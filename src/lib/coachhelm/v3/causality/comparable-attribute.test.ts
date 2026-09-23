@@ -30,13 +30,24 @@ vi.mock('@/lib/coachhelm/v3/evaluation/comparable-opportunities', async () => {
   };
 });
 
+// A9 slice 2: mocked wholesale, same reasoning as loadPlayerContext/
+// computeComparableOpportunities above — this file proves comparable-
+// attribute.ts's OWN orchestration (when the confounder check runs, and how
+// its result maps to multipleInterventions/method_version), not
+// confounding-check.ts's own DB query logic (that's confounding-check.test.ts).
+vi.mock('./confounding-check', () => ({
+  detectConfoundingInterventions: vi.fn(),
+}));
+
 import {
   isShotLevelAttributionMetric,
   computeComparableAttribution,
   writeComparableAttribution,
+  COMPARABLE_OPPORTUNITIES_LIMITED_METHOD_VERSION,
   type ComparableAttributionRow,
 } from './comparable-attribute';
 import { loadPlayerContext } from '@/lib/coachhelm/v3/context/load-player-context';
+import { detectConfoundingInterventions } from './confounding-check';
 import {
   computeComparableOpportunities,
   COMPARABLE_OPPORTUNITIES_METHOD_VERSION,
@@ -45,6 +56,7 @@ import {
 
 const loadPlayerContextMock = vi.mocked(loadPlayerContext);
 const computeComparableOpportunitiesMock = vi.mocked(computeComparableOpportunities);
+const detectConfoundingInterventionsMock = vi.mocked(detectConfoundingInterventions);
 
 const SHOWN_AT = '2026-08-01T00:00:00.000Z';
 
@@ -140,6 +152,10 @@ describe('computeComparableAttribution', () => {
       },
     });
     computeComparableOpportunitiesMock.mockReset().mockReturnValue(fullResult());
+    detectConfoundingInterventionsMock.mockReset().mockResolvedValue({
+      ok: true,
+      multipleInterventions: false,
+    });
   });
 
   it('returns unsupported-metric for a metric with no shot-level MatchingSpec, without querying anything', async () => {
@@ -270,6 +286,10 @@ describe('computeComparableAttribution', () => {
       expect(result).toEqual({ ok: false, reason: 'follow-up-window-open' });
       expect(loadPlayerContextMock).not.toHaveBeenCalled();
       expect(computeComparableOpportunitiesMock).not.toHaveBeenCalled();
+      // A9 slice 2: the confounder scan is a permanent-write gate too — must
+      // never run before the follow-up window has closed (see
+      // confounding-check.ts's ConfounderCheckInput.windowEnd doc comment).
+      expect(detectConfoundingInterventionsMock).not.toHaveBeenCalled();
     } finally {
       vi.useRealTimers();
     }
@@ -327,7 +347,7 @@ describe('computeComparableAttribution', () => {
     ).toBeNull();
   });
 
-  it('windows the baseline/follow-up around shown_at using the SAME PRE/POST_WINDOW_DAYS attribute.ts uses, and passes multipleInterventions: false', async () => {
+  it('windows the baseline/follow-up around shown_at using the SAME PRE/POST_WINDOW_DAYS attribute.ts uses, and passes the confounder check\'s multipleInterventions through unchanged', async () => {
     const { client } = makeExposureClient({ shown_at: SHOWN_AT });
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -344,10 +364,111 @@ describe('computeComparableAttribution', () => {
     expect(call.baselineWindow.start).toBe('2026-07-18T00:00:00.000Z'); // 14 days before
     expect(call.followUpWindow.start).toBe(SHOWN_AT);
     expect(call.followUpWindow.end).toBe('2026-08-22T00:00:00.000Z'); // 21 days after
-    expect(call.multipleInterventions).toBe(false);
+    expect(call.multipleInterventions).toBe(false); // beforeEach's default mock result
     expect(call.metricId).toBe('approach_proximity_125_175ft');
     // The band-in-feet spec for this metric: 125–175 YARDS * 3 ft/yd.
     expect(call.spec.distanceBand).toEqual({ label: '125_175ft', minFt: 375, maxFt: 525 });
+  });
+});
+
+describe('A9 slice 2: confounding-intervention detection wiring', () => {
+  beforeEach(() => {
+    loadPlayerContextMock.mockReset().mockResolvedValue({
+      shots: [],
+      holes: [],
+      coverage: {
+        holesIncluded: 0,
+        holesExcludedByReason: {},
+        shotsExcludedByReason: {},
+        partialSequenceCount: 0,
+      },
+    });
+    computeComparableOpportunitiesMock.mockReset().mockReturnValue(fullResult());
+    detectConfoundingInterventionsMock.mockReset().mockResolvedValue({
+      ok: true,
+      multipleInterventions: false,
+    });
+  });
+
+  it('calls the confounder check with the baseline-start-to-follow-up-end window, excluding this insight, only after the follow-up window has closed', async () => {
+    const { client } = makeExposureClient({ shown_at: SHOWN_AT });
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await computeComparableAttribution(client as any, {
+      insight_id: 'insight-1',
+      player_id: 'player-1',
+      target_metric_id: 'approach_proximity_125_175ft',
+    });
+
+    expect(detectConfoundingInterventionsMock).toHaveBeenCalledTimes(1);
+    expect(detectConfoundingInterventionsMock).toHaveBeenCalledWith(client, {
+      insight_id: 'insight-1',
+      player_id: 'player-1',
+      windowStart: '2026-07-18T00:00:00.000Z', // baselineWindow.start (14 days before shown_at)
+      windowEnd: '2026-08-22T00:00:00.000Z', // followUpWindow.end (21 days after shown_at)
+    });
+    // Called BEFORE loadPlayerContext — see the module's own ordering
+    // comment (evaluated only after the follow-up-window-open gate).
+    expect(detectConfoundingInterventionsMock.mock.invocationCallOrder[0]!).toBeLessThan(
+      loadPlayerContextMock.mock.invocationCallOrder[0]!,
+    );
+  });
+
+  it('when the confounder check finds one, passes multipleInterventions: true through to the pure core and writes the LIMITED method_version', async () => {
+    const { client } = makeExposureClient({ shown_at: SHOWN_AT });
+    detectConfoundingInterventionsMock.mockResolvedValue({ ok: true, multipleInterventions: true });
+    computeComparableOpportunitiesMock.mockReturnValue(
+      fullResult({ status: 'observed_change_limited', multipleInterventions: true }),
+    );
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const result = await computeComparableAttribution(client as any, {
+      insight_id: 'insight-1',
+      player_id: 'player-1',
+      target_metric_id: 'approach_proximity_125_175ft',
+    });
+
+    const call = computeComparableOpportunitiesMock.mock.calls[0]![0];
+    expect(call.multipleInterventions).toBe(true);
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.row.method_version).toBe(COMPARABLE_OPPORTUNITIES_LIMITED_METHOD_VERSION);
+      expect(result.row.method_version).not.toBe(COMPARABLE_OPPORTUNITIES_METHOD_VERSION);
+    }
+  });
+
+  it('when no confounder is found and the pure core reports observed_change, writes the CLEAN (non-limited) method_version', async () => {
+    const { client } = makeExposureClient({ shown_at: SHOWN_AT });
+    // beforeEach already wires multipleInterventions: false / status: observed_change.
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const result = await computeComparableAttribution(client as any, {
+      insight_id: 'insight-1',
+      player_id: 'player-1',
+      target_metric_id: 'approach_proximity_125_175ft',
+    });
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.row.method_version).toBe(COMPARABLE_OPPORTUNITIES_METHOD_VERSION);
+      expect(result.row.method_version).not.toBe(COMPARABLE_OPPORTUNITIES_LIMITED_METHOD_VERSION);
+    }
+  });
+
+  it('returns its own typed confounder-read-failed skip when the confounder check fails, without loading player context — never silently defaults to "no confounder"', async () => {
+    const { client } = makeExposureClient({ shown_at: SHOWN_AT });
+    detectConfoundingInterventionsMock.mockResolvedValue({ ok: false, error: 'connection reset' });
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const result = await computeComparableAttribution(client as any, {
+      insight_id: 'insight-1',
+      player_id: 'player-1',
+      target_metric_id: 'approach_proximity_125_175ft',
+    });
+
+    expect(result).toEqual({ ok: false, reason: 'confounder-read-failed', error: 'connection reset' });
+    expect(loadPlayerContextMock).not.toHaveBeenCalled();
+    expect(computeComparableOpportunitiesMock).not.toHaveBeenCalled();
   });
 });
 
@@ -396,6 +517,23 @@ describe('writeComparableAttribution', () => {
     expect(inserts).toHaveLength(1);
     expect(inserts[0]!.lift).toBeNull();
     expect(inserts[0]!.method_version).toBe(COMPARABLE_OPPORTUNITIES_METHOD_VERSION);
+  });
+
+  it('A9 slice 2: a confounded row writes the distinct LIMITED method_version, never the clean one — this function passes method_version through unchanged, it never re-derives it', async () => {
+    const { client: cleanClient, inserts: cleanInserts } = makeWriteClient();
+    const { client: limitedClient, inserts: limitedInserts } = makeWriteClient();
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await writeComparableAttribution(cleanClient as any, ROW);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await writeComparableAttribution(limitedClient as any, {
+      ...ROW,
+      method_version: COMPARABLE_OPPORTUNITIES_LIMITED_METHOD_VERSION,
+    });
+
+    expect(cleanInserts[0]!.method_version).toBe(COMPARABLE_OPPORTUNITIES_METHOD_VERSION);
+    expect(limitedInserts[0]!.method_version).toBe(COMPARABLE_OPPORTUNITIES_LIMITED_METHOD_VERSION);
+    expect(cleanInserts[0]!.method_version).not.toBe(limitedInserts[0]!.method_version);
   });
 
   it('MUST 3 (PR #2007 review): a PGRST204 unknown-column error writes NOTHING — no retry insert, never a NULL-method_version row', async () => {

@@ -180,3 +180,56 @@
   narrative there hadn't been updated to match.
 - Verification: `causality-attribute.test.ts` — 30 passed, 0 failed.
   `npm run typecheck:fast` clean.
+
+## 2026-09-23 — A9 slice 2: confounding-intervention detection tests
+
+- New `src/lib/coachhelm/v3/causality/confounding-check.test.ts` (7
+  tests): zero-other-exposure reports `false`; another insight's first
+  exposure inside the window reports `true`, and asserts the exact
+  `.eq`/`.neq`/`.lte` calls the query makes; an insight already exposed
+  BEFORE baseline start (not a new intervention entering the window)
+  does not confound; the MINIMUM shown_at per insight_id is what's
+  checked, not any row inside the window — a re-exposure inside the
+  window of an insight first shown before baseline start does not
+  confound; the exact `windowStart` boundary instant counts (inclusive
+  lower bound); a query error returns a typed failure, never silently
+  "no confounder found"; and a pagination test (1,000 rows for one
+  spammy insight, plus a confounding insight whose row sorts past page
+  1) proves `fetchAllRowsResult` pagination actually runs.
+- `comparable-attribute.test.ts` gained a new "A9 slice 2" describe
+  block (5 tests) plus one more in `writeComparableAttribution`'s own
+  block: mocks `detectConfoundingInterventions` wholesale (same
+  reasoning as `loadPlayerContext`/`computeComparableOpportunities`
+  already being mocked in this file — this file proves
+  `comparable-attribute.ts`'s OWN orchestration, not
+  `confounding-check.ts`'s DB query logic). Covers: the confounder
+  check is called with `windowStart = baselineWindow.start`, `windowEnd
+  = followUpWindow.end`, excluding this insight, and strictly BEFORE
+  `loadPlayerContext` (asserted via `invocationCallOrder`); a `true`
+  result passes `multipleInterventions: true` through to the pure core
+  and the row is written with the LIMITED method_version; a `false`
+  result (the default) writes the CLEAN method_version; a confounder
+  check failure returns `{ok: false, reason: 'confounder-read-failed',
+  error}` without ever calling `loadPlayerContext` or
+  `computeComparableOpportunities`; and `writeComparableAttribution`
+  passes a limited row's method_version through to the insert unchanged
+  and distinct from a clean row's.
+- `src/test/api/cron/causality-attribute.test.ts` gained 2 tests: a
+  successful write with the LIMITED method_version counts
+  `summary.comparable_attributed_limited`, NOT `comparable_attributed`;
+  a `confounder-read-failed` skip is logged under its own action
+  (`cron.v3.causality.comparable-confounder-read`), counted under its
+  own new `comparable_confounder_read_failed` counter (separate from
+  every other `comparable_*` reason), and never written.
+- Verification: `comparable-attribute.test.ts` — 21 tests (was 16: 5 new
+  in the "A9 slice 2" describe block plus 1 new in
+  `writeComparableAttribution`'s own block), `confounding-check.test.ts`
+  — 7 tests (new file), `causality-attribute.test.ts` — 32 tests (was
+  30: 2 new). All 60 combined passed, 0 failed. `npm run typecheck:fast`
+  clean. `npx eslint` on all touched/new files: 0 problems. The pure
+  core's own suite (`comparable-opportunities.test.ts`) and the
+  dedicated real-core open-window test
+  (`comparable-attribute.open-window.test.ts`) re-run clean (9 passed,
+  0 failed) — the open-window test never reaches the confounder check
+  (it short-circuits at the follow-up-window-open gate, before the new
+  code runs), so it needed no changes.

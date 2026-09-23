@@ -63,6 +63,11 @@ vi.mock('@/lib/coachhelm/v3/causality/comparable-attribute', () => ({
       metricId === 'approach_proximity_125_175ft' ||
       metricId === 'approach_proximity_175_plus_ft',
   ),
+  // A9 slice 2: real string (not a mock fn) — route.ts compares a written
+  // row's method_version against this constant to split comparable_attributed
+  // vs. comparable_attributed_limited, so the mock must carry the SAME value
+  // production code does.
+  COMPARABLE_OPPORTUNITIES_LIMITED_METHOD_VERSION: 'comparable_opportunities_v1_limited',
 }));
 
 // Defaults to the real production default (off) — a test only needs to
@@ -77,6 +82,7 @@ import { computeAttribution } from '@/lib/coachhelm/v3/causality/attribute';
 import {
   computeComparableAttribution,
   writeComparableAttribution,
+  COMPARABLE_OPPORTUNITIES_LIMITED_METHOD_VERSION,
 } from '@/lib/coachhelm/v3/causality/comparable-attribute';
 import { logServerError, logServerEvent } from '@/lib/server-error-logger';
 import { isFlagEnabled } from '@/lib/flags';
@@ -1068,10 +1074,68 @@ describe('causality-attribute cron A9 slice 1: comparable-opportunity attributio
     const summary = await res.json();
 
     expect(summary.comparable_attributed).toBe(1);
+    expect(summary.comparable_attributed_limited).toBe(0);
     expect(writeComparableAttributionMock).toHaveBeenCalledTimes(1);
     // Never feeds the learning loop (the file header's own contract):
     // the round-level coach-weight upsert must never fire for this row.
     expect(weightCalls.upserts).toHaveLength(0);
+  });
+
+  it('A9 slice 2: a successful write with the LIMITED method_version counts comparable_attributed_limited, NOT comparable_attributed — a reader must be able to tell clean vs. confounded evidence apart from the summary alone', async () => {
+    isFlagEnabledMock.mockReturnValue(true);
+    computeComparableAttributionMock.mockResolvedValue({
+      ok: true,
+      row: {
+        insight_id: 'insight-1',
+        intervention_at: '2026-08-01T00:00:00.000Z',
+        target_metric_id: SHOT_LEVEL_METRIC,
+        baseline_value: 22.4,
+        post_value: 18.1,
+        delta: -4.3,
+        n_rounds_before: 3,
+        n_rounds_after: 4,
+        method_version: COMPARABLE_OPPORTUNITIES_LIMITED_METHOD_VERSION,
+      },
+    });
+    writeComparableAttributionMock.mockResolvedValue({ written: true, methodVersionColumnMissing: false });
+    const rows = [fixture({ id: 'insight-1', evidence: { metric: SHOT_LEVEL_METRIC } })];
+    const { client, weightCalls } = makeClient(rows, { exposures: { 'insight-1': WINDOW_CLOSED_IN_GRACE } });
+    createAdminMock.mockReturnValue(client);
+
+    const res = await POST(authedRequest());
+    const summary = await res.json();
+
+    expect(summary.comparable_attributed_limited).toBe(1);
+    expect(summary.comparable_attributed).toBe(0);
+    expect(weightCalls.upserts).toHaveLength(0);
+  });
+
+  it('A9 slice 2: a confounder-read-failed skip is logged under its own action, counted separately from every other comparable_* reason, and never written', async () => {
+    isFlagEnabledMock.mockReturnValue(true);
+    computeComparableAttributionMock.mockResolvedValue({
+      ok: false,
+      reason: 'confounder-read-failed',
+      error: 'connection reset',
+    });
+    const rows = [fixture({ id: 'insight-1', evidence: { metric: SHOT_LEVEL_METRIC } })];
+    const { client } = makeClient(rows, { exposures: { 'insight-1': WINDOW_CLOSED_IN_GRACE } });
+    createAdminMock.mockReturnValue(client);
+
+    const res = await POST(authedRequest());
+    const summary = await res.json();
+
+    expect(summary.comparable_confounder_read_failed).toBe(1);
+    expect(summary.comparable_exposure_read_failed).toBe(0);
+    expect(summary.comparable_no_exposure_record).toBe(0);
+    expect(summary.comparable_attributed).toBe(0);
+    expect(summary.comparable_attributed_limited).toBe(0);
+    expect(writeComparableAttributionMock).not.toHaveBeenCalled();
+    const errorCall = logServerErrorMock.mock.calls.find(
+      (c) =>
+        (c[1] as { action?: string } | undefined)?.action ===
+        'cron.v3.causality.comparable-confounder-read',
+    );
+    expect(errorCall).toBeDefined();
   });
 
   it('MUST 3: a write degraded away for a missing method_version column is NOT counted as attributed, sets the shared flag, and logs nothing', async () => {
