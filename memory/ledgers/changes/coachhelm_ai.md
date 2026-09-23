@@ -99,8 +99,9 @@
   default-off flag `coachhelm_comparable_opportunity_attribution`. The
   cron's pre-filter and main loop (`api/cron/v3/causality-attribute/
   route.ts`) route these metrics to the new module instead of the
-  round-level `computeAttribution` only when the flag is on; flag off is
-  byte-identical to before this slice.
+  round-level `computeAttribution` only when the flag is on; flag off means
+  no new DB reads or writes on this path at all — the summary just gains
+  three permanently-zero counters.
 - Why: `attribute.ts`'s round-level before/after average has no per-shot
   "opportunity" concept for these metrics — they've been permanently
   skipped since W22. This gives them a real, shot-level comparison instead,
@@ -169,3 +170,62 @@
   exit 0. `npm run test -- --run src/test/coachhelm` (the feature map's
   required check): 140 files, 1434 passed, 3 skipped, 0 failed. `eslint`
   on all touched files: 0 problems. `docs:check` clean.
+
+## 2026-09-23 — PR #2007 review: MUST 2 starvation fix + MUST 3 mislabel fix
+
+- Same PR (#2007), rebased onto PR #1992's fixed tip (`3aab65ef1`) after a
+  formal review verdict of "Fix" with 3 MUSTs.
+- MUST 2 (starvation, reintroduced): with the flag on, every shot-level
+  candidate since W22 was passing the cron's pre-filter on metric alone,
+  including old `no-exposure-record`/`follow-up-window-open` ones —
+  refilling every run's fixed work-list slots oldest-first and starving
+  round-level attribution, the exact P1 stall the pagination rewrite
+  originally fixed. Fixed: `api/cron/v3/causality-attribute/route.ts` now
+  bulk-fetches each page's shot-level candidates' first
+  `golf_insight_exposure` row in one `.in()` query (already page-bounded)
+  and drops a candidate with no exposure or a still-open window BEFORE it
+  ever takes a `todo` slot or costs a `loadPlayerContext` call.
+  `computeComparableAttribution`'s own per-candidate checks stay as a
+  backstop. A bulk-fetch error fails closed for that page (candidates not
+  enqueued, not silently guessed) and is logged/counted distinctly
+  (`comparable_exposure_read_failed`, `cron.v3.causality.comparable-
+  exposure-bulk-fetch`) — the SAME reason/counter the per-candidate
+  backstop uses for its own exposure-lookup failures, replacing the prior
+  "throw and let the generic catch handle it" approach so a real infra
+  error is never folded into the legitimate `no-exposure-record` case.
+- **Residual gap, raised to the task owner, not fixed**: once a
+  candidate's window IS closed, a terminal `insufficient-evidence` result
+  has no honest row to write into `golf_insight_outcome_attribution` —
+  `baseline_value`/`post_value`/`delta` are `NOT NULL numeric` in the
+  schema (`20260527000000_prod_public_baseline.sql`), so a side with zero
+  contributing shots has no real number, and even a real-but-underpowered
+  pair of values has no column to flag "measured, below the support
+  floor" as distinct from a certified row. These now-bounded (closed-
+  window-only) candidates still cost a real compute every run until this
+  is resolved or accepted as a known cost.
+- MUST 3 (`method_version` mislabel): the round-level path's own degrade
+  pattern — retry the insert without `method_version` on an
+  unknown-column error — would write a `NULL`-labeled row here too, but
+  `NULL` means "v1" (the round-level method) by that migration's own
+  comment; a comparable-opportunities row written that way would be
+  silently, permanently misread as a round-level row once read back.
+  Fixed: `writeComparableAttribution` now writes NOTHING on an
+  unknown-column error (`written: false, methodVersionColumnMissing:
+  true`, no retry-insert); `route.ts`'s handling was also fixed to check
+  `write.written` explicitly rather than inferring success from `!write.
+  error` (a `written: false` + no-error result was previously
+  miscounted as `comparable_attributed`). The flag's enable criteria
+  (`config/feature-flags.yml`) now states migration 20260922230000 must
+  be applied, and A9 slice 2 (confounding detection) must ship, before
+  this flag can ever go on in production — a slice-1 row is permanent
+  (idempotent insert, PK on `insight_id`).
+- SHOULD decisions: the exposure lookup's own DB error is its own typed
+  skip (`exposure-read-failed`), never folded into `no-exposure-record`;
+  the first-exposure lookup is on ANY surface (player or coach), doc
+  comments that said "coach" fixed, no surface filter added.
+- Verification: `npm run typecheck:fast` clean (0 errors — the #1992
+  fixture error from the prior entry is gone now that this branch is
+  rebased onto its fix). `npm run test -- --run src/test/coachhelm`: 140
+  files, 1434 passed, 0 failed. `eslint` on all touched/new files: 0
+  problems. `flags:check`: clean (6 flags). `docs:check` clean. See the
+  matching test-ledger entry for the new/changed test cases.

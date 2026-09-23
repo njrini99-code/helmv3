@@ -44,6 +44,9 @@ vi.mock('@/lib/coachhelm/v3/causality/attribute', () => ({
     weight: base.weight,
     sample_n: base.sample_n + 1,
   })),
+  // Real value (not a mock) — the route's MUST 2 pre-filter math needs the
+  // real 21 to agree with `comparable-attribute.ts`'s own window check.
+  POST_WINDOW_DAYS: 21,
 }));
 
 // A9 slice 1: mocked wholesale, same as `causality/attribute.ts` above — these
@@ -215,12 +218,43 @@ interface ClientOpts {
    * `insertError` (or null) path above.
    */
   unknownColumnError?: { code: string; message: string };
+  /**
+   * A9 slice 1 (MUST 2): map of `insight_id` -> its real first `shown_at`
+   * ISO string, backing the cron's per-page bulk `golf_insight_exposure`
+   * pre-filter fetch. An id absent from this map has no exposure row at
+   * all (the `comparable_no_exposure_record` pre-filter branch).
+   */
+  exposures?: Record<string, string>;
+  /** Force the bulk exposure pre-filter fetch (`.in()` over the page's
+   *  shot-level candidate ids) to error. */
+  exposureBulkFetchError?: { message: string };
 }
 
 function makeClient(rows: FixtureInsight[], opts: ClientOpts = {}) {
   const { builder, calls } = makeCandidatesBuilder(rows, {
     rangeError: opts.rangeError,
   });
+  const exposureRows = Object.entries(opts.exposures ?? {}).map(([insight_id, shown_at]) => ({
+    insight_id,
+    shown_at,
+  }));
+  let exposureQueriedIds: string[] = [];
+  const exposureBuilder = {
+    select: vi.fn().mockReturnThis(),
+    in: vi.fn((_col: string, ids: string[]) => {
+      exposureQueriedIds = ids;
+      return exposureBuilder;
+    }),
+    order: vi.fn(() => {
+      if (opts.exposureBulkFetchError) {
+        return Promise.resolve({ data: null, error: opts.exposureBulkFetchError });
+      }
+      return Promise.resolve({
+        data: exposureRows.filter((r) => exposureQueriedIds.includes(r.insight_id)),
+        error: null,
+      });
+    }),
+  };
   const attributedSet = new Set(opts.attributedIds ?? []);
   const attributionInserts: Record<string, unknown>[] = [];
   const attributionBuilder = {
@@ -273,6 +307,7 @@ function makeClient(rows: FixtureInsight[], opts: ClientOpts = {}) {
       if (table === 'golf_insight_outcome_attribution') return attributionBuilder;
       if (table === 'golf_coachhelm_coach_weights') return weightBuilder;
       if (table === 'golf_insight_outcome') return outcomeBuilder;
+      if (table === 'golf_insight_exposure') return exposureBuilder;
       throw new Error(`Unexpected table: ${table}`);
     }),
   } as unknown as ReturnType<typeof createAdminClient>;
@@ -706,11 +741,11 @@ describe('causality-attribute cron A9 slice 1: comparable-opportunity attributio
     expect(computeAttributionMock).not.toHaveBeenCalled();
   });
 
-  it('flag ON: a shot-level metric is NOT dropped in the pre-filter, and reaches computeComparableAttribution instead of computeAttribution', async () => {
+  it('flag ON: a shot-level metric with a closed-window exposure is NOT dropped in the pre-filter, and reaches computeComparableAttribution instead of computeAttribution', async () => {
     isFlagEnabledMock.mockReturnValue(true);
-    computeComparableAttributionMock.mockResolvedValue({ ok: false, reason: 'no-exposure-record' });
+    computeComparableAttributionMock.mockResolvedValue({ ok: false, reason: 'insufficient-evidence' });
     const rows = [fixture({ id: 'insight-1', evidence: { metric: SHOT_LEVEL_METRIC } })];
-    const { client } = makeClient(rows);
+    const { client } = makeClient(rows, { exposures: { 'insight-1': OLD } });
     createAdminMock.mockReturnValue(client);
 
     const res = await POST(authedRequest());
@@ -725,11 +760,85 @@ describe('causality-attribute cron A9 slice 1: comparable-opportunity attributio
     expect(computeAttributionMock).not.toHaveBeenCalled();
   });
 
-  it('flag ON: no-exposure-record is counted separately from intentional_no_lift and never written', async () => {
+  it('MUST 2 pre-filter: a shot-level candidate with NO real exposure row is dropped before ever reaching computeComparableAttribution', async () => {
+    isFlagEnabledMock.mockReturnValue(true);
+    const rows = [fixture({ id: 'insight-1', evidence: { metric: SHOT_LEVEL_METRIC } })];
+    const { client } = makeClient(rows, { exposures: {} });
+    createAdminMock.mockReturnValue(client);
+
+    const res = await POST(authedRequest());
+    const summary = await res.json();
+
+    expect(summary.comparable_no_exposure_record).toBe(1);
+    expect(summary.considered).toBe(0);
+    expect(computeComparableAttributionMock).not.toHaveBeenCalled();
+    expect(writeComparableAttributionMock).not.toHaveBeenCalled();
+  });
+
+  it('MUST 2 pre-filter: a shot-level candidate whose follow-up window has not closed yet is dropped before ever reaching computeComparableAttribution', async () => {
+    isFlagEnabledMock.mockReturnValue(true);
+    const shownRecently = new Date(Date.now() - 3 * 86_400_000).toISOString(); // 3 days ago
+    const rows = [fixture({ id: 'insight-1', evidence: { metric: SHOT_LEVEL_METRIC } })];
+    const { client } = makeClient(rows, { exposures: { 'insight-1': shownRecently } });
+    createAdminMock.mockReturnValue(client);
+
+    const res = await POST(authedRequest());
+    const summary = await res.json();
+
+    expect(summary.comparable_follow_up_open).toBe(1);
+    expect(summary.considered).toBe(0);
+    expect(computeComparableAttributionMock).not.toHaveBeenCalled();
+  });
+
+  it('MUST 2 pre-filter: a bulk exposure-fetch error is logged distinctly, counted, and the page never reaches computeComparableAttribution', async () => {
+    isFlagEnabledMock.mockReturnValue(true);
+    const rows = [fixture({ id: 'insight-1', evidence: { metric: SHOT_LEVEL_METRIC } })];
+    const { client } = makeClient(rows, {
+      exposureBulkFetchError: { message: 'connection reset' },
+    });
+    createAdminMock.mockReturnValue(client);
+
+    const res = await POST(authedRequest());
+    const summary = await res.json();
+
+    expect(summary.comparable_exposure_read_failed).toBe(1);
+    expect(computeComparableAttributionMock).not.toHaveBeenCalled();
+    const errorCall = logServerErrorMock.mock.calls.find(
+      (c) =>
+        (c[1] as { action?: string } | undefined)?.action ===
+        'cron.v3.causality.comparable-exposure-bulk-fetch',
+    );
+    expect(errorCall).toBeDefined();
+  });
+
+  it('backstop: computeComparableAttribution itself reporting exposure-read-failed is logged distinctly and counted, not folded into no-exposure-record', async () => {
+    isFlagEnabledMock.mockReturnValue(true);
+    computeComparableAttributionMock.mockResolvedValue({
+      ok: false,
+      reason: 'exposure-read-failed',
+      error: 'statement timeout',
+    });
+    const rows = [fixture({ id: 'insight-1', evidence: { metric: SHOT_LEVEL_METRIC } })];
+    const { client } = makeClient(rows, { exposures: { 'insight-1': OLD } });
+    createAdminMock.mockReturnValue(client);
+
+    const res = await POST(authedRequest());
+    const summary = await res.json();
+
+    expect(summary.comparable_exposure_read_failed).toBe(1);
+    expect(summary.comparable_no_exposure_record).toBe(0);
+    const errorCall = logServerErrorMock.mock.calls.find(
+      (c) =>
+        (c[1] as { action?: string } | undefined)?.action === 'cron.v3.causality.comparable-exposure-read',
+    );
+    expect(errorCall).toBeDefined();
+  });
+
+  it('backstop: computeComparableAttribution itself reporting no-exposure-record (bulk pre-filter passed it through) is still counted correctly', async () => {
     isFlagEnabledMock.mockReturnValue(true);
     computeComparableAttributionMock.mockResolvedValue({ ok: false, reason: 'no-exposure-record' });
     const rows = [fixture({ id: 'insight-1', evidence: { metric: SHOT_LEVEL_METRIC } })];
-    const { client } = makeClient(rows);
+    const { client } = makeClient(rows, { exposures: { 'insight-1': OLD } });
     createAdminMock.mockReturnValue(client);
 
     const res = await POST(authedRequest());
@@ -741,11 +850,11 @@ describe('causality-attribute cron A9 slice 1: comparable-opportunity attributio
     expect(writeComparableAttributionMock).not.toHaveBeenCalled();
   });
 
-  it('flag ON: follow-up-window-open is counted separately, retried tomorrow like no-exposure-record, and never written', async () => {
+  it('backstop: computeComparableAttribution itself reporting follow-up-window-open (bulk pre-filter passed it through) is still counted correctly', async () => {
     isFlagEnabledMock.mockReturnValue(true);
     computeComparableAttributionMock.mockResolvedValue({ ok: false, reason: 'follow-up-window-open' });
     const rows = [fixture({ id: 'insight-1', evidence: { metric: SHOT_LEVEL_METRIC } })];
-    const { client } = makeClient(rows);
+    const { client } = makeClient(rows, { exposures: { 'insight-1': OLD } });
     createAdminMock.mockReturnValue(client);
 
     const res = await POST(authedRequest());
@@ -761,7 +870,7 @@ describe('causality-attribute cron A9 slice 1: comparable-opportunity attributio
     isFlagEnabledMock.mockReturnValue(true);
     computeComparableAttributionMock.mockResolvedValue({ ok: false, reason: 'insufficient-evidence' });
     const rows = [fixture({ id: 'insight-1', evidence: { metric: SHOT_LEVEL_METRIC } })];
-    const { client } = makeClient(rows);
+    const { client } = makeClient(rows, { exposures: { 'insight-1': OLD } });
     createAdminMock.mockReturnValue(client);
 
     const res = await POST(authedRequest());
@@ -789,7 +898,7 @@ describe('causality-attribute cron A9 slice 1: comparable-opportunity attributio
     });
     writeComparableAttributionMock.mockResolvedValue({ written: true, methodVersionColumnMissing: false });
     const rows = [fixture({ id: 'insight-1', evidence: { metric: SHOT_LEVEL_METRIC } })];
-    const { client, weightCalls } = makeClient(rows);
+    const { client, weightCalls } = makeClient(rows, { exposures: { 'insight-1': OLD } });
     createAdminMock.mockReturnValue(client);
 
     const res = await POST(authedRequest());
@@ -802,7 +911,7 @@ describe('causality-attribute cron A9 slice 1: comparable-opportunity attributio
     expect(weightCalls.upserts).toHaveLength(0);
   });
 
-  it('flag ON: a write that had to drop method_version sets the SAME summary flag the round-level degrade path uses', async () => {
+  it('MUST 3: a write degraded away for a missing method_version column is NOT counted as attributed, sets the shared flag, and logs nothing', async () => {
     isFlagEnabledMock.mockReturnValue(true);
     computeComparableAttributionMock.mockResolvedValue({
       ok: true,
@@ -818,16 +927,21 @@ describe('causality-attribute cron A9 slice 1: comparable-opportunity attributio
         method_version: 'comparable_opportunities_v1',
       },
     });
-    writeComparableAttributionMock.mockResolvedValue({ written: true, methodVersionColumnMissing: true });
+    // MUST 3 (PR #2007 review): the comparable path never degrades to a
+    // NULL-method_version insert — it writes NOTHING and reports
+    // written:false with no `error` (not a failure, a routine degrade).
+    writeComparableAttributionMock.mockResolvedValue({ written: false, methodVersionColumnMissing: true });
     const rows = [fixture({ id: 'insight-1', evidence: { metric: SHOT_LEVEL_METRIC } })];
-    const { client } = makeClient(rows);
+    const { client } = makeClient(rows, { exposures: { 'insight-1': OLD } });
     createAdminMock.mockReturnValue(client);
 
     const res = await POST(authedRequest());
     const summary = await res.json();
 
     expect(summary.method_version_column_missing).toBe(true);
-    expect(summary.comparable_attributed).toBe(1);
+    expect(summary.comparable_attributed).toBe(0);
+    expect(summary.errors).toBe(0);
+    expect(logServerErrorMock).not.toHaveBeenCalled();
   });
 
   it('flag ON: a write error is logged and counted in summary.errors, tagged with its own action', async () => {
@@ -852,7 +966,7 @@ describe('causality-attribute cron A9 slice 1: comparable-opportunity attributio
       error: 'permission denied for table golf_insight_outcome_attribution',
     });
     const rows = [fixture({ id: 'insight-1', evidence: { metric: SHOT_LEVEL_METRIC } })];
-    const { client } = makeClient(rows);
+    const { client } = makeClient(rows, { exposures: { 'insight-1': OLD } });
     createAdminMock.mockReturnValue(client);
 
     const res = await POST(authedRequest());

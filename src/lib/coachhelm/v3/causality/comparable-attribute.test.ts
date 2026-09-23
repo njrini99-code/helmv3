@@ -236,17 +236,20 @@ describe('computeComparableAttribution', () => {
     });
   });
 
-  it('throws on a genuine exposure-lookup DB error, rather than reading it as no-exposure-record', async () => {
+  it('returns its own typed exposure-read-failed skip on a genuine exposure-lookup DB error, rather than reading it as no-exposure-record', async () => {
     const { client } = makeExposureClient(null, { error: { message: 'connection reset' } });
 
-    await expect(
+    const result = await computeComparableAttribution(
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      computeComparableAttribution(client as any, {
+      client as any,
+      {
         insight_id: 'insight-1',
         player_id: 'player-1',
         target_metric_id: 'approach_proximity_125_175ft',
-      }),
-    ).rejects.toThrow(/connection reset/);
+      },
+    );
+
+    expect(result).toEqual({ ok: false, reason: 'exposure-read-failed', error: 'connection reset' });
     expect(loadPlayerContextMock).not.toHaveBeenCalled();
   });
 
@@ -395,7 +398,7 @@ describe('writeComparableAttribution', () => {
     expect(inserts[0]!.method_version).toBe(COMPARABLE_OPPORTUNITIES_METHOD_VERSION);
   });
 
-  it('degrades and retries without method_version on a PGRST204 unknown-column error', async () => {
+  it('MUST 3 (PR #2007 review): a PGRST204 unknown-column error writes NOTHING — no retry insert, never a NULL-method_version row', async () => {
     const { client, inserts } = makeWriteClient({
       insertError: { code: 'PGRST204', message: "Could not find the 'method_version' column" },
     });
@@ -403,14 +406,15 @@ describe('writeComparableAttribution', () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const result = await writeComparableAttribution(client as any, ROW);
 
-    expect(result).toEqual({ written: true, methodVersionColumnMissing: true });
-    expect(inserts).toHaveLength(2);
-    expect('method_version' in inserts[0]!).toBe(true);
-    expect('method_version' in inserts[1]!).toBe(false);
-    expect(inserts[1]!.lift).toBeNull();
+    // written:false and NO error — this is a routine, expected degrade
+    // (the migration isn't applied yet), never a genuine failure. A NULL
+    // method_version row here would be silently, permanently
+    // indistinguishable from a real round-level v1 row (MUST 3).
+    expect(result).toEqual({ written: false, methodVersionColumnMissing: true });
+    expect(inserts).toHaveLength(1); // no retry attempted
   });
 
-  it('degrades and retries on a raw-Postgres 42703 unknown-column error', async () => {
+  it('MUST 3: a raw-Postgres 42703 unknown-column error also writes nothing, no retry', async () => {
     const { client, inserts } = makeWriteClient({
       insertError: { code: '42703', message: 'column "method_version" does not exist' },
     });
@@ -419,8 +423,9 @@ describe('writeComparableAttribution', () => {
     const result = await writeComparableAttribution(client as any, ROW);
 
     expect(result.methodVersionColumnMissing).toBe(true);
-    expect(result.written).toBe(true);
-    expect(inserts).toHaveLength(2);
+    expect(result.written).toBe(false);
+    expect(result.error).toBeUndefined();
+    expect(inserts).toHaveLength(1);
   });
 
   it('does NOT retry a genuine (non-unknown-column) insert error, and surfaces it', async () => {

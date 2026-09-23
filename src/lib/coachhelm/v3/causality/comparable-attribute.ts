@@ -18,13 +18,14 @@
  * non-intervention event" (see that module's own doc comment).
  * `causality/attribute.ts`'s round-level path uses `golf_coach_insights.
  * created_at` as an admitted "surfaced_at proxy" (its own comment says so).
- * This module does NOT: `firstRealExposureAt` below reads the insight's
- * FIRST real `golf_insight_exposure` row (`shown_at` — the actual recorded
- * moment a coach was shown this insight, written by
- * `effectiveness/event-ledger.ts`'s `recordInsightExposure`) and this module
- * returns `{ ok: false, reason: 'no-exposure-record' }` for an insight with
- * zero exposure rows, rather than estimating one from `created_at` the way
- * the round-level path does.
+ * This module does NOT: this module reads the insight's FIRST real
+ * `golf_insight_exposure` row (`shown_at` — the actual recorded moment the
+ * insight was shown, on ANY surface it can be shown on — player or coach;
+ * `effectiveness/event-ledger.ts`'s `recordInsightExposure` does not
+ * distinguish, and neither does this module — there is no surface filter to
+ * add here) and returns `{ ok: false, reason: 'no-exposure-record' }` for an
+ * insight with zero exposure rows, rather than estimating one from
+ * `created_at` the way the round-level path does.
  *
  * NEVER FEEDS THE LEARNING LOOP (this slice): every row this module writes
  * carries `lift: null` unconditionally — `nextWeight`/`updateCoachWeight`
@@ -152,15 +153,27 @@ export type ComparableAttributionSkip =
    * module's window is anchored to a REAL, variable `shown_at` rather than
    * the cron's own `MIN_AGE_DAYS` candidate-age cutoff, so the cron
    * admitting a candidate (created >=21d ago) does NOT guarantee its
-   * follow-up window has closed — an insight first shown to a coach only
-   * a few days ago has a follow-up window still wide open. Measuring
-   * early would truncate the follow-up side to whatever thin slice of
-   * data exists so far and — because a write is a permanent, idempotent
-   * row (PK on `insight_id`) — that truncated measurement could never be
-   * redone once the window actually closes. Retried next run, exactly
-   * like `no-exposure-record`, never a permanent skip.
+   * follow-up window has closed — an insight first shown only a few days
+   * ago has a follow-up window still wide open. Measuring early would
+   * truncate the follow-up side to whatever thin slice of data exists so
+   * far and — because a write is a permanent, idempotent row (PK on
+   * `insight_id`) — that truncated measurement could never be redone once
+   * the window actually closes. Retried next run, exactly like
+   * `no-exposure-record`, never a permanent skip. The cron's own per-page
+   * pre-filter (route.ts) now also checks this cheaply BEFORE a candidate
+   * ever reaches this function, so it can be dropped without ever costing
+   * a `loadPlayerContext` call — this reason/check stays here too as a
+   * backstop for anyone calling this function directly.
    */
   | { ok: false; reason: 'follow-up-window-open' }
+  /**
+   * The `golf_insight_exposure` lookup itself failed (a transient/infra
+   * error), NOT "zero rows" — must never be folded into
+   * `no-exposure-record`, which is a legitimate, expected outcome for a
+   * never-shown insight, while this is a real failure worth alerting on.
+   * `error` carries the raw driver message for the caller to log.
+   */
+  | { ok: false; reason: 'exposure-read-failed'; error: string }
   | { ok: false; reason: 'insufficient-evidence' };
 
 export interface ComparableAttributionRow {
@@ -189,10 +202,10 @@ export type ComparableAttributionResult =
  * `computeComparableOpportunities` core. Returns a row to write, or a typed
  * skip reason; a caller (the cron) counts each skip reason in its own
  * summary the same way `computeAttribution`'s `AttributionSkip` already
- * works. A genuine DB error (the exposure lookup failing) THROWS rather
- * than being read as `no-exposure-record` — the cron's own per-candidate
- * try/catch (`cron.v3.causality.compute`) already absorbs and logs that,
- * the same way it does for `computeAttribution`'s own DB calls.
+ * works. A genuine DB error on the exposure lookup is its OWN typed skip
+ * (`'exposure-read-failed'`), never folded into `no-exposure-record` —
+ * that reason is a legitimate, expected outcome (never shown yet), while a
+ * failed lookup is a real infra problem the cron should log distinctly.
  */
 export async function computeComparableAttribution(
   sb: Sb,
@@ -213,13 +226,11 @@ export async function computeComparableAttribution(
     .maybeSingle();
   // A transient/infra failure must not read as "no exposure yet" — that
   // would silently and permanently misclassify a real DB error as the
-  // addendum's legitimate not-shown-yet case. Throw and let the cron's own
-  // per-candidate try/catch (cron.v3.causality.compute) log it, same as any
-  // other DB failure in this loop.
+  // addendum's legitimate not-shown-yet case. Its own typed skip so the
+  // cron can log it distinctly (`cron.v3.causality.comparable-exposure-
+  // read`) rather than folding it into `comparable_no_exposure_record`.
   if (exposureError) {
-    throw new Error(
-      `comparable-attribute exposure lookup ${input.insight_id}: ${exposureError.message}`,
-    );
+    return { ok: false, reason: 'exposure-read-failed', error: exposureError.message };
   }
   if (!exposure) return { ok: false, reason: 'no-exposure-record' };
   const interventionAt = exposure.shown_at;
@@ -240,8 +251,8 @@ export async function computeComparableAttribution(
   // ROUND-LEVEL path's post window has fully elapsed. It does NOT guarantee
   // this path's has: `interventionAt` is the real, independently-timed
   // `shown_at`, which can land long after `created_at` — an insight created
-  // 30 days ago but first shown to a coach 3 days ago still has 18 days left
-  // on its follow-up window. Measuring now would only see those 3 days, and
+  // 30 days ago but first shown 3 days ago still has 18 days left on its
+  // follow-up window. Measuring now would only see those 3 days, and
   // because the write is a permanent, idempotent row (PK on `insight_id`),
   // that truncated measurement could never be corrected later. See
   // `ComparableAttributionSkip`'s `'follow-up-window-open'` doc comment.
@@ -277,9 +288,15 @@ export async function computeComparableAttribution(
     // Slice 2 candidate: detect a second insight surfaced before the
     // follow-up window closes. Slice 1 always reports `false` — WRONG in the
     // "more confident than warranted" direction would be worse than this
-    // slice's actual behavior (which never even reaches a coach yet — see
-    // the file header's "NEVER FEEDS THE LEARNING LOOP" note), so this is a
-    // real known gap for slice 2, not a silent shortcut.
+    // slice's actual behavior (which never feeds a coach weight regardless —
+    // see the file header's "NEVER FEEDS THE LEARNING LOOP" note), so this is
+    // a real known gap for slice 2, not a silent shortcut. PR #2007 review:
+    // this is a genuine enable-blocker, not just a nice-to-have — a
+    // confounded row written now is PERMANENT (the insert is idempotent, PK
+    // on `insight_id`) and can't be relabeled once slice 2 lands. See
+    // `config/feature-flags.yml`'s `coachhelm_comparable_opportunity_
+    // attribution` entry: this flag should not go on in production before
+    // slice 2 (confounding detection) ships.
     multipleInterventions: false,
     metricId: input.target_metric_id,
   });
@@ -326,10 +343,15 @@ function isUnknownColumnError(error: { code?: string | null; message?: string | 
 
 export interface WriteComparableAttributionResult {
   written: boolean;
-  /** Mirrors the cron's own `method_version_column_missing` — true when the
-   *  insert had to drop `method_version` because migration 20260922230000
-   *  isn't applied yet. The row still writes (pre-N10 shape: no method_
-   *  version at all, same as a legacy v1 round-level row). */
+  /** Mirrors the cron's own `method_version_column_missing` — true when
+   *  migration 20260922230000 isn't applied yet, so `method_version`
+   *  couldn't be written. Unlike the round-level path (where `NULL` is a
+   *  meaningful, documented value — "v1"), this path has NO honest row
+   *  shape without `method_version`: a `NULL` row here would be
+   *  indistinguishable from a real round-level v1 row once read back, and
+   *  permanently wrong (MUST 3, PR #2007 review) — so `written` is
+   *  `false` and NOTHING is inserted; retried next run once the owner
+   *  applies the migration. */
   methodVersionColumnMissing: boolean;
   error?: string;
 }
@@ -354,15 +376,19 @@ export async function writeComparableAttribution(
     n_rounds_after: row.n_rounds_after,
     lift: null,
   };
-  let { error } = await fromUntyped(sb, 'golf_insight_outcome_attribution').insert({
+  const { error } = await fromUntyped(sb, 'golf_insight_outcome_attribution').insert({
     ...attributionRow,
     method_version: row.method_version,
   });
-  let methodVersionColumnMissing = false;
   if (error && isUnknownColumnError(error)) {
-    methodVersionColumnMissing = true;
-    ({ error } = await fromUntyped(sb, 'golf_insight_outcome_attribution').insert(attributionRow));
+    // Never retry-insert without `method_version` here: for the ROUND-level
+    // path `NULL` genuinely means "v1" (attribute.ts's own N10 note), so
+    // degrading to that shape there is honest. For THIS path there is no
+    // honest degraded shape — a NULL-method_version row would be silently,
+    // permanently misread as a round-level v1 row. Write nothing; retried
+    // next run once the owner applies migration 20260922230000.
+    return { written: false, methodVersionColumnMissing: true };
   }
-  if (error) return { written: false, methodVersionColumnMissing, error: error.message as string };
-  return { written: true, methodVersionColumnMissing };
+  if (error) return { written: false, methodVersionColumnMissing: false, error: error.message };
+  return { written: true, methodVersionColumnMissing: false };
 }
