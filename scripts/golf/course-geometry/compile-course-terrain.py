@@ -79,6 +79,7 @@ pilot = module('pilot', 'prepare-pilot.py')
 fetch = module('fetch', 'fetch-terrain-pilot.py')
 elevation_raster = module('elevation_raster', 'elevation_raster.py')
 course_crs = module('course_crs', 'course_crs.py')
+sea_mask = module('sea_mask', 'sea_mask.py')
 # Read-only reuse of the S1M research spike's bounded, retried TNM Access
 # fetch (`fetch_json`) and ScienceBase item reader (`item_provenance`).
 # research-s1m-coverage.py is not edited; only its request code is reused.
@@ -241,6 +242,74 @@ def date_text(value):
 
 
 MAX_EMPTY_EXPORT_FRACTION = 0.001
+
+
+def load_coastline_context(path):
+    """(ways, snapshotSha256) from an `--coastline-context overpass.json.gz`
+    path, or `None` when no coastline context was supplied at all. Reused
+    verbatim by every acquisition path below so a facility with no coastline
+    ways anywhere near a layout, or no `--coastline-context` argument, sees
+    `sea_geom` come back `None` and behaves exactly as it did before this
+    module existed."""
+    if path is None:
+        return None
+    ways, snapshot_sha256 = sea_mask.coastline_ways_from_snapshot(path)
+    if not ways:
+        return None
+    return ways, snapshot_sha256
+
+
+def build_sea_geom(coastline, bounds, crs):
+    """Project `coastline`'s ways into `crs` and build the sea polygon over
+    `bounds` (an `(xmin, ymin, xmax, ymax)` tuple already in `crs`), or
+    `None` when there is no coastline context or none of it reaches
+    `bounds`."""
+    if coastline is None:
+        return None
+    ways, _snapshot_sha256 = coastline
+    transformer = pyproj.Transformer.from_crs(4326, crs, always_xy=True)
+    return sea_mask.build_sea_mask(ways, bounds, transformer)
+
+
+def mask_aware_empty_fraction(decoded, extent, sea_geom):
+    """(landOnlyFraction, seaFillCount, total). With `sea_geom=None` this is
+    `elevation_raster.empty_fraction(decoded)` exactly -- `classify_and_fill`
+    is built to reproduce that when there is no mask, cell for cell."""
+    _filled, land_empty_count, sea_fill_count, total = sea_mask.classify_and_fill(decoded, extent, sea_geom)
+    return land_empty_count / total, sea_fill_count, total
+
+
+def sea_fill_record(coastline, sea_fill_count, total):
+    """The manifest's `seaFill` evidence block, or `None` when nothing was
+    filled (no coastline context, or a coastline that never reached this
+    export). A reviewer must be able to see the cell count, the share of the
+    export it represents, the exact fill value and tolerance applied, and
+    which coastline ways / snapshot authorized it."""
+    if coastline is None or sea_fill_count == 0:
+        return None
+    ways, snapshot_sha256 = coastline
+    return {'cellCount': sea_fill_count, 'share': sea_fill_count / total, 'valueM': sea_mask.SEA_FILL_VALUE_M,
+            'toleranceM': sea_mask.SEA_FILL_TOLERANCE_M, 'basis': sea_mask.coastline_basis(ways, snapshot_sha256)}
+
+
+def fill_sea_cells_in_place(path, decoded, extent, sea_geom):
+    """Bake sea fill into the retained GeoTIFF at `path` so the raster on
+    disk -- not just an in-memory array -- never carries NaN/zero fill over
+    open water. `decoded` is the array already read from `path`; only cells
+    `classify_and_fill` assigns to the sea polygon change. Geotransform,
+    projection and the nodata tag are left exactly as GDAL wrote them."""
+    filled, _land_empty_count, sea_fill_count, _total = sea_mask.classify_and_fill(decoded, extent, sea_geom)
+    if sea_fill_count == 0:
+        return
+    from osgeo import gdal
+    gdal.UseExceptions()
+    dataset = gdal.Open(str(path), gdal.GA_Update)
+    band = dataset.GetRasterBand(1)
+    band.WriteArray(filled)  # GDAL casts to the band's own data type (Float32)
+    band.FlushCache()
+    dataset = None
+
+
 AREA_CONSERVATION_ABSOLUTE_M2 = .002
 # This accounts only for floating point summation after a source polygon has
 # been split into tens of thousands of exactly-covered faces. It does not
@@ -523,12 +592,15 @@ def terrain_export_windows(bounds, width, height):
             for y in range(0, height, edge) for x in range(0, width, edge)]
 
 
-def export_usgs_grid(directory, bounds, width, height, crs, object_ids):
+def export_usgs_grid(directory, bounds, width, height, crs, object_ids, sea_geom=None):
     """Retain original locked exports and stitch their exact pixel grid.
 
     The 8M-pixel/40MB per-request limits remain unchanged. Large layouts use
     several smaller exports from the same admitted project and datum. The
-    mosaic has no extra interpolation or invented values.
+    mosaic has no extra interpolation or invented values. `sea_geom` (already
+    in `crs`) only changes which empty cells this function's own per-window
+    check tolerates; the mosaic it writes is never filled here -- the caller
+    fills the one assembled raster exactly once, after this returns.
     """
     windows = terrain_export_windows(bounds, width, height)
     parts = []
@@ -570,7 +642,9 @@ def export_usgs_grid(directory, bounds, width, height, crs, object_ids):
                 raise ValueError('Terrain tile TIFF grid differs from its locked request')
             ds = None
             values, _nodata, _decoder = elevation_raster.read_elevation(path)
-            if elevation_raster.empty_fraction(values) > MAX_EMPTY_EXPORT_FRACTION:
+            window_extent = dict(zip(('xmin', 'ymin', 'xmax', 'ymax'), window['bounds']))
+            land_only_fraction, _sea_fill_count, _total = mask_aware_empty_fraction(values, window_extent, sea_geom)
+            if land_only_fraction > MAX_EMPTY_EXPORT_FRACTION:
                 raise ValueError('A locked terrain tile contains unsupported empty fill')
         vrt = gdal.BuildVRT(str(root / 'mosaic.vrt'), paths)
         merged = gdal.Translate(str(root / 'mosaic.tiff'), vrt,
@@ -675,13 +749,18 @@ def tnm_tile_vertical_evidence(tile, meta_doc):
     return tnm_metadata_vertical_evidence(meta_doc)
 
 
-def tnm_warp_grid(directory, tiles, out_bounds, width, height, crs):
+def tnm_warp_grid(directory, tiles, out_bounds, width, height, crs, sea_geom=None):
     """One VRT over every intersecting tile's `/vsicurl/` source, warped in
     a single pass to the exact requested grid (bilinear, matching every
     other physical export in this file). GDAL range-reads only the bytes
     the warp touches -- never the whole ~100-400 MB tile -- but every
     source host was already checked against the fixed allowlist in
     `tnm_1m_products`, since GDAL's own network stack does not consult it.
+
+    When `sea_geom` (already in `crs`) authorizes it, sea cells are filled
+    in place on the warped GeoTIFF before its bytes are read back -- even
+    when this candidate is later rejected, since a rejected candidate's
+    whole temporary directory is discarded regardless.
     """
     from osgeo import gdal
     gdal.UseExceptions()
@@ -711,12 +790,17 @@ def tnm_warp_grid(directory, tiles, out_bounds, width, height, crs):
             raise ValueError('TNM terrain mosaic grid changed during assembly')
         warped = None
         decoded, _nodata, decoder = elevation_raster.read_elevation(out_path)
-        empty = elevation_raster.empty_fraction(decoded)
+        raw_empty_fraction = elevation_raster.empty_fraction(decoded)
+        extent = dict(zip(('xmin', 'ymin', 'xmax', 'ymax'), out_bounds))
+        land_only_fraction, sea_fill_count, total = mask_aware_empty_fraction(decoded, extent, sea_geom)
+        if sea_fill_count:
+            fill_sea_cells_in_place(out_path, decoded, extent, sea_geom)
         raster = out_path.read_bytes()
-    return raster, empty, decoder
+    return {'raster': raster, 'rawEmptyFraction': raw_empty_fraction, 'landOnlyFraction': land_only_fraction,
+            'seaFillCount': sea_fill_count, 'total': total, 'decoder': decoder}
 
 
-def attempt_tnm_1m_fallback(directory, pkg, bounds, west, south, east, north, extent_wgs84):
+def attempt_tnm_1m_fallback(directory, pkg, bounds, west, south, east, north, extent_wgs84, coastline=None):
     """The ImageServer's native-1m catalog found nothing here. TNM Access
     is a second, independently-updated catalog for the same USGS 3DEP
     one-meter product line; apply the same source rule (one project, full
@@ -745,6 +829,7 @@ def attempt_tnm_1m_fallback(directory, pkg, bounds, west, south, east, north, ex
     # a single `gdal.Warp` call has no per-request pixel cap to tile around,
     # so only the guard is reused here, not the request partitioning.
     terrain_export_windows([a, b, c, d], width, height)
+    sea_geom = build_sea_geom(coastline, (a, b, c, d), crs)
 
     def evaluate(item):
         project_name, project_tiles = item
@@ -764,12 +849,14 @@ def attempt_tnm_1m_fallback(directory, pkg, bounds, west, south, east, north, ex
                 break
         if vertical is None:
             raise SourceRejected('vertical_datum_unverified')
-        raster, empty, decoder = tnm_warp_grid(directory, intersecting, [a, b, c, d], width, height, crs)
-        if empty > MAX_EMPTY_EXPORT_FRACTION:
-            raise SourceRejected('export_empty_fraction_exceeds_threshold', emptyFraction=empty)
+        warped = tnm_warp_grid(directory, intersecting, [a, b, c, d], width, height, crs, sea_geom=sea_geom)
+        if warped['landOnlyFraction'] > MAX_EMPTY_EXPORT_FRACTION:
+            raise SourceRejected('export_empty_fraction_exceeds_threshold', emptyFraction=warped['landOnlyFraction'])
         starts, ends = zip(*(tnm_metadata_dates(tnm_item_metadata(t.get('metaUrl'))) for t in intersecting))
         starts, ends = [s for s in starts if s], [e for e in ends if e]
-        return {'tiles': intersecting, 'vertical': vertical, 'raster': raster, 'empty': empty, 'decoder': decoder,
+        return {'tiles': intersecting, 'vertical': vertical, 'raster': warped['raster'],
+                'empty': warped['landOnlyFraction'], 'rawEmptyFraction': warped['rawEmptyFraction'],
+                'seaFillCount': warped['seaFillCount'], 'total': warped['total'], 'decoder': warped['decoder'],
                 'acquisitionStart': min(starts) if starts else None, 'acquisitionEnd': max(ends) if ends else None}
 
     winner, extra, rejected = select_first_survivor(ordered, evaluate)
@@ -801,7 +888,9 @@ def attempt_tnm_1m_fallback(directory, pkg, bounds, west, south, east, north, ex
                                     else 'tnm_access_same_project_adjacent_native_1m_tiles'),
                 'renderingOnly': False, 'renderingOnlyResolutionM': None,
                 'coverageMethod': SOURCE_COVERAGE_METHOD, 'coveragePaddingMeters': SOURCE_COVERAGE_PADDING_METERS,
-                'exportEmptyFraction': extra['empty'], 'decoder': extra['decoder'], 'rejectedCandidates': [],
+                'exportEmptyFraction': extra['empty'], 'rawEmptyFraction': extra['rawEmptyFraction'],
+                'decoder': extra['decoder'], 'rejectedCandidates': [],
+                'seaFill': sea_fill_record(coastline, extra['seaFillCount'], extra['total']),
                 'licenseUrl': 'https://www.usgs.gov/3d-elevation-program/about-3dep-products-services',
                 'exportRequestCount': 1,
                 'fileHashes': {name: hashlib.sha256((directory / name).read_bytes()).hexdigest()
@@ -810,7 +899,7 @@ def attempt_tnm_1m_fallback(directory, pkg, bounds, west, south, east, north, ex
     return manifest, []
 
 
-def acquire_usgs_source(directory, pkg, bounds, rendering_only_resolution_m=None):
+def acquire_usgs_source(directory, pkg, bounds, rendering_only_resolution_m=None, coastline=None):
     manifest = existing_source_manifest(directory, pkg, bounds, rendering_only=rendering_only_resolution_m is not None)
     if manifest is not None:
         if manifest.get('providerPolicyId', USGS_3DEP_PROVIDER) != USGS_3DEP_PROVIDER:
@@ -856,7 +945,7 @@ def acquire_usgs_source(directory, pkg, bounds, rendering_only_resolution_m=None
             # one-meter DEM product line; never blended with an ImageServer
             # candidate, so a course the ImageServer already resolves above
             # cannot have its choice changed by a newer TNM project.
-            tnm_manifest, tnm_rejected = attempt_tnm_1m_fallback(directory, pkg, bounds, west, south, east, north, extent_wgs84)
+            tnm_manifest, tnm_rejected = attempt_tnm_1m_fallback(directory, pkg, bounds, west, south, east, north, extent_wgs84, coastline=coastline)
             if tnm_manifest is not None:
                 return tnm_manifest
         report = {'state': 'needs_source_review', 'reason': 'No native-1m tile set covers the full bounded course context',
@@ -878,6 +967,7 @@ def acquire_usgs_source(directory, pkg, bounds, rendering_only_resolution_m=None
         terrain_export_windows([a, b, c, d], width, height)
     else:
         width, height = usgs_rendering_only_grid_size(native_width, native_height, rendering_only_resolution_m)
+    sea_geom = build_sea_geom(coastline, (a, b, c, d), crs)
     inverse = pyproj.Transformer.from_crs(crs, 4326, always_xy=True)
     # Newest tile first. A catalog footprint is a claim, not evidence: a
     # project tile clipped at a state line still advertises its full square,
@@ -892,7 +982,7 @@ def acquire_usgs_source(directory, pkg, bounds, rendering_only_resolution_m=None
             raise ValueError('Render-only request would magnify the lower-resolution source grid')
         object_ids = [row['attributes']['OBJECTID'] for row in tiles]
         try:
-            exported, raster, source_parts = export_usgs_grid(directory, [a, b, c, d], width, height, crs, object_ids)
+            exported, raster, source_parts = export_usgs_grid(directory, [a, b, c, d], width, height, crs, object_ids, sea_geom=sea_geom)
         except ValueError as error:
             if 'unsupported empty fill' not in str(error):
                 raise
@@ -909,11 +999,16 @@ def acquire_usgs_source(directory, pkg, bounds, rendering_only_resolution_m=None
         scratch = directory/'elevation.tiff'
         scratch.write_bytes(raster)
         decoded, _nodata, decoder = elevation_raster.read_elevation(scratch)
-        empty = elevation_raster.empty_fraction(decoded)
-        if empty <= MAX_EMPTY_EXPORT_FRACTION:
+        raw_empty = elevation_raster.empty_fraction(decoded)
+        land_only_fraction, sea_fill_count, empty_total = mask_aware_empty_fraction(decoded, ex, sea_geom)
+        if land_only_fraction <= MAX_EMPTY_EXPORT_FRACTION:
+            if sea_fill_count:
+                fill_sea_cells_in_place(scratch, decoded, ex, sea_geom)
+            empty = land_only_fraction
             break
         scratch.unlink()
-        rejected.append({'title': attrs['title'], 'objectId': attrs['OBJECTID'], 'objectIds': object_ids, 'emptyFraction': empty,
+        rejected.append({'title': attrs['title'], 'objectId': attrs['OBJECTID'], 'objectIds': object_ids, 'emptyFraction': land_only_fraction,
+                         'rawEmptyFraction': raw_empty,
                          'reason': 'Catalog footprint covers the context but the locked export is empty fill there'})
     else:
         report = {'state': 'needs_source_review', 'reason': 'Every covering terrain tile exported empty fill over the course context',
@@ -945,7 +1040,8 @@ def acquire_usgs_source(directory, pkg, bounds, rendering_only_resolution_m=None
                 'renderingOnly': rendering_only_resolution_m is not None,
                 'renderingOnlyResolutionM': rendering_only_resolution_m,
                 'coverageMethod': SOURCE_COVERAGE_METHOD, 'coveragePaddingMeters': SOURCE_COVERAGE_PADDING_METERS,
-                'exportEmptyFraction': empty, 'decoder': decoder, 'rejectedCandidates': rejected,
+                'exportEmptyFraction': empty, 'rawEmptyFraction': raw_empty, 'decoder': decoder, 'rejectedCandidates': rejected,
+                'seaFill': sea_fill_record(coastline, sea_fill_count, empty_total),
                 'licenseUrl': 'https://www.usgs.gov/3d-elevation-program/about-3dep-products-services',
                 'exportRequestCount': max(1, len(source_parts)),
                 'fileHashes': {name: hashlib.sha256((directory/name).read_bytes()).hexdigest()
@@ -1659,9 +1755,16 @@ def acquire_charleston_county_dem_2025_source(directory, pkg, bounds, rendering_
     return manifest
 
 
-def acquire_source(directory, pkg, bounds, provider=USGS_3DEP_PROVIDER, rendering_only_resolution_m=None):
+def acquire_source(directory, pkg, bounds, provider=USGS_3DEP_PROVIDER, rendering_only_resolution_m=None, coastline=None):
+    """`coastline` (from `load_coastline_context`) only ever reaches the USGS
+    3DEP adapter. NC OneMap and Charleston County export in feet, on
+    non-1m-native grids and in ftUS-family CRSs -- the sea mask's tolerance
+    and fill value are defined in meters, so applying it there would need a
+    unit-aware rework of its own. Left unchanged: they still reject a
+    coastal empty export exactly as before, which is conservative, not a
+    gate loosening."""
     if provider == USGS_3DEP_PROVIDER:
-        return acquire_usgs_source(directory, pkg, bounds, rendering_only_resolution_m)
+        return acquire_usgs_source(directory, pkg, bounds, rendering_only_resolution_m, coastline=coastline)
     if provider == NC_ONEMAP_PROVIDER:
         return acquire_nc_onemap_source(directory, pkg, bounds, rendering_only_resolution_m)
     if provider == CHARLESTON_COUNTY_DEM_2025_PROVIDER:
@@ -2139,6 +2242,10 @@ def main():
                         help='terrain adapter selected by the facility provider policy')
     parser.add_argument('--acquire-only', action='store_true',
                         help='lock the terrain source for this package and stop before compiling any hole (the course factory acquires once, compiles per hole)')
+    parser.add_argument('--coastline-context', type=Path, default=None,
+                        help="the facility's osm-context overpass.json.gz; when a coastline reaches the export "
+                             "bbox, an empty cell inside the resulting sea polygon is accepted and filled, "
+                             "never anywhere else")
     parser.add_argument('--rendering-only-resolution-m', type=float, default=None,
                         help='request a coarser derived raster for a facility visual scene; never supplies physical terrain truth')
     args = parser.parse_args()
@@ -2152,7 +2259,8 @@ def main():
     provider = resolve_source_provider(args.source, args.provider, acquire_only=args.acquire_only)
     if args.rendering_only_resolution_m is not None and not args.acquire_only:
         raise ValueError('rendering-only terrain may only be acquired; it cannot compile physical hole terrain')
-    manifest = acquire_source(args.source, pkg, bounds, provider, args.rendering_only_resolution_m)
+    coastline = load_coastline_context(args.coastline_context)
+    manifest = acquire_source(args.source, pkg, bounds, provider, args.rendering_only_resolution_m, coastline=coastline)
     if args.acquire_only:
         (args.source/'README.md').write_text(source_readme(pkg, manifest))
         print(json.dumps({'source': manifest['selectedTitle'], 'sourceManifestHash': digest(manifest), 'requestedLocalBoundsM': bounds}), flush=True)

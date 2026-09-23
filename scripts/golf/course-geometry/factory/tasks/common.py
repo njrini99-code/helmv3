@@ -32,7 +32,7 @@ TERRAIN_PROVIDER_FILES = (script('factory/providers.py'),)
 TERRAIN_ACQUIRE_FILES = (
     script('compile-course-terrain.py'), script('hole_footprint.py'),
     script('elevation_raster.py'), script('prepare-pilot.py'),
-    script('fetch-terrain-pilot.py'),
+    script('fetch-terrain-pilot.py'), script('sea_mask.py'),
 ) + CRS_FILES + TERRAIN_PROVIDER_FILES
 TERRAIN_COMPILE_FILES = TERRAIN_ACQUIRE_FILES + (script('terrain_triangulate.py'),)
 
