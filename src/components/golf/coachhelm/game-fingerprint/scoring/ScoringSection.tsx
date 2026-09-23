@@ -82,8 +82,11 @@ function handleActivationKeyDown(onActivate: () => void) {
  *  (that helper is typed to a whole `number | null` score-to-par, and this
  *  value may already carry a decimal). Rounds FIRST, then tests for zero —
  *  a raw value of 0.04 must read "E", not "−0" (rounding after the zero
- *  check would print the sign of a value that rounds away to nothing). */
-function formatStrokesVsPar(value: number): string {
+ *  check would print the sign of a value that rounds away to nothing).
+ *  Exported (#2010 review, SHOULD 4) so the ±0.04-rounds-to-"E" case is
+ *  directly unit-tested, rather than only reachable by engineering real
+ *  hole-score fixtures to an exact 0.04 average. */
+export function formatStrokesVsPar(value: number): string {
   const rounded = Math.round(value * 10) / 10;
   if (rounded === 0) return 'E';
   return rounded > 0 ? `+${rounded}` : `−${Math.abs(rounded)}`;

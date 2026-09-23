@@ -175,8 +175,15 @@
 - Verification: 14 new/touched tests (`buildScoringViewModel` 5,
   `ScoringSection` 8, `load-par-opportunities` wiring 1).
   `FairwayPlayerGameFingerprint.mode.test.tsx` (7/7) and
-  `PlayerDeepDiveTabs.test.tsx` rerun unchanged, confirming the new
-  addendum is a no-op while its flag is off. `typecheck:fast` and
-  `eslint --max-warnings 0` clean; `flags:check` clean (8 flags total).
-  Not verified: mobile/desktop visual layout (no local build or dev
-  server run this session).
+  `PlayerDeepDiveTabs.test.tsx` rerun unchanged — neither exercises the
+  flag gate (both receive `sectionAddenda` as an already-resolved prop,
+  unrelated to page.tsx's server-side flag logic), so they prove no
+  regression in existing markup, not the no-op claim. Corrected
+  2026-09-23 (#2010 review, MUST 1) — the no-op-while-off property is
+  actually proven by `loadScoringAddendumIfEnabled`'s own unit tests
+  (page.distanceProfileAddendum.test.ts-style: flag off never calls
+  `loadScoringAddendum`; a throw resolves to `null`, not a rejection),
+  mirroring slice 1's `loadDistanceProfileAddendumIfEnabled` pattern.
+  `typecheck:fast` and `eslint --max-warnings 0` clean; `flags:check`
+  clean (9 flags total). Not verified: mobile/desktop visual layout (no
+  local build or dev server run this session).
