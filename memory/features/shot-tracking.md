@@ -183,6 +183,30 @@ resume timestamps. NIR is explicitly not alpha. Canopy texture uses population
 standard deviation with reflected edges; the vectorized calculation is tested
 against the former per-pixel implementation. Unknown pixels and their texture
 neighborhoods are excluded, and morphology cannot fill excluded surface pixels.
+
+Lidar canopy height outranks that classification wherever it exists. The
+factory's `layout.lidar.acquire` task (`fetch-lidar-chm.py`) streams the
+terrain export's extent from a USGS 3DEP Entwine point cloud through PDAL:
+noise classes 7 and 18 are dropped, and height is measured above the nearest
+ground return. The result is a max-height raster on the export's own grid.
+The project is found through the hobuinc boundaries index, then verified
+against its own `ept.json` `boundsConforming`, because the index has claimed
+coverage 130 km from a project's data. The newest covering flight wins, and
+its year is inferred from the project name.
+`derive-canopy-naip.py --lidar-chm` marks trees where a cell's height is
+3–60 m. Cells with no lidar return fall back to NAIP. Below 50% lidar
+coverage, the review uses NAIP alone and names the reason
+`LIDAR_COVERAGE_PARTIAL`. With no covering flight, the reason is
+`LIDAR_NO_COVERAGE`. The review's `canopySource` records the project,
+`ept.json` hash and CHM hash. A review not drawn from the current CHM is not
+adoptable, and the canopy payload-reuse identity includes the lidar verdict.
+Regions are written as hole-free rings. A forest around a clearing is split
+through each clearing, and gaps under 200 m² between crowns are filled. The
+auto-review measures the written shapes. On Golden Horseshoe, NAIP alone put
+27% of its canopy on ground lidar measures under 1 m, which filled the
+fairways. `ship` blocks `CANOPY_IN_PLAY_CORRIDOR` when woods cover more than
+40% of any hole's 20 m route corridor, and reports every hole's share and
+the canopy source as advisory evidence.
 Generated classification reports state automated review, never human approval.
 
 Physical native terrain can use aligned bounded requests when the facility

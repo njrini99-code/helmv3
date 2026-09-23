@@ -78,6 +78,15 @@ CANOPY_SURFACE_OVERLAP_MAX = 0.03  # final regions overlapping fairway/green/tee
 CANOPY_GROUP_DENSITY_MAX_PER_HA = 2.0  # groups per hectare of the export; above this reads as classification speckle, not distinct tree masses
 
 
+# Lidar canopy height (fetch-lidar-chm.py) outranks NAIP wherever it has
+# returns: NDVI/texture on Golden Horseshoe's 2025 NAIP put 27% of its canopy
+# on ground the 2013 3DEP CHM measures under 1 m and missed over half the
+# trees the CHM sees. NAIP classifies only the cells lidar never reached.
+CHM_TREE_MIN_M = 3.0
+CHM_TREE_MAX_M = 60.0  # above any eastern canopy: birds, wires, unclassified noise -> treated as no return
+LIDAR_COVERAGE_MIN = 0.5  # below this share of the export, lidar is a patchwork; NAIP alone, by name
+CHM_NODATA = -9999.0
+
 MIN_SPLIT_PART_M2 = 25  # a split piece this small is a seam sliver, not a tree mass
 MIN_CLEARING_M2 = 200  # a gap smaller than this is between crowns, not a clearing anything plays through
 
@@ -147,13 +156,55 @@ def calibrate(ndvi, pkg, to_pixel, size, valid=None):
 
 def classify(ndvi, texture, masked, ndvi_min):
     """Canopy pixels: vegetated by NDVI, textured by NIR, off every golf surface."""
-    canopy = (ndvi > ndvi_min) & (texture > TEXTURE_MIN) & ~masked
+    return clean((ndvi > ndvi_min) & (texture > TEXTURE_MIN) & ~masked, masked)
+
+
+def clean(canopy, masked):
+    """Drop speckle, close crown gaps, keep off surfaces, keep groups."""
+    canopy = canopy & ~masked
     canopy = ndimage.binary_opening(canopy, structure=np.ones((3, 3)))
     canopy = ndimage.binary_closing(canopy, structure=np.ones((5, 5)))
     canopy &= ~masked
     labels, count = ndimage.label(canopy)
     sizes = ndimage.sum(canopy, labels, range(1, count + 1))
     return np.isin(labels, np.nonzero(sizes >= MIN_GROUP_M2 * .625)[0] + 1)
+
+
+def load_lidar(directory, export_path, width, height):
+    """`(chm, source)` from a fetch-lidar-chm.py directory, or `(None,
+    source)` naming why lidar is not used. A CHM for another export is an
+    error, never silently NAIP."""
+    if directory is None:
+        return None, {'kind': 'naip', 'lidar': None, 'reason': 'no lidar acquisition for this layout'}
+    manifest = json.loads((directory / 'manifest.json').read_text())
+    if manifest.get('terrainExportSha256') != hashlib.sha256(export_path.read_bytes()).hexdigest():
+        raise SystemExit('LIDAR_EXPORT_MISMATCH: the lidar CHM was cut for another terrain export')
+    if manifest.get('status') != 'covered':
+        return None, {'kind': 'naip', 'lidar': {'status': manifest.get('status')}, 'reason': 'LIDAR_NO_COVERAGE: no 3DEP point cloud verified over the export'}
+    chm_path = directory / 'chm.tif'
+    if hashlib.sha256(chm_path.read_bytes()).hexdigest() != manifest.get('chmSha256'):
+        raise SystemExit('LIDAR_CHM_HASH_MISMATCH: chm.tif is not the raster its manifest records')
+    dataset = gdal.Open(str(chm_path))
+    chm = dataset.GetRasterBand(1).ReadAsArray().astype(float)
+    if chm.shape != (height, width):
+        raise SystemExit(f'LIDAR_GRID_MISMATCH: CHM {chm.shape} vs export {(height, width)}')
+    project = manifest.get('project') or {}
+    lidar = {'status': 'covered', 'project': project.get('name'), 'eptUrl': project.get('url'), 'eptJsonSha256': project.get('eptJsonSha256'),
+             'acquisitionYearInferred': project.get('acquisitionYearInferred'), 'chmSha256': manifest['chmSha256'],
+             'treeHeightMinM': CHM_TREE_MIN_M, 'treeHeightMaxM': CHM_TREE_MAX_M}
+    return chm, {'kind': 'lidar_chm+naip', 'lidar': lidar, 'reason': None}
+
+
+def merge_lidar(chm, naip_canopy, masked):
+    """Lidar decides every cell it has a plausible return for; NAIP the
+    rest. Returns `(canopy, lidarCellShare)`; `canopy` is None when lidar
+    covers too little of the export to lead."""
+    covered = (chm != CHM_NODATA) & (chm <= CHM_TREE_MAX_M)
+    share = float(covered.mean())
+    if share < LIDAR_COVERAGE_MIN:
+        return None, share
+    merged = np.where(covered, chm >= CHM_TREE_MIN_M, naip_canopy)
+    return clean(merged, masked), share
 
 
 def nir_texture(nir):
@@ -284,6 +335,7 @@ def main():
     parser.add_argument('naip_directory', type=Path)
     parser.add_argument('output', type=Path)
     parser.add_argument('--imagery-index', type=Path)
+    parser.add_argument('--lidar-chm', type=Path, help='fetch-lidar-chm.py output directory for this export')
     args = parser.parse_args()
 
     pkg = json.loads(args.package.read_text())
@@ -332,6 +384,15 @@ def main():
 
     calibration = calibrate(ndvi, pkg, to_pixel, (width, height), valid)
     canopy = classify(ndvi, texture, masked, calibration['ndviMin'])
+    chm, canopy_source = load_lidar(args.lidar_chm, args.terrain_source / 'export.json', width, height)
+    if chm is not None:
+        merged, lidar_share = merge_lidar(chm, canopy, masked)
+        canopy_source['lidar']['cellShare'] = round(lidar_share, 4)
+        if merged is None:
+            canopy_source = {**canopy_source, 'kind': 'naip',
+                             'reason': f'LIDAR_COVERAGE_PARTIAL: returns over {lidar_share:.0%} of the export, under {LIDAR_COVERAGE_MIN:.0%}'}
+        else:
+            canopy = merged
 
     transform = (extent['xmin'], px_x, 0, extent['ymax'], 0, -px_y)
     groups = polygonize(canopy, transform, crs)
@@ -386,12 +447,15 @@ def main():
         'sourceSelection': {'provider': provider, 'reason': provider_reason},
         'reviewStatus': 'auto_reviewed' if within_bounds else 'out_of_bounds', 'canMeasurePhysicalGeometry': False,
         'autoReview': auto_review,
+        'canopySource': canopy_source,
         'method': {'ndviMin': calibration['ndviMin'], 'ndviCalibration': calibration, 'nirTextureStdMin': TEXTURE_MIN, 'textureWindowPx': 7, 'surfaceBufferPx': SURFACE_BUFFER_PX,
                    'morphology': 'open 3x3, close 5x5', 'vectorClosingM': 6, 'vectorOpeningM': 2, 'minGroupM2': MIN_GROUP_M2, 'simplifyM': 2.0,
                    'contextMarginM': CONTEXT_MARGIN_M},
         'reviewedAt': datetime.now(timezone.utc).date().isoformat(),
         'reviewer': auto_review['reviewer'],
-        'meaning': 'Approximate canopy groups classified from leaf-on NAIP by NIR texture and NDVI, masked away from every OSM golf surface. '
+        'meaning': ('Approximate canopy groups: lidar canopy height >= 3 m wherever the recorded 3DEP project has returns, leaf-on NAIP NIR texture and NDVI elsewhere, '
+                    if canopy_source['kind'] != 'naip' else 'Approximate canopy groups classified from leaf-on NAIP by NIR texture and NDVI, ')
+                   + 'masked away from every OSM golf surface. '
                    'Group interiors bound crown artwork only; crown glyphs are illustrative, not surveyed trees. '
                    'No currentness, height or obstruction claim.',
         'stats': {'canopyShareOfExport': canopy_share, 'validImageryShare': float(valid.mean()), 'groups': len(regions)},
@@ -399,7 +463,8 @@ def main():
     }
     args.output.write_text(json.dumps(review, indent=2, ensure_ascii=False) + '\n')
     print(json.dumps({'groups': len(regions), 'canopyShare': canopy_share, 'provider': provider, 'withinBounds': within_bounds,
-                      'holes': len({r['holeKey'] for r in regions}), 'ndviMin': calibration['ndviMin'], 'ndviRule': calibration['rule']}))
+                      'holes': len({r['holeKey'] for r in regions}), 'ndviMin': calibration['ndviMin'], 'ndviRule': calibration['rule'],
+                      'canopySource': canopy_source['kind']}))
 
 
 if __name__ == '__main__':

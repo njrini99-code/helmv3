@@ -676,6 +676,27 @@ def acquire_terrain(node, ctx, run):
     return artifacts
 
 
+LIDAR_INDEX_CACHE = ('cache', 'usgs-lidar-resources.geojson')
+
+
+def acquire_lidar(node, ctx, run):
+    """3DEP point-cloud canopy height on the terrain export's own grid.
+    `no_coverage` is a result (canopy falls back to NAIP by name); PDAL
+    missing or every covering project failing to read is a failure."""
+    layout_id = node.scope.layout_id
+    source = ctx.terrain_source_dir(layout_id)
+    out = ctx.lidar_out(layout_id)
+    if not source or not out:
+        raise RuntimeError('lidar acquisition needs the layout terrain export first')
+    run_script(ctx, run, node, 'scripts/golf/course-geometry/fetch-lidar-chm.py',
+               [source, out, '--index-cache', os.path.join(ctx.output_root, *LIDAR_INDEX_CACHE)])
+    manifest = ctx.json(os.path.join(out, 'manifest.json'), fresh=True)
+    artifacts = [artifact('lidar-manifest', os.path.join(out, 'manifest.json'), 'B')]
+    if manifest.get('status') == 'covered':
+        artifacts.append(artifact('lidar-chm', os.path.join(out, 'chm.tif'), 'B'))
+    return artifacts
+
+
 def derive_canopy(node, ctx, run):
     layout_id = node.scope.layout_id
     source = ctx.terrain_source_dir(layout_id)
@@ -685,9 +706,15 @@ def derive_canopy(node, ctx, run):
     imagery = ctx.indexed_imagery(layout_id)
     if imagery:
         args += ['--imagery-index', imagery['path']]
+    lidar = ctx.lidar_manifest(layout_id)
+    if lidar:
+        args += ['--lidar-chm', ctx.lidar_out(layout_id)]
     from .payload_reuse import load_receipt, retain_receipt, stage_identity
     package = ctx.json(ctx.candidates_package_path(layout_id), fresh=True)
-    identity = stage_identity(ctx, node, package, {'imagery': imagery['identity'] if imagery else None})
+    # The lidar verdict is part of what the canopy is: a receipt from a
+    # NAIP-only derivation must not stand in for a lidar one.
+    identity = stage_identity(ctx, node, package, {'imagery': imagery['identity'] if imagery else None,
+                                                   'lidar': {k: v for k, v in lidar.items() if k != 'retrievedAt'} if lidar else None})
     receipt = load_receipt(ctx, layout_id, 'canopy', identity)
     if receipt:
         document = ctx.json(out, fresh=True)
@@ -1208,6 +1235,7 @@ DEFAULT_EXECUTORS = {
     'layout.scorecard.compose': compose_scorecard,
     'layout.candidates.compose': compose_candidates,
     'layout.terrain.acquire': acquire_terrain,
+    'layout.lidar.acquire': acquire_lidar,
     'layout.canopy.derive': derive_canopy,
     'layout.package.compose': compose_package,
     'layout.terrain.base': compile_terrain_base,

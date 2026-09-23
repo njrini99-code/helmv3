@@ -53,6 +53,7 @@ class World:
         self.bunker_shift = {}      # hole ordinal -> extra offset (a bunker edit in OSM)
         self.hole_labels = {}       # layout slug -> how a mapper named that course's holes ('Synthetic A' -> 'Synthetic A Hole 3')
         self.canopy = True
+        self.lidar_chm = None       # bytes of a fake CHM once 3DEP covers the export; None is no coverage
         self.naip_sha = 'naip-' + '0' * 60
         self.naip_dates = ['2024-06-01']  # what the fake NAIP export was flown on (the real manifest writes YYYYMMDD tile suffixes)
         # What the fake lab draws: holes whose captures breach the draw-call
@@ -125,7 +126,7 @@ class FakePipeline:
             'layout.routes.resolve': self.routes, 'layout.route.dossier': self.route_dossier, 'layout.scorecard.compose': self.scorecard, 'layout.candidates.compose': self.candidates,
             'layout.visual.candidates.compose': self.visual_candidates, 'layout.visual.terrain.acquire': self.visual_terrain,
             'layout.visual.world.build': self.visual_world,
-            'layout.terrain.acquire': self.terrain, 'layout.canopy.derive': self.canopy, 'layout.package.compose': self.package,
+            'layout.terrain.acquire': self.terrain, 'layout.lidar.acquire': self.lidar, 'layout.canopy.derive': self.canopy, 'layout.package.compose': self.package,
             'layout.package.validate': self.package_validate, 'layout.terrain.base': self.terrain_base, 'layout.imagery.audit': self.imagery,
             'layout.context.classify': self.context, 'hole.terrain.compile': self.hole_terrain, 'hole.world.build': self.hole_world,
             'layout.terrain.aggregate': self.terrain_aggregate, 'layout.world.aggregate': self.world_aggregate, 'layout.review.queue': self.review_queue,
@@ -308,6 +309,23 @@ class FakePipeline:
         arts += [artifact(f'terrain-{name}', os.path.join(folder, name), 'A') for name in manifest['fileHashes']]
         return arts
 
+    def lidar(self, node, ctx, run):
+        self._mark(node)
+        layout_id = node.scope.layout_id
+        out = ctx.lidar_out(layout_id)
+        export = os.path.join(ctx.terrain_source_dir(layout_id), 'export.json')
+        manifest = {'schema': 'golfhelm-lidar-chm-v1', 'status': 'no_coverage', 'retrievedAt': '2026-09-19',
+                    'terrainExportSha256': file_sha256(export), 'candidatesRejected': [], 'failures': []}
+        arts = []
+        if self.world.lidar_chm is not None:
+            os.makedirs(out, exist_ok=True)
+            with open(os.path.join(out, 'chm.tif'), 'wb') as f:
+                f.write(self.world.lidar_chm)
+            manifest.update(status='covered', project={'name': 'SYN_2019'}, chmSha256=file_sha256(os.path.join(out, 'chm.tif')))
+            arts.append(artifact('lidar-chm', os.path.join(out, 'chm.tif'), 'B'))
+        write_json(os.path.join(out, 'manifest.json'), manifest)
+        return [artifact('lidar-manifest', os.path.join(out, 'manifest.json'), 'B')] + arts
+
     def canopy(self, node, ctx, run):
         self._mark(node)
         layout_id = node.scope.layout_id
@@ -320,6 +338,9 @@ class FakePipeline:
         regions = [{'id': f'{layout_id}-woods-1', 'holeKey': f'{layout_id}-05', 'coordinatesWgs84': ring(ORIGIN[0] - 0.002, ORIGIN[1] + 0.005, 0.0005)}] if self.world.canopy else []
         doc = {'kind': 'golfhelm-canopy-review-v1', 'siteId': pkg['siteId'], 'packageHash': pkg['contentHash'], 'reviewedAt': '2026-09-19',
                'rasterSha256': self.world.naip_sha, 'regions': regions, 'method': {'name': 'fake'}}
+        lidar = ctx.lidar_manifest(layout_id)
+        if lidar and lidar.get('status') == 'covered':
+            doc['canopySource'] = {'kind': 'lidar_chm+naip', 'lidar': {'chmSha256': lidar['chmSha256']}}
         write_json(ctx.canopy_out(layout_id), doc)
         return [artifact('canopy-review', ctx.canopy_out(layout_id), 'A'), artifact('naip-manifest', os.path.join(naip, 'manifest.json'), 'B'), artifact('naip-raster', os.path.join(naip, 'naip.tif'), 'B')]
 

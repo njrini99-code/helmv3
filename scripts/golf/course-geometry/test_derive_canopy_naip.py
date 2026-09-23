@@ -216,6 +216,56 @@ class HoleFreePartsTests(unittest.TestCase):
         square = P([(0, 0), (50, 0), (50, 50), (0, 50)])
         self.assertEqual(canopy.hole_free_parts(square), [square])
 
+class LidarMergeTests(unittest.TestCase):
+    def test_lidar_decides_covered_cells_and_naip_fills_the_rest(self):
+        chm = np.full((60, 60), 20.0)
+        chm[:, 20:40] = 0.3            # a lidar-measured clearing (fairway)
+        chm[:, 50:] = canopy.CHM_NODATA  # no returns: NAIP decides
+        naip = np.ones((60, 60), bool)   # NAIP calls everything canopy
+        merged, share = canopy.merge_lidar(chm, naip, np.zeros((60, 60), bool))
+        self.assertAlmostEqual(share, 50 / 60, places=3)
+        self.assertFalse(merged[:, 22:38].any())
+        self.assertTrue(merged[3:-3, 52:57].all())  # the closing pass erodes the raster border
+
+    def test_implausible_heights_are_no_return(self):
+        chm = np.full((40, 40), 0.2)
+        chm[10:20, 10:20] = 150.0      # birds / wires: not trees, and not ground either
+        naip = np.zeros((40, 40), bool)
+        merged, share = canopy.merge_lidar(chm, naip, np.zeros((40, 40), bool))
+        self.assertFalse(merged.any())
+        self.assertAlmostEqual(share, 1 - 100 / 1600, places=3)
+
+    def test_patchy_lidar_does_not_lead(self):
+        chm = np.full((40, 40), canopy.CHM_NODATA)
+        chm[:10] = 20.0
+        merged, share = canopy.merge_lidar(chm, np.zeros((40, 40), bool), np.zeros((40, 40), bool))
+        self.assertIsNone(merged)
+        self.assertLess(share, canopy.LIDAR_COVERAGE_MIN)
+
+    def test_a_chm_for_another_export_is_refused(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            export = Path(tmp) / 'export.json'
+            export.write_text('{"width": 1}')
+            lidar_dir = Path(tmp) / 'lidar'
+            lidar_dir.mkdir()
+            (lidar_dir / 'manifest.json').write_text(json.dumps({'status': 'covered', 'terrainExportSha256': '0' * 64}))
+            with self.assertRaises(SystemExit) as caught:
+                canopy.load_lidar(lidar_dir, export, 1, 1)
+            self.assertIn('LIDAR_EXPORT_MISMATCH', str(caught.exception))
+
+    def test_no_coverage_falls_back_to_naip_by_name(self):
+        import hashlib
+        with tempfile.TemporaryDirectory() as tmp:
+            export = Path(tmp) / 'export.json'
+            export.write_text('{"width": 1}')
+            lidar_dir = Path(tmp) / 'lidar'
+            lidar_dir.mkdir()
+            (lidar_dir / 'manifest.json').write_text(json.dumps({'status': 'no_coverage', 'terrainExportSha256': hashlib.sha256(export.read_bytes()).hexdigest()}))
+            chm, source = canopy.load_lidar(lidar_dir, export, 1, 1)
+            self.assertIsNone(chm)
+            self.assertEqual(source['kind'], 'naip')
+            self.assertTrue(source['reason'].startswith('LIDAR_NO_COVERAGE'))
+
 
 if __name__ == '__main__':
     unittest.main()

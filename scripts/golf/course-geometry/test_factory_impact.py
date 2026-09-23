@@ -204,6 +204,26 @@ class ImpactTests(unittest.TestCase):
         executed = set(read_json(os.path.join(os.path.dirname(next(l for l in text.splitlines() if l.startswith('report: '))[len('report: '):]), 'report.json'))['executed'])
         self.assertEqual(executed, {'layout.canopy.derive[synthetic-a]'})
 
+    def test_new_lidar_coverage_rederives_canopy_and_then_holds(self):
+        """3DEP coverage appearing for an export (or a re-flown CHM) is a
+        canopy input: the canopy re-derives from it, and a second run is a
+        cached fixed point."""
+        self.h.run('run', '--layout', 'synthetic-a')
+        self.h.world.lidar_chm = b'CHM-2019' * 32
+        code, text = self.h.run('invalidate', '--layout', 'synthetic-a', '--task', 'layout.lidar.acquire', '--reason', '3DEP project published')
+        self.assertEqual(code, 0, text)
+        code, text = self.h.run('run', '--layout', 'synthetic-a')
+        self.assertIn('failed 0', text)
+        executed = set(read_json(os.path.join(os.path.dirname(next(l for l in text.splitlines() if l.startswith('report: '))[len('report: '):]), 'report.json'))['executed'])
+        self.assertIn('layout.lidar.acquire[synthetic-a]', executed)
+        self.assertIn('layout.canopy.derive[synthetic-a]', executed)
+        self.assertNotIn('layout.terrain.acquire[synthetic-a]', executed)
+        review = read_json(os.path.join(self.h.output, 'layouts', 'synthetic-a', 'canopy-review.json'))
+        self.assertEqual(review['canopySource']['kind'], 'lidar_chm+naip')
+        states = self.h.states('synthetic-a')
+        self.assertEqual(states['layout.canopy.derive[synthetic-a]'][0], 'cached')
+        self.assertEqual(states['layout.lidar.acquire[synthetic-a]'][0], 'cached')
+
     def test_manual_invalidation_rebuilds_one_hole(self):
         self.h.run('run', '--layout', 'synthetic-a')
         code, text = self.h.run('invalidate', '--layout', 'synthetic-a', '--task', 'hole.terrain.compile', '--hole', '11', '--reason', 'reviewer asked')

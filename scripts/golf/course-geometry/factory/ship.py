@@ -320,6 +320,7 @@ def evaluate_gates(ctx, layout_id, captures_report=None, capture_blockers=None):
         'contextUncertainShares': context_uncertain_shares(context_report),
         'tracedSurfaces': traced_surfaces(package),
         'canopyCorridorShares': canopy_shares,
+        'canopySource': (ctx.json(ctx.canopy_path(layout_id), fresh=True) or {}).get('canopySource') if ctx.canopy_path(layout_id) else None,
         'glbSpan': {'status': 'unassessed (not shipped)',
                     'reason': 'GLBs are visual review products only (aggregate_world\'s own manifest text); the published package never includes one.',
                     'findings': gate_glb_span(glb_reports)},

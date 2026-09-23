@@ -50,7 +50,7 @@ class GoldenPlanTests(unittest.TestCase):
 
     def test_cacapon_plan_is_a_clean_slate_behind_the_aoi(self):
         rows = self.golden('cacapon')
-        self.assertEqual(len(rows), 101)
+        self.assertEqual(len(rows), 102)
         self.assertEqual(rows['catalog.validate[cacapon]'], ('cached', 'INLINE_VALIDATED'))
         self.assertEqual(rows['layout.identity.resolve[cacapon]'], ('cached', 'INLINE_VALIDATED'))
         self.assertEqual(rows['layout.scorecard.validate[cacapon]'], ('cached', 'INLINE_VALIDATED'))
@@ -58,7 +58,7 @@ class GoldenPlanTests(unittest.TestCase):
         self.assertEqual(rows['layout.publish.prepare[cacapon]'], ('blocked', 'PUBLISH_NOT_APPROVED'))
         self.assertEqual(rows['layout.publish.verify[cacapon]'], ('blocked', 'DEPENDENCY_BLOCKED'))
         pending = [k for k, v in rows.items() if v == ('pending', 'DEPENDENCY_PENDING')]
-        self.assertEqual(len(pending), 95)
+        self.assertEqual(len(pending), 96)
         self.assertIn('hole.terrain.compile[cacapon:07]', pending)
 
     def test_upper_plan_adopts_the_retained_evidence(self):
@@ -144,7 +144,7 @@ class OperatorCommandTests(unittest.TestCase):
         self.assertEqual(code, 0)
         self.assertIn('STATE', table)
         rows = self.h.plan_rows('synthetic-a')
-        self.assertEqual(len(rows), 101)
+        self.assertEqual(len(rows), 102)
         self.assertEqual(rows['facility.aoi.resolve[synthetic]']['state'], 'ready')
         self.assertEqual(rows['layout.routes.resolve[synthetic-a]']['state'], 'pending')
         self.assertIn('facility.aoi.resolve[synthetic]', table)

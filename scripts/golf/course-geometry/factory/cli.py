@@ -227,6 +227,7 @@ def cmd_doctor(session, args, out):
     probe('node', binary('node'))
     probe('tsx', lambda: os.path.isfile(os.path.join(session.repo_root, 'node_modules', '.bin', 'tsx')))
     probe('playwright', lambda: os.path.isfile(os.path.join(session.repo_root, 'node_modules', 'playwright', 'package.json')))
+    probe('pdal', binary('pdal'))
     probe('osmium (optional)', binary('osmium'))
     probe('blender (optional)', binary('blender'))
     probe('qgis (optional)', lambda: 'present' if glob.glob('/Applications/QGIS*.app') else None)

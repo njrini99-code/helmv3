@@ -12,6 +12,7 @@ from ..context import MAX_HOLE_COUNT, MIN_HOLE_COUNT, supported_hole_count
 from ..fingerprints import (
     content_hash_matches,
     digest,
+    file_sha256,
     terrain_source_identity,
 )
 from ..model import TaskSpec
@@ -385,6 +386,39 @@ def eval_terrain_acquire(node, ctx):
     return evaluation(inputs, [], artifacts, adoptable, notes, output=terrain_source_identity(manifest))
 
 
+def lidar_identity(manifest):
+    """What canopy consumes from a lidar acquisition: the verdict and the
+    raster, not the day it ran."""
+    return digest({k: v for k, v in manifest.items() if k != 'retrievedAt'})
+
+
+def eval_lidar_acquire(node, ctx):
+    layout_id = node.scope.layout_id
+    inputs = {'terrain': dep_input(ctx, node, 'layout.terrain.acquire')}
+    source = ctx.terrain_source_dir(layout_id)
+    manifest = ctx.lidar_manifest(layout_id)
+    if not source or not manifest:
+        return evaluation(inputs)
+    out = ctx.lidar_out(layout_id)
+    export = os.path.join(source, 'export.json')
+    if not os.path.isfile(export) or manifest.get('terrainExportSha256') != file_sha256(export):
+        return evaluation(inputs, [], [], False, ['lidar CHM was cut for another terrain export'])
+    if manifest.get('status') not in ('covered', 'no_coverage'):
+        return evaluation(inputs, [], [], False, [f'lidar acquisition ended {manifest.get("status")}'])
+    artifacts = [artifact('lidar-manifest', os.path.join(out, 'manifest.json'), 'B')]
+    notes = []
+    if manifest['status'] == 'covered':
+        chm = os.path.join(out, 'chm.tif')
+        if not os.path.isfile(chm) or file_sha256(chm) != manifest.get('chmSha256'):
+            return evaluation(inputs, [], [], False, ['lidar chm.tif does not match its manifest'])
+        artifacts.append(artifact('lidar-chm', chm, 'B'))
+        project = manifest.get('project') or {}
+        notes.append(f'lidar {project.get("name")} (flown ~{project.get("acquisitionYearInferred")}): returns over {manifest.get("coverageShare", 0):.0%} of the export')
+    else:
+        notes.append('LIDAR_NO_COVERAGE: no 3DEP point cloud verified over the export; canopy uses NAIP alone')
+    return evaluation(inputs, [], artifacts, True, notes, output=lidar_identity(manifest))
+
+
 def canopy_identity(doc):
     """What the package merge consumes: the groups and the method that drew
     them (and the raster they came from), not the day the pass ran. A
@@ -395,7 +429,8 @@ def canopy_identity(doc):
 
 def eval_canopy_derive(node, ctx):
     layout_id = node.scope.layout_id
-    inputs = {'terrain': dep_input(ctx, node, 'layout.terrain.acquire'), 'candidates': dep_input(ctx, node, 'layout.candidates.compose')}
+    inputs = {'terrain': dep_input(ctx, node, 'layout.terrain.acquire'), 'candidates': dep_input(ctx, node, 'layout.candidates.compose'),
+              'lidar': dep_input(ctx, node, 'layout.lidar.acquire')}
     indexed = ctx.indexed_imagery(layout_id)
     if indexed:
         inputs['indexedImagery'] = indexed['identity']
@@ -449,6 +484,12 @@ def eval_canopy_derive(node, ctx):
             adoptable, notes = False, notes + ['canopy must be rederived from the verified facility imagery cache']
     if naip_manifest and naip_manifest.get('rasterSha256') != doc.get('rasterSha256'):
         adoptable, notes = False, notes + ['canopy review was derived from another NAIP export']
+    lidar = ctx.lidar_manifest(layout_id)
+    used = ((doc.get('canopySource') or {}).get('lidar') or {}).get('chmSha256')
+    if lidar and lidar.get('status') == 'covered' and used != lidar.get('chmSha256'):
+        # A review without lidar predates the lidar stage; one with another
+        # CHM was drawn from a different acquisition.
+        adoptable, notes = False, notes + ['canopy review was not derived from the current lidar CHM']
     candidates = ctx.json(ctx.candidates_package_path(layout_id)) if ctx.can_adopt(ctx.candidates_package_path(layout_id)) else None
     if candidates and doc.get('packageHash') and doc['packageHash'] != candidates.get('contentHash') and not ctx.retained(ctx.layout(layout_id), 'canopyReview'):
         adoptable, notes = False, notes + [f'canopy review is for candidate package {doc["packageHash"][:12]}']
@@ -573,7 +614,9 @@ SPECS = [
              impl_files=(script('prepare-osm-course.py'), script('source_geometry.py')) + CRS_FILES, retention='A', estimated_bytes=20_000_000),
     TaskSpec('layout.terrain.acquire', '1', 'layout', ('layout.candidates.compose',), eval_terrain_acquire,
              impl_files=TERRAIN_COMPILER_FILES, retention='A', estimated_bytes=300_000_000),
-    TaskSpec('layout.canopy.derive', '1', 'layout', ('layout.terrain.acquire', 'layout.candidates.compose'), eval_canopy_derive,
+    TaskSpec('layout.lidar.acquire', '1', 'layout', ('layout.terrain.acquire',), eval_lidar_acquire,
+             impl_files=(script('fetch-lidar-chm.py'),) + CRS_FILES, retention='B', estimated_bytes=40_000_000),
+    TaskSpec('layout.canopy.derive', '1', 'layout', ('layout.terrain.acquire', 'layout.candidates.compose', 'layout.lidar.acquire?'), eval_canopy_derive,
              impl_files=(script('derive-canopy-naip.py'), script('indexed_naip.py'), script('fetch-usgs-naip-facility-ortho.py'), script('factory/payload_reuse.py')) + CRS_FILES, retention='B', estimated_bytes=500_000_000),
     TaskSpec('layout.package.compose', '1', 'layout', ('layout.candidates.compose', 'layout.scorecard.compose', 'facility.osm.snapshot', 'layout.canopy.derive?'), eval_package_compose,
              impl_files=(script('prepare-osm-course.py'), script('source_geometry.py')) + CRS_FILES, retention='A', estimated_bytes=5_000_000),

@@ -305,6 +305,18 @@ class Context:
         retained = self.retained(self.facility((self.layout(layout_id) or {}).get('facilityId')), 'naip')
         return self._current(self.naip_out(layout_id), retained, lambda d: os.path.isfile(os.path.join(d, 'manifest.json')))
 
+    def lidar_out(self, layout_id):
+        """One lidar CHM per terrain export (keyed like the export), shared
+        by every layout cut from it; None before a terrain source exists."""
+        source = self.terrain_source_dir(layout_id)
+        if not source:
+            return None
+        return os.path.join(self.facility_out((self.layout(layout_id) or {}).get('facilityId')), 'lidar', os.path.basename(os.path.normpath(source)))
+
+    def lidar_manifest(self, layout_id):
+        out = self.lidar_out(layout_id)
+        return self.json(os.path.join(out, 'manifest.json'), fresh=True) if out and os.path.isfile(os.path.join(out, 'manifest.json')) else None
+
     def canopy_out(self, layout_id):
         return os.path.join(self.layout_out(layout_id), 'canopy-review.json')
 
