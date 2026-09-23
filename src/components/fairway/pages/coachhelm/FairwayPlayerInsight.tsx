@@ -58,7 +58,7 @@ import {
 import { tintFor } from '@/components/fairway/pages/calendar/FairwayCalendarMemberRail';
 
 // Reused logic widgets (warm-palette, action-bearing) — embedded as-is.
-import { InsightCard, type InsightAction } from '@/components/golf/coachhelm/insight-card';
+import { InsightCard, AttributionReadout, type InsightAction } from '@/components/golf/coachhelm/insight-card';
 import { PrescribedPracticePlanCard } from '@/components/golf/coachhelm/coach';
 
 // Hierarchical THEME insights (v3) — flag-gated replacement for the flat feed.
@@ -76,6 +76,8 @@ import {
   getInsightsForCoach,
   type EvidenceInsight,
 } from '@/app/golf/actions/insight-delivery';
+import { getInsightAttributionReadout } from '@/app/golf/actions/insight-attribution';
+import type { AttributionReadout as AttributionReadoutModel } from '@/lib/coachhelm/v3/effectiveness/attribution-view-model';
 import {
   acknowledgeInsight,
   dismissInsight,
@@ -636,6 +638,28 @@ export function FairwayPlayerInsight({
   const heroInsight = displayInsights[0];
   const secondInsight = displayInsights[1];
 
+  // A9 slice 3 (repair-plan §14.12): the automated outcome-attribution
+  // readout for the hero insight only — the one insight this page gives
+  // most prominence to, matching where `OutcomeBadge` already renders
+  // inside `InsightCard`. `getInsightAttributionReadout` itself no-ops
+  // (returns `null`, no DB call) while the flag is off, so this effect is
+  // inert in production today; `AttributionReadout` renders nothing for a
+  // `null` prop regardless.
+  const [heroAttribution, setHeroAttribution] = useState<AttributionReadoutModel | null>(null);
+  const heroInsightId = heroInsight?.id ?? null;
+  useEffect(() => {
+    let cancelled = false;
+    setHeroAttribution(null);
+    if (!heroInsightId) return;
+    (async () => {
+      const readout = await getInsightAttributionReadout(heroInsightId);
+      if (!cancelled) setHeroAttribution(readout);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [heroInsightId]);
+
   // Deep-link scroll: insights are fetched client-side (loadInsights above),
   // so a `#insight-<id>` hash from the coach morning-digest email
   // (coach-morning-digest/route.ts's deepLinkFor) has nothing to find at
@@ -886,6 +910,9 @@ export function FairwayPlayerInsight({
                     // verbatim-reused primitive.
                     <div id={`insight-${heroInsight.id}`}>
                       <InsightCard insight={heroInsight} density="hero" audience="coach" showActions onAction={handleAction} />
+                      <div className="mt-2">
+                        <AttributionReadout readout={heroAttribution} />
+                      </div>
                     </div>
                   ) : null}
                   {secondInsight ? (

@@ -346,3 +346,68 @@
   (8 flags); `npm run docs:check` all green; `npm run markdown:ratchet`
   no regressions. Test counts in the matching test-ledger entry. Build
   not run locally (session rule — CI's Next build job covers it).
+
+## 2026-09-23 — A9 slice 3: coach-facing read of attribution results
+
+- SHA: (pending push).
+- Change: the first-ever READ side of `golf_insight_outcome_attribution`.
+  New `src/lib/coachhelm/v3/effectiveness/attribution-read.ts` — a pure,
+  flag-unaware DB loader: `readAttributionForInsight` (single insight) and
+  `readAttributionForPlayer` (player-scoped — resolves the player's own
+  insight ids first, then reads attribution rows for them, chunked at
+  `chunkIds`'s 200-id URL cap and paginated per chunk via
+  `fetchAllRowsResult`). A genuine read failure returns `{ok: false}`, NEVER
+  an empty rows array — a legitimate "not attributed yet" is
+  `{ok: true, rows: []}`, a distinct, honest state. Same unknown-column
+  degrade as the write side (`isUnknownColumnError`, a per-file copy
+  matching this codebase's own established convention for that helper) —
+  every row reads back `method_version: null` until migration
+  20260922230000 is applied.
+  New `src/lib/coachhelm/v3/effectiveness/attribution-view-model.ts` —
+  pure labeling: `null`/`'v2_observed_delta'` (the round-level path, which
+  predates A9 slice 2's confounding check entirely) both collapse to
+  `'earlier_method'`, never clean evidence; `'comparable_opportunities_v1'`
+  is the ONLY `isClean: true` value (the only method whose own pipeline
+  actively checked for and ruled out a confound);
+  `'comparable_opportunities_v1_limited'` is never clean either (limited ≠
+  clean, but a healthy-sample limited row is still `state: 'result'`, not
+  `'insufficient'` — those two axes are orthogonal); any unrecognized
+  version string is a neutral `'unknown'` fallback. Sample size reuses
+  `event-ledger.ts`'s `deriveTrustStatus` `< 3` floor
+  (`MIN_SUFFICIENT_ROUNDS`).
+  New `src/app/golf/actions/insight-attribution.ts` — the flag gate
+  (`coachhelm_comparable_opportunity_attribution`, checked before any
+  Supabase call, so an off flag makes zero DB calls) and auth check; a
+  failed read or unauthenticated caller both return `null`.
+  New `src/components/golf/coachhelm/insight-card/AttributionReadout.tsx`
+  — renders nothing for `null` (flag off / unauthenticated / failed read)
+  but DOES render the real `'missing'` state as a quiet "Not attributed
+  yet" note — silence there would misread as "proven to do nothing" — and
+  the `'insufficient'`/`'result'` states with sample sizes. Wired into
+  `FairwayPlayerInsight.tsx`'s hero-insight slot (a new `useEffect` +
+  local state, fetching via the new server action; inert while the flag
+  is off) beside `InsightCard`'s `OutcomeBadge` — a DIFFERENT column
+  (`golf_coach_insights.outcome_status`, the human self-report, not this
+  automated pipeline).
+- Why: repair-plan §14.12's A9 slice 3 — before this, nothing anywhere
+  read `golf_insight_outcome_attribution` back for display (confirmed by
+  the observed-outcome-language audit, PR #2023), so the whole A9
+  attribution pipeline (slices 1-2) had no coach-visible surface at all.
+- Not done by this slice (explicit non-goals): no migration applied
+  (20260922230000 stays unapplied; the degrade path covers both cases);
+  no change to whether these rows ever feed `nextWeight` (still the open,
+  separate decision the A9 slice 2 entry above already named — this
+  slice is read/display-only); the flag stays default-off, so no coach
+  sees anything different in production from this change.
+- Verification: see the matching test-ledger entry for exact counts.
+  `npm run typecheck:fast` clean; `npx eslint` on all touched/new files
+  clean; `npm run docs:check` clean (regenerated `DOCUMENT_AUTHORITY_
+  INVENTORY.md`/`HELM_FEATURE_MAP.md` for the new ledger entries — same
+  recurring generator-drift pattern as every prior entry in this
+  session). Build not run locally (session rule) — CI's Next build job
+  covers it. `observed-outcome-language.test.ts` (PR #2023) is not on
+  this branch (stacked on #2016, not #2023) so it could not be run
+  directly against this slice's new strings — manually verified none of
+  them contain "proven"/"caused by"/"guaranteed"/a quantified "Saved N
+  strokes" claim; will be covered automatically once #2023 lands and
+  this branch rebases past it.
