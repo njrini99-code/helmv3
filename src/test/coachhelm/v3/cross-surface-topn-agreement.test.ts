@@ -122,7 +122,7 @@ function makeInsightDeliverySb(queuedResponses: Array<{ data: unknown[]; error: 
 // ---------------------------------------------------------------------------
 function makeChatSb(rows: unknown[]) {
   const node: Record<string, unknown> = {};
-  for (const m of ['select', 'eq', 'in', 'order', 'gte', 'lte', 'neq', 'limit', 'or']) {
+  for (const m of ['select', 'eq', 'in', 'order', 'gte', 'lte', 'neq', 'limit', 'range', 'or']) {
     node[m] = () => node;
   }
   node.then = (resolve: (v: { data: unknown[]; error: null }) => void) =>

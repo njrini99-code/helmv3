@@ -72,7 +72,7 @@ function sbWith(script: Record<string, Array<Partial<QueryResult>>>) {
     from: vi.fn((table: string) => {
       const result = queues.get(table)?.shift() ?? { data: [], error: null };
       const chain: Record<string, unknown> = {};
-      for (const method of ['select', 'eq', 'in', 'order', 'gte', 'lte', 'neq', 'limit', 'or']) {
+      for (const method of ['select', 'eq', 'in', 'order', 'gte', 'lte', 'neq', 'limit', 'range', 'or']) {
         chain[method] = vi.fn(() => chain);
       }
       chain.maybeSingle = vi.fn(async () => result);

@@ -2,6 +2,7 @@ import { scoreInsight, scoreInsightWithCalibration, type CoachWeights } from '@/
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/types/database';
 import type { Goal } from '@/lib/coachhelm/v3/goals/types';
+import { sanitizeProse } from '@/lib/coachhelm/v3/themes/assemble';
 import type {
   InsightCategory,
   InsightEvidence,
@@ -67,7 +68,7 @@ export interface RawInsightRowForRanking {
  * insight, breaking cross-surface agreement (A6).
  */
 export function mapRowToRankable(row: RawInsightRowForRanking): RankableEvidenceInsight | null {
-  if (!row?.id || !row.player_id || !row.title) return null;
+  if (!row.id || !row.player_id || !row.title) return null;
   if (!row.evidence || typeof row.evidence !== 'object') return null;
   const evidence = row.evidence as InsightEvidence;
   if (typeof evidence.strokes_impact !== 'number') return null;
@@ -80,7 +81,12 @@ export function mapRowToRankable(row: RawInsightRowForRanking): RankableEvidence
     category: (row.category as InsightCategory | null) ?? null,
     insight_type: row.insight_type ?? null,
     title: row.title,
-    content: row.content ?? '',
+    // Strip authoring artifacts ("(Research doc §N)" citations, the dangling
+    // "standing card below" sentence) the same way every other reader does
+    // (insight-delivery.ts's mapRowToEvidenceInsight, themes/assemble.ts) —
+    // older stored rows still carry them, and this is the chat tool's only
+    // mapper, so skipping it would let a coach see raw authoring copy.
+    content: sanitizeProse(row.content),
     signature: row.signature ?? null,
     evidence,
     metadata: (row.metadata ?? null) as RankableEvidenceInsight['metadata'],

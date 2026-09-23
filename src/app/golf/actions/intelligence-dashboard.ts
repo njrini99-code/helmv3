@@ -220,6 +220,18 @@ async function verifyInsightAccess(
 // GET TEAM INSIGHTS SUMMARY
 // ============================================================================
 
+/**
+ * NOTE (A6 top-N audit, 2026-09-23): this action has no live callers as of
+ * this fix — it reads the whole team's eligible `golf_coach_insights` set on
+ * every call (uncapped `fetchAllRowsResult`, no cache) to compute
+ * `topInsight`/`activeInsights`/`urgentInsights` correctly (see the A6
+ * comment below). That is fine for a currently-unused action, but if/when
+ * this is wired into a live, frequently-hit dashboard page, the uncapped
+ * full-team fetch should be cached (short-TTL, keyed by `teamId`) rather than
+ * re-reading the entire team on every request — do not remove the full fetch
+ * to "fix" the cost; that would reintroduce the truncate-before-rank bug A6
+ * just closed.
+ */
 async function getTeamInsightsSummaryImpl(
   teamId: string,
   pagination?: PaginationParams

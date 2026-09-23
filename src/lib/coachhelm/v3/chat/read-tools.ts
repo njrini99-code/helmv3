@@ -19,6 +19,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/types/database';
 import { applyInsightVisibility } from '@/lib/coachhelm/v3/insight-visibility';
+import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import {
   mapRowToRankable,
   rankEvidenceInsights,
@@ -851,26 +852,22 @@ export async function getRecentRounds(
 }
 
 /**
- * A6 top-N audit (2026-09-23): fetches a generous bounded window (order is
- * irrelevant — every candidate in the window is re-ranked in-app, so this
- * only needs to be wide enough that a real player's eligible set never
- * exceeds it; matches the same "a few dozen rows per player" bound the other
- * single-player readers in insight-delivery.ts rely on).
- */
-const CHAT_PLAYER_INSIGHTS_FETCH_CAP = 100;
-
-/**
  * Open CoachHelm signals for one player, ranked the SAME way every other
  * surface ranks them.
  *
  * Before this fix: ordered by `created_at DESC` and truncated to
  * `input.limit` (<=10) at the DB level — an ad-hoc, recency-only "ranking"
  * that could disagree with the feed's #1 the moment a higher-impact insight
- * was older than the newest ~10. Now: fetch a bounded candidate window,
- * route through the SAME canonical pipeline the coach feed's per-player
- * branch uses (`rankEvidenceInsights` -> `collapseParScoring` ->
- * `dedupeBySubject`), THEN slice to `input.limit` — so this tool's leading
- * insight always agrees with what the coach feed shows for that player.
+ * was older than the newest ~10. A later fix widened the DB truncation to a
+ * bounded cap (100) before ranking — still a truncate-before-rank shape, just
+ * a wider one. Now: paginate the player's FULL eligible set via
+ * `fetchAllRowsResult` (the same pattern insight-delivery.ts's single-player
+ * readers use; a normal player's set is a few dozen rows, so this is still
+ * one round trip), route through the SAME canonical pipeline the coach
+ * feed's per-player branch uses (`rankEvidenceInsights` ->
+ * `collapseParScoring` -> `dedupeBySubject`), THEN slice to `input.limit` —
+ * so this tool's leading insight always agrees with what the coach feed
+ * shows for that player, with no candidate silently excluded before ranking.
  *
  * Coach-facing (not player-facing): loads the player's real coach weights +
  * active goals (same inputs the coach feed's per-player branch loads), but
@@ -890,16 +887,26 @@ export async function getPlayerInsights(
   input: { player_id: string; limit: number },
 ): Promise<ToolEnvelope> {
   const player = requireRosterPlayer(ctx, input.player_id);
-  const { data, error } = await applyInsightVisibility(
-    sb
-      .from('golf_coach_insights')
-      .select(
-        'id, player_id, category, insight_type, title, content, signature, evidence, metadata, lifecycle_state, status, priority, acknowledged_at, resolved_at, created_at, updated_at',
+  const { data, error } = await fetchAllRowsResult(
+    (from, to) =>
+      applyInsightVisibility(
+        sb
+          .from('golf_coach_insights')
+          .select(
+            'id, player_id, category, insight_type, title, content, signature, evidence, metadata, lifecycle_state, status, priority, acknowledged_at, resolved_at, created_at, updated_at',
+          )
+          .eq('player_id', player.id),
       )
-      .eq('player_id', player.id),
-  )
-    .order('created_at', { ascending: false })
-    .limit(CHAT_PLAYER_INSIGHTS_FETCH_CAP);
+        .order('id', { ascending: true })
+        .range(from, to),
+    undefined,
+    {
+      table: 'golf_coach_insights',
+      action: 'getPlayerInsights',
+      feature: 'coachhelm_ai_engine',
+      sport: 'golf',
+    },
+  );
 
   if (error) return unavailableEnvelope('Could not read insights.', 'The insights query failed.');
 
