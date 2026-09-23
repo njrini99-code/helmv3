@@ -335,3 +335,52 @@
   file. Not verified: mobile/desktop visual layout (no local build or
   dev server run this session) — deferred to CI's `pr-smoke-a11y` job
   or a preview deploy.
+
+## 2026-09-23 — A7 Scoring surface: loader, view model, section, Game Fingerprint mount (slice 2)
+
+- SHA: 42d1dccd4. Stacked on slice 1 (61d611615).
+- Change: adds `loadParOpportunities` (server-only, wraps
+  `loadPlayerContext` + A3's `computeParOpportunities`, mirroring
+  `load-distance-profile.ts`'s wiring-only shape), `buildScoringViewModel`
+  (splits A3's flat `MetricResult[]` into its own two independent
+  families — `parSections`, identity-agnostic, grouped by par + length
+  band, and `par5Holes`, specific-hole, one card per course+hole
+  identity), and `ScoringSection` (the same status-discriminated tile
+  grid + drill-down `Sheet` pattern `DistanceProfileSection`
+  established, adapted to two row shapes). Mounted behind a new,
+  independently-toggleable `coachhelm_a7_scoring_surface` flag
+  (experiment, default off everywhere) targeting
+  `sectionAddenda.scoring`, reusing slice 1's mount mechanism and
+  rolling-12-month scope/window helpers as-is; also queries
+  `golf_courses` (chunked via `chunkIds`) to resolve each par-5 card's
+  course name.
+- A pre-wiring review caught three real bugs, all fixed before the
+  page mount landed: (1) `par5Holes` is keyed by `course_hole_key`, but
+  its label was a bare "Hole N" — two different courses' hole 7 would
+  have rendered as identical, indistinguishable cards. Fixed by
+  resolving `golf_courses.name` into each card's `courseLabel`, with a
+  short-id-fragment fallback, never a raw full UUID or a silently
+  dropped distinction. (2) An `invalid` par-5 row is a real state (the
+  card only exists because plays were recorded) but its copy claimed
+  "no data recorded yet" beside a real sibling `0%` supported tile on
+  the same hole — made metric-aware instead (putting conversion's
+  invalid state names its own zero-opportunity denominator explicitly,
+  distinct from regulation/green-in-two's). (3) A3 never rounds a
+  percent (`(100*n)/d` can repeat, e.g. `33.333333333333336%`); the
+  drill-down now formats by unit, and the signed strokes-vs-par
+  formatter rounds before testing for zero (previously printed "−0" for
+  a small positive value).
+- Why: addendum §13 A7 slice 2, A3 → Scoring per the slice plan (A2 →
+  Approach was slice 1; A4 → FilmstripReview is a separate later
+  slice). Known, accepted cost: with both A7 flags on,
+  `loadPlayerContext` runs twice for the same scope (once per
+  addendum) — kept for independent reviewability/toggling rather than
+  sharing a single load across two still-separately-flagged surfaces.
+- Verification: 14 new/touched tests (`buildScoringViewModel` 5,
+  `ScoringSection` 8, `load-par-opportunities` wiring 1).
+  `FairwayPlayerGameFingerprint.mode.test.tsx` (7/7) and
+  `PlayerDeepDiveTabs.test.tsx` rerun unchanged, confirming the new
+  addendum is a no-op while its flag is off. `typecheck:fast` and
+  `eslint --max-warnings 0` clean; `flags:check` clean (8 flags total).
+  Not verified: mobile/desktop visual layout (no local build or dev
+  server run this session).
