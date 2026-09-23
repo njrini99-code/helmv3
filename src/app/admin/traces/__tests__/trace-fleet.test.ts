@@ -69,7 +69,6 @@ describe('summarizeTraceFleet', () => {
       warning: 0,
       succeeded: 0,
       stuck: 0,
-      abandoned: 0,
       running: 0,
       dominantGap: null,
       workflows: [],
@@ -101,25 +100,7 @@ describe('summarizeTraceFleet', () => {
 
   it('leaves an unknown status out of every outcome bucket', () => {
     const s = summarizeTraceFleet([run({ status: 'mystery' })]);
-    expect(s.succeeded + s.failed + s.warning + s.stuck + s.abandoned + s.running).toBe(0);
-  });
-
-  /**
-   * 21 of the 68 unfinalized production runs on 2026-09-23 never recorded a
-   * step: a round opened and left. Those are not a stalled pipeline.
-   */
-  it('separates a run that never recorded a step from one that stalled', () => {
-    const now = Date.parse('2026-09-23T12:00:00Z');
-    const s = summarizeTraceFleet(
-      [
-        run({ status: 'started', started_at: '2026-09-23T10:00:00Z', observed_step_count: 0 }),
-        run({ status: 'started', started_at: '2026-09-23T10:00:00Z', observed_step_count: 3 }),
-        run({ status: 'started', started_at: '2026-09-23T10:00:00Z', observed_step_count: null }),
-      ],
-      now,
-    );
-    expect(s.abandoned).toBe(1);
-    expect(s.stuck).toBe(2);
+    expect(s.succeeded + s.failed + s.warning + s.stuck + s.running).toBe(0);
   });
 });
 
