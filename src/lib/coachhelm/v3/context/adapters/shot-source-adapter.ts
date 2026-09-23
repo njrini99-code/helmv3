@@ -26,6 +26,10 @@
  *   - `shot_type`   → hardcoded `'approach'`. `loadApproachShots` already
  *                     filters `.eq('shot_type', 'approach')`, so every row
  *                     it returns IS one; there's no raw column to lose.
+ *   - `miss_direction` → carried through UNCHANGED — `ApproachShot` already
+ *                     selects this column, so it's the one field here that
+ *                     ISN'T narrowed. Feeds `metrics/distance-profile.ts`'s
+ *                     direction-coverage metric (A2).
  *   - `observed_at` → `ApproachShot` has no timestamp at all. A caller that
  *                     needs a real, cutoff-checkable one must use
  *                     `load-player-context.ts` instead, which selects
@@ -58,6 +62,7 @@ export function approachShotToShotFact(
     result: shot.result,
     is_penalty: shot.is_penalty,
     putt_made: null,
+    miss_direction: shot.miss_direction,
     observed_at: fallbackObservedAt,
   };
   return normalizeShot(raw);

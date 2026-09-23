@@ -334,6 +334,24 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
   wired to a generator**: no change to `engine/generator-base.ts` or any
   generator's output, no `evidence-packet.ts` — those remain later slices.
 
+- **A2 distance profile (2026-09-23, `agent/coachhelm-distance-profile`,
+  stacked on `agent/coachhelm-player-context`): pure metrics only, not
+  wired to a generator.** `metrics/distance-profile.ts`'s
+  `computeDistanceProfile(facts, scope, options?)` computes five per-band
+  `MetricResult`s (green hit, on-green proximity, direction coverage,
+  severe outcomes, measured contribution) over `ShotFact[]`, reusing the
+  Package 7B / addendum A2 all-shot proximity semantics already shipped in
+  the `20260922120000_v3_standing_shot_metrics_all_shot_proximity` SQL
+  migration: the same three yard bands, on-green predicate, 175+ yd par-5
+  lay-up exclusion, and support floors. Adds `miss_direction` to `ShotFact`
+  (raw passthrough, threaded through `normalize-shot.ts`,
+  `load-player-context.ts`, and the shot-source adapter). Every
+  `MetricResult.distanceMethod` is `'recorded'`, never `'derived_progress'`
+  — see the evidence-contract doc's "Distance profile" section for why
+  that second `TeeStrategyShot`-style mode cannot arise here. **Do not**
+  wire this into `approach-miss.ts` yet — that's a later slice, behind a
+  flag.
+
 ## Tests To Prefer
 
 - Unit tests under `src/test/coachhelm/**`.
