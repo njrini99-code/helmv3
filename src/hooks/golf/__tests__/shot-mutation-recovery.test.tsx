@@ -499,3 +499,100 @@ describe('shot mutation recovery', () => {
     expect(dispatch).not.toHaveBeenCalledWith(expect.objectContaining({ type: 'UNDO_FAIL' }));
   });
 });
+
+describe('undo of a Penalty tap that wrote an errant stroke', () => {
+  const PENALTY_ID = '22222222-2222-4222-8222-222222222222';
+  const ERRANT_ID = '33333333-3333-4333-8333-333333333333';
+
+  function fairwayDrive(): ShotRecord {
+    return makeShot();
+  }
+  function errantFromFairway(): ShotRecord {
+    return {
+      id: ERRANT_ID,
+      shotNumber: 2,
+      shotType: 'approach',
+      clubType: 'non_driver',
+      lieBefore: 'fairway',
+      result: 'other',
+      distanceToHoleBefore: 150,
+      distanceUnitBefore: 'yards',
+      distanceToHoleAfter: 150,
+      distanceUnitAfter: 'yards',
+      shotDistance: 0,
+      isPenalty: false,
+    };
+  }
+  function obPenaltyFromFairway(): ShotRecord {
+    return {
+      id: PENALTY_ID,
+      shotNumber: 3,
+      shotType: 'penalty',
+      clubType: 'non_driver',
+      lieBefore: 'fairway',
+      result: 'penalty',
+      distanceToHoleBefore: 150,
+      distanceUnitBefore: 'yards',
+      distanceToHoleAfter: 150,
+      distanceUnitAfter: 'yards',
+      shotDistance: 0,
+      isPenalty: true,
+      penaltyType: 'ob',
+    };
+  }
+
+  it('lifts both rows — penalty first — and restores the fairway position', async () => {
+    const dispatch = vi.fn<React.Dispatch<ShotAction>>();
+    actionMocks.deleteShot.mockReset();
+    actionMocks.deleteShot.mockResolvedValue({ success: true, data: undefined });
+    const state = { shotHistory: [fairwayDrive(), errantFromFairway(), obPenaltyFromFairway()] } as ShotTrackingState;
+    const { result } = renderHook(() => useDeleteHandlers(state, dispatch));
+
+    await act(async () => {
+      await result.current.undo();
+    });
+
+    expect(actionMocks.deleteShot.mock.calls.map((c) => c[0])).toEqual([PENALTY_ID, ERRANT_ID]);
+    const complete = dispatch.mock.calls.find(([a]) => a.type === 'UNDO_COMPLETE')?.[0];
+    expect(complete).toBeDefined();
+    if (complete?.type === 'UNDO_COMPLETE') {
+      expect(complete.payload.newHistory.map((s) => s.id)).toEqual([SHOT_ID]);
+    }
+  });
+
+  it('lifts only the penalty when the "other" shot was entered by the player', async () => {
+    const dispatch = vi.fn<React.Dispatch<ShotAction>>();
+    actionMocks.deleteShot.mockReset();
+    actionMocks.deleteShot.mockResolvedValue({ success: true, data: undefined });
+    // A player-entered OB drive carries where the ball actually went.
+    const entered: ShotRecord = { ...errantFromFairway(), distanceToHoleAfter: 20, shotDistance: 130 };
+    const state = { shotHistory: [fairwayDrive(), entered, obPenaltyFromFairway()] } as ShotTrackingState;
+    const { result } = renderHook(() => useDeleteHandlers(state, dispatch));
+
+    await act(async () => {
+      await result.current.undo();
+    });
+
+    expect(actionMocks.deleteShot.mock.calls.map((c) => c[0])).toEqual([PENALTY_ID]);
+    const complete = dispatch.mock.calls.find(([a]) => a.type === 'UNDO_COMPLETE')?.[0];
+    if (complete?.type === 'UNDO_COMPLETE') {
+      expect(complete.payload.newHistory.map((s) => s.id)).toEqual([SHOT_ID, ERRANT_ID]);
+    }
+  });
+
+  it('keeps the errant stroke on the card when the penalty delete fails', async () => {
+    const dispatch = vi.fn<React.Dispatch<ShotAction>>();
+    actionMocks.deleteShot.mockReset();
+    actionMocks.deleteShot.mockResolvedValueOnce({ success: false, code: 'network' });
+    const state = { shotHistory: [fairwayDrive(), errantFromFairway(), obPenaltyFromFairway()] } as ShotTrackingState;
+    const { result } = renderHook(() => useDeleteHandlers(state, dispatch));
+
+    await act(async () => {
+      await result.current.undo();
+    });
+
+    expect(actionMocks.deleteShot).toHaveBeenCalledTimes(1);
+    expect(dispatch.mock.calls.some(([a]) => a.type === 'UNDO_FAIL')).toBe(true);
+    expect(dispatch.mock.calls.some(([a]) => a.type === 'UNDO_COMPLETE')).toBe(false);
+  });
+});

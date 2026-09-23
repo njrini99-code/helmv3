@@ -28,10 +28,11 @@
  * ========================================================================== */
 
 import * as React from 'react';
-import { ArrowLeft, CalendarClock, Plus, X } from 'lucide-react';
+import { ArrowLeft, CalendarClock, Plus, Repeat, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
   Button,
+  PressTarget,
   Segmented,
   Skeleton,
   EmptyState,
@@ -200,18 +201,18 @@ export function MyAvailabilityScreen({ open, onOpenChange, viewerRole, teamId }:
                 const rowPending = pendingIds.has(block.id);
                 return (
                   <li key={block.id} className={cn(index < 8 && surfaces.enter)} style={index < 8 ? { animationDelay: `${index * 30}ms` } : undefined}>
-                    <Button
-                      type="button"
-                      variant="ghost"
+                    <PressTarget
                       onClick={() => setSelection({ kind: 'edit', id: block.id })}
                       disabled={rowPending}
                       className={cn(
-                        'flex h-auto w-full min-h-11 items-center justify-between gap-3 rounded-fw-md border border-border-subtle bg-surface px-3 py-2.5 text-left font-normal',
-                        surfaces.press,
-                        'hover:border-border-strong disabled:opacity-60',
+                        'flex min-h-12 w-full items-center gap-3 rounded-fw-md border border-border-subtle bg-surface py-2.5 pl-4 pr-3 text-left [box-shadow:var(--fw-shadow-card)] hover:bg-surface-sunken',
+                        selection.kind === 'edit' && selection.id === block.id && 'border-accent-650 ring-1 ring-inset ring-accent-650',
                       )}
                     >
-                      <span className="min-w-0">
+                      <span aria-hidden className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-surface-sunken text-text-secondary">
+                        {rule ? <Repeat className="h-4 w-4" aria-hidden /> : <CalendarClock className="h-4 w-4" aria-hidden />}
+                      </span>
+                      <span className="min-w-0 flex-1">
                         <span className="block truncate font-fw-sans text-body-sm font-medium text-text-primary">
                           {block.title || 'Busy'}
                         </span>
@@ -224,7 +225,7 @@ export function MyAvailabilityScreen({ open, onOpenChange, viewerRole, teamId }:
                           {rule ? ` · ${describeRecurrenceRule(rule)}` : ''}
                         </span>
                       </span>
-                    </Button>
+                    </PressTarget>
                   </li>
                 );
               })}
@@ -269,10 +270,11 @@ export function MyAvailabilityScreen({ open, onOpenChange, viewerRole, teamId }:
         size="full"
         className={cn(
           'flex h-[min(88dvh,720px)] !w-[calc(100vw-1rem)] flex-col overflow-hidden p-0 sm:!w-[min(90vw,860px)]',
+          surfaces.scope,
           surfaces.panel,
         )}
       >
-        <header className={cn('relative z-10 flex shrink-0 items-center gap-3 border-b px-4 py-4 sm:px-6', surfaces.chrome)}>
+        <header className={cn('relative z-10 flex shrink-0 items-center gap-3 border-b px-4 py-4 sm:px-6', 'fw-glass-chrome')}>
           {!isDesktop && showEditor ? (
             <Button
               variant="ghost"
@@ -324,10 +326,12 @@ export function MyAvailabilityScreen({ open, onOpenChange, viewerRole, teamId }:
         <div className="min-h-0 flex-1 overflow-hidden">
           {tab === 'sources' ? (
             <div className="h-full overflow-y-auto p-4 sm:p-6">
-              <p className="mb-3 font-fw-sans text-body-sm text-text-secondary">
-                How completely Helm could check your schedule when other people compare availability with you.
-              </p>
-              <SourceStatusList state={sourceState} onRetry={retrySources} />
+              <div className={cn('rounded-card p-4', 'border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-card)]')}>
+                <p className="mb-3 font-fw-sans text-body-sm text-text-secondary">
+                  How completely Helm could check your schedule when other people compare availability with you.
+                </p>
+                <SourceStatusList state={sourceState} onRetry={retrySources} />
+              </div>
             </div>
           ) : isDesktop ? (
             <div className="grid h-full grid-cols-[minmax(0,1fr)_360px]">

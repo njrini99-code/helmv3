@@ -127,8 +127,8 @@ export function ConflictCenter({
   const failedRefresh = Boolean(error) && Boolean(snapshot);
 
   return (
-    <div className={cn('flex h-full min-h-0 flex-col', className)}>
-      <header className="flex shrink-0 flex-wrap items-start justify-between gap-3 border-b border-border-subtle px-4 py-4 sm:px-6">
+    <div className={cn('flex h-full min-h-0 flex-col', surfaces.scope, className)}>
+      <header className={cn('sticky top-0 z-20 flex shrink-0 flex-wrap items-start justify-between gap-3 border-b px-4 py-4 sm:px-6', 'fw-glass-chrome')}>
         <div className="min-w-0">
           <h1 className="font-fw-display text-title font-semibold tracking-[-0.02em] text-text-primary">Conflicts</h1>
           {snapshot ? (
@@ -247,7 +247,7 @@ export function ConflictCenter({
         </div>
 
         {isDesktop ? (
-          <aside className={cn('hidden w-[360px] shrink-0 overflow-y-auto lg:block', surfaces.inspector)}>
+          <aside className={cn('hidden w-[380px] shrink-0 overflow-y-auto lg:block', surfaces.inspector)}>
             {snapshot && selectedGroup ? (
               <ConflictDetail
                 group={selectedGroup}

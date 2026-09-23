@@ -42,21 +42,41 @@ beforeEach(() => {
 });
 
 describe('CalendarPersonDialog', () => {
-  it('renders the class-day visual and lets a known event open from the schedule', () => {
+  it('renders the day timeline and lets a known event open from the schedule', () => {
     const onEvent = vi.fn();
     render(<CalendarPersonDialog request={request} personId={request.participantIds[0]!} onDateChange={() => {}} onCompare={() => {}} onClose={() => {}} onEvent={onEvent} />);
 
     // ModalShell's real entrance begins at opacity 0 in jsdom. Assert the
     // rendered contract here; interaction/motion itself is covered there.
     expect(screen.getByRole('heading', { name: 'Ava Stone' })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: 'Class day' })).toBeInTheDocument();
-    expect(screen.getByLabelText('Classes schedule timeline')).toBeInTheDocument();
-    expect(screen.getAllByText('Calculus III')).toHaveLength(2);
-    fireEvent.click(screen.getByRole('button', { name: 'Team practice' }));
+    expect(screen.getByRole('list', { name: 'Day timeline' })).toBeInTheDocument();
+    expect(screen.getAllByText('Calculus III')).toHaveLength(1);
+    fireEvent.click(screen.getByRole('button', { name: /Team practice/ }));
     expect(onEvent).toHaveBeenCalledWith('event-1');
+    // The primary action names the person.
+    expect(screen.getAllByRole('button', { name: 'Find a time with Ava' }).length).toBeGreaterThan(0);
   });
 
-  it('opens class detail from a lane block when the interval carries a classId (SCREEN-BUILD-PLAN.md §2.4)', () => {
+  it('draws verified free gaps of an hour or more, and none when the read was partial', () => {
+    render(<CalendarPersonDialog request={request} personId={request.participantIds[0]!} onDateChange={() => {}} onCompare={() => {}} onClose={() => {}} onEvent={() => {}} />);
+    // 8:00–9:00 AM (before Calculus at 9:00) is exactly an hour; 10:15 AM–2:00 PM
+    // and 4:00–6:00 PM are the other verified openings in the working day.
+    const gaps = screen.getAllByRole('listitem', { name: /^Available, / });
+    expect(gaps.map((gap) => gap.getAttribute('aria-label'))).toEqual([
+      'Available, 1 hour, 8:00 AM to 9:00 AM',
+      'Available, 3.8 hours, 10:15 AM to 2:00 PM',
+      'Available, 2 hours, 4:00 PM to 6:00 PM',
+    ]);
+  });
+
+  it('changes the day from the week strip', () => {
+    const onDateChange = vi.fn();
+    render(<CalendarPersonDialog request={request} personId={request.participantIds[0]!} onDateChange={onDateChange} onCompare={() => {}} onClose={() => {}} onEvent={() => {}} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Thursday, September 10' }));
+    expect(onDateChange).toHaveBeenCalledWith('2026-09-10');
+  });
+
+  it('opens class detail from a timeline block when the interval carries a classId (SCREEN-BUILD-PLAN.md §2.4)', () => {
     const onOpenClass = vi.fn();
     const withClass: ScheduleSnapshot = {
       ...snapshot,
@@ -80,17 +100,10 @@ describe('CalendarPersonDialog', () => {
       />,
     );
 
-    // The lane block AND the commitments row both open class detail.
+    // The timeline block opens class detail.
     fireEvent.click(screen.getByTitle(/Biology 201/));
     expect(onOpenClass).toHaveBeenCalledWith({ classId: 'class-uuid-1', eventId: undefined, date: request.date });
-
-    onOpenClass.mockClear();
-    // Two "Biology 201" controls exist now (lane block + commitments row) —
-    // the lane block is the one with a `title` attribute; take the other.
-    const buttons = screen.getAllByRole('button', { name: 'Biology 201' });
-    expect(buttons).toHaveLength(2);
-    fireEvent.click(buttons[1]!);
-    expect(onOpenClass).toHaveBeenCalledWith({ classId: 'class-uuid-1', eventId: undefined, date: request.date });
+    expect(screen.getAllByRole('button', { name: /Biology 201/ })).toHaveLength(1);
   });
 
   it('leaves a class interval with neither classId nor eventId inert — never a fabricated deep link', () => {
@@ -108,7 +121,8 @@ describe('CalendarPersonDialog', () => {
     );
     // "Calculus III" (class-1) has no classId/eventId in this fixture — it
     // must render as plain text, never a clickable control.
-    expect(screen.queryByRole('button', { name: 'Calculus III' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Calculus III/ })).not.toBeInTheDocument();
+    expect(screen.getByText('Calculus III')).toBeInTheDocument();
   });
 
   it('keeps partial schedule data visibly unverified', () => {
@@ -121,5 +135,6 @@ describe('CalendarPersonDialog', () => {
     render(<CalendarPersonDialog request={request} personId={request.participantIds[0]!} onDateChange={() => {}} onCompare={() => {}} onClose={() => {}} onEvent={() => {}} />);
 
     expect(screen.getByText(/could not be fully verified/i)).toBeInTheDocument();
+    expect(screen.queryByRole('listitem', { name: /^Available, / })).not.toBeInTheDocument();
   });
 });

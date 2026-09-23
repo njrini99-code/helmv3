@@ -21306,6 +21306,7 @@ export type Database = {
         Returns: boolean
       }
       heartbeat: { Args: never; Returns: undefined }
+      helm_debug_db_analysis_snapshot: { Args: never; Returns: Json }
       helm_debug_db_health_snapshot: { Args: never; Returns: Json }
       helm_debug_db_lock_snapshot: { Args: never; Returns: Json }
       helm_debug_db_table_snapshot: { Args: never; Returns: Json }
@@ -21328,6 +21329,7 @@ export type Database = {
         }
         Returns: Json
       }
+      helm_debug_read_db_analysis_samples: { Args: never; Returns: Json }
       helm_debug_read_db_error_events: {
         Args: { p_limit?: number; p_min_severity?: string; p_since?: string }
         Returns: Json
@@ -21348,12 +21350,20 @@ export type Database = {
         Args: { p_regression_lookback_hours?: number }
         Returns: Json
       }
+      helm_debug_read_db_statement_samples: {
+        Args: { p_sparkline_days?: number; p_top_n?: number }
+        Returns: Json
+      }
       helm_debug_read_db_table_health: {
         Args: { p_limit?: number }
         Returns: Json
       }
       helm_debug_read_jobs_health: { Args: never; Returns: Json }
       helm_debug_read_observability_sizes: { Args: never; Returns: Json }
+      helm_debug_read_statement_alert_state: {
+        Args: { p_queryids: string[] }
+        Returns: Json
+      }
       helm_debug_record_trace_step: {
         Args: {
           p_layer: string
@@ -21377,6 +21387,58 @@ export type Database = {
       helm_debug_stat_statements_snapshot: {
         Args: { p_limit?: number }
         Returns: Json
+      }
+      helm_jobs_ack: {
+        Args: { p_msg_id: number; p_queue: string }
+        Returns: boolean
+      }
+      helm_jobs_depth: {
+        Args: never
+        Returns: {
+          dead_letter_count: number
+          oldest_msg_age_seconds: number
+          queue: string
+          queue_length: number
+        }[]
+      }
+      helm_jobs_enqueue: {
+        Args: { p_dedupe_key?: string; p_payload: Json; p_queue: string }
+        Returns: number
+      }
+      helm_jobs_fail: {
+        Args: { p_error: string; p_msg_id: number; p_queue: string }
+        Returns: Json
+      }
+      helm_jobs_list_dead_letters: {
+        Args: { p_limit?: number; p_queue?: string }
+        Returns: {
+          attempts: number
+          error: string
+          failed_at: string
+          first_enqueued_at: string
+          id: string
+          msg_id: number
+          payload: Json
+          queue: string
+        }[]
+      }
+      helm_jobs_pg_cron_consume_tick: {
+        Args: { p_target_url: string }
+        Returns: number
+      }
+      helm_jobs_read_batch: {
+        Args: { p_n?: number; p_queue: string; p_visibility_seconds?: number }
+        Returns: {
+          enqueued_at: string
+          message: Json
+          msg_id: number
+          read_ct: number
+          vt: string
+        }[]
+      }
+      helm_jobs_requeue_dead_letter: {
+        Args: { p_dead_letter_id: string }
+        Returns: number
       }
       helm_lifting_accept_invite: { Args: { p_token: string }; Returns: Json }
       helm_lifting_assign_team: {
@@ -21496,6 +21558,10 @@ export type Database = {
         Returns: undefined
       }
       recompute_team_sg: { Args: { p_team_id: string }; Returns: undefined }
+      record_db_analysis_sample: {
+        Args: { p_rows: Json; p_sampled_at: string }
+        Returns: number
+      }
       record_db_error_event: {
         Args: {
           p_action: string
@@ -21625,6 +21691,15 @@ export type Database = {
           p_prior_state_rows: Json
           p_sampled_at: string
           p_stats_reset_at: string
+        }
+        Returns: number
+      }
+      record_db_statement_samples: {
+        Args: {
+          p_mean_rows: Json
+          p_paged_queryids?: Json
+          p_sampled_at: string
+          p_total_rows: Json
         }
         Returns: number
       }

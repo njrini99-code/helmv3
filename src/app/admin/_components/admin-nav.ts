@@ -4,12 +4,7 @@ type AdminHref =
   | '/admin/errors'
   | '/admin/traces'
   | '/admin/engineering'
-  | '/admin/work-log'
-  | '/admin/qualifiers'
-  | '/admin/reliability'
-  | '/admin/slo'
   | '/admin/database'
-  | '/admin/self-heal'
   | '/admin/auth'
   | '/admin/golf'
   | '/admin/baseball'
@@ -22,13 +17,7 @@ type AdminHref =
   | '/admin/deploys'
   | '/admin/releases'
   | '/admin/health'
-  | '/admin/teams'
-  | '/admin/billing'
-  | '/admin/lenses/golf'
-  | '/admin/lenses/baseball'
-  | '/admin/lenses/lifting'
-  | '/admin/lenses/teams'
-  | '/admin/lenses/users';
+  | '/admin/teams';
 
 export interface AdminNavEntry {
   label: string;
@@ -55,30 +44,21 @@ export const ADMIN_NAV: readonly AdminNavEntry[] = [
   // /admin/errors/<fp> reference, and the repair contract's PR-body join,
   // and buys nothing an operator can see.
   { label: 'Incidents', href: '/admin/errors', key: '3', section: 'Triage', description: 'One incident per cause, with every source that saw it', meta: 'trace' },
-  { label: 'Health', href: '/admin/health', key: '0', section: 'Triage', description: 'Feature health across every app', meta: 'map' },
+  // Three views: the feature dot grid, ?view=budgets (error budgets, golden
+  // paths, silence detection, trace funnels — was the SLO Center tab, and
+  // every one of those four reads is a read of feature health) and
+  // ?view=heartbeats (the Heartbeat Matrix and Invariant Lattice).
+  { label: 'Health', href: '/admin/health', key: '0', section: 'Triage', description: 'Feature health, budgets, heartbeats', meta: 'map' },
   { label: 'Jobs & Integrity', href: '/admin/jobs', key: '8', section: 'Triage', description: 'Crons, guards, integrity checks' },
-  // The 3-hourly collector's correlated view. Distinct from Errors: that tab
-  // shows each source's incidents, this one shows what MORE THAN ONE source
-  // agrees on, plus which sources were readable at all.
-  { label: 'Reliability', href: '/admin/reliability', key: 'R', section: 'Triage', description: 'Correlated Vercel, Sentry and Supabase signals', meta: '3h' },
-  // Error budgets/golden-path health/silence detection/trace funnels —
-  // Bridge Control Plane Phase D. Distinct from Reliability above: that tab
-  // is the 3-hourly correlated SIGNAL feed; this rolls the same tier
-  // vocabulary up into a rolling-window BUDGET, a golden-path rollup, a
-  // heartbeat-staleness read, and a fleet view of the flight recorder.
-  { label: 'SLO Center', href: '/admin/slo', key: 'O', section: 'Triage', description: 'Error budgets, golden paths, silence detection, trace funnels', meta: 'slo' },
-  // Database/Postgres-layer signal, distinct from Reliability: that tab
-  // correlates APPLICATION-level signals across three sources every 3
-  // hours; this tab is the DATABASE's own state — connections, deduped
+  // Database/Postgres-layer signal, distinct from the Incidents `sources`
+  // view: that correlates APPLICATION-level signals across three sources
+  // every 3 hours; this tab is the DATABASE's own state — connections, deduped
   // Supabase/PostgREST failures, query-performance deltas — read from the
   // zero-cost collectors every 5-15 minutes.
-  { label: 'Database', href: '/admin/database', key: 'X', section: 'Triage', description: 'Postgres health, deduped DB errors, query deltas', meta: '5m' },
-  // The self-healing circuit as a thing that can be watched. Distinct from
-  // Jobs & Integrity, which answers "did the crons run": this answers "is the
-  // loop alive, and has each stage ever actually produced its output" — a
-  // stage can heartbeat healthily for a week while never once doing its job,
-  // which is exactly what Repair did.
-  { label: 'Self-heal', href: '/admin/self-heal', key: 'S', section: 'Triage', description: 'Collect, Diagnose, Repair, Close — runtime and capability', meta: 'loop' },
+  // Three views over what was a nineteen-section scroll: posture (is it
+  // healthy), performance (what is slow), schema (is it safe). A ?incident=
+  // deep link renders above the rail under every one of them.
+  { label: 'Database', href: '/admin/database', key: 'X', section: 'Triage', description: 'Postgres posture, performance, schema', meta: '5m' },
   // Was reachable ONLY from a text-xs back-arrow three levels deep, despite
   // being the one cross-sport board built to answer "who needs attention" —
   // 30-day activity/error EKG with four triage sorts.
@@ -86,10 +66,6 @@ export const ADMIN_NAV: readonly AdminNavEntry[] = [
   // that answers "which rounds are stuck", this answers "walk me through one
   // execution and show me where it diverged".
   { label: 'Flight Recorder', href: '/admin/traces', key: 'F', section: 'Triage', description: 'One round mutation traced end to end', meta: 'trace' },
-  // Qualifier lifecycle + the business rules rendered as live invariant checks.
-  // Sits in Triage because a breached invariant (a round on another team's
-  // qualifier) is an integrity incident, not a reporting curiosity.
-  { label: 'Qualifiers', href: '/admin/qualifiers', key: 'Q', section: 'Triage', description: 'Qualifier lifecycle and rule invariants', meta: 'rules' },
   { label: 'Teams pulse', href: '/admin/teams', key: 'T', section: 'Triage', description: 'Cross-sport team activity and error EKG' },
 
   // CUSTOMERS — "who is this, and how are they doing"
@@ -108,40 +84,16 @@ export const ADMIN_NAV: readonly AdminNavEntry[] = [
   // registry, not the deploy-risk/rollback surface `/admin/deploys` owns.
   { label: 'Releases', href: '/admin/releases', key: 'K', section: 'Platform', description: 'Feature flags and kill switches', meta: 'flags' },
   { label: 'Auth & Sign-ins', href: '/admin/auth', key: '4', section: 'Platform', description: 'Access, sessions, auth failures' },
-  { label: 'Work log', href: '/admin/work', key: 'W', section: 'Platform', description: 'PR timeline — problems, fixes, areas', meta: 'prs' },
-  // Distinct from the "Work log" tab above: that is the PR-timeline view
-  // (github-pr-timeline.ts entries, problem/fix narrative), this is the
-  // change-to-proof join over the SAME entries (repair verdict, shipped
-  // release, post-deploy delta) — Bridge Premium Phase 5 (Engineering OS).
-  { label: 'Proof Log', href: '/admin/work-log', key: 'Y', section: 'Platform', description: 'PR → release shipped in → post-deploy proof', meta: 'proof' },
+  // Two views: the PR timeline (problem/fix narrative from
+  // github-pr-timeline.ts) and ?view=proof, the change-to-proof join over the
+  // SAME entries (repair verdict, shipped release, post-deploy delta). They
+  // were two tabs until the 30→19 consolidation; one feed, two framings.
+  { label: 'Work log', href: '/admin/work', key: 'W', section: 'Platform', description: 'PR timeline and change-to-proof', meta: 'prs' },
   { label: 'Engineering OS', href: '/admin/engineering', key: 'Z', section: 'Platform', description: 'Decision Inbox, Agent Flight Recorder, gates, blast radius', meta: 'os' },
-
-  // LENSES — Bridge Premium Phase 4 (brief §20-27). Journey/flow-shaped
-  // dominant visuals over the same underlying data the Apps/Customers tabs
-  // above already surface — see each page's own header comment for what it
-  // reuses vs. adds. Deliberately in Platform per that brief's routing, not
-  // Apps/Customers, so it reads as an operating-model lens rather than a
-  // second app tab competing with Golf/Baseball/Lift Lab/Teams/Users above.
-  { label: 'Golf journey lens', href: '/admin/lenses/golf', key: 'G', section: 'Platform', description: 'Golf Journey River — funnel + incidents' },
-  { label: 'Baseball journey lens', href: '/admin/lenses/baseball', key: 'A', section: 'Platform', description: 'Baseball journeys — funnel + incidents' },
-  { label: 'Lift Lab flow lens', href: '/admin/lenses/lifting', key: 'P', section: 'Platform', description: 'Program Execution Flow, fully durable' },
-  { label: 'Teams EKG lens', href: '/admin/lenses/teams', key: 'E', section: 'Platform', description: 'Team EKG + release impact + adoption' },
-  { label: 'Users journey lens', href: '/admin/lenses/users', key: 'D', section: 'Platform', description: 'Directory + per-user Journey Ribbon' },
-
-  // REVENUE — zero inbound links repo-wide before this entry.
-  { label: 'Billing', href: '/admin/billing', key: 'V', section: 'Revenue', description: 'Create invoices' },
 
   // INTAKE
   { label: 'Ben + Leah', href: '/admin/ben-leah', key: 'B', section: 'Platform', description: 'Log tester-reported bugs on their behalf', meta: 'issues' },
 ] as const;
-
-/** Quick links in the Overview command header — must be real ADMIN_NAV routes. */
-export const ADMIN_COMMAND_SHORTCUTS = [
-  { href: '/admin/errors', label: 'Errors' },
-  { href: '/admin/health', label: 'Feature Map' },
-  { href: '/admin/deploys', label: 'Deploys' },
-  { href: '/admin/auth', label: 'Auth' },
-] as const satisfies ReadonlyArray<{ href: AdminHref; label: string }>;
 
 export function hrefForShortcut(key: string): string | null {
   return ADMIN_NAV.find((e) => e.key === key)?.href ?? null;

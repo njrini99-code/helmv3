@@ -21,7 +21,7 @@ below.
 ONLY for the exact string `'true'` — unset, empty, `'TRUE'`, `'1'`, anything
 else is OFF. When disabled, `gateCustomerEmail()` records one throttled
 `admin_events` row (`event_type: 'email.suppressed'`, severity info,
-`source: 'system'`, kind + caller origin (`metadata.origin`) + recipientCount
+`source: 'system'`, kind + caller call site (`metadata.callSite`) + recipientCount
 only — no addresses, ever) via `logEmailSuppressed()`
 (`src/lib/admin-logger.ts`), then returns
 `{ allowed: false, reason: 'customer_email_disabled' }`. Repeated

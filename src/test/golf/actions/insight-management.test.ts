@@ -18,7 +18,6 @@ vi.mock('@/lib/supabase/server', () => ({
 
 import {
   searchInsights,
-  bulkDismissInsights,
   exportInsights,
 } from '@/app/golf/actions/insight-management';
 
@@ -105,53 +104,6 @@ describe('searchInsights', () => {
     expect(textFilter).toContain('content.ilike');
     expect(textFilter).not.toContain('description.ilike');
     expect(textFilter).toContain('title.ilike');
-  });
-});
-
-describe('bulkDismissInsights', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
-
-  it('writes status=dismissed, dismissed=true, and dismissed_at', async () => {
-    const updateSpy = vi.fn().mockReturnValue({
-      eq: () => ({
-        in: () => ({
-          select: async () => ({ data: [{ id: 'i-1' }], error: null }),
-        }),
-      }),
-    });
-
-    createClientMock.mockResolvedValue({
-      auth: {
-        getUser: async () => ({ data: { user: { id: 'u-1' } } }),
-      },
-      from: (table: string) => {
-        if (table === 'golf_coaches') {
-          return {
-            select: () => ({
-              eq: () => ({
-                single: async () => ({ data: { id: 'coach-1' }, error: null }),
-              }),
-            }),
-          };
-        }
-        if (table === 'golf_coach_insights') {
-          return { update: updateSpy };
-        }
-        return {};
-      },
-    });
-
-    const result = await bulkDismissInsights(['i-1']);
-    expect(result.success).toBe(true);
-    expect(updateSpy).toHaveBeenCalledTimes(1);
-    const firstCall = updateSpy.mock.calls[0];
-    expect(firstCall).toBeDefined();
-    const payload = firstCall![0];
-    expect(payload.status).toBe('dismissed');
-    expect(payload.dismissed).toBe(true);
-    expect(typeof payload.dismissed_at).toBe('string');
   });
 });
 

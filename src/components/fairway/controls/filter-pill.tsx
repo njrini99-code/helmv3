@@ -14,6 +14,7 @@
  * ========================================================================== */
 
 import { type ButtonHTMLAttributes, type ReactNode, forwardRef } from 'react';
+import Link from 'next/link';
 import { Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { fwDisabled, fwFocusRing, fwTransition } from './_internal';
@@ -36,33 +37,38 @@ const sizeStyles: Record<'sm' | 'md', string> = {
   md: 'min-h-[36px] px-3.5 text-[13px] gap-1.5',
 };
 
-export const FilterPill = forwardRef<HTMLButtonElement, FilterPillProps>(function FilterPill(
-  { className, selected = false, size = 'md', icon, count, showCheck = true, disabled, children, type, ...props },
-  ref,
-) {
+/** The pill's visuals, shared by the <button> and <a> forms below. */
+function pillClassName(selected: boolean, size: 'sm' | 'md', className?: string): string {
+  return cn(
+    'inline-flex select-none items-center justify-center rounded-full border font-fw-sans font-medium',
+    'whitespace-nowrap',
+    fwTransition,
+    fwFocusRing,
+    fwDisabled,
+    'active:translate-y-[0.5px] motion-reduce:active:translate-y-0',
+    sizeStyles[size],
+    selected
+      ? 'border-accent-500 bg-accent-50 text-accent-700 hover:bg-accent-100'
+      : 'border-border-subtle bg-surface text-text-secondary hover:border-border-strong hover:bg-surface-tint hover:text-text-primary',
+    className,
+  );
+}
+
+function PillContents({
+  selected,
+  showCheck,
+  icon,
+  count,
+  children,
+}: {
+  selected: boolean;
+  showCheck: boolean;
+  icon?: ReactNode;
+  count?: number;
+  children: ReactNode;
+}) {
   return (
-    <button
-      ref={ref}
-      type={type ?? 'button'}
-      aria-pressed={selected}
-      data-slot="fw-filter-pill"
-      data-selected={selected || undefined}
-      disabled={disabled}
-      className={cn(
-        'inline-flex select-none items-center justify-center rounded-full border font-fw-sans font-medium',
-        'whitespace-nowrap',
-        fwTransition,
-        fwFocusRing,
-        fwDisabled,
-        'active:translate-y-[0.5px] motion-reduce:active:translate-y-0',
-        sizeStyles[size],
-        selected
-          ? 'border-accent-500 bg-accent-50 text-accent-700 hover:bg-accent-100'
-          : 'border-border-subtle bg-surface text-text-secondary hover:border-border-strong hover:bg-surface-tint hover:text-text-primary',
-        className,
-      )}
-      {...props}
-    >
+    <>
       {selected && showCheck ? (
         // Selected check springs in with a soft overshoot (scale 0 → 1.2 → 1) on
         // the shared bounce easing. Pure transform — layout unchanged; motion-safe
@@ -87,6 +93,76 @@ export const FilterPill = forwardRef<HTMLButtonElement, FilterPillProps>(functio
           {count}
         </span>
       )}
+    </>
+  );
+}
+
+export const FilterPill = forwardRef<HTMLButtonElement, FilterPillProps>(function FilterPill(
+  { className, selected = false, size = 'md', icon, count, showCheck = true, disabled, children, type, ...props },
+  ref,
+) {
+  return (
+    <button
+      ref={ref}
+      type={type ?? 'button'}
+      aria-pressed={selected}
+      data-slot="fw-filter-pill"
+      data-selected={selected || undefined}
+      disabled={disabled}
+      className={pillClassName(selected, size, className)}
+      {...props}
+    >
+      <PillContents selected={selected} showCheck={showCheck} icon={icon} count={count}>
+        {children}
+      </PillContents>
     </button>
   );
 });
+
+/**
+ * The same pill as a real link.
+ *
+ * A filter that changes the URL IS navigation, and the Bridge's filter chips
+ * were `<button onClick={() => router.push(href)}>` — which cannot be
+ * middle-clicked into a new tab, cmd-clicked, copied with "copy link
+ * address", or previewed in the status bar on hover, and which needs a
+ * `'use client'` boundary and a router hook to do what an `<a href>` does for
+ * free. On an admin console the whole point of a filtered view is that you can
+ * hand someone the URL.
+ *
+ * `aria-current="true"` rather than `aria-pressed`: a link is not a toggle,
+ * and the selected chip is the current view of this list.
+ */
+export function FilterPillLink({
+  href,
+  selected = false,
+  size = 'md',
+  icon,
+  count,
+  showCheck = true,
+  className,
+  children,
+}: {
+  href: string;
+  selected?: boolean;
+  size?: 'sm' | 'md';
+  icon?: ReactNode;
+  count?: number;
+  showCheck?: boolean;
+  className?: string;
+  children: ReactNode;
+}) {
+  return (
+    <Link
+      href={href}
+      aria-current={selected ? 'true' : undefined}
+      data-slot="fw-filter-pill"
+      data-selected={selected || undefined}
+      className={pillClassName(selected, size, className)}
+    >
+      <PillContents selected={selected} showCheck={showCheck} icon={icon} count={count}>
+        {children}
+      </PillContents>
+    </Link>
+  );
+}

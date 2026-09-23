@@ -724,8 +724,6 @@ export const FEATURE_REGISTRY: readonly FeatureDef[] = [
         'reactivateInsight',
         'resolveInsight',
         'rateInsight',
-        'acknowledgeComposedInsight',
-        'dismissComposedInsight',
       ],
     },
     primaryTable: 'golf_coach_insights',

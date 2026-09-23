@@ -35,7 +35,12 @@ import type {
   MetricId,
 } from '@/lib/coachhelm/v3/engine/types';
 import { METRIC_RENDER_CONFIG } from '@/lib/coachhelm/v3/standing/metric-config';
-import { cohortAnchor, type CohortGender } from '@/lib/coachhelm/v3/counterfactual/cohort-baselines';
+import {
+  cohortAnchor,
+  cohortAnchorLabel,
+  cohortAnchorSource,
+  type CohortGender,
+} from '@/lib/coachhelm/v3/counterfactual/cohort-baselines';
 import { loadPlayerCohort } from '@/lib/coachhelm/v3/counterfactual/player-cohort-loader';
 import { attemptGate, lifetimeSpanDays, staleDataSuffix, ATTEMPT_FLOOR } from '@/lib/coachhelm/v3/engine/window-honesty';
 
@@ -195,7 +200,9 @@ export class PuttDistanceGenerator extends BaseGenerator<PuttDistanceAggregate> 
     // men's falls through to the unchanged PGA Tour constant.
     const pgaValue =
       cohortAnchor(this.metricId, agg.cohort_gender) ?? PGA_MAKE_PCT_BY_BUCKET[agg.bucket];
-    const anchorLabel = agg.cohort_gender === 'womens' ? "Women's college avg" : 'PGA Tour avg';
+    // Women's anchor is a derived target, not a measured college average — the
+    // label and comparison_source say so (repair plan N16).
+    const anchorLabel = cohortAnchorLabel(agg.cohort_gender, 'make %');
 
     const signature = `putt_distance:${agg.bucket}`;
     const bandClass = BUCKET_BAND_CLASS[agg.bucket];
@@ -204,7 +211,9 @@ export class PuttDistanceGenerator extends BaseGenerator<PuttDistanceAggregate> 
     const base =
       `Across your last ${agg.rounds_played} rounds${agg.spanDays && agg.spanDays > 0 ? ` (${agg.spanDays} days)` : ''} ` +
       `you're making ${valueDisp} of putts from ${label}${gate.disclosure} ` +
-      `(${agg.cohort_gender === 'womens' ? "Women's college" : 'PGA Tour'} ~${pgaValue.toFixed(0)}%).`;
+      `(${agg.cohort_gender === 'womens'
+        ? `women's college target ~${pgaValue.toFixed(0)}%, estimated`
+        : `PGA Tour ~${pgaValue.toFixed(0)}%`}).`;
 
     let verdict: string;
     let composedPriority: InsightPriority;
@@ -250,7 +259,7 @@ export class PuttDistanceGenerator extends BaseGenerator<PuttDistanceAggregate> 
         // Real anchor make % (gen-putt-distance-1) — was hard-coded 0.
         comparison_value: pgaValue,
         comparison_label: anchorLabel,
-        comparison_source: 'pga_baseline',
+        comparison_source: cohortAnchorSource(agg.cohort_gender),
         sample_n: agg.attempts,
         window_days: agg.spanDays ?? 0,
         window_start: '',

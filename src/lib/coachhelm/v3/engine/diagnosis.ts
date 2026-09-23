@@ -1,9 +1,11 @@
 /**
  * v3 engine — shared diagnosis helper.
  *
- * Turns a miss tally into a DOMINANT AXIS (the actual cause) + a SPECIFIC
- * coachable action. Reused by approach_miss / scrambling / putt_distance /
- * course-mgmt so every "driver+action" sentence is composed one way.
+ * Turns a miss tally into a DOMINANT AXIS (the measured tendency) + an
+ * observation / check / action reading. Reused by approach_miss / scrambling /
+ * putt_distance / course-mgmt so every reading is composed one way — and so
+ * none of them asserts a cause (under-clubbing, deceleration, face control)
+ * that the shot record does not contain.
  *
  * PURE: no IO, no Date.now / Math.random. The neutral bucket is carried but
  * NEVER counted toward the directional share — e.g. an approach miss can be
@@ -74,52 +76,112 @@ export function dominantAxis(
   return null;
 }
 
-/** Approach miss directions we read a driver+action for. */
+/** Approach miss directions we read an observation for. */
 export type ApproachAxis = 'short' | 'long' | 'left' | 'right';
 
 /**
- * Driver+action sentence for a dominant APPROACH miss axis. Each names the
- * observed share, the WHY (the cause), and a SPECIFIC action — never a symptom
- * restatement. Derived entirely from the cited tally; no uncontrolled claims.
+ * Observation / check / action reading for a dominant approach miss axis
+ * (repair plan Package 2, "replace practice strings with observation/check/
+ * action fields and a compatible text fallback").
+ *
+ *  - `observation` is the measured fact: the share of misses on the axis and
+ *    the sample it is over. It is the ONLY sentence that may read as fact.
+ *  - `check` names what the data does NOT contain and what the coach should
+ *    establish before treating a cause as known. A 73% short share is
+ *    compatible with under-clubbing, a headwind, a front-edge target, a
+ *    lay-up, or a lie that cost carry — the engine has no intent, wind,
+ *    target, or club record, so it asserts none of them.
+ *  - `action` is a recommendation that is useful whichever of those turns
+ *    out to be true, framed as a recommendation, never as the fix.
+ */
+export interface AxisReading {
+  observation: string;
+  check: string;
+  action: string;
+}
+
+const AXIS_WORD: Record<ApproachAxis, string> = {
+  short: 'SHORT',
+  long: 'LONG',
+  left: 'LEFT',
+  right: 'RIGHT',
+};
+
+/**
+ * Compose the reading for a dominant APPROACH miss axis. Every number in the
+ * observation comes from the cited tally; the check and action contain no
+ * measured claim at all.
  *
  * @param axis The dominant approach miss direction (short / long / left / right).
  * @param share Observed share of the cited misses, as a 0..1 fraction (NOT
- *   0..100) — rendered as a percentage in the sentence. Pass the
- *   {@link DominantAxis.share} straight through.
+ *   0..100) — rendered as a percentage. Pass {@link DominantAxis.share}
+ *   straight through.
  * @param n Number of misses the share is over (the cited sample). NOTE: this
  *   is the AXIS-READ subset (misses with a short/long or left/right
  *   component), not all misses — pure cross-axis misses are excluded by
  *   dominantAxis, and the sentence must say so (regrade VAL-P3: '82% of
  *   those 11 misses' on a card whose own green-hit line implies 21).
- * @returns A driver+action sentence naming the share, the cause, and a specific
- *   mechanical fix.
  */
-export function approachAxisDriver(axis: ApproachAxis, share: number, n: number): string {
+export function approachAxisReading(axis: ApproachAxis, share: number, n: number): AxisReading {
   const pct = Math.round(share * 100);
+  const read = axis === 'short' || axis === 'long' ? 'distance read' : 'line read';
+  const observation =
+    `${pct}% of the ${n} misses with a ${read} finished ${AXIS_WORD[axis]}.`;
   switch (axis) {
     case 'short':
-      return (
-        `${pct}% of the ${n} misses with a distance read came up SHORT — the driver is under-clubbing ` +
-        `or decelerating, not aim. Club up and commit to a full number (carry the ` +
-        `flag's yardage, not the front edge).`
-      );
+      return {
+        observation,
+        check:
+          'The record does not say why: the same short pattern comes from ' +
+          'under-clubbing, a headwind, a front-edge target, a deliberate lay-up, ' +
+          'or a lie that cost carry. Check the club and target on the next few ' +
+          'approaches from this range before naming a cause.',
+        action:
+          'Recommended: have the player call the carry number that covers the ' +
+          'flag from this range and log the club, then review the next ten ' +
+          'approaches from here together.',
+      };
     case 'long':
-      return (
-        `${pct}% of the ${n} misses with a distance read flew LONG — you're getting more carry than the ` +
-        `number plays. Club down and take spin off it (three-quarter swing) so the ` +
-        `stock yardage matches the green.`
-      );
+      return {
+        observation,
+        check:
+          'The record does not say why: the same long pattern comes from ' +
+          'over-clubbing, a helping wind, a back-pin target, firm greens, or a ' +
+          'flyer lie. Check the club and conditions on the next few approaches ' +
+          'from this range before naming a cause.',
+        action:
+          'Recommended: have the player log club and pin position from this ' +
+          'range for the next ten approaches, then compare the carry numbers to ' +
+          'the distances actually played.',
+      };
     case 'left':
-      return (
-        `${pct}% of the ${n} misses with a line read leaked LEFT — this is a start line / face-control ` +
-        `pattern, not a distance fix. Work an alignment-stick start line gate and favor ` +
-        `the right edge so the miss stays on the green.`
-      );
     case 'right':
-      return (
-        `${pct}% of the ${n} misses with a line read leaked RIGHT — this is a start line / face-control ` +
-        `pattern, not a distance fix. Work an alignment-stick start line gate and favor ` +
-        `the left edge so the miss stays on the green.`
-      );
+      return {
+        observation,
+        check:
+          'The record does not say why: a one-sided line miss can be start ' +
+          'line, face control, wind, slope, or aiming away from a hazard on ' +
+          'purpose. Check the intended start line and target on the next few ' +
+          'approaches before naming a cause.',
+        action:
+          'Recommended: have the player state the start line and target before ' +
+          `each approach from this range, then compare where the ${axis} misses ` +
+          'were aimed against where they finished.',
+      };
   }
+}
+
+/** Compatible text fallback: the three fields as one paragraph. */
+export function axisReadingToText(reading: AxisReading): string {
+  return `${reading.observation} ${reading.check} ${reading.action}`;
+}
+
+/**
+ * Sentence form of {@link approachAxisReading} for callers that only carry
+ * prose. Kept as the public name the generators already import; the content
+ * is the observation/check/action text — it no longer asserts a mechanical
+ * cause (under-clubbing, deceleration, face control) that nothing measured.
+ */
+export function approachAxisDriver(axis: ApproachAxis, share: number, n: number): string {
+  return axisReadingToText(approachAxisReading(axis, share, n));
 }

@@ -36,6 +36,7 @@ import {
 } from './EventVerificationPanel';
 import { EventRecurrenceFields } from './EventRecurrenceFields';
 import type { FairwayEventTimeRequest } from '../FairwayEventEditor';
+import { sectionCardCls, sectionTitle } from './sectionChrome';
 
 export interface EventPeopleTimeFieldsProps {
   formData: GolfEventFormData;
@@ -45,6 +46,7 @@ export interface EventPeopleTimeFieldsProps {
   disabled: boolean;
   isCancelled: boolean;
   tzAbbrev: string | null;
+  timezone?: string | null;
   desktopSplit: boolean;
   /** Publish and Find a time are disabled while offline; every other field
    *  stays editable so the draft isn't locked just because the network is
@@ -94,6 +96,7 @@ export function EventPeopleTimeFields({
   disabled,
   isCancelled,
   tzAbbrev,
+  timezone,
   desktopSplit,
   offline,
   eventId,
@@ -124,7 +127,7 @@ export function EventPeopleTimeFields({
 }: EventPeopleTimeFieldsProps) {
   const [pickerOpen, setPickerOpen] = React.useState(false);
   const whenColumn = (
-    <FormSection title="When">
+    <FormSection title={sectionTitle(Clock, 'When')} className={sectionCardCls}>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <DateChooser
           label="Start date"
@@ -209,6 +212,7 @@ export function EventPeopleTimeFields({
           onRetryAttendees={onRetryAttendees}
           onRetryConflicts={onRetryConflicts}
           onSelectSuggestion={onSelectSuggestion}
+          timezone={timezone}
         />
       ) : null}
     </FormSection>
@@ -217,7 +221,7 @@ export function EventPeopleTimeFields({
   const peopleColumn = (
     <div className="flex flex-col gap-5">
       {/* RSVP */}
-      <FormSection title="RSVP">
+      <FormSection title={sectionTitle(Check, 'RSVP')} className={sectionCardCls}>
         <Switch
           label="Require RSVP"
           description="Players respond Going / Maybe / Decline"
@@ -272,11 +276,8 @@ export function EventPeopleTimeFields({
           synchronously from the `teamPlayers` prop. */}
       {availablePlayers.length === 0 ? (
         <FormSection
-          title={
-            <span className="inline-flex items-center gap-1.5">
-              <Users className="h-4 w-4 text-accent-700" /> Invite players
-            </span>
-          }
+          title={sectionTitle(Users, 'Invite players')}
+          className={sectionCardCls}
         >
           <UiButton
             variant="ghost"
@@ -293,11 +294,8 @@ export function EventPeopleTimeFields({
       ) : (
         onApplyAttendees ? (
           <FormSection
-            title={
-              <span className="inline-flex items-center gap-1.5">
-                <Users className="h-4 w-4 text-accent-700" /> Invite players
-              </span>
-            }
+            title={sectionTitle(Users, 'Invite players')}
+            className={sectionCardCls}
             action={
               <span className="font-fw-mono text-caption font-semibold tabular-nums text-accent-700">
                 {formData.attendeeIds.length} of {availablePlayers.length}
@@ -320,7 +318,7 @@ export function EventPeopleTimeFields({
                   variant="ghost"
                   type="button"
                   disabled={disabled || attendeesLoading}
-                  className="flex min-h-11 w-full items-center justify-between gap-2 rounded-fw-md border border-border-subtle bg-surface-sunken px-3 py-2 text-left font-fw-sans text-body-sm text-text-primary hover:bg-surface-tint focus-visible:ring-accent-500/40 focus-visible:ring-offset-canvas"
+                  className={cn('flex min-h-12 w-full items-center justify-between gap-2 rounded-fw-md border-transparent px-3 py-2 text-left font-fw-sans text-body-sm text-text-primary hover:bg-surface-tint focus-visible:ring-accent-500/40 focus-visible:ring-offset-canvas', 'border border-border-subtle bg-surface')}
                 >
                   <span className="inline-flex items-center gap-2">
                     <UserRound className="h-4 w-4 text-text-tertiary" aria-hidden />
@@ -349,18 +347,15 @@ export function EventPeopleTimeFields({
           </FormSection>
         ) : onOpenPeoplePicker ? (
           <FormSection
-            title={
-              <span className="inline-flex items-center gap-1.5">
-                <Users className="h-4 w-4 text-accent-700" /> Invite players
-              </span>
-            }
+            title={sectionTitle(Users, 'Invite players')}
+            className={sectionCardCls}
           >
             <UiButton
               variant="ghost"
               type="button"
               onClick={onOpenPeoplePicker}
               disabled={disabled || attendeesLoading}
-              className="flex min-h-11 w-full items-center justify-between gap-2 rounded-fw-md border border-border-subtle bg-surface-sunken px-3 py-2 text-left font-fw-sans text-body-sm text-text-primary hover:bg-surface-tint focus-visible:ring-accent-500/40 focus-visible:ring-offset-canvas"
+              className={cn('flex min-h-12 w-full items-center justify-between gap-2 rounded-fw-md border-transparent px-3 py-2 text-left font-fw-sans text-body-sm text-text-primary hover:bg-surface-tint focus-visible:ring-accent-500/40 focus-visible:ring-offset-canvas', 'border border-border-subtle bg-surface')}
             >
               <span className="inline-flex items-center gap-2">
                 <UserRound className="h-4 w-4 text-text-tertiary" aria-hidden />
@@ -373,11 +368,8 @@ export function EventPeopleTimeFields({
           </FormSection>
         ) : (
           <FormSection
-            title={
-              <span className="inline-flex items-center gap-1.5">
-                <Users className="h-4 w-4 text-accent-700" /> Invite players
-              </span>
-            }
+            title={sectionTitle(Users, 'Invite players')}
+            className={sectionCardCls}
             // Always show the count, not only once someone is picked —
             // "0 of 14" is the honest starting state and tells the coach
             // how big the roster is before they start tapping. The
@@ -458,8 +450,8 @@ export function EventPeopleTimeFields({
                       'flex items-center gap-2.5 rounded-fw-md border p-2 text-left transition-colors',
                       'focus-visible:ring-accent-500/40 focus-visible:ring-offset-canvas',
                       selected
-                        ? 'border-accent-500 bg-accent-50'
-                        : 'border-border-subtle bg-surface hover:bg-surface-tint',
+                        ? 'border-accent-600 bg-accent-50 ring-1 ring-accent-600'
+                        : cn('border-transparent hover:bg-surface-tint', 'border border-border-subtle bg-surface'),
                     )}
                   >
                     <span

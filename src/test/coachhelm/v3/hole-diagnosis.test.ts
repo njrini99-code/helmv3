@@ -15,6 +15,8 @@ function makeHole(over: number, extra: Partial<DiagnosisHole> = {}): DiagnosisHo
   const par = extra.par ?? 4;
   return {
     round_id: extra.round_id ?? 'r-1',
+    course_id: extra.course_id ?? null,
+    course_name: extra.course_name ?? null,
     hole_number: extra.hole_number ?? 1,
     par,
     score: extra.score ?? par + over,
@@ -111,7 +113,10 @@ vi.mock('@/lib/supabase/admin', () => ({
       chain.eq = ret;
       chain.not = ret;
       chain.gte = () =>
-        Promise.resolve({ data: [{ id: 'round-1' }], error: null });
+        Promise.resolve({
+          data: [{ id: 'round-1', course_id: 'course-A', course_name: 'Pine Valley' }],
+          error: null,
+        });
       return chain;
     },
   }),
@@ -223,6 +228,15 @@ describe('loadCompletedHoles pagination', () => {
     expect(rangeCalls.length).toBeGreaterThanOrEqual(2);
     expect(rangeCalls[0]).toEqual({ from: 0, to: 999 });
     expect(rangeCalls[1]).toEqual({ from: 1000, to: 1999 });
+  });
+
+  it('carries the round\'s course identity onto every hole (addendum §6.3)', async () => {
+    const result = await loadCompletedHoles('player-1');
+    // Specific-hole aggregation keys on (course_id, hole_number); the name is
+    // display metadata that rides along.
+    expect(result[0]?.course_id).toBe('course-A');
+    expect(result[0]?.course_name).toBe('Pine Valley');
+    expect(result.every((h) => h.course_id === 'course-A')).toBe(true);
   });
 
   it('derives up_and_down from the engine def (gir=false & score<=par), not the sparse column', async () => {

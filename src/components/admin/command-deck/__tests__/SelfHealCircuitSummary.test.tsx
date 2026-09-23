@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import { SelfHealCircuitSummary } from '../SelfHealCircuitSummary';
 import { buildCircuitSummary } from '@/lib/admin/command-deck/selfheal-circuit';
 import { summarizeFlow } from '@/lib/admin/selfheal-flow';
@@ -58,5 +58,48 @@ describe('SelfHealCircuitSummary', () => {
     render(<SelfHealCircuitSummary summary={summary} />);
     expect(screen.getByText('Self-heal board could not be read this refresh.')).toBeInTheDocument();
     expect(screen.getAllByText('unknown').length).toBeGreaterThan(0);
+  });
+
+  // Plan §2.4 — the proof-debt chip. `null` (and an omitted prop) must say
+  // "unknown", never a fabricated 0: a blind or unreadable source could be
+  // hiding real proof debt, so a literal zero would claim something the
+  // caller could not confirm.
+  it('renders the proof-debt chip as a real link to the awaiting-proof lens', () => {
+    const summary = buildCircuitSummary({
+      incidents: [],
+      flow: summarizeFlow([], NOW),
+      stageDetails: [stage('triage'), stage('repair'), stage('close')],
+      verdict: { tone: 'ok', label: 'Healthy', detail: 'On schedule.' },
+      now: NOW,
+    });
+    render(<SelfHealCircuitSummary summary={summary} proofDebt={3} />);
+    const link = screen.getByRole('link', { name: /3\s*proof debt/i });
+    expect(link).toHaveAttribute('href', '/admin/errors?lens=awaiting-proof');
+    expect(within(link).getByText('3')).toBeInTheDocument();
+  });
+
+  it('renders "unknown" for proof debt when the caller could not compute it, never "0"', () => {
+    const summary = buildCircuitSummary({
+      incidents: [],
+      flow: summarizeFlow([], NOW),
+      stageDetails: [stage('triage'), stage('repair'), stage('close')],
+      verdict: { tone: 'ok', label: 'Healthy', detail: 'On schedule.' },
+      now: NOW,
+    });
+    render(<SelfHealCircuitSummary summary={summary} proofDebt={null} />);
+    const link = screen.getByRole('link', { name: /unknown\s*proof debt/i });
+    expect(within(link).queryByText('0')).not.toBeInTheDocument();
+  });
+
+  it('defaults the proof-debt chip to "unknown" when the prop is omitted', () => {
+    const summary = buildCircuitSummary({
+      incidents: [],
+      flow: summarizeFlow([], NOW),
+      stageDetails: [stage('triage'), stage('repair'), stage('close')],
+      verdict: { tone: 'ok', label: 'Healthy', detail: 'On schedule.' },
+      now: NOW,
+    });
+    render(<SelfHealCircuitSummary summary={summary} />);
+    expect(screen.getByRole('link', { name: /unknown\s*proof debt/i })).toBeInTheDocument();
   });
 });

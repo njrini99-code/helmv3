@@ -12,6 +12,7 @@ import { describe, it, expect } from 'vitest';
 import {
   parseArgs,
   evaluateRequiredChecks,
+  canonicalSyncPlan,
   DEFAULT_REQUIRED_CONTEXTS,
 } from '../../../scripts/pr-land.mjs';
 
@@ -90,5 +91,19 @@ describe('pr-land evaluateRequiredChecks', () => {
     const result = evaluateRequiredChecks(null, DEFAULT_REQUIRED_CONTEXTS);
     expect(result.ok).toBe(false);
     expect(result.missing).toEqual(DEFAULT_REQUIRED_CONTEXTS);
+  });
+});
+
+describe('pr-land canonicalSyncPlan', () => {
+  it('fast-forwards the working tree when canonical is on main, fatally', () => {
+    expect(canonicalSyncPlan('main')).toEqual({ args: ['pull', '--ff-only'], fatal: true });
+  });
+
+  it('updates only the local main ref when canonical is on a task branch, non-fatally', () => {
+    expect(canonicalSyncPlan('agent/some-task')).toEqual({ args: ['fetch', 'origin', 'main:main'], fatal: false });
+  });
+
+  it('treats a detached HEAD (empty branch name) like a task branch', () => {
+    expect(canonicalSyncPlan('')).toEqual({ args: ['fetch', 'origin', 'main:main'], fatal: false });
   });
 });

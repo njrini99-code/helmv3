@@ -268,7 +268,18 @@ export default function CRMPage() {
   const [domainAuth, setDomainAuth] = useState<DomainAuthResult | null>(null);
 
   const [supabase] = useState(() => createClient());
-  const [sessionReady, setSessionReady] = useState(false);
+  // Starts TRUE. /golf/admin/layout.tsx has already verified the session and
+  // the admin role for the request that produced this page, so the first
+  // paint is the real shell and the coach/template fetches start at once. It
+  // flips to false only on a definitive sign-out (below) — the long-mounted
+  // tab case this gate exists for. It used to start false and wait for a
+  // second, client-side getUserResilient round trip, which put a
+  // "Checking admin session…" spinner in front of every CRM open and delayed
+  // the first data request by that round trip; opened in a background tab,
+  // that wait did not even begin until the tab was viewed, because React
+  // reveals streamed content on the next animation frame and hidden tabs get
+  // none (see crm/loading.tsx).
+  const [sessionReady, setSessionReady] = useState(true);
 
   const redirectToLogin = useCallback(() => {
     const returnTo = `${window.location.pathname}${window.location.search}`;
@@ -278,22 +289,25 @@ export default function CRMPage() {
   // The server layouts protect the initial request, but this page can remain
   // mounted for hours. Once its refresh token expires, direct browser queries
   // otherwise continue as `anon` and generate a burst of crm_coaches 42501s.
-  // Stop rendering data-fetching children until auth is confirmed, and leave
-  // the stale tab as soon as Supabase reports a sign-out.
+  // Re-verify in the background without gating the render (the server just
+  // did this check for this request), and leave the stale tab as soon as the
+  // auth server definitively rejects the session or Supabase reports a
+  // sign-out. getUserResilient only returns `user: null` for a real rejection
+  // or a missing local session — never for a transiently unreachable auth
+  // server — so a network blip no longer bounces a signed-in admin to login.
   useEffect(() => {
     let active = true;
 
     void getUserResilient(supabase)
       .then(({ user }) => {
-        if (!active) return;
-        if (!user) {
-          redirectToLogin();
-          return;
-        }
-        setSessionReady(true);
+        if (!active || user) return;
+        setSessionReady(false);
+        redirectToLogin();
       })
       .catch(() => {
-        if (active) redirectToLogin();
+        // Transient failure of a background re-check. The server-side gate
+        // already admitted this request; a 42501 from the first data query
+        // (fetchAllCoaches) or a SIGNED_OUT event still redirects.
       });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {

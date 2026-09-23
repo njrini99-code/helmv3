@@ -1,0 +1,21 @@
+import { chromium, devices } from '@playwright/test';
+import dotenv from 'dotenv'; dotenv.config({ path: '/Users/ricknini/worktrees/helmv3/calendar-makeover/.env.local' });
+const b = await chromium.launch();
+const ctx = await b.newContext({ ...devices['iPhone 15'], baseURL: 'http://localhost:3013', hasTouch: true });
+const p = await ctx.newPage();
+await p.goto('/golf/login');
+await p.locator('#golf-signin-email').fill(process.env.GOLFHELM_COACH_EMAIL); await p.locator('#golf-signin-password').fill(process.env.GOLFHELM_COACH_PASSWORD);
+await p.getByRole('button', { name: 'Sign in' }).click();
+await p.waitForURL(u => u.pathname.startsWith('/golf/') && !u.pathname.endsWith('/login'), { timeout: 60000 });
+await p.goto('/golf/dashboard/calendar');
+await p.getByRole('heading', { level: 1 }).first().waitFor({ timeout: 30000 });
+await p.waitForTimeout(1200);
+const r = await p.evaluate(() => {
+  const h = document.querySelector('section[aria-label] h2').parentElement;
+  const cs = getComputedStyle(h);
+  const fab = document.querySelector('button[aria-label="New event"]');
+  const fcs = fab ? getComputedStyle(fab) : null;
+  return { position: cs.position, top: cs.top, bg: cs.backgroundColor, blur: cs.backdropFilter, fab: fcs && { position: fcs.position, bottom: fcs.bottom, right: fcs.right, w: fcs.width } , scrollH: document.documentElement.scrollHeight, vh: innerHeight };
+});
+console.log(JSON.stringify(r));
+await b.close();

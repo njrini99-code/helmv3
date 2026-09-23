@@ -72,7 +72,12 @@ const TRIAGE_JOB_TYPE = 'selfheal-triage';
 const INVOCATION_JOB_TYPE = 'selfheal-triage-invocation';
 
 const WINDOW_HOURS = 72;
-const DEFAULT_MAX_ANALYSES = 8;
+/** Groups analysed per run. Was 8 — with a 183-group backlog on 2026-09-09
+ *  that meant `capped: true` on every run and 29 groups still waiting after a
+ *  week, while each run finished in well under a minute. `TIME_BUDGET_MS`
+ *  below is the real guard against the 300s maxDuration; this only bounds
+ *  model spend on a pathological day. */
+const DEFAULT_MAX_ANALYSES = 24;
 
 /** Leaves ~80s of the 300s `maxDuration` for the resolves and the heartbeat
  *  write once analysis stops — a function killed mid-run writes NOTHING (no

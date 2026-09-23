@@ -65,22 +65,31 @@ describe('newestLedgerEntryMs', () => {
   });
 
   it('returns the newest ts across ledger lines', () => {
-    mkdirSync(join(task, 'memory/ledgers'), { recursive: true });
+    mkdirSync(join(task, '.helm/runtime'), { recursive: true });
     const lines = [
       JSON.stringify({ ts: '2026-01-01T00:00:00.000Z' }),
       JSON.stringify({ ts: '2026-06-01T00:00:00.000Z' }),
     ];
-    writeFileSync(join(task, 'memory/ledgers/gates.jsonl'), `${lines.join('\n')}\n`);
+    writeFileSync(join(task, '.helm/runtime/gates.jsonl'), `${lines.join('\n')}\n`);
     expect(newestLedgerEntryMs(task)).toBe(Date.parse('2026-06-01T00:00:00.000Z'));
   });
 
   it('skips a malformed line instead of throwing', () => {
-    mkdirSync(join(task, 'memory/ledgers'), { recursive: true });
+    mkdirSync(join(task, '.helm/runtime'), { recursive: true });
     writeFileSync(
-      join(task, 'memory/ledgers/gates.jsonl'),
+      join(task, '.helm/runtime/gates.jsonl'),
       `not json\n${JSON.stringify({ ts: '2026-06-01T00:00:00.000Z' })}\n`,
     );
     expect(newestLedgerEntryMs(task)).toBe(Date.parse('2026-06-01T00:00:00.000Z'));
+  });
+
+  it('reads the epoch-millisecond timestamps the gate serializer records', () => {
+    mkdirSync(join(task, '.helm/runtime'), { recursive: true });
+    writeFileSync(
+      join(task, '.helm/runtime/gates.jsonl'),
+      `${JSON.stringify({ ts: 1788927434124 })}\n`,
+    );
+    expect(newestLedgerEntryMs(task)).toBe(1788927434124);
   });
 });
 

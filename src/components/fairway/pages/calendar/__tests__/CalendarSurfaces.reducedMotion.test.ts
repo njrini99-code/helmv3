@@ -40,9 +40,9 @@ describe('CalendarSurfaces reduced motion', () => {
     }
   });
 
-  it('keeps chrome and dock usable without transparency', () => {
+  it('keeps the drag readout usable without transparency', () => {
     expect(css).toMatch(/@media \(prefers-reduced-transparency: reduce\)/);
-    expect(css).toMatch(/\.chrome, \.dock \{[^}]*backdrop-filter: none/);
+    expect(css).toMatch(/\.lensLabel \{[^}]*backdrop-filter: none/);
   });
 });
 

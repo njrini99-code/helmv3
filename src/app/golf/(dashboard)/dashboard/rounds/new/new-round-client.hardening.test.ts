@@ -49,26 +49,61 @@ describe('New Round — multi-device conflict blocks further writes (B2/B9)', ()
     expect(hookCall).toContain('onRoundStale');
   });
 
-  it('never adopts the server updated_at from handleRoundSyncConflict outside the beacon self-heal window', () => {
+  it('never adopts the server updated_at from handleRoundSyncConflict outside the unreadable-write self-heal window', () => {
     const handler = slice(
       'const handleRoundSyncConflict = useCallback(',
-      '// Check for the freshest emergency save on mount.',
+      '\n  const savePartialRoundTracked = useCallback(',
     );
-    const pendingBeaconGuardIdx = handler.indexOf('if (pendingBeaconRef.current)');
+    const pendingGuardIdx = handler.indexOf('if (pendingUnreadableWriteRef.current)');
     const blockCallIdx = handler.lastIndexOf('blockRoundForConflict(');
     const adoptionIdx = handler.indexOf(
       'lastServerUpdatedAtRef.current = stalenessResult.data.currentUpdatedAt',
     );
-    expect(pendingBeaconGuardIdx, 'expected a pendingBeaconRef guard (B9)').toBeGreaterThanOrEqual(0);
-    expect(blockCallIdx, 'expected the real-conflict path to still block').toBeGreaterThan(pendingBeaconGuardIdx);
-    expect(adoptionIdx).toBeGreaterThan(pendingBeaconGuardIdx);
+    expect(pendingGuardIdx, 'expected a pendingUnreadableWriteRef guard (B9)').toBeGreaterThanOrEqual(0);
+    expect(blockCallIdx, 'expected the real-conflict path to still block').toBeGreaterThan(pendingGuardIdx);
+    expect(adoptionIdx).toBeGreaterThan(pendingGuardIdx);
     expect(adoptionIdx).toBeLessThan(blockCallIdx);
   });
 
-  it('marks the beacon-pending window when a background save is actually queued', () => {
+  it('marks the unreadable-write window when a background save is actually queued, without the lock token', () => {
     const pageHide = slice('const handlePageHide = () => {', 'const handleVisibilityChange = () => {');
     expect(pageHide).toContain('beaconPartialSave(saveData, savedRoundIdRef.current ?? undefined)');
-    expect(pageHide).toContain('pendingBeaconRef.current = true');
+    expect(pageHide).toContain('pendingUnreadableWriteRef.current = true');
+    // Two beacons for one backgrounding (iOS fires visibilitychange-hidden
+    // AND pagehide) would bump updated_at twice for one self-heal.
+    expect(pageHide).toContain('if (beaconSentWhileHiddenRef.current) return;');
+    // A device PROVEN behind must not beacon — the beacon holds no lock token.
+    expect(pageHide).toContain('if (roundConflictBlockedRef.current) return;');
+    // Durability: a beacon has no reader, so it must NOT carry the lock
+    // token — a rejection would silently drop the last shots before a phone
+    // lock (incident 2026-06-10). Pin the payload shape the route forwards.
+    const payload = pageHide.slice(pageHide.indexOf('const saveData'), pageHide.indexOf('beaconPartialSave('));
+    expect(payload).not.toMatch(/^\s*expectedUpdatedAt\s*:/m);
+  });
+
+  it('records a killed foreground save as an unreadable write, on every foreground save path (Hampden-Sydney 2026-09-15)', () => {
+    const tracked = slice('const savePartialRoundTracked = useCallback(', '\n  // Check for the freshest emergency save on mount.');
+    expect(tracked).toContain('isUnreadableWriteFailure(err)');
+    expect(tracked).toContain('pendingUnreadableWriteRef.current = true');
+    // No foreground save against an EXISTING round may bypass the wrapper.
+    // A CREATE (no round id) holds no lock token, so the two create paths —
+    // persistRoundStart and the auto-save round_missing re-create — and the
+    // wrapper's own delegating call are the only raw calls allowed.
+    const afterWrapper = source.slice(source.indexOf('const savePartialRoundTracked = useCallback(') + 1);
+    const raw = [...afterWrapper.matchAll(/(?:await|void) savePartialRound\(/g)]
+      // Skip the prose mention inside the beacon comment.
+      .filter((m) => !afterWrapper.slice(afterWrapper.lastIndexOf('\n', m.index), m.index).includes('//'))
+      .map((m) => afterWrapper.slice(m.index + m[0].length, m.index + 160));
+    expect(raw.length).toBeGreaterThan(0);
+    for (const args of raw) {
+      expect(args).toMatch(/^(data, targetRoundId\)|initialData\)|\s*buildPartialRoundData\([^)]*\),\s*undefined,)/);
+    }
+  });
+
+  it('retries the checkpoint under the adopted token after a self-healed conflict instead of failing the hole', () => {
+    const checkpoint = slice('const persistCompletedHole = useCallback(async (', 'const handleHoleComplete = async (');
+    expect(checkpoint).toContain("if (await handleRoundSyncConflict('This round was updated on another device. Please reload.')) continue;");
+    expect(checkpoint).toContain('expectedUpdatedAt: lastServerUpdatedAtRef.current');
   });
 
   it('refuses to write once blocked, across every write entry point', () => {

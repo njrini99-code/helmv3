@@ -703,7 +703,7 @@ export function FairwayNewRoundEntry(props: FairwayNewRoundEntryProps) {
                         autoComplete="off"
                         className={fwInputCls}
                         placeholder="CA"
-                        maxLength={2}
+                        maxLength={100}
                       />
                     </div>
                   </div>
@@ -994,7 +994,11 @@ export function FairwayNewRoundEntry(props: FairwayNewRoundEntryProps) {
             </p>
           </m.div>
 
-          {props.error && (
+          {/* A start failure is shown next to whichever control started the
+              round. With the confirmed-course scorecard below, that control is
+              FairwayHoleConfig's own dock, so the notice moves down there
+              (`submitError`); here it would sit 18 hole rows above the tap. */}
+          {props.error && !(courseConfirmed && seededHoles) && (
             <InlineNotice tone="danger" title="Unable to start round">
               {props.error}
             </InlineNotice>
@@ -1021,6 +1025,8 @@ export function FairwayNewRoundEntry(props: FairwayNewRoundEntryProps) {
                 onSave={props.onHolesSave}
                 onBack={props.onClearSelectedCourse}
                 holesPerRound={props.holesPerRound}
+                submitError={props.error || null}
+                submitting={props.isStartingRound}
               />
             </m.div>
           )}

@@ -352,6 +352,67 @@ const nextConfig = {
         destination: '/golf/dashboard/players/:playerId/genome',
         permanent: false, // shim used redirect()
       },
+
+      // ─── Bridge consolidation: retired /admin routes ────────────────────
+      // The 30→19 nav fold. Each of these had a `page.tsx` that has been
+      // deleted; its surface now lives as a `?view=` on the destination.
+      //
+      // KEPT IN SYNC BY TEST, not by discipline: this config is `.mjs` and
+      // cannot import the typed table in `src/lib/admin/retired-routes.ts`,
+      // so `src/test/lib/admin/admin-redirects.test.ts` reads BOTH and fails
+      // if either grows an entry the other lacks. A retired route with no
+      // redirect is a dead bookmark, which is the one outcome this fold is
+      // not allowed to produce.
+      //
+      // ALL `permanent: false` — see that module's header. A 308 would be
+      // cached effectively forever, and this is an organisational judgement
+      // that must stay revertible in code.
+      //
+      // `/admin/errors/<fingerprint>` is deliberately absent and never moves:
+      // it is stored in `rca_analysis` rows and matched by the repair
+      // contract's PR-body regex.
+      {
+        // Ordered before the bare `/admin/lenses/users` rule below: Next
+        // matches in array order, and the detail route must not be swallowed
+        // by the directory rule.
+        source: '/admin/lenses/users/:id',
+        destination: '/admin/users/:id?view=journey',
+        permanent: false,
+      },
+      { source: '/admin/lenses/users', destination: '/admin/users', permanent: false },
+      { source: '/admin/lenses/golf', destination: '/admin/golf?view=journey', permanent: false },
+      { source: '/admin/lenses/baseball', destination: '/admin/baseball?view=journey', permanent: false },
+      { source: '/admin/lenses/lifting', destination: '/admin/lifting?view=flow', permanent: false },
+      { source: '/admin/lenses/teams', destination: '/admin/teams?view=ekg', permanent: false },
+
+      // Step 4. Two more tabs that were framings of a subject that already had
+      // one: the change-to-proof Work Log over the SAME PR feed as /admin/work,
+      // and Qualifier Logic, which is a golf rules question.
+      { source: '/admin/work-log', destination: '/admin/work?view=proof', permanent: false },
+      { source: '/admin/qualifiers', destination: '/admin/golf?view=qualifiers', permanent: false },
+
+      // Step 5. Reliability and Self-heal fold into Incidents as views.
+      //
+      // The `?feature=` rule MUST come first (Next matches in array order).
+      // /admin/reliability?feature=<key> selected a constellation node; a
+      // blanket rule would drop the param and land on the queue with nothing
+      // selected — a redirect that appears to work and silently loses the one
+      // thing the link was carrying. `?feature=` is shared vocabulary on
+      // /admin/errors (parseErrorsFilters reads the same FeatureKey), so the
+      // param still means what it meant.
+      {
+        source: '/admin/reliability',
+        has: [{ type: 'query', key: 'feature' }],
+        destination: '/admin/errors?view=sources&feature=:feature',
+        permanent: false,
+      },
+      { source: '/admin/reliability', destination: '/admin/errors?view=sources', permanent: false },
+      { source: '/admin/self-heal', destination: '/admin/errors?view=loop', permanent: false },
+      { source: '/admin/slo', destination: '/admin/health?view=budgets', permanent: false },
+
+      // Step 6. Billing's page is deleted, not folded — it had nothing to fold
+      // into. Overview is where an operator who typed this URL should land.
+      { source: '/admin/billing', destination: '/admin', permanent: false },
     ];
   },
 

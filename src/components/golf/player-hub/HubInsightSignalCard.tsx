@@ -297,7 +297,7 @@ export function HubInsightSignalCard({ insight }: HubInsightSignalCardProps) {
   const movement = (insight?.metadata?.movement ?? null) as InsightMovement | null;
   const movementChip = useMemo(() => {
     if (!insight || !movement) return null;
-    const improving = isImprovement(movement.direction, insight.evidence.metric);
+    const improving = isImprovement(movement.direction, insight.evidence.metric, insight.evidence);
     const pctLabel = formatMovementMagnitude(Number(movement.percent_change ?? 0));
     const delta = Math.abs(Number(movement.to ?? 0) - Number(movement.from ?? 0));
     return {

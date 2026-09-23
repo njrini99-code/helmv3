@@ -2,42 +2,36 @@
 
 /**
  * ============================================================================
- * Fairway · Calendar · FairwayCalendarMemberRail — coach availability filter
+ * Fairway · Calendar · FairwayCalendarMemberRail — the coach's people entry
  * ----------------------------------------------------------------------------
- * The Fairway-native re-skin of the legacy CalendarAvatarSidebar. A horizontal
- * avatar rail (coach-only): tapping an avatar opens that player's schedule
- * (`onOpenPerson`); "All" instantly overlays every roster member's combined
- * availability; "Compare" opens a deliberate, searchable picker
- * (`CalendarPeoplePicker`, SCREEN-BUILD-PLAN.md §2.3) for choosing a specific
- * subset to overlay. Deselecting everything (ALL again, or Clear) drops back
- * to the plain team calendar.
+ * One row that says whose schedule is on screen and opens the three people
+ * operations, each named for what it does:
  *
- * Selection input lives in exactly one place now: the picker (plus the ALL
- * instant toggle). Earlier this rail put the avatar row itself into a
- * checkbox mode once "Compare" was pressed — SCREEN-BUILD-PLAN.md §2.3 calls
- * for the picker instead ("Compare in the member rail opens the picker
- * instead of toggling avatars in place"), so an avatar chip is now ALWAYS a
- * pure "open this person's schedule" control, never a toggle. The chosen
- * `selectedPlayerIds` still colors the avatar row and the "Viewing" legend
- * below exactly as before — only how a coach GETS to that selection changed.
+ *   · Team schedule   — the ordinary team calendar (nothing selected).
+ *   · Open a schedule — navigate to one person's day (`onOpenPerson`).
+ *   · Compare         — deliberately choose people (the searchable picker,
+ *                       its own button) or everyone (People menu), and
+ *                       overlay their availability.
  *
- * Manual selection past 8 has no unambiguous palette color left to assign
- * (MAX_SELECTION === AVATAR_TINT_COUNT, one color per selectable member), so
- * those members render identified by initials + a per-person tint (the same
- * fallback FairwayMonthGrid already uses for class-owner chips) instead of a
- * numbered palette color — a rendering fallback only; nothing here still
- * blocks a selection for being the ninth (see #1470 — that used to be a real,
- * silently-discarded click on this very rail; picking people now happens in
- * the picker, which never disables a row for it either).
+ * The row is ONE raised line: a pressable summary (avatar stack · status ·
+ * detail · chevron) that IS the People menu trigger, then Clear (while
+ * comparing) and Compare — an icon on a phone (the People menu names it
+ * "Compare schedules…" too), labelled from md up. It reads like a native
+ * list row that opens a menu, not a status line with a second line of
+ * buttons under it. When comparing, the legend of who is in the overlay sits
+ * beneath in the overlay's colors.
  *
- * Reuses the EXACT legacy PLAYER_COLORS palette so colors match across the app.
- * Selection state is parent-owned; this is presentation only.
+ * It renders no portrait carousel: the schedule is the content of the
+ * calendar home, not the roster. Selection state is parent-owned.
+ *
+ * `tintFor` — a person's deterministic identity tint — still lives here
+ * because the roster, month grid and agenda row all share it.
  * ========================================================================== */
 
 import * as React from 'react';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronDown, Users, UserSearch } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
+import { Avatar, AvatarGroup, Button, PopoverPanel, PressTarget } from '@/components/fairway';
 import type { TeamMember } from '@/components/golf/calendar/CalendarAvatarSidebar';
 import { PLAYER_COLORS } from '@/lib/calendar/player-colors';
 import { CalendarPeoplePicker, type PeoplePickerPerson } from './people/CalendarPeoplePicker';
@@ -51,22 +45,6 @@ export interface FairwayCalendarMemberRailProps {
   onOpenPerson?: (id: string) => void;
 }
 
-// First LETTER of a name field, skipping any parenthetical suffix (e.g. a
-// "(Captain)"/"(C)" role tag some rosters store inline) and any other
-// leading non-letter character — a raw `name?.[0]` picks up the suffix's
-// opening "(" verbatim, rendering a garbled chip like "C(" instead of two
-// clean initials (finding #85).
-function firstLetter(name: string | null | undefined): string {
-  if (!name) return '';
-  const withoutParens = name.replace(/\(.*?\)/g, '');
-  const match = withoutParens.match(/\p{L}/u);
-  return match ? match[0] : '';
-}
-
-function initials(m: TeamMember): string {
-  const result = `${firstLetter(m.first_name)}${firstLetter(m.last_name)}`.toUpperCase();
-  return result || '—';
-}
 function fullName(m: TeamMember): string {
   return `${m.first_name ?? ''} ${m.last_name ?? ''}`.trim() || 'Team member';
 }
@@ -75,14 +53,9 @@ function fullName(m: TeamMember): string {
 // read like real profile avatars (not flat gray) when a member has no photo.
 // Deterministic per member id, so a person keeps the same color every render.
 //
-// THEME-AWARE BY INDIRECTION. These were hex literals, and because every
-// consumer applies them as an INLINE style (`style={{ backgroundColor:
-// tint.bg }}`) no `.dark` rule could reach them — the light pastels carried
-// straight into dark mode and turned the calendar filter rail into a strip of
-// near-white circles that outshone the agenda beneath it. Returning `var()`
-// references instead lets design-tokens.css flip the palette (dark fill +
-// light ink, same hue per person) with no change at any call site. Keep them
-// as var() references: a literal here silently reintroduces the bug.
+// THEME-AWARE BY INDIRECTION: consumers apply these as INLINE styles, which no
+// `.dark` rule can reach — returning `var()` references lets design-tokens.css
+// flip the palette. Keep them as var() references.
 const AVATAR_TINT_COUNT = 8;
 export function tintFor(seed: string): { bg: string; text: string } {
   let h = 0;
@@ -97,34 +70,8 @@ export function FairwayCalendarMemberRail({
   onSelect,
   onOpenPerson,
 }: FairwayCalendarMemberRailProps) {
-  // Scroll affordance (finding #123) — `scrollbar-hide` removes the native
-  // scrollbar with NO other visual cue that the pill row continues past the
-  // viewport edge, so it reads as a hard, flush cutoff rather than a
-  // scrollable list. Track scroll position and fade in a small edge chevron
-  // whenever there's more content in that direction.
-  const scrollerRef = React.useRef<HTMLDivElement>(null);
-  const [canScrollLeft, setCanScrollLeft] = React.useState(false);
-  const [canScrollRight, setCanScrollRight] = React.useState(false);
+  const [menuOpen, setMenuOpen] = React.useState(false);
   const [pickerOpen, setPickerOpen] = React.useState(false);
-
-  const updateScrollAffordance = React.useCallback(() => {
-    const el = scrollerRef.current;
-    if (!el) return;
-    setCanScrollLeft(el.scrollLeft > 2);
-    setCanScrollRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 2);
-  }, []);
-
-  React.useEffect(() => {
-    updateScrollAffordance();
-    const el = scrollerRef.current;
-    if (!el) return;
-    el.addEventListener('scroll', updateScrollAffordance, { passive: true });
-    window.addEventListener('resize', updateScrollAffordance);
-    return () => {
-      el.removeEventListener('scroll', updateScrollAffordance);
-      window.removeEventListener('resize', updateScrollAffordance);
-    };
-  }, [updateScrollAffordance, teamMembers.length]);
 
   const pickerPeople = React.useMemo<PeoplePickerPerson[]>(
     () => teamMembers.map((m) => ({
@@ -138,81 +85,124 @@ export function FairwayCalendarMemberRail({
 
   if (teamMembers.length === 0) return null;
 
-  const noneSelected = selectedPlayerIds.length === 0;
+  const selectedMembers = selectedPlayerIds
+    .map((id) => teamMembers.find((m) => m.id === id))
+    .filter((m): m is TeamMember => Boolean(m));
+  const comparing = selectedMembers.length > 0;
   const isAllSelected = teamMembers.every((m) => selectedPlayerIds.includes(m.id));
-
-  // Purely a rendering fallback now (see file doc): once a selection exceeds
-  // the 8-color palette, further members are identified by initials + an
-  // id-hash tint rather than a numbered color. It never blocks a selection —
-  // the picker (and the ALL toggle) can select as many people as exist.
+  // Past the 8-color palette the index color stops being unambiguous, so the
+  // legend identifies people by their own id-hash tint instead.
   const useInitialsOnlyColoring = selectedPlayerIds.length > MAX_SELECTION;
 
-  return (
-    <div className="flex flex-col gap-2.5">
-      <div className="relative">
-        {canScrollLeft ? (
-          <span
-            aria-hidden
-            data-testid="rail-scroll-left"
-            className="pointer-events-none absolute inset-y-0 left-0 z-10 flex w-7 items-center justify-start"
-          >
-            <span className="grid h-5 w-5 place-items-center rounded-full bg-surface shadow-flat ring-1 ring-border-subtle">
-              <ChevronLeft className="h-3 w-3 text-text-tertiary" />
-            </span>
-          </span>
-        ) : null}
-        {canScrollRight ? (
-          <span
-            aria-hidden
-            data-testid="rail-scroll-right"
-            className="pointer-events-none absolute inset-y-0 right-0 z-10 flex w-7 items-center justify-end"
-          >
-            <span className="grid h-5 w-5 place-items-center rounded-full bg-surface shadow-flat ring-1 ring-border-subtle">
-              <ChevronRight className="h-3 w-3 text-text-tertiary" />
-            </span>
-          </span>
-        ) : null}
-        <div
-          ref={scrollerRef}
-          role="group"
-          aria-label="Team availability filter"
-          className={cn(
-            'flex items-center gap-2 overflow-x-auto scrollbar-hide pb-0.5',
-            // Reserve the chevron's own 28px gutter, and only while that
-            // chevron is actually shown — otherwise the overlay paints on top
-            // of the last avatar chip (audit L2). scroll-p* keeps
-            // scroll-snapping/`scrollIntoView` clear of the gutter too.
-            canScrollLeft && 'pl-7 scroll-pl-7',
-            canScrollRight && 'pr-7 scroll-pr-7',
-          )}
-        >
-        {/* ALL — instantly overlays every roster member's schedule (bypassing
-            the 8-color cap, see `useInitialsOnlyColoring`), or clears back to
-            the plain team calendar if everyone is already selected. This is
-            the one-tap shortcut; "Compare" (below) is the deliberate,
-            searchable path for a specific subset. Visible pill stays h-9
-            (36px); the Button itself floors at the 44px touch target and
-            centers the pill inside, so only the invisible hit area grows. */}
-        <Button
-          type="button"
-          variant="ghost"
-          onClick={() => onSelect(isAllSelected ? [] : teamMembers.map((m) => m.id))}
-          aria-pressed={isAllSelected}
-          haptic="none"
-          className="group flex min-h-[44px] flex-shrink-0 items-center justify-center rounded-full p-0 hover:bg-transparent active:bg-transparent"
-        >
-          <span
-            className={cn(
-              'flex h-9 items-center rounded-full px-3.5 font-fw-sans text-caption font-semibold uppercase tracking-[0.08em] transition-colors',
-              isAllSelected
-                ? 'bg-accent-650 text-text-on-accent shadow-flat'
-                : 'border border-border-subtle bg-surface-sunken text-text-secondary group-hover:bg-surface-tint',
-            )}
-          >
-            All
-          </span>
-        </Button>
+  const previewMembers = comparing ? selectedMembers : teamMembers;
+  const statusTitle = comparing
+    ? isAllSelected
+      ? 'Comparing everyone'
+      : `Comparing ${selectedMembers.length}`
+    : 'Team schedule';
+  const statusDetail = comparing
+    ? selectedMembers.map((m) => m.first_name ?? fullName(m)).join(', ')
+    : `${teamMembers.length} ${teamMembers.length === 1 ? 'person' : 'people'}`;
 
+  return (
+    <div className="flex flex-col gap-2">
+      <div className="flex items-center gap-2">
+        {/* One raised row on the canvas: the summary IS the People menu. On a
+            phone it is the only control here — "Compare schedules…" lives in
+            the menu — so nothing sits nested inside it. From `md` up the
+            labelled Compare button stands beside the row, never inside it. */}
+        <div className="flex min-w-0 flex-1 items-center gap-1 rounded-xl border border-border-subtle bg-surface p-1 [box-shadow:var(--fw-shadow-card)]">
+        {/* The summary is the menu: one press opens People. */}
+        <PopoverPanel
+          open={menuOpen}
+          onOpenChange={setMenuOpen}
+          side="bottom"
+          align="start"
+          width="md"
+          ariaLabel="People"
+          trigger={
+            <PressTarget
+              aria-label="People"
+              className={cn(
+                'flex min-h-11 min-w-0 flex-1 items-center gap-3 rounded-md py-1 pl-2 pr-2 text-left',
+                '[@media(hover:hover)]:hover:bg-surface-sunken active:bg-surface-sunken',
+              )}
+            >
+              <AvatarGroup size="sm" max={2} ring="ring-surface" className="shrink-0">
+                {previewMembers.map((m) => (
+                  <Avatar key={m.id} src={m.avatar_url ?? undefined} name={fullName(m)} size="sm" decorative />
+                ))}
+              </AvatarGroup>
+              <span className="min-w-0 flex-1">
+                <span className="block truncate font-fw-sans text-body-sm font-semibold leading-5 text-text-primary">
+                  {statusTitle}
+                </span>
+                <span className="block truncate font-fw-sans text-caption leading-4 text-text-tertiary">
+                  {statusDetail}
+                </span>
+              </span>
+              <ChevronDown className="h-4 w-4 shrink-0 text-text-tertiary" aria-hidden />
+            </PressTarget>
+          }
+        >
+          <PopoverPanel.Header>Availability</PopoverPanel.Header>
+          {/* Everyone: overlays every roster member (bypassing the palette
+              cap); pressing it again returns to the plain team schedule. */}
+          <PopoverPanel.Item
+            aria-pressed={isAllSelected}
+            onClick={() => {
+              setMenuOpen(false);
+              onSelect(isAllSelected ? [] : teamMembers.map((m) => m.id));
+            }}
+          >
+            <span className="flex items-center gap-2.5">
+              <Users className="h-4 w-4 text-text-tertiary" aria-hidden />
+              {isAllSelected ? 'Stop comparing everyone' : 'Everyone'}
+            </span>
+          </PopoverPanel.Item>
+          {onOpenPerson ? (
+            <PopoverPanel.Item
+              onClick={() => {
+                setMenuOpen(false);
+                setPickerOpen(true);
+              }}
+            >
+              <span className="flex items-center gap-2.5">
+                <UserSearch className="h-4 w-4 text-text-tertiary" aria-hidden />
+                Compare schedules…
+              </span>
+            </PopoverPanel.Item>
+          ) : null}
+          {onOpenPerson ? (
+            <>
+              <PopoverPanel.Separator />
+              <PopoverPanel.Header>Open a schedule</PopoverPanel.Header>
+              <div className="max-h-64 overflow-y-auto">
+                {teamMembers.map((m) => (
+                  <PopoverPanel.Item
+                    key={m.id}
+                    onClick={() => {
+                      setMenuOpen(false);
+                      onOpenPerson(m.id);
+                    }}
+                  >
+                    <span className="flex min-w-0 items-center gap-2.5">
+                      <Avatar src={m.avatar_url ?? undefined} name={fullName(m)} size="xs" decorative />
+                      <span className="min-w-0 truncate">{fullName(m)}</span>
+                    </span>
+                  </PopoverPanel.Item>
+                ))}
+              </div>
+            </>
+          ) : null}
+        </PopoverPanel>
+
+        {comparing ? (
+          <Button variant="ghost" size="sm" className="shrink-0" onClick={() => onSelect([])}>
+            Clear
+          </Button>
+        ) : null}
+        </div>
         {onOpenPerson ? (
           <CalendarPeoplePicker
             open={pickerOpen}
@@ -226,145 +216,36 @@ export function FairwayCalendarMemberRail({
             emptyMessage="No players on this team yet."
             trigger={
               <Button
-                type="button"
-                variant="ghost"
-                haptic="none"
-                className="group flex min-h-[44px] flex-shrink-0 items-center justify-center rounded-full p-0 hover:bg-transparent active:bg-transparent"
+                variant="secondary"
+                size="sm"
+                leftIcon={<UserSearch className="h-4 w-4" aria-hidden />}
+                className="hidden shrink-0 md:inline-flex"
               >
-                <span className="flex h-9 items-center rounded-full border border-border-subtle bg-surface-sunken px-3.5 font-fw-sans text-caption font-semibold uppercase tracking-[0.08em] text-text-secondary transition-colors group-hover:bg-surface-tint">
-                  Compare
-                </span>
+                Compare
               </Button>
             }
           />
         ) : null}
-
-        <span aria-hidden className="h-6 w-px flex-shrink-0 bg-border-subtle" />
-
-        {teamMembers.map((m) => {
-          const idx = selectedPlayerIds.indexOf(m.id);
-          const selected = idx !== -1;
-          // Past the cap, the index-based palette wraps and two different
-          // members would render the same color — so `indexColor` is
-          // deliberately null there and the chip falls back to the id-hash
-          // tint instead (see `useInitialsOnlyColoring`).
-          const indexColor = selected && !useInitialsOnlyColoring ? PLAYER_COLORS[idx % PLAYER_COLORS.length]! : null;
-          const tint = tintFor(m.id);
-          return (
-            <Button
-              key={m.id}
-              type="button"
-              variant="ghost"
-              haptic="none"
-              onClick={() => onOpenPerson?.(m.id)}
-              aria-label={`Open ${fullName(m)}'s schedule${selected ? ' — included in comparison' : ''}`}
-              title={fullName(m)}
-              className="group relative flex h-11 min-h-[44px] w-11 min-w-[44px] flex-shrink-0 items-center justify-center overflow-visible rounded-full p-0 transition-transform hover:bg-transparent active:bg-transparent"
-            >
-              {/* Visible avatar chip — fixed 36x36 (h-9 w-9), unchanged from
-                  before the fix. The Button around it is the 44x44 touch
-                  target; only the invisible padding grows. */}
-              <span
-                className={cn(
-                  'relative grid h-9 w-9 place-items-center overflow-visible rounded-full font-fw-sans text-caption font-semibold ring-1 ring-border-subtle transition-transform group-hover:ring-border-strong',
-                  indexColor && 'scale-[1.06] text-white ring-0',
-                  // Selected past the cap: no palette color to carry the
-                  // "selected" cue, so an accent ring does that job instead
-                  // (the tint background/text stays the same as unselected —
-                  // it's the person's fixed id-hash color either way).
-                  selected && !indexColor && 'scale-[1.06] ring-2 ring-accent-650',
-                )}
-                style={
-                  indexColor
-                    ? { backgroundColor: indexColor.bg, color: '#fff', boxShadow: `0 0 0 2px ${indexColor.border}` }
-                    : m.avatar_url
-                      ? undefined
-                      : { backgroundColor: tint.bg, color: tint.text }
-                }
-              >
-                {m.avatar_url ? (
-                  <img src={m.avatar_url} alt="" className="h-full w-full rounded-full object-cover" />
-                ) : (
-                  <span>{initials(m)}</span>
-                )}
-                {indexColor && (
-                  <span
-                    aria-hidden
-                    className="absolute -right-1 -top-1 grid h-4 w-4 place-items-center rounded-full border-2 border-canvas text-microbadge font-bold text-white"
-                    style={{ backgroundColor: indexColor.bg }}
-                  >
-                    {idx + 1}
-                  </span>
-                )}
-              </span>
-            </Button>
-          );
-        })}
-        </div>
       </div>
 
-      {/* Legend / clear */}
-      {!noneSelected ? (
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
-          <span className="font-fw-sans text-eyebrow font-semibold uppercase tracking-[0.1em] text-text-tertiary">
-            Viewing
-          </span>
+      {/* Legend — who is in the comparison, in the colors the overlay uses. */}
+      {comparing ? (
+        <ul className="flex flex-wrap items-center gap-x-3 gap-y-1" aria-label="People in this comparison">
           {selectedPlayerIds.map((id, idx) => {
             const m = teamMembers.find((x) => x.id === id);
             if (!m) return null;
-            // Same fallback as the chips above: past the cap the index-based
-            // palette wraps and stops being unambiguous, so identify by the
-            // person's own id-hash tint instead.
             const dotColor = useInitialsOnlyColoring
               ? tintFor(id).text
               : PLAYER_COLORS[idx % PLAYER_COLORS.length]!.bg;
             return (
-              <span key={id} className="flex items-center gap-1.5">
-                <span aria-hidden className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: dotColor }} />
-                <span className="font-fw-sans text-caption text-text-secondary">{m.first_name}</span>
-              </span>
+              <li key={id} className="flex items-center gap-1.5">
+                <span aria-hidden className={cn('h-2.5 w-2.5 rounded-full')} style={{ backgroundColor: dotColor }} />
+                <span className="font-fw-sans text-caption text-text-secondary">{m.first_name ?? fullName(m)}</span>
+              </li>
             );
           })}
-          <Button
-            type="button"
-            variant="ghost"
-            haptic="none"
-            onClick={() => onSelect([])}
-            className="ml-auto h-auto min-h-0 w-auto p-0 font-fw-sans text-caption font-medium text-accent-700 transition-colors hover:bg-transparent hover:text-fw-success-ink"
-          >
-            Clear
-          </Button>
-        </div>
-      ) : (
-        // DEFAULT (nothing selected) — the row above is otherwise nine
-        // unlabelled two-letter chips: an accessible name + `title` tooltip
-        // exist per-chip (finding: "unlabelled initials"), but neither is
-        // visible at rest, and `title` never fires on touch (no hover). This
-        // quiet key uses the SAME tint each avatar already renders with
-        // (tintFor) so identifying a chip doesn't require hovering or
-        // selecting it first.
-        //
-        // PHONE ONLY (< md): hidden. On phone this key is a straight
-        // re-listing of the exact roster the avatar rail above already shows
-        // — same person, same tint color, avatar initials standing in for
-        // the name — and it was costing real height in front of the agenda
-        // (mobile-density audit). It stays on desktop, where there's room and
-        // a hover/title path already exists; on phone each avatar's
-        // `aria-label`/`title` still carries the full name, so nothing here
-        // is uniquely accessible-only information being removed, only the
-        // always-visible duplicate.
-        <div className="hidden flex-wrap items-center gap-x-3 gap-y-1.5 md:flex">
-          {teamMembers.map((m) => {
-            const tint = tintFor(m.id);
-            return (
-              <span key={m.id} className="flex items-center gap-1.5">
-                <span aria-hidden className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: tint.text }} />
-                <span className="font-fw-sans text-caption text-text-tertiary">{m.first_name}</span>
-              </span>
-            );
-          })}
-        </div>
-      )}
+        </ul>
+      ) : null}
     </div>
   );
 }

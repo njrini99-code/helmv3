@@ -29,7 +29,7 @@ import { cn } from '@/lib/utils';
 import { useMediaQuery } from '@/hooks/use-media-query';
 import { ModalShell } from '@/components/fairway/overlays/ModalShell';
 import { PopoverPanel } from '@/components/fairway/overlays/PopoverPanel';
-import { Button, Input, EmptyState, Avatar, Segmented, Skeleton } from '@/components/fairway';
+import { Button, Input, EmptyState, Avatar, PressTarget, Segmented, Skeleton } from '@/components/fairway';
 import { fwHaptic } from '@/lib/fairway/haptics';
 import { usePeopleSelection, type PeoplePickerPerson } from './usePeopleSelection';
 import surfaces from '../CalendarSurfaces.module.css';
@@ -144,7 +144,7 @@ function PickerBody({
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <div className="shrink-0 border-b border-border-subtle px-4 py-3 sm:px-5">
+      <div className={cn('sticky top-0 z-10 shrink-0 border-b px-4 py-3 sm:px-5', 'fw-glass-chrome')}>
         <Input
           type="search"
           aria-label="Search people"
@@ -202,10 +202,8 @@ function PickerBody({
             {selection.filtered.map((person, index) => {
               const selected = selection.isSelected(person.id);
               return (
-                <div key={person.id} className={cn('rounded-fw-md', selected && 'bg-accent-50/60')}>
-                  <Button
-                    type="button"
-                    variant="ghost"
+                <div key={person.id} className={cn('rounded-fw-md', selected && 'bg-accent-50/60 ring-1 ring-accent-600/40')}>
+                  <PressTarget
                     role="option"
                     aria-selected={selected}
                     tabIndex={index === activeIndex ? 0 : -1}
@@ -213,10 +211,8 @@ function PickerBody({
                     onFocus={() => setActiveIndex(index)}
                     onClick={() => toggleRow(person.id)}
                     className={cn(
-                      'flex h-auto w-full items-center justify-start gap-3 rounded-fw-md px-2 py-1.5 text-left font-normal',
+                      'flex w-full items-center gap-3 rounded-fw-md px-2 py-1.5 text-left hover:bg-surface-sunken',
                       ROW_HEIGHT_CLASS,
-                      surfaces.press,
-                      'hover:bg-surface-sunken',
                     )}
                   >
                     <Avatar src={person.avatarUrl ?? undefined} name={person.name} size="sm" />
@@ -232,12 +228,12 @@ function PickerBody({
                       aria-hidden
                       className={cn(
                         'grid h-6 w-6 shrink-0 place-items-center rounded-full border-2 transition-colors',
-                        selected ? 'border-accent-650 bg-accent-650 text-white' : 'border-border-strong text-transparent',
+                        selected ? cn('border-transparent', 'bg-accent-650 text-text-on-accent') : 'border-border-strong text-transparent',
                       )}
                     >
                       <Check className="h-3.5 w-3.5" />
                     </span>
-                  </Button>
+                  </PressTarget>
                   {mode === 'compare' && selected ? (
                     <div className="flex items-center justify-end px-2 pb-2">
                       <Segmented
@@ -259,7 +255,7 @@ function PickerBody({
         )}
       </div>
 
-      <div className="flex shrink-0 items-center justify-end gap-2 border-t border-border-subtle px-4 py-3 sm:px-5">
+      <div className={cn('flex shrink-0 items-center justify-end gap-2 border-t px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:px-5', 'fw-glass-chrome')}>
         <Button variant="ghost" onClick={onCancel}>Cancel</Button>
         <Button onClick={() => onApply(selection.selectedIds, { requiredIds: selection.requiredIds })}>{doneLabel}</Button>
       </div>
@@ -330,7 +326,7 @@ export function CalendarPeoplePicker({
       trigger={trigger}
       title={title}
       size="lg"
-      className={cn('flex h-[min(88dvh,720px)] flex-col', className)}
+      className={cn('flex h-[min(88dvh,720px)] flex-col', surfaces.scope, surfaces.panel, className)}
     >
       {body}
     </ModalShell>

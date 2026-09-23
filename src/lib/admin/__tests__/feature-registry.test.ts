@@ -325,7 +325,7 @@ describe('FEATURE_REGISTRY completeness', () => {
   // 'ALL'-mapped to `course_library`, so this new withAdminObserved-wrapped
   // export is picked up by the live `scanExports` count with no manifest
   // edit required.
-  it('total manifest size is exactly 428 (excludes the CRM row)', () => {
+  it('total manifest size is exactly 423 (excludes the CRM row)', () => {
     let total = 0;
     for (const def of FEATURE_REGISTRY) {
       if (def.excluded || def.app === 'baseballhelm') continue;
@@ -388,7 +388,12 @@ describe('FEATURE_REGISTRY completeness', () => {
     // 'ALL'-mapped attendance.ts (+1), and scheduling.ts, conflict-inbox.ts
     // and class-detail.ts (one read each) join `calendar_events` as 'ALL'
     // (+3). Matches 432 -> 436 in coverage-contract.foundation.
-    expect(total).toBe(428);
+    // 2026-09-22 (-5), dead-code cleanup: removed acknowledgeComposedInsight
+    // and dismissComposedInsight from insights.ts's explicit manifest entry,
+    // and bulkDismissInsights/bulkAcknowledgeInsights/bulkResolveInsights
+    // from insight-management.ts (picked up via its 'ALL' mapping). Matches
+    // 436 -> 431 in coverage-contract.foundation.
+    expect(total).toBe(423);
   });
 
   it('the CRM row lists no files (never a wrap target)', () => {

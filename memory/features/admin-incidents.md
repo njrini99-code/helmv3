@@ -12,6 +12,16 @@
 > feature's evidence sources reads from) and `memory/features/admin-selfheal.md`
 > (Diagnose/Repair/Close, which act on the incidents this feature surfaces).
 
+> **Absorbed two tabs 2026-09-08 (30→19 consolidation).** `/admin/errors` now
+> has three views: `list` (the queue, default and param-free), `sources` (was
+> `/admin/reliability` — what Sentry, Supabase and Vercel each saw) and `loop`
+> (was `/admin/self-heal` — collect → diagnose → repair → close). This is the
+> principle `src/lib/admin/incidents/types.ts` already stated applied to the
+> page itself: "Reliability stopped being a competing incident list the moment
+> it became a lens." The two data layers stay with their own features; only the
+> UI moved here. `?feature=` is shared across views — `parseErrorsFilters`
+> narrows the queue by it, the constellation selects a node by it.
+
 ## Status
 
 - active

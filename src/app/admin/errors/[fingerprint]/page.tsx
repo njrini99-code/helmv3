@@ -220,8 +220,8 @@ export default async function FingerprintDetailPage({
             <InlineNotice tone="info">
               This is a correlated reliability signal (Sentry / Vercel / Supabase), not an
               application error logged directly. Its occurrences live on the{' '}
-              <Link href="/admin/reliability" className="underline">
-                Reliability tab
+              <Link href="/admin/errors?view=sources" className="underline">
+                Sources view
               </Link>
               ; what follows is the root-cause analysis the nightly triage wrote for it.
             </InlineNotice>

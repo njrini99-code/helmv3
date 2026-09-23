@@ -6,14 +6,12 @@
 // reminder to stderr.
 // Fires when this is a task worktree (not the canonical checkout) with
 // tracked-file modifications and no entry in the gates ledger
-// (`memory/ledgers/gates.jsonl`) newer than the newest modified tracked
+// (`.helm/runtime/gates.jsonl`) newer than the newest modified tracked
 // file. Silent otherwise.
 //
-// LEDGER SCHEMA (assumed — nothing in this repo populates this ledger yet):
-// one JSON object per line, each carrying at least `ts` (an ISO-8601
-// timestamp of when a gate run completed). This hook only READS the ledger;
-// something else — a gate-runner this task does not build — would need to
-// append to it for the reminder to ever go quiet on a real dirty tree.
+// One JSON object per line, each carrying at least `ts` as an epoch-millisecond
+// number (the serializer's native format) or ISO-8601 timestamp. This hook
+// only reads the local runtime telemetry.
 //
 // TRACKED FILES ONLY: `git diff --name-only HEAD` (working tree vs HEAD,
 // covers both staged and unstaged modifications to tracked files) — not raw
@@ -25,7 +23,7 @@ import { existsSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { workspaceRoots } from './lib/workspace-identity.mjs';
 
-const GATES_LEDGER = 'memory/ledgers/gates.jsonl';
+const GATES_LEDGER = '.helm/runtime/gates.jsonl';
 
 function readStdinJson() {
   return new Promise((resolvePromise) => {
@@ -87,8 +85,9 @@ export function newestLedgerEntryMs(root, ledgerPath = GATES_LEDGER) {
     if (!line.trim()) continue;
     try {
       const entry = JSON.parse(line);
-      const ms = Date.parse(entry?.ts);
-      if (!Number.isNaN(ms) && (newest === null || ms > newest)) newest = ms;
+      const raw = entry?.ts;
+      const ms = typeof raw === 'number' ? raw : Date.parse(raw);
+      if (Number.isFinite(ms) && (newest === null || ms > newest)) newest = ms;
     } catch {
       // skip a malformed line — this ledger is diagnostic, not a database
     }

@@ -80,9 +80,14 @@ Baseball and Lift Lab; preserve RLS, sport boundaries, and customer data.
 Keep secrets out of output and commits.
 
 Vercel reads, logs, and previews are normal development work. Production
-deploy/promote/rollback requires explicit user authorization; use
-`scripts/deploy-prod.sh` for production deploys. A Git push alone does not
-prove deployment. Use repo-local Supabase/Vercel binaries.
+deploys from the Vercel Git integration: merging a PR to `main` builds and
+promotes it. Do not deploy from the CLI (`vercel deploy --prod`,
+`scripts/deploy-prod.sh` — retired, it refuses to run); a CLI deploy beside
+the Git integration produced duplicate and failed production deploys. After a
+merge, confirm the Vercel deployment for that commit is READY before
+reporting it live; a push or merge alone does not prove deployment. Rollback
+and promote of an existing deployment still require explicit user
+authorization. Use repo-local Supabase/Vercel binaries.
 
 ## Product conventions
 

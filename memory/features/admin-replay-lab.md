@@ -56,7 +56,7 @@ has, none of which exist yet.
 - `src/components/admin/replay/ReplayCoveragePanel.tsx` — the per-replay
   row list (StatusPill tones: `reproduced` success, `inconclusive` warning,
   `not-yet-run` neutral — never green by default)
-- `src/app/admin/self-heal/page.tsx` — gained a "Replay coverage" `Surface`
+- `src/app/admin/errors/_components/loop/LoopView.tsx` (was `/admin/self-heal`) — gained a "Replay coverage" `Surface`
   section (additive; the file remains owned by `admin_selfheal`)
 
 ## Known limitations

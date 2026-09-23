@@ -1,5 +1,5 @@
 /**
- * Bridge Premium Phase 3 — Evidence Braid for `/admin/reliability`.
+ * Bridge Premium Phase 3 — Evidence Braid for `/admin/errors?view=sources`.
  *
  * One lane per evidence source, bucketed over time, for the selected
  * feature. A bucket where several lanes read ✓ together is the brief's

@@ -192,6 +192,11 @@ describe('ApproachMissGenerator', () => {
     expect(c.evidence.your_value).toBe(70);
     expect(c.evidence.comparison_value).toBe(80);
     expect(c.evidence.comparison_source).toBe('pga_baseline');
+    // The registry id is a FEET / lower_better proximity metric; the headline
+    // value is a green-hit PERCENT, so the producer declares the polarity.
+    expect(c.evidence.metric).toBe('approach_proximity_50_125ft');
+    expect(c.evidence.polarity).toBe('higher_better');
+    expect(c.evidence.metric_label).toBe('Greens hit from 50-125 yd');
   });
 
   it('frames a reach problem (no reliable proximity) when too few greens are hit', () => {
@@ -215,11 +220,14 @@ describe('ApproachMissGenerator', () => {
     expect(c.content).not.toContain('incurred a penalty');
   });
 
-  it("women's green-hit anchor for 50-125 is ~70%, not the men's 80%", () => {
+  it("women's green-hit anchor for 50-125 is ~70%, not the men's 80% — labelled as an estimated target", () => {
     const g = new ApproachMissGenerator(PLAYER_ID, '50_125ft');
     const c = g.composeContent(makeAgg({ green_hit_pct: 50, attempts: 20, cohort_gender: 'womens' }));
     expect(c.evidence.comparison_value).toBe(70);
-    expect(c.content).toContain('70%');
+    expect(c.content).toContain("women's college target ~70%, estimated");
+    // A derived target is not a measured population average (N16).
+    expect(c.evidence.comparison_source).toBe('estimated_target');
+    expect(c.evidence.comparison_label).toBe("Women's college green-hit target (est.)");
   });
 });
 
@@ -352,7 +360,7 @@ describe('ApproachMissGenerator.aggregate (green-hit + on-green proximity)', () 
 });
 
 describe('ApproachMissGenerator — dominant miss-axis driver (PLAY: driver+action)', () => {
-  it('appends a SHORT driver with "club up" when misses skew short (Nick Rini 50-125)', () => {
+  it('appends a SHORT reading (observation / check / action) when misses skew short — no mechanical cause', () => {
     const g = new ApproachMissGenerator(PLAYER_ID, '50_125ft');
     // 7 short, 3 long → 70% short, the live prod shape for Nick's short approaches.
     const c = g.composeContent(makeAgg({
@@ -360,20 +368,39 @@ describe('ApproachMissGenerator — dominant miss-axis driver (PLAY: driver+acti
       miss_short_long: { negative: 7, positive: 3, neutral: 0 },
       miss_left_right: { negative: 1, positive: 1, neutral: 8 },
     }));
-    expect(c.content).toContain('SHORT');
-    expect(c.content).toContain('70%');
-    expect(c.content.toLowerCase()).toContain('club up');
-    expect(c.content.toLowerCase()).toContain('full number');
+    expect(c.content).toContain('70% of the 10 misses with a distance read finished SHORT.');
+    expect(c.content).toContain('The record does not say why');
+    expect(c.content).toContain('Recommended:');
+    // No asserted cause: the old sentence read "the driver is under-clubbing or
+    // decelerating, not aim. Club up and commit …".
+    expect(c.content).not.toMatch(/the driver is|decelerating|not aim|club up and commit/i);
+    // The typed diagnosis carries the same reading, framed as a hypothesis,
+    // with the green-hit driver labelled as a percent (not a proximity).
+    const d = c.evidence.diagnosis!;
+    expect(d.causality_level).toBe('inferred_hypothesis');
+    expect(d.symptom).toContain('Greens hit from 50-125 yd: 55% over 20 approaches.');
+    expect(d.symptom).toContain('70% of the 10 misses');
+    expect(d.root_cause).toContain('does not say why');
+    expect(d.recommended_action).toMatch(/^Recommended:/);
+    expect(d.drivers[0]).toMatchObject({
+      metric: 'approach_proximity_50_125ft',
+      label: 'Greens hit from 50-125 yd',
+      unit: 'percent',
+      value: 55,
+      sample_n: 20,
+    });
+    expect(d.drivers[1]).toMatchObject({ label: 'Misses finishing short', value: 70, sample_n: 10 });
   });
 
-  it('omits the axis driver when the miss pattern is balanced (no false tendency)', () => {
+  it('omits the axis reading (and the typed diagnosis) when the miss pattern is balanced (no false tendency)', () => {
     const g = new ApproachMissGenerator(PLAYER_ID, '125_175ft');
     const c = g.composeContent(makeAgg({
       miss_short_long: { negative: 5, positive: 5, neutral: 0 },
       miss_left_right: { negative: 5, positive: 5, neutral: 0 },
     }));
-    expect(c.content).not.toContain('club up');
+    expect(c.content).not.toContain('does not say why');
     expect(c.content).not.toContain('start line');
+    expect(c.evidence.diagnosis).toBeUndefined();
     // A balanced tally must not leak ANY axis-share claim. Every axis driver
     // sentence is uniquely fingerprinted by "<pct>% of those <n> misses ..."
     // (the reach/dial-in prose talks about "approaches", never "misses"), so a

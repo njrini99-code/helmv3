@@ -9,6 +9,11 @@ const state = vi.hoisted(() => ({
   readError: null as { message: string } | null,
   events: [] as (() => void)[],
   deletes: [] as Record<string, string>[],
+  reads: 0,
+  /** null models the moment a call fires before the session is attached
+   *  (or after it expired) — the 42501 case this hook now gates against. */
+  session: { access_token: 'jwt', user: { id: 'me' } } as { access_token: string; user: { id: string } } | null,
+  authListeners: [] as ((event: string) => void)[],
 }));
 vi.mock('@/lib/error-logging', () => ({ logError: vi.fn() }));
 vi.mock('@/lib/supabase/client', () => ({ createClient: () => ({
@@ -26,7 +31,7 @@ vi.mock('@/lib/supabase/client', () => ({ createClient: () => ({
       delete: () => { mode = 'delete'; return query; },
       eq: (key: string, value: string) => { filters[key] = value; return query; },
       then: (resolve: (result: unknown) => void) => {
-        if (mode === 'read') return resolve({ data: state.rows.filter((row) => ids.includes(row.message_id)), error: state.readError });
+        if (mode === 'read') { state.reads += 1; return resolve({ data: state.rows.filter((row) => ids.includes(row.message_id)), error: state.readError }); }
         if (state.saveError) return resolve({ error: state.saveError });
         if (mode === 'insert') state.rows.push({ id: `r${state.rows.length}`, ...inserted } as MessageReaction);
         if (mode === 'delete') {
@@ -43,6 +48,13 @@ vi.mock('@/lib/supabase/client', () => ({ createClient: () => ({
     return channel;
   },
   removeChannel: vi.fn(),
+  auth: {
+    getSession: async () => ({ data: { session: state.session }, error: null }),
+    onAuthStateChange: (cb: (event: string) => void) => {
+      state.authListeners.push(cb);
+      return { data: { subscription: { unsubscribe: () => { state.authListeners = state.authListeners.filter((l) => l !== cb); } } } };
+    },
+  },
 }) }));
 // Keep pagination in production; isolate this hook's state contract here.
 vi.mock('@/lib/supabase/fetch-all-rows', () => ({ fetchAllRowsResult: (query: (from: number, to: number) => unknown) => query(0, 999) }));
@@ -53,6 +65,9 @@ beforeEach(() => {
   state.readError = null;
   state.events = [];
   state.deletes = [];
+  state.reads = 0;
+  state.session = { access_token: 'jwt', user: { id: 'me' } };
+  state.authListeners = [];
 });
 const row = (id: string, user: string, message = 'message-a'): MessageReaction => ({ id, user_id: user, message_id: message, emoji: '👍' });
 
@@ -111,5 +126,34 @@ describe('message reactions', () => {
     state.readError = null;
     await act(async () => { await result.current.refresh(); });
     expect(result.current.error).toBeNull();
+  });
+
+  it('never queries without a live session, and self-heals once one appears', async () => {
+    // Measured 2026-09-09T18:31:49Z: this hook's GET went out with no JWT and
+    // golf_message_reactions (anon revoked by design) answered 42501. The
+    // request must not be made at all — not retried, not surfaced as an error.
+    state.rows = [row('peer', 'peer')];
+    state.session = null;
+    const { result } = renderHook(() => useMessageReactions('dm', ['message-a'], 'me'));
+    await act(async () => { await Promise.resolve(); });
+    expect(state.reads).toBe(0);
+    expect(result.current.error).toBeNull();
+    expect(result.current.rows).toEqual([]);
+
+    state.session = { access_token: 'jwt', user: { id: 'me' } };
+    await act(async () => { state.authListeners.forEach((l) => l('SIGNED_IN')); });
+    await waitFor(() => expect(result.current.rows).toHaveLength(1));
+    expect(state.reads).toBeGreaterThan(0);
+  });
+
+  it('refuses to write a reaction without a live session', async () => {
+    const { result } = renderHook(() => useMessageReactions('dm', ['message-a'], 'me'));
+    await waitFor(() => expect(state.reads).toBeGreaterThan(0));
+    state.session = null;
+    let saved = true;
+    await act(async () => { saved = await result.current.setReaction('message-a', '👍', true); });
+    expect(saved).toBe(false);
+    expect(state.rows).toEqual([]);
+    expect(result.current.error).toBe('Sign in again to react.');
   });
 });

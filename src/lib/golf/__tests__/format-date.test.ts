@@ -4,8 +4,8 @@
  * the one-liner so call sites reach for the product's actual convention".
  *
  * It formats via `new Date(value)` then `toLocaleDateString('en-US', …)`. For a
- * full timestamp that is correct and is what all three current callers pass
- * (`feed.last_synced_at`, `feed.created_at`, `ev.start_time` — all timestamptz).
+ * full timestamp that is correct unless the caller supplies the explicit
+ * timezone required by a stable metadata-date contract.
  *
  * For a bare `YYYY-MM-DD` it is off by one west of Greenwich, because
  * `new Date('2026-01-05')` is UTC midnight and the formatter renders it in the
@@ -61,6 +61,10 @@ describe('formatShortDate — timestamps are unchanged', () => {
     // which is the existing behaviour every current caller relies on.
     const iso = new Date(2026, 8, 14, 12, 0).toISOString();
     expect(formatShortDate(iso)).toBe('Sep 14');
+  });
+
+  it('honors an explicit timezone for stable metadata dates', () => {
+    expect(formatShortDate('2026-08-01T18:00:00.000Z', 'UTC')).toBe('Aug 1');
   });
 
   it('uses the en-US house style, not the runtime locale default', () => {

@@ -116,7 +116,10 @@ describe('ScramblingGenerator', () => {
     expect(c.evidence.comparison_value).toBe(38);
     expect(c.content).toContain('38%');
     expect(c.content).not.toContain('~50%'); // no men's Tour anchor for a women's player
-    expect(c.evidence.comparison_label).toContain('women');
+    // A derived target, labelled as one — never a measured college average (N16).
+    expect(c.evidence.comparison_label).toBe("Women's college sand save target (est.)");
+    expect(c.evidence.comparison_source).toBe('estimated_target');
+    expect(c.content).toContain('~38% (estimated)');
   });
 
   it('men\'s player keeps the 50% Tour anchor (unchanged)', () => {

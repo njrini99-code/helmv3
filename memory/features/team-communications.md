@@ -17,7 +17,10 @@ initial-open sentinel so it cannot be overwritten by a stale initial scroll.
 The immersive mobile thread uses one bottom safe-area inset, owned by the
 composer. Its writing field sits in a compact flush footer. Attachments open
 in the shared scrollable Sheet on phones and a menu on desktop. Group details
-use Sheet.Body so long member lists scroll within the viewport.
+use Sheet.Body so long member lists scroll within the viewport. Group creation
+dates use the conversation row's UTC calendar date because conversations carry
+no team-timezone field; the same group metadata therefore renders identically
+on every client.
 
 The mobile inbox has one Messages header with working All, Unread and Groups
 filters. Short conversations settle near the composer; longer histories retain
@@ -55,6 +58,18 @@ feedback and composer send transitions respect reduced motion. Tap a reaction co
 distinct members, refresh through realtime, and reload on window focus. Errors
 remain visible; switching threads discards stale fetch results. Removing a
 reaction targets the current user's row only and never edits group membership.
+Every reactions read and write is gated on `client.auth.getSession()` first
+and the hook re-loads on `SIGNED_IN`/`TOKEN_REFRESHED`: the browser client is a
+singleton, but the session it carries can be absent at the moment a call fires
+(reliably so on iOS WKWebView after backgrounding), and `golf_message_reactions`
+deliberately grants `anon` nothing, so an ungated call fails with `42501`
+rather than RLS's silent empty set. That is the table doing its job — never
+widen the grant; gate the call (measured 2026-09-09T18:31:49Z, one ungated GET
+went out with no JWT in the same millisecond an authenticated heartbeat left
+the same device). Likewise `getPlayerNotificationCounts` returns
+`{ success: true, authExpired: true }` for a dead session, mirroring the coach
+action, so the 45s badge poll stops instead of persisting "Not authenticated"
+to the Bridge every tick.
 `20260908160000_golf_message_reactions_access.sql` reconciles the already-live
 membership helper, reaction policies, indexes and publication into migration
 replay. The declarative schema already carried those objects; the earlier
@@ -550,6 +565,33 @@ group beneath it. `Group.dc.html:44` is the artboard that matches a group thread
 and draws the same chip `display: flex; justify-content: center; padding: 0 0
 16px 0` — in flow, so it structurally cannot collide. The chip's material stays
 Thread's glass, which `audit/DECISIONS.md` froze; only the placement moved.
+
+## Touch: the chips scroll without blur, and the bubble text never highlights (2026-09-09)
+
+Owner report from a phone: the thread scrolls choppily, and a long-press opens
+the reactions row correctly but also starts a text highlight when the hold lands
+on the message text. Two causes, both in `MessageThreadPane.tsx`'s territory.
+
+**Scroll.** G-50a (`audit/DECISIONS.md`) costed the day chip's 22px glass blur
+as "a single ~90×26px element" — one chip pinned at the head of the pane. The
+2026-09-07 change above made it a per-boundary separator in flow, so a
+200-message group thread scrolls dozens of them, and on iOS every
+`backdrop-filter` element inside a scroller is its own compositing layer,
+re-blurred on each frame. The chip now sets `backdrop-filter: none` under
+`(pointer: coarse)` and keeps the tinted ground and pop shadow, the same call
+`globals.css` already makes when it reduces glass blur on mobile. Desktop keeps
+the frozen material. **Rule carried forward: nothing that scrolls inside the
+thread gets a backdrop filter on touch.** The masthead, composer and reactions
+sheet are pinned, so theirs stay.
+
+**Selection.** The bubble turns `user-select` off on coarse pointers, but the
+message text is a `<p>` inside it, and the Capacitor layer in `globals.css`
+re-enables `user-select: text` on every `p` and `span` at `body.capacitor p`
+specificity — higher than a single Tailwind class. Only the native app hits it,
+which is why mobile Safari never showed it. A bubble-scoped
+`body.capacitor [data-message-bubble] p, … span` rule now outranks the
+re-enable; `MessageThreadPane.capacitorSelection.test.ts` pins its shape and
+cascade order. Copy in the reactions row is what replaces selection, as before.
 
 ## Opening a thread at its newest message: arm, then pin (2026-09-07)
 

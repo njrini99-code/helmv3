@@ -172,6 +172,12 @@ vi.mock('@/components/fairway', () => {
         {children}
       </button>
     ),
+    // The unstyled pressable: a plain button that forwards everything.
+    PressTarget: ({ children, haptic: _haptic, ...props }: { children?: React.ReactNode; haptic?: boolean } & React.ButtonHTMLAttributes<HTMLButtonElement>) => (
+      <button type="button" {...props}>
+        {children}
+      </button>
+    ),
     Input: ({ leading: _leading, trailing: _trailing, ...props }: Record<string, unknown>) => <input {...props} />,
     TextArea: (props: Record<string, unknown>) => <textarea {...props} />,
     Checkbox: ({

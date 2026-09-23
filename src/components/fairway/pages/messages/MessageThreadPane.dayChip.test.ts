@@ -148,7 +148,21 @@ describe('G-50a — the component inlines the chip instead of floating it', () =
     // The action popup is independently licensed glass. Count only the date
     // chip's standard and WebKit declarations so adding that popup cannot
     // invalidate this chip contract.
-    const sites = chipSurfaceCode.match(/backdrop-filter:/g) ?? [];
+    const sites = chipSurfaceCode.match(/backdrop-filter:blur\(/g) ?? [];
     expect(sites.length).toBe(2); // the standard property and its -webkit- pair
+  });
+
+  it('turns the blur OFF on coarse pointers — the chips scroll, and blur in a scroller is the jank', () => {
+    // G-50a costed the glass as ONE pinned chip. In flow it is one per day
+    // boundary, and on iOS each backdrop-filter element inside the scroll
+    // container is a compositing layer re-blurred every frame. Touch keeps
+    // the tinted ground and the pop shadow; only the filter goes.
+    expect(chipSurfaceCode).toContain('[@media(pointer:coarse)]:[backdrop-filter:none]');
+    expect(chipSurfaceCode).toContain('[@media(pointer:coarse)]:[-webkit-backdrop-filter:none]');
+    // Order matters for the cascade: the coarse-pointer override must come
+    // AFTER the blur declarations it overrides.
+    expect(chipSurfaceCode.indexOf('[backdrop-filter:none]')).toBeGreaterThan(
+      chipSurfaceCode.indexOf('[backdrop-filter:blur('),
+    );
   });
 });

@@ -1,7 +1,6 @@
 import { requireSuperAdmin } from '@/lib/admin/require-super-admin';
 import {
   fetchVercelDeployments,
-  fetchVercelWebInsights,
   formatDeployAge,
   type VercelDeployment,
   type VercelDeployState,
@@ -18,6 +17,7 @@ import { ReleaseLedger } from './_components/ReleaseLedger';
 import { fetchReleaseRunway } from '@/lib/admin/triage/release-runway';
 import { ReleaseRunwayStrip } from '@/components/admin/triage/ReleaseRunwayStrip';
 import { ReleaseIntelPanel } from './_components/ReleaseIntelPanel';
+import { SectionLabel } from '../_components/SectionLabel';
 
 /** Phone card list (below `md`) shows this many deploys before "Show more" —
  *  keeps the default view inside the ~3-screen-height scroll budget (Mobile
@@ -34,14 +34,6 @@ const STATE_TONE: Record<VercelDeployState, FwStatusTone> = {
   ERROR: 'danger',
   CANCELED: 'warning',
 };
-
-function SectionLabel({ children }: { children: React.ReactNode }) {
-  return (
-    <h2 className="border-b border-accent-600/25 pb-2 text-xs font-semibold uppercase tracking-widest text-warm-500">
-      {children}
-    </h2>
-  );
-}
 
 /** Deep-links each row to its Sentry issue stream, filtered to that
  *  release's commit sha. SENTRY_ORG is a non-secret org slug — safe to
@@ -369,28 +361,6 @@ async function ReleaseHealth() {
   );
 }
 
-async function WebVitals() {
-  const insights = await fetchVercelWebInsights();
-  if (insights.status !== 'ok' || !insights.data) {
-    return (
-      <PanelNoData
-        label="Web insights unavailable"
-        description="Same Vercel token trio as the deployments table."
-      />
-    );
-  }
-  return (
-    // Below `sm`: doctrine "2 + 1-wide" rhythm for a 3-peer strip (2-col grid,
-    // 3rd cell spans both) instead of 3 full-width stacked rows. `sm:` and up
-    // is untouched — still the original flat 3-across row.
-    <div className="grid grid-cols-2 gap-3 [&>*:last-child]:col-span-2 sm:grid-cols-3 sm:[&>*:last-child]:col-span-1">
-      <StatTile label="Visitors 24h" value={insights.data.visitors24h} tone="neutral" mono />
-      <StatTile label="Visitors 7d" value={insights.data.visitors7d} tone="neutral" mono />
-      <StatTile label="Visitors 30d" value={insights.data.visitors30d} tone="neutral" mono />
-    </div>
-  );
-}
-
 async function ReleaseRunwaySection() {
   const runway = await fetchReleaseRunway();
   if (runway.status !== 'ok' || !runway.data) {
@@ -447,24 +417,21 @@ export default async function DeploysPage() {
         </div>
       </Surface>
 
-      <div className="grid gap-4 md:grid-cols-2">
-        <Surface padding="sm">
-          <SectionLabel>Release health</SectionLabel>
-          <div className="mt-3">
-            <PanelBoundary title="Release health" skeleton={<PanelStatsSkeleton count={2} />}>
-              <ReleaseHealth />
-            </PanelBoundary>
-          </div>
-        </Surface>
-        <Surface padding="sm">
-          <SectionLabel>Traffic</SectionLabel>
-          <div className="mt-3">
-            <PanelBoundary title="Traffic" skeleton={<PanelStatsSkeleton count={3} />}>
-              <WebVitals />
-            </PanelBoundary>
-          </div>
-        </Surface>
-      </div>
+      {/* Traffic (three Vercel visitor counts) was removed 2026-09-08. Web
+          Analytics is not enabled for this project — the API answers
+          `404 not_found: Web Analytics not found` — so the panel could only
+          ever render "Web insights unavailable", and it occupied half a row
+          next to Release health to do it. fetchVercelWebInsights() and its
+          tests are untouched; re-adding the panel is one commit once Web
+          Analytics is turned on. */}
+      <Surface padding="sm">
+        <SectionLabel>Release health</SectionLabel>
+        <div className="mt-3">
+          <PanelBoundary title="Release health" skeleton={<PanelStatsSkeleton count={2} />}>
+            <ReleaseHealth />
+          </PanelBoundary>
+        </div>
+      </Surface>
     </div>
   );
 }

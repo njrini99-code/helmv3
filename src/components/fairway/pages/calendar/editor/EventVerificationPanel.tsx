@@ -19,11 +19,13 @@
  */
 
 import * as React from 'react';
-import { AlertTriangle, Check, LoaderCircle } from 'lucide-react';
+import { AlertTriangle, Check, RefreshCw } from 'lucide-react';
 import { Button as UiButton } from '@/components/ui/button';
+import { Skeleton } from '@/components/fairway/feedback/Skeleton';
 import { cn } from '@/lib/utils';
-import { localDayIso } from '@/lib/golf/local-day';
+import surfaces from '../CalendarSurfaces.module.css';
 import { fwHaptic } from '@/lib/fairway/haptics';
+import { formatEventTime, getValidTimezone, getZonedDateParts } from '@/lib/calendar/timezone';
 
 export type VerificationStatus = 'idle' | 'checking' | 'ready' | 'error';
 
@@ -53,20 +55,36 @@ export interface EventVerificationPanelProps {
   onRetryAttendees: () => void;
   onRetryConflicts: () => void;
   onSelectSuggestion: (slot: { start: Date; end: Date }) => void;
+  /** Team timezone for conflict times returned as UTC instants. */
+  timezone?: string | null;
 }
 
 /**
  * "2026-06-15T14:00:00Z" + "…T15:00:00Z" -> "Jun 15 · 2:00 PM – 3:00 PM"
  * (or "Jun 15 · 2:00 PM – Jun 16 · 12:30 AM" across midnight).
  */
-function formatConflictInterval(startValue: string, endValue: string): string {
+function formatConflictInterval(
+  startValue: string,
+  endValue: string,
+  timezone: string | null | undefined,
+): string {
   const start = new Date(startValue);
   const end = new Date(endValue);
   if (!Number.isFinite(start.getTime()) || !Number.isFinite(end.getTime())) return 'Time unavailable';
-  const date = start.toLocaleDateString([], { month: 'short', day: 'numeric' });
-  const startTime = start.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
-  const endTime = end.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
-  const endDate = localDayIso(start) === localDayIso(end) ? '' : `${end.toLocaleDateString([], { month: 'short', day: 'numeric' })} · `;
+  const resolvedTimezone = getValidTimezone(timezone);
+  const date = new Intl.DateTimeFormat('en-US', {
+    timeZone: resolvedTimezone,
+    month: 'short',
+    day: 'numeric',
+  }).format(start);
+  const startTime = formatEventTime(startValue, timezone);
+  const endTime = formatEventTime(endValue, timezone);
+  const startDay = getZonedDateParts(startValue, timezone);
+  const endDay = getZonedDateParts(endValue, timezone);
+  const sameDay = startDay.year === endDay.year && startDay.month === endDay.month && startDay.day === endDay.day;
+  const endDate = sameDay
+    ? ''
+    : `${new Intl.DateTimeFormat('en-US', { timeZone: resolvedTimezone, month: 'short', day: 'numeric' }).format(end)} · `;
   return `${date} · ${startTime} – ${endDate}${endTime}`;
 }
 
@@ -86,6 +104,7 @@ export function EventVerificationPanel({
   onRetryAttendees,
   onRetryConflicts,
   onSelectSuggestion,
+  timezone,
 }: EventVerificationPanelProps) {
   const [showAllConflicts, setShowAllConflicts] = React.useState(false);
   const state = deriveVerificationState(status, conflicts);
@@ -100,61 +119,90 @@ export function EventVerificationPanel({
 
   if (status === 'idle') return null;
 
+  const isAttention = state === 'partial' || state === 'failed';
+  const isConflicts = state === 'conflicts';
+  const headline =
+    state === 'checking' ? 'Checking Helm schedules…'
+      : state === 'failed' ? 'Schedules not verified. The check could not finish.'
+      : state === 'partial' ? 'Schedules partially checked. Some availability is not verified.'
+      : state === 'conflicts' ? 'Schedule conflicts'
+      : 'Everyone is available';
+
   return (
     <div
       data-state={state}
       className={cn(
-        'rounded-fw-md border p-3 font-fw-sans text-caption',
-        conflicts?.hasConflict || conflicts?.partial || status === 'error'
-          ? 'border-fw-warning-ring bg-fw-warning-bg text-fw-warning-ink'
-          : 'border-border-subtle bg-surface-sunken text-text-secondary',
+        'flex flex-col gap-3 rounded-card p-3 font-fw-sans text-caption',
+        isAttention ? 'border border-fw-warning-ring bg-fw-warning-bg text-fw-warning-ink' : 'border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-card)]',
+        !isAttention && (isConflicts ? 'text-fw-warning-ink' : 'text-text-secondary'),
       )}
     >
-      <p role="status" className="flex items-center gap-2 font-medium">
-        {status === 'checking' ? <LoaderCircle className="h-4 w-4 motion-safe:animate-spin" aria-hidden /> :
-          conflicts?.hasConflict || conflicts?.partial || status === 'error'
-            ? <AlertTriangle className="h-4 w-4 shrink-0" aria-hidden /> : <Check className="h-4 w-4" aria-hidden />}
-        {status === 'checking' ? 'Checking Helm schedules…' :
-          status === 'error' ? 'Schedules not verified. The check could not finish.' :
-          conflicts?.partial ? 'Schedules partially checked. Some availability is not verified.' :
-          conflicts?.hasConflict ? 'Schedule conflicts' : 'No conflicts found in checked Helm schedules.'}
-      </p>
-      {status === 'error' || conflicts?.partial ? (
-        <UiButton
-          variant="ghost"
-          type="button"
-          onClick={() => {
-            if (attendeeHydrationError) onRetryAttendees();
-            else onRetryConflicts();
-          }}
-          className="mt-1 min-h-11 px-0 text-caption font-medium text-fw-warning-ink underline underline-offset-2"
-        >
-          Check again
-        </UiButton>
+      <div className="flex items-center gap-3">
+        {state === 'checking' ? (
+          <Skeleton className="h-8 w-8 shrink-0 rounded-full" />
+        ) : (
+          <span
+            aria-hidden
+            className={cn(
+              'grid h-8 w-8 shrink-0 place-items-center rounded-full',
+              state === 'verified' ? 'bg-accent-650 text-text-on-accent' : 'bg-fw-warning-bg text-fw-warning-ink',
+            )}
+          >
+            {state === 'verified' ? <Check className="h-4 w-4" aria-hidden /> : <AlertTriangle className="h-4 w-4" aria-hidden />}
+          </span>
+        )}
+        <div className="min-w-0 flex-1">
+          <p role="status" className={cn('font-semibold', state === 'verified' ? 'text-text-primary' : undefined)}>
+            {headline}
+          </p>
+          {state === 'verified' ? (
+            <p className="mt-0.5 text-text-tertiary">No conflicts found in checked Helm schedules.</p>
+          ) : null}
+        </div>
+        {isAttention ? (
+          <UiButton
+            variant="ghost"
+            type="button"
+            onClick={() => {
+              if (attendeeHydrationError) onRetryAttendees();
+              else onRetryConflicts();
+            }}
+            className="inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-full border border-fw-warning-ring bg-surface px-3.5 text-caption font-semibold text-fw-warning-ink hover:bg-surface-tint"
+          >
+            <RefreshCw className="h-3.5 w-3.5" aria-hidden />
+            Check again
+          </UiButton>
+        ) : null}
+      </div>
+      {state === 'checking' ? (
+        <div className="flex flex-col gap-1.5" aria-hidden>
+          <Skeleton className="h-3 w-3/4 rounded-full" />
+          <Skeleton className="h-3 w-1/2 rounded-full" />
+        </div>
       ) : null}
       {conflicts && conflicts.conflicts.length > 0 ? (
         <>
-          <p className="mt-2">{conflicts.conflicts.length} overlaps · {new Set(conflicts.conflicts.map((conflict) => conflict.userId)).size} people affected</p>
-          <ul className="mt-2 flex flex-col gap-2">
+          <p className="font-medium">{conflicts.conflicts.length} overlaps · {new Set(conflicts.conflicts.map((conflict) => conflict.userId)).size} people affected</p>
+          <ul className="flex flex-col gap-2">
             {(showAllConflicts ? conflicts.conflicts : conflicts.conflicts.slice(0, 4)).map((conflict, index) => (
-              <li key={`${conflict.userId}-${index}`}>
+              <li key={`${conflict.userId}-${index}`} className={cn('rounded-fw-md px-3 py-2', surfaces.overlap)}>
                 <p className="font-medium">{conflict.userName} — {conflict.conflictingEvent.title}</p>
-                <p className="mt-0.5 tabular-nums">{formatConflictInterval(conflict.conflictingEvent.start, conflict.conflictingEvent.end)} · {conflict.conflictingEvent.type === 'class' ? 'Class' : conflict.conflictingEvent.type === 'blocked' ? 'Blocked time' : 'Event'}</p>
+                <p className="mt-0.5 font-fw-mono tabular-nums">{formatConflictInterval(conflict.conflictingEvent.start, conflict.conflictingEvent.end, timezone)} · {conflict.conflictingEvent.type === 'class' ? 'Class' : conflict.conflictingEvent.type === 'blocked' ? 'Blocked time' : 'Event'}</p>
               </li>
             ))}
           </ul>
           {conflicts.conflicts.length > 4 ? (
-            <UiButton variant="ghost" type="button" aria-expanded={showAllConflicts} onClick={() => setShowAllConflicts((value) => !value)} className="mt-1 min-h-11 px-0 text-caption font-medium text-fw-warning-ink underline underline-offset-2">
+            <UiButton variant="ghost" type="button" aria-expanded={showAllConflicts} onClick={() => setShowAllConflicts((value) => !value)} className="min-h-11 self-start px-0 text-caption font-medium text-fw-warning-ink underline underline-offset-2">
               {showAllConflicts ? 'Show fewer overlaps' : `Show all ${conflicts.conflicts.length} overlaps (4 shown)`}
             </UiButton>
           ) : null}
         </>
       ) : null}
       {conflicts?.hasConflict && !conflicts.partial && conflicts.suggestions.length > 0 ? (
-        <div className="mt-2 flex flex-wrap gap-1.5">
+        <div className="flex flex-wrap gap-1.5">
           {conflicts.suggestions.slice(0, 3).map((slot, index) => (
-            <UiButton key={index} variant="ghost" type="button" onClick={() => onSelectSuggestion(slot)} className="min-h-11 rounded-fw-sm border border-border-subtle bg-surface px-3 font-fw-mono text-caption tabular-nums text-text-secondary">
-              Try {slot.start.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
+            <UiButton key={index} variant="ghost" type="button" onClick={() => onSelectSuggestion(slot)} className={cn('min-h-11 rounded-full px-3.5 font-fw-mono text-caption tabular-nums text-text-primary', 'border border-border-subtle bg-surface')}>
+              Try {formatEventTime(slot.start.toISOString(), timezone)}
             </UiButton>
           ))}
         </div>

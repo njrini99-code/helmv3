@@ -1426,6 +1426,18 @@ export function MessageThreadPane({
                         '[background:var(--fw-glass-bg)]',
                         '[backdrop-filter:blur(var(--fw-blur-glass))_saturate(var(--fw-glass-saturate))]',
                         '[-webkit-backdrop-filter:blur(var(--fw-blur-glass))_saturate(var(--fw-glass-saturate))]',
+                        // No blur on touch. `audit/DECISIONS.md` G-50a costed
+                        // the glass as "a single ~90×26px element" — one chip
+                        // pinned at the head of the pane. Per-boundary and in
+                        // flow, a 200-message group thread scrolls dozens of
+                        // them, and on iOS every backdrop-filter element in a
+                        // scroller is its own compositing layer re-blurred each
+                        // frame: that is the choppy thread. `globals.css`
+                        // already reduces glass blur on mobile for exactly this
+                        // reason; this chip just goes all the way, keeping the
+                        // tinted ground and the pop shadow so it still reads as
+                        // the same material. Desktop keeps the frozen glass.
+                        '[@media(pointer:coarse)]:[backdrop-filter:none] [@media(pointer:coarse)]:[-webkit-backdrop-filter:none]',
                         '[box-shadow:inset_0_1px_0_var(--fw-glass-border),var(--fw-shadow-pop)]',
                       )}
                     >
