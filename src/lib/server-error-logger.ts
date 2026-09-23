@@ -606,9 +606,16 @@ function captureSentryTrace(
     }
 
     if (context.userId || context.userEmail) {
+      // `user_id_unverified` (set above via context.tags, same source as the
+      // admin_events/error_logs rows) is a tag — it doesn't appear on
+      // Sentry's User panel, only in the Tags list, so an operator glancing
+      // at "User: <id>" would otherwise see no difference from a verified
+      // getUser() attribution. `username` IS rendered on the User panel, so
+      // mirror the marker there rather than relying on the tag alone.
       scope.setUser({
         id: context.userId ?? undefined,
         email: context.userEmail ?? undefined,
+        username: context.tags?.user_id_unverified === 'true' ? 'unverified' : undefined,
       });
     }
 

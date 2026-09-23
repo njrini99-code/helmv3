@@ -80,6 +80,11 @@ describe('Bridge user attribution', () => {
 
     expect(rowsFor('admin_events')[0]!.row.user_id).toBe('user-abc');
     expect(rowsFor('error_logs')[0]!.row.user_id).toBe('user-abc');
+    // A verified ambient id must reach Sentry's User panel with no
+    // "unverified" marker — see the paired assertion below for the opposite case.
+    expect(mocks.scope.setUser).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'user-abc', username: undefined }),
+    );
   });
 
   it('writes the SAME user to both Bridge tables', async () => {
@@ -121,6 +126,14 @@ describe('Bridge user attribution', () => {
     const row = rowsFor('admin_events')[0]!.row as { user_id: string; metadata: Record<string, unknown> };
     expect(row.user_id).toBe('expired-user');
     expect((row.metadata.tags as Record<string, unknown>).user_id_unverified).toBe('true');
+    // `user_id_unverified` lands as a Sentry TAG (asserted above via metadata,
+    // mirrored onto the scope by the same context.tags loop), but Sentry's
+    // User panel doesn't show tags — an operator glancing at "User: <id>"
+    // would see nothing different from a verified attribution. `username` DOES
+    // render on that panel, so the marker must be mirrored there too.
+    expect(mocks.scope.setUser).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'expired-user', username: 'unverified' }),
+    );
   });
 
   it('is a no-op outside a request scope, so unwrapped runtimes behave as before', async () => {

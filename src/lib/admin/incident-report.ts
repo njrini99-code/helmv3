@@ -175,6 +175,26 @@ export function extractRoute(metadata: unknown): string | null {
 }
 
 /**
+ * `metadata.tags.user_id_unverified` — set by server-error-logger.ts's
+ * enrichTraceContext() when the row's `user_id` came from
+ * `unverifiedSubjectFromCookies()` (a decoded-but-not-signature-checked JWT
+ * `sub`, read only after `getUser()` failed to verify a session — the normal
+ * "session expired mid-round" case) rather than a verified `getUser()` call.
+ * `user_id` itself carries no marker, so any admin surface that links off it
+ * (e.g. the `/admin/users/[id]` link on the fingerprint detail page) must
+ * check this before presenting the id as a confirmed identity.
+ */
+export function extractUserIdUnverified(metadata: unknown): boolean {
+  if (metadata && typeof metadata === 'object' && 'tags' in metadata) {
+    const tags = (metadata as { tags?: unknown }).tags;
+    if (tags && typeof tags === 'object') {
+      return (tags as { user_id_unverified?: unknown }).user_id_unverified === 'true';
+    }
+  }
+  return false;
+}
+
+/**
  * `metadata.roundId` — a TOP-LEVEL key, same shape as `route`/`action`
  * (`normalizeContext` in `server-error-logger.ts` writes it from
  * `RoundErrorContext.roundId`, which `observed-action.ts`'s

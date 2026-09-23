@@ -8,6 +8,7 @@ import {
   extractRoute,
   extractRoundId,
   extractCollapsedCount,
+  extractUserIdUnverified,
   extractErrorHint,
   extractRequestId,
   extractHelmTraceId,
@@ -365,6 +366,23 @@ describe('extractActionName / extractRoute / extractCollapsedCount', () => {
     expect(extractRoute({})).toBeNull();
     expect(extractCollapsedCount({})).toBe(0);
     expect(extractCollapsedCount({ metadata: { collapsed_count: 'nope' } })).toBe(0);
+  });
+});
+
+describe('extractUserIdUnverified', () => {
+  it('reads true from a normalizeContext-shaped metadata blob carrying the tag', () => {
+    const metadata = { action: 'savePartialRound', tags: { user_id_unverified: 'true' } };
+    expect(extractUserIdUnverified(metadata)).toBe(true);
+  });
+
+  it('is false when the tag is absent, present-but-not-"true", or metadata is malformed', () => {
+    expect(extractUserIdUnverified({ action: 'x' })).toBe(false);
+    expect(extractUserIdUnverified({ tags: {} })).toBe(false);
+    expect(extractUserIdUnverified({ tags: { user_id_unverified: true } })).toBe(false);
+    expect(extractUserIdUnverified({ tags: null })).toBe(false);
+    expect(extractUserIdUnverified(null)).toBe(false);
+    expect(extractUserIdUnverified(undefined)).toBe(false);
+    expect(extractUserIdUnverified('not an object')).toBe(false);
   });
 });
 
