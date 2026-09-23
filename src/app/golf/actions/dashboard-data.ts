@@ -93,10 +93,15 @@ interface ScoringTrend {
      *  date — two rounds twelve months apart produce the same label, so any
      *  axis built from it is fabricated. Use `date`. */
     label: string;
-    /** The round's own `round_date`, a bare YYYY-MM-DD. Added 2026-09-10 so a
-     *  consumer can plot this series on a real date axis; `label` had already
-     *  formatted the year away. Parse it at LOCAL midnight, not through
-     *  `new Date(str)`, which reads a bare date as UTC. */
+    /** The point's own date, a bare YYYY-MM-DD. Added 2026-09-10 so a consumer
+     *  can plot this series on a real date axis; `label` had already formatted
+     *  the year away. Parse it at LOCAL midnight, not through `new Date(str)`,
+     *  which reads a bare date as UTC.
+     *
+     *  On the per-round series (`scoringTrend`) this is the round's own
+     *  `round_date`. On the monthly team aggregate (`teamScoringTrend`) a
+     *  bucket has no single round date, so it carries the first day of its
+     *  month: the bucket's own key, not a round that happened that day. */
     date: string;
     value: number;
 }
@@ -654,8 +659,11 @@ async function getCoachDashboardDataImpl(
             });
             teamScoringTrend = Object.entries(roundsByYearMonth)
                 .sort(([a], [b]) => a.localeCompare(b))
-                .map(([, { label, scores: s }]) => ({
+                .map(([sortKey, { label, scores: s }]) => ({
                     label,
+                    // A month bucket has no round date; the first of the month
+                    // is the bucket's own key expressed as a date.
+                    date: `${sortKey}-01`,
                     value: Number((s.reduce((a, b) => a + b, 0) / s.length).toFixed(1))
                 }));
 

@@ -28,7 +28,6 @@
  * ========================================================================== */
 
 import { useCallback, useEffect, useMemo, useState, useTransition } from 'react';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
 import { cn } from '@/lib/utils';
@@ -69,9 +68,23 @@ import {
   rowReadout,
   rowTrend,
   type ReadingLogRow,
-  type VerdictPart,
 } from './development-logic';
 import type { FocusFieldRow } from './focus-field';
+import {
+  FieldReadout,
+  LedgerRow,
+  LedgerRowItem,
+  SectionHead,
+  VerdictLine,
+} from '../field-sheet-parts';
+
+/**
+ * The page-language pieces now live in `pages/field-sheet-parts.tsx` (this
+ * screen was the second copy; player home was the third, which is the line
+ * the old note here drew). They are re-exported so every caller of this file
+ * is unchanged.
+ */
+export { FieldReadout, LedgerRow, LedgerRowItem, SectionHead };
 
 /**
  * Phone focus-area Sheet: the full FocusAreaCard (Sparkline, StandingBars,
@@ -566,71 +579,15 @@ export function formatAreaValue(value: number, targetMetric: string | null | und
 }
 
 /**
- * The stage's verdict, player voice. "No reading" until the player has
- * moved off the baseline or logged a second point; then the change since
- * the start and how far along the rail that is.
+ * The masthead verdict, under this page's own name.
+ *
+ * It prints no eyebrow and no title, because DrillPanel already prints
+ * "Development" one line above on the live host and `CoachHelmShell` prints
+ * its own heading on the preview host; a second title would be duplication,
+ * not anatomy. That is the only thing development-specific about it, so the
+ * body is the shared part.
  */
-export function SectionHead({
-  children,
-  action,
-  id,
-}: {
-  children: React.ReactNode;
-  action?: React.ReactNode;
-  id?: string;
-}) {
-  return (
-    <div className="flex flex-col gap-2">
-      <div className="flex items-baseline justify-between gap-3">
-        <h2 id={id} className="font-fw-display text-h3 font-semibold text-text-primary">
-          {children}
-        </h2>
-        {action}
-      </div>
-      <div className="h-px w-full bg-accent-300" aria-hidden="true" />
-    </div>
-  );
-}
-
-/**
- * The masthead verdict: one honest sentence assembled from clauses, with the
- * names and numbers as links. No eyebrow and no title, because DrillPanel
- * already prints "Development" one line above on the live host and
- * `CoachHelmShell` prints its own heading on the preview host; a second title
- * would be duplication, not anatomy.
- */
-export function DevelopmentVerdict({
-  parts,
-  facts,
-}: {
-  parts: readonly VerdictPart[];
-  facts?: React.ReactNode;
-}) {
-  if (parts.length === 0) return null;
-  return (
-    <div className="flex flex-col gap-2">
-      <p className="max-w-[64ch] font-fw-display text-h3 font-normal leading-snug text-text-primary">
-        {parts.map((part, i) => (
-          <span key={`${part.text}-${i}`}>
-            {part.href ? (
-              <Link
-                href={part.href}
-                className="text-text-primary underline decoration-accent-300 decoration-[1.5px] underline-offset-[5px] hover:decoration-accent-500"
-              >
-                {part.text}
-              </Link>
-            ) : (
-              part.text
-            )}
-          </span>
-        ))}
-      </p>
-      {facts ? (
-        <p className="font-fw-sans text-caption text-text-tertiary">{facts}</p>
-      ) : null}
-    </div>
-  );
-}
+export const DevelopmentVerdict = VerdictLine;
 
 /**
  * The stage's frame, decided by host.
@@ -688,124 +645,6 @@ export function focusFieldRows(
         : null,
     };
   });
-}
-
-/**
- * The ledger row: bare columns divided by vertical hairlines, never equal
- * cards. Only non-empty columns are passed in, and the grid takes the shape of
- * however many arrive, so a player with no goals does not get an empty third.
- *
- * The split is fractional (5/4/3, 7/5), so a narrow width costs every column
- * proportionally instead of starving one. Per the amended breakpoint rule the
- * split point is whatever width still holds every column's content whole; it
- * is verified in the captures, not chosen by breakpoint name.
- */
-const LEDGER_SPANS: Record<number, string[]> = {
-  1: ['md:col-span-12'],
-  2: ['md:col-span-7', 'md:col-span-5'],
-};
-
-export function LedgerRow({ columns }: { columns: readonly React.ReactNode[] }) {
-  const present = columns.filter(Boolean);
-  if (present.length === 0) return null;
-  const spans = LEDGER_SPANS[present.length] ?? LEDGER_SPANS[2]!;
-  return (
-    <div
-      data-slot="development-ledger"
-      className="grid grid-cols-1 divide-y divide-border-subtle md:grid-cols-12 md:divide-x md:divide-y-0"
-    >
-      {present.map((column, i) => (
-        <div
-          key={i}
-          className={cn(
-            'flex min-w-0 flex-col gap-3 py-5 md:py-0',
-            spans[i],
-            // The hairlines are the division; the padding keeps content off
-            // them. First column has no left rule, so it needs no left pad.
-            i > 0 ? 'md:pl-6' : '',
-            i < present.length - 1 ? 'md:pr-6' : '',
-          )}
-        >
-          {column}
-        </div>
-      ))}
-    </div>
-  );
-}
-
-/** One hairline row inside a ledger column. */
-/**
- * One hairline row inside a ledger column.
- *
- * NOTHING HERE TRUNCATES. A ledger column is a fraction of an already narrow
- * page, and `truncate` gives every row a hard minimum width equal to its
- * longest unbroken line: measured at 1440, a suggestion row wanted 262px of a
- * 92px cell and pushed 4px of horizontal overflow all the way up through
- * DrillPanel. Wrapping holds the content whole at every width, which is what
- * the breakpoint rule actually asks for.
- *
- * `actions` sit on their OWN line, never beside the text. Two 44px buttons
- * plus a sentence do not share a third of this page at any width it renders
- * at, so there is no breakpoint at which the inline arrangement is correct.
- * `trailing` stays inline for a short figure, a percent or a word.
- */
-export function LedgerRowItem({
-  title,
-  meta,
-  trailing,
-  actions,
-  href,
-  onClick,
-}: {
-  title: React.ReactNode;
-  meta?: React.ReactNode;
-  trailing?: React.ReactNode;
-  actions?: React.ReactNode;
-  href?: string;
-  onClick?: () => void;
-}) {
-  const body = (
-    <>
-      <span className="flex min-w-0 flex-col gap-0.5">
-        <span className="font-fw-sans text-body-sm font-medium text-text-primary">{title}</span>
-        {meta ? (
-          <span className="font-fw-sans text-caption text-text-tertiary">{meta}</span>
-        ) : null}
-      </span>
-      {trailing ? <span className="shrink-0">{trailing}</span> : null}
-    </>
-  );
-  const shell =
-    'flex min-h-11 w-full items-center justify-between gap-3 text-left';
-  const frame = 'border-b border-border-subtle py-2 last:border-b-0';
-
-  if (actions) {
-    return (
-      <div className={cn('flex flex-col gap-2', frame)}>
-        <div className={shell}>{body}</div>
-        <div className="flex flex-wrap items-center gap-1">{actions}</div>
-      </div>
-    );
-  }
-  if (href) {
-    return (
-      <Link href={href} className={cn(shell, frame, fwTransition, 'hover:text-accent-700')}>
-        {body}
-      </Link>
-    );
-  }
-  if (onClick) {
-    return (
-      // The hairline ROW is the tap target. <Button> brings its own
-      // min-height, padding and hover fill, which would turn a ledger row
-      // back into the tile this page bans.
-      // eslint-disable-next-line helm/no-raw-button -- see above
-      <button type="button" onClick={onClick} className={cn(shell, frame, fwFocusRing, fwTransition)}>
-        {body}
-      </button>
-    );
-  }
-  return <div className={cn(shell, frame)}>{body}</div>;
 }
 
 /**
@@ -1088,40 +927,5 @@ export function ProposedLedgerRow({
         </>
       }
     />
-  );
-}
-
-/**
- * One readout in the stage's readouts column: a number typeset as part of the
- * page, not a tile. No panel, no border, no fill behind the figure. Green and
- * amber are ink on the numeral itself, which is the only place LANGUAGE.md
- * spends them.
- */
-export function FieldReadout({
-  label,
-  value,
-  tone = 'neutral',
-}: {
-  label: string;
-  value: number;
-  tone?: 'neutral' | 'good' | 'warn';
-}) {
-  return (
-    <div className="flex flex-col gap-0.5">
-      <span
-        className={cn(
-          'font-fw-mono text-h3 font-medium tabular-nums leading-none',
-          // Zero is neither good news nor bad news.
-          value !== 0 && tone === 'good' && 'text-accent-700',
-          value !== 0 && tone === 'warn' && 'text-fw-warning-ink',
-          (value === 0 || tone === 'neutral') && 'text-text-primary',
-        )}
-      >
-        {value}
-      </span>
-      <span className="font-fw-sans text-eyebrow uppercase tracking-[0.07em] text-text-tertiary">
-        {label}
-      </span>
-    </div>
   );
 }
