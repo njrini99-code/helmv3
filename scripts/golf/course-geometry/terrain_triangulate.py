@@ -2,16 +2,36 @@
 
 Split out of `compile-course-terrain.py` so a change here (mesh output only)
 does not also change the fingerprint of `layout.terrain.acquire` /
-`layout.visual.terrain.acquire`, which only run source acquisition and never
-reach this code path (`compile-course-terrain.py --acquire-only` returns
-before any face is triangulated). See `factory/tasks/common.py`
-(`TERRAIN_ACQUIRE_FILES` vs `TERRAIN_COMPILE_FILES`) for the impl_files
-split this file exists to support, and `test_factory_impact.py` /
-`test_factory_fingerprints.py` for the proof that acquire stays cached while
-a hole's compile goes stale when only this module changes.
+`layout.visual.terrain.acquire`. `compile-course-terrain.py` still imports
+this module at top level even when run `--acquire-only` (Python must
+resolve every top-level import before any code runs), but that acquire-only
+path never CALLS `triangulate_faces` or reads `DEGENERATE_AREA_M2` - it
+returns after writing the source manifest, before a single face is built.
+See `factory/tasks/common.py` (`TERRAIN_ACQUIRE_FILES` vs
+`TERRAIN_COMPILE_FILES`) for the impl_files split this file exists to
+support, and `test_factory_impact.py`'s
+`test_a_mesh_only_triangulation_edit_leaves_terrain_acquisition_cached` for
+the proof that acquire stays cached while a hole's compile goes stale when
+only this module changes.
 """
 from shapely import constrained_delaunay_triangles
 from shapely.geometry import Polygon
+
+# Degenerate-geometry gate for pieces/faces/triangles, in m^2. A genuine
+# GEOS overlay artifact (a collinear sliver from a buffer/difference chain)
+# is ~1e-15 m^2 or smaller. A legitimate sliver from two materials or cells
+# meeting at a near-tangent angle can be a real, non-degenerate ~1e-9 to
+# 1e-8 m^2 triangle: node_pieces (compile-course-terrain.py) already gives
+# it and its neighbor the same noded boundary, so it is on both sides of a
+# shared edge. The pre-v5 threshold (1e-8) sat inside that legitimate range
+# and discarded such a sliver on one side only, leaving the neighbor's
+# matching edge unpaired (a T-junction). 1e-10 stays far above the true
+# noise floor while passing every legitimate sliver observed in
+# course-factory batches to date. Defined here, not in
+# compile-course-terrain.py, so re-tuning it only moves the fingerprint of
+# tasks that actually triangulate (TERRAIN_COMPILE_FILES), never
+# layout.terrain.acquire.
+DEGENERATE_AREA_M2 = 1e-10
 
 
 def triangulate_faces(faces, ids, hole_key, feature_count, degenerate_area_m2):

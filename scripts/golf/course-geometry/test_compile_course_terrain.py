@@ -13,9 +13,8 @@ from typing import ClassVar
 from unittest.mock import patch
 
 import numpy as np
-from shapely.geometry import LineString, MultiPolygon, Polygon, box
-
 import terrain_triangulate
+from shapely.geometry import LineString, MultiPolygon, Polygon, box
 
 spec = importlib.util.spec_from_file_location('compiler', Path(__file__).with_name('compile-course-terrain.py'))
 compiler = importlib.util.module_from_spec(spec)
