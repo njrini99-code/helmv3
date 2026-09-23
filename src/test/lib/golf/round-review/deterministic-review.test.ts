@@ -50,12 +50,13 @@ type Row = Record<string, unknown>;
  * so `ignoreDuplicates: true` can be tested for real: a conflicting upsert
  * returns zero rows and leaves the existing row object untouched (same
  * reference), exactly like `ON CONFLICT (round_id) DO NOTHING`. */
-function makeSupabase(store: Record<string, Row[]>) {
+function makeSupabase(store: Record<string, Row[]>, errors: Record<string, { message: string; code?: string }> = {}) {
   function builder(table: string) {
     let rows = [...(store[table] ?? [])];
     let mode: 'select' | 'upsert' = 'select';
     let upsertPayload: Row | null = null;
     let upsertOpts: { onConflict?: string; ignoreDuplicates?: boolean } | undefined;
+    const injectedError = errors[table] ?? null;
 
     const node: Record<string, unknown> = {};
     Object.assign(node, {
@@ -75,9 +76,13 @@ function makeSupabase(store: Record<string, Row[]>) {
         upsertOpts = opts;
         return node;
       },
-      single: async () => (rows.length > 0 ? { data: rows[0], error: null } : { data: null, error: { message: 'not found' } }),
+      single: async () => {
+        if (injectedError) return { data: null, error: injectedError };
+        return rows.length > 0 ? { data: rows[0], error: null } : { data: null, error: { message: 'not found' } };
+      },
       then: (resolve: (v: unknown) => unknown, reject?: (e: unknown) => unknown) => {
         if (mode !== 'upsert') {
+          if (injectedError) return Promise.resolve({ data: null, error: injectedError }).then(resolve, reject);
           return Promise.resolve({ data: rows, error: null }).then(resolve, reject);
         }
         // Emulate `ON CONFLICT (round_id) DO NOTHING` — only meaningful
@@ -258,4 +263,45 @@ describe('buildDeterministicRoundReview — as-played baseline via the worker-sa
 
     expect(result).toEqual({ ok: false, roundId: 'round-x', reason: 'not_completed' });
   });
+
+  // Audit-repair companion to round-review-system.ts's own shots/holes error
+  // checks (src/app/golf/actions/__tests__/round-review-error-codes.test.ts):
+  // this module already guarded every read's `error` before that PR (unlike
+  // round-review-system.ts's now-fixed silent-`[]`-fallback bug), so these
+  // tests are pinning existing, correct behavior — a real DB error on any of
+  // the pre-warm path's reads must surface as `query_failed`, never as an
+  // empty-data `ok: true` review.
+  const completedRound = {
+    id: 'round-y', player_id: 'p1', course_name: 'Test', round_date: '2026-06-15',
+    total_score: 72, score_to_par: 0, total_putts: 30, total_fairways_hit: 8, total_fairways: 14,
+    total_gir: 10, total_gir_possible: 18, holes_played: 18, status: 'completed',
+  };
+
+  it('reports query_failed (not an empty-data success) when the shots read errors', async () => {
+    const { buildDeterministicRoundReview } = await import('@/lib/golf/round-review/deterministic-review');
+    const store: Record<string, Row[]> = { golf_rounds: [completedRound], golf_shots: [], golf_holes: [] };
+    const supabase = makeSupabase(store, { golf_shots: { message: 'shots query failed', code: '500' } }) as never;
+
+    const result = await buildDeterministicRoundReview(supabase, 'round-y');
+
+    expect(result).toEqual({ ok: false, roundId: 'round-y', reason: 'query_failed', detail: 'shots query failed' });
+  });
+
+  it('reports query_failed when the holes read errors', async () => {
+    const { buildDeterministicRoundReview } = await import('@/lib/golf/round-review/deterministic-review');
+    const store: Record<string, Row[]> = { golf_rounds: [completedRound], golf_shots: [], golf_holes: [] };
+    const supabase = makeSupabase(store, { golf_holes: { message: 'holes query failed', code: '500' } }) as never;
+
+    const result = await buildDeterministicRoundReview(supabase, 'round-y');
+
+    expect(result).toEqual({ ok: false, roundId: 'round-y', reason: 'query_failed', detail: 'holes query failed' });
+  });
+
+  // The as-played comparison read (`golf_rounds`, second query in the
+  // function) already checks `cmpError` in the source too, but this fake's
+  // per-table error injection can't isolate it from the FIRST `golf_rounds`
+  // read (the round lookup) without a richer per-call-site mock, so it is
+  // not exercised here. Not a coverage gap in the fix itself — team-lead's
+  // ask was specifically the shots/holes reads, which the two tests above
+  // cover directly against the real module.
 });

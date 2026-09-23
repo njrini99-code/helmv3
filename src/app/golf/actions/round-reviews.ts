@@ -251,11 +251,22 @@ function effectiveReviewStatus(row: {
 }): ReviewStatus {
   // `publishReviewImpl` writes the top-level `status` column directly
   // (`status: 'published'`, alongside `published_at`/`published_by`) and
-  // never touches `patterns_detected`. No other writer in this file sets
-  // this column, so its only two states are NULL and 'published' — but a
-  // published review's `patterns_detected.status` still holds whatever it
-  // was before publishing (typically 'approved'), which is stale once the
-  // review has actually shipped to the player. The raw column wins when set.
+  // never touches `patterns_detected`. The column defaults to `'draft'`
+  // (baseline migration :10579) and its CHECK constraint also allows
+  // `'archived'`, but a published review's `patterns_detected.status` still
+  // holds whatever it was before publishing (typically 'approved'), which is
+  // stale once the review has actually shipped to the player. The raw
+  // column wins when it says `'published'`.
+  //
+  // `'archived'` is OUT OF SCOPE here: no writer in this codebase currently
+  // sets it (grepped `status:\s*'archived'` across the golf round-review
+  // actions, 2026-09-23 — zero hits), and the app-level `ReviewStatus` enum
+  // (`src/lib/types/golf.ts`) has no `'archived'` member for this function to
+  // return. If a future writer starts setting it, this function will fall
+  // through to the `patterns_detected`/`shared_with_coach` branch below and
+  // silently report the review as draft/shared instead of archived — add an
+  // explicit `if (row.status === 'archived') return …` branch (and extend
+  // `ReviewStatus`) at that point, rather than relying on this comment alone.
   if (row.status === 'published') return 'published';
   const extData = row.patterns_detected as ReviewExtendedData | null;
   return extData?.status ?? (row.shared_with_coach ? 'shared' : 'draft');
@@ -1331,25 +1342,36 @@ async function getPlayerReviewHistoryImpl(playerId: string): Promise<{
     // still come back in this player's own history rather than silently
     // dropping out; compareByRoundChronologyDesc sorts an undatable review
     // last) to sort by the round's own chronology instead.
-    const { data: reviews, error } = await supabase
-      .from('golf_round_reviews')
-      .select('*, round:golf_rounds(round_date, created_at, id)')
-      .eq('player_id', playerId)
-      .order('id', { ascending: true });
-
-    if (error) {
-      await logServerError(`getPlayerReviewHistory query failed: ${error.message}`, {
+    //
+    // Unpaginated, this silently truncated at PostgREST's 1000-row cap — a
+    // multi-season player's OLDEST reviews would drop off the end with no
+    // error and no indication anything was missing. `fetchAllRows` pages
+    // past it the same way `getTeamReviewsImpl` above already does.
+    type ReviewWithRoundChronology = ReviewDbRow & {
+      round: { round_date: string | null; created_at: string | null; id: string } | null;
+    };
+    let reviews: unknown[];
+    try {
+      reviews = await fetchAllRows<unknown>(
+        (from, to) =>
+          supabase
+            .from('golf_round_reviews')
+            .select('*, round:golf_rounds(round_date, created_at, id)')
+            .eq('player_id', playerId)
+            .order('id', { ascending: true })
+            .range(from, to),
+        1000,
+        { table: 'golf_round_reviews', action: 'getPlayerReviewHistory', sport: 'golf' },
+      );
+    } catch (fetchError) {
+      await logServerError(`getPlayerReviewHistory query failed: ${describeError(fetchError)}`, {
         action: 'getPlayerReviewHistory',
         featureArea: 'round_reviews',
         playerId,
-        extra: { errorCode: error.code },
       });
       return { success: false, error: 'Failed to fetch reviews' };
     }
 
-    type ReviewWithRoundChronology = ReviewDbRow & {
-      round: { round_date: string | null; created_at: string | null; id: string } | null;
-    };
     const rows = (reviews ?? []) as unknown as ReviewWithRoundChronology[];
     rows.sort(compareByRoundChronologyDesc);
 
