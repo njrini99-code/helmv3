@@ -88,6 +88,7 @@ CoachHelm generates insight/pattern/prediction
 - The Triage Desk is an open-work queue: acknowledged/addressed/resolved rows leave the queue but remain available to lifecycle/history and effectiveness reads.
 - “Scan team” must run the canonical CoachHelm engine for the active roster. V3 generators own stable-signature upsert/retraction; the UI must not create a parallel legacy alert feed.
 - Insight evidence is part of the trust contract; UI should make supporting evidence reachable when present.
+- Benchmark provenance (2026-09-23, repair plan N16): a `comparison_source` label must never claim a measured average/norm for a value that is actually derived/estimated. `EvidencePanel.tsx`'s `SOURCE_LABELS` and `baseline-registry.ts`'s `BaselineEntry.provenance`/`sourceNote` fields are the enforcement points; full contract in `docs/architecture/coachhelm-evidence-contract.md`.
 - Coaching philosophy settings feed future alert/insight prioritization and should not be treated as cosmetic preferences.
 - CoachHelm analytics currently has sparse effectiveness data, so UI and agents should not assume the dashboard is fully populated.
 

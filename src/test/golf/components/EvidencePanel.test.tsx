@@ -144,7 +144,7 @@ describe('EvidencePanel', () => {
     const yourValue = screen.getByTestId('evidence-your-value');
     expect(yourValue.textContent).toContain('38%');
     expect(yourValue.textContent).toContain('52%');
-    expect(yourValue.textContent).toContain('D2 average');
+    expect(yourValue.textContent).toContain('D2 target (approx.)');
 
     // Sample + window
     expect(screen.getByTestId('evidence-sample').textContent).toContain('47 putts');
@@ -284,7 +284,7 @@ describe('EvidencePanel', () => {
         />,
       );
       const you = tickLeft('You');
-      const comp = tickLeft('D2 average');
+      const comp = tickLeft('D2 target (approx.)');
       // You (38) is the smaller value → left of the comparison (52).
       expect(you).toBeLessThan(comp);
       // Neither tick is pinned to an edge.
@@ -309,7 +309,7 @@ describe('EvidencePanel', () => {
         />,
       );
       const you = tickLeft('You');
-      const comp = tickLeft('D2 average');
+      const comp = tickLeft('D2 target (approx.)');
       expect(you).toBeGreaterThan(comp);
       expect(you).toBeLessThanOrEqual(100);
       expect(comp).toBeGreaterThanOrEqual(0);

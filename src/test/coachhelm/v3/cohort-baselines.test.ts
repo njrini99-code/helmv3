@@ -3,7 +3,11 @@ import {
   cohortAnchor,
   cohortAnchorLabel,
   cohortAnchorSource,
+  cohortAnchorProvenance,
+  cohortAnchorMetricIds,
   greenHitAnchor,
+  greenHitAnchorProvenance,
+  APPROACH_BUCKETS,
   type CohortGender,
 } from '@/lib/coachhelm/v3/counterfactual/cohort-baselines';
 
@@ -57,5 +61,56 @@ describe('anchor labels and sources say what the number is (repair plan N16)', (
     expect(cohortAnchorLabel('mens', 'sand save')).toBe('PGA Tour sand save avg');
     expect(cohortAnchorSource('womens')).toBe('estimated_target');
     expect(cohortAnchorSource('mens')).toBe('pga_baseline');
+  });
+});
+
+/**
+ * N16 typed-provenance guard: every COHORT_ANCHORS / GREEN_HIT_ANCHORS entry
+ * now carries a `provenance`/`sourceNote` pair next to the number, so this
+ * check is a real data assertion, not a read of prose.
+ */
+describe('typed provenance metadata (repair plan N16)', () => {
+  it('every women\'s anchor is provenance "derived" with a non-empty sourceNote', () => {
+    for (const id of cohortAnchorMetricIds()) {
+      const p = cohortAnchorProvenance(id, 'womens');
+      expect(p, `no provenance for ${id}/womens`).not.toBeNull();
+      expect(p!.provenance).toBe('derived');
+      expect(p!.sourceNote.length).toBeGreaterThan(0);
+    }
+    for (const bucket of APPROACH_BUCKETS) {
+      const p = greenHitAnchorProvenance(bucket, 'womens');
+      expect(p.provenance).toBe('derived');
+      expect(p.sourceNote.length).toBeGreaterThan(0);
+    }
+  });
+
+  it('men\'s putt-make / scrambling / GIR anchors are provenance "measured" (golf_pga_standards, verified 2026-06-06)', () => {
+    for (const id of cohortAnchorMetricIds()) {
+      const p = cohortAnchorProvenance(id, 'mens');
+      expect(p, `no provenance for ${id}/mens`).not.toBeNull();
+      expect(p!.provenance).toBe('measured');
+      expect(p!.sourceNote).toMatch(/golf_pga_standards/);
+    }
+  });
+
+  it('men\'s green-hit-by-band anchors are provenance "derived" (approximate Tour band anchors, NOT the verified 2026-06-06 pass)', () => {
+    // The one place men's and women's share the SAME provenance class: the
+    // green-hit table was never part of the golf_pga_standards verification,
+    // unlike the anchors above — this is the exact self-contradiction the
+    // module header used to have before this audit (N16, 2026-09-23).
+    for (const bucket of APPROACH_BUCKETS) {
+      const p = greenHitAnchorProvenance(bucket, 'mens');
+      expect(p.provenance).toBe('derived');
+    }
+  });
+
+  it('cohortAnchorMetricIds() enumerates every metric a test/audit needs to check (stays in sync with COHORT_ANCHORS)', () => {
+    const ids = cohortAnchorMetricIds();
+    expect(ids).toContain('putts_made_3_5ft_pct');
+    expect(ids).toContain('scrambling_pct_sand');
+    expect(ids).toContain('gir_pct');
+    // approach_proximity_* ids are deliberately absent — see the "green-hit
+    // anchors are their own identity" describe block above.
+    expect(ids).not.toContain('approach_proximity_50_125ft');
   });
 });

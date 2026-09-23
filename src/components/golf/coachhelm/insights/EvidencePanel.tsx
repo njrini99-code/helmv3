@@ -169,12 +169,21 @@ const METHOD_LABELS: Record<InsightEvidence['strokes_impact_method'], string> = 
   rough_estimate: 'Rough estimate',
 };
 
+// N16 (repair plan): d1/d2/d3/naia/juco_avg currently have no live producer
+// (`baselineRegistry` — the only place that would emit one — is dead code;
+// see its own file header) and none of the numbers behind them today are a
+// cited, measured division population stat (the one live example,
+// `baseline-registry.ts`'s former `d2_avg.*` entries, turned out to be an
+// unsourced approximation — see that file's PROVENANCE note). Labeled as
+// approximate targets rather than "average" so a future generator that DOES
+// wire one of these up can't accidentally claim a measured norm without
+// deliberately choosing to.
 const SOURCE_LABELS: Record<InsightEvidence['comparison_source'], string> = {
-  d1_avg: 'D1 average',
-  d2_avg: 'D2 average',
-  d3_avg: 'D3 average',
-  naia_avg: 'NAIA average',
-  juco_avg: 'JUCO average',
+  d1_avg: 'D1 target (approx.)',
+  d2_avg: 'D2 target (approx.)',
+  d3_avg: 'D3 target (approx.)',
+  naia_avg: 'NAIA target (approx.)',
+  juco_avg: 'JUCO target (approx.)',
   your_baseline: 'Your baseline',
   team_avg: 'Team average',
   pga_baseline: 'PGA baseline',

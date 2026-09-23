@@ -9,7 +9,9 @@
  *   1. "Where misses go" — dominant lie_type (fairway / rough / bunker /
  *      hazard) among the misses. Emits when any single lie captures >=40%.
  *   2. "Severity" — average distance_from_green on missed approaches vs the
- *      bucket's D2 baseline. Emits when severity is >1.5x the baseline.
+ *      bucket's approximate miss-severity target (BASELINE_SEVERITY_YDS —
+ *      uncited, not a measured D2 or PGA figure; see that constant's own
+ *      comment). Emits when severity is >1.5x the target.
  *   3. "Direction bias" — left vs right horizontal skew of the misses.
  *      Emits when one side captures >=60%.
  *
@@ -70,7 +72,17 @@ const BUCKET_LABEL: Record<DistanceBucket, string> = {
   '200+': '200+ yards',
 };
 
-/** D2 baseline severity (avg distance_from_green on a missed green) by bucket. */
+/**
+ * Approximate miss-severity target (avg distance_from_green on a missed
+ * green) by bucket. N16 audit (2026-09-23): the three places this value used
+ * to reach an evidence card disagreed with each other about what it was —
+ * this comment called it "D2 baseline", the title said "D2 ~Xy", the
+ * comparison_label said "PGA Tour avg miss severity", and the body said "PGA
+ * Tour avg of X yards". None of those is a cited figure; all three now read
+ * as an approximate target. LIVENESS: as of the same audit, `approach-
+ * analytics.ts` has no importer outside `v2/mining` and is not reachable from
+ * any live route/cron — dead code, kept corrected regardless.
+ */
 const BASELINE_SEVERITY_YDS: Record<DistanceBucket, number> = {
   '<150': 8,
   '150_175': 12,
@@ -507,8 +519,12 @@ async function emitSeverityInsight(
     your_value: Number(stats.avgDistanceFromGreen.toFixed(1)),
     your_value_display: `${Math.round(stats.avgDistanceFromGreen)} yd`,
     comparison_value: baseline,
-    comparison_label: 'PGA Tour avg miss severity',
-    comparison_source: 'pga_baseline',
+    // N16: was 'PGA Tour avg miss severity' / 'pga_baseline' — an uncited
+    // number was claiming a measured Tour figure. `estimated_target` is the
+    // canonical source for "a derived coaching target, not a measured
+    // population average" (see InsightComparisonSource's own doc comment).
+    comparison_label: 'Approximate miss-severity target',
+    comparison_source: 'estimated_target',
     sample_n: stats.n,
     window_days: WINDOW_DAYS,
     window_start: windowStart,
@@ -531,13 +547,13 @@ async function emitSeverityInsight(
   // — the body still carries the absolute numbers for proper context.
   const yourAvgYds = Math.round(stats.avgDistanceFromGreen);
   const title =
-    `${BUCKET_LABEL[stats.bucket]} misses leak ~${yourAvgYds}y from pin (D2 ~${baseline}y)`;
+    `${BUCKET_LABEL[stats.bucket]} misses leak ~${yourAvgYds}y from pin (target ~${baseline}y)`;
   const cappedRatio = Math.min(ratio, SEVERITY_DISPLAY_CAP);
   const ratioPrefix = ratio > SEVERITY_DISPLAY_CAP ? '>=' : '~';
   const content =
     `On your ${stats.n} missed greens from ${BUCKET_LABEL[stats.bucket]} in the ` +
     `last ${WINDOW_DAYS} days, you finish an average of ${yourAvgYds} ` +
-    `yards from the pin (${ratioPrefix}${cappedRatio.toFixed(1)}x the PGA Tour avg of ${baseline} yards). ` +
+    `yards from the pin (${ratioPrefix}${cappedRatio.toFixed(1)}x the ${baseline}-yard target). ` +
     `Oversized misses turn makeable up-and-downs into bogey saves.`;
 
   const drillTags = ['approach', stats.bucket, 'proximity', 'distance_control'];

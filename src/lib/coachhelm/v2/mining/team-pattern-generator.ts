@@ -402,13 +402,20 @@ function detectPuttingDistancePatterns(
 ): MinedPattern[] {
   const patterns: MinedPattern[] = [];
 
-  // Benchmarks are D1 averages from golf_pga_standards (div1_avg_value) — the
-  // appropriate comparison point for college players. PGA Tour values
-  // (62.2 / 35.7 / 15.4) would flag an average D1 putter as a weakness.
+  // N16 correction (2026-09-23): this comment previously claimed these were
+  // "D1 averages from golf_pga_standards (div1_avg_value)" — false. The
+  // object below is a hand-set local constant that has never read the DB;
+  // `div1_avg_value` is not referenced anywhere in this file. The values were
+  // chosen to sit below the men's PGA Tour figures (62.2 / 35.7 / 15.4) so an
+  // average D1 putter isn't flagged as weak, but nobody measured a D1
+  // population average to derive them — they're a reasonable estimate, same
+  // class of number as `BENCHMARKS` above. The user-facing copy below already
+  // says "benchmark", never "average", so no player/coach-facing text changes
+  // here — only the misleading internal comment and a provenance tag.
   const puttBenchmarks = {
-    putt_make_pct_5_10ft: 50,
-    putt_make_pct_10_15ft: 25,
-    putt_make_pct_15_25ft: 12,
+    putt_make_pct_5_10ft: { value: 50, provenance: 'derived' as const, sourceNote: 'Hand-set estimate, below the men\'s PGA Tour 5-10ft figure (62.2%); not read from golf_pga_standards.' },
+    putt_make_pct_10_15ft: { value: 25, provenance: 'derived' as const, sourceNote: 'Hand-set estimate, below the men\'s PGA Tour 10-15ft figure (35.7%); not read from golf_pga_standards.' },
+    putt_make_pct_15_25ft: { value: 12, provenance: 'derived' as const, sourceNote: 'Hand-set estimate, below the men\'s PGA Tour 15-25ft figure (15.4%); not read from golf_pga_standards.' },
   };
 
   const puttLabels: Record<string, string> = {
@@ -421,9 +428,10 @@ function detectPuttingDistancePatterns(
     const player = playerMap.get(id);
     if (!player) continue;
 
-    for (const [key, benchmark] of Object.entries(puttBenchmarks)) {
+    for (const [key, puttBenchmark] of Object.entries(puttBenchmarks)) {
       const val = stats[key as keyof StatsRow] as number | null;
       if (val === null) continue;
+      const benchmark = puttBenchmark.value;
 
       const gap = benchmark - val;
       if (gap > 12) {
