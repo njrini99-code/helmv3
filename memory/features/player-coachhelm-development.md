@@ -319,45 +319,92 @@ Player opens round review
 
 - **Practice-completion log + coach criteria (Addendum A8 slice 2, folded
   into Pkg 9, 2026-09-23, `agent/coachhelm-a8-practice-log`)**:
-  <!-- schema-drift-absent: golf_focus_area_practice_sessions -->
-  `golf_focus_area_practice_sessions` is named below even though it is not
-  yet in the schema snapshot — its migration has not been applied to
-  production (owner's apply queue). Two new, additive surfaces added by
-  `supabase/migrations/20260923110000_golf_focus_area_practice_log.sql`,
-  both gated behind
-  `coachhelm_focus_area_practice_log` (default off everywhere, zero reads
-  or writes of either surface while off):
-  - `golf_player_focus_areas.criteria` — a small, coach-authored jsonb list
-    of "done" definitions (`{entries: [{id, label, source, created_at, met,
-    met_at}]}`), capped at 10 entries, written via a compare-and-swap on
-    `updated_at` with one retry (`addFocusAreaCriterion`,
-    `setFocusAreaCriterionMet` in the new
-    `src/app/golf/actions/focus-area-practice-log.ts`).
-  - `golf_focus_area_practice_sessions` — a NEW append-only table (not a
-    jsonb array, to avoid a read-modify-write losing a concurrent append)
-    logging actual practice completions, idempotent on
-    `UNIQUE(focus_area_id, client_request_id)` via `ON CONFLICT DO NOTHING`
-    (`logFocusAreaPracticeSession`); a repeated `client_request_id` returns
-    `{success: true}`, not a failure. RLS mirrors
-    `golf_player_focus_areas`' own visibility by re-running its SELECT
-    policy inside an `EXISTS` subquery, rather than re-deriving
-    player/coach access a second time; append-only at both the RLS and grant
-    layer (no UPDATE/DELETE policy, no UPDATE/DELETE grant for
-    `authenticated`).
+  <!-- schema-drift-absent: golf_focus_area_practice_sessions, golf_focus_area_criteria, golf_focus_area_practice_sessions_dedupe_key -->
+  `golf_focus_area_practice_sessions` and `golf_focus_area_criteria` are
+  named below even though neither is yet in the schema snapshot — the
+  migration that creates them has not been applied to production (owner's
+  apply queue). Two new, additive, RLS-protected TABLES (both gated behind
+  `coachhelm_focus_area_practice_log`, default off everywhere, zero reads
+  or writes of either surface while off) added by
+  `supabase/migrations/20260923110000_golf_focus_area_practice_log.sql`:
+  - `golf_focus_area_criteria` — one row per coach-authored "done"
+    definition (`focus_area_id`, `player_id`, `label`, `source: 'coach' |
+    'engine'`, `met`, `met_at`, `created_by_user_id`), capped at 10 per
+    focus area (checked in the action via a count query, acceptable
+    because INSERT is coach-gated at the DB layer). **NOT a jsonb column on
+    `golf_player_focus_areas`** — the original design (v1 of this slice) put
+    it there, but a db-migration-reviewer pass caught that
+    `golf_player_focus_areas_update_player` already lets a player PATCH any
+    column on their own focus area row, including a jsonb blob, which would
+    make "coach-authored, cap 10" false at the database layer; a separate
+    table with its own coach-only RLS closes that gap, and also avoids an
+    `ALTER TABLE` (ACCESS EXCLUSIVE lock) on the live, high-traffic
+    `golf_player_focus_areas` table. INSERT and UPDATE are both coach-only
+    (`criteria_insert_coach`, `criteria_update_coach`: active
+    `golf_team_members` + `is_golf_team_coach`, `fa.player_id` must match,
+    `fa.status IN ('active','in_progress','paused')`); INSERT additionally
+    pins `created_by_user_id = auth.uid()`, deliberately NOT repeated in the
+    UPDATE policy's WITH CHECK (that would require the ORIGINAL creating
+    coach to be the one marking a criterion met, denying a different
+    on-team coach doing normal coaching work). UPDATE is column-restricted
+    via `GRANT UPDATE(met, met_at, updated_at)` only — no grant on
+    `label`/`source`, so they're immutable after INSERT even for an
+    on-team coach; verified with `has_column_privilege`, not
+    `has_table_privilege` (the latter is false when only column grants
+    exist). `UNIQUE(focus_area_id, lower(label))` is a functional unique
+    INDEX, not a constraint (Postgres constraints can't take expressions),
+    so PostgREST's `.upsert(onConflict:)` can't target it — the action
+    layer catches the resulting `23505` directly and returns "A criterion
+    with this label already exists." One row per criterion also means
+    `setFocusAreaCriterionMet` is a single-row `UPDATE ... WHERE id = $1 AND
+    focus_area_id = $2`, not a compare-and-swap retry loop over a shared
+    blob — the CAS pattern from v1 no longer applies.
+  - `golf_focus_area_practice_sessions` — an append-only table (not a jsonb
+    array, to avoid a read-modify-write losing a concurrent append) logging
+    actual practice completions, idempotent on
+    `UNIQUE(focus_area_id, client_request_id)` (constraint name
+    `golf_focus_area_practice_sessions_dedupe_key` — the mechanical pg_dump
+    name was 64 chars, over Postgres's 63-char `NAMEDATALEN` limit) via
+    `ON CONFLICT DO NOTHING` (`logFocusAreaPracticeSession`); a repeated
+    `client_request_id` returns `{success: true}`, not a failure. SELECT
+    mirrors `golf_player_focus_areas`' own visibility by re-running its RLS
+    inside an `EXISTS` subquery. INSERT binds the CLAIMED `logged_by_role`
+    to what the database can verify — copying the exact branch predicates
+    from `golf_player_focus_areas_insert_coach` and
+    `golf_player_focus_areas_update_player` (OR'd, each gated on the
+    matching `logged_by_role` value) — rather than trusting `logged_by_role`
+    as a plain enum the action layer computed correctly; a forged role, a
+    forged `logged_by_user_id`, or a `player_id` that doesn't match the
+    parent focus area's own player (even for an otherwise-valid on-team
+    coach) are all denied at the RLS layer, not just the action layer.
+    Append-only at both the RLS and grant layer (no UPDATE/DELETE policy,
+    no UPDATE/DELETE grant for `authenticated`).
+  - Both new tables' actions map a Postgres `42501` (RLS WITH CHECK denial)
+    to a plain `Forbidden` result, never an "outage" log — reaching that
+    code means the action's own checks already agreed to the write and the
+    world changed underneath it (e.g. a team membership lapsed mid-request).
+  - Both `withAdminObserved` wrappers set `observeSoftFailures: false`: a
+    flag-off `{success:false, error:'Not enabled'}` result is an expected,
+    routine state (the migration isn't applied everywhere yet), not an
+    incident — without this, every flag-off call would still write a Bridge
+    soft-failure telemetry row.
   - Deliberately a NEW action file, not `development.ts` — that file was
     under concurrent edit by two other in-flight A8 slices (evidence
     revision / evidence badge) when this slice started, and this keeps
     those rebases conflict-free.
   - **Deliberately out of scope for this slice**: loader/UI wiring. Neither
     the `intelligence`/`coachhelm` page loaders nor `FocusAreaCard` read or
-    render `criteria` or practice sessions yet — those files are owned by
+    render criteria or practice sessions yet — those files are owned by
     the two concurrent A8 slices above, and wiring here would guarantee a
     conflict. A follow-up slice wires the read side once this slice lands.
-  - The new pgTAP suite
-    (`supabase/tests/rls/golf_focus_area_practice_sessions.sql`) has not
-    been run locally (no Docker/local Supabase stack available in this
-    session) — CI's "Supabase lint + RLS tests" job is this suite's first
-    real run.
+  - A `db:types` regen PR follows once the owner applies the migration —
+    until then `src/lib/types/database.ts` has no row types for either
+    table, and both actions go through `fromUntyped(supabase, table)`.
+  - The pgTAP suite
+    (`supabase/tests/rls/golf_focus_area_practice_sessions.sql`, despite the
+    filename, now covers BOTH new tables) has not been run locally (no
+    Docker/local Supabase stack available in this session) — CI's
+    "Supabase lint + RLS tests" job is this suite's first real run.
 
 ## Tests To Prefer
 

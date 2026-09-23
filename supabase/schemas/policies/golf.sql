@@ -389,6 +389,26 @@ CREATE POLICY "coach_weights_coach_only" ON "public"."golf_coachhelm_coach_weigh
 
 CREATE POLICY "coachhelm_action_runs_coach_only" ON "public"."golf_coachhelm_action_runs" USING (("coach_id" = "public"."current_coach_id"())) WITH CHECK (("coach_id" = "public"."current_coach_id"()));
 
+CREATE POLICY "criteria_insert_coach" ON "public"."golf_focus_area_criteria" FOR INSERT TO "authenticated" WITH CHECK ((("created_by_user_id" = ( SELECT "auth"."uid"() AS "uid")) AND (EXISTS ( SELECT 1
+   FROM "public"."golf_player_focus_areas" "fa"
+  WHERE (("fa"."id" = "golf_focus_area_criteria"."focus_area_id") AND ("fa"."player_id" = "golf_focus_area_criteria"."player_id") AND ("fa"."status" = ANY (ARRAY['active'::"text", 'in_progress'::"text", 'paused'::"text"]))))) AND (EXISTS ( SELECT 1
+   FROM "public"."golf_team_members" "gtm"
+  WHERE (("gtm"."player_id" = "golf_focus_area_criteria"."player_id") AND ("gtm"."status" = 'active'::"public"."team_member_status") AND "public"."is_golf_team_coach"("gtm"."team_id"))))));
+
+CREATE POLICY "criteria_select_via_focus_area" ON "public"."golf_focus_area_criteria" FOR SELECT TO "authenticated" USING ((EXISTS ( SELECT 1
+   FROM "public"."golf_player_focus_areas" "fa"
+  WHERE ("fa"."id" = "golf_focus_area_criteria"."focus_area_id"))));
+
+CREATE POLICY "criteria_update_coach" ON "public"."golf_focus_area_criteria" FOR UPDATE TO "authenticated" USING ((EXISTS ( SELECT 1
+   FROM "public"."golf_player_focus_areas" "fa"
+  WHERE (("fa"."id" = "golf_focus_area_criteria"."focus_area_id") AND ("fa"."player_id" = "golf_focus_area_criteria"."player_id") AND ("fa"."status" = ANY (ARRAY['active'::"text", 'in_progress'::"text", 'paused'::"text"]))))) AND (EXISTS ( SELECT 1
+   FROM "public"."golf_team_members" "gtm"
+  WHERE (("gtm"."player_id" = "golf_focus_area_criteria"."player_id") AND ("gtm"."status" = 'active'::"public"."team_member_status") AND "public"."is_golf_team_coach"("gtm"."team_id"))))) WITH CHECK ((EXISTS ( SELECT 1
+   FROM "public"."golf_player_focus_areas" "fa"
+  WHERE (("fa"."id" = "golf_focus_area_criteria"."focus_area_id") AND ("fa"."player_id" = "golf_focus_area_criteria"."player_id") AND ("fa"."status" = ANY (ARRAY['active'::"text", 'in_progress'::"text", 'paused'::"text"]))))) AND (EXISTS ( SELECT 1
+   FROM "public"."golf_team_members" "gtm"
+  WHERE (("gtm"."player_id" = "golf_focus_area_criteria"."player_id") AND ("gtm"."status" = 'active'::"public"."team_member_status") AND "public"."is_golf_team_coach"("gtm"."team_id")))));
+
 CREATE POLICY "drill_attachments_read_via_insight" ON "public"."golf_insight_drill_attachments" FOR SELECT TO "authenticated" USING ((EXISTS ( SELECT 1
    FROM "public"."golf_coach_insights" "gci"
   WHERE ("gci"."id" = "golf_insight_drill_attachments"."insight_id"))));
@@ -658,9 +678,13 @@ CREATE POLICY "practice_sessions_select_via_focus_area" ON "public"."golf_focus_
    FROM "public"."golf_player_focus_areas" "fa"
   WHERE ("fa"."id" = "golf_focus_area_practice_sessions"."focus_area_id"))));
 
-CREATE POLICY "practice_sessions_insert_via_focus_area" ON "public"."golf_focus_area_practice_sessions" FOR INSERT TO "authenticated" WITH CHECK ((("logged_by_user_id" = ( SELECT "auth"."uid"() AS "uid")) AND (EXISTS ( SELECT 1
+CREATE POLICY "practice_sessions_insert_via_focus_area" ON "public"."golf_focus_area_practice_sessions" FOR INSERT TO "authenticated" WITH CHECK (((EXISTS ( SELECT 1
    FROM "public"."golf_player_focus_areas" "fa"
-  WHERE (("fa"."id" = "golf_focus_area_practice_sessions"."focus_area_id") AND ("fa"."player_id" = "golf_focus_area_practice_sessions"."player_id"))))));
+  WHERE (("fa"."id" = "golf_focus_area_practice_sessions"."focus_area_id") AND ("fa"."player_id" = "golf_focus_area_practice_sessions"."player_id") AND ("fa"."status" = ANY (ARRAY['active'::"text", 'in_progress'::"text", 'paused'::"text"]))))) AND ("logged_by_user_id" = ( SELECT "auth"."uid"() AS "uid")) AND ((("golf_focus_area_practice_sessions"."logged_by_role" = 'player'::"text") AND (EXISTS ( SELECT 1
+   FROM "public"."golf_players" "gp"
+  WHERE (("gp"."id" = "golf_focus_area_practice_sessions"."player_id") AND ("gp"."user_id" = ( SELECT "auth"."uid"() AS "uid")))))) OR (("golf_focus_area_practice_sessions"."logged_by_role" = 'coach'::"text") AND (EXISTS ( SELECT 1
+   FROM "public"."golf_team_members" "gtm"
+  WHERE (("gtm"."player_id" = "golf_focus_area_practice_sessions"."player_id") AND ("gtm"."status" = 'active'::"public"."team_member_status") AND "public"."is_golf_team_coach"("gtm"."team_id"))))))));
 
 CREATE POLICY "golf_holes_delete" ON "public"."golf_holes" FOR DELETE TO "authenticated" USING ((EXISTS ( SELECT 1
    FROM ("public"."golf_rounds" "gr"

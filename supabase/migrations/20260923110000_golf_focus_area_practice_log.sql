@@ -1,20 +1,22 @@
 -- A8 slice 2 (addendum "collect only useful context and complete the
 -- coaching action", folded into Pkg 9): persist actual practice completion
--- and coach-authored review criteria against a focus area, through
--- proper concurrency-safe and idempotent write paths.
+-- and coach-authored review criteria against a focus area, through proper
+-- concurrency-safe, idempotent write paths and RLS that binds the claimed
+-- writer identity to what the database can actually verify.
 --
--- Two additions, deliberately different shapes for different reasons:
+-- Two new, append-only tables, NOT columns on golf_player_focus_areas:
 --
--- (criteria) golf_player_focus_areas.criteria jsonb — small (capped at ~10
--- entries, enforced in the action layer, not here), coach-authored, and read
--- alongside the rest of the focus area row, so a jsonb column matches the
--- existing progress_notes convention on this same table. Locked schema:
--- `{ entries: [{ id, label, source: 'coach'|'engine', created_at, met,
--- met_at }] }`. A read-modify-write on this column MUST compare
--- updated_at (or an equivalent version marker) before writing — a plain
--- select-then-update silently drops one of two concurrent appends (e.g. a
--- player's practiced_at bump racing a coach's new criterion) with no
--- constraint to catch it. See the action layer for the compare-and-swap.
+-- (criteria) golf_focus_area_criteria — one row per criterion, not a jsonb
+-- column on golf_player_focus_areas. A jsonb column was the original design
+-- (db review, A8 slice 2 v1) but golf_player_focus_areas_update_player lets
+-- a player PATCH any column on their own focus area, including a jsonb
+-- criteria blob — "coach-authored, capped at 10" would have been false at
+-- the DB layer, enforced only by app code a player's own client never runs.
+-- A separate, coach-only-write table makes that a real RLS guarantee. It
+-- also avoids taking an ACCESS EXCLUSIVE lock on a live, high-traffic
+-- table for a column add. The cap of 10 stays an action-layer check (the
+-- table has no natural row-count constraint), acceptable because the
+-- INSERT path is coach-only, not player-writable.
 --
 -- (sessions) golf_focus_area_practice_sessions — a NEW append-only table,
 -- NOT a jsonb array, because:
@@ -27,37 +29,44 @@
 --      writes of the same jsonb blob where the second writer's UPDATE can
 --      silently discard the first writer's append.
 --
--- Both are purely additive: nullable/no-default (criteria) or a brand new
--- table (sessions), no backfill, and neither ships live yet — see the
+-- Both tables are purely additive (CREATE TABLE, no ALTER on any existing
+-- table) and neither ships live yet — see the
 -- coachhelm_focus_area_practice_log flag (config/feature-flags.yml) gating
 -- every read AND write of either surface until the owner applies this
--- migration in each environment.
+-- migration in each environment. "Additive, no lock" is true of the base
+-- tables themselves; the two new foreign keys DO take a SHARE ROW
+-- EXCLUSIVE lock on golf_player_focus_areas and golf_players respectively
+-- while validating, same as any other FK-carrying table added against a
+-- live parent.
 --
 -- ROLLBACK: additive only.
---   ALTER TABLE public.golf_player_focus_areas DROP COLUMN criteria;
---   DROP TABLE public.golf_focus_area_practice_sessions;
+--   DROP TABLE IF EXISTS public.golf_focus_area_practice_sessions;
+--   DROP TABLE IF EXISTS public.golf_focus_area_criteria;
 --
--- VERIFY: select 1 from information_schema.columns where table_schema = 'public' and table_name = 'golf_player_focus_areas' and column_name = 'criteria'; -- noqa: LT05
 -- VERIFY: select 1 from information_schema.tables where table_schema = 'public' and table_name = 'golf_focus_area_practice_sessions'; -- noqa: LT05
+-- VERIFY: select 1 from information_schema.tables where table_schema = 'public' and table_name = 'golf_focus_area_criteria'; -- noqa: LT05
 -- VERIFY: select 1 where (select relrowsecurity from pg_class where oid = 'public.golf_focus_area_practice_sessions'::regclass); -- noqa: LT05
--- VERIFY: select 1 from pg_constraint where conname = 'golf_focus_area_practice_sessions_focus_area_id_client_reque_key'; -- noqa: LT05
+-- VERIFY: select 1 where (select relrowsecurity from pg_class where oid = 'public.golf_focus_area_criteria'::regclass); -- noqa: LT05
+-- VERIFY: select 1 from pg_constraint where conname = 'golf_focus_area_practice_sessions_dedupe_key'; -- noqa: LT05
+-- VERIFY: select 1 from pg_indexes where schemaname = 'public' and indexname = 'golf_focus_area_criteria_label_unique_idx'; -- noqa: LT05
+-- VERIFY: select 1 from pg_policies where schemaname = 'public' and tablename = 'golf_focus_area_practice_sessions' and policyname = 'practice_sessions_select_via_focus_area'; -- noqa: LT05
+-- VERIFY: select 1 from pg_policies where schemaname = 'public' and tablename = 'golf_focus_area_practice_sessions' and policyname = 'practice_sessions_insert_via_focus_area'; -- noqa: LT05
+-- VERIFY: select 1 from pg_policies where schemaname = 'public' and tablename = 'golf_focus_area_criteria' and policyname = 'criteria_select_via_focus_area'; -- noqa: LT05
+-- VERIFY: select 1 from pg_policies where schemaname = 'public' and tablename = 'golf_focus_area_criteria' and policyname = 'criteria_insert_coach'; -- noqa: LT05
+-- VERIFY: select 1 from pg_policies where schemaname = 'public' and tablename = 'golf_focus_area_criteria' and policyname = 'criteria_update_coach'; -- noqa: LT05
 -- VERIFY: select 1 where not has_table_privilege('anon', 'public.golf_focus_area_practice_sessions', 'SELECT'); -- noqa: LT05
+-- VERIFY: select 1 where has_table_privilege('authenticated', 'public.golf_focus_area_practice_sessions', 'SELECT'); -- noqa: LT05
+-- VERIFY: select 1 where has_table_privilege('authenticated', 'public.golf_focus_area_practice_sessions', 'INSERT'); -- noqa: LT05
 -- VERIFY: select 1 where not has_table_privilege('authenticated', 'public.golf_focus_area_practice_sessions', 'UPDATE'); -- noqa: LT05
 -- VERIFY: select 1 where not has_table_privilege('authenticated', 'public.golf_focus_area_practice_sessions', 'DELETE'); -- noqa: LT05
--- VERIFY: select 1 from pg_policies where schemaname = 'public' and tablename = 'golf_focus_area_practice_sessions'; -- noqa: LT05
+-- VERIFY: select 1 where not has_table_privilege('anon', 'public.golf_focus_area_criteria', 'SELECT'); -- noqa: LT05
+-- VERIFY: select 1 where has_table_privilege('authenticated', 'public.golf_focus_area_criteria', 'SELECT'); -- noqa: LT05
+-- VERIFY: select 1 where has_table_privilege('authenticated', 'public.golf_focus_area_criteria', 'INSERT'); -- noqa: LT05
+-- VERIFY: select 1 where not has_table_privilege('authenticated', 'public.golf_focus_area_criteria', 'DELETE'); -- noqa: LT05
+-- VERIFY: select 1 where has_column_privilege('authenticated', 'public.golf_focus_area_criteria', 'met', 'UPDATE'); -- noqa: LT05
+-- VERIFY: select 1 where not has_column_privilege('authenticated', 'public.golf_focus_area_criteria', 'label', 'UPDATE'); -- noqa: LT05
 
--- golf_player_focus_areas is a live, high-traffic table; cap how long each
--- of these DDL statements will wait for its lock rather than risk queuing
--- behind a long-running transaction indefinitely.
-SET lock_timeout = '5s';
-
-ALTER TABLE public.golf_player_focus_areas
-ADD COLUMN IF NOT EXISTS criteria jsonb;
-
-COMMENT ON COLUMN public.golf_player_focus_areas.criteria
-IS 'A8 slice 2: coach-authored (or engine-suggested) definitions of "done" for this focus area. Locked schema: {"entries": [{id, label, source: coach|engine, created_at, met, met_at}]}. Capped at ~10 entries, enforced in the action layer. NULL = no criteria set yet, or the write flag was off. Read-modify-write must compare a version marker (e.g. updated_at) before writing -- see the action layer''s compare-and-swap.'; -- noqa: LT05
-
-SET lock_timeout = '5s';
+SET LOCAL lock_timeout = '5s';
 
 CREATE TABLE IF NOT EXISTS public.golf_focus_area_practice_sessions (
     id uuid DEFAULT extensions.uuid_generate_v4() NOT NULL,
@@ -74,7 +83,7 @@ CREATE TABLE IF NOT EXISTS public.golf_focus_area_practice_sessions (
     CONSTRAINT golf_focus_area_practice_sessions_logged_by_role_check
     CHECK ((logged_by_role = any(ARRAY['player'::text, 'coach'::text]))),
     CONSTRAINT golf_focus_area_practice_sessions_reps_check
-    CHECK ((reps IS NULL OR reps >= 0))
+    CHECK ((reps IS NULL OR (reps >= 0 AND reps <= 1000)))
 );
 
 ALTER TABLE public.golf_focus_area_practice_sessions OWNER TO "postgres";
@@ -82,8 +91,14 @@ ALTER TABLE public.golf_focus_area_practice_sessions OWNER TO "postgres";
 ALTER TABLE ONLY public.golf_focus_area_practice_sessions
 ADD CONSTRAINT golf_focus_area_practice_sessions_pkey PRIMARY KEY (id);
 
+-- Named golf_focus_area_practice_sessions_dedupe_key (not the mechanical
+-- _focus_area_id_client_reque_key spelling): the mechanical name is 64
+-- bytes, one over Postgres's NAMEDATALEN-1 identifier limit, so it would
+-- have been silently truncated and every reference to the FULL name
+-- (VERIFY above, the pgTAP suite, ON CONFLICT target) would have quietly
+-- mismatched the truncated one actually stored in pg_constraint.
 ALTER TABLE ONLY public.golf_focus_area_practice_sessions
-ADD CONSTRAINT golf_focus_area_practice_sessions_focus_area_id_client_reque_key
+ADD CONSTRAINT golf_focus_area_practice_sessions_dedupe_key
 UNIQUE (focus_area_id, client_request_id);
 
 -- ON DELETE CASCADE (not the NO ACTION default) deliberately: deleteFocusArea
@@ -111,10 +126,10 @@ FOREIGN KEY (player_id) REFERENCES public.golf_players (
 -- never trusted from client input.
 
 COMMENT ON TABLE public.golf_focus_area_practice_sessions IS
-'A8 slice 2: append-only log of actual practice completions against a golf_player_focus_areas row. One row per logged session (player or coach), never updated or deleted by application code -- see the REVOKE below, which grants authenticated INSERT and SELECT only. client_request_id + the UNIQUE(focus_area_id, client_request_id) constraint make a double-submitted log entry (network retry, double-tap) a real no-op via ON CONFLICT DO NOTHING, without ever reading the table back to scan for a duplicate. Gated behind config/feature-flags.yml''s coachhelm_focus_area_practice_log flag (default off) until this migration is applied in production.'; -- noqa: LT05
+'A8 slice 2: append-only log of actual practice completions against a golf_player_focus_areas row. One row per logged session (player or coach), never updated or deleted by application code -- see the REVOKE below, which grants authenticated INSERT and SELECT only. client_request_id + the UNIQUE(focus_area_id, client_request_id) constraint (golf_focus_area_practice_sessions_dedupe_key) make a double-submitted log entry (network retry, double-tap) a real no-op via ON CONFLICT DO NOTHING, without ever reading the table back to scan for a duplicate. Gated behind config/feature-flags.yml''s coachhelm_focus_area_practice_log flag (default off) until this migration is applied in production.'; -- noqa: LT05
 
 -- The natural read pattern is "this focus area''s sessions, in time order" --
--- the leading column overlaps with the UNIQUE constraint''s own implicit
+-- the leading column overlaps with the dedupe constraint''s own implicit
 -- index (which leads with focus_area_id too), but that index is keyed on
 -- (focus_area_id, client_request_id) and is useless for an ORDER BY
 -- practiced_at scan, so this composite index is not redundant with it.
@@ -145,26 +160,49 @@ USING (
     )
 );
 
--- golf_player_focus_areas itself has NO player-self INSERT policy (a player
--- can never insert a focus area directly; only a coach can, or the admin
--- client for self-promote -- see development.ts). This table's INSERT
--- policy is deliberately NOT copied from that: a player logging their OWN
--- practice session must succeed through the ordinary scoped client, so this
--- policy allows INSERT to anyone who can already SEE the parent focus area
--- (player-self OR coach-via-team, via the same EXISTS subquery as SELECT
--- above), while WITH CHECK still pins logged_by_user_id to the caller and
--- player_id to the focus area's own player_id -- neither is ever taken from
--- client-supplied values the RLS layer can't otherwise verify.
+-- INSERT binds the CLAIMED logged_by_role to what the database can verify,
+-- rather than trusting logged_by_role as a plain enum value the action
+-- layer happened to compute correctly. Each branch is copied verbatim from
+-- the source-of-truth policy for that identity on golf_player_focus_areas
+-- itself (golf_player_focus_areas_insert_coach for the coach branch,
+-- golf_player_focus_areas_update_player for the player branch), so this
+-- table's access model can never drift from the parent's. Both branches
+-- also require the parent focus area to be in an actionable lifecycle
+-- state (mirrors the action layer's own lifecycle guard) -- a session
+-- can't be logged against a 'proposed' (not yet accepted) or 'declined'
+-- focus area, closing the gap between what the action checks and what a
+-- client hitting PostgREST directly could otherwise do.
 CREATE POLICY practice_sessions_insert_via_focus_area
 ON public.golf_focus_area_practice_sessions FOR INSERT TO authenticated
 WITH CHECK (
-    logged_by_user_id = (SELECT auth.uid())
-    AND EXISTS (
+    EXISTS (
         SELECT 1 FROM public.golf_player_focus_areas AS fa
         WHERE
             fa.id = golf_focus_area_practice_sessions.focus_area_id
-            AND fa.player_id
-            = golf_focus_area_practice_sessions.player_id
+            AND fa.player_id = golf_focus_area_practice_sessions.player_id
+            AND fa.status IN ('active', 'in_progress', 'paused')
+    )
+    AND logged_by_user_id = (SELECT auth.uid())
+    AND (
+        (
+            golf_focus_area_practice_sessions.logged_by_role = 'player'
+            AND EXISTS (
+                SELECT 1 FROM public.golf_players AS gp
+                WHERE
+                    gp.id = golf_focus_area_practice_sessions.player_id
+                    AND gp.user_id = (SELECT auth.uid())
+            )
+        )
+        OR (
+            golf_focus_area_practice_sessions.logged_by_role = 'coach'
+            AND EXISTS (
+                SELECT 1 FROM public.golf_team_members AS gtm
+                WHERE
+                    gtm.player_id = golf_focus_area_practice_sessions.player_id
+                    AND gtm.status = 'active'::public.team_member_status
+                    AND public.is_golf_team_coach(gtm.team_id)
+            )
+        )
     )
 );
 
@@ -186,3 +224,156 @@ authenticated;
 GRANT SELECT,
 INSERT ON TABLE public.golf_focus_area_practice_sessions TO authenticated;
 GRANT ALL ON TABLE public.golf_focus_area_practice_sessions TO service_role;
+
+SET LOCAL lock_timeout = '5s';
+
+CREATE TABLE IF NOT EXISTS public.golf_focus_area_criteria (
+    id uuid DEFAULT extensions.uuid_generate_v4() NOT NULL,
+    focus_area_id uuid NOT NULL,
+    player_id uuid NOT NULL,
+    label text NOT NULL,
+    source text NOT NULL,
+    met boolean DEFAULT false NOT NULL,
+    met_at timestamp with time zone,
+    created_by_user_id uuid NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT golf_focus_area_criteria_source_check
+    CHECK ((source = any(ARRAY['coach'::text, 'engine'::text]))),
+    CONSTRAINT golf_focus_area_criteria_label_length_check
+    CHECK ((char_length(label) >= 1 AND char_length(label) <= 200))
+);
+
+ALTER TABLE public.golf_focus_area_criteria OWNER TO "postgres";
+
+ALTER TABLE ONLY public.golf_focus_area_criteria
+ADD CONSTRAINT golf_focus_area_criteria_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.golf_focus_area_criteria
+ADD CONSTRAINT golf_focus_area_criteria_focus_area_id_fkey
+FOREIGN KEY (focus_area_id) REFERENCES public.golf_player_focus_areas (
+    id
+) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.golf_focus_area_criteria
+ADD CONSTRAINT golf_focus_area_criteria_player_id_fkey
+FOREIGN KEY (player_id) REFERENCES public.golf_players (
+    id
+) ON DELETE CASCADE;
+
+-- No FK to auth.users for created_by_user_id, matching this repo's existing
+-- convention -- validated against auth.uid() by the INSERT policy below and
+-- by the action layer, never trusted from client input.
+
+-- lower(label) can't be enforced by a plain UNIQUE constraint (Postgres
+-- constraints don't take expressions), so this is a unique INDEX instead --
+-- meaning PostgREST's .upsert(onConflict: ...) can't target it directly;
+-- the action layer maps the resulting 23505 to a clean "already exists"
+-- error instead.
+CREATE UNIQUE INDEX IF NOT EXISTS golf_focus_area_criteria_label_unique_idx -- noqa: LT05
+ON public.golf_focus_area_criteria (focus_area_id, lower(label));
+
+COMMENT ON TABLE public.golf_focus_area_criteria IS
+'A8 slice 2: coach-authored (or engine-suggested) "done" definitions for a focus area -- one row per criterion, not a jsonb column on golf_player_focus_areas (see this migration''s header for why). INSERT is coach-only; UPDATE is coach-only and column-restricted to (met, met_at, updated_at) via GRANT, so a coach can mark a criterion met/unmet but never rewrite its label or source. The cap of ~10 per focus area is enforced in the action layer, acceptable because INSERT is coach-gated. Gated behind config/feature-flags.yml''s coachhelm_focus_area_practice_log flag (default off) until this migration is applied in production.'; -- noqa: LT05
+
+ALTER TABLE public.golf_focus_area_criteria ENABLE ROW LEVEL SECURITY;
+
+-- Same "re-run the parent's own RLS" trick as the sessions table above.
+CREATE POLICY criteria_select_via_focus_area
+ON public.golf_focus_area_criteria FOR SELECT TO authenticated
+USING (
+    EXISTS (
+        SELECT 1 FROM public.golf_player_focus_areas AS fa
+        WHERE fa.id = golf_focus_area_criteria.focus_area_id
+    )
+);
+
+-- Coach-only INSERT, copied verbatim from
+-- golf_player_focus_areas_insert_coach's own EXISTS branch. created_by_user_id
+-- is pinned to the caller HERE, at INSERT time only -- not repeated on the
+-- UPDATE policy below, because WITH CHECK on an UPDATE evaluates the NEW
+-- row, and created_by_user_id can never change under the column grants
+-- (only met/met_at/updated_at are UPDATE-granted). Pinning it there too
+-- would require the ORIGINAL creating coach to be the one marking a
+-- criterion met, which would deny a different on-team coach doing normal
+-- coaching work for no security benefit.
+CREATE POLICY criteria_insert_coach
+ON public.golf_focus_area_criteria FOR INSERT TO authenticated
+WITH CHECK (
+    created_by_user_id = (SELECT auth.uid())
+    AND EXISTS (
+        SELECT 1 FROM public.golf_player_focus_areas AS fa
+        WHERE
+            fa.id = golf_focus_area_criteria.focus_area_id
+            AND fa.player_id = golf_focus_area_criteria.player_id
+            AND fa.status IN ('active', 'in_progress', 'paused')
+    )
+    AND EXISTS (
+        SELECT 1 FROM public.golf_team_members AS gtm
+        WHERE
+            gtm.player_id = golf_focus_area_criteria.player_id
+            AND gtm.status = 'active'::public.team_member_status
+            AND public.is_golf_team_coach(gtm.team_id)
+    )
+);
+
+-- Coach-only UPDATE. Any on-team coach may mark a criterion met/unmet
+-- (deliberately not restricted to whichever coach created it -- see the
+-- comment on criteria_insert_coach above), but the column grants below
+-- mean the ONLY columns PostgREST can actually change here are met,
+-- met_at and updated_at; label and source stay immutable after INSERT.
+CREATE POLICY criteria_update_coach
+ON public.golf_focus_area_criteria FOR UPDATE TO authenticated
+USING (
+    EXISTS (
+        SELECT 1 FROM public.golf_player_focus_areas AS fa
+        WHERE
+            fa.id = golf_focus_area_criteria.focus_area_id
+            AND fa.player_id = golf_focus_area_criteria.player_id
+            AND fa.status IN ('active', 'in_progress', 'paused')
+    )
+    AND EXISTS (
+        SELECT 1 FROM public.golf_team_members AS gtm
+        WHERE
+            gtm.player_id = golf_focus_area_criteria.player_id
+            AND gtm.status = 'active'::public.team_member_status
+            AND public.is_golf_team_coach(gtm.team_id)
+    )
+)
+WITH CHECK (
+    EXISTS (
+        SELECT 1 FROM public.golf_player_focus_areas AS fa
+        WHERE
+            fa.id = golf_focus_area_criteria.focus_area_id
+            AND fa.player_id = golf_focus_area_criteria.player_id
+            AND fa.status IN ('active', 'in_progress', 'paused')
+    )
+    AND EXISTS (
+        SELECT 1 FROM public.golf_team_members AS gtm
+        WHERE
+            gtm.player_id = golf_focus_area_criteria.player_id
+            AND gtm.status = 'active'::public.team_member_status
+            AND public.is_golf_team_coach(gtm.team_id)
+    )
+);
+
+-- No DELETE policy -- criteria are append-only-ish (never removed, only
+-- toggled met/unmet); combined with the REVOKE below, DELETE is refused at
+-- both layers.
+--
+-- Column-restricted UPDATE grant, same reasoning as the sessions REVOKE
+-- above (`authenticated` gets a full implicit grant at CREATE TABLE time
+-- that must be explicitly revoked first): a coach may flip met/met_at
+-- (and updated_at, so the row's own version marker stays honest), but
+-- never label or source -- has_table_privilege('authenticated', ...,
+-- 'UPDATE') correctly reports false here because the grant is
+-- column-scoped, not table-scoped; has_column_privilege is the positive
+-- check (see this migration's header VERIFY lines).
+REVOKE ALL ON TABLE public.golf_focus_area_criteria FROM public,
+anon,
+authenticated;
+GRANT SELECT,
+INSERT ON TABLE public.golf_focus_area_criteria TO authenticated;
+GRANT UPDATE (met, met_at, updated_at) ON TABLE public.golf_focus_area_criteria -- noqa: LT05
+TO authenticated;
+GRANT ALL ON TABLE public.golf_focus_area_criteria TO service_role;

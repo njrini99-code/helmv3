@@ -15,8 +15,17 @@
 //
 // Every exported action below checks the flag FIRST, before any `.from()`
 // call against either surface — while the flag is off, this module makes
-// zero reads or writes of golf_player_focus_areas.criteria or
+// zero reads or writes of golf_focus_area_criteria or
 // golf_focus_area_practice_sessions.
+//
+// Criteria live in their OWN table (golf_focus_area_criteria), not a jsonb
+// column on golf_player_focus_areas — the db-migration-reviewer's design
+// change (see this migration's own header for why: a player-writable jsonb
+// blob on a row a player can already PATCH would make "coach-authored, cap
+// 10" false at the DB layer, and an ALTER TABLE on the live focus-areas
+// table takes an ACCESS EXCLUSIVE lock). One row per criterion also means
+// `setFocusAreaCriterionMet` is a single-row UPDATE, not a
+// compare-and-swap retry loop over a shared blob.
 
 import { createClient } from '@/lib/supabase/server';
 import { fromUntyped } from '@/lib/supabase/untyped';
@@ -25,8 +34,18 @@ import { verifyPlayerAccess } from '@/lib/auth/verify-player-access';
 import { withAdminObserved } from '@/lib/admin/observed-action';
 import { logServerError } from '@/lib/server-error-logger';
 import { describeError } from '@/lib/utils/describe-error';
+import { isUuid } from '@/lib/utils/uuid';
 
 const FLAG = 'coachhelm_focus_area_practice_log';
+
+const NOTE_MAX_LENGTH = 1000;
+const DRILL_ID_MAX_LENGTH = 100;
+const LABEL_MAX_LENGTH = 200;
+const REPS_MIN = 0;
+const REPS_MAX = 1000;
+const PRACTICED_AT_MAX_FUTURE_MS = 24 * 60 * 60 * 1000; // 1 day
+const PRACTICED_AT_MAX_PAST_MS = 365 * 24 * 60 * 60 * 1000; // 365 days
+const MAX_CRITERIA_ENTRIES = 10;
 
 /**
  * Lifecycle states a focus area may log a practice session or take a
@@ -34,7 +53,9 @@ const FLAG = 'coachhelm_focus_area_practice_log';
  * `ACTIONABLE_FOCUS_AREA_STATUSES` (not imported) — that module is under
  * concurrent edit by two other in-flight A8 slices, and this small,
  * stable set is cheaper to keep in sync by eye than to risk a rebase
- * conflict over an import change to a shared, contested file.
+ * conflict over an import change to a shared, contested file. Mirrored
+ * exactly in the RLS policies added by this migration (fa.status IN
+ * ('active', 'in_progress', 'paused')).
  */
 const ACTIONABLE_FOCUS_AREA_STATUSES = ['active', 'in_progress', 'paused'] as const;
 
@@ -46,6 +67,21 @@ function focusAreaLifecycleError(status: string | null | undefined): string | nu
   if (status === 'declined') return 'This focus area was declined by the player.';
   if (status === 'completed') return 'This focus area is already completed.';
   return 'This focus area cannot be updated in its current state.';
+}
+
+/**
+ * `code === '42501'` (insufficient_privilege) means an RLS WITH CHECK
+ * rejected the write — the action's own checks above should always catch
+ * this first, so reaching it here means the world changed between our read
+ * and the write (e.g. a team membership lapsed mid-request). Never an
+ * "outage" log: this is the database doing its job as defense in depth.
+ */
+function isRlsDenied(error: { code?: string } | null | undefined): boolean {
+  return error?.code === '42501';
+}
+
+function isUniqueViolation(error: { code?: string } | null | undefined): boolean {
+  return error?.code === '23505';
 }
 
 // ============================================================================
@@ -64,11 +100,50 @@ export interface LogFocusAreaPracticeSessionInput {
   practicedAt?: string;
 }
 
+function validateLogFocusAreaPracticeSessionInput(
+  input: LogFocusAreaPracticeSessionInput,
+): string | null {
+  if (!isUuid(input.focusAreaId)) return 'Invalid focus area.';
+  if (!isUuid(input.clientRequestId)) return 'Invalid request id.';
+  if (input.drillId != null) {
+    if (typeof input.drillId !== 'string' || input.drillId.trim().length > DRILL_ID_MAX_LENGTH) {
+      return `Drill id must be ${DRILL_ID_MAX_LENGTH} characters or fewer.`;
+    }
+  }
+  if (input.note != null) {
+    if (typeof input.note !== 'string' || input.note.length > NOTE_MAX_LENGTH) {
+      return `Note must be ${NOTE_MAX_LENGTH} characters or fewer.`;
+    }
+  }
+  if (input.reps != null) {
+    if (!Number.isInteger(input.reps) || input.reps < REPS_MIN || input.reps > REPS_MAX) {
+      return `Reps must be a whole number between ${REPS_MIN} and ${REPS_MAX}.`;
+    }
+  }
+  if (input.practicedAt != null) {
+    const parsed = Date.parse(input.practicedAt);
+    if (Number.isNaN(parsed)) return 'Invalid practice date.';
+    const now = Date.now();
+    if (parsed > now + PRACTICED_AT_MAX_FUTURE_MS) {
+      return 'Practice date cannot be more than a day in the future.';
+    }
+    if (parsed < now - PRACTICED_AT_MAX_PAST_MS) {
+      return 'Practice date cannot be more than a year in the past.';
+    }
+  }
+  return null;
+}
+
 async function logFocusAreaPracticeSessionImpl(
   input: LogFocusAreaPracticeSessionInput,
 ): Promise<{ success: boolean; error?: string }> {
   if (!isFlagEnabled(FLAG)) {
     return { success: false, error: 'Not enabled' };
+  }
+
+  const validationError = validateLogFocusAreaPracticeSessionInput(input);
+  if (validationError) {
+    return { success: false, error: validationError };
   }
 
   const supabase = await createClient();
@@ -110,7 +185,9 @@ async function logFocusAreaPracticeSessionImpl(
   // client input — `access.reason` is either 'self' (the caller IS the
   // player) or 'coach' (the caller staffs the player's active team); both
   // are the only two branches `verifyPlayerAccess` can return `allowed:
-  // true` for.
+  // true` for. The INSERT policy independently re-verifies this same
+  // binding at the database layer, so a forged role can never slip through
+  // even if this line had a bug.
   const loggedByRole = access.reason === 'coach' ? 'coach' : 'player';
 
   // ON CONFLICT DO NOTHING via ignoreDuplicates: a retried/double-tapped
@@ -136,6 +213,9 @@ async function logFocusAreaPracticeSessionImpl(
     .select('id');
 
   if (error) {
+    if (isRlsDenied(error)) {
+      return { success: false, error: 'Forbidden' };
+    }
     await logServerError(`Failed to log practice session: ${describeError(error)}`, {
       action: 'focusAreaPracticeLog.log',
       featureArea: 'development',
@@ -148,7 +228,7 @@ async function logFocusAreaPracticeSessionImpl(
 
 const observedLogFocusAreaPracticeSession = withAdminObserved(
   'logFocusAreaPracticeSession',
-  { sport: 'golf', feature: 'development_plans_coach' },
+  { sport: 'golf', feature: 'development_plans_coach', observeSoftFailures: false },
   logFocusAreaPracticeSessionImpl,
 );
 
@@ -159,40 +239,27 @@ export async function logFocusAreaPracticeSession(
 }
 
 // ============================================================================
-// Criteria (coach-authored, compare-and-swap)
+// Criteria (coach-authored "done" definitions — golf_focus_area_criteria)
 // ============================================================================
 
-interface FocusAreaCriterionEntry {
-  id: string;
-  label: string;
-  source: 'coach' | 'engine';
-  created_at: string;
-  met: boolean;
-  met_at: string | null;
-}
-
-interface FocusAreaCriteriaRow {
-  player_id: string | null;
+interface FocusAreaAccessContext {
+  playerId: string;
   status: string | null;
-  updated_at: string | null;
-  criteria: { entries: FocusAreaCriterionEntry[] } | null;
 }
-
-const MAX_CRITERIA_ENTRIES = 10;
-const CRITERIA_CAS_MAX_ATTEMPTS = 2;
 
 /**
  * Loads the focus area row needed by both criteria mutations below, coach
  * access included. Returns an error string (never throws) so both callers
  * can `return` it directly on a non-null result.
  */
-async function loadCriteriaMutationContext(
+async function loadFocusAreaForCriteria(
   supabase: Awaited<ReturnType<typeof createClient>>,
   focusAreaId: string,
   userId: string,
-): Promise<{ row: FocusAreaCriteriaRow; coachId?: string } | { error: string }> {
-  const { data: focusArea, error: focusAreaError } = await fromUntyped(supabase, 'golf_player_focus_areas')
-    .select('player_id, status, updated_at, criteria')
+): Promise<{ context: FocusAreaAccessContext } | { error: string }> {
+  const { data: focusArea, error: focusAreaError } = await supabase
+    .from('golf_player_focus_areas')
+    .select('player_id, status')
     .eq('id', focusAreaId)
     .maybeSingle();
 
@@ -204,28 +271,26 @@ async function loadCriteriaMutationContext(
     return { error: "Couldn't load this focus area. Please try again." };
   }
 
-  const row = focusArea as FocusAreaCriteriaRow | null;
-  if (!row?.player_id) {
+  if (!focusArea?.player_id) {
     return { error: 'Focus area not found' };
   }
 
-  const access = await verifyPlayerAccess(row.player_id, userId, supabase);
-  // Only a coach may author criteria — a player's own access ('self') is
-  // deliberately excluded here, unlike the practice-session log above.
+  const access = await verifyPlayerAccess(focusArea.player_id, userId, supabase);
+  // Only a coach may author or resolve criteria — a player's own access
+  // ('self') is deliberately excluded here, unlike the practice-session log
+  // above. Mirrored at the database layer by criteria_insert_coach and
+  // criteria_update_coach, which require an active is_golf_team_coach
+  // membership and have no 'self' branch at all.
   if (!access.allowed || access.reason !== 'coach') {
     return { error: 'Forbidden' };
   }
 
-  const lifecycleError = focusAreaLifecycleError(row.status);
+  const lifecycleError = focusAreaLifecycleError(focusArea.status);
   if (lifecycleError) {
     return { error: lifecycleError };
   }
 
-  return { row, coachId: access.coachId };
-}
-
-function normalizeLabel(label: string): string {
-  return label.trim().toLowerCase();
+  return { context: { playerId: focusArea.player_id, status: focusArea.status } };
 }
 
 export interface AddFocusAreaCriterionInput {
@@ -240,9 +305,18 @@ async function addFocusAreaCriterionImpl(
     return { success: false, error: 'Not enabled' };
   }
 
+  if (!isUuid(input.focusAreaId)) {
+    return { success: false, error: 'Invalid focus area.' };
+  }
+  if (typeof input.label !== 'string') {
+    return { success: false, error: 'A criterion needs a label.' };
+  }
   const label = input.label.trim();
   if (!label) {
     return { success: false, error: 'A criterion needs a label.' };
+  }
+  if (label.length > LABEL_MAX_LENGTH) {
+    return { success: false, error: `Label must be ${LABEL_MAX_LENGTH} characters or fewer.` };
   }
 
   const supabase = await createClient();
@@ -251,69 +325,56 @@ async function addFocusAreaCriterionImpl(
     return { success: false, error: 'Not authenticated' };
   }
 
-  for (let attempt = 0; attempt < CRITERIA_CAS_MAX_ATTEMPTS; attempt++) {
-    const context = await loadCriteriaMutationContext(supabase, input.focusAreaId, user.id);
-    if ('error' in context) {
-      return { success: false, error: context.error };
-    }
-
-    const existingEntries = context.row.criteria?.entries ?? [];
-    if (existingEntries.some((entry) => normalizeLabel(entry.label) === normalizeLabel(label))) {
-      return { success: false, error: 'A criterion with this label already exists.' };
-    }
-    if (existingEntries.length >= MAX_CRITERIA_ENTRIES) {
-      return { success: false, error: `A focus area can have at most ${MAX_CRITERIA_ENTRIES} criteria.` };
-    }
-
-    const nowIso = new Date().toISOString();
-    const nextEntries: FocusAreaCriterionEntry[] = [
-      ...existingEntries,
-      {
-        id: crypto.randomUUID(),
-        label,
-        source: 'coach',
-        created_at: nowIso,
-        met: false,
-        met_at: null,
-      },
-    ];
-
-    // Compare-and-swap: the WHERE also pins updated_at (or its absence) to
-    // the value just read, so a concurrent writer's change since our read
-    // makes this UPDATE match zero rows instead of silently overwriting
-    // their append.
-    let query = fromUntyped(supabase, 'golf_player_focus_areas')
-      .update({ criteria: { entries: nextEntries }, updated_at: nowIso })
-      .eq('id', input.focusAreaId);
-    query = context.row.updated_at
-      ? query.eq('updated_at', context.row.updated_at)
-      : query.is('updated_at', null);
-    const { data: updated, error } = await query.select('id');
-
-    if (error) {
-      await logServerError(`Failed to add focus area criterion: ${describeError(error)}`, {
-        action: 'focusAreaPracticeLog.addCriterion',
-        featureArea: 'development',
-      });
-      return { success: false, error: 'Failed to save this criterion. Please try again.' };
-    }
-
-    if (updated && updated.length > 0) {
-      return { success: true };
-    }
-    // 0 rows: another writer changed updated_at between our read and this
-    // update. Retry once with a fresh read; otherwise report the conflict.
+  const loaded = await loadFocusAreaForCriteria(supabase, input.focusAreaId, user.id);
+  if ('error' in loaded) {
+    return { success: false, error: loaded.error };
   }
 
-  return {
-    success: false,
-    error: 'This focus area changed while you were editing. Please try again.',
-  };
+  const { count, error: countError } = await fromUntyped(supabase, 'golf_focus_area_criteria')
+    .select('id', { count: 'exact', head: true })
+    .eq('focus_area_id', input.focusAreaId);
+
+  if (countError) {
+    await logServerError(`Failed to count focus area criteria: ${describeError(countError)}`, {
+      action: 'focusAreaPracticeLog.addCriterion.count',
+      featureArea: 'development',
+    });
+    return { success: false, error: 'Failed to save this criterion. Please try again.' };
+  }
+  if ((count ?? 0) >= MAX_CRITERIA_ENTRIES) {
+    return { success: false, error: `A focus area can have at most ${MAX_CRITERIA_ENTRIES} criteria.` };
+  }
+
+  const { error } = await fromUntyped(supabase, 'golf_focus_area_criteria')
+    .insert({
+      focus_area_id: input.focusAreaId,
+      player_id: loaded.context.playerId,
+      label,
+      source: 'coach',
+      created_by_user_id: user.id,
+    })
+    .select('id');
+
+  if (error) {
+    if (isUniqueViolation(error)) {
+      return { success: false, error: 'A criterion with this label already exists.' };
+    }
+    if (isRlsDenied(error)) {
+      return { success: false, error: 'Forbidden' };
+    }
+    await logServerError(`Failed to add focus area criterion: ${describeError(error)}`, {
+      action: 'focusAreaPracticeLog.addCriterion',
+      featureArea: 'development',
+    });
+    return { success: false, error: 'Failed to save this criterion. Please try again.' };
+  }
+
+  return { success: true };
 }
 
 const observedAddFocusAreaCriterion = withAdminObserved(
   'addFocusAreaCriterion',
-  { sport: 'golf', feature: 'development_plans_coach' },
+  { sport: 'golf', feature: 'development_plans_coach', observeSoftFailures: false },
   addFocusAreaCriterionImpl,
 );
 
@@ -336,61 +397,60 @@ async function setFocusAreaCriterionMetImpl(
     return { success: false, error: 'Not enabled' };
   }
 
+  if (!isUuid(input.focusAreaId)) {
+    return { success: false, error: 'Invalid focus area.' };
+  }
+  if (!isUuid(input.criterionId)) {
+    return { success: false, error: 'Invalid criterion.' };
+  }
+
   const supabase = await createClient();
   const { data: { user }, error: userError } = await supabase.auth.getUser();
   if (userError || !user) {
     return { success: false, error: 'Not authenticated' };
   }
 
-  for (let attempt = 0; attempt < CRITERIA_CAS_MAX_ATTEMPTS; attempt++) {
-    const context = await loadCriteriaMutationContext(supabase, input.focusAreaId, user.id);
-    if ('error' in context) {
-      return { success: false, error: context.error };
-    }
-
-    const existingEntries = context.row.criteria?.entries ?? [];
-    const targetIndex = existingEntries.findIndex((entry) => entry.id === input.criterionId);
-    if (targetIndex === -1) {
-      return { success: false, error: 'Criterion not found' };
-    }
-
-    const nowIso = new Date().toISOString();
-    const nextEntries = existingEntries.map((entry, index) =>
-      index === targetIndex
-        ? { ...entry, met: input.met, met_at: input.met ? nowIso : null }
-        : entry,
-    );
-
-    let query = fromUntyped(supabase, 'golf_player_focus_areas')
-      .update({ criteria: { entries: nextEntries }, updated_at: nowIso })
-      .eq('id', input.focusAreaId);
-    query = context.row.updated_at
-      ? query.eq('updated_at', context.row.updated_at)
-      : query.is('updated_at', null);
-    const { data: updated, error } = await query.select('id');
-
-    if (error) {
-      await logServerError(`Failed to update focus area criterion: ${describeError(error)}`, {
-        action: 'focusAreaPracticeLog.setCriterionMet',
-        featureArea: 'development',
-      });
-      return { success: false, error: 'Failed to save this criterion. Please try again.' };
-    }
-
-    if (updated && updated.length > 0) {
-      return { success: true };
-    }
+  const loaded = await loadFocusAreaForCriteria(supabase, input.focusAreaId, user.id);
+  if ('error' in loaded) {
+    return { success: false, error: loaded.error };
   }
 
-  return {
-    success: false,
-    error: 'This focus area changed while you were editing. Please try again.',
-  };
+  // Single-row UPDATE, no compare-and-swap: one row per criterion means
+  // there's no shared blob another writer could concurrently clobber. The
+  // column-restricted GRANT (met, met_at, updated_at only) is what actually
+  // keeps this from touching label/source, not application logic.
+  const nowIso = new Date().toISOString();
+  const { data: updated, error } = await fromUntyped(supabase, 'golf_focus_area_criteria')
+    .update({
+      met: input.met,
+      met_at: input.met ? nowIso : null,
+      updated_at: nowIso,
+    })
+    .eq('id', input.criterionId)
+    .eq('focus_area_id', input.focusAreaId)
+    .select('id');
+
+  if (error) {
+    if (isRlsDenied(error)) {
+      return { success: false, error: 'Forbidden' };
+    }
+    await logServerError(`Failed to update focus area criterion: ${describeError(error)}`, {
+      action: 'focusAreaPracticeLog.setCriterionMet',
+      featureArea: 'development',
+    });
+    return { success: false, error: 'Failed to save this criterion. Please try again.' };
+  }
+
+  if (!updated || updated.length === 0) {
+    return { success: false, error: 'Criterion not found' };
+  }
+
+  return { success: true };
 }
 
 const observedSetFocusAreaCriterionMet = withAdminObserved(
   'setFocusAreaCriterionMet',
-  { sport: 'golf', feature: 'development_plans_coach' },
+  { sport: 'golf', feature: 'development_plans_coach', observeSoftFailures: false },
   setFocusAreaCriterionMetImpl,
 );
 

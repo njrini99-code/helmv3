@@ -738,6 +738,23 @@ CREATE TABLE IF NOT EXISTS "public"."golf_events" (
 
 ALTER TABLE "public"."golf_events" OWNER TO "postgres";
 
+CREATE TABLE IF NOT EXISTS "public"."golf_focus_area_criteria" (
+    "id" "uuid" DEFAULT "extensions"."uuid_generate_v4"() NOT NULL,
+    "focus_area_id" "uuid" NOT NULL,
+    "player_id" "uuid" NOT NULL,
+    "label" "text" NOT NULL,
+    "source" "text" NOT NULL,
+    "met" boolean DEFAULT false NOT NULL,
+    "met_at" timestamp with time zone,
+    "created_by_user_id" "uuid" NOT NULL,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    CONSTRAINT "golf_focus_area_criteria_source_check" CHECK (("source" = ANY (ARRAY['coach'::"text", 'engine'::"text"]))),
+    CONSTRAINT "golf_focus_area_criteria_label_length_check" CHECK ((("char_length"("label") >= 1) AND ("char_length"("label") <= 200)))
+);
+
+ALTER TABLE "public"."golf_focus_area_criteria" OWNER TO "postgres";
+
 CREATE TABLE IF NOT EXISTS "public"."golf_focus_area_practice_sessions" (
     "id" "uuid" DEFAULT "extensions"."uuid_generate_v4"() NOT NULL,
     "focus_area_id" "uuid" NOT NULL,
@@ -751,7 +768,7 @@ CREATE TABLE IF NOT EXISTS "public"."golf_focus_area_practice_sessions" (
     "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
     "client_request_id" "uuid" NOT NULL,
     CONSTRAINT "golf_focus_area_practice_sessions_logged_by_role_check" CHECK (("logged_by_role" = ANY (ARRAY['player'::"text", 'coach'::"text"]))),
-    CONSTRAINT "golf_focus_area_practice_sessions_reps_check" CHECK ((("reps" IS NULL) OR ("reps" >= 0)))
+    CONSTRAINT "golf_focus_area_practice_sessions_reps_check" CHECK ((("reps" IS NULL) OR (("reps" >= 0) AND ("reps" <= 1000))))
 );
 
 ALTER TABLE "public"."golf_focus_area_practice_sessions" OWNER TO "postgres";
@@ -1265,7 +1282,6 @@ CREATE TABLE IF NOT EXISTS "public"."golf_player_focus_areas" (
     "baseline_value" numeric,
     "snapshots" "jsonb" DEFAULT '[]'::"jsonb" NOT NULL,
     "evidence_revision" "text",
-    "criteria" "jsonb",
     CONSTRAINT "golf_player_focus_areas_target_kind_check" CHECK (("target_kind" = ANY (ARRAY['date'::"text", 'rounds'::"text"])))
 );
 

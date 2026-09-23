@@ -298,21 +298,26 @@ flags:
       exist in generated types yet, and that escape hatch should not
       outlive the reason it was needed.
 
-  # Addendum A8 slice 2 (folded into Pkg 9): gates BOTH new surfaces added by
+  # Addendum A8 slice 2 (folded into Pkg 9): gates BOTH new tables added by
   # supabase/migrations/20260923110000_golf_focus_area_practice_log.sql —
-  # golf_player_focus_areas.criteria and the new golf_focus_area_practice_sessions
-  # table. Neither is applied to production yet (owner's migration apply
-  # queue); every read AND write of either surface must check this flag
-  # first, with zero .from() calls against either surface while it is off,
-  # since the column/table may not exist yet in a given environment.
+  # golf_focus_area_criteria (coach-written "done" definitions, one row per
+  # criterion) and golf_focus_area_practice_sessions (the append-only
+  # practice-completion log). A db-migration-reviewer pass moved criteria
+  # OUT of a golf_player_focus_areas jsonb column (v1 of this slice) into
+  # its own table, since a player could otherwise PATCH it directly — see
+  # memory/features/player-coachhelm-development.md. Neither table is
+  # applied to production yet (owner's migration apply queue); every read
+  # AND write of either table must check this flag first, with zero
+  # .from() calls against either while it is off, since neither table
+  # exists yet in a given environment.
   - feature_id: coachhelm_focus_area_practice_log
     owner: golf/coachhelm
     purpose: >-
-      Gates the practice-completion log rows for a focus area and the
-      coach-written review criteria on golf_player_focus_areas added for
-      A8 slice 2. Off means zero reads or writes of either surface
-      anywhere in the app — required because the migration that creates
-      them has not been applied in every environment yet.
+      Gates the coach-written "done" criteria and the practice-completion
+      log rows for a focus area, added for A8 slice 2. Off means zero
+      reads or writes of either new table anywhere in the app — required
+      because the migration that creates them has not been applied in
+      every environment yet.
     type: temporary_migration
     status: active
     created_at: "2026-09-23"
