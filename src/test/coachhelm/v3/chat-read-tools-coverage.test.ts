@@ -1,5 +1,18 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { CoachChatContext } from '@/lib/coachhelm/v3/chat/context';
+
+// getPlayerInsights (A6 top-N audit) now routes through the canonical
+// rank->collapse->dedupe pipeline, which loads the player's real coach
+// weights + active goals — both hit their own tables via a fresh client, so
+// they must be mocked the same way insight-delivery.ts's own tests mock them.
+vi.mock('@/lib/coachhelm/v3/ranking/score', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/lib/coachhelm/v3/ranking/score')>();
+  return { ...actual, loadCoachWeightsForPlayer: vi.fn(async () => ({})) };
+});
+vi.mock('@/lib/coachhelm/v3/goals/loader', () => ({
+  loadActiveGoals: vi.fn(async () => []),
+}));
+
 import {
   comparePlayers,
   getFocusAreas,
@@ -59,7 +72,7 @@ function sbWith(script: Record<string, Array<Partial<QueryResult>>>) {
     from: vi.fn((table: string) => {
       const result = queues.get(table)?.shift() ?? { data: [], error: null };
       const chain: Record<string, unknown> = {};
-      for (const method of ['select', 'eq', 'in', 'order', 'gte', 'lte', 'neq', 'limit', 'or']) {
+      for (const method of ['select', 'eq', 'in', 'order', 'gte', 'lte', 'neq', 'limit', 'range', 'or']) {
         chain[method] = vi.fn(() => chain);
       }
       chain.maybeSingle = vi.fn(async () => result);
@@ -226,12 +239,27 @@ describe('CoachHelm read tools — sourced envelope contracts', () => {
         golf_coach_insights: [{
           data: [{
             id: 'insight-1',
+            player_id: 'p1',
             insight_type: 'trend',
             category: 'putting',
             title: 'Inside six feet',
             content: 'Conversion improved.',
-            evidence: { metric_label: 'Make rate', your_value_display: '82%' },
+            // strokes_impact/confidence/metric are the eligibility floor
+            // `mapRowToRankable` (insight-delivery-ranking.ts) applies — a row
+            // missing any of them can't be scored, so it can't be ranked into
+            // this tool's output either (A6: same floor as the feed).
+            evidence: {
+              metric_label: 'Make rate',
+              your_value_display: '82%',
+              strokes_impact: 0.6,
+              confidence: 0.8,
+              metric: 'putts_made_5_10ft_pct',
+            },
+            lifecycle_state: 'detected',
+            status: 'active',
+            priority: 'medium',
             created_at: '2026-08-17T12:00:00Z',
+            updated_at: '2026-08-17T12:00:00Z',
           }],
         }],
       }),
@@ -251,6 +279,68 @@ describe('CoachHelm read tools — sourced envelope contracts', () => {
         created_at: '2026-08-17T12:00:00Z',
       },
     ]);
+  });
+
+  it('ranks by the canonical composite, not DB/array order (A6 revert-check)', async () => {
+    // Five recent, low-impact rows come FIRST in array/DB order; one older,
+    // high-impact row comes LAST. The pre-fix code trusted `created_at DESC`
+    // order straight from the DB and just sliced to `limit` — under that
+    // behavior the low-impact rows would win and the high-impact row (last
+    // in the array, and outside a small limit) would never surface. The fix
+    // re-ranks every candidate by the shared composite before slicing, so
+    // the high-impact row must win regardless of its position in the array.
+    const lowImpactRows = Array.from({ length: 5 }, (_, i) => ({
+      id: `low-${i}`,
+      player_id: 'p1',
+      insight_type: 'trend',
+      category: 'putting',
+      title: `Low impact ${i}`,
+      content: 'Minor.',
+      evidence: {
+        metric_label: 'Make rate',
+        your_value_display: '50%',
+        strokes_impact: 0.1,
+        confidence: 0.4,
+        metric: `putts_low_${i}`,
+      },
+      lifecycle_state: 'detected',
+      status: 'active',
+      priority: 'medium',
+      created_at: `2026-09-2${i}T12:00:00Z`,
+      updated_at: `2026-09-2${i}T12:00:00Z`,
+    }));
+    const importantRow = {
+      id: 'important-1',
+      player_id: 'p1',
+      insight_type: 'trend',
+      category: 'putting',
+      title: 'Three-putt rate spiking',
+      content: 'Big impact.',
+      evidence: {
+        metric_label: 'Three-putt rate',
+        your_value_display: '18%',
+        strokes_impact: 2.5,
+        confidence: 0.95,
+        metric: 'three_putt_rate',
+      },
+      lifecycle_state: 'detected',
+      status: 'active',
+      priority: 'medium',
+      created_at: '2026-08-01T12:00:00Z',
+      updated_at: '2026-08-01T12:00:00Z',
+    };
+
+    const envelope = await getPlayerInsights(
+      sbWith({
+        golf_coach_insights: [{ data: [...lowImpactRows, importantRow] }],
+      }),
+      ctx,
+      { player_id: 'p1', limit: 3 },
+    );
+
+    const insights = (envelope.detail as { insights: Array<{ insight_id: string }> }).insights;
+    expect(insights).toHaveLength(3);
+    expect(insights[0]?.insight_id).toBe('important-1');
   });
 
   it('labels active focus areas with the roster player name', async () => {

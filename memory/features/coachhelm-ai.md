@@ -136,6 +136,55 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
   feeds with `rankEvidenceInsights`; order a "sort by priority" list with
   `compareBySeverity` from `v3/ranking/score.ts` over the full set, then
   paginate.
+- Top-N selection audit (addendum A6, 2026-09-23): every reader that picks a
+  top-N/top-1 `golf_coach_insights` row must apply eligibility
+  (`applyInsightVisibility` + the player-feedback overlay on player-facing
+  surfaces) BEFORE any DB `.limit()`/client `.slice()`, and rank survivors
+  with the canonical composite (`scoreInsight`, via
+  `rankEvidenceInsights`/`rankEvidenceInsightsScored` in
+  `app/golf/actions/insight-delivery-ranking.ts`), never an ad-hoc formula —
+  truncating before ranking can silently drop a genuinely higher-priority
+  row that's merely older than the cutoff. Fixed four real instances of this
+  bug: the Hub's urgent-priority fast path (`getTopInsightForPlayer`) used
+  to take `.limit(1)` by `created_at DESC`, so 2+ open urgent rows could
+  return the newest rather than the best-by-composite (URGENT_SHORT_CIRCUIT
+  lifts all urgent rows equally; among them the composite still decides) —
+  now fetches up to 20 urgent candidates and ranks them through the same
+  pipeline. The round-review takeaway (`getRoundTakeawayInsight`) used to
+  `.limit(20)` its ±24h window before ranking with neutral `{}`/`[]`
+  weights/goals and no collapse/dedupe/feedback-overlay — now paginates the
+  full window via `fetchAllRowsResult`, ranks with the player's real
+  weights/goals, and applies the same collapse/dedupe/overlay every other
+  player-facing surface applies. The team dashboard's `getTeamInsightsSummary`
+  used to derive `topInsight`/`activeInsights`/`urgentInsights` from the SAME
+  paginated table-body page (newest ≤100 rows for the whole team) — a
+  player's true worst row past that boundary was invisible — now a separate
+  full-team `fetchAllRowsResult` fetch (uncapped) feeds the summary while the
+  table body keeps its existing pagination. The coach chat tool
+  `getPlayerInsights` (`v3/chat/read-tools.ts`) used to be pure
+  `.order('created_at' desc).limit(input.limit)` with zero ranking — now
+  routes through the same `rankEvidenceInsights` → `collapseParScoring` →
+  `dedupeBySubject` pipeline via a new `mapRowToRankable` helper in
+  `insight-delivery-ranking.ts`, coach-facing (no player-feedback overlay,
+  matching the coach feed's documented rule). The roster card
+  (`getTopInsightsForPlayers`) keeps its existing neutral-weights/no-goals
+  batched-sweep ranking (a deliberate one-query-for-the-whole-roster
+  tradeoff), but its docblock's claim of guaranteed agreement with the
+  per-player feed's head was corrected — false whenever a player has an
+  active goal or non-default coach weight. Deliberately NOT routed through
+  `scoreInsight` (different domains, not an oversight): the goal-suggestion
+  writer's metric-severity ranking and `getPlayerWeakestAreas`/weekly-digest
+  pattern rollups. `insights.ts`'s `getTopInsightsByStrokeImpact` (legacy V2
+  ad-hoc `strokeImpactScore` sort) has zero real callers left — a dead-code
+  finding, left in place. A client-observed "viewed" signal (as opposed to
+  "delivered") remains separate future work (Package 9/11, addendum N11). Out
+  of scope for A6: issue grouping and parent/child claim links (need
+  addendum A1–A4 evidence-packet work first). See
+  `docs/architecture/coachhelm-evidence-contract.md`'s "Top-N selection
+  audit" section for the full surface-by-surface table, and
+  `src/test/coachhelm/v3/cross-surface-topn-agreement.test.ts` for the test
+  proving the feed, the Hub/PracticeRx pick, and the chat tool now agree on
+  the same leading insight from one shared fixture.
 - Budget-sensitive LLM behavior should use team settings and persisted usage, not hardcoded token math.
 - Post-round analysis returns a typed `AnalysisOutcome` (repair plan R3,
   2026-09-12; `src/lib/coachhelm/v3/engine/analysis-outcome.ts`):

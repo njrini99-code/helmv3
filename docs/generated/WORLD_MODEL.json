@@ -12498,7 +12498,7 @@
         {
           "kind": "import_graph",
           "path": "src/app/golf/actions/intelligence-dashboard.ts",
-          "line": 12
+          "line": 13
         },
         {
           "kind": "import_graph",
@@ -12763,6 +12763,11 @@
           "kind": "import_graph",
           "path": "src/app/golf/actions/intelligence-dashboard.ts",
           "line": 10
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/intelligence-dashboard.ts",
+          "line": 12
         },
         {
           "kind": "import_graph",
@@ -13098,12 +13103,12 @@
         {
           "kind": "import_graph",
           "path": "src/app/golf/actions/intelligence-dashboard.ts",
-          "line": 13
+          "line": 14
         },
         {
           "kind": "import_graph",
           "path": "src/app/golf/actions/intelligence-dashboard.ts",
-          "line": 14
+          "line": 15
         },
         {
           "kind": "import_graph",
@@ -13852,7 +13857,7 @@
         {
           "kind": "import_graph",
           "path": "src/app/golf/actions/insight-delivery-ranking.ts",
-          "line": 9
+          "line": 10
         },
         {
           "kind": "import_graph",
@@ -14059,6 +14064,11 @@
           "kind": "import_graph",
           "path": "src/app/golf/actions/insight-delivery-ranking.ts",
           "line": 4
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/insight-delivery-ranking.ts",
+          "line": 5
         },
         {
           "kind": "import_graph",
@@ -17478,6 +17488,11 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/chat/read-tools.ts",
+          "line": 22
+        },
+        {
+          "kind": "import_graph",
           "path": "src/lib/coachhelm/v3/chat/request-cache.ts",
           "line": 2
         },
@@ -17616,7 +17631,7 @@
         {
           "kind": "import_graph",
           "path": "src/lib/coachhelm/v3/chat/read-tools.ts",
-          "line": 41
+          "line": 51
         }
       ]
     },
@@ -17776,6 +17791,11 @@
           "kind": "import_graph",
           "path": "src/lib/coachhelm/v3/brief/assemble.ts",
           "line": 28
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/chat/read-tools.ts",
+          "line": 29
         },
         {
           "kind": "import_graph",
@@ -17979,7 +17999,7 @@
         {
           "kind": "import_graph",
           "path": "src/lib/coachhelm/v3/chat/read-tools.ts",
-          "line": 42
+          "line": 52
         },
         {
           "kind": "import_graph",

@@ -356,6 +356,94 @@ describe('intelligence-dashboard actions', () => {
     expect(summary?.urgentInsights).toBe(1);
     expect(summary?.topInsight?.id).toBe('i-urgent');
   });
+
+  it('picks a player\'s true worst insight even when it falls outside the paginated table-body page (A6 revert-check)', async () => {
+    // The table-body page (what a small `limit` returns, newest-first) has
+    // only ONE low-priority row for p-1. A genuinely urgent row for the same
+    // player exists but is older, so it doesn't fit on this page. Before the
+    // A6 fix, `topInsight`/`activeInsights`/`urgentInsights` were derived
+    // from this SAME paginated page — the urgent row, sitting just past the
+    // page boundary, was invisible to the summary panel entirely. After the
+    // fix, a separate full-team fetch (unbounded by the table body's
+    // `limit`) is used for the summary, so the urgent row surfaces.
+    const pageRows = [
+      { id: 'i-page-low', player_id: 'p-1', team_id: 'team-1', coach_id: 'coach-1', insight_type: 'performance', title: 'on the page, low', content: '', priority: 'low', status: 'active', acknowledged_at: null, dismissed: false, dismissed_at: null, metadata: {}, created_at: '2026-09-20T10:00:00Z', updated_at: '2026-09-20T10:00:00Z', player: { id: 'p-1', first_name: 'A', last_name: 'B' } },
+    ];
+    const fullTeamRows = [
+      ...pageRows,
+      { id: 'i-offpage-urgent', player_id: 'p-1', team_id: 'team-1', coach_id: 'coach-1', insight_type: 'performance', title: 'off the page, urgent', content: '', priority: 'urgent', status: 'active', acknowledged_at: null, dismissed: false, dismissed_at: null, metadata: {}, created_at: '2026-08-01T10:00:00Z', updated_at: '2026-08-01T10:00:00Z', player: { id: 'p-1', first_name: 'A', last_name: 'B' } },
+    ];
+
+    let dataCallCount = 0;
+    const sb: Record<string, unknown> = {
+      auth: { getUser: async () => ({ data: { user: { id: 'user-1' } } }) },
+      from: (table: string) => {
+        if (table === 'golf_coaches') {
+          return {
+            select: () => ({
+              eq: () => ({
+                maybeSingle: async () => ({ data: { id: 'coach-1' } }),
+                single: async () => ({ data: { id: 'coach-1' } }),
+              }),
+            }),
+          };
+        }
+        if (table === 'golf_team_members') {
+          return {
+            select: () => ({
+              eq: () => ({ eq: async () => ({ data: [{ player_id: 'p-1' }], error: null }) }),
+            }),
+          };
+        }
+        if (table === 'golf_patterns_v2') {
+          return {
+            select: () => ({
+              in: () => ({ eq: () => ({ order: () => ({ limit: async () => ({ data: [], error: null }) }) }) }),
+            }),
+          };
+        }
+        if (table === 'golf_coach_insights') {
+          const visibilityChain = (terminal: unknown) => {
+            const node: Record<string, unknown> = {};
+            node.or = () => node;
+            node.in = () => node;
+            node.neq = () => node;
+            node.then = (resolve: (v: unknown) => void) => Promise.resolve(resolve(terminal));
+            node.order = () => ({ range: async () => terminal });
+            return node;
+          };
+          return {
+            select: (_cols: string, opts?: { count?: string; head?: boolean }) => ({
+              eq: () => ({
+                eq: () => {
+                  if (opts?.head) {
+                    return visibilityChain({ count: fullTeamRows.length, error: null });
+                  }
+                  // 1st non-head call = the paginated table-body query (page
+                  // only); 2nd = the A6 full-team audit fetch (everything).
+                  dataCallCount++;
+                  const rows = dataCallCount === 1 ? pageRows : fullTeamRows;
+                  return visibilityChain({ data: rows, error: null });
+                },
+              }),
+            }),
+          };
+        }
+        return { select: () => ({}) };
+      },
+    };
+    createClientMock.mockResolvedValue(sb);
+
+    const result = await getTeamInsightsSummary('team-1');
+    expect(result.success).toBe(true);
+    // The table-body page itself is unaffected — still just the one row.
+    expect(result.data?.insights.map((i) => i.id)).toEqual(['i-page-low']);
+
+    const summary = result.data?.playerSummaries.find((s) => s.playerId === 'p-1');
+    expect(summary?.activeInsights).toBe(2);
+    expect(summary?.urgentInsights).toBe(1);
+    expect(summary?.topInsight?.id).toBe('i-offpage-urgent');
+  });
 });
 
 /**

@@ -19,6 +19,16 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/types/database';
 import { applyInsightVisibility } from '@/lib/coachhelm/v3/insight-visibility';
+import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
+import {
+  mapRowToRankable,
+  rankEvidenceInsights,
+  collapseParScoring,
+  dedupeBySubject,
+  type RawInsightRowForRanking,
+} from '@/app/golf/actions/insight-delivery-ranking';
+import { loadCoachWeightsForPlayer } from '@/lib/coachhelm/v3/ranking/score';
+import { loadActiveGoals } from '@/lib/coachhelm/v3/goals/loader';
 import {
   type CoachChatContext,
   requireRosterPlayer,
@@ -841,24 +851,78 @@ export async function getRecentRounds(
   };
 }
 
+/**
+ * Open CoachHelm signals for one player, ranked the SAME way every other
+ * surface ranks them.
+ *
+ * Before this fix: ordered by `created_at DESC` and truncated to
+ * `input.limit` (<=10) at the DB level — an ad-hoc, recency-only "ranking"
+ * that could disagree with the feed's #1 the moment a higher-impact insight
+ * was older than the newest ~10. A later fix widened the DB truncation to a
+ * bounded cap (100) before ranking — still a truncate-before-rank shape, just
+ * a wider one. Now: paginate the player's FULL eligible set via
+ * `fetchAllRowsResult` (the same pattern insight-delivery.ts's single-player
+ * readers use; a normal player's set is a few dozen rows, so this is still
+ * one round trip), route through the SAME canonical pipeline the coach
+ * feed's per-player branch uses (`rankEvidenceInsights` ->
+ * `collapseParScoring` -> `dedupeBySubject`), THEN slice to `input.limit` —
+ * so this tool's leading insight always agrees with what the coach feed
+ * shows for that player, with no candidate silently excluded before ranking.
+ *
+ * Coach-facing (not player-facing): loads the player's real coach weights +
+ * active goals (same inputs the coach feed's per-player branch loads), but
+ * does NOT apply the player-feedback dismissal overlay — that overlay is
+ * player-view-only by design (see insight-delivery.ts's
+ * `applyPlayerFeedbackOverlay` doc comment: "Coach reads never call this").
+ *
+ * `mapRowToRankable` applies the same eligibility floor the feed's mapper
+ * does (numeric strokes_impact/confidence, string metric), so a row the feed
+ * can't score is invisible here too — the "N open signals" count can
+ * therefore be lower than the raw eligible-row count for a player whose rows
+ * are missing that evidence.
+ */
 export async function getPlayerInsights(
   sb: Sb,
   ctx: CoachChatContext,
   input: { player_id: string; limit: number },
 ): Promise<ToolEnvelope> {
   const player = requireRosterPlayer(ctx, input.player_id);
-  const { data, error } = await applyInsightVisibility(
-    sb
-      .from('golf_coach_insights')
-      .select('id, insight_type, category, title, content, evidence, created_at')
-      .eq('player_id', player.id),
-  )
-    .order('created_at', { ascending: false })
-    .limit(Math.min(Math.max(input.limit, 1), 10));
+  const { data, error } = await fetchAllRowsResult(
+    (from, to) =>
+      applyInsightVisibility(
+        sb
+          .from('golf_coach_insights')
+          .select(
+            'id, player_id, category, insight_type, title, content, signature, evidence, metadata, lifecycle_state, status, priority, acknowledged_at, resolved_at, created_at, updated_at',
+          )
+          .eq('player_id', player.id),
+      )
+        .order('id', { ascending: true })
+        .range(from, to),
+    undefined,
+    {
+      table: 'golf_coach_insights',
+      action: 'getPlayerInsights',
+      feature: 'coachhelm_ai_engine',
+      sport: 'golf',
+    },
+  );
 
   if (error) return unavailableEnvelope('Could not read insights.', 'The insights query failed.');
 
-  const rows = data ?? [];
+  const rawRows = (data ?? []) as unknown as RawInsightRowForRanking[];
+  const rankable = rawRows
+    .map(mapRowToRankable)
+    .filter((r): r is NonNullable<typeof r> => r !== null);
+
+  const [weights, goals] = await Promise.all([
+    loadCoachWeightsForPlayer(sb, player.id).catch(() => ({})),
+    loadActiveGoals(player.id).catch(() => []),
+  ]);
+  const ranked = await rankEvidenceInsights(rankable, weights, goals, sb);
+  const deduped = dedupeBySubject(collapseParScoring(ranked));
+  const rows = deduped.slice(0, Math.min(Math.max(input.limit, 1), 10));
+
   return {
     summary: `${rows.length} open signal${rows.length === 1 ? '' : 's'} for ${player.name}.`,
     measurements: [],
@@ -866,7 +930,7 @@ export async function getPlayerInsights(
     detail: {
       player: { player_id: player.id, name: player.name },
       insights: rows.map((i) => {
-        const ev = (i.evidence ?? {}) as Record<string, unknown>;
+        const ev = (i.evidence ?? {}) as unknown as Record<string, unknown>;
         return {
           insight_id: i.id,
           type: i.insight_type,

@@ -177,7 +177,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `memory/features/auth-onboarding-join.md` | current | yes | - | - | 3 | 15 | - |
 | `memory/features/calendar-events.md` | current | yes | - | yes | 6 | 29 | - |
 | `memory/features/coach-intelligence-triage.md` | current | yes | - | yes | 2 | 24 | - |
-| `memory/features/coachhelm-ai.md` | current | yes | - | yes | 6 | 41 | - |
+| `memory/features/coachhelm-ai.md` | current | yes | - | yes | 6 | 42 | - |
 | `memory/features/crm_outreach.md` | current | yes | - | - | 2 | 24 | - |
 | `memory/features/email_outbound.md` | current | yes | - | - | 2 | 18 | - |
 | `memory/features/golf-round-lifecycle.md` | current | yes | - | yes | 4 | 37 | - |

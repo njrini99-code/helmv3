@@ -150,9 +150,20 @@ function makeSupabaseMock(opts: {
     data: { round_date: string } | null;
     error: { message: string } | null;
   }>;
+  /**
+   * Rows for `from('golf_insight_player_feedback')` (`loadPlayerFeedbackByInsight`).
+   * Without this, the shared `from()` router below falls back to
+   * `buildInsightBuilder()`, silently stealing an entry off `insightQueue` AND
+   * feeding it feedback rows whose shape doesn't match `{ insight_id, rating,
+   * created_at }` — harmless (the malformed rows are filtered out) but it
+   * means a test that actually wants to exercise the feedback overlay must
+   * supply this explicitly.
+   */
+  feedbackRows?: Array<{ insight_id: string; rating: string; created_at: string }>;
 }) {
   const insightQueue = [...(opts.insightQueries ?? [])];
   const roundQueue = [...(opts.roundQueries ?? [])];
+  const feedbackRows = opts.feedbackRows ?? [];
 
   const buildInsightBuilder = () => {
     const terminal = insightQueue.shift() ?? { data: [], error: null };
@@ -190,6 +201,33 @@ function makeSupabaseMock(opts: {
     };
   };
 
+  const buildFeedbackBuilder = () => ({
+    select: vi.fn().mockReturnThis(),
+    eq: vi.fn().mockReturnThis(),
+    order: vi.fn().mockResolvedValue({ data: feedbackRows, error: null }),
+  });
+
+  // `loadCoachWeightsForPlayer` (v3/ranking/score.ts) chains
+  // `.select().eq().eq().limit(1).maybeSingle()` against `golf_team_members`
+  // and `golf_team_coach_staff`, then a plain `.select().eq().eq().gte()`
+  // against `golf_coachhelm_coach_weights`. None of these are
+  // `golf_coach_insights` — without an explicit branch they'd fall through to
+  // `buildInsightBuilder()` and silently steal an entry off `insightQueue`
+  // (and lack `.maybeSingle()`, throwing — caught by the caller's `.catch()`,
+  // but only after already consuming the queue slot). Always resolve empty so
+  // `loadCoachWeightsForPlayer` degrades to `{}` without touching the queue.
+  const buildEmptyLookupBuilder = () => {
+    const node: Record<string, unknown> = {};
+    node.select = () => node;
+    node.eq = () => node;
+    node.gte = () => node;
+    node.limit = () => node;
+    node.maybeSingle = async () => ({ data: null, error: null });
+    node.then = (resolve: (v: { data: never[]; error: null }) => void) =>
+      Promise.resolve(resolve({ data: [], error: null }));
+    return node;
+  };
+
   return {
     auth: {
       getUser: vi.fn(async () => ({
@@ -200,6 +238,14 @@ function makeSupabaseMock(opts: {
     from: vi.fn((table: string) => {
       if (table === 'golf_coach_insights') return buildInsightBuilder();
       if (table === 'golf_rounds') return buildRoundBuilder();
+      if (table === 'golf_insight_player_feedback') return buildFeedbackBuilder();
+      if (
+        table === 'golf_team_members' ||
+        table === 'golf_team_coach_staff' ||
+        table === 'golf_coachhelm_coach_weights'
+      ) {
+        return buildEmptyLookupBuilder();
+      }
       return buildInsightBuilder();
     }),
   };
@@ -336,6 +382,49 @@ describe('getTopInsightForPlayer', () => {
       { id: 'd2', slug: 's2', title: 'Second', duration_min: 15, difficulty: 'intermediate' },
       { id: 'd3', slug: 's3', title: 'Third', duration_min: 5, difficulty: 'beginner' },
     ]);
+  });
+
+  it('picks the highest-composite urgent row, not merely the newest urgent row (A6 revert-check)', async () => {
+    // Two urgent rows. `newerLowImpact` is what the DB's `created_at DESC`
+    // order would surface first; `olderHighImpact` is the better pick by the
+    // shared composite (scoreInsight's URGENT_SHORT_CIRCUIT lifts both above
+    // the non-urgent band equally, so among urgent rows the composite is the
+    // real tie-break — see v3/ranking/score.ts). Before the A6 fix, the
+    // urgent pass took `urgent[0]` directly with no ranking step at all, so
+    // whichever row the query returned first (i.e. the newest) always won
+    // regardless of composite.
+    const newerLowImpact = makeRow({
+      id: 'urgent-newer-low',
+      priority: 'urgent',
+      category: 'putting',
+      created_at: '2026-04-22T12:00:00.000Z',
+      evidence: makeEvidence({
+        metric: 'putt_make_rate_6_10ft',
+        strokes_impact: 0.4,
+        confidence: 0.4,
+      }),
+    });
+    const olderHighImpact = makeRow({
+      id: 'urgent-older-high',
+      priority: 'urgent',
+      category: 'off_tee',
+      created_at: '2026-04-10T12:00:00.000Z',
+      evidence: makeEvidence({
+        metric: 'fairway_hit_rate',
+        strokes_impact: 3.5,
+        confidence: 0.9,
+      }),
+    });
+    const sb = makeSupabaseMock({
+      userId: 'u-1',
+      // DB order (created_at desc): newest first, exactly the order the old
+      // `urgent[0]`-only code trusted.
+      insightQueries: [{ data: [newerLowImpact, olderHighImpact], error: null }],
+    });
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const result = await getTopInsightForPlayer('p-1', sb as any);
+    expect(result?.id).toBe('urgent-older-high');
   });
 });
 
@@ -480,6 +569,80 @@ describe('getRoundTakeawayInsight', () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const result = await getRoundTakeawayInsight('p-1', 'r-1', sb as any);
     expect(result).toBeNull();
+  });
+
+  it('excludes a player-dismissed insight, falling back to the next-best in-window row (A6 revert-check)', async () => {
+    // The higher-impact row is the one the player dismissed. Before the A6
+    // fix, `getRoundTakeawayInsightImpl` never loaded/applied the player
+    // feedback overlay at all, so a dismissed insight could still resurface
+    // as the round-review "takeaway" card. After the fix, the SAME overlay
+    // the Hub and feed apply drops it, and the next-best eligible row wins.
+    const dismissedHighImpact = makeRow({
+      id: 'dismissed-1',
+      category: 'putting',
+      updated_at: '2026-04-22T01:00:00.000Z',
+      evidence: makeEvidence({
+        metric: 'putt_make_rate_6_10ft',
+        strokes_impact: 3.0,
+        confidence: 0.9,
+      }),
+    });
+    const nextBest = makeRow({
+      id: 'next-best-1',
+      category: 'off_tee',
+      updated_at: '2026-04-22T02:00:00.000Z',
+      evidence: makeEvidence({
+        metric: 'fairway_hit_rate',
+        strokes_impact: 1.0,
+        confidence: 0.6,
+      }),
+    });
+    const sb = makeSupabaseMock({
+      userId: 'u-1',
+      roundQueries: [{ data: { round_date: '2026-04-22T00:00:00.000Z' }, error: null }],
+      insightQueries: [{ data: [dismissedHighImpact, nextBest], error: null }],
+      feedbackRows: [
+        { insight_id: 'dismissed-1', rating: 'dismissed', created_at: '2026-04-22T03:00:00.000Z' },
+      ],
+    });
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const result = await getRoundTakeawayInsight('p-1', 'r-1', sb as any);
+    expect(result?.id).toBe('next-best-1');
+  });
+
+  it('collapses the 3 par-scoring rows into one card before picking the takeaway (A6)', async () => {
+    // Before the A6 fix, the round-review pass ranked the raw rows with no
+    // `collapseParScoring`/`dedupeBySubject` step, so 3 separate
+    // `scoring_par_*` rows could each compete individually. After the fix it
+    // applies the SAME collapse pass every other surface applies.
+    const par3 = makeRow({
+      id: 'par-3',
+      category: 'scoring',
+      updated_at: '2026-04-22T01:00:00.000Z',
+      evidence: makeEvidence({ metric: 'scoring_par_3', strokes_impact: 1.0, confidence: 0.8 }),
+    });
+    const par4 = makeRow({
+      id: 'par-4',
+      category: 'scoring',
+      updated_at: '2026-04-22T01:00:00.000Z',
+      evidence: makeEvidence({ metric: 'scoring_par_4', strokes_impact: 0.9, confidence: 0.8 }),
+    });
+    const par5 = makeRow({
+      id: 'par-5',
+      category: 'scoring',
+      updated_at: '2026-04-22T01:00:00.000Z',
+      evidence: makeEvidence({ metric: 'scoring_par_5', strokes_impact: 0.8, confidence: 0.8 }),
+    });
+    const sb = makeSupabaseMock({
+      userId: 'u-1',
+      roundQueries: [{ data: { round_date: '2026-04-22T00:00:00.000Z' }, error: null }],
+      insightQueries: [{ data: [par3, par4, par5], error: null }],
+    });
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const result = await getRoundTakeawayInsight('p-1', 'r-1', sb as any);
+    expect(result?.title).toBe('Scoring by par type');
   });
 });
 
