@@ -13,14 +13,20 @@
   2026-09-09 Bridge sweep ahead of the Bridge consolidation PR #1914).
 - `src/lib/sentry-environment.ts` `resolveServerEnvironment` and
   `src/lib/telemetry-gate.ts` `shouldPersistAdminTables`/`getRuntimeEnv`: a
-  development `NODE_ENV` now wins before the `VERCEL`/`VERCEL_ENV` read. A
+  non-production `NODE_ENV` now wins before the `VERCEL`/`VERCEL_ENV` read. A
   pulled `.env.local` (`vercel env pull --environment=production`) carries
   `VERCEL="1"` + `VERCEL_ENV=production`, and Next loads it for `next dev`, so
   a laptop reported `environment: production` (S7 ×146, S9 ×64) and wrote
-  ~100 prod `admin_events` rows (`530e91c6`, `e9f122e7`). Safety property
-  intact: Vercel never runs with `NODE_ENV=development`. `next build && next
-  start` with the same pulled file is NOT covered by this (VERCEL is present)
-  — strip `VERCEL`/`VERCEL_ENV` from the pulled file for that case.
+  ~100 prod `admin_events` rows (`530e91c6`, `e9f122e7`). Landed alongside an
+  equivalent fix already on `main` for `shouldPersistAdminTables`/
+  `getRuntimeEnv` that broadened the guard from `NODE_ENV === 'development'`
+  to `NODE_ENV !== 'production'` (also catches `NODE_ENV=test` and unset) —
+  this branch's narrower `=== 'development'` check was dropped as
+  superseded; `resolveServerEnvironment` keeps its own equivalent check
+  unchanged (`main` did not touch that file). Safety property intact: Vercel
+  never runs with a non-production `NODE_ENV`. `next build && next start`
+  with the same pulled file is NOT covered by this (VERCEL is present) —
+  strip `VERCEL`/`VERCEL_ENV` from the pulled file for that case.
 - `src/lib/observability/cron-monitors.ts` `flushCronCheckIn(checkInId)`
   (`Sentry.flush(2000)`, fail-open) awaited by `recordJobRun` after the
   terminal check-in on all 3 exit paths. Cause of the
@@ -28,8 +34,12 @@
   <11s): the `ok` envelope was queued but the function froze on response.
 - `src/lib/admin-logger.ts`: `ADMIN_EVENT_SOURCES`/`AdminEventSource`
   mirror `admin_events_source_check`; `logEmailSuppressed` writes
-  `source: 'system'` + `metadata.origin` (was the caller's path string,
-  rejected on every write — V0 ×15, EG `bridge_write_failed` ×1,006).
+  `source: 'system'` + `metadata.callSite` (was the caller's path string,
+  rejected on every write — V0 ×15, EG `bridge_write_failed` ×1,006). `main`
+  had already landed the same `source: 'system'` fix independently (with
+  `metadata.callSite`, not typed against `ADMIN_EVENT_SOURCES`); this branch
+  kept its own `ADMIN_EVENT_SOURCES`/`AdminEventSource` closed-enum addition
+  on top of `main`'s already-shipped fix.
 - Tests: `sentry-environment.test.ts`, `telemetry-gate.test.ts`,
   `cron-monitors.test.ts`, `job-log.test.ts` (131 across the 8 affected
   suites). `tsc` clean.

@@ -254,8 +254,8 @@ them would have broken those routes, not the dead one.
 - **`admin_events.source` is a closed enum** — `ADMIN_EVENT_SOURCES` in
   `src/lib/admin-logger.ts` mirrors the DB check constraint
   `admin_events_source_check`; `logAdminEvent`'s `source` is typed to it.
-  A caller's free-form origin belongs in metadata (`logEmailSuppressed` →
-  `metadata.origin`), never in `source`: the constraint rejected 1,006
+  A caller's free-form call-site path belongs in metadata (`logEmailSuppressed`
+  → `metadata.callSite`), never in `source`: the constraint rejected 1,006
   `email.suppressed` writes as `bridge_write_failed` before this (#1917).
 - **As of 2026-09-02, `recordJobRun` also drives a Sentry Cron Monitor
   check-in — a SEPARATE signal from `background_job_logs`/the Jobs board,
@@ -1524,14 +1524,18 @@ assumed it would:
   tagging casually: the current check keys on `VERCEL_ENV`'s absence, and if
   that assumption ever broke, real production errors would be relabelled and
   any alert rule scoped to `environment:production` would go silent, which is
-  worse than the noise. The one downgrade that is safe, and now applied
-  first in both `resolveServerEnvironment` and the `admin_events` gate
-  (`shouldPersistAdminTables`/`getRuntimeEnv`), is `NODE_ENV === 'development'`:
-  Vercel forces `NODE_ENV=production` on every build and runtime, so
-  `next dev` is positive evidence of a laptop even when a pulled
+  worse than the noise. The one downgrade that is safe is a non-production
+  `NODE_ENV`: Vercel forces `NODE_ENV=production` on every build and runtime,
+  so anything else is positive evidence of a laptop even when a pulled
   `.env.local` carries `VERCEL="1"` + `VERCEL_ENV=production` (#1919 —
   2026-09-08 dev traffic from `Mac.lan` tagged production in Sentry and
-  written to the prod ledger). Sentry's Supabase tracing instrumentation
+  written to the prod ledger). `resolveServerEnvironment` applies this via
+  its own `NODE_ENV === 'production'` branch (falls through to `NODE_ENV` or
+  `'development'` otherwise); the `admin_events` gate
+  (`shouldPersistAdminTables`/`getRuntimeEnv`) applies the broader
+  `NODE_ENV !== 'production'` check first, so any non-production NODE_ENV
+  value — not just `'development'` — is treated as off-prod. Sentry's
+  Supabase tracing instrumentation
   (`@supabase/supabase-js/tracing` + `Sentry.instrumentSupabaseClient()`)
   also reports a failed query to Sentry on its own, independent of whether
   the calling code caught and handled it gracefully — a correctly-handled
