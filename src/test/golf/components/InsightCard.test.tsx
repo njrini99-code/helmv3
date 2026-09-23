@@ -168,12 +168,26 @@ describe('deriveTone', () => {
     expect(deriveTone(makeInsight({ priority: 'urgent' }))).toBe('urgent');
   });
 
-  it('returns "urgent" when category=pressure and |strokes_impact|>2', () => {
+  it('returns "urgent" when category=pressure and |strokes_impact|*confidence>2', () => {
     const insight = makeInsight({
       category: 'pressure',
-      evidence: makeEvidence({ strokes_impact: 2.5 }),
+      evidence: makeEvidence({ strokes_impact: 2.5, confidence: 0.9 }),
     });
     expect(deriveTone(insight)).toBe('urgent');
+  });
+
+  it('does NOT return "urgent" for a pressure row whose confidence dampens it below the gate (Package 11)', () => {
+    // Same |strokes_impact| as the case above (2.5, > 2 on its own), but a
+    // low confidence. The pressure branch used to compare raw strokes_impact
+    // with no confidence weighting at all — unlike its cautionary sibling
+    // (`strokes_impact * confidence > 1.0`) — so a single-sample pressure
+    // estimate could pulse red exactly like an explicitly-tagged urgent row.
+    const insight = makeInsight({
+      category: 'pressure',
+      priority: 'medium',
+      evidence: makeEvidence({ strokes_impact: 2.5, confidence: 0.3 }),
+    });
+    expect(deriveTone(insight)).not.toBe('urgent');
   });
 
   it('returns "cautionary" when priority=high', () => {
