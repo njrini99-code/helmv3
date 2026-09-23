@@ -105,6 +105,44 @@ Player opens round review
 - Revalidation can miss `/golf/dashboard/coachhelm` or `/golf/dashboard/my-development`.
 - Player-facing fallbacks can mask missing source data or LLM/citation failures.
 - V3 surfaces evolve quickly, so docs and registry paths need frequent updates when new components land.
+- **Addendum A8 ("collect only useful context and complete the coaching
+  action", folded into Pkg 9, planned 2026-09-23)**: survey found the
+  select-insight -> approve -> link flow (`PromoteToFocusAreaButton` ->
+  `FocusAreaModal` -> `createFocusAreaFromInsight[V2]`) and the
+  completion+evaluation loop (`recordFocusAreaOutcome`) already exist and
+  already satisfy "a real approved focus can be completed and later
+  evaluated" — that part of A8 is not new work. The real gaps: no evidence
+  revision/version is ever captured when a focus area is approved from an
+  insight (`golf_coach_insights` rows are updated in place on regen, keyed by
+  a stable `signature`, so `from_insight_id` is a live FK with no snapshot of
+  what justified the approval); no practice-completion or review-criteria
+  persistence exists tied to a focus area (`golf_practice_sessions` is an
+  unrelated shot-log import table; PracticeRx is read-only by design); no
+  read-time invalidation badge exists for when an insight's evidence changes
+  after a focus area was built on it. Approved plan is 3 slices, in order:
+  (1) stamp an evidence-revision fingerprint at approval time — needs an
+  additive migration (`golf_player_focus_areas.evidence_revision text NULL`),
+  gated behind a `config/feature-flags.yml` flag defaulted off until that
+  migration is applied to prod, since writing to a column that doesn't exist
+  yet would break focus-area creation outright; (2) practice completion +
+  review criteria via a new `practice_log jsonb` column, reusing
+  `updateFocusAreaProgressImpl`'s existing select-filter-reselect
+  concurrency pattern; (3) a read-time-only badge comparing the stored vs.
+  live evidence revision, same "derive at read time, never persist a
+  re-check" contract as `due-for-review.ts` (Pkg 9 slice 4) — never touches
+  status, never overwrites the stored revision, so the prior accepted
+  version is preserved exactly. Slice 4 from the original addendum (shot-level
+  intent/strike/target annotations — confirmed no existing table anywhere in
+  the schema, `golf_shots` has only a generic `notes` text column) is
+  DEFERRED, not built in this pass; it would need a genuinely new table +
+  RLS surface and the acceptance bar doesn't require it. The pure,
+  Supabase-free fingerprint core both slice 1 and slice 3 depend on is
+  `src/lib/coachhelm/focus-areas/evidence-revision.ts`
+  (`computeEvidenceRevision`/`EvidenceRevisionInput`/
+  `canonicalizeForFingerprint`) — order-independent SHA-256 over
+  status/confidence/your_value/comparison_value/secondary_value/sample_n/
+  window/engine_version, deliberately excluding ids and bookkeeping
+  timestamps so a no-op regen never changes the fingerprint.
 - **Focus-area progress is travel from baseline, never `current / target`,
   and an unresolvable metric must render no progress bar at all** — not a
   guessed one. `golf_player_focus_areas.baseline_value` (present in
