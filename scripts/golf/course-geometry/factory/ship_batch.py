@@ -131,13 +131,18 @@ def wait_for_capacity(pause_path, min_free_gb, out, free_gb_fn=None, sleep_fn=ti
         sleep_fn(poll_seconds)
 
 
-def select_courses(played, catalog_layout_ids):
+def select_courses(played, catalog_layouts):
     """Pure selection: flattens played-courses.json into one row per course,
-    skipping Oviinbyrd (out of scope) and any course whose listed layout ids
-    have no catalog entry yet (checked against `catalog_layout_ids`, so the
-    caller can re-load the catalog fresh right before calling this and pick
-    up entries another worker adds mid-run)."""
+    skipping Oviinbyrd (out of scope) and any course with no catalog layout
+    yet. A layout counts if played-courses.json lists it or if its
+    `externalBindings.golfCourseIds` names the course (how `intake-played
+    --write` binds a course catalogued after the played snapshot was taken).
+    `catalog_layouts` maps layout id -> document, so the caller can re-load
+    the catalog fresh right before calling this and pick up entries another
+    worker adds mid-run. A layout already selected by an earlier row (an
+    alias course folded into one layout) is not shipped twice."""
     rows = []
+    selected = set()
     for course in played.get('courses') or []:
         db_id = course.get('dbCourseId')
         name = course.get('name') or ''
@@ -145,13 +150,20 @@ def select_courses(played, catalog_layout_ids):
         if db_id == OVIINBYRD_DB_ID or name.strip().lower() == OVIINBYRD_NAME:
             rows.append({**base, 'status': 'SKIPPED', 'skippedReason': 'out_of_scope', 'layouts': []})
             continue
-        listed = course.get('layouts') or []
-        eligible = [lid for lid in listed if lid in catalog_layout_ids]
+        listed = [lid for lid in course.get('layouts') or [] if lid in catalog_layouts]
+        bound = [lid for lid, doc in sorted(catalog_layouts.items())
+                 if db_id and db_id in (((doc or {}).get('externalBindings') or {}).get('golfCourseIds') or [])]
+        eligible = list(dict.fromkeys(listed + bound))
         if not eligible:
             rows.append({**base, 'status': 'SKIPPED', 'skippedReason': 'no_catalog_entry', 'layouts': []})
             continue
+        fresh = [lid for lid in eligible if lid not in selected]
+        if not fresh:
+            rows.append({**base, 'status': 'SKIPPED', 'skippedReason': 'layout_selected_by_earlier_row', 'layouts': []})
+            continue
+        selected.update(fresh)
         rows.append({**base, 'status': None, 'skippedReason': None,
-                    'layouts': [{'layoutId': lid} for lid in eligible]})
+                    'layouts': [{'layoutId': lid} for lid in fresh]})
     return rows
 
 

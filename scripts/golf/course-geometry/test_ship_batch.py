@@ -16,36 +16,36 @@ from factory.ship_batch import (
 class SelectCoursesTests(unittest.TestCase):
     def test_oviinbyrd_is_skipped_by_db_id_even_if_renamed(self):
         played = {'courses': [{'dbCourseId': OVIINBYRD_DB_ID, 'name': 'Oviinbyrd (renamed)', 'layouts': ['oviinbyrd']}]}
-        rows = select_courses(played, catalog_layout_ids={'oviinbyrd'})
+        rows = select_courses(played, catalog_layouts={'oviinbyrd': {}})
         self.assertEqual(rows, [{'dbCourseId': OVIINBYRD_DB_ID, 'name': 'Oviinbyrd (renamed)', 'rounds': None,
                                 'status': 'SKIPPED', 'skippedReason': 'out_of_scope', 'layouts': []}])
 
     def test_oviinbyrd_is_skipped_by_name_if_db_id_ever_differs(self):
         played = {'courses': [{'dbCourseId': 'some-other-id', 'name': 'Oviinbyrd Golf Club', 'layouts': ['oviinbyrd']}]}
-        rows = select_courses(played, catalog_layout_ids={'oviinbyrd'})
+        rows = select_courses(played, catalog_layouts={'oviinbyrd': {}})
         self.assertEqual(rows[0]['skippedReason'], 'out_of_scope')
 
     def test_course_with_no_layouts_is_skipped_as_uncatalogued(self):
         played = {'courses': [{'dbCourseId': 'x', 'name': 'Uncatalogued Course', 'layouts': []}]}
-        rows = select_courses(played, catalog_layout_ids=set())
+        rows = select_courses(played, catalog_layouts={})
         self.assertEqual(rows[0]['status'], 'SKIPPED')
         self.assertEqual(rows[0]['skippedReason'], 'no_catalog_entry')
 
     def test_layout_not_yet_in_catalog_is_skipped_even_if_listed(self):
         played = {'courses': [{'dbCourseId': 'x', 'name': 'Pending Intake', 'layouts': ['not-catalogued-yet']}]}
-        rows = select_courses(played, catalog_layout_ids={'some-other-layout'})
+        rows = select_courses(played, catalog_layouts={'some-other-layout': {}})
         self.assertEqual(rows[0]['status'], 'SKIPPED')
         self.assertEqual(rows[0]['skippedReason'], 'no_catalog_entry')
 
     def test_normal_catalogued_course_is_selected_with_its_layouts(self):
         played = {'courses': [{'dbCourseId': 'x', 'name': 'Peek n Peak', 'rounds': 12, 'layouts': ['peek-n-peak-upper']}]}
-        rows = select_courses(played, catalog_layout_ids={'peek-n-peak-upper'})
+        rows = select_courses(played, catalog_layouts={'peek-n-peak-upper': {}})
         self.assertEqual(rows, [{'dbCourseId': 'x', 'name': 'Peek n Peak', 'rounds': 12, 'status': None, 'skippedReason': None,
                                 'layouts': [{'layoutId': 'peek-n-peak-upper'}]}])
 
     def test_multi_layout_course_keeps_only_catalogued_layouts(self):
         played = {'courses': [{'dbCourseId': 'x', 'name': 'Two Courses', 'layouts': ['ready-one', 'not-ready-yet']}]}
-        rows = select_courses(played, catalog_layout_ids={'ready-one'})
+        rows = select_courses(played, catalog_layouts={'ready-one': {}})
         self.assertEqual(rows[0]['layouts'], [{'layoutId': 'ready-one'}])
 
 
@@ -127,6 +127,18 @@ class AncestorLockTests(unittest.TestCase):
 class _Sink:
     def write(self, _text):
         pass
+
+class CatalogBindingSelectionTests(unittest.TestCase):
+    def test_a_course_bound_in_the_catalog_ships_though_the_snapshot_lists_nothing(self):
+        played = {'courses': [{'dbCourseId': 'db-1', 'name': 'New Course', 'layouts': []}]}
+        rows = select_courses(played, catalog_layouts={'new-course': {'externalBindings': {'golfCourseIds': ['db-1']}}})
+        self.assertEqual(rows[0]['layouts'], [{'layoutId': 'new-course'}])
+
+    def test_an_alias_row_does_not_ship_the_same_layout_twice(self):
+        played = {'courses': [{'dbCourseId': 'p1', 'name': 'Players', 'layouts': []}, {'dbCourseId': 'p2', 'name': 'Players Course', 'layouts': []}]}
+        rows = select_courses(played, catalog_layouts={'players': {'externalBindings': {'golfCourseIds': ['p1', 'p2']}}})
+        self.assertEqual(rows[0]['layouts'], [{'layoutId': 'players'}])
+        self.assertEqual((rows[1]['status'], rows[1]['skippedReason']), ('SKIPPED', 'layout_selected_by_earlier_row'))
 
 
 if __name__ == '__main__':
