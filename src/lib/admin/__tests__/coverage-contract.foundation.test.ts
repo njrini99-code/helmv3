@@ -403,6 +403,16 @@ describe('global tripwire', () => {
     // comparable-opportunity attribution results, both withAdminObserved-wrapped
     // with feature `coachhelm_analytics` (same feature as the sibling
     // getInsightEffectiveness/getPlayerEffectiveness reads). Total 432 -> 434.
-    expect(total).toBe(434);
+    // 2026-09-23 (+1), A4 slice 3b (repair-plan §13, work package A4):
+    // getRoundReviewSequenceAttribution in the new
+    // src/app/golf/actions/round-review-sequence-attribution.ts — a
+    // read-only, decorative Round Review mount, flag-gated
+    // (coachhelm_a4_sequence_attribution_surface, default off) with the
+    // flag check first so a flag-off call makes zero DB calls.
+    // withAdminObserved-wrapped with feature `round_review_ai` (mirrors
+    // getPlayerStandingForReview's 'player_or_coach' pattern on the same
+    // page). This wrapping was added in the train-2 merge — the action
+    // shipped unwrapped in the PR. Total 434 -> 435.
+    expect(total).toBe(435);
   });
 });

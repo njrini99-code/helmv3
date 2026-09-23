@@ -24,6 +24,7 @@ import { verifyPlayerAccess } from '@/lib/auth/verify-player-access';
 import { buildRollingSequenceAttributionScope } from '@/lib/coachhelm/v3/metrics/sequence-attribution-window';
 import { loadSequenceAttribution } from '@/lib/coachhelm/v3/metrics/load-sequence-attribution';
 import type { MetricResult } from '@/lib/coachhelm/v3/metrics/types';
+import { withAdminObserved } from '@/lib/admin/observed-action';
 
 const SEQUENCE_ATTRIBUTION_FLAG = 'coachhelm_a4_sequence_attribution_surface';
 
@@ -45,7 +46,7 @@ function isValidUuid(id: string): boolean {
  * Review page treats `null` as "hide the section", exactly like every
  * other best-effort addendum on this page.
  */
-export async function getRoundReviewSequenceAttribution(playerId: string): Promise<MetricResult[] | null> {
+async function getRoundReviewSequenceAttributionImpl(playerId: string): Promise<MetricResult[] | null> {
   const enabled = isFlagEnabled(SEQUENCE_ATTRIBUTION_FLAG);
   if (!enabled) return null;
 
@@ -63,4 +64,23 @@ export async function getRoundReviewSequenceAttribution(playerId: string): Promi
 
   const scope = buildRollingSequenceAttributionScope(playerId);
   return loadSequenceAttribution(scope, { supabase });
+}
+
+// Mirrors round-review-system.ts's getPlayerStandingForReview — same page,
+// same 'player_or_coach' auth pattern, same withAdminObserved feature.
+// Never demoSafe: this is a read, and guarding a read would break the demo
+// tour itself (see observed-action.ts's demoSafe doc comment). Neither the
+// flag-off `null` nor a successful `MetricResult[]` result is an object
+// with `success`/`ok`/`error` fields, so extractActionSoftFailure never
+// matches here and the wrapper never makes its own resolveObservedUser()
+// call on the flag-off path — the "ZERO DB calls when the flag is off"
+// contract this file documents above is unaffected by this wrap.
+const observedGetRoundReviewSequenceAttribution = withAdminObserved(
+  'getRoundReviewSequenceAttribution',
+  { sport: 'golf', feature: 'round_review_ai' },
+  getRoundReviewSequenceAttributionImpl,
+);
+
+export async function getRoundReviewSequenceAttribution(playerId: string): Promise<MetricResult[] | null> {
+  return observedGetRoundReviewSequenceAttribution(playerId);
 }
