@@ -49,6 +49,13 @@ import { fairwayScope } from '@/lib/redesign/flag';
 import type { PlayerStanding } from '@/lib/coachhelm/v3/standing/types';
 import { cleanCourseName } from '@/lib/golf/course-name';
 import { FilmstripReview, type PromoteSuggestion } from '@/components/golf/coachhelm/round-review/FilmstripReview';
+import { SequenceAttributionSection } from '@/components/golf/coachhelm/round-review/SequenceAttributionSection';
+import { getRoundReviewSequenceAttribution } from '@/app/golf/actions/round-review-sequence-attribution';
+import {
+  buildRollingSequenceAttributionScope,
+  describeSequenceAttributionWindow,
+} from '@/lib/coachhelm/v3/metrics/sequence-attribution-window';
+import type { MetricResult } from '@/lib/coachhelm/v3/metrics/types';
 import { sanitizeNaN } from '@/components/golf/coachhelm/round-review/buildReviewViewModel';
 
 // ============================================================================
@@ -183,6 +190,11 @@ export default function RoundReviewPage() {
   // round stats. Empty `{}` until the season standing cron has populated rows
   // for this player — the band renders nothing in that cold-start case.
   const [standing, setStanding] = useState<Record<string, PlayerStanding>>({});
+  // A4 slice 3b — sequence-attribution rollup. `null` (the default AND the
+  // failure/flag-off/unauthorized result) hides `SequenceAttributionSection`
+  // entirely; it never renders an empty/loading placeholder for this
+  // decorative, best-effort addendum.
+  const [sequenceRollup, setSequenceRollup] = useState<MetricResult[] | null>(null);
   // True only when the viewer is a coach on the round's player's team (not
   // the player themselves, even a dual-role coach viewing their OWN round —
   // matches the server-side `callerRole === 'coach'` gate in
@@ -426,6 +438,38 @@ export default function RoundReviewPage() {
       cancelled = true;
     };
   }, [round, roundId, loadingRound]);
+
+  // A4 slice 3b — sequence-attribution rollup. Same failure-silent shape as
+  // the standing fetch above: `getRoundReviewSequenceAttribution` already
+  // returns `null` for flag-off/unauthorized/failed-read, so this effect
+  // never needs its own try/catch beyond guarding against a stray throw.
+  useEffect(() => {
+    if (!round) return;
+    let cancelled = false;
+
+    async function fetchSequenceRollup() {
+      if (!round) return;
+      try {
+        const results = await getRoundReviewSequenceAttribution(round.player_id);
+        if (!cancelled) setSequenceRollup(results);
+      } catch {
+        if (!cancelled) setSequenceRollup(null);
+      }
+    }
+
+    fetchSequenceRollup();
+    return () => {
+      cancelled = true;
+    };
+  }, [round]);
+
+  const sequenceWindowLabel = useMemo(
+    () =>
+      round
+        ? describeSequenceAttributionWindow(buildRollingSequenceAttributionScope(round.player_id))
+        : '',
+    [round],
+  );
 
   // Fetch the evidence-backed takeaway once we know which player the round
   // belongs to — used only to pre-fill the Promote-to-Focus-Area CTA (see
@@ -812,6 +856,8 @@ export default function RoundReviewPage() {
           if (round?.player_id) void loadRoundStats(round.player_id, roundId);
         }}
       />
+
+      <SequenceAttributionSection results={sequenceRollup} windowLabel={sequenceWindowLabel} />
     </m.div>
   );
 
