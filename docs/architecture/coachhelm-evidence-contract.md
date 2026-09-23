@@ -680,7 +680,15 @@ the wiring is a dependency on #1986, not this PR.
 
 `MetricResult`/`MetricStatus` live in `src/lib/coachhelm/v3/metrics/types.ts`
 — shared across metrics packages (A3 re-exports both from
-`par-opportunities.ts` for existing callers/tests). A narrower version of
+`par-opportunities.ts` for existing callers/tests). **Every consumer must
+gate on `status`, never on `value !== null`.** `value` is populated
+whenever a row's own `denominator` is nonzero, regardless of `status` —
+including `status: 'insufficient'`, which still carries a computed `value`
+so the number isn't hidden, only flagged as low-confidence. `value` is
+`null` ONLY when `status: 'invalid'` (`denominator === 0`, no evidence at
+all). A consumer that renders or trusts a number by checking `value !==
+null` instead of `status` will silently treat an under-floor,
+low-confidence row the same as a fully supported one. A narrower version of
 the addendum's §4.3 design-contract shape, adapted to the merged A1 types:
 no `interval` (no confidence-interval estimation shipped yet) and no
 `sourceShotIds` (no consumer reads per-shot provenance yet) — both are
