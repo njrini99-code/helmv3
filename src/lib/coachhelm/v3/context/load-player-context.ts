@@ -119,6 +119,7 @@ interface HoleRow {
   penalty_strokes: number | null;
   putts: number | null;
   gir: boolean | null;
+  yardage: number | null;
   created_at: string | null;
 }
 
@@ -146,7 +147,7 @@ interface ShotRow {
 }
 
 const HOLE_COLUMNS =
-  'round_id, hole_number, par, score, penalty_strokes, putts, gir, created_at';
+  'round_id, hole_number, par, score, penalty_strokes, putts, gir, yardage, created_at';
 const SHOT_COLUMNS =
   'round_id, hole_number, shot_number, shot_type, club_type, ' +
   'distance_to_hole_before, distance_unit_before, distance_to_hole_after, ' +
@@ -265,6 +266,7 @@ export async function loadPlayerContext(
       penalty_strokes: h.penalty_strokes,
       putts: h.putts,
       gir: h.gir,
+      yardage: h.yardage,
     });
   }
 

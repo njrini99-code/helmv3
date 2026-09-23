@@ -203,6 +203,7 @@ describe('buildHoleSequence — order, termination, and penalty representation',
       penalty_strokes: 0,
       putts: 1,
       gir: true,
+      yardage: null,
     };
     const facts: ShotFact[] = [
       {
@@ -254,6 +255,7 @@ describe('buildHoleSequence — order, termination, and penalty representation',
       penalty_strokes: null, // not recorded — must not be treated as 0
       putts: 1,
       gir: false,
+      yardage: null,
     };
     const facts: ShotFact[] = [
       {
@@ -331,6 +333,7 @@ describe('buildHoleSequence — order, termination, and penalty representation',
       penalty_strokes: 1,
       putts: 1,
       gir: false,
+      yardage: null,
     };
     const facts: ShotFact[] = [
       {
@@ -396,6 +399,7 @@ describe('buildHoleSequence — order, termination, and penalty representation',
       penalty_strokes: 0,
       putts: 2,
       gir: false,
+      yardage: null,
     };
     const result = buildHoleSequence([], hole);
     expect(result.complete).toBe(false);
@@ -412,6 +416,7 @@ describe('buildHoleSequence — order, termination, and penalty representation',
       penalty_strokes: 0,
       putts: 1,
       gir: true,
+      yardage: null,
     };
     // shot_number 1, 3, 4 — a gap at 2, but the ROW COUNT (3) still matches
     // total_strokes (3). Row count alone must not be treated as sufficient.

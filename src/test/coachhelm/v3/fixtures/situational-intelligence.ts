@@ -55,6 +55,7 @@ const TWO_COURSE_HOLE_A: HoleContext = {
   penalty_strokes: 0,
   putts: 1,
   gir: true,
+  yardage: null,
 };
 const TWO_COURSE_HOLE_B: HoleContext = {
   round_id: 'round-course-b',
@@ -65,6 +66,7 @@ const TWO_COURSE_HOLE_B: HoleContext = {
   penalty_strokes: 0,
   putts: 1,
   gir: true,
+  yardage: null,
 };
 const twoCourseSameHoleNumber: SituationalFixture = {
   name: 'two_course_same_hole_number',
@@ -185,6 +187,7 @@ const PAR_5_HOLE: HoleContext = {
   penalty_strokes: 0,
   putts: 1,
   gir: true,
+  yardage: null,
 };
 const par5Layup: SituationalFixture = {
   name: 'par_5_layup',
@@ -285,6 +288,7 @@ const PAR_3_HOLE: HoleContext = {
   penalty_strokes: 0,
   putts: 2,
   gir: true,
+  yardage: null,
 };
 const par3TeeGreenAttempt: SituationalFixture = {
   name: 'par_3_tee_green_attempt',
@@ -368,6 +372,7 @@ const PENALTY_HOLE: HoleContext = {
   penalty_strokes: 2,
   putts: 2,
   gir: false,
+  yardage: null,
 };
 const explicitPenaltyPair: SituationalFixture = {
   name: 'explicit_penalty_pair',
@@ -505,6 +510,7 @@ const INCOMPLETE_HOLE: HoleContext = {
   penalty_strokes: 0,
   putts: 2,
   gir: true,
+  yardage: null,
 };
 const incompleteShotSequence: SituationalFixture = {
   name: 'incomplete_shot_sequence',
@@ -588,6 +594,7 @@ const MIXED_UNIT_HOLE: HoleContext = {
   penalty_strokes: 0,
   putts: 1,
   gir: true,
+  yardage: null,
 };
 const mixedUnitApproach: SituationalFixture = {
   name: 'mixed_unit_approach',
@@ -673,6 +680,7 @@ const CHIP_IN_HOLE: HoleContext = {
   penalty_strokes: 0,
   putts: 0,
   gir: false,
+  yardage: null,
 };
 const aroundGreenHoleOut: SituationalFixture = {
   name: 'around_green_hole_out',
