@@ -50,13 +50,22 @@ describe('fetchFeatureFlags', () => {
   });
 
   it('a null expires_at reports no_expiry with a null daysUntilExpiry', () => {
-    const { flags } = fetchFeatureFlags(new Date('2026-09-03T00:00:00Z'));
-    // Both seeded flags carry expires_at: null (permanent ops lever /
-    // long-lived release toggle) — see config/feature-flags.yml.
+    const now = new Date('2026-09-03T00:00:00Z');
+    const { flags } = fetchFeatureFlags(now);
+    // The real registry mixes permanent flags (expires_at: null) with
+    // temporary_migration flags that must carry a date, so assert the
+    // per-flag contract instead of assuming every seeded flag is permanent.
+    const permanent = flags.filter((flag) => flag.expires_at === null);
+    expect(permanent.length).toBeGreaterThan(0);
     for (const flag of flags) {
-      expect(flag.expires_at).toBeNull();
-      expect(flag.rolloutStatus).toBe('no_expiry');
-      expect(flag.daysUntilExpiry).toBeNull();
+      if (flag.expires_at === null && flag.rolloutStatus !== 'archived') {
+        expect(flag.rolloutStatus).toBe('no_expiry');
+        expect(flag.daysUntilExpiry).toBeNull();
+      } else {
+        expect({ rolloutStatus: flag.rolloutStatus, daysUntilExpiry: flag.daysUntilExpiry }).toEqual(
+          rolloutStatusFor(flag, now),
+        );
+      }
     }
   });
 
