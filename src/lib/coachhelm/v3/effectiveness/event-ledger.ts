@@ -31,8 +31,17 @@ import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import { logServerError } from '@/lib/server-error-logger';
 import { describeError } from '@/lib/utils/describe-error';
 import { isTransientFetchError, delay } from '@/lib/utils/transient-error';
+import { isFlagEnabled } from '@/lib/flags';
 import { dedupeExposureRows, exposureDedupeKey, startOfUtcDayIso } from './exposure-rows';
 import { actionDedupeKey, isActionAlreadyRecorded } from './action-rows';
+
+/**
+ * Package 10 gap fix (repair-plan §14.12 item d — missingness): default off,
+ * see `config/feature-flags.yml`'s `coachhelm_trust_status_exclude_unmeasured_outcomes`
+ * entry for the full rationale. Read at call time (not module load) so tests
+ * can toggle it per-case.
+ */
+const EXCLUDE_UNMEASURED_FLAG = 'coachhelm_trust_status_exclude_unmeasured_outcomes';
 
 // ============================================================================
 // PUBLIC TYPES (shared contract — other agents depend on these exact shapes)
@@ -493,12 +502,29 @@ export async function getInsightEffectivenessSignals(
     //    measured_at) pairs per insight. Rows arrive in `id` order now, so the
     //    newest-first window deriveTrend expects is built per insight below. ──
     const outcomesById = new Map<string, Array<{ improvement: number | null; measuredAt: string }>>();
+    const excludeUnmeasured = isFlagEnabled(EXCLUDE_UNMEASURED_FLAG);
     for (const r of outcomeRes.data ?? []) {
       const sig = result.get(r.insight_id);
       if (!sig) continue;
-      sig.measured += 1;
       const imp = typeof r.improvement === 'number' ? r.improvement : null;
-      if (imp !== null && imp > OUTCOME_WORKED_THRESHOLD) sig.worked += 1;
+      // A `golf_insight_outcome` row exists once `recordInsightOutcome` ran,
+      // but a thin-sample attribution (below attribute.ts's MIN_WINDOW_ROUNDS)
+      // still inserts that row with `improvement: null` — "we tried to
+      // measure, evidence was insufficient", not "we measured, nothing
+      // happened". Counting it into `measured` moved an insight into
+      // 'needs_validation' (or, with 3+ such rows and worked=0,
+      // 'underperforming') on zero real evidence — the Package 10 gate's
+      // "missing post-action evidence remains unknown" violated by this
+      // rollup, not by the write side (which already nulls `lift` and never
+      // reaches nextWeight for these rows). Flag-gated: default off so this
+      // ships as a no-op until reviewed; on, a null-improvement row still
+      // contributes to `shown`/`acted` (unaffected) but not to `measured`/
+      // `worked`, matching this module's own header contract ("measured"
+      // = "count of outcome rows we actually measured").
+      if (!excludeUnmeasured || imp !== null) {
+        sig.measured += 1;
+        if (imp !== null && imp > OUTCOME_WORKED_THRESHOLD) sig.worked += 1;
+      }
 
       const entry = { improvement: imp, measuredAt: r.measured_at };
       const arr = outcomesById.get(r.insight_id);

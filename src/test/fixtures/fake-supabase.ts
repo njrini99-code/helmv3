@@ -32,6 +32,12 @@ interface FakeOptions {
   // fault-injection parser. Cleared after the first match so a later query
   // against the same table (e.g. a retry) behaves normally again.
   queryErrors?: Record<string, unknown>;
+  // Opt-in id generator for an insert that doesn't supply its own `id`.
+  // Default unchanged (`fake-<random>`) so every existing caller is
+  // unaffected — pass `crypto.randomUUID` when the code under test (or a
+  // downstream call in the same flow) validates the id shape with
+  // `isUuid()`, since `fake-<random>` is not a well-formed UUID.
+  idFactory?: () => string;
 }
 
 interface QueryState {
@@ -176,6 +182,7 @@ class WriteBuilder implements PromiseLike<{ data: Row[] | null; error: unknown; 
     private readonly op: 'insert' | 'update' | 'upsert' | 'delete',
     private readonly payload: unknown,
     private readonly opts?: { onConflict?: string },
+    private readonly idFactory?: () => string,
   ) {}
 
   eq(col: string, value: unknown): this {
@@ -239,7 +246,10 @@ class WriteBuilder implements PromiseLike<{ data: Row[] | null; error: unknown; 
         }
         // Auto-generate an id when not supplied — mirrors Postgres
         // DEFAULT gen_random_uuid() conventions used by golf_* tables.
-        const enriched: Row = row.id === undefined ? { ...row, id: `fake-${Math.random().toString(36).slice(2, 10)}` } : row;
+        const enriched: Row =
+          row.id === undefined
+            ? { ...row, id: this.idFactory ? this.idFactory() : `fake-${Math.random().toString(36).slice(2, 10)}` }
+            : row;
         list.push(enriched);
         result.push(enriched);
       }
@@ -277,6 +287,7 @@ export function createFakeSupabase(opts: FakeOptions = {}) {
   // Own mutable copy: consuming an injected error must not mutate the
   // caller's original `opts.queryErrors` object between test runs.
   const queryErrors = opts.queryErrors ? { ...opts.queryErrors } : undefined;
+  const idFactory = opts.idFactory;
   return {
     from(table: string) {
       return {
@@ -290,11 +301,11 @@ export function createFakeSupabase(opts: FakeOptions = {}) {
             },
             queryErrors,
           ),
-        insert: (payload: unknown) => new WriteBuilder(tables, table, 'insert', payload),
-        update: (payload: unknown) => new WriteBuilder(tables, table, 'update', payload),
+        insert: (payload: unknown) => new WriteBuilder(tables, table, 'insert', payload, undefined, idFactory),
+        update: (payload: unknown) => new WriteBuilder(tables, table, 'update', payload, undefined, idFactory),
         upsert: (payload: unknown, options?: { onConflict?: string }) =>
-          new WriteBuilder(tables, table, 'upsert', payload, options),
-        delete: () => new WriteBuilder(tables, table, 'delete', null),
+          new WriteBuilder(tables, table, 'upsert', payload, options, idFactory),
+        delete: () => new WriteBuilder(tables, table, 'delete', null, undefined, idFactory),
       };
     },
     rpc(name: string, args: unknown) {

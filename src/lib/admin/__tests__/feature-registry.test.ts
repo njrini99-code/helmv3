@@ -143,7 +143,9 @@ const NON_CRM_ACTION_FILES = [
   'documents.ts',
   'drills.ts',
   'event-documents.ts',
+  'focus-area-practice-log.ts',
   'golf.ts',
+  'insight-attribution.ts',
   'insight-celebration.ts',
   'insight-delivery.ts',
   'insight-evidence.ts',
@@ -166,6 +168,7 @@ const NON_CRM_ACTION_FILES = [
   'round-drafts.ts',
   'round-recap.ts',
   'round-review-narrative.ts',
+  'round-review-sequence-attribution.ts',
   'round-review-system.ts',
   'round-reviews.ts',
   'shot-analytics.ts',
@@ -398,11 +401,24 @@ describe('FEATURE_REGISTRY completeness', () => {
     // generateTournamentPrep from insights.ts's explicit manifest entry —
     // both zero-caller dead code (see coverage-contract.foundation's
     // matching comment). Matches 431 -> 429 there.
-    // 2026-09-23 (+1), PR #2046: round-review-narrative.ts joins
-    // round_review_ai as a new 'ALL'-mapped file (round-recap.ts and
-    // round-review-system.ts's sibling), for getRoundReviewNarrative.
-    // Matches 429 -> 430 in coverage-contract.foundation.
-    expect(total).toBe(422);
+    // 2026-09-23 (+3), CoachHelm train 2: two new 'use server' action files
+    // were missing from this manifest (silently unscanned, not a violation
+    // the completeness checks above would ever catch — w-review-page-2's
+    // finding). getInsightAttributionReadout and getPlayerAttributionReadouts
+    // (insight-attribution.ts, #2044) join coachhelm_analytics's 'ALL' entry
+    // (+2); getRoundReviewSequenceAttribution (round-review-sequence-
+    // attribution.ts, #2036) joins round_review_ai's 'ALL' entry (+1).
+    // Total 421 -> 424.
+    // 2026-09-23 (+3), post-main-merge follow-up: focus-area-practice-log.ts
+    // (train 1, folded into A8 slice 2) was also missing from this manifest —
+    // logFocusAreaPracticeSession, addFocusAreaCriterion and
+    // setFocusAreaCriterionMet join development_plans_coach's new 'ALL'
+    // entry. Total 424 -> 427.
+    // 2026-09-23 (+1), PR #2046 (merged into train 2 independently of
+    // the above): round-review-narrative.ts joins round_review_ai as a
+    // new 'ALL'-mapped file (round-recap.ts and round-review-system.ts's
+    // sibling), for getRoundReviewNarrative. Total 427 -> 428.
+    expect(total).toBe(428);
   });
 
   it('the CRM row lists no files (never a wrap target)', () => {

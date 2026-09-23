@@ -39,6 +39,7 @@ This area depends heavily on shot tracking, stats, round reviews, and CoachHelm 
 - `src/app/golf/actions/development.ts`
 - `src/app/golf/actions/player-feedback.ts`
 - `src/app/golf/actions/round-reviews.ts`
+- `src/app/golf/actions/round-review-sequence-attribution.ts`
 - `src/app/golf/actions/v3/**`
 - `src/lib/coachhelm/v2/**`
 - `src/lib/coachhelm/v3/**`
@@ -84,6 +85,7 @@ Player opens round review
 - V3 narrative and counterfactual content must preserve citation/trust rules from CoachHelm AI.
 - Cohort/benchmark constants (2026-09-23, repair plan N16): `v3/counterfactual/cohort-baselines.ts` anchors carry `provenance: 'measured' | 'derived'` per value — women's anchors are always `'derived'` (LPGA/NCAA discounted to college, never a measured women's-college population stat); a `'derived'` label must read as a target/estimate, never an average/norm. Full contract in `docs/architecture/coachhelm-evidence-contract.md`.
 - Round review acknowledgement must not silently fail; it affects both learning and UI state.
+- Package 10 anchor choice (owner decision, 2026-09-23): comparable-method attribution's `interventionAt` anchors on an insight's first qualifying `golf_insight_action` (`INTERVENTION_ACTION_TYPES` in `causality/comparable-attribute.ts` — `create_focus`/`acknowledged`/`resolved`, confirmed by the owner including `'acknowledged'` alone) when one exists, else falls back to first exposure (`shown_at`). The action wins even if it is earlier than the exposure — a gap in the exposure ledger is not evidence the action didn't happen. `anchor_kind` ('action' | 'exposure') is derived at READ time (`attribution-read.ts`'s `attachAnchorKind`) via an exact timestamp-string match against `golf_insight_action.created_at`, never "does any action exist for this insight" — the latter would silently reclassify an old exposure-anchored row the moment an unrelated LATER action appears, since attribution rows are written once but actions are append-only. The view model (`attribution-view-model.ts`) renders "(since first shown)" for `anchor_kind: 'exposure'` and "(since you acted on it)" for `anchor_kind: 'action'` (owner-confirmed wording). No migration — not persisted, no column exists for it.
 
 ## UI Contract
 
@@ -355,6 +357,56 @@ Player opens round review
   PostgREST's cap silently truncates it and both `RosterHealthHeader` and
   `DueForReviewPanel` under-report — same class of bug
   `.claude/rules/database.md` calls out generally, not yet applied here.
+
+- **Follow-up eligibility (Pkg 9 gap 2, owner decision 2026-09-23,
+  `agent/coachhelm-a9-flow-integration`)**: before this, nothing in the
+  codebase named or computed "follow-up eligibility" — the closest real
+  mechanism was `findActiveFocusAreaForMetric`'s duplicate-active guard
+  (`development.ts`), which answers "is a second area on this metric
+  permitted at all", not "should the coach create one now". Owner rule:
+  eligible when (`status === 'completed'` OR today is past `target_date`
+  while the area is still `active`/`in_progress`/`paused`) AND the player
+  has played `>= FOLLOW_UP_ROUNDS_THRESHOLD` (3) completed `golf_rounds`
+  since the area's real start (`started_at`, from `acceptFocusArea` — never
+  `created_at`; a `'proposed'` area was never accepted, so it never reads as
+  "past its target date" here either). Under-threshold areas surface with a
+  `"waiting for rounds (n/3)"` label instead of being omitted. Deliberately
+  does not feed Package 10 outcome measurement (whether the metric actually
+  improved) — eligibility only.
+  Split like `due-for-review.ts`/`practice-log-loader.ts`:
+  `src/lib/coachhelm/focus-areas/follow-up-eligibility.ts` is the pure core
+  (`followUpEligibilityReason`/`computeFollowUpEligibility`, no
+  `'server-only'`, importable from a client component) and
+  `follow-up-eligibility-loader.ts` is the `'server-only'` `golf_rounds`
+  batch read (`loadFollowUpRoundCounts`, chunked + paged per
+  `.claude/rules/database.md`), returning `null` — not an empty Map — on a
+  read failure so a caller never confuses "read failed" with "zero rounds
+  played". Wired into the SAME `DueForReviewPanel` as a second, independent
+  section ("Follow-up eligibility", distinct from "Due for review" above):
+  `intelligence/page.tsx` calls the loader once (parallel with
+  `loadFocusAreaPracticeLogData`), converts the `Map` to a plain
+  `Record<string, number> | null` (Maps don't cross the server/client
+  boundary), and threads it through `playersDrillProps.followUpRoundCounts`
+  → `PlayersGridView` → `DueForReviewPanel`, which classifies client-side
+  against the SAME `focusAreas` prop — no new focus-area fetch, only the
+  one new `golf_rounds` read.
+  **Leaves the queue on a recorded outcome (owner decision follow-up,
+  2026-09-23)**: `recordFocusAreaOutcomeImpl` (`development.ts`) sets
+  `golf_player_focus_areas.outcome_status` directly, on the SAME write that
+  sets `status: 'completed'`, regardless of `from_insight_id`.
+  `followUpEligibilityReason` checks that raw column BEFORE the `completed`
+  leg and returns `null` (excluded, not just ineligible) when it's set — the
+  follow-up decision the queue exists to surface has already been made.
+  Threaded as `FollowUpEligibilityInput.recordedOutcomeStatus`, deliberately
+  NOT the same field as `PlayersGridFocusArea.outcome_status` (inherited
+  from `FocusAreaCardData`): that one is derived from the SOURCE INSIGHT
+  only (`golf_coach_insights.outcome_status`) and reads `null` whenever
+  `from_insight_id` is absent even though the focus area's own column is
+  set — reusing that name would silently miss exactly the areas this
+  exclusion most needs to catch. `intelligence/page.tsx` selects the raw
+  `outcome_status` column alongside the rest of `golf_player_focus_areas`
+  and sets `PlayersGridFocusArea.recordedOutcomeStatus` from it directly
+  (the existing insight-derived `outcome_status` field is untouched).
 - **`src/lib/coachhelm/v3/ranking/situational-ranking.ts`** (2026-09-23,
   addendum §13, work package A6 slice 1, pure core, not wired to a route,
   component, or `ranking/score.ts` yet) — `groupIssues(packets)` groups
@@ -387,6 +439,32 @@ Player opens round review
   regardless of confidence. Full contract in
   `docs/architecture/coachhelm-evidence-contract.md`'s "Controlled
   hypotheses" section and `memory/features/coachhelm-ai.md`.
+- **`src/lib/coachhelm/v3/eval/shadow-harness.ts`** (2026-09-23, addendum
+  §13, work package A10 slice 1, pure, not wired to a route or component):
+  `runShadowEvaluation(snapshot)` runs every new v3 family (A2/A3/A4 both
+  layers/A5/A6) over one de-identified fixed snapshot and reports
+  per-family support status plus two invariant counters that must both be
+  `0` — one flagging a hypothesis whose "supported" state isn't actually
+  backed by a real supported metric, one flagging a shot or owning claim
+  credited to more than one grouped issue. Proven against a real 2×2
+  new-vs-established-roster / complete-vs-incomplete-data fixture matrix,
+  not just hand-picked numbers. Full contract in
+  `docs/architecture/coachhelm-evidence-contract.md`'s "Shadow-mode
+  evaluation harness" section and `memory/features/coachhelm-ai.md`.
+
+- **`situational-ranking.ts` slice 2** (2026-09-23, addendum §13, A6 slice
+  2, still pure core): sequence packets now gate eligibility on the #2020
+  rollup's own per-kind support status instead of one event's own
+  resolution, closing a gap where a single hole could found an issue with
+  no real population behind it. New `Issue.evidenceKey`, a pure
+  `applyMaterialChangeSuppression` (never drops an issue, suppresses only
+  a matched, unchanged-or-under-50%-worse intervention, mutation-verified
+  at the 50% boundary), and a pure `issueToRankableInsight` adapter that
+  proves "one issue, one leading priority" at the ranked-output level.
+  Still not wired to a route, component, or live ranking read. Full
+  contract in `docs/architecture/coachhelm-evidence-contract.md`'s "Issue
+  grouping and ranking-input unification (A6 slice 2)" section and
+  `memory/features/coachhelm-ai.md`.
 
 - **Duplicate-active-work guard (Pkg 9 slice 1a, 2026-09-23,
   `agent/coachhelm-focus-dedup`)**: all 5 focus-area create paths
@@ -492,6 +570,23 @@ content component, so a same-day correction that leaves the round count and
 window unchanged collides with the pre-correction key and is not counted as
 a new maturation confirmation.
 
+- **Missing-evidence-counted-as-measured fix (Package 10 gap audit,
+  2026-09-23, `agent/coachhelm-trust-status-null-measured`)**:
+  `getInsightEffectivenessSignals` (`event-ledger.ts`) was counting every
+  `golf_insight_outcome` row into `sig.measured` regardless of whether
+  `improvement` was null. A thin-sample attribution (below
+  `attribute.ts`'s `MIN_WINDOW_ROUNDS`) still inserts that row via
+  `recordInsightOutcome` with `improvement: null` — insufficient evidence,
+  not a real measurement — so an insight resting on only thin-sample
+  outcomes could read `'needs_validation'` or, with 3+ such rows and
+  `worked === 0`, `'underperforming'`, on zero real evidence. Gated behind
+  the new `coachhelm_trust_status_exclude_unmeasured_outcomes` flag
+  (default off everywhere, see `config/feature-flags.yml`) pending team
+  review of the coach-visible trust-tier change; flag off is byte-identical
+  to the prior (buggy) behavior. `worked`, `shown`, and `acted` are
+  unaffected; `deriveTrend`'s null-skip was already correct. Write-side
+  unrelated: a null-`improvement`/null-`lift` row already never reaches
+  `nextWeight` either way.
 - **Practice-completion log + coach criteria (Addendum A8 slice 2, folded
   into Pkg 9, 2026-09-23, `agent/coachhelm-a8-practice-log`)**:
   <!-- schema-drift-absent: golf_focus_area_practice_sessions, golf_focus_area_criteria, golf_focus_area_practice_sessions_dedupe_key -->
@@ -567,19 +662,159 @@ a new maturation confirmation.
     under concurrent edit by two other in-flight A8 slices (evidence
     revision / evidence badge) when this slice started, and this keeps
     those rebases conflict-free.
-  - **Deliberately out of scope for this slice**: loader/UI wiring. Neither
-    the `intelligence`/`coachhelm` page loaders nor `FocusAreaCard` read or
-    render criteria or practice sessions yet — those files are owned by
-    the two concurrent A8 slices above, and wiring here would guarantee a
-    conflict. A follow-up slice wires the read side once this slice lands.
+  - **Read-side loader + UI (follow-up slice, stacked on this one)**:
+    `src/lib/coachhelm/focus-areas/practice-log-loader.ts` is a plain,
+    non-`'use server'` server module (not a public action endpoint) —
+    `loadFocusAreaPracticeLogData(supabase, focusAreaIds)` batch-loads both
+    tables for a set of focus areas in one call, checking the flag FIRST
+    (zero `.from()` calls while off, same contract as the actions above)
+    and returning `{criteriaByFocusArea, practiceSummaryByFocusArea}` maps
+    keyed by `focus_area_id`. Both the coach grid
+    (`intelligence/page.tsx`) and the player page (`coachhelm/page.tsx`)
+    call it once with every loaded focus area's id and thread the result
+    onto each row as `criteria`/`practiceSummary` before handing off to
+    `PlayersGridView`/`FocusAreaCard`. Practice sessions are rolled up to
+    `{count, lastPracticedAt}` — never the raw per-session rows — so the
+    card never grows unbounded. `FocusAreaCard` originally rendered this as
+    a read-only checklist (`criteria`, met/unmet via
+    `IconCheckCircle2`/`IconCircleDot`) and a one-line practice-log summary,
+    both absent/null-safe (render nothing) exactly like `evidence_revision`
+    above; the write-side affordances described below replace the checklist
+    with an interactive one for a coach and add the log-practice trigger for
+    a player, but the same absent/null-safe contract still governs whether
+    either renders at all. Focus-area ids are chunked at `chunkIds`'s 200-id
+    `ID_CHUNK_SIZE` before each `.in()`, and each chunk is paged past
+    PostgREST's 1000-row cap via `fetchAllRows` — the same two-limit
+    discipline `load-player-context.ts` already uses for
+    `golf_holes`/`golf_shots`.
   - A `db:types` regen PR follows once the owner applies the migration —
     until then `src/lib/types/database.ts` has no row types for either
-    table, and both actions go through `fromUntyped(supabase, table)`.
+    table, and both the actions and the loader go through
+    `fromUntyped(supabase, table)`.
   - The pgTAP suite
     (`supabase/tests/rls/golf_focus_area_practice_sessions.sql`, despite the
     filename, now covers BOTH new tables) has not been run locally (no
     Docker/local Supabase stack available in this session) — CI's
     "Supabase lint + RLS tests" job is this suite's first real run.
+  - **Write-side UI (Addendum A8 slice 3, folded into Pkg 9, 2026-09-23,
+    `agent/coachhelm-a8-practice-log-write-ui`, stacked on the read-side
+    slice above)**: `FocusAreaCard` gained two new optional callback props,
+    each gating its own affordance independently:
+    - `onLogPracticeSession` (PLAYER-only — this is the player's own record
+      of practice, not something a coach logs on their behalf; hidden for
+      role="coach" even if wired). When present and the area is actionable,
+      a secondary "Log practice" `Button` opens a `Sheet` (drill, reps,
+      note — all optional, mirroring the server action's own validation)
+      and submits via `logFocusAreaPracticeSession`. Idempotency:
+      `clientRequestId` is generated once per SHEET OPEN
+      (`crypto.randomUUID()` with the same manual RFC4122-shaped fallback
+      `use-golf-messages.ts` uses, since the server validates with
+      `isUuid()` and a malformed fallback would hard-fail rather than
+      merely reduce entropy) and REUSED across retries within that open
+      session — a failed submit keeps the same id so retrying is a safe
+      no-op-or-success against the server's
+      `UNIQUE(focus_area_id, client_request_id)` upsert, never a duplicate
+      row. A fresh id is only drawn when the sheet is opened again. On
+      success the card bumps its own optimistic session-count DELTA (not a
+      replacement value, so it composes with whatever count the server
+      already reported, including a null summary) and shows a success
+      toast; on failure it shows an inline + toast error and leaves the
+      sheet open for a retry. The delta clears via a `useEffect` keyed on
+      `focusArea.practiceSummary`'s own count/lastPracticedAt, i.e. the
+      instant the consumer's post-success `router.refresh()` lands fresh
+      server data — never a blanket `recordedValue ?? optimistic` merge
+      (unlike `OutcomeCapture`'s pattern), because a session count is
+      additive, not a one-way/monotonic verdict.
+    - `onSetCriterionMet` (COACH-only, mirroring
+      `setFocusAreaCriterionMet`'s own coach-only authorship at the action
+      layer). When present and the area is actionable, each criteria row
+      becomes an interactive `Checkbox` instead of the static
+      icon+label row, calling `onSetCriterionMet` on toggle. Each row
+      tracks its own optimistic override + pending state (an
+      id-keyed map, not one shared flag) so toggling one criterion never
+      disables the others; a failure rolls back only that row and shows an
+      error toast. All overrides clear via a `useEffect` keyed on the
+      `criteria` array reference — a fresh array only ever arrives via the
+      consumer's own post-success `router.refresh()`, i.e. authoritative
+      server state, so a confirmed value never lingers stale.
+    - Both handlers are wired only when
+      `isFlagEnabled('coachhelm_focus_area_practice_log')` is true.
+      `isFlagEnabled` is server-only (`import 'server-only'`) and
+      `FocusAreaCard`/`DevelopmentDrill`/`PlayersGridView` are all `'use
+      client'`, so the boolean is computed once, server-side, in
+      `coachhelm/page.tsx` and `intelligence/page.tsx` (a pure flag read,
+      outside their best-effort try/catch blocks) and threaded down as a
+      plain `practiceLogEnabled` prop — `PlayerCoachHelmHome` ->
+      `DevelopmentDrill` on the player path, `playersDrillProps`
+      (`PlayersGridViewProps.practiceLogEnabled`) -> `PlayersGridView` ->
+      `FocusAreaBoard` on the coach path — rather than each client
+      component re-deriving it from the criteria/practiceSummary data
+      itself, which can't distinguish "flag off" from "flag on, no data
+      yet" (both arrive as `null`). With the flag off the handler props are
+      simply never passed down, so nothing new renders and nothing calls
+      either action — the same "absent handler = absent affordance"
+      contract every other FocusAreaCard action (`onEdit`, `onComplete`,
+      `onRecordOutcome`, …) already follows.
+    - Both page-level handlers (`DevelopmentDrill`'s
+      `handleLogPracticeSession`, `PlayersGridView`'s
+      `handleSetCriterionMet`) follow the established thin-wrapper pattern
+      (`handleRecordOutcome`): perform the write, `router.refresh()` on
+      success, return the raw `{success, error?}` — no toast at that layer,
+      since the card owns 100% of its own optimistic state and toast
+      display.
+    - Component tests:
+      `src/components/fairway/pages/coachhelm/FocusAreaCard.practiceLogWrite.test.tsx`
+      covers trigger/checkbox visibility (flag-off = handler absent, wrong
+      role, non-actionable status), success, failure/rollback, and
+      duplicate-submit (no second call while pending; a retry after failure
+      reuses the same `clientRequestId`). Testing a `vaul`-based `Sheet` in
+      jsdom needs two local polyfills the suite documents inline: jsdom has
+      no Pointer Events capture methods, and its `getComputedStyle` returns
+      `''` (not `'none'`) for an unset `transform`, which crashes `vaul`'s
+      own drag-cleanup code on every open/close — neither is specific to
+      this component.
+- **Round Review sequence-attribution mount (A4 slice 3b, 2026-09-23,
+  `agent/coachhelm-a4-round-review-mount`, stacked on #2015
+  `agent/coachhelm-review-stable-read` with #2020
+  `agent/a4-sequence-attribution-rollup` merged in)** — a read-only section
+  on the Round Review page (`'use client'`) surfacing A4 slice 2's
+  `computeSequenceAttribution` rollup, behind
+  `coachhelm_a4_sequence_attribution_surface` (default off, all
+  environments false). The flag check is the literal first statement in the
+  new `'use server'` action
+  (`src/app/golf/actions/round-review-sequence-attribution.ts`), before
+  `createClient()`/`getUser()`, so the surface makes zero DB calls while
+  off. `src/lib/coachhelm/v3/metrics/load-sequence-attribution.ts` wraps
+  `loadPlayerContext` (A1 — already chunked at 200, already paginated past
+  the 1,000-row PostgREST cap) and `computeSequenceAttribution` in a
+  try/catch that returns `null` on any read error, never `[]`; the page
+  renders nothing (`SequenceAttributionSection` returns `null`) rather than
+  showing an empty or broken block. Auth/authorization reuses
+  `verifyPlayerAccess` directly (self-or-coach), matching
+  `getPlayerStandingForReviewImpl`'s existing shape in
+  `round-review-system.ts`. Only `status === 'supported'` rows render a
+  number; `insufficient`/`invalid`/`descriptive_only` rows render "Not
+  enough holes yet" and never a value, so a thin sample can't read as a
+  finding. Wording stays "observed" per #2023's guard (`sav`/`prov`/`caused
+  by`/`guaranteed` all forbidden in this scan root) — the component lives
+  under `components/golf/coachhelm/round-review/`, already inside that
+  guard's scan roots.
+  **Sign convention**: positive means strokes GAINED. This intentionally
+  does NOT reuse `ScoringSection.tsx`'s `formatStrokesVsPar` (positive =
+  more strokes than par = worse) even un-flipped, and that component is
+  unmerged (#2010) besides. It reuses `formatSigned`
+  (`src/components/fairway/charts/theme.ts`) exactly as `RoundSGSummary`
+  already does elsewhere on the same page for `strokes_gained_total` —
+  positive renders `+`, with the words "gained"/"lost" spelled out rather
+  than relying on the sign alone. Pinned by a dedicated sign-convention
+  test in `SequenceAttributionSection.test.tsx`.
+  **Window**: the page has no single existing 12-month convention to
+  import (same "opaque, cron-refreshed standing cache with no explicit
+  `window_start`/`window_end`" situation A7 already found on the sibling
+  Game Fingerprint page) — `sequence-attribution-window.ts` builds an
+  independent UTC-safe rolling 12-calendar-month `AnalysisScope`, following
+  A7's pattern rather than importing its unmerged
+  `distance-profile-window.ts`.
 
 ## Tests To Prefer
 
