@@ -750,11 +750,18 @@ def trace_surfaces(node, ctx, run):
                            if b['code'] == 'HOLE_SURFACE_MISSING' and b.get('surfaceClass') == 'fairway'})
     lidar = ctx.lidar_manifest(layout_id)
     lidar_covered = bool(lidar and lidar.get('status') == 'covered')
+    canopy_path = ctx.canopy_path(layout_id)
+    canopy_available = bool(canopy_path and ctx.states.get(f'layout.canopy.derive[{layout_id}]') in ('cached', 'success')
+                             and os.path.isfile(canopy_path))
     from .payload_reuse import load_receipt, retain_receipt, stage_identity
     # The lidar verdict is part of what a trace is: a receipt from a
-    # NAIP-only derivation must not stand in for a lidar-boosted one.
+    # NAIP-only derivation must not stand in for a lidar-boosted one. The
+    # canopy review is the no-lidar tree-exclusion signal (see derive-
+    # surface-traces.py's `--canopy-review`), so a changed canopy review
+    # must invalidate a reusable receipt the same way.
     identity = stage_identity(ctx, node, package, {'holes': target_holes,
-                                                   'lidar': {k: v for k, v in lidar.items() if k != 'retrievedAt'} if lidar else None})
+                                                   'lidar': {k: v for k, v in lidar.items() if k != 'retrievedAt'} if lidar else None,
+                                                   'canopy': file_sha256(canopy_path) if canopy_available else None})
     receipt = load_receipt(ctx, layout_id, 'surfaces-trace', identity)
     if receipt:
         document = ctx.json(out, fresh=True)
@@ -776,6 +783,8 @@ def trace_surfaces(node, ctx, run):
                 '--dem', os.path.join(source, 'elevation.tiff'), '--holes', ','.join(str(o) for o in target_holes), '--out', out]
         if lidar_covered:
             args += ['--lidar-chm', ctx.lidar_out(layout_id), '--terrain-source', source]
+        if canopy_available:
+            args += ['--canopy-review', canopy_path]
         run_script(ctx, run, node, 'scripts/golf/course-geometry/derive-surface-traces.py', args)
     retained = retain_receipt(ctx, layout_id, 'surfaces-trace', identity, package['contentHash'], [out])
     return [artifact('surfaces-trace', out, 'A'), artifact('payload-reuse', retained, 'C')]

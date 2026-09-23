@@ -131,6 +131,37 @@ def make_chm(value, shape=(100, 150)):
     return cr.Raster(array, geotransform, EPSG, [dst.CHM_NODATA])
 
 
+# A tree clump sitting inside the corridor from `hole_with_route`'s default
+# route (row 50 is the centerline, corridor half-width 18m = rows 41-59):
+# rows 40:46 / cols 70:81 is the corridor's north edge around the route's
+# midpoint (x ~604140-604162), well clear of the tee/green exclusion boxes
+# at either end. Touching the corridor's own outer edge (rather than sitting
+# fully inside it) means excluding it carves a bite out of the trace rather
+# than punching an unrepresentable interior hole.
+CLUMP_ROWS = slice(40, 46)
+CLUMP_COLS = slice(70, 81)
+CLUMP_BOX_UTM = box(604140.0, 4656708.0, 604162.0, 4656720.0)
+
+
+def make_chm_with_clump(base_value, clump_value, shape=(100, 150), rows=CLUMP_ROWS, cols=CLUMP_COLS):
+    """Like `make_chm`, but with a localized tree clump (`clump_value`, e.g.
+    a canopy height) cut into an otherwise-uniform `base_value` (e.g. open
+    turf)."""
+    geotransform = synthetic_grid()[0]
+    array = np.full((1,) + shape, base_value, dtype=np.float64)
+    array[0, rows, cols] = clump_value
+    return cr.Raster(array, geotransform, EPSG, [dst.CHM_NODATA])
+
+
+def make_canopy_review(clump_box_utm=CLUMP_BOX_UTM, site_id='test-site'):
+    """A minimal `golfhelm-canopy-review-v1` doc (see derive-canopy-naip.py)
+    with one region covering `clump_box_utm`, for the no-lidar exclusion
+    path (`_canopy_evidence`)."""
+    ring = [utm_to_wgs84(x, y) for x, y in clump_box_utm.exterior.coords]
+    return {'schemaVersion': 1, 'kind': 'golfhelm-canopy-review-v1', 'siteId': site_id,
+            'regions': [{'areaM2': clump_box_utm.area, 'coordinatesWgs84': ring}]}
+
+
 def write_geotiff(path, array, geotransform, epsg, nodata=None):
     from osgeo import gdal, osr
     height, width = array.shape
@@ -357,6 +388,119 @@ class LidarSignalTests(unittest.TestCase):
         self.assertFalse(evidence['lidar']['used'])
         self.assertIn('does not match', evidence['lidar']['reason'])
         self.assertEqual(traced['evidenceSource'], 'naip')
+
+
+class TreeClumpExclusionTests(unittest.TestCase):
+    """A synthetic corridor with an otherwise-uniform good-turf reading (the
+    owner's complaint was traces eating tree crowns/treelines that read
+    plausibly turf-like in NAIP alone) but a localized tree clump inside it:
+    the hard CHM exclusion (lidar covered) and the canopy-region exclusion
+    (no lidar) must each carve that clump out of the emitted trace, not just
+    lower its confidence."""
+
+    def test_lidar_covered_clump_is_excluded_from_the_trace(self):
+        hole, features = hole_with_route()
+        package = make_package({'holes': [hole], 'features': features})
+        naip, dem = make_rasters(ndvi_value=0.30, texture_noise_std=0.005)
+        options = dict(OPTIONS, corridor_m=18.0, expected_width_m=32.0)
+
+        baseline_chm = make_chm(0.3)  # open turf everywhere, no clump
+        baseline, baseline_evidence = dst.build_trace(package, hole, naip, dem, EPSG, options, chm=baseline_chm)
+        self.assertIsNotNone(baseline, baseline_evidence)
+        baseline_traced = cr.wgs84_to_epsg(cr.to_shapely({'type': 'Polygon', 'coordinates': [baseline['coordinatesWgs84']]}), EPSG)
+        baseline_clump_share = baseline_traced.intersection(CLUMP_BOX_UTM).area / CLUMP_BOX_UTM.area
+        self.assertGreater(baseline_clump_share, 0.5, 'sanity: without the clump this area traces as fairway')
+
+        clump_chm = make_chm_with_clump(base_value=0.3, clump_value=5.0)
+        traced, evidence = dst.build_trace(package, hole, naip, dem, EPSG, options, chm=clump_chm)
+        self.assertIsNotNone(traced, evidence)
+        self.assertTrue(evidence['lidar']['used'], evidence['lidar'])
+        self.assertGreater(evidence['lidar']['treePixels'], 0)
+        self.assertLessEqual(evidence['treeShare'], options['tree_share_max'])
+        polygon = cr.wgs84_to_epsg(cr.to_shapely({'type': 'Polygon', 'coordinates': [traced['coordinatesWgs84']]}), EPSG)
+        clump_share = polygon.intersection(CLUMP_BOX_UTM).area / CLUMP_BOX_UTM.area
+        self.assertLess(clump_share, 0.10, 'the tree clump should be carved out of the emitted trace')
+
+    def test_no_lidar_clump_is_excluded_via_the_canopy_review(self):
+        hole, features = hole_with_route()
+        package = make_package({'holes': [hole], 'features': features})
+        naip, dem = make_rasters(ndvi_value=0.30, texture_noise_std=0.005)
+        options = dict(OPTIONS, corridor_m=18.0, expected_width_m=32.0)
+
+        baseline, baseline_evidence = dst.build_trace(package, hole, naip, dem, EPSG, options)
+        self.assertIsNotNone(baseline, baseline_evidence)
+        baseline_traced = cr.wgs84_to_epsg(cr.to_shapely({'type': 'Polygon', 'coordinates': [baseline['coordinatesWgs84']]}), EPSG)
+        baseline_clump_share = baseline_traced.intersection(CLUMP_BOX_UTM).area / CLUMP_BOX_UTM.area
+        self.assertGreater(baseline_clump_share, 0.5, 'sanity: without a canopy review this area traces as fairway')
+
+        canopy = make_canopy_review()
+        traced, evidence = dst.build_trace(package, hole, naip, dem, EPSG, options, canopy=canopy)
+        self.assertIsNotNone(traced, evidence)
+        self.assertFalse(evidence['lidar']['used'])
+        self.assertTrue(evidence['canopy']['used'], evidence['canopy'])
+        self.assertGreater(evidence['canopy']['excludedPixels'], 0)
+        self.assertLessEqual(evidence['treeShare'], options['tree_share_max'])
+        polygon = cr.wgs84_to_epsg(cr.to_shapely({'type': 'Polygon', 'coordinates': [traced['coordinatesWgs84']]}), EPSG)
+        clump_share = polygon.intersection(CLUMP_BOX_UTM).area / CLUMP_BOX_UTM.area
+        self.assertLess(clump_share, 0.10, 'the canopy region should be carved out of the emitted trace')
+
+    def test_a_fully_enclosed_tree_clump_is_refused_as_unrepresentable(self):
+        """A clump sitting well inside the corridor (not touching its own
+        outer edge) gets fully surrounded by turf on every side once it's
+        hard-excluded, cutting a literal hole in the mask -- the written
+        schema only ever has an exterior ring, so silently absorbing that
+        hole would ship the exact tree crown the exclusion just cut out.
+        This must refuse outright, not just lower confidence."""
+        hole, features = hole_with_route()
+        package = make_package({'holes': [hole], 'features': features})
+        naip, dem = make_rasters(ndvi_value=0.30, texture_noise_std=0.005)
+        options = dict(OPTIONS, corridor_m=18.0, expected_width_m=32.0)
+        # Rows 47:53 straddle the route centerline (row 50); well clear of
+        # the corridor's own top/bottom edge (rows 41/59) on every side.
+        enclosed_chm = make_chm_with_clump(base_value=0.3, clump_value=5.0, rows=slice(47, 53), cols=slice(70, 81))
+        traced, evidence = dst.build_trace(package, hole, naip, dem, EPSG, options, chm=enclosed_chm)
+        self.assertIsNone(traced, evidence)
+        self.assertEqual(evidence['reason'], 'tree_canopy_encloses_an_unrepresentable_gap')
+
+    def test_a_non_tree_interior_hole_is_not_refused_regression(self):
+        """Regression guard: a fully-enclosed bunker (or any non-tree
+        exclusion) island that survives `fill_holes`/opening/closing as a
+        genuine interior ring must NOT trip the tree-donut refusal -- that
+        kind of hole predates the tree exclusion entirely and was always
+        silently absorbed into the exterior ring. (A prior version of this
+        guard refused on ANY interior ring regardless of cause, which
+        regressed the held-out Peek'n Peak eval on a hole with no lidar or
+        canopy signal at all -- see eval-surface-traces.py.)"""
+        hole, features = hole_with_route()
+        bunker_box = box(604140.0, 4656696.0, 604160.0, 4656704.0)  # well inside the corridor, away from tee/green
+        bunker_ring = [utm_to_wgs84(x, y) for x, y in bunker_box.exterior.coords]
+        bunker_id = f'{hole["key"]}-bunker'
+        features = features + [{'id': bunker_id, 'kind': 'bunker', 'holeKeys': [hole['key']],
+                                 'geometryWgs84': {'type': 'Polygon', 'coordinates': [bunker_ring]}}]
+        hole = dict(hole, featureIds=hole['featureIds'] + [bunker_id])
+        package = make_package({'holes': [hole], 'features': features})
+        naip, dem = make_rasters(ndvi_value=0.30, texture_noise_std=0.005)
+        options = dict(OPTIONS, corridor_m=18.0, expected_width_m=32.0)
+        traced, evidence = dst.build_trace(package, hole, naip, dem, EPSG, options)
+        self.assertIsNotNone(traced, evidence)
+        self.assertNotEqual(evidence.get('reason'), 'tree_canopy_encloses_an_unrepresentable_gap')
+
+    def test_lidar_covered_clump_takes_precedence_over_a_stale_canopy_review(self):
+        """When lidar covers the hole, `_canopy_evidence` is never even
+        consulted (see `build_trace`) -- a canopy review with no regions at
+        all must not stop the CHM-driven exclusion from doing its job."""
+        hole, features = hole_with_route()
+        package = make_package({'holes': [hole], 'features': features})
+        naip, dem = make_rasters(ndvi_value=0.30, texture_noise_std=0.005)
+        options = dict(OPTIONS, corridor_m=18.0, expected_width_m=32.0)
+        clump_chm = make_chm_with_clump(base_value=0.3, clump_value=5.0)
+        empty_canopy = {'schemaVersion': 1, 'kind': 'golfhelm-canopy-review-v1', 'siteId': 'test-site', 'regions': []}
+        traced, evidence = dst.build_trace(package, hole, naip, dem, EPSG, options, chm=clump_chm, canopy=empty_canopy)
+        self.assertIsNotNone(traced, evidence)
+        self.assertEqual(evidence['canopy']['reason'], 'lidar CHM already covers this hole')
+        polygon = cr.wgs84_to_epsg(cr.to_shapely({'type': 'Polygon', 'coordinates': [traced['coordinatesWgs84']]}), EPSG)
+        clump_share = polygon.intersection(CLUMP_BOX_UTM).area / CLUMP_BOX_UTM.area
+        self.assertLess(clump_share, 0.10)
 
 
 class LoadLidarChmTests(unittest.TestCase):

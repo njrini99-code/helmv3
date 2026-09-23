@@ -29,9 +29,18 @@ def _to_pixel(xy, geotransform):
     return col, row
 
 
-def render_trace_overlay(naip, epsg, features, package, out_path, hand_trace_ring_wgs84=None):
+def render_trace_overlay(naip, epsg, features, package, out_path, hand_trace_ring_wgs84=None, chm=None, chm_tree_min_m=None):
     rgb = np.stack([_stretch(naip.array[i]) for i in (0, 1, 2)], axis=-1)
     image = Image.fromarray(rgb, mode='RGB').convert('RGBA')
+    if chm is not None and chm_tree_min_m is not None:
+        # A translucent tint under the hard-exclusion threshold the tracer
+        # actually used, so a reviewer can see whether a trace boundary
+        # legitimately cleared the tree mask or is hugging it.
+        chm_arr = chm.array[0]
+        tree = chm_arr >= chm_tree_min_m
+        tint = np.zeros((*tree.shape, 4), dtype=np.uint8)
+        tint[tree] = (255, 120, 0, 120)
+        image = Image.alpha_composite(image, Image.fromarray(tint, mode='RGBA'))
     draw = ImageDraw.Draw(image)
     for feature in features:
         polygon = cr.wgs84_to_epsg(shapely_shape({'type': 'Polygon', 'coordinates': [feature['coordinatesWgs84']]}), epsg)
