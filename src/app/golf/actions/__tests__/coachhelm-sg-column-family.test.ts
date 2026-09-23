@@ -1,7 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { readFileSync } from 'node:fs';
 import { generateTeamPatterns, type StatsRow } from '@/lib/coachhelm/v2/mining/team-pattern-generator';
-import { generateTeamForecasts } from '@/lib/coachhelm/v2/prediction/team-forecaster';
 
 /**
  * Regression coverage for #1297 / #1300 — "GolfHelm/CoachHelm: SG source
@@ -26,30 +24,26 @@ import { generateTeamForecasts } from '@/lib/coachhelm/v2/prediction/team-foreca
  * per-round rate, while the dashboard and CoachHelm v3 chat metrics catalog
  * correctly read the per-round family.
  *
- * The insights action keeps its statistic composer private so it cannot become
- * a publicly callable server action. Its source contract therefore asserts the
- * exact per-round read sites, while the public pattern and forecast helpers
- * below exercise the same column-family behavior with fixtures.
+ * 2026-09-22 (fix #6, dead-code cleanup): `insights.ts`'s private statistic
+ * composer `buildStatInsightsForTeam` and the `generateTeamForecasts`
+ * (team-forecaster.ts) call site were both exclusively reachable from
+ * `generateTeamInsight()` — a server action whose last UI caller
+ * (`IntelligenceCommandCenter.tsx`) was deleted 2026-07-23 (#1009) and never
+ * replaced. All three were removed as dead code, along with this file's
+ * source-contract assertions against `buildStatInsightsForTeam` and its
+ * `generateTeamForecasts` fixture test. `generateTeamPatterns`
+ * (team-pattern-generator.ts) lost its own only caller in the same cleanup
+ * but is left in place, untested-in-production or not, as a lib export this
+ * fix's scope didn't ask for — its regression coverage below stays useful
+ * documentation of the column-family contract for whoever wires it up next.
  */
 
 const PER_ROUND_APPROACH_SG = -6.6;
 const ROUNDS_IN_CALCULATION = 13;
 const CUMULATIVE_APPROACH_SG = -85.8; // -6.6 * 13 — the incident's own arithmetic
-const insightsSource = readFileSync(new URL('../insights.ts', import.meta.url), 'utf8');
-const buildStatInsightsStart = insightsSource.indexOf('function buildStatInsightsForTeam(');
-// End marker was the now-removed "ACKNOWLEDGE COMPOSED INSIGHT" section
-// header (that dead code — and its sibling DISMISS COMPOSED INSIGHT — was
-// deleted 2026-09-22; see insights.ts). The next stable section header after
-// buildStatInsightsForTeam is now TRIGGER INSIGHTS FOR SINGLE PLAYER.
-const buildStatInsightsEnd = insightsSource.indexOf(
-  '// ============================================================================\n// TRIGGER INSIGHTS FOR SINGLE PLAYER',
-  buildStatInsightsStart,
-);
-const buildStatInsightsSource = insightsSource.slice(buildStatInsightsStart, buildStatInsightsEnd);
 
-/** Full StatsRow fixture for generateTeamPatterns/generateTeamForecasts — a
- * wider shape than PlayerStatsCacheRow (mirrors the real Supabase select,
- * which fetches every column both call sites need from one query). */
+/** Full StatsRow fixture for generateTeamPatterns — a wider shape than
+ * PlayerStatsCacheRow (mirrors the real Supabase select). */
 function makeFullStatsRow(overrides: Partial<StatsRow> = {}): StatsRow {
   return {
     player_id: 'player-1',
@@ -92,29 +86,6 @@ describe('CoachHelm V2 SG column family (#1297 / #1300)', () => {
     expect(CUMULATIVE_APPROACH_SG).toBeCloseTo(PER_ROUND_APPROACH_SG * ROUNDS_IN_CALCULATION, 5);
   });
 
-  it('reads every team SG average from the per-round column family', () => {
-    expect(buildStatInsightsStart).toBeGreaterThanOrEqual(0);
-    expect(buildStatInsightsEnd).toBeGreaterThan(buildStatInsightsStart);
-
-    for (const column of [
-      'sg_total_per_round',
-      'sg_tee_per_round',
-      'sg_approach_per_round',
-      'sg_around_green_per_round',
-      'sg_putting_per_round',
-    ]) {
-      expect(buildStatInsightsSource).toContain(`statsRows.map((row) => row.${column})`);
-    }
-
-    expect(buildStatInsightsSource).not.toContain('statsRows.map((row) => row.strokes_gained_');
-  });
-
-  it('keeps the team-weakness threshold on the per-round team average', () => {
-    expect(buildStatInsightsSource).toContain('value: teamAverages.sgApproach');
-    expect(buildStatInsightsSource).toContain('if ((teamWeakness.value as number) < -0.3)');
-    expect(buildStatInsightsSource).toContain('per round');
-  });
-
   it('generateTeamPatterns compares SG against the per-round team average, not a cumulative sum', () => {
     // Team of 3 so the "well below team average" (>0.8 gap) detector has a
     // real baseline; one player's around-green is meaningfully worse.
@@ -134,18 +105,5 @@ describe('CoachHelm V2 SG column family (#1297 / #1300)', () => {
     // Description interpolates the raw value — must be the per-round figure.
     expect(weaknessPattern?.description).toContain('-1.0 SG:ARG');
     expect(weaknessPattern?.description).not.toMatch(/-1[0-9]\.\d SG:ARG/);
-  });
-
-  it('generateTeamForecasts only flags "Elite Putting" at a per-round threshold', () => {
-    const forecastPlayers = [{ id: 'p1', first_name: 'A', last_name: 'One' }];
-    // A cumulative SUM of +6.5 over 13 rounds is really +0.5/round — right at
-    // the >0.5 threshold boundary, so use a clearly-below-threshold per-round
-    // value to prove the forecaster reads the per-round column, not the sum.
-    const forecastStats: StatsRow[] = [makeFullStatsRow({ player_id: 'p1', sg_putting_per_round: 0.2 })];
-    const forecasts = generateTeamForecasts(forecastPlayers, forecastStats, []);
-    const elitePutting = forecasts
-      .flatMap((f) => f.keyFactors ?? [])
-      .find((s) => s.name === 'Elite Putting');
-    expect(elitePutting).toBeUndefined();
   });
 });

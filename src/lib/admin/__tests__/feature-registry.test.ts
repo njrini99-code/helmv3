@@ -393,7 +393,11 @@ describe('FEATURE_REGISTRY completeness', () => {
     // and bulkDismissInsights/bulkAcknowledgeInsights/bulkResolveInsights
     // from insight-management.ts (picked up via its 'ALL' mapping). Matches
     // 436 -> 431 in coverage-contract.foundation.
-    expect(total).toBe(423);
+    // 2026-09-22 (-2), fix #6: removed generateTeamInsight and
+    // generateTournamentPrep from insights.ts's explicit manifest entry —
+    // both zero-caller dead code (see coverage-contract.foundation's
+    // matching comment). Matches 431 -> 429 there.
+    expect(total).toBe(421);
   });
 
   it('the CRM row lists no files (never a wrap target)', () => {
