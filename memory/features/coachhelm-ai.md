@@ -610,7 +610,20 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
   `value`, never null, per `types.ts`'s "state it, don't hide it"
   contract; only a zero-denominator row (`status: 'invalid'`) nulls
   `value`. **Do not** wire this into `approach-miss.ts` yet — that's a
-  later slice, behind a flag.
+  later slice, behind a flag. **`failedFloors?: readonly SupportFloorGap[]`**
+  (`metrics/types.ts`, #2008 review) is absent unless `status ===
+  'insufficient'`, in which case it names every real floor
+  (`'rounds'`/`'attempts'`/`'greens'`) that row's OWN gating population
+  failed — a row can fail more than one floor at once (the proximity row's
+  rounds/attempts/greens all fail together in the fixture that proves
+  this), and `failedFloors` names all of them, never just the first.
+  `describeSupportGap(row)` moved to its own module,
+  `metrics/support-gap.ts` — a client component ('use client') needs it as
+  a runtime value, and that file has no value import of anything
+  server-only, unlike `distance-profile.ts` itself (which value-imports
+  `bucketApproachDistance` from `engine/shot-source.ts`, importing
+  `createAdminClient`); `distance-profile.ts` re-exports it unchanged for
+  every server-side caller.
 
 - **`src/lib/coachhelm/v3/metrics/par-opportunities.ts` is a new, pure
   metrics module** (2026-09-23, `agent/coachhelm-par-opportunities`,

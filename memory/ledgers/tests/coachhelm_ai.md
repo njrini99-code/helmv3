@@ -251,3 +251,30 @@
   0 failed) — the open-window test never reaches the confounder check
   (it short-circuits at the follow-up-window-open gate, before the new
   code runs), so it needed no changes.
+## 2026-09-23 — A7 Scoring surface: new contracts pinned by tests (slice 2)
+
+- New: `buildScoringViewModel.test.ts` (5) — par-grouping across
+  'all'/'mid' bands, par5-grouping into fixed metric order, a
+  `courseNameById` resolution + its fallback, a two-courses-same-hole
+  identity collision (mirroring A3's own fixture), and the
+  empty-input case. `ScoringSection.test.tsx` (8) — a supported par
+  tile next to an insufficient one switching on `kind` alone (not
+  `value !== null`), fixed per-hole metric ordering, accessible-name
+  baking for both row shapes, keyboard open/close (Enter, Escape)
+  parity with click, the empty-collection state, an invalid par-5 row
+  next to a real `0%` sibling getting metric-aware copy rather than a
+  blanket "no data" claim, a non-terminating percent
+  (`33.333333333333336%` → `33.3%`) formatted in the drill-down, and
+  two identical hole numbers at different courses rendering with
+  distinct accessible names. `load-par-opportunities.test.ts` (1) —
+  wiring-only pass-through, mirroring `load-distance-profile.test.ts`.
+- Two of these tests initially asserted the wrong thing rather than
+  finding a real bug: a single-play "invalid" fixture at
+  `greenShotNumber: 4` (fails regulation) produced `eligible=1`
+  (nonzero) so the row was `'insufficient'`, not `'invalid'` as
+  intended — the fixture was changed to three such plays, which
+  clears the 3-play floor for regulation/green-in-two (`'supported'`,
+  real `0%`) while putting-conversion's own `created` denominator
+  stays 0 (`'invalid'`), correctly isolating the case the copy fix
+  targets. `FairwayPlayerGameFingerprint.mode.test.tsx` (existing, 7)
+  and `PlayerDeepDiveTabs.test.tsx` reran unchanged and green.

@@ -30,6 +30,23 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     cleanup_plan: "Either promote to a permanent `release` flag once the section has been reviewed and the rolling-12-month load has been checked against a heavy-user roster in preview, or remove the section and its wiring if the review asks for a different surface/placement instead.",
   },
   {
+    feature_id: "coachhelm_a7_scoring_surface",
+    owner: "golf/coachhelm",
+    purpose: "Gates whether the Game Fingerprint page's Scoring section renders the new par/length + par-5 opportunity surface (loadParOpportunities + buildScoringViewModel + ScoringSection) alongside the existing stats-cache-backed KPIs; default off pending a design/product review of the new section's placement, copy, and the par-5 card volume across a multi-course player history.",
+    type: "experiment",
+    status: "active",
+    created_at: "2026-09-23",
+    expires_at: null,
+    default: false,
+    environment: {
+      production: false,
+      preview: false,
+      development: false,
+    },
+    kill_switch_behavior: null,
+    cleanup_plan: "Either promote to a permanent `release` flag once the section has been reviewed and the rolling-12-month load (shared with the distance-profile flag when both are on — see `admin_platform`'s ledger) has been checked against a heavy-user roster in preview, or remove the section and its wiring if the review asks for a different surface/placement instead.",
+  },
+  {
     feature_id: "coachhelm_chat_claim_gate",
     owner: "golf/coachhelm",
     purpose: "Gates whether coach chat's turn verdict also engages claim-validator.ts's typed wrong-player/wrong-window/wrong-unit/wrong-denominator/ unsupported-cause checks, on top of the existing numeric-claim audit; default off pending real-world evidence this doesn't over-reject otherwise-good answers. A rejected chat turn collapses the WHOLE turn to a failure note (repair plan 14.10's \"state it, don't hide it\"), so a false-positive rejection here is more visible and more frequent than round-recap's one-shot cached fallback — the uncited-denominator false positive found in review (2026-09-23) is fixed, but this flag stays off until a shadow-log rate confirms no other prose shape trips it.",
