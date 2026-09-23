@@ -317,6 +317,48 @@ Player opens round review
   action count can read low. Fixing it means widening the dedup key, a
   follow-up slice.
 
+- **Practice-completion log + coach criteria (Addendum A8 slice 2, folded
+  into Pkg 9, 2026-09-23, `agent/coachhelm-a8-practice-log`)**:
+  <!-- schema-drift-absent: golf_focus_area_practice_sessions -->
+  `golf_focus_area_practice_sessions` is named below even though it is not
+  yet in the schema snapshot — its migration has not been applied to
+  production (owner's apply queue). Two new, additive surfaces added by
+  `supabase/migrations/20260923110000_golf_focus_area_practice_log.sql`,
+  both gated behind
+  `coachhelm_focus_area_practice_log` (default off everywhere, zero reads
+  or writes of either surface while off):
+  - `golf_player_focus_areas.criteria` — a small, coach-authored jsonb list
+    of "done" definitions (`{entries: [{id, label, source, created_at, met,
+    met_at}]}`), capped at 10 entries, written via a compare-and-swap on
+    `updated_at` with one retry (`addFocusAreaCriterion`,
+    `setFocusAreaCriterionMet` in the new
+    `src/app/golf/actions/focus-area-practice-log.ts`).
+  - `golf_focus_area_practice_sessions` — a NEW append-only table (not a
+    jsonb array, to avoid a read-modify-write losing a concurrent append)
+    logging actual practice completions, idempotent on
+    `UNIQUE(focus_area_id, client_request_id)` via `ON CONFLICT DO NOTHING`
+    (`logFocusAreaPracticeSession`); a repeated `client_request_id` returns
+    `{success: true}`, not a failure. RLS mirrors
+    `golf_player_focus_areas`' own visibility by re-running its SELECT
+    policy inside an `EXISTS` subquery, rather than re-deriving
+    player/coach access a second time; append-only at both the RLS and grant
+    layer (no UPDATE/DELETE policy, no UPDATE/DELETE grant for
+    `authenticated`).
+  - Deliberately a NEW action file, not `development.ts` — that file was
+    under concurrent edit by two other in-flight A8 slices (evidence
+    revision / evidence badge) when this slice started, and this keeps
+    those rebases conflict-free.
+  - **Deliberately out of scope for this slice**: loader/UI wiring. Neither
+    the `intelligence`/`coachhelm` page loaders nor `FocusAreaCard` read or
+    render `criteria` or practice sessions yet — those files are owned by
+    the two concurrent A8 slices above, and wiring here would guarantee a
+    conflict. A follow-up slice wires the read side once this slice lands.
+  - The new pgTAP suite
+    (`supabase/tests/rls/golf_focus_area_practice_sessions.sql`) has not
+    been run locally (no Docker/local Supabase stack available in this
+    session) — CI's "Supabase lint + RLS tests" job is this suite's first
+    real run.
+
 ## Tests To Prefer
 
 - `src/test/app/golf/dashboard/coachhelm/**`

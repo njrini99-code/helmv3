@@ -738,6 +738,24 @@ CREATE TABLE IF NOT EXISTS "public"."golf_events" (
 
 ALTER TABLE "public"."golf_events" OWNER TO "postgres";
 
+CREATE TABLE IF NOT EXISTS "public"."golf_focus_area_practice_sessions" (
+    "id" "uuid" DEFAULT "extensions"."uuid_generate_v4"() NOT NULL,
+    "focus_area_id" "uuid" NOT NULL,
+    "player_id" "uuid" NOT NULL,
+    "logged_by_user_id" "uuid" NOT NULL,
+    "logged_by_role" "text" NOT NULL,
+    "drill_id" "text",
+    "reps" integer,
+    "note" "text",
+    "practiced_at" timestamp with time zone NOT NULL,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "client_request_id" "uuid" NOT NULL,
+    CONSTRAINT "golf_focus_area_practice_sessions_logged_by_role_check" CHECK (("logged_by_role" = ANY (ARRAY['player'::"text", 'coach'::"text"]))),
+    CONSTRAINT "golf_focus_area_practice_sessions_reps_check" CHECK ((("reps" IS NULL) OR ("reps" >= 0)))
+);
+
+ALTER TABLE "public"."golf_focus_area_practice_sessions" OWNER TO "postgres";
+
 CREATE TABLE IF NOT EXISTS "public"."golf_global_patterns" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "signature" "text" NOT NULL,
@@ -1247,6 +1265,7 @@ CREATE TABLE IF NOT EXISTS "public"."golf_player_focus_areas" (
     "baseline_value" numeric,
     "snapshots" "jsonb" DEFAULT '[]'::"jsonb" NOT NULL,
     "evidence_revision" "text",
+    "criteria" "jsonb",
     CONSTRAINT "golf_player_focus_areas_target_kind_check" CHECK (("target_kind" = ANY (ARRAY['date'::"text", 'rounds'::"text"])))
 );
 
