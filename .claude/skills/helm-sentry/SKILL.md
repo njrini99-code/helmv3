@@ -11,8 +11,8 @@ memory; the underlying implementations change and this skill can drift.
 
 ## 1. Issue: look it up
 
-- `search_issues` (Sentry MCP, `mcp__7524981b-0003-40de-9f86-c5275420784a__search_issues`)
-  to find the issue by query, then `get_sentry_resource` for the full record.
+- `search_issues` on whichever Sentry connector this session has (its
+  namespace differs by account and session) to find the issue by query, then `get_sentry_resource` for the full record.
 - Pull: title, culprit, event count, first/last seen, and tags — especially
   `sport`, `feature`, `pg_code`, and `supabase_key_error`. These four are the
   ones this codebase deliberately sets (see step 5); anything else is

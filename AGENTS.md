@@ -1,13 +1,22 @@
 <!-- markdownlint-disable MD013 -->
 # Helm agent instructions
 
-## Authority and execution
+This is the operating policy for every agent in this repo (Claude Code, Codex,
+Devin, Cursor, CI). Any other file that states policy is subordinate: where it
+disagrees with this file, follow this file and fix the other one in the same
+change. `CLAUDE.md` adds Claude Code specifics; `.claude/rules/` holds
+path-scoped code conventions. Incidents, ADRs, audits and plans explain the
+past; they do not override this file, the user's current instructions, or live
+code. Fix a configuration bug in the configuration, not by adding a rule here.
 
-The user's current task authorizes the work needed to complete it. Do the
-implementation, relevant verification, and requested Git operations without
-asking the user to repeat permission. Ask only for missing information or an
-irreversible action outside that authorization. A task involving production
-must identify the intended target and change before execution.
+## Authority
+
+The user's current task authorizes the work needed to complete it:
+implementation, verification, configuration repairs, and the Git operations
+the task implies. Don't ask the user to repeat permission. Ask only for missing
+information, or before an irreversible action the task did not cover. For
+anything touching production, state the exact target and change before running
+it.
 
 Owner decisions are asked, not assumed or parked in a status report: product
 behavior, cost or billing, production migrations, deploys, enabling feature
@@ -17,101 +26,124 @@ and keep working on anything that does not depend on the answer. When unsure
 about intent, scope, or which of two reasonable designs to build, ask before
 building.
 
-This file is the single operating policy. CLAUDE.md is a technical adapter;
-path-scoped rules cover code conventions. Historical incidents, old plans,
-agent templates, and cached tool inventories do not override current user
-instructions or live code. Do not add a new rule to fix a configuration bug.
+## Done means
+
+1. The change works: the checks that fit it ran once, with real exit codes;
+   any check you could not run is named.
+2. The mapped feature doc is updated if its contract changed.
+3. The work is committed on a task branch, pushed
+   (`git push -u origin <branch>`), and a PR is open — unless the user asked
+   for something else (local only, no PR, or merge).
+4. Merge only when the user asks (`npm run pr:land -- <n>`). Production only
+   per "Production" below.
+5. The final report says what changed, where it is, what was verified, and
+   what was left untouched or unverified.
 
 ## Workspace and Git
 
-Canonical repo: `/Users/ricknini/Downloads/helmv3`. Check the current branch
-and dirty files before editing. One session may work directly in canonical;
-concurrent writers use separate worktrees or explicitly disjoint files.
-Never overwrite another session's work or switch its branch underneath it.
+Canonical repo: `/Users/ricknini/Downloads/helmv3`; `main` is its resting
+branch. Start every task with `git status` and the current branch.
 
-Use `helm` or `h` to launch Claude with current canonical tools and agents
-while staying in the selected Helm worktree. This prevents historical branch
-settings from restoring retired restrictions. Direct `claude` launches still
-use the branch's settings.
+- **Solo session:** if canonical is clean on `main` and no other session is
+  writing, you may branch in canonical for a quick fix. Otherwise use
+  `scripts/new-worktree.sh <task>` (an `agent/<task>` branch under
+  `~/worktrees/helmv3/`).
+- **Parallel sessions:** each writer gets its own worktree or explicitly
+  disjoint files. Treat dirty files you did not create as someone else's work:
+  never overwrite, stage, stash, discard, or switch the branch under them.
+  `npm run worktrees` shows what exists; a count warning is advice, not proof
+  of activity. Disk limits are real: when space is short, share a checkout on
+  disjoint files instead of creating another.
+- Launch Claude with `h` (or `helm`) from any checkout. It opens Claude in
+  that checkout and warns when the branch carries a stale copy of the agent
+  config; merge `origin/main` when it does.
+- Worktrees share canonical env files, local permissions, tool credentials and
+  the Vercel project: isolation covers source, not access. Never print
+  credential values. Run `node scripts/ensure-worktree-deps.mjs <dir>` only
+  when dependencies differ or are missing — or pass `--install` to
+  `scripts/new-worktree.sh` at creation time to run that same install upfront
+  instead of the default node_modules symlink.
+- Stage explicit paths. Push an explicit branch. Never force-push `main`;
+  after a rebase use `--force-with-lease` on your own task branch only. Never
+  bypass required checks with `--admin`.
+- Cleanup: `npm run worktrees:park` / `worktrees:retire`; `npm run pr:land --
+  <n>` runs `--retire` itself, and the WorktreeRemove hook applies the same
+  checks to harness worktrees. STANDING OWNER AUTHORIZATION covers only
+  checkouts the tool verdicts PARKABLE and branches it verdicts
+  DELETE_MERGED_EXACT / DELETE_MERGED_CONTENT. Never delete unrelated folders
+  or branches to satisfy a count.
 
-Prefer `scripts/new-worktree.sh <task>` for an isolated task. It creates an
-`agent/<task>` branch without tracking origin/main. A workspace-count warning
-is capacity advice, not proof of active processes. Disk limits still apply;
-when storage is short, use the existing checkout for disjoint files instead
-of creating another copy. Run `node scripts/ensure-worktree-deps.mjs <dir>`
-only when dependencies differ or are unavailable — or pass `--install` to
-`scripts/new-worktree.sh` at creation time to run that same install upfront
-instead of the default node_modules symlink. Worktrees share canonical
-environment files, Claude local permissions, tool credentials, and Vercel
-project identity. Branch isolation separates source changes, not tool access.
-Runtime files remain ignored and linked; never print credential values.
+## Context
 
-Stage explicit paths. Before pushing, inspect the upstream and push an
-explicit branch: `git push -u origin <branch>`. Do not force-push main or
-discard uncommitted work. Use `npm run pr:land -- <n>` for the normal
-merge-and-sync workflow; an explicitly authorized GitHub merge is also valid
-once required checks pass. Do not bypass required checks with `--admin`.
+Before changing feature behavior, map the files:
+`npm run knowledge:map -- --files <paths...>`, then read the doc the registry
+names (`memory/registry.yml`; not every doc lives under `memory/features/`).
+Update that doc when its contract changes; report or fix an unmapped file.
+Trust order: live state, then generated files (`src/lib/types/database.ts`,
+`AUTOGEN` blocks), then code, then feature docs, then everything else.
 
-Use `npm run worktrees{,:park,:retire}` to retire work safely.
-STANDING OWNER AUTHORIZATION covers only tool-verdicted PARKABLE checkouts
-and DELETE_MERGED_EXACT / DELETE_MERGED_CONTENT branches. The landing script
-runs `--retire`, and the WorktreeRemove hook applies the same checks to
-harness worktrees. The lifecycle checks preserve dirty, unpushed, or active
-work and archive proven-merged branches. Main is the resting branch after a
-completed task. Do not delete unrelated folders or branches to satisfy a
-workspace count.
+## Verification
 
-## Context and verification
+Run the checks that fit the change (`/gates` picks them) once, preserving exit
+codes. Rerun only after a new change or a failure. A changed `'use server'`
+surface needs `npm run build`; a migration or policy needs database/RLS
+verification (`npm run test:rls`); prose or config-only edits need the affected
+tooling tests, not the suite. The pre-push hook checks pushed changes; GitHub
+Actions owns the required merge checks. No hook blocks you from finishing a
+turn. Never weaken, skip, or delete a test, or raise a baseline, to get green.
+Reviewer agents are optional and risk-based, never a required ceremony.
 
-Use `memory/registry.yml` and `npm run knowledge:map -- --files <paths...>`
-to find the relevant feature doc before changing feature behavior. Read the
-doc the registry actually names; not every feature lives under
-`memory/features/`. Update that doc when its contract changes. If a file is
-unmapped, report or repair the gap. Use the code graph when available; fall
-back to `rg` when it is unavailable or incomplete.
+## Tools
 
-Run checks appropriate to the changed behavior once, preserving their exit
-codes. A new change or a failure justifies repeating affected checks. Do not
-run the whole suite for prose or config-only edits. A changed server-action
-surface needs a build; migrations need database/RLS verification. Report
-unavailable checks honestly. The local push hook checks the pushed changes;
-GitHub Actions owns the full required merge checks. There is no mandatory Stop gate.
+Use the tools present in this session. A missing tool or expired login is a
+connection problem, not a policy ban: use a working connector or the repo-local
+CLI (`./node_modules/.bin/{supabase,vercel}`). Never conclude a service is
+unreachable from an old namespace table or a missing env token.
 
-## Tools and environments
+## Database
 
-Discover the tools present in the current session. A missing tool or expired
-login is a connection problem, not a permanent policy ban. Use a working
-connector or the repo-local CLI; never claim a service is unavailable based
-only on an old namespace or a missing environment token.
+One production Supabase project (`qmnssrrolpinvwjjnufo`) serves Golf
+(`golf_*`), Baseball (`baseball_*`) and Lift Lab (`helm_lifting_*`), with no
+staging copy. Preserve RLS, sport boundaries, and customer data; keep secrets
+out of output and commits. Local reset and migration work is fine. For
+production: write a forward-only migration, get it reviewed and merged, then
+apply it with `npm run db:apply -- <file>` or the project Supabase MCP after
+confirming the target and SQL (`docs/operations/APPLY_PATH.md`), and verify the
+resulting schema. Changing a row's status in `supabase/migrations/HELD.md` is
+the owner's decision. Supabase access (MCP, CLI, SQL) is fully permitted for
+Claude and Codex; the judgment above is the safeguard, not a permission rule.
 
-The project Supabase MCP is scoped to Helm and supports reads and writes.
-Use it or the authenticated repo-local CLI for task-authorized database work.
-Review migration SQL and target first, then verify the resulting schema. Local
-Supabase reset/migration work is allowed. Production is shared by Golf,
-Baseball and Lift Lab; preserve RLS, sport boundaries, and customer data.
-Keep secrets out of output and commits.
+## Production
 
-Vercel reads, logs, and previews are normal development work. Production
-deploys are manual and happen only when the owner says to deploy.
-`vercel.json` disables Vercel Git deployments, so pushing or merging to
-`main` never deploys; merged work waits in `npm run release:status` until a
-release. The release path is `scripts/deploy-prod.sh`, run by the owner from a
-clean, current `main` checkout (`! scripts/deploy-prod.sh` in a Claude
-session): it checks the linked project, the tree and the weekly budget
+Vercel reads, logs, and previews are normal development work. `vercel.json`
+disables Vercel Git deployments: pushing or merging to `main` does not
+deploy. Production deploys are manual and happen only when the owner says
+to deploy — agents do not run `vercel --prod` or `scripts/deploy-prod.sh`;
+they prepare the release and verify it afterwards. The release path is
+`scripts/deploy-prod.sh` from a clean, current `main` checkout (`!
+scripts/deploy-prod.sh` in a Claude session, run by the owner): it checks
+the linked project, the clean tree and the weekly budget
 (`config/release-policy.yml`), stamps the Sentry release, deploys, and
-verifies the served commit. Agents are denied the script and `vercel --prod`;
-they prepare the release and verify it afterwards. Report a release live only
-after `npm run release:status` shows the released SHA. Rollback and promote of
-an existing deployment also require explicit owner authorization. Use
-repo-local Supabase/Vercel binaries.
+verifies the served commit. Prefer it over a bare `vercel deploy --prod`,
+which skips those checks. Report a release as live only after `npm run
+release:status` shows the approved SHA. Rollback and promote of an existing
+deployment also require explicit owner authorization. Use repo-local
+Supabase/Vercel binaries.
 
 ## Product conventions
 
-Mobile authority: `src/styles/design-tokens.css` →
-`src/components/fairway/**` → `.claude/rules/design-system.md`.
-Reuse the shared app shell, safe areas, navigation, buttons, cards, and empty
-states. Keep one primary action per screen. For overlay/layout defects use
-`ui-stability-debugger-v2`. Golf reliability context lives in
-`memory/system/golfhelm-engineering-os.md`; it does not grant production
-mutation authority. Review Gate and CodeQL are the required review tools;
-`.claude/rules/code-review-tooling.md` describes them.
+Mobile/UI authority: `src/styles/design-tokens.css`, then
+`src/components/fairway/**`, then `.claude/rules/design-system.md`. Reuse the
+shared shell, safe areas, navigation, buttons, cards, and empty states; keep
+one primary action per screen. Golf reliability context:
+`memory/system/golfhelm-engineering-os.md` (it grants no production
+authority). Required review automation: Review Gate and CodeQL
+(`.claude/rules/code-review-tooling.md`).
+
+## Guards
+
+No permission rule or hook denies, asks for, or blocks Bash, Git, Supabase, or
+Vercel. The Git rules above (explicit staging, no force-push to `main`, no
+`--admin`, lifecycle tools for cleanup) are policy you follow, not guards that
+stop you; GitHub branch protection still enforces required checks on `main`. The generated
+`docs/CONTROL_PLANE_ENFORCEMENT.md` lists what is actually wired.

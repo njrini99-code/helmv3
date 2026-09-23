@@ -1,6 +1,6 @@
 ---
 name: debugging-capacitor
-description: Comprehensive debugging guide for Capacitor applications. Covers WebView debugging, native debugging, crash analysis, network inspection, and common issues. Use this skill when users report bugs, crashes, or need help diagnosing issues.
+description: Comprehensive debugging guide for Capacitor applications. Covers WebView debugging, native debugging, crash analysis, network inspection, and common issues. Use for the native shell only: WebView, Capacitor plugins, Xcode/Gradle builds, and device-only crashes. Web bugs go to the debugger agent.
 ---
 
 # Debugging Capacitor Applications

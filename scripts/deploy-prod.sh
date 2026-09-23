@@ -4,9 +4,12 @@
 # deployments, so merging to `main` never deploys; production changes only
 # when the owner decides to release and runs this script from a clean,
 # current `main` checkout (in a Claude session: `! scripts/deploy-prod.sh`).
-# Agents are denied this script in .claude/settings.json — they prepare and
+# Agents do not run this script or `vercel --prod` — they prepare and
 # verify (`npm run release:status`), the owner deploys. See AGENTS.md
-# "Production" and .claude/rules/shipping.md.
+# "Production" and .claude/rules/shipping.md. It refuses a dirty tree, a
+# non-main branch, an unlinked directory, and a spent weekly budget
+# (config/release-policy.yml), stamps the Sentry release, deploys, and
+# verifies the served commit.
 #
 # History: retired 2026-09-17 while the Git integration auto-deployed main;
 # restored 2026-09-22 when Git deploys were disabled and releases became

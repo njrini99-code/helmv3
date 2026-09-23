@@ -132,7 +132,7 @@ jobs:
           HELM_REPAIR_RUN_ID: ${{ github.run_id }}
         run: |
           set -uo pipefail
-          npm install -g @anthropic-ai/claude-code >/dev/null 2>&1
+          npm install -g @anthropic-ai/claude-code@2.1.280 >/dev/null 2>&1
           claude --version
 
           dry=""

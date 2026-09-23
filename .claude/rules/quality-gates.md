@@ -1,4 +1,3 @@
-<!-- markdownlint-disable MD003 MD007 MD012 MD013 MD022 MD028 MD032 MD034 MD036 MD037 MD038 MD040 MD041 MD050 MD060 -->
 ---
 paths:
   - ".github/workflows/**"
@@ -10,7 +9,9 @@ paths:
   - "**/*.test.tsx"
   - "**/*.test.mjs"
   - "*-baseline.json"
+  - ".*-baseline.json"
 ---
+<!-- markdownlint-disable MD003 MD007 MD012 MD013 MD022 MD028 MD032 MD034 MD036 MD037 MD038 MD040 MD041 MD050 MD060 -->
 
 ## Quality gates — ratchets, lint, CI, tests
 

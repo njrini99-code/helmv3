@@ -124,15 +124,17 @@ worktree. Other Supabase temporary files and local stack state stay separate.
 ## Claude across older branches
 
 The `helm` and `h` shell functions run canonical `scripts/claude.mjs`. Inside
-a Helm worktree they preserve the working directory; elsewhere they open
-canonical Helm. The launcher selects user and shared local settings, passes
-current canonical project settings and MCP configuration explicitly, and
-loads canonical agent definitions and operating policy. Hook commands resolve
-to canonical scripts. It leaves other installed connectors available and does
-not rewrite tracked source files or create automatic Git commits.
+a Helm checkout they open Claude in that checkout's top level; elsewhere they
+open canonical Helm. Claude then loads the checkout's own CLAUDE.md (which
+imports AGENTS.md), rules, skills, commands, agents, hooks, settings and
+`.mcp.json` — the same as a direct `claude` launch. User-supplied CLI flags
+pass through unchanged.
 
-Claude merges permission lists, so adding a local allow cannot cancel an old
-project deny. Selecting the current profile at launch avoids that merge.
-Launching `claude` directly still loads the checked-out branch's settings; use
-`helm` when working on historical source. User-supplied CLI flags remain
-available for deliberate per-session customization.
+Before launching, the launcher compares the agent configuration (`AGENTS.md`,
+`CLAUDE.md`, `.claude/`, `.mcp.json`, the launcher itself) with `origin/main`
+and warns when the branch carries a stale copy: a file the branch never changed
+but main has since. Claude merges permission lists across scopes, so an old
+branch's settings can bring back retired rules; the fix is to merge or rebase
+on `origin/main`, not to overlay canonical settings (excluding the project
+source also drops CLAUDE.md, rules, skills and commands). The launcher never
+fetches and never changes the checkout.

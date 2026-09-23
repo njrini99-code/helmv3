@@ -47,15 +47,13 @@ const COUNT_IN_PROSE_RE =
   /\b\d{2,}\s+(tables|scripts|branches|migrations|files|checks|rules)\b/i;
 
 function hasFrontmatterPathsKey(text) {
-  // Frontmatter is the first `---`/`---` fenced block in the file — it need
-  // not start at byte 0 (quality-gates.md, for one, opens with a
-  // markdownlint-disable comment before the fence).
+  // Claude Code only honors frontmatter that opens on the first line; a rule
+  // with a comment above its `---` fence loads in every session.
   const lines = text.split('\n');
-  const start = lines.indexOf('---');
-  if (start === -1) return false;
-  const end = lines.indexOf('---', start + 1);
+  if (lines[0] !== '---') return false;
+  const end = lines.indexOf('---', 1);
   if (end === -1) return false;
-  return lines.slice(start + 1, end).some((l) => /^paths:/.test(l));
+  return lines.slice(1, end).some((l) => /^paths:/.test(l));
 }
 
 function listRuleFiles() {

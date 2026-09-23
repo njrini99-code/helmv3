@@ -30,12 +30,7 @@ description: Supercharged Pencil design system for GolfHelm — UI mockups, mark
 
 | System | Location | Purpose |
 |--------|----------|---------|
-| **Design System (persisted)** | `design-system/golfhelm/MASTER.md` | Global brand tokens — read EVERY time |
-| **Page Overrides** | `design-system/golfhelm/pages/*.md` | Page-specific rules (dashboard, landing, IG) |
-| **ui-ux-pro-max** | `~/.agents/skills/ui-ux-pro-max/` | Searchable design intelligence DB |
-| **web-accessibility** | `~/.agents/skills/web-accessibility/` | WCAG 2.1 audit |
-| **web-design-guidelines** | `~/.agents/skills/web-design-guidelines/` | Design linter |
-| **ui-animation** | `~/.agents/skills/ui-animation/` | Motion design rules |
+| **Product tokens** | `src/styles/design-tokens.css` + `.claude/rules/design-system.md` | Fairway tokens and rules (authoritative) |
 | **Design folder** | `docs/design/DESIGN-SYSTEM.md` | Extracted Tailwind tokens for Pencil |
 | **Screenshots** | `docs/design/assets/reference-shots/` | Captured UI for import into Pencil |
 

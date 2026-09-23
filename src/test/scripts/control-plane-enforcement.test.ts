@@ -74,22 +74,9 @@ describe('hook wiring is real', () => {
     }
   });
 
-  it('every PreToolUse guard added by the config-hardening pass is wired', () => {
-    // 2026-09-07: guard-git.mjs, guard-sql.mjs, and guard-config-change.mjs
-    // joined guard-canonical-write.mjs as PreToolUse hooks that can refuse a
-    // tool call — this repo's config-hardening pass. If this count or set
-    // ever legitimately changes again, the inventory changes with it and
-    // this assertion is what forces the docs to be regenerated rather than
-    // silently drift.
+  it('no PreToolUse hook blocks tool calls (owner grant: full permissions)', () => {
     const blocking = hookRows().filter((r) => r.event === 'PreToolUse');
-    const scripts = blocking.map((r) => scriptPath(r.command));
-    expect(scripts).toEqual(
-      expect.arrayContaining([
-        '.claude/hooks/guard-git.mjs',
-        '.claude/hooks/guard-sql.mjs',
-      ]),
-    );
-    expect(blocking.length).toBeGreaterThan(1);
+    expect(blocking).toEqual([]);
   });
 
   it('no hook claims to cover MCP unless one actually matches mcp__', () => {
@@ -106,19 +93,9 @@ describe('hook wiring is real', () => {
 });
 
 describe('database access and destructive-operation permissions', () => {
-  it('project deletion, resets and costly operations request approval', () => {
-    const mutating = [
-      'create_project',
-      'delete_branch',
-      'merge_branch',
-      'pause_project',
-      'reset_branch',
-      'restore_project',
-    ];
-    const missing = mutating
-      .map((t) => `mcp__claude_ai_Supabase__${t}`)
-      .filter((r) => !ask.includes(r));
-    expect(missing).toEqual([]);
+  it('Supabase and Vercel mutations are not gated by permission rules (owner grant)', () => {
+    const gated = [...ask, ...deny].filter((r) => /supabase|vercel|e139bbde|fba2ada3/i.test(r));
+    expect(gated).toEqual([]);
   });
 
   it('provides project-scoped database access without disabling migrations', () => {
@@ -199,22 +176,20 @@ describe('the three corrected claims stay corrected', () => {
     read(p)
       .replace(/[\u201c\u201d"][^\u201c\u201d"]*[\u201c\u201d"]/g, ' ');
 
-  it('database.md describes guard-sql.mjs\'s actual, narrow coverage rather than a blanket block', () => {
-    // 2026-09-07: guard-sql.mjs now really does refuse DROP TABLE/SCHEMA,
-    // TRUNCATE, a WHERE-less DELETE, and ALTER...DROP COLUMN — so the old
-    // "blocked by a PreToolUse hook on both the file-write and MCP paths"
-    // phrasing this suite used to forbid is no longer a lie to correct, it
-    // is closer to true. What must still not happen is overclaiming: the
-    // hook is text matching over SQL syntax, not a parser, and everything
-    // outside that exact statement shape is explicitly out of scope.
+  it('database.md says plainly that nothing blocks destructive SQL', () => {
     const db = read('.claude/rules/database.md');
-    expect(db).toMatch(/guard-sql\.mjs/);
-    expect(db).toMatch(/not a parser/);
+    expect(db).not.toMatch(/guard-sql/);
+    expect(db).toMatch(/No hook or permission rule blocks destructive SQL/);
   });
 
-  it('CLAUDE.md distinguishes detection from prevention', () => {
-    expect(asserted('CLAUDE.md')).not.toMatch(/A governed edit is blocked until/);
-    expect(read('CLAUDE.md')).toMatch(/DETECTED, not prevented/);
+  it('AGENTS.md claims no Stop gate and no context gate', () => {
+    // The Stop gate and the edit-time context gate were retired with their
+    // hooks. The policy must say so rather than describe enforcement that
+    // no longer exists.
+    const a = asserted('AGENTS.md');
+    expect(a).not.toMatch(/Stop gate (reports|rejects|checks)/);
+    expect(a).not.toMatch(/A governed edit is blocked until/);
+    expect(read('AGENTS.md')).toMatch(/No hook blocks you from finishing a/);
   });
 
   it('shipping.md does not claim an rm guard that does not exist', () => {
@@ -224,36 +199,17 @@ describe('the three corrected claims stay corrected', () => {
     expect(read('.claude/rules/shipping.md')).toMatch(/Recursive `rm` is UNENFORCED/);
   });
 
-  it('autonomy.md does not justify autonomy with hooks that do not exist', () => {
-    // The most consequential of the four. A now-deleted paragraph told the
-    // reader it was safe to proceed without asking, and named three shapes —
-    // force push, destructive SQL, unscoped recursive rm — as
-    // deterministically blocked, when none of the three was covered by any
-    // hook or deny rule.
-    //
-    // 2026-09-07: force push and destructive SQL got REAL, narrow guards
-    // (guard-git.mjs, guard-sql.mjs) — so the blanket "no hook covers force
-    // push, destructive SQL, or recursive rm" this suite used to pin is now
-    // itself the kind of overclaim this file exists to prevent, just
-    // pointed the other way. What must still hold: autonomy.md names each
-    // guard's actual scope (a subset of commands/statements, not a shell or
-    // SQL parser) rather than claiming blanket coverage, and it still names
-    // the two things nothing catches — Bash-driven writes into the
-    // canonical checkout, and a recursive `rm`.
-    const a = asserted('.claude/rules/autonomy.md');
-    expect(a).not.toMatch(/they block the shapes\s+that actually matter/);
-    const raw = read('.claude/rules/autonomy.md');
-    expect(raw).toMatch(/guard-git\.mjs/);
-    expect(raw).toMatch(/guard-sql\.mjs/);
-    expect(raw).toMatch(/not parsers or complete security boundaries/);
+  it('AGENTS.md states that no permission rule or hook blocks Bash, Git, Supabase or Vercel', () => {
+    const raw = read('AGENTS.md');
+    expect(raw).not.toMatch(/guard-(git|sql)/);
+    expect(raw).toMatch(/No permission rule or hook denies, asks for, or blocks Bash, Git, Supabase, or\s+Vercel/);
   });
 
-  it('all four point readers at the generated inventory', () => {
+  it('the policy and rules point readers at the generated inventory', () => {
     for (const p of [
       '.claude/rules/database.md',
-      'CLAUDE.md',
+      'AGENTS.md',
       '.claude/rules/shipping.md',
-      '.claude/rules/autonomy.md',
     ]) {
       expect(read(p), `${p} should cite the inventory`).toContain('CONTROL_PLANE_ENFORCEMENT.md');
     }

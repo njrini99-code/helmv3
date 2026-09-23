@@ -18,7 +18,7 @@ Last updated: 2026-07-04
 | `main` | **No** — deploy manually when you ship a milestone |
 | All other branches | **No** — skipped |
 
-Production is updated on demand only: **Vercel dashboard → Deployments → Redeploy/Promote**, or `vercel --prod` from a trusted shell. Cron jobs keep running against the current production deployment regardless. To go back to auto-deploying `main` on every push, add `"main": true` under `git.deploymentEnabled` in `vercel.json`.
+Production is updated on demand only: `scripts/deploy-prod.sh` (AGENTS.md "Production"), or promote an existing deployment in the Vercel dashboard. Cron jobs keep running against the current production deployment regardless. To go back to auto-deploying `main` on every push, add `"main": true` under `git.deploymentEnabled` in `vercel.json`.
 
 ### How it is enforced (defense in depth)
 

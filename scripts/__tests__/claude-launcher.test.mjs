@@ -1,55 +1,75 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import { execFileSync } from 'node:child_process';
-import { mkdtempSync, mkdirSync, writeFileSync, rmSync, realpathSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, writeFileSync, rmSync, realpathSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { launchArguments, resolveLaunchDirectory } from '../claude.mjs';
+import { configDrift, driftWarning, resolveLaunchDirectory } from '../claude.mjs';
 
 const roots = [];
 afterEach(() => { for (const root of roots.splice(0)) rmSync(root, { recursive: true, force: true }); });
+
+/** A repo whose `main` doubles as origin/main (a local ref named like the remote one). */
 function fixture() {
   const root = realpathSync(mkdtempSync(join(tmpdir(), 'helm-launch-')));
   roots.push(root);
-  mkdirSync(join(root, '.claude/agents'), { recursive: true });
-  writeFileSync(join(root, '.claude/settings.json'), JSON.stringify({ permissions: { allow: ['Bash', 'mcp__supabase'] }, hooks: { SessionStart: [{ hooks: [{ command: 'node "$CLAUDE_PROJECT_DIR"/.claude/hooks/session.mjs' }] }] } }));
-  writeFileSync(join(root, '.claude/agents/reader.md'), '---\nname: reader\ndescription: Read the database\nmodel: sonnet\ndisallowedTools: Write, Edit\n---\nInspect using available tools.\n');
-  writeFileSync(join(root, 'AGENTS.md'), 'Current task authority.\n');
-  writeFileSync(join(root, '.mcp.json'), '{}');
-  return root;
+  const git = (cwd, ...args) => execFileSync('git', args, { cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
+  git(root, 'init', '-q', '-b', 'main');
+  git(root, 'config', 'user.name', 'Fixture');
+  git(root, 'config', 'user.email', 'fixture@example.test');
+  mkdirSync(join(root, '.claude/rules'), { recursive: true });
+  writeFileSync(join(root, 'AGENTS.md'), 'policy v1\n');
+  writeFileSync(join(root, 'CLAUDE.md'), '@AGENTS.md\n');
+  writeFileSync(join(root, '.claude/rules/db.md'), 'rule v1\n');
+  writeFileSync(join(root, 'app.ts'), 'export {}\n');
+  git(root, 'add', '.');
+  git(root, 'commit', '-qm', 'initial');
+  git(root, 'update-ref', 'refs/remotes/origin/main', 'HEAD');
+  return { root, git };
 }
-const value = (args, key) => args[args.indexOf(key) + 1];
 
-describe('canonical Claude launch profile', () => {
-  it('excludes stale branch project settings while retaining user and shared local preferences', () => {
-    const root = fixture();
-    const args = launchArguments(root, ['--model', 'haiku']);
-    expect(value(args, '--setting-sources')).toBe('user,local');
-    const settings = JSON.parse(value(args, '--settings'));
-    expect(settings.permissions.allow).toContain('mcp__supabase');
-    expect(settings.hooks.SessionStart[0].hooks[0].command).toBe(`node '${root}'/.claude/hooks/session.mjs`);
-    expect(value(args, '--mcp-config')).toBe(join(root, '.mcp.json'));
-    expect(args).not.toContain('--strict-mcp-config');
-    expect(args.slice(-2)).toEqual(['--model', 'haiku']);
-    const reader = JSON.parse(value(args, '--agents')).reader;
-    expect(reader.tools).toBeUndefined();
-    expect(reader.disallowedTools).toEqual(['Write', 'Edit']);
-    expect(value(args, '--append-system-prompt')).toContain('Current task authority.');
+describe('h launcher', () => {
+  it('launches in the current checkout, or canonical when outside the repo', () => {
+    const { root, git } = fixture();
+    const wt = join(root, '..', `${root.split('/').pop()}-wt`);
+    roots.push(wt);
+    git(root, 'worktree', 'add', '-qb', 'agent/task', wt, 'main');
+    mkdirSync(join(wt, 'nested'), { recursive: true });
+    expect(resolveLaunchDirectory(join(wt, 'nested'), root)).toEqual({ canonicalRoot: root, cwd: realpathSync(wt) });
+    expect(resolveLaunchDirectory(tmpdir(), root)).toEqual({ canonicalRoot: root, cwd: root });
   });
 
-  it('keeps an old source checkout and its tracked files intact', () => {
-    const root = fixture();
-    const git = (...args) => execFileSync('git', args, { cwd: root, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
-    git('init', '-q', '-b', 'main');
-    git('config', 'user.name', 'Fixture'); git('config', 'user.email', 'fixture@example.test');
-    git('add', '.claude', '.mcp.json', 'AGENTS.md'); git('commit', '-qm', 'initial');
-    const old = join(root, 'old');
-    git('worktree', 'add', '-qb', 'old-code', old);
-    writeFileSync(join(old, '.claude/settings.json'), '{"permissions":{"deny":["mcp__supabase"]}}\n');
-    const before = execFileSync('git', ['diff'], { cwd: old, encoding: 'utf8' });
-    expect(resolveLaunchDirectory(old, root)).toEqual({ canonicalRoot: root, cwd: old });
-    const args = launchArguments(root);
-    expect(JSON.parse(value(args, '--settings')).permissions.deny).toBeUndefined();
-    expect(execFileSync('git', ['diff'], { cwd: old, encoding: 'utf8' })).toBe(before);
-    expect(resolveLaunchDirectory(tmpdir(), root)).toEqual({ canonicalRoot: root, cwd: root });
+  it('reports a control-plane file main changed but the branch did not as stale', () => {
+    const { root, git } = fixture();
+    git(root, 'switch', '-qc', 'agent/old');
+    writeFileSync(join(root, 'app.ts'), 'export const x = 1\n');
+    git(root, 'commit', '-qam', 'feature work');
+    git(root, 'switch', '-q', 'main');
+    writeFileSync(join(root, 'AGENTS.md'), 'policy v2\n');
+    git(root, 'commit', '-qam', 'policy update');
+    git(root, 'update-ref', 'refs/remotes/origin/main', 'HEAD');
+    git(root, 'switch', '-q', 'agent/old');
+
+    const drift = configDrift(root);
+    expect(drift.stale).toEqual(['AGENTS.md']);
+    expect(driftWarning(drift)).toMatch(/1 file\(s\).*AGENTS\.md/);
+    expect(readFileSync(join(root, 'AGENTS.md'), 'utf8')).toBe('policy v1\n'); // never touched
+  });
+
+  it('does not flag control-plane files the branch changed on purpose, committed or not', () => {
+    const { root, git } = fixture();
+    git(root, 'switch', '-qc', 'agent/config');
+    writeFileSync(join(root, '.claude/rules/db.md'), 'rule v2\n');
+    git(root, 'commit', '-qam', 'rule change');
+    writeFileSync(join(root, 'CLAUDE.md'), '@AGENTS.md\nmore\n');
+
+    const drift = configDrift(root);
+    expect(drift.stale).toEqual([]);
+    expect(drift.changedHere.sort()).toEqual(['.claude/rules/db.md', 'CLAUDE.md']);
+    expect(driftWarning(drift)).toBeNull();
+  });
+
+  it('says nothing when it cannot compare', () => {
+    expect(configDrift(tmpdir())).toBeNull();
+    expect(driftWarning(null)).toBeNull();
   });
 });
