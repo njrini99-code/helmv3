@@ -13,6 +13,7 @@
  * Default window: 90 days, completed rounds only.
  */
 
+import 'server-only';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { fromUntyped } from '@/lib/supabase/untyped';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';

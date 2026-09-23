@@ -6,17 +6,18 @@
  * and updates the per-coach weight EMA. Idempotent — same insight
  * never gets attributed twice (PK on insight_id).
  *
- * A9 slice 1 (`comparable-attribute.ts`, behind `coachhelm_comparable_
+ * A9 slice 1+2 (`comparable-attribute.ts`, behind `coachhelm_comparable_
  * opportunity_attribution`, default off): the three "needs-shot-level-join"
  * approach-proximity metrics get a SEPARATE shot-level, matched-opportunity
- * attempt instead of the permanent `intentional-null` skip. Those rows never
- * update the coach weight EMA — see that module's own doc comment. Flag off:
- * no new DB reads or writes happen on this path at all; the summary just
- * gains three permanently-zero counters. This flag requires migration
- * 20260922230000 applied (MUST 3, PR #2007 review — see
- * `writeComparableAttribution`'s doc comment) and A9 slice 2 (confounding
- * detection) shipped before it should ever go on in production — see
- * `config/feature-flags.yml`'s entry for both.
+ * attempt instead of the permanent `intentional-null` skip, including
+ * confounding-intervention detection (slice 2, `confounding-check.ts`) — a
+ * confounded row is still written, under a distinct `method_version`, never
+ * dropped. Those rows never update the coach weight EMA — see that module's
+ * own doc comment. Flag off: no new DB reads or writes happen on this path
+ * at all; the summary just gains permanently-zero counters. This flag
+ * requires migration 20260922230000 applied (MUST 3, PR #2007 review — see
+ * `writeComparableAttribution`'s doc comment) before it should ever go on in
+ * production — see `config/feature-flags.yml`'s entry.
  *
  * Auth: Vercel Cron sends Authorization: Bearer ${CRON_SECRET}.
  */
@@ -33,6 +34,7 @@ import {
   computeComparableAttribution,
   writeComparableAttribution,
   isShotLevelAttributionMetric,
+  COMPARABLE_OPPORTUNITIES_LIMITED_METHOD_VERSION,
 } from '@/lib/coachhelm/v3/causality/comparable-attribute';
 import { recordInsightOutcome } from '@/lib/coachhelm/v3/effectiveness/event-ledger';
 import { isFlagEnabled } from '@/lib/flags';
@@ -134,15 +136,28 @@ interface CronSummary {
    */
   method_version_column_missing?: boolean;
   /**
-   * A9 slice 1: successfully wrote a `method_version: 'comparable_
+   * A9 slice 1: successfully wrote a CLEAN `method_version: 'comparable_
    * opportunities_v1'` row (see `causality/comparable-attribute.ts`) for one
-   * of the shot-level "needs-shot-level-join" metrics. Counted separately
-   * from `attributed` (the round-level path) since these rows never touch
-   * `updateCoachWeight` — a reader must not assume `attributed` count implies
-   * a weight moved. Gated behind `coachhelm_comparable_opportunity_
-   * attribution` (default off); absent/0 when the flag is off.
+   * of the shot-level "needs-shot-level-join" metrics — no confounding
+   * intervention detected (A9 slice 2). Counted separately from `attributed`
+   * (the round-level path) since these rows never touch `updateCoachWeight`
+   * — a reader must not assume `attributed` count implies a weight moved.
+   * Gated behind `coachhelm_comparable_opportunity_attribution` (default
+   * off); absent/0 when the flag is off. Does NOT include
+   * `comparable_attributed_limited` rows — see that counter.
    */
   comparable_attributed: number;
+  /**
+   * A9 slice 2: successfully wrote a row, but with
+   * `method_version: 'comparable_opportunities_v1_limited'` — another
+   * insight's first exposure to this player landed inside the measurement
+   * window (`confounding-check.ts`), so the comparison can't be isolated to
+   * this one intervention. Still written, never dropped or folded into
+   * `comparable_attributed` — a reader must be able to tell clean vs.
+   * confounded evidence apart from the summary alone, the same way
+   * `method_version` lets a DB reader tell them apart.
+   */
+  comparable_attributed_limited: number;
   /**
    * A9 slice 1: the insight has no real `golf_insight_exposure` row — the
    * addendum rule against simulating one from `created_at`. Retry tomorrow
@@ -186,6 +201,15 @@ interface CronSummary {
    * window itself, before the horizon expires).
    */
   comparable_retry_horizon_expired: number;
+  /**
+   * A9 slice 2: the confounding-intervention scan itself failed (a real
+   * infra error on the `golf_insight_exposure` query), never folded into
+   * `comparable_no_exposure_record` or `comparable_exposure_read_failed` —
+   * a distinct DB read failing for a distinct reason. Retried next run,
+   * never a permanent skip. See `confounding-check.ts`'s doc comment for why
+   * a failed check must never silently read as "no confounder found".
+   */
+  comparable_confounder_read_failed: number;
 }
 
 export async function GET(req: NextRequest) {
@@ -212,11 +236,13 @@ async function handle(): Promise<NextResponse> {
     errors: 0,
     duration_ms: 0,
     comparable_attributed: 0,
+    comparable_attributed_limited: 0,
     comparable_no_exposure_record: 0,
     comparable_insufficient_evidence: 0,
     comparable_follow_up_open: 0,
     comparable_exposure_read_failed: 0,
     comparable_retry_horizon_expired: 0,
+    comparable_confounder_read_failed: 0,
   };
   // Read once per run, not once per candidate — matches the flag-off ==
   // pre-slice-1-behavior contract (A9 slice 1).
@@ -468,6 +494,15 @@ async function handle(): Promise<NextResponse> {
               { action: 'cron.v3.causality.comparable-exposure-read' },
             );
             summary.comparable_exposure_read_failed += 1;
+          } else if (comparable.reason === 'confounder-read-failed') {
+            // A9 slice 2: a real infra error on the confounder scan, not "no
+            // confounder found" — must never be folded into a successful
+            // write. Distinct log action from the exposure-read failure.
+            await logServerError(
+              `causality comparable confounder lookup ${c.id}: ${comparable.error}`,
+              { action: 'cron.v3.causality.comparable-confounder-read' },
+            );
+            summary.comparable_confounder_read_failed += 1;
           } else if (comparable.reason === 'insufficient-evidence') {
             summary.comparable_insufficient_evidence += 1;
           } else {
@@ -487,7 +522,14 @@ async function handle(): Promise<NextResponse> {
           });
           summary.errors += 1;
         } else if (write.written) {
-          summary.comparable_attributed += 1;
+          // A9 slice 2: split clean vs. confounding-limited writes — both are
+          // successful writes, but a reader must be able to tell them apart
+          // from the summary alone without re-deriving method_version.
+          if (comparable.row.method_version === COMPARABLE_OPPORTUNITIES_LIMITED_METHOD_VERSION) {
+            summary.comparable_attributed_limited += 1;
+          } else {
+            summary.comparable_attributed += 1;
+          }
         }
         // else: `written: false` with no `error` — the migration isn't
         // applied yet (methodVersionColumnMissing is set above, which

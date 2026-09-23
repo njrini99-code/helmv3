@@ -275,3 +275,32 @@ describe('CategoryInsightsPanel — organize by category', () => {
     expect(within(screen.getByRole('heading', { name: 'Approach' }).closest('section')!).getByText('Approach cause')).toBeInTheDocument();
   });
 });
+
+describe('CategoryInsightsPanel — cause card strokes badge carries the same qualifier as CauseRow.tsx (Package 11)', () => {
+  it('says "from team avg" when the realistic gap is below the raw Tour gap', () => {
+    const cause = makeCause({
+      insight_id: 'c9',
+      title: 'Leaves approach shots short',
+      strokesSavedPerRound: 0.9,
+      tourGapPerRound: 1.4,
+    });
+    const theme = makeTheme({ category: 'approach', displayLabel: 'Approach', state: 'leak', causes: [cause] });
+    render(<CategoryInsightsPanel themes={[theme]} />);
+
+    expect(screen.getByText(/from team avg/)).toBeInTheDocument();
+    expect(screen.queryByText(/from Tour/)).not.toBeInTheDocument();
+  });
+
+  it('says "from Tour" when the realistic gap equals the raw Tour gap (no team reference)', () => {
+    const cause = makeCause({
+      insight_id: 'c10',
+      title: 'Leaves approach shots short',
+      strokesSavedPerRound: 1.4,
+      tourGapPerRound: 1.4,
+    });
+    const theme = makeTheme({ category: 'approach', displayLabel: 'Approach', state: 'leak', causes: [cause] });
+    render(<CategoryInsightsPanel themes={[theme]} />);
+
+    expect(screen.getByText(/from Tour/)).toBeInTheDocument();
+  });
+});

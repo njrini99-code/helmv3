@@ -2,7 +2,6 @@
 
 import Link from 'next/link';
 import {
-  Activity,
   ArrowRight,
   Clock3,
   ShieldAlert,
@@ -25,7 +24,6 @@ interface CategoryPressure {
   category: string;
   count: number;
   highPriority: number;
-  fresh: number;
   impact: number;
 }
 
@@ -62,13 +60,12 @@ export function TeamSignalSummary({ groups, playerHref, onOpenPlayer }: TeamSign
       signals.filter((signal) => signal.severity === severity).length,
     ]),
   ) as Record<SignalSeverity, number>;
-  const ageBands = [
-    { label: '0–7d', count: signals.filter((signal) => signal.ageDays <= 7).length },
-    { label: '8–14d', count: signals.filter((signal) => signal.ageDays > 7 && signal.ageDays <= 14).length },
-    { label: '15–30d', count: signals.filter((signal) => signal.ageDays > 14 && signal.ageDays <= 30).length },
-    { label: '30d+', count: signals.filter((signal) => signal.ageDays > 30).length },
-  ];
-  const maxAgeBand = Math.max(1, ...ageBands.map((band) => band.count));
+  // Age-based buckets ("New this week", a 0-7d/8-14d/etc. distribution) were
+  // removed here for the same reason BriefBand.tsx and buildTriageViewModel.ts
+  // dropped them: `signal.ageDays` derives from `created_at`, frozen by
+  // upsert-by-signature, so a genuinely fresh signal recomputed into an
+  // old row reads as stale. A confident age distribution is worse than none.
+  // Restore when a real `content_generated_at` is available.
   const materialSignals = signals.filter((signal) => signal.strokeImpact != null);
   const estimatedImpact = materialSignals.reduce((sum, signal) => sum + Math.abs(signal.strokeImpact ?? 0), 0);
 
@@ -110,7 +107,6 @@ export function TeamSignalSummary({ groups, playerHref, onOpenPlayer }: TeamSign
                         <p className="truncate text-body-sm font-semibold text-text-primary">{formatCategoryLabel(entry.category)}</p>
                       </div>
                       <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-caption text-text-tertiary">
-                        <span>{entry.fresh} fresh</span>
                         <span>{entry.highPriority} high priority</span>
                         {entry.impact > 0 ? <span>{entry.impact.toFixed(1)} strokes</span> : null}
                       </div>
@@ -132,11 +128,10 @@ export function TeamSignalSummary({ groups, playerHref, onOpenPlayer }: TeamSign
           </div>
         </div>
 
-        <div className="grid grid-cols-2 divide-x divide-y divide-border-subtle border-t border-border-subtle sm:grid-cols-4 sm:divide-y-0">
+        <div className="grid grid-cols-1 divide-x divide-y divide-border-subtle border-t border-border-subtle sm:grid-cols-3 sm:divide-y-0">
           <SummaryMetric icon={ShieldAlert} label="High priority" value={String(severityCounts.urgent + severityCounts.high)} />
           <SummaryMetric icon={Users} label="Players flagged" value={String(groups.filter((group) => group.playerId !== null).length)} />
           <SummaryMetric icon={Target} label="Game categories" value={String(categoryPressure.length)} />
-          <SummaryMetric icon={Activity} label="New this week" value={String(ageBands[0]?.count ?? 0)} />
         </div>
       </Surface>
 
@@ -193,29 +188,14 @@ export function TeamSignalSummary({ groups, playerHref, onOpenPlayer }: TeamSign
         <Surface elevation="shadow" padding="md">
           <div className="flex items-center justify-between gap-3">
             <div>
-              <Eyebrow as="h2">Signal velocity</Eyebrow>
-              <p className="mt-1 text-caption text-text-tertiary">Age of the evidence still in the queue.</p>
+              <Eyebrow as="h2">Severity mix</Eyebrow>
+              <p className="mt-1 text-caption text-text-tertiary">How the open queue splits by severity.</p>
             </div>
             <Clock3 className="h-4 w-4 text-accent-700" aria-hidden />
           </div>
-          <div className="mt-5 flex h-24 items-end gap-3 border-b border-border-subtle px-1">
-            {ageBands.map((band, index) => (
-              <div key={band.label} className="flex min-w-0 flex-1 flex-col items-center justify-end gap-2 self-stretch">
-                <span className="font-fw-mono text-caption font-semibold tabular-nums text-text-primary">{band.count}</span>
-                <span
-                  className={cn('w-full max-w-12 rounded-t-fw-sm', index === 0 ? 'bg-accent-500' : 'bg-accent-200')}
-                  style={{ height: `${Math.max(5, (band.count / maxAgeBand) * 58)}px`, opacity: 1 - index * 0.13 }}
-                />
-              </div>
-            ))}
-          </div>
-          <div className="mt-2 grid grid-cols-4 gap-3 text-center font-fw-mono text-eyebrow text-text-tertiary">
-            {ageBands.map((band) => <span key={band.label}>{band.label}</span>)}
-          </div>
 
           <div className="mt-5">
-            <div className="mb-2 flex items-center justify-between gap-3">
-              <span className="text-caption font-medium text-text-primary">Severity mix</span>
+            <div className="mb-2 flex items-center justify-end gap-3">
               <span className="font-fw-mono text-eyebrow tabular-nums text-text-tertiary">{signals.length} total</span>
             </div>
             <div className="flex h-2.5 overflow-clip rounded-full bg-surface-sunken" aria-label="Severity distribution">
@@ -250,12 +230,10 @@ function buildCategoryPressure(signals: readonly GroupedSignal[]): CategoryPress
       category: signal.category,
       count: 0,
       highPriority: 0,
-      fresh: 0,
       impact: 0,
     };
     current.count += 1;
     if (signal.severity === 'urgent' || signal.severity === 'high') current.highPriority += 1;
-    if (signal.ageDays <= 7) current.fresh += 1;
     current.impact += Math.abs(signal.strokeImpact ?? 0);
     byCategory.set(signal.category, current);
   }
@@ -271,7 +249,6 @@ function PressureRadar({ categories, total }: { categories: readonly CategoryPre
       category: `awaiting_${index}`,
       count: 0,
       highPriority: 0,
-      fresh: 0,
       impact: 0,
     })),
   ];

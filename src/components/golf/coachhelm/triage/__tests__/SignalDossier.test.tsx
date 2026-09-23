@@ -271,4 +271,12 @@ describe('SignalDossier — related context', () => {
     // Prod rendered "55d ago" here for content recomputed that morning.
     expect(container.textContent).not.toMatch(/\d+d ago/);
   });
+
+  it('Package 11 (#1933 bug, confirmed present on main): frames strokeImpact as an estimate, matching TeamSignalSummary\'s "est. strokes" language for the same generation-time field', () => {
+    const current = makeSignal({ strokeImpact: 1.2 });
+    const { container } = render(
+      <SignalDossier {...baseProps()} entry={{ signal: current, group: makeGroup([current]) }} />,
+    );
+    expect(container.textContent).toContain('1.20 est. strokes');
+  });
 });

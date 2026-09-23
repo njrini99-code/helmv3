@@ -109,9 +109,42 @@ describe('TeamCategoryLeakBand', () => {
         teamHealth={50}
       />,
     );
-    expect(screen.getByText('Awaiting rounds')).toBeInTheDocument();
+    // Both the per-category card AND the team-health ring degrade here —
+    // this category is the ONLY one, and it has zero scored players, so
+    // "team health" has no signal either (see the dedicated test below).
+    expect(screen.getAllByText('Awaiting rounds').length).toBeGreaterThan(0);
     // Never a fabricated "0 of 0 need work" / "0 of 0 on track" claim.
     expect(screen.queryByText(/of 0/)).not.toBeInTheDocument();
+  });
+
+  it('degrades the team-health ring to "Awaiting rounds" when every category is unscored (Package 11 / #1933 bug, fixed on main)', () => {
+    render(
+      <TeamCategoryLeakBand
+        categories={[
+          makeCategory({ id: 'putting', label: 'Putting', players: [], attentionCount: 0 }),
+          makeCategory({ id: 'approach', label: 'Approach', players: [], attentionCount: 0 }),
+        ]}
+        teamHealth={0}
+      />,
+    );
+    // computeTeamHealth returns 0 for "no signal" same as it would for a
+    // genuinely 0%-healthy team — the ring must not print that 0 as if it
+    // were a real score.
+    expect(screen.queryByRole('img', { name: /Composite/ })).not.toBeInTheDocument();
+    expect(screen.getAllByText('Awaiting rounds').length).toBeGreaterThan(0);
+  });
+
+  it('still shows the real team-health ring when at least one category has scored players', () => {
+    render(
+      <TeamCategoryLeakBand
+        categories={[
+          makeCategory({ id: 'putting', label: 'Putting' }),
+          makeCategory({ id: 'approach', label: 'Approach', players: [], attentionCount: 0 }),
+        ]}
+        teamHealth={74}
+      />,
+    );
+    expect(screen.getByRole('img', { name: 'Composite 74 of 100' })).toBeInTheDocument();
   });
 
   it('renders strokesSavedPerRound chips only from insights that carry a positive figure', () => {

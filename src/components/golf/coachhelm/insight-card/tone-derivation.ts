@@ -43,8 +43,12 @@ export function deriveTone(insight: EvidenceInsight): DerivedTone {
 
   // Rule 7: pressure + strokes_impact > 2 is always urgent — pressure
   // failures compound across tournament holes, so we give them the same
-  // weight as an explicitly-tagged urgent row.
-  if (insight.category === 'pressure' && Math.abs(strokesImpact) > 2) {
+  // weight as an explicitly-tagged urgent row. Gated on `confidence` the
+  // same way its cautionary sibling below is (`strokesImpact * confidence`)
+  // — an unweighted `strokesImpact` comparison let a low-confidence pressure
+  // row (e.g. a single-sample estimate) pulse red exactly like a real
+  // urgent-priority insight.
+  if (insight.category === 'pressure' && Math.abs(strokesImpact) * confidence > 2) {
     return 'urgent';
   }
 

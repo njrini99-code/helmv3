@@ -203,6 +203,26 @@ jobs:
         run: |
           set -uo pipefail
 
+          # Draft PR (owner decision, PR throughput): nothing is required
+          # until ready_for_review, so every path-gated job downstream
+          # (ci.yml's unit-tests/next-build/supabase,
+          # feature-awareness.yml's report) skips exactly like a docs-only
+          # PR. block-historical-edits and codeql.yml's per-leg scan decide
+          # their own draft skip independently (they don't gate purely on
+          # these outputs), so this branch does not need to special-case
+          # them.
+          if [ "$EVENT_NAME" = "pull_request" ] && [ "${{ github.event.pull_request.draft }}" = "true" ]; then
+            {
+              for out in code frontend e2e migrations python actions; do
+                echo "$out=false"
+              done
+              echo "docs_only=true"
+              echo "mapped_feature_code=false"
+            } >> "$GITHUB_OUTPUT"
+            echo "draft PR -> every output false (nothing required until ready_for_review)"
+            exit 0
+          fi
+
           # Non-PR events (push, merge_group, schedule, workflow_dispatch)
           # always run the full suite everywhere.
           if [ "$EVENT_NAME" != "pull_request" ]; then

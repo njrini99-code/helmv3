@@ -532,11 +532,31 @@ describe('extractAndValidateClaims() / stripAllClaimsDelimiters() — delimiter 
     expect(strippedText).not.toContain('<<<END_CLAIMS>>>');
   });
 
-  it('never strips anything when no evidence_packet is supplied (gate stays opt-in)', () => {
-    const raw = `Text.${claimsBlock([])}More text.`;
+  it('leaves byte-identical text with no evidence_packet AND no claims-block marker (MUST-2, the no-op compose() case)', () => {
+    const raw = 'Text.\n\nMore text.';
     const { strippedText, claims } = extractAndValidateClaims(raw, undefined);
 
     expect(strippedText).toBe(raw);
+    expect(claims).toBeNull();
+  });
+
+  it('still strips a block with no evidence_packet, when one is present (A7, chat slice): VALIDATION stays opt-in, stripping does not', () => {
+    // Chat (`chat/instructions.ts`) asks the model for a claims block
+    // unconditionally, in the STATIC system prompt built before any tool
+    // call — before it is knowable whether this turn will resolve to a
+    // single-player packet at all (`chat/claims-packet.ts`). A team/
+    // multi-player turn calls this with `packet: null` and can still get a
+    // well-formed block back from the model; it must never leak into
+    // whatever the caller returns or persists just because nothing
+    // validated it. compose()'s own callers are unaffected: none of them
+    // ever asks the model for a block without an `evidence_packet`, so this
+    // path only fires for a caller that does — see the no-op case above for
+    // compose()'s actual behavior.
+    const raw = `Text.${claimsBlock([])}More text.`;
+    const { strippedText, claims } = extractAndValidateClaims(raw, undefined);
+
+    expect(strippedText).toBe('Text.\n\nMore text.');
+    expect(strippedText).not.toContain('<<<CLAIMS>>>');
     expect(claims).toBeNull();
   });
 

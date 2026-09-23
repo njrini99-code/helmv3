@@ -18,6 +18,14 @@ information, or before an irreversible action the task did not cover. For
 anything touching production, state the exact target and change before running
 it.
 
+Owner decisions are asked, not assumed or parked in a status report: product
+behavior, cost or billing, production migrations, deploys, enabling feature
+flags, and merging or closing someone else's PR. Ask with AskUserQuestion,
+put a recommended option first with its trade-off, batch related questions,
+and keep working on anything that does not depend on the answer. When unsure
+about intent, scope, or which of two reasonable designs to build, ask before
+building.
+
 ## Done means
 
 1. The change works: the checks that fit it ran once, with real exit codes;

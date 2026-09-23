@@ -514,7 +514,14 @@ function GenomeHeroInstrument({
             courseProfile && courseProfile.length > 0 ? courseProfile : undefined
           }
           data={data}
-          seriesName="Percentile"
+          // `data`'s value is normalizeForRadar()'s [0,1] "good-axis" score
+          // rounded to 0-100 (lib/coachhelm/v3/genome/normalize.ts) — a
+          // linear/symmetric mapping per-dimension, never a rank against a
+          // population. Every other GenomeRadar caller (ProfileDrill,
+          // FairwayMyGameProfile) already overrides the shared default of
+          // "Percentile" to "Score" for the same underlying value; this
+          // caller was the one left on the misleading default.
+          seriesName="Score"
           height={360}
           className="border-0 bg-transparent p-0 shadow-none backdrop-blur-none"
         />

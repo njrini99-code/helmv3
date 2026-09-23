@@ -45,7 +45,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `PLAN` | 37 | 5 | 18 | 74 |
 | `AUDIT_SNAPSHOT` | 56 | 6 | 30 | 25 |
 | `STATE_SNAPSHOT` | 6 | 2 | 5 | 0 |
-| `HISTORY_LEDGER` | 40 | 0 | 7 | 15 |
+| `HISTORY_LEDGER` | 41 | 0 | 7 | 15 |
 | `INCIDENT` | 30 | 15 | 2 | 2 |
 | `ADR` | 5 | 0 | 3 | 0 |
 | `INDEX` | 19 | 1 | 7 | 5 |
@@ -475,6 +475,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `memory/ledgers/tests/coachhelm_ai.md` | current | - | - | - | - |
 | `memory/ledgers/tests/golf_round_lifecycle.md` | current | - | - | - | - |
 | `memory/ledgers/tests/observability_sentry.md` | current | - | - | - | 2 |
+| `memory/ledgers/tests/player_coachhelm_development.md` | current | - | - | - | - |
 | `memory/ledgers/tests/qualifiers.md` | current | - | - | - | - |
 | `memory/ledgers/tests/shot_tracking.md` | current | - | - | - | - |
 | `memory/ledgers/tests/stats_analytics.md` | current | - | - | - | - |

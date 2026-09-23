@@ -1,4 +1,5 @@
 <!-- markdownlint-disable MD004 MD007 MD012 MD013 MD022 MD032 MD034 MD036 MD037 MD038 MD040 MD041 MD050 MD060 -->
+
 # coachhelm ai test ledger
 
 ## 2026-09-04 — no new tests; the composer fixes ride the existing suite (PR #1828)
@@ -157,3 +158,96 @@
   exposure row).
 - Verification: `causality-attribute.test.ts` — 28 passed, 0 failed.
   `npm run typecheck:fast` clean.
+
+## 2026-09-23 — A7 distance-profile surface: new contracts pinned by tests
+
+- New: `distance-profile-window.test.ts` (4) — closed-window bounds, a
+  pinned (not assumed) leap-year `addMonths` edge case, and the window
+  label including its neutral no-window fallback.
+  `buildDistanceProfileViewModel.test.ts` (6) and
+  `DistanceProfileSection.test.tsx` (5) — the status-discriminated
+  render switch (`kind`, never raw `value !== null`), the
+  `approach_measured_contribution` special case (always a real number,
+  never an InsufficientData hedge), the accessible name baking in
+  value/kind (an advisor-review catch — a bare `aria-label` had been
+  replacing all descendant text for assistive tech), and
+  keyboard open/close (Enter, Escape) parity with click.
+- `FairwayPlayerGameFingerprint.mode.test.tsx` (existing, 7) reran
+  unchanged and green — pins that the new `sectionAddenda` prop is a
+  true no-op for every call site that doesn't pass it.
+
+## 2026-09-23 — #2007 re-review follow-ups: boundary + multi-page-drop coverage
+
+- `causality-attribute.test.ts` gained 2 tests (A9 slice 2 branch, before
+  the slice-2 confounding work): the exact retry-horizon boundary instant
+  (`shownAt + POST_WINDOW_DAYS + RETRY_GRACE_DAYS === now`, via fake
+  timers) still reaches `computeComparableAttribution` and is NOT counted
+  under `comparable_retry_horizon_expired` — proves that check is a
+  strict `<`, not `<=`, mirroring the same boundary-proof convention
+  already used for `follow-up-window-open` in `comparable-attribute.
+  test.ts`. Second: a full `FETCH_PAGE_SIZE` (200) page of shot-level
+  candidates ALL dropped by the bulk pre-filter (no exposure record) does
+  not stall the outer candidate-page loop — pagination continues to page
+  2 and reaches the one attributable candidate there, the same guarantee
+  the original P1 pagination rewrite gives for a page of only
+  intentional-null metrics.
+- Also fixed a stale line in `memory/features/coachhelm-ai.md` (~line
+  601) that still said a genuine exposure-lookup DB error "THROWS ...
+  per-candidate try/catch" — that changed to the typed
+  `exposure-read-failed` skip during the PR #2007 review round; the
+  narrative there hadn't been updated to match.
+- Verification: `causality-attribute.test.ts` — 30 passed, 0 failed.
+  `npm run typecheck:fast` clean.
+
+## 2026-09-23 — A9 slice 2: confounding-intervention detection tests
+
+- New `src/lib/coachhelm/v3/causality/confounding-check.test.ts` (7
+  tests): zero-other-exposure reports `false`; another insight's first
+  exposure inside the window reports `true`, and asserts the exact
+  `.eq`/`.neq`/`.lte` calls the query makes; an insight already exposed
+  BEFORE baseline start (not a new intervention entering the window)
+  does not confound; the MINIMUM shown_at per insight_id is what's
+  checked, not any row inside the window — a re-exposure inside the
+  window of an insight first shown before baseline start does not
+  confound; the exact `windowStart` boundary instant counts (inclusive
+  lower bound); a query error returns a typed failure, never silently
+  "no confounder found"; and a pagination test (1,000 rows for one
+  spammy insight, plus a confounding insight whose row sorts past page
+  1) proves `fetchAllRowsResult` pagination actually runs.
+- `comparable-attribute.test.ts` gained a new "A9 slice 2" describe
+  block (5 tests) plus one more in `writeComparableAttribution`'s own
+  block: mocks `detectConfoundingInterventions` wholesale (same
+  reasoning as `loadPlayerContext`/`computeComparableOpportunities`
+  already being mocked in this file — this file proves
+  `comparable-attribute.ts`'s OWN orchestration, not
+  `confounding-check.ts`'s DB query logic). Covers: the confounder
+  check is called with `windowStart = baselineWindow.start`, `windowEnd
+  = followUpWindow.end`, excluding this insight, and strictly BEFORE
+  `loadPlayerContext` (asserted via `invocationCallOrder`); a `true`
+  result passes `multipleInterventions: true` through to the pure core
+  and the row is written with the LIMITED method_version; a `false`
+  result (the default) writes the CLEAN method_version; a confounder
+  check failure returns `{ok: false, reason: 'confounder-read-failed',
+  error}` without ever calling `loadPlayerContext` or
+  `computeComparableOpportunities`; and `writeComparableAttribution`
+  passes a limited row's method_version through to the insert unchanged
+  and distinct from a clean row's.
+- `src/test/api/cron/causality-attribute.test.ts` gained 2 tests: a
+  successful write with the LIMITED method_version counts
+  `summary.comparable_attributed_limited`, NOT `comparable_attributed`;
+  a `confounder-read-failed` skip is logged under its own action
+  (`cron.v3.causality.comparable-confounder-read`), counted under its
+  own new `comparable_confounder_read_failed` counter (separate from
+  every other `comparable_*` reason), and never written.
+- Verification: `comparable-attribute.test.ts` — 21 tests (was 16: 5 new
+  in the "A9 slice 2" describe block plus 1 new in
+  `writeComparableAttribution`'s own block), `confounding-check.test.ts`
+  — 7 tests (new file), `causality-attribute.test.ts` — 32 tests (was
+  30: 2 new). All 60 combined passed, 0 failed. `npm run typecheck:fast`
+  clean. `npx eslint` on all touched/new files: 0 problems. The pure
+  core's own suite (`comparable-opportunities.test.ts`) and the
+  dedicated real-core open-window test
+  (`comparable-attribute.open-window.test.ts`) re-run clean (9 passed,
+  0 failed) — the open-window test never reaches the confounder check
+  (it short-circuits at the follow-up-window-open gate, before the new
+  code runs), so it needed no changes.

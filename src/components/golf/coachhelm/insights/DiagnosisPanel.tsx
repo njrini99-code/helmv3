@@ -174,7 +174,15 @@ export function DiagnosisPanel({
 
       <p className="text-body text-text-secondary">
         <span className="font-medium text-text-tertiary">
-          {diagnosis.causality_level === 'observed_sequence' ? 'Caused by' : 'Likely because'} —{' '}
+          {/* repair-plan §14.12 (observed-outcome-language re-review, PR #2023):
+              was "Caused by" — an observed temporal sequence (root_cause
+              happening before symptom in the recorded shot data) is not a
+              controlled measurement, so it can't back a causal claim either,
+              even though it's a directly measured FACT (see CausalityChip
+              above). "Preceded by" states exactly what was observed —
+              root_cause came first in the sequence — without asserting it
+              caused the symptom. */}
+          {diagnosis.causality_level === 'observed_sequence' ? 'Preceded by' : 'Likely because'} —{' '}
         </span>
         {diagnosis.root_cause}
       </p>

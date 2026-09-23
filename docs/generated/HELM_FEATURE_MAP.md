@@ -157,11 +157,11 @@ is a second thing to keep true.
 **Player CoachHelm And Development** · active · criticality high · owner product
 
 - **Behaviour:** `memory/features/player-coachhelm-development.md`
-- **Code:** `src/app/golf/(dashboard)/dashboard/coachhelm/**`, `src/app/golf/(dashboard)/dashboard/my-insights/**`, `src/app/golf/(dashboard)/dashboard/my-development/**`, `src/app/golf/(dashboard)/dashboard/development/**`, `src/app/golf/(dashboard)/dashboard/rounds/[id]/review/**`, `src/components/golf/coachhelm/player/**` … and 24 more in the registry
+- **Code:** `src/app/golf/(dashboard)/dashboard/coachhelm/**`, `src/app/golf/(dashboard)/dashboard/my-insights/**`, `src/app/golf/(dashboard)/dashboard/my-development/**`, `src/app/golf/(dashboard)/dashboard/development/**`, `src/app/golf/(dashboard)/dashboard/rounds/[id]/review/**`, `src/components/golf/coachhelm/player/**` … and 25 more in the registry
 - **Telemetry:** `player_coachhelm_dashboard` (coachhelm, med), `development_plans_coach` (coachhelm, med), `my_development` (coachhelm, low), `drills_practice_rx` (coachhelm, low), `coachhelm_v3_goals` (coachhelm, med)
 - **Incidents:** none recorded
 - **Repair units:** none in the queue
-- **History:** `memory/ledgers/changes/player_coachhelm_development.md`
+- **History:** `memory/ledgers/changes/player_coachhelm_development.md`, `memory/ledgers/tests/player_coachhelm_development.md`
 
 ## `team_communications`
 
