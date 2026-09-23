@@ -625,28 +625,39 @@ describe('auditNumericClaims', () => {
       expect(auditNumericClaims('Played 9/6/78.', evidence).map((c) => c.text)).toEqual(['9/6/78']);
     });
 
-    it('documents the residual risk left open by review, not fixed here: an unrelated window sharing a month-day still supports a no-year date elsewhere', () => {
+    it('documents the residual risk left open by review, not fixed here: an unrelated exact evidence date still supports a no-year date elsewhere', () => {
       // SHOULD (not required): the exact-day check (`evidenceMonthDays`) is
       // global across the whole turn's evidence, not scoped to the claim's
-      // own metric/window. A season-tracking measurement ending Dec 31 lets
-      // an unrelated "wrapped up on Dec 31" pass even though nothing about
-      // THIS claim's own subject touches Dec 31. Scoping this to the
-      // claim's entity/window is a possible follow-up (see provenance.ts's
-      // `isSupported` doc comment) — this test pins today's documented,
-      // accepted behavior so a future change to it is deliberate rather
-      // than silent.
-      const claims = auditNumericClaims(
-        'Season wrapped up on Dec 31.',
-        [
-          measurement({
-            metric_id: 'season_length',
-            value: 24,
-            sample_size: 24,
-            window_start: '2026-01-01',
-            window_end: '2026-12-31',
-          }),
-        ],
-      );
+      // own metric/entity. A prior finding note this test deliberately
+      // avoids: a *window*-based version of this test (e.g. a season-length
+      // measurement running window_start 2026-01-01 to window_end
+      // 2026-12-31) would pass for a DIFFERENT reason — a full-year window
+      // trivially CONTAINS every month-day, so that version would exercise
+      // the (correct) containment fix, not the exact-day pool this test
+      // means to pin. This version uses a series point with NO window at
+      // all, so containment cannot apply — the point's own day is the only
+      // way "Dec 31" can be accepted, and it comes from an entirely
+      // different metric than the one the claim's sentence is about.
+      // Scoping this to the claim's entity/metric is a possible follow-up
+      // (see provenance.ts's `isSupported` doc comment, which also now notes
+      // the wide-window variant of this same risk).
+      const unrelatedSeries: MeasurementSeries = {
+        metric_id: 'unrelated_metric',
+        metric_label: 'Some other metric entirely',
+        unit: 'strokes',
+        entity: { kind: 'player', id: 'p2', label: 'Someone Else' },
+        points: [{ at: '2026-12-31T12:00:00Z', value: 3, bucket: null, sample_size: 1 }],
+        window_start: null,
+        window_end: null,
+        as_of: '2026-12-31T12:00:00Z',
+        coverage: 'complete',
+        coverage_note: null,
+        source: 'rounds',
+        method: 'round_level',
+        benchmark: null,
+        direction: 'higher_better',
+      };
+      const claims = auditNumericClaims('Season wrapped up on Dec 31.', [], [unrelatedSeries]);
       expect(claims).toEqual([]);
     });
   });

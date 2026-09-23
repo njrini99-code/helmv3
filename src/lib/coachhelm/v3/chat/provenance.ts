@@ -494,6 +494,15 @@ function auditDateExpressions(
       // entity/window is a possible follow-up, not done here — the fix this
       // block makes is the CONTAINMENT check below, which is what actually
       // closes the reported false-positive gap for a real, in-window date.
+      //
+      // The containment check itself, once added, carries a related and
+      // wider version of the same risk: it is scoped to a WINDOW, not an
+      // entity, so any evidence window spanning most or all of a year
+      // supports nearly every bare month-day inside it — an unrelated
+      // season-long measurement makes containment almost as permissive as
+      // the exact-day pool above, for a different reason. Neither is fixed
+      // here; both are the same "no-year dates aren't scoped to the claim's
+      // own subject" gap the note above already describes.
       if (evidenceMonthDays.has(monthDay)) return true;
       for (const candidateYear of candidateYears) {
         const iso = `${candidateYear}-${monthDay}`;
