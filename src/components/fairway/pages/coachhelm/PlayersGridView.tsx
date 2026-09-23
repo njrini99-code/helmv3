@@ -131,6 +131,17 @@ export interface PlayersGridFocusArea extends FocusAreaCardData {
   player_id: string;
   coach_id?: string | null;
   player?: PlayersGridPlayer | null;
+  /**
+   * Owner decision follow-up (2026-09-23) to Pkg 9 gap 2 — the RAW
+   * `golf_player_focus_areas.outcome_status` column (set directly by
+   * `recordFocusAreaOutcomeImpl`, regardless of `from_insight_id`), read by
+   * `DueForReviewPanel`'s follow-up-eligibility computation ONLY. Distinct
+   * on purpose from this interface's inherited `outcome_status`
+   * (`FocusAreaCardData`), which is derived from the SOURCE INSIGHT and
+   * reads `null` whenever `from_insight_id` is absent even if this focus
+   * area's own column is set — see `intelligence/page.tsx`.
+   */
+  recordedOutcomeStatus?: string | null;
 }
 
 export interface PlayersGridStats {
@@ -237,6 +248,17 @@ export interface PlayersGridViewProps {
    * Default false.
    */
   practiceLogEnabled?: boolean;
+  /**
+   * Pkg 9 gap 2 (follow-up eligibility, owner decision 2026-09-23) —
+   * completed-round count per focus area id, since that area's `started_at`,
+   * resolved server-side once in `intelligence/page.tsx`
+   * (`loadFollowUpRoundCounts`) and threaded down opaquely here, same
+   * pattern as `practiceLogEnabled`. A plain object, not a Map — Maps don't
+   * cross the server/client boundary. `null` means the read failed (unknown),
+   * not "zero rounds" — passed straight through to `DueForReviewPanel`,
+   * which must not default it to `{}` itself.
+   */
+  followUpRoundCounts?: Record<string, number> | null;
 }
 
 /* ---------------------------------------------------------------------------
@@ -290,6 +312,7 @@ export function PlayersGridView({
   embedded = false,
   todayIso,
   practiceLogEnabled = false,
+  followUpRoundCounts = null,
 }: PlayersGridViewProps) {
   const router = useRouter();
 
@@ -862,6 +885,7 @@ export function PlayersGridView({
           players={players}
           focusAreas={focusAreas}
           todayIso={todayIso}
+          followUpRoundCounts={followUpRoundCounts}
           onSelectPlayer={(playerId) => {
             setSelectedPlayerId(playerId);
             setView('areas');
