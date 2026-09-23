@@ -157,11 +157,19 @@ export function buildFilmstripHoles(holes: HoleBreakdown[]): FilmstripHole[] {
   }));
 }
 
-/** Narrative fallback, three tiers in priority order:
- *   1. `v2Body` — a FRESH V2 composed-review generation from THIS page load
+/** Narrative fallback, four tiers in priority order:
+ *   1. `aiNarrative` — Package 8's round-review narrative
+ *      (`golf_round_reviews.ai_narrative`, gated behind
+ *      `coachhelm_round_review_narrative`, default off everywhere). A
+ *      purpose-written paragraph cached once per round, preferred over
+ *      every tier below when present. `undefined`/`null` (flag off, not
+ *      yet generated, or the generating action refused — published/
+ *      coach-annotated review, no billing coach, etc.) falls through to
+ *      the pre-existing tiers unchanged.
+ *   2. `v2Body` — a FRESH V2 composed-review generation from THIS page load
  *      (only populated when the round had no stored review yet, so
  *      `useRoundReviewV2`'s auto-generate effect fired).
- *   2. `persistedComposedBody` — the SAME CoachHelm-authored body read back
+ *   3. `persistedComposedBody` — the SAME CoachHelm-authored body read back
  *      from the already-stored review row (`review.deepInsights[0].body`,
  *      written by `mergeCoachHelmReviewContent` in round-review-system.ts).
  *      Without this tier, every revisit — and the page's Refresh button,
@@ -169,13 +177,16 @@ export function buildFilmstripHoles(holes: HoleBreakdown[]): FilmstripHole[] {
  *      through to the V1 summary even though the composed narrative was
  *      sitting in the DB. Mirrors `pickPracticePriority`'s v2-then-v1-overlay
  *      tiering below.
- *   3. `v1Summary` — the rule-based summary, the surface's honest floor. The
+ *   4. `v1Summary` — the rule-based summary, the surface's honest floor. The
  *      surface is never narrative-empty. */
 export function buildNarrative(
   v1Summary: string,
   v2Body: string | null | undefined,
   persistedComposedBody?: string | null,
+  aiNarrative?: string | null,
 ): string {
+  const ai = aiNarrative?.trim();
+  if (ai && ai.length > 0) return ai;
   const fresh = v2Body?.trim();
   if (fresh && fresh.length > 0) return fresh;
   const persisted = persistedComposedBody?.trim();
