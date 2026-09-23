@@ -49,7 +49,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `INCIDENT` | 30 | 15 | 2 | 2 |
 | `ADR` | 5 | 0 | 3 | 0 |
 | `INDEX` | 19 | 1 | 7 | 5 |
-| `UNKNOWN` | 93 | 12 | 39 | 73 |
+| `UNKNOWN` | 93 | 12 | 39 | 74 |
 
 ## Files
 
@@ -559,7 +559,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `.github/branch-protection.md` | current | - | - | - | 1 |
 | `android/playstore/SUBMISSION.md` | current | - | - | - | - |
 | `docs/BI_DASHBOARD_ARCHITECTURE.md` | current | yes | - | - | 20 |
-| `docs/CI_RUNBOOK.md` | current | - | - | yes | - |
+| `docs/CI_RUNBOOK.md` | current | - | - | yes | 1 |
 | `docs/HELM_OS.md` | current | - | - | yes | - |
 | `docs/LANDING_ENTRY_WORLD_DESIGN.md` | current | - | - | - | 2 |
 | `docs/OBSERVABILITY.md` | current | yes | - | yes | - |

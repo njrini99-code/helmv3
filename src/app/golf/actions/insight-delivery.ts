@@ -17,7 +17,7 @@
  * card. Drills are sorted by rank and capped at 3.
  */
 
-import type { SupabaseClient } from '@supabase/supabase-js';
+import { isAuthSessionMissingError, type SupabaseClient } from '@supabase/supabase-js';
 import { createClient } from '@/lib/supabase/server';
 import { logServerError } from '@/lib/server-error-logger';
 import { verifyPlayerAccess } from '@/lib/auth/verify-player-access';
@@ -548,7 +548,11 @@ async function getInsightsForPlayerImpl(
   try {
     const { data, error: authError } = await supabase.auth.getUser();
     if (authError || !data.user) {
-      if (authError) {
+      // No session at all (a signed-out visitor, an expired cookie) is the
+      // anonymous case this function already answers with [] — not an
+      // auth-service failure. It reached the Bridge at error severity
+      // (2026-09-20). Only a real auth error is logged.
+      if (authError && !isAuthSessionMissingError(authError)) {
         await logServerError(
           `getInsightsForPlayer auth check failed: ${describeError(authError)}`,
           { action: 'insight-delivery.getInsightsForPlayer', featureArea: 'insights', playerId },

@@ -37,6 +37,53 @@ export function isTransientAuthError(error: AuthErrorLike | null | undefined): b
   return error.status === 429 || (typeof error.status === 'number' && error.status >= 500);
 }
 
+/**
+ * True for auth-js's commit guard (`GoTrueClient._callRefreshToken`): a token
+ * refresh COMPLETED, but storage changed under it mid-flight — a concurrent
+ * `signOut`, or another tab that rotated the refresh token first — so auth-js
+ * discarded the rotated tokens.
+ *
+ * The critical property: this is a verdict on the REFRESH RESULT, not on the
+ * session. GoTrue never said the session is invalid; auth-js chose not to
+ * commit a token pair it could no longer prove was current.
+ *
+ * It carries **status 409**, which is why it needs naming separately. Every
+ * "is this a real sign-out?" check in this repo discriminates on 4xx —
+ * `isTransientAuthError` above returns false for it, and so does
+ * `isTransientAuthCheckFailure` in src/app/golf/actions/golf.ts. So a
+ * discarded refresh read as a genuine rejection: `getUserResilient` returned
+ * `user: null` on the first call, `getGolfSessionProfile()` returned null, and
+ * `src/app/golf/(dashboard)/layout.tsx` ran `redirect('/golf/login')` on a
+ * player whose valid, unexpired session was sitting in the cookie the whole
+ * time. Same class as the 2026-06-11 mass-logout this file was written for.
+ *
+ * Treating it as "not a verdict" is also what makes the two underlying cases
+ * separate themselves correctly, with no extra branching:
+ *   - concurrent signOut  -> storage was CLEARED, the fallback's getSession()
+ *                            finds nothing, and the user stays signed out.
+ *   - another tab rotated -> storage holds that tab's FRESH session, the
+ *                            fallback returns it, and the user stays signed in.
+ * First seen 2026-09-04 (JAVASCRIPT-NEXTJS-RR).
+ */
+export function isRefreshDiscardedError(error: AuthErrorLike | null | undefined): boolean {
+  return error?.name === 'AuthRefreshDiscardedError';
+}
+
+/**
+ * The question `getUserResilient` actually needs answered: did the auth server
+ * RULE that this session is invalid? Only a real rejection ends the session.
+ * An unavailable auth server and a discarded refresh are both "we still don't
+ * know" — retry, then fall back to the local cookie.
+ *
+ * Deliberately NOT folded into `isTransientAuthError`: that predicate means
+ * "auth server unavailable right now" and also drives
+ * `signInWithPasswordResilient`'s retry loop, where a discard cannot occur and
+ * retrying would be wrong. Two questions, two predicates.
+ */
+function isNotASessionVerdict(error: AuthErrorLike | null | undefined): boolean {
+  return isTransientAuthError(error) || isRefreshDiscardedError(error);
+}
+
 function normalizeThrownAuthError(error: unknown): AuthErrorLike {
   if (error && typeof error === 'object') {
     const value = error as { name?: unknown; status?: unknown; message?: unknown };
@@ -58,7 +105,7 @@ async function readUser(supabase: AuthClientLike) {
     return await supabase.auth.getUser();
   } catch (error) {
     const normalized = normalizeThrownAuthError(error);
-    if (isTransientAuthError(normalized) || isStaleRefreshTokenError(normalized)) {
+    if (isNotASessionVerdict(normalized) || isStaleRefreshTokenError(normalized)) {
       return { data: { user: null }, error: normalized };
     }
     throw error;
@@ -205,14 +252,14 @@ export async function getUserResilient(
 ): Promise<ResilientUserResult> {
   const first = await readUser(supabase);
   if (first.data.user) return { user: first.data.user, degraded: false };
-  if (!isTransientAuthError(first.error)) return { user: null, degraded: false };
+  if (!isNotASessionVerdict(first.error)) return { user: null, degraded: false };
 
   if (options.retryTransient !== false) {
     await jitteredDelay();
 
     const second = await readUser(supabase);
     if (second.data.user) return { user: second.data.user, degraded: false };
-    if (!isTransientAuthError(second.error)) return { user: null, degraded: false };
+    if (!isNotASessionVerdict(second.error)) return { user: null, degraded: false };
   }
 
   // Auth server still unavailable — fall back to the locally-stored session.

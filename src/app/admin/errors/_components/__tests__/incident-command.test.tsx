@@ -56,6 +56,7 @@ function makeIncident(overrides: Partial<UnifiedIncident> = {}): UnifiedIncident
     lastSeen: '2026-08-02T00:00:00.000Z',
     occurrences: 4,
     affectedUsers: 2,
+    affectedPeople: [],
     affectedUsersKnown: true,
     sources: [],
     corroboration: 1,

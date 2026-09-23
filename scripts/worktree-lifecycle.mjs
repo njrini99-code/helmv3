@@ -4,8 +4,9 @@
  *
  *   scripts/worktree-lifecycle.mjs                 report only (default)
  *   scripts/worktree-lifecycle.mjs --park          remove PARKABLE checkouts, keep branches
- *   scripts/worktree-lifecycle.mjs --retire        PARK + delete DELETE_MERGED_EXACT branches
- *   scripts/worktree-lifecycle.mjs --gc-branches   delete DELETE_MERGED_EXACT branches only
+ *   scripts/worktree-lifecycle.mjs --retire        PARK + delete DELETE_MERGED_* branches
+ *   scripts/worktree-lifecycle.mjs --gc-branches   delete DELETE_MERGED_* branches only
+ *   ... --branch <name>                            limit report and actions to one branch
  *   scripts/worktree-lifecycle.mjs --json          machine-readable report
  *
  * This gathers facts. scripts/lib/worktree-lifecycle.mjs decides. The split is
@@ -44,10 +45,22 @@ import {
   classifyBranch,
   classifyRetention,
   combineVerdicts,
+  effectiveDirty,
+  AUTONOMOUS_BRANCH_VERDICTS,
   DELETE_MERGED_EXACT,
   PARKABLE,
   REQUIRES_HUMAN_VERDICTS,
 } from './lib/worktree-lifecycle.mjs';
+import {
+  archiveBeforeDelete as archiveTag,
+  contentInMain as contentInTrunk,
+  gitIn,
+  knownCopyPredicate,
+  prFor as lookupPr,
+  restoreCopies,
+  statusPorcelain,
+  workspaceIntent,
+} from './lib/worktree-facts.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 
@@ -87,6 +100,14 @@ const args = process.argv.slice(2);
 const PARK = args.includes('--park') || args.includes('--retire');
 const GC = args.includes('--gc-branches') || args.includes('--retire');
 const JSON_OUT = args.includes('--json');
+// --branch <name>: consider only that branch (its worktree, local ref and
+// remote ref). scripts/pr-land.mjs uses it to retire exactly the PR it landed
+// with one PR lookup instead of one per branch in the repository.
+const ONLY = (() => {
+  const i = args.indexOf('--branch');
+  return i === -1 ? null : args[i + 1] ?? '';
+})();
+const inScope = (b) => ONLY === null || b === ONLY;
 
 function git(a, opts = {}) {
   try {
@@ -97,60 +118,6 @@ function git(a, opts = {}) {
     }).trim();
   } catch {
     return null;
-  }
-}
-
-/**
- * PR lookup. HELM_PR_LOOKUP is the testability seam kept from the shell tool —
- * `gh` cannot answer for fixture branches that were never pushed. It receives a
- * branch name and prints "<number> <STATE> <headSha>", or "NONE".
- *
- * Returns { lookup: 'OK'|'FAILED', number, state, headSha }. A failed lookup is
- * FAILED, never NONE: #1668 exists because those were conflated.
- */
-function prFor(branch) {
-  const stub = process.env.HELM_PR_LOOKUP;
-  if (stub) {
-    try {
-      const out = execFileSync(stub, [branch], { encoding: 'utf-8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
-      if (!out || out === 'NONE') return { lookup: 'OK', state: 'NONE' };
-      const [num, state, sha] = out.split(/\s+/);
-      return { lookup: 'OK', number: Number(num), state, headSha: sha ?? null };
-    } catch {
-      return { lookup: 'FAILED' };
-    }
-  }
-  try {
-    const out = execFileSync(
-      'gh',
-      ['api', `repos/{owner}/{repo}/pulls?state=all&head={owner}:${branch}&per_page=1`,
-       '--jq', '.[0] | if . == null then "NONE" else "\\(.number) \\(if .merged_at then "MERGED" else (.state|ascii_upcase) end) \\(.head.sha)" end'],
-      { cwd: REPO, encoding: 'utf-8', stdio: ['ignore', 'pipe', 'pipe'] },
-    ).trim();
-    if (!out || out === 'NONE') return { lookup: 'OK', state: 'NONE' };
-    const [num, state, sha] = out.split(/\s+/);
-    return { lookup: 'OK', number: Number(num), state, headSha: sha ?? null };
-  } catch {
-    return { lookup: 'FAILED' };
-  }
-}
-
-/**
- * Recorded intent for the CHECKOUT, read from the checkout itself.
- *
- * scripts/new-worktree.sh already writes .helm/workspace.json; this adds one
- * field to it rather than a second ownership store. Every failure mode returns
- * a marker state and no policy, which classifyWorktree turns into KEEP —
- * absence is never permission.
- */
-function workspaceIntent(path) {
-  const f = resolve(path, '.helm/workspace.json');
-  if (!existsSync(f)) return { marker: 'absent', parkPolicy: null };
-  try {
-    const j = JSON.parse(readFileSync(f, 'utf-8'));
-    return { marker: 'present', parkPolicy: typeof j.parkPolicy === 'string' ? j.parkPolicy : null };
-  } catch {
-    return { marker: 'unreadable', parkPolicy: null };
   }
 }
 
@@ -229,10 +196,19 @@ function uniqueCommits(branch) {
   return Number(n);
 }
 
-function dirtyCount(path) {
-  const s = git(['status', '--porcelain'], { cwd: path });
-  if (s === null) return null;
-  return s === '' ? 0 : s.split('\n').length;
+const prFor = (branch) => lookupPr(branch, REPO);
+const archiveBeforeDelete = (branch, sha, prNumber) => archiveTag(git, branch, sha, prNumber);
+const isContentInMain = (sha) => contentInTrunk(git, sha);
+
+/**
+ * Uncommitted files, minus stale copies of GENERATED_COPY_PATHS whose content
+ * the repository already knows (see effectiveDirty). `ignored` is restored to
+ * the tracked version just before the checkout is removed.
+ */
+let knownCopy = null;
+function dirtyFacts(path) {
+  knownCopy ??= knownCopyPredicate(git, CANON);
+  return effectiveDirty(statusPorcelain(gitIn(REPO), path), knownCopy(path));
 }
 
 function hasLiveProcess(path) {
@@ -256,44 +232,6 @@ function du(path) {
   }
 }
 
-/**
- * Preserve the exact proven-merged tip before deleting its branch/ref.
- *
- * A local branch is recoverable from the reflog for a while, but that is not
- * the lifecycle guarantee: DELETE_MERGED_EXACT must leave a durable, named
- * record. An existing archive tag is acceptable only when it resolves to the
- * same tip. A conflict or an inability to create/verify the tag is a hard
- * veto on the destructive operation.
- */
-function archiveBeforeDelete(branch, sha, prNumber) {
-  const tag = `archive/${branch}`;
-  const ref = `refs/tags/${tag}^{}`;
-  const existing = git(['rev-parse', '--verify', ref]);
-  if (existing !== null) {
-    if (existing === sha) return true;
-    console.log(
-      `gc: SKIP ${branch} — ${tag} already points to ${existing.slice(0, 9)}, expected ${sha.slice(0, 9)}`,
-    );
-    return false;
-  }
-
-  const message = prNumber
-    ? `Archive ${branch} after PR #${prNumber} merged`
-    : `Archive ${branch} after verified merge`;
-  if (git(['tag', '--annotate', tag, sha, '--message', message]) === null) {
-    console.log(`gc: SKIP ${branch} — could not create archive tag ${tag}`);
-    return false;
-  }
-  const verified = git(['rev-parse', '--verify', ref]);
-  if (verified !== sha) {
-    console.log(
-      `gc: SKIP ${branch} — archive tag ${tag} did not verify at ${sha.slice(0, 9)}`,
-    );
-    return false;
-  }
-  return true;
-}
-
 // ---------------------------------------------------------------------------
 
 const CANON = canonicalRoot();
@@ -306,13 +244,14 @@ for (const w of wts) if (w.branch) byBranch.set(w.branch, w);
 const rows = [];
 
 for (const w of wts) {
+  if (!inScope(w.branch)) continue;
   const isCanonical = CANON !== null && resolve(w.path) === resolve(CANON);
   const localSha = w.branch ? git(['rev-parse', w.branch]) : git(['rev-parse', 'HEAD'], { cwd: w.path });
   const upstream = w.branch
     ? git(['for-each-ref', '--format=%(upstream:short)', `refs/heads/${w.branch}`]) || null
     : null;
   const remoteSha = upstream ? git(['rev-parse', upstream]) : null;
-  const dirty = dirtyCount(w.path);
+  const { dirtyCount: dirty, ignored: staleCopies } = dirtyFacts(w.path);
 
   // PR facts are gathered BEFORE the worktree is classified, because since
   // 2026-08-30 the worktree verdict depends on them: an OPEN PR's checkout is
@@ -335,6 +274,9 @@ for (const w of wts) {
   // distinction.
   const pr = w.branch ? prFor(w.branch) : { lookup: 'OK', state: 'NONE' };
   const disp = pr.number != null ? (DISPOSITIONS[String(pr.number)] ?? null) : null;
+  // Only worth a merge-tree when a merged PR's head no longer matches the tip.
+  const contentInMain =
+    pr.state === 'MERGED' && pr.headSha && pr.headSha !== localSha ? isContentInMain(localSha) : null;
 
   const wFacts = {
     path: w.path,
@@ -350,6 +292,7 @@ for (const w of wts) {
     prNumber: pr.number ?? null,
     prState: pr.state ?? null,
     prHeadSha: pr.headSha ?? null,
+    contentInMain,
     disposition: disp?.disposition ?? null,
     worktreePolicy: disp?.worktree_policy ?? null,
     ...(isCanonical ? { parkPolicy: null, workspaceMarker: null } : (() => {
@@ -372,6 +315,7 @@ for (const w of wts) {
         prNumber: pr.number ?? null,
         prState: pr.state ?? null,
         prHeadSha: pr.headSha ?? null,
+        contentInMain,
       })
     : { verdict: 'UNKNOWN_IDENTITY', reason: 'detached' };
 
@@ -383,6 +327,7 @@ for (const w of wts) {
     worktree: w.path,
     size: du(w.path),
     dirty: dirty === null ? 'UNKNOWN' : dirty > 0 ? 'yes' : 'no',
+    staleCopies,
     processCwd: wFacts.hasLiveProcess === null ? 'UNKNOWN' : wFacts.hasLiveProcess ? 'yes' : 'no',
     upstream: upstream ?? 'none',
     localSha: localSha ? localSha.slice(0, 9) : '-',
@@ -409,7 +354,7 @@ const allBranches = (git(['for-each-ref', '--format=%(refname:short)', 'refs/hea
   .filter(Boolean);
 
 for (const b of allBranches) {
-  if (byBranch.has(b)) continue;
+  if (byBranch.has(b) || !inScope(b)) continue;
   const localSha = git(['rev-parse', b]);
   const upstream = git(['for-each-ref', '--format=%(upstream:short)', `refs/heads/${b}`]) || null;
   const pr = prFor(b);
@@ -422,6 +367,8 @@ for (const b of allBranches) {
     prNumber: pr.number ?? null,
     prState: pr.state ?? null,
     prHeadSha: pr.headSha ?? null,
+    contentInMain:
+      pr.state === 'MERGED' && pr.headSha && pr.headSha !== localSha ? isContentInMain(localSha) : null,
   });
   rows.push({
     kind: 'branch',
@@ -442,7 +389,7 @@ for (const b of allBranches) {
     worktreePolicy: '-',
     worktreeVerdict: '-',
     branchVerdict: bv.verdict,
-    action: bv.verdict === DELETE_MERGED_EXACT ? 'DELETE_BRANCH' : 'KEEP',
+    action: AUTONOMOUS_BRANCH_VERDICTS.has(bv.verdict) ? 'DELETE_BRANCH' : 'KEEP',
     reason: bv.reason,
   });
 }
@@ -469,7 +416,7 @@ const remoteBranches = (git(['for-each-ref', '--format=%(refname:short)', 'refs/
   .split('\n')
   .filter(Boolean)
   .map((r) => r.replace(/^origin\//, ''))
-  .filter((b) => b && b !== 'HEAD' && b !== 'origin' && b !== 'main' && !localSet.has(b));
+  .filter((b) => b && b !== 'HEAD' && b !== 'origin' && b !== 'main' && !localSet.has(b) && inScope(b));
 
 for (const b of remoteBranches) {
   const remoteTip = git(['rev-parse', `origin/${b}`]);
@@ -531,7 +478,7 @@ for (const r of rows) {
 }
 
 const parkable = rows.filter((r) => r.kind === 'worktree' && (r.action === 'PARK' || r.action === 'RETIRE'));
-const deletable = rows.filter((r) => r.branchVerdict === DELETE_MERGED_EXACT && r.action !== 'KEEP');
+const deletable = rows.filter((r) => AUTONOMOUS_BRANCH_VERDICTS.has(r.branchVerdict) && r.action !== 'KEEP');
 // Proven merged, but a checkout still holds the branch so it cannot be deleted
 // yet. This used to be silently excluded from a count that carried the SAME
 // NAME as the verdict printed on its row — so the report said
@@ -540,7 +487,7 @@ const deletable = rows.filter((r) => r.branchVerdict === DELETE_MERGED_EXACT && 
 // meanings, is how a tool tells you nothing while appearing to tell you
 // something.
 const blockedByWorktree = rows.filter(
-  (r) => r.branchVerdict === DELETE_MERGED_EXACT && r.action === 'KEEP' && r.worktree !== 'none',
+  (r) => AUTONOMOUS_BRANCH_VERDICTS.has(r.branchVerdict) && r.action === 'KEEP' && r.worktree !== 'none',
 );
 const unknowns = rows.filter((r) => String(r.branchVerdict).startsWith('UNKNOWN') || String(r.worktreeVerdict).startsWith('UNKNOWN'));
 
@@ -619,7 +566,7 @@ const humanRows = rows.filter(
 );
 if (humanRows.length) {
   console.log('');
-  console.log('  STANDING AUTHORIZATION covers ONLY DELETE_MERGED_EXACT and PARKABLE.');
+  console.log('  STANDING AUTHORIZATION covers ONLY DELETE_MERGED_EXACT, DELETE_MERGED_CONTENT and PARKABLE.');
   console.log(`  ${humanRows.length} row(s) carry a verdict that requires a human and will never be`);
   console.log('  acted on automatically — including NO_UPSTREAM_UNIQUE_WORK, which is the');
   console.log('  only copy of real commits, and KEEP_PR_OWNER_INTENT_REQUIRED, which is an');
@@ -639,6 +586,10 @@ let acted = 0;
 if (PARK) {
   for (const r of parkable) {
     console.log(`park: removing checkout ${r.worktree} (branch ${r.branch} kept)`);
+    if (r.staleCopies?.length) {
+      console.log(`  restoring stale copies first: ${r.staleCopies.join(', ')}`);
+      restoreCopies(git, r.worktree, r.staleCopies);
+    }
     if (git(['worktree', 'remove', r.worktree]) === null) {
       console.log('  refused — left in place');
     } else {
@@ -650,7 +601,9 @@ if (GC) {
   // Re-derive after parking: a branch whose worktree just went away becomes
   // eligible, and one whose removal was refused must not be.
   const stillHeld = new Set(worktrees().map((w) => w.branch).filter(Boolean));
-  const targets = rows.filter((r) => r.branchVerdict === DELETE_MERGED_EXACT && !stillHeld.has(r.branch));
+  const targets = rows.filter(
+    (r) => r.kind !== 'remote-branch' && AUTONOMOUS_BRANCH_VERDICTS.has(r.branchVerdict) && !stillHeld.has(r.branch),
+  );
   for (const r of targets) {
     // Re-verify the exact head match immediately before deleting. The report
     // may be seconds old; the deletion is not reversible from here.

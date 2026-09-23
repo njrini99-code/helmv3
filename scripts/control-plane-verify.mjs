@@ -407,6 +407,17 @@ function checkProtectedPrefixBranchRetention() {
 // STATIC — everything provable from the repository alone.
 
 function checkGenerated() {
+  // HELM_CP_SKIP_GENERATED=1 is set by ci.yml's `Static checks` ONLY. There
+  // these three --check commands run in the job's own "Generated artifacts
+  // are current" step through scripts/github/pr-drift-gate.mjs, which does
+  // not fail a PR for drift `main` moving put there (2026-09-23). No row is
+  // recorded here for them — they were not checked by THIS process, and a
+  // PASS it did not establish would be exactly the false green this
+  // verifier exists to refuse. Every other caller runs all three.
+  if (process.env.HELM_CP_SKIP_GENERATED === '1') {
+    console.error('control-plane: generated-artifact checks delegated to CI step "Generated artifacts are current" (HELM_CP_SKIP_GENERATED=1)');
+    return;
+  }
   for (const [id, args] of [
     ['enforcement-inventory-current', ['scripts/gen-enforcement-inventory.mjs', '--check']],
     ['generated-docs-current', ['scripts/regen-docs.mjs', '--check']],
@@ -672,7 +683,9 @@ function checkLifecycleRuntime() {
 
   // Safe GC waiting to happen is itself a control failure: it means the
   // retire-at-merge step was skipped, which is the original leak.
-  const retirable = rows.filter((x) => x.branchVerdict === 'DELETE_MERGED_EXACT' && x.worktree === 'none');
+  const retirable = rows.filter(
+    (x) => ['DELETE_MERGED_EXACT', 'DELETE_MERGED_CONTENT'].includes(x.branchVerdict) && x.worktree === 'none',
+  );
   add('lifecycle', 'no-retirable-branches-waiting', retirable.length ? FAIL : PASS,
     retirable.length ? `${retirable.length} branch(es) provably merged and deletable: ${retirable.map((x) => x.branch).join(', ')}` : 'no safe GC pending');
 

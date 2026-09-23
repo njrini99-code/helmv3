@@ -85,6 +85,7 @@ function boardEmpty() {
     },
     computedAt: '2026-08-28T00:00:00.000Z',
     windowHours: 24,
+    staleUnresolved: { items: [], readable: true, reason: null },
   };
 }
 

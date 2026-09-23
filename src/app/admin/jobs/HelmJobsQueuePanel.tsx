@@ -4,7 +4,9 @@
  * Bridge Jobs board — "Jobs queue" section (Database Plan D6).
  * Depth/oldest-age/dead-letter counts per pgmq queue, plus a dead-letter
  * list with redacted payload and a requeue action. Empty state when the
- * facade migration (supabase/migrations/20260906140000_...) is not applied.
+ * facade RPCs (supabase/migrations/20260906140000_...) are missing from the
+ * connected database — applied in production since 2026-09-22's ledger
+ * check, so in production this only renders if they are dropped.
  */
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
@@ -37,7 +39,7 @@ export function HelmJobsQueuePanel({ status }: { status: HelmJobsQueueStatus }) 
             label="Queue not active"
             description={
               status.reason === 'migration-not-applied'
-                ? 'The pgmq facade migration (HELD) has not been applied yet — see supabase/migrations/HELD.md.'
+                ? 'The helm_jobs facade functions are missing from this database — check 20260906140000 in supabase/migrations/HELD.md.'
                 : (status.reason ?? 'HELM_QUEUE_ENABLED is off, or the queue has not been used yet.')
             }
           />

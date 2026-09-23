@@ -3,9 +3,12 @@
 
 ## Status
 
-- active build, three phases so far. Every migration in phases 1 and 2 is
-  HELD — none has been applied to production (see
-  `supabase/migrations/HELD.md`). Phase 3 Track F adds no migration at all.
+- active build, three phases so far. Every phase 1 and 2 migration is
+  APPLIED in production (2026-09-03, and the 2026-09-06 set ledger-verified
+  2026-09-22 — see `supabase/migrations/HELD.md`). Verified live 2026-09-23:
+  all nine `helm_debug` collector tables exist, and eight hold rows (e.g.
+  `db_statement_samples` ~67k, `db_health_samples` ~5.6k).
+  Phase 3 Track F adds no migration at all.
 - platform infrastructure, not a product feature — this doc exists so a
   reader touching `helm_debug.*`, `src/lib/observability/supabase/**`, or
   `src/lib/admin/database/**` has one place to start.
@@ -20,14 +23,6 @@
   still resolves to no key. That, and the other registry gaps Track F
   surfaced, are recorded in
   `docs/observability/SUPABASE_OPERATING_MODEL.md`.
-- active build, two phases so far, both HELD at the database layer (no
-  migration in either phase has been applied to production — see
-  `supabase/migrations/HELD.md`)
-- platform infrastructure, not a product feature — this doc exists so a
-  reader touching `helm_debug.*`, `src/lib/observability/supabase/**`, or
-  `src/lib/admin/database/**` has one place to start; add a
-  `memory/registry.yml` mapping the next time this area is touched (none
-  exists yet — a real gap this doc is flagging, not silently filling)
 
 ## Current State
 

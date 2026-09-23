@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { ChevronRight } from 'lucide-react';
 import { requireSuperAdmin } from '@/lib/admin/require-super-admin';
 import { fetchUsersTab, USER_ROLES, type RosterPlayerInsight, type TeamRosterInsight } from '@/lib/admin/data/users';
+import { isInternalOrTestAccount } from '@/lib/admin/data/internal-accounts';
 import { Surface, Inset, StatTile, StatStrip, StatusPill, SearchField, Button, type FwStatusTone } from '@/components/fairway';
 import { FairwayLargeTitle } from '@/components/fairway/app-shell';
 import { cn } from '@/lib/utils';
@@ -427,6 +428,11 @@ export default async function UsersPage({
     const tab = await fetchUsersTab({ q, role, team });
     const golfCount = tab.users.filter((u) => u.sports.includes('golf')).length;
     const baseballCount = tab.users.filter((u) => u.sports.includes('baseball')).length;
+    // OWNER DECISION (users-01): test/demo/internal accounts stay IN every
+    // count above — filtering them out would change what "N users" means
+    // platform-wide — this is disclosure only, computed over the same
+    // capped `tab.users` set the golf/baseball tiles above already use.
+    const internalCount = tab.users.filter((u) => isInternalOrTestAccount(u.email)).length;
 
     return (
       <div className="space-y-6">
@@ -480,6 +486,13 @@ export default async function UsersPage({
           <p className="text-xs text-warm-500">
             Showing the {tab.users.length} most recently seen users (capped view — {tab.totalUsersCount} total match
             this filter). Golf/Baseball/At-risk counts reflect only this capped set.
+          </p>
+        ) : null}
+        {internalCount > 0 ? (
+          <p className="text-xs text-warm-500">
+            {internalCount} of {tab.users.length} shown are test, demo, or internal accounts
+            (helmsportslabs.com, or an email/name containing test/demo/e2e/codex) — kept in every count above, not
+            excluded.
           </p>
         ) : null}
 

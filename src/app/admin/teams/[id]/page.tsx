@@ -498,8 +498,8 @@ export default async function TeamDetailPage({ params }: { params: Promise<{ id:
 
   return (
     <div className="space-y-4">
-      <Link href="/admin/golf" className="text-xs text-warm-500 underline">
-        ← Golf
+      <Link href="/admin/teams" className="text-xs text-warm-500 underline">
+        ← Teams
       </Link>
       <PanelBoundary title="Team detail" skeleton={<PanelPageSkeleton rows={8} />}>
         <TeamDetailBody teamId={id} />

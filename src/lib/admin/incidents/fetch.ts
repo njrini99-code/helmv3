@@ -10,7 +10,10 @@ import { fetchReliabilitySnapshot } from '@/lib/admin/data/reliability';
 import {
   fetchIncidentFeed,
   DEFAULT_INCIDENT_WINDOW_HOURS,
+  queryStaleUnresolvedIncidents,
+  excludeInWindowFingerprints,
   type IncidentFeedFilters,
+  type StaleUnresolvedResult,
 } from '@/lib/admin/data/incident-feed';
 import type { CorrelatedSignal } from '@/lib/reliability/types';
 
@@ -464,6 +467,14 @@ export interface IncidentBoard {
   /** ISO — when this board was computed, so a screen can show its own age. */
   computedAt: string;
   windowHours: number;
+  /**
+   * Unresolved error/critical fingerprints with no occurrence inside
+   * `windowHours` — bounded, best-effort, and NEVER folded into `incidents`
+   * or `lensCounts` (see `queryStaleUnresolvedIncidents`'s own doc comment
+   * in incident-feed.ts). A read failure here degrades to `readable: false`
+   * and must never take the rest of the board down with it.
+   */
+  staleUnresolved: StaleUnresolvedResult;
 }
 
 function toAnalysis(stored: RcaAnalysis, repairVerdict: IncidentAnalysis['repairVerdict']): IncidentAnalysis {
@@ -548,7 +559,7 @@ export async function fetchIncidentBoard(
   filters: IncidentFeedFilters = { windowHours: DEFAULT_INCIDENT_WINDOW_HOURS },
   now: number = Date.now(),
 ): Promise<IncidentBoard> {
-  const [feed, reliability, deploy, databaseSource] = await Promise.all([
+  const [feed, reliability, deploy, databaseSource, staleUnresolvedRaw] = await Promise.all([
     fetchIncidentFeed(filters),
     readReliability(),
     getProductionDeployAt(now),
@@ -562,6 +573,11 @@ export async function fetchIncidentBoard(
       observedAt: null,
       reason: error instanceof Error ? error.message : 'database observability source unreadable',
     })),
+    // Independent of `feed` — the exclusion step below runs after both
+    // resolve, so this does not need to wait on it (see
+    // `excludeInWindowFingerprints`'s own doc comment for why exclusion is a
+    // separate, pure step rather than a second query parameter).
+    queryStaleUnresolvedIncidents(filters.windowHours),
   ]);
 
   const nowIso = new Date(now).toISOString();
@@ -750,6 +766,20 @@ export async function fetchIncidentBoard(
     );
   }
 
+  // Drop anything already visible in THIS window's feed — a fingerprint with
+  // both an old row and a recent one is still on the board above, not
+  // "dropped off" it. `feed.appEvents` (not `feed.incidents`) is the raw,
+  // ungrouped set queryStaleUnresolvedIncidents's own fingerprints compare
+  // against, so the two use the exact same notion of "in the window".
+  const windowFingerprints = new Set(
+    feed.appEvents
+      .map((row) => row.fingerprint)
+      .filter((fp): fp is string => typeof fp === 'string' && fp.length > 0),
+  );
+  const staleUnresolved: StaleUnresolvedResult = staleUnresolvedRaw.readable
+    ? { ...staleUnresolvedRaw, items: excludeInWindowFingerprints(staleUnresolvedRaw.items, windowFingerprints) }
+    : staleUnresolvedRaw;
+
   return {
     incidents,
     eventIdsByIncident,
@@ -760,6 +790,7 @@ export async function fetchIncidentBoard(
     lensCounts: countLenses(incidents),
     computedAt: nowIso,
     windowHours: filters.windowHours,
+    staleUnresolved,
   };
 }
 

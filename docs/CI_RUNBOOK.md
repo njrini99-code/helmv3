@@ -9,6 +9,63 @@ the authoritative source of truth for which checks are actually enforced —
 if the two ever disagree, branch protection wins and this doc should be
 updated.
 
+## What changed on 2026-09-23, and why
+
+Measured that day: about 42% of PRs failed their first push, mostly for
+reasons the PR did not cause, and queueing was 64% of the wait before a PR
+went green (the account runs at most 20 jobs at once). The changes:
+
+- **Types drift left the PR gate.** `Database types drift` compared every
+  PR to the live production schema, so one production apply turned every
+  open PR red: 10 of 16 real first-push failures on 2026-09-23.
+  `types-regen.yml` now runs it after `db-apply`, on push to `main`, every
+  3 h and on dispatch, and opens or updates the `types/auto-regen` PR.
+- **Generated artifacts fail a PR only for drift it introduced.** The
+  inventory, World Model, document inventory, feature map, enforcement
+  inventory and tool-authority matrix checks ran on the PR merged into the
+  current `main`, so a stale `main`, or two PRs regenerating the same
+  file, failed every open PR. They now run through
+  `scripts/github/pr-drift-gate.mjs`, and `Docs Regen` regenerates on
+  `main` (it opens `docs/auto-regen`).
+- **Dead references count only new ones.** CI runs `docs:dead-refs` with
+  `--introduced-since <base>`; the whole-tree count failed every PR once
+  `main` itself passed the baseline ("REGRESSION 4 -> 6").
+- **Action-count tests are floors.** `coverage-contract.foundation` and
+  `feature-registry` asserted exact totals, so two PRs that each added an
+  action collided ("expected 430 to be 429").
+- **Superseded runs are not red.** `CI aggregate` and `Review Gate
+  aggregate` excuse cancelled or skipped jobs only when the PR head has
+  moved on. Drafts still fail on purpose (#2049).
+- **Supabase job pulls less.** 19 of 26 failures of this job were ghcr.io
+  `toomanyrequests`. It now starts only Postgres, Auth and Storage
+  (`supabase start -x ...`) and runs `pg_prove` once over every suite
+  instead of one container per file.
+- **Fewer jobs per merge and per PR.** `unit-tests-timezone` and
+  `baseball-auth-smoke` moved to `nightly.yml` (7 jobs off every merge).
+  `pr-smoke-a11y` and `sentry-snapshot-capture` run on push to `main`,
+  `workflow_dispatch`, or a PR labelled `ci:e2e`.
+- **No detect hop.** `Unit tests`, `Next build` and `Supabase` apply the
+  `code` filter (`.github/path-filters.yml`) inside the job instead of
+  waiting on `detect-changes`, which was a second queue wait.
+- **Shorter critical path.** Unit tests (which paced 66% of runs) run in 5
+  shards. `TypeScript` and `Lint` are one job, which saves a slot and an
+  install and still finishes before `Next build`. Every `npm ci` uses
+  `--prefer-offline --no-audit --no-fund`.
+- **Next cache stops thrashing.** `.next/cache` was saved per commit and
+  filled the 10 GB cache (9.96 GB), which evicted what PRs restore; 27% of
+  builds took over 7 min. It is now saved from `main` once per UTC day per
+  lockfile, and the separate `next-smoke` cache is gone.
+
+**Owner actions (optional; nothing here needs them to work):**
+
+- Add a fine-grained `REGEN_PR_PAT` secret (contents: write, pull-requests:
+  write). Then `types/auto-regen` and `docs/auto-regen` PRs get CI on their
+  own. Without it, a human push to the branch triggers CI.
+- Create the `ci:e2e` label (`gh label create ci:e2e`) so PRs can opt into
+  the Playwright and Sentry jobs.
+- GitHub Pro raises the concurrent-job cap from 20 to 40, which removes most
+  of the remaining queue wait.
+
 ## 0. Before you push
 
 `npm install` wires a `pre-push` git hook automatically (the `prepare`
@@ -147,10 +204,10 @@ branch unless `--any-branch` is passed; see `scripts/pr-land.mjs`.
 
 | Check | Source | What it validates | Gate type |
 |---|---|---|---|
-| `CI aggregate` | `ci.yml` | aggregate: `Static checks` (DB-types drift, schema invariants, feature knowledge, control plane, bridge env, Deno edge functions, business contracts, route hygiene, import cycles — named steps of one job since 2026-09-02), `TypeScript`, `Lint` (ESLint + ratchets) — these three ALWAYS run — plus `Unit tests` ×3, `Next build`, and **`Supabase lint + RLS tests`**, which SKIP when `detect-changes` (`.github/workflows/detect-changes.yml`, a shared `dorny/paths-filter` reusable workflow, 2026-09-06) finds no changed path under `src/**`, `supabase/**`, `e2e/**`, `package*.json`, `next.config.*`, `tsconfig*.json`, `vitest.config.ts`, `eslint.config.mjs`, `tailwind.config.*`, `postcss.config.*`, `middleware.ts`, `scripts/**/*.{ts,mjs}`, or `ci.yml`/`detect-changes.yml` themselves. Those three heavy jobs (plus `unit-tests-timezone`) run in parallel with `typecheck`/`lint` (2026-09-22; the 2026-09-06 `needs: [typecheck, lint]` ordering added ~4 min per PR to save runner minutes that are free on a public repo). `main` branch protection no longer requires branches to be up to date (2026-09-22): each merge used to force every open PR to rerun CI, and a merge queue is unavailable on a user-owned repo; push-to-main CI still runs the full set. A docs-only or config-only PR outside that list finishes in minutes (detect + static + typecheck + lint + aggregate, no install-heavy build/test/Supabase job); a `push` to `main` always runs the full set. | **Hard gate** — uniquely named since 2026-08-19; a green `CI aggregate` now really is CI's |
+| `CI aggregate` | `ci.yml` | aggregate: `Static checks` (schema invariants, feature knowledge, control plane, bridge env, Deno edge functions, business contracts, route hygiene, import cycles, generated artifacts — named steps of one job since 2026-09-02; DB-types drift moved to `types-regen.yml` 2026-09-23), `TypeScript + Lint` (tsc + ESLint + ratchets, one job since 2026-09-23) — these two ALWAYS run — plus `Unit tests` ×5, `Next build`, and **`Supabase lint + RLS tests`**, which finish green with every step skipped (an in-job path gate since 2026-09-23; they SKIPPED as jobs before) when `detect-changes` (`.github/workflows/detect-changes.yml`, a shared `dorny/paths-filter` reusable workflow, 2026-09-06) finds no changed path under `src/**`, `supabase/**`, `e2e/**`, `package*.json`, `next.config.*`, `tsconfig*.json`, `vitest.config.ts`, `eslint.config.mjs`, `tailwind.config.*`, `postcss.config.*`, `middleware.ts`, `scripts/**/*.{ts,mjs}`, or `ci.yml`/`detect-changes.yml` themselves. Those three heavy jobs run in parallel with everything else, with no `needs:` (2026-09-23) (2026-09-22; the 2026-09-06 `needs: [typecheck, lint]` ordering added ~4 min per PR to save runner minutes that are free on a public repo). `main` branch protection no longer requires branches to be up to date (2026-09-22): each merge used to force every open PR to rerun CI, and a merge queue is unavailable on a user-owned repo; push-to-main CI still runs the full set. A docs-only or config-only PR outside that list finishes in minutes (detect + static + typecheck + lint + aggregate, no install-heavy build/test/Supabase job); a `push` to `main` always runs the full set. | **Hard gate** — uniquely named since 2026-08-19; a green `CI aggregate` now really is CI's |
 | `Review Gate aggregate` | `review-gate.yml` | aggregate: `Review Gate checks` (ast-grep, gitleaks, actionlint, yamllint, shellcheck, markdownlint, ruff+pylint, sqlfluff, hadolint, env-secrets as steps) + `semgrep (custom rules)` | **Hard gate** — uniquely named since 2026-08-19 |
 | ~~`Smoke checks`~~ | ~~`playwright.yml`~~ | ~~build-only smoke: `npm ci` + `next build`~~ | **REMOVED 2026-09-02** — a duplicate of `Next build`; context dropped first, job second |
-| `Playwright PR smoke (a11y)` | `ci.yml` (`pr-smoke-a11y` job) | public-route accessibility Playwright | Advisory — **folded in from the now-deleted `pr-smoke.yml` (2026-09-06)**; gated on `detect-changes`'s `code`/`frontend` outputs (a non-matching PR shows this job SKIPPED rather than not starting at all, since it now lives inside `ci.yml`), and consumes `next-build`'s uploaded `.next` artifact instead of running `npm run dev` itself |
+| `Playwright PR smoke (a11y)` | `ci.yml` (`pr-smoke-a11y` job) | public-route accessibility Playwright | Advisory — **folded in from the now-deleted `pr-smoke.yml` (2026-09-06)**; since 2026-09-23 runs only on push to `main`, `workflow_dispatch`, or a PR labelled `ci:e2e` (otherwise SKIPPED), and consumes `next-build`'s uploaded `.next` artifact instead of running `npm run dev` itself |
 | `CodeRabbit` | CodeRabbit GitHub App | ~~assertive line-level review + blocking custom checks~~ | **DROPPED 2026-07-20** — removed from the required set by founder decision; `.coderabbit.yaml` is a disable stub. If a `CodeRabbit` status still appears, it is informational. The custom rule packs under `.coderabbit/` REMAIN and are consumed directly by the Review Gate. |
 | `CodeQL` | GitHub's code-scanning app, posted for `codeql.yml`'s scans | summarizes alert-count deltas for the commit (distinct from the three `Analyze (...)` runs the callout above documents, which only assert the scan completed) | **Not required** — the callout above already says so; this row used to say "Hard gate" directly under it, contradicting it. It can show `failure` (new alerts introduced) while all three `Analyze (...)` show `success` simultaneously, so it is real signal that nothing currently blocks on. |
 | `the external review bot` | the external review bot GitHub App | ~~whole-codebase review~~ | **DROPPED 2026-07-20** — the retired rules directory is deleted. Neither external AI reviewer is a gate any more; the deterministic Review Gate + CodeQL cover the same hard rules. |
@@ -158,7 +215,7 @@ branch unless `--any-branch` is passed; see `scripts/pr-land.mjs`.
 | `ci/circleci: ios-compile` | CircleCI | iOS Capacitor compile, branch-gated: `main` / `release/*` / `ios/*` / `capacitor/*` / `agent/fix-circleci-ios-*` | Advisory unless the PR touches iOS |
 | `ci/circleci: android-compile` | CircleCI | Android `assembleDebug` (no signing), branch-gated: `main` / `release/*` / `android/*` / `capacitor/*` / `ci/android-*` | Advisory unless the PR touches Android |
 | `migration-lockdown / block-historical-edits` | `migration-lockdown.yml` | blocks edits to already-applied migrations | **Hard gate** — promoted to required 2026-09-05, applied and verified live 2026-09-06. Its own changed-path check now reads the shared `detect-changes.yml`'s `migrations` output (2026-09-06) instead of running its own `changed-files.sh` scan. |
-| `Capture + upload Sentry snapshots` | `ci.yml` (`sentry-snapshot-capture` job) | visual diff of a curated screen set against Sentry Snapshots | Advisory — **folded in from the now-deleted `sentry-snapshots.yml` (2026-09-06)**; gated on `detect-changes`'s `code`/`e2e` outputs plus an in-job `SENTRY_SNAPSHOTS_AUTH_TOKEN` check step (the old separate "Check Sentry snapshot prerequisites" job is now a step); `push` to `main` always runs to refresh the base build; consumes `next-build`'s uploaded `.next` artifact instead of running its own `npm run build` <!-- markdownlint-disable-line MD013 --> |
+| `Capture + upload Sentry snapshots` | `ci.yml` (`sentry-snapshot-capture` job) | visual diff of a curated screen set against Sentry Snapshots | Advisory — **folded in from the now-deleted `sentry-snapshots.yml` (2026-09-06)**; since 2026-09-23 runs only on push to `main`, `workflow_dispatch`, or a PR labelled `ci:e2e`, plus an in-job `SENTRY_SNAPSHOTS_AUTH_TOKEN` check step (the old separate "Check Sentry snapshot prerequisites" job is now a step); `push` to `main` always runs to refresh the base build; consumes `next-build`'s uploaded `.next` artifact instead of running its own `npm run build` <!-- markdownlint-disable-line MD013 --> |
 | `check (advisory — routes + owner issues)` | `baseball-readiness-matrix.yml` | every route cited in the BaseballHelm readiness matrix resolves; every owner-issue link is open | Advisory, **not on `pull_request`** since 2026-09-06 (neither check depends on a PR's diff) — runs on `push` to `main` touching the matrix doc/scripts, plus a Wednesday 08:30 UTC `schedule` (`config/routines.yml`'s `baseball-readiness-matrix-weekly`) <!-- markdownlint-disable-line MD013 --> |
 | `Vercel` / `Vercel Preview Comments` | Vercel GitHub App | was posting a Vercel Toolbar comment-sync status as recently as PR #1835; absent from every PR audited from #1839 on | **No longer posts on PRs.** Git deploys are disconnected (`vercel.json`'s `deploymentEnabled: {"*": false}`, no branch auto-deploys, production is an on-demand CLI promote) — there is nothing left for the GitHub App to report against. Do not wait on this check; its absence is expected, not stuck. |
 
@@ -179,16 +236,16 @@ Don't treat a check as "stuck" before its normal window has passed:
   the same hard rules deterministically.
 - **PR smoke** (`ci.yml`'s `pr-smoke-a11y` job, folded in from the deleted
   `pr-smoke.yml` on 2026-09-06) — optional `Playwright PR smoke (a11y)` ~12
-  min. Gated on `detect-changes`'s `code`/`frontend` outputs and
-  `needs: next-build`: a non-matching PR (or one where `next-build` itself
-  skipped) shows this job SKIPPED rather than not starting at all, since it
-  now lives inside `ci.yml` alongside everything else. (The `Smoke checks`
+  min. Since 2026-09-23 it runs on push to `main`, `workflow_dispatch`, or a
+  PR labelled `ci:e2e` (add the label before the push you want covered), and
+  needs `next-build` to have built; otherwise it shows SKIPPED. (The `Smoke checks`
   build is gone since 2026-09-02; `Next build` inside CI is the build
   verdict, ~6 min warm, and this job now downloads that same build instead
   of compiling its own.)
 - **Full Playwright** (`playwright.yml`, manual `workflow_dispatch` only since
   2026-09-02) — `e2e` job, 120-minute budget.
-- **`baseball-auth-smoke` (#372)** — 30-minute budget. It
+- **`baseball-auth-smoke` (#372)** — `nightly.yml` since 2026-09-23 (and
+  `gh workflow run nightly.yml`); never on a PR or a merge. 45-minute budget. It
   installs Playwright chromium, runs a full `npm run build`, seeds BaseballHelm
   CI accounts, then runs the coach/player smoke. Separate from — and in
   addition to — CI's `Next build`. **Out of the PR gate since
@@ -273,12 +330,12 @@ your diff — `main` itself was already red when you branched.
   their env vars aren't set (`PLAYWRIGHT_BASEBALL_SEEDED`, `E2E_GOLF_*`,
   `GOLFHELM_*`). A skip is not a failure.
 
-  **`baseball-auth-smoke` (#372) skipping on a PR is now expected** — since
-  2026-08-26 (owner decision) its `if:` limits it to push-to-`main` events, so
-  every `pull_request` run shows it skipped. What remains deliberate from the
+  **`baseball-auth-smoke` (#372) does not appear on PRs at all** — since
+  2026-09-23 it lives in `nightly.yml` (off the PR gate since 2026-08-26,
+  owner decision). What remains deliberate from the
   PR #1125 rework: it needs no secrets (it seeds a throwaway stack on the
-  runner), so on `main` pushes it runs unconditionally — a skip THERE is not
-  expected and means the `if:` or path-detect logic changed.
+  runner), so the nightly run is unconditional — a skip THERE is not
+  expected.
 
 ## 5. `claude-code.yml`'s trigger gate — reviewed 2026-09-05
 

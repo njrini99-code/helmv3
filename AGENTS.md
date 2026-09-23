@@ -67,10 +67,11 @@ branch. Start every task with `git status` and the current branch.
   after a rebase use `--force-with-lease` on your own task branch only. Never
   bypass required checks with `--admin`.
 - Cleanup: `npm run worktrees:park` / `worktrees:retire`; `npm run pr:land --
-  <n>` runs `--retire` itself. STANDING OWNER AUTHORIZATION covers only
+  <n>` runs `--retire` itself, and the WorktreeRemove hook applies the same
+  checks to harness worktrees. STANDING OWNER AUTHORIZATION covers only
   checkouts the tool verdicts PARKABLE and branches it verdicts
-  DELETE_MERGED_EXACT. Never delete unrelated folders or branches to satisfy a
-  count.
+  DELETE_MERGED_EXACT / DELETE_MERGED_CONTENT. Never delete unrelated folders
+  or branches to satisfy a count.
 
 ## Context
 

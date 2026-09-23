@@ -126,6 +126,10 @@ jobs:
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.HELM_REPAIR_DB_KEY || secrets.SUPABASE_SERVICE_ROLE_KEY }}
           GH_TOKEN: ${{ github.token }}
           SELFHEAL_DRY_RUN: ${{ inputs.dry_run || 'false' }}
+          # repair-contract.md STEP 6 stamps this into the agent's own
+          # heartbeat, so the step below can tell whether THIS run already
+          # wrote one.
+          HELM_REPAIR_RUN_ID: ${{ github.run_id }}
         run: |
           set -uo pipefail
           npm install -g @anthropic-ai/claude-code@2.1.280 >/dev/null 2>&1
@@ -204,10 +208,33 @@ jobs:
           # failed Repair, not a completed one.
           [ "${DID_WORK:-false}" = "true" ] || status="failed"
           run_url="$REPO_URL/actions/runs/$RUN_ID"
+
+          # ONE ROW PER RUN. The agent writes its own, richer heartbeat
+          # (repair-contract.md STEP 6: candidates, prs_opened, ...), and this
+          # step used to add a second row for every successful run — 22 rows
+          # for 15 runs over 2026-09-09..23, so /admin/jobs double-counted
+          # Repair. When the agent's row for this run already carries the same
+          # verdict, it stands alone. A disagreement (the agent said completed
+          # but the step failed) still writes this row, so the newest row tells
+          # the truth. Only SELECT + INSERT, which is all the scoped
+          # HELM_REPAIR_DB_KEY role will grant.
+          agent_status="$(curl -sS -G "$SUPABASE_URL/rest/v1/background_job_logs" \
+            -H "apikey: $SERVICE_KEY" \
+            -H "Authorization: Bearer $SERVICE_KEY" \
+            --data-urlencode "select=status" \
+            --data-urlencode "job_type=eq.selfheal-repair" \
+            --data-urlencode "metadata->>run_id=eq.$RUN_ID" \
+            --data-urlencode "order=started_at.desc" \
+            --data-urlencode "limit=1" | jq -r '.[0].status // empty' 2>/dev/null || true)"
+          if [ "$agent_status" = "$status" ]; then
+            echo "The agent already wrote this run's heartbeat ($status); not adding a second row."
+            exit 0
+          fi
+
           jt='"job_type":"selfheal-repair"'
           body=$(printf '{%s,"status":"%s",' "$jt" "$status")
           body="$body$(printf '"error_message":"Actions run: %s",' "$run_url")"
-          body="$body$(printf '"metadata":{"runtime":"github-actions"}}')"
+          body="$body$(printf '"metadata":{"runtime":"github-actions","run_id":"%s"}}' "$RUN_ID")"
           curl -sS -X POST "$SUPABASE_URL/rest/v1/background_job_logs" \
             -H "apikey: $SERVICE_KEY" \
             -H "Authorization: Bearer $SERVICE_KEY" \

@@ -62,6 +62,62 @@ describe('GET /api/jobs/consume', () => {
     expect(body.results['coachhelm_analysis']).toEqual({ skipped: 'migration-not-applied', code: 'PGRST202' });
   });
 
+  it('makes one depth call and no reads when every queue is empty', async () => {
+    const rpc = vi.fn((fn: string) => {
+      if (fn === 'helm_jobs_depth') {
+        return Promise.resolve({
+          data: [
+            { queue: 'coachhelm_analysis', queue_length: 0 },
+            { queue: 'email_send', queue_length: '0' },
+            { queue: 'push_send', queue_length: 0 },
+          ],
+          error: null,
+        });
+      }
+      return Promise.resolve({ data: [], error: null });
+    });
+    createAdminMock.mockReturnValue({ rpc } as unknown as ReturnType<typeof createAdminClient>);
+
+    const res = await GET(req());
+    expect(res.status).toBe(200);
+    expect(rpc.mock.calls.map(([fn]) => fn)).toEqual(['helm_jobs_depth']);
+    const body = (await res.json()) as { results: Record<string, unknown> };
+    expect(body.results['email_send']).toEqual({ read: 0, acked: 0, failed: 0, deadLettered: 0 });
+  });
+
+  it('reads only the queues depth reports as non-empty, and any queue depth omits', async () => {
+    const rpc = vi.fn((fn: string, _args?: Record<string, unknown>) => {
+      if (fn === 'helm_jobs_depth') {
+        return Promise.resolve({
+          data: [
+            { queue: 'coachhelm_analysis', queue_length: 0 },
+            { queue: 'email_send', queue_length: 2 },
+          ],
+          error: null,
+        });
+      }
+      return Promise.resolve({ data: [], error: null });
+    });
+    createAdminMock.mockReturnValue({ rpc } as unknown as ReturnType<typeof createAdminClient>);
+
+    await GET(req());
+    const reads = rpc.mock.calls
+      .filter(([fn]) => fn === 'helm_jobs_read_batch')
+      .map(([, args]) => (args as { p_queue: string }).p_queue);
+    expect(reads).toEqual(['email_send', 'push_send']);
+  });
+
+  it('reads every queue when the depth call fails, so a bad gate never strands messages', async () => {
+    const rpc = vi.fn((fn: string) => {
+      if (fn === 'helm_jobs_depth') return Promise.resolve({ data: null, error: { code: '57014', message: 'timeout' } });
+      return Promise.resolve({ data: [], error: null });
+    });
+    createAdminMock.mockReturnValue({ rpc } as unknown as ReturnType<typeof createAdminClient>);
+
+    await GET(req());
+    expect(rpc.mock.calls.filter(([fn]) => fn === 'helm_jobs_read_batch')).toHaveLength(3);
+  });
+
   it('reads a batch, runs the handler, and acks on success', async () => {
     const rpc = vi.fn((fn: string, args?: Record<string, unknown>) => {
       if (fn === 'helm_jobs_read_batch') {

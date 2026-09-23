@@ -1630,6 +1630,11 @@
         "category": "services"
       },
       {
+        "id": "services:src/hooks/use-presence.ts",
+        "pattern": "src/hooks/use-presence.ts",
+        "category": "services"
+      },
+      {
         "id": "services:src/instrumentation*.ts",
         "pattern": "src/instrumentation*.ts",
         "category": "services"
@@ -8040,6 +8045,11 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/lib/supabase/__tests__/server-user-attribution.test.ts",
+          "anchor": "src/lib/admin/request-context"
+        },
+        {
+          "kind": "import_graph",
           "path": "src/lib/supabase/expect-rows.ts",
           "anchor": "src/lib/admin/emit-throttle"
         },
@@ -8062,6 +8072,11 @@
           "kind": "import_graph",
           "path": "src/lib/supabase/middleware.ts",
           "anchor": "src/lib/admin/super-admin-shared"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/supabase/server.ts",
+          "anchor": "src/lib/admin/request-context"
         }
       ]
     },
@@ -8329,6 +8344,18 @@
           "kind": "registry_glob",
           "path": "memory/registry.yml",
           "pattern": "src/app/golf/join/**"
+        }
+      ]
+    },
+    {
+      "source": "auth_onboarding_join",
+      "target": "services:src/hooks/use-presence.ts",
+      "kind": "feature_service",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/hooks/use-presence.ts"
         }
       ]
     },
@@ -16398,6 +16425,11 @@
           "kind": "feature_doc_contract",
           "path": "memory/features/observability-sentry.md",
           "anchor": "auth_onboarding_join"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/observability/observed-user-from-request.ts",
+          "anchor": "src/lib/supabase/keys.mjs"
         }
       ]
     },

@@ -233,6 +233,10 @@ export default defineConfig({
             // testable off a live connection, and it is the part that would
             // ship a wrong ledger row silently.
             'scripts/__tests__/db-apply-single-file.test.mjs',
+            // CI's generated-artifact drift gate (2026-09-23): which drift
+            // fails a PR — introduced yes; inherited from main or merge skew
+            // no. Builds a throwaway git repo per run.
+            'scripts/__tests__/pr-drift-gate.test.mjs',
             // Weekly control-plane report (A6): the pure decision functions
             // behind control-plane-weekly.yml's four hard checks (secret
             // scanning, Dependabot severity ceiling, full-history gitleaks

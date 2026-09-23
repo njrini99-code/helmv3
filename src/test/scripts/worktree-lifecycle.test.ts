@@ -53,6 +53,13 @@ import {
   WORKTREE_POLICY_KEEP,
   WORKTREE_POLICY_PARK_IF_REPRODUCIBLE,
   OPEN_PR_KEEP_DISPOSITIONS,
+  DELETE_MERGED_CONTENT,
+  effectiveDirty,
+  decideRemoval,
+  REMOVE,
+  REMOVE_DELETE_BRANCH,
+  REFUSE,
+  ALREADY_GONE,
 } from '../../../scripts/lib/worktree-lifecycle.mjs';
 
 const REPO = resolve(__dirname, '../../..');
@@ -813,8 +820,12 @@ describe('the CLI, against real worktrees', () => {
   it('--gc-branches refuses a branch that diverged after its PR merged', () => {
     git(['branch', 'agent/w5', 'main'], canonical);
     const old = git(['rev-parse', 'agent/w5'], canonical);
+    // The post-merge commit lives on the BRANCH only. (It used to be made on
+    // main and the branch fast-forwarded to it — but then main already has
+    // every change, and the content proof correctly finds nothing to lose.)
+    git(['checkout', '-q', 'agent/w5'], canonical);
     commit(canonical, 'after-merge');
-    git(['branch', '-f', 'agent/w5', 'main'], canonical);
+    git(['checkout', '-q', 'main'], canonical);
     expect(git(['rev-parse', 'agent/w5'], canonical)).not.toBe(old);
 
     writePrStub({ 'agent/w5': `903 MERGED ${old}` });
@@ -930,6 +941,87 @@ describe('the CLI, against real worktrees', () => {
     expect(r.status === 0 || r.status === 1).toBe(true);
   });
 
+  // -------------------------------------------------------------------------
+  // 2026-09-23: the three things that let 57 worktrees pile up.
+
+  it('--park removes a checkout whose only "change" is a stale .mcp.json copy', () => {
+    // Old creators copied canonical's .mcp.json over the TRACKED file. Once the
+    // tracked version moved on, the copy read as dirty forever.
+    writeFileSync(join(canonical, '.mcp.json'), '{"v":1}\n');
+    git(['add', '.mcp.json'], canonical);
+    git(['commit', '-q', '-m', 'mcp v1'], canonical);
+    writeFileSync(join(canonical, '.mcp.json'), '{"v":2}\n');
+    git(['commit', '-q', '-am', 'mcp v2'], canonical);
+    const wt = pushedWorktree('wmcp');
+    writeFileSync(join(wt, '.mcp.json'), '{"v":1}\n');
+    expect(git(['status', '--porcelain'], wt)).toContain('.mcp.json');
+
+    const out = run(['--park']);
+    expect(out).toMatch(/restoring stale copies first: \.mcp\.json/);
+    expect(git(['worktree', 'list'], canonical)).not.toContain(wt);
+    expect(git(['branch', '--list', 'agent/wmcp'], canonical)).toContain('agent/wmcp');
+  });
+
+  it('--park KEEPS a genuine .mcp.json edit — only known content is a copy', () => {
+    writeFileSync(join(canonical, '.mcp.json'), '{"v":1}\n');
+    git(['add', '.mcp.json'], canonical);
+    git(['commit', '-q', '-m', 'mcp v1'], canonical);
+    const wt = pushedWorktree('wmcp-edit');
+    writeFileSync(join(wt, '.mcp.json'), '{"authored":"here"}\n');
+
+    const out = run(['--park']);
+    expect(git(['worktree', 'list'], canonical)).toContain(wt);
+    expect(row(out, 'agent/wmcp-edit')).toMatch(/ACTIVE/);
+  });
+
+  function squashWorktree(name: string) {
+    const wt = join(tmp, name);
+    const branch = `agent/${name}`;
+    git(['worktree', 'add', '-q', '--no-track', '-b', branch, wt, 'main'], canonical);
+    mkdirSync(join(wt, '.helm'), { recursive: true });
+    writeFileSync(join(wt, '.helm/workspace.json'), JSON.stringify({ parkPolicy: 'PARK_IF_REPRODUCIBLE' }));
+    commit(wt, `${name}-a`);
+    const prHead = git(['rev-parse', 'HEAD'], wt);
+    commit(wt, `${name}-b`);
+    // Merge train: the whole branch lands in main as ONE squash commit, under a
+    // PR whose recorded head is not the local tip.
+    git(['merge', '-q', '--squash', branch], canonical);
+    git(['commit', '-q', '-m', `squash ${name}`], canonical);
+    return { wt, branch, prHead };
+  }
+
+  it('--retire retires a squash/merge-train branch whose content is already in main', () => {
+    const { wt, branch, prHead } = squashWorktree('wsq');
+    const tip = git(['rev-parse', branch], canonical);
+    expect(tip).not.toBe(prHead);
+    writePrStub({ [branch]: `906 MERGED ${prHead}` });
+
+    const out = run(['--retire']);
+    expect(row(out, branch)).toMatch(/DELETE_MERGED_CONTENT/);
+    expect(git(['worktree', 'list'], canonical)).not.toContain(wt);
+    expect(git(['branch', '--list', branch], canonical)).toBe('');
+    expect(git(['rev-parse', '--verify', `refs/tags/archive/${branch}^{}`], canonical)).toBe(tip);
+  });
+
+  it('--retire still KEEPS a merged branch with a commit main does not have', () => {
+    const { wt, branch, prHead } = squashWorktree('wsq-late');
+    commit(wt, 'late-work');
+    writePrStub({ [branch]: `907 MERGED ${prHead}` });
+
+    const out = run(['--retire']);
+    expect(row(out, branch)).toMatch(/KEEP_DIVERGED_AFTER_PR/);
+    expect(git(['worktree', 'list'], canonical)).toContain(wt);
+    expect(git(['branch', '--list', branch], canonical)).toContain(branch);
+  });
+
+  it('--branch limits the report and every action to one branch', () => {
+    pushedWorktree('wonly-a');
+    pushedWorktree('wonly-b');
+    const out = run(['--branch', 'agent/wonly-a']);
+    expect(row(out, 'agent/wonly-a')).not.toBe('');
+    expect(row(out, 'agent/wonly-b')).toBe('');
+  });
+
   it('never deletes a protected branch, whatever the PR says', () => {
     git(['branch', 'preserve/important', 'main'], canonical);
     const sha = git(['rev-parse', 'preserve/important'], canonical);
@@ -1013,5 +1105,138 @@ describe('locally-unique work is a distinct, permanent keep', () => {
       expect(AUTONOMOUS_BRANCH_VERDICTS.has(v), v).toBe(false);
     }
     expect(AUTONOMOUS_BRANCH_VERDICTS.has(DELETE_MERGED_EXACT)).toBe(true);
+  });
+});
+
+describe('2026-09-23: squash/merge-train content proof', () => {
+  const merged = {
+    branch: 'agent/x',
+    localSha: SHA_B,
+    prLookup: 'OK' as const,
+    prNumber: 906,
+    prState: 'MERGED',
+    prHeadSha: SHA_A,
+  };
+
+  it('DELETE_MERGED_CONTENT when the tip moved but main already has every change', () => {
+    const v = classifyBranch({ ...merged, contentInMain: true });
+    expect(v.verdict).toBe(DELETE_MERGED_CONTENT);
+    expect(AUTONOMOUS_BRANCH_VERDICTS.has(DELETE_MERGED_CONTENT)).toBe(true);
+  });
+
+  it('unknown or false content proof stays KEEP_DIVERGED_AFTER_PR', () => {
+    expect(classifyBranch({ ...merged, contentInMain: false }).verdict).toBe(KEEP_DIVERGED_AFTER_PR);
+    expect(classifyBranch({ ...merged, contentInMain: null }).verdict).toBe(KEEP_DIVERGED_AFTER_PR);
+  });
+
+  it('content proof needs a MERGED PR — an OPEN one is still KEEP_OPEN', () => {
+    expect(classifyBranch({ ...merged, prState: 'OPEN', contentInMain: true }).verdict).toBe(KEEP_OPEN);
+  });
+
+  it('a clean checkout of a content-merged branch is PARKABLE even unpushed', () => {
+    const v = classifyWorktree({
+      ...clean, localSha: SHA_B, remoteSha: null, upstream: null,
+      prLookup: 'OK', prNumber: 906, prState: 'MERGED', prHeadSha: SHA_A, contentInMain: true,
+    });
+    expect(v.verdict).toBe(PARKABLE);
+    expect(combineVerdicts(v.verdict, DELETE_MERGED_CONTENT).action).toBe('RETIRE');
+  });
+
+  it('content proof never overrides dirt or a live process', () => {
+    const f = { ...clean, prLookup: 'OK', prState: 'MERGED', prHeadSha: SHA_B, contentInMain: true };
+    expect(classifyWorktree({ ...f, dirtyCount: 1 }).verdict).toBe(ACTIVE);
+    expect(classifyWorktree({ ...f, hasLiveProcess: true }).verdict).toBe(ACTIVE);
+  });
+});
+
+describe('effectiveDirty — stale copies are not work', () => {
+  const known = () => true;
+  const unknown = () => false;
+
+  it('ignores an unstaged .mcp.json modification whose content is known', () => {
+    expect(effectiveDirty(' M .mcp.json', known)).toEqual({ dirtyCount: 0, ignored: ['.mcp.json'] });
+  });
+
+  it('counts .mcp.json when its content is not known — a real edit', () => {
+    expect(effectiveDirty(' M .mcp.json', unknown)).toEqual({ dirtyCount: 1, ignored: [] });
+  });
+
+  it('counts staged, untracked or other paths whatever the predicate says', () => {
+    expect(effectiveDirty('M  .mcp.json', known).dirtyCount).toBe(1);
+    expect(effectiveDirty('?? .mcp.json', known).dirtyCount).toBe(1);
+    expect(effectiveDirty(' M src/a.ts\n M .mcp.json', known)).toEqual({ dirtyCount: 1, ignored: ['.mcp.json'] });
+  });
+
+  it('unreadable status stays null, and clean stays zero', () => {
+    expect(effectiveDirty(null).dirtyCount).toBeNull();
+    expect(effectiveDirty('').dirtyCount).toBe(0);
+  });
+});
+
+describe('decideRemoval — the WorktreeRemove hook', () => {
+  const base = {
+    exists: true,
+    registered: true,
+    isCanonical: false,
+    parkPolicy: 'PARK_IF_REPRODUCIBLE',
+    dirtyCount: 0,
+    branch: 'agent/agent-a1b2',
+    localSha: SHA_A,
+    uniqueCommits: 0,
+    upstream: null,
+    remoteSha: null,
+    prLookup: 'OK' as const,
+    prState: 'NONE',
+  };
+
+  it('removes a subagent checkout with nothing unique, branch included, no archive', () => {
+    expect(decideRemoval(base)).toMatchObject({ action: REMOVE_DELETE_BRANCH, archive: false });
+  });
+
+  it('ALREADY_GONE when the directory no longer exists', () => {
+    expect(decideRemoval({ ...base, exists: false }).action).toBe(ALREADY_GONE);
+  });
+
+  it('REFUSES canonical, unregistered paths and parkPolicy KEEP', () => {
+    expect(decideRemoval({ ...base, isCanonical: true }).action).toBe(REFUSE);
+    expect(decideRemoval({ ...base, registered: false }).action).toBe(REFUSE);
+    expect(decideRemoval({ ...base, parkPolicy: 'KEEP' }).action).toBe(REFUSE);
+  });
+
+  it('REFUSES uncommitted work, and unreadable status', () => {
+    expect(decideRemoval({ ...base, dirtyCount: 2 }).reason).toMatch(/2 uncommitted/);
+    expect(decideRemoval({ ...base, dirtyCount: null }).action).toBe(REFUSE);
+  });
+
+  it('REFUSES commits that are neither pushed nor in a merged PR', () => {
+    const v = decideRemoval({ ...base, uniqueCommits: 3 });
+    expect(v.action).toBe(REFUSE);
+    expect(v.reason).toMatch(/3 commit\(s\) neither pushed nor in a merged PR/);
+    expect(decideRemoval({ ...base, uniqueCommits: 3, prLookup: 'FAILED' }).action).toBe(REFUSE);
+    expect(decideRemoval({ ...base, uniqueCommits: 3, prState: 'OPEN', prNumber: 1, prHeadSha: SHA_A }).action).toBe(REFUSE);
+  });
+
+  it('removes the checkout but keeps a pushed branch', () => {
+    const v = decideRemoval({ ...base, uniqueCommits: 3, upstream: 'origin/agent/x', remoteSha: SHA_A });
+    expect(v.action).toBe(REMOVE);
+  });
+
+  it('removes and archives-then-deletes a branch whose PR merged', () => {
+    const exact = decideRemoval({ ...base, uniqueCommits: 3, prState: 'MERGED', prNumber: 9, prHeadSha: SHA_A });
+    expect(exact).toMatchObject({ action: REMOVE_DELETE_BRANCH, archive: true });
+    const content = decideRemoval({
+      ...base, uniqueCommits: 3, prState: 'MERGED', prNumber: 9, prHeadSha: SHA_B, contentInMain: true,
+    });
+    expect(content).toMatchObject({ action: REMOVE_DELETE_BRANCH, archive: true });
+  });
+
+  it('never deletes a protected branch, and refuses one with unpushed commits', () => {
+    expect(decideRemoval({ ...base, branch: 'preserve/x' }).action).toBe(REMOVE);
+    expect(decideRemoval({ ...base, branch: 'preserve/x', uniqueCommits: 2 }).action).toBe(REFUSE);
+  });
+
+  it('a detached checkout goes only when its commit is already in main', () => {
+    expect(decideRemoval({ ...base, branch: null }).action).toBe(REMOVE);
+    expect(decideRemoval({ ...base, branch: null, uniqueCommits: 1 }).action).toBe(REFUSE);
   });
 });
