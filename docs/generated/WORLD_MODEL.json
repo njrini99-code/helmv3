@@ -13306,6 +13306,11 @@
       "kind": "feature_relation",
       "evidence": [
         {
+          "kind": "feature_doc_contract",
+          "path": "memory/features/coachhelm-ai.md",
+          "anchor": "admin_platform"
+        },
+        {
           "kind": "import_graph",
           "path": "src/app/golf/actions/coachhelm-data.ts",
           "anchor": "src/lib/supabase/admin"
@@ -13876,6 +13881,11 @@
       "target": "player_coachhelm_development",
       "kind": "feature_relation",
       "evidence": [
+        {
+          "kind": "feature_doc_contract",
+          "path": "memory/features/coachhelm-ai.md",
+          "anchor": "player_coachhelm_development"
+        },
         {
           "kind": "import_graph",
           "path": "src/app/golf/actions/insight-delivery-ranking.ts",
@@ -17822,6 +17832,11 @@
           "kind": "import_graph",
           "path": "src/lib/coachhelm/v3/generators/scrambling.ts",
           "anchor": "src/lib/golf/stat-formulas"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/metrics/distance-profile-window.ts",
+          "anchor": "src/lib/golf/date-only"
         },
         {
           "kind": "import_graph",

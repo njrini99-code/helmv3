@@ -22,6 +22,8 @@
  * Print-optimized variant lives at `/players/[playerId]/game/print`.
  */
 import type { Metadata } from 'next';
+import type { ReactNode } from 'react';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import { notFound, redirect } from 'next/navigation';
 import { isUuid } from '@/lib/utils/uuid';
 import { createClient } from '@/lib/supabase/server';
@@ -36,9 +38,62 @@ import { logServerError } from '@/lib/server-error-logger';
 import { applyInsightVisibility } from '@/lib/coachhelm/v3/insight-visibility';
 import { fairwayScope } from '@/lib/redesign/flag';
 import { computeCompositeRating } from '@/lib/coachhelm/composite-rating';
+import { isFlagEnabled } from '@/lib/flags';
+import {
+  buildRollingDistanceProfileScope,
+  describeDistanceProfileWindow,
+} from '@/lib/coachhelm/v3/metrics/distance-profile-window';
+import { loadDistanceProfile } from '@/lib/coachhelm/v3/metrics/load-distance-profile';
+import { buildDistanceProfileViewModel } from '@/components/golf/coachhelm/game-fingerprint/distance-profile/buildDistanceProfileViewModel';
+import { DistanceProfileSection } from '@/components/golf/coachhelm/game-fingerprint/distance-profile/DistanceProfileSection';
 import { PlayerDeepDiveTabs } from './PlayerDeepDiveTabs';
 import type { FairwayPlayerInsightProps } from '@/components/fairway/pages/coachhelm/FairwayPlayerInsight';
+import type { Database } from '@/lib/types/database';
 import { describeError } from '@/lib/utils/describe-error';
+
+/**
+ * Addendum §13 A7 slice 1 — best-effort load of the distance-profile
+ * surface for the Approach section. Flag-gated (`coachhelm_a7_distance_profile_surface`,
+ * default off) and isolated in its own try/catch: this is one extra panel
+ * on an already-dense page, and its failure must never take down the
+ * fingerprint/scouting spine above. Reuses the page's own SESSION-scoped
+ * `supabase` client (never an admin client) so RLS still applies exactly
+ * as it does for every other query on this page.
+ */
+export async function loadDistanceProfileAddendum(
+  playerId: string,
+  supabase: SupabaseClient<Database>,
+): Promise<ReactNode | null> {
+  try {
+    const scope = buildRollingDistanceProfileScope(playerId);
+    const results = await loadDistanceProfile(scope, { supabase });
+    const sections = buildDistanceProfileViewModel(results);
+    const windowLabel = describeDistanceProfileWindow(scope);
+    return <DistanceProfileSection sections={sections} windowLabel={windowLabel} />;
+  } catch (err) {
+    void logServerError(
+      `[player game page] distance-profile load failed for ${playerId}: ${describeError(err)}`,
+      { action: 'players.gamePage.distanceProfile', featureArea: 'coachhelm' },
+      'warning',
+    );
+    return null;
+  }
+}
+
+/**
+ * Flag gate, pulled out of the `Promise.all` array so it's directly
+ * testable: `enabled: false` must never call `loadDistanceProfileAddendum`
+ * at all (not just skip rendering its result), and `loadDistanceProfileAddendum`
+ * always resolves (never rejects) since its own try/catch already degrades a
+ * throw to `null` — this wrapper adds no new failure mode of its own.
+ */
+export function loadDistanceProfileAddendumIfEnabled(
+  enabled: boolean,
+  playerId: string,
+  supabase: SupabaseClient<Database>,
+): Promise<ReactNode | null> {
+  return enabled ? loadDistanceProfileAddendum(playerId, supabase) : Promise.resolve(null);
+}
 
 export const metadata: Metadata = {
   title: 'Game Fingerprint | Helm Golf',
@@ -193,6 +248,8 @@ export default async function PlayerGamePage({
   // Report data in parallel — ONE round trip for both tabs, so switching
   // between them client-side is instant.
   // ---------------------------------------------------------------------
+  const distanceProfileEnabled = isFlagEnabled('coachhelm_a7_distance_profile_surface');
+
   const [
     fingerprint,
     playerResult,
@@ -205,6 +262,7 @@ export default async function PlayerGamePage({
     countsRes,
     trendRes,
     trajectoryRes,
+    distanceProfileAddendum,
   ] = await Promise.all([
     getPlayerFingerprint(playerId),
 
@@ -301,6 +359,12 @@ export default async function PlayerGamePage({
       ).catch(() => undefined);
       return undefined;
     }),
+
+    // Addendum §13 A7 slice 1 — only run the load when the flag is
+    // genuinely on; `loadDistanceProfileAddendum` is already best-effort
+    // internally (its own try/catch + logServerError), so a failure here
+    // degrades to `null` (no addendum), never to a thrown page error.
+    loadDistanceProfileAddendumIfEnabled(distanceProfileEnabled, playerId, supabase),
   ]);
 
   if (!fingerprint) notFound();
@@ -512,9 +576,11 @@ export default async function PlayerGamePage({
     signalCount,
   };
 
+  const sectionAddenda = distanceProfileAddendum ? { approach: distanceProfileAddendum } : undefined;
+
   return (
     <div className={fairwayScope('min-h-full bg-canvas')}>
-      <PlayerDeepDiveTabs fingerprint={fingerprint} insight={insightProps} />
+      <PlayerDeepDiveTabs fingerprint={fingerprint} insight={insightProps} sectionAddenda={sectionAddenda} />
     </div>
   );
 }

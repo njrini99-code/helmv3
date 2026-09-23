@@ -351,3 +351,33 @@ flags:
       rule). This flag is promoted or removed based on that decision plus
       shadow-log evidence on the insufficient-evidence rate, not on a fixed
       date.
+  # Addendum §13 A7 slice 1: the Game Fingerprint page's own Approach/
+  # Scoring sections read golf_player_stats_cache with an opaque,
+  # cron-recomputed window — this surface instead loads a fresh rolling
+  # 12-month distance profile straight from A1/A2. Default off until a
+  # coach/design review of the new section lands, per the same repair-plan
+  # pattern (a new surface ships hidden, not silently live to production
+  # players' coaches).
+  - feature_id: coachhelm_a7_distance_profile_surface
+    owner: golf/coachhelm
+    purpose: >-
+      Gates whether the Game Fingerprint page's Approach section renders
+      the new distance-profile surface (buildRollingDistanceProfileScope +
+      loadDistanceProfile + DistanceProfileSection) alongside the existing
+      stats-cache-backed KPIs; default off pending a design/product review
+      of the new section's placement and copy.
+    type: experiment
+    status: active
+    created_at: "2026-09-23"
+    expires_at: null
+    default: false
+    environment:
+      production: false
+      preview: false
+      development: false
+    kill_switch_behavior: null
+    cleanup_plan: >-
+      Either promote to a permanent `release` flag once the section has
+      been reviewed and the rolling-12-month load has been checked against
+      a heavy-user roster in preview, or remove the section and its wiring
+      if the review asks for a different surface/placement instead.

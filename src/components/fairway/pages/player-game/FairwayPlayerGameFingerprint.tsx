@@ -35,7 +35,7 @@
  * serif / skeuomorphic gauges).
  * ========================================================================== */
 
-import { useCallback, useMemo, useState, useTransition } from 'react';
+import { useCallback, useMemo, useState, useTransition, type ReactNode } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
@@ -100,6 +100,15 @@ export interface FairwayPlayerGameFingerprintProps {
   /** @default 'coach' — every existing call site (the coach route) is
    *  unaffected by this prop's addition. */
   mode?: FingerprintMode;
+  /**
+   * Extra, server-built content rendered directly after a given section's
+   * own card (addendum §13 A7). Keyed by `FingerprintSectionKey` so a caller
+   * can target e.g. `approach` (A2's distance profile) or `scoring` (A3)
+   * without this component knowing anything about either surface. Omitted
+   * or `undefined` for a key renders nothing extra — every existing call
+   * site is byte-for-byte unaffected by this prop's addition.
+   */
+  sectionAddenda?: Partial<Record<FingerprintSectionKey, ReactNode>>;
 }
 
 /* ───────────────────────────────────────────────────────────────────────────
@@ -180,6 +189,7 @@ export function formatGeneratedAt(iso: string): string {
 export function FairwayPlayerGameFingerprint({
   fingerprint,
   mode = 'coach',
+  sectionAddenda,
 }: FairwayPlayerGameFingerprintProps) {
   const router = useRouter();
   const golfUser = useGolfUser();
@@ -460,15 +470,39 @@ export function FairwayPlayerGameFingerprint({
         </nav>
 
         {/* ════════════════ 3 · GAME AREAS — the six sections ═══════════════ */}
-        {orderedSections.map((section, index) => (
-          <FingerprintSection
-            key={section.key}
-            section={section}
-            index={index}
-            pendingIds={pendingIds}
-            onAction={handleAction}
-          />
-        ))}
+        {orderedSections.map((section, index) => {
+          const addendum = sectionAddenda?.[section.key];
+          // Only wrap in the extra `space-y-4` div when there is actually an
+          // addendum to append — every existing call site (no `sectionAddenda`
+          // prop, or one that omits this key) renders the exact same
+          // `<FingerprintSection>` markup as before this prop existed, not a
+          // new wrapper div around it. A prior version of this map always
+          // added the wrapper, so "byte-for-byte unaffected" was true only
+          // when compared component-for-component, not against the actual
+          // rendered DOM.
+          if (!addendum) {
+            return (
+              <FingerprintSection
+                key={section.key}
+                section={section}
+                index={index}
+                pendingIds={pendingIds}
+                onAction={handleAction}
+              />
+            );
+          }
+          return (
+            <div key={section.key} className="space-y-4">
+              <FingerprintSection
+                section={section}
+                index={index}
+                pendingIds={pendingIds}
+                onAction={handleAction}
+              />
+              {addendum}
+            </div>
+          );
+        })}
 
         {/* ════════════════ 4 · GENERATED-AT footnote ═══════════════════════ */}
         <p className="text-center font-fw-sans text-caption text-text-tertiary">
