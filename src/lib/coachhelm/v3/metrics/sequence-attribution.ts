@@ -1,27 +1,38 @@
 /**
  * Per-hole sequence attribution — pure core (addendum §13, work package A4,
  * slice 1). Depends on A1 (`context/build-hole-sequence.ts`) and the
- * existing, audited PGA-Tour strokes-gained baseline
- * (`src/lib/golf/strokes-gained.ts`'s `getExpectedStrokes` /
- * `PGA_BASELINE_DATA`, DB-synced with `public.sg_expected_strokes()` — see
- * that file's header). No new baseline is invented here.
+ * canonical, DB-synced strokes-gained engine in
+ * `src/lib/utils/golf-stats-calculator-shots.ts` (`getExpectedStrokes`,
+ * kept in sync with `public.sg_expected_strokes()`). No new baseline is
+ * invented here.
+ *
+ * `src/lib/golf/strokes-gained.ts` looks similar (same anchor values today)
+ * but is quarantined dead code — see the warning in
+ * `src/components/golf/coachhelm/round-review/shot-strokes-gained.ts` — and
+ * MUST NOT be imported for real computation.
  *
  * `attributeSequence` partitions a hole's validated shot sequence into
  * non-overlapping "events" — a `SequenceEvent` per penalty shot, per named
- * addendum §7.3 family (tee → next shot, missed-green → recovery, first
- * putt → next putt), and a residual `'other'` event for every shot that
- * doesn't fall into one of those (a green-in-regulation approach, a lay-up,
- * a hole-out putt with no earlier miss, …). Every shot on a complete hole
+ * addendum §7.3 family (tee → next shot, missed-green → recovery chain,
+ * first putt, putting sequence after the first), and a residual `'other'`
+ * event for every shot that doesn't fall into one of those (a
+ * green-in-regulation approach, a lay-up, …). Every shot on a complete hole
  * belongs to EXACTLY one event — see `sequence-attribution.test.ts`'s
  * no-double-count check — so summing every event's `measuredContribution`
  * telescopes to `expectedStrokesAtStart - hole.total_strokes` (addendum
  * §7.2's conservation requirement) whenever every event resolves one.
  *
+ * This telescoping assumes a shot's `lie_after` matches the NEXT shot's own
+ * `lie_before` (continuity of physical state across the gap between two
+ * recorded rows). That continuity is assumed, not independently validated
+ * here — a data-entry error that disagrees between the two rows would not
+ * be caught by this module.
+ *
  * Two kinds of output, kept in separate fields per the addendum's explicit
  * warning against conflating them (§7.2, §7.4):
  *
  *   - `measuredContribution` — a strokes-gained-style number computed from
- *     the audited baseline. `null` when the group's starting or ending
+ *     the canonical baseline. `null` when the group's starting or ending
  *     (lie, distance) does not resolve against it (`baselineGap` says why).
  *     Never guessed from a partial state.
  *   - `heuristicScore` — populated ONLY when `measuredContribution` is
@@ -33,6 +44,13 @@
  *     coefficient; it reports the raw distance and lets a later slice
  *     (hypothesis-policy.ts, A5) decide what a "large" leave means.
  *
+ * This module deliberately does NOT replicate
+ * `calculateStrokesGainedForShot`'s fallback estimation of a missing
+ * after-distance (~3ft for an unmeasured putt miss, ~20ft for an
+ * unmeasured green-hit proximity) — a missing distance here is always
+ * reported as a `baselineGap`, never a guessed number, consistent with the
+ * anti-false-precision stance above.
+ *
  * A hole `buildHoleSequence` reports incomplete is fully SUPPRESSED here —
  * no events, no total — per this slice's assignment ("never do complete-
  * hole attribution on a partial sequence"). `lostStrokesVsPar` is reported
@@ -43,13 +61,15 @@
  * unavailable", §14.1).
  *
  * `attributeSequence` operates on ONE hole. Rolling per-hole events up into
- * a scope-wide, `MetricResult`-shaped aggregate (numerator/denominator/
- * status/interval across every hole in an `AnalysisScope`) is a later
- * slice's job — this module is intentionally not wired into
- * `v2/orchestrator.ts` or any composite (slice 2).
+ * a scope-wide aggregate (numerator/denominator/status/interval across
+ * every hole in an `AnalysisScope`) is PLANNED for a later slice (slice 2),
+ * not built yet — this module is intentionally not wired into
+ * `v2/orchestrator.ts` or any composite. Slice 2 should consume the shared
+ * `MetricResult` type landing via #1990's `metrics/types.ts`; that type
+ * does not exist on `main` yet and nothing in this module depends on it.
  */
 
-import { getExpectedStrokes, type LieType } from '@/lib/golf/strokes-gained';
+import { getExpectedStrokes, isGreenHit } from '@/lib/utils/golf-stats-calculator-shots';
 import { buildHoleSequence } from '../context/build-hole-sequence';
 import type { AnalysisScope, HoleContext, ShotFact } from '../context/types';
 
@@ -66,18 +86,25 @@ export type SequenceEventKind =
   | 'tee_to_next'
   | 'approach_to_recovery'
   | 'first_putt_to_next_putt'
+  | 'putting_sequence'
   | 'penalty'
   | 'other';
 
-export type BaselineGapReason = 'unresolved_lie' | 'missing_distance';
+/** Why an event's `measuredContribution` came back `null`. `missing_lie` —
+ *  neither the shot's own `lie_before`/`lie_after` nor (on the after side)
+ *  `result` says what the lie was. `missing_distance` — the distance itself
+ *  was never recorded. An UNMAPPED lie string (`'water'`, `'recovery'`,
+ *  `'other'`, anything `getExpectedStrokes` doesn't recognize) is NOT a gap
+ *  — it resolves through the fairway table, matching
+ *  `public.sg_expected_strokes()`'s ELSE branch. */
+export type BaselineGapReason = 'missing_lie' | 'missing_distance';
 
 export interface SequenceEvent {
   kind: SequenceEventKind;
-  /** `shot_number`s this event covers, in hole order (1 for every kind
-   *  except `approach_to_recovery` and a 2-putt `first_putt_to_next_putt`,
-   *  which cover 2). A `shot_number` missing from the sequence (should not
-   *  happen on a `complete` hole — `buildHoleSequence` rejects that) is
-   *  simply omitted rather than coerced. */
+  /** `shot_number`s this event covers, in hole order. A `shot_number`
+   *  missing from the sequence (should not happen on a `complete` hole —
+   *  `buildHoleSequence` rejects that) is simply omitted rather than
+   *  coerced. */
   shotNumbers: number[];
   isPenalty: boolean;
   /** See the module doc comment. */
@@ -113,50 +140,51 @@ export interface SequenceAttributionResult {
   exclusions: Partial<Record<BaselineGapReason, number>>;
 }
 
-/** `golf_shots` lie strings this module can resolve to a strokes-gained
- *  `LieType`. `'fringe'` counts as `'fairway'` (mirrors
- *  `approach-plausibility.ts`'s `APPROACH_LIES` — "a fairway-lie attempt
- *  that catches the fringe was still an approach into the green"); `'sand'`
- *  and `'bunker'` are the same lie under two spellings. Anything else
- *  (`'other'`, `'hole'`, `null`, an unrecognized string) resolves to `null`
- *  — never guessed. */
-function toLieType(lie: string | null): LieType | null {
-  switch ((lie ?? '').toLowerCase()) {
-    case 'tee':
-      return 'tee';
-    case 'fairway':
-    case 'fringe':
-      return 'fairway';
-    case 'rough':
-      return 'rough';
-    case 'sand':
-    case 'bunker':
-      return 'sand';
-    case 'green':
-      return 'green';
-    default:
-      return null;
-  }
-}
+type EndpointResolution = { readonly ok: true; readonly value: number } | {
+  readonly ok: false;
+  readonly gap: BaselineGapReason;
+};
 
 /**
- * Expected strokes to hole out from a normalized (feet) shot state. `0` feet
- * is always "holed" (expected strokes `0`) regardless of the recorded lie
- * string — a chip-in's `lie_after` is often `'hole'`, which `toLieType`
- * does not recognize, and this check runs before that lookup so a genuine
- * zero-distance state is never excluded for want of a lie label.
+ * Resolve one (lie, distance-in-feet) state to an expected-strokes value via
+ * the canonical engine.
  *
- * `getExpectedStrokes` takes YARDS for every lie, including `'green'` (it
- * converts internally when `lie === 'green'`) — `ShotFact` distances are
- * canonicalized to FEET (A1), so this always converts back to yards before
- * calling it.
+ * Order matters: a missing DISTANCE is checked first (nothing can be
+ * computed without one, regardless of lie), then a recorded ZERO distance
+ * short-circuits to `0` outright — `getExpectedStrokes` cannot do this
+ * itself, because the fairway/rough/sand tables have no `0` anchor and
+ * would instead clamp to their smallest anchor (e.g. a "holed from the
+ * fairway" chip-in would otherwise look like a 20-yard fairway shot). Only
+ * once both of those are ruled out is a missing LIE treated as a gap: the
+ * canonical `getExpectedStrokes(null, ...)` returns `0` for a null lie
+ * (its own defensive default for a same-row estimate), which this module
+ * must not inherit — a 400-yard shot with no recorded lie is missing data,
+ * not "already holed".
  */
-function expectedStrokesFeet(lie: string | null, distanceFeet: number | null): number | null {
-  if (distanceFeet === null) return null;
-  if (distanceFeet === 0) return 0;
-  const lieType = toLieType(lie);
-  if (lieType === null) return null;
-  return getExpectedStrokes(lieType, distanceFeet / FEET_PER_YARD);
+function resolveEndpoint(lie: string | null, distanceFeet: number | null): EndpointResolution {
+  if (distanceFeet === null) return { ok: false, gap: 'missing_distance' };
+  if (distanceFeet === 0) return { ok: true, value: 0 };
+  if (lie === null) return { ok: false, gap: 'missing_lie' };
+  if (lie === 'green') {
+    // On the green, pass distanceFeet straight through — no feet→yards
+    // round trip. `distanceYards` is unused by getExpectedStrokes' green
+    // branch, so 0 is a fine placeholder.
+    return { ok: true, value: getExpectedStrokes('green', 0, distanceFeet) };
+  }
+  return { ok: true, value: getExpectedStrokes(lie, distanceFeet / FEET_PER_YARD) };
+}
+
+function failureReason(resolution: EndpointResolution): BaselineGapReason | null {
+  return resolution.ok ? null : resolution.gap;
+}
+
+/** The lie a shot ENDED in, deriving from `result` when `lie_after` itself
+ *  is not recorded — mirrors `calculateStrokesGainedForShot`'s own
+ *  `lie_after || (isGreenHit(result) ? 'green' : result)` derivation, so
+ *  this module doesn't report a spurious `missing_lie` gap in a case the
+ *  canonical engine would have resolved from `result` alone. */
+function endingLie(shot: ShotFact): string | null {
+  return shot.lie_after ?? (isGreenHit(shot.result) ? 'green' : shot.result);
 }
 
 /**
@@ -179,9 +207,11 @@ function isGreenAttempt(shot: ShotFact, hole: HoleContext): boolean {
   return shot.shot_type === 'tee' && hole.par === 3;
 }
 
-/** Did this green-attempt shot miss? Mirrors `engine/shot-source.ts`'s own
- *  reached-green definition (`result` in {`green`,`hole`,`gir`}, or
- *  `lie_after === 'green'` as a fallback when `result` doesn't say). */
+/** Did this shot miss the green (or fail to hole out)? Mirrors
+ *  `engine/shot-source.ts`'s own reached-green definition (`result` in
+ *  {`green`,`hole`,`gir`}, or `lie_after === 'green'` as a fallback), plus
+ *  `putt_made` for a hole-out that isn't reflected in `result`. Used both to
+ *  trigger a recovery chain and to decide when one ends. */
 function missedGreen(shot: ShotFact): boolean {
   if (shot.putt_made === true) return false;
   if (shot.result !== null && GREEN_FINDING_RESULTS.has(shot.result)) return false;
@@ -192,29 +222,24 @@ function missedGreen(shot: ShotFact): boolean {
 function buildEvent(kind: SequenceEventKind, group: readonly ShotFact[]): SequenceEvent {
   const first = group[0]!;
   const last = group[group.length - 1]!;
-  const before = expectedStrokesFeet(first.lie_before, first.distance_to_hole_before_feet);
-  const after = expectedStrokesFeet(last.lie_after, last.distance_to_hole_after_feet);
-  const measuredContribution =
-    before !== null && after !== null ? before - after - group.length : null;
+  const before = resolveEndpoint(first.lie_before, first.distance_to_hole_before_feet);
+  const after = resolveEndpoint(endingLie(last), last.distance_to_hole_after_feet);
 
+  let measuredContribution: number | null = null;
   let baselineGap: BaselineGapReason | null = null;
   let heuristicScore: number | null = null;
-  if (measuredContribution === null) {
-    // Diagnose which endpoint failed to resolve, preferring to name a
-    // missing measurement over an unresolved lie when both are absent (a
-    // `null` distance is the more specific data-quality problem).
-    const beforeMissingDistance = first.distance_to_hole_before_feet === null;
-    const afterMissingDistance = last.distance_to_hole_after_feet === null;
-    baselineGap =
-      beforeMissingDistance || afterMissingDistance ? 'missing_distance' : 'unresolved_lie';
+  if (before.ok && after.ok) {
+    measuredContribution = before.value - after.value - group.length;
+  } else {
+    // Report whichever endpoint failed; when both did, the BEFORE endpoint's
+    // reason wins (it's the one that blocks computing anything at all).
+    baselineGap = failureReason(before) ?? failureReason(after);
     heuristicScore = last.distance_to_hole_after_feet;
   }
 
   return {
     kind,
-    shotNumbers: group
-      .map((s) => s.shot_number)
-      .filter((n): n is number => n !== null),
+    shotNumbers: group.map((s) => s.shot_number).filter((n): n is number => n !== null),
     isPenalty: group.some((s) => s.is_penalty),
     measuredContribution,
     heuristicScore,
@@ -250,7 +275,6 @@ export function attributeSequence(
   let i = 0;
   while (i < shots.length) {
     const shot = shots[i]!;
-    const next = shots[i + 1];
 
     if (shot.is_penalty) {
       events.push(buildEvent('penalty', [shot]));
@@ -266,41 +290,60 @@ export function attributeSequence(
       continue;
     }
 
-    // View 2: missed green -> recovery. Pairs the miss with the very next
-    // shot, structurally — never on an intent tag, which is 'unknown' for
-    // almost every real shot (A1 doc comment, types.ts). Does not pair
-    // across a penalty: a penalty stays its own explicit event (never
-    // charged twice), so the miss stands alone when the next shot is one.
+    // View 2: missed green -> recovery, CHAINED. Absorbs every consecutive
+    // non-penalty follow-up shot ("repeated failed recovery", addendum
+    // §7.3) until one reaches the green (inclusive — that shot resolved the
+    // miss) or a penalty intervenes (exclusive — a penalty always stays its
+    // own explicit event, never folded into this chain; the hole is
+    // guaranteed to terminate by holing out, so the loop below cannot run
+    // past the end of a complete sequence without hitting either stop
+    // condition). Only triggered by an approach or a par-3 tee shot; a
+    // drive that finishes greenside followed by chip attempts is not
+    // covered here and falls through to individual `'other'` events.
     if (isGreenAttempt(shot, hole) && missedGreen(shot)) {
-      if (next && !next.is_penalty) {
-        events.push(buildEvent('approach_to_recovery', [shot, next]));
-        i += 2;
-        continue;
+      const chain: ShotFact[] = [shot];
+      let j = i + 1;
+      while (j < shots.length) {
+        const candidate = shots[j]!;
+        if (candidate.is_penalty) break;
+        chain.push(candidate);
+        if (!missedGreen(candidate)) break;
+        j += 1;
       }
-      events.push(buildEvent('other', [shot]));
-      i += 1;
+      events.push(buildEvent('approach_to_recovery', chain));
+      i += chain.length;
       continue;
     }
 
-    // View 3: first putt -> next putt. Only the FIRST putt encountered on
-    // the hole; a hole-out on the first putt still gets this kind (a
-    // single-shot group) so first-putt performance is always identifiable,
-    // matching addendum §7.3's family even when there is no three-putt.
-    if (shot.shot_type === 'putting' && !firstPuttSeen) {
-      firstPuttSeen = true;
-      if (next && next.shot_type === 'putting' && !next.is_penalty) {
-        events.push(buildEvent('first_putt_to_next_putt', [shot, next]));
-        i += 2;
+    if (shot.shot_type === 'putting') {
+      // View 3a: the first putt encountered on the hole, always its own
+      // singleton event — a hole-out on the first putt still gets this
+      // kind, so first-putt performance is always identifiable even when
+      // there is no second putt.
+      if (!firstPuttSeen) {
+        firstPuttSeen = true;
+        events.push(buildEvent('first_putt_to_next_putt', [shot]));
+        i += 1;
         continue;
       }
-      events.push(buildEvent('first_putt_to_next_putt', [shot]));
-      i += 1;
+      // View 3b: putting_sequence — every putt after the first, chained as
+      // one group. Covers a clean 2-putt's second putt alone, and a
+      // 3-putt's (or worse) second-and-every-later putt together, instead
+      // of dropping the third putt into `'other'`.
+      const chain: ShotFact[] = [shot];
+      let j = i + 1;
+      while (j < shots.length && shots[j]!.shot_type === 'putting' && !shots[j]!.is_penalty) {
+        chain.push(shots[j]!);
+        j += 1;
+      }
+      events.push(buildEvent('putting_sequence', chain));
+      i += chain.length;
       continue;
     }
 
-    // Every other shot (green-in-regulation approach, a lay-up, a later
-    // putt, an around-green shot with no earlier miss, …) — still gets its
-    // own explicit event so nothing is dropped from the partition.
+    // Every other shot (green-in-regulation approach, a lay-up, an
+    // around-green shot with no earlier miss, …) — still gets its own
+    // explicit event so nothing is dropped from the partition.
     events.push(buildEvent('other', [shot]));
     i += 1;
   }

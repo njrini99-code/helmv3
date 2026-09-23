@@ -2,16 +2,20 @@
  * Pure-core tests for `attributeSequence` (addendum §13, work package A4,
  * slice 1). Reuses the A0 counterexample fixtures where they already cover
  * the case (`explicitPenaltyPair`, `incompleteShotSequence`, `par5Layup`,
- * `par3TeeGreenAttempt`) and adds one new fixture purpose-built to exercise
- * all three named §7.3 views plus the conservation identity in a single
- * hole. No DB, no adapters.
+ * `par3TeeGreenAttempt`, `aroundGreenHoleOut`) and adds fixtures purpose-
+ * built to exercise all three named §7.3 views (including their chained
+ * forms — repeated recovery shots, a 3-putt's third putt), the conservation
+ * identity, and the canonical baseline's exact behavior (green-distance
+ * anchors, the unmapped-lie fairway fallback, missing-lie vs.
+ * missing-distance gaps). No DB, no adapters.
  */
 import { describe, it, expect } from 'vitest';
-import { getExpectedStrokes } from '@/lib/golf/strokes-gained';
+import { getExpectedStrokes } from '@/lib/utils/golf-stats-calculator-shots';
 import { normalizeShot, type RawShotInput } from '@/lib/coachhelm/v3/context/normalize-shot';
 import type { HoleContext, ShotFact } from '@/lib/coachhelm/v3/context/types';
 import { attributeSequence } from '@/lib/coachhelm/v3/metrics/sequence-attribution';
 import {
+  aroundGreenHoleOut,
   explicitPenaltyPair,
   incompleteShotSequence,
   par3TeeGreenAttempt,
@@ -269,5 +273,569 @@ describe('attributeSequence — a par-3 tee shot is the green attempt, not a tee
     expect(teeEvent!.kind).not.toBe('tee_to_next');
     expect(teeEvent!.kind).not.toBe('approach_to_recovery'); // it found the green
     expect(teeEvent!.kind).toBe('other');
+  });
+});
+
+describe('attributeSequence — a chip-in holes out from off the green (aroundGreenHoleOut)', () => {
+  it('absorbs the chip-in into the same approach_to_recovery chain as the miss', () => {
+    const hole = aroundGreenHoleOut.holes[0]!;
+    const facts = factsFor(aroundGreenHoleOut.rawShots);
+    const result = attributeSequence(facts, hole, SCOPE);
+
+    expect(result.status).toBe('attributed');
+    expect(result.events.map((e) => e.kind)).toEqual(['tee_to_next', 'approach_to_recovery']);
+    expect(result.events.map((e) => e.shotNumbers)).toEqual([[1], [2, 3]]);
+    assertPartitionsAllShots(result.events, hole);
+
+    // No putt was ever recorded (the fixture's whole point) — nothing in
+    // the partition should be a putting kind.
+    expect(result.events.some((e) => e.kind === 'first_putt_to_next_putt')).toBe(false);
+    expect(result.events.some((e) => e.kind === 'putting_sequence')).toBe(false);
+
+    const expectedStart = getExpectedStrokes('tee', 380);
+    expect(result.totalMeasuredContribution).not.toBeNull();
+    expect(result.totalMeasuredContribution!).toBeCloseTo(expectedStart - hole.total_strokes, 10);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Hole-in-one: a single tee shot that holes out directly on a par 3.
+// ---------------------------------------------------------------------------
+const HOLE_IN_ONE_HOLE: HoleContext = {
+  round_id: 'round-ace',
+  course_id: 'course-ace',
+  hole_number: 6,
+  par: 3,
+  total_strokes: 1,
+  penalty_strokes: 0,
+  putts: 0,
+  gir: true,
+};
+const HOLE_IN_ONE_RAW_SHOTS: RawShotInput[] = [
+  {
+    round_id: 'round-ace',
+    hole_number: 6,
+    shot_number: 1,
+    shot_type: 'tee',
+    club_type: 'non_driver',
+    distance_to_hole_before: 175,
+    distance_unit_before: 'yards',
+    distance_to_hole_after: 0,
+    distance_unit_after: 'feet',
+    lie_before: 'tee',
+    lie_after: 'hole',
+    result: 'hole',
+    is_penalty: false,
+    putt_made: null,
+    intent: 'go_for_green',
+    observed_at: '2026-07-10T09:00:00.000Z',
+  },
+];
+
+describe('attributeSequence — a hole-in-one is a single, fully resolved event', () => {
+  it('does not require a second shot for the partition or the conservation identity', () => {
+    const facts = factsFor(HOLE_IN_ONE_RAW_SHOTS);
+    const result = attributeSequence(facts, HOLE_IN_ONE_HOLE, SCOPE);
+
+    expect(result.status).toBe('attributed');
+    expect(result.events).toHaveLength(1);
+    expect(result.events[0]!.shotNumbers).toEqual([1]);
+    expect(result.events[0]!.measuredContribution).not.toBeNull();
+    expect(result.events[0]!.baselineGap).toBeNull();
+    assertPartitionsAllShots(result.events, HOLE_IN_ONE_HOLE);
+
+    const expectedStart = getExpectedStrokes('tee', 175);
+    expect(result.totalMeasuredContribution).toBeCloseTo(expectedStart - 1, 10);
+    expect(result.lostStrokesVsPar).toBe(-2);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// A genuine 3-putt: putt 1 leaves a mid-range putt, putt 2 misses short,
+// putt 3 holes. The approach's own BEFORE lie is an unmapped string
+// ('other') to also prove the canonical engine's fairway fallback resolves
+// it instead of reporting a gap.
+// ---------------------------------------------------------------------------
+const THREE_PUTT_HOLE: HoleContext = {
+  round_id: 'round-3putt',
+  course_id: 'course-3putt',
+  hole_number: 11,
+  par: 4,
+  total_strokes: 5,
+  penalty_strokes: 0,
+  putts: 3,
+  gir: true,
+};
+const THREE_PUTT_RAW_SHOTS: RawShotInput[] = [
+  {
+    round_id: 'round-3putt',
+    hole_number: 11,
+    shot_number: 1,
+    shot_type: 'tee',
+    club_type: 'driver',
+    distance_to_hole_before: 400,
+    distance_unit_before: 'yards',
+    distance_to_hole_after: 150,
+    distance_unit_after: 'yards',
+    lie_before: 'tee',
+    lie_after: 'other',
+    result: 'other',
+    is_penalty: false,
+    putt_made: null,
+    observed_at: '2026-07-12T13:00:00.000Z',
+  },
+  {
+    round_id: 'round-3putt',
+    hole_number: 11,
+    shot_number: 2,
+    shot_type: 'approach',
+    club_type: 'non_driver',
+    // Unmapped lie ('other', not 'fairway'/'rough'/'sand'/'tee'/'green') —
+    // must resolve via the canonical fairway fallback, not a baselineGap.
+    distance_to_hole_before: 150,
+    distance_unit_before: 'yards',
+    distance_to_hole_after: 10,
+    distance_unit_after: 'feet',
+    lie_before: 'other',
+    lie_after: 'green',
+    result: 'green',
+    is_penalty: false,
+    putt_made: null,
+    intent: 'go_for_green',
+    observed_at: '2026-07-12T13:03:00.000Z',
+  },
+  {
+    round_id: 'round-3putt',
+    hole_number: 11,
+    shot_number: 3,
+    shot_type: 'putting',
+    club_type: 'putter',
+    distance_to_hole_before: 10,
+    distance_unit_before: 'feet',
+    distance_to_hole_after: 6,
+    distance_unit_after: 'feet',
+    lie_before: 'green',
+    lie_after: 'green',
+    result: null,
+    is_penalty: false,
+    putt_made: null,
+    intent: 'putt',
+    observed_at: '2026-07-12T13:05:00.000Z',
+  },
+  {
+    round_id: 'round-3putt',
+    hole_number: 11,
+    shot_number: 4,
+    shot_type: 'putting',
+    club_type: 'putter',
+    distance_to_hole_before: 6,
+    distance_unit_before: 'feet',
+    distance_to_hole_after: 2,
+    distance_unit_after: 'feet',
+    lie_before: 'green',
+    lie_after: 'green',
+    result: null,
+    is_penalty: false,
+    putt_made: null,
+    intent: 'putt',
+    observed_at: '2026-07-12T13:06:00.000Z',
+  },
+  {
+    round_id: 'round-3putt',
+    hole_number: 11,
+    shot_number: 5,
+    shot_type: 'putting',
+    club_type: 'putter',
+    distance_to_hole_before: 2,
+    distance_unit_before: 'feet',
+    distance_to_hole_after: 0,
+    distance_unit_after: 'feet',
+    lie_before: 'green',
+    lie_after: 'hole',
+    result: 'hole',
+    is_penalty: false,
+    putt_made: true,
+    intent: 'putt',
+    observed_at: '2026-07-12T13:07:00.000Z',
+  },
+];
+
+describe('attributeSequence — a genuine 3-putt puts the third putt in putting_sequence, not other', () => {
+  it('gives the first putt its own event and chains putts 2+3 into one putting_sequence', () => {
+    const facts = factsFor(THREE_PUTT_RAW_SHOTS);
+    const result = attributeSequence(facts, THREE_PUTT_HOLE, SCOPE);
+
+    expect(result.status).toBe('attributed');
+    expect(result.events.map((e) => e.kind)).toEqual([
+      'tee_to_next',
+      'other',
+      'first_putt_to_next_putt',
+      'putting_sequence',
+    ]);
+    expect(result.events.map((e) => e.shotNumbers)).toEqual([[1], [2], [3], [4, 5]]);
+    assertPartitionsAllShots(result.events, THREE_PUTT_HOLE);
+
+    // Shot 2's unmapped 'other' before-lie still resolves (fairway fallback).
+    const approachEvent = result.events.find((e) => e.shotNumbers.includes(2))!;
+    expect(approachEvent.measuredContribution).not.toBeNull();
+    expect(approachEvent.baselineGap).toBeNull();
+
+    for (const event of result.events) {
+      expect(event.measuredContribution).not.toBeNull();
+    }
+    const expectedStart = getExpectedStrokes('tee', 400);
+    expect(result.totalMeasuredContribution).toBeCloseTo(
+      expectedStart - THREE_PUTT_HOLE.total_strokes,
+      10,
+    );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Repeated failed recovery: TWO recovery attempts (not just one) before the
+// ball finally reaches the green. Proves the approach_to_recovery chain
+// extends past a single follow-up shot instead of dropping the second
+// recovery attempt into 'other'.
+// ---------------------------------------------------------------------------
+const REPEATED_RECOVERY_HOLE: HoleContext = {
+  round_id: 'round-recovery',
+  course_id: 'course-recovery',
+  hole_number: 14,
+  par: 4,
+  total_strokes: 5,
+  penalty_strokes: 0,
+  putts: 1,
+  gir: false,
+};
+const REPEATED_RECOVERY_RAW_SHOTS: RawShotInput[] = [
+  {
+    round_id: 'round-recovery',
+    hole_number: 14,
+    shot_number: 1,
+    shot_type: 'tee',
+    club_type: 'driver',
+    distance_to_hole_before: 380,
+    distance_unit_before: 'yards',
+    distance_to_hole_after: 150,
+    distance_unit_after: 'yards',
+    lie_before: 'tee',
+    lie_after: 'fairway',
+    result: 'fairway',
+    is_penalty: false,
+    putt_made: null,
+    observed_at: '2026-07-15T08:00:00.000Z',
+  },
+  {
+    round_id: 'round-recovery',
+    hole_number: 14,
+    shot_number: 2,
+    shot_type: 'approach',
+    club_type: 'non_driver',
+    distance_to_hole_before: 150,
+    distance_unit_before: 'yards',
+    distance_to_hole_after: 75,
+    distance_unit_after: 'feet',
+    lie_before: 'fairway',
+    lie_after: 'rough',
+    result: 'rough',
+    is_penalty: false,
+    putt_made: null,
+    intent: 'go_for_green',
+    observed_at: '2026-07-15T08:03:00.000Z',
+  },
+  {
+    round_id: 'round-recovery',
+    hole_number: 14,
+    shot_number: 3,
+    shot_type: 'around_green',
+    club_type: 'non_driver',
+    // First recovery attempt — still short of the green.
+    distance_to_hole_before: 75,
+    distance_unit_before: 'feet',
+    distance_to_hole_after: 30,
+    distance_unit_after: 'feet',
+    lie_before: 'rough',
+    lie_after: 'rough',
+    result: 'rough',
+    is_penalty: false,
+    putt_made: null,
+    observed_at: '2026-07-15T08:05:00.000Z',
+  },
+  {
+    round_id: 'round-recovery',
+    hole_number: 14,
+    shot_number: 4,
+    shot_type: 'around_green',
+    club_type: 'non_driver',
+    // Second recovery attempt — finally reaches the green.
+    distance_to_hole_before: 30,
+    distance_unit_before: 'feet',
+    distance_to_hole_after: 3,
+    distance_unit_after: 'feet',
+    lie_before: 'rough',
+    lie_after: 'green',
+    result: 'green',
+    is_penalty: false,
+    putt_made: null,
+    observed_at: '2026-07-15T08:07:00.000Z',
+  },
+  {
+    round_id: 'round-recovery',
+    hole_number: 14,
+    shot_number: 5,
+    shot_type: 'putting',
+    club_type: 'putter',
+    distance_to_hole_before: 3,
+    distance_unit_before: 'feet',
+    distance_to_hole_after: 0,
+    distance_unit_after: 'feet',
+    lie_before: 'green',
+    lie_after: 'hole',
+    result: 'hole',
+    is_penalty: false,
+    putt_made: true,
+    intent: 'putt',
+    observed_at: '2026-07-15T08:08:00.000Z',
+  },
+];
+
+describe('attributeSequence — repeated recovery shots chain into one approach_to_recovery event', () => {
+  it('absorbs both recovery attempts, not just the first, into the same chain', () => {
+    const facts = factsFor(REPEATED_RECOVERY_RAW_SHOTS);
+    const result = attributeSequence(facts, REPEATED_RECOVERY_HOLE, SCOPE);
+
+    expect(result.status).toBe('attributed');
+    expect(result.events.map((e) => e.kind)).toEqual([
+      'tee_to_next',
+      'approach_to_recovery',
+      'first_putt_to_next_putt',
+    ]);
+    // The chain covers the miss (2) AND both recovery attempts (3, 4) — not
+    // just [2, 3] with shot 4 dropped into 'other'.
+    expect(result.events.map((e) => e.shotNumbers)).toEqual([[1], [2, 3, 4], [5]]);
+    assertPartitionsAllShots(result.events, REPEATED_RECOVERY_HOLE);
+
+    for (const event of result.events) {
+      expect(event.measuredContribution).not.toBeNull();
+    }
+    const expectedStart = getExpectedStrokes('tee', 380);
+    expect(result.totalMeasuredContribution).toBeCloseTo(
+      expectedStart - REPEATED_RECOVERY_HOLE.total_strokes,
+      10,
+    );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Stroke-and-distance OB re-tee: the original tee shot is itself the
+// penalty (before and after both the SAME tee distance — "stroke and
+// distance" replays from the identical spot), followed by a fresh, distinct
+// tee shot from the same marker. Proves the penalty resolves to a clean,
+// fully-measured contribution (not just the null/missing-data path
+// explicitPenaltyPair already covers) and that the re-tee swing is its own
+// tee_to_next event, never double-counted with the penalty.
+// ---------------------------------------------------------------------------
+const OB_RETEE_HOLE: HoleContext = {
+  round_id: 'round-ob-retee',
+  course_id: 'course-ob-retee',
+  hole_number: 16,
+  par: 4,
+  total_strokes: 4,
+  penalty_strokes: 1,
+  putts: 1,
+  gir: false,
+};
+const OB_RETEE_RAW_SHOTS: RawShotInput[] = [
+  {
+    round_id: 'round-ob-retee',
+    hole_number: 16,
+    shot_number: 1,
+    shot_type: 'tee',
+    club_type: 'driver',
+    // Stroke and distance: the ball is OB, so the replay is from the exact
+    // same tee position — before and after are the same distance/lie.
+    distance_to_hole_before: 400,
+    distance_unit_before: 'yards',
+    distance_to_hole_after: 400,
+    distance_unit_after: 'yards',
+    lie_before: 'tee',
+    lie_after: 'tee',
+    result: null,
+    is_penalty: true,
+    putt_made: null,
+    observed_at: '2026-07-18T07:00:00.000Z',
+  },
+  {
+    round_id: 'round-ob-retee',
+    hole_number: 16,
+    shot_number: 2,
+    shot_type: 'tee',
+    club_type: 'driver',
+    distance_to_hole_before: 400,
+    distance_unit_before: 'yards',
+    distance_to_hole_after: 150,
+    distance_unit_after: 'yards',
+    lie_before: 'tee',
+    lie_after: 'fairway',
+    result: 'fairway',
+    is_penalty: false,
+    putt_made: null,
+    observed_at: '2026-07-18T07:01:00.000Z',
+  },
+  {
+    round_id: 'round-ob-retee',
+    hole_number: 16,
+    shot_number: 3,
+    shot_type: 'approach',
+    club_type: 'non_driver',
+    distance_to_hole_before: 150,
+    distance_unit_before: 'yards',
+    distance_to_hole_after: 10,
+    distance_unit_after: 'feet',
+    lie_before: 'fairway',
+    lie_after: 'green',
+    result: 'green',
+    is_penalty: false,
+    putt_made: null,
+    intent: 'go_for_green',
+    observed_at: '2026-07-18T07:04:00.000Z',
+  },
+  {
+    round_id: 'round-ob-retee',
+    hole_number: 16,
+    shot_number: 4,
+    shot_type: 'putting',
+    club_type: 'putter',
+    distance_to_hole_before: 10,
+    distance_unit_before: 'feet',
+    distance_to_hole_after: 0,
+    distance_unit_after: 'feet',
+    lie_before: 'green',
+    lie_after: 'hole',
+    result: 'hole',
+    is_penalty: false,
+    putt_made: true,
+    intent: 'putt',
+    observed_at: '2026-07-18T07:06:00.000Z',
+  },
+];
+
+describe('attributeSequence — stroke-and-distance OB re-tee', () => {
+  it('resolves the penalty to a clean -1 and gives the re-tee its own tee_to_next event', () => {
+    const facts = factsFor(OB_RETEE_RAW_SHOTS);
+    const result = attributeSequence(facts, OB_RETEE_HOLE, SCOPE);
+
+    expect(result.status).toBe('attributed');
+    expect(result.events.map((e) => e.kind)).toEqual([
+      'penalty',
+      'tee_to_next',
+      'other',
+      'first_putt_to_next_putt',
+    ]);
+    expect(result.events.map((e) => e.shotNumbers)).toEqual([[1], [2], [3], [4]]);
+    assertPartitionsAllShots(result.events, OB_RETEE_HOLE);
+
+    const penaltyEvent = result.events[0]!;
+    expect(penaltyEvent.isPenalty).toBe(true);
+    // Same before/after distance and lie — expected-strokes cancels exactly,
+    // leaving just the -1 stroke charge. Not the null/missing-data shape
+    // explicitPenaltyPair covers.
+    expect(penaltyEvent.baselineGap).toBeNull();
+    expect(penaltyEvent.measuredContribution).toBeCloseTo(-1, 10);
+
+    const retreeEvent = result.events[1]!;
+    expect(retreeEvent.isPenalty).toBe(false);
+    expect(retreeEvent.measuredContribution).not.toBeNull();
+
+    const expectedStart = getExpectedStrokes('tee', 400);
+    expect(result.totalMeasuredContribution).toBeCloseTo(
+      expectedStart - OB_RETEE_HOLE.total_strokes,
+      10,
+    );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// A missing BEFORE distance with a KNOWN after-distance: measuredContribution
+// must be null (can't compute without a start point), but heuristicScore
+// must still surface the known ending leave distance rather than also
+// coming back null. Not a realistic scorecard — a minimal, purpose-built
+// case isolating this one behavior.
+// ---------------------------------------------------------------------------
+const HEURISTIC_GAP_HOLE: HoleContext = {
+  round_id: 'round-heuristic-gap',
+  course_id: 'course-heuristic-gap',
+  hole_number: 2,
+  par: 4,
+  total_strokes: 2,
+  penalty_strokes: 0,
+  putts: 1,
+  gir: true,
+};
+const HEURISTIC_GAP_RAW_SHOTS: RawShotInput[] = [
+  {
+    round_id: 'round-heuristic-gap',
+    hole_number: 2,
+    shot_number: 1,
+    shot_type: 'tee',
+    club_type: 'driver',
+    // Before-distance never captured (ingest glitch) — after-distance is.
+    distance_to_hole_before: null,
+    distance_unit_before: null,
+    distance_to_hole_after: 15,
+    distance_unit_after: 'feet',
+    lie_before: 'tee',
+    lie_after: 'green',
+    result: 'green',
+    is_penalty: false,
+    putt_made: null,
+    observed_at: '2026-07-20T06:00:00.000Z',
+  },
+  {
+    round_id: 'round-heuristic-gap',
+    hole_number: 2,
+    shot_number: 2,
+    shot_type: 'putting',
+    club_type: 'putter',
+    distance_to_hole_before: 15,
+    distance_unit_before: 'feet',
+    distance_to_hole_after: 0,
+    distance_unit_after: 'feet',
+    lie_before: 'green',
+    lie_after: 'hole',
+    result: 'hole',
+    is_penalty: false,
+    putt_made: true,
+    intent: 'putt',
+    observed_at: '2026-07-20T06:01:00.000Z',
+  },
+];
+
+describe('attributeSequence — a missing before-distance still surfaces a non-null heuristicScore', () => {
+  it('reports the gap on the tee event but not on the resolved putt event', () => {
+    const facts = factsFor(HEURISTIC_GAP_RAW_SHOTS);
+    const result = attributeSequence(facts, HEURISTIC_GAP_HOLE, SCOPE);
+
+    expect(result.status).toBe('attributed');
+    expect(result.events.map((e) => e.kind)).toEqual(['tee_to_next', 'first_putt_to_next_putt']);
+    assertPartitionsAllShots(result.events, HEURISTIC_GAP_HOLE);
+
+    const teeEvent = result.events[0]!;
+    expect(teeEvent.measuredContribution).toBeNull();
+    expect(teeEvent.baselineGap).toBe('missing_distance');
+    // The known ending leave distance (15ft, an exact green-table anchor —
+    // 1.78 — which also proves distanceFeet is passed straight through with
+    // no feet→yards round trip) still comes back, even though the event's
+    // own contribution could not be computed.
+    expect(teeEvent.heuristicScore).toBe(15);
+
+    const puttEvent = result.events[1]!;
+    expect(puttEvent.measuredContribution).not.toBeNull();
+    expect(puttEvent.measuredContribution).toBeCloseTo(1.78 - 0 - 1, 10);
+    expect(puttEvent.baselineGap).toBeNull();
+    expect(puttEvent.heuristicScore).toBeNull();
+
+    expect(result.totalMeasuredContribution).toBeNull();
+    expect(result.exclusions).toEqual({ missing_distance: 1 });
   });
 });

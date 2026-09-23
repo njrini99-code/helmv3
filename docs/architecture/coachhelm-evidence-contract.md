@@ -832,13 +832,22 @@ number, so wiring this in later cannot double-count the impact
 `attributeSequence(facts, hole, scope)`
 (`src/lib/coachhelm/v3/metrics/sequence-attribution.ts`) partitions ONE
 hole's A1-validated shots into non-overlapping events and computes a
-strokes-gained-style contribution per event, reusing the existing audited
-baseline — `getExpectedStrokes` / `PGA_BASELINE_DATA` in
-`src/lib/golf/strokes-gained.ts` (DB-synced with
-`public.sg_expected_strokes()`) — rather than inventing a second one. Not
-wired into `v2/orchestrator.ts` or any composite yet; that integration,
-plus `reasoning/hypothesis-policy.ts` consumption and the short-side
-composite-title replacement A4's own checklist names, are slice 2.
+strokes-gained-style contribution per event, reusing the CANONICAL,
+DB-synced baseline — `getExpectedStrokes` in
+`src/lib/utils/golf-stats-calculator-shots.ts` (kept in sync with
+`public.sg_expected_strokes()`) — rather than inventing a second one.
+`src/lib/golf/strokes-gained.ts` has numerically similar tables but is
+quarantined dead code (see the warning in
+`src/components/golf/coachhelm/round-review/shot-strokes-gained.ts`) and
+must never be imported for real computation. On the green,
+`distanceFeet` is passed straight through (no feet→yards round trip); an
+unmapped lie (`'water'`, `'recovery'`, `'other'`, anything not in the
+tee/fairway/rough/sand/green table) resolves via the fairway table,
+matching `public.sg_expected_strokes()`'s ELSE branch — it is not a gap.
+Not wired into `v2/orchestrator.ts` or any composite yet; that
+integration, plus `reasoning/hypothesis-policy.ts` consumption and the
+short-side composite-title replacement A4's own checklist names, are
+slice 2.
 
 - **Suppression**: when `buildHoleSequence(facts, hole).complete` is
   `false`, the whole hole is suppressed — no events, no total — never a
@@ -876,14 +885,19 @@ composite-title replacement A4's own checklist names, are slice 2.
   `exclusions` (a count by reason) plus the always-available
   `lostStrokesVsPar`, per this slice's instruction for when the baseline
   can't be applied.
-- **Three §7.3 views**: `tee_to_next` (a par-4/5 tee shot only — a par-3
-  tee shot is the green attempt itself, see below), `approach_to_recovery`
-  (a green-attempt shot that missed, paired with the very next shot
-  UNLESS that shot is itself a penalty, in which case the miss stands
-  alone), and `first_putt_to_next_putt` (the first putt on the hole,
-  paired with the next putt when one follows — a hole-out on the first
-  putt still gets this kind as a single-shot group, so first-putt
-  performance is always identifiable even without a three-putt).
+- **Three §7.3 views, two of them chained**: `tee_to_next` (a par-4/5 tee
+  shot only — a par-3 tee shot is the green attempt itself, see below);
+  `approach_to_recovery` (a green-attempt shot that missed, CHAINED with
+  every consecutive non-penalty follow-up shot — "repeated failed
+  recovery" — until one reaches the green (inclusive) or a penalty
+  intervenes (exclusive, stays its own event)); and putting, split into
+  `first_putt_to_next_putt` (always the first putt alone, a singleton) and
+  `putting_sequence` (every putt after the first, chained as one group —
+  covers a clean 2-putt's second putt, or a 3-putt's second AND third
+  putt together, instead of dropping the third putt into `'other'`). The
+  recovery chain only triggers off an approach or a par-3 tee shot; a
+  drive that finishes greenside followed by chip attempts is not covered
+  by this view.
 - **A green attempt excludes an explicitly tagged lay-up.** A1 never
   INFERS a lay-up from distance/outcome (that inference is A2's job), but
   an EXPLICIT `intent: 'layup'` tag is not an inference — treating a
@@ -900,10 +914,18 @@ composite-title replacement A4's own checklist names, are slice 2.
   that coefficient is left to a later slice (`hypothesis-policy.ts`, A5);
   this module reports only the raw distance so nothing here fabricates an
   unaudited stroke-equivalent number.
+- **Continuity is assumed, not validated**: the conservation identity
+  above assumes a shot's `lie_after` matches the NEXT shot's own
+  `lie_before` (the physical state carries across the gap between two
+  recorded rows unchanged). This module does not cross-check that; a
+  disagreement between the two rows would pass through silently.
 - `attributeSequence` runs per hole. Rolling its events up into a
-  scope-wide, `MetricResult`-shaped aggregate (numerator/denominator/
-  status/interval across every hole in an `AnalysisScope`) is a later
-  slice's job.
+  scope-wide aggregate (numerator/denominator/status/interval across
+  every hole in an `AnalysisScope`) is PLANNED for a later slice (slice
+  2), not built yet. `MetricResult` does not exist on `main` today; a
+  shared version is landing in `src/lib/coachhelm/v3/metrics/types.ts`
+  via #1990, and slice 2 should consume that type rather than defining
+  its own aggregate shape.
 
 ## How to add a new comparison source
 
