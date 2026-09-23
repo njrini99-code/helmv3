@@ -335,3 +335,54 @@
   file. Not verified: mobile/desktop visual layout (no local build or
   dev server run this session) — deferred to CI's `pr-smoke-a11y` job
   or a preview deploy.
+
+## 2026-09-23 — A4 sequence-attribution rollup: scope-wide MetricResult[] (slice 2)
+
+- SHA: TBD (branch `agent/a4-sequence-attribution-rollup`).
+- Change: adds `computeSequenceAttribution(facts, holes, scope):
+  MetricResult[]` to `src/lib/coachhelm/v3/metrics/sequence-attribution.ts`,
+  rolling slice 1's per-hole `attributeSequence` events up into the shared
+  `MetricResult` (`metrics/types.ts`), mirroring `computeParOpportunities`'s
+  argument order and reusing its `factsInScope` (newly exported) rather
+  than duplicating window/cutoff logic. One `sequence_event_strokes_gained`
+  row per `SequenceEventKind` (mean `measuredContribution` over every
+  ATTRIBUTED hole's resolved events of that kind — an unresolved event's
+  `baselineGap` lands in `exclusions`, never the denominator) plus one
+  `sequence_hole_coverage` count row (a suppressed hole contributes no
+  events but is still counted here, via its `buildHoleSequence` reasons in
+  `exclusions`). New floor constants: `SEQUENCE_MIN_EVENTS` (10),
+  `SEQUENCE_MIN_ROUNDS` (3), `SEQUENCE_MIN_HOLES` (10, deliberately
+  separate from `SEQUENCE_MIN_EVENTS` since "event" and "hole" are
+  different units). Also fixes this module's own header doc comment,
+  which still framed slice 2 as blocked on `MetricResult` "not existing on
+  main yet" — it has been consumed by A2/A3 since #1990 and this slice was
+  never actually blocked on it.
+- Why: addendum §13, A4 slice 2, per the slice plan (slice 1 was the
+  per-hole pure core; a later slice wires this rollup into
+  `hypothesis-policy.ts`/a Round Review mount). Every row's
+  `eligibleCount`/`denominator`/`distinctRounds` is computed from that
+  row's own real gating population by construction — carrying forward the
+  #2008 review's MUST 1 lesson (a distance-profile row once reported a
+  floor its own narrower population had already cleared, hiding the wider
+  floor that actually produced `'insufficient'`) into a brand-new module
+  rather than repeating it.
+- Verification: 8 new tests in
+  `src/test/coachhelm/v3/sequence-attribution.test.ts` (conservation +
+  insufficient-but-real-value, zero-denominator invalid rows, real
+  non-null coverage value below its floor, suppressed-hole-still-counted,
+  gap-lands-in-exclusions-not-denominator), reusing this file's own
+  existing per-hole fixtures (`CONSERVATION_HOLE`, `incompleteShotSequence`,
+  `explicitPenaltyPair`) rather than inventing new ones. Full file: 22/22
+  passing. Corrected 2026-09-23 (rev-2020 Fix-first, MUST): the first
+  pass had no test that actually reached `'supported'` or exercised the
+  `&&` between the two floors — a `>=` → `>`, an `&&` → `||`, or moving
+  `acc.roundIds.add(...)` out of the `measuredContribution !== null`
+  branch (the exact #2008 wrong-population bug) would all have passed.
+  Three new floor-boundary tests (10 events/3 rounds → supported; 9/3 and
+  10/2 → insufficient, for both the event-kind row and the coverage row
+  at once, via a shared `holeInOneBatch` fixture) plus two added
+  assertions on existing tests (`coverage.distinctRounds === 1` on the
+  suppressed-hole test; `penaltyRow.distinctRounds === 0` on the gap
+  test, which is what actually catches the `roundIds.add` mutation).
+  `typecheck`/`lint` run on touched files. Not wired into any generator,
+  composite, or page — pure core + tests only, same posture as A0–A3.

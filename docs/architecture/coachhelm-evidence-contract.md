@@ -1125,8 +1125,8 @@ tee/fairway/rough/sand/green table) resolves via the fairway table,
 matching `public.sg_expected_strokes()`'s ELSE branch — it is not a gap.
 Not wired into `v2/orchestrator.ts` or any composite yet; that
 integration, plus `reasoning/hypothesis-policy.ts` consumption and the
-short-side composite-title replacement A4's own checklist names, are
-slice 2.
+short-side composite-title replacement A4's own checklist names, remain a
+later slice — slice 2 is the scope-wide rollup below.
 
 - **Suppression**: when `buildHoleSequence(facts, hole).complete` is
   `false`, the whole hole is suppressed — no events, no total — never a
@@ -1198,12 +1198,57 @@ slice 2.
   `lie_before` (the physical state carries across the gap between two
   recorded rows unchanged). This module does not cross-check that; a
   disagreement between the two rows would pass through silently.
-- `attributeSequence` runs per hole. Rolling its events up into a
-  scope-wide aggregate (numerator/denominator/status/interval across
-  every hole in an `AnalysisScope`) is PLANNED for a later slice (slice
-  2), not built yet. Slice 2 must consume the shared `MetricResult` in
-  `src/lib/coachhelm/v3/metrics/types.ts` rather than defining its own
-  aggregate shape.
+- `attributeSequence` runs per hole. `computeSequenceAttribution` (below)
+  rolls its events up into the scope-wide `MetricResult[]`.
+
+### Sequence attribution rollup (A4 deliverable, slice 2 — scope-wide `MetricResult[]`)
+
+`computeSequenceAttribution(facts, holes, scope)` (same file) rolls
+`attributeSequence`'s per-hole events up into the shared `MetricResult` in
+`src/lib/coachhelm/v3/metrics/types.ts`, mirroring `computeParOpportunities`'s
+argument order and its `factsInScope` scoping (`facts` is self-scoped
+internally; `holes` is not — `HoleContext` carries no date field, so the
+caller must already have window/cutoff/completed-status filtered it, same
+as A2/A3). Not wired into `v2/orchestrator.ts`, `hypothesis-policy.ts`
+(A5), or any composite/generator yet — this slice is only the rollup
+itself, for a caller (e.g. a Round Review mount) to consume directly.
+
+Two kinds of row:
+
+- **`sequence_event_strokes_gained`**, one row per `SequenceEventKind`
+  (`dimensions.event_kind`: `tee_to_next`, `approach_to_recovery`,
+  `first_putt_to_next_putt`, `putting_sequence`, `penalty`, `other`) — the
+  mean `measuredContribution` across every event of that kind whose
+  baseline resolved, over every ATTRIBUTED (non-suppressed) hole in
+  `holes`. A suppressed hole contributes no events to any row but is still
+  counted by the coverage row below. Gated `supported`/`insufficient` on
+  `denominator >= SEQUENCE_MIN_EVENTS (10)` AND `distinctRounds >=
+  SEQUENCE_MIN_ROUNDS (3)`; `denominator === 0` is `invalid` with a null
+  value. An unresolved event (`measuredContribution === null`) never
+  enters the denominator — its `baselineGap` reason is counted in
+  `exclusions` instead, never silently dropped.
+
+  **Sign convention** — POSITIVE means strokes GAINED versus the canonical
+  baseline (performed better than expected). This is the OPPOSITE of
+  `ScoringSection.tsx`'s `formatStrokesVsPar`, where positive means MORE
+  strokes than par (worse); that formatter must never be reused for this
+  metric without flipping its sign first.
+
+- **`sequence_hole_coverage`** — a single row (empty `dimensions`) stating
+  how many of `holes` were attributed vs. suppressed, mirroring A2's
+  `approach_measured_contribution` convention: a COUNT, never a rate, and
+  `value` is always the real attributed-hole count — never null, even when
+  `status` is `'invalid'`. Gated on `attributedCount >=
+  SEQUENCE_MIN_HOLES (10)` AND `distinctRounds >= SEQUENCE_MIN_ROUNDS
+  (3)`. `exclusions` names each `buildHoleSequence` suppression reason by
+  how many suppressed holes carried it (one hole can carry more than one
+  reason, so a count here can exceed the suppressed-hole count).
+
+Every row's `eligibleCount`/`denominator`/`distinctRounds` are computed
+from that row's own real gating population — never a narrower proxy
+(#2008 review, MUST 1's lesson: a distance-profile row once reported a
+floor its own narrower population had already cleared, hiding the wider
+floor that actually produced `'insufficient'`).
 
 ## Comparable-opportunities outcome measurement (A9 deliverable — pure, not wired)
 

@@ -666,6 +666,26 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
   consumption — that remains a later slice. See
   `docs/architecture/coachhelm-evidence-contract.md`'s "Sequence
   attribution" section.
+- **`computeSequenceAttribution(facts, holes, scope): MetricResult[]`**
+  (same file, addendum §13, A4 slice 2) rolls `attributeSequence`'s
+  per-hole events up into the shared `MetricResult` (`metrics/types.ts`,
+  already consumed by A2/A3), mirroring `computeParOpportunities`'s
+  argument order and `factsInScope` scoping. One
+  `sequence_event_strokes_gained` row per `SequenceEventKind` (mean
+  `measuredContribution` over every ATTRIBUTED hole's resolved events of
+  that kind; an unresolved event's `baselineGap` lands in `exclusions`,
+  never the denominator) plus one `sequence_hole_coverage` count row (a
+  suppressed hole contributes no events but is still counted here).
+  Floors: `SEQUENCE_MIN_EVENTS`/`SEQUENCE_MIN_ROUNDS` per event-kind row,
+  `SEQUENCE_MIN_HOLES`/`SEQUENCE_MIN_ROUNDS` for coverage. **Sign
+  convention is the OPPOSITE of `ScoringSection.tsx`'s
+  `formatStrokesVsPar`** — positive means strokes GAINED here, positive
+  means MORE strokes than par (worse) there; never reuse that formatter
+  without flipping the sign. Still not wired into any generator/composite.
+  See `docs/architecture/coachhelm-evidence-contract.md`'s "Sequence
+  attribution rollup" section and
+  `src/test/coachhelm/v3/sequence-attribution.test.ts`'s
+  `computeSequenceAttribution` describe blocks.
 
 - **`src/lib/coachhelm/v3/evaluation/comparable-opportunities.ts` is a new,
   pure evaluation module** (2026-09-23,
