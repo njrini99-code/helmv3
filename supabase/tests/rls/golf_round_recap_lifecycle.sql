@@ -1,6 +1,6 @@
 BEGIN;
 
-SELECT plan(17);
+SELECT plan(32);
 
 SELECT ok(
   has_function_privilege('authenticated', 'public.save_round_ai_recap(uuid, text)', 'EXECUTE'),
@@ -120,6 +120,101 @@ SELECT isnt(
 SELECT ok(
   has_table_privilege('service_role', 'public.golf_round_recap_provenance', 'INSERT'),
   'the service role (round-recap.ts admin client) can write recap provenance'
+);
+
+-- Package 8 (2026-09-23, migration 20260923100000): the tighter half of
+-- single-flight — golf_round_recap_locks and its two claim/release
+-- functions. Zero authenticated access at all (unlike provenance, which
+-- authenticated may read): this table is purely an internal lease,
+-- written and read only through the two functions below. Revised same day
+-- to add a `kind` column (round-recap.ts passes 'recap'; the round-review
+-- narrative passes 'round_review_narrative') so the two features' locks
+-- for the same round_id can never contend with or resolve into each
+-- other — both callers are service-role admin clients.
+
+SELECT ok(
+  (SELECT relrowsecurity FROM pg_class WHERE oid = 'public.golf_round_recap_locks'::regclass),
+  'golf_round_recap_locks has row level security enabled'
+);
+
+SELECT isnt(
+  has_table_privilege('anon', 'public.golf_round_recap_locks', 'SELECT'),
+  true,
+  'anonymous callers cannot read the recap lock table'
+);
+
+SELECT isnt(
+  has_table_privilege('public', 'public.golf_round_recap_locks', 'SELECT'),
+  true,
+  'the recap lock table is not granted to PUBLIC'
+);
+
+SELECT isnt(
+  has_table_privilege('authenticated', 'public.golf_round_recap_locks', 'SELECT'),
+  true,
+  'authenticated callers cannot read the recap lock table — it has no user-facing purpose'
+);
+
+SELECT ok(
+  has_table_privilege('service_role', 'public.golf_round_recap_locks', 'SELECT'),
+  'the service role (round-recap.ts admin client) can read the recap lock table'
+);
+
+SELECT isnt(
+  has_function_privilege('anon', 'public.claim_round_recap_lock(uuid, integer, text, integer)', 'EXECUTE'),
+  true,
+  'anonymous callers cannot claim a round lock'
+);
+
+SELECT isnt(
+  has_function_privilege('authenticated', 'public.claim_round_recap_lock(uuid, integer, text, integer)', 'EXECUTE'),
+  true,
+  'authenticated callers cannot claim a round lock directly — only the service role coordinates this'
+);
+
+SELECT ok(
+  has_function_privilege('service_role', 'public.claim_round_recap_lock(uuid, integer, text, integer)', 'EXECUTE'),
+  'the service role (round-recap.ts / narrative admin client) can claim a round lock'
+);
+
+SELECT isnt(
+  has_function_privilege('anon', 'public.release_round_recap_lock(uuid, integer, text, uuid)', 'EXECUTE'),
+  true,
+  'anonymous callers cannot release a round lock'
+);
+
+SELECT isnt(
+  has_function_privilege('authenticated', 'public.release_round_recap_lock(uuid, integer, text, uuid)', 'EXECUTE'),
+  true,
+  'authenticated callers cannot release a round lock directly'
+);
+
+SELECT ok(
+  has_function_privilege('service_role', 'public.release_round_recap_lock(uuid, integer, text, uuid)', 'EXECUTE'),
+  'the service role (round-recap.ts / narrative admin client) can release a round lock'
+);
+
+SELECT ok(
+  position('WHERE l.expires_at < now()' IN pg_get_functiondef('public.claim_round_recap_lock(uuid, integer, text, integer)'::regprocedure)) > 0,
+  'claim_round_recap_lock only reclaims an EXPIRED lock, never a live one'
+);
+
+SELECT ok(
+  position('holder_token = p_holder_token' IN pg_get_functiondef('public.release_round_recap_lock(uuid, integer, text, uuid)'::regprocedure)) > 0,
+  'release_round_recap_lock only deletes a row it can prove it still owns'
+);
+
+SELECT ok(
+  position('kind = p_kind' IN pg_get_functiondef('public.release_round_recap_lock(uuid, integer, text, uuid)'::regprocedure)) > 0,
+  'release_round_recap_lock scopes its delete to the exact kind it was asked to release — a recap release can never delete a narrative lock row for the same round, or vice versa'
+);
+
+SELECT ok(
+  (SELECT pg_get_constraintdef(oid) FROM pg_constraint WHERE conname = 'golf_round_recap_locks_kind_check')
+    LIKE '%''recap''%' AND
+  (SELECT pg_get_constraintdef(oid) FROM pg_constraint WHERE conname = 'golf_round_recap_locks_kind_check')
+    LIKE '%''round_review_narrative''%',
+  'golf_round_recap_locks.kind is restricted to exactly the two known lock consumers'
 );
 
 SELECT * FROM finish();
