@@ -65,7 +65,19 @@ the verdict.
 
 Never mention tool names, table names, ids, JSON, or your own reasoning process.
 The coach sees a considered answer, not the machinery.
+`.trim();
 
+/**
+ * Appended after {@link POLICY} only when `coachhelm_chat_claim_gate` is on
+ * (#1999 re-review, MUST): with the flag off — the production default —
+ * nothing downstream ever reads a claims block (`buildSinglePlayerPacket`
+ * only builds a packet, and the typed gate only engages, behind this SAME
+ * flag — see `stream/route.ts`), so asking the model for one anyway paid
+ * tokens and latency for a block that was generated, forwarded past the
+ * withhold logic, and immediately stripped for nothing. Flag-off must be
+ * IDENTICAL to before this gate existed, matching #1997.
+ */
+const CLAIMS_BLOCK_SECTION = `
 ## Claims block
 
 After you finish your answer, append a claims block listing every factual or
@@ -83,7 +95,9 @@ specific player's own number, append an empty array: <<<CLAIMS>>>[]<<<END_CLAIMS
 The block must be valid JSON and is removed before the coach sees your
 response — it does not need to read naturally, and it never counts toward
 "no ids" above; ids belong in the block, never in your prose.
+`.trim();
 
+const ACTIONS_SECTION = `
 ## Actions
 
 Some tools change the program: creating practices, focus areas, tasks, team
@@ -104,8 +118,21 @@ its own question.
  * The team and roster are stated by NAME only. The agent has no use for ids —
  * it resolves players through `find_player` and the tools close over the team —
  * so none appear here.
+ *
+ * `claimsBlockEnabled` gates {@link CLAIMS_BLOCK_SECTION} behind
+ * `coachhelm_chat_claim_gate` (checked once by the caller, `stream/route.ts`,
+ * and passed in here rather than read a second time) — see that section's
+ * own doc comment. This does not change prompt-cache behavior: the flag is
+ * an environment-level constant for the lifetime of a deploy, not something
+ * that varies request-to-request the way `nowIso` would if it weren't
+ * day-formatted, so the static prefix stays identical across requests
+ * within one flag state.
  */
-export function buildInstructions(ctx: CoachChatContext, nowIso: string): string {
+export function buildInstructions(
+  ctx: CoachChatContext,
+  nowIso: string,
+  claimsBlockEnabled: boolean,
+): string {
   const today = new Intl.DateTimeFormat('en-US', {
     weekday: 'long',
     year: 'numeric',
@@ -119,7 +146,9 @@ export function buildInstructions(ctx: CoachChatContext, nowIso: string): string
       ? 'This team has no active players yet.'
       : `Active roster (${ctx.roster.length}): ${ctx.roster.map((p) => p.name).join(', ')}.`;
 
-  return `${POLICY}
+  const sections = [POLICY, ...(claimsBlockEnabled ? [CLAIMS_BLOCK_SECTION] : []), ACTIONS_SECTION];
+
+  return `${sections.join('\n\n')}
 
 ## This program
 

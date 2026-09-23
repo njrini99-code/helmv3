@@ -359,6 +359,15 @@ function checkClaim(claim: ClaimReference, packet: EvidencePacket): ClaimRejecti
   // to sample — the count IS the fact. Only an 'aggregate' entry (a
   // multi-round rate or average) is floored. Unlabeled defaults to
   // 'aggregate' so it fails safe.
+  //
+  // #1999 re-review, NICE: `sample_n === 0` is never a real "the count IS
+  // the fact" measurement — it means zero rounds/attempts actually backed
+  // this entry, which is a builder bug or a genuinely empty window, not
+  // evidence. Checked BEFORE the 'measurement' exemption so a zero-support
+  // entry can never dodge the floor just by being labeled 'measurement'.
+  if (entry.sample_n === 0) {
+    return 'unsupported_small_number';
+  }
   if ((entry.kind ?? 'aggregate') === 'aggregate' && entry.sample_n < MIN_SAMPLE_N) {
     return 'unsupported_small_number';
   }
