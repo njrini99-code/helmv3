@@ -261,3 +261,33 @@
   files together — 44 passed, 0 failed (2 new tests for the horizon-
   expired-drop and still-in-grace cases). See the matching test-ledger
   entry.
+
+## 2026-09-23 — #2007 re-review catch: bulk exposure fetch needed pagination
+
+- `.claude/rules/database.md`'s documented PostgREST trap, caught before
+  re-review: the bulk exposure pre-filter's `.in('insight_id',
+  shotLevelPageIds)` query had no pagination, and `golf_insight_exposure`
+  has no uniqueness constraint on `insight_id`
+  (`20260621160000_insight_event_ledger.sql`) — an insight can be
+  re-shown/re-ranked any number of times. 200 page ids can legitimately
+  produce more than 1,000 exposure rows, and an unpaginated fetch
+  silently keeps only the globally-earliest 1,000, permanently
+  misreading any candidate whose real first exposure landed later as
+  `comparable_no_exposure_record` (a page is never re-fetched).
+- Fixed: the bulk fetch now goes through `fetchAllRowsResult`
+  (`src/lib/supabase/fetch-all-rows.ts`), the repo's existing
+  past-the-cap pagination helper (used elsewhere for `golf_holes`/
+  `golf_shots`), with `id` (the table's PK) added as an `.order()`
+  tiebreaker after `shown_at` so `.range()` page boundaries stay stable
+  when rows share the same `shown_at` instant.
+- Added a test with 1,006 raw exposure rows across two candidates (one
+  spammy insight with 1,005 rows, one candidate whose single, later
+  exposure would sort past row 1,000) proving the later candidate's
+  exposure is still found — not misclassified as
+  `comparable_no_exposure_record` — after pagination.
+- Also fixed a stale doc comment on `comparable_retry_horizon_expired`
+  (wrongly implied `comparable_insufficient_evidence` only fires on
+  runs that predate the retry-horizon cap; it still fires every run
+  during the grace window itself).
+- Verification: `npm run typecheck:fast` clean; `causality-attribute.
+  test.ts` — 28 passed, 0 failed (1 new test).

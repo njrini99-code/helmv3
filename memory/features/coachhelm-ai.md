@@ -737,6 +737,17 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
   `no-exposure-record` (which means "legitimately never shown yet"). The
   first-exposure lookup is the insight's first exposure on ANY surface
   (player or coach) — there is no surface filter.
+  **Re-review catch (2026-09-23): the bulk exposure fetch needed
+  pagination.** `golf_insight_exposure` has no uniqueness constraint on
+  `insight_id` (an insight can be re-shown/re-ranked any number of
+  times), so a page's shot-level candidates could legitimately produce
+  more than PostgREST's 1,000-row cap — an unpaginated `.in()` would
+  silently keep only the globally-earliest 1,000 rows and permanently
+  misread a later candidate's real exposure as `comparable_no_exposure_
+  record`, since a page is never re-fetched. Fixed by routing the fetch
+  through `fetchAllRowsResult` (`src/lib/supabase/fetch-all-rows.ts`),
+  with `id` added as an `.order()` tiebreaker after `shown_at` so
+  `.range()` page boundaries stay stable.
 
 ## Tests To Prefer
 
