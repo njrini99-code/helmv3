@@ -28,6 +28,7 @@ import type { FairwayGoalCardData } from '@/components/fairway/pages/coachhelm/F
 import { logServerError } from '@/lib/server-error-logger';
 import { describeError } from '@/lib/utils/describe-error';
 import { todayIsoInZone } from '@/lib/golf/timezone';
+import { loadFocusAreaPracticeLogData } from '@/lib/coachhelm/focus-areas/practice-log-loader';
 
 // ============================================================================
 // METADATA
@@ -284,12 +285,22 @@ export default async function IntelligenceDashboardPage({ searchParams }: Intell
       if (row.round_id) roundIdByReviewId[row.id] = row.round_id;
   }
 
+  // A8 slice 2 (read side): zero .from() calls against either new table
+  // while coachhelm_focus_area_practice_log is off — the loader checks the
+  // flag first and returns empty maps immediately in that case.
+  const { criteriaByFocusArea, practiceSummaryByFocusArea } = await loadFocusAreaPracticeLogData(
+    supabase,
+    (focusAreas || []).map((fa) => fa.id),
+  );
+
   const focusAreasWithPlayers: PlayersGridFocusArea[] = (focusAreas || []).map((fa) => ({
     ...fa,
     player: players.find((p) => p.id === fa.player_id) || null,
     outcome_status: fa.from_insight_id ? (outcomeByInsightId[fa.from_insight_id] ?? null) : null,
     progressHistory: progressHistoryOf(fa.progress_notes),
     from_review_round_id: fa.from_review_id ? (roundIdByReviewId[fa.from_review_id] ?? null) : null,
+    criteria: criteriaByFocusArea.get(fa.id) ?? null,
+    practiceSummary: practiceSummaryByFocusArea.get(fa.id) ?? null,
   })) as unknown as PlayersGridFocusArea[];
 
   const gridStats: Record<string, PlayersGridStats> = {};

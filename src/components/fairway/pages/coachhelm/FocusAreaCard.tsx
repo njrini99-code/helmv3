@@ -80,6 +80,7 @@ import { PracticeRxForInsight } from './PracticeRxForInsight';
 import {
   IconCheck,
   IconCheckCircle2,
+  IconCircleDot,
   IconClock,
   IconFileText,
   IconSparkles,
@@ -203,6 +204,37 @@ export interface FocusAreaCardData {
    * Sparkline. When fewer than 2 points exist the Sparkline shows an em-dash.
    */
   progressHistory?: FocusAreaProgressEntry[] | null;
+  /**
+   * A8 slice 2 (read side): coach-authored "done" criteria from
+   * golf_focus_area_criteria, oldest→newest. Absent/null (never `[]` — the
+   * loader only sets this when the coachhelm_focus_area_practice_log flag is
+   * on) renders nothing, the same honest-absence contract as
+   * `evidence_revision` above. Read-only here: marking a criterion met is a
+   * follow-up slice's UI wiring (the `setFocusAreaCriterionMet` action
+   * already exists).
+   */
+  criteria?: FocusAreaCriterionView[] | null;
+  /**
+   * A8 slice 2 (read side): a rollup of golf_focus_area_practice_sessions
+   * for this focus area — never the raw rows, so this card never grows
+   * unbounded. Absent/null under the same flag-off/loader contract as
+   * `criteria` above.
+   */
+  practiceSummary?: FocusAreaPracticeSummaryView | null;
+}
+
+/** One golf_focus_area_criteria row, as rendered by the checklist below. */
+export interface FocusAreaCriterionView {
+  id: string;
+  label: string;
+  met: boolean;
+}
+
+/** golf_focus_area_practice_sessions, rolled up — never the raw log rows. */
+export interface FocusAreaPracticeSummaryView {
+  count: number;
+  /** ISO timestamp of the most recent session, or null if count is 0. */
+  lastPracticedAt: string | null;
 }
 
 export interface FocusAreaCardProps {
@@ -875,6 +907,58 @@ export const FocusAreaCard = forwardRef<HTMLDivElement, FocusAreaCardProps>(
             >
               Evidence snapshot recorded
             </Badge>
+          ) : null}
+
+          {/* A8 slice 2 (read side): coach-authored "done" criteria + a
+              practice-log rollup. Both render nothing when absent/null —
+              either the flag is off, the migration isn't applied yet, or
+              this focus area simply has neither. Read-only: no mark-met or
+              log-practice affordance here yet (the actions already exist;
+              wiring them is a follow-up slice). */}
+          {focusArea.criteria && focusArea.criteria.length > 0 ? (
+            <Inset padding="sm" className="space-y-1.5">
+              <span className="font-fw-sans text-eyebrow uppercase tracking-wide text-text-tertiary">
+                Criteria
+              </span>
+              <ul className="space-y-1">
+                {focusArea.criteria.map((criterion) => (
+                  <li
+                    key={criterion.id}
+                    className={cn(
+                      'flex items-center gap-1.5 font-fw-sans text-body-sm',
+                      criterion.met ? 'text-text-secondary' : 'text-text-tertiary',
+                    )}
+                  >
+                    {criterion.met ? (
+                      <IconCheckCircle2 size={14} className="flex-shrink-0 text-accent-600" />
+                    ) : (
+                      <IconCircleDot size={14} className="flex-shrink-0 text-text-tertiary" />
+                    )}
+                    <span className={cn(criterion.met && 'line-through decoration-1')}>
+                      {criterion.label}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </Inset>
+          ) : null}
+
+          {focusArea.practiceSummary && focusArea.practiceSummary.count > 0 ? (
+            <p className="flex items-center gap-1.5 font-fw-sans text-eyebrow text-text-tertiary">
+              <IconTarget size={12} />
+              {focusArea.practiceSummary.count === 1
+                ? '1 practice session logged'
+                : `${focusArea.practiceSummary.count} practice sessions logged`}
+              {focusArea.practiceSummary.lastPracticedAt ? (
+                <>
+                  {' · last '}
+                  {new Date(focusArea.practiceSummary.lastPracticedAt).toLocaleDateString('en-US', {
+                    month: 'short',
+                    day: 'numeric',
+                  })}
+                </>
+              ) : null}
+            </p>
           ) : null}
 
           {/* Practice Rx — drills prescribed for the originating insight. Self-

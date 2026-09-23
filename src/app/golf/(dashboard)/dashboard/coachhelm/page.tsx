@@ -42,6 +42,7 @@ import { normalizeForRadar } from '@/lib/coachhelm/v3/genome/normalize';
 import { loadPlayerScoringBaseline } from '@/lib/coachhelm/v3/counterfactual/baseline-loader';
 import { logServerError } from '@/lib/server-error-logger';
 import { describeError } from '@/lib/utils/describe-error';
+import { loadFocusAreaPracticeLogData } from '@/lib/coachhelm/focus-areas/practice-log-loader';
 
 export const metadata: Metadata = {
   title: 'CoachHelm | GolfHelm',
@@ -374,10 +375,20 @@ export default async function PlayerCoachHelmPage() {
       }
     }
 
+    // A8 slice 2 (read side): zero .from() calls against either new table
+    // while coachhelm_focus_area_practice_log is off — the loader checks
+    // the flag first and returns empty maps immediately in that case.
+    const { criteriaByFocusArea, practiceSummaryByFocusArea } = await loadFocusAreaPracticeLogData(
+      supabase,
+      (focusAreas || []).map((fa) => fa.id),
+    );
+
     const focusAreasWithHistory = (focusAreas || []).map((fa) => ({
       ...fa,
       progressHistory: progressHistoryOf(fa.progress_notes),
       from_review_round_id: fa.from_review_id ? roundIdByReviewId[fa.from_review_id] ?? null : null,
+      criteria: criteriaByFocusArea.get(fa.id) ?? null,
+      practiceSummary: practiceSummaryByFocusArea.get(fa.id) ?? null,
     }));
 
     developmentActiveAreas = focusAreasWithHistory.filter(
