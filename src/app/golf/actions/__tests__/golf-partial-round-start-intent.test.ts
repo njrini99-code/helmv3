@@ -179,6 +179,79 @@ describe('savePartialRound no-id branch — startIntent (R8)', () => {
     expect(tables.golf_rounds).toHaveLength(2);
   });
 
+  it('36-hole day: a COMPLETED round 1 never forces a resume/discard — round 2 for the same course/date is allowed after a non-blocking warning', async () => {
+    const tables = baseTables();
+    tables.golf_rounds.push({
+      id: COMPLETED_ROUND, player_id: 'player-1', team_id: 'team-1', course_id: COURSE,
+      course_name: 'Winchester CC', round_date: '2026-09-02', status: 'completed',
+      qualifier_id: null, qualifier_round_number: null,
+      updated_at: '2026-09-02T18:00:00Z',
+    });
+    seed(tables);
+
+    // First attempt: a warning, not a forced action — round 1 is untouched
+    // and nothing about it (resume/discard) is required of the player.
+    const first = await savePartialRound(newRoundPayload, undefined, { startIntent: true });
+    expect(first.success).toBe(false);
+    if (!first.success) expect(first.error).toBe('duplicate_completed_round');
+    expect(tables.golf_rounds).toHaveLength(1);
+    expect(tables.golf_rounds[0]?.status).toBe('completed');
+
+    // Second attempt (the same "Start round" tap, now confirmed): round 2 is
+    // created as a genuinely separate round. Round 1 is still completed and
+    // untouched — this is exactly a 36-hole day, not a duplicate.
+    const second = await savePartialRound(newRoundPayload, undefined, {
+      startIntent: true,
+      confirmDuplicateCourse: true,
+    });
+    expect(second.success).toBe(true);
+    expect(tables.golf_rounds).toHaveLength(2);
+    expect(tables.golf_rounds.find((r) => r.id === COMPLETED_ROUND)?.status).toBe('completed');
+  });
+
+  it('36-hole day: confirmSeparateRound proceeds to insert round 2 while round 1 stays in_progress, untouched (no forced resume/discard)', async () => {
+    const tables = baseTables();
+    tables.golf_rounds.push({
+      id: EXISTING_ROUND, player_id: 'player-1', team_id: 'team-1', course_id: COURSE,
+      course_name: 'Winchester CC', round_date: '2026-09-02', status: 'in_progress',
+      qualifier_id: null, qualifier_round_number: null,
+      updated_at: '2026-09-02T02:00:00Z',
+    });
+    tables.golf_holes.push({ id: 'h1', round_id: EXISTING_ROUND, hole_number: 1, score: 4, putts: 2 });
+    seed(tables);
+
+    const result = await savePartialRound(newRoundPayload, undefined, {
+      startIntent: true,
+      confirmSeparateRound: true,
+    });
+
+    expect(result.success).toBe(true);
+    expect(tables.golf_rounds).toHaveLength(2);
+    // Round 1: not resumed (its id is not the id returned for this new
+    // round), not discarded (still present, still in_progress, holes intact).
+    const round1 = tables.golf_rounds.find((r) => r.id === EXISTING_ROUND);
+    expect(round1?.status).toBe('in_progress');
+    expect(tables.golf_holes.filter((h) => h.round_id === EXISTING_ROUND)).toHaveLength(1);
+    if (result.success) expect(result.data.roundId).not.toBe(EXISTING_ROUND);
+  });
+
+  it('confirmSeparateRound alone (no startIntent) changes nothing for legacy callers', async () => {
+    const tables = baseTables();
+    tables.golf_rounds.push({
+      id: EXISTING_ROUND, player_id: 'player-1', team_id: 'team-1', course_id: COURSE,
+      course_name: 'Winchester CC', round_date: '2026-09-02', status: 'in_progress',
+      qualifier_id: null, qualifier_round_number: null,
+      updated_at: '2026-09-02T02:00:00Z',
+    });
+    tables.golf_holes.push({ id: 'h1', round_id: EXISTING_ROUND, hole_number: 1, score: 4, putts: 2 });
+    seed(tables);
+
+    const result = await savePartialRound(newRoundPayload, undefined, { confirmSeparateRound: true });
+
+    expect(result.success).toBe(true);
+    expect(tables.golf_rounds).toHaveLength(2);
+  });
+
   it('still reuses an empty-shell in_progress match even with startIntent (no regression to A1)', async () => {
     const tables = baseTables();
     tables.golf_rounds.push({

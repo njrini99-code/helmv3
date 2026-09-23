@@ -888,6 +888,25 @@ export default function NewRoundClient({ playerId }: NewRoundClientProps) {
   // (course/date/type/qualifier) changes below, so a stale confirmation
   // can never silently apply to a different course or date.
   const duplicateCourseConfirmedRef = useRef(false);
+  // 36-hole-day follow-up (2026-09-23): when `persistRoundStart` finds the
+  // player's own in_progress round already at this course/date, the player —
+  // not the server — decides whether it's the same abandoned round (resume
+  // or discard) or a genuinely separate round (e.g. round 2 of a 36-hole
+  // day). This holds that server signal so the setup screen can present all
+  // three choices instead of auto-navigating away.
+  const [inProgressConflict, setInProgressConflict] = useState<{ roundId: string } | null>(null);
+  const [conflictActionBusy, setConflictActionBusy] = useState(false);
+  // Set only by the "Start a new round" choice below, then consumed by the
+  // very next persistRoundStart retry — bypasses just the in_progress_exists
+  // check server-side, never the duplicate_completed_round warning.
+  const confirmSeparateRoundRef = useRef(false);
+  // The args of the most recent persistRoundStart call, so "Start a new
+  // round" can retry with them without re-running setup validation. Retrying
+  // this way skips the original caller's post-success cosmetics (saving the
+  // course to the player's library, cloud-catalog contribution) — an
+  // acceptable trade for a conflict-recovery corner case; the round itself
+  // is fully durable either way.
+  const lastStartArgsRef = useRef<{ initialHoles: Hole[]; configuredHoles: HoleConfig[] } | null>(null);
   // Reactive mirror of "a cloud tee is selected" (selectedTeeIdRef is a ref and
   // can't drive render). Kept in lockstep with selectedTeeIdRef so the setup
   // screen can show a read-only "Course ready" confirmation for a cloud pick
@@ -899,6 +918,8 @@ export default function NewRoundClient({ playerId }: NewRoundClientProps) {
   // dedupe check server-side next tap.
   useEffect(() => {
     duplicateCourseConfirmedRef.current = false;
+    confirmSeparateRoundRef.current = false;
+    setInProgressConflict(null);
   }, [
     setupData.courseName,
     setupData.roundDate,
@@ -1391,6 +1412,7 @@ export default function NewRoundClient({ playerId }: NewRoundClientProps) {
     initialHoles: Hole[],
     configuredHoles: HoleConfig[],
   ): Promise<boolean> => {
+    lastStartArgsRef.current = { initialHoles, configuredHoles };
     const initialData: PartialRoundData = {
       courseName: setupData.courseName,
       courseId: resolvedCourseIdRef.current || undefined,
@@ -1455,16 +1477,19 @@ export default function NewRoundClient({ playerId }: NewRoundClientProps) {
       const result = await savePartialRound(initialData, undefined, {
         startIntent: true,
         confirmDuplicateCourse: duplicateCourseConfirmedRef.current,
+        confirmSeparateRound: confirmSeparateRoundRef.current,
       });
       if (!result.success) {
         // R8: the player's own in-progress round already occupies this
         // exact course/date/qualifier slot with real progress. Nothing was
-        // created — send them to it instead of leaving them stuck on a
-        // "Start round" control that will only find the same round again.
+        // created. 36-hole-day follow-up: don't assume it's the same
+        // abandoned round — a college player can legitimately start a
+        // second, separate round for the same course/date. Show the
+        // conflict prompt (Resume / Discard / Start a new round) instead of
+        // auto-navigating away.
         if (result.error === 'in_progress_exists' && 'roundId' in result) {
           reportStartFailure('in_progress_exists', { existingRoundId: result.roundId });
-          showToast('You already have this round in progress — resuming it.', 'warning');
-          router.push(`/golf/dashboard/rounds/continue/${result.roundId}`);
+          setInProgressConflict({ roundId: result.roundId });
           return false;
         }
         // R8: a COMPLETED round already occupies this slot. Warn once; a
@@ -1487,6 +1512,8 @@ export default function NewRoundClient({ playerId }: NewRoundClientProps) {
       // A round genuinely started — any stale duplicate confirmation from an
       // earlier tap no longer applies.
       duplicateCourseConfirmedRef.current = false;
+      confirmSeparateRoundRef.current = false;
+      setInProgressConflict(null);
 
       savedRoundIdRef.current = result.data.roundId;
       setSavedRoundId(result.data.roundId);
@@ -1518,7 +1545,66 @@ export default function NewRoundClient({ playerId }: NewRoundClientProps) {
       setError('Unable to save this round. Please try again before tracking.');
       return false;
     }
-  }, [connectionStatus.isConnected, playerId, router, selectedQualifierId, selectedRoundNumber, setupData, showToast]);
+  }, [connectionStatus.isConnected, playerId, selectedQualifierId, selectedRoundNumber, setupData]);
+
+  /**
+   * 36-hole-day conflict prompt actions. `inProgressConflict` is set by
+   * `persistRoundStart` when the server reports the player's own in_progress
+   * round already occupies this course/date/qualifier slot — none of these
+   * three choices happens automatically.
+   */
+  const handleConflictResume = () => {
+    if (!inProgressConflict) return;
+    router.push(`/golf/dashboard/rounds/continue/${inProgressConflict.roundId}`);
+  };
+
+  const handleConflictDiscard = async () => {
+    if (!inProgressConflict || conflictActionBusy) return;
+    setConflictActionBusy(true);
+    try {
+      const result = await deleteInProgressRound(inProgressConflict.roundId);
+      if (!result.success) {
+        setError(result.error || 'Failed to discard round');
+        setConflictActionBusy(false);
+        return;
+      }
+      clearEmergencySave(inProgressConflict.roundId, playerId);
+      setInProgressConflict(null);
+      setConflictActionBusy(false);
+      // The slot is now free — retry immediately with the same setup so the
+      // player doesn't have to re-tap "Start round".
+      if (lastStartArgsRef.current) {
+        setIsStartingRound(true);
+        const persisted = await persistRoundStart(
+          lastStartArgsRef.current.initialHoles,
+          lastStartArgsRef.current.configuredHoles,
+        );
+        setIsStartingRound(false);
+        if (persisted) setStep('tracking');
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to discard round');
+      setConflictActionBusy(false);
+    }
+  };
+
+  const handleConflictStartNewRound = async () => {
+    if (!inProgressConflict || conflictActionBusy || !lastStartArgsRef.current) return;
+    setConflictActionBusy(true);
+    confirmSeparateRoundRef.current = true;
+    setInProgressConflict(null);
+    setIsStartingRound(true);
+    // Retrying via `lastStartArgsRef` skips the original caller's
+    // post-success cosmetics (save-course-to-library, cloud contribution) —
+    // see the ref's own comment. The round itself is fully durable.
+    const persisted = await persistRoundStart(
+      lastStartArgsRef.current.initialHoles,
+      lastStartArgsRef.current.configuredHoles,
+    );
+    setIsStartingRound(false);
+    setConflictActionBusy(false);
+    if (persisted) setStep('tracking');
+  };
 
   const handleSetupSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -2681,6 +2767,57 @@ export default function NewRoundClient({ playerId }: NewRoundClientProps) {
     </ModalShell>
   );
 
+  // 36-hole-day follow-up (2026-09-23): shown only during setup/holes, where
+  // persistRoundStart runs. All three choices are explicit — nothing here
+  // auto-navigates, auto-discards, or auto-starts.
+  const inProgressConflictDialog = (
+    <ModalShell
+      open={Boolean(inProgressConflict)}
+      onOpenChange={(next) => {
+        if (!next) setInProgressConflict(null);
+      }}
+      size="sm"
+      title="Round already in progress"
+      hideTitle
+      hideClose
+    >
+      <div className="px-6 pb-6 pt-6">
+        <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-fw-md bg-fw-warning-bg">
+          <IconWarning size={24} className="text-fw-warning-ink" />
+        </div>
+        <h2 className="mb-2 text-center font-fw-display text-body-lg font-medium tracking-[-0.012em] text-text-primary">
+          Round already in progress
+        </h2>
+        <p className="mb-6 text-center font-fw-sans text-sm text-text-tertiary">
+          You already have an in-progress round for this course and date.
+          Resume it, discard it, or start a genuinely separate round — for
+          example, a second round on a 36-hole day.
+        </p>
+        <div className="flex flex-col gap-3">
+          <FwButton variant="primary" className="w-full" onClick={handleConflictResume} disabled={conflictActionBusy}>
+            Resume
+          </FwButton>
+          <FwButton
+            variant="secondary"
+            className="w-full"
+            onClick={handleConflictStartNewRound}
+            disabled={conflictActionBusy}
+          >
+            Start a new round
+          </FwButton>
+          <FwButton
+            variant="danger"
+            className="w-full"
+            onClick={handleConflictDiscard}
+            busy={conflictActionBusy}
+          >
+            Discard
+          </FwButton>
+        </div>
+      </div>
+    </ModalShell>
+  );
+
   // ============================================================================
   // ENTRY SCREENS (setup + holes) — the tracking and submitting steps fall
   // through to the render below. No mutation/autosave/optimistic-lock logic
@@ -2794,6 +2931,7 @@ export default function NewRoundClient({ playerId }: NewRoundClientProps) {
             created — not only once the player has already started tracking
             a brand-new round. */}
         {recoveryDialog}
+        {inProgressConflictDialog}
       </div>
     );
   }

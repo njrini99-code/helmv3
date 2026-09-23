@@ -6462,6 +6462,19 @@ export interface SavePartialRoundOptions {
   startIntent?: boolean;
   /** See `startIntent` — bypasses only the `duplicate_completed_round` warning. */
   confirmDuplicateCourse?: boolean;
+  /**
+   * R8 follow-up (2026-09-23): college golf routinely plays 36 holes in one
+   * day — two genuinely separate rounds for the same player, course, AND
+   * date. The `in_progress_exists` check above cannot tell "an abandoned
+   * duplicate of the same round" apart from "round 1 of 36 is still open
+   * while the player starts round 2" from server data alone; only the
+   * player knows. Set ONLY after the player has seen the `in_progress_exists`
+   * signal and explicitly chosen "Start a new round" over Resume/Discard —
+   * bypasses just that one check so the insert proceeds; every other
+   * `startIntent` rule (empty-shell reuse, the `duplicate_completed_round`
+   * warning) still applies.
+   */
+  confirmSeparateRound?: boolean;
 }
 
 /**
@@ -7573,13 +7586,19 @@ async function savePartialRoundImpl(
         // FairwayRecoverRound, never by persistRoundStart.
         if (candidateRound && (options?.allowReuse || await isEmptyShellRound(candidateRound.id))) {
           existingRound = candidateRound;
-        } else if (candidateRound && options?.startIntent) {
+        } else if (candidateRound && options?.startIntent && !options?.confirmSeparateRound) {
           // R8: `persistRoundStart` — a brand-new "start a round" action —
           // found the player's OWN in_progress round already occupying this
           // exact slot, with real progress. Falling through to an INSERT
           // here is exactly how the production orphans were produced: the
           // first round sits abandoned while a second one gets played and
           // submitted. Resume it instead of stranding it.
+          //
+          // 36-hole-day follow-up: `confirmSeparateRound` bypasses ONLY this
+          // branch, after the player has explicitly chosen "Start a new
+          // round" over Resume/Discard on the client's conflict prompt — the
+          // insert below then proceeds with `candidateRound` left untouched
+          // (never reused, never discarded from here).
           void flightRecorder.warn('db.create_or_update_draft', { errorSummary: 'in_progress_exists' });
           endTrace('warning');
           return {
