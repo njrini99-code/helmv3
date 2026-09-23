@@ -28,6 +28,7 @@ import {
   parseLastActivity,
 } from '@/lib/auth/session-idle-shared';
 import { isDemoMetadataUser, probeSignedIn, raceWithTimeout } from '@/lib/demo/gate-probe';
+import { clearAllCachedResources } from '@/lib/golf/client-resource-cache';
 
 const ACTIVITY_CHECK_INTERVAL_MS = 60 * 1000; // Re-check every minute
 
@@ -148,6 +149,12 @@ export function useSessionActivity() {
       isDemoMetadataUser(await probeSignedIn(supabase));
 
     clearLastActivity();
+    // The idle-timeout logout is the OTHER path off a golf dashboard besides
+    // `useGolfSignOut` (FairwayDashboardShell.tsx) — exactly the shared-device
+    // case (a team iPad left signed in) that per-viewer cached rails/threads
+    // must not survive. A no-op for baseball/lifting/admin: this cache only
+    // ever holds golf-prefixed keys.
+    clearAllCachedResources();
     try {
       await supabase.auth.signOut();
     } catch {
