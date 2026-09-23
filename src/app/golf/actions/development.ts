@@ -2,6 +2,7 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/types/database';
+import { ACTIVE_FOCUS_DUPLICATE_ERROR } from '@/lib/coachhelm/focus-areas/duplicate-guard';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { fromUntyped } from '@/lib/supabase/untyped';
@@ -185,8 +186,6 @@ function outcomeLifecycleError(status: string | null | undefined): string | null
  * the duplicate this guard exists to prevent.
  */
 const ACTIVE_FOCUS_AREA_STATUSES_FOR_DEDUP = ['proposed', 'active', 'in_progress', 'paused'] as const;
-
-export const ACTIVE_FOCUS_DUPLICATE_ERROR = 'An active focus on this metric already exists.';
 
 /**
  * Look up an existing focus area for `(player_id, target_metric)` whose

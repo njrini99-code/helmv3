@@ -40,8 +40,8 @@ import {
   createFocusAreaFromReview,
   createFocusAreaFromInsightV2,
   createFocusAreaFromInsight,
-  ACTIVE_FOCUS_DUPLICATE_ERROR,
 } from '@/app/golf/actions/development';
+import { ACTIVE_FOCUS_DUPLICATE_ERROR } from '@/lib/coachhelm/focus-areas/duplicate-guard';
 import { recordInsightAction } from '@/lib/coachhelm/v3/effectiveness/event-ledger';
 
 interface FaRow {
