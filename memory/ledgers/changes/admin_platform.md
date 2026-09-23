@@ -2395,3 +2395,15 @@ section for the full per-module description; not restated here.
 - Verification: every edited file was adversarially re-verified against
   its page's source, twice for the files that failed the first pass.
   typecheck 0, lint 0, build 0.
+
+## 2026-09-23 — registry entry: `coachhelm_a7_distance_profile_surface`
+
+- SHA: 7070eae8d.
+- Change: one new `experiment` flag added to `config/feature-flags.yml`
+  and `registry.generated.ts` (regenerated via `npm run flags:generate`,
+  `npm run flags:check` clean). Default off in every environment. Gates
+  only whether the Game Fingerprint page's Approach section renders a
+  new distance-profile surface — no auth/RLS/tenancy/persistence
+  decision, so it's not a NEVER-GATE case. Full behavioral detail is in
+  coachhelm_ai's own change ledger (this is the mechanism-owning
+  feature; that is the surface-owning one).
