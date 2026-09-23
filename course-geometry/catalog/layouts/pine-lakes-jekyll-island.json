@@ -1,0 +1,74 @@
+{
+  "schema": "golfhelm-layout-v1",
+  "layoutId": "pine-lakes-jekyll-island",
+  "facilityId": "jekyll-island-golf-club",
+  "name": "Pine Lakes Jekyll Island",
+  "siteIds": [
+    "osm-way-133692507"
+  ],
+  "segments": {
+    "main": {
+      "holes": [
+        "pine-lakes-jekyll-island-01",
+        "pine-lakes-jekyll-island-02",
+        "pine-lakes-jekyll-island-03",
+        "pine-lakes-jekyll-island-04",
+        "pine-lakes-jekyll-island-05",
+        "pine-lakes-jekyll-island-06",
+        "pine-lakes-jekyll-island-07",
+        "pine-lakes-jekyll-island-08",
+        "pine-lakes-jekyll-island-09",
+        "pine-lakes-jekyll-island-10",
+        "pine-lakes-jekyll-island-11",
+        "pine-lakes-jekyll-island-12",
+        "pine-lakes-jekyll-island-13",
+        "pine-lakes-jekyll-island-14",
+        "pine-lakes-jekyll-island-15",
+        "pine-lakes-jekyll-island-16",
+        "pine-lakes-jekyll-island-17",
+        "pine-lakes-jekyll-island-18"
+      ]
+    }
+  },
+  "segmentOrder": [
+    "main"
+  ],
+  "holeOrder": [
+    "pine-lakes-jekyll-island-01",
+    "pine-lakes-jekyll-island-02",
+    "pine-lakes-jekyll-island-03",
+    "pine-lakes-jekyll-island-04",
+    "pine-lakes-jekyll-island-05",
+    "pine-lakes-jekyll-island-06",
+    "pine-lakes-jekyll-island-07",
+    "pine-lakes-jekyll-island-08",
+    "pine-lakes-jekyll-island-09",
+    "pine-lakes-jekyll-island-10",
+    "pine-lakes-jekyll-island-11",
+    "pine-lakes-jekyll-island-12",
+    "pine-lakes-jekyll-island-13",
+    "pine-lakes-jekyll-island-14",
+    "pine-lakes-jekyll-island-15",
+    "pine-lakes-jekyll-island-16",
+    "pine-lakes-jekyll-island-17",
+    "pine-lakes-jekyll-island-18"
+  ],
+  "routeWayIds": null,
+  "bboxWgs84": null,
+  "capabilityTier": "C0",
+  "externalBindings": {
+    "golfCourseIds": [
+      "7e9eb781-cadc-48ce-929f-1cf82f528126"
+    ]
+  },
+  "scorecardProfiles": [
+    "pine-lakes-jekyll-island-tee-1c99640a-5724-496c-a43a-a33fe107c859-2966cd5dfcbbeec55154",
+    "pine-lakes-jekyll-island-tee-8bb78cb0-f4e7-413a-ae8f-a4d60ad6cb8e-c7e81d29bcf039633dae",
+    "pine-lakes-jekyll-island-tee-e14ac195-d285-4f1f-9256-f61b284e25ea-ab91f024eaf40531a8d8"
+  ],
+  "referenceScorecardProfileId": "pine-lakes-jekyll-island-tee-1c99640a-5724-496c-a43a-a33fe107c859-2966cd5dfcbbeec55154",
+  "geometry": null,
+  "notes": [
+    "6 completed cohort rounds (2026-09-22); intake wrote this manifest at C0 with routes unresolved."
+  ]
+}

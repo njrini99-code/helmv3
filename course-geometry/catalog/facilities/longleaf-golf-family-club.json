@@ -1,0 +1,37 @@
+{
+  "schema": "golfhelm-facility-v1",
+  "facilityId": "longleaf-golf-family-club",
+  "name": "Longleaf Golf & Family Club",
+  "country": "US",
+  "region": "NC",
+  "originWgs84": [
+    -79.419913,
+    35.2067153
+  ],
+  "aoi": {
+    "kind": "osm",
+    "id": "relation/6387132",
+    "marginM": 300
+  },
+  "sourcePins": {
+    "osm": [
+      "relation/6387132"
+    ]
+  },
+  "providerPolicy": {
+    "terrain": [
+      "nc_onemap_dem03"
+    ],
+    "imagery": [
+      "nc_onemap_2024_2027_analysis",
+      "usgs_naip_plus"
+    ],
+    "context": [
+      "osm"
+    ]
+  },
+  "notes": [
+    "Intake from the 2026-09-22 usage cohort and the library coverage audit (2026-09-18); origin is the OSM course centre until the build pins it from the AOI.",
+    "Coverage audit: h18 g41 f24 b54 t89 inside the course polygon; DEM tiles named: 0; verdict no-dem."
+  ]
+}

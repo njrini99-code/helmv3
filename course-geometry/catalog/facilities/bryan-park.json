@@ -1,0 +1,37 @@
+{
+  "schema": "golfhelm-facility-v1",
+  "facilityId": "bryan-park",
+  "name": "Bryan Park",
+  "country": "US",
+  "region": "NC",
+  "originWgs84": [
+    -79.7388068,
+    36.1759928
+  ],
+  "aoi": {
+    "kind": "osm",
+    "id": "relation/3972771",
+    "marginM": 300
+  },
+  "sourcePins": {
+    "osm": [
+      "relation/3972771"
+    ]
+  },
+  "providerPolicy": {
+    "terrain": [
+      "nc_onemap_dem03"
+    ],
+    "imagery": [
+      "nc_onemap_2024_2027_analysis",
+      "usgs_naip_plus"
+    ],
+    "context": [
+      "osm"
+    ]
+  },
+  "notes": [
+    "Intake from the 2026-09-22 usage cohort and the library coverage audit (2026-09-18); no golf_course polygon is mapped; origin is the centre of the enclosing OSM element 'relation/3972771' ('Bryan Park') until the build pins it from the AOI.",
+    "Coverage audit: h1 g23 f22 b87 t79 counted around the anchor element, not inside a course boundary; DEM tiles named: 0; verdict no-dem."
+  ]
+}

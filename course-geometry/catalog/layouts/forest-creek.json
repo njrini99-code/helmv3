@@ -1,0 +1,74 @@
+{
+  "schema": "golfhelm-layout-v1",
+  "layoutId": "forest-creek",
+  "facilityId": "forest-creek",
+  "name": "Forest Creek",
+  "siteIds": [
+    "osm-relation-6384809"
+  ],
+  "segments": {
+    "main": {
+      "holes": [
+        "forest-creek-01",
+        "forest-creek-02",
+        "forest-creek-03",
+        "forest-creek-04",
+        "forest-creek-05",
+        "forest-creek-06",
+        "forest-creek-07",
+        "forest-creek-08",
+        "forest-creek-09",
+        "forest-creek-10",
+        "forest-creek-11",
+        "forest-creek-12",
+        "forest-creek-13",
+        "forest-creek-14",
+        "forest-creek-15",
+        "forest-creek-16",
+        "forest-creek-17",
+        "forest-creek-18"
+      ]
+    }
+  },
+  "segmentOrder": [
+    "main"
+  ],
+  "holeOrder": [
+    "forest-creek-01",
+    "forest-creek-02",
+    "forest-creek-03",
+    "forest-creek-04",
+    "forest-creek-05",
+    "forest-creek-06",
+    "forest-creek-07",
+    "forest-creek-08",
+    "forest-creek-09",
+    "forest-creek-10",
+    "forest-creek-11",
+    "forest-creek-12",
+    "forest-creek-13",
+    "forest-creek-14",
+    "forest-creek-15",
+    "forest-creek-16",
+    "forest-creek-17",
+    "forest-creek-18"
+  ],
+  "routeWayIds": null,
+  "bboxWgs84": null,
+  "capabilityTier": "C0",
+  "externalBindings": {
+    "golfCourseIds": [
+      "29034e4c-3a70-46b1-95b3-02b1d41b7529"
+    ]
+  },
+  "scorecardProfiles": [
+    "forest-creek-tee-18b9b750-65fc-4d61-b9e4-9d22bfdeb8c8-fac8e48f65534e375865",
+    "forest-creek-tee-85cb2edd-e0c3-48d9-9661-1d7ae3d472d2-00c59e6a76c818cd5928",
+    "forest-creek-tee-fadfff4c-2b83-4fa7-a1bc-05a76ddc88b1-798f5067f74e33e8520f"
+  ],
+  "referenceScorecardProfileId": "forest-creek-tee-18b9b750-65fc-4d61-b9e4-9d22bfdeb8c8-fac8e48f65534e375865",
+  "geometry": null,
+  "notes": [
+    "6 completed cohort rounds (2026-09-22); intake wrote this manifest at C0 with routes unresolved."
+  ]
+}

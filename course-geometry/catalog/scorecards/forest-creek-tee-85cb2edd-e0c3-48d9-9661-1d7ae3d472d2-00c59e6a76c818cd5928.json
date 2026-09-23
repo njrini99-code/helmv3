@@ -1,0 +1,112 @@
+{
+  "schema": "golfhelm-scorecard-profile-v1",
+  "profileId": "forest-creek-tee-85cb2edd-e0c3-48d9-9661-1d7ae3d472d2-00c59e6a76c818cd5928",
+  "layoutId": "forest-creek",
+  "teeName": "Forward",
+  "revision": "00c59e6a76c818cd5928ff975365de82b951d8a99af96b1e139e7058b33710d2",
+  "courseRating": null,
+  "slopeRating": null,
+  "source": {
+    "provider": "helm_course_library",
+    "url": null,
+    "retrievedAt": "2026-09-22",
+    "snapshotHash": "3ccb942047b8cb7e43ed794747102318d66a1d207ce8d2890840827b16d50458",
+    "note": "Immutable read-only snapshot; library source=unknown. Scorecard facts only. No physical tee marker, hole association or geometry approval."
+  },
+  "holes": [
+    {
+      "hole": 1,
+      "par": 3,
+      "yards": 148
+    },
+    {
+      "hole": 2,
+      "par": 4,
+      "yards": 349
+    },
+    {
+      "hole": 3,
+      "par": 3,
+      "yards": 162
+    },
+    {
+      "hole": 4,
+      "par": 4,
+      "yards": 342
+    },
+    {
+      "hole": 5,
+      "par": 5,
+      "yards": 418
+    },
+    {
+      "hole": 6,
+      "par": 4,
+      "yards": 263
+    },
+    {
+      "hole": 7,
+      "par": 5,
+      "yards": 426
+    },
+    {
+      "hole": 8,
+      "par": 4,
+      "yards": 337
+    },
+    {
+      "hole": 9,
+      "par": 4,
+      "yards": 288
+    },
+    {
+      "hole": 10,
+      "par": 4,
+      "yards": 336
+    },
+    {
+      "hole": 11,
+      "par": 3,
+      "yards": 162
+    },
+    {
+      "hole": 12,
+      "par": 4,
+      "yards": 278
+    },
+    {
+      "hole": 13,
+      "par": 4,
+      "yards": 326
+    },
+    {
+      "hole": 14,
+      "par": 5,
+      "yards": 416
+    },
+    {
+      "hole": 15,
+      "par": 4,
+      "yards": 342
+    },
+    {
+      "hole": 16,
+      "par": 4,
+      "yards": 260
+    },
+    {
+      "hole": 17,
+      "par": 5,
+      "yards": 409
+    },
+    {
+      "hole": 18,
+      "par": 3,
+      "yards": 153
+    }
+  ],
+  "libraryBinding": {
+    "courseId": "29034e4c-3a70-46b1-95b3-02b1d41b7529",
+    "teeId": "85cb2edd-e0c3-48d9-9661-1d7ae3d472d2"
+  }
+}

@@ -1,0 +1,112 @@
+{
+  "schema": "golfhelm-scorecard-profile-v1",
+  "profileId": "bryan-park-champs-tee-968bae9b-dc8e-459b-a27c-0e03eab460f1-f0144b6432b9f6f5a3a6",
+  "layoutId": "bryan-park-champs",
+  "teeName": "Qualifying Tees",
+  "revision": "f0144b6432b9f6f5a3a6e9a9ec61d9f6974c439c8f2166237c1c224bf0dcec92",
+  "courseRating": null,
+  "slopeRating": null,
+  "source": {
+    "provider": "helm_course_library",
+    "url": null,
+    "retrievedAt": "2026-09-22",
+    "snapshotHash": "3ccb942047b8cb7e43ed794747102318d66a1d207ce8d2890840827b16d50458",
+    "note": "Immutable read-only snapshot; library source=unknown. Scorecard facts only. No physical tee marker, hole association or geometry approval."
+  },
+  "holes": [
+    {
+      "hole": 1,
+      "par": 4,
+      "yards": 410
+    },
+    {
+      "hole": 2,
+      "par": 4,
+      "yards": 440
+    },
+    {
+      "hole": 3,
+      "par": 5,
+      "yards": 519
+    },
+    {
+      "hole": 4,
+      "par": 3,
+      "yards": 180
+    },
+    {
+      "hole": 5,
+      "par": 4,
+      "yards": 442
+    },
+    {
+      "hole": 6,
+      "par": 5,
+      "yards": 536
+    },
+    {
+      "hole": 7,
+      "par": 3,
+      "yards": 175
+    },
+    {
+      "hole": 8,
+      "par": 4,
+      "yards": 410
+    },
+    {
+      "hole": 9,
+      "par": 4,
+      "yards": 436
+    },
+    {
+      "hole": 10,
+      "par": 4,
+      "yards": 390
+    },
+    {
+      "hole": 11,
+      "par": 5,
+      "yards": 520
+    },
+    {
+      "hole": 12,
+      "par": 3,
+      "yards": 205
+    },
+    {
+      "hole": 13,
+      "par": 4,
+      "yards": 472
+    },
+    {
+      "hole": 14,
+      "par": 3,
+      "yards": 200
+    },
+    {
+      "hole": 15,
+      "par": 5,
+      "yards": 492
+    },
+    {
+      "hole": 16,
+      "par": 4,
+      "yards": 416
+    },
+    {
+      "hole": 17,
+      "par": 4,
+      "yards": 435
+    },
+    {
+      "hole": 18,
+      "par": 4,
+      "yards": 472
+    }
+  ],
+  "libraryBinding": {
+    "courseId": "0c980b93-8eee-48d4-be02-ddddfd3171fd",
+    "teeId": "968bae9b-dc8e-459b-a27c-0e03eab460f1"
+  }
+}

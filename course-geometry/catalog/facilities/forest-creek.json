@@ -1,0 +1,37 @@
+{
+  "schema": "golfhelm-facility-v1",
+  "facilityId": "forest-creek",
+  "name": "Forest Creek",
+  "country": "US",
+  "region": "NC",
+  "originWgs84": [
+    -79.4175125,
+    35.2238028
+  ],
+  "aoi": {
+    "kind": "osm",
+    "id": "relation/6384809",
+    "marginM": 300
+  },
+  "sourcePins": {
+    "osm": [
+      "relation/6384809"
+    ]
+  },
+  "providerPolicy": {
+    "terrain": [
+      "nc_onemap_dem03"
+    ],
+    "imagery": [
+      "nc_onemap_2024_2027_analysis",
+      "usgs_naip_plus"
+    ],
+    "context": [
+      "osm"
+    ]
+  },
+  "notes": [
+    "Intake from the 2026-09-22 usage cohort and the library coverage audit (2026-09-18); origin is the OSM course centre until the build pins it from the AOI.",
+    "Coverage audit: h18 g7 f9 b8 t30 inside the course polygon; DEM tiles named: 0; verdict no-dem."
+  ]
+}

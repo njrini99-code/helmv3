@@ -1,0 +1,72 @@
+{
+  "schema": "golfhelm-layout-v1",
+  "layoutId": "longleaf-family-golf-club",
+  "facilityId": "longleaf-golf-family-club",
+  "name": "Longleaf Family Golf Club",
+  "siteIds": [
+    "osm-relation-6387132"
+  ],
+  "segments": {
+    "main": {
+      "holes": [
+        "longleaf-family-golf-club-01",
+        "longleaf-family-golf-club-02",
+        "longleaf-family-golf-club-03",
+        "longleaf-family-golf-club-04",
+        "longleaf-family-golf-club-05",
+        "longleaf-family-golf-club-06",
+        "longleaf-family-golf-club-07",
+        "longleaf-family-golf-club-08",
+        "longleaf-family-golf-club-09",
+        "longleaf-family-golf-club-10",
+        "longleaf-family-golf-club-11",
+        "longleaf-family-golf-club-12",
+        "longleaf-family-golf-club-13",
+        "longleaf-family-golf-club-14",
+        "longleaf-family-golf-club-15",
+        "longleaf-family-golf-club-16",
+        "longleaf-family-golf-club-17",
+        "longleaf-family-golf-club-18"
+      ]
+    }
+  },
+  "segmentOrder": [
+    "main"
+  ],
+  "holeOrder": [
+    "longleaf-family-golf-club-01",
+    "longleaf-family-golf-club-02",
+    "longleaf-family-golf-club-03",
+    "longleaf-family-golf-club-04",
+    "longleaf-family-golf-club-05",
+    "longleaf-family-golf-club-06",
+    "longleaf-family-golf-club-07",
+    "longleaf-family-golf-club-08",
+    "longleaf-family-golf-club-09",
+    "longleaf-family-golf-club-10",
+    "longleaf-family-golf-club-11",
+    "longleaf-family-golf-club-12",
+    "longleaf-family-golf-club-13",
+    "longleaf-family-golf-club-14",
+    "longleaf-family-golf-club-15",
+    "longleaf-family-golf-club-16",
+    "longleaf-family-golf-club-17",
+    "longleaf-family-golf-club-18"
+  ],
+  "routeWayIds": null,
+  "bboxWgs84": null,
+  "capabilityTier": "C0",
+  "externalBindings": {
+    "golfCourseIds": [
+      "788fdf4d-b405-45dc-844a-286babf5e908"
+    ]
+  },
+  "scorecardProfiles": [
+    "longleaf-family-golf-club-tee-3eb34192-4de1-41af-89d7-1bf98180d4c3-3d1073922e7f27e2e04a"
+  ],
+  "referenceScorecardProfileId": "longleaf-family-golf-club-tee-3eb34192-4de1-41af-89d7-1bf98180d4c3-3d1073922e7f27e2e04a",
+  "geometry": null,
+  "notes": [
+    "8 completed cohort rounds (2026-09-22); intake wrote this manifest at C0 with routes unresolved."
+  ]
+}

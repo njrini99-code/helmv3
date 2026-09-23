@@ -1,0 +1,73 @@
+{
+  "schema": "golfhelm-layout-v1",
+  "layoutId": "bryan-park-players",
+  "facilityId": "bryan-park",
+  "name": "Bryan Park Players",
+  "siteIds": [
+    "osm-relation-3972771"
+  ],
+  "segments": {
+    "main": {
+      "holes": [
+        "bryan-park-players-01",
+        "bryan-park-players-02",
+        "bryan-park-players-03",
+        "bryan-park-players-04",
+        "bryan-park-players-05",
+        "bryan-park-players-06",
+        "bryan-park-players-07",
+        "bryan-park-players-08",
+        "bryan-park-players-09",
+        "bryan-park-players-10",
+        "bryan-park-players-11",
+        "bryan-park-players-12",
+        "bryan-park-players-13",
+        "bryan-park-players-14",
+        "bryan-park-players-15",
+        "bryan-park-players-16",
+        "bryan-park-players-17",
+        "bryan-park-players-18"
+      ]
+    }
+  },
+  "segmentOrder": [
+    "main"
+  ],
+  "holeOrder": [
+    "bryan-park-players-01",
+    "bryan-park-players-02",
+    "bryan-park-players-03",
+    "bryan-park-players-04",
+    "bryan-park-players-05",
+    "bryan-park-players-06",
+    "bryan-park-players-07",
+    "bryan-park-players-08",
+    "bryan-park-players-09",
+    "bryan-park-players-10",
+    "bryan-park-players-11",
+    "bryan-park-players-12",
+    "bryan-park-players-13",
+    "bryan-park-players-14",
+    "bryan-park-players-15",
+    "bryan-park-players-16",
+    "bryan-park-players-17",
+    "bryan-park-players-18"
+  ],
+  "routeWayIds": null,
+  "bboxWgs84": null,
+  "capabilityTier": "C0",
+  "externalBindings": {
+    "golfCourseIds": [
+      "3ddd1e12-ad9b-4e72-ab85-8c49feb42e3b",
+      "1d9820d4-e628-4f97-9c82-0bbb5aa79216"
+    ]
+  },
+  "scorecardProfiles": [
+    "bryan-park-players-tee-08a53b39-3f5f-41d6-8f69-ad297608b28b-d3293a3f89566edc1e71"
+  ],
+  "referenceScorecardProfileId": "bryan-park-players-tee-08a53b39-3f5f-41d6-8f69-ad297608b28b-d3293a3f89566edc1e71",
+  "geometry": null,
+  "notes": [
+    "7 completed cohort rounds (2026-09-22); intake wrote this manifest at C0 with routes unresolved."
+  ]
+}

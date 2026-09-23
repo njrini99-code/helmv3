@@ -1,0 +1,72 @@
+{
+  "schema": "golfhelm-layout-v1",
+  "layoutId": "bryan-park-champs",
+  "facilityId": "bryan-park",
+  "name": "Bryan Park Champs",
+  "siteIds": [
+    "osm-relation-3972771"
+  ],
+  "segments": {
+    "main": {
+      "holes": [
+        "bryan-park-champs-01",
+        "bryan-park-champs-02",
+        "bryan-park-champs-03",
+        "bryan-park-champs-04",
+        "bryan-park-champs-05",
+        "bryan-park-champs-06",
+        "bryan-park-champs-07",
+        "bryan-park-champs-08",
+        "bryan-park-champs-09",
+        "bryan-park-champs-10",
+        "bryan-park-champs-11",
+        "bryan-park-champs-12",
+        "bryan-park-champs-13",
+        "bryan-park-champs-14",
+        "bryan-park-champs-15",
+        "bryan-park-champs-16",
+        "bryan-park-champs-17",
+        "bryan-park-champs-18"
+      ]
+    }
+  },
+  "segmentOrder": [
+    "main"
+  ],
+  "holeOrder": [
+    "bryan-park-champs-01",
+    "bryan-park-champs-02",
+    "bryan-park-champs-03",
+    "bryan-park-champs-04",
+    "bryan-park-champs-05",
+    "bryan-park-champs-06",
+    "bryan-park-champs-07",
+    "bryan-park-champs-08",
+    "bryan-park-champs-09",
+    "bryan-park-champs-10",
+    "bryan-park-champs-11",
+    "bryan-park-champs-12",
+    "bryan-park-champs-13",
+    "bryan-park-champs-14",
+    "bryan-park-champs-15",
+    "bryan-park-champs-16",
+    "bryan-park-champs-17",
+    "bryan-park-champs-18"
+  ],
+  "routeWayIds": null,
+  "bboxWgs84": null,
+  "capabilityTier": "C0",
+  "externalBindings": {
+    "golfCourseIds": [
+      "0c980b93-8eee-48d4-be02-ddddfd3171fd"
+    ]
+  },
+  "scorecardProfiles": [
+    "bryan-park-champs-tee-968bae9b-dc8e-459b-a27c-0e03eab460f1-f0144b6432b9f6f5a3a6"
+  ],
+  "referenceScorecardProfileId": "bryan-park-champs-tee-968bae9b-dc8e-459b-a27c-0e03eab460f1-f0144b6432b9f6f5a3a6",
+  "geometry": null,
+  "notes": [
+    "46 completed cohort rounds (2026-09-22); intake wrote this manifest at C0 with routes unresolved."
+  ]
+}

@@ -1,0 +1,112 @@
+{
+  "schema": "golfhelm-scorecard-profile-v1",
+  "profileId": "pine-lakes-jekyll-island-tee-e14ac195-d285-4f1f-9256-f61b284e25ea-ab91f024eaf40531a8d8",
+  "layoutId": "pine-lakes-jekyll-island",
+  "teeName": "Forward",
+  "revision": "ab91f024eaf40531a8d872fe6a389cb7ae3b5bc3093d56e6c7dd8886eb18e146",
+  "courseRating": null,
+  "slopeRating": null,
+  "source": {
+    "provider": "helm_course_library",
+    "url": null,
+    "retrievedAt": "2026-09-22",
+    "snapshotHash": "3ccb942047b8cb7e43ed794747102318d66a1d207ce8d2890840827b16d50458",
+    "note": "Immutable read-only snapshot; library source=unknown. Scorecard facts only. No physical tee marker, hole association or geometry approval."
+  },
+  "holes": [
+    {
+      "hole": 1,
+      "par": 5,
+      "yards": 388
+    },
+    {
+      "hole": 2,
+      "par": 3,
+      "yards": 160
+    },
+    {
+      "hole": 3,
+      "par": 3,
+      "yards": 106
+    },
+    {
+      "hole": 4,
+      "par": 4,
+      "yards": 285
+    },
+    {
+      "hole": 5,
+      "par": 4,
+      "yards": 319
+    },
+    {
+      "hole": 6,
+      "par": 4,
+      "yards": 272
+    },
+    {
+      "hole": 7,
+      "par": 5,
+      "yards": 374
+    },
+    {
+      "hole": 8,
+      "par": 4,
+      "yards": 294
+    },
+    {
+      "hole": 9,
+      "par": 4,
+      "yards": 337
+    },
+    {
+      "hole": 10,
+      "par": 4,
+      "yards": 300
+    },
+    {
+      "hole": 11,
+      "par": 4,
+      "yards": 307
+    },
+    {
+      "hole": 12,
+      "par": 3,
+      "yards": 124
+    },
+    {
+      "hole": 13,
+      "par": 4,
+      "yards": 263
+    },
+    {
+      "hole": 14,
+      "par": 4,
+      "yards": 250
+    },
+    {
+      "hole": 15,
+      "par": 5,
+      "yards": 405
+    },
+    {
+      "hole": 16,
+      "par": 4,
+      "yards": 277
+    },
+    {
+      "hole": 17,
+      "par": 3,
+      "yards": 165
+    },
+    {
+      "hole": 18,
+      "par": 5,
+      "yards": 379
+    }
+  ],
+  "libraryBinding": {
+    "courseId": "7e9eb781-cadc-48ce-929f-1cf82f528126",
+    "teeId": "e14ac195-d285-4f1f-9256-f61b284e25ea"
+  }
+}

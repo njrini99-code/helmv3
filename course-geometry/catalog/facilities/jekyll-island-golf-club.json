@@ -1,0 +1,37 @@
+{
+  "schema": "golfhelm-facility-v1",
+  "facilityId": "jekyll-island-golf-club",
+  "name": "Jekyll Island Golf Club",
+  "country": "US",
+  "region": "GA",
+  "originWgs84": [
+    -81.4144721,
+    31.0681646
+  ],
+  "aoi": {
+    "kind": "osm",
+    "id": "way/133692507",
+    "marginM": 300
+  },
+  "sourcePins": {
+    "osm": [
+      "way/133692507"
+    ]
+  },
+  "providerPolicy": {
+    "terrain": [
+      "usgs_s1m",
+      "usgs_3dep_project_1m"
+    ],
+    "imagery": [
+      "usgs_naip_plus"
+    ],
+    "context": [
+      "osm"
+    ]
+  },
+  "notes": [
+    "Intake from the 2026-09-22 usage cohort and the library coverage audit (2026-09-18); origin is the OSM course centre until the build pins it from the AOI.",
+    "Coverage audit: h63 g66 f71 b132 t50 inside the course polygon; DEM tiles named: 2; verdict ready."
+  ]
+}

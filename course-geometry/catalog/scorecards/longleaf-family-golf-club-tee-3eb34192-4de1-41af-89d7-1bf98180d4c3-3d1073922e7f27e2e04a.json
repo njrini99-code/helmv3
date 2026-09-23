@@ -1,0 +1,112 @@
+{
+  "schema": "golfhelm-scorecard-profile-v1",
+  "profileId": "longleaf-family-golf-club-tee-3eb34192-4de1-41af-89d7-1bf98180d4c3-3d1073922e7f27e2e04a",
+  "layoutId": "longleaf-family-golf-club",
+  "teeName": "Championship",
+  "revision": "3d1073922e7f27e2e04a88d7ff6d40e9511e773a078b250490c00a74f3eccce5",
+  "courseRating": 72.7,
+  "slopeRating": 134,
+  "source": {
+    "provider": "helm_course_library",
+    "url": null,
+    "retrievedAt": "2026-09-22",
+    "snapshotHash": "3ccb942047b8cb7e43ed794747102318d66a1d207ce8d2890840827b16d50458",
+    "note": "Immutable read-only snapshot; library source=unknown. Scorecard facts only. No physical tee marker, hole association or geometry approval."
+  },
+  "holes": [
+    {
+      "hole": 1,
+      "par": 4,
+      "yards": 408
+    },
+    {
+      "hole": 2,
+      "par": 4,
+      "yards": 400
+    },
+    {
+      "hole": 3,
+      "par": 3,
+      "yards": 198
+    },
+    {
+      "hole": 4,
+      "par": 3,
+      "yards": 184
+    },
+    {
+      "hole": 5,
+      "par": 5,
+      "yards": 532
+    },
+    {
+      "hole": 6,
+      "par": 3,
+      "yards": 173
+    },
+    {
+      "hole": 7,
+      "par": 4,
+      "yards": 367
+    },
+    {
+      "hole": 8,
+      "par": 5,
+      "yards": 524
+    },
+    {
+      "hole": 9,
+      "par": 4,
+      "yards": 334
+    },
+    {
+      "hole": 10,
+      "par": 4,
+      "yards": 392
+    },
+    {
+      "hole": 11,
+      "par": 3,
+      "yards": 208
+    },
+    {
+      "hole": 12,
+      "par": 4,
+      "yards": 391
+    },
+    {
+      "hole": 13,
+      "par": 4,
+      "yards": 423
+    },
+    {
+      "hole": 14,
+      "par": 5,
+      "yards": 519
+    },
+    {
+      "hole": 15,
+      "par": 4,
+      "yards": 391
+    },
+    {
+      "hole": 16,
+      "par": 5,
+      "yards": 506
+    },
+    {
+      "hole": 17,
+      "par": 4,
+      "yards": 329
+    },
+    {
+      "hole": 18,
+      "par": 4,
+      "yards": 388
+    }
+  ],
+  "libraryBinding": {
+    "courseId": "788fdf4d-b405-45dc-844a-286babf5e908",
+    "teeId": "3eb34192-4de1-41af-89d7-1bf98180d4c3"
+  }
+}

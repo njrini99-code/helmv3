@@ -1,0 +1,112 @@
+{
+  "schema": "golfhelm-scorecard-profile-v1",
+  "profileId": "pebble-beach-golf-club-tee-ffb893e4-c9dc-4221-ac0c-ba03aec8bf08-685e67962725a25fe2d4",
+  "layoutId": "pebble-beach-golf-club",
+  "teeName": "White",
+  "revision": "685e67962725a25fe2d4b494e112d43516c5eafb8c3d2d5590809e870dc6c55c",
+  "courseRating": null,
+  "slopeRating": null,
+  "source": {
+    "provider": "helm_course_library",
+    "url": null,
+    "retrievedAt": "2026-09-22",
+    "snapshotHash": "3ccb942047b8cb7e43ed794747102318d66a1d207ce8d2890840827b16d50458",
+    "note": "Immutable read-only snapshot; library source=unknown. Scorecard facts only. No physical tee marker, hole association or geometry approval."
+  },
+  "holes": [
+    {
+      "hole": 1,
+      "par": 4,
+      "yards": 380
+    },
+    {
+      "hole": 2,
+      "par": 4,
+      "yards": 420
+    },
+    {
+      "hole": 3,
+      "par": 3,
+      "yards": 165
+    },
+    {
+      "hole": 4,
+      "par": 5,
+      "yards": 520
+    },
+    {
+      "hole": 5,
+      "par": 4,
+      "yards": 400
+    },
+    {
+      "hole": 6,
+      "par": 4,
+      "yards": 385
+    },
+    {
+      "hole": 7,
+      "par": 3,
+      "yards": 175
+    },
+    {
+      "hole": 8,
+      "par": 4,
+      "yards": 410
+    },
+    {
+      "hole": 9,
+      "par": 5,
+      "yards": 545
+    },
+    {
+      "hole": 10,
+      "par": 4,
+      "yards": 395
+    },
+    {
+      "hole": 11,
+      "par": 4,
+      "yards": 430
+    },
+    {
+      "hole": 12,
+      "par": 3,
+      "yards": 155
+    },
+    {
+      "hole": 13,
+      "par": 5,
+      "yards": 510
+    },
+    {
+      "hole": 14,
+      "par": 4,
+      "yards": 375
+    },
+    {
+      "hole": 15,
+      "par": 4,
+      "yards": 415
+    },
+    {
+      "hole": 16,
+      "par": 3,
+      "yards": 185
+    },
+    {
+      "hole": 17,
+      "par": 4,
+      "yards": 390
+    },
+    {
+      "hole": 18,
+      "par": 5,
+      "yards": 535
+    }
+  ],
+  "libraryBinding": {
+    "courseId": "9dcd1de8-126e-4287-b299-f9cc0ccb4526",
+    "teeId": "ffb893e4-c9dc-4221-ac0c-ba03aec8bf08"
+  }
+}

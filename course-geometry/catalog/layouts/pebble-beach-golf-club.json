@@ -1,0 +1,72 @@
+{
+  "schema": "golfhelm-layout-v1",
+  "layoutId": "pebble-beach-golf-club",
+  "facilityId": "pebble-beach-golf-course",
+  "name": "Pebble Beach Golf Club",
+  "siteIds": [
+    "osm-relation-3741806"
+  ],
+  "segments": {
+    "main": {
+      "holes": [
+        "pebble-beach-golf-club-01",
+        "pebble-beach-golf-club-02",
+        "pebble-beach-golf-club-03",
+        "pebble-beach-golf-club-04",
+        "pebble-beach-golf-club-05",
+        "pebble-beach-golf-club-06",
+        "pebble-beach-golf-club-07",
+        "pebble-beach-golf-club-08",
+        "pebble-beach-golf-club-09",
+        "pebble-beach-golf-club-10",
+        "pebble-beach-golf-club-11",
+        "pebble-beach-golf-club-12",
+        "pebble-beach-golf-club-13",
+        "pebble-beach-golf-club-14",
+        "pebble-beach-golf-club-15",
+        "pebble-beach-golf-club-16",
+        "pebble-beach-golf-club-17",
+        "pebble-beach-golf-club-18"
+      ]
+    }
+  },
+  "segmentOrder": [
+    "main"
+  ],
+  "holeOrder": [
+    "pebble-beach-golf-club-01",
+    "pebble-beach-golf-club-02",
+    "pebble-beach-golf-club-03",
+    "pebble-beach-golf-club-04",
+    "pebble-beach-golf-club-05",
+    "pebble-beach-golf-club-06",
+    "pebble-beach-golf-club-07",
+    "pebble-beach-golf-club-08",
+    "pebble-beach-golf-club-09",
+    "pebble-beach-golf-club-10",
+    "pebble-beach-golf-club-11",
+    "pebble-beach-golf-club-12",
+    "pebble-beach-golf-club-13",
+    "pebble-beach-golf-club-14",
+    "pebble-beach-golf-club-15",
+    "pebble-beach-golf-club-16",
+    "pebble-beach-golf-club-17",
+    "pebble-beach-golf-club-18"
+  ],
+  "routeWayIds": null,
+  "bboxWgs84": null,
+  "capabilityTier": "C0",
+  "externalBindings": {
+    "golfCourseIds": [
+      "9dcd1de8-126e-4287-b299-f9cc0ccb4526"
+    ]
+  },
+  "scorecardProfiles": [
+    "pebble-beach-golf-club-tee-ffb893e4-c9dc-4221-ac0c-ba03aec8bf08-685e67962725a25fe2d4"
+  ],
+  "referenceScorecardProfileId": "pebble-beach-golf-club-tee-ffb893e4-c9dc-4221-ac0c-ba03aec8bf08-685e67962725a25fe2d4",
+  "geometry": null,
+  "notes": [
+    "5 completed cohort rounds (2026-09-22); intake wrote this manifest at C0 with routes unresolved."
+  ]
+}
