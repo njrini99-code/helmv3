@@ -311,6 +311,10 @@ function printPlan(body) {
  * A trailing fragment with no `;` is still returned rather than dropped, so a
  * malformed block fails loudly instead of silently shrinking the check set.
  *
+ * A trailing sqlfluff directive (`-- noqa: LT05` on a long VERIFY line) is a
+ * lint comment, not SQL: it is stripped before the `;` test, or the query
+ * would never terminate and would swallow the next fragment.
+ *
  * Exported for the unit test; not part of the CLI surface.
  */
 export function extractVerifyQueries(fileText) {
@@ -318,7 +322,7 @@ export function extractVerifyQueries(fileText) {
     .split('\n')
     .map((l) => l.trim())
     .filter((l) => /^--\s*VERIFY:/i.test(l))
-    .map((l) => l.replace(/^--\s*VERIFY:\s*/i, '').trim())
+    .map((l) => l.replace(/^--\s*VERIFY:\s*/i, '').replace(/\s+--\s*noqa\b.*$/i, '').trim())
     .filter(Boolean);
 
   const queries = [];
