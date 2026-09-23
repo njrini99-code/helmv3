@@ -36,18 +36,21 @@
  *    target_kind/target_date/target_rounds through. A focus area created
  *    from an insight WITH a timeframe reaches the due-for-review queue
  *    with no separate `updateFocusArea` call — asserted below.
- * 6. Follow-up eligibility "computed from the persisted rows": no function
- *    or concept named "follow-up eligibility" exists anywhere in the
- *    codebase (checked `recordFocusAreaOutcome`, the fixture-matrix doc's
- *    Pkg 9 section, and rows 39-41 — "Missing (no code path)"). The
- *    closest real, persisted-row-driven mechanism is
- *    `findActiveFocusAreaForMetric` itself: it blocks a second focus area
- *    on the same metric while the first is active (step 2), and — because
- *    `completeFocusArea` moves `status` out of
- *    `ACTIVE_FOCUS_AREA_STATUSES_FOR_DEDUP` — the SAME guard stops
- *    blocking once the area is completed. That is verified below as
- *    "re-assignment unblocked after completion," not asserted to be
- *    "follow-up eligibility" — no code names that computation.
+ * 6. Duplicate-guard re-opens after completion — `findActiveFocusAreaForMetric`
+ *    blocks a second focus area on the same metric while the first is active
+ *    (step 2), and stops blocking once `completeFocusArea` moves `status`
+ *    out of `ACTIVE_FOCUS_AREA_STATUSES_FOR_DEDUP`. Answers "is a second
+ *    area permitted at all", not "should the coach create one now" — that's
+ *    step 7.
+ * 7. Follow-up eligibility (#1998, owner decision 2026-09-23) — FIXED:
+ *    `follow-up-eligibility.ts`'s `computeFollowUpEligibility` (pure) +
+ *    `loadFollowUpRoundCounts` (loader over `golf_rounds`). Eligible when
+ *    (status === 'completed' OR today is past `target_date`) AND >= 3
+ *    completed rounds since the area's real start (`started_at`, from
+ *    `acceptFocusArea` — never `created_at`). Under-threshold areas surface
+ *    with a "waiting for rounds (n/3)" label rather than being omitted.
+ *    Does not feed Package 10 outcome measurement — eligibility only, not
+ *    whether the metric improved.
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
@@ -95,6 +98,10 @@ import {
 } from '@/app/golf/actions/focus-area-practice-log';
 import { loadFocusAreaPracticeLogData } from '@/lib/coachhelm/focus-areas/practice-log-loader';
 import { computeDueFocusAreas } from '@/lib/coachhelm/focus-areas/due-for-review';
+import {
+  computeFollowUpEligibility,
+  loadFollowUpRoundCounts,
+} from '@/lib/coachhelm/focus-areas/follow-up-eligibility';
 import { computeInsightEvidenceRevision } from '@/lib/coachhelm/focus-areas/evidence-revision-source';
 
 const PLAYER_ID = 'player-1';
@@ -135,6 +142,7 @@ function makeTables() {
     golf_player_focus_areas: [] as Record<string, unknown>[],
     golf_focus_area_criteria: [] as Record<string, unknown>[],
     golf_focus_area_practice_sessions: [] as Record<string, unknown>[],
+    golf_rounds: [] as Record<string, unknown>[],
   };
 }
 
@@ -162,7 +170,7 @@ beforeEach(() => {
 });
 
 describe('Package 9 gate — one focus area, coach assignment through re-eligibility', () => {
-  it('walks the real actions end to end, through the due-for-review queue, and pins the one remaining real gap', async () => {
+  it('walks the real actions end to end: coach assignment, player view, completion, due-for-review, and follow-up eligibility', async () => {
     const tables = makeTables();
 
     // ---- Step 1: coach creates the focus area from an insight ----------
@@ -281,12 +289,12 @@ describe('Package 9 gate — one focus area, coach assignment through re-eligibi
     expect(dueAfterTimeframe[0]!.area.id).toBe(focusAreaId);
     expect(dueAfterTimeframe[0]!.reason).toBe('due_soon');
 
-    // ---- Step 6: "follow-up eligibility" is not a real, named computation
+    // ---- Step 6: duplicate-guard re-opens after completion --------------
     // Completing the area moves it out of ACTIVE_FOCUS_AREA_STATUSES_FOR_
     // DEDUP — proven by re-running the SAME duplicate-guard path (step 2)
-    // and observing it now succeeds. This is re-assignment unblocked after
-    // completion, not a verification of "follow-up eligibility" — nothing
-    // in the codebase computes or names that.
+    // and observing it now succeeds. This is re-assignment being ALLOWED
+    // again, distinct from follow-up ELIGIBILITY (step 7 below) — the guard
+    // only answers "is a second area on this metric permitted at all".
     createClientMock.mockResolvedValue(asPlayer(tables));
     const completed = await completeFocusArea(focusAreaId);
     expect(completed.success).toBe(true);
@@ -306,17 +314,75 @@ describe('Package 9 gate — one focus area, coach assignment through re-eligibi
     expect(followUp.success).toBe(true);
     expect(followUp.focusAreaId).not.toBe(focusAreaId);
     expect(tables.golf_player_focus_areas).toHaveLength(2);
-  });
 
-  // GAP, pinned: nothing in the codebase names or computes "follow-up
-  // eligibility" as a concept distinct from the duplicate-guard's own
-  // active/not-active check exercised above. If a later slice adds a real
-  // eligibility computation (e.g. weighing outcome_status, a cool-down
-  // window, or how many prior follow-ups already ran on this metric — see
-  // fixture-matrix row 41, "Two of three follow-ups improve," "Missing (no
-  // code path)"), this test should be replaced with a real assertion
-  // against it, not left passing by accident.
-  it.todo(
-    'a real "follow-up eligibility" computation, distinct from the duplicate-active guard, once one exists',
-  );
+    // ---- Step 7: follow-up eligibility — FIXED, owner decision 2026-09-23
+    // Eligible = (status === 'completed' OR today is past target_date) AND
+    // >= 3 completed rounds since the area's real start (started_at, from
+    // acceptFocusArea in step 3 — never created_at). `row` is `completed`
+    // (step 6), so it qualifies on the status leg; round count starts at 0.
+    const startedRow = tables.golf_player_focus_areas.find((r) => r.id === focusAreaId)!;
+    expect(startedRow.started_at).toBeTruthy();
+    const startDate = (startedRow.started_at as string).slice(0, 10);
+
+    const coachReadClient = asCoach(tables);
+    const countsBeforeRounds = await loadFollowUpRoundCounts(coachReadClient as never, [
+      { id: focusAreaId, player_id: PLAYER_ID, started_at: startedRow.started_at as string },
+    ]);
+    expect(countsBeforeRounds).not.toBeNull(); // null would mean the read failed, not "0 rounds"
+
+    const eligibilityBeforeRounds = computeFollowUpEligibility(
+      [
+        {
+          id: focusAreaId,
+          player_id: PLAYER_ID,
+          status: startedRow.status as string,
+          target_kind: (startedRow.target_kind as string | null) ?? null,
+          target_date: (startedRow.target_date as string | null) ?? null,
+        },
+      ],
+      countsBeforeRounds!,
+      { todayIso: '2026-09-23' },
+    );
+    expect(eligibilityBeforeRounds).toHaveLength(1);
+    expect(eligibilityBeforeRounds[0]).toMatchObject({
+      reason: 'completed',
+      roundsSinceStart: 0,
+      eligible: false,
+      waitingLabel: 'waiting for rounds (0/3)',
+    });
+
+    // Play 3 completed rounds on/after the area's start date — real
+    // persisted golf_rounds rows, read back through the real loader.
+    tables.golf_rounds.push(
+      { id: crypto.randomUUID(), player_id: PLAYER_ID, round_date: startDate, status: 'completed' },
+      { id: crypto.randomUUID(), player_id: PLAYER_ID, round_date: startDate, status: 'completed' },
+      { id: crypto.randomUUID(), player_id: PLAYER_ID, round_date: startDate, status: 'completed' },
+    );
+
+    const countsAfterRounds = await loadFollowUpRoundCounts(coachReadClient as never, [
+      { id: focusAreaId, player_id: PLAYER_ID, started_at: startedRow.started_at as string },
+    ]);
+    expect(countsAfterRounds).not.toBeNull();
+
+    const eligibilityAfterRounds = computeFollowUpEligibility(
+      [
+        {
+          id: focusAreaId,
+          player_id: PLAYER_ID,
+          status: startedRow.status as string,
+          target_kind: (startedRow.target_kind as string | null) ?? null,
+          target_date: (startedRow.target_date as string | null) ?? null,
+        },
+      ],
+      countsAfterRounds!,
+      { todayIso: '2026-09-23' },
+    );
+    expect(eligibilityAfterRounds).toHaveLength(1);
+    expect(eligibilityAfterRounds[0]).toMatchObject({
+      reason: 'completed',
+      roundsSinceStart: 3,
+      eligible: true,
+      waitingLabel: null,
+    });
+  });
 });
