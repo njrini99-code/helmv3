@@ -12,31 +12,6 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "14.5"
   }
-  graphql_public: {
-    Tables: {
-      [_ in never]: never
-    }
-    Views: {
-      [_ in never]: never
-    }
-    Functions: {
-      graphql: {
-        Args: {
-          extensions?: Json
-          operationName?: string
-          query?: string
-          variables?: Json
-        }
-        Returns: Json
-      }
-    }
-    Enums: {
-      [_ in never]: never
-    }
-    CompositeTypes: {
-      [_ in never]: never
-    }
-  }
   public: {
     Tables: {
       admin_allowlist: {
@@ -13926,6 +13901,7 @@ export type Database = {
           delta: number
           insight_id: string
           lift: number | null
+          method_version: string | null
           n_rounds_after: number
           n_rounds_before: number
           post_value: number
@@ -13938,6 +13914,7 @@ export type Database = {
           delta: number
           insight_id: string
           lift?: number | null
+          method_version?: string | null
           n_rounds_after: number
           n_rounds_before: number
           post_value: number
@@ -13950,6 +13927,7 @@ export type Database = {
           delta?: number
           insight_id?: string
           lift?: number | null
+          method_version?: string | null
           n_rounds_after?: number
           n_rounds_before?: number
           post_value?: number
@@ -14691,6 +14669,7 @@ export type Database = {
           created_at: string | null
           current_value: number | null
           description: string | null
+          evidence_revision: string | null
           from_insight_id: string | null
           from_review_id: string | null
           id: string
@@ -14720,6 +14699,7 @@ export type Database = {
           created_at?: string | null
           current_value?: number | null
           description?: string | null
+          evidence_revision?: string | null
           from_insight_id?: string | null
           from_review_id?: string | null
           id?: string
@@ -14749,6 +14729,7 @@ export type Database = {
           created_at?: string | null
           current_value?: number | null
           description?: string | null
+          evidence_revision?: string | null
           from_insight_id?: string | null
           from_review_id?: string | null
           id?: string
@@ -15984,6 +15965,58 @@ export type Database = {
             columns: ["review_id"]
             isOneToOne: false
             referencedRelation: "golf_round_reviews"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      golf_round_recap_provenance: {
+        Row: {
+          call_log_id: string | null
+          claim_packet_engaged: boolean
+          generated_at: string
+          player_id: string
+          round_id: string
+          source: string
+          stats_rounds_played_at_generation: number | null
+        }
+        Insert: {
+          call_log_id?: string | null
+          claim_packet_engaged?: boolean
+          generated_at?: string
+          player_id: string
+          round_id: string
+          source: string
+          stats_rounds_played_at_generation?: number | null
+        }
+        Update: {
+          call_log_id?: string | null
+          claim_packet_engaged?: boolean
+          generated_at?: string
+          player_id?: string
+          round_id?: string
+          source?: string
+          stats_rounds_played_at_generation?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "golf_round_recap_provenance_call_log_id_fkey"
+            columns: ["call_log_id"]
+            isOneToOne: false
+            referencedRelation: "golf_coachhelm_llm_calls"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "golf_round_recap_provenance_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "golf_players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "golf_round_recap_provenance_round_id_fkey"
+            columns: ["round_id"]
+            isOneToOne: true
+            referencedRelation: "golf_rounds"
             referencedColumns: ["id"]
           },
         ]
@@ -22100,9 +22133,6 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
-  graphql_public: {
-    Enums: {},
-  },
   public: {
     Enums: {
       admin_event_severity: ["info", "warning", "error", "critical"],
