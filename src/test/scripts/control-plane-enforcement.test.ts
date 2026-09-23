@@ -74,18 +74,9 @@ describe('hook wiring is real', () => {
     }
   });
 
-  it('every PreToolUse guard added by the config-hardening pass is wired', () => {
-    // 2026-09-07: guard-git.mjs, guard-sql.mjs, and guard-config-change.mjs
-    // joined guard-canonical-write.mjs as PreToolUse hooks that can refuse a
-    // tool call — this repo's config-hardening pass. If this count or set
-    // ever legitimately changes again, the inventory changes with it and
-    // this assertion is what forces the docs to be regenerated rather than
-    // silently drift.
+  it('no PreToolUse hook blocks tool calls (owner grant: full permissions)', () => {
     const blocking = hookRows().filter((r) => r.event === 'PreToolUse');
-    const scripts = blocking.map((r) => scriptPath(r.command));
-    // guard-sql.mjs was removed when the owner granted full Supabase access;
-    // guard-git.mjs (protects other sessions' uncommitted work) remains.
-    expect(scripts).toEqual(['.claude/hooks/guard-git.mjs']);
+    expect(blocking).toEqual([]);
   });
 
   it('no hook claims to cover MCP unless one actually matches mcp__', () => {
@@ -208,12 +199,10 @@ describe('the three corrected claims stay corrected', () => {
     expect(read('.claude/rules/shipping.md')).toMatch(/Recursive `rm` is UNENFORCED/);
   });
 
-  it('AGENTS.md describes the remaining guard as a narrow text matcher, not a boundary', () => {
+  it('AGENTS.md states that no permission rule or hook blocks Bash, Git, Supabase or Vercel', () => {
     const raw = read('AGENTS.md');
-    expect(raw).toMatch(/guard-git/);
-    expect(raw).not.toMatch(/guard-sql/);
-    expect(raw).toMatch(/text matcher, not a security boundary/);
-    expect(raw).toMatch(/No permission rule denies or asks for Bash, Supabase, or Vercel/);
+    expect(raw).not.toMatch(/guard-(git|sql)/);
+    expect(raw).toMatch(/No permission rule or hook denies, asks for, or blocks Bash, Git, Supabase, or\s+Vercel/);
   });
 
   it('the policy and rules point readers at the generated inventory', () => {

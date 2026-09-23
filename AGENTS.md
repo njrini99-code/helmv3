@@ -127,8 +127,8 @@ authority). Required review automation: Review Gate and CodeQL
 
 ## Guards
 
-No permission rule denies or asks for Bash, Supabase, or Vercel. The one
-guard hook, `guard-git`, blocks a few Git shapes that destroy other sessions'
-work (force-push to `main`, bulk staging, raw worktree removal, `branch -D`);
-it is a text matcher, not a security boundary. The generated
+No permission rule or hook denies, asks for, or blocks Bash, Git, Supabase, or
+Vercel. The Git rules above (explicit staging, no force-push to `main`, no
+`--admin`, lifecycle tools for cleanup) are policy you follow, not guards that
+stop you; GitHub branch protection still enforces required checks on `main`. The generated
 `docs/CONTROL_PLANE_ENFORCEMENT.md` lists what is actually wired.

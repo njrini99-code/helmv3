@@ -608,9 +608,11 @@ export function renderBlock() {
   const blocking = hooks.filter((h) => h.blocking);
   L.push('');
   L.push(
-    blocking.length === 1
-      ? `Exactly one hook can refuse a tool call: \`${basename(blocking[0].script ?? '?')}\` under matcher \`${blocking[0].matcher}\`. Every other wired hook observes.`
-      : `${blocking.length} hooks can refuse a tool call.`,
+    blocking.length === 0
+      ? 'No hook can refuse a tool call; every wired hook observes or reports.'
+      : blocking.length === 1
+        ? `Exactly one hook can refuse a tool call: \`${basename(blocking[0].script ?? '?')}\` under matcher \`${blocking[0].matcher}\`. Every other wired hook observes.`
+        : `${blocking.length} hooks can refuse a tool call.`,
   );
   L.push('');
   L.push('## Permission rules');

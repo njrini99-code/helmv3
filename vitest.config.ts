@@ -146,7 +146,6 @@ export default defineConfig({
             // SessionStart/Stop hooks wired in .claude/settings.json. Same
             // "named explicitly, not swept in" rule applies — an unlisted
             // file under scripts/__tests__/ runs under nothing.
-            'scripts/__tests__/hooks/guard-git.test.mjs',
             'scripts/__tests__/hooks/route-prompt.test.mjs',
             'scripts/__tests__/hooks/session-state-compaction.test.mjs',
             // Named explicitly for the same reason as the line above (no

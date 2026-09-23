@@ -438,16 +438,6 @@ function checkHookWiring() {
   add('hooks', 'hook-scripts-exist', missing.length ? FAIL : PASS,
     missing.length ? `configured hooks whose script is absent: ${missing.join(', ')}` : `${rows.length} configured hooks all resolve`);
 
-  // Verify reachability of the guards actually configured, rather than
-  // requiring a retired canonical-edit ban to exist forever.
-  const pre = rows.filter((r) => r.event === 'PreToolUse');
-  for (const guard of ['guard-git.mjs']) {
-    const entries = pre.filter((r) => r.command.includes(guard));
-    const reaches = entries.some((r) => new RegExp(r.matcher).test('Bash'));
-    add('hooks', `${guard}-reachable`, reaches ? PASS : FAIL,
-      reaches ? 'configured guard can reach Bash' : 'missing or unreachable guard');
-  }
-
 }
 
 function checkClaimConsistency() {

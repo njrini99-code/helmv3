@@ -139,7 +139,6 @@ describe('failure injection — each control goes red for its own reason', () =>
   it('baseline fixture: the checks under test are green before injection', () => {
     for (const id of [
       'hook-scripts-exist',
-      'guard-git.mjs-reachable',
       'no-prose-overclaims-enforcement',
       'every-declared-namespace-observed',
       'mutation-budget-enforced',
@@ -151,10 +150,10 @@ describe('failure injection — each control goes red for its own reason', () =>
   it('DELETE a configured hook -> hook-scripts-exist FAILS', () => {
     const fx = makeFixture();
     try {
-      rmSync(join(fx, '.claude/hooks/guard-git.mjs'));
+      rmSync(join(fx, '.claude/hooks/stamp-workspace.mjs'));
       const r = checkIn(fx, 'hook-scripts-exist');
       expect(r?.state).toBe('FAIL');
-      expect(r?.detail).toMatch(/guard-git/);
+      expect(r?.detail).toMatch(/stamp-workspace/);
     } finally {
       rmSync(fx, { recursive: true, force: true });
     }
@@ -168,22 +167,6 @@ describe('failure injection — each control goes red for its own reason', () =>
       d.hooks.SessionStart[0].hooks[0].command = '"$CLAUDE_PROJECT_DIR"/.claude/hooks/guard-sql.sh';
       writeFileSync(p, JSON.stringify(d, null, 2));
       expect(checkIn(fx, 'hook-scripts-exist')?.state).toBe('FAIL');
-    } finally {
-      rmSync(fx, { recursive: true, force: true });
-    }
-  });
-
-  it('BREAK the blocking hook matcher -> guard-reachable FAILS', () => {
-    // guard-bash.sh's exact shape: wired, and unable to fire.
-    const fx = makeFixture();
-    try {
-      const p = join(fx, '.claude/settings.json');
-      const d = JSON.parse(readFileSync(p, 'utf-8'));
-      d.hooks.PreToolUse[0].matcher = 'Read';
-      writeFileSync(p, JSON.stringify(d, null, 2));
-      const r = checkIn(fx, 'guard-git.mjs-reachable');
-      expect(r?.state).toBe('FAIL');
-      expect(r?.detail).toMatch(/unreachable/);
     } finally {
       rmSync(fx, { recursive: true, force: true });
     }
@@ -638,7 +621,7 @@ describe('SENTINEL: injections can never reach the live checkout', () => {
       rmSync(join(fx, '.claude/hooks'), { recursive: true, force: true });
       expect(checkIn(fx, 'hook-scripts-exist')?.state).toBe('FAIL');
       // ...and the real repo is untouched by that deletion.
-      expect(existsSync(resolve(REPO, '.claude/hooks/guard-git.mjs'))).toBe(true);
+      expect(existsSync(resolve(REPO, '.claude/hooks/stamp-workspace.mjs'))).toBe(true);
     } finally {
       rmSync(fx, { recursive: true, force: true });
     }

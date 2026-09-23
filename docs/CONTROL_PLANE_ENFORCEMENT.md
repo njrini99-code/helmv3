@@ -42,10 +42,9 @@ asserted here — see `.claude/rules/database.md`.
 | SessionStart | `compact\|resume` | `.claude/hooks/restore-session-state.mjs` | yes | no — records/reports only |
 | WorktreeCreate | `(all tools)` | `.claude/hooks/worktree-create.mjs` | yes | no — records/reports only |
 | UserPromptSubmit | `(all tools)` | `.claude/hooks/route-prompt.mjs` | yes | no — records/reports only |
-| PreToolUse | `Bash` | `.claude/hooks/guard-git.mjs` | yes | yes |
 | PreCompact | `(all tools)` | `.claude/hooks/save-session-state.mjs` | yes | no — records/reports only |
 
-Exactly one hook can refuse a tool call: `guard-git.mjs` under matcher `Bash`. Every other wired hook observes.
+No hook can refuse a tool call; every wired hook observes or reports.
 
 ## Permission rules
 
