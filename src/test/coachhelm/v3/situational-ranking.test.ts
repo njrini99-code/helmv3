@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import type { AnalysisScope, HoleContext, ShotFact } from '@/lib/coachhelm/v3/context/types';
+import { computeDistanceProfile } from '@/lib/coachhelm/v3/metrics/distance-profile';
 import { computeParOpportunities } from '@/lib/coachhelm/v3/metrics/par-opportunities';
+import {
+  attributeSequence,
+  type SequenceAttributionResult,
+  type SequenceEvent,
+} from '@/lib/coachhelm/v3/metrics/sequence-attribution';
 import type { MetricResult } from '@/lib/coachhelm/v3/metrics/types';
 import {
   groupIssues,
@@ -15,13 +21,15 @@ import {
  * module doc comment for the full contract.
  *
  * A2 (`distance-profile.ts`, #1989) and A4 (`sequence-attribution.ts`,
- * #1988) had not merged to `main` as of this slice, so their packets are
- * hand-built here in the shape their real adapters will eventually
- * produce (`IssueSourcePacket`, `origin: 'distance' | 'sequence'`) rather
- * than sourced from real modules. A3 (`par-opportunities.ts`) IS real and
- * merged — `parPacketFromRow` below is a test-local adapter (not a claim
- * about what a real production adapter's claimId scheme will look like)
- * that turns one of its actual `MetricResult` rows into a packet.
+ * #1988) merged to `main` during this slice — the main grouping fixture
+ * below calls all three of A2/A3/A4's real, merged functions and wraps
+ * their actual output into packets via small test-local adapters (not a
+ * claim about what a real production adapter's claimId scheme will look
+ * like — that wiring is a later slice's job). The "tie-breaking and edge
+ * cases" describe block below stays on hand-built synthetic packets on
+ * purpose: those tests exercise `groupIssues`'s own algorithm (ownership
+ * tie-breaks, empty input, determinism) independent of any one family's
+ * real shape, not a claim about A2/A3/A4 behavior.
  */
 
 function scope(overrides: Partial<AnalysisScope> = {}): AnalysisScope {
@@ -59,6 +67,7 @@ function shot(overrides: Partial<ShotFact> & Pick<ShotFact, 'round_id' | 'hole_n
     result: null,
     is_penalty: false,
     putt_made: null,
+    miss_direction: null,
     observed_at: '2026-06-01T00:00:00.000Z',
     ...overrides,
   };
@@ -134,6 +143,42 @@ function parPacketFromRow(row: MetricResult, sourceShotIds: string[]): IssueSour
   };
 }
 
+/** Test-local adapter from a real A2 `MetricResult` row — same rationale
+ *  as `parPacketFromRow`. A2 also computes no strokes-impact number (only
+ *  rates/counts/proximity-feet — see `distance-profile.ts`'s file header),
+ *  so `strokesImpact` is honestly `null` here too. */
+function distancePacketFromRow(row: MetricResult, sourceShotIds: string[]): IssueSourcePacket {
+  return {
+    claimId: `metric:${row.metricId}:${row.dimensions.band}`,
+    origin: 'distance',
+    label: row.metricId,
+    sourceShotIds,
+    eligible: row.status === 'supported' || row.status === 'descriptive_only',
+    strokesImpact: null,
+    confidence: null,
+  };
+}
+
+/** Test-local adapter from a real A4 `SequenceEvent` — the one family here
+ *  that DOES compute a genuine strokes-gained-style number
+ *  (`measuredContribution`), so it is honestly non-null when the event
+ *  resolved (no `baselineGap`). No confidence notion applies to an exact
+ *  computed value, so that field stays `null` like the others. */
+function sequencePacketFromEvent(result: SequenceAttributionResult, event: SequenceEvent): IssueSourcePacket {
+  const sourceShotIds = event.shotNumbers.map((n) =>
+    shotClaimId({ round_id: result.round_id, hole_number: result.hole_number, shot_number: n }),
+  );
+  return {
+    claimId: `sequence:${event.kind}:${result.round_id}:${result.hole_number}:${event.shotNumbers.join('-')}`,
+    origin: 'sequence',
+    label: event.kind,
+    sourceShotIds,
+    eligible: event.measuredContribution !== null,
+    strokesImpact: event.measuredContribution,
+    confidence: null,
+  };
+}
+
 function syntheticPacket(overrides: Partial<IssueSourcePacket> & Pick<IssueSourcePacket, 'claimId' | 'origin' | 'sourceShotIds'>): IssueSourcePacket {
   return {
     label: overrides.claimId,
@@ -142,6 +187,39 @@ function syntheticPacket(overrides: Partial<IssueSourcePacket> & Pick<IssueSourc
     confidence: null,
     ...overrides,
   };
+}
+
+/** Attaches the distance/lie detail `par5Play`'s own fixture omits (A3
+ *  never reads it, so the shared helper leaves it null) — needed for A2
+ *  (band bucketing) and A4 (strokes-gained resolution) to compute a real
+ *  value from this exact sequence: a big drive to 100yd out, a fairway
+ *  shot to 20ft short, a green-finding approach to 15ft, a lag putt to
+ *  5ft, then holed out. Continuity holds (each shot's `before` matches
+ *  the previous shot's `after`). */
+function withSequenceDetail(facts: readonly ShotFact[]): ShotFact[] {
+  const detail: Record<number, Partial<ShotFact>> = {
+    1: { lie_before: 'tee', distance_to_hole_before_feet: 1500, lie_after: 'fairway', distance_to_hole_after_feet: 300 },
+    2: { lie_before: 'fairway', distance_to_hole_before_feet: 300, lie_after: 'fairway', distance_to_hole_after_feet: 60 },
+    3: { lie_before: 'fairway', distance_to_hole_before_feet: 60, lie_after: 'green', distance_to_hole_after_feet: 15 },
+    4: { lie_before: 'green', distance_to_hole_before_feet: 15, lie_after: 'green', distance_to_hole_after_feet: 5 },
+    5: { lie_before: 'green', distance_to_hole_before_feet: 5, lie_after: 'green', distance_to_hole_after_feet: 0 },
+  };
+  return facts.map((f) => ({ ...f, ...(f.shot_number !== null ? detail[f.shot_number] : undefined) }));
+}
+
+/** A2's own MIN_ATTEMPTS(10)/MIN_ROUNDS(3) support floor, cleared with
+ *  filler approach shots on an unrelated hole — never appearing in any
+ *  packet's `sourceShotIds`, existing only so the real row is
+ *  `status: 'supported'`. */
+function fillerApproachShot(round_id: string, shot_number: number): ShotFact {
+  return shot({
+    round_id,
+    hole_number: 1,
+    shot_number,
+    shot_type: 'approach',
+    distance_to_hole_before_feet: 300, // 100yd — same band as approach1 below
+    result: 'rough',
+  });
 }
 
 describe('groupIssues — par, distance, and sequence describing the same source shots', () => {
@@ -168,28 +246,33 @@ describe('groupIssues — par, distance, and sequence describing the same source
   const approach1 = shotClaimId({ round_id: ROUND, hole_number: HOLE, shot_number: 2 });
   const approach2 = shotClaimId({ round_id: ROUND, hole_number: HOLE, shot_number: 3 });
 
-  // par ↔ distance overlap on approach1 only; par ↔ sequence overlap on
-  // approach2 only; distance and sequence share NO shot directly — the
-  // transitive closure through `par` is what proves they still group.
+  const sequenceFacts = withSequenceDetail(play.facts);
+  const sequenceResult = attributeSequence(sequenceFacts, play.hole, scope());
+  const approachEvent = sequenceResult.events.find((e) => e.kind === 'approach_to_recovery')!;
+
+  const fillers = [
+    ...[101, 102, 103, 104].map((n) => fillerApproachShot(ROUND, n)),
+    ...[101, 102, 103].map((n) => fillerApproachShot('round-1b', n)),
+    ...[101, 102].map((n) => fillerApproachShot('round-1c', n)),
+  ];
+  const distanceRows = computeDistanceProfile(
+    [sequenceFacts.find((f) => f.shot_number === 2)!, ...fillers],
+    scope(),
+    [play.hole, extraPlay1.hole, extraPlay2.hole],
+  );
+  const greenHitRow = distanceRows.find((r) => r.metricId === 'approach_green_hit_rate' && r.dimensions.band === '50_125ft')!;
+
+  // par covers BOTH approach shots (its own opportunity-creation check
+  // spans the whole hole); the real A4 event also covers both (the same
+  // fairway-miss-then-green-find chain, see `approach_to_recovery`'s own
+  // grouping rule); distance covers only approach1's own band membership.
+  // Distance and par/sequence still share approach1 directly — this
+  // fixture proves the union correctly DEDUPLICATES that overlap rather
+  // than needing a purely transitive chain to prove grouping at all (a
+  // purely transitive case is covered separately below).
   const parPacket = parPacketFromRow(opportunityRow, [approach1, approach2]);
-  const distancePacket = syntheticPacket({
-    claimId: 'metric:approach_distance_band:225_275',
-    origin: 'distance',
-    label: 'approach_distance_band',
-    sourceShotIds: [approach1],
-    eligible: true,
-    strokesImpact: 0.9,
-    confidence: 0.7,
-  });
-  const sequencePacket = syntheticPacket({
-    claimId: 'sequence:par5-approach-chain:round-1:7',
-    origin: 'sequence',
-    label: 'par5_approach_chain',
-    sourceShotIds: [approach2],
-    eligible: true,
-    strokesImpact: 1.4,
-    confidence: 0.8,
-  });
+  const distancePacket = distancePacketFromRow(greenHitRow, [approach1]);
+  const sequencePacket = sequencePacketFromEvent(sequenceResult, approachEvent);
 
   // An unrelated hypothesis-origin packet on a totally different shot —
   // must never merge into the group above.
@@ -239,24 +322,32 @@ describe('groupIssues — par, distance, and sequence describing the same source
     const grouped = issues.find((i) => i.claims.length > 1)!;
     const byId = new Map(grouped.claims.map((c) => [c.claimId, c]));
     expect(byId.get(parPacket.claimId)).toMatchObject({ origin: 'par', label: 'par5_regulation_opportunity_rate' });
-    expect(byId.get(distancePacket.claimId)).toMatchObject({ origin: 'distance', label: 'approach_distance_band' });
-    expect(byId.get(sequencePacket.claimId)).toMatchObject({ origin: 'sequence', label: 'par5_approach_chain' });
+    expect(byId.get(distancePacket.claimId)).toMatchObject({ origin: 'distance', label: 'approach_green_hit_rate' });
+    expect(byId.get(sequencePacket.claimId)).toMatchObject({ origin: 'sequence', label: 'approach_to_recovery' });
   });
 
   it('impact ownership is non-overlapping: the issue is not inflated by duplicate perspectives', () => {
+    // Precondition: A4 resolved a real number here (neither endpoint hit a
+    // baselineGap) — this test is meaningless against a null.
+    expect(approachEvent.measuredContribution).not.toBeNull();
+
     const issues = groupIssues(allPackets);
     const grouped = issues.find((i) => i.claims.length > 1)!;
 
-    // sequence (1.4) > distance (0.9) > par (null) — sequence owns.
+    // par and distance compute NO strokes-impact number at all (both
+    // file headers say so) — only sequence's measuredContribution is a
+    // real number, so it owns by being the only real claim, not by
+    // out-competing a rival number.
     expect(grouped.impactOwnership.ownerClaimId).toBe(sequencePacket.claimId);
     expect(new Set(grouped.impactOwnership.nonOwningClaimIds)).toEqual(
       new Set([parPacket.claimId, distancePacket.claimId]),
     );
 
-    // The issue's policy input mirrors ONLY the owner — never the sum
-    // (0.9 + 1.4 = 2.3) or an average across the three perspectives.
-    expect(grouped.policyInput.strokesImpact).toBe(1.4);
-    expect(grouped.policyInput.confidence).toBe(0.8);
+    // The issue's policy input mirrors ONLY the owner's real number —
+    // par's and distance's null contributions never turn into a fabricated
+    // 0 that gets added to it.
+    expect(grouped.policyInput.strokesImpact).toBe(approachEvent.measuredContribution);
+    expect(grouped.policyInput.confidence).toBe(0); // owner's confidence is null → policyInput's documented `?? 0`
   });
 
   it('one underlying issue yields one leading priority (a single deterministic owner, claims owner-first)', () => {

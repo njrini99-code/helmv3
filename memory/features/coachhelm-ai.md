@@ -395,9 +395,10 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
   source-shot/round counts); and `policyInput` (the
   `strokesImpact`/`confidence`/`sampleSize` a later ranking policy would
   consume, mirroring ONLY the owner — "one issue, one leading priority" by
-  construction). Tested against a real `computeParOpportunities` row
-  wrapped by a test-local adapter, plus hand-built A2/A4-shaped synthetic
-  packets (#1989/#1988 unmerged as of this slice). Full contract in
+  construction). Tested against real `computeParOpportunities` (A3),
+  `computeDistanceProfile` (A2, #1989), and `attributeSequence` (A4,
+  #1988) output on one shared par-5 fixture, each wrapped by a small
+  test-local adapter — not synthetic stand-ins. Full contract in
   `docs/architecture/coachhelm-evidence-contract.md`'s "Issue grouping and
   ranking-input unification" section.
 - N13 sweep (repair plan, 2026-09-23): audited every CoachHelm action/route

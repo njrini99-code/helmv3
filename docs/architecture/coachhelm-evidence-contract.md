@@ -629,13 +629,17 @@ later slice." This module is that slice, for the new v3 pure-core families.
   `ranking/score.ts`-shaped policy would consume, mirroring ONLY the impact
   owner's own numbers, never an average or sum — "one underlying issue
   yields one leading priority" holds by construction, not convention).
-- **Tested against real A3 output** (`situational-ranking.test.ts` calls
-  the real `computeParOpportunities` and wraps one of its actual
-  `MetricResult` rows into a packet via a test-local adapter) **and
-  synthetic A2/A4-shaped packets** (hand-built, since #1989/#1988 had not
-  merged as of this slice) describing the same source shots — proving the
-  transitive-overlap grouping and the non-inflated impact estimate against
-  a real par-opportunity row, not just synthetic data on both sides.
+- **Tested against real A2/A3/A4 output**, not synthetic stand-ins —
+  `situational-ranking.test.ts` calls the real `computeParOpportunities`
+  (A3), `computeDistanceProfile` (A2, #1989), and `attributeSequence` (A4,
+  #1988 — the one family here whose real `SequenceEvent.
+  measuredContribution` is an honest non-null strokes-gained-style
+  number, unlike A2/A3's rate/count-only rows) on ONE shared par-5
+  fixture, wraps each real result into a packet via a small test-local
+  adapter, and proves the union correctly DEDUPLICATES the shots par,
+  distance, and sequence all describe — the non-inflated impact estimate
+  holds against real par/distance/sequence output, not just synthetic
+  data standing in for all three.
 - **Not wired into `ranking/score.ts` or any delivery surface** — building
   the real A2/A3/A4/A5-to-`IssueSourcePacket` adapters and feeding
   `groupIssues`'s output into scoring/delivery is later-slice work, per
