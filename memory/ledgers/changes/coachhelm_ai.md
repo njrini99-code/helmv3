@@ -513,3 +513,50 @@
   `metrics/types.ts` via #2008) in this doc's and the evidence-contract
   doc's A2 sections — absent unless `status === 'insufficient'`, and can
   name more than one failed floor at once.
+## 2026-09-23 — A6 slice 2: rollup-gated sequence eligibility, evidenceKey, material-change suppression, ranking-input adapter
+
+- What: `ranking/situational-ranking.ts` (stacked on #2020's A4 rollup).
+  Three additions on top of #2003's slice-1 `groupIssues`: (1) a sequence
+  packet's `eligible` now gates on the #2020 rollup's own per-`event_kind`
+  `status: 'supported'`, never on a single event's own resolution — slice
+  1's own test adapter let one hole's one event found/own an issue with
+  no real population behind it, contradicting the standing "a single
+  round never clears the floors" rule; the packet's `sourceShotIds`/
+  `strokesImpact` still describe only the one occurrence, never the
+  rollup's full population, so eligibility and grouping data stay at
+  different grains on purpose. (2) `Issue.evidenceKey: string | null` —
+  owner-derived, stable across shot-set churn, deliberately never the
+  shot-set-addressed `id`. (3) `applyMaterialChangeSuppression(issues,
+  activeInterventions): SuppressibleIssue[]` — pure, keys off
+  `evidenceKey`, never drops an issue from its output, suppresses an
+  exact-key match unchanged or under `MATERIAL_CHANGE_THRESHOLD` (50%)
+  worse than its intervention's baseline magnitude, resurfaces at or past
+  it; a zero baseline always resurfaces (avoids silent divide-by-zero
+  suppression); no match or no owner never suppresses. (4)
+  `issueToRankableInsight(issue): RankableInsight` — new pure adapter,
+  `scoreInsight`/`rankInsights`/all live callers untouched, no flag
+  needed since no live ranking output changes.
+- Why: addendum A6 slice 2, per the slice plan — #2003/slice 1 already
+  built the union-find grouping, stable `id`, and ownership; this slice
+  covers what was genuinely new: the rollup as an eligibility gate, the
+  evidence-stable suppression key, the actual suppression contract, and
+  the ranking-input bridge. Acceptance: "one underlying issue yields one
+  leading priority," proved at the ranked-output level, not just at
+  `claims[0]` (already covered by slice 1).
+- Verification: 14 new tests in `situational-ranking.test.ts` (own
+  fixture, separate round/hole ids from slice 1's) — a new anchor par-5
+  hole plus 9 filler `approach_to_recovery` holes across 3 rounds so the
+  kind clears `SEQUENCE_MIN_EVENTS`(10)/`SEQUENCE_MIN_ROUNDS`(3) exactly;
+  grouping par+distance+sequence into one issue with the right
+  `evidenceKey`; the rollup-not-cleared case where the sequence claim
+  never joins; the `evidenceKey`-fallback case; the full
+  `applyMaterialChangeSuppression` boundary matrix (unchanged, 49% worse,
+  exactly 50%, well past, different key, no owner, zero baseline,
+  never-drops-an-issue); `issueToRankableInsight`+`rankInsights` proving
+  the trio ranks as one entry. The 50% boundary was mutation-verified for
+  real: `>=` flipped to `>`, reran, confirmed exactly the boundary test
+  failed and no other, then reverted and confirmed `git diff --stat`
+  empty before reverifying green. Full suite: 39/39 passing (25
+  pre-existing slice-1 tests unchanged). `typecheck`/`lint` clean on
+  touched files. Still pure core, not wired into `ranking/score.ts`'s
+  live callers or any delivery surface.
