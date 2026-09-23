@@ -228,17 +228,6 @@ legacy `is_recurring` flag in sync for older consumers.
   label, so the length shows in the popover header beside the chosen time.
   A popover closed via "Done" with nothing chosen commits the time it opened
   on (start + 1 hr for the end field; the next quarter-hour otherwise).
-- The dashboard shell `router.prefetch`es Calendar on idle
-  (`useGolfSurfacePrewarm`, `src/hooks/golf/use-surface-prewarm.ts`) so the
-  FIRST tap is warmer than a cold navigation. Server `revalidate = 30` is
-  unchanged. Raising `experimental.staleTimes.dynamic` (Next's client Router
-  Cache TTL) to extend this further was tried and DROPPED (2026-09):
-  `staleTimes` is process-wide, not scoped to Golf, and the Router Cache can
-  serve a previously-rendered page from memory on a client-side back/forward
-  navigation without re-invoking middleware — i.e. without re-checking auth.
-  None of this repo's sign-out paths currently bust that cache, so it was cut
-  rather than shipped unaudited across Baseball/Lift Lab/Admin too —
-  `next.config.mjs` carries no diff for it.
 
 ## Known Risk Areas
 
