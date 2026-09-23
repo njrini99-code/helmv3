@@ -43,6 +43,8 @@ import {
   isShotLevelAttributionMetric,
   computeComparableAttribution,
   writeComparableAttribution,
+  resolveInterventionAnchor,
+  INTERVENTION_ACTION_TYPES,
   COMPARABLE_OPPORTUNITIES_LIMITED_METHOD_VERSION,
   type ComparableAttributionRow,
 } from './comparable-attribute';
@@ -61,10 +63,18 @@ const detectConfoundingInterventionsMock = vi.mocked(detectConfoundingInterventi
 const SHOWN_AT = '2026-08-01T00:00:00.000Z';
 
 /** Chainable fake for `sb.from('golf_insight_exposure').select(...).eq(...)
- *  .order(...).limit(...).maybeSingle()`. */
+ *  .order(...).limit(...).maybeSingle()`, PLUS the `golf_insight_action`
+ *  lookup `computeComparableAttribution` now runs first (Package 10 anchor
+ *  choice). `opts.action` defaults to "no qualifying action, no error" so
+ *  every pre-existing exposure-anchored test in this file keeps behaving
+ *  exactly as before without touching its own opts — only the new
+ *  anchor-specific tests below pass `opts.action`. */
 function makeExposureClient(
   row: { shown_at: string } | null,
-  opts: { error?: { message: string } } = {},
+  opts: {
+    error?: { message: string };
+    action?: { row?: { created_at: string } | null; error?: { message: string } };
+  } = {},
 ) {
   const builder = {
     select: vi.fn().mockReturnThis(),
@@ -73,13 +83,25 @@ function makeExposureClient(
     limit: vi.fn().mockReturnThis(),
     maybeSingle: vi.fn().mockResolvedValue({ data: row, error: opts.error ?? null }),
   };
+  const actionBuilder = {
+    select: vi.fn().mockReturnThis(),
+    eq: vi.fn().mockReturnThis(),
+    in: vi.fn().mockReturnThis(),
+    order: vi.fn().mockReturnThis(),
+    limit: vi.fn().mockReturnThis(),
+    maybeSingle: vi.fn().mockResolvedValue({
+      data: opts.action?.row ?? null,
+      error: opts.action?.error ?? null,
+    }),
+  };
   const client = {
     from: vi.fn((table: string) => {
       if (table === 'golf_insight_exposure') return builder;
+      if (table === 'golf_insight_action') return actionBuilder;
       throw new Error(`Unexpected table: ${table}`);
     }),
   };
-  return { client, builder };
+  return { client, builder, actionBuilder };
 }
 
 function fullResult(over: Partial<ComparableOpportunitiesResult> = {}): ComparableOpportunitiesResult {
@@ -241,6 +263,7 @@ describe('computeComparableAttribution', () => {
       row: {
         insight_id: 'insight-1',
         intervention_at: SHOWN_AT,
+        anchor_kind: 'exposure',
         target_metric_id: 'approach_proximity_125_175ft',
         baseline_value: 22.4,
         post_value: 18.1,
@@ -371,6 +394,159 @@ describe('computeComparableAttribution', () => {
   });
 });
 
+describe('resolveInterventionAnchor', () => {
+  it('prefers the action when both a first action and a first exposure exist', () => {
+    expect(
+      resolveInterventionAnchor({ firstActionAt: '2026-08-05T00:00:00.000Z', firstExposureAt: SHOWN_AT }),
+    ).toEqual({ at: '2026-08-05T00:00:00.000Z', kind: 'action' });
+  });
+
+  it('falls back to the exposure when there is no action', () => {
+    expect(resolveInterventionAnchor({ firstActionAt: null, firstExposureAt: SHOWN_AT })).toEqual({
+      at: SHOWN_AT,
+      kind: 'exposure',
+    });
+  });
+
+  it('returns null when neither a real action nor a real exposure exists', () => {
+    expect(resolveInterventionAnchor({ firstActionAt: null, firstExposureAt: null })).toBeNull();
+  });
+
+  it('deliberate: the action wins even when it is EARLIER than the exposure — a gap in the exposure ledger is not evidence the action did not happen, and the action is the stronger engagement signal regardless of relative timing', () => {
+    expect(
+      resolveInterventionAnchor({
+        firstActionAt: '2026-07-01T00:00:00.000Z', // earlier than the exposure below
+        firstExposureAt: '2026-08-01T00:00:00.000Z',
+      }),
+    ).toEqual({ at: '2026-07-01T00:00:00.000Z', kind: 'action' });
+  });
+});
+
+describe('computeComparableAttribution — Package 10 action anchor', () => {
+  beforeEach(() => {
+    loadPlayerContextMock.mockReset().mockResolvedValue({
+      shots: [],
+      holes: [],
+      coverage: {
+        holesIncluded: 0,
+        holesExcludedByReason: {},
+        shotsExcludedByReason: {},
+        partialSequenceCount: 0,
+      },
+    });
+    computeComparableOpportunitiesMock.mockReset().mockReturnValue(fullResult());
+    detectConfoundingInterventionsMock.mockReset().mockResolvedValue({
+      ok: true,
+      multipleInterventions: false,
+    });
+  });
+
+  const ACTION_AT = '2026-08-05T00:00:00.000Z';
+
+  it('anchors on the first qualifying action when one exists — anchor_kind: action, intervention_at = the action created_at, never shown_at', async () => {
+    const { client } = makeExposureClient(
+      { shown_at: SHOWN_AT },
+      { action: { row: { created_at: ACTION_AT } } },
+    );
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const result = await computeComparableAttribution(client as any, {
+      insight_id: 'insight-1',
+      player_id: 'player-1',
+      target_metric_id: 'approach_proximity_125_175ft',
+    });
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.row.anchor_kind).toBe('action');
+      expect(result.row.intervention_at).toBe(ACTION_AT);
+    }
+  });
+
+  it('falls back to the first exposure, labelled anchor_kind: exposure, when no qualifying action exists', async () => {
+    const { client } = makeExposureClient({ shown_at: SHOWN_AT }, { action: { row: null } });
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const result = await computeComparableAttribution(client as any, {
+      insight_id: 'insight-1',
+      player_id: 'player-1',
+      target_metric_id: 'approach_proximity_125_175ft',
+    });
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.row.anchor_kind).toBe('exposure');
+      expect(result.row.intervention_at).toBe(SHOWN_AT);
+    }
+  });
+
+  // Deliberate design choice (owner decision, Package 10), not an oversight:
+  // an action recorded BEFORE the first exposure still anchors on the
+  // action. The action is stronger engagement evidence than a view, so an
+  // out-of-order action/exposure pair (e.g. a gap in the exposure ledger)
+  // does not disqualify it. See resolveInterventionAnchor's own doc comment.
+  it('anchors on the action even when the action timestamp is EARLIER than the exposure timestamp', async () => {
+    const earlyAction = '2026-07-01T00:00:00.000Z';
+    const { client } = makeExposureClient(
+      { shown_at: SHOWN_AT }, // 2026-08-01, later than earlyAction
+      { action: { row: { created_at: earlyAction } } },
+    );
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const result = await computeComparableAttribution(client as any, {
+      insight_id: 'insight-1',
+      player_id: 'player-1',
+      target_metric_id: 'approach_proximity_125_175ft',
+    });
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.row.anchor_kind).toBe('action');
+      expect(result.row.intervention_at).toBe(earlyAction);
+    }
+  });
+
+  it('returns action-read-failed and fails fast on a genuine golf_insight_action DB error — never falls through to the exposure lookup', async () => {
+    const { client, builder } = makeExposureClient(
+      { shown_at: SHOWN_AT },
+      { action: { error: { message: 'connection reset' } } },
+    );
+
+    const result = await computeComparableAttribution(
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      client as any,
+      {
+        insight_id: 'insight-1',
+        player_id: 'player-1',
+        target_metric_id: 'approach_proximity_125_175ft',
+      },
+    );
+
+    expect(result).toEqual({ ok: false, reason: 'action-read-failed', error: 'connection reset' });
+    // The exposure query must never run once the action lookup itself failed.
+    expect(builder.maybeSingle).not.toHaveBeenCalled();
+    expect(loadPlayerContextMock).not.toHaveBeenCalled();
+  });
+
+  it('queries golf_insight_action filtered to exactly INTERVENTION_ACTION_TYPES — a dismissed action does not qualify as an anchor, only create_focus/acknowledged/resolved do', async () => {
+    const { client, actionBuilder } = makeExposureClient(
+      { shown_at: SHOWN_AT },
+      { action: { row: null } }, // simulates the DB having filtered out a 'dismissed'-only action history
+    );
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await computeComparableAttribution(client as any, {
+      insight_id: 'insight-1',
+      player_id: 'player-1',
+      target_metric_id: 'approach_proximity_125_175ft',
+    });
+
+    expect(actionBuilder.in).toHaveBeenCalledWith('action_type', INTERVENTION_ACTION_TYPES);
+    expect(INTERVENTION_ACTION_TYPES).toEqual(['create_focus', 'acknowledged', 'resolved']);
+    expect(INTERVENTION_ACTION_TYPES).not.toContain('dismissed');
+  });
+});
+
 describe('A9 slice 2: confounding-intervention detection wiring', () => {
   beforeEach(() => {
     loadPlayerContextMock.mockReset().mockResolvedValue({
@@ -498,6 +674,7 @@ describe('writeComparableAttribution', () => {
   const ROW: ComparableAttributionRow = {
     insight_id: 'insight-1',
     intervention_at: SHOWN_AT,
+    anchor_kind: 'exposure',
     target_metric_id: 'approach_proximity_125_175ft',
     baseline_value: 22.4,
     post_value: 18.1,
@@ -517,6 +694,15 @@ describe('writeComparableAttribution', () => {
     expect(inserts).toHaveLength(1);
     expect(inserts[0]!.lift).toBeNull();
     expect(inserts[0]!.method_version).toBe(COMPARABLE_OPPORTUNITIES_METHOD_VERSION);
+  });
+
+  it('never inserts anchor_kind — no column exists for it; a reader re-derives it from surfaced_at instead', async () => {
+    const { client, inserts } = makeWriteClient();
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await writeComparableAttribution(client as any, ROW);
+
+    expect(inserts[0]).not.toHaveProperty('anchor_kind');
   });
 
   it('A9 slice 2: a confounded row writes the distinct LIMITED method_version, never the clean one — this function passes method_version through unchanged, it never re-derives it', async () => {

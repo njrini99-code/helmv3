@@ -13,6 +13,23 @@ import type { FlagDefinition } from './types';
 
 export const FLAG_REGISTRY: readonly FlagDefinition[] = [
   {
+    feature_id: "coachhelm_a4_sequence_attribution_surface",
+    owner: "golf/coachhelm",
+    purpose: "Gates whether the Round Review page renders the new per-hole sequence-attribution rollup (loadSequenceAttribution + computeSequenceAttribution + SequenceAttributionSection) below the existing stat breakdown; default off pending a design/product review of the section's placement, copy, and the observed-strokes-gained wording against a busy round.",
+    type: "experiment",
+    status: "active",
+    created_at: "2026-09-23",
+    expires_at: null,
+    default: false,
+    environment: {
+      production: false,
+      preview: false,
+      development: false,
+    },
+    kill_switch_behavior: null,
+    cleanup_plan: "Either promote to a permanent `release` flag once the section has been reviewed, or remove the section and its wiring if the review asks for a different surface/placement instead.",
+  },
+  {
     feature_id: "coachhelm_a7_distance_profile_surface",
     owner: "golf/coachhelm",
     purpose: "Gates whether the Game Fingerprint page's Approach section renders the new distance-profile surface (buildRollingDistanceProfileScope + loadDistanceProfile + DistanceProfileSection) alongside the existing stats-cache-backed KPIs; default off pending a design/product review of the new section's placement and copy.",
@@ -28,6 +45,23 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     },
     kill_switch_behavior: null,
     cleanup_plan: "Either promote to a permanent `release` flag once the section has been reviewed and the rolling-12-month load has been checked against a heavy-user roster in preview, or remove the section and its wiring if the review asks for a different surface/placement instead.",
+  },
+  {
+    feature_id: "coachhelm_a7_scoring_surface",
+    owner: "golf/coachhelm",
+    purpose: "Gates whether the Game Fingerprint page's Scoring section renders the new par/length + par-5 opportunity surface (loadParOpportunities + buildScoringViewModel + ScoringSection) alongside the existing stats-cache-backed KPIs; default off pending a design/product review of the new section's placement, copy, and the par-5 card volume across a multi-course player history.",
+    type: "experiment",
+    status: "active",
+    created_at: "2026-09-23",
+    expires_at: null,
+    default: false,
+    environment: {
+      production: false,
+      preview: false,
+      development: false,
+    },
+    kill_switch_behavior: null,
+    cleanup_plan: "Either promote to a permanent `release` flag once the section has been reviewed and the rolling-12-month load (shared with the distance-profile flag when both are on — see `admin_platform`'s ledger) has been checked against a heavy-user roster in preview, or remove the section and its wiring if the review asks for a different surface/placement instead.",
   },
   {
     feature_id: "coachhelm_chat_claim_gate",
@@ -164,6 +198,23 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     },
     kill_switch_behavior: null,
     cleanup_plan: "Flip on (development, then preview, then production) only after the owner applies 20260923100000_round_recap_single_flight_lock to each environment, confirmed via information_schema.columns (ai_narrative) and pg_proc (claim_round_recap_lock / release_round_recap_lock). Once on everywhere and the fallback rate (deterministic vs. LLM-authored) is acceptable, consider promoting to a permanent `release` flag — owner's call, not automatic.",
+  },
+  {
+    feature_id: "coachhelm_trust_status_exclude_unmeasured_outcomes",
+    owner: "golf/coachhelm",
+    purpose: "Gates whether getInsightEffectivenessSignals excludes a null-improvement golf_insight_outcome row (an attempted-but-thin-sample attribution) from the `measured`/`worked` trust-status counts instead of counting it as a real measurement. OWNER DECISION (2026-09-23): the owner reviewed the prod diff before enabling — 26 of 68 insights move trust tier with the flag on, all 26 from `needs_validation` to `new_hypothesis` and all 26 driven by a single thin-sample (null-improvement) outcome row; zero insights move into or out of `supported`/`promising`/`underperforming`. Approved to ship enabled.",
+    type: "experiment",
+    status: "active",
+    created_at: "2026-09-23",
+    expires_at: null,
+    default: true,
+    environment: {
+      production: true,
+      preview: true,
+      development: true,
+    },
+    kill_switch_behavior: null,
+    cleanup_plan: "Shipped enabled per owner review of the prod trust-tier diff (2026-09-23) — promote to a permanent `release` flag or remove by inlining the fix once the change has been live long enough to confirm no regression, since this is a correctness fix to an existing, always-on rollup rather than new behavior pending evidence.",
   },
   {
     feature_id: "coachhelm_v2_alert_personalization",

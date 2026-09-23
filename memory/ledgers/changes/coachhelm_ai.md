@@ -441,3 +441,244 @@
   (8 flags); `npm run docs:check` all green; `npm run markdown:ratchet`
   no regressions. Test counts in the matching test-ledger entry. Build
   not run locally (session rule — CI's Next build job covers it).
+## 2026-09-23 — A7 Scoring surface: loader, view model, section, Game Fingerprint mount (slice 2)
+
+- SHA: 42d1dccd4. Stacked on slice 1 (61d611615).
+- Change: adds `loadParOpportunities` (server-only, wraps
+  `loadPlayerContext` + A3's `computeParOpportunities`, mirroring
+  `load-distance-profile.ts`'s wiring-only shape), `buildScoringViewModel`
+  (splits A3's flat `MetricResult[]` into its own two independent
+  families — `parSections`, identity-agnostic, grouped by par + length
+  band, and `par5Holes`, specific-hole, one card per course+hole
+  identity), and `ScoringSection` (the same status-discriminated tile
+  grid + drill-down `Sheet` pattern `DistanceProfileSection`
+  established, adapted to two row shapes). Mounted behind a new,
+  independently-toggleable `coachhelm_a7_scoring_surface` flag
+  (experiment, default off everywhere) targeting
+  `sectionAddenda.scoring`, reusing slice 1's mount mechanism and
+  rolling-12-month scope/window helpers as-is; also queries
+  `golf_courses` (chunked via `chunkIds`) to resolve each par-5 card's
+  course name.
+- A pre-wiring review caught three real bugs, all fixed before the
+  page mount landed: (1) `par5Holes` is keyed by `course_hole_key`, but
+  its label was a bare "Hole N" — two different courses' hole 7 would
+  have rendered as identical, indistinguishable cards. Fixed by
+  resolving `golf_courses.name` into each card's `courseLabel`, with a
+  short-id-fragment fallback, never a raw full UUID or a silently
+  dropped distinction. (2) An `invalid` par-5 row is a real state (the
+  card only exists because plays were recorded) but its copy claimed
+  "no data recorded yet" beside a real sibling `0%` supported tile on
+  the same hole — made metric-aware instead (putting conversion's
+  invalid state names its own zero-opportunity denominator explicitly,
+  distinct from regulation/green-in-two's). (3) A3 never rounds a
+  percent (`(100*n)/d` can repeat, e.g. `33.333333333333336%`); the
+  drill-down now formats by unit, and the signed strokes-vs-par
+  formatter rounds before testing for zero (previously printed "−0" for
+  a small positive value).
+- Why: addendum §13 A7 slice 2, A3 → Scoring per the slice plan (A2 →
+  Approach was slice 1; A4 → FilmstripReview is a separate later
+  slice). Corrected 2026-09-23 (#2010 review, SHOULD 3) — this
+  originally accepted `loadPlayerContext` running twice for the same
+  scope (once per addendum) as a known cost of independent
+  reviewability/toggling. `loadDistanceProfileAndScoringAddenda` now
+  calls it exactly once when both A7 flags are on, feeding the same
+  `{shots, holes}` straight to `computeDistanceProfile` and
+  `computeParOpportunities`; each surface keeps its own failure
+  isolation on top of that shared read. A single flag on is unchanged
+  (a thin pass-through to that addendum's own existing loader).
+- Verification: 14 new/touched tests (`buildScoringViewModel` 5,
+  `ScoringSection` 8, `load-par-opportunities` wiring 1).
+  `FairwayPlayerGameFingerprint.mode.test.tsx` (7/7) and
+  `PlayerDeepDiveTabs.test.tsx` rerun unchanged — neither exercises the
+  flag gate (both receive `sectionAddenda` as an already-resolved prop,
+  unrelated to page.tsx's server-side flag logic), so they prove no
+  regression in existing markup, not the no-op claim. Corrected
+  2026-09-23 (#2010 review, MUST 1) — the no-op-while-off property is
+  actually proven by `loadScoringAddendumIfEnabled`'s own unit tests
+  in the new `page.scoringAddendum.test.ts` (mirroring
+  `page.distanceProfileAddendum.test.ts`'s convention: flag off never
+  calls `loadScoringAddendum`; a throw resolves to `null`, not a
+  rejection),
+  mirroring slice 1's `loadDistanceProfileAddendumIfEnabled` pattern.
+  `typecheck:fast` and `eslint --max-warnings 0` clean; `flags:check`
+  clean (9 flags total). Not verified: mobile/desktop visual layout (no
+  local build or dev server run this session). Corrected 2026-09-23
+  (#2010 review, round 3): added a test proving
+  `renderDistanceProfileFromContext`/`renderScoringFromContext`'s
+  isolation actually holds when one COMPUTE function throws (not just
+  when the shared `loadPlayerContext` call itself fails, already
+  covered) — `computeParOpportunities` throwing degrades only `scoring`
+  to null; the shared distance-profile addendum still renders. Also
+  documents `MetricResult.failedFloors`/`SupportFloorGap` (landed on
+  `metrics/types.ts` via #2008) in this doc's and the evidence-contract
+  doc's A2 sections — absent unless `status === 'insufficient'`, and can
+  name more than one failed floor at once.
+## 2026-09-23 — A6 slice 2: rollup-gated sequence eligibility, evidenceKey, material-change suppression, ranking-input adapter
+
+- What: `ranking/situational-ranking.ts` (stacked on #2020's A4 rollup).
+  Three additions on top of #2003's slice-1 `groupIssues`: (1) a sequence
+  packet's `eligible` now gates on the #2020 rollup's own per-`event_kind`
+  `status: 'supported'`, never on a single event's own resolution — slice
+  1's own test adapter let one hole's one event found/own an issue with
+  no real population behind it, contradicting the standing "a single
+  round never clears the floors" rule; the packet's `sourceShotIds`/
+  `strokesImpact` still describe only the one occurrence, never the
+  rollup's full population, so eligibility and grouping data stay at
+  different grains on purpose. (2) `Issue.evidenceKey: string | null` —
+  owner-derived, stable across shot-set churn, deliberately never the
+  shot-set-addressed `id`. (3) `applyMaterialChangeSuppression(issues,
+  activeInterventions): SuppressibleIssue[]` — pure, keys off
+  `evidenceKey`, never drops an issue from its output, suppresses an
+  exact-key match unchanged or under `MATERIAL_CHANGE_THRESHOLD` (50%)
+  worse than its intervention's baseline magnitude, resurfaces at or past
+  it; a zero baseline always resurfaces (avoids silent divide-by-zero
+  suppression); no match or no owner never suppresses. (4)
+  `issueToRankableInsight(issue): RankableInsight` — new pure adapter,
+  `scoreInsight`/`rankInsights`/all live callers untouched, no flag
+  needed since no live ranking output changes.
+- Why: addendum A6 slice 2, per the slice plan — #2003/slice 1 already
+  built the union-find grouping, stable `id`, and ownership; this slice
+  covers what was genuinely new: the rollup as an eligibility gate, the
+  evidence-stable suppression key, the actual suppression contract, and
+  the ranking-input bridge. Acceptance: "one underlying issue yields one
+  leading priority," proved at the ranked-output level, not just at
+  `claims[0]` (already covered by slice 1).
+- Verification: 14 new tests in `situational-ranking.test.ts` (own
+  fixture, separate round/hole ids from slice 1's) — a new anchor par-5
+  hole plus 9 filler `approach_to_recovery` holes across 3 rounds so the
+  kind clears `SEQUENCE_MIN_EVENTS`(10)/`SEQUENCE_MIN_ROUNDS`(3) exactly;
+  grouping par+distance+sequence into one issue with the right
+  `evidenceKey`; the rollup-not-cleared case where the sequence claim
+  never joins; the `evidenceKey`-fallback case; the full
+  `applyMaterialChangeSuppression` boundary matrix (unchanged, 49% worse,
+  exactly 50%, well past, different key, no owner, zero baseline,
+  never-drops-an-issue); `issueToRankableInsight`+`rankInsights` proving
+  the trio ranks as one entry. The 50% boundary was mutation-verified for
+  real: `>=` flipped to `>`, reran, confirmed exactly the boundary test
+  failed and no other, then reverted and confirmed `git diff --stat`
+  empty before reverifying green. Full suite: 39/39 passing (25
+  pre-existing slice-1 tests unchanged). `typecheck`/`lint` clean on
+  touched files. Still pure core, not wired into `ranking/score.ts`'s
+  live callers or any delivery surface.
+
+## 2026-09-23 — A9 slice 3: coach-facing read of attribution results
+
+- SHA: (pending push).
+- Change: the first-ever READ side of `golf_insight_outcome_attribution`.
+  New `src/lib/coachhelm/v3/effectiveness/attribution-read.ts` — a pure,
+  flag-unaware DB loader: `readAttributionForInsight` (single insight) and
+  `readAttributionForPlayer` (player-scoped — resolves the player's own
+  insight ids first, then reads attribution rows for them, chunked at
+  `chunkIds`'s 200-id URL cap and paginated per chunk via
+  `fetchAllRowsResult`). A genuine read failure returns `{ok: false}`, NEVER
+  an empty rows array — a legitimate "not attributed yet" is
+  `{ok: true, rows: []}`, a distinct, honest state. Same unknown-column
+  degrade as the write side (`isUnknownColumnError`, a per-file copy
+  matching this codebase's own established convention for that helper) —
+  every row reads back `method_version: null` until migration
+  20260922230000 is applied.
+  New `src/lib/coachhelm/v3/effectiveness/attribution-view-model.ts` —
+  pure labeling: `null`/`'v2_observed_delta'` (the round-level path, which
+  predates A9 slice 2's confounding check entirely) both collapse to
+  `'earlier_method'`, never clean evidence; `'comparable_opportunities_v1'`
+  is the ONLY `isClean: true` value (the only method whose own pipeline
+  actively checked for and ruled out a confound);
+  `'comparable_opportunities_v1_limited'` is never clean either (limited ≠
+  clean, but a healthy-sample limited row is still `state: 'result'`, not
+  `'insufficient'` — those two axes are orthogonal); any unrecognized
+  version string is a neutral `'unknown'` fallback. Sample size reuses
+  `event-ledger.ts`'s `deriveTrustStatus` `< 3` floor
+  (`MIN_SUFFICIENT_ROUNDS`).
+  New `src/app/golf/actions/insight-attribution.ts` — the flag gate
+  (`coachhelm_comparable_opportunity_attribution`, checked before any
+  Supabase call, so an off flag makes zero DB calls) and auth check; a
+  failed read or unauthenticated caller both return `null`.
+  New `src/components/golf/coachhelm/insight-card/AttributionReadout.tsx`
+  — renders nothing for `null` (flag off / unauthenticated / failed read)
+  but DOES render the real `'missing'` state as a quiet "Not attributed
+  yet" note — silence there would misread as "proven to do nothing" — and
+  the `'insufficient'`/`'result'` states with sample sizes. Wired into
+  `FairwayPlayerInsight.tsx`'s hero-insight slot (a new `useEffect` +
+  local state, fetching via the new server action; inert while the flag
+  is off) beside `InsightCard`'s `OutcomeBadge` — a DIFFERENT column
+  (`golf_coach_insights.outcome_status`, the human self-report, not this
+  automated pipeline).
+- Why: repair-plan §14.12's A9 slice 3 — before this, nothing anywhere
+  read `golf_insight_outcome_attribution` back for display (confirmed by
+  the observed-outcome-language audit, PR #2023), so the whole A9
+  attribution pipeline (slices 1-2) had no coach-visible surface at all.
+- Not done by this slice (explicit non-goals): no migration applied
+  (20260922230000 stays unapplied; the degrade path covers both cases);
+  no change to whether these rows ever feed `nextWeight` (still the open,
+  separate decision the A9 slice 2 entry above already named — this
+  slice is read/display-only); the flag stays default-off, so no coach
+  sees anything different in production from this change.
+- Verification: see the matching test-ledger entry for exact counts.
+  `npm run typecheck:fast` clean; `npx eslint` on all touched/new files
+  clean; `npm run docs:check` clean (regenerated `DOCUMENT_AUTHORITY_
+  INVENTORY.md`/`HELM_FEATURE_MAP.md` for the new ledger entries — same
+  recurring generator-drift pattern as every prior entry in this
+  session). Build not run locally (session rule) — CI's Next build job
+  covers it. `observed-outcome-language.test.ts` (PR #2023) is not on
+  this branch (stacked on #2016, not #2023) so it could not be run
+  directly against this slice's new strings — manually verified none of
+  them contain "proven"/"caused by"/"guaranteed"/a quantified "Saved N
+  strokes" claim; will be covered automatically once #2023 lands and
+  this branch rebases past it.
+## 2026-09-23 — A10 slice 1: shadow-mode evaluation harness
+
+- What: new `src/lib/coachhelm/v3/eval/shadow-harness.ts`. Pure and
+  offline — `runShadowEvaluation(snapshot)` takes one de-identified
+  `ShadowSnapshot` (`scope`/`facts`/`holes`, no live player id) and feeds
+  it through A2 (`computeDistanceProfile`), A3 (`computeParOpportunities`),
+  A4 both layers (per-hole `attributeSequence` and the #2020 rollup
+  `computeSequenceAttribution`), A5 (`buildHypotheses`), and A6
+  (`groupIssues`), returning a structured `ShadowEvalReport`: per-family
+  `MetricStatus` counts + `eligibleCount`/exclusions histograms, A4
+  per-hole suppression-reason/baseline-gap histograms, hypothesis counts
+  by state + a missing-input distribution, and a `grouping` block
+  (packet/issue counts, duplicate-issue rate, and two invariant counters).
+  Sequence packets gate `eligible` on the #2020 rollup's own per-kind
+  `status: 'supported'` (A6 slice 2's rule, #2026, reimplemented locally
+  since that PR isn't on `main` yet). A2/A3 rows and the round-level
+  `par5_opportunity_loss` hypothesis are deliberately never turned into a
+  packet (no honest per-shot provenance) — counted under
+  `nonGroupablePacketSources` instead of fabricating an id.
+- Why: addendum §13, A10 slice 1 — "run all new families in shadow mode on
+  de-identified fixed snapshots before coach-visible writes." No DB write,
+  no flag flip, no delivery-surface change; this is proof-before-wiring,
+  not a new production path.
+- Correction: found and fixed a stale claim in both
+  `docs/architecture/coachhelm-evidence-contract.md`'s "Controlled
+  hypotheses" section and this ledger's own feature doc — `par5_opportunity
+  _loss` was grouped with `short_bias`/`recovery` as having "no metric
+  producer today." It does: A3 emits both `par5_regulation_opportunity_rate`
+  and `par5_green_in_two_rate`, the exact two ids `par5_opportunity_loss`
+  cites. It reaches `'supported_association'` on real input (a specific
+  par-5 hole played 3+ times without reaching regulation) — proven, not
+  asserted, by this slice's established-roster snapshot.
+  `short_bias`/`recovery` remain genuinely unreachable (confirmed the same
+  way): no A2/A3 family emits `approach_short_miss_rate`, and `recovery`
+  never cites its own triggering shot as support by design.
+- Verification: 16 new tests in `src/test/coachhelm/v3/shadow-harness.test.ts`.
+  The two invariant counters (`countUnsupportedCauseClaims`,
+  `countDuplicateLeadingPriority`) are each unit-tested against a
+  hand-built VIOLATING input, not just real output — `.claude/rules/
+  quality-gates.md`'s "a gate that cannot fail is not a gate."
+  `countDuplicateLeadingPriority`'s shot-overlap check was mutation-verified
+  for real (`> 1` flipped to `> 2`, reran, confirmed exactly the two
+  shot-duplicate tests failed and no others, reverted, confirmed
+  `git diff --stat` empty, reran green). `runShadowEvaluation` is proven
+  against a real 2×2 snapshot matrix (`fixtures/shadow-eval-snapshots.ts`,
+  composed from the A0 `situational-intelligence.ts` fixtures via
+  `normalizeShot` plus one round-id re-keying helper — not a second
+  fixture system): new-roster snapshots assert `'insufficient'`/suppressed
+  outcomes (support genuinely fails); the established-roster snapshot
+  asserts real A2/A3/A4-rollup rows actually reach `status: 'supported'`
+  as a PRECONDITION before checking `grouping.unsupportedCauseClaims === 0`
+  and `grouping.duplicateLeadingPriority === 0` on top of them — a
+  contrast that never clears a real floor would prove nothing. Full v3
+  suite: 1225/1225 passing (106 files, no regressions).
+  `typecheck`/`lint`/`docs:check` clean on touched files. Not wired into
+  any generator, composite, route, or page — pure core + tests only, same
+  posture as A0–A6.
