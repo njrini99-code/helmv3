@@ -134,6 +134,19 @@ describe('buildIncidentReport', () => {
     expect(report).toContain('metadata={"code":"42501"}');
   });
 
+  it('marks an occurrence user id as unverified when userIdUnverified is true, and leaves a verified one unmarked', () => {
+    const report = buildIncidentReport({
+      ...minimal,
+      occurrences: [
+        { timestamp: '2026-07-02T00:00:00.000Z', userId: 'user-unverified', userIdUnverified: true },
+        { timestamp: '2026-07-02T00:01:00.000Z', userId: 'user-verified', userIdUnverified: false },
+      ],
+    });
+    expect(report).toContain('user=user-unverified (unverified)');
+    expect(report).toContain('user=user-verified');
+    expect(report).not.toContain('user=user-verified (unverified)');
+  });
+
   it('renders deploy markers with and without a sha', () => {
     const report = buildIncidentReport({
       ...minimal,

@@ -24,6 +24,11 @@ export interface IncidentReportOccurrence {
   timestamp: string;
   route?: string | null;
   userId?: string | null;
+  /** True when `userId` came from an unverified cookie fallback
+   *  (`extractUserIdUnverified(metadata)`) rather than a verified `getUser()`
+   *  call — must render visibly so a reader (often Claude, via the copied
+   *  report) doesn't treat the id as a confirmed identity. */
+  userIdUnverified?: boolean;
   /** Freeform per-event context (admin_events.metadata), rendered as JSON. */
   metadata?: unknown;
 }
@@ -491,7 +496,9 @@ export function buildIncidentReport(input: IncidentReportInput): string {
   if (occurrences.length) {
     const rows = occurrences.slice(0, 20).map((occ) => {
       const route = occ.route ? ` route=${occ.route}` : '';
-      const user = occ.userId ? ` user=${occ.userId}` : '';
+      const user = occ.userId
+        ? ` user=${occ.userId}${occ.userIdUnverified ? ' (unverified)' : ''}`
+        : '';
       const meta =
         occ.metadata !== undefined && occ.metadata !== null ? ` metadata=${safeJson(occ.metadata)}` : '';
       return `${occ.timestamp}${route}${user}${meta}`;
