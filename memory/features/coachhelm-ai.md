@@ -672,6 +672,15 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
   `src/test/coachhelm/v3/comparable-opportunities.test.ts` for the
   fixtures, including the version-mismatch-rejection and
   exactly-at-the-instant boundary cases.
+- Chart honesty (2026-09-23, Package 11): `PuttHeatmap` (`v3/PuttHeatmap/index.tsx`)
+  plots a real `distance_feet` radius but only a real angular position when
+  `miss_direction` was logged — a make or an unlogged-direction miss gets a
+  seeded (not measured) angle. The component now carries an on-screen
+  disclosure caption for this, matching the honesty pattern `HoleShotPath`'s
+  "Distances are player-logged, not GPS-measured" footer already
+  established for its own stylized axis. The underlying plotting geometry
+  in `./geometry.ts` was left unchanged — this is a labeling fix, not a
+  data fix.
 
 ## Tests To Prefer
 

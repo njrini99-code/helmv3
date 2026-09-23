@@ -1149,7 +1149,7 @@ function ErrorMixDeck({ data }: { data?: PredictionPerformanceData }) {
  * ══════════════════════════════════════════════════════════════════════════ */
 
 /* PREDICTIONS — the detailed prediction read (low-N honest). */
-function PredictionsSection({ data }: { data?: PredictionPerformanceData }) {
+export function PredictionsSection({ data }: { data?: PredictionPerformanceData }) {
   if (!data) {
     return (
       <EmptyState
@@ -1183,7 +1183,10 @@ function PredictionsSection({ data }: { data?: PredictionPerformanceData }) {
           value={data.summary.overallAccuracy}
           format={{ style: 'percent', maximumFractionDigits: 0 }}
           goodDirection="up"
-          starved={resolved === 0}
+          // starved must match `required` below — a low-N read (e.g. 2 for 2
+          // = "100%") is not trustworthy until GLOBAL_LOW_CONFIDENCE_RESOLVED
+          // resolved predictions, the same floor the InlineNotice above uses.
+          starved={resolved < GLOBAL_LOW_CONFIDENCE_RESOLVED}
           current={resolved}
           required={GLOBAL_LOW_CONFIDENCE_RESOLVED}
           unit="resolved predictions"
@@ -1204,7 +1207,7 @@ function PredictionsSection({ data }: { data?: PredictionPerformanceData }) {
           mono
           goodDirection="down"
           hideTrend
-          starved={resolved === 0}
+          starved={resolved < BUCKET_MIN_RESOLVED}
           current={resolved}
           required={BUCKET_MIN_RESOLVED}
           unit="resolved predictions"
@@ -1215,7 +1218,7 @@ function PredictionsSection({ data }: { data?: PredictionPerformanceData }) {
           format={{ style: 'percent', maximumFractionDigits: 0 }}
           goodDirection="up"
           hideTrend
-          starved={resolved === 0}
+          starved={resolved < GLOBAL_LOW_CONFIDENCE_RESOLVED}
           current={resolved}
           required={GLOBAL_LOW_CONFIDENCE_RESOLVED}
           unit="resolved predictions"

@@ -154,8 +154,16 @@ export function ShotAnalysisCard({
   }
 
   const maxAbsSG = getMaxAbsSG(resolvedYardageCurve);
-  const rankedWeaknesses = resolvedWeaknesses?.length ? rankWeaknesses(resolvedWeaknesses) : [];
+  // Only a genuinely negative avgSG is a weakness. The server-ranked list is
+  // sorted ascending by severity but never filters out a positive average —
+  // for a strong player where every context clears the sample-size bar, the
+  // "least good, still positive" contexts would otherwise render red under
+  // "Key Weaknesses" with an unsigned number that reads as a loss.
+  const rankedWeaknesses = resolvedWeaknesses?.length
+    ? rankWeaknesses(resolvedWeaknesses).filter((w) => Number(w.avgSG ?? 0) < 0)
+    : [];
   const topWeaknesses = rankedWeaknesses.slice(0, 3);
+  const hasWeaknessData = !!resolvedWeaknesses?.length;
 
   return (
     <InstrumentPanel depth="base" className={className} eyebrow="Deep dive" header="Shot Analysis">
@@ -255,10 +263,19 @@ export function ShotAnalysisCard({
           )
         )}
 
-        {/* Top weaknesses */}
-        {topWeaknesses.length > 0 && (
+        {/* Top weaknesses — always rendered when we have weakness data, so a
+            player whose ranked contexts are all net-positive sees an honest
+            confirmation instead of the section silently disappearing. */}
+        {hasWeaknessData && (
           <div className="space-y-2">
             <p className="text-body-sm font-medium text-text-secondary">Key Weaknesses</p>
+            {topWeaknesses.length === 0 ? (
+              <div className="rounded-fw-md border border-border-subtle bg-fw-success-bg px-3 py-2.5">
+                <p className="text-caption text-text-secondary">
+                  No net-negative contexts — every tracked situation is at or above par.
+                </p>
+              </div>
+            ) : (
             <div className="grid gap-2">
               {topWeaknesses.map((weakness, i) => {
                 const thin = weakness.shotCount < MIN_WEAKNESS_SAMPLE_SIZE;
@@ -292,6 +309,7 @@ export function ShotAnalysisCard({
                 );
               })}
             </div>
+            )}
           </div>
         )}
 

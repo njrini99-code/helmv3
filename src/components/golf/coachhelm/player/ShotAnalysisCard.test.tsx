@@ -53,3 +53,37 @@ describe('ShotAnalysisCard — Key Weaknesses minimum-sample guard (#972)', () =
     expect(cards[1]).toHaveTextContent('30 shots');
   });
 });
+
+describe('ShotAnalysisCard — Key Weaknesses excludes net-positive contexts (Package 11)', () => {
+  it('does not render a positive-avgSG context under "Key Weaknesses"', () => {
+    render(
+      <ShotAnalysisCard
+        weaknesses={[
+          // A strong player: every ranked context clears the sample bar and
+          // is still net-positive. None of these are a real weakness.
+          { context: 'a', lie: 'green', distanceRange: '0-3', avgSG: 0.2, shotCount: 40 },
+          { context: 'b', lie: 'fairway', distanceRange: '150-175', avgSG: 0.05, shotCount: 30 },
+        ]}
+      />,
+    );
+
+    expect(screen.queryByText('Key Weaknesses')).toBeInTheDocument();
+    expect(screen.queryByText(/shots$/)).toBeNull();
+    expect(screen.getByText(/at or above par/i)).toBeInTheDocument();
+  });
+
+  it('keeps a genuinely negative context and drops a positive one from the same list', () => {
+    render(
+      <ShotAnalysisCard
+        weaknesses={[
+          { context: 'weak', lie: 'green', distanceRange: '0-3', avgSG: -0.4, shotCount: 50 },
+          { context: 'strength', lie: 'fairway', distanceRange: '150-175', avgSG: 0.3, shotCount: 50 },
+        ]}
+      />,
+    );
+
+    expect(screen.getByText('50 shots')).toBeInTheDocument();
+    expect(screen.getAllByText(/shots$/)).toHaveLength(1);
+    expect(screen.getByText('-0.40')).toBeInTheDocument();
+  });
+});
