@@ -67,7 +67,11 @@ const BUCKET_TO_METRIC_ID: Record<ApproachBucket, MetricId> = {
   '175_plus_ft':   'approach_proximity_175_plus_ft',
 };
 
-const BUCKET_LABEL: Record<ApproachBucket, string> = {
+/** Exported so any other surface reading an `ApproachBucket` (e.g. the A7
+ *  distance-profile view model) shows the same YARD label this generator
+ *  does — the bucket keys carry a legacy `ft` suffix, but the distance
+ *  they bucket is always yards (see the module doc comment above). */
+export const BUCKET_LABEL: Record<ApproachBucket, string> = {
   '50_125ft':    '50-125 yd',
   '125_175ft':   '125-175 yd',
   '175_plus_ft': '175+ yd',

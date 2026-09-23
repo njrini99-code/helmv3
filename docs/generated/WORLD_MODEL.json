@@ -13485,6 +13485,11 @@
       "kind": "feature_relation",
       "evidence": [
         {
+          "kind": "feature_doc_contract",
+          "path": "memory/features/coachhelm-ai.md",
+          "line": 583
+        },
+        {
           "kind": "import_graph",
           "path": "src/app/golf/actions/coachhelm-data.ts",
           "line": 17
@@ -14055,6 +14060,11 @@
       "target": "player_coachhelm_development",
       "kind": "feature_relation",
       "evidence": [
+        {
+          "kind": "feature_doc_contract",
+          "path": "memory/features/coachhelm-ai.md",
+          "line": 583
+        },
         {
           "kind": "import_graph",
           "path": "src/app/golf/actions/insight-delivery-ranking.ts",

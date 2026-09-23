@@ -20,16 +20,20 @@ import type {
   MetricResult,
   MetricStatus,
 } from '@/lib/coachhelm/v3/metrics/distance-profile';
+import { BUCKET_LABEL } from '@/lib/coachhelm/v3/generators/approach-miss';
 
 /** Canonical band display order — mirrors `distance-profile.ts`'s own
  *  internal `BANDS` array so the surface reads shortest-to-longest. */
 const BAND_ORDER: readonly DistanceBand[] = ['50_125ft', '125_175ft', '175_plus_ft'];
 
-const BAND_LABELS: Record<DistanceBand, string> = {
-  '50_125ft': '50–125 ft',
-  '125_175ft': '125–175 ft',
-  '175_plus_ft': '175+ ft',
-};
+/** Reuses `ApproachMissGenerator`'s own `BUCKET_LABEL` rather than a second,
+ *  independent label map — a prior version of this map read the `ft` suffix
+ *  on the `DistanceBand` enum literally ("175+ ft"), but the distance these
+ *  bands bucket is always YARDS (`bucketApproachDistance` takes yards; see
+ *  `approach-miss.ts`'s own module doc comment on the legacy suffix). Kept
+ *  as a local alias so this file's own `BAND_LABELS` references don't all
+ *  need renaming. */
+const BAND_LABELS: Record<DistanceBand, string> = BUCKET_LABEL;
 
 /** Canonical within-band row order. `approach_measured_contribution` goes
  *  last so it reads as "how much evidence backs the rows above," not as a

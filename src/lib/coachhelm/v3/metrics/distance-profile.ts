@@ -158,12 +158,16 @@ export type DistanceProfileMetricId =
   | 'approach_severe_outcome_rate'
   | 'approach_measured_contribution';
 
-/** Addendum A2 §5.2 / migration 20260922120000: the all-shot support floor. */
-const MIN_ATTEMPTS = 10;
-const MIN_ROUNDS = 3;
+/** Addendum A2 §5.2 / migration 20260922120000: the all-shot support floor.
+ *  Exported (not just internal to `statusFor`) so a consuming surface can
+ *  state WHICH floor an `'insufficient'` row is short of — see
+ *  `describeSupportGap` below — rather than hiding the actual denominator
+ *  and floor behind a generic "not enough data yet". */
+export const MIN_ATTEMPTS = 10;
+export const MIN_ROUNDS = 3;
 /** Legacy on-green floor, preserved for on-green proximity specifically —
  *  same migration, same constant name (`v_min_greens`). */
-const MIN_GREENS = 3;
+export const MIN_GREENS = 3;
 
 const BANDS: readonly DistanceBand[] = ['50_125ft', '125_175ft', '175_plus_ft'];
 
@@ -174,6 +178,36 @@ const BANDS: readonly DistanceBand[] = ['50_125ft', '125_175ft', '175_plus_ft'];
 function statusFor(denominator: number, meetsFloor: boolean): MetricStatus {
   if (denominator === 0) return 'invalid';
   return meetsFloor ? 'supported' : 'insufficient';
+}
+
+/**
+ * Names the SPECIFIC floor an `'insufficient'` row is short of, so a
+ * surface can say "2 of 3 rounds" or "6 of 10 attempts" instead of a
+ * generic count with no stated floor. Only meaningful when
+ * `row.status === 'insufficient'` — the caller decides when to show it;
+ * this function doesn't check `status` itself, so it stays a pure
+ * description of the numbers rather than a second copy of the gating
+ * logic in `statusFor`/`computeDistanceProfile`.
+ *
+ * Checks the ROUNDS floor first: every row here shares the same
+ * `MIN_ATTEMPTS`/`MIN_ROUNDS` compound floor (`meetsAttemptFloor` in
+ * `computeDistanceProfile`), so a row failing on rounds might still clear
+ * the attempts count, and rounds is the rarer, more informative shortfall
+ * to name. `approach_on_green_proximity_feet` carries an additional
+ * `MIN_GREENS` floor on top; its `eligibleCount` is defined as the reading
+ * count (`proximityReadings.length`), which in practice tracks the
+ * green-hit count this floor actually gates (a green-finding shot without
+ * a valid finish reading is the rare exception), so it stands in for
+ * "greens hit" here without a separate field.
+ */
+export function describeSupportGap(metricId: DistanceProfileMetricId, row: MetricResult): string {
+  if (row.distinctRounds < MIN_ROUNDS) {
+    return `${row.distinctRounds} of ${MIN_ROUNDS} rounds`;
+  }
+  if (metricId === 'approach_on_green_proximity_feet') {
+    return `${row.eligibleCount} of ${MIN_GREENS} greens hit`;
+  }
+  return `${row.eligibleCount} of ${MIN_ATTEMPTS} attempts`;
 }
 
 function distinctRoundsOf(shots: readonly ShotFact[]): number {

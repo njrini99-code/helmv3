@@ -29,7 +29,7 @@ Admin Incidents · active · criticality high · owner platform
 
 Admin Platform · active · criticality high · owner platform
 
-- **Relations:** 12 doc/structurally-evidenced, 22 import-graph-only (weak)
+- **Relations:** 13 doc/structurally-evidenced, 21 import-graph-only (weak)
 - **Tables:** `admin_allowlist`, `admin_error_resolutions`, `baseball_ai_audit`, `baseball_staff_audit_events`, `baseball_strength_group_audit`, `billing_customers`, `billing_invoices`, `crm_stage_transitions`, `crm_unmatched_inbound`, `helm_debug`, `helm_lifting_group_audit`
 - **RPCs:** `admin_auto_resolve_error_fingerprint`, `admin_mark_error_regressed`, `get_active_sessions`, `get_admin_dashboard_rollup`, `get_crm_coach_stage_history`, `get_crm_email_stats`, `get_crm_events_in_range`, `get_crm_funnel`, `get_crm_stage_ages`, `get_crm_time_to_open`, `get_crm_weekly_kpis`, `get_feature_health`, `get_platform_health_stats`, `helm_debug_db_health_snapshot`, `helm_debug_db_lock_snapshot`, `helm_debug_get_agent_run`, `helm_debug_list_agent_runs`, `helm_debug_list_traces`, `helm_debug_prune_observability`, `helm_debug_read_statement_alert_state`, `helm_debug_record_agent_run`, `helm_debug_stat_statements_snapshot`, `is_super_admin`, `recalculate_round_strokes_gained`, `record_db_error_event`, `record_db_health_sample`, `record_db_lock_incident`, `record_db_platform_sample`, `record_db_stat_snapshot`, `record_db_statement_samples`, `refresh_player_stats_cache`, `revoke_user_sessions`
 - **Test surfaces:** 3
@@ -119,7 +119,7 @@ Coach Intelligence Triage · active · criticality high · owner product
 
 CoachHelm AI · active · criticality high · owner product
 
-- **Relations:** 3 doc/structurally-evidenced, 14 import-graph-only (weak)
+- **Relations:** 5 doc/structurally-evidenced, 12 import-graph-only (weak)
 - **Tables:** `golf_coachhelm_action_runs`, `golf_insight_action`, `golf_insight_exposure`, `golf_insight_outcome`
 - **RPCs:** `prune_stale_player_standing`, `refresh_player_standing`, `refresh_player_stats_cache`
 - **Test surfaces:** 3
@@ -199,7 +199,7 @@ Supabase Database Observability — Zero-Cost Error/Health Control Plane · acti
 
 Player CoachHelm And Development · active · criticality high · owner product
 
-- **Relations:** 0 doc/structurally-evidenced, 18 import-graph-only (weak)
+- **Relations:** 1 doc/structurally-evidenced, 17 import-graph-only (weak)
 - **Tables:** none
 - **RPCs:** `ingest_external_round_atomic`, `sg_scale_for_player`
 - **Test surfaces:** 3
@@ -398,12 +398,12 @@ Team Operations · active · criticality high · owner product
 | `coach_intelligence_triage` | `coachhelm_ai` | import_graph (weak) |
 | `coach_intelligence_triage` | `golf_round_lifecycle` | import_graph (weak) |
 | `coach_intelligence_triage` | `player_coachhelm_development` | import_graph (weak) |
-| `coachhelm_ai` | `admin_platform` | import_graph (weak) |
+| `coachhelm_ai` | `admin_platform` | feature_doc_contract, import_graph |
 | `coachhelm_ai` | `auth_onboarding_join` | import_graph (weak) |
 | `coachhelm_ai` | `baseball_core` | import_graph (weak) |
 | `coachhelm_ai` | `coach_intelligence_triage` | import_graph (weak) |
 | `coachhelm_ai` | `golf_round_lifecycle` | import_graph (weak) |
-| `coachhelm_ai` | `player_coachhelm_development` | import_graph (weak) |
+| `coachhelm_ai` | `player_coachhelm_development` | feature_doc_contract, import_graph |
 | `coachhelm_ai` | `shot_tracking` | import_graph (weak) |
 | `coachhelm_ai` | `stats_analytics` | import_graph (weak) |
 | `crm_outreach` | `auth_onboarding_join` | import_graph (weak) |
