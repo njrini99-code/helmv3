@@ -57,7 +57,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `.claude/rules/code-patterns.md` | current | - | - | - | 0 | 0 | - |
 | `.claude/rules/code-review-tooling.md` | current | - | - | - | 6 | 2 | - |
 | `.claude/rules/database-review.md` | current | - | - | yes | 3 | 5 | - |
-| `.claude/rules/database.md` | current | - | - | - | 5 | 5 | - |
+| `.claude/rules/database.md` | current | - | - | - | 4 | 5 | - |
 | `.claude/rules/design-system.md` | current | - | - | yes | 9 | 6 | - |
 | `.claude/rules/file-structure.md` | current | - | - | - | 0 | 0 | - |
 | `.claude/rules/golf-feature-ownership.md` | current | - | - | - | 0 | 1 | - |
@@ -177,14 +177,14 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `memory/features/auth-onboarding-join.md` | current | yes | - | - | 3 | 15 | - |
 | `memory/features/calendar-events.md` | current | yes | - | yes | 6 | 29 | - |
 | `memory/features/coach-intelligence-triage.md` | current | yes | - | yes | 2 | 24 | - |
-| `memory/features/coachhelm-ai.md` | current | yes | - | yes | 6 | 51 | - |
+| `memory/features/coachhelm-ai.md` | current | yes | - | yes | 6 | 49 | - |
 | `memory/features/crm_outreach.md` | current | yes | - | - | 2 | 24 | - |
 | `memory/features/email_outbound.md` | current | yes | - | - | 2 | 18 | - |
 | `memory/features/golf-round-lifecycle.md` | current | yes | - | yes | 4 | 37 | - |
 | `memory/features/ios-native-shell.md` | current | yes | - | - | 1 | 14 | - |
 | `memory/features/observability-sentry.md` | current | yes | - | - | 6 | 32 | - |
 | `memory/features/observability-supabase.md` | current | yes | - | yes | 5 | 45 | - |
-| `memory/features/player-coachhelm-development.md` | current | yes | - | - | 1 | 33 | - |
+| `memory/features/player-coachhelm-development.md` | current | yes | - | - | 1 | 29 | - |
 | `memory/features/player-hub.md` | current | yes | - | yes | 1 | 13 | - |
 | `memory/features/qualifiers.md` | current | yes | - | yes | 3 | 14 | - |
 | `memory/features/recruiting.md` | current | yes | - | - | 3 | 15 | - |
@@ -289,7 +289,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/ai-system/selfheal/README.md` | current | yes | - | yes | 6 | 8 | - |
 | `docs/ai-system/selfheal/repair-contract.md` | current | yes | - | yes | 6 | 10 | - |
 | `docs/ai-system/selfheal/triage-contract.md` | current | yes | - | yes | 2 | 8 | - |
-| `docs/architecture/coachhelm-evidence-contract.md` | current | yes | - | yes | 4 | 29 | - |
+| `docs/architecture/coachhelm-evidence-contract.md` | current | yes | - | yes | 4 | 23 | - |
 | `docs/superpowers/plans/2026-04-22-insight-delivery/00-design-contract.md` | superseded | - | - | yes | 0 | 4 | - |
 | `docs/superpowers/plans/2026-04-22-insight-quality/00-design-contract.md` | superseded | - | - | yes | 0 | 3 | - |
 | `memory/system/golfhelm-engineering-os.md` | current | - | - | yes | 16 | 18 | - |
