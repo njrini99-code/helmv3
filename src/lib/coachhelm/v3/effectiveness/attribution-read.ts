@@ -37,8 +37,15 @@ import type { Database } from '@/lib/types/database';
 import { fromUntyped } from '@/lib/supabase/untyped';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import { chunkIds } from '@/lib/supabase/chunk-ids';
+import { COMPARABLE_OPPORTUNITIES_METHOD_VERSION } from '@/lib/coachhelm/v3/evaluation/comparable-opportunities';
+import {
+  COMPARABLE_OPPORTUNITIES_LIMITED_METHOD_VERSION,
+  INTERVENTION_ACTION_TYPES,
+} from '@/lib/coachhelm/v3/causality/comparable-attribute';
 
 type Sb = SupabaseClient<Database>;
+
+export type AttributionAnchorKind = 'action' | 'exposure';
 
 export interface AttributionRow {
   insight_id: string;
@@ -62,14 +69,40 @@ export interface AttributionRow {
    * claim more certainty about "which old method" than the data supports.
    */
   method_version: string | null;
+  /**
+   * Package 10 (owner decision, anchor-on-first-action): which real record
+   * `surfaced_at` came from, RE-DERIVED here rather than read off a stored
+   * column — `golf_insight_outcome_attribution` has no column for it (no
+   * migration this slice; see `comparable-attribute.ts`'s
+   * `ComparableAttributionRow.anchor_kind` doc comment).
+   *
+   * Derivation: an EXACT string match of this row's `surfaced_at` against a
+   * qualifying `golf_insight_action.created_at` for the same insight —
+   * never "does any action exist for this insight", which would
+   * mis-classify an exposure-anchored row as soon as ANY later action
+   * appeared (see `attachAnchorKind`'s doc comment for why that matters).
+   *
+   * `null` for a ROUND-LEVEL row (`attribute.ts`'s `v2_observed_delta` or a
+   * legacy/unknown `method_version`) — those write `surfaced_at` from
+   * `golf_coach_insights.created_at`, an admitted proxy, never a real
+   * exposure or action instant, so labeling one `'exposure'` would be a
+   * false claim ("since first shown") about data that was never actually
+   * checked against an exposure row at all. Only a comparable
+   * (shot-level) `method_version` gets a non-null `anchor_kind`.
+   */
+  anchor_kind: AttributionAnchorKind | null;
 }
 
 export type AttributionReadResult = { ok: true; rows: AttributionRow[] } | { ok: false };
 
 const ATTRIBUTION_COLUMNS =
-  'insight_id, target_metric_id, baseline_value, post_value, delta, n_rounds_before, n_rounds_after, method_version';
+  'insight_id, target_metric_id, baseline_value, post_value, delta, n_rounds_before, n_rounds_after, method_version, surfaced_at';
 const ATTRIBUTION_COLUMNS_NO_METHOD_VERSION =
-  'insight_id, target_metric_id, baseline_value, post_value, delta, n_rounds_before, n_rounds_after';
+  'insight_id, target_metric_id, baseline_value, post_value, delta, n_rounds_before, n_rounds_after, surfaced_at';
+const COMPARABLE_METHOD_VERSIONS: ReadonlySet<string> = new Set([
+  COMPARABLE_OPPORTUNITIES_METHOD_VERSION,
+  COMPARABLE_OPPORTUNITIES_LIMITED_METHOD_VERSION,
+]);
 
 /**
  * Same detection as `causality/comparable-attribute.ts` and `api/cron/v3/
@@ -95,6 +128,76 @@ interface RawAttributionRow {
   n_rounds_before: number;
   n_rounds_after: number;
   method_version?: string | null;
+  surfaced_at: string;
+}
+
+/**
+ * Bulk-derives `anchor_kind` for every row whose `method_version` is a
+ * comparable (shot-level) version — round-level/earlier/unknown rows get
+ * `null` without a DB call at all (see `AttributionRow.anchor_kind`'s doc
+ * comment for why they must never get a label).
+ *
+ * EXACT-MATCH derivation, not "does any action exist for this insight":
+ * `golf_insight_outcome_attribution` rows are permanent and idempotent
+ * (PK on `insight_id`, written once), but `golf_insight_action` is
+ * append-only and keeps growing — a coach can act on an insight AFTER its
+ * attribution row was already written and anchored on the exposure. "any
+ * action exists" would then wrongly re-derive that old exposure-anchored
+ * row as `'action'`-anchored the moment that later action landed, silently
+ * relabeling a historical value (exactly what Package 10 item (b) forbids).
+ * Matching the row's own `surfaced_at` string against a qualifying action's
+ * `created_at` is stable regardless of what actions appear later: the
+ * action that was actually used as the anchor (if any) keeps that exact
+ * timestamp forever; a later, different action has a different timestamp
+ * and never matches.
+ */
+async function attachAnchorKind(sb: Sb, rows: RawAttributionRow[]): Promise<AttributionReadResult> {
+  const comparableInsightIds = Array.from(
+    new Set(
+      rows
+        .filter((r) => COMPARABLE_METHOD_VERSIONS.has(r.method_version ?? ''))
+        .map((r) => r.insight_id),
+    ),
+  );
+
+  // Map<insight_id, Set<created_at>> — a qualifying action's exact timestamp
+  // strings for that insight, for the exact-match check below.
+  const actionTimestampsByInsightId = new Map<string, Set<string>>();
+  for (const idChunk of chunkIds(comparableInsightIds)) {
+    const actionResult = await fetchAllRowsResult<{ insight_id: string; created_at: string }>((from, to) =>
+      sb
+        .from('golf_insight_action')
+        .select('insight_id, created_at')
+        .in('insight_id', idChunk)
+        .in('action_type', INTERVENTION_ACTION_TYPES)
+        .order('insight_id', { ascending: true })
+        .range(from, to),
+    );
+    // A failed action read must not silently read as "no action" (which
+    // would derive every affected row as `'exposure'` — a false claim of
+    // certainty this function does not have). Same "NEVER EMPTY ON
+    // FAILURE"/"never partial success" discipline this file's header
+    // establishes for the primary read: the whole call fails, not just this
+    // row's label.
+    if (actionResult.error) return { ok: false };
+    for (const row of actionResult.data ?? []) {
+      const set = actionTimestampsByInsightId.get(row.insight_id);
+      if (set) set.add(row.created_at);
+      else actionTimestampsByInsightId.set(row.insight_id, new Set([row.created_at]));
+    }
+  }
+
+  return {
+    ok: true,
+    rows: rows.map((r) => {
+      const methodVersion = r.method_version ?? null;
+      if (!COMPARABLE_METHOD_VERSIONS.has(methodVersion ?? '')) {
+        return { ...r, method_version: methodVersion, anchor_kind: null };
+      }
+      const matchesAction = actionTimestampsByInsightId.get(r.insight_id)?.has(r.surfaced_at) ?? false;
+      return { ...r, method_version: methodVersion, anchor_kind: matchesAction ? 'action' : 'exposure' };
+    }),
+  };
 }
 
 /**
@@ -130,14 +233,24 @@ async function fetchAttributionRows(
         .range(from, to),
     );
     if (degraded.error) return { ok: false };
-    return { ok: true, rows: (degraded.data ?? []).map((r) => ({ ...r, method_version: null })) };
+    // No method_version column means every row is round-level/earlier —
+    // COMPARABLE_METHOD_VERSIONS.has(null) is always false, so
+    // attachAnchorKind is a no-op here (anchor_kind: null throughout) and
+    // makes no extra DB call. Called anyway rather than inlined, so there is
+    // exactly one place that decides anchor_kind.
+    const attached = await attachAnchorKind(
+      sb,
+      (degraded.data ?? []).map((r) => ({ ...r, method_version: null })),
+    );
+    return attached;
   }
 
   if (primary.error) return { ok: false };
-  return {
-    ok: true,
-    rows: (primary.data ?? []).map((r) => ({ ...r, method_version: r.method_version ?? null })),
-  };
+  const attached = await attachAnchorKind(
+    sb,
+    (primary.data ?? []).map((r) => ({ ...r, method_version: r.method_version ?? null })),
+  );
+  return attached;
 }
 
 /** Single-insight read — at most one row (the table's FK to
