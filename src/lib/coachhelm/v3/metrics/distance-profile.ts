@@ -227,7 +227,7 @@ function hasDirectionReading(fact: ShotFact): boolean {
  *  canonical FEET value back to yards for `bucketApproachDistance`, which
  *  is exactly the round trip `shot-source-adapter.test.ts` already proved
  *  agrees with the existing bucketing for every well-unit-tagged shot. */
-function bandOf(fact: ShotFact): DistanceBand | null {
+export function bandOf(fact: ShotFact): DistanceBand | null {
   if (fact.shot_type !== 'approach') return null;
   if (fact.distance_to_hole_before_feet === null) return null;
   const yards = fact.distance_to_hole_before_feet / 3;

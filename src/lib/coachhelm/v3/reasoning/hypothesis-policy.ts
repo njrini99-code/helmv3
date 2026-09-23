@@ -1,7 +1,8 @@
 /**
  * Controlled-hypothesis pure core (repair-plan addendum §13, work package
- * A5, slice 1). Depends on A1's `ShotFact` (`context/types.ts`) and a
- * metric-result shape adapted from A2/A3's shared contract.
+ * A5, slice 1 + slice 2). Depends on A1's `ShotFact` (`context/types.ts`)
+ * and the shared `MetricResult` contract (`../metrics/types.ts`, #1990,
+ * merged).
  *
  * `buildHypotheses(metrics, facts)` proposes a small, NAMED set of
  * candidate explanations for a round's shot data — never a fabricated
@@ -15,12 +16,36 @@
  * or `facts` — see `metricClaimId`/`shotClaimId`), and a `nextCheck` naming
  * the specific input that would resolve an ambiguity, when one exists.
  *
- * `MetricResultInput` below is a structural subset of the shared
- * `MetricResult` landing in `../metrics/types.ts` via #1990 (not merged to
- * `main` as of this slice) — same field names (`metricId`, `value`,
- * `status`), so swapping the import is a one-line change, not a refactor.
- * TODO(#1990): `import type { MetricResult } from '../metrics/types'` and
- * drop this local type once that lands.
+ * ## Slice 2: dimensioned metrics
+ * `MetricResult` carries `dimensions` (e.g. a distance band, or a specific
+ * par-5 hole) — a real call can hand back SEVERAL rows sharing one
+ * `metricId`, one per dimension value. `prerequisites`/`missingInputs` name
+ * a metric FAMILY and stay undimensioned (`metricClaimId(id)`); a claim id
+ * that resolves to an actual matched row is dimensioned
+ * (`metricClaimId(id, row.dimensions)`), canonically serialized (sorted
+ * keys) so the same dimensions always produce the same id regardless of
+ * key order. `findMetric` takes an optional dimension filter so a caller
+ * reads the ONE row that actually describes its own shot/hole, never an
+ * arbitrary first match across every band/hole.
+ *
+ * `rough_gap` matches `approach_measured_contribution` to its OWN
+ * triggering shot's distance band (`bandOf` from `../metrics/distance-
+ * profile.ts`) — the real metric is a per-band row, not a single
+ * round-wide value. That real metric also turned out to be a plain
+ * eligible-attempt COUNT (`unit: 'count'`, always >= 0), not the signed
+ * strokes-gained value this slice originally assumed — a count can state
+ * how much evidence exists, never a direction, so a `'count'`-unit row is
+ * treated the same as an absent one (named in `missingInputs`, never
+ * elevates or contradicts) until a strokes-shaped metric exists.
+ *
+ * `par5_opportunity_loss` matches every real call: `par-opportunities.ts`
+ * dimensions its two metric ids per SPECIFIC par-5 hole
+ * (`course_hole_key`/`hole_number`), so a round with several par-5s yields
+ * several rows per metric id. This slice emits one `Hypothesis` PER
+ * dimensioned opportunity row (mirroring the existing per-shot pattern for
+ * `rough_gap`/`recovery`) instead of reading one arbitrary row and
+ * silently dropping the rest. Zero opportunity rows still produce the
+ * single aggregate `'no_data'` hypothesis slice 1 shipped.
  *
  * ## States
  * `'no_data'` — this hypothesis's ENTIRE content is a gap: no supporting
@@ -35,10 +60,11 @@
  * with `status === 'supported'` points the same direction as the
  * hypothesis, and nothing contradicts it; this is an ASSOCIATION, not a
  * causal claim. `'coach_annotated'` is reachable only once a coach has
- * reviewed a hypothesis (personal-context.ts, slice 2) — nothing in this
- * module can produce it, and it is kept in the union only so the type is
- * stable across both slices. There is deliberately no `'proven'` state:
- * this module never claims that.
+ * reviewed a hypothesis (`personal-context.ts` — not wired by slice 2
+ * either; still a LATER slice) — nothing in this module can produce it,
+ * and it is kept in the union only so the type is stable across slices.
+ * There is deliberately no `'proven'` state: this module never claims
+ * that.
  *
  * `description` is a function of `state`, not a fixed per-family string —
  * the SAME family reads differently depending on how much has actually
@@ -77,30 +103,23 @@
  *
  * `rough_gap`'s own triggering shot counts as a real supporting claim (the
  * shot itself — "a go-for-green attempt from the rough" — is meaningful
- * context on its own, and a real corroborating metric, `approach_
- * measured_contribution` from A2, exists and could land in a future
- * call), so `rough_gap` without its metric is `'candidate'`, never
- * `'no_data'`. `recovery` deliberately does NOT cite its own triggering
- * shot as support: no metric measures a recovery-specific expected
- * outcome today, and citing the tag that TRIGGERED the hypothesis as
- * evidence FOR it would be circular. `recovery` is therefore always
+ * context on its own), so `rough_gap` without a usable metric is
+ * `'candidate'`, never `'no_data'`. `approach_measured_contribution` (A2)
+ * is a per-band eligible-attempt COUNT, not the signed strokes-gained
+ * value this family needs — see the slice 2 note above — so it currently
+ * never corroborates either. `recovery` deliberately does NOT cite its own
+ * triggering shot as support: no metric measures a recovery-specific
+ * expected outcome today, and citing the tag that TRIGGERED the hypothesis
+ * as evidence FOR it would be circular. `recovery` is therefore always
  * `'no_data'` in this slice (its `id` still carries the triggering shot's
  * coordinates for traceability).
  */
 
 import type { ShotFact, ShotIntent } from '../context/types';
+import type { MetricResult } from '../metrics/types';
+import { bandOf } from '../metrics/distance-profile';
 
-// ---------------------------------------------------------------------------
-// Metric input (structural MetricResult subset — see module doc comment)
-// ---------------------------------------------------------------------------
-
-export type MetricStatusInput = 'supported' | 'descriptive_only' | 'insufficient' | 'invalid';
-
-export interface MetricResultInput {
-  metricId: string;
-  value: number | null;
-  status: MetricStatusInput;
-}
+export type { MetricResult, MetricStatus } from '../metrics/types';
 
 // ---------------------------------------------------------------------------
 // Hypothesis shape
@@ -127,7 +146,10 @@ export interface NextCheck {
 
 export interface Hypothesis {
   /** Unique per call — includes the triggering shot's coordinates for a
-   *  per-shot family, or is a fixed string for a per-round family. */
+   *  per-shot family, the dimensioned row's serialized dimensions for a
+   *  per-dimension family (`par5_opportunity_loss` with real rows), or is
+   *  a fixed string for a family with no per-shot/per-dimension identity
+   *  (`short_bias`, or `par5_opportunity_loss` with zero rows). */
   id: string;
   family: HypothesisFamily;
   /** A function of `state` — see the module doc comment. Never implies
@@ -158,18 +180,74 @@ export interface Hypothesis {
 // Claim ids — always resolvable back to an input element (tested).
 // ---------------------------------------------------------------------------
 
-export function metricClaimId(metricId: string): string {
-  return `metric:${metricId}`;
+/** Sort-stable serialization of a dimensions map — same content always
+ *  produces the same string regardless of key insertion order. Empty (or
+ *  omitted) dimensions serialize to `''`. */
+function serializeDimensions(dimensions: Record<string, string | number> | undefined): string {
+  if (!dimensions) return '';
+  const keys = Object.keys(dimensions).sort();
+  if (keys.length === 0) return '';
+  return keys.map((k) => `${k}=${dimensions[k]}`).join(',');
 }
 
+/** `metricClaimId(id)` (no dimensions) names a metric FAMILY — used in
+ *  `prerequisites`/`missingInputs`, which describe what a hypothesis
+ *  depends on in general, not a specific row. `metricClaimId(id,
+ *  row.dimensions)` names the SPECIFIC row a claim actually resolved
+ *  against — used in `supportingClaimIds`/`contradictingClaimIds`. A row
+ *  with empty dimensions produces the same bare id as the no-dimensions
+ *  form, so an undimensioned metric (no real producer yet, or a
+ *  single-row-per-call family) is unaffected. */
+export function metricClaimId(metricId: string, dimensions?: Record<string, string | number>): string {
+  const suffix = serializeDimensions(dimensions);
+  return suffix ? `metric:${metricId}:${suffix}` : `metric:${metricId}`;
+}
+
+/** The fixed marker `shotClaimId` renders for an unknown hole/shot number
+ *  — matches `ranking/situational-ranking.ts`'s own `UNKNOWN_SHOT_MARKER`
+ *  (that module's doc comment names this exact fix as owed here; see
+ *  repair-plan addendum §13 review notes, 2026-09-23). */
+const UNKNOWN_SHOT_MARKER = 'unknown';
+
+/** `hole_number`/`shot_number` are nullable only for non-DB inputs (a
+ *  fixture, a future adapter) — real `golf_shots` rows always have both.
+ *  Slice 1 rendered a missing field as the literal string `'null'`, which
+ *  is silently wrong in two ways: it can't be told apart from `'unknown'`,
+ *  and — the real bug — two DIFFERENT shots both missing a field would
+ *  render identically. The fix here matches `situational-ranking.ts`'s
+ *  own resolution of the exact same problem: any missing field renders to
+ *  ONE fixed, shared marker (`shot:<round_id>:unknown:unknown`) rather
+ *  than a per-shot-varying one. This is deliberate, not merely tolerated:
+ *  a fixed marker is deterministic and pure (same input -> same id,
+ *  always), and the id format then interoperates with
+ *  `situational-ranking.ts`'s `IssueSourcePacket.sourceShotIds` without
+ *  translation. It does mean two DIFFERENT unknown-numbered shots in the
+ *  same round are indistinguishable by this id alone — a caller that
+ *  needs to tell them apart (like `situational-ranking.ts`'s union-find)
+ *  must special-case the marker itself, the same way that module already
+ *  does, rather than expect this id to disambiguate for it. */
 export function shotClaimId(shot: Pick<ShotFact, 'round_id' | 'hole_number' | 'shot_number'>): string {
-  return `shot:${shot.round_id}:${shot.hole_number ?? 'null'}:${shot.shot_number ?? 'null'}`;
+  if (shot.hole_number === null || shot.shot_number === null) {
+    return `shot:${shot.round_id}:${UNKNOWN_SHOT_MARKER}:${UNKNOWN_SHOT_MARKER}`;
+  }
+  return `shot:${shot.round_id}:${shot.hole_number}:${shot.shot_number}`;
 }
 
+/** Finds the metric row matching `metricId` and, when given, every key in
+ *  `dimensions` (a partial match — the row may carry additional dimension
+ *  keys beyond the ones named here). Omitting `dimensions` matches on
+ *  `metricId` alone, for a family with no established per-call dimension
+ *  concept yet (no real producer today). */
 function findMetric(
-  metrics: readonly MetricResultInput[],
+  metrics: readonly MetricResult[],
   metricId: string,
-): MetricResultInput | undefined {
+  dimensions?: Record<string, string | number>,
+): MetricResult | undefined {
+  if (dimensions) {
+    return metrics.find(
+      (m) => m.metricId === metricId && Object.entries(dimensions).every(([k, v]) => m.dimensions[k] === v),
+    );
+  }
   return metrics.find((m) => m.metricId === metricId);
 }
 
@@ -230,7 +308,7 @@ function describeShortBias(state: HypothesisState): string {
 }
 
 function buildShortBiasHypothesis(
-  metrics: readonly MetricResultInput[],
+  metrics: readonly MetricResult[],
   facts: readonly ShotFact[],
 ): Hypothesis | null {
   if (!facts.some((f) => f.shot_type === 'approach')) return null;
@@ -342,23 +420,33 @@ function describeRoughGap(state: HypothesisState): string {
   }
 }
 
-function buildRoughGapHypothesis(shot: ShotFact, metrics: readonly MetricResultInput[]): Hypothesis {
+function buildRoughGapHypothesis(shot: ShotFact, metrics: readonly MetricResult[]): Hypothesis {
   const claim = shotClaimId(shot);
-  const contribution = findMetric(metrics, ROUGH_GAP_METRIC_ID);
+  // Match the corroborating row to THIS shot's own distance band — the
+  // real producer (distance-profile.ts) reports one row per band, not one
+  // round-wide value, so an unfiltered lookup could silently corroborate
+  // off a different band's evidence than the one this shot belongs to.
+  const band = bandOf(shot);
+  const contribution = band ? findMetric(metrics, ROUGH_GAP_METRIC_ID, { band }) : undefined;
 
   const supportingClaimIds = [claim];
   const contradictingClaimIds: string[] = [];
   const missingInputs: string[] = [];
   let elevates = false;
 
-  if (!contribution) {
+  // The real approach_measured_contribution row is a plain eligible-
+  // attempt COUNT (unit 'count', never negative) — evidence volume, not a
+  // signed strokes-gained direction. It cannot support or contradict this
+  // family's over/underperformance claim until a strokes-shaped metric
+  // exists, so it is treated the same as an absent row.
+  if (!contribution || contribution.unit !== 'strokes') {
     missingInputs.push(metricClaimId(ROUGH_GAP_METRIC_ID));
   } else if (contribution.status === 'supported' && contribution.value !== null) {
     if (contribution.value < ROUGH_GAP_UNDERPERFORM_THRESHOLD) {
-      supportingClaimIds.push(metricClaimId(ROUGH_GAP_METRIC_ID));
+      supportingClaimIds.push(metricClaimId(ROUGH_GAP_METRIC_ID, contribution.dimensions));
       elevates = true;
     } else if (contribution.value > ROUGH_GAP_CONTRADICT_THRESHOLD) {
-      contradictingClaimIds.push(metricClaimId(ROUGH_GAP_METRIC_ID));
+      contradictingClaimIds.push(metricClaimId(ROUGH_GAP_METRIC_ID, contribution.dimensions));
     }
   }
 
@@ -402,7 +490,7 @@ function isDistinguishingIntent(intent: ShotIntent): intent is 'go_for_green' | 
 }
 
 function buildRoughLieHypotheses(
-  metrics: readonly MetricResultInput[],
+  metrics: readonly MetricResult[],
   facts: readonly ShotFact[],
 ): Hypothesis[] {
   const hypotheses: Hypothesis[] = [];
@@ -455,10 +543,12 @@ function describePar5OpportunityLoss(state: HypothesisState): string {
   }
 }
 
-function buildPar5OpportunityHypothesis(metrics: readonly MetricResultInput[]): Hypothesis {
-  const opportunity = findMetric(metrics, PAR5_OPPORTUNITY_METRIC_ID);
-  const greenInTwo = findMetric(metrics, PAR5_GREEN_IN_TWO_METRIC_ID);
+const PAR5_PREREQUISITES = [metricClaimId(PAR5_OPPORTUNITY_METRIC_ID), metricClaimId(PAR5_GREEN_IN_TWO_METRIC_ID)];
 
+/** One hypothesis for a single dimensioned opportunity row (real call:
+ *  one specific par-5 hole) — `greenInTwo`, when present, is the row
+ *  sharing that SAME hole's dimensions, never an arbitrary other hole's. */
+function par5HypothesisFor(opportunity: MetricResult | undefined, greenInTwo: MetricResult | undefined): Hypothesis {
   const supportingClaimIds: string[] = [];
   const contradictingClaimIds: string[] = [];
   const missingInputs: string[] = [];
@@ -471,7 +561,7 @@ function buildPar5OpportunityHypothesis(metrics: readonly MetricResultInput[]): 
     opportunity.value !== null &&
     opportunity.value < PAR5_OPPORTUNITY_LOSS_MAX_PERCENT
   ) {
-    supportingClaimIds.push(metricClaimId(PAR5_OPPORTUNITY_METRIC_ID));
+    supportingClaimIds.push(metricClaimId(PAR5_OPPORTUNITY_METRIC_ID, opportunity.dimensions));
     elevates = true;
   }
 
@@ -482,16 +572,17 @@ function buildPar5OpportunityHypothesis(metrics: readonly MetricResultInput[]): 
     greenInTwo.value !== null &&
     greenInTwo.value >= PAR5_GREEN_IN_TWO_CONTRADICT_MIN_PERCENT
   ) {
-    contradictingClaimIds.push(metricClaimId(PAR5_GREEN_IN_TWO_METRIC_ID));
+    contradictingClaimIds.push(metricClaimId(PAR5_GREEN_IN_TWO_METRIC_ID, greenInTwo.dimensions));
   }
 
   const state = finalizeState(supportingClaimIds, contradictingClaimIds, elevates);
+  const dimSuffix = serializeDimensions(opportunity?.dimensions);
   return {
-    id: 'par5_opportunity_loss',
+    id: dimSuffix ? `par5_opportunity_loss:${dimSuffix}` : 'par5_opportunity_loss',
     family: 'par5_opportunity_loss',
     description: describePar5OpportunityLoss(state),
     state,
-    prerequisites: [metricClaimId(PAR5_OPPORTUNITY_METRIC_ID), metricClaimId(PAR5_GREEN_IN_TWO_METRIC_ID)],
+    prerequisites: PAR5_PREREQUISITES,
     supportingClaimIds,
     contradictingClaimIds,
     missingInputs,
@@ -499,10 +590,24 @@ function buildPar5OpportunityHypothesis(metrics: readonly MetricResultInput[]): 
   };
 }
 
+/** One `Hypothesis` PER dimensioned opportunity row — a real call can hand
+ *  back several (one per par-5 hole played). Zero rows still produce the
+ *  single aggregate `'no_data'` hypothesis (nothing to enumerate, but the
+ *  gap itself is still worth stating). */
+function buildPar5OpportunityHypotheses(metrics: readonly MetricResult[]): Hypothesis[] {
+  const opportunityRows = metrics.filter((m) => m.metricId === PAR5_OPPORTUNITY_METRIC_ID);
+  if (opportunityRows.length === 0) {
+    return [par5HypothesisFor(undefined, findMetric(metrics, PAR5_GREEN_IN_TWO_METRIC_ID))];
+  }
+  return opportunityRows.map((opportunity) =>
+    par5HypothesisFor(opportunity, findMetric(metrics, PAR5_GREEN_IN_TWO_METRIC_ID, opportunity.dimensions)),
+  );
+}
+
 // ---------------------------------------------------------------------------
 
 export function buildHypotheses(
-  metrics: readonly MetricResultInput[],
+  metrics: readonly MetricResult[],
   facts: readonly ShotFact[],
 ): Hypothesis[] {
   const hypotheses: Hypothesis[] = [];
@@ -512,7 +617,7 @@ export function buildHypotheses(
 
   hypotheses.push(...buildRoughLieHypotheses(metrics, facts));
 
-  hypotheses.push(buildPar5OpportunityHypothesis(metrics));
+  hypotheses.push(...buildPar5OpportunityHypotheses(metrics));
 
   return hypotheses;
 }
