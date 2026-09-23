@@ -656,9 +656,14 @@ def eval_review_compose(node, ctx):
 SPECS = [
     TaskSpec('layout.identity.resolve', '2', 'layout', ('catalog.validate',), eval_identity_resolve, executor=INLINE),
     TaskSpec('layout.scorecard.validate', '1', 'layout', ('catalog.validate',), eval_scorecard_validate, executor=INLINE),
-    TaskSpec('layout.routes.propose', '1', 'layout', ('layout.identity.resolve', 'layout.scorecard.validate', 'facility.osm.snapshot'), eval_routes_propose,
+    TaskSpec('layout.routes.propose', '2', 'layout', ('layout.identity.resolve', 'layout.scorecard.validate', 'facility.osm.snapshot'), eval_routes_propose,
+             # v2: the executor (adapters.py) can now solve a facility's
+             # shared physical nines once and compose several combo layouts
+             # from that one solve (Phase D1 item 2, Landfall) before
+             # falling back to its old single-layout run -- adapters.py
+             # itself is now part of what this task produces.
              impl_files=(script('propose-routes.py'), script('source_geometry.py'), script('factory/context.py'), script('factory/osm.py'),
-                         script('course_raster.py')) + CRS_FILES,
+                         script('factory/adapters.py'), script('course_raster.py')) + CRS_FILES,
              retention='A', estimated_bytes=200_000),
     TaskSpec('layout.routes.resolve', '3', 'layout', ('layout.identity.resolve', 'layout.scorecard.validate', 'facility.osm.snapshot', 'layout.routes.propose?'), eval_routes_resolve, impl_files=(script('source_geometry.py'), script('factory/context.py')), retention='A', estimated_bytes=10_000),
     TaskSpec('layout.route.dossier', '1', 'layout', ('layout.identity.resolve', 'layout.scorecard.validate', 'facility.osm.snapshot'), eval_route_dossier,

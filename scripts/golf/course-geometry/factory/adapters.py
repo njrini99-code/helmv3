@@ -305,6 +305,59 @@ def snapshot_context(node, ctx, run):
 
 
 # --- layout ---------------------------------------------------------------
+def _facility_shared_nines_attempt(node, ctx, run, layout_id, facility_id, extract, surfaces_path, surfaces_doc):
+    """Phase D1 item 2 (Landfall): before proposing this layout alone, check
+    whether any OTHER layout at the facility also needs a proposal right
+    now -- if so, ask `propose-routes.py --facility-manifest` to solve every
+    physical nine the two-or-more of them actually share exactly once and
+    compose each affected layout from that one solve (never six independent
+    solves that could disagree about which green belongs to which hole).
+    Writes straight to `ctx.route_proposal_path` for every layout the
+    facility solve actually composed (this layout's own node included, plus
+    any sibling node that will separately discover its file already
+    written and fresh) and returns the artifact list for THIS layout, or
+    `None` when nothing was composed for it (a single-layout facility, or a
+    multi-layout one where this layout's segments matched no one else's --
+    the caller then falls through to the normal, single-layout run, which
+    also keeps this layout's own front-to-back turn continuity scoring that
+    composing from independent 9-hole solves gives up)."""
+    siblings = [layout for layout in ctx.catalog.layouts_of(facility_id) if layout['layoutId'] != layout_id]
+    if not siblings:
+        return None
+    scorecards = {layout_id: ctx.route_proposal_scorecard(layout_id)}
+    for sibling in siblings:
+        sibling_id = sibling['layoutId']
+        sibling_base = ctx.route_resolution(sibling_id, include_proposal=False)
+        if sibling_base is None or resolved_routes(sibling_base):
+            continue  # not retained yet, or already resolved some other way: nothing to compose it from
+        sibling_scorecard = ctx.route_proposal_scorecard(sibling_id)
+        if sibling_scorecard:
+            scorecards[sibling_id] = sibling_scorecard
+    if len(scorecards) < 2:
+        return None  # no other layout is actually in play right now; a facility-manifest run would find nothing shared
+    manifest_dir = os.path.join(ctx.facility_out(facility_id), 'route-nines')
+    scorecard_paths = {}
+    for lid, card in scorecards.items():
+        card_path = os.path.join(ctx.layout_out(lid), 'route-proposal-scorecard.json')
+        _write_json(card_path, card)
+        scorecard_paths[lid] = card_path
+    out_dir = os.path.join(manifest_dir, 'out')
+    manifest_path = os.path.join(manifest_dir, 'manifest.json')
+    _write_json(manifest_path, {'facilityId': facility_id, 'scorecards': scorecard_paths, 'outDir': out_dir})
+    args = ['--facility-manifest', manifest_path, '--osm', extract, '--allow-numbered-osm']
+    if surfaces_doc:
+        args += ['--surfaces', surfaces_path]
+    run_script(ctx, run, node, 'scripts/golf/course-geometry/propose-routes.py', args)
+    composed_path = os.path.join(out_dir, f'{layout_id}.json')
+    if not os.path.isfile(composed_path):
+        return None  # this layout's own segments matched no one else's; fall back to a normal solo run
+    path = ctx.route_proposal_path(layout_id)
+    with open(composed_path, encoding='utf-8') as f:
+        doc = json.load(f)
+    _write_json(path, doc)
+    return [artifact('route-proposal', path, 'A')]
+
+
 def propose_routes_task(node, ctx, run):
     """`layout.routes.propose`: wraps `propose-routes.py` unchanged (Factory
     v2 §31 anti-goal). Only runs when the base (non-proposal) resolution is
@@ -334,12 +387,15 @@ def propose_routes_task(node, ctx, run):
     manifest, extract = ctx.snapshot(facility_id)
     if not manifest or not extract:
         raise RuntimeError('route proposal requires a retained OSM snapshot; the plan should have blocked this node')
+    surfaces_path, surfaces_doc, _surfaces_sha = ctx.detected_surfaces(facility_id)
+    shared = _facility_shared_nines_attempt(node, ctx, run, layout_id, facility_id, extract, surfaces_path, surfaces_doc)
+    if shared is not None:
+        return shared
     scorecard_path = os.path.join(ctx.layout_out(layout_id), 'route-proposal-scorecard.json')
     _write_json(scorecard_path, scorecard)
     path = ctx.route_proposal_path(layout_id)
     args = ['--layout', layout_id, '--scorecard', scorecard_path, '--osm', extract, '--out', path,
             '--facility-id', facility_id, '--allow-numbered-osm']
-    surfaces_path, surfaces_doc, _surfaces_sha = ctx.detected_surfaces(facility_id)
     if surfaces_doc:
         args += ['--surfaces', surfaces_path]
     run_script(ctx, run, node, 'scripts/golf/course-geometry/propose-routes.py', args)
