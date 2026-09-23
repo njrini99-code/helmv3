@@ -188,6 +188,37 @@ Player opens round review
   `DueForReviewPanel` under-report — same class of bug
   `.claude/rules/database.md` calls out generally, not yet applied here.
 
+- **Duplicate-active-work guard (Pkg 9 slice 1a, 2026-09-23,
+  `agent/coachhelm-focus-dedup`)**: all 5 focus-area create paths
+  (`createFocusArea`, `createPlayerFocusArea`, `createFocusAreaFromReview`,
+  `createFocusAreaFromInsightV2`, `createFocusAreaFromInsight`) now call a
+  shared `findActiveFocusAreaForMetric(client, player_id, target_metric)`
+  pre-check before inserting. A match on the SAME canonicalized
+  `target_metric` (via `resolveFocusTargetMetric`) whose status is
+  `'proposed' | 'active' | 'in_progress' | 'paused'` blocks the insert and
+  returns `{ success: false, error: ACTIVE_FOCUS_DUPLICATE_ERROR,
+  duplicateFocusAreaId }` instead — `'completed'`/`'declined'` areas never
+  block a new one. App-level only, no schema change: prod
+  (`golf_player_focus_areas`, checked read-only 2026-09-23) already has one
+  duplicate-active pair on the same player/metric, so a partial unique index
+  would fail until an owner picks which row to keep. That index (plus an
+  `evidence_revision` column) is deferred to slice 1b pending that decision.
+  `recordInsightAction` (`event-ledger.ts`) gained the same same-day dedup
+  `recordInsightExposure` already had (#1506 pattern), keyed on `(insight_id,
+  actor_id, action_type)` via `effectiveness/action-rows.ts`, so a
+  double-submit that DOES get past the guard (a genuine race between the
+  read and the insert) still can't double-count as two ledger actions.
+  Known limitation (#1995 review, deferred): the ledger dedup key is
+  `(insight_id, actor_id, action_type)` — it does NOT include
+  `focus_area_id`. A second genuine `create_focus_area` action on the SAME
+  insight but a DIFFERENT target metric (now possible since the duplicate
+  guard only blocks a repeat of the same metric) is deduped away as if it
+  were the earlier one, undercounting the display-only `acted` signal in
+  `TrustSignal`. This does not affect the duplicate-active-work guard
+  itself (a separate check, keyed on player+metric) — only the ledger's
+  action count can read low. Fixing it means widening the dedup key, a
+  follow-up slice.
+
 ## Tests To Prefer
 
 - `src/test/app/golf/dashboard/coachhelm/**`

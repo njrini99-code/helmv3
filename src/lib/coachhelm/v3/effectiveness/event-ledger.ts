@@ -31,6 +31,7 @@ import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import { logServerError } from '@/lib/server-error-logger';
 import { describeError } from '@/lib/utils/describe-error';
 import { dedupeExposureRows, exposureDedupeKey, startOfUtcDayIso } from './exposure-rows';
+import { actionDedupeKey, isActionAlreadyRecorded } from './action-rows';
 
 // ============================================================================
 // PUBLIC TYPES (shared contract — other agents depend on these exact shapes)
@@ -225,6 +226,14 @@ export async function recordInsightExposure(
  * Record one insight ACTION event — "someone actually acted on this insight"
  * (dismissed, opened drill, started plan, etc. — `action_type` is free-form).
  * Never throws.
+ *
+ * Dedup (Pkg 9 slice 1a, mirrors `recordInsightExposure`'s #1506 pattern):
+ * before inserting, reads today's already-recorded (insight_id, action_type)
+ * rows and skips the insert if this exact (insight, actor, action_type) is
+ * already covered — a double-submit must not double-count as two real
+ * actions. If the dedup lookup itself fails, fall back to writing the row
+ * rather than dropping the action signal entirely (same choice
+ * `recordInsightExposure` makes).
  */
 export async function recordInsightAction(row: {
   insight_id: string;
@@ -237,6 +246,31 @@ export async function recordInsightAction(row: {
   if (!row?.insight_id || !row?.player_id || !row?.action_type) return;
   try {
     const admin = createAdminClient();
+
+    const { data: existing, error: existingError } = await admin
+      .from('golf_insight_action')
+      .select('actor_id')
+      .eq('insight_id', row.insight_id)
+      .eq('action_type', row.action_type)
+      .gte('created_at', startOfUtcDayIso());
+
+    if (existingError) {
+      await logServerError(`recordInsightAction dedup read failed: ${existingError.message}`, {
+        action: 'recordInsightAction',
+        featureArea: FEATURE_AREA,
+        errorCode: existingError.code,
+      });
+    }
+
+    if (!existingError) {
+      const alreadyRecordedKeys = new Set(
+        (existing ?? []).map((r) =>
+          actionDedupeKey({ insight_id: row.insight_id, actor_id: r.actor_id, action_type: row.action_type }),
+        ),
+      );
+      if (isActionAlreadyRecorded(row, alreadyRecordedKeys)) return;
+    }
+
     const { error } = await admin.from('golf_insight_action').insert({
       insight_id: row.insight_id,
       player_id: row.player_id,

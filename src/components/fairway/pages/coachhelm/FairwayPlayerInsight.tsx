@@ -544,7 +544,20 @@ export function FairwayPlayerInsight({
             });
             // Canonical destination directly, not the /development redirect
             // shim (React #310 legacy-link audit, 2026-07-22).
-            if (res.success) router.push(`/golf/dashboard/intelligence?view=players&player=${target.player_id}`);
+            if (res.success) {
+              fairwayToast.success('Focus area created');
+              router.push(`/golf/dashboard/intelligence?view=players&player=${target.player_id}`);
+            } else if (res.duplicateFocusAreaId) {
+              // Pkg 9 slice 1a — the create-time duplicate guard rejected this
+              // (an active focus on the same metric already exists). No
+              // per-area deep link exists yet, so the best "go to the
+              // existing one" is the same player-scoped Focus-areas board
+              // the success path lands on.
+              fairwayToast.danger(res.error ?? 'An active focus on this metric already exists — opening it.');
+              router.push(`/golf/dashboard/intelligence?view=players&player=${target.player_id}`);
+            } else {
+              fairwayToast.danger(res.error ?? 'Could not create focus area');
+            }
           }
         } catch {
           setInsights(prev);

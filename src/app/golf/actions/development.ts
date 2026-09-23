@@ -1,5 +1,8 @@
 'use server';
 
+import type { SupabaseClient } from '@supabase/supabase-js';
+import type { Database } from '@/lib/types/database';
+import { ACTIVE_FOCUS_DUPLICATE_ERROR } from '@/lib/coachhelm/focus-areas/duplicate-guard';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { fromUntyped } from '@/lib/supabase/untyped';
@@ -22,6 +25,11 @@ export interface DevelopmentActionResult<T = void> {
   success: boolean;
   data?: T;
   error?: string;
+  /** Set only when `error` is specifically the duplicate-active-work guard
+   *  (Pkg 9 slice 1a, {@link ACTIVE_FOCUS_DUPLICATE_ERROR}) — the id of the
+   *  existing active focus area on this metric, so the UI can offer "View
+   *  existing" instead of a dead-end error toast. */
+  duplicateFocusAreaId?: string;
 }
 
 /**
@@ -166,6 +174,79 @@ function outcomeLifecycleError(status: string | null | undefined): string | null
   return focusAreaLifecycleError(status);
 }
 
+/**
+ * Statuses that count as "already active work" for the duplicate-focus-area
+ * guard below (Pkg 9 slice 1a) — a DIFFERENT set from
+ * `ACTIONABLE_FOCUS_AREA_STATUSES`. That set governs what a progress/complete
+ * WRITE may act on and deliberately excludes 'proposed' (nothing has been
+ * accepted yet, so there is no work to log progress against). This set is
+ * about whether a SECOND create on the same metric would be confusing, and a
+ * 'proposed' area is still a live, unanswered prescription — creating a
+ * second one before the player has even responded to the first is exactly
+ * the duplicate this guard exists to prevent.
+ */
+const ACTIVE_FOCUS_AREA_STATUSES_FOR_DEDUP = ['proposed', 'active', 'in_progress', 'paused'] as const;
+
+/**
+ * Look up an existing focus area for `(player_id, target_metric)` whose
+ * status counts as active work (see {@link ACTIVE_FOCUS_AREA_STATUSES_FOR_DEDUP}).
+ * Shared by all 5 create paths (Pkg 9 slice 1a) so a coach or player can
+ * never end up with two live focus areas silently targeting the exact same
+ * metric. `target_metric` must already be CANONICALIZED (the same
+ * `resolveFocusTargetMetric(...) ?? raw` value the caller is about to
+ * persist) — comparing a raw, unresolved alias against the stored canonical
+ * id would silently miss a real duplicate.
+ *
+ * `null`/empty `target_metric` never matches anything — there is no value to
+ * compare. A free-text metric that does NOT resolve to a catalog id still
+ * gets compared, but only as an EXACT string match against this SAME
+ * player's other rows (every caller passes `resolveFocusTargetMetric(raw) ??
+ * raw`, so an unresolved value is the raw string verbatim). That is
+ * deliberately narrower than the canonical case: two different players'
+ * coaches typing "tempo" for different things never collide (this is a
+ * same-player check), and two spellings of the same free-text idea on the
+ * SAME player ("tempo" vs "Tempo") do not either — only a literal repeat
+ * does. A real cross-alias catch for free text would need normalization
+ * this function does not attempt.
+ *
+ * Reads through whichever client the caller is about to WRITE through (the
+ * scoped RLS client for a coach path, the service-role admin client for a
+ * player-self-insert path) — matching the client to the eventual write
+ * avoids a false negative from a read the caller's own RLS policy can't see.
+ * A genuine read failure fails OPEN (logs and returns null) rather than
+ * blocking a legitimate create over an infrastructure hiccup — this is a
+ * best-effort, app-level guard, not a hard gate (the same posture
+ * `recordInsightExposure`'s dedup takes; a real unique index is a separate,
+ * owner-decided migration — see PR body).
+ */
+async function findActiveFocusAreaForMetric(
+  client: SupabaseClient<Database>,
+  player_id: string,
+  target_metric: string | null | undefined,
+): Promise<{ id: string } | null> {
+  if (!target_metric) return null;
+
+  const { data, error } = await client
+    .from('golf_player_focus_areas')
+    .select('id')
+    .eq('player_id', player_id)
+    .eq('target_metric', target_metric)
+    .in('status', ACTIVE_FOCUS_AREA_STATUSES_FOR_DEDUP)
+    .limit(1)
+    .maybeSingle();
+
+  if (error) {
+    await logServerError(
+      `[development] duplicate-focus-area check failed — proceeding without the guard: ${describeError(error)}`,
+      { action: 'development.findActiveFocusAreaForMetric', featureArea: 'development' },
+      'warning',
+    );
+    return null;
+  }
+
+  return data ?? null;
+}
+
 // ============================================================================
 // FOCUS AREA OPERATIONS
 // ============================================================================
@@ -269,6 +350,18 @@ async function createFocusAreaImpl(
   });
   if (wrongWay) return { success: false, error: wrongWay };
 
+  // #1239: store the canonical id when the metric resolves, so the progress
+  // driver recognizes it. Free-text custom metrics are preserved verbatim —
+  // they are a supported choice, they just track manually (the card says so).
+  const canonicalMetric = resolveFocusTargetMetric(data.target_metric) ?? data.target_metric;
+
+  // Pkg 9 slice 1a — duplicate-active-work guard, shared across all 5 create
+  // paths (see `findActiveFocusAreaForMetric`'s doc comment).
+  const existingActive = await findActiveFocusAreaForMetric(supabase, data.player_id, canonicalMetric);
+  if (existingActive) {
+    return { success: false, error: ACTIVE_FOCUS_DUPLICATE_ERROR, duplicateFocusAreaId: existingActive.id };
+  }
+
   const { error } = await fromUntyped(supabase, 'golf_player_focus_areas').insert({
     player_id: data.player_id,
     coach_id: data.coach_id,
@@ -276,10 +369,7 @@ async function createFocusAreaImpl(
     title: data.title,
     description: data.description,
     status,
-    // #1239: store the canonical id when the metric resolves, so the progress
-    // driver recognizes it. Free-text custom metrics are preserved verbatim —
-    // they are a supported choice, they just track manually (the card says so).
-    target_metric: resolveFocusTargetMetric(data.target_metric) ?? data.target_metric,
+    target_metric: canonicalMetric,
     current_value: data.current_value,
     // #1240: the value at creation IS the starting point. Capture it in its own
     // immutable column — the driver overwrites current_value in place, so
@@ -417,6 +507,17 @@ async function createPlayerFocusAreaImpl(
   });
   if (wrongWay) return { success: false, error: wrongWay };
 
+  // #1239 / #1240 — same contract as the coach create path above.
+  const canonicalMetric = resolveFocusTargetMetric(data.target_metric) ?? data.target_metric;
+
+  // Pkg 9 slice 1a — duplicate-active-work guard. Reads through the SAME
+  // admin client this path writes through (RLS has no player self-select
+  // policy on this table either).
+  const existingActive = await findActiveFocusAreaForMetric(admin, player.id, canonicalMetric);
+  if (existingActive) {
+    return { success: false, error: ACTIVE_FOCUS_DUPLICATE_ERROR, duplicateFocusAreaId: existingActive.id };
+  }
+
   const { error } = await fromUntyped(admin, 'golf_player_focus_areas').insert({
     player_id: player.id,
     coach_id: null,
@@ -424,8 +525,7 @@ async function createPlayerFocusAreaImpl(
     title: data.title,
     description: data.description,
     status: 'active',
-    // #1239 / #1240 — same contract as the coach create path above.
-    target_metric: resolveFocusTargetMetric(data.target_metric) ?? data.target_metric,
+    target_metric: canonicalMetric,
     current_value: data.current_value,
     baseline_value: data.current_value ?? null,
     target_value: data.target_value,
@@ -1142,7 +1242,7 @@ interface CreateFocusAreaFromReviewArgs {
  */
 async function createFocusAreaFromReviewImpl(
   args: CreateFocusAreaFromReviewArgs
-): Promise<{ success: boolean; focusAreaId?: string; error?: string }> {
+): Promise<{ success: boolean; focusAreaId?: string; error?: string; duplicateFocusAreaId?: string }> {
   const supabase = await createClient();
 
   const { data: { user }, error: userError } = await supabase.auth.getUser();
@@ -1162,6 +1262,9 @@ async function createFocusAreaFromReviewImpl(
   // promoting their own review needs no consent step (active immediately).
   const isCoachPromoting = access.reason === 'coach';
   const nowIso = new Date().toISOString();
+  // #1239: canonicalize so the progress driver recognizes it (this is the
+  // path that wrote the orphaned ids). Unrecognized free text is preserved.
+  const canonicalMetric = resolveFocusTargetMetric(args.targetMetric) ?? args.targetMetric ?? null;
   const insertPayload = {
     player_id: args.playerId,
     team_id: teamId,
@@ -1170,9 +1273,7 @@ async function createFocusAreaFromReviewImpl(
     title: args.title,
     description: args.description,
     status: (isCoachPromoting ? 'proposed' : 'active') as 'proposed' | 'active',
-    // #1239: canonicalize so the progress driver recognizes it (this is the
-    // path that wrote the orphaned ids). Unrecognized free text is preserved.
-    target_metric: resolveFocusTargetMetric(args.targetMetric) ?? args.targetMetric ?? null,
+    target_metric: canonicalMetric,
     target_value: args.targetValue ?? null,
     from_review_id: args.reviewId,
     review_context: args.reviewContext ?? null,
@@ -1186,9 +1287,18 @@ async function createFocusAreaFromReviewImpl(
   // self-ownership above is the sole gate (mirrors createPlayerFocusAreaImpl).
   // Without this, every player self-promote from Round Review was silently
   // rejected by RLS (the "Add focus area" button did nothing).
+  const writeClient = isCoachPromoting ? supabase : createAdminClient();
+
+  // Pkg 9 slice 1a — duplicate-active-work guard. Reads through the same
+  // client the write below will use.
+  const existingActive = await findActiveFocusAreaForMetric(writeClient, args.playerId, canonicalMetric);
+  if (existingActive) {
+    return { success: false, error: ACTIVE_FOCUS_DUPLICATE_ERROR, duplicateFocusAreaId: existingActive.id };
+  }
+
   const { data: row, error } = isCoachPromoting
-    ? await supabase.from('golf_player_focus_areas').insert(insertPayload).select('id').single()
-    : await fromUntyped(createAdminClient(), 'golf_player_focus_areas').insert(insertPayload).select('id').single();
+    ? await writeClient.from('golf_player_focus_areas').insert(insertPayload).select('id').single()
+    : await fromUntyped(writeClient, 'golf_player_focus_areas').insert(insertPayload).select('id').single();
 
   if (error || !row) {
     await logServerError(
@@ -1215,7 +1325,7 @@ const observedCreateFocusAreaFromReview = withAdminObserved(
   createFocusAreaFromReviewImpl,
 );
 
-export async function createFocusAreaFromReview(args: CreateFocusAreaFromReviewArgs): Promise<{ success: boolean; focusAreaId?: string; error?: string }> {
+export async function createFocusAreaFromReview(args: CreateFocusAreaFromReviewArgs): Promise<{ success: boolean; focusAreaId?: string; error?: string; duplicateFocusAreaId?: string }> {
   return observedCreateFocusAreaFromReview(args);
 }
 
@@ -1245,7 +1355,7 @@ interface CreateFocusAreaFromInsightArgsV2 {
  */
 async function createFocusAreaFromInsightV2Impl(
   args: CreateFocusAreaFromInsightArgsV2
-): Promise<{ success: boolean; focusAreaId?: string; error?: string }> {
+): Promise<{ success: boolean; focusAreaId?: string; error?: string; duplicateFocusAreaId?: string }> {
   const supabase = await createClient();
 
   const { data: { user }, error: userError } = await supabase.auth.getUser();
@@ -1264,6 +1374,9 @@ async function createFocusAreaFromInsightV2Impl(
   // promoting their own insight needs no consent step (active immediately).
   const isCoachPromoting = access.reason === 'coach';
   const nowIso = new Date().toISOString();
+  // #1239: canonicalize so the progress driver recognizes it (this is the
+  // path that wrote the orphaned ids). Unrecognized free text is preserved.
+  const canonicalMetric = resolveFocusTargetMetric(args.targetMetric) ?? args.targetMetric ?? null;
   const insertPayload = {
     player_id: args.playerId,
     team_id: teamId,
@@ -1272,9 +1385,7 @@ async function createFocusAreaFromInsightV2Impl(
     title: args.title,
     description: args.description,
     status: (isCoachPromoting ? 'proposed' : 'active') as 'proposed' | 'active',
-    // #1239: canonicalize so the progress driver recognizes it (this is the
-    // path that wrote the orphaned ids). Unrecognized free text is preserved.
-    target_metric: resolveFocusTargetMetric(args.targetMetric) ?? args.targetMetric ?? null,
+    target_metric: canonicalMetric,
     target_value: args.targetValue ?? null,
     from_insight_id: args.insightId,
     started_at: isCoachPromoting ? null : nowIso,
@@ -1284,9 +1395,18 @@ async function createFocusAreaFromInsightV2Impl(
   // reason==='self', ownership proven) routes through the admin client; coach
   // stays on the scoped client. Without this, promoting your own CoachHelm/Hub
   // insight to a focus area was silently rejected by RLS.
+  const writeClient = isCoachPromoting ? supabase : createAdminClient();
+
+  // Pkg 9 slice 1a — duplicate-active-work guard. Reads through the same
+  // client the write below will use.
+  const existingActive = await findActiveFocusAreaForMetric(writeClient, args.playerId, canonicalMetric);
+  if (existingActive) {
+    return { success: false, error: ACTIVE_FOCUS_DUPLICATE_ERROR, duplicateFocusAreaId: existingActive.id };
+  }
+
   const { data: row, error } = isCoachPromoting
-    ? await supabase.from('golf_player_focus_areas').insert(insertPayload).select('id').single()
-    : await fromUntyped(createAdminClient(), 'golf_player_focus_areas').insert(insertPayload).select('id').single();
+    ? await writeClient.from('golf_player_focus_areas').insert(insertPayload).select('id').single()
+    : await fromUntyped(writeClient, 'golf_player_focus_areas').insert(insertPayload).select('id').single();
 
   if (error || !row) {
     await logServerError(
@@ -1329,7 +1449,7 @@ const observedCreateFocusAreaFromInsightV2 = withAdminObserved(
   createFocusAreaFromInsightV2Impl,
 );
 
-export async function createFocusAreaFromInsightV2(args: CreateFocusAreaFromInsightArgsV2): Promise<{ success: boolean; focusAreaId?: string; error?: string }> {
+export async function createFocusAreaFromInsightV2(args: CreateFocusAreaFromInsightArgsV2): Promise<{ success: boolean; focusAreaId?: string; error?: string; duplicateFocusAreaId?: string }> {
   return observedCreateFocusAreaFromInsightV2(args);
 }
 
@@ -1506,6 +1626,15 @@ async function createFocusAreaFromInsightImpl(
   });
   if (wrongWay) return { success: false, error: wrongWay };
 
+  // #1239 / #1240 — canonicalize, and capture the starting point.
+  const canonicalMetric = resolveFocusTargetMetric(data.target_metric) ?? data.target_metric ?? null;
+
+  // Pkg 9 slice 1a — duplicate-active-work guard.
+  const existingActive = await findActiveFocusAreaForMetric(supabase, data.player_id, canonicalMetric);
+  if (existingActive) {
+    return { success: false, error: ACTIVE_FOCUS_DUPLICATE_ERROR, duplicateFocusAreaId: existingActive.id };
+  }
+
   const { data: focusArea, error: insertError } = await supabase
     .from('golf_player_focus_areas')
     .insert({
@@ -1520,8 +1649,7 @@ async function createFocusAreaFromInsightImpl(
       // This legacy path is coach-only (golf_coaches row required above), so
       // it must never silently create active work on the player's behalf.
       status: 'proposed',
-      // #1239 / #1240 — canonicalize, and capture the starting point.
-      target_metric: resolveFocusTargetMetric(data.target_metric) ?? data.target_metric ?? null,
+      target_metric: canonicalMetric,
       current_value: data.current_value ?? null,
       baseline_value: data.current_value ?? null,
       target_value: data.target_value ?? null,
