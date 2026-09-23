@@ -651,9 +651,15 @@ def acquire_terrain(node, ctx, run):
     # Keep the old four-corner source immutable. Perimeter coverage plus a
     # native-grid buffer is a different acquired raster, not a metadata edit.
     source = os.path.join(ctx.facility_out(node.scope.facility_id), 'terrain', key + ('-nc-native-v2' if provider.compiler_id == 'nc_onemap_dem03' else '-perimeter-v1'))
+    args = ['--acquire-only', '--provider', provider.compiler_id, '--holes', 'all', '--package', pkg_path, '--source', source, '--output', ctx.terrain_base_out(layout_id)]
+    # Same call as eval_terrain_acquire's fingerprint input: an inland
+    # layout (no coastline reaches its bounds) gets no argument at all, so
+    # its compiler invocation is unchanged from before this existed.
+    coastline_path, _coastline_digest = ctx.coastline_context(layout_id)
+    if coastline_path:
+        args += ['--coastline-context', coastline_path]
     try:
-        run_script(ctx, run, node, 'scripts/golf/course-geometry/compile-course-terrain.py',
-                   ['--acquire-only', '--provider', provider.compiler_id, '--holes', 'all', '--package', pkg_path, '--source', source, '--output', ctx.terrain_base_out(layout_id)])
+        run_script(ctx, run, node, 'scripts/golf/course-geometry/compile-course-terrain.py', args)
     except RuntimeError as error:
         dossier = os.path.join(source, 'source-selection-dossier.json')
         precondition = terrain_acquisition_precondition(

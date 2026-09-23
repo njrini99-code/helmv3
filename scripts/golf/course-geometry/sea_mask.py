@@ -89,6 +89,31 @@ def coastline_ways_from_snapshot(gz_path):
     return ways, hashlib.sha256(raw).hexdigest()
 
 
+def coastline_reaches_bbox_wgs84(ways, bbox_wgs84):
+    """A coarse, conservative gate: True when any coastline way's own
+    bounding box overlaps `bbox_wgs84` (`(minLon, minLat, maxLon, maxLat)`).
+
+    This is what the factory uses to decide whether a layout is coastal at
+    all -- whether to add a `--coastline-context` argument and a fingerprint
+    input -- not the exact clip `build_sea_mask` does later in the export's
+    real projected CRS. A false positive here only costs an unused argument
+    (`build_sea_mask` still returns `None`); a false negative would silently
+    reintroduce a coastal rejection, so this always tests the whole `bbox`,
+    never a single point or centroid.
+    """
+    minx, miny, maxx, maxy = bbox_wgs84
+    for way in ways:
+        geometry = way.get('geometry') or []
+        if not geometry:
+            continue
+        lons = [pt['lon'] for pt in geometry]
+        lats = [pt['lat'] for pt in geometry]
+        if max(lons) < minx or min(lons) > maxx or max(lats) < miny or min(lats) > maxy:
+            continue
+        return True
+    return False
+
+
 def coastline_geometry_digest(ways):
     """A factory-input digest of the coastline geometry actually used: way
     ids plus their coordinates, so an edit to a way's shape under the same

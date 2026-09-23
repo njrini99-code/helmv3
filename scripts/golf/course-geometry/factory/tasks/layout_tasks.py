@@ -343,6 +343,15 @@ def eval_terrain_acquire(node, ctx):
     provider = select_terrain_provider(providers)
     inputs = {'footprint': footprint, 'origin': digest(facility.get('originWgs84')), 'providers': digest(providers),
               'selectedProvider': provider.policy_id if provider else None}
+    # Only a layout whose export bounds a coastline actually reaches gets a
+    # 'coastline' input at all -- an inland layout's fingerprint stays
+    # byte-identical to before this existed. ctx.coastline_context is the
+    # same call acquire_terrain's executor makes, so the two can't disagree
+    # about whether this layout is coastal.
+    if footprint is not None:
+        _coastline_path, coastline_digest = ctx.coastline_context(layout_id)
+        if coastline_digest is not None:
+            inputs['coastline'] = digest(coastline_digest)
     if provider is None:
         blockers.append(blocked('TERRAIN_ADAPTER_MISSING', providers=providers, available=list(supported_terrain_provider_ids())))
     if blockers:
@@ -613,7 +622,12 @@ SPECS = [
     TaskSpec('layout.candidates.compose', '1', 'layout', ('facility.osm.snapshot', 'layout.scorecard.compose'),
              _package_eval(lambda c, l: c.candidates_dir(l), ('facility.osm.snapshot', 'layout.scorecard.compose')),
              impl_files=(script('prepare-osm-course.py'), script('source_geometry.py')) + CRS_FILES, retention='A', estimated_bytes=20_000_000),
-    TaskSpec('layout.terrain.acquire', '1', 'layout', ('layout.candidates.compose',), eval_terrain_acquire,
+    # Optional: eval_terrain_acquire reads the context snapshot straight off
+    # disk via ctx.coastline_context (not through dep_input), and a coastal
+    # layout only ever needs it to exist -- it must never newly BLOCK every
+    # layout's terrain acquisition (coastal or not) merely because this
+    # facility task hasn't run yet or failed. A required dep here would.
+    TaskSpec('layout.terrain.acquire', '1', 'layout', ('layout.candidates.compose', 'facility.context.snapshot?'), eval_terrain_acquire,
              impl_files=TERRAIN_ACQUIRE_FILES, retention='A', estimated_bytes=300_000_000),
     TaskSpec('layout.lidar.acquire', '1', 'layout', ('layout.terrain.acquire',), eval_lidar_acquire,
              impl_files=(script('fetch-lidar-chm.py'),) + CRS_FILES, retention='B', estimated_bytes=40_000_000),

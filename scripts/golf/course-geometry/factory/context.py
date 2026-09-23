@@ -581,6 +581,42 @@ class Context:
         self._bounds[cache_key] = bounds
         return bounds
 
+    def coastline_context(self, layout_id):
+        """(extractPath, geometryDigest) when the facility's retained
+        osm-context snapshot has at least one `natural=coastline` way whose
+        own bounding box reaches this layout's terrain export bounds, else
+        (None, None). `geometryDigest` is `sea_mask.coastline_geometry_digest`
+        over the ways actually read: the factory-input identity that moves
+        only when the coastline geometry itself changes, not on every
+        unrelated context edit (a bunker retraced, a tree added).
+
+        `eval_terrain_acquire`'s fingerprint and `acquire_terrain`'s executor
+        argument both call this exact method, so they can never disagree
+        about whether a layout is coastal -- an inland layout (no coastline
+        reaches its bounds) gets `(None, None)` from both, unchanged from
+        before this existed.
+        """
+        layout = self.layout(layout_id) or {}
+        facility_id = layout.get('facilityId')
+        if not facility_id:
+            return None, None
+        _manifest, extract = self.snapshot(facility_id, kind='osm-context')
+        if not extract or not os.path.isfile(extract):
+            return None, None
+        bounds = self.terrain_bounds(layout_id)
+        pkg_path = self.candidates_package_path(layout_id)
+        pkg = self.json(pkg_path, fresh=True) if bounds and self.can_adopt(pkg_path) else None
+        if not bounds or not pkg:
+            return None, None
+        compiler = _compiler_module(self.abspath(f'{SCRIPTS_DIR}/compile-course-terrain.py'))
+        compiler.pilot.ORIGIN = pkg['originWgs84']
+        lon, lat = compiler.geographic(*zip(*compiler.local_bounds_perimeter(bounds)))
+        bbox_wgs84 = (min(lon), min(lat), max(lon), max(lat))
+        ways, _snapshot_sha256 = compiler.sea_mask.coastline_ways_from_snapshot(extract)
+        if not ways or not compiler.sea_mask.coastline_reaches_bbox_wgs84(ways, bbox_wgs84):
+            return None, None
+        return extract, compiler.sea_mask.coastline_geometry_digest(ways)
+
     # --- graph outputs ------------------------------------------------------
     def output_hash(self, key):
         return self.outputs.get(key)

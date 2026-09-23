@@ -207,6 +207,19 @@ class BasisAndDigestTests(unittest.TestCase):
         self.assertIn('coordinatesHash', digest)
 
 
+class CoastlineReachesBboxTests(unittest.TestCase):
+    def test_overlapping_way_bbox_is_a_hit(self):
+        ways = [way(1, [1, 2], [(-121.95, 36.55), (-121.93, 36.56)])]
+        self.assertTrue(sea_mask.coastline_reaches_bbox_wgs84(ways, (-122.0, 36.5, -121.9, 36.6)))
+
+    def test_a_way_entirely_outside_the_bbox_is_not_a_hit(self):
+        ways = [way(1, [1, 2], [(10.0, 10.0), (11.0, 11.0)])]
+        self.assertFalse(sea_mask.coastline_reaches_bbox_wgs84(ways, (-122.0, 36.5, -121.9, 36.6)))
+
+    def test_no_ways_is_not_a_hit(self):
+        self.assertFalse(sea_mask.coastline_reaches_bbox_wgs84([], (-122.0, 36.5, -121.9, 36.6)))
+
+
 class ClassifyAndFillTests(unittest.TestCase):
     def test_matches_todays_behavior_with_no_mask(self):
         decoded = np.array([[np.nan, 0.0], [1.0, 2.0]])
