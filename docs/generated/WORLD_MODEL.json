@@ -13650,6 +13650,21 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/lib/coachhelm/focus-areas/follow-up-eligibility-loader.ts",
+          "anchor": "src/lib/supabase/untyped"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/focus-areas/follow-up-eligibility-loader.ts",
+          "anchor": "src/lib/supabase/fetch-all-rows"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/focus-areas/follow-up-eligibility-loader.ts",
+          "anchor": "src/lib/supabase/chunk-ids"
+        },
+        {
+          "kind": "import_graph",
           "path": "src/lib/coachhelm/focus-areas/practice-log-loader.ts",
           "anchor": "src/lib/supabase/untyped"
         },

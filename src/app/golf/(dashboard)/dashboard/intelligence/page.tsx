@@ -226,7 +226,8 @@ export default async function IntelligenceDashboardPage({ searchParams }: Intell
              current_value, baseline_value, snapshots,
              target_value, target_kind, target_date, target_rounds,
              started_at, completed_at, created_at, updated_at,
-             from_review_id, from_insight_id, review_context, progress_notes`,
+             from_review_id, from_insight_id, review_context, progress_notes,
+             outcome_status`,
           )
           .in('player_id', playerIds)
           .order('created_at', { ascending: false })
@@ -322,6 +323,11 @@ export default async function IntelligenceDashboardPage({ searchParams }: Intell
     ...fa,
     player: players.find((p) => p.id === fa.player_id) || null,
     outcome_status: fa.from_insight_id ? (outcomeByInsightId[fa.from_insight_id] ?? null) : null,
+    // Owner decision follow-up (2026-09-23) — the RAW column, unlike
+    // `outcome_status` above which only reflects the SOURCE INSIGHT and
+    // misses areas with no `from_insight_id`. See PlayersGridFocusArea's
+    // doc for why this needs its own field rather than reusing that one.
+    recordedOutcomeStatus: fa.outcome_status ?? null,
     progressHistory: progressHistoryOf(fa.progress_notes),
     from_review_round_id: fa.from_review_id ? (roundIdByReviewId[fa.from_review_id] ?? null) : null,
     // `null` from the loader means that table's read failed (unknown), not
