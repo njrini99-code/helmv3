@@ -15,10 +15,13 @@ import {
   scope,
   SCENARIO_A_125_175,
   SCENARIO_B_UNDER_ATTEMPTS_50_125,
+  SCENARIO_C_HOLES,
   SCENARIO_C_UNDER_ROUNDS_175_PLUS,
+  SCENARIO_D_HOLES,
+  SCENARIO_D_HOLES_PARTIAL,
   SCENARIO_D_LAYUP_175_PLUS,
-  SCENARIO_D_PAR_BY_ROUND_HOLE,
   SCENARIO_E_BOUNDARIES,
+  SCENARIO_E_HOLES,
 } from './fixtures/distance-profile-fixtures';
 
 const ALL_BANDS: readonly DistanceBand[] = ['50_125ft', '125_175ft', '175_plus_ft'];
@@ -41,7 +44,7 @@ describe('distance-profile — band boundaries (49.9/50/124.9/125/174.9/175 yd)'
 
   it('computeDistanceProfile buckets each boundary fixture into the same band, end to end', () => {
     const facts = Object.values(SCENARIO_E_BOUNDARIES);
-    const results = computeDistanceProfile(facts, scope('player-e'));
+    const results = computeDistanceProfile(facts, scope('player-e'), SCENARIO_E_HOLES);
 
     // 49.9 yd belongs to no band — it must not inflate ANY band's attempts.
     const totalAttempts = ALL_BANDS
@@ -56,7 +59,8 @@ describe('distance-profile — band boundaries (49.9/50/124.9/125/174.9/175 yd)'
 });
 
 describe('distance-profile — known-answer denominators (scenario A, 125-175 yd, exactly at the support floor)', () => {
-  const results = computeDistanceProfile(SCENARIO_A_125_175, scope('player-a'));
+  // Band is 125-175, not 175+, so holes are irrelevant here — [] proves it.
+  const results = computeDistanceProfile(SCENARIO_A_125_175, scope('player-a'), []);
 
   it('green_hit_rate = 6/10 attempts', () => {
     const r = find(results, 'approach_green_hit_rate', '125_175ft');
@@ -91,7 +95,7 @@ describe('distance-profile — known-answer denominators (scenario A, 125-175 yd
 
 describe('distance-profile — support policy (sample size, distinct rounds, coverage)', () => {
   it('under MIN_ATTEMPTS: every rate metric is null, but measured_contribution still reports the true count', () => {
-    const results = computeDistanceProfile(SCENARIO_B_UNDER_ATTEMPTS_50_125, scope('player-b'));
+    const results = computeDistanceProfile(SCENARIO_B_UNDER_ATTEMPTS_50_125, scope('player-b'), []);
     expect(find(results, 'approach_green_hit_rate', '50_125ft')).toMatchObject({ support: 'under_supported', value: null });
     expect(find(results, 'approach_on_green_proximity_feet', '50_125ft')).toMatchObject({ support: 'under_supported', value: null });
     expect(find(results, 'approach_direction_coverage', '50_125ft')).toMatchObject({ support: 'under_supported', value: null });
@@ -102,16 +106,18 @@ describe('distance-profile — support policy (sample size, distinct rounds, cov
   });
 
   it('MIN_ATTEMPTS clears but MIN_ROUNDS fails (12 attempts, 2 rounds): still under-supported', () => {
-    const results = computeDistanceProfile(SCENARIO_C_UNDER_ROUNDS_175_PLUS, scope('player-c'));
+    const results = computeDistanceProfile(SCENARIO_C_UNDER_ROUNDS_175_PLUS, scope('player-c'), SCENARIO_C_HOLES);
     const r = find(results, 'approach_green_hit_rate', '175_plus_ft');
     expect(r.attempts).toBe(12);
     expect(r.distinctRounds).toBe(2);
     expect(r.support).toBe('under_supported');
     expect(r.value).toBeNull();
+    expect(r.layupExcludedN).toBe(0);
+    expect(r.missingParExcludedN).toBe(0);
   });
 
   it('a band with zero shots reports measured_contribution 0, not an absent result', () => {
-    const results = computeDistanceProfile([], scope('player-empty'));
+    const results = computeDistanceProfile([], scope('player-empty'), []);
     for (const band of ALL_BANDS) {
       expect(find(results, 'approach_measured_contribution', band).value).toBe(0);
       expect(find(results, 'approach_green_hit_rate', band).value).toBeNull();
@@ -119,27 +125,17 @@ describe('distance-profile — support policy (sample size, distinct rounds, cov
   });
 });
 
-describe('distance-profile — 175+ yd lay-up exclusion (reuses Package 7B / addendum A2 semantics)', () => {
-  it('without parByRoundHole: no shot is ever excluded (documented conservative fallback)', () => {
-    const results = computeDistanceProfile(SCENARIO_D_LAYUP_175_PLUS, scope('player-d'));
-    const r = find(results, 'approach_measured_contribution', '175_plus_ft');
-    expect(r.attempts).toBe(3);
-    expect(r.layupExcludedN).toBe(0);
-  });
-
-  it('with parByRoundHole: the confirmed par-5 missed-green shot is excluded as a likely lay-up', () => {
-    const results = computeDistanceProfile(SCENARIO_D_LAYUP_175_PLUS, scope('player-d'), {
-      parByRoundHole: SCENARIO_D_PAR_BY_ROUND_HOLE,
-    });
+describe('distance-profile — 175+ yd lay-up / missing-par exclusion (reuses Package 7B / addendum A2 semantics)', () => {
+  it('with holes resolvable for all three: the confirmed par-5 missed-green shot is excluded as a likely lay-up', () => {
+    const results = computeDistanceProfile(SCENARIO_D_LAYUP_175_PLUS, scope('player-d'), SCENARIO_D_HOLES);
     const r = find(results, 'approach_measured_contribution', '175_plus_ft');
     expect(r.attempts).toBe(2); // d2 (par-4 miss) and d3 (par-5 green-finder) remain
     expect(r.layupExcludedN).toBe(1); // d1 only
+    expect(r.missingParExcludedN).toBe(0);
   });
 
-  it('a par-5 approach that FOUND the green is never tagged a lay-up, even with parByRoundHole', () => {
-    const results = computeDistanceProfile(SCENARIO_D_LAYUP_175_PLUS, scope('player-d'), {
-      parByRoundHole: SCENARIO_D_PAR_BY_ROUND_HOLE,
-    });
+  it('a par-5 approach that FOUND the green is never tagged a lay-up, even when resolvable', () => {
+    const results = computeDistanceProfile(SCENARIO_D_LAYUP_175_PLUS, scope('player-d'), SCENARIO_D_HOLES);
     const r = find(results, 'approach_green_hit_rate', '175_plus_ft');
     // Only 2 eligible attempts (d2, d3) — well under MIN_ATTEMPTS=10, so the
     // rate itself is null regardless; d3's inclusion (not excluded as a
@@ -150,14 +146,20 @@ describe('distance-profile — 175+ yd lay-up exclusion (reuses Package 7B / add
     expect(r.value).toBeNull();
   });
 
-  it('an unresolvable par (no entry in parByRoundHole) is never treated as a confirmed par-5 lay-up', () => {
-    const sparseMap = new Map<string, number>(); // d1's hole is absent entirely
-    const results = computeDistanceProfile(SCENARIO_D_LAYUP_175_PLUS, scope('player-d'), {
-      parByRoundHole: sparseMap,
-    });
+  it('with no holes at all: every 175+ shot is excluded as missing_par, never silently kept', () => {
+    const results = computeDistanceProfile(SCENARIO_D_LAYUP_175_PLUS, scope('player-d'), []);
     const r = find(results, 'approach_measured_contribution', '175_plus_ft');
-    expect(r.attempts).toBe(3); // nothing excluded — an unknown par is not "confirmed par 5"
+    expect(r.attempts).toBe(0); // nothing kept — an unresolvable par is excluded, not assumed safe
     expect(r.layupExcludedN).toBe(0);
+    expect(r.missingParExcludedN).toBe(3);
+  });
+
+  it('resolves par PER SHOT: only d1 is resolvable, so d1 is a layup exclusion and d2/d3 are missing_par', () => {
+    const results = computeDistanceProfile(SCENARIO_D_LAYUP_175_PLUS, scope('player-d'), SCENARIO_D_HOLES_PARTIAL);
+    const r = find(results, 'approach_measured_contribution', '175_plus_ft');
+    expect(r.attempts).toBe(0);
+    expect(r.layupExcludedN).toBe(1); // d1
+    expect(r.missingParExcludedN).toBe(2); // d2, d3
   });
 });
 
@@ -167,19 +169,19 @@ describe('distance-profile — scope', () => {
       approachFact({ round_id: 'r1', shot_type: 'putting', distance_to_hole_before_feet: 300 }),
       approachFact({ round_id: 'r1', shot_type: 'tee', distance_to_hole_before_feet: 300 }),
     ];
-    const results = computeDistanceProfile(facts, scope('player-x'));
+    const results = computeDistanceProfile(facts, scope('player-x'), []);
     expect(find(results, 'approach_measured_contribution', '50_125ft').value).toBe(0);
   });
 
   it('echoes scope.player_id onto every MetricResult', () => {
-    const results = computeDistanceProfile(SCENARIO_A_125_175, scope('player-echo'));
+    const results = computeDistanceProfile(SCENARIO_A_125_175, scope('player-echo'), []);
     expect(results.every((r) => r.playerId === 'player-echo')).toBe(true);
   });
 });
 
 describe('distance-profile — recorded travel distance vs. derived progress', () => {
   it('every MetricResult states distanceMethod: recorded — this module never derives a distance from hole yardage', () => {
-    const results = computeDistanceProfile(SCENARIO_A_125_175, scope('player-a'));
+    const results = computeDistanceProfile(SCENARIO_A_125_175, scope('player-a'), []);
     expect(results.length).toBeGreaterThan(0);
     expect(results.every((r) => r.distanceMethod === 'recorded')).toBe(true);
   });

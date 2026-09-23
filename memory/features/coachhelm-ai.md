@@ -337,13 +337,16 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
 - **A2 distance profile (2026-09-23, `agent/coachhelm-distance-profile`,
   stacked on `agent/coachhelm-player-context`): pure metrics only, not
   wired to a generator.** `metrics/distance-profile.ts`'s
-  `computeDistanceProfile(facts, scope, options?)` computes five per-band
+  `computeDistanceProfile(facts, scope, holes)` computes five per-band
   `MetricResult`s (green hit, on-green proximity, direction coverage,
   severe outcomes, measured contribution) over `ShotFact[]`, reusing the
   Package 7B / addendum A2 all-shot proximity semantics already shipped in
   the `20260922120000_v3_standing_shot_metrics_all_shot_proximity` SQL
   migration: the same three yard bands, on-green predicate, 175+ yd par-5
-  lay-up exclusion, and support floors. Adds `miss_direction` to `ShotFact`
+  lay-up exclusion, and support floors. `holes: readonly HoleContext[]`
+  is REQUIRED (not an optional side map) — a 175+ yd shot whose hole isn't
+  resolvable from it is excluded with reason `missing_par`, never silently
+  kept. Adds `miss_direction` to `ShotFact`
   (raw passthrough, threaded through `normalize-shot.ts`,
   `load-player-context.ts`, and the shot-source adapter). Every
   `MetricResult.distanceMethod` is `'recorded'`, never `'derived_progress'`
