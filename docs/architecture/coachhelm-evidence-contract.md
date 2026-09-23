@@ -1035,8 +1035,8 @@ column (migration 20260922230000).
 **Input**: `facts` (`ShotFact[]`), `holes` (`HoleContext[]`, used only to
 resolve `round_id` → `course_id` for course-mix disclosure), an
 `interventionAt` instant, a frozen `baselineWindow` and a `followUpWindow`
-(`{start, end}`), a single `spec` (`MatchingSpec`: an optional distance band
-+ version id, an optional lie filter, an optional shot-role filter, and a
+(`{start, end}`), a single `spec` (`MatchingSpec`: an optional distance band and
+version id, an optional lie filter, an optional shot-role filter, and a
 benchmark version id) applied identically to BOTH sides, an `outcome`
 classifier (`'rate'` with an `isSuccess` predicate, or `'mean'` with a
 numeric `valueOf`), a `multipleInterventions` flag, and a `metricId` label.
