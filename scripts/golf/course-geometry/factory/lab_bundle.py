@@ -76,7 +76,12 @@ def _immutable_write(path, data):
         temp.unlink(missing_ok=True)
 
 
-def export_bundle(output_root, layout_id, hole_keys=None):
+def export_bundle(output_root, layout_id, hole_keys=None, *, package_path=None, context_path=None, retained_root=None):
+    """`package_path`/`context_path` override the built package/context
+    locations for a layout whose catalog retains checked-in geometry (Peek's
+    `geometry.package` fixture), which never lives under the output root.
+    Such a file must sit under `retained_root` and passes the same traversal/
+    symlink/size checks there; only its bytes enter the lab's object store."""
     if not SAFE_KEY.fullmatch(layout_id):
         raise ValueError('invalid layout ID')
     root = Path(output_root).absolute()
@@ -89,19 +94,26 @@ def export_bundle(output_root, layout_id, hole_keys=None):
         if path.is_symlink():
             raise ValueError('symlink output directories are forbidden')
 
+    retained = Path(retained_root).absolute() if retained_root else None
+
     def retain(path, media_type, maximum=MAX_JSON):
-        data = read_checked(root, path, maximum)
+        path = Path(path).absolute()
+        inside = path.is_relative_to(root)
+        if not inside and (retained is None or not path.is_relative_to(retained)):
+            raise ValueError('asset outside configured factory output root')
+        base = root if inside else retained
+        data = read_checked(base, path, maximum)
         sha = hashlib.sha256(data).hexdigest()
         _immutable_write(objects / sha, data)
         return {'sha256': sha, 'bytes': len(data), 'mediaType': media_type,
-                'sourceRelativePath': str(Path(path).relative_to(root))}, data
+                'sourceRelativePath': str(path.relative_to(base)) if inside else 'retained:' + str(path.relative_to(base))}, data
 
-    package_ref, package_bytes = retain(folder / 'package' / 'normalized.json', 'application/json')
+    package_ref, package_bytes = retain(Path(package_path) if package_path else folder / 'package' / 'normalized.json', 'application/json')
     package = json.loads(package_bytes)
     if not content_hash_matches(package):
         raise ValueError('package contentHash mismatch')
     package_hash = package['contentHash']
-    context = folder / 'context' / f'{layout_id}-context.json'
+    context = Path(context_path) if context_path else folder / 'context' / f'{layout_id}-context.json'
     context_ref = None
     if context.exists():
         context_ref, data = retain(context, 'application/json')

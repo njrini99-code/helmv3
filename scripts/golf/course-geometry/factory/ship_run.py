@@ -74,7 +74,10 @@ def _capture_bundle(session, layout_id, log_path):
     ran at all (a `ship.py` gate reads `captures_report` as
     `SHIP_CAPTURES_MISSING` either way, so the two never double-count)."""
     try:
-        bundle = export_bundle(session.output_root, layout_id)
+        ctx = session.ctx
+        bundle = export_bundle(session.output_root, layout_id, package_path=ctx.package_path(layout_id),
+                               context_path=ctx.context_layer_path(layout_id),
+                               retained_root=os.path.join(session.repo_root, 'src', 'test', 'fixtures', 'course-geometry'))
     except (OSError, ValueError, KeyError, TypeError) as exc:
         return None, None, [ship.blocker('SHIP_CAPTURE_BUNDLE_EXPORT_FAILED', detail=str(exc))]
     try:

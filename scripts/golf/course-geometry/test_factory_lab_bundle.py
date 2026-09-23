@@ -51,6 +51,34 @@ class LabBundleTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'contentHash'):
             export_bundle(self.root, 'example')
 
+    def test_catalog_retained_package_outside_output_root_exports_from_its_own_root(self):
+        # Peek adopts a checked-in package fixture; it never exists under
+        # layouts/<id>/package, which used to fail every ship capture.
+        retained_dir = tempfile.TemporaryDirectory(prefix='retained-')
+        self.addCleanup(retained_dir.cleanup)
+        retained = Path(retained_dir.name).resolve()
+        fixture = retained / 'example.json'
+        fixture.write_bytes((self.layout / 'package' / 'normalized.json').read_bytes())
+        (self.layout / 'package' / 'normalized.json').unlink()
+        with self.assertRaisesRegex(ValueError, 'missing'):
+            export_bundle(self.root, 'example')
+        exported = export_bundle(self.root, 'example', package_path=fixture, retained_root=retained)
+        doc = json.loads(Path(exported['manifest']).read_bytes())
+        self.assertEqual(doc['package']['sourceRelativePath'], 'retained:example.json')
+
+    def test_retained_package_must_sit_under_the_retained_root(self):
+        elsewhere = Path(tempfile.mkdtemp(prefix='elsewhere-')).resolve()
+        try:
+            stray = elsewhere / 'example.json'
+            stray.write_bytes((self.layout / 'package' / 'normalized.json').read_bytes())
+            with self.assertRaisesRegex(ValueError, 'outside'):
+                export_bundle(self.root, 'example', package_path=stray, retained_root=self.root / 'no-such-retained-root')
+            with self.assertRaisesRegex(ValueError, 'outside'):
+                export_bundle(self.root, 'example', package_path=stray)
+        finally:
+            stray.unlink(missing_ok=True)
+            elsewhere.rmdir()
+
     def test_unknown_hole_and_layout_traversal_fail_closed(self):
         with self.assertRaisesRegex(ValueError, 'unknown hole'):
             export_bundle(self.root, 'example', ['other-01'])
