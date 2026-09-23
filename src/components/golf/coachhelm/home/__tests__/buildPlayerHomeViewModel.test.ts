@@ -84,7 +84,17 @@ describe('buildFocusAreaPriorities', () => {
     const out = buildFocusAreaPriorities([
       { area: 'proximity', strokesGained: -5, value: 24.3, unit: 'yd from target' },
     ]);
-    expect(out).toEqual([{ rank: 1, title: 'Proximity', value: '24.3' }]);
+    // Package 11 (#1933 bug, confirmed present on main): this used to render
+    // a bare '24.3' — indistinguishable from a strokes/round row sorted right
+    // next to it. Now carries its own unit.
+    expect(out).toEqual([{ rank: 1, title: 'Proximity', value: '24.3 yd' }]);
+  });
+
+  it('an "opportunity" unit also gets a suffix (0-1 scale, easy to mistake for a strokes count)', () => {
+    const out = buildFocusAreaPriorities([
+      { area: 'scrambling', strokesGained: -3, value: 0.6, unit: 'opportunity' },
+    ]);
+    expect(out).toEqual([{ rank: 1, title: 'Scrambling', value: '0.6 opportunity' }]);
   });
 });
 

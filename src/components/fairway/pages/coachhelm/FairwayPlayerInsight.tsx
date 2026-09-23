@@ -83,6 +83,7 @@ import {
 } from '@/app/golf/actions/insights';
 import { createFocusAreaFromInsight } from '@/app/golf/actions/development';
 import { useGolfUser } from '@/contexts/golf-user-context';
+import { getProgressPercent } from './areaTypes';
 
 /* ---------------------------------------------------------------------------
  * Props — mirror the legacy PlayerInsightClient signature verbatim
@@ -138,6 +139,8 @@ interface FocusAreaRow {
   status: string | null;
   current_value: number | null;
   target_value: number | null;
+  baseline_value: number | null;
+  target_metric: string | null;
   created_at: string;
 }
 interface PredictionRow {
@@ -945,10 +948,18 @@ export function FairwayPlayerInsight({
             ) : (
               <div className="flex flex-col gap-3">
                 {focusAreas.map((fa) => {
-                  const progress =
-                    fa.current_value && fa.target_value
-                      ? Math.min(100, Math.round((fa.current_value / fa.target_value) * 100))
-                      : 0;
+                  // Package 11 (#1933 bug, confirmed present on main): was a
+                  // naive current/target ratio that ignores baseline_value —
+                  // wrong for any lower-is-better metric and for a target
+                  // that isn't zero-anchored. FocusAreaCard.tsx already has
+                  // the correct shared derivation for the identical row;
+                  // this call site was just never wired to it.
+                  const progress = getProgressPercent(
+                    fa.current_value,
+                    fa.target_value,
+                    fa.target_metric,
+                    fa.baseline_value,
+                  );
                   return (
                     <div key={fa.id} className="flex flex-col gap-2 rounded-fw-md bg-surface p-4">
                       <div className="flex items-start justify-between gap-2">
@@ -962,7 +973,7 @@ export function FairwayPlayerInsight({
                           {fa.status ?? 'active'}
                         </StatusPill>
                       </div>
-                      {fa.target_value !== null ? (
+                      {progress !== null && fa.target_value !== null ? (
                         <div>
                           <div className="mb-1 flex items-center justify-between font-fw-mono text-eyebrow tabular-nums text-text-tertiary">
                             <span>{fa.current_value ?? 0}</span>

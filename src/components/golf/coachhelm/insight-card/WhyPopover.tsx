@@ -220,6 +220,12 @@ function formatGapLabel(gap: number, unit: string): string {
     const pct = Math.abs(gap) <= 1 ? gap * 100 : gap;
     return `${Math.round(pct)}pt`;
   }
+  // Every other unit must carry its own suffix — the paired comparison
+  // value (formatComparisonValue) already does, and a bare number next to
+  // a unit-suffixed one in the same sentence reads ambiguously.
+  if (unit === 'strokes') return `${gap.toFixed(1)} str`;
+  if (unit === 'yards') return `${Math.round(gap)} yd`;
+  if (unit === 'feet') return `${Math.round(gap)} ft`;
   return `${gap.toFixed(1)}`;
 }
 

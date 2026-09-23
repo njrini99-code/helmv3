@@ -19,6 +19,14 @@ import { TEAM_MARKER_MIN_N, PCT_LANGUAGE_MIN_N } from './types';
  * Clamped — out-of-range values stick to the edge.
  */
 export function toScalePct(value: number, scale: { min: number; max: number }): number {
+  // Package 11 (#1933 bug, confirmed present on main): a NaN input flowed
+  // straight through Math.max/Math.min, which both return NaN for a NaN
+  // operand — the marker silently vanished at `left: NaN%` instead of
+  // degrading gracefully. Scoped to NaN only, not Infinity: ±Infinity
+  // already clamps correctly through the Math.max/Math.min below (a
+  // deliberately extreme value pins to the 0/100 edge, which is the
+  // existing, correct "clamped" contract this function documents above).
+  if (Number.isNaN(value)) return 0;
   if (scale.max === scale.min) return 50;
   const pct = ((value - scale.min) / (scale.max - scale.min)) * 100;
   return Math.max(0, Math.min(100, pct));
@@ -79,6 +87,9 @@ export function pgaOmissionNote(
 
 /** Display formatter per unit. */
 export function formatValue(value: number, unit: Unit): string {
+  // Package 11 (#1933 bug, confirmed present on main): no guard meant a
+  // non-finite input printed the literal string "NaN%"/"NaN yd"/etc.
+  if (!Number.isFinite(value)) return '—';
   switch (unit) {
     case 'percent': return `${value.toFixed(0)}%`;
     case 'strokes': return value.toFixed(2);
@@ -440,29 +451,54 @@ export function layoutMarkerPositions(
   if (items.length <= 1) return items.map((i) => ({ key: i.key, pct: i.pct }));
 
   const ordered = items.map((i) => ({ key: i.key, pct: i.pct })).sort((a, b) => a.pct - b.pct);
+  // Original (pre-nudge) positions, captured before the forward pass mutates
+  // `ordered` in place — the re-centre step below needs each cluster's TRUE
+  // endpoints, not their already-pushed values.
+  const rawPct = ordered.map((o) => o.pct);
 
-  // Midpoint of the TRUE cluster, captured before any nudging.
-  const rawMid = (ordered[0]!.pct + ordered[ordered.length - 1]!.pct) / 2;
-
+  // Package 11 (#1933 bug, confirmed present on main): `pushed[i]` marks
+  // whether the forward pass actually moved marker i off its raw position.
+  const pushed: boolean[] = new Array(ordered.length).fill(false);
   for (let i = 1; i < ordered.length; i++) {
     const min = ordered[i - 1]!.pct + minGapPct;
-    if (ordered[i]!.pct < min) ordered[i]!.pct = min;
+    if (ordered[i]!.pct < min) {
+      ordered[i]!.pct = min;
+      pushed[i] = true;
+    }
   }
 
-  // Re-centre the spread chain on where the data actually sits.
+  // Re-centre each COLLISION CLUSTER on its own true midpoint — not the
+  // whole array's.
   //
-  // The forward pass above pins the LEFTMOST marker and pushes everyone else
-  // right, so a tight cluster grew rightward off its true location: three
-  // values 2.5% apart (You 65% / ref 66% / team 64%, the 07-24 screenshot)
-  // came out spanning 80->98%, drifting the reference marker 15.5 points from
-  // the value it reports and jamming it against the rail end. Order and the
-  // min-gap are what stop circles overlapping; WHERE the resulting chain sits
-  // is still free, so put its midpoint back on the real one. Same case now
-  // drifts at most 3.3 points, and the group still reads at the right spot on
-  // the rail. Markers that never collided are untouched by construction.
-  const spreadMid = (ordered[0]!.pct + ordered[ordered.length - 1]!.pct) / 2;
-  if (spreadMid !== rawMid) {
-    for (const item of ordered) item.pct += rawMid - spreadMid;
+  // The forward pass above pins the LEFTMOST marker of a cluster and pushes
+  // the rest of that cluster right, so a tight group grew rightward off its
+  // true location: three values 2.5% apart (You 65% / ref 66% / team 64%,
+  // the 07-24 screenshot) came out spanning 80->98%, drifting the reference
+  // marker 15.5 points from the value it reports and jamming it against the
+  // rail end. Order and the min-gap are what stop circles overlapping; WHERE
+  // the resulting group sits is still free, so put its midpoint back on the
+  // real one. Same case now drifts at most 3.3 points, and the group still
+  // reads at the right spot on the rail.
+  //
+  // A marker the forward pass never touched (`pushed[i] === false`) starts a
+  // NEW cluster boundary — grouping the re-centre shift by cluster (instead
+  // of always spanning `ordered[0]`..`ordered[length-1]`) is what makes
+  // "markers that never collided are untouched" actually true: previously,
+  // a collision anywhere in the array could still drag an unrelated,
+  // far-away, never-colliding marker off its real position (e.g. 10/50/55
+  // with a 9pt min gap: only 50/55 collide, yet the old pass also nudged 10
+  // to 8 to re-centre the WHOLE array).
+  let clusterStart = 0;
+  for (let i = 1; i <= ordered.length; i++) {
+    if (i === ordered.length || !pushed[i]) {
+      const clusterEnd = i - 1;
+      const rawMid = (rawPct[clusterStart]! + rawPct[clusterEnd]!) / 2;
+      const spreadMid = (ordered[clusterStart]!.pct + ordered[clusterEnd]!.pct) / 2;
+      if (spreadMid !== rawMid) {
+        for (let j = clusterStart; j <= clusterEnd; j++) ordered[j]!.pct += rawMid - spreadMid;
+      }
+      clusterStart = i;
+    }
   }
 
   const rightOverflow = ordered[ordered.length - 1]!.pct - maxPct;

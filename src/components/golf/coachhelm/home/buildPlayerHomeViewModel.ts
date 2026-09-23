@@ -88,10 +88,23 @@ export function buildFocusAreaPriorities(
 
   return scored.map((a, i) => {
     const display = a.value !== null ? a.value.toFixed(a.unit === 'strokes/round' ? 2 : 1) : Math.abs(a.impact).toFixed(2);
+    // Package 11 (#1933 bug, confirmed present on main): 'yd from target' and
+    // 'opportunity' rows printed the bare formatted number with no unit — in
+    // a list sorted next to 'strokes/round' rows (which DO get a +/− sign),
+    // a coach can't tell "3.2" apart from a strokes/round figure.
+    // PriorityItem has no separate unit slot (`{ rank, title, value }`), so
+    // the unit is appended into the same display string it already renders.
+    const unitSuffix =
+      a.unit === 'yd from target' ? ' yd' :
+      a.unit === 'opportunity' ? ' opportunity' :
+      '';
     return {
       rank: i + 1,
       title: formatAreaName(a.area),
-      value: a.unit === 'strokes/round' || a.unit == null ? `${a.impact > 0 ? '+' : '−'}${display}` : display,
+      value:
+        a.unit === 'strokes/round' || a.unit == null
+          ? `${a.impact > 0 ? '+' : '−'}${display}`
+          : `${display}${unitSuffix}`,
     };
   });
 }

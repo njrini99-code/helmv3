@@ -322,6 +322,10 @@ function CauseCard({ cause, onMakePlan, makePlanPending = false }: CauseCardProp
   const showStrokesBadge = !suppressed && Math.round(strokes * 10) > 0;
   const toTourOnly = tourGap != null && tourGap.toFixed(1) === strokes.toFixed(1);
   const showTourCeiling = showStrokesBadge && !toTourOnly && tourGap != null && tourGap > strokes;
+  // Same qualifier framing as CauseRow.tsx's strokes pill (Package 11
+  // follow-up) — a bare "N strokes/rd" doesn't say what it's a gap FROM. The
+  // badge was the one place `toTourOnly` was computed but never read.
+  const strokesQualifier = toTourOnly ? 'from Tour' : 'from team avg';
 
   const planEnabled = !suppressed && cause.canMakePlan && hasDrill;
   const needsDrill = !suppressed && cause.canMakePlan && !hasDrill;
@@ -356,7 +360,7 @@ function CauseCard({ cause, onMakePlan, makePlanPending = false }: CauseCardProp
               </span>
               {showStrokesBadge ? (
                 <Badge tone="danger" size="sm" className="flex-shrink-0">
-                  <span className="tabular-nums">{strokes.toFixed(1)}</span> strokes/rd
+                  <span className="tabular-nums">{strokes.toFixed(1)}</span> strokes/rd {strokesQualifier}
                 </Badge>
               ) : suppressed ? (
                 <Badge tone="neutral" variant="outline" size="sm" className="flex-shrink-0">

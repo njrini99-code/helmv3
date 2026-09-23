@@ -1,6 +1,11 @@
 /**
- * PuttHeatmap — top-down green: where every putt started, and whether it
- * dropped.
+ * PuttHeatmap — top-down green: each dot's distance from the hole is real
+ * (`distance_feet`, how far the putt started), and whether it dropped is
+ * real. Its POSITION AROUND the hole is only real when the putt logged a
+ * `miss_direction` — a make, or a miss with no logged direction, has no
+ * lateral signal at all, so that angle is a seeded (never random-looking-
+ * twice) illustrative placement, not a measurement. See the on-screen
+ * disclosure caption below the legend.
  *
  * Reads the same canonical v3 motion library + Fairway tokens as the rest of
  * round review (mirrors `HoleShotPath`'s component pattern: LazyMotion + m.*
@@ -222,6 +227,14 @@ export function PuttHeatmap({ putts, title = 'Putting heatmap', className }: Put
                 {Math.round(data.miss_bias.share * 100)}% of misses.
               </p>
             ) : null}
+
+            {/* Honesty caption, mirroring HoleShotPath's footer disclosure:
+                only distance-from-hole and make/miss are measured. A dot's
+                position AROUND the hole is illustrative except where a real
+                miss direction was logged. */}
+            <p className="px-0.5 text-eyebrow leading-snug text-text-tertiary/80">
+              Position around the hole is illustrative except where a miss direction was logged.
+            </p>
           </>
         )}
       </m.div>

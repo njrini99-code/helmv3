@@ -234,6 +234,32 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
   Independent review of the fix (2026-09-22) found the live audit itself had a real regression: it checked `result.text`, which in `ai` 7.0.79 is the LAST agent step's text only (`StreamTextResult#text`), so a fabrication planted in an earlier step of a multi-step turn was invisible to it, and `onFinish` reused that narrow verdict instead of re-checking the full persisted text. Fixed by accumulating every `text-delta` chunk in the stream-forwarding loop and auditing exactly that string in both places. A provider error or a dropped connection mid-generation is now also tracked explicitly (`streamErrored`) and forces the turn to `'failed'` regardless of what the numeric audit finds — previously a stream error could leave a partial, unaudited answer stored as `'complete'`. `priorTurnEvidence` (cross-turn evidence carryover) now validates every stored envelope with `ToolEnvelope.safeParse` before trusting its shape (a legacy or forged `ui_parts` blob can no longer crash the turn). Player-scoping is two-phase: it splits carryover into `shared` (team/round-level evidence with no player entity — always safe) and `deferred` (anything player-scoped, or entity-less, e.g. `get_player_insights`, which returns no `entity` at all and so cannot be assumed safe). `execute` then unions the current turn's own tagged player id(s) with `deferred`'s before deciding whether to fold `deferred` in, so the current turn's context — not just prior turns' — governs the decision (a number about player A must not "support" a claim about player B). This is a heuristic bounded by what's tagged: an entity-less envelope secretly about a second, untagged player is indistinguishable from one about the single tagged player. A second-round fix (2026-09-23) closed a related hole: when THIS turn makes zero fresh player-scoped tool calls at all (the model answering entirely from memory), `deferred` is never folded in, even if it names only one player — with no fresh evidence of who this turn is actually about, "only one player on record" can't be trusted (production shape: turn 1 fetches Alice's putts; turn 2 asks about Bob and answers from memory with no tool call, and Alice's carried-over number would otherwise "support" a claim about Bob). `shared` (team/round-level) evidence is unaffected and still always carries over, including on a zero-tool-call turn. Carryover is capped to the last 5 assistant turns via a bounded, descending `listRecentMessages` query (avoiding both PostgREST's 1,000-row cap and an unbounded evidence window), and the pairwise-differencing anchor cap (`PAIRWISE_ANCHOR_CAP`) now evicts its oldest member instead of silently disabling differencing once exceeded. Known, accepted, self-only risk (not changed here): `chat_messages_coach_only` is a `FOR ALL` RLS policy, so a coach can edit their own persisted `ui_parts`, including a stored evidence envelope.
 
   Repair plan §14.10 ("chat publication waits for validation," 2026-09-23) closed two remaining gaps the `streamErrored` tracking above didn't cover. First, a disconnect-specific hole in `onFinish`'s own fallback: `execute`'s forwarding loop only ever set its verdict variable at the very end of the loop, so a client disconnect or platform teardown mid-generation left it unset when `onFinish` ran (the AI SDK's `handleUIMessageStreamFinish` wraps the stream in a `TransformStream` whose `cancel()` calls `onFinish` concurrently with, not after, `execute`'s own loop — confirmed by reading `ai`'s `dist/index.js` directly). The old fallback re-audited whatever partial fragment had accumulated and treated a fragment with no numeric claims in it as grounded, persisting a truncated, mid-sentence answer as `status: 'complete'` — indistinguishable from a real answer on reload. Fixed: a still-unset verdict at `onFinish` time is now unconditionally `{outcome: 'rejected', reason: 'stream_incomplete'}`, never re-audited. Second, a rendering gap: a rejected turn's already-streamed tokens stayed visible as ordinary prose with the failure note merely appended below them, both live and on reload — a coach could still read (and act on) the unverified text. `computeTurnVerdict` (`src/lib/coachhelm/v3/chat/verdict.ts`) now decides accepted/rejected as one ordered list of checks — stream completeness first (short-circuits everything else), then the numeric audit, with an explicit seam for `claim-validator.ts` (#1991, not wired) to add a third check later without changing the function's signature or any caller. On rejection, `route.ts`'s `onFinish` still persists the model's raw stripped text as `content` (`content: text`, route.ts:~869) — the failure note lives only in `ui_parts`/`status`, kept out of `content` so it never leaks into the NEXT turn's model context via `convertToModelMessages` on the client's replayed thread — and `ChatThread.tsx`/`restore.ts` render ONLY that note (plus, see below, any action parts) for the turn: never the raw text, never any evidence part, both live (as soon as the verdict part arrives) and on every subsequent reload. The wire-level part type for an ungrounded-claims rejection stays `data-grounding-flag` (production already has rows carrying it); a stream-incomplete rejection gets its own new, additive `data-turn-incomplete` type. Review of this PR (2026-09-23, #1997) found the rejection collapse also dropped `data-action-proposal`/`data-action-receipt` — hiding a coach's Confirm card, or a receipt for a write that had already run, behind an unrelated prose rejection. Fixed on both the live-render path (`ChatThread.tsx`) and the reload path (`restore.ts`'s `restoreFailedTurn`, via a shared `ACTION_PART_TYPES` set): a rejected turn now renders its failure note PLUS any `data-action-proposal`/`data-action-receipt` parts from the same turn, never its text or evidence. The same review found the root cause of most such rejections: `agent-tools.ts`'s `proposeGated`/`executeGated` never called `collect`, so a proposal or receipt citing its own number above 12 (e.g. "3 sessions of 90 minutes") had nothing to be checked against and failed `auditNumericClaims` outright. Fixed by routing every plan/receipt through `collect` the same way a read tool's `detail` is (`collectActionNumbers` in `agent-tools.ts`), so a gated action's own numbers count as supported evidence. `streamText`'s call in `route.ts` also now passes `abortSignal: req.signal`, so a client disconnect stops model generation (and spend) instead of continuing to bill for tokens `onFinish` discards anyway. Tests: `src/test/coachhelm/v3/chat-verdict.test.ts` (the ordered-checks logic in isolation) and `src/test/coachhelm/v3/chat-restore.test.ts` (reload behavior for a rejected/incomplete/disconnected turn, including the no-verdict-part disconnect case and the action-parts-survive-rejection case).
+- **A session-scoped (RLS'd) `golf_shots` read is ~580x slower than a
+  service-role read on the same table** (measured in migration
+  `20260817121500`). Every A7/A2/A3 loader (`load-player-context.ts` and
+  its callers, e.g. `load-distance-profile.ts`, `load-par-opportunities.ts`)
+  correctly uses the page's own session-scoped client, never an admin one
+  — that's the right tenancy call, not a bug — but it means enabling a
+  flag that turns this load on for a heavy multi-season roster is a real
+  page-load-time risk, not just a correctness one. Do not "fix" this by
+  switching to an admin client. Run a heavy-roster load check in preview
+  before flipping `coachhelm_a7_distance_profile_surface` or
+  `coachhelm_a7_scoring_surface` on for any environment (both flags'
+  `cleanup_plan`/ledger entries name this explicitly).
+
+  Addendum A7 slice 1 (2026-09-23) wired `claim-validator.ts` (#1991, typed claim gate — see the "Provenance" section below) into `computeTurnVerdict` as its THIRD and last check, after stream completeness and the numeric audit: `reason: 'claim_validation_failed'` fires when a claim in the model's structured claims block cites a real value under the wrong player, window, unit, or denominator, or asserts a cause chat evidence never carries backing for. `extractAndValidateClaims`/`stripAllClaimsDelimiters` moved out of `compose.ts` into a new shared `src/lib/coachhelm/v3/llm/claims-block.ts` so chat and compose() share one parser rather than two copies drifting apart (compose()'s own behavior is unchanged; its `__testables` re-exports the same functions). `ClaimReference`/`EvidencePacketEntry` gained optional `unit`/`denominator` fields and `checkClaim` gained `wrong_unit`/`wrong_denominator` — both optional, so every existing compose() caller (which never sets either) is unaffected.
+
+  The gate is opt-in PER TURN, mirroring compose()'s own contract: `chat/claims-packet.ts`'s `buildSinglePlayerPacket` returns a packet only when this turn's fresh, player-scoped measurements resolve to exactly one player and one shared window; a team or multi-player turn has no single (player, window) to validate against and is judged by the two checks above only — failing closed on an ambiguous turn would reject most of chat. The system prompt (`instructions.ts`'s "Claims block" section) asks the model to append a `<<<CLAIMS>>>[...]<<<END_CLAIMS>>>` block after every answer UNCONDITIONALLY (built before any tool call, so it cannot know in advance whether a packet will resolve) — copying `metric_id`/`player_id`/`window_start`/`window_end`/`unit`/`denominator` verbatim from the tool result it cites, never inventing them; an empty array when it cited nothing player-specific. A missing or malformed block on an ENGAGED turn is treated as a rejection, not silence-as-acceptance, same as compose()'s own contract for an opted-in packet. `extractAndValidateClaimsSafe` (`claims-block.ts`) wraps the parser to fail closed — reject, never crash or silently accept — if validation itself throws (a caller-side bug building a packet, not something `validateClaims` is expected to do on its own).
+
+  Streaming makes stripping the block a live problem, not just a persistence one: `execute`'s forwarding loop withholds up to `CLAIMS_OPEN.length - 1` trailing characters of every text-delta (in case the opener splits across two chunks) and, once the opener is found, withholds everything into a small buffer — a raw JSON fragment a coach must never see live, in the persisted `content`, or in a saved `ui_parts` text part — until the closer is found. **#1999 re-review (2026-09-23), SHOULD-2:** the first version of this withheld everything for the REST of the text part once the opener was seen, even past the closer, while `content` (`extractAndValidateClaims`) only ever strips the delimited block itself and preserves any prose that follows it — a tested contract (`compose.test.ts`'s "strips a single well-formed block ... including one in the MIDDLE of the prose"), not an anomaly. That mismatch meant a coach could see LESS live/in `ui_parts` than what got persisted. The forwarding loop now resumes once the closer is seen (re-entrant per chunk, so an opener+closer in one delta, or a closer immediately followed by a second opener, are both handled without waiting for another chunk), keeping the two channels in agreement — proven by route-level tests for a split opener, a partial opener flushed at EOF, text after the block, and multiple blocks. `verdictPartType` maps `'claim_validation_failed'` onto the EXISTING `data-grounding-flag` wire part rather than a third type — from the coach's point of view both are the same signal ("a number in this answer didn't check out"), and `restore.ts`/`ChatThread.tsx` already collapse either to just the note. Tests: `src/test/coachhelm/v3/situational-explanation.test.ts` — adversarial fixtures for wrong-player, wrong-window, wrong-unit, wrong-denominator, and unsupported-cause (both a mechanics and a psychology framing, written with no causal connective word, so the rejection comes from the model's own `claim_type:"causal"` tag against evidence with no causal backing, not from regex word-matching), plus a passing control, a not-engaged team/multi-player turn staying accepted, a malformed-block rejection, a forced-throw fail-closed case, and two ordering tests proving the typed gate never runs once an earlier check already rejected the turn.
+
+  **Known risk, not closed here:** the false-positive lesson from N15 above (46% of chat replies wrongly flagged before that fix) applies to this gate too, and more sharply — an untagged causal-sounding sentence with no explicit connective word is invisible to `CAUSAL_LANGUAGE_RE`'s prose-level check, so a model that fails to tag its own claim `claim_type:"causal"` slips through un-flagged (a false NEGATIVE, the opposite failure mode from N15's false positives). Watch the `v3.chat.stream.claim_validation` `logServerEvent` rate the way N15 was diagnosed from `v3.chat.stream.ungrounded`'s.
+
+  **Fixed in review (2026-09-23):** `validateClaims`'s "uncited number" scan originally only treated a claim's or packet entry's own VALUE as citable — not `sample_n`/`denominator` — so an honest answer that states its attempt count in prose ("across 43 attempts") without a claim separately naming 43 tripped `uncited_number` on otherwise correct text, even though the legacy numeric audit already treats a denominator as supported. `validateClaims` now also credits the `denominator`/`sample_n` of every packet entry an ACCEPTED claim actually cites (never every entry in the packet, so an unrelated metric's denominator can't "support" a fabricated number about a different one it was never cited alongside). Because this gate collapses the whole turn to a failure note on rejection (repair plan 14.10's "state it, don't hide it"), a false positive here is more visible than round-recap's one-shot cached fallback, so the wiring stays behind a NEW, separate, default-off flag — `coachhelm_chat_claim_gate` (`config/feature-flags.yml`) — rather than shipping live off the fix alone: `chat/claims-packet.ts`'s `buildSinglePlayerPacket` is only called, and the typed gate only engages, when the flag is on. Off (everywhere, today), `route.ts` passes `claimsPacket: null` and chat's turn verdict is judged by stream completeness and the numeric audit only, unchanged from before this gate existed. Promote to `release` or remove per the flag's own `cleanup_plan` once a shadow-log rate confirms no other prose shape trips it.
+
+  **#1999 re-review (2026-09-23), MUST:** the flag above only gated whether anything ever READ a claims block — `instructions.ts`'s "Claims block" section was appended to the system prompt UNCONDITIONALLY, so flag-off (the default everywhere) still paid tokens and latency for the model to generate a block, have it withheld from the stream, and then strip it for nothing. `buildInstructions` now takes a `claimsBlockEnabled` boolean (`route.ts` reads `coachhelm_chat_claim_gate` once and passes the same value into both `buildInstructions` and the packet gate, so the prompt and the validation gate can never disagree about whether this turn asked for one) and only appends `CLAIMS_BLOCK_SECTION` when it's true — flag-off is now byte-identical to before this gate existed, matching #1997's own contract. See `src/lib/coachhelm/v3/chat/instructions.test.ts`.
+
+  **#1999 re-review, NICE:** `checkClaim` (`claim-validator.ts`) now floors `sample_n === 0` regardless of `kind` — a `'measurement'` entry is exempt from `MIN_SAMPLE_N` because "the count IS the fact," but zero support is never a fact, it's a builder bug or a genuinely empty window, so it is checked before the `'measurement'` exemption rather than being able to hide behind it.
 - Safety-net fallback behavior can mask generator failures if logs are ignored.
 - Course-management "worst holes" and hole-1 "warmup" insights require at
   least five samples, matching the persisted insight writer's Rule 1
@@ -654,6 +680,26 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
   consumption — that remains a later slice. See
   `docs/architecture/coachhelm-evidence-contract.md`'s "Sequence
   attribution" section.
+- **`computeSequenceAttribution(facts, holes, scope): MetricResult[]`**
+  (same file, addendum §13, A4 slice 2) rolls `attributeSequence`'s
+  per-hole events up into the shared `MetricResult` (`metrics/types.ts`,
+  already consumed by A2/A3), mirroring `computeParOpportunities`'s
+  argument order and `factsInScope` scoping. One
+  `sequence_event_strokes_gained` row per `SequenceEventKind` (mean
+  `measuredContribution` over every ATTRIBUTED hole's resolved events of
+  that kind; an unresolved event's `baselineGap` lands in `exclusions`,
+  never the denominator) plus one `sequence_hole_coverage` count row (a
+  suppressed hole contributes no events but is still counted here).
+  Floors: `SEQUENCE_MIN_EVENTS`/`SEQUENCE_MIN_ROUNDS` per event-kind row,
+  `SEQUENCE_MIN_HOLES`/`SEQUENCE_MIN_ROUNDS` for coverage. **Sign
+  convention is the OPPOSITE of `ScoringSection.tsx`'s
+  `formatStrokesVsPar`** — positive means strokes GAINED here, positive
+  means MORE strokes than par (worse) there; never reuse that formatter
+  without flipping the sign. Still not wired into any generator/composite.
+  See `docs/architecture/coachhelm-evidence-contract.md`'s "Sequence
+  attribution rollup" section and
+  `src/test/coachhelm/v3/sequence-attribution.test.ts`'s
+  `computeSequenceAttribution` describe blocks.
 
 - **`src/lib/coachhelm/v3/evaluation/comparable-opportunities.ts` is a new,
   pure evaluation module** (2026-09-23,
@@ -694,6 +740,47 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
   `src/test/coachhelm/v3/comparable-opportunities.test.ts` for the
   fixtures, including the version-mismatch-rejection and
   exactly-at-the-instant boundary cases.
+- Chart honesty (2026-09-23, Package 11): `PuttHeatmap` (`v3/PuttHeatmap/index.tsx`)
+  plots a real `distance_feet` radius but only a real angular position when
+  `miss_direction` was logged — a make or an unlogged-direction miss gets a
+  seeded (not measured) angle. The component now carries an on-screen
+  disclosure caption for this, matching the honesty pattern `HoleShotPath`'s
+  "Distances are player-logged, not GPS-measured" footer already
+  established for its own stylized axis. The underlying plotting geometry
+  in `./geometry.ts` was left unchanged — this is a labeling fix, not a
+  data fix.
+- **A7 Game Fingerprint mount (2026-09-23, `agent/a7-distance-profile-surface`,
+  addendum §13 A7 slice 1) — the FIRST place A2's pure metric core actually
+  reaches a page.** `metrics/load-distance-profile.ts` composes
+  `loadPlayerContext` (A1) + `computeDistanceProfile` (A2) into one
+  server-only loader; `DistanceProfileSection` renders its `MetricResult[]`
+  (via `buildDistanceProfileViewModel`) inside the Game Fingerprint page's
+  Approach section, through a new optional `sectionAddenda` prop on
+  `FairwayPlayerGameFingerprint` (keyed by `FingerprintSectionKey`, e.g.
+  `approach`/`scoring`). Flag-gated
+  (`coachhelm_a7_distance_profile_surface`, default off everywhere) and the
+  loader is SKIPPED (not just unrendered) while the flag is off — see
+  `loadDistanceProfileAddendumIfEnabled` in `page.tsx`, pulled out of the
+  page's `Promise.all` specifically so that gate is unit-tested directly,
+  not just implied by the ternary it replaced. `loadDistanceProfileAddendum`
+  itself never rejects: any throw (including from the loader) degrades to
+  `null` (no addendum) plus a `logServerError` call, so one addendum's
+  failure can never fail the page's whole parallel fetch. Reuses the page's
+  own session-scoped Supabase client — never admin — so RLS still applies;
+  see this doc's "Known Risk Areas" section on that client's `golf_shots`
+  read cost.
+  `sectionAddenda` absent (every existing call site) renders byte-for-byte
+  the same markup as before this prop existed — a #2008 review caught a
+  version of this claim that was true component-for-component but not
+  actually true of the rendered DOM (an unconditional wrapper div around
+  every section), fixed by only wrapping a section when it actually has an
+  addendum.
+- A7's slice-2 counterpart (`agent/a7-scoring-surface`, PR #2010, stacked
+  on this branch) mounts A3's par-opportunities metrics into the Scoring
+  section the same way, behind its own independent
+  `coachhelm_a7_scoring_surface` flag — see this doc's own future update
+  once that PR lands, and `player_coachhelm_development`/`admin_platform`'s
+  ledgers for the flag/loader detail in the meantime.
 
 - **A9 slice 1 wires the pure core above into the `causality-attribute` cron**
   (2026-09-23, `agent/coachhelm-comparable-attribution`, addendum §14.12) —
@@ -714,10 +801,12 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
   insight's FIRST real `golf_insight_exposure.shown_at` row — never a
   `created_at` proxy the way `attribute.ts`'s round-level path uses one. Zero
   exposure rows → `{ok: false, reason: 'no-exposure-record'}`, retried next
-  run, not treated as a permanent skip. A genuine DB error on that lookup
-  THROWS rather than being misread as "no exposure yet" — caught by the
-  cron's own per-candidate try/catch like any other infra failure in that
-  loop. Baseline/follow-up windows reuse `attribute.ts`'s own
+  run, not treated as a permanent skip. A genuine DB error on that lookup is
+  its own typed skip (`{ok: false, reason: 'exposure-read-failed', error}`),
+  logged via `logServerError` and counted under
+  `summary.comparable_exposure_read_failed` — never misread as "no exposure
+  yet" (PR #2007 review, SHOULD decision; see the matching note further
+  down this section). Baseline/follow-up windows reuse `attribute.ts`'s own
   `PRE_WINDOW_DAYS`/`POST_WINDOW_DAYS` (now exported) around that instant.
   **The cron's 21-day candidate-age filter does NOT guarantee this path's
   follow-up window has closed** (review catch, 2026-09-23): `interventionAt`
@@ -817,6 +906,78 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
   through `fetchAllRowsResult` (`src/lib/supabase/fetch-all-rows.ts`),
   with `id` added as an `.order()` tiebreaker after `shown_at` so
   `.range()` page boundaries stay stable.
+
+- **A9 slice 2 adds confounding-intervention detection**
+  (2026-09-23, `agent/coachhelm-comparable-confounding`, addendum §14.12) —
+  `src/lib/coachhelm/v3/causality/confounding-check.ts`
+  (`detectConfoundingInterventions`), called from
+  `comparable-attribute.ts` right after the follow-up-window-open gate
+  (never before — the write is permanent, so checking before the window
+  has closed could miss a confounder that lands later in it) and before
+  `loadPlayerContext`. Replaces slice 1's hardcoded
+  `multipleInterventions: false`, which PR #2007's review flagged as the
+  real enable-blocker for this flag (a confounded row written under that
+  hard-code could never be relabeled once slice 2 shipped).
+  **What counts as a confounder**: ANY other insight whose FIRST-EVER
+  `golf_insight_exposure` to this player lands inside
+  `[baselineWindow.start, followUpWindow.end]` — the window starts at
+  BASELINE start (not `interventionAt`), since an intervention landing
+  during the baseline contaminates it just as much as one landing during
+  follow-up. Matched on ANY metric, not just this insight's own
+  `target_metric_id` — insight→metric mapping isn't reliable enough to
+  trust as a filter, and a swing/practice change can plausibly move a
+  totally different metric than the one it surfaced on. Erring toward
+  flagging costs no data (a "limited" result is still written, see below).
+  **What does NOT count**: this insight itself, or a re-surfacing of it.
+  `golf_coach_insights` carries no lineage/supersession key today (only
+  `signature`, which identifies the generating RULE, not an identity
+  chain across re-creates) — if one is ever added, its chain should be
+  excluded here too.
+  **Deferred (named follow-up, not shipped in slice 2)**: focus-area/
+  drill-change confounders (repair-plan addendum item (c)) are not
+  checked — there is no existing player-scoped table with a reliable
+  activation timestamp for a focus-area change to join against without
+  inventing one.
+  **Query**: player-scoped (`.eq('player_id', ...)`), excludes this
+  insight (`.neq('insight_id', ...)`), filtered to `shown_at <= windowEnd`
+  (an insight first exposed after the window closes can't confound it),
+  paginated via `fetchAllRowsResult` (a player's cumulative exposure
+  history can exceed PostgREST's 1,000-row cap), ordered `insight_id,
+  shown_at, id` so the first row of each `insight_id` group is that
+  insight's true minimum `shown_at`. **A failed query never silently
+  reads as "no confounder found"** (the wrong direction for a downgrade
+  flag) — it returns a typed failure, and the caller returns
+  `{ok: false, reason: 'confounder-read-failed', error}` (own summary
+  counter `comparable_confounder_read_failed`, own log action
+  `cron.v3.causality.comparable-confounder-read`, retried next run, never
+  a permanent skip).
+  **Write-layer method_version**: a confounded write is still written,
+  never skipped or dropped — under the distinct `method_version`
+  `'comparable_opportunities_v1_limited'`
+  (`COMPARABLE_OPPORTUNITIES_LIMITED_METHOD_VERSION`, `comparable-
+  attribute.ts`) instead of the clean `'comparable_opportunities_v1'`. No
+  migration and no CHECK constraint on the column — either string
+  round-trips today. The cron's own summary splits the two:
+  `comparable_attributed` (clean) vs. `comparable_attributed_limited`
+  (confounded) — a reader must be able to tell them apart from the
+  summary alone, without re-deriving `method_version`. Every current
+  reader of `golf_insight_outcome_attribution`/`method_version` was
+  grepped (2026-09-23): the only other reads are the round-level
+  `attribute.ts` path (its own, unrelated `'v2_observed_delta'` literal)
+  and the cron's own anti-join `.select('insight_id')` (never reads
+  `method_version` at all) — nothing today does an equality/switch check
+  on this column that could misclassify the new value.
+  See `docs/architecture/coachhelm-evidence-contract.md`'s
+  "Comparable-opportunities outcome measurement" section (both
+  `method_version` values documented there too),
+  `src/lib/coachhelm/v3/causality/confounding-check.test.ts` (the query/
+  grouping logic itself), `comparable-attribute.test.ts`'s "A9 slice 2"
+  describe block (this module's orchestration — call ordering, window
+  bounds, method_version selection), and `causality-attribute.test.ts`'s
+  matching cases (the cron's counters/logging). Flag
+  (`coachhelm_comparable_opportunity_attribution`) stays default-off —
+  slice 2 removes one enable blocker, but migration 20260922230000 still
+  isn't applied and no real-world shadow evidence exists yet.
 
 ## Tests To Prefer
 

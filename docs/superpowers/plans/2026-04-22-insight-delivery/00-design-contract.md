@@ -143,7 +143,7 @@ The same INSIGHT row drives both — the component swaps copy via the `audience`
 
 | Tone derived from | Visual |
 |---|---|
-| `priority === 'urgent'` OR `category === 'pressure' AND strokes_impact > 2` | Red accent, pulse dot |
+| `priority === 'urgent'` OR `category === 'pressure' AND strokes_impact * confidence > 2` | Red accent, pulse dot |
 | `priority === 'high'` OR `strokes_impact * confidence > 1.0` | Amber accent |
 | `lifecycle_state === 'resolved'` | Green/celebratory, no actions, "Resolved {N} days ago" |
 | `your_value > comparison_value` AND positive metric | Green/encouraging |
