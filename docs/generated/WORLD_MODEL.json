@@ -17071,12 +17071,12 @@
         {
           "kind": "import_graph",
           "path": "src/app/golf/actions/focus-area-practice-log.ts",
-          "line": 32
+          "anchor": "src/lib/flags"
         },
         {
           "kind": "import_graph",
           "path": "src/app/golf/actions/focus-area-practice-log.ts",
-          "line": 34
+          "anchor": "src/lib/admin/observed-action"
         },
         {
           "kind": "import_graph",
@@ -17265,17 +17265,17 @@
         {
           "kind": "import_graph",
           "path": "src/app/golf/actions/focus-area-practice-log.ts",
-          "line": 30
+          "anchor": "src/lib/supabase/server"
         },
         {
           "kind": "import_graph",
           "path": "src/app/golf/actions/focus-area-practice-log.ts",
-          "line": 31
+          "anchor": "src/lib/supabase/untyped"
         },
         {
           "kind": "import_graph",
           "path": "src/app/golf/actions/focus-area-practice-log.ts",
-          "line": 33
+          "anchor": "src/lib/auth/verify-player-access"
         },
         {
           "kind": "import_graph",
