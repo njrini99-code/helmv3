@@ -111,7 +111,7 @@ function validateLogFocusAreaPracticeSessionInput(
     }
   }
   if (input.note != null) {
-    if (typeof input.note !== 'string' || input.note.length > NOTE_MAX_LENGTH) {
+    if (typeof input.note !== 'string' || input.note.trim().length > NOTE_MAX_LENGTH) {
       return `Note must be ${NOTE_MAX_LENGTH} characters or fewer.`;
     }
   }
@@ -195,6 +195,12 @@ async function logFocusAreaPracticeSessionImpl(
   // error — that MUST read as success, not as "not found" or a failure, or a
   // network retry would show the player a false error for a session that
   // was already logged.
+  // Store exactly what was validated: the length checks above run against
+  // the TRIMMED string (matching this migration's DB CHECKs, which apply to
+  // the stored value), so storage trims the same way -- an untrimmed value
+  // with enough padding to look short in the raw input but exceed the cap
+  // once trimmed cannot pass the action and then trip the DB CHECK, nor can
+  // a value that only exceeds the raw (untrimmed) length wrongly get denied.
   const { error } = await fromUntyped(supabase, 'golf_focus_area_practice_sessions')
     .upsert(
       {
@@ -202,9 +208,9 @@ async function logFocusAreaPracticeSessionImpl(
         player_id: focusArea.player_id,
         logged_by_user_id: user.id,
         logged_by_role: loggedByRole,
-        drill_id: input.drillId ?? null,
+        drill_id: input.drillId != null ? input.drillId.trim() : null,
         reps: input.reps ?? null,
-        note: input.note ?? null,
+        note: input.note != null ? input.note.trim() : null,
         practiced_at: input.practicedAt ?? new Date().toISOString(),
         client_request_id: input.clientRequestId,
       },
@@ -402,6 +408,13 @@ async function setFocusAreaCriterionMetImpl(
   }
   if (!isUuid(input.criterionId)) {
     return { success: false, error: 'Invalid criterion.' };
+  }
+  // `met` is typed `boolean` at compile time only -- an untrusted caller
+  // (bypassing the TS boundary) could pass anything. A non-boolean here
+  // must be a clean validation error, not a value that reaches Postgres and
+  // surfaces as a generic outage log.
+  if (typeof input.met !== 'boolean') {
+    return { success: false, error: 'Invalid value for met.' };
   }
 
   const supabase = await createClient();
