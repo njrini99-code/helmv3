@@ -168,11 +168,11 @@ interface TrustChipSpec {
 }
 
 const TRUST_SPECS: Record<TrustStatus, TrustChipSpec> = {
-  proven: {
+  supported: {
     tone: 'accent',
     dot: 'bg-accent-600',
     shortLabel: 'Worked',
-    fullLabel: 'Proven',
+    fullLabel: 'Supported',
   },
   promising: {
     tone: 'success',
@@ -201,14 +201,14 @@ const TRUST_SPECS: Record<TrustStatus, TrustChipSpec> = {
 };
 
 /**
- * The chip COPY is honesty-first. Proven/promising read as a worked/measured
+ * The chip COPY is honesty-first. Supported/promising read as a worked/measured
  * ratio ("Worked 7/11"); the thin states read as their status word; the
  * underperforming state names the regression. Always returns a short, scannable
  * string under ~16 chars where possible.
  */
 function trustChipLabel(signal: TrustSignal): string {
   const spec = TRUST_SPECS[signal.status];
-  if ((signal.status === 'proven' || signal.status === 'promising') && signal.measured > 0) {
+  if ((signal.status === 'supported' || signal.status === 'promising') && signal.measured > 0) {
     return `${spec.shortLabel} ${signal.worked}/${signal.measured}`;
   }
   return spec.shortLabel;
@@ -1470,19 +1470,19 @@ function useInsightTrust(coachId: string | undefined, enabled: boolean): Insight
 function summarizeTrust(rows: InsightTrustRow[]) {
   let shown = 0;
   let acted = 0;
-  let proven = 0;
+  let supported = 0;
   let needsValidation = 0;
   for (const r of rows) {
     shown += r.signal.shown;
     acted += r.signal.acted;
-    if (r.signal.status === 'proven') proven += 1;
+    if (r.signal.status === 'supported') supported += 1;
     if (r.signal.status === 'needs_validation') needsValidation += 1;
   }
-  return { shown, acted, proven, needsValidation, tracked: rows.length };
+  return { shown, acted, supported, needsValidation, tracked: rows.length };
 }
 
 /* ────────────────────────────────────────────────────────────────────────────
- * TRUST BAND — a clean KPI row (Shown · Acted · Proven · Needs validation).
+ * TRUST BAND — a clean KPI row (Shown · Acted · Supported · Needs validation).
  * One accent, restrained, editorial. Honest loading / error / empty states.
  * ─────────────────────────────────────────────────────────────────────────── */
 function InsightTrustBand({ trust }: { trust: InsightTrustState }) {
@@ -1528,7 +1528,7 @@ function InsightTrustBand({ trust }: { trust: InsightTrustState }) {
   const kpis: ReadonlyArray<{ label: string; value: number; hint: string; accent?: boolean }> = [
     { label: 'Insights shown', value: k.shown, hint: `across ${k.tracked} tracked` },
     { label: 'Acted on', value: k.acted, hint: 'coach or player taps' },
-    { label: 'Proven', value: k.proven, hint: 'worked ≥60% of ≥3 measured', accent: true },
+    { label: 'Supported', value: k.supported, hint: 'worked ≥60% of ≥3 measured', accent: true },
     { label: 'Needs validation', value: k.needsValidation, hint: 'too few outcomes yet' },
   ];
 

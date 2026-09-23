@@ -28,17 +28,17 @@ describe('deriveTrustStatus — the status ladder', () => {
     expect(deriveTrustStatus(2, 2)).toBe<TrustStatus>('needs_validation');
   });
 
-  test('measured >= 3 and rate >= 0.6 → proven', () => {
-    expect(deriveTrustStatus(3, 3)).toBe<TrustStatus>('proven'); // 1.0
-    expect(deriveTrustStatus(3, 2)).toBe<TrustStatus>('proven'); // 0.666…
-    expect(deriveTrustStatus(5, 3)).toBe<TrustStatus>('proven'); // 0.6 boundary
-    expect(deriveTrustStatus(10, 6)).toBe<TrustStatus>('proven'); // 0.6 boundary
+  test('measured >= 3 and rate >= 0.6 → supported', () => {
+    expect(deriveTrustStatus(3, 3)).toBe<TrustStatus>('supported'); // 1.0
+    expect(deriveTrustStatus(3, 2)).toBe<TrustStatus>('supported'); // 0.666…
+    expect(deriveTrustStatus(5, 3)).toBe<TrustStatus>('supported'); // 0.6 boundary
+    expect(deriveTrustStatus(10, 6)).toBe<TrustStatus>('supported'); // 0.6 boundary
   });
 
   test('measured >= 3 and 0.4 <= rate < 0.6 → promising', () => {
     expect(deriveTrustStatus(5, 2)).toBe<TrustStatus>('promising'); // 0.4 boundary
     expect(deriveTrustStatus(10, 5)).toBe<TrustStatus>('promising'); // 0.5
-    expect(deriveTrustStatus(10, 5).valueOf()).not.toBe('proven');
+    expect(deriveTrustStatus(10, 5).valueOf()).not.toBe('supported');
     // just under 0.6 stays promising
     expect(deriveTrustStatus(100, 59)).toBe<TrustStatus>('promising'); // 0.59
   });
@@ -50,21 +50,21 @@ describe('deriveTrustStatus — the status ladder', () => {
   });
 
   test('boundary values are inclusive on the high side', () => {
-    // exactly 0.6 → proven (>=), exactly 0.4 → promising (>=)
-    expect(deriveTrustStatus(5, 3)).toBe('proven');
+    // exactly 0.6 → supported (>=), exactly 0.4 → promising (>=)
+    expect(deriveTrustStatus(5, 3)).toBe('supported');
     expect(deriveTrustStatus(5, 2)).toBe('promising');
   });
 
   test('hardened against malformed counts (clamp + floor + non-finite)', () => {
     // worked > measured is clamped to measured → rate caps at 1.0, never NaN.
-    expect(deriveTrustStatus(3, 99)).toBe<TrustStatus>('proven');
+    expect(deriveTrustStatus(3, 99)).toBe<TrustStatus>('supported');
     // negative worked clamps to 0.
     expect(deriveTrustStatus(3, -5)).toBe<TrustStatus>('underperforming');
     // negative / NaN measured reads as zero evidence.
     expect(deriveTrustStatus(-1, 0)).toBe<TrustStatus>('new_hypothesis');
     expect(deriveTrustStatus(Number.NaN, 0)).toBe<TrustStatus>('new_hypothesis');
     // fractional inputs floor before the ratio.
-    expect(deriveTrustStatus(3.9, 3.9)).toBe<TrustStatus>('proven');
+    expect(deriveTrustStatus(3.9, 3.9)).toBe<TrustStatus>('supported');
   });
 
   test('deterministic — same inputs always yield same status', () => {
