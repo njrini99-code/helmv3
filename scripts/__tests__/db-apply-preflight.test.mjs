@@ -1,10 +1,14 @@
 /**
- * Preflight checks in `scripts/db/apply.mjs` — the only sanctioned path from a
- * merged migration file to production.
+ * Preflight checks in `scripts/db/apply.mjs` — a reviewed, task-authorized
+ * path from a merged migration file to production (see that file's own
+ * header; #1905 clarified who may run `--apply`).
  *
- * Both defects covered here were found the same way: every dry run against the
- * twelve migrations sitting unapplied on 2026-09-08 failed at preflight, and
- * neither failure was about the migrations.
+ * Both defects covered here were found the same way: every dry run against
+ * the September helm_debug/helm_jobs/pgaudit migrations held as of
+ * 2026-09-08 failed at preflight, and neither failure was about the
+ * migrations. 8 of those 9 have since been applied to production (see
+ * `supabase/migrations/HELD.md`); only
+ * `20260903150000_helm_debug_agent_runs.sql` is still HOLD.
  *
  *   (a) The reachability check shelled out to
  *       `git log origin/main --name-only --pretty=format:`, whose output is
@@ -44,26 +48,35 @@ function heldByOldRegex(heldText, basename) {
   return rowRe.test(heldText);
 }
 
-// Qualified status in its own row.
-const QUALIFIED_SINGLE = [
-  '20260903150000_helm_debug_agent_runs.sql',
+// Qualified status in its own row. Only one file in this series is still
+// genuinely HOLD in production as of 2026-09-22 — the other four
+// once-QUALIFIED_SINGLE files below (120000/140000/141000/142000) were
+// ledger-verified APPLIED that day and moved to NOW_APPLIED.
+const STILL_HELD_QUALIFIED = '20260903150000_helm_debug_agent_runs.sql';
+
+// The eight files that were HOLD (qualified status, four of them in one
+// grouped row) as of 2026-09-08 and are now APPLIED — ledger-verified
+// 2026-09-22 against production (`list_migrations`); see the corresponding
+// rows in `supabase/migrations/HELD.md`. Kept as fixtures for the NEGATIVE
+// assertion: isHeldInRegister must not flag an applied row, including one
+// whose status text still contains "hold" nowhere in its own text but did
+// in the row's history.
+const NOW_APPLIED = [
+  '20260906115900_helm_debug_stat_statements_snapshot_min_exec.sql',
   '20260906120000_narrow_admin_event_purge_pg_cron.sql',
+  '20260906120010_helm_debug_db_statement_samples.sql',
+  '20260906120100_helm_debug_db_analysis_samples.sql',
+  '20260906120200_helm_debug_observability_retention_v3.sql',
   '20260906140000_helm_jobs_pgmq_queues.sql',
   '20260906141000_helm_jobs_pg_cron_consume_variant.sql',
   '20260906142000_pgaudit_ddl_role_only.sql',
 ];
 
-// Members of a grouped row. The old anchor could reach only the first.
-const GROUPED_MEMBERS = [
-  '20260906115900_helm_debug_stat_statements_snapshot_min_exec.sql',
-  '20260906120010_helm_debug_db_statement_samples.sql',
-  '20260906120100_helm_debug_db_analysis_samples.sql',
-  '20260906120200_helm_debug_observability_retention_v3.sql',
-];
-
-// The nine files staged with -- VERIFY: headers in this change. The baseball
-// trio below is held for unrelated reasons and was deliberately left alone.
-const STAGED_WITH_VERIFY = [...QUALIFIED_SINGLE, ...GROUPED_MEMBERS];
+// The nine files staged with -- VERIFY: headers in this change (unaffected by
+// HOLD/APPLIED status — the headers stay on the file regardless). The
+// baseball trio below is held for unrelated reasons and was deliberately
+// left alone.
+const STAGED_WITH_VERIFY = [STILL_HELD_QUALIFIED, ...NOW_APPLIED];
 
 // Bare `**HOLD**` — the only shape the old regex handled.
 const BARE_HOLD = [
@@ -75,22 +88,39 @@ const BARE_HOLD = [
 describe('isHeldInRegister', () => {
   const register = readFileSync(HELD_MD, 'utf-8');
 
-  it.each([...QUALIFIED_SINGLE, ...GROUPED_MEMBERS, ...BARE_HOLD])(
-    'detects %s as held in the real register',
+  it('detects the one remaining qualified-status HOLD in the real register', () => {
+    expect(isHeldInRegister(register, STILL_HELD_QUALIFIED)).toBe(true);
+  });
+
+  it('the old regex missed it — this is the regression being locked', () => {
+    // Carries a qualified status (`**HOLD — R3, not yet reviewed**`), so the
+    // old literal `**HOLD**` match failed on it.
+    expect(heldByOldRegex(register, STILL_HELD_QUALIFIED)).toBe(false);
+  });
+
+  it.each(BARE_HOLD)('detects %s as held in the real register', (basename) => {
+    expect(isHeldInRegister(register, basename)).toBe(true);
+  });
+
+  it.each(NOW_APPLIED)(
+    'does not flag %s — HOLD as of 2026-09-08, APPLIED and ledger-verified 2026-09-22',
     (basename) => {
-      expect(isHeldInRegister(register, basename)).toBe(true);
+      expect(isHeldInRegister(register, basename)).toBe(false);
     },
   );
 
-  it.each([...QUALIFIED_SINGLE, ...GROUPED_MEMBERS])(
-    'the old regex missed %s — this is the regression being locked',
-    (basename) => {
-      // Every one of these carries a qualified status (`**HOLD — ...**`), so
-      // the old literal `**HOLD**` match failed even on a grouped row's first
-      // member, where the anchor itself was satisfied.
-      expect(heldByOldRegex(register, basename)).toBe(false);
-    },
-  );
+  it('detects a qualified status inside a grouped row (synthetic — mirrors the shape of the now-discharged real rows, since none remain live)', () => {
+    // Reproduces exactly the shape that used to defeat the old regex on the
+    // real `20260906115900_...` row before it was discharged: a grouped cell
+    // (`A.sql` + `B.sql`) carrying a qualified status. isHeldInRegister must
+    // catch every member; the old regex caught none of them.
+    const row =
+      '| `20260906115900_a.sql` + `20260906120010_b.sql` | **HOLD — R3, not yet reviewed** | why | when |';
+    expect(isHeldInRegister(row, '20260906115900_a.sql')).toBe(true);
+    expect(isHeldInRegister(row, '20260906120010_b.sql')).toBe(true);
+    expect(heldByOldRegex(row, '20260906115900_a.sql')).toBe(false);
+    expect(heldByOldRegex(row, '20260906120010_b.sql')).toBe(false);
+  });
 
   it('still detects the bare **HOLD** rows the old regex already caught', () => {
     for (const basename of BARE_HOLD) {
