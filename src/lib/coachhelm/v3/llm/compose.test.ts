@@ -72,9 +72,31 @@ vi.mock('@ai-sdk/anthropic', () => ({
 }));
 
 import { compose } from './compose';
+import { checkBudget } from './budget';
 import type { ComposeRequest } from './types';
+import type { EvidencePacket } from './claim-validator';
 
 const FALLBACK = 'Deterministic fallback summary.';
+const ALLOW_BUDGET = {
+  allowed: true,
+  remaining_usd: 10,
+  budget_usd: 10,
+  spent_usd: 0,
+  source: 'coach_configured',
+} as const;
+const WINDOW = { window_start: '2026-09-01T00:00:00.000Z', window_end: '2026-09-08T00:00:00.000Z' };
+const PACKET: EvidencePacket = {
+  player_id: 'player-1',
+  ...WINDOW,
+  entries: [
+    { metric_id: 'total_putts', value: 28, sample_n: 18 },
+    { metric_id: 'gir_pct', value: 55.6, sample_n: 18 },
+  ],
+};
+
+function claimsBlock(claims: unknown[]): string {
+  return `\n\n<<<CLAIMS>>>\n${JSON.stringify(claims)}\n<<<END_CLAIMS>>>`;
+}
 
 function baseReq(overrides: Partial<ComposeRequest> = {}): ComposeRequest {
   return {
@@ -95,6 +117,12 @@ beforeEach(() => {
   anthropicMock.mockClear();
   recordAiMock.mockClear();
   loggedRows.length = 0;
+  // Reset rather than clear: some tests queue `mockResolvedValueOnce`
+  // overrides that may go unconsumed (e.g. a denied retry gate means the
+  // second queued value is never read) — reset drops any leftover queue
+  // entries so they can't bleed into the next test's first call.
+  vi.mocked(checkBudget).mockReset();
+  vi.mocked(checkBudget).mockResolvedValue(ALLOW_BUDGET);
 });
 
 describe('compose() citation grounding (P0-03)', () => {
@@ -297,5 +325,158 @@ describe('compose() Sentry AI observability', () => {
         outcome: 'failure',
       }),
     );
+  });
+});
+
+/**
+ * Typed claim gate (Package 8 slice 1, repair plan 14.10). `evidence_packet`
+ * is opt-in — these tests all pass it explicitly; every test above this
+ * point omits it and is unaffected (the gate simply isn't evaluated).
+ */
+describe('compose() typed claim gate (evidence_packet)', () => {
+  it('accepts a verified typed claim and strips the claims block from the returned text', async () => {
+    generateTextMock.mockResolvedValueOnce({
+      text:
+        'You took 28 putts today.' +
+        claimsBlock([
+          { claim_id: 'c1', metric_id: 'total_putts', value: 28, player_id: 'player-1', ...WINDOW },
+        ]),
+      usage: { inputTokens: 10, outputTokens: 8 },
+    });
+
+    const result = await compose(baseReq({ evidence_packet: PACKET }), FALLBACK);
+
+    expect(result.text).toBe('You took 28 putts today.');
+    expect(result.text).not.toContain('<<<CLAIMS>>>');
+    expect(result.used_llm).toBe(true);
+    expect(result.citations_verified).toBe(true);
+    expect(generateTextMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('a numeric-scan failure on attempt 1 and a typed wrong_field failure on the retry still total exactly two calls, then fall back', async () => {
+    // Attempt 1: legacy scan fails — "42" is not in `req.evidence` and not
+    // covered by any cited claim either.
+    generateTextMock.mockResolvedValueOnce({
+      text: 'You took 42 putts today.' + claimsBlock([]),
+      usage: { inputTokens: 10, outputTokens: 8 },
+    });
+    // Retry: numerically clean prose (legacy scan passes), but the claim
+    // cites 55.6 (gir_pct's real value) under total_putts — wrong_field.
+    generateTextMock.mockResolvedValueOnce({
+      text:
+        'Great improvement across the board this round.' +
+        claimsBlock([
+          { claim_id: 'c1', metric_id: 'total_putts', value: 55.6, player_id: 'player-1', ...WINDOW },
+        ]),
+      usage: { inputTokens: 12, outputTokens: 9 },
+    });
+
+    const result = await compose(baseReq({ evidence_packet: PACKET }), FALLBACK);
+
+    expect(generateTextMock).toHaveBeenCalledTimes(2);
+    expect(result.text).toBe(FALLBACK);
+    expect(result.used_llm).toBe(false);
+    expect(result.citations_verified).toBe(false);
+
+    const row = loggedRows.find(
+      (r) => (r.citations as { reason?: string })?.reason === 'claim_validation_failed',
+    );
+    expect(row).toBeTruthy();
+    const claimValidation = (row?.citations as {
+      claim_validation?: { malformed: boolean; rejected: Array<{ metric_id: string; reason: string }> };
+    }).claim_validation;
+    expect(claimValidation?.malformed).toBe(false);
+    expect(claimValidation?.rejected).toEqual(
+      expect.arrayContaining([expect.objectContaining({ metric_id: 'total_putts', reason: 'wrong_field' })]),
+    );
+  });
+
+  it('a typed rejection on attempt 1 with the retry denied by budget makes exactly one call and bills only attempt 1', async () => {
+    vi.mocked(checkBudget)
+      .mockResolvedValueOnce(ALLOW_BUDGET) // initial gate
+      .mockResolvedValueOnce({
+        allowed: false,
+        remaining_usd: 0,
+        budget_usd: 10,
+        spent_usd: 10,
+        source: 'coach_configured',
+        fallback_reason: 'budget_exhausted',
+      }); // retry re-gate: denied
+
+    generateTextMock.mockResolvedValueOnce({
+      text:
+        'Great improvement across the board this round.' +
+        claimsBlock([
+          { claim_id: 'c1', metric_id: 'total_putts', value: 55.6, player_id: 'player-1', ...WINDOW },
+        ]),
+      usage: { inputTokens: 10, outputTokens: 8 },
+    });
+
+    const result = await compose(baseReq({ evidence_packet: PACKET }), FALLBACK);
+
+    expect(generateTextMock).toHaveBeenCalledTimes(1);
+    expect(result.text).toBe(FALLBACK);
+    expect(result.used_llm).toBe(false);
+    // Only attempt-1's (wasted) tokens were billed — the denied retry never ran.
+    expect(recordSpendMock).toHaveBeenCalledTimes(1);
+    expect(recordSpendMock.mock.calls[0]?.[1]).toEqual(
+      expect.objectContaining({ coach_id: 'coach-1' }),
+    );
+  });
+
+  it('a missing/malformed claims block is rejected, retried once, then falls back if still malformed', async () => {
+    // Neither attempt includes a claims block at all.
+    generateTextMock
+      .mockResolvedValueOnce({ text: 'Solid ball-striking round overall.', usage: { inputTokens: 10, outputTokens: 8 } })
+      .mockResolvedValueOnce({ text: 'Solid ball-striking round overall.', usage: { inputTokens: 10, outputTokens: 8 } });
+
+    const result = await compose(baseReq({ evidence_packet: PACKET }), FALLBACK);
+
+    expect(generateTextMock).toHaveBeenCalledTimes(2);
+    expect(result.text).toBe(FALLBACK);
+    const row = loggedRows.find(
+      (r) => (r.citations as { reason?: string })?.reason === 'claim_validation_failed',
+    );
+    expect((row?.citations as { claim_validation?: { malformed: boolean } })?.claim_validation?.malformed).toBe(true);
+  });
+
+  it('provider failure on the FIRST call never blocks the deterministic fallback', async () => {
+    generateTextMock.mockRejectedValueOnce(new Error('provider unavailable'));
+
+    const result = await compose(baseReq({ evidence_packet: PACKET }), FALLBACK);
+
+    expect(result.text).toBe(FALLBACK);
+    expect(result.used_llm).toBe(false);
+    expect(generateTextMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('provider failure on the RETRY call never blocks the deterministic fallback', async () => {
+    // Attempt 1 fails the typed gate (no claims block) -> triggers a retry.
+    generateTextMock
+      .mockResolvedValueOnce({ text: 'Solid ball-striking round overall.', usage: { inputTokens: 10, outputTokens: 8 } })
+      .mockRejectedValueOnce(new Error('provider unavailable'));
+
+    const result = await compose(baseReq({ evidence_packet: PACKET }), FALLBACK);
+
+    expect(result.text).toBe(FALLBACK);
+    expect(result.used_llm).toBe(false);
+    expect(generateTextMock).toHaveBeenCalledTimes(2);
+  });
+
+  it('a budget of zero makes no LLM call even with an evidence_packet supplied', async () => {
+    vi.mocked(checkBudget).mockResolvedValue({
+      allowed: false,
+      remaining_usd: 0,
+      budget_usd: 0,
+      spent_usd: 0,
+      source: 'disabled',
+      fallback_reason: 'budget_disabled',
+    });
+
+    const result = await compose(baseReq({ evidence_packet: PACKET }), FALLBACK);
+
+    expect(generateTextMock).not.toHaveBeenCalled();
+    expect(result.text).toBe(FALLBACK);
+    expect(result.used_llm).toBe(false);
   });
 });

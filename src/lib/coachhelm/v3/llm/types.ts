@@ -10,6 +10,8 @@
  * before answering, so it is the task that benefits most from the newer model.
  */
 
+import type { EvidencePacket } from './claim-validator';
+
 export type ComposeTask = 'round_review' | 'hero_narrative' | 'coach_chat';
 
 /** Vercel AI Gateway model strings — see Part XI.5. */
@@ -41,6 +43,16 @@ export interface ComposeRequest {
   evidence: EvidenceClaim[];
   /** Soft cap on completion tokens. Hard cap = 2× this in the model call. */
   max_completion_tokens: number;
+  /**
+   * Package 8 slice 1 (repair plan 14.10) — opt-in typed claim gate.
+   * When present, compose() asks the model to emit a structured claims
+   * block alongside its prose and runs `validateClaims` against this
+   * packet as an EXTRA gate after the existing numeric-token scan
+   * (`verifyCitations`), which stays wired as defense in depth. Absent
+   * for every caller that hasn't been migrated yet (round-review.ts is
+   * not wired in this slice — no live caller sets this field yet).
+   */
+  evidence_packet?: EvidencePacket;
 }
 
 export interface EvidenceClaim {

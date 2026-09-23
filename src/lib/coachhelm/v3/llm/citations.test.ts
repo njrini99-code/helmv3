@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { extractNumericTokens, verifyCitations } from './citations';
+import { extractNumericTokens, normalize, verifyCitations } from './citations';
 import type { EvidenceClaim } from './types';
 
 /**
@@ -107,5 +107,31 @@ describe('verifyCitations — existing behaviour', () => {
     const out = verifyCitations('You hit 47% of greens.', [{ field: 'gir_pct', value: 50 }]);
     expect(out.unmatched_tokens).toEqual(['47%']);
     expect(out.verified).toBe(false);
+  });
+});
+
+/**
+ * `normalize` is exported (Package 8 slice 1) so claim-validator.ts's
+ * `uncited_number` check compares prose-extracted tokens against typed
+ * claim values with this exact same normalization, rather than a second
+ * normalizer drifting from this one.
+ */
+describe('normalize', () => {
+  it('strips a trailing percent sign', () => {
+    expect(normalize('47%')).toBe('47');
+  });
+
+  it('strips unit suffixes (ft/yd/strokes/etc.)', () => {
+    expect(normalize('28 ft')).toBe('28');
+    expect(normalize('1.4 strokes')).toBe('1.4');
+  });
+
+  it('strips a trailing ".0" and lowercases', () => {
+    expect(normalize('30.0')).toBe('30');
+  });
+
+  it('is stable across the two spellings verifyCitations already treats as equal', () => {
+    expect(normalize('28 ft')).toBe(normalize('28'));
+    expect(normalize('30.0')).toBe(normalize('30'));
   });
 });

@@ -11,11 +11,20 @@
  *      caller-supplied fallback text (used_llm=false).
  *   3. generateText via Vercel AI Gateway using MODEL_FOR_TASK[task].
  *   4. verifyCitations() against the evidence the caller supplied.
- *   5. If verification fails, retry ONCE with the unmatched tokens fed
- *      back to the model. If the retry still fails citation
- *      verification, DISCARD the LLM text and fall back to the
- *      caller-supplied template — unverified claims must never reach a
- *      player surface as fact (P0-03).
+ *   4a. Package 8 slice 1 (repair plan 14.10): when the caller supplies
+ *      `evidence_packet`, the prompt also asks for a structured claims
+ *      block, which is parsed and run through claim-validator.ts's
+ *      validateClaims() as an EXTRA gate — it catches a real evidence
+ *      value cited under the wrong metric/player/window, which the flat
+ *      numeric scan in step 4 cannot see. The numeric scan stays wired
+ *      as defense in depth for callers with and without a packet. The
+ *      claims block itself is always stripped before the text is
+ *      verified or returned — it must never reach a player.
+ *   5. If EITHER gate fails, retry ONCE with the unmatched tokens and/or
+ *      rejected-claim reasons fed back to the model. If the retry still
+ *      fails, DISCARD the LLM text and fall back to the caller-supplied
+ *      template — unverified claims must never reach a player surface
+ *      as fact (P0-03).
  *   6. INSERT a row into golf_coachhelm_llm_calls with token counts +
  *      computed cost + verification status.
  *   7. recordSpend() updates the per-day budget row.
@@ -28,8 +37,10 @@
  * On unrecoverable citation-verification failure → same template
  * fallback, but the log row records `verified=false`,
  * `fallback_to_template=true`, and `citations.reason='verification_failed'`
- * along with the offending unmatched tokens, so the call log keeps the
- * fabricated-cite evidence even though the player never sees the text.
+ * (or `'claim_validation_failed'` when the typed gate is what failed)
+ * along with the offending unmatched tokens / rejected claims, so the
+ * call log keeps the fabricated-cite evidence even though the player
+ * never sees the text.
  */
 
 import { createAdminClient } from '@/lib/supabase/admin';
@@ -38,8 +49,10 @@ import { resolveModelProvider } from '@/lib/ai/model-provider';
 import { logServerError, logServerEvent } from '@/lib/server-error-logger';
 import { classifyProviderFault, providerFaultSeverity } from '@/lib/admin/provider-fault';
 import { drainCollapsedCount, shouldEmit } from '@/lib/admin/emit-throttle';
+import { z } from 'zod';
 import { checkBudget, recordSpend } from './budget';
 import { verifyCitations } from './citations';
+import { validateClaims, type ClaimReference, type RejectedClaim } from './claim-validator';
 import type { Json } from '@/lib/types/database';
 import {
   MODEL_FOR_TASK,
@@ -121,16 +134,21 @@ export async function compose(
   }
 
   // --- 2. LLM call (with one citation-grounded retry) ---
-  // First attempt uses the caller's prompt. If the verifier flags
-  // fabricated cites, retry ONCE with the offending tokens fed back so
-  // the model can correct itself. Tokens accumulate across attempts so
-  // the budget reflects real spend.
+  // First attempt uses the caller's prompt (plus the claims-block
+  // instruction when a typed evidence packet was supplied). If either
+  // gate flags a problem, retry ONCE with the offending tokens/claims fed
+  // back so the model can correct itself. Tokens accumulate across
+  // attempts so the budget reflects real spend.
   let total_prompt_tokens = 0;
   let total_completion_tokens = 0;
 
+  const promptWithClaims = req.evidence_packet
+    ? `${req.prompt}${buildClaimsInstruction(req.evidence_packet)}`
+    : req.prompt;
+
   let attempt: LlmAttempt;
   try {
-    attempt = await runLlmAttempt(req, model_id, promptTokensEstimate);
+    attempt = await runLlmAttempt({ ...req, prompt: promptWithClaims }, model_id, promptTokensEstimate);
   } catch (err) {
     return await fallbackFromLlmError(supabase, req, fallbackText, {
       prompt_hash,
@@ -141,9 +159,14 @@ export async function compose(
   total_prompt_tokens += attempt.prompt_tokens;
   total_completion_tokens += attempt.completion_tokens;
 
-  // --- 3. Verify citations (retry once on failure) ---
-  if (!attempt.verification.verified) {
-    const retryPrompt = buildRetryPrompt(req.prompt, attempt.verification.unmatched_tokens);
+  // --- 3. Verify citations + typed claims (retry once on failure) ---
+  if (!attemptVerified(attempt)) {
+    const retryPrompt = buildRetryPrompt(
+      promptWithClaims,
+      attempt.verification.unmatched_tokens,
+      attempt.claims?.rejected,
+      attempt.claims?.malformed ?? false,
+    );
     // The correction retry is a second billable call — re-gate it. Without
     // this, a coach sitting just under their cap could spend roughly double
     // the amount the original gate reserved, since the retry previously ran
@@ -194,18 +217,28 @@ export async function compose(
   const cost_usd = estimateCostUsd(model_id, total_prompt_tokens, total_completion_tokens);
 
   // --- 4a. Unrecoverable verification failure → DISCARD LLM text ---
-  // The model emitted at least one numeric claim absent from the
-  // supplied evidence even after a corrective retry. Surfacing it would
-  // show a fabricated number to a player as fact (P0-03), so we throw
-  // the LLM text away and return the caller's deterministic fallback.
-  // We still bill for the (wasted) tokens and keep the unmatched-token
-  // evidence in the call log.
-  if (!attempt.verification.verified) {
+  // The model emitted at least one numeric claim absent from the supplied
+  // evidence, or (Package 8 slice 1) a typed claim that misattributed a
+  // real value, even after a corrective retry. Surfacing it would show a
+  // fabricated or misattributed claim to a player as fact (P0-03), so we
+  // throw the LLM text away and return the caller's deterministic
+  // fallback. We still bill for the (wasted) tokens and keep the
+  // rejection evidence in the call log.
+  if (!attemptVerified(attempt)) {
+    const claimReasonSummary = (attempt.claims?.rejected ?? [])
+      .map((r) => `${r.claim.metric_id}:${r.reason}`)
+      .join(',');
     await logServerEvent(
-      `compose() discarded unverified LLM text for task=${req.task}: unmatched=${attempt.verification.unmatched_tokens.join(',')}`,
+      `compose() discarded unverified LLM text for task=${req.task}: ` +
+        `unmatched=${attempt.verification.unmatched_tokens.join(',')}` +
+        (attempt.claims ? ` claims=${claimReasonSummary || (attempt.claims.malformed ? 'malformed' : 'none')}` : ''),
       { action: 'v3.llm.compose' },
       'warning',
     );
+    // Prefer the typed-gate reason when it's the one that failed — it is
+    // strictly more diagnosable (names the metric and why) than the flat
+    // numeric-scan reason.
+    const typedGateFailed = attempt.claims !== null && (attempt.claims.malformed || attempt.claims.rejected.length > 0);
     const fallbackId = await logCall(supabase, {
       task: req.task,
       coach_id: req.coach_id,
@@ -216,7 +249,7 @@ export async function compose(
       completion_tokens: total_completion_tokens,
       cost_usd,
       citations: {
-        reason: 'verification_failed',
+        reason: typedGateFailed ? 'claim_validation_failed' : 'verification_failed',
         unmatched_tokens: attempt.verification.unmatched_tokens,
         // The values that WERE allowed. Without these a discard is not
         // diagnosable: the row says what was rejected but not what it was
@@ -235,6 +268,20 @@ export async function compose(
         // lands in `golf_coachhelm_llm_calls.citations` next to a player_id,
         // so it stays the same class of data the row already holds.
         evidence_offered: req.evidence.map((e) => ({ field: e.field, value: e.value })),
+        // Package 8 slice 1: {claim_id, metric_id, reason} only — no prose,
+        // mirroring evidence_offered's own no-prose contract.
+        ...(attempt.claims
+          ? {
+              claim_validation: {
+                malformed: attempt.claims.malformed,
+                rejected: attempt.claims.rejected.map((r) => ({
+                  claim_id: r.claim.claim_id,
+                  metric_id: r.claim.metric_id,
+                  reason: r.reason,
+                })),
+              },
+            }
+          : {}),
       },
       verified: false,
       fallback_to_template: true,
@@ -287,11 +334,108 @@ export async function compose(
 // Internal: one generate-and-verify pass.
 // ---------------------------------------------------------------------------
 
+interface TypedClaimAttempt {
+  accepted: ClaimReference[];
+  rejected: RejectedClaim[];
+  /** True when the claims block was absent or failed to parse. Distinct
+   *  from a plain rejection: nothing here names a specific bad claim. */
+  malformed: boolean;
+}
+
 interface LlmAttempt {
+  /** Model prose with the claims block (if any) already stripped out —
+   *  this is the ONLY text that reaches verifyCitations, validateClaims,
+   *  or a player. The raw block must never survive past this point. */
   text: string;
   prompt_tokens: number;
   completion_tokens: number;
   verification: ReturnType<typeof verifyCitations>;
+  /** Null when the caller supplied no `evidence_packet` — the typed gate
+   *  is opt-in and simply isn't evaluated for that request. */
+  claims: TypedClaimAttempt | null;
+}
+
+/** True when BOTH the legacy numeric scan and (if engaged) the typed
+ *  claim gate are satisfied. Either gate failing means the text must not
+ *  render. */
+function attemptVerified(attempt: LlmAttempt): boolean {
+  if (!attempt.verification.verified) return false;
+  if (attempt.claims && (attempt.claims.malformed || attempt.claims.rejected.length > 0)) return false;
+  return true;
+}
+
+const CLAIMS_BLOCK_RE = /<<<CLAIMS>>>([\s\S]*?)<<<END_CLAIMS>>>/;
+
+const ClaimReferenceSchema = z.object({
+  claim_id: z.string(),
+  metric_id: z.string(),
+  value: z.number(),
+  player_id: z.string(),
+  window_start: z.string(),
+  window_end: z.string(),
+  claim_type: z.enum(['fact', 'causal']).optional(),
+});
+const ClaimsBlockSchema = z.array(ClaimReferenceSchema);
+
+/**
+ * Ask the model to append a structured claims block naming every
+ * factual/causal number it cites, in addition to writing normal prose.
+ * The block is parsed with zod `safeParse` — never the AI SDK's
+ * structured-output API, since this rides alongside free-text generation
+ * rather than replacing it — and is ALWAYS stripped before the text is
+ * checked or returned (see `stripClaimsBlock`).
+ */
+function buildClaimsInstruction(packet: NonNullable<ComposeRequest['evidence_packet']>): string {
+  return (
+    `\n\nAfter your response, append a claims block listing EVERY factual ` +
+    `or causal number you cited, in exactly this format:\n` +
+    `<<<CLAIMS>>>\n` +
+    `[{"claim_id":"c1","metric_id":"<metric id>","value":<number>,` +
+    `"player_id":"${packet.player_id}","window_start":"${packet.window_start}",` +
+    `"window_end":"${packet.window_end}","claim_type":"fact"}]\n` +
+    `<<<END_CLAIMS>>>\n` +
+    `Set "claim_type":"causal" only when asserting a CAUSE, not a plain fact. ` +
+    `The block must be valid JSON and is removed before anyone sees your ` +
+    `response — it does not need to read naturally.`
+  );
+}
+
+/**
+ * Strip the claims block (delimiters included) out of the raw model text
+ * and parse it, when present, against `evidence_packet`. Never throws —
+ * a missing block or invalid JSON/schema comes back as `malformed: true`
+ * rather than an exception, matching compose()'s contract that a
+ * provider or parsing problem never surfaces past this module.
+ */
+function extractAndValidateClaims(
+  rawText: string,
+  packet: ComposeRequest['evidence_packet'],
+): { strippedText: string; claims: TypedClaimAttempt | null } {
+  if (!packet) return { strippedText: rawText, claims: null };
+
+  const match = rawText.match(CLAIMS_BLOCK_RE);
+  if (!match) {
+    return { strippedText: rawText.trim(), claims: { accepted: [], rejected: [], malformed: true } };
+  }
+  const strippedText = rawText.replace(CLAIMS_BLOCK_RE, '').trim();
+
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(match[1] ?? '');
+  } catch {
+    return { strippedText, claims: { accepted: [], rejected: [], malformed: true } };
+  }
+
+  const result = ClaimsBlockSchema.safeParse(parsed);
+  if (!result.success) {
+    return { strippedText, claims: { accepted: [], rejected: [], malformed: true } };
+  }
+
+  const validated = validateClaims(result.data, packet, strippedText);
+  return {
+    strippedText,
+    claims: { accepted: validated.accepted, rejected: validated.rejected, malformed: false },
+  };
 }
 
 async function runLlmAttempt(
@@ -337,12 +481,12 @@ async function runLlmAttempt(
     throw error;
   }
 
-  const text = res.text;
+  const rawText = res.text;
   // `usage` is `LanguageModelUsage` with optional inputTokens/outputTokens
   // numbers; widen the inference TS sees on the gateway-string path.
   const usage = res.usage as { inputTokens?: number; outputTokens?: number } | undefined;
   const prompt_tokens = usage?.inputTokens ?? promptTokensEstimate;
-  const completion_tokens = usage?.outputTokens ?? Math.ceil(text.length / 4);
+  const completion_tokens = usage?.outputTokens ?? Math.ceil(rawText.length / 4);
 
   recordAi({
     feature: 'coachhelm_compose',
@@ -355,27 +499,61 @@ async function runLlmAttempt(
     runtime: process.env.NEXT_RUNTIME ?? 'nodejs',
   });
 
+  // Strip the claims block (if any) BEFORE either verifier sees the text —
+  // it must never reach verifyCitations, validateClaims, or a player.
+  const { strippedText, claims } = extractAndValidateClaims(rawText, req.evidence_packet);
+
   return {
-    text,
+    text: strippedText,
     prompt_tokens,
     completion_tokens,
-    verification: verifyCitations(text, req.evidence),
+    verification: verifyCitations(strippedText, req.evidence),
+    claims,
   };
 }
 
 /**
- * Append corrective feedback naming the unmatched tokens so the retry
- * attempt can drop or fix the fabricated numbers.
+ * Append corrective feedback naming the unmatched tokens and/or rejected
+ * typed claims so the retry attempt can drop or fix them. `prompt` is
+ * already the base prompt including the claims-block instruction (when
+ * engaged), so the retry keeps asking for the block too.
  */
-function buildRetryPrompt(prompt: string, unmatchedTokens: string[]): string {
-  const tokenList = unmatchedTokens.join(', ');
-  return (
-    `${prompt}\n\n` +
-    `IMPORTANT CORRECTION: a previous draft included numbers that are NOT ` +
-    `supported by the provided data: ${tokenList}. Rewrite the response and ` +
-    `do NOT mention any number unless it appears in the supplied evidence. ` +
-    `Use directional words ("up", "down", "improved") instead of inventing figures.`
-  );
+function buildRetryPrompt(
+  prompt: string,
+  unmatchedTokens: string[],
+  rejectedClaims: RejectedClaim[] | undefined,
+  malformed: boolean,
+): string {
+  const parts: string[] = [`${prompt}\n\n`];
+
+  if (unmatchedTokens.length > 0) {
+    const tokenList = unmatchedTokens.join(', ');
+    parts.push(
+      `IMPORTANT CORRECTION: a previous draft included numbers that are NOT ` +
+        `supported by the provided data: ${tokenList}. Rewrite the response and ` +
+        `do NOT mention any number unless it appears in the supplied evidence. ` +
+        `Use directional words ("up", "down", "improved") instead of inventing figures.\n`,
+    );
+  }
+
+  if (malformed) {
+    parts.push(
+      `IMPORTANT CORRECTION: your claims block was missing or was not valid JSON. ` +
+        `You MUST include it, in exactly the format shown, listing every number you cite.\n`,
+    );
+  } else if (rejectedClaims && rejectedClaims.length > 0) {
+    const issues = rejectedClaims
+      .map((r) => `metric_id=${r.claim.metric_id || '(none)'} value=${r.claim.value} reason=${r.reason}`)
+      .join('; ');
+    parts.push(
+      `IMPORTANT CORRECTION: some of your cited claims could not be verified against ` +
+        `the evidence for this player and window: ${issues}. Only cite a metric's own ` +
+        `value, for this exact player and window, and only assert a cause when the ` +
+        `evidence supports it. Rewrite the response and its claims block accordingly.\n`,
+    );
+  }
+
+  return parts.join('');
 }
 
 /**

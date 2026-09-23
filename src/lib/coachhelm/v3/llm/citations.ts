@@ -88,6 +88,17 @@ export function extractNumericTokens(text: string): string[] {
   return found.sort((a, b) => a.at - b.at).map((f) => f.token);
 }
 
+/**
+ * Universally-safe tokens: 0, 100, 1, single digits inside common phrases
+ * like "1 stroke" / "2 strokes" — these aren't claims about data.
+ *
+ * Exported so claim-validator.ts's `uncited_number` check (the typed
+ * validator's own vacuous-pass guard) judges prose by the same safe list
+ * this scanner does — two independently-maintained safe lists is how a
+ * token becomes flaggable by one gate and not the other.
+ */
+export const SAFE_NUMERIC_TOKENS = new Set(['0', '1', '2', '3', '100']);
+
 export function verifyCitations(text: string, evidence: EvidenceClaim[]): CitationVerification {
   const allowedValues = new Set(evidence.map((e) => normalize(String(e.value))));
 
@@ -99,10 +110,7 @@ export function verifyCitations(text: string, evidence: EvidenceClaim[]): Citati
     }
   }
 
-  // Allow universally-safe tokens: 0, 100, 1, single digits inside common
-  // phrases like "1 stroke" / "2 strokes" — these aren't claims about data.
-  const SAFE = new Set(['0', '1', '2', '3', '100']);
-  const trulyUnmatched = unmatched.filter((t) => !SAFE.has(normalize(t)));
+  const trulyUnmatched = unmatched.filter((t) => !SAFE_NUMERIC_TOKENS.has(normalize(t)));
 
   return {
     verified: trulyUnmatched.length === 0,
@@ -110,7 +118,18 @@ export function verifyCitations(text: string, evidence: EvidenceClaim[]): Citati
   };
 }
 
-function normalize(s: string): string {
+/**
+ * Strip trailing %, unit suffixes, and trailing ".0..." so a value like
+ * "28 ft" or "1.4 strokes" normalizes to the bare number the extraction
+ * regex pulls out of free text.
+ *
+ * Exported so claim-validator.ts's `uncited_number` check can compare a
+ * prose-extracted token against an accepted claim's numeric value using
+ * this exact same normalization — a second normalizer drifting from this
+ * one is exactly how a number becomes flaggable by one gate and not the
+ * other.
+ */
+export function normalize(s: string): string {
   // Strip trailing %, unit suffixes (ft/yd/strokes/etc.), and trailing
   // ".0..." so evidence values like "28 ft" or "1.4 strokes" normalize
   // down to the bare number the text-extraction regex pulls out.
