@@ -390,6 +390,23 @@ Player opens round review
   → `PlayersGridView` → `DueForReviewPanel`, which classifies client-side
   against the SAME `focusAreas` prop — no new focus-area fetch, only the
   one new `golf_rounds` read.
+  **Leaves the queue on a recorded outcome (owner decision follow-up,
+  2026-09-23)**: `recordFocusAreaOutcomeImpl` (`development.ts`) sets
+  `golf_player_focus_areas.outcome_status` directly, on the SAME write that
+  sets `status: 'completed'`, regardless of `from_insight_id`.
+  `followUpEligibilityReason` checks that raw column BEFORE the `completed`
+  leg and returns `null` (excluded, not just ineligible) when it's set — the
+  follow-up decision the queue exists to surface has already been made.
+  Threaded as `FollowUpEligibilityInput.recordedOutcomeStatus`, deliberately
+  NOT the same field as `PlayersGridFocusArea.outcome_status` (inherited
+  from `FocusAreaCardData`): that one is derived from the SOURCE INSIGHT
+  only (`golf_coach_insights.outcome_status`) and reads `null` whenever
+  `from_insight_id` is absent even though the focus area's own column is
+  set — reusing that name would silently miss exactly the areas this
+  exclusion most needs to catch. `intelligence/page.tsx` selects the raw
+  `outcome_status` column alongside the rest of `golf_player_focus_areas`
+  and sets `PlayersGridFocusArea.recordedOutcomeStatus` from it directly
+  (the existing insight-derived `outcome_status` field is untouched).
 - **`src/lib/coachhelm/v3/ranking/situational-ranking.ts`** (2026-09-23,
   addendum §13, work package A6 slice 1, pure core, not wired to a route,
   component, or `ranking/score.ts` yet) — `groupIssues(packets)` groups

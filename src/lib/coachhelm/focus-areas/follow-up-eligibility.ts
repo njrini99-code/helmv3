@@ -52,6 +52,24 @@ export interface FollowUpEligibilityInput {
   target_kind?: string | null;
   /** ISO date (YYYY-MM-DD), or a full timestamp — only the date part is read. */
   target_date?: string | null;
+  /**
+   * Owner decision follow-up (2026-09-23): the RAW
+   * `golf_player_focus_areas.outcome_status` column, set directly by
+   * `recordFocusAreaOutcomeImpl` (development.ts) regardless of whether the
+   * area has a `from_insight_id` — that function persists the verdict on
+   * the focus area itself precisely so a from_insight_id-less area doesn't
+   * silently lose it (see that function's own doc). Deliberately named
+   * `recordedOutcomeStatus`, NOT `outcome_status` — `PlayersGridFocusArea`
+   * already has an `outcome_status` field (inherited from
+   * `FocusAreaCardData`) that is derived from the SOURCE INSIGHT only and
+   * reads `null` whenever `from_insight_id` is absent, even when this
+   * focus area's own column is set. Reusing that name here would silently
+   * read the wrong value for exactly the areas this exclusion most needs
+   * to catch. A recorded outcome means the follow-up decision this module
+   * exists to surface has already been made — the area is excluded
+   * entirely, not just marked ineligible.
+   */
+  recordedOutcomeStatus?: string | null;
 }
 
 export interface FollowUpEligibilityEntry<T> {
@@ -86,11 +104,18 @@ export interface FollowUpEligibilityEntry<T> {
  * "Past" the target date matches `due-for-review.ts`'s `overdue` boundary:
  * strictly before `todayIso`, not on it — a target due today is not yet
  * "past" it.
+ *
+ * Checked BEFORE the `completed` leg below: `recordFocusAreaOutcomeImpl`
+ * ALSO sets `status: 'completed'` on the same write that sets
+ * `outcome_status` (see that function's doc) — without this check first, a
+ * recorded-outcome area would keep satisfying the `completed` leg and sit
+ * in the queue forever, which is exactly the gap this exclusion closes.
  */
 export function followUpEligibilityReason(
   area: FollowUpEligibilityInput,
   todayIso: string,
 ): FollowUpEligibilityReason | null {
+  if (area.recordedOutcomeStatus) return null;
   if (area.status === 'completed') return 'completed';
   if (
     area.status &&

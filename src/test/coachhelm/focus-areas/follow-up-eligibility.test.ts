@@ -21,6 +21,7 @@ function area(
     status: string | null;
     target_kind: string | null;
     target_date: string | null;
+    recordedOutcomeStatus: string | null;
   }> = {},
 ) {
   return {
@@ -29,6 +30,7 @@ function area(
     status: 'active',
     target_kind: 'date',
     target_date: '2026-09-30',
+    recordedOutcomeStatus: null,
     ...overrides,
   };
 }
@@ -88,6 +90,27 @@ describe('followUpEligibilityReason', () => {
       followUpEligibilityReason(area({ status: 'declined', target_kind: 'date', target_date: '2026-09-01' }), TODAY_ISO),
     ).toBeNull();
   });
+
+  it('is null for a completed area with a recorded outcome — the follow-up decision has already been made', () => {
+    expect(
+      followUpEligibilityReason(area({ status: 'completed', recordedOutcomeStatus: 'improved' }), TODAY_ISO),
+    ).toBeNull();
+  });
+
+  it('is null for a recorded-outcome area even though recordFocusAreaOutcomeImpl also sets status: completed', () => {
+    // Guards the ordering: the recordedOutcomeStatus check must run BEFORE
+    // the status === 'completed' leg, or this would incorrectly read
+    // 'completed' and keep showing forever.
+    expect(
+      followUpEligibilityReason(area({ status: 'completed', recordedOutcomeStatus: 'no_change' }), TODAY_ISO),
+    ).toBeNull();
+  });
+
+  it('is still "completed" for a completed area with no recorded outcome yet', () => {
+    expect(
+      followUpEligibilityReason(area({ status: 'completed', recordedOutcomeStatus: null }), TODAY_ISO),
+    ).toBe('completed');
+  });
 });
 
 describe('computeFollowUpEligibility', () => {
@@ -133,6 +156,19 @@ describe('computeFollowUpEligibility', () => {
     expect(result).toHaveLength(0);
   });
 
+  it('excludes an area with a recorded outcome even though it also satisfies the "completed" reason', () => {
+    const areas = [area({ id: 'fa-graded', status: 'completed', recordedOutcomeStatus: 'improved' })];
+    const result = computeFollowUpEligibility(areas, new Map([['fa-graded', 5]]), { todayIso: TODAY_ISO });
+    expect(result).toHaveLength(0);
+  });
+
+  it('still lists an area with the same shape but no recorded outcome', () => {
+    const areas = [area({ id: 'fa-ungraded', status: 'completed', recordedOutcomeStatus: null })];
+    const result = computeFollowUpEligibility(areas, new Map([['fa-ungraded', 5]]), { todayIso: TODAY_ISO });
+    expect(result).toHaveLength(1);
+    expect(result[0]).toMatchObject({ reason: 'completed', eligible: true });
+  });
+
   it('honors a custom roundsThreshold override', () => {
     const areas = [area({ id: 'fa-1', status: 'completed' })];
     const counts = new Map([['fa-1', 1]]);
@@ -146,11 +182,13 @@ describe('computeFollowUpEligibility', () => {
       area({ id: 'fa-completed-waiting', status: 'completed' }),
       area({ id: 'fa-overdue', status: 'active', target_kind: 'date', target_date: '2026-09-01' }),
       area({ id: 'fa-still-active', status: 'active', target_kind: 'date', target_date: '2026-10-01' }),
+      area({ id: 'fa-graded', status: 'completed', recordedOutcomeStatus: 'worsened' }),
     ];
     const counts = new Map([
       ['fa-completed-ready', 5],
       ['fa-completed-waiting', 1],
       ['fa-overdue', 3],
+      ['fa-graded', 5],
     ]);
     const result = computeFollowUpEligibility(areas, counts, { todayIso: TODAY_ISO });
     const byId = new Map(result.map((r) => [r.area.id, r]));
@@ -158,5 +196,6 @@ describe('computeFollowUpEligibility', () => {
     expect(byId.get('fa-completed-waiting')).toMatchObject({ reason: 'completed', eligible: false, waitingLabel: 'waiting for rounds (1/3)' });
     expect(byId.get('fa-overdue')).toMatchObject({ reason: 'past_target_date', eligible: true });
     expect(byId.has('fa-still-active')).toBe(false);
+    expect(byId.has('fa-graded')).toBe(false);
   });
 });

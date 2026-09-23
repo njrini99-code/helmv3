@@ -89,6 +89,7 @@ import {
   createFocusAreaFromInsightV2,
   acceptFocusArea,
   completeFocusArea,
+  recordFocusAreaOutcome,
 } from '@/app/golf/actions/development';
 import { getPlayerFocusAreas } from '@/app/golf/actions/insights';
 import {
@@ -395,5 +396,40 @@ describe('Package 9 gate — one focus area, coach assignment through re-eligibi
       eligible: true,
       waitingLabel: null,
     });
+
+    // ---- Step 8: recorded outcome removes it from the queue — owner
+    // decision follow-up (2026-09-23). Once the coach records the outcome
+    // (real `recordFocusAreaOutcome` -> `recordFocusAreaOutcomeImpl` action,
+    // not a hand-set fixture row), the follow-up decision this queue exists
+    // to surface has already been made. That action also re-stamps
+    // `status: 'completed'` (a no-op here — step 6 already set it) on the
+    // SAME write that sets `outcome_status`, which is exactly why
+    // `followUpEligibilityReason` must check `recordedOutcomeStatus` before
+    // the `completed` leg (see that function's doc).
+    createClientMock.mockResolvedValue(asCoach(tables));
+    const outcomeResult = await recordFocusAreaOutcome(focusAreaId, 'improved');
+    expect(outcomeResult.success).toBe(true);
+
+    const gradedRow = tables.golf_player_focus_areas.find((r) => r.id === focusAreaId)!;
+    expect(gradedRow.outcome_status).toBe('improved');
+
+    const eligibilityAfterOutcome = computeFollowUpEligibility(
+      [
+        {
+          id: focusAreaId,
+          player_id: PLAYER_ID,
+          status: gradedRow.status as string,
+          target_kind: (gradedRow.target_kind as string | null) ?? null,
+          target_date: (gradedRow.target_date as string | null) ?? null,
+          recordedOutcomeStatus: (gradedRow.outcome_status as string | null) ?? null,
+        },
+      ],
+      countsAfterRounds!,
+      { todayIso: '2026-09-23' },
+    );
+    // Without the recordedOutcomeStatus check, a completed + graded area
+    // with >= 3 rounds would still show as "ready" forever — verified by
+    // mutation-testing this check away locally (see follow-up-eligibility.ts).
+    expect(eligibilityAfterOutcome).toHaveLength(0);
   });
 });
