@@ -827,6 +827,83 @@ separately); A3 never sets it, since none of its inputs are ever derived.
 Neither of A3's metric families computes a `strokes_impact`/counterfactual
 number, so wiring this in later cannot double-count the impact
 `par-type.ts`'s existing per-par cards already own.
+## Sequence attribution (A4 deliverable, slice 1 — pure core, no DB)
+
+`attributeSequence(facts, hole, scope)`
+(`src/lib/coachhelm/v3/metrics/sequence-attribution.ts`) partitions ONE
+hole's A1-validated shots into non-overlapping events and computes a
+strokes-gained-style contribution per event, reusing the existing audited
+baseline — `getExpectedStrokes` / `PGA_BASELINE_DATA` in
+`src/lib/golf/strokes-gained.ts` (DB-synced with
+`public.sg_expected_strokes()`) — rather than inventing a second one. Not
+wired into `v2/orchestrator.ts` or any composite yet; that integration,
+plus `reasoning/hypothesis-policy.ts` consumption and the short-side
+composite-title replacement A4's own checklist names, are slice 2.
+
+- **Suppression**: when `buildHoleSequence(facts, hole).complete` is
+  `false`, the whole hole is suppressed — no events, no total — never a
+  complete-hole attribution computed from a sequence A1 itself flagged as
+  invalid. `lostStrokesVsPar` (`hole.total_strokes - hole.par`) is still
+  returned: it reads only the hole's authoritative totals, independent of
+  shot-sequence validity, matching the addendum's own fixture-matrix line
+  ("Missing shot with completed scorecard → par total may remain valid;
+  full sequence attribution unavailable", §14.1).
+- **Event partition**: every shot on a complete hole belongs to EXACTLY one
+  `SequenceEvent` — a penalty shot always gets its own singleton (see
+  below), the three named §7.3 views each cover 1–2 shots, and everything
+  else (a green-in-regulation approach, a lay-up, a later putt, …) falls to
+  a residual `'other'` singleton. This total partition is what makes the
+  conservation identity below hold structurally, not by coincidence.
+- **Conservation**: an event's `measuredContribution` is expected strokes
+  at the group's own recorded starting state minus expected strokes at its
+  own recorded ending state minus strokes taken (`before - after -
+  group.length`) — no lookahead into a neighboring event's shots is needed,
+  since every `ShotFact` already carries its own before/after state. Summed
+  over a full partition this telescopes to `expectedStrokesAtStart -
+  hole.total_strokes` whenever every event resolves one (§7.2's
+  requirement; proven by `sequence-attribution.test.ts`'s conservation
+  fixture).
+- **Penalty events stay explicit**: a penalty shot is checked FIRST, before
+  any view match, and always becomes its own singleton event — never
+  merged into an adjacent tee/approach/putt group, so its stroke is never
+  charged twice by a later consumer that also expects to see it named.
+  When a penalty leaves no usable after-distance (a real production
+  pattern — `explicitPenaltyPair`'s fixture comment: "the ball is lost in
+  the hazard, no usable after-distance"), that event's
+  `measuredContribution` is `null` with `baselineGap: 'missing_distance'`,
+  and the hole-level `totalMeasuredContribution` becomes `null` rather than
+  silently summing only the resolved events — the shortfall is reported as
+  `exclusions` (a count by reason) plus the always-available
+  `lostStrokesVsPar`, per this slice's instruction for when the baseline
+  can't be applied.
+- **Three §7.3 views**: `tee_to_next` (a par-4/5 tee shot only — a par-3
+  tee shot is the green attempt itself, see below), `approach_to_recovery`
+  (a green-attempt shot that missed, paired with the very next shot
+  UNLESS that shot is itself a penalty, in which case the miss stands
+  alone), and `first_putt_to_next_putt` (the first putt on the hole,
+  paired with the next putt when one follows — a hole-out on the first
+  putt still gets this kind as a single-shot group, so first-putt
+  performance is always identifiable even without a three-putt).
+- **A green attempt excludes an explicitly tagged lay-up.** A1 never
+  INFERS a lay-up from distance/outcome (that inference is A2's job), but
+  an EXPLICIT `intent: 'layup'` tag is not an inference — treating a
+  deliberate lay-up's fairway finish as a "missed green needing recovery"
+  would conflate two different named §7.3 families. `par5Layup`'s tagged
+  lay-up resolves to `'other'`, never `'approach_to_recovery'`.
+- **A par-3 tee shot is the green attempt**, never `tee_to_next` — decided
+  by `hole.par`, never `shot_type` alone (`par3TeeGreenAttempt` proves
+  this).
+- **`heuristicScore`** is populated ONLY when `measuredContribution` is
+  `null`: the group's own ending leave distance in feet, restated as a
+  plain fact. This module does not compute the "large leave × coefficient"
+  diagnostic score the addendum names as an example (§7.2) — inventing
+  that coefficient is left to a later slice (`hypothesis-policy.ts`, A5);
+  this module reports only the raw distance so nothing here fabricates an
+  unaudited stroke-equivalent number.
+- `attributeSequence` runs per hole. Rolling its events up into a
+  scope-wide, `MetricResult`-shaped aggregate (numerator/denominator/
+  status/interval across every hole in an `AnalysisScope`) is a later
+  slice's job.
 
 ## How to add a new comparison source
 

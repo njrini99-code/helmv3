@@ -460,6 +460,34 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
   par-5 opportunity metrics" section and
   `src/test/coachhelm/v3/par-opportunities.test.ts` for the fixtures,
   including the two-course same-hole-number case.
+- **`src/lib/coachhelm/v3/metrics/sequence-attribution.ts`** (2026-09-23,
+  `agent/coachhelm-sequence-attribution`, addendum §13, work package A4
+  slice 1) — `attributeSequence(facts, hole, scope)` partitions one hole's
+  A1-validated shots into non-overlapping events (a penalty always its own
+  singleton, three named §7.3 views — `tee_to_next`, `approach_to_recovery`,
+  `first_putt_to_next_putt` — plus an `'other'` residual) and computes a
+  strokes-gained-style `measuredContribution` per event by reusing the
+  EXISTING audited baseline (`getExpectedStrokes` /
+  `src/lib/golf/strokes-gained.ts`, DB-synced with
+  `public.sg_expected_strokes()`) — no second baseline invented. Summed
+  contributions telescope to `expectedStrokesAtStart - hole.total_strokes`
+  whenever every event resolves one. Suppresses the whole hole (no events,
+  no total) when `buildHoleSequence` reports the sequence incomplete, but
+  still reports `lostStrokesVsPar` (`total_strokes - par`), which reads only
+  the hole's authoritative totals. When an event's endpoint state can't
+  resolve against the baseline (e.g. a penalty with no usable after-distance
+  — a real pattern in production), that event's `measuredContribution` is
+  `null` with a `baselineGap` reason, the hole-level total becomes `null`
+  rather than a silent partial sum, and the shortfall shows up in
+  `exclusions` (counts) plus `lostStrokesVsPar`. An explicitly tagged
+  `intent: 'layup'` is excluded from the missed-green/recovery view (a
+  deliberate lay-up is a different named family, never inferred here); a
+  par-3 tee shot is the green attempt, never `tee_to_next` — both decided by
+  `hole.par`/an explicit tag, never inferred from distance or outcome. **Not
+  wired to anything yet**: no `v2/orchestrator.ts` or composite consumer,
+  no `hypothesis-policy.ts` — that's slice 2. See
+  `docs/architecture/coachhelm-evidence-contract.md`'s "Sequence
+  attribution" section.
 
 ## Tests To Prefer
 
