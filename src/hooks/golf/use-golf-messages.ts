@@ -428,6 +428,31 @@ export function useGolfMessages(conversationId: string, viewerUserId?: string | 
    * once per conversation.
    */
   const currentUserIdRef = useRef<string | null>(viewerUserId ?? null);
+  /**
+   * The cache epoch as of THIS hook instance's mount — captured once, never
+   * re-read at write time.
+   *
+   * `clearAllCachedResources()` (client-resource-cache.ts) bumps a module-level
+   * epoch on every golf sign-out. The fetch-path writes above capture
+   * `getCacheEpoch()` BEFORE their `await`, so a clear landing during the fetch
+   * makes the captured epoch stale by the time the write runs. The realtime
+   * "keep warm copy current" effect below has no such gap: `setMessages` from a
+   * realtime handler runs synchronously, so a `getCacheEpoch()` read on the line
+   * immediately before its own write could never observe a clear — there is no
+   * `await` between the two for one to land in. That made the guard a no-op: a
+   * realtime insert or update landing AFTER a sign-out's
+   * `clearAllCachedResources()` (the hook can still be mounted for a beat while
+   * unmount is in flight) would read the POST-clear epoch on both sides of the
+   * comparison and write the signed-out viewer's messages straight back into
+   * the cache it was just cleared from.
+   *
+   * Comparing against the epoch captured HERE, at mount, instead fixes that:
+   * once a clear happens, `getCacheEpoch()` no longer equals
+   * `cacheEpochAtMountRef.current` and stays that way for the rest of this hook
+   * instance's life, so every write below — not just the one in flight when the
+   * clear happened — is blocked from that point on.
+   */
+  const cacheEpochAtMountRef = useRef<number>(getCacheEpoch());
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const lastTypingBroadcastRef = useRef<number>(0);
   const supabaseRef = useRef(createClient());
@@ -618,12 +643,18 @@ export function useGolfMessages(conversationId: string, viewerUserId?: string | 
   useEffect(() => {
     if (!conversationId || loading || !currentUserId) return;
     if (messages.some((m) => m.conversation_id && m.conversation_id !== conversationId)) return;
-    // Epoch-guarded like the fetch-path writes above: a realtime insert can
-    // schedule this effect around the same moment sign-out calls
-    // clearAllCachedResources(), and an unguarded write here would resurrect
-    // the cleared entry with this signed-out viewer's messages.
-    const epoch = getCacheEpoch();
-    writeCachedResourceIfCurrent(messagesCacheKey(conversationId, currentUserId), cacheableMessages(messages), epoch);
+    // Guards against a sign-out's clearAllCachedResources() that happened
+    // AFTER this hook instance mounted — see cacheEpochAtMountRef's docstring
+    // above for why the epoch must be captured at mount, not re-read here:
+    // this setMessages-triggered effect has no await between a fresh read and
+    // its own write for a clear to land in, so re-reading here can never
+    // observe one.
+    if (getCacheEpoch() !== cacheEpochAtMountRef.current) return;
+    writeCachedResourceIfCurrent(
+      messagesCacheKey(conversationId, currentUserId),
+      cacheableMessages(messages),
+      cacheEpochAtMountRef.current,
+    );
   }, [conversationId, messages, loading, currentUserId]);
 
   // Compute read status for messages when otherParticipantLastReadAt changes

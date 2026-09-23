@@ -32,6 +32,7 @@ describe('golf sign-out clears the client resource cache', () => {
   it('every file that clears the active team AND signs out also clears the cache', () => {
     const roots = ['src/app', 'src/components', 'src/lib', 'src/hooks'];
     const offenders: string[] = [];
+    let scannedFileCount = 0;
 
     for (const root of roots) {
       let files: string[];
@@ -46,6 +47,7 @@ describe('golf sign-out clears the client resource cache', () => {
         // a caller, and has no clearActiveTeam/signOut of its own.
         if (file.endsWith('client-resource-cache.ts')) continue;
 
+        scannedFileCount += 1;
         const text = readFileSync(file, 'utf-8');
         const callsClearActiveTeam = /\bclearActiveTeam\s*\(/.test(text);
         const callsSignOut = /auth\.signOut\s*\(/.test(text);
@@ -54,6 +56,11 @@ describe('golf sign-out clears the client resource cache', () => {
         }
       }
     }
+
+    // A silently-empty walk (a renamed/missing root, a swallowed `try`) would
+    // make this suite pass by scanning nothing — indistinguishable from every
+    // sign-out path being clean. Pin that the scan actually covered files.
+    expect(scannedFileCount).toBeGreaterThan(0);
 
     expect(
       offenders,
