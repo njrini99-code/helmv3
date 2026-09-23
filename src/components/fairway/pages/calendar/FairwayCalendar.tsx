@@ -58,6 +58,7 @@ import {
   endOfMonth,
   addDays,
   addMonths,
+  eachDayOfInterval,
 } from 'date-fns';
 import { AlertTriangle, ArrowRight, Plus, RefreshCw } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -70,6 +71,7 @@ import type { RSVPStatus, RsvpRespondResult } from '@/hooks/useRSVP';
 import { readRsvpLockCode } from '@/hooks/useRSVP';
 import { zonedMidnight, DEFAULT_TIMEZONE } from '@/lib/calendar/timezone';
 import { wallClockInZone } from '@/lib/golf/timezone';
+import { computeCommonFreeTime, type FreeWindow } from '@/lib/golf/common-free-time';
 import { useCalendarRangeEvents } from '@/hooks/golf/use-calendar-range-events';
 import { useRouter } from 'next/navigation';
 import { useNotificationBadges } from '@/contexts/notification-badge-context';
@@ -439,6 +441,52 @@ export function FairwayCalendar({
     });
     return out;
   }, [availabilityMode, selectedPlayerIds, availByPlayer, teamMembers]);
+
+  // Common free time — the windows where every selected player is open,
+  // derived once with `computeCommonFreeTime` (src/lib/golf/common-free-time.ts)
+  // so `FairwayAvailabilityList` doesn't have to reimplement the intersection.
+  // Only meaningful with 2+ players (with one, "common" is just their own free
+  // time) and only fed to the non-month lenses the list view covers — the
+  // month grid overlay is a separate surface (FairwayMonthGrid) not wired here.
+  //
+  // Skip until EVERY selected player has an availability entry. Right after a
+  // coach adds a player, that id isn't in `availByPlayer` yet (the fetch effect
+  // above hasn't resolved) — `?? []` would read them as free all day and the
+  // callout would show player 1's free time as "common" for a beat, then
+  // correct itself once the fetch lands. Waiting for all keys avoids that.
+  //
+  // `days` uses `format`, NOT `dayKeyInZone`: `availWindow.start/end` are
+  // built from `focusDate`, itself `zonedMidnight`'d — a device-local `Date`
+  // whose (y, m, d) fields already ARE the team-local calendar date (see the
+  // comment above `initialFocus`). `format()` reads those fields back
+  // directly, exactly like the availability-fetch effect above (`s`/`e`) —
+  // the same days whose busy data was actually fetched. `dayKeyInZone`
+  // instead reinterprets the Date as a real instant and re-derives the day in
+  // `teamTimezone`, which double-converts and is off by a day for a viewer
+  // east of the team's zone.
+  //
+  // `zone` IS `teamTimezone` (or its `DEFAULT_TIMEZONE` fallback) — that part
+  // wants the real IANA name, resolved per-instant, so the working-window
+  // boundaries land correctly across a DST transition (module header, audit
+  // P237). Not the viewer's device zone, which is what `tzOffset` in the
+  // fetch effect above intentionally uses instead (a different concern:
+  // bucketing the SERVER QUERY window).
+  const commonFreeWindows = React.useMemo<FreeWindow[]>(() => {
+    if (!availabilityMode || selectedPlayerIds.length < 2) return [];
+    if (selectedPlayerIds.some((id) => !availByPlayer.has(id))) return [];
+    const days = eachDayOfInterval({ start: availWindow.start, end: availWindow.end }).map((d) =>
+      format(d, 'yyyy-MM-dd'),
+    );
+    const result = computeCommonFreeTime({
+      days,
+      zone: teamTimezone ?? DEFAULT_TIMEZONE,
+      players: selectedPlayerIds.map((playerId) => ({
+        playerId,
+        busy: availByPlayer.get(playerId) ?? [],
+      })),
+    });
+    return result.allFreeWindows;
+  }, [availabilityMode, selectedPlayerIds, availByPlayer, availWindow, teamTimezone]);
 
   // ── Coach create/edit event (Fairway editor) ───────────────────────────────
   // The editor only GATHERS form data; these handlers replicate
@@ -1242,6 +1290,7 @@ export function FairwayCalendar({
             rangeEnd={availWindow.end}
             nowRef={nowRef}
             timezone={teamTimezone}
+            commonFreeWindows={commonFreeWindows}
           />
         )
       ) : isAgenda ? (
