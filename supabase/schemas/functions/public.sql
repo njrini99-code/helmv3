@@ -816,16 +816,18 @@ ALTER FUNCTION "public"."check_rate_limit_atomic"("p_key" "text", "p_window_ms" 
 
 COMMENT ON FUNCTION "public"."check_rate_limit_atomic"("p_key" "text", "p_window_ms" bigint, "p_max_attempts" integer, "p_block_ms" bigint) IS 'Atomic rate-limit increment for auth_rate_limits. Returns the post-increment row. service_role only.';
 
-CREATE OR REPLACE FUNCTION "public"."claim_round_recap_lock"("p_round_id" "uuid", "p_revision" integer, "p_ttl_seconds" integer) RETURNS TABLE("holder_token" "uuid", "expires_at" timestamp with time zone)
+CREATE OR REPLACE FUNCTION "public"."claim_round_recap_lock"("p_round_id" "uuid", "p_revision" integer, "p_kind" "text", "p_ttl_seconds" integer) RETURNS TABLE("holder_token" "uuid", "expires_at" timestamp with time zone)
     LANGUAGE "sql"
     SET "search_path" TO 'public', 'pg_temp'
     AS $$
-  INSERT INTO public.golf_round_recap_locks AS l (round_id, revision, holder_token, locked_at, expires_at)
+  INSERT INTO public.golf_round_recap_locks AS l (
+      round_id, revision, kind, holder_token, locked_at, expires_at
+  )
   VALUES (
-      p_round_id, p_revision, gen_random_uuid(), now(),
+      p_round_id, p_revision, p_kind, gen_random_uuid(), now(),
       now() + make_interval(secs => p_ttl_seconds)
   )
-  ON CONFLICT (round_id, revision) DO UPDATE
+  ON CONFLICT (round_id, revision, kind) DO UPDATE
     SET holder_token = gen_random_uuid(),
         locked_at = now(),
         expires_at = now() + make_interval(secs => p_ttl_seconds)
@@ -833,9 +835,9 @@ CREATE OR REPLACE FUNCTION "public"."claim_round_recap_lock"("p_round_id" "uuid"
   RETURNING l.holder_token, l.expires_at;
 $$;
 
-ALTER FUNCTION "public"."claim_round_recap_lock"("p_round_id" "uuid", "p_revision" integer, "p_ttl_seconds" integer) OWNER TO "postgres";
+ALTER FUNCTION "public"."claim_round_recap_lock"("p_round_id" "uuid", "p_revision" integer, "p_kind" "text", "p_ttl_seconds" integer) OWNER TO "postgres";
 
-COMMENT ON FUNCTION "public"."claim_round_recap_lock"("p_round_id" "uuid", "p_revision" integer, "p_ttl_seconds" integer) IS 'Atomic conditional claim for golf_round_recap_locks: claims iff no row exists for (round_id, revision) or the existing row is expired. Returns zero rows when a live, unexpired lease is already held by someone else. service_role only — called by round-recap.ts''s admin client.';
+COMMENT ON FUNCTION "public"."claim_round_recap_lock"("p_round_id" "uuid", "p_revision" integer, "p_kind" "text", "p_ttl_seconds" integer) IS 'Atomic conditional claim for golf_round_recap_locks: claims iff no row exists for (round_id, revision, kind) or the existing row is expired. Returns zero rows when a live, unexpired lease is already held by someone else. service_role only — called by round-recap.ts''s and the round-review narrative''s admin clients, each passing their own kind.';
 
 CREATE OR REPLACE FUNCTION "public"."coach_id_for_team"("p_team_id" "uuid", "p_user_id" "uuid") RETURNS "uuid"
     LANGUAGE "sql" STABLE SECURITY DEFINER
@@ -8354,19 +8356,20 @@ $$;
 
 ALTER FUNCTION "public"."release_baseball_team_invitation_redemption"("p_invitation_id" "uuid") OWNER TO "postgres";
 
-CREATE OR REPLACE FUNCTION "public"."release_round_recap_lock"("p_round_id" "uuid", "p_revision" integer, "p_holder_token" "uuid") RETURNS "void"
+CREATE OR REPLACE FUNCTION "public"."release_round_recap_lock"("p_round_id" "uuid", "p_revision" integer, "p_kind" "text", "p_holder_token" "uuid") RETURNS "void"
     LANGUAGE "sql"
     SET "search_path" TO 'public', 'pg_temp'
     AS $$
   DELETE FROM public.golf_round_recap_locks
   WHERE round_id = p_round_id
     AND revision = p_revision
+    AND kind = p_kind
     AND holder_token = p_holder_token;
 $$;
 
-ALTER FUNCTION "public"."release_round_recap_lock"("p_round_id" "uuid", "p_revision" integer, "p_holder_token" "uuid") OWNER TO "postgres";
+ALTER FUNCTION "public"."release_round_recap_lock"("p_round_id" "uuid", "p_revision" integer, "p_kind" "text", "p_holder_token" "uuid") OWNER TO "postgres";
 
-COMMENT ON FUNCTION "public"."release_round_recap_lock"("p_round_id" "uuid", "p_revision" integer, "p_holder_token" "uuid") IS 'Releases a golf_round_recap_locks row only when the caller supplies the exact holder_token it was issued at claim time — a slow winner whose lease already expired (and was reclaimed by a new holder) can never delete the new holder''s row out from under it. service_role only.';
+COMMENT ON FUNCTION "public"."release_round_recap_lock"("p_round_id" "uuid", "p_revision" integer, "p_kind" "text", "p_holder_token" "uuid") IS 'Releases a golf_round_recap_locks row only when the caller supplies the exact holder_token it was issued at claim time — a slow winner whose lease already expired (and was reclaimed by a new holder) can never delete the new holder''s row out from under it. service_role only.';
 
 CREATE OR REPLACE FUNCTION "public"."resolve_admin_event"("p_event_ids" "uuid"[]) RETURNS integer
     LANGUAGE "plpgsql" SECURITY DEFINER

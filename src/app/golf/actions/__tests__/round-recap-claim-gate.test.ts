@@ -75,11 +75,14 @@ let lockClaimCallCount = 0;
 let lockReleaseCallCount = 0;
 let lockClaimError: { message: string; code?: string } | null = null;
 let adminRoundsAiRecap: string | null = null;
+// Key includes `kind` (Package 8 revision, same day: the lock now serves
+// both round-recap.ts (kind = 'recap') and the narrative), so a recap lock
+// and a narrative lock for the SAME round never share lease state.
 const adminRpcMock = vi.fn(async (name: string, args: Record<string, unknown>) => {
   if (name === 'claim_round_recap_lock') {
     lockClaimCallCount += 1;
     if (lockClaimError) return { data: null, error: lockClaimError };
-    const key = `${args.p_round_id as string}:${args.p_revision as number}`;
+    const key = `${args.p_round_id as string}:${args.p_revision as number}:${args.p_kind as string}`;
     const now = Date.now();
     const existing = lockRows.get(key);
     if (existing && existing.expires_at > now) {
@@ -92,7 +95,7 @@ const adminRpcMock = vi.fn(async (name: string, args: Record<string, unknown>) =
   }
   if (name === 'release_round_recap_lock') {
     lockReleaseCallCount += 1;
-    const key = `${args.p_round_id as string}:${args.p_revision as number}`;
+    const key = `${args.p_round_id as string}:${args.p_revision as number}:${args.p_kind as string}`;
     const existing = lockRows.get(key);
     if (existing && existing.holder_token === args.p_holder_token) lockRows.delete(key);
     return { data: null, error: null };
@@ -800,7 +803,7 @@ describe('round-recap.ts — single-flight lock, taken BEFORE the LLM call (Pack
   it('an expired lock is reclaimed — the new holder still makes exactly one LLM call', async () => {
     // Seed a stale lease (already past its own expiry) as if a prior
     // request crashed mid-generation without ever releasing it.
-    lockRows.set('round-1:1', { holder_token: 'crashed-holder', expires_at: Date.now() - 1_000 });
+    lockRows.set('round-1:1:recap', { holder_token: 'crashed-holder', expires_at: Date.now() - 1_000 });
     const goodText = 'Caden carded 74 at Pinehurst No. 2. Consistency next time is the target.';
     generateTextMock.mockResolvedValueOnce({ text: goodText, usage: { inputTokens: 20, outputTokens: 20 } });
 
@@ -825,8 +828,8 @@ describe('round-recap.ts — single-flight lock, taken BEFORE the LLM call (Pack
     expect(mockRpc).not.toHaveBeenCalled(); // save_round_ai_recap never called
     expect(persistedRecap).toBeNull();
     expect(vi.mocked(logServerError)).toHaveBeenCalledWith(
-      expect.stringContaining('lock claim threw'),
-      expect.objectContaining({ action: 'generateRoundRecap.lockClaim', roundId: 'round-1' }),
+      expect.stringContaining('claim threw'),
+      expect.objectContaining({ action: 'generateRoundRecap.lock.claim', roundId: 'round-1' }),
       'warning',
     );
   });
@@ -839,7 +842,7 @@ describe('round-recap.ts — single-flight lock, taken BEFORE the LLM call (Pack
       // never expires during the wait. Real timers here (not the file's
       // default instant-delay mock) so the poll loop's own bounded wait is
       // exercised end to end, not bypassed.
-      lockRows.set('round-1:1', { holder_token: 'still-working', expires_at: Date.now() + 999_000 });
+      lockRows.set('round-1:1:recap', { holder_token: 'still-working', expires_at: Date.now() + 999_000 });
       vi.mocked(delay).mockImplementation((ms: number) => new Promise((resolve) => setTimeout(resolve, ms)));
 
       const result = await generateRoundRecap('round-1');

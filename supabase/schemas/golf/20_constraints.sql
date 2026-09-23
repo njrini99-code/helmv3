@@ -335,7 +335,7 @@ ALTER TABLE ONLY "public"."golf_review_events"
     ADD CONSTRAINT "golf_review_events_pkey" PRIMARY KEY ("id");
 
 ALTER TABLE ONLY "public"."golf_round_recap_locks"
-    ADD CONSTRAINT "golf_round_recap_locks_pkey" PRIMARY KEY ("round_id", "revision");
+    ADD CONSTRAINT "golf_round_recap_locks_pkey" PRIMARY KEY ("round_id", "revision", "kind");
 
 ALTER TABLE ONLY "public"."golf_round_recap_provenance"
     ADD CONSTRAINT "golf_round_recap_provenance_pkey" PRIMARY KEY ("round_id");

@@ -162,9 +162,9 @@ REVOKE ALL ON FUNCTION "public"."check_rate_limit_atomic"("p_key" "text", "p_win
 
 GRANT ALL ON FUNCTION "public"."check_rate_limit_atomic"("p_key" "text", "p_window_ms" bigint, "p_max_attempts" integer, "p_block_ms" bigint) TO "service_role";
 
-REVOKE ALL ON FUNCTION "public"."claim_round_recap_lock"("p_round_id" "uuid", "p_revision" integer, "p_ttl_seconds" integer) FROM PUBLIC;
+REVOKE ALL ON FUNCTION "public"."claim_round_recap_lock"("p_round_id" "uuid", "p_revision" integer, "p_kind" "text", "p_ttl_seconds" integer) FROM PUBLIC;
 
-GRANT ALL ON FUNCTION "public"."claim_round_recap_lock"("p_round_id" "uuid", "p_revision" integer, "p_ttl_seconds" integer) TO "service_role";
+GRANT ALL ON FUNCTION "public"."claim_round_recap_lock"("p_round_id" "uuid", "p_revision" integer, "p_kind" "text", "p_ttl_seconds" integer) TO "service_role";
 
 REVOKE ALL ON FUNCTION "public"."coach_id_for_team"("p_team_id" "uuid", "p_user_id" "uuid") FROM PUBLIC;
 
@@ -1030,9 +1030,9 @@ REVOKE ALL ON FUNCTION "public"."release_baseball_team_invitation_redemption"("p
 
 GRANT ALL ON FUNCTION "public"."release_baseball_team_invitation_redemption"("p_invitation_id" "uuid") TO "service_role";
 
-REVOKE ALL ON FUNCTION "public"."release_round_recap_lock"("p_round_id" "uuid", "p_revision" integer, "p_holder_token" "uuid") FROM PUBLIC;
+REVOKE ALL ON FUNCTION "public"."release_round_recap_lock"("p_round_id" "uuid", "p_revision" integer, "p_kind" "text", "p_holder_token" "uuid") FROM PUBLIC;
 
-GRANT ALL ON FUNCTION "public"."release_round_recap_lock"("p_round_id" "uuid", "p_revision" integer, "p_holder_token" "uuid") TO "service_role";
+GRANT ALL ON FUNCTION "public"."release_round_recap_lock"("p_round_id" "uuid", "p_revision" integer, "p_kind" "text", "p_holder_token" "uuid") TO "service_role";
 
 REVOKE ALL ON FUNCTION "public"."resolve_admin_event"("p_event_ids" "uuid"[]) FROM PUBLIC;
 

@@ -8,28 +8,44 @@
  * 2026-07-25 — coach_chat moved to Sonnet 5. The chat agent is the one task
  * that runs a multi-step tool loop and has to reason about which reads to make
  * before answering, so it is the task that benefits most from the newer model.
+ *
+ * 2026-09-23 — round_review_narrative added (Package 8, owner decision).
+ * Its own task key, deliberately NOT a reuse of round_review (round-recap.ts's
+ * existing key): a 3-5 sentence paragraph for golf_round_reviews.ai_narrative
+ * costs meaningfully more per call than round-recap.ts's 2-sentence blurb,
+ * and the owner wants the two surfaces separable in spend telemetry
+ * (golf_coachhelm_llm_calls.task, widened by migration
+ * 20260923110000_round_review_narrative_schema.sql). Model and fallback
+ * priority are this feature's own implementation defaults (not separately
+ * specified by the owner): Haiku, matching the other two prose tasks, and
+ * lowest fallback priority (4) — new and not yet load-bearing, so it sheds
+ * first under budget pressure rather than displacing round_review or
+ * coach_chat.
  */
 
 import type { EvidencePacket } from './claim-validator';
 
-export type ComposeTask = 'round_review' | 'hero_narrative' | 'coach_chat';
+export type ComposeTask = 'round_review' | 'hero_narrative' | 'coach_chat' | 'round_review_narrative';
 
 /** Vercel AI Gateway model strings — see Part XI.5. */
 export const MODEL_FOR_TASK: Record<ComposeTask, string> = {
   round_review: 'anthropic/claude-haiku-4-5',
   hero_narrative: 'anthropic/claude-haiku-4-5',
   coach_chat: 'anthropic/claude-sonnet-5',
+  round_review_narrative: 'anthropic/claude-haiku-4-5',
 };
 
 /**
  * Per-task fallback priority on budget exhaustion (Part XI.4).
  * Lower number = higher priority (stays on LLM longer).
- *   round_review (1) > coach_chat (2) > hero_narrative (3)
+ *   round_review (1) > coach_chat (2) > hero_narrative (3) >
+ *   round_review_narrative (4)
  */
 export const FALLBACK_PRIORITY: Record<ComposeTask, number> = {
   round_review: 1,
   coach_chat: 2,
   hero_narrative: 3,
+  round_review_narrative: 4,
 };
 
 export interface ComposeRequest {

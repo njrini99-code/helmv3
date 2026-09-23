@@ -165,11 +165,13 @@ COMMENT ON TABLE "public"."golf_qualifier_selections" IS 'v3 W29 per-player pick
 
 COMMENT ON TABLE "public"."golf_review_events" IS 'Timeline of events related to reviews for history display';
 
-COMMENT ON TABLE "public"."golf_round_recap_locks" IS 'Single-flight lease for round-recap.ts''s LLM call, taken BEFORE compose() so a concurrent second generateRoundRecap() call for the same round waits for or reads the first call''s result instead of making a second billable LLM call. Row-per-(round_id,revision), TTL-expiring, service-role-only — written and cleared exclusively through public.claim_round_recap_lock / public.release_round_recap_lock, never through a direct client write.';
+COMMENT ON TABLE "public"."golf_round_recap_locks" IS 'Single-flight lease for a per-round LLM call, taken BEFORE compose() so a concurrent second request for the same (round_id, revision, kind) waits for or reads the first call''s result instead of making a second billable LLM call. Serves round-recap.ts (kind = ''recap'') and the round-review narrative (kind = ''round_review_narrative'') — the name predates the second caller. Row-per-(round_id,revision,kind), TTL-expiring, service-role-only — written and cleared exclusively through public.claim_round_recap_lock / public.release_round_recap_lock, never through a direct client write.';
 
 COMMENT ON TABLE "public"."golf_round_recap_provenance" IS 'One row per generated golf_rounds.ai_recap: which path produced it (llm vs deterministic fallback), the golf_coachhelm_llm_calls row for the llm path (full audit trail: evidence, citations, cost), whether the typed claim packet gate was engaged, and the season-stats snapshot the prose was generated against. Written best-effort by the service role from round-recap.ts; a write failure never blocks or throws the recap.';
 
 COMMENT ON COLUMN "public"."golf_round_reviews"."status" IS 'Review workflow status: draft (coach editing), published (visible to player), archived';
+
+COMMENT ON COLUMN "public"."golf_round_reviews"."ai_narrative" IS 'LLM-authored 3-5 sentence narrative paragraph (round-review narrative feature, Package 8, migration 20260923110000) — distinct from the deterministic `summary` column and from round-recap.ts''s separate `golf_rounds.ai_recap` blurb. NULL until the flagged narrative action generates and caches one for the round; caches a deterministic fallback permanently on LLM/validation failure the same way ai_recap does — one attempt per round, never silently retried on a later page load.';
 
 COMMENT ON COLUMN "public"."golf_rounds"."draft_data" IS 'JSON blob storing full draft state for in-progress rounds (step, setupData, holes, completedHoleStats, etc.)';
 

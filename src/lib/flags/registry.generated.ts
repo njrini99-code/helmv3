@@ -98,6 +98,23 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     cleanup_plan: "Flip on (development, then preview, then production) only after the owner applies migration 20260923100000_round_recap_single_flight_lock to each environment and confirms both public.claim_round_recap_lock and public.release_round_recap_lock exist via `pg_proc`. expires_at is a review reminder, not an automatic kill — if the migration still hasn't landed by then, re-date it rather than silently expiring. Once on everywhere and stable for a season, consider promoting to a permanent `release` flag or removing the flag branch entirely (the lock becomes the only code path) — owner's call, not automatic.",
   },
   {
+    feature_id: "coachhelm_round_review_narrative",
+    owner: "golf/coachhelm",
+    purpose: "Gates the round-review narrative end to end: checked FIRST, before any DB read tied to generation (mirroring the A4 slice 3b pattern — zero cost while off), so no code path selects, claims a lock for, or writes golf_round_reviews.ai_narrative unless this is on. Requires migration 20260923110000_round_review_narrative_schema applied in prod (adds the ai_narrative column and widens golf_coachhelm_llm_calls.task's CHECK to accept 'round_review_narrative') AND 20260923100000_round_recap_single_flight_lock applied (the narrative reuses that migration's lock table/functions, kind = 'round_review_narrative') — until both are applied, turning this on would make every narrative generation attempt fail against columns/functions that don't exist there yet. Off by default in every environment for exactly that reason, same as coachhelm_recap_single_flight_lock's own migration-ordering rationale.",
+    type: "experiment",
+    status: "active",
+    created_at: "2026-09-23",
+    expires_at: null,
+    default: false,
+    environment: {
+      production: false,
+      preview: false,
+      development: false,
+    },
+    kill_switch_behavior: null,
+    cleanup_plan: "Flip on (development, then preview, then production) only after the owner applies BOTH 20260923110000_round_review_narrative_schema and 20260923100000_round_recap_single_flight_lock to each environment, confirmed via information_schema.columns (ai_narrative) and pg_proc (claim_round_recap_lock / release_round_recap_lock). Once on everywhere and the fallback rate (deterministic vs. LLM-authored) is acceptable, consider promoting to a permanent `release` flag — owner's call, not automatic.",
+  },
+  {
     feature_id: "coachhelm_v2_alert_personalization",
     owner: "golf/coachhelm",
     purpose: "Adjusts a coach's v2 alert-generation thresholds (decline, pressure gap) using their own ack/dismiss history instead of only the coach-set CoachPhilosophy values; default off pending real-world evidence that this improves alert relevance.",
