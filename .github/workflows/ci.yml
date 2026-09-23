@@ -1444,6 +1444,16 @@ jobs:
       - next-build
       - supabase
     steps:
+      - name: Fail on a draft PR (full suite runs on ready_for_review)
+        # Owner decision 2026-09-23: a draft run skips every gated job, and a
+        # green aggregate from that run stayed attached to the head SHA after
+        # the PR was marked ready, satisfying branch protection with nothing
+        # tested (#2049). Failing here means only a real, non-draft run can
+        # ever turn this required check green.
+        if: github.event_name == 'pull_request' && github.event.pull_request.draft == true
+        run: |
+          echo "Draft PR: gated jobs were skipped. The full suite runs when the PR is marked ready for review."
+          exit 1
       - name: Fail if any required CI check failed
         # A skipped heavy job is fine ONLY on a docs-only PR (code=='false').
         # On a code PR or a push, a skip is a real problem and still fails.
