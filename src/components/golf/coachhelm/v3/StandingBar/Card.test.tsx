@@ -169,6 +169,21 @@ describe('layoutMarkerPositions (pure)', () => {
     expect(span).toBeCloseTo(BAR_MARKER_MIN_GAP_PCT * 2, 5);
   });
 
+  it('Package 11 (#1933 bug, confirmed present on main): a marker that never collides with anything is untouched, even when a DIFFERENT pair elsewhere in the array collides', () => {
+    // 10 (alone) / 50 & 55 (a genuine collision pair, 5pt apart on a 9pt min
+    // gap). Only 50/55 should move; 10 must stay exactly 10 — the doc
+    // comment above already claims this ("untouched by construction"), but
+    // the old whole-array re-centre broke it by nudging 10 to 8.
+    const result = layoutMarkerPositions([
+      { key: 'lonely', pct: 10 },
+      { key: 'team', pct: 50 },
+      { key: 'pga', pct: 55 },
+    ]);
+    const byKey = Object.fromEntries(result.map((r) => [r.key, r.pct]));
+    expect(byKey.lonely).toBe(10);
+    expect(byKey.pga! - byKey.team!).toBeGreaterThanOrEqual(MARKER_MIN_GAP_PCT - 0.01);
+  });
+
   it('never pushes a marker outside [0, 100] even for a cluster pinned at the edge', () => {
     const result = layoutMarkerPositions([
       { key: 'a', pct: 99 },
