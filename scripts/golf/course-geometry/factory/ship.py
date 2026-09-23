@@ -125,6 +125,24 @@ def context_uncertain_shares(context_report):
     return [{'holeKey': hole.get('key'), 'uncertainShare': hole.get('uncertainShare')} for hole in context_report.get('holes') or []]
 
 
+TRACE_SOURCE_PREFIX = 'naip-trace-'
+
+
+def traced_surfaces(package):
+    """Every surface that came from an imagery trace (hand or auto) rather
+    than a mapped source -- `prepare-osm-course.py --traces` stamps each one
+    with a `naip-trace-<tracedAt>` source id. Not a gate: the plan makes the
+    owner's `ship --approve` the review of these, the same pattern as
+    context sign-off, so every one is listed in the QA report and the
+    proposed approval rather than passing `gate_holes_shape` silently."""
+    if not package:
+        return []
+    return [{'featureId': f['id'], 'kind': f['kind'], 'holeKeys': f.get('holeKeys') or [],
+             'sourceIds': [s for s in f.get('sourceIds') or [] if s.startswith(TRACE_SOURCE_PREFIX)]}
+            for f in package.get('features') or []
+            if any(s.startswith(TRACE_SOURCE_PREFIX) for s in f.get('sourceIds') or [])]
+
+
 def gate_bundle_captures(captures_report, expected_holes=18):
     """Ship's own player-capture evidence: every hole rendered by the
     factory lab (`:8774`) from THIS candidate's own content-addressed
@@ -235,6 +253,7 @@ def evaluate_gates(ctx, layout_id, captures_report=None, capture_blockers=None):
 
     advisory = {
         'contextUncertainShares': context_uncertain_shares(context_report),
+        'tracedSurfaces': traced_surfaces(package),
         'glbSpan': {'status': 'unassessed (not shipped)',
                     'reason': 'GLBs are visual review products only (aggregate_world\'s own manifest text); the published package never includes one.',
                     'findings': gate_glb_span(glb_reports)},

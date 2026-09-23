@@ -87,6 +87,23 @@ class HolesShapeGateTests(unittest.TestCase):
         self.assertIn(ship.blocker('HOLE_SURFACE_MISSING', holeKey='h03', ordinal=3, par=3, surfaceClass='green'), blockers)
 
 
+class TracedSurfacesTests(unittest.TestCase):
+    def test_traced_fairway_passes_the_shape_gate_but_is_listed_for_review(self):
+        holes, features = full_18_holes()
+        traced = {'id': 'h01-fairway-trace', 'kind': 'fairway', 'holeKeys': ['h01'], 'sourceIds': ['naip-trace-2026-09-23T00:00:00Z']}
+        holes[0]['featureIds'] = [fid for fid in holes[0]['featureIds'] if not fid.endswith('fairway')] + [traced['id']]
+        package = make_package(holes, [f for f in features if f['id'] != 'h01-fairway'] + [traced])
+        self.assertEqual(ship.gate_holes_shape(package), [])
+        self.assertEqual(ship.traced_surfaces(package), [{'featureId': 'h01-fairway-trace', 'kind': 'fairway', 'holeKeys': ['h01'],
+                                                          'sourceIds': ['naip-trace-2026-09-23T00:00:00Z']}])
+
+    def test_mapped_surfaces_are_not_listed(self):
+        holes, features = full_18_holes()
+        mapped = [dict(f, sourceIds=['osm-overpass-2026-09-20']) for f in features]
+        self.assertEqual(ship.traced_surfaces(make_package(holes, mapped)), [])
+        self.assertEqual(ship.traced_surfaces(None), [])
+
+
 class HashChainGateTests(unittest.TestCase):
     def setUp(self):
         holes, features = full_18_holes()

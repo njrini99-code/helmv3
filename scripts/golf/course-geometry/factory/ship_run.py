@@ -232,8 +232,10 @@ def run_ship(session, layout_id, out=None):
         proposed = {'kind': 'golfhelm-factory-ship-proposed-approval-v1', 'layoutId': layout_id, 'contentHash': report['packageHash'],
                     'packageBytesSha256': publish_summary.get('packageByteSha256'), 'stagingDir': ctx.relpath(staging),
                     'contactSheets': [report['contactSheet']] if report['contactSheet'] else [], 'publishSummary': publish_summary, 'generatedAt': now_iso(),
+                    'tracedSurfaces': advisory.get('tracedSurfaces') or [],
                     'note': 'ship --approve merges this into course-geometry/approvals.json; a layout not already there also needs an owner-reviewed courseNamePatterns entry. '
-                            'Approving also counts as the owner\'s context sign-off (see advisory.contextUncertainShares in qa-report.json), the same pattern as route confirmation.'}
+                            'Approving also counts as the owner\'s context sign-off (see advisory.contextUncertainShares in qa-report.json), the same pattern as route confirmation, '
+                            'and the owner\'s review of every imagery-traced surface listed in tracedSurfaces.'}
         with open(os.path.join(dest, 'proposed-approval.json'), 'w', encoding='utf-8') as f:
             json.dump(proposed, f, indent=1, sort_keys=True)
             f.write('\n')
