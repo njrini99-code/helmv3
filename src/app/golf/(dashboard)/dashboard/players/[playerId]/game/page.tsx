@@ -46,6 +46,10 @@ import {
 import { loadDistanceProfile } from '@/lib/coachhelm/v3/metrics/load-distance-profile';
 import { buildDistanceProfileViewModel } from '@/components/golf/coachhelm/game-fingerprint/distance-profile/buildDistanceProfileViewModel';
 import { DistanceProfileSection } from '@/components/golf/coachhelm/game-fingerprint/distance-profile/DistanceProfileSection';
+import { loadParOpportunities } from '@/lib/coachhelm/v3/metrics/load-par-opportunities';
+import { buildScoringViewModel } from '@/components/golf/coachhelm/game-fingerprint/scoring/buildScoringViewModel';
+import { ScoringSection } from '@/components/golf/coachhelm/game-fingerprint/scoring/ScoringSection';
+import { chunkIds } from '@/lib/supabase/chunk-ids';
 import { PlayerDeepDiveTabs } from './PlayerDeepDiveTabs';
 import type { FairwayPlayerInsightProps } from '@/components/fairway/pages/coachhelm/FairwayPlayerInsight';
 import type { Database } from '@/lib/types/database';
@@ -93,6 +97,59 @@ export function loadDistanceProfileAddendumIfEnabled(
   supabase: SupabaseClient<Database>,
 ): Promise<ReactNode | null> {
   return enabled ? loadDistanceProfileAddendum(playerId, supabase) : Promise.resolve(null);
+}
+
+/**
+ * Addendum §13 A7 slice 2 — best-effort load of the Scoring surface
+ * (par/length + par-5 opportunities). Same shape as
+ * `loadDistanceProfileAddendum` above: flag-gated
+ * (`coachhelm_a7_scoring_surface`, default off), its own try/catch so a
+ * failure here never takes down the fingerprint/scouting spine, and the
+ * page's own session-scoped `supabase` client (never admin).
+ *
+ * A par-5 opportunity row's `dimensions.course_id` is a raw id, not a name
+ * — resolves it against `golf_courses.name` so two different courses'
+ * "Hole 7" don't render as identical, indistinguishable cards (see
+ * `ScoringPar5HoleViewModel.courseLabel`'s doc comment). This is a SECOND
+ * query beyond `loadParOpportunities`'s own loader, chunked at 200 ids per
+ * the project's PostgREST URL-length convention — the distinct course
+ * count behind one player's par-5 history is expected to be small, but the
+ * chunking costs nothing when it isn't needed.
+ */
+async function loadScoringAddendum(
+  playerId: string,
+  supabase: SupabaseClient<Database>,
+): Promise<ReactNode | null> {
+  try {
+    const scope = buildRollingDistanceProfileScope(playerId);
+    const results = await loadParOpportunities(scope, { supabase });
+
+    const courseIds = [
+      ...new Set(
+        results
+          .map((r) => r.dimensions.course_id)
+          .filter((id): id is string => typeof id === 'string'),
+      ),
+    ];
+    const courseNameById: Record<string, string> = {};
+    for (const chunk of chunkIds(courseIds)) {
+      if (chunk.length === 0) continue;
+      const { data, error } = await supabase.from('golf_courses').select('id, name').in('id', chunk);
+      if (error) throw error;
+      for (const c of data ?? []) courseNameById[c.id] = c.name;
+    }
+
+    const viewModel = buildScoringViewModel(results, courseNameById);
+    const windowLabel = describeDistanceProfileWindow(scope);
+    return <ScoringSection viewModel={viewModel} windowLabel={windowLabel} />;
+  } catch (err) {
+    void logServerError(
+      `[player game page] scoring surface load failed for ${playerId}: ${describeError(err)}`,
+      { action: 'players.gamePage.scoring', featureArea: 'coachhelm' },
+      'warning',
+    );
+    return null;
+  }
 }
 
 export const metadata: Metadata = {
@@ -249,6 +306,7 @@ export default async function PlayerGamePage({
   // between them client-side is instant.
   // ---------------------------------------------------------------------
   const distanceProfileEnabled = isFlagEnabled('coachhelm_a7_distance_profile_surface');
+  const scoringSurfaceEnabled = isFlagEnabled('coachhelm_a7_scoring_surface');
 
   const [
     fingerprint,
@@ -263,6 +321,7 @@ export default async function PlayerGamePage({
     trendRes,
     trajectoryRes,
     distanceProfileAddendum,
+    scoringAddendum,
   ] = await Promise.all([
     getPlayerFingerprint(playerId),
 
@@ -365,6 +424,13 @@ export default async function PlayerGamePage({
     // internally (its own try/catch + logServerError), so a failure here
     // degrades to `null` (no addendum), never to a thrown page error.
     loadDistanceProfileAddendumIfEnabled(distanceProfileEnabled, playerId, supabase),
+
+    // Addendum §13 A7 slice 2 — same contract as slice 1, independently
+    // flagged. With both flags on, `loadPlayerContext` runs twice for the
+    // same scope (once per addendum) — a known, accepted cost of keeping
+    // the two surfaces independently reviewable/toggleable rather than
+    // sharing one fetch; revisit if it shows up in real load.
+    scoringSurfaceEnabled ? loadScoringAddendum(playerId, supabase) : Promise.resolve(null),
   ]);
 
   if (!fingerprint) notFound();
@@ -576,7 +642,14 @@ export default async function PlayerGamePage({
     signalCount,
   };
 
-  const sectionAddenda = distanceProfileAddendum ? { approach: distanceProfileAddendum } : undefined;
+  const rawSectionAddenda: Record<string, ReactNode> = {};
+  if (distanceProfileAddendum) rawSectionAddenda.approach = distanceProfileAddendum;
+  if (scoringAddendum) rawSectionAddenda.scoring = scoringAddendum;
+  // `undefined` (not `{}`) when neither flag produced anything — matches
+  // exactly what the page sent before this addendum existed, so
+  // `FairwayPlayerGameFingerprint.mode.test.tsx`'s "no-op when absent"
+  // guarantee stays literal, not just behaviorally equivalent.
+  const sectionAddenda = Object.keys(rawSectionAddenda).length > 0 ? rawSectionAddenda : undefined;
 
   return (
     <div className={fairwayScope('min-h-full bg-canvas')}>
