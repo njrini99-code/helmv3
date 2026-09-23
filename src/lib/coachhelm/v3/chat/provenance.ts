@@ -394,6 +394,20 @@ export function auditNumericClaims(
     if (metricId) {
       const key = metricGroup(metricId);
       const group = byMetric.get(key) ?? new Set<number>();
+      // Cross-turn evidence carryover (route.ts's `priorTurnEvidence`) can
+      // accumulate many measurements of the same metric across several
+      // turns. A `Set` already dedupes an exact repeat; what it does not do
+      // on its own is stay bounded — and the differencing loop below skips a
+      // metric group entirely once it exceeds PAIRWISE_ANCHOR_CAP, which
+      // would silently turn off a genuine same-turn comparison just because
+      // old evidence padded the group. Evicting the OLDEST member first (Set
+      // iteration order is insertion order) keeps the group at the cap while
+      // preferring the most recently seen values — the ones most likely to
+      // still be relevant to the current question.
+      if (!group.has(n) && group.size >= PAIRWISE_ANCHOR_CAP) {
+        const oldest = group.values().next().value;
+        if (oldest !== undefined) group.delete(oldest);
+      }
       group.add(n);
       byMetric.set(key, group);
     }
@@ -411,7 +425,14 @@ export function auditNumericClaims(
   }
   for (const n of extraSupported) add(n);
   for (const s of series) {
-    for (const p of s.points) {
+    // `series` is typed as `MeasurementSeries[]`, but a caller can hand this
+    // function evidence that was round-tripped through the database first
+    // (route.ts's `priorTurnEvidence`, reading a stored `ui_parts` blob) —
+    // the type is a claim about the good case, not a runtime guarantee.
+    // `points` missing or non-array must be skipped, not iterated, or a
+    // single legacy/forged envelope crashes the whole turn's audit.
+    const points = Array.isArray(s.points) ? s.points : [];
+    for (const p of points) {
       add(p.value, s.metric_id);
       add(p.sample_size);
       // A distance-band label ("15-25 ft", "10-15 ft") is the tool's own
@@ -424,8 +445,8 @@ export function auditNumericClaims(
       if (p.bucket) for (const n of numbersInText(p.bucket)) add(n);
     }
     // First-to-last movement is the whole point of a trend, so allow the delta.
-    const first = s.points[0]?.value;
-    const last = s.points[s.points.length - 1]?.value;
+    const first = points[0]?.value;
+    const last = points[points.length - 1]?.value;
     if (typeof first === 'number' && typeof last === 'number') add(last - first);
   }
 
@@ -440,6 +461,9 @@ export function auditNumericClaims(
    * justified by subtracting two putt counts.
    */
   for (const group of byMetric.values()) {
+    // `add()` above never lets a group exceed PAIRWISE_ANCHOR_CAP; the upper
+    // check is kept as a direct guarantee against this loop's own O(n²) cost
+    // rather than trusting that invariant silently.
     if (group.size < 2 || group.size > PAIRWISE_ANCHOR_CAP) continue;
     const values = [...group];
     for (const [i, left] of values.entries()) {

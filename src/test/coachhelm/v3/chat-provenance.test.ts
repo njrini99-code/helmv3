@@ -282,6 +282,89 @@ describe('auditNumericClaims', () => {
     );
     expect(claims.map((c) => c.value)).toEqual([71]);
   });
+
+  /**
+   * Review of PR #1975 (2026-09-22): `route.ts`'s `priorTurnEvidence` can feed
+   * this function many prior turns' worth of measurements of one metric in a
+   * single call. Two separate risks follow, and each gets its own test below:
+   * a caller handing in evidence that does not actually match the type it
+   * claims to (a stored `ui_parts` blob, not something just built and
+   * validated) must not crash the audit, and enough accumulated volume of one
+   * metric must not become a way to sneak a real fabrication past the check.
+   */
+  it('does not throw when a series carries a malformed points field', () => {
+    // `series` is typed as `MeasurementSeries[]`, but `priorTurnEvidence`
+    // hands this function evidence read back out of the database — a legacy
+    // row predating a schema field, or simply bad data, can arrive with
+    // `points` missing or not an array. Before the guard, `for (const p of
+    // s.points)` threw a TypeError here, which crashed the whole turn's
+    // audit rather than the audit just skipping the one malformed series.
+    const malformed = {
+      metric_id: 'putts_per_round',
+      metric_label: 'Putts per round',
+      unit: 'count',
+      entity: { kind: 'player', id: 'p1', label: 'Elliott' },
+      points: undefined,
+      window_start: null,
+      window_end: null,
+      as_of: '2026-01-01T00:00:00Z',
+      coverage: 'complete',
+      coverage_note: null,
+      source: 'rounds',
+      method: 'round_level',
+      benchmark: null,
+      direction: null,
+    } as unknown as MeasurementSeries;
+    expect(() => auditNumericClaims('He made 71%.', [], [malformed])).not.toThrow();
+    // The fabrication is still caught — the malformed series is skipped, not
+    // treated as a free pass for anything unsourced.
+    expect(auditNumericClaims('He made 71%.', [], [malformed]).map((c) => c.value)).toEqual([71]);
+  });
+
+  it('still catches a fabrication after many prior-turn measurements of one metric have accumulated', () => {
+    // `priorTurnEvidence` can carry several prior turns' measurements of the
+    // same metric into one audit call, comfortably past
+    // PAIRWISE_ANCHOR_CAP (32). Their sheer volume must not become a way to
+    // launder an unrelated, clearly invented number through the pairwise-
+    // differencing allowance — the group is capped and evicts its oldest
+    // members rather than disabling differencing (or, worse, the check
+    // itself) once it grows past the cap.
+    const many: Measurement[] = Array.from({ length: 50 }, (_, i) =>
+      measurement({ metric_id: 'putts_per_round', unit: 'count', value: 1000 + i * 37 }),
+    );
+    const claims = auditNumericClaims('His putts per round jumped to 9999.', many);
+    expect(claims.map((c) => c.value)).toEqual([9999]);
+  });
+
+  it('keeps supporting a same-turn pairwise difference even after the metric group exceeds the anchor cap', () => {
+    // 40 prior-turn values of one metric push that metric's anchor group well
+    // past PAIRWISE_ANCHOR_CAP (32) before the two CURRENT-turn values (a, b)
+    // are even added. Old code disabled pairwise differencing for the WHOLE
+    // group once it exceeded the cap, so a genuine same-turn comparison would
+    // be wrongly flagged just because unrelated prior turns padded the group.
+    // New code evicts the OLDEST members instead, so a and b — added last —
+    // always survive and their difference stays supported.
+    const old: Measurement[] = Array.from({ length: 40 }, (_, i) =>
+      measurement({ metric_id: 'sg_putting_mean', unit: 'strokes', value: 1000 + i * 37 }),
+    );
+    const a = measurement({
+      metric_id: 'sg_putting_mean',
+      unit: 'strokes',
+      value: -3.45,
+      entity: { kind: 'player', id: 'p1', label: 'Nick' },
+    });
+    const b = measurement({
+      metric_id: 'sg_putting_mean',
+      unit: 'strokes',
+      value: -5.86,
+      entity: { kind: 'player', id: 'p2', label: 'Someone' },
+    });
+    const claims = auditNumericClaims(
+      'The gap between them is roughly 2.41 strokes per round.',
+      [...old, a, b],
+    );
+    expect(claims).toEqual([]);
+  });
 });
 
 /**

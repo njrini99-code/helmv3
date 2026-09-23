@@ -84,6 +84,33 @@ export async function listMessages(sb: Sb, conversation_id: string): Promise<Cha
 }
 
 /**
+ * The conversation's most recent `limit` messages, in chronological order.
+ *
+ * `listMessages` is unbounded ascending, which is the right shape for
+ * replaying a whole conversation but the wrong one for "give me roughly the
+ * last N turns": PostgREST caps every response at 1,000 rows
+ * (`.claude/rules/database.md`), so an unbounded ascending query followed by
+ * a client-side `slice(-N)` silently returns the OLDEST 1,000 messages of a
+ * long conversation and then slices the wrong end — the recent messages this
+ * is actually for would be missing entirely. Querying DESCENDING with a
+ * LIMIT gets the right end regardless of how long the conversation is, and
+ * the reverse() puts them back in reading order for callers that walk the
+ * list forward (e.g. `priorTurnEvidence` in the chat stream route).
+ */
+export async function listRecentMessages(
+  sb: Sb,
+  conversation_id: string,
+  limit: number,
+): Promise<ChatMessage[]> {
+  const { data } = await fromUntyped(sb, 'golf_coachhelm_chat_messages')
+    .select(MESSAGE_COLUMNS)
+    .eq('conversation_id', conversation_id)
+    .order('created_at', { ascending: false })
+    .limit(limit);
+  return (data ?? []).map(rowToMessage).reverse();
+}
+
+/**
  * P1-11 — idempotency probe. Returns the existing assistant turn for a given
  * client_turn_id in this conversation, if one was already completed. The send
  * route uses this so a retried request returns the prior answer instead of

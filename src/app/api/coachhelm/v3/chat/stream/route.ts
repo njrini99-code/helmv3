@@ -61,9 +61,14 @@ import { buildInstructions } from '@/lib/coachhelm/v3/chat/instructions';
 import {
   auditNumericClaims,
   collectNumbers,
+  // Imported as a value, not `type`-only: `priorTurnEvidence` runs it as a
+  // zod schema (`ToolEnvelope.safeParse`) to validate a stored `ui_parts`
+  // blob before trusting its shape. The inferred type of the same name is
+  // still available for annotations below — zod schema + `z.infer` sharing
+  // one exported identifier is the standard pattern.
+  ToolEnvelope,
   type Measurement,
   type MeasurementSeries,
-  type ToolEnvelope,
   type UnsupportedClaim,
 } from '@/lib/coachhelm/v3/chat/provenance';
 import type { ChatMessage } from '@/lib/coachhelm/v3/chat/types';
@@ -73,6 +78,7 @@ import {
   findAssistantTurn,
   getConversation,
   listMessages,
+  listRecentMessages,
   touchConversation,
   upsertUserTurn,
 } from '@/lib/coachhelm/v3/chat/persistence';
@@ -179,8 +185,25 @@ function logStreamModelError(error: unknown): void {
 const UNGROUNDED_NOTE =
   "\n\n_Some figures in this answer could not be traced back to your program's data, so I've flagged it rather than presenting them as fact. Please ask again._";
 
-/** How far back into the conversation {@link priorTurnEvidence} looks. */
-const PRIOR_EVIDENCE_MESSAGE_LIMIT = 20;
+/**
+ * How many of the conversation's most recent ASSISTANT turns
+ * {@link priorTurnEvidence} draws carried-over evidence from — not messages.
+ * A "turn" can span more than one stored row (an approval round-trip inserts
+ * a second assistant message for the same exchange), so counting turns
+ * rather than raw rows is what "the last few things the coach was told"
+ * actually means; a flat row count skews toward whichever conversation
+ * happens to have chattier tool/approval loops in its recent history.
+ */
+const PRIOR_EVIDENCE_ASSISTANT_TURN_LIMIT = 5;
+
+/**
+ * Row budget for the query backing {@link priorTurnEvidence}. Comfortably
+ * covers `PRIOR_EVIDENCE_ASSISTANT_TURN_LIMIT` turns even with a user message
+ * and an approval round-trip between each one, and stays far under
+ * PostgREST's 1,000-row cap (`.claude/rules/database.md`) regardless of how
+ * long the conversation has grown — see `listRecentMessages`.
+ */
+const PRIOR_EVIDENCE_ROW_LIMIT = 40;
 
 /**
  * Evidence already shown to the coach earlier in THIS conversation.
@@ -194,34 +217,90 @@ const PRIOR_EVIDENCE_MESSAGE_LIMIT = 20;
  * been shown to the coach, but that request's audit had never seen any of it
  * and discarded the whole answer as fabricated.
  *
- * Read from THIS SERVER'S OWN persisted `ui_parts` (`listMessages`), never
- * from the client-sent `uiMessages` thread: a `data-evidence` part is written
- * server-side, after this route itself ran the tool (see `evidence()` in
- * `buildCoachTools`), and nothing else ever produces one. Seeding the
- * supported set from the client's replayed payload instead would let a
- * tampered request forge "evidence" for whatever number it wanted.
+ * Read from THIS SERVER'S OWN persisted `ui_parts` (`listRecentMessages`),
+ * never from the client-sent `uiMessages` thread: a `data-evidence` part is
+ * written server-side, after this route itself ran the tool (see
+ * `evidence()` in `buildCoachTools`), and nothing else ever produces one.
+ * Seeding the supported set from the client's replayed payload instead would
+ * let a tampered request forge "evidence" for whatever number it wanted.
+ *
+ * Two more things a NUMBER passing through here does not automatically
+ * earn:
+ *
+ *  - A believable shape. This is JSON that round-tripped through the
+ *    database, not something `execute` just built and validated a moment
+ *    ago — a legacy row predating a schema field, or a forged `ui_parts`
+ *    payload (the coach can edit their own via RLS — `chat_messages_coach_
+ *    only` is FOR ALL, a known, accepted, self-only risk; see the PR
+ *    description), could otherwise 500 the whole turn the moment the audit
+ *    tries to iterate a `series[].points` that isn't an array. Every
+ *    envelope is re-validated with `ToolEnvelope.safeParse` and dropped,
+ *    not thrown on, when it fails.
+ *  - The right player. A number that measured player A is not support for a
+ *    claim about player B just because both appeared in the same
+ *    conversation. Two things follow, and neither is decidable from the
+ *    prior messages alone — both are resolved by the caller (`POST`, below)
+ *    once THIS turn's own fresh evidence is also known:
+ *      1. Evidence with a `Measurement`/`MeasurementSeries` entity that is
+ *         NOT a player (team/round) carries no attribution risk at all and
+ *         is returned as `shared`, unconditionally safe to use.
+ *      2. Everything else — evidence tied to a specific player, AND
+ *         evidence with no entity at all (`get_player_insights` puts
+ *         everything in free-form `detail` with no `Measurement` wrapper,
+ *         so its own shape cannot say who it is about) — is returned as
+ *         `deferred`, alongside every distinct player id actually seen.
+ *         The caller only folds `deferred` in once it can check that
+ *         id set against the player(s) THIS turn's own fresh tool calls are
+ *         actually about; a number about a player never mentioned this turn
+ *         must not silently support a claim about whichever player IS being
+ *         asked about now.
  */
 function priorTurnEvidence(messages: readonly ChatMessage[]): {
-  measurements: Measurement[];
-  series: MeasurementSeries[];
-  detailNumbers: number[];
+  shared: { measurements: Measurement[]; series: MeasurementSeries[]; detailNumbers: number[] };
+  deferred: {
+    measurements: Measurement[];
+    series: MeasurementSeries[];
+    detailNumbers: number[];
+    playerIds: Set<string>;
+  };
 } {
-  const measurements: Measurement[] = [];
-  const series: MeasurementSeries[] = [];
-  const detailNumbers: number[] = [];
-  for (const message of messages.slice(-PRIOR_EVIDENCE_MESSAGE_LIMIT)) {
+  const shared = { measurements: [] as Measurement[], series: [] as MeasurementSeries[], detailNumbers: [] as number[] };
+  const deferred = {
+    measurements: [] as Measurement[],
+    series: [] as MeasurementSeries[],
+    detailNumbers: [] as number[],
+    playerIds: new Set<string>(),
+  };
+
+  const assistantTurns = messages
+    .filter((m) => m.role === 'assistant')
+    .slice(-PRIOR_EVIDENCE_ASSISTANT_TURN_LIMIT);
+
+  for (const message of assistantTurns) {
     if (!Array.isArray(message.ui_parts)) continue;
     for (const part of message.ui_parts) {
       if (!part || typeof part !== 'object') continue;
-      const { type, data } = part as { type?: unknown; data?: { envelope?: ToolEnvelope } };
+      const { type, data } = part as { type?: unknown; data?: { envelope?: unknown } };
       if (type !== 'data-evidence' || !data?.envelope) continue;
-      const envelope = data.envelope;
-      measurements.push(...(envelope.measurements ?? []));
-      series.push(...(envelope.series ?? []));
-      if (envelope.detail !== undefined) detailNumbers.push(...collectNumbers(envelope.detail));
+      const parsed = ToolEnvelope.safeParse(data.envelope);
+      if (!parsed.success) continue;
+      const envelope = parsed.data;
+
+      const entities = [...envelope.measurements, ...envelope.series].map((m) => m.entity);
+      const playerIdsHere = entities.filter((e) => e.kind === 'player').map((e) => e.id);
+      // No entity anywhere in the envelope is treated the same as a player
+      // entity, not the same as team/round: its scope is genuinely unknown,
+      // not positively team-level.
+      const target = playerIdsHere.length > 0 || entities.length === 0 ? deferred : shared;
+
+      target.measurements.push(...envelope.measurements);
+      target.series.push(...envelope.series);
+      if (envelope.detail !== undefined) target.detailNumbers.push(...collectNumbers(envelope.detail));
+      for (const id of playerIdsHere) deferred.playerIds.add(id);
     }
   }
-  return { measurements, series, detailNumbers };
+
+  return { shared, deferred };
 }
 
 export async function POST(req: NextRequest) {
@@ -365,12 +444,28 @@ export async function POST(req: NextRequest) {
 
   // Seed the audit with evidence THIS conversation already produced (see
   // priorTurnEvidence's doc comment) — a fresh conversation has none to load.
+  // `shared` (team/round-level) evidence is unconditionally safe and seeded
+  // immediately; `deferred` (player-scoped, or of unknown scope) is held
+  // back and only folded in from inside `execute`, once this turn's OWN
+  // fresh evidence says which player(s) are actually in play — see the
+  // `allPlayerIds` check below.
+  let priorDeferred: {
+    measurements: Measurement[];
+    series: MeasurementSeries[];
+    detailNumbers: number[];
+    playerIds: Set<string>;
+  } = { measurements: [], series: [], detailNumbers: [], playerIds: new Set() };
   if (!needsNewConversation) {
-    const priorMessages = await listMessages(supabase, conversationId);
+    const priorMessages = await listRecentMessages(
+      supabase,
+      conversationId,
+      PRIOR_EVIDENCE_ROW_LIMIT,
+    );
     const prior = priorTurnEvidence(priorMessages);
-    measurements.push(...prior.measurements);
-    seriesAll.push(...prior.series);
-    detailNumbers.push(...prior.detailNumbers);
+    measurements.push(...prior.shared.measurements);
+    seriesAll.push(...prior.shared.series);
+    detailNumbers.push(...prior.shared.detailNumbers);
+    priorDeferred = prior.deferred;
   }
 
   const convId = conversationId;
@@ -386,7 +481,19 @@ export async function POST(req: NextRequest) {
   // Computed in `execute`, once the full text is known — see the manual
   // stream-forwarding loop below — and reused by `onFinish` so the audit
   // runs exactly once per turn and both places agree on the verdict.
-  let auditResult: { grounded: boolean; unsupported: UnsupportedClaim[] } | null = null;
+  // `text` is carried alongside the verdict, not just the boolean: `onFinish`
+  // persists this EXACT string rather than re-deriving its own from
+  // `assistant.parts`, so the flag shown live and the status/content stored
+  // can never quietly diverge. `streamErrored` marks a turn that never
+  // finished cleanly (an inline error chunk, or the stream ending without
+  // ever producing a `finish` chunk) — such a turn must never be persisted
+  // as 'complete' no matter what the numeric audit finds.
+  let auditResult: {
+    grounded: boolean;
+    unsupported: UnsupportedClaim[];
+    text: string;
+    streamErrored: boolean;
+  } | null = null;
 
   const stream = createUIMessageStream({
     execute: async ({ writer }) => {
@@ -502,32 +609,57 @@ export async function POST(req: NextRequest) {
       // wire entirely. It renders nowhere today, but "not rendered" is not the
       // requirement — the requirement is that it never reaches the browser,
       // where it sits in network responses and React state either way.
-      // `onError` HAS to be passed here too.
+      // `onError` HAS to be passed here too — see why below.
+      //
+      // Forwarded chunk-by-chunk ourselves — accumulating every `text-delta`
+      // as it passes through — rather than handed to `writer.merge` (see its
+      // implementation: a `.getReader()` loop kicked off as a fire-and-forget
+      // background promise). Two things follow from doing it this way that
+      // `writer.merge` cannot give us: `execute` does not resolve, and the
+      // response does not close, until every chunk has actually been sent;
+      // and we get one deterministic point — after the loop, before
+      // `execute` returns — to run the grounding audit on the text that was
+      // ACTUALLY streamed and still speak into this same connection. N15:
+      // the audit used to run only in `onFinish`, which cannot happen until
+      // the stream has already finished sending — a coach watching the
+      // answer stream in never saw the flag live, only on a later reload of
+      // the thread.
+      //
+      // That text is NOT `result.text`. In `ai` 7.0.79, `StreamTextResult`'s
+      // `text` getter resolves to `finalStep.text` — the LAST agent step's
+      // text only (`node_modules/ai/dist/index.js`, the `StreamTextResult`
+      // class). A tool-using turn is routinely more than one step (tool call
+      // → tool result → more text → …, up to `stepCountIs(8)`), and the
+      // coach sees every step's text concatenated, not just the last one.
+      // Auditing `result.text` would silently exempt a fabricated number
+      // written in an earlier step from ever being checked. Accumulating
+      // `text-delta.delta` ourselves as each chunk is forwarded is exactly
+      // the string the browser received, in the order it received it — and
+      // it is the SAME string `onFinish` persists as `content` (see
+      // `auditResult` above), so the live flag and the stored status can
+      // never audit two different things and disagree.
       //
       // A model failure happens INSIDE this merged stream, not inside the
       // outer `execute`, so the outer `createUIMessageStream.onError` never
       // sees it — `toUIMessageStream` falls back to the SDK default, and the
-      // coach is shown the literal string "An error occurred."
+      // coach is shown the literal string "An error occurred." That is what
+      // a coach saw in production while the account's model credit was
+      // exhausted: six identical retries, each answered with four words that
+      // named neither the cause nor anything they could do. The sanitised
+      // message below already said "the model quota is exhausted"; it was
+      // just never reaching the browser. `toUIMessageStream`'s own `onError`
+      // (passed below) turns that failure into an inline `{type:'error'}`
+      // chunk carrying the sanitised text, which this loop still forwards
+      // like any other chunk — but a turn that produced one must never be
+      // stored as a finished, verified answer just because the partial text
+      // it managed to stream happened to pass the numeric audit. Likewise, a
+      // dropped connection can end this stream with no `finish` chunk at
+      // all; either signal marks the turn as never having completed.
       //
-      // That is what a coach saw in production while the account's model
-      // credit was exhausted: six identical retries, each answered with four
-      // words that named neither the cause nor anything they could do. The
-      // sanitised message below already said "the model quota is exhausted";
-      // it was just never reaching the browser.
+      // The `finish` chunk itself is held back and re-emitted last so an
+      // ungrounded turn's flag still arrives before the message is marked
+      // done, per the UI message stream protocol.
       //
-      // Forwarded chunk-by-chunk ourselves (equivalent to `writer.merge` —
-      // see its implementation: a reader loop over the same async iterable)
-      // rather than handed to `writer.merge` directly, so `execute` does not
-      // resolve, and the response does not close, until every chunk has been
-      // sent. That gives us one deterministic point — after the loop, before
-      // `execute` returns — to run the grounding audit on the COMPLETE text
-      // and still speak into this same connection. N15: the audit used to
-      // run only in `onFinish`, which cannot happen until the stream has
-      // already finished sending — a coach watching the answer stream in
-      // never saw the flag live, only on a later reload of the thread. The
-      // `finish` chunk is held back and re-emitted last so an ungrounded
-      // turn's flag still arrives before the message is marked done, per the
-      // UI message stream protocol.
       // `toUIMessageStream`'s deprecated method overload does not carry a
       // precise element type through to a `for await` loop; the SDK's own
       // `writer.write` parameter type is the source of truth for what a
@@ -541,28 +673,62 @@ export async function POST(req: NextRequest) {
         onError: sanitiseStreamError,
       }) as AsyncIterable<StreamChunk>;
       let finishChunk: StreamChunk | null = null;
+      let accumulatedText = '';
+      let streamErrored = false;
       for await (const chunk of uiStream) {
-        if ((chunk as { type?: string }).type === 'finish') {
+        const c = chunk as { type?: string; delta?: unknown };
+        if (c.type === 'text-delta' && typeof c.delta === 'string') {
+          accumulatedText += c.delta;
+        } else if (c.type === 'error') {
+          streamErrored = true;
+        }
+        if (c.type === 'finish') {
           finishChunk = chunk;
           continue;
         }
         writer.write(chunk);
       }
+      // The stream ended without ever emitting a `finish` chunk — the
+      // connection was aborted mid-generation rather than completing
+      // normally. Whatever text made it through is a fragment, not an
+      // answer, however clean it audits.
+      if (!finishChunk) streamErrored = true;
 
-      // `result.text` rejects when a model failure aborted generation —
-      // `onError` above already turned that into its own stream chunk and
-      // `logStreamModelError` already logged it, so there is no new text to
-      // audit. Swallowed rather than left to reject `execute()`'s own
-      // promise: a model error must not fail `execute` itself, matching the
-      // pre-existing contract `writer.merge` relied on (it absorbs a bad
-      // sub-stream into an error chunk rather than rejecting).
-      // `onFinish`'s own `hasPersistableAssistantContent` guard is what
-      // actually keeps an empty/failed turn from being persisted as a
-      // grounded answer, not this fallback.
-      const finalText = await Promise.resolve(result.text).catch(() => '');
-      const unsupported = auditNumericClaims(finalText, measurements, seriesAll, detailNumbers);
-      auditResult = { grounded: unsupported.length === 0, unsupported };
-      if (!auditResult.grounded) {
+      // Fold in `priorDeferred` (player-scoped, or of unknown scope, prior
+      // evidence) only now — `measurements`/`seriesAll` already carry every
+      // fresh `Measurement`/`MeasurementSeries` THIS turn's own tool calls
+      // produced (via `collect`, which has already run: tool execution
+      // happens inside the `streamText` agent loop the forwarding loop above
+      // just finished draining), so this is the first point where "which
+      // player(s) is this turn actually about" is knowable. A prior turn's
+      // number about a player never mentioned this turn must not be allowed
+      // to "support" a claim about whichever player IS being discussed now.
+      const currentTurnPlayerIds = new Set(
+        [...measurements, ...seriesAll]
+          .map((m) => m.entity)
+          .filter((e) => e.kind === 'player')
+          .map((e) => e.id),
+      );
+      const allPlayerIds = new Set([...currentTurnPlayerIds, ...priorDeferred.playerIds]);
+      if (allPlayerIds.size <= 1) {
+        measurements.push(...priorDeferred.measurements);
+        seriesAll.push(...priorDeferred.series);
+        detailNumbers.push(...priorDeferred.detailNumbers);
+      }
+
+      const fullText = accumulatedText.trim();
+      const unsupported = auditNumericClaims(fullText, measurements, seriesAll, detailNumbers);
+      auditResult = {
+        grounded: unsupported.length === 0 && !streamErrored,
+        unsupported,
+        text: fullText,
+        streamErrored,
+      };
+      // The ungrounded-numbers flag is specifically about a figure the tools
+      // never produced — showing it on top of a stream error would tell the
+      // coach the wrong story when the real one (an inline error chunk,
+      // already forwarded above) has already been shown.
+      if (!auditResult.grounded && !streamErrored) {
         writer.write({
           type: 'data-grounding-flag',
           id: 'grounding-flag',
@@ -584,7 +750,15 @@ export async function POST(req: NextRequest) {
         const assistant = [...messages].reverse().find((m) => m.role === 'assistant');
         if (!assistant) return;
 
-        const text = textOf(assistant);
+        // Prefer the exact string `execute` streamed and audited — see
+        // `auditResult`'s declaration above — over independently
+        // reconstructing one from `assistant.parts` here, so the live flag
+        // and the persisted content/status can never audit two different
+        // strings and disagree. The `textOf(assistant)` fallback only runs
+        // when `execute` threw before reaching its own audit, in which case
+        // `onFinish` is still the last chance to avoid persisting ungrounded
+        // text as 'complete'.
+        const text = auditResult?.text ?? textOf(assistant);
 
         // A turn that produced NOTHING must not be stored as an answer.
         //
@@ -597,7 +771,7 @@ export async function POST(req: NextRequest) {
         // A turn with no prose is not necessarily empty: an action proposal is
         // a card with no text. So the test is text OR a real data part —
         // `step-start` alone does not count as an answer.
-        const hasContent = hasPersistableAssistantContent(assistant, textOf(assistant));
+        const hasContent = hasPersistableAssistantContent(assistant, text);
         if (!hasContent) return;
         // Reuse the verdict `execute` already computed on the identical text,
         // so the live flag and the persisted status can never disagree. The
@@ -605,13 +779,13 @@ export async function POST(req: NextRequest) {
         // threw before reaching its own audit, in which case `onFinish` is
         // still the last chance to avoid persisting ungrounded text as
         // 'complete'.
-        const { grounded, unsupported } =
+        const { grounded, unsupported, streamErrored } =
           auditResult ?? (() => {
             const claims = auditNumericClaims(text, measurements, seriesAll, detailNumbers);
-            return { grounded: claims.length === 0, unsupported: claims };
+            return { grounded: claims.length === 0, unsupported: claims, streamErrored: false };
           })();
 
-        if (!grounded) {
+        if (!grounded && unsupported.length > 0) {
           // A designed guardrail FIRING is not an incident: the claim was
           // caught and the turn was annotated + stored as 'failed' below,
           // which is the system working. Logged at 'info' with skipSentry so
@@ -646,12 +820,35 @@ export async function POST(req: NextRequest) {
             },
             'info',
           );
+        } else if (!grounded && streamErrored) {
+          // Distinct from the guardrail above: nothing was fabricated, the
+          // turn simply never finished (an inline error chunk, or the
+          // connection dropping before a `finish` chunk arrived). Logging it
+          // separately keeps "the model made something up" and "the stream
+          // broke" as two different, both-queryable signals instead of one
+          // count that conflates them.
+          await logServerEvent(
+            'chat/stream: assistant turn ended without completing; stored as failed rather than complete',
+            {
+              action: 'v3.chat.stream.incomplete',
+              featureArea: 'coachhelm',
+              skipSentry: true,
+              extra: { conversationId: convId, coachId: ctx.coach_id },
+            },
+            'info',
+          );
         }
+
+        // A stream error's partial text is stored as-is: the coach already
+        // saw the sanitised error message inline (the forwarded `error`
+        // chunk), and appending UNGROUNDED_NOTE on top would misdescribe a
+        // broken connection as a fabricated statistic.
+        const content = grounded ? text : streamErrored ? text : text + UNGROUNDED_NOTE;
 
         await appendMessage(supabase, {
           conversation_id: convId,
           role: 'assistant',
-          content: grounded ? text : text + UNGROUNDED_NOTE,
+          content,
           status: grounded ? 'complete' : 'failed',
           client_turn_id: clientTurnId,
           ui_parts: publishableParts(assistant.parts) as unknown,
