@@ -131,6 +131,15 @@ interface CronSummary {
   /** A9 slice 1: `MIN_OPPORTUNITY_N`/`MIN_DISTINCT_ROUNDS` not met on one or
    *  both sides — retry tomorrow once more shots land. */
   comparable_insufficient_evidence: number;
+  /**
+   * A9 slice 1: the insight's real exposure (`shown_at`) is real, but its
+   * follow-up window hasn't fully elapsed yet — the cron's own 21-day
+   * candidate-age filter does NOT guarantee this, since `shown_at` can land
+   * well after `created_at`. Retry tomorrow; never a permanent skip (same
+   * shape as `comparable_no_exposure_record`) — see
+   * `comparable-attribute.ts`'s `'follow-up-window-open'` doc comment.
+   */
+  comparable_follow_up_open: number;
 }
 
 export async function GET(req: NextRequest) {
@@ -159,6 +168,7 @@ async function handle(): Promise<NextResponse> {
     comparable_attributed: 0,
     comparable_no_exposure_record: 0,
     comparable_insufficient_evidence: 0,
+    comparable_follow_up_open: 0,
   };
   // Read once per run, not once per candidate — matches the flag-off ==
   // pre-slice-1-behavior contract (A9 slice 1).
@@ -303,6 +313,8 @@ async function handle(): Promise<NextResponse> {
         if (!comparable.ok) {
           if (comparable.reason === 'no-exposure-record') {
             summary.comparable_no_exposure_record += 1;
+          } else if (comparable.reason === 'follow-up-window-open') {
+            summary.comparable_follow_up_open += 1;
           } else if (comparable.reason === 'insufficient-evidence') {
             summary.comparable_insufficient_evidence += 1;
           } else {

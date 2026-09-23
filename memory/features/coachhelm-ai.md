@@ -692,10 +692,25 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
   insight's FIRST real `golf_insight_exposure.shown_at` row — never a
   `created_at` proxy the way `attribute.ts`'s round-level path uses one. Zero
   exposure rows → `{ok: false, reason: 'no-exposure-record'}`, retried next
-  run, not treated as a permanent skip. Baseline/follow-up windows reuse
-  `attribute.ts`'s own `PRE_WINDOW_DAYS`/`POST_WINDOW_DAYS` (now exported)
-  around that instant, and `loadPlayerContext` (A1) loads the combined-window
-  shot/hole facts. **Never feeds the learning loop (this slice)**: every
+  run, not treated as a permanent skip. A genuine DB error on that lookup
+  THROWS rather than being misread as "no exposure yet" — caught by the
+  cron's own per-candidate try/catch like any other infra failure in that
+  loop. Baseline/follow-up windows reuse `attribute.ts`'s own
+  `PRE_WINDOW_DAYS`/`POST_WINDOW_DAYS` (now exported) around that instant.
+  **The cron's 21-day candidate-age filter does NOT guarantee this path's
+  follow-up window has closed** (review catch, 2026-09-23): `interventionAt`
+  is the real, independently-timed `shown_at`, which can land long after
+  `created_at` — an insight created 30 days ago but first shown 3 days ago
+  still has most of its 21-day follow-up window open. Measuring early would
+  permanently record a row built from a truncated slice (the insert is
+  idempotent, PK on `insight_id` — it could never be corrected once the
+  window actually closes), so `computeComparableAttribution` checks
+  `followUpWindow.end` against now and returns
+  `{ok: false, reason: 'follow-up-window-open'}` (counted in
+  `summary.comparable_follow_up_open`, retried next run, same as
+  `no-exposure-record`) before calling `loadPlayerContext` at all.
+  `loadPlayerContext` (A1) loads the combined-window shot/hole facts.
+  **Never feeds the learning loop (this slice)**: every
   written row carries `lift: null` unconditionally — there is no parameter
   that could set it otherwise — so a `method_version:
   'comparable_opportunities_v1'` row can never move a coach weight. Whether
@@ -712,6 +727,18 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
   and `src/test/api/cron/causality-attribute.test.ts`'s A9 slice 1 describe
   block (the cron's wiring — flag on/off, pre-filter, summary counters,
   never touching the weight/outcome-ledger tables).
+  **Known limitation, not yet fixed (flag stays default-off until resolved
+  or explicitly accepted)**: the cron's P1 pre-filter exists so
+  never-attributable rows can't hog the fixed `LIMIT`/oldest-first work
+  list. With this flag on, EVERY shot-level candidate since W22 passes that
+  pre-filter — including old `no-exposure-record` and
+  `follow-up-window-open` ones — so they can still fill every slot every
+  run (oldest-`created_at`-first) and starve round-level attribution the
+  same way the original P1 stall did. Fixing this needs a synchronous
+  per-page drop of shot-level candidates that fail cheaply (mirroring the
+  existing anti-join batch-fetch), out of this slice's scope — raised with
+  the task owner as a prerequisite question for slice 2 or for ever
+  flipping the flag in production.
 
 ## Tests To Prefer
 

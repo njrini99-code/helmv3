@@ -741,6 +741,22 @@ describe('causality-attribute cron A9 slice 1: comparable-opportunity attributio
     expect(writeComparableAttributionMock).not.toHaveBeenCalled();
   });
 
+  it('flag ON: follow-up-window-open is counted separately, retried tomorrow like no-exposure-record, and never written', async () => {
+    isFlagEnabledMock.mockReturnValue(true);
+    computeComparableAttributionMock.mockResolvedValue({ ok: false, reason: 'follow-up-window-open' });
+    const rows = [fixture({ id: 'insight-1', evidence: { metric: SHOT_LEVEL_METRIC } })];
+    const { client } = makeClient(rows);
+    createAdminMock.mockReturnValue(client);
+
+    const res = await POST(authedRequest());
+    const summary = await res.json();
+
+    expect(summary.comparable_follow_up_open).toBe(1);
+    expect(summary.comparable_attributed).toBe(0);
+    expect(summary.intentional_no_lift).toBe(0);
+    expect(writeComparableAttributionMock).not.toHaveBeenCalled();
+  });
+
   it('flag ON: insufficient-evidence is counted separately and never written', async () => {
     isFlagEnabledMock.mockReturnValue(true);
     computeComparableAttributionMock.mockResolvedValue({ ok: false, reason: 'insufficient-evidence' });

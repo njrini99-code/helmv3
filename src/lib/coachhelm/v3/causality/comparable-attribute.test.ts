@@ -50,13 +50,16 @@ const SHOWN_AT = '2026-08-01T00:00:00.000Z';
 
 /** Chainable fake for `sb.from('golf_insight_exposure').select(...).eq(...)
  *  .order(...).limit(...).maybeSingle()`. */
-function makeExposureClient(row: { shown_at: string } | null) {
+function makeExposureClient(
+  row: { shown_at: string } | null,
+  opts: { error?: { message: string } } = {},
+) {
   const builder = {
     select: vi.fn().mockReturnThis(),
     eq: vi.fn().mockReturnThis(),
     order: vi.fn().mockReturnThis(),
     limit: vi.fn().mockReturnThis(),
-    maybeSingle: vi.fn().mockResolvedValue({ data: row, error: null }),
+    maybeSingle: vi.fn().mockResolvedValue({ data: row, error: opts.error ?? null }),
   };
   const client = {
     from: vi.fn((table: string) => {
@@ -231,6 +234,94 @@ describe('computeComparableAttribution', () => {
         method_version: COMPARABLE_OPPORTUNITIES_METHOD_VERSION,
       },
     });
+  });
+
+  it('throws on a genuine exposure-lookup DB error, rather than reading it as no-exposure-record', async () => {
+    const { client } = makeExposureClient(null, { error: { message: 'connection reset' } });
+
+    await expect(
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      computeComparableAttribution(client as any, {
+        insight_id: 'insight-1',
+        player_id: 'player-1',
+        target_metric_id: 'approach_proximity_125_175ft',
+      }),
+    ).rejects.toThrow(/connection reset/);
+    expect(loadPlayerContextMock).not.toHaveBeenCalled();
+  });
+
+  it('returns follow-up-window-open when the follow-up window has not fully elapsed yet, without loading shot context', async () => {
+    vi.useFakeTimers();
+    try {
+      vi.setSystemTime(new Date('2026-09-23T00:00:00.000Z'));
+      // Shown 3 days ago: a 21-day follow-up window still has 18 days left.
+      const { client } = makeExposureClient({ shown_at: '2026-09-20T00:00:00.000Z' });
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const result = await computeComparableAttribution(client as any, {
+        insight_id: 'insight-1',
+        player_id: 'player-1',
+        target_metric_id: 'approach_proximity_125_175ft',
+      });
+
+      expect(result).toEqual({ ok: false, reason: 'follow-up-window-open' });
+      expect(loadPlayerContextMock).not.toHaveBeenCalled();
+      expect(computeComparableOpportunitiesMock).not.toHaveBeenCalled();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('proceeds once the follow-up window has just closed (boundary: end === now)', async () => {
+    vi.useFakeTimers();
+    try {
+      // shown_at + 21d === now, exactly at the boundary — must NOT be "open".
+      vi.setSystemTime(new Date('2026-09-22T00:00:00.000Z'));
+      const { client } = makeExposureClient({ shown_at: '2026-09-01T00:00:00.000Z' });
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const result = await computeComparableAttribution(client as any, {
+        insight_id: 'insight-1',
+        player_id: 'player-1',
+        target_metric_id: 'approach_proximity_125_175ft',
+      });
+
+      expect(result.ok).toBe(true);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('builds a spec/outcome that only scores proximity for a shot that reached the green, dropping a miss', async () => {
+    const { client } = makeExposureClient({ shown_at: SHOWN_AT });
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await computeComparableAttribution(client as any, {
+      insight_id: 'insight-1',
+      player_id: 'player-1',
+      target_metric_id: 'approach_proximity_125_175ft',
+    });
+
+    const call = computeComparableOpportunitiesMock.mock.calls[0]![0];
+    expect(call.spec.shotRole).toBe('approach');
+    expect(call.spec.lie).toBeNull();
+    expect(call.outcome.kind).toBe('mean');
+    const valueOf = (call.outcome as { valueOf: (shot: unknown) => number | null }).valueOf;
+
+    expect(
+      valueOf({ result: 'green', lie_after: null, distance_to_hole_after_feet: 12 }),
+    ).toBe(12);
+    expect(
+      valueOf({ result: 'hole', lie_after: null, distance_to_hole_after_feet: 0 }),
+    ).toBe(0);
+    // Fallback: no `result`, but `lie_after` says green.
+    expect(
+      valueOf({ result: null, lie_after: 'green', distance_to_hole_after_feet: 6 }),
+    ).toBe(6);
+    // Missed the green entirely — dropped (null), never counted as a value.
+    expect(
+      valueOf({ result: 'rough', lie_after: 'rough', distance_to_hole_after_feet: 40 }),
+    ).toBeNull();
   });
 
   it('windows the baseline/follow-up around shown_at using the SAME PRE/POST_WINDOW_DAYS attribute.ts uses, and passes multipleInterventions: false', async () => {
