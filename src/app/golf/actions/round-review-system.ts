@@ -32,6 +32,7 @@ import {
 } from './round-review-content';
 import { withAdminObserved } from '@/lib/admin/observed-action';
 import { describeError } from '@/lib/utils/describe-error';
+import { gateCoachHelmEngineCall } from '@/lib/auth/action-rate-limit';
 
 // UUID format validation
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -599,6 +600,7 @@ type GenerateReviewFailureCode =
   | 'round_not_completed'
   | 'db_error'
   | 'save_failed'
+  | 'rate_limited'
   | 'unknown';
 
 type GenerateReviewResult = {
@@ -630,7 +632,7 @@ const inFlightRoundReviews = new Map<string, Promise<GenerateReviewResult>>();
 
 async function generateAndStoreRoundReviewImpl(
   roundId: string,
-  playerId: string
+  playerId: string,
 ): Promise<GenerateReviewResult> {
   const supabase = await createClient();
 
@@ -642,6 +644,34 @@ async function generateAndStoreRoundReviewImpl(
   const access = await verifyReviewAccess(supabase, playerId, 'player_or_coach');
   if (!access.authorized) {
     return { success: false, error: access.error || 'Not authorized to generate review for this player', code: 'unauthorized' };
+  }
+
+  // Rate-limit a REGENERATE — derived server-side from whether a stored
+  // review already exists for this round, never trusted from a caller-
+  // supplied flag (a direct caller could simply omit one to dodge the gate).
+  // First generation (no row yet) stays ungated — this is exactly the state
+  // the page's own auto-generate effect and `useRoundReviewV2`'s independent
+  // auto-generate effect fire in (both guard on `!storedReview`/no existing
+  // row), so this derivation naturally exempts ordinary automatic behaviour
+  // (e.g. a coach opening several different players' unreviewed rounds in a
+  // row) without needing to know who's calling. A failed existence read
+  // fails CLOSED: an unknown state is treated as "a review exists" so a DB
+  // hiccup can never quietly exempt a caller from the cost gate. Reuses the
+  // shared CoachHelm-engine bucket (5/min/user, `gateCoachHelmEngineCall`)
+  // since a cold OR repeat generate here runs the same
+  // `coachHelmIntelligence.generateRoundReview` engine call that bucket
+  // already gates everywhere else. Checked before the single-flight join
+  // below so a rate-limited caller never joins (or starts) a compute.
+  const { data: existingReviewRow, error: existingReviewError } = await supabase
+    .from('golf_round_reviews')
+    .select('id')
+    .eq('round_id', roundId)
+    .maybeSingle();
+  if (existingReviewError || existingReviewRow) {
+    const rateLimit = await gateCoachHelmEngineCall(user.id);
+    if (!rateLimit.allowed) {
+      return { success: false, error: rateLimit.error, code: 'rate_limited' };
+    }
   }
 
   // The check above authorizes the PLAYER and takes `roundId` on trust — the
