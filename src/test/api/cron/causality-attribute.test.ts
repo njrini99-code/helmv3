@@ -856,6 +856,45 @@ describe('causality-attribute cron A9 slice 1: comparable-opportunity attributio
     expect(summary.comparable_follow_up_open).toBe(1);
   });
 
+  it('MUST 2 pre-filter: candidate-page pagination continues to page 2 when EVERY shot-level candidate on page 1 is dropped by the pre-filter', async () => {
+    // #2007 re-review follow-up: a whole FETCH_PAGE_SIZE (200) page of
+    // shot-level candidates dropped by the bulk pre-filter must not stall
+    // the outer candidate-page loop — it should keep paginating (todo.length
+    // stays 0, which is still < LIMIT) until it finds an attributable
+    // candidate on a later page, the same way the P1 pagination rewrite
+    // guarantees for intentional-null-only pages.
+    isFlagEnabledMock.mockReturnValue(true);
+    computeComparableAttributionMock.mockResolvedValue({ ok: false, reason: 'insufficient-evidence' });
+    const droppedRows = Array.from({ length: 200 }, (_, i) =>
+      fixture({ id: `drop-${i}`, evidence: { metric: SHOT_LEVEL_METRIC } }),
+    ); // default created_at is OLD; no exposure fixture below => all dropped
+    // as comparable_no_exposure_record and never take a todo slot.
+    const goodRow = fixture({
+      id: 'insight-good',
+      evidence: { metric: SHOT_LEVEL_METRIC },
+      // Later than OLD (still older than the 21d cutoff) so ascending
+      // created_at order sorts it onto page 2, after all 200 dropped rows.
+      created_at: new Date(Date.now() - 22 * 86_400_000).toISOString(),
+    });
+    const rows = [...droppedRows, goodRow];
+    const { client } = makeClient(rows, {
+      exposures: { 'insight-good': WINDOW_CLOSED_IN_GRACE },
+    });
+    createAdminMock.mockReturnValue(client);
+
+    const res = await POST(authedRequest());
+    const summary = await res.json();
+
+    // All 200 page-1 candidates dropped cheaply, never reaching the mock...
+    expect(summary.comparable_no_exposure_record).toBe(200);
+    // ...but pagination continued to page 2 and found the one good candidate.
+    expect(computeComparableAttributionMock).toHaveBeenCalledTimes(1);
+    expect(computeComparableAttributionMock).toHaveBeenCalledWith(
+      client,
+      expect.objectContaining({ insight_id: 'insight-good' }),
+    );
+  });
+
   it('residual on MUST 2: a shot-level candidate whose retry horizon (window close + 14d grace) has expired is dropped for good and never reaches computeComparableAttribution', async () => {
     isFlagEnabledMock.mockReturnValue(true);
     // Shown 40 days ago: the 21-day window closed at day 21, and the 14-day
@@ -886,6 +925,32 @@ describe('causality-attribute cron A9 slice 1: comparable-opportunity attributio
 
     expect(summary.comparable_retry_horizon_expired).toBe(0);
     expect(computeComparableAttributionMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('residual on MUST 2: the exact retry-horizon boundary instant (window close + 14d grace === now) is NOT expired — proves the check is a strict <, not <=', async () => {
+    isFlagEnabledMock.mockReturnValue(true);
+    computeComparableAttributionMock.mockResolvedValue({ ok: false, reason: 'insufficient-evidence' });
+    vi.useFakeTimers();
+    try {
+      vi.setSystemTime(new Date('2026-09-23T00:00:00.000Z'));
+      // shownAt + POST_WINDOW_DAYS(21) + RETRY_GRACE_DAYS(14) === now exactly.
+      const shownAt = new Date(Date.now() - 35 * 86_400_000).toISOString();
+      const rows = [fixture({ id: 'insight-1', evidence: { metric: SHOT_LEVEL_METRIC } })];
+      const { client } = makeClient(rows, { exposures: { 'insight-1': shownAt } });
+      createAdminMock.mockReturnValue(client);
+
+      const res = await POST(authedRequest());
+      const summary = await res.json();
+
+      // Not expired at the exact instant — the horizon check
+      // (`followUpWindowEndMs + RETRY_GRACE_DAYS * 86_400_000 < Date.now()`)
+      // is a strict `<`, so an equal value still reaches the mock.
+      expect(summary.comparable_retry_horizon_expired).toBe(0);
+      expect(summary.comparable_follow_up_open).toBe(0);
+      expect(computeComparableAttributionMock).toHaveBeenCalledTimes(1);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('MUST 2 pre-filter: a bulk exposure-fetch error is logged distinctly, counted, and the page never reaches computeComparableAttribution', async () => {
