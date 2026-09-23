@@ -925,7 +925,7 @@ jobs:
         run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
 
       - name: Start local Supabase stack
-        run: supabase start
+        run: bash scripts/db/supabase-start-with-retry.sh
 
       - name: Lint migrations
         run: supabase db lint --schema public
