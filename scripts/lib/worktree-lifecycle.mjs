@@ -340,18 +340,26 @@ export function classifyWorktree(facts) {
   // branch deletion, never for checkout parkability, which is why parking
   // still refused after a merge even though the branch was correctly
   // deletable.
-  if (!f.upstream) {
-    if (f.prState === 'MERGED' && f.prHeadSha && f.prHeadSha === f.localSha) {
+  //
+  // The same escape covers a CONFIGURED upstream whose ref is gone. `pr:land`
+  // deletes the remote branch but leaves the checkout's tracking config, so a
+  // landed checkout reports `upstream: origin/<branch>` with no readable
+  // remote tip — which previously fell to UNKNOWN_REMOTE and kept every landed
+  // worktree forever while its branch was already DELETE_MERGED_EXACT.
+  const mergedExact = f.prState === 'MERGED' && f.prHeadSha && f.prHeadSha === f.localSha;
+  if (!f.upstream || !f.remoteSha) {
+    if (mergedExact) {
+      const what = f.upstream ? `${f.upstream} is gone` : 'no upstream';
       return {
         verdict: PARKABLE,
         reason:
-          `no upstream, but PR #${f.prNumber} MERGED with tip === PR head ${short(f.prHeadSha)} ` +
+          `${what}, but PR #${f.prNumber} MERGED with tip === PR head ${short(f.prHeadSha)} ` +
           '— stronger proof than a remote ref, and the remote branch is gone precisely because it merged',
       };
     }
-    return { verdict: UNKNOWN_REMOTE, reason: 'no upstream — commits here may exist nowhere else' };
-  }
-  if (!f.remoteSha) {
+    if (!f.upstream) {
+      return { verdict: UNKNOWN_REMOTE, reason: 'no upstream — commits here may exist nowhere else' };
+    }
     return { verdict: UNKNOWN_REMOTE, reason: `could not read ${f.upstream}` };
   }
   if (f.localSha !== f.remoteSha) {

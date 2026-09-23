@@ -259,6 +259,26 @@ describe('createWorkspace — what it writes', () => {
     expect(git(['config', '--get', 'core.hooksPath'], seed)).toBe(join(seed, '.githooks'));
   });
 
+  it('keeps the branch\'s tracked .mcp.json even when canonical\'s copy has drifted', async () => {
+    // Canonical's working copy lagging main (0.0.79 vs a committed 0.0.82)
+    // used to be copied over the tracked file, so every new worktree was born
+    // dirty and could never be parked after its PR landed.
+    writeFileSync(join(seed, '.mcp.json'), '{"v":"committed"}\n');
+    git(['add', '.mcp.json'], seed);
+    git(['commit', '-qm', 'mcp'], seed);
+    git(['push', '-q', 'origin', 'main'], seed);
+    writeFileSync(join(seed, '.mcp.json'), '{"v":"canonical-drift"}\n');
+    const result = await createWorkspace({ name: 'mcp-tracked', repo: seed, home, base: 'origin/main' });
+    expect(readFileSync(join(result.path, '.mcp.json'), 'utf-8')).toBe('{"v":"committed"}\n');
+    expect(git(['status', '--porcelain'], result.path)).toBe('');
+  });
+
+  it('copies canonical .mcp.json into a branch that does not track one', async () => {
+    writeFileSync(join(seed, '.mcp.json'), '{"v":"canonical"}\n');
+    const result = await createWorkspace({ name: 'mcp-absent', repo: seed, home, base: 'origin/main' });
+    expect(readFileSync(join(result.path, '.mcp.json'), 'utf-8')).toBe('{"v":"canonical"}\n');
+  });
+
   it('leaves the new worktree with a clean `git status --porcelain`', async () => {
     const result = await createWorkspace({ name: 'clean', repo: seed, home });
     expect(git(['status', '--porcelain'], result.path)).toBe('');
