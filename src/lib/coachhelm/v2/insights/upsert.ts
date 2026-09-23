@@ -420,15 +420,27 @@ async function updateExisting(
       // EVIDENCE-only refresh. Retry (once) only if OUR incoming evidence
       // is actually newer than what is now persisted; otherwise we are the
       // stale worker and must not clobber a concurrent newer revision.
-      if (attempt < 1 && isEvidenceNewer(evidence, fresh.evidence)) {
+      const evidenceIsNewer = isEvidenceNewer(evidence, fresh.evidence);
+      if (attempt < 1 && evidenceIsNewer) {
         return updateExisting(supabase, fresh, input, evidence, teamId, attempt + 1);
       }
+      const reason = evidenceIsNewer
+        ? `retry budget exhausted (attempt=${attempt}) while incoming evidence is still newer than the ` +
+          `already-persisted sample_n=${fresh.evidence?.sample_n ?? 'null'}/window_end=${fresh.evidence?.window_end ?? 'null'}; ` +
+          `dropping to bound the race instead of retrying indefinitely`
+        : `incoming sample_n=${evidence.sample_n}/window_end=${evidence.window_end} is not newer than the ` +
+          `already-persisted sample_n=${fresh.evidence?.sample_n ?? 'null'}/window_end=${fresh.evidence?.window_end ?? 'null'}; ` +
+          `skipping write to avoid regressing a concurrent newer revision`;
       await logServerError(
-        `upsertInsight.updateExisting: dropped a stale evidence write for insight=${existing.id} ` +
-          `(incoming sample_n=${evidence.sample_n}/window_end=${evidence.window_end} is not newer than the ` +
-          `already-persisted sample_n=${fresh.evidence?.sample_n ?? 'null'}/window_end=${fresh.evidence?.window_end ?? 'null'}); ` +
-          `skipping write to avoid regressing a concurrent newer revision`,
-        { action: 'coachhelm.upsert.updateExisting.cas', featureArea: 'coachhelm', extra: { insightId: existing.id } },
+        `upsertInsight.updateExisting: dropped a stale evidence write for insight=${existing.id} (${reason})`,
+        {
+          action: 'coachhelm.upsert.updateExisting.cas',
+          featureArea: 'coachhelm',
+          extra: { insightId: existing.id },
+          // Expected, benign outcome of the CAS design itself (a losing
+          // concurrent writer backing off) — not an anomaly worth paging on.
+          skipSentry: true,
+        },
         'warning',
       );
       return existing.id;
