@@ -46,6 +46,28 @@ export interface AppTriageEventRow {
   metadata?: unknown;
 }
 
+/**
+ * One person an incident actually happened to.
+ *
+ * `userId` is null when the row carried only an email (some capture paths
+ * record one and not the other), and that distinction is load-bearing: only a
+ * real id can link to `/admin/thread/user/<id>`, so a UI must never build that
+ * href from an email. Never both null — an entry with no identity at all is
+ * not an identity and is dropped at the source.
+ */
+export interface AffectedPerson {
+  userId: string | null;
+  email: string | null;
+}
+
+/**
+ * How many identities travel with one incident. The point is answering "who
+ * hit this" at a glance, not exporting a mailing list — `affectedUsers` stays
+ * the honest full count, and a UI that renders these says "+N more" past the
+ * cap rather than implying it has them all.
+ */
+export const MAX_AFFECTED_PEOPLE = 25;
+
 export interface TriageItem {
   key: string;
   origin: 'sentry' | 'app';
@@ -125,6 +147,46 @@ export interface TriageItem {
   isFixture: boolean;
   /** Pre-built Copy-for-Claude markdown — see @/lib/admin/incident-report. */
   report: string;
+  /**
+   * The exact text `correlate.ts` must hash to join this item to the
+   * reliability collector's `CorrelatedSignal` for the same fault.
+   *
+   * WHY IT EXISTS AT ALL. `correlate.ts` used to hash `item.title`, while
+   * `correlationSignature` (`@/lib/reliability/normalize.ts`) hashes the
+   * MESSAGE each collector arm read. Two derivations, two keyspaces, so an
+   * app fingerprint and its reliability twin could never land in one bucket.
+   * Measured against production on 2026-09-08: of 22 app incidents in the
+   * 72h window, ZERO joined a reliability signal under the title key and 13
+   * join under this one — and the whole board reported `corroboration > 1`
+   * exactly once in 84 incidents.
+   *
+   * Each branch below sets this to the SAME expression its counterpart arm in
+   * `@/lib/reliability/sources.ts` uses, so the two are compared field for
+   * field rather than by coincidence:
+   *  - app    → `row.message ?? row.title ?? ''`      (sources.ts's Supabase arm)
+   *  - sentry → `culprit ? \`${title} — ${culprit}\`` (sources.ts's Sentry arm)
+   * Keep them in lockstep: changing one without the other silently reopens
+   * the split, and only the live `corroboration` count would show it.
+   */
+  correlationMessage: string;
+  /**
+   * WHO this happened to, up to `MAX_AFFECTED_PEOPLE`. Empty for Sentry
+   * items, whose API gives a `userCount` and no identities.
+   *
+   * This is the other half of `affectedUsers`. The Set of `user_id`/
+   * `user_email` behind that number has always been built here and then
+   * reduced to `.size` on the next line — the identities were read out of the
+   * database, counted, and dropped, so every surface downstream could say
+   * "2 users" and none could say which two. `/admin/thread/user/<id>` and
+   * `entity-thread.ts` have existed the whole time with nothing linking to
+   * them from an incident.
+   *
+   * Deliberately NOT folded into `report`: that string is what the RCA action
+   * forwards to a third-party model, and an operator asking "who hit this"
+   * on a super-admin page is a different question from what belongs in a
+   * prompt.
+   */
+  affectedPeople: AffectedPerson[];
 }
 
 /**
@@ -296,10 +358,15 @@ export function mergeTriage(input: {
     // Sentry's title IS its summary line; there is no separate message to
     // prefer, and its culprit is already rendered as the path.
     description: issue.title,
+    // Character-for-character `sources.ts`'s Sentry arm — see the field's doc.
+    correlationMessage: issue.culprit ? `${issue.title} — ${issue.culprit}` : issue.title,
     severity,
     sport: hintSport,
     occurrences: issue.count,
     affectedUsers: issue.userCount,
+    // Sentry's issue-list endpoint returns a `userCount` and no identities;
+    // an empty array here is the honest answer, not a gap to fill in.
+    affectedPeople: [],
     firstSeen: issue.firstSeen,
     lastSeen: issue.lastSeen,
     permalink: issue.permalink,
@@ -340,14 +407,30 @@ export function mergeTriage(input: {
     };
   });
 
-  const buckets = new Map<string, { rows: AppTriageEventRow[]; users: Set<string> }>();
+  const buckets = new Map<
+    string,
+    { rows: AppTriageEventRow[]; users: Map<string, AffectedPerson> }
+  >();
   for (const row of input.appEvents) {
     if (isExpectedAuthNoise(row)) continue;
     const fp = row.fingerprint ?? `row:${row.id}`;
-    const bucket = buckets.get(fp) ?? { rows: [], users: new Set<string>() };
+    const bucket = buckets.get(fp) ?? { rows: [], users: new Map<string, AffectedPerson>() };
     bucket.rows.push(row);
+    // A Map keyed on the SAME `user_id ?? user_email` string the Set used, so
+    // `.size` is the identical count it always was — but keeping the identity
+    // instead of discarding it. Prefer the entry that carries an id: two rows
+    // for one person can record the id on one and only the email on the other,
+    // and the id is what makes the person linkable.
     const userKey = row.user_id ?? row.user_email ?? null;
-    if (userKey) bucket.users.add(userKey);
+    if (userKey) {
+      const existing = bucket.users.get(userKey);
+      if (!existing || (existing.userId === null && row.user_id)) {
+        bucket.users.set(userKey, {
+          userId: row.user_id ?? null,
+          email: row.user_email ?? null,
+        });
+      }
+    }
     buckets.set(fp, bucket);
   }
 
@@ -430,10 +513,17 @@ export function mergeTriage(input: {
       origin: 'app',
       title: last.title,
       description: buildIncidentDescription(last.message, last.title, actionName),
+      // Character-for-character `sources.ts`'s Supabase arm — see the field's
+      // doc. Deliberately the RAW message, not `description`: the latter has
+      // contextual suffix text appended for short messages
+      // (buildIncidentDescription), which the collector never sees.
+      correlationMessage: last.message ?? last.title ?? '',
       severity: worst,
       sport: normalizeSport(last.sport),
       occurrences: bucket.rows.length,
       affectedUsers: bucket.users.size,
+      // The identities behind that count, capped — see the field's doc.
+      affectedPeople: [...bucket.users.values()].slice(0, MAX_AFFECTED_PEOPLE),
       firstSeen: first.created_at,
       lastSeen: last.created_at,
       permalink: null,

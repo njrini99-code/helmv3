@@ -423,7 +423,7 @@ Team Operations · active · criticality high · owner product
 | `golf_round_lifecycle` | `roster_team` | import_graph (weak) |
 | `golf_round_lifecycle` | `stats_analytics` | import_graph (weak) |
 | `observability_sentry` | `admin_platform` | import_graph (weak) |
-| `observability_sentry` | `auth_onboarding_join` | feature_doc_contract |
+| `observability_sentry` | `auth_onboarding_join` | feature_doc_contract, import_graph |
 | `observability_sentry` | `coachhelm_ai` | feature_doc_contract |
 | `observability_sentry` | `golf_round_lifecycle` | feature_doc_contract |
 | `observability_sentry` | `shot_tracking` | feature_doc_contract |

@@ -52,7 +52,13 @@ interface RelayedErrorBody {
   routeType?: unknown;
   routerKind?: unknown;
   method?: unknown;
+  userId?: unknown;
+  userEmail?: unknown;
 }
+
+/** A Supabase user id is a UUID; anything else is not one and is dropped
+ *  rather than written into `admin_events.user_id`, whose column is a uuid. */
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export async function POST(request: NextRequest) {
   const expected = process.env.INTERNAL_LOG_KEY;
@@ -76,6 +82,16 @@ export async function POST(request: NextRequest) {
   const routeType = typeof body.routeType === 'string' ? body.routeType.slice(0, 50) : null;
   const routerKind = typeof body.routerKind === 'string' ? body.routerKind.slice(0, 50) : null;
   const method = typeof body.method === 'string' ? body.method.slice(0, 10) : null;
+  // WHO, relayed from the edge branch of onRequestError — that frame resolved
+  // it from the request's own cookies (observed-user-from-request.ts) because
+  // this route cannot see them. Validated in shape here regardless: the caller
+  // is authenticated by a shared secret, but a malformed id would fail the
+  // insert and cost the whole error row rather than one field.
+  const userId = typeof body.userId === 'string' && UUID_RE.test(body.userId) ? body.userId : null;
+  const userEmail =
+    typeof body.userEmail === 'string' && body.userEmail.includes('@')
+      ? body.userEmail.slice(0, 320)
+      : null;
 
   const relayedError = new Error(message);
   relayedError.name = name;
@@ -90,6 +106,8 @@ export async function POST(request: NextRequest) {
       handled: false,
       statusCode: 500,
       runtime: 'edge',
+      userId,
+      userEmail,
       metadata: { routerKind, routeType, method },
     },
     'error',
