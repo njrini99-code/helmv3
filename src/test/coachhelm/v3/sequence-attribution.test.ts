@@ -13,7 +13,11 @@ import { describe, it, expect } from 'vitest';
 import { getExpectedStrokes } from '@/lib/utils/golf-stats-calculator-shots';
 import { normalizeShot, type RawShotInput } from '@/lib/coachhelm/v3/context/normalize-shot';
 import type { HoleContext, ShotFact } from '@/lib/coachhelm/v3/context/types';
-import { attributeSequence } from '@/lib/coachhelm/v3/metrics/sequence-attribution';
+import {
+  attributeSequence,
+  computeSequenceAttribution,
+  SEQUENCE_MIN_EVENTS,
+} from '@/lib/coachhelm/v3/metrics/sequence-attribution';
 import {
   aroundGreenHoleOut,
   explicitPenaltyPair,
@@ -843,5 +847,123 @@ describe('attributeSequence — a missing before-distance still surfaces a non-n
 
     expect(result.totalMeasuredContribution).toBeNull();
     expect(result.exclusions).toEqual({ missing_distance: 1 });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// computeSequenceAttribution (addendum §13, A4 slice 2) — the scope-wide
+// MetricResult[] rollup. Reuses this file's own per-hole fixtures rather
+// than inventing new ones: CONSERVATION_HOLE (every event resolved),
+// incompleteShotSequence (suppressed), explicitPenaltyPair (a resolved
+// population and a null/gap population on the SAME hole).
+// ---------------------------------------------------------------------------
+describe('computeSequenceAttribution — conservation and the insufficient-but-real-value case', () => {
+  it('sums one attributed hole into per-kind rows whose numerator/value match the single event, each below the events floor', () => {
+    const facts = factsFor(CONSERVATION_RAW_SHOTS);
+    const rows = computeSequenceAttribution(facts, [CONSERVATION_HOLE], SCOPE);
+
+    const perHole = attributeSequence(facts, CONSERVATION_HOLE, SCOPE);
+    expect(perHole.status).toBe('attributed');
+
+    for (const kind of ['tee_to_next', 'approach_to_recovery', 'first_putt_to_next_putt'] as const) {
+      const row = rows.find((r) => r.metricId === 'sequence_event_strokes_gained' && r.dimensions.event_kind === kind);
+      expect(row).toBeDefined();
+      const matching = perHole.events.filter((e) => e.kind === kind);
+      expect(matching).toHaveLength(1);
+      expect(row!.denominator).toBe(1);
+      expect(row!.denominator).toBeLessThan(SEQUENCE_MIN_EVENTS);
+      // Below the floor, but the real value is still reported, never hidden.
+      expect(row!.status).toBe('insufficient');
+      expect(row!.value).not.toBeNull();
+      expect(row!.numerator).toBeCloseTo(matching[0]!.measuredContribution!, 10);
+      expect(row!.value).toBeCloseTo(matching[0]!.measuredContribution!, 10);
+      expect(row!.exclusions).toEqual({});
+    }
+  });
+
+  it('gives every kind that never occurred on any hole a zero-denominator, null-value invalid row', () => {
+    const facts = factsFor(CONSERVATION_RAW_SHOTS);
+    const rows = computeSequenceAttribution(facts, [CONSERVATION_HOLE], SCOPE);
+
+    for (const kind of ['putting_sequence', 'penalty', 'other'] as const) {
+      const row = rows.find((r) => r.metricId === 'sequence_event_strokes_gained' && r.dimensions.event_kind === kind);
+      expect(row).toBeDefined();
+      expect(row!.denominator).toBe(0);
+      expect(row!.value).toBeNull();
+      expect(row!.numerator).toBeNull();
+      expect(row!.status).toBe('invalid');
+    }
+  });
+
+  it('reports a real, non-null coverage value even though it is below the holes floor', () => {
+    const facts = factsFor(CONSERVATION_RAW_SHOTS);
+    const rows = computeSequenceAttribution(facts, [CONSERVATION_HOLE], SCOPE);
+
+    const coverage = rows.find((r) => r.metricId === 'sequence_hole_coverage')!;
+    expect(coverage.dimensions).toEqual({});
+    expect(coverage.value).toBe(1);
+    expect(coverage.denominator).toBe(1);
+    expect(coverage.observedCount).toBe(1);
+    expect(coverage.distinctRounds).toBe(1);
+    expect(coverage.status).toBe('insufficient'); // 1 attributed hole < SEQUENCE_MIN_HOLES
+    expect(coverage.exclusions).toEqual({});
+  });
+});
+
+describe('computeSequenceAttribution — a suppressed hole contributes no events but is still counted', () => {
+  it('excludes the suppressed hole from every per-kind row while naming its reasons on the coverage row', () => {
+    const suppressedHole = incompleteShotSequence.holes[0]!;
+    const facts = [
+      ...factsFor(CONSERVATION_RAW_SHOTS),
+      ...factsFor(incompleteShotSequence.rawShots),
+    ];
+    const rows = computeSequenceAttribution(facts, [CONSERVATION_HOLE, suppressedHole], SCOPE);
+
+    const perHoleSuppressed = attributeSequence(factsFor(incompleteShotSequence.rawShots), suppressedHole, SCOPE);
+    expect(perHoleSuppressed.status).toBe('suppressed');
+
+    // The suppressed hole's round contributes zero events to any kind — the
+    // conservation hole's single events are all that appear.
+    for (const kind of ['tee_to_next', 'approach_to_recovery', 'first_putt_to_next_putt'] as const) {
+      const row = rows.find((r) => r.metricId === 'sequence_event_strokes_gained' && r.dimensions.event_kind === kind)!;
+      expect(row.denominator).toBe(1);
+      expect(row.distinctRounds).toBe(1);
+    }
+
+    const coverage = rows.find((r) => r.metricId === 'sequence_hole_coverage')!;
+    // Both holes are visible in observedCount; only the attributed one counts
+    // toward value/denominator.
+    expect(coverage.observedCount).toBe(2);
+    expect(coverage.value).toBe(1);
+    expect(coverage.denominator).toBe(1);
+    for (const reason of perHoleSuppressed.reasons) {
+      expect(coverage.exclusions[reason]).toBe(1);
+    }
+  });
+});
+
+describe('computeSequenceAttribution — an unresolved (gap) event lands in exclusions, never the denominator', () => {
+  it('keeps the penalty row at a zero denominator while naming the gap reason and count', () => {
+    const hole = explicitPenaltyPair.holes[0]!;
+    const facts = factsFor(explicitPenaltyPair.rawShots);
+    const rows = computeSequenceAttribution(facts, [hole], SCOPE);
+
+    const perHole = attributeSequence(facts, hole, SCOPE);
+    const penaltyEvents = perHole.events.filter((e) => e.kind === 'penalty');
+    expect(penaltyEvents).toHaveLength(2);
+    for (const event of penaltyEvents) {
+      expect(event.measuredContribution).toBeNull();
+      expect(event.baselineGap).toBe('missing_distance');
+    }
+
+    const penaltyRow = rows.find((r) => r.metricId === 'sequence_event_strokes_gained' && r.dimensions.event_kind === 'penalty')!;
+    expect(penaltyRow.denominator).toBe(0);
+    expect(penaltyRow.value).toBeNull();
+    expect(penaltyRow.numerator).toBeNull();
+    expect(penaltyRow.status).toBe('invalid');
+    // Both gap events are still visible in the wider population...
+    expect(penaltyRow.observedCount).toBe(2);
+    // ...but named as exclusions, never smuggled into the denominator.
+    expect(penaltyRow.exclusions).toEqual({ missing_distance: 2 });
   });
 });

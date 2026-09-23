@@ -127,8 +127,13 @@ function statusFor(denominator: number, minN: number): MetricStatus {
  * This does NOT, and cannot, scope Family 1 (`par_length_scoring`):
  * `HoleContext` carries no date field at all. See `computeParLengthScoring`'s
  * doc comment below for that family's (different) scope contract.
+ *
+ * Exported so `sequence-attribution.ts`'s scope-wide rollup (A4 slice 2) can
+ * reuse this exact filter rather than defining a second, possibly-drifting
+ * copy of the same window/cutoff logic — both modules read `ShotFact`
+ * timestamps the same way.
  */
-function factsInScope(facts: readonly ShotFact[], scope: AnalysisScope): ShotFact[] {
+export function factsInScope(facts: readonly ShotFact[], scope: AnalysisScope): ShotFact[] {
   const cutoff = Date.parse(scope.analysis_cutoff);
   const start = scope.window_start;
   const end = scope.window_end;
