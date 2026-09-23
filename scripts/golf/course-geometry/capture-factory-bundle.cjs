@@ -42,7 +42,11 @@ const output = path.resolve(args.out || `output/playwright/factory-bundles/${lay
         const renderer = await page.locator('canvas[data-terrain-state="ready"]').evaluate(el => ({ ...el.dataset }));
         if (evidence.factoryBundle !== bundle || evidence.packageHash !== manifest.packageHash || evidence.meshHash !== expected.meshHash || renderer.terrainHash !== expected.meshHash) throw new Error('Captured identity mismatch');
         const file = `${key}-terrain-390x844.png`;
-        await page.screenshot({ path: path.join(output, file), fullPage: true });
+        // The 390x844 viewport, not fullPage: Chromium 151's full-page capture
+        // re-renders the lab mid-shot and fitTerrainCamera throws, unmounting
+        // the page into a blank screenshot that still read as captured.
+        await page.screenshot({ path: path.join(output, file) });
+        if (await page.locator('canvas[data-terrain-state="ready"]').count() === 0) throw new Error('terrain canvas gone after the screenshot');
         captures.push({ holeKey: key, file, evidence, renderer });
         console.log(`${key}: draw ${renderer.drawCalls}/${renderer.drawCallBudget}, mesh ${expected.meshHash.slice(0, 12)}`);
       } catch (error) {
@@ -50,7 +54,7 @@ const output = path.resolve(args.out || `output/playwright/factory-bundles/${lay
         // get captured (a thrown error here used to abandon the whole run).
         const terrainState = await page.locator('canvas[data-terrain-state]').first().getAttribute('data-terrain-state', { timeout: 100 }).catch(() => null);
         const file = `${key}-failed-390x844.png`;
-        await page.screenshot({ path: path.join(output, file), fullPage: true }).catch(() => {});
+        await page.screenshot({ path: path.join(output, file) }).catch(() => {});
         errors.push({ hole: key, message: String(error.message || error).slice(0, 2500), terrainState, file });
         console.error(`${key}: FAILED (${terrainState ?? 'no terrain canvas'}) ${String(error.message || error).split('\n')[0].slice(0, 200)}`);
       } finally { await page.close(); }

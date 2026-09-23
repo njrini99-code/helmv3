@@ -117,6 +117,33 @@ def hole_free_parts(polygon):
     return pieces
 
 
+TERRITORY_SPACING_M = 10  # sample spacing along each hole's own geometry for the nearest-hole partition
+
+
+def hole_territories(own_by_hole, bounds):
+    """Each hole's share of the plane: every point goes to the hole whose own
+    geometry (route, tees, green, fairways) is nearest. Canopy used to be
+    clipped per hole to overlapping context boxes, so one forest was written
+    once per nearby hole -- about three copies on Golden Horseshoe, which
+    pushed a hole mesh past the runtime's 255-entry feature table."""
+    from shapely import MultiPoint, segmentize, voronoi_polygons
+    points, owners = [], []
+    for key, geoms in own_by_hole.items():
+        for geom in geoms:
+            line = geom.exterior if geom.geom_type == 'Polygon' else geom
+            coords = segmentize(line, TERRITORY_SPACING_M).coords
+            points.extend(coords)
+            owners.extend([key] * len(coords))
+    unique = {}
+    for point, owner in zip(points, owners):
+        unique.setdefault((round(point[0], 3), round(point[1], 3)), owner)
+    cells = voronoi_polygons(MultiPoint(list(unique)), extend_to=bounds, ordered=True)
+    by_hole = {}
+    for cell, owner in zip(cells.geoms, unique.values()):
+        by_hole.setdefault(owner, []).append(cell)
+    return {key: unary_union(parts).intersection(bounds) for key, parts in by_hole.items()}
+
+
 class NoFPACCoverage(RuntimeError):
     """FPAC conus_naip has no catalog tiles for this request; the caller may
     fall back to the facility's indexed NAIP Plus cache."""
@@ -401,10 +428,14 @@ def main():
     regions = []
     final_region_shapes = []
     masses = 0  # canopy groups before clearing splits: the density bound measures speckle, not seams
+    own_by_hole = {hole['key']: [shapes[i] for i in hole['featureIds'] if i in shapes] for hole in pkg['holes']}
+    territories = hole_territories(own_by_hole, box(extent['xmin'], extent['ymin'], extent['xmax'], extent['ymax']))
     for hole in pkg['holes']:
-        own = [shapes[i] for i in hole['featureIds'] if i in shapes]
+        own = own_by_hole[hole['key']]
         minx, miny, maxx, maxy = unary_union(own).bounds
-        context = box(minx - CONTEXT_MARGIN_M, miny - CONTEXT_MARGIN_M, maxx + CONTEXT_MARGIN_M, maxy + CONTEXT_MARGIN_M)
+        # Each canopy cell is written once, by its nearest hole, within that
+        # hole's context margin.
+        context = box(minx - CONTEXT_MARGIN_M, miny - CONTEXT_MARGIN_M, maxx + CONTEXT_MARGIN_M, maxy + CONTEXT_MARGIN_M).intersection(territories[hole['key']])
         # Whole groups per hole: round the raster stair-steps, then simplify.
         # Tiling would leave straight seams through a forest; the renderer
         # spreads its crown budget across large groups by adaptive spacing.

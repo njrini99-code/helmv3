@@ -29,6 +29,9 @@ NAVD88_SPELLINGS = frozenset({
 # Mirrors meshSchema.source.provider's z.enum; test_terrain_contract checks
 # the two stay aligned.
 RUNTIME_PROVIDERS = frozenset({'USGS 3DEP', 'usgs_3dep_project_1m', 'nc_onemap_dem03'})
+# meshSchema.triangleFeatures is z.number().int().min(0).max(255): one byte
+# per triangle indexes the mesh's feature table.
+RUNTIME_MAX_FEATURES = 256
 
 
 def conform_mesh(mesh):
@@ -53,6 +56,9 @@ def contract_problems(mesh):
         problems.append({'code': 'TERRAIN_VERTICAL_DATUM_UNSUPPORTED', 'verticalDatum': mesh.get('verticalDatum')})
     if source.get('provider') not in RUNTIME_PROVIDERS:
         problems.append({'code': 'TERRAIN_PROVIDER_UNSUPPORTED', 'provider': source.get('provider')})
+    features = len(mesh.get('featureIds') or [])
+    if features > RUNTIME_MAX_FEATURES:
+        problems.append({'code': 'TERRAIN_FEATURE_TABLE_OVERFLOW', 'features': features, 'max': RUNTIME_MAX_FEATURES})
     missing = [k for k in ('acquisitionStart', 'acquisitionEnd') if not isinstance(source.get(k), str)]
     if missing:
         # The runtime shows acquisitionStart's year beside the terrain. A

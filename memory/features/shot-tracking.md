@@ -201,7 +201,15 @@ coverage, the review uses NAIP alone and names the reason
 `ept.json` hash and CHM hash. A review not drawn from the current CHM is not
 adoptable, and the canopy payload-reuse identity includes the lidar verdict.
 Regions are written as hole-free rings. A forest around a clearing is split
-through each clearing, and gaps under 200 m² between crowns are filled. The
+through each clearing, and gaps under 200 m² between crowns are filled.
+Each canopy cell is written once, by its nearest hole, within that hole's
+context margin. Holes share the plane through a Voronoi partition of points
+along their own geometry. Per-hole context boxes used to write one forest
+about three times, which pushed a hole mesh past the runtime's one-byte
+feature index. `ship` names any mesh over 256 features as
+`TERRAIN_FEATURE_TABLE_OVERFLOW`. Lab captures take the 390×844 viewport,
+not a full-page shot: Chromium 151 re-renders the lab mid-capture, and the
+camera fit then throws. The
 auto-review measures the written shapes. On Golden Horseshoe, NAIP alone put
 27% of its canopy on ground lidar measures under 1 m, which filled the
 fairways. `ship` blocks `CANOPY_IN_PLAY_CORRIDOR` when woods cover more than

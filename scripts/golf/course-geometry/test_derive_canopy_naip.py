@@ -269,3 +269,14 @@ class LidarMergeTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+class HoleTerritoryTests(unittest.TestCase):
+    def test_every_point_belongs_to_exactly_its_nearest_hole(self):
+        from shapely.geometry import LineString, Point
+        extent = box(0, 0, 400, 200)
+        territories = canopy.hole_territories({'h1': [LineString([(50, 20), (50, 180)])], 'h2': [LineString([(250, 20), (250, 180)])]}, extent)
+        self.assertTrue(territories['h1'].contains(Point(100, 100)))
+        self.assertTrue(territories['h2'].contains(Point(200, 100)))
+        self.assertAlmostEqual(territories['h1'].area + territories['h2'].area, extent.area, delta=1.0)
+        self.assertLess(territories['h1'].intersection(territories['h2']).area, 1.0)

@@ -5,7 +5,7 @@ from pathlib import Path
 
 from factory import ship
 from factory.fingerprints import content_hash_matches, digest
-from factory.terrain_contract import NAVD88_SPELLINGS, RUNTIME_DATUM, RUNTIME_PROVIDERS, conform_mesh, contract_problems
+from factory.terrain_contract import NAVD88_SPELLINGS, RUNTIME_DATUM, RUNTIME_MAX_FEATURES, RUNTIME_PROVIDERS, conform_mesh, contract_problems
 
 REPO = Path(__file__).resolve().parents[3]
 
@@ -60,7 +60,20 @@ class ContractProblemsTests(unittest.TestCase):
         self.assertEqual(codes, ['TERRAIN_VERTICAL_DATUM_UNSUPPORTED', 'TERRAIN_PROVIDER_UNSUPPORTED'])
 
 
+class FeatureTableTests(unittest.TestCase):
+    def test_more_features_than_one_byte_indexes_is_named(self):
+        doc = mesh()
+        doc['featureIds'] = [f'f{i}' for i in range(288)]
+        self.assertEqual([p['code'] for p in contract_problems(doc)], ['TERRAIN_FEATURE_TABLE_OVERFLOW'])
+        doc['featureIds'] = doc['featureIds'][:256]
+        self.assertEqual(contract_problems(doc), [])
+
+
 class RuntimeAlignmentTests(unittest.TestCase):
+    def test_feature_table_limit_matches_the_runtime_schema(self):
+        source = (REPO / 'src/lib/golf/course-geometry/terrain.ts').read_text()
+        self.assertIn(f'triangleFeatures: z.array(z.number().int().min(0).max({RUNTIME_MAX_FEATURES - 1}))', source)
+
     def test_constants_match_the_runtime_mesh_schema(self):
         source = (REPO / 'src/lib/golf/course-geometry/terrain.ts').read_text()
         self.assertIn(f"verticalDatum: z.literal('{RUNTIME_DATUM}')", source)
