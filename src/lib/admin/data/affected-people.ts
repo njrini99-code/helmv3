@@ -149,8 +149,17 @@ export async function resolveAffectedPeople(
  *
  * `row:<id>` keys resolve by primary key, mirroring `fetchFingerprintDetail`'s
  * own `scoped()` branch, so a pre-fingerprint row's detail page works too.
+ *
+ * IDENTITY_ROW_LIMIT is a TOTAL bound across pages, not a single-request
+ * `.limit()` — PostgREST caps every request at 1,000 rows regardless of what
+ * is asked for (`.claude/rules/database.md`), so a bare `.limit(2000)` here
+ * silently returned only 1,000 rows and looked complete. `PAGE_SIZE` stays at
+ * the cap and the loop below drains up to `IDENTITY_ROW_LIMIT` total rows in
+ * pages of `PAGE_SIZE`, ordered by `created_at` with an `id` tiebreaker so
+ * page boundaries don't drift when many rows share a timestamp.
  */
 const IDENTITY_ROW_LIMIT = 2000;
+const PAGE_SIZE = 1000;
 
 export async function fetchAffectedPeopleForFingerprint(
   rawFingerprint: string,
@@ -159,28 +168,35 @@ export async function fetchAffectedPeopleForFingerprint(
   const fingerprint = decodeURIComponent(rawFingerprint);
   const isRowKey = fingerprint.startsWith('row:');
 
-  let query = admin
-    .from('admin_events')
-    .select('user_id, user_email')
-    .neq('event_type', 'rca_analysis')
-    .order('created_at', { ascending: false })
-    .limit(IDENTITY_ROW_LIMIT);
-  query = isRowKey
-    ? query.eq('id', fingerprint.slice('row:'.length))
-    : query.eq('fingerprint', fingerprint);
+  const data: Array<{ user_id: string | null; user_email: string | null }> = [];
+  for (let from = 0; from < IDENTITY_ROW_LIMIT; from += PAGE_SIZE) {
+    const to = Math.min(from + PAGE_SIZE, IDENTITY_ROW_LIMIT) - 1;
+    let pageQuery = admin
+      .from('admin_events')
+      .select('user_id, user_email')
+      .neq('event_type', 'rca_analysis')
+      .order('created_at', { ascending: false })
+      .order('id', { ascending: false })
+      .range(from, to);
+    pageQuery = isRowKey
+      ? pageQuery.eq('id', fingerprint.slice('row:'.length))
+      : pageQuery.eq('fingerprint', fingerprint);
 
-  const { data, error } = await query;
-  if (error) {
-    console.warn('[fetchAffectedPeopleForFingerprint] identity read failed', error.message);
-    // `known: false` — "we could not read who", never "nobody".
-    return { people: [], total: 0, known: false };
+    const { data: page, error } = await pageQuery;
+    if (error) {
+      console.warn('[fetchAffectedPeopleForFingerprint] identity read failed', error.message);
+      // `known: false` — "we could not read who", never "nobody".
+      return { people: [], total: 0, known: false };
+    }
+    const rows = page ?? [];
+    data.push(...rows);
+    if (rows.length < PAGE_SIZE) break;
   }
 
   // Same `user_id ?? user_email` dedupe key `mergeTriage` uses, so this total
   // and the board's `affectedUsers` count the same population.
   const byKey = new Map<string, AffectedPerson>();
-  for (const raw of data ?? []) {
-    const row = raw as { user_id: string | null; user_email: string | null };
+  for (const row of data) {
     const key = row.user_id ?? row.user_email;
     if (!key) continue;
     const existing = byKey.get(key);

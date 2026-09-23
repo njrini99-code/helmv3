@@ -16247,6 +16247,11 @@
           "kind": "feature_doc_contract",
           "path": "memory/features/observability-sentry.md",
           "anchor": "auth_onboarding_join"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/observability/observed-user-from-request.ts",
+          "anchor": "src/lib/supabase/keys.mjs"
         }
       ]
     },

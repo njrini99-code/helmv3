@@ -139,6 +139,16 @@ always derived at read time.
   to a third-party model. The detail page's `AffectedPeoplePanel` keeps three
   states: named people, "no identity was captured" (a capture gap), and "could
   not read who" — the last must never render as the second.
+- **`fetchAffectedPeopleForFingerprint`'s identity read is paginated, not a
+  single `.limit()`.** It asked PostgREST for up to `IDENTITY_ROW_LIMIT`
+  (2000) `admin_events` rows in one request; PostgREST caps every request at
+  1,000 regardless of what `.limit()` asks for, so a fingerprint with more
+  than 1,000 distinct identity rows in its history silently undercounted
+  `total` and dropped names — no error, an incident that just looked smaller
+  than it was. `IDENTITY_ROW_LIMIT` is now a TOTAL bound drained across
+  `PAGE_SIZE` (1000) pages via `.range()`, ordered by `created_at` with an
+  `id` tiebreaker so a page boundary can't drop or duplicate a row when many
+  share a timestamp.
 - **Server-render faults capture the signed-in user from the request's own
   cookies.** `onRequestError` (`src/instrumentation.ts`) is the capture path for
   every server-render and route-handler failure and passed no identity at all,
