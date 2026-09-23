@@ -1098,6 +1098,11 @@
         "category": "actions"
       },
       {
+        "id": "actions:src/app/golf/actions/focus-area-practice-log.ts",
+        "pattern": "src/app/golf/actions/focus-area-practice-log.ts",
+        "category": "actions"
+      },
+      {
         "id": "actions:src/app/golf/actions/golf.ts",
         "pattern": "src/app/golf/actions/golf.ts",
         "category": "actions"
@@ -2696,6 +2701,12 @@
         "id": "golf_demo_sessions",
         "definedIn": [
           "supabase/migrations/20260611000000_create_golf_demo_sessions.sql"
+        ]
+      },
+      {
+        "id": "golf_focus_area_practice_sessions",
+        "definedIn": [
+          "supabase/migrations/20260923110000_golf_focus_area_practice_log.sql"
         ]
       },
       {
@@ -17211,6 +17222,18 @@
     },
     {
       "source": "player_coachhelm_development",
+      "target": "actions:src/app/golf/actions/focus-area-practice-log.ts",
+      "kind": "feature_action",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/app/golf/actions/focus-area-practice-log.ts"
+        }
+      ]
+    },
+    {
+      "source": "player_coachhelm_development",
       "target": "actions:src/app/golf/actions/intelligence-dashboard.ts",
       "kind": "feature_action",
       "evidence": [
@@ -17298,6 +17321,16 @@
           "kind": "import_graph",
           "path": "src/app/golf/actions/drills.ts",
           "line": 30
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/focus-area-practice-log.ts",
+          "line": 23
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/focus-area-practice-log.ts",
+          "line": 25
         },
         {
           "kind": "import_graph",
@@ -17482,6 +17515,21 @@
           "kind": "import_graph",
           "path": "src/app/golf/actions/drills.ts",
           "line": 31
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/focus-area-practice-log.ts",
+          "line": 21
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/focus-area-practice-log.ts",
+          "line": 22
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/focus-area-practice-log.ts",
+          "line": 24
         },
         {
           "kind": "import_graph",
@@ -18010,6 +18058,17 @@
           "kind": "import_graph",
           "path": "src/lib/coachhelm/v3/notifications/dispatch.ts",
           "line": 29
+        }
+      ]
+    },
+    {
+      "source": "player_coachhelm_development",
+      "target": "golf_focus_area_practice_sessions",
+      "kind": "feature_table",
+      "evidence": [
+        {
+          "kind": "migration_schema",
+          "path": "supabase/migrations/20260923110000_golf_focus_area_practice_log.sql"
         }
       ]
     },
