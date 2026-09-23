@@ -218,6 +218,28 @@ legacy `is_recurring` flag in sync for older consumers.
   view (`role="alert"`) so an end-before-start rejection is never rendered
   above the fold of a scrolled modal (UI-5 / P1-8).
 
+- Time fields (event editor start/end, busy-time editor) are the iOS Clock
+  drum on desktop and mobile alike (owner request, 2026-09-10):
+  `TimeWheel` in `src/components/fairway/controls/wheel-picker.tsx` — hour ·
+  minute · AM/PM columns, one continuous selection band, snap-on-settle,
+  keyboard listbox per column. Minutes are offered at 1-minute granularity
+  (the old list stepped by 15). `TimeChooser` (EventWhenFields.tsx) still
+  owns the trigger and the duration-from-start label; the drum has no per-row
+  label, so the length shows in the popover header beside the chosen time.
+  A popover closed via "Done" with nothing chosen commits the time it opened
+  on (start + 1 hr for the end field; the next quarter-hour otherwise).
+- The dashboard shell `router.prefetch`es Calendar on idle
+  (`useGolfSurfacePrewarm`, `src/hooks/golf/use-surface-prewarm.ts`) so the
+  FIRST tap is warmer than a cold navigation. Server `revalidate = 30` is
+  unchanged. Raising `experimental.staleTimes.dynamic` (Next's client Router
+  Cache TTL) to extend this further was tried and DROPPED (2026-09):
+  `staleTimes` is process-wide, not scoped to Golf, and the Router Cache can
+  serve a previously-rendered page from memory on a client-side back/forward
+  navigation without re-invoking middleware — i.e. without re-checking auth.
+  None of this repo's sign-out paths currently bust that cache, so it was cut
+  rather than shipped unaudited across Baseball/Lift Lab/Admin too —
+  `next.config.mjs` carries no diff for it.
+
 ## Known Risk Areas
 
 - Calendar has both premium/editorial and shared/simple component histories; avoid duplicating divergent logic.
