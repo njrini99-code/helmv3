@@ -460,6 +460,7 @@ describe('causality-attribute cron P3: null-lift does not upsert coach weights',
         n_rounds_after: 3,
         improvement_lift: lift,
         lift,
+        method_version: 'v2_observed_delta' as const,
       },
     };
   }
@@ -513,6 +514,7 @@ describe('causality-attribute cron P3: coach-weight upsert error is captured', (
         n_rounds_after: 3,
         improvement_lift: 0.5,
         lift: 0.5,
+        method_version: 'v2_observed_delta' as const,
       },
     });
     const { client } = makeClient([fixture({ id: 'r-1' })], {

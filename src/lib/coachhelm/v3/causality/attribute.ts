@@ -3,9 +3,28 @@
  *
  * For each insight surfaced ≥21 days ago without an attribution row,
  * compute baseline (14d before surfaced_at) + post (21d after) for the
- * insight's target metric. Lift is the post-vs-baseline delta minus
- * the player's ambient 90-day trend over the same window, so we don't
- * credit insights for improvements that would have happened anyway.
+ * insight's target metric. Lift is the observed, direction-corrected
+ * post-vs-baseline change (`method_version: 'v2_observed_delta'`).
+ *
+ * N10 (2026-09-22): this used to also fetch a 90-day "ambient" window and
+ * subtract `(ambient.avg - base.avg)` from the raw delta, on the theory that
+ * it nets out the player's pre-existing trend so we don't credit an insight
+ * for improvement that would have happened anyway. That theory was never
+ * actually implemented: `rawDelta - (ambient.avg - base.avg)` expands to
+ * `(post.avg - base.avg) - ambient.avg + base.avg`, which is `post.avg -
+ * ambient.avg` — `base.avg` cancels completely, so the "trend-adjusted"
+ * lift never used the baseline window at all, despite every comment near it
+ * claiming otherwise. Per the 2026-09-12 CoachHelm repair plan §6.7 item 1
+ * ("rename existing values according to what they actually calculate") and
+ * item 4 ("report the observed before/after change with uncertainty
+ * first"), v2 drops the ambient fetch and the fake trend adjustment and
+ * reports the real observed change instead. A validated predictive
+ * counterfactual (plan item 5) is future work, gated on held-out validation
+ * — not something to ship silently inside a bug fix.
+ *
+ * `method_version` (migration 20260922230000) distinguishes v1 rows
+ * (NULL — the post-vs-ambient value above) from v2 rows (the observed
+ * delta) so a reader/aggregate must never average the two together.
  *
  * Pure-ish: takes a Supabase client and one insight id, returns the
  * computed attribution row (or null if not enough data). The caller
@@ -72,11 +91,17 @@ export interface AttributionRow {
   n_rounds_before: number;
   n_rounds_after: number;
   /**
-   * Direction-CORRECTED, ambient-adjusted improvement signal: the raw
-   * ambient-adjusted lift multiplied by the metric's improvement sign (+1 for
-   * higher-is-better, −1 for lower-is-better). Positive ALWAYS means the player
-   * got better. This is the ONLY value that may drive `nextWeight`. `null` when
-   * the ambient sample is too thin to net out drift. Persisted as DB `lift`.
+   * Direction-CORRECTED observed improvement signal: `raw_delta` multiplied
+   * by the metric's improvement sign (+1 for higher-is-better, −1 for
+   * lower-is-better). Positive ALWAYS means the player got better. This is
+   * the ONLY value that may drive `nextWeight`. `null` when either window's
+   * sample is too thin to trust (see {@link MIN_WINDOW_ROUNDS}). Persisted
+   * as DB `lift`.
+   *
+   * N10 (2026-09-22): pre-v2 this was ALSO adjusted by a 90-day "ambient"
+   * window that algebraically cancelled the baseline and never did what its
+   * comments claimed — see the file header. v2 is the plain observed
+   * before/after change; there is no ambient adjustment to net out anymore.
    */
   improvement_lift: number | null;
   /**
@@ -86,6 +111,14 @@ export interface AttributionRow {
    * yields a positive value here.
    */
   lift: number | null;
+  /**
+   * Attribution method that produced this row. Persisted as DB
+   * `method_version` (migration 20260922230000, nullable, no default — a
+   * NULL row predates this column and was computed by v1, the fake
+   * post-vs-ambient trend adjustment described in the file header. Every
+   * row this module writes going forward carries `'v2_observed_delta'`.
+   */
+  method_version: 'v2_observed_delta';
 }
 
 /**
@@ -104,11 +137,19 @@ export type WindowResult =
 
 const PRE_WINDOW_DAYS = 14;
 const POST_WINDOW_DAYS = 21;
-/** Days of player history BEFORE the pre-window used to estimate ambient drift. */
-const AMBIENT_HISTORY_DAYS = 90;
-/** Minimum rounds in the ambient window before we trust it to net out drift.
- *  A 1-round ambient average is noise, not a trend — below this, lift is null. */
-const MIN_AMBIENT_ROUNDS = 2;
+/**
+ * Minimum rounds required in BOTH the baseline and post windows before a
+ * lift is trusted. A 1-round window average is noise, not a measurement —
+ * below this, `raw_delta`/`baseline_value`/`post_value` are still recorded
+ * (observability), but `improvement_lift`/`lift` are null so `nextWeight`
+ * no-ops rather than moving coach weights off a single round.
+ *
+ * N10 (2026-09-22): this used to gate on a 90-day "ambient" window's sample
+ * size instead (`MIN_AMBIENT_ROUNDS`). v2 no longer fetches an ambient
+ * window at all (see the file header), so the gate moved to the two windows
+ * the lift is actually computed from.
+ */
+const MIN_WINDOW_ROUNDS = 2;
 
 /** Average a denormalised `golf_rounds` column across completed rounds in a window. */
 async function averageGolfRoundsColumn(
@@ -414,37 +455,17 @@ export async function computeAttribution(
   // Direction-AGNOSTIC raw change in the metric's own units. Stored as `delta`.
   const rawDelta = post.avg - base.avg;
 
-  // Ambient counterfactual: the player's level over the 90 days of history
-  // BEFORE the pre-window — strictly OUTSIDE [preStart, postEnd]. A window that
-  // overlaps the post period would absorb the very improvement the insight
-  // caused and cancel the lift (the W35 bug). Ambient drift = (ambient.avg −
-  // base.avg) is "how much the player was already trending"; lift subtracts it
-  // so we only credit movement BEYOND that trend.
-  const ambientStart = new Date(
-    surfacedTs - (PRE_WINDOW_DAYS + AMBIENT_HISTORY_DAYS) * 86400_000,
-  ).toISOString();
-  const ambientEnd = new Date(
-    surfacedTs - (PRE_WINDOW_DAYS + 1) * 86400_000,
-  ).toISOString();
-  const ambient = await dispatchWindow(
-    sb,
-    input.player_id,
-    source,
-    ambientStart,
-    ambientEnd,
-  );
-  // Min-rounds gate: a thin ambient sample is noise, not a trend. Below the
-  // gate we record delta but leave lift null (nextWeight no-ops on null, so the
-  // attribution row is still logged for observability without moving weights).
+  // v2 (N10): the raw lift IS the observed change — no ambient window, no
+  // fake trend subtraction (see the file header for why the old formula
+  // never did what it claimed). Gate on both windows having enough rounds to
+  // trust the averages at all.
   const rawLift =
-    ambient.ok && ambient.n >= MIN_AMBIENT_ROUNDS
-      ? rawDelta - (ambient.avg - base.avg)
-      : null;
+    base.n >= MIN_WINDOW_ROUNDS && post.n >= MIN_WINDOW_ROUNDS ? rawDelta : null;
 
-  // P0-01: turn the raw, direction-AGNOSTIC ambient-adjusted lift into a
-  // direction-CORRECTED *improvement* signal. For a lower-is-better metric a
-  // drop in value (negative rawLift) is an improvement, so we flip the sign;
-  // for higher-is-better the sign is unchanged. After this, a positive
+  // P0-01: turn the raw, direction-AGNOSTIC lift into a direction-CORRECTED
+  // *improvement* signal. For a lower-is-better metric a drop in value
+  // (negative rawLift) is an improvement, so we flip the sign; for
+  // higher-is-better the sign is unchanged. After this, a positive
   // improvement_lift ALWAYS means the player got better, regardless of metric
   // polarity, and that is the only value that may move coach weights. Without
   // this flip, a successful putts/penalties/scoring drop would be learned as a
@@ -468,14 +489,16 @@ export async function computeAttribution(
       // Direction-corrected improvement (DB `lift` column). `lift` is an alias.
       improvement_lift: improvementLift,
       lift: improvementLift,
+      method_version: 'v2_observed_delta',
     },
   };
 }
 
 /** Stroke-scale for the tanh lift→target map. Calibrated from live data:
  *  SG_total round-to-round magnitude has median |value| ≈5.35 and SD ≈4.39
- *  across 173 completed rounds, but a *lift* (delta-of-averages minus ambient)
- *  is realistically ~0.5–2 strokes. scale=1.0 makes a 1-stroke lift target
+ *  across 173 completed rounds, but a *lift* (observed post-vs-baseline
+ *  delta-of-averages, direction-corrected — see N10 in the file header) is
+ *  realistically ~0.5–2 strokes. scale=1.0 makes a 1-stroke lift target
  *  1+tanh(1)≈1.76 and a 2-stroke lift ≈1.96 (near saturation) — meaningful
  *  gradation exactly where real lifts live. */
 const LIFT_TANH_SCALE = 1.0;
