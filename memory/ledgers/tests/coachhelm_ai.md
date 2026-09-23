@@ -278,3 +278,72 @@
   stays 0 (`'invalid'`), correctly isolating the case the copy fix
   targets. `FairwayPlayerGameFingerprint.mode.test.tsx` (existing, 7)
   and `PlayerDeepDiveTabs.test.tsx` reran unchanged and green.
+
+## 2026-09-23 — A9 slice 3: coach-facing attribution-readout tests
+
+- SHA: (pending push).
+- New: `src/lib/coachhelm/v3/effectiveness/attribution-read.test.ts` (13)
+  — a hand-rolled chainable fake `sb` (per-table queued pages, same
+  convention as `comparable-attribute.test.ts`'s `makeExposureClient`).
+  Covers: an empty insight/player id short-circuits before ever calling
+  `sb.from` at all; a found row maps through with `method_version`
+  normalized; zero rows is `{ok: true, rows: []}`, never mistaken for
+  failure; a genuine read error is `{ok: false}`, never an empty array;
+  the unknown-column (unapplied-migration) degrade retries without
+  `method_version` and maps every row's version to `null`; a failure on
+  the degrade retry itself is still `{ok: false}`; a player with zero
+  insights returns `{ok: true, rows: []}` without ever querying the
+  attribution table; a failed insight-id lookup is `{ok: false}`; 250
+  insight ids split into two `.in()` chunks (200 + 50) and both chunks'
+  rows merge into one result; one failed chunk (of two) fails the WHOLE
+  call, never a partial success.
+- New: `src/lib/coachhelm/v3/effectiveness/attribution-view-model.test.ts`
+  (16) — pure, no mocks. `describeMethodVersion`: every known
+  `method_version` value maps to its documented label (`null` and
+  `'v2_observed_delta'` both → `earlier_method`, never clean;
+  `comparable_opportunities_v1` → `observed_change`, IS clean;
+  `comparable_opportunities_v1_limited` → `observed_change_limited`,
+  never clean — the explicit "limited ≠ clean" case; an unrecognized
+  string → `unknown`, never clean); a sweep asserting no label's
+  description ever contains "improved"/"proven"/"caused".
+  `rowToAttributionReadout`: below `MIN_SUFFICIENT_ROUNDS` on either side
+  (before alone, after alone, or both) → `insufficient`; at/above the
+  floor → `result`; a LIMITED row with a healthy sample size is still
+  `result` (limited is a method-quality flag, orthogonal to the
+  sample-size state, not a synonym for "not enough data"); an
+  insufficient readout still carries method info + sample size.
+  `toAttributionReadout`: zero rows → `missing`; one row → identical
+  output to `rowToAttributionReadout` on that row.
+- New: `src/test/golf/actions/insight-attribution.test.ts` (10) —
+  `attribution-read.ts` mocked wholesale (this file proves the action's
+  OWN flag/auth orchestration, not the loader's), `attribution-view-
+  model.ts` left real. `getInsightAttributionReadout`: flag off → `null`
+  AND `createClient`/the loader are never called (the required
+  "flag-off makes no DB call" coverage); an empty insight id short-
+  circuits before even checking the flag; not authenticated → `null`; a
+  FAILED read (`{ok: false}` from the loader) → `null`, never a
+  fabricated readout (the required "a failed read renders nothing"
+  coverage, at the action layer); no attribution row yet → the real
+  `{state: 'missing'}`, not `null`; a found row → a `result` readout
+  built by the REAL view model (an integration check, not just a mock
+  echo). `getPlayerAttributionReadouts`: flag off → `null`, no DB call;
+  access denied (`verifyPlayerAccess`) → `null` without ever calling the
+  loader; a failed read → `null`; rows found → keyed by `insight_id`.
+- New: `src/test/golf/components/AttributionReadout.test.tsx` (5) — the
+  required "a failed read renders nothing" coverage at the component
+  layer: a `null` prop renders an empty DOM element. Plus: the `missing`
+  state renders a quiet "Not attributed yet" note (a real, non-null
+  state DOES render, unlike `null`); the `insufficient` state renders
+  both sample-size numbers; the clean-method `result` state renders its
+  hedged description and never "improved"/"proven"/"caused"; the
+  limited-method `result` state renders distinctly (`data-method`
+  differs, "can't be isolated" wording) — limited ≠ clean, visibly.
+- Verification: all 4 new files, 44 tests, 0 failed, 0 skipped. Broader
+  regression sweep — `src/test/coachhelm/v3`, `src/test/golf/actions`,
+  `src/test/golf/components`, `src/lib/coachhelm` — 247 files / 2483
+  passed / 3 skipped (pre-existing, unrelated), 0 failed. `npm run
+  typecheck:fast` clean. `npx eslint` on every touched/new file: 0
+  problems. `observed-outcome-language.test.ts` (PR #2023) isn't on this
+  branch yet (stacked on #2016) — every new user-facing string was
+  manually checked against its four forbidden patterns instead; will run
+  for real once this branch rebases past #2023.
