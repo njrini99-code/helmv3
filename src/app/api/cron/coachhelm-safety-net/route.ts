@@ -534,15 +534,32 @@ async function stampCovered(supabase: SupabaseClient, roundId: string, nowIso: s
   return true;
 }
 
+/**
+ * A wake-decision read failed. Log it and fail closed: the round stays
+ * parked for the next tick rather than waking (or being stamped) on a read
+ * that returned nothing because it errored.
+ */
+async function logWakeReadFailure(read: string, message: string, extra: Record<string, unknown>): Promise<void> {
+  await logServerError(
+    `cron.safetyNet.reconcile: ${read} read failed: ${message}`,
+    { action: 'cron.coachhelm.safetyNet.reconcile.wakeRead', featureArea: 'coachhelm', extra: { read, ...extra } },
+    'warning',
+  );
+}
+
 /** Does the player have an active roster membership right now? */
 async function hasActiveMembership(supabase: SupabaseClient, playerId: string): Promise<boolean> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data } = await (supabase as any)
+  const { data, error } = await (supabase as any)
     .from('golf_team_members')
     .select('team_id')
     .eq('player_id', playerId)
     .eq('status', 'active')
     .limit(1);
+  if (error) {
+    await logWakeReadFailure('golf_team_members', error.message, { playerId });
+    return false;
+  }
   return Array.isArray(data) && data.length > 0;
 }
 
@@ -555,16 +572,28 @@ async function analysisEnabledFor(supabase: SupabaseClient, teamId: string | nul
   if (!teamId) return false;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const client = supabase as any;
-  const { data: teamSettings } = await client
+  const { data: teamSettings, error: teamSettingsError } = await client
     .from('golf_team_coachhelm_settings')
     .select('enabled')
     .eq('team_id', teamId)
     .maybeSingle();
+  if (teamSettingsError) {
+    await logWakeReadFailure('golf_team_coachhelm_settings', teamSettingsError.message, { teamId });
+    return false;
+  }
   if (teamSettings?.enabled === false) return false;
-  const { data: team } = await client.from('golf_teams').select('organization_id').eq('id', teamId).maybeSingle();
+  const { data: team, error: teamError } = await client
+    .from('golf_teams')
+    .select('organization_id')
+    .eq('id', teamId)
+    .maybeSingle();
+  if (teamError) {
+    await logWakeReadFailure('golf_teams', teamError.message, { teamId });
+    return false;
+  }
   const orgId = team?.organization_id as string | undefined;
   if (!orgId) return false;
-  const { data: coach } = await client
+  const { data: coach, error: coachError } = await client
     .from('golf_coaches')
     .select('id')
     .eq('organization_id', orgId)
@@ -572,12 +601,20 @@ async function analysisEnabledFor(supabase: SupabaseClient, teamId: string | nul
     .order('id', { ascending: true })
     .limit(1)
     .maybeSingle();
+  if (coachError) {
+    await logWakeReadFailure('golf_coaches', coachError.message, { teamId, orgId });
+    return false;
+  }
   if (!coach?.id) return false;
-  const { data: coachSettings } = await client
+  const { data: coachSettings, error: coachSettingsError } = await client
     .from('golf_coachhelm_settings')
     .select('enabled')
     .eq('coach_id', coach.id)
     .maybeSingle();
+  if (coachSettingsError) {
+    await logWakeReadFailure('golf_coachhelm_settings', coachSettingsError.message, { teamId, coachId: coach.id });
+    return false;
+  }
   return coachSettings?.enabled !== false;
 }
 
@@ -654,7 +691,7 @@ async function reconcileParkedRounds(
     rows.sort((a, b) => (a.created_at < b.created_at ? -1 : a.created_at > b.created_at ? 1 : 0));
 
     // 1. Coverage by the player's newest analyzed round.
-    const { data: newestAnalyzed } = await client
+    const { data: newestAnalyzed, error: newestAnalyzedError } = await client
       .from('golf_rounds')
       .select('id, created_at')
       .eq('player_id', playerId)
@@ -663,6 +700,11 @@ async function reconcileParkedRounds(
       .order('created_at', { ascending: false })
       .limit(1)
       .maybeSingle();
+    if (newestAnalyzedError) {
+      await logWakeReadFailure('golf_rounds', newestAnalyzedError.message, { playerId });
+      summary.stillParked += rows.length;
+      continue;
+    }
     const coveredUntil = (newestAnalyzed?.created_at as string | undefined) ?? null;
     let remaining: ParkedRoundRow[] = [];
     for (const row of rows) {

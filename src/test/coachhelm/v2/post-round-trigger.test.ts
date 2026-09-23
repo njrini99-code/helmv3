@@ -77,7 +77,9 @@ describe('postRoundTrigger', () => {
 
     await postRoundTrigger(admin as never, { playerId: 'p1', roundId: 'r1' });
 
-    const { data } = await admin.from('golf_rounds').select('*').eq('id', 'r1');
+    const { data, error } = await admin.from('golf_rounds').select('*').eq('id', 'r1');
+
+    expect(error).toBeNull();
     expect(data?.[0]?.['coachhelm_analyzed_at']).toBeTruthy();
     expect(data?.[0]?.['coachhelm_failed_at']).toBeNull();
     expect(data?.[0]?.['coachhelm_failure_reason']).toBeNull();
@@ -91,7 +93,9 @@ describe('postRoundTrigger', () => {
 
     const result = await postRoundTrigger(admin as never, { playerId: 'p1', roundId: 'r2' });
 
-    const { data } = await admin.from('golf_rounds').select('*').eq('id', 'r2');
+    const { data, error } = await admin.from('golf_rounds').select('*').eq('id', 'r2');
+
+    expect(error).toBeNull();
     expect(data?.[0]?.['coachhelm_analyzed_at']).toBeFalsy();
     expect(data?.[0]?.['coachhelm_failed_at']).toBeTruthy();
     // The old sanitizer would have sniffed "disabled" out of the message and
@@ -109,7 +113,9 @@ describe('postRoundTrigger', () => {
 
     await postRoundTrigger(admin as never, { playerId: 'p1', roundId: 'r3' });
 
-    const { data } = await admin.from('golf_rounds').select('*').eq('id', 'r3');
+    const { data, error } = await admin.from('golf_rounds').select('*').eq('id', 'r3');
+
+    expect(error).toBeNull();
     expect(data?.[0]?.['coachhelm_failed_at']).toBeTruthy();
     expect(data?.[0]?.['coachhelm_failure_reason']).toBe('engine_error');
     const call = mocks.logServerError.mock.calls.find(([msg]) => String(msg).startsWith('postRoundTrigger outcome'));
@@ -126,7 +132,9 @@ describe('postRoundTrigger', () => {
 
     await postRoundTrigger(admin as never, { playerId: 'p1', roundId: 'r4' });
 
-    const { data } = await admin.from('golf_rounds').select('*').eq('id', 'r4');
+    const { data, error } = await admin.from('golf_rounds').select('*').eq('id', 'r4');
+
+    expect(error).toBeNull();
     expect(data?.[0]?.['coachhelm_failure_reason']).toBe('engine_error');
   });
 
@@ -151,7 +159,9 @@ describe('postRoundTrigger', () => {
 
       const result = await postRoundTrigger(admin as never, { playerId: 'p1', roundId: 'r6' });
 
-      const { data } = await admin.from('golf_rounds').select('*').eq('id', 'r6');
+      const { data, error } = await admin.from('golf_rounds').select('*').eq('id', 'r6');
+
+      expect(error).toBeNull();
       expect(data?.[0]?.['coachhelm_analyzed_at']).toBeNull();
       expect(data?.[0]?.['coachhelm_failed_at']).toBeNull();
       expect(data?.[0]?.['coachhelm_failure_reason']).toBe('engine_below_round_floor');
@@ -181,7 +191,9 @@ describe('postRoundTrigger', () => {
 
       await postRoundTrigger(admin as never, { playerId: 'p1', roundId: 'r6b' });
 
-      const { data } = await admin.from('golf_rounds').select('*').eq('id', 'r6b');
+      const { data, error } = await admin.from('golf_rounds').select('*').eq('id', 'r6b');
+
+      expect(error).toBeNull();
       expect(data?.[0]?.['coachhelm_failed_at']).toBeNull();
       expect(data?.[0]?.['coachhelm_failure_reason']).toBe('engine_no_recent_rounds');
       expect(mocks.logServerError).not.toHaveBeenCalled();
@@ -199,7 +211,9 @@ describe('postRoundTrigger', () => {
 
       const result = await postRoundTrigger(admin as never, { playerId: 'p1', roundId: 'r9' });
 
-      const { data } = await admin.from('golf_rounds').select('*').eq('id', 'r9');
+      const { data, error } = await admin.from('golf_rounds').select('*').eq('id', 'r9');
+
+      expect(error).toBeNull();
       expect(data?.[0]?.['coachhelm_failed_at']).toBeNull();
       expect(data?.[0]?.['coachhelm_failure_reason']).toBe('engine_no_team_membership');
       expect(result.outcome.kind).toBe('not_applicable');
@@ -223,7 +237,9 @@ describe('postRoundTrigger', () => {
 
       const result = await postRoundTrigger(admin as never, { playerId: 'p1', roundId: 'r12' });
 
-      const { data } = await admin.from('golf_rounds').select('*').eq('id', 'r12');
+      const { data, error } = await admin.from('golf_rounds').select('*').eq('id', 'r12');
+
+      expect(error).toBeNull();
       expect(data?.[0]?.['coachhelm_failed_at']).toBeNull();
       expect(data?.[0]?.['coachhelm_failure_reason']).toBe('engine_disabled');
       expect(result.outcome.kind).toBe('disabled');
@@ -243,7 +259,9 @@ describe('postRoundTrigger', () => {
 
       const result = await postRoundTrigger(admin as never, { playerId: 'p1', roundId: 'r13' });
 
-      const { data } = await admin.from('golf_rounds').select('*').eq('id', 'r13');
+      const { data, error } = await admin.from('golf_rounds').select('*').eq('id', 'r13');
+
+      expect(error).toBeNull();
       expect(data?.[0]?.['coachhelm_failed_at']).toBeTruthy();
       expect(data?.[0]?.['coachhelm_failure_reason']).toBe('engine_timeout');
       expect(result.outcome.kind).toBe('retryable_failure');
@@ -271,7 +289,9 @@ describe('postRoundTrigger', () => {
 
       const result = await postRoundTrigger(admin as never, { playerId: 'p1', roundId: 'r7' });
 
-      const { data } = await admin.from('golf_rounds').select('*').eq('id', 'r7');
+      const { data, error } = await admin.from('golf_rounds').select('*').eq('id', 'r7');
+
+      expect(error).toBeNull();
       expect(data?.[0]?.['coachhelm_failed_at']).toBeTruthy();
       expect(result.outcome.kind).toBe('permanent_failure');
       expect(mocks.logServerError).toHaveBeenCalledWith(
@@ -289,7 +309,9 @@ describe('postRoundTrigger', () => {
 
       const result = await postRoundTrigger(admin as never, { playerId: 'p1', roundId: 'r14' });
 
-      const { data } = await admin.from('golf_rounds').select('*').eq('id', 'r14');
+      const { data, error } = await admin.from('golf_rounds').select('*').eq('id', 'r14');
+
+      expect(error).toBeNull();
       expect(data?.[0]?.['coachhelm_analyzed_at']).toBeTruthy();
       expect(data?.[0]?.['coachhelm_failure_reason']).toBeNull();
       expect(result).toMatchObject({ success: true, code: 'engine_succeeded' });
@@ -305,7 +327,9 @@ describe('postRoundTrigger', () => {
 
       const result = await postRoundTrigger(admin as never, { playerId: 'p1', roundId: 'r15' });
 
-      const { data } = await admin.from('golf_rounds').select('*').eq('id', 'r15');
+      const { data, error } = await admin.from('golf_rounds').select('*').eq('id', 'r15');
+
+      expect(error).toBeNull();
       expect(data?.[0]?.['coachhelm_analyzed_at']).toBeTruthy();
       expect(data?.[0]?.['coachhelm_failed_at']).toBeNull();
       expect(data?.[0]?.['coachhelm_failure_reason']).toBe('engine_partial_failure');
