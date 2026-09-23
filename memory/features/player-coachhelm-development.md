@@ -140,6 +140,30 @@ Player opens round review
   branch in that action, or everything after the return silently never
   executes. (STU, source: `focus-area-redesign.md` dated 2026-08-02.)
 
+- **Coach-facing "due for review" queue (Pkg 9 slice 4, 2026-09-23,
+  `agent/coachhelm-focus-due-queue`)**: "due" is derived AT READ TIME from
+  `target_date` — overdue (`target_date < today`) or due within a window
+  (default 7 days, inclusive both ends) — never written to a column or a
+  cron, so an edited target date is reflected on the very next read. Lives
+  in `src/lib/coachhelm/focus-areas/due-for-review.ts` (pure, no `'use
+  server'` directive — `development.ts` IS `'use server'`, which only
+  permits async-function exports, so a plain derivation helper cannot live
+  there), shared by BOTH the new team-scoped server action
+  `listDueFocusAreas(teamId, opts?)` in `development.ts` (access verified
+  via `verifyTeamAccess`, same RPC-backed check `getTeamCausalRelationships`
+  uses; roster resolved via `golf_team_members`, matching that action's own
+  "team_id is NULL on the row itself" roster-resolution shape) AND the coach
+  UI's `DueForReviewPanel` (`components/fairway/pages/coachhelm/`), which
+  derives its list client-side from the SAME `focusAreas` prop
+  `PlayersGridView` already has (the `intelligence/page.tsx` loader already
+  selects `target_kind`/`target_date`) — no new fetch for the badge, so it
+  cannot disagree with the action. Only `'active' | 'in_progress' |
+  'paused'` areas with `target_kind === 'date'` are ever "due" — `'proposed'`
+  (not yet accepted) and `'completed'`/`'declined'` never are, mirroring
+  `ACTIONABLE_FOCUS_AREA_STATUSES`. `target_kind === 'rounds'` timeframes are
+  explicitly OUT of scope for this slice (no round-count context is
+  fetched) — left for later.
+
 ## Tests To Prefer
 
 - `src/test/app/golf/dashboard/coachhelm/**`

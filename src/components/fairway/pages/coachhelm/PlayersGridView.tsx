@@ -78,6 +78,7 @@ import {
   computeRosterHealth,
   computeNeedsAttention,
 } from './RosterHealthHeader';
+import { DueForReviewPanel } from './DueForReviewPanel';
 import {
   DataTable,
   type ColumnDef,
@@ -812,6 +813,19 @@ export function PlayersGridView({
               warm glass: coverage gauge focal, outcome-mix rail, micro-readout
               foot row. Reads from the same props (no new fetch). ── */}
         <RosterHealthHeader health={rosterHealth} needs={needsAttention} onAdd={openCreate} />
+
+        {/* ── DUE FOR REVIEW (Pkg 9 slice 4) — overdue/due-soon focus areas,
+              derived from the SAME focusAreas prop above (no new fetch).
+              Renders nothing when the queue is empty. ── */}
+        <DueForReviewPanel
+          players={players}
+          focusAreas={focusAreas}
+          onSelectPlayer={(playerId) => {
+            setSelectedPlayerId(playerId);
+            setView('areas');
+            onNavigationChange?.({ view: 'areas', playerId });
+          }}
+        />
 
         {/* Player filter chip strip (selecting a player scopes the areas view). */}
         {selectedPlayer ? (

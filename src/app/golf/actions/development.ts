@@ -13,6 +13,8 @@ import { withAdminObserved } from '@/lib/admin/observed-action';
 import { describeError } from '@/lib/utils/describe-error';
 import { resolveFocusTargetMetric } from '@/lib/coachhelm/focus-areas/target-metric';
 import { describeWrongWayTarget } from '@/lib/coachhelm/focus-areas/direction';
+import { verifyTeamAccess } from '@/lib/auth/verify-player-access';
+import { computeDueFocusAreas, type FocusAreaDueReason } from '@/lib/coachhelm/focus-areas/due-for-review';
 
 // ============================================================================
 // TYPES
@@ -1754,6 +1756,113 @@ const observedRecordFocusAreaOutcome = withAdminObserved(
 
 export async function recordFocusAreaOutcome(focusAreaId: string, outcome: FocusAreaOutcome): Promise<{ success: boolean; error?: string; notice?: string }> {
   return observedRecordFocusAreaOutcome(focusAreaId, outcome);
+}
+
+// ============================================================================
+// DUE FOR REVIEW (Pkg 9 slice 4) — coach-facing, team-scoped queue
+// ============================================================================
+// Code-only, no schema change. "Due" is derived at read time from
+// `target_date` (see `due-for-review.ts`), not written anywhere — a coach
+// editing a target date is reflected on the next call with nothing to
+// invalidate. Only `target_kind === 'date'` areas are considered;
+// `target_rounds` timeframes are left for a later slice (no round-count
+// context is fetched here).
+
+export interface DueFocusAreaRow {
+  id: string;
+  player_id: string;
+  title: string;
+  target_metric: string | null;
+  target_date: string;
+  reason: FocusAreaDueReason;
+}
+
+/**
+ * List the coach's team's focus areas that are overdue or due soon.
+ * Team access is verified via `verifyTeamAccess` (the same RPC-backed check
+ * `getTeamCausalRelationships` uses) rather than trusting a client-supplied
+ * teamId outright — a coach who does not staff `teamId` gets a denial, not
+ * an empty list, so the two failure modes stay distinguishable.
+ */
+async function listDueFocusAreasImpl(
+  teamId: string,
+  opts?: { dueWithinDays?: number },
+): Promise<DevelopmentActionResult<DueFocusAreaRow[]>> {
+  if (!teamId) return { success: false, error: 'A team is required.' };
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
+  if (userError || !user) return { success: false, error: 'Not authenticated' };
+
+  const access = await verifyTeamAccess(teamId, user.id, supabase);
+  if (!access.allowed) return { success: false, error: 'Not authorized for this team' };
+
+  // Team scope is via membership, not a `team_id` column on the focus-area
+  // table itself — same roster-resolution shape as `getTeamCausalRelationships`.
+  const { data: members, error: membersError } = await supabase
+    .from('golf_team_members')
+    .select('player_id')
+    .eq('team_id', teamId)
+    .eq('status', 'active');
+
+  if (membersError) {
+    await logServerError(
+      `[development] listDueFocusAreas roster read failed for team ${teamId}: ${describeError(membersError)}`,
+      { action: 'development.listDueFocusAreas', featureArea: 'development', metadata: { teamId } },
+    );
+    return { success: false, error: 'Could not load the roster. Please try again.' };
+  }
+
+  const playerIds = (members ?? [])
+    .map((m) => m.player_id)
+    .filter((id): id is string => Boolean(id));
+  if (playerIds.length === 0) return { success: true, data: [] };
+
+  const { data: areas, error: areasError } = await supabase
+    .from('golf_player_focus_areas')
+    .select('id, player_id, title, target_metric, target_kind, target_date, status')
+    .in('player_id', playerIds)
+    .eq('target_kind', 'date')
+    .not('target_date', 'is', null)
+    .in('status', ACTIONABLE_FOCUS_AREA_STATUSES);
+
+  if (areasError) {
+    await logServerError(
+      `[development] listDueFocusAreas focus-area read failed for team ${teamId}: ${describeError(areasError)}`,
+      { action: 'development.listDueFocusAreas', featureArea: 'development', metadata: { teamId } },
+    );
+    return { success: false, error: 'Could not load focus areas. Please try again.' };
+  }
+
+  const due = computeDueFocusAreas(areas ?? [], { dueWithinDays: opts?.dueWithinDays });
+
+  return {
+    success: true,
+    data: due.map(({ area, reason }) => ({
+      id: area.id,
+      player_id: area.player_id,
+      title: area.title,
+      target_metric: area.target_metric,
+      target_date: area.target_date as string,
+      reason,
+    })),
+  };
+}
+
+const observedListDueFocusAreas = withAdminObserved(
+  'listDueFocusAreas',
+  { sport: 'golf', feature: 'development_plans_coach' },
+  listDueFocusAreasImpl,
+);
+
+export async function listDueFocusAreas(
+  teamId: string,
+  opts?: { dueWithinDays?: number },
+): Promise<DevelopmentActionResult<DueFocusAreaRow[]>> {
+  return observedListDueFocusAreas(teamId, opts);
 }
 
 // ============================================================================
