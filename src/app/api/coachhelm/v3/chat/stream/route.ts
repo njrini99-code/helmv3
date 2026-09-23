@@ -77,7 +77,7 @@ import {
   type TurnVerdict,
 } from '@/lib/coachhelm/v3/chat/verdict';
 import { buildSinglePlayerPacket } from '@/lib/coachhelm/v3/chat/claims-packet';
-import { CLAIMS_OPEN, extractAndValidateClaimsSafe } from '@/lib/coachhelm/v3/llm/claims-block';
+import { CLAIMS_OPEN, CLAIMS_CLOSE, extractAndValidateClaimsSafe } from '@/lib/coachhelm/v3/llm/claims-block';
 import { isFlagEnabled } from '@/lib/flags';
 import type { ChatMessage } from '@/lib/coachhelm/v3/chat/types';
 import {
@@ -521,6 +521,13 @@ export async function POST(req: NextRequest) {
   let turnVerdict: TurnVerdict | null = null;
   let turnText = '';
 
+  // Read once and reuse for both the prompt (below) and the packet gate
+  // (after the stream finishes) — same flag value either way within one
+  // request, and #1999 re-review's MUST is exactly that these two checks
+  // must never disagree. See `instructions.ts`'s `CLAIMS_BLOCK_SECTION` doc
+  // comment.
+  const claimsBlockEnabled = isFlagEnabled('coachhelm_chat_claim_gate');
+
   const stream = createUIMessageStream({
     execute: async ({ writer }) => {
       const tools = buildCoachTools({ sb: supabase, ctx, conversationId: convId, writer, collect });
@@ -553,7 +560,7 @@ export async function POST(req: NextRequest) {
         // string is ever edited.
         instructions: {
           role: 'system',
-          content: buildInstructions(ctx, new Date().toISOString()),
+          content: buildInstructions(ctx, new Date().toISOString(), claimsBlockEnabled),
           providerOptions: { anthropic: { cacheControl: { type: 'ephemeral' } } },
         },
         // Pass the tool set so tool parts from earlier turns convert correctly —
@@ -723,9 +730,25 @@ export async function POST(req: NextRequest) {
       // opener is split across two chunks (a provider can flush a delta at
       // any byte boundary) — without this, forwarding a delta the instant
       // it arrives could send half of `<<<CLAIMS` before ever seeing the
-      // rest. Once the opener is found, EVERYTHING from there on for this
-      // text part is withheld, not just the matched substring.
+      // rest. Once the opener is found, text is withheld into
+      // `insideBlockBuffer` — a raw JSON fragment, never forwarded — until
+      // the closer is found.
+      //
+      // #1999 re-review, SHOULD-2: an earlier version withheld EVERYTHING
+      // from the opener to the end of the text part, forever, even past the
+      // closer. `strippedText`/`content` (`extractAndValidateClaims`) only
+      // ever remove the delimited block itself and preserve whatever prose
+      // follows it (see `compose.test.ts`'s "strips a single well-formed
+      // block ... including one in the MIDDLE of the prose" — trailing text
+      // after the block is an intentional, tested contract, not an
+      // anomaly), so a coach could see LESS live/in `ui_parts` than what
+      // `content` ends up storing. Resuming forwarding once the closer is
+      // seen keeps the two channels in agreement. The loop below re-enters
+      // itself (via `remaining`) so an opener and closer landing in the
+      // SAME delta — or a closer immediately followed by a second opener —
+      // are each handled without waiting for the next chunk.
       let pendingText = '';
+      let insideBlockBuffer = '';
       let claimsBlockStarted = false;
       let lastTextDeltaChunk: StreamChunk | null = null;
       for await (const chunk of uiStream) {
@@ -733,20 +756,40 @@ export async function POST(req: NextRequest) {
         if (c.type === 'text-delta' && typeof c.delta === 'string') {
           rawText += c.delta;
           lastTextDeltaChunk = chunk;
-          if (claimsBlockStarted) continue; // never forward more of the block
-          pendingText += c.delta;
-          const openIdx = pendingText.indexOf(CLAIMS_OPEN);
-          if (openIdx !== -1) {
-            claimsBlockStarted = true;
-            const toForward = pendingText.slice(0, openIdx);
-            if (toForward) writer.write({ ...chunk, delta: toForward } as StreamChunk);
-            pendingText = '';
-            continue;
-          }
-          const safeLen = Math.max(0, pendingText.length - (CLAIMS_OPEN.length - 1));
-          if (safeLen > 0) {
-            writer.write({ ...chunk, delta: pendingText.slice(0, safeLen) } as StreamChunk);
-            pendingText = pendingText.slice(safeLen);
+          let remaining: string | null = c.delta;
+          while (remaining !== null) {
+            if (!claimsBlockStarted) {
+              pendingText += remaining;
+              remaining = null;
+              const openIdx = pendingText.indexOf(CLAIMS_OPEN);
+              if (openIdx !== -1) {
+                const toForward = pendingText.slice(0, openIdx);
+                if (toForward) writer.write({ ...chunk, delta: toForward } as StreamChunk);
+                claimsBlockStarted = true;
+                insideBlockBuffer = pendingText.slice(openIdx + CLAIMS_OPEN.length);
+                pendingText = '';
+                remaining = ''; // re-enter below to scan the leftover for a closer immediately
+                continue;
+              }
+              const safeLen = Math.max(0, pendingText.length - (CLAIMS_OPEN.length - 1));
+              if (safeLen > 0) {
+                writer.write({ ...chunk, delta: pendingText.slice(0, safeLen) } as StreamChunk);
+                pendingText = pendingText.slice(safeLen);
+              }
+            } else {
+              insideBlockBuffer += remaining;
+              remaining = null;
+              const closeIdx = insideBlockBuffer.indexOf(CLAIMS_CLOSE);
+              if (closeIdx !== -1) {
+                // Block content itself (`<<<CLAIMS>>>...<<<END_CLAIMS>>>`) is
+                // small JSON — no length bound needed on `insideBlockBuffer`
+                // the way `pendingText` needs one while forwarding live.
+                claimsBlockStarted = false;
+                remaining = insideBlockBuffer.slice(closeIdx + CLAIMS_CLOSE.length);
+                insideBlockBuffer = '';
+                continue; // re-enter above to forward/scan whatever followed the closer
+              }
+            }
           }
           continue;
         }
@@ -759,10 +802,14 @@ export async function POST(req: NextRequest) {
         }
         writer.write(chunk);
       }
-      // No claims block ever started — the withheld tail was ordinary text
+      // No claims block ever started (or the one that did already closed
+      // and we're back outside it) — the withheld tail is ordinary text
       // (the common case: most turns end after "…" with nothing to hold
       // back at all), so flush it now that we know it was never the start
-      // of a delimiter.
+      // of a delimiter. An UNTERMINATED opener (`claimsBlockStarted` still
+      // true at stream end) intentionally flushes nothing — matches
+      // `stripAllClaimsDelimiters`'s "strip from the opener onward" for that
+      // case.
       if (!claimsBlockStarted && pendingText && lastTextDeltaChunk) {
         writer.write({ ...lastTextDeltaChunk, delta: pendingText } as StreamChunk);
       }
@@ -822,7 +869,7 @@ export async function POST(req: NextRequest) {
       // from before this gate existed. The `<<<CLAIMS>>>` block is still
       // always stripped either way (the system prompt asks for one
       // unconditionally) and the numeric audit above is unaffected.
-      const claimsPacket = isFlagEnabled('coachhelm_chat_claim_gate')
+      const claimsPacket = claimsBlockEnabled
         ? buildSinglePlayerPacket(measurements)
         : null;
       const { strippedText, claims } = extractAndValidateClaimsSafe(rawText, claimsPacket);
