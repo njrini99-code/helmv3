@@ -152,7 +152,70 @@ export async function verifyPlayerAccess(
     });
   }
 
-  return { allowed: !!isCoach, reason: isCoach ? 'coach' : 'denied' };
+  if (!isCoach) {
+    return { allowed: false, reason: 'denied' };
+  }
+
+  // Resolve the coach.id for attribution (see the `coachId` docblock above).
+  // `verify_coach_owns_player` only confirms the RPC's boolean access
+  // decision; it does not return an id. A lookup failure here must not flip
+  // an already-granted decision to denied -- callers that need coachId (e.g.
+  // insight-verbosity personalization) simply get `undefined` and fall back,
+  // same as before this id was ever wired.
+  const coachId = await resolveCoachIdForPlayer(sb, playerId, userId);
+  return { allowed: true, reason: 'coach', coachId };
+}
+
+/**
+ * Find which `golf_coaches.id` belongs to `userId` among the coaches
+ * staffing a team `playerId` actively belongs to. Only called after
+ * `verify_coach_owns_player` already confirmed access, so this never
+ * widens or narrows the access decision -- it only supplies the id the
+ * docblock on `VerifyResult.coachId` has always promised.
+ */
+async function resolveCoachIdForPlayer(
+  sb: SupabaseClient,
+  playerId: string,
+  userId: string,
+): Promise<string | undefined> {
+  const { data: memberships, error: membershipError } = await probeWithRetry(() =>
+    sb
+      .from('golf_team_members')
+      .select('team_id')
+      .eq('player_id', playerId)
+      .eq('status', 'active'),
+  );
+  if (membershipError) {
+    await logServerError('resolveCoachIdForPlayer.membership failed', {
+      action: 'auth.resolveCoachIdForPlayer',
+      metadata: { playerId, userId, error: describeError(membershipError) },
+    });
+    return undefined;
+  }
+  const teamIds = (memberships ?? [])
+    .map((m: { team_id: string | null }) => m.team_id)
+    .filter((id): id is string => !!id);
+  if (teamIds.length === 0) return undefined;
+
+  const { data: staff, error: staffError } = await probeWithRetry(() =>
+    sb
+      .from('golf_team_coach_staff')
+      .select('coach_id, golf_coaches!inner(user_id)')
+      .in('team_id', teamIds),
+  );
+  if (staffError) {
+    await logServerError('resolveCoachIdForPlayer.staff failed', {
+      action: 'auth.resolveCoachIdForPlayer',
+      metadata: { playerId, userId, error: describeError(staffError) },
+    });
+    return undefined;
+  }
+  const match = (staff ?? []).find(
+    (row) =>
+      (row as unknown as { golf_coaches?: { user_id?: string | null } }).golf_coaches
+        ?.user_id === userId,
+  ) as { coach_id?: string } | undefined;
+  return match?.coach_id ?? undefined;
 }
 
 /**

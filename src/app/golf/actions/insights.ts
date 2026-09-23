@@ -663,19 +663,50 @@ async function verifyPlayerAccess(
 
   // Coach branch — look up coach id + team id. Prefer a team the coach staffs
   // that the player is an active member of (multi-team-safe).
+  //
+  // #1571 follow-up: `access.coachId` was always undefined before that fix,
+  // so this branch never actually ran in production. The embed below --
+  // `golf_team_coach_staff.select('team_id, golf_team_members!inner(...))` --
+  // has no real foreign key between those two tables (both reference
+  // `golf_teams` independently), so PostgREST would refuse it. Resolved with
+  // two plain queries instead: the player's active team memberships, then
+  // which of those the coach staffs.
   const coachId = access.coachId;
 
   let teamId: string | undefined;
   if (coachId) {
-    const { data: staffedTeam } = await supabase
-      .from('golf_team_coach_staff')
-      .select('team_id, golf_team_members!inner(player_id, status)')
-      .eq('coach_id', coachId)
-      .eq('golf_team_members.player_id', playerId)
-      .eq('golf_team_members.status', 'active')
-      .limit(1)
-      .maybeSingle();
-    teamId = staffedTeam?.team_id ?? undefined;
+    const { data: memberships, error: membershipError } = await supabase
+      .from('golf_team_members')
+      .select('team_id')
+      .eq('player_id', playerId)
+      .eq('status', 'active');
+    if (membershipError) {
+      await logServerError(`verifyPlayerAccess.teamId membership lookup failed: ${describeError(membershipError)}`, {
+        action: 'insights.verifyPlayerAccess.teamId',
+        featureArea: 'insights',
+        metadata: { playerId, coachId },
+      });
+    }
+    const teamIds = (memberships ?? [])
+      .map((m) => m.team_id)
+      .filter((id): id is string => !!id);
+    if (teamIds.length > 0) {
+      const { data: staffedTeam, error: staffError } = await supabase
+        .from('golf_team_coach_staff')
+        .select('team_id')
+        .eq('coach_id', coachId)
+        .in('team_id', teamIds)
+        .limit(1)
+        .maybeSingle();
+      if (staffError) {
+        await logServerError(`verifyPlayerAccess.teamId staff lookup failed: ${describeError(staffError)}`, {
+          action: 'insights.verifyPlayerAccess.teamId',
+          featureArea: 'insights',
+          metadata: { playerId, coachId },
+        });
+      }
+      teamId = staffedTeam?.team_id ?? undefined;
+    }
   }
 
   return { authorized: true, userId: user.id, coachId, teamId };
@@ -2833,14 +2864,14 @@ async function getPlayerTrajectoryImpl(playerId: string): Promise<{
 
     // Coach-only surface (see the player deep-dive page's own gate). Calls
     // the SHARED verifyPlayerAccess directly rather than this file's local
-    // wrapper: the wrapper's `coachId` is read straight from the shared
-    // helper's return value, but that helper's coach branch
-    // (verify-player-access.ts:116-155) returns
-    // `{ allowed: !!isCoach, reason: isCoach ? 'coach' : 'denied' }` — no
-    // `coachId` is ever assigned, despite the field's own docblock claiming
-    // it is. Gating on `!access.coachId` here rejected every real coach.
-    // `reason` (which the local wrapper drops entirely) is the one signal
-    // that actually distinguishes coach-access from self-access.
+    // wrapper. #1571 (fixed 2026-09-22): the shared helper's coach branch
+    // used to return `{ allowed: !!isCoach, reason: isCoach ? 'coach' :
+    // 'denied' }` with no `coachId` ever assigned, despite the field's own
+    // docblock claiming it is -- gating on `!access.coachId` here rejected
+    // every real coach. `coachId` is now populated (verify-player-access.ts),
+    // but `reason === 'coach'` is kept as the gate here since it's the more
+    // direct signal and every other coach-only check in this file already
+    // reads it the same way.
     const access = await sharedVerifyPlayerAccess(playerId, user.id, supabase);
     if (!access.allowed) {
       return { success: false, error: 'Not authorized to access this player' };
