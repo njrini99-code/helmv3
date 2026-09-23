@@ -26,6 +26,7 @@ import { isFlagEnabled } from '@/lib/flags';
 import { fromUntyped } from '@/lib/supabase/untyped';
 import { logServerError } from '@/lib/server-error-logger';
 import { describeError } from '@/lib/utils/describe-error';
+import { chunkIds } from '@/lib/supabase/chunk-ids';
 import {
   computeInsightEvidenceRevision,
   type InsightEvidenceSourceRow,
@@ -44,11 +45,19 @@ export interface FocusAreaEvidenceRevisionRow {
  * area whose comparison is actually verifiable (see `compareEvidenceRevision`
  * — an id is simply absent from the map, never present with `'unknown'`, so
  * callers can treat "not in the map" as "render nothing" uniformly).
+ *
+ * Returns `null`, distinct from `{}`, when the live-insight read itself
+ * failed. `{}` means "asked, nothing to compare" (flag off, or no candidate
+ * focus areas) — a real, honest answer. `null` means "didn't get to ask" —
+ * collapsing that into `{}` made a failed read indistinguishable from
+ * "nothing changed" and silently hid the evidence-changed warning behind an
+ * outage. Callers must branch on `null` explicitly rather than defaulting it
+ * to `{}` themselves, or the same collapse just happens one call up.
  */
 export async function computeEvidenceRevisionStatuses(
   client: SupabaseClient<Database>,
   focusAreas: FocusAreaEvidenceRevisionRow[],
-): Promise<Record<string, EvidenceRevisionComparison>> {
+): Promise<Record<string, EvidenceRevisionComparison> | null> {
   if (!isFlagEnabled('coachhelm_focus_area_evidence_revision')) return {};
 
   const candidates = focusAreas.filter(
@@ -59,22 +68,31 @@ export async function computeEvidenceRevisionStatuses(
 
   const insightIds = Array.from(new Set(candidates.map((fa) => fa.from_insight_id)));
 
-  const { data, error } = await fromUntyped(client, 'golf_coach_insights')
-    .select('id, lifecycle_state, evidence, engine_version')
-    .in('id', insightIds);
-
-  if (error) {
-    await logServerError(
-      `[evidence-revision] live insight read failed for ${insightIds.length} insight(s) — evidence-changed badges will not render this load: ${describeError(error)}`,
-      { action: 'evidenceRevision.loadStatuses', featureArea: 'coachhelm' },
-      'warning',
-    );
-    return {};
-  }
-
+  // Nothing caps the number of focus areas a team can have, so nothing caps
+  // the number of distinct source insights either — chunk the `.in()` at
+  // chunkIds' 200-id PostgREST URL-size limit (src/lib/supabase/chunk-ids.ts).
   const liveRevisionById = new Map<string, string | null>();
-  for (const row of (data ?? []) as (InsightEvidenceSourceRow & { id: string })[]) {
-    liveRevisionById.set(row.id, computeInsightEvidenceRevision(row));
+  for (const idChunk of chunkIds(insightIds)) {
+    const { data, error } = await fromUntyped(client, 'golf_coach_insights')
+      .select('id, lifecycle_state, evidence, engine_version')
+      .in('id', idChunk);
+
+    if (error) {
+      await logServerError(
+        `[evidence-revision] live insight read failed for ${idChunk.length} insight(s) — evidence-changed badges will not render this load: ${describeError(error)}`,
+        { action: 'evidenceRevision.loadStatuses', featureArea: 'coachhelm' },
+        'warning',
+      );
+      // One failed chunk makes the whole batch unverifiable — a partial
+      // result would silently show "match" for insights whose chunk simply
+      // never got read, which is the same fail-open shape this fix exists
+      // to close.
+      return null;
+    }
+
+    for (const row of (data ?? []) as (InsightEvidenceSourceRow & { id: string })[]) {
+      liveRevisionById.set(row.id, computeInsightEvidenceRevision(row));
+    }
   }
 
   const result: Record<string, EvidenceRevisionComparison> = {};

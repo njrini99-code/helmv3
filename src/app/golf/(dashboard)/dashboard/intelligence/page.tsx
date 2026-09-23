@@ -31,6 +31,7 @@ import { todayIsoInZone } from '@/lib/golf/timezone';
 import { isFlagEnabled } from '@/lib/flags';
 import { fromUntyped } from '@/lib/supabase/untyped';
 import { computeEvidenceRevisionStatuses } from '@/lib/coachhelm/focus-areas/load-evidence-revision-status';
+import type { EvidenceRevisionComparison } from '@/lib/coachhelm/focus-areas/evidence-revision-status';
 
 /**
  * A8 slice 3: the focus-area select is routed through `fromUntyped` (see
@@ -325,6 +326,12 @@ export default async function IntelligenceDashboardPage({ searchParams }: Intell
     supabase,
     focusAreas || [],
   );
+  // `null` means the live-insight read failed — render no badge, same as an
+  // id simply missing from a successful map, but NEVER by silently
+  // defaulting the whole result to `{}` first (that's the exact collapse
+  // that hid a failed read behind "nothing changed").
+  const evidenceRevisionStatusFor = (id: string): EvidenceRevisionComparison | undefined =>
+    evidenceRevisionStatusByFocusAreaId ? evidenceRevisionStatusByFocusAreaId[id] : undefined;
 
   const focusAreasWithPlayers: PlayersGridFocusArea[] = (focusAreas || []).map((fa) => ({
     ...fa,
@@ -332,7 +339,7 @@ export default async function IntelligenceDashboardPage({ searchParams }: Intell
     outcome_status: fa.from_insight_id ? (outcomeByInsightId[fa.from_insight_id] ?? null) : null,
     progressHistory: progressHistoryOf(fa.progress_notes),
     from_review_round_id: fa.from_review_id ? (roundIdByReviewId[fa.from_review_id] ?? null) : null,
-    evidence_revision_status: evidenceRevisionStatusByFocusAreaId[fa.id],
+    evidence_revision_status: evidenceRevisionStatusFor(fa.id),
   })) as unknown as PlayersGridFocusArea[];
 
   const gridStats: Record<string, PlayersGridStats> = {};
