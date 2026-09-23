@@ -726,6 +726,77 @@ later slice." This module is that slice, for the new v3 pure-core families.
   `groupIssues`'s output into scoring/delivery is later-slice work, per
   this slice's explicit scope.
 
+### Issue grouping and ranking-input unification (A6 slice 2, 2026-09-23)
+
+Three additions on top of slice 1's `groupIssues`, all still pure core —
+still no `ranking/score.ts` policy change, no flag needed, because nothing
+wires into a live ranking read yet:
+
+- **Sequence packets now gate `eligible` on the #2020 rollup
+  (`computeSequenceAttribution`'s per-`event_kind` `MetricResult.status`),
+  never on a single event's own resolution.** Slice 1's test-local
+  `sequencePacketFromEvent` let one hole's one `measuredContribution !==
+  null` event found/own an issue with zero population behind it —
+  contradicting the standing "a single round never clears the floors"
+  rule everywhere else in v3. `sequencePacketFromRollupGatedEvent` (test
+  helper, mirrors what a real adapter should do) instead requires the
+  EVENT KIND's own rollup row to be `status: 'supported'` (i.e. cleared
+  `SEQUENCE_MIN_EVENTS`/`SEQUENCE_MIN_ROUNDS`) before the packet is
+  eligible. The packet's own `sourceShotIds`/`strokesImpact` still
+  describe only the one occurrence being grouped, never the rollup's full
+  population — using the rollup as the source of a packet's shots or
+  impact would let transitive union-find over-merge every occurrence of a
+  kind across a player's whole history into one mega-issue.
+- **`Issue.evidenceKey: string | null`** — a new field, separate from
+  `id`. `id` is shot-set-addressed and shifts the moment new evidence
+  joins or leaves the group; `evidenceKey` is stable across that churn
+  (derived from the impact owner's own `IssueSourcePacket.evidenceKey`,
+  falling back to `` `${origin}:${label}` `` when the packet omits one) so
+  a consumer can recognize "this is still fundamentally the same
+  underlying pattern" even after the shot set changes. A group with no
+  owner has `evidenceKey: null`, matching the existing `ownerClaimId:
+  null` convention.
+- **`applyMaterialChangeSuppression(issues, activeInterventions):
+  SuppressibleIssue[]`** — pure function, runs strictly after
+  ownership/scoring and before any future top-N truncation, per the
+  standing ordering rule. Looks up each issue by `evidenceKey` (never
+  `id`) against the caller-supplied `ActiveIntervention[]`. No match, or
+  `evidenceKey: null` → never suppressed, regardless of magnitude — a
+  genuinely different pattern (or an issue with no owner to key off of)
+  always surfaces. A match compares `|policyInput.strokesImpact|` against
+  the intervention's own baseline magnitude: unchanged or worsened by
+  less than `MATERIAL_CHANGE_THRESHOLD` (50%) → suppressed with reason
+  `'active_intervention_unchanged'`; at or past the threshold → resurfaces
+  (`suppressed: null`). A zero baseline treats any nonzero current
+  magnitude as material (avoids a divide-by-zero silently suppressing
+  forever). **The function never removes an issue from its returned
+  list** — every input issue is present, `suppressed` is either `null` or
+  the one named reason, so a caller can never lose an issue's other data
+  by filtering it out. The `>=` boundary at exactly 50% was mutation-
+  verified: flipping it to `>` fails exactly the boundary test
+  (`situational-ranking.test.ts`) and only that test.
+- **`issueToRankableInsight(issue): RankableInsight`** — a new pure
+  adapter in `situational-ranking.ts` (imports `RankableInsight` as a type
+  from `./score`), NOT a change to `scoreInsight`/`rankInsights` or any
+  live caller. Maps `policyInput.strokesImpact`/`confidence`/`sampleSize`
+  straight through and derives `insight_type` from the impact owner's
+  `origin:label` (falling back to the first claim when there is no
+  owner). "One underlying issue yields one leading priority" is proved at
+  the ranked-output level in `situational-ranking.test.ts`: grouping a
+  par/distance/sequence trio describing the same shots into one `Issue`
+  and ranking it alongside two standalone issues yields exactly one
+  ranked entry for the trio, not three.
+- **Units caveat, documented not solved**: `IssueSourcePacket.strokesImpact`
+  is documented as per-round, but neither a sequence event's
+  `measuredContribution` nor the #2020 rollup's per-event mean is actually
+  per-round today. `policyInput`/`issueToRankableInsight` pass this number
+  through unchanged; reconciling the unit is out of this slice's scope.
+- **Still not wired into `ranking/score.ts`'s live callers or any delivery
+  surface** — `issueToRankableInsight` exists so a later slice can call it,
+  and `applyMaterialChangeSuppression` exists so a later slice can call it
+  with real `ActiveIntervention` data sourced from actual interventions;
+  neither is invoked by any production code path yet.
+
 Two ranking reads outside `golf_coach_insights` were checked and are
 DELIBERATELY not routed through `scoreInsight` — different domains, not an
 oversight: the goal-suggestion writer (`v3/goals/suggestion-writer.ts`) ranks

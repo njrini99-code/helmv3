@@ -388,6 +388,20 @@ Player opens round review
   `docs/architecture/coachhelm-evidence-contract.md`'s "Controlled
   hypotheses" section and `memory/features/coachhelm-ai.md`.
 
+- **`situational-ranking.ts` slice 2** (2026-09-23, addendum §13, A6 slice
+  2, still pure core): sequence packets now gate eligibility on the #2020
+  rollup's own per-kind support status instead of one event's own
+  resolution, closing a gap where a single hole could found an issue with
+  no real population behind it. New `Issue.evidenceKey`, a pure
+  `applyMaterialChangeSuppression` (never drops an issue, suppresses only
+  a matched, unchanged-or-under-50%-worse intervention, mutation-verified
+  at the 50% boundary), and a pure `issueToRankableInsight` adapter that
+  proves "one issue, one leading priority" at the ranked-output level.
+  Still not wired to a route, component, or live ranking read. Full
+  contract in `docs/architecture/coachhelm-evidence-contract.md`'s "Issue
+  grouping and ranking-input unification (A6 slice 2)" section and
+  `memory/features/coachhelm-ai.md`.
+
 - **Duplicate-active-work guard (Pkg 9 slice 1a, 2026-09-23,
   `agent/coachhelm-focus-dedup`)**: all 5 focus-area create paths
   (`createFocusArea`, `createPlayerFocusArea`, `createFocusAreaFromReview`,
