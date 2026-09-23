@@ -1,60 +1,33 @@
 # Feature flag + kill-switch registry.
 #
-
 # Source of truth for `src/lib/flags/registry.generated.ts` (regenerate with
-
 # `npm run flags:generate`; `npm run flags:check` is the CI governance gate —
-
 # see docs/ai-system/FEATURE_FLAGS.md for the full schema, the NEVER-GATE
-
 # list, and how to add/expire a flag).
 #
-
 # Owner decision: ADR 2026-09-03-control-plane-owner-decisions.md
-
 # (`FEATURE_FLAG_INFRASTRUCTURE_NET_NEW` = "Flags yes";
-
 # `CANARY_ROLLOUT_MECHANISM` = "Canary later" — `environment` below is
-
 # booleans ONLY, never a percentage/cohort. Percentage rollout is explicitly
-
 # deferred, not built here.
 #
-
 # Schema per flag (all fields required unless noted):
-
 #   feature_id             stable id; also the string passed to isFlagEnabled()
-
 #   owner                  who to ask before flipping/removing this flag
-
 #   purpose                one sentence: what it controls and why it exists
-
 #   type                   release | experiment | operations_kill_switch | temporary_migration
-
 #   status                 active | archived
-
 #   created_at             ISO date
-
 #   expires_at             ISO date or null — required for temporary_migration;
-
 #                          optional (norm: set one) for release/experiment;
-
 #                          may be null for a permanent operations_kill_switch
-
 #   default                boolean fallback when an environment key is absent
-
 #   environment            { production, preview, development } — booleans only
-
 #   kill_switch_behavior   required (non-empty) when type is operations_kill_switch;
-
 #                          null otherwise. What turning it off disables, what
-
 #                          keeps running, who may change it, how it's audited.
-
 #   cleanup_plan           required for every flag — how/when it gets removed
-
 #                          ("no planned removal" is a valid, honest answer for
-
 #                          a permanent operations_kill_switch)
 
 version: 1
@@ -359,6 +332,25 @@ flags:
       confounded row written under that hard-code is PERMANENT (the insert
       is idempotent, PK on `insight_id`) and cannot be relabeled once slice 2
       lands.
+    type: experiment
+    status: active
+    created_at: "2026-09-23"
+    expires_at: null
+    default: false
+    environment:
+      production: false
+      preview: false
+      development: false
+    kill_switch_behavior: null
+    cleanup_plan: >-
+      A9 slice 2 extends metric coverage, adds confounding detection (the
+      enable-blocking prerequisite above), and adds an observability rollup;
+      slice 3 is the explicit, separate decision on whether this signal
+      should ever feed `nextWeight` (requires either a dedicated non-`lift`
+      column or a reviewed ADR relaxing the pure core's "never named lift"
+      rule). This flag is promoted or removed based on that decision plus
+      shadow-log evidence on the insufficient-evidence rate, not on a fixed
+      date.
   # Addendum §13 A7 slice 1: the Game Fingerprint page's own Approach/
   # Scoring sections read golf_player_stats_cache with an opaque,
   # cron-recomputed window — this surface instead loads a fresh rolling
@@ -385,14 +377,6 @@ flags:
       development: false
     kill_switch_behavior: null
     cleanup_plan: >-
-      A9 slice 2 extends metric coverage, adds confounding detection (the
-      enable-blocking prerequisite above), and adds an observability rollup;
-      slice 3 is the explicit, separate decision on whether this signal
-      should ever feed `nextWeight` (requires either a dedicated non-`lift`
-      column or a reviewed ADR relaxing the pure core's "never named lift"
-      rule). This flag is promoted or removed based on that decision plus
-      shadow-log evidence on the insufficient-evidence rate, not on a fixed
-      date.
       Either promote to a permanent `release` flag once the section has
       been reviewed and the rolling-12-month load has been checked against
       a heavy-user roster in preview, or remove the section and its wiring
