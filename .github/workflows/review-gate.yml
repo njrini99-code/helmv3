@@ -447,14 +447,34 @@ jobs:
         run: |
           echo "Draft PR: review-gate checks were skipped. They run when the PR is marked ready for review."
           exit 1
+      # Any failure fails. A cancellation or skip fails too — UNLESS the PR's
+      # live head is no longer this run's commit (2026-09-23): a new push
+      # cancels the running gate via `concurrency`, and this always() job used
+      # to paint that cancellation red on the superseded commit. Fail closed
+      # if the live head cannot be read. The draft case is caught above.
       - name: Fail if any required check failed
-        # Any skip, failure or cancellation fails; the draft case is caught
-        # by the step above.
-        if: >-
-          contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') ||
-          contains(needs.*.result, 'skipped')
+        env:
+          RESULTS: ${{ toJSON(needs.*.result) }}
+          EVENT_NAME: ${{ github.event_name }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          RUN_HEAD: ${{ github.event.pull_request.head.sha }}
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
         run: |
-          echo "One or more review-gate checks failed."
+          set -uo pipefail
+          echo "needs results: $RESULTS"
+          if jq -e 'index("failure")' <<< "$RESULTS" >/dev/null; then
+            echo "One or more review-gate checks failed."; exit 1
+          fi
+          if ! jq -e 'index("cancelled") or index("skipped")' <<< "$RESULTS" >/dev/null; then
+            echo "review-gate clean."; exit 0
+          fi
+          if [ "$EVENT_NAME" = "pull_request" ] && [ -n "$PR_NUMBER" ]; then
+            live="$(gh api "repos/$GH_REPO/pulls/$PR_NUMBER" --jq .head.sha 2>/dev/null || true)"
+            if [ -n "$live" ] && [ "$live" != "$RUN_HEAD" ]; then
+              echo "::notice::Superseded: PR head is now ${live:0:12}, this run was for ${RUN_HEAD:0:12}."
+              exit 0
+            fi
+          fi
+          echo "One or more review-gate checks were cancelled or skipped on the current head."
           exit 1
-      - name: All checks green
-        run: echo "review-gate clean."
