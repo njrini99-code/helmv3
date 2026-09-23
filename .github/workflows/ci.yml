@@ -965,6 +965,11 @@ jobs:
       - name: Run pgTAP RLS suites
         run: |
           set -euo pipefail
+          # `supabase test db` pulls pg_prove itself; pre-pull it with the
+          # mirror fallback so a ghcr.io rate limit can't fail the suite.
+          # The tag follows the pinned CLI; a stale tag only skips the
+          # pre-pull, and the CLI pulls the image it wants as before.
+          bash scripts/db/pull-supabase-image.sh ghcr.io/supabase/pg_prove:3.36 || true
           tmp_dir="$(mktemp -d)"
           for f in supabase/tests/rls/*.sql; do
             case "$f" in
