@@ -115,6 +115,15 @@ export interface HoleContext {
   course_id: string | null;
   hole_number: number;
   par: number;
+  /** `golf_holes.yardage` — nullable in the database (sparsely populated).
+   *  `null` means "not recorded", never coerced to an estimate. A3's
+   *  par/length grouping (`metrics/par-opportunities.ts`) falls back to the
+   *  par-only aggregate for holes where this is `null`, rather than guessing
+   *  a length band. Never derive this from `ShotFact.distance_to_hole_before_feet`
+   *  on the tee shot — that is inferring hole length from a shot, which A1's
+   *  identity/length fields must not do (see `holeIdentityKey`'s doc comment
+   *  for the same rule applied to identity). */
+  yardage: number | null;
   /** `golf_holes.score` is nullable in the database, but this field is not:
    *  a `HoleContext` must only ever be constructed for a hole with a
    *  non-null score. A null score means "exclude this hole", mirroring
@@ -133,9 +142,6 @@ export interface HoleContext {
   penalty_strokes: number | null;
   putts: number | null;
   gir: boolean | null;
-  /** `golf_holes.yardage`. Nullable in the database — not every hole has a
-   *  recorded yardage — and stays nullable here, never defaulted. */
-  yardage: number | null;
 }
 
 /**

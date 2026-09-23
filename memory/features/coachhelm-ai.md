@@ -355,6 +355,35 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
   wire this into `approach-miss.ts` yet — that's a later slice, behind a
   flag.
 
+- **`src/lib/coachhelm/v3/metrics/par-opportunities.ts` is a new, pure
+  metrics module** (2026-09-23, `agent/coachhelm-par-opportunities`,
+  addendum §13, work package A3) — `computeParOpportunities(facts, holes,
+  scope): MetricResult[]`, built on the A1 types above. **Not wired into
+  any generator, composite, or the feed** — pure core + tests only, same
+  posture as A0/A1. Two families: `par_length_scoring` (identity-agnostic
+  avg strokes-to-par by par + a length band per par split at CONSTANT,
+  versioned yardage cutoffs — `PAR_LENGTH_BANDS`/`PAR_LENGTH_BAND_VERSION`,
+  not player-derived, so a boundary never drifts between a lifetime,
+  recent, or as-of scope — falling back to the par-only aggregate when a
+  band can't clear the sample floor on its own) and
+  `par5_regulation_opportunity_rate` / `par5_green_in_two_rate` /
+  `par5_putting_conversion_rate` (specific-hole, keyed by
+  `holeIdentityKey`, three separate metrics on purpose — green-in-two is a
+  strictly narrower eagle-look rate, never folded into opportunity or
+  conversion). `HoleContext` gained a `yardage: number | null` field
+  (`golf_holes.yardage`) to support the length grouping — the live
+  producer (`load-player-context.ts` selecting it) is in #1986, so this
+  slice's bands fold to `'all'` in production until that lands. The
+  same-hole-number/different-course collision A3 was scoped to fix in
+  `par-type.ts`/`course-mgmt.ts` turned out already fixed there
+  (course-mgmt.ts's `worst_holes`, PR #1936, pinned by
+  `course-mgmt-hole-identity.test.ts`); `par-type.ts` never grouped by a
+  specific hole. See
+  `docs/architecture/coachhelm-evidence-contract.md`'s "Par/length +
+  par-5 opportunity metrics" section and
+  `src/test/coachhelm/v3/par-opportunities.test.ts` for the fixtures,
+  including the two-course same-hole-number case.
+
 ## Tests To Prefer
 
 - Unit tests under `src/test/coachhelm/**`.
