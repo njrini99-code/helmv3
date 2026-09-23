@@ -52,6 +52,7 @@
     "docs:dead-refs": "node scripts/knowledge/document-inventory.mjs --dead-refs",
     "docs:lifecycle": "node scripts/knowledge/document-inventory.mjs --lifecycle",
     "docs:staleness": "node scripts/knowledge/document-inventory.mjs --staleness",
+    "docs:refs": "node scripts/knowledge/document-inventory.mjs --refs",
     "doctor": "node scripts/doctor.mjs",
     "diagnostics:health": "node scripts/diagnostics-health.mjs",
     "enforcement:check": "node scripts/gen-enforcement-inventory.mjs --check",
