@@ -65,13 +65,20 @@ type Mode =
   | 'round-not-completed'
   | 'shots-error'
   | 'holes-error'
+  | 'comparison-error'
   | 'upsert-error'
   | 'unknown-throw';
 
 let mode: Mode = 'success';
+// The round-detail `.single()` read and the as-played comparison read both
+// hit `golf_rounds`, in that order — this counter lets 'comparison-error'
+// fail only the SECOND call, so the round lookup itself still succeeds and
+// the compute reaches the comparison query before failing.
+let golfRoundsCallCount = 0;
 
 const mockFrom = vi.fn((table: string) => {
   if (table === 'golf_rounds') {
+    golfRoundsCallCount += 1;
     if (mode === 'round-not-found') {
       const chain = createChainableMock();
       chain.single = vi.fn(async () => ({ data: null, error: { code: 'PGRST116', message: 'no rows' } }));
@@ -86,6 +93,9 @@ const mockFrom = vi.fn((table: string) => {
       const chain = createChainableMock();
       chain.single = vi.fn(async () => ({ data: { ...BASE_ROUND, status: 'in_progress' }, error: null }));
       return chain;
+    }
+    if (mode === 'comparison-error' && golfRoundsCallCount === 2) {
+      return createChainableMock({ data: null, error: { code: '500', message: 'comparison query failed' } });
     }
     // Used both for the round-detail `.single()` read and the later
     // (non-`.single()`) player-history comparison read.
@@ -164,6 +174,7 @@ import { generateAndStoreRoundReview } from '../round-review-system';
 describe('generateAndStoreRoundReview — typed failure codes + error surfacing', () => {
   beforeEach(() => {
     mode = 'success';
+    golfRoundsCallCount = 0;
     mockFrom.mockClear();
     logServerError.mockClear();
   });
@@ -247,6 +258,20 @@ describe('generateAndStoreRoundReview — typed failure codes + error surfacing'
     expect(result.success).toBe(false);
     expect(result.code).toBe('db_error');
     expect(findLogCall('holes read failed')).toBeDefined();
+  });
+
+  it('a failed as-played comparison read is logged and fails the compute with db_error, not a false empty-comparison success', async () => {
+    mode = 'comparison-error';
+    const result = await generateAndStoreRoundReview(ROUND_ID, PLAYER_ID);
+    expect(result.success).toBe(false);
+    expect(result.code).toBe('db_error');
+    const call = findLogCall('comparison read failed');
+    expect(call).toBeDefined();
+    const [, meta] = call!;
+    expect(meta).toMatchObject({ roundId: ROUND_ID, playerId: PLAYER_ID });
+    // The round lookup itself must have succeeded (not round_not_found) —
+    // this failure is specifically the SECOND golf_rounds read.
+    expect(golfRoundsCallCount).toBe(2);
   });
 
   it('a failed upsert is logged and returns code save_failed', async () => {

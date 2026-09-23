@@ -818,11 +818,16 @@ async function computeAndStoreRoundReview(
     // arbitrary intra-day ordering. `.neq('id', roundId)` is kept as defense
     // in depth even though the date bound already excludes the round itself.
     //
-    // NOTE: this comparison query's `error` is still left unhandled here —
-    // same reasoning as the (now fixed) shots/holes reads above would apply,
-    // but this block is N4/R4-owned (repair plan §5.4, #1977); left as a
-    // follow-up rather than touching #1977's query in this audit-repair PR.
-    const { data: playerRounds } = await supabase
+    // This comparison query's `error` is checked below, matching
+    // `buildDeterministicRoundReview`'s own as-played comparison query
+    // (src/lib/golf/round-review/deterministic-review.ts) — the pre-warm
+    // path's independent copy of this exact query already failed the build
+    // on a comparison-read error rather than silently treating it as "no
+    // prior rounds". Silently falling back to an empty comparison here would
+    // be the exact bug class this PR fixes elsewhere in this function: a
+    // real DB error masquerading as a legitimate empty state (a new
+    // player's first round) instead of failing loudly.
+    const { data: playerRounds, error: playerRoundsError } = await supabase
       .from('golf_rounds')
       .select('id, created_at, total_score, score_to_par, total_putts, total_gir, total_gir_possible, total_fairways_hit, total_fairways, holes_played')
       .eq('player_id', ownerPlayerId)
@@ -834,6 +839,13 @@ async function computeAndStoreRoundReview(
       .order('created_at', { ascending: false })
       .order('id', { ascending: false })
       .limit(20);
+    if (playerRoundsError) {
+      await logServerError(
+        `[RoundReview] generateAndStoreRoundReview: comparison read failed: ${describeError(playerRoundsError)}`,
+        { action: 'round_review_system.generateAndStoreRoundReview', featureArea: 'round_reviews', roundId, playerId }
+      );
+      return { success: false, error: 'An unexpected error occurred', code: 'db_error' };
+    }
 
     const playerAvgs = calculateComparisonAverages((playerRounds ?? []) as ComparisonRoundRow[]);
 
