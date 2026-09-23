@@ -21,12 +21,51 @@
  * `[today-12mo, today]` range is both more precise and gives
  * `describeDistanceProfileWindow` two real dates to print.
  */
-import { addMonths } from 'date-fns';
 import { formatDateOnlyFull } from '@/lib/golf/date-only';
 import type { AnalysisScope } from '../context/types';
 
 function toDateOnly(date: Date): string {
   return date.toISOString().slice(0, 10);
+}
+
+/**
+ * Subtracts `months` from `date`, computed ENTIRELY from UTC calendar
+ * fields — never local time. Mirrors `date-fns`' own `addMonths`
+ * end-of-month clamping (e.g. Jan 31 minus 1 month -> Feb 28, never
+ * overflowing into March): when the source day doesn't exist in the
+ * target month (Feb 29 twelve months before a non-leap year), the result
+ * CLAMPS to the target month's last day rather than rolling into the
+ * next one.
+ *
+ * This module used to call `date-fns`' `addMonths(now, -12)` directly,
+ * which reads LOCAL getters (`getDate`/`getMonth`/`getFullYear`). Every
+ * `now` this module receives is effectively a UTC-midnight instant (see
+ * `toDateOnly` below), and a negative-offset zone (e.g. America/New_York,
+ * UTC-5/-4) reads a UTC-midnight instant as the PREVIOUS local calendar
+ * day. For a Feb 29 `now`, that meant `addMonths` actually operated on
+ * local Feb 28 in that zone — which doesn't overflow at all — and the
+ * result's preserved local time-of-day converted back to UTC as March 1.
+ * That was never a deliberate decision about the leap-year case, only a
+ * side effect of mixing local-time month arithmetic with a UTC-midnight
+ * input: it passed in `America/New_York` and produced a DIFFERENT date
+ * (Feb 28, the correct clamp) in CI's UTC, failing the test that pinned
+ * the former. This function has no dependency on the process's timezone
+ * at all, so both environments agree.
+ */
+function subtractMonthsUTC(date: Date, months: number): Date {
+  const year = date.getUTCFullYear();
+  const month = date.getUTCMonth();
+  const day = date.getUTCDate();
+
+  // Day 0 of a month is the LAST day of the previous month (`Date.UTC`'s
+  // own overflow rule) — this one call both lands on the target month AND
+  // finds its last day.
+  const endOfTargetMonth = new Date(Date.UTC(year, month - months + 1, 0));
+  const daysInTargetMonth = endOfTargetMonth.getUTCDate();
+
+  return day >= daysInTargetMonth
+    ? endOfTargetMonth
+    : new Date(Date.UTC(endOfTargetMonth.getUTCFullYear(), endOfTargetMonth.getUTCMonth(), day));
 }
 
 /**
@@ -38,7 +77,7 @@ function toDateOnly(date: Date): string {
 export function buildRollingDistanceProfileScope(playerId: string, now: Date = new Date()): AnalysisScope {
   return {
     player_id: playerId,
-    window_start: toDateOnly(addMonths(now, -12)),
+    window_start: toDateOnly(subtractMonthsUTC(now, 12)),
     window_end: toDateOnly(now),
     analysis_cutoff: now.toISOString(),
   };
