@@ -155,6 +155,23 @@ export const SCENARIO_D_HOLES_PARTIAL: HoleContext[] = [
 ];
 
 // ---------------------------------------------------------------------------
+// Scenario F — 125-175 yd band, EVERY compound floor failing at once: 4
+// attempts (< MIN_ATTEMPTS=10) across only 2 distinct rounds (< MIN_ROUNDS=3),
+// and the proximity row's OWN extra floor also fails (1 green hit <
+// MIN_GREENS=3). #2008 review, MUST 1: a tile test must cover the
+// multi-floor case, not just a single-floor one, on every row a compound
+// floor gates — not just green_hit_rate.
+// ---------------------------------------------------------------------------
+export const SCENARIO_F_BOTH_FLOORS_125_175: ShotFact[] = [
+  // 1 green hit (of the eventual MIN_GREENS=3 floor).
+  approachFact({ round_id: 'f-round-1', distance_to_hole_before_feet: yardsToFeet(150), result: 'green', lie_after: 'green' }),
+  // 3 misses, 1 distinct rounds worth on top of the green hit's round.
+  approachFact({ round_id: 'f-round-1', distance_to_hole_before_feet: yardsToFeet(150), result: 'fairway', lie_after: 'fairway', miss_direction: 'left' }),
+  approachFact({ round_id: 'f-round-2', distance_to_hole_before_feet: yardsToFeet(150), result: 'rough', lie_after: 'rough', miss_direction: null }),
+  approachFact({ round_id: 'f-round-2', distance_to_hole_before_feet: yardsToFeet(150), result: 'fairway', lie_after: 'fairway', miss_direction: null }),
+];
+
+// ---------------------------------------------------------------------------
 // Scenario E — band boundaries (before-distance in yards; hi exclusive,
 // lo inclusive, matching bucketApproachDistance exactly):
 //   49.9 -> no band (below the 50 yd floor)

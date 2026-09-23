@@ -8,6 +8,7 @@ import {
   SCENARIO_B_UNDER_ATTEMPTS_50_125,
   SCENARIO_C_UNDER_ROUNDS_175_PLUS,
   SCENARIO_C_HOLES,
+  SCENARIO_F_BOTH_FLOORS_125_175,
 } from '@/test/coachhelm/v3/fixtures/distance-profile-fixtures';
 import { buildDistanceProfileViewModel } from '../buildDistanceProfileViewModel';
 import { DistanceProfileSection } from '../DistanceProfileSection';
@@ -75,6 +76,52 @@ describe('DistanceProfileSection', () => {
     expect(within(button).getByText(/2 of 3 rounds/i)).toBeInTheDocument();
   });
 
+  it('names the true attempts gap on the proximity tile, never "greens hit" — its own reading-count floor is cleared (#2008 review, MUST 1 repro)', () => {
+    // Before this fix, the proximity tile read its OWN eligibleCount/
+    // distinctRounds (scoped to the narrower 3-shot reading population) and
+    // reported "3 of 3 greens hit" — self-contradictory, since that floor is
+    // actually cleared, and hiding the real problem (8 of 10 attempts).
+    const results = computeDistanceProfile(SCENARIO_B_UNDER_ATTEMPTS_50_125, scope('p1'), []);
+    const sections = buildDistanceProfileViewModel(results);
+    render(<DistanceProfileSection sections={sections} windowLabel="Last 12 months (test)" />);
+
+    const button = screen.getByRole('button', { name: /Proximity when on the green, 50-125 yd/i });
+    expect(within(button).getByText(/8 of 10 attempts/i)).toBeInTheDocument();
+    expect(within(button).queryByText(/greens hit/i)).not.toBeInTheDocument();
+  });
+
+  it('names the same attempts gap on the direction-coverage and severe-outcome tiles, not their own narrower row counts', () => {
+    const results = computeDistanceProfile(SCENARIO_B_UNDER_ATTEMPTS_50_125, scope('p1'), []);
+    const sections = buildDistanceProfileViewModel(results);
+    render(<DistanceProfileSection sections={sections} windowLabel="Last 12 months (test)" />);
+
+    const coverage = screen.getByRole('button', { name: /Miss-direction data coverage, 50-125 yd/i });
+    expect(within(coverage).getByText(/8 of 10 attempts/i)).toBeInTheDocument();
+
+    const severe = screen.getByRole('button', { name: /Severe-outcome rate, 50-125 yd/i });
+    expect(within(severe).getByText(/8 of 10 attempts/i)).toBeInTheDocument();
+  });
+
+  it('names every failed floor at once, on every rate tile, when rounds/attempts/greens all fail together', () => {
+    const results = computeDistanceProfile(SCENARIO_F_BOTH_FLOORS_125_175, scope('p1'), []);
+    const sections = buildDistanceProfileViewModel(results);
+    render(<DistanceProfileSection sections={sections} windowLabel="Last 12 months (test)" />);
+
+    const greenHit = screen.getByRole('button', { name: /Greens hit, 125-175 yd/i });
+    expect(within(greenHit).getByText(/2 of 3 rounds and 4 of 10 attempts/i)).toBeInTheDocument();
+
+    const proximity = screen.getByRole('button', { name: /Proximity when on the green, 125-175 yd/i });
+    expect(
+      within(proximity).getByText(/2 of 3 rounds and 4 of 10 attempts and 1 of 3 greens hit/i),
+    ).toBeInTheDocument();
+
+    const coverage = screen.getByRole('button', { name: /Miss-direction data coverage, 125-175 yd/i });
+    expect(within(coverage).getByText(/2 of 3 rounds and 4 of 10 attempts/i)).toBeInTheDocument();
+
+    const severe = screen.getByRole('button', { name: /Severe-outcome rate, 125-175 yd/i });
+    expect(within(severe).getByText(/2 of 3 rounds and 4 of 10 attempts/i)).toBeInTheDocument();
+  });
+
   it('bakes the value and kind into the accessible name, not just the metric/band identity', () => {
     // A bare aria-label on the tile's wrapping element replaces its
     // descendants' text for assistive tech, so the label itself has to
@@ -140,8 +187,20 @@ describe('DistanceProfileSection', () => {
     expect(sheetContent()).not.toBeInTheDocument();
   });
 
-  it('renders the empty-collection state when there are no bands at all', () => {
+  it('renders the empty state for a synthetic empty sections array (defensive — computeDistanceProfile never actually produces this)', () => {
     render(<DistanceProfileSection sections={[]} windowLabel="Last 12 months (test)" />);
+    expect(screen.getByText('No approach shots yet')).toBeInTheDocument();
+  });
+
+  it('renders the empty state for the REALISTIC no-shots-yet case: computeDistanceProfile([]) still emits a full row set, all invalid (#2008 review, SHOULD 2)', () => {
+    // A brand-new player's real path never produces sections=[] — every band
+    // still gets a row set, every row 'invalid' (denominator 0). Testing
+    // sections=[] alone would miss a regression in buildDistanceProfileViewModel
+    // or the `hasAnyNonInvalidRow` gate itself.
+    const results = computeDistanceProfile([], scope('p1'), []);
+    const sections = buildDistanceProfileViewModel(results);
+    expect(sections.length).toBeGreaterThan(0);
+    render(<DistanceProfileSection sections={sections} windowLabel="Last 12 months (test)" />);
     expect(screen.getByText('No approach shots yet')).toBeInTheDocument();
   });
 });

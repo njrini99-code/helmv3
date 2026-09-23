@@ -44,5 +44,11 @@
   list at 200 — so the existing loader was already safe for this load;
   no pagination change was needed, only the window choice itself.
 - Verification: `distance-profile-window.test.ts` (4/4), including a
-  pinned (not assumed) `date-fns` `addMonths` leap-year edge case: Feb
-  29 minus 12 months rolls to March 1, it does not clamp to Feb 28.
+  pinned (not assumed) leap-year edge case: Feb 29 minus 12 months
+  CLAMPS to Feb 28 of the target year, deliberately, via a hand-written
+  `subtractMonthsUTC` using only UTC calendar methods (`date-fns`'s
+  `addMonths` reads LOCAL getters against a UTC-midnight `now`, which
+  rolled to March 1 depending on the process's timezone — a
+  timezone-dependent CI-only bug, not a decision; see
+  `distance-profile-window.ts`'s own doc comment). Verified under
+  `TZ=UTC`, `TZ=America/New_York`, and `TZ=Asia/Tokyo`.
