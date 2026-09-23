@@ -110,13 +110,21 @@ async function getRoundReviewNarrativeImpl(roundId: string): Promise<RoundReview
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NOT_GENERATED;
 
-  const { data: round } = await supabase
+  const { data: round, error: roundError } = await supabase
     .from('golf_rounds')
     .select(
       'id, player_id, status, course_name, round_type, total_score, score_to_par, total_putts, total_fairways, total_fairways_hit, total_gir, total_gir_possible',
     )
     .eq('id', roundId)
     .maybeSingle<RoundContext>();
+  if (roundError) {
+    await logServerError(
+      `Round-review narrative: round lookup failed: ${describeError(roundError)}`,
+      { action: 'getRoundReviewNarrative.roundLookup', featureArea: 'round_review_ai', roundId, userId: user.id, skipSentry: true },
+      'warning',
+    );
+    return NOT_GENERATED;
+  }
   if (!round) return NOT_GENERATED;
   if (round.status !== 'completed') return NOT_GENERATED;
 
@@ -348,22 +356,38 @@ async function resolveBillingCoachId(
   supabase: Awaited<ReturnType<typeof createClient>>,
   playerId: string,
 ): Promise<string | null> {
-  const { data: membership } = await supabase
+  const { data: membership, error: membershipError } = await supabase
     .from('golf_team_members')
     .select('team_id')
     .eq('player_id', playerId)
     .eq('status', 'active')
     .limit(1)
     .maybeSingle();
+  if (membershipError) {
+    await logServerError(
+      `Round-review narrative: billing coach team lookup failed: ${describeError(membershipError)}`,
+      { action: 'getRoundReviewNarrative.resolveBillingCoach', featureArea: 'round_review_ai', playerId, skipSentry: true },
+      'warning',
+    );
+    return null;
+  }
   if (!membership?.team_id) return null;
 
-  const { data: staff } = await supabase
+  const { data: staff, error: staffError } = await supabase
     .from('golf_team_coach_staff')
     .select('coach_id')
     .eq('team_id', membership.team_id)
     .eq('is_primary', true)
     .limit(1)
     .maybeSingle();
+  if (staffError) {
+    await logServerError(
+      `Round-review narrative: billing coach staff lookup failed: ${describeError(staffError)}`,
+      { action: 'getRoundReviewNarrative.resolveBillingCoach', featureArea: 'round_review_ai', playerId, skipSentry: true },
+      'warning',
+    );
+    return null;
+  }
   return staff?.coach_id ?? null;
 }
 
