@@ -500,13 +500,27 @@ def _resolve_grid(naip_path, dem_path, epsg):
 
 
 def _source_block(naip_path):
+    """Provenance for the traced raster. A factory NAIP export carries a
+    sibling manifest.json (the same one derive-canopy-naip.py reads); when its
+    rasterSha256 matches, the package cites that https service and its capture
+    dates. A hand-supplied raster with no matching manifest keeps its local
+    path, which the package schema rightly refuses as a source url."""
     raw = Path(naip_path).read_bytes()
+    raster_sha = hashlib.sha256(raw).hexdigest()
     naip = cr.read_raster(naip_path)
-    return {
+    block = {
         'provider': 'Locally supplied NAIP raster (see --naip)', 'service': str(naip_path),
-        'catalogTiles': [], 'capturedAt': [], 'rasterSha256': hashlib.sha256(raw).hexdigest(),
+        'catalogTiles': [], 'capturedAt': [], 'rasterSha256': raster_sha,
         'nativeResolutionM': round(naip.pixel_size()[0], 3),
     }
+    manifest_path = Path(naip_path).with_name('manifest.json')
+    if manifest_path.is_file():
+        manifest = json.loads(manifest_path.read_text())
+        if manifest.get('rasterSha256') == raster_sha:
+            block.update({'provider': manifest['provider'], 'service': manifest['service'],
+                          'catalogTiles': manifest.get('catalogTiles') or [],
+                          'capturedAt': manifest.get('captureDates') or []})
+    return block
 
 
 def load_lidar_chm(chm_dir, terrain_source_dir, naip, epsg):

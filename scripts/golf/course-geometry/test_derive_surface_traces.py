@@ -180,6 +180,37 @@ def write_geotiff(path, array, geotransform, epsg, nodata=None):
 OPTIONS = dict(dst.DEFAULTS)
 
 
+class SourceBlockTests(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, self.tmp)
+        self.naip = os.path.join(self.tmp, 'naip.tif')
+        geotransform, width, height = synthetic_grid(width=4, height=4)
+        write_geotiff(self.naip, np.zeros((height, width)), geotransform, EPSG)
+        with open(self.naip, 'rb') as handle:
+            self.sha = hashlib.sha256(handle.read()).hexdigest()
+
+    def write_manifest(self, raster_sha):
+        with open(os.path.join(self.tmp, 'manifest.json'), 'w') as handle:
+            json.dump({'provider': 'USDA NAIP via FPAC conus_naip ImageServer',
+                       'service': 'https://apps.geo.fpac.usda.gov/geo-imagery/rest/services/naip/conus_naip/ImageServer',
+                       'catalogTiles': ['m_1'], 'captureDates': ['20250613'], 'rasterSha256': raster_sha}, handle)
+
+    def test_a_matching_export_manifest_supplies_the_https_service_and_capture_dates(self):
+        self.write_manifest(self.sha)
+        block = dst._source_block(self.naip)
+        self.assertTrue(block['service'].startswith('https://'))
+        self.assertEqual(block['capturedAt'], ['20250613'])
+        self.assertEqual(block['rasterSha256'], self.sha)
+
+    def test_a_manifest_for_a_different_raster_is_ignored(self):
+        self.write_manifest('0' * 64)
+        self.assertEqual(dst._source_block(self.naip)['service'], self.naip)
+
+    def test_no_manifest_keeps_the_local_path(self):
+        self.assertEqual(dst._source_block(self.naip)['service'], self.naip)
+
+
 class MissingKindsTests(unittest.TestCase):
     def test_default_target_holes_only_lists_holes_missing_a_traceable_kind(self):
         hole, features = hole_with_route()
