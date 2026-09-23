@@ -276,6 +276,7 @@ features:
         - supabase/migrations/*coachhelm*.sql
         - supabase/migrations/*insight*.sql
         - supabase/migrations/*golf_coachhelm*.sql
+        - supabase/migrations/*attribution*.sql
       tests:
         - src/test/coachhelm/**
         - src/test/api/cron/coachhelm*.test.ts
