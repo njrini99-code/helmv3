@@ -9,15 +9,22 @@
  * color-coded per player, so the coach can read each player's schedule and spot
  * common free time. Presentation-only; the data comes from getPlayerAvailability
  * via the parent. Colors are the legacy PLAYER_COLORS (inline-styled hex).
+ *
+ * `commonFreeWindows` (optional) surfaces `computeCommonFreeTime`'s ALL-FREE
+ * track — the windows where every selected player is open — as a small callout
+ * above the per-player buckets, so the coach doesn't have to eyeball the tracks
+ * below to find one. Still presentation-only: the parent computes the windows
+ * from the same `getPlayerAvailability` data these buckets are built from.
  * ========================================================================== */
 
 import * as React from 'react';
 import { format, isSameDay, addDays } from 'date-fns';
-import { CalendarCheck } from 'lucide-react';
+import { CalendarCheck, Users } from 'lucide-react';
 
 import { formatEventTime, zonedMidnight } from '@/lib/calendar/timezone';
 import { EmptyState } from '@/components/fairway/feedback/EmptyState';
 import type { ScheduleOverlay } from './FairwayMonthGrid';
+import type { FreeWindow } from '@/lib/golf/common-free-time';
 
 export interface FairwayAvailabilityListProps {
   overlays: ScheduleOverlay[];
@@ -34,6 +41,13 @@ export interface FairwayAvailabilityListProps {
    * time whenever the viewer's own device zone differed from the team's.
    */
   timezone?: string | null;
+  /**
+   * Windows where every selected player is free — `computeCommonFreeTime`'s
+   * `allFreeWindows`. Only meaningful with 2+ players selected (with one
+   * player "common" is just their own free time); the parent gates on that.
+   * Omitted or empty renders nothing extra.
+   */
+  commonFreeWindows?: FreeWindow[];
 }
 
 const KIND_LABEL: Record<ScheduleOverlay['kind'], string> = {
@@ -56,6 +70,7 @@ export function FairwayAvailabilityList({
   rangeEnd,
   nowRef,
   timezone,
+  commonFreeWindows,
 }: FairwayAvailabilityListProps) {
   const buckets = React.useMemo(() => {
     const startMs = rangeStart.getTime();
@@ -80,19 +95,56 @@ export function FairwayAvailabilityList({
     return arr;
   }, [overlays, rangeStart, rangeEnd, timezone]);
 
+  // "Common free time" — the windows where every selected player is open,
+  // above the per-player buckets so the coach doesn't have to read the
+  // tracks below to find one. Presentation only: `commonFreeWindows` is
+  // `computeCommonFreeTime`'s `allFreeWindows`, computed by the parent from
+  // the same availability data.
+  const commonSection =
+    commonFreeWindows && commonFreeWindows.length > 0 ? (
+      <section className="flex flex-col gap-2.5">
+        <h3 className="flex items-center gap-1.5 font-fw-sans text-eyebrow font-semibold uppercase tracking-[0.1em] text-text-tertiary">
+          <Users className="h-3.5 w-3.5" aria-hidden />
+          Common free time
+        </h3>
+        <div className="flex flex-col gap-2">
+          {commonFreeWindows.map((w) => (
+            <div
+              key={`${w.dayIso}:${w.startIso}`}
+              className="flex items-center gap-3 rounded-card border border-fw-success/30 bg-fw-success-bg px-4 py-3"
+            >
+              <CalendarCheck className="h-4 w-4 flex-shrink-0 text-fw-success-ink" aria-hidden />
+              <div className="flex min-w-0 flex-col">
+                <p className="font-fw-sans text-body-sm font-medium text-fw-success-ink">
+                  {dayLabel(zonedMidnight(w.startIso, timezone), nowRef)}
+                </p>
+                <p className="font-fw-mono text-caption tabular-nums text-fw-success-ink">
+                  {formatEventTime(w.startIso, timezone)} – {formatEventTime(w.endIso, timezone)}
+                </p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+    ) : null;
+
   if (buckets.length === 0) {
     return (
-      <EmptyState
-        variant="subtle"
-        icon={CalendarCheck}
-        title="No scheduled time"
-        description="The selected players have nothing on the books in this window — likely all free."
-      />
+      <div className="flex flex-col gap-6">
+        {commonSection}
+        <EmptyState
+          variant="subtle"
+          icon={CalendarCheck}
+          title="No scheduled time"
+          description="The selected players have nothing on the books in this window — likely all free."
+        />
+      </div>
     );
   }
 
   return (
     <div className="flex flex-col gap-6">
+      {commonSection}
       {buckets.map(({ date, items }) => (
         <section key={format(date, 'yyyy-MM-dd')} className="flex flex-col gap-2.5">
           <h3 className="font-fw-sans text-eyebrow font-semibold uppercase tracking-[0.1em] text-text-tertiary">

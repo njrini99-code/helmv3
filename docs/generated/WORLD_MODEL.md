@@ -6,8 +6,8 @@
 
 A dependency graph over `memory/registry.yml`'s feature ownership, not a second copy of it. Every semantic edge below carries evidence — see `docs/generated/WORLD_MODEL.json` for the full attribution. Use `npm run knowledge:world-model -- --impact <file|feature>` for the blast-radius read model.
 
-**Node counts:** 29 features, 66 routes, 46 components, 30 apis, 91 actions, 100 services, 62 tests, 131 tables, 162 rpcs, 28 jobs, 17 invariants, 86 sentrySignals, 8 journeys.
-**Edges:** 999 (merged; an edge with more than one evidence kind is a stronger claim).
+**Node counts:** 29 features, 66 routes, 46 components, 30 apis, 91 actions, 102 services, 65 tests, 131 tables, 162 rpcs, 28 jobs, 17 invariants, 86 sentrySignals, 8 journeys.
+**Edges:** 1005 (merged; an edge with more than one evidence kind is a stronger claim).
 **Unmapped:** Probed files with no registry owner (a real gap this graph surfaces, not fixed here): src/lib/inngest/functions.ts.
 **Table attribution:** A feature’s `tables` list comes only from its own `db:` migration globs, scanned for a literal `CREATE TABLE`. A feature can be real owner of a table with no migration under its glob still containing that statement (e.g. the table was created by a migration matched by a DIFFERENT feature’s `db:` glob, or the CREATE TABLE was later superseded by an ALTER/rename this scanner does not follow) — `admin_incidents` is exactly this case: its current-state doc names `admin_events` and `admin_error_resolutions` as Core Data, but no migration under its own `db:` glob still contains their CREATE TABLE, so this model reports zero tables for it. Read an empty `tables` list as “no migration-glob evidence found,” never as “this feature owns no tables” — check the feature’s own doc for the real answer.
 
@@ -79,7 +79,7 @@ Admin SLO Center · active · criticality high · owner platform
 
 Auth Onboarding And Join · active · criticality high · owner platform
 
-- **Relations:** 1 doc/structurally-evidenced, 27 import-graph-only (weak)
+- **Relations:** 1 doc/structurally-evidenced, 28 import-graph-only (weak)
 - **Tables:** none
 - **RPCs:** `check_rate_limit_atomic`, `golf_team_by_join_code`
 - **Test surfaces:** 2
@@ -289,10 +289,10 @@ Team Access Control And RLS · active · criticality high · owner platform
 
 Team Communications · active · criticality high · owner product
 
-- **Relations:** 0 doc/structurally-evidenced, 5 import-graph-only (weak)
+- **Relations:** 0 doc/structurally-evidenced, 6 import-graph-only (weak)
 - **Tables:** `golf_message_mentions`, `golf_message_reactions`, `golf_message_responses`
 - **RPCs:** none
-- **Test surfaces:** 6
+- **Test surfaces:** 9
 - **Sentry/admin_events signals:** `announcements`, `messaging`, `notifications`
 
 ### `team_operations`
@@ -384,6 +384,7 @@ Team Operations · active · criticality high · owner product
 | `auth_onboarding_join` | `golf_round_lifecycle` | import_graph (weak) |
 | `auth_onboarding_join` | `observability_sentry` | import_graph (weak) |
 | `auth_onboarding_join` | `roster_team` | import_graph (weak) |
+| `auth_onboarding_join` | `team_communications` | import_graph (weak) |
 | `baseball_core` | `admin_platform` | import_graph (weak) |
 | `baseball_core` | `auth_onboarding_join` | import_graph (weak) |
 | `baseball_core` | `coachhelm_ai` | import_graph (weak) |
