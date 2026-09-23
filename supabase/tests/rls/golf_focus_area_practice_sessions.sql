@@ -719,9 +719,14 @@ SELECT is(
   'the on-team coach cannot UPDATE label (column-grant enforced)'
 );
 
+-- met_at must be set alongside met = true here (not left NULL) -- the new
+-- golf_focus_area_criteria_met_consistency_check CHECK (met = (met_at IS
+-- NOT NULL)) would otherwise raise 23514, which pgtap_affected_rows'
+-- exception handler only catches for insufficient_privilege, aborting the
+-- whole suite rather than returning a row count.
 SELECT is(
   public.pgtap_affected_rows($q$
-    UPDATE public.golf_focus_area_criteria SET met = true
+    UPDATE public.golf_focus_area_criteria SET met = true, met_at = now()
     WHERE id = '00000000-0000-0000-0000-0000000000ee'::uuid
   $q$),
   1,
