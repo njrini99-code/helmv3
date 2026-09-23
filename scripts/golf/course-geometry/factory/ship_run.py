@@ -185,6 +185,14 @@ def _build_route_overview(ctx, layout_id, routes_doc, proposal_doc, dest):
         if not (proposal_doc and os.path.isfile(proposal_path)):
             return None, 'ROUTE_PROPOSAL_MISSING: auto-route-v1 routes.json but no route-proposal.json to render'
         cmd += ['--proposal', proposal_path]
+        if facility_id:
+            # Best-effort only: draws the OSM golf=tee/green polygons
+            # faintly under the proposed routes. A proposal already carries
+            # its own confidence/yardage table, so unlike the branch below,
+            # a missing snapshot here is not a review blocker.
+            _manifest, extract_path = ctx.snapshot(facility_id)
+            if extract_path:
+                cmd += ['--osm', extract_path]
     elif routes_doc.get('routeWayIds') and facility_id:
         _manifest, extract_path = ctx.snapshot(facility_id)
         if not extract_path:

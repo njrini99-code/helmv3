@@ -41,7 +41,7 @@ from pathlib import Path
 
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
-from shapely.geometry import shape as shapely_shape
+from shapely.geometry import Polygon, shape as shapely_shape
 
 import course_raster as cr
 from course_crs import utm_epsg
@@ -172,13 +172,42 @@ def _all_route_points_wgs84(doc):
     return points
 
 
-def render_overview(doc, out_path, naip=None, naip_epsg=None, layout_name=None, caption=None):
+def _faint_osm_polygons(extract):
+    """Every `golf=tee`/`golf=green` way in `extract`, as `(kind, [lonlat,
+    ...])` closed-ring points -- drawn faintly under the routes so an owner
+    can see the actual tee/green shapes a proposal or resolution worked
+    from, not just the tee->green line. Mirrors `propose-routes.py`'s
+    `_way_polygon` closed-ring/validity check; not imported from there,
+    since that script is a standalone CLI (hyphenated name), not a shared
+    module -- this is a five-line tag filter, not the routing algorithm."""
+    polygons = []
+    for element in (extract or {}).get('elements', []):
+        if element.get('type') != 'way':
+            continue
+        golf = (element.get('tags') or {}).get('golf')
+        if golf not in ('tee', 'green'):
+            continue
+        points = osmlib.way_points(element)
+        if len(points) < 4 or points[0] != points[-1]:
+            continue
+        polygon = Polygon(points)
+        if polygon.is_empty or not polygon.is_valid or polygon.area <= 0:
+            continue
+        polygons.append((golf, points))
+    return polygons
+
+
+def render_overview(doc, out_path, naip=None, naip_epsg=None, extract=None, layout_name=None, caption=None):
     """Draw `doc` (a `{'features', 'report'}` mapping -- see
     `synthesize_doc_from_osm` and `layout.routes.propose`'s own
     `route-proposal.json`) as a numbered tee->green map with a per-hole
     table underneath. `naip`/`naip_epsg` are optional: without them the map
     falls back to a plain local-projection background so a facility with no
-    retained NAIP export still gets a reviewable overview."""
+    retained NAIP export still gets a reviewable overview -- but that
+    fallback is called out in a title strip above the map so it is never
+    mistaken for a real aerial background. `extract` (an already-loaded
+    Overpass dict) is also optional: when given, every `golf=tee`/
+    `golf=green` way is drawn faintly under the routes."""
     by_id = {f['id']: f for f in doc['features']}
     route_points = _all_route_points_wgs84(doc)
     if naip is not None:
@@ -195,10 +224,39 @@ def render_overview(doc, out_path, naip=None, naip_epsg=None, layout_name=None, 
         map_image = Image.new('RGBA', (width_px, height_px), (235, 240, 230, 255))
         to_px = lambda lonlat: project(_xy(lonlat, epsg))  # noqa: E731
 
-    draw = ImageDraw.Draw(map_image)
     font = ImageFont.load_default(size=20)
     small_font = ImageFont.load_default(size=13)
     table_font = ImageFont.load_default(size=14)
+
+    if extract is not None:
+        polygons = _faint_osm_polygons(extract)
+        if polygons:
+            # Drawn onto a transparent layer and alpha_composite'd in, not
+            # onto map_image directly: ImageDraw only blends a fill's alpha
+            # against a separate RGBA layer -- drawn straight onto
+            # map_image the fill alpha is stored, not blended, and comes
+            # out fully opaque the moment map_image is later flattened to
+            # RGB for the canvas (hiding the very NAIP this exists to show).
+            overlay = Image.new('RGBA', map_image.size, (0, 0, 0, 0))
+            overlay_draw = ImageDraw.Draw(overlay)
+            for kind, points in polygons:
+                pts_px = [to_px(p) for p in points]
+                if kind == 'green':
+                    # Not (60,220,60): that is the high-confidence route
+                    # color: a green polygon outline that shade would read,
+                    # to an owner, as a confident route rather than an OSM
+                    # green shape. Cyan is not in the confidence palette
+                    # (green/orange/red) at all.
+                    fill, outline = (0, 200, 210, 60), (0, 200, 210, 170)
+                else:
+                    # Not blue (reads as water on aerial imagery) and not
+                    # orange/red (the mid/low-confidence route colors):
+                    # violet is in neither set.
+                    fill, outline = (170, 80, 220, 60), (170, 80, 220, 170)
+                overlay_draw.polygon(pts_px, fill=fill, outline=outline)
+            map_image = Image.alpha_composite(map_image, overlay)
+
+    draw = ImageDraw.Draw(map_image)
 
     unassigned = []
     for row in doc['report']:
@@ -220,30 +278,42 @@ def render_overview(doc, out_path, naip=None, naip_epsg=None, layout_name=None, 
         draw.text(label_xy, str(row['ordinal']), fill=(255, 255, 0, 255), font=font, stroke_width=2, stroke_fill=(0, 0, 0, 255))
 
     footer_lines = []
+    if naip is None:
+        # ASCII "--", not an em dash: ImageFont.load_default() has no glyph
+        # for U+2014 and silently draws a tofu box in its place.
+        footer_lines.append('NO NAIP IMAGERY RETAINED FOR THIS FACILITY -- plain background (routes/order still reviewable)')
     if layout_name:
         footer_lines.append(layout_name)
     if unassigned:
         footer_lines.append(f'Unassigned slots: {", ".join(str(n) for n in unassigned)}')
     if caption:
         footer_lines.append(caption)
+    # A separate strip between the map and the table, not a translucent band
+    # overlaid on the map itself: the fallback's local-UTM crop is fit to
+    # the route points with only a small margin, so an overlaid band could
+    # cover a hole sitting near the bottom edge (as it did here for Bryan
+    # Park's southernmost hole) instead of just dimming empty background.
+    footer_pad = 8
+    footer_height = 0
     if footer_lines:
-        pad = 8
         text = '\n'.join(footer_lines)
-        bbox = draw.multiline_textbbox((pad, map_image.height - pad), text, font=small_font, anchor='ld')
-        band = Image.new('RGBA', map_image.size, (0, 0, 0, 0))
-        band_draw = ImageDraw.Draw(band)
-        band_draw.rectangle([0, bbox[1] - pad, map_image.width, map_image.height], fill=(0, 0, 0, 170))
-        map_image = Image.alpha_composite(map_image, band)
-        draw = ImageDraw.Draw(map_image)
-        draw.multiline_text((pad, map_image.height - pad), text, fill=(255, 255, 255, 255), font=small_font, anchor='ld')
+        measure = ImageDraw.Draw(Image.new('RGB', (1, 1)))
+        bbox = measure.multiline_textbbox((0, 0), text, font=small_font)
+        footer_height = (bbox[3] - bbox[1]) + 2 * footer_pad
 
     table_width = sum(w for _, w in TABLE_COLUMNS) + 2 * TABLE_PAD
     table_height = TABLE_HEADER_H + TABLE_ROW_H * len(doc['report']) + 2 * TABLE_PAD
     canvas_width = max(map_image.width, table_width)
-    canvas = Image.new('RGB', (canvas_width, map_image.height + table_height), (255, 255, 255))
-    canvas.paste(map_image.convert('RGB'), (0, 0))
+    canvas = Image.new('RGB', (canvas_width, footer_height + map_image.height + table_height), (255, 255, 255))
     table_draw = ImageDraw.Draw(canvas)
-    y = map_image.height + TABLE_PAD
+    if footer_lines:
+        # Above the map, not below: this is the image's title (the "no
+        # imagery" line an owner must read before judging the routes),
+        # not a caption for the table underneath.
+        table_draw.rectangle([0, 0, canvas_width, footer_height], fill=(20, 20, 20))
+        table_draw.multiline_text((footer_pad, footer_pad), text, fill=(255, 255, 255, 255), font=small_font)
+    canvas.paste(map_image.convert('RGB'), (0, footer_height))
+    y = footer_height + map_image.height + TABLE_PAD
     x = TABLE_PAD
     for label, width in TABLE_COLUMNS:
         table_draw.text((x, y), label, fill=(0, 0, 0, 255), font=table_font)
@@ -281,14 +351,18 @@ def build_overview(routes_doc, out_path, proposal_doc=None, extract=None, scorec
     `routeWayIds` plus `extract` (an already-loaded Overpass dict) and
     `scorecard`. Raises `ValueError` when neither input can produce a
     reviewable route (mirrors `resolved_routes`'s own precondition --
-    callers should check that first)."""
+    callers should check that first). `extract`, when given, is also passed
+    through to `render_overview` to draw the faint tee/green polygons --
+    even when it was `proposal_doc`, not `extract`, that supplied the
+    route features themselves."""
     if proposal_doc is not None:
         doc = proposal_doc
     elif routes_doc.get('routeWayIds') and extract is not None:
         doc = synthesize_doc_from_osm(routes_doc, extract, scorecard, layout_name=layout_name)
     else:
         raise ValueError('no proposal doc and no routeWayIds+extract to synthesize a route overview from')
-    return render_overview(doc, out_path, naip=naip, naip_epsg=naip_epsg, layout_name=layout_name, caption=caption)
+    return render_overview(doc, out_path, naip=naip, naip_epsg=naip_epsg, extract=extract,
+                           layout_name=layout_name, caption=caption)
 
 
 def main(argv=None):
