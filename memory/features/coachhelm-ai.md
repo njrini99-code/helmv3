@@ -748,19 +748,22 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
      a candidate with no exposure or an open window BEFORE it ever takes a
      `todo` slot or costs a `loadPlayerContext` call.
      `computeComparableAttribution`'s own per-candidate checks stay as a
-     backstop. **Residual gap, NOT fixed, flagged to the task owner**: once
-     a shot-level candidate's window IS closed, an `insufficient-evidence`
+     backstop. **Residual gap, resolved with no schema change**: once a
+     shot-level candidate's window IS closed, an `insufficient-evidence`
      result has no honest terminal row to write — `golf_insight_
      outcome_attribution.baseline_value`/`post_value`/`delta` are all
      `NOT NULL numeric`, so a truly empty side (zero contributing shots)
      has no real number to write, and even a real-but-underpowered pair of
      values has no existing column to flag "measured, but below the
      support floor" as distinct from a certified `observed_change` row.
-     These candidates therefore still cost a real `loadPlayerContext` +
-     pure-core call every run once their window closes (bounded to real
-     closed-window shot-level insights, no longer to the whole W22
-     backlog) — a schema addition or an accepted trade-off is the task
-     owner's call, not invented here.
+     The task owner's decision: no migration — cap the retry window
+     instead. The bulk pre-filter now also drops a candidate once
+     `firstExposure + POST_WINDOW_DAYS + RETRY_GRACE_DAYS` (14 days) has
+     passed, counted under its own `summary.comparable_retry_horizon_
+     expired` counter — permanently, it never takes a `todo` slot again.
+     This bounds each insight's cost at roughly `RETRY_GRACE_DAYS` daily-
+     cron `loadPlayerContext` calls after its window closes, instead of an
+     unbounded number, with no schema addition.
   3. **`method_version` degrade mislabeling**: retrying the insert without
      `method_version` on an unknown-column error (the round-level path's
      own degrade pattern) would write a `NULL`-labeled row here too — but
