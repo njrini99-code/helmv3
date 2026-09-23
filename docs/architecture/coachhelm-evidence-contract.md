@@ -1460,14 +1460,28 @@ product/owner decisions or a migration this slice does not make:
   (`golf_insight_exposure`) the way the shot-level path does, or accepting
   the proxy permanently and documenting why. Not decided or built by #2034.
 
-Two related decisions were escalated to the owner rather than resolved in #2034
-(see that PR's description): whether the new
-`coachhelm_trust_status_exclude_unmeasured_outcomes` flag (the missingness
-fix — a null-`improvement` `golf_insight_outcome` row from a thin-sample
-attribution no longer counts as `measured`) should be enabled, and whether
-`interventionAt` across this contract should anchor to first EXPOSURE
-(current default everywhere it's implemented) or first ACTION with an
-exposure fallback.
+Two related decisions were escalated to the owner rather than resolved in PR #2034
+(see that PR's description) — both are now RESOLVED (2026-09-23):
+
+- The `coachhelm_trust_status_exclude_unmeasured_outcomes` flag (the
+  missingness fix — a null-`improvement` `golf_insight_outcome` row from a
+  thin-sample attribution no longer counts as `measured`) ships **enabled**
+  by default in every environment. The owner reviewed the prod trust-tier
+  diff first: 26 of 68 insights change tier with the flag on, all 26 from
+  `needs_validation` → `new_hypothesis` and all 26 driven by a single
+  thin-sample outcome row; no `supported`/`promising`/`underperforming`
+  insight is affected. See #2034's description for the flag's exact
+  `purpose` text and the diff SQL used.
+- `interventionAt` for the shot-level comparable-opportunities path (this
+  doc's module above) now anchors to the first real recorded ACTION
+  (`golf_insight_action`, `INTERVENTION_ACTION_TYPES` —
+  `create_focus`/`acknowledged`/`resolved`) when one exists, falling back to
+  first EXPOSURE otherwise — see #2044 (`comparable-attribute.ts`'s
+  `resolveInterventionAnchor`, `attribution-read.ts`'s read-time
+  `anchor_kind` derivation, `attribution-view-model.ts`'s "(since first
+  shown)"/"(since you acted on it)" labels). Not persisted — no migration.
+  The round-level path's proxy anchor (`golf_coach_insights.created_at`,
+  named as an open item just above) is unaffected by this decision.
 
 ## Controlled hypotheses (A5 deliverable, slices 1-2)
 
