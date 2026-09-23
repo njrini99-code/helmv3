@@ -1,7 +1,37 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { pilotPackage } from '@/test/fixtures/course-geometry/pilot';
 import { isCourseGeometryEligible, resolveCoursePolicy, tierAtLeast, type CourseGeometryPolicy } from '../course-policy';
+import { loadCourseCatalog } from '../load-catalog';
+import { checkRegistryInvariants } from '../registry-invariants';
 import { COURSE_GEOMETRY_REGISTRY, PEEK_N_PEAK_UPPER_POLICY, courseGeometryEligibility, courseGeometryPolicyForLayout, courseGeometryPolicyForSite, courseIdForSite, productCourseIdForRound, resolveCourseGeometryPolicy } from '../course-registry';
+
+/** Exactly the hand-written policy this file carried before the registry
+ * became generated (Factory v2 PR A → PR B). Not imported from anywhere —
+ * copied here on purpose, so a generator or approvals.json bug that changes
+ * Peek's *behaviour* fails this test even though every other assertion below
+ * still passes against whatever the generator produced. */
+const LEGACY_PEEK: CourseGeometryPolicy = {
+  layoutId: 'peek-n-peak-upper',
+  facilityId: 'peek-n-peak',
+  siteIds: new Set(['osm-way-136097904']),
+  projection: 'wgs84-local-enu-v1',
+  geometryFeatureFlag: 'peek_n_peak_one_tap_v1',
+  syncFeatureFlag: 'peek_n_peak_one_tap_sync_v1',
+  approvedGeometryHashes: new Set(['fdec6ea8467dd214372bde680e7b7f9236c06ad5d27bb5ddeadf8ed5e9d3f87a']),
+  approvedPackageByteHashes: { fdec6ea8467dd214372bde680e7b7f9236c06ad5d27bb5ddeadf8ed5e9d3f87a: '7dbe0b9caf1c7e5e6399397c0521bc97af418d6693cc6ddc29228af88dfae119' },
+  acceptedCapabilityTier: 'C2',
+  pilotAcceptsSourceCandidate: true,
+  dbCourseIds: new Set<string>(['48596a01-88a4-4081-aaa1-3b049584aa2d']),
+  courseNamePatterns: [/peek\W*n?\W*peak[\s\S]*\bupper\b/i],
+  renderWorld: 'v2',
+  holeBindings: {
+    fdec6ea8467dd214372bde680e7b7f9236c06ad5d27bb5ddeadf8ed5e9d3f87a: Object.fromEntries(
+      Array.from({ length: 18 }, (_, i) => [i + 1, `peek-n-peak-upper-${String(i + 1).padStart(2, '0')}`])),
+  },
+  livePilot: { layoutId: 'peek-n-peak-upper', geometryHashes: new Set(['fdec6ea8467dd214372bde680e7b7f9236c06ad5d27bb5ddeadf8ed5e9d3f87a']) },
+};
 
 /** A second layout the registry does not carry, for the resolution tests. */
 const cacapon: CourseGeometryPolicy = {
@@ -28,8 +58,27 @@ describe('course geometry registry (Factory v2 PR A)', () => {
       expect(p.approvedGeometryHashes.size).toBeGreaterThan(0);
       expect(p.projection).toBe('wgs84-local-enu-v1');
     }
-    // The pilot stays the registry's fixed point until a second layout ships.
-    expect(COURSE_GEOMETRY_REGISTRY).toEqual([PEEK_N_PEAK_UPPER_POLICY]);
+    // The registry is generated (course-geometry/registry.generated.json,
+    // via approvals.json) — this only pins today's roster, not the whole
+    // registry's shape. Peek's behaviour is separately pinned exactly by
+    // the golden comparison below.
+    expect(COURSE_GEOMETRY_REGISTRY.map(p => p.layoutId)).toContain('peek-n-peak-upper');
+  });
+  it("hydrates Peek'n Peak Upper byte-identical to its pre-generator hand-written policy", () => {
+    expect(PEEK_N_PEAK_UPPER_POLICY).toEqual(LEGACY_PEEK);
+    // `policyForLayout` and the named export must be the same array element,
+    // not two equal-but-distinct hydrations — every `toBe(PEEK_N_PEAK_UPPER_POLICY)`
+    // assertion elsewhere in this suite depends on that identity.
+    expect(courseGeometryPolicyForLayout('peek-n-peak-upper')).toBe(PEEK_N_PEAK_UPPER_POLICY);
+  });
+  it('holds the registry invariants: unique ids, and no sister-layout name collisions', () => {
+    const catalog = loadCourseCatalog();
+    expect(checkRegistryInvariants(COURSE_GEOMETRY_REGISTRY, catalog.layouts)).toEqual([]);
+  });
+  it('matches the checked-in generated registry file exactly (registry.generated.json is not stale)', () => {
+    const onDisk = JSON.parse(readFileSync(join(process.cwd(), 'course-geometry', 'registry.generated.json'), 'utf8'));
+    expect(Array.isArray(onDisk)).toBe(true);
+    expect(onDisk.map((p: { layoutId: string }) => p.layoutId)).toEqual(COURSE_GEOMETRY_REGISTRY.map(p => p.layoutId));
   });
   it('resolves a round by db course id first, then by name pattern, and an unlisted course to null', () => {
     expect(resolveCoursePolicy({ dbCourseId: 'course-row-cacapon', courseName: "Peek'n Peak Upper" }, both)).toBe(cacapon);

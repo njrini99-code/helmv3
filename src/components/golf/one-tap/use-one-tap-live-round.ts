@@ -31,14 +31,25 @@ export interface UseOneTapLiveRoundOptions {
   roundId: string | null;
   dbCourseId?: string | null;
   courseName?: string | null;
+  /** The single course this caller means (Peek's historical call shape):
+   * ignored once `flagsByLayout` resolves an entry for the round's layout. */
   featureFlagEnabled: boolean;
   /** The player's own switch for this round (`live-opt-in.ts`): `false` keeps
    * an eligible round on standard tracking with the row offering "Turn on";
    * omitted (the lab, tests) means no switch governs the round. */
   optIn?: boolean;
   /** Server-evaluated `peek_n_peak_one_tap_sync_v1`: off (the default) plays
-   * device-only, never posting to outbox tables that may not exist yet. */
+   * device-only, never posting to outbox tables that may not exist yet.
+   * Ignored once `flagsByLayout` resolves an entry for the round's layout. */
   syncEnabled?: boolean;
+  /** D3: every distinct geometry/sync flag pair in the registry, evaluated
+   * server-side once per request (`layoutId -> {geometry, sync}`), so a
+   * round page needs no per-course branching as the registry grows past
+   * Peek. A layout with no entry gets `false` for both — never `undefined`
+   * treated as "on". Takes priority over `featureFlagEnabled`/`syncEnabled`
+   * for a round whose layout it names; those two stay the fallback for a
+   * caller (tests, the lab) that has not migrated to the map yet. */
+  flagsByLayout?: Readonly<Record<string, { geometry: boolean; sync: boolean }>>;
   /** The hole the player is on; its terrain loads first. */
   holeNumber?: number;
   /** One policy to test against instead of the registry (tests, the lab). */
@@ -58,13 +69,23 @@ export type OneTapLiveStatus =
   | { phase: 'off'; reason: OneTapIneligibility | 'opt_in_off' | 'course_unavailable' | 'error'; detail?: string };
 export interface OneTapLiveRoundState { live: OneTapLiveRound | null; status: OneTapLiveStatus }
 
-export function useOneTapLiveRoundState({ roundSetup, bindingTransport, roundId, dbCourseId, courseName, featureFlagEnabled, optIn, syncEnabled = false, holeNumber, policy: onlyPolicy, cache, roundType, transport }: UseOneTapLiveRoundOptions): OneTapLiveRoundState {
+export function useOneTapLiveRoundState({ roundSetup, bindingTransport, roundId, dbCourseId, courseName, featureFlagEnabled, optIn, syncEnabled = false, flagsByLayout, holeNumber, policy: onlyPolicy, cache, roundType, transport }: UseOneTapLiveRoundOptions): OneTapLiveRoundState {
   const [connectionRevision, setConnectionRevision] = useState(0);
   useEffect(() => { const online = () => setConnectionRevision(n => n + 1); window.addEventListener('online', online); return () => window.removeEventListener('online', online); }, []);
   const roundSetupRef = useRef(roundSetup);
   roundSetupRef.current = roundSetup;
   const policy = useMemo(() => resolveCourseGeometryPolicy({ dbCourseId, courseName }, onlyPolicy ? [onlyPolicy] : undefined), [dbCourseId, courseName, onlyPolicy]);
   const productCourseId = policy?.layoutId ?? null;
+  // Primitives only, never the record itself, so a caller that rebuilds
+  // `flagsByLayout` per render (a fresh object, same values) cannot spin the
+  // effect below — its dependency array holds these two booleans, not the map.
+  const layoutFlags = productCourseId ? flagsByLayout?.[productCourseId] : undefined;
+  // Once a `flagsByLayout` map is supplied, IT decides for every layout it
+  // covers — a layout missing from it is `false`, never a silent fallback to
+  // `featureFlagEnabled`/`syncEnabled` (those two only apply when no map was
+  // passed at all, the pre-D3 call shape).
+  const resolvedFeatureFlagEnabled = flagsByLayout ? (layoutFlags?.geometry ?? false) : featureFlagEnabled;
+  const resolvedSyncEnabled = flagsByLayout ? (layoutFlags?.sync ?? false) : syncEnabled;
   const [state, setRawState] = useState<OneTapLiveRoundState>({ live: null, status: { phase: 'inactive' } });
   // Idempotent: an unchanged state keeps its identity, so a caller that
   // re-creates an option object per render cannot spin the effect.
@@ -74,7 +95,7 @@ export function useOneTapLiveRoundState({ roundSetup, bindingTransport, roundId,
   holeRef.current = holeNumber;
   useEffect(() => {
     if (!policy || !productCourseId || !roundId) { setState({ live: null, status: { phase: 'inactive' } }); return; }
-    if (!featureFlagEnabled) { setState({ live: null, status: { phase: 'off', reason: 'feature_flag_off' } }); return; }
+    if (!resolvedFeatureFlagEnabled) { setState({ live: null, status: { phase: 'off', reason: 'feature_flag_off' } }); return; }
     // The flag makes the round eligible; the player's tap starts it. Nothing
     // downloads for a round that has not been switched on.
     if (optIn === false) { setState({ live: null, status: { phase: 'off', reason: 'opt_in_off' } }); return; }
@@ -84,7 +105,7 @@ export function useOneTapLiveRoundState({ roundSetup, bindingTransport, roundId,
     void (async () => {
       try {
         const assetCache = cache === undefined ? cacheStorageCourseAssetCache() : cache;
-        const loaded = await loadCoursePackage({ roundSetup: roundSetupRef.current, bindingTransport: bindingTransport === undefined ? browserRoundBindingTransport(roundId) : bindingTransport, roundId, leaseStore: browserRoundLeaseStore(), courseId: productCourseId, policy, cache: assetCache });
+        const loaded = await loadCoursePackage({ roundSetup: roundSetupRef.current, bindingTransport: bindingTransport === undefined ? browserRoundBindingTransport(roundId) : bindingTransport, roundId, leaseStore: browserRoundLeaseStore(), courseId: productCourseId, policy, cache: assetCache, baseUrl: policy.assetBaseUrl });
         if (cancelled) return;
         if (!loaded) { off('course_unavailable'); return; }
         const { manifest, pkg, contextLayer } = loaded;
@@ -95,9 +116,9 @@ export function useOneTapLiveRoundState({ roundSetup, bindingTransport, roundId,
         // outbox tables an environment does not have (the migration is applied
         // by db:apply, never by a deploy). Off, marks stay on the device and
         // the scorecard is written through the standard ledger (§77).
-        const outbox = transport !== undefined ? transport : syncEnabled ? browserSyncTransport() : null;
+        const outbox = transport !== undefined ? transport : resolvedSyncEnabled ? browserSyncTransport() : null;
         const terrainByHole: Record<string, TerrainMesh> = {};
-        const { live: resolved, eligibility } = resolveOneTapLiveRound({ roundHoleKeys: loaded.roundBinding?.holeBindings, roundSetup: roundSetupRef.current, roundId, roundCourseId: productCourseId, featureFlagEnabled, pkg, terrainByHole, contextLayer, location, policy, readiness: 'partial', roundType, transport: outbox });
+        const { live: resolved, eligibility } = resolveOneTapLiveRound({ roundHoleKeys: loaded.roundBinding?.holeBindings, roundSetup: roundSetupRef.current, roundId, roundCourseId: productCourseId, featureFlagEnabled: resolvedFeatureFlagEnabled, pkg, terrainByHole, contextLayer, location, policy, readiness: 'partial', roundType, transport: outbox });
         if (cancelled) return;
         if (!resolved) { off(eligibility.eligible ? 'error' : eligibility.reason); return; }
         // Current hole first, then the holes ahead, then the ones behind.
@@ -124,13 +145,13 @@ export function useOneTapLiveRoundState({ roundSetup, bindingTransport, roundId,
           if (!started) started = true;
           publish(loadedCount === total && missing === 0 ? 'ready' : 'partial');
         }
-        await pruneCourseAssets(assetCache, productCourseId, [manifestUrl(productCourseId), manifest.packageUrl, ...Object.values(manifest.terrainByHole ?? {}), ...(manifest.contextLayerUrl ? [manifest.contextLayerUrl] : [])]);
+        await pruneCourseAssets(assetCache, productCourseId, [manifestUrl(productCourseId, policy.assetBaseUrl), manifest.packageUrl, ...Object.values(manifest.terrainByHole ?? {}), ...(manifest.contextLayerUrl ? [manifest.contextLayerUrl] : [])], policy.assetBaseUrl);
       } catch (error) {
         off('error', error instanceof Error ? error.message : String(error));
       }
     })();
     return () => { cancelled = true; };
-  }, [connectionRevision, bindingTransport, roundId, featureFlagEnabled, optIn, syncEnabled, productCourseId, policy, cache, roundType, transport]);
+  }, [connectionRevision, bindingTransport, roundId, resolvedFeatureFlagEnabled, optIn, resolvedSyncEnabled, productCourseId, policy, cache, roundType, transport]);
   return state;
 }
 function sameStatus(a: OneTapLiveStatus, b: OneTapLiveStatus): boolean {

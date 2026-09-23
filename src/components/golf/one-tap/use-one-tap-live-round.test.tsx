@@ -130,4 +130,23 @@ describe('useOneTapLiveRound', () => {
     delete bodies[manifestUrl(policy.layoutId)];
     bodies[manifestUrl(policy.layoutId)] = JSON.stringify({ geometryVersion: physicalPackage.contentHash, packageUrl: PKG_URL });
   });
+
+  describe('flagsByLayout (D3: shared flag plus per-course approval)', () => {
+    it('overrides featureFlagEnabled with the map entry for the round\'s own layout', async () => {
+      arm();
+      const cache = new MemoryCourseAssetCache();
+      // featureFlagEnabled: true would normally go live; the map says this
+      // layout's geometry flag is off, and the map wins.
+      const hook = renderHook(() => useOneTapLiveRoundState({ ...base, roundId: 'r-flags-1', cache, flagsByLayout: { [policy.layoutId]: { geometry: false, sync: false } } }));
+      await waitFor(() => expect(hook.result.current.status).toEqual({ phase: 'off', reason: 'feature_flag_off' }));
+      expect(hook.result.current.live).toBeNull();
+    });
+    it('treats a layout missing from the map as off, never falling back to featureFlagEnabled', async () => {
+      arm();
+      const cache = new MemoryCourseAssetCache();
+      const hook = renderHook(() => useOneTapLiveRoundState({ ...base, roundId: 'r-flags-2', cache, flagsByLayout: { 'some-other-layout': { geometry: true, sync: true } } }));
+      await waitFor(() => expect(hook.result.current.status).toEqual({ phase: 'off', reason: 'feature_flag_off' }));
+      expect(hook.result.current.live).toBeNull();
+    });
+  });
 });

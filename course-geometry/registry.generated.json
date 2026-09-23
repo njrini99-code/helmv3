@@ -1,0 +1,57 @@
+[
+  {
+    "layoutId": "peek-n-peak-upper",
+    "facilityId": "peek-n-peak",
+    "siteIds": [
+      "osm-way-136097904"
+    ],
+    "geometryFeatureFlag": "peek_n_peak_one_tap_v1",
+    "syncFeatureFlag": "peek_n_peak_one_tap_sync_v1",
+    "approvedGeometryHashes": [
+      "fdec6ea8467dd214372bde680e7b7f9236c06ad5d27bb5ddeadf8ed5e9d3f87a"
+    ],
+    "approvedPackageByteHashes": {
+      "fdec6ea8467dd214372bde680e7b7f9236c06ad5d27bb5ddeadf8ed5e9d3f87a": "7dbe0b9caf1c7e5e6399397c0521bc97af418d6693cc6ddc29228af88dfae119"
+    },
+    "acceptedCapabilityTier": "C2",
+    "pilotAcceptsSourceCandidate": true,
+    "dbCourseIds": [
+      "48596a01-88a4-4081-aaa1-3b049584aa2d"
+    ],
+    "courseNamePatterns": [
+      {
+        "source": "peek\\W*n?\\W*peak[\\s\\S]*\\bupper\\b",
+        "flags": "i"
+      }
+    ],
+    "renderWorld": "v2",
+    "holeBindings": {
+      "fdec6ea8467dd214372bde680e7b7f9236c06ad5d27bb5ddeadf8ed5e9d3f87a": {
+        "1": "peek-n-peak-upper-01",
+        "2": "peek-n-peak-upper-02",
+        "3": "peek-n-peak-upper-03",
+        "4": "peek-n-peak-upper-04",
+        "5": "peek-n-peak-upper-05",
+        "6": "peek-n-peak-upper-06",
+        "7": "peek-n-peak-upper-07",
+        "8": "peek-n-peak-upper-08",
+        "9": "peek-n-peak-upper-09",
+        "10": "peek-n-peak-upper-10",
+        "11": "peek-n-peak-upper-11",
+        "12": "peek-n-peak-upper-12",
+        "13": "peek-n-peak-upper-13",
+        "14": "peek-n-peak-upper-14",
+        "15": "peek-n-peak-upper-15",
+        "16": "peek-n-peak-upper-16",
+        "17": "peek-n-peak-upper-17",
+        "18": "peek-n-peak-upper-18"
+      }
+    },
+    "livePilot": {
+      "layoutId": "peek-n-peak-upper",
+      "geometryHashes": [
+        "fdec6ea8467dd214372bde680e7b7f9236c06ad5d27bb5ddeadf8ed5e9d3f87a"
+      ]
+    }
+  }
+]

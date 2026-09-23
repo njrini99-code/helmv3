@@ -83,12 +83,12 @@ export function useCourseGeometry({ bindingTransport, roundId, roundSetup, dbCou
     setStatus(current => current === 'ready' ? current : 'loading');
     void (async () => {
       try {
-        const result = await loadCoursePackage({ roundSetup: immutableRoundSetup, bindingTransport: bindingTransport === undefined ? browserRoundBindingTransport(roundId) : bindingTransport, roundId: roundId ?? undefined, leaseStore: browserRoundLeaseStore(), courseId: productCourseId!, policy: policy!, cache: assetCache, fetchImpl });
+        const result = await loadCoursePackage({ roundSetup: immutableRoundSetup, bindingTransport: bindingTransport === undefined ? browserRoundBindingTransport(roundId) : bindingTransport, roundId: roundId ?? undefined, leaseStore: browserRoundLeaseStore(), courseId: productCourseId!, policy: policy!, cache: assetCache, fetchImpl, baseUrl: policy!.assetBaseUrl });
         if (cancelled) return;
         setLoaded(current => current && result && current.manifest.geometryVersion === result.manifest.geometryVersion ? current : result);
         setStatus(result ? 'ready' : 'unavailable');
         // Old versions stay available while a suspended round leases them.
-        if (result) await pruneCourseAssets(assetCache, productCourseId!, [manifestUrl(productCourseId!), result.manifest.packageUrl, ...Object.values(result.manifest.terrainByHole ?? {}), ...(result.manifest.contextLayerUrl ? [result.manifest.contextLayerUrl] : [])]);
+        if (result) await pruneCourseAssets(assetCache, productCourseId!, [manifestUrl(productCourseId!, policy!.assetBaseUrl), result.manifest.packageUrl, ...Object.values(result.manifest.terrainByHole ?? {}), ...(result.manifest.contextLayerUrl ? [result.manifest.contextLayerUrl] : [])], policy!.assetBaseUrl);
       } catch {
         if (!cancelled) { setLoaded(null); setStatus('unavailable'); }
       }

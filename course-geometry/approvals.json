@@ -1,0 +1,21 @@
+{
+  "$schema": "golfhelm-course-approvals-v1",
+  "_comment": "Owner-written. Only a layout listed here gets a policy in the generated registry (course-geometry/registry.generated.json, via `npm run course-geometry:registry:generate`). Everything else — facilityId, siteIds, dbCourseIds, acceptedCapabilityTier, holeBindings — comes from the catalog layout (course-geometry/catalog/layouts/<layoutId>.json) and its approved geometry package, joined by the generator. `packages` keys are the exact owner-approved geometry content hashes; `livePilot: true` on a hash is the existing on-course pilot exception (Factory v2 §16.1) and must never be copied to a layout that has not itself earned it.",
+  "layouts": {
+    "peek-n-peak-upper": {
+      "geometryFeatureFlag": "peek_n_peak_one_tap_v1",
+      "syncFeatureFlag": "peek_n_peak_one_tap_sync_v1",
+      "renderWorld": "v2",
+      "pilotAcceptsSourceCandidate": true,
+      "courseNamePatterns": [
+        { "source": "peek\\W*n?\\W*peak[\\s\\S]*\\bupper\\b", "flags": "i" }
+      ],
+      "packages": {
+        "fdec6ea8467dd214372bde680e7b7f9236c06ad5d27bb5ddeadf8ed5e9d3f87a": {
+          "packageBytesSha256": "7dbe0b9caf1c7e5e6399397c0521bc97af418d6693cc6ddc29228af88dfae119",
+          "livePilot": true
+        }
+      }
+    }
+  }
+}

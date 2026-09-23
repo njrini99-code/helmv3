@@ -124,7 +124,7 @@ export interface PreflightReport { status: PreflightStatus; geometryVersion: str
  * cache. `ready` means the whole course is viewable offline; `partial` means
  * the package is here but some hole's terrain is not (that hole draws in 2D);
  * `unavailable` means no package — the round stays on standard tracking. */
-export async function preflightCourseAssets({ courseId, policy = courseGeometryPolicyForLayout(courseId), cache, fetchImpl = defaultFetch, baseUrl = '/course-geometry' }: CourseAssetOptions): Promise<PreflightReport> {
+export async function preflightCourseAssets({ courseId, policy = courseGeometryPolicyForLayout(courseId), cache, fetchImpl = defaultFetch, baseUrl = policy?.assetBaseUrl ?? '/course-geometry' }: CourseAssetOptions): Promise<PreflightReport> {
   const empty = (status: PreflightStatus, geometryVersion: string | null = null, manifestSource: AssetSource | null = null): PreflightReport => ({ status, geometryVersion, manifestSource, assets: [], missing: [] });
   if (!policy || policy.approvedGeometryHashes.size === 0 || courseId !== policy.layoutId) return empty('not_approved');
   const manifestHit = await fetchAsset(manifestUrl(courseId, baseUrl), { cache, fetchImpl, strategy: 'network_first' });
@@ -157,8 +157,8 @@ export function browserRoundLeaseStore(): StorageLike | null {
 }
 const durableRoundBindingKey = (roundId: string) => `golfhelm-round-world-v2:${roundId}`;
 const roundBindingKey = (roundId: string) => `golfhelm-round-course-binding:${roundId}`;
-export async function releaseCourseRoundLease(cache: CourseAssetCache | null, courseId: string, roundId: string): Promise<void> {
-  await cache?.delete(roundLeaseUrl(courseId, roundId));
+export async function releaseCourseRoundLease(cache: CourseAssetCache | null, courseId: string, roundId: string, baseUrl = '/course-geometry'): Promise<void> {
+  await cache?.delete(roundLeaseUrl(courseId, roundId, baseUrl));
 }
 /** Completion releases cached bytes, but retains the small version binding
  * for later review. Only a confirmed deletion removes that binding. */
@@ -170,14 +170,21 @@ export async function releaseBrowserRoundLeases(roundId: string, deleted = false
     if (deleted) { browserRoundLeaseStore()?.removeItem(roundBindingKey(roundId)); browserRoundLeaseStore()?.removeItem(durableRoundBindingKey(roundId)); }
   } catch { /* cleanup cannot make a completed or deleted round fail */ }
 }
+/** `baseUrl` may itself be origin-qualified (D2: a Supabase Storage
+ * `https://…` base) as well as an app-relative path (Peek's default,
+ * `/course-geometry`); cache keys may be stored either way too, depending on
+ * how the request was made. Strip any origin from both sides before
+ * comparing, so a course served from a different origin than the app's own
+ * still prunes and lease-detects correctly. */
+const stripOrigin = (s: string) => s.replace(/^https?:\/\/[^/]+/, '');
 /** Keep suspended rounds' files; otherwise remove obsolete course assets. */
 export async function pruneCourseAssets(cache: CourseAssetCache | null, courseId: string, keep: readonly string[], baseUrl = '/course-geometry'): Promise<string[]> {
   if (!cache) return [];
-  const leasePrefix = `${baseUrl}/${courseId}/round-leases/`;
-  if ((await cache.keys()).some(url => url.replace(/^https?:\/\/[^/]+/, '').startsWith(leasePrefix))) return [];
-  const prefix = `${baseUrl}/${courseId}/`, keepSet = new Set(keep), removed: string[] = [];
+  const leasePrefix = `${stripOrigin(baseUrl)}/${courseId}/round-leases/`;
+  if ((await cache.keys()).some(url => stripOrigin(url).startsWith(leasePrefix))) return [];
+  const prefix = `${stripOrigin(baseUrl)}/${courseId}/`, keepSet = new Set(keep), removed: string[] = [];
   for (const url of await cache.keys()) {
-    const path = url.startsWith('http') ? url.replace(/^https?:\/\/[^/]+/, '') : url;
+    const path = stripOrigin(url);
     if (path.startsWith(prefix) && !keepSet.has(path) && !keepSet.has(url)) { await cache.delete(url); removed.push(url); }
   }
   return removed;
@@ -192,7 +199,7 @@ export interface LoadedCoursePackage { roundBinding?: DurableRoundCourseBinding;
  * live round needs before it can start. Terrain follows per hole through
  * `loadHoleTerrain`, so the first hole is on screen after ~1.5 MB instead of
  * after the whole course. Null when no approved package can be had. */
-export async function loadCoursePackage({ roundSetup, bindingTransport, roundId, leaseStore, courseId, policy = courseGeometryPolicyForLayout(courseId), cache, fetchImpl = defaultFetch, baseUrl = '/course-geometry' }: CourseAssetOptions): Promise<LoadedCoursePackage | null> {
+export async function loadCoursePackage({ roundSetup, bindingTransport, roundId, leaseStore, courseId, policy = courseGeometryPolicyForLayout(courseId), cache, fetchImpl = defaultFetch, baseUrl = policy?.assetBaseUrl ?? '/course-geometry' }: CourseAssetOptions): Promise<LoadedCoursePackage | null> {
   if (!policy || policy.approvedGeometryHashes.size === 0 || courseId !== policy.layoutId) return null;
   // An evictable asset cache alone cannot protect a round's version binding.
   if (roundId && !leaseStore) return null;

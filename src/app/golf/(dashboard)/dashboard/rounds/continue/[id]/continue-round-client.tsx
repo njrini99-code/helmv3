@@ -108,6 +108,10 @@ interface ContinueRoundClientProps {
   oneTapFlagEnabled?: boolean;
   /** Server-evaluated `peek_n_peak_one_tap_sync_v1`; off (the default) keeps a live round's marks on the device. */
   oneTapSyncEnabled?: boolean;
+  /** D3: every distinct registry geometry/sync flag, evaluated server-side
+   * (`layoutId -> {geometry, sync}`); resolves ahead of `oneTapFlagEnabled`/
+   * `oneTapSyncEnabled` above for a round whose layout it names. */
+  oneTapFlagsByLayout?: Readonly<Record<string, { geometry: boolean; sync: boolean }>>;
   roundId: string;
   playerId: string;
   setupData: RoundSetupData;
@@ -129,6 +133,7 @@ export default function ContinueRoundClient({
   roundId: routeRoundId,
   oneTapFlagEnabled = false,
   oneTapSyncEnabled = false,
+  oneTapFlagsByLayout,
   playerId,
   setupData,
   qualifierRoundNumberOptions = [],
@@ -173,7 +178,7 @@ export default function ContinueRoundClient({
   // flag on and an approved package resolves a live round; everything else is null.
   // The player's own Live switch for this round (the status row turns it on, the ••• menu off).
   const [oneTapOptIn, setOneTapOptIn] = useLiveOptIn(roundId);
-  const { live: oneTapLiveRound, status: oneTapLiveStatus } = useOneTapLiveRoundState({ roundSetup: { dbCourseId: setupData.courseId ?? null, selectedTeeId: setupData.teeId ?? null, holes }, roundId, dbCourseId: setupData.courseId ?? null, courseName: setupData.courseName, featureFlagEnabled: oneTapFlagEnabled, optIn: oneTapOptIn === 'on', syncEnabled: oneTapSyncEnabled, roundType: setupData.roundType, holeNumber: holes[currentHoleIndex]?.number ?? currentHoleIndex + 1 });
+  const { live: oneTapLiveRound, status: oneTapLiveStatus } = useOneTapLiveRoundState({ roundSetup: { dbCourseId: setupData.courseId ?? null, selectedTeeId: setupData.teeId ?? null, holes }, roundId, dbCourseId: setupData.courseId ?? null, courseName: setupData.courseName, featureFlagEnabled: oneTapFlagEnabled, optIn: oneTapOptIn === 'on', syncEnabled: oneTapSyncEnabled, flagsByLayout: oneTapFlagsByLayout, roundType: setupData.roundType, holeNumber: holes[currentHoleIndex]?.number ?? currentHoleIndex + 1 });
   const onOneTapOptIn = useCallback((on: boolean) => setOneTapOptIn(on ? 'on' : 'off'), [setOneTapOptIn]);
   // Course-framed tracking (plan §unlock 3): the Upper package draws the hole
   // scene, the 3D hero and tap-to-measure for a Peek'n Peak Upper round only;

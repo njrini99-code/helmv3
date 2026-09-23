@@ -5,6 +5,7 @@ import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPag
 import { FeatureUnavailable } from '@/components/fairway';
 import { evaluateFlag } from '@/lib/flags/is-enabled';
 import { PEEK_N_PEAK_UPPER_POLICY } from '@/lib/golf/course-geometry/course-registry';
+import { evaluateCourseGeometryFlags } from '@/lib/golf/course-geometry/registry-flags';
 
 export default async function NewRoundPage() {
   const session = await getGolfSessionProfile();
@@ -41,7 +42,7 @@ export default async function NewRoundPage() {
   return (
     <AnimatedPage>
       <AnimatedItem>
-        <NewRoundClient playerId={player.id} oneTapFlagEnabled={evaluateFlag(PEEK_N_PEAK_UPPER_POLICY.geometryFeatureFlag).value} oneTapSyncEnabled={(PEEK_N_PEAK_UPPER_POLICY.syncFeatureFlag ? evaluateFlag(PEEK_N_PEAK_UPPER_POLICY.syncFeatureFlag).value : false)} />
+        <NewRoundClient playerId={player.id} oneTapFlagEnabled={evaluateFlag(PEEK_N_PEAK_UPPER_POLICY.geometryFeatureFlag).value} oneTapSyncEnabled={(PEEK_N_PEAK_UPPER_POLICY.syncFeatureFlag ? evaluateFlag(PEEK_N_PEAK_UPPER_POLICY.syncFeatureFlag).value : false)} oneTapFlagsByLayout={evaluateCourseGeometryFlags()} />
       </AnimatedItem>
     </AnimatedPage>
   );

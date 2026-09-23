@@ -973,3 +973,70 @@ this production path; local migration verification is not production rollout.
 
 Implementation and remaining rollout gates:
 `docs/plans/2026-09-20-course-factory-authority-implementation.md`.
+
+## Generated registry, shared flags, Supabase-hosted assets (September 22, 2026)
+
+Course Factory v2 Phase 3 bridges the factory's output to the runtime. The
+registry (`COURSE_GEOMETRY_REGISTRY`, `src/lib/golf/course-geometry/course-registry.ts`)
+is no longer hand-written. It hydrates `course-geometry/registry.generated.json`
+with zod (`registry-wire.ts`) into the same `CourseGeometryPolicy[]` shape as
+before — `PEEK_N_PEAK_UPPER_POLICY` is still exported, now as the array
+element `policyForLayout('peek-n-peak-upper')` would return, byte-identical
+to its pre-generator hand-written values (pinned in
+`__tests__/course-registry.test.ts` against a copied `LEGACY_PEEK` literal).
+
+- `npm run course-geometry:registry:generate`
+  (`scripts/golf/course-geometry/generate-course-registry.mts`) joins the
+  owner-written `course-geometry/approvals.json` (per layout: flags,
+  `courseNamePatterns`, `renderWorld`, `pilotAcceptsSourceCandidate`, and a
+  `packages` map of approved content hash → `{packageBytesSha256, livePilot?}`)
+  with the checked-in catalog (`course-geometry/catalog/layouts/*.json`, for
+  `facilityId`/`siteIds`/`dbCourseIds`/`acceptedCapabilityTier`) and the
+  approved package's own file (for `holeBindings`, derived from `holes[].key`
+  in ordinal order, and to verify the byte hash). Only a layout listed in
+  `approvals.json` becomes a registry policy — today, only Peek. `npm run
+  course-geometry:registry:check` fails on drift, the same pattern as
+  `flags:check`. `checkRegistryInvariants` (`registry-invariants.ts`) adds:
+  unique `layoutId`/`dbCourseIds`, and no `courseNamePattern` matching a
+  sister layout's catalog name (or missing its own).
+- **D3, shared flags.** `config/feature-flags.yml` adds `meridian_live_v1` /
+  `meridian_live_sync_v1` (preview on, prod off) for a future layout to name
+  as its `geometryFeatureFlag`/`syncFeatureFlag`, and defines the
+  previously-undefined `peek_n_peak_one_tap_sync_v1` — **off in every
+  environment**, not preview-on like the geometry flag, because its outbox
+  migration (`20260916_peek_n_peak_one_tap.sql`) has not been applied to any
+  project; the transport throws on a missing table and the retry ladder would
+  spin forever. The round pages (`rounds/new/page.tsx`,
+  `rounds/continue/[id]/page.tsx`) evaluate every distinct flag pair in the
+  registry server-side (`evaluateCourseGeometryFlags`,
+  `registry-flags.ts`) into a `layoutId -> {geometry, sync}` map, passed as
+  `oneTapFlagsByLayout` alongside the existing single-course booleans.
+  `useOneTapLiveRoundState`'s new `flagsByLayout` option resolves ahead of
+  `featureFlagEnabled`/`syncEnabled` for a round whose layout it names; a
+  layout absent from the map gets `false` for both.
+- **D2, asset hosting.** `CourseGeometryPolicy.assetBaseUrl` (optional;
+  omitted keeps `/course-geometry`, Peek's default) lets a layout's assets be
+  served from Supabase Storage instead of the app's static folder. Every
+  loader already took `baseUrl`; the two live-round hooks now pass
+  `policy.assetBaseUrl` through. `pruneCourseAssets` strips any origin from
+  both the cache keys and the base URL before comparing, so an
+  origin-qualified base URL (a `https://…supabase.co/...` bucket) still
+  prunes and detects a round's lease correctly — it previously compared a
+  bare path against an absolute prefix and matched nothing. CSP: `next.config.mjs`'s
+  `connect-src` already allows `https://*.supabase.co` (this project has no
+  custom Supabase domain), and `public/sw.js` already ignores any
+  cross-origin request, so neither needed a change for D2. A public-read,
+  service-role-write-only `course-geometry` bucket migration is prepared
+  (`supabase/migrations/20260922100000_course_geometry_storage_bucket.sql`,
+  HELD pending review and owner apply — no local Docker/Supabase stack in
+  this worktree to verify against).
+- **Publisher.** `scripts/golf/course-geometry/publish-course-assets.mts`
+  now requires `--course` (no default) and accepts `--from <factory layout
+  dir>` (tries its promoted `package/normalized.json` else
+  `candidates/normalized.json`, `compiled/` else `compiled-base/`,
+  `context/<course>-context.json`) with `--package`/`--compiled`/`--context`
+  overrides, plus `--base-url` for the manifest's asset URLs (default still
+  `/course-geometry`). It prints one JSON summary line to stdout (package
+  byte SHA-256, `geometryVersion`, hole/terrain counts); its progress note
+  moved to stderr. Republishing Peek from the fixtures into a scratch `--out`
+  reproduces `public/course-geometry/peek-n-peak-upper/` byte-for-byte.

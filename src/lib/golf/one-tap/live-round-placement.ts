@@ -119,7 +119,7 @@ export function greenCentreENU(pkg: CourseGeometryPackage, holeKey: string): Poi
  * reaches a player. */
 export type { CoursePackageAssets };
 export async function loadApprovedCoursePackage(courseId: string, policy: CourseGeometryPolicy | null = courseGeometryPolicyForLayout(courseId),
-  fetchImpl: FetchLike | null = defaultFetch, baseUrl = '/course-geometry', cache: CourseAssetCache | null = null): Promise<CoursePackageAssets | null> {
+  fetchImpl: FetchLike | null = defaultFetch, baseUrl = policy?.assetBaseUrl ?? '/course-geometry', cache: CourseAssetCache | null = null): Promise<CoursePackageAssets | null> {
   const loaded = await loadCourseAssets({ courseId, policy, cache, fetchImpl, baseUrl });
   return loaded ? { pkg: loaded.pkg, terrainByHole: loaded.terrainByHole, geometryVersion: loaded.geometryVersion } : null;
 }

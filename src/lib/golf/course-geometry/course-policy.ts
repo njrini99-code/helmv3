@@ -46,7 +46,12 @@ export interface CourseGeometryPolicy {
   readonly holeBindings?: Readonly<Record<string, Readonly<Record<number, string>>>>;
   /** Existing on-course pilot only; copying its policy to another layout cannot copy this exception. */
   readonly livePilot?: { readonly layoutId: string; readonly geometryHashes: ReadonlySet<string> };
-
+  /** Where this layout's published assets are served from (D2: Supabase
+   * Storage for a course published there); omitted keeps the app's own
+   * `/course-geometry` static folder, which is where Peek stays. Every
+   * loader takes `baseUrl` as a parameter already — this is the one place
+   * a caller reads the policy's choice instead of hardcoding the default. */
+  readonly assetBaseUrl?: string;
 }
 
 export type RoundCourseIdentity = { dbCourseId?: string | null; courseName?: string | null };

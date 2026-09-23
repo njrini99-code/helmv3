@@ -60,6 +60,8 @@
     "evals:view": "promptfoo view",
     "flags:check": "node scripts/flags/generate-flags.mjs --check && node --test scripts/flags/__tests__/*.test.mjs scripts/__tests__/check-feature-flags.test.mjs && node scripts/check-feature-flags.mjs",
     "flags:generate": "node scripts/flags/generate-flags.mjs",
+    "course-geometry:registry:generate": "tsx --tsconfig tsconfig.json scripts/golf/course-geometry/generate-course-registry.mts",
+    "course-geometry:registry:check": "tsx --tsconfig tsconfig.json scripts/golf/course-geometry/generate-course-registry.mts --check",
     "flight-recorder:audit": "node scripts/flight-recorder-audit.mjs",
     "guards": "node scripts/repo-guards.mjs",
     "hooks:install": "node scripts/setup-hooks.mjs",

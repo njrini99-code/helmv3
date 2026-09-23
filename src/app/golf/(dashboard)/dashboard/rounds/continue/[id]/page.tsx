@@ -14,6 +14,7 @@ import { logServerError } from '@/lib/server-error-logger';
 import { RoundTypeEditor } from '@/components/fairway/pages/rounds/RoundTypeEditor';
 import { evaluateFlag } from '@/lib/flags/is-enabled';
 import { PEEK_N_PEAK_UPPER_POLICY } from '@/lib/golf/course-geometry/course-registry';
+import { evaluateCourseGeometryFlags } from '@/lib/golf/course-geometry/registry-flags';
 
 export const metadata: Metadata = {
   title: 'Continue Round | GolfHelm',
@@ -624,6 +625,7 @@ export default async function ContinueRoundPage({ params }: { params: Promise<{ 
       <ContinueRoundClient
         oneTapFlagEnabled={evaluateFlag(PEEK_N_PEAK_UPPER_POLICY.geometryFeatureFlag).value}
         oneTapSyncEnabled={(PEEK_N_PEAK_UPPER_POLICY.syncFeatureFlag ? evaluateFlag(PEEK_N_PEAK_UPPER_POLICY.syncFeatureFlag).value : false)}
+        oneTapFlagsByLayout={evaluateCourseGeometryFlags()}
         roundTypeEditor={
           <RoundTypeEditor
             roundId={id}

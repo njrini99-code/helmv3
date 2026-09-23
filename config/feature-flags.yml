@@ -180,3 +180,90 @@ flags:
       Live launch (a separate architectural project) or is withdrawn; either
       way the flag row is deleted and the eligibility gate keeps the
       course/site/hash/capability checks.
+
+  # Peek'n Peak Upper's server outbox (task 13; §75). The durable anchor
+  # tables (`golf_shot_anchors` & co.) exist only where
+  # `20260916_peek_n_peak_one_tap.sql` has been applied through `db:apply`
+  # (docs/operations/APPLY_PATH.md) — as of this writing that migration is
+  # BRANCH-ONLY and has not been applied to any project, preview or
+  # production. `supabase-sync-transport.ts` THROWS on a failed write, and
+  # the outbox's own retry ladder would keep re-attempting a table that does
+  # not exist, so this stays off in every environment until the migration
+  # ships; off, marks stay on the device and the round still scores through
+  # the standard ledger (§77). Do not copy `peek_n_peak_one_tap_v1`'s
+  # preview:true here for that reason.
+  - feature_id: peek_n_peak_one_tap_sync_v1
+    owner: golf/course-geometry
+    purpose: >-
+      Enables the One-Tap server outbox for Peek'n Peak Upper (mirroring
+      resolved anchors to `golf_shot_anchors` & co.) once
+      `20260916_peek_n_peak_one_tap.sql` is applied; off, an eligible Live
+      round still plays fully on-device and its score still reaches the
+      standard ledger. Chooses a mirroring destination only — never an
+      eligibility gate.
+    type: release
+    status: active
+    created_at: "2026-09-22"
+    expires_at: null
+    default: false
+    environment:
+      production: false
+      preview: false
+      development: false
+    kill_switch_behavior: null
+    cleanup_plan: >-
+      Removed alongside peek_n_peak_one_tap_v1 when the Upper pilot
+      graduates or is withdrawn; flip to true per environment only after
+      that environment's migration is confirmed applied
+      (information_schema, not schema_migrations — see
+      .claude/rules/database.md "Applied ≠ recorded").
+
+  # Factory v2 PR B/C (D3: shared flag plus per-course approval). Generic
+  # release flags every registry-generated `CourseGeometryPolicy` may name as
+  # its `geometryFeatureFlag` / `syncFeatureFlag` once `approvals.json`
+  # approves it — a course goes Live when this shared flag is on for its
+  # environment AND its own package hash is approved. Peek'n Peak Upper keeps
+  # its own dedicated flags above; no layout uses these yet.
+  - feature_id: meridian_live_v1
+    owner: golf/course-geometry
+    purpose: >-
+      Shared release flag for Meridian Live course drawing / One-Tap on any
+      layout whose approvals.json entry names it as `geometryFeatureFlag`.
+      Off returns an eligible round to standard GolfHelm shot tracking; on
+      alone draws nothing without that layout's own approved package hash.
+    type: release
+    status: active
+    created_at: "2026-09-22"
+    expires_at: null
+    default: false
+    environment:
+      production: false
+      preview: true
+      development: true
+    kill_switch_behavior: null
+    cleanup_plan: >-
+      No planned removal while any registry layout names it — this is
+      shared, ongoing product infrastructure, not a single-course pilot
+      flag. Reassess if every layout migrates to its own dedicated flag.
+
+  - feature_id: meridian_live_sync_v1
+    owner: golf/course-geometry
+    purpose: >-
+      Shared release flag for the One-Tap server outbox on any layout whose
+      approvals.json entry names it as `syncFeatureFlag`; off, an eligible
+      Live round plays device-only. Requires that layout's own outbox
+      migration be applied first — turning this on for an environment whose
+      migration is unapplied will fail every sync write.
+    type: release
+    status: active
+    created_at: "2026-09-22"
+    expires_at: null
+    default: false
+    environment:
+      production: false
+      preview: true
+      development: true
+    kill_switch_behavior: null
+    cleanup_plan: >-
+      No planned removal while any registry layout names it. Reassess if
+      every layout migrates to its own dedicated flag.

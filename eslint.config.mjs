@@ -122,7 +122,7 @@ export default tseslint.config(
     // visual layer, Three, or React components. The mirror-image rule (visual
     // reads canonical, never mutates) is enforced by visual-boundary.test.ts.
     files: [
-      "src/lib/golf/course-geometry/{build-scene,camera,canopy,catalog,course-policy,course-registry,describe-position,display-outline,display-trajectories,normalize,project,quality,reconstruct,ring-index,schema,selected-shot-focus,spatial,surface-compatibility,terrain,terrain-source,tracking-scene,types}.ts",
+      "src/lib/golf/course-geometry/{build-scene,camera,canopy,catalog,course-policy,course-registry,describe-position,display-outline,display-trajectories,load-catalog,normalize,project,quality,reconstruct,registry-flags,registry-invariants,registry-wire,ring-index,schema,selected-shot-focus,spatial,surface-compatibility,terrain,terrain-source,tracking-scene,types}.ts",
     ],
     rules: {
       "no-restricted-imports": ["error", {
