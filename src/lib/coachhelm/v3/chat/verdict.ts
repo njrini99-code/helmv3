@@ -45,7 +45,7 @@ export type TurnVerdict =
     };
 
 export const STREAM_INCOMPLETE_NOTE =
-  "This answer didn't finish coming through, so it's shown as a draft rather than a complete response. Please ask again.";
+  "This answer didn't finish coming through, so it isn't being shown. Please ask again.";
 
 export const UNGROUNDED_NOTE =
   "Some figures in this answer could not be traced back to your program's data, so I've flagged it rather than presenting them as fact. Please ask again.";

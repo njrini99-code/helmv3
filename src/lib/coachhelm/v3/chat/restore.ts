@@ -13,11 +13,13 @@
  * a feature about trust.
  *
  * `status: 'failed'` is the one override on top of that (repair plan §14.10,
- * "chat publication"): a rejected turn's text — whether an ungrounded claim
+ * "chat publication"): a rejected turn's TEXT — whether an ungrounded claim
  * or a fragment from a stream that never finished — must never reappear as
  * ordinary, accepted prose just because it happens to survive as `content` or
  * as a `text` part in `ui_parts`. See `computeTurnVerdict`
- * (`chat/verdict.ts`) for how `route.ts` decides that status.
+ * (`chat/verdict.ts`) for how `route.ts` decides that status. An action
+ * proposal or receipt on that same turn is NOT prose and is not part of
+ * this override (#1997 review) — see `restoreFailedTurn`'s doc comment.
  * ========================================================================== */
 
 import type { UIMessage } from 'ai';
@@ -45,6 +47,16 @@ const REPLAYABLE = new Set([
 /** The two reasons `computeTurnVerdict` can reject a turn — see that
  *  function's own doc comment in `chat/verdict.ts`. */
 const VERDICT_PART_TYPES = new Set(['data-grounding-flag', 'data-turn-incomplete']);
+
+/**
+ * Kept alongside the verdict note on a rejected turn (#1997 review,
+ * MUST-1/MUST-2) — a proposal or receipt is a fact about an ACTION, never a
+ * claim the numeric/claim audit judges, so the audit rejecting the
+ * SURROUNDING prose must not also erase a Confirm card the coach still needs,
+ * or a receipt for a write that already ran. See `ChatThread.tsx`'s matching
+ * collapse branch for the live-render half of this same rule.
+ */
+const ACTION_PART_TYPES = new Set(['data-action-proposal', 'data-action-receipt']);
 
 /**
  * A row this repo has no honest verdict note for — one written before this
@@ -111,14 +123,16 @@ export function restoreUIMessages(messages: ChatMessage[]): UIMessage[] {
 }
 
 /**
- * A rejected turn renders as ONLY its failure affordance — never its text,
- * never its evidence/proposal/receipt parts, regardless of what `ui_parts`
- * or `content` happen to hold. This is deliberately stricter than "hide the
+ * A rejected turn renders as its failure affordance PLUS any action parts —
+ * never its text, never its evidence, regardless of what `ui_parts` or
+ * `content` happen to hold. This is deliberately stricter than "hide the
  * text but keep the chart": a chart that streamed before the turn was
  * rejected was never itself vouched for as part of a finished, accepted
- * answer, and a coach re-reading history should see one unambiguous signal —
- * this answer was not accepted — rather than a mix of trusted and untrusted
- * fragments they have to sort out themselves.
+ * answer, and a coach re-reading history should see one unambiguous signal
+ * about the PROSE — this answer was not accepted — rather than a mix of
+ * trusted and untrusted fragments they have to sort out themselves. A
+ * proposal or receipt is not prose (see `ACTION_PART_TYPES`'s doc comment)
+ * and keeps rendering exactly as it would on an accepted turn.
  *
  * The note shown is whichever verdict part `route.ts` actually persisted
  * (`data-grounding-flag` for an ungrounded claim, `data-turn-incomplete` for
@@ -137,9 +151,17 @@ function restoreFailedTurn(row: ChatMessage): UIMessage {
     (typeof verdictPart?.data?.note === 'string' && verdictPart.data.note) || GENERIC_FAILURE_NOTE;
   const partType = (verdictPart?.type as 'data-grounding-flag' | 'data-turn-incomplete' | undefined) ?? 'data-turn-incomplete';
 
+  const actionParts = parts.filter(
+    (p): p is { type: string } =>
+      Boolean(p) && typeof p === 'object' && ACTION_PART_TYPES.has((p as { type?: unknown }).type as string),
+  );
+
   return {
     id: row.id,
     role: 'assistant',
-    parts: [{ type: partType, id: 'restored-verdict', data: { note } }] as UIMessage['parts'],
+    parts: [
+      { type: partType, id: 'restored-verdict', data: { note } },
+      ...actionParts,
+    ] as UIMessage['parts'],
   };
 }

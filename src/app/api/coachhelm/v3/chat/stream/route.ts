@@ -70,7 +70,12 @@ import {
   type Measurement,
   type MeasurementSeries,
 } from '@/lib/coachhelm/v3/chat/provenance';
-import { computeTurnVerdict, verdictPartType, type TurnVerdict } from '@/lib/coachhelm/v3/chat/verdict';
+import {
+  computeTurnVerdict,
+  STREAM_INCOMPLETE_NOTE,
+  verdictPartType,
+  type TurnVerdict,
+} from '@/lib/coachhelm/v3/chat/verdict';
 import type { ChatMessage } from '@/lib/coachhelm/v3/chat/types';
 import {
   appendMessage,
@@ -519,6 +524,12 @@ export async function POST(req: NextRequest) {
 
       const result = streamText({
         model,
+        // A client disconnect should stop generation and spend, not just the
+        // write side: the answer is discarded anyway once `onFinish` marks
+        // the row `'failed'` (no verdict was ever computed — see
+        // `turnVerdict`'s doc comment below), so paying the provider for
+        // tokens nobody will read is pure waste (#1997 review, SHOULD-4).
+        abortSignal: req.signal,
         // ── Prompt caching on the static prefix ─────────────────────────
         //
         // One turn is several model calls: the agent loop re-sends the system
@@ -826,8 +837,15 @@ export async function POST(req: NextRequest) {
         // that audit on a truncated fragment was the actual defect: a short
         // partial answer with no numbers in it passed the audit trivially
         // and was stored as `'complete'`.
+        // `note` is never read below in this function — this branch only
+        // ever inspects `.outcome`/`.reason`/`.unsupported` — but the empty
+        // string this used to carry was also simply wrong: `stream_incomplete`
+        // ALWAYS means `STREAM_INCOMPLETE_NOTE`, the same value
+        // `computeTurnVerdict` itself returns for this exact reason above
+        // (#1997 review, NICE). Populating it correctly costs nothing and
+        // removes a landmine for the next caller that reads `.note`.
         const verdict: TurnVerdict =
-          turnVerdict ?? { outcome: 'rejected', reason: 'stream_incomplete', note: '', unsupported: [] };
+          turnVerdict ?? { outcome: 'rejected', reason: 'stream_incomplete', note: STREAM_INCOMPLETE_NOTE, unsupported: [] };
 
         if (verdict.outcome === 'rejected' && verdict.reason === 'ungrounded_claims') {
           // A designed guardrail FIRING is not an incident: the claim was
@@ -884,12 +902,17 @@ export async function POST(req: NextRequest) {
           );
         }
 
-        // `content` is the raw text the model produced, undecorated — the
-        // failure note lives only in `ui_parts`/`status`, which is what
-        // governs display (`restore.ts`, `ChatThread.tsx`). Baking the note
-        // into `content` too would leak it into the next turn's model
-        // context via `convertToModelMessages` on the client's own replayed
-        // thread.
+        // `content` is the raw text the model produced — never the failure
+        // note, which lives only in `ui_parts`/`status`. Baking the note into
+        // `content` too would leak it into the next turn's model context via
+        // `convertToModelMessages` on the client's own replayed thread. This
+        // is about what `content` is SENT to the model as, not what a coach
+        // can see: `restore.ts`/`ChatThread.tsx` govern display and, on a
+        // rejected turn, show only the note — but an in-session `uiMessages`
+        // array (this same request, before any reload) can still carry the
+        // raw rejected text in a `text` part alongside it (#1997 review,
+        // NICE) — this comment used to overclaim that display, not just the
+        // model-context payload, was undecorated everywhere.
         await appendMessage(supabase, {
           conversation_id: convId,
           role: 'assistant',

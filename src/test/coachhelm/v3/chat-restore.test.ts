@@ -135,12 +135,21 @@ describe('restoreUIMessages — status: failed (repair plan §14.10, chat public
     expect(restored!.parts.map((p) => p.type)).not.toContain('text');
   });
 
-  it('drops evidence/proposal/receipt parts alongside the text for a rejected turn — no partial trust', () => {
+  /**
+   * #1997 review, MUST-1/MUST-2: a proposal or receipt is a fact about an
+   * ACTION, not a claim the numeric/claim audit judges, so the rejection
+   * collapse must drop text and evidence but keep it. A receipt in
+   * particular is for a write that already ran (executeGated → action.run →
+   * recordOutcome) — losing it on reload would make a completed mutation
+   * look like it never happened.
+   */
+  it('drops evidence/text for a rejected turn but keeps action-proposal/receipt parts — no partial trust in prose, full trust in facts about actions', () => {
     const row = assistantRow({
       status: 'failed',
       ui_parts: [
         { type: 'text', text: 'Some claim.' },
         { type: 'data-evidence', data: { envelope: { coverage: 'ok' } } },
+        { type: 'data-action-proposal', data: { summary: 'Create a focus area', idempotency_key: 'k1' } },
         { type: 'data-action-receipt', data: { summary: 'Created a focus area' } },
         { type: 'data-grounding-flag', id: 'grounding-flag', data: { note: 'flagged' } },
       ],
@@ -150,6 +159,8 @@ describe('restoreUIMessages — status: failed (repair plan §14.10, chat public
 
     expect(restored!.parts).toEqual([
       { type: 'data-grounding-flag', id: 'restored-verdict', data: { note: 'flagged' } },
+      { type: 'data-action-proposal', data: { summary: 'Create a focus area', idempotency_key: 'k1' } },
+      { type: 'data-action-receipt', data: { summary: 'Created a focus area' } },
     ]);
   });
 });
