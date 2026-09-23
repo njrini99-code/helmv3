@@ -31,18 +31,18 @@
 --   (Only while the bucket is empty — empty it through the Storage API first.
 --   Nothing else is touched, so removing the row fully reverts it.)
 --
--- VERIFY: select 1 from storage.buckets where id = 'course-geometry' and public and file_size_limit = 20971520 and allowed_mime_types = array['application/json'];
+-- VERIFY: select 1 from storage.buckets where id = 'course-geometry' and public and file_size_limit = 20971520 and allowed_mime_types = array['application/json']; -- noqa: LT05
 -- ============================================================================
 
-INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types) -- noqa: LT05
 VALUES (
-  'course-geometry',
-  'course-geometry',
-  true,
-  20971520,  -- 20 MB — a published package + one hole's terrain mesh comfortably fits; the manifest/terrain files are JSON, not media.
-  ARRAY['application/json']
+  'course-geometry', -- noqa: LT02
+  'course-geometry', -- noqa: LT02
+  true, -- noqa: LT02
+  20971520,  -- 20 MB — a published package + one hole's terrain mesh comfortably fits; the manifest/terrain files are JSON, not media. -- noqa: LT02,LT05
+  ARRAY['application/json'] -- noqa: LT02
 )
 ON CONFLICT (id) DO UPDATE
-  SET public = EXCLUDED.public,
-      file_size_limit = EXCLUDED.file_size_limit,
-      allowed_mime_types = EXCLUDED.allowed_mime_types;
+  SET public = EXCLUDED.public, -- noqa: LT02,CP02
+      file_size_limit = EXCLUDED.file_size_limit, -- noqa: LT02,CP02
+      allowed_mime_types = EXCLUDED.allowed_mime_types; -- noqa: LT02,CP02

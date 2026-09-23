@@ -454,6 +454,7 @@ features:
         # course library, and their storage/RLS surface.
         - supabase/migrations/*course_library*.sql
         - supabase/migrations/*course_image*.sql
+        - supabase/migrations/*course_geometry*.sql
         - supabase/migrations/*round_atomic*.sql
         - supabase/migrations/*atomic_round*.sql
         - supabase/migrations/*atomic_lifecycle*.sql
