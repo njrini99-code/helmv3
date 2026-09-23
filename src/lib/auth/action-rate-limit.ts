@@ -11,6 +11,13 @@
  * schedule-image.ts and v3/llm.ts share ONE definition instead of five.
  * DB-backed limiter on purpose — it is correct across serverless instances
  * unconditionally, unlike the Upstash-or-memory tiering in ./rate-limit.
+ *
+ * 2026-09-23: round-review-system.ts's `generateAndStoreRoundReview` also
+ * gates through `gateCoachHelmEngineCall`, but only for a REGENERATE — it
+ * derives that server-side from whether a `golf_round_reviews` row already
+ * exists for the round (fail-closed on a failed existence read), rather than
+ * trusting a caller-supplied flag a direct caller could omit. First
+ * generation stays ungated.
  */
 
 import { checkRateLimit } from '@/lib/auth/supabase-rate-limit';

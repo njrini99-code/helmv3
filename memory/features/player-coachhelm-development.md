@@ -101,6 +101,43 @@ Player opens round review
 
 ## Known Risk Areas
 
+- `upsertInsight`'s optimistic CAS (`src/lib/coachhelm/v2/insights/upsert.ts`,
+  `updateExisting`) guards both `lifecycle_state` and `updated_at` (2026-09-23
+  — closed the §15.2 "old worker finishes after a new revision" gap). On a
+  CAS miss it re-reads the row: a genuine lifecycle change (dismiss/
+  acknowledge/archive/resolve, or another lifecycle write) always wins with
+  no retry; a same-lifecycle evidence-only race retries ONCE, and only if
+  the incoming evidence (`isEvidenceNewer`: later `window_end`, or same
+  `window_end` with a larger `sample_n`) is actually newer than what the
+  re-read finds — otherwise the write is dropped, never overwriting a
+  concurrent newer revision. The exhausted-retry-while-still-newer case pages
+  at `error` severity with no `skipSentry` (a real evidence loss, not an
+  expected backoff); the stale-worker case logs at `warning` with
+  `skipSentry: true`. `isEvidenceNewer` compares `window_end` as parsed
+  instants, not raw strings — v2 mining writes a date-only `YYYY-MM-DD`
+  while several v3 evidence builders write a full timestamp, and a same-day
+  string compare would otherwise misjudge the shorter form as older. `.eq`
+  passes through the exact `updated_at` string read from PostgREST
+  (microsecond-precision `timestamptz(6)`), never a JS-reserialized value.
+  `upsertInsightV3`'s `engine_version` stamp (`upsert-v3.ts`) only matches a
+  row when it isn't already `'v3'`, so a repeat v3 write doesn't burn the one
+  CAS retry bumping `updated_at` for a no-op stamp. `evidenceRevisionKey`
+  (the separate maturation-confirmation dedup key, §15.2 row 12) was
+  investigated and found NOT to need a content component: it gates only
+  `metadata.maturation_keys`, never the evidence write itself, and per plan
+  §5.2 a same-round correction correctly should not add a second maturation
+  confirmation.
+- **Follow-up, not yet done (2026-09-23):** `generator-base.ts`'s and
+  `synthesis.ts`'s archive/retraction sweeps (`generator-base.ts:483-497`,
+  `synthesis.ts:545`) compare-and-set on `lifecycle_state` alone, with no
+  `updated_at`/revision guard. Unlike `updateExisting`, they write a terminal
+  administrative state (archived), not evolving evidence, so the CAS miss
+  they already handle (skip cleanly, no retry) covers their own race — but a
+  sweep's write can still silently discard a *concurrent unrelated refresh's*
+  metadata (e.g. a movement/maturation update landing between the sweep's
+  read and its write) since it only guards the field it itself intends to
+  change. Not fixed here — flagged as a follow-up scoping question, not a
+  confirmed bug, since it may be within these sweeps' intended scope.
 - Player acknowledgement/dismissal callbacks have historically been easy to render without wiring actions.
 - Revalidation can miss `/golf/dashboard/coachhelm` or `/golf/dashboard/my-development`.
 - Player-facing fallbacks can mask missing source data or LLM/citation failures.
@@ -171,6 +208,32 @@ Player opens round review
   nullable `text` (not yet run locally -- no Docker/local Supabase stack
   available in this session; CI's Supabase lint + RLS tests job is the
   verification gate).
+  **Slice 3 (built, PR "Depends on #2004", no migration)**: read-time-only
+  "evidence has changed since this was approved" check, same "derive at read
+  time, never persist a re-check" contract as `due-for-review.ts` (Pkg 9
+  slice 4) -- never writes `evidence_revision` or `status`, so the prior
+  accepted version is preserved exactly.
+  `src/lib/coachhelm/focus-areas/evidence-revision-status.ts`'s pure
+  `compareEvidenceRevision(stored, live)` returns `'match' | 'changed' |
+  'unknown'`; `'unknown'` (stored absent, or the live insight couldn't be
+  recomputed) always renders nothing -- an unverifiable comparison must never
+  be reported as a confirmed mismatch.
+  `src/lib/coachhelm/focus-areas/load-evidence-revision-status.ts`'s
+  `computeEvidenceRevisionStatuses` is the flag-gated batched loader: while
+  the flag is off it makes zero `golf_coach_insights` reads; while on, it
+  collects the distinct `from_insight_id`s among focus areas that already
+  carry a stored `evidence_revision`, fetches each live insight once via
+  `fromUntyped`, and maps id -> `'match' | 'changed'` (an id absent from the
+  map means "render nothing", uniformly with `'unknown'`).
+  Both `intelligence/page.tsx` and `coachhelm/page.tsx`'s focus-area selects
+  now route through `fromUntyped` unconditionally (its `any` return made a
+  typed/untyped client ternary untypeable; the SELECT COLUMN LIST still only
+  adds `evidence_revision` when the flag is on, so with it off the actual
+  query text is byte-for-byte unchanged from before slice 1/3). `FocusAreaCard`
+  takes a new `evidence_revision_status?: 'match' | 'changed'` field (computed
+  by the loader, never a raw DB column) and swaps its slice-1 "Evidence
+  snapshot recorded" badge for a `tone="warning"` "Evidence has changed since
+  this was approved" badge only when the status is `'changed'`.
 - **Focus-area progress is travel from baseline, never `current / target`,
   and an unresolvable metric must render no progress bar at all** — not a
   guessed one. `golf_player_focus_areas.baseline_value` (present in

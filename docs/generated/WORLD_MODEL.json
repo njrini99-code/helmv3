@@ -579,6 +579,11 @@
         "category": "components"
       },
       {
+        "id": "components:src/components/fairway/controls/wheel-picker.*",
+        "pattern": "src/components/fairway/controls/wheel-picker.*",
+        "category": "components"
+      },
+      {
         "id": "components:src/components/fairway/pages/calendar/**",
         "pattern": "src/components/fairway/pages/calendar/**",
         "category": "components"
@@ -11997,6 +12002,18 @@
     },
     {
       "source": "calendar_events",
+      "target": "components:src/components/fairway/controls/wheel-picker.*",
+      "kind": "feature_component",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/components/fairway/controls/wheel-picker.*"
+        }
+      ]
+    },
+    {
+      "source": "calendar_events",
       "target": "components:src/components/fairway/pages/calendar/**",
       "kind": "feature_component",
       "evidence": [
@@ -13401,6 +13418,11 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/lib/coachhelm/focus-areas/load-evidence-revision-status.ts",
+          "anchor": "src/lib/flags"
+        },
+        {
+          "kind": "import_graph",
           "path": "src/lib/coachhelm/round-single-flight-lock.ts",
           "anchor": "src/lib/supabase/admin"
         }
@@ -13644,6 +13666,16 @@
           "kind": "import_graph",
           "path": "src/app/golf/actions/v3/team-practice-rx.ts",
           "anchor": "src/lib/supabase/server"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/focus-areas/load-evidence-revision-status.ts",
+          "anchor": "src/lib/supabase/untyped"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/focus-areas/load-evidence-revision-status.ts",
+          "anchor": "src/lib/supabase/chunk-ids"
         }
       ]
     },
@@ -15457,6 +15489,11 @@
           "kind": "import_graph",
           "path": "src/app/golf/actions/round-review-system.ts",
           "anchor": "src/lib/auth/verify-player-access"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/round-review-system.ts",
+          "anchor": "src/lib/auth/action-rate-limit"
         },
         {
           "kind": "import_graph",

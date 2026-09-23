@@ -42,6 +42,27 @@ import { normalizeForRadar } from '@/lib/coachhelm/v3/genome/normalize';
 import { loadPlayerScoringBaseline } from '@/lib/coachhelm/v3/counterfactual/baseline-loader';
 import { logServerError } from '@/lib/server-error-logger';
 import { describeError } from '@/lib/utils/describe-error';
+import { isFlagEnabled } from '@/lib/flags';
+import { fromUntyped } from '@/lib/supabase/untyped';
+import { computeEvidenceRevisionStatuses } from '@/lib/coachhelm/focus-areas/load-evidence-revision-status';
+import type { EvidenceRevisionComparison } from '@/lib/coachhelm/focus-areas/evidence-revision-status';
+
+/**
+ * A8 slice 3: the focus-area select is routed through `fromUntyped` (see
+ * below) so it can conditionally add `evidence_revision`, a column that
+ * doesn't exist in generated `database.ts` types until the owner applies
+ * the migration — this is the resulting row shape, kept minimal to what
+ * this page actually reads off it.
+ */
+interface RawFocusAreaRow {
+  id: string;
+  from_insight_id?: string | null;
+  from_review_id?: string | null;
+  status?: string | null;
+  progress_notes?: unknown;
+  evidence_revision?: string | null;
+  [key: string]: unknown;
+}
 
 export const metadata: Metadata = {
   title: 'CoachHelm | GolfHelm',
@@ -336,22 +357,33 @@ export default async function PlayerCoachHelmPage() {
   let suggestions: GoalSuggestionView[] = [];
   let causalRelationships: Awaited<ReturnType<typeof getPlayerCausalRelationships>> = [];
   try {
-    const { data: focusAreas, error: focusAreasError } = await supabase
-      .from('golf_player_focus_areas')
-      .select(
-        `id, area_type, title, description, status, target_metric, current_value,
+    // A8 slice 3: only extend the select (and only route it through the
+    // untyped escape hatch) when the flag is on — with it off, this must be
+    // byte-for-byte the same select as before slice 1/3, since the column
+    // doesn't exist in prod until the owner applies the migration.
+    const evidenceRevisionFlagOn = isFlagEnabled('coachhelm_focus_area_evidence_revision');
+    const focusAreaSelectColumns = `id, area_type, title, description, status, target_metric, current_value,
          baseline_value, snapshots,
          target_value, target_kind, target_date, target_rounds, started_at,
          completed_at, created_at, from_review_id, from_insight_id,
-         review_context, progress_notes`,
-      )
+         review_context, progress_notes${evidenceRevisionFlagOn ? ', evidence_revision' : ''}`;
+
+    // fromUntyped is `client.from(table) as any` at runtime — identical to
+    // the typed call this replaced for every column already selected before
+    // slice 1/3; only the column LIST varies on the flag, never the client.
+    const focusResult = (await fromUntyped(supabase, 'golf_player_focus_areas')
+      .select(focusAreaSelectColumns)
       .eq('player_id', player.id)
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false })) as {
+      data: RawFocusAreaRow[] | null;
+      error: unknown;
+    };
+    const { data: focusAreas, error: focusAreasError } = focusResult;
     developmentLoadError = Boolean(focusAreasError);
 
     const reviewIds = Array.from(
-      new Set((focusAreas || []).map((fa) => fa.from_review_id).filter((id): id is string => Boolean(id))),
-    );
+      new Set((focusAreas || []).map((fa) => fa.from_review_id).filter(Boolean)),
+    ) as string[];
     const roundIdByReviewId: Record<string, string> = {};
     if (reviewIds.length > 0) {
       const { data: reviewRows, error: reviewRowsError } = await supabase
@@ -374,10 +406,22 @@ export default async function PlayerCoachHelmPage() {
       }
     }
 
+    const evidenceRevisionStatusByFocusAreaId = await computeEvidenceRevisionStatuses(
+      supabase,
+      focusAreas || [],
+    );
+    // `null` means the live-insight read failed — render no badge, same as
+    // an id simply missing from a successful map, but NEVER by silently
+    // defaulting the whole result to `{}` first (that's the exact collapse
+    // that hid a failed read behind "nothing changed").
+    const evidenceRevisionStatusFor = (id: string): EvidenceRevisionComparison | undefined =>
+      evidenceRevisionStatusByFocusAreaId ? evidenceRevisionStatusByFocusAreaId[id] : undefined;
+
     const focusAreasWithHistory = (focusAreas || []).map((fa) => ({
       ...fa,
       progressHistory: progressHistoryOf(fa.progress_notes),
       from_review_round_id: fa.from_review_id ? roundIdByReviewId[fa.from_review_id] ?? null : null,
+      evidence_revision_status: evidenceRevisionStatusFor(fa.id),
     }));
 
     developmentActiveAreas = focusAreasWithHistory.filter(

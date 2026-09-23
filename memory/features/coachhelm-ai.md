@@ -232,6 +232,8 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
   A `'failed'` row now also records why: `golf_coachhelm_llm_calls.citations` carries `{reason: 'verification_failed', unmatched_tokens}` (mirrors `compose.ts`'s shape) instead of `null`, and the live stream carries a `data-grounding-flag` part with the same note appended to `content` on persistence — before this fix the flag only ever reached the DB row, so a coach watching the answer stream in never saw it until a reload; `restore.ts`'s `REPLAYABLE` set now also includes `data-grounding-flag`, so the flag survives a reload instead of only the original streaming session. See `src/test/coachhelm/v3/chat-provenance.test.ts` for the reproduced false positives.
 
   Independent review of the fix (2026-09-22) found the live audit itself had a real regression: it checked `result.text`, which in `ai` 7.0.79 is the LAST agent step's text only (`StreamTextResult#text`), so a fabrication planted in an earlier step of a multi-step turn was invisible to it, and `onFinish` reused that narrow verdict instead of re-checking the full persisted text. Fixed by accumulating every `text-delta` chunk in the stream-forwarding loop and auditing exactly that string in both places. A provider error or a dropped connection mid-generation is now also tracked explicitly (`streamErrored`) and forces the turn to `'failed'` regardless of what the numeric audit finds — previously a stream error could leave a partial, unaudited answer stored as `'complete'`. `priorTurnEvidence` (cross-turn evidence carryover) now validates every stored envelope with `ToolEnvelope.safeParse` before trusting its shape (a legacy or forged `ui_parts` blob can no longer crash the turn). Player-scoping is two-phase: it splits carryover into `shared` (team/round-level evidence with no player entity — always safe) and `deferred` (anything player-scoped, or entity-less, e.g. `get_player_insights`, which returns no `entity` at all and so cannot be assumed safe). `execute` then unions the current turn's own tagged player id(s) with `deferred`'s before deciding whether to fold `deferred` in, so the current turn's context — not just prior turns' — governs the decision (a number about player A must not "support" a claim about player B). This is a heuristic bounded by what's tagged: an entity-less envelope secretly about a second, untagged player is indistinguishable from one about the single tagged player. A second-round fix (2026-09-23) closed a related hole: when THIS turn makes zero fresh player-scoped tool calls at all (the model answering entirely from memory), `deferred` is never folded in, even if it names only one player — with no fresh evidence of who this turn is actually about, "only one player on record" can't be trusted (production shape: turn 1 fetches Alice's putts; turn 2 asks about Bob and answers from memory with no tool call, and Alice's carried-over number would otherwise "support" a claim about Bob). `shared` (team/round-level) evidence is unaffected and still always carries over, including on a zero-tool-call turn. Carryover is capped to the last 5 assistant turns via a bounded, descending `listRecentMessages` query (avoiding both PostgREST's 1,000-row cap and an unbounded evidence window), and the pairwise-differencing anchor cap (`PAIRWISE_ANCHOR_CAP`) now evicts its oldest member instead of silently disabling differencing once exceeded. Known, accepted, self-only risk (not changed here): `chat_messages_coach_only` is a `FOR ALL` RLS policy, so a coach can edit their own persisted `ui_parts`, including a stored evidence envelope.
+
+  Repair plan §14.10 ("chat publication waits for validation," 2026-09-23) closed two remaining gaps the `streamErrored` tracking above didn't cover. First, a disconnect-specific hole in `onFinish`'s own fallback: `execute`'s forwarding loop only ever set its verdict variable at the very end of the loop, so a client disconnect or platform teardown mid-generation left it unset when `onFinish` ran (the AI SDK's `handleUIMessageStreamFinish` wraps the stream in a `TransformStream` whose `cancel()` calls `onFinish` concurrently with, not after, `execute`'s own loop — confirmed by reading `ai`'s `dist/index.js` directly). The old fallback re-audited whatever partial fragment had accumulated and treated a fragment with no numeric claims in it as grounded, persisting a truncated, mid-sentence answer as `status: 'complete'` — indistinguishable from a real answer on reload. Fixed: a still-unset verdict at `onFinish` time is now unconditionally `{outcome: 'rejected', reason: 'stream_incomplete'}`, never re-audited. Second, a rendering gap: a rejected turn's already-streamed tokens stayed visible as ordinary prose with the failure note merely appended below them, both live and on reload — a coach could still read (and act on) the unverified text. `computeTurnVerdict` (`src/lib/coachhelm/v3/chat/verdict.ts`) now decides accepted/rejected as one ordered list of checks — stream completeness first (short-circuits everything else), then the numeric audit, with an explicit seam for `claim-validator.ts` (#1991, not wired) to add a third check later without changing the function's signature or any caller. On rejection, `route.ts`'s `onFinish` still persists the model's raw stripped text as `content` (`content: text`, route.ts:~869) — the failure note lives only in `ui_parts`/`status`, kept out of `content` so it never leaks into the NEXT turn's model context via `convertToModelMessages` on the client's replayed thread — and `ChatThread.tsx`/`restore.ts` render ONLY that note (plus, see below, any action parts) for the turn: never the raw text, never any evidence part, both live (as soon as the verdict part arrives) and on every subsequent reload. The wire-level part type for an ungrounded-claims rejection stays `data-grounding-flag` (production already has rows carrying it); a stream-incomplete rejection gets its own new, additive `data-turn-incomplete` type. Review of this PR (2026-09-23, #1997) found the rejection collapse also dropped `data-action-proposal`/`data-action-receipt` — hiding a coach's Confirm card, or a receipt for a write that had already run, behind an unrelated prose rejection. Fixed on both the live-render path (`ChatThread.tsx`) and the reload path (`restore.ts`'s `restoreFailedTurn`, via a shared `ACTION_PART_TYPES` set): a rejected turn now renders its failure note PLUS any `data-action-proposal`/`data-action-receipt` parts from the same turn, never its text or evidence. The same review found the root cause of most such rejections: `agent-tools.ts`'s `proposeGated`/`executeGated` never called `collect`, so a proposal or receipt citing its own number above 12 (e.g. "3 sessions of 90 minutes") had nothing to be checked against and failed `auditNumericClaims` outright. Fixed by routing every plan/receipt through `collect` the same way a read tool's `detail` is (`collectActionNumbers` in `agent-tools.ts`), so a gated action's own numbers count as supported evidence. `streamText`'s call in `route.ts` also now passes `abortSignal: req.signal`, so a client disconnect stops model generation (and spend) instead of continuing to bill for tokens `onFinish` discards anyway. Tests: `src/test/coachhelm/v3/chat-verdict.test.ts` (the ordered-checks logic in isolation) and `src/test/coachhelm/v3/chat-restore.test.ts` (reload behavior for a rejected/incomplete/disconnected turn, including the no-verdict-part disconnect case and the action-parts-survive-rejection case).
 - Safety-net fallback behavior can mask generator failures if logs are ignored.
 - Course-management "worst holes" and hole-1 "warmup" insights require at
   least five samples, matching the persisted insight writer's Rule 1
@@ -410,9 +412,8 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
   claim, and a `null` hole/shot number no longer collides with another
   unknown shot (each renders to a fixed marker excluded from union-find,
   then disambiguated by its packet's own `claimId` when an issue's shots
-  are built, so identity stays reproducible — A5's own `shotClaimId`,
-  #1993, still renders `'null'` literally and needs this same fix in its
-  own slice).
+  are built, so identity stays reproducible — A5's own `shotClaimId`
+  (#1993) picked up this same fix in its slice 2).
   Tested against real `computeParOpportunities` (A3),
   `computeDistanceProfile` (A2, #1989), and `attributeSequence` (A4,
   #1988) metric values on one shared par-5 fixture, each wrapped by a
@@ -426,15 +427,33 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
 
 - **`src/lib/coachhelm/v3/reasoning/hypothesis-policy.ts`** (2026-09-23,
   `agent/coachhelm-hypothesis-policy`, addendum §13, work package A5
-  slice 1) — `buildHypotheses(metrics, facts)` proposes a small, NAMED set
-  of candidate explanations for a round's shot data (`short_bias`,
-  `rough_gap`, `recovery`, `par5_opportunity_loss`, plus a non-family
-  `'insufficient'` entry naming two competing families instead of picking
-  one) — never a fabricated cause, never a psychology/fatigue/mechanics
-  inference. `metrics` is `MetricResultInput[]`, a structural subset of the
-  shared `MetricResult` landing via #1990 (`src/lib/coachhelm/v3/metrics/
-  types.ts`, not merged as of this slice — same field names, so switching
-  the import later is one line). `ShotFact` carries no `par` and no
+  slice 1 + slice 2) — `buildHypotheses(metrics, facts)` proposes a small,
+  NAMED set of candidate explanations for a round's shot data
+  (`short_bias`, `rough_gap`, `recovery`, `par5_opportunity_loss`, plus a
+  non-family `'insufficient'` entry naming two competing families instead
+  of picking one) — never a fabricated cause, never a
+  psychology/fatigue/mechanics inference. `metrics` is now the real,
+  merged `MetricResult` (`src/lib/coachhelm/v3/metrics/types.ts`, #1990;
+  slice 1 read a structural subset before #1990 landed). Slice 2:
+  `MetricResult.dimensions` means a real call can hand back several rows
+  per `metricId` (a distance band, or a specific par-5 hole) —
+  `metricClaimId`/`findMetric` take an optional dimensions filter so a
+  hypothesis reads the ONE row describing its own shot/hole, never an
+  arbitrary first match; `rough_gap` matches its corroborating metric to
+  its own triggering shot's distance band, and `par5_opportunity_loss` now
+  emits one `Hypothesis` PER dimensioned opportunity row (a round with
+  several par-5s yields several) instead of reading one arbitrary row and
+  dropping the rest. Slice 2 also found that `approach_measured_
+  contribution` (A2's real producer) is a plain eligible-attempt COUNT,
+  never negative — not the signed strokes-gained value slice 1 assumed —
+  so `rough_gap`'s corroboration is now guarded on `unit === 'strokes'`
+  and stays a stated gap (never elevates/contradicts) until a
+  strokes-shaped metric exists. `shotClaimId` no longer renders a missing
+  `hole_number`/`shot_number` as the literal string `'null'`; it now
+  matches `ranking/situational-ranking.ts`'s own fixed `'unknown'` marker
+  scheme so ids from both modules interoperate without translation (that
+  module's own doc comment named this exact fix as owed here). `ShotFact`
+  carries no `par` and no
   miss-direction field, so `short_bias`/`par5_opportunity_loss` can only
   come from a `metrics` row, never guessed; `rough_gap`/`recovery` come
   from an approach shot with `lie_before === 'rough'`, split on the
@@ -448,7 +467,8 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
   was but got contradicted), `'supported_association'` (a `status:
   'supported'` metric agrees and nothing contradicts — an association,
   never causal), and `'coach_annotated'` (reachable only from
-  `personal-context.ts`, slice 2 — nothing here produces it). No
+  `personal-context.ts` — not wired by slice 2 either, still a later
+  slice — nothing here produces it). No
   `'proven'` state exists. `recovery` (no metric ever corroborates it, and
   its own triggering shot is deliberately not cited as its own support)
   and `short_bias`/`par5_opportunity_loss` with an absent metric resolve
@@ -466,10 +486,12 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
   missing prerequisite is reported as a `Hypothesis` with empty claims and
   a populated `missingInputs`, never silently omitted. Claim ids
   (`metricClaimId`/`shotClaimId`) always resolve back to an element of the
-  `metrics`/`facts` a call was given (tested). **Not wired to
-  `diagnosis.ts` or `personal-context.ts`** — that's slice 2. See
-  `docs/architecture/coachhelm-evidence-contract.md`'s "Controlled
-  hypotheses" section.
+  `metrics`/`facts` a call was given (tested). **Still not wired to
+  `diagnosis.ts` or `personal-context.ts`** — slice 2 was the
+  `MetricResult` swap, the `shotClaimId` marker fix, and dimensioned claim
+  ids (above); the diagnosis/personal-context wiring remains a later
+  slice. See `docs/architecture/coachhelm-evidence-contract.md`'s
+  "Controlled hypotheses" section.
 - N13 sweep (repair plan, 2026-09-23): audited every CoachHelm action/route
   under `src/app/golf/actions` and `src/lib/coachhelm` for a catch-all that
   discards the real exception and returns one generic "session expired"-style
@@ -628,10 +650,10 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
   green attempt, never `tee_to_next` — both decided by `hole.par`/an
   explicit tag, never inferred from distance or outcome. `lie_after` →
   next shot's `lie_before` continuity is assumed, not validated. **Not
-  wired to anything yet**: no `v2/orchestrator.ts` or composite consumer,
-  no `hypothesis-policy.ts` — that's slice 2, which should consume the
-  shared `MetricResult` landing in `metrics/types.ts` via #1990
-  (`MetricResult` does not exist on `main` yet). See
+  wired to anything yet**: no `v2/orchestrator.ts` or composite consumer;
+  `hypothesis-policy.ts`'s A5 slice 2 (2026-09-23) did the `MetricResult`
+  swap (`MetricResult` merged via #1990) but did not add attribution
+  consumption — that remains a later slice. See
   `docs/architecture/coachhelm-evidence-contract.md`'s "Sequence
   attribution" section.
 

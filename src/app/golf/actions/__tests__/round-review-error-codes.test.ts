@@ -75,6 +75,7 @@ let mode: Mode = 'success';
 // fail only the SECOND call, so the round lookup itself still succeeds and
 // the compute reaches the comparison query before failing.
 let golfRoundsCallCount = 0;
+let reviewUpsertCalls = 0;
 
 const mockFrom = vi.fn((table: string) => {
   if (table === 'golf_rounds') {
@@ -123,12 +124,18 @@ const mockFrom = vi.fn((table: string) => {
     return createChainableMock({ data: [] });
   }
   if (table === 'golf_round_reviews') {
+    // The table is now also READ up front (the stored-review gate), so
+    // "touched golf_round_reviews" no longer means "wrote a review". Count
+    // upserts specifically.
+    const chain = createChainableMock();
+    chain.upsert = vi.fn(() => {
+      reviewUpsertCalls += 1;
+      return chain;
+    });
     if (mode === 'upsert-error') {
-      const chain = createChainableMock();
       chain.single = vi.fn(async () => ({ data: null, error: { code: '500', message: 'upsert failed' } }));
       return chain;
     }
-    const chain = createChainableMock();
     chain.single = vi.fn(async () => ({ data: { id: 'review-1' }, error: null }));
     return chain;
   }
@@ -175,6 +182,7 @@ describe('generateAndStoreRoundReview — typed failure codes + error surfacing'
   beforeEach(() => {
     mode = 'success';
     golfRoundsCallCount = 0;
+    reviewUpsertCalls = 0;
     mockFrom.mockClear();
     logServerError.mockClear();
   });
@@ -249,7 +257,7 @@ describe('generateAndStoreRoundReview — typed failure codes + error surfacing'
     // empty data — see the revert-check note in the source comment above
     // the shots read in round-review-system.ts. Confirm we did NOT reach
     // the upsert at all.
-    expect(mockFrom).not.toHaveBeenCalledWith('golf_round_reviews');
+    expect(reviewUpsertCalls).toBe(0);
   });
 
   it('a failed holes read is logged and fails the compute with db_error', async () => {
