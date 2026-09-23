@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { fromUntyped } from '@/lib/supabase/untyped';
+import { fetchAllRows } from '@/lib/supabase/fetch-all-rows';
 import { revalidatePath } from 'next/cache';
 import { logServerError } from '@/lib/server-error-logger';
 import { verifyPlayerAccess as sharedVerifyPlayerAccess } from '@/lib/auth/verify-player-access';
@@ -70,6 +71,10 @@ interface ReviewDbRow {
   coach_viewed_at: string | null;
   created_at: string | null;
   updated_at: string | null;
+  /** Raw top-level DB column — see `effectiveReviewStatus` below. Distinct
+   *  from the computed `GolfRoundReview.status` this file also calls
+   *  "status"; this one is what `publishReviewImpl` actually writes. */
+  status: string | null;
 }
 
 /**
@@ -230,6 +235,62 @@ async function generateAIReviewContent(round: RoundDataForReview, keyStats: Revi
 }
 
 /**
+ * N14 (repair plan §5.4/§14.7): the workflow status was being derived three
+ * different ways in this file — `dbRowToReview` fell back to
+ * `shared_with_coach`, `getTeamReviewsImpl` matched `patterns_detected.status`
+ * with NO fallback (silently excluding/miscounting a shared-but-unlabeled
+ * review), and `getPendingCoachReviewsImpl` fell back to a bare `'draft'`
+ * regardless of `shared_with_coach`. A review whose `patterns_detected.status`
+ * was never written could be "shared" to one caller and "draft" to another.
+ * This is the single reconciled definition every reader must use.
+ */
+function effectiveReviewStatus(row: {
+  patterns_detected: unknown;
+  shared_with_coach: boolean | null;
+  status?: string | null;
+}): ReviewStatus {
+  // `publishReviewImpl` writes the top-level `status` column directly
+  // (`status: 'published'`, alongside `published_at`/`published_by`) and
+  // never touches `patterns_detected`. No other writer in this file sets
+  // this column, so its only two states are NULL and 'published' — but a
+  // published review's `patterns_detected.status` still holds whatever it
+  // was before publishing (typically 'approved'), which is stale once the
+  // review has actually shipped to the player. The raw column wins when set.
+  if (row.status === 'published') return 'published';
+  const extData = row.patterns_detected as ReviewExtendedData | null;
+  return extData?.status ?? (row.shared_with_coach ? 'shared' : 'draft');
+}
+
+/** Deterministic review chronology (repair plan §5.4 R4): order by the
+ * REVIEWED ROUND's date, not by when the review row was generated —
+ * otherwise a review just (re)generated for an old round jumps to the top of
+ * a "recent" list. `round_date` is a DATE column, so ties are broken by the
+ * round's own `created_at` (submission time), then its `id`, for a stable
+ * order across pages.
+ *
+ * `round` is nullable here (not just for typing hygiene): getTeamReviews and
+ * getPendingCoachReviews join with `!inner` so their rows always carry one,
+ * but getPlayerReviewHistory's join is a plain left join specifically so a
+ * review whose round became RLS-hidden (e.g. after a player transfer) still
+ * comes back instead of silently vanishing from the caller's history — it
+ * just can't be dated, so it sorts last via the `''` fallback below, using
+ * the review's OWN id (not the missing round's) as the final tiebreak. */
+function compareByRoundChronologyDesc(
+  a: { id: string; round: { round_date: string | null; created_at: string | null; id: string } | null },
+  b: { id: string; round: { round_date: string | null; created_at: string | null; id: string } | null },
+): number {
+  const dateA = a.round?.round_date ?? '';
+  const dateB = b.round?.round_date ?? '';
+  if (dateA !== dateB) return dateA < dateB ? 1 : -1;
+  const createdA = a.round?.created_at ?? '';
+  const createdB = b.round?.created_at ?? '';
+  if (createdA !== createdB) return createdA < createdB ? 1 : -1;
+  const idA = a.round?.id ?? a.id;
+  const idB = b.round?.id ?? b.id;
+  return idA < idB ? 1 : idA > idB ? -1 : 0;
+}
+
+/**
  * Convert database row to GolfRoundReview type
  */
 function dbRowToReview(row: ReviewDbRow, callerRole: 'player' | 'coach' = 'coach'): GolfRoundReview {
@@ -261,7 +322,7 @@ function dbRowToReview(row: ReviewDbRow, callerRole: 'player' | 'coach' = 'coach
     coach_notes: row.coach_notes,
     coach_viewed_at: row.coach_viewed_at,
     // Extended fields from patterns_detected JSON
-    status: extData?.status ?? (row.shared_with_coach ? 'shared' : 'draft'),
+    status: effectiveReviewStatus(row),
     strengths: highlights ?? undefined,
     areas_for_improvement: areasToReview ?? undefined,
     key_stats: roundStats ?? undefined,
@@ -1030,35 +1091,49 @@ async function getTeamReviewsImpl(
           course:golf_courses(*)
         )
       `;
-    const { data: reviews, error, count } = await supabase
-      .from('golf_round_reviews')
-      .select(teamReviewSelect, { count: 'exact' })
-      .eq('round.team_id', teamId)
-      .order('created_at', { ascending: false })
-      .range(offset, offset + limit - 1);
 
-    if (error) {
-      await logServerError(`getTeamReviews query failed: ${error.message}`, {
+    // N14 (repair plan §5.4/§14.7): the previous query ordered by review
+    // `created_at` (generation time, not the round's chronology), applied the
+    // status filter to the page AFTER `.range()` had already cut it down, and
+    // returned `count` for the UNFILTERED set — so a status-filtered page
+    // could come back short or empty while `total` claimed there was more.
+    // Fetch every review the team can see (bounded by roster/season size, and
+    // `fetchAllRows` still paginates past PostgREST's 1000-row cap), then
+    // filter → sort by round chronology → paginate, all over the SAME set,
+    // so `total` always matches what `reviews` was sliced from.
+    let allReviews: unknown[];
+    try {
+      allReviews = await fetchAllRows<unknown>(
+        (from, to) =>
+          supabase
+            .from('golf_round_reviews')
+            .select(teamReviewSelect)
+            .eq('round.team_id', teamId)
+            .order('id', { ascending: true })
+            .range(from, to),
+        1000,
+        { table: 'golf_round_reviews', action: 'getTeamReviews' },
+      );
+    } catch (fetchError) {
+      await logServerError(`getTeamReviews query failed: ${describeError(fetchError)}`, {
         action: 'getTeamReviews',
         featureArea: 'round_reviews',
-        extra: { teamId, errorCode: error.code },
+        extra: { teamId },
       });
       return { success: false, error: 'Failed to fetch reviews' };
     }
 
-    // Filter by status if specified (status is in patterns_detected JSON)
-    let filteredReviews = reviews as unknown as RoundReviewWithDetails[];
-    if (options.status) {
-      filteredReviews = filteredReviews.filter(r => {
-        const extData = (r as unknown as ReviewDbRow).patterns_detected as ReviewExtendedData | null;
-        return extData?.status === options.status;
-      });
-    }
+    const typedReviews = allReviews as unknown as RoundReviewWithDetails[];
+    const filteredReviews = options.status
+      ? typedReviews.filter(r => effectiveReviewStatus(r as unknown as ReviewDbRow) === options.status)
+      : typedReviews;
+
+    filteredReviews.sort(compareByRoundChronologyDesc);
 
     return {
       success: true,
-      reviews: filteredReviews,
-      total: count ?? 0,
+      reviews: filteredReviews.slice(offset, offset + limit),
+      total: filteredReviews.length,
     };
 
   } catch (error) {
@@ -1169,27 +1244,41 @@ async function getPendingCoachReviewsImpl(_coachId?: string): Promise<{
           course:golf_courses(*)
         )
       `;
-    const { data: reviews, error } = await supabase
-      .from('golf_round_reviews')
-      .select(pendingReviewSelect)
-      .in('player_id', playerIds)
-      .order('created_at', { ascending: false });
-
-    if (error) {
-      await logServerError(`getPendingCoachReviews query failed: ${error.message}`, {
+    // N14: ordered by review `created_at` (generation time) rather than the
+    // reviewed round's chronology, and the status fallback here ('draft'
+    // regardless of `shared_with_coach`) disagreed with `dbRowToReview`'s.
+    // Fetch by `id` for a stable cursor (this call has no external caller
+    // pagination to preserve), then apply the single reconciled status rule
+    // and sort by round chronology.
+    const reviews = await fetchAllRows<unknown>(
+      (from, to) =>
+        supabase
+          .from('golf_round_reviews')
+          .select(pendingReviewSelect)
+          .in('player_id', playerIds)
+          .order('id', { ascending: true })
+          .range(from, to),
+      1000,
+      { table: 'golf_round_reviews', action: 'getPendingCoachReviews' },
+    ).catch(async (fetchError: unknown) => {
+      await logServerError(`getPendingCoachReviews query failed: ${describeError(fetchError)}`, {
         action: 'getPendingCoachReviews',
         featureArea: 'round_reviews',
-        extra: { errorCode: error.code },
       });
+      return null;
+    });
+
+    if (reviews === null) {
       return { success: false, error: 'Failed to fetch pending reviews' };
     }
 
     // Filter to only draft/coach_review status
     const pendingReviews = (reviews as unknown as RoundReviewWithDetails[]).filter(r => {
-      const extData = (r as unknown as ReviewDbRow).patterns_detected as ReviewExtendedData | null;
-      const status = extData?.status ?? 'draft';
+      const status = effectiveReviewStatus(r as unknown as ReviewDbRow);
       return ['draft', 'coach_review'].includes(status);
     });
+
+    pendingReviews.sort(compareByRoundChronologyDesc);
 
     return {
       success: true,
@@ -1236,11 +1325,17 @@ async function getPlayerReviewHistoryImpl(playerId: string): Promise<{
       return { success: false, error: access.error || 'Not authorized' };
     }
 
+    // N14: previously ordered by review `created_at` (generation time). Join
+    // the round (a plain left join, NOT `!inner` — a review whose round
+    // became inaccessible under RLS, e.g. after a player transfer, must
+    // still come back in this player's own history rather than silently
+    // dropping out; compareByRoundChronologyDesc sorts an undatable review
+    // last) to sort by the round's own chronology instead.
     const { data: reviews, error } = await supabase
       .from('golf_round_reviews')
-      .select('*')
+      .select('*, round:golf_rounds(round_date, created_at, id)')
       .eq('player_id', playerId)
-      .order('created_at', { ascending: false });
+      .order('id', { ascending: true });
 
     if (error) {
       await logServerError(`getPlayerReviewHistory query failed: ${error.message}`, {
@@ -1252,10 +1347,16 @@ async function getPlayerReviewHistoryImpl(playerId: string): Promise<{
       return { success: false, error: 'Failed to fetch reviews' };
     }
 
+    type ReviewWithRoundChronology = ReviewDbRow & {
+      round: { round_date: string | null; created_at: string | null; id: string } | null;
+    };
+    const rows = (reviews ?? []) as unknown as ReviewWithRoundChronology[];
+    rows.sort(compareByRoundChronologyDesc);
+
     const callerRole = access.callerRole ?? 'player';
     return {
       success: true,
-      reviews: (reviews as ReviewDbRow[]).map(r => dbRowToReview(r, callerRole))
+      reviews: rows.map(r => dbRowToReview(r, callerRole))
     };
   } catch (error) {
     await logServerError(`getPlayerReviewHistory failed: ${describeError(error)}`, {

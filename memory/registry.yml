@@ -443,6 +443,7 @@ features:
         - src/lib/golf/**
         - src/lib/coachhelm/v2/post-round-trigger.ts
         - src/lib/coachhelm/v3/llm/round-review.ts
+        - scripts/coachhelm-prewarm-round-reviews.ts
       db:
         - supabase/migrations/*golf_round*.sql
         - supabase/migrations/*golf_shot*.sql
