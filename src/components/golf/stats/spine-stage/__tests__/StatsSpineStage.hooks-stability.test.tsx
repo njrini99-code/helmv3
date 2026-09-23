@@ -237,28 +237,43 @@ const FIND_TIMEOUT_MS = 15_000;
  *
  * The assertion is unchanged: the chip must still be found. Only the failure
  * message is richer.
+ *
+ * Scoped to `stage`, not `screen` (2026-09-23, ci-flakes): the back chip only
+ * ever renders inside a drill's `DrillPanel`, which only ever mounts inside
+ * `<div data-slot="stage">` (StageRouter.tsx) — it can never appear anywhere
+ * else in the document. `findByRole` polls via a MutationObserver + interval,
+ * re-querying its ENTIRE search root's accessibility tree on every DOM
+ * mutation until it matches; an unscoped `screen.findByRole` re-scans the
+ * whole `document.body` — the spine's own BentoCell grid, every drill's own
+ * interactive content (charts, chips, tooltips) — on every one of those
+ * re-checks, for a lookup that could only ever match inside `stage`. Under
+ * real CI load (a four-shard-by-two-zone runner, per the comment above) that
+ * extra traversal work is exactly the kind of cost that turns a few hundred
+ * fast local polls into ones slow enough to blow a wall-clock budget. Scoping
+ * to `stage` cuts every poll down to the one subtree that could ever contain
+ * a match, with no change to what is asserted (same role, same name, same
+ * required element).
  */
-async function findBackChip(): Promise<HTMLElement> {
+async function findBackChip(stage: HTMLElement): Promise<HTMLElement> {
   try {
-    return await screen.findByRole(
+    return await within(stage).findByRole(
       'button',
       { name: /home|all areas/i },
       { timeout: FIND_TIMEOUT_MS },
     );
   } catch (err) {
-    const stage = document.querySelector('[data-slot="stage"]');
-    const headings = Array.from(stage?.querySelectorAll('h1, h2, h3') ?? [])
+    const headings = Array.from(stage.querySelectorAll('h1, h2, h3'))
       .map((h) => h.textContent?.trim())
       .filter(Boolean);
-    const buttons = screen
+    const buttons = within(stage)
       .queryAllByRole('button')
       .map((b) => b.textContent?.trim().slice(0, 40))
       .filter(Boolean);
     throw new Error(
       `Back chip (/home|all areas/i) not found within ${FIND_TIMEOUT_MS}ms.\n` +
-        `Stage mounted: ${stage ? 'yes' : 'NO — the stage itself is gone'}\n` +
+        `Stage mounted: yes\n` +
         `Stage headings: ${headings.length ? headings.join(' | ') : '(none)'}\n` +
-        `Buttons on screen (${buttons.length}): ${buttons.join(' | ') || '(none)'}\n` +
+        `Buttons in stage (${buttons.length}): ${buttons.join(' | ') || '(none)'}\n` +
         `Original: ${err instanceof Error ? err.message : String(err)}`,
     );
   }
@@ -378,7 +393,7 @@ describe('StatsSpineStage — hooks-order stability across ?area= switches', { t
       // reliable "navigation finished" signal. Await the back chip itself —
       // it only exists inside a drill's DrillPanel — otherwise a synchronous
       // lookup here races the click's re-render under CI load.
-      const backChip = await findBackChip();
+      const backChip = await findBackChip(stage as HTMLElement);
       fireEvent.click(backChip);
       await expectStageShows('Core ball striking');
 
@@ -387,7 +402,7 @@ describe('StatsSpineStage — hooks-order stability across ?area= switches', { t
       const cellAgain = screen.getAllByRole('button').find((btn) => btn.textContent?.includes(AREA_HEADING[area]));
       fireEvent.click(cellAgain!);
       await expectStageShows(AREA_HEADING[area]);
-      fireEvent.click(await findBackChip());
+      fireEvent.click(await findBackChip(stage as HTMLElement));
       await expectStageShows('Core ball striking');
     }
   });

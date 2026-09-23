@@ -30,6 +30,41 @@ import { PricingView } from '@/components/landing/PricingView';
 
 vi.mock('@/app/actions/demo-request', () => ({ submitDemoRequest: vi.fn() }));
 
+// `PricingView` renders `MarketingShell` -> `FinalCTASection`, which runs
+// `pinScene` through `useScene` (src/lib/motion/gsap/useScene.ts) — a real
+// GSAP `ScrollTrigger` timeline that this test has no interest in. Without
+// this mock, `gsap.matchMedia().add()` invokes the scene body for real,
+// creating a genuine ScrollTrigger whose internal ticker keeps scheduling
+// `requestAnimationFrame` work (`ScrollTrigger.js`'s `Timeout._sync`) past
+// this test's own teardown, throwing "requestAnimationFrame is not defined"
+// once jsdom tears the env down — an unhandled error vitest still counts
+// against the run even though every assertion already passed. Mocking the
+// ONE module every GSAP consumer imports through (`register.ts` — see its
+// own header comment) means `gsap.matchMedia().add()` never calls back, so
+// the scene body — and the real ScrollTrigger it would create — never runs
+// at all. Same pattern as
+// `src/lib/motion/gsap/__tests__/MarketingScrollProvider.test.tsx`.
+vi.mock('@/lib/motion/gsap/register', () => {
+  const noop = () => {};
+  return {
+    gsap: {
+      matchMedia: () => ({ add: noop, revert: noop }),
+      set: noop,
+      timeline: () => {
+        const tl: Record<string, unknown> = {};
+        tl.to = () => tl;
+        return tl;
+      },
+      utils: { selector: () => () => [] },
+      context: () => ({ revert: noop }),
+      registerPlugin: noop,
+    },
+    ScrollTrigger: { refresh: noop, update: noop, getAll: () => [], create: noop },
+    SplitText: class {},
+    Flip: {},
+  };
+});
+
 afterEach(() => cleanup());
 
 describe('pricing work-email capture', () => {
