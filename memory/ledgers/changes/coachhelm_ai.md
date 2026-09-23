@@ -125,3 +125,47 @@
   `src/test/coachhelm/v3/comparable-opportunities.test.ts` (confirmed
   present on that branch before this slice's changes, not caused by them).
   `docs:check` clean.
+
+## 2026-09-23 — A9 slice 1 review catch: follow-up window can still be open
+
+- Fixes a real bug found in review before merge, same PR (#2007), branch
+  `agent/coachhelm-comparable-attribution`.
+- Change: `computeComparableAttribution` now checks whether
+  `followUpWindow.end` (interventionAt + `POST_WINDOW_DAYS`) is still in
+  the future and returns a new typed skip,
+  `{ok: false, reason: 'follow-up-window-open'}`, BEFORE calling
+  `loadPlayerContext` — counted in the cron's new
+  `summary.comparable_follow_up_open`, retried next run like
+  `no-exposure-record`, never a permanent skip. Also: a genuine DB error on
+  the exposure lookup now THROWS (caught by the cron's existing
+  per-candidate try/catch) instead of being silently misread as
+  `no-exposure-record`.
+- Why: the cron's own `MIN_AGE_DAYS` (21d, === `POST_WINDOW_DAYS`)
+  candidate-age filter guarantees the ROUND-LEVEL path's post window has
+  fully elapsed, because that path's window is anchored to `created_at`.
+  This path's window is anchored to the real, independently-timed
+  `shown_at` instead — which can land long after `created_at` — so an
+  insight created 30 days ago but first shown to a coach only 3 days ago
+  still has most of its 21-day follow-up window open. Measuring early
+  would have permanently recorded a row built from a truncated slice of
+  data: the insert is idempotent (PK on `insight_id`), so a premature
+  measurement could never be corrected once the window actually closed.
+- Known limitation raised but NOT fixed in this slice (documented in
+  `memory/features/coachhelm-ai.md` and the PR body, question open to the
+  task owner): with the flag on, every shot-level candidate since W22
+  — including old `no-exposure-record`/`follow-up-window-open` ones —
+  still passes the cron's P1 pre-filter and can fill every run's fixed
+  work-list slots oldest-first, reintroducing the original P1 stall for
+  round-level attribution. A real fix needs a synchronous per-page
+  cheap-drop of these candidates (mirroring the existing anti-join
+  batch-fetch) and is out of this slice's scope.
+- Verification: 4 new tests in `comparable-attribute.test.ts` (exposure-
+  error throws without loading player context; follow-up-window-open skip;
+  the exact end-equals-now boundary proceeds, not skipped; the
+  `proximityOutcome` spec/outcome — `shotRole`/`lie`/the `reachedGreen`-
+  gated `valueOf`, including its `lie_after` fallback and the dropped-miss
+  case) plus 1 new cron test for `summary.comparable_follow_up_open`.
+  `npm run typecheck` (tsc, the actual CI gate — not just `typecheck:fast`)
+  exit 0. `npm run test -- --run src/test/coachhelm` (the feature map's
+  required check): 140 files, 1434 passed, 3 skipped, 0 failed. `eslint`
+  on all touched files: 0 problems. `docs:check` clean.

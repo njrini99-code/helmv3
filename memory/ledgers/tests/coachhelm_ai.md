@@ -47,3 +47,27 @@
   block) already proves flag-off parity for one of these exact metrics
   since the new `isFlagEnabled` mock defaults to `false` — not
   duplicated.
+
+## 2026-09-23 — A9 slice 1 review catch: follow-up-window-open coverage
+
+- Same PR (#2007) as above, a pre-merge review catch — see the change
+  ledger's matching entry for the bug.
+- `comparable-attribute.test.ts` gained 4 tests: the exposure-lookup DB
+  error path THROWS and never calls `loadPlayerContext` (proves a genuine
+  infra failure is no longer misread as `no-exposure-record`); the
+  follow-up window still being open returns the new typed skip without
+  loading player context or calling the pure core; the exact
+  `followUpWindow.end === now` boundary instant proceeds (not skipped —
+  proves the check is a strict `>`, not `>=`); and the `proximityOutcome`
+  spec/outcome the module builds internally — `shotRole: 'approach'`,
+  `lie: null`, and the `reachedGreen`-gated `valueOf` (a `result: 'green'`/
+  `'hole'` shot returns its proximity, the `lie_after: 'green'` fallback
+  for a null `result` works, and a missed-green shot returns `null` rather
+  than a fabricated proximity value).
+- `causality-attribute.test.ts` gained 1 test in the A9 slice 1 describe
+  block: `summary.comparable_follow_up_open` increments on that skip
+  reason and `writeComparableAttribution` is never called for it.
+- Also ran (not new tests, but widened verification per the feature map's
+  required checks): `npm run typecheck` (tsc) exit 0, and
+  `npm run test -- --run src/test/coachhelm` — 140 files, 1434 passed, 3
+  skipped, 0 failed.

@@ -177,7 +177,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `memory/features/auth-onboarding-join.md` | current | yes | - | - | 3 | 15 | - |
 | `memory/features/calendar-events.md` | current | yes | - | yes | 6 | 29 | - |
 | `memory/features/coach-intelligence-triage.md` | current | yes | - | yes | 2 | 24 | - |
-| `memory/features/coachhelm-ai.md` | current | yes | - | yes | 6 | 53 | - |
+| `memory/features/coachhelm-ai.md` | current | yes | - | yes | 7 | 53 | - |
 | `memory/features/crm_outreach.md` | current | yes | - | - | 2 | 24 | - |
 | `memory/features/email_outbound.md` | current | yes | - | - | 2 | 18 | - |
 | `memory/features/golf-round-lifecycle.md` | current | yes | - | yes | 4 | 37 | - |
@@ -445,7 +445,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `memory/ledgers/changes/auth_onboarding_join.md` | current | - | - | - | 1 | 0 | - |
 | `memory/ledgers/changes/calendar_events.md` | current | - | - | - | 1 | 3 | - |
 | `memory/ledgers/changes/coach_intelligence_triage.md` | current | - | - | - | 1 | 0 | - |
-| `memory/ledgers/changes/coachhelm_ai.md` | current | - | - | - | 2 | 5 | - |
+| `memory/ledgers/changes/coachhelm_ai.md` | current | - | - | - | 2 | 6 | - |
 | `memory/ledgers/changes/crm_outreach.md` | current | - | - | - | 1 | 0 | - |
 | `memory/ledgers/changes/feature_awareness_system.md` | current | - | - | yes | 1 | 19 | - |
 | `memory/ledgers/changes/golf_round_lifecycle.md` | current | - | - | - | 2 | 6 | - |
