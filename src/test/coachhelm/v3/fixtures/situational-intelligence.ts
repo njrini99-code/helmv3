@@ -53,6 +53,7 @@ const TWO_COURSE_HOLE_A: HoleContext = {
   par: 4,
   total_strokes: 3,
   penalty_strokes: 0,
+  yardage: null,
   putts: 1,
   gir: true,
 };
@@ -63,6 +64,7 @@ const TWO_COURSE_HOLE_B: HoleContext = {
   par: 3,
   total_strokes: 2,
   penalty_strokes: 0,
+  yardage: null,
   putts: 1,
   gir: true,
 };
@@ -183,6 +185,7 @@ const PAR_5_HOLE: HoleContext = {
   par: 5,
   total_strokes: 4,
   penalty_strokes: 0,
+  yardage: null,
   putts: 1,
   gir: true,
 };
@@ -283,6 +286,7 @@ const PAR_3_HOLE: HoleContext = {
   par: 3,
   total_strokes: 3,
   penalty_strokes: 0,
+  yardage: null,
   putts: 2,
   gir: true,
 };
@@ -366,6 +370,7 @@ const PENALTY_HOLE: HoleContext = {
   par: 5,
   total_strokes: 6,
   penalty_strokes: 2,
+  yardage: null,
   putts: 2,
   gir: false,
 };
@@ -503,6 +508,7 @@ const INCOMPLETE_HOLE: HoleContext = {
   par: 4,
   total_strokes: 4,
   penalty_strokes: 0,
+  yardage: null,
   putts: 2,
   gir: true,
 };
@@ -586,6 +592,7 @@ const MIXED_UNIT_HOLE: HoleContext = {
   par: 4,
   total_strokes: 3,
   penalty_strokes: 0,
+  yardage: null,
   putts: 1,
   gir: true,
 };
@@ -671,6 +678,7 @@ const CHIP_IN_HOLE: HoleContext = {
   par: 4,
   total_strokes: 3,
   penalty_strokes: 0,
+  yardage: null,
   putts: 0,
   gir: false,
 };
