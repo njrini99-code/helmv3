@@ -373,16 +373,33 @@ async function getTopInsightForPlayerImpl(
     return feedbackByInsight;
   };
 
+  // Real weights/goals, loaded once and shared by both the urgent pass and
+  // the exhaustive ranked pass below — the urgent pass used to rank with
+  // neither, which was fine while it only ever compared a single row against
+  // itself, but is load-bearing now that it ranks a candidate SET (A6).
+  const weights = await loadCoachWeightsForPlayer(supabase, playerId).catch(() => ({}));
+  const activeGoals = await loadActiveGoals(playerId).catch(() => []);
+
   // 1. Urgent-priority first pass. We run it as a separate query so the JSON
   //    ordering below never accidentally starves an urgent row.
   // Query shape (tables/filters/order) — logged for the index-review this
   // warning intentionally does NOT escalate to: golf_coach_insights filtered
   // by (player_id, evidence NOT NULL) + the shared applyInsightVisibility
   // predicates (v3 engine OR-filter, visible lifecycle_state IN, status !=
-  // dismissed), then priority='urgent', ordered by created_at desc, limit 1.
+  // dismissed), then priority='urgent', ordered by created_at desc, limit 20.
   // Same BEST_EFFORT_QUERY_TIMEOUT_MS budget as fetchShotDriversByCategory —
   // deliberately shorter than the DB's 8s statement_timeout so a slow/
   // unindexed scan aborts client-side instead of holding the request open.
+  //
+  // A6 top-N audit: this used to be `.limit(1)`, trusting `created_at DESC`
+  // as the tie-break among urgent rows. `scoreInsight`'s URGENT_SHORT_CIRCUIT
+  // lifts every urgent row above the whole non-urgent band, but MULTIPLE
+  // urgent rows still order by their own composite, not recency (see
+  // v3/ranking/score.ts) — so the newest urgent row is not necessarily the
+  // best one. A player with 2+ open urgent insights could get a different
+  // "top" pick here than the feed's head. Urgent rows are rare enough that
+  // 20 is a generous, effectively-exhaustive cap; if that cap is ever hit in
+  // practice, widen it rather than trusting the query order past it.
   const { data: urgent, error: urgentError } = await applyInsightVisibility(
     supabase
       .from('golf_coach_insights')
@@ -392,7 +409,7 @@ async function getTopInsightForPlayerImpl(
   )
     .eq('priority', 'urgent')
     .order('created_at', { ascending: false })
-    .limit(1)
+    .limit(20)
     .abortSignal(AbortSignal.timeout(BEST_EFFORT_QUERY_TIMEOUT_MS));
 
   if (urgentError) {
@@ -407,15 +424,26 @@ async function getTopInsightForPlayerImpl(
       'warning',
     ).catch(() => undefined);
   } else if (urgent && urgent.length > 0) {
-    const urgentInsight = mapRowToEvidenceInsight(urgent[0] as unknown as RawInsightRowWithDrills);
-    // P1-09: only return the urgent row if the player hasn't dismissed it; a
-    // dismissed urgent row falls through to the ranked pass (which also filters).
-    if (urgentInsight) {
-      const overlaid = applyPlayerFeedbackOverlay([urgentInsight], await getFeedback());
-      if (overlaid.length > 0 && overlaid[0]) {
-        recordExposureForReturned([overlaid[0]], 'hub_signal');
-        return overlaid[0];
-      }
+    const urgentInsights = urgent
+      .map((row) => mapRowToEvidenceInsight(row as unknown as RawInsightRowWithDrills))
+      .filter((r): r is EvidenceInsight => r !== null);
+    // Rank the urgent candidates by the SAME composite the feed uses (the
+    // urgent short-circuit constant is identical across this set, so this
+    // reduces to ordering by the real composite among urgent rows), then
+    // apply the SAME dedupe/collapse pass so a multi-row par-scoring urgent
+    // group collapses the same way it would in the feed.
+    const rankedUrgent = dedupeBySubject(
+      collapseParScoring(
+        await rankEvidenceInsights(urgentInsights, weights, activeGoals, supabase),
+      ),
+    );
+    // P1-09: only return an urgent row the player hasn't dismissed; if every
+    // urgent candidate is dismissed, fall through to the ranked pass below
+    // (which also filters, over the full non-urgent-and-urgent set).
+    const overlaid = applyPlayerFeedbackOverlay(rankedUrgent, await getFeedback());
+    if (overlaid.length > 0 && overlaid[0]) {
+      recordExposureForReturned([overlaid[0]], 'hub_signal');
+      return overlaid[0];
     }
   }
 
@@ -451,12 +479,13 @@ async function getTopInsightForPlayerImpl(
   const rows = (data ?? []) as unknown as RawInsightRowWithDrills[];
   if (rows.length === 0) return null;
 
-  // The urgent first pass already short-circuited any urgent row at the DB
-  // level, so this second pass only sees non-urgent rows. Rank with the shared
-  // `scoreInsight` composite, then collapse par-scoring + dedupe by subject —
-  // EXACTLY the feed pipeline — so the single-pick agrees with the list feed.
-  const weights = await loadCoachWeightsForPlayer(supabase, playerId).catch(() => ({}));
-  const activeGoals = await loadActiveGoals(playerId).catch(() => []);
+  // This query has no `priority` filter, so it sees urgent rows too — it's
+  // the fallback for the case where every urgent candidate above was
+  // dismissed (rare) as well as the normal non-urgent path. `weights` and
+  // `activeGoals` were already loaded above, shared with the urgent pass.
+  // Rank with the shared `scoreInsight` composite, then collapse par-scoring
+  // + dedupe by subject — EXACTLY the feed pipeline — so the single-pick
+  // agrees with the list feed.
   const ranked = await rankEvidenceInsights(
     rows.map(mapRowToEvidenceInsight).filter((r): r is EvidenceInsight => r !== null),
     weights,
@@ -995,9 +1024,21 @@ async function getTopInsightsForPlayersImpl(
     .filter((r): r is EvidenceInsight => r !== null);
 
   // Group per player, then apply the SAME rank → collapse → dedupe → slice
-  // pipeline `getInsightsForPlayer` applies, with neutral weights/goals (team
-  // sweep convention). This guarantees the roster card's top insight agrees
-  // with the per-player feed's head for the same visible set.
+  // pipeline `getInsightsForPlayer` applies — but with NEUTRAL weights/goals
+  // (`{}` / `[]`), the batched-sweep convention: loading each player's real
+  // coach weights and active goals here would mean N extra queries for one
+  // roster card render.
+  //
+  // A6 top-N audit correction: this does NOT guarantee agreement with the
+  // per-player feed's head. `getInsightsForPlayer` ranks with that player's
+  // REAL weights and active goals; a non-empty `goalBoost` or a non-default
+  // coach weight changes the composite, so whenever a player has an active
+  // goal (or a coach weight that isn't the default), this sweep's ranking can
+  // legitimately diverge from the feed's — same tradeoff the coach team sweep
+  // in intelligence-dashboard.ts documents for the same reason. If a caller
+  // needs guaranteed agreement with the per-player feed, it must load real
+  // weights/goals per player (as `getTopInsightForPlayer`, the round-review
+  // card, and the chat tool's `getPlayerInsights` all do), not this sweep.
   const byPlayer = new Map<string, EvidenceInsight[]>();
   for (const ins of mapped) {
     const arr = byPlayer.get(ins.player_id) ?? [];
@@ -1083,17 +1124,36 @@ async function getRoundTakeawayInsightImpl(
   const windowStart = new Date(anchor.getTime() - 24 * 60 * 60 * 1000).toISOString();
   const windowEnd = new Date(anchor.getTime() + 24 * 60 * 60 * 1000).toISOString();
 
-  const { data, error } = await applyInsightVisibility(
-    supabase
-      .from('golf_coach_insights')
-      .select(INSIGHT_SELECT)
-      .eq('player_id', playerId)
-      .not('evidence', 'is', null),
-  )
-    .gte('updated_at', windowStart)
-    .lte('updated_at', windowEnd)
-    .order('updated_at', { ascending: false })
-    .limit(20);
+  // A6 top-N audit: this used to be `.order('updated_at' desc).limit(20)`,
+  // the same truncation-before-rank shape the Hub's old newest-20 pre-trim
+  // had — a genuinely higher-impact insight updated just outside the newest
+  // 20 in this ±24h window would never reach the rank step below. Paginate
+  // the FULL window via `fetchAllRowsResult` instead (a normal round's window
+  // is a handful of rows, so this is still one round trip) and rank with the
+  // player's real weights/goals rather than `{}`/`[]`, so the single pick
+  // agrees with what the feed would rank as this player's best insight
+  // updated in the window — same pipeline as the feed and the Hub.
+  const { data, error } = await fetchAllRowsResult(
+    (from, to) =>
+      applyInsightVisibility(
+        supabase
+          .from('golf_coach_insights')
+          .select(INSIGHT_SELECT)
+          .eq('player_id', playerId)
+          .not('evidence', 'is', null),
+      )
+        .gte('updated_at', windowStart)
+        .lte('updated_at', windowEnd)
+        .order('id', { ascending: true })
+        .range(from, to),
+    undefined,
+    {
+      table: 'golf_coach_insights',
+      action: 'getRoundTakeawayInsight',
+      feature: 'coachhelm_ai_engine',
+      sport: 'golf',
+    },
+  );
 
   if (error) {
     await logServerError(
@@ -1104,14 +1164,28 @@ async function getRoundTakeawayInsightImpl(
   }
 
   const rows = (data ?? []) as unknown as RawInsightRowWithDrills[];
+  const weights = await loadCoachWeightsForPlayer(supabase, playerId).catch(() => ({}));
+  const activeGoals = await loadActiveGoals(playerId).catch(() => []);
   const ranked = await rankEvidenceInsights(
     rows.map(mapRowToEvidenceInsight).filter((r): r is EvidenceInsight => r !== null),
-    {},
-    [],
+    weights,
+    activeGoals,
     supabase,
   );
+  // Same collapse + dedupe pass every other surface applies, so a 3-row
+  // par-scoring group collapses to the same one card here too.
+  const deduped = dedupeBySubject(collapseParScoring(ranked));
 
-  const takeaway = ranked[0] ?? null;
+  // Round review is a player-facing card (verifyPlayerAccess allows a coach
+  // viewing a staffed player too, same as the Hub); apply the SAME
+  // player-feedback overlay the Hub and feed apply, so a player-dismissed
+  // insight can't resurface here even though its `updated_at` sits in window.
+  const feedbackByInsight = await loadPlayerFeedbackByInsight(supabase, playerId).catch(
+    () => new Map<string, InsightPlayerFeedback>(),
+  );
+  const overlaid = applyPlayerFeedbackOverlay(deduped, feedbackByInsight);
+
+  const takeaway = overlaid[0] ?? null;
   // Only the single takeaway insight the round-review card shows is recorded.
   if (takeaway) recordExposureForReturned([takeaway], 'round_review');
   return takeaway;

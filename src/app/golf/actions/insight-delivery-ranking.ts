@@ -30,6 +30,72 @@ export interface RankableEvidenceInsight {
 }
 
 /**
+ * A2/A6 top-N audit — the minimal raw `golf_coach_insights` row shape any
+ * reader needs to produce a {@link RankableEvidenceInsight}, independent of
+ * the heavier `EvidenceInsight` (drills, sanitized content) that
+ * `insight-delivery.ts`'s 'use server' actions assemble. Exported so a
+ * reader outside that file (e.g. a chat tool) can route through the SAME
+ * canonical rank -> collapse -> dedupe pipeline without duplicating it, or
+ * depending on insight-delivery.ts's module-private mapper.
+ */
+export interface RawInsightRowForRanking {
+  id: string | null;
+  player_id: string | null;
+  category: string | null;
+  insight_type?: string | null;
+  title: string | null;
+  content: string | null;
+  signature: string | null;
+  evidence: unknown;
+  metadata: unknown;
+  lifecycle_state: string | null;
+  status: string | null;
+  priority: string | null;
+  acknowledged_at: string | null;
+  resolved_at: string | null;
+  created_at: string | null;
+  updated_at: string | null;
+}
+
+/**
+ * Maps a raw row to the canonical ranker's input shape, applying the SAME
+ * eligibility floor `insight-delivery.ts`'s `mapRowToEvidenceInsight` applies:
+ * a row without a numeric `evidence.strokes_impact`/`confidence` or a string
+ * `evidence.metric` is invisible to every ranked surface (the feed can't
+ * score it either), so it must be invisible here too — otherwise a row the
+ * feed would never show could still surface as a chat tool's "leading"
+ * insight, breaking cross-surface agreement (A6).
+ */
+export function mapRowToRankable(row: RawInsightRowForRanking): RankableEvidenceInsight | null {
+  if (!row?.id || !row.player_id || !row.title) return null;
+  if (!row.evidence || typeof row.evidence !== 'object') return null;
+  const evidence = row.evidence as InsightEvidence;
+  if (typeof evidence.strokes_impact !== 'number') return null;
+  if (typeof evidence.confidence !== 'number') return null;
+  if (typeof evidence.metric !== 'string') return null;
+
+  return {
+    id: row.id,
+    player_id: row.player_id,
+    category: (row.category as InsightCategory | null) ?? null,
+    insight_type: row.insight_type ?? null,
+    title: row.title,
+    content: row.content ?? '',
+    signature: row.signature ?? null,
+    evidence,
+    metadata: (row.metadata ?? null) as RankableEvidenceInsight['metadata'],
+    lifecycle_state:
+      (row.lifecycle_state as RankableEvidenceInsight['lifecycle_state']) ?? 'detected',
+    status: (row.status as RankableEvidenceInsight['status']) ?? 'active',
+    priority: (row.priority as RankableEvidenceInsight['priority']) ?? 'medium',
+    acknowledged_at: row.acknowledged_at ?? null,
+    resolved_at: row.resolved_at ?? null,
+    created_at: row.created_at ?? new Date().toISOString(),
+    updated_at: row.updated_at ?? new Date().toISOString(),
+  };
+}
+
+/**
  * Normalize a metric id to a canonical *subject* key so cross-version aliases
  * collapse to one row in dedupe.
  */

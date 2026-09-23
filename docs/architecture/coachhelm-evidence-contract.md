@@ -350,8 +350,88 @@ follows; both are pure functions with tests.
   with `scoreInsight` (`rankEvidenceInsights`); a "sort by priority" read
   (`searchInsights`) pages the full matching set, sorts it with
   `compareBySeverity` (`v3/ranking/score.ts`: urgent → high → medium → low,
-  newest first within a band) and slices afterwards; `getTeamInsightsSummary`
-  walks its page in that order before choosing a player's `topInsight`.
+  newest first within a band) and slices afterwards. `getTeamInsightsSummary`
+  (`intelligence-dashboard.ts`) walks a SEPARATE full-team fetch in that
+  order to compute `topInsight`/`activeInsights`/`urgentInsights` (A6, below)
+  — the paginated page it also returns is only the table body.
+
+### Top-N selection audit (addendum A6, 2026-09-23)
+
+Every surface that picks a top-N or top-1 `golf_coach_insights` row must (a)
+apply eligibility (`applyInsightVisibility` — v3 engine, visible
+`lifecycle_state`, not coach-dismissed; plus the player-feedback overlay on
+player-facing surfaces) BEFORE any DB `.limit()`/client `.slice()`, and (b)
+rank survivors with the canonical composite (`scoreInsight`, reached via
+`rankEvidenceInsights`/`rankEvidenceInsightsScored` in
+`app/golf/actions/insight-delivery-ranking.ts`), not an ad-hoc formula.
+Truncating before ranking can silently drop a genuinely higher-priority row
+that happens to be older than the truncation cutoff — the same class of bug
+`getTopInsightForPlayer`'s exhaustive pass already fixed for its own
+non-urgent ranking (the "old newest-20/100 created_at pre-trim" note above).
+
+Audited surfaces and outcome:
+
+- **Hub single-pick, urgent-priority fast path** (`getTopInsightForPlayer`,
+  `insight-delivery.ts`). Before: `.limit(1)` ordered by `created_at DESC` —
+  with 2+ open urgent rows, always returned the NEWEST one, not the best by
+  composite (the URGENT_SHORT_CIRCUIT band lifts all urgent rows equally;
+  among urgent rows the composite still decides). After: fetches up to 20
+  urgent candidates (urgent rows are rare; effectively exhaustive), ranks
+  them with the player's real weights/goals through the SAME
+  `rankEvidenceInsights` → `collapseParScoring` → `dedupeBySubject`
+  pipeline, then applies the feedback overlay.
+- **Hub single-pick, non-urgent ranked pass**. Already correct pre-A6 (full
+  paginated fetch, canonical rank/collapse/dedupe/overlay). No change.
+- **Player feed** (`getInsightsForPlayer`). Already correct (full fetch,
+  canonical rank/collapse/dedupe/overlay, THEN slice). No change.
+- **Coach feed** (`getInsightsForCoachWithMeta`). Already correct (full
+  fetch both branches, canonical rank, THEN slice, honest `total`/`capped`).
+  No change.
+- **Round-review takeaway** (`getRoundTakeawayInsight`). Before:
+  `.order('updated_at' desc).limit(20)` inside the ±24h window BEFORE
+  ranking; ranked with neutral `{}`/`[]` weights/goals; no collapse/dedupe;
+  no player-feedback overlay (a player-dismissed row in-window could still
+  surface). After: paginates the FULL window via `fetchAllRowsResult`; ranks
+  with the player's real weights/goals; applies
+  `collapseParScoring`/`dedupeBySubject`; applies the player-feedback
+  overlay (player-facing surface, same as the Hub).
+- **Roster card** (`getTopInsightsForPlayers`). Before: docblock claimed the
+  sweep "guarantees the roster card's top insight agrees with the
+  per-player feed's head." After: ranking is unchanged (still neutral
+  weights/goals — a deliberate batched-sweep tradeoff, one query for the
+  whole roster instead of N); the docblock is corrected — agreement is NOT
+  guaranteed whenever a player has an active goal or a non-default coach
+  weight, matching the coach team-sweep's own documented tradeoff.
+- **Team dashboard `topInsight`** (`getTeamInsightsSummary`,
+  `intelligence-dashboard.ts`). Before: `topInsight`/`activeInsights`/
+  `urgentInsights` derived from the SAME paginated page (newest ≤100 rows
+  for the WHOLE team) the table body renders — a player's true worst row,
+  or a player with zero rows on that page, could be missed or wrong. After:
+  a separate full-team fetch (`fetchAllRowsResult`, no `.range()` cap) feeds
+  `topInsight`/counts/trend; the table-body page is unchanged and still
+  paginated.
+- **Chat tool `getPlayerInsights`** (`v3/chat/read-tools.ts`). Before:
+  `.order('created_at' desc).limit(input.limit)` at the DB — an ad-hoc,
+  recency-only "ranking"; no eligibility floor matching the feed's mapper.
+  After: fetches a generous bounded window (100 rows; a single player's
+  eligible set), routes through the SAME canonical pipeline (via the new
+  `mapRowToRankable`/`RawInsightRowForRanking` in
+  `insight-delivery-ranking.ts`) with the player's real weights/goals, THEN
+  slices — coach-facing, so no player-feedback overlay (matches the coach
+  feed's documented rule).
+
+Out of scope for A6 (need addendum A1–A4 evidence-packet work first): issue
+grouping and parent/child claim links.
+
+Two ranking reads outside `golf_coach_insights` were checked and are
+DELIBERATELY not routed through `scoreInsight` — different domains, not an
+oversight: the goal-suggestion writer (`v3/goals/suggestion-writer.ts`) ranks
+by metric severity against a target, and `getPlayerWeakestAreas`/weekly-digest
+pattern rollups aggregate/sample for a different purpose than "pick the single
+best insight". `insights.ts`'s `getTopInsightsByStrokeImpact` (legacy V2
+`WeightedInsight` shape, ad-hoc `strokeImpactScore` sort) has zero real
+callers left in `src/`/`e2e`/`scripts` — a dead-code finding, left in place
+(deletion is out of this ticket's scope).
 
 ## Metric identity table (A0 deliverable — approach, scrambling, tee, course-hole)
 

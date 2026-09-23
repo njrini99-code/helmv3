@@ -9,6 +9,7 @@ import {
   insightAccessDenialMessage,
 } from '@/lib/auth/verify-player-access';
 import { applyInsightVisibility } from '@/lib/coachhelm/v3/insight-visibility';
+import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import { withAdminObserved } from '@/lib/admin/observed-action';
 import { recordInsightAction } from '@/lib/coachhelm/v3/effectiveness/event-ledger';
 import { compareBySeverity } from '@/lib/coachhelm/v3/ranking/score';
@@ -248,44 +249,49 @@ async function getTeamInsightsSummaryImpl(
         .eq('dismissed', false),
     );
 
-    // Fetch active insights for the team using actual database columns
-    const { data: insightsData, error: insightsError } = await applyInsightVisibility(
-      supabase
-        .from('golf_coach_insights')
-        .select(`
-          id,
-          coach_id,
-          player_id,
-          team_id,
-          insight_type,
-          title,
-          content,
-          priority,
-          status,
-          acknowledged_at,
-          dismissed,
-          dismissed_at,
-          metadata,
-          created_at,
-          updated_at,
-          player:golf_players(id, first_name, last_name)
-        `)
-        .eq('team_id', teamId)
-        .eq('dismissed', false),
-    )
-      .order('created_at', { ascending: false })
-      .range(offset, offset + limit - 1);
+    // Shared column list — used for BOTH the paginated table-body query below
+    // and the full-team audit query further down, so a record from either one
+    // maps through `mapTeamInsightRecord` identically.
+    const TEAM_INSIGHT_SELECT = `
+      id,
+      coach_id,
+      player_id,
+      team_id,
+      insight_type,
+      title,
+      content,
+      priority,
+      status,
+      acknowledged_at,
+      dismissed,
+      dismissed_at,
+      metadata,
+      created_at,
+      updated_at,
+      player:golf_players(id, first_name, last_name)
+    `;
 
-    if (insightsError) {
-      await logServerError(`Failed to fetch insights: ${describeError(insightsError)}`, { action: 'intelligence_dashboard.getTeamInsightsSummary' });
-      return { success: false, error: 'Failed to fetch insights' };
-    }
+    type TeamInsightRecord = {
+      id: string;
+      coach_id: string | null;
+      player_id: string | null;
+      team_id: string | null;
+      insight_type: string | null;
+      title: string | null;
+      content: string | null;
+      priority: string | null;
+      status: string | null;
+      acknowledged_at: string | null;
+      dismissed: boolean | null;
+      dismissed_at: string | null;
+      metadata: unknown;
+      created_at: string | null;
+      updated_at: string | null;
+      player: { id: string; first_name: string; last_name: string } | null;
+    };
 
-    // Map to DashboardInsight format
-    const insights: DashboardInsight[] = (insightsData || []).map((record) => {
-      // Extract metadata if available
+    const mapTeamInsightRecord = (record: TeamInsightRecord): DashboardInsight => {
       const metadata = (record.metadata as Record<string, unknown>) || {};
-
       return {
         id: record.id,
         playerId: record.player_id || '',
@@ -306,21 +312,86 @@ async function getTeamInsightsSummaryImpl(
         updatedAt: record.updated_at || new Date().toISOString(),
         sourceType: ((metadata.source_type as DashboardInsight['sourceType']) || 'system'),
       };
-    });
+    };
 
-    // Build player summaries. The page above is the NEWEST `limit` rows
-    // (ordered by created_at at the DB); walk it most-severe-first so each
-    // player's `topInsight` is their worst row on the page, not their newest
+    // Fetch active insights for the team using actual database columns
+    const { data: insightsData, error: insightsError } = await applyInsightVisibility(
+      supabase
+        .from('golf_coach_insights')
+        .select(TEAM_INSIGHT_SELECT)
+        .eq('team_id', teamId)
+        .eq('dismissed', false),
+    )
+      .order('created_at', { ascending: false })
+      .range(offset, offset + limit - 1);
+
+    if (insightsError) {
+      await logServerError(`Failed to fetch insights: ${describeError(insightsError)}`, { action: 'intelligence_dashboard.getTeamInsightsSummary' });
+      return { success: false, error: 'Failed to fetch insights' };
+    }
+
+    // Map to DashboardInsight format — this is the paginated page the table
+    // body renders (`pagination.total`/`hasMore` below refer to this page).
+    const insights: DashboardInsight[] = (insightsData || []).map((record) =>
+      mapTeamInsightRecord(record as unknown as TeamInsightRecord),
+    );
+
+    // A6 top-N audit: `topInsight`/`activeInsights`/`urgentInsights` used to
+    // be derived from the SAME paginated page as the table body — the newest
+    // `limit` (<=100) rows for the WHOLE team, truncated at the DB before
+    // `compareBySeverity` ever ran. A player whose worst insight was older
+    // than the team's most recent ~100 could show a wrong (or no) topInsight,
+    // and a player with zero insights on the page wouldn't appear in
+    // `playerSummaries` at all even with real open insights further back.
+    // Fetch the FULL eligible team set (paginated past the 1000-row PostgREST
+    // cap) for the summary panel instead; the table body above still uses the
+    // cheaper paginated page.
+    const { data: fullTeamData, error: fullTeamError } = await fetchAllRowsResult(
+      (from, to) =>
+        applyInsightVisibility(
+          supabase
+            .from('golf_coach_insights')
+            .select(TEAM_INSIGHT_SELECT)
+            .eq('team_id', teamId)
+            .eq('dismissed', false),
+        )
+          .order('id', { ascending: true })
+          .range(from, to),
+      undefined,
+      {
+        table: 'golf_coach_insights',
+        action: 'getTeamInsightsSummary.fullSet',
+        feature: 'intelligence_dashboard',
+        sport: 'golf',
+      },
+    );
+
+    if (fullTeamError) {
+      await logServerError(
+        `Failed to fetch full team insight set: ${describeError(fullTeamError)}`,
+        { action: 'intelligence_dashboard.getTeamInsightsSummary' },
+      );
+      return { success: false, error: 'Failed to fetch insights' };
+    }
+
+    const fullRecords = (fullTeamData ?? []) as unknown as TeamInsightRecord[];
+    const fullInsightsById = new Map(
+      fullRecords.map((record) => [record.id, mapTeamInsightRecord(record)]),
+    );
+
+    // Build player summaries from the FULL set, walked most-severe-first so
+    // each player's `topInsight` is their true worst OPEN row, not their
+    // newest, and not limited to whatever fit on the table-body's page
     // (repair plan N5 — the old comment claimed the created_at sort was a
-    // priority sort).
+    // priority sort; A6 fixed the truncate-before-rank on top of that).
     const playerMap = new Map<string, TeamInsightSummary>();
-    const bySeverity = [...(insightsData || [])].sort(compareBySeverity);
+    const bySeverity = [...fullRecords].sort(compareBySeverity);
 
     for (const record of bySeverity) {
       if (!record.player_id) continue;
 
       const playerId = record.player_id;
-      const player = record.player as { id: string; first_name: string; last_name: string } | null;
+      const player = record.player;
 
       if (!playerMap.has(playerId)) {
         playerMap.set(playerId, {
@@ -344,13 +415,15 @@ async function getTeamInsightsSummaryImpl(
 
       // Set top insight (first one is the most severe — see bySeverity above)
       if (!summary.topInsight) {
-        summary.topInsight = insights.find((i) => i.id === record.id);
+        summary.topInsight = fullInsightsById.get(record.id);
       }
     }
 
-    // Determine trend for each player (based on insight patterns)
+    // Determine trend for each player (based on insight patterns), from the
+    // same full set the topInsight/count fields above use.
+    const fullInsights = Array.from(fullInsightsById.values());
     for (const summary of playerMap.values()) {
-      const playerInsights = insights.filter((i) => i.playerId === summary.playerId);
+      const playerInsights = fullInsights.filter((i) => i.playerId === summary.playerId);
       const improvingCount = playerInsights.filter(
         (i) => i.headline?.toLowerCase().includes('improv') ||
                i.category === 'performance_improvement'

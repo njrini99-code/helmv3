@@ -12498,7 +12498,7 @@
         {
           "kind": "import_graph",
           "path": "src/app/golf/actions/intelligence-dashboard.ts",
-          "line": 12
+          "line": 13
         },
         {
           "kind": "import_graph",
@@ -12763,6 +12763,11 @@
           "kind": "import_graph",
           "path": "src/app/golf/actions/intelligence-dashboard.ts",
           "line": 10
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/intelligence-dashboard.ts",
+          "line": 12
         },
         {
           "kind": "import_graph",
@@ -13098,12 +13103,12 @@
         {
           "kind": "import_graph",
           "path": "src/app/golf/actions/intelligence-dashboard.ts",
-          "line": 13
+          "line": 14
         },
         {
           "kind": "import_graph",
           "path": "src/app/golf/actions/intelligence-dashboard.ts",
-          "line": 14
+          "line": 15
         },
         {
           "kind": "import_graph",
@@ -17601,7 +17606,7 @@
         {
           "kind": "import_graph",
           "path": "src/lib/coachhelm/v3/chat/read-tools.ts",
-          "line": 41
+          "line": 50
         }
       ]
     },
@@ -17760,6 +17765,11 @@
         {
           "kind": "import_graph",
           "path": "src/lib/coachhelm/v3/brief/assemble.ts",
+          "line": 28
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/chat/read-tools.ts",
           "line": 28
         },
         {
@@ -17964,7 +17974,7 @@
         {
           "kind": "import_graph",
           "path": "src/lib/coachhelm/v3/chat/read-tools.ts",
-          "line": 42
+          "line": 51
         },
         {
           "kind": "import_graph",
