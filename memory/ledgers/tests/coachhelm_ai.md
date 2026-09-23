@@ -157,3 +157,26 @@
   exposure row).
 - Verification: `causality-attribute.test.ts` — 28 passed, 0 failed.
   `npm run typecheck:fast` clean.
+
+## 2026-09-23 — #2007 re-review follow-ups: boundary + multi-page-drop coverage
+
+- `causality-attribute.test.ts` gained 2 tests (A9 slice 2 branch, before
+  the slice-2 confounding work): the exact retry-horizon boundary instant
+  (`shownAt + POST_WINDOW_DAYS + RETRY_GRACE_DAYS === now`, via fake
+  timers) still reaches `computeComparableAttribution` and is NOT counted
+  under `comparable_retry_horizon_expired` — proves that check is a
+  strict `<`, not `<=`, mirroring the same boundary-proof convention
+  already used for `follow-up-window-open` in `comparable-attribute.
+  test.ts`. Second: a full `FETCH_PAGE_SIZE` (200) page of shot-level
+  candidates ALL dropped by the bulk pre-filter (no exposure record) does
+  not stall the outer candidate-page loop — pagination continues to page
+  2 and reaches the one attributable candidate there, the same guarantee
+  the original P1 pagination rewrite gives for a page of only
+  intentional-null metrics.
+- Also fixed a stale line in `memory/features/coachhelm-ai.md` (~line
+  601) that still said a genuine exposure-lookup DB error "THROWS ...
+  per-candidate try/catch" — that changed to the typed
+  `exposure-read-failed` skip during the PR #2007 review round; the
+  narrative there hadn't been updated to match.
+- Verification: `causality-attribute.test.ts` — 30 passed, 0 failed.
+  `npm run typecheck:fast` clean.

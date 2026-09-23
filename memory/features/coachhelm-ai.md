@@ -692,10 +692,12 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
   insight's FIRST real `golf_insight_exposure.shown_at` row — never a
   `created_at` proxy the way `attribute.ts`'s round-level path uses one. Zero
   exposure rows → `{ok: false, reason: 'no-exposure-record'}`, retried next
-  run, not treated as a permanent skip. A genuine DB error on that lookup
-  THROWS rather than being misread as "no exposure yet" — caught by the
-  cron's own per-candidate try/catch like any other infra failure in that
-  loop. Baseline/follow-up windows reuse `attribute.ts`'s own
+  run, not treated as a permanent skip. A genuine DB error on that lookup is
+  its own typed skip (`{ok: false, reason: 'exposure-read-failed', error}`),
+  logged via `logServerError` and counted under
+  `summary.comparable_exposure_read_failed` — never misread as "no exposure
+  yet" (PR #2007 review, SHOULD decision; see the matching note further
+  down this section). Baseline/follow-up windows reuse `attribute.ts`'s own
   `PRE_WINDOW_DAYS`/`POST_WINDOW_DAYS` (now exported) around that instant.
   **The cron's 21-day candidate-age filter does NOT guarantee this path's
   follow-up window has closed** (review catch, 2026-09-23): `interventionAt`
