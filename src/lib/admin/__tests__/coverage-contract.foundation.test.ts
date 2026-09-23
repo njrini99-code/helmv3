@@ -391,6 +391,11 @@ describe('global tripwire', () => {
     // and never replaced; generateTournamentPrep (#1485) never had a UI
     // caller. Both confirmed via `git log -G` for the last removed .tsx
     // call site. Total 431 -> 429.
-    expect(total).toBe(429);
+    // 2026-09-23 (+1), PR #2046: getRoundReviewNarrative
+    // (round-review-narrative.ts), the round-review narrative action —
+    // withAdminObserved-wrapped with feature `round_review_ai`, gated
+    // behind `coachhelm_round_review_narrative` (default off). Total
+    // 429 -> 430.
+    expect(total).toBe(430);
   });
 });
