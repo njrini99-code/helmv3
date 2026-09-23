@@ -2395,3 +2395,26 @@ section for the full per-module description; not restated here.
 - Verification: every edited file was adversarially re-verified against
   its page's source, twice for the files that failed the first pass.
   typecheck 0, lint 0, build 0.
+
+## 2026-09-23 — registry entry: `coachhelm_a7_distance_profile_surface`
+
+- SHA: 235e37aa5. Corrected 2026-09-23 (#2008 review) — the SHA
+  originally recorded here (7070eae8d) was not on this branch.
+- Change: one new `experiment` flag added to `config/feature-flags.yml`
+  and `registry.generated.ts` (regenerated via `npm run flags:generate`,
+  `npm run flags:check` clean). Default off in every environment. Gates
+  only whether the Game Fingerprint page's Approach section renders a
+  new distance-profile surface — no auth/RLS/tenancy/persistence
+  decision, so it's not a NEVER-GATE case. Full behavioral detail is in
+  coachhelm_ai's own change ledger (this is the mechanism-owning
+  feature; that is the surface-owning one).
+- Enable criteria (#2008 review, SHOULD 8): `loadDistanceProfile` reads
+  `golf_shots` through the page's session-scoped (RLS'd) Supabase
+  client, never an admin client — correct for tenancy, but migration
+  `20260817121500` measured authenticated `golf_shots` reads at ~580x
+  slower than a service-role read on this table. Do not switch to an
+  admin client to work around this. Before flipping this flag on for
+  any environment, run a heavy-roster load check in preview (a coach
+  with a large multi-season player roster opening several Game
+  Fingerprint pages) and confirm the added Approach-section query
+  doesn't push page load past an acceptable bound.

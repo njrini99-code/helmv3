@@ -80,12 +80,18 @@ const NOW_APPLIED = [
 // left alone.
 const STAGED_WITH_VERIFY = [STILL_HELD_QUALIFIED, ...NOW_APPLIED];
 
-// Bare `**HOLD**` — the only shape the old regex handled.
-const BARE_HOLD = [
+// The baseball trio that was bare `**HOLD**` until 2026-09-23. Two are now
+// `**APPROVED — ready to apply**` and must pass the gate; the third is a
+// qualified `**HOLD — SUPERSEDED by ...**` and must stay blocked.
+const NOW_APPROVED = [
   '20260905090000_baseball_camp_registrations_lifecycle_timestamps.sql',
-  '20260905091000_baseball_timeline_event_acks_user_id_columns.sql',
   '20260905092000_baseball_elite_stat_event_columns_gap.sql',
 ];
+const SUPERSEDED_HOLD = '20260905091000_baseball_timeline_event_acks_user_id_columns.sql';
+
+// Bare `**HOLD**` — the only shape the old regex handled. None remain in the
+// real register, so this synthetic row keeps the old regex's one success case.
+const BARE_HOLD_ROW = '| `20260905090000_x.sql` | **HOLD** | why | when |';
 
 describe('isHeldInRegister', () => {
   const register = readFileSync(HELD_MD, 'utf-8');
@@ -100,8 +106,13 @@ describe('isHeldInRegister', () => {
     expect(heldByOldRegex(register, STILL_HELD_QUALIFIED)).toBe(false);
   });
 
-  it.each(BARE_HOLD)('detects %s as held in the real register', (basename) => {
-    expect(isHeldInRegister(register, basename)).toBe(true);
+  it.each(NOW_APPROVED)('does not flag %s — APPROVED, ready to apply', (basename) => {
+    expect(isHeldInRegister(register, basename)).toBe(false);
+  });
+
+  it('keeps the superseded qualified HOLD blocked, which the old regex missed', () => {
+    expect(isHeldInRegister(register, SUPERSEDED_HOLD)).toBe(true);
+    expect(heldByOldRegex(register, SUPERSEDED_HOLD)).toBe(false);
   });
 
   it.each(NOW_APPLIED)(
@@ -124,11 +135,9 @@ describe('isHeldInRegister', () => {
     expect(heldByOldRegex(row, '20260906120010_b.sql')).toBe(false);
   });
 
-  it('still detects the bare **HOLD** rows the old regex already caught', () => {
-    for (const basename of BARE_HOLD) {
-      expect(heldByOldRegex(register, basename)).toBe(true);
-      expect(isHeldInRegister(register, basename)).toBe(true);
-    }
+  it('still detects a bare **HOLD** row the old regex already caught', () => {
+    expect(heldByOldRegex(BARE_HOLD_ROW, '20260905090000_x.sql')).toBe(true);
+    expect(isHeldInRegister(BARE_HOLD_ROW, '20260905090000_x.sql')).toBe(true);
   });
 
   it('does not flag a row whose hold was discharged', () => {
@@ -196,13 +205,23 @@ describe('extractVerifyQueries', () => {
     expect(extractVerifyQueries('-- VERIFY: select 1 from a')).toEqual(['select 1 from a']);
   });
 
+  it('strips a trailing sqlfluff noqa directive before the terminator test', () => {
+    const text = '-- VERIFY: select 1 from a; -- noqa: LT05\n-- VERIFY: select 1 from b;';
+    expect(extractVerifyQueries(text)).toEqual(['select 1 from a;', 'select 1 from b;']);
+  });
+
   it('tolerates indentation and ignores non-VERIFY comments', () => {
     const text = '-- some prose\n   -- VERIFY: select 1 from a;\n-- more prose';
     expect(extractVerifyQueries(text)).toEqual(['select 1 from a;']);
   });
 
   it('parses every staged migration into semicolon-terminated queries', () => {
-    for (const name of STAGED_WITH_VERIFY) {
+    const approvedToApply = [
+      ...NOW_APPROVED,
+      '20260923000000_baseball_timeline_event_acks_contract_repair.sql',
+      '20260923180000_helm_jobs_dedupe_keys_enable_rls.sql',
+    ];
+    for (const name of [...STAGED_WITH_VERIFY, ...approvedToApply]) {
       const sql = readFileSync(join(REPO_ROOT, 'supabase/migrations', name), 'utf-8');
       const queries = extractVerifyQueries(sql);
       expect(queries.length).toBeGreaterThan(0);

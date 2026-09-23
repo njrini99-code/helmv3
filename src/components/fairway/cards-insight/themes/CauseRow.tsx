@@ -178,6 +178,10 @@ export function CauseRow({
   // fraction fell back to 1 (no team reference), the realistic value equals the
   // raw Tour gap — detect that and label the primary "from Tour" honestly, hiding
   // the now-redundant ceiling note.
+  // strokesSavedPerRound is a projection (the realistic gap-closed estimate,
+  // never a measured post-resolution result) — Package 11 follow-up: "~" +
+  // "(est.)" keep it visually distinct from a measured value, same as the
+  // PrescribedPracticePlanCard.tsx pattern-impact chip.
   const strokes = cause.strokesSavedPerRound;
   const tourGap = cause.tourGapPerRound;
   const showStrokesPill = !suppressed && strokes > 0;
@@ -220,8 +224,8 @@ export function CauseRow({
           <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
             {showStrokesPill ? (
               <span className="inline-flex w-fit items-center gap-1 rounded-full bg-fw-warning-bg px-2.5 py-1 font-fw-sans text-eyebrow font-medium text-fw-warning-ink">
-                <span className="tabular-nums">{strokes.toFixed(1)}</span>
-                <span>strokes/round {primaryLabel}</span>
+                <span className="tabular-nums">~{strokes.toFixed(1)}</span>
+                <span>strokes/round {primaryLabel} (est.)</span>
               </span>
             ) : (
               <span className="inline-flex w-fit items-center rounded-full bg-inset px-2 py-0.5 font-fw-sans text-eyebrow font-medium uppercase tracking-[0.08em] text-text-tertiary">

@@ -278,8 +278,6 @@ const FILL_TONE: Record<'good' | 'bad' | 'neutral', { color: string; alpha: numb
 export function Bar({ youPct, teamPct, pgaPct, size, zeroPct = null, fill = null }: BarProps) {
   const height = size === 'inline' ? 'h-1.5' : size === 'hero' ? 'h-3' : 'h-2.5';
   const markerSize = size === 'inline' ? 'w-2 h-2' : size === 'hero' ? 'w-3.5 h-3.5' : 'w-3 h-3';
-  const fillLeft = fill ? Math.min(fill.fromPct, fill.toPct) : 0;
-  const fillWidth = fill ? Math.abs(fill.toPct - fill.fromPct) : 0;
 
   // Bug: each Marker draws its letter ('T'/'●'/'P') INSIDE a small circle
   // directly on top of the raw scale position — when two values are
@@ -295,6 +293,18 @@ export function Bar({ youPct, teamPct, pgaPct, size, zeroPct = null, fill = null
   if (teamPct !== null) rawPositions.push({ key: 'team', pct: teamPct });
   const laidOut = layoutMarkerPositions(rawPositions, BAR_MARKER_MIN_GAP_PCT);
   const drawnPct = new Map(laidOut.map((p) => [p.key, p.pct]));
+
+  // Package 11 (#1933 bug, confirmed present on main): the fill band used to
+  // span the RAW `fill.fromPct`/`fill.toPct` (team/you positions BEFORE the
+  // nudge above), while the T/You marker circles render at the NUDGED
+  // `drawnPct` positions. Whenever team/you were close enough to collide and
+  // get nudged apart, the tinted band's edges no longer lined up with the
+  // circles it's supposed to connect. Derive the fill span from the same
+  // post-nudge positions the markers actually draw at.
+  const fillFromPct = fill ? drawnPct.get('team') ?? fill.fromPct : 0;
+  const fillToPct = fill ? drawnPct.get('you') ?? fill.toPct : 0;
+  const fillLeft = fill ? Math.min(fillFromPct, fillToPct) : 0;
+  const fillWidth = fill ? Math.abs(fillToPct - fillFromPct) : 0;
 
   // The rail itself renders IMMEDIATELY (a plain div, no entrance animation).
   // Gating it behind a framer opacity-fade left the whole bar blank on a slow

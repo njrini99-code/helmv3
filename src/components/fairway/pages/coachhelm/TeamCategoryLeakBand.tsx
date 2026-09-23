@@ -180,6 +180,14 @@ export function TeamCategoryLeakBand({ categories, teamHealth, className }: Team
 
   const hiddenState = prefersReducedMotion ? (false as const) : { opacity: 0, y: 8 };
 
+  // Package 11 (#1933 bug, confirmed present on main): computeTeamHealth
+  // returns 0 both for "genuinely 0% healthy" and "no category has any
+  // scored player" (its own doc comment: "with no scorable categories,
+  // health is 0 — no signal"). The ring rendered that 0 unconditionally,
+  // reading as a real (terrible) score instead of "no data yet" — the same
+  // honest-degrade this file already applies per-category (see CategoryCard).
+  const hasAnyData = categories.some((c) => c.players.length > 0);
+
   return (
     <m.div initial={hiddenState} animate={{ opacity: 1, y: 0 }} transition={enterTransition}>
       <InstrumentPanel
@@ -188,12 +196,16 @@ export function TeamCategoryLeakBand({ categories, teamHealth, className }: Team
         eyebrow="CoachHelm · team"
         header="Where the team is bleeding strokes"
         readout={
-          <div className="flex items-center gap-2.5">
-            <RingGauge value={teamHealth} size={44} />
-            <div className="flex flex-col">
-              <span className="font-fw-mono text-caption tabular-nums text-text-tertiary">Team health</span>
+          hasAnyData ? (
+            <div className="flex items-center gap-2.5">
+              <RingGauge value={teamHealth} size={44} />
+              <div className="flex flex-col">
+                <span className="font-fw-mono text-caption tabular-nums text-text-tertiary">Team health</span>
+              </div>
             </div>
-          </div>
+          ) : (
+            <span className="font-fw-mono text-caption tabular-nums text-text-tertiary">Awaiting rounds</span>
+          )
         }
       >
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">

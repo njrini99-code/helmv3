@@ -46,6 +46,23 @@ refuses to proceed on the first FAIL.
    additional schema/RLS checks needed by the change. Repeat a query only
    when its outcome is uncertain or the database changed afterward.
 
+## One-click apply — the `db-apply` GitHub workflow
+
+`.github/workflows/db-apply.yml` (`Actions → db-apply → Run workflow`) runs
+steps 7–9 above on a GitHub runner under the repo's `SUPABASE_ACCESS_TOKEN`,
+`SUPABASE_PROJECT_ID` and `SUPABASE_DB_PASSWORD` secrets, so nobody types a
+production password into a terminal. Inputs: `migration` (bare filename),
+`mode` (`dry-run`, the default, or `apply`), `allow_out_of_order`,
+`held_override` + `reason`. It refuses any ref but `main`, links the CLI,
+then lists every migration production is missing: the named file must
+itself be pending, and if any OLDER migration is still pending the run
+stops unless `allow_out_of_order` is ticked deliberately — newer pending
+migrations are simply left untouched, since this path sends only the one
+named file (see "One file means one file" below). The step summary carries
+the pending list, the dry-run plan, and — with `mode: apply` — the
+`-- VERIFY:` results. Dispatching it is production authorization like any
+other path in this document, not a separate one.
+
 ## One file means one file
 
 `--apply` sends the migration through `supabase db query --linked --file`,

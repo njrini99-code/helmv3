@@ -12,8 +12,10 @@ import {
   deriveAriaLabel,
   deriveState,
   formatValue,
+  pgaOmissionNote,
   pgaReferenceLabel,
   shouldShowTeamMarker,
+  standingSubjectLabel,
   teamRelativeText,
   resolveDisplayScale,
   toScalePct,
@@ -46,6 +48,8 @@ export function Hero(props: StandingBarProps) {
     ? teamRelativeText(props.player_value, props.team_avg, props.direction, props.unit)
     : '';
   const refLabel = pgaReferenceLabel(props.metric_id, props.is_womens).short;
+  const omissionNote = pgaOmissionNote(props);
+  const subjectLabel = standingSubjectLabel(props.viewer_context, props.player_name);
 
   const toneColor =
     delta.tone === 'good' ? 'text-primary-700' :
@@ -79,7 +83,7 @@ export function Hero(props: StandingBarProps) {
         <span className="text-3xl md:text-4xl font-medium text-warm-900 tabular-nums tracking-[-0.02em]">
           {formatValue(props.player_value, props.unit)}
         </span>
-        <span className="text-xs text-warm-500">You</span>
+        <span className="text-xs text-warm-500">{subjectLabel}</span>
       </div>
 
       {/* Team / PGA reference values */}
@@ -115,6 +119,11 @@ export function Hero(props: StandingBarProps) {
       {/* Cohort text */}
       {props.show_cohort_text !== false && cohortText && (
         <p className={`text-sm mt-4 ${toneColor}`}>{cohortText}</p>
+      )}
+
+      {/* A2: a suppressed reference with a reason says why (not "missing data"). */}
+      {omissionNote && (
+        <p className="text-xs text-warm-500 mt-2">{omissionNote}</p>
       )}
 
       {state === 'cold-start' && (
@@ -175,7 +184,7 @@ function HeroEmpty({ label }: { label: string }) {
         {label}
       </h2>
       <p className="text-sm text-warm-500 mt-3">
-        Log 5 rounds to see where you stack up against PGA Tour and your team.
+        Log 5 rounds to see how you stack up.
       </p>
     </div>
   );

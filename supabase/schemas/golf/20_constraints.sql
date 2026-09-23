@@ -169,6 +169,15 @@ ALTER TABLE ONLY "public"."golf_event_documents"
 ALTER TABLE ONLY "public"."golf_events"
     ADD CONSTRAINT "golf_events_pkey" PRIMARY KEY ("id");
 
+ALTER TABLE ONLY "public"."golf_focus_area_criteria"
+    ADD CONSTRAINT "golf_focus_area_criteria_pkey" PRIMARY KEY ("id");
+
+ALTER TABLE ONLY "public"."golf_focus_area_practice_sessions"
+    ADD CONSTRAINT "golf_focus_area_practice_sessions_pkey" PRIMARY KEY ("id");
+
+ALTER TABLE ONLY "public"."golf_focus_area_practice_sessions"
+    ADD CONSTRAINT "golf_focus_area_practice_sessions_dedupe_key" UNIQUE ("focus_area_id", "client_request_id");
+
 ALTER TABLE ONLY "public"."golf_global_patterns"
     ADD CONSTRAINT "golf_global_patterns_pkey" PRIMARY KEY ("id");
 
@@ -678,6 +687,18 @@ ALTER TABLE ONLY "public"."golf_events"
 
 ALTER TABLE ONLY "public"."golf_events"
     ADD CONSTRAINT "golf_events_team_id_fkey" FOREIGN KEY ("team_id") REFERENCES "public"."golf_teams"("id") ON DELETE CASCADE;
+
+ALTER TABLE ONLY "public"."golf_focus_area_criteria"
+    ADD CONSTRAINT "golf_focus_area_criteria_focus_area_id_fkey" FOREIGN KEY ("focus_area_id") REFERENCES "public"."golf_player_focus_areas"("id") ON DELETE CASCADE;
+
+ALTER TABLE ONLY "public"."golf_focus_area_criteria"
+    ADD CONSTRAINT "golf_focus_area_criteria_player_id_fkey" FOREIGN KEY ("player_id") REFERENCES "public"."golf_players"("id") ON DELETE CASCADE;
+
+ALTER TABLE ONLY "public"."golf_focus_area_practice_sessions"
+    ADD CONSTRAINT "golf_focus_area_practice_sessions_focus_area_id_fkey" FOREIGN KEY ("focus_area_id") REFERENCES "public"."golf_player_focus_areas"("id") ON DELETE CASCADE;
+
+ALTER TABLE ONLY "public"."golf_focus_area_practice_sessions"
+    ADD CONSTRAINT "golf_focus_area_practice_sessions_player_id_fkey" FOREIGN KEY ("player_id") REFERENCES "public"."golf_players"("id") ON DELETE CASCADE;
 
 ALTER TABLE ONLY "public"."golf_goal_suggestions"
     ADD CONSTRAINT "golf_goal_suggestions_metric_id_fkey" FOREIGN KEY ("metric_id") REFERENCES "public"."golf_metrics"("metric_id");

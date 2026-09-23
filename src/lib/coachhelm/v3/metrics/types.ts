@@ -19,6 +19,26 @@ import type { AnalysisScope } from '../context/types';
  *  already uses for `holes_scored < 5`. */
 export type MetricStatus = 'supported' | 'descriptive_only' | 'insufficient' | 'invalid';
 
+/** One named floor an `'insufficient'` row's OWN gating population failed to
+ *  clear, in that population's real numbers. Exists so a consuming surface
+ *  never has to reverse-engineer which floor failed from `eligibleCount`/
+ *  `distinctRounds` — those two fields describe whatever population a
+ *  SPECIFIC row narrows to, which for some rows (a proximity or coverage
+ *  metric narrowed to green-finding or missed shots) is narrower than the
+ *  population a compound floor actually gates. Reading them as a stand-in
+ *  for "the failing floor" can name a floor the row cleared while hiding
+ *  the one it didn't (#2008 review, MUST 1 — a proximity row could clear
+ *  its own greens-hit count while still failing the wider attempts floor
+ *  that actually produced `'insufficient'`). */
+export interface SupportFloorGap {
+  /** Which floor, e.g. `'rounds'` / `'attempts'` / `'greens'` — a package's
+   *  own vocabulary, not a fixed enum, since different packages' compound
+   *  floors name different things. */
+  floor: string;
+  current: number;
+  required: number;
+}
+
 /** Mirrors `TeeStrategyShot.distance_method` (`engine/shot-source.ts`) — see
  *  its module doc comment's "RECORDED TRAVEL DISTANCE vs. DERIVED PROGRESS"
  *  section. `'derived_progress'` is hole yardage minus remaining distance
@@ -64,4 +84,15 @@ export interface MetricResult {
    * meant to make for that package.
    */
   distanceMethod?: DistanceMethod;
+  /**
+   * Optional — set by a metric package whose support floor is compound
+   * (more than one condition can independently fail) whenever `status` is
+   * `'insufficient'`, naming EVERY floor this row's own gating population
+   * failed to clear. See `SupportFloorGap`'s doc comment for why this
+   * exists instead of leaving a caller to infer it from `eligibleCount`/
+   * `distinctRounds`. Absent for a package with a single, non-compound
+   * floor, where `status` alone already says everything a caller needs, and
+   * absent (not an empty array) whenever `status !== 'insufficient'`.
+   */
+  failedFloors?: readonly SupportFloorGap[];
 }

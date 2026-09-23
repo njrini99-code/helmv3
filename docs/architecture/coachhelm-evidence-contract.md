@@ -1125,8 +1125,8 @@ tee/fairway/rough/sand/green table) resolves via the fairway table,
 matching `public.sg_expected_strokes()`'s ELSE branch — it is not a gap.
 Not wired into `v2/orchestrator.ts` or any composite yet; that
 integration, plus `reasoning/hypothesis-policy.ts` consumption and the
-short-side composite-title replacement A4's own checklist names, are
-slice 2.
+short-side composite-title replacement A4's own checklist names, remain a
+later slice — slice 2 is the scope-wide rollup below.
 
 - **Suppression**: when `buildHoleSequence(facts, hole).complete` is
   `false`, the whole hole is suppressed — no events, no total — never a
@@ -1198,21 +1198,71 @@ slice 2.
   `lie_before` (the physical state carries across the gap between two
   recorded rows unchanged). This module does not cross-check that; a
   disagreement between the two rows would pass through silently.
-- `attributeSequence` runs per hole. Rolling its events up into a
-  scope-wide aggregate (numerator/denominator/status/interval across
-  every hole in an `AnalysisScope`) is PLANNED for a later slice (slice
-  2), not built yet. Slice 2 must consume the shared `MetricResult` in
-  `src/lib/coachhelm/v3/metrics/types.ts` rather than defining its own
-  aggregate shape.
+- `attributeSequence` runs per hole. `computeSequenceAttribution` (below)
+  rolls its events up into the scope-wide `MetricResult[]`.
 
-## Comparable-opportunities outcome measurement (A9 deliverable — pure, not wired)
+### Sequence attribution rollup (A4 deliverable, slice 2 — scope-wide `MetricResult[]`)
+
+`computeSequenceAttribution(facts, holes, scope)` (same file) rolls
+`attributeSequence`'s per-hole events up into the shared `MetricResult` in
+`src/lib/coachhelm/v3/metrics/types.ts`, mirroring `computeParOpportunities`'s
+argument order and its `factsInScope` scoping (`facts` is self-scoped
+internally; `holes` is not — `HoleContext` carries no date field, so the
+caller must already have window/cutoff/completed-status filtered it, same
+as A2/A3). Not wired into `v2/orchestrator.ts`, `hypothesis-policy.ts`
+(A5), or any composite/generator yet — this slice is only the rollup
+itself, for a caller (e.g. a Round Review mount) to consume directly.
+
+Two kinds of row:
+
+- **`sequence_event_strokes_gained`**, one row per `SequenceEventKind`
+  (`dimensions.event_kind`: `tee_to_next`, `approach_to_recovery`,
+  `first_putt_to_next_putt`, `putting_sequence`, `penalty`, `other`) — the
+  mean `measuredContribution` across every event of that kind whose
+  baseline resolved, over every ATTRIBUTED (non-suppressed) hole in
+  `holes`. A suppressed hole contributes no events to any row but is still
+  counted by the coverage row below. Gated `supported`/`insufficient` on
+  `denominator >= SEQUENCE_MIN_EVENTS (10)` AND `distinctRounds >=
+  SEQUENCE_MIN_ROUNDS (3)`; `denominator === 0` is `invalid` with a null
+  value. An unresolved event (`measuredContribution === null`) never
+  enters the denominator — its `baselineGap` reason is counted in
+  `exclusions` instead, never silently dropped.
+
+  **Sign convention** — POSITIVE means strokes GAINED versus the canonical
+  baseline (performed better than expected). This is the OPPOSITE of
+  `ScoringSection.tsx`'s `formatStrokesVsPar`, where positive means MORE
+  strokes than par (worse); that formatter must never be reused for this
+  metric without flipping its sign first.
+
+- **`sequence_hole_coverage`** — a single row (empty `dimensions`) stating
+  how many of `holes` were attributed vs. suppressed, mirroring A2's
+  `approach_measured_contribution` convention: a COUNT, never a rate, and
+  `value` is always the real attributed-hole count — never null, even when
+  `status` is `'invalid'`. Gated on `attributedCount >=
+  SEQUENCE_MIN_HOLES (10)` AND `distinctRounds >= SEQUENCE_MIN_ROUNDS
+  (3)`. `exclusions` names each `buildHoleSequence` suppression reason by
+  how many suppressed holes carried it (one hole can carry more than one
+  reason, so a count here can exceed the suppressed-hole count).
+
+Every row's `eligibleCount`/`denominator`/`distinctRounds` are computed
+from that row's own real gating population — never a narrower proxy
+(#2008 review, MUST 1's lesson: a distance-profile row once reported a
+floor its own narrower population had already cleared, hiding the wider
+floor that actually produced `'insufficient'`).
+
+## Comparable-opportunities outcome measurement (A9 deliverable)
 
 `src/lib/coachhelm/v3/evaluation/comparable-opportunities.ts` (addendum A9,
 repair plan §14.12) exports `computeComparableOpportunities(input):
 ComparableOpportunitiesResult`, a pure function over `ShotFact[]`/
-`HoleContext[]`. **Not wired into `causality/attribute.ts` or any UI
-surface** — same not-wired discipline as A1/A3 above; learning/
-personalization weights are untouched by this slice.
+`HoleContext[]`. **Still not wired into `causality/attribute.ts` itself or
+any UI surface** — same not-wired discipline as A1/A3 above for THAT
+module. It IS wired into the `causality-attribute` cron via a separate
+DB-adapter (`src/lib/coachhelm/v3/causality/comparable-attribute.ts`, A9
+slices 1–2, behind `coachhelm_comparable_opportunity_attribution`, default
+off) — see below and `memory/features/coachhelm-ai.md`'s A9 sections for
+that wiring. Learning/personalization weights are untouched either way:
+every row this adapter writes carries `lift: null` unconditionally.
 
 Where this differs from `causality/attribute.ts`: `attribute.ts` measures a
 ROUND-LEVEL average (e.g. `sg_total`) before vs after an insight's
@@ -1441,6 +1491,184 @@ are dimensioned when they resolved against an actual row.
   was the `MetricResult` swap, dimensioned claim ids, and the
   `shotClaimId` marker fix (above); the diagnosis/personal-context wiring
   remains a later slice.
+
+## A10 capability gates (addendum A10, 2026-09-23)
+
+Addendum A10 ("Enable sequence/hypothesis capabilities only after their own
+gates pass"; "Keep geometry and intervention learning behind separate
+gates") requires each new-family coach-visible surface to sit behind its
+own dedicated, default-off flag rather than share one. This is the
+reference the owner uses for enablement decisions — built by auditing
+`config/feature-flags.yml`, the flag registry, and each gating PR's own
+diff and flag-off test directly, not by trusting a PR description. As of
+this audit every open gating PR listed below is unmerged; none of these
+flags are on `main` yet.
+
+Each entry: flag id, default, gated surface, gating PR, flag-off test,
+prerequisite migration.
+
+- **Distance (A2)** — `coachhelm_a7_distance_profile_surface`, default
+  off (all envs). Gates the Game Fingerprint page's Approach section
+  (`buildRollingDistanceProfileScope` + `loadDistanceProfile` +
+  `DistanceProfileSection`). Gating PR: #2008 (open). Flag-off test:
+  `page.distanceProfileAddendum.test.ts` — "never calls the loader when
+  the flag is off — not just discards its result." Prerequisite
+  migration: none.
+
+- **Par/par-5 opportunities (A3)** — `coachhelm_a7_scoring_surface`,
+  default off (all envs). Gates the Game Fingerprint page's Scoring
+  section (`loadParOpportunities` + `buildScoringViewModel` +
+  `ScoringSection`). Gating PR: #2010 (open). Flag-off test:
+  `page.scoringAddendum.test.ts` — "never calls the loader when the flag
+  is off — not just discards its result." Prerequisite migration: none.
+
+- **Sequence attribution + rollup (A4)** — no surface yet on `main`.
+  Slice 3b (PR #2036, `agent/coachhelm-a4-round-review-mount`, in
+  progress) already carries its own dedicated flag,
+  `coachhelm_a4_sequence_attribution_surface`, default off (all envs),
+  gating the Round Review page's per-hole rollup section
+  (`loadSequenceAttribution` + `computeSequenceAttribution` +
+  `SequenceAttributionSection`). Flag-off test:
+  `round-review-sequence-attribution.test.ts` — "flag off: returns null
+  and makes ZERO DB calls — createClient is never invoked." Prerequisite
+  migration: none.
+
+- **Controlled hypotheses (A5)** — no surface exists to gate.
+  `hypothesis-policy.ts` is pure core, not wired to `diagnosis.ts`,
+  `personal-context.ts`, or any route/component in any open PR (#2024
+  slice 2, #2030 slice 3 are both pure-core-only per their own titles).
+  Nothing to flag.
+
+- **Issue grouping / ranking (A6)** — no surface exists to gate.
+  `situational-ranking.ts` slice 2 (#2026) is pure core, "still not
+  wired to a live ranking read, no flag needed" per its own doc entry.
+  Nothing to flag.
+
+- **Attribution readout (A9)** — write and read share one flag,
+  `coachhelm_comparable_opportunity_attribution`, default off (all
+  envs) — one feature at both ends, not the shared-flag anti-pattern
+  (see below). Write gates the causality-attribute cron's shot-level
+  matched-opportunity path (`comparable-attribute.ts`); gating PRs
+  #2007 (slice 1) and #2016 (slice 2, extends metric coverage).
+  Flag-off test: `causality-attribute.test.ts` — "flag OFF: a
+  shot-level metric is still dropped in the pre-filter exactly as
+  before this slice." Read gates the coach-facing attribution readout
+  server action + `AttributionReadout` component; gating PR: #2025
+  (slice 3). Flag-off test: `insight-attribution.test.ts` — "flag off:
+  returns null and makes NO DB call at all — createClient is never
+  invoked." Prerequisite migration:
+  `20260922230000_v3_attribution_method_version.sql` — the migration
+  file is merged to `main` via #1980, but it is NOT yet applied to
+  production (owner's apply queue); the A9 flag must stay off in
+  production until it is, since the write path's `method_version:
+  'comparable_opportunities_v1'` rows depend on that column existing.
+
+- **Practice log (A8)** — `coachhelm_focus_area_practice_log`, default
+  off (all envs). One flag gates both the write and read surfaces
+  below; correct, because they're one feature (write and read of the
+  same new column/table pair added by one migration), not two unrelated
+  behaviors sharing a switch. Write: `createFocusArea*`/practice-log
+  actions (`golf_focus_area_practice_sessions`,
+  `golf_player_focus_areas.criteria`); gating PR #2012. Read:
+  `FocusAreaCard` practice-log summary + criteria checklist; gating PRs
+  #2017 and #2031 (write-side UI, shares #2017's flag — no new flag
+  added). Flag-off test: `focus-area-practice-log.test.ts` — "returns
+  Not enabled and never reads/writes a table when the flag is off"
+  (covers both the write actions and the read loader tested in
+  #2017/#2031). Prerequisite migration:
+  `20260923110000_golf_focus_area_practice_log.sql` — not yet applied
+  in any environment; the flag must stay off until it is
+  (`temporary_migration` type, `expires_at` 2026-12-23 as a review
+  date, not an auto-kill).
+
+- **Geometry** (course-shape/dogleg/carry-distance inferences) — no
+  flag exists because no CoachHelm family reads course-geometry data
+  today (§14.1's own fixture: "Dogleg progress estimate → no
+  carry-distance claim"). Nothing to gate yet; see the rule below.
+
+- **Intervention learning / personalization weights** — split
+  2026-09-23 into two independently-flippable flags that used to share
+  one switch: `coachhelm_learned_personalization` (v3 insight ranking's
+  coach-weight multiplier) and `coachhelm_v2_alert_personalization` (v2
+  alert-threshold learning), both default off (all envs) and both live
+  on `main` today (the split predates a numbered gating PR). v3 read
+  gate: `src/lib/coachhelm/v3/ranking/score.ts:389`. v2 read gate:
+  `orchestrator.ts:949`'s `personalizationEnabled` check. Flag-parity
+  test: `src/lib/flags/__tests__/is-enabled.test.ts`, plus each
+  consumer's own flag-off coverage. Prerequisite migration: none.
+
+**Geometry rule.** No CoachHelm family consumes course-geometry data yet —
+confirmed by an exhaustive search across CoachHelm code/docs; the only
+"geometry" hits are the unrelated Course Factory v2 product area
+(`agent/course-factory-*`, `agent/golf-course-geometry`) and one unrelated
+prose mention. This becomes a standing rule for future work, not a
+retrospective gap to fix: any future CoachHelm use of course-geometry data
+(hole shape, dogleg progress, carry distance) gets its own dedicated
+default-off flag, separate from A2/A3 and from every other family above —
+never folded into an existing distance/scoring flag just because the data
+also happens to be geometric.
+
+**Personalization is a write/read split, not two gaps.** The
+causality-attribute cron's `updateCoachWeight`
+(`src/app/api/cron/v3/causality-attribute/route.ts:354`) persists learned
+coach weights in shadow **unconditionally** whenever `improvement_lift` is
+non-null — that data condition, not a flag, is the only skip. Only the
+**read** side (`loadCoachWeightsForPlayer` in `score.ts`, and
+`orchestrator.ts`'s `personalizationEnabled` for the v2 alert path) is
+flag-gated. This is by design: shadow data accumulates regardless of
+rollout state so there is real evidence to evaluate before either read
+flag is ever flipped on.
+
+**A9's write/read pair sharing one flag is correct, not an anti-pattern.**
+`coachhelm_comparable_opportunity_attribution` gates both the
+causality-attribute cron's shot-level write path and (via #2025) the
+coach-facing read — this is one feature at both ends (the read has nothing
+to show until the write has run), proven by #2025's own "flag off: returns
+null and makes NO DB call at all" test. Contrast with the pre-split
+`coachhelm_learned_personalization`/`coachhelm_v2_alert_personalization`
+case above, where two genuinely unrelated behaviors shared one switch —
+that was the real anti-pattern, and it has already been split.
+
+**Enablement needs a per-event-kind read, not a collapsed summary.** A10
+slice 2's real-data shadow run reported aggregate status counts across all
+sequence-event kinds combined; that collapsed view is not sufficient for
+an enablement decision; because the #2020 rollup computes eligibility
+per-kind (`sequence_event_strokes_gained`'s own `status` per `event_kind`),
+a kind with too few real events can sit at `'invalid'` while a
+high-volume kind is genuinely `'supported'`, and a collapsed summary
+hides that split. The next real-data run of `runShadowEvaluation` must add
+a per-event-kind status table to its report output (tracked as a harness
+follow-up on `agent/a10-shadow-eval-harness`/#2032, once #2024 lands and
+is merged in) before any A4/A9 sequence-attribution surface is considered
+for enablement on real data.
+
+**Two `method_version` values, two different layers (A9 slice 2)**: this
+pure core's own `methodVersion` field is ALWAYS the string
+`'comparable_opportunities_v1'`, regardless of `multipleInterventions` —
+that field is this module's own versioning axis (what the matching/
+aggregation math means), independent of the DB column below, and never
+changes based on confounding (module header's NAMING note). The DB-write
+adapter (`comparable-attribute.ts`) is a separate layer: it maps a
+`status: 'observed_change_limited'` result to a DISTINCT
+`golf_insight_outcome_attribution.method_version` value,
+`'comparable_opportunities_v1_limited'`
+(`COMPARABLE_OPPORTUNITIES_LIMITED_METHOD_VERSION`), instead of the clean
+`'comparable_opportunities_v1'` — a confounded measurement is still
+written, never dropped, but a DB reader can always tell a clean
+comparison from a confounded one from that column alone, without
+re-deriving `multipleInterventions`. No migration and no CHECK constraint
+guards this column (migration 20260922230000 only adds the column
+itself) — either string round-trips today. Confounding-intervention
+detection itself (`detectConfoundingInterventions`,
+`src/lib/coachhelm/v3/causality/confounding-check.ts`) is a query over
+`golf_insight_exposure`, not part of this pure core: it sets
+`multipleInterventions` to `true` when any OTHER insight's first-ever
+exposure to the same player lands inside
+`[baselineWindow.start, followUpWindow.end]`, on ANY metric (insight→metric
+mapping isn't reliable enough to trust as a filter) — see
+`memory/features/coachhelm-ai.md`'s A9 slice 2 entry for the full
+what-counts/what-doesn't rule and the deferred focus-area/drill-change
+follow-up.
 
 ## How to add a new comparison source
 

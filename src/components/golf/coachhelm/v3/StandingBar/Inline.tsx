@@ -18,8 +18,10 @@ import {
   deriveAriaLabel,
   deriveState,
   formatValue,
+  pgaOmissionNote,
   pgaReferenceLabel,
   shouldShowTeamMarker,
+  standingSubjectLabel,
   teamRelativeText,
   resolveDisplayScale,
   toScalePct,
@@ -52,6 +54,8 @@ export function Inline(props: StandingBarProps) {
     ? teamRelativeText(props.player_value, props.team_avg, props.direction, props.unit)
     : '';
   const refLabel = pgaReferenceLabel(props.metric_id, props.is_womens).short;
+  const omissionNote = pgaOmissionNote(props);
+  const subjectLabel = standingSubjectLabel(props.viewer_context, props.player_name);
 
   const toneColor =
     delta.tone === 'good' ? 'text-primary-700' :
@@ -82,7 +86,7 @@ export function Inline(props: StandingBarProps) {
         {showTeam && props.team_avg !== null && (
           <>T {formatValue(props.team_avg, props.unit)} · </>
         )}
-        <span className="text-warm-900 font-medium">You {formatValue(props.player_value, props.unit)}</span>
+        <span className="text-warm-900 font-medium">{subjectLabel} {formatValue(props.player_value, props.unit)}</span>
         {!props.pga_omitted && (
           <>
             {' · '}
@@ -108,6 +112,11 @@ export function Inline(props: StandingBarProps) {
       {/* Cohort text — single line, compact */}
       {props.show_cohort_text !== false && cohortText && (
         <p className={`text-eyebrow mt-1 truncate ${toneColor}`}>{cohortText}</p>
+      )}
+
+      {/* A2: a suppressed reference with a reason says why (not "missing data"). */}
+      {omissionNote && (
+        <p className="text-eyebrow text-warm-500 mt-1 truncate" title={omissionNote}>{omissionNote}</p>
       )}
     </div>
   );

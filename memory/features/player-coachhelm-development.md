@@ -98,6 +98,16 @@ Player opens round review
   `page.tsx` is a pure `permanentRedirect` shim renders `bg-canvas` only:
   no geometry, and no real `<h1>` for a screen that never mounts.
   Reference implementation: `dashboard/alerts/loading.tsx`.
+- **Observed-outcome language (repair-plan §14.12, 2026-09-23)**: any
+  coach- or player-facing string, and any chat/LLM-facing text, that states
+  an insight's outcome must use hedged, honest wording — never "proven",
+  "caused by", "guaranteed", or a quantified "Saved N strokes" claim, unless
+  the underlying data is an actual measurement, not an estimate or a
+  self-report. Guarded by
+  `src/test/coachhelm/observed-outcome-language.test.ts` (an AST-walk over
+  string/template literals and JSX text, not a raw-text regex — comments
+  and identifiers are never checked, so engineering prose about
+  causality/lift/proof can't false-positive).
 
 ## Known Risk Areas
 
@@ -142,6 +152,35 @@ Player opens round review
 - Revalidation can miss `/golf/dashboard/coachhelm` or `/golf/dashboard/my-development`.
 - Player-facing fallbacks can mask missing source data or LLM/citation failures.
 - V3 surfaces evolve quickly, so docs and registry paths need frequent updates when new components land.
+- **Repair-plan §14.12 audit, observed-outcome language (2026-09-23)**: found
+  and fixed one live bug — `InsightCard.tsx`'s `OutcomeBadge` rendered
+  "Saved {impact} strokes/rd" once a player/coach marked a focus area's
+  insight `improved` (`golf_coach_insights.outcome_status`, a HUMAN
+  self-report via `recordFocusAreaOutcomeImpl`, unrelated to
+  `golf_insight_outcome_attribution`/`method_version`). `impact` is
+  `evidence.strokes_impact`, the insight's GENERATION-TIME counterfactual
+  estimate ("strokes recoverable IF fixed" — never a post-outcome
+  measurement, see `patternToInsightVocabulary.ts`), so the badge presented
+  an old estimate as a measured saving. Fixed to the same hedged "~N str/rd
+  at stake" phrasing used everywhere else this field is shown. Also fixed a
+  stale comment claiming `outcome_status`/`outcome_measured_at` weren't yet
+  projected by `INSIGHT_SELECT` — they have been for a while, so the badge
+  was live (confirmed rendering in `FairwayPlayerInsight.tsx`,
+  `audience="coach"`), just untested (no prior test covered it).
+  Audited and found ALREADY correct, no fix needed: the trust ladder
+  (`deriveTrustStatus`/`FairwayEffectiveness.tsx`, renamed off `'proven'` in
+  N9) and `MovementPill`'s "↑ +6pt since 12 days ago" (plain magnitude +
+  direction, no causal wording) both already use honest, hedged language.
+  `FocusAreaCard.tsx`/`RosterHealthHeader.tsx`'s plain "Improved"/"Worsened"
+  tally labels are a human's own self-report echoed back, not a system-
+  asserted claim, so left as-is. `DiagnosisPanel.tsx`'s "Caused by" is a
+  DIFFERENT axis (root-cause diagnosis of a symptom, with its own honest
+  measured-fact-vs-hypothesis chip) and was deliberately NOT touched here —
+  named as a candidate for a future, separate review rather than expanded
+  into this slice. Admin-only analytics (`effectiveness_score`/
+  `improvement_rate` on `app/admin/golf/page.tsx` etc.) are an internal
+  audience reading a raw score, out of scope. Guard test:
+  `src/test/coachhelm/observed-outcome-language.test.ts`.
 - **Addendum A8 ("collect only useful context and complete the coaching
   action", folded into Pkg 9, planned 2026-09-23)**: survey found the
   select-insight -> approve -> link flow (`PromoteToFocusAreaButton` ->
@@ -379,6 +418,16 @@ Player opens round review
   itself (a separate check, keyed on player+metric) — only the ledger's
   action count can read low. Fixing it means widening the dedup key, a
   follow-up slice.
+- Chart/label honesty (2026-09-23, Package 11): `ShotAnalysisCard.tsx`'s
+  "Key Weaknesses" now filters ranked contexts to `avgSG < 0` before slicing
+  the top 3 — the prior derivation only stable-sorted by sample-size tier
+  and never excluded a net-positive context, so a strong player could see a
+  genuine strength rendered red, unsigned, under "Key Weaknesses". An
+  all-positive ranked list now renders an honest "at or above par" note
+  instead of hiding the section. `WhyPopover.tsx`'s generated-explanation gap
+  label now suffixes strokes/yards/feet the same way its paired comparison
+  value already does (`formatComparisonValue`) — only `percent` had a unit
+  before.
 
 ## §15.2 Regression Fixture Matrix (repair plan, 2026-09-23)
 
@@ -402,11 +451,11 @@ introduced this table for the repro and report.
 | 11 | Same round revision delivered twice | Covered | `upsert.test.ts:325` (DI-1 dedup), `round-review-system.test.ts:219,243` |
 | 12 | Corrected round within 24 hours | Covered | `upsert.test.ts` "corrected-round, same revision key" — resolved per plan §5.2's maturation correction, not a code fix: `evidenceRevisionKey` gates only `metadata.maturation_keys` (lifecycle-policy.ts:119), never the evidence write itself, so a same-day correction is already written/processed on main; it correctly does not add a second maturation confirmation for the same round (§5.2: "require new contributing rounds or meaningful independent opportunities") |
 | 13 | Some generators fail, others succeed | Partial | per-generator gate: `generator-base-run-lifecycle.test.ts:217`; orchestrator-level `tier1Generators`/`Promise.allSettled` aggregation untested — `it.todo`, `fixture-matrix-gaps.test.ts` |
-| 14 | Missing unit on a legacy shot | Needs follow-up | not conclusively verified this pass |
+| 14 | Missing unit on a legacy shot | Covered | `shot-context.test.ts:53-55` — `normalizeShotValue(128, null/undefined/'')` returns `{kind:'missing', reason:'no_unit'}`, never a silent conversion |
 | 15 | Mixed before/after feet and yards | Covered | `ApproachMissGenerator.test.ts:153,280` |
-| 16 | OB from tee and mid-hole, entered/here variants | Needs follow-up | not conclusively verified this pass |
-| 17 | Scorecard-only round | Needs follow-up | not conclusively verified this pass |
-| 18 | Nine-hole round | Needs follow-up | not conclusively verified this pass |
+| 16 | OB from tee and mid-hole, entered/here variants | Covered | `use-penalty-handler.test.ts:42` (tee), `:69` (mid-hole, replays from that shot's own spot), `:106-134` ('entered'/'here' origin); undo both-row semantics: `shot-mutation-recovery.test.ts:544,563,583` |
+| 17 | Scorecard-only round | Partial | shot-diagnosis abstention covered — `shot-context.test.ts:398-412` (`no_shots_recorded`), `par-opportunities.test.ts:183-193` (`incomplete_sequence` exclusion); "scoring facts permitted" half is an architectural guarantee (`HoleContext` sourced from `golf_holes`, never derived from shots — `build-hole-sequence.ts` module doc), not directly proven end-to-end — `it.todo`, `fixture-matrix-gaps.test.ts` |
+| 18 | Nine-hole round | Covered | `composite-rating.test.ts:75`, `scoring-trend.test.ts:28`, `round-regime.test.ts:59`, `putts-per-round.test.ts:14` (18-hole-equivalent normalization); `holes-played-assert.test.ts` (submitted `holes_played` must match actual hole entries — no imaginary holes) |
 | 19 | Layup/recovery in long-approach bucket | Covered | `distance-profile.test.ts:219` |
 | 20 | Par-3 tee miss | Missing (SQL layer) | exclusion lives in `recompute_golf_round_totals`, no pgTAP fixture — `it.todo`, `fixture-matrix-gaps.test.ts` |
 | 21 | Missing miss directions | Partial | `ApproachMissGenerator.test.ts:411` (off-green-only tally) is adjacent, denominator/coverage reporting unconfirmed |
@@ -424,14 +473,14 @@ introduced this table for the repro and report.
 | 33 | Unsupported claim using an exempt small number | Covered | `claim-validator.test.ts:66` (`unsupported_small_number`) |
 | 34 | Correct percentage complement or rounding | Missing (no code path) | no metric-derivation registry exists — `it.todo`, `claim-validator.test.ts` |
 | 35 | Correct number for wrong player/team | Covered | `claim-validator.test.ts:124` (`wrong_player`) |
-| 36 | LLM provider failure | Needs follow-up | live fallback is `buildDeterministicRecap` in `round-recap.ts`, reached via `compose()`'s `fallbackText`; `deterministic-review.ts` is used only by the prewarm script, not this path — wiring-level test unconfirmed |
-| 37 | Cached fallback after transient failure | Needs follow-up | not conclusively verified this pass |
-| 38 | Chat fails validation after generating text | Needs follow-up | chat surface does not appear to use `claim-validator.ts`; separate mechanism not investigated |
+| 36 | LLM provider failure | Covered | two independent surfaces, both tested: `round-review-system.test.ts` "falls back to the rule-based review instead of failing when the CoachHelm/LLM provider throws" (`reviewContent` is built deterministically before the CoachHelm/LLM enhancement is attempted; a thrown provider error is caught and the deterministic content ships with `ai_model_version: 'rule-based-v2'`); and, for round-recap generation, `round-recap-llm-provider-failure.test.ts` (#2019) — a real wiring-level test (only `ai`'s `generateText` mocked, `compose.ts`/`round-recap.ts` real) proving `generateRoundRecap` falls back to `buildDeterministicRecap`'s exact output end to end, persisted via the RPC, call-logged `fallback_to_template`, provenance `source: 'deterministic'`, no LLM text leaked — complements the unit-level `compose.test.ts:312`. (Note: `deterministic-review.ts` is NOT this fallback's live path — that's the prewarm script only; the live fallback is `buildDeterministicRecap` in `round-recap.ts`.) |
+| 37 | Cached fallback after transient failure | Partial | two real mechanisms, neither tested: `round-reviews.ts`'s `generateRoundReviewImpl` (`MAX_GENERATION_ATTEMPTS`, likely legacy/no live caller) and the active `useRoundReviewV2.ts` hook (stable read of an existing `summary`, `autoGenAttempted` bounds automatic regeneration to once per mount, deliberate `generate()` still available) — proving the hook needs a renderHook harness, not a fake client — `it.todo`, `fixture-matrix-gaps.test.ts` |
+| 38 | Chat fails validation after generating text | Covered | separate mechanism confirmed (not `claim-validator.ts`): `auditNumericClaims` (`chat-provenance.test.ts`, extensive) flags an unsupported number post-generation, wired live-stream-side in `stream/route.test.ts:404-444` (MUST-FIX #1, `data-grounding-flag` emitted on the wire, not just discovered on reload) and `:513`; the flag is durably persisted and replayed on reload, not dropped — `chat-restore.test.ts:31-41` and, at the actual reload ENDPOINT (not just the persistence layer), the new `conversations/[id]/route.test.ts` (#2019) proves a stored failed/ungrounded turn comes back with `status: 'failed'`, its `UNGROUNDED_NOTE` content, and its `data-grounding-flag` UI part all intact |
 | 39 | Focus assigned, no practice completion data | Missing (no code path) | no completion-tracking concept in `focus-areas/` — `it.todo`, `fixture-matrix-gaps.test.ts` |
 | 40 | Practice improves, course data sparse | Missing (no code path) | `it.todo`, `fixture-matrix-gaps.test.ts` |
 | 41 | Two of three follow-ups improve | Missing (no code path) | `it.todo`, `fixture-matrix-gaps.test.ts` |
 | 42 | Transfer/assistant coach/multi-team | Partial | write-scoping covered: `upsert-coach-scoping.test.ts:53`; broader read-access-control unconfirmed |
-| 43 | Silent night with no new rounds | Needs follow-up | not conclusively verified this pass |
+| 43 | Silent night with no new rounds | Covered | `engine_no_recent_rounds` maps to the healthy `waiting_for_data` outcome kind (`analysis-outcome.test.ts:37,137`), routed to info-level logging with `skipSentry:true` and never `logServerError` (`coachhelm-safety-net.test.ts:481-492`), and parks the round without a hard failure stamp (`post-round-trigger.test.ts:181-198`) — the engine never reaches `upsertInsight` on this early-exit path, so nothing is fabricated |
 
 Two real, pre-existing bugs surfaced by this audit (reported, not fixed —
 each has an `it.fails` repro in `src/test/coachhelm/v2/insights/upsert.test.ts`):
@@ -442,6 +491,95 @@ between them, and (b) `evidenceRevisionKey = sample_n|window_end` has no
 content component, so a same-day correction that leaves the round count and
 window unchanged collides with the pre-correction key and is not counted as
 a new maturation confirmation.
+
+- **Practice-completion log + coach criteria (Addendum A8 slice 2, folded
+  into Pkg 9, 2026-09-23, `agent/coachhelm-a8-practice-log`)**:
+  <!-- schema-drift-absent: golf_focus_area_practice_sessions, golf_focus_area_criteria, golf_focus_area_practice_sessions_dedupe_key -->
+  `golf_focus_area_practice_sessions` and `golf_focus_area_criteria` are
+  named below even though neither is yet in the schema snapshot — the
+  migration that creates them has not been applied to production (owner's
+  apply queue). Two new, additive, RLS-protected TABLES (both gated behind
+  `coachhelm_focus_area_practice_log`, default off everywhere, zero reads
+  or writes of either surface while off) added by
+  `supabase/migrations/20260923110000_golf_focus_area_practice_log.sql`:
+  - `golf_focus_area_criteria` — one row per coach-authored "done"
+    definition (`focus_area_id`, `player_id`, `label`, `source: 'coach' |
+    'engine'`, `met`, `met_at`, `created_by_user_id`), capped at 10 per
+    focus area (checked in the action via a count query, acceptable
+    because INSERT is coach-gated at the DB layer). **NOT a jsonb column on
+    `golf_player_focus_areas`** — the original design (v1 of this slice) put
+    it there, but a db-migration-reviewer pass caught that
+    `golf_player_focus_areas_update_player` already lets a player PATCH any
+    column on their own focus area row, including a jsonb blob, which would
+    make "coach-authored, cap 10" false at the database layer; a separate
+    table with its own coach-only RLS closes that gap, and also avoids an
+    `ALTER TABLE` (ACCESS EXCLUSIVE lock) on the live, high-traffic
+    `golf_player_focus_areas` table. INSERT and UPDATE are both coach-only
+    (`criteria_insert_coach`, `criteria_update_coach`: active
+    `golf_team_members` + `is_golf_team_coach`, `fa.player_id` must match,
+    `fa.status IN ('active','in_progress','paused')`); INSERT additionally
+    pins `created_by_user_id = auth.uid()`, deliberately NOT repeated in the
+    UPDATE policy's WITH CHECK (that would require the ORIGINAL creating
+    coach to be the one marking a criterion met, denying a different
+    on-team coach doing normal coaching work). UPDATE is column-restricted
+    via `GRANT UPDATE(met, met_at, updated_at)` only — no grant on
+    `label`/`source`, so they're immutable after INSERT even for an
+    on-team coach; verified with `has_column_privilege`, not
+    `has_table_privilege` (the latter is false when only column grants
+    exist). `UNIQUE(focus_area_id, lower(label))` is a functional unique
+    INDEX, not a constraint (Postgres constraints can't take expressions),
+    so PostgREST's `.upsert(onConflict:)` can't target it — the action
+    layer catches the resulting `23505` directly and returns "A criterion
+    with this label already exists." One row per criterion also means
+    `setFocusAreaCriterionMet` is a single-row `UPDATE ... WHERE id = $1 AND
+    focus_area_id = $2`, not a compare-and-swap retry loop over a shared
+    blob — the CAS pattern from v1 no longer applies.
+  - `golf_focus_area_practice_sessions` — an append-only table (not a jsonb
+    array, to avoid a read-modify-write losing a concurrent append) logging
+    actual practice completions, idempotent on
+    `UNIQUE(focus_area_id, client_request_id)` (constraint name
+    `golf_focus_area_practice_sessions_dedupe_key` — the mechanical pg_dump
+    name was 64 chars, over Postgres's 63-char `NAMEDATALEN` limit) via
+    `ON CONFLICT DO NOTHING` (`logFocusAreaPracticeSession`); a repeated
+    `client_request_id` returns `{success: true}`, not a failure. SELECT
+    mirrors `golf_player_focus_areas`' own visibility by re-running its RLS
+    inside an `EXISTS` subquery. INSERT binds the CLAIMED `logged_by_role`
+    to what the database can verify — copying the exact branch predicates
+    from `golf_player_focus_areas_insert_coach` and
+    `golf_player_focus_areas_update_player` (OR'd, each gated on the
+    matching `logged_by_role` value) — rather than trusting `logged_by_role`
+    as a plain enum the action layer computed correctly; a forged role, a
+    forged `logged_by_user_id`, or a `player_id` that doesn't match the
+    parent focus area's own player (even for an otherwise-valid on-team
+    coach) are all denied at the RLS layer, not just the action layer.
+    Append-only at both the RLS and grant layer (no UPDATE/DELETE policy,
+    no UPDATE/DELETE grant for `authenticated`).
+  - Both new tables' actions map a Postgres `42501` (RLS WITH CHECK denial)
+    to a plain `Forbidden` result, never an "outage" log — reaching that
+    code means the action's own checks already agreed to the write and the
+    world changed underneath it (e.g. a team membership lapsed mid-request).
+  - Both `withAdminObserved` wrappers set `observeSoftFailures: false`: a
+    flag-off `{success:false, error:'Not enabled'}` result is an expected,
+    routine state (the migration isn't applied everywhere yet), not an
+    incident — without this, every flag-off call would still write a Bridge
+    soft-failure telemetry row.
+  - Deliberately a NEW action file, not `development.ts` — that file was
+    under concurrent edit by two other in-flight A8 slices (evidence
+    revision / evidence badge) when this slice started, and this keeps
+    those rebases conflict-free.
+  - **Deliberately out of scope for this slice**: loader/UI wiring. Neither
+    the `intelligence`/`coachhelm` page loaders nor `FocusAreaCard` read or
+    render criteria or practice sessions yet — those files are owned by
+    the two concurrent A8 slices above, and wiring here would guarantee a
+    conflict. A follow-up slice wires the read side once this slice lands.
+  - A `db:types` regen PR follows once the owner applies the migration —
+    until then `src/lib/types/database.ts` has no row types for either
+    table, and both actions go through `fromUntyped(supabase, table)`.
+  - The pgTAP suite
+    (`supabase/tests/rls/golf_focus_area_practice_sessions.sql`, despite the
+    filename, now covers BOTH new tables) has not been run locally (no
+    Docker/local Supabase stack available in this session) — CI's
+    "Supabase lint + RLS tests" job is this suite's first real run.
 
 ## Tests To Prefer
 

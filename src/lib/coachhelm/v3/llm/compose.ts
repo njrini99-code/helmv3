@@ -49,10 +49,14 @@ import { resolveModelProvider } from '@/lib/ai/model-provider';
 import { logServerError, logServerEvent } from '@/lib/server-error-logger';
 import { classifyProviderFault, providerFaultSeverity } from '@/lib/admin/provider-fault';
 import { drainCollapsedCount, shouldEmit } from '@/lib/admin/emit-throttle';
-import { z } from 'zod';
 import { checkBudget, recordSpend } from './budget';
 import { verifyCitations } from './citations';
-import { validateClaims, type ClaimReference, type RejectedClaim } from './claim-validator';
+import type { RejectedClaim } from './claim-validator';
+import {
+  extractAndValidateClaims,
+  stripAllClaimsDelimiters,
+  type TypedClaimAttempt,
+} from './claims-block';
 import type { Json } from '@/lib/types/database';
 import {
   MODEL_FOR_TASK,
@@ -346,14 +350,6 @@ export async function compose(
 // Internal: one generate-and-verify pass.
 // ---------------------------------------------------------------------------
 
-interface TypedClaimAttempt {
-  accepted: ClaimReference[];
-  rejected: RejectedClaim[];
-  /** True when the claims block was absent or failed to parse. Distinct
-   *  from a plain rejection: nothing here names a specific bad claim. */
-  malformed: boolean;
-}
-
 interface LlmAttempt {
   /** Model prose with the claims block (if any) already stripped out —
    *  this is the ONLY text that reaches verifyCitations, validateClaims,
@@ -376,43 +372,6 @@ function attemptVerified(attempt: LlmAttempt): boolean {
   return true;
 }
 
-const CLAIMS_OPEN = '<<<CLAIMS>>>';
-const CLAIMS_CLOSE = '<<<END_CLAIMS>>>';
-const CLAIMS_BLOCK_RE = /<<<CLAIMS>>>([\s\S]*?)<<<END_CLAIMS>>>/;
-
-function countOccurrences(haystack: string, needle: string): number {
-  return haystack.split(needle).length - 1;
-}
-
-/**
- * Remove every claims-block delimiter from `text`, however many there
- * are: every complete `<<<CLAIMS>>>...<<<END_CLAIMS>>>` pair (global, not
- * just the first — MUST-1 post-#1991 review: without `/g` a SECOND block
- * survived a `.replace()` into player text), everything from an
- * unterminated opener through the end of the string, and any stray
- * closer with no matching opener. Called on every malformed path so a
- * duplicated or broken claims block can never leave a literal delimiter
- * or a raw JSON fragment in text a player reads.
- */
-function stripAllClaimsDelimiters(text: string): string {
-  let out = text.replace(new RegExp(CLAIMS_BLOCK_RE.source, 'g'), '');
-  const openIdx = out.indexOf(CLAIMS_OPEN);
-  if (openIdx !== -1) out = out.slice(0, openIdx);
-  out = out.split(CLAIMS_CLOSE).join('');
-  return out.trim();
-}
-
-const ClaimReferenceSchema = z.object({
-  claim_id: z.string(),
-  metric_id: z.string(),
-  value: z.number(),
-  player_id: z.string(),
-  window_start: z.string(),
-  window_end: z.string(),
-  claim_type: z.enum(['fact', 'causal']).optional(),
-});
-const ClaimsBlockSchema = z.array(ClaimReferenceSchema);
-
 /**
  * Ask the model to append a structured claims block naming every
  * factual/causal number it cites, in addition to writing normal prose.
@@ -434,60 +393,6 @@ function buildClaimsInstruction(packet: NonNullable<ComposeRequest['evidence_pac
     `The block must be valid JSON and is removed before anyone sees your ` +
     `response — it does not need to read naturally.`
   );
-}
-
-/**
- * Strip the claims block (delimiters included) out of the raw model text
- * and parse it, when present, against `evidence_packet`. Never throws —
- * a missing, duplicated, unterminated, or invalid-JSON/-schema block
- * comes back as `malformed: true` rather than an exception, matching
- * compose()'s contract that a provider or parsing problem never surfaces
- * past this module.
- *
- * More than one opener or closer (a duplicated block) and an opener with
- * no matching closer (an unterminated block) are BOTH malformed, not "use
- * the first one" — MUST-1 (post-#1991 review): a second, unparsed block
- * must never reach a player as literal text.
- */
-function extractAndValidateClaims(
-  rawText: string,
-  packet: ComposeRequest['evidence_packet'],
-): { strippedText: string; claims: TypedClaimAttempt | null } {
-  if (!packet) return { strippedText: rawText, claims: null };
-
-  const strippedText = stripAllClaimsDelimiters(rawText);
-  const openCount = countOccurrences(rawText, CLAIMS_OPEN);
-  const closeCount = countOccurrences(rawText, CLAIMS_CLOSE);
-  if (openCount !== 1 || closeCount !== 1) {
-    return { strippedText, claims: { accepted: [], rejected: [], malformed: true } };
-  }
-
-  // Exactly one opener and one closer exist, but they could still be in
-  // the wrong order (closer before opener) — `.match` returns null in
-  // that case rather than a false match, so this guard is load-bearing,
-  // not defensive dead code.
-  const match = rawText.match(CLAIMS_BLOCK_RE);
-  if (!match) {
-    return { strippedText, claims: { accepted: [], rejected: [], malformed: true } };
-  }
-
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(match[1] ?? '');
-  } catch {
-    return { strippedText, claims: { accepted: [], rejected: [], malformed: true } };
-  }
-
-  const result = ClaimsBlockSchema.safeParse(parsed);
-  if (!result.success) {
-    return { strippedText, claims: { accepted: [], rejected: [], malformed: true } };
-  }
-
-  const validated = validateClaims(result.data, packet, strippedText);
-  return {
-    strippedText,
-    claims: { accepted: validated.accepted, rejected: validated.rejected, malformed: false },
-  };
 }
 
 async function runLlmAttempt(

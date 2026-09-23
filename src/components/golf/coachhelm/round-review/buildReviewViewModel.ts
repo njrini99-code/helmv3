@@ -16,10 +16,15 @@
  *   - the grade is `gradeDotsForDelta(scoreToPar)` (5-dot scale), NOT the
  *     legacy A–F `overallGrade` letter;
  *   - the scoring-mix line reads `scoringDistribution`;
- *   - the strokes-lost `RailBars` read `strokesToGain` — the SINGLE home for
- *     that data (the old `RoundIntelligence` "where today's strokes went"
- *     board is retired from this page, though the component itself stays
- *     mounted elsewhere).
+ *   - `buildStrokesLostRows` below was meant to be the strokes-lost
+ *     `RailBars`' single home for `strokesToGain` (the old
+ *     `RoundIntelligence` "where today's strokes went" board was retired
+ *     from this page). Package 11 (#1933 bug, confirmed present on main):
+ *     that wiring never shipped — `buildStrokesLostRows` has no production
+ *     caller today (only its own unit test calls it); this page's `RailBars`
+ *     instance (`ReviewBreakdown.tsx`) is fed `shortGameRows`, not this
+ *     function's output. Kept as dead code, not deleted, until it's either
+ *     wired up or intentionally removed — see the function's own comment.
  * ========================================================================== */
 
 import {
@@ -230,13 +235,19 @@ export function formatHoleDetail(h: FilmstripHole): { header: string; body: stri
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
- * Strokes-lost RailBars — the SINGLE home for `strokesToGain`
+ * Strokes-lost RailBars — was meant to be the single home for `strokesToGain`
  * ──────────────────────────────────────────────────────────────────────── */
 
 /** Top 4 positive-opportunity `strokesToGain` items, ranked biggest-first,
  *  scaled to the leader's magnitude (`pct`). Only the leader renders full
  *  strength — the rest render `dim`, matching `RailBars`' secondary-row
- *  convention. */
+ *  convention.
+ *
+ *  Package 11 (#1933 bug, confirmed present on main): no production caller
+ *  wires this into a `RailBars` today (grep the repo — only this file's own
+ *  unit test calls it). Kept, not deleted, in case it's still meant to ship;
+ *  do not trust the "SINGLE home for strokesToGain" framing above the file
+ *  header as evidence this is live. */
 export function buildStrokesLostRows(items: StrokesToGainItem[]): RailBarRow[] {
   const opps = [...items]
     .filter((i) => i.potentialStrokes > 0)

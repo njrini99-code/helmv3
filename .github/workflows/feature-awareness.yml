@@ -17,8 +17,11 @@ name: Feature Awareness
 # mapped_feature_code=true.
 
 on:
+  # ready_for_review added so a draft->ready transition re-triggers a real
+  # run — `report` skips while draft via detect-changes.yml's
+  # mapped_feature_code=false (owner decision, PR throughput).
   pull_request:
-    types: [opened, synchronize, reopened]
+    types: [opened, synchronize, reopened, ready_for_review]
   workflow_dispatch: {}
 
 concurrency:

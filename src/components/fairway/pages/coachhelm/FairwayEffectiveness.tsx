@@ -689,7 +689,8 @@ function CockpitView({
  * accuracy RIBBON (the bold filled rising trend, with its coin-flip benchmark
  * tick) inset into the same panel's lower band. Live from getPredictionPerformance.
  * ─────────────────────────────────────────────────────────────────────────── */
-function PrimaryInstrument({ data, days }: { data?: PredictionPerformanceData; days: number }) {
+/** Exported for unit testing (Package 11 — the Climbing/Holding delta chip). */
+export function PrimaryInstrument({ data, days }: { data?: PredictionPerformanceData; days: number }) {
   const resolved = data?.summary.validatedPredictions ?? 0;
   const accuracy = data?.summary.overallAccuracy ?? 0;
 
@@ -698,13 +699,15 @@ function PrimaryInstrument({ data, days }: { data?: PredictionPerformanceData; d
   const ribbonPoints: RibbonPoint[] = series.map((p) => ({ x: p.date, y: p.accuracyRate }));
 
   // Is accuracy climbing? Honest delta from the validated-only series.
+  // Strictly greater than — an unchanged rate is "Holding", not "Climbing
+  // +0%": `>=` let a zero delta wear the up-arrow and the success color.
   const firstPoint = series[0];
   const lastPoint = series[series.length - 1];
   const climbing =
     series.length >= 2 &&
     firstPoint !== undefined &&
     lastPoint !== undefined &&
-    lastPoint.accuracyRate >= firstPoint.accuracyRate;
+    lastPoint.accuracyRate > firstPoint.accuracyRate;
 
   const climbDelta =
     series.length >= 2 && firstPoint && lastPoint
@@ -746,7 +749,11 @@ function PrimaryInstrument({ data, days }: { data?: PredictionPerformanceData; d
         </div>
         {live ? (
           <span className="font-fw-sans text-body-sm text-text-secondary">
-            of {resolved} resolved predictions proved accurate — well above a 50% coin flip.
+            {/* repair-plan §14.12 re-review (PR #2023): was "proved accurate" —
+                each resolved prediction's accuracy is a directly checkable fact,
+                but "proved" overstates what a hit RATE across resolved
+                predictions demonstrates. */}
+            of {resolved} resolved predictions were accurate — well above a 50% coin flip.
           </span>
         ) : null}
       </div>
@@ -1033,7 +1040,7 @@ function PatternImpactDeck({
         </div>
         <InsufficientData
           title="Nothing to credit yet"
-          description="When CoachHelm detects and resolves performance patterns, their signed strokes-saved impact lands here as a diverging tornado."
+          description="When CoachHelm detects and resolves performance patterns, their signed stroke-impact estimate lands here as a diverging tornado."
           unit="detected patterns"
           current={0}
           required={1}
@@ -1083,9 +1090,14 @@ function PatternImpactDeck({
           <p className="font-fw-sans text-caption text-text-tertiary">
             {data.patternsDetected} detected · {data.patternsResolved} resolved ·{' '}
             <span className="font-fw-mono text-text-secondary">
-              {data.totalStrokesSaved.toFixed(1)}
+              ~{data.totalStrokesSaved.toFixed(1)}
             </span>{' '}
-            strokes saved
+            {/* repair-plan §14.12 re-review (PR #2023): was "strokes saved" —
+                totalStrokesSaved sums each resolved pattern's GENERATION-TIME
+                stroke_impact estimate, never a post-resolution measurement, so
+                "saved" (a measured claim) is exactly the same overclaim
+                OutcomeBadge's old wording made. */}
+            str/rd impact (est.)
           </p>
         </div>
         <Button
@@ -1149,7 +1161,7 @@ function ErrorMixDeck({ data }: { data?: PredictionPerformanceData }) {
  * ══════════════════════════════════════════════════════════════════════════ */
 
 /* PREDICTIONS — the detailed prediction read (low-N honest). */
-function PredictionsSection({ data }: { data?: PredictionPerformanceData }) {
+export function PredictionsSection({ data }: { data?: PredictionPerformanceData }) {
   if (!data) {
     return (
       <EmptyState
@@ -1183,7 +1195,10 @@ function PredictionsSection({ data }: { data?: PredictionPerformanceData }) {
           value={data.summary.overallAccuracy}
           format={{ style: 'percent', maximumFractionDigits: 0 }}
           goodDirection="up"
-          starved={resolved === 0}
+          // starved must match `required` below — a low-N read (e.g. 2 for 2
+          // = "100%") is not trustworthy until GLOBAL_LOW_CONFIDENCE_RESOLVED
+          // resolved predictions, the same floor the InlineNotice above uses.
+          starved={resolved < GLOBAL_LOW_CONFIDENCE_RESOLVED}
           current={resolved}
           required={GLOBAL_LOW_CONFIDENCE_RESOLVED}
           unit="resolved predictions"
@@ -1204,7 +1219,7 @@ function PredictionsSection({ data }: { data?: PredictionPerformanceData }) {
           mono
           goodDirection="down"
           hideTrend
-          starved={resolved === 0}
+          starved={resolved < BUCKET_MIN_RESOLVED}
           current={resolved}
           required={BUCKET_MIN_RESOLVED}
           unit="resolved predictions"
@@ -1215,7 +1230,7 @@ function PredictionsSection({ data }: { data?: PredictionPerformanceData }) {
           format={{ style: 'percent', maximumFractionDigits: 0 }}
           goodDirection="up"
           hideTrend
-          starved={resolved === 0}
+          starved={resolved < GLOBAL_LOW_CONFIDENCE_RESOLVED}
           current={resolved}
           required={GLOBAL_LOW_CONFIDENCE_RESOLVED}
           unit="resolved predictions"
@@ -1225,7 +1240,7 @@ function PredictionsSection({ data }: { data?: PredictionPerformanceData }) {
       <Ribbon
         title="Prediction accuracy over time"
         overline="Validated predictions only"
-        takeaway="Share of validated predictions that proved accurate per snapshot, vs a coin-flip baseline."
+        takeaway="Share of validated predictions that were accurate per snapshot, vs a coin-flip baseline."
         data={ribbonPoints}
         benchmark={{ value: 0.5, label: 'coin flip' }}
         valueFormatter={(v) => formatPercent(v, 0)}
@@ -1709,7 +1724,7 @@ function PatternsSection({ data }: { data?: PatternImpactData }) {
     return (
       <EmptyState
         title="No patterns detected yet"
-        description="When CoachHelm detects performance patterns across the team, their lifecycle and strokes-saved impact appear here."
+        description="When CoachHelm detects performance patterns across the team, their lifecycle and stroke-impact estimate appear here."
       />
     );
   }
@@ -1725,7 +1740,10 @@ function PatternsSection({ data }: { data?: PatternImpactData }) {
         </div>
         <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
           <StatTile
-            label="Strokes saved"
+            // repair-plan §14.12 re-review (PR #2023): was "Strokes saved" —
+            // totalStrokesSaved sums resolved patterns' generation-time
+            // stroke_impact estimates, never a post-resolution measurement.
+            label="Stroke impact (est.)"
             value={data.totalStrokesSaved}
             format={{ maximumFractionDigits: 1 }}
             mono

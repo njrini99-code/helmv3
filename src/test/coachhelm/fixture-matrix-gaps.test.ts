@@ -71,6 +71,45 @@ describe('§15.2 — "Two simultaneous missing-review creators" backfill variant
   );
 });
 
+describe('§15.2 — "Scorecard-only round: scoring facts permitted" half (row 17)', () => {
+  // The "shot diagnoses abstain" half is real and tested: buildHoleSequence
+  // reports no_shots_recorded (shot-context.test.ts) and computeParOpportunities
+  // excludes it via incomplete_sequence (par-opportunities.test.ts). The
+  // "scoring facts permitted" half rests on an architectural guarantee —
+  // HoleContext (par, total_strokes) is sourced from golf_holes, never
+  // derived from golf_shots (build-hole-sequence.ts's own module doc) — so a
+  // scorecard-only round's score-level facts are never gated on shot
+  // completeness in the first place. No test currently exercises a full
+  // round with zero shots recorded end-to-end through a score-level metric
+  // (e.g. a scoring average) to confirm it still returns a real value rather
+  // than abstaining alongside the shot diagnostics.
+  it.todo(
+    'a round with zero recorded shots still produces valid score-level facts (e.g. a scoring-average metric) even though shot-level diagnoses abstain — no end-to-end test exists; today this is an architectural inference (HoleContext never derives from shots), not a proven fixture',
+  );
+});
+
+describe('§15.2 — "Cached fallback after transient failure: stable read; bounded deliberate regeneration allowed" (row 37)', () => {
+  // Two real mechanisms exist, neither with a test:
+  //  1. src/app/golf/actions/round-reviews.ts's generateRoundReviewImpl —
+  //     MAX_GENERATION_ATTEMPTS (line 109) gates further auto-attempts on a
+  //     `failed`/`pending` review unless forceRegenerate is passed; appears
+  //     to have no live UI caller (round-review-system.ts's
+  //     generateAndStoreRoundReview is the active path — see row 36's new
+  //     test), so may be legacy.
+  //  2. src/hooks/coachhelm/useRoundReviewV2.ts — fetchReview() serves an
+  //     existing `summary` as a stable cached read (~line 106-120);
+  //     `autoGenAttempted` (~line 379-438) bounds AUTOMATIC regeneration to
+  //     once per mount, while the returned `generate()` remains available
+  //     for a deliberate, user-triggered refresh.
+  // Both are real code, not missing paths — but proving them needs more than
+  // a fake Supabase client: mechanism 2 needs a full renderHook harness
+  // (precedent exists elsewhere under src/hooks/golf/__tests__), which is a
+  // bigger lift than this fixture-only pass takes on blind.
+  it.todo(
+    'useRoundReviewV2 serves an existing review as a stable read and bounds automatic (but not user-triggered) regeneration to once per mount — needs a renderHook-based test, not a fake-client one; none exists today',
+  );
+});
+
 describe('§15.2 — practice/follow-up outcome tracking (rows: "focus assigned, no completion data" / "practice improves, course data sparse" / "two of three follow-ups improve")', () => {
   // src/lib/coachhelm/focus-areas/ (catalog.ts, direction.ts, due-for-review.ts,
   // duplicate-guard.ts, target-metric.ts) has no concept of practice-

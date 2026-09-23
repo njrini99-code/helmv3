@@ -738,6 +738,44 @@ CREATE TABLE IF NOT EXISTS "public"."golf_events" (
 
 ALTER TABLE "public"."golf_events" OWNER TO "postgres";
 
+CREATE TABLE IF NOT EXISTS "public"."golf_focus_area_criteria" (
+    "id" "uuid" DEFAULT "extensions"."uuid_generate_v4"() NOT NULL,
+    "focus_area_id" "uuid" NOT NULL,
+    "player_id" "uuid" NOT NULL,
+    "label" "text" NOT NULL,
+    "source" "text" NOT NULL,
+    "met" boolean DEFAULT false NOT NULL,
+    "met_at" timestamp with time zone,
+    "created_by_user_id" "uuid" NOT NULL,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    CONSTRAINT "golf_focus_area_criteria_source_check" CHECK (("source" = ANY (ARRAY['coach'::"text", 'engine'::"text"]))),
+    CONSTRAINT "golf_focus_area_criteria_label_length_check" CHECK ((("char_length"("label") >= 1) AND ("char_length"("label") <= 200))),
+    CONSTRAINT "golf_focus_area_criteria_met_consistency_check" CHECK (("met" = ("met_at" IS NOT NULL)))
+);
+
+ALTER TABLE "public"."golf_focus_area_criteria" OWNER TO "postgres";
+
+CREATE TABLE IF NOT EXISTS "public"."golf_focus_area_practice_sessions" (
+    "id" "uuid" DEFAULT "extensions"."uuid_generate_v4"() NOT NULL,
+    "focus_area_id" "uuid" NOT NULL,
+    "player_id" "uuid" NOT NULL,
+    "logged_by_user_id" "uuid" NOT NULL,
+    "logged_by_role" "text" NOT NULL,
+    "drill_id" "text",
+    "reps" integer,
+    "note" "text",
+    "practiced_at" timestamp with time zone NOT NULL,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "client_request_id" "uuid" NOT NULL,
+    CONSTRAINT "golf_focus_area_practice_sessions_logged_by_role_check" CHECK (("logged_by_role" = ANY (ARRAY['player'::"text", 'coach'::"text"]))),
+    CONSTRAINT "golf_focus_area_practice_sessions_reps_check" CHECK ((("reps" IS NULL) OR (("reps" >= 0) AND ("reps" <= 1000)))),
+    CONSTRAINT "golf_focus_area_practice_sessions_note_length_check" CHECK ((("note" IS NULL) OR ("char_length"("note") <= 1000))),
+    CONSTRAINT "golf_focus_area_practice_sessions_drill_id_length_check" CHECK ((("drill_id" IS NULL) OR ("char_length"("drill_id") <= 100)))
+);
+
+ALTER TABLE "public"."golf_focus_area_practice_sessions" OWNER TO "postgres";
+
 CREATE TABLE IF NOT EXISTS "public"."golf_global_patterns" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "signature" "text" NOT NULL,

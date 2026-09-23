@@ -168,12 +168,26 @@ describe('deriveTone', () => {
     expect(deriveTone(makeInsight({ priority: 'urgent' }))).toBe('urgent');
   });
 
-  it('returns "urgent" when category=pressure and |strokes_impact|>2', () => {
+  it('returns "urgent" when category=pressure and |strokes_impact|*confidence>2', () => {
     const insight = makeInsight({
       category: 'pressure',
-      evidence: makeEvidence({ strokes_impact: 2.5 }),
+      evidence: makeEvidence({ strokes_impact: 2.5, confidence: 0.9 }),
     });
     expect(deriveTone(insight)).toBe('urgent');
+  });
+
+  it('does NOT return "urgent" for a pressure row whose confidence dampens it below the gate (Package 11)', () => {
+    // Same |strokes_impact| as the case above (2.5, > 2 on its own), but a
+    // low confidence. The pressure branch used to compare raw strokes_impact
+    // with no confidence weighting at all — unlike its cautionary sibling
+    // (`strokes_impact * confidence > 1.0`) — so a single-sample pressure
+    // estimate could pulse red exactly like an explicitly-tagged urgent row.
+    const insight = makeInsight({
+      category: 'pressure',
+      priority: 'medium',
+      evidence: makeEvidence({ strokes_impact: 2.5, confidence: 0.3 }),
+    });
+    expect(deriveTone(insight)).not.toBe('urgent');
   });
 
   it('returns "cautionary" when priority=high', () => {
@@ -400,6 +414,71 @@ describe('InsightCard zero-impact suppression (tee-strat-1)', () => {
     render(<InsightCard insight={insight} density="default" audience="coach" />);
     const card = screen.getByTestId('insight-card-default');
     expect(card.textContent).not.toContain('~0.0 strokes');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// OutcomeBadge — observed-outcome language audit (repair-plan §14.12)
+// ---------------------------------------------------------------------------
+describe('InsightCard OutcomeBadge (observed-outcome language audit)', () => {
+  it('improved + meaningful impact: renders "Coach marked improved" (a manual grade, not a system verdict) with the hedged "~N str/rd at stake" phrasing, never a measured "Saved" claim', () => {
+    const insight = makeInsight({
+      outcome_status: 'improved',
+      evidence: makeEvidence({ strokes_impact: 1.2 }),
+    });
+    render(<InsightCard insight={insight} density="default" audience="coach" />);
+    const badge = screen.getByTestId('insight-outcome-badge');
+    expect(badge).toHaveAttribute('data-outcome', 'improved');
+    expect(badge.textContent).toContain('Coach marked improved');
+    expect(badge.textContent).toContain('~1.2 str/rd at stake');
+    // The old wording asserted a measured saving ("Saved") from an estimate
+    // that was never actually re-measured — must never regress to that.
+    expect(badge.textContent).not.toContain('Saved');
+  });
+
+  it('improved + zero/no impact: the badge is suppressed (no bare "Improved" pill with a fabricated 0.0 figure)', () => {
+    const insight = makeInsight({
+      outcome_status: 'improved',
+      evidence: makeEvidence({ strokes_impact: 0 }),
+    });
+    render(<InsightCard insight={insight} density="default" audience="coach" />);
+    expect(screen.queryByTestId('insight-outcome-badge')).toBeNull();
+  });
+
+  it('worsened: renders "Coach marked worsened" regardless of impact magnitude', () => {
+    const insight = makeInsight({
+      outcome_status: 'worsened',
+      evidence: makeEvidence({ strokes_impact: 0.9 }),
+    });
+    render(<InsightCard insight={insight} density="default" audience="coach" />);
+    const badge = screen.getByTestId('insight-outcome-badge');
+    expect(badge).toHaveAttribute('data-outcome', 'worsened');
+    expect(badge.textContent).toBe('Coach marked worsened');
+  });
+
+  it('no_change: intentionally omitted — no badge at all (too noisy on the feed)', () => {
+    const insight = makeInsight({
+      outcome_status: 'no_change',
+      evidence: makeEvidence({ strokes_impact: 0.5 }),
+    });
+    render(<InsightCard insight={insight} density="default" audience="coach" />);
+    expect(screen.queryByTestId('insight-outcome-badge')).toBeNull();
+  });
+
+  it('no recorded outcome (outcome_status null): no badge — the typical case', () => {
+    const insight = makeInsight({ outcome_status: null });
+    render(<InsightCard insight={insight} density="default" audience="coach" />);
+    expect(screen.queryByTestId('insight-outcome-badge')).toBeNull();
+  });
+
+  it('is live in the hero density too (not just default) — confirms the badge is NOT dead code', () => {
+    const insight = makeInsight({
+      outcome_status: 'improved',
+      evidence: makeEvidence({ strokes_impact: 2.4 }),
+    });
+    render(<InsightCard insight={insight} density="hero" audience="coach" />);
+    const badge = screen.getByTestId('insight-outcome-badge');
+    expect(badge.textContent).toContain('~2.4 str/rd at stake');
   });
 });
 
