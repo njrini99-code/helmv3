@@ -18,6 +18,7 @@ const mocks = vi.hoisted(() => ({
   loadDistanceProfile: vi.fn(),
   buildDistanceProfileViewModel: vi.fn(() => []),
   loadParOpportunities: vi.fn(),
+  computeParOpportunities: vi.fn(() => []),
   loadPlayerContext: vi.fn(),
   buildScoringViewModel: vi.fn(() => ({ parSections: [], par5Holes: [] })),
   buildRollingDistanceProfileScope: vi.fn((playerId: string) => ({
@@ -79,6 +80,9 @@ vi.mock('@/components/golf/coachhelm/game-fingerprint/distance-profile/DistanceP
 }));
 vi.mock('@/lib/coachhelm/v3/metrics/load-par-opportunities', () => ({
   loadParOpportunities: mocks.loadParOpportunities,
+}));
+vi.mock('@/lib/coachhelm/v3/metrics/par-opportunities', () => ({
+  computeParOpportunities: mocks.computeParOpportunities,
 }));
 vi.mock('@/lib/coachhelm/v3/context/load-player-context', () => ({
   loadPlayerContext: mocks.loadPlayerContext,
@@ -202,5 +206,24 @@ describe('loadDistanceProfileAndScoringAddenda — shared player-context path (#
       scoring: null,
     });
     expect(mocks.logServerError).toHaveBeenCalled();
+  });
+
+  it('with BOTH flags on, a computeParOpportunities failure degrades ONLY Scoring — the shared distance-profile addendum still renders (#2010 review fold-in)', async () => {
+    // computeDistanceProfile is NOT mocked in this file — it runs for real
+    // on the shared (empty) context, proving renderDistanceProfileFromContext's
+    // own try/catch isolation actually holds when its SIBLING renderer
+    // throws, not just when loadPlayerContext itself fails (already covered
+    // above).
+    mocks.computeParOpportunities.mockImplementationOnce(() => {
+      throw new Error('scoring boom');
+    });
+    const result = await loadDistanceProfileAndScoringAddenda(true, true, 'p-1', FAKE_SUPABASE);
+    expect(result.scoring).toBeNull();
+    expect(result.distanceProfile).not.toBeNull();
+    expect(mocks.logServerError).toHaveBeenCalledWith(
+      expect.stringContaining('scoring render failed'),
+      expect.anything(),
+      expect.anything(),
+    );
   });
 });
