@@ -28,6 +28,7 @@ function roughApproachShot(intent: ShotIntent, overrides: Partial<ShotFact> = {}
     result: 'rough',
     is_penalty: false,
     putt_made: null,
+    miss_direction: null,
     observed_at: '2026-07-01T10:00:00.000Z',
     ...overrides,
   };
@@ -192,6 +193,7 @@ describe('buildHypotheses — short_bias has no producer today, no_data until a 
       result: 'hole',
       is_penalty: false,
       putt_made: true,
+      miss_direction: null,
       observed_at: '2026-07-01T10:00:00.000Z',
     };
     const result = buildHypotheses([], [puttOnly]);
