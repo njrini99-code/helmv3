@@ -297,3 +297,27 @@ flags:
       routed through fromUntyped only because evidence_revision didn't
       exist in generated types yet, and that escape hatch should not
       outlive the reason it was needed.
+
+  - feature_id: coachhelm_a4_sequence_attribution_surface
+    owner: golf/coachhelm
+    purpose: >-
+      Gates whether the Round Review page renders the new per-hole
+      sequence-attribution rollup (loadSequenceAttribution +
+      computeSequenceAttribution + SequenceAttributionSection) below the
+      existing stat breakdown; default off pending a design/product review
+      of the section's placement, copy, and the observed-strokes-gained
+      wording against a busy round.
+    type: experiment
+    status: active
+    created_at: "2026-09-23"
+    expires_at: null
+    default: false
+    environment:
+      production: false
+      preview: false
+      development: false
+    kill_switch_behavior: null
+    cleanup_plan: >-
+      Either promote to a permanent `release` flag once the section has
+      been reviewed, or remove the section and its wiring if the review
+      asks for a different surface/placement instead.
