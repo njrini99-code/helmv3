@@ -350,6 +350,8 @@ ALTER TABLE "public"."golf_event_documents" ENABLE ROW LEVEL SECURITY;
 
 ALTER TABLE "public"."golf_events" ENABLE ROW LEVEL SECURITY;
 
+ALTER TABLE "public"."golf_focus_area_practice_sessions" ENABLE ROW LEVEL SECURITY;
+
 ALTER TABLE "public"."golf_global_patterns" ENABLE ROW LEVEL SECURITY;
 
 ALTER TABLE "public"."golf_goal_suggestions" ENABLE ROW LEVEL SECURITY;

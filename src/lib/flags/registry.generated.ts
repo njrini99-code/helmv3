@@ -47,6 +47,23 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     cleanup_plan: "Flip on (development, then preview, then production) only after the owner applies migration 20260923090000_golf_focus_area_evidence_revision to each environment and `information_schema.columns` confirms evidence_revision exists there. expires_at is a review reminder, not an automatic kill — if the migration still hasn't landed by then, re-date it rather than silently expiring. Once on everywhere and stable, remove this flag and the branch in createFocusAreaFromInsight / createFocusAreaFromInsightV2 that reads it (stamp unconditionally). DB-review follow-up (#2004): once db:types is regenerated against the applied migration, also restore the two now-untyped golf_player_focus_areas inserts (development.ts's createFocusAreaFromInsightV2Impl and createFocusAreaFromInsightImpl) to plain typed `.from('golf_player_focus_areas')` calls — they were routed through fromUntyped only because evidence_revision didn't exist in generated types yet, and that escape hatch should not outlive the reason it was needed.",
   },
   {
+    feature_id: "coachhelm_focus_area_practice_log",
+    owner: "golf/coachhelm",
+    purpose: "Gates the practice-completion log rows for a focus area and the coach-written review criteria on golf_player_focus_areas added for A8 slice 2. Off means zero reads or writes of either surface anywhere in the app — required because the migration that creates them has not been applied in every environment yet.",
+    type: "temporary_migration",
+    status: "active",
+    created_at: "2026-09-23",
+    expires_at: "2026-12-23",
+    default: false,
+    environment: {
+      production: false,
+      preview: false,
+      development: false,
+    },
+    kill_switch_behavior: null,
+    cleanup_plan: "Once 20260923110000_golf_focus_area_practice_log.sql is applied in every environment and the read/write paths have run in production without incident, flip default to true, then remove this flag and the now-dead off-branches once the write paths no longer need a migration-safety gate.",
+  },
+  {
     feature_id: "coachhelm_learned_personalization",
     owner: "golf/coachhelm",
     purpose: "Gates whether v3 insight ranking's loadCoachWeightsForPlayer applies stored golf_coachhelm_coach_weights instead of neutral 1.0 defaults; default off because production's weights were computed under v1's broken outcome-attribution math (see score.ts's own docblock), not because of any evidence problem with this flag.",

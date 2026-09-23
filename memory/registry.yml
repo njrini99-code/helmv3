@@ -965,6 +965,7 @@ features:
         - src/app/golf/actions/shot-analytics.ts
         - src/app/golf/actions/intelligence-dashboard.ts
         - src/app/golf/actions/development.ts
+        - src/app/golf/actions/focus-area-practice-log.ts
         - src/app/golf/actions/player-feedback.ts
         - src/app/golf/actions/round-reviews.ts
         - src/app/golf/actions/v3/**

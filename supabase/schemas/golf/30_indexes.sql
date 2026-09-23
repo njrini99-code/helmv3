@@ -354,6 +354,10 @@ CREATE INDEX "idx_golf_focus_areas_player_id" ON "public"."golf_player_focus_are
 
 CREATE INDEX "idx_golf_focus_areas_team_id" ON "public"."golf_player_focus_areas" USING "btree" ("team_id");
 
+CREATE INDEX "golf_focus_area_practice_sessions_focus_area_practiced_idx" ON "public"."golf_focus_area_practice_sessions" USING "btree" ("focus_area_id", "practiced_at");
+
+CREATE INDEX "golf_focus_area_practice_sessions_practiced_at_idx" ON "public"."golf_focus_area_practice_sessions" USING "btree" ("practiced_at");
+
 CREATE INDEX "idx_golf_global_patterns_confidence" ON "public"."golf_global_patterns" USING "btree" ("confidence" DESC);
 
 CREATE INDEX "idx_golf_global_patterns_pattern_type" ON "public"."golf_global_patterns" USING "btree" ("pattern_type");

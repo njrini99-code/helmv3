@@ -351,3 +351,35 @@ flags:
       rule). This flag is promoted or removed based on that decision plus
       shadow-log evidence on the insufficient-evidence rate, not on a fixed
       date.
+
+  # Addendum A8 slice 2 (folded into Pkg 9): gates BOTH new surfaces added by
+  # supabase/migrations/20260923110000_golf_focus_area_practice_log.sql —
+  # golf_player_focus_areas.criteria and the new golf_focus_area_practice_sessions
+  # table. Neither is applied to production yet (owner's migration apply
+  # queue); every read AND write of either surface must check this flag
+  # first, with zero .from() calls against either surface while it is off,
+  # since the column/table may not exist yet in a given environment.
+  - feature_id: coachhelm_focus_area_practice_log
+    owner: golf/coachhelm
+    purpose: >-
+      Gates the practice-completion log rows for a focus area and the
+      coach-written review criteria on golf_player_focus_areas added for
+      A8 slice 2. Off means zero reads or writes of either surface
+      anywhere in the app — required because the migration that creates
+      them has not been applied in every environment yet.
+    type: temporary_migration
+    status: active
+    created_at: "2026-09-23"
+    expires_at: "2026-12-23"
+    default: false
+    environment:
+      production: false
+      preview: false
+      development: false
+    kill_switch_behavior: null
+    cleanup_plan: >-
+      Once 20260923110000_golf_focus_area_practice_log.sql is applied in
+      every environment and the read/write paths have run in production
+      without incident, flip default to true, then remove this flag and
+      the now-dead off-branches once the write paths no longer need a
+      migration-safety gate.

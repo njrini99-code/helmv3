@@ -654,6 +654,14 @@ CREATE POLICY "golf_events_select_team" ON "public"."golf_events" FOR SELECT USI
 
 CREATE POLICY "golf_events_update_coach" ON "public"."golf_events" FOR UPDATE USING ("public"."is_golf_team_coach"("team_id")) WITH CHECK ("public"."is_golf_team_coach"("team_id"));
 
+CREATE POLICY "practice_sessions_select_via_focus_area" ON "public"."golf_focus_area_practice_sessions" FOR SELECT TO "authenticated" USING ((EXISTS ( SELECT 1
+   FROM "public"."golf_player_focus_areas" "fa"
+  WHERE ("fa"."id" = "golf_focus_area_practice_sessions"."focus_area_id"))));
+
+CREATE POLICY "practice_sessions_insert_via_focus_area" ON "public"."golf_focus_area_practice_sessions" FOR INSERT TO "authenticated" WITH CHECK ((("logged_by_user_id" = ( SELECT "auth"."uid"() AS "uid")) AND (EXISTS ( SELECT 1
+   FROM "public"."golf_player_focus_areas" "fa"
+  WHERE (("fa"."id" = "golf_focus_area_practice_sessions"."focus_area_id") AND ("fa"."player_id" = "golf_focus_area_practice_sessions"."player_id"))))));
+
 CREATE POLICY "golf_holes_delete" ON "public"."golf_holes" FOR DELETE TO "authenticated" USING ((EXISTS ( SELECT 1
    FROM ("public"."golf_rounds" "gr"
      JOIN "public"."golf_players" "gp" ON (("gp"."id" = "gr"."player_id")))
