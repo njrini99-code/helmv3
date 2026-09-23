@@ -1297,6 +1297,14 @@ are dimensioned when they resolved against an actual row.
   strokes-shaped metric exists for this family. Pinned by a test using the
   real shape (`unit: 'count'`, a positive value) asserting it stays
   `'candidate'`, never `'candidate'`-via-false-contradiction.
+  Follow-up: `missingInputs`/`prerequisites` now name a distinct id,
+  `approach_rough_gap_strokes_contribution` (`ROUGH_GAP_STROKES_METRIC_ID`),
+  for the not-yet-existing strokes-shaped signal, instead of dishonestly
+  naming the real, present count metric as "missing." A resolved
+  supporting/contradicting claim still names
+  `approach_measured_contribution` (`ROUGH_GAP_COUNT_METRIC_ID`) — the id
+  `contribution` was actually looked up and found under — so the claim
+  traces back to a real input element.
 - **`par5_opportunity_loss` now emits one `Hypothesis` PER dimensioned
   opportunity row**, not one aggregate reading an arbitrary first match.
   `par-opportunities.ts` dimensions its two metric ids per SPECIFIC par-5

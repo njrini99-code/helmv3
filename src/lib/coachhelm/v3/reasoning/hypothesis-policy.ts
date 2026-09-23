@@ -350,7 +350,20 @@ function buildShortBiasHypothesis(
 // intent.
 // ---------------------------------------------------------------------------
 
-const ROUGH_GAP_METRIC_ID = 'approach_measured_contribution';
+/** The real producer (distance-profile.ts) — an eligible-attempt COUNT,
+ *  never a signed value (see below). Looked up only to check whether some
+ *  future row under this id ever carries the strokes-shaped signal this
+ *  family actually needs; never itself named as the prerequisite/claim,
+ *  since naming a count metric as "the rough-gap corroborator" would be
+ *  the same count-vs-signed-value conflation review flagged once already. */
+const ROUGH_GAP_COUNT_METRIC_ID = 'approach_measured_contribution';
+/** Not a real producer today — names the GAP honestly, the same pattern
+ *  short_bias/recovery already use for a real-but-absent signal. Likely
+ *  future producer: A4's `sequence-attribution.ts`
+ *  `SequenceEvent.measuredContribution` (a genuinely signed,
+ *  canonical-baseline strokes value), adapted to a `MetricResult` row —
+ *  that adapter is deliberately not built in this slice. */
+const ROUGH_GAP_STROKES_METRIC_ID = 'approach_rough_gap_strokes_contribution';
 /** A negative measured contribution means the shot cost more strokes than
  *  the canonical baseline expected — the direction `rough_gap` claims.
  *  Positive means the opposite — the direction that contradicts it. Zero
@@ -427,7 +440,7 @@ function buildRoughGapHypothesis(shot: ShotFact, metrics: readonly MetricResult[
   // round-wide value, so an unfiltered lookup could silently corroborate
   // off a different band's evidence than the one this shot belongs to.
   const band = bandOf(shot);
-  const contribution = band ? findMetric(metrics, ROUGH_GAP_METRIC_ID, { band }) : undefined;
+  const contribution = band ? findMetric(metrics, ROUGH_GAP_COUNT_METRIC_ID, { band }) : undefined;
 
   const supportingClaimIds = [claim];
   const contradictingClaimIds: string[] = [];
@@ -438,15 +451,20 @@ function buildRoughGapHypothesis(shot: ShotFact, metrics: readonly MetricResult[
   // attempt COUNT (unit 'count', never negative) — evidence volume, not a
   // signed strokes-gained direction. It cannot support or contradict this
   // family's over/underperformance claim until a strokes-shaped metric
-  // exists, so it is treated the same as an absent row.
+  // exists, so a missing/wrong-shaped row is named under
+  // ROUGH_GAP_STROKES_METRIC_ID, the honestly-not-yet-existing signal —
+  // never the count metric's own id, which IS present, just wrong-shaped.
+  // A resolved claim, by contrast, must name the row that actually produced
+  // it: ROUGH_GAP_COUNT_METRIC_ID, the real id `contribution` was looked up
+  // under, so the claim id traces back to an actual input element.
   if (!contribution || contribution.unit !== 'strokes') {
-    missingInputs.push(metricClaimId(ROUGH_GAP_METRIC_ID));
+    missingInputs.push(metricClaimId(ROUGH_GAP_STROKES_METRIC_ID));
   } else if (contribution.status === 'supported' && contribution.value !== null) {
     if (contribution.value < ROUGH_GAP_UNDERPERFORM_THRESHOLD) {
-      supportingClaimIds.push(metricClaimId(ROUGH_GAP_METRIC_ID, contribution.dimensions));
+      supportingClaimIds.push(metricClaimId(ROUGH_GAP_COUNT_METRIC_ID, contribution.dimensions));
       elevates = true;
     } else if (contribution.value > ROUGH_GAP_CONTRADICT_THRESHOLD) {
-      contradictingClaimIds.push(metricClaimId(ROUGH_GAP_METRIC_ID, contribution.dimensions));
+      contradictingClaimIds.push(metricClaimId(ROUGH_GAP_COUNT_METRIC_ID, contribution.dimensions));
     }
   }
 
@@ -456,7 +474,7 @@ function buildRoughGapHypothesis(shot: ShotFact, metrics: readonly MetricResult[
     family: 'rough_gap',
     description: describeRoughGap(state),
     state,
-    prerequisites: ['fact:lie_before', 'fact:intent', metricClaimId(ROUGH_GAP_METRIC_ID)],
+    prerequisites: ['fact:lie_before', 'fact:intent', metricClaimId(ROUGH_GAP_STROKES_METRIC_ID)],
     supportingClaimIds,
     contradictingClaimIds,
     missingInputs,

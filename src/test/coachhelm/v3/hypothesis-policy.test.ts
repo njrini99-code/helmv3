@@ -142,7 +142,7 @@ describe('buildHypotheses — rough_gap elevates only with a corroborating, unco
     const result = buildHypotheses([], facts);
     const roughGap = result.find((h) => h.family === 'rough_gap')!;
     expect(roughGap.state).toBe('candidate');
-    expect(roughGap.missingInputs).toContain(metricClaimId('approach_measured_contribution'));
+    expect(roughGap.missingInputs).toContain(metricClaimId('approach_rough_gap_strokes_contribution'));
     expect(roughGap.supportingClaimIds).toEqual([shotClaimId(facts[0]!)]);
   });
 
@@ -229,7 +229,7 @@ describe('buildHypotheses — rough_gap elevates only with a corroborating, unco
     expect(roughGap.state).toBe('candidate');
     expect(roughGap.contradictingClaimIds).toEqual([]);
     expect(roughGap.supportingClaimIds).toEqual([shotClaimId(facts[0]!)]);
-    expect(roughGap.missingInputs).toContain(metricClaimId('approach_measured_contribution'));
+    expect(roughGap.missingInputs).toContain(metricClaimId('approach_rough_gap_strokes_contribution'));
   });
 
   it('two shots in different distance bands each read their OWN band\'s row, never an arbitrary first match', () => {
