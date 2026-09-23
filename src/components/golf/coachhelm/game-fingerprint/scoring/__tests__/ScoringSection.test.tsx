@@ -9,12 +9,30 @@ import {
   PAR4_MID_BAND_HOLES,
 } from '@/test/coachhelm/v3/fixtures/par-opportunities-fixtures';
 import { buildScoringViewModel } from '../buildScoringViewModel';
-import { ScoringSection } from '../ScoringSection';
+import { formatStrokesVsPar, ScoringSection } from '../ScoringSection';
 
 /** The vaul-attributed Sheet content node is portaled to `document.body`. */
 function sheetContent() {
   return document.body.querySelector('[data-vaul-drawer]');
 }
+
+describe('formatStrokesVsPar — rounds first, tests for zero after (#2010 review, SHOULD 4)', () => {
+  it('shows "E", never "−0", for a value that rounds away to zero (+0.04)', () => {
+    // Rounding AFTER the zero check would print the sign of a value that
+    // rounds away to nothing — 0.04 * 10 = 0.4, Math.round(0.4) = 0, so the
+    // zero check must run on the ALREADY-ROUNDED 0, not on the raw 0.04.
+    expect(formatStrokesVsPar(0.04)).toBe('E');
+  });
+
+  it('shows "E", never "−0", for a value that rounds away to zero (−0.04)', () => {
+    expect(formatStrokesVsPar(-0.04)).toBe('E');
+  });
+
+  it('still shows the signed value once rounding does not erase it', () => {
+    expect(formatStrokesVsPar(0.4)).toBe('+0.4');
+    expect(formatStrokesVsPar(-0.4)).toBe('−0.4');
+  });
+});
 
 describe('ScoringSection', () => {
   it('renders a MetricCard for a supported par row, InsufficientData for an insufficient one', () => {
