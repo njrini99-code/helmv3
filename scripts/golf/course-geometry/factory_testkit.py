@@ -351,11 +351,11 @@ class FakePipeline:
 
     def _asset_manifest(self, ctx, layout_id, folder, holes):
         manifest = ctx.terrain_source_manifest(layout_id)
-        doc = {'schemaVersion': 1, 'compilerVersion': 'course-terrain-v4', 'geometryHash': ctx.package_hash(layout_id), 'sourceManifestHash': digest(manifest),
+        doc = {'schemaVersion': 1, 'compilerVersion': 'course-terrain-v5', 'geometryHash': ctx.package_hash(layout_id), 'sourceManifestHash': digest(manifest),
                'sourceIdentity': terrain_source_identity(manifest), 'holes': dict(sorted(holes.items()))}
         write_json(os.path.join(folder, 'asset-manifest.json'), doc)
         # Like the real compiler, the compilation report embeds the source manifest.
-        write_json(os.path.join(folder, 'compilation-report.json'), {'compilerVersion': 'course-terrain-v4', 'packageHash': ctx.package_hash(layout_id), 'source': manifest,
+        write_json(os.path.join(folder, 'compilation-report.json'), {'compilerVersion': 'course-terrain-v5', 'packageHash': ctx.package_hash(layout_id), 'source': manifest,
                                                                      'sourceManifestHash': digest(manifest), 'contextLayerHash': self._context_hash(ctx, layout_id)})
         return doc
 

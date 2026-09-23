@@ -20,11 +20,19 @@ CRS_FILES = (script('course_crs.py'),)
 # Hash the registry with acquisition and compilation tasks: otherwise a
 # registry contract edit could leave a cached terrain result looking current.
 TERRAIN_PROVIDER_FILES = (script('factory/providers.py'),)
-TERRAIN_COMPILER_FILES = (
+# `compile-course-terrain.py --acquire-only` (the executor every
+# `*.terrain.acquire` task runs) returns before triangulating a single face:
+# it never reaches `terrain_triangulate.py`. Keep that module out of this
+# list so an edit confined to mesh output does not move the acquire tasks'
+# fingerprint and force a ~300-450MB DEM re-download; TERRAIN_COMPILE_FILES
+# below is for the tasks that actually call the compiler without
+# --acquire-only and so do reach it.
+TERRAIN_ACQUIRE_FILES = (
     script('compile-course-terrain.py'), script('hole_footprint.py'),
     script('elevation_raster.py'), script('prepare-pilot.py'),
     script('fetch-terrain-pilot.py'),
 ) + CRS_FILES + TERRAIN_PROVIDER_FILES
+TERRAIN_COMPILE_FILES = TERRAIN_ACQUIRE_FILES + (script('terrain_triangulate.py'),)
 
 
 def artifact(key, path, retention='C'):

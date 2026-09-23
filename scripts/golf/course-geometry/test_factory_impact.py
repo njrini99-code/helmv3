@@ -152,6 +152,43 @@ class ImpactTests(unittest.TestCase):
         self.assertEqual(states['facility.osm.snapshot[synthetic]'][0], 'cached')
         self.assertEqual(states['layout.scorecard.compose[synthetic-a]'][0], 'cached')
 
+    def test_a_mesh_only_triangulation_edit_leaves_terrain_acquisition_cached(self):
+        """terrain_triangulate.py holds only the per-face CDT/mesh-output step;
+        `compile-course-terrain.py --acquire-only` (what every *.terrain.acquire
+        task runs) returns before it is ever imported for that purpose. Its
+        impl_files list (factory/tasks/common.py: TERRAIN_ACQUIRE_FILES vs
+        TERRAIN_COMPILE_FILES) is split so an edit here does not force a
+        ~300MB DEM re-download for every layout; only the tasks that actually
+        triangulate (layout.terrain.base, hole.terrain.compile) must rebuild."""
+        self.h.run('run', '--layout', 'synthetic-a')
+        before = self.h.states('synthetic-a')
+        self.assertEqual(before['layout.terrain.acquire[synthetic-a]'][0], 'cached')
+        self.assertEqual(before['hole.terrain.compile[synthetic-a:07]'][0], 'cached')
+        with open(os.path.join(self.h.repo, 'scripts', 'golf', 'course-geometry', 'terrain_triangulate.py'), 'a', encoding='utf-8') as f:
+            f.write('\n# mesh-output edit\n')
+        states = self.h.states('synthetic-a')
+        # Acquisition (and everything upstream of it) is untouched: same
+        # fingerprint, no re-run queued.
+        self.assertEqual(states['layout.candidates.compose[synthetic-a]'], before['layout.candidates.compose[synthetic-a]'])
+        self.assertEqual(states['layout.terrain.acquire[synthetic-a]'], before['layout.terrain.acquire[synthetic-a]'])
+        # Every task that actually triangulates goes stale on its own moved
+        # fingerprint (not adopted, not blocked on something upstream).
+        self.assertEqual(states['layout.terrain.base[synthetic-a]'], ('stale', 'FINGERPRINT_CHANGED'))
+        # hole.terrain.compile also has terrain_triangulate.py in its own
+        # impl_files, but layout.terrain.base going stale first makes it
+        # DEPENDENCY_PENDING rather than independently FINGERPRINT_CHANGED;
+        # either way it must leave the cached fixed point.
+        compiles = {k: v for k, v in states.items() if k.startswith('hole.terrain.compile')}
+        self.assertTrue(compiles, 'expected per-hole terrain.compile rows')
+        self.assertTrue(all(v[0] not in DONE for v in compiles.values()), compiles)
+        mark = len(self.h.pipeline.calls)
+        code, text = self.h.run('run', '--layout', 'synthetic-a')
+        self.assertEqual(code, 0, text)
+        second = self.h.pipeline.calls[mark:]
+        self.assertNotIn('layout.terrain.acquire[synthetic-a]', second, 'a mesh-only edit must not re-trigger acquisition')
+        self.assertIn('layout.terrain.base[synthetic-a]', second)
+        self.assertEqual(len([k for k in second if k.startswith('hole.terrain.compile')]), 18)
+
     def test_missing_and_corrupt_artifacts_invalidate_despite_a_success_row(self):
         self.h.run('run', '--layout', 'synthetic-a')
         compiled = os.path.join(self.h.output, 'layouts', 'synthetic-a', 'compiled')

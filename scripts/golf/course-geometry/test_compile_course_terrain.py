@@ -15,6 +15,8 @@ from unittest.mock import patch
 import numpy as np
 from shapely.geometry import LineString, MultiPolygon, Polygon, box
 
+import terrain_triangulate
+
 spec = importlib.util.spec_from_file_location('compiler', Path(__file__).with_name('compile-course-terrain.py'))
 compiler = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(compiler)
@@ -490,6 +492,55 @@ class TerrainCompilerTest(unittest.TestCase):
         triangles = np.array(mesh['vertices']).reshape(-1, 3, 3)
         self.assertTrue(np.allclose(triangles[:, :, 2], 200+.05*triangles[:, :, 0]+.1*triangles[:, :, 1], atol=1e-3))
 
+    def test_a_legitimate_near_tangent_sliver_is_not_dropped_from_only_one_side(self):
+        # Two real, exactly-noded faces from Golden Horseshoe hole 18 (course-
+        # geometry batch), captured hex-exact so the CDT reproduces bit for bit.
+        # Where they meet at a near-tangent angle, one side's raw CDT output
+        # includes a genuine, non-degenerate sliver triangle of area
+        # ~9.6076e-09 m^2; the pre-v5 threshold (1e-8) discarded it, but only
+        # on this side, since node_pieces already gave both faces the same
+        # noded boundary and the mirror edge on the other face's independent
+        # CDT pass was not similarly slivered. The dropped triangle's edge
+        # then stayed single-use in the combined mesh: a T-junction, not a
+        # detector false positive (see t_junction_report). DEGENERATE_AREA_M2
+        # (1e-10) sits below this sliver and above true GEOS overlay noise
+        # (~1e-15), so it keeps the triangle and the crack closes.
+        def h(s):
+            return float.fromhex(s)
+
+        def face(hex_points):
+            return Polygon([(h(x), h(y)) for x, y in hex_points])
+
+        face_a = face([
+            ('-0x1.c000000000000p+7', '0x1.7400000000000p+9'), ('-0x1.c000000000000p+7', '0x1.7405eda661284p+9'),
+            ('-0x1.bf60512231833p+7', '0x1.7411da16616b5p+9'), ('-0x1.bf60407cc7d1cp+7', '0x1.7411dd7ecbb80p+9'),
+            ('-0x1.bf602afdda8bdp+7', '0x1.7411dcf0307f2p+9'), ('-0x1.bc8662131a8efp+7', '0x1.74487a41e57dap+9'),
+            ('-0x1.b82319e731d2ep+7', '0x1.7483082491afcp+9'), ('-0x1.b800000000000p+7', '0x1.74841bf37b8d4p+9'),
+            ('-0x1.b800000000000p+7', '0x1.7400000000000p+9'), ('-0x1.c000000000000p+7', '0x1.7400000000000p+9'),
+        ])
+        face_b = face([
+            ('-0x1.bf60407cc7d1cp+7', '0x1.7411dd7ecbb80p+9'), ('-0x1.bf60512231833p+7', '0x1.7411da16616b5p+9'),
+            ('-0x1.c000000000000p+7', '0x1.7405eda661284p+9'), ('-0x1.c000000000000p+7', '0x1.748b841248d7ep+9'),
+            ('-0x1.bff2ebc408d8fp+7', '0x1.748c7e175d13dp+9'), ('-0x1.bd0ebedfa43fep+7', '0x1.74c3e27179bfep+9'),
+            ('-0x1.bcf996312f4cfp+7', '0x1.74c539a7c17a9p+9'), ('-0x1.b881276fb0920p+7', '0x1.7500e1c58255bp+9'),
+            ('-0x1.b86c185058ddep+7', '0x1.7501c0a06e9ffp+9'), ('-0x1.b800000000000p+7', '0x1.750511f926c7fp+9'),
+            ('-0x1.b800000000000p+7', '0x1.74841bf37b8d4p+9'), ('-0x1.b82319e731d2ep+7', '0x1.7483082491afcp+9'),
+            ('-0x1.bc8662131a8efp+7', '0x1.74487a41e57dap+9'), ('-0x1.bf602afdda8bdp+7', '0x1.7411dcf0307f2p+9'),
+            ('-0x1.bf60407cc7d1cp+7', '0x1.7411dd7ecbb80p+9'),
+        ])
+        faces = [(0, 'fairway', face_a), (0, 'fairway', face_b)]
+        bounds = [min(face_a.bounds[0], face_b.bounds[0]) - 10, min(face_a.bounds[1], face_b.bounds[1]) - 10,
+                  max(face_a.bounds[2], face_b.bounds[2]) + 10, max(face_a.bounds[3], face_b.bounds[3]) + 10]
+
+        xy_old, tf_old, _tm, _ab, _cb = terrain_triangulate.triangulate_faces(faces, ['golf-hole-18-fairway'], 'test-hole', 1, 1e-8)
+        cracked = compiler.t_junction_report(xy_old, bounds)
+        self.assertGreater(cracked['tJunctionVertices'], 0, 'fixture no longer reproduces the old sliver-drop crack')
+
+        xy_new, tf_new, _tm, _ab, _cb = terrain_triangulate.triangulate_faces(faces, ['golf-hole-18-fairway'], 'test-hole', 1, compiler.DEGENERATE_AREA_M2)
+        fixed = compiler.t_junction_report(xy_new, bounds)
+        self.assertEqual(fixed['tJunctionVertices'], 0)
+        self.assertEqual(len(tf_new), len(tf_old) + 1, 'the fix keeps exactly the one previously-dropped legitimate sliver')
+
     def test_metric_grid_is_independent_of_display_lod_and_row_order_is_northward(self):
         self.assertEqual(self.fine['metricGrid'], self.coarse['metricGrid'])
         grid = self.fine['metricGrid']
@@ -521,7 +572,7 @@ class TerrainCompilerTest(unittest.TestCase):
         self.assertEqual(self.report['sourceNormals'], 'metric_grid_slope')
         self.assertNotIn('sourceNormalDuplicatesAgree', self.report)
         self.assertTrue(self.report['sourceHeightDuplicatesAgree'])
-        self.assertEqual(self.report['renderProfile']['compilerVersion'], 'course-terrain-v4')
+        self.assertEqual(self.report['renderProfile']['compilerVersion'], 'course-terrain-v5')
         # The grid carries the same gradient the array would: z = 100 + .05x + .1y.
         grid = self.fine['metricGrid']
         self.assertAlmostEqual((grid['heightsM'][1]-grid['heightsM'][0])/grid['spacingM'], .05)
