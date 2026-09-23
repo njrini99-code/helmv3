@@ -44,10 +44,12 @@ once required checks pass. Do not bypass required checks with `--admin`.
 
 Use `npm run worktrees{,:park,:retire}` to retire work safely.
 STANDING OWNER AUTHORIZATION covers only tool-verdicted PARKABLE checkouts
-and DELETE_MERGED_EXACT branches. The landing script runs `--retire`. The lifecycle
-checks preserve dirty, unpushed, or active work and archive proven-merged
-branches. Main is the resting branch after a completed task. Do not delete
-unrelated folders or branches to satisfy a workspace count.
+and DELETE_MERGED_EXACT / DELETE_MERGED_CONTENT branches. The landing script
+runs `--retire`, and the WorktreeRemove hook applies the same checks to
+harness worktrees. The lifecycle checks preserve dirty, unpushed, or active
+work and archive proven-merged branches. Main is the resting branch after a
+completed task. Do not delete unrelated folders or branches to satisfy a
+workspace count.
 
 ## Context and verification
 
