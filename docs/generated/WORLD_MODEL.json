@@ -2747,6 +2747,12 @@
         ]
       },
       {
+        "id": "golf_round_recap_provenance",
+        "definedIn": [
+          "supabase/migrations/20260923080000_recap_provenance_and_single_flight.sql"
+        ]
+      },
+      {
         "id": "golf_staff_invite_codes",
         "definedIn": [
           "supabase/migrations/20260819040000_golf_staff_invite_codes.sql"
@@ -15854,6 +15860,17 @@
         {
           "kind": "migration_schema",
           "path": "supabase/migrations/20260611000000_create_golf_demo_sessions.sql"
+        }
+      ]
+    },
+    {
+      "source": "golf_round_lifecycle",
+      "target": "golf_round_recap_provenance",
+      "kind": "feature_table",
+      "evidence": [
+        {
+          "kind": "migration_schema",
+          "path": "supabase/migrations/20260923080000_recap_provenance_and_single_flight.sql"
         }
       ]
     },
