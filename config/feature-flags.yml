@@ -297,3 +297,46 @@ flags:
       routed through fromUntyped only because evidence_revision didn't
       exist in generated types yet, and that escape hatch should not
       outlive the reason it was needed.
+
+  # A9 slice 1 (repair-plan addendum §14.12, PR #1992's pure core wired into
+  # the attribution path). `causality/attribute.ts`'s round-level average has
+  # no natural per-shot opportunity for the "needs-shot-level-join" metrics
+  # (approach_proximity_{50_125,125_175,175_plus}ft) — they've been
+  # `intentional-null` in `metric-sources.ts` since W22, permanently skipped.
+  # This flag gates ONLY whether `causality/comparable-attribute.ts` attempts
+  # a shot-level, matched-opportunity comparison for those metrics instead of
+  # skipping them; `causality/attribute.ts` itself is untouched, every other
+  # metric's round-level path is unaffected, and a `comparable_opportunities_v1`
+  # row NEVER populates `lift` or reaches `updateCoachWeight` — see that
+  # module's own "NEVER FEEDS THE LEARNING LOOP" note. Whether this signal
+  # should ever move a coach weight is an explicit, separate decision (A9
+  # slice 3), not something this flag or this slice decides.
+  - feature_id: coachhelm_comparable_opportunity_attribution
+    owner: golf/coachhelm
+    purpose: >-
+      Gates whether the causality-attribute cron attempts a shot-level,
+      matched-opportunity outcome measurement (distance band, lie, and shot
+      classification held constant on both sides of the insight's actual
+      recorded exposure) for the three approach-proximity metrics that have no
+      round-level equivalent, writing `method_version:
+      'comparable_opportunities_v1'` rows with `lift` always null; default
+      off pending real-world evidence on the insufficient-evidence /
+      no-exposure-record rate before any shadow data exists.
+    type: experiment
+    status: active
+    created_at: "2026-09-23"
+    expires_at: null
+    default: false
+    environment:
+      production: false
+      preview: false
+      development: false
+    kill_switch_behavior: null
+    cleanup_plan: >-
+      A9 slice 2 extends metric coverage and adds an observability rollup;
+      slice 3 is the explicit, separate decision on whether this signal
+      should ever feed `nextWeight` (requires either a dedicated non-`lift`
+      column or a reviewed ADR relaxing the pure core's "never named lift"
+      rule). This flag is promoted or removed based on that decision plus
+      shadow-log evidence on the insufficient-evidence rate, not on a fixed
+      date.
