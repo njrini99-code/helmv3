@@ -71,7 +71,9 @@ Location: `src/lib/coachhelm/v2/`
 **Prediction** (`v2/prediction/`):
 - `performance-predictor.ts` — Score/metric predictions
 - `trajectory-forecaster.ts` — Long-term forecasts
-- `team-forecaster.ts` — Team-level predictions
+- `team-forecaster.ts` — deleted 2026-09-22/23 (fix #6, PR #1980): its only
+  caller, `generateTeamInsight()`, was zero-caller dead code itself (last UI
+  caller deleted 2026-07-23 by #1009)
 
 **Feature Engineering** (`v2/features/`):
 - `temporal.ts` — Time-based features (frequency, trends, volatility)

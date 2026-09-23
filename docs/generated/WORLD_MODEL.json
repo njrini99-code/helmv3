@@ -13507,12 +13507,12 @@
         {
           "kind": "import_graph",
           "path": "src/app/golf/actions/insights.ts",
-          "line": 73
+          "line": 67
         },
         {
           "kind": "import_graph",
           "path": "src/app/golf/actions/insights.ts",
-          "line": 79
+          "line": 73
         },
         {
           "kind": "import_graph",
@@ -13708,7 +13708,12 @@
         {
           "kind": "import_graph",
           "path": "src/app/golf/actions/insights.ts",
-          "line": 55
+          "line": 49
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/insights.ts",
+          "line": 58
         },
         {
           "kind": "import_graph",
@@ -13718,12 +13723,7 @@
         {
           "kind": "import_graph",
           "path": "src/app/golf/actions/insights.ts",
-          "line": 70
-        },
-        {
-          "kind": "import_graph",
-          "path": "src/app/golf/actions/insights.ts",
-          "line": 71
+          "line": 65
         },
         {
           "kind": "import_graph",
@@ -13867,12 +13867,27 @@
         {
           "kind": "import_graph",
           "path": "src/app/golf/actions/insights.ts",
-          "line": 40
+          "line": 36
         },
         {
           "kind": "import_graph",
           "path": "src/app/golf/actions/insights.ts",
-          "line": 41
+          "line": 37
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/insights.ts",
+          "line": 42
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/insights.ts",
+          "line": 43
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/insights.ts",
+          "line": 45
         },
         {
           "kind": "import_graph",
@@ -13882,32 +13897,7 @@
         {
           "kind": "import_graph",
           "path": "src/app/golf/actions/insights.ts",
-          "line": 47
-        },
-        {
-          "kind": "import_graph",
-          "path": "src/app/golf/actions/insights.ts",
-          "line": 48
-        },
-        {
-          "kind": "import_graph",
-          "path": "src/app/golf/actions/insights.ts",
-          "line": 49
-        },
-        {
-          "kind": "import_graph",
-          "path": "src/app/golf/actions/insights.ts",
-          "line": 51
-        },
-        {
-          "kind": "import_graph",
-          "path": "src/app/golf/actions/insights.ts",
-          "line": 52
-        },
-        {
-          "kind": "import_graph",
-          "path": "src/app/golf/actions/insights.ts",
-          "line": 77
+          "line": 71
         },
         {
           "kind": "import_graph",
@@ -14009,17 +13999,17 @@
         {
           "kind": "import_graph",
           "path": "src/app/golf/actions/insights.ts",
-          "line": 72
+          "line": 66
         },
         {
           "kind": "import_graph",
           "path": "src/app/golf/actions/insights.ts",
-          "line": 81
+          "line": 75
         },
         {
           "kind": "import_graph",
           "path": "src/app/golf/actions/insights.ts",
-          "line": 82
+          "line": 76
         },
         {
           "kind": "import_graph",
@@ -14133,12 +14123,17 @@
         {
           "kind": "import_graph",
           "path": "src/app/golf/actions/insights.ts",
-          "line": 43
+          "line": 39
         },
         {
           "kind": "import_graph",
           "path": "src/app/golf/actions/insights.ts",
-          "line": 50
+          "line": 44
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/insights.ts",
+          "line": 48
         },
         {
           "kind": "import_graph",
@@ -14148,17 +14143,12 @@
         {
           "kind": "import_graph",
           "path": "src/app/golf/actions/insights.ts",
-          "line": 60
+          "line": 59
         },
         {
           "kind": "import_graph",
           "path": "src/app/golf/actions/insights.ts",
-          "line": 65
-        },
-        {
-          "kind": "import_graph",
-          "path": "src/app/golf/actions/insights.ts",
-          "line": 78
+          "line": 72
         },
         {
           "kind": "import_graph",
@@ -16045,7 +16035,7 @@
         {
           "kind": "rpc_call",
           "path": "src/app/golf/actions/golf.ts",
-          "line": 7353
+          "line": 7381
         }
       ]
     },
@@ -17394,6 +17384,11 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/ranking/score.ts",
+          "line": 28
+        },
+        {
+          "kind": "import_graph",
           "path": "src/lib/coachhelm/v3/standing/loader.ts",
           "line": 12
         },
@@ -17469,7 +17464,7 @@
         {
           "kind": "import_graph",
           "path": "src/lib/coachhelm/v3/causality/attribute.ts",
-          "line": 29
+          "line": 48
         },
         {
           "kind": "import_graph",
@@ -17708,7 +17703,7 @@
         {
           "kind": "import_graph",
           "path": "src/lib/coachhelm/v3/ranking/score.ts",
-          "line": 26
+          "line": 29
         },
         {
           "kind": "import_graph",
@@ -17780,7 +17775,7 @@
         {
           "kind": "import_graph",
           "path": "src/lib/coachhelm/v3/ranking/score.ts",
-          "line": 24
+          "line": 26
         },
         {
           "kind": "import_graph",

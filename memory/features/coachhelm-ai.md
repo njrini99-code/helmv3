@@ -263,6 +263,23 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
   `rateInsight`) are now correctly bucketed into `BehaviorLearner`'s
   ack/dismiss counts, and `rateInsightImpl` now records a real `insight_type`
   in interaction metadata so per-type bucketing works.
+- **v3 ranking's coach-weight multiplier is wired but flagged off** (2026-09-23,
+  PR #1980 review follow-up): `loadCoachWeightsForPlayer`
+  (`v3/ranking/score.ts`) is gated behind the same
+  `coachhelm_learned_personalization` flag (default OFF) as the alert
+  personalization above. Production's `golf_coachhelm_coach_weights` (4
+  rows, sample_n up to 36, weights 0.77-1.60 as of 2026-09-23) was built
+  entirely from v1's outcome attribution — the pre-N10 formula that
+  algebraically cancelled to post-vs-ambient instead of the observed lift
+  (see `v3/causality/attribute.ts`'s file header) — so per the 2026-09-12
+  repair plan §6.7 step 8, those weights stay neutral (every insight gets
+  `coach_weight = 1.0` in `scoreInsight`'s composite) until outcome quality
+  under the corrected v2 attribution justifies applying them. The write
+  side is NOT gated: the `causality-attribute` cron's `updateCoachWeight`
+  keeps computing and persisting weights unconditionally (in shadow), so
+  the data keeps accumulating for whenever an owner flips the flag with
+  evidence to support it. Resetting the 4 existing rows (built from the v1
+  formula) is a separate owner decision, not made here.
 - **v2 coach-alert family (bubble_player, pattern_detected, streak,
   surge_player, plateau, tournament_pressure, closing_holes, par_3_issues,
   recurring_weakness, team_trend, scoring_decline) is still live-written,

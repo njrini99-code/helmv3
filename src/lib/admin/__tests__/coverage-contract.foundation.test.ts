@@ -385,6 +385,12 @@ describe('global tripwire', () => {
     // and dismissComposedInsight (insights.ts, zero live callers) and
     // bulkDismissInsights/bulkAcknowledgeInsights/bulkResolveInsights
     // (insight-management.ts, zero live callers). Total 436 -> 431.
-    expect(total).toBe(431);
+    // 2026-09-22 (-2), fix #6: removed generateTeamInsight and
+    // generateTournamentPrep from insights.ts. generateTeamInsight's last
+    // caller (IntelligenceCommandCenter.tsx) was deleted 2026-07-23 (#1009)
+    // and never replaced; generateTournamentPrep (#1485) never had a UI
+    // caller. Both confirmed via `git log -G` for the last removed .tsx
+    // call site. Total 431 -> 429.
+    expect(total).toBe(429);
   });
 });

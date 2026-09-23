@@ -67,6 +67,97 @@ describe('verifyPlayerAccess', () => {
     });
   });
 
+  it('resolves coachId from golf_team_coach_staff when granted via coach access (regression #1571)', async () => {
+    // Before the fix, the coach branch returned `{ allowed: true, reason:
+    // 'coach' }` with no `coachId`, so insight-verbosity personalization
+    // (F061, src/app/golf/actions/insights.ts) never fired for a real coach.
+    const sb = {
+      from: vi.fn((table: string) => {
+        if (table === 'golf_players') {
+          return {
+            select: () => ({
+              eq: () => ({
+                eq: () => ({ maybeSingle: async () => ({ data: null, error: null }) }),
+              }),
+            }),
+          };
+        }
+        if (table === 'golf_team_members') {
+          return {
+            select: () => ({
+              eq: () => ({
+                eq: async () => ({ data: [{ team_id: 'team-1' }], error: null }),
+              }),
+            }),
+          };
+        }
+        if (table === 'golf_team_coach_staff') {
+          return {
+            select: () => ({
+              in: () => ({
+                order: async () => ({
+                  data: [{ coach_id: 'coach-99', golf_coaches: { user_id: 'user-1' } }],
+                  error: null,
+                }),
+              }),
+            }),
+          };
+        }
+        throw new Error(`unexpected table: ${table}`);
+      }),
+      rpc: vi.fn().mockResolvedValue({ data: true, error: null }),
+    };
+
+    const result = await verifyPlayerAccess('player-1', 'user-1', sb as never);
+
+    expect(result.allowed).toBe(true);
+    expect(result.reason).toBe('coach');
+    expect(result.coachId).toBe('coach-99');
+  });
+
+  it('does not attribute a coachId belonging to a different staffer on the same team', async () => {
+    const sb = {
+      from: vi.fn((table: string) => {
+        if (table === 'golf_players') {
+          return {
+            select: () => ({
+              eq: () => ({
+                eq: () => ({ maybeSingle: async () => ({ data: null, error: null }) }),
+              }),
+            }),
+          };
+        }
+        if (table === 'golf_team_members') {
+          return {
+            select: () => ({
+              eq: () => ({
+                eq: async () => ({ data: [{ team_id: 'team-1' }], error: null }),
+              }),
+            }),
+          };
+        }
+        if (table === 'golf_team_coach_staff') {
+          return {
+            select: () => ({
+              in: () => ({
+                order: async () => ({
+                  data: [{ coach_id: 'coach-other', golf_coaches: { user_id: 'someone-else' } }],
+                  error: null,
+                }),
+              }),
+            }),
+          };
+        }
+        throw new Error(`unexpected table: ${table}`);
+      }),
+      rpc: vi.fn().mockResolvedValue({ data: true, error: null }),
+    };
+
+    const result = await verifyPlayerAccess('player-1', 'user-1', sb as never);
+    expect(result.allowed).toBe(true);
+    expect(result.coachId).toBeUndefined();
+  });
+
   it('denies when neither self nor coach check passes', async () => {
     const sb = makeSelfSupabase(null);
     const result = await verifyPlayerAccess('player-1', 'user-1', sb as never);

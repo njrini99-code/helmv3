@@ -37,7 +37,7 @@ import { dedupeExposureRows, exposureDedupeKey, startOfUtcDayIso } from './expos
 // ============================================================================
 
 export type TrustStatus =
-  | 'proven'
+  | 'supported'
   | 'promising'
   | 'needs_validation'
   | 'new_hypothesis'
@@ -74,13 +74,22 @@ export const RECENT_TREND_WINDOW = 3;
  *
  *   measured === 0                          → 'new_hypothesis'   (no evidence)
  *   0 < measured < 3                        → 'needs_validation' (too few)
- *   measured >= 3, rate >= 0.6              → 'proven'
+ *   measured >= 3, rate >= 0.6              → 'supported'
  *   rate >= 0.4                             → 'promising'
  *   else                                    → 'underperforming'
  *
  * `rate = worked / measured`. Guards: a non-positive `measured` is treated as
  * zero evidence; `worked` is clamped to [0, measured] so a malformed call can
  * never manufacture a >1.0 rate.
+ *
+ * N9 (2026-09-22): this ladder's top tier used to be named `'proven'`. Three
+ * measured outcomes at a >=60% work rate is real evidence, but it is not
+ * proof an intervention causes improvement — a small sample can clear that
+ * bar by chance, and nothing here rules out a confound. `'supported'` is the
+ * honest word: the evidence to date supports the insight, without claiming
+ * more than that. There is no persisted `'proven'` value anywhere to migrate
+ * — this status is derived fresh from `golf_insight_outcome` rows on every
+ * read, never stored — so this is a pure rename, not a backward-compat map.
  */
 export function deriveTrustStatus(measured: number, worked: number): TrustStatus {
   const m = Number.isFinite(measured) && measured > 0 ? Math.floor(measured) : 0;
@@ -90,7 +99,7 @@ export function deriveTrustStatus(measured: number, worked: number): TrustStatus
   if (m < 3) return 'needs_validation';
 
   const rate = w / m;
-  if (rate >= 0.6) return 'proven';
+  if (rate >= 0.6) return 'supported';
   if (rate >= 0.4) return 'promising';
   return 'underperforming';
 }

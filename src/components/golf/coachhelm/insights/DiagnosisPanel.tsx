@@ -44,7 +44,7 @@ import { InsightCallout } from './InsightCallout';
 
 /** Effectiveness-ledger trust status (P1-12). Optional decoration. */
 export type DiagnosisTrust =
-  | 'proven'
+  | 'supported'
   | 'promising'
   | 'needs_validation'
   | 'new_hypothesis'
@@ -121,7 +121,7 @@ function DriverRow({ driver }: { driver: DiagnosisDriver }) {
 }
 
 const TRUST_BADGE: Record<DiagnosisTrust, { label: string; cls: string }> = {
-  proven: { label: 'Proven', cls: 'bg-fw-success-bg text-fw-success-ink' },
+  supported: { label: 'Supported', cls: 'bg-fw-success-bg text-fw-success-ink' },
   promising: { label: 'Promising', cls: 'bg-accent-100 text-accent-700' },
   needs_validation: { label: 'Needs validation', cls: 'bg-surface-sunken text-text-tertiary' },
   new_hypothesis: { label: 'New hypothesis', cls: 'bg-surface-sunken text-text-tertiary' },

@@ -28,6 +28,22 @@ export const runtime = 'nodejs';
 export const maxDuration = 300;
 export const dynamic = 'force-dynamic';
 
+/**
+ * N10: `method_version` (migration 20260922230000) is prepared but not yet
+ * applied to production -- only the owner applies a migration (AGENTS.md /
+ * HELD.md). PostgREST returns `PGRST204` ("Could not find the 'x' column of
+ * 'y' in the schema cache") for an insert naming a column the live table
+ * doesn't have yet; a raw Postgres path would surface `42703`
+ * (undefined_column). Detected by code/message, not a generic catch-all, so
+ * a REAL insert failure still reaches the existing error handling below.
+ */
+function isUnknownColumnError(error: { code?: string | null; message?: string | null } | null): boolean {
+  if (!error) return false;
+  if (error.code === 'PGRST204' || error.code === '42703') return true;
+  const message = (error.message ?? '').toLowerCase();
+  return message.includes('could not find') && message.includes('column');
+}
+
 const LIMIT = 50;
 const MIN_AGE_DAYS = 21;
 /**
@@ -76,6 +92,13 @@ interface CronSummary {
   malformed: number;
   errors: number;
   duration_ms: number;
+  /**
+   * N10: true when at least one insert had to drop `method_version` because
+   * the owner has not yet applied migration 20260922230000 to production.
+   * Rows still write successfully (pre-N10 shape); this only means the
+   * v1/v2 distinction is not yet available for THIS run's rows.
+   */
+  method_version_column_missing?: boolean;
 }
 
 export async function GET(req: NextRequest) {
@@ -239,22 +262,43 @@ async function handle(): Promise<NextResponse> {
         continue;
       }
       const row = result.row;
-      const { error: insErr } = await sb
-        .from('golf_insight_outcome_attribution')
+      const attributionRow = {
+        insight_id: row.insight_id,
+        surfaced_at: row.surfaced_at,
+        target_metric_id: row.target_metric_id,
+        baseline_value: row.baseline_value,
+        post_value: row.post_value,
+        // P0-01: `delta` stores the direction-AGNOSTIC raw change; `lift`
+        // stores the direction-CORRECTED improvement signal. Only `lift`
+        // (improvement_lift) is ever fed to the weight update below.
+        delta: row.raw_delta,
+        n_rounds_before: row.n_rounds_before,
+        n_rounds_after: row.n_rounds_after,
+        lift: row.improvement_lift,
+      };
+      // fromUntyped: `method_version` (migration 20260922230000, N10) is not
+      // yet in the generated Database types -- the migration is prepared but
+      // unapplied (production apply is owner-only; see supabase/migrations/
+      // HELD.md's own convention for a prepared-not-applied additive column).
+      // Every other field above is still the real, checked column shape.
+      let { error: insErr } = await fromUntyped(sb, 'golf_insight_outcome_attribution')
         .insert({
-          insight_id: row.insight_id,
-          surfaced_at: row.surfaced_at,
-          target_metric_id: row.target_metric_id,
-          baseline_value: row.baseline_value,
-          post_value: row.post_value,
-          // P0-01: `delta` stores the direction-AGNOSTIC raw change; `lift`
-          // stores the direction-CORRECTED improvement signal. Only `lift`
-          // (improvement_lift) is ever fed to the weight update below.
-          delta: row.raw_delta,
-          n_rounds_before: row.n_rounds_before,
-          n_rounds_after: row.n_rounds_after,
-          lift: row.improvement_lift,
+          ...attributionRow,
+          // N10: distinguishes this row from a pre-fix v1 row (NULL). See
+          // src/lib/coachhelm/v3/causality/attribute.ts's file header.
+          method_version: row.method_version,
         });
+      if (insErr && isUnknownColumnError(insErr)) {
+        // Migration not applied yet -- degrade to the pre-N10 row shape
+        // rather than failing every attribution write until the owner
+        // applies it. Logged once per run via logServerEvent below, not
+        // per-row, to avoid paging noise identical to every other
+        // isMigrationNotAppliedError call site in this codebase.
+        summary.method_version_column_missing = true;
+        ({ error: insErr } = await fromUntyped(sb, 'golf_insight_outcome_attribution').insert(
+          attributionRow,
+        ));
+      }
       if (insErr) {
         // Postgres 23503 = foreign_key_violation. As of migration
         // 20260608150000 the target_metric_id -> golf_metrics FK is DROPPED, so
@@ -347,6 +391,20 @@ async function handle(): Promise<NextResponse> {
           distinct_metrics: distinctMetrics,
           sample_insights: unknownMetricSamples,
         },
+      },
+      'info',
+    );
+  }
+
+  // N10: one info-level event per run (never per-row) so a still-unapplied
+  // migration is visible without paging on every attribution write.
+  if (summary.method_version_column_missing) {
+    await logServerEvent(
+      'causality cron wrote rows without method_version — migration 20260922230000 not yet applied',
+      {
+        action: 'cron.v3.causality.method-version-missing',
+        featureArea: 'coachhelm.causality',
+        metadata: { migration: '20260922230000_v3_attribution_method_version' },
       },
       'info',
     );

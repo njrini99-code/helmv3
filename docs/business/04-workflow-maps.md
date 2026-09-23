@@ -135,7 +135,8 @@ Trigger: round submit (workflow 1) -> triggerPlayerInsightsAfterRound()
        gate.ts            — feature flags (global / per-user / per-team) gate the whole run
        mining/*            — pattern-miner, shot-pattern-miner, causal-engine,
                               correlation-engine, pressure-analysis, resilience-analysis
-       prediction/*        — performance-predictor, trajectory-forecaster, team-forecaster
+       prediction/*        — performance-predictor, trajectory-forecaster
+                              (team-forecaster deleted 2026-09-23, dead code)
        features/*          — temporal, sequence, contextual feature engineering
        learning/*          — behavior-learner, cross-learner, outcome-validator
        reasoning/*          — reasoning-engine, confidence-calibrator

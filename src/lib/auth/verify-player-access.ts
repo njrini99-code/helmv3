@@ -152,7 +152,101 @@ export async function verifyPlayerAccess(
     });
   }
 
-  return { allowed: !!isCoach, reason: isCoach ? 'coach' : 'denied' };
+  if (!isCoach) {
+    return { allowed: false, reason: 'denied' };
+  }
+
+  // Resolve the coach.id for attribution (see the `coachId` docblock above).
+  // `verify_coach_owns_player` only confirms the RPC's boolean access
+  // decision; it does not return an id. A lookup failure here must not flip
+  // an already-granted decision to denied -- callers that need coachId (e.g.
+  // insight-verbosity personalization) simply get `undefined` and fall back,
+  // same as before this id was ever wired.
+  const coachId = await resolveCoachIdForPlayer(sb, playerId, userId);
+  return { allowed: true, reason: 'coach', coachId };
+}
+
+/**
+ * Find which `golf_coaches.id` belongs to `userId` among the coaches
+ * staffing a team `playerId` actively belongs to. Only called after
+ * `verify_coach_owns_player` already confirmed access, so this never
+ * widens or narrows the access decision -- it only supplies the id the
+ * docblock on `VerifyResult.coachId` has always promised.
+ */
+async function resolveCoachIdForPlayer(
+  sb: SupabaseClient,
+  playerId: string,
+  userId: string,
+): Promise<string | undefined> {
+  const { data: memberships, error: membershipError } = await probeWithRetry(() =>
+    sb
+      .from('golf_team_members')
+      .select('team_id')
+      .eq('player_id', playerId)
+      .eq('status', 'active'),
+  );
+  if (membershipError) {
+    await logServerError('resolveCoachIdForPlayer.membership failed', {
+      action: 'auth.resolveCoachIdForPlayer',
+      metadata: { playerId, userId, error: describeError(membershipError) },
+    });
+    return undefined;
+  }
+  const teamIds = (memberships ?? [])
+    .map((m: { team_id: string | null }) => m.team_id)
+    .filter((id): id is string => !!id);
+  if (teamIds.length === 0) {
+    // `verify_coach_owns_player` (the RPC just above this call) already
+    // confirmed the caller is a coach with access to this player, so an
+    // active player with zero active team memberships here is a
+    // contradiction, not a benign case -- most likely a stale/inconsistent
+    // `golf_team_members` row. Logged (not thrown): access was already
+    // granted, so a coachId lookup gap must degrade to `undefined`, not
+    // flip the decision to denied.
+    await logServerError(
+      'resolveCoachIdForPlayer: coach access granted but player has no active team membership',
+      { action: 'auth.resolveCoachIdForPlayer', metadata: { playerId, userId } },
+    );
+    return undefined;
+  }
+
+  const { data: staff, error: staffError } = await probeWithRetry(() =>
+    sb
+      .from('golf_team_coach_staff')
+      .select('coach_id, golf_coaches!inner(user_id)')
+      .in('team_id', teamIds)
+      // Deterministic pick when more than one staff row could match this
+      // user_id (a coach staffing more than one of the player's teams, or
+      // the rarer case of one user_id spanning multiple golf_coaches rows):
+      // order by coach_id so the same profile wins every time regardless of
+      // Postgres's unordered physical row order, rather than depending on
+      // whichever row `.find()` below happens to see first.
+      .order('coach_id', { ascending: true }),
+  );
+  if (staffError) {
+    await logServerError('resolveCoachIdForPlayer.staff failed', {
+      action: 'auth.resolveCoachIdForPlayer',
+      metadata: { playerId, userId, error: describeError(staffError) },
+    });
+    return undefined;
+  }
+  const match = (staff ?? []).find(
+    (row) =>
+      (row as unknown as { golf_coaches?: { user_id?: string | null } }).golf_coaches
+        ?.user_id === userId,
+  ) as { coach_id?: string } | undefined;
+  if (!match) {
+    // Same contradiction as the empty-teamIds branch above: the RPC granted
+    // coach access, but none of the staff rows for the player's teams
+    // belong to this user_id. Logged so a real gap (e.g. the RPC and this
+    // lookup disagreeing on staffing) is visible instead of silently
+    // falling back to `undefined` forever.
+    await logServerError(
+      'resolveCoachIdForPlayer: coach access granted but no staff row matched this user_id',
+      { action: 'auth.resolveCoachIdForPlayer', metadata: { playerId, userId, teamIds } },
+    );
+  }
+  return match?.coach_id ?? undefined;
 }
 
 /**
