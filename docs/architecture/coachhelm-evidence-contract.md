@@ -319,5 +319,5 @@ follows; both are pure functions with tests.
 | `src/app/api/cron/coachhelm-insight-lifecycle/route.ts` | Nightly Rules 1–4 (resolve / archive / decay / demote); never promotes. `MIN_SAMPLE_N`, coach/team-scoped dedup and the insert / refresh / movement / resurrection / promotion branches live in the two rows above |
 | `src/lib/coachhelm/v2/insights/to-insight-input.ts` | Legacy v1 → v2 adapter; returns null on insufficient data |
 | `src/lib/coachhelm/v2/orchestrator.ts` | Tier-1 generator dispatch + `generatorSummary` |
-| `src/lib/coachhelm/v3/engine/analysis-outcome.ts` | Typed `AnalysisOutcome` for the post-round trigger path (#1960) |
+| `src/lib/coachhelm/v3/engine/analysis-outcome.ts` | Post-round outcome |
 | `src/test/coachhelm/v2/insights/baseline-registry.test.ts` | Static guard catching hard-coded `comparison_source` strings |
