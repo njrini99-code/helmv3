@@ -43,6 +43,7 @@ import { loadPlayerScoringBaseline } from '@/lib/coachhelm/v3/counterfactual/bas
 import { logServerError } from '@/lib/server-error-logger';
 import { describeError } from '@/lib/utils/describe-error';
 import { loadFocusAreaPracticeLogData } from '@/lib/coachhelm/focus-areas/practice-log-loader';
+import { isFlagEnabled } from '@/lib/flags';
 
 export const metadata: Metadata = {
   title: 'CoachHelm | GolfHelm',
@@ -321,6 +322,13 @@ export default async function PlayerCoachHelmPage() {
   // unchanged). Best-effort: a failure here degrades to an honest loadError
   // flag inside the drill rather than failing the whole CoachHelm home. ──────
   const supabase = await createClient();
+  // A8 slice 3 (write side): `isFlagEnabled` is server-only (DevelopmentDrill/
+  // FocusAreaCard are client components), so the boolean is computed here
+  // and threaded down as a plain prop rather than each client component
+  // re-deriving it from the (also flag-gated, so ambiguous) criteria/
+  // practiceSummary data alone. A pure flag read, so it lives outside the
+  // best-effort try/catch below rather than degrading with it.
+  const practiceLogEnabled = isFlagEnabled('coachhelm_focus_area_practice_log');
   let developmentActiveAreas: FocusAreaCardData[] = [];
   let developmentCompletedAreas: FocusAreaCardData[] = [];
   let developmentProposedAreas: FocusAreaCardData[] = [];
@@ -538,6 +546,7 @@ export default async function PlayerCoachHelmPage() {
           genomeRoundsBasis={genomeRoundsBasis}
           fingerprint={fingerprint}
           playerBaseline={playerBaseline}
+          practiceLogEnabled={practiceLogEnabled}
         />
       </div>
     </div>

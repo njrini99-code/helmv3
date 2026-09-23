@@ -405,16 +405,17 @@ Player opens round review
     onto each row as `criteria`/`practiceSummary` before handing off to
     `PlayersGridView`/`FocusAreaCard`. Practice sessions are rolled up to
     `{count, lastPracticedAt}` — never the raw per-session rows — so the
-    card never grows unbounded. `FocusAreaCard` renders a read-only
-    checklist (`criteria`, met/unmet via `IconCheckCircle2`/`IconCircleDot`)
-    and a one-line practice-log summary; both are absent/null-safe (render
-    nothing) exactly like `evidence_revision` above, and neither has a
-    mark-met/log-practice affordance yet — the `setFocusAreaCriterionMet`/
-    `logFocusAreaPracticeSession` actions exist but wiring a mutation
-    control onto the card is still a further slice. Focus-area ids are
-    chunked at `chunkIds`'s 200-id `ID_CHUNK_SIZE` before each `.in()`, and
-    each chunk is paged past PostgREST's 1000-row cap via `fetchAllRows` —
-    the same two-limit discipline `load-player-context.ts` already uses for
+    card never grows unbounded. `FocusAreaCard` originally rendered this as
+    a read-only checklist (`criteria`, met/unmet via
+    `IconCheckCircle2`/`IconCircleDot`) and a one-line practice-log summary,
+    both absent/null-safe (render nothing) exactly like `evidence_revision`
+    above; the write-side affordances described below replace the checklist
+    with an interactive one for a coach and add the log-practice trigger for
+    a player, but the same absent/null-safe contract still governs whether
+    either renders at all. Focus-area ids are chunked at `chunkIds`'s 200-id
+    `ID_CHUNK_SIZE` before each `.in()`, and each chunk is paged past
+    PostgREST's 1000-row cap via `fetchAllRows` — the same two-limit
+    discipline `load-player-context.ts` already uses for
     `golf_holes`/`golf_shots`.
   - A `db:types` regen PR follows once the owner applies the migration —
     until then `src/lib/types/database.ts` has no row types for either
@@ -425,6 +426,83 @@ Player opens round review
     filename, now covers BOTH new tables) has not been run locally (no
     Docker/local Supabase stack available in this session) — CI's
     "Supabase lint + RLS tests" job is this suite's first real run.
+  - **Write-side UI (Addendum A8 slice 3, folded into Pkg 9, 2026-09-23,
+    `agent/coachhelm-a8-practice-log-write-ui`, stacked on the read-side
+    slice above)**: `FocusAreaCard` gained two new optional callback props,
+    each gating its own affordance independently:
+    - `onLogPracticeSession` (PLAYER-only — this is the player's own record
+      of practice, not something a coach logs on their behalf; hidden for
+      role="coach" even if wired). When present and the area is actionable,
+      a secondary "Log practice" `Button` opens a `Sheet` (drill, reps,
+      note — all optional, mirroring the server action's own validation)
+      and submits via `logFocusAreaPracticeSession`. Idempotency:
+      `clientRequestId` is generated once per SHEET OPEN
+      (`crypto.randomUUID()` with the same manual RFC4122-shaped fallback
+      `use-golf-messages.ts` uses, since the server validates with
+      `isUuid()` and a malformed fallback would hard-fail rather than
+      merely reduce entropy) and REUSED across retries within that open
+      session — a failed submit keeps the same id so retrying is a safe
+      no-op-or-success against the server's
+      `UNIQUE(focus_area_id, client_request_id)` upsert, never a duplicate
+      row. A fresh id is only drawn when the sheet is opened again. On
+      success the card bumps its own optimistic session-count DELTA (not a
+      replacement value, so it composes with whatever count the server
+      already reported, including a null summary) and shows a success
+      toast; on failure it shows an inline + toast error and leaves the
+      sheet open for a retry. The delta clears via a `useEffect` keyed on
+      `focusArea.practiceSummary`'s own count/lastPracticedAt, i.e. the
+      instant the consumer's post-success `router.refresh()` lands fresh
+      server data — never a blanket `recordedValue ?? optimistic` merge
+      (unlike `OutcomeCapture`'s pattern), because a session count is
+      additive, not a one-way/monotonic verdict.
+    - `onSetCriterionMet` (COACH-only, mirroring
+      `setFocusAreaCriterionMet`'s own coach-only authorship at the action
+      layer). When present and the area is actionable, each criteria row
+      becomes an interactive `Checkbox` instead of the static
+      icon+label row, calling `onSetCriterionMet` on toggle. Each row
+      tracks its own optimistic override + pending state (an
+      id-keyed map, not one shared flag) so toggling one criterion never
+      disables the others; a failure rolls back only that row and shows an
+      error toast. All overrides clear via a `useEffect` keyed on the
+      `criteria` array reference — a fresh array only ever arrives via the
+      consumer's own post-success `router.refresh()`, i.e. authoritative
+      server state, so a confirmed value never lingers stale.
+    - Both handlers are wired only when
+      `isFlagEnabled('coachhelm_focus_area_practice_log')` is true.
+      `isFlagEnabled` is server-only (`import 'server-only'`) and
+      `FocusAreaCard`/`DevelopmentDrill`/`PlayersGridView` are all `'use
+      client'`, so the boolean is computed once, server-side, in
+      `coachhelm/page.tsx` and `intelligence/page.tsx` (a pure flag read,
+      outside their best-effort try/catch blocks) and threaded down as a
+      plain `practiceLogEnabled` prop — `PlayerCoachHelmHome` ->
+      `DevelopmentDrill` on the player path, `playersDrillProps`
+      (`PlayersGridViewProps.practiceLogEnabled`) -> `PlayersGridView` ->
+      `FocusAreaBoard` on the coach path — rather than each client
+      component re-deriving it from the criteria/practiceSummary data
+      itself, which can't distinguish "flag off" from "flag on, no data
+      yet" (both arrive as `null`). With the flag off the handler props are
+      simply never passed down, so nothing new renders and nothing calls
+      either action — the same "absent handler = absent affordance"
+      contract every other FocusAreaCard action (`onEdit`, `onComplete`,
+      `onRecordOutcome`, …) already follows.
+    - Both page-level handlers (`DevelopmentDrill`'s
+      `handleLogPracticeSession`, `PlayersGridView`'s
+      `handleSetCriterionMet`) follow the established thin-wrapper pattern
+      (`handleRecordOutcome`): perform the write, `router.refresh()` on
+      success, return the raw `{success, error?}` — no toast at that layer,
+      since the card owns 100% of its own optimistic state and toast
+      display.
+    - Component tests:
+      `src/components/fairway/pages/coachhelm/FocusAreaCard.practiceLogWrite.test.tsx`
+      covers trigger/checkbox visibility (flag-off = handler absent, wrong
+      role, non-actionable status), success, failure/rollback, and
+      duplicate-submit (no second call while pending; a retry after failure
+      reuses the same `clientRequestId`). Testing a `vaul`-based `Sheet` in
+      jsdom needs two local polyfills the suite documents inline: jsdom has
+      no Pointer Events capture methods, and its `getComputedStyle` returns
+      `''` (not `'none'`) for an unset `transform`, which crashes `vaul`'s
+      own drag-cleanup code on every open/close — neither is specific to
+      this component.
 
 ## Tests To Prefer
 

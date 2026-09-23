@@ -29,6 +29,7 @@ import { logServerError } from '@/lib/server-error-logger';
 import { describeError } from '@/lib/utils/describe-error';
 import { todayIsoInZone } from '@/lib/golf/timezone';
 import { loadFocusAreaPracticeLogData } from '@/lib/coachhelm/focus-areas/practice-log-loader';
+import { isFlagEnabled } from '@/lib/flags';
 
 // ============================================================================
 // METADATA
@@ -292,6 +293,12 @@ export default async function IntelligenceDashboardPage({ searchParams }: Intell
     supabase,
     (focusAreas || []).map((fa) => fa.id),
   );
+  // A8 slice 3 (write side): `isFlagEnabled` is server-only — resolved once
+  // here and threaded down opaquely through `playersDrillProps` (see
+  // PlayersGridViewProps.practiceLogEnabled) rather than re-derived from the
+  // flag-gated criteria/practiceSummary data, which can't distinguish
+  // "flag off" from "flag on, no data yet".
+  const practiceLogEnabled = isFlagEnabled('coachhelm_focus_area_practice_log');
 
   const focusAreasWithPlayers: PlayersGridFocusArea[] = (focusAreas || []).map((fa) => ({
     ...fa,
@@ -420,6 +427,7 @@ export default async function IntelligenceDashboardPage({ searchParams }: Intell
             initialSelectedPlayerId:
               sp.player && players.some((p) => p.id === sp.player) ? sp.player : null,
             todayIso,
+            practiceLogEnabled,
           }}
           effectivenessDrillProps={{
             teamId,

@@ -59,7 +59,7 @@
  * scope on a `bg-canvas` page.
  * ========================================================================== */
 
-import { forwardRef, useMemo, useState, type ReactNode } from 'react';
+import { forwardRef, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import Link from 'next/link';
 import { motion, useReducedMotion } from 'framer-motion';
 import { cn } from '@/lib/utils';
@@ -74,6 +74,8 @@ import { Sparkline } from '@/components/fairway/charts/Sparkline';
 import { TrendChip, type GoodDirection } from '@/components/fairway/charts/TrendChip';
 import { StandingStrip } from '@/components/fairway/charts/StandingStrip';
 import { fairwayToast } from '@/components/fairway/feedback/ToastStack';
+import { Sheet } from '@/components/fairway/overlays/Sheet';
+import { FormField, Input, TextArea, NumberField, Checkbox } from '@/components/fairway/forms';
 import { getMetricRenderConfig } from '@/lib/coachhelm/v3/standing/metric-config';
 import type { PlayerStanding } from '@/lib/coachhelm/v3/standing/types';
 import { PracticeRxForInsight } from './PracticeRxForInsight';
@@ -91,6 +93,7 @@ import {
   IconMinus,
   IconTrash,
   IconRotateCcw,
+  IconCalendar,
 } from '@/components/icons';
 import {
   getAreaType,
@@ -205,13 +208,13 @@ export interface FocusAreaCardData {
    */
   progressHistory?: FocusAreaProgressEntry[] | null;
   /**
-   * A8 slice 2 (read side): coach-authored "done" criteria from
+   * A8 slice 2+3: coach-authored "done" criteria from
    * golf_focus_area_criteria, oldest→newest. Absent/null (never `[]` — the
    * loader only sets this when the coachhelm_focus_area_practice_log flag is
    * on) renders nothing, the same honest-absence contract as
-   * `evidence_revision` above. Read-only here: marking a criterion met is a
-   * follow-up slice's UI wiring (the `setFocusAreaCriterionMet` action
-   * already exists).
+   * `evidence_revision` above. Interactive (a checkbox per row, calling
+   * `onSetCriterionMet`) only when role==="coach", the area is actionable,
+   * and a handler is wired; otherwise renders as the static read-only list.
    */
   criteria?: FocusAreaCriterionView[] | null;
   /**
@@ -278,6 +281,38 @@ export interface FocusAreaCardProps {
     focusArea: FocusAreaCardData,
     outcome: FocusAreaOutcome,
   ) => Promise<{ success: boolean; error?: string; notice?: string }>;
+  /**
+   * A8 slice 3 (write side): log-practice handler (PLAYER only — this is the
+   * player's own record of practice, not something a coach logs on their
+   * behalf). When provided AND role==="player" AND the area is actionable, a
+   * secondary "Log practice" trigger opens a Sheet form and submits through
+   * this handler. Must resolve to the same `{ success, error? }` shape
+   * `logFocusAreaPracticeSession` returns. The card owns the idempotent
+   * `clientRequestId`, the optimistic session-count bump, and the toast —
+   * the consumer just performs the write (+ refresh).
+   */
+  onLogPracticeSession?: (
+    focusArea: FocusAreaCardData,
+    input: {
+      clientRequestId: string;
+      drillId?: string | null;
+      reps?: number | null;
+      note?: string | null;
+    },
+  ) => Promise<{ success: boolean; error?: string }>;
+  /**
+   * A8 slice 3 (write side): mark-criterion-met handler (COACH only — mirrors
+   * `setFocusAreaCriterionMet`'s own coach-only authorship). When provided
+   * AND role==="coach" AND the area is actionable, each criteria row becomes
+   * an interactive checkbox calling this on toggle. Must resolve to the same
+   * `{ success, error? }` shape. The card owns the per-criterion optimistic
+   * override + rollback + toast.
+   */
+  onSetCriterionMet?: (
+    focusArea: FocusAreaCardData,
+    criterion: FocusAreaCriterionView,
+    met: boolean,
+  ) => Promise<{ success: boolean; error?: string }>;
   /** Stagger index for the in-view reveal. */
   index?: number;
   className?: string;
@@ -653,6 +688,257 @@ function OutcomeCapture({
   );
 }
 
+/**
+ * Client-side idempotency key generator for `logFocusAreaPracticeSession`'s
+ * `clientRequestId`. No shared helper exists for this anywhere in the
+ * codebase (see src/hooks/golf/use-golf-messages.ts) because the server
+ * validates with `isUuid()` — a malformed fallback would hard-fail the
+ * request rather than merely reduce entropy, so the RFC4122-shaped fallback
+ * below matters, not just "looks unique".
+ */
+function generatePracticeRequestId(): string {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0;
+    const v = c === 'x' ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
+}
+
+/**
+ * The player's own "Log practice" flow — a Sheet form over
+ * `logFocusAreaPracticeSession`. Player-only (see `onLogPracticeSession`'s
+ * doc comment on FocusAreaCardProps).
+ *
+ * IDEMPOTENCY: one `clientRequestId` is generated per SHEET OPEN and reused
+ * across retries within that session — a failed submit keeps the same id so
+ * retrying is a safe no-op-or-success against the server's
+ * UNIQUE(focus_area_id, client_request_id) upsert, never a duplicate row. A
+ * fresh id is drawn only when the sheet is opened again (including after a
+ * successful submit, which closes it).
+ */
+function LogPracticeSheet({
+  focusArea,
+  onLogPracticeSession,
+  onLogged,
+}: {
+  focusArea: FocusAreaCardData;
+  onLogPracticeSession: NonNullable<FocusAreaCardProps['onLogPracticeSession']>;
+  /** Fired after a successful submit so the card can bump its optimistic
+   *  practice-session summary without waiting for a full data refresh. */
+  onLogged: () => void;
+}): ReactNode {
+  const [open, setOpen] = useState(false);
+  const [drillId, setDrillId] = useState('');
+  const [reps, setReps] = useState<number | null>(null);
+  const [note, setNote] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const requestIdRef = useRef<string | null>(null);
+
+  function ensureRequestId(): string {
+    if (!requestIdRef.current) requestIdRef.current = generatePracticeRequestId();
+    return requestIdRef.current;
+  }
+
+  function handleOpenChange(next: boolean) {
+    setOpen(next);
+    if (next) {
+      // Fresh session each time the sheet opens: a new idempotency id and a
+      // clean form. A prior FAILED submit's id is only reused while the sheet
+      // stays open for a retry (see handleSubmit's catch branch below).
+      requestIdRef.current = null;
+      setError(null);
+      setDrillId('');
+      setReps(null);
+      setNote('');
+    }
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (submitting) return;
+    setSubmitting(true);
+    setError(null);
+    const clientRequestId = ensureRequestId();
+    try {
+      const res = await onLogPracticeSession(focusArea, {
+        clientRequestId,
+        drillId: drillId.trim() ? drillId.trim() : null,
+        reps,
+        note: note.trim() ? note.trim() : null,
+      });
+      if (res.success) {
+        fairwayToast.success('Practice session logged');
+        onLogged();
+        setOpen(false);
+      } else {
+        // Keep requestIdRef intact — a retry with the same id is what makes
+        // this idempotent instead of a duplicate row on the eventual success.
+        setError(res.error ?? 'Could not log this session');
+        fairwayToast.error(res.error ?? 'Could not log this session');
+      }
+    } catch {
+      setError('Could not log this session');
+      fairwayToast.error('Could not log this session');
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <Sheet
+      open={open}
+      onOpenChange={handleOpenChange}
+      title="Log practice"
+      side="bottom"
+      trigger={
+        <Button variant="secondary" leftIcon={<IconCalendar size={15} />}>
+          Log practice
+        </Button>
+      }
+    >
+      <form onSubmit={handleSubmit}>
+        <Sheet.Body className="space-y-4">
+          <FormField label="Drill" showOptional>
+            <Input
+              value={drillId}
+              onChange={(e) => setDrillId(e.target.value)}
+              placeholder="e.g. 5ft circle drill"
+              maxLength={100}
+            />
+          </FormField>
+          {/* "Reps completed" is an OBSERVED count from this session — never
+              the same number as the focus area's suggested/target value
+              above, and deliberately labeled + boxed on its own so the two
+              never read as the same kind of number. */}
+          <FormField
+            label="Reps completed"
+            showOptional
+            help="What you actually did — not the target above."
+          >
+            <NumberField
+              value={reps ?? undefined}
+              onValueChange={(v) => setReps(v ?? null)}
+              min={0}
+              max={1000}
+            />
+          </FormField>
+          <FormField label="Note" showOptional>
+            <TextArea
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              maxLength={1000}
+              rows={3}
+            />
+          </FormField>
+          {error ? (
+            <p className="font-fw-sans text-body-sm text-fw-danger-ink">{error}</p>
+          ) : null}
+        </Sheet.Body>
+        <Sheet.Footer>
+          <Button
+            type="button"
+            variant="ghost"
+            onClick={() => setOpen(false)}
+            disabled={submitting}
+          >
+            Cancel
+          </Button>
+          <Button type="submit" variant="primary" busy={submitting}>
+            Log session
+          </Button>
+        </Sheet.Footer>
+      </form>
+    </Sheet>
+  );
+}
+
+/**
+ * Coach-only interactive criteria checklist — replaces the static read-only
+ * rows with a Checkbox per criterion when `onSetCriterionMet` is wired. Each
+ * row tracks its own optimistic override + pending state so toggling one
+ * criterion never disables the others, and a failure rolls back only that
+ * row (never a blanket re-render of the whole list).
+ */
+function CriteriaChecklist({
+  focusArea,
+  criteria,
+  onSetCriterionMet,
+}: {
+  focusArea: FocusAreaCardData;
+  criteria: FocusAreaCriterionView[];
+  onSetCriterionMet: NonNullable<FocusAreaCardProps['onSetCriterionMet']>;
+}): ReactNode {
+  const [overrides, setOverrides] = useState<Record<string, boolean>>({});
+  const [pending, setPending] = useState<Record<string, boolean>>({});
+
+  // A fresh `criteria` array only ever arrives via the consumer's
+  // post-success router.refresh() — i.e. authoritative server state. Clear
+  // every optimistic override then so a confirmed value never lingers stale,
+  // and so a write that failed server-side (no refresh fires) keeps showing
+  // its already-rolled-back state instead.
+  useEffect(() => {
+    setOverrides({});
+  }, [criteria]);
+
+  async function handleToggle(criterion: FocusAreaCriterionView) {
+    if (pending[criterion.id]) return;
+    const current = criterion.id in overrides ? overrides[criterion.id] : criterion.met;
+    const next = !current;
+    setPending((p) => ({ ...p, [criterion.id]: true }));
+    setOverrides((o) => ({ ...o, [criterion.id]: next }));
+    try {
+      const res = await onSetCriterionMet(focusArea, criterion, next);
+      if (!res.success) {
+        setOverrides((o) => {
+          const copy = { ...o };
+          delete copy[criterion.id];
+          return copy;
+        });
+        fairwayToast.error(res.error ?? 'Could not update this criterion');
+      }
+    } catch {
+      setOverrides((o) => {
+        const copy = { ...o };
+        delete copy[criterion.id];
+        return copy;
+      });
+      fairwayToast.error('Could not update this criterion');
+    } finally {
+      setPending((p) => {
+        const copy = { ...p };
+        delete copy[criterion.id];
+        return copy;
+      });
+    }
+  }
+
+  return (
+    <ul className="space-y-1">
+      {criteria.map((criterion) => {
+        const met = criterion.id in overrides ? overrides[criterion.id] : criterion.met;
+        return (
+          <li key={criterion.id}>
+            <Checkbox
+              checked={met}
+              disabled={Boolean(pending[criterion.id])}
+              onCheckedChange={() => handleToggle(criterion)}
+              label={
+                <span className={cn('font-fw-sans text-body-sm', met && 'text-text-secondary line-through decoration-1')}>
+                  {criterion.label}
+                </span>
+              }
+            />
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
 /* ---------------------------------------------------------------------------
  * FocusAreaCard
  * ------------------------------------------------------------------------- */
@@ -675,6 +961,8 @@ export const FocusAreaCard = forwardRef<HTMLDivElement, FocusAreaCardProps>(
       reopening = false,
       onDelete,
       onRecordOutcome,
+      onLogPracticeSession,
+      onSetCriterionMet,
       completing = false,
       index = 0,
       className,
@@ -683,6 +971,21 @@ export const FocusAreaCard = forwardRef<HTMLDivElement, FocusAreaCardProps>(
     ref,
   ) {
     const reduced = useReducedMotion() ?? false;
+
+    // A8 slice 3: optimistic bump to the practice-session count after a
+    // successful log, cleared the instant fresh server data arrives (the
+    // consumer's post-success router.refresh()) so the two never double-
+    // count. A DELTA (not a replacement value) so it composes with whatever
+    // count the server already reported, including a null summary (read
+    // failed/never fetched, or the flag just turned on) — see the render
+    // below, which treats "has a delta" and "has a real summary" as two
+    // independent reasons to show the line.
+    const [practiceDelta, setPracticeDelta] = useState(0);
+    const [optimisticLastPracticedAt, setOptimisticLastPracticedAt] = useState<string | null>(null);
+    useEffect(() => {
+      setPracticeDelta(0);
+      setOptimisticLastPracticedAt(null);
+    }, [focusArea.practiceSummary?.count, focusArea.practiceSummary?.lastPracticedAt]);
 
     const area = getAreaType(focusArea.area_type);
     const AreaIcon = area.icon;
@@ -838,6 +1141,9 @@ export const FocusAreaCard = forwardRef<HTMLDivElement, FocusAreaCardProps>(
     // Outcome capture is an ADDITIONAL coach capability — it never replaces the
     // complete/progress actions. Shown when a handler is wired for a coach.
     const showOutcome = role === 'coach' && actionable && typeof onRecordOutcome === 'function';
+    // A8 slice 3: log-practice is the PLAYER's own capability (this is their
+    // record of practice, not something entered on their behalf).
+    const showLogPractice = role === 'player' && actionable && typeof onLogPracticeSession === 'function';
 
     return (
       <motion.div
@@ -909,55 +1215,72 @@ export const FocusAreaCard = forwardRef<HTMLDivElement, FocusAreaCardProps>(
             </Badge>
           ) : null}
 
-          {/* A8 slice 2 (read side): coach-authored "done" criteria + a
-              practice-log rollup. Both render nothing when absent/null —
-              either the flag is off, the migration isn't applied yet, or
-              this focus area simply has neither. Read-only: no mark-met or
-              log-practice affordance here yet (the actions already exist;
-              wiring them is a follow-up slice). */}
+          {/* A8 slice 2+3: coach-authored "done" criteria + a practice-log
+              rollup. Both render nothing when absent/null AND no optimistic
+              delta — either the flag is off, the migration isn't applied
+              yet, or this focus area simply has neither. The criteria list
+              is interactive (a Checkbox per row) only for a coach, an
+              actionable area, and a wired `onSetCriterionMet`; otherwise it
+              stays the static read-only list. This block is deliberately
+              its OWN Inset, separate from the Trend/target meter below — a
+              logged rep count or a met checkbox must never visually read as
+              the same kind of number as the suggested target/current value. */}
           {focusArea.criteria && focusArea.criteria.length > 0 ? (
             <Inset padding="sm" className="space-y-1.5">
               <span className="font-fw-sans text-eyebrow uppercase tracking-wide text-text-tertiary">
                 Criteria
               </span>
-              <ul className="space-y-1">
-                {focusArea.criteria.map((criterion) => (
-                  <li
-                    key={criterion.id}
-                    className={cn(
-                      'flex items-center gap-1.5 font-fw-sans text-body-sm',
-                      criterion.met ? 'text-text-secondary' : 'text-text-tertiary',
-                    )}
-                  >
-                    {criterion.met ? (
-                      <IconCheckCircle2 size={14} className="flex-shrink-0 text-accent-600" />
-                    ) : (
-                      <IconCircleDot size={14} className="flex-shrink-0 text-text-tertiary" />
-                    )}
-                    <span className={cn(criterion.met && 'line-through decoration-1')}>
-                      {criterion.label}
-                    </span>
-                  </li>
-                ))}
-              </ul>
+              {role === 'coach' && actionable && typeof onSetCriterionMet === 'function' ? (
+                <CriteriaChecklist
+                  focusArea={focusArea}
+                  criteria={focusArea.criteria}
+                  onSetCriterionMet={onSetCriterionMet}
+                />
+              ) : (
+                <ul className="space-y-1">
+                  {focusArea.criteria.map((criterion) => (
+                    <li
+                      key={criterion.id}
+                      className={cn(
+                        'flex items-center gap-1.5 font-fw-sans text-body-sm',
+                        criterion.met ? 'text-text-secondary' : 'text-text-tertiary',
+                      )}
+                    >
+                      {criterion.met ? (
+                        <IconCheckCircle2 size={14} className="flex-shrink-0 text-accent-600" />
+                      ) : (
+                        <IconCircleDot size={14} className="flex-shrink-0 text-text-tertiary" />
+                      )}
+                      <span className={cn(criterion.met && 'line-through decoration-1')}>
+                        {criterion.label}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </Inset>
           ) : null}
 
-          {focusArea.practiceSummary && focusArea.practiceSummary.count > 0 ? (
+          {(focusArea.practiceSummary && focusArea.practiceSummary.count > 0) || practiceDelta > 0 ? (
             <p className="flex items-center gap-1.5 font-fw-sans text-eyebrow text-text-tertiary">
               <IconTarget size={12} />
-              {focusArea.practiceSummary.count === 1
-                ? '1 practice session logged'
-                : `${focusArea.practiceSummary.count} practice sessions logged`}
-              {focusArea.practiceSummary.lastPracticedAt ? (
-                <>
-                  {' · last '}
-                  {new Date(focusArea.practiceSummary.lastPracticedAt).toLocaleDateString('en-US', {
-                    month: 'short',
-                    day: 'numeric',
-                  })}
-                </>
-              ) : null}
+              {(() => {
+                const count = (focusArea.practiceSummary?.count ?? 0) + practiceDelta;
+                return count === 1 ? '1 practice session logged' : `${count} practice sessions logged`;
+              })()}
+              {(() => {
+                const lastPracticedAt = optimisticLastPracticedAt ?? focusArea.practiceSummary?.lastPracticedAt;
+                if (!lastPracticedAt) return null;
+                return (
+                  <>
+                    {' · last '}
+                    {new Date(lastPracticedAt).toLocaleDateString('en-US', {
+                      month: 'short',
+                      day: 'numeric',
+                    })}
+                  </>
+                );
+              })()}
             </p>
           ) : null}
 
@@ -1104,7 +1427,7 @@ export const FocusAreaCard = forwardRef<HTMLDivElement, FocusAreaCardProps>(
           ) : null}
 
           {/* Actions — role-gated. Outcome capture lives in its own row above. */}
-          {(showEdit || showLogProgress || showComplete || showDelete) && (
+          {(showEdit || showLogProgress || showComplete || showDelete || showLogPractice) && (
             <div className="flex flex-wrap items-center gap-2 pt-1">
               {/* Touch target: md (44px min-height) unconditionally — not sm,
                   which is only 44px behind a `(pointer: coarse)` media query
@@ -1117,6 +1440,18 @@ export const FocusAreaCard = forwardRef<HTMLDivElement, FocusAreaCardProps>(
                 >
                   Log progress
                 </Button>
+              ) : null}
+              {/* A8 slice 3 — secondary, never primary: "Mark complete" stays
+                  the card's one primary action. */}
+              {showLogPractice ? (
+                <LogPracticeSheet
+                  focusArea={focusArea}
+                  onLogPracticeSession={onLogPracticeSession!}
+                  onLogged={() => {
+                    setPracticeDelta((d) => d + 1);
+                    setOptimisticLastPracticedAt(new Date().toISOString());
+                  }}
+                />
               ) : null}
               {showComplete ? (
                 <Button
