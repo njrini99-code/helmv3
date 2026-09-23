@@ -365,6 +365,69 @@ describe('auditNumericClaims', () => {
     );
     expect(claims).toEqual([]);
   });
+
+  it('accepts a measurement window date written in non-ISO prose', () => {
+    // Found in a replay of stored production chat turns (task: read-only
+    // chat false-positive replay, 2026-09-23): a ranking tool's
+    // window_start/window_end ('2026-08-16'..'2026-09-15') are real
+    // evidence, but the model rendered them as "Aug 16-Sep 15" rather than
+    // the ISO form the tool returned. Neither CLAIM_EXEMPT (ISO
+    // YYYY-MM-DD only) nor any prior anchor recognized "16" or "15" as
+    // sourced, so a real date read as an invented number on every turn
+    // that used this tool — 8 of 11 stored failed turns, confirmed by
+    // replaying this exact check against them before this fix.
+    const claims = auditNumericClaims(
+      'Penalty rate 0.09 over 11 rounds, window Aug 16-Sep 15.',
+      [measurement({ metric_id: 'penalties_per_round', value: 0.09, sample_size: 11, window_start: '2026-08-16', window_end: '2026-09-15' })],
+    );
+    expect(claims).toEqual([]);
+  });
+
+  it('accepts a series point date written in non-ISO prose', () => {
+    const series: MeasurementSeries = {
+      metric_id: 'sg_putting',
+      metric_label: 'Strokes gained putting',
+      unit: 'strokes',
+      entity: { kind: 'player', id: 'p1', label: 'Nick' },
+      points: [{ at: '2026-08-16', value: 58, bucket: null, sample_size: 1 }],
+      window_start: '2026-08-16',
+      window_end: '2026-08-16',
+      as_of: '2026-08-16T12:00:00Z',
+      coverage: 'complete',
+      coverage_note: null,
+      source: 'rounds',
+      method: 'round_level',
+      benchmark: null,
+      direction: 'higher_better',
+    };
+    expect(auditNumericClaims('58 on Aug 16.', [], [series])).toEqual([]);
+  });
+
+  it('accepts an ISO date embedded in detail, restated in non-ISO prose', () => {
+    // Same gap as the two tests above, but through the `detail`/
+    // `collectNumbers` path rather than a `Measurement`: a round-by-round
+    // tool returns `{ date: '2026-09-06', ... }` inside `detail.rounds[]`,
+    // the model writes "9/6/26", and the two-digit year ('26') was
+    // previously unsourced because `numbersInText` skipped the whole ISO
+    // string rather than reading its day/year out of it.
+    const detail = { rounds: [{ date: '2026-09-06', total_score: 74, putts: 30 }] };
+    const claims = auditNumericClaims(
+      'His 9/6/26 round: 74 strokes, 30 putts.',
+      [],
+      [],
+      collectNumbers(detail),
+    );
+    expect(claims).toEqual([]);
+  });
+
+  it('still does not mine an ISO timestamp for its hour/minute', () => {
+    // The day-of-month/year carve-out must not widen into "mine the whole
+    // timestamp" — an event's start hour is not evidence for an unrelated
+    // claimed figure that happens to share a digit with it.
+    const detail = { events: [{ starts_at: '2026-08-27T11:30:00+00:00' }] };
+    const claims = auditNumericClaims('The tee time is 45 minutes long.', [], [], collectNumbers(detail));
+    expect(claims.map((c) => c.text)).toEqual(['45']);
+  });
 });
 
 /**

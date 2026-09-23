@@ -299,17 +299,55 @@ const ISO_DATE_LITERAL =
  * PGA Tour comparison the insight itself carried — was flagged as fabricated
  * because the audit had never looked at the string that number came from.
  *
- * A whole-string UUID or ISO date/timestamp is skipped rather than mined for
- * digits — an id or a timestamp is not a statistic, and walking it would
- * hand the audit meaningless "supported" anchors (a round's id, a
- * `created_at`) that could mask a genuine fabrication landing on the same
- * digits by coincidence.
+ * A whole-string UUID is skipped rather than mined for digits — an id is not
+ * a statistic, and walking it would hand the audit a meaningless "supported"
+ * anchor that could mask a genuine fabrication landing on the same digits by
+ * coincidence. A whole-string ISO date/timestamp gets the same treatment for
+ * its *other* components (hour, minute, month, full year-month-day run as one
+ * token) but not for day-of-month or year: `detail.events[].starts_at`,
+ * `detail.rounds[].date` and similar tool-supplied ISO fields are exactly
+ * where the day/year the model later writes as "Aug 16" or "Sep 6, 2026"
+ * actually lives (see {@link dateAnchors}'s doc comment). Registering only
+ * those two components keeps the id/timestamp-mining guard intact while
+ * closing the gap for the one thing a coach actually restates from a date.
  */
 function numbersInText(value: string): number[] {
-  if (UUID_LITERAL.test(value) || ISO_DATE_LITERAL.test(value)) return [];
+  if (UUID_LITERAL.test(value)) return [];
+  if (ISO_DATE_LITERAL.test(value)) return dateAnchors(value);
   const matches = value.match(NUMERIC_TOKEN_RE);
   if (!matches) return [];
   return matches.map(Number).filter((n) => Number.isFinite(n));
+}
+
+/**
+ * Day-of-month and year anchors from an ISO `window_start`/`window_end` (or
+ * a series point's `at`), registered the same way `sample_size` and
+ * `denominator` are.
+ *
+ * Found in live verification (replay of stored chat turns against this
+ * check): a ranking tool's `window_start`/`window_end` are real evidence,
+ * but the model routinely renders them in prose as "Aug 16", "Sep 6, 2026"
+ * or "9/6/26" rather than the ISO form the tool returned. `numbersInText`
+ * deliberately skips a whole-string ISO date (it is metadata, not a
+ * statistic) — but that guard only covers the ISO string itself, not a
+ * *different* rendering of the same date elsewhere in the model's prose,
+ * which then reads as an unsupported number purely because of which format
+ * the model chose. This is the `window_start`/`window_end` sibling of the
+ * `detail`/`extraSupported` gap #1975 closed: a real value, checked against
+ * the wrong set. Only day-of-month and year are registered — the calendar
+ * month is not, both because it is nearly always spelled as a name ("Aug",
+ * not "8") and because a bare month digit is already exempt (`<= 12`).
+ */
+function dateAnchors(iso: string | null | undefined): number[] {
+  if (typeof iso !== 'string') return [];
+  const match = /^(\d{4})-\d{2}-(\d{2})/.exec(iso);
+  if (!match) return [];
+  const year = Number(match[1]);
+  const day = Number(match[2]);
+  const out: number[] = [];
+  if (Number.isFinite(year)) out.push(year, year % 100);
+  if (Number.isFinite(day)) out.push(day);
+  return out;
 }
 
 /** Tolerance for matching a written number against a measured one. */
@@ -422,9 +460,13 @@ export function auditNumericClaims(
     if (typeof m.value === 'number' && typeof m.benchmark?.value === 'number') {
       add(m.value - m.benchmark.value);
     }
+    for (const n of dateAnchors(m.window_start)) add(n);
+    for (const n of dateAnchors(m.window_end)) add(n);
   }
   for (const n of extraSupported) add(n);
   for (const s of series) {
+    for (const n of dateAnchors(s.window_start)) add(n);
+    for (const n of dateAnchors(s.window_end)) add(n);
     // `series` is typed as `MeasurementSeries[]`, but a caller can hand this
     // function evidence that was round-tripped through the database first
     // (route.ts's `priorTurnEvidence`, reading a stored `ui_parts` blob) —
@@ -435,6 +477,7 @@ export function auditNumericClaims(
     for (const p of points) {
       add(p.value, s.metric_id);
       add(p.sample_size);
+      for (const n of dateAnchors(p.at)) add(n);
       // A distance-band label ("15-25 ft", "10-15 ft") is the tool's own
       // vocabulary for the bucket, not a claim — but its digits are not
       // otherwise anchored, so e.g. "15" and "25" from get_putting_distance_profile
