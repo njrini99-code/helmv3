@@ -24,6 +24,35 @@ import type {
   StatComparison,
 } from './round-review-system';
 
+// Hole-level data from golf_holes table (carries known par, score, etc.) —
+// moved here (with buildHoleBreakdowns/calculateComparisonAverages below)
+// from round-review-system.ts so a worker-safe caller (the CoachHelm repair
+// plan §5.5/§14.8 30-day pre-warm tool, src/lib/golf/round-review/
+// deterministic-review.ts) can reuse the exact same deterministic content
+// logic without depending on the `'use server'` action file — a `'use
+// server'` module may only export async functions as values, so these pure
+// functions could not live there and still be importable from a plain
+// script.
+export interface HoleParRow {
+  hole_number: number;
+  par: number;
+  score: number | null;
+  putts: number | null;
+  fairway_hit: boolean | null;
+  gir: boolean | null;
+}
+
+export interface ComparisonRoundRow {
+  total_score: number | null;
+  score_to_par: number | null;
+  total_putts: number | null;
+  total_gir: number | null;
+  total_gir_possible: number | null;
+  total_fairways_hit: number | null;
+  total_fairways: number | null;
+  holes_played?: number | null;
+}
+
 function missMatches(direction: string | null | undefined, side: 'left' | 'right' | 'short' | 'long'): boolean {
   if (!direction) return false;
   return direction === side || direction.startsWith(`${side}_`) || direction.endsWith(`_${side}`);
@@ -590,4 +619,285 @@ export function generateReviewContent(
     penaltyAnalysis, strokesToGain,
     holeByHole: holes,
   };
+}
+
+/**
+ * Player/team comparison averages from a set of comparison rounds. Each
+ * field is independently null when the round history can't honestly
+ * support it (no 18-hole rounds for avgScore, no putt/GIR/fairway data for
+ * the others). Consumers must SKIP a comparison whose average is null —
+ * never substitute a fabricated benchmark.
+ *
+ * Pure aggregation only — callers own the "which rounds count as the
+ * comparison baseline" query. In particular this does NOT enforce the
+ * as-played time bound (repair plan §5.4 R4 / N4): a caller passing rounds
+ * played after the reviewed round will get them averaged in. See
+ * `computeAndStoreRoundReview` (round-review-system.ts) and
+ * `buildDeterministicRoundReview` (src/lib/golf/round-review/
+ * deterministic-review.ts) for the query that applies that bound.
+ */
+export function calculateComparisonAverages(rounds: ComparisonRoundRow[]): ComparisonAverages | null {
+  const valid = rounds.filter(r => r.total_score !== null);
+  if (valid.length < 3) return null;
+
+  const rounds18 = valid.filter(r => (r.holes_played ?? 18) === 18);
+  const avgScore = rounds18.length > 0
+    ? rounds18.reduce((sum, round) => sum + (round.total_score ?? 0), 0) / rounds18.length
+    : null;
+
+  const roundsWithToPar = valid.filter(r => r.score_to_par !== null);
+  const avgScoreToPar = roundsWithToPar.length > 0
+    ? roundsWithToPar.reduce((sum, round) => {
+      const holesPlayed = round.holes_played ?? 18;
+      return sum + ((round.score_to_par ?? 0) * (18 / holesPlayed));
+    }, 0) / roundsWithToPar.length
+    : null;
+
+  const puttRounds = valid.filter(r => r.total_putts !== null);
+  const puttHoles = puttRounds.reduce((sum, round) => sum + (round.holes_played ?? 18), 0);
+  const totalPutts = puttRounds.reduce((sum, round) => sum + (round.total_putts ?? 0), 0);
+  // Round at the source so no consumer (UI labels, tooltips) ever prints a raw
+  // float like "76.11111111111113%". Grade/comparison logic is unaffected.
+  const avgPutts = puttHoles > 0 ? Math.round((totalPutts / puttHoles) * 18) : null;
+
+  // Weighted averages: (Σ made ÷ Σ opportunities) × 100, NOT the mean of
+  // per-round percentages — a 9-hole round contributes 9 opportunities, not a
+  // full vote, so short or partial rounds no longer skew the average.
+  const girRounds = valid.filter(r => r.total_gir !== null && r.total_gir_possible);
+  const girHit = girRounds.reduce((sum, round) => sum + (round.total_gir ?? 0), 0);
+  const girPossible = girRounds.reduce((sum, round) => sum + (round.total_gir_possible ?? 0), 0);
+  const avgGirPct = girPossible > 0 ? Math.round((girHit / girPossible) * 100) : null;
+
+  const fwRounds = valid.filter(r => r.total_fairways_hit !== null && r.total_fairways);
+  const fwHit = fwRounds.reduce((sum, round) => sum + (round.total_fairways_hit ?? 0), 0);
+  const fwPossible = fwRounds.reduce((sum, round) => sum + (round.total_fairways ?? 0), 0);
+  const avgFairwayPct = fwPossible > 0 ? Math.round((fwHit / fwPossible) * 100) : null;
+
+  return { avgScore, avgScoreToPar, avgPutts, avgGirPct, avgFairwayPct };
+}
+
+/**
+ * Build per-hole breakdowns from shot-level data.
+ *
+ * Key design decisions:
+ * - Score is computed by checking if the last shot holed out. If shot data is
+ *   incomplete (ball never reaches hole), we detect this and estimate score
+ *   from the shots we have + likely remaining shots.
+ * - Chip-ins (around_green with result 'hole') are properly handled — 0 putts.
+ * - GIR detection checks for both lie_after='green' AND result='hole' (chip-in
+ *   from approach counts as GIR).
+ * - Par 3 tee shots that hit the green count as GIR (shot 1 reaching green on
+ *   par 3 satisfies girShotLimit of 1).
+ */
+export function buildHoleBreakdowns(shots: ShotRow[], round: RoundData, holePars?: HoleParRow[]): HoleBreakdown[] {
+  const byHole = new Map<number, ShotRow[]>();
+  for (const s of shots) {
+    const arr = byHole.get(s.hole_number) ?? [];
+    arr.push(s);
+    byHole.set(s.hole_number, arr);
+  }
+
+  // Build a lookup for known hole par/score from golf_holes table
+  const knownHoles = new Map<number, HoleParRow>();
+  if (holePars) {
+    for (const hp of holePars) {
+      knownHoles.set(hp.hole_number, hp);
+    }
+  }
+
+  const holes: HoleBreakdown[] = [];
+  for (let h = 1; h <= 18; h++) {
+    const holeShots = (byHole.get(h) ?? []).sort((a, b) => a.shot_number - b.shot_number);
+    const knownHole = knownHoles.get(h);
+
+    // If no shot data AND no hole-level data, skip entirely
+    if (holeShots.length === 0 && !knownHole) continue;
+
+    // If no shot data but we have golf_holes data, build a minimal breakdown
+    if (holeShots.length === 0 && knownHole) {
+      const par = knownHole.par;
+      const score = knownHole.score ?? par;
+      const scoreToPar = score - par;
+      const puttCount = knownHole.putts ?? 2;
+      const fairwayHit = par >= 4 ? (knownHole.fairway_hit ?? null) : null;
+      const gir = knownHole.gir ?? false;
+      holes.push({
+        hole: h, par, score, scoreToPar,
+        putts: puttCount, fairwayHit, gir,
+        threePutt: puttCount >= 3, onePutt: puttCount === 1,
+        penalties: 0,
+        scrambleAttempt: !gir,
+        scrambleSuccess: !gir && scoreToPar <= 0,
+        sandSaveAttempt: false, sandSaveSuccess: false,
+        driveClub: null, driveDist: null, driveMiss: null,
+        firstPuttFeet: null, approachClub: null, approachDist: null, approachMiss: null,
+      });
+      continue;
+    }
+
+    const teeShot = holeShots.find(s => s.shot_type === 'tee');
+    const putts = holeShots.filter(s => s.shot_type === 'putting');
+    const penalties = holeShots.filter(s => s.is_penalty).length;
+
+    // Use known par from golf_holes if available; otherwise infer from tee distance
+    // (knownHole was already looked up above)
+    let par: number;
+    if (knownHole) {
+      par = knownHole.par;
+    } else {
+      const teeDistYards = teeShot ? parseFloat(teeShot.distance_to_hole_before ?? '0') : 400;
+      par = teeDistYards <= 250 ? 3 : teeDistYards >= 470 ? 5 : 4;
+    }
+
+    // Determine if the hole was completed (ball holed out)
+    const lastShot = holeShots[holeShots.length - 1];
+    const holedOut = lastShot?.result === 'hole' || lastShot?.putt_made === true;
+
+    // Score calculation priority:
+    // 1. If golf_holes has a known score, use that (ground truth)
+    // 2. If shot data shows ball holed out, use shot count
+    // 3. Otherwise estimate from shots + likely remaining
+    let score: number;
+    if (knownHole?.score != null) {
+      score = knownHole.score;
+    } else if (holedOut) {
+      score = holeShots.length;
+    } else {
+      // Incomplete hole data — shots stop before holing out.
+      // Estimate: recorded shots + likely chip/putt to finish.
+      const onGreen = lastShot?.lie_after === 'green';
+      if (onGreen) {
+        // On green but no holing putt — assume 2-putt
+        score = holeShots.length + 2;
+      } else {
+        // Not on green — assume chip on + 2-putt
+        score = holeShots.length + 3;
+      }
+      // Clamp to reasonable range: at least par-2, at most par+6
+      score = Math.max(par - 2, Math.min(par + 6, score));
+    }
+
+    const scoreToPar = score - par;
+
+    const fairwayHit = par >= 4
+      ? (knownHole?.fairway_hit ?? (teeShot ? teeShot.lie_after === 'fairway' : null))
+      : null;
+
+    // GIR: reached green within par-2 shots. Also counts chip-ins from
+    // approach distance and par 3 tee shots hitting the green.
+    const girShotLimit = par - 2;
+    let greenReachedAt = -1;
+    for (let i = 0; i < holeShots.length; i++) {
+      const s = holeShots[i]!;
+      if (s.lie_after === 'green' || s.result === 'hole' || s.result === 'green' || s.result === 'gir') {
+        greenReachedAt = i + 1; // 1-based
+        break;
+      }
+    }
+    const gir = knownHole?.gir ?? (greenReachedAt > 0 && greenReachedAt <= girShotLimit);
+
+    const scrambleAttempt = !gir;
+    const scrambleSuccess = scrambleAttempt && scoreToPar <= 0;
+
+    const hadBunkerShot = holeShots.some(s =>
+      (s.shot_type === 'around_green' || s.shot_type === 'approach') && s.lie_before === 'sand'
+    );
+    // A greenside-bunker visit is the sand-save attempt; do NOT gate on !gir
+    // (canonical denominator = bunker visits, matching the cache — STAGE 4).
+    const sandSaveAttempt = hadBunkerShot;
+    const sandSaveSuccess = sandSaveAttempt && scoreToPar <= 0;
+
+    const driveDist = teeShot?.shot_distance ? parseFloat(teeShot.shot_distance) : null;
+    const driveMiss = teeShot?.miss_direction ?? null;
+    const driveClub = teeShot?.club_type ?? null;
+
+    const firstPutt = putts[0];
+    const firstPuttFeet = firstPutt?.putt_distance_feet ? parseFloat(firstPutt.putt_distance_feet) : null;
+
+    const approachShot = holeShots.find(s =>
+      s.shot_type === 'approach' || (s.shot_type === 'around_green' && !gir)
+    );
+    const approachClub = approachShot?.club_type ?? null;
+    const approachDist = approachShot?.distance_to_hole_before ? parseFloat(approachShot.distance_to_hole_before) : null;
+    const approachMiss = approachShot?.miss_direction ?? null;
+
+    holes.push({
+      hole: h, par, score, scoreToPar,
+      putts: knownHole?.putts ?? putts.length, fairwayHit, gir,
+      threePutt: (knownHole?.putts ?? putts.length) >= 3, onePutt: (knownHole?.putts ?? putts.length) === 1,
+      penalties, scrambleAttempt, scrambleSuccess,
+      sandSaveAttempt, sandSaveSuccess,
+      driveClub,
+      driveDist: driveDist ? Math.round(driveDist) : null,
+      driveMiss, firstPuttFeet,
+      approachClub,
+      approachDist: approachDist ? Math.round(approachDist) : null,
+      approachMiss,
+    });
+  }
+
+  // ── Cross-reference with round-level stats ──
+  // If the round table has a known total_score, distribute any score
+  // discrepancy across incomplete holes so the total matches.
+  if (round.total_score && holes.length > 0) {
+    const computedTotal = holes.reduce((s, h) => s + h.score, 0);
+    const diff = round.total_score - computedTotal;
+    if (diff !== 0) {
+      // Find holes where data was incomplete (no holed-out shot)
+      const incompleteHoles = holes.filter(h => {
+        const holeShots2 = byHole.get(h.hole) ?? [];
+        const last = holeShots2[holeShots2.length - 1];
+        return !(last?.result === 'hole' || last?.putt_made === true);
+      });
+
+      if (incompleteHoles.length > 0) {
+        // Weight adjustment by confidence: holes with more recorded shots
+        // are more likely to have an accurate estimate already, so they
+        // receive less adjustment. Holes with fewer shots get more.
+        const shotCounts = incompleteHoles.map(h => (byHole.get(h.hole) ?? []).length);
+        const totalShots = shotCounts.reduce((a, b) => a + b, 0);
+
+        // Compute inverse-confidence weights (fewer shots = higher weight)
+        const weights = shotCounts.map(sc =>
+          totalShots > 0 ? 1 - sc / totalShots : 1 / incompleteHoles.length
+        );
+        const weightSum = weights.reduce((a, b) => a + b, 0);
+
+        let remaining = diff;
+        for (let i = 0; i < incompleteHoles.length; i++) {
+          if (remaining === 0) break;
+          const h = incompleteHoles[i]!;
+          const normalizedWeight = weightSum > 0 ? weights[i]! / weightSum : 1 / incompleteHoles.length;
+          const adjustment = Math.round(diff * normalizedWeight);
+          const clampedAdj = Math.max(-3, Math.min(3, adjustment));
+          const finalAdj = Math.abs(remaining) < Math.abs(clampedAdj) ? remaining : clampedAdj;
+          h.score += finalAdj;
+          h.scoreToPar = h.score - h.par;
+          h.scrambleSuccess = h.scrambleAttempt && h.scoreToPar <= 0;
+          h.sandSaveSuccess = h.sandSaveAttempt && h.scoreToPar <= 0;
+          remaining -= finalAdj;
+        }
+
+        // If any remainder, distribute 1 stroke at a time to least-confident holes
+        if (remaining !== 0) {
+          const sortedByConfidence = [...incompleteHoles].sort((a, b) => {
+            const aShots = (byHole.get(a.hole) ?? []).length;
+            const bShots = (byHole.get(b.hole) ?? []).length;
+            return aShots - bShots; // fewest shots first = least confident
+          });
+          for (const h of sortedByConfidence) {
+            if (remaining === 0) break;
+            const adj = remaining > 0 ? 1 : -1;
+            h.score += adj;
+            h.scoreToPar = h.score - h.par;
+            h.scrambleSuccess = h.scrambleAttempt && h.scoreToPar <= 0;
+            h.sandSaveSuccess = h.sandSaveAttempt && h.scoreToPar <= 0;
+            remaining -= adj;
+          }
+        }
+      }
+    }
+  }
+
+  return holes;
 }

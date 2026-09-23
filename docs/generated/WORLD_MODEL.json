@@ -1490,6 +1490,11 @@
         "category": "services"
       },
       {
+        "id": "services:scripts/coachhelm-prewarm-round-reviews.ts",
+        "pattern": "scripts/coachhelm-prewarm-round-reviews.ts",
+        "category": "services"
+      },
+      {
         "id": "services:scripts/contracts/**",
         "pattern": "scripts/contracts/**",
         "category": "services"
@@ -15423,7 +15428,7 @@
         {
           "kind": "import_graph",
           "path": "src/app/golf/actions/round-review-system.ts",
-          "line": 27
+          "line": 33
         },
         {
           "kind": "import_graph",
@@ -15469,6 +15474,11 @@
           "kind": "import_graph",
           "path": "src/lib/golf/qualifier-standings.ts",
           "line": 1
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/golf/round-review/deterministic-review.ts",
+          "line": 44
         },
         {
           "kind": "import_graph",
@@ -16036,6 +16046,18 @@
           "kind": "rpc_call",
           "path": "src/app/golf/actions/golf.ts",
           "line": 7278
+        }
+      ]
+    },
+    {
+      "source": "golf_round_lifecycle",
+      "target": "services:scripts/coachhelm-prewarm-round-reviews.ts",
+      "kind": "feature_service",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "scripts/coachhelm-prewarm-round-reviews.ts"
         }
       ]
     },
@@ -17248,12 +17270,12 @@
         {
           "kind": "import_graph",
           "path": "src/app/golf/actions/round-reviews.ts",
-          "line": 23
+          "line": 24
         },
         {
           "kind": "import_graph",
           "path": "src/app/golf/actions/round-reviews.ts",
-          "line": 24
+          "line": 25
         },
         {
           "kind": "import_graph",
@@ -17437,7 +17459,12 @@
         {
           "kind": "import_graph",
           "path": "src/app/golf/actions/round-reviews.ts",
-          "line": 7
+          "line": 5
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/round-reviews.ts",
+          "line": 8
         },
         {
           "kind": "import_graph",
@@ -17912,12 +17939,12 @@
         {
           "kind": "import_graph",
           "path": "src/app/golf/actions/round-reviews.ts",
-          "line": 8
+          "line": 9
         },
         {
           "kind": "import_graph",
           "path": "src/app/golf/actions/round-reviews.ts",
-          "line": 9
+          "line": 10
         },
         {
           "kind": "import_graph",

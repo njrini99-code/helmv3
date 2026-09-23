@@ -444,6 +444,7 @@ export type ReviewStatus =
   | 'coach_review'
   | 'approved'
   | 'shared'
+  | 'published'
   | 'failed';
 
 /**

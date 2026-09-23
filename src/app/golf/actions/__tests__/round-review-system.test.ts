@@ -24,7 +24,13 @@ function createChainableMock({
     error,
     count: Array.isArray(data) ? data.length : 0,
   };
-  const methods = ['select', 'eq', 'neq', 'in', 'gte', 'lte', 'not', 'order', 'limit', 'range', 'filter', 'upsert'];
+  // `lt` added alongside the repair plan N4 "as-played" fix
+  // (round-review-system.ts's comparison query now calls
+  // `.lt('round_date', roundData.round_date)`) — without it, that call hits
+  // `chain.lt is not a function` and the compute's try/catch turns that
+  // TypeError into a silent `success: false`, which is what broke this
+  // suite (not a single-flight regression).
+  const methods = ['select', 'eq', 'neq', 'in', 'gte', 'lte', 'lt', 'not', 'order', 'limit', 'range', 'filter', 'upsert'];
   for (const method of methods) {
     chain[method] = vi.fn(() => chain);
   }

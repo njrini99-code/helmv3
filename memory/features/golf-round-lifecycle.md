@@ -102,6 +102,10 @@ separate `recordWorkflow` calls directly in `golf.ts`.
 - `src/app/golf/actions/round-recap.ts`
 - `src/app/golf/actions/round-review-system.ts`
 - `src/app/golf/actions/round-reviews.ts`
+- `src/app/golf/actions/round-review-content.ts` — pure deterministic content
+  builders (`buildHoleBreakdowns`, `calculateComparisonAverages`,
+  `generateReviewContent`); not `'use server'`, so it's also the reuse point
+  for the pre-warm worker below.
 - `src/app/golf/actions/shot-analytics.ts`
 - `src/app/golf/actions/player-feedback.ts`
 
@@ -110,6 +114,14 @@ separate `recordWorkflow` calls directly in `golf.ts`.
 - `src/lib/coachhelm/v2/post-round-trigger.ts`
 - `src/lib/coachhelm/v2/shot-analysis/**`
 - `src/lib/coachhelm/v3/llm/round-review.ts`
+- `src/lib/golf/round-review/deterministic-review.ts` — worker-safe
+  (non-cookie, no `revalidatePath`) deterministic review generation for
+  `scripts/coachhelm-prewarm-round-reviews.ts` (CoachHelm repair plan
+  §5.5/§14.8 Package 6, the 30-day missing-review pre-warm). Insert-only:
+  `writeReviewIfAbsent` always upserts with `ignoreDuplicates: true`, so it
+  can create a missing review but never overwrite an existing one's
+  coach-authored/published/shared state. Deliberately skips the CoachHelm v2
+  enhancement branch (deterministic-only) — see the module's header comment.
 - `src/lib/observability/helm-flight-recorder.ts`,
   `src/lib/observability/golf-round-flight-workflow.ts` — the
   `trace_runs`/`helm_debug` diagnostic trace AND (as of 2026-09-03) the
@@ -213,6 +225,17 @@ Use `memory/context/golfhelm-database.md` for exact columns.
   from the server's persisted progress; a newer timestamp alone is not proof
   of unsaved work.
 - Round review and CoachHelm triggers must use committed round data, not stale draft state.
+- Round-review history/chronology reads by the REVIEWED ROUND's date, never
+  by when the review row was generated, and the historical comparison
+  baseline used to generate a review ("as played") must exclude rounds
+  played on or after the reviewed round (repair plan §5.4 R4 / finding N4) —
+  a strict `round_date <` comparison in the comparison query gives both the
+  future-round exclusion and the same-day exclusion for free. Workflow status
+  has one reconciled definition (`effectiveReviewStatus` in
+  `round-reviews.ts`): the raw `status` column (only ever null or
+  `'published'` in practice — `publishReviewImpl` is the only writer) takes
+  precedence, then `patterns_detected.status`, then `shared_with_coach` as a
+  last-resort default. Do not re-derive status inline at a new call site.
 - Cache invalidation must include player-facing and coach-facing views that reflect the round.
 - Score, hole, shot, lie, and strokes-gained calculations must stay consistent with `docs/v3-research-golf-domain.md`.
 - Completed score history is immutable. Any post-submit derived write must use
