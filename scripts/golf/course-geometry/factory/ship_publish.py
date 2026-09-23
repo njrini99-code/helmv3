@@ -200,6 +200,19 @@ def cmd_ship_approve(session, args, out):
                   f'(found status={qa.get("status") if qa else None}, packageHash={(qa.get("packageHash") or "")[:12] if qa else None}); '
                   f'run `ship --layout {layout_id}` first\n')
         return 1
+    route_confirmation = qa.get('routeConfirmation')
+    if route_confirmation and route_confirmation.get('required') and not route_confirmation.get('confirmed'):
+        # Phase D1, owner decision 2026-09-23: an auto-route-v1 layout builds
+        # provisionally to READY_FOR_APPROVAL, but nothing reaches players
+        # without the owner reviewing hole order first -- see
+        # `ship.route_confirmation_item`. This is the point that actually
+        # refuses; `layout.routes.resolve` already accepted the proposal.
+        out.write(f'refusing: {layout_id} was built from an unconfirmed auto-route-v1 route proposal '
+                  f'(proposalHash {(route_confirmation.get("proposalHash") or "")[:12]}); review the hole order '
+                  f'(qa-report.json routeConfirmation.holes, and routeOverview next to the contact sheet), then run '
+                  f'`course-factory.py ship --confirm-route {layout_id}`, then re-run `ship --layout {layout_id}` '
+                  f'before approving\n')
+        return 1
     package = ctx.package(layout_id)
     if not package or package.get('contentHash') != content_hash or not content_hash_matches(package):
         out.write(f'refusing: the package on disk no longer hashes to {content_hash[:12]}; rerun ship first\n')

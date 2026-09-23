@@ -7,12 +7,13 @@ import json
 import os
 
 from source_geometry import identity as source_identity
-from source_geometry import read_route_traces, read_source_geometry, resolved_routes
+from source_geometry import read_route_traces, read_source_geometry, resolved_routes, validate as validate_source_geometry
 
 from . import osm
 from .fingerprints import (
     content_hash_matches,
     digest,
+    file_sha256,
     files_digest,
     native_imagery_identity,
     package_subhashes,
@@ -134,6 +135,25 @@ class Context:
         of adopting the golden fixture."""
         return None if self.fresh else (self.layout(layout_id) or {}).get('geometry')
 
+    def effective_source_geometry_path(self, layout_id):
+        """The `--source-geometry` input `prepare-osm-course.py` should
+        consume, and the same identity `_package_eval` compares a built
+        package's `source-metadata.json` against: the catalog's retained
+        `sourceGeometry` when curated by hand, else an accepted
+        `auto-route-v1` proposal (Phase D1), else `None`. A pin, retained
+        `routeTraces`, or a numbered OSM series never reach this -- they do
+        not need a `--source-geometry` file at all. This is the one place
+        both consumers read from, so a proposal and a hand-curated import
+        are adopted/hashed the same way."""
+        layout = self.layout(layout_id) or {}
+        retained = self.retained(layout, 'sourceGeometry')
+        if retained:
+            return retained
+        resolution = self.route_resolution(layout_id)
+        if resolution and resolution.get('source') == 'auto-route-v1' and resolved_routes(resolution):
+            return self.route_proposal_path(layout_id)
+        return None
+
     def layout_out(self, layout_id):
         return os.path.join(self.output_root, 'layouts', layout_id)
 
@@ -224,6 +244,64 @@ class Context:
     # layout artifacts
     def routes_path(self, layout_id):
         return os.path.join(self.layout_out(layout_id), 'routes.json')
+
+    def route_proposal_path(self, layout_id):
+        """`layout.routes.propose`'s own factory-output resolution source
+        (Phase D1). Never a catalog/retained path: a proposal is never
+        written into a layout's checked-in `sourceGeometry`, and never
+        promotes `identityReview` in place -- see `route_resolution`."""
+        return os.path.join(self.layout_out(layout_id), 'route-proposal.json')
+
+    def route_proposal_pointer_path(self, layout_id):
+        """A tiny marker `layout.routes.propose` writes when a pin, a
+        retained import, or a numbered OSM series already resolves the
+        layout -- kept separate from `route_proposal_path` so a "not
+        required" marker can never be misread as an actual proposal
+        document (mirrors `visual_candidate_pointer_path`'s
+        `not_required_source_route_available` pattern)."""
+        return os.path.join(self.layout_out(layout_id), 'route-proposal-pointer.json')
+
+    def route_confirmation_path(self, layout_id):
+        """The owner's `ship --confirm-route` record: which `auto-route-v1`
+        proposal hash they reviewed. A new proposal hash invalidates an old
+        confirmation (see `ship_publish.cmd_ship_approve`)."""
+        return os.path.join(self.layout_out(layout_id), 'route-confirmation.json')
+
+    def route_proposal_scorecard(self, layout_id):
+        """The scorecard-shaped input `propose-routes.py` needs, built
+        without depending on a resolved route (unlike `pilot_scorecard`,
+        which requires `resolved_routes(routes)` and would be circular
+        here: a route proposal is exactly what runs *before* a route is
+        resolved). `None` until the raw scorecard and a bbox both exist."""
+        layout = self.layout(layout_id) or {}
+        facility = self.facility(layout.get('facilityId')) or {}
+        card = self.scorecard(layout_id)
+        aoi = self.aoi(layout.get('facilityId'))
+        bbox = layout.get('bboxWgs84') or (aoi or {}).get('bboxWgs84')
+        if not (card and bbox and facility.get('originWgs84')):
+            return None
+        holes = sorted(card['holes'], key=lambda h: h['hole'])
+        site_id = (layout.get('siteIds') or ['osm-' + (facility.get('aoi') or {}).get('id', '').replace('/', '-')])[0]
+        return {'siteId': site_id, 'layoutName': layout.get('name'), 'originWgs84': facility['originWgs84'],
+                'scorecardYards': [h['yards'] for h in holes], 'pars': [h['par'] for h in holes],
+                'facilityId': layout['facilityId'], 'holeOrder': layout['holeOrder'], 'bboxWgs84': bbox}
+
+    def detected_surfaces_path(self, facility_id):
+        """Where `facility.surfaces.detect` (another worker's task, not this
+        branch's) writes its `surfaces.json`, in the `propose-routes.py
+        collect_surface_candidates` shape. Read defensively: that task does
+        not exist on this branch yet, so its absence is normal, not an error."""
+        return os.path.join(self.facility_out(facility_id), 'surface-detect', 'surfaces.json')
+
+    def detected_surfaces(self, facility_id):
+        """(path, doc, sha256) of a detected-surfaces file when one is
+        retained and adoptable; (path, None, None) otherwise. `sha256` goes
+        into a task's own inputs so a later `facility.surfaces.detect`
+        change is picked up without this branch depending on that task."""
+        path = self.detected_surfaces_path(facility_id)
+        if not self.can_adopt(path) or not os.path.isfile(path):
+            return path, None, None
+        return path, self.json(path), file_sha256(path)
 
     def scorecard_path(self, layout_id):
         return os.path.join(self.layout_out(layout_id), 'scorecard.json')
@@ -478,11 +556,23 @@ class Context:
             candidates.append({'site': facility['aoi']['id'], 'polygon': osm.way_points(ways[int(facility['aoi']['id'][4:])])})
         return candidates
 
-    def route_resolution(self, layout_id):
+    def route_resolution(self, layout_id, include_proposal=True):
         """Catalog routeWayIds when pinned; otherwise the unambiguous proposal
-        from the retained extract, or None with the evidence of why not."""
-        if layout_id in self._routes:
-            return self._routes[layout_id]
+        from the retained extract, or None with the evidence of why not.
+
+        `include_proposal=False` computes the *base* resolution only --
+        pin, retained sourceGeometry/routeTraces, or a numbered OSM series --
+        never an accepted `layout.routes.propose` output. `layout.routes.
+        propose`'s own eval always calls this way, so it decides "does OSM
+        lack a resolvable series" from source truth, never from its own
+        prior output (which would be circular: an accepted proposal would
+        make the base series check see a resolved layout and never revisit
+        it). Every other caller keeps the default, which additionally
+        accepts a complete `auto-route-v1` proposal as the lowest-priority
+        resolution, only when nothing higher in this list resolves it."""
+        cache_key = (layout_id, include_proposal)
+        if cache_key in self._routes:
+            return self._routes[cache_key]
         layout = self.layout(layout_id) or {}
         result = None
         source_geometry = self.retained(layout, 'sourceGeometry')
@@ -524,8 +614,48 @@ class Context:
                         break
                 if result is None:
                     result = {'source': None, 'routeWayIds': None, 'extractSha256': manifest.get('uncompressedSha256'), 'evidence': {'attempts': attempts}}
-        self._routes[layout_id] = result
+                if include_proposal and result.get('source') is None:
+                    proposed = self._route_proposal_resolution(layout_id, layout, result)
+                    if proposed is not None:
+                        result = proposed
+        self._routes[cache_key] = result
         return result
+
+    def _route_proposal_resolution(self, layout_id, layout, base_result):
+        """The lowest-priority route_resolution fallback: a complete, valid
+        `layout.routes.propose` output (Phase D1, `auto-route-v1`), only
+        reached once a pin, a retained sourceGeometry/routeTraces import,
+        and a numbered OSM series have all already failed to resolve this
+        layout. `None` when there is no proposal file yet -- the caller
+        keeps its existing ROUTE_WAY_IDS_REQUIRED result in that case.
+        `base_result`'s own OSM-series-attempt evidence (missing/duplicate
+        refs) is carried into an incomplete-proposal's evidence too, so a
+        reviewer never loses why OSM itself could not resolve this layout
+        just because a proposal was also attempted and also came up short."""
+        base_evidence = {'osmSeriesAttempts': (base_result or {}).get('evidence', {}).get('attempts')}
+        path = self.route_proposal_path(layout_id)
+        if not self.can_adopt(path) or not os.path.isfile(path):
+            return None
+        raw = self.json(path)
+        if not isinstance(raw, dict):
+            return {'source': 'auto-route-v1', 'routeWayIds': None, 'problem': 'ROUTE_PROPOSAL_INCOMPLETE',
+                    'evidence': {'detail': 'route-proposal.json is not a readable document', **base_evidence}}
+        scorecard = self.route_proposal_scorecard(layout_id)
+        site_id = scorecard['siteId'] if scorecard else (layout.get('siteIds') or [None])[0]
+        unassigned = [row.get('ordinal') for row in raw.get('report') or [] if row.get('decision') != 'proposed']
+        if unassigned:
+            return {'source': 'auto-route-v1', 'routeWayIds': None, 'problem': 'ROUTE_PROPOSAL_INCOMPLETE',
+                    'evidence': {'unassignedHoles': unassigned, 'proposalPath': self.relpath(path), **base_evidence}}
+        try:
+            validate_source_geometry(raw, layout.get('facilityId'), site_id, layout.get('holeOrder'))
+        except (ValueError, TypeError, KeyError) as exc:
+            return {'source': 'auto-route-v1', 'routeWayIds': None, 'problem': 'ROUTE_PROPOSAL_INCOMPLETE',
+                    'evidence': {'detail': str(exc), 'proposalPath': self.relpath(path), **base_evidence}}
+        confidences = {row['ordinal']: row.get('confidence') for row in raw.get('report') or [] if row.get('decision') == 'proposed'}
+        return {'source': 'auto-route-v1', 'routeWayIds': None, 'sourceGeometryHash': source_identity(raw),
+                'holeOrder': layout.get('holeOrder'),
+                'evidence': {'sourceGeometry': self.relpath(path), 'proposalPath': self.relpath(path),
+                             'producer': raw.get('producer'), 'confidences': confidences}}
 
     def canonical_route_admission(self, layout_id):
         """Return the narrow prerequisite for a route-specific physical world.

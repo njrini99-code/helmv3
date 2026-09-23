@@ -113,6 +113,20 @@ CORRIDOR_INSIDE_SLACK_M = 3.0  # a sample within this of a fairway polygon count
 DEFAULT_CORRIDOR_BONUS_WEIGHT = 60.0  # full-length coverage's bonus; weaker than REF_HINT_BONUS on purpose --
                                       # corridor coverage is circumstantial evidence, not a near-certain identity match
 
+# Cart-path continuity evidence: a mapped `golf=cartpath`/`highway=path` way
+# connecting hole h-1's green to hole h's tee is stronger routing evidence
+# than raw walking distance -- it says the course itself routes players that
+# way, not just that two markers happen to sit near each other. Scored the
+# same coverage-fraction way as the fairway corridor bonus (0..1, never a
+# penalty: no mapped cart path in the extract, or a walk that never comes
+# close to one, both legitimately score 0 rather than counting against a
+# true transition). Held out of the walk's own `continuity_cost` on purpose:
+# that model is the *prior* over how far a walk should be; this is
+# independent, positive evidence about one specific walk.
+CARTPATH_SAMPLE_STEP_M = 10.0
+CARTPATH_INSIDE_SLACK_M = 5.0  # a path is a line, not a wide polygon -- more slack than the fairway corridor's 3m
+DEFAULT_CARTPATH_BONUS_WEIGHT = 40.0
+
 REF_HINT_BONUS = 300.0  # cost reduction when a candidate green's OSM `ref`/`name` names this hole number
 
 
@@ -181,6 +195,36 @@ def collect_fairway_union(extract, bbox_wgs84=None):
             continue
         polygons.append(polygon)
     return unary_union(polygons) if polygons else None
+
+
+def collect_cartpath_union(extract, bbox_wgs84=None):
+    """Every `golf=cartpath`/`highway=path` way in the extract (inside
+    `bbox_wgs84` when given), merged into one shapely geometry in WGS84 --
+    green->next-tee continuity evidence for the beam search's walk cost. A
+    cart path connecting a hole's green to the next hole's tee is much
+    stronger routing evidence than raw walking distance alone: it is
+    evidence the *course* actually routes players that way, not just that
+    two markers happen to be close. Unlike a fairway (a closed polygon), a
+    cart path is a line, so this keeps it as a LineString rather than
+    forcing `_way_polygon`'s closed-ring requirement. `None` when the
+    extract has no cart paths at all inside the bbox."""
+    from shapely.geometry import LineString
+    from shapely.ops import unary_union
+    lines = []
+    for element in extract.get('elements', []):
+        if element.get('type') != 'way':
+            continue
+        tags = element.get('tags') or {}
+        if tags.get('golf') != 'cartpath' and tags.get('highway') != 'path':
+            continue
+        points = osmlib.way_points(element)
+        if len(points) < 2:
+            continue
+        mid = points[len(points) // 2]
+        if not _in_bbox(mid, bbox_wgs84):
+            continue
+        lines.append(LineString(points))
+    return unary_union(lines) if lines else None
 
 
 def collect_surface_candidates(traces_doc, bbox_wgs84=None):
@@ -255,10 +299,12 @@ def yardage_cost(distance_m, yards_m):
     return 0.0
 
 
-def corridor_coverage_fraction(tee_xy, green_xy, fairway_union_xy, sample_step_m=CORRIDOR_SAMPLE_STEP_M):
+def corridor_coverage_fraction(tee_xy, green_xy, fairway_union_xy, sample_step_m=CORRIDOR_SAMPLE_STEP_M,
+                                inside_slack_m=CORRIDOR_INSIDE_SLACK_M):
     """The fraction (0..1) of evenly-spaced samples along the straight
-    tee-green line that fall within `CORRIDOR_INSIDE_SLACK_M` of any mapped
-    fairway polygon. `0.0` when there's no fairway data at all, or when the
+    tee-green line that fall within `inside_slack_m` of any mapped
+    fairway (or, via `cartpath_union_xy`/`CARTPATH_INSIDE_SLACK_M`, cart
+    path) geometry. `0.0` when there's no such data at all, or when the
     line simply never comes close to one -- in both cases this contributes
     no bonus rather than a penalty (see the module-level comment: a missing
     fairway feature or a real dogleg both legitimately produce a line that
@@ -275,7 +321,7 @@ def corridor_coverage_fraction(tee_xy, green_xy, fairway_union_xy, sample_step_m
         t = i / steps
         x = tee_xy[0] + (green_xy[0] - tee_xy[0]) * t
         y = tee_xy[1] + (green_xy[1] - tee_xy[1]) * t
-        if _Point(x, y).distance(fairway_union_xy) <= CORRIDOR_INSIDE_SLACK_M:
+        if _Point(x, y).distance(fairway_union_xy) <= inside_slack_m:
             covered += 1
     return covered / (steps + 1)
 
@@ -330,7 +376,8 @@ def _feasible_pairs_by_hole(pairs, yards_m):
 
 
 def _run_beam(pairs, yards_m, beam_width=DEFAULT_BEAM_WIDTH, continuity_weight=DEFAULT_CONTINUITY_WEIGHT,
-              corridor_bonus_weight=DEFAULT_CORRIDOR_BONUS_WEIGHT, use_ref_hints=True):
+              corridor_bonus_weight=DEFAULT_CORRIDOR_BONUS_WEIGHT, use_ref_hints=True,
+              cartpath_union_xy=None, cartpath_bonus_weight=DEFAULT_CARTPATH_BONUS_WEIGHT):
     """The final surviving beam (list of states), not just its best sequence.
 
     A beam of partial sequences is grown one hole slot at a time. Each state
@@ -340,15 +387,32 @@ def _run_beam(pairs, yards_m, beam_width=DEFAULT_BEAM_WIDTH, continuity_weight=D
     Leaving a slot unassigned is always an option, at `SKIP_PENALTY`, so one
     bad/missing hole cannot starve the rest of the course of candidates.
 
-    Per-pair cost is `yardage_cost + continuity_cost - corridor-coverage
-    bonus - ref-hint bonus`: yardage match, walking-distance plausibility
-    against the fitted green->next-tee distribution, how much of the line is
-    actually chained together by mapped fairway, and (when present) whether
-    a mapper already labelled this green with this hole's number.
+    Per-pair cost is `yardage_cost + continuity_cost - cart-path bonus -
+    corridor-coverage bonus - ref-hint bonus`: yardage match, walking-
+    distance plausibility against the fitted green->next-tee distribution,
+    whether a mapped cart path actually connects the previous green to this
+    tee, how much of the line is chained together by mapped fairway, and
+    (when present) whether a mapper already labelled this green with this
+    hole's number.
     """
     if not pairs or not yards_m:
         return []
     by_hole = _feasible_pairs_by_hole(pairs, yards_m)
+    # (last_green_id, tee_id) -> cart-path coverage fraction. Unlike the
+    # fairway corridor bonus (precomputed once per pair in `build_pairs`),
+    # this one is inherently path-dependent -- it scores a *transition*
+    # (this pair's tee against WHATEVER pair the previous hole slot ends up
+    # using), so it cannot be precomputed per pair alone. But it depends on
+    # nothing except those two ids, and many beam states share the same
+    # `last_green_id` (states differ by their (used_greens, used_complexes)
+    # sets, not always by which green was last) -- without this cache, a
+    # real course's beam search recomputes the identical sampled-line
+    # geometry query thousands of times over, dominating runtime (measured:
+    # a 66-tee/33-green course did not finish in 120s at beam_width=50
+    # before this cache; the number of distinct (green, tee) transitions is
+    # bounded by tees*greens, orders of magnitude smaller than
+    # beam_width*holes*pairs_per_hole).
+    cartpath_cache = {}
     # (cost, assigned_dict, used_greens, used_complexes, last_green_xy, last_green_id)
     beam = [(0.0, {}, frozenset(), frozenset(), None, None)]
     for h, yards in enumerate(yards_m):
@@ -367,6 +431,15 @@ def _run_beam(pairs, yards_m, beam_width=DEFAULT_BEAM_WIDTH, continuity_weight=D
                 if last_green_xy is not None:
                     walk = _dist(last_green_xy, pair['teeXy'])
                     added += continuity_cost(walk, continuity_weight)
+                    if cartpath_union_xy is not None:
+                        cache_key = (last_green_id, pair['tee']['id'])
+                        path_coverage = cartpath_cache.get(cache_key)
+                        if path_coverage is None:
+                            path_coverage = corridor_coverage_fraction(last_green_xy, pair['teeXy'], cartpath_union_xy,
+                                                                        sample_step_m=CARTPATH_SAMPLE_STEP_M,
+                                                                        inside_slack_m=CARTPATH_INSIDE_SLACK_M)
+                            cartpath_cache[cache_key] = path_coverage
+                        added -= cartpath_bonus_weight * path_coverage
                 new_assigned = dict(assigned)
                 new_assigned[h] = pair_idx
                 expanded.append((cost + added, new_assigned, used_greens | {green_id}, used_complexes | {complex_id},
@@ -509,7 +582,8 @@ def propose(scorecard, extract, surfaces_doc, facility_id, hole_key_prefix, osm_
             allow_numbered_osm=False, tee_complex_radius_m=DEFAULT_TEE_COMPLEX_RADIUS_M,
             beam_width=DEFAULT_BEAM_WIDTH, continuity_weight=DEFAULT_CONTINUITY_WEIGHT,
             corridor_bonus_weight=DEFAULT_CORRIDOR_BONUS_WEIGHT,
-            use_ref_hints=True, extra_tee_candidates=None):
+            use_ref_hints=True, extra_tee_candidates=None,
+            use_cartpaths=True, cartpath_bonus_weight=DEFAULT_CARTPATH_BONUS_WEIGHT):
     bbox = scorecard.get('bboxWgs84')
     pars = scorecard.get('pars')
     hole_order = scorecard.get('holeOrder')
@@ -530,27 +604,191 @@ def propose(scorecard, extract, surfaces_doc, facility_id, hole_key_prefix, osm_
     if extra_tee_candidates:
         tees = tees + extra_tee_candidates
     fairway_union = collect_fairway_union(extract, bbox)
+    cartpath_union = collect_cartpath_union(extract, bbox) if use_cartpaths else None
     epsg = utm_epsg(*scorecard['originWgs84'])
     cluster_tee_complexes(tees, epsg, tee_complex_radius_m)
     pairs = build_pairs(tees, greens, epsg, fairway_union_wgs84=fairway_union)
+    cartpath_union_xy = cr.wgs84_to_epsg(cartpath_union, epsg) if cartpath_union is not None else None
     yards_m = [y * YARD_TO_M for y in scorecard['scorecardYards']]
     assignment, confidences = beam_search_with_confidence(
         pairs, yards_m, beam_width=beam_width, continuity_weight=continuity_weight,
-        corridor_bonus_weight=corridor_bonus_weight, use_ref_hints=use_ref_hints)
+        corridor_bonus_weight=corridor_bonus_weight, use_ref_hints=use_ref_hints,
+        cartpath_union_xy=cartpath_union_xy, cartpath_bonus_weight=cartpath_bonus_weight)
     doc = build_document(facility_id, scorecard['siteId'], hole_key_prefix, assignment, pairs, yards_m, pars,
                           osm_path, hole_count, hole_keys=hole_order, confidences=confidences)
     stats = {'teeCandidates': len(tees), 'greenCandidates': len(greens), 'pairCandidates': len(pairs),
-              'fairwayCandidates': 0 if fairway_union is None else (len(fairway_union.geoms) if fairway_union.geom_type == 'MultiPolygon' else 1)}
+              'fairwayCandidates': 0 if fairway_union is None else (len(fairway_union.geoms) if fairway_union.geom_type == 'MultiPolygon' else 1),
+              'cartpathCandidates': 0 if cartpath_union is None else (len(cartpath_union.geoms) if cartpath_union.geom_type == 'MultiLineString' else 1)}
     return doc, stats
+
+
+# --- shared physical nines (Phase D1 item 2: Landfall) -----------------------
+# A facility can carry several 18-hole "combo" layouts assembled from a
+# smaller set of physical 9-hole courses (CC of Landfall: marsh-9, ocean-9,
+# and a third nine, combined six ways as Nick M/O, Nick O/P, Nick P/M, ...).
+# Each combo layout has its own catalog hole keys for holes 1-18, so nothing
+# in the catalog literally says "combo X's holes 10-18 are physical nine Y" --
+# but two combos that share a nine share that nine's exact scorecard (par and
+# yardage per hole, in order): a real course does not re-measure the same
+# physical hole differently depending which combo it is being played as part
+# of. That identity, not any catalog field, is what group_facility_nines
+# below keys on. Solving each nine once and composing every layout that
+# plays it from that one solve is required, not an optimization: solving six
+# combos independently could -- and without this, would -- let two different
+# combos each claim the SAME physical green as two DIFFERENT hole numbers'
+# greens, or worse, assign one combo's hole 4 and another combo's hole 13 to
+# two different greens for what is, on the ground, one green.
+
+def layout_nine_segments(scorecard):
+    """Split one layout's scorecard into its 9-hole physical segments (front,
+    back for 18 holes; the whole scorecard for 9). Each segment's
+    `signature` is `(pars, yards)` for its 9 holes -- the identity two
+    combos' shared nine must match on. Yards are rounded to the whole yard a
+    scorecard is authored in; two independently-typo'd combos would fail to
+    match here and simply solve independently (never wrong, just missing
+    the sharing optimization)."""
+    hole_order = scorecard['holeOrder']
+    pars = scorecard['pars']
+    yards = scorecard['scorecardYards']
+    n = len(hole_order)
+    if n % 9 != 0 or n == 0:
+        halves = [(0, n)]  # not nine-shaped at all; one opaque segment, never matched
+    else:
+        halves = [(i, i + 9) for i in range(0, n, 9)]
+    segments = []
+    for start, end in halves:
+        seg_pars = tuple(pars[start:end])
+        seg_yards = tuple(round(y) for y in yards[start:end])
+        segments.append({'holeKeys': hole_order[start:end], 'start': start, 'end': end,
+                          'pars': seg_pars, 'yardsYards': seg_yards, 'signature': (seg_pars, seg_yards)})
+    return segments
+
+
+def group_facility_nines(scorecard_by_layout):
+    """`{layoutId: scorecard}` -> `{signature: [{'layoutId', 'holeKeys', 'start', 'end'}, ...]}`,
+    every layout's segments grouped by physical-nine identity. A signature
+    used by only one layout is simply that layout's own, unshared nine."""
+    groups = {}
+    for layout_id, scorecard in scorecard_by_layout.items():
+        for segment in layout_nine_segments(scorecard):
+            groups.setdefault(segment['signature'], []).append(
+                {'layoutId': layout_id, 'holeKeys': segment['holeKeys'], 'start': segment['start'], 'end': segment['end']})
+    return groups
+
+
+def propose_facility(scorecard_by_layout, extract, surfaces_doc, facility_id, osm_path,
+                      tee_complex_radius_m=DEFAULT_TEE_COMPLEX_RADIUS_M,
+                      beam_width=DEFAULT_BEAM_WIDTH, continuity_weight=DEFAULT_CONTINUITY_WEIGHT,
+                      corridor_bonus_weight=DEFAULT_CORRIDOR_BONUS_WEIGHT,
+                      use_ref_hints=True, use_cartpaths=True, cartpath_bonus_weight=DEFAULT_CARTPATH_BONUS_WEIGHT):
+    """Solve every physical nine that at least two layouts share exactly
+    once -- with tee/green exclusivity carried across nines, so two nines
+    can never claim the same green -- then compose each affected layout's
+    full route from its nines' shared solve. Returns
+    `{layoutId: (doc, stats) | None}`; `None` means none of this layout's
+    segments are shared with any other layout at the facility, so the
+    caller falls back to `propose()`'s own single, continuous solve for the
+    whole layout instead -- deliberately: a plain (non-combo) 18-hole
+    layout must keep the front-to-back turn (hole 9 -> hole 10) continuity
+    scoring `propose()` gives it, which composing from two independently
+    solved 9-hole segments always loses (see `layout_nine_segments`'s
+    docstring, and the brief: "leave the combo-dependent 9->10 walk out of
+    the solve" -- that trade only pays for itself when a nine is actually
+    reused)."""
+    groups = group_facility_nines(scorecard_by_layout)
+    shared_signatures = {signature for signature, members in groups.items() if len(members) > 1}
+    if not shared_signatures:
+        return {layout_id: None for layout_id in scorecard_by_layout}
+    any_scorecard = next(iter(scorecard_by_layout.values()))
+    bbox = any_scorecard.get('bboxWgs84')  # one shared facility AOI/bbox for every layout here
+    tees, greens = collect_osm_candidates(extract, bbox)
+    if surfaces_doc:
+        extra_tees, extra_greens = collect_surface_candidates(surfaces_doc, bbox)
+        tees, greens = tees + extra_tees, greens + extra_greens
+    fairway_union = collect_fairway_union(extract, bbox)
+    cartpath_union = collect_cartpath_union(extract, bbox) if use_cartpaths else None
+    epsg = utm_epsg(*any_scorecard['originWgs84'])
+    cluster_tee_complexes(tees, epsg, tee_complex_radius_m)
+    cartpath_union_xy = cr.wgs84_to_epsg(cartpath_union, epsg) if cartpath_union is not None else None
+
+    # Only the signatures an actually-affected layout (>=1 shared segment)
+    # needs: an unrelated single-nine layout that happens to coincide with
+    # a shared signature (unlikely, but not impossible) must not have its
+    # own green pool drawn down by a solve it never asked for.
+    active_layout_ids = {layout_id for layout_id, scorecard in scorecard_by_layout.items()
+                          if any(seg['signature'] in shared_signatures for seg in layout_nine_segments(scorecard))}
+    needed_signatures = {seg['signature'] for layout_id in active_layout_ids
+                          for seg in layout_nine_segments(scorecard_by_layout[layout_id])}
+
+    used_green_ids, used_complex_ids = set(), set()
+    nine_solutions = {}
+    # Sorted so the solve order (and therefore which nine wins a contested
+    # green under the exclusivity rule below) is deterministic run to run,
+    # not dependent on dict/layout iteration order.
+    for signature in sorted(needed_signatures, key=lambda s: json.dumps(s)):
+        pars, yards = signature
+        yards_m = [y * YARD_TO_M for y in yards]
+        available_tees = [t for t in tees if t.get('complexId', t['id']) not in used_complex_ids]
+        available_greens = [g for g in greens if g['id'] not in used_green_ids]
+        pairs = build_pairs(available_tees, available_greens, epsg, fairway_union_wgs84=fairway_union)
+        assignment, confidences = beam_search_with_confidence(
+            pairs, yards_m, beam_width=beam_width, continuity_weight=continuity_weight,
+            corridor_bonus_weight=corridor_bonus_weight, use_ref_hints=use_ref_hints,
+            cartpath_union_xy=cartpath_union_xy, cartpath_bonus_weight=cartpath_bonus_weight)
+        for pair_idx in assignment.values():
+            used_green_ids.add(pairs[pair_idx]['green']['id'])
+            used_complex_ids.add(pairs[pair_idx]['complexId'])
+        nine_solutions[signature] = {'pairs': pairs, 'assignment': assignment, 'confidences': confidences,
+                                      'pars': list(pars), 'yardsM': yards_m}
+
+    results = {}
+    for layout_id, scorecard in scorecard_by_layout.items():
+        segments = layout_nine_segments(scorecard)
+        if not any(segment['signature'] in shared_signatures for segment in segments):
+            results[layout_id] = None  # nothing of this layout's is shared: let propose() solve it whole
+            continue
+        combined_pairs, combined_assignment, combined_confidences, combined_pars, combined_yards_m = [], {}, {}, [], []
+        complete = True
+        for segment in segments:
+            solution = nine_solutions.get(segment['signature'])
+            if solution is None:
+                complete = False
+                break
+            base = len(combined_pairs)
+            combined_pairs.extend(solution['pairs'])
+            for local_ordinal, pair_idx in solution['assignment'].items():
+                combined_assignment[segment['start'] + local_ordinal] = base + pair_idx
+            for local_ordinal, confidence in solution['confidences'].items():
+                combined_confidences[segment['start'] + local_ordinal] = confidence
+            combined_pars.extend(solution['pars'])
+            combined_yards_m.extend(solution['yardsM'])
+        if not complete:
+            results[layout_id] = None
+            continue
+        hole_count = len(scorecard['scorecardYards'])
+        doc = build_document(facility_id, scorecard['siteId'], layout_id, combined_assignment, combined_pairs,
+                              combined_yards_m, combined_pars, osm_path, hole_count,
+                              hole_keys=scorecard['holeOrder'], confidences=combined_confidences)
+        stats = {'teeCandidates': len(tees), 'greenCandidates': len(greens), 'pairCandidates': len(combined_pairs),
+                  'sharedNineSignatures': [json.dumps(seg['signature']) for seg in segments]}
+        results[layout_id] = (doc, stats)
+    return results
 
 
 def parse_args(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--layout', required=True, help='Layout id; also the default hole-key prefix')
-    parser.add_argument('--scorecard', required=True, type=Path)
+    parser.add_argument('--layout', default=None, help='Layout id; also the default hole-key prefix. Required unless --facility-manifest is given.')
+    parser.add_argument('--scorecard', default=None, type=Path, help='Required unless --facility-manifest is given.')
     parser.add_argument('--osm', required=True, type=Path, help='Retained Overpass extract (.json or .json.gz)')
     parser.add_argument('--surfaces', default=None, type=Path, help='Optional derive-surface-traces.py output for extra tee/green candidates')
-    parser.add_argument('--out', required=True, type=Path)
+    parser.add_argument('--out', default=None, type=Path, help='Required unless --facility-manifest is given.')
+    parser.add_argument('--facility-manifest', default=None, type=Path,
+                         help='JSON {"facilityId": ..., "scorecards": {layoutId: scorecardPath}, "outDir": dir} '
+                              '(Phase D1 item 2: Landfall). Solves every physical nine shared by 2+ of these '
+                              "layouts exactly once and writes each affected layout's <layoutId>.json under "
+                              "outDir; a layout with nothing shared is silently omitted -- the caller (adapters.py's "
+                              'propose_routes_task) falls back to a normal single-layout --scorecard/--out run for '
+                              'it. Mutually exclusive with --layout/--scorecard/--out.')
     parser.add_argument('--facility-id', default=None, help="Defaults to the scorecard's facilityId, then --layout")
     parser.add_argument('--hole-key-prefix', default=None, help='Defaults to --layout')
     parser.add_argument('--allow-numbered-osm', action='store_true',
@@ -561,14 +799,42 @@ def parse_args(argv=None):
     parser.add_argument('--continuity-weight', type=float, default=DEFAULT_CONTINUITY_WEIGHT)
     parser.add_argument('--corridor-bonus-weight', type=float, default=DEFAULT_CORRIDOR_BONUS_WEIGHT)
     parser.add_argument('--no-ref-hints', action='store_true', help='Ignore OSM ref/name hole-number hints on tees/greens (for ablation)')
+    parser.add_argument('--no-cartpaths', action='store_true', help='Ignore golf=cartpath/highway=path continuity evidence (for ablation)')
+    parser.add_argument('--cartpath-bonus-weight', type=float, default=DEFAULT_CARTPATH_BONUS_WEIGHT)
     return parser.parse_args(argv)
 
 
 def main(argv=None):
     args = parse_args(argv)
-    scorecard = load_json(args.scorecard)
     extract = load_osm_extract(args.osm)
     surfaces_doc = load_json(args.surfaces) if args.surfaces else None
+
+    if args.facility_manifest:
+        manifest = load_json(args.facility_manifest)
+        scorecard_by_layout = {layout_id: load_json(Path(path)) for layout_id, path in manifest['scorecards'].items()}
+        facility_id = manifest.get('facilityId') or args.facility_id or next(iter(scorecard_by_layout.values()))['facilityId']
+        results = propose_facility(scorecard_by_layout, extract, surfaces_doc, facility_id, str(args.osm),
+                                    tee_complex_radius_m=args.tee_complex_radius_m,
+                                    beam_width=args.beam_width, continuity_weight=args.continuity_weight,
+                                    corridor_bonus_weight=args.corridor_bonus_weight,
+                                    use_ref_hints=not args.no_ref_hints,
+                                    use_cartpaths=not args.no_cartpaths, cartpath_bonus_weight=args.cartpath_bonus_weight)
+        out_dir = Path(manifest['outDir'])
+        out_dir.mkdir(parents=True, exist_ok=True)
+        written = []
+        for layout_id, result in results.items():
+            if result is None:
+                continue
+            doc, _stats = result
+            (out_dir / f'{layout_id}.json').write_text(json.dumps(doc, indent=2) + '\n')
+            written.append(layout_id)
+        print(f'{len(written)}/{len(results)} layouts composed from shared physical nines: {sorted(written)}', file=sys.stderr)
+        return 0
+
+    if not (args.layout and args.scorecard and args.out):
+        print('--layout, --scorecard and --out are required unless --facility-manifest is given', file=sys.stderr)
+        return 2
+    scorecard = load_json(args.scorecard)
     facility_id = args.facility_id or scorecard.get('facilityId') or args.layout
     hole_key_prefix = args.hole_key_prefix or args.layout
     doc, stats = propose(scorecard, extract, surfaces_doc, facility_id, hole_key_prefix, args.osm,
@@ -576,7 +842,8 @@ def main(argv=None):
                           tee_complex_radius_m=args.tee_complex_radius_m,
                           beam_width=args.beam_width, continuity_weight=args.continuity_weight,
                           corridor_bonus_weight=args.corridor_bonus_weight,
-                          use_ref_hints=not args.no_ref_hints)
+                          use_ref_hints=not args.no_ref_hints,
+                          use_cartpaths=not args.no_cartpaths, cartpath_bonus_weight=args.cartpath_bonus_weight)
     args.out.parent.mkdir(parents=True, exist_ok=True)
     args.out.write_text(json.dumps(doc, indent=2) + '\n')
     proposed = sum(1 for row in doc['report'] if row['decision'] == 'proposed')

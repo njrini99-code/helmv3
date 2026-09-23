@@ -50,7 +50,9 @@ class GoldenPlanTests(unittest.TestCase):
 
     def test_cacapon_plan_is_a_clean_slate_behind_the_aoi(self):
         rows = self.golden('cacapon')
-        self.assertEqual(len(rows), 103)
+        # +1 node (plus +1 for layout.surfaces.trace) vs. the pre-Phase-D1 baseline: `layout.routes.propose`
+        # (owner decision 2026-09-23, "build it, confirm at approval").
+        self.assertEqual(len(rows), 104)
         self.assertEqual(rows['catalog.validate[cacapon]'], ('cached', 'INLINE_VALIDATED'))
         self.assertEqual(rows['layout.identity.resolve[cacapon]'], ('cached', 'INLINE_VALIDATED'))
         self.assertEqual(rows['layout.scorecard.validate[cacapon]'], ('cached', 'INLINE_VALIDATED'))
@@ -58,8 +60,15 @@ class GoldenPlanTests(unittest.TestCase):
         self.assertEqual(rows['layout.publish.prepare[cacapon]'], ('blocked', 'PUBLISH_NOT_APPROVED'))
         self.assertEqual(rows['layout.publish.verify[cacapon]'], ('blocked', 'DEPENDENCY_BLOCKED'))
         self.assertEqual(rows['layout.surfaces.trace[cacapon]'], ('pending', 'DEPENDENCY_PENDING'))
+        # `layout.routes.resolve` now waits on its new optional dependency
+        # `layout.routes.propose?` being attempted at least once (it never
+        # blocks, but the dependant is not `ready` until it has run --
+        # `planner.py`'s `dep_pending`), so both routes nodes join the
+        # pending set on a clean slate.
+        self.assertEqual(rows['layout.routes.propose[cacapon]'], ('pending', 'DEPENDENCY_PENDING'))
+        self.assertEqual(rows['layout.routes.resolve[cacapon]'], ('pending', 'DEPENDENCY_PENDING'))
         pending = [k for k, v in rows.items() if v == ('pending', 'DEPENDENCY_PENDING')]
-        self.assertEqual(len(pending), 97)
+        self.assertEqual(len(pending), 98)
         self.assertIn('hole.terrain.compile[cacapon:07]', pending)
 
     def test_upper_plan_adopts_the_retained_evidence(self):
@@ -77,7 +86,16 @@ class GoldenPlanTests(unittest.TestCase):
         self.assertEqual(rows['layout.context.classify[peek-n-peak-upper]'], ('pending', 'DEPENDENCY_PENDING'))
         self.assertEqual(sum(1 for k in adopted if k.startswith('hole.terrain.compile[')), 0)
         self.assertEqual(rows['hole.terrain.compile[peek-n-peak-upper:01]'], ('pending', 'DEPENDENCY_PENDING'))
-        self.assertEqual(rows['layout.routes.resolve[peek-n-peak-upper]'], ('ready', 'NO_SUCCESSFUL_FINGERPRINT'))
+        # `layout.routes.propose` is a new optional dependency of
+        # `layout.routes.resolve` (Phase D1). The Upper's OSM extract has a
+        # resolvable numbered series, so the proposer itself has nothing to
+        # do and is `ready` immediately (it will write only the "not
+        # required" pointer artifact), but `layout.routes.resolve` still
+        # waits for it to be attempted once before it can be `ready` itself
+        # -- an optional dependency never blocks, but the dependant is not
+        # `ready` until it has run (`planner.py`'s `dep_pending`).
+        self.assertEqual(rows['layout.routes.propose[peek-n-peak-upper]'], ('ready', 'NO_SUCCESSFUL_FINGERPRINT'))
+        self.assertEqual(rows['layout.routes.resolve[peek-n-peak-upper]'], ('pending', 'DEPENDENCY_PENDING'))
         # The lab still serves the Upper, but sign-off capture waits for the
         # perimeter-covered terrain rebuild rather than capturing stale mesh.
         self.assertEqual(rows['hole.visual.canary[peek-n-peak-upper:01]'], ('pending', 'DEPENDENCY_PENDING'))
@@ -145,7 +163,7 @@ class OperatorCommandTests(unittest.TestCase):
         self.assertEqual(code, 0)
         self.assertIn('STATE', table)
         rows = self.h.plan_rows('synthetic-a')
-        self.assertEqual(len(rows), 103)
+        self.assertEqual(len(rows), 104)  # +1 layout.routes.propose (Phase D1), +1 layout.surfaces.trace
         self.assertEqual(rows['facility.aoi.resolve[synthetic]']['state'], 'ready')
         self.assertEqual(rows['layout.routes.resolve[synthetic-a]']['state'], 'pending')
         self.assertIn('facility.aoi.resolve[synthetic]', table)

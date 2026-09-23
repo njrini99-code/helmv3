@@ -32,7 +32,10 @@ class VisualFallbackFactoryTests(unittest.TestCase):
         code, text = self.harness.run('run', '--layout', 'synthetic-a', '--task', 'layout.visual.world.build')
         self.assertEqual(code, 0, text)
         states = self.harness.states('synthetic-a')
-        self.assertEqual(states['layout.routes.resolve[synthetic-a]'], ('blocked', 'ROUTE_WAY_IDS_REQUIRED'))
+        # The factory now attempts an auto-route-v1 proposal before giving
+        # up (owner decision 2026-09-23); the synthetic world has no
+        # golf=tee/golf=green ways, so it comes up empty.
+        self.assertEqual(states['layout.routes.resolve[synthetic-a]'], ('blocked', 'ROUTE_PROPOSAL_INCOMPLETE'))
         self.assertEqual(states['layout.visual.world.build[synthetic-a]'][0], 'cached')
         pointer = read_json(os.path.join(self.harness.output, 'layouts', 'synthetic-a', 'visual-world.json'))
         self.assertTrue(pointer['renderingContract']['canRender'])
