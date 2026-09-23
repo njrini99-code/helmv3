@@ -923,10 +923,9 @@ slice 2.
 - `attributeSequence` runs per hole. Rolling its events up into a
   scope-wide aggregate (numerator/denominator/status/interval across
   every hole in an `AnalysisScope`) is PLANNED for a later slice (slice
-  2), not built yet. `MetricResult` does not exist on `main` today; a
-  shared version is landing in `src/lib/coachhelm/v3/metrics/types.ts`
-  via #1990, and slice 2 should consume that type rather than defining
-  its own aggregate shape.
+  2), not built yet. Slice 2 must consume the shared `MetricResult` in
+  `src/lib/coachhelm/v3/metrics/types.ts` rather than defining its own
+  aggregate shape.
 
 ## How to add a new comparison source
 
