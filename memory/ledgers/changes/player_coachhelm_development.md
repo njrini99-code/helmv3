@@ -1,5 +1,22 @@
 # Change ledger — player_coachhelm_development
 
+## 2026-09-23 — trust rollup no longer counts a thin-sample outcome as measured
+
+- SHA: 390a44c65.
+- Change: `getInsightEffectivenessSignals` (event-ledger.ts) gains a
+  `coachhelm_trust_status_exclude_unmeasured_outcomes` flag (default off).
+  On, a null-`improvement` `golf_insight_outcome` row (thin-sample
+  attribution, below attribute.ts's MIN_WINDOW_ROUNDS) is excluded from
+  `measured`/`worked` instead of counting as a real measurement. Off is
+  byte-identical to prior behavior.
+- Why: Package 10 gap audit — the gate "missing post-action evidence
+  remains unknown" was violated by the rollup (not the write side, which
+  already nulls `lift`/never reaches `nextWeight` for these rows): an
+  insight with only thin-sample outcomes could read `needs_validation`,
+  or `underperforming` with 3+ such rows, on zero real evidence.
+- Verification: 5 new tests (event-ledger.test.ts), full `npm run
+  typecheck` (tsc, 0 errors), eslint 0, `npm run docs:check` clean.
+
 ## 2026-08-26 — log-progress drawers stop autofocusing the measurement field on touch
 
 - SHA: 596913022.
