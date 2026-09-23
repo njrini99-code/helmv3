@@ -160,6 +160,31 @@ function MessageTurn({
     .map((p) => (p.data as { envelope?: ToolEnvelope } | undefined)?.envelope)
     .filter((e): e is ToolEnvelope => Boolean(e));
 
+  // Written by the route (not a tool), once, when the finished turn is
+  // rejected — an ungrounded numeric claim, or a stream that never finished
+  // (`chat/verdict.ts`'s `computeTurnVerdict`). Whichever part type is
+  // present, the whole turn collapses to just this note — never alongside
+  // the streamed text, evidence, or an activity receipt. This is the "state
+  // it, don't hide it" requirement (repair plan §14.10): a rejected turn
+  // must never look, even partially, like an accepted answer, on THIS
+  // connection or on a later reload (`restoreUIMessages` applies the exact
+  // same collapse — see its own doc comment). Because the verdict part is
+  // only written after the model's own text has already streamed to the
+  // browser, its arrival is a visible moment: the tokens the coach was just
+  // reading disappear and this note takes their place.
+  const verdictPart = parts.find(
+    (p) => p.type === 'data-grounding-flag' || p.type === 'data-turn-incomplete',
+  );
+  if (verdictPart) {
+    const note = String((verdictPart.data as { note?: string } | undefined)?.note ?? '');
+    if (!note) return null;
+    return (
+      <article className={PROSE_WIDTH}>
+        <AssistantProse text={note} playersByName={playersByName} lead={false} />
+      </article>
+    );
+  }
+
   // The first non-empty text block is the takeaway. Tracked while mapping
   // because the model may open with a tool call rather than a sentence.
   let leadTaken = false;
@@ -230,21 +255,6 @@ function MessageTurn({
           return (
             <div key={index} className="max-w-[42rem]">
               <ActionReceiptCard receipt={part.data as ActionReceipt} />
-            </div>
-          );
-        }
-
-        // Written by the route (not a tool) when the finished turn fails the
-        // numeric-claim audit — see chat/stream/route.ts. Rendered live, in
-        // THIS connection, not only after a reload: the note used to reach
-        // only the persisted `content`, so a coach watching the answer
-        // stream in never saw it appear until they reopened the thread.
-        if (part.type === 'data-grounding-flag') {
-          const note = String((part.data as { note?: string } | undefined)?.note ?? '');
-          if (!note) return null;
-          return (
-            <div key={index} className={PROSE_WIDTH}>
-              <AssistantProse text={note} playersByName={playersByName} lead={false} />
             </div>
           );
         }

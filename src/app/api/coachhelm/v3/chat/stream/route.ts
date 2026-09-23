@@ -59,7 +59,6 @@ import {
 import { buildCoachTools, isConfirmRequired } from '@/lib/coachhelm/v3/chat/agent-tools';
 import { buildInstructions } from '@/lib/coachhelm/v3/chat/instructions';
 import {
-  auditNumericClaims,
   collectDates,
   collectNumbers,
   // Imported as a value, not `type`-only: `priorTurnEvidence` runs it as a
@@ -70,8 +69,8 @@ import {
   ToolEnvelope,
   type Measurement,
   type MeasurementSeries,
-  type UnsupportedClaim,
 } from '@/lib/coachhelm/v3/chat/provenance';
+import { computeTurnVerdict, verdictPartType, type TurnVerdict } from '@/lib/coachhelm/v3/chat/verdict';
 import type { ChatMessage } from '@/lib/coachhelm/v3/chat/types';
 import {
   appendMessage,
@@ -182,9 +181,6 @@ function logStreamModelError(error: unknown): void {
     severity,
   );
 }
-
-const UNGROUNDED_NOTE =
-  "\n\n_Some figures in this answer could not be traced back to your program's data, so I've flagged it rather than presenting them as fact. Please ask again._";
 
 /**
  * How many of the conversation's most recent ASSISTANT turns
@@ -499,21 +495,23 @@ export async function POST(req: NextRequest) {
   // worst-case estimate. See recordTurnCost below.
   let usagePromise: Promise<{ inputTokens?: number; outputTokens?: number }> | null = null;
   // Computed in `execute`, once the full text is known — see the manual
-  // stream-forwarding loop below — and reused by `onFinish` so the audit
-  // runs exactly once per turn and both places agree on the verdict.
-  // `text` is carried alongside the verdict, not just the boolean: `onFinish`
-  // persists this EXACT string rather than re-deriving its own from
-  // `assistant.parts`, so the flag shown live and the status/content stored
-  // can never quietly diverge. `streamErrored` marks a turn that never
-  // finished cleanly (an inline error chunk, or the stream ending without
-  // ever producing a `finish` chunk) — such a turn must never be persisted
-  // as 'complete' no matter what the numeric audit finds.
-  let auditResult: {
-    grounded: boolean;
-    unsupported: UnsupportedClaim[];
-    text: string;
-    streamErrored: boolean;
-  } | null = null;
+  // stream-forwarding loop below — and reused by `onFinish` so the verdict
+  // runs exactly once per turn and both places agree on it. `text` travels
+  // alongside the verdict, not just the outcome: `onFinish` persists this
+  // EXACT string rather than re-deriving its own from `assistant.parts`, so
+  // the live affordance and the stored status/content can never quietly
+  // diverge.
+  //
+  // Staying `null` past `execute` (never assigned) is itself meaningful, not
+  // just "not computed yet": it means the client disconnected, or the
+  // platform tore the function down, before generation ever reached a
+  // verdict. `onFinish` treats a still-`null` verdict as rejected —
+  // unconditionally, never re-running the numeric audit on whatever partial
+  // text happened to accumulate — because "no verdict was ever computed" is
+  // not the same claim as "the audit found nothing wrong." See
+  // `computeTurnVerdict`'s doc comment.
+  let turnVerdict: TurnVerdict | null = null;
+  let turnText = '';
 
   const stream = createUIMessageStream({
     execute: async ({ writer }) => {
@@ -656,8 +654,8 @@ export async function POST(req: NextRequest) {
       // `text-delta.delta` ourselves as each chunk is forwarded is exactly
       // the string the browser received, in the order it received it — and
       // it is the SAME string `onFinish` persists as `content` (see
-      // `auditResult` above), so the live flag and the stored status can
-      // never audit two different things and disagree.
+      // `turnVerdict` above), so the live affordance and the stored status
+      // can never audit two different things and disagree.
       //
       // A model failure happens INSIDE this merged stream, not inside the
       // outer `execute`, so the outer `createUIMessageStream.onError` never
@@ -676,9 +674,9 @@ export async function POST(req: NextRequest) {
       // dropped connection can end this stream with no `finish` chunk at
       // all; either signal marks the turn as never having completed.
       //
-      // The `finish` chunk itself is held back and re-emitted last so an
-      // ungrounded turn's flag still arrives before the message is marked
-      // done, per the UI message stream protocol.
+      // The `finish` chunk itself is held back and re-emitted last so a
+      // rejected turn's verdict part still arrives before the message is
+      // marked done, per the UI message stream protocol.
       //
       // `toUIMessageStream`'s deprecated method overload does not carry a
       // precise element type through to a `for await` loop; the SDK's own
@@ -748,30 +746,35 @@ export async function POST(req: NextRequest) {
         detailDates.push(...priorDeferred.detailDates);
       }
 
-      const fullText = accumulatedText.trim();
-      const unsupported = auditNumericClaims(
-        fullText,
+      turnText = accumulatedText.trim();
+      turnVerdict = computeTurnVerdict({
+        streamComplete: !streamErrored,
+        text: turnText,
         measurements,
-        seriesAll,
+        series: seriesAll,
         detailNumbers,
+        // Rebase reconciliation (#1997 vs. a since-merged main commit): main
+        // grew `auditNumericClaims` two more params (date-claim checking and
+        // timezone-correct WINDOW/SERIES-POINT conversion) after this
+        // module was written against the 4-arg shape. Threaded through here
+        // so `computeTurnVerdict` gets the same accuracy the inline
+        // pre-#1997 call on main had, instead of silently degrading to the
+        // old UTC-only, no-date-check behavior (both are backward-
+        // compatible optional params on `auditNumericClaims` itself — see
+        // its own doc comment — so this is strictly additive, not a fix to
+        // a broken call).
         detailDates,
-        ctx.timezone,
-      );
-      auditResult = {
-        grounded: unsupported.length === 0 && !streamErrored,
-        unsupported,
-        text: fullText,
-        streamErrored,
-      };
-      // The ungrounded-numbers flag is specifically about a figure the tools
-      // never produced — showing it on top of a stream error would tell the
-      // coach the wrong story when the real one (an inline error chunk,
-      // already forwarded above) has already been shown.
-      if (!auditResult.grounded && !streamErrored) {
+        timezone: ctx.timezone,
+      });
+      // A rejected verdict's note replaces the streamed text — not a note
+      // appended alongside it — so ChatThread (live) and restoreUIMessages
+      // (reload) both hide the text parts whenever this part is present. See
+      // ChatThread.tsx's `MessageTurn` and restore.ts's per-row filter.
+      if (turnVerdict.outcome === 'rejected') {
         writer.write({
-          type: 'data-grounding-flag',
-          id: 'grounding-flag',
-          data: { note: UNGROUNDED_NOTE },
+          type: verdictPartType(turnVerdict.reason),
+          id: 'turn-verdict',
+          data: { note: turnVerdict.note },
         });
       }
       if (finishChunk) writer.write(finishChunk);
@@ -789,49 +792,44 @@ export async function POST(req: NextRequest) {
         const assistant = [...messages].reverse().find((m) => m.role === 'assistant');
         if (!assistant) return;
 
-        // Prefer the exact string `execute` streamed and audited — see
-        // `auditResult`'s declaration above — over independently
-        // reconstructing one from `assistant.parts` here, so the live flag
-        // and the persisted content/status can never audit two different
-        // strings and disagree. The `textOf(assistant)` fallback only runs
-        // when `execute` threw before reaching its own audit, in which case
-        // `onFinish` is still the last chance to avoid persisting ungrounded
-        // text as 'complete'.
-        const text = auditResult?.text ?? textOf(assistant);
+        // Prefer the exact string `execute` streamed and verified — see
+        // `turnVerdict`'s declaration above — over independently
+        // reconstructing one from `assistant.parts` here, so the live
+        // affordance and the persisted content/status can never disagree.
+        // The `textOf(assistant)` fallback only matters when `turnVerdict`
+        // is still null below.
+        const text = turnVerdict ? turnText : textOf(assistant);
 
         // A turn that produced NOTHING must not be stored as an answer.
         //
         // `onFinish` fires on a failed turn too. With no guard it wrote a row
-        // with empty content and `status: 'complete'` — the audit finds zero
-        // claims, so `grounded` is true and a total failure is recorded as a
-        // finished answer. Production has six of them, one per retry, and each
-        // renders on reload as a blank assistant turn.
+        // with empty content and `status: 'complete'` — a total failure was
+        // recorded as a finished answer. Production has six of them, one per
+        // retry, and each renders on reload as a blank assistant turn.
         //
         // A turn with no prose is not necessarily empty: an action proposal is
         // a card with no text. So the test is text OR a real data part —
         // `step-start` alone does not count as an answer.
         const hasContent = hasPersistableAssistantContent(assistant, text);
         if (!hasContent) return;
-        // Reuse the verdict `execute` already computed on the identical text,
-        // so the live flag and the persisted status can never disagree. The
-        // recompute is a defensive fallback only — it would run if `execute`
-        // threw before reaching its own audit, in which case `onFinish` is
-        // still the last chance to avoid persisting ungrounded text as
-        // 'complete'.
-        const { grounded, unsupported, streamErrored } =
-          auditResult ?? (() => {
-            const claims = auditNumericClaims(
-              text,
-              measurements,
-              seriesAll,
-              detailNumbers,
-              detailDates,
-              ctx.timezone,
-            );
-            return { grounded: claims.length === 0, unsupported: claims, streamErrored: false };
-          })();
 
-        if (!grounded && unsupported.length > 0) {
+        // `execute` never reached its own verdict — the client disconnected,
+        // or the platform tore the function down, before the stream
+        // finished (see `handleUIMessageStreamFinish`'s TransformStream
+        // `cancel()`, which calls `onFinish` early with whatever fragment of
+        // `assistant.parts` made it into the OUTER stream by then). This is
+        // NOT "the audit found nothing wrong" — there is no complete answer
+        // to audit — so a still-null verdict here is unconditionally
+        // rejected as `stream_incomplete`, the same first check
+        // `computeTurnVerdict` itself runs, rather than re-running the
+        // numeric audit on a fragment the model never finished. Re-running
+        // that audit on a truncated fragment was the actual defect: a short
+        // partial answer with no numbers in it passed the audit trivially
+        // and was stored as `'complete'`.
+        const verdict: TurnVerdict =
+          turnVerdict ?? { outcome: 'rejected', reason: 'stream_incomplete', note: '', unsupported: [] };
+
+        if (verdict.outcome === 'rejected' && verdict.reason === 'ungrounded_claims') {
           // A designed guardrail FIRING is not an incident: the claim was
           // caught and the turn was annotated + stored as 'failed' below,
           // which is the system working. Logged at 'info' with skipSentry so
@@ -840,8 +838,8 @@ export async function POST(req: NextRequest) {
           // the convention stated in lib/admin/observe-action-result.ts.
           //
           // Count-stable message (see the staleBacklog emitter for the same
-          // rule): interpolating `unsupported.length` minted one fingerprint
-          // per distinct count, so "1 claim" and "2 claims" arrived as two
+          // rule): interpolating the claim count minted one fingerprint per
+          // distinct count, so "1 claim" and "2 claims" arrived as two
           // unrelated warnings that could never dedupe.
           //
           // The claim TEXTS matter more than the count and were not recorded
@@ -858,21 +856,22 @@ export async function POST(req: NextRequest) {
               featureArea: 'coachhelm',
               skipSentry: true,
               extra: {
-                unsupportedCount: unsupported.length,
-                claims: unsupported.slice(0, 10).map((c) => c.text),
+                unsupportedCount: verdict.unsupported.length,
+                claims: verdict.unsupported.slice(0, 10).map((c) => c.text),
                 conversationId: convId,
                 coachId: ctx.coach_id,
               },
             },
             'info',
           );
-        } else if (!grounded && streamErrored) {
+        } else if (verdict.outcome === 'rejected' && verdict.reason === 'stream_incomplete') {
           // Distinct from the guardrail above: nothing was fabricated, the
-          // turn simply never finished (an inline error chunk, or the
-          // connection dropping before a `finish` chunk arrived). Logging it
-          // separately keeps "the model made something up" and "the stream
-          // broke" as two different, both-queryable signals instead of one
-          // count that conflates them.
+          // turn simply never finished (an inline error chunk, the stream
+          // ending with no `finish` chunk, or `onFinish` firing before
+          // `execute` ever computed a verdict at all — see `turnVerdict`'s
+          // declaration). Logging it separately keeps "the model made
+          // something up" and "the turn broke" as two different, both-
+          // queryable signals instead of one count that conflates them.
           await logServerEvent(
             'chat/stream: assistant turn ended without completing; stored as failed rather than complete',
             {
@@ -885,17 +884,17 @@ export async function POST(req: NextRequest) {
           );
         }
 
-        // A stream error's partial text is stored as-is: the coach already
-        // saw the sanitised error message inline (the forwarded `error`
-        // chunk), and appending UNGROUNDED_NOTE on top would misdescribe a
-        // broken connection as a fabricated statistic.
-        const content = grounded ? text : streamErrored ? text : text + UNGROUNDED_NOTE;
-
+        // `content` is the raw text the model produced, undecorated — the
+        // failure note lives only in `ui_parts`/`status`, which is what
+        // governs display (`restore.ts`, `ChatThread.tsx`). Baking the note
+        // into `content` too would leak it into the next turn's model
+        // context via `convertToModelMessages` on the client's own replayed
+        // thread.
         await appendMessage(supabase, {
           conversation_id: convId,
           role: 'assistant',
-          content,
-          status: grounded ? 'complete' : 'failed',
+          content: text,
+          status: verdict.outcome === 'accepted' ? 'complete' : 'failed',
           client_turn_id: clientTurnId,
           ui_parts: publishableParts(assistant.parts) as unknown,
         });
@@ -920,8 +919,8 @@ export async function POST(req: NextRequest) {
           ctx,
           conversationId: convId,
           usagePromise,
-          grounded,
-          unmatchedTokens: unsupported.map((c) => c.text),
+          grounded: verdict.outcome === 'accepted',
+          unmatchedTokens: verdict.outcome === 'rejected' ? verdict.unsupported.map((c) => c.text) : [],
         });
 
         // helm.ai.* — the call reached this point, so the model responded and

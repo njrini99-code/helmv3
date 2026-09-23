@@ -11,10 +11,18 @@
  * `content` as a plain text part, which is exactly what they used to render as.
  * A migration that made old conversations unreadable would be a bad trade for
  * a feature about trust.
+ *
+ * `status: 'failed'` is the one override on top of that (repair plan §14.10,
+ * "chat publication"): a rejected turn's text — whether an ungrounded claim
+ * or a fragment from a stream that never finished — must never reappear as
+ * ordinary, accepted prose just because it happens to survive as `content` or
+ * as a `text` part in `ui_parts`. See `computeTurnVerdict`
+ * (`chat/verdict.ts`) for how `route.ts` decides that status.
  * ========================================================================== */
 
 import type { UIMessage } from 'ai';
 import type { ChatMessage } from './types';
+import { STREAM_INCOMPLETE_NOTE } from './verdict';
 
 /** A part shape we are willing to replay. Anything else is dropped. */
 const REPLAYABLE = new Set([
@@ -27,9 +35,27 @@ const REPLAYABLE = new Set([
   // persisted assistant turn's `ui_parts` the same way a receipt is. Without
   // it here, the flag showed only during the original streaming session —
   // reloading the thread silently dropped it and an ungrounded answer read
-  // as a normal one again.
+  // as a normal one again. Kept alongside the newer `data-turn-incomplete`
+  // (added for the stream-never-finished reason) rather than renamed or
+  // merged: production already has rows carrying this exact part type.
   'data-grounding-flag',
+  'data-turn-incomplete',
 ]);
+
+/** The two reasons `computeTurnVerdict` can reject a turn — see that
+ *  function's own doc comment in `chat/verdict.ts`. */
+const VERDICT_PART_TYPES = new Set(['data-grounding-flag', 'data-turn-incomplete']);
+
+/**
+ * A row this repo has no honest verdict note for — one written before this
+ * mechanism shipped, or one where `onFinish` synthesized `status: 'failed'`
+ * without `execute` ever reaching its own verdict (a disconnect; see
+ * `route.ts`'s `turnVerdict` doc comment). Reusing `STREAM_INCOMPLETE_NOTE`
+ * rather than inventing a third string: both cases share the same underlying
+ * fact from the coach's point of view — this answer never reached a state
+ * this app is willing to stand behind.
+ */
+const GENERIC_FAILURE_NOTE = STREAM_INCOMPLETE_NOTE;
 
 /**
  * Rebuild the UI message list from durable history.
@@ -45,6 +71,11 @@ export function restoreUIMessages(messages: ChatMessage[]): UIMessage[] {
 
   for (const row of messages) {
     if (row.role === 'tool') continue;
+
+    if (row.role === 'assistant' && row.status === 'failed') {
+      out.push(restoreFailedTurn(row));
+      continue;
+    }
 
     if (Array.isArray(row.ui_parts) && row.ui_parts.length > 0) {
       const parts = row.ui_parts.filter(
@@ -64,7 +95,10 @@ export function restoreUIMessages(messages: ChatMessage[]): UIMessage[] {
       }
     }
 
-    // Legacy row, or one whose parts were all filtered out.
+    // Legacy row, or one whose parts were all filtered out. `status` here is
+    // never `'failed'` — that branch already returned above — so this is a
+    // legacy pre-status row (`status: null`) or a genuinely empty one, both
+    // of which read as a completed answer, unchanged from before.
     if (!row.content) continue;
     out.push({
       id: row.id,
@@ -74,4 +108,38 @@ export function restoreUIMessages(messages: ChatMessage[]): UIMessage[] {
   }
 
   return out;
+}
+
+/**
+ * A rejected turn renders as ONLY its failure affordance — never its text,
+ * never its evidence/proposal/receipt parts, regardless of what `ui_parts`
+ * or `content` happen to hold. This is deliberately stricter than "hide the
+ * text but keep the chart": a chart that streamed before the turn was
+ * rejected was never itself vouched for as part of a finished, accepted
+ * answer, and a coach re-reading history should see one unambiguous signal —
+ * this answer was not accepted — rather than a mix of trusted and untrusted
+ * fragments they have to sort out themselves.
+ *
+ * The note shown is whichever verdict part `route.ts` actually persisted
+ * (`data-grounding-flag` for an ungrounded claim, `data-turn-incomplete` for
+ * a stream that never finished); `GENERIC_FAILURE_NOTE` covers the one case
+ * neither wrote — `execute` never reached its own verdict at all, so
+ * `onFinish` marked the row `'failed'` without a part to go with it (see
+ * `route.ts`'s `turnVerdict` doc comment).
+ */
+function restoreFailedTurn(row: ChatMessage): UIMessage {
+  const parts = Array.isArray(row.ui_parts) ? row.ui_parts : [];
+  const verdictPart = parts.find(
+    (p): p is { type: string; id?: unknown; data?: { note?: unknown } } =>
+      Boolean(p) && typeof p === 'object' && VERDICT_PART_TYPES.has((p as { type?: unknown }).type as string),
+  );
+  const note =
+    (typeof verdictPart?.data?.note === 'string' && verdictPart.data.note) || GENERIC_FAILURE_NOTE;
+  const partType = (verdictPart?.type as 'data-grounding-flag' | 'data-turn-incomplete' | undefined) ?? 'data-turn-incomplete';
+
+  return {
+    id: row.id,
+    role: 'assistant',
+    parts: [{ type: partType, id: 'restored-verdict', data: { note } }] as UIMessage['parts'],
+  };
 }
