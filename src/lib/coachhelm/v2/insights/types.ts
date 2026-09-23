@@ -32,7 +32,16 @@ export type InsightUnit = 'percent' | 'strokes' | 'count' | 'yards' | 'feet';
  *
  * - your_baseline:    compared to the player's own rolling history
  * - team_avg:         compared to teammates' aggregated rolling stats
- * - d1_avg / d2_avg / d3_avg / naia_avg / juco_avg: college-division benchmarks
+ * - d1_avg / d2_avg / d3_avg / naia_avg / juco_avg: college-division
+ *                     benchmarks. N16 (2026-09-23): as of this writing NONE
+ *                     of these has a cited, measured division-population
+ *                     figure behind it in this codebase — the one entry that
+ *                     used to exist (`baseline-registry.ts`'s `d2_avg.*`) was
+ *                     an unsourced approximation mislabeled "average"; it has
+ *                     been relabeled a target. Do not add a new value under
+ *                     one of these five sources unless it is a genuinely
+ *                     cited, measured figure — an approximation belongs under
+ *                     `estimated_target` instead, however plausible-sounding.
  * - pga_baseline:     PGA Tour benchmark
  * - absolute_target:  a known target value (par, uniform distribution, etc.)
  * - estimated_target: a DERIVED coaching target, not a measured population

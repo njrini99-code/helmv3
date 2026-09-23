@@ -82,6 +82,7 @@ Player opens round review
 - Feedback and acknowledgement actions must persist to player-specific records and revalidate player-facing pages.
 - Auto-generation should not fabricate insights when source data is insufficient.
 - V3 narrative and counterfactual content must preserve citation/trust rules from CoachHelm AI.
+- Cohort/benchmark constants (2026-09-23, repair plan N16): `v3/counterfactual/cohort-baselines.ts` anchors carry `provenance: 'measured' | 'derived'` per value — women's anchors are always `'derived'` (LPGA/NCAA discounted to college, never a measured women's-college population stat); a `'derived'` label must read as a target/estimate, never an average/norm. Full contract in `docs/architecture/coachhelm-evidence-contract.md`.
 - Round review acknowledgement must not silently fail; it affects both learning and UI state.
 
 ## UI Contract

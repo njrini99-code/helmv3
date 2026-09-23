@@ -60,9 +60,16 @@ export function compareAgainstBaseline(args: {
   };
 }
 
-// Static D2/D3 college golf averages — intentionally hardcoded as population-level benchmarks.
+// Static D2/D3-level TARGETS — intentionally hardcoded, hand-adjusted numbers
+// (see the inline "was N" comments below), not a measured D2/D3 population
+// average. Renamed from "averages" to "targets" in the doc comment (N16 audit,
+// 2026-09-23) so a future reader doesn't reintroduce "average"/"measured"
+// wording in user-facing copy for these. LIVENESS: as of the same audit, this
+// generator (`stats-insight-generator.ts` / `v2/orchestrator.ts`) has no live
+// importer anywhere outside its own directory — dead code, not currently
+// reaching a coach. Kept corrected regardless; see the N16 PR body.
 // stats/baselines.ts provides per-player EWMA baselines (different purpose — individual trends,
-// not population reference). These population benchmarks should only change if the target
+// not population reference). These targets should only change if the intended
 // skill level changes.
 const BENCHMARKS = {
   // Strokes Gained per round (vs scratch/par)
@@ -942,7 +949,11 @@ export class StatsInsightGenerator {
         playerId: this.playerId,
         category: 'putting',
         headline: 'Short Putt Conversion Issue',
-        body: `Making ${stats.puttMakePct0_3.toFixed(0)}% inside 3 feet (tour level: ${BENCHMARKS.puttMake0_3}%). These are expected makes that are costing strokes.`,
+        // N16 fix: this previously read "tour level: ${BENCHMARKS.puttMake0_3}%"
+        // — wrong. puttMake0_3 (95) is BENCHMARKS' own D2/D3-level target (see
+        // its definition above), not a PGA Tour figure; labeling a college
+        // target "tour level" overstates the bar a player is being held to.
+        body: `Making ${stats.puttMakePct0_3.toFixed(0)}% inside 3 feet (target: ${BENCHMARKS.puttMake0_3}%). These are expected makes that are costing strokes.`,
         strokeImpact: missedShortPutts,
         recommendation: 'Focus on routine consistency. These putts are mental/routine issues more than technique. Work on pre-putt routine and visualization.',
         priority: 'high',

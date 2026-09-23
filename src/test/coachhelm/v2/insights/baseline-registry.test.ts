@@ -96,6 +96,56 @@ function walk(dir: string): string[] {
   return out;
 }
 
+/**
+ * N16 guard (repair plan): a 'derived' entry's label may never read as a
+ * measured population statistic. This is the enforcement the file's own
+ * header docblock originally (and wrongly) claimed already existed for
+ * label/source/value agreement — narrower in scope (label wording vs.
+ * declared provenance only), but a real invariant, not just an enum check.
+ */
+describe('N16: derived entries never carry measured-sounding wording', () => {
+  // Allowed even on a 'derived' entry — these describe an estimate/target,
+  // never a measured norm.
+  const SAFE_DERIVED_PATTERN = /target|estimate|approx|balanced|^par$/i;
+  // Would claim a measured population statistic if present on a 'derived' entry.
+  const MEASURED_SOUNDING_PATTERN = /\baverage\b|\bavg\b|\bnorm\b|\bmeasured\b/i;
+
+  it('every ENTRIES row with provenance "derived" has a target/estimate-worded label, never "average"/"avg"/"norm"/"measured"', () => {
+    const offenders: Array<{ key: string; label: string }> = [];
+    for (const key of baselineRegistry.allKeys()) {
+      const entry = baselineRegistry.get(key);
+      if (entry.provenance !== 'derived') continue;
+      const looksMeasured = MEASURED_SOUNDING_PATTERN.test(entry.label);
+      const looksSafe = SAFE_DERIVED_PATTERN.test(entry.label);
+      if (looksMeasured || !looksSafe) {
+        offenders.push({ key, label: entry.label });
+      }
+    }
+    expect(
+      offenders,
+      `Derived entries with a measured-sounding or unqualified label:\n${JSON.stringify(offenders, null, 2)}`,
+    ).toEqual([]);
+  });
+
+  it('every ENTRIES row declares a provenance and a non-empty sourceNote', () => {
+    for (const key of baselineRegistry.allKeys()) {
+      const entry = baselineRegistry.get(key);
+      expect(['measured', 'derived']).toContain(entry.provenance);
+      expect(entry.sourceNote.length).toBeGreaterThan(0);
+    }
+  });
+
+  it('the d2_avg putting entries are specifically flagged derived (the historical N16 offender)', () => {
+    const keys = baselineRegistry.allKeys().filter((k) => k.startsWith('d2_avg.'));
+    expect(keys.length).toBeGreaterThan(0);
+    for (const key of keys) {
+      const entry = baselineRegistry.get(key);
+      expect(entry.provenance).toBe('derived');
+      expect(entry.label).not.toMatch(/\baverage\b/i);
+    }
+  });
+});
+
 describe('generator files use only canonical comparison_source values', () => {
   it('no hard-coded comparison_source string is outside the canonical set', () => {
     const minerFiles = [

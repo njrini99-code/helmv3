@@ -21,13 +21,51 @@ The three fields cannot disagree.
 | --- | --- | --- |
 | `your_baseline` | Player's own rolling history | last-N rounds putting make% |
 | `team_avg` | Teammates' aggregated stats | team median scrambling rate |
-| `d1_avg` / `d2_avg` / `d3_avg` / `naia_avg` / `juco_avg` | College-division benchmarks | D2 avg putting make% from 5ft |
+| `d1_avg` / `d2_avg` / `d3_avg` / `naia_avg` / `juco_avg` | College-division benchmarks. As of 2026-09-23 (N16) none has a live producer, and none is backed by a cited, measured division-population figure — see the provenance section below before adding one. | D2-style putting target (approx.) from 5ft |
 | `pga_baseline` | PGA Tour reference | PGA avg fairway% |
 | `absolute_target` | Fixed reference point | par, uniform-25% distribution |
 | `estimated_target` | A derived coaching target, not a measured population average (women's-college anchors in `v3/counterfactual/cohort-baselines.ts`: LPGA/NCAA figures discounted to college). Rendered as "Estimated target". Labels built by `cohortAnchorLabel()` say `target (est.)`. | Women's college sand save target (est.) 38% |
 
 A static test at `src/test/coachhelm/v2/insights/baseline-registry.test.ts`
 fails CI if any miner emits a `comparison_source` outside this set.
+
+## Provenance: measured vs. derived (repair plan N16, 2026-09-23)
+
+A `comparison_source` name alone is not a promise the number behind it was
+measured. The 2026-05-17 audit that created this contract stopped at
+label/source/value *agreement*; a later audit (N16) found the agreed-upon
+label could itself overclaim — `baseline-registry.ts`'s `d2_avg.*` entries
+were labeled "Division II average" for numbers the file that originated them
+(the deleted `putt-analytics.ts`) called "reasonable D2 averages" with no
+citation. The label and source agreed with each other; both were wrong about
+what the number was.
+
+Every `BaselineEntry` in `baseline-registry.ts`, and every anchor in
+`v3/counterfactual/cohort-baselines.ts`, now carries two additional fields
+next to the value:
+
+- `provenance: 'measured' | 'derived'` — `'measured'` means a cited,
+  verified population statistic (e.g. the men's putt/scrambling/GIR anchors
+  in `cohort-baselines.ts`, cross-checked against `golf_pga_standards` on
+  2026-06-06). `'derived'` means scaled, discounted, hand-adjusted, or
+  otherwise computed from a measured figure rather than itself measured — a
+  defensible estimate, never a norm.
+- `sourceNote` — a one-line citation, or an honest statement of how the
+  value was derived when there is no citation.
+
+Rule: a `'derived'` entry's `label` must read as a target or an estimate
+("D2-style putting target (approx.)", "Women's college sand save target
+(est.)") and must never contain "average", "avg", "norm", or "measured".
+`src/test/coachhelm/v2/insights/baseline-registry.test.ts`'s
+`N16: derived entries never carry measured-sounding wording` block and
+`src/test/coachhelm/v3/cohort-baselines.test.ts`'s
+`typed provenance metadata (repair plan N16)` block enforce this — both fail
+CI if a new `'derived'` entry ships with measured-sounding wording, or with
+no `provenance`/`sourceNote` at all.
+
+This does not change any benchmark number. `d1_avg`, `d3_avg`, `naia_avg`,
+and `juco_avg` currently have zero producers anywhere in the codebase — see
+the note in the table above before wiring one up.
 
 ## How a generator emits a comparison
 
