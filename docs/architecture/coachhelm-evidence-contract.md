@@ -801,6 +801,62 @@ Neither of A3's metric families computes a `strokes_impact`/counterfactual
 number, so wiring this in later cannot double-count the impact
 `par-type.ts`'s existing per-par cards already own.
 
+## Distance profile (A2 deliverable — pure metrics, not yet wired)
+
+`metrics/distance-profile.ts`'s `computeDistanceProfile(facts, scope,
+options?)` computes five per-band `MetricResult`s over `ShotFact[]` — pure,
+no DB, and NOT wired into `approach-miss.ts` yet (that wiring is the next
+slice, behind a flag). It reuses the all-shot proximity semantics Package
+7B / addendum A2 already shipped in the migration
+`20260922120000_v3_standing_shot_metrics_all_shot_proximity.sql`: the same
+three yard bands (`[50,125)`, `[125,175)`, `[175,∞)`, lo inclusive/hi
+exclusive), the same on-green predicate (`result` in
+`green`/`hole`/`gir`, or `lie_after = 'green'`), the same 175+ yd par-5
+lay-up exclusion, and the same MIN_ATTEMPTS=10 / MIN_ROUNDS=3 / MIN_GREENS=3
+support floors.
+
+- **Metric ids** (a local `DistanceProfileMetricId` union, deliberately NOT
+  added to the canonical `MetricId`/`METRIC_IDS` registry in this slice —
+  that registry requires a matching SQL seed migration, which is out of
+  scope for a pure-metrics-only change):
+  `approach_green_hit_rate`, `approach_on_green_proximity_feet`,
+  `approach_direction_coverage`, `approach_severe_outcome_rate`,
+  `approach_measured_contribution`.
+- **Support policy.** Every rate/proximity metric is `null` when the band's
+  eligible attempts or distinct rounds fall under the floor (proximity has
+  its own extra `MIN_GREENS` floor on top) — `support: 'under_supported'`
+  states why. `approach_measured_contribution` is the one metric that is
+  NEVER null, even when under-supported: it is the evidence count the
+  support policy itself is judged against.
+- **Lay-up exclusion needs `par`, which `ShotFact` doesn't carry.**
+  `parByRoundHole` (keyed `` `${round_id}:${hole_number}` ``) is an
+  optional third argument; omitting it means no 175+ yd shot is ever
+  excluded as a lay-up (a conservative fallback), matching the migration's
+  own `IS NOT DISTINCT FROM 5` rule that an unresolvable par is never
+  treated as a confirmed par-5 lay-up either way.
+- **Direction coverage needed `miss_direction`, which `ShotFact` didn't
+  carry until this slice.** Added as a required, raw-passthrough field
+  (`types.ts`), threaded through `normalize-shot.ts`,
+  `load-player-context.ts`, and `shot-source-adapter.ts` — the same kind of
+  additive extension `putt_made` went through in the #1981 review round.
+  `approach_direction_coverage` reports what fraction of a band's MISSED
+  attempts carry a non-null direction reading; it is a data-quality/support
+  metric, not a directional-bias read (that's `diagnosis.ts`'s
+  `approachAxisReading`).
+- **Recorded travel distance vs. derived progress.** `TeeStrategyShot`
+  (`engine/shot-source.ts`) has a real `distance_method: 'recorded' |
+  'derived_progress' | null` split — when its own distance is unrecorded it
+  falls back to `hole.yardage - distance_to_hole_after`, an ESTIMATE of
+  progress toward the hole, and its doc comment bans describing that
+  estimate as carry or travel distance. `ShotFact`'s distance fields have
+  no such fallback — `normalizeShot` only converts a recorded value's unit,
+  never substitutes hole yardage — so every `MetricResult.distanceMethod`
+  here is `'recorded'`, never `'derived_progress'`; that second mode cannot
+  arise from today's approach-shot data model. `approach_on_green_proximity
+  _feet` is the shot's own recorded remaining distance to the hole, a
+  straight-line proximity number — prose describing it must say
+  "proximity" or "remaining distance," never "carry."
+
 ## How to add a new comparison source
 
 1. Append to `InsightComparisonSource` and `COMPARISON_SOURCES` in `types.ts`.
