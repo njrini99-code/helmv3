@@ -327,3 +327,10 @@ docs/generated/janitor-findings.json
 
 # FUSE leftovers (open handle on a deleted file); three were committed on 2026-03-09
 .fuse_hidden*
+
+# Skills installed by `npx skills add` symlink into the ignored .agents/
+# tree. Committing the links would leave every other clone dangling —
+# skills-lock.json is the portable record, the links are local artifacts.
+.claude/skills/supabase
+.claude/skills/supabase-postgres-best-practices
+.devin/
