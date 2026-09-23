@@ -694,6 +694,9 @@ function PromoteFocusAreaAction({ insight, mode, label, className }: PromoteFocu
       areaType: payload.area_type,
       targetMetric: payload.target_metric ?? undefined,
       targetValue: payload.target_value ?? undefined,
+      target_kind: payload.target_kind,
+      target_date: payload.target_date,
+      target_rounds: payload.target_rounds,
     });
     return { success: res.success, error: res.error };
   }
