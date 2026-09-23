@@ -71,3 +71,51 @@
   required checks): `npm run typecheck` (tsc) exit 0, and
   `npm run test -- --run src/test/coachhelm` — 140 files, 1434 passed, 3
   skipped, 0 failed.
+
+## 2026-09-23 — PR #2007 review round: MUST 2/3 coverage + a real-core test
+
+- Same PR (#2007), same session as the entry above — a formal review round
+  ("Fix", 3 MUSTs) landed after the follow-up-window fix was already
+  pushed; this entry covers the tests added to close those MUSTs.
+- `comparable-attribute.test.ts`: the exposure-lookup-DB-error test now
+  asserts the typed `{ok: false, reason: 'exposure-read-failed', error}`
+  skip (was asserting a thrown `Error` before MUST 1's SHOULD decision
+  changed the contract). The two unknown-column "degrade and retry" write
+  tests were rewritten for MUST 3: they now assert `written: false`,
+  `methodVersionColumnMissing: true`, and exactly ONE insert call (no
+  retry-insert) — previously asserted a successful retried write.
+- New file `comparable-attribute.open-window.test.ts` (PR #2007 review,
+  explicit ask: "exercise the real `computeComparableOpportunities` with a
+  fake-client `loadPlayerContext` for the open-window case"). Unlike
+  `comparable-attribute.test.ts`'s suite, this file does NOT mock
+  `context/load-player-context` or `evaluation/comparable-opportunities` —
+  it uses the REAL functions, with a fake client that implements only
+  `golf_insight_exposure` and THROWS for any other table (`golf_rounds`
+  first, if `loadPlayerContext` were ever reached). Proves the
+  follow-up-window-open short-circuit against the real dependencies, not a
+  stand-in for them: a regression that called through anyway would fail
+  loudly (a thrown "Unexpected table" surfacing as a rejection) instead of
+  silently passing on stubbed shot data.
+- `causality-attribute.test.ts`: `makeClient`'s shared helper gained
+  `golf_insight_exposure` table support (`exposures` fixture map,
+  `exposureBulkFetchError` option) for the new per-page bulk pre-filter.
+  6 new tests: two prove the bulk pre-filter itself now drops a
+  no-exposure and an open-window shot-level candidate BEFORE
+  `computeComparableAttribution` is ever called (MUST 2's actual new
+  behavior); one proves a bulk-fetch error fails closed for the page,
+  logs/counts distinctly, and never reaches the mock; two "backstop"
+  tests prove `computeComparableAttribution`'s own no-exposure-record/
+  follow-up-window-open returns are STILL correctly counted even when the
+  bulk pre-filter let the candidate through (the mocked function
+  independently reporting the reason); one proves the new
+  `exposure-read-failed` reason is logged under its own action tag and
+  counted separately from `no-exposure-record`. One existing test rewritten
+  for MUST 3: a write degraded away for a missing column (`written: false,
+  methodVersionColumnMissing: true`, no `error`) must NOT be counted as
+  `comparable_attributed` and must NOT log an error — this is the bug MUST
+  3 fixed in `route.ts` (previously inferred success from `!write.error`
+  alone).
+- Verification: all three files together — 42 passed, 0 failed. Full
+  `npm run test -- --run src/test/coachhelm` — 140 files, 1434 passed, 0
+  failed. `npm run typecheck` (tsc) exit 0. `eslint` on all touched/new
+  files: 0 problems.

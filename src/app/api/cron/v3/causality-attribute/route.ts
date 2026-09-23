@@ -10,7 +10,13 @@
  * opportunity_attribution`, default off): the three "needs-shot-level-join"
  * approach-proximity metrics get a SEPARATE shot-level, matched-opportunity
  * attempt instead of the permanent `intentional-null` skip. Those rows never
- * update the coach weight EMA — see that module's own doc comment.
+ * update the coach weight EMA — see that module's own doc comment. Flag off:
+ * no new DB reads or writes happen on this path at all; the summary just
+ * gains three permanently-zero counters. This flag requires migration
+ * 20260922230000 applied (MUST 3, PR #2007 review — see
+ * `writeComparableAttribution`'s doc comment) and A9 slice 2 (confounding
+ * detection) shipped before it should ever go on in production — see
+ * `config/feature-flags.yml`'s entry for both.
  *
  * Auth: Vercel Cron sends Authorization: Bearer ${CRON_SECRET}.
  */
@@ -20,7 +26,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { logServerError, logServerEvent } from '@/lib/server-error-logger';
 import { requireCronAuth } from '@/lib/cron/auth';
 import { fromUntyped } from '@/lib/supabase/untyped';
-import { computeAttribution, nextWeight } from '@/lib/coachhelm/v3/causality/attribute';
+import { computeAttribution, nextWeight, POST_WINDOW_DAYS } from '@/lib/coachhelm/v3/causality/attribute';
 import { lookupMetricSource } from '@/lib/coachhelm/v3/causality/metric-sources';
 import {
   computeComparableAttribution,
@@ -124,8 +130,9 @@ interface CronSummary {
   /**
    * A9 slice 1: the insight has no real `golf_insight_exposure` row — the
    * addendum rule against simulating one from `created_at`. Retry tomorrow
-   * once the insight is actually shown to a coach; do not treat as a
-   * permanent skip the way `intentional_no_lift` is.
+   * once the insight is actually shown (on any surface — player or coach;
+   * there is no surface filter); do not treat as a permanent skip the way
+   * `intentional_no_lift` is.
    */
   comparable_no_exposure_record: number;
   /** A9 slice 1: `MIN_OPPORTUNITY_N`/`MIN_DISTINCT_ROUNDS` not met on one or
@@ -140,6 +147,15 @@ interface CronSummary {
    * `comparable-attribute.ts`'s `'follow-up-window-open'` doc comment.
    */
   comparable_follow_up_open: number;
+  /**
+   * A9 slice 1 (PR #2007 review, SHOULD decision): the `golf_insight_
+   * exposure` lookup itself failed — a real infra error, never folded into
+   * `comparable_no_exposure_record` (which means "legitimately never
+   * shown yet"). Covers both the per-page bulk pre-filter fetch
+   * (route.ts) and the per-candidate backstop
+   * (`comparable-attribute.ts`'s own lookup).
+   */
+  comparable_exposure_read_failed: number;
 }
 
 export async function GET(req: NextRequest) {
@@ -169,6 +185,7 @@ async function handle(): Promise<NextResponse> {
     comparable_no_exposure_record: 0,
     comparable_insufficient_evidence: 0,
     comparable_follow_up_open: 0,
+    comparable_exposure_read_failed: 0,
   };
   // Read once per run, not once per candidate — matches the flag-off ==
   // pre-slice-1-behavior contract (A9 slice 1).
@@ -244,6 +261,57 @@ async function handle(): Promise<NextResponse> {
       .in('insight_id', pageIds);
     const attributedSet = new Set((existing ?? []).map((r) => r.insight_id));
 
+    // A9 slice 1 (PR #2007 review, MUST 2): with the flag on, a shot-level
+    // candidate skips the intentional-null pre-filter below on metric alone
+    // — but most of them have no real exposure yet, or a follow-up window
+    // that hasn't closed, and EITHER would just re-enter this page's work
+    // list every run (oldest-`created_at`-first) forever, costing a real
+    // `loadPlayerContext` call each time and starving round-level
+    // attribution — the exact P1 stall the pagination rewrite fixed. Bulk-
+    // fetch each shot-level candidate's first exposure for THIS PAGE (one
+    // `.in()` over ids already page-bounded to <= FETCH_PAGE_SIZE) so both
+    // can be dropped here, cheaply and synchronously, before a candidate
+    // ever takes a `todo` slot. `computeComparableAttribution`'s own
+    // per-candidate checks stay as a backstop (a race between this fetch
+    // and that call, or a future direct caller of that function).
+    const shotLevelPageIds = comparableAttributionEnabled
+      ? candidatePage
+          .filter((c) => {
+            if (attributedSet.has(c.id)) return false;
+            const metric = (c.evidence as { metric?: string } | null)?.metric;
+            return !!metric && isShotLevelAttributionMetric(metric);
+          })
+          .map((c) => c.id)
+      : [];
+    const firstExposureByInsightId = new Map<string, string>();
+    let exposureBulkFetchFailed = false;
+    if (shotLevelPageIds.length > 0) {
+      const { data: exposureRows, error: exposureErr } = await sb
+        .from('golf_insight_exposure')
+        .select('insight_id, shown_at')
+        .in('insight_id', shotLevelPageIds)
+        .order('shown_at', { ascending: true });
+      if (exposureErr) {
+        // Fail closed for this page's shot-level candidates rather than
+        // guessing — they're simply not enqueued this run (accounted for
+        // by the single logged error below, not per-candidate), and
+        // retried once the infra issue clears.
+        exposureBulkFetchFailed = true;
+        await logServerError(
+          `causality comparable exposure bulk fetch (page ${page}): ${exposureErr.message}`,
+          { action: 'cron.v3.causality.comparable-exposure-bulk-fetch' },
+        );
+        summary.comparable_exposure_read_failed += 1;
+      } else {
+        // Ordered ascending — keep only the FIRST (earliest) row per insight_id.
+        for (const row of exposureRows ?? []) {
+          if (!firstExposureByInsightId.has(row.insight_id)) {
+            firstExposureByInsightId.set(row.insight_id, row.shown_at);
+          }
+        }
+      }
+    }
+
     for (const c of candidatePage) {
       if (todo.length >= LIMIT) break;
       if (attributedSet.has(c.id)) continue;
@@ -254,10 +322,12 @@ async function handle(): Promise<NextResponse> {
       //
       // A9 slice 1: when the comparable-opportunities flag is on, a metric
       // with a shot-level `MatchingSpec` (`comparable-attribute.ts`) is NOT
-      // dropped here — it gets its own attempt in the main loop below,
-      // instead of the permanent `intentional_no_lift` skip. Flag off:
-      // unchanged, every intentional-null metric (including these three) is
-      // dropped here exactly as before this slice.
+      // dropped here on metric alone — it gets its own attempt in the main
+      // loop below, instead of the permanent `intentional_no_lift` skip,
+      // UNLESS the bulk exposure pre-filter above already disqualifies it
+      // (no exposure yet, or its follow-up window is still open) — see MUST
+      // 2 above. Flag off: unchanged, every intentional-null metric
+      // (including these three) is dropped here exactly as before this slice.
       const metric = (c.evidence as { metric?: string } | null)?.metric;
       if (metric) {
         const source = lookupMetricSource(metric);
@@ -265,6 +335,21 @@ async function handle(): Promise<NextResponse> {
         if (source && source.kind === 'intentional-null' && !attemptComparable) {
           summary.intentional_no_lift += 1;
           continue;
+        }
+        if (attemptComparable) {
+          // The bulk fetch above already failed closed for this page — do
+          // NOT enqueue (already counted once via
+          // `comparable_exposure_read_failed`, not per-candidate here).
+          if (exposureBulkFetchFailed) continue;
+          const shownAt = firstExposureByInsightId.get(c.id);
+          if (!shownAt) {
+            summary.comparable_no_exposure_record += 1;
+            continue;
+          }
+          if (new Date(shownAt).getTime() + POST_WINDOW_DAYS * 86_400_000 > Date.now()) {
+            summary.comparable_follow_up_open += 1;
+            continue;
+          }
         }
       }
       todo.push(c);
@@ -315,6 +400,16 @@ async function handle(): Promise<NextResponse> {
             summary.comparable_no_exposure_record += 1;
           } else if (comparable.reason === 'follow-up-window-open') {
             summary.comparable_follow_up_open += 1;
+          } else if (comparable.reason === 'exposure-read-failed') {
+            // A real infra error, not "never shown yet" — never folded into
+            // comparable_no_exposure_record. This is the per-candidate
+            // backstop; the bulk pre-filter above should have already
+            // caught most of these before a candidate got here.
+            await logServerError(
+              `causality comparable exposure lookup ${c.id}: ${comparable.error}`,
+              { action: 'cron.v3.causality.comparable-exposure-read' },
+            );
+            summary.comparable_exposure_read_failed += 1;
           } else if (comparable.reason === 'insufficient-evidence') {
             summary.comparable_insufficient_evidence += 1;
           } else {
@@ -333,9 +428,16 @@ async function handle(): Promise<NextResponse> {
             action: 'cron.v3.causality.comparable-insert',
           });
           summary.errors += 1;
-        } else {
+        } else if (write.written) {
           summary.comparable_attributed += 1;
         }
+        // else: `written: false` with no `error` — the migration isn't
+        // applied yet (methodVersionColumnMissing is set above, which
+        // triggers the shared end-of-run info log below). MUST 3 (PR #2007
+        // review): unlike the round-level path, this path writes NOTHING in
+        // that case rather than degrading to a NULL-method_version row — a
+        // NULL row here would be silently, permanently indistinguishable
+        // from a real round-level v1 row. Retried next run.
         // Never falls through to the round-level path, and never calls
         // `recordInsightOutcome`/`updateCoachWeight` — see the file header's
         // "NEVER FEEDS THE LEARNING LOOP" note on `comparable-attribute.ts`.

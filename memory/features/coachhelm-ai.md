@@ -715,11 +715,13 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
   that could set it otherwise — so a `method_version:
   'comparable_opportunities_v1'` row can never move a coach weight. Whether
   it ever should is an explicit, separate decision (A9 slice 3, a decision
-  doc, not code). Reuses the cron's own `isUnknownColumnError`
-  degrade-on-missing-column pattern (duplicated, not imported) for the same
-  still-unapplied migration 20260922230000 `method_version` column;
-  `summary.comparable_attributed` /`comparable_no_exposure_record`/
-  `comparable_insufficient_evidence` are counted separately from the
+  doc, not code). Reuses the cron's own `isUnknownColumnError` detection
+  (duplicated, not imported) for the same still-unapplied migration
+  20260922230000 `method_version` column, but — unlike the round-level
+  path — never degrades to a NULL-labeled insert on it (see the MUST 3
+  review fix below); `summary.comparable_attributed`
+  /`comparable_no_exposure_record`/`comparable_insufficient_evidence` are
+  counted separately from the
   round-level `attributed`/`intentional_no_lift`, and
   `summary.method_version_column_missing` is the same flag the round-level
   degrade path already sets. See `src/lib/coachhelm/v3/causality/
@@ -727,18 +729,58 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
   and `src/test/api/cron/causality-attribute.test.ts`'s A9 slice 1 describe
   block (the cron's wiring — flag on/off, pre-filter, summary counters,
   never touching the weight/outcome-ledger tables).
-  **Known limitation, not yet fixed (flag stays default-off until resolved
-  or explicitly accepted)**: the cron's P1 pre-filter exists so
-  never-attributable rows can't hog the fixed `LIMIT`/oldest-first work
-  list. With this flag on, EVERY shot-level candidate since W22 passes that
-  pre-filter — including old `no-exposure-record` and
-  `follow-up-window-open` ones — so they can still fill every slot every
-  run (oldest-`created_at`-first) and starve round-level attribution the
-  same way the original P1 stall did. Fixing this needs a synchronous
-  per-page drop of shot-level candidates that fail cheaply (mirroring the
-  existing anti-join batch-fetch), out of this slice's scope — raised with
-  the task owner as a prerequisite question for slice 2 or for ever
-  flipping the flag in production.
+  **PR #2007 review fixes (2026-09-23), three MUSTs**:
+  1. The follow-up window can still be open even once the cron's own
+     21-day candidate-age filter admits a candidate — that filter
+     guarantees the ROUND-LEVEL path's window has closed (anchored to
+     `created_at`), not this path's (anchored to the real, independently
+     timed `shown_at`). `computeComparableAttribution` now returns
+     `{ok: false, reason: 'follow-up-window-open'}` before ever calling
+     `loadPlayerContext`, retried next run like `no-exposure-record`.
+  2. **P1 starvation, reintroduced and now fixed**: with the flag on,
+     every shot-level candidate since W22 was passing the cron's P1
+     pre-filter on metric alone — including old `no-exposure-record`/
+     `follow-up-window-open` ones — refilling every run's fixed work-list
+     slots oldest-first and starving round-level attribution, the same
+     stall the pagination rewrite originally fixed. Fixed: the route now
+     bulk-fetches each page's shot-level candidates' first exposure in one
+     `.in()` query (already page-bounded, <= `FETCH_PAGE_SIZE`) and drops
+     a candidate with no exposure or an open window BEFORE it ever takes a
+     `todo` slot or costs a `loadPlayerContext` call.
+     `computeComparableAttribution`'s own per-candidate checks stay as a
+     backstop. **Residual gap, NOT fixed, flagged to the task owner**: once
+     a shot-level candidate's window IS closed, an `insufficient-evidence`
+     result has no honest terminal row to write — `golf_insight_
+     outcome_attribution.baseline_value`/`post_value`/`delta` are all
+     `NOT NULL numeric`, so a truly empty side (zero contributing shots)
+     has no real number to write, and even a real-but-underpowered pair of
+     values has no existing column to flag "measured, but below the
+     support floor" as distinct from a certified `observed_change` row.
+     These candidates therefore still cost a real `loadPlayerContext` +
+     pure-core call every run once their window closes (bounded to real
+     closed-window shot-level insights, no longer to the whole W22
+     backlog) — a schema addition or an accepted trade-off is the task
+     owner's call, not invented here.
+  3. **`method_version` degrade mislabeling**: retrying the insert without
+     `method_version` on an unknown-column error (the round-level path's
+     own degrade pattern) would write a `NULL`-labeled row here too — but
+     `NULL` means "v1" (the round-level method) by that migration's own
+     comment, so a comparable-opportunities row written that way would be
+     silently, permanently misread as a round-level row. Fixed:
+     `writeComparableAttribution` now writes NOTHING on an unknown-column
+     error (`written: false, methodVersionColumnMissing: true`, no
+     retry-insert) — this flag's enable criteria (`config/
+     feature-flags.yml`) now requires migration 20260922230000 applied
+     before it can ever go on in production, alongside A9 slice 2
+     (confounding detection) landing first, since a slice-1 row is
+     permanent (idempotent insert, PK on `insight_id`) and can't be
+     relabeled later.
+  Also: a genuine exposure-lookup DB error is its own typed skip
+  (`exposure-read-failed`, both at the bulk pre-filter and the
+  per-candidate backstop), logged distinctly and never folded into
+  `no-exposure-record` (which means "legitimately never shown yet"). The
+  first-exposure lookup is the insight's first exposure on ANY surface
+  (player or coach) — there is no surface filter.
 
 ## Tests To Prefer
 
