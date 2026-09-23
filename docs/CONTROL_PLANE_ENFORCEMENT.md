@@ -41,6 +41,7 @@ asserted here — see `.claude/rules/database.md`.
 | SessionStart | `(all tools)` | `.claude/hooks/stamp-workspace.mjs` | yes | no — records/reports only |
 | SessionStart | `compact\|resume` | `.claude/hooks/restore-session-state.mjs` | yes | no — records/reports only |
 | WorktreeCreate | `(all tools)` | `.claude/hooks/worktree-create.mjs` | yes | no — records/reports only |
+| WorktreeRemove | `(all tools)` | `.claude/hooks/worktree-remove.mjs` | yes | no — records/reports only |
 | UserPromptSubmit | `(all tools)` | `.claude/hooks/route-prompt.mjs` | yes | no — records/reports only |
 | PreToolUse | `Bash` | `.claude/hooks/guard-git.mjs` | yes | yes |
 | PreToolUse | `Bash` | `.claude/hooks/guard-sql.mjs` | yes | yes |

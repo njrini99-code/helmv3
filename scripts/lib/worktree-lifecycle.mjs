@@ -55,6 +55,16 @@ export const UNKNOWN = 'UNKNOWN';
  * remote and reports UNKNOWN_REMOTE when it cannot get it.
  */
 export const DELETE_MERGED_EXACT = 'DELETE_MERGED_EXACT';
+/**
+ * PR MERGED, the branch tip is NOT the PR head, and yet every change the
+ * branch makes is already in main: `git merge-tree --write-tree origin/main
+ * <tip>` merges cleanly to main's own tree. Squash merges, merge trains and
+ * re-batched PRs leave exactly this shape — content shipped, ancestry and head
+ * OID both disagreeing. The merge-tree proof is conservative: a later revert
+ * on main, or any edit main made on top, makes the trees differ and the branch
+ * stays KEEP_DIVERGED_AFTER_PR. The archive tag still preserves the commits.
+ */
+export const DELETE_MERGED_CONTENT = 'DELETE_MERGED_CONTENT';
 export const KEEP_OPEN = 'KEEP_OPEN';
 export const KEEP_DIVERGED_AFTER_PR = 'KEEP_DIVERGED_AFTER_PR';
 export const KEEP_WORKTREE_ACTIVE = 'KEEP_WORKTREE_ACTIVE';
@@ -347,6 +357,16 @@ export function classifyWorktree(facts) {
   // remote tip — which previously fell to UNKNOWN_REMOTE and kept every landed
   // worktree forever while its branch was already DELETE_MERGED_EXACT.
   const mergedExact = f.prState === 'MERGED' && f.prHeadSha && f.prHeadSha === f.localSha;
+  // Same escape for a merged PR whose content (not head OID) is proven in
+  // main — see DELETE_MERGED_CONTENT. Nothing in the checkout's history is
+  // lost by removing it, pushed or not.
+  const mergedContent = f.prState === 'MERGED' && f.contentInMain === true;
+  if (mergedContent && !mergedExact && (!f.upstream || !f.remoteSha || f.localSha !== f.remoteSha)) {
+    return {
+      verdict: PARKABLE,
+      reason: `PR #${f.prNumber} MERGED and every change on ${short(f.localSha)} is already in main`,
+    };
+  }
   if (!f.upstream || !f.remoteSha) {
     if (mergedExact) {
       const what = f.upstream ? `${f.upstream} is gone` : 'no upstream';
@@ -438,6 +458,15 @@ export function classifyBranch(facts) {
   // PR merged. The PR proves the OLD tip landed; it says nothing about the new
   // commits, which exist nowhere else once the remote branch is gone.
   if (f.localSha !== f.prHeadSha) {
+    // ...unless git itself proves the newer tip adds nothing main lacks.
+    if (f.contentInMain === true) {
+      return {
+        verdict: DELETE_MERGED_CONTENT,
+        reason:
+          `PR #${f.prNumber} MERGED; tip ${short(f.localSha)} differs from PR head ${short(f.prHeadSha)} ` +
+          'but every change it makes is already in main (merge-tree == main tree)',
+      };
+    }
     return {
       verdict: KEEP_DIVERGED_AFTER_PR,
       reason: `PR #${f.prNumber} merged ${short(f.prHeadSha)} but the branch is now ${short(f.localSha)}`,
@@ -465,6 +494,7 @@ function short(sha) {
  *   ACTIVE                                     -> KEEP    (do nothing)
  *   KEEP_PR_OWNER_INTENT_REQUIRED              -> KEEP    (owner has not released it)
  *   PARKABLE + branch DELETE_MERGED_EXACT      -> RETIRE  (remove tree AND branch)
+ *   PARKABLE + branch DELETE_MERGED_CONTENT    -> RETIRE  (same; content proof)
  *   PARKABLE + anything else                   -> PARK    (remove tree, keep branch)
  *   UNKNOWN                                    -> KEEP    (evidence missing)
  *
@@ -472,7 +502,7 @@ function short(sha) {
  * human no longer costs ~3.8 GiB while it waits.
  */
 export function combineVerdicts(worktreeVerdict, branchVerdict) {
-  if (worktreeVerdict === PARKABLE && branchVerdict === DELETE_MERGED_EXACT) {
+  if (worktreeVerdict === PARKABLE && AUTONOMOUS_BRANCH_VERDICTS.has(branchVerdict)) {
     return { action: 'RETIRE', worktree: RETIRABLE, reason: 'checkout disposable and branch provably merged' };
   }
   if (worktreeVerdict === PARKABLE) {
@@ -499,6 +529,10 @@ export function combineVerdicts(worktreeVerdict, branchVerdict) {
  *
  * and may PARK or RETIRE a workspace the classifier verdicts PARKABLE.
  *
+ * WIDENED 2026-09-23 by exactly one verdict, DELETE_MERGED_CONTENT: PR MERGED
+ * and `git merge-tree` proves the tip adds nothing main lacks. The branch is
+ * archived to a tag before deletion, same as DELETE_MERGED_EXACT.
+ *
  * NARROWED 2026-08-30. PARKABLE no longer follows from "clean + pushed + no
  * process seen". A worktree whose branch has an OPEN PR is PARKABLE only when
  * that PR carries a disposition whose worktree_policy is PARK_IF_REPRODUCIBLE.
@@ -522,7 +556,9 @@ export function combineVerdicts(worktreeVerdict, branchVerdict) {
  * already recorded that this exact tree landed on main.
  */
 export const AUTONOMOUS_WORKTREE_VERDICTS = new Set([PARKABLE, RETIRABLE]);
-export const AUTONOMOUS_BRANCH_VERDICTS = new Set([DELETE_MERGED_EXACT]);
+// DELETE_MERGED_CONTENT joined 2026-09-23: PR MERGED plus git's own proof
+// that the branch adds nothing main lacks — the squash/merge-train residue.
+export const AUTONOMOUS_BRANCH_VERDICTS = new Set([DELETE_MERGED_EXACT, DELETE_MERGED_CONTENT]);
 export const REQUIRES_HUMAN_VERDICTS = new Set([
   KEEP_WORKSPACE_INTENT_REQUIRED,
   UNKNOWN_PR, KEEP_OPEN, KEEP_DIVERGED_AFTER_PR, KEEP_PROTECTED,
@@ -617,4 +653,121 @@ export function mutationBudgetDecision(existing, budget = DEFAULT_MUTATION_BUDGE
     };
   }
   return { ok: true, used, budget, blocking: [], reason: `${used} of ${budget} in use` };
+}
+
+// ---------------------------------------------------------------------------
+// Copied files that are not work.
+//
+// Until the create-workspace fix, every worktree got canonical's `.mcp.json`
+// copied over its own TRACKED copy. Once canonical's file moved on, every such
+// checkout read as dirty for a file no session ever authored — and a dirty
+// checkout is never parkable, so 57 worktrees piled up behind one copy.
+//
+// A modification to one of these paths is ignored ONLY when the caller proves
+// its exact content is already known (canonical's current file, or a blob
+// main has held). Anything else in the path — a genuine edit — stays dirty.
+export const GENERATED_COPY_PATHS = ['.mcp.json'];
+
+/**
+ * @param {string|null} porcelain  `git status --porcelain` output; null = unreadable
+ * @param {(path: string) => boolean} isKnownCopy
+ * @returns {{dirtyCount: number|null, ignored: string[]}}
+ */
+export function effectiveDirty(porcelain, isKnownCopy = () => false) {
+  if (porcelain === null || porcelain === undefined) return { dirtyCount: null, ignored: [] };
+  const lines = String(porcelain).split('\n').filter((l) => l.length > 0);
+  const ignored = [];
+  let dirtyCount = 0;
+  for (const line of lines) {
+    // Only an UNSTAGED modification of a tracked file (" M <path>") can be a
+    // stale copy. Staged, renamed, deleted or untracked entries are real work.
+    const path = line.slice(3);
+    if (line.startsWith(' M ') && GENERATED_COPY_PATHS.includes(path) && isKnownCopy(path)) {
+      ignored.push(path);
+    } else {
+      dirtyCount++;
+    }
+  }
+  return { dirtyCount, ignored };
+}
+
+// ---------------------------------------------------------------------------
+// WorktreeRemove: the harness asks to remove a worktree it created.
+//
+// The request itself is the owner's intent for the CHECKOUT, so the workspace
+// and open-PR ownership gates (which exist because the sweep cannot know who
+// is using a tree) do not apply. What still applies is the one thing the
+// request cannot vouch for: whether anything in the tree exists nowhere else.
+//
+//   REFUSE                 uncommitted work, or commits neither pushed nor in
+//                          a merged PR, or the tree says parkPolicy KEEP
+//   REMOVE                 checkout goes, branch stays (pushed, or protected)
+//   REMOVE_DELETE_BRANCH   checkout and branch go (tip already in main, or
+//                          PR proven merged — archived first unless ancestry)
+//   ALREADY_GONE           nothing left to remove
+export const REMOVE = 'REMOVE';
+export const REMOVE_DELETE_BRANCH = 'REMOVE_DELETE_BRANCH';
+export const REFUSE = 'REFUSE';
+export const ALREADY_GONE = 'ALREADY_GONE';
+
+/**
+ * facts:
+ *   exists, registered, isCanonical   bool
+ *   parkPolicy      string|null   from .helm/workspace.json; only KEEP refuses
+ *   dirtyCount      number|null   AFTER effectiveDirty
+ *   branch          string|null
+ *   localSha        string|null
+ *   uniqueCommits   number|null   origin/main..tip
+ *   upstream, remoteSha, prLookup, prNumber, prState, prHeadSha, contentInMain
+ *
+ * @returns {{action: string, reason: string, archive?: boolean}}
+ */
+export function decideRemoval(facts) {
+  const f = facts ?? {};
+  // A missing directory holds nothing to lose; the caller prunes its record.
+  if (!f.exists) return { action: ALREADY_GONE, reason: 'nothing left at that path' };
+  if (f.isCanonical) return { action: REFUSE, reason: 'canonical checkout — never removed by a hook' };
+  if (!f.registered) return { action: REFUSE, reason: 'not a linked worktree of this repository' };
+  if (f.parkPolicy === WORKTREE_POLICY_KEEP) {
+    return { action: REFUSE, reason: '.helm/workspace.json parkPolicy is KEEP' };
+  }
+  if (f.dirtyCount === null || f.dirtyCount === undefined) {
+    return { action: REFUSE, reason: 'could not read working-tree status' };
+  }
+  if (f.dirtyCount > 0) {
+    return { action: REFUSE, reason: `${f.dirtyCount} uncommitted file(s) exist nowhere else` };
+  }
+  if (!f.localSha) return { action: REFUSE, reason: 'could not resolve the checkout tip' };
+
+  const inMain = f.uniqueCommits === 0;
+  if (!f.branch) {
+    return inMain
+      ? { action: REMOVE, reason: 'detached at a commit already in main' }
+      : { action: REFUSE, reason: 'detached HEAD with commits not in main' };
+  }
+
+  const bv = classifyBranch({ ...f, worktreePath: null });
+  if (bv.verdict === KEEP_PROTECTED) {
+    const safe = inMain || (f.upstream && f.remoteSha && f.remoteSha === f.localSha);
+    return safe
+      ? { action: REMOVE, reason: `${bv.reason}; checkout removed, branch kept` }
+      : { action: REFUSE, reason: `protected branch with unpushed commits` };
+  }
+  if (AUTONOMOUS_BRANCH_VERDICTS.has(bv.verdict)) {
+    return { action: REMOVE_DELETE_BRANCH, reason: bv.reason, archive: true };
+  }
+  if (inMain) {
+    // The common subagent case: nothing committed, or only what main already
+    // has by ancestry. The branch adds nothing, so it goes too — which is what
+    // the harness's own git fallback does for the branches it creates.
+    return { action: REMOVE_DELETE_BRANCH, reason: 'tip already in main (0 unique commits)', archive: false };
+  }
+  if (f.upstream && f.remoteSha && f.remoteSha === f.localSha) {
+    return { action: REMOVE, reason: `identical to ${f.upstream} — branch kept` };
+  }
+  const n = f.uniqueCommits ?? 'some';
+  return {
+    action: REFUSE,
+    reason: `${n} commit(s) neither pushed nor in a merged PR (${bv.verdict}: ${bv.reason})`,
+  };
 }

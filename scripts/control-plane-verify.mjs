@@ -682,7 +682,9 @@ function checkLifecycleRuntime() {
 
   // Safe GC waiting to happen is itself a control failure: it means the
   // retire-at-merge step was skipped, which is the original leak.
-  const retirable = rows.filter((x) => x.branchVerdict === 'DELETE_MERGED_EXACT' && x.worktree === 'none');
+  const retirable = rows.filter(
+    (x) => ['DELETE_MERGED_EXACT', 'DELETE_MERGED_CONTENT'].includes(x.branchVerdict) && x.worktree === 'none',
+  );
   add('lifecycle', 'no-retirable-branches-waiting', retirable.length ? FAIL : PASS,
     retirable.length ? `${retirable.length} branch(es) provably merged and deletable: ${retirable.map((x) => x.branch).join(', ')}` : 'no safe GC pending');
 
