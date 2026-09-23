@@ -69,6 +69,49 @@ class TiledTerrainAcquisitionTests(unittest.TestCase):
             for row, part in zip(exported['parts'], parts):
                 self.assertEqual(row['sha256'], hashlib.sha256(part['raster']).hexdigest())
 
+    def test_a_tiled_window_that_is_entirely_ocean_fill_only_survives_inside_a_sea_mask(self):
+        """A coastal layout large enough to need `terrain_export_windows`
+        tiling (unlike Pebble's single-window export) can have one whole
+        *window* sit over open water and export literal-zero fill for its
+        entire extent. `export_usgs_grid`'s own per-window check (not the
+        top-level acquire_usgs_source check, which only ever sees the fully
+        assembled mosaic) is what would reject that window; this proves it
+        stays a hard rejection with no mask, and is accepted with one."""
+        from osgeo import gdal, osr
+        gdal.UseExceptions()
+        windows = [{'bounds': [100, 200, 103, 204], 'pixels': [3, 4]},
+                   {'bounds': [103, 200, 106, 204], 'pixels': [3, 4]}]
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp); payloads = {}
+
+            def request(operation, values):
+                a, b, c, d = map(float, values['bbox'].split(','))
+                path = root / f'{int(a)}.tif'
+                ds = gdal.GetDriverByName('GTiff').Create(str(path), 3, 4, 1, gdal.GDT_Float32)
+                ds.SetGeoTransform((a, 1, 0, d, 0, -1))
+                sr = osr.SpatialReference(); sr.ImportFromEPSG(32617); ds.SetProjection(sr.ExportToWkt())
+                # The first window (x in [100,103)) is entirely ocean fill
+                # (literal zero, the ImageServer's own convention); the
+                # second is ordinary land elevation.
+                grid = np.zeros((4, 3), dtype=np.float32) if a == 100 else np.full((4, 3), 12.5, dtype=np.float32)
+                ds.GetRasterBand(1).WriteArray(grid); ds = None
+                payloads[str(path)] = path.read_bytes()
+                return {'width': 3, 'height': 4, 'href': str(path),
+                        'extent': {'xmin': a, 'ymin': b, 'xmax': c, 'ymax': d}}
+
+            def run(sea_geom):
+                with patch.object(compiler, 'terrain_export_windows', return_value=windows), \
+                     patch.object(compiler.fetch, 'request', side_effect=request), \
+                     patch.object(compiler.fetch, 'read', side_effect=lambda href, limit: payloads[href]):
+                    return compiler.export_usgs_grid(root, [100, 200, 106, 204], 6, 4, 32617, [42, 43], sea_geom=sea_geom)
+
+            with self.assertRaisesRegex(ValueError, 'unsupported empty fill'):
+                run(sea_geom=None)
+            sea_geom = box(100, 200, 103, 204)  # exactly the ocean window
+            exported, raw, parts = run(sea_geom=sea_geom)
+            self.assertEqual(len(parts), 2)
+            self.assertEqual(exported['assembly'], 'exact_aligned_grid_mosaic_no_resampling')
+
 
 class PlaneSource:
     manifest: ClassVar[dict] = {'selectedTitle': 'Analytic fixture', 'sourceUrl': 'https://example.invalid/source',
@@ -775,6 +818,62 @@ class AcquisitionCrsTests(unittest.TestCase):
         self.assertNotIn('discoveryPath', manifest)
 
 
+class CachedAcquireNeverTouchesCoastlineTests(unittest.TestCase):
+    """`layout.terrain.acquire`'s fingerprint now includes a coastline
+    input for a coastal layout, per the factory wiring brief. This proves
+    the load-bearing guarantee that makes that safe: `existing_source_manifest`
+    still returns before ANY of the new coastline/network code runs, so an
+    inland layout's cached acquire (which never had a coastline argument
+    before) stays exactly as free of network I/O as it always was --- and,
+    just as importantly, so does a *coastal* layout's cached re-acquire: a
+    second call that happens to pass `--coastline-context` must not read it,
+    build a mask, or requery the provider merely because the argument is
+    now present."""
+
+    def test_second_acquire_with_a_coastline_argument_does_no_network_io_and_is_byte_identical(self):
+        size = [48, 48]
+
+        def fake_request(operation, values):
+            if operation == 'query':
+                return {'features': [{'attributes': {'OBJECTID': 7, 'Name': 'n', 'title': 'USGS 1 Meter 16 x70y422 KY_Statewide_2019_B19', 'URL': 'https://example.invalid/tile',
+                                                     'StartDate': 1546300800000, 'EndDate': 1577750400000, 'Resolution_X': 1, 'VerticalDatum': 'NAVD88'},
+                                      'geometry': {'rings': [[[-180, -90], [180, -90], [180, 90], [-180, 90], [-180, -90]]]}}]}
+            a, b, c, d = (float(v) for v in values['bbox'].split(','))
+            width, height = (int(v) for v in values['size'].split(','))
+            size[:] = [width, height]
+            return {'width': width, 'height': height, 'href': 'https://example.invalid/export.tiff',
+                    'extent': {'xmin': a, 'ymin': b, 'xmax': c, 'ymax': d, 'spatialReference': {'wkid': values['imageSR'], 'latestWkid': values['imageSR']}}}
+
+        def fake_read(href, limit):
+            from PIL import Image
+            buffer = io.BytesIO()
+            Image.fromarray(np.full((size[1], size[0]), 250., dtype=np.float32)).save(buffer, format='TIFF')
+            return buffer.getvalue()
+
+        class ExplodingCoastline:
+            """Stands in for `load_coastline_context`'s return value. Any
+            attempt to unpack or iterate it (what `build_sea_geom` must do
+            to reach the actual coastline ways) fails the test immediately,
+            rather than merely being slow or wasteful."""
+            def __iter__(self):
+                raise AssertionError('cached acquire must never read the coastline context')
+
+        pkg = {'contentHash': '9' * 64, 'originWgs84': [-78.1467049, 39.1707734], 'name': 'Cache fixture'}
+        compiler.pilot.ORIGIN = pkg['originWgs84']
+        with tempfile.TemporaryDirectory() as directory:
+            source = Path(directory)
+            with patch.object(compiler.fetch, 'request', fake_request), patch.object(compiler.fetch, 'read', fake_read), \
+                 redirect_stdout(io.StringIO()):
+                first = compiler.acquire_source(source, pkg, [-20, -20, 20, 20])
+            with patch.object(compiler.fetch, 'request', side_effect=AssertionError('cached; must not requery the provider')), \
+                 patch.object(compiler.fetch, 'read', side_effect=AssertionError('cached; must not re-download')), \
+                 patch.object(compiler, 'build_sea_geom', side_effect=AssertionError('cached; must not build a sea mask')), \
+                 redirect_stdout(io.StringIO()):
+                second = compiler.acquire_source(source, pkg, [-20, -20, 20, 20], coastline=ExplodingCoastline())
+        self.assertEqual(compiler.digest(first), compiler.digest(second))
+        self.assertEqual(first['fileHashes'], second['fileHashes'])
+
+
 class TnmFallbackTests(unittest.TestCase):
     """Benvenue/Eagle Point's real shape: the ImageServer catalog carries
     nothing for the course, but TNM Access lists the same USGS 3DEP
@@ -799,10 +898,12 @@ class TnmFallbackTests(unittest.TestCase):
                    'verticalUnitToMeters': 1, 'verticalUnitStatus': 'declared_by_product_metadata_record'}
         dates = {'dates': [{'type': 'Start', 'dateString': '2019-11-26'}, {'type': 'End', 'dateString': '2020-08-25'}]}
 
-        def fake_warp(directory, tiles, out_bounds, width, height, crs):
+        def fake_warp(directory, tiles, out_bounds, width, height, crs, sea_geom=None):
             self.assertEqual(len(tiles), 1)
             self.assertEqual(crs, 32618)
-            return b'FAKE-ELEVATION-BYTES', 0.0002, 'test'
+            self.assertIsNone(sea_geom)  # no --coastline-context given in this call
+            return {'raster': b'FAKE-ELEVATION-BYTES', 'rawEmptyFraction': 0.0002, 'landOnlyFraction': 0.0002,
+                    'seaFillCount': 0, 'total': 10000, 'decoder': 'test'}
 
         pkg = {'contentHash': '5' * 64, 'originWgs84': [-77.8178, 35.9811], 'name': 'Benvenue fixture'}
         compiler.pilot.ORIGIN = pkg['originWgs84']
@@ -823,6 +924,9 @@ class TnmFallbackTests(unittest.TestCase):
             self.assertEqual(manifest['acquisitionEnd'], '2020-08-25')
             self.assertEqual(manifest['nativeResolutionM'], 1.0)
             self.assertEqual(manifest['rejectedCandidates'], [])
+            self.assertEqual(manifest['exportEmptyFraction'], 0.0002)
+            self.assertEqual(manifest['rawEmptyFraction'], 0.0002)
+            self.assertIsNone(manifest['seaFill'])  # no coastline context: nothing to fill
             self.assertEqual((Path(directory) / 'elevation.tiff').read_bytes(), b'FAKE-ELEVATION-BYTES')
             # A retained TNM fallback reuses cleanly on a second acquire call.
             with patch.object(compiler.fetch, 'request', side_effect=AssertionError('cached; must not re-query')), \
