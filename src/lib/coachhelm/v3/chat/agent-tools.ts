@@ -66,7 +66,7 @@ import {
   getUpcomingEvents,
   resolvePlayerReference,
 } from './read-tools';
-import { unavailableEnvelope, type ToolEnvelope } from './provenance';
+import { nowIso, unavailableEnvelope, type ToolEnvelope } from './provenance';
 import {
   planRecurringPractice,
   executeRecurringPractice,
@@ -236,6 +236,44 @@ export function buildCoachTools({ sb, ctx, conversationId, writer, collect }: Bu
       return envelope;
     };
 
+  /**
+   * A proposal or receipt is not a read tool's `ToolEnvelope` — it never had
+   * measurements to begin with — but its own numbers ("3 sessions of 90
+   * minutes", "8 practices", "12 recipients") are things the model wrote
+   * about ITS OWN action and will restate in the reply. Without this,
+   * `auditNumericClaims` had nothing to check those numbers against and
+   * rejected the whole turn — hiding the Confirm card and the receipt behind
+   * a false "ungrounded claim" note (#1997 review, MUST-1(b)). Folding the
+   * plan/receipt through `collect` the same way a read tool's `detail` does
+   * makes every number on the card itself count as supported evidence.
+   *
+   * `facing` is deliberately narrow — `ActionProposal.facts` (its own doc
+   * comment: "everything the coach sees before approving") or a receipt's
+   * `created`/`notifications`, NEVER the whole plan/proposal/receipt object.
+   * The first version of this fix passed `{plan, proposal}`/`{plan, receipt}`
+   * whole, and a re-review caught the consequence: an internal-only numeric
+   * field on `plan` that never reaches the card (a cost estimate, a batch
+   * id) would then silently "support" an unrelated FABRICATED number
+   * elsewhere in the same turn's prose, just because it happened to share a
+   * value with something the coach never saw (#1997 re-review, should-fix).
+   * See `agent-tools.collect.test.ts`'s "a fabricated stat matching an
+   * internal-only plan field is still rejected" case.
+   */
+  const collectActionNumbers = (
+    summary: string,
+    facing: { facts?: ActionProposal['facts'] } | { created?: ActionReceipt['created']; notifications?: ActionReceipt['notifications'] },
+  ) => {
+    collect({
+      summary,
+      measurements: [],
+      series: [],
+      detail: facing,
+      coverage: 'complete',
+      coverage_note: null,
+      as_of: nowIso(),
+    });
+  };
+
   const PlayerId = z.string().uuid().describe('Player id from the roster. Use find_player if you only have a name.');
 
   /**
@@ -257,6 +295,7 @@ export function buildCoachTools({ sb, ctx, conversationId, writer, collect }: Bu
         proposed_input: plan,
         idempotency_key: proposal.idempotency_key,
       });
+      collectActionNumbers(proposal.summary, { facts: proposal.facts });
       writer.write({
         type: 'data-action-proposal',
         id: `proposal-${proposal.idempotency_key}`,
@@ -333,6 +372,10 @@ export function buildCoachTools({ sb, ctx, conversationId, writer, collect }: Bu
       idempotency_key: proposal.idempotency_key,
     });
     if (claim.kind === 'already_completed') {
+      collectActionNumbers(claim.receipt.summary, {
+        created: claim.receipt.created,
+        notifications: claim.receipt.notifications,
+      });
       writer.write({
         type: 'data-action-receipt',
         id: `receipt-${proposal.idempotency_key}`,
@@ -349,6 +392,7 @@ export function buildCoachTools({ sb, ctx, conversationId, writer, collect }: Bu
 
     const receipt = await action.run(plan);
     await recordOutcome(sb, { run_id: claim.run_id, receipt });
+    collectActionNumbers(receipt.summary, { created: receipt.created, notifications: receipt.notifications });
     writer.write({
       type: 'data-action-receipt',
       id: `receipt-${proposal.idempotency_key}`,
@@ -593,6 +637,13 @@ export function buildCoachTools({ sb, ctx, conversationId, writer, collect }: Bu
             proposed_input: plan,
             idempotency_key: proposal.idempotency_key,
           });
+          // Same fix as `proposeGated` above (#1997 review, MUST-1(b)) — this
+          // tool duplicates that helper's shape instead of using it (see
+          // `GatedAction`'s doc comment), so it needs its own call. A
+          // recurring practice's own preview is dense with numbers
+          // (occurrence_count, weekday count, every date), so this is the
+          // tool most likely to trip the false-positive rejection.
+          collectActionNumbers(proposal.summary, { facts: proposal.facts });
           writer.write({
             type: 'data-action-proposal',
             id: `proposal-${proposal.idempotency_key}`,
@@ -660,6 +711,10 @@ export function buildCoachTools({ sb, ctx, conversationId, writer, collect }: Bu
           idempotency_key: proposal.idempotency_key,
         });
         if (claim.kind === 'already_completed') {
+          collectActionNumbers(claim.receipt.summary, {
+        created: claim.receipt.created,
+        notifications: claim.receipt.notifications,
+      });
           writer.write({
             type: 'data-action-receipt',
             id: `receipt-${proposal.idempotency_key}`,
@@ -676,6 +731,7 @@ export function buildCoachTools({ sb, ctx, conversationId, writer, collect }: Bu
 
         const receipt: ActionReceipt = await executeRecurringPractice(ctx, plan);
         await recordOutcome(sb, { run_id: claim.run_id, receipt });
+        collectActionNumbers(receipt.summary, { created: receipt.created, notifications: receipt.notifications });
         writer.write({
           type: 'data-action-receipt',
           id: `receipt-${proposal.idempotency_key}`,

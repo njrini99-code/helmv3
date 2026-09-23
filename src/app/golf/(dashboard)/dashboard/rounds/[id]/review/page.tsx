@@ -456,32 +456,61 @@ export default function RoundReviewPage() {
     };
   }, [round, roundId]);
 
-  // Generate review if needed
+  // Generate review if needed. Called both from the cold-start auto-generate
+  // effect a few lines down and from the Refresh / Generate review / Try
+  // again clicks below — the two are no longer distinguished here. Whether a
+  // call is a REGENERATE (and therefore rate-limited) is derived server-side
+  // in `generateAndStoreRoundReview` from whether a stored review already
+  // exists for the round, not from a client-supplied flag a direct caller
+  // could omit to dodge the gate.
   const generateReview = useCallback(async () => {
     if (!round) return;
 
     setGeneratingReview(true);
-    setError(null);
+    // Only clear the persistent full-page error state when there is no
+    // stored review to fall back on. A failed regenerate against a review
+    // that's already loaded and showing must never blank that content — see
+    // the `else if (storedReview)` branch below.
+    if (!storedReview) setError(null);
 
     try {
       const result = await generateAndStoreRoundReview(roundId, round.player_id);
 
       if (result.success && result.review) {
         setStoredReview(result.review);
+        setError(null);
         addToast({
           type: 'success',
           title: 'Review Generated',
           description: 'AI analysis complete for your round.',
         });
+      } else if (storedReview) {
+        // Stable read: a stored review was already loaded and rendering
+        // fine before this (re)generate attempt. A failed regenerate must
+        // surface non-destructively — via toast — rather than replace good,
+        // already-loaded content with the full-page error screen.
+        addToast({
+          type: 'error',
+          title: 'Refresh Failed',
+          description: result.error ?? 'Could not refresh this review. Showing the last saved version.',
+        });
       } else {
         setError(result.error ?? 'Failed to generate review');
       }
     } catch {
-      setError('An unexpected error occurred');
+      if (storedReview) {
+        addToast({
+          type: 'error',
+          title: 'Refresh Failed',
+          description: 'An unexpected error occurred. Showing the last saved version.',
+        });
+      } else {
+        setError('An unexpected error occurred');
+      }
     } finally {
       setGeneratingReview(false);
     }
-  }, [round, roundId, addToast]);
+  }, [round, roundId, addToast, storedReview]);
 
   // Auto-generate if no review exists (only once)
   const [autoGenerateAttempted, setAutoGenerateAttempted] = useState(false);
@@ -550,7 +579,17 @@ export default function RoundReviewPage() {
   // by `isGenerating` below to drive the Refresh-button spinner + the
   // "Running CoachHelm analysis..." copy when the hook generates in the
   // background, so it remains referenced; `v1Loading` is intentionally unused.
-  const isLoading = loadingRound || loadingStoredReview || generatingReview;
+  //
+  // `generatingReview` only forces the full-page skeleton when there's no
+  // `storedReview` to show instead (the first-generation / cold auto-generate
+  // case, where the skeleton IS the only honest thing to render). Refreshing
+  // an EXISTING review must never fall back into this branch — that was the
+  // rest of the stable-read bug: a full-page skeleton mid-refresh discarded
+  // the already-loaded review from the screen for the whole regenerate
+  // window, even on a call that was about to succeed. The pending state for
+  // that case is the Refresh button's own spinner (`isGenerating` below,
+  // already wired to the button's spin class + `disabled`).
+  const isLoading = loadingRound || loadingStoredReview || (generatingReview && !storedReview);
   const isGenerating = generatingReview || v1Generating;
 
   // P216: one standardized analysis-in-progress message (no V1/V2 split copy)

@@ -446,6 +446,36 @@ closes that gap for a `compose()` caller that opts in.
     RLS mirrors `golf_rounds`' own read policies (self player, team
     coach, admin); only the service role writes it (`authenticated` gets
     `SELECT` only, nothing to `anon`/`PUBLIC`).
+- **Chat vs. recap use two SEPARATE claim-grounding mechanisms — a known
+  open item, not a defect** (audited 2026-09-23): recap/`compose()` gates
+  on `claim-validator.ts`'s typed `validateClaims` (player/window/metric/
+  value/sample-floor/causal-backing against a structured
+  `EvidencePacket`, see above). The coach-chat stream route
+  (`src/app/api/coachhelm/v3/chat/stream/route.ts`) gates on a DIFFERENT,
+  lighter mechanism instead: `chat/provenance.ts`'s `auditNumericClaims`,
+  a numeric-token-vs-tool-evidence scan with no typed claim references or
+  per-metric checks. Both correctly BLOCK ungrounded output from being
+  persisted as `'complete'` (chat: `onFinish` gates `appendMessage` on the
+  audit result and stores `status: 'failed'` instead;
+  `chat/restore.ts`'s `REPLAYABLE` set keeps `'data-grounding-flag'` so a
+  failed turn stays visibly flagged on reload, not silently normal —
+  tested at `src/test/coachhelm/v3/chat-restore.test.ts`, PR #1975).
+  Whether chat should eventually adopt the same typed `validateClaims`
+  gate as recap (chat's real-time streaming shape vs. a single
+  post-generation validation makes this a real design question, not an
+  oversight) is open, not decided here.
+- **Package 8 addendum checklist item (f), "a concise evidence-backed
+  review narrative," remains UNBUILT** (audited 2026-09-23): no caller
+  and no persistence path. `round-review.ts`'s `composeRoundReview` has a
+  server-action wrapper (`src/app/golf/actions/v3/llm.ts`,
+  `generateLlmRoundReview`) whose OWN header comment used to claim "a
+  client component on the round-review page" calls it — false;
+  `round-regime.ts:132` documents that the action has zero callers
+  outside its own file, and `llm.ts`'s header now says so instead. No
+  persistence path from `composeRoundReview` into `golf_round_reviews`
+  exists either. Building this needs its own spec (an owner decision, not
+  a slice) — see the "Not wired in slice 1" bullet above for the same
+  finding at the `round-review.ts` level.
 
 ## Standing read rules (2026-09-12, repair deferrals)
 
@@ -613,8 +643,7 @@ later slice." This module is that slice, for the new v3 pure-core families.
   when an issue's own `sourceShotIds`/`id` are built, so two different
   packets' unknown shots landing in the same issue via some other, real,
   shared id still don't collapse into one entry. A5's own `shotClaimId`
-  (#1993) still renders `'null'` literally as of this writing and needs
-  this same fixed-marker fix in A5 slice 2.
+  (#1993) picked up this same fixed-marker fix in its slice 2.
 - **Connectivity before eligibility, eligibility before ownership/scoring,
   scoring before any future truncation** (revised 2026-09-23 review fix,
   refining — not reversing — the A6 top-N audit's ordering rule:
@@ -1259,20 +1288,83 @@ never feeds `nextWeight` or any learning loop, so there is no
 direction-corrected signal to compute, only the plain observed change
 (module header's NAMING note).
 
-## Controlled hypotheses (A5 deliverable, slice 1 — pure core, no DB)
+## Controlled hypotheses (A5 deliverable, slices 1-2)
 
 `buildHypotheses(metrics, facts)`
-(`src/lib/coachhelm/v3/reasoning/hypothesis-policy.ts`) proposes a small,
-NAMED set of candidate explanations for a round's shot data — never a
-fabricated cause, never a psychology/fatigue/mechanics inference (a test
+(`src/lib/coachhelm/v3/reasoning/hypothesis-policy.ts`) — PURE CORE, no
+DB — proposes a small, NAMED set of candidate explanations for a round's
+shot data — never a fabricated cause, never a psychology/fatigue/mechanics
+inference (a test
 scans every hypothesis this module can produce for banned terms —
 `pressure`, `confidence`, `swing`, `mechanics`, and similar).
 
-`metrics` is typed as `MetricResultInput[]`, a structural subset of the
-shared `MetricResult` landing in `src/lib/coachhelm/v3/metrics/types.ts`
-via #1990 (same field names — `metricId`, `value`, `status` — so swapping
-the import later is a one-line change). `#1990` had not merged to `main`
-as of this slice.
+`metrics` is the real, merged `MetricResult`
+(`src/lib/coachhelm/v3/metrics/types.ts`, #1990 — slice 1 read a
+structural subset, `MetricResultInput`, before #1990 landed to `main`;
+slice 2 swapped to the real type).
+
+### Slice 2: dimensioned metrics, rough_gap's id, shotClaimId marker
+
+`MetricResult.dimensions` means a real call can hand back SEVERAL rows
+sharing one `metricId` (a distance band, or a specific par-5 hole) —
+`metricClaimId(id, dimensions?)` and `findMetric(metrics, id,
+dimensions?)` both take an optional dimensions filter, canonically
+serialized (sorted keys, so key order never changes the id).
+`prerequisites`/`missingInputs` stay undimensioned (they name a metric
+FAMILY, not a specific row); `supportingClaimIds`/`contradictingClaimIds`
+are dimensioned when they resolved against an actual row.
+
+- **`rough_gap` reads its own shot's distance band**, not an arbitrary
+  first match: `bandOf` (exported from `metrics/distance-profile.ts`)
+  buckets the triggering shot the same way the real producer buckets its
+  rows, and `findMetric` is called with that band as a filter.
+- **`approach_measured_contribution` turned out to be the wrong shape**:
+  slice 1 assumed a signed strokes-gained value (negative supports,
+  positive contradicts). The real producer (`distance-profile.ts`) is a
+  plain eligible-attempt COUNT, `unit: 'count'`, never negative — evidence
+  volume, not direction, so it can never corroborate an over/underperformance
+  claim. Follow-up: rather than name this real, present count metric as
+  `rough_gap`'s corroborator — "missing" when unit-mismatched, "supporting"
+  when hypothetically reshaped — `findMetric`/`missingInputs`/
+  `prerequisites`/every claim id now key on a DISTINCT id,
+  `approach_rough_gap_strokes_contribution` (`ROUGH_GAP_STROKES_METRIC_ID`),
+  naming the honestly not-yet-existing strokes-shaped signal this family
+  actually needs. No producer emits a row under this id today, so the
+  lookup always reports the gap — a `'count'`-unit row under the OLD id is
+  simply never found under the new one (pinned by a test using the real
+  `approach_measured_contribution` shape, `unit: 'count'`, asserting it
+  stays `'candidate'` with the gap reported, never a false contradiction).
+  A single metricId cannot honestly mean two different things (a count
+  today, a signed value if some future producer reused it) without
+  corrupting every OTHER reader of `approach_measured_contribution` — the
+  likely future producer (A4's `sequence-attribution.ts`
+  `SequenceEvent.measuredContribution`, adapted to a `MetricResult` row) is
+  expected to emit under this distinct id, not the old one; that adapter is
+  deliberately not built in this slice.
+- **`par5_opportunity_loss` now emits one `Hypothesis` PER dimensioned
+  opportunity row**, not one aggregate reading an arbitrary first match.
+  `par-opportunities.ts` dimensions its two metric ids per SPECIFIC par-5
+  hole (`course_hole_key`/`hole_number`), so a round with several par-5s
+  yields several rows per metric id; each opportunity row is paired with
+  the green-in-two row sharing its SAME dimensions. Zero opportunity rows
+  still produce the single aggregate `'no_data'` hypothesis slice 1
+  shipped (nothing to enumerate, but the gap is still worth stating).
+  Pinned by a test with two dimensioned opportunity rows asserting two
+  independent hypotheses come back, each reading only its own hole's
+  green-in-two row.
+- **`shotClaimId` no longer renders a missing `hole_number`/`shot_number`
+  as the literal string `'null'`.** `ranking/situational-ranking.ts`
+  (A6, #2003) hit the identical problem first and its own doc comment
+  named this exact fix as owed here: any missing field now renders to ONE
+  fixed, shared marker (`shot:<round_id>:unknown:unknown`, matching that
+  module's `UNKNOWN_SHOT_MARKER`) instead of a per-shot-varying id, so ids
+  from both modules interoperate without translation. This is deliberate,
+  not merely tolerated — two DIFFERENT unknown-numbered shots in the same
+  round are indistinguishable by this id alone; a caller that needs to
+  tell them apart (like `situational-ranking.ts`'s union-find) must
+  special-case the marker itself, exactly as that module already does.
+  Real `golf_shots` rows always have both fields — this only arises for a
+  non-DB input (a fixture, a future adapter).
 
 - **Four named families, plus one non-family entry**: `short_bias`,
   `rough_gap`, `recovery`, `par5_opportunity_loss`, and `'insufficient'`
@@ -1301,8 +1393,9 @@ as of this slice.
   `'supported_association'` (a `status: 'supported'` metric points the
   same direction and nothing contradicts it — an association, never a
   causal claim), `'coach_annotated'` (reachable only once a coach has
-  reviewed a hypothesis — `personal-context.ts`, slice 2; nothing in this
-  module can produce it). There is no `'proven'` state anywhere in the
+  reviewed a hypothesis — `personal-context.ts`; not wired by slice 2
+  either, still a later slice; nothing in this module can produce it).
+  There is no `'proven'` state anywhere in the
   type. `'no_data'` vs `'candidate'` is a review-driven fix (2026-09-23):
   a consumer must not read "recovery, no producer" and "rough_gap, a real
   pattern match, just uncorroborated" as the same confidence — `recovery`
@@ -1329,10 +1422,13 @@ as of this slice.
   contradicts it, and a value strictly between the two floors does
   neither (stays `'no_data'`).
 - **Claim ids always resolve to an input element**: `metricClaimId(id)` →
-  `` `metric:${id}` ``, `shotClaimId(shot)` →
-  `` `shot:${round_id}:${hole_number}:${shot_number}` `` — tested by
-  resolving every `supportingClaimIds`/`contradictingClaimIds` entry back
-  to an element of the `metrics`/`facts` a call was given.
+  `` `metric:${id}` `` (undimensioned — prerequisites/missingInputs),
+  `metricClaimId(id, dimensions)` → `` `metric:${id}:<sorted
+  key=value,...>` `` (dimensioned — a resolved claim), `shotClaimId(shot)`
+  → `` `shot:${round_id}:${hole_number}:${shot_number}` ``, or
+  `` `shot:${round_id}:unknown:unknown` `` when either field is null —
+  tested by resolving every `supportingClaimIds`/`contradictingClaimIds`
+  entry back to an element of the `metrics`/`facts` a call was given.
 - **"No hypothesis" is a `Hypothesis` with empty claims and a populated
   `missingInputs`**, not an omitted entry — `buildHypotheses` returns a
   flat `Hypothesis[]` (no separate "withheld" bucket), so a family with an
@@ -1341,8 +1437,10 @@ as of this slice.
   have no metric producer today (no A2/A3 slice emits
   `approach_short_miss_rate`/`approach_recovery_outcome_rate`) — every real
   call reports them `'no_data'`, never fabricates a value.
-- **Not wired to `diagnosis.ts` or `personal-context.ts`** — that's slice 2,
-  per this slice's explicit scope.
+- **Still not wired to `diagnosis.ts` or `personal-context.ts`** — slice 2
+  was the `MetricResult` swap, dimensioned claim ids, and the
+  `shotClaimId` marker fix (above); the diagnosis/personal-context wiring
+  remains a later slice.
 
 ## How to add a new comparison source
 

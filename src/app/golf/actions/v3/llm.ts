@@ -7,8 +7,14 @@
  * billing-coach context from the authed session, calls the composer,
  * returns the prose text + flags.
  *
- * Caller (a client component on the round-review page) renders the
- * returned text alongside the existing template summary.
+ * `generateLlmRoundReview` is currently UNWIRED: it has zero callers
+ * outside this file (`round-regime.ts:132` documents this — all 7
+ * references to the action sit inside its own file). The coach-facing
+ * round review is produced by the v2 path instead. Package 8's addendum
+ * checklist item (f), "a concise evidence-backed review narrative,"
+ * remains unbuilt for this reason — no caller, no persistence path into
+ * `golf_round_reviews` (see `docs/architecture/coachhelm-evidence-
+ * contract.md`'s Package 8 section).
  */
 
 import { createClient } from '@/lib/supabase/server';

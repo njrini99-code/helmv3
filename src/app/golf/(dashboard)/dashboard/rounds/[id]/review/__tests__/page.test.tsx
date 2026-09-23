@@ -140,8 +140,12 @@ vi.mock('@/hooks/coachhelm/useRoundReviewV2', () => ({
   useRoundReviewV2: () => ({ v2Review: null, isV2Enabled: false, generating: false }),
 }));
 
+// A single hoisted mock (not a fresh `vi.fn()` per render) so tests below can
+// assert on calls made across the component's lifetime — the failed-Refresh
+// tests need to see the toast fired from inside the click handler.
+const addToastMock = vi.fn();
 vi.mock('@/components/ui/sonner', () => ({
-  useToast: () => ({ addToast: vi.fn() }),
+  useToast: () => ({ addToast: addToastMock }),
 }));
 
 /** A complete `RoundReviewContent` fixture — every field `buildReviewViewModel`
@@ -381,5 +385,138 @@ describe('RoundReviewPage — focus-area prescription (FocusAreaModal migration)
         }),
       );
     });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Stable-read bug fix: a stored review is already loaded (this fixture's
+// `getRoundReview` mock always succeeds — see above). Clicking Refresh used
+// to call `setError(...)` on ANY `generateAndStoreRoundReview` failure, and
+// the page's `if (error)` early return then replaced the good, already-
+// rendered review with the full-page "We couldn't load this review" screen.
+// Fails on pre-fix code: the review content assertion below does not survive
+// the failed Refresh, and the full-page error notice appears instead.
+// ---------------------------------------------------------------------------
+describe('RoundReviewPage — stable read on a failed Refresh', () => {
+  beforeEach(() => {
+    roundRow = { ...DEFAULT_ROUND_ROW };
+    addToastMock.mockClear();
+  });
+
+  it('keeps the stored review on screen and surfaces a toast when the regenerate call resolves success:false', async () => {
+    const { generateAndStoreRoundReview } = await import('@/app/golf/actions/round-review-system');
+    vi.mocked(generateAndStoreRoundReview).mockResolvedValueOnce({
+      success: false,
+      error: 'Round must be completed before generating a review',
+    });
+
+    const { findByRole, findByText, queryByText } = renderAsPlayer();
+
+    // Review is already loaded from the stored-review fixture.
+    await findByText(/3 pars · 6 bogeys/);
+
+    const refreshButton = await findByRole('button', { name: /refresh/i });
+    refreshButton.click();
+
+    await waitFor(() => {
+      expect(addToastMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: 'error',
+          description: 'Round must be completed before generating a review',
+        }),
+      );
+    });
+
+    // The stored review is still on screen — no full-page error replaced it.
+    await findByText(/3 pars · 6 bogeys/);
+    expect(queryByText("We couldn't load this review")).not.toBeInTheDocument();
+  });
+
+  it('keeps the stored review on screen and surfaces a toast when the regenerate call throws', async () => {
+    const { generateAndStoreRoundReview } = await import('@/app/golf/actions/round-review-system');
+    vi.mocked(generateAndStoreRoundReview).mockRejectedValueOnce(new Error('network down'));
+
+    const { findByRole, findByText, queryByText } = renderAsPlayer();
+
+    await findByText(/3 pars · 6 bogeys/);
+
+    const refreshButton = await findByRole('button', { name: /refresh/i });
+    refreshButton.click();
+
+    await waitFor(() => {
+      expect(addToastMock).toHaveBeenCalledWith(expect.objectContaining({ type: 'error' }));
+    });
+
+    await findByText(/3 pars · 6 bogeys/);
+    expect(queryByText("We couldn't load this review")).not.toBeInTheDocument();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// The cold-start auto-generate effect (`!storedReview` -> `generateReview()`
+// with no click) was previously never exercised by this suite — every other
+// test's `getRoundReview` fixture already resolves a stored review, so the
+// effect's guard never fires. `generateAndStoreRoundReview` is no longer
+// told apart by a client-supplied "is this a click" flag (that trust moved
+// server-side — see round-review-system.ts), so this suite doesn't assert
+// anything about how the call is made, only that the automatic path fires
+// and renders correctly on success.
+// ---------------------------------------------------------------------------
+describe('RoundReviewPage — auto-generate when no stored review exists', () => {
+  beforeEach(() => {
+    roundRow = { ...DEFAULT_ROUND_ROW };
+    addToastMock.mockClear();
+  });
+
+  it('fires the auto-generate effect (no click) and renders the freshly generated review', async () => {
+    const { getRoundReview, generateAndStoreRoundReview } = await import('@/app/golf/actions/round-review-system');
+    vi.mocked(getRoundReview).mockResolvedValueOnce({ success: true, review: undefined });
+    vi.mocked(generateAndStoreRoundReview).mockClear();
+    vi.mocked(generateAndStoreRoundReview).mockResolvedValueOnce({
+      success: true,
+      review: {
+        id: 'review-2',
+        player_id: 'player-1',
+        round_id: 'round-1',
+        review_content: FULL_REVIEW_CONTENT,
+        generated_at: '2026-01-01T00:00:00.000Z',
+        ai_model_version: 'test',
+        shared_with_coach: false,
+        shared_at: null,
+        coach_notes: null,
+        coach_viewed_at: null,
+        created_at: '2026-01-01T00:00:00.000Z',
+        updated_at: '2026-01-01T00:00:00.000Z',
+        round: {
+          id: 'round-1',
+          player_id: 'player-1',
+          course_name: DEFAULT_ROUND_ROW.course_name,
+          round_date: DEFAULT_ROUND_ROW.round_date,
+          total_score: DEFAULT_ROUND_ROW.total_score,
+          score_to_par: DEFAULT_ROUND_ROW.score_to_par,
+          total_putts: DEFAULT_ROUND_ROW.total_putts,
+          total_fairways_hit: DEFAULT_ROUND_ROW.total_fairways_hit,
+          total_fairways: DEFAULT_ROUND_ROW.total_fairways,
+          total_gir: DEFAULT_ROUND_ROW.total_gir,
+          total_gir_possible: DEFAULT_ROUND_ROW.total_gir_possible,
+        },
+      },
+    });
+
+    const { findByText } = renderAsPlayer();
+
+    // Nobody clicked anything — this call can only have come from the
+    // auto-generate effect.
+    await waitFor(() => {
+      expect(generateAndStoreRoundReview).toHaveBeenCalledWith('round-1', 'player-1');
+    });
+
+    await waitFor(() => {
+      expect(addToastMock).toHaveBeenCalledWith(
+        expect.objectContaining({ type: 'success', title: 'Review Generated' }),
+      );
+    });
+
+    await findByText(/3 pars · 6 bogeys/);
   });
 });
