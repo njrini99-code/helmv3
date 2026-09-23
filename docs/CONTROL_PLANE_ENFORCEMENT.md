@@ -43,13 +43,14 @@ asserted here — see `.claude/rules/database.md`.
 | WorktreeCreate | `(all tools)` | `.claude/hooks/worktree-create.mjs` | yes | no — records/reports only |
 | UserPromptSubmit | `(all tools)` | `.claude/hooks/route-prompt.mjs` | yes | no — records/reports only |
 | PreToolUse | `Bash` | `.claude/hooks/guard-git.mjs` | yes | yes |
+| PreToolUse | `Bash` | `.claude/hooks/require-preflight.mjs` | yes | yes |
 | PreToolUse | `Bash` | `.claude/hooks/guard-sql.mjs` | yes | yes |
 | PreToolUse | `^mcp__.*__(execute_sql\|apply_migration)$` | `.claude/hooks/guard-sql.mjs` | yes | yes |
 | PostToolUse | `Read\|Bash` | `.claude/hooks/record-context-load.mjs` | yes | no — records/reports only |
 | PostToolUse | `Write\|Edit\|MultiEdit` | `.claude/hooks/record-session-touch.mjs` | yes | no — records/reports only |
 | PreCompact | `(all tools)` | `.claude/hooks/save-session-state.mjs` | yes | no — records/reports only |
 
-3 hooks can refuse a tool call.
+4 hooks can refuse a tool call.
 
 ## Permission rules
 

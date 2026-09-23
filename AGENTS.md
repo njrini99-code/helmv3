@@ -47,9 +47,10 @@ project identity. Branch isolation separates source changes, not tool access.
 Runtime files remain ignored and linked; never print credential values.
 
 Stage explicit paths. Before pushing, inspect the upstream and push an
-explicit branch: `git push -u origin <branch>`. Do not force-push main or
-discard uncommitted work. Use `npm run pr:land -- <n>` for the normal
-merge-and-sync workflow; an explicitly authorized GitHub merge is also valid
+explicit branch: `git push -u origin <branch>`, then `gh pr create --draft`
+and `gh pr ready` once preflight is green (CI runs once, on ready). Do not
+force-push main or discard uncommitted work. Use `npm run pr:land -- <n>`
+for the normal merge-and-sync workflow; an explicitly authorized GitHub merge is also valid
 once required checks pass. Do not bypass required checks with `--admin`.
 
 Use `npm run worktrees{,:park,:retire}` to retire work safely.
@@ -72,8 +73,14 @@ Run checks appropriate to the changed behavior once, preserving their exit
 codes. A new change or a failure justifies repeating affected checks. Do not
 run the whole suite for prose or config-only edits. A changed server-action
 surface needs a build; migrations need database/RLS verification. Report
-unavailable checks honestly. The local push hook checks the pushed changes;
-GitHub Actions owns the full required merge checks. There is no mandatory Stop gate.
+unavailable checks honestly. There is no mandatory Stop gate.
+
+Before any push or PR: `npm run preflight` (add `--full` for migrations,
+`use server`, or broad changes). Open PRs as drafts; mark ready when
+preflight passes. Its exit code is the answer. It mirrors the required CI
+checks from the workflow files; fix everything it reports in one batch, and
+push once. The pre-push hook and a Claude hook enforce it. A failure that is
+pre-existing on main or infrastructure noise is reported, not pushed around.
 
 ## Tools and environments
 

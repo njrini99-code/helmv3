@@ -168,7 +168,7 @@ product decision. More accurate truth, not quieter dashboards.
 ```text
 npm run knowledge:map / knowledge:context / knowledge:check   # live
 npm run repo:doctor                 # live
-npm run preflight                   # live — the blocking static gate set
+npm run preflight                   # live — the required CI checks, locally
 ```
 
 Planned commands (`knowledge:registry-check`, `reliability:collect`,

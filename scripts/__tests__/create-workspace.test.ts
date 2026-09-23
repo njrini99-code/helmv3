@@ -41,8 +41,15 @@ function git(args: string[], cwd: string): string {
 let tmp: string;
 let seed: string;
 let home: string;
+let prevReserve: string | undefined;
 
 beforeEach(() => {
+  // The disk reserve reads the REAL free space of the machine running the
+  // test. On a nearly-full laptop every createWorkspace() below refused with
+  // DISK_LOW while CI (ample disk) passed — a result about the machine, not
+  // the code. Pin it off; no test here exercises the reserve itself.
+  prevReserve = process.env.HELM_DISK_RESERVE_GIB;
+  process.env.HELM_DISK_RESERVE_GIB = '0';
   // realpathSync matters on macOS: /var/folders/... vs /private/var/folders/...
   // is exactly the string mismatch that made canonical-root comparisons
   // manufacture false budget refusals elsewhere in this repo (see
@@ -77,6 +84,8 @@ beforeEach(() => {
 
 afterEach(() => {
   rmSync(tmp, { recursive: true, force: true });
+  if (prevReserve === undefined) delete process.env.HELM_DISK_RESERVE_GIB;
+  else process.env.HELM_DISK_RESERVE_GIB = prevReserve;
 });
 
 describe('createWorkspace — refusals', () => {

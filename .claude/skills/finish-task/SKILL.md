@@ -12,13 +12,13 @@ keep happening.
 
 ## The gate sequence
 
-Select checks by changed paths with `/gates`; do not run unrelated gates.
+While iterating, run the affected typecheck, lint and focused tests (`/gates`).
 Use `set -o pipefail` for piped commands so the pipeline preserves the gate's
-exit status. For application changes, run the affected typecheck, lint, and
-tests; add `npm run build` for a changed `use server` surface,
-`npm run test:rls` for a policy or migration change, E2E for E2E changes, and
-`npm run docs:check` when generated documentation inputs changed. Config-only
-changes need syntax and affected tooling checks, not the full suite.
+exit status. Before any push or PR, run `npm run preflight` — the required CI
+checks, read from the workflow files — and `npm run preflight:full` for a
+migration, a `use server` change, or a broad change. Its exit code is the
+answer: fix everything it reports in one batch, push once, open the PR as a
+draft, and `gh pr ready` only after it is green. E2E changes still need E2E.
 
 ## What a green gate does NOT prove here
 

@@ -14,8 +14,7 @@
  * Exit 1 if any step fails. `npm run gates:review`.
  */
 import { execFileSync, spawnSync } from 'node:child_process';
-import { readFileSync } from 'node:fs';
-import { load as yamlLoad } from 'js-yaml';
+import { loadWorkflow, reviewGateSteps, toolOverrideFor } from './lib/workflow-steps.mjs';
 
 const args = process.argv.slice(2);
 const baseRef = args.includes('--base') ? args[args.indexOf('--base') + 1] : 'origin/main';
@@ -29,40 +28,18 @@ const tryGit = (...a) => { try { return git(...a); } catch { return ''; } };
 const BASE_SHA = tryGit('merge-base', baseRef, 'HEAD') || tryGit('merge-base', 'main', 'HEAD') || tryGit('rev-parse', 'HEAD^') || HEAD_SHA;
 const env = { ...process.env, BASE_SHA, HEAD_SHA, GITHUB_WORKSPACE: process.cwd(), CI: '', FORCE_COLOR: '1' };
 
-const wf = yamlLoad(readFileSync('.github/workflows/review-gate.yml', 'utf8'));
-const steps = [];
-for (const [jobId, job] of Object.entries(wf.jobs)) {
-  if (jobId === 'all') continue;
-  for (const s of job.steps ?? []) {
-    if (s.uses && /checkout|setup-/.test(s.uses)) continue;
-    if (!s.id && /Install linters|aggregate/i.test(s.name ?? '')) continue; // CI-only plumbing
-    if (s.run || s.uses) steps.push({ ...s, id: s.id ?? jobId });
-  }
-}
-
+// Step list and local tool mirrors are shared with `npm run preflight`
+// (scripts/lib/workflow-steps.mjs), so the two can never disagree.
+const steps = reviewGateSteps(loadWorkflow(process.cwd(), '.github/workflows/review-gate.yml'));
 const has = (tool) => spawnSync('sh', ['-c', `command -v ${tool}`], { stdio: 'ignore' }).status === 0;
-const overrides = {
-  gitleaks: () => has('gitleaks')
-    ? { script: `gitleaks git --config .gitleaks.toml --redact --log-opts="${BASE_SHA}..${HEAD_SHA}" .` }
-    : { skip: 'brew install gitleaks' },
-  hadolint: (s) => has('hadolint')
-    ? { script: s.run.replace(/curl -fsSL[^\n]*\n\s*chmod[^\n]*\n\s*\/tmp\/hadolint/, 'hadolint') }
-    : { skip: 'brew install hadolint' },
-  ruff: (s) => has('ruff') ? { script: s.run } : { skip: 'pip install ruff' },
-  pylint: (s) => has('pylint') ? { script: s.run } : { skip: 'pip install pylint' },
-  actionlint: (s) => has('actionlint') ? { script: s.run } : { skip: 'brew install actionlint' },
-  yamllint: (s) => has('yamllint') ? { script: s.run } : { skip: 'pip install yamllint' },
-  semgrep: (s) => has('semgrep') ? { script: s.run.replace(/git config --global[^\n]*\n/, '') } : { skip: 'pip install semgrep' },
-  sqlfluff: (s) => has('sqlfluff') ? { script: s.run } : { skip: 'pip install sqlfluff' },
-};
 
 let failed = 0; const rows = [];
 for (const s of steps) {
   const id = s.id;
   if (only && !only.includes(id)) continue;
-  if (/aggregate|all_green|required_failed/i.test(id) || /aggregate|All checks green|Fail if any/i.test(s.name ?? '')) continue;
-  const key = id.replace(/_.*/, '');
-  const o = overrides[key] ? overrides[key](s) : { script: s.run };
+  if (/aggregate|all_green|required_failed/i.test(id)) continue;
+  const override = toolOverrideFor(id);
+  const o = override ? override(s, { has, BASE_SHA, HEAD_SHA }) : { script: s.run };
   const t0 = Date.now();
   if (o.skip) { rows.push([id, 'SKIPPED', `tool missing — ${o.skip}`]); continue; }
   const r = spawnSync('bash', ['-eo', 'pipefail', '-c', o.script], { env, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 });

@@ -11,20 +11,41 @@ updated.
 
 ## 0. Before you push
 
-`npm install` wires a `pre-push` git hook automatically (the `prepare`
-lifecycle script, `scripts/setup-hooks.mjs` — sets `core.hooksPath` to the
-tracked `.githooks/`; `npm run hooks:install` does the same by hand). The hook
-keeps local work fast and range-scoped:
+Run `npm run preflight` (`npm run preflight:full` for migrations, a
+`use server` change, or broad changes). Its exit code is the answer.
 
-- `git diff --check` over each pushed commit range — blocks trailing
-  whitespace and other patch-format errors before they reach the remote.
-- `gitleaks git --redact --log-opts=<range>` over each pushed commit range —
-  runs when `gitleaks` is installed and is skipped with a notice when it is
-  unavailable. CI remains the authoritative full repository secret scan.
+- It reads `ci.yml`, `review-gate.yml` and `migration-lockdown.yml` at runtime
+  and runs every required step it can reproduce — so it cannot drift from CI;
+  `src/test/scripts/preflight-parity.test.ts` fails when a workflow gains a
+  step it cannot model. `npm run preflight -- --list` shows how each CI step
+  is handled; `--only <key>` reruns one.
+- It regenerates generated artifacts first and fails with the list of files
+  to commit when any were stale.
+- Fast mode (default, ~2–4 min, longer while other checkouts hold the
+  `~/.helm-gates` heavy-gate slots): every static step, a cached full ESLint
+  scan feeding the ratchets, `tsgo`, tests related to the changed files,
+  `next build` only for a `use server` / `next.config` / dependency change.
+  Full mode: cold ESLint, `tsc`, the whole unit and integration suites,
+  `next build`, and — when `supabase/**` changed and Docker is up — squawk,
+  db lint, drift and pgTAP.
+- It never reports a pass it did not observe: a missing tool is SKIP (CI still
+  checks), types drift without `SUPABASE_ACCESS_TOKEN` is UNKNOWN, a failure
+  of a step that reads CI secrets is UNKNOWN. It exits 2 on a Node major other
+  than `.nvmrc`'s.
+- On success it stamps the tested tree in `.helm/runtime/preflight.json`.
 
-The hook does not run typecheck, ESLint, ratchets, generated-docs commands, or
-the Review Gate locally. Those project-wide checks remain in CI, where they run
-once per workflow. Skip the local hook for one push with
+Open PRs with `gh pr create --draft` and run `gh pr ready` after preflight is
+green: drafts skip the heavy CI jobs, so CI runs once per ready PR instead of
+on every WIP push (and superseding pushes stop cancelling runs).
+
+`npm install` wires the git hooks (the `prepare` lifecycle script,
+`scripts/setup-hooks.mjs` — sets `core.hooksPath` to the tracked `.githooks/`;
+`npm run hooks:install` does the same by hand). `pre-push` runs
+`git diff --check` and, when installed, `gitleaks` over each pushed commit
+range, then `npm run preflight` in fast mode unless the stamp already covers
+the pushed tree. In Claude sessions `.claude/hooks/require-preflight.mjs`
+also refuses `git push`, a non-draft `gh pr create` and `gh pr ready` without
+a matching stamp. Skip the git hook for one push with
 `HELM_SKIP_PREPUSH=1 git push`; CI still runs every required check.
 
 The paired `pre-commit` hook scans staged content with redacted gitleaks output

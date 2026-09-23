@@ -15,10 +15,12 @@ no authorization restrictions.
 - Implement the authorized work; use `helm-reader` for read-only diagnosis
   and `helm-worker` for bounded implementation.
 - Run checks appropriate to the change, preserve exit codes, and report
-  limitations. `/gates` selects checks; it is not a mandatory full-suite loop.
+  limitations. Before any push or PR: `npm run preflight` (`--full` for
+  migrations, `use server`, or broad changes); its exit code is the answer.
 - When Git delivery is part of the task: stage explicit paths, commit,
-  `git push -u origin <branch>`, create a PR, and use `/land` to merge and sync
-  after required checks pass.
+  `git push -u origin <branch>`, `gh pr create --draft`, `gh pr ready` once
+  preflight is green, and use `/land` to merge and sync after required checks
+  pass.
 - Use `npm run worktrees:retire` for safe cleanup.
 - Production deploys only when the owner says to; the owner runs
   `scripts/deploy-prod.sh` (agents are denied it). Pushes and merges never

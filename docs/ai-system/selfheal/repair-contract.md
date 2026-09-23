@@ -293,7 +293,7 @@ Then, in order:
 Run all three, in this order, and read the real exit codes:
 
 ```bash
-npm run preflight   # typecheck, lint, lint:ratchet, the doc + supabase ratchets
+npm run preflight   # the required CI checks, mirrored locally
 npm test            # the FULL suite — not a subset
 npm run build       # a page/component or 'use server' surface may have changed
 ```

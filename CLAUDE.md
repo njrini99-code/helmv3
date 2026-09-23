@@ -31,6 +31,8 @@ one. `src/lib/golf/surface-registry.ts` is hand-maintained and canonical.
     // Anything with useState/useEffect/onClick starts with 'use client';
 
 ## Commands
+    npm run preflight     # before any push/PR: the required CI checks, locally
+    npm run preflight:full  # + full suites/build/db: migrations, 'use server'
     npm run doctor / repo:doctor / dev / typecheck / lint / test / test:all
     npm run build         # required when a 'use server' surface changed
     npm run docs:check    # AUTOGEN inventory + drift + enforcement + rules-current

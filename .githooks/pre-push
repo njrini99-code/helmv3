@@ -1,9 +1,11 @@
 #!/bin/bash
-# .githooks/pre-push — fast local push hygiene.
+# .githooks/pre-push — nothing reaches GitHub that preflight has not passed.
 #
-# CI owns the project-wide checks. Locally, keep only checks that are cheap,
-# range-scoped, and useful before a push: whitespace errors in the pushed
-# commits and an optional gitleaks scan of that same commit range.
+# 1. Range-scoped hygiene on the pushed commits: `git diff --check` and, when
+#    installed, a gitleaks scan of the same range.
+# 2. `npm run preflight` (scripts/preflight.mjs, the local mirror of the
+#    required CI checks) — skipped when its stamp already covers the pushed
+#    tree, run in fast mode otherwise.
 #
 # Skip for a single push: HELM_SKIP_PREPUSH=1 git push
 
@@ -96,6 +98,58 @@ if command -v gitleaks >/dev/null 2>&1; then
   done
 else
   echo "pre-push: gitleaks not found — skipped (CI still scans)."
+fi
+
+# --- preflight: the local mirror of the required CI checks ------------------
+# A green `npm run preflight` stamps the tree it tested
+# (.helm/runtime/preflight.json). A pushed commit with exactly that tree goes
+# straight through; otherwise, when the pushed commit is HEAD, run the fast
+# preflight now. Skipped when the cheap checks above already failed.
+PREFLIGHT="$REPO_ROOT/scripts/preflight.mjs"
+STAMP_TOOL="$REPO_ROOT/scripts/lib/preflight-stamp.mjs"
+if [ "$FAILED" -eq 0 ] && [ -f "$PREFLIGHT" ] && [ -f "$STAMP_TOOL" ]; then
+  # Git hooks inherit a non-interactive PATH, which has resolved Homebrew's
+  # newer Node before. Prefer the fnm default when it is the .nvmrc major.
+  WANT_NODE=""
+  [ -f "$REPO_ROOT/.nvmrc" ] && WANT_NODE="$(tr -dc '0-9' < "$REPO_ROOT/.nvmrc")"
+  if [ -n "$WANT_NODE" ] && ! node -v 2>/dev/null | grep -q "^v${WANT_NODE}\."; then
+    FNM_DEFAULT="$HOME/.local/share/fnm/aliases/default/bin"
+    if [ -x "$FNM_DEFAULT/node" ] && "$FNM_DEFAULT/node" -v | grep -q "^v${WANT_NODE}\."; then
+      PATH="$FNM_DEFAULT:$PATH"
+      export PATH
+    fi
+  fi
+  HEAD_SHA_NOW="$(git rev-parse HEAD)"
+  for line in "${STDIN_LINES[@]}"; do
+    read -r local_ref local_sha remote_ref _remote_sha <<<"$line"
+    [ "$local_sha" = "$ZERO_SHA" ] && continue
+    case "$remote_ref" in refs/heads/*) ;; *) continue ;; esac
+    if node "$STAMP_TOOL" verify "$local_sha" >/dev/null 2>&1; then
+      echo "✓ preflight stamp matches ${local_sha:0:9} ($local_ref)"
+      continue
+    fi
+    if [ "$local_sha" != "$HEAD_SHA_NOW" ]; then
+      echo "✗ preflight: ${local_ref} (${local_sha:0:9}) is not the checked-out HEAD and has no green preflight."
+      echo "  Check it out and run 'npm run preflight', then push again."
+      FAILED=1
+      continue
+    fi
+    echo "pre-push: no green preflight for ${local_sha:0:9} — running 'npm run preflight' (fast) now."
+    if node "$PREFLIGHT" --fast; then
+      if node "$STAMP_TOOL" verify "$local_sha" >/dev/null 2>&1; then
+        echo "✓ preflight OK (${local_sha:0:9})"
+      else
+        echo "✗ preflight passed for the working tree, but it differs from the pushed commit ${local_sha:0:9}."
+        echo "  Commit (or stash) the uncommitted edits so the tested tree is the pushed tree, then push again."
+        FAILED=1
+      fi
+    else
+      echo "✗ preflight FAILED — fix everything it reported in one batch before pushing."
+      FAILED=1
+    fi
+  done
+elif [ "$FAILED" -eq 0 ]; then
+  echo "pre-push: scripts/preflight.mjs not on this branch — preflight skipped."
 fi
 
 TOTAL=$(( $(date +%s) - HOOK_START ))

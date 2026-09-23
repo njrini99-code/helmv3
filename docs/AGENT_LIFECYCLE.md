@@ -433,7 +433,7 @@ gh pr list --state merged --limit 20 \
 ## Part 6 — Edit to merged
 
 1. **Edit** — three PreToolUse hooks vote; PostToolUse records the touch.
-2. **Verify** — `npm run preflight`, ten gates, all also run by CI.
+2. **Verify** — `npm run preflight`: the required CI checks, run locally.
 3. **`git add <explicit paths>`** — never `-A` in a shared checkout.
 4. **`git commit`** — new tree and commit; branch pointer moves.
 5. **`git show --stat`** — a commit that "succeeded" is not one that

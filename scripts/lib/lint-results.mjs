@@ -46,10 +46,16 @@ export function validateResults(results, root, combined = false) {
   return results;
 }
 
-export function runESLint(root, args, execute = execFileSync) {
+export function runESLint(root, args, execute = execFileSync, env = process.env) {
+  // HELM_ESLINT_CACHE=<file> is set only by `npm run preflight` (fast mode) so
+  // a repeat local scan re-lints changed files only. CI never sets it, so
+  // every CI scan stays cold and complete.
+  const cache = env.HELM_ESLINT_CACHE
+    ? ['--cache', '--cache-location', env.HELM_ESLINT_CACHE, '--cache-strategy', 'content']
+    : [];
   let raw;
   try {
-    raw = execute('npx', ['eslint', ...args, '--format', 'json', '--max-warnings', '999999'], {
+    raw = execute('npx', ['eslint', ...args, ...cache, '--format', 'json', '--max-warnings', '999999'], {
       cwd: root, encoding: 'utf-8', maxBuffer: 64 * 1024 * 1024,
       stdio: ['ignore', 'pipe', 'inherit'],
     });
@@ -68,7 +74,7 @@ export function produceReport(root, env = process.env, execute = execFileSync) {
   // A failed new scan must never leave a previously successful report behind.
   rmSync(path, { force: true });
   const rules = Object.fromEntries(AUDIT_RULES.map((rule) => [rule, 'warn']));
-  const results = runESLint(root, ['src', 'scripts', '--rule', JSON.stringify(rules)], execute);
+  const results = runESLint(root, ['src', 'scripts', '--rule', JSON.stringify(rules)], execute, env);
   validateResults(results, root, true);
   // Enabling a rule can consume an eslint-disable that the default run calls
   // unused. Recheck only those files under the default configuration so the
@@ -77,7 +83,7 @@ export function produceReport(root, env = process.env, execute = execFileSync) {
     (message) => AUDIT_RULES.includes(message.ruleId),
   ));
   if (suppressed.length) {
-    const regular = runESLint(root, suppressed.map((file) => file.filePath), execute);
+    const regular = runESLint(root, suppressed.map((file) => file.filePath), execute, env);
     const byPath = new Map(regular.map((file) => [file.filePath, file.messages]));
     for (const file of suppressed) {
       if (!byPath.has(file.filePath)) throw new Error('ESLint omitted a suppression compatibility result.');
