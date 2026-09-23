@@ -468,10 +468,17 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
   several par-5s yields several) instead of reading one arbitrary row and
   dropping the rest. Slice 2 also found that `approach_measured_
   contribution` (A2's real producer) is a plain eligible-attempt COUNT,
-  never negative — not the signed strokes-gained value slice 1 assumed —
-  so `rough_gap`'s corroboration is now guarded on `unit === 'strokes'`
-  and stays a stated gap (never elevates/contradicts) until a
-  strokes-shaped metric exists. `shotClaimId` no longer renders a missing
+  never negative — not the signed strokes-gained value slice 1 assumed.
+  Follow-up (still slice 2): rather than name that real, present count
+  metric as `rough_gap`'s corroborator, `findMetric`/`missingInputs`/
+  `prerequisites`/every claim id key on a DISTINCT id,
+  `approach_rough_gap_strokes_contribution`
+  (`ROUGH_GAP_STROKES_METRIC_ID`), naming the honestly not-yet-existing
+  strokes-shaped signal — no producer emits it today, so `rough_gap`
+  always stays a stated gap until one does (likely A4's
+  `sequence-attribution.ts` `SequenceEvent.measuredContribution`, adapted
+  to a `MetricResult` row under this id — that adapter is deliberately not
+  built yet). `shotClaimId` no longer renders a missing
   `hole_number`/`shot_number` as the literal string `'null'`; it now
   matches `ranking/situational-ranking.ts`'s own fixed `'unknown'` marker
   scheme so ids from both modules interoperate without translation (that
@@ -489,10 +496,13 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
   `'candidate'` (a real supporting claim exists but isn't corroborated, or
   was but got contradicted), `'supported_association'` (a `status:
   'supported'` metric agrees and nothing contradicts — an association,
-  never causal), and `'coach_annotated'` (reachable only from
-  `personal-context.ts` — not wired by slice 2 either, still a later
-  slice — nothing here produces it). No
-  `'proven'` state exists. `recovery` (no metric ever corroborates it, and
+  never causal). `'coach_annotated'` was briefly a fourth state in slice
+  3's draft, then DROPPED (review decision, 2026-09-23): `mergeCoachAnnotation`
+  deliberately never sets `state` to it (the addendum is explicit that a
+  coach's judgment layers onto the evidence, never replaces it), so nothing
+  could ever produce it — a state with no producer was removed rather than
+  kept as dead code; a "reviewed" read belongs at the call site
+  (`coachAnnotation != null`). No `'proven'` state exists. `recovery` (no metric ever corroborates it, and
   its own triggering shot is deliberately not cited as its own support)
   and `short_bias`/`par5_opportunity_loss` with an absent metric resolve
   to `'no_data'`; `rough_gap` and `'insufficient'` keep a real fact-based
@@ -509,12 +519,35 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
   missing prerequisite is reported as a `Hypothesis` with empty claims and
   a populated `missingInputs`, never silently omitted. Claim ids
   (`metricClaimId`/`shotClaimId`) always resolve back to an element of the
-  `metrics`/`facts` a call was given (tested). **Still not wired to
-  `diagnosis.ts` or `personal-context.ts`** — slice 2 was the
-  `MetricResult` swap, the `shotClaimId` marker fix, and dimensioned claim
-  ids (above); the diagnosis/personal-context wiring remains a later
-  slice. See `docs/architecture/coachhelm-evidence-contract.md`'s
-  "Controlled hypotheses" section.
+  `metrics`/`facts` a call was given (tested). Slice 3 (2026-09-23,
+  addendum §8.3) added `mergeCoachAnnotation`/`reopenIfContradicted`: a
+  coach's judgment layers onto a hypothesis in a new `coachAnnotation`
+  field (author, date, note, and separate supporting/contradicting claim-id
+  snapshots) without touching `state`/`description`/`prerequisites`/the
+  claim arrays/`missingInputs`. `reopenIfContradicted` flags
+  `reopened: true` the moment a fresh contradicting claim wasn't already
+  known at annotation time — checked against the CONTRADICTING snapshot
+  specifically (never a union of both), since a claim id can flip sides
+  between calls (e.g. `short_bias` reuses one undimensioned id on both
+  sides). **`diagnosis.ts`/`personal-context.ts` remain unwired**:
+  `diagnosis.ts` (`engine/diagnosis.ts`) is a narrow pure `AxisTally`→text
+  helper with one caller, the DB-backed `generators/approach-miss.ts` — not
+  a fit for this module's pure-core `Hypothesis[]` shape without a much
+  larger change than "wire it in." Wiring hypotheses into a generator's
+  reading belongs to that DB-backed GENERATOR layer, not `diagnosis.ts`
+  itself — a future slice, reported back rather than forced here.
+  `personal-context.ts` was scoped to resolve active goals/focus
+  areas/interventions for check-selection priority, but `Goal.metric_id`
+  (typed `MetricId`, `metrics/registry.ts`) shares NO ids with this
+  module's own metric-id vocabulary (`approach_short_miss_rate`,
+  `approach_rough_gap_strokes_contribution`, etc. — none are registered
+  `MetricId`s), no "intervention" type/loader exists anywhere in the
+  codebase, and `FocusAreaCategory` (`insight-types.ts`) has no verified
+  mapping to a `HypothesisFamily` — building it would either always return
+  empty or require inventing an unverified correspondence, so it was not
+  built this slice pending a real shared vocabulary or loader. See
+  `docs/architecture/coachhelm-evidence-contract.md`'s "Controlled
+  hypotheses" section.
 
 - **`situational-ranking.ts` slice 2** (2026-09-23, addendum §13, A6 slice
   2, still pure core, still not wired to a live ranking read, no flag

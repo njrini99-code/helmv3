@@ -9,6 +9,8 @@ import {
   buildHypotheses,
   metricClaimId,
   shotClaimId,
+  mergeCoachAnnotation,
+  reopenIfContradicted,
   type MetricResult,
   type MetricStatus,
 } from '@/lib/coachhelm/v3/reasoning/hypothesis-policy';
@@ -644,5 +646,125 @@ describe('shotClaimId — missing hole_number/shot_number renders to a fixed, sh
     expect(roughGap.supportingClaimIds).toEqual([shotClaimId(shotA)]);
     expect(roughGap.id).not.toBe(recovery.id); // family prefix, not the shared shotClaimId, keeps these apart
     assertClaimsResolve(result, [], [shotA, shotB]);
+  });
+});
+
+describe('mergeCoachAnnotation — layers a judgment without touching the evidence (addendum §8.3)', () => {
+  it('adds coachAnnotation without changing state, description, prerequisites, claim arrays, or missingInputs', () => {
+    const facts = [roughApproachShot('go_for_green')];
+    const before = buildHypotheses([], facts).find((h) => h.family === 'rough_gap')!;
+    expect(before.coachAnnotation).toBeUndefined();
+
+    const annotated = mergeCoachAnnotation(before, {
+      author: 'coach-1',
+      date: '2026-07-02T09:00:00.000Z',
+      note: 'Reviewed with the player; looked like a deliberate carry decision.',
+    });
+
+    expect(annotated.state).toBe(before.state);
+    expect(annotated.description).toBe(before.description);
+    expect(annotated.prerequisites).toEqual(before.prerequisites);
+    expect(annotated.supportingClaimIds).toEqual(before.supportingClaimIds);
+    expect(annotated.contradictingClaimIds).toEqual(before.contradictingClaimIds);
+    expect(annotated.missingInputs).toEqual(before.missingInputs);
+    expect(annotated.nextCheck).toEqual(before.nextCheck);
+    expect(before.coachAnnotation).toBeUndefined(); // `before` itself is untouched — pure
+    expect(annotated.coachAnnotation).toEqual({
+      author: 'coach-1',
+      date: '2026-07-02T09:00:00.000Z',
+      note: 'Reviewed with the player; looked like a deliberate carry decision.',
+      supportingClaimIdsAtAnnotation: before.supportingClaimIds,
+      contradictingClaimIdsAtAnnotation: before.contradictingClaimIds,
+      reopened: false,
+    });
+  });
+
+  it('works the same way on a supported_association hypothesis — there is no causal state to upgrade to', () => {
+    const facts = [roughApproachShot('go_for_green')];
+    const metrics: MetricResult[] = [
+      metricRow({
+        metricId: 'approach_rough_gap_strokes_contribution',
+        value: -0.4,
+        status: 'supported',
+        unit: 'strokes',
+        dimensions: { band: ROUGH_GAP_BAND },
+      }),
+    ];
+    const before = buildHypotheses(metrics, facts).find((h) => h.family === 'rough_gap')!;
+    expect(before.state).toBe('supported_association');
+
+    const annotated = mergeCoachAnnotation(before, { author: 'coach-2', date: '2026-07-03', note: 'Confirmed.' });
+    expect(annotated.state).toBe('supported_association');
+    expect(annotated.supportingClaimIds).toEqual(before.supportingClaimIds);
+  });
+});
+
+describe('reopenIfContradicted — reopens on new contradicting evidence, per addendum §8.3', () => {
+  it('is a no-op passthrough for a hypothesis with no annotation', () => {
+    const facts = [roughApproachShot('go_for_green')];
+    const fresh = buildHypotheses([], facts).find((h) => h.family === 'rough_gap')!;
+    expect(reopenIfContradicted(fresh, fresh)).toEqual(fresh);
+  });
+
+  it('carries the annotation forward unchanged (reopened: false) when no new contradicting claim exists', () => {
+    const facts = [roughApproachShot('go_for_green')];
+    const before = buildHypotheses([], facts).find((h) => h.family === 'rough_gap')!;
+    const annotated = mergeCoachAnnotation(before, { author: 'coach-1', date: '2026-07-02', note: 'ok' });
+    // Rebuilt from the exact same inputs — nothing new.
+    const fresh = buildHypotheses([], facts).find((h) => h.family === 'rough_gap')!;
+
+    const result = reopenIfContradicted(annotated, fresh);
+    expect(result.coachAnnotation?.reopened).toBe(false);
+    expect(result.coachAnnotation?.author).toBe('coach-1');
+    expect(result.state).toBe(fresh.state);
+  });
+
+  it('reopens when a fresh evaluation contradicts a claim the annotation never saw', () => {
+    const facts = [roughApproachShot('go_for_green')];
+    const before = buildHypotheses([], facts).find((h) => h.family === 'rough_gap')!;
+    const annotated = mergeCoachAnnotation(before, { author: 'coach-1', date: '2026-07-02', note: 'looked fine' });
+
+    const metrics: MetricResult[] = [
+      metricRow({
+        metricId: 'approach_rough_gap_strokes_contribution',
+        value: 0.3, // above the contradict threshold
+        status: 'supported',
+        unit: 'strokes',
+        dimensions: { band: ROUGH_GAP_BAND },
+      }),
+    ];
+    const fresh = buildHypotheses(metrics, facts).find((h) => h.family === 'rough_gap')!;
+    expect(fresh.contradictingClaimIds.length).toBeGreaterThan(0);
+
+    const result = reopenIfContradicted(annotated, fresh);
+    expect(result.coachAnnotation?.reopened).toBe(true);
+    expect(result.coachAnnotation?.author).toBe('coach-1'); // retained, per §8.3
+    expect(result.coachAnnotation?.note).toBe('looked fine'); // retained
+    expect(result.state).toBe(fresh.state); // fresh's own state — never re-derived by this function
+  });
+
+  it('reopens on a FLIPPED claim id — supporting at annotation time, contradicting now — not just a brand-new ' +
+    'id (regression: a single union-of-both-arrays "known claims" set would miss this, since short_bias reuses ' +
+    'the SAME undimensioned id on both sides)', () => {
+    const supportedMetrics: MetricResult[] = [
+      metricRow({ metricId: 'approach_short_miss_rate', value: 70, status: 'supported' }),
+    ];
+    const before = buildHypotheses(supportedMetrics, [roughApproachShot('go_for_green')])
+      .find((h) => h.family === 'short_bias')!;
+    expect(before.state).toBe('supported_association');
+    const annotated = mergeCoachAnnotation(before, { author: 'coach-1', date: '2026-07-02', note: 'agreed' });
+
+    const flippedMetrics: MetricResult[] = [
+      metricRow({ metricId: 'approach_short_miss_rate', value: 20, status: 'supported' }),
+    ];
+    const fresh = buildHypotheses(flippedMetrics, [roughApproachShot('go_for_green')])
+      .find((h) => h.family === 'short_bias')!;
+    // Precondition: the flipped claim id is literally the SAME string that
+    // was supporting at annotation time — a union-based snapshot would
+    // already "know" it and wrongly treat this as nothing new.
+    expect(fresh.contradictingClaimIds).toEqual(annotated.coachAnnotation?.supportingClaimIdsAtAnnotation);
+
+    const result = reopenIfContradicted(annotated, fresh);
+    expect(result.coachAnnotation?.reopened).toBe(true);
   });
 });
