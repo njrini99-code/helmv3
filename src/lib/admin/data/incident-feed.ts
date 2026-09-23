@@ -6,7 +6,7 @@ import { fetchSentryIssues, type SentryIssue } from '@/lib/admin/sentry-api';
 import { getProductionDeployAt, RELEASE_GRACE_MS } from '@/lib/admin/auto-resolve';
 import type { AdminFetchResult } from '@/lib/admin/fetch-result';
 import type { FeatureKey } from '@/lib/admin/feature-registry';
-import { INCIDENT_SEVERITIES } from '@/lib/admin/severity';
+import { INCIDENT_SEVERITIES, FAILURE_SEVERITIES } from '@/lib/admin/severity';
 import {
   mergeTriage,
   type AppTriageEventRow,
@@ -508,3 +508,145 @@ export async function fetchIncidentFeed(
 export const cachedIncidentFeed = cache((windowHours: number) =>
   fetchIncidentFeed({ windowHours }),
 );
+
+// ---------------------------------------------------------------------------
+// Stale-unresolved fingerprints — still open, but outside the visible window.
+// ---------------------------------------------------------------------------
+
+/**
+ * "Still open, quiet for 72h+" (bridge-tab-audit-p0p1 incidents Finding 8).
+ *
+ * A fingerprint with an occurrence inside DEFAULT_INCIDENT_WINDOW_HOURS shows
+ * up in the feed above. One whose LAST occurrence rolled just past that
+ * window drops off the board entirely — not because it was fixed, but
+ * because nothing observed it recently enough to stay inside the window. The
+ * board has no other way to distinguish "resolved" from "just outside the
+ * window", and an unresolved fingerprint can sit there indefinitely (React
+ * #441, fingerprint 7e45247a, confirmed still unresolved).
+ *
+ * Deliberately a SEPARATE result, never merged into the feed's
+ * `incidents`/`counts`: the 72h totals (`totalGroups`, `actionableGroups`,
+ * etc.) must stay exactly what they were — this is additive information,
+ * never a second incident feed that could disagree with the first on what a
+ * "count" means.
+ */
+export interface StaleUnresolvedIncident {
+  fingerprint: string;
+  title: string;
+  /** Always 'error' or 'critical' — the query is scoped to
+   *  FAILURE_SEVERITIES, the same tier the KPI/headline counts use. */
+  severity: TriageSeverity;
+  /** Occurrences seen WITHIN the bounded page this read fetched — a lower
+   *  bound, not an exact count (see STALE_UNRESOLVED_ROW_LIMIT below). */
+  occurrences: number;
+  firstSeen: string;
+  lastSeen: string;
+}
+
+export interface StaleUnresolvedResult {
+  items: readonly StaleUnresolvedIncident[];
+  readable: boolean;
+  reason: string | null;
+}
+
+/** Bounded read — this is a sample of what's still open, never a claim of
+ *  completeness. 50 ROWS, not 50 fingerprints: a handful of noisy
+ *  fingerprints can legitimately consume most of the page, which is itself
+ *  useful information (see `occurrences`'s own doc comment above). */
+export const STALE_UNRESOLVED_ROW_LIMIT = 50;
+
+export interface RawStaleUnresolvedRow {
+  title: string;
+  severity: string;
+  fingerprint: string | null;
+  created_at: string | null;
+}
+
+/**
+ * Pure. Groups a flat, already-queried page of rows by fingerprint — same
+ * shape as `aggregateFeatureEvents` (feature-health-detail.ts): a row with
+ * no fingerprint or no `created_at` cannot be grouped or ordered, so it is
+ * dropped rather than guessed into a bucket.
+ */
+export function groupStaleUnresolvedRows(
+  rows: readonly RawStaleUnresolvedRow[],
+): StaleUnresolvedIncident[] {
+  const byFingerprint = new Map<
+    string,
+    { title: string; severity: TriageSeverity; occurrences: number; firstSeen: string; lastSeen: string }
+  >();
+
+  for (const row of rows) {
+    if (!row.fingerprint || !row.created_at) continue;
+    const existing = byFingerprint.get(row.fingerprint);
+    if (existing) {
+      existing.occurrences += 1;
+      if (row.created_at < existing.firstSeen) existing.firstSeen = row.created_at;
+      if (row.created_at > existing.lastSeen) existing.lastSeen = row.created_at;
+    } else {
+      byFingerprint.set(row.fingerprint, {
+        title: row.title,
+        severity: row.severity as TriageSeverity,
+        occurrences: 1,
+        firstSeen: row.created_at,
+        lastSeen: row.created_at,
+      });
+    }
+  }
+
+  return [...byFingerprint.entries()]
+    .map(([fingerprint, v]) => ({ fingerprint, ...v }))
+    .sort((a, b) => (a.lastSeen < b.lastSeen ? 1 : a.lastSeen > b.lastSeen ? -1 : 0));
+}
+
+/**
+ * Pure. Drops any fingerprint the caller says is already visible in the
+ * current windowed feed — it did not "drop off the board", it is still ON
+ * it. Kept as its own step (not folded into the SQL `created_at < since`
+ * filter) because a fingerprint can carry BOTH an old occurrence and a
+ * recent one: the query below only sees rows before the window, but the
+ * SAME fingerprint may also have a row inside it — which means it is
+ * currently visible and must not be reported as stale.
+ */
+export function excludeInWindowFingerprints(
+  items: readonly StaleUnresolvedIncident[],
+  inWindowFingerprints: ReadonlySet<string>,
+): StaleUnresolvedIncident[] {
+  return items.filter((item) => !inWindowFingerprints.has(item.fingerprint));
+}
+
+/**
+ * The bounded read itself. Ordered newest-first so the page is biased toward
+ * fingerprints that most recently rolled out of the window (the actionable
+ * "just dropped off" case) rather than toward ancient rows a cron sweep will
+ * eventually claim anyway.
+ *
+ * Fail-soft: a failed read returns `readable: false` with the reason — never
+ * a thrown error (this must never take the Errors tab down with it) and
+ * never a silent empty list presented as "nothing is stale".
+ */
+export async function queryStaleUnresolvedIncidents(windowHours: number): Promise<StaleUnresolvedResult> {
+  const admin = createAdminClient();
+  const since = new Date(Date.now() - windowHours * 3600_000).toISOString();
+
+  const { data, error } = await admin
+    .from('admin_events')
+    .select('title, severity, fingerprint, created_at')
+    .eq('event_type', 'error')
+    .eq('resolved', false)
+    .in('severity', FAILURE_SEVERITIES)
+    .not('fingerprint', 'is', null)
+    .lt('created_at', since)
+    .order('created_at', { ascending: false })
+    .limit(STALE_UNRESOLVED_ROW_LIMIT);
+
+  if (error) {
+    return { items: [], readable: false, reason: `Stale-unresolved lookup failed: ${error.message}` };
+  }
+
+  return {
+    items: groupStaleUnresolvedRows((data ?? []) as RawStaleUnresolvedRow[]),
+    readable: true,
+    reason: null,
+  };
+}

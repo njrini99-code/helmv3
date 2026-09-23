@@ -23,7 +23,12 @@ export interface AdminNavEntry {
   label: string;
   href: AdminHref;
   key: string;
-  section: 'Triage' | 'Customers' | 'Apps' | 'Platform' | 'Revenue';
+  // 'More' — an OWNER-DECIDED deprioritized group: still fully wired (URL,
+  // shortcut, ⌘K, mobile More sheet), just rendered under its own heading at
+  // the end of the rail/⌘K instead of alongside the primary tabs. Derived
+  // the same way every other section is (NAV_SECTION_ORDER in AdminShell.tsx)
+  // — never a second hand-listed rail.
+  section: 'Triage' | 'Customers' | 'Apps' | 'Platform' | 'Revenue' | 'More';
   description: string;
   meta?: string;
 }
@@ -89,7 +94,11 @@ export const ADMIN_NAV: readonly AdminNavEntry[] = [
   // SAME entries (repair verdict, shipped release, post-deploy delta). They
   // were two tabs until the 30→19 consolidation; one feed, two framings.
   { label: 'Work log', href: '/admin/work', key: 'W', section: 'Platform', description: 'PR timeline and change-to-proof', meta: 'prs' },
-  { label: 'Engineering OS', href: '/admin/engineering', key: 'Z', section: 'Platform', description: 'Decision Inbox, Agent Flight Recorder, gates, blast radius', meta: 'os' },
+  // OWNER DECISION (bridge-tab-audit-p0p1): moved out of the primary rail
+  // into its own 'More' section — this tab is agent/engineering-process
+  // tooling, not a daily-operator surface. Its URL and 'Z' shortcut are
+  // unchanged; it still appears in ⌘K and the mobile More sheet.
+  { label: 'Engineering OS', href: '/admin/engineering', key: 'Z', section: 'More', description: 'Decision Inbox, Agent Flight Recorder, gates, blast radius', meta: 'os' },
 
   // INTAKE
   { label: 'Ben + Leah', href: '/admin/ben-leah', key: 'B', section: 'Platform', description: 'Log tester-reported bugs on their behalf', meta: 'issues' },

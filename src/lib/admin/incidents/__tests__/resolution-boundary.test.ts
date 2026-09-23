@@ -43,7 +43,11 @@ vi.mock('@/lib/supabase/admin', () => ({
       // method returns the chain so call order does not matter.
       const empty = { data: [], error: null };
       const chain: Record<string, unknown> = {};
-      for (const m of ['select', 'in', 'eq', 'gte', 'lte', 'order', 'limit', 'not', 'or', 'filter']) {
+      // 'lt' added for `queryStaleUnresolvedIncidents` (incident-feed.ts) —
+      // fetchIncidentBoard now also reads a bounded "still open, quiet for
+      // 72h+" page against `admin_events`, which this generic fallback
+      // (every table besides `admin_error_resolutions`) must not choke on.
+      for (const m of ['select', 'in', 'eq', 'gte', 'lte', 'lt', 'order', 'limit', 'not', 'or', 'filter']) {
         chain[m] = () => chain;
       }
       chain.then = (resolve: (v: unknown) => unknown) => Promise.resolve(empty).then(resolve);

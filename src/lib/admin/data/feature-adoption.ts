@@ -7,6 +7,7 @@ import {
   type FeatureKey,
   type FeatureTier,
 } from '@/lib/admin/feature-registry';
+import { isInternalOrTestAccount } from '@/lib/admin/data/internal-accounts';
 
 /**
  * Utilization tab (B1) — the ONE shared rollup query both the Adoption
@@ -99,6 +100,17 @@ export interface FeatureAdoptionReadouts {
   touchedToday: number;
   quiet14d: number;
   dropoutRiskCount: number;
+  /** OWNER DECISION (utilization-01): how many of the 30d-active users
+   *  (`activeUsers30d`) are test/demo/internal accounts — disclosure only,
+   *  computed from data already in memory (no extra query). Never
+   *  subtracted from the tiles above; kept in every count, same as the
+   *  Users tab. */
+  internalActiveUsers: number;
+  /** Distinct 30d-active users across every registry feature — the
+   *  denominator `internalActiveUsers` is "of". Bigger than `users.length`
+   *  above, which is the top-50 breadth/depth leaderboard slice, not the
+   *  full active set. */
+  activeUsers30d: number;
 }
 
 export interface FeatureAdoptionResult {
@@ -213,7 +225,7 @@ export async function fetchFeatureAdoption(now: Date = new Date()): Promise<Feat
       generatedAt,
       rows: [],
       users: [],
-      readouts: { touchedToday: 0, quiet14d: 0, dropoutRiskCount: 0 },
+      readouts: { touchedToday: 0, quiet14d: 0, dropoutRiskCount: 0, internalActiveUsers: 0, activeUsers30d: 0 },
     };
   }
 
@@ -423,11 +435,19 @@ export async function fetchFeatureAdoption(now: Date = new Date()): Promise<Feat
     .sort((a, b) => b.breadth - a.breadth || b.depthEventCount - a.depthEventCount)
     .slice(0, LEADERBOARD_CAP);
 
+  // Counted over the full 30d-active set (`userAgg`), not just the
+  // top-50 leaderboard slice below — both are already fully materialized in
+  // memory, so the full set is no more expensive and is the honest
+  // denominator for "how much of platform activity is synthetic."
+  const internalActiveUsers = Array.from(userAgg.values()).filter((u) => isInternalOrTestAccount(u.email)).length;
+
   const readouts: FeatureAdoptionReadouts = {
     touchedToday: rows.filter((r) => (r.days30.at(-1)?.uniqueUsers ?? 0) > 0 && r.days30.at(-1)?.date === todayKey)
       .length,
     quiet14d: rows.filter((r) => r.quietDays >= 14).length,
     dropoutRiskCount: rows.filter((r) => r.dropoutRisk).length,
+    internalActiveUsers,
+    activeUsers30d: userAgg.size,
   };
 
   return { status: 'ok', generatedAt, rows, users, readouts };

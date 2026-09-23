@@ -32,16 +32,16 @@ type MaybePostgrestError = { code?: string | null; message?: string | null } | n
 
 const MIGRATION_NOT_APPLIED_CODES = new Set(['PGRST202', '42883', '42P01', '3F000']);
 
+// Narrowed to error CODES only (2026-09-23) — the prior free-text substring
+// match ("does not exist", "could not find the function", ...) also
+// matches a genuine outage message (e.g. a timeout wrapper or a Postgres
+// error for an unrelated missing relation), which this file then relabeled
+// as "migration HELD" instead of surfacing as a real failure. The four
+// codes below are the actual Postgres/PostgREST codes for "this function or
+// relation does not exist" and are exhaustive for the held-migration case.
 function isMigrationNotAppliedError(error: MaybePostgrestError): boolean {
   if (!error) return false;
-  if (MIGRATION_NOT_APPLIED_CODES.has(error.code ?? '')) return true;
-  const message = (error.message ?? '').toLowerCase();
-  return (
-    message.includes('could not find the function') ||
-    (message.includes('function') && message.includes('does not exist')) ||
-    (message.includes('relation') && message.includes('does not exist')) ||
-    (message.includes('schema') && message.includes('does not exist'))
-  );
+  return MIGRATION_NOT_APPLIED_CODES.has(error.code ?? '');
 }
 
 interface RawRunRow {

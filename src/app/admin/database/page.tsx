@@ -114,10 +114,14 @@ async function MissionControlPanel() {
   const result = await fetchDatabaseMissionControl();
 
   if (result.status === 'unconfigured') {
+    // The health-sampler migration (20260903180100) is applied and
+    // catalog-verified live (supabase/migrations/HELD.md) — an
+    // `unconfigured` result today means the read genuinely failed, not a
+    // migration still awaiting apply.
     return (
       <PanelNoData
-        label="Database health sampler not shipped yet"
-        description={result.error ?? 'Migration HELD — see supabase/migrations/HELD.md'}
+        label="Could not read database health sampler"
+        description={result.error ?? 'This read failed this refresh for an unknown reason.'}
       />
     );
   }
@@ -243,8 +247,8 @@ async function ErrorsPanel() {
   if (result.status === 'unconfigured') {
     return (
       <PanelNoData
-        label="Database error store not shipped yet"
-        description={result.error ?? 'Migration HELD — see supabase/migrations/HELD.md'}
+        label="Could not read database error store"
+        description={result.error ?? 'This read failed this refresh for an unknown reason.'}
       />
     );
   }
@@ -308,8 +312,8 @@ async function PerformancePanel() {
   if (result.status === 'unconfigured') {
     return (
       <PanelNoData
-        label="Query delta engine not shipped yet"
-        description={result.error ?? 'Migration HELD — see supabase/migrations/HELD.md'}
+        label="Could not read query delta engine"
+        description={result.error ?? 'This read failed this refresh for an unknown reason.'}
       />
     );
   }
@@ -403,8 +407,8 @@ async function LocksPanel() {
   if (result.status === 'unconfigured') {
     return (
       <PanelNoData
-        label="Lock incident store not shipped yet"
-        description={result.error ?? 'Migration HELD — see supabase/migrations/HELD.md'}
+        label="Could not read lock incident store"
+        description={result.error ?? 'This read failed this refresh for an unknown reason.'}
       />
     );
   }
@@ -452,8 +456,8 @@ async function TableHealthPanel() {
   if (result.status === 'unconfigured') {
     return (
       <PanelNoData
-        label="Table health collector not shipped yet"
-        description={result.error ?? 'Migration HELD — see supabase/migrations/HELD.md'}
+        label="Could not read table health collector"
+        description={result.error ?? 'This read failed this refresh for an unknown reason.'}
       />
     );
   }
@@ -528,13 +532,13 @@ async function JobsPanel() {
   if (result.status === 'unconfigured') {
     return (
       <PanelNoData
-        label="Jobs & webhooks read not shipped yet"
-        description={result.error ?? 'Migration HELD — see supabase/migrations/HELD.md'}
+        label="Could not read pg_cron / pg_net"
+        description={result.error ?? 'The read failed this refresh — see the error above for the specific cause.'}
       />
     );
   }
   if (result.status === 'error' || !result.data) {
-    return <PanelStale label="Jobs & Webhooks" error={result.error} />;
+    return <PanelStale label="Postgres scheduled jobs" error={result.error} />;
   }
 
   const { cronCapability, cronJobs, netQueueDepth, netQueueCapability, netResponsesCapability, netFindings } = result.data;
@@ -613,8 +617,8 @@ async function TelemetryHealthPanel() {
   if (result.status === 'unconfigured') {
     return (
       <PanelNoData
-        label="Telemetry health not shipped yet"
-        description={result.error ?? 'Migration HELD — see supabase/migrations/HELD.md'}
+        label="Could not read telemetry health"
+        description={result.error ?? 'This read failed this refresh for an unknown reason.'}
       />
     );
   }
@@ -1222,8 +1226,8 @@ async function IncidentDetailPanel({ fingerprint }: { fingerprint: string }) {
   if (result.status === 'unconfigured') {
     return (
       <PanelNoData
-        label="Database error store not shipped yet"
-        description={result.error ?? 'Migration HELD — see supabase/migrations/HELD.md'}
+        label="Could not read database error store"
+        description={result.error ?? 'This read failed this refresh for an unknown reason.'}
       />
     );
   }
@@ -1520,12 +1524,18 @@ export default async function DatabasePage({
 
             <Surface>
               <Inset>
-                <Eyebrow as="h2">Jobs &amp; Webhooks</Eyebrow>
+                <Eyebrow as="h2">Postgres scheduled jobs</Eyebrow>
                 <p className="mt-1 text-xs text-warm-500">
-                  pg_cron job history and pg_net queue/response health. Counts only — never raw job SQL or response payloads.
+                  pg_cron job history and pg_net queue/response health. Counts only — never raw job SQL or response
+                  payloads. This is Postgres-level scheduling only (1 job today: purge-admin-event-telemetry) —
+                  application job queues (pgmq, Inngest) live on{' '}
+                  <Link href="/admin/jobs" className="text-accent-700 underline">
+                    Jobs &amp; Integrity →
+                  </Link>
+                  .
                 </p>
                 <div className="mt-3">
-                  <PanelBoundary title="Jobs & Webhooks" skeleton={<PanelPageSkeleton rows={5} />}>
+                  <PanelBoundary title="Postgres scheduled jobs" skeleton={<PanelPageSkeleton rows={5} />}>
                     <JobsPanel />
                   </PanelBoundary>
                 </div>

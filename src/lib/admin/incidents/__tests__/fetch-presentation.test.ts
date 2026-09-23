@@ -19,7 +19,10 @@ vi.mock('@/lib/supabase/admin', () => ({
     from: () => {
       const empty = { data: [], error: null };
       const chain: Record<string, unknown> = {};
-      for (const m of ['select', 'in', 'eq', 'gte', 'lte', 'order', 'limit', 'not', 'or', 'filter']) {
+      // 'lt' added for `queryStaleUnresolvedIncidents` (incident-feed.ts) —
+      // fetchIncidentBoard now also reads a bounded "still open, quiet for
+      // 72h+" page against `admin_events`.
+      for (const m of ['select', 'in', 'eq', 'gte', 'lte', 'lt', 'order', 'limit', 'not', 'or', 'filter']) {
         chain[m] = () => chain;
       }
       chain.then = (resolve: (v: unknown) => unknown) => Promise.resolve(empty).then(resolve);
