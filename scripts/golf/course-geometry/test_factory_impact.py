@@ -50,7 +50,13 @@ class ImpactTests(unittest.TestCase):
         self.assertEqual(b['facility.osm.snapshot[synthetic]'][0], 'cached')
         self.assertEqual(b['facility.context.snapshot[synthetic]'][0], 'cached')
         self.assertEqual(b['facility.aoi.resolve[synthetic]'][0], 'cached')
-        self.assertEqual(b['layout.routes.resolve[synthetic-b]'][0], 'ready')
+        # layout.routes.resolve now has an optional layout.routes.propose
+        # dependency (owner decision 2026-09-23): it waits for that node to
+        # be attempted before it can run, even though B's OSM series already
+        # resolves and the proposal task itself will be a one-line "not
+        # required" pointer write.
+        self.assertEqual(b['layout.routes.propose[synthetic-b]'][0], 'ready')
+        self.assertEqual(b['layout.routes.resolve[synthetic-b]'][0], 'pending')
         # Blocked-by-design rows stay honest.
         self.assertEqual(states['layout.publish.prepare[synthetic-a]'], ('blocked', 'PUBLISH_NOT_APPROVED'))
         self.assertEqual(states['hole.visual.canary[synthetic-a:01]'], ('blocked', 'LAB_COURSE_NOT_SERVED'))
@@ -354,17 +360,24 @@ class BlockerTests(unittest.TestCase):
             self.assertEqual(code, 0, text)
             rows = h.plan_rows('synthetic-a')
             routes = rows['layout.routes.resolve[synthetic-a]']
-            self.assertEqual((routes['state'], routes['blockers'][0]['code']), ('blocked', 'ROUTE_WAY_IDS_REQUIRED'))
+            # OSM's ambiguous series is unresolved, so the factory now
+            # attempts an auto-route-v1 proposal (owner decision
+            # 2026-09-23); the synthetic world has no golf=tee/golf=green
+            # ways at all, so the proposal itself comes up empty. Its own
+            # blocker carries the original OSM-series evidence forward
+            # (`osmSeriesAttempts`) so nothing about *why* OSM failed is lost.
+            self.assertEqual((routes['state'], routes['blockers'][0]['code']), ('blocked', 'ROUTE_PROPOSAL_INCOMPLETE'))
             evidence = routes['blockers'][0]['evidence']
-            self.assertEqual(evidence['attempts'][0]['site'], 'osm-way-900000001')
-            self.assertEqual(len(evidence['attempts'][0]['duplicateRefs']), 18)
+            self.assertEqual(evidence['unassignedHoles'], list(range(1, 19)))
+            self.assertEqual(evidence['osmSeriesAttempts'][0]['site'], 'osm-way-900000001')
+            self.assertEqual(len(evidence['osmSeriesAttempts'][0]['duplicateRefs']), 18)
             downstream = ('layout.candidates.compose[synthetic-a]', 'layout.terrain.acquire[synthetic-a]', 'hole.terrain.compile[synthetic-a:07]',
                           'hole.world.build[synthetic-a:18]', 'layout.terrain.aggregate[synthetic-a]', 'layout.capability.evaluate[synthetic-a]')
             for key in downstream:
                 row = rows[key]
                 self.assertEqual(row['state'], 'blocked', key)
                 self.assertEqual(row['blockers'][0]['code'], 'DEPENDENCY_BLOCKED', key)
-                self.assertEqual(row['blockers'][0]['evidence']['root'], 'ROUTE_WAY_IDS_REQUIRED', key)
+                self.assertEqual(row['blockers'][0]['evidence']['root'], 'ROUTE_PROPOSAL_INCOMPLETE', key)
             # Nothing past the snapshot ran, and no acquisition was attempted.
             self.assertNotIn('layout.terrain.acquire[synthetic-a]', h.pipeline.calls)
             self.assertNotIn('layout.candidates.compose[synthetic-a]', h.pipeline.calls)
@@ -405,8 +418,13 @@ class BlockerTests(unittest.TestCase):
             code, text = h.run('run', '--layout', 'synthetic-a')
             rows = h.plan_rows('synthetic-a')
             routes = rows['layout.routes.resolve[synthetic-a]']
-            self.assertEqual((routes['state'], routes['blockers'][0]['code']), ('blocked', 'ROUTE_WAY_IDS_REQUIRED'))
-            self.assertEqual(routes['blockers'][0]['evidence']['attempts'][0]['namedSeries'], ['synthetic', 'synthetic a'])
+            # Two equally-named series is ambiguous again, so the factory
+            # falls through to an auto-route-v1 proposal attempt; the
+            # synthetic world has no golf=tee/golf=green ways, so it comes
+            # up empty, but the original OSM-series evidence (both series
+            # naming the layout) is still carried forward.
+            self.assertEqual((routes['state'], routes['blockers'][0]['code']), ('blocked', 'ROUTE_PROPOSAL_INCOMPLETE'))
+            self.assertEqual(routes['blockers'][0]['evidence']['osmSeriesAttempts'][0]['namedSeries'], ['synthetic', 'synthetic a'])
         finally:
             h.ledger.close()
 

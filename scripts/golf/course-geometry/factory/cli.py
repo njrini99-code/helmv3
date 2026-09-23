@@ -133,6 +133,10 @@ def build_parser():
     ship = sub.add_parser('ship', help='run the DAG through layout.world.aggregate/layout.terrain.aggregate, capture the candidate against the factory lab, then the automated QA gates; stop at READY_FOR_APPROVAL or a blocker list')
     ship.add_argument('--layout', help='required unless --approve')
     ship.add_argument('--approve', nargs=2, metavar=('LAYOUT', 'CONTENTHASH'), help='merge this exact READY_FOR_APPROVAL hash into course-geometry/approvals.json and regenerate the registry')
+    ship.add_argument('--confirm-route', metavar='LAYOUT', help='record the owner\'s review of the current auto-route-v1 '
+                      'route-proposal.json hole order (Phase D1); keyed to that proposal\'s content hash, so a new '
+                      'proposal run invalidates an old confirmation; ship --approve refuses without a matching one')
+    ship.add_argument('--confirmed-by', help='with --confirm-route: identity to record (defaults to $USER)')
     ship.add_argument('--live-pilot', action='store_true', help='with --approve: set livePilot: true on the merged package entry')
     ship.add_argument('--upload', action='store_true', help='with --approve: also upload the staged files to Supabase Storage (requires the bucket migration to be applied)')
     ship.add_argument('--all-played', action='store_true',
@@ -570,6 +574,13 @@ def cmd_ship(session, args, out):
     if args.approve:
         from .ship_publish import cmd_ship_approve
         return cmd_ship_approve(session, args, out)
+    if args.confirm_route:
+        if args.layout or args.all_played:
+            raise SystemExit('--confirm-route is exclusive with --layout and --all-played')
+        from .ship_run import cmd_ship_confirm_route
+        return cmd_ship_confirm_route(session, args, out)
+    if args.confirmed_by:
+        raise SystemExit('--confirmed-by only applies with --confirm-route')
     if args.live_pilot or args.upload:
         raise SystemExit('--live-pilot and --upload only apply with --approve')
     if args.all_played:

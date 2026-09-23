@@ -123,6 +123,7 @@ class FakePipeline:
     def executors(self):
         return {
             'facility.aoi.resolve': self.aoi, 'facility.osm.snapshot': self.osm, 'facility.context.snapshot': self.context_snapshot,
+            'layout.routes.propose': self.routes_propose,
             'layout.routes.resolve': self.routes, 'layout.route.dossier': self.route_dossier, 'layout.scorecard.compose': self.scorecard, 'layout.candidates.compose': self.candidates,
             'layout.visual.candidates.compose': self.visual_candidates, 'layout.visual.terrain.acquire': self.visual_terrain,
             'layout.visual.world.build': self.visual_world,
@@ -167,6 +168,11 @@ class FakePipeline:
         return self._snapshot(node, ctx, ctx.snapshot_dir(node.scope.facility_id, 'osm-context'), doc, 'osm-context')
 
     # ---- layout ------------------------------------------------------------
+    def routes_propose(self, node, ctx, run):
+        self._mark(node)
+        from factory.adapters import propose_routes_task
+        return propose_routes_task(node, ctx, run)
+
     def routes(self, node, ctx, run):
         self._mark(node)
         from factory.adapters import resolve_routes
@@ -585,6 +591,16 @@ class Harness:
             if name.endswith(('.py', '.mts', '.cjs')) and os.path.isfile(os.path.join(HERE, name)):
                 with open(os.path.join(HERE, name), 'rb') as f, open(os.path.join(scripts, name), 'wb') as g:
                     g.write(f.read())
+        # `propose-routes.py` is a standalone script (invoked here via a real
+        # subprocess, like the real repo's `run_script`), but it deliberately
+        # reuses `factory/osm.py`'s numbered-series/tag-parsing helpers
+        # rather than duplicating them -- the same functions
+        # `Context.route_resolution` calls in-process. Its subprocess needs
+        # that one small, dependency-free module on disk beside it too.
+        os.makedirs(os.path.join(scripts, 'factory'), exist_ok=True)
+        for name in ('__init__.py', 'osm.py'):
+            with open(os.path.join(HERE, 'factory', name), 'rb') as f, open(os.path.join(scripts, 'factory', name), 'wb') as g:
+                g.write(f.read())
         self.world = world or World()
         self.two_layouts = two_layouts
         write_catalog(self.catalog, two_layouts, site_a_shared=site_a_shared)

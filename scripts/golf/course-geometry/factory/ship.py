@@ -187,6 +187,43 @@ def context_uncertain_shares(context_report):
     return [{'holeKey': hole.get('key'), 'uncertainShare': hole.get('uncertainShare')} for hole in context_report.get('holes') or []]
 
 
+# --- route confirmation (Phase D1, owner decision 2026-09-23) ----------------
+def route_confirmation_item(layout_id, routes_doc, proposal_doc, confirmation_doc):
+    """The REQUIRED (not advisory) owner sign-off for a layout built on an
+    `auto-route-v1` proposal: every hole's tee/green source ids, scorecard
+    vs straight-line yards, and confidence, plus whether the owner has
+    already confirmed this exact proposal hash. `None` when this layout's
+    route source is not `auto-route-v1` at all -- an OSM-routed or
+    hand-curated layout never carries this item.
+
+    Unlike the DAG gates above, a pending item never blocks
+    READY_FOR_APPROVAL by itself (`layout.routes.resolve` already accepted
+    the proposal as a resolution; nothing about the build depends on the
+    owner's review of hole order). `ship --approve` is what actually
+    refuses without a matching confirmation (`ship_publish.cmd_ship_
+    approve`) -- the same point context sign-off and traced-surfaces review
+    happen, and a new proposal hash invalidates an old confirmation."""
+    if not routes_doc or routes_doc.get('source') != 'auto-route-v1':
+        return None
+    proposal_hash = routes_doc.get('sourceGeometryHash')
+    confirmed = bool(confirmation_doc and confirmation_doc.get('proposalHash') == proposal_hash)
+    holes = [{'ordinal': row.get('ordinal'), 'holeKey': row.get('holeKey'), 'teeId': row.get('teeId'), 'greenId': row.get('greenId'),
+              'scorecardYards': row.get('scorecardYards'), 'straightLineYards': row.get('straightLineYards'),
+              'yardageDeltaYards': row.get('yardageDeltaYards'), 'confidence': row.get('confidence')}
+             for row in (proposal_doc or {}).get('report') or [] if row.get('decision') == 'proposed']
+    return {
+        'code': 'HUMAN_ROUTE_CONFIRMATION', 'required': True, 'confirmed': confirmed,
+        'layoutId': layout_id, 'proposalHash': proposal_hash,
+        'confirmedAt': confirmation_doc.get('confirmedAt') if confirmed else None,
+        'confirmedBy': confirmation_doc.get('confirmedBy') if confirmed else None,
+        'producer': proposal_doc.get('producer') if proposal_doc else None, 'holes': holes,
+        'remediation': None if confirmed else
+            f'review the hole order (holes[] below, and the route overview PNG), then run '
+            f'`course-factory.py ship --confirm-route {layout_id}`; ship --approve refuses without it, '
+            f'and a new proposal hash invalidates an old confirmation',
+    }
+
+
 TRACE_SOURCE_PREFIX = 'naip-trace-'
 
 

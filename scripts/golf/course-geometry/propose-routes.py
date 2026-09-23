@@ -113,6 +113,20 @@ CORRIDOR_INSIDE_SLACK_M = 3.0  # a sample within this of a fairway polygon count
 DEFAULT_CORRIDOR_BONUS_WEIGHT = 60.0  # full-length coverage's bonus; weaker than REF_HINT_BONUS on purpose --
                                       # corridor coverage is circumstantial evidence, not a near-certain identity match
 
+# Cart-path continuity evidence: a mapped `golf=cartpath`/`highway=path` way
+# connecting hole h-1's green to hole h's tee is stronger routing evidence
+# than raw walking distance -- it says the course itself routes players that
+# way, not just that two markers happen to sit near each other. Scored the
+# same coverage-fraction way as the fairway corridor bonus (0..1, never a
+# penalty: no mapped cart path in the extract, or a walk that never comes
+# close to one, both legitimately score 0 rather than counting against a
+# true transition). Held out of the walk's own `continuity_cost` on purpose:
+# that model is the *prior* over how far a walk should be; this is
+# independent, positive evidence about one specific walk.
+CARTPATH_SAMPLE_STEP_M = 10.0
+CARTPATH_INSIDE_SLACK_M = 5.0  # a path is a line, not a wide polygon -- more slack than the fairway corridor's 3m
+DEFAULT_CARTPATH_BONUS_WEIGHT = 40.0
+
 REF_HINT_BONUS = 300.0  # cost reduction when a candidate green's OSM `ref`/`name` names this hole number
 
 
@@ -181,6 +195,36 @@ def collect_fairway_union(extract, bbox_wgs84=None):
             continue
         polygons.append(polygon)
     return unary_union(polygons) if polygons else None
+
+
+def collect_cartpath_union(extract, bbox_wgs84=None):
+    """Every `golf=cartpath`/`highway=path` way in the extract (inside
+    `bbox_wgs84` when given), merged into one shapely geometry in WGS84 --
+    green->next-tee continuity evidence for the beam search's walk cost. A
+    cart path connecting a hole's green to the next hole's tee is much
+    stronger routing evidence than raw walking distance alone: it is
+    evidence the *course* actually routes players that way, not just that
+    two markers happen to be close. Unlike a fairway (a closed polygon), a
+    cart path is a line, so this keeps it as a LineString rather than
+    forcing `_way_polygon`'s closed-ring requirement. `None` when the
+    extract has no cart paths at all inside the bbox."""
+    from shapely.geometry import LineString
+    from shapely.ops import unary_union
+    lines = []
+    for element in extract.get('elements', []):
+        if element.get('type') != 'way':
+            continue
+        tags = element.get('tags') or {}
+        if tags.get('golf') != 'cartpath' and tags.get('highway') != 'path':
+            continue
+        points = osmlib.way_points(element)
+        if len(points) < 2:
+            continue
+        mid = points[len(points) // 2]
+        if not _in_bbox(mid, bbox_wgs84):
+            continue
+        lines.append(LineString(points))
+    return unary_union(lines) if lines else None
 
 
 def collect_surface_candidates(traces_doc, bbox_wgs84=None):
@@ -255,10 +299,12 @@ def yardage_cost(distance_m, yards_m):
     return 0.0
 
 
-def corridor_coverage_fraction(tee_xy, green_xy, fairway_union_xy, sample_step_m=CORRIDOR_SAMPLE_STEP_M):
+def corridor_coverage_fraction(tee_xy, green_xy, fairway_union_xy, sample_step_m=CORRIDOR_SAMPLE_STEP_M,
+                                inside_slack_m=CORRIDOR_INSIDE_SLACK_M):
     """The fraction (0..1) of evenly-spaced samples along the straight
-    tee-green line that fall within `CORRIDOR_INSIDE_SLACK_M` of any mapped
-    fairway polygon. `0.0` when there's no fairway data at all, or when the
+    tee-green line that fall within `inside_slack_m` of any mapped
+    fairway (or, via `cartpath_union_xy`/`CARTPATH_INSIDE_SLACK_M`, cart
+    path) geometry. `0.0` when there's no such data at all, or when the
     line simply never comes close to one -- in both cases this contributes
     no bonus rather than a penalty (see the module-level comment: a missing
     fairway feature or a real dogleg both legitimately produce a line that
@@ -275,7 +321,7 @@ def corridor_coverage_fraction(tee_xy, green_xy, fairway_union_xy, sample_step_m
         t = i / steps
         x = tee_xy[0] + (green_xy[0] - tee_xy[0]) * t
         y = tee_xy[1] + (green_xy[1] - tee_xy[1]) * t
-        if _Point(x, y).distance(fairway_union_xy) <= CORRIDOR_INSIDE_SLACK_M:
+        if _Point(x, y).distance(fairway_union_xy) <= inside_slack_m:
             covered += 1
     return covered / (steps + 1)
 
@@ -330,7 +376,8 @@ def _feasible_pairs_by_hole(pairs, yards_m):
 
 
 def _run_beam(pairs, yards_m, beam_width=DEFAULT_BEAM_WIDTH, continuity_weight=DEFAULT_CONTINUITY_WEIGHT,
-              corridor_bonus_weight=DEFAULT_CORRIDOR_BONUS_WEIGHT, use_ref_hints=True):
+              corridor_bonus_weight=DEFAULT_CORRIDOR_BONUS_WEIGHT, use_ref_hints=True,
+              cartpath_union_xy=None, cartpath_bonus_weight=DEFAULT_CARTPATH_BONUS_WEIGHT):
     """The final surviving beam (list of states), not just its best sequence.
 
     A beam of partial sequences is grown one hole slot at a time. Each state
@@ -340,11 +387,13 @@ def _run_beam(pairs, yards_m, beam_width=DEFAULT_BEAM_WIDTH, continuity_weight=D
     Leaving a slot unassigned is always an option, at `SKIP_PENALTY`, so one
     bad/missing hole cannot starve the rest of the course of candidates.
 
-    Per-pair cost is `yardage_cost + continuity_cost - corridor-coverage
-    bonus - ref-hint bonus`: yardage match, walking-distance plausibility
-    against the fitted green->next-tee distribution, how much of the line is
-    actually chained together by mapped fairway, and (when present) whether
-    a mapper already labelled this green with this hole's number.
+    Per-pair cost is `yardage_cost + continuity_cost - cart-path bonus -
+    corridor-coverage bonus - ref-hint bonus`: yardage match, walking-
+    distance plausibility against the fitted green->next-tee distribution,
+    whether a mapped cart path actually connects the previous green to this
+    tee, how much of the line is chained together by mapped fairway, and
+    (when present) whether a mapper already labelled this green with this
+    hole's number.
     """
     if not pairs or not yards_m:
         return []
@@ -367,6 +416,11 @@ def _run_beam(pairs, yards_m, beam_width=DEFAULT_BEAM_WIDTH, continuity_weight=D
                 if last_green_xy is not None:
                     walk = _dist(last_green_xy, pair['teeXy'])
                     added += continuity_cost(walk, continuity_weight)
+                    if cartpath_union_xy is not None:
+                        path_coverage = corridor_coverage_fraction(last_green_xy, pair['teeXy'], cartpath_union_xy,
+                                                                    sample_step_m=CARTPATH_SAMPLE_STEP_M,
+                                                                    inside_slack_m=CARTPATH_INSIDE_SLACK_M)
+                        added -= cartpath_bonus_weight * path_coverage
                 new_assigned = dict(assigned)
                 new_assigned[h] = pair_idx
                 expanded.append((cost + added, new_assigned, used_greens | {green_id}, used_complexes | {complex_id},
@@ -509,7 +563,8 @@ def propose(scorecard, extract, surfaces_doc, facility_id, hole_key_prefix, osm_
             allow_numbered_osm=False, tee_complex_radius_m=DEFAULT_TEE_COMPLEX_RADIUS_M,
             beam_width=DEFAULT_BEAM_WIDTH, continuity_weight=DEFAULT_CONTINUITY_WEIGHT,
             corridor_bonus_weight=DEFAULT_CORRIDOR_BONUS_WEIGHT,
-            use_ref_hints=True, extra_tee_candidates=None):
+            use_ref_hints=True, extra_tee_candidates=None,
+            use_cartpaths=True, cartpath_bonus_weight=DEFAULT_CARTPATH_BONUS_WEIGHT):
     bbox = scorecard.get('bboxWgs84')
     pars = scorecard.get('pars')
     hole_order = scorecard.get('holeOrder')
@@ -530,17 +585,21 @@ def propose(scorecard, extract, surfaces_doc, facility_id, hole_key_prefix, osm_
     if extra_tee_candidates:
         tees = tees + extra_tee_candidates
     fairway_union = collect_fairway_union(extract, bbox)
+    cartpath_union = collect_cartpath_union(extract, bbox) if use_cartpaths else None
     epsg = utm_epsg(*scorecard['originWgs84'])
     cluster_tee_complexes(tees, epsg, tee_complex_radius_m)
     pairs = build_pairs(tees, greens, epsg, fairway_union_wgs84=fairway_union)
+    cartpath_union_xy = cr.wgs84_to_epsg(cartpath_union, epsg) if cartpath_union is not None else None
     yards_m = [y * YARD_TO_M for y in scorecard['scorecardYards']]
     assignment, confidences = beam_search_with_confidence(
         pairs, yards_m, beam_width=beam_width, continuity_weight=continuity_weight,
-        corridor_bonus_weight=corridor_bonus_weight, use_ref_hints=use_ref_hints)
+        corridor_bonus_weight=corridor_bonus_weight, use_ref_hints=use_ref_hints,
+        cartpath_union_xy=cartpath_union_xy, cartpath_bonus_weight=cartpath_bonus_weight)
     doc = build_document(facility_id, scorecard['siteId'], hole_key_prefix, assignment, pairs, yards_m, pars,
                           osm_path, hole_count, hole_keys=hole_order, confidences=confidences)
     stats = {'teeCandidates': len(tees), 'greenCandidates': len(greens), 'pairCandidates': len(pairs),
-              'fairwayCandidates': 0 if fairway_union is None else (len(fairway_union.geoms) if fairway_union.geom_type == 'MultiPolygon' else 1)}
+              'fairwayCandidates': 0 if fairway_union is None else (len(fairway_union.geoms) if fairway_union.geom_type == 'MultiPolygon' else 1),
+              'cartpathCandidates': 0 if cartpath_union is None else (len(cartpath_union.geoms) if cartpath_union.geom_type == 'MultiLineString' else 1)}
     return doc, stats
 
 
@@ -561,6 +620,8 @@ def parse_args(argv=None):
     parser.add_argument('--continuity-weight', type=float, default=DEFAULT_CONTINUITY_WEIGHT)
     parser.add_argument('--corridor-bonus-weight', type=float, default=DEFAULT_CORRIDOR_BONUS_WEIGHT)
     parser.add_argument('--no-ref-hints', action='store_true', help='Ignore OSM ref/name hole-number hints on tees/greens (for ablation)')
+    parser.add_argument('--no-cartpaths', action='store_true', help='Ignore golf=cartpath/highway=path continuity evidence (for ablation)')
+    parser.add_argument('--cartpath-bonus-weight', type=float, default=DEFAULT_CARTPATH_BONUS_WEIGHT)
     return parser.parse_args(argv)
 
 
@@ -576,7 +637,8 @@ def main(argv=None):
                           tee_complex_radius_m=args.tee_complex_radius_m,
                           beam_width=args.beam_width, continuity_weight=args.continuity_weight,
                           corridor_bonus_weight=args.corridor_bonus_weight,
-                          use_ref_hints=not args.no_ref_hints)
+                          use_ref_hints=not args.no_ref_hints,
+                          use_cartpaths=not args.no_cartpaths, cartpath_bonus_weight=args.cartpath_bonus_weight)
     args.out.parent.mkdir(parents=True, exist_ok=True)
     args.out.write_text(json.dumps(doc, indent=2) + '\n')
     proposed = sum(1 for row in doc['report'] if row['decision'] == 'proposed')

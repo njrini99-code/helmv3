@@ -380,5 +380,51 @@ class CanopyCorridorTests(unittest.TestCase):
         self.assertEqual(ship.canopy_corridor_shares(self.package([]))[0]['canopyShare'], 0.0)
 
 
+class RouteConfirmationItemTests(unittest.TestCase):
+    """`ship.route_confirmation_item` -- Phase D1's REQUIRED (but non-
+    DAG-blocking) owner sign-off item for an `auto-route-v1` layout. See
+    `ship.py`'s own docstring: `ship --approve` (not this item, and not
+    `layout.routes.resolve`) is what actually refuses without a matching
+    confirmation."""
+    ROUTES = {'source': 'auto-route-v1', 'sourceGeometryHash': 'hash-1'}
+    PROPOSAL = {'producer': 'auto-route-v1', 'report': [
+        {'ordinal': 1, 'holeKey': 'h01', 'decision': 'proposed', 'teeId': 't1', 'greenId': 'g1',
+         'scorecardYards': 400.0, 'straightLineYards': 395.0, 'yardageDeltaYards': -5.0, 'confidence': 0.9},
+        {'ordinal': 2, 'holeKey': 'h02', 'decision': 'unassigned'},
+    ]}
+
+    def test_none_when_the_route_source_is_not_auto_route_v1(self):
+        self.assertIsNone(ship.route_confirmation_item('L', {'source': 'osm_ref_unique'}, None, None))
+        self.assertIsNone(ship.route_confirmation_item('L', {'source': 'catalog'}, None, None))
+        self.assertIsNone(ship.route_confirmation_item('L', None, None, None))
+
+    def test_required_and_unconfirmed_with_no_confirmation_doc(self):
+        item = ship.route_confirmation_item('layout-1', self.ROUTES, self.PROPOSAL, None)
+        self.assertEqual(item['code'], 'HUMAN_ROUTE_CONFIRMATION')
+        self.assertTrue(item['required'])
+        self.assertFalse(item['confirmed'])
+        self.assertEqual(item['proposalHash'], 'hash-1')
+        self.assertIsNotNone(item['remediation'])
+        # Only the proposed rows are reviewable holes; the unassigned slot
+        # is not silently included as if it had a route.
+        self.assertEqual(len(item['holes']), 1)
+        self.assertEqual(item['holes'][0]['holeKey'], 'h01')
+        self.assertEqual(item['holes'][0]['straightLineYards'], 395.0)
+
+    def test_confirmed_when_the_recorded_hash_matches_the_current_proposal(self):
+        confirmation = {'proposalHash': 'hash-1', 'confirmedAt': '2026-09-23T00:00:00Z', 'confirmedBy': 'owner@example.com'}
+        item = ship.route_confirmation_item('layout-1', self.ROUTES, self.PROPOSAL, confirmation)
+        self.assertTrue(item['confirmed'])
+        self.assertEqual(item['confirmedBy'], 'owner@example.com')
+        self.assertIsNone(item['remediation'])
+
+    def test_a_new_proposal_hash_invalidates_an_old_confirmation(self):
+        stale_confirmation = {'proposalHash': 'hash-0-stale', 'confirmedAt': '2026-09-01T00:00:00Z', 'confirmedBy': 'owner@example.com'}
+        item = ship.route_confirmation_item('layout-1', self.ROUTES, self.PROPOSAL, stale_confirmation)
+        self.assertFalse(item['confirmed'])
+        self.assertIsNone(item['confirmedAt'])
+        self.assertIsNone(item['confirmedBy'])
+
+
 if __name__ == '__main__':
     unittest.main()

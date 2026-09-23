@@ -289,7 +289,7 @@ class BoundedBatchTests(unittest.TestCase):
         self.assertEqual(body['totals']['attempted'], 2)
         self.assertTrue(body['selected'][0]['blocked'])
         self.assertIn('layout.candidates.compose[synthetic-b]', self.h.pipeline.calls)
-        allowed = {'facility.aoi.resolve', 'facility.osm.snapshot', 'layout.routes.resolve',
+        allowed = {'facility.aoi.resolve', 'facility.osm.snapshot', 'layout.routes.propose', 'layout.routes.resolve',
                    'layout.scorecard.compose', 'layout.candidates.compose'}
         self.assertTrue(all(call.split('[', 1)[0] in allowed for call in self.h.pipeline.calls), self.h.pipeline.calls)
 

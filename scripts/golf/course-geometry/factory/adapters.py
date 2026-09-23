@@ -305,6 +305,47 @@ def snapshot_context(node, ctx, run):
 
 
 # --- layout ---------------------------------------------------------------
+def propose_routes_task(node, ctx, run):
+    """`layout.routes.propose`: wraps `propose-routes.py` unchanged (Factory
+    v2 §31 anti-goal). Only runs when the base (non-proposal) resolution is
+    unresolved -- a pin, a retained import, or a numbered OSM series always
+    wins; see `eval_routes_propose` and `Context.route_resolution`.
+
+    `--allow-numbered-osm` is always passed: the eval function already made
+    the authoritative "OSM lacks a resolvable series" call via
+    `ctx.route_resolution`'s multi-site-candidate check (stricter than this
+    script's own single-bbox check), so this script must trust that
+    determination rather than re-deciding it with a cruder site and
+    possibly disagreeing.
+    """
+    layout_id, facility_id = node.scope.layout_id, node.scope.facility_id
+    base = ctx.route_resolution(layout_id, include_proposal=False)
+    if resolved_routes(base):
+        # Nothing to propose: a pin, retained import, or numbered OSM series
+        # already resolves this layout. Write the small not-required
+        # pointer eval_routes_propose's own not-required branch checks for.
+        pointer_path = ctx.route_proposal_pointer_path(layout_id)
+        _write_json(pointer_path, {'kind': 'golfhelm-factory-route-proposal-pointer-v1', 'layoutId': layout_id,
+                                    'status': 'not_required', 'baseSource': base['source']})
+        return [artifact('route-proposal-pointer', pointer_path, 'C')]
+    scorecard = ctx.route_proposal_scorecard(layout_id)
+    if not scorecard:
+        raise RuntimeError('route proposal scorecard is not ready yet; the plan should have blocked this node')
+    manifest, extract = ctx.snapshot(facility_id)
+    if not manifest or not extract:
+        raise RuntimeError('route proposal requires a retained OSM snapshot; the plan should have blocked this node')
+    scorecard_path = os.path.join(ctx.layout_out(layout_id), 'route-proposal-scorecard.json')
+    _write_json(scorecard_path, scorecard)
+    path = ctx.route_proposal_path(layout_id)
+    args = ['--layout', layout_id, '--scorecard', scorecard_path, '--osm', extract, '--out', path,
+            '--facility-id', facility_id, '--allow-numbered-osm']
+    surfaces_path, surfaces_doc, _surfaces_sha = ctx.detected_surfaces(facility_id)
+    if surfaces_doc:
+        args += ['--surfaces', surfaces_path]
+    run_script(ctx, run, node, 'scripts/golf/course-geometry/propose-routes.py', args)
+    return [artifact('route-proposal', path, 'A')]
+
+
 def resolve_routes(node, ctx, run):
     layout_id = node.scope.layout_id
     resolution = ctx.route_resolution(layout_id)
@@ -604,7 +645,10 @@ def _prepare(node, ctx, run, out, canopy=None):
     args = [extract, ctx.scorecard_path(layout_id), out]
     if canopy:
         args += ['--canopy-review', canopy]
-    imported = ctx.retained(layout, 'sourceGeometry')
+    # The catalog's retained sourceGeometry when hand-curated, else an
+    # accepted auto-route-v1 proposal (Phase D1) -- see
+    # `Context.effective_source_geometry_path`.
+    imported = ctx.effective_source_geometry_path(layout_id)
     if imported:
         args += ['--source-geometry', imported]
     route_traces = ctx.retained(layout, 'routeTraces')
@@ -1227,6 +1271,7 @@ DEFAULT_EXECUTORS = {
     'facility.aoi.resolve': facility_tasks.resolve_aoi,
     'facility.osm.snapshot': snapshot_osm,
     'facility.context.snapshot': snapshot_context,
+    'layout.routes.propose': propose_routes_task,
     'layout.routes.resolve': resolve_routes,
     'layout.route.dossier': write_route_dossier,
     'layout.visual.candidates.compose': compose_visual_candidates,

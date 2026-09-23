@@ -24,6 +24,9 @@ import subprocess
 import uuid
 from pathlib import Path
 
+from source_geometry import identity as source_identity
+from source_geometry import resolved_routes
+
 from . import ship
 from .lab_bundle import export_bundle
 from .ledger import now_iso
@@ -159,6 +162,51 @@ def _build_contact_sheet(ctx, layout_id, captures_report, capture_root, context_
     return sheet, None
 
 
+def _build_route_overview(ctx, layout_id, routes_doc, proposal_doc, dest):
+    """The whole-course route overview PNG next to the contact sheet (Phase
+    D1 item 5): required reading for `ship --confirm-route` on an
+    `auto-route-v1` layout (every hole's order, tee/green source, scorecard
+    vs measured yards and confidence -- see `ship.route_confirmation_item`),
+    and produced for an OSM-routed layout too, since ship's own per-hole
+    contact sheet has no way to show hole ORDER. Runs `route-overview.py`
+    as its own subprocess (same pattern as `_build_contact_sheet`'s
+    `build-player-sheet.py`): a rendering failure must never crash `ship`
+    itself, only report `routeOverviewError`. Returns
+    `(path_or_None, error_or_None)`."""
+    layout = ctx.layout(layout_id) or {}
+    facility_id = layout.get('facilityId')
+    out_path = os.path.join(dest, 'route-overview.png')
+    cmd = ['python3', ctx.abspath('scripts/golf/course-geometry/route-overview.py'),
+           '--routes', ctx.routes_path(layout_id), '--out', out_path]
+    if layout.get('name'):
+        cmd += ['--layout-name', layout['name']]
+    if routes_doc.get('source') == 'auto-route-v1':
+        proposal_path = ctx.route_proposal_path(layout_id)
+        if not (proposal_doc and os.path.isfile(proposal_path)):
+            return None, 'ROUTE_PROPOSAL_MISSING: auto-route-v1 routes.json but no route-proposal.json to render'
+        cmd += ['--proposal', proposal_path]
+    elif routes_doc.get('routeWayIds') and facility_id:
+        _manifest, extract_path = ctx.snapshot(facility_id)
+        if not extract_path:
+            return None, 'OSM_SNAPSHOT_MISSING: routeWayIds resolved but no retained OSM extract to render from'
+        cmd += ['--osm', extract_path]
+    else:
+        return None, f'ROUTE_OVERVIEW_UNSUPPORTED_SOURCE: {routes_doc.get("source")!r} has neither a proposal nor routeWayIds'
+    scorecard_path = ctx.scorecard_path(layout_id)
+    if os.path.isfile(scorecard_path):
+        cmd += ['--scorecard', scorecard_path]
+    naip_dir = ctx.naip_dir(layout_id)
+    if naip_dir:
+        naip_manifest = ctx.json(os.path.join(naip_dir, 'manifest.json')) or {}
+        naip_tif = os.path.join(naip_dir, naip_manifest.get('file', 'naip.tif'))
+        if os.path.isfile(naip_tif):
+            cmd += ['--naip', naip_tif]
+    result = subprocess.run(cmd, cwd=ctx.repo_root, capture_output=True, text=True, check=False)
+    if result.returncode != 0:
+        return None, ((result.stdout or '') + (result.stderr or ''))[-1500:]
+    return out_path, None
+
+
 def _publish_stage(ctx, layout_id, out_dir, log_path):
     """publish-course-assets.mts against a local staging folder only -- never
     `public/course-geometry` (its own default). `--compiled` must point at
@@ -217,12 +265,27 @@ def run_ship(session, layout_id, out=None):
     if captures_report and capture_root:
         contact_sheet, contact_sheet_error = _build_contact_sheet(ctx, layout_id, captures_report, capture_root, context_report, dest)
 
+    routes_doc = ctx.json(ctx.routes_path(layout_id), fresh=True)
+    proposal_doc = ctx.json(ctx.route_proposal_path(layout_id), fresh=True) if (routes_doc or {}).get('source') == 'auto-route-v1' else None
+    confirmation_doc = ctx.json(ctx.route_confirmation_path(layout_id), fresh=True)
+    route_confirmation = ship.route_confirmation_item(layout_id, routes_doc, proposal_doc, confirmation_doc)
+
+    route_overview, route_overview_error = (None, None)
+    if resolved_routes(routes_doc):
+        # Required for a proposed-route layout (that is what the owner
+        # reviews at ship --confirm-route); an OSM-routed layout may get one
+        # too, since the whole-course order is otherwise unreviewable next
+        # to the per-hole contact sheet.
+        route_overview, route_overview_error = _build_route_overview(ctx, layout_id, routes_doc, proposal_doc, dest)
+
     package = ctx.package(layout_id)
     report = {'kind': 'golfhelm-factory-ship-qa-v1', 'layoutId': layout_id, 'packageHash': (package or {}).get('contentHash'),
               'runId': run_id, 'status': 'READY_FOR_APPROVAL' if not blockers else 'NOT_READY',
               'dag': {'executed': len(run.executed), 'cached': len(run.cached), 'blocked': len(run.blocked), 'failed': len(run.failed)},
               'blockers': blockers, 'advisory': advisory, 'notes': notes,
               'contactSheet': ctx.relpath(contact_sheet) if contact_sheet else None, 'contactSheetError': contact_sheet_error,
+              'routeConfirmation': route_confirmation,
+              'routeOverview': ctx.relpath(route_overview) if route_overview else None, 'routeOverviewError': route_overview_error,
               'generatedAt': now_iso()}
     qa_path = os.path.join(dest, 'qa-report.json')
     with open(qa_path, 'w', encoding='utf-8') as f:
@@ -243,6 +306,44 @@ def run_ship(session, layout_id, out=None):
             json.dump(proposed, f, indent=1, sort_keys=True)
             f.write('\n')
     return report
+
+
+def cmd_ship_confirm_route(session, args, out):
+    """`ship --confirm-route LAYOUT`: record the owner's review of the
+    current `auto-route-v1` `route-proposal.json` hole order (Phase D1,
+    owner decision 2026-09-23 -- see `ship.route_confirmation_item`'s
+    docstring). Keys the confirmation to `source_identity(raw)`, the exact
+    hash `ctx.route_resolution` also computes for `routes.json`'s
+    `sourceGeometryHash`, so a later, different proposal run (a changed
+    `layout.routes.propose` output) invalidates this confirmation without
+    `ship --approve`'s refusal gate having to compare anything else.
+    Deliberately independent of a full `ship --layout` DAG run: an owner
+    can review and confirm hole order as soon as a proposal exists."""
+    ctx = session.ctx
+    layout_id = args.confirm_route
+    path = ctx.route_proposal_path(layout_id)
+    if not os.path.isfile(path):
+        raise SystemExit(f'no route-proposal.json for {layout_id} at {path}; run '
+                          f'`course-factory.py ship --layout {layout_id}` (or `run --layout {layout_id} '
+                          f'--task layout.routes.propose`) first')
+    raw = ctx.json(path)
+    if not isinstance(raw, dict):
+        raise SystemExit(f'{path} is not a readable document')
+    proposal_hash = source_identity(raw)
+    confirmed_by = args.confirmed_by or os.environ.get('USER') or os.environ.get('USERNAME') or 'unknown'
+    doc = {'kind': 'golfhelm-factory-route-confirmation-v1', 'layoutId': layout_id, 'proposalHash': proposal_hash,
+           'confirmedAt': now_iso(), 'confirmedBy': confirmed_by, 'proposalPath': ctx.relpath(path)}
+    out_path = ctx.route_confirmation_path(layout_id)
+    os.makedirs(os.path.dirname(out_path), exist_ok=True)
+    with open(out_path, 'w', encoding='utf-8') as f:
+        json.dump(doc, f, indent=1, sort_keys=True)
+        f.write('\n')
+    if args.json:
+        out.write(json.dumps(doc, indent=1) + '\n')
+    else:
+        out.write(f'route confirmed for {layout_id}: proposalHash {proposal_hash[:12]} by {confirmed_by}\n')
+        out.write(f'written to {out_path}\n')
+    return 0
 
 
 def cmd_ship_build(session, args, out):

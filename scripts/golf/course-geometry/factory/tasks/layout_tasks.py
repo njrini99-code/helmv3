@@ -82,6 +82,60 @@ def eval_routes_resolve(node, ctx):
     return evaluation(inputs, [], [artifact('routes', path, 'A')] if adoptable else [], adoptable, notes, output=digest(resolution))
 
 
+def eval_routes_propose(node, ctx):
+    """`auto-route-v1`: propose a full tee-to-green route when OSM has no
+    resolvable numbered `golf=hole` series (owner decision 2026-09-23,
+    "build it, confirm at approval"). Writes its own factory-output
+    resolution source under the layout's output directory -- never the
+    catalog's `sourceGeometry`, and never promotes a hole's `identityReview`
+    in place. `layout.routes.resolve` accepts a complete proposal as a
+    resolution whose `source` is `auto-route-v1`; `ship --confirm-route` is
+    the owner's separate, required route-order sign-off before
+    `ship --approve` (see `ship.py`/`ship_publish.py`)."""
+    layout_id = node.scope.layout_id
+    layout = ctx.layout(layout_id) or {}
+    # The base (non-proposal) resolution decides whether a proposal is even
+    # needed -- never the full resolution, which would be circular (see
+    # `Context.route_resolution`'s own docstring).
+    base = ctx.route_resolution(layout_id, include_proposal=False)
+    scorecard = ctx.route_proposal_scorecard(layout_id)
+    _surfaces_path, _surfaces_doc, surfaces_sha = ctx.detected_surfaces(node.scope.facility_id)
+    inputs = {'baseResolution': digest(base), 'scorecard': digest(scorecard),
+              'extract': dep_input(ctx, node, 'facility.osm.snapshot'), 'surfaces': surfaces_sha}
+    if base is None:
+        return evaluation(inputs)  # the OSM extract is not retained yet
+    if resolved_routes(base):
+        # A pin, a retained sourceGeometry/routeTraces import, or a numbered
+        # OSM series already resolves this layout: a proposal must never be
+        # built (or trusted) over one. Mirrors the visual fallback's
+        # `not_required_source_route_available` pattern: a small pointer
+        # artifact records the not-required state (the planner requires at
+        # least one on-disk artifact to treat a node as adoptable).
+        pointer_path = ctx.route_proposal_pointer_path(layout_id)
+        pointer = ctx.json(pointer_path) if ctx.can_adopt(pointer_path) else None
+        valid = bool(pointer and pointer.get('layoutId') == layout_id and pointer.get('status') == 'not_required'
+                     and pointer.get('baseSource') == base['source'])
+        notes = [f'route proposal not required: {base["source"]} already resolves this layout'] if valid else []
+        return evaluation(inputs, [], [artifact('route-proposal-pointer', pointer_path, 'C')] if valid else [], valid, notes,
+                           output=digest(pointer) if valid else None)
+    if not scorecard:
+        return evaluation(inputs)  # the raw scorecard/bbox is not ready yet
+    path = ctx.route_proposal_path(layout_id)
+    raw = ctx.json(path) if ctx.can_adopt(path) else None
+    if not raw:
+        return evaluation(inputs)
+    resolution = ctx.route_resolution(layout_id, include_proposal=True)
+    if not resolved_routes(resolution):
+        return evaluation(inputs, [blocked(resolution.get('problem') or 'ROUTE_PROPOSAL_INCOMPLETE', layoutId=layout_id,
+                                            holes=len(layout.get('holeOrder') or []), **(resolution.get('evidence') or {}))])
+    proposed_rows = [row for row in raw.get('report') or [] if row.get('decision') == 'proposed']
+    confidences = sorted(row.get('confidence') or 0.0 for row in proposed_rows)
+    median_confidence = confidences[len(confidences) // 2] if confidences else None
+    notes = [f'route proposal: {len(proposed_rows)}/{len(layout.get("holeOrder") or [])} holes, '
+             f'producer {raw.get("producer")}, median confidence {median_confidence}']
+    return evaluation(inputs, [], [artifact('route-proposal', path, 'A')], True, notes, output=digest(raw))
+
+
 def eval_route_dossier(node, ctx):
     """Persist route-selection evidence even when no route may be admitted.
 
@@ -250,7 +304,12 @@ def _package_eval(folder_fn, dep_ids, with_canopy=False):
         layout_id = node.scope.layout_id
         inputs = {dep: dep_input(ctx, node, dep) for dep in dep_ids}
         traces = ctx.json(ctx.retained(ctx.layout(layout_id), 'imageryTraces'))
-        imported = ctx.json(ctx.retained(ctx.layout(layout_id), 'sourceGeometry'))
+        # Whichever `--source-geometry` input the executor actually passed to
+        # `prepare-osm-course.py`: the catalog's retained import when
+        # hand-curated, else an accepted `auto-route-v1` proposal -- the one
+        # place both are read from, so adoption hashes the same document the
+        # executor consumed either way (see `Context.effective_source_geometry_path`).
+        imported = ctx.json(ctx.effective_source_geometry_path(layout_id))
         route_traces = ctx.json(ctx.retained(ctx.layout(layout_id), 'routeTraces'))
         inputs['traces'] = digest(traces)
         inputs['sourceGeometry'] = digest(imported)
@@ -597,7 +656,11 @@ def eval_review_compose(node, ctx):
 SPECS = [
     TaskSpec('layout.identity.resolve', '2', 'layout', ('catalog.validate',), eval_identity_resolve, executor=INLINE),
     TaskSpec('layout.scorecard.validate', '1', 'layout', ('catalog.validate',), eval_scorecard_validate, executor=INLINE),
-    TaskSpec('layout.routes.resolve', '3', 'layout', ('layout.identity.resolve', 'layout.scorecard.validate', 'facility.osm.snapshot'), eval_routes_resolve, impl_files=(script('source_geometry.py'), script('factory/context.py')), retention='A', estimated_bytes=10_000),
+    TaskSpec('layout.routes.propose', '1', 'layout', ('layout.identity.resolve', 'layout.scorecard.validate', 'facility.osm.snapshot'), eval_routes_propose,
+             impl_files=(script('propose-routes.py'), script('source_geometry.py'), script('factory/context.py'), script('factory/osm.py'),
+                         script('course_raster.py')) + CRS_FILES,
+             retention='A', estimated_bytes=200_000),
+    TaskSpec('layout.routes.resolve', '3', 'layout', ('layout.identity.resolve', 'layout.scorecard.validate', 'facility.osm.snapshot', 'layout.routes.propose?'), eval_routes_resolve, impl_files=(script('source_geometry.py'), script('factory/context.py')), retention='A', estimated_bytes=10_000),
     TaskSpec('layout.route.dossier', '1', 'layout', ('layout.identity.resolve', 'layout.scorecard.validate', 'facility.osm.snapshot'), eval_route_dossier,
              impl_files=(script('factory/adapters.py'),), retention='C', estimated_bytes=20_000),
     TaskSpec('layout.visual.candidates.compose', '2', 'layout', ('layout.identity.resolve', 'facility.osm.snapshot', 'layout.routes.resolve?', 'layout.terrain.acquire?'), eval_visual_candidates_compose,
