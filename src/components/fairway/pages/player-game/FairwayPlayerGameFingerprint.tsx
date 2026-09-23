@@ -35,7 +35,7 @@
  * serif / skeuomorphic gauges).
  * ========================================================================== */
 
-import { useCallback, useMemo, useState, useTransition } from 'react';
+import { useCallback, useMemo, useState, useTransition, type ReactNode } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
@@ -102,6 +102,15 @@ export interface FairwayPlayerGameFingerprintProps {
   /** @default 'coach' — every existing call site (the coach route) is
    *  unaffected by this prop's addition. */
   mode?: FingerprintMode;
+  /**
+   * Extra, server-built content rendered directly after a given section's
+   * own card (addendum §13 A7). Keyed by `FingerprintSectionKey` so a caller
+   * can target e.g. `approach` (A2's distance profile) or `scoring` (A3)
+   * without this component knowing anything about either surface. Omitted
+   * or `undefined` for a key renders nothing extra — every existing call
+   * site is byte-for-byte unaffected by this prop's addition.
+   */
+  sectionAddenda?: Partial<Record<FingerprintSectionKey, ReactNode>>;
 }
 
 /* ───────────────────────────────────────────────────────────────────────────
@@ -182,6 +191,7 @@ export function formatGeneratedAt(iso: string): string {
 export function FairwayPlayerGameFingerprint({
   fingerprint,
   mode = 'coach',
+  sectionAddenda,
 }: FairwayPlayerGameFingerprintProps) {
   const router = useRouter();
   const golfUser = useGolfUser();
@@ -463,13 +473,15 @@ export function FairwayPlayerGameFingerprint({
 
         {/* ════════════════ 3 · GAME AREAS — the six sections ═══════════════ */}
         {orderedSections.map((section, index) => (
-          <FingerprintSection
-            key={section.key}
-            section={section}
-            index={index}
-            pendingIds={pendingIds}
-            onAction={handleAction}
-          />
+          <div key={section.key} className="space-y-4">
+            <FingerprintSection
+              section={section}
+              index={index}
+              pendingIds={pendingIds}
+              onAction={handleAction}
+            />
+            {sectionAddenda?.[section.key]}
+          </div>
         ))}
 
         {/* ════════════════ 4 · GENERATED-AT footnote ═══════════════════════ */}
