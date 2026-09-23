@@ -328,6 +328,51 @@ describe('logFocusAreaPracticeSession', () => {
     });
   });
 
+  it('stores the trimmed drillId and note, not the raw untrimmed values', async () => {
+    const focusAreaTable = makeFocusAreaTable({
+      data: { player_id: 'player-1', status: 'active' },
+      error: null,
+    });
+    const sessionsTable = makeSessionsTable();
+    createClientMock.mockReturnValue(makeClient({ focusAreaTable, sessionsTable }));
+    verifyPlayerAccessMock.mockResolvedValue({ allowed: true, reason: 'self' });
+
+    const result = await logFocusAreaPracticeSession({
+      focusAreaId: FOCUS_AREA_ID,
+      clientRequestId: REQ_ID,
+      drillId: '  putting-drill-1  ',
+      note: '  felt good  ',
+    });
+
+    expect(result).toEqual({ success: true });
+    expect(sessionsTable._lastPayload()).toMatchObject({
+      drill_id: 'putting-drill-1',
+      note: 'felt good',
+    });
+  });
+
+  it('rejects a drillId/note that only exceeds the cap once trimmed is validated on the trimmed value', async () => {
+    // Padding on both sides that pushes the RAW length over 100/1000 but the
+    // TRIMMED length is exactly at the cap -- must be accepted, matching the
+    // migration's DB CHECKs which apply to the stored (trimmed) value.
+    const focusAreaTable = makeFocusAreaTable({
+      data: { player_id: 'player-1', status: 'active' },
+      error: null,
+    });
+    const sessionsTable = makeSessionsTable();
+    createClientMock.mockReturnValue(makeClient({ focusAreaTable, sessionsTable }));
+    verifyPlayerAccessMock.mockResolvedValue({ allowed: true, reason: 'self' });
+
+    const result = await logFocusAreaPracticeSession({
+      focusAreaId: FOCUS_AREA_ID,
+      clientRequestId: REQ_ID,
+      drillId: `  ${'x'.repeat(100)}  `,
+    });
+
+    expect(result).toEqual({ success: true });
+    expect(sessionsTable._lastPayload()).toMatchObject({ drill_id: 'x'.repeat(100) });
+  });
+
   it('logs a session for a coach as logged_by_role coach', async () => {
     const focusAreaTable = makeFocusAreaTable({
       data: { player_id: 'player-1', status: 'active' },
@@ -553,6 +598,16 @@ describe('setFocusAreaCriterionMet', () => {
       met: true,
     });
     expect(result).toEqual({ success: false, error: 'Invalid criterion.' });
+    expect(createClientMock).not.toHaveBeenCalled();
+  });
+
+  it('rejects a non-boolean met as a clean validation error, before createClient', async () => {
+    const result = await setFocusAreaCriterionMet({
+      focusAreaId: FOCUS_AREA_ID,
+      criterionId: CRITERION_ID,
+      met: 'true' as unknown as boolean,
+    });
+    expect(result).toEqual({ success: false, error: 'Invalid value for met.' });
     expect(createClientMock).not.toHaveBeenCalled();
   });
 

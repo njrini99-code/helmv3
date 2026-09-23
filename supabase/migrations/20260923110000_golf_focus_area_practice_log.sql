@@ -34,10 +34,12 @@
 -- coachhelm_focus_area_practice_log flag (config/feature-flags.yml) gating
 -- every read AND write of either surface until the owner applies this
 -- migration in each environment. "Additive, no lock" is true of the base
--- tables themselves; the two new foreign keys DO take a SHARE ROW
--- EXCLUSIVE lock on golf_player_focus_areas and golf_players respectively
--- while validating, same as any other FK-carrying table added against a
--- live parent.
+-- tables themselves; all four new foreign keys (two per table, into
+-- golf_player_focus_areas and golf_players) DO take a SHARE ROW EXCLUSIVE
+-- lock on the referenced parent while validating, same as any other
+-- FK-carrying table added against a live parent — they're grouped at the
+-- end of this migration, after every other DDL for both tables, so that
+-- lock window is as short as possible.
 --
 -- ROLLBACK: additive only.
 --   DROP TABLE IF EXISTS public.golf_focus_area_practice_sessions;
@@ -48,7 +50,12 @@
 -- VERIFY: select 1 where (select relrowsecurity from pg_class where oid = 'public.golf_focus_area_practice_sessions'::regclass); -- noqa: LT05
 -- VERIFY: select 1 where (select relrowsecurity from pg_class where oid = 'public.golf_focus_area_criteria'::regclass); -- noqa: LT05
 -- VERIFY: select 1 from pg_constraint where conname = 'golf_focus_area_practice_sessions_dedupe_key'; -- noqa: LT05
+-- VERIFY: select 1 from pg_constraint where conname = 'golf_focus_area_practice_sessions_note_length_check'; -- noqa: LT05
+-- VERIFY: select 1 from pg_constraint where conname = 'golf_focus_area_practice_sessions_drill_id_length_check'; -- noqa: LT05
+-- VERIFY: select 1 from pg_indexes where schemaname = 'public' and indexname = 'golf_focus_area_practice_sessions_player_id_idx'; -- noqa: LT05
 -- VERIFY: select 1 from pg_indexes where schemaname = 'public' and indexname = 'golf_focus_area_criteria_label_unique_idx'; -- noqa: LT05
+-- VERIFY: select 1 from pg_constraint where conname = 'golf_focus_area_criteria_met_consistency_check'; -- noqa: LT05
+-- VERIFY: select 1 from pg_indexes where schemaname = 'public' and indexname = 'golf_focus_area_criteria_player_id_idx'; -- noqa: LT05
 -- VERIFY: select 1 from pg_policies where schemaname = 'public' and tablename = 'golf_focus_area_practice_sessions' and policyname = 'practice_sessions_select_via_focus_area'; -- noqa: LT05
 -- VERIFY: select 1 from pg_policies where schemaname = 'public' and tablename = 'golf_focus_area_practice_sessions' and policyname = 'practice_sessions_insert_via_focus_area'; -- noqa: LT05
 -- VERIFY: select 1 from pg_policies where schemaname = 'public' and tablename = 'golf_focus_area_criteria' and policyname = 'criteria_select_via_focus_area'; -- noqa: LT05
@@ -83,7 +90,11 @@ CREATE TABLE IF NOT EXISTS public.golf_focus_area_practice_sessions (
     CONSTRAINT golf_focus_area_practice_sessions_logged_by_role_check
     CHECK ((logged_by_role = any(ARRAY['player'::text, 'coach'::text]))),
     CONSTRAINT golf_focus_area_practice_sessions_reps_check
-    CHECK ((reps IS NULL OR (reps >= 0 AND reps <= 1000)))
+    CHECK ((reps IS NULL OR (reps >= 0 AND reps <= 1000))),
+    CONSTRAINT golf_focus_area_practice_sessions_note_length_check
+    CHECK ((note IS NULL OR char_length(note) <= 1000)),
+    CONSTRAINT golf_focus_area_practice_sessions_drill_id_length_check
+    CHECK ((drill_id IS NULL OR char_length(drill_id) <= 100))
 );
 
 ALTER TABLE public.golf_focus_area_practice_sessions OWNER TO "postgres";
@@ -101,24 +112,9 @@ ALTER TABLE ONLY public.golf_focus_area_practice_sessions
 ADD CONSTRAINT golf_focus_area_practice_sessions_dedupe_key
 UNIQUE (focus_area_id, client_request_id);
 
--- ON DELETE CASCADE (not the NO ACTION default) deliberately: deleteFocusArea
--- (src/app/golf/actions/development.ts) does a hard DELETE on
--- golf_player_focus_areas, not a soft/status change. Under the default
--- NO ACTION, that delete would start failing with a foreign-key violation
--- the moment any practice session exists for the focus area being deleted.
-ALTER TABLE ONLY public.golf_focus_area_practice_sessions
-ADD CONSTRAINT golf_focus_area_practice_sessions_focus_area_id_fkey
-FOREIGN KEY (focus_area_id) REFERENCES public.golf_player_focus_areas (
-    id
-) ON DELETE CASCADE;
-
--- Same convention as golf_player_focus_areas_player_id_fkey: deleting the
--- player's own row cascades away everything scoped to them.
-ALTER TABLE ONLY public.golf_focus_area_practice_sessions
-ADD CONSTRAINT golf_focus_area_practice_sessions_player_id_fkey
-FOREIGN KEY (player_id) REFERENCES public.golf_players (
-    id
-) ON DELETE CASCADE;
+-- The two FOREIGN KEY constraints for this table are added at the end of
+-- this migration, grouped with the criteria table's two -- see the header
+-- and the block near the bottom of this file for why.
 
 -- No FK to auth.users for logged_by_user_id, matching this repo's existing
 -- convention (no table here foreign-keys into the auth schema) -- validated
@@ -140,6 +136,12 @@ ON public.golf_focus_area_practice_sessions (
 
 CREATE INDEX IF NOT EXISTS golf_focus_area_practice_sessions_practiced_at_idx
 ON public.golf_focus_area_practice_sessions (practiced_at);
+
+-- The ON DELETE CASCADE from golf_players (added at the end of this
+-- migration) scans this table for every deleted player without an index on
+-- player_id -- neither of the two indexes above leads with this column.
+CREATE INDEX IF NOT EXISTS golf_focus_area_practice_sessions_player_id_idx
+ON public.golf_focus_area_practice_sessions (player_id);
 
 ALTER TABLE public.golf_focus_area_practice_sessions ENABLE ROW LEVEL SECURITY;
 
@@ -166,11 +168,12 @@ USING (
 -- the source-of-truth policy for that identity on golf_player_focus_areas
 -- itself (golf_player_focus_areas_insert_coach for the coach branch,
 -- golf_player_focus_areas_update_player for the player branch), so this
--- table's access model can never drift from the parent's. Both branches
--- also require the parent focus area to be in an actionable lifecycle
--- state (mirrors the action layer's own lifecycle guard) -- a session
--- can't be logged against a 'proposed' (not yet accepted) or 'declined'
--- focus area, closing the gap between what the action checks and what a
+-- table's access model can never drift from the parent's. The parent focus
+-- area's lifecycle is checked ONCE, in the shared top-level EXISTS above
+-- (mirrors the action layer's own lifecycle guard), not independently
+-- inside each branch -- a session can't be logged against a 'proposed'
+-- (not yet accepted) or 'declined' focus area regardless of which role is
+-- claiming the write, closing the gap between what the action checks and what a
 -- client hitting PostgREST directly could otherwise do.
 CREATE POLICY practice_sessions_insert_via_focus_area
 ON public.golf_focus_area_practice_sessions FOR INSERT TO authenticated
@@ -225,7 +228,8 @@ GRANT SELECT,
 INSERT ON TABLE public.golf_focus_area_practice_sessions TO authenticated;
 GRANT ALL ON TABLE public.golf_focus_area_practice_sessions TO service_role;
 
-SET LOCAL lock_timeout = '5s';
+-- No second SET LOCAL here: lock_timeout is already set for the rest of
+-- this transaction by the one at the top of this migration.
 
 CREATE TABLE IF NOT EXISTS public.golf_focus_area_criteria (
     id uuid DEFAULT extensions.uuid_generate_v4() NOT NULL,
@@ -241,7 +245,9 @@ CREATE TABLE IF NOT EXISTS public.golf_focus_area_criteria (
     CONSTRAINT golf_focus_area_criteria_source_check
     CHECK ((source = any(ARRAY['coach'::text, 'engine'::text]))),
     CONSTRAINT golf_focus_area_criteria_label_length_check
-    CHECK ((char_length(label) >= 1 AND char_length(label) <= 200))
+    CHECK ((char_length(label) >= 1 AND char_length(label) <= 200)),
+    CONSTRAINT golf_focus_area_criteria_met_consistency_check
+    CHECK ((met = (met_at IS NOT NULL)))
 );
 
 ALTER TABLE public.golf_focus_area_criteria OWNER TO "postgres";
@@ -249,17 +255,9 @@ ALTER TABLE public.golf_focus_area_criteria OWNER TO "postgres";
 ALTER TABLE ONLY public.golf_focus_area_criteria
 ADD CONSTRAINT golf_focus_area_criteria_pkey PRIMARY KEY (id);
 
-ALTER TABLE ONLY public.golf_focus_area_criteria
-ADD CONSTRAINT golf_focus_area_criteria_focus_area_id_fkey
-FOREIGN KEY (focus_area_id) REFERENCES public.golf_player_focus_areas (
-    id
-) ON DELETE CASCADE;
-
-ALTER TABLE ONLY public.golf_focus_area_criteria
-ADD CONSTRAINT golf_focus_area_criteria_player_id_fkey
-FOREIGN KEY (player_id) REFERENCES public.golf_players (
-    id
-) ON DELETE CASCADE;
+-- The two FOREIGN KEY constraints for this table are added at the end of
+-- this migration, grouped with the sessions table's two -- see the header
+-- and the block near the bottom of this file for why.
 
 -- No FK to auth.users for created_by_user_id, matching this repo's existing
 -- convention -- validated against auth.uid() by the INSERT policy below and
@@ -272,6 +270,12 @@ FOREIGN KEY (player_id) REFERENCES public.golf_players (
 -- error instead.
 CREATE UNIQUE INDEX IF NOT EXISTS golf_focus_area_criteria_label_unique_idx -- noqa: LT05
 ON public.golf_focus_area_criteria (focus_area_id, lower(label));
+
+-- The ON DELETE CASCADE from golf_players (added at the end of this
+-- migration) scans this table for every deleted player without this index;
+-- the unique index above leads with focus_area_id, not player_id.
+CREATE INDEX IF NOT EXISTS golf_focus_area_criteria_player_id_idx
+ON public.golf_focus_area_criteria (player_id);
 
 COMMENT ON TABLE public.golf_focus_area_criteria IS
 'A8 slice 2: coach-authored (or engine-suggested) "done" definitions for a focus area -- one row per criterion, not a jsonb column on golf_player_focus_areas (see this migration''s header for why). INSERT is coach-only; UPDATE is coach-only and column-restricted to (met, met_at, updated_at) via GRANT, so a coach can mark a criterion met/unmet but never rewrite its label or source. The cap of ~10 per focus area is enforced in the action layer, acceptable because INSERT is coach-gated. Gated behind config/feature-flags.yml''s coachhelm_focus_area_practice_log flag (default off) until this migration is applied in production.'; -- noqa: LT05
@@ -377,3 +381,42 @@ INSERT ON TABLE public.golf_focus_area_criteria TO authenticated;
 GRANT UPDATE (met, met_at, updated_at) ON TABLE public.golf_focus_area_criteria -- noqa: LT05
 TO authenticated;
 GRANT ALL ON TABLE public.golf_focus_area_criteria TO service_role;
+
+-- All four foreign keys, grouped here at the end of the migration: by this
+-- point every other DDL for both tables (indexes, RLS, policies, grants) is
+-- already in place, so each ADD CONSTRAINT ... FOREIGN KEY -- which takes a
+-- SHARE ROW EXCLUSIVE lock on the referenced parent (golf_player_focus_areas
+-- or golf_players, both live/high-traffic) while validating -- runs back to
+-- back instead of being interleaved with slower, unrelated DDL earlier in
+-- the transaction, keeping that lock window as short as possible.
+
+-- ON DELETE CASCADE (not the NO ACTION default) deliberately: deleteFocusArea
+-- (src/app/golf/actions/development.ts) does a hard DELETE on
+-- golf_player_focus_areas, not a soft/status change. Under the default
+-- NO ACTION, that delete would start failing with a foreign-key violation
+-- the moment any practice session exists for the focus area being deleted.
+ALTER TABLE ONLY public.golf_focus_area_practice_sessions
+ADD CONSTRAINT golf_focus_area_practice_sessions_focus_area_id_fkey
+FOREIGN KEY (focus_area_id) REFERENCES public.golf_player_focus_areas (
+    id
+) ON DELETE CASCADE;
+
+-- Same convention as golf_player_focus_areas_player_id_fkey: deleting the
+-- player's own row cascades away everything scoped to them.
+ALTER TABLE ONLY public.golf_focus_area_practice_sessions
+ADD CONSTRAINT golf_focus_area_practice_sessions_player_id_fkey
+FOREIGN KEY (player_id) REFERENCES public.golf_players (
+    id
+) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.golf_focus_area_criteria
+ADD CONSTRAINT golf_focus_area_criteria_focus_area_id_fkey
+FOREIGN KEY (focus_area_id) REFERENCES public.golf_player_focus_areas (
+    id
+) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.golf_focus_area_criteria
+ADD CONSTRAINT golf_focus_area_criteria_player_id_fkey
+FOREIGN KEY (player_id) REFERENCES public.golf_players (
+    id
+) ON DELETE CASCADE;
