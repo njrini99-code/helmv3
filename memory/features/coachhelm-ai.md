@@ -488,6 +488,46 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
   par-5 opportunity metrics" section and
   `src/test/coachhelm/v3/par-opportunities.test.ts` for the fixtures,
   including the two-course same-hole-number case.
+- **`src/lib/coachhelm/v3/metrics/sequence-attribution.ts`** (2026-09-23,
+  `agent/coachhelm-sequence-attribution`, addendum §13, work package A4
+  slice 1) — `attributeSequence(facts, hole, scope)` partitions one hole's
+  A1-validated shots into non-overlapping events (a penalty always its own
+  singleton, §7.3 views — `tee_to_next`, a CHAINED `approach_to_recovery`
+  covering repeated recovery attempts, `first_putt_to_next_putt` always a
+  singleton for the first putt, and a CHAINED `putting_sequence` covering
+  every putt after the first — plus an `'other'` residual) and computes a
+  strokes-gained-style `measuredContribution` per event by reusing the
+  CANONICAL, DB-synced baseline (`getExpectedStrokes` in
+  `src/lib/utils/golf-stats-calculator-shots.ts`, kept in sync with
+  `public.sg_expected_strokes()`) — no second baseline invented.
+  `src/lib/golf/strokes-gained.ts` is quarantined dead code with similar but
+  unpatched-on-drift tables and must never be imported for this. On the
+  green, `distanceFeet` passes straight through (no feet→yards round trip);
+  an unmapped lie resolves via the fairway table (matching the DB
+  function's ELSE branch), not a gap. Summed contributions telescope to
+  `expectedStrokesAtStart - hole.total_strokes` whenever every event
+  resolves one. Suppresses the whole hole (no events, no total) when
+  `buildHoleSequence` reports the sequence incomplete, but still reports
+  `lostStrokesVsPar` (`total_strokes - par`), which reads only the hole's
+  authoritative totals. When an event's endpoint state can't resolve
+  against the baseline (a missing lie, or a missing distance — e.g. a
+  penalty with no usable after-distance, a real pattern in production),
+  that event's `measuredContribution` is `null` with a `baselineGap`
+  reason and a non-null `heuristicScore` (the event's own known ending
+  distance, when it has one), the hole-level total becomes `null` rather
+  than a silent partial sum, and the shortfall shows up in `exclusions`
+  (counts) plus `lostStrokesVsPar`. An explicitly tagged `intent: 'layup'`
+  is excluded from the missed-green/recovery view (a deliberate lay-up is a
+  different named family, never inferred here); a par-3 tee shot is the
+  green attempt, never `tee_to_next` — both decided by `hole.par`/an
+  explicit tag, never inferred from distance or outcome. `lie_after` →
+  next shot's `lie_before` continuity is assumed, not validated. **Not
+  wired to anything yet**: no `v2/orchestrator.ts` or composite consumer,
+  no `hypothesis-policy.ts` — that's slice 2, which should consume the
+  shared `MetricResult` landing in `metrics/types.ts` via #1990
+  (`MetricResult` does not exist on `main` yet). See
+  `docs/architecture/coachhelm-evidence-contract.md`'s "Sequence
+  attribution" section.
 
 ## Tests To Prefer
 
