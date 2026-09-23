@@ -1432,11 +1432,11 @@ Repair-plan §14.12 Package 10's gate: *"Improvement is not attributed to a
 mere page view, repeated cron scan, or unrelated later round. Missing
 post-action evidence remains unknown."* Most of the checklist ((a) real
 measurement method, (b) versioned outcomes, (e) limited language, (f)
-neutral personalization weights) was already covered on main or by #2023/
-#2007/#2016 by the time of this audit — see PR #2034's description for the
-full item-by-item map. Two items are named here as genuine, currently-open
-gaps rather than built, because both need product/owner decisions or a
-migration this slice does not make:
+neutral personalization weights) was already covered on main or by issue
+2023, issue 2007 and issue 2016 by the time of this audit — see PR #2034's
+description for the full item-by-item map. Two items are named here as
+genuine, currently-open gaps rather than built, because both need
+product/owner decisions or a migration this slice does not make:
 
 - **Uncertainty (variance/SE/CI on the observed lift)**: neither
   `causality/attribute.ts`'s round-level path nor this doc's
@@ -1460,8 +1460,8 @@ migration this slice does not make:
   (`golf_insight_exposure`) the way the shot-level path does, or accepting
   the proxy permanently and documenting why. Not decided or built by #2034.
 
-Two related decisions were escalated to the owner rather than resolved in
-#2034 (see that PR's description): whether the new
+Two related decisions were escalated to the owner rather than resolved in #2034
+(see that PR's description): whether the new
 `coachhelm_trust_status_exclude_unmeasured_outcomes` flag (the missingness
 fix — a null-`improvement` `golf_insight_outcome` row from a thin-sample
 attribution no longer counts as `measured`) should be enabled, and whether
