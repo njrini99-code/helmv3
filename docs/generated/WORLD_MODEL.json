@@ -17251,12 +17251,12 @@
         {
           "kind": "import_graph",
           "path": "src/lib/coachhelm/v3/causality/comparable-attribute.ts",
-          "line": 50
+          "anchor": "src/lib/supabase/untyped"
         },
         {
           "kind": "import_graph",
           "path": "src/lib/coachhelm/v3/causality/confounding-check.ts",
-          "line": 44
+          "anchor": "src/lib/supabase/fetch-all-rows"
         },
         {
           "kind": "import_graph",
