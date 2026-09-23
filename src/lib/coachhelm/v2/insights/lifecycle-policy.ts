@@ -5,7 +5,7 @@
  *
  * State graph:
  *
- *   insert ──(conf >= floor)──► detected ──(3 movements)──► matured ► addressed ► resolved
+ *   insert ──(conf >= floor)──► detected ──(3 independent confirmations)──► matured ► addressed ► resolved
  *     │                            ▲
  *     └──(conf < floor)──► tentative ──(conf >= floor, team gate open)──┘
  *
@@ -18,10 +18,21 @@
  * held 326 tentative v3 rows, 167 with real sample support. Only the cron's
  * demotion edge (detected → tentative on decayed confidence) existed.
  *
+ * 2026-09-22 (R1/R2 leftovers): maturation used to advance on ANY >=5% write
+ * (`movement_count`), including a swing counted while the row was still
+ * `tentative` (invisible). A row could accumulate 3 movements pre-promotion
+ * and jump straight to `matured` on its FIRST post-promotion write — "matured"
+ * without ever having been seen. Maturation now requires `MATURATION_CONFIRMATIONS`
+ * DISTINCT evidence revisions (`evidenceRevisionKey`, keyed off `sample_n` +
+ * `window_end` by the caller) counted only while the row is `detected`, and the
+ * confirmation list is reset to empty on every `promoted`/`resurrected`
+ * transition — a movement recorded before the row became visible never counts
+ * toward maturing it. `metadata.movement_count` (raw >=5% swing counter, used
+ * by the cron's Rule 2 "never moved" archive check) is unaffected — it is a
+ * different question ("did this ever move at all") from "how many independent
+ * new-round confirmations has this had since becoming visible".
+ *
  * Deliberately NOT done here:
- *  - No promotion straight to `matured`: `movement_count` tracks >=5% value
- *    swings, not independent confirmations, so an old counter reaching 3 says
- *    nothing about a row that was never visible.
  *  - No `status` handling: a coach dismissal (`status='dismissed'`) hides the
  *    row regardless of lifecycle and is never written by the engine.
  *  - No cron-side promotion: only a write carrying freshly recomputed
@@ -32,8 +43,8 @@ import type { InsightLifecycleState } from './types';
 
 /** Confidence at or above which a row is coach-visible on insert / promotion. */
 export const TENTATIVE_CONFIDENCE_FLOOR = 0.4;
-/** >=5% value movements needed for detected → matured. */
-export const MATURATION_MOVEMENTS = 3;
+/** Distinct new-evidence confirmations needed for detected → matured. */
+export const MATURATION_CONFIRMATIONS = 3;
 
 export type LifecycleTransition = 'none' | 'promoted' | 'matured' | 'resurrected';
 
@@ -42,16 +53,35 @@ export interface LifecycleWriteDecision {
   transition: LifecycleTransition;
   /** True when this write takes the row from invisible to coach-visible. */
   becomesVisible: boolean;
+  /**
+   * New value for `metadata.maturation_keys` when it changed this write
+   * (a fresh confirmation was recorded, or the list was reset on
+   * promotion/resurrection). `undefined` means "leave metadata alone" —
+   * distinct from `[]`, which means "persist an explicit reset".
+   */
+  maturationKeys?: readonly string[];
 }
 
 export interface LifecycleWriteInput {
   existing: InsightLifecycleState | null;
   /** Freshly recomputed confidence for THIS write (never the stored value). */
   confidence: number;
-  /** `metadata.movement_count` after this write (unchanged on a refresh). */
-  nextMovementCount: number;
   /** True only on the >=5% movement branch. */
   movedThisWrite: boolean;
+  /**
+   * Fingerprint of the evidence driving THIS write — e.g. `${sample_n}|
+   * ${window_end}`. Two writes over the identical source rounds share a key;
+   * a genuinely new completed round changes it. Only used when `existing`
+   * is `detected` and `movedThisWrite` is true.
+   */
+  evidenceRevisionKey: string;
+  /**
+   * Distinct evidence-revision keys already counted toward maturation
+   * (`metadata.maturation_keys`, empty when absent). Reset to `[]` by the
+   * caller whenever the row (re)entered `detected` via `promoted` or
+   * `resurrected` — see `maturationKeys` on the decision.
+   */
+  priorMaturationKeys: readonly string[];
   /** Team gate (`golf_team_coachhelm_settings.preferences.tentative_promotion_enabled`). */
   promotionEnabled: boolean;
 }
@@ -68,24 +98,34 @@ export function resolveLifecycleOnWrite(input: LifecycleWriteInput): LifecycleWr
     // RESURRECTION (to-95 audit P2): a re-emitted signature whose row was
     // archived must return to a visible state through the SAME confidence
     // gate as a fresh insert (regrade NEW-P2) — never straight to visible on
-    // sub-floor confidence.
+    // sub-floor confidence. A fresh visibility period starts a fresh
+    // maturation count: confirmations from before the archive must not carry
+    // over and let a resurrected row mature on its very next movement.
     const next = resolveLifecycleOnInsert(input.confidence);
-    return { next, transition: 'resurrected', becomesVisible: next === 'detected' };
+    return { next, transition: 'resurrected', becomesVisible: next === 'detected', maturationKeys: [] };
   }
 
   if (existing === 'tentative') {
     if (clearsFloor && input.promotionEnabled) {
-      return { next: 'detected', transition: 'promoted', becomesVisible: true };
+      // Becoming visible for the first time: any movements counted while
+      // invisible must not carry over (2026-09-22 gap — see header).
+      return { next: 'detected', transition: 'promoted', becomesVisible: true, maturationKeys: [] };
     }
     return { next: 'tentative', transition: 'none', becomesVisible: false };
   }
 
-  if (
-    existing === 'detected' &&
-    input.movedThisWrite &&
-    input.nextMovementCount >= MATURATION_MOVEMENTS
-  ) {
-    return { next: 'matured', transition: 'matured', becomesVisible: false };
+  if (existing === 'detected') {
+    let keys = input.priorMaturationKeys;
+    if (input.movedThisWrite && !keys.includes(input.evidenceRevisionKey)) {
+      keys = [...keys, input.evidenceRevisionKey];
+    }
+    if (keys.length >= MATURATION_CONFIRMATIONS) {
+      return { next: 'matured', transition: 'matured', becomesVisible: false, maturationKeys: keys };
+    }
+    if (keys !== input.priorMaturationKeys) {
+      return { next: 'detected', transition: 'none', becomesVisible: false, maturationKeys: keys };
+    }
+    return { next: 'detected', transition: 'none', becomesVisible: false };
   }
 
   return { next: existing, transition: 'none', becomesVisible: false };

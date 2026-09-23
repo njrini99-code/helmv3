@@ -39,11 +39,20 @@ function createFakeSupabase(existingRow: Record<string, unknown> | null) {
         calls.push({ table, op: 'select' });
         return Promise.resolve({ data: existingRow ? [existingRow] : [], error: null });
       }),
+      // Chainable .eq()/.is() (the CAS guard adds a second filter beyond
+      // `.eq('id', …)`), terminated by `.select('id')` as `updateExisting`
+      // now does. Defaults to a successful CAS match.
       update: vi.fn((payload: Record<string, unknown>) => {
-        calls.push({ table, op: 'update', payload });
-        return {
-          eq: () => Promise.resolve({ data: null, error: null }),
+        const filters: Record<string, unknown> = {};
+        const chain = {
+          eq: (col: string, val: unknown) => { filters[col] = val; return chain; },
+          is: (col: string, val: unknown) => { filters[`${col}__is`] = val; return chain; },
+          select: (_cols?: string) => {
+            calls.push({ table, op: 'update', payload });
+            return Promise.resolve({ data: [{ id: filters.id ?? existingRow?.id }], error: null });
+          },
         };
+        return chain;
       }),
     };
     return thenable;

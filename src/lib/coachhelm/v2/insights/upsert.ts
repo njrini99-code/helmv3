@@ -15,8 +15,11 @@
  *      * |new.your_value - existing.evidence.your_value| / existing < 5% →
  *        refresh evidence + content; don't touch lifecycle_state.
  *      * >= 5% movement → update evidence + content; set metadata.movement;
- *        increment metadata.movement_count. When count reaches 3 and current
- *        state is 'detected', promote to 'matured'.
+ *        increment metadata.movement_count (a raw "did this ever move" tally,
+ *        read only by the cron's Rule 2 archive check — see lifecycle-policy.ts
+ *        for the SEPARATE maturation-confirmation count, which requires
+ *        MATURATION_CONFIRMATIONS distinct evidence revisions recorded while
+ *        the row is 'detected' before promoting to 'matured').
  *      * EITHER branch: a 'tentative' row whose freshly recomputed confidence
  *        clears TENTATIVE_CONFIDENCE_FLOOR is promoted to 'detected'
  *        (2026-09-12 RC0 — this edge was missing; see lifecycle-policy.ts).
@@ -25,7 +28,11 @@
  *    confidence < 0.4) else 'detected'.
  *
  *  All lifecycle decisions are made by the pure evaluator in
- *  ./lifecycle-policy.ts; this file only persists them.
+ *  ./lifecycle-policy.ts; this file only persists them, guarded by an
+ *  optimistic compare-and-set on `lifecycle_state` (2026-09-22) so a
+ *  concurrent coach dismissal/acknowledge/archive/resolve — or another
+ *  concurrent engine write — is never silently overwritten by a decision
+ *  computed from a stale read. See `updateExisting`'s CAS block.
  *
  * attachDrills() pulls up to 3 drills from golf_drills matching the insight's
  * category + tags, ranked by number of overlapping tags.
@@ -254,11 +261,24 @@ async function updateExisting(
     ? await isTentativePromotionEnabled(supabase, teamId)
     : true;
 
+  // Maturation confirmations are tracked separately from `movement_count`
+  // (the raw >=5% swing counter, used only by the cron's "never moved"
+  // archive check). A confirmation is keyed to the evidence revision driving
+  // THIS write so two writes over the identical source rounds — a re-emit,
+  // or the same round re-evaluated by a different generator run — never
+  // count twice, and only movements recorded while the row is already
+  // `detected` count at all (see lifecycle-policy.ts header, 2026-09-22).
+  const priorMaturationKeys: readonly string[] = Array.isArray(priorMetadata.maturation_keys)
+    ? (priorMetadata.maturation_keys as unknown[]).filter((k): k is string => typeof k === 'string')
+    : [];
+  const evidenceRevisionKey = `${evidence.sample_n}|${evidence.window_end}`;
+
   const decision: LifecycleWriteDecision = resolveLifecycleOnWrite({
     existing: existing.lifecycle_state,
     confidence: evidence.confidence,
-    nextMovementCount,
     movedThisWrite,
+    evidenceRevisionKey,
+    priorMaturationKeys,
     promotionEnabled,
   });
 
@@ -279,6 +299,12 @@ async function updateExisting(
     };
     mergedMetadata.movement = movement;
     mergedMetadata.movement_count = nextMovementCount;
+  }
+  // Persist the maturation confirmation list whenever the evaluator changed
+  // it — a fresh confirmation, or an explicit reset on promotion/resurrection.
+  // `undefined` means "leave metadata.maturation_keys alone".
+  if (decision.maturationKeys !== undefined) {
+    mergedMetadata.maturation_keys = decision.maturationKeys;
   }
 
   const updatePayload: Record<string, unknown> = {
@@ -324,14 +350,45 @@ async function updateExisting(
       break;
   }
 
-  const { error } = await supabase
+  // Optimistic compare-and-set (2026-09-22 R1/R2 leftover): this whole write
+  // was decided from `existing.lifecycle_state` read at the top of
+  // `updateExisting`. Between that read and this write, a coach action
+  // (dismiss/acknowledge/archive/resolve — `src/app/golf/actions/insights.ts`,
+  // `intelligence-dashboard.ts`) or another concurrent engine write (a
+  // duplicate analysis run, the lifecycle cron, a generator's stale-scope
+  // sweep) can have moved `lifecycle_state` off the value we observed. Guard
+  // the UPDATE on it, matching the pattern already used by
+  // `generator-base.ts`'s and `synthesis.ts`'s archive sweeps — never land a
+  // decision computed from a stale snapshot on top of whatever the row is
+  // NOW.
+  let casUpdate = supabase
     .from('golf_coach_insights')
     .update(updatePayload)
     .eq('id', existing.id);
+  casUpdate = existing.lifecycle_state === null
+    ? casUpdate.is('lifecycle_state', null)
+    : casUpdate.eq('lifecycle_state', existing.lifecycle_state);
+  const { data: casRows, error } = await casUpdate.select('id');
 
   if (error) {
     const branch = movedThisWrite ? 'update' : 'refresh';
     throw new Error(`upsertInsight.${branch} failed: ${error.message}`);
+  }
+
+  if (!casRows || casRows.length === 0) {
+    // Lost the race: `lifecycle_state` no longer matches what we read, so
+    // NONE of this write applied (evidence refresh included). Do not retry
+    // and clobber whatever won — log and hand back the row's identity
+    // unchanged. The next analysis run re-reads the current state and
+    // decides fresh; a lost evidence refresh this run is not a lost insight.
+    await logServerError(
+      `upsertInsight.updateExisting: lost lifecycle CAS race for insight=${existing.id} ` +
+        `(observed lifecycle_state=${existing.lifecycle_state ?? 'null'}, attempted transition=${decision.transition}); ` +
+        `skipping write to avoid clobbering a concurrent lifecycle change`,
+      { action: 'coachhelm.upsert.updateExisting.cas', featureArea: 'coachhelm', extra: { insightId: existing.id } },
+      'warning',
+    );
+    return existing.id;
   }
 
   // Wave 1B — post-write push hook. The notifier only pushes on matured /

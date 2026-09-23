@@ -124,8 +124,15 @@ const NEGATIVE_METRIC_PATTERN =
  *      for it;
  *   3. the name-pattern fallback for non-registry composite metric strings —
  *      applied to the metric LABEL when step 2 was skipped for a unit
- *      disagreement (the id is the thing that lied), else to the id. */
-function isNegativePolarityMetric(metric: string, hints?: PolarityHints): boolean {
+ *      disagreement (the id is the thing that lied), else to the id.
+ *
+ * Exported (2026-09-22) so the lifecycle cron's Rule 1 healthy-band check
+ * (`coachhelm-insight-lifecycle/route.ts`) can tell "better than the
+ * comparison" from "worse than the comparison" instead of an absolute
+ * symmetric gap that called an improvement unhealthy just for overshooting
+ * the target. This is the one polarity table in the codebase — do not add a
+ * second one for the cron. */
+export function isNegativePolarityMetric(metric: string, hints?: PolarityHints): boolean {
   if (hints?.polarity) return hints.polarity === 'lower_better';
   const cfg = getMetricRenderConfig(metric);
   const unitDisagrees = Boolean(cfg && hints?.unit && hints.unit !== cfg.unit);

@@ -56,12 +56,21 @@ function buildSupabase(rows: FakeRow[]) {
       served = true;
       return { data: rows, error: null };
     }),
-    update: vi.fn((patch: Record<string, unknown>) => ({
-      eq: vi.fn(async (_col: string, id: string) => {
-        updates.push({ id, patch });
-        return { error: null };
-      }),
-    })),
+    // Chainable .eq()/.is() (the CAS guard adds a second filter beyond
+    // `.eq('id', …)`), terminated by `.select('id')` as the cron now does.
+    // Defaults to a successful CAS match.
+    update: vi.fn((patch: Record<string, unknown>) => {
+      const filters: Record<string, unknown> = {};
+      const chain = {
+        eq: (col: string, val: unknown) => { filters[col] = val; return chain; },
+        is: (col: string, val: unknown) => { filters[`${col}__is`] = val; return chain; },
+        select: (_cols?: string) => {
+          updates.push({ id: filters.id as string, patch });
+          return Promise.resolve({ data: [{ id: filters.id }], error: null });
+        },
+      };
+      return chain;
+    }),
   };
   return {
     updates,
@@ -200,5 +209,67 @@ describe('lifecycle cron Rule 1 counts healthy cycles per evidence snapshot', ()
     const p3 = u3.find((u) => u.id === 'a')?.patch;
     expect(p3?.lifecycle_state).toBe('resolved');
     expect((p3?.metadata as Record<string, unknown>).healthy_cycles_count).toBe(2);
+  });
+});
+
+describe('lifecycle cron Rule 1 healthy band is direction-aware (2026-09-22)', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.setSystemTime(NOW);
+    process.env.CRON_SECRET = 'secret';
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.clearAllMocks();
+  });
+
+  const polarized = (
+    polarity: 'higher_better' | 'lower_better',
+    yourValue: number,
+    comparisonValue: number,
+  ) => honestEvidence(1, { your_value: yourValue, comparison_value: comparisonValue, polarity });
+
+  it('higher-is-better: overshooting the comparison by far more than 20% still counts ' +
+     'healthy — a symmetric gap used to call this unresolved for having improved too much', async () => {
+    const r = row({
+      id: 'over-good', lifecycle_state: 'addressed', addressed_at: daysAgoIso(5),
+      evidence: polarized('higher_better', 90, 65), // (90-65)/65 ≈ 38% — but BETTER, not worse
+      metadata: { movement_count: 0, last_refreshed_at: daysAgoIso(1) },
+    });
+    const updates = await runWithRows([r]);
+    const patch = updates.find((u) => u.id === 'over-good')?.patch;
+    expect((patch?.metadata as Record<string, unknown> | undefined)?.healthy_cycles_count).toBe(1);
+  });
+
+  it('higher-is-better: falling short by more than 20% is still unhealthy (adverse direction, unchanged)', async () => {
+    const r = row({
+      id: 'under-bad', lifecycle_state: 'addressed', addressed_at: daysAgoIso(5),
+      evidence: polarized('higher_better', 40, 65), // (65-40)/65 ≈ 38% short
+      metadata: { movement_count: 0, last_refreshed_at: daysAgoIso(1) },
+    });
+    const updates = await runWithRows([r]);
+    // No healthy cycle recorded — evaluateRow makes no change for this row.
+    expect(updates.find((u) => u.id === 'under-bad')).toBeUndefined();
+  });
+
+  it('lower-is-better: dropping well below the comparison (a big improvement) still counts healthy', async () => {
+    const r = row({
+      id: 'below-good', lifecycle_state: 'addressed', addressed_at: daysAgoIso(5),
+      evidence: polarized('lower_better', 0.2, 1.0), // way below a penalty-rate target — great
+      metadata: { movement_count: 0, last_refreshed_at: daysAgoIso(1) },
+    });
+    const updates = await runWithRows([r]);
+    const patch = updates.find((u) => u.id === 'below-good')?.patch;
+    expect((patch?.metadata as Record<string, unknown> | undefined)?.healthy_cycles_count).toBe(1);
+  });
+
+  it('lower-is-better: sitting well above the comparison (worse) is unhealthy (adverse direction, unchanged)', async () => {
+    const r = row({
+      id: 'above-bad', lifecycle_state: 'addressed', addressed_at: daysAgoIso(5),
+      evidence: polarized('lower_better', 2.0, 1.0), // above a penalty-rate target — bad
+      metadata: { movement_count: 0, last_refreshed_at: daysAgoIso(1) },
+    });
+    const updates = await runWithRows([r]);
+    expect(updates.find((u) => u.id === 'above-bad')).toBeUndefined();
   });
 });

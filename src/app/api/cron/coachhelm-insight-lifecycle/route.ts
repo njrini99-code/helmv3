@@ -5,8 +5,15 @@
  * design contract at docs/superpowers/plans/2026-04-22-insight-quality/
  * 00-design-contract.md:
  *
- *   1. addressed → resolved when `evidence.your_value` has been within 20%
- *      of `evidence.comparison_value` for 2 consecutive evaluation cycles.
+ *   1. addressed → resolved when `evidence.your_value` is in the healthy band
+ *      for 2 consecutive evaluation cycles. "Healthy" is DIRECTION-AWARE
+ *      (2026-09-22): the player is at least as good as `comparison_value` per
+ *      the metric's polarity (`isNegativePolarityMetric` — the same table
+ *      `tone-derivation.ts` uses for insight-card tone, not a second one), OR
+ *      within 20% of it. An absolute symmetric gap used to call a player who
+ *      had overshot the target — e.g. a lower-is-better metric now BELOW the
+ *      comparison by more than 20% — unhealthy for having improved too much;
+ *      only the ADVERSE direction is gated by the 20% closeness check.
  *      Consecutive-cycle tracking lives on `metadata.healthy_cycles_count`:
  *      incremented when checked AND in the healthy band, reset to 0 when
  *      out of band. Upon resolution we set `resolved_at`.
@@ -60,6 +67,7 @@ import { rollupPredictionPerformanceRolling30d } from '@/lib/coachhelm/v2/analyt
 import { requireCronAuth } from '@/lib/cron/auth';
 import { recordJobRun } from '@/lib/admin/job-log';
 import { describeError } from '@/lib/utils/describe-error';
+import { isNegativePolarityMetric } from '@/components/golf/coachhelm/insight-card/tone-derivation';
 
 export const runtime = 'nodejs';
 export const maxDuration = 300;
@@ -154,7 +162,7 @@ async function handleLifecycle(req: NextRequest): Promise<NextResponse> {
   const staleBeforeIso = new Date(now - STALE_EVALUATION_MS).toISOString();
   let cursor = parseCursor(req.nextUrl.searchParams.get('cursor'));
 
-  type EvaluatedRow = { id: string; patch: UpdatePatch };
+  type EvaluatedRow = { id: string; patch: UpdatePatch; observedLifecycleState: InsightLifecycleState | null };
   let scannedCount = 0;
   let nextCursor: string | null = null;
   let reachedRunLimit = false;
@@ -164,6 +172,7 @@ async function handleLifecycle(req: NextRequest): Promise<NextResponse> {
   let demotedCount = 0;
   let healthyCyclesUpdatedCount = 0;
   let failed = 0;
+  let lostCasRaceCount = 0;
 
   while (scannedCount < MAX_ROWS_PER_RUN) {
     const remaining = MAX_ROWS_PER_RUN - scannedCount;
@@ -226,14 +235,7 @@ async function handleLifecycle(req: NextRequest): Promise<NextResponse> {
       try {
         const patch = evaluateRow(row, now, nowIso);
         if (!patch) continue;
-        if (patch.lifecycle_state === 'resolved') resolvedCount++;
-        if (patch.lifecycle_state === 'archived') archivedCount++;
-        if (patch.lifecycle_state === 'tentative') demotedCount++;
-        if (patch.evidence) recencyAdjustedCount++;
-        if (patch.metadata && !patch.lifecycle_state && !patch.evidence) {
-          healthyCyclesUpdatedCount++;
-        }
-        evaluated.push({ id: row.id, patch });
+        evaluated.push({ id: row.id, patch, observedLifecycleState: row.lifecycle_state });
       } catch (err) {
         await logServerError(
           `cron.insight_lifecycle.evaluate failed: ${describeError(err)}`,
@@ -250,19 +252,35 @@ async function handleLifecycle(req: NextRequest): Promise<NextResponse> {
     // Issue updates in concurrent chunks (50 in flight at once) instead of
     // serial round-trips. Per-row updates remain because evidence + metadata
     // patches are row-specific (recency decay, healthy_cycles_count).
+    //
+    // Optimistic compare-and-set (2026-09-22 R1/R2 leftover): each patch was
+    // decided from `lifecycle_state` as read by the SELECT above. Between
+    // that read and this write, a coach action (dismiss/acknowledge/archive/
+    // resolve) or a concurrent engine write (upsertInsight, a generator's
+    // stale-scope sweep) can have moved the row. Guard every update on the
+    // observed `lifecycle_state` — same pattern as `generator-base.ts`'s and
+    // `synthesis.ts`'s archive sweeps — and only count success metrics
+    // (resolved/archived/demoted/etc.) for rows the CAS actually matched.
+    // Success is decided from the actual write outcome, not the intended
+    // patch, so these counts reflect what happened, not what was attempted.
     for (let i = 0; i < evaluated.length; i += UPDATE_CONCURRENCY) {
       const chunk = evaluated.slice(i, i + UPDATE_CONCURRENCY);
       const results = await Promise.all(
-        chunk.map(({ id, patch }) =>
-          supabase
+        chunk.map(({ id, patch, observedLifecycleState }) => {
+          let q = supabase
             .from('golf_coach_insights')
             .update(patch as unknown as Record<string, never>)
-            .eq('id', id),
-        ),
+            .eq('id', id);
+          q = observedLifecycleState === null
+            ? q.is('lifecycle_state', null)
+            : q.eq('lifecycle_state', observedLifecycleState);
+          return q.select('id');
+        }),
       );
       for (let j = 0; j < results.length; j++) {
         const result = results[j];
         const updateError = result?.error;
+        const { patch, id } = chunk[j] ?? { patch: undefined, id: undefined };
         if (updateError) {
           failed++;
           await logServerError(
@@ -274,6 +292,33 @@ async function handleLifecycle(req: NextRequest): Promise<NextResponse> {
             },
             'error',
           );
+          continue;
+        }
+        if (!result?.data || result.data.length === 0) {
+          // Lost the CAS race: lifecycle_state no longer matched what we
+          // read, so this write did NOT apply. Do not clobber whatever won —
+          // log and move on; the row will be re-scanned on a future run once
+          // it goes stale again.
+          lostCasRaceCount++;
+          await logServerError(
+            `cron.insight_lifecycle.update: lost lifecycle CAS race for insight=${id} ` +
+              `(observed lifecycle_state=${chunk[j]?.observedLifecycleState ?? 'null'}); skipping to avoid ` +
+              `clobbering a concurrent lifecycle change`,
+            {
+              action: 'cron.coachhelm.insight_lifecycle.cas',
+              featureArea: 'coachhelm',
+              extra: { insightId: id },
+            },
+            'warning',
+          );
+          continue;
+        }
+        if (patch?.lifecycle_state === 'resolved') resolvedCount++;
+        if (patch?.lifecycle_state === 'archived') archivedCount++;
+        if (patch?.lifecycle_state === 'tentative') demotedCount++;
+        if (patch?.evidence) recencyAdjustedCount++;
+        if (patch?.metadata && !patch?.lifecycle_state && !patch?.evidence) {
+          healthyCyclesUpdatedCount++;
         }
       }
     }
@@ -318,6 +363,7 @@ async function handleLifecycle(req: NextRequest): Promise<NextResponse> {
     demoted_to_tentative: demotedCount,
     healthy_cycles_updated: healthyCyclesUpdatedCount,
     failed,
+    lost_cas_race: lostCasRaceCount,
     effectiveness_rollup: effectivenessResult,
     prediction_rollup: predictionResult,
   });
@@ -434,6 +480,19 @@ function evaluateRow(row: InsightRow, nowMs: number, nowIso: string): UpdatePatc
       ? (your_value === 0 ? 0 : Infinity)
       : Math.abs(your_value - comparison_value) / Math.abs(comparison_value);
 
+    // Direction-aware (2026-09-22): "more than the comparison" is good for a
+    // higher-is-better metric and bad for a lower-is-better one — a symmetric
+    // |gap| <= 20% treated a player who had overshot the target as
+    // unresolved just as readily as one who was still falling short. Once
+    // the player is AT LEAST as good as the comparison, resolution is never
+    // blocked by how large the gap is; the 20% closeness bar only gates the
+    // adverse direction (still behind, but close enough to call it healthy).
+    const lowerIsBetter = isNegativePolarityMetric(row.evidence.metric, row.evidence);
+    const meetsOrBeatsComparison = lowerIsBetter
+      ? your_value <= comparison_value
+      : your_value >= comparison_value;
+    const isHealthy = meetsOrBeatsComparison || gap <= HEALTHY_GAP_THRESHOLD;
+
     const priorCycles = typeof metadata.healthy_cycles_count === 'number'
       ? (metadata.healthy_cycles_count as number)
       : 0;
@@ -443,7 +502,7 @@ function evaluateRow(row: InsightRow, nowMs: number, nowIso: string): UpdatePatc
     const evidenceKey = healthyCycleEvidenceKey(row.evidence);
     const alreadyCounted = metadata.healthy_cycle_evidence_key === evidenceKey;
 
-    if (gap <= HEALTHY_GAP_THRESHOLD) {
+    if (isHealthy) {
       if (!alreadyCounted) {
         const nextCycles = priorCycles + 1;
         metadata.healthy_cycles_count = nextCycles;
