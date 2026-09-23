@@ -208,6 +208,120 @@ class TerrainCompilerTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'truncated'):
             compiler.nc_select_covering_raster(catalog, footprint, 2)
 
+    def _nc_candidate_row(self, object_id, name):
+        # A footprint far larger than any real request bounds: these tests
+        # exercise selection and the empty-fill walk, not coverage geometry
+        # (already covered by test_nc_native_covering_rasters above).
+        return {'attributes': {'objectid': object_id, 'lowps': 3.125, 'name': name, 'category': 1},
+                'geometry': {'rings': [[[-1e9, -1e9], [1e9, -1e9], [1e9, 1e9], [-1e9, 1e9], [-1e9, -1e9]]]}}
+
+    def _nc_info(self, verified_vertical):
+        extent_sr = {'latestWkid': 6543}
+        if verified_vertical:
+            extent_sr['latestVcsWkid'] = 6360
+        return {'origin': {'x': 0.0, 'y': 0.0}, 'pixelSizeX': 3.125, 'pixelSizeY': 3.125,
+                'extent': {'spatialReference': extent_sr}}
+
+    def _run_nc_acquisition(self, rows, infos, empties, tmp):
+        """`infos`/`empties` are keyed by objectid; `empties` may omit a
+        candidate whose vertical reference is expected to fail first."""
+        service = {'pixelType': 'F32', 'serviceDataType': 'esriImageServiceDataTypeElevation',
+                   'pixelSizeX': 3.125, 'pixelSizeY': 3.125, 'spatialReference': {'wkt': compiler.pyproj.CRS('EPSG:6543').to_wkt()}}
+        requests = []
+
+        def request(operation, values):
+            requests.append(operation)
+            if operation == 'query':
+                return {'objectIdFieldName': 'objectid', 'features': rows}
+            if operation.endswith('/info'):
+                return infos[int(operation.split('/')[0])]
+            self.assertEqual(operation, 'exportImage')
+            object_id = json.loads(values['mosaicRule'])['lockRasterIds'][0]
+            size = list(map(int, values['size'].split(',')))
+            bounds = list(map(float, values['bbox'].split(',')))
+            return {'href': f'https://example.invalid/{object_id}.tiff', 'width': size[0], 'height': size[1],
+                    'extent': dict(zip(('xmin', 'ymin', 'xmax', 'ymax'), bounds), spatialReference={'latestWkid': 6543})}
+
+        def read(url, _limit):
+            return json.dumps(service).encode() if url.endswith('?f=json') else b'fake-raster-bytes'
+
+        def read_elevation(path):
+            object_id = int(path.stem.split('-')[1])
+            array = np.zeros((2, 2)) if empties[object_id] else np.ones((2, 2))
+            return array, None, 'test'
+
+        with patch.object(compiler, 'nc_onemap_request', side_effect=request), \
+             patch.object(compiler, 'nc_onemap_read', side_effect=read), \
+             patch.object(compiler.elevation_raster, 'read_elevation', side_effect=read_elevation):
+            manifest = compiler.acquire_nc_onemap_source(Path(tmp) / 'source', {'contentHash': 'a' * 64}, [-10, -10, 10, 10])
+        return manifest, requests
+
+    def test_ambiguous_native_coverage_falls_back_to_the_next_newest_candidate_on_empty_fill(self):
+        # Duke's real overlap: Durham 2024 and Orange 2024 (tied on year,
+        # Durham tried first by object id), Wake undated. Durham's export is
+        # empty fill here; Orange is the newest survivor.
+        rows = [self._nc_candidate_row(1307, 'Durham_2024_QL1_03ft_CountywideRaster'),
+                self._nc_candidate_row(1343, 'Orange_2024_QL1_03ft_CountywideRaster'),
+                self._nc_candidate_row(1367, 'Wake_Countywide_DEM03')]
+        infos = {1307: self._nc_info(True), 1343: self._nc_info(True), 1367: self._nc_info(True)}
+        empties = {1307: True, 1343: False, 1367: True}
+        with tempfile.TemporaryDirectory() as tmp:
+            manifest, requests = self._run_nc_acquisition(rows, infos, empties, tmp)
+        self.assertEqual(manifest['selectedTitle'], 'Orange_2024_QL1_03ft_CountywideRaster')
+        self.assertEqual(manifest['selectionMethod'], 'single_native_full_coverage_raster_newest_acquisition_v1')
+        self.assertEqual(manifest['sourceSelection'], 'single_native_full_coverage_raster_newest_acquisition_v1')
+        self.assertEqual(len(manifest['rejectedCandidates']), 1)
+        self.assertEqual(manifest['rejectedCandidates'][0]['objectId'], 1307)
+        self.assertEqual(manifest['rejectedCandidates'][0]['reason'], 'export_empty_fraction_exceeds_threshold')
+        self.assertEqual(manifest['verticalDatum'], 'North American Vertical Datum 1988')
+        # Wake was never tried: the walk stops at the first survivor.
+        self.assertNotIn('1367/info', requests)
+
+    def test_ambiguous_native_coverage_falls_back_to_usgs_3dep_when_no_candidate_has_a_verified_datum(self):
+        # Benvenue/Eagle Point's real shape: two full-coverage county rasters,
+        # neither with an independently verified vertical CRS. NC OneMap
+        # still can't blend or guess a datum, but USGS 3DEP is NAVD88 by
+        # definition, so the course is not permanently blocked: it falls
+        # through instead of raising VERTICAL_UNIT_UNKNOWN.
+        rows = [self._nc_candidate_row(1308, 'Edgecombe_Ground_3ft'), self._nc_candidate_row(1339, 'Nash_Ground_3ft')]
+        infos = {1308: self._nc_info(False), 1339: self._nc_info(False)}
+        fallback_manifest = {'schemaVersion': 1, 'providerPolicyId': compiler.USGS_3DEP_PROVIDER,
+                             'selectedTitle': 'VA_NorthernShenandoah_2020_D20', 'verticalDatum': 'NAVD88'}
+        usgs_calls = []
+
+        def fake_acquire_usgs_source(directory, pkg, bounds, rendering_only_resolution_m=None):
+            usgs_calls.append((directory, pkg, bounds, rendering_only_resolution_m))
+            compiler.write_json(directory / 'source-manifest.json', dict(fallback_manifest), True)
+            return dict(fallback_manifest)
+
+        with tempfile.TemporaryDirectory() as tmp:
+            with patch.object(compiler, 'acquire_usgs_source', side_effect=fake_acquire_usgs_source):
+                manifest, _requests = self._run_nc_acquisition(rows, infos, {}, tmp)
+            dossier = json.loads((Path(tmp) / 'source' / 'source-selection-dossier.json').read_text())
+        self.assertEqual(dossier['selectionStatus'], 'all_candidates_lack_verified_vertical_reference')
+        self.assertEqual(len(usgs_calls), 1)
+        self.assertEqual(usgs_calls[0][2], [-10, -10, 10, 10])
+        self.assertEqual(manifest['providerPolicyId'], compiler.USGS_3DEP_PROVIDER)
+        self.assertEqual(manifest['fallbackFrom'], compiler.NC_ONEMAP_PROVIDER)
+        self.assertEqual(manifest['fallbackReason'], 'all_candidates_lack_verified_vertical_reference')
+        rejected_ids = sorted(r['objectId'] for r in manifest['fallbackRejectedCandidates'])
+        self.assertEqual(rejected_ids, [1308, 1339])
+        self.assertTrue(all(r['reason'] == 'vertical_datum_unverified' for r in manifest['fallbackRejectedCandidates']))
+
+    def test_second_run_reuses_the_retained_3dep_fallback_without_requerying_nc(self):
+        # `--acquire-only` always passes the facility policy's requested
+        # provider (nc_onemap_dem03); once the directory holds a retained
+        # 3DEP fallback, a second run must resolve to it rather than
+        # re-running the NC walk or refusing the cache as mismatched.
+        with tempfile.TemporaryDirectory() as tmp:
+            source = Path(tmp) / 'source'
+            source.mkdir()
+            manifest = {'schemaVersion': 1, 'providerPolicyId': compiler.USGS_3DEP_PROVIDER,
+                       'fallbackFrom': compiler.NC_ONEMAP_PROVIDER, 'selectedTitle': 'VA_NorthernShenandoah_2020_D20'}
+            (source / 'source-manifest.json').write_text(json.dumps(manifest))
+            resolved = compiler.resolve_source_provider(source, compiler.NC_ONEMAP_PROVIDER, acquire_only=True)
+        self.assertEqual(resolved, compiler.USGS_3DEP_PROVIDER)
+
     def test_usgs_rendering_only_grid_cannot_silently_claim_native_sampling(self):
         # 2 m would still exceed the provider cap; the caller must advance to
         # a separately declared 4 m visual-only raster.
@@ -602,6 +716,94 @@ class AcquisitionCrsTests(unittest.TestCase):
         base = {'fileHashes': {'elevation.tiff': 'a'}, 'requestedLocalBoundsM': [0, 0, 1, 1]}
         self.assertNotEqual(compiler.source_identity({**base, 'horizontalExportCrs': 'EPSG:32616'}),
                             compiler.source_identity({**base, 'horizontalExportCrs': 'EPSG:32617'}))
+
+    def test_a_covering_imageserver_tile_never_reaches_the_tnm_fallback(self):
+        with patch.object(compiler, 'attempt_tnm_1m_fallback',
+                          side_effect=AssertionError('TNM must not be queried when the ImageServer already covers the course')):
+            _requests, manifest, _export = self.acquire([-78.1467049, 39.1707734])  # Winchester, VA
+        self.assertEqual(manifest['horizontalExportCrs'], 'EPSG:32617')
+        self.assertNotIn('discoveryPath', manifest)
+
+
+class TnmFallbackTests(unittest.TestCase):
+    """Benvenue/Eagle Point's real shape: the ImageServer catalog carries
+    nothing for the course, but TNM Access lists the same USGS 3DEP
+    one-meter product line's newer project. `tnm_1m_products`,
+    `tnm_tile_vertical_evidence`, `tnm_item_metadata` and `tnm_warp_grid`
+    are the only network/GDAL seams; patching them tests the
+    orchestration (grouping, ordering, rejection, manifest assembly)
+    without a live TNM query or a `/vsicurl/` read."""
+
+    BENVENUE_TILE = {'title': 'USGS 1 Meter 18 x24y399 NC_HurricaneFlorence_2020_D20',
+                     'downloadURL': 'https://prd-tnm.s3.amazonaws.com/StagedProducts/Elevation/1m/Projects/'
+                                    'NC_HurricaneFlorence_2020_D20/TIFF/USGS_1M_18_x24y399_NC_HurricaneFlorence_2020_D20.tif',
+                     'sizeInBytes': 390274764, 'boundingBoxWgs84': [-77.88514173599998, 35.92979034500007, -77.77114182699995, 36.02245323100004],
+                     'publicationDate': '2025-03-25', 'metaUrl': 'https://www.sciencebase.gov/catalog/item/681c1326d4be0260c2c46a82'}
+
+    def empty_imageserver_catalog(self, operation, values):
+        self.assertEqual(operation, 'query')
+        return {'features': []}
+
+    def test_used_only_when_the_imageserver_finds_nothing_and_matches_peeks_source_rule(self):
+        vertical = {'verticalDatum': 'North American Vertical Datum of 1988', 'rawVerticalUnit': 'meter',
+                   'verticalUnitToMeters': 1, 'verticalUnitStatus': 'declared_by_product_metadata_record'}
+        dates = {'dates': [{'type': 'Start', 'dateString': '2019-11-26'}, {'type': 'End', 'dateString': '2020-08-25'}]}
+
+        def fake_warp(directory, tiles, out_bounds, width, height, crs):
+            self.assertEqual(len(tiles), 1)
+            self.assertEqual(crs, 32618)
+            return b'FAKE-ELEVATION-BYTES', 0.0002, 'test'
+
+        pkg = {'contentHash': '5' * 64, 'originWgs84': [-77.8178, 35.9811], 'name': 'Benvenue fixture'}
+        compiler.pilot.ORIGIN = pkg['originWgs84']
+        with tempfile.TemporaryDirectory() as directory:
+            with patch.object(compiler.fetch, 'request', self.empty_imageserver_catalog), \
+                 patch.object(compiler, 'tnm_1m_products', return_value=[dict(self.BENVENUE_TILE)]), \
+                 patch.object(compiler, 'tnm_tile_vertical_evidence', return_value=vertical), \
+                 patch.object(compiler, 'tnm_item_metadata', return_value=dates), \
+                 patch.object(compiler, 'tnm_warp_grid', side_effect=fake_warp), \
+                 redirect_stdout(io.StringIO()):
+                manifest = compiler.acquire_source(Path(directory), pkg, [-30, -30, 30, 30])
+            self.assertEqual(manifest['providerPolicyId'], compiler.USGS_3DEP_PROVIDER)
+            self.assertEqual(manifest['discoveryPath'], 'tnm_access')
+            self.assertEqual(manifest['sourceSelection'], 'tnm_access_single_native_1m_tile')
+            self.assertEqual(manifest['selectedTitle'], self.BENVENUE_TILE['title'])
+            self.assertEqual(manifest['verticalDatum'], 'North American Vertical Datum of 1988')
+            self.assertEqual(manifest['acquisitionStart'], '2019-11-26')
+            self.assertEqual(manifest['acquisitionEnd'], '2020-08-25')
+            self.assertEqual(manifest['nativeResolutionM'], 1.0)
+            self.assertEqual(manifest['rejectedCandidates'], [])
+            self.assertEqual((Path(directory) / 'elevation.tiff').read_bytes(), b'FAKE-ELEVATION-BYTES')
+            # A retained TNM fallback reuses cleanly on a second acquire call.
+            with patch.object(compiler.fetch, 'request', side_effect=AssertionError('cached; must not re-query')), \
+                 patch.object(compiler, 'tnm_1m_products', side_effect=AssertionError('cached; must not re-query TNM')), \
+                 redirect_stdout(io.StringIO()):
+                reused = compiler.acquire_source(Path(directory), pkg, [-30, -30, 30, 30])
+            self.assertEqual(reused['selectedTitle'], manifest['selectedTitle'])
+
+    def test_a_candidate_with_no_verified_vertical_reference_is_rejected_and_the_blocker_message_is_unchanged(self):
+        pkg = {'contentHash': '6' * 64, 'originWgs84': [-77.8178, 35.9811], 'name': 'Benvenue fixture'}
+        compiler.pilot.ORIGIN = pkg['originWgs84']
+        with tempfile.TemporaryDirectory() as directory, \
+             patch.object(compiler.fetch, 'request', self.empty_imageserver_catalog), \
+             patch.object(compiler, 'tnm_1m_products', return_value=[dict(self.BENVENUE_TILE, metaUrl=None)]), \
+             patch.object(compiler, 'tnm_tile_vertical_evidence', return_value=None), \
+             redirect_stdout(io.StringIO()):
+            with self.assertRaisesRegex(ValueError, 'No native-1m tile set covers the full bounded course context'):
+                compiler.acquire_source(Path(directory), pkg, [-30, -30, 30, 30])
+            report = json.loads((Path(directory) / 'coverage-exception.json').read_text())
+        self.assertEqual(report['tnmRejectedCandidates'],
+                         [{'project': 'NC_HurricaneFlorence_2020_D20', 'reason': 'vertical_datum_unverified'}])
+
+    def test_no_tnm_tiles_at_all_still_raises_the_unchanged_blocker_message(self):
+        pkg = {'contentHash': '7' * 64, 'originWgs84': [-77.8178, 35.9811], 'name': 'Benvenue fixture'}
+        compiler.pilot.ORIGIN = pkg['originWgs84']
+        with tempfile.TemporaryDirectory() as directory, \
+             patch.object(compiler.fetch, 'request', self.empty_imageserver_catalog), \
+             patch.object(compiler, 'tnm_1m_products', return_value=[]), \
+             redirect_stdout(io.StringIO()):
+            with self.assertRaisesRegex(ValueError, 'No native-1m tile set covers the full bounded course context'):
+                compiler.acquire_source(Path(directory), pkg, [-30, -30, 30, 30])
 
 
 class CourseCrsTests(unittest.TestCase):

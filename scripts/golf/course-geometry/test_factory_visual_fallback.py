@@ -7,6 +7,7 @@ import unittest
 
 from factory.adapters import (
     canopy_source_precondition,
+    context_classification_precondition,
     derived_output_lock,
     reset_incomplete_visual_source_cache,
     terrain_acquisition_precondition,
@@ -199,6 +200,15 @@ class VisualFallbackFactoryTests(unittest.TestCase):
             canopy_source_precondition(RuntimeError('HTTP Error 500: upstream'), 'synthetic-a').blocker.code,
             'CANOPY_SOURCE_TRANSIENT',
         )
+
+    def test_context_zone_still_past_the_local_frame_after_clipping_becomes_a_blocker(self):
+        precondition = context_classification_precondition(
+            RuntimeError('LOCAL_FRAME_EXTENT_EXCEEDED: a context zone coordinate is 5120.0 m from the origin, '
+                         'over the 5000 m local-frame limit'), 'synthetic-a',
+        )
+        self.assertEqual(precondition.blocker.code, 'LOCAL_FRAME_EXTENT_EXCEEDED')
+        self.assertEqual(precondition.blocker.evidence['layoutId'], 'synthetic-a')
+        self.assertIsNone(context_classification_precondition(RuntimeError('some other failure'), 'synthetic-a'))
 
 
 if __name__ == '__main__':

@@ -30,6 +30,7 @@ from hole_footprint import played_features
 from shapely import constrained_delaunay_triangles
 from shapely.geometry import LineString, MultiPolygon, Polygon, box
 from shapely.ops import polygonize, unary_union
+from terrain_source_rule import SourceRejected, order_by_recency, select_first_survivor
 
 ROOT = Path(__file__).resolve().parents[3]
 FIXTURES = ROOT / 'src/test/fixtures/course-geometry'
@@ -72,6 +73,10 @@ pilot = module('pilot', 'prepare-pilot.py')
 fetch = module('fetch', 'fetch-terrain-pilot.py')
 elevation_raster = module('elevation_raster', 'elevation_raster.py')
 course_crs = module('course_crs', 'course_crs.py')
+# Read-only reuse of the S1M research spike's bounded, retried TNM Access
+# fetch (`fetch_json`) and ScienceBase item reader (`item_provenance`).
+# research-s1m-coverage.py is not edited; only its request code is reused.
+s1m_research = module('s1m_research', 'research-s1m-coverage.py')
 
 
 def canonical_json(value):
@@ -248,6 +253,17 @@ INTERNATIONAL_FOOT_TO_METERS = 0.3048
 USGS_3DEP_SOURCE_CONTRACT = 'usgs-3dep-native-grid-v1'
 NC_ONEMAP_SOURCE_CONTRACT = 'nc-dem03-native-frame-v2'
 CHARLESTON_COUNTY_DEM_2025_SOURCE_CONTRACT = 'charleston-county-dem-2025-v1'
+# TNM Access is a second, independently-updated USGS 3DEP catalog for the
+# same one-meter DEM product line the ImageServer indexes; it carries a
+# newly published project sooner. Used only as a fallback when the
+# ImageServer's own catalog finds nothing -- never blended with an
+# ImageServer candidate, so a course the ImageServer already resolves is
+# never re-decided by a newer TNM project.
+TNM_PRODUCTS_URL = 'https://tnmaccess.nationalmap.gov/api/v1/products'
+TNM_1M_DATASET = 'Digital Elevation Model (DEM) 1 meter'
+TNM_ALLOWED_DOWNLOAD_HOSTS = ('prd-tnm.s3.amazonaws.com',)
+MAX_TNM_CATALOG_BYTES = 2_000_000
+MAX_TNM_METADATA_BYTES = 2_000_000
 
 
 def _positive_source_number(value, field):
@@ -466,7 +482,12 @@ def resolve_source_provider(directory, requested_provider, acquire_only=False):
     provider = manifest.get('providerPolicyId', USGS_3DEP_PROVIDER)
     if provider not in (USGS_3DEP_PROVIDER, NC_ONEMAP_PROVIDER, CHARLESTON_COUNTY_DEM_2025_PROVIDER):
         raise ValueError(f'Immutable source cache has unsupported terrain provider {provider!r}')
-    if acquire_only and provider != requested_provider:
+    # A retained fallback (`fallbackFrom`) is a directory whose requested
+    # provider fell through to a different one on acquisition; the caller
+    # still passes the originally requested provider on every later
+    # compile call, so that must resolve too, not just the acquire run
+    # that produced it.
+    if acquire_only and provider != requested_provider and manifest.get('fallbackFrom') != requested_provider:
         raise ValueError('Immutable source cache belongs to another terrain provider')
     return provider
 
@@ -563,6 +584,226 @@ def export_usgs_grid(directory, bounds, width, height, crs, object_ids):
     return document, raster, parts
 
 
+def tnm_1m_products(bbox_wgs84):
+    """Every native one-meter DEM GeoTIFF TNM Access lists over a WGS84 bbox.
+
+    Reuses research-s1m-coverage.py's bounded, retried fetch. Refuses a
+    truncated response rather than silently acting on a partial catalog
+    (the same posture as the ImageServer's own `exceededTransferLimit`
+    check); drops a listed item whose declared download host is not the
+    fixed USGS bucket this compiler is willing to acquire from, and any
+    non-GeoTIFF product (a LAZ point cloud can share this dataset's bbox).
+    """
+    query = {'datasets': TNM_1M_DATASET, 'bbox': ','.join(f'{v:.7f}' for v in bbox_wgs84),
+             'prodFormats': 'GeoTIFF', 'outputFormat': 'JSON', 'max': 50}
+    doc = s1m_research.fetch_json(TNM_PRODUCTS_URL + '?' + urllib.parse.urlencode(query), MAX_TNM_CATALOG_BYTES)
+    items = doc.get('items') or []
+    if doc.get('total') and doc['total'] > len(items):
+        raise ValueError('Truncated TNM product list requires bounded pagination review')
+    seen, tiles = set(), []
+    for item in items:
+        title = item.get('title')
+        if item.get('format') != 'GeoTIFF' or not is_native_1m_title(title) or title in seen:
+            continue
+        url = item.get('downloadURL') or ''
+        if urllib.parse.urlparse(url).netloc not in TNM_ALLOWED_DOWNLOAD_HOSTS:
+            continue
+        bbox = item.get('boundingBox') or {}
+        if not all(k in bbox for k in ('minX', 'minY', 'maxX', 'maxY')):
+            continue
+        seen.add(title)
+        tiles.append({'title': title, 'downloadURL': url, 'sizeInBytes': item.get('sizeInBytes'),
+                      'boundingBoxWgs84': [bbox['minX'], bbox['minY'], bbox['maxX'], bbox['maxY']],
+                      'publicationDate': item.get('publicationDate'), 'metaUrl': item.get('metaUrl')})
+    return tiles
+
+
+def tnm_item_metadata(meta_url):
+    """The tile's own ScienceBase record: its real flight window (`dates`)
+    and its declared vertical datum text. Best-effort: a metadata outage
+    must not hide a coverage decision, so this returns {} rather than
+    raising, and the caller treats a missing datum declaration as
+    unverified, never as verified by omission."""
+    if not meta_url:
+        return {}
+    try:
+        return s1m_research.fetch_json(meta_url + '?format=json&fields=dates,body,summary,purpose', MAX_TNM_METADATA_BYTES)
+    except Exception:
+        return {}
+
+
+def tnm_metadata_dates(meta_doc):
+    dates = {d.get('type'): d.get('dateString') for d in (meta_doc or {}).get('dates') or []}
+    return dates.get('Start'), dates.get('End')
+
+
+def tnm_metadata_vertical_evidence(meta_doc):
+    """3DEP one-meter GeoTIFFs carry no compound vertical CRS (checked in
+    `tnm_tile_vertical_evidence` first); this is the fallback the owner
+    named for that case: the product's own declared datum statement, read
+    from this exact item's ScienceBase record over the network, never
+    assumed from the dataset's name alone."""
+    text = ' '.join(str((meta_doc or {}).get(k) or '') for k in ('body', 'summary', 'purpose'))
+    if 'North American Vertical Datum of 1988' in text or 'NAVD88' in text or 'NAVD 88' in text:
+        return {'verticalDatum': 'North American Vertical Datum of 1988', 'rawVerticalUnit': 'meter',
+                'verticalUnitToMeters': 1, 'verticalUnitStatus': 'declared_by_product_metadata_record'}
+    return None
+
+
+def tnm_tile_vertical_evidence(tile, meta_doc):
+    """The tile's own compound CRS first (authoritative when present);
+    3DEP one-meter GeoTIFFs typically embed only the horizontal CRS, so
+    this falls back to the item's declared product metadata."""
+    from osgeo import gdal
+    gdal.UseExceptions()
+    ds = gdal.Open('/vsicurl/' + tile['downloadURL'])
+    srs = ds.GetSpatialRef()
+    ds = None
+    if srs is not None and srs.IsCompound():
+        crs = pyproj.CRS.from_wkt(srs.ExportToWkt())
+        vertical = crs.sub_crs_list[1] if len(crs.sub_crs_list) > 1 else None
+        if vertical is not None and ('NAVD88' in vertical.name or 'North American Vertical Datum of 1988' in vertical.name):
+            return {'verticalDatum': vertical.name, 'rawVerticalUnit': 'meter', 'verticalUnitToMeters': 1,
+                    'verticalUnitStatus': 'verified_from_locked_raster_vcs'}
+        return None
+    return tnm_metadata_vertical_evidence(meta_doc)
+
+
+def tnm_warp_grid(directory, tiles, out_bounds, width, height, crs):
+    """One VRT over every intersecting tile's `/vsicurl/` source, warped in
+    a single pass to the exact requested grid (bilinear, matching every
+    other physical export in this file). GDAL range-reads only the bytes
+    the warp touches -- never the whole ~100-400 MB tile -- but every
+    source host was already checked against the fixed allowlist in
+    `tnm_1m_products`, since GDAL's own network stack does not consult it.
+    """
+    from osgeo import gdal
+    gdal.UseExceptions()
+    for key, value in (('GDAL_DISABLE_READDIR_ON_OPEN', 'EMPTY_DIR'), ('CPL_VSIL_CURL_ALLOWED_EXTENSIONS', '.tif'),
+                       ('GDAL_HTTP_TIMEOUT', '120'), ('GDAL_HTTP_MAX_RETRY', '2'), ('GDAL_HTTP_RETRY_DELAY', '5')):
+        gdal.SetConfigOption(key, value)
+    sources = ['/vsicurl/' + t['downloadURL'] for t in tiles]
+    first = gdal.Open(sources[0])
+    nodata = first.GetRasterBand(1).GetNoDataValue()
+    first = None
+    if nodata is None:
+        raise SourceRejected('source_nodata_undeclared')
+    a, b, c, d = out_bounds
+    with tempfile.TemporaryDirectory(prefix='.terrain-tnm-', dir=directory) as tmp:
+        vrt_path = str(Path(tmp) / 'mosaic.vrt')
+        gdal.BuildVRT(vrt_path, sources)
+        out_path = Path(tmp) / 'warped.tiff'
+        warped = gdal.Warp(str(out_path), vrt_path, dstSRS=f'EPSG:{crs}', outputBounds=(a, b, c, d),
+                           xRes=1, yRes=1, resampleAlg='bilinear', srcNodata=nodata, dstNodata=nodata,
+                           outputType=gdal.GDT_Float32, creationOptions=['COMPRESS=DEFLATE', 'PREDICTOR=3', 'TILED=YES'])
+        if warped is None or [warped.RasterXSize, warped.RasterYSize] != [width, height]:
+            warped = None
+            raise ValueError('TNM terrain mosaic did not produce the expected pixel grid')
+        gt = warped.GetGeoTransform()
+        if not np.allclose(gt, [a, 1.0, 0.0, d, 0.0, -1.0], atol=1e-7, rtol=0):
+            warped = None
+            raise ValueError('TNM terrain mosaic grid changed during assembly')
+        warped = None
+        decoded, _nodata, decoder = elevation_raster.read_elevation(out_path)
+        empty = elevation_raster.empty_fraction(decoded)
+        raster = out_path.read_bytes()
+    return raster, empty, decoder
+
+
+def attempt_tnm_1m_fallback(directory, pkg, bounds, west, south, east, north, extent_wgs84):
+    """The ImageServer's native-1m catalog found nothing here. TNM Access
+    is a second, independently-updated catalog for the same USGS 3DEP
+    one-meter product line; apply the same source rule (one project, full
+    AOI coverage, native 1 m, verified NAVD88, newest acquisition) to
+    whatever it lists. Returns (manifest_or_None, rejectedCandidates);
+    never raises for an ordinary rejection -- only a hard, unexpected
+    failure (a malformed mosaic, a truncated catalog) propagates.
+    """
+    tiles = tnm_1m_products([west, south, east, north])
+    if not tiles:
+        return None, []
+    projects = {}
+    for tile in tiles:
+        projects.setdefault(tile_project(tile['title']), []).append(tile)
+    ordered = order_by_recency(list(projects.items()), lambda item: item[0], lambda item: item[0])
+
+    crs = course_crs.origin_epsg(pkg)
+    local_perimeter = local_bounds_perimeter(bounds)
+    x, y = zip(*local_perimeter)
+    lon, lat = geographic(x, y)
+    project = pyproj.Transformer.from_crs(4326, crs, always_xy=True)
+    source_x, source_y = project.transform(lon, lat)
+    a, b, c, d = snap_bounds([min(source_x), min(source_y), max(source_x), max(source_y)], SOURCE_COVERAGE_PADDING_METERS, 1)
+    width, height = int(c - a), int(d - b)
+    # The same bounded-budget guard `export_usgs_grid` enforces per request;
+    # a single `gdal.Warp` call has no per-request pixel cap to tile around,
+    # so only the guard is reused here, not the request partitioning.
+    terrain_export_windows([a, b, c, d], width, height)
+
+    def evaluate(item):
+        project_name, project_tiles = item
+        footprint = unary_union([box(*t['boundingBoxWgs84']) for t in project_tiles])
+        if not footprint.covers(extent_wgs84):
+            # A catalog footprint is a claim, not evidence, per the existing
+            # ImageServer path -- the real gate is the empty-fraction check
+            # on the warped output below. This coverage check only screens
+            # out a project that cannot possibly reach the whole AOI.
+            raise SourceRejected('coverage_gap')
+        intersecting = [t for t in project_tiles if box(*t['boundingBoxWgs84']).intersects(extent_wgs84)]
+        vertical, meta_doc = None, {}
+        for tile in intersecting:
+            meta_doc = tnm_item_metadata(tile.get('metaUrl'))
+            vertical = tnm_tile_vertical_evidence(tile, meta_doc)
+            if vertical is not None:
+                break
+        if vertical is None:
+            raise SourceRejected('vertical_datum_unverified')
+        raster, empty, decoder = tnm_warp_grid(directory, intersecting, [a, b, c, d], width, height, crs)
+        if empty > MAX_EMPTY_EXPORT_FRACTION:
+            raise SourceRejected('export_empty_fraction_exceeds_threshold', emptyFraction=empty)
+        starts, ends = zip(*(tnm_metadata_dates(tnm_item_metadata(t.get('metaUrl'))) for t in intersecting))
+        starts, ends = [s for s in starts if s], [e for e in ends if e]
+        return {'tiles': intersecting, 'vertical': vertical, 'raster': raster, 'empty': empty, 'decoder': decoder,
+                'acquisitionStart': min(starts) if starts else None, 'acquisitionEnd': max(ends) if ends else None}
+
+    winner, extra, rejected = select_first_survivor(ordered, evaluate)
+    if winner is None:
+        return None, [{'project': r['candidate'][0], 'reason': r['reason'],
+                       **{k: v for k, v in r.items() if k not in ('candidate', 'reason')}} for r in rejected]
+    project_name, _project_tiles = winner
+    tiles = extra['tiles']
+    title = tiles[0]['title'] if len(tiles) == 1 else f"{tiles[0]['title']} (+{len(tiles) - 1} adjacent {project_name} tile{'s' if len(tiles) > 2 else ''})"
+    (directory / 'elevation.tiff').write_bytes(extra['raster'])
+    exported = {'width': width, 'height': height,
+                'extent': dict(zip(('xmin', 'ymin', 'xmax', 'ymax'), (a, b, c, d)), spatialReference={'wkid': crs}),
+                'assembly': 'tnm_access_single_pass_warp_bilinear', 'sourceTiles': [t['title'] for t in tiles]}
+    write_json(directory / 'catalog.json', {'schema': 'golfhelm-tnm-1m-products-v1', 'dataset': TNM_1M_DATASET,
+                                            'bboxWgs84': [west, south, east, north], 'tiles': tiles}, True)
+    write_json(directory / 'export.json', exported, True)
+    vertical = extra['vertical']
+    manifest = {'schemaVersion': 1, 'providerPolicyId': USGS_3DEP_PROVIDER, 'packageHash': pkg['contentHash'],
+                'requestedLocalBoundsM': bounds, 'selectedTitle': title, 'selectedObjectId': None, 'selectedObjectIds': [],
+                'selectedTiles': [t['title'] for t in tiles], 'sourceUrl': tiles[0]['downloadURL'],
+                'acquisitionStart': extra['acquisitionStart'], 'acquisitionEnd': extra['acquisitionEnd'],
+                'nativeResolutionM': 1.0, 'sourceNativeResolutionM': 1.0, 'exportPixelM': [1.0, 1.0],
+                'horizontalExportCrs': f'EPSG:{crs}', 'verticalDatum': vertical['verticalDatum'],
+                'rawVerticalUnit': vertical['rawVerticalUnit'], 'verticalUnitToMeters': vertical['verticalUnitToMeters'],
+                'sourceFrameContract': USGS_3DEP_SOURCE_CONTRACT, 'verticalUnitStatus': vertical['verticalUnitStatus'],
+                'retrievedAt': datetime.now(timezone.utc).date().isoformat(),
+                'discoveryPath': 'tnm_access', 'imageServerCandidates': 0,
+                'sourceSelection': ('tnm_access_single_native_1m_tile' if len(tiles) == 1
+                                    else 'tnm_access_same_project_adjacent_native_1m_tiles'),
+                'renderingOnly': False, 'renderingOnlyResolutionM': None,
+                'coverageMethod': SOURCE_COVERAGE_METHOD, 'coveragePaddingMeters': SOURCE_COVERAGE_PADDING_METERS,
+                'exportEmptyFraction': extra['empty'], 'decoder': extra['decoder'], 'rejectedCandidates': [],
+                'licenseUrl': 'https://www.usgs.gov/3d-elevation-program/about-3dep-products-services',
+                'exportRequestCount': 1,
+                'fileHashes': {name: hashlib.sha256((directory / name).read_bytes()).hexdigest()
+                               for name in ('catalog.json', 'export.json', 'elevation.tiff')}}
+    write_json(directory / 'source-manifest.json', manifest, True)
+    return manifest, []
+
+
 def acquire_usgs_source(directory, pkg, bounds, rendering_only_resolution_m=None):
     manifest = existing_source_manifest(directory, pkg, bounds, rendering_only=rendering_only_resolution_m is not None)
     if manifest is not None:
@@ -603,9 +844,19 @@ def acquire_usgs_source(directory, pkg, bounds, rendering_only_resolution_m=None
         candidates = covering_tile_sets(visual, extent_wgs84)
         lower_resolution_visual_fallback = bool(candidates)
     if not candidates:
+        tnm_rejected = []
+        if rendering_only_resolution_m is None:
+            # A second, independently-updated USGS catalog for the same
+            # one-meter DEM product line; never blended with an ImageServer
+            # candidate, so a course the ImageServer already resolves above
+            # cannot have its choice changed by a newer TNM project.
+            tnm_manifest, tnm_rejected = attempt_tnm_1m_fallback(directory, pkg, bounds, west, south, east, north, extent_wgs84)
+            if tnm_manifest is not None:
+                return tnm_manifest
         report = {'state': 'needs_source_review', 'reason': 'No native-1m tile set covers the full bounded course context',
                   'packageHash': pkg['contentHash'], 'bboxWgs84': [west, south, east, north],
-                  'policy': 'No mixed-date or lower-resolution fallback is imported automatically', 'catalog': catalog}
+                  'policy': 'No mixed-date or lower-resolution fallback is imported automatically', 'catalog': catalog,
+                  'tnmRejectedCandidates': tnm_rejected}
         write_json(directory / 'coverage-exception.json', report, True)
         raise ValueError(report['reason'])
     # Horizontal reprojection only, in the course's own UTM zone; NAVD88 Z retained.
@@ -953,9 +1204,44 @@ def nc_selection_dossier(directory, service, catalog, footprint, request_bounds,
     return document
 
 
+def summarize_nc_rejected_candidates(rejected, object_id_field):
+    """A compact, JSON-safe record of an NC OneMap rejection walk: just
+    enough (object id, title, reason, and whatever evidence the rejection
+    carried) to explain a fallback decision, without repeating the full
+    catalog/metadata detail the source-selection dossier already retains."""
+    summary = []
+    for entry in rejected:
+        attrs = (entry['candidate'].get('attributes') or {})
+        item = {'objectId': attrs.get(object_id_field), 'title': attrs.get('name'), 'reason': entry['reason']}
+        item.update({k: v for k, v in entry.items() if k not in ('candidate', 'reason')})
+        summary.append(item)
+    return summary
+
+
+def attempt_usgs_3dep_terrain_fallback(directory, pkg, bounds, rendering_only_resolution_m, fallback_reason, rejected_nc_candidates):
+    """Every NC OneMap candidate was rejected (most often: none carries a
+    verified NAVD88 vertical reference). USGS 3DEP is NAVD88 by definition,
+    so fall through to it rather than leaving the course permanently
+    blocked -- the shared source rule (terrain_source_rule.py) still governs
+    which 3DEP project is chosen; a 3DEP failure here (no coverage, empty
+    fill) propagates unchanged, since the factory already classifies those
+    messages. The NC rejection stays on record so the fallback is never
+    silent about why NC OneMap was skipped."""
+    manifest = acquire_usgs_source(directory, pkg, bounds, rendering_only_resolution_m)
+    manifest['fallbackFrom'] = NC_ONEMAP_PROVIDER
+    manifest['fallbackReason'] = fallback_reason
+    manifest['fallbackRejectedCandidates'] = rejected_nc_candidates
+    write_json(directory / 'source-manifest.json', manifest, True)
+    return manifest
+
+
 def acquire_nc_onemap_source(directory, pkg, bounds, rendering_only_resolution_m=None):
     manifest = existing_source_manifest(directory, pkg, bounds, rendering_only=rendering_only_resolution_m is not None)
     if manifest is not None:
+        if manifest.get('providerPolicyId') == USGS_3DEP_PROVIDER and manifest.get('fallbackFrom') == NC_ONEMAP_PROVIDER:
+            # A retained 3DEP fallback is itself the immutable source now;
+            # NC OneMap is not re-queried behind an already-approved cache.
+            return manifest
         if manifest.get('providerPolicyId') != NC_ONEMAP_PROVIDER:
             raise ValueError('Immutable source cache belongs to another terrain provider')
         if manifest.get('sourceFrameContract') != NC_ONEMAP_SOURCE_CONTRACT:
@@ -981,72 +1267,176 @@ def acquire_nc_onemap_source(directory, pkg, bounds, rendering_only_resolution_m
         'spatialRel': 'esriSpatialRelIntersects', 'outFields': '*', 'returnGeometry': 'true',
     })
     footprint = box(*request_bounds)
+    object_id_field = catalog.get('objectIdFieldName', 'objectid')
+    rejected_candidates = []
+    already_resolved = False
     try:
         selected, candidate_object_ids, selection_method = nc_select_covering_raster(
             catalog, footprint, rendering_only_resolution_m,
         )
     except ValueError as error:
-        if 'NC_SOURCE_SELECTION_UNRESOLVED' in str(error):
-            if catalog.get('exceededTransferLimit'):
-                reason = 'catalog_query_truncated'
-            elif nc_native_covering_rasters(catalog, footprint):
-                reason = 'multiple_full_coverage_native_candidates'
-            else:
-                reason = 'no_full_coverage_native_candidate'
-            nc_selection_dossier(directory, service, catalog, footprint, request_bounds, reason)
-        raise
-    object_id = selected['attributes'][catalog.get('objectIdFieldName', 'objectid')]
-    info = nc_onemap_request(f'{object_id}/info', {})
-    validate_nc_horizontal_crs((info.get('extent') or {}).get('spatialReference') or {})
-    if any(not math.isclose(float(info.get(k, 0)), NC_ONEMAP_NATIVE_PIXEL_US_FEET, abs_tol=1e-9) for k in ('pixelSizeX', 'pixelSizeY')):
-        raise ValueError('NC selected raster grid differs from declared native spacing')
-    vertical = nc_vertical_evidence(info)
+        if 'NC_SOURCE_SELECTION_UNRESOLVED' not in str(error) or rendering_only_resolution_m is not None:
+            raise
+        # More than one native, full-coverage county raster: apply the same
+        # source rule every provider uses (single project/source, full
+        # coverage, native resolution -- both already established -- a
+        # verified NAVD88 vertical reference, newest acquisition wins) rather
+        # than refusing outright. Walk candidates newest-titled first; the
+        # first one whose vertical reference and locked export both hold up
+        # is the source. Every other candidate is recorded with its reason.
+        covering = nc_native_covering_rasters(catalog, footprint)
+        if not covering:
+            nc_selection_dossier(directory, service, catalog, footprint, request_bounds, 'no_full_coverage_native_candidate')
+            raise
+        ordered = order_by_recency(covering, lambda row: row['attributes'].get('name'), lambda row: row['attributes'][object_id_field])
+
+        def evaluate(row):
+            candidate_id = row['attributes'][object_id_field]
+            candidate_info = nc_onemap_request(f'{candidate_id}/info', {})
+            try:
+                validate_nc_horizontal_crs((candidate_info.get('extent') or {}).get('spatialReference') or {})
+            except ValueError as exc:
+                raise SourceRejected('horizontal_crs_mismatch', detail=str(exc)) from exc
+            if any(not math.isclose(float(candidate_info.get(k, 0)), NC_ONEMAP_NATIVE_PIXEL_US_FEET, abs_tol=1e-9)
+                   for k in ('pixelSizeX', 'pixelSizeY')):
+                raise SourceRejected('native_grid_mismatch')
+            candidate_vertical = nc_vertical_evidence(candidate_info)
+            if candidate_vertical is None:
+                raise SourceRejected('vertical_datum_unverified')
+            candidate_origin = candidate_info['origin']
+            candidate_requested, candidate_size = nc_native_grid_bounds(
+                request_bounds, {'xmin': candidate_origin['x'], 'ymin': candidate_origin['y']})
+            candidate_export = nc_onemap_request('exportImage', {
+                'bbox': ','.join(map(str, candidate_requested)), 'bboxSR': 6543, 'imageSR': 6543,
+                'size': ','.join(map(str, candidate_size)), 'format': 'tiff', 'pixelType': 'F32',
+                'interpolation': 'RSP_BilinearInterpolation', 'renderingRule': json.dumps({'rasterFunction': 'None'}),
+                'mosaicRule': json.dumps({'mosaicMethod': 'esriMosaicLockRaster', 'lockRasterIds': [candidate_id], 'mosaicOperation': 'MT_FIRST'}),
+            })
+            try:
+                validate_nc_horizontal_crs((candidate_export.get('extent') or {}).get('spatialReference') or {})
+            except ValueError as exc:
+                raise SourceRejected('horizontal_crs_mismatch', detail=str(exc)) from exc
+            if [candidate_export.get('width'), candidate_export.get('height')] != candidate_size:
+                raise SourceRejected('export_dimensions_changed')
+            candidate_actual = candidate_export.get('extent') or {}
+            candidate_actual_values = [float(candidate_actual.get(field, math.nan)) for field in ('xmin', 'ymin', 'xmax', 'ymax')]
+            if any(not math.isclose(value, expected, rel_tol=0, abs_tol=1e-6)
+                   for value, expected in zip(candidate_actual_values, candidate_requested)):
+                raise SourceRejected('export_extent_changed')
+            candidate_raster = nc_onemap_read(candidate_export['href'], 80_000_000)
+            probe_path = directory / f'probe-{candidate_id}.tiff'
+            probe_path.write_bytes(candidate_raster)
+            try:
+                candidate_decoded, _nodata, candidate_decoder = elevation_raster.read_elevation(probe_path)
+                candidate_empty = elevation_raster.empty_fraction(candidate_decoded)
+            finally:
+                probe_path.unlink(missing_ok=True)
+            if candidate_empty > MAX_EMPTY_EXPORT_FRACTION:
+                raise SourceRejected('export_empty_fraction_exceeds_threshold', emptyFraction=candidate_empty)
+            return {'info': candidate_info, 'vertical': candidate_vertical, 'requested': candidate_requested,
+                    'size': candidate_size, 'exported': candidate_export, 'raster': candidate_raster,
+                    'empty': candidate_empty, 'decoder': candidate_decoder, 'origin': candidate_origin}
+
+        winner, extra, rejected_candidates = select_first_survivor(ordered, evaluate)
+        if winner is None:
+            all_vertical_unknown = bool(rejected_candidates) and all(
+                r['reason'] == 'vertical_datum_unverified' for r in rejected_candidates)
+            nc_selection_dossier(directory, service, catalog, footprint, request_bounds,
+                                 'all_candidates_lack_verified_vertical_reference' if all_vertical_unknown
+                                 else 'no_candidate_satisfies_the_source_rule')
+            if all_vertical_unknown:
+                # USGS 3DEP is NAVD88 by definition, so a course whose NC
+                # OneMap candidates are all otherwise valid but carry no
+                # verified vertical reference is not stuck: fall through
+                # to 3DEP rather than raising VERTICAL_UNIT_UNKNOWN. The NC
+                # rejection stays on record via `fallbackRejectedCandidates`.
+                return attempt_usgs_3dep_terrain_fallback(
+                    directory, pkg, bounds, rendering_only_resolution_m,
+                    'all_candidates_lack_verified_vertical_reference',
+                    summarize_nc_rejected_candidates(rejected_candidates, object_id_field))
+            # Raised `from None`: the caught ValueError above is the *ambiguous
+            # multi-candidate* signal that sent us into this walk, not the
+            # actual diagnosis. Left chained, Python's default traceback
+            # prints both messages, and the factory's blocker classifier
+            # (which only greps the tail of that text) would always match
+            # the earlier generic NC_SOURCE_SELECTION_UNRESOLVED marker
+            # before ever reaching the specific one decided here.
+            raise ValueError('NC_SOURCE_SELECTION_UNRESOLVED: no full-coverage native county raster satisfies '
+                             'the source rule (single project, full coverage, native resolution, verified NAVD88, '
+                             'newest acquisition); see the retained dossier') from None
+        selected = winner
+        object_id = selected['attributes'][object_id_field]
+        candidate_object_ids = [row['attributes'][object_id_field] for row in ordered]
+        selection_method = 'single_native_full_coverage_raster_newest_acquisition_v1'
+        info, vertical = extra['info'], extra['vertical']
+        requested, size, exported = extra['requested'], extra['size'], extra['exported']
+        raster, empty, decoder, origin = extra['raster'], extra['empty'], extra['decoder'], extra['origin']
+        already_resolved = True
+
+    if not already_resolved:
+        object_id = selected['attributes'][object_id_field]
+        info = nc_onemap_request(f'{object_id}/info', {})
+        validate_nc_horizontal_crs((info.get('extent') or {}).get('spatialReference') or {})
+        if any(not math.isclose(float(info.get(k, 0)), NC_ONEMAP_NATIVE_PIXEL_US_FEET, abs_tol=1e-9) for k in ('pixelSizeX', 'pixelSizeY')):
+            raise ValueError('NC selected raster grid differs from declared native spacing')
+        vertical = nc_vertical_evidence(info)
+        if vertical is None and rendering_only_resolution_m is None:
+            # Only one covering candidate existed and it lacks a verified
+            # vertical reference: the same "every candidate rejected" case
+            # as the ambiguous walk above, just with one candidate instead
+            # of several. Same fallback, same record-keeping.
+            return attempt_usgs_3dep_terrain_fallback(
+                directory, pkg, bounds, rendering_only_resolution_m,
+                'all_candidates_lack_verified_vertical_reference',
+                summarize_nc_rejected_candidates(
+                    [{'candidate': selected, 'reason': 'vertical_datum_unverified'}], object_id_field))
+        origin = info['origin']
+        grid_extent = {'xmin': origin['x'], 'ymin': origin['y']}
+        if rendering_only_resolution_m is None:
+            requested, size = nc_native_grid_bounds(request_bounds, grid_extent)
+            output_pixel_m = [NC_ONEMAP_NATIVE_PIXEL_US_FEET * US_SURVEY_FOOT_TO_METERS] * 2
+        else:
+            requested, size, output_pixel_m = nc_rendering_only_grid_bounds(request_bounds, grid_extent, rendering_only_resolution_m)
+        exported = nc_onemap_request('exportImage', {
+            'bbox': ','.join(map(str, requested)), 'bboxSR': 6543, 'imageSR': 6543,
+            'size': ','.join(map(str, size)), 'format': 'tiff', 'pixelType': 'F32',
+            'interpolation': 'RSP_BilinearInterpolation', 'renderingRule': json.dumps({'rasterFunction': 'None'}),
+            'mosaicRule': json.dumps({'mosaicMethod': 'esriMosaicLockRaster', 'lockRasterIds': [object_id], 'mosaicOperation': 'MT_FIRST'}),
+        })
+        validate_nc_horizontal_crs((exported.get('extent') or {}).get('spatialReference') or {})
+        if [exported.get('width'), exported.get('height')] != size:
+            raise ValueError('NC OneMap DEM03 export dimensions changed; source resampling requires review')
+        actual = exported.get('extent') or {}
+        actual_values = [float(actual.get(field, math.nan)) for field in ('xmin', 'ymin', 'xmax', 'ymax')]
+        if rendering_only_resolution_m is None:
+            if any(not math.isclose(value, expected, rel_tol=0, abs_tol=1e-6)
+                   for value, expected in zip(actual_values, requested)):
+                raise ValueError('NC OneMap DEM03 export extent changed; native-grid alignment requires review')
+        else:
+            # ArcGIS may expand a resampled export by part of one output cell so
+            # it preserves all requested samples. The returned extent has to cover
+            # the requested source-aligned perimeter, and cannot grow by more than
+            # one declared visual pixel. This remains a rendering-only contract.
+            output_step_ft = rendering_only_resolution_m / US_SURVEY_FOOT_TO_METERS
+            left, bottom, right, top = actual_values
+            if (not (left <= requested[0] <= requested[2] <= right and bottom <= requested[1] <= requested[3] <= top)
+                    or left < requested[0] - output_step_ft - 1e-6 or bottom < requested[1] - output_step_ft - 1e-6
+                    or right > requested[2] + output_step_ft + 1e-6 or top > requested[3] + output_step_ft + 1e-6):
+                raise ValueError('NC OneMap DEM03 rendering-only export does not preserve bounded source coverage')
+            output_pixel_m = [(right - left) / size[0] * US_SURVEY_FOOT_TO_METERS,
+                              (top - bottom) / size[1] * US_SURVEY_FOOT_TO_METERS]
+        raster = nc_onemap_read(exported['href'], 80_000_000)
+        (directory / 'elevation.tiff').write_bytes(raster)
+        decoded, _nodata, decoder = elevation_raster.read_elevation(directory / 'elevation.tiff')
+        empty = elevation_raster.empty_fraction(decoded)
+        if empty > MAX_EMPTY_EXPORT_FRACTION:
+            raise ValueError(f'NC OneMap DEM03 export contains {empty:.3%} empty fill; source coverage review required')
+    else:
+        output_pixel_m = [NC_ONEMAP_NATIVE_PIXEL_US_FEET * US_SURVEY_FOOT_TO_METERS] * 2
+        (directory / 'elevation.tiff').write_bytes(raster)
     # Preserve metadata even when measurement is blocked. Existing visual assets
     # remain usable; an explicitly requested visual export may declare an assumption.
     write_json(directory / 'selected-raster.json', {'catalog': catalog, 'rasterInfo': info}, True)
-    if vertical is None and rendering_only_resolution_m is None:
-        raise ValueError('VERTICAL_UNIT_UNKNOWN: selected county raster supplies no independent vertical CRS; metadata retained')
-    origin = info['origin']
-    grid_extent = {'xmin': origin['x'], 'ymin': origin['y']}
-    if rendering_only_resolution_m is None:
-        requested, size = nc_native_grid_bounds(request_bounds, grid_extent)
-        output_pixel_m = [NC_ONEMAP_NATIVE_PIXEL_US_FEET * US_SURVEY_FOOT_TO_METERS] * 2
-    else:
-        requested, size, output_pixel_m = nc_rendering_only_grid_bounds(request_bounds, grid_extent, rendering_only_resolution_m)
-    exported = nc_onemap_request('exportImage', {
-        'bbox': ','.join(map(str, requested)), 'bboxSR': 6543, 'imageSR': 6543,
-        'size': ','.join(map(str, size)), 'format': 'tiff', 'pixelType': 'F32',
-        'interpolation': 'RSP_BilinearInterpolation', 'renderingRule': json.dumps({'rasterFunction': 'None'}),
-        'mosaicRule': json.dumps({'mosaicMethod': 'esriMosaicLockRaster', 'lockRasterIds': [object_id], 'mosaicOperation': 'MT_FIRST'}),
-    })
-    validate_nc_horizontal_crs((exported.get('extent') or {}).get('spatialReference') or {})
-    if [exported.get('width'), exported.get('height')] != size:
-        raise ValueError('NC OneMap DEM03 export dimensions changed; source resampling requires review')
-    actual = exported.get('extent') or {}
-    actual_values = [float(actual.get(field, math.nan)) for field in ('xmin', 'ymin', 'xmax', 'ymax')]
-    if rendering_only_resolution_m is None:
-        if any(not math.isclose(value, expected, rel_tol=0, abs_tol=1e-6)
-               for value, expected in zip(actual_values, requested)):
-            raise ValueError('NC OneMap DEM03 export extent changed; native-grid alignment requires review')
-    else:
-        # ArcGIS may expand a resampled export by part of one output cell so
-        # it preserves all requested samples. The returned extent has to cover
-        # the requested source-aligned perimeter, and cannot grow by more than
-        # one declared visual pixel. This remains a rendering-only contract.
-        output_step_ft = rendering_only_resolution_m / US_SURVEY_FOOT_TO_METERS
-        left, bottom, right, top = actual_values
-        if (not (left <= requested[0] <= requested[2] <= right and bottom <= requested[1] <= requested[3] <= top)
-                or left < requested[0] - output_step_ft - 1e-6 or bottom < requested[1] - output_step_ft - 1e-6
-                or right > requested[2] + output_step_ft + 1e-6 or top > requested[3] + output_step_ft + 1e-6):
-            raise ValueError('NC OneMap DEM03 rendering-only export does not preserve bounded source coverage')
-        output_pixel_m = [(right - left) / size[0] * US_SURVEY_FOOT_TO_METERS,
-                          (top - bottom) / size[1] * US_SURVEY_FOOT_TO_METERS]
-    raster = nc_onemap_read(exported['href'], 80_000_000)
-    (directory / 'elevation.tiff').write_bytes(raster)
-    decoded, _nodata, decoder = elevation_raster.read_elevation(directory / 'elevation.tiff')
-    empty = elevation_raster.empty_fraction(decoded)
-    if empty > MAX_EMPTY_EXPORT_FRACTION:
-        raise ValueError(f'NC OneMap DEM03 export contains {empty:.3%} empty fill; source coverage review required')
     retrieved = datetime.now(timezone.utc).date().isoformat()
     exported.update(retrievedAt=retrieved, requestedNativeBoundsUSFeet=requested, sourceCrs=NC_ONEMAP_CRS,
                     requestedLocalBoundsM=bounds)
@@ -1067,12 +1457,19 @@ def acquire_nc_onemap_source(directory, pkg, bounds, rendering_only_resolution_m
                        'visualElevationAssumption': 'US survey feet assumed for visual-only rendering; unavailable for measurements'}),
         'retrievedAt': retrieved,
         'sourceSelection': (
-            'bounded_rendering_only_ambiguous_native_selection'
+            'single_native_full_coverage_raster_newest_acquisition_v1'
+            if selection_method == 'single_native_full_coverage_raster_newest_acquisition_v1'
+            else 'bounded_rendering_only_ambiguous_native_selection'
             if rendering_only_resolution_m is not None and len(candidate_object_ids) > 1
             else 'bounded_rendering_only_resampled_service_export'
             if rendering_only_resolution_m is not None
             else 'bounded_native_grid_locked_county_export'
         ),
+        'rejectedCandidates': [
+            {'objectId': row['candidate']['attributes'].get(object_id_field), 'title': row['candidate']['attributes'].get('name'),
+             'reason': row['reason'], **{k: v for k, v in row.items() if k not in ('candidate', 'reason')}}
+            for row in rejected_candidates
+        ],
         'renderingOnly': rendering_only_resolution_m is not None,
         'renderingOnlyResolutionM': rendering_only_resolution_m,
         'coverageMethod': SOURCE_COVERAGE_METHOD, 'coveragePaddingMeters': SOURCE_COVERAGE_PADDING_METERS,
