@@ -804,7 +804,7 @@ number, so wiring this in later cannot double-count the impact
 ## Distance profile (A2 deliverable — pure metrics, not yet wired)
 
 `metrics/distance-profile.ts`'s `computeDistanceProfile(facts, scope,
-options?)` computes five per-band `MetricResult`s over `ShotFact[]` — pure,
+holes)` computes five per-band `MetricResult`s over `ShotFact[]` — pure,
 no DB, and NOT wired into `approach-miss.ts` yet (that wiring is the next
 slice, behind a flag). It reuses the all-shot proximity semantics Package
 7B / addendum A2 already shipped in the migration
@@ -829,11 +829,18 @@ support floors.
   NEVER null, even when under-supported: it is the evidence count the
   support policy itself is judged against.
 - **Lay-up exclusion needs `par`, which `ShotFact` doesn't carry.**
-  `parByRoundHole` (keyed `` `${round_id}:${hole_number}` ``) is an
-  optional third argument; omitting it means no 175+ yd shot is ever
-  excluded as a lay-up (a conservative fallback), matching the migration's
-  own `IS NOT DISTINCT FROM 5` rule that an unresolvable par is never
-  treated as a confirmed par-5 lay-up either way.
+  `holes: readonly HoleContext[]` is a REQUIRED third argument (not an
+  optional side map) — `load-player-context.ts` already returns
+  `HoleContext[]` alongside `ShotFact[]`, so a real caller always has one
+  to pass. The function builds a `` `${round_id}:${hole_number}` `` → par
+  lookup internally. A 175+ yd shot whose hole is NOT resolvable from
+  `holes` is excluded from the band with reason `missing_par` — it is
+  NEVER silently kept as "probably not a lay-up." Only a CONFIRMED par-5
+  miss is excluded as a lay-up, mirroring the migration's own `IS NOT
+  DISTINCT FROM 5` rule — now enforced on the exclusion side
+  (`missing_par`) rather than the inclusion side. `MetricResult` carries
+  both `layupExcludedN` and `missingParExcludedN` (both always 0 outside
+  the 175+ band) so a caller can tell the two exclusion reasons apart.
 - **Direction coverage needed `miss_direction`, which `ShotFact` didn't
   carry until this slice.** Added as a required, raw-passthrough field
   (`types.ts`), threaded through `normalize-shot.ts`,
