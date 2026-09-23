@@ -579,10 +579,33 @@ export async function getRoundReview(roundId: string): Promise<{
   return observedGetRoundReview(roundId);
 }
 
+/**
+ * A stable, machine-readable reason for a `generateAndStoreRoundReview`
+ * failure, additive alongside the existing free-text `error` (never a
+ * replacement — `useRoundReviewV2.ts` and `review/page.tsx` both still read
+ * `.error` as the user-facing message). Added because a caught `TypeError`
+ * used to collapse into the exact same `success: false` shape as an
+ * expected "round not found" — logged correctly (every catch here already
+ * calls `logServerError`), but with no way for a caller, the admin
+ * dashboard, or a test to tell "a bug" from "a coach clicked a round that
+ * isn't done yet." `withAdminObserved`'s `extractActionSoftFailure` already
+ * reads a `code` field off any `success: false` envelope, so populating
+ * this wires straight into existing admin telemetry with no extra plumbing.
+ */
+type GenerateReviewFailureCode =
+  | 'unauthenticated'
+  | 'unauthorized'
+  | 'round_not_found'
+  | 'round_not_completed'
+  | 'db_error'
+  | 'save_failed'
+  | 'unknown';
+
 type GenerateReviewResult = {
   success: boolean;
   review?: RoundReviewWithRound;
   error?: string;
+  code?: GenerateReviewFailureCode;
 };
 
 /**
@@ -614,11 +637,11 @@ async function generateAndStoreRoundReviewImpl(
   // Auth + access are verified per-caller, never shared through the coordinator.
   const { data: { user }, error: authError } = await supabase.auth.getUser();
   if (authError || !user) {
-    return { success: false, error: 'Not authenticated' };
+    return { success: false, error: 'Not authenticated', code: 'unauthenticated' };
   }
   const access = await verifyReviewAccess(supabase, playerId, 'player_or_coach');
   if (!access.authorized) {
-    return { success: false, error: access.error || 'Not authorized to generate review for this player' };
+    return { success: false, error: access.error || 'Not authorized to generate review for this player', code: 'unauthorized' };
   }
 
   // The check above authorizes the PLAYER and takes `roundId` on trust — the
@@ -627,7 +650,7 @@ async function generateAndStoreRoundReviewImpl(
   // subject they may read with a round they may not, and the review is then
   // written against the authorized player. Bind the two before computing.
   if (!(await verifyRoundBelongsToPlayer(roundId, playerId, supabase))) {
-    return { success: false, error: 'Not authorized to generate review for this round' };
+    return { success: false, error: 'Not authorized to generate review for this round', code: 'unauthorized' };
   }
 
   // Single-flight by round_id: join an in-progress analysis instead of
@@ -685,14 +708,26 @@ async function computeAndStoreRoundReview(
       .single();
 
     if (roundError || !round) {
-      return { success: false, error: 'Round not found' };
+      // PGRST116 ("no rows") from `.single()` is the expected shape of "this
+      // round doesn't exist" — everything else (RLS misconfiguration, a
+      // dropped connection, a genuine query error) was previously collapsed
+      // into the identical "Round not found" response with no log line,
+      // indistinguishable from a coach clicking a stale link.
+      if (roundError && roundError.code !== 'PGRST116') {
+        await logServerError(
+          `[RoundReview] generateAndStoreRoundReview: round lookup failed: ${describeError(roundError)}`,
+          { action: 'round_review_system.generateAndStoreRoundReview', featureArea: 'round_reviews', roundId, playerId }
+        );
+        return { success: false, error: 'An unexpected error occurred', code: 'db_error' };
+      }
+      return { success: false, error: 'Round not found', code: 'round_not_found' };
     }
 
     // RoundData defines `status?: string`; the typed select returns `string | null`.
     // The narrowing is safe but TS needs the bridge cast.
     const roundData = round as RoundData;
     if (roundData.status !== 'completed') {
-      return { success: false, error: 'Round must be completed before generating a review' };
+      return { success: false, error: 'Round must be completed before generating a review', code: 'round_not_completed' };
     }
 
     // DS-4: the round is the authority on who the review belongs to. The caller
@@ -714,25 +749,50 @@ async function computeAndStoreRoundReview(
     if (ownerPlayerId !== playerId) {
       const ownerAccess = await verifyReviewAccess(supabase, ownerPlayerId, 'player_or_coach');
       if (!ownerAccess.authorized) {
-        return { success: false, error: ownerAccess.error || 'Not authorized to generate review for this player' };
+        return { success: false, error: ownerAccess.error || 'Not authorized to generate review for this player', code: 'unauthorized' };
       }
     }
 
     // Fetch shot-level data
-    const { data: shots } = await supabase
+    //
+    // A failed read here used to be indistinguishable from "this round has
+    // no shots yet": `shots` fell back to `undefined` → `shotRows` became
+    // `[]` → the compute continued to a SUCCESSFUL upsert built from empty
+    // data. Against an EXISTING review, that upsert (`ignoreDuplicates:
+    // false` — see below) would overwrite good, previously-computed content
+    // with an empty one and still report `success: true`. A transient DB
+    // error must fail the compute, not silently produce (or clobber a
+    // review with) worse data.
+    const { data: shots, error: shotsError } = await supabase
       .from('golf_shots')
       .select('hole_number, shot_number, shot_type, club_type, distance_to_hole_before, distance_unit_before, result, lie_before, lie_after, miss_direction, putt_distance_feet, shot_distance, is_penalty, putt_made')
       .eq('round_id', roundId)
       .order('hole_number', { ascending: true })
       .order('shot_number', { ascending: true });
+    if (shotsError) {
+      await logServerError(
+        `[RoundReview] generateAndStoreRoundReview: shots read failed: ${describeError(shotsError)}`,
+        { action: 'round_review_system.generateAndStoreRoundReview', featureArea: 'round_reviews', roundId, playerId }
+      );
+      return { success: false, error: 'An unexpected error occurred', code: 'db_error' };
+    }
 
     // Fetch hole-level data (par, recorded score) — used as ground truth for
-    // par values and scores when shot data is incomplete
-    const { data: holeRows } = await supabase
+    // par values and scores when shot data is incomplete. Same reasoning as
+    // the shots read above: a real error here must not masquerade as "no
+    // hole records."
+    const { data: holeRows, error: holesError } = await supabase
       .from('golf_holes')
       .select('hole_number, par, score, putts, fairway_hit, gir')
       .eq('round_id', roundId)
       .order('hole_number', { ascending: true });
+    if (holesError) {
+      await logServerError(
+        `[RoundReview] generateAndStoreRoundReview: holes read failed: ${describeError(holesError)}`,
+        { action: 'round_review_system.generateAndStoreRoundReview', featureArea: 'round_reviews', roundId, playerId }
+      );
+      return { success: false, error: 'An unexpected error occurred', code: 'db_error' };
+    }
 
     // Local ShotRow models distance fields as `string | null` to match the
     // historical parseFloat() callers in this file; the DB returns them as
@@ -757,6 +817,11 @@ async function computeAndStoreRoundReview(
     // including them, which this table does not carry) rather than risk an
     // arbitrary intra-day ordering. `.neq('id', roundId)` is kept as defense
     // in depth even though the date bound already excludes the round itself.
+    //
+    // NOTE: this comparison query's `error` is still left unhandled here —
+    // same reasoning as the (now fixed) shots/holes reads above would apply,
+    // but this block is N4/R4-owned (repair plan §5.4, #1977); left as a
+    // follow-up rather than touching #1977's query in this audit-repair PR.
     const { data: playerRounds } = await supabase
       .from('golf_rounds')
       .select('id, created_at, total_score, score_to_par, total_putts, total_gir, total_gir_possible, total_fairways_hit, total_fairways, holes_played')
@@ -838,7 +903,13 @@ async function computeAndStoreRoundReview(
       .select('id')
       .single();
 
-    if (upsertError || !upserted) return { success: false, error: 'Failed to save review' };
+    if (upsertError || !upserted) {
+      await logServerError(
+        `[RoundReview] generateAndStoreRoundReview: upsert failed: ${describeError(upsertError)}`,
+        { action: 'round_review_system.generateAndStoreRoundReview', featureArea: 'round_reviews', roundId, playerId }
+      );
+      return { success: false, error: 'Failed to save review', code: 'save_failed' };
+    }
     const reviewId: string = upserted.id;
 
     revalidatePath('/golf/dashboard/rounds');
@@ -874,7 +945,7 @@ async function computeAndStoreRoundReview(
       `[RoundReview] generateAndStoreRoundReview failed: ${describeError(error)}`,
       { action: 'round_review_system.generateAndStoreRoundReview', featureArea: 'round_reviews', roundId, playerId }
     );
-    return { success: false, error: 'An unexpected error occurred' };
+    return { success: false, error: 'An unexpected error occurred', code: 'unknown' };
   }
 }
 
