@@ -27,6 +27,17 @@
 -- without seeding integration data (matches the deferral note in _helpers.sql).
 --
 -- Source: source -> signal -> action -> TIMELINE -> OUTCOME display loop.
+--
+-- Policy names: production's live policies are `baseball_timeline_event_acks_*`
+-- (with "_event_"), not the `baseball_timeline_acks_*` names this table's
+-- origin migration (20260624000430) and its LOCAL-ONLY reconciliation
+-- (20260825222432 — corrected in supabase/migrations/HELD.md, never ran
+-- live) create on a fresh replay.
+-- `20260923000000_baseball_timeline_event_acks_contract_repair.sql`
+-- converges both environments onto the production names for insert/update/
+-- delete (leaving select untouched), so the assertions below reference
+-- `baseball_timeline_event_acks_insert`, confirmed live via pg_policies
+-- 2026-09-23.
 
 BEGIN;
 \ir _helpers.sql
@@ -60,7 +71,7 @@ SELECT ok(
       JOIN pg_class c ON c.oid = p.polrelid
       JOIN pg_namespace n ON n.oid = c.relnamespace
       WHERE n.nspname = 'public' AND c.relname = 'baseball_timeline_event_acks'
-        AND p.polname = 'baseball_timeline_acks_insert'
+        AND p.polname = 'baseball_timeline_event_acks_insert'
   ), '')) > 0,
   'baseball_timeline_event_acks INSERT WITH CHECK requires user_id = auth.uid()'
 );
@@ -96,13 +107,13 @@ SELECT ok(
      JOIN pg_class c ON c.oid = p.polrelid
      JOIN pg_namespace n ON n.oid = c.relnamespace
      WHERE n.nspname = 'public' AND c.relname = 'baseball_timeline_event_acks'
-       AND p.polname = 'baseball_timeline_acks_insert') ~ 'staff_only'
+       AND p.polname = 'baseball_timeline_event_acks_insert') ~ 'staff_only'
   AND (SELECT pg_get_expr(p.polwithcheck, p.polrelid)
          FROM pg_policy p
          JOIN pg_class c ON c.oid = p.polrelid
          JOIN pg_namespace n ON n.oid = c.relnamespace
          WHERE n.nspname = 'public' AND c.relname = 'baseball_timeline_event_acks'
-           AND p.polname = 'baseball_timeline_acks_insert') ~ 'baseball_player_timeline_events',
+           AND p.polname = 'baseball_timeline_event_acks_insert') ~ 'baseball_player_timeline_events',
   'baseball_timeline_event_acks INSERT WITH CHECK gates on the timeline event visibility (excludes staff_only) against baseball_player_timeline_events'
 );
 

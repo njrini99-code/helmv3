@@ -353,7 +353,9 @@ CREATE TABLE IF NOT EXISTS "public"."baseball_camp_registrations" (
     "status" "text" DEFAULT 'registered'::"text",
     "payment_status" "text" DEFAULT 'pending'::"text",
     "notes" "text",
-    "created_at" timestamp with time zone DEFAULT "now"()
+    "created_at" timestamp with time zone DEFAULT "now"(),
+    "registered_at" timestamp with time zone DEFAULT "now"(),
+    "attended_at" timestamp with time zone
 );
 
 ALTER TABLE "public"."baseball_camp_registrations" OWNER TO "postgres";
@@ -998,6 +1000,10 @@ CREATE TABLE IF NOT EXISTS "public"."baseball_pitch_events" (
     "trust_tier" "text" DEFAULT 'unverified'::"text" NOT NULL,
     "visibility" "text" DEFAULT 'staff_only'::"text" NOT NULL,
     "measured_at" timestamp with time zone,
+    "batter_id" "uuid",
+    "pitch_type_classified" "text",
+    "is_called_strike" boolean,
+    "count_state" "text",
     CONSTRAINT "baseball_pitch_events_batter_handedness_check" CHECK (("batter_handedness" = ANY (ARRAY['L'::"text", 'R'::"text", 'S'::"text"]))),
     CONSTRAINT "baseball_pitch_events_data_context_check" CHECK (("data_context" = ANY (ARRAY['official_game'::"text", 'scrimmage'::"text", 'practice'::"text", 'bullpen'::"text", 'cage'::"text", 'showcase'::"text", 'sensor'::"text", 'video'::"text", 'lift'::"text", 'readiness'::"text", 'manual'::"text"]))),
     CONSTRAINT "baseball_pitch_events_trust_tier_check" CHECK (("trust_tier" = ANY (ARRAY['official'::"text", 'verified_vendor'::"text", 'coach_reviewed'::"text", 'player_submitted'::"text", 'unverified'::"text", 'inferred'::"text"]))),
@@ -2148,6 +2154,8 @@ CREATE TABLE IF NOT EXISTS "public"."baseball_timeline_event_acks" (
     "acked_at" timestamp with time zone DEFAULT "now"() NOT NULL,
     "reaction" "text",
     "note" "text",
+    "user_id" "uuid" NOT NULL,
+    "acknowledged_at" timestamp with time zone DEFAULT "now"() NOT NULL,
     CONSTRAINT "baseball_timeline_event_acks_reaction_check" CHECK (("reaction" = ANY (ARRAY['seen'::"text", 'acknowledged'::"text", 'flagged'::"text", 'disputed'::"text"])))
 );
 
@@ -2297,6 +2305,8 @@ CREATE TABLE IF NOT EXISTS "public"."baseball_workload_events" (
     "game_id" "uuid",
     "source_refs" "jsonb" DEFAULT '[]'::"jsonb" NOT NULL,
     "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "count" integer,
+    "high_intent_count" integer,
     CONSTRAINT "baseball_workload_events_event_type_check" CHECK (("event_type" = ANY (ARRAY['pitching'::"text", 'bullpen'::"text", 'long_toss'::"text", 'flat_ground'::"text", 'catching'::"text", 'throwing'::"text", 'other'::"text"])))
 );
 

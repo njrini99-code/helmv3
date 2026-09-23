@@ -373,6 +373,9 @@ ALTER TABLE ONLY "public"."baseball_timeline_event_acks"
 ALTER TABLE ONLY "public"."baseball_timeline_event_acks"
     ADD CONSTRAINT "baseball_timeline_event_acks_timeline_event_id_acked_by_key" UNIQUE ("timeline_event_id", "acked_by");
 
+ALTER TABLE ONLY "public"."baseball_timeline_event_acks"
+    ADD CONSTRAINT "baseball_timeline_event_acks_timeline_event_id_user_id_key" UNIQUE ("timeline_event_id", "user_id");
+
 ALTER TABLE ONLY "public"."baseball_travel_expenses"
     ADD CONSTRAINT "baseball_travel_expenses_pkey" PRIMARY KEY ("id");
 
@@ -792,6 +795,9 @@ ALTER TABLE ONLY "public"."baseball_messages"
 
 ALTER TABLE ONLY "public"."baseball_notifications"
     ADD CONSTRAINT "baseball_notifications_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
+
+ALTER TABLE ONLY "public"."baseball_pitch_events"
+    ADD CONSTRAINT "baseball_pitch_events_batter_id_fkey" FOREIGN KEY ("batter_id") REFERENCES "public"."baseball_players"("id") ON DELETE SET NULL;
 
 ALTER TABLE ONLY "public"."baseball_pitch_events"
     ADD CONSTRAINT "baseball_pitch_events_game_id_fkey" FOREIGN KEY ("game_id") REFERENCES "public"."baseball_games"("id") ON DELETE SET NULL;

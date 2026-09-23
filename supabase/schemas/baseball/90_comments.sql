@@ -65,3 +65,15 @@ COMMENT ON COLUMN "public"."baseball_team_coach_staff"."can_view_private_notes" 
 COMMENT ON COLUMN "public"."baseball_team_coach_staff"."can_message_players" IS 'Send messages to players. Backs has_baseball_staff_capability(team_id, ''can_message_players''). can_message_team is a deprecated alias resolved at the app layer only (src/lib/baseball/capabilities.ts); not mirrored here.';
 
 COMMENT ON COLUMN "public"."baseball_team_coach_staff"."can_export_reports" IS 'Export performance and team reports. Backs has_baseball_staff_capability(team_id, ''can_export_reports'').';
+
+COMMENT ON COLUMN "public"."baseball_camp_registrations"."registered_at" IS 'When the player registered for the camp. Backfilled from created_at for pre-existing rows; defaults to now() going forward.';
+
+COMMENT ON COLUMN "public"."baseball_camp_registrations"."attended_at" IS 'When the player was marked as attended by the camp''s owning coach (checkInCampPlayer). NULL until check-in; no default.';
+
+COMMENT ON COLUMN "public"."baseball_pitch_events"."batter_id" IS 'Elite stat event model column, never landed live (see this file''s header — the create-if-not-exists in 20260624000080 no-op''d against this pre-existing table). FK to baseball_players, matching the source migration''s own definition of this column.';
+
+COMMENT ON COLUMN "public"."baseball_workload_events"."count" IS 'Elite stat event model column, never landed live (see this file''s header — the create-if-not-exists in 20260624000080 no-op''d against this pre-existing table).';
+
+COMMENT ON COLUMN "public"."baseball_timeline_event_acks"."user_id" IS 'Canonical self-service actor key — always written equal to acked_by. No FK to auth.users: acked_by already carries one, and a second FK on this shared table is avoided deliberately (see this file''s header).';
+
+COMMENT ON COLUMN "public"."baseball_timeline_event_acks"."acknowledged_at" IS 'Canonical timestamp key — always written equal to acked_at.';
