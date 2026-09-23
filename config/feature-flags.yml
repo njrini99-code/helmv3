@@ -351,6 +351,42 @@ flags:
       rule). This flag is promoted or removed based on that decision plus
       shadow-log evidence on the insufficient-evidence rate, not on a fixed
       date.
+  # Addendum A8 slice 2 (folded into Pkg 9): gates BOTH new tables added by
+  # supabase/migrations/20260923110000_golf_focus_area_practice_log.sql —
+  # golf_focus_area_criteria (coach-written "done" definitions, one row per
+  # criterion) and golf_focus_area_practice_sessions (the append-only
+  # practice-completion log). A db-migration-reviewer pass moved criteria
+  # OUT of a golf_player_focus_areas jsonb column (v1 of this slice) into
+  # its own table, since a player could otherwise PATCH it directly — see
+  # memory/features/player-coachhelm-development.md. Neither table is
+  # applied to production yet (owner's migration apply queue); every read
+  # AND write of either table must check this flag first, with zero
+  # .from() calls against either while it is off, since neither table
+  # exists yet in a given environment.
+  - feature_id: coachhelm_focus_area_practice_log
+    owner: golf/coachhelm
+    purpose: >-
+      Gates the coach-written "done" criteria and the practice-completion
+      log rows for a focus area, added for A8 slice 2. Off means zero
+      reads or writes of either new table anywhere in the app — required
+      because the migration that creates them has not been applied in
+      every environment yet.
+    type: temporary_migration
+    status: active
+    created_at: "2026-09-23"
+    expires_at: "2026-12-23"
+    default: false
+    environment:
+      production: false
+      preview: false
+      development: false
+    kill_switch_behavior: null
+    cleanup_plan: >-
+      Once 20260923110000_golf_focus_area_practice_log.sql is applied in
+      every environment and the read/write paths have run in production
+      without incident, flip default to true, then remove this flag and
+      the now-dead off-branches once the write paths no longer need a
+      migration-safety gate.
   # Addendum §13 A7 slice 1: the Game Fingerprint page's own Approach/
   # Scoring sections read golf_player_stats_cache with an opaque,
   # cron-recomputed window — this surface instead loads a fresh rolling
