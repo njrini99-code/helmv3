@@ -29,7 +29,7 @@ const mocks = vi.hoisted(() => ({
   createClient: vi.fn(async () => ({})),
   createAdminClient: vi.fn(() => ({})),
   logServerError: vi.fn(async () => {}),
-  logServerEvent: vi.fn(async () => {}),
+  logServerEvent: vi.fn(async (..._args: [string, Record<string, unknown>?, string?]) => {}),
   checkBudget: vi.fn(async () => ({
     allowed: true,
     remaining_usd: 1,
@@ -429,18 +429,26 @@ describe('POST /coachhelm/v3/chat/stream — grounding audit over the full strea
     expect(auditedText).toContain('71%');
     expect(auditedText).toContain('Final step text mentions nothing numeric.');
 
-    // The flagged fabrication is stored, not silently passed through.
+    // The flagged fabrication is stored as `failed`. `content` itself stays
+    // the raw model text (route.ts's `onFinish`, `content: text`) — the
+    // note lives only in `ui_parts`/the wire part below, kept out of
+    // `content` so it never leaks into the next turn's model context via
+    // `convertToModelMessages` (this test previously asserted `content`
+    // carried the note itself, which was never true; caught during #1997
+    // review, SHOULD-3, alongside the matching stale claim in
+    // memory/features/coachhelm-ai.md).
     const persisted = mocks.appendMessage.mock.calls[0]![1];
     expect(persisted.status).toBe('failed');
-    expect(persisted.content as string).toContain(
-      "could not be traced back to your program's data",
-    );
+    expect(persisted.content as string).toContain('71%');
 
-    // The flag was written to the wire live, not only discovered on reload.
+    // The flag — carrying the coach-facing note — was written to the wire
+    // live, not only discovered on reload.
     const flagWrite = mocks.lastWriter!.write.mock.calls.find(
       (call) => (call[0] as FakeChunk).type === 'data-grounding-flag',
     );
     expect(flagWrite).toBeDefined();
+    const flagData = (flagWrite![0] as { data?: { note?: string } }).data;
+    expect(flagData?.note).toContain("could not be traced back to your program's data");
   });
 
   it('never stores a turn complete when a provider error interrupted the stream (MUST-FIX #2)', async () => {
@@ -899,5 +907,149 @@ describe('POST /coachhelm/v3/chat/stream — grounding audit over the full strea
     const seededDetailNumbers = mocks.auditNumericClaims.mock.calls[0]![3] ?? [];
     expect(seededMeasurements.some((m) => m.value === 30 || m.value === 99)).toBe(false);
     expect(seededDetailNumbers).not.toEqual(expect.arrayContaining([62]));
+  });
+});
+
+/**
+ * Review of PR #1997 (2026-09-23): three gaps found alongside the
+ * rejection-collapse regression fixed in ChatThread.tsx/restore.ts and
+ * agent-tools.ts (see `agent-tools.collect.test.ts` for the latter's own
+ * unit coverage).
+ */
+describe('POST /coachhelm/v3/chat/stream — #1997 review follow-ups', () => {
+  beforeEach(() => {
+    mocks.setConversationId.mockClear();
+    mocks.recordAi.mockClear();
+    mocks.streamText.mockReset();
+    mocks.createUIMessageStream.mockClear();
+    mocks.auditNumericClaims.mockReset().mockReturnValue([]);
+    mocks.collectNumbers.mockReset().mockReturnValue([]);
+    mocks.appendMessage.mockClear();
+    mocks.logServerEvent.mockClear();
+    mocks.getConversation.mockReset().mockResolvedValue(null);
+    mocks.findAssistantTurn.mockReset().mockResolvedValue(null);
+    mocks.listRecentMessages.mockReset().mockResolvedValue([]);
+    mocks.buildCoachTools.mockReset().mockReturnValue({});
+    mocks.onFinishAssistantParts = null;
+    mocks.lastWriter = null;
+  });
+
+  it('the onFinish fallback (no verdict ever computed, e.g. cancel() racing execute) logs and stores stream_incomplete, not a re-audited fragment', async () => {
+    // Mirrors the existing "connection drops before a finish chunk" case:
+    // this mock harness always awaits `execute` to completion before calling
+    // `onFinish`, so the observable state it can produce for "cancel() fires
+    // concurrently with execute, before execute ever sets its verdict" is the
+    // same one — `turnVerdict` still `null` when `onFinish` runs. What this
+    // test adds on top of that existing coverage is proving `onFinish`'s OWN
+    // fallback branch is what fired (via its distinct log event), not merely
+    // that `status` happens to end up `'failed'` for some other reason.
+    mocks.streamText.mockImplementation(() => ({
+      usage: Promise.resolve({ inputTokens: 20, outputTokens: 2 }),
+      toUIMessageStream: () =>
+        fakeUiMessageStream([
+          { type: 'text-start', id: 's1' },
+          { type: 'text-delta', id: 's1', delta: 'Still working on it' },
+          // No `finish` chunk — `execute`'s loop leaves `turnVerdict` null.
+        ]),
+    }));
+
+    await runPostAndSettle(baseBody);
+
+    const persisted = mocks.appendMessage.mock.calls[0]![1];
+    expect(persisted.status).toBe('failed');
+    const incompleteLog = mocks.logServerEvent.mock.calls.find(
+      (c) => c[1]?.action === 'v3.chat.stream.incomplete',
+    );
+    expect(incompleteLog).toBeDefined();
+    // The ungrounded-claims branch — a different failure story — must not
+    // also have fired for the same turn.
+    const ungroundedLog = mocks.logServerEvent.mock.calls.find(
+      (c) => c[1]?.action === 'v3.chat.stream.ungrounded',
+    );
+    expect(ungroundedLog).toBeUndefined();
+  });
+
+  it('a turn that pauses for coach approval (stepCountIs boundary, tool-call chunks before a clean finish) is not marked stream_incomplete', async () => {
+    // The AI SDK still emits a `finish` chunk when a step suspends for
+    // `toolApproval` — the response itself completes; only the CALL is
+    // pending a coach decision, resumed by a later request. This turn's
+    // chunk sequence has no text at all (a bare proposal turn), which is
+    // itself a real, accepted shape — see `hasPersistableAssistantContent`.
+    mocks.streamText.mockImplementation(() => ({
+      usage: Promise.resolve({ inputTokens: 30, outputTokens: 8 }),
+      toUIMessageStream: () =>
+        fakeUiMessageStream([
+          { type: 'tool-input-start', toolCallId: 'call-1', toolName: 'create_focus_area' },
+          { type: 'tool-input-available', toolCallId: 'call-1', toolName: 'create_focus_area', input: {} },
+          { type: 'data-action-proposal', id: 'proposal-1', data: { summary: 'Create a focus area' } },
+          // No text-delta, no error — the step paused cleanly for approval.
+          { type: 'finish' },
+        ]),
+    }));
+
+    await runPostAndSettle(baseBody);
+
+    const persisted = mocks.appendMessage.mock.calls[0]![1];
+    expect(persisted.status).not.toBe('failed');
+    const incompleteLog = mocks.logServerEvent.mock.calls.find(
+      (c) => c[1]?.action === 'v3.chat.stream.incomplete',
+    );
+    expect(incompleteLog).toBeUndefined();
+  });
+
+  it('a proposal/receipt number the model restates in prose is accepted — proving route.ts folds a tool envelope\'s `detail` (collectActionNumbers in agent-tools.ts) into the numeric audit\'s supported set (MUST-1(b))', async () => {
+    // `buildCoachTools` is mocked wholesale in this suite, so this does not
+    // exercise `proposeGated`/`executeGated` themselves (see
+    // `agent-tools.collect.test.ts` for that) — it proves the OTHER half of
+    // the fix: that route.ts's own `collect` callback still folds an
+    // envelope's `detail` numbers into `auditNumericClaims`'s `extraSupported`
+    // argument, which is the mechanism `collectActionNumbers` relies on.
+    mocks.buildCoachTools.mockImplementation(
+      ({ collect }: { collect: (envelope: Record<string, unknown>) => void }) => {
+        collect({
+          summary: '3 sessions of 90 minutes',
+          measurements: [],
+          series: [],
+          detail: { proposal: { summary: '3 sessions of 90 minutes' } },
+          coverage: 'complete',
+          coverage_note: null,
+          as_of: '2026-09-23T00:00:00.000Z',
+        });
+        return {};
+      },
+    );
+    mocks.collectNumbers.mockImplementation((detail: unknown) => {
+      const summary = (detail as { proposal?: { summary?: string } } | undefined)?.proposal?.summary;
+      return summary === '3 sessions of 90 minutes' ? [3, 90] : [];
+    });
+    // A faithful-enough stand-in for the real `auditNumericClaims`: a number
+    // in the text is unsupported unless it appears in `extraSupported`
+    // (route.ts's 4th argument) — exactly the field `collectActionNumbers`
+    // exists to populate.
+    mocks.auditNumericClaims.mockImplementation(
+      (
+        text: string,
+        _m: Record<string, unknown>[],
+        _s: Record<string, unknown>[] = [],
+        extraSupported: number[] = [],
+      ) => {
+        const unsupported: { text: string; value: number }[] = [];
+        for (const match of text.matchAll(/\d+(?:\.\d+)?/g)) {
+          const value = Number(match[0]);
+          if (Number.isInteger(value) && Math.abs(value) <= 12) continue;
+          if (!extraSupported.includes(value)) unsupported.push({ text: match[0], value });
+        }
+        return unsupported;
+      },
+    );
+    mocks.streamText.mockImplementation(() => ({
+      usage: Promise.resolve({ inputTokens: 10, outputTokens: 10 }),
+      toUIMessageStream: () => minimalUiMessageStream('The plan is 3 sessions of 90 minutes each.'),
+    }));
+
+    await runPostAndSettle(baseBody);
+
+    const persisted = mocks.appendMessage.mock.calls[0]![1];
+    expect(persisted.status).toBe('complete');
   });
 });

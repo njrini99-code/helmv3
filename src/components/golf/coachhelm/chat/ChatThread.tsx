@@ -163,24 +163,47 @@ function MessageTurn({
   // Written by the route (not a tool), once, when the finished turn is
   // rejected — an ungrounded numeric claim, or a stream that never finished
   // (`chat/verdict.ts`'s `computeTurnVerdict`). Whichever part type is
-  // present, the whole turn collapses to just this note — never alongside
-  // the streamed text, evidence, or an activity receipt. This is the "state
-  // it, don't hide it" requirement (repair plan §14.10): a rejected turn
-  // must never look, even partially, like an accepted answer, on THIS
+  // present, the turn collapses to just this note plus its action parts —
+  // never alongside the streamed TEXT or EVIDENCE. This is the "state it,
+  // don't hide it" requirement (repair plan §14.10): a rejected turn's
+  // PROSE must never look, even partially, like an accepted answer, on THIS
   // connection or on a later reload (`restoreUIMessages` applies the exact
   // same collapse — see its own doc comment). Because the verdict part is
   // only written after the model's own text has already streamed to the
   // browser, its arrival is a visible moment: the tokens the coach was just
   // reading disappear and this note takes their place.
+  //
+  // `data-action-proposal`/`data-action-receipt` are deliberately NOT
+  // dropped here (#1997 review, MUST-1/MUST-2). They are facts about an
+  // ACTION, not claims the numeric/claim audit ever judges: a proposal is a
+  // preview of a write the coach has not yet approved, and a receipt is a
+  // write that already happened (`executeGated` → `action.run` →
+  // `recordOutcome`), before this turn's own prose was ever audited. The
+  // audit rejecting the SURROUNDING text (a fabricated or unfinished
+  // sentence elsewhere in the same turn) must not also hide a Confirm card
+  // or make a real write vanish from the coach's history — that Confirm
+  // button is the coach's only path to the action once its proposal exists,
+  // and a receipt for a write that already ran is a fact regardless of
+  // whether the accompanying prose passed review.
   const verdictPart = parts.find(
     (p) => p.type === 'data-grounding-flag' || p.type === 'data-turn-incomplete',
   );
   if (verdictPart) {
     const note = String((verdictPart.data as { note?: string } | undefined)?.note ?? '');
-    if (!note) return null;
+    const actionParts = parts.filter(
+      (p) => p.type === 'data-action-proposal' || p.type === 'data-action-receipt',
+    );
+    if (!note && actionParts.length === 0) return null;
     return (
-      <article className={PROSE_WIDTH}>
-        <AssistantProse text={note} playersByName={playersByName} lead={false} />
+      <article className="flex flex-col gap-4">
+        {note && (
+          <div className={PROSE_WIDTH}>
+            <AssistantProse text={note} playersByName={playersByName} lead={false} />
+          </div>
+        )}
+        {actionParts.map((part, index) =>
+          renderActionPart(part, index, parts, onApprove, onDeny),
+        )}
       </article>
     );
   }
@@ -218,45 +241,8 @@ function MessageTurn({
           );
         }
 
-        if (part.type === 'data-action-proposal') {
-          const proposal = part.data as ActionProposal & { tool: string };
-          // The matching tool part carries the approval state; find it so the
-          // card can show "Confirmed" instead of live buttons after a decision.
-          const approvalPart = parts.find(
-            (p) => p.type.startsWith('tool-') && String(p.type).includes(proposal.tool),
-          ) as
-            | { toolCallId?: string; state?: string; approval?: { id?: string; approved?: boolean } }
-            | undefined;
-
-          // The SDK answers an approval by its OWN id, not the tool-call id.
-          // Passing `toolCallId` here matched nothing and made Confirm inert.
-          const approvalId = approvalPart?.approval?.id;
-
-          const decision =
-            approvalPart?.approval?.approved === true
-              ? ('approved' as const)
-              : approvalPart?.approval?.approved === false
-                ? ('denied' as const)
-                : null;
-
-          return (
-            <div key={index} className="max-w-[42rem]">
-              <ActionProposalCard
-                proposal={proposal}
-                decision={decision}
-                onApprove={approvalId ? () => onApprove(approvalId) : undefined}
-                onDeny={approvalId ? () => onDeny(approvalId) : undefined}
-              />
-            </div>
-          );
-        }
-
-        if (part.type === 'data-action-receipt') {
-          return (
-            <div key={index} className="max-w-[42rem]">
-              <ActionReceiptCard receipt={part.data as ActionReceipt} />
-            </div>
-          );
+        if (part.type === 'data-action-proposal' || part.type === 'data-action-receipt') {
+          return renderActionPart(part, index, parts, onApprove, onDeny);
         }
 
         return null;
@@ -265,6 +251,64 @@ function MessageTurn({
       {onSuggestion && <FollowUps parts={parts} onSuggestion={onSuggestion} />}
     </article>
   );
+}
+
+/**
+ * A proposal (preview of a write awaiting approval) or a receipt (a write
+ * that already ran). Shared between the normal per-turn render and the
+ * rejected-turn collapse above — both cases show the SAME action card,
+ * because whether it renders is never a function of the audit outcome (see
+ * the collapse branch's own doc comment for why).
+ */
+function renderActionPart(
+  part: Part,
+  index: number,
+  parts: Part[],
+  onApprove: (id: string) => void,
+  onDeny: (id: string) => void,
+): React.ReactNode {
+  if (part.type === 'data-action-proposal') {
+    const proposal = part.data as ActionProposal & { tool: string };
+    // The matching tool part carries the approval state; find it so the
+    // card can show "Confirmed" instead of live buttons after a decision.
+    const approvalPart = parts.find(
+      (p) => p.type.startsWith('tool-') && String(p.type).includes(proposal.tool),
+    ) as
+      | { toolCallId?: string; state?: string; approval?: { id?: string; approved?: boolean } }
+      | undefined;
+
+    // The SDK answers an approval by its OWN id, not the tool-call id.
+    // Passing `toolCallId` here matched nothing and made Confirm inert.
+    const approvalId = approvalPart?.approval?.id;
+
+    const decision =
+      approvalPart?.approval?.approved === true
+        ? ('approved' as const)
+        : approvalPart?.approval?.approved === false
+          ? ('denied' as const)
+          : null;
+
+    return (
+      <div key={index} className="max-w-[42rem]">
+        <ActionProposalCard
+          proposal={proposal}
+          decision={decision}
+          onApprove={approvalId ? () => onApprove(approvalId) : undefined}
+          onDeny={approvalId ? () => onDeny(approvalId) : undefined}
+        />
+      </div>
+    );
+  }
+
+  if (part.type === 'data-action-receipt') {
+    return (
+      <div key={index} className="max-w-[42rem]">
+        <ActionReceiptCard receipt={part.data as ActionReceipt} />
+      </div>
+    );
+  }
+
+  return null;
 }
 
 /**

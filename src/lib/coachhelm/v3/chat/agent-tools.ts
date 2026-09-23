@@ -66,7 +66,7 @@ import {
   getUpcomingEvents,
   resolvePlayerReference,
 } from './read-tools';
-import { unavailableEnvelope, type ToolEnvelope } from './provenance';
+import { nowIso, unavailableEnvelope, type ToolEnvelope } from './provenance';
 import {
   planRecurringPractice,
   executeRecurringPractice,
@@ -236,6 +236,29 @@ export function buildCoachTools({ sb, ctx, conversationId, writer, collect }: Bu
       return envelope;
     };
 
+  /**
+   * A proposal or receipt is not a read tool's `ToolEnvelope` — it never had
+   * measurements to begin with — but its own numbers ("3 sessions of 90
+   * minutes", "8 practices", "12 recipients") are things the model wrote
+   * about ITS OWN action and will restate in the reply. Without this,
+   * `auditNumericClaims` had nothing to check those numbers against and
+   * rejected the whole turn — hiding the Confirm card and the receipt behind
+   * a false "ungrounded claim" note (#1997 review, MUST-1(b)). Folding the
+   * plan/receipt through `collect` the same way a read tool's `detail` does
+   * makes every number on the card itself count as supported evidence.
+   */
+  const collectActionNumbers = (summary: string, detail: unknown) => {
+    collect({
+      summary,
+      measurements: [],
+      series: [],
+      detail,
+      coverage: 'complete',
+      coverage_note: null,
+      as_of: nowIso(),
+    });
+  };
+
   const PlayerId = z.string().uuid().describe('Player id from the roster. Use find_player if you only have a name.');
 
   /**
@@ -257,6 +280,7 @@ export function buildCoachTools({ sb, ctx, conversationId, writer, collect }: Bu
         proposed_input: plan,
         idempotency_key: proposal.idempotency_key,
       });
+      collectActionNumbers(proposal.summary, { proposal, plan });
       writer.write({
         type: 'data-action-proposal',
         id: `proposal-${proposal.idempotency_key}`,
@@ -333,6 +357,7 @@ export function buildCoachTools({ sb, ctx, conversationId, writer, collect }: Bu
       idempotency_key: proposal.idempotency_key,
     });
     if (claim.kind === 'already_completed') {
+      collectActionNumbers(claim.receipt.summary, claim.receipt);
       writer.write({
         type: 'data-action-receipt',
         id: `receipt-${proposal.idempotency_key}`,
@@ -349,6 +374,7 @@ export function buildCoachTools({ sb, ctx, conversationId, writer, collect }: Bu
 
     const receipt = await action.run(plan);
     await recordOutcome(sb, { run_id: claim.run_id, receipt });
+    collectActionNumbers(receipt.summary, { plan, receipt });
     writer.write({
       type: 'data-action-receipt',
       id: `receipt-${proposal.idempotency_key}`,
@@ -593,6 +619,13 @@ export function buildCoachTools({ sb, ctx, conversationId, writer, collect }: Bu
             proposed_input: plan,
             idempotency_key: proposal.idempotency_key,
           });
+          // Same fix as `proposeGated` above (#1997 review, MUST-1(b)) — this
+          // tool duplicates that helper's shape instead of using it (see
+          // `GatedAction`'s doc comment), so it needs its own call. A
+          // recurring practice's own preview is dense with numbers
+          // (occurrence_count, weekday count, every date), so this is the
+          // tool most likely to trip the false-positive rejection.
+          collectActionNumbers(proposal.summary, { proposal, plan });
           writer.write({
             type: 'data-action-proposal',
             id: `proposal-${proposal.idempotency_key}`,
@@ -660,6 +693,7 @@ export function buildCoachTools({ sb, ctx, conversationId, writer, collect }: Bu
           idempotency_key: proposal.idempotency_key,
         });
         if (claim.kind === 'already_completed') {
+          collectActionNumbers(claim.receipt.summary, claim.receipt);
           writer.write({
             type: 'data-action-receipt',
             id: `receipt-${proposal.idempotency_key}`,
@@ -676,6 +710,7 @@ export function buildCoachTools({ sb, ctx, conversationId, writer, collect }: Bu
 
         const receipt: ActionReceipt = await executeRecurringPractice(ctx, plan);
         await recordOutcome(sb, { run_id: claim.run_id, receipt });
+        collectActionNumbers(receipt.summary, { plan, receipt });
         writer.write({
           type: 'data-action-receipt',
           id: `receipt-${proposal.idempotency_key}`,
