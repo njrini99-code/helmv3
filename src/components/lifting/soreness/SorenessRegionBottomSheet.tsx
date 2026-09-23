@@ -43,6 +43,16 @@ const SORENESS_TAGS = [
   'Swollen', 'Burning', 'After activity', 'At rest',
 ] as const;
 
+// The WebView never resizes for the soft keyboard (`resize: 'ionic'`, no
+// <ion-app> — CapacitorProvider), and Safari doesn't resize its layout
+// viewport either, so a sheet pinned to `bottom-0` sits under the keys the
+// moment the Note textarea is tapped. Same fix as Sheet.tsx's bottom side:
+// lift by `--keyboard-height` (CapacitorProvider publishes it, 0px on
+// desktop and with the keyboard down) instead of pinning to the literal
+// viewport edge.
+const KEYBOARD_LIFT =
+  'bottom-[var(--keyboard-height,0px)] transition-[bottom] duration-[250ms] motion-reduce:transition-none';
+
 // ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
@@ -108,9 +118,11 @@ export function SorenessRegionBottomSheet({ regionId, existing, onSave, onClose 
           <motion.div
             key="sheet"
             ref={sheetRef}
-            className="fixed bottom-0 left-0 right-0 z-50 mx-auto max-w-lg
+            data-fw-keyboard-aware
+            className={`fixed left-0 right-0 z-50 mx-auto max-w-lg
               rounded-t-[28px] glass-standard backdrop-blur-xl
-              border-t border-white/40 shadow-2xl"
+              border-t border-white/40 shadow-2xl
+              ${KEYBOARD_LIFT}`}
             initial={prefersReducedMotion ? false : { y: '100%' }}
             animate={{ y: 0 }}
             exit={prefersReducedMotion ? {} : { y: '100%' }}

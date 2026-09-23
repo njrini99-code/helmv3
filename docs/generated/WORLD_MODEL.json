@@ -1620,6 +1620,11 @@
         "category": "services"
       },
       {
+        "id": "services:src/hooks/golf/use-surface-prewarm.ts",
+        "pattern": "src/hooks/golf/use-surface-prewarm.ts",
+        "category": "services"
+      },
+      {
         "id": "services:src/hooks/use-presence.ts",
         "pattern": "src/hooks/use-presence.ts",
         "category": "services"
@@ -1815,6 +1820,11 @@
         "category": "services"
       },
       {
+        "id": "services:src/lib/golf/client-resource-cache.ts",
+        "pattern": "src/lib/golf/client-resource-cache.ts",
+        "category": "services"
+      },
+      {
         "id": "services:src/lib/golf/nav-registry.ts",
         "pattern": "src/lib/golf/nav-registry.ts",
         "category": "services"
@@ -2002,6 +2012,16 @@
         "category": "tests"
       },
       {
+        "id": "tests:src/hooks/golf/__tests__/use-golf-conversations.warm-start.test.tsx",
+        "pattern": "src/hooks/golf/__tests__/use-golf-conversations.warm-start.test.tsx",
+        "category": "tests"
+      },
+      {
+        "id": "tests:src/hooks/golf/__tests__/use-surface-prewarm.test.tsx",
+        "pattern": "src/hooks/golf/__tests__/use-surface-prewarm.test.tsx",
+        "category": "tests"
+      },
+      {
         "id": "tests:src/lib/admin/autonomy/__tests__/**",
         "pattern": "src/lib/admin/autonomy/__tests__/**",
         "category": "tests"
@@ -2044,6 +2064,11 @@
       {
         "id": "tests:src/lib/email/__tests__/outbound-gate.test.ts",
         "pattern": "src/lib/email/__tests__/outbound-gate.test.ts",
+        "category": "tests"
+      },
+      {
+        "id": "tests:src/lib/golf/__tests__/client-resource-cache.test.ts",
+        "pattern": "src/lib/golf/__tests__/client-resource-cache.test.ts",
         "category": "tests"
       },
       {
@@ -8324,6 +8349,18 @@
           "kind": "registry_glob",
           "path": "memory/registry.yml",
           "pattern": "src/lib/supabase/**"
+        }
+      ]
+    },
+    {
+      "source": "auth_onboarding_join",
+      "target": "team_communications",
+      "kind": "feature_relation",
+      "evidence": [
+        {
+          "kind": "import_graph",
+          "path": "src/lib/auth/session-activity.ts",
+          "anchor": "src/lib/golf/client-resource-cache"
         }
       ]
     },
@@ -21172,6 +21209,30 @@
     },
     {
       "source": "team_communications",
+      "target": "services:src/hooks/golf/use-surface-prewarm.ts",
+      "kind": "feature_service",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/hooks/golf/use-surface-prewarm.ts"
+        }
+      ]
+    },
+    {
+      "source": "team_communications",
+      "target": "services:src/lib/golf/client-resource-cache.ts",
+      "kind": "feature_service",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/lib/golf/client-resource-cache.ts"
+        }
+      ]
+    },
+    {
+      "source": "team_communications",
       "target": "services:src/lib/supabase/**",
       "kind": "feature_service",
       "evidence": [
@@ -21227,6 +21288,42 @@
           "kind": "registry_glob",
           "path": "memory/registry.yml",
           "pattern": "src/app/golf/actions/unified-notifications-model.test.ts"
+        }
+      ]
+    },
+    {
+      "source": "team_communications",
+      "target": "tests:src/hooks/golf/__tests__/use-golf-conversations.warm-start.test.tsx",
+      "kind": "feature_test",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/hooks/golf/__tests__/use-golf-conversations.warm-start.test.tsx"
+        }
+      ]
+    },
+    {
+      "source": "team_communications",
+      "target": "tests:src/hooks/golf/__tests__/use-surface-prewarm.test.tsx",
+      "kind": "feature_test",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/hooks/golf/__tests__/use-surface-prewarm.test.tsx"
+        }
+      ]
+    },
+    {
+      "source": "team_communications",
+      "target": "tests:src/lib/golf/__tests__/client-resource-cache.test.ts",
+      "kind": "feature_test",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/lib/golf/__tests__/client-resource-cache.test.ts"
         }
       ]
     },

@@ -139,6 +139,60 @@ Announcement create
   -> optionally create inline tasks and task assignments
 ```
 
+## Warm start: the rail and the open thread paint from cache (2026-09-10, hardened 2026-09-22)
+
+"It loads separately each tab I click." Every visit to Messages re-ran the
+whole conversation waterfall from a blank skeleton because the data lived in
+React state, which dies with the component.
+
+- `useGolfConversations(viewerUserId, activeTeamId)` / `useGolfMessages(conversationId,
+  viewerUserId)` accept the signed-in user's id (FairwayMessages passes it
+  from `useGolfUser()`), so neither hook waits on `auth.getUser()` before its
+  first query. Both still resolve the id themselves when a caller omits it.
+- Both hooks read `src/lib/golf/client-resource-cache.ts` on mount — a
+  module-level Map mirrored into sessionStorage. Keys are scoped by VIEWER,
+  not just by conversation/user:
+  - `messagesCacheKey(conversationId, viewerUserId)` — `MessageWithReadStatus.isRead`
+    is computed relative to "the participant who is not me"
+    (`fetchOtherParticipantReadStatus`), so an unscoped key would let one
+    participant's read-receipt view leak into another's paint of the same
+    shared `conversationId` on a shared device.
+  - `conversationsCacheKey(userId, activeTeamId)` — `loadGolfConversationRail`
+    narrows a multi-team head coach's rail to `getGolfActiveTeamConversationIds()`
+    (the `golf_active_team` cookie); an unscoped key kept painting the team
+    a coach had just switched AWAY from, because `TeamSwitcher`'s
+    `router.refresh()` re-renders Server Components but does not reset this
+    client cache or remount the hook.
+  A warm key paints immediately with `loading: false`; the fetch then runs
+  and swaps rows in silently. `loading` is true ONLY when there is nothing to
+  show. Optimistic rows whose send failed are never written to the cache.
+- `loadGolfConversationRail(supabase, userId)` is the rail waterfall as a
+  plain function. `useGolfSurfacePrewarm(userId, teamId)` (mounted in
+  FairwayDashboardShell) runs it once per (viewer, active team) on idle and
+  `router.prefetch`es Calendar always and Messages only WITH a team —
+  `FairwayMessages` hard-blocks a teamless viewer with an empty state
+  ("No team found"), so there is nothing to usefully warm, and warming it
+  anyway risks caching the wrong team's rail ahead of resolution. Loaded via
+  a dynamic `import()` of `use-golf-messages.ts` so the shell's own bundle
+  (every dashboard page) doesn't carry the whole messaging module.
+- Sign-out calls `clearAllCachedResources()` on BOTH paths that end a golf
+  session: `useGolfSignOut` (FairwayDashboardShell) and the idle-timeout
+  logout (`src/lib/auth/session-activity.ts`) — the latter was missed in the
+  original cut and is exactly the shared-device case (a team iPad left
+  signed in) this cache exists to guard. `clearAllCachedResources()` also
+  bumps a module epoch (`getCacheEpoch()`); every write that follows an
+  `await` (a fetch already in flight when sign-out fires) captures the epoch
+  BEFORE the fetch and is dropped via `writeCachedResourceIfCurrent` if a
+  clear happened in between, so a slow response cannot resurrect a
+  signed-out viewer's data.
+- Raising `experimental.staleTimes.dynamic` in next.config to extend this to
+  the client Router Cache (RSC payload reuse across tab navigation) was tried
+  and DROPPED — see calendar-events.md. It is process-wide (Baseball/Lift
+  Lab/Admin too), and the Router Cache can serve a page from memory on a
+  client-side back/forward navigation without re-checking auth; no sign-out
+  path here busts it yet. The warm start above does not depend on it —
+  `next.config.mjs` carries no diff for it.
+
 ## Business Rules
 
 - Participants should only read conversations they belong to.
@@ -367,7 +421,7 @@ when the column is empty. That is why `GroupMember` is its own type rather than
 `GolfConversationParticipant`, whose `subtitle` is required and whose DM path
 fills the gap with `'Golf Coach'` / `'Golf Player'`.
 
-<!-- schema-drift-absent: golf_group_membership_management, golf_user_on_conversation_team -->
+<!-- schema-drift-absent: golf_group_membership_management, golf_user_on_conversation_team, golf_active_team -->
 <!--
   `golf_user_on_conversation_team` is a real function, created by
   20260907160000 — which is written and NOT applied, so it is correctly absent
@@ -378,6 +432,9 @@ fills the gap with `'Golf Coach'` / `'Golf Player'`.
   `golf_group_membership_management` is not a database object at all — it is
   the pgTAP suite's own filename, which happens to start with `golf_`:
   `supabase/tests/rls/golf_group_membership_management.sql`.
+  `golf_active_team` is not a database object either — it is the cookie name
+  `getGolfActiveTeamConversationIds()` reads to scope a multi-team head
+  coach's conversation rail (see the warm-start cache-key section below).
 -->
 
 ## Group membership management, and why it needed a policy change
