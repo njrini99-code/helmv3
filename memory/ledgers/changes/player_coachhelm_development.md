@@ -52,3 +52,21 @@
   timezone-dependent CI-only bug, not a decision; see
   `distance-profile-window.ts`'s own doc comment). Verified under
   `TZ=UTC`, `TZ=America/New_York`, and `TZ=Asia/Tokyo`.
+
+## 2026-09-23 — A7 Scoring surface: loader reuses the same scope/window helpers (slice 2)
+
+- SHA: 42d1dccd4. Stacked on slice 1 (61d611615).
+- Change: `loadParOpportunities` (see coachhelm_ai's ledger for the
+  full slice) reuses `buildRollingDistanceProfileScope` and
+  `describeDistanceProfileWindow` from slice 1 as-is — no new scope or
+  window logic for this loader. The only new query in this feature's
+  area is a `golf_courses` id → name lookup (chunked via the existing
+  `chunkIds`), added solely to label par-5 cards by course rather than
+  a bare hole number.
+- Why: A3's `computeParOpportunities` needs the exact same
+  window/cutoff-filtered `holes`/`shots` shape A2 already established;
+  introducing a second window convention for the same page would be an
+  unforced inconsistency.
+- Verification: `load-par-opportunities.test.ts` (1/1) — wiring-only,
+  confirms the loader passes `scope` straight through and returns A3's
+  result verbatim without re-deriving anything.
