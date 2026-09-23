@@ -6,6 +6,12 @@
  * and updates the per-coach weight EMA. Idempotent — same insight
  * never gets attributed twice (PK on insight_id).
  *
+ * A9 slice 1 (`comparable-attribute.ts`, behind `coachhelm_comparable_
+ * opportunity_attribution`, default off): the three "needs-shot-level-join"
+ * approach-proximity metrics get a SEPARATE shot-level, matched-opportunity
+ * attempt instead of the permanent `intentional-null` skip. Those rows never
+ * update the coach weight EMA — see that module's own doc comment.
+ *
  * Auth: Vercel Cron sends Authorization: Bearer ${CRON_SECRET}.
  */
 
@@ -16,7 +22,13 @@ import { requireCronAuth } from '@/lib/cron/auth';
 import { fromUntyped } from '@/lib/supabase/untyped';
 import { computeAttribution, nextWeight } from '@/lib/coachhelm/v3/causality/attribute';
 import { lookupMetricSource } from '@/lib/coachhelm/v3/causality/metric-sources';
+import {
+  computeComparableAttribution,
+  writeComparableAttribution,
+  isShotLevelAttributionMetric,
+} from '@/lib/coachhelm/v3/causality/comparable-attribute';
 import { recordInsightOutcome } from '@/lib/coachhelm/v3/effectiveness/event-ledger';
+import { isFlagEnabled } from '@/lib/flags';
 import {
   V3_ENGINE_FILTER,
   VISIBLE_LIFECYCLE_STATES,
@@ -99,6 +111,26 @@ interface CronSummary {
    * v1/v2 distinction is not yet available for THIS run's rows.
    */
   method_version_column_missing?: boolean;
+  /**
+   * A9 slice 1: successfully wrote a `method_version: 'comparable_
+   * opportunities_v1'` row (see `causality/comparable-attribute.ts`) for one
+   * of the shot-level "needs-shot-level-join" metrics. Counted separately
+   * from `attributed` (the round-level path) since these rows never touch
+   * `updateCoachWeight` — a reader must not assume `attributed` count implies
+   * a weight moved. Gated behind `coachhelm_comparable_opportunity_
+   * attribution` (default off); absent/0 when the flag is off.
+   */
+  comparable_attributed: number;
+  /**
+   * A9 slice 1: the insight has no real `golf_insight_exposure` row — the
+   * addendum rule against simulating one from `created_at`. Retry tomorrow
+   * once the insight is actually shown to a coach; do not treat as a
+   * permanent skip the way `intentional_no_lift` is.
+   */
+  comparable_no_exposure_record: number;
+  /** A9 slice 1: `MIN_OPPORTUNITY_N`/`MIN_DISTINCT_ROUNDS` not met on one or
+   *  both sides — retry tomorrow once more shots land. */
+  comparable_insufficient_evidence: number;
 }
 
 export async function GET(req: NextRequest) {
@@ -124,7 +156,13 @@ async function handle(): Promise<NextResponse> {
     malformed: 0,
     errors: 0,
     duration_ms: 0,
+    comparable_attributed: 0,
+    comparable_no_exposure_record: 0,
+    comparable_insufficient_evidence: 0,
   };
+  // Read once per run, not once per candidate — matches the flag-off ==
+  // pre-slice-1-behavior contract (A9 slice 1).
+  const comparableAttributionEnabled = isFlagEnabled('coachhelm_comparable_opportunity_attribution');
 
   const cutoffIso = new Date(Date.now() - MIN_AGE_DAYS * 86400_000).toISOString();
 
@@ -203,10 +241,18 @@ async function handle(): Promise<NextResponse> {
       // attribution row written, so leaving them in the work list would clog
       // every slot with permanently-skipped rows. Count them here exactly as the
       // loop would have, then drop them from the work list.
+      //
+      // A9 slice 1: when the comparable-opportunities flag is on, a metric
+      // with a shot-level `MatchingSpec` (`comparable-attribute.ts`) is NOT
+      // dropped here — it gets its own attempt in the main loop below,
+      // instead of the permanent `intentional_no_lift` skip. Flag off:
+      // unchanged, every intentional-null metric (including these three) is
+      // dropped here exactly as before this slice.
       const metric = (c.evidence as { metric?: string } | null)?.metric;
       if (metric) {
         const source = lookupMetricSource(metric);
-        if (source && source.kind === 'intentional-null') {
+        const attemptComparable = comparableAttributionEnabled && isShotLevelAttributionMetric(metric);
+        if (source && source.kind === 'intentional-null' && !attemptComparable) {
           summary.intentional_no_lift += 1;
           continue;
         }
@@ -239,6 +285,51 @@ async function handle(): Promise<NextResponse> {
         summary.malformed += 1;
         continue;
       }
+
+      // A9 slice 1: a shot-level metric never reaches `computeAttribution`
+      // when the flag is on — it has its own DB-backed path
+      // (`comparable-attribute.ts`) using a REAL recorded exposure instant,
+      // not `c.created_at`, as `interventionAt` (see that module's "NEVER
+      // SIMULATES AN EXPOSURE" note). `computeAttribution` would just
+      // re-derive `intentional-null` for these metrics anyway
+      // (`metric-sources.ts` still lists them that way); this branch
+      // replaces that outcome with a real attempt instead.
+      if (comparableAttributionEnabled && isShotLevelAttributionMetric(metric)) {
+        const comparable = await computeComparableAttribution(sb, {
+          insight_id: c.id,
+          player_id: c.player_id,
+          target_metric_id: metric,
+        });
+        if (!comparable.ok) {
+          if (comparable.reason === 'no-exposure-record') {
+            summary.comparable_no_exposure_record += 1;
+          } else if (comparable.reason === 'insufficient-evidence') {
+            summary.comparable_insufficient_evidence += 1;
+          } else {
+            // 'unsupported-metric' is unreachable here —
+            // `isShotLevelAttributionMetric` just confirmed the opposite —
+            // handled rather than silently falling through if the two ever
+            // drift apart.
+            summary.intentional_no_lift += 1;
+          }
+          continue;
+        }
+        const write = await writeComparableAttribution(sb, comparable.row);
+        if (write.methodVersionColumnMissing) summary.method_version_column_missing = true;
+        if (write.error) {
+          await logServerError(`comparable-attribution insert ${c.id}: ${write.error}`, {
+            action: 'cron.v3.causality.comparable-insert',
+          });
+          summary.errors += 1;
+        } else {
+          summary.comparable_attributed += 1;
+        }
+        // Never falls through to the round-level path, and never calls
+        // `recordInsightOutcome`/`updateCoachWeight` — see the file header's
+        // "NEVER FEEDS THE LEARNING LOOP" note on `comparable-attribute.ts`.
+        continue;
+      }
+
       const result = await computeAttribution(sb, {
         insight_id: c.id,
         player_id: c.player_id,
