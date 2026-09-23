@@ -42,6 +42,7 @@ function shot(overrides: Partial<ShotFact> & Pick<ShotFact, 'round_id' | 'hole_n
     result: null,
     is_penalty: false,
     putt_made: null,
+    miss_direction: null,
     observed_at: '2026-06-01T00:00:00.000Z',
     ...overrides,
   };
