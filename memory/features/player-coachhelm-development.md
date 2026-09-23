@@ -101,6 +101,18 @@ Player opens round review
 
 ## Known Risk Areas
 
+- `upsertInsight`'s optimistic CAS (`src/lib/coachhelm/v2/insights/upsert.ts`,
+  `updateExisting`) guards both `lifecycle_state` and `updated_at` (2026-09-23
+  — closed the §15.2 "old worker finishes after a new revision" gap). On a
+  CAS miss it re-reads the row: a genuine lifecycle change (dismiss/
+  acknowledge/archive/resolve, or another lifecycle write) always wins with
+  no retry; a same-lifecycle evidence-only race retries ONCE, and only if
+  the incoming evidence (`isEvidenceNewer`: later `window_end`, or same
+  `window_end` with a larger `sample_n`) is actually newer than what the
+  re-read finds — otherwise the write is dropped, never overwriting a
+  concurrent newer revision. `evidenceRevisionKey` (the separate maturation-
+  confirmation dedup key) still has no content component as of this note —
+  see the §15.2 fixture matrix table's row 12 for that follow-up.
 - Player acknowledgement/dismissal callbacks have historically been easy to render without wiring actions.
 - Revalidation can miss `/golf/dashboard/coachhelm` or `/golf/dashboard/my-development`.
 - Player-facing fallbacks can mask missing source data or LLM/citation failures.

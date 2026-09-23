@@ -18,8 +18,19 @@ type OpKind = 'select' | 'insert' | 'update';
 
 function createFakeSupabase(opts: {
   selectResult?: FakeResponse;
+  // Consumed in order across successive SELECT `.limit()` terminal calls —
+  // the first is upsertInsight's dedup lookup, a second (if any) is
+  // updateExisting's post-CAS-miss re-read. Falls back to `selectResult`
+  // once exhausted or when absent, so every existing single-`selectResult`
+  // test is unaffected.
+  selectResults?: FakeResponse[];
   insertResult?: FakeResponse;
   updateResult?: FakeResponse;
+  // Consumed in order across successive UPDATE `.select('id')` terminal
+  // calls — the first is the initial CAS attempt, a second (if any) is the
+  // one-shot retry after a same-lifecycle evidence race. Falls back to
+  // `updateResult` once exhausted or when absent.
+  updateResults?: FakeResponse[];
 }) {
   const calls: Array<{
     table: string;
@@ -27,6 +38,8 @@ function createFakeSupabase(opts: {
     payload?: unknown;
     filters?: Record<string, unknown>;
   }> = [];
+  let selectCallIndex = 0;
+  let updateCallIndex = 0;
 
   const fromFn = vi.fn((table: string) => {
     const state: {
@@ -60,7 +73,9 @@ function createFakeSupabase(opts: {
       }),
       order: vi.fn(() => thenable),
       limit: vi.fn(() => {
-        const r = recordAndReturn(opts.selectResult ?? { data: [], error: null });
+        const queued = opts.selectResults?.[selectCallIndex];
+        selectCallIndex += 1;
+        const r = recordAndReturn(queued ?? opts.selectResult ?? { data: [], error: null });
         return Promise.resolve(r);
       }),
       single: vi.fn(() => {
@@ -116,7 +131,9 @@ function createFakeSupabase(opts: {
             return chain;
           },
           select: (_cols?: string) => {
-            const terminal = opts.updateResult ?? { data: [{ id: state.filters.id }], error: null };
+            const queued = opts.updateResults?.[updateCallIndex];
+            updateCallIndex += 1;
+            const terminal = queued ?? opts.updateResult ?? { data: [{ id: state.filters.id }], error: null };
             return Promise.resolve(recordAndReturn(terminal));
           },
         };
@@ -458,12 +475,15 @@ describe('upsertInsight', () => {
         evidence: baseEvidence({ your_value: 0.38 }),
         metadata: { movement_count: 2 },
         lifecycle_state: 'detected' as const,
+        updated_at: '2026-04-21T10:00:00.000Z',
       };
       // Simulate a coach dismissing the row between our SELECT and our
-      // UPDATE: the CAS `.eq('lifecycle_state', 'detected')` matches zero
-      // rows because it is now 'archived'.
+      // UPDATE: the CAS matches zero rows because it is now 'archived'
+      // (and updated_at moved with it). The post-miss re-read confirms
+      // lifecycle_state genuinely changed, so this must NOT retry.
+      const dismissed = { ...existing, lifecycle_state: 'archived' as const, updated_at: '2026-04-21T10:05:00.000Z' };
       const { client, calls } = createFakeSupabase({
-        selectResult: { data: [existing], error: null },
+        selectResults: [{ data: [existing], error: null }, { data: [dismissed], error: null }],
         updateResult: { data: [], error: null },
       });
 
@@ -473,11 +493,13 @@ describe('upsertInsight', () => {
       );
 
       expect(id).toBe('existing-6');
-      const updateCall = calls.find((c) => c.op === 'update');
-      expect(updateCall).toBeDefined();
-      // The CAS filter carried the OBSERVED lifecycle_state, not the
-      // decision's target state.
-      expect(updateCall!.filters?.lifecycle_state).toBe('detected');
+      const updateCalls = calls.filter((c) => c.op === 'update');
+      // Exactly one attempt — lifecycle genuinely changed, so no retry.
+      expect(updateCalls).toHaveLength(1);
+      // The CAS filter carried the OBSERVED lifecycle_state/updated_at, not
+      // the decision's target state.
+      expect(updateCalls[0]!.filters?.lifecycle_state).toBe('detected');
+      expect(updateCalls[0]!.filters?.updated_at).toBe('2026-04-21T10:00:00.000Z');
     });
 
     it('guards the update with the observed lifecycle_state', async () => {
@@ -486,6 +508,7 @@ describe('upsertInsight', () => {
         evidence: baseEvidence({ your_value: 0.38 }),
         metadata: {},
         lifecycle_state: 'tentative' as const,
+        updated_at: '2026-04-21T10:00:00.000Z',
       };
       const { client, calls } = createFakeSupabase({
         selectResult: { data: [existing], error: null },
@@ -494,6 +517,80 @@ describe('upsertInsight', () => {
 
       const updateCall = calls.find((c) => c.op === 'update');
       expect(updateCall!.filters?.lifecycle_state).toBe('tentative');
+      expect(updateCall!.filters?.updated_at).toBe('2026-04-21T10:00:00.000Z');
+    });
+
+    // §15.2 fixture matrix row 10 — "old worker finishes after a new
+    // revision: new accepted result survives" / plan §5.1 "a concurrent run
+    // cannot revert a later state". Extends the CAS guard above to also
+    // cover the observed revision (`updated_at`), not just lifecycle_state,
+    // so a same-lifecycle evidence race is caught too.
+    describe('stale write vs. a concurrent newer revision (plan §5.1)', () => {
+      it('drops an older, stale write instead of clobbering evidence a newer concurrent run already persisted', async () => {
+        // A newer worker already wrote this: larger sample_n, later
+        // window_end, lifecycle_state unchanged, updated_at moved.
+        const fresher = {
+          id: 'existing-race',
+          evidence: baseEvidence({ sample_n: 90, window_end: '2026-05-20', your_value: 0.40 }),
+          metadata: {},
+          lifecycle_state: 'detected' as const,
+          updated_at: '2026-05-20T09:00:00.000Z',
+        };
+        // Our own SELECT happened BEFORE that write — we still hold the
+        // older snapshot.
+        const staleObserved = {
+          ...fresher,
+          evidence: baseEvidence({ sample_n: 47, window_end: '2026-04-21', your_value: 0.39 }),
+          updated_at: '2026-04-21T10:00:00.000Z',
+        };
+        const { client, calls } = createFakeSupabase({
+          selectResults: [{ data: [staleObserved], error: null }, { data: [fresher], error: null }],
+          updateResult: { data: [], error: null }, // the one CAS attempt misses (updated_at moved)
+        });
+
+        const staleEvidence = baseEvidence({ sample_n: 47, window_end: '2026-04-21', your_value: 0.39 });
+        const id = await upsertInsight(client, baseInput({ evidence: staleEvidence }));
+
+        expect(id).toBe('existing-race');
+        // Exactly one CAS attempt was made, it missed, and — because our
+        // stale evidence is NOT newer than the fresh re-read — no retry
+        // write happened. The fresher evidence is never overwritten.
+        expect(calls.filter((c) => c.op === 'update')).toHaveLength(1);
+      });
+
+      it('retries once and lands the write when the incoming evidence really is newer than the fresh read', async () => {
+        // Something else touched the row (bumping updated_at) without
+        // changing its evidence content or lifecycle_state — e.g. a
+        // metadata-only write. Our incoming evidence is genuinely newer
+        // than what a re-read finds.
+        const observed = {
+          id: 'existing-retry',
+          evidence: baseEvidence({ sample_n: 47, window_end: '2026-04-21', your_value: 0.39 }),
+          metadata: {},
+          lifecycle_state: 'detected' as const,
+          updated_at: '2026-04-21T10:00:00.000Z',
+        };
+        const freshSameLifecycle = { ...observed, updated_at: '2026-04-21T10:05:00.000Z' };
+        const { client, calls } = createFakeSupabase({
+          selectResults: [{ data: [observed], error: null }, { data: [freshSameLifecycle], error: null }],
+          updateResults: [
+            { data: [], error: null }, // first CAS attempt misses
+            { data: [{ id: 'existing-retry' }], error: null }, // retry succeeds
+          ],
+        });
+
+        const newerEvidence = baseEvidence({ sample_n: 90, window_end: '2026-05-20', your_value: 0.55 });
+        const id = await upsertInsight(client, baseInput({ evidence: newerEvidence }));
+
+        expect(id).toBe('existing-retry');
+        const updateCalls = calls.filter((c) => c.op === 'update');
+        expect(updateCalls).toHaveLength(2);
+        // The retry's CAS predicate carries the FRESH row's updated_at, not
+        // the originally-observed one.
+        expect(updateCalls[1]!.filters?.updated_at).toBe('2026-04-21T10:05:00.000Z');
+        const payload = updateCalls[1]!.payload as Record<string, unknown>;
+        expect((payload.evidence as InsightEvidence).sample_n).toBe(90);
+      });
     });
   });
 });

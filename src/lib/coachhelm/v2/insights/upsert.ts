@@ -116,6 +116,21 @@ interface ExistingInsightRow {
   evidence: InsightEvidence | null;
   metadata: JsonRecord | null;
   lifecycle_state: InsightLifecycleState | null;
+  updated_at: string | null;
+}
+
+/**
+ * True when `a` is a strictly newer evidence revision than `b` — later
+ * `window_end`, or the same `window_end` with a larger `sample_n`. Used only
+ * to decide whether a write that lost the CAS race below should retry once
+ * against the row's current state, or drop itself as the stale one. `b: null`
+ * (no revision to compare against) is treated as "newer" so a bad re-read
+ * doesn't wedge a genuinely fresh write.
+ */
+function isEvidenceNewer(a: InsightEvidence, b: InsightEvidence | null): boolean {
+  if (!b) return true;
+  if (a.window_end !== b.window_end) return a.window_end > b.window_end;
+  return a.sample_n > b.sample_n;
 }
 
 /**
@@ -198,7 +213,7 @@ export async function upsertInsight(
   // share a player (transferred athlete, multi-team setup).
   let lookup = supabase
     .from('golf_coach_insights')
-    .select('id, evidence, metadata, lifecycle_state')
+    .select('id, evidence, metadata, lifecycle_state, updated_at')
     .eq('signature', input.signature);
   lookup = input.player_id === null
     ? lookup.is('player_id', null)
@@ -232,6 +247,7 @@ async function updateExisting(
   input: InsightInput,
   evidence: InsightEvidence,
   teamId: string | null,
+  attempt = 0,
 ): Promise<string> {
   const nowIso = new Date().toISOString();
   const existingValue = existing.evidence?.your_value ?? 0;
@@ -350,17 +366,25 @@ async function updateExisting(
       break;
   }
 
-  // Optimistic compare-and-set (2026-09-22 R1/R2 leftover): this whole write
-  // was decided from `existing.lifecycle_state` read at the top of
-  // `updateExisting`. Between that read and this write, a coach action
-  // (dismiss/acknowledge/archive/resolve — `src/app/golf/actions/insights.ts`,
-  // `intelligence-dashboard.ts`) or another concurrent engine write (a
-  // duplicate analysis run, the lifecycle cron, a generator's stale-scope
-  // sweep) can have moved `lifecycle_state` off the value we observed. Guard
-  // the UPDATE on it, matching the pattern already used by
-  // `generator-base.ts`'s and `synthesis.ts`'s archive sweeps — never land a
-  // decision computed from a stale snapshot on top of whatever the row is
-  // NOW.
+  // Optimistic compare-and-set (2026-09-22 R1/R2; extended 2026-09-23 to
+  // also guard the observed REVISION, not just lifecycle_state — plan §5.1
+  // acceptance "a concurrent run cannot revert a later state", §15.2 "old
+  // worker finishes after a new revision"). This whole write was decided
+  // from `existing.lifecycle_state` AND `existing.updated_at` read at the
+  // top of this call (or by our own caller, on the retry below). Between
+  // that read and this write:
+  //  - a coach action (dismiss/acknowledge/archive/resolve —
+  //    `src/app/golf/actions/insights.ts`, `intelligence-dashboard.ts`) can
+  //    move `lifecycle_state`, or
+  //  - another concurrent engine write (a duplicate analysis run, the
+  //    lifecycle cron, a generator's stale-scope sweep) can refresh
+  //    evidence WITHOUT touching `lifecycle_state` at all.
+  // Either one bumps `updated_at`, which the old lifecycle-only guard could
+  // not see — a same-lifecycle refresh race would silently let an older,
+  // stale write land over a newer one. Guarding on both together, matching
+  // the pattern already used by `generator-base.ts`'s and `synthesis.ts`'s
+  // archive sweeps, never lands a decision computed from a stale snapshot
+  // on top of whatever the row is NOW.
   let casUpdate = supabase
     .from('golf_coach_insights')
     .update(updatePayload)
@@ -368,6 +392,9 @@ async function updateExisting(
   casUpdate = existing.lifecycle_state === null
     ? casUpdate.is('lifecycle_state', null)
     : casUpdate.eq('lifecycle_state', existing.lifecycle_state);
+  casUpdate = existing.updated_at === null
+    ? casUpdate.is('updated_at', null)
+    : casUpdate.eq('updated_at', existing.updated_at);
   const { data: casRows, error } = await casUpdate.select('id');
 
   if (error) {
@@ -376,11 +403,42 @@ async function updateExisting(
   }
 
   if (!casRows || casRows.length === 0) {
-    // Lost the race: `lifecycle_state` no longer matches what we read, so
-    // NONE of this write applied (evidence refresh included). Do not retry
-    // and clobber whatever won — log and hand back the row's identity
-    // unchanged. The next analysis run re-reads the current state and
-    // decides fresh; a lost evidence refresh this run is not a lost insight.
+    // Lost the race: lifecycle_state or updated_at no longer matches what
+    // we read, so NONE of this write applied. Re-read to tell the two
+    // causes apart instead of always backing off — a lifecycle action must
+    // still win unconditionally, but a same-lifecycle evidence race should
+    // let the genuinely newer write through.
+    const { data: freshRows, error: reReadError } = await supabase
+      .from('golf_coach_insights')
+      .select('id, evidence, metadata, lifecycle_state, updated_at')
+      .eq('id', existing.id)
+      .limit(1);
+    const fresh = (freshRows?.[0] ?? null) as ExistingInsightRow | null;
+
+    if (!reReadError && fresh && fresh.lifecycle_state === existing.lifecycle_state) {
+      // lifecycle_state is unchanged — the race was a concurrent
+      // EVIDENCE-only refresh. Retry (once) only if OUR incoming evidence
+      // is actually newer than what is now persisted; otherwise we are the
+      // stale worker and must not clobber a concurrent newer revision.
+      if (attempt < 1 && isEvidenceNewer(evidence, fresh.evidence)) {
+        return updateExisting(supabase, fresh, input, evidence, teamId, attempt + 1);
+      }
+      await logServerError(
+        `upsertInsight.updateExisting: dropped a stale evidence write for insight=${existing.id} ` +
+          `(incoming sample_n=${evidence.sample_n}/window_end=${evidence.window_end} is not newer than the ` +
+          `already-persisted sample_n=${fresh.evidence?.sample_n ?? 'null'}/window_end=${fresh.evidence?.window_end ?? 'null'}); ` +
+          `skipping write to avoid regressing a concurrent newer revision`,
+        { action: 'coachhelm.upsert.updateExisting.cas', featureArea: 'coachhelm', extra: { insightId: existing.id } },
+        'warning',
+      );
+      return existing.id;
+    }
+
+    // Either the re-read failed, or lifecycle_state genuinely moved — a
+    // real lifecycle action won. Do not retry and clobber it — log and
+    // hand back the row's identity unchanged. The next analysis run
+    // re-reads the current state and decides fresh; a lost evidence
+    // refresh this run is not a lost insight.
     await logServerError(
       `upsertInsight.updateExisting: lost lifecycle CAS race for insight=${existing.id} ` +
         `(observed lifecycle_state=${existing.lifecycle_state ?? 'null'}, attempted transition=${decision.transition}); ` +
