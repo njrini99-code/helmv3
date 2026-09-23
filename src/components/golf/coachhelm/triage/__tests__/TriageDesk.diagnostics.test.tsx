@@ -118,6 +118,7 @@ const basePlayersDrillProps = {
   focusAreas: [],
   coachId: 'coach-1',
   playerStats: {},
+  todayIso: '2026-09-23',
 };
 
 function renderDesk(overrides: { teamShotAnalysis?: TeamShotAnalysis } = {}) {

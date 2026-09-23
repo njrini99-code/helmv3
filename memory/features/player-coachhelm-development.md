@@ -142,27 +142,51 @@ Player opens round review
 
 - **Coach-facing "due for review" queue (Pkg 9 slice 4, 2026-09-23,
   `agent/coachhelm-focus-due-queue`)**: "due" is derived AT READ TIME from
-  `target_date` — overdue (`target_date < today`) or due within a window
-  (default 7 days, inclusive both ends) — never written to a column or a
-  cron, so an edited target date is reflected on the very next read. Lives
-  in `src/lib/coachhelm/focus-areas/due-for-review.ts` (pure, no `'use
-  server'` directive — `development.ts` IS `'use server'`, which only
-  permits async-function exports, so a plain derivation helper cannot live
-  there), shared by BOTH the new team-scoped server action
-  `listDueFocusAreas(teamId, opts?)` in `development.ts` (access verified
-  via `verifyTeamAccess`, same RPC-backed check `getTeamCausalRelationships`
-  uses; roster resolved via `golf_team_members`, matching that action's own
-  "team_id is NULL on the row itself" roster-resolution shape) AND the coach
-  UI's `DueForReviewPanel` (`components/fairway/pages/coachhelm/`), which
-  derives its list client-side from the SAME `focusAreas` prop
-  `PlayersGridView` already has (the `intelligence/page.tsx` loader already
-  selects `target_kind`/`target_date`) — no new fetch for the badge, so it
-  cannot disagree with the action. Only `'active' | 'in_progress' |
-  'paused'` areas with `target_kind === 'date'` are ever "due" — `'proposed'`
-  (not yet accepted) and `'completed'`/`'declined'` never are, mirroring
+  `target_date` — overdue or due within a window (default 7 days, inclusive
+  both ends) — never written to a column or a cron, so an edited target date
+  is reflected on the very next read. Lives in
+  `src/lib/coachhelm/focus-areas/due-for-review.ts` (pure, no `'use server'`
+  directive — `development.ts` IS `'use server'`, which only permits
+  async-function exports, so a plain derivation helper cannot live there),
+  consumed by the coach UI's `DueForReviewPanel`
+  (`components/fairway/pages/coachhelm/`), which derives its list
+  client-side from the SAME `focusAreas` prop `PlayersGridView` already has
+  (the `intelligence/page.tsx` loader already selects
+  `target_kind`/`target_date`) — no new fetch for the badge. Only
+  `'active' | 'in_progress' | 'paused'` areas with `target_kind === 'date'`
+  are ever "due" — `'proposed'` (not yet accepted) and
+  `'completed'`/`'declined'` never are, mirroring
   `ACTIONABLE_FOCUS_AREA_STATUSES`. `target_kind === 'rounds'` timeframes are
   explicitly OUT of scope for this slice (no round-count context is
   fetched) — left for later.
+  **Timezone (#1998 review fix)**: `target_date` is a coach-local CALENDAR
+  date (an `<input type=date>` value), not a UTC instant. The first version
+  compared it against `new Date()` read in UTC — the exact #1487 bug
+  `src/lib/golf/timezone.ts`'s `todayIsoInZone` /
+  `src/lib/golf/task-overdue.ts`'s `isGolfTaskOverdueInZone` already exist to
+  prevent: from the evening on, west of UTC, an area due TODAY read
+  `'overdue'` for hours. Fixed by requiring every caller to pass an
+  already-resolved `todayIso` (`YYYY-MM-DD`) — no `Date`, no default.
+  `intelligence/page.tsx` resolves it ONCE, server-side, via
+  `todayIsoInZone(teamTimezone)` where `teamTimezone` comes from
+  `golf_team_settings.timezone` (default `'America/New_York'`, same pattern
+  `dashboard-data.ts` already uses), and threads it down through
+  `playersDrillProps.todayIso` → `PlayersGridView` → `DueForReviewPanel`.
+  `DueForReviewPanel` (a client component) must never compute "today" itself
+  — SSR runs UTC and hydration runs the browser's zone, so a client-side
+  `new Date()` default would ALSO be a hydration-mismatch risk on top of
+  being the wrong zone.
+  A team-scoped server action (`listDueFocusAreas`) existed briefly in this
+  slice but was removed (#1998 review) for having no production caller —
+  the UI needs none, since it derives from data the page already loads. Add
+  it back, tested, when an actual caller (e.g. a notification digest) needs
+  it server-side.
+  **Follow-up, not yet fixed**: `intelligence/page.tsx`'s
+  `golf_player_focus_areas` query (the one that feeds `focusAreas`, and
+  therefore this panel) has no pagination. Past 1,000 rows for a team,
+  PostgREST's cap silently truncates it and both `RosterHealthHeader` and
+  `DueForReviewPanel` under-report — same class of bug
+  `.claude/rules/database.md` calls out generally, not yet applied here.
 
 ## Tests To Prefer
 

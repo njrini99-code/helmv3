@@ -1,15 +1,12 @@
 /**
  * Pkg 9 slice 4 — the coach-facing "due for review" derivation.
  *
- * Pure and directive-free on purpose: it is shared by the server action
- * (`listDueFocusAreas` in `src/app/golf/actions/development.ts`, which is
- * `'use server'` and therefore cannot export a plain value or a non-async
- * helper — see the 2026-09-23 build-fix commit on this branch's slice 1a
- * predecessor) AND by the coach UI, which already has every focus area for
- * the roster in props (`intelligence/page.tsx` selects `target_kind` +
- * `target_date` into `PlayersGridFocusArea`) and derives "due" client-side
- * with no extra fetch, mirroring `RosterHealthHeader.computeRosterHealth`'s
- * own "derived from the same props, no new fetch" convention.
+ * Pure and directive-free on purpose — the coach UI, which already has
+ * every focus area for the roster in props (`intelligence/page.tsx` selects
+ * `target_kind` + `target_date` into `PlayersGridFocusArea`), derives "due"
+ * client-side with no extra fetch, mirroring
+ * `RosterHealthHeader.computeRosterHealth`'s own "derived from the same
+ * props, no new fetch" convention.
  *
  * "Due" is derived AT READ TIME from `target_date` — never written to a
  * column or a cron — so a coach adjusting a target date is reflected the
@@ -17,8 +14,25 @@
  *
  * `target_kind === 'rounds'` areas are deliberately excluded: rounds-based
  * timeframes need the player's actual round count since `started_at`,
- * which neither this pure function nor the simple team-scoped read this
- * slice adds has in scope. Left for a later slice.
+ * which this pure function has no scope for. Left for a later slice.
+ *
+ * TIMEZONE (#1998 review fix): `target_date` is a coach-local CALENDAR date
+ * (a plain `<input type=date>` value, `YYYY-MM-DD`, no time component) — it
+ * means "this day on the team's wall clock", not a UTC instant. An earlier
+ * version of this module computed "today" via `new Date()` read in UTC,
+ * which is exactly the bug `src/lib/golf/timezone.ts`'s `todayIsoInZone` /
+ * `task-overdue.ts`'s `isGolfTaskOverdueInZone` were already written to fix
+ * (#1487): from the evening on, in every zone west of UTC, "today" had
+ * already rolled over in UTC while it was still yesterday on the wall — an
+ * area due TODAY read as `'overdue'` for the entire evening. This module no
+ * longer computes "today" at all — every caller must resolve
+ * `todayIsoInZone(teamTimezone)` SERVER-SIDE (the team's actual zone,
+ * `golf_team_settings.timezone`, default `'America/New_York'` — see
+ * `intelligence/page.tsx`) and pass the resulting `YYYY-MM-DD` string in as
+ * `todayIso`. Deliberately no `Date`-based default: computing it inside a
+ * CLIENT component (`DueForReviewPanel`) would also diverge between SSR
+ * (UTC on the server) and hydration (the browser's own zone), a hydration
+ * mismatch on top of the wrong answer.
  */
 
 /** The statuses "due for review" evaluates — mirrors
@@ -42,15 +56,6 @@ export interface FocusAreaDueInput {
   target_date?: string | null;
 }
 
-/** "Today" as a YYYY-MM-DD string in UTC — matches how `target_date` is
- *  stored (an ISO date with no time component), so comparison is a plain
- *  string compare with no timezone-boundary ambiguity. */
-function toUtcIsoDate(d: Date): string {
-  return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()))
-    .toISOString()
-    .slice(0, 10);
-}
-
 function addDaysToIsoDate(iso: string, days: number): string {
   const y = Number(iso.slice(0, 4));
   const m = Number(iso.slice(5, 7));
@@ -59,18 +64,20 @@ function addDaysToIsoDate(iso: string, days: number): string {
 }
 
 /**
- * Classify one focus area as overdue / due soon / not due, at `opts.today`
- * (defaults to now). `null` covers every non-due case at once — the wrong
- * `target_kind`, no `target_date`, a non-actionable status, or a target
- * further out than the window — so callers filter with a single truthy
- * check instead of re-deriving each exclusion.
+ * Classify one focus area as overdue / due soon / not due, relative to
+ * `opts.todayIso` — the caller's already-zone-resolved `YYYY-MM-DD` "today"
+ * (see the module doc: `todayIsoInZone(teamTimezone)`, resolved server-side,
+ * never computed here). `null` covers every non-due case at once — the
+ * wrong `target_kind`, no `target_date`, a non-actionable status, or a
+ * target further out than the window — so callers filter with a single
+ * truthy check instead of re-deriving each exclusion.
  *
- * Boundary (inclusive both ends): `target_date < today` → 'overdue';
- * `today <= target_date <= today + dueWithinDays` → 'due_soon'.
+ * Boundary (inclusive both ends): `target_date < todayIso` → 'overdue';
+ * `todayIso <= target_date <= todayIso + dueWithinDays` → 'due_soon'.
  */
 export function focusAreaDueReason(
   area: FocusAreaDueInput,
-  opts: { today?: Date; dueWithinDays?: number } = {},
+  opts: { todayIso: string; dueWithinDays?: number },
 ): FocusAreaDueReason | null {
   if (area.target_kind !== 'date') return null;
   if (!area.target_date) return null;
@@ -78,7 +85,7 @@ export function focusAreaDueReason(
     return null;
   }
 
-  const todayIso = toUtcIsoDate(opts.today ?? new Date());
+  const { todayIso } = opts;
   const dueWithinDays = opts.dueWithinDays ?? FOCUS_AREA_DUE_WITHIN_DAYS_DEFAULT;
   const targetIso = area.target_date.slice(0, 10);
 
@@ -95,13 +102,14 @@ export interface DueFocusAreaEntry<T> {
 
 /**
  * Filter + classify + sort (overdue first, then soonest target_date) a set
- * of focus areas. Generic over `T` so the SAME function runs against the
- * server action's minimal DB row selection and the UI's richer
- * `PlayersGridFocusArea` props without either side needing an adapter.
+ * of focus areas, relative to the caller's zone-resolved `opts.todayIso`
+ * (see the module doc). Generic over `T` so the same function runs against
+ * any row shape that carries the due-relevant fields — currently just the
+ * UI's `PlayersGridFocusArea` props.
  */
 export function computeDueFocusAreas<
   T extends FocusAreaDueInput & { id: string; player_id: string; title?: string | null },
->(areas: readonly T[], opts: { today?: Date; dueWithinDays?: number } = {}): DueFocusAreaEntry<T>[] {
+>(areas: readonly T[], opts: { todayIso: string; dueWithinDays?: number }): DueFocusAreaEntry<T>[] {
   return areas
     .map((area) => ({ area, reason: focusAreaDueReason(area, opts) }))
     .filter((entry): entry is DueFocusAreaEntry<T> => entry.reason !== null)

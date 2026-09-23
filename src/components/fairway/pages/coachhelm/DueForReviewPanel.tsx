@@ -14,10 +14,16 @@
  * clear" state.
  *
  * The pure classification (`computeDueFocusAreas`) lives in
- * `src/lib/coachhelm/focus-areas/due-for-review.ts`, shared with the
- * server-side `listDueFocusAreas` action — this panel does not call that
- * action itself; it runs the SAME derivation locally against data already on
- * the page, which is strictly less work and cannot disagree with it.
+ * `src/lib/coachhelm/focus-areas/due-for-review.ts`. This panel runs it
+ * locally against data already on the page — no fetch.
+ *
+ * `todayIso` is REQUIRED and comes from the server (`intelligence/page.tsx`
+ * resolves `todayIsoInZone(teamTimezone)` from `golf_team_settings.timezone`
+ * and threads it down through `PlayersGridView`). This component must never
+ * compute "today" itself with `new Date()` — SSR runs in UTC and hydration
+ * runs in the browser's zone, a mismatch on top of being the wrong zone for
+ * a coach-local `target_date` (#1998 review; see the due-for-review.ts
+ * module doc for the full incident).
  * ========================================================================== */
 
 import * as React from 'react';
@@ -42,6 +48,9 @@ function playerName(p?: PlayersGridPlayer | null): string {
 export interface DueForReviewPanelProps {
   players: PlayersGridPlayer[];
   focusAreas: PlayersGridFocusArea[];
+  /** Today, `YYYY-MM-DD`, on the TEAM's wall clock — resolved server-side.
+   *  See the file header; never computed here. */
+  todayIso: string;
   /** Review window in days — defaults to `FOCUS_AREA_DUE_WITHIN_DAYS_DEFAULT`. */
   dueWithinDays?: number;
   /** Optional "view" affordance per row (e.g. scope the Focus-areas board to
@@ -52,14 +61,15 @@ export interface DueForReviewPanelProps {
 export function DueForReviewPanel({
   players,
   focusAreas,
+  todayIso,
   dueWithinDays = FOCUS_AREA_DUE_WITHIN_DAYS_DEFAULT,
   onSelectPlayer,
 }: DueForReviewPanelProps) {
   const byId = React.useMemo(() => new Map(players.map((p) => [p.id, p])), [players]);
 
   const due = React.useMemo(
-    () => computeDueFocusAreas(focusAreas, { dueWithinDays }),
-    [focusAreas, dueWithinDays],
+    () => computeDueFocusAreas(focusAreas, { todayIso, dueWithinDays }),
+    [focusAreas, todayIso, dueWithinDays],
   );
 
   // Additive, not a permanent fixture — an empty queue means nothing to
