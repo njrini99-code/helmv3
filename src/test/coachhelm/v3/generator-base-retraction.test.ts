@@ -323,10 +323,23 @@ describe('BaseGenerator stale-scope retraction (audit P2 + regrade hardening)', 
 
   it('does NOT retract from the error path (error \u2260 dequalification)', async () => {
     const result = await new ScopedGenerator('player-1', { aggThrows: true }).run();
-    // P0-04: the error path now reports an explicit failed receipt.
-    expect(result).toEqual({ id: null, gated: false, status: 'failed' });
+    // P0-04: the error path now reports an explicit failed receipt, and the
+    // receipt carries the raw caught error (regrade 2026-09) so a caller
+    // (the orchestrator) can log the real code/message instead of the bare
+    // "generator threw internally" text the missing field used to force.
+    expect(result).toEqual({
+      id: null,
+      gated: false,
+      status: 'failed',
+      error: expect.objectContaining({ message: 'boom' }),
+    });
     expect(recordedSelects).toHaveLength(0);
-    expect(logServerErrorMock).toHaveBeenCalled();
+    expect(logServerErrorMock).toHaveBeenCalledWith(
+      expect.stringContaining('run() failed'),
+      expect.objectContaining({
+        metadata: { dbError: expect.objectContaining({ message: 'boom' }) },
+      }),
+    );
   });
 
   it('is a no-op when the generator declares no scope (default)', async () => {
@@ -342,7 +355,7 @@ describe('BaseGenerator stale-scope retraction (audit P2 + regrade hardening)', 
     expect(result.retracted).toBe(0);
     expect(logServerErrorMock).toHaveBeenCalledWith(
       expect.stringContaining('stale-scope retraction select failed'),
-      expect.anything(),
+      expect.objectContaining({ metadata: { dbError: retractionError } }),
     );
   });
 
@@ -352,7 +365,7 @@ describe('BaseGenerator stale-scope retraction (audit P2 + regrade hardening)', 
     expect(result.retracted).toBe(0);
     expect(logServerErrorMock).toHaveBeenCalledWith(
       expect.stringContaining('retraction update failed'),
-      expect.anything(),
+      expect.objectContaining({ metadata: { dbError: updateError } }),
     );
   });
 });

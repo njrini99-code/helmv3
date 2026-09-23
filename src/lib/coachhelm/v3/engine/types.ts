@@ -77,6 +77,19 @@ export interface RunResult {
    * on a path that must not retract (gated / no-standing / error).
    */
   retracted?: number;
+  /**
+   * The raw caught error when `status === 'failed'` — absent on every other
+   * status. `run()`'s own catch logs this with `describeError` already, but
+   * that text-only log line is all the orchestrator's caller ever saw: the
+   * receipt it actually inspects (`{ id, gated, status }`) carried no error
+   * at all, so `analyzePlayer.tier1Generator`'s own admin_events row could
+   * only say "generator threw internally" with no code or message attached.
+   * Kept as `unknown` (not stringified here) so a consumer can put it in
+   * `metadata: { dbError }` the way `pattern-miner.savePatterns` and the
+   * other `dbError`-shaped call sites across `coachhelm/v2` already do,
+   * rather than flattening it to text twice.
+   */
+  error?: unknown;
 }
 
 /**

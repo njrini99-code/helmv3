@@ -196,6 +196,14 @@ function lastLogMessage(): string {
   return String(last[0]);
 }
 
+/** Second arg (the context/options object) of the most recent logServerError call. */
+function lastLogContext(): { metadata?: { dbError?: unknown } } {
+  const calls = logServerErrorMock.mock.calls;
+  const last = calls[calls.length - 1];
+  if (!last) throw new Error('logServerError was not called');
+  return last[1] as { metadata?: { dbError?: unknown } };
+}
+
 describe('BaseGenerator.run() lifecycle (TS2)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -337,15 +345,45 @@ describe('BaseGenerator.run() lifecycle (TS2)', () => {
   });
 
   it('swallows a thrown error, logs it, and returns status:failed (cron stays alive)', async () => {
-    upsertInsightV3Mock.mockRejectedValue(new Error('db exploded'));
+    const thrown = new Error('db exploded');
+    upsertInsightV3Mock.mockRejectedValue(thrown);
     const gen = new TestGenerator('player-1', { requiresStanding: false });
     const res = await gen.run();
 
     // P0-04: a thrown generator now resolves with an explicit failed receipt
     // (NOT the old { gated:false } that was indistinguishable from no-data), so
-    // the orchestrator can route it into generatorSummary.failures.
-    expect(res).toEqual({ id: null, gated: false, status: 'failed' });
+    // the orchestrator can route it into generatorSummary.failures. `error` is
+    // the raw caught value — regrade (2026-09): before this, the receipt
+    // carried no error at all, so the orchestrator's OWN admin_events row for
+    // this failure could only ever say "generator threw internally", with no
+    // code or message, even though this exact logServerError call a moment
+    // earlier already had the real error via describeError.
+    expect(res).toEqual({ id: null, gated: false, status: 'failed', error: thrown });
     expect(logServerErrorMock).toHaveBeenCalledTimes(1);
     expect(lastLogMessage()).toContain('test-generator run() failed');
+    expect(lastLogContext().metadata?.dbError).toBe(thrown);
+  });
+
+  it('propagates a PostgREST-shaped error (code + message) into logged metadata.dbError', async () => {
+    // Fixture shape from the 2026-09-18 19:54 production incident: every
+    // failure in that window carried this exact code/message, including one
+    // tier-1 generator that (before this fix) reported status=failed with
+    // neither ever reaching admin_events.
+    const dbError = {
+      code: 'PGRST002',
+      message: 'Could not query the database for the schema cache. Retrying.',
+      details: null,
+      hint: null,
+    };
+    upsertInsightV3Mock.mockRejectedValue(dbError);
+    const gen = new TestGenerator('player-1', { requiresStanding: false });
+    const res = await gen.run();
+
+    expect(res).toEqual({ id: null, gated: false, status: 'failed', error: dbError });
+    expect(lastLogMessage()).toContain('code=PGRST002');
+    expect(lastLogMessage()).toContain('Could not query the database for the schema cache');
+    const loggedDbError = lastLogContext().metadata?.dbError as typeof dbError;
+    expect(loggedDbError.code).toBe('PGRST002');
+    expect(loggedDbError.message).toBe('Could not query the database for the schema cache. Retrying.');
   });
 });

@@ -461,7 +461,7 @@ export abstract class BaseGenerator<A extends GeneratorAggregate = GeneratorAggr
       if (selErr) {
         await logServerError(
           `${this.name} stale-scope retraction select failed for player=${this.playerId} scope=${scope}: ${selErr.message}`,
-          { action: `v3.generator.${this.name}.retract` },
+          { action: `v3.generator.${this.name}.retract`, metadata: { dbError: selErr as unknown } },
         );
         return 0;
       }
@@ -496,7 +496,7 @@ export abstract class BaseGenerator<A extends GeneratorAggregate = GeneratorAggr
         if (error) {
           await logServerError(
             `${this.name} stale-scope retraction update failed for insight=${r.id}: ${error.message}`,
-            { action: `v3.generator.${this.name}.retract` },
+            { action: `v3.generator.${this.name}.retract`, metadata: { dbError: error as unknown } },
           );
           continue;
         }
@@ -511,7 +511,7 @@ export abstract class BaseGenerator<A extends GeneratorAggregate = GeneratorAggr
     } catch (err) {
       await logServerError(
         `${this.name} stale-scope retraction threw for player=${this.playerId}: ${describeError(err)}`,
-        { action: `v3.generator.${this.name}.retract` },
+        { action: `v3.generator.${this.name}.retract`, metadata: { dbError: err as unknown } },
       );
       return 0;
     }
@@ -730,9 +730,9 @@ export abstract class BaseGenerator<A extends GeneratorAggregate = GeneratorAggr
       // machine-readable so the orchestrator routes it into generatorSummary.
       await logServerError(
         `${this.name} run() failed for player=${this.playerId}: ${describeError(err)}`,
-        { action: `v3.generator.${this.name}` },
+        { action: `v3.generator.${this.name}`, metadata: { dbError: err as unknown } },
       );
-      return { id: null, gated: false, status: 'failed' };
+      return { id: null, gated: false, status: 'failed', error: err };
     }
   }
 }
