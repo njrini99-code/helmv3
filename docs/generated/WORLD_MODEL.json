@@ -7979,6 +7979,11 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/lib/supabase/__tests__/server-user-attribution.test.ts",
+          "anchor": "src/lib/admin/request-context"
+        },
+        {
+          "kind": "import_graph",
           "path": "src/lib/supabase/expect-rows.ts",
           "anchor": "src/lib/admin/emit-throttle"
         },
@@ -8001,6 +8006,11 @@
           "kind": "import_graph",
           "path": "src/lib/supabase/middleware.ts",
           "anchor": "src/lib/admin/super-admin-shared"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/supabase/server.ts",
+          "anchor": "src/lib/admin/request-context"
         }
       ]
     },
