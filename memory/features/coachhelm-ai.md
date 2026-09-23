@@ -169,6 +169,41 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
   `useReducedMotionGuard()` from `@/lib/coachhelm/v3/motion`. (STU, source:
   `coachhelm-stats-hooks-310-false-positive.md` dated 2026-07-30, updated
   2026-08-19; verified 2026-09-05 that src/lib/coachhelm/v3/motion exists.)
+- **Outcome measurement now covers v3 insights** (2026-09-22,
+  `agent/coachhelm-outcome-measure`): `backfillInsightOutcomes`
+  (`v2/analytics/effectiveness-writer.ts`) previously only mapped v2-era
+  metric names to round columns, so `outcome_status`/`OutcomeBadge` were
+  effectively NULL on every v3-authored insight. It now also resolves v3
+  `evidence.metric` ids through the v3 metric registry
+  (`lookupMetricSource`/`averageInWindow`/`improvementSign`), keeps the
+  legacy mapping as a fallback, and leaves intentional-null metrics
+  unmeasured on purpose. It also now populates
+  `outcome_metric_name`/`outcome_metric_before`/`outcome_metric_after`, not
+  just `outcome_status`. Candidate selection is paginated and
+  pre-filtered to measurable rows (`FETCH_PAGE_SIZE`/`MAX_FETCH_PAGES`) so a
+  page of permanently-unmeasurable rows can't starve the per-tick backfill
+  budget — same pattern as the `causality-attribute` cron.
+- **Learned personalization of v2 alert thresholds is wired but flagged off**
+  (2026-09-22, `agent/coachhelm-learning-cleanup`): `BehaviorLearner`'s
+  `getLearnedPreferences()`/`getPersonalizedThreshold` are now consulted in
+  `orchestrator.ts`'s `generateAlerts()`, but only applied to
+  `philosophy.declineThreshold`/`pressureGapThreshold` when the
+  `coachhelm_learned_personalization` feature flag (default OFF in every
+  environment, see `config/feature-flags.yml`) is on. With the flag off the
+  computed thresholds are shadow-logged
+  (`coachhelm.learned_personalization.shadow`) instead of applied, so alert
+  generation is unchanged until an owner turns the flag on with evidence to
+  support it. Also fixed upstream: `'feedback'`-type interactions (from
+  `rateInsight`) are now correctly bucketed into `BehaviorLearner`'s
+  ack/dismiss counts, and `rateInsightImpl` now records a real `insight_type`
+  in interaction metadata so per-type bucketing works.
+- **v2 coach-alert family (bubble_player, pattern_detected, streak,
+  surge_player, plateau, tournament_pressure, closing_holes, par_3_issues,
+  recurring_weakness, team_trend, scoring_decline) is still live-written,
+  100% dark on read** — no v3 successor exists yet, `engine_version` is
+  never stamped `v3` for these, so `applyInsightVisibility` excludes them
+  from every coach/player surface. Planned retirement PR (sequenced after
+  `agent/coachhelm-outcomes` lands on main) not yet done as of 2026-09-22.
 
 ## Tests To Prefer
 

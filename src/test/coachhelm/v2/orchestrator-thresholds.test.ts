@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest';
-import { applyPhilosophyThresholds } from '@/lib/coachhelm/v2/orchestrator';
+import { describe, it, expect, vi } from 'vitest';
+import { applyPhilosophyThresholds, computePersonalizedThresholds } from '@/lib/coachhelm/v2/orchestrator';
 
 describe('applyPhilosophyThresholds (LIVE-24)', () => {
   it('returns shouldAlert=true when signal exceeds decline threshold', () => {
@@ -63,5 +63,46 @@ describe('applyPhilosophyThresholds (LIVE-24)', () => {
       { declineThreshold: undefined as unknown as number, pressureGapThreshold: undefined as unknown as number },
     );
     expect(result.shouldAlert).toBe(true);
+  });
+});
+
+describe('computePersonalizedThresholds (coachhelm_learned_personalization)', () => {
+  it('reports no change and returns the input thresholds when the learner returns the same values', async () => {
+    const behaviorLearner = {
+      getPersonalizedThreshold: vi.fn(async (_metric: string, defaultThreshold: number) => defaultThreshold),
+    };
+
+    const result = await computePersonalizedThresholds(behaviorLearner, 3, 2);
+
+    expect(result).toEqual({
+      declineThreshold: 3,
+      pressureGapThreshold: 2,
+      declineChanged: false,
+      pressureChanged: false,
+    });
+  });
+
+  it('flags declineChanged/pressureChanged independently and carries the personalized values', async () => {
+    const behaviorLearner = {
+      getPersonalizedThreshold: vi.fn(async (metric: string, defaultThreshold: number) =>
+        metric === 'scoring_decline' ? defaultThreshold * 1.15 : defaultThreshold,
+      ),
+    };
+
+    const result = await computePersonalizedThresholds(behaviorLearner, 3, 2);
+
+    expect(result.declineThreshold).toBeCloseTo(3.45);
+    expect(result.declineChanged).toBe(true);
+    expect(result.pressureGapThreshold).toBe(2);
+    expect(result.pressureChanged).toBe(false);
+  });
+
+  it('calls getPersonalizedThreshold with the metric keys generateAlerts uses', async () => {
+    const getPersonalizedThreshold = vi.fn(async (_metric: string, defaultThreshold: number) => defaultThreshold);
+
+    await computePersonalizedThresholds({ getPersonalizedThreshold }, 3, 2);
+
+    expect(getPersonalizedThreshold).toHaveBeenCalledWith('scoring_decline', 3);
+    expect(getPersonalizedThreshold).toHaveBeenCalledWith('pressure_gap', 2);
   });
 });

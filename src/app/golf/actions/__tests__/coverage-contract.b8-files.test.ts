@@ -13,14 +13,16 @@ import { assertAreaFullyWrapped } from '@/lib/admin/__tests__/coverage-contract.
  * Features: insights_management, intelligence_dashboard, coachhelm_analytics,
  * coaching_intelligence_settings.
  * Files fully wrapped this batch: insight-management.ts + insight-evidence.ts
- * (insights_management, 11 exports), intelligence-dashboard.ts +
- * team-category-insights.ts + coachhelm-data.ts + causal-relationships.ts
- * (intelligence_dashboard, 13 exports), coachhelm-analytics.ts +
- * player-effectiveness.ts (coachhelm_analytics, 6 exports),
- * coaching-philosophy.ts (coaching_intelligence_settings, 2 exports).
- * 32 exports total (B8's full 39 minus insights.ts's 7 lifecycle fns).
+ * (insights_management, 8 exports — `bulkDismissInsights`,
+ * `bulkAcknowledgeInsights`, `bulkResolveInsights` removed 2026-09-22 as dead
+ * code, down from 11), intelligence-dashboard.ts + team-category-insights.ts
+ * + coachhelm-data.ts + causal-relationships.ts (intelligence_dashboard, 13
+ * exports), coachhelm-analytics.ts + player-effectiveness.ts
+ * (coachhelm_analytics, 6 exports), coaching-philosophy.ts
+ * (coaching_intelligence_settings, 2 exports).
+ * 29 exports total.
  *
- * RED before the B8-FILES retrofit (32 unwrapped exports); GREEN after.
+ * RED before the B8-FILES retrofit (32 unwrapped exports at the time); GREEN after.
  */
 describe('coverage-contract — B8-FILES coachhelm coach surfaces (insights_management, intelligence_dashboard, coachhelm_analytics, coaching_intelligence_settings; insights.ts deferred)', () => {
   it('every B8-FILES export is wrapped with withAdminObserved({ feature: <its registry key> })', () => {

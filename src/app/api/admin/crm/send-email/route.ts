@@ -198,7 +198,9 @@ export async function POST(request: Request) {
     }
 
     // Verify all recipients exist in the database to prevent sending to orphaned/invalid IDs.
-    const missingRecipients = recipients.filter(r => !foundIds.has(r.id));
+    // A test send (sendTestTemplate) uses a synthetic `test-<uuid>` id by design — it is
+    // never a real crm_coaches row (see the isTestSend handling below) — so it's exempt.
+    const missingRecipients = recipients.filter(r => !foundIds.has(r.id) && !r.id.startsWith('test-'));
     if (missingRecipients.length > 0) {
       return NextResponse.json(
         {
@@ -320,7 +322,13 @@ export async function POST(request: Request) {
             // Provider-side exactly-once for the whole batch: survives a crash/retry
             // between POST-success and the DB writes below. Keyed on the chunk's first
             // recipient + size so two same-day 100-recipient chunks don't collide.
-            'Idempotency-Key': `crm-bulk-${actorId}-${today.getTime()}-${included[0]!.recipient.id}-${included.length}`,
+            // A test send (synthetic `test-<uuid>` recipient) is a deliberate repeat
+            // action — the admin clicking "Test" twice on the same template on the
+            // same day must send twice, not dedupe against the first — so it gets a
+            // millisecond-precision key instead of the day-scoped bulk key.
+            'Idempotency-Key': included[0]!.recipient.id.startsWith('test-')
+              ? `crm-test-${actorId}-${included[0]!.recipient.id}-${Date.now()}`
+              : `crm-bulk-${actorId}-${today.getTime()}-${included[0]!.recipient.id}-${included.length}`,
           },
           body: JSON.stringify(batchEmails),
         });

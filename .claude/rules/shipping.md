@@ -18,9 +18,14 @@ no built-in `timeout`. Quote shell variables next to colons in zsh.
 Recursive `rm` is UNENFORCED: inspect and scope any cleanup before running it.
 
 Regenerate affected docs explicitly before committing. Push hooks must not
-rewrite the checkout. Pushing a branch does not deploy; merging to `main`
-does — the Vercel Git integration builds and promotes every `main` commit
-(`scripts/vercel-ignore-build.sh` skips every other branch). Never deploy
-from the CLI; `scripts/deploy-prod.sh` is retired and refuses to run. After
-landing a PR, check that Vercel's deployment for the merge commit is READY.
-`.vercelignore` replaces default ignores.
+rewrite the checkout. **Pushing or merging to `main` does not deploy.** Vercel
+Git deployments are disabled for every branch by `vercel.json`; production is
+promoted intentionally from an approved deployment. The ignored-build script
+is defense in depth and skips any build carrying `VERCEL_GIT_COMMIT_REF`.
+Never deploy from the CLI unless the owner explicitly authorizes it; the
+repository's production-deploy guard may refuse the command. After an
+intentional promotion, verify that the deployment is READY and that the
+served commit SHA is the approved release.
+
+`.vercelignore` replaces the default ignore set; every secret-bearing ignored
+path must therefore be listed explicitly and checked by the repository doctor.

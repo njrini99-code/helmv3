@@ -65,7 +65,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `.claude/rules/golfhelm-engineering-os.md` | current | - | - | yes | 1 | 4 | - |
 | `.claude/rules/integrations.md` | current | - | - | - | 4 | 10 | - |
 | `.claude/rules/quality-gates.md` | current | - | - | - | 8 | 7 | - |
-| `.claude/rules/shipping.md` | current | - | - | - | 23 | 4 | - |
+| `.claude/rules/shipping.md` | current | - | - | - | 23 | 2 | - |
 | `AGENTS.md` | current | yes | - | yes | 0 | 8 | - |
 | `CLAUDE.md` | current | yes | - | yes | 0 | 4 | - |
 | `CONTRIBUTING.md` | current | - | - | yes | 0 | 2 | - |
@@ -177,7 +177,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `memory/features/auth-onboarding-join.md` | current | yes | - | - | 3 | 15 | - |
 | `memory/features/calendar-events.md` | current | yes | - | yes | 6 | 29 | - |
 | `memory/features/coach-intelligence-triage.md` | current | yes | - | yes | 2 | 24 | - |
-| `memory/features/coachhelm-ai.md` | current | yes | - | yes | 5 | 28 | - |
+| `memory/features/coachhelm-ai.md` | current | yes | - | yes | 5 | 29 | - |
 | `memory/features/crm_outreach.md` | current | yes | - | - | 2 | 24 | - |
 | `memory/features/email_outbound.md` | current | yes | - | - | 2 | 18 | - |
 | `memory/features/golf-round-lifecycle.md` | current | yes | - | yes | 3 | 31 | - |

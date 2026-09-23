@@ -56,7 +56,6 @@ import { loadActiveGoals } from '@/lib/coachhelm/v3/goals/loader';
 import {
   verifyPlayerAccess as sharedVerifyPlayerAccess,
   verifyRoundBelongsToPlayer,
-  verifyPlayersOnTeam,
 } from '@/lib/auth/verify-player-access';
 import { recordInsightAction } from '@/lib/coachhelm/v3/effectiveness/event-ledger';
 // 2026-08-01: gateCoachHelmEngineCall used to live here (private). Lifted into
@@ -1693,6 +1692,10 @@ async function rateInsightImpl(
     try {
       await recordInteraction(coach.id, 'coach', 'feedback', `insight_${rating}`, {
         insightId,
+        // snake_case: BehaviorLearner.aggregate() buckets byInsightType off
+        // metadata.insight_type (not the camelCase insightType below, kept
+        // for existing readers of this metadata blob).
+        insight_type: insight.insight_type,
         insightType: insight.insight_type,
         priority: insight.priority,
         rating,
@@ -3938,244 +3941,16 @@ function buildStatInsightsForTeam(
     .map((entry) => entry.insight);
 }
 
-// ============================================================================
-// ACKNOWLEDGE COMPOSED INSIGHT (For V2 in-memory insights)
-// ============================================================================
-
-/**
- * Acknowledges a composed insight by persisting it to the database and marking
- * it as acknowledged in one operation. Used for V2 insights that are generated
- * in-memory and don't have a database ID yet.
- */
-async function acknowledgeComposedInsightImpl(
-  insight: ComposedInsight,
-  playerId?: string
-): Promise<{ success: boolean; error?: string }> {
-  const supabase = await createClient();
-
-  try {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      return { success: false, error: 'Not authenticated' };
-    }
-
-    // Get coach info
-    const { data: coach } = await supabase
-      .from('golf_coaches')
-      .select('id, organization_id')
-      .eq('user_id', user.id)
-      .single();
-
-    if (!coach) {
-      return { success: false, error: 'Coach not found' };
-    }
-
-    // Resolve the coach's ACTIVE team (cookie-aware; handles multi-team programs
-    // and the men's/women's toggle). Falls back to the coach's primary team.
-    const teamId = await resolveCoachTeamIdWithCookie(supabase, coach.organization_id, coach.id);
-
-    // `teamId` is server-resolved and therefore trustworthy; `playerId` is not.
-    // It is the caller's argument and was written straight onto the insight
-    // row, so a coach could file insight state against a player on a team they
-    // do not staff and pollute that player's feed. Bind the two.
-    const roster = await verifyPlayersOnTeam(teamId ?? '', [playerId], supabase);
-    if (!roster.ok) {
-      return {
-        success: false,
-        error: roster.reason === 'unavailable'
-          ? "Couldn't confirm your roster just now. Please try again."
-          : 'That player is not on your team',
-      };
-    }
-
-    // Insert the insight with acknowledged status
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error: insertError } = await (supabase as any)
-      .from('golf_coach_insights')
-      .insert({
-        coach_id: coach.id,
-        team_id: teamId,
-        player_id: playerId || null,
-        insight_type: 'pattern_detected',  // maps to allowed DB type
-        priority: mapToneToPriority(insight.tone, insight.confidence),
-        title: insight.headline,
-        content: insight.body,
-        status: 'acknowledged',
-        acknowledged_at: new Date().toISOString(),
-        metadata: {
-          confidence: insight.confidence,
-          tone: insight.tone,
-          v2_engine: true,
-          recommendation: insight.callToAction || '',
-          reasoning_steps: insight.reasoning?.reasoningChain?.length ?? 0,
-        },
-      });
-
-    if (insertError) {
-      await logServerError(`acknowledgeComposedInsight persist failed: ${insertError.message}`, {
-        action: 'acknowledgeComposedInsight.persist',
-        featureArea: 'insights',
-        extra: { errorCode: insertError.code },
-      });
-      return { success: false, error: 'Failed to save insight' };
-    }
-
-    // Record interaction for learning
-    try {
-      await recordInteraction(coach.id, 'coach', 'action', 'insight_acknowledged', {
-        insightTone: insight.tone,
-        confidence: insight.confidence,
-      });
-    } catch (err) {
-      // Non-critical, don't fail the operation
-      await logServerError(`acknowledgeComposedInsight interaction recording failed: ${describeError(err)}`, {
-        action: 'acknowledgeComposedInsight.recordInteraction',
-        featureArea: 'insights',
-      }, 'warning');
-    }
-
-    revalidatePath('/golf/dashboard');
-    return { success: true };
-  } catch (error) {
-    await logServerError(`acknowledgeComposedInsight failed: ${describeError(error)}`, {
-      action: 'acknowledgeComposedInsight',
-      featureArea: 'insights',
-    });
-    return { success: false, error: 'An unexpected error occurred' };
-  }
-}
-
-const observedAcknowledgeComposedInsight = withAdminObserved(
-  'acknowledgeComposedInsight',
-  { sport: 'golf', feature: 'insights_management' },
-  acknowledgeComposedInsightImpl,
-);
-export async function acknowledgeComposedInsight(
-  insight: ComposedInsight,
-  playerId?: string
-): Promise<{ success: boolean; error?: string }> {
-  return observedAcknowledgeComposedInsight(insight, playerId);
-}
-
-// ============================================================================
-// DISMISS COMPOSED INSIGHT (For V2 in-memory insights)
-// ============================================================================
-
-/**
- * Dismisses a composed insight by persisting it to the database and marking
- * it as dismissed in one operation. Used for V2 insights that are generated
- * in-memory and don't have a database ID yet.
- */
-async function dismissComposedInsightImpl(
-  insight: ComposedInsight,
-  playerId?: string
-): Promise<{ success: boolean; error?: string }> {
-  const supabase = await createClient();
-
-  try {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      return { success: false, error: 'Not authenticated' };
-    }
-
-    // Get coach info
-    const { data: coach } = await supabase
-      .from('golf_coaches')
-      .select('id, organization_id')
-      .eq('user_id', user.id)
-      .single();
-
-    if (!coach) {
-      return { success: false, error: 'Coach not found' };
-    }
-
-    // Resolve the coach's ACTIVE team (cookie-aware; handles multi-team programs
-    // and the men's/women's toggle). Falls back to the coach's primary team.
-    const teamId = await resolveCoachTeamIdWithCookie(supabase, coach.organization_id, coach.id);
-
-    // `teamId` is server-resolved and therefore trustworthy; `playerId` is not.
-    // It is the caller's argument and was written straight onto the insight
-    // row, so a coach could file insight state against a player on a team they
-    // do not staff and pollute that player's feed. Bind the two.
-    const roster = await verifyPlayersOnTeam(teamId ?? '', [playerId], supabase);
-    if (!roster.ok) {
-      return {
-        success: false,
-        error: roster.reason === 'unavailable'
-          ? "Couldn't confirm your roster just now. Please try again."
-          : 'That player is not on your team',
-      };
-    }
-
-    // Insert the insight with dismissed status
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error: insertError } = await (supabase as any)
-      .from('golf_coach_insights')
-      .insert({
-        coach_id: coach.id,
-        team_id: teamId,
-        player_id: playerId || null,
-        insight_type: 'pattern_detected',  // maps to allowed DB type
-        priority: mapToneToPriority(insight.tone, insight.confidence),
-        title: insight.headline,
-        content: insight.body,
-        status: 'dismissed',
-        dismissed: true,
-        dismissed_at: new Date().toISOString(),
-        metadata: {
-          confidence: insight.confidence,
-          tone: insight.tone,
-          v2_engine: true,
-          recommendation: insight.callToAction || '',
-          reasoning_steps: insight.reasoning?.reasoningChain?.length ?? 0,
-        },
-      });
-
-    if (insertError) {
-      await logServerError(`dismissComposedInsight persist failed: ${insertError.message}`, {
-        action: 'dismissComposedInsight.persist',
-        featureArea: 'insights',
-        extra: { errorCode: insertError.code },
-      });
-      return { success: false, error: 'Failed to save insight' };
-    }
-
-    // Record interaction for learning
-    try {
-      await recordInteraction(coach.id, 'coach', 'dismiss', 'insight_dismissed', {
-        insightTone: insight.tone,
-        confidence: insight.confidence,
-      });
-    } catch (err) {
-      // Non-critical, don't fail the operation
-      await logServerError(`dismissComposedInsight interaction recording failed: ${describeError(err)}`, {
-        action: 'dismissComposedInsight.recordInteraction',
-        featureArea: 'insights',
-      }, 'warning');
-    }
-
-    revalidatePath('/golf/dashboard');
-    return { success: true };
-  } catch (error) {
-    await logServerError(`dismissComposedInsight failed: ${describeError(error)}`, {
-      action: 'dismissComposedInsight',
-      featureArea: 'insights',
-    });
-    return { success: false, error: 'An unexpected error occurred' };
-  }
-}
-
-const observedDismissComposedInsight = withAdminObserved(
-  'dismissComposedInsight',
-  { sport: 'golf', feature: 'insights_management' },
-  dismissComposedInsightImpl,
-);
-export async function dismissComposedInsight(
-  insight: ComposedInsight,
-  playerId?: string
-): Promise<{ success: boolean; error?: string }> {
-  return observedDismissComposedInsight(insight, playerId);
-}
+// `acknowledgeComposedInsight`/`dismissComposedInsight` (V2 in-memory
+// composed-insight accept/dismiss pair) removed 2026-09-22 — confirmed zero
+// non-test, non-registry-inventory callers by a fresh `git grep`. Their
+// historical rows (a handful, 2026-06/07) are the entire explanation for a
+// mismatch found during the golf_insight_action ledger investigation:
+// acknowledgeComposedInsightImpl inserted a pre-acknowledged
+// insight_type='pattern_detected' row and only logged to the OLD v2
+// interaction tracker (recordInteraction/BehaviorLearner), never to the v3
+// effectiveness ledger (recordInsightAction) — a real gap, but on a path
+// nothing calls today.
 
 // ============================================================================
 // TRIGGER INSIGHTS FOR SINGLE PLAYER (called after round submission)
