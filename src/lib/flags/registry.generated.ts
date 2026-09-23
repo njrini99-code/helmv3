@@ -32,7 +32,7 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
   {
     feature_id: "coachhelm_recap_claim_packet",
     owner: "golf/coachhelm",
-    purpose: "Gates whether the round recap's compose() call also receives a typed EvidencePacket (Package 8), engaging claim-validator.ts's wrong-metric/wrong-player/wrong-window/unsupported-cause checks for this one LLM surface, on top of the existing flat numeric scan; default off pending real-world evidence this doesn't over-reject otherwise-good recaps into the deterministic fallback.",
+    purpose: "Gates whether the round recap's compose() call also receives a typed EvidencePacket (Package 8), engaging claim-validator.ts's wrong-metric/wrong-player/wrong-window/unsupported-cause checks for this one LLM surface, on top of the existing flat numeric scan; default off pending real-world evidence this doesn't over-reject otherwise-good recaps into the deterministic fallback. A recap discarded to the fallback is cached forever (round-recap.ts only ever generates once per round; there is no regenerate path) — this flag must stay off in production until one exists, so a false-positive rejection isn't permanent for that round.",
     type: "experiment",
     status: "active",
     created_at: "2026-09-23",

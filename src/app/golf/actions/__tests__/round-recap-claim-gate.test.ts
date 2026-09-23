@@ -150,6 +150,8 @@ vi.mock('next/cache', () => ({
 }));
 
 import { generateRoundRecap } from '../round-recap';
+import { buildRecapEvidencePacket } from '@/lib/coachhelm/v3/llm/recap-evidence';
+import { extractNumericTokens, normalize, SAFE_NUMERIC_TOKENS } from '@/lib/coachhelm/v3/llm/citations';
 
 // 18-hole round chosen so buildDeterministicRecap takes one specific,
 // entirely predictable branch: no season stats to compare against
@@ -321,5 +323,65 @@ describe('round-recap.ts x claim-validator.ts — typed gate wired (flag ON)', (
     expect(result.recap).toBe(goodText);
     expect(persistedRecap).toEqual({ p_round_id: 'round-1', p_recap: goodText });
     expect(isFlagEnabledMock).toHaveBeenCalledWith('coachhelm_recap_claim_packet', undefined);
+  });
+
+  it('accepts prose that accurately cites "over 18 holes" — regression pin for the holes_played gap (must-fix)', async () => {
+    // The prompt's very first fact line is "Score: ... over 18 holes" — before
+    // the fix, buildRecapEvidencePacket never registered holes_played, so ANY
+    // accurate recap repeating "18 holes" tripped the uncited_number vacuous-
+    // pass guard and fell back to the deterministic recap on every call. No
+    // claims block content matters here — this is deliberately an EMPTY but
+    // well-formed claims block, so the only thing that can save this response
+    // is holes_played being a registered packet VALUE.
+    const goodText =
+      'Caden carded 74 over 18 holes, holding 71.4% of fairways to keep the card clean. Consistency next time is the target.';
+    generateTextMock.mockResolvedValueOnce({
+      text: goodText + claimsBlock([]),
+      usage: { inputTokens: 20, outputTokens: 20 },
+    });
+
+    const result = await generateRoundRecap('round-1');
+
+    expect(generateTextMock).toHaveBeenCalledTimes(1); // no retry needed
+    expect(result.recap).toBe(goodText);
+    expect(persistedRecap).toEqual({ p_round_id: 'round-1', p_recap: goodText });
+  });
+
+  it("every number in the prompt's Round data facts has a matching packet entry (CI guard against this class of bug)", async () => {
+    // General regression guard, not specific to holes_played: whatever the
+    // prompt's facts block shows the model, buildRecapEvidencePacket must
+    // register too, or an accurate recap fails uncited_number. Cross-checks
+    // the REAL prompt sent to the REAL compose() against the REAL packet
+    // builder's own output for the same round/stats — a future fact added to
+    // one without the other fails this test, not just a specific fixture.
+    mockStats = { scoring_average: 74.2, best_round: 70, rounds_played: 12 };
+    generateTextMock.mockResolvedValueOnce({
+      text: 'Caden carded 74. Consistency next time is the target.' + claimsBlock([]),
+      usage: { inputTokens: 20, outputTokens: 20 },
+    });
+
+    await generateRoundRecap('round-1');
+
+    const prompt = (generateTextMock.mock.calls[0]?.[0] as { prompt?: string } | undefined)?.prompt ?? '';
+    const factsMatch = prompt.match(/Round data:\n([\s\S]*?)\n\nOutput only the two sentences\. Nothing else\./);
+    expect(factsMatch).toBeTruthy();
+    const factsBlock = factsMatch![1]!;
+
+    const packet = buildRecapEvidencePacket(mockRound!, mockStats, 71.4, 66.7);
+    const packetValues = new Set(packet.entries.map((e) => normalize(String(e.value))));
+
+    // "Front 9 / Back 9:" is a fixed label in round-recap.ts's own template
+    // (facts.push(`Front 9 / Back 9: ${front} / ${back}`)) — its digits name
+    // the nines, not a cited stat value; only the numbers AFTER the colon
+    // (front_nine/back_nine's own values) are real citations, and those are
+    // already covered by the packet's own front_nine/back_nine entries.
+    const scannedFactsBlock = factsBlock.replace(/Front 9 \/ Back 9:/g, 'Front / Back:');
+
+    const uncoveredTokens = extractNumericTokens(scannedFactsBlock).filter((tok) => {
+      const normalized = normalize(tok);
+      return !SAFE_NUMERIC_TOKENS.has(normalized) && !packetValues.has(normalized);
+    });
+
+    expect(uncoveredTokens).toEqual([]);
   });
 });

@@ -144,6 +144,12 @@ export function buildRecapEvidencePacket(
   measure('gir_pct', gir);
   measure('front_nine', round.front_nine);
   measure('back_nine', round.back_nine);
+  // MUST-fix (2026-09-23 review): the prompt's very first fact line is
+  // "Score: ${total_score} (${chip}) over ${holes_played ?? 18} holes" — a
+  // recap that accurately repeats "18 holes" cited a number the packet never
+  // registered, tripping the uncited_number vacuous-pass guard and falling
+  // back to the deterministic recap for every well-formed response.
+  measure('holes_played', round.holes_played ?? 18);
 
   const is18HoleRound = (round.holes_played ?? 18) === 18;
   if (is18HoleRound && stats) {
