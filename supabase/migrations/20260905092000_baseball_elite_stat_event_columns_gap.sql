@@ -41,6 +41,13 @@
 -- pass. Held for that reason, not because the columns themselves are risky
 -- to add.
 
+-- VERIFY: select 1 from pg_attribute where attrelid=to_regclass('public.baseball_pitch_events') and attname='batter_id' and not attisdropped -- noqa: LT05
+-- VERIFY: select 1 from pg_attribute where attrelid=to_regclass('public.baseball_pitch_events') and attname='pitch_type_classified' and not attisdropped -- noqa: LT05
+-- VERIFY: select 1 from pg_attribute where attrelid=to_regclass('public.baseball_pitch_events') and attname='is_called_strike' and not attisdropped -- noqa: LT05
+-- VERIFY: select 1 from pg_attribute where attrelid=to_regclass('public.baseball_pitch_events') and attname='count_state' and not attisdropped -- noqa: LT05
+-- VERIFY: select 1 from pg_attribute where attrelid=to_regclass('public.baseball_workload_events') and attname='count' and not attisdropped -- noqa: LT05
+-- VERIFY: select 1 from pg_attribute where attrelid=to_regclass('public.baseball_workload_events') and attname='high_intent_count' and not attisdropped -- noqa: LT05
+
 ALTER TABLE public.baseball_pitch_events
 ADD COLUMN IF NOT EXISTS batter_id uuid,
 ADD COLUMN IF NOT EXISTS pitch_type_classified text,
@@ -53,7 +60,9 @@ COMMENT ON COLUMN public.baseball_pitch_events.batter_id IS
 'pre-existing table). HELD — see supabase/migrations/HELD.md.';
 
 ALTER TABLE public.baseball_workload_events
+-- squawk-ignore prefer-bigint-over-int
 ADD COLUMN IF NOT EXISTS count integer,
+-- squawk-ignore prefer-bigint-over-int
 ADD COLUMN IF NOT EXISTS high_intent_count integer;
 
 COMMENT ON COLUMN public.baseball_workload_events.count IS
