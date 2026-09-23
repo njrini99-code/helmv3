@@ -45,6 +45,15 @@ export function createAdminClient() {
       respectSamplingDecision: false,
     },
   });
-  Sentry.instrumentSupabaseClient(client, { sendOperationData: false });
+  // `Sentry.instrumentSupabaseClient` is undefined when `@sentry/nextjs` is
+  // loaded outside the Next.js runtime — e.g. a script run with plain `tsx`
+  // (confirmed directly: `typeof Sentry.instrumentSupabaseClient` is
+  // `'undefined'` there, `'function'` under `next build`/`next start`).
+  // Calling it unconditionally crashed `createAdminClient()` for every
+  // tsx-run caller before it made a single query. Guard it instead of
+  // requiring every script-side caller to build its own client.
+  if (typeof Sentry.instrumentSupabaseClient === 'function') {
+    Sentry.instrumentSupabaseClient(client, { sendOperationData: false });
+  }
   return client;
 }
