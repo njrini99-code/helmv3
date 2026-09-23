@@ -202,4 +202,10 @@ describe('shot-source adapter — before/after comparison on fixed fixtures', ()
     expect(fact.putt_made).toBeNull();
     expect(fact.shot_type).toBe('approach');
   });
+
+  it('carries miss_direction through unchanged — ApproachShot already selects it', () => {
+    const withDirection = shot({ result: 'rough', lie_after: 'rough', miss_direction: 'short_left' });
+    const fact = approachShotToShotFact(withDirection, FALLBACK_OBSERVED_AT);
+    expect(fact.miss_direction).toBe('short_left');
+  });
 });

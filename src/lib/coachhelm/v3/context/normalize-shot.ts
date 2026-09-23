@@ -153,6 +153,12 @@ export interface RawShotInput {
   putt_made: boolean | null;
   /** Ingest-provided, optional. Never inferred here — see `ShotIntent`. */
   intent?: string | null;
+  /** `golf_shots.miss_direction`, optional — a raw passthrough (no
+   *  normalization function; see `ShotFact.miss_direction`'s doc comment).
+   *  Optional here for the same reason `intent` is: an existing caller
+   *  (fixtures, the earlier A0/A1 test suite) built before this field
+   *  existed doesn't have to supply it just to keep type-checking. */
+  miss_direction?: string | null;
   observed_at: string;
 }
 
@@ -174,6 +180,7 @@ export function normalizeShot(raw: RawShotInput): ShotFact {
     lie_after: raw.lie_after,
     result: raw.result,
     is_penalty: raw.is_penalty === true,
+    miss_direction: raw.miss_direction ?? null,
     putt_made: raw.putt_made,
     observed_at: raw.observed_at,
   };

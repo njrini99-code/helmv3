@@ -142,6 +142,7 @@ interface ShotRow {
   result: string | null;
   is_penalty: boolean | null;
   putt_made: boolean | null;
+  miss_direction: string | null;
   created_at: string | null;
   updated_at: string | null;
 }
@@ -152,7 +153,7 @@ const SHOT_COLUMNS =
   'round_id, hole_number, shot_number, shot_type, club_type, ' +
   'distance_to_hole_before, distance_unit_before, distance_to_hole_after, ' +
   'distance_unit_after, lie_before, lie_after, result, is_penalty, putt_made, ' +
-  'created_at, updated_at';
+  'miss_direction, created_at, updated_at';
 
 /** A `null` created_at is a legacy row predating the column — see the
  *  module doc comment for why that reads as "available", not "excluded".
@@ -322,6 +323,7 @@ export async function loadPlayerContext(
       result: s.result,
       is_penalty: s.is_penalty,
       putt_made: s.putt_made,
+      miss_direction: s.miss_direction,
       // `created_at` is the closest available proxy for "observed" (see
       // module doc comment); a null one (legacy row, kept above) falls back
       // to the cutoff instant itself — the shot IS included, so it needs

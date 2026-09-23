@@ -220,6 +220,7 @@ describe('buildHoleSequence — order, termination, and penalty representation',
         result: 'green',
         is_penalty: false,
         putt_made: null,
+        miss_direction: null,
         observed_at: '2026-07-10T00:00:00.000Z',
       },
       {
@@ -236,6 +237,7 @@ describe('buildHoleSequence — order, termination, and penalty representation',
         result: null, // never set — only putt_made records the hole-out
         is_penalty: false,
         putt_made: true,
+        miss_direction: null,
         observed_at: '2026-07-10T00:01:00.000Z',
       },
     ];
@@ -272,6 +274,7 @@ describe('buildHoleSequence — order, termination, and penalty representation',
         result: null,
         is_penalty: true, // a real penalty shot on this hole
         putt_made: null,
+        miss_direction: null,
         observed_at: '2026-07-11T00:00:00.000Z',
       },
       {
@@ -288,6 +291,7 @@ describe('buildHoleSequence — order, termination, and penalty representation',
         result: 'hole',
         is_penalty: false,
         putt_made: true,
+        miss_direction: null,
         observed_at: '2026-07-11T00:01:00.000Z',
       },
     ];
@@ -350,6 +354,7 @@ describe('buildHoleSequence — order, termination, and penalty representation',
         result: 'green', // impossible: a penalty shot cannot also find the green
         is_penalty: true,
         putt_made: null,
+        miss_direction: null,
         observed_at: '2026-06-01T00:00:00.000Z',
       },
       {
@@ -366,6 +371,7 @@ describe('buildHoleSequence — order, termination, and penalty representation',
         result: 'hole',
         is_penalty: false,
         putt_made: true,
+        miss_direction: null,
         observed_at: '2026-06-01T00:01:00.000Z',
       },
     ];
@@ -434,6 +440,7 @@ describe('buildHoleSequence — order, termination, and penalty representation',
       result: n === 4 ? 'hole' : 'green',
       is_penalty: false,
       putt_made: n === 4 ? true : null,
+      miss_direction: null,
       observed_at: '2026-06-01T00:00:00.000Z',
     }));
 

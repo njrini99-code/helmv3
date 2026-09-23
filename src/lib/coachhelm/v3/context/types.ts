@@ -82,6 +82,14 @@ export interface ShotFact {
    *  `updateShotImpl`) can set this independently of `result`.
    *  `buildHoleSequence`'s termination check mirrors that OR. */
   putt_made: boolean | null;
+  /** `golf_shots.miss_direction` — raw passthrough, never derived here.
+   *  `'short'|'long'|'left'|'right'|'short_left'|...` in production; a
+   *  direction can carry BOTH a short/long and a left/right pole (see
+   *  `approach-miss.ts`'s `classifyMiss`). `null` when not recorded — added
+   *  for `metrics/distance-profile.ts`'s direction-coverage metric (A2),
+   *  which needs to state what fraction of misses have NO direction
+   *  reading, not just what the recorded ones say. */
+  miss_direction: string | null;
   /** Source observation time (ISO 8601) — when the shot was actually
    *  recorded, independent of the consuming `AnalysisScope.analysis_cutoff`. */
   observed_at: string;
