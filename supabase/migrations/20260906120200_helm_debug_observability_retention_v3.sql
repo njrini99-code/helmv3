@@ -23,6 +23,16 @@
 -- ROLLBACK: CREATE OR REPLACE back to v2's body
 -- (20260903191300_helm_debug_observability_retention_v2.sql).
 
+-- The three `-- noqa: disable=LT05` / `enable=LT05` pairs below bracket the
+-- one quoted signature literal
+-- ('public.helm_debug_prune_observability(integer,integer,integer,integer)',
+-- 74 chars) that recurs 3x in this VERIFY block and does not fit an
+-- 80-column line by itself even alone with the `-- VERIFY:` prefix — same
+-- `-- noqa: LT05` pattern already used elsewhere in this repo (see
+-- 20260903190000_helm_debug_stat_snapshot_extensions_search_path.sql). The
+-- disable/enable lines are NOT `-- VERIFY:`-prefixed, so
+-- extractVerifyQueries ignores them; they don't touch the executed query.
+
 -- VERIFY: select 1 from pg_proc where oid =
 -- noqa: disable=LT05
 -- VERIFY: 'public.helm_debug_prune_observability(integer,integer,integer,integer)'
