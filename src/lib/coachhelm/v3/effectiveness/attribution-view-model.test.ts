@@ -146,7 +146,9 @@ describe('Package 10: anchor label ("since first shown" / "since you acted on it
       makeRow({ anchor_kind: 'exposure', n_rounds_before: 1, n_rounds_after: 1 }),
     );
     expect(readout.state).toBe('insufficient');
-    expect(readout.method.description).toBe('Observed change on comparable shots (since first shown)');
+    if (readout.state === 'insufficient') {
+      expect(readout.method.description).toBe('Observed change on comparable shots (since first shown)');
+    }
   });
 
   it('anchor_kind: action on a clean (observed_change) result readout appends "(since you acted on it)" to the description', () => {

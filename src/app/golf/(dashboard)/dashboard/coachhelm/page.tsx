@@ -47,7 +47,6 @@ import { fromUntyped } from '@/lib/supabase/untyped';
 import { computeEvidenceRevisionStatuses } from '@/lib/coachhelm/focus-areas/load-evidence-revision-status';
 import type { EvidenceRevisionComparison } from '@/lib/coachhelm/focus-areas/evidence-revision-status';
 import { loadFocusAreaPracticeLogData } from '@/lib/coachhelm/focus-areas/practice-log-loader';
-import { isFlagEnabled } from '@/lib/flags';
 
 /**
  * A8 slice 3: the focus-area select is routed through `fromUntyped` (see

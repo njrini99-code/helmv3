@@ -34,7 +34,6 @@ import { computeEvidenceRevisionStatuses } from '@/lib/coachhelm/focus-areas/loa
 import type { EvidenceRevisionComparison } from '@/lib/coachhelm/focus-areas/evidence-revision-status';
 import { loadFocusAreaPracticeLogData } from '@/lib/coachhelm/focus-areas/practice-log-loader';
 import { loadFollowUpRoundCounts } from '@/lib/coachhelm/focus-areas/follow-up-eligibility-loader';
-import { isFlagEnabled } from '@/lib/flags';
 
 /**
  * A8 slice 3: the focus-area select is routed through `fromUntyped` (see
@@ -50,6 +49,7 @@ interface RawFocusAreaRow {
   from_review_id?: string | null;
   progress_notes?: unknown;
   evidence_revision?: string | null;
+  started_at?: string | null;
   [key: string]: unknown;
 }
 

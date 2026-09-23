@@ -112,12 +112,12 @@ export interface SequencePerHoleReport {
   baselineGapHistogram: Record<string, number>;
 }
 
-const HYPOTHESIS_STATES: readonly HypothesisState[] = [
-  'no_data',
-  'candidate',
-  'supported_association',
-  'coach_annotated',
-];
+// `HypothesisState` has no `'coach_annotated'` member (hypothesis-policy.ts's
+// own "## States"/"## Slice 3" notes: a "reviewed" read is derived from
+// `coachAnnotation != null` at the call site, never a fourth state value) —
+// keep this list in sync with that union rather than tracking a state that
+// nothing ever produces.
+const HYPOTHESIS_STATES: readonly HypothesisState[] = ['no_data', 'candidate', 'supported_association'];
 
 export interface HypothesisReport {
   total: number;

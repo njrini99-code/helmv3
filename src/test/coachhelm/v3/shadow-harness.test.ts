@@ -47,6 +47,10 @@ function issue(overrides: {
     impactOwnership: { ownerClaimId: overrides.ownerClaimId, nonOwningClaimIds: [] },
     opportunityFrequency: { shotCount: overrides.sourceShotIds.length, distinctRounds: 1 },
     policyInput: { strokesImpact: 0, confidence: 0, sampleSize: 0 },
+    // Not read by either counter under test here — set from ownerClaimId to
+    // match Issue.evidenceKey's own doc comment ("the impact owner's
+    // evidenceKey, falling back to ...") rather than an arbitrary value.
+    evidenceKey: overrides.ownerClaimId,
   };
 }
 
