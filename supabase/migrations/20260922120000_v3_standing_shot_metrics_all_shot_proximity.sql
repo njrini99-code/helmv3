@@ -91,7 +91,7 @@
 ALTER TABLE public.golf_player_standing
   ADD COLUMN IF NOT EXISTS basis text,
   ADD COLUMN IF NOT EXISTS on_green_proximity_feet numeric,
-  ADD COLUMN IF NOT EXISTS layup_excluded_n integer;
+  ADD COLUMN IF NOT EXISTS layup_excluded_n bigint;
 
 DO $$
 BEGIN
@@ -145,8 +145,9 @@ COMMENT ON COLUMN public.golf_player_standing.layup_excluded_n IS
 
 CREATE OR REPLACE FUNCTION "public"."refresh_player_standing_shot_metrics"("p_team_ids" "uuid"[])
     RETURNS TABLE("out_metric_id" "text", "out_rows_upserted" bigint)
-    LANGUAGE "plpgsql" SECURITY DEFINER
-    SET "search_path" TO 'public'
+    LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path TO 'public'
     AS $_$
 DECLARE
   -- (metric_id, band_lo_yards, band_hi_yards) — hi is exclusive; last band open-ended.

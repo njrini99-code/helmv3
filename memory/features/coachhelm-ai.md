@@ -26,7 +26,9 @@ CoachHelm is the golf intelligence layer. It turns round, shot, standing, player
 The feature currently spans two generations:
 
 - **V2**: established insight mining, prediction, learning, NLG, post-round triggers, and coach/player feedback loops.
-- **V3**: newer generator framework for composite insights, counterfactuals, player genome, provider ingest, goals, intent, LLM narratives, practice recommendations, qualifying, and chat.
+- **V3**: newer generator framework for composite insights, counterfactuals,
+  player genome, provider ingest, goals, intent, LLM narratives, practice
+  recommendations, qualifying, and chat.
 
 ## Primary Entry Points
 
