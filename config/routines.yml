@@ -108,9 +108,10 @@ routines:
     schedule: "17 */3 * * *"
     status: active
     description: >-
-      Regenerates src/lib/types/database.ts from production every 3 hours
-      and opens an auto-PR when it drifted, bounding how long types_drift
-      stays red for every other PR.
+      Owns the database-types drift check (removed from the PR gate
+      2026-09-23): after every db-apply, on push to main and every 3 hours
+      it compares src/lib/types/database.ts to production and opens or
+      updates the types/auto-regen PR when it drifted.
 
   - id: circleci-weekly
     trigger: circleci-scheduled-pipeline
