@@ -88,15 +88,25 @@ interface ToneConfig {
 }
 
 // ---------------------------------------------------------------------------
-// Outcome badge — surfaces the strokes-saved-per-round result once the
-// nightly outcome backfill writer has marked an insight as improved /
-// no_change / worsened. NOTE: `outcome_status` and `outcome_measured_at`
-// live on the `golf_coach_insights` row but are NOT yet projected by
-// `INSIGHT_SELECT` in `src/app/golf/actions/insight-delivery.ts`. The action
-// needs to add `outcome_status, outcome_measured_at` to the select clause
-// (and to `EvidenceInsight`) for this badge to light up. Until then the
-// helper short-circuits and the badge silently no-ops, which is the
-// expected default for the typical "no outcome yet" case anyway.
+// Outcome badge — surfaces the recorded improved/no_change/worsened verdict
+// once a player or coach marks a focus area's outcome
+// (`recordFocusAreaOutcomeImpl`, `src/app/golf/actions/development.ts`),
+// which credits the originating insight's `golf_coach_insights.outcome_
+// status`/`outcome_measured_at`. STALE NOTE CORRECTED (repair-plan §14.12,
+// observed-outcome language audit): this used to say `outcome_status`/
+// `outcome_measured_at` were "not yet projected by `INSIGHT_SELECT`" and the
+// badge "silently no-ops" — false; both columns HAVE been in `INSIGHT_SELECT`
+// (`src/app/golf/actions/insight-delivery.ts`) and `EvidenceInsight` since
+// before this comment was written, so this badge is live wherever
+// `InsightCard` renders with `outcome_status` set (confirmed: `Fairway
+// PlayerInsight.tsx` renders this exact card, `audience="coach"`).
+//
+// `outcome_status` is a HUMAN'S self-reported verdict (the player/coach
+// marking their own focus area's result), never a statistical measurement —
+// it is unrelated to `golf_insight_outcome_attribution`/`method_version`
+// (`causality/attribute.ts`, `causality/comparable-attribute.ts`), which
+// nothing in this component reads. See below for why the 'improved' label
+// must not claim a measured saving.
 type OutcomeStatus = 'improved' | 'no_change' | 'worsened';
 
 interface InsightOutcomeFields {
@@ -124,6 +134,20 @@ function OutcomeBadge({ insight, className }: OutcomeBadgeProps) {
   // estimated stroke-per-round magnitude, so we reuse it here. (When the
   // action eventually exposes a separate `stroke_impact` column we can
   // prefer that — both represent the same quantity.)
+  //
+  // Observed-outcome language audit (repair-plan §14.12): `strokes_impact`
+  // is the insight's GENERATION-TIME counterfactual estimate — "strokes
+  // recoverable per round IF this were fixed" (see `generator-base.ts`'s
+  // `backfilledStrokesImpact` / `patternToInsightVocabulary.ts`'s own note
+  // on this exact field) — never a post-outcome measured saving. This badge
+  // previously read "Saved {impact} strokes/rd" once a human marked the
+  // insight `improved`, which presented that pre-existing, un-measured
+  // estimate as if it had just been proven recovered — the outcome badge's
+  // real contribution is only the human's own self-reported verdict, not a
+  // new measurement of the number. Every OTHER place this card shows the
+  // same `strokes_impact` value (below, and `EvidencePanel.tsx`/
+  // `DiagnosisPanel.tsx`) already uses the honest, hedged "~N str/rd at
+  // stake" phrasing for exactly this reason — this was the one outlier.
   const impact = Math.abs(Number(insight.evidence.strokes_impact ?? 0));
   const hasMeaningfulImpact = Number.isFinite(impact) && impact > 0;
 
@@ -152,7 +176,7 @@ function OutcomeBadge({ insight, className }: OutcomeBadgeProps) {
         >
           <path d="M3 8l3-4 3 4" />
         </svg>
-        Saved {impact.toFixed(1)} strokes/rd
+        Improved · ~{impact.toFixed(1)} str/rd at stake
       </span>
     );
   }
