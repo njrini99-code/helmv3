@@ -202,10 +202,18 @@ describe('POST /coachhelm/v3/chat/stream — grounding-flag persistence (real ai
     };
 
     expect(persisted.status).toBe('failed');
-    expect(persisted.content).toContain("could not be traced back to your program's data");
+    // #1997: `content` stays the raw model text (never the note, which would
+    // leak into the next turn's model context); the note lives only in the
+    // grounding-flag ui_part that restore.ts/ChatThread.tsx display.
+    expect(persisted.content).toBe('His scoring average is 76.5.');
     expect(Array.isArray(persisted.ui_parts)).toBe(true);
     expect(persisted.ui_parts).toContainEqual(
-      expect.objectContaining({ type: 'data-grounding-flag' }),
+      expect.objectContaining({
+        type: 'data-grounding-flag',
+        data: expect.objectContaining({
+          note: expect.stringContaining("could not be traced back to your program's data"),
+        }),
+      }),
     );
   });
 });
