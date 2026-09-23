@@ -44,7 +44,7 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
       development: false,
     },
     kill_switch_behavior: null,
-    cleanup_plan: "Either promote to a permanent `release` flag once the section has been reviewed, or remove the section and its wiring if the review asks for a different surface/placement instead.",
+    cleanup_plan: "Either promote to a permanent `release` flag once the section has been reviewed and the rolling-12-month load (shared with the distance-profile flag when both are on — see `admin_platform`'s ledger) has been checked against a heavy-user roster in preview, or remove the section and its wiring if the review asks for a different surface/placement instead.",
   },
   {
     feature_id: "coachhelm_focus_area_evidence_revision",
