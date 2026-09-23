@@ -410,9 +410,8 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
   claim, and a `null` hole/shot number no longer collides with another
   unknown shot (each renders to a fixed marker excluded from union-find,
   then disambiguated by its packet's own `claimId` when an issue's shots
-  are built, so identity stays reproducible — A5's own `shotClaimId`,
-  #1993, still renders `'null'` literally and needs this same fix in its
-  own slice).
+  are built, so identity stays reproducible — A5's own `shotClaimId`
+  (#1993) picked up this same fix in its slice 2).
   Tested against real `computeParOpportunities` (A3),
   `computeDistanceProfile` (A2, #1989), and `attributeSequence` (A4,
   #1988) metric values on one shared par-5 fixture, each wrapped by a
@@ -426,15 +425,33 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
 
 - **`src/lib/coachhelm/v3/reasoning/hypothesis-policy.ts`** (2026-09-23,
   `agent/coachhelm-hypothesis-policy`, addendum §13, work package A5
-  slice 1) — `buildHypotheses(metrics, facts)` proposes a small, NAMED set
-  of candidate explanations for a round's shot data (`short_bias`,
-  `rough_gap`, `recovery`, `par5_opportunity_loss`, plus a non-family
-  `'insufficient'` entry naming two competing families instead of picking
-  one) — never a fabricated cause, never a psychology/fatigue/mechanics
-  inference. `metrics` is `MetricResultInput[]`, a structural subset of the
-  shared `MetricResult` landing via #1990 (`src/lib/coachhelm/v3/metrics/
-  types.ts`, not merged as of this slice — same field names, so switching
-  the import later is one line). `ShotFact` carries no `par` and no
+  slice 1 + slice 2) — `buildHypotheses(metrics, facts)` proposes a small,
+  NAMED set of candidate explanations for a round's shot data
+  (`short_bias`, `rough_gap`, `recovery`, `par5_opportunity_loss`, plus a
+  non-family `'insufficient'` entry naming two competing families instead
+  of picking one) — never a fabricated cause, never a
+  psychology/fatigue/mechanics inference. `metrics` is now the real,
+  merged `MetricResult` (`src/lib/coachhelm/v3/metrics/types.ts`, #1990;
+  slice 1 read a structural subset before #1990 landed). Slice 2:
+  `MetricResult.dimensions` means a real call can hand back several rows
+  per `metricId` (a distance band, or a specific par-5 hole) —
+  `metricClaimId`/`findMetric` take an optional dimensions filter so a
+  hypothesis reads the ONE row describing its own shot/hole, never an
+  arbitrary first match; `rough_gap` matches its corroborating metric to
+  its own triggering shot's distance band, and `par5_opportunity_loss` now
+  emits one `Hypothesis` PER dimensioned opportunity row (a round with
+  several par-5s yields several) instead of reading one arbitrary row and
+  dropping the rest. Slice 2 also found that `approach_measured_
+  contribution` (A2's real producer) is a plain eligible-attempt COUNT,
+  never negative — not the signed strokes-gained value slice 1 assumed —
+  so `rough_gap`'s corroboration is now guarded on `unit === 'strokes'`
+  and stays a stated gap (never elevates/contradicts) until a
+  strokes-shaped metric exists. `shotClaimId` no longer renders a missing
+  `hole_number`/`shot_number` as the literal string `'null'`; it now
+  matches `ranking/situational-ranking.ts`'s own fixed `'unknown'` marker
+  scheme so ids from both modules interoperate without translation (that
+  module's own doc comment named this exact fix as owed here). `ShotFact`
+  carries no `par` and no
   miss-direction field, so `short_bias`/`par5_opportunity_loss` can only
   come from a `metrics` row, never guessed; `rough_gap`/`recovery` come
   from an approach shot with `lie_before === 'rough'`, split on the
@@ -448,7 +465,8 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
   was but got contradicted), `'supported_association'` (a `status:
   'supported'` metric agrees and nothing contradicts — an association,
   never causal), and `'coach_annotated'` (reachable only from
-  `personal-context.ts`, slice 2 — nothing here produces it). No
+  `personal-context.ts` — not wired by slice 2 either, still a later
+  slice — nothing here produces it). No
   `'proven'` state exists. `recovery` (no metric ever corroborates it, and
   its own triggering shot is deliberately not cited as its own support)
   and `short_bias`/`par5_opportunity_loss` with an absent metric resolve
@@ -466,10 +484,12 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
   missing prerequisite is reported as a `Hypothesis` with empty claims and
   a populated `missingInputs`, never silently omitted. Claim ids
   (`metricClaimId`/`shotClaimId`) always resolve back to an element of the
-  `metrics`/`facts` a call was given (tested). **Not wired to
-  `diagnosis.ts` or `personal-context.ts`** — that's slice 2. See
-  `docs/architecture/coachhelm-evidence-contract.md`'s "Controlled
-  hypotheses" section.
+  `metrics`/`facts` a call was given (tested). **Still not wired to
+  `diagnosis.ts` or `personal-context.ts`** — slice 2 was the
+  `MetricResult` swap, the `shotClaimId` marker fix, and dimensioned claim
+  ids (above); the diagnosis/personal-context wiring remains a later
+  slice. See `docs/architecture/coachhelm-evidence-contract.md`'s
+  "Controlled hypotheses" section.
 - N13 sweep (repair plan, 2026-09-23): audited every CoachHelm action/route
   under `src/app/golf/actions` and `src/lib/coachhelm` for a catch-all that
   discards the real exception and returns one generic "session expired"-style
@@ -628,10 +648,10 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
   green attempt, never `tee_to_next` — both decided by `hole.par`/an
   explicit tag, never inferred from distance or outcome. `lie_after` →
   next shot's `lie_before` continuity is assumed, not validated. **Not
-  wired to anything yet**: no `v2/orchestrator.ts` or composite consumer,
-  no `hypothesis-policy.ts` — that's slice 2, which should consume the
-  shared `MetricResult` landing in `metrics/types.ts` via #1990
-  (`MetricResult` does not exist on `main` yet). See
+  wired to anything yet**: no `v2/orchestrator.ts` or composite consumer;
+  `hypothesis-policy.ts`'s A5 slice 2 (2026-09-23) did the `MetricResult`
+  swap (`MetricResult` merged via #1990) but did not add attribution
+  consumption — that remains a later slice. See
   `docs/architecture/coachhelm-evidence-contract.md`'s "Sequence
   attribution" section.
 

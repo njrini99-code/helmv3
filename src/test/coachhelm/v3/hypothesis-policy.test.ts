@@ -1,16 +1,16 @@
 /**
  * Pure-core tests for `buildHypotheses` (addendum §13, work package A5,
- * slice 1). No DB, no adapters — plain `MetricResultInput`/`ShotFact`
+ * slice 1 + slice 2). No DB, no adapters — plain `MetricResult`/`ShotFact`
  * fixtures.
  */
 import { describe, it, expect } from 'vitest';
-import type { ShotFact, ShotIntent } from '@/lib/coachhelm/v3/context/types';
+import type { AnalysisScope, ShotFact, ShotIntent } from '@/lib/coachhelm/v3/context/types';
 import {
   buildHypotheses,
   metricClaimId,
   shotClaimId,
-  type MetricResultInput,
-  type MetricStatusInput,
+  type MetricResult,
+  type MetricStatus,
 } from '@/lib/coachhelm/v3/reasoning/hypothesis-policy';
 
 function roughApproachShot(intent: ShotIntent, overrides: Partial<ShotFact> = {}): ShotFact {
@@ -34,15 +34,45 @@ function roughApproachShot(intent: ShotIntent, overrides: Partial<ShotFact> = {}
   };
 }
 
+const SCOPE: AnalysisScope = {
+  player_id: 'player-1',
+  window_start: '2026-06-01',
+  window_end: '2026-07-01',
+  analysis_cutoff: '2026-07-01T12:00:00.000Z',
+};
+
+/** Full `MetricResult` fixture with every field a test doesn't care about
+ *  defaulted, so a test only spells out `metricId`/`value`/`status` (and
+ *  `dimensions`/`unit` when they matter) instead of all thirteen fields.
+ *  `unit` defaults to `'percent'` — every real percent-shaped id this
+ *  module reads (`approach_short_miss_rate`, `par5_regulation_
+ *  opportunity_rate`, `par5_green_in_two_rate`) is percent-shaped; a test
+ *  exercising the count-shaped `approach_measured_contribution` mismatch
+ *  overrides it explicitly. */
+function metricRow(partial: Pick<MetricResult, 'metricId' | 'value' | 'status'> & Partial<MetricResult>): MetricResult {
+  return {
+    scope: SCOPE,
+    dimensions: {},
+    unit: 'percent',
+    numerator: null,
+    denominator: 0,
+    eligibleCount: 0,
+    observedCount: 0,
+    distinctRounds: 0,
+    exclusions: {},
+    ...partial,
+  };
+}
+
 /** Every supporting/contradicting claim id must resolve back to an actual
  *  element of the inputs this module was given — never a dangling
  *  reference. */
 function assertClaimsResolve(
   hypotheses: readonly { supportingClaimIds: string[]; contradictingClaimIds: string[] }[],
-  metrics: readonly MetricResultInput[],
+  metrics: readonly MetricResult[],
   facts: readonly ShotFact[],
 ): void {
-  const knownMetricClaims = new Set(metrics.map((m) => metricClaimId(m.metricId)));
+  const knownMetricClaims = new Set(metrics.map((m) => metricClaimId(m.metricId, m.dimensions)));
   const knownShotClaims = new Set(facts.map((f) => shotClaimId(f)));
   for (const h of hypotheses) {
     for (const claim of [...h.supportingClaimIds, ...h.contradictingClaimIds]) {
@@ -101,47 +131,78 @@ describe('buildHypotheses — rough-lie approach: identical shot, different inte
   });
 });
 
+// `roughApproachShot`'s default `distance_to_hole_before_feet: 450` (150
+// yards) buckets to the `'125_175ft'` band — the corroborating metric's
+// dimension a real call would key it by.
+const ROUGH_GAP_BAND = '125_175ft';
+
 describe('buildHypotheses — rough_gap elevates only with a corroborating, uncontradicted metric', () => {
   it('missing the corroborating metric caps state at candidate and reports the gap', () => {
     const facts = [roughApproachShot('go_for_green')];
     const result = buildHypotheses([], facts);
     const roughGap = result.find((h) => h.family === 'rough_gap')!;
     expect(roughGap.state).toBe('candidate');
-    expect(roughGap.missingInputs).toContain(metricClaimId('approach_measured_contribution'));
+    expect(roughGap.missingInputs).toContain(metricClaimId('approach_rough_gap_strokes_contribution'));
     expect(roughGap.supportingClaimIds).toEqual([shotClaimId(facts[0]!)]);
   });
 
   it('a supported, below-expectation contribution elevates to supported_association', () => {
+    // Fixture is keyed under the distinct, honestly-not-yet-existing
+    // strokes id (approach_rough_gap_strokes_contribution) — this is the
+    // shape a real future producer (A4's sequence-attribution adapter)
+    // would emit, not the real-today approach_measured_contribution count.
     const facts = [roughApproachShot('go_for_green')];
-    const metrics: MetricResultInput[] = [
-      { metricId: 'approach_measured_contribution', value: -0.4, status: 'supported' },
+    const metrics: MetricResult[] = [
+      metricRow({
+        metricId: 'approach_rough_gap_strokes_contribution',
+        value: -0.4,
+        status: 'supported',
+        unit: 'strokes',
+        dimensions: { band: ROUGH_GAP_BAND },
+      }),
     ];
     const result = buildHypotheses(metrics, facts);
     const roughGap = result.find((h) => h.family === 'rough_gap')!;
     expect(roughGap.state).toBe('supported_association');
-    expect(roughGap.supportingClaimIds).toContain(metricClaimId('approach_measured_contribution'));
+    expect(roughGap.supportingClaimIds).toContain(
+      metricClaimId('approach_rough_gap_strokes_contribution', { band: ROUGH_GAP_BAND }),
+    );
     expect(roughGap.missingInputs).toEqual([]);
     assertClaimsResolve(result, metrics, facts);
   });
 
   it('a supported, above-expectation contribution contradicts it and caps at candidate', () => {
     const facts = [roughApproachShot('go_for_green')];
-    const metrics: MetricResultInput[] = [
-      { metricId: 'approach_measured_contribution', value: 0.3, status: 'supported' },
+    const metrics: MetricResult[] = [
+      metricRow({
+        metricId: 'approach_rough_gap_strokes_contribution',
+        value: 0.3,
+        status: 'supported',
+        unit: 'strokes',
+        dimensions: { band: ROUGH_GAP_BAND },
+      }),
     ];
     const result = buildHypotheses(metrics, facts);
     const roughGap = result.find((h) => h.family === 'rough_gap')!;
     expect(roughGap.state).toBe('candidate');
-    expect(roughGap.contradictingClaimIds).toContain(metricClaimId('approach_measured_contribution'));
+    expect(roughGap.contradictingClaimIds).toContain(
+      metricClaimId('approach_rough_gap_strokes_contribution', { band: ROUGH_GAP_BAND }),
+    );
     assertClaimsResolve(result, metrics, facts);
   });
 
-  it.each<MetricStatusInput>(['insufficient', 'descriptive_only', 'invalid'])(
+  it.each<MetricStatus>(['insufficient', 'descriptive_only', 'invalid'])(
     'a %s-status metric neither elevates nor contradicts',
     (status) => {
       const facts = [roughApproachShot('go_for_green')];
-      const metrics: MetricResultInput[] = [
-        { metricId: 'approach_measured_contribution', value: -0.9, status },
+      const metrics: MetricResult[] = [
+        metricRow({
+          metricId: 'approach_rough_gap_strokes_contribution',
+          value: -0.9,
+          status,
+          unit: 'strokes',
+          dimensions: { band: ROUGH_GAP_BAND },
+        }),
       ];
       const result = buildHypotheses(metrics, facts);
       const roughGap = result.find((h) => h.family === 'rough_gap')!;
@@ -150,6 +211,68 @@ describe('buildHypotheses — rough_gap elevates only with a corroborating, unco
       expect(roughGap.contradictingClaimIds).toEqual([]);
     },
   );
+
+  it('the REAL producer (approach_measured_contribution, a count under a DIFFERENT id) is never found by this ' +
+    'family\'s lookup, so it reports the gap rather than a false contradiction or a wrong-shaped match', () => {
+    // approach_measured_contribution's actual shape (distance-profile.ts):
+    // a plain eligible-attempt count, not a signed strokes-gained value,
+    // AND a different metricId than ROUGH_GAP_STROKES_METRIC_ID entirely.
+    // findMetric looks up the strokes id, so this row is simply absent from
+    // its perspective — pins that a real count row under the OLD id can
+    // never be mistaken for this family's (not-yet-existing) signal.
+    const facts = [roughApproachShot('go_for_green')];
+    const metrics: MetricResult[] = [
+      metricRow({
+        metricId: 'approach_measured_contribution',
+        value: 14,
+        status: 'supported',
+        unit: 'count',
+        dimensions: { band: ROUGH_GAP_BAND },
+      }),
+    ];
+    const result = buildHypotheses(metrics, facts);
+    const roughGap = result.find((h) => h.family === 'rough_gap')!;
+    expect(roughGap.state).toBe('candidate');
+    expect(roughGap.contradictingClaimIds).toEqual([]);
+    expect(roughGap.supportingClaimIds).toEqual([shotClaimId(facts[0]!)]);
+    expect(roughGap.missingInputs).toContain(metricClaimId('approach_rough_gap_strokes_contribution'));
+  });
+
+  it('two shots in different distance bands each read their OWN band\'s row, never an arbitrary first match', () => {
+    const nearShot = roughApproachShot('go_for_green', {
+      shot_number: 2,
+      distance_to_hole_before_feet: 300, // 100 yd -> '50_125ft'
+    });
+    const farShot = roughApproachShot('go_for_green', {
+      shot_number: 3,
+      distance_to_hole_before_feet: 600, // 200 yd -> '175_plus_ft'
+    });
+    const metrics: MetricResult[] = [
+      metricRow({
+        metricId: 'approach_rough_gap_strokes_contribution',
+        value: -0.4,
+        status: 'supported',
+        unit: 'strokes',
+        dimensions: { band: '50_125ft' },
+      }),
+      metricRow({
+        metricId: 'approach_rough_gap_strokes_contribution',
+        value: 0.4,
+        status: 'supported',
+        unit: 'strokes',
+        dimensions: { band: '175_plus_ft' },
+      }),
+    ];
+    const result = buildHypotheses(metrics, [nearShot, farShot]);
+    const near = result.find((h) => h.id.includes(shotClaimId(nearShot)))!;
+    const far = result.find((h) => h.id.includes(shotClaimId(farShot)))!;
+    expect(near.state).toBe('supported_association');
+    expect(far.state).toBe('candidate');
+    expect(far.contradictingClaimIds).toContain(
+      metricClaimId('approach_rough_gap_strokes_contribution', { band: '175_plus_ft' }),
+    );
+    assertClaimsResolve(result, metrics, [nearShot, farShot]);
+  });
 });
 
 describe('buildHypotheses — recovery has no corroborating producer today, always no_data', () => {
@@ -202,8 +325,8 @@ describe('buildHypotheses — short_bias has no producer today, no_data until a 
 
   it('a supported miss rate at or above the support floor elevates to supported_association', () => {
     const facts = [roughApproachShot('go_for_green')];
-    const metrics: MetricResultInput[] = [
-      { metricId: 'approach_short_miss_rate', value: 70, status: 'supported' },
+    const metrics: MetricResult[] = [
+      metricRow({ metricId: 'approach_short_miss_rate', value: 70, status: 'supported' }),
     ];
     const result = buildHypotheses(metrics, facts);
     const shortBias = result.find((h) => h.family === 'short_bias')!;
@@ -214,8 +337,8 @@ describe('buildHypotheses — short_bias has no producer today, no_data until a 
 
   it('a supported miss rate at or below the refute floor contradicts it (should-fix #3)', () => {
     const facts = [roughApproachShot('go_for_green')];
-    const metrics: MetricResultInput[] = [
-      { metricId: 'approach_short_miss_rate', value: 25, status: 'supported' },
+    const metrics: MetricResult[] = [
+      metricRow({ metricId: 'approach_short_miss_rate', value: 25, status: 'supported' }),
     ];
     const result = buildHypotheses(metrics, facts);
     const shortBias = result.find((h) => h.family === 'short_bias')!;
@@ -227,8 +350,8 @@ describe('buildHypotheses — short_bias has no producer today, no_data until a 
 
   it('a supported miss rate strictly between the floors neither supports nor contradicts', () => {
     const facts = [roughApproachShot('go_for_green')];
-    const metrics: MetricResultInput[] = [
-      { metricId: 'approach_short_miss_rate', value: 50, status: 'supported' },
+    const metrics: MetricResult[] = [
+      metricRow({ metricId: 'approach_short_miss_rate', value: 50, status: 'supported' }),
     ];
     const result = buildHypotheses(metrics, facts);
     const shortBias = result.find((h) => h.family === 'short_bias')!;
@@ -249,8 +372,8 @@ describe('buildHypotheses — par5_opportunity_loss is metric-only and contradic
   });
 
   it('a low, supported opportunity rate elevates to supported_association', () => {
-    const metrics: MetricResultInput[] = [
-      { metricId: 'par5_regulation_opportunity_rate', value: 40, status: 'supported' },
+    const metrics: MetricResult[] = [
+      metricRow({ metricId: 'par5_regulation_opportunity_rate', value: 40, status: 'supported' }),
     ];
     const result = buildHypotheses(metrics, []);
     const par5 = result.find((h) => h.family === 'par5_opportunity_loss')!;
@@ -265,15 +388,15 @@ describe('buildHypotheses — par5_opportunity_loss is metric-only and contradic
   it('adding a high, supported green-in-two rate downgrades supported_association back to candidate', () => {
     // Same base fixture as the elevation test above, PLUS a contradicting
     // second metric — the downgrade, not a candidate-to-candidate no-op.
-    const baseMetrics: MetricResultInput[] = [
-      { metricId: 'par5_regulation_opportunity_rate', value: 40, status: 'supported' },
+    const baseMetrics: MetricResult[] = [
+      metricRow({ metricId: 'par5_regulation_opportunity_rate', value: 40, status: 'supported' }),
     ];
     const baseline = buildHypotheses(baseMetrics, []).find((h) => h.family === 'par5_opportunity_loss')!;
     expect(baseline.state).toBe('supported_association'); // precondition
 
-    const contradictingMetrics: MetricResultInput[] = [
+    const contradictingMetrics: MetricResult[] = [
       ...baseMetrics,
-      { metricId: 'par5_green_in_two_rate', value: 85, status: 'supported' },
+      metricRow({ metricId: 'par5_green_in_two_rate', value: 85, status: 'supported' }),
     ];
     const result = buildHypotheses(contradictingMetrics, []);
     const par5 = result.find((h) => h.family === 'par5_opportunity_loss')!;
@@ -283,11 +406,11 @@ describe('buildHypotheses — par5_opportunity_loss is metric-only and contradic
     assertClaimsResolve(result, contradictingMetrics, []);
   });
 
-  it.each<MetricStatusInput>(['insufficient', 'descriptive_only', 'invalid'])(
+  it.each<MetricStatus>(['insufficient', 'descriptive_only', 'invalid'])(
     'a %s-status opportunity metric never elevates',
     (status) => {
-      const metrics: MetricResultInput[] = [
-        { metricId: 'par5_regulation_opportunity_rate', value: 20, status },
+      const metrics: MetricResult[] = [
+        metricRow({ metricId: 'par5_regulation_opportunity_rate', value: 20, status }),
       ];
       const result = buildHypotheses(metrics, []);
       const par5 = result.find((h) => h.family === 'par5_opportunity_loss')!;
@@ -295,6 +418,53 @@ describe('buildHypotheses — par5_opportunity_loss is metric-only and contradic
       expect(par5.supportingClaimIds).toEqual([]);
     },
   );
+
+  it('several dimensioned opportunity rows (several par-5 holes played) each produce their OWN hypothesis', () => {
+    // Real par-opportunities.ts dimensions per specific hole
+    // (course_hole_key/hole_number) — a round with two par-5s yields two
+    // rows per metric id. The pre-fix findMetric().find() read one
+    // arbitrary row and silently dropped the other hole entirely.
+    const metrics: MetricResult[] = [
+      metricRow({
+        metricId: 'par5_regulation_opportunity_rate',
+        value: 30,
+        status: 'supported',
+        dimensions: { course_hole_key: 'course-a:7', hole_number: 7 },
+      }),
+      metricRow({
+        metricId: 'par5_regulation_opportunity_rate',
+        value: 90,
+        status: 'supported',
+        dimensions: { course_hole_key: 'course-a:11', hole_number: 11 },
+      }),
+      metricRow({
+        metricId: 'par5_green_in_two_rate',
+        value: 50,
+        status: 'supported',
+        dimensions: { course_hole_key: 'course-a:11', hole_number: 11 },
+      }),
+    ];
+    const result = buildHypotheses(metrics, []);
+    const par5s = result.filter((h) => h.family === 'par5_opportunity_loss');
+    expect(par5s).toHaveLength(2);
+
+    const hole7 = par5s.find((h) =>
+      h.supportingClaimIds.includes(
+        metricClaimId('par5_regulation_opportunity_rate', { course_hole_key: 'course-a:7', hole_number: 7 }),
+      ),
+    )!;
+    expect(hole7.state).toBe('supported_association');
+    expect(hole7.missingInputs).toContain(metricClaimId('par5_green_in_two_rate'));
+
+    const hole11 = par5s.find((h) => h.id !== hole7.id)!;
+    // Opportunity rate 90 is ABOVE the loss threshold (no support) and its
+    // OWN green-in-two row (50, below the contradict floor) doesn't
+    // contradict either — a genuinely neutral hole, still distinct from
+    // hole 7's real signal, and never blended with hole 7's rows.
+    expect(hole11.state).toBe('no_data');
+    expect(hole11.missingInputs).toEqual([]);
+    assertClaimsResolve(result, metrics, []);
+  });
 });
 
 describe('buildHypotheses — description is a function of state, not a fixed template', () => {
@@ -328,11 +498,11 @@ describe('buildHypotheses — description is a function of state, not a fixed te
     // no fact-based supporting claim of its own) — a below-refute-floor
     // value is the only route there.
     const candidate = buildHypotheses(
-      [{ metricId: 'approach_short_miss_rate', value: 25, status: 'supported' }],
+      [metricRow({ metricId: 'approach_short_miss_rate', value: 25, status: 'supported' })],
       [roughApproachShot('go_for_green')],
     ).find((h) => h.family === 'short_bias')!;
     const supported = buildHypotheses(
-      [{ metricId: 'approach_short_miss_rate', value: 70, status: 'supported' }],
+      [metricRow({ metricId: 'approach_short_miss_rate', value: 70, status: 'supported' })],
       [roughApproachShot('go_for_green')],
     ).find((h) => h.family === 'short_bias')!;
 
@@ -351,7 +521,15 @@ describe('buildHypotheses — description is a function of state, not a fixed te
   it('rough_gap reads differently across candidate and supported_association', () => {
     const candidate = buildHypotheses([], [roughApproachShot('go_for_green')]).find((h) => h.family === 'rough_gap')!;
     const supported = buildHypotheses(
-      [{ metricId: 'approach_measured_contribution', value: -0.4, status: 'supported' }],
+      [
+        metricRow({
+          metricId: 'approach_rough_gap_strokes_contribution',
+          value: -0.4,
+          status: 'supported',
+          unit: 'strokes',
+          dimensions: { band: ROUGH_GAP_BAND },
+        }),
+      ],
       [roughApproachShot('go_for_green')],
     ).find((h) => h.family === 'rough_gap')!;
 
@@ -363,13 +541,13 @@ describe('buildHypotheses — description is a function of state, not a fixed te
   it('par5_opportunity_loss reads differently across no_data, candidate-via-contradiction, and supported_association', () => {
     const noData = buildHypotheses([], []).find((h) => h.family === 'par5_opportunity_loss')!;
     const supported = buildHypotheses(
-      [{ metricId: 'par5_regulation_opportunity_rate', value: 40, status: 'supported' }],
+      [metricRow({ metricId: 'par5_regulation_opportunity_rate', value: 40, status: 'supported' })],
       [],
     ).find((h) => h.family === 'par5_opportunity_loss')!;
     const downgraded = buildHypotheses(
       [
-        { metricId: 'par5_regulation_opportunity_rate', value: 40, status: 'supported' },
-        { metricId: 'par5_green_in_two_rate', value: 85, status: 'supported' },
+        metricRow({ metricId: 'par5_regulation_opportunity_rate', value: 40, status: 'supported' }),
+        metricRow({ metricId: 'par5_green_in_two_rate', value: 85, status: 'supported' }),
       ],
       [],
     ).find((h) => h.family === 'par5_opportunity_loss')!;
@@ -394,11 +572,17 @@ describe('buildHypotheses — never infers psychology, fatigue, or mechanics', (
       roughApproachShot('recovery', { shot_number: 3 }),
       roughApproachShot('unknown', { shot_number: 4 }),
     ];
-    const metrics: MetricResultInput[] = [
-      { metricId: 'approach_short_miss_rate', value: 70, status: 'supported' },
-      { metricId: 'approach_measured_contribution', value: -0.4, status: 'supported' },
-      { metricId: 'par5_regulation_opportunity_rate', value: 30, status: 'supported' },
-      { metricId: 'par5_green_in_two_rate', value: 20, status: 'supported' },
+    const metrics: MetricResult[] = [
+      metricRow({ metricId: 'approach_short_miss_rate', value: 70, status: 'supported' }),
+      metricRow({
+        metricId: 'approach_rough_gap_strokes_contribution',
+        value: -0.4,
+        status: 'supported',
+        unit: 'strokes',
+        dimensions: { band: ROUGH_GAP_BAND },
+      }),
+      metricRow({ metricId: 'par5_regulation_opportunity_rate', value: 30, status: 'supported' }),
+      metricRow({ metricId: 'par5_green_in_two_rate', value: 20, status: 'supported' }),
     ];
     const result = buildHypotheses(metrics, facts);
     expect(result.length).toBeGreaterThan(0);
@@ -417,12 +601,48 @@ describe('buildHypotheses — claim ids always resolve to an input element', () 
       roughApproachShot('go_for_green'),
       roughApproachShot('recovery', { shot_number: 3 }),
     ];
-    const metrics: MetricResultInput[] = [
-      { metricId: 'approach_measured_contribution', value: -0.2, status: 'supported' },
-      { metricId: 'par5_regulation_opportunity_rate', value: 45, status: 'supported' },
-      { metricId: 'par5_green_in_two_rate', value: 90, status: 'supported' },
+    const metrics: MetricResult[] = [
+      metricRow({
+        metricId: 'approach_rough_gap_strokes_contribution',
+        value: -0.2,
+        status: 'supported',
+        unit: 'strokes',
+        dimensions: { band: ROUGH_GAP_BAND },
+      }),
+      metricRow({ metricId: 'par5_regulation_opportunity_rate', value: 45, status: 'supported' }),
+      metricRow({ metricId: 'par5_green_in_two_rate', value: 90, status: 'supported' }),
     ];
     const result = buildHypotheses(metrics, facts);
     assertClaimsResolve(result, metrics, facts);
+  });
+});
+
+describe('shotClaimId — missing hole_number/shot_number renders to a fixed, shared marker (slice 2 fix)', () => {
+  it('a null hole_number or shot_number renders as "unknown", not the literal string "null"', () => {
+    const missingBoth = roughApproachShot('go_for_green', { hole_number: null, shot_number: null });
+    const missingOne = roughApproachShot('go_for_green', { hole_number: null });
+    expect(shotClaimId(missingBoth)).toBe('shot:round-rough:unknown:unknown');
+    expect(shotClaimId(missingOne)).toBe('shot:round-rough:unknown:unknown');
+  });
+
+  it('two different shots in the same round, both missing hole_number and shot_number, deliberately render to the ' +
+    'SAME fixed marker — matching ranking/situational-ranking.ts\'s own resolution of this exact problem, not a ' +
+    'per-shot-varying id, so ids from both modules interoperate without translation', () => {
+    const shotA = roughApproachShot('go_for_green', { hole_number: null, shot_number: null });
+    const shotB = roughApproachShot('recovery', { hole_number: null, shot_number: null });
+    expect(shotClaimId(shotA)).toBe(shotClaimId(shotB));
+  });
+
+  it('still resolves cleanly through buildHypotheses when two DIFFERENT families share the marker — the family ' +
+    'prefix keeps their Hypothesis ids distinct even though their shotClaimId is identical', () => {
+    const shotA = roughApproachShot('go_for_green', { hole_number: null, shot_number: null });
+    const shotB = roughApproachShot('recovery', { hole_number: null, shot_number: null });
+    const result = buildHypotheses([], [shotA, shotB]);
+    const roughGap = result.find((h) => h.family === 'rough_gap')!;
+    const recovery = result.find((h) => h.family === 'recovery')!;
+    expect(shotClaimId(shotA)).toBe(shotClaimId(shotB)); // precondition: the marker really is shared
+    expect(roughGap.supportingClaimIds).toEqual([shotClaimId(shotA)]);
+    expect(roughGap.id).not.toBe(recovery.id); // family prefix, not the shared shotClaimId, keeps these apart
+    assertClaimsResolve(result, [], [shotA, shotB]);
   });
 });
