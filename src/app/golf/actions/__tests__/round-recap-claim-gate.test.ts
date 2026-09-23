@@ -56,20 +56,40 @@ vi.mock('@/lib/coachhelm/v3/llm/budget', () => ({
   recordSpend: (...args: unknown[]) => recordSpendMock(...args),
 }));
 
-// --- Capture rows written to golf_coachhelm_llm_calls. ---
+// --- Capture rows written to golf_coachhelm_llm_calls (by compose.ts) and
+//     golf_round_recap_provenance (by round-recap.ts's own admin write,
+//     Package 8 slice 3) — same mocked module, routed by table name since
+//     both callers share it. ---
 const loggedRows: Array<Record<string, unknown>> = [];
+const provenanceRows: Array<Record<string, unknown>> = [];
+let provenanceInsertResult: { error: { message: string; code?: string } | null } = { error: null };
+let provenanceInsertThrows = false;
 vi.mock('@/lib/supabase/admin', () => ({
   createAdminClient: () => ({
-    from: () => ({
-      insert: (row: Record<string, unknown>) => {
-        loggedRows.push(row);
+    from: (table: string) => {
+      if (table === 'golf_round_recap_provenance') {
         return {
-          select: () => ({
-            maybeSingle: () => Promise.resolve({ data: { id: 'log-1' }, error: null }),
-          }),
+          insert: (row: Record<string, unknown>) => {
+            if (provenanceInsertThrows) {
+              return Promise.reject(new Error('provenance insert threw'));
+            }
+            provenanceRows.push(row);
+            return Promise.resolve(provenanceInsertResult);
+          },
         };
-      },
-    }),
+      }
+      // golf_coachhelm_llm_calls (compose.ts's own call log).
+      return {
+        insert: (row: Record<string, unknown>) => {
+          loggedRows.push(row);
+          return {
+            select: () => ({
+              maybeSingle: () => Promise.resolve({ data: { id: 'log-1' }, error: null }),
+            }),
+          };
+        },
+      };
+    },
   }),
 }));
 
@@ -207,6 +227,9 @@ describe('round-recap.ts x claim-validator.ts — typed gate wired (flag ON)', (
     mockFrom.mockClear();
     mockRpc.mockClear();
     loggedRows.length = 0;
+    provenanceRows.length = 0;
+    provenanceInsertResult = { error: null };
+    provenanceInsertThrows = false;
     isFlagEnabledMock.mockReset();
     isFlagEnabledMock.mockReturnValue(true);
   });
@@ -383,5 +406,126 @@ describe('round-recap.ts x claim-validator.ts — typed gate wired (flag ON)', (
     });
 
     expect(uncoveredTokens).toEqual([]);
+  });
+});
+
+describe('round-recap.ts — recap provenance (Package 8, revision-keyed provenance + single-flight)', () => {
+  beforeEach(() => {
+    mockRound = { ...baseRound };
+    mockStats = null;
+    persistedRecap = null;
+    mockPlayerFirstName = 'Caden';
+    generateTextMock.mockReset();
+    recordSpendMock.mockClear();
+    mockFrom.mockClear();
+    mockRpc.mockClear();
+    loggedRows.length = 0;
+    provenanceRows.length = 0;
+    provenanceInsertResult = { error: null };
+    provenanceInsertThrows = false;
+    isFlagEnabledMock.mockReset();
+    isFlagEnabledMock.mockReturnValue(true);
+  });
+
+  it('writes source: "llm" provenance, linked to the compose() call-log row, on a verified LLM recap', async () => {
+    const goodText =
+      'Caden carded 74, holding 71.4% of fairways to keep the card clean. Consistency next time is the target.';
+    generateTextMock.mockResolvedValueOnce({
+      text:
+        goodText +
+        claimsBlock([
+          {
+            claim_id: 'c1',
+            metric_id: 'fairways_hit_pct',
+            value: 71.4,
+            player_id: 'player-1',
+            window_start: WINDOW_START,
+            window_end: WINDOW_START,
+            claim_type: 'fact',
+          },
+        ]),
+      usage: { inputTokens: 20, outputTokens: 20 },
+    });
+
+    await generateRoundRecap('round-1');
+
+    expect(provenanceRows).toHaveLength(1);
+    expect(provenanceRows[0]).toMatchObject({
+      round_id: 'round-1',
+      player_id: 'player-1',
+      source: 'llm',
+      call_log_id: 'log-1', // the mocked golf_coachhelm_llm_calls insert always returns this id
+      claim_packet_engaged: true,
+      stats_rounds_played_at_generation: null, // mockStats is null in this suite's default
+    });
+  });
+
+  it('writes source: "deterministic" provenance when a rejected claim discards to the fallback', async () => {
+    const text =
+      'Caden carded 74, holding 71.4% of fairways to keep the card clean. Consistency next time is the target.';
+    const badResponse = {
+      text:
+        text +
+        claimsBlock([
+          {
+            claim_id: 'c1',
+            metric_id: 'total_putts',
+            value: 999,
+            player_id: 'player-1',
+            window_start: WINDOW_START,
+            window_end: WINDOW_START,
+            claim_type: 'fact',
+          },
+        ]),
+      usage: { inputTokens: 20, outputTokens: 20 },
+    };
+    generateTextMock.mockResolvedValueOnce(badResponse).mockResolvedValueOnce(badResponse);
+
+    const result = await generateRoundRecap('round-1');
+
+    expect(result.recap).toBe(EXPECTED_DETERMINISTIC_RECAP);
+    expect(provenanceRows).toHaveLength(1);
+    expect(provenanceRows[0]).toMatchObject({
+      round_id: 'round-1',
+      player_id: 'player-1',
+      source: 'deterministic',
+      claim_packet_engaged: true, // the packet WAS engaged; it's what rejected the claim
+    });
+  });
+
+  it('records stats_rounds_played_at_generation from the season-stats snapshot used at generation time', async () => {
+    mockStats = { scoring_average: 74.7, best_round: 68, rounds_played: 12 };
+    const goodText = 'Caden carded 74 at Pinehurst No. 2. Consistency next time is the target.';
+    generateTextMock.mockResolvedValueOnce({ text: goodText, usage: { inputTokens: 20, outputTokens: 20 } });
+
+    await generateRoundRecap('round-1');
+
+    expect(provenanceRows[0]?.stats_rounds_played_at_generation).toBe(12);
+  });
+
+  it('a provenance write that returns an error never breaks the recap — it is already durably saved', async () => {
+    isFlagEnabledMock.mockReturnValue(false); // no claims block needed; this test is about the provenance write, not the claim gate
+    provenanceInsertResult = { error: { message: 'relation "golf_round_recap_provenance" does not exist', code: '42P01' } };
+    const goodText = 'Caden carded 74 at Pinehurst No. 2. Consistency next time is the target.';
+    generateTextMock.mockResolvedValueOnce({ text: goodText, usage: { inputTokens: 20, outputTokens: 20 } });
+
+    const result = await generateRoundRecap('round-1');
+
+    // The recap itself is unaffected — this is the "migration not applied yet
+    // in this environment" case the best-effort write exists to survive.
+    expect(result.recap).toBe(goodText);
+    expect(persistedRecap).toEqual({ p_round_id: 'round-1', p_recap: goodText });
+  });
+
+  it('a provenance write that throws never breaks the recap', async () => {
+    isFlagEnabledMock.mockReturnValue(false); // no claims block needed; this test is about the provenance write, not the claim gate
+    provenanceInsertThrows = true;
+    const goodText = 'Caden carded 74 at Pinehurst No. 2. Consistency next time is the target.';
+    generateTextMock.mockResolvedValueOnce({ text: goodText, usage: { inputTokens: 20, outputTokens: 20 } });
+
+    const result = await generateRoundRecap('round-1');
+
+    expect(result.recap).toBe(goodText);
+    expect(persistedRecap).toEqual({ p_round_id: 'round-1', p_recap: goodText });
   });
 });

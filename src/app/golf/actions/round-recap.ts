@@ -40,6 +40,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { compose } from '@/lib/coachhelm/v3/llm/compose';
 import { buildRecapEvidence, buildRecapEvidencePacket } from '@/lib/coachhelm/v3/llm/recap-evidence';
 import { isFlagEnabled } from '@/lib/flags';
@@ -48,6 +49,7 @@ import { withAdminObserved } from '@/lib/admin/observed-action';
 import { verifyPlayerAccess } from '@/lib/auth/verify-player-access';
 import { gateUserAction, LLM_COMPOSE_RATE_LIMIT } from '@/lib/auth/action-rate-limit';
 import { logServerError } from '@/lib/server-error-logger';
+import { describeError } from '@/lib/utils/describe-error';
 
 interface RoundContext {
   id: string;
@@ -193,7 +195,8 @@ async function generateRoundRecapImpl(
   // budget gate + golf_coachhelm_llm_calls log + citation verifier as
   // round-review / hero-narrative. Falls back to `deterministic` if
   // gated or on error.
-  const recap = await generateLLMRecap(round, stats, coachId, deterministic, playerName);
+  const outcome = await generateLLMRecap(round, stats, coachId, deterministic, playerName);
+  const recap = outcome.text;
 
   // 6. Persist the derived recap through the dedicated lifecycle RPC. Completed
   // round score history is immutable, so a direct `golf_rounds.update()` is
@@ -201,6 +204,14 @@ async function generateRoundRecapImpl(
   // The RPC permits precisely the two recap columns, rechecks player/coach
   // access in the database, and records the write under its own lifecycle
   // capability. Do not replace this with a broader completed-round exception.
+  // MUST-1 (Package 8, revision-keyed provenance + single-flight, 2026-09-23):
+  // the RPC's UPDATE now guards `AND ai_recap IS NULL`, so a call that loses
+  // a concurrent generation race for the same round persists nothing and
+  // still reports success:true — a pre-existing "success" contract this
+  // slice didn't change. That means `recap` here can, in the rare
+  // concurrent-race case, differ from what's actually stored (the winner's
+  // text). Fixing that fully needs a lock taken BEFORE the LLM call, which
+  // is deferred (see the evidence-contract doc) — out of scope here.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: persisted, error: persistError } = await (supabase as any).rpc(
     'save_round_ai_recap',
@@ -225,6 +236,17 @@ async function generateRoundRecapImpl(
     return { recap: null, cached: false };
   }
 
+  // Package 8 (revision-keyed provenance, 2026-09-23): record which path
+  // produced this recap, its golf_coachhelm_llm_calls audit row, whether the
+  // typed claim packet was engaged, and the season-stats snapshot it was
+  // generated against — best-effort, through the admin client so it never
+  // depends on this player/coach's own RLS grants (this table only grants
+  // authenticated SELECT, not INSERT). A write failure — including the
+  // migration that creates this table not yet being applied in this
+  // environment — is logged and swallowed; it must never block or throw the
+  // recap itself, which is already durably saved by the RPC above.
+  await recordRecapProvenance(roundId, round.player_id, stats, outcome);
+
   // Gated: never runs on the render path (page.tsx's lazy first-generation
   // call), only when a real action entrypoint explicitly opts in. See the
   // "Render vs. action callers" note in the file header.
@@ -233,6 +255,61 @@ async function generateRoundRecapImpl(
   }
 
   return { recap, cached: false };
+}
+
+async function recordRecapProvenance(
+  roundId: string,
+  playerId: string,
+  stats: PlayerStatContext | null,
+  outcome: LlmRecapOutcome,
+): Promise<void> {
+  try {
+    const admin = createAdminClient();
+    // `golf_round_recap_provenance` is new (this slice's migration) and may
+    // not be reflected in the generated Database type in every environment
+    // until `npm run db:types` runs against a DB that has it applied — cast,
+    // matching this file's existing `(supabase as any).rpc(...)` pattern
+    // above for the same reason.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error } = await (admin as any).from('golf_round_recap_provenance').insert({
+      round_id: roundId,
+      player_id: playerId,
+      source: outcome.used_llm ? 'llm' : 'deterministic',
+      call_log_id: outcome.call_log_id,
+      claim_packet_engaged: outcome.claim_packet_engaged,
+      stats_rounds_played_at_generation: stats?.rounds_played ?? null,
+    });
+    if (error) {
+      await logServerError(
+        `Recap provenance write failed (recap itself was already saved): ${error.message}`,
+        {
+          action: 'generateRoundRecap.provenance',
+          featureArea: 'round_review_ai',
+          roundId,
+          playerId,
+          errorCode: error.code,
+          errorHint: error.hint,
+          errorDetails: error.details,
+          skipSentry: true,
+        },
+        'warning',
+      );
+    }
+  } catch (err) {
+    // Never let a provenance failure (e.g. this migration not yet applied
+    // in this environment) surface as a recap failure.
+    await logServerError(
+      `Recap provenance write threw (recap itself was already saved): ${describeError(err)}`,
+      {
+        action: 'generateRoundRecap.provenance',
+        featureArea: 'round_review_ai',
+        roundId,
+        playerId,
+        skipSentry: true,
+      },
+      'warning',
+    );
+  }
 }
 
 const observedGenerateRoundRecap = withAdminObserved(
@@ -259,13 +336,26 @@ export async function generateRoundRecap(
 
 // --- LLM path -------------------------------------------------------------
 
+/**
+ * Package 8 slice 3 (repair plan §14.10, revision-keyed provenance):
+ * everything `generateRoundRecapImpl` needs to write a
+ * `golf_round_recap_provenance` row after a successful persist, without
+ * re-deriving it from `compose()`'s result a second time.
+ */
+interface LlmRecapOutcome {
+  text: string | null;
+  used_llm: boolean;
+  call_log_id: string | null;
+  claim_packet_engaged: boolean;
+}
+
 async function generateLLMRecap(
   round: RoundContext,
   stats: PlayerStatContext | null,
   coachId: string | null,
   fallbackText: string,
   playerName: string,
-): Promise<string | null> {
+): Promise<LlmRecapOutcome> {
   // Auth is handled by the SDK via Vercel's OIDC token (auto-rotated)
   // inside compose(). compose() also enforces the v3 budget gate, logs
   // the call to golf_coachhelm_llm_calls, and falls back to the
@@ -357,8 +447,11 @@ Output only the two sentences. Nothing else.`;
   // Run the same sanity check as before so a degenerate LLM reply still
   // collapses to fallback at the persistence layer.
   const trimmed = result.text.trim();
-  if (!trimmed || trimmed.length < 30 || trimmed.length > 400) return null;
-  return trimmed;
+  const claim_packet_engaged = evidencePacket !== undefined;
+  if (!trimmed || trimmed.length < 30 || trimmed.length > 400) {
+    return { text: null, used_llm: false, call_log_id: result.call_log_id, claim_packet_engaged };
+  }
+  return { text: trimmed, used_llm: result.used_llm, call_log_id: result.call_log_id, claim_packet_engaged };
 }
 
 /**
