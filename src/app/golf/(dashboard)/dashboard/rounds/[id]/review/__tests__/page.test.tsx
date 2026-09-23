@@ -140,8 +140,12 @@ vi.mock('@/hooks/coachhelm/useRoundReviewV2', () => ({
   useRoundReviewV2: () => ({ v2Review: null, isV2Enabled: false, generating: false }),
 }));
 
+// A single hoisted mock (not a fresh `vi.fn()` per render) so tests below can
+// assert on calls made across the component's lifetime — the failed-Refresh
+// tests need to see the toast fired from inside the click handler.
+const addToastMock = vi.fn();
 vi.mock('@/components/ui/sonner', () => ({
-  useToast: () => ({ addToast: vi.fn() }),
+  useToast: () => ({ addToast: addToastMock }),
 }));
 
 /** A complete `RoundReviewContent` fixture — every field `buildReviewViewModel`
@@ -381,5 +385,92 @@ describe('RoundReviewPage — focus-area prescription (FocusAreaModal migration)
         }),
       );
     });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Stable-read bug fix: a stored review is already loaded (this fixture's
+// `getRoundReview` mock always succeeds — see above). Clicking Refresh used
+// to call `setError(...)` on ANY `generateAndStoreRoundReview` failure, and
+// the page's `if (error)` early return then replaced the good, already-
+// rendered review with the full-page "We couldn't load this review" screen.
+// Fails on pre-fix code: the review content assertion below does not survive
+// the failed Refresh, and the full-page error notice appears instead.
+// ---------------------------------------------------------------------------
+describe('RoundReviewPage — stable read on a failed Refresh', () => {
+  beforeEach(() => {
+    roundRow = { ...DEFAULT_ROUND_ROW };
+    addToastMock.mockClear();
+  });
+
+  it('keeps the stored review on screen and surfaces a toast when the regenerate call resolves success:false', async () => {
+    const { generateAndStoreRoundReview } = await import('@/app/golf/actions/round-review-system');
+    vi.mocked(generateAndStoreRoundReview).mockResolvedValueOnce({
+      success: false,
+      error: 'Round must be completed before generating a review',
+    });
+
+    const { findByRole, findByText, queryByText } = renderAsPlayer();
+
+    // Review is already loaded from the stored-review fixture.
+    await findByText(/3 pars · 6 bogeys/);
+
+    const refreshButton = await findByRole('button', { name: /refresh/i });
+    refreshButton.click();
+
+    await waitFor(() => {
+      expect(addToastMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: 'error',
+          description: 'Round must be completed before generating a review',
+        }),
+      );
+    });
+
+    // The stored review is still on screen — no full-page error replaced it.
+    expect(queryByText("We couldn't load this review")).not.toBeInTheDocument();
+    await findByText(/3 pars · 6 bogeys/);
+  });
+
+  it('keeps the stored review on screen and surfaces a toast when the regenerate call throws', async () => {
+    const { generateAndStoreRoundReview } = await import('@/app/golf/actions/round-review-system');
+    vi.mocked(generateAndStoreRoundReview).mockRejectedValueOnce(new Error('network down'));
+
+    const { findByRole, findByText, queryByText } = renderAsPlayer();
+
+    await findByText(/3 pars · 6 bogeys/);
+
+    const refreshButton = await findByRole('button', { name: /refresh/i });
+    refreshButton.click();
+
+    await waitFor(() => {
+      expect(addToastMock).toHaveBeenCalledWith(expect.objectContaining({ type: 'error' }));
+    });
+
+    expect(queryByText("We couldn't load this review")).not.toBeInTheDocument();
+    await findByText(/3 pars · 6 bogeys/);
+  });
+
+  it('passes { userTriggered: true } to the server action from the Refresh click, not from auto-generate', async () => {
+    const { generateAndStoreRoundReview } = await import('@/app/golf/actions/round-review-system');
+    vi.mocked(generateAndStoreRoundReview).mockClear();
+    vi.mocked(generateAndStoreRoundReview).mockResolvedValueOnce({ success: false, error: 'boom' });
+
+    const { findByRole, findByText } = renderAsPlayer();
+    await findByText(/3 pars · 6 bogeys/);
+
+    // The cold auto-generate effect never fires here (a stored review already
+    // loaded), so any prior calls are from mount effects unrelated to a click.
+    const callsBeforeClick = vi.mocked(generateAndStoreRoundReview).mock.calls.length;
+
+    const refreshButton = await findByRole('button', { name: /refresh/i });
+    refreshButton.click();
+
+    await waitFor(() => {
+      expect(vi.mocked(generateAndStoreRoundReview).mock.calls.length).toBeGreaterThan(callsBeforeClick);
+    });
+
+    const [, , options] = vi.mocked(generateAndStoreRoundReview).mock.calls.at(-1)!;
+    expect(options).toEqual({ userTriggered: true });
   });
 });

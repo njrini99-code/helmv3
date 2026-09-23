@@ -456,32 +456,65 @@ export default function RoundReviewPage() {
     };
   }, [round, roundId]);
 
-  // Generate review if needed
-  const generateReview = useCallback(async () => {
+  // Generate review if needed.
+  //
+  // `userTriggered` distinguishes an explicit click (Refresh / Generate
+  // review / Try again below) from the cold-start auto-generate effect a
+  // few lines down, which calls this with no argument. The flag is threaded
+  // straight to `generateAndStoreRoundReview` so only the explicit-click
+  // path is rate-limited server-side — see that action's own comment.
+  const generateReview = useCallback(async (userTriggered: boolean = false) => {
     if (!round) return;
 
     setGeneratingReview(true);
-    setError(null);
+    // Only clear the persistent full-page error state when there is no
+    // stored review to fall back on. A failed regenerate against a review
+    // that's already loaded and showing must never blank that content — see
+    // the `else if (storedReview)` branch below.
+    if (!storedReview) setError(null);
 
     try {
-      const result = await generateAndStoreRoundReview(roundId, round.player_id);
+      const result = await generateAndStoreRoundReview(
+        roundId,
+        round.player_id,
+        userTriggered ? { userTriggered: true } : undefined,
+      );
 
       if (result.success && result.review) {
         setStoredReview(result.review);
+        setError(null);
         addToast({
           type: 'success',
           title: 'Review Generated',
           description: 'AI analysis complete for your round.',
         });
+      } else if (storedReview) {
+        // Stable read: a stored review was already loaded and rendering
+        // fine before this (re)generate attempt. A failed regenerate must
+        // surface non-destructively — via toast — rather than replace good,
+        // already-loaded content with the full-page error screen.
+        addToast({
+          type: 'error',
+          title: 'Refresh Failed',
+          description: result.error ?? 'Could not refresh this review. Showing the last saved version.',
+        });
       } else {
         setError(result.error ?? 'Failed to generate review');
       }
     } catch {
-      setError('An unexpected error occurred');
+      if (storedReview) {
+        addToast({
+          type: 'error',
+          title: 'Refresh Failed',
+          description: 'An unexpected error occurred. Showing the last saved version.',
+        });
+      } else {
+        setError('An unexpected error occurred');
+      }
     } finally {
       setGeneratingReview(false);
     }
-  }, [round, roundId, addToast]);
+  }, [round, roundId, addToast, storedReview]);
 
   // Auto-generate if no review exists (only once)
   const [autoGenerateAttempted, setAutoGenerateAttempted] = useState(false);
@@ -571,7 +604,7 @@ export default function RoundReviewPage() {
               <FwButton
                 variant="secondary"
                 size="sm"
-                onClick={() => generateReview()}
+                onClick={() => generateReview(true)}
                 disabled={isGenerating}
               >
                 <IconRefresh size={16} className={isGenerating ? 'animate-spin' : ''} />
@@ -638,7 +671,7 @@ export default function RoundReviewPage() {
             tone="danger"
             title="We couldn't load this review"
             action={
-              <FwButton variant="secondary" size="sm" onClick={() => generateReview()}>
+              <FwButton variant="secondary" size="sm" onClick={() => generateReview(true)}>
                 <IconRefresh size={16} />
                 <span>Try again</span>
               </FwButton>
@@ -731,7 +764,7 @@ export default function RoundReviewPage() {
           title="No review yet"
           description="Refresh to generate CoachHelm analysis for this round."
           action={
-            <FwButton variant="secondary" size="sm" onClick={() => generateReview()} disabled={isGenerating}>
+            <FwButton variant="secondary" size="sm" onClick={() => generateReview(true)} disabled={isGenerating}>
               <IconRefresh size={16} className={isGenerating ? 'animate-spin' : ''} />
               <span>Generate review</span>
             </FwButton>
@@ -805,7 +838,7 @@ export default function RoundReviewPage() {
               <FwButton
                 variant="secondary"
                 size="sm"
-                onClick={() => generateReview()}
+                onClick={() => generateReview(true)}
                 disabled={isGenerating}
               >
                 <IconRefresh size={16} className={isGenerating ? 'animate-spin' : ''} />

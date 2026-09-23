@@ -32,6 +32,7 @@ import {
 } from './round-review-content';
 import { withAdminObserved } from '@/lib/admin/observed-action';
 import { describeError } from '@/lib/utils/describe-error';
+import { gateCoachHelmEngineCall } from '@/lib/auth/action-rate-limit';
 
 // UUID format validation
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -599,6 +600,7 @@ type GenerateReviewFailureCode =
   | 'round_not_completed'
   | 'db_error'
   | 'save_failed'
+  | 'rate_limited'
   | 'unknown';
 
 type GenerateReviewResult = {
@@ -628,9 +630,23 @@ type GenerateReviewResult = {
  */
 const inFlightRoundReviews = new Map<string, Promise<GenerateReviewResult>>();
 
+/**
+ * Options threaded through from the caller. `userTriggered` distinguishes an
+ * explicit click (the review page's Refresh / Generate review / Try again
+ * buttons) from every automatic caller of this same action — the page's own
+ * cold-start auto-generate effect and `useRoundReviewV2`'s independent
+ * auto-generate effect. Both call this action with no options at all
+ * (default `undefined`/`false`), so the rate gate below never sees them —
+ * throttling those would misfire on ordinary automatic behaviour (e.g. a
+ * coach opening several different players' unreviewed rounds in a row),
+ * which is not the abuse case the gate exists for.
+ */
+type GenerateReviewOptions = { userTriggered?: boolean };
+
 async function generateAndStoreRoundReviewImpl(
   roundId: string,
-  playerId: string
+  playerId: string,
+  options?: GenerateReviewOptions,
 ): Promise<GenerateReviewResult> {
   const supabase = await createClient();
 
@@ -642,6 +658,19 @@ async function generateAndStoreRoundReviewImpl(
   const access = await verifyReviewAccess(supabase, playerId, 'player_or_coach');
   if (!access.authorized) {
     return { success: false, error: access.error || 'Not authorized to generate review for this player', code: 'unauthorized' };
+  }
+
+  // Rate-limit ONLY the explicit user-triggered path — see
+  // `GenerateReviewOptions` above. Reuses the shared CoachHelm-engine bucket
+  // (5/min/user, `gateCoachHelmEngineCall`) since a cold generate here runs
+  // the same `coachHelmIntelligence.generateRoundReview` engine call that
+  // bucket already gates everywhere else. Checked before the single-flight
+  // join below so a rate-limited caller never joins (or starts) a compute.
+  if (options?.userTriggered) {
+    const rateLimit = await gateCoachHelmEngineCall(user.id);
+    if (!rateLimit.allowed) {
+      return { success: false, error: rateLimit.error, code: 'rate_limited' };
+    }
   }
 
   // The check above authorizes the PLAYER and takes `roundId` on trust — the
@@ -685,8 +714,12 @@ const observedGenerateAndStoreRoundReview = withAdminObserved(
   generateAndStoreRoundReviewImpl,
 );
 
-export async function generateAndStoreRoundReview(roundId: string, playerId: string): Promise<GenerateReviewResult> {
-  return observedGenerateAndStoreRoundReview(roundId, playerId);
+export async function generateAndStoreRoundReview(
+  roundId: string,
+  playerId: string,
+  options?: GenerateReviewOptions,
+): Promise<GenerateReviewResult> {
+  return observedGenerateAndStoreRoundReview(roundId, playerId, options);
 }
 
 /**

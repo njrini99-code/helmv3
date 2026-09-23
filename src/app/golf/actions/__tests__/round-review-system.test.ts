@@ -130,7 +130,12 @@ vi.mock('next/cache', () => ({
   revalidatePath: vi.fn(),
 }));
 
+vi.mock('@/lib/auth/action-rate-limit', () => ({
+  gateCoachHelmEngineCall: vi.fn(async () => ({ allowed: true })),
+}));
+
 import { getStatAverages, generateAndStoreRoundReview } from '../round-review-system';
+import { gateCoachHelmEngineCall } from '@/lib/auth/action-rate-limit';
 
 const PLAYER_ID = '11111111-1111-1111-1111-111111111111';
 
@@ -267,5 +272,62 @@ describe('generateAndStoreRoundReview — single-flight coordinator (P2-13)', ()
     const second = await generateAndStoreRoundReview('round-coord-1', PLAYER_ID);
     expect(second.success).toBe(true);
     expect(upsertCallCount).toBe(2);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// The review page's Refresh/Generate-review/Try-again buttons now pass
+// `{ userTriggered: true }` so a genuine click is rate-limited, while the
+// SAME action's other callers (this page's own cold auto-generate effect,
+// and useRoundReviewV2's independent auto-generate effect) call with no
+// options and must never be throttled — see the comment on
+// `GenerateReviewOptions` in round-review-system.ts.
+// ---------------------------------------------------------------------------
+describe('generateAndStoreRoundReview — user-triggered rate limit', () => {
+  beforeEach(() => {
+    coordinatorMode = true;
+    upsertCallCount = 0;
+    upsertGate = Promise.resolve();
+    mockFrom.mockClear();
+    vi.mocked(gateCoachHelmEngineCall).mockReset();
+    vi.mocked(gateCoachHelmEngineCall).mockResolvedValue({ allowed: true });
+  });
+
+  afterEach(() => {
+    coordinatorMode = false;
+  });
+
+  it('blocks an explicit user-triggered call when the engine gate denies it, before any compute runs', async () => {
+    vi.mocked(gateCoachHelmEngineCall).mockResolvedValueOnce({
+      allowed: false,
+      error: 'Too many analyze requests in the last minute — please wait a moment and try again.',
+    });
+
+    const result = await generateAndStoreRoundReview('round-coord-1', PLAYER_ID, { userTriggered: true });
+
+    expect(result).toEqual({
+      success: false,
+      error: 'Too many analyze requests in the last minute — please wait a moment and try again.',
+      code: 'rate_limited',
+    });
+    expect(upsertCallCount).toBe(0);
+  });
+
+  it('lets an explicit user-triggered call through when the engine gate allows it', async () => {
+    const result = await generateAndStoreRoundReview('round-coord-1', PLAYER_ID, { userTriggered: true });
+
+    expect(gateCoachHelmEngineCall).toHaveBeenCalledWith(expect.any(String));
+    expect(result.success).toBe(true);
+    expect(upsertCallCount).toBe(1);
+  });
+
+  it('never consults the gate for an automatic (non-user-triggered) call, even when the gate would deny', async () => {
+    vi.mocked(gateCoachHelmEngineCall).mockResolvedValue({ allowed: false, error: 'blocked' });
+
+    const result = await generateAndStoreRoundReview('round-coord-1', PLAYER_ID);
+
+    expect(gateCoachHelmEngineCall).not.toHaveBeenCalled();
+    expect(result.success).toBe(true);
+    expect(upsertCallCount).toBe(1);
   });
 });
