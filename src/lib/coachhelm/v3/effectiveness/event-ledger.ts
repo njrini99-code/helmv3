@@ -30,6 +30,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import { logServerError } from '@/lib/server-error-logger';
 import { describeError } from '@/lib/utils/describe-error';
+import { isTransientFetchError, delay } from '@/lib/utils/transient-error';
 import { dedupeExposureRows, exposureDedupeKey, startOfUtcDayIso } from './exposure-rows';
 import { actionDedupeKey, isActionAlreadyRecorded } from './action-rows';
 
@@ -159,6 +160,22 @@ const FEATURE_AREA = 'coachhelm_effectiveness';
  * is an owner decision on the shared production DB (tracked in #1506). If the
  * dedup lookup itself fails, fall back to writing every row rather than
  * dropping the exposure signal entirely.
+ *
+ * Retry (N-audit 2026-09-23): the Supabase client's underlying `fetch` can
+ * THROW before ever returning a typed `{ data, error }` pair — most commonly
+ * `TypeError: fetch failed` on a real network blip. That is a different
+ * failure mode from a constraint violation or RLS denial, which always come
+ * back as a typed `error` above and are logged, never retried. One bounded
+ * retry with a short backoff, gated on `isTransientFetchError` (the same
+ * predicate `insight-delivery.ts`/`verify-player-access.ts` already use for
+ * this repo's other Supabase call sites), re-runs the whole dedup+insert
+ * attempt — safe because the dedup read re-checks what actually committed,
+ * so a retry after a response that was lost in transit still can't
+ * double-write. A lost first-exposure row doesn't just undercount `shown`;
+ * it also blinds A9's confounding check, which reads exposure rows as the
+ * baseline. If the retry also fails, this logs at 'warning' (a bounded,
+ * known-shape miss, not an unexpected failure) with the row count, and
+ * still returns void — this stays fire-and-forget for every caller.
  */
 export async function recordInsightExposure(
   rows: Array<{
@@ -171,7 +188,8 @@ export async function recordInsightExposure(
   }>,
 ): Promise<void> {
   if (!Array.isArray(rows) || rows.length === 0) return;
-  try {
+
+  const attempt = async (): Promise<void> => {
     const admin = createAdminClient();
     const payload = rows.map((r) => ({
       insight_id: r.insight_id,
@@ -214,11 +232,29 @@ export async function recordInsightExposure(
         extra: { count: toInsert.length },
       });
     }
+  };
+
+  try {
+    await attempt();
   } catch (err) {
-    await logServerError(
-      `recordInsightExposure threw: ${describeError(err)}`,
-      { action: 'recordInsightExposure', featureArea: FEATURE_AREA },
-    );
+    if (!isTransientFetchError(err)) {
+      await logServerError(
+        `recordInsightExposure threw: ${describeError(err)}`,
+        { action: 'recordInsightExposure', featureArea: FEATURE_AREA, extra: { count: rows.length } },
+      );
+      return;
+    }
+
+    await delay(500);
+    try {
+      await attempt();
+    } catch (retryErr) {
+      await logServerError(
+        `recordInsightExposure threw (after 1 retry): ${describeError(retryErr)}`,
+        { action: 'recordInsightExposure', featureArea: FEATURE_AREA, extra: { count: rows.length } },
+        'warning',
+      );
+    }
   }
 }
 

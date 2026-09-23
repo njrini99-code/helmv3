@@ -18,13 +18,25 @@ vi.mock('@/lib/supabase/admin', () => ({
   createAdminClient: () => adminClientMock(),
 }));
 
+// Keep the real `isTransientFetchError` predicate (it's the thing under
+// test in the non-retryable case) but strip the real 500ms backoff so the
+// retry tests run instantly.
+vi.mock('@/lib/utils/transient-error', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/lib/utils/transient-error')>();
+  return { ...actual, delay: vi.fn().mockResolvedValue(undefined) };
+});
+
+import { logServerError } from '@/lib/server-error-logger';
 import {
   deriveTrustStatus,
   deriveTrend,
   RECENT_TREND_WINDOW,
   recordInsightAction,
+  recordInsightExposure,
   type TrustStatus,
 } from './event-ledger';
+
+const logServerErrorMock = vi.mocked(logServerError);
 
 describe('deriveTrustStatus — the status ladder', () => {
   test('zero measured outcomes → new_hypothesis (no evidence)', () => {
@@ -229,5 +241,102 @@ describe('recordInsightAction — dedup read/insert chain', () => {
   test('is a no-op when required fields are missing — no client call at all', async () => {
     await recordInsightAction({ insight_id: '', player_id: 'player-1', action_type: 'create_focus_area' });
     expect(adminClientMock).not.toHaveBeenCalled();
+  });
+});
+
+/**
+ * N-audit 2026-09-23 follow-up — `recordInsightExposure`'s bounded retry.
+ * The dedup SELECT and the INSERT can both throw before ever returning a
+ * typed `{ data, error }` pair (a network-level `fetch` failure), which is a
+ * different failure mode from a constraint/RLS violation returned as a typed
+ * `error` — only the former is retried.
+ */
+describe('recordInsightExposure — bounded retry on transient network errors', () => {
+  const sampleRows = [{ insight_id: 'insight-1', player_id: 'player-1' }];
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  /** Builds a `golf_insight_exposure` table double: `insertImpl` drives the insert leg. */
+  function makeExposureTable(insertImpl: () => Promise<{ error: { message: string; code?: string } | null }>) {
+    const insertSpy = vi.fn(insertImpl);
+    return {
+      table: {
+        select: () => ({
+          in: () => ({
+            gte: async () => ({ data: [], error: null }),
+          }),
+        }),
+        insert: insertSpy,
+      },
+      insertSpy,
+    };
+  }
+
+  test('retry-then-succeed: a transient network throw on the first attempt is retried and recovers silently', async () => {
+    let calls = 0;
+    const { table, insertSpy } = makeExposureTable(async () => {
+      calls += 1;
+      if (calls === 1) throw new TypeError('fetch failed');
+      return { error: null };
+    });
+    adminClientMock.mockReturnValue({ from: () => table });
+
+    await recordInsightExposure(sampleRows);
+
+    expect(insertSpy).toHaveBeenCalledTimes(2);
+    // No failure was ever persisted past the retry — nothing logged.
+    expect(logServerErrorMock).not.toHaveBeenCalled();
+  });
+
+  test('retry-then-fail: a transient network throw on both attempts exhausts the bound and logs a warning with the row count', async () => {
+    const { table, insertSpy } = makeExposureTable(async () => {
+      throw new TypeError('fetch failed');
+    });
+    adminClientMock.mockReturnValue({ from: () => table });
+
+    await recordInsightExposure(sampleRows);
+
+    // Exactly one retry — bounded, not unbounded.
+    expect(insertSpy).toHaveBeenCalledTimes(2);
+    expect(logServerErrorMock).toHaveBeenCalledTimes(1);
+    const [message, context, severity] = logServerErrorMock.mock.calls[0]!;
+    expect(message).toContain('recordInsightExposure threw (after 1 retry)');
+    expect(context).toMatchObject({ extra: { count: sampleRows.length } });
+    expect(severity).toBe('warning');
+  });
+
+  test('non-retryable: a non-network throw fails on the first attempt, no retry, logged at default (error) severity', async () => {
+    const { table, insertSpy } = makeExposureTable(async () => {
+      throw new RangeError('unexpected shape');
+    });
+    adminClientMock.mockReturnValue({ from: () => table });
+
+    await recordInsightExposure(sampleRows);
+
+    expect(insertSpy).toHaveBeenCalledTimes(1);
+    expect(logServerErrorMock).toHaveBeenCalledTimes(1);
+    const [message, context, severity] = logServerErrorMock.mock.calls[0]!;
+    expect(message).toContain('recordInsightExposure threw:');
+    expect(message).not.toContain('after 1 retry');
+    expect(context).toMatchObject({ extra: { count: sampleRows.length } });
+    // Default severity (undefined here — logServerError itself defaults to 'error').
+    expect(severity).toBeUndefined();
+  });
+
+  test('non-retryable: a returned constraint-violation error (not thrown) is never retried', async () => {
+    const { table, insertSpy } = makeExposureTable(async () => ({
+      error: { message: 'duplicate key value violates unique constraint', code: '23505' },
+    }));
+    adminClientMock.mockReturnValue({ from: () => table });
+
+    await recordInsightExposure(sampleRows);
+
+    expect(insertSpy).toHaveBeenCalledTimes(1);
+    // Logged as an ordinary insert failure, not the retry-exhausted path.
+    expect(logServerErrorMock).toHaveBeenCalledTimes(1);
+    const [message] = logServerErrorMock.mock.calls[0]!;
+    expect(message).toContain('recordInsightExposure insert failed');
   });
 });
