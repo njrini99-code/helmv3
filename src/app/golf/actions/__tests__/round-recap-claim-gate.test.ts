@@ -128,6 +128,16 @@ let mockStats: { scoring_average: number | null; best_round: number | null; roun
   null;
 let persistedRecap: { p_round_id: string; p_recap: string | null } | null = null;
 let mockPlayerFirstName: string | null = 'Caden';
+// SHOULD-4 (single-flight race) fixtures: golf_rounds is read once for the
+// round context, then a SECOND time only by the "lost the race, re-read the
+// winner" branch — this counter distinguishes the two so a test can serve a
+// different ai_recap on the re-read. `mockRpcOverridePersisted` lets a test
+// simulate the RPC's `persisted: false` response without touching every
+// other test's default (no `persisted` field at all — the pre-migration
+// shape every other test in this file still exercises).
+let golfRoundsFetchCount = 0;
+let winnerAiRecap: string | null = null;
+let mockRpcOverridePersisted: boolean | undefined;
 
 function createChainableMock(maybeSingleData: unknown) {
   const chain: Record<string, unknown> = { data: null, error: null };
@@ -141,6 +151,10 @@ function createChainableMock(maybeSingleData: unknown) {
 
 const mockFrom = vi.fn((table: string) => {
   if (table === 'golf_rounds') {
+    golfRoundsFetchCount += 1;
+    if (golfRoundsFetchCount > 1) {
+      return createChainableMock({ ai_recap: winnerAiRecap });
+    }
     return createChainableMock(mockRound);
   }
   if (table === 'golf_player_stats_cache') {
@@ -158,7 +172,9 @@ const mockFrom = vi.fn((table: string) => {
 const mockGetUser = vi.fn(async () => ({ data: { user: { id: 'user-1' } }, error: null }));
 const mockRpc = vi.fn(async (_name: string, args: { p_round_id: string; p_recap: string | null }) => {
   persistedRecap = args;
-  return { data: { success: true }, error: null };
+  const data: { success: boolean; persisted?: boolean } = { success: true };
+  if (mockRpcOverridePersisted !== undefined) data.persisted = mockRpcOverridePersisted;
+  return { data, error: null };
 });
 
 vi.mock('@/lib/supabase/server', () => ({
@@ -230,6 +246,9 @@ describe('round-recap.ts x claim-validator.ts — typed gate wired (flag ON)', (
     provenanceRows.length = 0;
     provenanceInsertResult = { error: null };
     provenanceInsertThrows = false;
+    golfRoundsFetchCount = 0;
+    winnerAiRecap = null;
+    mockRpcOverridePersisted = undefined;
     isFlagEnabledMock.mockReset();
     isFlagEnabledMock.mockReturnValue(true);
   });
@@ -423,6 +442,9 @@ describe('round-recap.ts — recap provenance (Package 8, revision-keyed provena
     provenanceRows.length = 0;
     provenanceInsertResult = { error: null };
     provenanceInsertThrows = false;
+    golfRoundsFetchCount = 0;
+    winnerAiRecap = null;
+    mockRpcOverridePersisted = undefined;
     isFlagEnabledMock.mockReset();
     isFlagEnabledMock.mockReturnValue(true);
   });
@@ -527,5 +549,28 @@ describe('round-recap.ts — recap provenance (Package 8, revision-keyed provena
 
     expect(result.recap).toBe(goodText);
     expect(persistedRecap).toEqual({ p_round_id: 'round-1', p_recap: goodText });
+  });
+
+  it('SHOULD-4: a call that loses the single-flight race re-reads and returns the winner\'s stored recap, and skips provenance', async () => {
+    isFlagEnabledMock.mockReturnValue(false); // no claims block needed; this test is about the race, not the claim gate
+    mockRpcOverridePersisted = false; // this call's UPDATE touched zero rows — a concurrent call already won
+    const winnerText = "Someone else's generation won the race and is what's actually stored.";
+    winnerAiRecap = winnerText;
+    const thisCallsOwnText = 'This call generated its own text, but it lost the race and was never stored.';
+    generateTextMock.mockResolvedValueOnce({ text: thisCallsOwnText, usage: { inputTokens: 20, outputTokens: 20 } });
+
+    const result = await generateRoundRecap('round-1');
+
+    // Not this call's own (discarded) generation — the winner's stored text,
+    // re-read from golf_rounds after the RPC reported persisted: false.
+    expect(result.recap).toBe(winnerText);
+    expect(result.cached).toBe(true);
+    // The RPC was still called with this call's own text (it had no way to
+    // know in advance it would lose) — persistedRecap reflects the attempt,
+    // not what ended up stored.
+    expect(persistedRecap).toEqual({ p_round_id: 'round-1', p_recap: thisCallsOwnText });
+    // This call didn't produce what's stored, so it must not write provenance
+    // for it — the winning call already did.
+    expect(provenanceRows).toHaveLength(0);
   });
 });

@@ -228,6 +228,10 @@ CREATE POLICY "Players manage own notification state" ON "public"."golf_player_n
    FROM "public"."golf_players"
   WHERE ("golf_players"."user_id" = ( SELECT "auth"."uid"() AS "uid")))));
 
+CREATE POLICY "Recap provenance visible via round access" ON "public"."golf_round_recap_provenance" FOR SELECT TO "authenticated" USING ((EXISTS ( SELECT 1
+   FROM "public"."golf_rounds" "r"
+  WHERE ("r"."id" = "golf_round_recap_provenance"."round_id"))));
+
 CREATE POLICY "Service role can insert patterns" ON "public"."golf_patterns_v2" FOR INSERT TO "service_role" WITH CHECK ((( SELECT "auth"."role"() AS "role") = 'service_role'::"text"));
 
 CREATE POLICY "Service role can manage learned behavior" ON "public"."golf_learned_behavior" TO "service_role" USING ((( SELECT "auth"."role"() AS "role") = 'service_role'::"text"));

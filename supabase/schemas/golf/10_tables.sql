@@ -1613,6 +1613,26 @@ CREATE TABLE IF NOT EXISTS "public"."golf_review_events" (
 
 ALTER TABLE "public"."golf_review_events" OWNER TO "postgres";
 
+-- Package 8, repair plan §14.10 (2026-09-23): one row per generated
+-- golf_rounds.ai_recap — which path produced it (llm vs deterministic
+-- fallback), the golf_coachhelm_llm_calls audit row for the llm path,
+-- whether the typed claim packet gate was engaged, and the season-stats
+-- snapshot the prose was generated against. Written best-effort by
+-- round-recap.ts's service-role client; see 90_comments.sql for the full
+-- COMMENT ON TABLE text.
+CREATE TABLE IF NOT EXISTS "public"."golf_round_recap_provenance" (
+    "round_id" "uuid" NOT NULL,
+    "player_id" "uuid" NOT NULL,
+    "source" "text" NOT NULL,
+    "call_log_id" "uuid",
+    "claim_packet_engaged" boolean DEFAULT false NOT NULL,
+    "stats_rounds_played_at_generation" bigint,
+    "generated_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    CONSTRAINT "golf_round_recap_provenance_source_check" CHECK (("source" = ANY (ARRAY['llm'::"text", 'deterministic'::"text"])))
+);
+
+ALTER TABLE "public"."golf_round_recap_provenance" OWNER TO "postgres";
+
 CREATE TABLE IF NOT EXISTS "public"."golf_round_reviews" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "round_id" "uuid" NOT NULL,

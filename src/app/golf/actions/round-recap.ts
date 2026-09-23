@@ -208,10 +208,8 @@ async function generateRoundRecapImpl(
   // the RPC's UPDATE now guards `AND ai_recap IS NULL`, so a call that loses
   // a concurrent generation race for the same round persists nothing and
   // still reports success:true — a pre-existing "success" contract this
-  // slice didn't change. That means `recap` here can, in the rare
-  // concurrent-race case, differ from what's actually stored (the winner's
-  // text). Fixing that fully needs a lock taken BEFORE the LLM call, which
-  // is deferred (see the evidence-contract doc) — out of scope here.
+  // slice didn't change. The RPC's `persisted` field (added alongside the
+  // guard) distinguishes the two cases; see the SHOULD-4 handling below.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: persisted, error: persistError } = await (supabase as any).rpc(
     'save_round_ai_recap',
@@ -234,6 +232,25 @@ async function generateRoundRecapImpl(
       'warning',
     );
     return { recap: null, cached: false };
+  }
+
+  // SHOULD-4 (Package 8, 2026-09-23): `persisted.persisted === false` means
+  // this call's UPDATE touched zero rows — a concurrent call for the same
+  // round already won the single-flight race and its text is what's actually
+  // stored. `recap` in that case is THIS call's own (discarded) generation,
+  // not the winner's — re-read the stored value instead of returning or
+  // caching a recap nobody kept, and skip provenance: the winning call
+  // already recorded it. `persisted.persisted` is `undefined` (not `false`)
+  // against the pre-migration RPC, so this branch is inert until the owner
+  // applies the migration — same safety property the rest of this slice
+  // keeps everywhere else.
+  if (persisted?.persisted === false) {
+    const { data: winner } = await supabase
+      .from('golf_rounds')
+      .select('ai_recap')
+      .eq('id', roundId)
+      .maybeSingle<{ ai_recap: string | null }>();
+    return { recap: winner?.ai_recap ?? recap, cached: true };
   }
 
   // Package 8 (revision-keyed provenance, 2026-09-23): record which path
