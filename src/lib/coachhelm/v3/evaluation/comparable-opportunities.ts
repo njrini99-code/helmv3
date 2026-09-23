@@ -31,6 +31,28 @@
  * version` (migration 20260922230000) on `golf_insight_outcome_attribution`,
  * which this module does not read or write.
  *
+ * SINGLE SPEC, not two (PR #1992 review, MUST 1): an earlier revision took a
+ * `baselineSpec`/`followUpSpec` pair and rejected the comparison when their
+ * version ids disagreed. That only guarded the version STRINGS — nothing
+ * stopped two structurally different specs (a different distance band, lie,
+ * or shot role per side) from ever reaching a version check at all, which is
+ * the actual "comparable opportunity" contract. Taking one `spec` applied
+ * identically to both sides makes "baseline and follow-up matched on the
+ * same definition" true by construction instead of by validation — there is
+ * no `spec_mismatch` rejection to write or to forget.
+ *
+ * NO CALENDAR-DAY BUFFER, unlike `causality/attribute.ts`: that module
+ * excludes the surfaced calendar day from both its pre/post windows because
+ * its windows are computed as day-granularity offsets from `surfaced_at`,
+ * and without the exclusion the triggering day's `round_date` could satisfy
+ * both windows' inclusive date bounds at once. This module never has that
+ * ambiguity: {@link splitSide} assigns every shot to EXACTLY one side by
+ * comparing its own instant against `interventionAt` (`<` vs `>=`), which is
+ * a strict total order over real numbers — there is no instant a shot's
+ * timestamp can equal on both sides of. A buffer would only be needed if
+ * this module fell back to date-only, day-granularity comparisons; it does
+ * not.
+ *
  * NOT wired: nothing in `causality/attribute.ts`, any generator, or any UI
  * surface calls this module yet. Learning/personalization weights are
  * untouched by this slice.
@@ -67,15 +89,13 @@ export interface DistanceBandSpec {
 
 /**
  * What counts as a "comparable opportunity" for this comparison, plus the
- * version ids that pin down what the band/benchmark definitions MEANT at
- * the moment this spec was built. `baselineSpec` and `followUpSpec` are
- * two independent instances (see {@link ComparableOpportunitiesInput}) so a
- * baseline frozen under an older band/benchmark definition and a follow-up
- * computed under a newer one are caught and rejected rather than silently
- * compared as if they meant the same thing — addendum A9's "without
- * silently changing band boundaries or benchmark versions" acceptance
- * criterion. A version string is opaque to this module; it only compares
- * baseline vs follow-up for equality, never validates the string itself.
+ * version ids that record what the band/benchmark definitions MEANT at the
+ * moment this spec was built. Applied identically to BOTH sides (see the
+ * module header's "SINGLE SPEC" note) — there is exactly one `MatchingSpec`
+ * per call, never a baseline/follow-up pair that could disagree.
+ * `distanceBandVersion`/`benchmarkVersion` are opaque provenance strings
+ * carried onto each side's `MetricResult.dimensions` for audit purposes;
+ * this module never validates or interprets them.
  */
 export interface MatchingSpec {
   /** `null` = no distance filter (every opportunity matches on distance). */
@@ -93,10 +113,15 @@ export interface MatchingSpec {
 }
 
 /** How the outcome of a matched opportunity is scored. `'rate'` counts a
- *  success/failure per opportunity (e.g. "reached green"); `'mean'` reads a
- *  numeric value per opportunity (e.g. proximity in feet) and averages it.
- *  Both are pure classifiers over a single `ShotFact` — no cross-shot
- *  state, so the same function runs identically on both sides. */
+ *  success/failure per opportunity (e.g. "reached green") — every matched
+ *  shot contributes, since `isSuccess` always returns a boolean. `'mean'`
+ *  reads a numeric value per opportunity (e.g. proximity in feet) and
+ *  averages it — `valueOf` may return `null` for a matched shot that has no
+ *  usable value, and that shot is then dropped from the denominator/round
+ *  count entirely (see {@link computeSide}'s `missing_value` exclusion)
+ *  rather than being silently counted as a zero. Both are pure classifiers
+ *  over a single `ShotFact` — no cross-shot state, so the same function
+ *  runs identically on both sides. */
 export type OutcomeSpec =
   | { kind: 'rate'; isSuccess: (shot: ShotFact) => boolean }
   | { kind: 'mean'; unit: Exclude<MetricResult['unit'], 'percent'>; valueOf: (shot: ShotFact) => number | null };
@@ -112,9 +137,9 @@ export interface ComparableOpportunitiesInput {
   facts: readonly ShotFact[];
   /** Used ONLY to resolve each matched shot's `round_id` to a `course_id`
    *  for {@link DisclosedDifferences.courseMix} — never for eligibility
-   *  filtering (that is `facts` + the two specs). A round with no
-   *  `HoleContext` in this array (or a `null` `course_id`) is simply
-   *  absent from the course-mix sets, never coerced to a fabricated id. */
+   *  filtering (that is `facts` + `spec`). A round with no `HoleContext` in
+   *  this array (or a `null` `course_id`) is simply absent from the
+   *  course-mix sets, never coerced to a fabricated id. */
   holes: readonly HoleContext[];
   player_id: string;
   /** ISO 8601 instant this result is reproducible as of — carried onto each
@@ -141,8 +166,9 @@ export interface ComparableOpportunitiesInput {
    *  shots before it are excluded from follow-up regardless of this
    *  window's `start`. */
   followUpWindow: WindowBounds;
-  baselineSpec: MatchingSpec;
-  followUpSpec: MatchingSpec;
+  /** The single matching definition applied to BOTH sides — see the module
+   *  header's "SINGLE SPEC" note. */
+  spec: MatchingSpec;
   outcome: OutcomeSpec;
   /** Set when more than one intervention could plausibly have affected the
    *  follow-up window (e.g. a second insight surfaced, or a lesson taken,
@@ -202,21 +228,6 @@ export interface ComparableOpportunitiesResult {
   disclosedDifferences: DisclosedDifferences;
 }
 
-/**
- * Rejection outcomes that stop the comparison before either side is even
- * computed — both are version-drift guards, not data-quality findings (see
- * {@link ComparableOpportunitiesStatus} for those, which the OK branch
- * still carries as `'insufficient_evidence'`).
- */
-export interface ComparableOpportunitiesRejection {
-  ok: false;
-  reason: 'band_version_mismatch' | 'benchmark_version_mismatch';
-}
-
-export type ComparableOpportunitiesOutcome =
-  | { ok: true; result: ComparableOpportunitiesResult }
-  | ComparableOpportunitiesRejection;
-
 function matchesSpec(shot: ShotFact, spec: MatchingSpec): boolean {
   if (spec.distanceBand) {
     const d = shot.distance_to_hole_before_feet;
@@ -243,7 +254,8 @@ function inWindow(iso: string, window: WindowBounds): boolean {
  * a shot before `interventionAt` can never land in follow-up and a shot at
  * or after it can never land in baseline. See `interventionAt`'s doc
  * comment on {@link ComparableOpportunitiesInput} for the exactly-at-the-
- * instant boundary rule.
+ * instant boundary rule, and the module header for why this needs no
+ * calendar-day buffer.
  */
 function splitSide(
   shot: ShotFact,
@@ -257,78 +269,110 @@ function splitSide(
   return side === 'baseline' ? t < interventionMs : t >= interventionMs;
 }
 
+/** One side's computed `MetricResult` plus the exact shots that fed its
+ *  denominator — the "contributing" population. For `'rate'` this is every
+ *  matched shot (an `isSuccess` classification is always available). For
+ *  `'mean'` it is only the matched shots whose `valueOf` returned non-null
+ *  (PR #1992 review, MUST 2): a shot dropped for a missing value must not
+ *  inflate `eligibleCount`/`observedCount`, and — critically — a round that
+ *  contributed ONLY dropped shots must not count toward `distinctRounds`,
+ *  or a round with no usable value at all could still satisfy
+ *  {@link MIN_DISTINCT_ROUNDS}. `contributing` is exposed so
+ *  {@link buildDisclosedDifferences} can reuse the exact same population for
+ *  course-mix disclosure instead of re-deriving it (nice-to-have from the
+ *  same review). */
+interface SideComputation {
+  result: MetricResult;
+  contributing: readonly ShotFact[];
+}
+
 function computeSide(
   input: ComparableOpportunitiesInput,
   side: 'baseline' | 'followUp',
-): MetricResult {
-  const spec = side === 'baseline' ? input.baselineSpec : input.followUpSpec;
+): SideComputation {
+  const { spec } = input;
   const window = side === 'baseline' ? input.baselineWindow : input.followUpWindow;
-  const candidates = input.facts.filter(
-    (s) => splitSide(s, side, input) && matchesSpec(s, spec),
-  );
-  const eligibleCount = candidates.length;
-  const distinctRounds = new Set(candidates.map((s) => s.round_id)).size;
+  const matched = input.facts.filter((s) => splitSide(s, side, input) && matchesSpec(s, spec));
 
-  let denominator = 0;
-  let observedCount = 0;
+  let unit: MetricResult['unit'];
   let numerator: number | null = null;
   let value: number | null = null;
-  let unit: MetricResult['unit'];
+  let contributing: ShotFact[];
+  let missingValueCount = 0;
 
   if (input.outcome.kind === 'rate') {
     unit = 'percent';
+    contributing = matched;
     let successes = 0;
-    for (const s of candidates) {
-      denominator += 1;
-      observedCount += 1;
+    for (const s of matched) {
       if (input.outcome.isSuccess(s)) successes += 1;
     }
-    if (denominator > 0) {
+    if (contributing.length > 0) {
       numerator = successes;
-      value = (successes / denominator) * 100;
+      value = (successes / contributing.length) * 100;
     }
   } else {
     unit = input.outcome.unit;
+    contributing = [];
     const values: number[] = [];
-    for (const s of candidates) {
+    for (const s of matched) {
       const v = input.outcome.valueOf(s);
-      if (v === null) continue;
-      observedCount += 1;
+      if (v === null) {
+        missingValueCount += 1;
+        continue;
+      }
+      contributing.push(s);
       values.push(v);
     }
-    denominator = values.length;
     if (values.length > 0) {
       value = values.reduce((a, b) => a + b, 0) / values.length;
     }
   }
 
+  // eligibleCount/observedCount/distinctRounds all come from the CONTRIBUTING
+  // population, not the wider "matched the spec/window" population — a shot
+  // (or a whole round) that never actually produced a value is not evidence
+  // for this side, however many such shots exist (MUST 2 above).
+  const denominator = contributing.length;
+  const eligibleCount = contributing.length;
+  const observedCount = contributing.length;
+  const distinctRounds = new Set(contributing.map((s) => s.round_id)).size;
+
   const meetsFloor = denominator >= MIN_OPPORTUNITY_N && distinctRounds >= MIN_DISTINCT_ROUNDS;
   const status: MetricStatus = meetsFloor ? 'supported' : 'insufficient';
 
+  const exclusions: Record<string, number> = {};
+  if (missingValueCount > 0) exclusions.missing_value = missingValueCount;
+
   return {
-    scope: {
-      player_id: input.player_id,
-      window_start: window.start,
-      window_end: window.end,
-      analysis_cutoff: input.analysis_cutoff,
-    },
-    dimensions: {
+    result: {
+      scope: {
+        player_id: input.player_id,
+        window_start: window.start,
+        window_end: window.end,
+        analysis_cutoff: input.analysis_cutoff,
+      },
+      dimensions: {
+        metricId: input.metricId,
+        side,
+        distanceBand: spec.distanceBand?.label ?? 'any',
+        lie: spec.lie ?? 'any',
+        shotRole: spec.shotRole ?? 'any',
+        distanceBandVersion: spec.distanceBandVersion,
+        benchmarkVersion: spec.benchmarkVersion,
+      },
       metricId: input.metricId,
-      side,
-      distanceBand: spec.distanceBand?.label ?? 'any',
-      lie: spec.lie ?? 'any',
-      shotRole: spec.shotRole ?? 'any',
+      unit,
+      value,
+      numerator,
+      denominator,
+      eligibleCount,
+      observedCount,
+      distinctRounds,
+      status,
+      exclusions,
     },
-    metricId: input.metricId,
-    unit,
-    value,
-    numerator,
-    denominator,
-    eligibleCount,
-    observedCount,
-    distinctRounds,
-    status,
-    exclusions: {},
+    contributing,
   };
 }
 
@@ -340,67 +384,57 @@ function buildRoundCourseMap(holes: readonly HoleContext[]): Map<string, string 
   return map;
 }
 
-function courseIdsFor(
-  facts: readonly ShotFact[],
-  side: 'baseline' | 'followUp',
-  input: ComparableOpportunitiesInput,
-  spec: MatchingSpec,
+function courseIdsForShots(
+  shots: readonly ShotFact[],
   roundCourseIds: Map<string, string | null>,
 ): Set<string> {
   const ids = new Set<string>();
-  for (const s of facts) {
-    if (!splitSide(s, side, input) || !matchesSpec(s, spec)) continue;
+  for (const s of shots) {
     const courseId = roundCourseIds.get(s.round_id);
     if (courseId) ids.add(courseId);
   }
   return ids;
 }
 
+/** Reuses each side's exact `contributing` population (from {@link
+ *  computeSide}) rather than re-deriving matched shots from scratch — the
+ *  disclosure can never disagree with what a side actually counted. */
 function buildDisclosedDifferences(
-  input: ComparableOpportunitiesInput,
-  baseline: MetricResult,
-  followUp: MetricResult,
+  baseline: SideComputation,
+  followUp: SideComputation,
   roundCourseIds: Map<string, string | null>,
 ): DisclosedDifferences {
-  const baselineCourseIds = courseIdsFor(input.facts, 'baseline', input, input.baselineSpec, roundCourseIds);
-  const followUpCourseIds = courseIdsFor(input.facts, 'followUp', input, input.followUpSpec, roundCourseIds);
+  const baselineCourseIds = courseIdsForShots(baseline.contributing, roundCourseIds);
+  const followUpCourseIds = courseIdsForShots(followUp.contributing, roundCourseIds);
   const baselineOnly = [...baselineCourseIds].filter((id) => !followUpCourseIds.has(id)).sort();
   const followUpOnly = [...followUpCourseIds].filter((id) => !baselineCourseIds.has(id)).sort();
   const shared = [...baselineCourseIds].filter((id) => followUpCourseIds.has(id)).sort();
   return {
     courseMix: { baselineOnly, followUpOnly, shared },
-    opportunityCountImbalance: followUp.denominator - baseline.denominator,
+    opportunityCountImbalance: followUp.result.denominator - baseline.result.denominator,
   };
 }
 
 /**
  * Compares baseline vs follow-up rates/means over matched opportunities
- * around `input.interventionAt`. Returns a rejection (never a computed
- * result) when the two sides' specs disagree on what a "comparable
- * opportunity" even means — see {@link ComparableOpportunitiesRejection}.
- * Otherwise always returns a result: an unsupported side downgrades
- * `status` to `'insufficient_evidence'` rather than refusing to answer, the
- * same "state it, don't hide it" contract as `MetricResult.status`.
+ * around `input.interventionAt`, using the single `input.spec` for both
+ * sides (see the module header's "SINGLE SPEC" note — there is no
+ * mismatch to reject). An unsupported side downgrades `status` to
+ * `'insufficient_evidence'` rather than refusing to answer, the same
+ * "state it, don't hide it" contract as `MetricResult.status`.
  */
 export function computeComparableOpportunities(
   input: ComparableOpportunitiesInput,
-): ComparableOpportunitiesOutcome {
-  if (input.baselineSpec.distanceBandVersion !== input.followUpSpec.distanceBandVersion) {
-    return { ok: false, reason: 'band_version_mismatch' };
-  }
-  if (input.baselineSpec.benchmarkVersion !== input.followUpSpec.benchmarkVersion) {
-    return { ok: false, reason: 'benchmark_version_mismatch' };
-  }
-
+): ComparableOpportunitiesResult {
   const baseline = computeSide(input, 'baseline');
   const followUp = computeSide(input, 'followUp');
   const roundCourseIds = buildRoundCourseMap(input.holes);
-  const disclosedDifferences = buildDisclosedDifferences(input, baseline, followUp, roundCourseIds);
+  const disclosedDifferences = buildDisclosedDifferences(baseline, followUp, roundCourseIds);
 
-  const bothSupported = baseline.status === 'supported' && followUp.status === 'supported';
+  const bothSupported = baseline.result.status === 'supported' && followUp.result.status === 'supported';
   const observedChange =
-    bothSupported && baseline.value !== null && followUp.value !== null
-      ? followUp.value - baseline.value
+    bothSupported && baseline.result.value !== null && followUp.result.value !== null
+      ? followUp.result.value - baseline.result.value
       : null;
 
   const status: ComparableOpportunitiesStatus = !bothSupported
@@ -410,15 +444,12 @@ export function computeComparableOpportunities(
       : 'observed_change';
 
   return {
-    ok: true,
-    result: {
-      status,
-      baseline,
-      followUp,
-      observedChange,
-      methodVersion: COMPARABLE_OPPORTUNITIES_METHOD_VERSION,
-      multipleInterventions: input.multipleInterventions,
-      disclosedDifferences,
-    },
+    status,
+    baseline: baseline.result,
+    followUp: followUp.result,
+    observedChange,
+    methodVersion: COMPARABLE_OPPORTUNITIES_METHOD_VERSION,
+    multipleInterventions: input.multipleInterventions,
+    disclosedDifferences,
   };
 }

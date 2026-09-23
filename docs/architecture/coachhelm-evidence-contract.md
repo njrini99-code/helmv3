@@ -1016,7 +1016,7 @@ slice 2.
 
 `src/lib/coachhelm/v3/evaluation/comparable-opportunities.ts` (addendum A9,
 repair plan §14.12) exports `computeComparableOpportunities(input):
-ComparableOpportunitiesOutcome`, a pure function over `ShotFact[]`/
+ComparableOpportunitiesResult`, a pure function over `ShotFact[]`/
 `HoleContext[]`. **Not wired into `causality/attribute.ts` or any UI
 surface** — same not-wired discipline as A1/A3 above; learning/
 personalization weights are untouched by this slice.
@@ -1035,29 +1035,33 @@ column (migration 20260922230000).
 **Input**: `facts` (`ShotFact[]`), `holes` (`HoleContext[]`, used only to
 resolve `round_id` → `course_id` for course-mix disclosure), an
 `interventionAt` instant, a frozen `baselineWindow` and a `followUpWindow`
-(`{start, end}`), a `baselineSpec` and a `followUpSpec` (each a
-`MatchingSpec`: an optional distance band + version id, an optional lie
-filter, an optional shot-role filter, and a benchmark version id), an
-`outcome` classifier (`'rate'` with an `isSuccess` predicate, or `'mean'`
-with a numeric `valueOf`), a `multipleInterventions` flag, and a `metricId`
-label.
+(`{start, end}`), a single `spec` (`MatchingSpec`: an optional distance band
++ version id, an optional lie filter, an optional shot-role filter, and a
+benchmark version id) applied identically to BOTH sides, an `outcome`
+classifier (`'rate'` with an `isSuccess` predicate, or `'mean'` with a
+numeric `valueOf`), a `multipleInterventions` flag, and a `metricId` label.
 
-**Version guard, checked before anything is computed**: if
-`baselineSpec.distanceBandVersion !== followUpSpec.distanceBandVersion`, or
-`baselineSpec.benchmarkVersion !== followUpSpec.benchmarkVersion`, the
-function returns `{ ok: false, reason: 'band_version_mismatch' |
-'benchmark_version_mismatch' }` — no result is computed at all. This is the
-addendum's "without silently changing band boundaries or benchmark
-versions" acceptance criterion: a baseline frozen under an older band
-definition can never be silently compared against a follow-up computed
-under a newer one.
+**Single spec, not a baseline/follow-up pair** (PR #1992 review, MUST 1): an
+earlier revision took two independent `MatchingSpec`s and rejected the
+comparison when their version ids disagreed — that only guarded the version
+STRINGS, not the actual band/lie/role definitions, which could still differ
+silently. Taking one `spec` for both sides makes "matched on the same
+definition" true by construction: there is no `spec_mismatch` rejection to
+write, and the addendum's "without silently changing band boundaries or
+benchmark versions" acceptance criterion holds structurally rather than by
+validation. `distanceBandVersion`/`benchmarkVersion` are still carried onto
+each side's `MetricResult.dimensions` as opaque provenance strings.
 
 **Boundary rule**: a shot recorded at EXACTLY `interventionAt` is assigned
 to follow-up, never baseline, regardless of what the window bounds say —
 the intervention is treated as already in effect at the instant it is
 recorded, and a baseline can never include the moment that ends it
 (`splitSide`'s doc comment; proven by a dedicated fixture in
-`src/test/coachhelm/v3/comparable-opportunities.test.ts`).
+`src/test/coachhelm/v3/comparable-opportunities.test.ts`). Unlike
+`attribute.ts`, this needs no calendar-day buffer around the boundary:
+`splitSide` compares real instants with a strict `<`/`>=` split, which has
+no value satisfying both sides at once, whereas `attribute.ts`'s day-
+granularity windows could otherwise let the triggering day land in both.
 
 **Support floor**: `MIN_OPPORTUNITY_N` (5) matched opportunities AND
 `MIN_DISTINCT_ROUNDS` (2) on a side, mirroring `attribute.ts`'s
@@ -1065,18 +1069,25 @@ recorded, and a baseline can never include the moment that ends it
 hidden — the same `MetricResult` "state it, don't hide it" contract as
 A2/A3), but its `MetricResult.status` is `'insufficient'`, and the
 top-level `status` is `'insufficient_evidence'` whenever EITHER side fails
-the floor; `observedChange` is `null` in that case.
+the floor; `observedChange` is `null` in that case. For a `'mean'` outcome, a
+matched shot whose `valueOf` returns `null` is dropped before any of
+`eligibleCount`/`observedCount`/`denominator`/`distinctRounds` are computed
+(PR #1992 review, MUST 2) — a round whose only matched shot has no usable
+value must not itself satisfy `MIN_DISTINCT_ROUNDS`. Each dropped shot is
+counted under `exclusions.missing_value` (SHOULD 3), never silently
+absorbed.
 
-**Output** (`ComparableOpportunitiesResult`, once the version guard
-passes): `baseline` and `followUp`, each a `MetricResult` (see A3's section
-above for the shared type); `observedChange` — `followUp.value -
-baseline.value`, direction-agnostic, `null` unless both sides are
-supported; `methodVersion: 'comparable_opportunities_v1'`; the
-`multipleInterventions` flag as given; and `disclosedDifferences` (course
-mix — course ids matched on baseline-only/follow-up-only/shared — and
-`opportunityCountImbalance`, the signed `followUp.denominator -
-baseline.denominator`). `status` is one of `'observed_change'`,
-`'observed_change_limited'` (both sides supported but
+**Output** (`ComparableOpportunitiesResult`): `baseline` and `followUp`,
+each a `MetricResult` (see A3's section above for the shared type);
+`observedChange` — `followUp.value - baseline.value`, direction-agnostic,
+`null` unless both sides are supported; `methodVersion:
+'comparable_opportunities_v1'`; the `multipleInterventions` flag as given;
+and `disclosedDifferences` (course mix — course ids matched on
+baseline-only/follow-up-only/shared, derived from the exact same
+`contributing` shot population each side's `MetricResult` was built from,
+never re-derived separately — and `opportunityCountImbalance`, the signed
+`followUp.denominator - baseline.denominator`). `status` is one of
+`'observed_change'`, `'observed_change_limited'` (both sides supported but
 `multipleInterventions` was set — the change is real but cannot be
 isolated to this one intervention), or `'insufficient_evidence'`. **No
 field is ever named `lift`, `improvement`, or `proven`** — this module
