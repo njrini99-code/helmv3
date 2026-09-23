@@ -146,6 +146,21 @@ export interface ComparableAttributionInput {
 export type ComparableAttributionSkip =
   | { ok: false; reason: 'unsupported-metric' }
   | { ok: false; reason: 'no-exposure-record' }
+  /**
+   * The follow-up window (`interventionAt` + `POST_WINDOW_DAYS`) has not
+   * fully elapsed yet as of now. Unlike the round-level path, this
+   * module's window is anchored to a REAL, variable `shown_at` rather than
+   * the cron's own `MIN_AGE_DAYS` candidate-age cutoff, so the cron
+   * admitting a candidate (created >=21d ago) does NOT guarantee its
+   * follow-up window has closed — an insight first shown to a coach only
+   * a few days ago has a follow-up window still wide open. Measuring
+   * early would truncate the follow-up side to whatever thin slice of
+   * data exists so far and — because a write is a permanent, idempotent
+   * row (PK on `insight_id`) — that truncated measurement could never be
+   * redone once the window actually closes. Retried next run, exactly
+   * like `no-exposure-record`, never a permanent skip.
+   */
+  | { ok: false; reason: 'follow-up-window-open' }
   | { ok: false; reason: 'insufficient-evidence' };
 
 export interface ComparableAttributionRow {
@@ -172,9 +187,12 @@ export type ComparableAttributionResult =
  * DB-backed: reads the insight's first real exposure, loads shot/hole
  * context for the combined baseline+follow-up window, and runs the pure
  * `computeComparableOpportunities` core. Returns a row to write, or a typed
- * skip reason — never throws; a caller (the cron) counts each skip reason in
- * its own summary the same way `computeAttribution`'s `AttributionSkip`
- * already works.
+ * skip reason; a caller (the cron) counts each skip reason in its own
+ * summary the same way `computeAttribution`'s `AttributionSkip` already
+ * works. A genuine DB error (the exposure lookup failing) THROWS rather
+ * than being read as `no-exposure-record` — the cron's own per-candidate
+ * try/catch (`cron.v3.causality.compute`) already absorbs and logs that,
+ * the same way it does for `computeAttribution`'s own DB calls.
  */
 export async function computeComparableAttribution(
   sb: Sb,
@@ -186,13 +204,23 @@ export async function computeComparableAttribution(
   // The addendum rule: only a REAL recorded exposure counts. First exposure
   // = earliest `shown_at` on record for this insight. Zero rows → skip,
   // never estimate one from `created_at`.
-  const { data: exposure } = await sb
+  const { data: exposure, error: exposureError } = await sb
     .from('golf_insight_exposure')
     .select('shown_at')
     .eq('insight_id', input.insight_id)
     .order('shown_at', { ascending: true })
     .limit(1)
     .maybeSingle();
+  // A transient/infra failure must not read as "no exposure yet" — that
+  // would silently and permanently misclassify a real DB error as the
+  // addendum's legitimate not-shown-yet case. Throw and let the cron's own
+  // per-candidate try/catch (cron.v3.causality.compute) log it, same as any
+  // other DB failure in this loop.
+  if (exposureError) {
+    throw new Error(
+      `comparable-attribute exposure lookup ${input.insight_id}: ${exposureError.message}`,
+    );
+  }
   if (!exposure) return { ok: false, reason: 'no-exposure-record' };
   const interventionAt = exposure.shown_at;
 
@@ -206,6 +234,20 @@ export async function computeComparableAttribution(
     end: new Date(interventionMs + POST_WINDOW_DAYS * 86_400_000).toISOString(),
   };
   const nowIso = new Date().toISOString();
+
+  // The cron's own candidate-age filter (`created_at <= now - MIN_AGE_DAYS`,
+  // MIN_AGE_DAYS === attribute.ts's POST_WINDOW_DAYS) guarantees the
+  // ROUND-LEVEL path's post window has fully elapsed. It does NOT guarantee
+  // this path's has: `interventionAt` is the real, independently-timed
+  // `shown_at`, which can land long after `created_at` — an insight created
+  // 30 days ago but first shown to a coach 3 days ago still has 18 days left
+  // on its follow-up window. Measuring now would only see those 3 days, and
+  // because the write is a permanent, idempotent row (PK on `insight_id`),
+  // that truncated measurement could never be corrected later. See
+  // `ComparableAttributionSkip`'s `'follow-up-window-open'` doc comment.
+  if (new Date(followUpWindow.end).getTime() > new Date(nowIso).getTime()) {
+    return { ok: false, reason: 'follow-up-window-open' };
+  }
 
   // One `loadPlayerContext` call covering BOTH windows — `computeSide`
   // (inside `computeComparableOpportunities`) re-filters down to the exact
