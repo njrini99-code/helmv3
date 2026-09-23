@@ -77,7 +77,8 @@ describe('coachhelm-analytics — error surfacing (no silent mock fallback)', ()
     expect(result.error).toMatch(/pattern query broke/);
   });
 
-  // P070 — the hero sentence "X% of N resolved proved accurate" must pair a
+  // P070 — the hero sentence "X% of N resolved were accurate" (repair-plan
+  // §14.12 re-review, PR #2023: was "proved accurate") must pair a
   // rate and a count drawn from the SAME rolling-snapshot window. Previously
   // overallAccuracy averaged accuracy_rate across ALL snapshots while
   // validatedPredictions used only the latest snapshot — two denominators.

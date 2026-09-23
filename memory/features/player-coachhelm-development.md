@@ -98,6 +98,16 @@ Player opens round review
   `page.tsx` is a pure `permanentRedirect` shim renders `bg-canvas` only:
   no geometry, and no real `<h1>` for a screen that never mounts.
   Reference implementation: `dashboard/alerts/loading.tsx`.
+- **Observed-outcome language (repair-plan §14.12, 2026-09-23)**: any
+  coach- or player-facing string, and any chat/LLM-facing text, that states
+  an insight's outcome must use hedged, honest wording — never "proven",
+  "caused by", "guaranteed", or a quantified "Saved N strokes" claim, unless
+  the underlying data is an actual measurement, not an estimate or a
+  self-report. Guarded by
+  `src/test/coachhelm/observed-outcome-language.test.ts` (an AST-walk over
+  string/template literals and JSX text, not a raw-text regex — comments
+  and identifiers are never checked, so engineering prose about
+  causality/lift/proof can't false-positive).
 
 ## Known Risk Areas
 
@@ -142,6 +152,35 @@ Player opens round review
 - Revalidation can miss `/golf/dashboard/coachhelm` or `/golf/dashboard/my-development`.
 - Player-facing fallbacks can mask missing source data or LLM/citation failures.
 - V3 surfaces evolve quickly, so docs and registry paths need frequent updates when new components land.
+- **Repair-plan §14.12 audit, observed-outcome language (2026-09-23)**: found
+  and fixed one live bug — `InsightCard.tsx`'s `OutcomeBadge` rendered
+  "Saved {impact} strokes/rd" once a player/coach marked a focus area's
+  insight `improved` (`golf_coach_insights.outcome_status`, a HUMAN
+  self-report via `recordFocusAreaOutcomeImpl`, unrelated to
+  `golf_insight_outcome_attribution`/`method_version`). `impact` is
+  `evidence.strokes_impact`, the insight's GENERATION-TIME counterfactual
+  estimate ("strokes recoverable IF fixed" — never a post-outcome
+  measurement, see `patternToInsightVocabulary.ts`), so the badge presented
+  an old estimate as a measured saving. Fixed to the same hedged "~N str/rd
+  at stake" phrasing used everywhere else this field is shown. Also fixed a
+  stale comment claiming `outcome_status`/`outcome_measured_at` weren't yet
+  projected by `INSIGHT_SELECT` — they have been for a while, so the badge
+  was live (confirmed rendering in `FairwayPlayerInsight.tsx`,
+  `audience="coach"`), just untested (no prior test covered it).
+  Audited and found ALREADY correct, no fix needed: the trust ladder
+  (`deriveTrustStatus`/`FairwayEffectiveness.tsx`, renamed off `'proven'` in
+  N9) and `MovementPill`'s "↑ +6pt since 12 days ago" (plain magnitude +
+  direction, no causal wording) both already use honest, hedged language.
+  `FocusAreaCard.tsx`/`RosterHealthHeader.tsx`'s plain "Improved"/"Worsened"
+  tally labels are a human's own self-report echoed back, not a system-
+  asserted claim, so left as-is. `DiagnosisPanel.tsx`'s "Caused by" is a
+  DIFFERENT axis (root-cause diagnosis of a symptom, with its own honest
+  measured-fact-vs-hypothesis chip) and was deliberately NOT touched here —
+  named as a candidate for a future, separate review rather than expanded
+  into this slice. Admin-only analytics (`effectiveness_score`/
+  `improvement_rate` on `app/admin/golf/page.tsx` etc.) are an internal
+  audience reading a raw score, out of scope. Guard test:
+  `src/test/coachhelm/observed-outcome-language.test.ts`.
 - **Addendum A8 ("collect only useful context and complete the coaching
   action", folded into Pkg 9, planned 2026-09-23)**: survey found the
   select-insight -> approve -> link flow (`PromoteToFocusAreaButton` ->
