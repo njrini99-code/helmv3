@@ -127,8 +127,19 @@ archived ──(re-emitted)──► tentative | detected   (same gate)
   absent. Before this edge existed, a row born on a thin first sample stayed
   invisible forever — production held 326 tentative v3 rows, 167 with real
   sample support.
-- **No promotion to `matured`**: `movement_count` counts ≥5% value swings,
-  not confirmations.
+- **Maturation (`detected → matured`)** requires `MATURATION_CONFIRMATIONS`
+  (3) DISTINCT evidence revisions, not raw ≥5% value swings.
+  `metadata.movement_count` still counts every ≥5% swing (read only by the
+  cron's Rule 2 "never moved" archive check); maturation separately tracks
+  `metadata.maturation_keys`, a list of `${sample_n}|${window_end}`
+  fingerprints, appended to only when a write both moves ≥5% AND carries an
+  evidence revision not already in the list — so a duplicate analysis run
+  over the identical underlying rounds (the post-round trigger and the
+  nightly safety net both firing on the same data) never counts twice. The
+  list resets to `[]` on every `promoted` and `resurrected` transition: a
+  movement counted while the row was `tentative` (invisible) or `archived`
+  must never carry over and mature the row on its first post-promotion write
+  (2026-09-22 — the pre-fix counter could do exactly that).
 - **Team gate**:
   `golf_team_coachhelm_settings.preferences.tentative_promotion_enabled` —
   same JSONB blob and opt-OUT convention as the generator toggles; only an
@@ -142,7 +153,27 @@ archived ──(re-emitted)──► tentative | detected   (same gate)
   window and is fresh however old the row is. Rule 1 counts a healthy cycle
   once per distinct evidence snapshot
   (`metadata.healthy_cycle_evidence_key`); two scans over the same numbers
-  are one observation.
+  are one observation. Rule 1's healthy band is **direction-aware**
+  (2026-09-22): a player at least as good as `comparison_value` per the
+  metric's polarity (`isNegativePolarityMetric`,
+  `src/components/golf/coachhelm/insight-card/tone-derivation.ts` — the same
+  table insight-card tone uses, not a second one) is always healthy
+  regardless of gap size; only the adverse direction (still behind) is
+  gated by the 20% closeness threshold. A symmetric `|gap| ≤ 20%` used to
+  call a player who had overshot the target unresolved for having improved
+  too much.
+- **Optimistic compare-and-set** (2026-09-22): every lifecycle write —
+  `upsertInsight`'s `updateExisting` and the cron's per-row update — guards
+  its `UPDATE` with `.eq('lifecycle_state', <value read at SELECT time>)`
+  (matching the pattern `generator-base.ts`'s and `synthesis.ts`'s
+  stale-scope sweeps already used) and inspects the returned rows. Zero rows
+  back means a concurrent write — a coach dismiss/acknowledge/archive/
+  resolve, or another concurrent engine write — already moved
+  `lifecycle_state` off the observed value; the write is abandoned (logged
+  as a warning, never retried, never clobbers) and the row is re-evaluated
+  fresh on the next run. This closes the lost-update race the design
+  contract's R1 item 6 called out: a decision computed from a stale read
+  must never overwrite a concurrent transition.
 
 The `triggerPlayerInsightsAfterRound` flow always passes an explicit `coach_id`
 / `team_id`. Bootstrap paths that don't know the coach yet (cron sweeps over
@@ -157,10 +188,14 @@ that function for ownership rules.
   `playerId`, and `extra: { generator, reason }`.
 - `analyzePlayer` returns `generatorSummary: { successes, failures }` on the
   `PlayerAnalysis` payload so callers can react to partial failure.
-- `/api/coachhelm/analyze-player` currently returns 200 with `success: false` on
-  engine-level failure. A follow-up will flip to 5xx when
-  `generatorSummary.failures.length > 0` so platform-level observability sees
-  real signal (audit Q-NEW-6, partially addressed).
+- `/api/coachhelm/analyze-player` was deleted (`d282423ed`, "close
+  runtime-broken refs" — it was orphaned, calling nothing that still
+  existed). There is currently no HTTP surface returning `generatorSummary`
+  directly; callers get partial-failure status through `analyzePlayer`'s
+  in-process return value only. Audit Q-NEW-6 (platform-level observability
+  for `generatorSummary.failures.length > 0`) remains open against whatever
+  surface eventually replaces it — do not point new work at the deleted
+  route.
 
 ## Claim honesty fields (2026-09-12, repair plan Package 2)
 

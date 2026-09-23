@@ -19,8 +19,10 @@ vi.mock('@/lib/coachhelm/v2/analytics/prediction-performance-writer', () => ({
 
 import { GET } from '@/app/api/cron/coachhelm-insight-lifecycle/route';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { logServerError } from '@/lib/server-error-logger';
 
 const createAdminMock = vi.mocked(createAdminClient);
+const logServerErrorMock = vi.mocked(logServerError);
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const NOW = Date.parse('2026-06-25T02:00:00.000Z');
@@ -45,8 +47,12 @@ interface FakeRow {
  * Build a single-page admin client that returns `rows` from the first
  * `.limit()` and an empty page thereafter, while recording every
  * `update(patch).eq('id', id)` so tests can assert per-row archive decisions.
+ *
+ * `casFailIds` simulates a lost lifecycle CAS race for those row ids: as if a
+ * concurrent coach action moved `lifecycle_state` between the SELECT and this
+ * UPDATE, the guarded write matches zero rows.
  */
-function buildSupabase(rows: FakeRow[]) {
+function buildSupabase(rows: FakeRow[], casFailIds: ReadonlySet<string> = new Set()) {
   const updates: Array<{ id: string; patch: Record<string, unknown> }> = [];
   let served = false;
 
@@ -61,12 +67,25 @@ function buildSupabase(rows: FakeRow[]) {
       served = true;
       return { data: rows, error: null };
     }),
-    update: vi.fn((patch: Record<string, unknown>) => ({
-      eq: vi.fn(async (_col: string, id: string) => {
-        updates.push({ id, patch });
-        return { error: null };
-      }),
-    })),
+    // Chainable .eq()/.is() (the CAS guard adds a second filter beyond
+    // `.eq('id', …)`), terminated by `.select('id')` as the cron now does.
+    // Defaults to a successful CAS match; `casFailIds` simulates a lost race.
+    update: vi.fn((patch: Record<string, unknown>) => {
+      const filters: Record<string, unknown> = {};
+      const chain = {
+        eq: (col: string, val: unknown) => { filters[col] = val; return chain; },
+        is: (col: string, val: unknown) => { filters[`${col}__is`] = val; return chain; },
+        select: (_cols?: string) => {
+          const id = filters.id as string;
+          if (casFailIds.has(id)) {
+            return Promise.resolve({ data: [], error: null });
+          }
+          updates.push({ id, patch });
+          return Promise.resolve({ data: [{ id }], error: null });
+        },
+      };
+      return chain;
+    }),
   };
 
   return {
@@ -81,8 +100,8 @@ function buildSupabase(rows: FakeRow[]) {
   };
 }
 
-async function runWithRows(rows: FakeRow[]) {
-  const { client, updates } = buildSupabase(rows);
+async function runWithRows(rows: FakeRow[], casFailIds?: ReadonlySet<string>) {
+  const { client, updates } = buildSupabase(rows, casFailIds);
   createAdminMock.mockReturnValueOnce(client);
   const res = await GET(
     new NextRequest('http://x/api/cron/coachhelm-insight-lifecycle', {
@@ -248,5 +267,33 @@ describe('insight lifecycle archive anchors on most recent sign of life', () => 
     expect(patch).toBeDefined();
     const evidence = patch?.evidence as { confidence_factors?: { recency?: number } } | undefined;
     expect(evidence?.confidence_factors?.recency).toBeLessThan(1);
+  });
+
+  // 2026-09-22 (R1/R2 leftover): optimistic compare-and-set. A row the cron
+  // decided to archive can have been moved by a concurrent coach action
+  // (dismiss/acknowledge/resolve) between the SELECT and this UPDATE — the
+  // guarded write must not clobber it.
+  it('lost lifecycle CAS race: a row the cron would archive is left alone when a ' +
+     'concurrent write already moved its lifecycle_state', async () => {
+    const row = detectedRow({
+      id: 'e-raced',
+      created_at: daysAgoIso(120),
+      metadata: { movement_count: 0, last_refreshed_at: daysAgoIso(100), redetected_at: daysAgoIso(95) },
+    });
+    const { updates, res } = await runWithRows([row], new Set(['e-raced']));
+
+    // No archive patch was actually applied.
+    expect(archivePatchFor(updates, 'e-raced')).toBeUndefined();
+    // The run still completes successfully and reports the lost race, not a
+    // silent success or a thrown error.
+    const body = await res.json();
+    expect(body.success).toBe(true);
+    expect(body.lost_cas_race).toBe(1);
+    expect(body.archived).toBe(0);
+    expect(logServerErrorMock).toHaveBeenCalledWith(
+      expect.stringContaining('lost lifecycle CAS race'),
+      expect.objectContaining({ action: 'cron.coachhelm.insight_lifecycle.cas' }),
+      'warning',
+    );
   });
 });

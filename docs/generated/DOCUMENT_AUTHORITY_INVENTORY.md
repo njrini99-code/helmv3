@@ -289,7 +289,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/ai-system/selfheal/README.md` | current | yes | - | yes | 6 | 8 | - |
 | `docs/ai-system/selfheal/repair-contract.md` | current | yes | - | yes | 6 | 10 | - |
 | `docs/ai-system/selfheal/triage-contract.md` | current | yes | - | yes | 2 | 8 | - |
-| `docs/architecture/coachhelm-evidence-contract.md` | current | yes | - | yes | 3 | 9 | - |
+| `docs/architecture/coachhelm-evidence-contract.md` | current | yes | - | yes | 3 | 10 | - |
 | `docs/superpowers/plans/2026-04-22-insight-delivery/00-design-contract.md` | superseded | - | - | yes | 0 | 4 | - |
 | `docs/superpowers/plans/2026-04-22-insight-quality/00-design-contract.md` | superseded | - | - | yes | 0 | 3 | - |
 | `memory/system/golfhelm-engineering-os.md` | current | - | - | yes | 16 | 18 | - |

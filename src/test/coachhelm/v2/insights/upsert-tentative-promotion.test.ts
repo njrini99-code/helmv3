@@ -29,8 +29,12 @@ function createFakeSupabase(opts: {
   existingRow: Record<string, unknown> | null;
   teamPreferences?: Record<string, unknown> | null;
   settingsError?: { message: string } | null;
+  /** Simulate a lost lifecycle CAS race (a concurrent coach action / engine
+   *  write moved the row between the SELECT and this UPDATE): `[]` means the
+   *  `.eq('lifecycle_state', …)` guard matched zero rows. */
+  updateResult?: { data: unknown; error: { message: string } | null };
 }) {
-  const calls: RecordedCall[] = [];
+  const calls: (RecordedCall & { filters?: Record<string, unknown> })[] = [];
   const fromFn = vi.fn((table: string) => {
     const thenable = {
       select: vi.fn(() => thenable),
@@ -52,9 +56,21 @@ function createFakeSupabase(opts: {
         }
         return Promise.resolve({ data: null, error: null });
       }),
+      // Chainable .eq()/.is() (the CAS guard adds a second filter beyond
+      // `.eq('id', …)`), terminated by `.select('id')` as `updateExisting`
+      // now does. Defaults to a successful CAS match (the row id came back).
       update: vi.fn((payload: Record<string, unknown>) => {
-        calls.push({ table, op: 'update', payload });
-        return { eq: () => Promise.resolve({ data: null, error: null }) };
+        const filters: Record<string, unknown> = {};
+        const chain = {
+          eq: (col: string, val: unknown) => { filters[col] = val; return chain; },
+          is: (col: string, val: unknown) => { filters[`${col}__is`] = val; return chain; },
+          select: (_cols?: string) => {
+            calls.push({ table, op: 'update', payload, filters });
+            const rowId = (opts.existingRow as { id?: string } | null)?.id ?? 'row-1';
+            return Promise.resolve(opts.updateResult ?? { data: [{ id: rowId }], error: null });
+          },
+        };
+        return chain;
       }),
     };
     return thenable;
@@ -190,5 +206,21 @@ describe('upsertInsight promotes tentative rows whose sample support clears the 
     await upsertInsight(client, input(29, 1.0));
     const ev = updatePayload(calls).evidence as InsightEvidence;
     expect(ev.confidence_factors.method_version).toBe('honest_v2');
+  });
+
+  // 2026-09-22 (R1/R2 leftover): a concurrent coach dismissal/acknowledge/
+  // archive between the SELECT and this UPDATE must never be clobbered by a
+  // promotion decided from the stale 'tentative' read.
+  it('lost lifecycle CAS race: a concurrent coach action wins, no promotion applied, no push', async () => {
+    const { client, calls } = createFakeSupabase({
+      existingRow: tentativeRow(29),
+      updateResult: { data: [], error: null }, // .eq('lifecycle_state', 'tentative') matched nothing
+    });
+    const id = await upsertInsight(client, input(29, 1.0));
+
+    expect(id).toBe('row-1'); // hands back the row's identity, unchanged
+    expect(vi.mocked(notifyInsightLanded)).not.toHaveBeenCalled();
+    const update = calls.find((c) => c.op === 'update' && c.table === 'golf_coach_insights');
+    expect(update?.filters?.lifecycle_state).toBe('tentative');
   });
 });

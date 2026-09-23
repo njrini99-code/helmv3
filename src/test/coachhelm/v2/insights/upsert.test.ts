@@ -98,18 +98,29 @@ function createFakeSupabase(opts: {
         return thenable;
       }),
 
-      // UPDATE — await-able directly after .eq() chain
+      // UPDATE — chainable .eq()/.is() (the CAS guard adds a second filter
+      // beyond `.eq('id', ...)`), terminated by `.select('id')` as
+      // `updateExisting` now does. Defaults to a successful CAS match (the
+      // row carrying `filters.id` came back) unless a test supplies
+      // `updateResult` to simulate a lost race (`{ data: [], error: null }`).
       update: vi.fn((payload: unknown) => {
         state.op = 'update';
         state.payload = payload;
-        return {
+        const chain = {
           eq: (col: string, val: unknown) => {
             state.filters[col] = val;
-            return Promise.resolve(
-              recordAndReturn(opts.updateResult ?? { data: null, error: null }),
-            );
+            return chain;
+          },
+          is: (col: string, val: unknown) => {
+            state.filters[`${col}__is`] = val;
+            return chain;
+          },
+          select: (_cols?: string) => {
+            const terminal = opts.updateResult ?? { data: [{ id: state.filters.id }], error: null };
+            return Promise.resolve(recordAndReturn(terminal));
           },
         };
+        return chain;
       }),
     };
 
@@ -352,25 +363,137 @@ describe('upsertInsight', () => {
     expect(payload.evidence.your_value).toBeCloseTo(0.55);
   });
 
-  it('3rd movement promotes detected → matured', async () => {
-    // Simulate: existing row already had 2 prior movements tracked.
+  // 2026-09-22 (R1/R2 leftover): maturation used to fire off the raw
+  // `movement_count` tally alone, including movements counted before the row
+  // was ever visible. It now requires MATURATION_CONFIRMATIONS DISTINCT
+  // evidence revisions (`metadata.maturation_keys`, keyed off sample_n +
+  // window_end) recorded while the row is 'detected'.
+  it('an old movement_count of 2 does NOT mature the row on the next move — pins the ' +
+     'old-counter bug: maturation needs distinct evidence revisions, not a raw tally', async () => {
     const existing = {
       id: 'existing-3',
       evidence: baseEvidence({ your_value: 0.38 }),
+      // Legacy shape: a movement_count from before this fix, no
+      // maturation_keys at all.
       metadata: { movement_count: 2 },
       lifecycle_state: 'detected' as const,
     };
     const { client, calls } = createFakeSupabase({
       selectResult: { data: [existing], error: null },
     });
-    // Another big move
+    // Another big move, same sample_n/window_end as the fixture default —
+    // this is the FIRST distinct-revision confirmation under the new scheme.
     await upsertInsight(client, baseInput({ evidence: baseEvidence({ your_value: 0.55 }) }));
 
     const updateCall = calls.find((c) => c.op === 'update');
     expect(updateCall).toBeDefined();
     const payload = updateCall!.payload as Record<string, unknown>;
     const metadata = payload.metadata as Record<string, unknown>;
+    // The raw tally is unaffected bookkeeping (still read by the cron's Rule 2).
     expect(metadata.movement_count).toBe(3);
+    // But lifecycle must NOT jump to matured off that stale counter.
+    expect(payload.lifecycle_state).toBeUndefined();
+    expect(metadata.maturation_keys).toEqual(['47|2026-04-21']);
+  });
+
+  it('three DISTINCT evidence revisions recorded while detected mature the row', async () => {
+    const existing = {
+      id: 'existing-4',
+      evidence: baseEvidence({ your_value: 0.38 }),
+      // Two independent new-round confirmations already recorded.
+      metadata: { maturation_keys: ['20|2026-02-20', '35|2026-03-20'] },
+      lifecycle_state: 'detected' as const,
+    };
+    const { client, calls } = createFakeSupabase({
+      selectResult: { data: [existing], error: null },
+    });
+    // A third, genuinely new evidence revision (distinct sample_n/window_end)
+    // that also moves the value >5%.
+    await upsertInsight(
+      client,
+      baseInput({ evidence: baseEvidence({ your_value: 0.55, sample_n: 52, window_end: '2026-04-21' }) }),
+    );
+
+    const updateCall = calls.find((c) => c.op === 'update');
+    const payload = updateCall!.payload as Record<string, unknown>;
+    const metadata = payload.metadata as Record<string, unknown>;
+    expect(metadata.maturation_keys).toEqual(['20|2026-02-20', '35|2026-03-20', '52|2026-04-21']);
     expect(payload.lifecycle_state).toBe('matured');
+  });
+
+  it('re-evaluating the SAME evidence revision does not count twice toward maturation', async () => {
+    const existing = {
+      id: 'existing-5',
+      evidence: baseEvidence({ your_value: 0.38, sample_n: 47, window_end: '2026-04-21' }),
+      metadata: { maturation_keys: ['47|2026-04-21'] },
+      lifecycle_state: 'detected' as const,
+    };
+    const { client, calls } = createFakeSupabase({
+      selectResult: { data: [existing], error: null },
+    });
+    // Same sample_n/window_end as the already-counted revision — e.g. a
+    // duplicate analysis run over the identical underlying round — but the
+    // value still moves >5% (recompute noise / a corrected value).
+    await upsertInsight(
+      client,
+      baseInput({ evidence: baseEvidence({ your_value: 0.55, sample_n: 47, window_end: '2026-04-21' }) }),
+    );
+
+    const updateCall = calls.find((c) => c.op === 'update');
+    const payload = updateCall!.payload as Record<string, unknown>;
+    const metadata = payload.metadata as Record<string, unknown>;
+    // Unchanged — the key was already present.
+    expect(metadata.maturation_keys).toEqual(['47|2026-04-21']);
+    expect(payload.lifecycle_state).toBeUndefined();
+  });
+
+  // 2026-09-22: optimistic compare-and-set so a concurrent coach action
+  // (dismiss/acknowledge/archive/resolve) is never silently overwritten by a
+  // lifecycle decision computed from a stale read.
+  describe('lifecycle compare-and-set', () => {
+    it('lost race (lifecycle_state changed concurrently): does not throw, does not ' +
+       'notify, and returns the existing id untouched', async () => {
+      const existing = {
+        id: 'existing-6',
+        evidence: baseEvidence({ your_value: 0.38 }),
+        metadata: { movement_count: 2 },
+        lifecycle_state: 'detected' as const,
+      };
+      // Simulate a coach dismissing the row between our SELECT and our
+      // UPDATE: the CAS `.eq('lifecycle_state', 'detected')` matches zero
+      // rows because it is now 'archived'.
+      const { client, calls } = createFakeSupabase({
+        selectResult: { data: [existing], error: null },
+        updateResult: { data: [], error: null },
+      });
+
+      const id = await upsertInsight(
+        client,
+        baseInput({ evidence: baseEvidence({ your_value: 0.55 }) }),
+      );
+
+      expect(id).toBe('existing-6');
+      const updateCall = calls.find((c) => c.op === 'update');
+      expect(updateCall).toBeDefined();
+      // The CAS filter carried the OBSERVED lifecycle_state, not the
+      // decision's target state.
+      expect(updateCall!.filters?.lifecycle_state).toBe('detected');
+    });
+
+    it('guards the update with the observed lifecycle_state', async () => {
+      const existing = {
+        id: 'existing-7',
+        evidence: baseEvidence({ your_value: 0.38 }),
+        metadata: {},
+        lifecycle_state: 'tentative' as const,
+      };
+      const { client, calls } = createFakeSupabase({
+        selectResult: { data: [existing], error: null },
+      });
+      await upsertInsight(client, baseInput({ evidence: baseEvidence({ your_value: 0.39 }) }));
+
+      const updateCall = calls.find((c) => c.op === 'update');
+      expect(updateCall!.filters?.lifecycle_state).toBe('tentative');
+    });
   });
 });
