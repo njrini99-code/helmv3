@@ -237,6 +237,17 @@ export interface PlayersGridViewProps {
    * Default false.
    */
   practiceLogEnabled?: boolean;
+  /**
+   * Pkg 9 gap 2 (follow-up eligibility, owner decision 2026-09-23) —
+   * completed-round count per focus area id, since that area's `started_at`,
+   * resolved server-side once in `intelligence/page.tsx`
+   * (`loadFollowUpRoundCounts`) and threaded down opaquely here, same
+   * pattern as `practiceLogEnabled`. A plain object, not a Map — Maps don't
+   * cross the server/client boundary. `null` means the read failed (unknown),
+   * not "zero rounds" — passed straight through to `DueForReviewPanel`,
+   * which must not default it to `{}` itself.
+   */
+  followUpRoundCounts?: Record<string, number> | null;
 }
 
 /* ---------------------------------------------------------------------------
@@ -290,6 +301,7 @@ export function PlayersGridView({
   embedded = false,
   todayIso,
   practiceLogEnabled = false,
+  followUpRoundCounts = null,
 }: PlayersGridViewProps) {
   const router = useRouter();
 
@@ -862,6 +874,7 @@ export function PlayersGridView({
           players={players}
           focusAreas={focusAreas}
           todayIso={todayIso}
+          followUpRoundCounts={followUpRoundCounts}
           onSelectPlayer={(playerId) => {
             setSelectedPlayerId(playerId);
             setView('areas');

@@ -253,6 +253,39 @@ Player opens round review
   PostgREST's cap silently truncates it and both `RosterHealthHeader` and
   `DueForReviewPanel` under-report — same class of bug
   `.claude/rules/database.md` calls out generally, not yet applied here.
+
+- **Follow-up eligibility (Pkg 9 gap 2, owner decision 2026-09-23,
+  `agent/coachhelm-a9-flow-integration`)**: before this, nothing in the
+  codebase named or computed "follow-up eligibility" — the closest real
+  mechanism was `findActiveFocusAreaForMetric`'s duplicate-active guard
+  (`development.ts`), which answers "is a second area on this metric
+  permitted at all", not "should the coach create one now". Owner rule:
+  eligible when (`status === 'completed'` OR today is past `target_date`
+  while the area is still `active`/`in_progress`/`paused`) AND the player
+  has played `>= FOLLOW_UP_ROUNDS_THRESHOLD` (3) completed `golf_rounds`
+  since the area's real start (`started_at`, from `acceptFocusArea` — never
+  `created_at`; a `'proposed'` area was never accepted, so it never reads as
+  "past its target date" here either). Under-threshold areas surface with a
+  `"waiting for rounds (n/3)"` label instead of being omitted. Deliberately
+  does not feed Package 10 outcome measurement (whether the metric actually
+  improved) — eligibility only.
+  Split like `due-for-review.ts`/`practice-log-loader.ts`:
+  `src/lib/coachhelm/focus-areas/follow-up-eligibility.ts` is the pure core
+  (`followUpEligibilityReason`/`computeFollowUpEligibility`, no
+  `'server-only'`, importable from a client component) and
+  `follow-up-eligibility-loader.ts` is the `'server-only'` `golf_rounds`
+  batch read (`loadFollowUpRoundCounts`, chunked + paged per
+  `.claude/rules/database.md`), returning `null` — not an empty Map — on a
+  read failure so a caller never confuses "read failed" with "zero rounds
+  played". Wired into the SAME `DueForReviewPanel` as a second, independent
+  section ("Follow-up eligibility", distinct from "Due for review" above):
+  `intelligence/page.tsx` calls the loader once (parallel with
+  `loadFocusAreaPracticeLogData`), converts the `Map` to a plain
+  `Record<string, number> | null` (Maps don't cross the server/client
+  boundary), and threads it through `playersDrillProps.followUpRoundCounts`
+  → `PlayersGridView` → `DueForReviewPanel`, which classifies client-side
+  against the SAME `focusAreas` prop — no new focus-area fetch, only the
+  one new `golf_rounds` read.
 - **`src/lib/coachhelm/v3/ranking/situational-ranking.ts`** (2026-09-23,
   addendum §13, work package A6 slice 1, pure core, not wired to a route,
   component, or `ranking/score.ts` yet) — `groupIssues(packets)` groups
