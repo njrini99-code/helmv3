@@ -1,5 +1,5 @@
--- HELD — see supabase/migrations/HELD.md. Do NOT apply without reading that
--- entry first; this row is added there in the same change as this file.
+-- APPROVED — see supabase/migrations/HELD.md (row updated 2026-09-23,
+-- db-migration-reviewer pass). No longer HELD.
 --
 -- Found by db-drift.yml's daily production-drift check (failing 5 runs
 -- straight, 2026-08-31 -> 2026-09-04): the check requires
@@ -8,7 +8,8 @@
 -- columns (`count`, `high_intent_count`),
 -- naming them as columns real application code selects (CoachHelm telemetry,
 -- the workload view). Confirmed live 2026-09-05 (`list_tables`, verbose):
--- none of those six columns exist on either table.
+-- none of those six columns exist on either table. Re-confirmed live via
+-- `information_schema.columns` 2026-09-23.
 --
 -- ROOT CAUSE, not just a missing column:
 -- `20260624000080_baseball_elite_stat_event_model.sql`
@@ -38,11 +39,38 @@
 -- to coexist permanently, be reconciled into one, or have the old ones
 -- retired — that is a product/schema-design decision for whoever owns the
 -- elite stat event model, not something to guess at in a reconciliation
--- pass. Held for that reason, not because the columns themselves are risky
--- to add.
+-- pass.
+--
+-- CHANGE FROM THE ORIGINALLY HELD FILE: `batter_id` is now a proper FK —
+-- `uuid REFERENCES public.baseball_players(id) ON DELETE SET NULL`, matching
+-- every sibling player-identity column the elite-model migration itself
+-- defines (`20260624000080_baseball_elite_stat_event_model.sql:189`:
+-- `batter_id UUID REFERENCES baseball_players(id) ON DELETE SET NULL` on
+-- this exact table) and the FK style `baseball_pitch_events.pitcher_id`
+-- already carries live today. The originally held version added `batter_id`
+-- as a bare `uuid` with no FK — leaving it referentially unenforced would
+-- have been a second, permanent divergence from the elite-model contract on
+-- top of the one this file exists to close. `count`/`high_intent_count`
+-- (plain `integer`) and `pitch_type_classified`/`count_state` (plain `text`)
+-- carry no FK in the elite-model source either, so those are unchanged.
+--
+-- SET LOCAL lock_timeout: both tables take live tracking-data writes
+-- (pitch-by-pitch / workload logging can happen during a game), so the
+-- ALTER should queue behind, then give up on, a concurrent long-held lock
+-- rather than stall the apply indefinitely.
+
+SET LOCAL lock_timeout = '5s';
+
+-- VERIFY: select 1 from pg_attribute where attrelid=to_regclass('public.baseball_pitch_events') and attname='batter_id' and not attisdropped -- noqa: LT05
+-- VERIFY: select 1 from pg_attribute where attrelid=to_regclass('public.baseball_pitch_events') and attname='pitch_type_classified' and not attisdropped -- noqa: LT05
+-- VERIFY: select 1 from pg_attribute where attrelid=to_regclass('public.baseball_pitch_events') and attname='is_called_strike' and not attisdropped -- noqa: LT05
+-- VERIFY: select 1 from pg_attribute where attrelid=to_regclass('public.baseball_pitch_events') and attname='count_state' and not attisdropped -- noqa: LT05
+-- VERIFY: select 1 from pg_attribute where attrelid=to_regclass('public.baseball_workload_events') and attname='count' and not attisdropped -- noqa: LT05
+-- VERIFY: select 1 from pg_attribute where attrelid=to_regclass('public.baseball_workload_events') and attname='high_intent_count' and not attisdropped -- noqa: LT05
 
 ALTER TABLE public.baseball_pitch_events
-ADD COLUMN IF NOT EXISTS batter_id uuid,
+ADD COLUMN IF NOT EXISTS batter_id uuid
+REFERENCES public.baseball_players (id) ON DELETE SET NULL,
 ADD COLUMN IF NOT EXISTS pitch_type_classified text,
 ADD COLUMN IF NOT EXISTS is_called_strike boolean,
 ADD COLUMN IF NOT EXISTS count_state text;
@@ -50,13 +78,53 @@ ADD COLUMN IF NOT EXISTS count_state text;
 COMMENT ON COLUMN public.baseball_pitch_events.batter_id IS
 'Elite stat event model column, never landed live (see this file''s header — '
 'the create-if-not-exists in 20260624000080 no-op''d against this '
-'pre-existing table). HELD — see supabase/migrations/HELD.md.';
+'pre-existing table). FK to baseball_players, matching the source '
+'migration''s own definition of this column.';
 
 ALTER TABLE public.baseball_workload_events
+-- squawk-ignore prefer-bigint-over-int
 ADD COLUMN IF NOT EXISTS count integer,
+-- squawk-ignore prefer-bigint-over-int
 ADD COLUMN IF NOT EXISTS high_intent_count integer;
 
 COMMENT ON COLUMN public.baseball_workload_events.count IS
 'Elite stat event model column, never landed live (see this file''s header — '
 'the create-if-not-exists in 20260624000080 no-op''d against this '
-'pre-existing table). HELD — see supabase/migrations/HELD.md.';
+'pre-existing table).';
+
+-- VERIFY: select 1 from information_schema.columns where table_schema =
+-- VERIFY: 'public' and table_name = 'baseball_pitch_events' and column_name =
+-- VERIFY: 'batter_id' and data_type = 'uuid';
+-- VERIFY: select 1 from information_schema.columns where table_schema =
+-- VERIFY: 'public' and table_name = 'baseball_pitch_events' and column_name =
+-- VERIFY: 'pitch_type_classified';
+-- VERIFY: select 1 from information_schema.columns where table_schema =
+-- VERIFY: 'public' and table_name = 'baseball_pitch_events' and column_name =
+-- VERIFY: 'is_called_strike' and data_type = 'boolean';
+-- VERIFY: select 1 from information_schema.columns where table_schema =
+-- VERIFY: 'public' and table_name = 'baseball_pitch_events' and column_name =
+-- VERIFY: 'count_state';
+-- VERIFY: select 1 from information_schema.columns where table_schema =
+-- VERIFY: 'public' and table_name = 'baseball_workload_events' and column_name
+-- VERIFY: = 'count' and data_type = 'integer';
+-- VERIFY: select 1 from information_schema.columns where table_schema =
+-- VERIFY: 'public' and table_name = 'baseball_workload_events' and column_name
+-- VERIFY: = 'high_intent_count' and data_type = 'integer';
+-- VERIFY: select 1 from pg_constraint con join pg_class rel on rel.oid =
+-- VERIFY: con.conrelid where rel.relname = 'baseball_pitch_events' and
+-- VERIFY: con.contype = 'f' and pg_get_constraintdef(con.oid) ilike
+-- VERIFY: '%batter_id%baseball_players%on delete set null%';
+--
+-- ROLLBACK: ALTER TABLE public.baseball_pitch_events DROP COLUMN batter_id,
+-- ROLLBACK: DROP COLUMN pitch_type_classified, DROP COLUMN is_called_strike,
+-- ROLLBACK: DROP COLUMN count_state; ALTER TABLE
+-- ROLLBACK: public.baseball_workload_events DROP COLUMN count, DROP COLUMN
+-- ROLLBACK: high_intent_count; — safe: every column here is new, additive,
+-- ROLLBACK: and (as of this migration's own guard reasoning above) not yet
+-- ROLLBACK: read by any shipped call site, so dropping them cannot lose data
+-- ROLLBACK: any application path depends on. Re-check
+-- ROLLBACK: `grep -rn
+-- ROLLBACK: "batter_id\|pitch_type_classified\|is_called_strike\|count_state"
+-- ROLLBACK: src/app/baseball src/lib/baseball`
+-- ROLLBACK: immediately before rolling back, in case a caller started
+-- ROLLBACK: relying on these columns after this migration shipped.
