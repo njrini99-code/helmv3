@@ -22,7 +22,7 @@ import fcntl
 from physical_admission import review_input_hash
 from source_geometry import resolved_routes
 
-from . import imagery, lab
+from . import imagery, lab, ship
 from .fingerprints import digest, file_sha256, terrain_source_identity
 from .model import Blocker, Precondition
 from .planner import DONE
@@ -597,7 +597,7 @@ def compose_scorecard(node, ctx, run):
     return [artifact('scorecard', path, 'A')]
 
 
-def _prepare(node, ctx, run, out, canopy=None):
+def _prepare(node, ctx, run, out, canopy=None, use_auto_trace=False):
     layout_id = node.scope.layout_id
     layout = ctx.layout(layout_id)
     _manifest, extract = ctx.snapshot(node.scope.facility_id)
@@ -610,7 +610,7 @@ def _prepare(node, ctx, run, out, canopy=None):
     route_traces = ctx.retained(layout, 'routeTraces')
     if route_traces:
         args += ['--route-traces', route_traces]
-    traces = ctx.retained(layout, 'imageryTraces')
+    traces = ctx.effective_traces_path(layout_id) if use_auto_trace else ctx.retained(layout, 'imageryTraces')
     if traces and os.path.isfile(traces):
         args += ['--traces', traces]
     if os.path.isdir(out):
@@ -632,7 +632,7 @@ def compose_candidates(node, ctx, run):
 def compose_package(node, ctx, run):
     canopy = ctx.canopy_path(node.scope.layout_id)
     canopy = canopy if ctx.states.get(f'layout.canopy.derive[{node.scope.layout_id}]') in ('cached', 'success') and os.path.isfile(canopy) else None
-    return _prepare(node, ctx, run, ctx.package_dir(node.scope.layout_id), canopy)
+    return _prepare(node, ctx, run, ctx.package_dir(node.scope.layout_id), canopy, use_auto_trace=True)
 
 
 def acquire_terrain(node, ctx, run):
@@ -733,6 +733,52 @@ def derive_canopy(node, ctx, run):
     retained = retain_receipt(ctx, layout_id, 'canopy', identity, package['contentHash'], paths)
     return [artifact('canopy-review', out, 'A'), artifact('naip-manifest', paths[1], 'B'), artifact('naip-raster', paths[2], 'B'),
             artifact('payload-reuse', retained, 'C')]
+
+
+def trace_surfaces(node, ctx, run):
+    """Auto-trace whichever holes `ship.gate_holes_shape` currently flags
+    `HOLE_SURFACE_MISSING`/fairway from NAIP (+ lidar CHM where covered):
+    imagery-derived evidence for owner review, never a substitute for a real
+    mapped surface (`derive-surface-traces.py` itself never writes below its
+    confidence floor). Only run for the holes that actually need it."""
+    layout_id = node.scope.layout_id
+    source = ctx.terrain_source_dir(layout_id)
+    naip = ctx.naip_dir(layout_id)
+    out = ctx.surfaces_trace_out(layout_id)
+    package = ctx.json(ctx.candidates_package_path(layout_id), fresh=True)
+    target_holes = sorted({b['ordinal'] for b in ship.gate_holes_shape(package, expected_holes=len(package.get('holes') or []))
+                           if b['code'] == 'HOLE_SURFACE_MISSING' and b.get('surfaceClass') == 'fairway'})
+    lidar = ctx.lidar_manifest(layout_id)
+    lidar_covered = bool(lidar and lidar.get('status') == 'covered')
+    from .payload_reuse import load_receipt, retain_receipt, stage_identity
+    # The lidar verdict is part of what a trace is: a receipt from a
+    # NAIP-only derivation must not stand in for a lidar-boosted one.
+    identity = stage_identity(ctx, node, package, {'holes': target_holes,
+                                                   'lidar': {k: v for k, v in lidar.items() if k != 'retrievedAt'} if lidar else None})
+    receipt = load_receipt(ctx, layout_id, 'surfaces-trace', identity)
+    if receipt:
+        document = ctx.json(out, fresh=True)
+        if document.get('packageHash') != receipt['packageHash']:
+            raise RuntimeError('reusable surfaces-trace envelope mismatch')
+        _write_json(out, {**document, 'packageHash': package['contentHash']})
+    elif not target_holes:
+        # No hole currently needs a traced fairway: an empty, valid envelope
+        # -- not a call into the tracer, which needs a real naip.tif to open.
+        _write_json(out, {'schemaVersion': 1, 'kind': 'golfhelm-imagery-traces-v1', 'siteId': package['siteId'],
+                          'packageHash': package['contentHash'], 'producer': 'auto-trace-v1',
+                          'source': {'provider': None, 'service': None, 'catalogTiles': [], 'capturedAt': [], 'rasterSha256': None, 'nativeResolutionM': None},
+                          'lidarSource': {'kind': 'lidar_chm+naip', 'lidar': lidar, 'reason': None} if lidar_covered else {'kind': 'naip', 'lidar': None, 'reason': 'no lidar CHM supplied'},
+                          'tracer': 'Automated NDVI+DEM corridor segmentation (auto-trace-v1); not a course-supplied vector.',
+                          'tracedAt': datetime.now(timezone.utc).date().isoformat(),
+                          'meaning': 'No hole in this package is missing a fairway; nothing to trace.', 'features': [], 'report': []})
+    else:
+        args = ['--layout', layout_id, '--package', ctx.candidates_package_path(layout_id), '--naip', os.path.join(naip, 'naip.tif'),
+                '--dem', os.path.join(source, 'elevation.tiff'), '--holes', ','.join(str(o) for o in target_holes), '--out', out]
+        if lidar_covered:
+            args += ['--lidar-chm', ctx.lidar_out(layout_id), '--terrain-source', source]
+        run_script(ctx, run, node, 'scripts/golf/course-geometry/derive-surface-traces.py', args)
+    retained = retain_receipt(ctx, layout_id, 'surfaces-trace', identity, package['contentHash'], [out])
+    return [artifact('surfaces-trace', out, 'A'), artifact('payload-reuse', retained, 'C')]
 
 
 def _compile(node, ctx, run, holes, out, context=None):
@@ -1237,6 +1283,7 @@ DEFAULT_EXECUTORS = {
     'layout.terrain.acquire': acquire_terrain,
     'layout.lidar.acquire': acquire_lidar,
     'layout.canopy.derive': derive_canopy,
+    'layout.surfaces.trace': trace_surfaces,
     'layout.package.compose': compose_package,
     'layout.terrain.base': compile_terrain_base,
     'layout.imagery.audit': audit_imagery,

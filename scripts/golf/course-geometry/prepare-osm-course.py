@@ -177,17 +177,23 @@ def main():
                                'shape': transform(project.transform, geometry_shape(feature['geometryWgs84']))})
 
     traces = json.loads(args.traces.read_text()) if args.traces else None
-    trace_source = None
+    trace_source_ids = set()  # every distinct naip-trace-/lidar-trace- source id a feature actually used
     if traces:
         if traces.get('kind') != 'golfhelm-imagery-traces-v1' or traces.get('siteId') != card['siteId']:
             raise ValueError('Trace file does not belong to this course')
-        trace_source = 'naip-trace-' + traces['tracedAt']
         for trace in traces['features']:
             ring = trace['coordinatesWgs84']
             if trace['holeKey'] not in hole_order or trace['kind'] not in ('fairway', 'tee', 'bunker', 'green', 'water') or len(ring) < 4 or ring[0] != ring[-1] or not Polygon(ring).is_valid:
                 raise ValueError('Invalid trace: ' + trace['id'])
             if any(c['id'] == trace['id'] for c in candidates):
                 raise ValueError('Duplicate trace id: ' + trace['id'])
+            # A trace the lidar canopy-height signal also confirmed gets its
+            # own source id (`lidar-trace-`), never merged into a plain
+            # `naip-trace-` one -- both are still unreviewed owner-review
+            # candidates, never OSM truth, but which evidence backed a given
+            # trace must stay auditable per feature.
+            trace_source = ('lidar-trace-' if trace.get('evidenceSource') == 'lidar_chm+naip' else 'naip-trace-') + traces['tracedAt']
+            trace_source_ids.add(trace_source)
             feature = {'id': trace['id'], 'kind': trace['kind'], 'sourceIds': [trace_source],
                        'holeKeys': [trace['holeKey']], 'reviewed': False, 'accuracyMeters': trace['accuracyMeters'],
                        'geometryWgs84': {'type': 'Polygon', 'coordinates': [ring]}}
@@ -301,10 +307,13 @@ def main():
                                'associationReview': imported['routeTraceAssociationReview'],
                                'rule': 'confirms hole identity and route-to-green association only; boundaries remain source candidates'}
     if traces:
-        package['sources'].append({'id': trace_source, 'provider': traces['source']['provider'], 'licenseId': 'US-Public-Domain',
-                                   'url': traces['source']['service'], 'capturedAt': ','.join(traces['source']['capturedAt']),
-                                   'retrievedAt': traces['tracedAt'],
-                                   'attribution': 'USDA NAIP; traced surface candidates, unreviewed'})
+        for trace_source in sorted(trace_source_ids):
+            is_lidar = trace_source.startswith('lidar-trace-')
+            package['sources'].append({'id': trace_source, 'provider': traces['source']['provider'], 'licenseId': 'US-Public-Domain',
+                                       'url': traces['source']['service'], 'capturedAt': ','.join(traces['source']['capturedAt']),
+                                       'retrievedAt': traces['tracedAt'],
+                                       'attribution': ('USDA NAIP + USGS 3DEP lidar; traced surface candidates, unreviewed' if is_lidar
+                                                       else 'USDA NAIP; traced surface candidates, unreviewed')})
         trace_summary = {'traceFile': args.traces.name, 'features': [t['id'] for t in traces['features']],
                          'rasterSha256': traces['source']['rasterSha256'], 'tracer': traces['tracer'],
                          'cornerSmoothingM': TRACE_SMOOTHING_M}

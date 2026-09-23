@@ -55,6 +55,7 @@ SCHEMA = 'golfhelm-imagery-traces-v1'
 PRODUCER = 'auto-trace-v1'
 TRACEABLE_KINDS = ('fairway', 'tee', 'green')  # kinds prepare-osm-course.py --traces accepts
 ROUTE_OVERLAP_MIN_M = 8.0  # prepare-osm-course.py only attaches a fairway that crosses the route by this much
+CHM_NODATA = -9999.0  # fetch-lidar-chm.py's writers.gdal nodata value
 
 DEFAULTS = {
     'corridor_m': 50.0,
@@ -72,6 +73,18 @@ DEFAULTS = {
     'otsu_eta_min': 0.4,       # below this, the fairway/rough split isn't real separation; keep the whole corridor
     'brightness_smooth_m': 10.0,  # wider than a mowing-stripe period, so stripes don't get Otsu-split as fairway/rough
     'chaikin_passes': 2,
+    # Lidar canopy-height signal (fetch-lidar-chm.py), applied wherever the
+    # export has coverage: CHM below `chm_turf_max_m` confirms open turf
+    # inside the plausible NDVI band (a road or bare dirt at the same height
+    # is not turf, so the boost is gated on NDVI, never on height alone); CHM
+    # at/above `chm_tree_min_m` is trees and is excluded outright, regardless
+    # of what NDVI/texture would have said. `lidar_coverage_min` mirrors
+    # derive-canopy-naip.py's own share-of-export floor, scoped to one hole's
+    # corridor: below it, a covering project is a patchwork here and NAIP
+    # alone decides, by name.
+    'chm_turf_max_m': 1.0,
+    'chm_tree_min_m': 3.0,
+    'lidar_coverage_min': 0.5,
 }
 
 FAIRWAY_TEXTURE_SCALES_PX = (3, 5, 9)  # multi-scale local texture windows for the fairway/rough split
@@ -197,10 +210,45 @@ def split_fairway_rough(naip, component, on_route, route_distance, pixel_m, opti
     return restricted, evidence
 
 
-def build_trace(package, hole, naip, dem, epsg, options):
+def _lidar_evidence(chm, texture, within_corridor, ndvi, options):
+    """`(texture_effective, excluded_by_lidar, evidence)`. Where the CHM
+    covers enough of this hole's corridor: a cell below `chm_turf_max_m`
+    confirms open, mown-height ground -- but only inside the plausible NDVI
+    band, so a road or bare dirt at the same height is never treated as
+    confirmed on height alone. For a confirmed cell, only its NDVI *texture*
+    term is replaced with a clean 0 (lidar height measures directly what
+    texture is a proxy for: crown edges, shadow lines, cart-path stripes);
+    the NDVI band term and DEM-smoothness term are untouched, so confidence
+    still has to be earned from real NDVI/slope evidence rather than a flat
+    constant. A cell at/above `chm_tree_min_m` is trees and is excluded
+    outright, regardless of NDVI/texture."""
+    excluded = np.zeros_like(texture, dtype=bool)
+    if chm is None:
+        return texture, excluded, {'used': False, 'reason': 'no lidar CHM supplied for this hole'}
+    chm_arr = chm.array[0]
+    if chm_arr.shape != texture.shape:
+        return texture, excluded, {'used': False, 'reason': 'lidar CHM grid does not match the imagery grid for this hole'}
+    valid = chm_arr != CHM_NODATA
+    coverage = float(valid[within_corridor].mean()) if within_corridor.any() else 0.0
+    if coverage < options['lidar_coverage_min']:
+        return texture, excluded, {'used': False, 'coverage': round(coverage, 4),
+                                   'reason': f"LIDAR_COVERAGE_PARTIAL: {coverage:.0%} of the corridor, under {options['lidar_coverage_min']:.0%}"}
+    ndvi_center = (options['ndvi_min'] + options['ndvi_max']) / 2
+    ndvi_half = (options['ndvi_max'] - options['ndvi_min']) / 2
+    ndvi_plausible = np.abs(ndvi - ndvi_center) <= ndvi_half
+    tree_mask = valid & (chm_arr >= options['chm_tree_min_m'])
+    turf_confirmed = valid & (chm_arr < options['chm_turf_max_m']) & ndvi_plausible
+    texture_effective = np.where(turf_confirmed, 0.0, texture)
+    return texture_effective, tree_mask, {'used': True, 'coverage': round(coverage, 4),
+                                          'treePixels': int(tree_mask.sum()), 'turfConfirmedPixels': int(turf_confirmed.sum())}
+
+
+def build_trace(package, hole, naip, dem, epsg, options, chm=None):
     """Segment one hole's fairway candidate. Returns (traceFeature, evidence)
     where traceFeature is None when nothing crosses the confidence bar or no
-    connected candidate touches the route; evidence always explains why."""
+    connected candidate touches the route; evidence always explains why.
+    `chm` is an optional lidar canopy-height `Raster`, cropped/warped onto
+    the same grid as `naip`/`dem` (see `load_lidar_chm`)."""
     by_id = _features_by_id(package)
     route_wgs84 = _route_geometry(package, hole, by_id)
     route_xy = [cr.wgs84_to_epsg(Point(lon, lat), epsg).coords[0] for lon, lat in route_wgs84]
@@ -214,25 +262,33 @@ def build_trace(package, hole, naip, dem, epsg, options):
     texture = cr.local_std(ndvi, 5)
 
     pixel_m = naip.pixel_size()
+    xs, ys = naip.xy_grid()
+    within_corridor = corridor_mask(xs, ys, route_xy, options['corridor_m'])
+
+    # Lidar, when supplied, only ever substitutes for the NDVI *texture*
+    # term below -- never the band term or the smoothness term -- so a
+    # lidar-confirmed pixel still has to clear the real NDVI/slope bar
+    # rather than being force-admitted on height alone.
+    texture, lidar_excluded, lidar_evidence = _lidar_evidence(chm, texture, within_corridor, ndvi, options)
+
     smooth, roughness = smoothness_score(dem.array[0], pixel_m, options['roughness_max'])
     turf = turf_score(ndvi, texture, options['ndvi_min'], options['ndvi_max'], options['texture_max'])
     composite = turf * smooth
 
-    xs, ys = naip.xy_grid()
     route_distance = cr.distance_to_geometry(xs, ys, route_line)
     decay = np.clip(1 - route_distance / options['decay_m'], 0, 1) if options['decay_m'] > 0 else np.ones_like(composite)
     weighted = composite * decay
 
-    within_corridor = corridor_mask(xs, ys, route_xy, options['corridor_m'])
     exclusions = _exclusion_union(package, hole, by_id, ('green', 'tee', 'bunker', 'water'))
     excluded = vcontains(cr.wgs84_to_epsg(exclusions, epsg), xs, ys) if exclusions is not None else np.zeros_like(xs, dtype=bool)
+    excluded = excluded | lidar_excluded
 
     candidate_mask = (weighted >= options['turf_threshold']) & within_corridor & ~excluded
     candidate_mask = cr.binary_opening(candidate_mask, options['open_radius_m'], pixel_m)
     on_route = corridor_mask(xs, ys, route_xy, max(pixel_m[0], pixel_m[1]) * 1.5)
     component = cr.largest_component(candidate_mask, seed_mask=on_route)
 
-    evidence = {'candidatePixels': int(candidate_mask.sum()), 'onRoutePixels': int(on_route.sum())}
+    evidence = {'candidatePixels': int(candidate_mask.sum()), 'onRoutePixels': int(on_route.sum()), 'lidar': lidar_evidence}
     if not component.any():
         return None, {**evidence, 'reason': 'no_connected_candidate_touching_route'}
 
@@ -283,11 +339,12 @@ def build_trace(package, hole, naip, dem, epsg, options):
     if ring[0] != ring[-1]:
         ring.append(list(ring[0]))
     accuracy = round(max(3.0, pixel_m[0] * 6), 1)
+    evidence_source = 'lidar_chm+naip' if lidar_evidence.get('used') else 'naip'
     trace_feature = {
         'id': f'auto-trace-{hole["key"]}-fairway', 'kind': 'fairway', 'holeKey': hole['key'],
-        'accuracyMeters': accuracy, 'confidence': confidence, 'producer': PRODUCER,
+        'accuracyMeters': accuracy, 'confidence': confidence, 'producer': PRODUCER, 'evidenceSource': evidence_source,
         'note': f'Auto-traced mown corridor along the route for {hole["key"]} '
-                f'(NDVI+DEM segmentation, {PRODUCER}); confidence {confidence}.',
+                f'(NDVI+DEM segmentation, {PRODUCER}{" + lidar CHM" if evidence_source == "lidar_chm+naip" else ""}); confidence {confidence}.',
         'coordinatesWgs84': ring,
     }
     return trace_feature, evidence
@@ -314,6 +371,34 @@ def _source_block(naip_path):
     }
 
 
+def load_lidar_chm(chm_dir, terrain_source_dir, naip, epsg):
+    """`(chm, meta)` from a fetch-lidar-chm.py output directory, warped onto
+    the same grid as `naip` (nearest-neighbor: a height signal thresholded
+    against fixed cutoffs must not blend across a nodata/data or turf/tree
+    boundary). `chm` is None whenever lidar cannot lead -- no directory, no
+    coverage, or another export's CHM -- and `meta['reason']` says why. An
+    export/hash mismatch is an error, never silently NAIP (mirrors derive-
+    canopy-naip.py's `load_lidar`)."""
+    if chm_dir is None:
+        return None, {'kind': 'naip', 'lidar': None, 'reason': 'no lidar acquisition for this layout'}
+    chm_dir = Path(chm_dir)
+    manifest = json.loads((chm_dir / 'manifest.json').read_text())
+    if terrain_source_dir is not None:
+        export_path = Path(terrain_source_dir) / 'export.json'
+        if export_path.is_file() and manifest.get('terrainExportSha256') != hashlib.sha256(export_path.read_bytes()).hexdigest():
+            raise ValueError('LIDAR_EXPORT_MISMATCH: the lidar CHM was cut for another terrain export')
+    if manifest.get('status') != 'covered':
+        return None, {'kind': 'naip', 'lidar': {'status': manifest.get('status')}, 'reason': f'LIDAR_NO_COVERAGE: lidar acquisition ended {manifest.get("status")}'}
+    chm_path = chm_dir / 'chm.tif'
+    if hashlib.sha256(chm_path.read_bytes()).hexdigest() != manifest.get('chmSha256'):
+        raise ValueError('LIDAR_CHM_HASH_MISMATCH: chm.tif is not the raster its manifest records')
+    chm = cr.warp_to_grid(chm_path, epsg, naip.bounds(), naip.pixel_size(), resample='near')
+    project = manifest.get('project') or {}
+    lidar = {'status': 'covered', 'project': project.get('name'), 'chmSha256': manifest['chmSha256'],
+             'acquisitionYearInferred': project.get('acquisitionYearInferred')}
+    return chm, {'kind': 'lidar_chm+naip', 'lidar': lidar, 'reason': None}
+
+
 def _hole_bounds(package, hole, epsg, corridor_m, margin_m=20.0):
     by_id = _features_by_id(package)
     route_wgs84 = _route_geometry(package, hole, by_id)
@@ -322,15 +407,17 @@ def _hole_bounds(package, hole, epsg, corridor_m, margin_m=20.0):
     return buffered.bounds
 
 
-def run(package, holes, naip, dem, options, epsg=None):
+def run(package, holes, naip, dem, options, epsg=None, chm=None):
     """Segment every requested hole against already-aligned `naip`/`dem`
-    rasters (same CRS, grid and pixel size — see `_resolve_grid`).
+    rasters (same CRS, grid and pixel size — see `_resolve_grid`). `chm` is
+    an optional lidar canopy-height `Raster` on that same grid (see
+    `load_lidar_chm`); passed through per hole, cropped like `naip`/`dem`.
 
-    Each hole is processed against a small crop of `naip`/`dem` around its
-    own route corridor, not the full (possibly whole-facility) raster: NDVI,
-    texture and distance-to-route are computed pixel-by-pixel, so cropping
-    first keeps a facility-wide raster from making every hole as slow as the
-    whole course."""
+    Each hole is processed against a small crop of `naip`/`dem`/`chm` around
+    its own route corridor, not the full (possibly whole-facility) raster:
+    NDVI, texture and distance-to-route are computed pixel-by-pixel, so
+    cropping first keeps a facility-wide raster from making every hole as
+    slow as the whole course."""
     epsg = epsg or origin_epsg(package)
     features, report = [], []
     for ordinal in holes:
@@ -346,9 +433,10 @@ def run(package, holes, naip, dem, options, epsg=None):
             bounds = _hole_bounds(package, hole, epsg, options['corridor_m'])
             hole_naip = cr.crop_to_bounds(naip, bounds)
             hole_dem = cr.crop_to_bounds(dem, bounds)
+            hole_chm = cr.crop_to_bounds(chm, bounds) if chm is not None else None
         except (ValueError, KeyError):
-            hole_naip, hole_dem = naip, dem
-        trace, evidence = build_trace(package, hole, hole_naip, hole_dem, epsg, options)
+            hole_naip, hole_dem, hole_chm = naip, dem, chm
+        trace, evidence = build_trace(package, hole, hole_naip, hole_dem, epsg, options, chm=hole_chm)
         if trace is None:
             report.append({'ordinal': ordinal, 'holeKey': hole['key'], 'decision': 'skipped_' + evidence.get('reason', 'unknown'), 'evidence': evidence})
             continue
@@ -357,10 +445,11 @@ def run(package, holes, naip, dem, options, epsg=None):
     return features, report, epsg
 
 
-def build_document(package, features, report, naip_path):
+def build_document(package, features, report, naip_path, lidar_meta=None):
     return {
-        'schemaVersion': 1, 'kind': SCHEMA, 'siteId': package['siteId'],
+        'schemaVersion': 1, 'kind': SCHEMA, 'siteId': package['siteId'], 'packageHash': package.get('contentHash'),
         'producer': PRODUCER, 'source': _source_block(naip_path),
+        'lidarSource': lidar_meta or {'kind': 'naip', 'lidar': None, 'reason': 'no lidar CHM supplied'},
         'tracer': f'Automated NDVI+DEM corridor segmentation ({PRODUCER}); not a course-supplied vector.',
         'tracedAt': datetime.datetime.now(datetime.timezone.utc).date().isoformat(),
         'meaning': 'Unreviewed source candidates traced where the package has no fairway polygon. '
@@ -379,6 +468,8 @@ def parse_args(argv=None):
     parser.add_argument('--out', required=True, type=Path)
     parser.add_argument('--holes', default=None, help='Comma-separated hole ordinals; default: every hole missing a fairway')
     parser.add_argument('--overlay', default=None, type=Path, help='Optional PNG overlay (trace over NAIP) for visual review')
+    parser.add_argument('--lidar-chm', type=Path, default=None, help='fetch-lidar-chm.py output directory for this export')
+    parser.add_argument('--terrain-source', type=Path, default=None, help='terrain source directory (export.json), to validate --lidar-chm against')
     for key, default in DEFAULTS.items():
         parser.add_argument('--' + key.replace('_', '-'), type=float, default=default)
     return parser.parse_args(argv)
@@ -391,8 +482,11 @@ def main(argv=None):
     options = {key: getattr(args, key) for key in DEFAULTS}
     epsg = origin_epsg(package)
     naip, dem = _resolve_grid(args.naip, args.dem, epsg)
-    features, report, epsg = run(package, holes, naip, dem, options, epsg=epsg)
-    doc = build_document(package, features, report, args.naip)
+    chm, lidar_meta = (None, {'kind': 'naip', 'lidar': None, 'reason': 'no lidar CHM supplied'})
+    if args.lidar_chm:
+        chm, lidar_meta = load_lidar_chm(args.lidar_chm, args.terrain_source, naip, epsg)
+    features, report, epsg = run(package, holes, naip, dem, options, epsg=epsg, chm=chm)
+    doc = build_document(package, features, report, args.naip, lidar_meta=lidar_meta)
     args.out.parent.mkdir(parents=True, exist_ok=True)
     args.out.write_text(json.dumps(doc, indent=2) + '\n')
     for row in report:

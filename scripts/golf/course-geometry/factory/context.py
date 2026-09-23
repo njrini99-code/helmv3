@@ -323,6 +323,30 @@ class Context:
     def canopy_path(self, layout_id):
         return self._current(self.canopy_out(layout_id), self.retained(self.layout(layout_id), 'canopyReview'))
 
+    def surfaces_trace_out(self, layout_id):
+        return os.path.join(self.layout_out(layout_id), 'surfaces-trace.json')
+
+    def effective_traces_path(self, layout_id):
+        """Which `--traces` document `layout.candidates.compose`/`layout.
+        package.compose` should pass, if any: a checked-in `imageryTraces`
+        override always wins outright (no catalog layout has ever combined
+        one with auto-tracing); otherwise, once `layout.surfaces.trace` has
+        actually run for this build (state-gated, not just file presence --
+        a stale surfaces-trace.json from a prior run must not be adopted
+        silently) and produced at least one feature, its output is used."""
+        layout = self.layout(layout_id) or {}
+        override = self.retained(layout, 'imageryTraces')
+        if override:
+            return override
+        if self.states.get(f'layout.surfaces.trace[{layout_id}]') not in ('cached', 'success'):
+            return None
+        auto = self.surfaces_trace_out(layout_id)
+        if self.can_adopt(auto) and os.path.isfile(auto):
+            doc = self.json(auto, fresh=True)
+            if doc and doc.get('features'):
+                return auto
+        return None
+
     def compiled_out(self, layout_id):
         return os.path.join(self.layout_out(layout_id), 'compiled')
 

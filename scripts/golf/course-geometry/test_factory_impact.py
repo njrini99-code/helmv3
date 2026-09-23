@@ -224,6 +224,90 @@ class ImpactTests(unittest.TestCase):
         self.assertEqual(states['layout.canopy.derive[synthetic-a]'][0], 'cached')
         self.assertEqual(states['layout.lidar.acquire[synthetic-a]'][0], 'cached')
 
+    def test_surfaces_trace_defaults_to_a_no_op_and_never_touches_the_package(self):
+        """`World.auto_trace` defaults False: `layout.surfaces.trace` still
+        runs (an empty, valid envelope), but `effective_traces_path` refuses
+        to adopt an empty trace, so the served package is exactly what it
+        was before the task existed -- the new task changes nothing about
+        every other test's package shape."""
+        code, text = self.h.run('run', '--layout', 'synthetic-a')
+        self.assertEqual(code, 0, text)
+        self.assertIn('failed 0', text)
+        states = self.h.states('synthetic-a')
+        self.assertIn(states['layout.surfaces.trace[synthetic-a]'][0], DONE, states['layout.surfaces.trace[synthetic-a]'])
+        trace_doc = read_json(os.path.join(self.h.output, 'layouts', 'synthetic-a', 'surfaces-trace.json'))
+        self.assertEqual(trace_doc['features'], [])
+        package = read_json(os.path.join(self.h.output, 'layouts', 'synthetic-a', 'package', 'normalized.json'))
+        self.assertFalse(any(f['kind'] == 'fairway' for f in package['features']))
+        self.assertEqual({s['id'] for s in package['sources']}, {'osm'})
+
+    def test_new_lidar_coverage_re_traces_previously_naip_only_fairways(self):
+        """New 3DEP coverage is a `layout.surfaces.trace` input too, exactly
+        like canopy: a hole traced from NAIP alone re-traces once lidar
+        covers the export, and its package sourceId moves from
+        `naip-trace-` to `lidar-trace-`. A second run is a cached fixed
+        point again."""
+        self.h.world.auto_trace = True
+        code, text = self.h.run('run', '--layout', 'synthetic-a')
+        self.assertEqual(code, 0, text)
+        self.assertIn('failed 0', text)
+        before = read_json(os.path.join(self.h.output, 'layouts', 'synthetic-a', 'package', 'normalized.json'))
+        before_sources = {s['id'] for s in before['sources']}
+        self.assertTrue(any(s.startswith('naip-trace-') for s in before_sources), before_sources)
+        self.assertFalse(any(s.startswith('lidar-trace-') for s in before_sources), before_sources)
+        traced_before = [f for f in before['features'] if f['kind'] == 'fairway']
+        self.assertEqual(len(traced_before), 18, 'every synthetic hole is missing a fairway by construction')
+
+        self.h.world.lidar_chm = b'CHM-2019' * 32
+        code, text = self.h.run('invalidate', '--layout', 'synthetic-a', '--task', 'layout.lidar.acquire', '--reason', '3DEP project published')
+        self.assertEqual(code, 0, text)
+        code, text = self.h.run('run', '--layout', 'synthetic-a')
+        self.assertEqual(code, 0, text)
+        self.assertIn('failed 0', text)
+        executed = set(read_json(os.path.join(os.path.dirname(next(l for l in text.splitlines() if l.startswith('report: '))[len('report: '):]), 'report.json'))['executed'])
+        self.assertIn('layout.lidar.acquire[synthetic-a]', executed)
+        self.assertIn('layout.surfaces.trace[synthetic-a]', executed)
+        self.assertIn('layout.package.compose[synthetic-a]', executed)
+        trace_doc = read_json(os.path.join(self.h.output, 'layouts', 'synthetic-a', 'surfaces-trace.json'))
+        self.assertEqual(trace_doc['lidarSource']['kind'], 'lidar_chm+naip')
+        self.assertTrue(all(f.get('evidenceSource') == 'lidar_chm+naip' for f in trace_doc['features']))
+        after = read_json(os.path.join(self.h.output, 'layouts', 'synthetic-a', 'package', 'normalized.json'))
+        after_sources = {s['id'] for s in after['sources']}
+        self.assertTrue(any(s.startswith('lidar-trace-') for s in after_sources), after_sources)
+        self.assertFalse(any(s.startswith('naip-trace-') for s in after_sources), after_sources)
+        # And a second run is a cached fixed point.
+        states = self.h.states('synthetic-a')
+        self.assertEqual(states['layout.surfaces.trace[synthetic-a]'][0], 'cached')
+        self.assertEqual(states['layout.package.compose[synthetic-a]'][0], 'cached')
+
+    def test_surfaces_trace_restamps_cleanly_across_a_card_only_scorecard_edit(self):
+        """A yards-only scorecard edit changes the served package's
+        contentHash (yards live in the package) but not the physical corridor
+        geometry `layout.surfaces.trace` traced from. The real adapter reuses
+        its payload-reuse receipt here exactly like `layout.canopy.derive`
+        (`factory/payload_reuse.py`'s stage/receipt mechanism is stage-name
+        generic and already covered by `test_factory_payload_reuse.py`); this
+        checks the observable contract every caller of the task relies on:
+        the task re-runs to restamp `packageHash`, and the traced fairways
+        themselves are not silently dropped or duplicated."""
+        self.h.world.auto_trace = True
+        self.h.run('run', '--layout', 'synthetic-a')
+        mark = len(self.h.pipeline.calls)
+        card_path = os.path.join(self.h.catalog, 'scorecards', 'synthetic-a-blue.json')
+        card = read_json(card_path)
+        card['holes'][2]['yards'] = 455
+        with open(card_path, 'w', encoding='utf-8') as f:
+            json.dump(card, f)
+        code, text = self.h.run('run', '--layout', 'synthetic-a')
+        self.assertEqual(code, 0, text)
+        self.assertIn('failed 0', text)
+        second = self.h.pipeline.calls[mark:]
+        self.assertIn('layout.surfaces.trace[synthetic-a]', second, 'the task still runs to restamp packageHash')
+        after = read_json(os.path.join(self.h.output, 'layouts', 'synthetic-a', 'surfaces-trace.json'))
+        candidates = read_json(os.path.join(self.h.output, 'layouts', 'synthetic-a', 'candidates', 'normalized.json'))
+        self.assertEqual(after['packageHash'], candidates['contentHash'], 'stamped against its own analysis input, the candidates package')
+        self.assertEqual(len([f for f in after['features'] if f['kind'] == 'fairway']), 18, 'reused, not silently emptied')
+
     def test_manual_invalidation_rebuilds_one_hole(self):
         self.h.run('run', '--layout', 'synthetic-a')
         code, text = self.h.run('invalidate', '--layout', 'synthetic-a', '--task', 'hole.terrain.compile', '--hole', '11', '--reason', 'reviewer asked')

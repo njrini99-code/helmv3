@@ -1,8 +1,12 @@
 """Synthetic-data tests for `derive-surface-traces.py`: the missing-fairway
 detector, the per-pixel turf/smoothness scoring, and the full segmentation
 against a hand-built corridor where the right answer is known."""
+import hashlib
 import importlib.util
+import json
 import os
+import shutil
+import tempfile
 import unittest
 
 import numpy as np
@@ -97,6 +101,49 @@ def make_fairway_rough_rasters(ndvi_value=0.30, seed=1):
     naip = cr.Raster(array, geotransform, EPSG, [None] * 4)
     dem = cr.Raster(np.zeros((1, height, width)), geotransform, EPSG, [None])
     return naip, dem, fairway_band
+
+
+def make_row_striped_rasters(ndvi_value, amplitude):
+    """NDVI alternating +/-`amplitude` every row: a deterministic stand-in
+    for mowing-stripe/crown-edge texture. `local_std` over a 5-row window
+    reads back ~`amplitude` at every pixel (unlike i.i.d. per-pixel noise,
+    which speckles rather than blocks and gets erased by the corridor's
+    morphological opening regardless of what the lidar boost does)."""
+    geotransform, width, height = synthetic_grid()
+    rows = np.arange(height).reshape(-1, 1).repeat(width, axis=1)
+    ndvi = ndvi_value + amplitude * np.where(rows % 2 == 0, 1.0, -1.0)
+    red = np.full((height, width), 900.0)
+    denom = np.clip(1 - ndvi, 1e-3, None)
+    nir = red * (1 + ndvi) / denom
+    green = np.full((height, width), 800.0)
+    blue = np.full((height, width), 700.0)
+    array = np.stack([red, green, blue, nir], axis=0)
+    naip = cr.Raster(array, geotransform, EPSG, [None] * 4)
+    dem = cr.Raster(np.zeros((1, height, width)), geotransform, EPSG, [None])
+    return naip, dem
+
+
+def make_chm(value, shape=(100, 150)):
+    """A single-band lidar CHM raster of one uniform height value (meters),
+    on the same synthetic grid as `make_rasters`."""
+    geotransform = synthetic_grid()[0]
+    array = np.full((1,) + shape, value, dtype=np.float64)
+    return cr.Raster(array, geotransform, EPSG, [dst.CHM_NODATA])
+
+
+def write_geotiff(path, array, geotransform, epsg, nodata=None):
+    from osgeo import gdal, osr
+    height, width = array.shape
+    ds = gdal.GetDriverByName('GTiff').Create(str(path), width, height, 1, gdal.GDT_Float32)
+    ds.SetGeoTransform(geotransform)
+    srs = osr.SpatialReference()
+    srs.ImportFromEPSG(epsg)
+    ds.SetProjection(srs.ExportToWkt())
+    band = ds.GetRasterBand(1)
+    if nodata is not None:
+        band.SetNoDataValue(nodata)
+    band.WriteArray(array.astype('float32'))
+    ds = None
 
 
 OPTIONS = dict(dst.DEFAULTS)
@@ -213,6 +260,166 @@ class SegmentationTests(unittest.TestCase):
         self.assertEqual(decisions[2], 'skipped_fairway_already_present')
         self.assertEqual(decisions[99], 'skipped_unknown_hole')
         self.assertEqual(len(features_out), 1)
+
+
+class LidarSignalTests(unittest.TestCase):
+    """`--lidar-chm`: a CHM below `chm_turf_max_m` (inside the plausible NDVI
+    band) strengthens the turf candidate; a CHM at/above `chm_tree_min_m`
+    excludes outright; too little coverage of the hole's corridor is ignored
+    and the trace falls back to NAIP alone, by name."""
+
+    def test_high_chm_excludes_trees_regardless_of_ndvi_texture(self):
+        hole, features = hole_with_route()
+        package = make_package({'holes': [hole], 'features': features})
+        naip, dem = make_rasters(ndvi_value=0.30, texture_noise_std=0.005)
+        options = dict(OPTIONS, corridor_m=18.0, expected_width_m=32.0)
+        baseline, _ = dst.build_trace(package, hole, naip, dem, EPSG, options)
+        self.assertIsNotNone(baseline, 'sanity: this corridor traces fine without lidar')
+        chm = make_chm(5.0)  # trees over the whole export
+        traced, evidence = dst.build_trace(package, hole, naip, dem, EPSG, options, chm=chm)
+        self.assertIsNone(traced)
+        self.assertTrue(evidence['lidar']['used'], evidence['lidar'])
+        self.assertGreater(evidence['lidar']['treePixels'], 0)
+        self.assertEqual(evidence['reason'], 'no_connected_candidate_touching_route')
+
+    def test_low_chm_confirms_turf_and_rescues_a_texture_degraded_corridor(self):
+        hole, features = hole_with_route()
+        package = make_package({'holes': [hole], 'features': features})
+        # Row-alternating NDVI (+/- 0.15 around a mid-band 0.5) with a tight
+        # texture_max override (0.1): local texture reads ~0.12-0.15, past
+        # that override everywhere, zeroing the NAIP-only turf score -- no
+        # candidate at all without lidar. Lidar only ever substitutes for the
+        # texture term (see _lidar_evidence), never the NDVI band term, so
+        # the rescued trace's confidence still comes from real NDVI-band
+        # evidence (~0.5, mid-band) and DEM smoothness, not a flat constant.
+        naip, dem = make_row_striped_rasters(ndvi_value=0.5, amplitude=0.15)
+        options = dict(OPTIONS, corridor_m=18.0, expected_width_m=32.0, texture_max=0.1)
+        baseline, baseline_evidence = dst.build_trace(package, hole, naip, dem, EPSG, options)
+        self.assertIsNone(baseline, baseline_evidence)
+        chm = make_chm(0.3)  # open turf height, covering the whole export
+        traced, evidence = dst.build_trace(package, hole, naip, dem, EPSG, options, chm=chm)
+        self.assertIsNotNone(traced, evidence)
+        self.assertTrue(evidence['lidar']['used'], evidence['lidar'])
+        self.assertEqual(traced['evidenceSource'], 'lidar_chm+naip')
+        self.assertGreaterEqual(traced['confidence'], options['confidence_min'])
+
+        # Same texture degradation and the same lidar coverage, but NDVI
+        # sitting near the band edge instead of mid-band (a road or bare
+        # dirt reads this way too): the rescue must NOT fire the same way --
+        # confidence tracks the real NDVI band position, not the lidar
+        # boost, so this stays without a usable candidate.
+        naip_edge, dem_edge = make_row_striped_rasters(ndvi_value=0.2, amplitude=0.15)
+        edge_traced, edge_evidence = dst.build_trace(package, hole, naip_edge, dem_edge, EPSG, options, chm=chm)
+        self.assertIsNone(edge_traced, edge_evidence)
+        self.assertTrue(edge_evidence['lidar']['used'], edge_evidence['lidar'])
+
+    def test_partial_lidar_coverage_is_ignored_and_falls_back_to_naip_alone(self):
+        hole, features = hole_with_route()
+        package = make_package({'holes': [hole], 'features': features})
+        naip, dem = make_rasters(ndvi_value=0.30, texture_noise_std=0.005)
+        options = dict(OPTIONS, corridor_m=18.0, expected_width_m=32.0)
+        baseline, _ = dst.build_trace(package, hole, naip, dem, EPSG, options)
+        chm = make_chm(dst.CHM_NODATA)  # no returns anywhere
+        traced, evidence = dst.build_trace(package, hole, naip, dem, EPSG, options, chm=chm)
+        self.assertFalse(evidence['lidar']['used'])
+        self.assertIn('LIDAR_COVERAGE_PARTIAL', evidence['lidar']['reason'])
+        self.assertEqual(traced['confidence'], baseline['confidence'])
+        self.assertEqual(traced['evidenceSource'], 'naip')
+
+    def test_off_band_ndvi_is_never_force_admitted_by_a_low_chm_alone(self):
+        """A road or bare ground reads as low CHM too; the confirmation is
+        gated on the NDVI turf band, so it never admits either on height
+        alone -- neither past the high edge (over-saturated vegetation
+        reading) nor a real road/bare-dirt NDVI near/under the low edge."""
+        hole, features = hole_with_route()
+        package = make_package({'holes': [hole], 'features': features})
+        chm = make_chm(0.3)
+
+        naip, dem = make_rasters(ndvi_value=0.98, texture_noise_std=0.005)  # far outside [ndvi_min, ndvi_max]
+        options = dict(OPTIONS, corridor_m=18.0, expected_width_m=32.0)
+        traced, evidence = dst.build_trace(package, hole, naip, dem, EPSG, options, chm=chm)
+        self.assertIsNone(traced, evidence)
+        self.assertEqual(evidence['lidar']['turfConfirmedPixels'], 0)
+
+        road_naip, road_dem = make_rasters(ndvi_value=0.03, texture_noise_std=0.005)  # pavement/bare-dirt-range NDVI
+        road_traced, road_evidence = dst.build_trace(package, hole, road_naip, road_dem, EPSG, options, chm=chm)
+        self.assertIsNone(road_traced, road_evidence)
+        self.assertEqual(road_evidence['lidar']['turfConfirmedPixels'], 0)
+
+    def test_a_chm_grid_that_does_not_match_the_imagery_is_ignored_not_crashed(self):
+        hole, features = hole_with_route()
+        package = make_package({'holes': [hole], 'features': features})
+        naip, dem = make_rasters(ndvi_value=0.30, texture_noise_std=0.005)
+        options = dict(OPTIONS, corridor_m=18.0, expected_width_m=32.0)
+        mismatched = cr.Raster(np.zeros((1, 5, 5)), synthetic_grid()[0], EPSG, [dst.CHM_NODATA])
+        traced, evidence = dst.build_trace(package, hole, naip, dem, EPSG, options, chm=mismatched)
+        self.assertIsNotNone(traced)
+        self.assertFalse(evidence['lidar']['used'])
+        self.assertIn('does not match', evidence['lidar']['reason'])
+        self.assertEqual(traced['evidenceSource'], 'naip')
+
+
+class LoadLidarChmTests(unittest.TestCase):
+    """`load_lidar_chm`: reads and validates a fetch-lidar-chm.py output
+    directory the way derive-canopy-naip.py's `load_lidar` does -- an
+    export/hash mismatch is an error, never silently NAIP."""
+
+    def setUp(self):
+        self.tmp = tempfile.mkdtemp(prefix='surface-trace-lidar-')
+        self.addCleanup(shutil.rmtree, self.tmp, ignore_errors=True)
+        self.geotransform, self.width, self.height = synthetic_grid()
+        self.naip = cr.Raster(np.zeros((4, self.height, self.width)), self.geotransform, EPSG, [None] * 4)
+        self.terrain_source = os.path.join(self.tmp, 'terrain')
+        os.makedirs(self.terrain_source)
+        self.export_path = os.path.join(self.terrain_source, 'export.json')
+        with open(self.export_path, 'w', encoding='utf-8') as f:
+            f.write('{"extent": {}, "width": 1, "height": 1}')
+
+    def _chm_dir(self, status='covered', bad_hash=False, mismatched_export=False):
+        directory = os.path.join(self.tmp, 'lidar')
+        os.makedirs(directory, exist_ok=True)
+        with open(self.export_path, 'rb') as f:
+            export_sha = hashlib.sha256(f.read()).hexdigest()
+        manifest = {'status': status, 'terrainExportSha256': 'x' * 64 if mismatched_export else export_sha}
+        if status == 'covered':
+            chm_path = os.path.join(directory, 'chm.tif')
+            write_geotiff(chm_path, np.full((self.height, self.width), 0.5), self.geotransform, EPSG, nodata=dst.CHM_NODATA)
+            with open(chm_path, 'rb') as f:
+                actual_sha = hashlib.sha256(f.read()).hexdigest()
+            manifest['chmSha256'] = ('bad' * 20) if bad_hash else actual_sha
+            manifest['project'] = {'name': 'TEST_2020', 'acquisitionYearInferred': 2020}
+        with open(os.path.join(directory, 'manifest.json'), 'w', encoding='utf-8') as f:
+            json.dump(manifest, f)
+        return directory
+
+    def test_no_directory_means_naip_alone(self):
+        chm, meta = dst.load_lidar_chm(None, self.terrain_source, self.naip, EPSG)
+        self.assertIsNone(chm)
+        self.assertEqual(meta['kind'], 'naip')
+
+    def test_no_coverage_status_means_naip_alone(self):
+        directory = self._chm_dir(status='no_coverage')
+        chm, meta = dst.load_lidar_chm(directory, self.terrain_source, self.naip, EPSG)
+        self.assertIsNone(chm)
+        self.assertEqual(meta['kind'], 'naip')
+        self.assertIn('LIDAR_NO_COVERAGE', meta['reason'])
+
+    def test_export_mismatch_raises(self):
+        directory = self._chm_dir(mismatched_export=True)
+        with self.assertRaises(ValueError):
+            dst.load_lidar_chm(directory, self.terrain_source, self.naip, EPSG)
+
+    def test_chm_hash_mismatch_raises(self):
+        directory = self._chm_dir(bad_hash=True)
+        with self.assertRaises(ValueError):
+            dst.load_lidar_chm(directory, self.terrain_source, self.naip, EPSG)
+
+    def test_covered_returns_a_warped_raster_on_the_naip_grid(self):
+        directory = self._chm_dir(status='covered')
+        chm, meta = dst.load_lidar_chm(directory, self.terrain_source, self.naip, EPSG)
+        self.assertEqual(meta['kind'], 'lidar_chm+naip')
+        self.assertEqual(chm.shape, self.naip.shape)
+        self.assertAlmostEqual(float(chm.array[0].mean()), 0.5, places=1)
 
 
 if __name__ == '__main__':
