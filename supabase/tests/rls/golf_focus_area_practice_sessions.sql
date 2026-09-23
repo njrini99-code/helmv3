@@ -36,7 +36,7 @@
 BEGIN;
 \ir _helpers.sql
 
-SELECT plan(40);
+SELECT plan(45);
 
 -- Returns the number of rows a statement affects, or 0 when the role lacks
 -- the table privilege outright (RLS denial and missing grant both mean
@@ -70,6 +70,8 @@ DECLARE
   v_focus_area     uuid := '00000000-0000-0000-0000-0000000000eb';
   v_session_seed   uuid := '00000000-0000-0000-0000-0000000000ec';
   v_criterion_seed uuid := '00000000-0000-0000-0000-0000000000ee';
+  v_fa_proposed    uuid := '00000000-0000-0000-0000-0000000000f8';
+  v_fa_declined    uuid := '00000000-0000-0000-0000-0000000000f9';
 BEGIN
   INSERT INTO auth.users (id, email, role) VALUES
     (v_coach_user,    'fasafe-coach@helm.test',    'authenticated'),
@@ -109,6 +111,15 @@ BEGIN
   INSERT INTO public.golf_player_focus_areas
     (id, player_id, team_id, coach_id, area_type, title, status) VALUES
     (v_focus_area, v_player_a, v_team_id, v_coach_id, 'skill', 'FASAFE putting', 'active')
+  ON CONFLICT DO NOTHING;
+
+  -- Two more of player A's focus areas, NOT in an actionable lifecycle
+  -- state, for the "session against a non-actionable focus area is denied"
+  -- assertions below (S4).
+  INSERT INTO public.golf_player_focus_areas
+    (id, player_id, team_id, coach_id, area_type, title, status) VALUES
+    (v_fa_proposed, v_player_a, v_team_id, v_coach_id, 'skill', 'FASAFE proposed', 'proposed'),
+    (v_fa_declined, v_player_a, v_team_id, v_coach_id, 'skill', 'FASAFE declined', 'declined')
   ON CONFLICT DO NOTHING;
 
   -- One session seeded as the table owner (RLS bypassed), so the SELECT
@@ -409,6 +420,68 @@ SELECT is(
 RESET role;
 RESET request.jwt.claims;
 
+SET LOCAL role TO authenticated;
+SET LOCAL request.jwt.claims TO
+  '{"sub": "00000000-0000-0000-0000-0000000000e1", "role": "authenticated"}';
+
+SELECT is(
+  public.pgtap_affected_rows($q$
+    INSERT INTO public.golf_focus_area_practice_sessions
+      (focus_area_id, player_id, logged_by_user_id, logged_by_role,
+       practiced_at, client_request_id)
+    VALUES
+      ('00000000-0000-0000-0000-0000000000eb'::uuid,
+       '00000000-0000-0000-0000-0000000000e9'::uuid,
+       '00000000-0000-0000-0000-0000000000e1'::uuid,
+       'player', now(), '00000000-0000-0000-0000-0000000000fa'::uuid)
+  $q$),
+  0,
+  'an on-team coach claiming logged_by_role = player is denied'
+);
+
+RESET role;
+RESET request.jwt.claims;
+
+-- S4: a session can't be logged against a focus area that isn't in an
+-- actionable lifecycle state, for either role, even by an otherwise-valid
+-- on-team coach against their own player.
+SET LOCAL role TO authenticated;
+SET LOCAL request.jwt.claims TO
+  '{"sub": "00000000-0000-0000-0000-0000000000e1", "role": "authenticated"}';
+
+SELECT is(
+  public.pgtap_affected_rows($q$
+    INSERT INTO public.golf_focus_area_practice_sessions
+      (focus_area_id, player_id, logged_by_user_id, logged_by_role,
+       practiced_at, client_request_id)
+    VALUES
+      ('00000000-0000-0000-0000-0000000000f8'::uuid,
+       '00000000-0000-0000-0000-0000000000e9'::uuid,
+       '00000000-0000-0000-0000-0000000000e1'::uuid,
+       'coach', now(), '00000000-0000-0000-0000-0000000000fb'::uuid)
+  $q$),
+  0,
+  'a session cannot be logged against a proposed (not yet accepted) focus area'
+);
+
+SELECT is(
+  public.pgtap_affected_rows($q$
+    INSERT INTO public.golf_focus_area_practice_sessions
+      (focus_area_id, player_id, logged_by_user_id, logged_by_role,
+       practiced_at, client_request_id)
+    VALUES
+      ('00000000-0000-0000-0000-0000000000f9'::uuid,
+       '00000000-0000-0000-0000-0000000000e9'::uuid,
+       '00000000-0000-0000-0000-0000000000e1'::uuid,
+       'coach', now(), '00000000-0000-0000-0000-0000000000fc'::uuid)
+  $q$),
+  0,
+  'a session cannot be logged against a declined focus area'
+);
+
+RESET role;
+RESET request.jwt.claims;
+
 -- ---------------------------------------------------------------------------
 -- 5. Criteria: RLS enabled; anon locked out; authenticated has no DELETE;
 --    UPDATE is column-restricted to (met, met_at, updated_at); the label
@@ -653,6 +726,30 @@ SELECT is(
   $q$),
   1,
   'the on-team coach can UPDATE met on a criterion'
+);
+
+-- S4: focus_area_id and created_by_user_id are outside the column-restricted
+-- UPDATE grant (met, met_at, updated_at only) -- an UPDATE statement whose
+-- SET list includes either is rejected at the GRANT/privilege layer, before
+-- the WITH CHECK even runs, same as label above.
+SELECT is(
+  public.pgtap_affected_rows($q$
+    UPDATE public.golf_focus_area_criteria
+    SET focus_area_id = '00000000-0000-0000-0000-0000000000f8'::uuid
+    WHERE id = '00000000-0000-0000-0000-0000000000ee'::uuid
+  $q$),
+  0,
+  'the on-team coach cannot UPDATE focus_area_id (column-grant enforced)'
+);
+
+SELECT is(
+  public.pgtap_affected_rows($q$
+    UPDATE public.golf_focus_area_criteria
+    SET created_by_user_id = '00000000-0000-0000-0000-0000000000e3'::uuid
+    WHERE id = '00000000-0000-0000-0000-0000000000ee'::uuid
+  $q$),
+  0,
+  'the on-team coach cannot UPDATE created_by_user_id (column-grant enforced)'
 );
 
 RESET role;
