@@ -29,16 +29,16 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | --- | --- | --- | --- | --- |
 | `POLICY` | 21 | 2 | 7 | 0 |
 | `AGENT_SKILL` | 87 | 0 | 4 | 0 |
-| `CURRENT_FEATURE` | 27 | 27 | 12 | 2 |
+| `CURRENT_FEATURE` | 27 | 27 | 12 | 0 |
 | `REFERENCE` | 52 | 15 | 19 | 0 |
 | `GENERATED_TRUTH` | 24 | 3 | 7 | 4 |
-| `PROCESS_CONTRACT` | 8 | 4 | 7 | 1 |
+| `PROCESS_CONTRACT` | 8 | 4 | 7 | 0 |
 | `RUNBOOK` | 5 | 2 | 1 | 0 |
 | `DESIGN_SPEC` | 7 | 0 | 6 | 0 |
 | `PLAN` | 37 | 5 | 18 | 74 |
 | `AUDIT_SNAPSHOT` | 56 | 6 | 30 | 24 |
 | `STATE_SNAPSHOT` | 6 | 2 | 5 | 0 |
-| `HISTORY_LEDGER` | 40 | 0 | 7 | 15 |
+| `HISTORY_LEDGER` | 40 | 0 | 7 | 13 |
 | `INCIDENT` | 30 | 15 | 2 | 0 |
 | `ADR` | 5 | 0 | 3 | 0 |
 | `INDEX` | 19 | 1 | 7 | 5 |
@@ -177,14 +177,14 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `memory/features/auth-onboarding-join.md` | current | yes | - | - | 3 | 15 | - |
 | `memory/features/calendar-events.md` | current | yes | - | yes | 6 | 29 | - |
 | `memory/features/coach-intelligence-triage.md` | current | yes | - | yes | 2 | 24 | - |
-| `memory/features/coachhelm-ai.md` | current | yes | - | yes | 9 | 56 | 2 |
+| `memory/features/coachhelm-ai.md` | current | yes | - | yes | 9 | 57 | - |
 | `memory/features/crm_outreach.md` | current | yes | - | - | 2 | 24 | - |
 | `memory/features/email_outbound.md` | current | yes | - | - | 2 | 18 | - |
 | `memory/features/golf-round-lifecycle.md` | current | yes | - | yes | 4 | 37 | - |
 | `memory/features/ios-native-shell.md` | current | yes | - | - | 1 | 14 | - |
 | `memory/features/observability-sentry.md` | current | yes | - | - | 6 | 32 | - |
 | `memory/features/observability-supabase.md` | current | yes | - | yes | 5 | 45 | - |
-| `memory/features/player-coachhelm-development.md` | current | yes | - | - | 1 | 37 | - |
+| `memory/features/player-coachhelm-development.md` | current | yes | - | - | 1 | 38 | - |
 | `memory/features/player-hub.md` | current | yes | - | yes | 1 | 13 | - |
 | `memory/features/qualifiers.md` | current | yes | - | yes | 3 | 14 | - |
 | `memory/features/recruiting.md` | current | yes | - | - | 3 | 15 | - |
@@ -289,7 +289,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/ai-system/selfheal/README.md` | current | yes | - | yes | 6 | 8 | - |
 | `docs/ai-system/selfheal/repair-contract.md` | current | yes | - | yes | 6 | 10 | - |
 | `docs/ai-system/selfheal/triage-contract.md` | current | yes | - | yes | 2 | 8 | - |
-| `docs/architecture/coachhelm-evidence-contract.md` | current | yes | - | yes | 5 | 32 | 1 |
+| `docs/architecture/coachhelm-evidence-contract.md` | current | yes | - | yes | 5 | 32 | - |
 | `docs/superpowers/plans/2026-04-22-insight-delivery/00-design-contract.md` | superseded | - | - | yes | 0 | 4 | - |
 | `docs/superpowers/plans/2026-04-22-insight-quality/00-design-contract.md` | superseded | - | - | yes | 0 | 3 | - |
 | `memory/system/golfhelm-engineering-os.md` | current | - | - | yes | 16 | 18 | - |
@@ -445,7 +445,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `memory/ledgers/changes/auth_onboarding_join.md` | current | - | - | - | 1 | 0 | - |
 | `memory/ledgers/changes/calendar_events.md` | current | - | - | - | 1 | 3 | - |
 | `memory/ledgers/changes/coach_intelligence_triage.md` | current | - | - | - | 1 | 0 | - |
-| `memory/ledgers/changes/coachhelm_ai.md` | current | - | - | - | 2 | 12 | 1 |
+| `memory/ledgers/changes/coachhelm_ai.md` | current | - | - | - | 2 | 12 | - |
 | `memory/ledgers/changes/crm_outreach.md` | current | - | - | - | 1 | 0 | - |
 | `memory/ledgers/changes/feature_awareness_system.md` | current | - | - | yes | 1 | 19 | - |
 | `memory/ledgers/changes/golf_round_lifecycle.md` | current | - | - | - | 2 | 6 | - |
@@ -468,7 +468,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `memory/ledgers/tests/admin_reliability_collector.md` | current | - | - | - | 1 | 5 | - |
 | `memory/ledgers/tests/admin_slo.md` | current | - | - | - | 1 | 5 | - |
 | `memory/ledgers/tests/calendar_events.md` | current | - | - | - | 1 | 2 | - |
-| `memory/ledgers/tests/coachhelm_ai.md` | current | - | - | - | 1 | 4 | 1 |
+| `memory/ledgers/tests/coachhelm_ai.md` | current | - | - | - | 1 | 4 | - |
 | `memory/ledgers/tests/golf_round_lifecycle.md` | current | - | - | - | 2 | 5 | - |
 | `memory/ledgers/tests/observability_sentry.md` | current | - | - | - | 1 | 26 | 2 |
 | `memory/ledgers/tests/qualifiers.md` | current | - | - | - | 1 | 6 | - |
