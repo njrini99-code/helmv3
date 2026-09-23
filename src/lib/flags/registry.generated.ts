@@ -13,13 +13,13 @@ import type { FlagDefinition } from './types';
 
 export const FLAG_REGISTRY: readonly FlagDefinition[] = [
   {
-    feature_id: "coachhelm_focus_area_evidence_revision",
+    feature_id: "coachhelm_comparable_opportunity_attribution",
     owner: "golf/coachhelm",
-    purpose: "Gates stamping computeEvidenceRevision()'s fingerprint onto golf_player_focus_areas.evidence_revision when a focus area is approved from a source insight (A8 slice 1). Requires migration 20260923090000_golf_focus_area_evidence_revision applied in prod — until then the column does not exist there, and turning this on would make every insight-sourced focus-area create fail outright (the insert would include a key the live table doesn't have). Off by default in every environment for exactly that reason; this is a migration-sequencing gate, not a rollout decision the flag itself makes on the feature's merits.",
-    type: "temporary_migration",
+    purpose: "Gates whether the causality-attribute cron attempts a shot-level, matched-opportunity outcome measurement (distance band, lie, and shot classification held constant on both sides of the insight's actual recorded exposure) for the three approach-proximity metrics that have no round-level equivalent, writing `method_version: 'comparable_opportunities_v1'` rows with `lift` always null; default off pending real-world evidence on the insufficient-evidence / no-exposure-record rate before any shadow data exists.",
+    type: "experiment",
     status: "active",
     created_at: "2026-09-23",
-    expires_at: "2026-10-23",
+    expires_at: null,
     default: false,
     environment: {
       production: false,
@@ -27,7 +27,7 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
       development: false,
     },
     kill_switch_behavior: null,
-    cleanup_plan: "Flip on (development, then preview, then production) only after the owner applies migration 20260923090000_golf_focus_area_evidence_revision to each environment and `information_schema.columns` confirms evidence_revision exists there. expires_at is a review reminder, not an automatic kill — if the migration still hasn't landed by then, re-date it rather than silently expiring. Once on everywhere and stable, remove this flag and the branch in createFocusAreaFromInsight / createFocusAreaFromInsightV2 that reads it (stamp unconditionally). DB-review follow-up (#2004): once db:types is regenerated against the applied migration, also restore the two now-untyped golf_player_focus_areas inserts (development.ts's createFocusAreaFromInsightV2Impl and createFocusAreaFromInsightImpl) to plain typed `.from('golf_player_focus_areas')` calls — they were routed through fromUntyped only because evidence_revision didn't exist in generated types yet, and that escape hatch should not outlive the reason it was needed.",
+    cleanup_plan: "A9 slice 2 extends metric coverage and adds an observability rollup; slice 3 is the explicit, separate decision on whether this signal should ever feed `nextWeight` (requires either a dedicated non-`lift` column or a reviewed ADR relaxing the pure core's \"never named lift\" rule). This flag is promoted or removed based on that decision plus shadow-log evidence on the insufficient-evidence rate, not on a fixed date.",
   },
   {
     feature_id: "coachhelm_learned_personalization",

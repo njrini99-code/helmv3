@@ -46,15 +46,45 @@ vi.mock('@/lib/coachhelm/v3/causality/attribute', () => ({
   })),
 }));
 
+// A9 slice 1: mocked wholesale, same as `causality/attribute.ts` above — these
+// tests prove the CRON'S wiring (flag on/off, pre-filter, summary counters,
+// never touching updateCoachWeight/recordInsightOutcome for these rows), not
+// `comparable-attribute.ts`'s own DB logic (see `comparable-attribute.test.ts`
+// for that).
+vi.mock('@/lib/coachhelm/v3/causality/comparable-attribute', () => ({
+  computeComparableAttribution: vi.fn(),
+  writeComparableAttribution: vi.fn(),
+  isShotLevelAttributionMetric: vi.fn(
+    (metricId: string) =>
+      metricId === 'approach_proximity_50_125ft' ||
+      metricId === 'approach_proximity_125_175ft' ||
+      metricId === 'approach_proximity_175_plus_ft',
+  ),
+}));
+
+// Defaults to the real production default (off) — a test only needs to
+// mock a `true` return when it's specifically exercising the A9 slice 1 path.
+vi.mock('@/lib/flags', () => ({
+  isFlagEnabled: vi.fn().mockReturnValue(false),
+}));
+
 import { POST } from '@/app/api/cron/v3/causality-attribute/route';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { computeAttribution } from '@/lib/coachhelm/v3/causality/attribute';
+import {
+  computeComparableAttribution,
+  writeComparableAttribution,
+} from '@/lib/coachhelm/v3/causality/comparable-attribute';
 import { logServerError, logServerEvent } from '@/lib/server-error-logger';
+import { isFlagEnabled } from '@/lib/flags';
 
 const createAdminMock = vi.mocked(createAdminClient);
 const computeAttributionMock = vi.mocked(computeAttribution);
+const computeComparableAttributionMock = vi.mocked(computeComparableAttribution);
+const writeComparableAttributionMock = vi.mocked(writeComparableAttribution);
 const logServerErrorMock = vi.mocked(logServerError);
 const logServerEventMock = vi.mocked(logServerEvent);
+const isFlagEnabledMock = vi.mocked(isFlagEnabled);
 
 interface FixtureInsight {
   id: string;
@@ -638,5 +668,185 @@ describe('causality-attribute cron N10: unknown-column retry (method_version not
     expect(attributionInserts).toHaveLength(1); // no retry attempted
     expect(logServerErrorMock).toHaveBeenCalledTimes(1);
     expect(logServerEventMock).not.toHaveBeenCalled();
+  });
+});
+
+describe('causality-attribute cron A9 slice 1: comparable-opportunity attribution', () => {
+  beforeEach(() => {
+    vi.stubEnv('CRON_SECRET', 'test-secret');
+    computeAttributionMock.mockClear();
+    computeAttributionMock.mockResolvedValue({ ok: false, reason: 'no-data' });
+    computeComparableAttributionMock.mockReset();
+    writeComparableAttributionMock.mockReset();
+    isFlagEnabledMock.mockReset().mockReturnValue(false);
+    logServerErrorMock.mockClear();
+    logServerEventMock.mockClear();
+  });
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    // Never leak a `true` flag state into a later describe block — this is
+    // the one mock in the file whose default lives in the module factory,
+    // not reset by every other block's own `beforeEach`.
+    isFlagEnabledMock.mockReturnValue(false);
+  });
+
+  const SHOT_LEVEL_METRIC = 'approach_proximity_125_175ft';
+
+  it('flag OFF: a shot-level metric is still dropped in the pre-filter exactly as before this slice', async () => {
+    const rows = [fixture({ id: 'insight-1', evidence: { metric: SHOT_LEVEL_METRIC } })];
+    const { client } = makeClient(rows);
+    createAdminMock.mockReturnValue(client);
+
+    const res = await POST(authedRequest());
+    const summary = await res.json();
+
+    expect(summary.intentional_no_lift).toBe(1);
+    expect(summary.comparable_attributed).toBe(0);
+    expect(computeComparableAttributionMock).not.toHaveBeenCalled();
+    expect(computeAttributionMock).not.toHaveBeenCalled();
+  });
+
+  it('flag ON: a shot-level metric is NOT dropped in the pre-filter, and reaches computeComparableAttribution instead of computeAttribution', async () => {
+    isFlagEnabledMock.mockReturnValue(true);
+    computeComparableAttributionMock.mockResolvedValue({ ok: false, reason: 'no-exposure-record' });
+    const rows = [fixture({ id: 'insight-1', evidence: { metric: SHOT_LEVEL_METRIC } })];
+    const { client } = makeClient(rows);
+    createAdminMock.mockReturnValue(client);
+
+    const res = await POST(authedRequest());
+    const summary = await res.json();
+
+    expect(summary.considered).toBe(1);
+    expect(summary.intentional_no_lift).toBe(0);
+    expect(computeComparableAttributionMock).toHaveBeenCalledWith(
+      client,
+      expect.objectContaining({ insight_id: 'insight-1', target_metric_id: SHOT_LEVEL_METRIC }),
+    );
+    expect(computeAttributionMock).not.toHaveBeenCalled();
+  });
+
+  it('flag ON: no-exposure-record is counted separately from intentional_no_lift and never written', async () => {
+    isFlagEnabledMock.mockReturnValue(true);
+    computeComparableAttributionMock.mockResolvedValue({ ok: false, reason: 'no-exposure-record' });
+    const rows = [fixture({ id: 'insight-1', evidence: { metric: SHOT_LEVEL_METRIC } })];
+    const { client } = makeClient(rows);
+    createAdminMock.mockReturnValue(client);
+
+    const res = await POST(authedRequest());
+    const summary = await res.json();
+
+    expect(summary.comparable_no_exposure_record).toBe(1);
+    expect(summary.comparable_attributed).toBe(0);
+    expect(summary.intentional_no_lift).toBe(0);
+    expect(writeComparableAttributionMock).not.toHaveBeenCalled();
+  });
+
+  it('flag ON: insufficient-evidence is counted separately and never written', async () => {
+    isFlagEnabledMock.mockReturnValue(true);
+    computeComparableAttributionMock.mockResolvedValue({ ok: false, reason: 'insufficient-evidence' });
+    const rows = [fixture({ id: 'insight-1', evidence: { metric: SHOT_LEVEL_METRIC } })];
+    const { client } = makeClient(rows);
+    createAdminMock.mockReturnValue(client);
+
+    const res = await POST(authedRequest());
+    const summary = await res.json();
+
+    expect(summary.comparable_insufficient_evidence).toBe(1);
+    expect(writeComparableAttributionMock).not.toHaveBeenCalled();
+  });
+
+  it('flag ON: a successful compute writes the row, counts comparable_attributed, and never touches the round-level weight path', async () => {
+    isFlagEnabledMock.mockReturnValue(true);
+    computeComparableAttributionMock.mockResolvedValue({
+      ok: true,
+      row: {
+        insight_id: 'insight-1',
+        intervention_at: '2026-08-01T00:00:00.000Z',
+        target_metric_id: SHOT_LEVEL_METRIC,
+        baseline_value: 22.4,
+        post_value: 18.1,
+        delta: -4.3,
+        n_rounds_before: 3,
+        n_rounds_after: 4,
+        method_version: 'comparable_opportunities_v1',
+      },
+    });
+    writeComparableAttributionMock.mockResolvedValue({ written: true, methodVersionColumnMissing: false });
+    const rows = [fixture({ id: 'insight-1', evidence: { metric: SHOT_LEVEL_METRIC } })];
+    const { client, weightCalls } = makeClient(rows);
+    createAdminMock.mockReturnValue(client);
+
+    const res = await POST(authedRequest());
+    const summary = await res.json();
+
+    expect(summary.comparable_attributed).toBe(1);
+    expect(writeComparableAttributionMock).toHaveBeenCalledTimes(1);
+    // Never feeds the learning loop (the file header's own contract):
+    // the round-level coach-weight upsert must never fire for this row.
+    expect(weightCalls.upserts).toHaveLength(0);
+  });
+
+  it('flag ON: a write that had to drop method_version sets the SAME summary flag the round-level degrade path uses', async () => {
+    isFlagEnabledMock.mockReturnValue(true);
+    computeComparableAttributionMock.mockResolvedValue({
+      ok: true,
+      row: {
+        insight_id: 'insight-1',
+        intervention_at: '2026-08-01T00:00:00.000Z',
+        target_metric_id: SHOT_LEVEL_METRIC,
+        baseline_value: 22.4,
+        post_value: 18.1,
+        delta: -4.3,
+        n_rounds_before: 3,
+        n_rounds_after: 4,
+        method_version: 'comparable_opportunities_v1',
+      },
+    });
+    writeComparableAttributionMock.mockResolvedValue({ written: true, methodVersionColumnMissing: true });
+    const rows = [fixture({ id: 'insight-1', evidence: { metric: SHOT_LEVEL_METRIC } })];
+    const { client } = makeClient(rows);
+    createAdminMock.mockReturnValue(client);
+
+    const res = await POST(authedRequest());
+    const summary = await res.json();
+
+    expect(summary.method_version_column_missing).toBe(true);
+    expect(summary.comparable_attributed).toBe(1);
+  });
+
+  it('flag ON: a write error is logged and counted in summary.errors, tagged with its own action', async () => {
+    isFlagEnabledMock.mockReturnValue(true);
+    computeComparableAttributionMock.mockResolvedValue({
+      ok: true,
+      row: {
+        insight_id: 'insight-1',
+        intervention_at: '2026-08-01T00:00:00.000Z',
+        target_metric_id: SHOT_LEVEL_METRIC,
+        baseline_value: 22.4,
+        post_value: 18.1,
+        delta: -4.3,
+        n_rounds_before: 3,
+        n_rounds_after: 4,
+        method_version: 'comparable_opportunities_v1',
+      },
+    });
+    writeComparableAttributionMock.mockResolvedValue({
+      written: false,
+      methodVersionColumnMissing: false,
+      error: 'permission denied for table golf_insight_outcome_attribution',
+    });
+    const rows = [fixture({ id: 'insight-1', evidence: { metric: SHOT_LEVEL_METRIC } })];
+    const { client } = makeClient(rows);
+    createAdminMock.mockReturnValue(client);
+
+    const res = await POST(authedRequest());
+    const summary = await res.json();
+
+    expect(summary.errors).toBe(1);
+    expect(summary.comparable_attributed).toBe(0);
+    const errorCall = logServerErrorMock.mock.calls.find(
+      (c) => (c[1] as { action?: string } | undefined)?.action === 'cron.v3.causality.comparable-insert',
+    );
+    expect(errorCall).toBeDefined();
   });
 });

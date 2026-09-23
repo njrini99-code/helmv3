@@ -626,6 +626,46 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
   fixtures, including the version-mismatch-rejection and
   exactly-at-the-instant boundary cases.
 
+- **A9 slice 1 wires the pure core above into the `causality-attribute` cron**
+  (2026-09-23, `agent/coachhelm-comparable-attribution`, addendum §14.12) —
+  `src/lib/coachhelm/v3/causality/comparable-attribute.ts`
+  (`computeComparableAttribution`/`writeComparableAttribution`,
+  `isShotLevelAttributionMetric`), gated behind
+  `coachhelm_comparable_opportunity_attribution` (default off everywhere).
+  Targets the three "needs-shot-level-join" `intentional-null` metrics
+  (`approach_proximity_{50_125,125_175,175_plus}ft`, `metric-sources.ts`) —
+  `attribute.ts`'s round-level average has no per-shot opportunity concept
+  for them, so they've sat permanently skipped since W22. Flag off: these
+  metrics are still dropped by the cron's pre-filter exactly as before this
+  slice; `computeComparableAttribution` is never called. Flag on: the
+  pre-filter lets them through, and the cron's main loop routes them to this
+  module instead of `computeAttribution`, bypassing `recordInsightOutcome`
+  and `updateCoachWeight` entirely for these rows.
+  **Never simulates an exposure (addendum rule)**: `interventionAt` is the
+  insight's FIRST real `golf_insight_exposure.shown_at` row — never a
+  `created_at` proxy the way `attribute.ts`'s round-level path uses one. Zero
+  exposure rows → `{ok: false, reason: 'no-exposure-record'}`, retried next
+  run, not treated as a permanent skip. Baseline/follow-up windows reuse
+  `attribute.ts`'s own `PRE_WINDOW_DAYS`/`POST_WINDOW_DAYS` (now exported)
+  around that instant, and `loadPlayerContext` (A1) loads the combined-window
+  shot/hole facts. **Never feeds the learning loop (this slice)**: every
+  written row carries `lift: null` unconditionally — there is no parameter
+  that could set it otherwise — so a `method_version:
+  'comparable_opportunities_v1'` row can never move a coach weight. Whether
+  it ever should is an explicit, separate decision (A9 slice 3, a decision
+  doc, not code). Reuses the cron's own `isUnknownColumnError`
+  degrade-on-missing-column pattern (duplicated, not imported) for the same
+  still-unapplied migration 20260922230000 `method_version` column;
+  `summary.comparable_attributed` /`comparable_no_exposure_record`/
+  `comparable_insufficient_evidence` are counted separately from the
+  round-level `attributed`/`intentional_no_lift`, and
+  `summary.method_version_column_missing` is the same flag the round-level
+  degrade path already sets. See `src/lib/coachhelm/v3/causality/
+  comparable-attribute.test.ts` (this module's own DB-orchestration logic)
+  and `src/test/api/cron/causality-attribute.test.ts`'s A9 slice 1 describe
+  block (the cron's wiring — flag on/off, pre-filter, summary counters,
+  never touching the weight/outcome-ledger tables).
+
 ## Tests To Prefer
 
 - Unit tests under `src/test/coachhelm/**`.
