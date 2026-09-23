@@ -326,10 +326,10 @@ introduced this table for the repro and report.
 
 | # | Fixture | Status | Evidence |
 |---|---|---|---|
-| 1 | Player with 1–2 rounds under a three-round policy | Covered | `analysis-outcome.test.ts:24`, `post-round-trigger.test.ts:149` |
-| 2 | Third eligible round arrives | Covered (new) | `post-round-trigger.test.ts` — "a parked round is not stuck…" |
-| 3 | No active membership | Partial | mapping: `analysis-outcome.test.ts:41`, `post-round-trigger.test.ts:202`; caller honoring `wake_on_membership` (no 30-min poll) unverified |
-| 4 | Team deliberately disabled | Partial | mapping: `analysis-outcome.test.ts:53,140`, `post-round-trigger.test.ts:227`; "across repair and backfill" unverified |
+| 1 | Player with 1–2 rounds under a three-round policy | Covered | `analysis-outcome.test.ts:24`, `post-round-trigger.test.ts:149`, `coachhelm-safety-net-reconcile.test.ts:132` (real cron caller: a parked round is excluded from the sweep, no engine call) |
+| 2 | Third eligible round arrives | Covered | `coachhelm-safety-net-reconcile.test.ts:149` (real cron caller: "round 3 wakes the player: the never-processed sweep runs it, and its success covers rounds 1–2"); also `post-round-trigger.test.ts` new test "a parked round is not stuck…" |
+| 3 | No active membership | Covered | `coachhelm-safety-net-reconcile.test.ts:207` (real cron caller: "no membership stays quiet until a roster row appears, then gets ONE run" — proves no repeated retry) |
+| 4 | Team deliberately disabled | Covered | `coachhelm-safety-net-reconcile.test.ts:248` ("team disable stays quiet until both switches are on") and `:268` ("a coach-level disable keeps the round parked even when the team switch is on") — the reconcile sweep IS the repair/backfill path, and both prove it honors the disable |
 | 5 | Tentative, unchanged value, newly sufficient sample | Covered | `upsert-tentative-promotion.test.ts:138` |
 | 6 | Tentative, moved value, newly sufficient sample | Covered | `upsert-tentative-promotion.test.ts:152` |
 | 7 | Sample adequacy fixed while recency decreases | Covered | `confidence-honest-monotone.test.ts:25` |
