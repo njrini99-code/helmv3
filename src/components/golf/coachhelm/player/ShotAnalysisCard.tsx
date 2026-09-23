@@ -138,7 +138,15 @@ export function ShotAnalysisCard({
   const resolvedScrambleRate = rawScrambleValue != null && !isNaN(rawScrambleValue)
     ? (rawScrambleValue <= 1 ? rawScrambleValue * 100 : rawScrambleValue)
     : undefined;
-  const resolvedTeamScrambleRate = teamScrambleRate ?? (shotData?.teamScrambleRate != null ? Number(shotData.teamScrambleRate) : undefined);
+  // Same 0-1-fraction contract as scrambleRate above — teamScrambleRate is
+  // unwired today (no caller currently supplies it), but it shares the
+  // engine's 0-1 fraction and was missing the same *100 conversion, which
+  // would have rendered e.g. 0.62 as "team avg: 0.62%" the moment a caller
+  // wires it up (Package 11 follow-up).
+  const rawTeamScramble = teamScrambleRate ?? (shotData?.teamScrambleRate != null ? Number(shotData.teamScrambleRate) : undefined);
+  const resolvedTeamScrambleRate = rawTeamScramble != null && !isNaN(rawTeamScramble)
+    ? (rawTeamScramble <= 1 ? rawTeamScramble * 100 : rawTeamScramble)
+    : undefined;
   const hasSomething = resolvedYardageCurve?.buckets?.length || resolvedWeaknesses?.length || safeResilience != null || resolvedScrambleRate != null;
 
   if (!hasSomething) {

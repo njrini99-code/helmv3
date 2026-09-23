@@ -165,3 +165,28 @@ describe('derivePracticePlan — 3-drill cap', () => {
     expect(drills[0]?.sourceInsightId).toBe('a');
   });
 });
+
+describe('derivePracticePlan — pattern-sourced impact label is marked an estimate (Package 11)', () => {
+  it('shows the pattern engine\'s stroke_impact as "~N str/rd (est.)", never an unhedged "strokes/rd"', () => {
+    const drills = derivePracticePlan({
+      insights: [],
+      patterns: [
+        {
+          id: 'p-1',
+          pattern_type: 'approach',
+          name: 'Short-iron dispersion',
+          description: 'Approach shots from 100-125y are drifting long.',
+          stroke_impact: -1.25,
+          metadata: null,
+        },
+      ],
+      categoryBreakdown: ZERO_BREAKDOWN,
+      focusAreas: [],
+    });
+
+    expect(drills).toHaveLength(1);
+    expect(drills[0]?.impactLabel).toBe('~-1.25 str/rd (est.)');
+    expect(drills[0]?.impactLabel).not.toMatch(/^-?\d/); // never a bare number
+    expect(drills[0]?.impactLabel).not.toContain('strokes/rd'); // never the old unhedged phrasing
+  });
+});
