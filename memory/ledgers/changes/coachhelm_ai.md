@@ -342,3 +342,61 @@
   test, which is what actually catches the `roundIds.add` mutation).
   `typecheck`/`lint` run on touched files. Not wired into any generator,
   composite, or page — pure core + tests only, same posture as A0–A3.
+
+## 2026-09-23 — A10 slice 1: shadow-mode evaluation harness
+
+- What: new `src/lib/coachhelm/v3/eval/shadow-harness.ts`. Pure and
+  offline — `runShadowEvaluation(snapshot)` takes one de-identified
+  `ShadowSnapshot` (`scope`/`facts`/`holes`, no live player id) and feeds
+  it through A2 (`computeDistanceProfile`), A3 (`computeParOpportunities`),
+  A4 both layers (per-hole `attributeSequence` and the #2020 rollup
+  `computeSequenceAttribution`), A5 (`buildHypotheses`), and A6
+  (`groupIssues`), returning a structured `ShadowEvalReport`: per-family
+  `MetricStatus` counts + `eligibleCount`/exclusions histograms, A4
+  per-hole suppression-reason/baseline-gap histograms, hypothesis counts
+  by state + a missing-input distribution, and a `grouping` block
+  (packet/issue counts, duplicate-issue rate, and two invariant counters).
+  Sequence packets gate `eligible` on the #2020 rollup's own per-kind
+  `status: 'supported'` (A6 slice 2's rule, #2026, reimplemented locally
+  since that PR isn't on `main` yet). A2/A3 rows and the round-level
+  `par5_opportunity_loss` hypothesis are deliberately never turned into a
+  packet (no honest per-shot provenance) — counted under
+  `nonGroupablePacketSources` instead of fabricating an id.
+- Why: addendum §13, A10 slice 1 — "run all new families in shadow mode on
+  de-identified fixed snapshots before coach-visible writes." No DB write,
+  no flag flip, no delivery-surface change; this is proof-before-wiring,
+  not a new production path.
+- Correction: found and fixed a stale claim in both
+  `docs/architecture/coachhelm-evidence-contract.md`'s "Controlled
+  hypotheses" section and this ledger's own feature doc — `par5_opportunity
+  _loss` was grouped with `short_bias`/`recovery` as having "no metric
+  producer today." It does: A3 emits both `par5_regulation_opportunity_rate`
+  and `par5_green_in_two_rate`, the exact two ids `par5_opportunity_loss`
+  cites. It reaches `'supported_association'` on real input (a specific
+  par-5 hole played 3+ times without reaching regulation) — proven, not
+  asserted, by this slice's established-roster snapshot.
+  `short_bias`/`recovery` remain genuinely unreachable (confirmed the same
+  way): no A2/A3 family emits `approach_short_miss_rate`, and `recovery`
+  never cites its own triggering shot as support by design.
+- Verification: 16 new tests in `src/test/coachhelm/v3/shadow-harness.test.ts`.
+  The two invariant counters (`countUnsupportedCauseClaims`,
+  `countDuplicateLeadingPriority`) are each unit-tested against a
+  hand-built VIOLATING input, not just real output — `.claude/rules/
+  quality-gates.md`'s "a gate that cannot fail is not a gate."
+  `countDuplicateLeadingPriority`'s shot-overlap check was mutation-verified
+  for real (`> 1` flipped to `> 2`, reran, confirmed exactly the two
+  shot-duplicate tests failed and no others, reverted, confirmed
+  `git diff --stat` empty, reran green). `runShadowEvaluation` is proven
+  against a real 2×2 snapshot matrix (`fixtures/shadow-eval-snapshots.ts`,
+  composed from the A0 `situational-intelligence.ts` fixtures via
+  `normalizeShot` plus one round-id re-keying helper — not a second
+  fixture system): new-roster snapshots assert `'insufficient'`/suppressed
+  outcomes (support genuinely fails); the established-roster snapshot
+  asserts real A2/A3/A4-rollup rows actually reach `status: 'supported'`
+  as a PRECONDITION before checking `grouping.unsupportedCauseClaims === 0`
+  and `grouping.duplicateLeadingPriority === 0` on top of them — a
+  contrast that never clears a real floor would prove nothing. Full v3
+  suite: 1225/1225 passing (106 files, no regressions).
+  `typecheck`/`lint`/`docs:check` clean on touched files. Not wired into
+  any generator, composite, route, or page — pure core + tests only, same
+  posture as A0–A6.
