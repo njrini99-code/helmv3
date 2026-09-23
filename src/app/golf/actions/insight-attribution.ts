@@ -24,9 +24,11 @@
  * see that component's own doc comment for what it does with each state.
  *
  * No migration is applied by this slice. Migration 20260922230000
- * (`method_version`) stays unapplied in production; `attribution-read.ts`'s
- * own unknown-column degrade keeps this action working (reading `null`
- * method_version for every row) whether or not the column exists.
+ * (`method_version`) IS applied in production as of 2026-09-23 (verified:
+ * `golf_insight_outcome_attribution.method_version` exists live).
+ * `attribution-read.ts`'s own unknown-column degrade (reading `null`
+ * method_version for every row) stays in place regardless, as defense —
+ * this action keeps working the same way if the column is ever missing.
  */
 import { createClient } from '@/lib/supabase/server';
 import { isFlagEnabled } from '@/lib/flags';
