@@ -246,6 +246,23 @@ export function validateClaims(
   // and is not part of a structural mention (hole/par/date, SHOULD-4).
   const claimedValues = new Set(claims.map((c) => normalize(String(c.value))));
   const packetValues = new Set(packet.entries.map((e) => normalize(String(e.value))));
+  // Chat re-review (2026-09-23): "across 43 attempts" in otherwise-honest
+  // prose was tripping `uncited_number` — only a claim's or entry's VALUE
+  // ever counted as citable, never the denominator/sample size the value
+  // was computed OVER. The legacy numeric audit (`auditNumericClaims`,
+  // `chat/provenance.ts`) already treats a denominator as supported; this
+  // typed gate was narrower and rejected real answers because of it.
+  // Scoped to entries an ACCEPTED claim actually names — not every entry in
+  // the packet — so an unrelated metric's denominator can never "support" a
+  // fabricated number about a different one it was never cited alongside.
+  for (const c of accepted) {
+    const entry = packet.entries.find((e) => e.metric_id === c.metric_id);
+    if (!entry) continue;
+    if (entry.denominator !== undefined && entry.denominator !== null) {
+      packetValues.add(normalize(String(entry.denominator)));
+    }
+    packetValues.add(normalize(String(entry.sample_n)));
+  }
   const structuralExempt = structurallyExemptTokens(prose);
   const proseTokens = extractNumericTokens(prose);
   let uncitedIndex = 0;

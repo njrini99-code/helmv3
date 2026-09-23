@@ -78,6 +78,7 @@ import {
 } from '@/lib/coachhelm/v3/chat/verdict';
 import { buildSinglePlayerPacket } from '@/lib/coachhelm/v3/chat/claims-packet';
 import { CLAIMS_OPEN, extractAndValidateClaimsSafe } from '@/lib/coachhelm/v3/llm/claims-block';
+import { isFlagEnabled } from '@/lib/flags';
 import type { ChatMessage } from '@/lib/coachhelm/v3/chat/types';
 import {
   appendMessage,
@@ -813,7 +814,17 @@ export async function POST(req: NextRequest) {
       // is the text with any claims block removed — see
       // `extractAndValidateClaims`'s own doc comment for why that holds
       // even when no packet is engaged.
-      const claimsPacket = buildSinglePlayerPacket(measurements);
+      //
+      // Gated behind `coachhelm_chat_claim_gate` (config/feature-flags.yml,
+      // default off — same pattern as round-recap's
+      // `coachhelm_recap_claim_packet`): off, `claimsPacket` stays `null`,
+      // so the third verdict check never engages and behavior is unchanged
+      // from before this gate existed. The `<<<CLAIMS>>>` block is still
+      // always stripped either way (the system prompt asks for one
+      // unconditionally) and the numeric audit above is unaffected.
+      const claimsPacket = isFlagEnabled('coachhelm_chat_claim_gate')
+        ? buildSinglePlayerPacket(measurements)
+        : null;
       const { strippedText, claims } = extractAndValidateClaimsSafe(rawText, claimsPacket);
       turnText = strippedText.trim();
       turnVerdict = computeTurnVerdict({
