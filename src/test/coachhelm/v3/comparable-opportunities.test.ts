@@ -49,6 +49,7 @@ function approachShot(
     result: 'fairway',
     is_penalty: false,
     putt_made: null,
+    miss_direction: null,
     ...rest,
   };
 }
