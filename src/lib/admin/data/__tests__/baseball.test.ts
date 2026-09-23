@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { weekStart } from '@/lib/admin/data/baseball';
+import { weekStart, isDemoOrTestTeamName } from '@/lib/admin/data/baseball';
 
 describe('weekStart', () => {
   it('buckets a date-only string to its Monday (mirrors Postgres date_trunc(\'week\', ...))', () => {
@@ -18,5 +18,24 @@ describe('weekStart', () => {
 
   it('accepts a full timestamp string, not just a date-only string', () => {
     expect(weekStart('2026-07-08T23:59:59.000Z')).toBe('2026-07-06');
+  });
+});
+
+describe('isDemoOrTestTeamName', () => {
+  it('matches a name containing "demo", case-insensitively', () => {
+    expect(isDemoOrTestTeamName('Demo Tigers')).toBe(true);
+    expect(isDemoOrTestTeamName('DEMO Tigers')).toBe(true);
+  });
+
+  it('matches a name containing "test", case-insensitively', () => {
+    expect(isDemoOrTestTeamName('Test Team 3')).toBe(true);
+  });
+
+  it('is false for a real-looking team name', () => {
+    expect(isDemoOrTestTeamName('Shenandoah Baseball')).toBe(false);
+  });
+
+  it('is false for an empty name', () => {
+    expect(isDemoOrTestTeamName('')).toBe(false);
   });
 });

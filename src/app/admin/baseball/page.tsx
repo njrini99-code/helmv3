@@ -5,7 +5,7 @@ import { fetchErrorsTab } from '@/lib/admin/data/errors';
 import { fetchUsersTab } from '@/lib/admin/data/users';
 import { fetchBaseballTab } from '@/lib/admin/data/baseball';
 import { fetchFeatureHealth, summarizeFeatureHealth } from '@/lib/admin/data/feature-health';
-import { Surface, StatStrip, StatTile, StatusPill, TrendChart } from '@/components/fairway';
+import { Surface, StatStrip, StatTile, StatusPill, TrendChart, InlineNotice } from '@/components/fairway';
 import { PanelBoundary } from '../_components/PanelBoundary';
 import { PanelPageSkeleton } from '../_components/PanelSkeletons';
 import { PanelNoData } from '../_components/PanelStates';
@@ -31,7 +31,7 @@ function KeyPanelRule() {
 
 async function BaseballBody() {
   const [usersTab, errorsTab, baseballTab, featureHealth] = await Promise.all([
-    fetchUsersTab({}),
+    fetchUsersTab({ sport: 'baseball' }),
     fetchErrorsTab({ sport: 'baseball', windowHours: 168 }),
     fetchBaseballTab(),
     fetchFeatureHealth(),
@@ -53,7 +53,18 @@ async function BaseballBody() {
   const quietPlayers = players.filter((player) => player.activity30d === 0).length;
   const profileGaps = players.filter((player) => player.profileQuality !== 'complete').length;
   const teamsWithErrors = teams.filter((team) => team.errors7d > 0).length;
-  const recentErrors = errorsTab.incidents.length;
+  // Same denominator as the Journey view and the Errors page — the actionable
+  // group count, not the raw (filtered-but-unfiltered-by-actionability)
+  // incident list. Previously this rendered as both "Errors 7d" (here) and
+  // "Incidents 7d" (Error trace hooks below), so the two tiles always agreed
+  // by construction rather than by measuring the same thing twice; the
+  // duplicate tile there is now removed.
+  const recentErrors = errorsTab.counts.actionableGroups;
+  // Denominator for the "Mapped incidents" ratio below is the actual
+  // fetched incidents array (already actionable-only by default), NOT
+  // `recentErrors` — those two counts differ by isFixture rows, and mixing
+  // them would produce a numerator that can exceed its own denominator.
+  const incidentCount = errorsTab.incidents.length;
   const mappedRoutes = errorsTab.incidents.filter((incident) => incident.route || incident.actionName || incident.feature).length;
   const watchlist = players
     .filter((player) => player.errors7d > 0 || player.activity30d === 0 || player.profileQuality !== 'complete')
@@ -122,7 +133,7 @@ async function BaseballBody() {
               { icon: Users, label: 'Quiet players', value: quietPlayers, href: '/admin/users?sport=baseball&attention=quiet' },
               { icon: SearchCheck, label: 'Profile gaps', value: profileGaps, href: '/admin/users?sport=baseball&attention=profile' },
               { icon: AlertTriangle, label: 'Teams with errors', value: teamsWithErrors, href: '/admin/errors?sport=baseball&window=168' },
-              { icon: ShieldCheck, label: 'Mapped incidents', value: `${mappedRoutes}/${recentErrors}`, href: '/admin/errors?sport=baseball&window=168' },
+              { icon: ShieldCheck, label: 'Mapped incidents', value: `${mappedRoutes}/${incidentCount}`, href: '/admin/errors?sport=baseball&window=168' },
             ].map((item) => {
               const Icon = item.icon;
               return (
@@ -142,6 +153,14 @@ async function BaseballBody() {
           </div>
         </Surface>
       </section>
+
+      {baseballTab.demoTeams.count > 0 && (
+        <InlineNotice tone="warning" title="Includes test/demo teams">
+          {baseballTab.demoTeams.count} of {baseballTab.demoTeams.total} baseball_teams are test/demo accounts
+          (name contains &ldquo;test&rdquo; or &ldquo;demo&rdquo;) — the counts on this page are real, they just
+          aren&rsquo;t all live customers yet.
+        </InlineNotice>
+      )}
 
       {/* Activity pulse — baseball engine rollup (fetchBaseballTab), the
           BaseballHelm parity counterpart to golf's rounds/CoachHelm trend
@@ -182,6 +201,15 @@ async function BaseballBody() {
             <StatTile label="Sessions 30d" value={baseballTab.liftLab.sessions30d} tone="neutral" mono />
             <StatTile label="Active athletes 30d" value={baseballTab.liftLab.activeAthletes30d} tone="neutral" mono />
           </div>
+          {/* helm_lifting_sessions has only ever belonged to seed/demo orgs
+              (see /admin/lifting's own banner) — caveat rather than let a
+              real-looking count pass as live customer usage. */}
+          <p className="mt-3 text-xs text-warm-500">
+            Seed/demo data only so far — see the full cross-sport picture at{' '}
+            <Link href="/admin/lifting" className="text-accent-700 underline">
+              /admin/lifting →
+            </Link>
+          </p>
         </Surface>
 
         {/* Feature health cross-link — BaseballHelm slice of the platform-wide
@@ -233,8 +261,10 @@ async function BaseballBody() {
           />
           <Surface padding="sm">
             <SectionLabel>Error trace hooks</SectionLabel>
-            <div className="mt-3 grid grid-cols-2 gap-3">
-              <StatTile label="Incidents 7d" value={recentErrors} tone="neutral" mono goodDirection="down" />
+            {/* "Incidents 7d" used to duplicate the "Errors 7d" KPI tile above
+                (same value, two labels) — removed rather than kept alongside
+                it now that both would read the same actionableGroups count. */}
+            <div className="mt-3 grid grid-cols-1 gap-3">
               <StatTile label="RLS denials 24h" value={errorsTab.rlsDenials24h} tone="neutral" mono goodDirection="down" />
             </div>
             <div className="mt-4 flex flex-wrap gap-2">

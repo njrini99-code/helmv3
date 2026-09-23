@@ -9,7 +9,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { revalidatePath } from 'next/cache';
 import { normalizeIncidentRoute } from '@/lib/admin/incident-grouping';
 import { withAdminObserved } from '@/lib/admin/observed-action';
-import { classifyInProgressActivity } from '@/lib/golf/tracer-round-activity';
+import { classifyInProgressActivity, STUCK_TIER_MAX_IDLE_HOURS } from '@/lib/golf/tracer-round-activity';
 import {
   tracerIncidentGroupKey,
   unmatchedTracerOperatorImpact,
@@ -1258,17 +1258,21 @@ async function getTracerEnrichedDataImpl(): Promise<TracerEnrichedData> {
     }
   }
 
-  // Only the 'round_stuck' tier belongs on this dataset — it feeds admin
-  // alert panels (TracerAlertPanel's generateAlerts, StuckRoundsPanel on
-  // /admin/golf/tracer) that treat every row as urgent and actionable. A
-  // round abandoned long ago (classifyInProgressActivity's 'round_abandoned'
-  // tier, or null when even further outside the window) isn't that — it
-  // stays visible and resolvable via the Tracer round inspector table
-  // (TracerRoundInspector's own abandoned tier), just not screaming on an
-  // alert panel forever.
+  // Only the 'round_abandoned' tier (idle >= STUCK_TIER_MAX_IDLE_HOURS,
+  // within the 30-day recency window classifyInProgressActivity applies)
+  // belongs on this dataset. StuckRoundsPanel's only action is "Resolve"
+  // (bridgeFixRoundData's 'resolve_stuck_round' case below), which itself
+  // refuses anything idle less than STUCK_TIER_MAX_IDLE_HOURS — so a panel
+  // that listed the louder 'round_stuck' tier (idle 1h–24h) instead was
+  // showing rows its own button could never actually resolve, while the
+  // rounds it COULD resolve never appeared here at all. Both sides now read
+  // the same constant, so the panel and the action can never drift apart
+  // again. 'round_stuck' rows are still visible elsewhere (the Tracer
+  // activity feed / round inspector), just not on this "here's what you can
+  // fix right now" panel.
   const stuckRounds = stuckData
     .filter((r): r is typeof r & { updated_at: string } => r.updated_at != null)
-    .filter((r) => classifyInProgressActivity(r.updated_at) === 'round_stuck')
+    .filter((r) => classifyInProgressActivity(r.updated_at) === 'round_abandoned')
     .map((r) => ({
       round_id: r.id,
       player_id: r.player_id,
@@ -1670,13 +1674,15 @@ async function fixRoundDataImpl(
       }
 
       const hoursStale = (Date.now() - new Date(round.updated_at).getTime()) / (1000 * 60 * 60);
-      if (hoursStale < 24) {
+      // Same STUCK_TIER_MAX_IDLE_HOURS constant the panel's own query filters
+      // on above — one number, not two independently-drifting copies of "24".
+      if (hoursStale < STUCK_TIER_MAX_IDLE_HOURS) {
         return {
           success: false,
           fix_type: fixType,
           round_id: roundId,
           player_id: round.player_id,
-          message: `Round was updated ${hoursStale.toFixed(1)} hours ago; only rounds stale for 24+ hours can be auto-resolved`,
+          message: `Round was updated ${hoursStale.toFixed(1)} hours ago; only rounds stale for ${STUCK_TIER_MAX_IDLE_HOURS}+ hours can be auto-resolved`,
         };
       }
 

@@ -6,7 +6,8 @@ import { fetchUsersTab } from '@/lib/admin/data/users';
 import { fetchErrorsTab } from '@/lib/admin/data/errors';
 import { fetchFeatureHealth, summarizeFeatureHealth } from '@/lib/admin/data/feature-health';
 import type { RollupAFeatureAdoptionPayload, FeatureCountPair } from '@/app/golf/actions/admin/rollup-a';
-import { Surface, StatStrip, StatTile, TrendChart, type StatTileProps } from '@/components/fairway';
+import { Surface, StatStrip, StatTile, TrendChart, InlineNotice, type StatTileProps } from '@/components/fairway';
+import { DEMO_TEAM_IDS } from '@/app/golf/actions/admin/demo-teams';
 import { PanelBoundary } from '../_components/PanelBoundary';
 import { PanelPageSkeleton } from '../_components/PanelSkeletons';
 import { PanelNoData } from '../_components/PanelStates';
@@ -77,6 +78,16 @@ async function GolfBody() {
 
   const roundsTrend = r.roundsByWeek.map((w) => ({ x: w.week, y: w.count }));
 
+  // OWNER DECISION: keep demo/test data in the platform counts above, but
+  // disclose it honestly rather than silently. `allRoundsMinimal` is bounded
+  // to the last 12 weeks and already loaded by fetchGolfTab (rollup-a.ts) —
+  // filtering it here is free, so this doesn't need a separate query, unlike
+  // baseball's name-based detector (baseball.ts has no id list to filter by).
+  const ago7dIso = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+  const demoRoundsThisWeek = tab.rollup.allRoundsMinimal.filter(
+    (round) => round.team_id != null && DEMO_TEAM_IDS.has(round.team_id) && round.created_at >= ago7dIso,
+  ).length;
+
   // Feature health cross-link (golf half) — same summarizeFeatureHealth()
   // pattern as admin/baseball/page.tsx, filtered to app='golfhelm'.
   const golfFeatureHealth = summarizeFeatureHealth(
@@ -128,6 +139,11 @@ async function GolfBody() {
           Team-by-team, player-by-player visibility
         </h2>
       </div>
+
+      <InlineNotice tone="warning" title={`Includes ${DEMO_TEAM_IDS.size} demo teams`}>
+        {demoRoundsThisWeek} of {r.roundsThisWeek} rounds this week come from seed/demo teams — the counts on this
+        page are real, they just aren&rsquo;t all live customers yet.
+      </InlineNotice>
 
       {/* Activity pulse */}
       <section className="space-y-4">
@@ -258,6 +274,15 @@ async function GolfBody() {
             <StatTile label="Sessions 30d" value={tab.liftLab.sessions30d} tone="neutral" mono />
             <StatTile label="Active athletes 30d" value={tab.liftLab.activeAthletes30d} tone="neutral" mono />
           </div>
+          {/* helm_lifting_sessions has never had a sport='golf' row (measured
+              2026-09) — this card is honestly zero, not broken. Caveat rather
+              than a bare 0/0 that reads as an outage. */}
+          <p className="mt-3 text-xs text-warm-500">
+            No golf Lift Lab sessions logged yet — see the full cross-sport picture at{' '}
+            <Link href="/admin/lifting" className="text-accent-700 underline">
+              /admin/lifting →
+            </Link>
+          </p>
         </Surface>
 
         {/* Feature health cross-link — GolfHelm slice of the platform-wide
@@ -317,7 +342,7 @@ async function GolfBody() {
           <Surface padding="sm">
             <SectionLabel>Error trace hooks</SectionLabel>
             <div className="mt-3 grid grid-cols-2 gap-3">
-              <StatTile label="Incidents 7d" value={errorsTab.incidents.length} tone="neutral" mono goodDirection="down" />
+              <StatTile label="Incidents 7d" value={errorsTab.counts.actionableGroups} tone="neutral" mono goodDirection="down" />
               <StatTile label="RLS denials 24h" value={errorsTab.rlsDenials24h} tone="neutral" mono goodDirection="down" />
             </div>
             <div className="mt-4 flex flex-wrap gap-2">

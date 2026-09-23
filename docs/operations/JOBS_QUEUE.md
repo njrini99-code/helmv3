@@ -2,16 +2,17 @@
 
 ## Status
 
-**HELD.** `supabase/migrations/20260906140000_helm_jobs_pgmq_queues.sql` has
-not been applied to production — see `supabase/migrations/HELD.md` for the
-row, the owner verification steps, and why it is R3 (privileged: extension +
-new schema + grant changes). `HELM_QUEUE_ENABLED` defaults to `false` even
-after the migration ships (see `.env.example`) — flipping it is a separate,
-explicit owner step.
+**APPLIED.** `supabase/migrations/20260906140000_helm_jobs_pgmq_queues.sql`
+was applied to production and is ledger-verified (2026-09-22) — see
+`supabase/migrations/HELD.md` for the row, the owner verification steps, and
+why it was R3 (privileged: extension + new schema + grant changes) while it
+stood. `HELM_QUEUE_ENABLED` still defaults to `false` (see `.env.example`) —
+flipping it is a separate, explicit owner step, independent of the migration.
 
-Until both are true, every producer call in this repo (`enqueueJob`) fails
-open to the exact inline/Inngest path that existed before this PR. Nothing
-in application behavior changes until an owner does both things.
+Until an owner flips `HELM_QUEUE_ENABLED`, every producer call in this repo
+(`enqueueJob`) still fails open to the exact inline/Inngest path that existed
+before this PR. Nothing in application behavior changes until that flag is
+set.
 
 ## The three queues
 

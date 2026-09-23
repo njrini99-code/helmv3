@@ -52,8 +52,10 @@ export async function HeartbeatsView() {
   return (
     <div className="space-y-4">
       <div>
+        {/* Plain label — "Heartbeat matrix" was internal jargon for "did every
+            scheduled job run on time" (bridge-tab-audit-p0p1 Health Finding). */}
         <Eyebrow as="h3" tone="tertiary">
-          Heartbeat matrix
+          Scheduled job health
         </Eyebrow>
         {heartbeat ? (
           <HeartbeatMatrixGrid view={heartbeat} />
@@ -62,8 +64,10 @@ export async function HeartbeatsView() {
         )}
       </div>
       <div>
+        {/* Plain label — "Invariant lattice" was internal jargon for "is the
+            data this system maintains still consistent". */}
         <Eyebrow as="h3" tone="tertiary">
-          Invariant lattice
+          Data consistency checks
         </Eyebrow>
         <InvariantLatticeGrid view={lattice} />
       </div>

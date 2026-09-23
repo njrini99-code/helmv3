@@ -162,16 +162,16 @@ routines:
       `admin_analytics_events` with no severity awareness or batching.
       Narrowed 2026-09-06 (cron consolidation,
       supabase/migrations/20260906120000_narrow_admin_event_purge_pg_cron.sql,
-      HELD — owner applies) to a REDUNDANT FLOOR only: `admin_events` rows
-      with severity in ('info','warning') older than 180 days. It no longer
-      touches `admin_analytics_events` (owned exclusively by the
-      `log-retention` Vercel cron as of the same PR) and never touches
-      error/critical `admin_events` (log-retention's 13-month window for
-      those is intentionally longer than any floor this job should apply).
-      Verification query: `select jobname, schedule, command from cron.job;`
-      — as of 2026-09-06 the live production job still runs the OLD
-      two-table body; the narrowing migration is HOLD, not yet applied.
-    verified: 2026-09-06
+      APPLIED — ledger-verified 2026-09-22) to a REDUNDANT FLOOR only:
+      `admin_events` rows with severity in ('info','warning') older than 180
+      days. It no longer touches `admin_analytics_events` (owned exclusively
+      by the `log-retention` Vercel cron as of the same PR) and never
+      touches error/critical `admin_events` (log-retention's 13-month window
+      for those is intentionally longer than any floor this job should
+      apply). Verification query: `select jobname, schedule, command from
+      cron.job;` — the live production job's command is already the
+      narrowed single-table body.
+    verified: 2026-09-22
 
   - id: v3-weekly-coach-email
     trigger: vercel-cron

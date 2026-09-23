@@ -259,8 +259,10 @@ function useBridgeSignOut() {
 /**
  * Helm Bridge chrome: Fairway AppShell (warm-black rail + cream canvas) as
  * the neutral ops shell. Sport inks appear ONLY inside sport-scoped panes.
- * Keyboard: 1-9 then 0 jump the 10 tabs (see admin-nav.ts), R refreshes,
- * ⌘K opens the command menu — preserving the old admin's muscle memory.
+ * Keyboard: 1-9 then 0 jump the first ten tabs, Shift+letter jumps the rest
+ * (see admin-nav.ts — ADMIN_NAV has grown past ten tabs since this comment
+ * was first written), R refreshes, ⌘K opens the command menu — preserving
+ * the old admin's muscle memory.
  *
  * M1 (bridge-chrome, docs/MOBILE_DOCTRINE.md rule 6/10): on phone, the rail
  * is replaced by a persistent bottom-tab bar (Overview/Errors/Health/Users —

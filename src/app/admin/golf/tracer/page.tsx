@@ -31,15 +31,15 @@ export interface FlightTraceFetch {
 
 /**
  * `bridgeListFlightTraces` throws when `public.helm_debug_list_traces`
- * doesn't exist — true in production today: the flight recorder migration
- * (20260825200811_helm_flight_recorder.sql) is HELD, not yet applied
- * (supabase/migrations/HELD.md). It could also throw for an unrelated reason
- * (a revoked grant, a misconfigured admin client) that this thin action
- * layer can't distinguish from that one — so the held migration is
- * surfaced as the likely cause, not asserted as certain. Isolating the
- * failure here, instead of letting it reject inside the page's shared
- * `Promise.all`, keeps a missing migration from taking down the whole
- * Tracer page along with it.
+ * doesn't exist or the call otherwise fails (a revoked grant, a
+ * misconfigured admin client, etc.). The flight recorder migration
+ * (20260825200811_helm_flight_recorder.sql) was applied to production on
+ * 2026-08-26 (supabase/migrations/HELD.md) and verified live the same day,
+ * so a missing-migration cause is no longer the likely explanation for a
+ * throw here — this now surfaces the real error message rather than a
+ * pointer to a hold that has since been discharged. Isolating the failure
+ * here, instead of letting it reject inside the page's shared `Promise.all`,
+ * still keeps a genuine outage from taking down the whole Tracer page.
  */
 async function loadFlightTraces(): Promise<FlightTraceFetch> {
   try {
@@ -48,9 +48,7 @@ async function loadFlightTraces(): Promise<FlightTraceFetch> {
     const detail = err instanceof Error ? err.message : 'unknown error';
     return {
       traces: [],
-      unavailableReason:
-        `${detail} Most likely cause: migration 20260825200811 (Helm Flight ` +
-        'Recorder) is not applied to production yet — see supabase/migrations/HELD.md.',
+      unavailableReason: `Could not load flight traces: ${detail}`,
     };
   }
 }

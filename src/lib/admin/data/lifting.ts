@@ -63,6 +63,11 @@ export interface LiftingRollup {
    *  the sport-scoped halves of this same number). */
   activeAthletes30d: number;
   recentSessions: LiftingSessionFeedRow[];
+  /** `recentSessions[0].createdAt` (that query is already ordered
+   *  created_at desc) — the whole platform's most recent Lift Lab session,
+   *  `null` only when there are zero sessions ever. Free: no separate query,
+   *  since `recentSessions` is already fetched for the feed above. */
+  lastSessionAt: string | null;
   /** True when every helm_lifting_sessions row that has EVER existed
    *  belongs to a seed/demo organization (lifting-demo-orgs.ts). Confirmed
    *  live 2026-08-21: 100% today (Rini University 56, Demo University 32,
@@ -249,6 +254,7 @@ export async function fetchLiftingTab(): Promise<LiftingRollup> {
     activePrograms: activeProgramsRes.count ?? 0,
     activeAthletes30d: activeAthleteIds.size,
     recentSessions,
+    lastSessionAt: recentSessions[0]?.createdAt ?? null,
     allSessionsAreDemoOrgs: computeAllSessionsAreDemoOrgs(totalSessionsCount, demoOrgSessionsCount),
   };
 }

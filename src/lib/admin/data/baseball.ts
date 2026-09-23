@@ -49,6 +49,28 @@ export interface BaseballLiftLab {
   activeAthletes30d: number;
 }
 
+/**
+ * Test/demo detection for baseball_teams. Unlike golf_teams (two seed rows,
+ * matched by a hard-coded id set — see demo-teams.ts), baseball_teams has no
+ * demo flag column and no small, stable id list: 7 of 13 rows are named
+ * Test/Demo (verified live), so this matches by name instead. A name match
+ * risks a false positive against a real program whose name happens to
+ * contain "test" or "demo" — an honest disclosure banner erring toward
+ * over-counting demo teams is a far smaller harm than the counts silently
+ * including them with no disclosure at all.
+ */
+export function isDemoOrTestTeamName(name: string): boolean {
+  const lower = name.toLowerCase();
+  return lower.includes('demo') || lower.includes('test');
+}
+
+export interface BaseballDemoTeams {
+  /** Count of baseball_teams whose name matches isDemoOrTestTeamName. */
+  count: number;
+  /** Total baseball_teams rows. */
+  total: number;
+}
+
 /** Monday-start ISO week bucket for a date-only ('YYYY-MM-DD') or timestamp
  *  string — the JS-side equivalent of Postgres's `date_trunc('week', ...)`,
  *  which golf's rollup-a.ts RPC uses for `roundsByWeek`. Computed in UTC so
@@ -66,6 +88,7 @@ export function weekStart(dateStr: string): string {
 export async function fetchBaseballTab(): Promise<{
   games: BaseballGamesRollup;
   liftLab: BaseballLiftLab;
+  demoTeams: BaseballDemoTeams;
 }> {
   const admin = createAdminClient();
   const now = new Date();
@@ -86,7 +109,7 @@ export async function fetchBaseballTab(): Promise<{
   const ago84dIso = daysAgoIso(84); // 12 weeks
   const ago30dTs = new Date(now.getTime() - 30 * 86400_000).toISOString();
 
-  const [gamesRes, liftCountRes, liftAthletesRes] = await Promise.all([
+  const [gamesRes, liftCountRes, liftAthletesRes, teamsRes] = await Promise.all([
     // Paginate past the 1000-row PostgREST cap — an unpaginated `.select()`
     // would silently under-count/misdate every Activity-pulse number below
     // (gamesThisWeek, gamesToday, completedGames30d, lastGameAt, gamesByWeek)
@@ -120,6 +143,9 @@ export async function fetchBaseballTab(): Promise<{
         .order('id', { ascending: true })
         .range(from, to),
     ),
+    // Small table (13 rows measured) — a plain unpaginated select is fine;
+    // the 1000-row PostgREST cap only bites tables at that scale, not this one.
+    admin.from('baseball_teams').select('id, name'),
   ]);
 
   // The 3 queries above never throw on a Supabase/RLS/schema error — they
@@ -136,6 +162,9 @@ export async function fetchBaseballTab(): Promise<{
   }
   if (liftAthletesRes.error) {
     throw new Error(`fetchBaseballTab: helm_lifting_sessions athlete query failed: ${liftAthletesRes.error.message}`);
+  }
+  if (teamsRes.error) {
+    throw new Error(`fetchBaseballTab: baseball_teams query failed: ${teamsRes.error.message}`);
   }
 
   const games = (gamesRes.data ?? []) as Array<{ game_date: string; status: string | null }>;
@@ -174,6 +203,9 @@ export async function fetchBaseballTab(): Promise<{
       .filter((id): id is string => Boolean(id)),
   );
 
+  const teamRows = (teamsRes.data ?? []) as Array<{ id: string; name: string | null }>;
+  const demoTeamCount = teamRows.filter((t) => isDemoOrTestTeamName(t.name ?? '')).length;
+
   return {
     games: {
       gamesThisWeek,
@@ -186,6 +218,10 @@ export async function fetchBaseballTab(): Promise<{
     liftLab: {
       sessions30d: liftCountRes.count ?? 0,
       activeAthletes30d: athleteIds.size,
+    },
+    demoTeams: {
+      count: demoTeamCount,
+      total: teamRows.length,
     },
   };
 }

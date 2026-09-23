@@ -35,8 +35,10 @@ export const CRON_REGISTRY: readonly CronRegistryEntry[] = [
   { jobType: 'integrity-check', path: '/api/cron/integrity-check', cadenceMinutes: DAILY, schedule: '0 7 * * *' },
   { jobType: 'log-retention', path: '/api/cron/log-retention', cadenceMinutes: DAILY, schedule: '30 7 * * *' },
   { jobType: 'admin-digest', path: '/api/cron/admin-digest', cadenceMinutes: DAILY, schedule: '0 11 * * *' },
-  // Database Plan D6: pgmq queue consumer. Degrades to a 200 no-op until the
-  // owner applies 20260906140000_helm_jobs_pgmq_queues.sql (HELD).
+  // Database Plan D6: pgmq queue consumer. 20260906140000_helm_jobs_pgmq_queues.sql
+  // is applied (ledger-verified 2026-09-22, supabase/migrations/HELD.md) —
+  // the 200-no-op fallback is now gated by HELM_QUEUE_ENABLED (default off),
+  // not by a missing migration.
   { jobType: 'jobs-consume', path: '/api/jobs/consume', cadenceMinutes: 1, schedule: '*/1 * * * *' },
   // vercel.json schedules this "10 */4 * * *" — every 4 hours, not 5 minutes.
   // The 5-minute value survived here because the contract test below only
@@ -64,11 +66,14 @@ export const CRON_REGISTRY: readonly CronRegistryEntry[] = [
   // drifted apart once at exactly this spot.
   { jobType: 'reliability-triage', path: '/api/cron/reliability-triage', cadenceMinutes: 3 * 60, schedule: '0 */3 * * *' },
   // vercel.json schedules this "17 3,9,15,21 * * *" — four evenly-spaced
-  // fires a day, 6 hours apart, with the 09:17 UTC one placed 83 minutes
-  // before Repair's 10:40 UTC fire (see selfheal-registry.ts / the Diagnose
-  // contract). This is the SAME job_type SELFHEAL_STAGES' 'triage' entry
-  // uses — the route writes one row, and both the Jobs board and the
-  // Self-heal circuit read it.
+  // fires a day, 6 hours apart. Repair actually runs on a GitHub Actions
+  // schedule, not a Vercel cron (.github/workflows/selfheal-repair.yml:
+  // `cron: '40 6 * * *'`, 06:40 UTC) — the 03:17 UTC triage fire lands 203
+  // minutes before it. (This comment previously said "83 minutes before
+  // Repair's 10:40 UTC fire", which was never Repair's real schedule.) This
+  // is the SAME job_type SELFHEAL_STAGES' 'triage' entry uses — the route
+  // writes one row, and both the Jobs board and the Self-heal circuit read
+  // it.
   { jobType: 'selfheal-triage', path: '/api/cron/selfheal-triage', cadenceMinutes: 6 * 60, schedule: '17 3,9,15,21 * * *' },
 ] as const;
 

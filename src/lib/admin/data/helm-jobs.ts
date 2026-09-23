@@ -3,11 +3,13 @@
  *
  * Reads pgmq queue depth/dead-letters through the `helm_jobs_*`
  * SECURITY DEFINER facades (supabase/migrations/
- * 20260906140000_helm_jobs_pgmq_queues.sql, HELD). Fails open to an empty
- * state — never throws — when the facade migration is not applied yet, the
- * same idiom every other `helm_debug_*`/`helm_jobs_*` reader in this repo
- * uses (see src/app/api/cron/helm-debug-prune/route.ts's header for the
- * canonical explanation).
+ * 20260906140000_helm_jobs_pgmq_queues.sql — APPLIED, ledger-verified
+ * 2026-09-22, supabase/migrations/HELD.md). Still fails open to an empty
+ * state — never throws — on any facade read error (a genuine outage, a
+ * revoked grant, HELM_QUEUE_ENABLED being off), the same idiom every other
+ * `helm_debug_*`/`helm_jobs_*` reader in this repo uses (see
+ * src/app/api/cron/helm-debug-prune/route.ts's header for the canonical
+ * explanation).
  */
 import { createAdminClient } from '@/lib/supabase/admin';
 import { redactPiiDeep } from '@/lib/observability/redact-pii';

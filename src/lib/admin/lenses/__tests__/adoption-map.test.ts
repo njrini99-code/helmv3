@@ -58,7 +58,7 @@ function featureRow(overrides: Partial<FeatureAdoptionRow> = {}): FeatureAdoptio
 
 describe('fetchAdoptionMapLens', () => {
   beforeEach(() => {
-    adoptionResult = { status: 'ok', generatedAt: '2026-09-03T00:00:00Z', rows: [], users: [], readouts: { touchedToday: 0, quiet14d: 0, dropoutRiskCount: 0 } };
+    adoptionResult = { status: 'ok', generatedAt: '2026-09-03T00:00:00Z', rows: [], users: [], readouts: { touchedToday: 0, quiet14d: 0, dropoutRiskCount: 0, internalActiveUsers: 0, activeUsers30d: 0 } };
     usersResult = { users: [], totalUsersCount: 0, teams: [], atRisk: [] };
   });
 
