@@ -6,7 +6,7 @@ import * as Sentry from '@sentry/nextjs';
 import { classifyTraceSurface } from '@/lib/error-trace-classification';
 import { markBridgeLogged } from '@/lib/bridge-logged-marker';
 import { isTransientNetworkErrorMessage } from '@/lib/transient-network-error';
-import { requestRecovery } from '@/lib/recovery/client';
+import { requestRecovery, type RecoveryStatus } from '@/lib/recovery/client';
 
 const SEVERITY_TO_SENTRY_LEVEL: Record<'low' | 'medium' | 'high' | 'critical', Sentry.SeverityLevel> = {
   low: 'info',
@@ -177,15 +177,17 @@ export function isStaleServerActionError(error: unknown): boolean {
 /**
  * For code that catches its own server-action failures (a picker that toasts
  * "Could not load…" and stays put): true when the failure is a stale action
- * id and the one-per-session reload has been requested, so the caller shows
- * nothing of its own; false for every other error, which the caller handles
- * as before. Without this, a caught stale-action error never reaches the
+ * id and a reload is actually on its way (claimed now, or already in flight),
+ * so the caller shows nothing of its own; false for every other error — and
+ * for a stale action the coordinator refused (unsaved work, budget spent) —
+ * which the caller handles as before, so the failure is never silent.
+ * Without this, a caught stale-action error never reaches the
  * global handlers and the player keeps tapping into the same dead action.
  */
 export function recoverFromStaleServerAction(error: unknown): boolean {
   if (!isStaleServerActionError(error)) return false;
-  softReloadForStaleServerAction(error instanceof Error ? error.message : error);
-  return true;
+  const status = softReloadForStaleServerAction(error instanceof Error ? error.message : error);
+  return status === 'scheduled' || status === 'in-flight';
 }
 
 /** Track suppressed stale-action warnings so we still emit one per session. */
@@ -538,13 +540,13 @@ export const STALE_ACTION_RELOAD_KEY = 'stale-action-auto-reload';
  * The toast is still ours, because the coordinator is boot-safe and cannot
  * import `sonner`. It only appears when an attempt was actually claimed.
  */
-export function softReloadForStaleServerAction(message?: unknown): void {
-  if (typeof window === 'undefined') return;
+export function softReloadForStaleServerAction(message?: unknown): RecoveryStatus {
+  if (typeof window === 'undefined') return 'unavailable';
 
   const status = requestRecovery(
     message ?? 'Failed to find Server Action. This request was not found on the server.',
   );
-  if (status !== 'scheduled') return;
+  if (status !== 'scheduled') return status;
 
   void import('sonner')
     .then(({ toast }) => {
@@ -557,6 +559,7 @@ export function softReloadForStaleServerAction(message?: unknown): void {
     .catch(() => {
       /* sonner not available — a silent recovery is fine */
     });
+  return status;
 }
 
 /**

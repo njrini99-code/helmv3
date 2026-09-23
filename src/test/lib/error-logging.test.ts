@@ -150,6 +150,20 @@ describe('softReloadForStaleServerAction', () => {
     expect(reloadSpy).not.toHaveBeenCalled();
   });
 
+  it('recoverFromStaleServerAction: a refused recovery hands the error back to the caller', async () => {
+    const { recoverFromStaleServerAction } = await import('@/lib/error-logging');
+    // Unsaved work, a spent budget or a missing coordinator: no reload is
+    // coming, so the caller must still toast — a silent tee tap is the bug.
+    for (const status of ['unsafe-work', 'budget-spent', 'ineligible'] as const) {
+      requestRecovery.mockReturnValueOnce(status);
+      expect(recoverFromStaleServerAction(new Error('Server action not found.'))).toBe(false);
+    }
+    requestRecovery.mockReturnValueOnce('in-flight');
+    expect(recoverFromStaleServerAction(new Error('Server action not found.'))).toBe(true);
+    delete (window as unknown as { __helmRecovery?: unknown }).__helmRecovery;
+    expect(recoverFromStaleServerAction(new Error('Server action not found.'))).toBe(false);
+  });
+
   it('hands the failure to the coordinator instead of reloading itself', async () => {
     const { softReloadForStaleServerAction } = await import('@/lib/error-logging');
 
