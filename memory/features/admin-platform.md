@@ -103,14 +103,16 @@ This area is high criticality because it often uses broader access patterns, ope
   PostgREST failures grouped by fingerprint, `pg_stat_statements`
   delta/regression detection — read from `helm_debug` every 5-15 minutes via
   `src/lib/admin/database/{overview,errors,performance}.ts`. Its data source
-  (`src/lib/observability/supabase/**`, four new `helm_debug` tables) is
-  **HELD, not applied to production** — see `supabase/migrations/HELD.md` —
-  so every fetcher currently renders "not shipped yet"
-  (`status: 'unconfigured'`), not a false failure state.
+  (`src/lib/observability/supabase/**`, the `helm_debug` collector tables)
+  is **applied in production** (2026-09-03; see `supabase/migrations/HELD.md`,
+  verified live 2026-09-23). The `status: 'unconfigured'` path remains only
+  for a database without those tables (a fresh local stack or a preview), so
+  it renders "not shipped yet" there rather than a false failure state.
 - `src/app/api/cron/db-health-sampler/**`, `db-stat-delta/**`,
   `db-observability-prune/**` — the three Vercel-cron collectors behind
-  `/admin/database` (5m / 15m / daily). Degrade cleanly on the HELD-migration
-  "not found" error shape, same pattern as `helm-debug-prune/route.ts`.
+  `/admin/database` (5m / 15m / daily). Degrade cleanly on the
+  missing-migration "not found" error shape (fresh or preview databases),
+  same pattern as `helm-debug-prune/route.ts`.
 - `src/app/api/cron/selfheal-triage/**` — the self-healing loop's Diagnose
   stage, moved here from an Anthropic-hosted cloud routine (2026-09-02). Its
   collection/apply core is `src/lib/admin/triage-collect.ts` /
