@@ -53,3 +53,21 @@ describe('ShotAnalysisCard — Key Weaknesses minimum-sample guard (#972)', () =
     expect(cards[1]).toHaveTextContent('30 shots');
   });
 });
+
+describe('ShotAnalysisCard — teamScrambleRate scale (Package 11 follow-up)', () => {
+  it('scales a 0-1 teamScrambleRate fraction to a percent, same as the player scrambleRate', () => {
+    const { container } = render(<ShotAnalysisCard scrambleRate={0.55} teamScrambleRate={0.62} />);
+
+    // Player rate: 55% (rendered twice — the badge circle and the caption).
+    expect(screen.getAllByText('55%').length).toBeGreaterThan(0);
+    // Team avg: 62%, not the unscaled "0.62%".
+    expect(container.textContent).toContain('team avg: 62%');
+    expect(container.textContent).not.toContain('team avg: 0.62%');
+  });
+
+  it('passes an already-scaled (>1) teamScrambleRate through unchanged', () => {
+    const { container } = render(<ShotAnalysisCard scrambleRate={0.55} teamScrambleRate={62} />);
+
+    expect(container.textContent).toContain('team avg: 62%');
+  });
+});
