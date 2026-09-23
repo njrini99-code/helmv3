@@ -56,6 +56,19 @@ export interface EvidencePacketEntry {
   metric_id: string;
   value: number;
   sample_n: number;
+  /**
+   * `'measurement'`: a direct, single-observation fact (a round's own
+   * score, putts, fairways hit — there is no "n" to sample, the count
+   * IS the fact). Exempt from the `MIN_SAMPLE_N` floor below.
+   * `'aggregate'`: a value computed over multiple observations (a
+   * multi-round rate, a season average) — floored at `MIN_SAMPLE_N`,
+   * same as the v2 insight-writer contract this reuses.
+   *
+   * Defaults to `'aggregate'` when omitted so an unlabeled entry fails
+   * safe (floored), rather than an entry silently skipping the floor
+   * because a producer forgot to set this.
+   */
+  kind?: 'measurement' | 'aggregate';
   causal_support?: CausalSupport;
 }
 
@@ -97,6 +110,15 @@ export interface ClaimValidationResult {
   renderable: boolean;
 }
 
+// Claims and packet entries both carry plain `number`s (never the
+// string-typed `EvidenceClaim.value` citations.ts deals with), so exact
+// float equality would be the naive choice — this tolerance exists only
+// for a value that crossed a JSON round-trip or a display-rounding step
+// upstream (e.g. a caller building a claim from a `.toFixed(1)` string it
+// re-parsed): 0.005 is half of the smallest increment (0.01) a 1-decimal
+// percentage or strokes-gained figure can differ by, so two renderings of
+// the SAME true value always match while any real difference still trips
+// `wrong_field`/`value_mismatch`.
 const VALUE_TOLERANCE = 0.005;
 
 function valuesMatch(a: number, b: number): boolean {
@@ -104,9 +126,49 @@ function valuesMatch(a: number, b: number): boolean {
 }
 
 /**
+ * Causal-language markers in free text: "because", "due to", "caused by",
+ * "led to", "as a result", "which is why", and near-synonyms.
+ *
+ * SHOULD-3 (post-#1991 review): a model can write causal PROSE while
+ * tagging its structured claim `claim_type: 'fact'` (or omitting the
+ * field) — `checkClaim`'s causal-backing check only ever runs when the
+ * claim itself declares `'causal'`, so an untagged causal sentence would
+ * sail through with no backing check at all. This scans the rendered
+ * prose independently of what the model DECLARED, closing that gap: the
+ * model's own label is not trusted.
+ */
+const CAUSAL_LANGUAGE_RE =
+  /\b(because|due to|caused? by|(?:has |have |had )?led to|leads? to|leading to|as a result(?: of)?|which is why|the reason (?:is|for|was)|results? in|resulting in|resulted in)\b/i;
+
+/**
+ * Hole numbers (1-18), par values (3/4/5), and written-out dates ("Sept
+ * 12" / "September 12th") — numbers that describe the STRUCTURE of a
+ * round rather than assert a fact needing evidence backing. SHOULD-4
+ * (post-#1991 review): these were tripping `uncited_number` on otherwise
+ * good text, since nothing registers "hole 14" as an evidence value.
+ * Deliberately narrow (requires the structural keyword immediately
+ * beside the number) so a bare number elsewhere is still scrutinised.
+ */
+const HOLE_NUMBER_RE = /\bhole\s*#?\s*(\d{1,2})\b/gi;
+const PAR_RE = /\bpar[\s-]?(3|4|5)\b/gi;
+const MONTH_DAY_RE =
+  /\b(?:jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:t(?:ember)?)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)\.?\s+(\d{1,2})(?:st|nd|rd|th)?\b/gi;
+
+function structurallyExemptTokens(prose: string): Set<string> {
+  const exempt = new Set<string>();
+  for (const re of [HOLE_NUMBER_RE, PAR_RE, MONTH_DAY_RE]) {
+    for (const m of prose.matchAll(re)) {
+      if (m[1]) exempt.add(normalize(m[1]));
+    }
+  }
+  return exempt;
+}
+
+/**
  * Validate a batch of typed claim references against the evidence packet
  * they were supposedly drawn from, then check the surrounding prose for
- * numbers no accepted claim accounts for.
+ * numbers no accepted claim accounts for and for causal language no
+ * claim backs.
  *
  * Fixed check order per claim — player, then window, then metric
  * existence, then value, then the sample floor, then causal backing —
@@ -135,14 +197,20 @@ export function validateClaims(
   // that maps to a claim's value is "explained" by that claim's own
   // rejection reason — checking it AGAIN here would double-report one
   // mistake under two reasons. This only catches a number in the prose
-  // that no claim, accepted or rejected, ever attempted to cite at all.
+  // that no claim, accepted or rejected, ever attempted to cite at all,
+  // is not one of the packet's own values cited informally (SHOULD-4),
+  // and is not part of a structural mention (hole/par/date, SHOULD-4).
   const claimedValues = new Set(claims.map((c) => normalize(String(c.value))));
+  const packetValues = new Set(packet.entries.map((e) => normalize(String(e.value))));
+  const structuralExempt = structurallyExemptTokens(prose);
   const proseTokens = extractNumericTokens(prose);
   let uncitedIndex = 0;
   for (const tok of proseTokens) {
     const normalized = normalize(tok);
     if (SAFE_NUMERIC_TOKENS.has(normalized)) continue;
     if (claimedValues.has(normalized)) continue;
+    if (packetValues.has(normalized)) continue;
+    if (structuralExempt.has(normalized)) continue;
     rejected.push({
       claim: {
         claim_id: `uncited:${uncitedIndex++}`,
@@ -153,6 +221,31 @@ export function validateClaims(
         window_end: packet.window_end,
       },
       reason: 'uncited_number',
+    });
+  }
+
+  // SHOULD-3: causal PROSE with no accepted claim actually tagged and
+  // backed as causal. Independent of any individual claim's own
+  // `claim_type` — a claim mistagged (or left) 'fact' does not exempt
+  // causal-sounding prose from needing backing.
+  const hasCausalLanguage = CAUSAL_LANGUAGE_RE.test(prose);
+  const hasBackedCausalClaim = accepted.some((c) => c.claim_type === 'causal');
+  // A claim properly tagged 'causal' but lacking backing already earned
+  // its own unsupported_cause rejection via checkClaim — don't ALSO add
+  // the prose-level synthetic one for the same underlying mistake. This
+  // check exists for causal prose NO claim was ever tagged to cover.
+  const alreadyFlagged = rejected.some((r) => r.reason === 'unsupported_cause');
+  if (hasCausalLanguage && !hasBackedCausalClaim && !alreadyFlagged) {
+    rejected.push({
+      claim: {
+        claim_id: 'unsupported-cause:prose',
+        metric_id: '',
+        value: 0,
+        player_id: packet.player_id,
+        window_start: packet.window_start,
+        window_end: packet.window_end,
+      },
+      reason: 'unsupported_cause',
     });
   }
 
@@ -182,7 +275,13 @@ function checkClaim(claim: ClaimReference, packet: EvidencePacket): ClaimRejecti
     return misattributed ? 'wrong_field' : 'value_mismatch';
   }
 
-  if (entry.sample_n < MIN_SAMPLE_N) return 'unsupported_small_number';
+  // A 'measurement' entry (a round's own score/putts/fairways) has no "n"
+  // to sample — the count IS the fact. Only an 'aggregate' entry (a
+  // multi-round rate or average) is floored. Unlabeled defaults to
+  // 'aggregate' so it fails safe.
+  if ((entry.kind ?? 'aggregate') === 'aggregate' && entry.sample_n < MIN_SAMPLE_N) {
+    return 'unsupported_small_number';
+  }
 
   if (claim.claim_type === 'causal') {
     const support = entry.causal_support;

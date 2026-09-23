@@ -339,7 +339,45 @@ closes that gap for a `compose()` caller that opts in.
   existing `evidence_offered` no-prose contract.
 - Not wired in this slice: `round-review.ts` does not build or pass an
   `evidence_packet` yet, so this gate is dormant for every live caller
-  today. Wiring it is a candidate next slice.
+  today. `round-review.ts` itself has zero callers in production
+  (`round-regime.ts` documents this); the wiring candidate is
+  `round-recap.ts`'s `generateLLMRecap`, the only live, persisted
+  (`golf_rounds.ai_recap`) LLM-text surface among the candidates
+  surveyed — a later slice.
+- `EvidencePacketEntry.kind: 'measurement' | 'aggregate'` (2026-09-23
+  review fix): the `sample_n` floor only applies to `'aggregate'` (a
+  value computed over multiple observations — a rate, an average).
+  `'measurement'` (a direct single-round fact: this round's own score,
+  putts, fairways hit) is exempt — there is no "n" to sample when the
+  count IS the fact. Unlabeled entries default to `'aggregate'` so an
+  entry a producer forgot to classify still fails safe (floored).
+- Delimiter handling is defense-in-depth against the model itself, not
+  just malformed JSON (2026-09-23 review fix): more than one
+  `<<<CLAIMS>>>`/`<<<END_CLAIMS>>>` pair, or an opener with no matching
+  closer, is `malformed` — every delimiter occurrence is stripped
+  regardless (global, not "replace the first"), so a duplicated or
+  unterminated block can never leave a literal delimiter or raw JSON
+  fragment in text a player reads.
+- The `uncited_number` guard also exempts (2026-09-23 review fix): a
+  number that appears in ANY packet entry's value, even if no claim
+  formally cited it, and numbers in narrow structural context — hole
+  numbers (`hole 14`), par values (`par 4`), and written dates
+  (`September 12`) — so accurate prose doesn't fall back just because
+  nothing registered a course-structure number as an "evidence value".
+  A bare number with no structural keyword beside it is still
+  scrutinised.
+- Causal language is checked in the PROSE independent of what a claim
+  declares (2026-09-23 review fix): a model can tag its own claim
+  `claim_type: 'fact'` (or omit the field) while still writing a causal
+  sentence ("because", "due to", "led to", "as a result", "which is
+  why", …) — the model's own label is not trusted. Causal prose with no
+  ACCEPTED claim actually tagged and backed `'causal'` is its own
+  `unsupported_cause` rejection, distinct from (and not duplicating) a
+  properly-tagged causal claim that already failed its own backing
+  check.
+- A successful packet-engaged call now logs `citations.claim_validation:
+  { accepted, rejected: 0 }` (2026-09-23 review fix) — previously only a
+  discard told you the typed gate had run at all.
 
 ## Standing read rules (2026-09-12, repair deferrals)
 

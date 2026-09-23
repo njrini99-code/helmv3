@@ -71,10 +71,12 @@ vi.mock('@ai-sdk/anthropic', () => ({
   anthropic: (modelName: string) => anthropicMock(modelName),
 }));
 
-import { compose } from './compose';
+import { compose, __testables } from './compose';
 import { checkBudget } from './budget';
 import type { ComposeRequest } from './types';
 import type { EvidencePacket } from './claim-validator';
+
+const { buildRetryPrompt, extractAndValidateClaims } = __testables;
 
 const FALLBACK = 'Deterministic fallback summary.';
 const ALLOW_BUDGET = {
@@ -478,5 +480,160 @@ describe('compose() typed claim gate (evidence_packet)', () => {
     expect(generateTextMock).not.toHaveBeenCalled();
     expect(result.text).toBe(FALLBACK);
     expect(result.used_llm).toBe(false);
+  });
+});
+
+/**
+ * MUST-1 (post-#1991 review): `CLAIMS_BLOCK_RE` had no `/g` flag, so
+ * `.replace()` only removed the FIRST claims block — a second one, or an
+ * unterminated opener, survived verbatim into player text. These test
+ * `extractAndValidateClaims`/`stripAllClaimsDelimiters` directly via
+ * `__testables` so the delimiter-handling logic is pinned independent of
+ * the rest of the compose() pipeline.
+ */
+describe('extractAndValidateClaims() / stripAllClaimsDelimiters() — delimiter handling (MUST-1)', () => {
+  it('strips a single well-formed block, including one in the MIDDLE of the prose', () => {
+    const raw = `Prefix.${claimsBlock([])}Suffix.`;
+    const { strippedText, claims } = extractAndValidateClaims(raw, PACKET);
+
+    // claimsBlock() itself prefixes the delimiter with "\n\n" — that
+    // whitespace is what's left once the delimiter+JSON is removed; the
+    // point of this assertion is no DELIMITER or JSON content survives.
+    expect(strippedText).toBe('Prefix.\n\nSuffix.');
+    expect(strippedText).not.toContain('<<<CLAIMS>>>');
+    expect(claims?.malformed).toBe(false);
+  });
+
+  it('treats TWO complete blocks as malformed and strips BOTH, leaving no delimiter behind', () => {
+    const raw = `Text one.${claimsBlock([])} middle text ${claimsBlock([])}Text two.`;
+    const { strippedText, claims } = extractAndValidateClaims(raw, PACKET);
+
+    expect(claims?.malformed).toBe(true);
+    expect(strippedText).not.toContain('<<<CLAIMS>>>');
+    expect(strippedText).not.toContain('<<<END_CLAIMS>>>');
+    expect(strippedText).not.toContain('[]');
+  });
+
+  it('treats an UNTERMINATED opener (no closing delimiter) as malformed and strips from the opener onward', () => {
+    const raw = 'You took 28 putts today.<<<CLAIMS>>>\n[{"claim_id":"c1"';
+    const { strippedText, claims } = extractAndValidateClaims(raw, PACKET);
+
+    expect(claims?.malformed).toBe(true);
+    expect(strippedText).toBe('You took 28 putts today.');
+    expect(strippedText).not.toContain('<<<CLAIMS>>>');
+    expect(strippedText).not.toContain('claim_id');
+  });
+
+  it('treats a stray closer with no opener as malformed and strips it', () => {
+    const raw = 'You took 28 putts today.<<<END_CLAIMS>>> extra.';
+    const { strippedText, claims } = extractAndValidateClaims(raw, PACKET);
+
+    expect(claims?.malformed).toBe(true);
+    expect(strippedText).not.toContain('<<<END_CLAIMS>>>');
+  });
+
+  it('never strips anything when no evidence_packet is supplied (gate stays opt-in)', () => {
+    const raw = `Text.${claimsBlock([])}More text.`;
+    const { strippedText, claims } = extractAndValidateClaims(raw, undefined);
+
+    expect(strippedText).toBe(raw);
+    expect(claims).toBeNull();
+  });
+
+  it('end-to-end via compose(): a duplicated claims block never reaches the returned OR logged text', async () => {
+    generateTextMock.mockResolvedValueOnce({
+      text: `First answer.${claimsBlock([
+        { claim_id: 'c1', metric_id: 'total_putts', value: 28, player_id: 'player-1', ...WINDOW },
+      ])} Second answer with a DIFFERENT block.${claimsBlock([])}`,
+      usage: { inputTokens: 10, outputTokens: 8 },
+    });
+    generateTextMock.mockResolvedValueOnce({
+      text: 'Clean retry text.' + claimsBlock([
+        { claim_id: 'c1', metric_id: 'total_putts', value: 28, player_id: 'player-1', ...WINDOW },
+      ]),
+      usage: { inputTokens: 10, outputTokens: 8 },
+    });
+
+    const result = await compose(baseReq({ evidence_packet: PACKET }), FALLBACK);
+
+    // Whatever the outcome, no returned text may EVER contain a delimiter
+    // or a raw claims JSON fragment.
+    expect(result.text).not.toContain('<<<CLAIMS>>>');
+    expect(result.text).not.toContain('<<<END_CLAIMS>>>');
+    for (const row of loggedRows) {
+      expect(JSON.stringify(row)).not.toContain('<<<CLAIMS>>>');
+    }
+  });
+});
+
+/**
+ * MUST-2 (post-#1991 review): the retry-prompt builder gained sections
+ * for the typed gate, and the rewrite silently appended a trailing `\n`
+ * to the numeric-correction string even when no `evidence_packet` was in
+ * play — changing the byte-identical default-path prompt that shipped
+ * before this slice. This pins the exact original string.
+ */
+describe('buildRetryPrompt() — byte-exact with no packet (MUST-2)', () => {
+  it('matches the original pre-typed-gate string exactly, with no trailing newline', () => {
+    const prompt = 'Write a round review.';
+    const unmatchedTokens = ['42', '17'];
+
+    const result = buildRetryPrompt(prompt, unmatchedTokens, undefined, false);
+
+    expect(result).toBe(
+      'Write a round review.\n\n' +
+        'IMPORTANT CORRECTION: a previous draft included numbers that are NOT ' +
+        'supported by the provided data: 42, 17. Rewrite the response and ' +
+        'do NOT mention any number unless it appears in the supplied evidence. ' +
+        'Use directional words ("up", "down", "improved") instead of inventing figures.',
+    );
+    expect(result.endsWith('\n')).toBe(false);
+  });
+
+  it('adds a second section (no trailing newline after the first) when a packet issue is also present', () => {
+    const result = buildRetryPrompt('Base prompt.', ['42'], undefined, true);
+    // Sections join with exactly one '\n', never two in a row.
+    expect(result).not.toContain('\n\n\n');
+    expect(result).not.toMatch(/figures\.\n[^I]/); // no stray blank line before the next section
+  });
+});
+
+/**
+ * SHOULD-5 (post-#1991 review): a SUCCESSFUL packet-engaged call
+ * previously logged nothing about the typed gate at all — only a
+ * discard told you claim-validator.ts ran.
+ */
+describe('compose() success-path claim_validation logging (SHOULD-5)', () => {
+  it('logs claim_validation: { accepted, rejected: 0 } on a verified call with a packet', async () => {
+    generateTextMock.mockResolvedValueOnce({
+      text:
+        'You took 28 putts today.' +
+        claimsBlock([
+          { claim_id: 'c1', metric_id: 'total_putts', value: 28, player_id: 'player-1', ...WINDOW },
+        ]),
+      usage: { inputTokens: 10, outputTokens: 8 },
+    });
+
+    const result = await compose(baseReq({ evidence_packet: PACKET }), FALLBACK);
+
+    expect(result.used_llm).toBe(true);
+    const row = loggedRows.find((r) => r.verified === true);
+    expect(row).toBeTruthy();
+    expect((row?.citations as { claim_validation?: { accepted: number; rejected: number } })?.claim_validation).toEqual({
+      accepted: 1,
+      rejected: 0,
+    });
+  });
+
+  it('logs no claim_validation block when no evidence_packet was supplied (gate stays opt-in)', async () => {
+    generateTextMock.mockResolvedValueOnce({
+      text: 'You took 28 putts today.',
+      usage: { inputTokens: 10, outputTokens: 8 },
+    });
+
+    await compose(baseReq(), FALLBACK);
+
+    const row = loggedRows.find((r) => r.verified === true);
+    expect((row?.citations as { claim_validation?: unknown })?.claim_validation).toBeUndefined();
   });
 });

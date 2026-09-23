@@ -308,7 +308,19 @@ export async function compose(
     prompt_tokens: total_prompt_tokens,
     completion_tokens: total_completion_tokens,
     cost_usd,
-    citations: { unmatched_tokens: attempt.verification.unmatched_tokens },
+    citations: {
+      unmatched_tokens: attempt.verification.unmatched_tokens,
+      // SHOULD-5 (post-#1991 review): a successful call with a typed
+      // packet previously logged nothing about the typed gate at all —
+      // only a discard told you claim-validator.ts ran. Recording the
+      // accepted count on every packet-engaged call (rejected is always
+      // 0 here, by construction of reaching this branch) makes "was the
+      // typed gate even exercised" answerable without cross-referencing
+      // discards.
+      ...(attempt.claims
+        ? { claim_validation: { accepted: attempt.claims.accepted.length, rejected: 0 } }
+        : {}),
+    },
     verified: true,
     fallback_to_template: false,
   });
@@ -364,7 +376,31 @@ function attemptVerified(attempt: LlmAttempt): boolean {
   return true;
 }
 
+const CLAIMS_OPEN = '<<<CLAIMS>>>';
+const CLAIMS_CLOSE = '<<<END_CLAIMS>>>';
 const CLAIMS_BLOCK_RE = /<<<CLAIMS>>>([\s\S]*?)<<<END_CLAIMS>>>/;
+
+function countOccurrences(haystack: string, needle: string): number {
+  return haystack.split(needle).length - 1;
+}
+
+/**
+ * Remove every claims-block delimiter from `text`, however many there
+ * are: every complete `<<<CLAIMS>>>...<<<END_CLAIMS>>>` pair (global, not
+ * just the first — MUST-1 post-#1991 review: without `/g` a SECOND block
+ * survived a `.replace()` into player text), everything from an
+ * unterminated opener through the end of the string, and any stray
+ * closer with no matching opener. Called on every malformed path so a
+ * duplicated or broken claims block can never leave a literal delimiter
+ * or a raw JSON fragment in text a player reads.
+ */
+function stripAllClaimsDelimiters(text: string): string {
+  let out = text.replace(new RegExp(CLAIMS_BLOCK_RE.source, 'g'), '');
+  const openIdx = out.indexOf(CLAIMS_OPEN);
+  if (openIdx !== -1) out = out.slice(0, openIdx);
+  out = out.split(CLAIMS_CLOSE).join('');
+  return out.trim();
+}
 
 const ClaimReferenceSchema = z.object({
   claim_id: z.string(),
@@ -403,9 +439,15 @@ function buildClaimsInstruction(packet: NonNullable<ComposeRequest['evidence_pac
 /**
  * Strip the claims block (delimiters included) out of the raw model text
  * and parse it, when present, against `evidence_packet`. Never throws —
- * a missing block or invalid JSON/schema comes back as `malformed: true`
- * rather than an exception, matching compose()'s contract that a
- * provider or parsing problem never surfaces past this module.
+ * a missing, duplicated, unterminated, or invalid-JSON/-schema block
+ * comes back as `malformed: true` rather than an exception, matching
+ * compose()'s contract that a provider or parsing problem never surfaces
+ * past this module.
+ *
+ * More than one opener or closer (a duplicated block) and an opener with
+ * no matching closer (an unterminated block) are BOTH malformed, not "use
+ * the first one" — MUST-1 (post-#1991 review): a second, unparsed block
+ * must never reach a player as literal text.
  */
 function extractAndValidateClaims(
   rawText: string,
@@ -413,11 +455,21 @@ function extractAndValidateClaims(
 ): { strippedText: string; claims: TypedClaimAttempt | null } {
   if (!packet) return { strippedText: rawText, claims: null };
 
+  const strippedText = stripAllClaimsDelimiters(rawText);
+  const openCount = countOccurrences(rawText, CLAIMS_OPEN);
+  const closeCount = countOccurrences(rawText, CLAIMS_CLOSE);
+  if (openCount !== 1 || closeCount !== 1) {
+    return { strippedText, claims: { accepted: [], rejected: [], malformed: true } };
+  }
+
+  // Exactly one opener and one closer exist, but they could still be in
+  // the wrong order (closer before opener) — `.match` returns null in
+  // that case rather than a false match, so this guard is load-bearing,
+  // not defensive dead code.
   const match = rawText.match(CLAIMS_BLOCK_RE);
   if (!match) {
-    return { strippedText: rawText.trim(), claims: { accepted: [], rejected: [], malformed: true } };
+    return { strippedText, claims: { accepted: [], rejected: [], malformed: true } };
   }
-  const strippedText = rawText.replace(CLAIMS_BLOCK_RE, '').trim();
 
   let parsed: unknown;
   try {
@@ -517,6 +569,12 @@ async function runLlmAttempt(
  * typed claims so the retry attempt can drop or fix them. `prompt` is
  * already the base prompt including the claims-block instruction (when
  * engaged), so the retry keeps asking for the block too.
+ *
+ * MUST-2 (post-#1991 review): with no `evidence_packet`, this must
+ * return BYTE-IDENTICAL output to the original single-purpose function —
+ * `${prompt}\n\n${correction}`, no trailing newline. Sections are joined
+ * with `\n` and only a leading `${prompt}\n\n` is ever added, so the
+ * single-section (default, no-packet) case reduces to exactly that.
  */
 function buildRetryPrompt(
   prompt: string,
@@ -524,36 +582,38 @@ function buildRetryPrompt(
   rejectedClaims: RejectedClaim[] | undefined,
   malformed: boolean,
 ): string {
-  const parts: string[] = [`${prompt}\n\n`];
+  const sections: string[] = [];
 
   if (unmatchedTokens.length > 0) {
     const tokenList = unmatchedTokens.join(', ');
-    parts.push(
+    sections.push(
       `IMPORTANT CORRECTION: a previous draft included numbers that are NOT ` +
         `supported by the provided data: ${tokenList}. Rewrite the response and ` +
         `do NOT mention any number unless it appears in the supplied evidence. ` +
-        `Use directional words ("up", "down", "improved") instead of inventing figures.\n`,
+        `Use directional words ("up", "down", "improved") instead of inventing figures.`,
     );
   }
 
   if (malformed) {
-    parts.push(
-      `IMPORTANT CORRECTION: your claims block was missing or was not valid JSON. ` +
-        `You MUST include it, in exactly the format shown, listing every number you cite.\n`,
+    sections.push(
+      `IMPORTANT CORRECTION: your claims block was missing, duplicated, unterminated, ` +
+        `or was not valid JSON. You MUST include EXACTLY ONE claims block, in exactly ` +
+        `the format shown, listing every number you cite.`,
     );
   } else if (rejectedClaims && rejectedClaims.length > 0) {
     const issues = rejectedClaims
       .map((r) => `metric_id=${r.claim.metric_id || '(none)'} value=${r.claim.value} reason=${r.reason}`)
       .join('; ');
-    parts.push(
+    sections.push(
       `IMPORTANT CORRECTION: some of your cited claims could not be verified against ` +
         `the evidence for this player and window: ${issues}. Only cite a metric's own ` +
         `value, for this exact player and window, and only assert a cause when the ` +
-        `evidence supports it. Rewrite the response and its claims block accordingly.\n`,
+        `evidence supports it. Rewrite the response and its claims block accordingly.`,
     );
   }
 
-  return parts.join('');
+  if (sections.length === 0) return prompt;
+  return `${prompt}\n\n${sections.join('\n')}`;
 }
 
 /**
@@ -689,3 +749,14 @@ async function logCall(
   }
   return data?.id ?? null;
 }
+
+// ---------------------------------------------------------------------------
+// Test surface — exported for unit tests in compose.test.ts. Production
+// callers should use compose() above.
+// ---------------------------------------------------------------------------
+
+export const __testables = {
+  buildRetryPrompt,
+  extractAndValidateClaims,
+  stripAllClaimsDelimiters,
+};
