@@ -3,7 +3,7 @@ cohort, which rows reach the facility resolver, and the resolve hook."""
 import unittest
 from types import SimpleNamespace
 
-from factory.intake_played import cohort_from_played, resolution_plan, run
+from factory.intake_played import apply_aliases, cohort_from_played, resolution_plan, run
 
 PLAYED = {'queriedAt': '2026-09-23T03:00:00Z', 'courses': [
     {'dbCourseId': 'bound', 'name': 'Bound Course', 'city': 'A', 'state': 'NC', 'rounds': 40, 'layouts': ['bound-course']},
@@ -61,18 +61,35 @@ class RunTests(unittest.TestCase):
             calls.append(([r['id'] for r in rows], reresolve_ids))
             return {'facilities': coverage['facilities'] + [{'libraryIds': ['absent'], 'name': 'Not Audited'}]}
 
-        merged, resolved_rows, _ = run(PLAYED, COVERAGE, {'scorecards': []}, SimpleNamespace(layouts=CATALOG.layouts, facilities={}), resolve=resolve)
+        merged, resolved_rows, _, _ = run(PLAYED, COVERAGE, {'scorecards': []}, SimpleNamespace(layouts=CATALOG.layouts, facilities={}), resolve=resolve)
         self.assertEqual(calls, [(['stale', 'node', 'absent'], {'stale'})])
         self.assertIn('absent', [lid for f in merged['facilities'] for lid in f['libraryIds']])
         self.assertEqual(len(resolved_rows), 3)
 
     def test_no_resolver_reports_on_current_coverage(self):
-        merged, _, rows = run(PLAYED, COVERAGE, {'scorecards': []}, SimpleNamespace(layouts=CATALOG.layouts, facilities={}))
+        merged, _, rows, _ = run(PLAYED, COVERAGE, {'scorecards': []}, SimpleNamespace(layouts=CATALOG.layouts, facilities={}))
         self.assertIs(merged, COVERAGE)
         by_id = {r['libraryId']: r for r in rows}
         self.assertEqual(by_id['bound']['status'], 'catalogued')
         self.assertEqual(by_id['absent']['status'], 'skipped')
 
+
+
+class AliasTests(unittest.TestCase):
+    PLAYED = {'courses': [{'dbCourseId': 'p1', 'name': 'Bryan Park Players'}, {'dbCourseId': 'p2', 'name': 'Bryan Park Players Course'},
+                          {'dbCourseId': 'l2', 'name': 'Lakeview Golf Course'}]}
+
+    def test_alias_is_not_its_own_cohort_row(self):
+        self.assertEqual([c['id'] for c in cohort_from_played(self.PLAYED)['courses']], ['p1'])
+
+    def test_alias_id_joins_a_layout_being_written(self):
+        layout = {'externalBindings': {'golfCourseIds': ['p1']}}
+        rows = [{'course': 'Bryan Park Players', 'status': 'ready_to_write', 'layoutId': 'bryan-park-players', 'docs': {'layout': layout}}]
+        catalog = SimpleNamespace(layouts={'lakeview-golf-club': {'layoutId': 'lakeview-golf-club', 'name': 'Lakeview Golf Club', 'externalBindings': {'golfCourseIds': ['l1']}}})
+        pending = apply_aliases(self.PLAYED, rows, catalog)
+        self.assertEqual(layout['externalBindings']['golfCourseIds'], ['p1', 'p2'])
+        # An already-catalogued canonical layout is never rewritten here.
+        self.assertEqual([(p['alias'], p['layoutId']) for p in pending], [('Lakeview Golf Course', 'lakeview-golf-club')])
 
 if __name__ == '__main__':
     unittest.main()

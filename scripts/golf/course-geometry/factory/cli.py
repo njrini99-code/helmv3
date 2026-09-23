@@ -97,7 +97,7 @@ def build_parser():
     kp.add_argument('--played', default='output/course-geometry/overnight/played-courses.json')
     kp.add_argument('--coverage', default='output/course-geometry/library-coverage/coverage.json')
     kp.add_argument('--coverage-out', default='output/course-geometry/library-coverage/coverage-played.json', help='merged coverage (the audit file is never overwritten)')
-    kp.add_argument('--scorecards', default='output/course-geometry/overnight/w4-combined-scorecards.json')
+    kp.add_argument('--scorecards', default='output/course-geometry/overnight/played-scorecards.json')
     kp.add_argument('--cache', default='output/course-geometry/library-coverage/resolver-cache')
     kp.add_argument('--sleep', type=float, default=1.5, help='seconds between public API calls')
     kp.add_argument('--no-resolve', action='store_true', help='report on current coverage only; no network')

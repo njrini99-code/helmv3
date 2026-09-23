@@ -23,6 +23,13 @@ import os
 from .intake import build_entries
 
 OUT_OF_SCOPE = {'Oviinbyrd Golf Club'}
+# Played DB rows that are the same physical course as another played row
+# (plan W4). An alias never becomes a layout of its own: its DB id joins the
+# canonical layout's golfCourseIds when intake writes that layout, and is
+# reported for a manual binding when the canonical layout already exists
+# (intake never overwrites a catalogued layout).
+ALIASES = {'Bryan Park Players Course': 'Bryan Park Players', 'Forest Oaks CC': 'Forest Oaks',
+           'Lakeview Golf Course': 'Lakeview Golf Club'}
 
 
 def cohort_from_played(played, out_of_scope=OUT_OF_SCOPE):
@@ -31,7 +38,33 @@ def cohort_from_played(played, out_of_scope=OUT_OF_SCOPE):
     `retrievedAt`, and a profile without one is SCORECARD_INVALID."""
     return {'queriedAt': played.get('queriedAt') or '', 'courses': [{'id': c['dbCourseId'], 'name': c['name'], 'city': c.get('city'), 'state': c.get('state'),
                          'completed_rounds': c.get('rounds') or 0}
-                        for c in played.get('courses', []) if c['name'] not in out_of_scope]}
+                        for c in played.get('courses', []) if c['name'] not in out_of_scope and c['name'] not in ALIASES]}
+
+
+def apply_aliases(played, rows, catalog):
+    """Folds each alias's DB id into its canonical row's layout doc when that
+    layout is about to be written; returns the aliases that need a person
+    (canonical already catalogued, or not resolvable this run)."""
+    ids = {c['name']: c['dbCourseId'] for c in played.get('courses', [])}
+    by_course = {r['course']: r for r in rows}
+    pending = []
+    for alias, canonical in ALIASES.items():
+        if alias not in ids:
+            continue
+        row = by_course.get(canonical)
+        layout_doc = ((row or {}).get('docs') or {}).get('layout') if row and row.get('status') == 'ready_to_write' else None
+        if layout_doc is not None:
+            bound = layout_doc['externalBindings']['golfCourseIds']
+            if ids[alias] not in bound:
+                bound.append(ids[alias])
+            row['aliases'] = sorted(set(row.get('aliases', [])) | {alias})
+            continue
+        existing = next((l['layoutId'] for l in catalog.layouts.values()
+                         if canonical.lower() == (l.get('name') or '').lower() or ids.get(canonical) in (l.get('externalBindings') or {}).get('golfCourseIds', [])), None)
+        pending.append({'alias': alias, 'dbCourseId': ids[alias], 'canonical': canonical, 'layoutId': existing or (row or {}).get('layoutId'),
+                        'action': (f'add {ids[alias]} to {existing}.externalBindings.golfCourseIds by hand' if existing else
+                                   f'bind once {canonical!r} is catalogued (it is {(row or {}).get("status") or "not in this run"})')})
+    return pending
 
 
 def _usable(facility):
@@ -72,7 +105,8 @@ def run(played, coverage, scorecards, catalog, *, resolve=None, min_rounds=1):
     cohort = cohort_from_played(played)
     rows_to_resolve, reresolve = resolution_plan(cohort, coverage, catalog)
     merged = resolve(rows_to_resolve, coverage, reresolve) if (resolve and rows_to_resolve) else coverage
-    return merged, rows_to_resolve, build_entries(cohort, merged, scorecards, catalog, min_rounds)
+    rows = build_entries(cohort, merged, scorecards, catalog, min_rounds)
+    return merged, rows_to_resolve, rows, apply_aliases(played, rows, catalog)
 
 
 def cmd_intake_played(session, args, out):
@@ -95,7 +129,7 @@ def cmd_intake_played(session, args, out):
         def resolve(rows, coverage, reresolve_ids):
             return merge_played_courses(rows, coverage, sleep=args.sleep, cache=cache, reresolve_library_ids=reresolve_ids)
 
-    merged, resolved_rows, rows = run(read(args.played), read(args.coverage), read(args.scorecards), session.catalog,
+    merged, resolved_rows, rows, pending_aliases = run(read(args.played), read(args.coverage), read(args.scorecards), session.catalog,
                                       resolve=resolve, min_rounds=args.min_rounds)
     if merged is not None and resolved_rows and not args.no_resolve:
         os.makedirs(os.path.dirname(path(args.coverage_out)), exist_ok=True)
@@ -106,11 +140,13 @@ def cmd_intake_played(session, args, out):
     if args.json:
         out.write(json.dumps({'resolverRows': [r['name'] for r in resolved_rows], 'resolverRan': not args.no_resolve, 'coverageOut': args.coverage_out if resolved_rows and not args.no_resolve else None,
                               'rows': [{k: v for k, v in r.items() if k != 'docs'} for r in rows],
-                              'written': [session.ctx.relpath(w) for w in written]}, indent=1) + '\n')
+                              'pendingAliases': pending_aliases, 'written': [session.ctx.relpath(w) for w in written]}, indent=1) + '\n')
     else:
         verb = 'needs the resolver (not run: --no-resolve)' if args.no_resolve else 'resolver ran for'
         out.write(f'{verb} {len(resolved_rows)} course(s)' + (f': {", ".join(r["name"] for r in resolved_rows)}' if resolved_rows else '') + '\n')
         out.write(render([r for r in rows if r['status'] != 'catalogued']) + '\n')
+        for alias in pending_aliases:
+            out.write(f'alias {alias["alias"]!r} -> {alias["canonical"]!r}: {alias["action"]}\n')
         if args.write:
             out.write(f'wrote {len(written)} manifest(s)\n' + ''.join(f'  {session.ctx.relpath(w)}\n' for w in written))
         elif any(r['status'] == 'ready_to_write' for r in rows):
