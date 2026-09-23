@@ -13,6 +13,23 @@ import type { FlagDefinition } from './types';
 
 export const FLAG_REGISTRY: readonly FlagDefinition[] = [
   {
+    feature_id: "coachhelm_chat_claim_gate",
+    owner: "golf/coachhelm",
+    purpose: "Gates whether coach chat's turn verdict also engages claim-validator.ts's typed wrong-player/wrong-window/wrong-unit/wrong-denominator/ unsupported-cause checks, on top of the existing numeric-claim audit; default off pending real-world evidence this doesn't over-reject otherwise-good answers. A rejected chat turn collapses the WHOLE turn to a failure note (repair plan 14.10's \"state it, don't hide it\"), so a false-positive rejection here is more visible and more frequent than round-recap's one-shot cached fallback — the uncited-denominator false positive found in review (2026-09-23) is fixed, but this flag stays off until a shadow-log rate confirms no other prose shape trips it.",
+    type: "experiment",
+    status: "active",
+    created_at: "2026-09-23",
+    expires_at: null,
+    default: false,
+    environment: {
+      production: false,
+      preview: false,
+      development: false,
+    },
+    kill_switch_behavior: null,
+    cleanup_plan: "Either promote to a permanent `release` flag once shadow-log data (the claim_validation_failed rate, and manual review of a sample of its rejections) shows the typed gate isn't discarding good chat answers, or remove the wiring entirely if it is.",
+  },
+  {
     feature_id: "coachhelm_learned_personalization",
     owner: "golf/coachhelm",
     purpose: "Gates whether v3 insight ranking's loadCoachWeightsForPlayer applies stored golf_coachhelm_coach_weights instead of neutral 1.0 defaults; default off because production's weights were computed under v1's broken outcome-attribution math (see score.ts's own docblock), not because of any evidence problem with this flag.",

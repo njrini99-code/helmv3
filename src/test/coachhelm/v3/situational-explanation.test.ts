@@ -88,15 +88,16 @@ function runTurn(rawText: string, measurements: Measurement[]) {
 
 describe('situational explanation — the typed claim gate (addendum A7 slice 1)', () => {
   it('control: an accurately attributed claim is accepted, and the block never reaches the stripped text', () => {
-    // Deliberately cites only the entry's own VALUE (28), not its
-    // denominator (43) — `validateClaims`'s own "uncited number" scan only
-    // treats claim/entry VALUES as citable, so a prose mention of the
-    // attempt count alone (with no claim naming 43) would trip
-    // `uncited_number` on an otherwise honest answer. That is a real,
-    // narrower boundary of the typed gate's prose scan than the legacy
-    // numeric audit's (which does treat a denominator as supported) — see
-    // `wrong-denominator` below for the check this module DOES cover.
-    const rawText = withClaimsBlock('Alice took 28 putts this week.', [claim()]);
+    // Cites both the entry's VALUE (28) AND its denominator (43) in prose.
+    // `validateClaims`'s "uncited number" scan used to only treat a
+    // claim/entry's own VALUE as citable, so "across 43 attempts" here
+    // tripped `uncited_number` on an otherwise honest answer — a real gap
+    // vs. the legacy numeric audit (which already treats a denominator as
+    // supported). Fixed (chat re-review, 2026-09-23): the scan now also
+    // credits the denominator/sample_n of any entry an ACCEPTED claim
+    // actually names, so a real, correctly-cited attempt count no longer
+    // needs its own separate claim to avoid a false rejection.
+    const rawText = withClaimsBlock('Alice took 28 putts across 43 attempts this week.', [claim()]);
     const { verdict, strippedText } = runTurn(rawText, [measurement()]);
 
     expect(verdict).toEqual({ outcome: 'accepted' });
