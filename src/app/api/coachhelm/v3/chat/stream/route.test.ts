@@ -1053,3 +1053,132 @@ describe('POST /coachhelm/v3/chat/stream — #1997 review follow-ups', () => {
     expect(persisted.status).toBe('complete');
   });
 });
+
+/**
+ * #1999 re-review, SHOULD-2/SHOULD-3: the live/`ui_parts` channel and the
+ * persisted `content` channel must never disagree about what a coach can
+ * read. `claims-block.ts` is NOT mocked in this file, so `content` below is
+ * the REAL `extractAndValidateClaimsSafe` output — these tests compare it
+ * directly against what actually reached `writer.write`.
+ */
+describe('POST /coachhelm/v3/chat/stream — #1999 review follow-ups (claims-block streaming)', () => {
+  beforeEach(() => {
+    mocks.setConversationId.mockClear();
+    mocks.recordAi.mockClear();
+    mocks.streamText.mockReset();
+    mocks.createUIMessageStream.mockClear();
+    mocks.auditNumericClaims.mockReset().mockReturnValue([]);
+    mocks.collectNumbers.mockReset().mockReturnValue([]);
+    mocks.appendMessage.mockClear();
+    mocks.logServerEvent.mockClear();
+    mocks.getConversation.mockReset().mockResolvedValue(null);
+    mocks.findAssistantTurn.mockReset().mockResolvedValue(null);
+    mocks.listRecentMessages.mockReset().mockResolvedValue([]);
+    mocks.buildCoachTools.mockReset().mockReturnValue({});
+    mocks.onFinishAssistantParts = null;
+    mocks.lastWriter = null;
+  });
+
+  /** Every `text-delta` `writer.write` call this turn, in order, joined. */
+  function forwardedText(): string {
+    return mocks.lastWriter!.write.mock.calls
+      .filter((c) => (c[0] as FakeChunk).type === 'text-delta')
+      .map((c) => (c[0] as FakeChunk).delta as string)
+      .join('');
+  }
+
+  it('an opener split across two chunks never leaks a delimiter fragment to the wire', async () => {
+    mocks.streamText.mockImplementation(() => ({
+      usage: Promise.resolve({ inputTokens: 10, outputTokens: 10 }),
+      toUIMessageStream: () =>
+        fakeUiMessageStream([
+          { type: 'text-start', id: 's1' },
+          // The opener splits mid-delimiter across this chunk boundary.
+          { type: 'text-delta', id: 's1', delta: 'His putts total is 28. <<<CLA' },
+          { type: 'text-delta', id: 's1', delta: 'IMS>>>\n[]<<<END_CLAIMS>>>' },
+          { type: 'text-end', id: 's1' },
+          { type: 'finish' },
+        ]),
+    }));
+
+    await runPostAndSettle(baseBody);
+
+    expect(forwardedText()).toBe('His putts total is 28. ');
+    for (const call of mocks.lastWriter!.write.mock.calls) {
+      const delta = (call[0] as FakeChunk).delta;
+      if (typeof delta === 'string') expect(delta).not.toContain('<<<CLA');
+    }
+    const persisted = mocks.appendMessage.mock.calls[0]![1];
+    expect((persisted.content as string).trim()).toBe(forwardedText().trim());
+  });
+
+  it('a partial opener that never completes is still flushed at EOF — nothing is silently lost', async () => {
+    const original = 'Great round overall.<<<CLA';
+    mocks.streamText.mockImplementation(() => ({
+      usage: Promise.resolve({ inputTokens: 10, outputTokens: 10 }),
+      toUIMessageStream: () =>
+        fakeUiMessageStream([
+          { type: 'text-start', id: 's1' },
+          { type: 'text-delta', id: 's1', delta: original },
+          { type: 'text-end', id: 's1' },
+          { type: 'finish' },
+        ]),
+    }));
+
+    await runPostAndSettle(baseBody);
+
+    // "<<<CLA" is not a complete `<<<CLAIMS>>>` opener, so it is never
+    // treated as a claims block at all — the withheld tail must reach the
+    // wire once the stream ends rather than vanishing.
+    expect(forwardedText()).toBe(original);
+  });
+
+  it('text after a complete block resumes forwarding, matching what gets persisted', async () => {
+    mocks.streamText.mockImplementation(() => ({
+      usage: Promise.resolve({ inputTokens: 10, outputTokens: 10 }),
+      toUIMessageStream: () =>
+        fakeUiMessageStream([
+          { type: 'text-start', id: 's1' },
+          {
+            type: 'text-delta',
+            id: 's1',
+            delta: 'His putts total is 28.<<<CLAIMS>>>[]<<<END_CLAIMS>>>Nice work today.',
+          },
+          { type: 'text-end', id: 's1' },
+          { type: 'finish' },
+        ]),
+    }));
+
+    await runPostAndSettle(baseBody);
+
+    expect(forwardedText()).toBe('His putts total is 28.Nice work today.');
+    expect(forwardedText()).not.toContain('CLAIMS');
+    const persisted = mocks.appendMessage.mock.calls[0]![1];
+    expect((persisted.content as string).trim()).toBe(forwardedText().trim());
+  });
+
+  it('multiple blocks: the wire withholds BOTH, forwarding only the text between and after them', async () => {
+    mocks.streamText.mockImplementation(() => ({
+      usage: Promise.resolve({ inputTokens: 10, outputTokens: 10 }),
+      toUIMessageStream: () =>
+        fakeUiMessageStream([
+          { type: 'text-start', id: 's1' },
+          {
+            type: 'text-delta',
+            id: 's1',
+            delta:
+              'First fact.<<<CLAIMS>>>[]<<<END_CLAIMS>>> middle text <<<CLAIMS>>>[]<<<END_CLAIMS>>>Last fact.',
+          },
+          { type: 'text-end', id: 's1' },
+          { type: 'finish' },
+        ]),
+    }));
+
+    await runPostAndSettle(baseBody);
+
+    const wire = forwardedText();
+    expect(wire).not.toContain('<<<CLAIMS>>>');
+    expect(wire).not.toContain('<<<END_CLAIMS>>>');
+    expect(wire).toBe('First fact. middle text Last fact.');
+  });
+});

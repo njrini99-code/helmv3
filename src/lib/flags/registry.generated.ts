@@ -30,6 +30,23 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     cleanup_plan: "Either promote to a permanent `release` flag once the section has been reviewed and the rolling-12-month load has been checked against a heavy-user roster in preview, or remove the section and its wiring if the review asks for a different surface/placement instead.",
   },
   {
+    feature_id: "coachhelm_chat_claim_gate",
+    owner: "golf/coachhelm",
+    purpose: "Gates whether coach chat's turn verdict also engages claim-validator.ts's typed wrong-player/wrong-window/wrong-unit/wrong-denominator/ unsupported-cause checks, on top of the existing numeric-claim audit; default off pending real-world evidence this doesn't over-reject otherwise-good answers. A rejected chat turn collapses the WHOLE turn to a failure note (repair plan 14.10's \"state it, don't hide it\"), so a false-positive rejection here is more visible and more frequent than round-recap's one-shot cached fallback — the uncited-denominator false positive found in review (2026-09-23) is fixed, but this flag stays off until a shadow-log rate confirms no other prose shape trips it.",
+    type: "experiment",
+    status: "active",
+    created_at: "2026-09-23",
+    expires_at: null,
+    default: false,
+    environment: {
+      production: false,
+      preview: false,
+      development: false,
+    },
+    kill_switch_behavior: null,
+    cleanup_plan: "Either promote to a permanent `release` flag once shadow-log data (the claim_validation_failed rate, and manual review of a sample of its rejections) shows the typed gate isn't discarding good chat answers, or remove the wiring entirely if it is.",
+  },
+  {
     feature_id: "coachhelm_comparable_opportunity_attribution",
     owner: "golf/coachhelm",
     purpose: "Gates whether the causality-attribute cron attempts a shot-level, matched-opportunity outcome measurement (distance band, lie, and shot classification held constant on both sides of the insight's actual recorded exposure) for the three approach-proximity metrics that have no round-level equivalent, writing `method_version: 'comparable_ opportunities_v1'` (clean) or `'comparable_opportunities_v1_limited'` (another intervention detected inside the measurement window — A9 slice 2, `confounding-check.ts`) rows with `lift` always null; default off pending real-world evidence on the insufficient-evidence / no-exposure-record / confounded rate before any shadow data exists. Enable criterion (PR #2007 review): migration 20260922230000 must be applied — off that migration, every write degrades away with nothing inserted (`writeComparableAttribution`'s `methodVersionColumnMissing` path), so turning the flag on beforehand produces zero rows, not partial ones. A9 slice 2 (confounding / `multipleInterventions` detection) has shipped — this is no longer a separate blocker — but the flag stays off pending the migration and real-world shadow evidence.",

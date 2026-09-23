@@ -198,3 +198,40 @@
   timezone-dependent CI-only bug, not a decision; see
   `distance-profile-window.ts`'s own doc comment). Verified under
   `TZ=UTC`, `TZ=America/New_York`, and `TZ=Asia/Tokyo`.
+
+## 2026-09-23 — #1999 rebased onto #1997's new tip via cherry-pick
+
+- PR #1999 (`agent/coachhelm-chat-claims`, addendum A7 slice 1, "wire
+  claim-validator.ts into chat's turn verdict") stacks on #1997's
+  `verdict.ts`/`computeTurnVerdict`, and its branch history contained an
+  old `Merge remote-tracking branch 'origin/main'` commit plus the OLD
+  (pre-rebase) #1997 commits directly — the same "duplicate content,
+  different SHA" shape #1997 itself hit against #1992 earlier. A plain
+  `git rebase --onto` against either the old #1997 tip or the merge's
+  main-side commit replayed redundant history and conflicted on content
+  that was already present. Resolved by identifying #1999's 3 genuinely
+  unique commits (`git merge-base` against both the old #1997 tip and
+  the merged-in main commit) and cherry-picking exactly those three
+  onto #1997's new tip (`444869adb`) instead of rebasing the whole
+  branch — 2 conflicts (both additive, both sides adding independent
+  fields/checks to `verdict.ts`/`computeTurnVerdict`: kept both), a 3rd
+  cherry-pick's only conflict was the generated
+  `DOCUMENT_AUTHORITY_INVENTORY.md` (regenerated after).
+- Two pre-existing typecheck errors surfaced only once rebased against
+  #1997's stricter tsconfig path (not new regressions from the rebase
+  itself): two new tests in `stream/route.test.ts` accessed
+  `persisted.content.trim()` without the `as string` cast every other
+  call site in the file already uses (the mock types `appendMessage`'s
+  second arg as `Record<string, unknown>`, so `.content` is `unknown`);
+  and `instructions.test.ts`'s `const [offBefore] = str.split(...)`
+  destructure needed non-null assertions under
+  `noUncheckedIndexedAccess`. Both fixed to match the file's own
+  existing conventions.
+- Verification: `npm run typecheck:fast` clean; the 6 directly relevant
+  test files (verdict, stream/route, provenance, restore, instructions,
+  situational-explanation) — 95 passed, 0 failed; broader
+  `npm run test -- --run src/test/coachhelm` — 143 files, 1480 passed, 0
+  failed; `eslint` on touched files — 0 problems; `flags:check` clean (7
+  flags); `docs:check` clean; `markdown:ratchet` — no regressions.
+  `npm run build` not attempted again this round given the prior entry's
+  disk-exhaustion finding.
