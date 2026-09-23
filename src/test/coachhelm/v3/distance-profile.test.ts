@@ -2,14 +2,25 @@
  * Tests for `metrics/distance-profile.ts` (addendum §13, A2 — pure metrics
  * only). Every scenario's expected numbers are stated by hand in
  * `fixtures/distance-profile-fixtures.ts` and asserted directly here.
+ *
+ * Uses the shared `MetricResult` (`metrics/types.ts`, adopted from #1990):
+ * `id`/`band`/`playerId`/`attempts`/`support`/`layupExcludedN`/
+ * `missingParExcludedN` are gone — use `metricId`/`dimensions.band`/
+ * `scope.player_id`/`eligibleCount`ordenominator/`status`/`exclusions.layup`/
+ * `exclusions.missing_par` instead. `status: 'insufficient'` (an under-floor
+ * row) still carries a computed `value` — only `status: 'invalid'`
+ * (denominator 0) nulls it, per `types.ts`'s "state it, don't hide it"
+ * contract. See `distance-profile.ts`'s module doc comment for the full
+ * reconciliation notes.
  */
 import { describe, expect, it } from 'vitest';
 import { bucketApproachDistance } from '@/lib/coachhelm/v3/engine/shot-source';
 import {
   computeDistanceProfile,
   type DistanceBand,
-  type MetricResult,
+  type DistanceProfileMetricId,
 } from '@/lib/coachhelm/v3/metrics/distance-profile';
+import type { MetricResult } from '@/lib/coachhelm/v3/metrics/types';
 import {
   approachFact,
   scope,
@@ -26,9 +37,13 @@ import {
 
 const ALL_BANDS: readonly DistanceBand[] = ['50_125ft', '125_175ft', '175_plus_ft'];
 
-function find(results: MetricResult[], id: MetricResult['id'], band: MetricResult['band']): MetricResult {
-  const r = results.find((x) => x.id === id && x.band === band);
-  if (!r) throw new Error(`no MetricResult for ${id}/${band}`);
+function find(
+  results: MetricResult[],
+  metricId: DistanceProfileMetricId,
+  band: DistanceBand,
+): MetricResult {
+  const r = results.find((x) => x.metricId === metricId && x.dimensions.band === band);
+  if (!r) throw new Error(`no MetricResult for ${metricId}/${band}`);
   return r;
 }
 
@@ -64,20 +79,24 @@ describe('distance-profile — known-answer denominators (scenario A, 125-175 yd
 
   it('green_hit_rate = 6/10 attempts', () => {
     const r = find(results, 'approach_green_hit_rate', '125_175ft');
-    expect(r.attempts).toBe(10);
+    expect(r.eligibleCount).toBe(10);
+    expect(r.denominator).toBe(10);
     expect(r.distinctRounds).toBe(3);
-    expect(r.support).toBe('supported');
+    expect(r.status).toBe('supported');
     expect(r.value).toBe(60.0);
   });
 
-  it('on_green_proximity_feet = avg(10,12,14,16,18,20) = 15.0', () => {
+  it('on_green_proximity_feet = avg(10,12,14,16,18,20) = 15.0, over the 3 rounds those 6 shots span', () => {
     const r = find(results, 'approach_on_green_proximity_feet', '125_175ft');
-    expect(r.support).toBe('supported');
+    expect(r.denominator).toBe(6);
+    expect(r.distinctRounds).toBe(3);
+    expect(r.status).toBe('supported');
     expect(r.value).toBe(15.0);
   });
 
   it('direction_coverage = 2/4 missed shots carry a miss_direction', () => {
     const r = find(results, 'approach_direction_coverage', '125_175ft');
+    expect(r.denominator).toBe(4);
     expect(r.value).toBe(50.0);
   });
 
@@ -89,38 +108,81 @@ describe('distance-profile — known-answer denominators (scenario A, 125-175 yd
   it('measured_contribution = 10, unconditionally', () => {
     const r = find(results, 'approach_measured_contribution', '125_175ft');
     expect(r.value).toBe(10);
-    expect(r.support).toBe('supported');
+    expect(r.status).toBe('supported');
+  });
+
+  it('no shot is excluded in this band, so exclusions is empty everywhere', () => {
+    for (const id of [
+      'approach_green_hit_rate',
+      'approach_severe_outcome_rate',
+      'approach_measured_contribution',
+    ] as const) {
+      expect(find(results, id, '125_175ft').exclusions).toEqual({});
+    }
+  });
+});
+
+describe('distance-profile — status policy: "insufficient" still carries a computed value', () => {
+  // 8 shots, 4 rounds — MIN_ATTEMPTS=10 fails, MIN_ROUNDS=3 would otherwise
+  // clear. 3 green hits (i<3), all with the fixture default after-feet=15;
+  // no shot carries a miss_direction or a severe outcome.
+  const results = computeDistanceProfile(SCENARIO_B_UNDER_ATTEMPTS_50_125, scope('player-b'), []);
+
+  it('green_hit_rate is insufficient but still reports the real 3/8 rate, not null', () => {
+    const r = find(results, 'approach_green_hit_rate', '50_125ft');
+    expect(r.eligibleCount).toBe(8);
+    expect(r.status).toBe('insufficient');
+    expect(r.value).toBe(37.5);
+  });
+
+  it('on_green_proximity_feet is insufficient (band floor fails) but reports avg(15,15,15)=15.0', () => {
+    const r = find(results, 'approach_on_green_proximity_feet', '50_125ft');
+    expect(r.denominator).toBe(3); // 3 green shots, all with an after-feet reading
+    expect(r.distinctRounds).toBe(3);
+    expect(r.status).toBe('insufficient');
+    expect(r.value).toBe(15.0);
+  });
+
+  it('direction_coverage reports the real 0/5 (no miss carries a direction), not null', () => {
+    const r = find(results, 'approach_direction_coverage', '50_125ft');
+    expect(r.denominator).toBe(5);
+    expect(r.status).toBe('insufficient');
+    expect(r.value).toBe(0);
+  });
+
+  it('severe_outcome_rate reports the real 0/8, not null', () => {
+    const r = find(results, 'approach_severe_outcome_rate', '50_125ft');
+    expect(r.status).toBe('insufficient');
+    expect(r.value).toBe(0);
+  });
+
+  it('measured_contribution still reports the true count, status insufficient not invalid (8 attempts is a real, nonzero denominator)', () => {
+    const r = find(results, 'approach_measured_contribution', '50_125ft');
+    expect(r.value).toBe(8); // never null, even when status is not 'supported'
+    expect(r.status).toBe('insufficient');
   });
 });
 
 describe('distance-profile — support policy (sample size, distinct rounds, coverage)', () => {
-  it('under MIN_ATTEMPTS: every rate metric is null, but measured_contribution still reports the true count', () => {
-    const results = computeDistanceProfile(SCENARIO_B_UNDER_ATTEMPTS_50_125, scope('player-b'), []);
-    expect(find(results, 'approach_green_hit_rate', '50_125ft')).toMatchObject({ support: 'under_supported', value: null });
-    expect(find(results, 'approach_on_green_proximity_feet', '50_125ft')).toMatchObject({ support: 'under_supported', value: null });
-    expect(find(results, 'approach_direction_coverage', '50_125ft')).toMatchObject({ support: 'under_supported', value: null });
-    expect(find(results, 'approach_severe_outcome_rate', '50_125ft')).toMatchObject({ support: 'under_supported', value: null });
-    const contribution = find(results, 'approach_measured_contribution', '50_125ft');
-    expect(contribution.value).toBe(8); // never null, even under-supported
-    expect(contribution.support).toBe('under_supported');
-  });
-
-  it('MIN_ATTEMPTS clears but MIN_ROUNDS fails (12 attempts, 2 rounds): still under-supported', () => {
+  it('MIN_ATTEMPTS clears but MIN_ROUNDS fails (12 attempts, 2 rounds): status insufficient, value still computed (0 green hits)', () => {
     const results = computeDistanceProfile(SCENARIO_C_UNDER_ROUNDS_175_PLUS, scope('player-c'), SCENARIO_C_HOLES);
     const r = find(results, 'approach_green_hit_rate', '175_plus_ft');
-    expect(r.attempts).toBe(12);
+    expect(r.eligibleCount).toBe(12);
     expect(r.distinctRounds).toBe(2);
-    expect(r.support).toBe('under_supported');
-    expect(r.value).toBeNull();
-    expect(r.layupExcludedN).toBe(0);
-    expect(r.missingParExcludedN).toBe(0);
+    expect(r.status).toBe('insufficient');
+    expect(r.value).toBe(0); // 0 of 12 found the green — a real, non-null 0%
+    expect(r.exclusions).toEqual({}); // both holes are a known, non-par-5 par
   });
 
-  it('a band with zero shots reports measured_contribution 0, not an absent result', () => {
+  it('a band with zero shots: measured_contribution reports 0 (never null); every rate metric is null (denominator 0 -> invalid)', () => {
     const results = computeDistanceProfile([], scope('player-empty'), []);
     for (const band of ALL_BANDS) {
-      expect(find(results, 'approach_measured_contribution', band).value).toBe(0);
-      expect(find(results, 'approach_green_hit_rate', band).value).toBeNull();
+      const contribution = find(results, 'approach_measured_contribution', band);
+      expect(contribution.value).toBe(0);
+      expect(contribution.status).toBe('invalid');
+      const greenHit = find(results, 'approach_green_hit_rate', band);
+      expect(greenHit.value).toBeNull();
+      expect(greenHit.status).toBe('invalid');
     }
   });
 });
@@ -129,37 +191,36 @@ describe('distance-profile — 175+ yd lay-up / missing-par exclusion (reuses Pa
   it('with holes resolvable for all three: the confirmed par-5 missed-green shot is excluded as a likely lay-up', () => {
     const results = computeDistanceProfile(SCENARIO_D_LAYUP_175_PLUS, scope('player-d'), SCENARIO_D_HOLES);
     const r = find(results, 'approach_measured_contribution', '175_plus_ft');
-    expect(r.attempts).toBe(2); // d2 (par-4 miss) and d3 (par-5 green-finder) remain
-    expect(r.layupExcludedN).toBe(1); // d1 only
-    expect(r.missingParExcludedN).toBe(0);
+    expect(r.eligibleCount).toBe(2); // d2 (par-4 miss) and d3 (par-5 green-finder) remain
+    expect(r.observedCount).toBe(3); // all 3 shots landed in the 175+ band before exclusion
+    expect(r.exclusions).toEqual({ layup: 1 }); // d1 only; missing_par is 0, so absent
   });
 
   it('a par-5 approach that FOUND the green is never tagged a lay-up, even when resolvable', () => {
     const results = computeDistanceProfile(SCENARIO_D_LAYUP_175_PLUS, scope('player-d'), SCENARIO_D_HOLES);
     const r = find(results, 'approach_green_hit_rate', '175_plus_ft');
-    // Only 2 eligible attempts (d2, d3) — well under MIN_ATTEMPTS=10, so the
-    // rate itself is null regardless; d3's inclusion (not excluded as a
-    // lay-up despite being a par-5) is what the attempts/layupExcludedN
-    // counts above already prove.
-    expect(r.attempts).toBe(2);
-    expect(r.support).toBe('under_supported');
-    expect(r.value).toBeNull();
+    // Only 2 eligible attempts (d2, d3) — well under MIN_ATTEMPTS=10, so
+    // status is 'insufficient'; d3's inclusion (not excluded as a lay-up
+    // despite being a par-5) is what the real 1/2 = 50.0 value below proves.
+    expect(r.eligibleCount).toBe(2);
+    expect(r.status).toBe('insufficient');
+    expect(r.value).toBe(50.0);
   });
 
   it('with no holes at all: every 175+ shot is excluded as missing_par, never silently kept', () => {
     const results = computeDistanceProfile(SCENARIO_D_LAYUP_175_PLUS, scope('player-d'), []);
     const r = find(results, 'approach_measured_contribution', '175_plus_ft');
-    expect(r.attempts).toBe(0); // nothing kept — an unresolvable par is excluded, not assumed safe
-    expect(r.layupExcludedN).toBe(0);
-    expect(r.missingParExcludedN).toBe(3);
+    expect(r.eligibleCount).toBe(0); // nothing kept — an unresolvable par is excluded, not assumed safe
+    expect(r.value).toBe(0); // measured_contribution never nulls, even at denominator 0
+    expect(r.status).toBe('invalid'); // denominator 0
+    expect(r.exclusions).toEqual({ missing_par: 3 });
   });
 
   it('resolves par PER SHOT: only d1 is resolvable, so d1 is a layup exclusion and d2/d3 are missing_par', () => {
     const results = computeDistanceProfile(SCENARIO_D_LAYUP_175_PLUS, scope('player-d'), SCENARIO_D_HOLES_PARTIAL);
     const r = find(results, 'approach_measured_contribution', '175_plus_ft');
-    expect(r.attempts).toBe(0);
-    expect(r.layupExcludedN).toBe(1); // d1
-    expect(r.missingParExcludedN).toBe(2); // d2, d3
+    expect(r.eligibleCount).toBe(0);
+    expect(r.exclusions).toEqual({ layup: 1, missing_par: 2 });
   });
 });
 
@@ -173,9 +234,9 @@ describe('distance-profile — scope', () => {
     expect(find(results, 'approach_measured_contribution', '50_125ft').value).toBe(0);
   });
 
-  it('echoes scope.player_id onto every MetricResult', () => {
+  it('echoes scope onto every MetricResult (scope.player_id specifically)', () => {
     const results = computeDistanceProfile(SCENARIO_A_125_175, scope('player-echo'), []);
-    expect(results.every((r) => r.playerId === 'player-echo')).toBe(true);
+    expect(results.every((r) => r.scope.player_id === 'player-echo')).toBe(true);
   });
 });
 

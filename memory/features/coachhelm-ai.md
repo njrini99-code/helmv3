@@ -351,7 +351,14 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
   `load-player-context.ts`, and the shot-source adapter). Every
   `MetricResult.distanceMethod` is `'recorded'`, never `'derived_progress'`
   — see the evidence-contract doc's "Distance profile" section for why
-  that second `TeeStrategyShot`-style mode cannot arise here. **Do not**
+  that second `TeeStrategyShot`-style mode cannot arise here. Rebased past
+  #1990 (A3) and adopted its shared `metrics/types.ts` `MetricResult`
+  (dropping this module's own `id`/`band`/`playerId`-shaped row): band
+  lives in `dimensions.band`, exclusions in `exclusions.layup`/
+  `.missing_par` (non-zero only), and `status` replaces `support` —
+  `'insufficient'` still reports a real computed `value`, never null,
+  per `types.ts`'s "state it, don't hide it" contract; only a
+  zero-denominator row (`status: 'invalid'`) nulls `value`. **Do not**
   wire this into `approach-miss.ts` yet — that's a later slice, behind a
   flag.
 

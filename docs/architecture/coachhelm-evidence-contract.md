@@ -522,7 +522,12 @@ three yard bands (`[50,125)`, `[125,175)`, `[175,∞)`, lo inclusive/hi
 exclusive), the same on-green predicate (`result` in
 `green`/`hole`/`gir`, or `lie_after = 'green'`), the same 175+ yd par-5
 lay-up exclusion, and the same MIN_ATTEMPTS=10 / MIN_ROUNDS=3 / MIN_GREENS=3
-support floors.
+support floors. `MetricResult`/`MetricStatus` live in `metrics/types.ts` —
+shared with A3 (see the "Par/length + par-5 opportunity metrics" section
+below) rather than this package exporting its own row shape; this module
+originally predated that file with its own `id`/`band`/`playerId`-shaped
+row, reconciled onto the shared shape once #1990 landed a shared
+`MetricResult`.
 
 - **Metric ids** (a local `DistanceProfileMetricId` union, deliberately NOT
   added to the canonical `MetricId`/`METRIC_IDS` registry in this slice —
@@ -530,13 +535,20 @@ support floors.
   scope for a pure-metrics-only change):
   `approach_green_hit_rate`, `approach_on_green_proximity_feet`,
   `approach_direction_coverage`, `approach_severe_outcome_rate`,
-  `approach_measured_contribution`.
-- **Support policy.** Every rate/proximity metric is `null` when the band's
-  eligible attempts or distinct rounds fall under the floor (proximity has
-  its own extra `MIN_GREENS` floor on top) — `support: 'under_supported'`
-  states why. `approach_measured_contribution` is the one metric that is
-  NEVER null, even when under-supported: it is the evidence count the
-  support policy itself is judged against.
+  `approach_measured_contribution`. Each row's band lives in
+  `dimensions.band`.
+- **Status policy follows `types.ts`'s "state it, don't hide it" contract.**
+  `value` is `null` ONLY when its own `denominator` is 0 (`status:
+  'invalid'`) — a real but under-floor denominator (attempts or distinct
+  rounds under MIN_ATTEMPTS=10/MIN_ROUNDS=3, or green-finding shots under
+  MIN_GREENS=3 for proximity) still computes and reports `value`, with
+  `status: 'insufficient'` flagging the low confidence instead of hiding
+  the number. This is a real behavior change from this module's
+  pre-adoption policy, which nulled `value` outright whenever the floor
+  wasn't cleared. `approach_measured_contribution` is the one row whose
+  `value` is never null even at `denominator === 0` (`status: 'invalid'`
+  there simply means "no evidence," not "value withheld") — it is the
+  evidence count the other four rows' `status` is judged against.
 - **Lay-up exclusion needs `par`, which `ShotFact` doesn't carry.**
   `holes: readonly HoleContext[]` is a REQUIRED third argument (not an
   optional side map) — `load-player-context.ts` already returns
@@ -547,9 +559,10 @@ support floors.
   NEVER silently kept as "probably not a lay-up." Only a CONFIRMED par-5
   miss is excluded as a lay-up, mirroring the migration's own `IS NOT
   DISTINCT FROM 5` rule — now enforced on the exclusion side
-  (`missing_par`) rather than the inclusion side. `MetricResult` carries
-  both `layupExcludedN` and `missingParExcludedN` (both always 0 outside
-  the 175+ band) so a caller can tell the two exclusion reasons apart.
+  (`missing_par`) rather than the inclusion side. Both counts (always 0
+  outside the 175+ band) live in `exclusions` — `{ layup: n }` and/or
+  `{ missing_par: n }`, present only when nonzero, mirroring
+  `par-opportunities.ts`'s own non-zero-only `exclusions` convention.
 - **Direction coverage needed `miss_direction`, which `ShotFact` didn't
   carry until this slice.** Added as a required, raw-passthrough field
   (`types.ts`), threaded through `normalize-shot.ts`,
@@ -584,9 +597,9 @@ is a later slice, same as A1 before it.
 Before building this, the collision A3 was scoped to reproduce
 (`generators/par-type.ts`/`course-mgmt.ts` grouping a specific hole by bare
 `hole_number`) was re-checked against current code: `course-mgmt.ts`'s
-`worst_holes` ranking already keys on `(course_id, hole_number)` — fixed in
-#1936, pinned by `src/test/coachhelm/v3/course-mgmt-hole-identity.test.ts` —
-and `par-type.ts` never groups by a specific hole at all (it only
+`worst_holes` ranking already keys on `(course_id, hole_number)` — fixed
+in #1936, pinned by `src/test/coachhelm/v3/course-mgmt-hole-identity.test.ts`
+— and `par-type.ts` never groups by a specific hole at all (it only
 decomposes by `par`, across all holes of that par). Neither file needed a
 collision fix in this slice; the "Specific-hole scoring" row above already
 reflects the fixed state. A3's OWN collision-safe grouping job is in the new
@@ -651,9 +664,10 @@ self-scopes `facts` (via an internal `factsInScope`, filtering
 no date field at all. `par5_regulation_opportunity_rate` and its siblings are
 correctly scoped as a result (they only ever look at in-scope facts).
 `par_length_scoring` is NOT: the caller MUST pass an already
-window/cutoff/completed-status-filtered `holes` array (`load-player-context.ts`,
-#1986, is the intended enforcer); passing an unscoped array silently produces
-a lifetime aggregate regardless of `scope`. Band BOUNDARIES themselves are
+window/cutoff/completed-status-filtered `holes` array
+(`load-player-context.ts`, #1986, is the intended enforcer); passing an
+unscoped array silently produces a lifetime aggregate regardless of
+`scope`. Band BOUNDARIES themselves are
 unaffected either way — they are compile-time constants, never derived from
 `holes` or `scope`.
 

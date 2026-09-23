@@ -8,6 +8,14 @@
  * 175+ yd par-5 lay-up exclusion, and the same MIN_ATTEMPTS/MIN_ROUNDS
  * support floor.
  *
+ * `MetricResult`/`MetricStatus` live in `./types.ts` — shared with A3
+ * (`par-opportunities.ts`) rather than this package exporting its own row
+ * shape. This module predated that file with its own `id`/`band`/
+ * `playerId`-shaped `MetricResult`; this is the reconciliation, following
+ * `par-opportunities.ts`'s own construction pattern (`statusFor`,
+ * non-zero-only `exclusions`, `value` computed whenever `denominator > 0`
+ * regardless of `status`) rather than inventing an independent convention.
+ *
  * ── SCOPE: approach shots only ──────────────────────────────────────────
  * The band system (50-125 / 125-175 / 175+ yd) is an approach-shot concept
  * (mirrors `ApproachMissGenerator`'s own scope) — a putt or a tee shot never
@@ -48,27 +56,63 @@
  *
  *   - `approach_green_hit_rate`: % of the band's eligible (non-lay-up)
  *     attempts that found the green. Same predicate as `reachedGreen`
- *     (approach-miss.ts) / the migration's `on_green`.
+ *     (approach-miss.ts) / the migration's `on_green`. `denominator` /
+ *     `eligibleCount` / `observedCount` = the band's eligible attempts;
+ *     `exclusions` carries this band's `layup`/`missing_par` counts.
  *   - `approach_on_green_proximity_feet`: average finish distance (feet)
- *     over the green-finding subset — mirrors the migration's
- *     `on_green_proximity_feet`, including its OWN extra floor
- *     (>= MIN_GREENS on top of the all-shot floor).
+ *     over the green-finding subset that also carries a non-null finish
+ *     reading — mirrors the migration's `on_green_proximity_feet`,
+ *     including its OWN extra floor (>= MIN_GREENS green-finding shots,
+ *     checked on `greenShots`, not on the narrower reading count).
+ *     `numerator`/`denominator` are the summed/counted readings
+ *     themselves, so `value` is exactly `numerator / denominator` — a
+ *     further narrowing of `attempts`, not a fresh exclusion reason, so
+ *     `exclusions` is empty here (mirrors `par-opportunities.ts`'s
+ *     `par5_putting_conversion_rate`, whose population also narrows from
+ *     an already-explained set without a new reason of its own).
  *   - `approach_direction_coverage`: % of the band's MISSED eligible
  *     attempts that carry a non-null `miss_direction` — a data-quality/
  *     support metric, not a directional bias metric (that's
  *     `diagnosis.ts`'s `approachAxisReading`, which already states what
  *     isn't recorded on its own reading's `check` field). This is the
  *     metric that tells a caller whether a directional read is even
- *     possible before computing one.
+ *     possible before computing one. Population narrows to missed shots
+ *     the same way `on_green_proximity_feet` narrows to green shots, so
+ *     `exclusions` is empty here too.
  *   - `approach_severe_outcome_rate`: % of the band's eligible attempts
  *     that are a penalty OR finish in `'sand'`/`'other'` — a "how costly
  *     are the misses" companion to the green-hit rate, distinct from a
  *     plain miss rate (a `'fairway'`/`'rough'` miss is not severe).
  *   - `approach_measured_contribution`: the band's eligible attempt COUNT
- *     itself, always reported (never null, even when under-supported) —
- *     the metric that states how much evidence backs the other four,
- *     directly answering the "support policy" requirement rather than
- *     leaving it implicit in a shared `support` field alone.
+ *     itself, unit `'count'`, ALWAYS reported (never null, even when
+ *     `status` is `'insufficient'`/`'invalid'`) — the metric that states
+ *     how much evidence backs the other four, directly answering the
+ *     "support policy" requirement rather than leaving it implicit in
+ *     `status` alone. This is the one row whose `value` deliberately does
+ *     not follow the "null when its denominator is 0" rule every other
+ *     row here follows.
+ *
+ * ── STATUS AND "STATE IT, DON'T HIDE IT" ─────────────────────────────────
+ * `types.ts`'s `MetricStatus` doc comment states the contract this module
+ * now follows instead of its own earlier support policy: `'insufficient'`
+ * still carries a computed `value`, it only flags a small denominator. So
+ * `value` here is `null` ONLY when its own `denominator` is 0 (mirrors
+ * `par-opportunities.ts`'s `statusFor`/row-construction pattern exactly:
+ * `eligible > 0 ? ... : null`), never merely because a floor (MIN_ATTEMPTS/
+ * MIN_ROUNDS/MIN_GREENS) isn't cleared — that now lives in `status` alone
+ * (`'supported'` vs `'insufficient'`), which the caller reads to decide
+ * how much weight to give an otherwise-real number. This is a genuine
+ * behavior change from this module's pre-adaptation version, which nulled
+ * `value` whenever `support === 'under_supported'`.
+ *
+ * `distinctRounds` is computed per row from THAT row's own population
+ * (e.g. `approach_on_green_proximity_feet` counts rounds among the shots
+ * with a valid proximity reading, not among the wider `attempts` set) —
+ * following `par-opportunities.ts`'s own per-row `distinctRounds` (its
+ * `par5_putting_conversion_rate` counts rounds among `created`, not among
+ * the wider `eligible` set), rather than this module's earlier design of
+ * computing one `distinctRounds` per band and reusing it across all five
+ * rows.
  *
  * ── RECORDED TRAVEL DISTANCE vs. DERIVED PROGRESS ───────────────────────
  * `TeeStrategyShot` (this same file's tee-shot cousin) has a real
@@ -101,6 +145,9 @@
 import { round } from '@/lib/golf/stat-formulas';
 import { bucketApproachDistance, type ApproachBucket } from '../engine/shot-source';
 import type { AnalysisScope, HoleContext, ShotFact } from '../context/types';
+import type { MetricResult, MetricStatus } from './types';
+
+export type { MetricResult, MetricStatus } from './types';
 
 export type DistanceBand = ApproachBucket;
 
@@ -111,49 +158,6 @@ export type DistanceProfileMetricId =
   | 'approach_severe_outcome_rate'
   | 'approach_measured_contribution';
 
-export type SupportLevel = 'supported' | 'under_supported';
-
-/** Mirrors `TeeStrategyShot.distance_method` (`engine/shot-source.ts`) —
- *  see the module doc comment's "RECORDED TRAVEL DISTANCE vs. DERIVED
- *  PROGRESS" section. Always `'recorded'` today; no approach-shot input
- *  this module reads is ever derived from hole yardage. */
-export type DistanceMethod = 'recorded' | 'derived_progress';
-
-export interface MetricResult {
-  id: DistanceProfileMetricId;
-  band: DistanceBand;
-  playerId: string;
-  /** Always `'recorded'` — see `DistanceMethod`'s doc comment. Carried on
-   *  every result, not just the proximity one, so a consumer never has to
-   *  special-case which metric id is safe to label "carry"/"travel": none
-   *  of them are anything but a recorded value here. */
-  distanceMethod: DistanceMethod;
-  /**
-   * Percent (0-100, 1dp) for the three rate/coverage metrics, feet (1dp)
-   * for on-green proximity, a raw integer count for measured_contribution.
-   * `null` when the metric is under-supported, or (on-green proximity
-   * specifically) when there are fewer than `MIN_GREENS` green-finding
-   * shots even though the band itself clears the all-shot floor — NEVER a
-   * fabricated 0.
-   */
-  value: number | null;
-  /** The band's eligible (lay-up-excluded) attempt count — always
-   *  populated, even when `value` is null, so a caller can explain why. */
-  attempts: number;
-  distinctRounds: number;
-  /** 175+ yd CONFIRMED par-5 approaches missing the green, excluded from
-   *  every metric in this band as likely lay-ups. Always 0 outside the
-   *  175+ band. */
-  layupExcludedN: number;
-  /** 175+ yd shots whose hole's par could not be resolved from the
-   *  `holes` argument — excluded outright, never silently kept as
-   *  "probably not a lay-up." Always 0 outside the 175+ band. See the
-   *  module doc comment's "WHY `holes: HoleContext[]` IS A REQUIRED THIRD
-   *  ARGUMENT" section. */
-  missingParExcludedN: number;
-  support: SupportLevel;
-}
-
 /** Addendum A2 §5.2 / migration 20260922120000: the all-shot support floor. */
 const MIN_ATTEMPTS = 10;
 const MIN_ROUNDS = 3;
@@ -162,6 +166,19 @@ const MIN_ROUNDS = 3;
 const MIN_GREENS = 3;
 
 const BANDS: readonly DistanceBand[] = ['50_125ft', '125_175ft', '175_plus_ft'];
+
+/** Mirrors `par-opportunities.ts`'s `statusFor(denominator, minN)`,
+ *  generalized to a caller-supplied floor predicate since this module's
+ *  floor is compound (attempts AND rounds, and — for on-green proximity —
+ *  AND a green-count floor on top) rather than a single `minN`. */
+function statusFor(denominator: number, meetsFloor: boolean): MetricStatus {
+  if (denominator === 0) return 'invalid';
+  return meetsFloor ? 'supported' : 'insufficient';
+}
+
+function distinctRoundsOf(shots: readonly ShotFact[]): number {
+  return new Set(shots.map((f) => f.round_id)).size;
+}
 
 function parKey(roundId: string, holeNumber: number | null): string | null {
   if (holeNumber === null) return null;
@@ -217,11 +234,6 @@ function bandOf(fact: ShotFact): DistanceBand | null {
   return bucketApproachDistance(yards, 'yards');
 }
 
-function average(values: readonly number[]): number | null {
-  if (values.length === 0) return null;
-  return values.reduce((a, b) => a + b, 0) / values.length;
-}
-
 export function computeDistanceProfile(
   facts: readonly ShotFact[],
   scope: AnalysisScope,
@@ -250,92 +262,110 @@ export function computeDistanceProfile(
     });
 
     const attempts = eligible.length;
-    const distinctRounds = new Set(eligible.map((f) => f.round_id)).size;
-    const support: SupportLevel =
-      attempts >= MIN_ATTEMPTS && distinctRounds >= MIN_ROUNDS ? 'supported' : 'under_supported';
+    const attemptRounds = distinctRoundsOf(eligible);
+    const meetsAttemptFloor = attempts >= MIN_ATTEMPTS && attemptRounds >= MIN_ROUNDS;
+
+    const bandExclusions: Record<string, number> = {};
+    if (layupExcludedN > 0) bandExclusions.layup = layupExcludedN;
+    if (missingParExcludedN > 0) bandExclusions.missing_par = missingParExcludedN;
+
+    const dimensions = { band };
 
     const greenShots = eligible.filter(isOnGreen);
     results.push({
-      id: 'approach_green_hit_rate',
-      band,
-      playerId: scope.player_id,
+      scope,
+      dimensions,
+      metricId: 'approach_green_hit_rate',
+      unit: 'percent',
+      value: attempts > 0 ? round((100 * greenShots.length) / attempts) : null,
+      numerator: attempts > 0 ? greenShots.length : null,
+      denominator: attempts,
+      eligibleCount: attempts,
+      observedCount: inBand.length,
+      distinctRounds: attemptRounds,
+      status: statusFor(attempts, meetsAttemptFloor),
+      exclusions: bandExclusions,
       distanceMethod: 'recorded',
-      value: support === 'supported' ? round((100 * greenShots.length) / attempts) : null,
-      attempts,
-      distinctRounds,
-      layupExcludedN,
-      missingParExcludedN,
-      support,
     });
 
-    const onGreenSupport: SupportLevel =
-      support === 'supported' && greenShots.length >= MIN_GREENS ? 'supported' : 'under_supported';
-    const proximityFeet =
-      onGreenSupport === 'supported'
-        ? average(
-            greenShots
-              .map((f) => f.distance_to_hole_after_feet)
-              .filter((v): v is number => v !== null),
-          )
-        : null;
+    const proximityReadings = greenShots
+      .map((f) => f.distance_to_hole_after_feet)
+      .filter((v): v is number => v !== null);
+    const meetsProximityFloor = meetsAttemptFloor && greenShots.length >= MIN_GREENS;
+    const proximitySum = proximityReadings.reduce((a, b) => a + b, 0);
     results.push({
-      id: 'approach_on_green_proximity_feet',
-      band,
-      playerId: scope.player_id,
+      scope,
+      dimensions,
+      metricId: 'approach_on_green_proximity_feet',
+      unit: 'feet',
+      value: proximityReadings.length > 0 ? round(proximitySum / proximityReadings.length) : null,
+      numerator: proximityReadings.length > 0 ? round(proximitySum) : null,
+      denominator: proximityReadings.length,
+      eligibleCount: proximityReadings.length,
+      observedCount: proximityReadings.length,
+      distinctRounds: distinctRoundsOf(
+        greenShots.filter((f) => f.distance_to_hole_after_feet !== null),
+      ),
+      status: statusFor(proximityReadings.length, meetsProximityFloor),
+      exclusions: {},
       distanceMethod: 'recorded',
-      value: proximityFeet === null ? null : round(proximityFeet),
-      attempts,
-      distinctRounds,
-      layupExcludedN,
-      missingParExcludedN,
-      support: onGreenSupport,
     });
 
     const missedShots = eligible.filter((f) => !isOnGreen(f));
     const coveredMisses = missedShots.filter(hasDirectionReading);
     results.push({
-      id: 'approach_direction_coverage',
-      band,
-      playerId: scope.player_id,
+      scope,
+      dimensions,
+      metricId: 'approach_direction_coverage',
+      unit: 'percent',
+      value: missedShots.length > 0 ? round((100 * coveredMisses.length) / missedShots.length) : null,
+      numerator: missedShots.length > 0 ? coveredMisses.length : null,
+      denominator: missedShots.length,
+      eligibleCount: missedShots.length,
+      observedCount: missedShots.length,
+      distinctRounds: distinctRoundsOf(missedShots),
+      status: statusFor(missedShots.length, meetsAttemptFloor),
+      exclusions: {},
       distanceMethod: 'recorded',
-      value:
-        support === 'supported' && missedShots.length > 0
-          ? round((100 * coveredMisses.length) / missedShots.length)
-          : null,
-      attempts,
-      distinctRounds,
-      layupExcludedN,
-      missingParExcludedN,
-      support,
     });
 
     const severeShots = eligible.filter(isSevereOutcome);
     results.push({
-      id: 'approach_severe_outcome_rate',
-      band,
-      playerId: scope.player_id,
+      scope,
+      dimensions,
+      metricId: 'approach_severe_outcome_rate',
+      unit: 'percent',
+      value: attempts > 0 ? round((100 * severeShots.length) / attempts) : null,
+      numerator: attempts > 0 ? severeShots.length : null,
+      denominator: attempts,
+      eligibleCount: attempts,
+      observedCount: inBand.length,
+      distinctRounds: attemptRounds,
+      status: statusFor(attempts, meetsAttemptFloor),
+      exclusions: bandExclusions,
       distanceMethod: 'recorded',
-      value: support === 'supported' ? round((100 * severeShots.length) / attempts) : null,
-      attempts,
-      distinctRounds,
-      layupExcludedN,
-      missingParExcludedN,
-      support,
     });
 
-    // Always reported, even under-supported — this IS the metric that
-    // states the support policy's input, not something it's gated by.
+    // Always reported, even when `status` is `'insufficient'`/`'invalid'` —
+    // this IS the metric that states the support policy's input, not
+    // something the policy gates. `numerator`/`denominator` both equal
+    // `attempts`: unlike every other row in this file, this one does not
+    // null `value` when its denominator is 0 (0 attempts is itself the
+    // reportable fact).
     results.push({
-      id: 'approach_measured_contribution',
-      band,
-      playerId: scope.player_id,
-      distanceMethod: 'recorded',
+      scope,
+      dimensions,
+      metricId: 'approach_measured_contribution',
+      unit: 'count',
       value: attempts,
-      attempts,
-      distinctRounds,
-      layupExcludedN,
-      missingParExcludedN,
-      support,
+      numerator: attempts,
+      denominator: attempts,
+      eligibleCount: attempts,
+      observedCount: inBand.length,
+      distinctRounds: attemptRounds,
+      status: statusFor(attempts, meetsAttemptFloor),
+      exclusions: bandExclusions,
+      distanceMethod: 'recorded',
     });
   }
 
