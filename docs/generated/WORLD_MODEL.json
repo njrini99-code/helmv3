@@ -17498,6 +17498,21 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/context/load-player-context.ts",
+          "line": 67
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/context/load-player-context.ts",
+          "line": 68
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/context/load-player-context.ts",
+          "line": 69
+        },
+        {
+          "kind": "import_graph",
           "path": "src/lib/coachhelm/v3/effectiveness/event-ledger.ts",
           "line": 30
         },
