@@ -1631,29 +1631,41 @@ of silently preserving certainty."
   a reading means wiring them into that DB-backed GENERATOR layer, not
   `diagnosis.ts` itself — a materially larger change, and out of scope for
   this module's pure-core, no-I/O slices.
-- **`personal-context.ts` — open item, needs a vocabulary decision, not a
-  mapping table**: scoped to resolve active goals/focus areas/interventions
-  for a player (through existing loaders) into check-selection/
-  delivery-priority hints, never touching metric results. Not built this
-  slice because there is no shared vocabulary to build it against:
-  `Goal.metric_id` is typed `MetricId` (`metrics/registry.ts`), and NONE of
-  this module's own metric ids (`approach_short_miss_rate`,
-  `approach_rough_gap_strokes_contribution`,
-  `approach_recovery_outcome_rate`, `par5_regulation_opportunity_rate`,
-  `par5_green_in_two_rate`) are registered `MetricId`s, so a goal can never
-  match a hypothesis family through `metric_id`. No "intervention"
+- **`personal-context.ts` — built, on a code-level mapping table (owner
+  decision, 2026-09-23)**: `resolvePersonalContextHints(goals,
+  focusAreas)` is pure — already-loaded `Goal[]`/`PlayerFocusArea[]` in,
+  `PersonalContextHints` (per-family, presence-only "prioritize this
+  family" signal) out. It never receives a `MetricResult` and never
+  touches a `Hypothesis`'s `state`/evidence arrays/`description` — a
+  test asserts `buildHypotheses`' output and its `metrics` input are
+  byte-identical `JSON.stringify` before and after resolving hints.
+  "Check-selection" is not a separate field: presence means "prioritize
+  resolving this family's `missingInputs`/`nextCheck`," and a caller
+  joins its own `buildHypotheses` output against the family key for that
+  detail — this module has no visibility into `missingInputs`/`nextCheck`
+  itself. `Goal.metric_id` (`MetricId`, `metrics/registry.ts`) and
+  `FocusAreaCategory` (`insight-types.ts`) remain a genuinely different
+  vocabulary from this module's own metric ids, so the table is a
+  same-underlying-thing judgment call per entry, not an identity match —
+  checked against every registered `MetricId` and every
+  `FocusAreaCategory`, exactly ONE honest entry exists: `scoring_par_5` →
+  `par5_opportunity_loss` (same holes; `scoring_par_5` is the coarse
+  average, `par5_regulation_opportunity_rate`/`par5_green_in_two_rate` are
+  the conversion-rate breakdown of that same outcome).
+  `FOCUS_AREA_TO_FAMILY` is empty — `short_game`
+  (chipping/pitching/sand, `shot_type: 'around_green'`) is a different
+  shot type from `recovery` (an approach-shot decision, `shot_type:
+  'approach'`, `intent: 'recovery'`), so the shared word "recovery" is not
+  a shared measurement domain; the other five categories and every other
+  `MetricId` (`sg_approach` — can't choose between `short_bias`/
+  `rough_gap`; `gir_pct` — all par types, not par-5-specific; driving/
+  putting/round-level-risk ids — no family touches those domains) have no
+  honest correspondence either, each with its reason in the module doc.
+  A near-empty table is the honest finding here, not a shortfall — the
+  four hypothesis families are narrow, and most of a player's own
+  goal-setting vocabulary genuinely falls outside them. No "intervention"
   type/loader exists anywhere in the codebase (`development.ts`, 1968
-  lines, zero hits for "intervention"). `FocusAreaCategory`
-  (`insight-types.ts`) has no verified mapping to a `HypothesisFamily` —
-  its `relatedStats` are loosely-named legacy stat strings, not this
-  module's metric-id vocabulary. Deliberately NOT resolved by inventing an
-  unverified `FocusAreaCategory` → `HypothesisFamily` correspondence table
-  or an ad hoc `Intervention` type — either would either always return
-  empty (the `Goal.metric_id` path) or fabricate a mapping nothing in the
-  codebase currently backs. Building `personal-context.ts` needs one of:
-  a real shared metric-id vocabulary between `Goal`/`MetricId` and this
-  module's families, a genuine intervention loader, or a different,
-  narrower spec — an owner decision, not a slice.
+  lines, zero hits for "intervention") — interventions stay out of scope.
 - **Checklist item "paired fixtures with identical endpoints but different
   recorded intent"** was already satisfied by slice 1/2:
   `hypothesis-policy.test.ts`'s `'buildHypotheses — rough-lie approach:
