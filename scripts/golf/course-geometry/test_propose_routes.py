@@ -134,6 +134,78 @@ class BeamSearchTests(unittest.TestCase):
         self.assertIn(chosen['tee']['id'], ('tee-1', 'tee-1b'))
 
 
+class YardageCostTests(unittest.TestCase):
+    def test_yardage_cost_is_free_in_the_normal_range_gentle_below_and_steep_above(self):
+        yards = 400.0
+        self.assertEqual(pr.yardage_cost(380.0, yards), 0.0)   # ratio 0.95: inside the flat zone
+        self.assertEqual(pr.yardage_cost(408.0, yards), 0.0)   # ratio 1.02: still inside
+        short_cost = pr.yardage_cost(340.0, yards)             # ratio 0.85: a real dogleg, gentle slope
+        long_cost = pr.yardage_cost(440.0, yards)              # ratio 1.10: implausible overshoot, steep slope
+        self.assertGreater(short_cost, 0.0)
+        self.assertGreater(long_cost, 0.0)
+        self.assertGreater(long_cost, short_cost, 'overshoot must be penalized harder than an equal-ratio undershoot')
+
+
+class ContinuityCostTests(unittest.TestCase):
+    def test_short_and_typical_walks_are_free_but_an_implausibly_long_one_is_penalized(self):
+        import math
+        median_walk = math.exp(pr.CONTINUITY_LOGNORMAL_MU)
+        self.assertEqual(pr.continuity_cost(median_walk), 0.0)
+        self.assertEqual(pr.continuity_cost(3.0), 0.0,
+                          'a green sitting right next to the next tee must never be penalized')
+        long_walk_cost = pr.continuity_cost(600.0)  # far longer than any real calibration transition
+        self.assertGreater(long_walk_cost, 5.0)
+
+
+class CorridorEvidenceTests(unittest.TestCase):
+    def test_a_line_on_the_fairway_is_covered_and_one_off_it_is_not(self):
+        from shapely.geometry import box as _box
+        fairway = _box(-2.0, -2.0, 2.0, 400.0)  # a straight fairway strip along x=0
+        on_fairway = pr.corridor_coverage_fraction((0.0, 0.0), (0.0, 400.0), fairway)
+        off_fairway = pr.corridor_coverage_fraction((60.0, 0.0), (60.0, 400.0), fairway)  # 60m away the whole way
+        self.assertGreater(on_fairway, 0.95)
+        self.assertEqual(off_fairway, 0.0)
+
+    def test_no_fairway_data_gives_zero_coverage_not_a_penalty(self):
+        # No fairway to check against: coverage is 0 (neutral), matching a hole with no mapped
+        # fairway feature at all -- this must never look like an off-fairway line (also 0), because
+        # the beam-search cost only ever subtracts a coverage bonus, so both cases score identically:
+        # no bonus, not a penalty.
+        self.assertEqual(pr.corridor_coverage_fraction((0.0, 0.0), (0.0, 400.0), None), 0.0)
+
+    def test_beam_search_prefers_the_pair_whose_line_is_covered_by_fairway(self):
+        # Two equally yardage-plausible pairs for one hole slot; only one runs along the mapped fairway.
+        tee_good = make_candidate('tee-good', 'tee', (0.0, 0.0))
+        green_good = make_candidate('green-good', 'green', (0.0, 300.0))
+        tee_bad = make_candidate('tee-bad', 'tee', (100.0, 0.0))
+        green_bad = make_candidate('green-bad', 'green', (100.0, 300.0))
+        tees = pr.cluster_tee_complexes([tee_good, tee_bad], EPSG, radius_m=1.0)
+        from shapely.geometry import box as _box
+        fairway_utm = _box(-5.0, -5.0, 5.0, 305.0)
+        fairway_wgs84 = cr.epsg_to_wgs84(fairway_utm, EPSG)
+        pairs = pr.build_pairs(tees, [green_good, green_bad], EPSG, fairway_union_wgs84=fairway_wgs84)
+        yards_m = [300.0]
+        assignment = pr.beam_search_assignment(pairs, yards_m)
+        self.assertEqual(pairs[assignment[0]]['tee']['id'], 'tee-good')
+
+
+class RefHintTests(unittest.TestCase):
+    def test_a_matching_ref_tag_is_preferred_for_that_hole_slot(self):
+        # Two candidate greens, equally yardage-plausible for the single hole slot (both at 300m).
+        # Only green-1 carries an OSM ref naming this as hole 1; it should win the slot.
+        tee1 = make_candidate('tee-1', 'tee', (0.0, 0.0))
+        green1 = make_candidate('green-1', 'green', (0.0, 300.0))
+        green1['ref'] = 1
+        tee2 = make_candidate('tee-2', 'tee', (1000.0, 0.0))
+        green2 = make_candidate('green-2', 'green', (1000.0, 300.0))
+        green2['ref'] = 2  # names a *different* hole: must not win slot 0 over the matching ref
+        tees = pr.cluster_tee_complexes([tee1, tee2], EPSG)
+        pairs = pr.build_pairs(tees, [green1, green2], EPSG)
+        yards_m = [300.0]
+        assignment = pr.beam_search_assignment(pairs, yards_m, use_ref_hints=True)
+        self.assertEqual(pairs[assignment[0]]['green']['id'], 'green-1')
+
+
 class CandidateCollectionTests(unittest.TestCase):
     def test_collect_osm_candidates_filters_by_kind_and_bbox(self):
         extract = {'elements': [

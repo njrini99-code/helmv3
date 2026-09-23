@@ -65,10 +65,16 @@ DEFAULTS = {
     'turf_threshold': 0.08,
     'decay_m': 52.0,
     'open_radius_m': 3.0,
+    'close_radius_m': 3.0,
     'expected_width_m': 32.0,
-    'simplify_m': 1.5,
+    'simplify_m': 1.0,
     'confidence_min': 0.55,
+    'otsu_eta_min': 0.4,       # below this, the fairway/rough split isn't real separation; keep the whole corridor
+    'brightness_smooth_m': 10.0,  # wider than a mowing-stripe period, so stripes don't get Otsu-split as fairway/rough
+    'chaikin_passes': 2,
 }
+
+FAIRWAY_TEXTURE_SCALES_PX = (3, 5, 9)  # multi-scale local texture windows for the fairway/rough split
 
 
 def _load_json(path):
@@ -132,6 +138,65 @@ def corridor_mask(xs, ys, route_xy, half_width_m):
     return vcontains(buffered, xs, ys)
 
 
+def split_fairway_rough(naip, component, on_route, route_distance, pixel_m, options):
+    """Within `component` (the stage-1 mown-corridor candidate, fairway and
+    rough together), separate the brighter, smoother-textured fairway from
+    the darker, coarser rough. Returns `(fairway_mask, evidence)`; when the
+    split doesn't look real, `fairway_mask` is just `component` unchanged.
+
+    Two failure modes this guards against (both round-1 findings):
+    - Otsu always finds *some* split, even inside a pure fairway with no
+      rough at all — so the split is accepted only when `eta` (between-class
+      variance / total variance) clears `otsu_eta_min`, AND the darker class
+      sits farther from the route line on average (rough lines the edges;
+      it isn't found in patches nearer the centerline than the fairway).
+    - Mowing stripes alternate bright/dark every 5-10m, which would otherwise
+      make Otsu split along stripe boundaries instead of the fairway/rough
+      boundary. Brightness is smoothed over `brightness_smooth_m` (wider than
+      a stripe period) before comparing pixels to the corridor median."""
+    red, green, blue, nir = naip.array[0], naip.array[1], naip.array[2], naip.array[3]
+    brightness = (red + green + blue + nir) / 4.0
+    smooth_px = max(1, int(round(options['brightness_smooth_m'] / max(pixel_m[0], 1e-6))))
+    from scipy.ndimage import uniform_filter
+    brightness_smooth = uniform_filter(brightness, size=smooth_px, mode='nearest')
+    texture_multi = np.mean([cr.local_std(brightness, size) for size in FAIRWAY_TEXTURE_SCALES_PX], axis=0)
+
+    idx = component
+    n = int(idx.sum())
+    evidence = {'otsuEta': 0.0, 'otsuAccepted': False, 'splitPixels': n}
+    if n < 20:  # too few pixels for a meaningful two-class split
+        return component, evidence
+
+    bright_vals, texture_vals = brightness_smooth[idx], texture_multi[idx]
+    bright_z = (bright_vals - np.median(bright_vals)) / max(np.std(bright_vals), 1e-6)
+    texture_z = (texture_vals - np.median(texture_vals)) / max(np.std(texture_vals), 1e-6)
+    fairway_index_vals = bright_z - texture_z
+
+    threshold, eta = cr.otsu_threshold(fairway_index_vals)
+    evidence['otsuEta'] = round(eta, 4)
+    if eta < options['otsu_eta_min']:
+        return component, evidence
+
+    fairway_index = np.zeros_like(brightness)
+    fairway_index[idx] = fairway_index_vals
+    high_mask = idx & (fairway_index >= threshold)
+    low_mask = idx & ~high_mask
+    if not high_mask.any() or not low_mask.any():
+        return component, evidence
+
+    dist_high = float(route_distance[high_mask].mean())
+    dist_low = float(route_distance[low_mask].mean())
+    evidence.update({'roughDistanceM': round(dist_low, 2), 'fairwayDistanceM': round(dist_high, 2)})
+    if dist_low <= dist_high:  # the "rough" class isn't actually farther from the line: not a real split
+        return component, evidence
+
+    restricted = cr.largest_component(high_mask, seed_mask=on_route)
+    if not restricted.any():
+        return component, evidence
+    evidence['otsuAccepted'] = True
+    return restricted, evidence
+
+
 def build_trace(package, hole, naip, dem, epsg, options):
     """Segment one hole's fairway candidate. Returns (traceFeature, evidence)
     where traceFeature is None when nothing crosses the confidence bar or no
@@ -171,16 +236,28 @@ def build_trace(package, hole, naip, dem, epsg, options):
     if not component.any():
         return None, {**evidence, 'reason': 'no_connected_candidate_touching_route'}
 
-    merged = cr.polygonize_mask(component, naip.geotransform, epsg)
+    fairway_mask, split_evidence = split_fairway_rough(naip, component, on_route, route_distance, pixel_m, options)
+    evidence['fairwayRoughSplit'] = split_evidence
+    fairway_mask = cr.fill_holes(fairway_mask)
+    fairway_mask = cr.binary_opening(fairway_mask, options['open_radius_m'], pixel_m)
+    fairway_mask = cr.binary_closing(fairway_mask, options['close_radius_m'], pixel_m)
+    if not fairway_mask.any():
+        return None, {**evidence, 'reason': 'fairway_rough_split_emptied_candidate'}
+
+    merged = cr.polygonize_mask(fairway_mask, naip.geotransform, epsg)
     if merged is None or merged.is_empty:
         return None, {**evidence, 'reason': 'polygonize_empty'}
     polygon = cr.largest_polygon(merged).buffer(0)
     polygon = polygon.simplify(options['simplify_m'], preserve_topology=True)
     if not polygon.is_valid or polygon.is_empty or polygon.area <= 0:
         return None, {**evidence, 'reason': 'invalid_topology_after_simplify'}
+    smoothed_coords = cr.chaikin_smooth(list(polygon.exterior.coords), passes=int(options['chaikin_passes']))
+    smoothed = Polygon(smoothed_coords).buffer(0)
+    if smoothed.is_valid and not smoothed.is_empty and smoothed.area > 0:
+        polygon = cr.largest_polygon(smoothed)
 
     overlap_length = polygon.intersection(route_line).length
-    class_margin = float(weighted[component].mean()) - options['turf_threshold']
+    class_margin = float(weighted[fairway_mask].mean()) - options['turf_threshold']
     margin_headroom = max(1e-6, 1 - options['turf_threshold'])
     class_score = float(np.clip(class_margin / margin_headroom, 0, 1))
     alignment_score = float(min(1.0, overlap_length / max(route_line.length * 0.6, 1.0)))
@@ -237,9 +314,23 @@ def _source_block(naip_path):
     }
 
 
+def _hole_bounds(package, hole, epsg, corridor_m, margin_m=20.0):
+    by_id = _features_by_id(package)
+    route_wgs84 = _route_geometry(package, hole, by_id)
+    route_xy = [cr.wgs84_to_epsg(Point(lon, lat), epsg).coords[0] for lon, lat in route_wgs84]
+    buffered = LineString(route_xy).buffer(corridor_m + margin_m)
+    return buffered.bounds
+
+
 def run(package, holes, naip, dem, options, epsg=None):
     """Segment every requested hole against already-aligned `naip`/`dem`
-    rasters (same CRS, grid and pixel size — see `_resolve_grid`)."""
+    rasters (same CRS, grid and pixel size — see `_resolve_grid`).
+
+    Each hole is processed against a small crop of `naip`/`dem` around its
+    own route corridor, not the full (possibly whole-facility) raster: NDVI,
+    texture and distance-to-route are computed pixel-by-pixel, so cropping
+    first keeps a facility-wide raster from making every hole as slow as the
+    whole course."""
     epsg = epsg or origin_epsg(package)
     features, report = [], []
     for ordinal in holes:
@@ -251,7 +342,13 @@ def run(package, holes, naip, dem, options, epsg=None):
         if 'fairway' not in wanted:
             report.append({'ordinal': ordinal, 'holeKey': hole['key'], 'decision': 'skipped_fairway_already_present'})
             continue
-        trace, evidence = build_trace(package, hole, naip, dem, epsg, options)
+        try:
+            bounds = _hole_bounds(package, hole, epsg, options['corridor_m'])
+            hole_naip = cr.crop_to_bounds(naip, bounds)
+            hole_dem = cr.crop_to_bounds(dem, bounds)
+        except (ValueError, KeyError):
+            hole_naip, hole_dem = naip, dem
+        trace, evidence = build_trace(package, hole, hole_naip, hole_dem, epsg, options)
         if trace is None:
             report.append({'ordinal': ordinal, 'holeKey': hole['key'], 'decision': 'skipped_' + evidence.get('reason', 'unknown'), 'evidence': evidence})
             continue

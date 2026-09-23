@@ -68,11 +68,52 @@ MIN_DOGLEG_RATIO = 0.45   # a sharp dogleg's straight tee-to-green line can be w
 MAX_DOGLEG_RATIO = 1.05   # a little slack over 100% for GPS/measurement noise on a straight hole
 DEFAULT_TEE_COMPLEX_RADIUS_M = 25.0
 DEFAULT_BEAM_WIDTH = 1500
-DEFAULT_CONTINUITY_WEIGHT = 1.0
-CONTINUITY_HINGE_M = 150.0  # a green-to-next-tee walk under this is "free"; only the excess over it is penalized,
-                            # so continuity discourages implausible walks rather than rewarding merely-short ones
-                            # (which let a decoy tee sitting next to the previous green outscore the true, longer walk)
 SKIP_PENALTY = 2000.0  # cost of leaving a hole unassigned rather than forcing a bad pair
+
+# Walk continuity: round 1's hinge (`|walk| capped free below 150m, 1x/metre above`) was too weak a
+# discriminator once several candidate greens were all yardage-plausible for the same hole -- any tee
+# within 150m of the previous green was equally "free" regardless of how typical that walk actually is.
+# This replaces it with an empirical model: green-to-next-tee walk distances are approximately log-normal
+# (always positive, right-skewed -- most transitions are a short walk to an adjacent tee, a few are a long
+# walk back toward the clubhouse). mu/sigma below are fit on ln(walk) for all 34 real green->next-tee
+# transitions at Peek'n Peak Upper and Statesville CC (both full 18-hole numbered courses, and both
+# outside this tool's held-out route-proposal eval set) -- median ~85m, range 40-230m. The cost is the
+# squared log-distance from that fitted median (a per-transition "how surprising is this walk" score),
+# scaled by DEFAULT_CONTINUITY_WEIGHT so it's comparable in magnitude to the yardage-cost term below.
+CONTINUITY_LOGNORMAL_MU = 4.4377
+CONTINUITY_LOGNORMAL_SIGMA = 0.3449
+DEFAULT_CONTINUITY_WEIGHT = 20.0
+
+# Yardage cost: round-1 scored every hole against `abs(distance - yards)`, which is symmetric around
+# 100% of the scorecard yardage. A validation diagnostic against Winchester's true tee/green pairs
+# found their straight-line distance is *always* under the played yardage (median ratio ~0.97, two real
+# doglegs down at ~0.83) -- doglegs and elevation change routinely play longer than they measure in a
+# straight line, but essentially never shorter. The old symmetric cost charged the truth ~350 of its
+# 465-cost total for being "short", while a decoy pair sitting at exactly 100% paid nothing. These flat
+# and slope constants (FLAT_LOW/HIGH_RATIO from that same Peek+Statesville distribution) fix that: no
+# cost inside the normal range, a gentle slope for legitimate doglegs below it, and a steep slope above
+# it, since overshooting a straight-line distance past the scorecard yardage is basically GPS noise.
+YARDAGE_FLAT_LOW_RATIO = 0.90
+YARDAGE_FLAT_HIGH_RATIO = 1.02
+YARDAGE_BELOW_SLOPE = 0.3
+YARDAGE_ABOVE_SLOPE = 3.0
+
+# Corridor-chain evidence, take 2: a straight-line "longest gap from the nearest mapped fairway" penalty
+# (the first version of this) turned out to punish TRUE holes almost as hard as the old symmetric yardage
+# cost did. A diagnostic against Winchester's true assignment found two distinct causes, neither of which
+# is "this pair is wrong": (a) 2/18 Winchester holes have no fairway feature mapped in OSM at all, so
+# *every* candidate for that hole was measuring distance to some unrelated neighbouring hole's fairway;
+# (b) real doglegs (verified against truth) have their own correctly-mapped fairway curving well away from
+# the straight tee-green line for much of its length, the same "dogleg problem" the yardage-cost fix
+# already had to solve once. A hard gap penalty is not dogleg-safe or missing-data-safe; a coverage-based
+# *bonus* is: it can only ever help a pair, never hurt one, so a hole with no mapped fairway (or a fairway
+# that runs mostly off the straight line) simply gets ~0 bonus instead of a large penalty.
+CORRIDOR_SAMPLE_STEP_M = 10.0
+CORRIDOR_INSIDE_SLACK_M = 3.0  # a sample within this of a fairway polygon counts as "on" it (digitization slop)
+DEFAULT_CORRIDOR_BONUS_WEIGHT = 60.0  # full-length coverage's bonus; weaker than REF_HINT_BONUS on purpose --
+                                      # corridor coverage is circumstantial evidence, not a near-certain identity match
+
+REF_HINT_BONUS = 300.0  # cost reduction when a candidate green's OSM `ref`/`name` names this hole number
 
 
 def load_json(path):
@@ -99,7 +140,9 @@ def _in_bbox(point, bbox):
 
 def collect_osm_candidates(extract, bbox_wgs84=None):
     """Every `golf=tee`/`golf=green` way in the extract (inside `bbox_wgs84`
-    when given), as `{id, wayId, kind, geometryWgs84, centroidWgs84}`."""
+    when given), as `{id, wayId, kind, geometryWgs84, centroidWgs84, ref}`.
+    `ref` is the hole number a mapper recorded on that tee/green itself
+    (`ref`/`name` tag, via `factory/osm.py`'s generic parser), or `None`."""
     tees, greens = [], []
     for element in extract.get('elements', []):
         if element.get('type') != 'way':
@@ -115,9 +158,29 @@ def collect_osm_candidates(extract, bbox_wgs84=None):
             continue
         entry = {'id': f'osm-way-{element["id"]}', 'kind': golf,
                   'geometryWgs84': {'type': 'Polygon', 'coordinates': [[list(p) for p in polygon.exterior.coords]]},
-                  'centroidWgs84': list(centroid)}
+                  'centroidWgs84': list(centroid), 'ref': osmlib.parse_ref(element.get('tags') or {})}
         (tees if golf == 'tee' else greens).append(entry)
     return tees, greens
+
+
+def collect_fairway_union(extract, bbox_wgs84=None):
+    """Every `golf=fairway` way in the extract (inside `bbox_wgs84` when
+    given), merged into one shapely geometry in WGS84 -- corridor-chain
+    evidence for `build_pairs`. `None` when the extract has no fairways at
+    all (nothing to score a tee/green line's connectivity against)."""
+    from shapely.ops import unary_union
+    polygons = []
+    for element in extract.get('elements', []):
+        if element.get('type') != 'way' or (element.get('tags') or {}).get('golf') != 'fairway':
+            continue
+        polygon = _way_polygon(element)
+        if polygon is None:
+            continue
+        centroid = (polygon.centroid.x, polygon.centroid.y)
+        if not _in_bbox(centroid, bbox_wgs84):
+            continue
+        polygons.append(polygon)
+    return unary_union(polygons) if polygons else None
 
 
 def collect_surface_candidates(traces_doc, bbox_wgs84=None):
@@ -134,7 +197,7 @@ def collect_surface_candidates(traces_doc, bbox_wgs84=None):
         centroid = (polygon.centroid.x, polygon.centroid.y)
         if not _in_bbox(centroid, bbox_wgs84):
             continue
-        entry = {'id': feature['id'], 'kind': feature['kind'],
+        entry = {'id': feature['id'], 'kind': feature['kind'], 'ref': None,
                   'geometryWgs84': {'type': 'Polygon', 'coordinates': [ring]}, 'centroidWgs84': list(centroid)}
         (tees if feature['kind'] == 'tee' else greens).append(entry)
     return tees, greens
@@ -177,10 +240,68 @@ def cluster_tee_complexes(tees, epsg, radius_m=DEFAULT_TEE_COMPLEX_RADIUS_M):
     return tees
 
 
-def build_pairs(tees, greens, epsg):
-    """Every tee/green combination with its straight-line length in metres
-    and precomputed projected coordinates (the beam search evaluates many
-    thousands of these; re-projecting per lookup is too slow)."""
+def yardage_cost(distance_m, yards_m):
+    """Piecewise cost against the scorecard yardage: free inside the normal
+    range real holes fall in, a gentle slope for a legitimate dogleg running
+    short of it, a steep slope for running long (see the module-level
+    constants' comment for why this replaced `abs(distance - yards)`)."""
+    if yards_m <= 0:
+        return 0.0
+    low, high = YARDAGE_FLAT_LOW_RATIO * yards_m, YARDAGE_FLAT_HIGH_RATIO * yards_m
+    if distance_m < low:
+        return (low - distance_m) * YARDAGE_BELOW_SLOPE
+    if distance_m > high:
+        return (distance_m - high) * YARDAGE_ABOVE_SLOPE
+    return 0.0
+
+
+def corridor_coverage_fraction(tee_xy, green_xy, fairway_union_xy, sample_step_m=CORRIDOR_SAMPLE_STEP_M):
+    """The fraction (0..1) of evenly-spaced samples along the straight
+    tee-green line that fall within `CORRIDOR_INSIDE_SLACK_M` of any mapped
+    fairway polygon. `0.0` when there's no fairway data at all, or when the
+    line simply never comes close to one -- in both cases this contributes
+    no bonus rather than a penalty (see the module-level comment: a missing
+    fairway feature or a real dogleg both legitimately produce a line that
+    isn't well covered, and neither should count against a true pair)."""
+    if fairway_union_xy is None or fairway_union_xy.is_empty:
+        return 0.0
+    total = _dist(tee_xy, green_xy)
+    if total <= 0:
+        return 0.0
+    from shapely.geometry import Point as _Point
+    steps = max(1, int(total / sample_step_m))
+    covered = 0
+    for i in range(steps + 1):
+        t = i / steps
+        x = tee_xy[0] + (green_xy[0] - tee_xy[0]) * t
+        y = tee_xy[1] + (green_xy[1] - tee_xy[1]) * t
+        if _Point(x, y).distance(fairway_union_xy) <= CORRIDOR_INSIDE_SLACK_M:
+            covered += 1
+    return covered / (steps + 1)
+
+
+def continuity_cost(walk_m, weight=DEFAULT_CONTINUITY_WEIGHT, mu=CONTINUITY_LOGNORMAL_MU, sigma=CONTINUITY_LOGNORMAL_SIGMA):
+    """One-sided squared log-distance above the fitted green->next-tee walk
+    median (see the module-level comment for the fit): free at or below a
+    typical walk, growing for one that's unusually long. One-sided on
+    purpose -- a green sitting right next to the next tee is completely
+    ordinary routing (often *more* common than the ~85m calibration median,
+    just under-sampled in a 34-transition fit), so a short walk must never
+    cost more than a long one; only an implausibly long walk (crossing to
+    the wrong side of the course) is real evidence against a pair."""
+    if walk_m <= 0.0:
+        return 0.0
+    import math
+    z = (math.log(walk_m) - mu) / sigma
+    return weight * 0.5 * max(0.0, z) ** 2
+
+
+def build_pairs(tees, greens, epsg, fairway_union_wgs84=None):
+    """Every tee/green combination with its straight-line length in metres,
+    precomputed projected coordinates, and its corridor-chain gap (the beam
+    search evaluates many thousands of these; re-projecting or re-sampling
+    the line per lookup is too slow)."""
+    fairway_union_xy = cr.wgs84_to_epsg(fairway_union_wgs84, epsg) if fairway_union_wgs84 is not None else None
     pairs = []
     for tee in tees:
         tee_xy = tee.get('xy') or _xy(tee['centroidWgs84'], epsg)
@@ -190,8 +311,9 @@ def build_pairs(tees, greens, epsg):
             green_xy = green.get('xy') or _xy(green['centroidWgs84'], epsg)
             green['xy'] = green_xy
             distance = _dist(tee_xy, green_xy)
+            coverage = corridor_coverage_fraction(tee_xy, green_xy, fairway_union_xy)
             pairs.append({'tee': tee, 'green': green, 'distanceM': distance, 'teeXy': tee_xy, 'greenXy': green_xy,
-                          'complexId': tee.get('complexId', tee['id'])})
+                          'complexId': tee.get('complexId', tee['id']), 'corridorCoverageFraction': round(coverage, 3)})
     return pairs
 
 
@@ -207,7 +329,8 @@ def _feasible_pairs_by_hole(pairs, yards_m):
     return by_hole
 
 
-def _run_beam(pairs, yards_m, beam_width=DEFAULT_BEAM_WIDTH, continuity_weight=DEFAULT_CONTINUITY_WEIGHT):
+def _run_beam(pairs, yards_m, beam_width=DEFAULT_BEAM_WIDTH, continuity_weight=DEFAULT_CONTINUITY_WEIGHT,
+              corridor_bonus_weight=DEFAULT_CORRIDOR_BONUS_WEIGHT, use_ref_hints=True):
     """The final surviving beam (list of states), not just its best sequence.
 
     A beam of partial sequences is grown one hole slot at a time. Each state
@@ -216,6 +339,12 @@ def _run_beam(pairs, yards_m, beam_width=DEFAULT_BEAM_WIDTH, continuity_weight=D
     position (so the next hole's tee can be scored for walking continuity).
     Leaving a slot unassigned is always an option, at `SKIP_PENALTY`, so one
     bad/missing hole cannot starve the rest of the course of candidates.
+
+    Per-pair cost is `yardage_cost + continuity_cost - corridor-coverage
+    bonus - ref-hint bonus`: yardage match, walking-distance plausibility
+    against the fitted green->next-tee distribution, how much of the line is
+    actually chained together by mapped fairway, and (when present) whether
+    a mapper already labelled this green with this hole's number.
     """
     if not pairs or not yards_m:
         return []
@@ -231,10 +360,13 @@ def _run_beam(pairs, yards_m, beam_width=DEFAULT_BEAM_WIDTH, continuity_weight=D
                 green_id, complex_id = pair['green']['id'], pair['complexId']
                 if green_id in used_greens or complex_id in used_complexes:
                     continue
-                added = abs(pair['distanceM'] - yards)
+                added = yardage_cost(pair['distanceM'], yards)
+                added -= corridor_bonus_weight * pair.get('corridorCoverageFraction', 0.0)
+                if use_ref_hints and pair['green'].get('ref') == h + 1:
+                    added -= REF_HINT_BONUS
                 if last_green_xy is not None:
                     walk = _dist(last_green_xy, pair['teeXy'])
-                    added += continuity_weight * max(0.0, walk - CONTINUITY_HINGE_M)
+                    added += continuity_cost(walk, continuity_weight)
                 new_assigned = dict(assigned)
                 new_assigned[h] = pair_idx
                 expanded.append((cost + added, new_assigned, used_greens | {green_id}, used_complexes | {complex_id},
@@ -258,12 +390,13 @@ def _run_beam(pairs, yards_m, beam_width=DEFAULT_BEAM_WIDTH, continuity_weight=D
     return beam
 
 
-def beam_search_assignment(pairs, yards_m, beam_width=DEFAULT_BEAM_WIDTH, continuity_weight=DEFAULT_CONTINUITY_WEIGHT):
+def beam_search_assignment(pairs, yards_m, beam_width=DEFAULT_BEAM_WIDTH, continuity_weight=DEFAULT_CONTINUITY_WEIGHT,
+                            **kwargs):
     """Hole index -> pair index for the lowest-cost complete sequence found
     by `_run_beam`. This is the plain assignment, with no confidence
     information; `propose()` calls `beam_search_with_confidence` instead to
     get both in one search."""
-    beam = _run_beam(pairs, yards_m, beam_width, continuity_weight)
+    beam = _run_beam(pairs, yards_m, beam_width, continuity_weight, **kwargs)
     if not beam:
         return {}
     best = min(beam, key=lambda state: state[0])
@@ -295,8 +428,9 @@ def hole_confidences(beam, assignment, pairs):
     return confidences
 
 
-def beam_search_with_confidence(pairs, yards_m, beam_width=DEFAULT_BEAM_WIDTH, continuity_weight=DEFAULT_CONTINUITY_WEIGHT):
-    beam = _run_beam(pairs, yards_m, beam_width, continuity_weight)
+def beam_search_with_confidence(pairs, yards_m, beam_width=DEFAULT_BEAM_WIDTH, continuity_weight=DEFAULT_CONTINUITY_WEIGHT,
+                                 **kwargs):
+    beam = _run_beam(pairs, yards_m, beam_width, continuity_weight, **kwargs)
     if not beam:
         return {}, {}
     best = min(beam, key=lambda state: state[0])
@@ -373,7 +507,9 @@ class NumberedSeriesExistsError(Exception):
 
 def propose(scorecard, extract, surfaces_doc, facility_id, hole_key_prefix, osm_path,
             allow_numbered_osm=False, tee_complex_radius_m=DEFAULT_TEE_COMPLEX_RADIUS_M,
-            beam_width=DEFAULT_BEAM_WIDTH, continuity_weight=DEFAULT_CONTINUITY_WEIGHT):
+            beam_width=DEFAULT_BEAM_WIDTH, continuity_weight=DEFAULT_CONTINUITY_WEIGHT,
+            corridor_bonus_weight=DEFAULT_CORRIDOR_BONUS_WEIGHT,
+            use_ref_hints=True, extra_tee_candidates=None):
     bbox = scorecard.get('bboxWgs84')
     pars = scorecard.get('pars')
     hole_order = scorecard.get('holeOrder')
@@ -391,15 +527,21 @@ def propose(scorecard, extract, surfaces_doc, facility_id, hole_key_prefix, osm_
     if surfaces_doc:
         extra_tees, extra_greens = collect_surface_candidates(surfaces_doc, bbox)
         tees, greens = tees + extra_tees, greens + extra_greens
+    if extra_tee_candidates:
+        tees = tees + extra_tee_candidates
+    fairway_union = collect_fairway_union(extract, bbox)
     epsg = utm_epsg(*scorecard['originWgs84'])
     cluster_tee_complexes(tees, epsg, tee_complex_radius_m)
-    pairs = build_pairs(tees, greens, epsg)
+    pairs = build_pairs(tees, greens, epsg, fairway_union_wgs84=fairway_union)
     yards_m = [y * YARD_TO_M for y in scorecard['scorecardYards']]
-    assignment, confidences = beam_search_with_confidence(pairs, yards_m, beam_width=beam_width,
-                                                           continuity_weight=continuity_weight)
+    assignment, confidences = beam_search_with_confidence(
+        pairs, yards_m, beam_width=beam_width, continuity_weight=continuity_weight,
+        corridor_bonus_weight=corridor_bonus_weight, use_ref_hints=use_ref_hints)
     doc = build_document(facility_id, scorecard['siteId'], hole_key_prefix, assignment, pairs, yards_m, pars,
                           osm_path, hole_count, hole_keys=hole_order, confidences=confidences)
-    return doc, {'teeCandidates': len(tees), 'greenCandidates': len(greens), 'pairCandidates': len(pairs)}
+    stats = {'teeCandidates': len(tees), 'greenCandidates': len(greens), 'pairCandidates': len(pairs),
+              'fairwayCandidates': 0 if fairway_union is None else (len(fairway_union.geoms) if fairway_union.geom_type == 'MultiPolygon' else 1)}
+    return doc, stats
 
 
 def parse_args(argv=None):
@@ -417,6 +559,8 @@ def parse_args(argv=None):
     parser.add_argument('--tee-complex-radius-m', type=float, default=DEFAULT_TEE_COMPLEX_RADIUS_M)
     parser.add_argument('--beam-width', type=int, default=DEFAULT_BEAM_WIDTH)
     parser.add_argument('--continuity-weight', type=float, default=DEFAULT_CONTINUITY_WEIGHT)
+    parser.add_argument('--corridor-bonus-weight', type=float, default=DEFAULT_CORRIDOR_BONUS_WEIGHT)
+    parser.add_argument('--no-ref-hints', action='store_true', help='Ignore OSM ref/name hole-number hints on tees/greens (for ablation)')
     return parser.parse_args(argv)
 
 
@@ -430,7 +574,9 @@ def main(argv=None):
     doc, stats = propose(scorecard, extract, surfaces_doc, facility_id, hole_key_prefix, args.osm,
                           allow_numbered_osm=args.allow_numbered_osm,
                           tee_complex_radius_m=args.tee_complex_radius_m,
-                          beam_width=args.beam_width, continuity_weight=args.continuity_weight)
+                          beam_width=args.beam_width, continuity_weight=args.continuity_weight,
+                          corridor_bonus_weight=args.corridor_bonus_weight,
+                          use_ref_hints=not args.no_ref_hints)
     args.out.parent.mkdir(parents=True, exist_ok=True)
     args.out.write_text(json.dumps(doc, indent=2) + '\n')
     proposed = sum(1 for row in doc['report'] if row['decision'] == 'proposed')

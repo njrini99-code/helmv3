@@ -137,6 +137,105 @@ def binary_opening(mask, radius_m, pixel_m):
     return _opening(mask, structure=structure)
 
 
+def binary_closing(mask, radius_m, pixel_m):
+    """Dilation then erosion: fills thin gaps (a cart path crossing the
+    fairway, a sprinkler-head shadow) without doing anything when `radius_m`
+    is 0."""
+    if radius_m <= 0:
+        return mask
+    from scipy.ndimage import binary_closing as _closing
+    radius_px = max(1, int(round(radius_m / max(pixel_m[0], 1e-6))))
+    structure = np.ones((2 * radius_px + 1, 2 * radius_px + 1))
+    return _closing(mask, structure=structure)
+
+
+def fill_holes(mask):
+    """Fills fully-enclosed False regions (a bunker or sprinkler head sitting
+    inside an otherwise-solid fairway) before the open/close smoothing pass,
+    so smoothing acts on the outer boundary instead of chewing through
+    interior noise."""
+    from scipy.ndimage import binary_fill_holes as _fill
+    return _fill(mask)
+
+
+def otsu_threshold(values):
+    """The threshold that maximizes between-class variance for a 1-D sample
+    (Otsu 1979), via a 256-bin histogram. Returns `(threshold, eta)` where eta
+    is that best between-class variance divided by the total variance — how
+    cleanly the sample actually splits in two, not just where. `eta` near 0
+    means the split is arbitrary (near-uniform data); `eta` near 1 means two
+    well-separated modes."""
+    values = np.asarray(values, dtype=np.float64)
+    if values.size == 0 or np.ptp(values) == 0:
+        return float(values[0]) if values.size else 0.0, 0.0
+    hist, edges = np.histogram(values, bins=256)
+    centers = (edges[:-1] + edges[1:]) / 2
+    weight = hist.astype(np.float64)
+    total = weight.sum()
+    cum_weight = np.cumsum(weight)
+    cum_mean = np.cumsum(weight * centers)
+    grand_mean = cum_mean[-1] / total
+    with np.errstate(divide='ignore', invalid='ignore'):
+        w0 = cum_weight / total
+        w1 = 1 - w0
+        mean0 = np.where(cum_weight > 0, cum_mean / np.where(cum_weight > 0, cum_weight, 1), 0)
+        mean1 = np.where((total - cum_weight) > 0, (cum_mean[-1] - cum_mean) / np.where((total - cum_weight) > 0, total - cum_weight, 1), 0)
+        between = w0 * w1 * (mean0 - mean1) ** 2
+    between = np.nan_to_num(between)
+    total_var = np.sum(weight * (centers - grand_mean) ** 2) / total
+    best = int(np.argmax(between))
+    eta = float(between[best] / total_var) if total_var > 0 else 0.0
+    return float(centers[best]), max(0.0, min(1.0, eta))
+
+
+def chaikin_smooth(ring, passes=2):
+    """Chaikin corner-cutting on a closed ring of (x, y) points: each edge's
+    corner is replaced by two points at 1/4 and 3/4 along it, run `passes`
+    times. Smooths a blocky, pixel-grid polygon boundary into a curve without
+    changing its rough shape or moving it off the true edge by more than
+    about a quarter of the vertex spacing."""
+    points = list(ring)
+    if points[0] == points[-1]:
+        points = points[:-1]
+    if len(points) < 3:
+        return ring
+    for _ in range(max(0, passes)):
+        smoothed = []
+        n = len(points)
+        for i in range(n):
+            p0, p1 = points[i], points[(i + 1) % n]
+            q = (0.75 * p0[0] + 0.25 * p1[0], 0.75 * p0[1] + 0.25 * p1[1])
+            r = (0.25 * p0[0] + 0.75 * p1[0], 0.25 * p0[1] + 0.75 * p1[1])
+            smoothed.extend([q, r])
+        points = smoothed
+    points.append(points[0])
+    return points
+
+
+def crop_to_bounds(raster, bounds, margin_m=0.0):
+    """A new `Raster` covering only `bounds` (xmin, ymin, xmax, ymax, in the
+    raster's own CRS) plus `margin_m` on every side, by pixel-index slicing
+    (no resampling). Keeps per-hole processing over a whole-facility raster
+    fast: NDVI/texture/distance are O(pixels), and a hole's corridor is a
+    small fraction of a facility's full extent."""
+    gt = raster.geotransform
+    h, w = raster.shape
+    xmin, ymin, xmax, ymax = bounds
+    xmin, xmax = xmin - margin_m, xmax + margin_m
+    ymin, ymax = ymin - margin_m, ymax + margin_m
+    inv_col = lambda x, y: (x - gt[0]) / gt[1] if gt[1] else 0  # noqa: E731 (gt[2]==0 for these grids)
+    inv_row = lambda x, y: (y - gt[3]) / gt[5] if gt[5] else 0  # noqa: E731
+    cols = [inv_col(xmin, ymin), inv_col(xmax, ymax)]
+    rows = [inv_row(xmin, ymin), inv_row(xmax, ymax)]
+    col0, col1 = int(max(0, min(cols))), int(min(w, max(cols) + 1))
+    row0, row1 = int(max(0, min(rows))), int(min(h, max(rows) + 1))
+    if col1 <= col0 or row1 <= row0:
+        raise ValueError('crop_to_bounds: requested bounds do not overlap the raster')
+    cropped = raster.array[:, row0:row1, col0:col1]
+    new_gt = (gt[0] + col0 * gt[1], gt[1], gt[2], gt[3] + row0 * gt[5], gt[4], gt[5])
+    return Raster(cropped, new_gt, raster.epsg, raster.nodata)
+
+
 def local_std(array, size):
     """Windowed standard deviation via uniform-filter moments: O(n), unlike
     `scipy.ndimage.generic_filter(np.std, ...)`."""

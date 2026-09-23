@@ -74,6 +74,31 @@ def make_rasters(ndvi_value, texture_noise_std, dem_flat=True, seed=1):
     return naip, dem
 
 
+def make_fairway_rough_rasters(ndvi_value=0.30, seed=1):
+    """A corridor with a narrow, bright, smooth fairway band along the route
+    centerline (row 50) and a darker, coarser rough on either side out to the
+    corridor edge -- same NDVI everywhere (so stage 1 keeps the whole
+    corridor), different brightness and texture (so stage 2 should split
+    fairway from rough)."""
+    geotransform, width, height = synthetic_grid()
+    rng = np.random.default_rng(seed)
+    rows = np.arange(height).reshape(-1, 1).repeat(width, axis=1)
+    dist_from_centerline_m = np.abs(rows - 50) * 2.0
+    fairway_band = dist_from_centerline_m <= 10.0
+
+    red = np.where(fairway_band, 1000.0, 650.0) + np.where(
+        fairway_band, rng.normal(0, 3, (height, width)), rng.normal(0, 90, (height, width)))
+    ndvi = np.full((height, width), ndvi_value)
+    denom = np.clip(1 - ndvi, 1e-3, None)
+    nir = red * (1 + ndvi) / denom
+    green = red * 0.9
+    blue = red * 0.8
+    array = np.stack([red, green, blue, nir], axis=0)
+    naip = cr.Raster(array, geotransform, EPSG, [None] * 4)
+    dem = cr.Raster(np.zeros((1, height, width)), geotransform, EPSG, [None])
+    return naip, dem, fairway_band
+
+
 OPTIONS = dict(dst.DEFAULTS)
 
 
@@ -154,6 +179,21 @@ class SegmentationTests(unittest.TestCase):
         self.assertIsNone(trace)
         self.assertEqual(evidence['reason'], 'confidence_below_threshold')
         self.assertLess(evidence['confidence'], options['confidence_min'])
+
+    def test_fairway_rough_split_narrows_the_trace_to_the_bright_smooth_band(self):
+        hole, features = hole_with_route()
+        package = make_package({'holes': [hole], 'features': features})
+        naip, dem, fairway_band = make_fairway_rough_rasters()
+        options = dict(OPTIONS, corridor_m=30.0, expected_width_m=32.0, decay_m=0.0)
+        trace, evidence = dst.build_trace(package, hole, naip, dem, EPSG, options)
+        self.assertIsNotNone(trace, evidence)
+        self.assertTrue(evidence['fairwayRoughSplit']['otsuAccepted'], evidence['fairwayRoughSplit'])
+        # The true fairway band is 20m wide (rows within 10m of the centerline) inside a
+        # 60m-wide corridor; the split should land much closer to the narrow band's area
+        # than to the full corridor's.
+        true_fairway_area = fairway_band.sum() * (2.0 ** 2)
+        traced = cr.wgs84_to_epsg(cr.to_shapely({'type': 'Polygon', 'coordinates': [trace['coordinatesWgs84']]}), EPSG)
+        self.assertLess(traced.area, true_fairway_area * 2.5)
 
     def test_run_reports_every_requested_hole_including_those_not_missing_a_fairway(self):
         hole, features = hole_with_route()
