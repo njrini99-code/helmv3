@@ -34,6 +34,7 @@ def _sibling(name, filename):
 course_crs = _sibling('course_crs', 'course_crs.py')
 
 TRACE_SMOOTHING_M = 0  # canonical source boundaries are never beautified
+SAME_WAY_TOLERANCE_M = 0.05  # an imported osm-way feature this close to the OSM way IS that way
 
 
 def canonical(value):
@@ -71,6 +72,29 @@ def polygon(element, project):
     projected = [project.transform(*point) for point in coordinates]
     shape = Polygon(projected)
     return (coordinates, shape) if shape.is_valid and not shape.is_empty else None
+
+
+def merge_imported_candidates(candidates, imported_features, to_metric):
+    """Adds each imported non-route feature to `candidates` in place.
+
+    An auto-route proposal re-carries the OSM tee/green it anchored on under
+    the same osm-way id. That is the same way, not a conflict, so the OSM
+    candidate is kept. Any other id collision, or a same-id feature whose
+    geometry differs, is refused."""
+    by_id = {c['id']: c for c in candidates}
+    for feature in imported_features:
+        if feature['kind'] == 'route':
+            continue
+        shape = transform(to_metric, geometry_shape(feature['geometryWgs84']))
+        existing = by_id.get(feature['id'])
+        if existing:
+            if (existing['kind'] == feature['kind'] and feature['id'].startswith('osm-way-')
+                    and existing['shape'].hausdorff_distance(shape) <= SAME_WAY_TOLERANCE_M):
+                continue
+            raise ValueError('SOURCE_FEATURE_CONFLICT: ' + feature['id'])
+        candidates.append({'id': feature['id'], 'kind': feature['kind'], 'imported': feature, 'shape': shape})
+        by_id[feature['id']] = candidates[-1]
+    return candidates
 
 
 def main():
@@ -169,12 +193,7 @@ def main():
         coordinates, shape = item
         candidates.append({'id': f'osm-way-{way_id}', 'kind': kind, 'coordinates': coordinates, 'shape': shape})
 
-    for feature in imported_features:
-        if feature['kind'] != 'route':
-            if any(c['id'] == feature['id'] for c in candidates):
-                raise ValueError('SOURCE_FEATURE_CONFLICT: ' + feature['id'])
-            candidates.append({'id': feature['id'], 'kind': feature['kind'], 'imported': feature,
-                               'shape': transform(project.transform, geometry_shape(feature['geometryWgs84']))})
+    merge_imported_candidates(candidates, imported_features, project.transform)
 
     traces = json.loads(args.traces.read_text()) if args.traces else None
     trace_source_ids = set()  # every distinct naip-trace-/lidar-trace- source id a feature actually used
