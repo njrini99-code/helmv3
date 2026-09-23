@@ -10,6 +10,11 @@ import { describeError, postgrestErrorContext, toPostgrestError } from '@/lib/ut
 import { observeRealtimeChannel } from '@/lib/observability/supabase/realtime';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import { isGroupConversation } from '@/components/fairway/pages/messages/conversation-kind';
+import {
+  readCachedResource,
+  writeCachedResourceIfCurrent,
+  getCacheEpoch,
+} from '@/lib/golf/client-resource-cache';
 
 /** Pause before the single transport-failure retry of a message send. */
 const SEND_TRANSPORT_RETRY_DELAY_MS = 750;
@@ -341,16 +346,64 @@ function generateClientMessageId(): string {
   });
 }
 
-export function useGolfMessages(conversationId: string) {
-  const [messages, setMessages] = useState<MessageWithReadStatus[]>([]);
-  const [loading, setLoading] = useState(true);
+/**
+ * Cache key for one thread's last fetched page, scoped by VIEWER as well as
+ * conversation. `MessageWithReadStatus.isRead` is viewer-relative (computed
+ * against `otherParticipantLastReadAt`, itself resolved as "the participant
+ * who is not me" — see `fetchOtherParticipantReadStatus`), so an unscoped key
+ * would let one participant's read-receipt view leak into another
+ * participant's paint of the same shared conversationId on a shared device.
+ */
+export function messagesCacheKey(conversationId: string, viewerUserId: string): string {
+  return `golf.messages:${conversationId}:${viewerUserId}`;
+}
+
+/**
+ * Cache key for one viewer's conversation rail, scoped by their ACTIVE team.
+ * `loadGolfConversationRail` narrows a multi-team head coach's rail to
+ * `getGolfActiveTeamConversationIds()` (the `golf_active_team` cookie); an
+ * unscoped key would keep painting the team they just switched AWAY from —
+ * `TeamSwitcher`'s `router.refresh()` re-renders Server Components but does
+ * not reset this client-side cache or remount the hook. `teamId` omitted
+ * (players, single-team coaches) falls back to the unscoped key so their
+ * rail — never team-filtered in the first place — is unaffected.
+ */
+export function conversationsCacheKey(userId: string, teamId?: string | null): string {
+  return teamId ? `golf.conversations:${userId}:${teamId}` : `golf.conversations:${userId}`;
+}
+
+/**
+ * Optimistic rows that never reached the server are client-only state; they
+ * must not be revived from cache as if they had been sent.
+ */
+function cacheableMessages(rows: MessageWithReadStatus[]): MessageWithReadStatus[] {
+  return rows.filter((m) => !m.sendFailed);
+}
+
+/**
+ * @param viewerUserId The signed-in user's id when the caller already has it
+ *   (FairwayMessages does, via `useGolfUser()`). Passing it skips the
+ *   `auth.getUser()` network round trip that otherwise gates the first query.
+ */
+export function useGolfMessages(conversationId: string, viewerUserId?: string | null) {
+  // Warm start: the last fetched page for this thread, if we have seen it
+  // this session. Painted immediately; the fetch below refreshes it silently.
+  // Requires the viewer id UP FRONT (only available when the caller hands it
+  // in) — the cache key is viewer-scoped, so without it there is nothing safe
+  // to read yet.
+  const warm =
+    conversationId && viewerUserId
+      ? readCachedResource<MessageWithReadStatus[]>(messagesCacheKey(conversationId, viewerUserId))
+      : null;
+  const [messages, setMessages] = useState<MessageWithReadStatus[]>(warm?.data ?? []);
+  const [loading, setLoading] = useState(!warm);
   // Distinguishes "this thread failed to load" from "this thread is truly empty".
   // A swallowed query error used to surface as the honest-empty state (P258); the
   // consumer (MessageThreadPane) reads this to render a recoverable error instead.
   const [error, setError] = useState<boolean>(false);
   const [otherParticipantLastReadAt, setOtherParticipantLastReadAt] = useState<string | null>(null);
   const [isOtherTyping, setIsOtherTyping] = useState(false);
-  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(viewerUserId ?? null);
   /**
    * The same value, readable without becoming a dependency.
    *
@@ -374,15 +427,45 @@ export function useGolfMessages(conversationId: string) {
    * callback identity stable, so the thread is fetched and subscribed exactly
    * once per conversation.
    */
-  const currentUserIdRef = useRef<string | null>(null);
+  const currentUserIdRef = useRef<string | null>(viewerUserId ?? null);
+  /**
+   * The cache epoch as of THIS hook instance's mount — captured once, never
+   * re-read at write time.
+   *
+   * `clearAllCachedResources()` (client-resource-cache.ts) bumps a module-level
+   * epoch on every golf sign-out. The fetch-path writes above capture
+   * `getCacheEpoch()` BEFORE their `await`, so a clear landing during the fetch
+   * makes the captured epoch stale by the time the write runs. The realtime
+   * "keep warm copy current" effect below has no such gap: `setMessages` from a
+   * realtime handler runs synchronously, so a `getCacheEpoch()` read on the line
+   * immediately before its own write could never observe a clear — there is no
+   * `await` between the two for one to land in. That made the guard a no-op: a
+   * realtime insert or update landing AFTER a sign-out's
+   * `clearAllCachedResources()` (the hook can still be mounted for a beat while
+   * unmount is in flight) would read the POST-clear epoch on both sides of the
+   * comparison and write the signed-out viewer's messages straight back into
+   * the cache it was just cleared from.
+   *
+   * Comparing against the epoch captured HERE, at mount, instead fixes that:
+   * once a clear happens, `getCacheEpoch()` no longer equals
+   * `cacheEpochAtMountRef.current` and stays that way for the rest of this hook
+   * instance's life, so every write below — not just the one in flight when the
+   * clear happened — is blocked from that point on.
+   */
+  const cacheEpochAtMountRef = useRef<number>(getCacheEpoch());
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const lastTypingBroadcastRef = useRef<number>(0);
   const supabaseRef = useRef(createClient());
   const channelRef = useRef<ReturnType<typeof supabaseRef.current.channel> | null>(null);
   const supabase = supabaseRef.current;
 
-  // Get current user ID on mount
+  // Get current user ID on mount — only when the caller could not hand it in.
   useEffect(() => {
+    if (viewerUserId) {
+      currentUserIdRef.current = viewerUserId;
+      setCurrentUserId(viewerUserId);
+      return;
+    }
     let mounted = true;
     const getUser = async () => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -396,7 +479,7 @@ export function useGolfMessages(conversationId: string) {
       mounted = false;
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [viewerUserId]);
 
   /**
    * G-13 — the conversation currently on screen, readable from inside an
@@ -460,7 +543,18 @@ export function useGolfMessages(conversationId: string) {
       return;
     }
 
-    setLoading(true);
+    // Captured BEFORE the fetch below: if a sign-out clears the cache while
+    // this request is in flight, the write at the bottom must not resurrect
+    // the signed-out viewer's data (see client-resource-cache.ts).
+    const fetchEpoch = getCacheEpoch();
+    const uidAtStart = currentUserIdRef.current;
+
+    // `loading` means "nothing to show yet". A thread we have already painted
+    // from cache revalidates silently — flashing the skeleton over readable
+    // rows is exactly the "loads again every time" the cache exists to end.
+    if (!uidAtStart || !readCachedResource<MessageWithReadStatus[]>(messagesCacheKey(conversationId, uidAtStart))) {
+      setLoading(true);
+    }
     setError(false);
     // Fetch most recent 200 messages (descending for limit), then reverse for display order
     const { data, error: fetchError } = await supabase
@@ -514,7 +608,13 @@ export function useGolfMessages(conversationId: string) {
     // slower response belonging to a conversation the user already left.
     if (liveConversationIdRef.current !== conversationId) return;
 
-    setMessages(((data || []) as MessageWithReadStatus[]).reverse());
+    const fresh = ((data || []) as MessageWithReadStatus[]).reverse();
+    // currentUserIdRef.current may have resolved DURING the fetch (uidAtStart
+    // was captured before it); prefer the fresh value, and skip caching
+    // entirely rather than guess at an unscoped key.
+    const uidNow = currentUserIdRef.current ?? uidAtStart;
+    if (uidNow) writeCachedResourceIfCurrent(messagesCacheKey(conversationId, uidNow), fresh, fetchEpoch);
+    setMessages(fresh);
     setLoading(false);
 
     // Mark messages as read. Awaited + caught so a DB error in the server action
@@ -538,6 +638,25 @@ export function useGolfMessages(conversationId: string) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [conversationId, fetchOtherParticipantReadStatus]);
 
+  // Keep the warm copy current as realtime inserts/updates/edits land, so a
+  // return visit paints the thread as it was last seen, not as last fetched.
+  useEffect(() => {
+    if (!conversationId || loading || !currentUserId) return;
+    if (messages.some((m) => m.conversation_id && m.conversation_id !== conversationId)) return;
+    // Guards against a sign-out's clearAllCachedResources() that happened
+    // AFTER this hook instance mounted — see cacheEpochAtMountRef's docstring
+    // above for why the epoch must be captured at mount, not re-read here:
+    // this setMessages-triggered effect has no await between a fresh read and
+    // its own write for a clear to land in, so re-reading here can never
+    // observe one.
+    if (getCacheEpoch() !== cacheEpochAtMountRef.current) return;
+    writeCachedResourceIfCurrent(
+      messagesCacheKey(conversationId, currentUserId),
+      cacheableMessages(messages),
+      cacheEpochAtMountRef.current,
+    );
+  }, [conversationId, messages, loading, currentUserId]);
+
   // Compute read status for messages when otherParticipantLastReadAt changes
   useEffect(() => {
     if (!otherParticipantLastReadAt || !currentUserId) return;
@@ -556,6 +675,18 @@ export function useGolfMessages(conversationId: string) {
 
   useEffect(() => {
     if (!conversationId) return;
+
+    // Switching threads inside one mounted hook: show the target thread's
+    // cached rows at once instead of the previous thread (or a skeleton)
+    // while its fetch is in flight.
+    const cached = currentUserIdRef.current
+      ? readCachedResource<MessageWithReadStatus[]>(messagesCacheKey(conversationId, currentUserIdRef.current))
+      : null;
+    if (cached) {
+      setMessages(cached.data);
+      setLoading(false);
+      setError(false);
+    }
 
     fetchMessages();
 
@@ -1041,563 +1172,503 @@ export function applyPerViewerUnread(
   );
 }
 
-export function useGolfConversations() {
-  const [conversations, setConversations] = useState<GolfConversationWithMeta[]>([]);
-  const [loading, setLoading] = useState(true);
-  // P257: distinguishes "the rail failed to load" from "the inbox is truly
-  // empty". A swallowed RPC error used to surface as the cheerful empty state
-  // ("No conversations yet…"), making a backend failure indistinguishable from
-  // a genuine empty inbox. The rail reads this to render a recoverable error
-  // (explain + Retry) instead.
-  const [error, setError] = useState<boolean>(false);
-  const [userId, setUserId] = useState<string | null>(null);
-  const supabaseRef = useRef(createClient());
-  const supabase = supabaseRef.current;
-  const conversationIdsRef = useRef<Set<string>>(new Set());
-  const fetchDebounceRef = useRef<NodeJS.Timeout | null>(null);
-
-  // Get the current user on mount
-  useEffect(() => {
-    const getUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        setUserId(user.id);
-      }
-    };
-    getUser();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const fetchConversations = useCallback(async () => {
-    if (!userId) {
-      setLoading(false);
-      return;
-    }
-
-    setLoading(true);
-    setError(false);
-
-    // Use optimized DB function - single query replaces N+1 pattern (was 50-60 queries)
-    // Note: Function added in migration, types may need regeneration with `npm run db:types`
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: rawData, error } = await (supabase.rpc as any)(
-      'get_golf_conversations_with_details',
-      { p_user_id: userId }
+/**
+ * The conversation rail, resolved end to end for one viewer: the RPC, the
+ * team-chat rows, unread counts, participant identities, sort. Pure with
+ * respect to React so it can run from OUTSIDE the hook — the dashboard shell
+ * pre-warms the session cache with it on idle, which is what makes the first
+ * tap on Messages paint instantly instead of after this ~6-query waterfall.
+ *
+ * `ok: false` is a real backend failure with nothing recovered; the hook maps
+ * it to its error state and keeps whatever rows it already had.
+ */
+export async function loadGolfConversationRail(
+  supabase: ReturnType<typeof createClient>,
+  userId: string,
+): Promise<{ ok: true; rows: GolfConversationWithMeta[] } | { ok: false }> {
+  // Use optimized DB function - single query replaces N+1 pattern (was 50-60 queries)
+  // Note: Function added in migration, types may need regeneration with `npm run db:types`
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: rawData, error } = await (supabase.rpc as any)(
+    'get_golf_conversations_with_details',
+    { p_user_id: userId }
+  );
+  // Active-team scoping (multi-team coaches only). A `null` allow-set means
+  // "do NOT scope" — players and single-team coaches see the exact same rail
+  // as before. Fail-open: a scoping error leaves the rail unscoped, never blank.
+  let teamAllow: Set<string> | null = null;
+  try {
+    const allowedIds = await getGolfActiveTeamConversationIds();
+    if (allowedIds !== null) teamAllow = new Set(allowedIds);
+  } catch (teamAllowErr) {
+    teamAllow = null;
+    logError(
+      teamAllowErr instanceof Error ? teamAllowErr : new Error(String(teamAllowErr)),
+      { component: 'useGolfMessages', action: 'fetch-active-team-scope', sport: 'golf', userId },
+      'medium'
     );
-    // Active-team scoping (multi-team coaches only). A `null` allow-set means
-    // "do NOT scope" — players and single-team coaches see the exact same rail
-    // as before. Fail-open: a scoping error leaves the rail unscoped, never blank.
-    let teamAllow: Set<string> | null = null;
-    try {
-      const allowedIds = await getGolfActiveTeamConversationIds();
-      if (allowedIds !== null) teamAllow = new Set(allowedIds);
-    } catch (teamAllowErr) {
-      teamAllow = null;
-      logError(
-        teamAllowErr instanceof Error ? teamAllowErr : new Error(String(teamAllowErr)),
-        { component: 'useGolfMessages', action: 'fetch-active-team-scope', sport: 'golf', userId },
-        'medium'
-      );
-    }
+  }
 
-    let conversationsData = rawData as GolfConversationRpcRow[] | null;
-    if (teamAllow) {
-      const allow = teamAllow;
-      conversationsData = (conversationsData ?? []).filter((c) => allow.has(c.id));
-    }
+  let conversationsData = rawData as GolfConversationRpcRow[] | null;
+  if (teamAllow) {
+    const allow = teamAllow;
+    conversationsData = (conversationsData ?? []).filter((c) => allow.has(c.id));
+  }
 
-    // Also fetch team chat conversations directly (in case DB function doesn't include them)
-    const { data: groupConvs, error: groupConvsError } = await supabase
-      .from('golf_conversation_participants')
-      .select(`
-        conversation:golf_conversations!inner(
-          id,
-          created_at,
-          updated_at,
-          is_team_chat,
-          is_team_channel,
-          title,
-          created_by
-        )
-      `)
-      .eq('user_id', userId);
+  // Also fetch team chat conversations directly (in case DB function doesn't include them)
+  const { data: groupConvs, error: groupConvsError } = await supabase
+    .from('golf_conversation_participants')
+    .select(`
+      conversation:golf_conversations!inner(
+        id,
+        created_at,
+        updated_at,
+        is_team_chat,
+        is_team_channel,
+        title,
+        created_by
+      )
+    `)
+    .eq('user_id', userId);
 
-    if (groupConvsError) {
-      logError(
-        toPostgrestError(groupConvsError),
-        {
-          component: 'useGolfConversations',
-          action: 'fetch-team-chat-conversations',
-          sport: 'golf',
-          userId,
-          ...postgrestErrorContext(groupConvsError),
-        },
-        'medium'
-      );
-    }
+  if (groupConvsError) {
+    logError(
+      toPostgrestError(groupConvsError),
+      {
+        component: 'useGolfConversations',
+        action: 'fetch-team-chat-conversations',
+        sport: 'golf',
+        userId,
+        ...postgrestErrorContext(groupConvsError),
+      },
+      'medium'
+    );
+  }
 
-    // Extract team chat conversations and merge them
-    const groupConversations: GolfConversationRpcRow[] = [];
-    const existingIds = new Set(conversationsData?.map(c => c.id) || []);
-    /**
-     * Conversations whose unread count this function computed itself, from the
-     * viewer's own `last_read_at`. They must NOT be recomputed below (G-40).
-     */
-    const perViewerUnreadIds = new Set<string>();
+  // Extract team chat conversations and merge them
+  const groupConversations: GolfConversationRpcRow[] = [];
+  const existingIds = new Set(conversationsData?.map(c => c.id) || []);
+  /**
+   * Conversations whose unread count this function computed itself, from the
+   * viewer's own `last_read_at`. They must NOT be recomputed below (G-40).
+   */
+  const perViewerUnreadIds = new Set<string>();
 
-    if (groupConvs) {
-      // Collect team chat conversations that aren't already in the RPC results
-      const teamChats: Array<{
+  if (groupConvs) {
+    // Collect team chat conversations that aren't already in the RPC results
+    const teamChats: Array<{
+      id: string;
+      created_at: string;
+      updated_at: string;
+      is_team_channel: boolean | null;
+      title: string | null;
+      created_by: string | null;
+    }> = [];
+
+    for (const gc of groupConvs) {
+      const conv = gc.conversation as {
         id: string;
         created_at: string;
         updated_at: string;
+        is_team_chat: boolean | null;
         is_team_channel: boolean | null;
         title: string | null;
         created_by: string | null;
-      }> = [];
+      } | null;
 
-      for (const gc of groupConvs) {
-        const conv = gc.conversation as {
-          id: string;
-          created_at: string;
-          updated_at: string;
-          is_team_chat: boolean | null;
-          is_team_channel: boolean | null;
-          title: string | null;
-          created_by: string | null;
-        } | null;
-
-        if (
-          conv &&
-          conv.is_team_chat &&
-          !existingIds.has(conv.id) &&
-          (!teamAllow || teamAllow.has(conv.id))
-        ) {
-          teamChats.push(conv);
-        }
+      if (
+        conv &&
+        conv.is_team_chat &&
+        !existingIds.has(conv.id) &&
+        (!teamAllow || teamAllow.has(conv.id))
+      ) {
+        teamChats.push(conv);
       }
+    }
 
-      // Batch fetch all group chat metadata in parallel (instead of N+1 per chat)
-      if (teamChats.length > 0) {
-        const teamChatIds = teamChats.map(c => c.id);
+    // Batch fetch all group chat metadata in parallel (instead of N+1 per chat)
+    if (teamChats.length > 0) {
+      const teamChatIds = teamChats.map(c => c.id);
 
-        const [participantCounts, userParticipantData] = await Promise.all([
-          // Every participant row for these group chats.
-          //
-          // G-33 — this now supplies IDENTITY, not just a count, so it is
-          // paginated. As a count the PostgREST 1000-row cap degraded quietly
-          // (a big team channel under-counted); as the source of the member
-          // list it would silently truncate WHO is in the group, which is the
-          // class of defect this audit exists to remove. `.limit(2000)` does
-          // not raise the cap — `fetchAllRowsResult` ranges through it and
-          // preserves the `{ data, error }` shape the callers below read.
-          fetchAllRowsResult<{ conversation_id: string; user_id: string }>(
-            (from, to) =>
-              supabase
-                .from('golf_conversation_participants')
-                .select('conversation_id, user_id')
-                .in('conversation_id', teamChatIds)
-                // Stable order on the primary key — the helper's own contract.
-                // Ranging an unordered query lets page boundaries drift, which
-                // duplicates some rows and drops others.
-                .order('id', { ascending: true })
-                .range(from, to),
-            undefined,
-            {
-              table: 'golf_conversation_participants',
-              action: 'fetch-team-chat-participants',
-              sport: 'golf',
-              userId,
-            },
-          ),
-          // User's last_read_at for all group chats
-          supabase
-            .from('golf_conversation_participants')
-            .select('conversation_id, last_read_at')
-            .in('conversation_id', teamChatIds)
-            .eq('user_id', userId),
-        ]);
-
-        // Build lookup maps.
+      const [participantCounts, userParticipantData] = await Promise.all([
+        // Every participant row for these group chats.
         //
-        // G-33 — the ids and the count come off the SAME rows now, so the
-        // header's "N members" and the details sheet's member list cannot
-        // disagree with each other. They used to be two separate facts: a
-        // count from here and a hardcoded empty array below.
-        const idsByConv = new Map<string, string[]>();
-        (participantCounts.data || []).forEach(p => {
-          const ids = idsByConv.get(p.conversation_id);
-          if (ids) ids.push(p.user_id);
-          else idsByConv.set(p.conversation_id, [p.user_id]);
-        });
-        const countByConv = new Map<string, number>();
-        idsByConv.forEach((ids, cid) => countByConv.set(cid, ids.length));
-
-        const lastReadByConv = new Map<string, string | null>();
-        (userParticipantData.data || []).forEach(p => {
-          lastReadByConv.set(p.conversation_id, p.last_read_at);
-        });
-
-        // P447: compute last-message + unread COUNT in SQL, per conversation.
-        // The old approach fetched EVERY message of EVERY team chat (no .limit)
-        // and counted client-side — past the PostgREST 1000-row cap a busy team
-        // chat would silently cap/under-count its unread badge, and the "last
-        // message" could be wrong once total rows across the .in() exceeded the
-        // cap. A `head:true, count:'exact'` query transfers ZERO rows and is not
-        // subject to the row cap; the last message is a single-row fetch. Team
-        // chats per user are few, so per-conversation parallelism is cheap.
-        const lastMsgByConv = new Map<string, { content: string | null; created_at: string | null; sender_id: string }>();
-        const unreadByConv = new Map<string, number>();
-
-        await Promise.all(
-          teamChatIds.map(async (cid) => {
-            const lastReadAt = lastReadByConv.get(cid) ?? null;
-
-            // Latest message in this chat (single row, server-ordered).
-            const lastMsgQuery = supabase
-              .from('golf_messages')
-              .select('content, created_at, sender_id')
-              .eq('conversation_id', cid)
-              .eq('is_deleted', false)
-              .order('created_at', { ascending: false })
-              .limit(1)
-              .maybeSingle();
-
-            // Unread = others' messages newer than the user's last_read_at.
-            // count-only (head) → no rows transferred, no 1000-row truncation.
-            let unreadQuery = supabase
-              .from('golf_messages')
-              .select('id', { count: 'exact', head: true })
-              .eq('conversation_id', cid)
-              .eq('is_deleted', false)
-              .neq('sender_id', userId);
-            if (lastReadAt) {
-              unreadQuery = unreadQuery.gt('created_at', lastReadAt);
-            }
-
-            const [{ data: lastMsg }, { count: unreadCount }] = await Promise.all([
-              lastMsgQuery,
-              unreadQuery,
-            ]);
-
-            if (lastMsg) {
-              lastMsgByConv.set(cid, {
-                content: lastMsg.content,
-                created_at: lastMsg.created_at,
-                sender_id: lastMsg.sender_id,
-              });
-            }
-            unreadByConv.set(cid, unreadCount ?? 0);
-          }),
-        );
-
-        for (const conv of teamChats) {
-          const lastMsg = lastMsgByConv.get(conv.id);
-          const unreadCount = unreadByConv.get(conv.id) ?? 0;
-          perViewerUnreadIds.add(conv.id);
-
-          groupConversations.push({
-            id: conv.id,
-            created_at: conv.created_at,
-            updated_at: conv.updated_at,
-            creator_id: conv.created_by,
-            last_message_content: lastMsg?.content || null,
-            last_message_at: lastMsg?.created_at || null,
-            last_message_sender_id: lastMsg?.sender_id || null,
-            unread_count: unreadCount,
-            // G-33 — was a literal `[]` here, for every group, forever. The
-            // ids were one query away and that query was already being run;
-            // it just asked for `conversation_id` alone.
-            participant_ids: idsByConv.get(conv.id) ?? [],
-            // Still empty, and deliberately: NOTHING on the golf side reads
-            // `participant_names` (the RPC declares it, the DM path resolves
-            // its one name through `coachByUserId`/`playerByUserId` at
-            // transform time, and the group path resolves every name the same
-            // way). Filling it here would be a second, independently-staleable
-            // copy of names the transform already has. `participant_ids` is
-            // the identity carried forward; names are looked up from it.
-            participant_names: [],
-            is_group: true,
-            title: conv.title,
-            participant_count: countByConv.get(conv.id) || 0,
-            // Carried so a merged row has the same shape as an RPC row. These
-            // rows only reach here when `is_team_chat` is true; whether they
-            // are ALSO the team channel is a separate fact (G-15).
-            is_team_channel: conv.is_team_channel ?? false,
-          });
-        }
-      }
-    }
-
-    // Merge group conversations with regular ones
-    if (groupConversations.length > 0) {
-      conversationsData = [...(conversationsData || []), ...groupConversations];
-    }
-
-    /**
-     * G-40 — recompute group unread for THIS viewer.
-     *
-     * See `perViewerUnreadTargets` for why the RPC's number is wrong for a 3+
-     * person chat and right for a DM. This is the same computation the
-     * supplemental team-chat path above already performs; it now covers the
-     * normal path too, which is where nearly every group conversation arrives.
-     *
-     * `head: true, count: 'exact'` transfers zero rows and is not subject to
-     * the PostgREST 1000-row cap, so a busy team chat cannot silently
-     * under-count. The id list is chunked because PostgREST filters travel in
-     * the URL and a long `.in()` is rejected with a bare 400.
-     *
-     * A viewer with a null `last_read_at` counts every message someone else
-     * sent, which is the honest reading of "has never opened this thread".
-     * `markMessagesAsRead` has written that column as the primary read marker
-     * for some time, so this is the same source the global unread badge and
-     * the notification digests already use.
-     */
-    const perViewerTargets = perViewerUnreadTargets(conversationsData, perViewerUnreadIds);
-    if (perViewerTargets.length > 0) {
-      const ID_CHUNK = 200;
-      const lastReadByConv = new Map<string, string | null>();
-      let lastReadFailed = false;
-
-      for (let i = 0; i < perViewerTargets.length; i += ID_CHUNK) {
-        const chunk = perViewerTargets.slice(i, i + ID_CHUNK);
-        const { data: myRows, error: myRowsError } = await supabase
+        // G-33 — this now supplies IDENTITY, not just a count, so it is
+        // paginated. As a count the PostgREST 1000-row cap degraded quietly
+        // (a big team channel under-counted); as the source of the member
+        // list it would silently truncate WHO is in the group, which is the
+        // class of defect this audit exists to remove. `.limit(2000)` does
+        // not raise the cap — `fetchAllRowsResult` ranges through it and
+        // preserves the `{ data, error }` shape the callers below read.
+        fetchAllRowsResult<{ conversation_id: string; user_id: string }>(
+          (from, to) =>
+            supabase
+              .from('golf_conversation_participants')
+              .select('conversation_id, user_id')
+              .in('conversation_id', teamChatIds)
+              // Stable order on the primary key — the helper's own contract.
+              // Ranging an unordered query lets page boundaries drift, which
+              // duplicates some rows and drops others.
+              .order('id', { ascending: true })
+              .range(from, to),
+          undefined,
+          {
+            table: 'golf_conversation_participants',
+            action: 'fetch-team-chat-participants',
+            sport: 'golf',
+            userId,
+          },
+        ),
+        // User's last_read_at for all group chats
+        supabase
           .from('golf_conversation_participants')
           .select('conversation_id, last_read_at')
-          .in('conversation_id', chunk)
-          .eq('user_id', userId);
+          .in('conversation_id', teamChatIds)
+          .eq('user_id', userId),
+      ]);
 
-        if (myRowsError) {
-          lastReadFailed = true;
-          logError(
-            toPostgrestError(myRowsError),
-            {
-              component: 'useGolfConversations',
-              action: 'fetch-per-viewer-last-read',
-              sport: 'golf',
-              userId,
-              ...postgrestErrorContext(myRowsError),
-            },
-            'medium'
-          );
-          continue;
-        }
-        (myRows || []).forEach((row) => {
-          lastReadByConv.set(row.conversation_id, row.last_read_at);
-        });
-      }
+      // Build lookup maps.
+      //
+      // G-33 — the ids and the count come off the SAME rows now, so the
+      // header's "N members" and the details sheet's member list cannot
+      // disagree with each other. They used to be two separate facts: a
+      // count from here and a hardcoded empty array below.
+      const idsByConv = new Map<string, string[]>();
+      (participantCounts.data || []).forEach(p => {
+        const ids = idsByConv.get(p.conversation_id);
+        if (ids) ids.push(p.user_id);
+        else idsByConv.set(p.conversation_id, [p.user_id]);
+      });
+      const countByConv = new Map<string, number>();
+      idsByConv.forEach((ids, cid) => countByConv.set(cid, ids.length));
 
-      // A failed read-marker lookup means we cannot compute an honest count,
-      // so leave every badge as the RPC reported it rather than counting every
-      // message as unread.
-      if (!lastReadFailed) {
-        const perViewerCounts = new Map<string, number>();
+      const lastReadByConv = new Map<string, string | null>();
+      (userParticipantData.data || []).forEach(p => {
+        lastReadByConv.set(p.conversation_id, p.last_read_at);
+      });
 
-        await Promise.all(
-          perViewerTargets.map(async (cid) => {
-            const lastReadAt = lastReadByConv.get(cid) ?? null;
-            let unreadQuery = supabase
-              .from('golf_messages')
-              .select('id', { count: 'exact', head: true })
-              .eq('conversation_id', cid)
-              .eq('is_deleted', false)
-              .neq('sender_id', userId);
-            if (lastReadAt) {
-              unreadQuery = unreadQuery.gt('created_at', lastReadAt);
-            }
+      // P447: compute last-message + unread COUNT in SQL, per conversation.
+      // The old approach fetched EVERY message of EVERY team chat (no .limit)
+      // and counted client-side — past the PostgREST 1000-row cap a busy team
+      // chat would silently cap/under-count its unread badge, and the "last
+      // message" could be wrong once total rows across the .in() exceeded the
+      // cap. A `head:true, count:'exact'` query transfers ZERO rows and is not
+      // subject to the row cap; the last message is a single-row fetch. Team
+      // chats per user are few, so per-conversation parallelism is cheap.
+      const lastMsgByConv = new Map<string, { content: string | null; created_at: string | null; sender_id: string }>();
+      const unreadByConv = new Map<string, number>();
 
-            const { count, error: unreadError } = await unreadQuery;
-            if (unreadError) {
-              // Leave this one conversation on the RPC's shared-boolean number.
-              logError(
-                toPostgrestError(unreadError),
-                {
-                  component: 'useGolfConversations',
-                  action: 'count-per-viewer-unread',
-                  sport: 'golf',
-                  userId,
-                  ...postgrestErrorContext(unreadError),
-                },
-                'medium'
-              );
-              return;
-            }
-            perViewerCounts.set(cid, count ?? 0);
-          }),
-        );
+      await Promise.all(
+        teamChatIds.map(async (cid) => {
+          const lastReadAt = lastReadByConv.get(cid) ?? null;
 
-        conversationsData = applyPerViewerUnread(conversationsData, perViewerCounts);
-      }
-    }
+          // Latest message in this chat (single row, server-ordered).
+          const lastMsgQuery = supabase
+            .from('golf_messages')
+            .select('content, created_at, sender_id')
+            .eq('conversation_id', cid)
+            .eq('is_deleted', false)
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .maybeSingle();
 
-    // `groupConvsError` joins the RPC error here rather than early-returning at
-    // its own call site. The team-chat query is a SUPPLEMENT to the RPC ("in
-    // case DB function doesn't include them"), so returning on its failure
-    // would blank a rail whose DMs loaded fine. But when BOTH paths yield
-    // nothing and either one failed, that is a backend failure — and it was
-    // previously logged and then allowed to fall through to the cheerful "No
-    // conversations yet" empty, which is the exact masquerade P257 exists to
-    // stop. MessageConversationRail keeps rows on screen when
-    // `error && conversations.length > 0`, so the partial case stays readable.
-    const loadFailure = error ?? groupConvsError;
-    if (loadFailure && !conversationsData?.length) {
-      // P257: a real backend failure (fetch error AND no rows recovered) must
-      // NOT masquerade as an empty inbox. Flag it so the rail shows a
-      // recoverable error with Retry instead of the cheerful empty.
-      logError(
-        toPostgrestError(loadFailure),
-        {
-          component: 'useGolfConversations',
-          action: 'fetch-conversations',
-          sport: 'golf',
-          userId,
-          ...postgrestErrorContext(loadFailure),
-        },
-        'medium'
+          // Unread = others' messages newer than the user's last_read_at.
+          // count-only (head) → no rows transferred, no 1000-row truncation.
+          let unreadQuery = supabase
+            .from('golf_messages')
+            .select('id', { count: 'exact', head: true })
+            .eq('conversation_id', cid)
+            .eq('is_deleted', false)
+            .neq('sender_id', userId);
+          if (lastReadAt) {
+            unreadQuery = unreadQuery.gt('created_at', lastReadAt);
+          }
+
+          const [{ data: lastMsg }, { count: unreadCount }] = await Promise.all([
+            lastMsgQuery,
+            unreadQuery,
+          ]);
+
+          if (lastMsg) {
+            lastMsgByConv.set(cid, {
+              content: lastMsg.content,
+              created_at: lastMsg.created_at,
+              sender_id: lastMsg.sender_id,
+            });
+          }
+          unreadByConv.set(cid, unreadCount ?? 0);
+        }),
       );
-      setError(true);
-      // A failed background refresh must preserve the last readable inbox.
-      setLoading(false);
-      return;
-    }
 
-    if (!conversationsData || conversationsData.length === 0) {
-      setConversations([]);
-      setLoading(false);
-      return;
-    }
+      for (const conv of teamChats) {
+        const lastMsg = lastMsgByConv.get(conv.id);
+        const unreadCount = unreadByConv.get(conv.id) ?? 0;
+        perViewerUnreadIds.add(conv.id);
 
-    // Keep the existing client-side batch reads as the fast path. They are
-    // still the source of truth whenever RLS exposes a profile; the server
-    // action below is only for DMs whose counterpart remains unresolved.
-    const otherUserIds = new Set<string>();
-    conversationsData.forEach((conv) => {
-      if (!isGroupConversation(conv)) {
-        conv.participant_ids?.forEach((id) => {
-          if (id !== userId) otherUserIds.add(id);
-        });
-      }
-    });
-
-    const [{ data: coaches }, { data: players }] = await Promise.all([
-      otherUserIds.size > 0
-        ? supabase
-            .from('golf_coaches')
-            .select('id, user_id, full_name, title, avatar_url')
-            .in('user_id', Array.from(otherUserIds))
-        : Promise.resolve({ data: [] }),
-      otherUserIds.size > 0
-        ? supabase
-            .from('golf_players')
-            .select('id, user_id, first_name, last_name, graduation_year, avatar_url')
-            .in('user_id', Array.from(otherUserIds))
-        : Promise.resolve({ data: [] }),
-    ]);
-
-    const coachByUserId = new Map<string, CoachLookup>();
-    (coaches || []).forEach((c) => {
-      if (c.user_id) coachByUserId.set(c.user_id, c as CoachLookup);
-    });
-
-    const playerByUserId = new Map<string, PlayerLookup>();
-    (players || []).forEach((p) => {
-      if (p.user_id) playerByUserId.set(p.user_id, p as PlayerLookup);
-    });
-
-    // The privileged action is bounded to 100 ids per request. Chunking here
-    // keeps a long inbox responsive while ensuring each request satisfies the
-    // action's runtime contract. Rejected transport calls degrade to the
-    // existing maps/generic label and never leave the inbox loading forever.
-    const unresolvedConversationIds = conversationsData
-      .filter((conv) => {
-        if (isGroupConversation(conv)) return false;
-        const otherUserId = conv.participant_ids?.find((id) => id !== userId);
-        return !otherUserId || (!coachByUserId.has(otherUserId) && !playerByUserId.has(otherUserId));
-      })
-      .map((conv) => conv.id);
-    const identityChunks: string[][] = [];
-    for (let index = 0; index < unresolvedConversationIds.length; index += MAX_IDENTITY_CONVERSATIONS_PER_REQUEST) {
-      identityChunks.push(unresolvedConversationIds.slice(index, index + MAX_IDENTITY_CONVERSATIONS_PER_REQUEST));
-    }
-
-    const identitiesByConversation = new Map<string, GolfConversationParticipant[]>();
-    if (identityChunks.length > 0) {
-      const identityResults = await Promise.all(identityChunks.map(async (ids) => {
-        try {
-          return await getGolfConversationParticipantIdentities(ids);
-        } catch (identityError) {
-          logError(
-            identityError instanceof Error ? identityError : new Error(String(identityError)),
-            { component: 'useGolfConversations', action: 'resolve-conversation-identities', sport: 'golf', userId },
-            'medium',
-          );
-          return { participants: [] };
-        }
-      }));
-      for (const identityResult of identityResults) {
-        for (const identity of identityResult.participants ?? []) {
-          const participants = identitiesByConversation.get(identity.conversationId);
-          const participant: GolfConversationParticipant = {
-            id: identity.userId,
-            name: identity.name,
-            subtitle: identity.subtitle,
-            avatar: identity.avatar,
-            type: identity.type,
-          };
-          if (participants) participants.push(participant);
-          else identitiesByConversation.set(identity.conversationId, [participant]);
-        }
-      }
-    }
-
-    // Transform to GolfConversationWithMeta format
-    const transformedConversations = conversationsData.map((conv) => {
-      // Handle group conversations differently
-      if (conv.is_group) {
-        // `is_group` is also set for a team broadcast to one player. Preserve
-        // the storage flag for RLS, but resolve the other member whenever the
-        // participant count says this is actually a two-person conversation.
-        const rawOtherUserId = conv.participant_ids?.find((id) => id !== userId);
-        const knownOther = !isGroupConversation(conv) && rawOtherUserId &&
-          (coachByUserId.has(rawOtherUserId) || playerByUserId.has(rawOtherUserId))
-          ? resolveConversationParticipant(rawOtherUserId, coachByUserId, playerByUserId)
-          : undefined;
-        const privilegedOther = identitiesByConversation.get(conv.id)?.find((participant) => participant.id !== userId);
-        const resolvedOther = knownOther ?? privilegedOther;
-        const otherUserId = isGroupConversation(conv) ? undefined : resolvedOther?.id ?? rawOtherUserId;
-        return {
+        groupConversations.push({
           id: conv.id,
           created_at: conv.created_at,
           updated_at: conv.updated_at,
-          last_message: conv.last_message_content ? {
-            content: conv.last_message_content,
-            created_at: conv.last_message_at,
-            sender_id: conv.last_message_sender_id,
-          } : null,
-          unread_count: conv.unread_count || 0,
+          creator_id: conv.created_by,
+          last_message_content: lastMsg?.content || null,
+          last_message_at: lastMsg?.created_at || null,
+          last_message_sender_id: lastMsg?.sender_id || null,
+          unread_count: unreadCount,
+          // G-33 — was a literal `[]` here, for every group, forever. The
+          // ids were one query away and that query was already being run;
+          // it just asked for `conversation_id` alone.
+          participant_ids: idsByConv.get(conv.id) ?? [],
+          // Still empty, and deliberately: NOTHING on the golf side reads
+          // `participant_names` (the RPC declares it, the DM path resolves
+          // its one name through `coachByUserId`/`playerByUserId` at
+          // transform time, and the group path resolves every name the same
+          // way). Filling it here would be a second, independently-staleable
+          // copy of names the transform already has. `participant_ids` is
+          // the identity carried forward; names are looked up from it.
+          participant_names: [],
           is_group: true,
           title: conv.title,
-          participant_count: conv.participant_count || conv.participant_ids?.length || 0,
-          // G-33 / D-03a — forward, do not re-derive. Both fields are already
-          // on `conv` for RPC-origin rows and are set on the supplemental push
-          // below; the transform was simply not copying them out.
-          participant_ids: conv.participant_ids ?? [],
-          creator_id: conv.creator_id ?? null,
-          other_participant: resolvedOther ?? resolveConversationParticipant(otherUserId, coachByUserId, playerByUserId),
-        } as GolfConversationWithMeta;
+          participant_count: countByConv.get(conv.id) || 0,
+          // Carried so a merged row has the same shape as an RPC row. These
+          // rows only reach here when `is_team_chat` is true; whether they
+          // are ALSO the team channel is a separate fact (G-15).
+          is_team_channel: conv.is_team_channel ?? false,
+        });
       }
+    }
+  }
 
-      // Find the other user in this conversation
+  // Merge group conversations with regular ones
+  if (groupConversations.length > 0) {
+    conversationsData = [...(conversationsData || []), ...groupConversations];
+  }
+
+  /**
+   * G-40 — recompute group unread for THIS viewer.
+   *
+   * See `perViewerUnreadTargets` for why the RPC's number is wrong for a 3+
+   * person chat and right for a DM. This is the same computation the
+   * supplemental team-chat path above already performs; it now covers the
+   * normal path too, which is where nearly every group conversation arrives.
+   *
+   * `head: true, count: 'exact'` transfers zero rows and is not subject to
+   * the PostgREST 1000-row cap, so a busy team chat cannot silently
+   * under-count. The id list is chunked because PostgREST filters travel in
+   * the URL and a long `.in()` is rejected with a bare 400.
+   *
+   * A viewer with a null `last_read_at` counts every message someone else
+   * sent, which is the honest reading of "has never opened this thread".
+   * `markMessagesAsRead` has written that column as the primary read marker
+   * for some time, so this is the same source the global unread badge and
+   * the notification digests already use.
+   */
+  const perViewerTargets = perViewerUnreadTargets(conversationsData, perViewerUnreadIds);
+  if (perViewerTargets.length > 0) {
+    const ID_CHUNK = 200;
+    const lastReadByConv = new Map<string, string | null>();
+    let lastReadFailed = false;
+
+    for (let i = 0; i < perViewerTargets.length; i += ID_CHUNK) {
+      const chunk = perViewerTargets.slice(i, i + ID_CHUNK);
+      const { data: myRows, error: myRowsError } = await supabase
+        .from('golf_conversation_participants')
+        .select('conversation_id, last_read_at')
+        .in('conversation_id', chunk)
+        .eq('user_id', userId);
+
+      if (myRowsError) {
+        lastReadFailed = true;
+        logError(
+          toPostgrestError(myRowsError),
+          {
+            component: 'useGolfConversations',
+            action: 'fetch-per-viewer-last-read',
+            sport: 'golf',
+            userId,
+            ...postgrestErrorContext(myRowsError),
+          },
+          'medium'
+        );
+        continue;
+      }
+      (myRows || []).forEach((row) => {
+        lastReadByConv.set(row.conversation_id, row.last_read_at);
+      });
+    }
+
+    // A failed read-marker lookup means we cannot compute an honest count,
+    // so leave every badge as the RPC reported it rather than counting every
+    // message as unread.
+    if (!lastReadFailed) {
+      const perViewerCounts = new Map<string, number>();
+
+      await Promise.all(
+        perViewerTargets.map(async (cid) => {
+          const lastReadAt = lastReadByConv.get(cid) ?? null;
+          let unreadQuery = supabase
+            .from('golf_messages')
+            .select('id', { count: 'exact', head: true })
+            .eq('conversation_id', cid)
+            .eq('is_deleted', false)
+            .neq('sender_id', userId);
+          if (lastReadAt) {
+            unreadQuery = unreadQuery.gt('created_at', lastReadAt);
+          }
+
+          const { count, error: unreadError } = await unreadQuery;
+          if (unreadError) {
+            // Leave this one conversation on the RPC's shared-boolean number.
+            logError(
+              toPostgrestError(unreadError),
+              {
+                component: 'useGolfConversations',
+                action: 'count-per-viewer-unread',
+                sport: 'golf',
+                userId,
+                ...postgrestErrorContext(unreadError),
+              },
+              'medium'
+            );
+            return;
+          }
+          perViewerCounts.set(cid, count ?? 0);
+        }),
+      );
+
+      conversationsData = applyPerViewerUnread(conversationsData, perViewerCounts);
+    }
+  }
+
+  // `groupConvsError` joins the RPC error here rather than early-returning at
+  // its own call site. The team-chat query is a SUPPLEMENT to the RPC ("in
+  // case DB function doesn't include them"), so returning on its failure
+  // would blank a rail whose DMs loaded fine. But when BOTH paths yield
+  // nothing and either one failed, that is a backend failure — and it was
+  // previously logged and then allowed to fall through to the cheerful "No
+  // conversations yet" empty, which is the exact masquerade P257 exists to
+  // stop. MessageConversationRail keeps rows on screen when
+  // `error && conversations.length > 0`, so the partial case stays readable.
+  const loadFailure = error ?? groupConvsError;
+  if (loadFailure && !conversationsData?.length) {
+    // P257: a real backend failure (fetch error AND no rows recovered) must
+    // NOT masquerade as an empty inbox. Flag it so the rail shows a
+    // recoverable error with Retry instead of the cheerful empty.
+    logError(
+      toPostgrestError(loadFailure),
+      {
+        component: 'useGolfConversations',
+        action: 'fetch-conversations',
+        sport: 'golf',
+        userId,
+        ...postgrestErrorContext(loadFailure),
+      },
+      'medium'
+    );
+    return { ok: false };
+  }
+
+  if (!conversationsData || conversationsData.length === 0) {
+    return { ok: true, rows: [] };
+  }
+
+  // Keep the existing client-side batch reads as the fast path. They are
+  // still the source of truth whenever RLS exposes a profile; the server
+  // action below is only for DMs whose counterpart remains unresolved.
+  const otherUserIds = new Set<string>();
+  conversationsData.forEach((conv) => {
+    if (!isGroupConversation(conv)) {
+      conv.participant_ids?.forEach((id) => {
+        if (id !== userId) otherUserIds.add(id);
+      });
+    }
+  });
+
+  const [{ data: coaches }, { data: players }] = await Promise.all([
+    otherUserIds.size > 0
+      ? supabase
+          .from('golf_coaches')
+          .select('id, user_id, full_name, title, avatar_url')
+          .in('user_id', Array.from(otherUserIds))
+      : Promise.resolve({ data: [] }),
+    otherUserIds.size > 0
+      ? supabase
+          .from('golf_players')
+          .select('id, user_id, first_name, last_name, graduation_year, avatar_url')
+          .in('user_id', Array.from(otherUserIds))
+      : Promise.resolve({ data: [] }),
+  ]);
+
+  const coachByUserId = new Map<string, CoachLookup>();
+  (coaches || []).forEach((c) => {
+    if (c.user_id) coachByUserId.set(c.user_id, c as CoachLookup);
+  });
+
+  const playerByUserId = new Map<string, PlayerLookup>();
+  (players || []).forEach((p) => {
+    if (p.user_id) playerByUserId.set(p.user_id, p as PlayerLookup);
+  });
+
+  // The privileged action is bounded to 100 ids per request. Chunking here
+  // keeps a long inbox responsive while ensuring each request satisfies the
+  // action's runtime contract. Rejected transport calls degrade to the
+  // existing maps/generic label and never leave the inbox loading forever.
+  const unresolvedConversationIds = conversationsData
+    .filter((conv) => {
+      if (isGroupConversation(conv)) return false;
+      const otherUserId = conv.participant_ids?.find((id) => id !== userId);
+      return !otherUserId || (!coachByUserId.has(otherUserId) && !playerByUserId.has(otherUserId));
+    })
+    .map((conv) => conv.id);
+  const identityChunks: string[][] = [];
+  for (let index = 0; index < unresolvedConversationIds.length; index += MAX_IDENTITY_CONVERSATIONS_PER_REQUEST) {
+    identityChunks.push(unresolvedConversationIds.slice(index, index + MAX_IDENTITY_CONVERSATIONS_PER_REQUEST));
+  }
+
+  const identitiesByConversation = new Map<string, GolfConversationParticipant[]>();
+  if (identityChunks.length > 0) {
+    const identityResults = await Promise.all(identityChunks.map(async (ids) => {
+      try {
+        return await getGolfConversationParticipantIdentities(ids);
+      } catch (identityError) {
+        logError(
+          identityError instanceof Error ? identityError : new Error(String(identityError)),
+          { component: 'useGolfConversations', action: 'resolve-conversation-identities', sport: 'golf', userId },
+          'medium',
+        );
+        return { participants: [] };
+      }
+    }));
+    for (const identityResult of identityResults) {
+      for (const identity of identityResult.participants ?? []) {
+        const participants = identitiesByConversation.get(identity.conversationId);
+        const participant: GolfConversationParticipant = {
+          id: identity.userId,
+          name: identity.name,
+          subtitle: identity.subtitle,
+          avatar: identity.avatar,
+          type: identity.type,
+        };
+        if (participants) participants.push(participant);
+        else identitiesByConversation.set(identity.conversationId, [participant]);
+      }
+    }
+  }
+
+  // Transform to GolfConversationWithMeta format
+  const transformedConversations = conversationsData.map((conv) => {
+    // Handle group conversations differently
+    if (conv.is_group) {
+      // `is_group` is also set for a team broadcast to one player. Preserve
+      // the storage flag for RLS, but resolve the other member whenever the
+      // participant count says this is actually a two-person conversation.
       const rawOtherUserId = conv.participant_ids?.find((id) => id !== userId);
-      const knownOther = rawOtherUserId &&
+      const knownOther = !isGroupConversation(conv) && rawOtherUserId &&
         (coachByUserId.has(rawOtherUserId) || playerByUserId.has(rawOtherUserId))
         ? resolveConversationParticipant(rawOtherUserId, coachByUserId, playerByUserId)
         : undefined;
       const privilegedOther = identitiesByConversation.get(conv.id)?.find((participant) => participant.id !== userId);
       const resolvedOther = knownOther ?? privilegedOther;
-      const otherUserId = resolvedOther?.id ?? rawOtherUserId;
-      const otherParticipant = resolvedOther ?? resolveConversationParticipant(otherUserId, coachByUserId, playerByUserId);
-
+      const otherUserId = isGroupConversation(conv) ? undefined : resolvedOther?.id ?? rawOtherUserId;
       return {
         id: conv.id,
         created_at: conv.created_at,
@@ -1608,30 +1679,140 @@ export function useGolfConversations() {
           sender_id: conv.last_message_sender_id,
         } : null,
         unread_count: conv.unread_count || 0,
-        other_participant: otherParticipant,
-        is_group: false,
+        is_group: true,
+        title: conv.title,
+        participant_count: conv.participant_count || conv.participant_ids?.length || 0,
+        // G-33 / D-03a — forward, do not re-derive. Both fields are already
+        // on `conv` for RPC-origin rows and are set on the supplemental push
+        // below; the transform was simply not copying them out.
+        participant_ids: conv.participant_ids ?? [],
+        creator_id: conv.creator_id ?? null,
+        other_participant: resolvedOther ?? resolveConversationParticipant(otherUserId, coachByUserId, playerByUserId),
       } as GolfConversationWithMeta;
-    });
+    }
 
-    // Sort by last message time (most recent first)
-    transformedConversations.sort((a, b) => {
-      const aTime = a.last_message?.created_at || a.updated_at;
-      const bTime = b.last_message?.created_at || b.updated_at;
-      return new Date(bTime).getTime() - new Date(aTime).getTime();
-    });
+    // Find the other user in this conversation
+    const rawOtherUserId = conv.participant_ids?.find((id) => id !== userId);
+    const knownOther = rawOtherUserId &&
+      (coachByUserId.has(rawOtherUserId) || playerByUserId.has(rawOtherUserId))
+      ? resolveConversationParticipant(rawOtherUserId, coachByUserId, playerByUserId)
+      : undefined;
+    const privilegedOther = identitiesByConversation.get(conv.id)?.find((participant) => participant.id !== userId);
+    const resolvedOther = knownOther ?? privilegedOther;
+    const otherUserId = resolvedOther?.id ?? rawOtherUserId;
+    const otherParticipant = resolvedOther ?? resolveConversationParticipant(otherUserId, coachByUserId, playerByUserId);
 
+    return {
+      id: conv.id,
+      created_at: conv.created_at,
+      updated_at: conv.updated_at,
+      last_message: conv.last_message_content ? {
+        content: conv.last_message_content,
+        created_at: conv.last_message_at,
+        sender_id: conv.last_message_sender_id,
+      } : null,
+      unread_count: conv.unread_count || 0,
+      other_participant: otherParticipant,
+      is_group: false,
+    } as GolfConversationWithMeta;
+  });
+
+  // Sort by last message time (most recent first)
+  transformedConversations.sort((a, b) => {
+    const aTime = a.last_message?.created_at || a.updated_at;
+    const bTime = b.last_message?.created_at || b.updated_at;
+    return new Date(bTime).getTime() - new Date(aTime).getTime();
+  });
+
+  return { ok: true, rows: transformedConversations };
+}
+
+/**
+ * @param viewerUserId The signed-in user's id when the caller already has it.
+ *   Skips the `auth.getUser()` round trip AND lets the rail paint from cache
+ *   synchronously on the first render.
+ * @param activeTeamId The multi-team head coach's currently active team
+ *   (`useGolfUser().teamId`), if any. Scopes the cache key so switching teams
+ *   via `TeamSwitcher` never paints the PREVIOUS team's rail from a warm
+ *   cache entry — `TeamSwitcher`'s `router.refresh()` re-renders Server
+ *   Components but does not reset this hook or its cache. A team switch also
+ *   refetches: it's a dependency of `fetchConversations` below.
+ */
+export function useGolfConversations(viewerUserId?: string | null, activeTeamId?: string | null) {
+  const warm = viewerUserId
+    ? readCachedResource<GolfConversationWithMeta[]>(conversationsCacheKey(viewerUserId, activeTeamId))
+    : null;
+  const [conversations, setConversations] = useState<GolfConversationWithMeta[]>(warm?.data ?? []);
+  const [loading, setLoading] = useState(!warm);
+  // P257: distinguishes "the rail failed to load" from "the inbox is truly
+  // empty". A swallowed RPC error used to surface as the cheerful empty state
+  // ("No conversations yet…"), making a backend failure indistinguishable from
+  // a genuine empty inbox. The rail reads this to render a recoverable error
+  // (explain + Retry) instead.
+  const [error, setError] = useState<boolean>(false);
+  const [userId, setUserId] = useState<string | null>(viewerUserId ?? null);
+  const supabaseRef = useRef(createClient());
+  const supabase = supabaseRef.current;
+  const conversationIdsRef = useRef<Set<string>>(new Set(warm?.data.map((c) => c.id) ?? []));
+  const fetchDebounceRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Get the current user on mount — only when the caller could not hand it in.
+  useEffect(() => {
+    if (viewerUserId) {
+      setUserId(viewerUserId);
+      return;
+    }
+    const getUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        setUserId(user.id);
+      }
+    };
+    getUser();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [viewerUserId]);
+
+  const fetchConversations = useCallback(async () => {
+    if (!userId) {
+      setLoading(false);
+      return;
+    }
+
+    // Captured before the fetch: see client-resource-cache.ts on why a write
+    // must not land after a sign-out clears the cache mid-flight.
+    const fetchEpoch = getCacheEpoch();
+
+    // Silent revalidate when the rail already has rows to show (see the same
+    // rule in useGolfMessages.fetchMessages).
+    if (!readCachedResource<GolfConversationWithMeta[]>(conversationsCacheKey(userId, activeTeamId))) {
+      setLoading(true);
+    }
+    setError(false);
+
+    const result = await loadGolfConversationRail(supabase, userId);
+    if (!result.ok) {
+      setError(true);
+      // A failed background refresh must preserve the last readable inbox.
+      setLoading(false);
+      return;
+    }
+    const transformedConversations = result.rows;
+    writeCachedResourceIfCurrent(conversationsCacheKey(userId, activeTeamId), transformedConversations, fetchEpoch);
     setConversations(transformedConversations);
     conversationIdsRef.current = new Set(transformedConversations.map(c => c.id));
     setLoading(false);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [userId]);
+  }, [userId, activeTeamId]);
 
-  // Fetch conversations when userId is set
+  // Fetch conversations when userId is set, and again on a team switch (a
+  // multi-team head coach's rail is scoped to the active team server-side —
+  // `activeTeamId` changing means the rows this hook is holding are for a
+  // team the viewer just switched away from).
   useEffect(() => {
     if (userId) {
       fetchConversations();
     }
-  }, [userId, fetchConversations]);
+  }, [userId, activeTeamId, fetchConversations]);
 
   // Set up real-time subscription for conversation updates
   // OPTIMIZED: Subscribe to conversation_participants table filtered by user_id

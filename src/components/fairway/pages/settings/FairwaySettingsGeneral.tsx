@@ -44,6 +44,7 @@ import { createClient } from '@/lib/supabase/client';
 import { saveCoachingPhilosophy } from '@/app/golf/actions/coaching-philosophy';
 import { logError } from '@/lib/error-logging';
 import { clearActiveTeam } from '@/app/golf/actions/team-switcher';
+import { clearAllCachedResources } from '@/lib/golf/client-resource-cache';
 import { regenerateJoinCode } from '@/app/golf/actions/teams';
 import { fromUntyped } from '@/lib/supabase/untyped';
 import { cn } from '@/lib/utils';
@@ -572,6 +573,11 @@ export function FairwaySettingsGeneral() {
     void triggerHaptic('heavy');
     const supabase = createClient();
     await clearActiveTeam();
+    // Cached rails/threads are per-viewer and none may outlive the session —
+    // see client-resource-cache.ts. This is a shared-device sign-out path
+    // (Settings), so this must run BEFORE signOut, same as the shell's
+    // useGolfSignOut.
+    clearAllCachedResources();
     await supabase.auth.signOut();
     window.location.href = '/golf/login';
   };
