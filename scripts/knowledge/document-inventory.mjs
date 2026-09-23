@@ -232,11 +232,96 @@ function buildRows() {
   return { files, rows, bodies };
 }
 
+/**
+ * Renders one `## Files` subsection (`### CATEGORY` + either the ARCHIVE
+ * count-only blurb or a per-file table). Pure — no I/O — so both the
+ * committed write path and `--refs` can share it and a unit test can drive
+ * it against fixture rows without touching git or the filesystem.
+ *
+ * `refs: true` adds the `In`/`Out` reference-count columns; the committed
+ * file never sets it, because those counts change on almost every edit to
+ * a busy doc (this doc's own outgoing count, and the incoming count of
+ * every doc it names) and turned every PR touching a busy doc into a merge
+ * conflict on this generated file for every other open PR touching the
+ * same docs. `--refs` prints the same table with the counts to stdout,
+ * on demand, instead.
+ */
+function renderCategorySection(c, list, { refs = false } = {}) {
+  const L = [];
+  if (c === 'ARCHIVE') {
+    L.push(`### \`ARCHIVE\``);
+    L.push('');
+    L.push(`${list.length} file(s) under \`docs/archive/\` — historical evidence only, listed`);
+    L.push('by count rather than by name because none of them is a reference and enumerating');
+    L.push('them would bury everything above.');
+    L.push('');
+    const routedArchive = list.filter((r) => r.routed);
+    if (routedArchive.length) {
+      L.push('**Routed from `memory/registry.yml`, which archive files must never be:**');
+      L.push('');
+      for (const r of routedArchive) L.push(`- \`${r.path}\``);
+      L.push('');
+    }
+    return L;
+  }
+  L.push(`### \`${c}\``);
+  L.push('');
+  L.push(
+    refs
+      ? '| Path | Lifecycle | Routed | AUTOGEN | Authority? | In | Out | Dead |'
+      : '| Path | Lifecycle | Routed | AUTOGEN | Authority? | Dead |',
+  );
+  L.push(refs ? '| --- | --- | --- | --- | --- | --- | --- | --- |' : '| --- | --- | --- | --- | --- | --- |');
+  for (const r of list) {
+    const cols = [
+      `\`${r.path}\``,
+      r.lifecycle,
+      r.routed ? 'yes' : '-',
+      r.autogen ? 'yes' : '-',
+      r.claimsAuthority ? 'yes' : '-',
+    ];
+    if (refs) cols.push(String(r.incoming), String(r.outgoing));
+    cols.push(String(r.deadRefs || '-'));
+    L.push(`| ${cols.join(' | ')} |`);
+  }
+  L.push('');
+  return L;
+}
+
+/**
+ * --refs. Report only — never written to disk, never checked. The
+ * incoming/outgoing backtick-reference counts that used to live in the
+ * committed table, computed fresh from buildRows() and printed to stdout
+ * with the same per-category tables `--check` renders, plus the columns
+ * the committed file omits.
+ */
+function runRefs() {
+  const { rows } = buildRows();
+  const byCategory = new Map(CATEGORIES.map((c) => [c, []]));
+  for (const r of rows) byCategory.get(r.category).push(r);
+
+  const L = [];
+  L.push('# Document authority inventory — reference counts (report only, not written to disk)');
+  L.push('');
+  L.push('`In` — inbound backtick references from other tracked docs. `Out` — outbound');
+  L.push('backtick references this doc makes. Computed fresh from the current tree; run');
+  L.push('`npm run docs:refs` to regenerate. Not part of the committed inventory — see');
+  L.push('that file\'s header for why.');
+  L.push('');
+  for (const c of CATEGORIES) {
+    const list = byCategory.get(c);
+    if (!list.length) continue;
+    L.push(...renderCategorySection(c, list, { refs: true }));
+  }
+  console.log(L.join('\n').replace(/\n{3,}/g, '\n\n').trim());
+}
+
 function main() {
   const check = process.argv.includes('--check');
   if (process.argv.includes('--dead-refs')) return runDeadRefs();
   if (process.argv.includes('--lifecycle')) return runLifecycle();
   if (process.argv.includes('--staleness')) return runStaleness();
+  if (process.argv.includes('--refs')) return runRefs();
 
   const { files, rows } = buildRows();
 
@@ -262,6 +347,13 @@ function main() {
   L.push('the text contains "canonical", "source of truth" or "authoritative", which is');
   L.push('a prompt to check, not a verdict. `dead refs` — repo-relative paths named in');
   L.push('backticks that no tracked file matches.');
+  L.push('');
+  L.push('There is deliberately no inbound/outbound reference-count column either: almost');
+  L.push('any edit to a busy doc changes its own outgoing count and every doc it names\'');
+  L.push('incoming count, so committing them turned every PR touching a busy doc into a');
+  L.push('merge conflict on this file for every other open PR touching the same docs —');
+  L.push('the main CI-throughput bottleneck as of 2026-09-23. Run `npm run docs:refs` for');
+  L.push('the same counts computed fresh, printed to stdout, never committed.');
   L.push('');
   L.push('There is deliberately no last-touch-SHA column: this file is tracked, so the');
   L.push('commit recording every other file\'s SHA would change them and a `--check`');
@@ -289,33 +381,7 @@ function main() {
   for (const c of CATEGORIES) {
     const list = byCategory.get(c);
     if (!list.length) continue;
-    if (c === 'ARCHIVE') {
-      L.push(`### \`ARCHIVE\``);
-      L.push('');
-      L.push(`${list.length} file(s) under \`docs/archive/\` — historical evidence only, listed`);
-      L.push('by count rather than by name because none of them is a reference and enumerating');
-      L.push('them would bury everything above.');
-      L.push('');
-      const routedArchive = list.filter((r) => r.routed);
-      if (routedArchive.length) {
-        L.push('**Routed from `memory/registry.yml`, which archive files must never be:**');
-        L.push('');
-        for (const r of routedArchive) L.push(`- \`${r.path}\``);
-        L.push('');
-      }
-      continue;
-    }
-    L.push(`### \`${c}\``);
-    L.push('');
-    L.push('| Path | Lifecycle | Routed | AUTOGEN | Authority? | In | Out | Dead |');
-    L.push('| --- | --- | --- | --- | --- | --- | --- | --- |');
-    for (const r of list) {
-      L.push(
-        `| \`${r.path}\` | ${r.lifecycle} | ${r.routed ? 'yes' : '-'} | ${r.autogen ? 'yes' : '-'} | ` +
-          `${r.claimsAuthority ? 'yes' : '-'} | ${r.incoming} | ${r.outgoing} | ${r.deadRefs || '-'} |`,
-      );
-    }
-    L.push('');
+    L.push(...renderCategorySection(c, list));
   }
 
   const next = `${L.join('\n').replace(/\n{3,}/g, '\n\n').replace(/\s+$/, '')}\n`;
@@ -542,6 +608,7 @@ export {
   categorise,
   lifecycle,
   buildRows,
+  renderCategorySection,
   splitPathspec,
   LIVING_CATEGORIES,
   DONE_STATUSES,

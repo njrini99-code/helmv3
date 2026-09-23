@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   categorise,
   lifecycle,
+  renderCategorySection,
   splitPathspec,
   LIVING_CATEGORIES,
   DONE_STATUSES,
@@ -147,5 +148,57 @@ describe('splitPathspec()', () => {
 describe('STALENESS_THRESHOLD', () => {
   it('is the 200-commit figure the plan specifies', () => {
     expect(STALENESS_THRESHOLD).toBe(200);
+  });
+});
+
+// Regression coverage for the doc-inventory merge-churn fix (2026-09-23):
+// the committed table used to carry In/Out backtick-reference counts, and
+// because those counts change on almost any edit to a busy doc, every PR
+// touching a busy feature doc conflicted with every other open PR on this
+// generated file. renderCategorySection() is the pure function both the
+// committed write path (refs omitted) and `--refs` (refs included) share,
+// so this pins the contract directly rather than via a full CLI run.
+describe('renderCategorySection() (committed table omits In/Out; --refs restores them)', () => {
+  const rows = [
+    {
+      path: 'memory/features/example.md',
+      lifecycle: 'current',
+      routed: true,
+      autogen: false,
+      claimsAuthority: false,
+      incoming: 3,
+      outgoing: 5,
+      deadRefs: 0,
+    },
+  ];
+
+  it('the default (committed) table has no In/Out header or values', () => {
+    const lines = renderCategorySection('CURRENT_FEATURE', rows);
+    const joined = lines.join('\n');
+    expect(joined).toContain('| Path | Lifecycle | Routed | AUTOGEN | Authority? | Dead |');
+    expect(joined).not.toContain('In');
+    expect(joined).not.toContain('Out');
+    expect(joined).toContain('| `memory/features/example.md` | current | yes | - | - | - |');
+  });
+
+  it('--refs mode (refs: true) restores In/Out with the real counts', () => {
+    const lines = renderCategorySection('CURRENT_FEATURE', rows, { refs: true });
+    const joined = lines.join('\n');
+    expect(joined).toContain('| Path | Lifecycle | Routed | AUTOGEN | Authority? | In | Out | Dead |');
+    expect(joined).toContain('| `memory/features/example.md` | current | yes | - | - | 3 | 5 | - |');
+  });
+
+  it('leaves the ARCHIVE count-only section unaffected by the refs flag', () => {
+    const archiveRows = [{ path: 'docs/archive/old.md', routed: false }];
+    const withoutRefs = renderCategorySection('ARCHIVE', archiveRows).join('\n');
+    const withRefs = renderCategorySection('ARCHIVE', archiveRows, { refs: true }).join('\n');
+    expect(withoutRefs).toBe(withRefs);
+    expect(withoutRefs).toContain('1 file(s) under `docs/archive/`');
+  });
+
+  it('renders a real deadRefs count instead of the placeholder dash', () => {
+    const withDead = [{ ...rows[0], deadRefs: 2 }];
+    const lines = renderCategorySection('CURRENT_FEATURE', withDead);
+    expect(lines.join('\n')).toContain('| `memory/features/example.md` | current | yes | - | - | 2 |');
   });
 });
