@@ -429,7 +429,7 @@ CREATE TABLE IF NOT EXISTS "public"."golf_coachhelm_llm_calls" (
     CONSTRAINT "golf_coachhelm_llm_calls_completion_tokens_check" CHECK (("completion_tokens" >= 0)),
     CONSTRAINT "golf_coachhelm_llm_calls_cost_usd_check" CHECK (("cost_usd" >= (0)::numeric)),
     CONSTRAINT "golf_coachhelm_llm_calls_prompt_tokens_check" CHECK (("prompt_tokens" >= 0)),
-    CONSTRAINT "golf_coachhelm_llm_calls_task_check" CHECK (("task" = ANY (ARRAY['round_review'::"text", 'hero_narrative'::"text", 'coach_chat'::"text"])))
+    CONSTRAINT "golf_coachhelm_llm_calls_task_check" CHECK (("task" = ANY (ARRAY['round_review'::"text", 'hero_narrative'::"text", 'coach_chat'::"text", 'round_review_narrative'::"text"])))
 );
 
 ALTER TABLE "public"."golf_coachhelm_llm_calls" OWNER TO "postgres";
@@ -1652,6 +1652,25 @@ CREATE TABLE IF NOT EXISTS "public"."golf_review_events" (
 
 ALTER TABLE "public"."golf_review_events" OWNER TO "postgres";
 
+-- Package 8 (2026-09-23, migration 20260923100000): single-flight lease
+-- for a per-round LLM call, taken BEFORE compose(). Serves round-recap.ts
+-- (kind = 'recap') and the round-review narrative
+-- (kind = 'round_review_narrative') — the name predates the second caller.
+-- Written and cleared exclusively through public.claim_round_recap_lock /
+-- public.release_round_recap_lock; see 90_comments.sql for the full
+-- COMMENT ON TABLE text.
+CREATE TABLE IF NOT EXISTS "public"."golf_round_recap_locks" (
+    "round_id" "uuid" NOT NULL,
+    "revision" integer DEFAULT 1 NOT NULL,
+    "kind" "text" NOT NULL,
+    "holder_token" "uuid" NOT NULL,
+    "locked_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "expires_at" timestamp with time zone NOT NULL,
+    CONSTRAINT "golf_round_recap_locks_kind_check" CHECK (("kind" = ANY (ARRAY['recap'::"text", 'round_review_narrative'::"text"])))
+);
+
+ALTER TABLE "public"."golf_round_recap_locks" OWNER TO "postgres";
+
 -- Package 8, repair plan §14.10 (2026-09-23): one row per generated
 -- golf_rounds.ai_recap — which path produced it (llm vs deterministic
 -- fallback), the golf_coachhelm_llm_calls audit row for the llm path,
@@ -1712,6 +1731,7 @@ CREATE TABLE IF NOT EXISTS "public"."golf_round_reviews" (
     "version" integer DEFAULT 1,
     "generation_method" "text" DEFAULT 'v1'::"text",
     "shared_with_player" boolean DEFAULT false,
+    "ai_narrative" "text",
     CONSTRAINT "golf_round_reviews_coach_rating_check" CHECK ((("coach_rating" >= 1) AND ("coach_rating" <= 5))),
     CONSTRAINT "golf_round_reviews_status_check" CHECK (("status" = ANY (ARRAY['draft'::"text", 'published'::"text", 'archived'::"text"])))
 );

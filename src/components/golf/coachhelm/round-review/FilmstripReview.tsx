@@ -74,6 +74,12 @@ export interface FilmstripReviewProps {
   sharedWithCoach: boolean;
   onShare: () => void;
   v2Body: string | null;
+  /** Package 8's round-review narrative (`golf_round_reviews.ai_narrative`),
+   *  gated behind `coachhelm_round_review_narrative` (default off
+   *  everywhere) — see `buildNarrative`'s own doc comment for the full
+   *  tier order. `null`/`undefined` falls through to the existing tiers
+   *  with no behavior change. */
+  aiNarrative?: string | null;
   v2PracticePriority: string | null;
   isCoachViewer: boolean;
   coachNotes: string | null;
@@ -110,6 +116,7 @@ export function FilmstripReview({
   sharedWithCoach,
   onShare,
   v2Body,
+  aiNarrative,
   v2PracticePriority,
   isCoachViewer,
   coachNotes,
@@ -228,14 +235,16 @@ export function FilmstripReview({
   const mixLine = useMemo(() => buildMixLine(review.scoringDistribution), [review.scoringDistribution]);
   const courseDateLine = useMemo(() => buildCourseDateLine(courseName, roundDate), [courseName, roundDate]);
   const filmstripHoles = useMemo(() => buildFilmstripHoles(review.holeByHole), [review.holeByHole]);
-  // Third tier — the persisted CoachHelm composed body, mirroring
-  // `pickPracticePriority`'s v1CoachHelm-overlay fallback below. Ensures a
-  // revisit (or the page's Refresh button, neither of which re-runs
-  // useRoundReviewV2's generate()) still shows the composed narrative
-  // instead of falling through to the V1 rule-based summary.
+  // Top tier (Package 8) is `aiNarrative`; third tier below it is the
+  // persisted CoachHelm composed body, mirroring `pickPracticePriority`'s
+  // v1CoachHelm-overlay fallback below. Ensures a revisit (or the page's
+  // Refresh button, neither of which re-runs useRoundReviewV2's generate())
+  // still shows the composed narrative instead of falling through to the
+  // V1 rule-based summary. See `buildNarrative`'s own doc comment for the
+  // full tier order.
   const narrative = useMemo(
-    () => buildNarrative(review.summary, v2Body, review.deepInsights?.[0]?.body),
-    [review.summary, review.deepInsights, v2Body],
+    () => buildNarrative(review.summary, v2Body, review.deepInsights?.[0]?.body, aiNarrative),
+    [review.summary, review.deepInsights, v2Body, aiNarrative],
   );
   const practicePriority = useMemo(
     () => pickPracticePriority(v2PracticePriority, review.coachHelm),

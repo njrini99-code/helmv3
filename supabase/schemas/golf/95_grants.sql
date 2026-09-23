@@ -494,6 +494,8 @@ GRANT ALL ON TABLE "public"."golf_review_events" TO "authenticated";
 
 GRANT ALL ON TABLE "public"."golf_review_events" TO "service_role";
 
+GRANT ALL ON TABLE "public"."golf_round_recap_locks" TO "service_role";
+
 GRANT SELECT ON TABLE "public"."golf_round_recap_provenance" TO "authenticated";
 
 GRANT ALL ON TABLE "public"."golf_round_recap_provenance" TO "service_role";

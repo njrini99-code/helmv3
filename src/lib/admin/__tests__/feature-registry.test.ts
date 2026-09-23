@@ -165,6 +165,7 @@ const NON_CRM_ACTION_FILES = [
   'roster.ts',
   'round-drafts.ts',
   'round-recap.ts',
+  'round-review-narrative.ts',
   'round-review-system.ts',
   'round-reviews.ts',
   'shot-analytics.ts',
@@ -397,7 +398,11 @@ describe('FEATURE_REGISTRY completeness', () => {
     // generateTournamentPrep from insights.ts's explicit manifest entry —
     // both zero-caller dead code (see coverage-contract.foundation's
     // matching comment). Matches 431 -> 429 there.
-    expect(total).toBe(421);
+    // 2026-09-23 (+1), PR #2046: round-review-narrative.ts joins
+    // round_review_ai as a new 'ALL'-mapped file (round-recap.ts and
+    // round-review-system.ts's sibling), for getRoundReviewNarrative.
+    // Matches 429 -> 430 in coverage-contract.foundation.
+    expect(total).toBe(422);
   });
 
   it('the CRM row lists no files (never a wrap target)', () => {
