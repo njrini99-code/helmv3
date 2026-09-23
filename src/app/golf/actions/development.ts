@@ -1382,7 +1382,7 @@ export async function createFocusAreaFromReview(args: CreateFocusAreaFromReviewA
   return observedCreateFocusAreaFromReview(args);
 }
 
-interface CreateFocusAreaFromInsightArgsV2 {
+interface CreateFocusAreaFromInsightArgsV2 extends FocusAreaTimeframeFields {
   playerId: string;
   insightId: string;
   title: string;
@@ -1458,6 +1458,13 @@ async function createFocusAreaFromInsightV2Impl(
     from_insight_id: args.insightId,
     started_at: isCoachPromoting ? null : nowIso,
     ...(evidenceRevision ? { evidence_revision: evidenceRevision } : {}),
+    // A9: a focus area created from an insight carries whatever timeframe the
+    // coach set in FocusAreaModal (target_kind/target_date/target_rounds).
+    // Without this, the field was silently dropped and the area could never
+    // reach the due-for-review queue (computeDueFocusAreas requires
+    // target_kind==='date' + target_date). An absent timeframe normalizes to
+    // all-null, same as createFocusAreaImpl's default (no timeframe set).
+    ...normalizeTimeframe(args),
   };
 
   // Pkg 9 slice 1a — duplicate-active-work guard. Reads through the same

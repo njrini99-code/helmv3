@@ -28,14 +28,14 @@
  *    read back through `loadFocusAreaPracticeLogData` (practice-log-
  *    loader.ts, #2017).
  * 5. Due-for-review queue (#1998) — `computeDueFocusAreas` (due-for-
- *    review.ts). GAP: `CreateFocusAreaFromInsightArgsV2` (development.ts:
- *    1385-1393) has no target_kind/target_date field, and the real wired
- *    caller (InsightCard.tsx:689-697) does not pass the modal's
- *    target_kind/target_date through to `createFocusAreaFromInsightV2`
- *    even though `FocusAreaModal` collects them — a focus area created
- *    from an insight can never appear in the due-for-review queue without
- *    a SEPARATE, unspecified `updateFocusArea` call. Pinned below, not
- *    papered over.
+ *    review.ts). FIXED: `CreateFocusAreaFromInsightArgsV2` now extends
+ *    `FocusAreaTimeframeFields` (development.ts:1385), the insert payload
+ *    runs the same `normalizeTimeframe()` helper `updateFocusAreaImpl`
+ *    already used, and the real wired caller (InsightCard.tsx's
+ *    `PromoteFocusAreaAction.handleSubmit`) now passes the modal's
+ *    target_kind/target_date/target_rounds through. A focus area created
+ *    from an insight WITH a timeframe reaches the due-for-review queue
+ *    with no separate `updateFocusArea` call — asserted below.
  * 6. Follow-up eligibility "computed from the persisted rows": no function
  *    or concept named "follow-up eligibility" exists anywhere in the
  *    codebase (checked `recordFocusAreaOutcome`, the fixture-matrix doc's
@@ -162,7 +162,7 @@ beforeEach(() => {
 });
 
 describe('Package 9 gate — one focus area, coach assignment through re-eligibility', () => {
-  it('walks the real actions end to end and pins the two real gaps in the chain', async () => {
+  it('walks the real actions end to end, through the due-for-review queue, and pins the one remaining real gap', async () => {
     const tables = makeTables();
 
     // ---- Step 1: coach creates the focus area from an insight ----------
@@ -182,6 +182,10 @@ describe('Package 9 gate — one focus area, coach assignment through re-eligibi
       description: 'Focus on approach strokes gained from 125-175ft.',
       areaType: 'iron_play',
       targetMetric: TARGET_METRIC,
+      // What FocusAreaModal collects and InsightCard's handleSubmit now
+      // passes through — the fixed link in the chain (Step 5 below).
+      target_kind: 'date',
+      target_date: '2026-09-25',
     });
     expect(created.success).toBe(true);
     const focusAreaId = created.focusAreaId!;
@@ -253,12 +257,15 @@ describe('Package 9 gate — one focus area, coach assignment through re-eligibi
       met: true,
     });
 
-    // ---- Step 5: due-for-review queue — GAP, pinned not papered over ---
-    // The real create-from-insight action never wrote target_kind/
-    // target_date (createFocusAreaFromInsightV2 has no such args), so the
-    // real due-for-review derivation can never surface this row — proven
+    // ---- Step 5: due-for-review queue — FIXED, proven end to end --------
+    // The timeframe passed into Step 1 was persisted by the real create-
+    // from-insight action (normalizeTimeframe() inside insertPayload), so
+    // the real due-for-review derivation now surfaces this row — proven
     // against the actual persisted row, not a hand-built fixture.
-    const dueBeforeTimeframe = computeDueFocusAreas(
+    expect(row.target_kind).toBe('date');
+    expect(row.target_date).toBe('2026-09-25');
+
+    const dueAfterTimeframe = computeDueFocusAreas(
       [
         {
           id: row.id as string,
@@ -270,9 +277,9 @@ describe('Package 9 gate — one focus area, coach assignment through re-eligibi
       ],
       { todayIso: '2026-09-23' },
     );
-    expect(dueBeforeTimeframe).toHaveLength(0);
-    expect(row.target_kind ?? null).toBeNull();
-    expect(row.target_date ?? null).toBeNull();
+    expect(dueAfterTimeframe).toHaveLength(1);
+    expect(dueAfterTimeframe[0]!.area.id).toBe(focusAreaId);
+    expect(dueAfterTimeframe[0]!.reason).toBe('due_soon');
 
     // ---- Step 6: "follow-up eligibility" is not a real, named computation
     // Completing the area moves it out of ACTIVE_FOCUS_AREA_STATUSES_FOR_
@@ -311,14 +318,5 @@ describe('Package 9 gate — one focus area, coach assignment through re-eligibi
   // against it, not left passing by accident.
   it.todo(
     'a real "follow-up eligibility" computation, distinct from the duplicate-active guard, once one exists',
-  );
-
-  // GAP, pinned: a focus area created from an insight has no way to reach
-  // the due-for-review queue without a separate, unspecified updateFocusArea
-  // call setting target_kind/target_date — neither createFocusAreaFromInsightV2
-  // nor its real wired caller (InsightCard.tsx's PromoteFocusAreaAction)
-  // sets a timeframe, even though FocusAreaModal collects one.
-  it.todo(
-    'a focus area created from an insight reaching the due-for-review queue without a manual follow-up edit',
   );
 });
