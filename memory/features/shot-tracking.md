@@ -193,6 +193,18 @@ The project is found through the hobuinc boundaries index, then verified
 against its own `ept.json` `boundsConforming`, because the index has claimed
 coverage 130 km from a project's data. The newest covering flight wins, and
 its year is inferred from the project name.
+A covering project whose CHM has returns over less than half the export is
+rejected by name (`candidatesThin`), and the next one is tried: `KY_Western_1_A22`
+claims University Club of Kentucky but has no points there. PDAL is retried
+three times on a failed tile read (Forsyth). When no EPT project covers, the
+National Map's per-tile LAZ downloads are the fallback. The newest project
+whose tiles cover the export is used, with tiles downloaded in parallel
+under an 800 MB cap and processed one at a time. The per-tile rasters are
+max-mosaicked, and the manifest keeps each tile's hash (`source: tnm_lpc`).
+Horry County (Grande Dunes) is published only this way: 2023 lidar, 94%
+coverage, where NAIP alone had found 0.07% canopy. Guilford County (Starmount,
+The Cardinal, Bryan Park) has only 2001 flights in USGS and NOAA holdings, so
+its canopy stays NAIP-only (`LIDAR_NO_COVERAGE`).
 `derive-canopy-naip.py --lidar-chm` marks trees where a cell's height is
 3–60 m. Cells with no lidar return fall back to NAIP. Below 50% lidar
 coverage, the review uses NAIP alone and names the reason

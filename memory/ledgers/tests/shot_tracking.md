@@ -493,3 +493,8 @@ date.
 
 - Added: `HoleFreePartsTests`, `LidarMergeTests` and `HoleTerritoryTests` (`test_derive_canopy_naip.py`), `test_fetch_lidar_chm.py` (EPT project choice, `boundsConforming`, newest flight, single-leaf pipeline on the export grid), `CanopyCorridorTests` (`test_ship.py`), `FeatureTableTests` plus a runtime-schema alignment check (`test_terrain_contract.py`), and a DAG test showing that new lidar coverage re-derives the canopy and then reaches a cached fixed point (`test_factory_impact.py`).
 - Guarantee still missing: nothing checks CHM tree share against the imagery date, so a stale flight (Golden Horseshoe 2013) can still show removed trees. The lab's render-time `fitTerrainCamera` throw is avoided at capture time, not fixed in the lab.
+
+## 2026-09-23 — lidar fallback guarantees
+
+- Added to `test_fetch_lidar_chm.py`: `NationalMapTileTests` (the newest project whose tiles cover the export leads; partial, oversized and non-LAZ projects are rejected by name; listing pages until the total), `PdalRetryTests` (a transient read succeeds on retry; a persistent failure raises after 3 attempts), and `MosaicTests` (cell-wise max; nodata only where no tile has returns).
+- Guarantee still missing: the thin-coverage rejection and fallback order in `main()` are verified on real data (Grande Dunes) but not by a unit test.
