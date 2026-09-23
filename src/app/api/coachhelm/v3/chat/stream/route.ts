@@ -793,6 +793,14 @@ export async function POST(req: NextRequest) {
           }
           continue;
         }
+        // The withheld tail belongs to the text part that `text-end` is
+        // about to close, so flush it first: a delta written after its
+        // part's `text-end` is rejected by the ai SDK ("text-delta for
+        // missing text part") and the tail would never reach the coach.
+        if (c.type === 'text-end' && !claimsBlockStarted && pendingText && lastTextDeltaChunk) {
+          writer.write({ ...lastTextDeltaChunk, delta: pendingText } as StreamChunk);
+          pendingText = '';
+        }
         if (c.type === 'error') {
           streamErrored = true;
         }
