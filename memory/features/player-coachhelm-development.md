@@ -208,6 +208,32 @@ Player opens round review
   nullable `text` (not yet run locally -- no Docker/local Supabase stack
   available in this session; CI's Supabase lint + RLS tests job is the
   verification gate).
+  **Slice 3 (built, PR "Depends on #2004", no migration)**: read-time-only
+  "evidence has changed since this was approved" check, same "derive at read
+  time, never persist a re-check" contract as `due-for-review.ts` (Pkg 9
+  slice 4) -- never writes `evidence_revision` or `status`, so the prior
+  accepted version is preserved exactly.
+  `src/lib/coachhelm/focus-areas/evidence-revision-status.ts`'s pure
+  `compareEvidenceRevision(stored, live)` returns `'match' | 'changed' |
+  'unknown'`; `'unknown'` (stored absent, or the live insight couldn't be
+  recomputed) always renders nothing -- an unverifiable comparison must never
+  be reported as a confirmed mismatch.
+  `src/lib/coachhelm/focus-areas/load-evidence-revision-status.ts`'s
+  `computeEvidenceRevisionStatuses` is the flag-gated batched loader: while
+  the flag is off it makes zero `golf_coach_insights` reads; while on, it
+  collects the distinct `from_insight_id`s among focus areas that already
+  carry a stored `evidence_revision`, fetches each live insight once via
+  `fromUntyped`, and maps id -> `'match' | 'changed'` (an id absent from the
+  map means "render nothing", uniformly with `'unknown'`).
+  Both `intelligence/page.tsx` and `coachhelm/page.tsx`'s focus-area selects
+  now route through `fromUntyped` unconditionally (its `any` return made a
+  typed/untyped client ternary untypeable; the SELECT COLUMN LIST still only
+  adds `evidence_revision` when the flag is on, so with it off the actual
+  query text is byte-for-byte unchanged from before slice 1/3). `FocusAreaCard`
+  takes a new `evidence_revision_status?: 'match' | 'changed'` field (computed
+  by the loader, never a raw DB column) and swaps its slice-1 "Evidence
+  snapshot recorded" badge for a `tone="warning"` "Evidence has changed since
+  this was approved" badge only when the status is `'changed'`.
 - **Focus-area progress is travel from baseline, never `current / target`,
   and an unresolvable metric must render no progress bar at all** — not a
   guessed one. `golf_player_focus_areas.baseline_value` (present in
