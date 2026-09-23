@@ -1246,6 +1246,7 @@ CREATE TABLE IF NOT EXISTS "public"."golf_player_focus_areas" (
     "target_rounds" integer,
     "baseline_value" numeric,
     "snapshots" "jsonb" DEFAULT '[]'::"jsonb" NOT NULL,
+    "evidence_revision" "text",
     CONSTRAINT "golf_player_focus_areas_target_kind_check" CHECK (("target_kind" = ANY (ARRAY['date'::"text", 'rounds'::"text"])))
 );
 
