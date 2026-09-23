@@ -1272,7 +1272,7 @@ scans every hypothesis this module can produce for banned terms —
 structural subset, `MetricResultInput`, before #1990 landed to `main`;
 slice 2 swapped to the real type).
 
-### Slice 2: dimensioned metrics, the rough_gap unit mismatch, and the shotClaimId marker
+### Slice 2: dimensioned metrics, rough_gap's id, shotClaimId marker
 
 `MetricResult.dimensions` means a real call can hand back SEVERAL rows
 sharing one `metricId` (a distance band, or a specific par-5 hole) —
