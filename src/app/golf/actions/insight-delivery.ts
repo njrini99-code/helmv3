@@ -35,6 +35,7 @@ import type { AssembledThemes, AssembledEvidence, RootDriver, ThemeTrend } from 
 import { buildShotDrivers } from '@/lib/coachhelm/v3/themes/shot-drivers';
 import type { ShotDriverInput } from '@/lib/coachhelm/v3/themes/shot-drivers';
 import { computeSgTrends } from '@/lib/coachhelm/v3/themes/trend';
+import { isCountableRound } from '@/lib/golf/round-countable';
 import type { SgRoundSample } from '@/lib/coachhelm/v3/themes/trend';
 import { loadCoachWeightsForPlayer, type CoachWeights } from '@/lib/coachhelm/v3/ranking/score';
 import { buildExposureRows } from '@/lib/coachhelm/v3/effectiveness/exposure-rows';
@@ -1384,7 +1385,7 @@ async function fetchSgTrendsByCategory(
     const { data: rounds, error } = await supabase
       .from('golf_rounds')
       .select(
-        'round_date, holes_played, strokes_gained_putting, strokes_gained_approach, strokes_gained_tee, strokes_gained_around_green',
+        'round_date, holes_played, total_score, front_nine, back_nine, total_putts, strokes_gained_putting, strokes_gained_approach, strokes_gained_tee, strokes_gained_around_green',
       )
       .eq('player_id', playerId)
       .eq('status', 'completed')
@@ -1394,7 +1395,8 @@ async function fetchSgTrendsByCategory(
     if (!rounds || rounds.length === 0) return undefined;
 
     // Newest-first order is the SgRoundSample contract — preserve it as-is.
-    const samples: SgRoundSample[] = rounds.map((r) => ({
+    // Countable rounds only (src/lib/golf/round-countable.ts), like Stats.
+    const samples: SgRoundSample[] = rounds.filter(isCountableRound).map((r) => ({
       date: r.round_date,
       sgPutting: r.strokes_gained_putting,
       sgApproach: r.strokes_gained_approach,

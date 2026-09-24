@@ -658,9 +658,9 @@ async function getPlayerTrendAnalysisImpl(
     // Same contract and same latent limit as `getPlayerProfileImpl` above —
     // ascending is load-bearing for the EWMA fold, and ascending + limit takes
     // the OLDEST 30 rather than the most recent 30. See the full note there.
-    const { data: roundsData, error: roundsError } = await supabase
+    const { data: rawTrendRounds, error: roundsError } = await supabase
       .from('golf_rounds')
-      .select('id, score_to_par, round_date, total_putts, total_gir, total_gir_possible, total_fairways_hit, total_fairways, holes_played')
+      .select('id, score_to_par, round_date, total_score, front_nine, back_nine, total_putts, total_gir, total_gir_possible, total_fairways_hit, total_fairways, holes_played')
       .eq('player_id', playerId)
       .eq('status', 'completed')
       .not('score_to_par', 'is', null)
@@ -670,6 +670,19 @@ async function getPlayerTrendAnalysisImpl(
     if (roundsError) {
       return { success: false, error: 'Failed to fetch round data' };
     }
+
+    // Countable rounds only (src/lib/golf/round-countable.ts), with a nine-hole
+    // round's to-par and putts scaled to 18 holes the way Stats does. Before
+    // this a 37 stored as 18 holes (−35) and raw nine-hole to-pars bent the
+    // scoring trend and the prediction band.
+    const roundsData = (rawTrendRounds ?? []).filter(isCountableRound).map((r) => {
+      const scale = r.holes_played && r.holes_played > 0 && r.holes_played < 18 ? 18 / r.holes_played : 1;
+      return {
+        ...r,
+        score_to_par: r.score_to_par == null ? null : r.score_to_par * scale,
+        total_putts: r.total_putts == null ? null : r.total_putts * scale,
+      };
+    });
 
     if (!roundsData || roundsData.length < 3) {
       // Same ambiguity as getPlayerProfile: the main query drops completed
