@@ -13,6 +13,14 @@ import { logServerError, logServerException } from '@/lib/server-error-logger';
 import { describeError } from '@/lib/utils/describe-error';
 import { attributeClassEvents, type ClassOwnerIndex } from '@/lib/calendar/class-events';
 import { splitDisplayName } from '@/lib/types/calendar';
+import { DEFAULT_TIMEZONE } from '@/lib/calendar/timezone';
+import {
+  countCoachOverdueTasks,
+  countPlayerOverdueTasks,
+  overdueQueryUpperBound,
+  type CoachTaskOverdueRow,
+  type PlayerAssignmentOverdueRow,
+} from '@/lib/golf/overdue-task-count';
 
 // Code-split the Fairway calendar surface — it's the ONLY tree the route
 // renders, so this next/dynamic keeps its chunk loaded only when actually
@@ -216,14 +224,51 @@ export async function CalendarEventsSection({
   // "the lookup failed" — see attributeClassEvents.
   let classOwners: ClassOwnerIndex = {};
   let classOwnersResolved = false;
+  // Incomplete tasks due before today, for the agenda's pinned "N overdue
+  // tasks" row. 0 hides the row, which is also what a failed read degrades to.
+  let overdueTaskCount = 0;
 
   if (teamId) {
+    // Same scoping the Tasks page (`useTaskRealtime`) reads with, so the two
+    // agree: a player counts their OWN assignments, a coach counts the team's
+    // tasks with the all-assignees-complete rollup. RLS enforces both. The
+    // due-date bound is a superset (UTC today + 1); the zone-exact "before
+    // today" cut runs below, once the team's timezone has arrived.
+    const overdueBound = overdueQueryUpperBound();
+    const overdueTasksRead: Promise<
+      | { kind: 'coach'; data: CoachTaskOverdueRow[] | null; error: { message: string; code?: string | null } | null }
+      | { kind: 'player'; data: PlayerAssignmentOverdueRow[] | null; error: { message: string; code?: string | null } | null }
+      | { kind: 'none' }
+    > = isCoach
+      ? fetchAllRowsResult((from, to) =>
+          supabase
+            .from('golf_tasks')
+            .select('status, due_date, assignments:golf_task_assignments!golf_task_assignments_task_id_fkey(status)')
+            .eq('team_id', teamId)
+            .lte('due_date', overdueBound)
+            .order('id', { ascending: true })
+            .range(from, to),
+        ).then((r) => ({ kind: 'coach' as const, data: r.data as CoachTaskOverdueRow[] | null, error: r.error }))
+      : playerId
+        ? Promise.resolve(
+            supabase
+              .from('golf_task_assignments')
+              .select('status, task:golf_tasks!golf_task_assignments_task_id_fkey(due_date, team_id)')
+              .eq('player_id', playerId)
+              .limit(1000),
+          ).then((r) => ({
+            kind: 'player' as const,
+            data: r.data as unknown as PlayerAssignmentOverdueRow[] | null,
+            error: r.error,
+          }))
+        : Promise.resolve({ kind: 'none' as const });
+
     // NOTE: cancelled events are INCLUDED on purpose — they render distinctly
     // (strike/badge) instead of silently disappearing (soft-cancel lifecycle).
     // parent_event_id + recurrence_rule are REQUIRED end-to-end: without them
     // series members render as one-offs and the edit/delete scope picker never
     // appears (audit finding #6, which armed the P0 cascade delete).
-    const [eventsResult, teamMembersResult, teamSettingsResult, classOwnersResult] = await Promise.all([
+    const [eventsResult, teamMembersResult, teamSettingsResult, classOwnersResult, overdueResult] = await Promise.all([
       // Paginate past the PostgREST 1000-row server cap (audit F102): a busy
       // team's ±3-month window can exceed a single page, and a bare `.limit(500)`
       // silently dropped the overflow (events vanish from the calendar). A
@@ -260,6 +305,11 @@ export async function CalendarEventsSection({
         .select('id, player_id')
         .eq('team_id', teamId)
         .limit(1000),
+      // Never rejects the page: a failure here only hides the overdue row.
+      overdueTasksRead.catch((error: unknown) => ({
+        kind: 'none' as const,
+        failure: error,
+      })),
     ]);
 
     // A failed events fetch must NOT render as a cheerful empty calendar
@@ -297,6 +347,30 @@ export async function CalendarEventsSection({
     }
 
     teamTimezone = teamSettingsResult.data?.timezone || null;
+
+    // Overdue is decided on the team's wall clock, with the calendar's own
+    // zone fallback. A failed read is logged and hides the row; it never
+    // blocks the calendar.
+    const overdueZone = teamTimezone ?? DEFAULT_TIMEZONE;
+    if (overdueResult.kind === 'none') {
+      if ('failure' in overdueResult) {
+        await logServerError(
+          `[calendar] overdue-task read threw for team ${teamId}; the agenda's overdue row is hidden: ${describeError(overdueResult.failure)}`,
+          { action: 'golf.calendarPage.loadOverdueTasks', featureArea: 'calendar' },
+          'warning',
+        );
+      }
+    } else if (overdueResult.error) {
+      await logServerError(
+        `[calendar] overdue-task read failed for team ${teamId}; the agenda's overdue row is hidden: ${describeError(overdueResult.error)}`,
+        { action: 'golf.calendarPage.loadOverdueTasks', featureArea: 'calendar' },
+        'warning',
+      );
+    } else if (overdueResult.kind === 'coach') {
+      overdueTaskCount = countCoachOverdueTasks(overdueResult.data ?? [], overdueZone);
+    } else {
+      overdueTaskCount = countPlayerOverdueTasks(overdueResult.data ?? [], teamId, overdueZone);
+    }
 
     // Only claim the ownership index is authoritative when the query actually
     // succeeded — an error here must not read as "these classes belong to
@@ -456,6 +530,7 @@ export async function CalendarEventsSection({
       classOwners={classOwners}
       classOwnersResolved={classOwnersResolved}
       viewerPlayerId={playerId}
+      overdueTaskCount={overdueTaskCount}
     />
   );
 }

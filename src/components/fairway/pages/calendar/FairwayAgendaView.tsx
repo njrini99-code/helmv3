@@ -25,10 +25,11 @@
  * ========================================================================== */
 
 import * as React from 'react';
+import Link from 'next/link';
 import { format, isSameDay, addDays, startOfDay, isBefore } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { Surface, EmptyState, Button } from '@/components/fairway';
-import { CalendarDays, History } from 'lucide-react';
+import { CalendarDays, ChevronRight, CircleAlert, History } from 'lucide-react';
 import type { CalendarEvent } from '@/hooks/useCalendarEvents';
 import type { RSVPStatus } from '@/hooks/useRSVP';
 import { eventDaySpan, formatEventTime } from '@/lib/calendar/timezone';
@@ -123,7 +124,57 @@ export interface FairwayAgendaViewProps {
    * what is happening.
    */
   isLoadingRange?: boolean;
+  /**
+   * Incomplete tasks due before today (team zone). Above 0, one compact row
+   * pinned at the top of the agenda links to Tasks; 0 or absent renders
+   * nothing, so the agenda's DOM is unchanged.
+   */
+  overdueTaskCount?: number;
   className?: string;
+}
+
+/** The Tasks hub the overdue row opens. */
+export const OVERDUE_TASKS_HREF = '/golf/dashboard/tasks';
+
+/** One compact row, styled as an agenda row inside a day group's card. */
+function OverdueTasksRow({ count }: { count: number }) {
+  const label = `${count} overdue ${count === 1 ? 'task' : 'tasks'}`;
+  return (
+    <div className={DAY_GROUP_CLASS}>
+      <Link
+        href={OVERDUE_TASKS_HREF}
+        data-slot="agenda-overdue"
+        className={cn(
+          'group flex w-full items-center gap-3 bg-surface px-3 py-2.5 text-left outline-none',
+          '[@media(hover:hover)]:hover:bg-surface-sunken active:bg-surface-sunken',
+          'focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-border-focus',
+          'md:gap-4 md:px-4 md:py-3',
+        )}
+      >
+        <CircleAlert aria-hidden className="h-4 w-4 shrink-0 text-fw-warning-text" />
+        <span className="min-w-0 flex-1 font-fw-sans text-body-sm font-semibold text-text-primary">{label}</span>
+        <ChevronRight
+          aria-hidden
+          className="h-4 w-4 shrink-0 text-text-tertiary transition-transform [@media(hover:hover)]:group-hover:translate-x-0.5 motion-reduce:transition-none"
+        />
+      </Link>
+    </div>
+  );
+}
+
+/**
+ * The agenda, with the overdue-tasks row pinned above whichever body renders
+ * (populated, loading, or honest-empty: a player with no events this month can
+ * still be behind on tasks). The row is not sticky; the day headings are.
+ */
+export function FairwayAgendaView({ overdueTaskCount = 0, ...props }: FairwayAgendaViewProps) {
+  if (overdueTaskCount <= 0) return <AgendaBody {...props} />;
+  return (
+    <div className="flex flex-col gap-4">
+      <OverdueTasksRow count={overdueTaskCount} />
+      <AgendaBody {...props} />
+    </div>
+  );
 }
 
 interface DayBucket {
@@ -235,7 +286,7 @@ function bucketEvents(
   return ordered;
 }
 
-export function FairwayAgendaView({
+function AgendaBody({
   events,
   mode,
   focusDate,
@@ -250,7 +301,7 @@ export function FairwayAgendaView({
   nowRef,
   isLoadingRange = false,
   className,
-}: FairwayAgendaViewProps) {
+}: Omit<FairwayAgendaViewProps, 'overdueTaskCount'>) {
   const buckets = React.useMemo(
     () => bucketEvents(events, mode, focusDate, rangeStart, rangeEnd, nowRef, timezone),
     [events, mode, focusDate, rangeStart, rangeEnd, nowRef, timezone],

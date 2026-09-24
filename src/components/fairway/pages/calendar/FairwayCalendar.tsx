@@ -151,6 +151,11 @@ export interface FairwayCalendarProps {
   classOwnersResolved?: boolean;
   /** The viewer's own `golf_players.id`, when they are a player. */
   viewerPlayerId?: string | null;
+  /**
+   * Incomplete tasks due before today (team zone), scoped like the Tasks page.
+   * Drives the Agenda's pinned "N overdue tasks" row; 0 or absent hides it.
+   */
+  overdueTaskCount?: number;
 }
 
 /**
@@ -198,6 +203,7 @@ export function FairwayCalendar({
   initialEventId,
   classOwners,
   classOwnersResolved = false,
+  overdueTaskCount = 0,
   viewerPlayerId = null,
 }: FairwayCalendarProps) {
   const router = useRouter();
@@ -1308,6 +1314,7 @@ export function FairwayCalendar({
           onCreateEvent={isCoach ? handlePrimaryAction : undefined}
           nowRef={nowRef}
           isLoadingRange={isLoadingRange}
+          overdueTaskCount={overdueTaskCount}
         />
       ) : isDay ? (
         <FairwayAgendaView
