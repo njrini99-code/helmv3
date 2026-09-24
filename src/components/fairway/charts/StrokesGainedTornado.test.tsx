@@ -19,6 +19,7 @@
 import { render } from '@testing-library/react';
 import { describe, it, expect } from 'vitest';
 import {
+  placeValueAnnotation,
   TornadoInner,
   estimateLabelWidth,
   truncateLabel,
@@ -317,5 +318,20 @@ describe('StrokesGainedTornado — mobile-squeeze fix: responsive gutters', () =
     const group = container.querySelector('svg > g');
     expect(group).toBeDefined();
     expect(group!.getAttribute('transform')).toBe(`translate(${LABEL_GUTTER}, 8)`);
+  });
+});
+
+describe('placeValueAnnotation (CHART-R2)', () => {
+  it('sits past the bar tip when there is room', () => {
+    expect(placeValueAnnotation({ positive: false, valX: 80, zeroX: 150, textWidth: 30, rightLimit: 300 })).toEqual({ x: 74, anchor: 'end' });
+    expect(placeValueAnnotation({ positive: true, valX: 200, zeroX: 150, textWidth: 30, rightLimit: 300 })).toEqual({ x: 206, anchor: 'start' });
+  });
+
+  it('crosses to the other side of zero instead of running into the category labels', () => {
+    expect(placeValueAnnotation({ positive: false, valX: 12, zeroX: 150, textWidth: 30, rightLimit: 300 })).toEqual({ x: 156, anchor: 'start' });
+  });
+
+  it('crosses back when a positive value would run past the value gutter', () => {
+    expect(placeValueAnnotation({ positive: true, valX: 290, zeroX: 150, textWidth: 30, rightLimit: 300 })).toEqual({ x: 144, anchor: 'end' });
   });
 });
