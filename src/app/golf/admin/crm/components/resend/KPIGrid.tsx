@@ -33,7 +33,7 @@ const ACCENT_CONFIG = {
   neutral: { icon: 'text-text-tertiary',    text: 'text-text-primary' },
   success: { icon: 'text-accent-700', text: 'text-text-primary' },
   info:    { icon: 'text-info',        text: 'text-text-primary' },
-  warning: { icon: 'text-warning',     text: 'text-text-primary' },
+  warning: { icon: 'text-fw-warning-text', text: 'text-text-primary' },
   error:   { icon: 'text-destructive', text: 'text-text-primary' },
 };
 
