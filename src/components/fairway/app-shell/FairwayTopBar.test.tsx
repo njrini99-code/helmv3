@@ -93,11 +93,19 @@ describe('FairwayTopBar — standing destination title (phone)', () => {
     expect(el.className).not.toContain('opacity-0');
   });
 
-  it('never animates or transitions — it is not a scroll-driven affordance', () => {
+  it('is always visible and never moves when the page registered no large title', () => {
     const { container } = renderBar();
     const el = titleEl(container);
-    expect(el.className).not.toContain('transition');
+    expect(el.className).not.toContain('opacity-0');
     expect(el.className).not.toContain('translate-y');
+  });
+
+  it('hides behind the page large title at rest (DASH-05, iOS large-title behaviour)', () => {
+    const { container } = renderBar({}, ctx({ registeredTitle: 'Good morning' }));
+    const el = titleEl(container);
+    expect(el.textContent).toBe('Good morning');
+    expect(el.className).toContain('opacity-0');
+    expect(el.className).toContain('motion-reduce:transition-none');
   });
 
   it('lives in the LEADING slot on phone and is hidden at md+ (crumbs take over)', () => {
@@ -167,5 +175,20 @@ describe('FairwayTopBar — action cluster renders at every breakpoint', () => {
     const button = screen.getByRole('button', { name: 'Bell' });
     const wrapper = button.parentElement!;
     expect(wrapper.className).not.toContain('hidden');
+  });
+});
+
+describe('FairwayTopBar — phone back link on pushed routes (NAT-04)', () => {
+  it('renders a phone-only "Back to <parent>" link when backLink is passed', () => {
+    renderBar({ backLink: { label: 'Roster', href: '/golf/dashboard/roster' } });
+    const back = screen.getByRole('link', { name: 'Back to Roster' });
+    expect(back).toHaveAttribute('href', '/golf/dashboard/roster');
+    expect(back.className).toMatch(/\bmd:hidden\b/);
+    expect(back.className).toMatch(/\bmin-h-11\b/);
+  });
+
+  it('renders no back link on a tab root (no backLink prop)', () => {
+    renderBar();
+    expect(screen.queryByRole('link', { name: /^Back to/ })).toBeNull();
   });
 });

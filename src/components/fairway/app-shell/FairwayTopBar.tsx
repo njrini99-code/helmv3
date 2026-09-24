@@ -51,6 +51,7 @@
  * ========================================================================== */
 
 import { forwardRef, memo, useEffect, useState } from 'react';
+import { ChevronLeft } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { IconSearch } from '@/components/icons';
 import { Button } from '@/components/ui/button';
@@ -92,6 +93,11 @@ function useScrolledPastTop(): boolean {
 export interface FairwayTopBarProps {
   /** Breadcrumb trail (last crumb = current page; rendered as plain text). */
   breadcrumbs?: readonly Breadcrumb[];
+  /**
+   * Phones only: a leading `‹ Parent` link on a pushed route, the way an iOS
+   * navigation bar pops back (NAT-04). Omit on tab roots.
+   */
+  backLink?: Breadcrumb & { readonly href: string };
   /**
    * Persistent search / command entry. When `onSearchOpen` is provided, the bar
    * renders the canonical ⌘K command button. Pass `searchSlot` to fully replace it.
@@ -192,6 +198,7 @@ function BreadcrumbTrail({
 export const FairwayTopBar = memo(forwardRef<HTMLElement, FairwayTopBarProps>(function FairwayTopBar(
   {
     breadcrumbs,
+    backLink,
     onSearchOpen,
     searchPlaceholder = 'Search or jump to…',
     searchSlot,
@@ -254,6 +261,16 @@ export const FairwayTopBar = memo(forwardRef<HTMLElement, FairwayTopBarProps>(fu
             row's `px-6` left edge with the page masthead below it.
             `aria-hidden` — the accessible name lives on the `<header>`
             landmark above, so this never becomes a second announced heading. */}
+        {backLink ? (
+          <Link
+            href={backLink.href}
+            aria-label={`Back to ${backLink.label}`}
+            className="-ml-2 flex min-h-11 min-w-11 max-w-[40%] flex-shrink-0 items-center gap-0.5 rounded-fw-sm pr-1 font-fw-sans text-body-sm font-medium text-accent-ink outline-none focus-visible:ring-2 focus-visible:ring-border-focus md:hidden"
+          >
+            <ChevronLeft className="h-6 w-6 flex-shrink-0" strokeWidth={2.25} aria-hidden />
+            <span className="truncate">{backLink.label}</span>
+          </Link>
+        ) : null}
         <div
           className="flex min-w-0 flex-1 items-center md:hidden"
           aria-hidden

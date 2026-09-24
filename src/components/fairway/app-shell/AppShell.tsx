@@ -76,6 +76,8 @@ export interface AppShellProps {
 
   /** Breadcrumb trail for the top bar. */
   breadcrumbs?: readonly Breadcrumb[];
+  /** Phone-only back link to the parent screen on pushed routes (NAT-04). */
+  backLink?: Breadcrumb & { readonly href: string };
   /** Opens the command menu (⌘K). Renders the persistent command entry. */
   onSearchOpen?: () => void;
   /** Placeholder for the command entry. */
@@ -196,6 +198,7 @@ export const AppShell = forwardRef<HTMLDivElement, AppShellProps>(function AppSh
     sidebarFooter,
     sidebarIdentityExtra,
     breadcrumbs,
+    backLink,
     onSearchOpen,
     searchPlaceholder = DEFAULT_PLACEHOLDER,
     searchSlot,
@@ -337,6 +340,7 @@ export const AppShell = forwardRef<HTMLDivElement, AppShellProps>(function AppSh
   const topBarProps: FairwayTopBarProps = useMemo(
     () => ({
       breadcrumbs,
+      backLink,
       onSearchOpen,
       searchPlaceholder,
       searchSlot,
@@ -352,6 +356,7 @@ export const AppShell = forwardRef<HTMLDivElement, AppShellProps>(function AppSh
     }),
     [
       breadcrumbs,
+      backLink,
       onSearchOpen,
       searchPlaceholder,
       searchSlot,

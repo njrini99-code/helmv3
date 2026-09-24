@@ -185,6 +185,30 @@ function buildBreadcrumbs(pathname: string): Breadcrumb[] {
   return [{ label: 'Dashboard', href: '/golf/dashboard' }, { label }];
 }
 
+/** Pushed routes whose own first segment has no page of its own. */
+const BACK_PARENT_OVERRIDES: Record<string, { href: string; label: string } | null> = {
+  players: { href: '/golf/dashboard/roster', label: 'Roster' },
+  analytics: null,
+};
+
+/**
+ * The phone top bar's `‹ Parent` link (NAT-04). Only on pushed routes: a tab
+ * root (anything a hub strip or the bottom nav lands on) gets none, and the
+ * CoachHelm cluster keeps its own in-page breadcrumbs.
+ */
+function buildBackLink(
+  pathname: string,
+  hubTabs: readonly { href: string }[] | undefined,
+): { href: string; label: string } | undefined {
+  const segs = pathname.replace(/^\/golf\/dashboard\/?/, '').split('/').filter(Boolean);
+  if (segs.length < 2) return undefined;
+  if (hubTabs?.some((tab) => tab.href.split('?')[0] === pathname)) return undefined;
+  const seg = segs[0] ?? '';
+  if (COACHHELM_CLUSTER_SEGMENTS.has(seg) && isCoachHelmCoachCluster(pathname)) return undefined;
+  if (seg in BACK_PARENT_OVERRIDES) return BACK_PARENT_OVERRIDES[seg] ?? undefined;
+  return { href: `/golf/dashboard/${seg}`, label: SEGMENT_LABELS[seg] ?? toTitle(seg) };
+}
+
 /** Next <Link> adapter for the shell's link contract (module scope = stable identity). */
 const ShellLink: ShellLinkComponent = ({ href, children, ...rest }) => (
   <Link href={href} prefetch {...rest}>
@@ -625,6 +649,7 @@ function FairwayDashboardContent({
   }, []);
 
   const breadcrumbs = useMemo(() => buildBreadcrumbs(pathname), [pathname]);
+  const backLink = useMemo(() => buildBackLink(pathname, activeHub?.tabs), [pathname, activeHub]);
 
   // The name the mobile top bar gives the current view. Inside a multi-tab hub
   // that is the HUB, not the leaf: the strip immediately below the bar already
@@ -722,6 +747,7 @@ function FairwayDashboardContent({
         pathname={pathname}
         linkComponent={ShellLink}
         breadcrumbs={breadcrumbs}
+        backLink={backLink}
         collapsible={true}
         // The dashboard route `template.tsx` already owns the route-reveal fade
         // (one keyed motion div). Disabling the shell's own RouteTransition here

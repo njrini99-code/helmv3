@@ -142,14 +142,12 @@ describe('surface-registry — CoachHelmSubNav resolves the registry canonical n
     expect(labels).toEqual([surfaceName('brief'), surfaceName('ask')]);
   });
 
-  it('player strip renders the single consolidated Overview tab exactly as the registry names it', () => {
+  it('player gets no strip: its one consolidated Overview tab is not a choice (DASH-06)', () => {
     // Development / Game Profile / Standing are legacy+hidden (?view= drills
-    // of the Overview home now) — the strip no longer carries their tabs.
+    // of the Overview home now), which leaves the player a single tab, and a
+    // one-item tab strip is chrome with nothing to switch between.
     render(createElement(CoachHelmSubNav, { active: 'brief', role: 'player' }));
-    const nav = screen.getByRole('navigation', { name: 'CoachHelm sections' });
-    const labels = within(nav).getAllByRole('link').map((a) => a.textContent);
-
-    expect(labels).toEqual([surfaceName('overview')]);
+    expect(screen.queryByRole('navigation', { name: 'CoachHelm sections' })).toBeNull();
   });
 });
 

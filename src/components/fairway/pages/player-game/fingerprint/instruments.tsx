@@ -208,7 +208,7 @@ export function ApproachLadder({ data }: { data: ApproachLadderData }) {
         })}
       </ol>
       <InstrumentNote>
-        Strokes gained per approach shot, shot-level default baseline. Tee shots and putts excluded. {data.shots} shots over{' '}
+        Strokes gained per approach shot, on the same baseline as the strokes-gained chart. Tee shots and putts excluded. {data.shots} shots over{' '}
         {data.rounds} {data.rounds === 1 ? 'round' : 'rounds'}, last {data.windowDays} days. Outlined bands have fewer than{' '}
         {LADDER_THIN_SHOTS} shots.
       </InstrumentNote>

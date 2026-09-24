@@ -26,6 +26,9 @@ const REDIRECT_ONLY = new Set([
   'src/app/golf/(dashboard)/dashboard/my-insights',
   'src/app/golf/(dashboard)/dashboard/players/[playerId]',
   'src/app/golf/(dashboard)/dashboard/coachhelm/genome/[playerId]',
+  // Catch-all that only calls notFound() so unknown dashboard URLs get the
+  // dashboard's own not-found page (DASH-13); it never renders UI of its own.
+  'src/app/golf/(dashboard)/dashboard/[...missing]',
 ]);
 
 /** Real pages still without a page-shaped loading.tsx (STATE-X1 debt; shrink only). */
@@ -70,7 +73,7 @@ describe('golf route segments own their error and loading states (STATE-X1)', ()
     for (const s of REDIRECT_ONLY) {
       const page = resolve(ROOT, s, 'page.tsx');
       expect(existsSync(page), `${s} no longer exists; drop it from REDIRECT_ONLY`).toBe(true);
-      expect(readFileSync(page, 'utf8'), `${s} is listed as redirect-only`).toMatch(/\b(permanentRedirect|redirect)\(/);
+      expect(readFileSync(page, 'utf8'), `${s} is listed as redirect-only`).toMatch(/\b(permanentRedirect|redirect|notFound)\(/);
     }
     for (const s of LOADING_DEBT) {
       expect(existsSync(resolve(ROOT, s, 'page.tsx')), `${s} no longer exists; drop it from LOADING_DEBT`).toBe(true);

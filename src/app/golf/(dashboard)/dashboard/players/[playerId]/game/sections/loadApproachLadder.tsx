@@ -4,8 +4,9 @@
  * Approach shots only: the starting lie is neither the tee nor the green,
  * filtered in the query itself. That keeps drives out of the "dead zone"
  * reading (spec §4.3; the live 275-300y "dead zone" was driving). SG here is
- * shot-level against `buildDefaultBaseline()`, which is NOT the stats-cache
- * baseline behind the waterfall, so the instrument labels it as such.
+ * shot-level against the stats-cache expected-strokes table, the same one
+ * behind the waterfall (OD-12), so the two instruments cannot disagree about
+ * what "average" means.
  *
  * Uses the page's session-scoped client (RLS applies). Best-effort: any
  * failure logs and renders nothing, never taking down the page.
@@ -15,7 +16,8 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/types/database';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import { chunkIds } from '@/lib/supabase/chunk-ids';
-import { buildDefaultBaseline, type ShotData } from '@/lib/coachhelm/v2/shot-analysis/shot-level-sg';
+import type { ShotData } from '@/lib/coachhelm/v2/shot-analysis/shot-level-sg';
+import { buildStatsCacheSgBaseline } from '@/lib/coachhelm/v2/shot-analysis/stats-cache-baseline';
 import { buildYardageCurve } from '@/lib/coachhelm/v2/shot-analysis/yardage-curves';
 import { logServerError } from '@/lib/server-error-logger';
 import { describeError } from '@/lib/utils/describe-error';
@@ -82,7 +84,7 @@ export async function loadApproachLadder(
     }
 
     const inRange = shots.filter((s) => s.distanceBefore >= LADDER_MIN_YARDS && s.distanceBefore < LADDER_MAX_YARDS);
-    const curve = buildYardageCurve(inRange, buildDefaultBaseline(), 25, playerId);
+    const curve = buildYardageCurve(inRange, buildStatsCacheSgBaseline(), 25, playerId);
     return {
       bands: curve.buckets.map((b) => ({
         start: b.rangeStart,

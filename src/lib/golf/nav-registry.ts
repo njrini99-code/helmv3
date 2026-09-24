@@ -366,7 +366,8 @@ export function buildCoachRailSections(badges: GolfNavBadgeCounts): NavSection[]
       href: schedule.tabs[0]!.href,
       icon: IconCalendar,
       tabs: schedule.tabs,
-      badge: navBadge(badges.calendarNotifications),
+      // No badge: the calendar lists events, and these unread RSVP/event
+      // notifications are listed (and counted) by the bell (DASH-16).
     }),
     hubToNavItem({
       label: team.label,
@@ -414,7 +415,8 @@ export function buildPlayerRailSections(badges: GolfNavBadgeCounts): NavSection[
       label: 'Calendar',
       href: '/golf/dashboard/calendar',
       icon: IconCalendar,
-      badge: navBadge(badges.calendarNotifications),
+      // No badge: the calendar lists events, and these unread RSVP/event
+      // notifications are listed (and counted) by the bell (DASH-16).
     }),
     hubToNavItem({
       label: 'Team',
@@ -516,7 +518,8 @@ export function buildCoachBottomNavItems(badges: GolfNavBadgeCounts): NavItem[] 
       href: schedule.tabs[0]!.href,
       icon: IconCalendar,
       tabs: schedule.tabs,
-      badge: navBadge(badges.calendarNotifications),
+      // No badge: the calendar lists events, and these unread RSVP/event
+      // notifications are listed (and counted) by the bell (DASH-16).
     }),
     hubToNavItem({
       label: team.label,
