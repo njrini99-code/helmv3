@@ -68,18 +68,22 @@ export function SenseWord({ sense, children }: { sense: Sense; children: string 
 
 /* ── Scoring windows ─────────────────────────────────────────────────────── */
 
+const SCORING_SCALE_STROKES = 5;
+
 export function ScoringWindows({ windows }: { windows: ScoringTrendWindow[] }) {
-  const maxAbs = Math.max(0.5, ...windows.map((w) => Math.abs(w.change)));
+  // Fixed floor so a half-stroke drift draws as a slight tilt, not a cliff.
+  const maxAbs = Math.max(SCORING_SCALE_STROKES, ...windows.map((w) => Math.abs(w.change)));
   return (
     <ul data-slot="scoring-windows" className="grid grid-cols-1 gap-3 min-[520px]:grid-cols-3">
       {windows.map((w) => {
-        // Literal score axis: a line that falls means lower scores.
-        const rise = (w.change / maxAbs) * 12;
+        // Literal score axis: a line that falls means lower scores. A steady
+        // window draws flat whatever its residual slope.
+        const rise = w.sense === 'level' ? 0 : (w.change / maxAbs) * 12;
         return (
           <li key={w.key} className="flex items-center gap-3 min-[520px]:flex-col min-[520px]:items-start min-[520px]:gap-1.5">
             <svg width="64" height="32" viewBox="0 0 64 32" aria-hidden="true" className="shrink-0">
               <line x1="4" y1="16" x2="60" y2="16" stroke="var(--fw-color-border-subtle)" strokeWidth="1" strokeDasharray="2 3" />
-              <line x1="6" y1={16 - rise} x2="58" y2={16 + rise} stroke={SENSE_STROKE[w.sense]} strokeWidth="2.5" strokeLinecap="round" />
+              <line x1="6" y1={16 + rise} x2="58" y2={16 - rise} stroke={SENSE_STROKE[w.sense]} strokeWidth="2.5" strokeLinecap="round" />
               <circle cx="58" cy={16 + rise} r="3" fill={SENSE_STROKE[w.sense]} />
             </svg>
             <div className="min-w-0">

@@ -1384,7 +1384,7 @@ async function fetchSgTrendsByCategory(
     const { data: rounds, error } = await supabase
       .from('golf_rounds')
       .select(
-        'round_date, strokes_gained_putting, strokes_gained_approach, strokes_gained_tee, strokes_gained_around_green',
+        'round_date, holes_played, strokes_gained_putting, strokes_gained_approach, strokes_gained_tee, strokes_gained_around_green',
       )
       .eq('player_id', playerId)
       .eq('status', 'completed')
@@ -1400,6 +1400,7 @@ async function fetchSgTrendsByCategory(
       sgApproach: r.strokes_gained_approach,
       sgTee: r.strokes_gained_tee,
       sgAroundGreen: r.strokes_gained_around_green,
+      holes: r.holes_played,
     }));
 
     const trends = computeSgTrends(samples);

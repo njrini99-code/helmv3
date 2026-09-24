@@ -233,3 +233,21 @@ describe('computeSgTrends — robustness & determinism', () => {
     expect(trends.putting?.direction).toBe('improving');
   });
 });
+
+describe('computeSgTrends — nine-hole rounds are scaled to 18', () => {
+  test('a nine-hole round at the same per-18 level reads steady, not a jump', () => {
+    // Recent: three nine-hole rounds at -1.0 (= -2.0 per 18). Prior: three 18-hole rounds at -2.0.
+    const rounds: SgRoundSample[] = [
+      ...[-1, -1, -1].map((v) => sample({ sgPutting: v, holes: 9 })),
+      ...[-2, -2, -2].map((v) => sample({ sgPutting: v, holes: 18 })),
+    ];
+    const t = computeSgTrends(rounds).putting!;
+    expect(t.recentAvg).toBeCloseTo(-2);
+    expect(t.direction).toBe('steady');
+  });
+
+  test('missing holes is treated as a full round', () => {
+    const rounds = puttingSeries([1, 1, 1, 0, 0, 0]);
+    expect(computeSgTrends(rounds).putting!.recentAvg).toBeCloseTo(1);
+  });
+});

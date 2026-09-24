@@ -129,7 +129,7 @@ describe('buildScoringTrend', () => {
     expect(t?.word).toBe('Improving');
     expect(t?.sense).toBe('better');
     expect(t?.windows.map((w) => w.text)).toEqual(['1.6 strokes lower across 5 rounds', '1.1 strokes lower across 12 rounds']);
-    expect(t?.sentence).toBe('Last 5 rounds: 1.6 strokes lower across 5 rounds.');
+    expect(t?.sentence).toBe('Last 5 rounds: 1.6 strokes lower.');
   });
 
   it('names a turn when the recent window disagrees with the long one, and says both', () => {
@@ -138,7 +138,7 @@ describe('buildScoringTrend', () => {
     });
     expect(t?.word).toBe('Turning worse');
     expect(t?.headline).toBe('Your recent scores have turned up');
-    expect(t?.sentence).toContain('Over 25 rounds: 1.2 strokes lower across 25 rounds.');
+    expect(t?.sentence).toContain('Over 25 rounds: 1.2 strokes lower.');
   });
 
   it('shows a window once when few rounds collapse every window to the same size', () => {

@@ -215,8 +215,8 @@ export function buildScoringTrend(trendData: Record<string, unknown> | null | un
 
   const sentence =
     longest === recent || longest.sense === recent.sense
-      ? `Last ${recent.rounds} rounds: ${lowerFirst(recent.text)}.`
-      : `Last ${recent.rounds} rounds: ${lowerFirst(recent.text)}. Over ${longest.rounds} rounds: ${lowerFirst(longest.text)}.`;
+      ? `Last ${recent.rounds} rounds: ${lowerFirst(recent.short)}.`
+      : `Last ${recent.rounds} rounds: ${lowerFirst(recent.short)}. Over ${longest.rounds} rounds: ${lowerFirst(longest.short)}.`;
 
   return { word, sense: recent.sense, headline: HEADLINES[word] ?? 'Your scoring trend', sentence, windows };
 }
