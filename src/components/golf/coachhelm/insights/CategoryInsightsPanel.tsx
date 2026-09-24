@@ -400,7 +400,8 @@ function CauseCard({ cause, onMakePlan, makePlanPending = false }: CauseCardProp
 
           {showTourCeiling && tourGap != null ? (
             <p className="font-fw-sans text-caption text-text-tertiary">
-              <span className="tabular-nums">{tourGap.toFixed(1)}</span> from Tour
+              {/* NUM-30: the gap carries its unit. */}
+              <span className="tabular-nums">{tourGap.toFixed(1)}</span> strokes a round from Tour
             </p>
           ) : null}
 
