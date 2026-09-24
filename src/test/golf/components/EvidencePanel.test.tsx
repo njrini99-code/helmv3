@@ -155,7 +155,7 @@ describe('EvidencePanel', () => {
     expect(screen.getByTestId('evidence-impact').textContent).toContain('strokes');
 
     // Confidence
-    expect(screen.getByTestId('evidence-confidence').textContent).toContain('78%');
+    expect(screen.getByTestId('evidence-confidence').textContent).toContain('Solid read');
   });
 
   it('expanded mode renders all seven rows', () => {

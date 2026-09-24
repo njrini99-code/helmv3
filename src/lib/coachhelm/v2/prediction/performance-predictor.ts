@@ -18,6 +18,8 @@ import type {
 } from '../types';
 import { extractAllFeatures } from '../features';
 import { PatternMiner } from '../mining';
+import { isCountableRound } from '@/lib/golf/round-countable';
+import { withCanonicalRoundTotal } from '@/lib/golf/round-total';
 
 const WEIGHTS = {
   recentFormAdjustment: 0.6,
@@ -183,16 +185,31 @@ export class PerformancePredictor {
     this.features = await extractAllFeatures(this.playerId);
     if (!this.features) return null;
 
-    // Get baseline score (average over last 20 rounds)
-    const { data: rounds } = await supabase
+    // Baseline = last 20 COUNTABLE rounds (src/lib/golf/round-countable.ts).
+    // A partial or implausible round (e.g. 37 strokes "over 18") used to sit
+    // in this window and blow the interval out to a 25-stroke band. Over-fetch
+    // so the filter still leaves 20, and put 9-hole rounds on an 18-hole basis.
+    const { data: rawRounds } = await supabase
       .from('golf_rounds')
-      .select('score_to_par, round_date')
+      .select('score_to_par, round_date, holes_played, total_score, front_nine, back_nine, total_putts')
       .eq('player_id', this.playerId)
       .eq('status', 'completed')
       .order('round_date', { ascending: false })
-      .limit(20);
+      .limit(60);
 
-    if (!rounds || rounds.length < 5) return null;
+    const rounds = (rawRounds ?? [])
+      .map(withCanonicalRoundTotal)
+      .filter(isCountableRound)
+      .slice(0, 20)
+      .map((r) => {
+        const holes = r.holes_played ?? 18;
+        return {
+          round_date: r.round_date,
+          score_to_par: r.score_to_par != null && holes > 0 ? (r.score_to_par * 18) / holes : null,
+        };
+      });
+
+    if (rounds.length < 5) return null;
 
     // Staleness gate — refuse to predict off data older than STALENESS_DAYS
     const mostRecent = rounds[0]?.round_date;

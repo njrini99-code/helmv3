@@ -40,6 +40,7 @@ import {
   neutralizeForCoach,
   standingSubjectLabel,
   resolveDisplayScale,
+  unitHardBounds,
   layoutMarkerPositions,
   MARKER_MIN_GAP_PCT,
 } from '@/components/golf/coachhelm/v3/StandingBar';
@@ -71,7 +72,7 @@ export function StandingStrip(props: StandingStripProps) {
   const effectiveScale = resolveDisplayScale(
     props.scale,
     [props.player_value, showTeam ? props.team_avg : null, props.pga_omitted ? null : props.pga_value],
-    { symmetric: isSgMetric },
+    { symmetric: isSgMetric, hardBounds: unitHardBounds(props.unit) },
   );
   const youPct = toScalePct(props.player_value, effectiveScale);
   const teamPct = showTeam && props.team_avg !== null ? toScalePct(props.team_avg, effectiveScale) : null;

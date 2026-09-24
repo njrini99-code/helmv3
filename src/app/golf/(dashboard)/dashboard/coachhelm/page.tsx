@@ -247,6 +247,317 @@ export default async function PlayerCoachHelmPage() {
     );
   }
 
+  // ── Load shape (perf, 2026-09-23) ─────────────────────────────────────────
+  // Every read below depends only on `player.id`, but they used to run as ~11
+  // sequential stages (primary bundle → V3 trio → standing → focus areas →
+  // review links → evidence status → practice log → goals → genome →
+  // fingerprint → baseline). They now all start together and the page awaits
+  // them at the end, so the wall-clock cost is the slowest branch (about three
+  // dependent hops inside the development branch), not the sum of all of them.
+  //
+  // Each branch keeps the SAME failure contract it had when it ran serially:
+  // the primary bundle can still fail the page; standing still throws to the
+  // route error boundary; every other branch degrades on its own catch and can
+  // never blank the page.
+  const supabase = await createClient();
+  // A8 slice 3 (write side): `isFlagEnabled` is server-only (DevelopmentDrill/
+  // FocusAreaCard are client components), so the boolean is computed here
+  // and threaded down as a plain prop rather than each client component
+  // re-deriving it from the (also flag-gated, so ambiguous) criteria/
+  // practiceSummary data alone. A pure flag read, so it lives outside the
+  // best-effort try/catch below rather than degrading with it.
+  const practiceLogEnabled = isFlagEnabled('coachhelm_focus_area_practice_log');
+
+  // Standing snapshots (you vs team vs PGA). Not wrapped: a failure here has
+  // always surfaced to the route error boundary. The no-op catch only stops an
+  // unhandled-rejection warning when the page returns early (error states)
+  // before reaching the `await standingPromise` below, which still rethrows.
+  const standingPromise = loadPlayerStandingMap(player.id);
+  standingPromise.catch(() => {});
+
+  // Fetch additional V3 data (optional — new components). Expected empty-state
+  // codes (see src/lib/view-state/expected-empty-states.ts) are preserved so
+  // the client empty surfaces can render the registry's copy for the ACTUAL
+  // reason data is absent, instead of a generic "warming up" line.
+  const v3Promise = (async () => {
+    const v3EmptyCodes: { profile?: string | null; trend?: string | null; shots?: string | null } = {};
+    try {
+      const { getPlayerProfile, getPlayerTrendAnalysis, getPlayerShotContext } = await import('@/app/golf/actions/coachhelm-data');
+      const [profileResult, trendResult, shotResult] = await Promise.all([
+        getPlayerProfile(player.id),
+        getPlayerTrendAnalysis(player.id),
+        getPlayerShotContext(player.id),
+      ]);
+      v3EmptyCodes.profile = profileResult.success ? null : profileResult.code ?? null;
+      v3EmptyCodes.trend = trendResult.success ? null : trendResult.code ?? null;
+      v3EmptyCodes.shots = shotResult.success ? null : shotResult.code ?? null;
+      return {
+        profileData: profileResult.success ? profileResult.data : null,
+        trendData: trendResult.success ? trendResult.data : null,
+        shotData: shotResult.success ? shotResult.data : null,
+        v3EmptyCodes,
+      };
+    } catch {
+      /* V3 actions not yet available — degrade gracefully */
+      return { profileData: null, trendData: null, shotData: null, v3EmptyCodes };
+    }
+  })();
+
+  // ── `?view=development` reads — copied verbatim from my-development/page.tsx
+  // (the drill's own DrillPanel now hosts this content; the fetch shape is
+  // unchanged). Best-effort: a failure here degrades to an honest loadError
+  // flag inside the drill rather than failing the whole CoachHelm home. ──────
+  const developmentPromise = (async () => {
+    let developmentActiveAreas: FocusAreaCardData[] = [];
+    let developmentCompletedAreas: FocusAreaCardData[] = [];
+    let developmentProposedAreas: FocusAreaCardData[] = [];
+    let developmentPlayerStats: AreaAutoFillStats = {
+      rounds_played: 0,
+      avg_score: null,
+      avg_putts: null,
+      fairway_pct: null,
+      gir_pct: null,
+    };
+    let developmentLoadError = false;
+    let goals: FairwayGoalCardData[] = [];
+    let achievedGoals: FairwayGoalCardData[] = [];
+    let suggestions: GoalSuggestionView[] = [];
+    let causalRelationships: Awaited<ReturnType<typeof getPlayerCausalRelationships>> = [];
+    try {
+      // A8 slice 3: only extend the select (and only route it through the
+      // untyped escape hatch) when the flag is on — with it off, this must be
+      // byte-for-byte the same select as before slice 1/3, since the column
+      // doesn't exist in prod until the owner applies the migration.
+      const evidenceRevisionFlagOn = isFlagEnabled('coachhelm_focus_area_evidence_revision');
+      const focusAreaSelectColumns = `id, area_type, title, description, status, target_metric, current_value,
+         baseline_value, snapshots,
+         target_value, target_kind, target_date, target_rounds, started_at,
+         completed_at, created_at, from_review_id, from_insight_id,
+         review_context, progress_notes${evidenceRevisionFlagOn ? ', evidence_revision' : ''}`;
+
+      // Goals/suggestions/causal/stats-cache do not depend on focus areas, so
+      // they run alongside the focus-area chain instead of after it.
+      const goalsBundlePromise = Promise.all([
+        loadActiveGoals(player.id),
+        loadRecentlyAchievedGoals(player.id),
+        loadPendingGoalSuggestions(player.id, 5),
+        getPlayerCausalRelationships(player.id),
+        supabase
+          .from('golf_player_stats_cache')
+          .select(
+            'rounds_played, scoring_average, putts_per_round, driving_accuracy_percentage, gir_percentage, best_round, driving_distance_average, approach_proximity_average, scrambling_percentage, up_and_down_percentage, sand_save_percentage, one_putt_percentage, three_putt_percentage, par3_average, par4_average, par5_average',
+          )
+          .eq('player_id', player.id)
+          .maybeSingle(),
+      ]);
+      // Rejection is observed by the `await` below; this only prevents an
+      // unhandled-rejection warning if the focus-area chain throws first.
+      goalsBundlePromise.catch(() => {});
+
+      // fromUntyped is `client.from(table) as any` at runtime — identical to
+      // the typed call this replaced for every column already selected before
+      // slice 1/3; only the column LIST varies on the flag, never the client.
+      const focusResult = (await fromUntyped(supabase, 'golf_player_focus_areas')
+        .select(focusAreaSelectColumns)
+        .eq('player_id', player.id)
+        .order('created_at', { ascending: false })) as {
+        data: RawFocusAreaRow[] | null;
+        error: unknown;
+      };
+      const { data: focusAreas, error: focusAreasError } = focusResult;
+      developmentLoadError = Boolean(focusAreasError);
+
+      const reviewIds = Array.from(
+        new Set((focusAreas || []).map((fa) => fa.from_review_id).filter(Boolean)),
+      ) as string[];
+
+      // The three focus-area enrichments each need only the focus-area rows,
+      // not each other — run them together.
+      const [roundIdByReviewId, evidenceRevisionStatusByFocusAreaId, practiceLog] = await Promise.all([
+        (async () => {
+          const map: Record<string, string> = {};
+          if (reviewIds.length === 0) return map;
+          const { data: reviewRows, error: reviewRowsError } = await supabase
+            .from('golf_round_reviews')
+            .select('id, round_id')
+            .in('id', reviewIds);
+
+          if (reviewRowsError) {
+            // These back-links are how a player jumps from a focus area to the
+            // round that produced it. A failed read drops every link silently, so
+            // the focus area looks like it came from nowhere.
+            void logServerError(
+              `[player coachhelm] review back-link read failed for player ${player.id}; focus areas will lose their round links: ${describeError(reviewRowsError)}`,
+              { action: 'playerCoachHelm.loadDevelopment', featureArea: 'coachhelm' },
+              'warning',
+            );
+          }
+          for (const row of reviewRows || []) {
+            if (row.round_id) map[row.id] = row.round_id;
+          }
+          return map;
+        })(),
+        computeEvidenceRevisionStatuses(supabase, focusAreas || []),
+        // A8 slice 2 (read side): zero .from() calls against either new table
+        // while coachhelm_focus_area_practice_log is off — the loader checks
+        // the flag first and returns empty maps immediately in that case.
+        loadFocusAreaPracticeLogData(
+          supabase,
+          (focusAreas || []).map((fa) => fa.id),
+        ),
+      ]);
+      const { criteriaByFocusArea, practiceSummaryByFocusArea } = practiceLog;
+
+      // `null` means the live-insight read failed — render no badge, same as
+      // an id simply missing from a successful map, but NEVER by silently
+      // defaulting the whole result to `{}` first (that's the exact collapse
+      // that hid a failed read behind "nothing changed").
+      const evidenceRevisionStatusFor = (id: string): EvidenceRevisionComparison | undefined =>
+        evidenceRevisionStatusByFocusAreaId ? evidenceRevisionStatusByFocusAreaId[id] : undefined;
+
+      const focusAreasWithHistory = (focusAreas || []).map((fa) => ({
+        ...fa,
+        progressHistory: progressHistoryOf(fa.progress_notes),
+        from_review_round_id: fa.from_review_id ? roundIdByReviewId[fa.from_review_id] ?? null : null,
+        evidence_revision_status: evidenceRevisionStatusFor(fa.id),
+        // `null` from the loader means that table's read failed (unknown),
+        // not "no criteria"/"never practiced" -- see practice-log-loader.ts's
+        // FocusAreaPracticeLogData doc comment. Branching here keeps that
+        // distinction from collapsing into a false "none" one call up.
+        criteria: criteriaByFocusArea ? (criteriaByFocusArea.get(fa.id) ?? null) : null,
+        practiceSummary: practiceSummaryByFocusArea ? (practiceSummaryByFocusArea.get(fa.id) ?? null) : null,
+      }));
+
+      developmentActiveAreas = focusAreasWithHistory.filter(
+        (fa) => fa.status === 'active' || fa.status === 'in_progress' || fa.status === 'paused',
+      ) as unknown as FocusAreaCardData[];
+      developmentCompletedAreas = focusAreasWithHistory.filter((fa) => fa.status === 'completed') as unknown as FocusAreaCardData[];
+      developmentProposedAreas = focusAreasWithHistory.filter((fa) => fa.status === 'proposed') as unknown as FocusAreaCardData[];
+
+      const [[activeGoals, achievedGoalsRes, suggestionsRes, causalRes, statsRow], standingMap] = await Promise.all([
+        goalsBundlePromise,
+        standingPromise,
+      ]);
+      if (statsRow.error) {
+        // The player's own standing numbers. Absent renders as "not enough data
+        // yet", which is a statement about how much they have played rather than
+        // about a query that failed.
+        void logServerError(
+          `[player coachhelm] stats cache read failed for player ${player.id}; standing will render as insufficient data: ${describeError(statsRow.error)}`,
+          { action: 'playerCoachHelm.loadStanding', featureArea: 'coachhelm' },
+          'warning',
+        );
+      }
+
+      const sr = statsRow.data;
+      developmentPlayerStats = {
+        rounds_played: sr?.rounds_played ?? 0,
+        avg_score: sr?.scoring_average ?? null,
+        avg_putts: sr?.putts_per_round ?? null,
+        fairway_pct: sr?.driving_accuracy_percentage ?? null,
+        gir_pct: sr?.gir_percentage ?? null,
+        best_score: sr?.best_round ?? null,
+        driving_distance: sr?.driving_distance_average ?? null,
+        proximity_to_hole: sr?.approach_proximity_average ?? null,
+        scrambling_pct: sr?.scrambling_percentage ?? null,
+        up_and_down_pct: sr?.up_and_down_percentage ?? null,
+        sand_save_pct: sr?.sand_save_percentage ?? null,
+        one_putt_pct: sr?.one_putt_percentage ?? null,
+        three_putt_pct: sr?.three_putt_percentage ?? null,
+        par3_avg: sr?.par3_average ?? null,
+        par4_avg: sr?.par4_average ?? null,
+        par5_avg: sr?.par5_average ?? null,
+      };
+      goals = activeGoals.map((g) => ({ goal: g, standing: standingMap.get(g.metric_id) ?? null }));
+      achievedGoals = achievedGoalsRes.map((g) => ({ goal: g, standing: standingMap.get(g.metric_id) ?? null }));
+      suggestions = suggestionsRes.map((s) => {
+        const cfg = getMetricRenderConfig(s.metric_id);
+        return { suggestion: s, display_label: cfg?.display_label ?? s.metric_id, unit: cfg?.unit ?? 'count' };
+      });
+      causalRelationships = causalRes;
+    } catch {
+      developmentLoadError = true;
+    }
+    return {
+      developmentActiveAreas,
+      developmentCompletedAreas,
+      developmentProposedAreas,
+      developmentPlayerStats,
+      developmentLoadError,
+      goals,
+      achievedGoals,
+      suggestions,
+      causalRelationships,
+    };
+  })();
+
+  // ── `?view=profile` reads — copied verbatim from my-game-profile/page.tsx. ──
+  const genomePromise = (async () => {
+    try {
+      const genome = await loadGenome(supabase, player.id);
+      const persona = genome ? derivePersona(genome.vector) : null;
+      const cells = genome
+        ? GENOME_DIMENSIONS.map((dim) => {
+            const r = genome.vector[dim.id];
+            const norm = r ? normalizeForRadar(dim.id, r) : null;
+            return {
+              id: dim.id,
+              label: dim.label,
+              score: norm == null ? null : Math.round(norm * 100),
+              qualitative: r?.label ?? null,
+            };
+          })
+        : [];
+      return {
+        genomeDimensions: cells,
+        genomeAxes: cells
+          .filter((c): c is typeof c & { score: number } => c.score != null)
+          .map((c) => ({ label: c.label, value: c.score })),
+        genomeStrengths: (persona?.strengths ?? []).map((s) => ({ id: s.dim_id, label: s.label, qualitative: s.qualitative })),
+        genomeWatchouts: (persona?.watchouts ?? []).map((w) => ({ id: w.dim_id, label: w.label, qualitative: w.qualitative })),
+        genomeCourseProfile: persona?.course_profile ?? null,
+        genomeRoundsBasis: genome?.rounds_basis ?? null,
+      };
+    } catch {
+      /* genome not yet available — the profile drill degrades honestly */
+      return {
+        genomeDimensions: [] as { id: string; label: string; score: number | null; qualitative: string | null }[],
+        genomeAxes: [] as { label: string; value: number }[],
+        genomeStrengths: [] as { id: string; label: string; qualitative: string | null }[],
+        genomeWatchouts: [] as { id: string; label: string; qualitative: string | null }[],
+        genomeCourseProfile: null as string | null,
+        genomeRoundsBasis: null as number | null,
+      };
+    }
+  })();
+
+  // ── Player-self Game Fingerprint — same composition/data the coach's
+  // `/dashboard/players/[playerId]/game` page renders, via the player-self
+  // auth branch on `getPlayerFingerprint` (`verifyPlayerAccess` returns
+  // `reason: 'self'` when the authenticated user IS the requested player —
+  // see player-fingerprint.ts). Feeds `ProfileDrill`'s "Game Fingerprint"
+  // tab. Best-effort: any failure degrades to null and `ProfileDrill` falls
+  // back to its prior Genome-only content — never blocks the page.
+  const fingerprintPromise: Promise<PlayerFingerprint | null> = (async () => {
+    try {
+      return await getPlayerFingerprint(player.id, supabase);
+    } catch {
+      /* fingerprint not available — ProfileDrill degrades to Genome-only */
+      return null;
+    }
+  })();
+
+  // ── `?view=standing` read — the F028 counterfactual baseline (the standing
+  // map itself is already fetched above). Copied from my-standing/page.tsx. ──
+  const baselinePromise: Promise<number | null> = (async () => {
+    try {
+      return await loadPlayerScoringBaseline(player.id);
+    } catch {
+      /* counterfactual line degrades honestly (suppressed) */
+      return null;
+    }
+  })();
+
   // Fetch CoachHelm dashboard data, shot analytics, and the new evidence-backed
   // insight feed (top + secondary) in parallel. The insight-delivery fetchers
   // are the canonical source for the hero-card layout; `getPlayerCoachHelmDashboard`
@@ -285,29 +596,6 @@ export default async function PlayerCoachHelmPage() {
     dashboardResult = await getPlayerCoachHelmDashboard(player.id);
   }
 
-  // Fetch additional V3 data (optional — new components). Expected empty-state
-  // codes (see src/lib/view-state/expected-empty-states.ts) are preserved so
-  // the client empty surfaces can render the registry's copy for the ACTUAL
-  // reason data is absent, instead of a generic "warming up" line.
-  let profileData = null;
-  let trendData = null;
-  let shotData = null;
-  const v3EmptyCodes: { profile?: string | null; trend?: string | null; shots?: string | null } = {};
-  try {
-    const { getPlayerProfile, getPlayerTrendAnalysis, getPlayerShotContext } = await import('@/app/golf/actions/coachhelm-data');
-    const [profileResult, trendResult, shotResult] = await Promise.all([
-      getPlayerProfile(player.id),
-      getPlayerTrendAnalysis(player.id),
-      getPlayerShotContext(player.id),
-    ]);
-    profileData = profileResult.success ? profileResult.data : null;
-    trendData = trendResult.success ? trendResult.data : null;
-    shotData = shotResult.success ? shotResult.data : null;
-    v3EmptyCodes.profile = profileResult.success ? null : profileResult.code ?? null;
-    v3EmptyCodes.trend = trendResult.success ? null : trendResult.code ?? null;
-    v3EmptyCodes.shots = shotResult.success ? null : shotResult.code ?? null;
-  } catch { /* V3 actions not yet available — degrade gracefully */ }
-
   // Handle CoachHelm disabled or other errors
   if (!dashboardResult.success) {
     const error = dashboardResult.error || 'Failed to load AI dashboard';
@@ -330,232 +618,43 @@ export default async function PlayerCoachHelmPage() {
     return <ErrorState error="No dashboard data available" />;
   }
 
-  // Standing snapshots (you vs team vs PGA). Convert the Map to a plain Record
-  // so it serializes across the server→client boundary.
-  const standingMap = await loadPlayerStandingMap(player.id);
+  const [
+    standingMap,
+    { profileData, trendData, shotData, v3EmptyCodes },
+    {
+      developmentActiveAreas,
+      developmentCompletedAreas,
+      developmentProposedAreas,
+      developmentPlayerStats,
+      developmentLoadError,
+      goals,
+      achievedGoals,
+      suggestions,
+      causalRelationships,
+    },
+    {
+      genomeAxes,
+      genomeDimensions,
+      genomeStrengths,
+      genomeWatchouts,
+      genomeCourseProfile,
+      genomeRoundsBasis,
+    },
+    fingerprint,
+    playerBaseline,
+  ] = await Promise.all([
+    standingPromise,
+    v3Promise,
+    developmentPromise,
+    genomePromise,
+    fingerprintPromise,
+    baselinePromise,
+  ]);
+  // Convert the Map to a plain Record so it serializes across the
+  // server→client boundary.
   const standingByMetric = Object.fromEntries(standingMap) as Record<string, PlayerStanding>;
   // Hierarchical theme scaffold — degrades to `[]` on a failed/absent fetch.
   const themes = themesRes?.data?.themes ?? [];
-
-  // ── `?view=development` reads — copied verbatim from my-development/page.tsx
-  // (the drill's own DrillPanel now hosts this content; the fetch shape is
-  // unchanged). Best-effort: a failure here degrades to an honest loadError
-  // flag inside the drill rather than failing the whole CoachHelm home. ──────
-  const supabase = await createClient();
-  // A8 slice 3 (write side): `isFlagEnabled` is server-only (DevelopmentDrill/
-  // FocusAreaCard are client components), so the boolean is computed here
-  // and threaded down as a plain prop rather than each client component
-  // re-deriving it from the (also flag-gated, so ambiguous) criteria/
-  // practiceSummary data alone. A pure flag read, so it lives outside the
-  // best-effort try/catch below rather than degrading with it.
-  const practiceLogEnabled = isFlagEnabled('coachhelm_focus_area_practice_log');
-  let developmentActiveAreas: FocusAreaCardData[] = [];
-  let developmentCompletedAreas: FocusAreaCardData[] = [];
-  let developmentProposedAreas: FocusAreaCardData[] = [];
-  let developmentPlayerStats: AreaAutoFillStats = {
-    rounds_played: 0,
-    avg_score: null,
-    avg_putts: null,
-    fairway_pct: null,
-    gir_pct: null,
-  };
-  let developmentLoadError = false;
-  let goals: FairwayGoalCardData[] = [];
-  let achievedGoals: FairwayGoalCardData[] = [];
-  let suggestions: GoalSuggestionView[] = [];
-  let causalRelationships: Awaited<ReturnType<typeof getPlayerCausalRelationships>> = [];
-  try {
-    // A8 slice 3: only extend the select (and only route it through the
-    // untyped escape hatch) when the flag is on — with it off, this must be
-    // byte-for-byte the same select as before slice 1/3, since the column
-    // doesn't exist in prod until the owner applies the migration.
-    const evidenceRevisionFlagOn = isFlagEnabled('coachhelm_focus_area_evidence_revision');
-    const focusAreaSelectColumns = `id, area_type, title, description, status, target_metric, current_value,
-         baseline_value, snapshots,
-         target_value, target_kind, target_date, target_rounds, started_at,
-         completed_at, created_at, from_review_id, from_insight_id,
-         review_context, progress_notes${evidenceRevisionFlagOn ? ', evidence_revision' : ''}`;
-
-    // fromUntyped is `client.from(table) as any` at runtime — identical to
-    // the typed call this replaced for every column already selected before
-    // slice 1/3; only the column LIST varies on the flag, never the client.
-    const focusResult = (await fromUntyped(supabase, 'golf_player_focus_areas')
-      .select(focusAreaSelectColumns)
-      .eq('player_id', player.id)
-      .order('created_at', { ascending: false })) as {
-      data: RawFocusAreaRow[] | null;
-      error: unknown;
-    };
-    const { data: focusAreas, error: focusAreasError } = focusResult;
-    developmentLoadError = Boolean(focusAreasError);
-
-    const reviewIds = Array.from(
-      new Set((focusAreas || []).map((fa) => fa.from_review_id).filter(Boolean)),
-    ) as string[];
-    const roundIdByReviewId: Record<string, string> = {};
-    if (reviewIds.length > 0) {
-      const { data: reviewRows, error: reviewRowsError } = await supabase
-        .from('golf_round_reviews')
-        .select('id, round_id')
-        .in('id', reviewIds);
-
-      if (reviewRowsError) {
-        // These back-links are how a player jumps from a focus area to the
-        // round that produced it. A failed read drops every link silently, so
-        // the focus area looks like it came from nowhere.
-        void logServerError(
-          `[player coachhelm] review back-link read failed for player ${player.id}; focus areas will lose their round links: ${describeError(reviewRowsError)}`,
-          { action: 'playerCoachHelm.loadDevelopment', featureArea: 'coachhelm' },
-          'warning',
-        );
-      }
-      for (const row of reviewRows || []) {
-        if (row.round_id) roundIdByReviewId[row.id] = row.round_id;
-      }
-    }
-
-    const evidenceRevisionStatusByFocusAreaId = await computeEvidenceRevisionStatuses(
-      supabase,
-      focusAreas || [],
-    );
-    // `null` means the live-insight read failed — render no badge, same as
-    // an id simply missing from a successful map, but NEVER by silently
-    // defaulting the whole result to `{}` first (that's the exact collapse
-    // that hid a failed read behind "nothing changed").
-    const evidenceRevisionStatusFor = (id: string): EvidenceRevisionComparison | undefined =>
-      evidenceRevisionStatusByFocusAreaId ? evidenceRevisionStatusByFocusAreaId[id] : undefined;
-
-    // A8 slice 2 (read side): zero .from() calls against either new table
-    // while coachhelm_focus_area_practice_log is off — the loader checks
-    // the flag first and returns empty maps immediately in that case.
-    const { criteriaByFocusArea, practiceSummaryByFocusArea } = await loadFocusAreaPracticeLogData(
-      supabase,
-      (focusAreas || []).map((fa) => fa.id),
-    );
-
-    const focusAreasWithHistory = (focusAreas || []).map((fa) => ({
-      ...fa,
-      progressHistory: progressHistoryOf(fa.progress_notes),
-      from_review_round_id: fa.from_review_id ? roundIdByReviewId[fa.from_review_id] ?? null : null,
-      evidence_revision_status: evidenceRevisionStatusFor(fa.id),
-      // `null` from the loader means that table's read failed (unknown),
-      // not "no criteria"/"never practiced" -- see practice-log-loader.ts's
-      // FocusAreaPracticeLogData doc comment. Branching here keeps that
-      // distinction from collapsing into a false "none" one call up.
-      criteria: criteriaByFocusArea ? (criteriaByFocusArea.get(fa.id) ?? null) : null,
-      practiceSummary: practiceSummaryByFocusArea ? (practiceSummaryByFocusArea.get(fa.id) ?? null) : null,
-    }));
-
-    developmentActiveAreas = focusAreasWithHistory.filter(
-      (fa) => fa.status === 'active' || fa.status === 'in_progress' || fa.status === 'paused',
-    ) as unknown as FocusAreaCardData[];
-    developmentCompletedAreas = focusAreasWithHistory.filter((fa) => fa.status === 'completed') as unknown as FocusAreaCardData[];
-    developmentProposedAreas = focusAreasWithHistory.filter((fa) => fa.status === 'proposed') as unknown as FocusAreaCardData[];
-
-    const [activeGoals, achievedGoalsRes, suggestionsRes, causalRes, statsRow] = await Promise.all([
-      loadActiveGoals(player.id),
-      loadRecentlyAchievedGoals(player.id),
-      loadPendingGoalSuggestions(player.id, 5),
-      getPlayerCausalRelationships(player.id),
-      supabase
-        .from('golf_player_stats_cache')
-        .select(
-          'rounds_played, scoring_average, putts_per_round, driving_accuracy_percentage, gir_percentage, best_round, driving_distance_average, approach_proximity_average, scrambling_percentage, up_and_down_percentage, sand_save_percentage, one_putt_percentage, three_putt_percentage, par3_average, par4_average, par5_average',
-        )
-        .eq('player_id', player.id)
-        .maybeSingle(),
-    ]);
-    if (statsRow.error) {
-      // The player's own standing numbers. Absent renders as "not enough data
-      // yet", which is a statement about how much they have played rather than
-      // about a query that failed.
-      void logServerError(
-        `[player coachhelm] stats cache read failed for player ${player.id}; standing will render as insufficient data: ${describeError(statsRow.error)}`,
-        { action: 'playerCoachHelm.loadStanding', featureArea: 'coachhelm' },
-        'warning',
-      );
-    }
-
-    const sr = statsRow.data;
-    developmentPlayerStats = {
-      rounds_played: sr?.rounds_played ?? 0,
-      avg_score: sr?.scoring_average ?? null,
-      avg_putts: sr?.putts_per_round ?? null,
-      fairway_pct: sr?.driving_accuracy_percentage ?? null,
-      gir_pct: sr?.gir_percentage ?? null,
-      best_score: sr?.best_round ?? null,
-      driving_distance: sr?.driving_distance_average ?? null,
-      proximity_to_hole: sr?.approach_proximity_average ?? null,
-      scrambling_pct: sr?.scrambling_percentage ?? null,
-      up_and_down_pct: sr?.up_and_down_percentage ?? null,
-      sand_save_pct: sr?.sand_save_percentage ?? null,
-      one_putt_pct: sr?.one_putt_percentage ?? null,
-      three_putt_pct: sr?.three_putt_percentage ?? null,
-      par3_avg: sr?.par3_average ?? null,
-      par4_avg: sr?.par4_average ?? null,
-      par5_avg: sr?.par5_average ?? null,
-    };
-    goals = activeGoals.map((g) => ({ goal: g, standing: standingMap.get(g.metric_id) ?? null }));
-    achievedGoals = achievedGoalsRes.map((g) => ({ goal: g, standing: standingMap.get(g.metric_id) ?? null }));
-    suggestions = suggestionsRes.map((s) => {
-      const cfg = getMetricRenderConfig(s.metric_id);
-      return { suggestion: s, display_label: cfg?.display_label ?? s.metric_id, unit: cfg?.unit ?? 'count' };
-    });
-    causalRelationships = causalRes;
-  } catch {
-    developmentLoadError = true;
-  }
-
-  // ── `?view=profile` reads — copied verbatim from my-game-profile/page.tsx. ──
-  let genomeAxes: { label: string; value: number }[] = [];
-  let genomeDimensions: { id: string; label: string; score: number | null; qualitative: string | null }[] = [];
-  let genomeStrengths: { id: string; label: string; qualitative: string | null }[] = [];
-  let genomeWatchouts: { id: string; label: string; qualitative: string | null }[] = [];
-  let genomeCourseProfile: string | null = null;
-  let genomeRoundsBasis: number | null = null;
-  try {
-    const genome = await loadGenome(supabase, player.id);
-    const persona = genome ? derivePersona(genome.vector) : null;
-    const cells = genome
-      ? GENOME_DIMENSIONS.map((dim) => {
-          const r = genome.vector[dim.id];
-          const norm = r ? normalizeForRadar(dim.id, r) : null;
-          return {
-            id: dim.id,
-            label: dim.label,
-            score: norm == null ? null : Math.round(norm * 100),
-            qualitative: r?.label ?? null,
-          };
-        })
-      : [];
-    genomeDimensions = cells;
-    genomeAxes = cells
-      .filter((c): c is typeof c & { score: number } => c.score != null)
-      .map((c) => ({ label: c.label, value: c.score }));
-    genomeStrengths = (persona?.strengths ?? []).map((s) => ({ id: s.dim_id, label: s.label, qualitative: s.qualitative }));
-    genomeWatchouts = (persona?.watchouts ?? []).map((w) => ({ id: w.dim_id, label: w.label, qualitative: w.qualitative }));
-    genomeCourseProfile = persona?.course_profile ?? null;
-    genomeRoundsBasis = genome?.rounds_basis ?? null;
-  } catch { /* genome not yet available — the profile drill degrades honestly */ }
-
-  // ── Player-self Game Fingerprint — same composition/data the coach's
-  // `/dashboard/players/[playerId]/game` page renders, via the player-self
-  // auth branch on `getPlayerFingerprint` (`verifyPlayerAccess` returns
-  // `reason: 'self'` when the authenticated user IS the requested player —
-  // see player-fingerprint.ts). Feeds `ProfileDrill`'s "Game Fingerprint"
-  // tab. Best-effort: any failure degrades to null and `ProfileDrill` falls
-  // back to its prior Genome-only content — never blocks the page.
-  let fingerprint: PlayerFingerprint | null = null;
-  try {
-    fingerprint = await getPlayerFingerprint(player.id, supabase);
-  } catch { /* fingerprint not available — ProfileDrill degrades to Genome-only */ }
-
-  // ── `?view=standing` read — the F028 counterfactual baseline (the standing
-  // map itself is already fetched above). Copied from my-standing/page.tsx. ──
-  let playerBaseline: number | null = null;
-  try {
-    playerBaseline = await loadPlayerScoringBaseline(player.id);
-  } catch { /* counterfactual line degrades honestly (suppressed) */ }
 
   return (
     <div className={fairwayScope('min-h-full bg-canvas bg-canvas-gradient font-fw-sans text-text-primary')}>

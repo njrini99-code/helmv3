@@ -301,6 +301,7 @@ export function PlayerCoachHelmHome({
           low: data.prediction?.predictedRangeLow,
           high: data.prediction?.predictedRangeHigh,
         },
+        data.prediction?.metric,
       ),
     [data.prediction, priorities],
   );

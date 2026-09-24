@@ -31,6 +31,7 @@
  *   the average isn't dragged. `distance_to_hole_before` is uniformly yards.
  * ========================================================================== */
 
+import { isCountableRound, type CountableRoundInput } from '@/lib/golf/round-countable';
 import { createClient } from '@/lib/supabase/server';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import { getGolfSessionProfile } from '@/lib/auth/session';
@@ -256,7 +257,7 @@ async function completedRoundIds(
   const { data, error } = await fetchAllRowsResult((from, to) =>
     supabase
       .from('golf_rounds')
-      .select('id')
+      .select('id, holes_played, total_score, front_nine, back_nine, total_putts')
       .in('player_id', playerIds)
       .eq('status', 'completed')
       .order('id', { ascending: true })
@@ -269,8 +270,13 @@ async function completedRoundIds(
   if (error) {
     throw new Error(`completed-round id read failed: ${error.message}`);
   }
-  return (data ?? [])
-    .map((r) => (r as { id: string }).id)
+  // Countable rounds only (src/lib/golf/round-countable.ts): a partial,
+  // hole-less or implausible round must not feed the leak maps or the
+  // "rounds included" count shown above them.
+  type Row = CountableRoundInput & { id: string };
+  return ((data ?? []) as Row[])
+    .filter(isCountableRound)
+    .map((r) => r.id)
     .filter((id): id is string => typeof id === 'string');
 }
 

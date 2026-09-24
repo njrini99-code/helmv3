@@ -35,6 +35,7 @@ import {
 import { Surface, Inset } from '@/components/fairway/surfaces/surface';
 import { Button } from '@/components/fairway/controls/button';
 import { GenomeRadar, type GenomeAxis } from '@/components/fairway/charts/GenomeRadar';
+import { formatSigned } from '@/components/fairway/charts/theme';
 import { cn } from '@/lib/utils';
 import type {
   TodayEvent,
@@ -239,15 +240,17 @@ export function GenomeFingerprintTeaser({
   const axes: GenomeAxis[] = useMemo(() => {
     const toPct = (sg: number | null) =>
       sg == null ? null : Math.max(0, Math.min(100, 50 + (sg / 3) * 50));
-    const raw: Array<{ label: string; v: number | null }> = [
-      { label: 'Off the Tee', v: toPct(strokesGained.sg_off_tee) },
-      { label: 'Approach', v: toPct(strokesGained.sg_approach) },
-      { label: 'Around Green', v: toPct(strokesGained.sg_around_green) },
-      { label: 'Putting', v: toPct(strokesGained.sg_putting) },
+    // The table view and tooltip show the REAL strokes gained per round
+    // ("+1.98"), never the 0–100 plot position, which was being read as SG.
+    const raw: Array<{ label: string; sg: number | null }> = [
+      { label: 'Off the Tee', sg: strokesGained.sg_off_tee },
+      { label: 'Approach', sg: strokesGained.sg_approach },
+      { label: 'Around Green', sg: strokesGained.sg_around_green },
+      { label: 'Putting', sg: strokesGained.sg_putting },
     ];
     return raw
-      .filter((r): r is { label: string; v: number } => r.v != null)
-      .map((r) => ({ label: r.label, value: r.v }));
+      .filter((r): r is { label: string; sg: number } => r.sg != null && Number.isFinite(r.sg))
+      .map((r) => ({ label: r.label, value: toPct(r.sg) ?? 50, displayValue: formatSigned(r.sg, 2) }));
   }, [strokesGained]);
 
   // Only render a real shape when ≥3 of the four scoring zones carry SG data;
@@ -285,6 +288,7 @@ export function GenomeFingerprintTeaser({
           title={null as unknown as React.ReactNode}
           data={axes}
           seriesName="Strokes gained"
+          valueLabel="Strokes gained / round"
           height={220}
           takeaway={
             hasShape

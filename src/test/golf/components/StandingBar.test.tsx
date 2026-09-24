@@ -103,11 +103,13 @@ describe('teamCohortText', () => {
   it('says "Top quartile" for 75-89', () => {
     expect(teamCohortText(80)).toBe('Top quartile on your team');
   });
-  it('says "Above team average" for 50-74', () => {
-    expect(teamCohortText(60)).toBe('Above team average');
+  it('says "Upper half" for 50-74', () => {
+    // REQUIREMENT CHANGED ON PURPOSE: team_pct is a rank, so the caption no
+    // longer claims a comparison with the team average.
+    expect(teamCohortText(60)).toBe('Upper half of your team');
   });
-  it('says "Below team average" for 25-49', () => {
-    expect(teamCohortText(40)).toBe('Below team average');
+  it('says "Lower half" for 25-49', () => {
+    expect(teamCohortText(40)).toBe('Lower half of your team');
   });
   it('says "Bottom X%" for low percentiles', () => {
     expect(teamCohortText(18)).toBe('Bottom 18% on your team');
@@ -130,8 +132,8 @@ describe('teamCohortText', () => {
     expect(teamCohortText(1, 7)).toBe('Bottom of your team');
     // Mid buckets are still fine on a small roster.
     expect(teamCohortText(80, 7)).toBe('Top quartile on your team');
-    expect(teamCohortText(60, 7)).toBe('Above team average');
-    expect(teamCohortText(40, 7)).toBe('Below team average');
+    expect(teamCohortText(60, 7)).toBe('Upper half of your team');
+    expect(teamCohortText(40, 7)).toBe('Lower half of your team');
   });
 
   it('keeps percentage language on a large roster (team_n >= 20)', () => {

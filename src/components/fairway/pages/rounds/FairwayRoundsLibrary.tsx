@@ -58,6 +58,7 @@ import { EmptyState } from '@/components/fairway/feedback/EmptyState';
 import { FairwayRoundRow } from './FairwayRoundRow';
 import { FairwayUnfinishedBanner } from './FairwayUnfinishedBanner';
 import { parseDateOnly, dateOnlyToUtcDate, type DateOnlyParts } from '@/lib/golf/date-only';
+import { isPlausibleToPar } from '@/lib/golf/round-countable';
 
 // ── Types ────────────────────────────────────────────────────────────────--
 
@@ -218,7 +219,11 @@ function honestRange(rounds: RoundLibraryRound[]): string | null {
 /** Compute a month group's honest summary: scored count, 18-equiv avg/best,
  *  and the oldest→newest spark series. */
 function monthSummary(rounds: RoundLibraryRound[]) {
-  const scored = rounds.filter((r) => r.total_score !== null && r.total_score > 0);
+  // An implausible round (37 strokes "over 18") stays in the list but never
+  // sets the month's avg/best (src/lib/golf/round-countable.ts).
+  const scored = rounds.filter(
+    (r) => r.total_score !== null && r.total_score > 0 && isPlausibleToPar(r.score_to_par, r.holes_played),
+  );
   const spark = scored
     .slice()
     .reverse()
@@ -646,12 +651,16 @@ export function FairwayRoundsLibrary({
           ) : (
             <div className="flex flex-col gap-5">
               {grouped.map((group, gi) => {
-                // Best (lowest score-to-par) of the month → accent rail + badge.
+                // Best (lowest score-to-par, 18-hole basis) of the MONTH → accent
+                // rail + a "Best of month" badge. Implausible rounds never win it.
                 let bestId: string | null = null;
                 let bestScore = Infinity;
                 for (const r of group.rounds) {
-                  if (r.score_to_par !== null && r.score_to_par < bestScore) {
-                    bestScore = r.score_to_par;
+                  if (r.score_to_par === null || !isPlausibleToPar(r.score_to_par, r.holes_played)) continue;
+                  const holes = r.holes_played ?? 18;
+                  const toPar18 = holes > 0 ? (r.score_to_par * 18) / holes : r.score_to_par;
+                  if (toPar18 < bestScore) {
+                    bestScore = toPar18;
                     bestId = r.id;
                   }
                 }

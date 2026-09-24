@@ -8,6 +8,7 @@ import { fairwayScope } from '@/lib/redesign/flag';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import { logServerException } from '@/lib/server-error-logger';
 import { withCanonicalRoundTotal } from '@/lib/golf/round-total';
+import { isCountableRound } from '@/lib/golf/round-countable';
 import {
   FairwayRoundsLibrary,
   type RoundLibraryRound as FairwayRoundLibraryRound,
@@ -249,11 +250,31 @@ export default async function RoundsPage() {
   }
 
   // Calculate round statistics summary — normalize 9-hole rounds to 18-hole equivalents
+  // Countable rounds only (src/lib/golf/round-countable.ts): the list still
+  // shows every round, but a partial, hole-less or implausible round (a
+  // 37-stroke "18-hole" round) never sets Best or moves the averages.
   const roundStats = (() => {
     if (rounds.length === 0) return null;
-    type RoundWithHoles = typeof rounds[number] & { holes_played?: number | null };
-    const scoredRounds = (rounds as RoundWithHoles[]).filter(r => r.total_score !== null && r.total_score > 0);
-    const toParScores = rounds.map(r => r.score_to_par).filter((s): s is number => s !== null);
+    type RoundWithHoles = typeof rounds[number] & {
+      holes_played?: number | null;
+      front_nine?: number | null;
+      back_nine?: number | null;
+      total_putts?: number | null;
+    };
+    const countable = (rounds as RoundWithHoles[]).filter((r) =>
+      isCountableRound({
+        holes_played: r.holes_played ?? null,
+        total_score: r.total_score ?? null,
+        front_nine: r.front_nine ?? null,
+        back_nine: r.back_nine ?? null,
+        total_putts: r.total_putts ?? null,
+      }),
+    );
+    const scoredRounds = countable.filter(r => r.total_score !== null && r.total_score > 0);
+    // 18-hole basis, like avg/best on this same object: a 9-hole +3 is +6/18.
+    const toParScores = countable
+      .filter((r) => r.score_to_par !== null && (r.holes_played ?? 18) > 0)
+      .map((r) => (r.score_to_par! * 18) / (r.holes_played ?? 18));
     if (scoredRounds.length === 0) return null;
 
     // Normalize scoring to 18-hole equivalent

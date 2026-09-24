@@ -1,15 +1,24 @@
 /**
- * Display fonts — kept separate from the root layout so downstream surfaces
- * can import the CSS variable hook without re-triggering the root layout's
- * compilation.
+ * BaseballHelm web fonts.
  *
- * Fraunces is loaded with a single weight (600) and single subset (latin) to
- * keep the shipped font file under 35KB. It's used ONLY on hero-card titles
- * and the large strokes-impact numerals — body + nav type stays on DM Sans
- * (our existing sans). Rule 9 of the Insight Delivery design contract.
+ * GolfHelm / Fairway loads NO web fonts: display, body and numerals all ride
+ * the Apple SF system stack (src/styles/design-tokens.css `--fw-font-*`).
+ * Fragment Mono was retired 2026-09-23 (owner decision: numbers use SF with
+ * tabular figures, no slashed zero), and the root layout no longer registers
+ * Geist / DM Sans / Playfair, so the golf app ships zero font bytes.
+ *
+ * `next/font` calls run at module scope, so every importer of this module
+ * pulls every font declared here. Import it ONLY from BaseballHelm layouts
+ * (src/app/baseball/layout.tsx); a golf import would re-ship these faces to
+ * the golf app.
  */
-import { Fraunces, Fragment_Mono, Space_Grotesk } from 'next/font/google';
+import { Fraunces, Space_Grotesk } from 'next/font/google';
+import { GeistMono } from 'geist/font/mono';
 
+/**
+ * Fraunces — the editorial serif (`font-serif`), single weight 600 + latin
+ * subset to keep the file under 35KB. Baseball eyebrows / dialog titles.
+ */
 export const fraunces = Fraunces({
   subsets: ['latin'],
   weight: ['600'],
@@ -20,8 +29,8 @@ export const fraunces = Fraunces({
 /**
  * Space Grotesk — the BaseballHelm "Living Annual" display + number face.
  * One athletic grotesk carries both player names/hero numerals AND the stat
- * figures (tabular-nums), per founder direction (2026-07-01). Chrome/body type
- * stays on the existing sans. Exposed as `--font-space-grotesk` → `font-annual`.
+ * figures (tabular-nums), per founder direction (2026-07-01). Exposed as
+ * `--font-space-grotesk` → `font-annual`.
  */
 export const spaceGrotesk = Space_Grotesk({
   subsets: ['latin'],
@@ -30,31 +39,29 @@ export const spaceGrotesk = Space_Grotesk({
   display: 'swap',
 });
 
-/* ============================================================================
- * Fairway design-system fonts (ADDITIVE — FOUNDATION)
- * ----------------------------------------------------------------------------
- * The locked "Fairway" type system:
- *   - Display / headings → Apple SF Pro Display system stack (no webfont).
- *   - UI / body          → Apple SF Pro Text system stack (no webfont).
- *   - Numeric / ledger   → Fragment Mono — true monospace for code-like data.
- *
- * The display + sans roles ride the native Apple system stack (defined inline
- * in src/styles/design-tokens.css `--fw-font-display` / `--fw-font-sans` and
- * the `font-fw-display` / `font-fw-sans` Tailwind utilities), so the UI reads
- * like a native Apple app and ships zero font bytes for those roles. Only the
- * numeric role loads a webfont, exposing the namespaced `--font-fairway-mono`
- * CSS variable. It DOES NOT touch the existing active body font — the current
- * app keeps DM Sans / Geist exactly as-is; only redesigned Fairway components
- * opt into the role via the design-tokens var (--fw-font-mono) or the
- * `font-fw-mono` Tailwind utility.
- *
- * Self-hosted via next/font → zero layout shift, no external request.
- * ========================================================================== */
+/** Geist Mono — BaseballHelm's code-like identifiers (`font-mono`). */
+export const geistMono = GeistMono;
 
-// Numeric / ledger — Fragment Mono (single weight 400 is all the family ships).
-export const fragmentMono = Fragment_Mono({
-  subsets: ['latin'],
-  weight: '400',
-  variable: '--font-fairway-mono',
-  display: 'swap',
-});
+/**
+ * CSS that defines the font variables on `:root` for the lifetime of the
+ * layout that renders it.
+ *
+ * `next/font`'s `.variable` class only scopes the variable to the element it
+ * is put on, and a nested layout cannot put a class on <html>. A wrapper div
+ * would miss everything Radix portals into <body> (dialogs, popovers,
+ * toasts), so the variables are declared on :root instead. Render with
+ * `dangerouslySetInnerHTML`: the family names contain quotes that React would
+ * escape as text children.
+ */
+export function rootFontVariablesCss(
+  fonts: ReadonlyArray<{ variable: string; family: string }>,
+): string {
+  return `:root{${fonts.map((f) => `${f.variable}:${f.family};`).join('')}}`;
+}
+
+/** The BaseballHelm font variables, ready for `rootFontVariablesCss`. */
+export const baseballFontVariables = [
+  { variable: '--font-fraunces', family: fraunces.style.fontFamily },
+  { variable: '--font-space-grotesk', family: spaceGrotesk.style.fontFamily },
+  { variable: '--font-geist-mono', family: geistMono.style.fontFamily },
+] as const;

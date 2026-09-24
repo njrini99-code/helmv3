@@ -191,6 +191,14 @@ export function StatsBento({
   const puttingRows: RailBarRow[] = [
     { label: '0-3ft', pct: finite(s?.puttMakePct0_3) ?? 0, value: fmtPct(finite(s?.puttMakePct0_3)) },
     {
+      // The 3-5ft band is the headline putting read elsewhere (Insights,
+      // focus areas); the bento skipped straight from 0-3 to 5-10.
+      label: '3-5ft',
+      pct: finite(s?.puttMakePct3_5) ?? 0,
+      value: fmtPct(finite(s?.puttMakePct3_5)),
+      tickPct: pgaTickPct(standingByMetric, 'putts_made_3_5ft_pct'),
+    },
+    {
       label: '5-10ft',
       pct: finite(s?.puttMakePct5_10) ?? 0,
       value: fmtPct(finite(s?.puttMakePct5_10)),
@@ -338,7 +346,7 @@ export function StatsBento({
             <Sparkline
               data={scoringTrend?.series ?? []}
               goodDirection="down"
-              label={scoringTrend?.label ?? 'Score to par'}
+              label={scoringTrend?.label ?? 'Score per 18 holes'}
               width={52}
               height={16}
             />
@@ -351,6 +359,9 @@ export function StatsBento({
                       ? 'improving'
                       : 'declining'
                 }
+                // Scoring: lower is better, so the arrow follows the raw number
+                // (↓ for a falling score) while colour follows good/bad.
+                goodDirection="down"
                 label={scoringTrend.delta.text}
                 size="sm"
                 numeric

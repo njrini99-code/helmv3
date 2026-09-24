@@ -2,113 +2,105 @@
 
 /**
  * ============================================================================
- * Fairway · player-game · FairwayPlayerGameFingerprint — coach scouting report
+ * Fairway · player-game · FairwayPlayerGameFingerprint: where the strokes go
  * ----------------------------------------------------------------------------
- * The flag-on redesign of /golf/dashboard/players/[playerId]/game (coach-only).
- * It re-skins the SAME `PlayerFingerprint` the legacy page already resolves on
- * the server via getPlayerFingerprint — the score hero, the six game-area
- * sections (tee → approach → short game → putting → scoring → pressure), the
- * per-section metrics + evidence insights + small charts, and the recent-trend
- * line. This component performs NO fetching.
+ * One component for both readers of the Game Fingerprint:
+ *   - coach, at /golf/dashboard/players/[playerId]/game (default mode)
+ *   - player, as the Game profile tab inside ProfileDrill (mode="player")
+ * Only the actions differ: a coach assigns a focus area, a player adds to
+ * their plan. The data is the `PlayerFingerprint` the server already
+ * resolved; this component fetches nothing.
  *
- * PRESERVED LOGIC (imported UNCHANGED, never rewritten):
- *   • insights.ts#acknowledgeInsight, dismissInsight — wired through the
- *     InsightCard action row exactly as the legacy PlayerGameFingerprint client
- *     called them (same args, same optimistic state, same revert-on-failure).
- *   • development.ts#createFocusAreaFromInsight — same payload + same
- *     router.push('/golf/dashboard/development') on success.
- *   • The section order (FINGERPRINT_SECTION_ORDER) — same coach muscle-memory.
+ * ANATOMY (375pt first; desktop reflows to two columns at lg)
+ *   1. Masthead: the player's name (coach only; the player drill titles
+ *      itself), one sentence verdict built from real SG, and one Form line
+ *      whose formula opens on tap.
+ *   2. Signature instrument: the strokes-gained waterfall, tee to putting to
+ *      net. Each row opens that area's evidence sheet.
+ *   3. Ledger: one hairline section per area, each with one bespoke
+ *      mini-instrument and its CoachHelm claims inline. Areas with nothing to
+ *      show collapse into one line.
  *
- * ── HONESTY (the load-bearing rule — CRITICAL FOR STATS) ────────────────────
- *   • A section the aggregator marks `sparse` (< 5 qualifying samples) renders
- *     an honest "Not enough data yet" slot — NEVER fabricated metrics. The slot
- *     is preserved so the layout doesn't shift.
- *   • The composite rating renders only when the aggregator produced a real
- *     number; otherwise the hero Readout shows an honest awaiting state with a
- *     "N of 5" calibration — never a fabricated "0" or fake percentile.
- *   • Metrics, comparisons, evidence numbers, and drill durations are quoted
- *     verbatim from the aggregator output — no invented values.
+ * HONESTY: see ./fingerprint/fingerprint-model.ts. No frosted panels, no
+ * nested cards, no chip charts, no raw n=/conf %, no count-up.
  *
- * ADDITIVE + GATED — imported only behind the isRedesignEnabled() fork in
- * players/[playerId]/game/page.tsx. Renders inside the `.fairway-ds` scope on a
- * bg-canvas page. Built with Fairway tokens + primitives only (no bg-white /
- * serif / skeuomorphic gauges).
+ * PRESERVED LOGIC (verbatim): `handleAction` and the immutable section-state
+ * helpers below drive acknowledgeInsight / dismissInsight /
+ * createFocusAreaFromInsight (coach) and rateInsightAsPlayer /
+ * createPlayerFocusArea (player) with the same payloads, optimistic state and
+ * revert-on-failure as before.
  * ========================================================================== */
 
 import { useCallback, useMemo, useState, useTransition, type ReactNode } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
-import {
-  ViewHeader,
-  InstrumentCluster,
-  InstrumentPanel,
-  Readout,
-  Surface,
-  InsightCard,
-  EmptyState,
-  Chip,
-  Sparkline,
-  Button,
-  Avatar,
-  fairwayToast,
-  type InsightPriority,
-} from '@/components/fairway';
+import { fairwayToast } from '@/components/fairway';
+import { Sheet } from '@/components/fairway/overlays/Sheet';
+import { PopoverPanel } from '@/components/fairway/overlays/PopoverPanel';
+import { IconMoreHorizontal } from '@/components/icons';
 
-import { IconLayers } from '@/components/icons';
-
-import type {
-  PlayerFingerprint,
-  SectionData,
-  FingerprintMetric,
-} from '@/app/golf/actions/player-fingerprint';
+import type { PlayerFingerprint } from '@/app/golf/actions/player-fingerprint';
 import {
   FINGERPRINT_SECTION_ORDER,
   type FingerprintSectionKey,
+
 } from '@/app/golf/actions/player-fingerprint-types';
-// PRESERVED WRITE ACTIONS — imported UNCHANGED (the same actions the legacy
-// PlayerGameFingerprint client called). We re-skin the trigger UI only; the
-// server round-trip + payload are byte-for-byte the legacy behavior.
+// PRESERVED WRITE ACTIONS — imported UNCHANGED.
 import { acknowledgeInsight, dismissInsight } from '@/app/golf/actions/insights';
 import { createFocusAreaFromInsight, createPlayerFocusArea } from '@/app/golf/actions/development';
-// PLAYER-MODE write actions — the player-self equivalents of the coach
-// actions above. `rateInsightAsPlayer` is the SAME round-trip
-// `PlayerCoachHelmHome.handleRate` already uses for the Insights sub-tab;
-// `createPlayerFocusArea` is the player-self-create path (RLS has no player
-// INSERT policy on `golf_player_focus_areas`, so it runs through a
-// service-role client gated by an ownership check — see development.ts).
 import { rateInsightAsPlayer } from '@/app/golf/actions/player-feedback';
 import { useGolfUser } from '@/contexts/golf-user-context';
 import { DEFAULT_TIMEZONE } from '@/lib/calendar/timezone';
-import { pluralize } from '@/lib/utils';
-import { formatToPar } from '@/lib/golf/format-to-par';
+import { cn } from '@/lib/utils';
+
+import {
+  FORM_FORMULA,
+  buildAreas,
+  buildClaim,
+  buildVerdict,
+  buildWaterfall,
+  formatSignedValue,
+  joinNames,
+  presentForm,
+  type AreaView,
+  type SgAreaKey,
+} from './fingerprint/fingerprint-model';
+import { StrokesWaterfall } from './fingerprint/StrokesWaterfall';
+import { ClaimRow, type ClaimAction } from './fingerprint/ClaimRow';
+import {
+  FairwayStrip,
+  MissCompass,
+  ParDeltas,
+  PressureSplit,
+  PuttingMakeCurve,
+  RateMeters,
+  StatLine,
+  statItems,
+} from './fingerprint/instruments';
 
 /* ───────────────────────────────────────────────────────────────────────────
  * Props
  * ────────────────────────────────────────────────────────────────────────── */
 
-/** `coach` — the original `/dashboard/players/[playerId]/game` scouting
- *  view (unchanged). `player` — the SAME composition mounted inside the
- *  player's own "Game profile" tab (`ProfileDrill`), viewing their own
- *  fingerprint. Only the header actions + insight-card write actions
- *  branch on this — the rating hero, trend, six-card row, and per-category
- *  sections are byte-for-byte identical between modes. */
 export type FingerprintMode = 'coach' | 'player';
 
 export interface FairwayPlayerGameFingerprintProps {
   fingerprint: PlayerFingerprint;
-  /** @default 'coach' — every existing call site (the coach route) is
-   *  unaffected by this prop's addition. */
+  /** @default 'coach' */
   mode?: FingerprintMode;
   /**
-   * Extra, server-built content rendered directly after a given section's
-   * own card (addendum §13 A7). Keyed by `FingerprintSectionKey` so a caller
-   * can target e.g. `approach` (A2's distance profile) or `scoring` (A3)
-   * without this component knowing anything about either surface. Omitted
-   * or `undefined` for a key renders nothing extra — every existing call
-   * site is byte-for-byte unaffected by this prop's addition.
+   * Extra, server-built content rendered at the end of a given area's ledger
+   * section (addendum §13 A7), e.g. `approach` (A2 distance profile) or
+   * `scoring` (A3). Omitted keys render nothing extra.
    */
   sectionAddenda?: Partial<Record<FingerprintSectionKey, ReactNode>>;
+  /**
+   * Coach-only, streamed: the approach distance ladder (shot-level SG,
+   * approach shots only). Rendered as the Approach area's instrument; absent
+   * in player mode, where the miss compass stands alone.
+   */
+  approachLadder?: ReactNode;
 }
 
 /* ───────────────────────────────────────────────────────────────────────────
@@ -118,13 +110,7 @@ export interface FairwayPlayerGameFingerprintProps {
 /** The 5-round floor the aggregator uses to mark a section sparse. */
 const SECTION_SAMPLE_FLOOR = 5;
 
-/**
- * Player-mode "Make focus area" — maps a fingerprint section to the
- * `golf_player_focus_areas.area_type` vocabulary `development.ts`'s catalog
- * already uses (`area_type` is a plain string column, not a DB enum — see
- * `mapInsightTypeToAreaType` in development.ts for the coach-side sibling
- * mapping this mirrors for the six fingerprint sections specifically).
- */
+/** Player-mode "Add to my plan": fingerprint section → `area_type`. */
 const AREA_TYPE_BY_SECTION: Record<FingerprintSectionKey, string> = {
   tee: 'driving',
   approach: 'iron_play',
@@ -134,43 +120,9 @@ const AREA_TYPE_BY_SECTION: Record<FingerprintSectionKey, string> = {
   pressure: 'mental_game',
 };
 
-/** Map an evidence-insight priority string → the Fairway InsightCard priority.
- *  The Fairway scale has no `urgent`; the riskiest tier maps to `critical`. */
-function toInsightPriority(priority: string): InsightPriority {
-  switch (priority) {
-    case 'urgent':
-      return 'critical';
-    case 'high':
-      return 'high';
-    case 'low':
-      return 'low';
-    default:
-      return 'medium';
-  }
-}
-
-/** Signed, honest score-to-par chip ("E", "+3", "−2", or "—" when absent). */
-// formatToPar consolidated onto @/lib/golf/format-to-par (see
-// src/test/schema/format-to-par-single-source.test.ts). Ten copies existed;
-// four rendered the ASCII hyphen where the rest render U+2212, so the same
-// score changed glyph between adjacent screens and broke tabular alignment.
-
 /**
- * Format the aggregator's `generated_at` ISO timestamp deterministically —
- * an explicit `timeZone` (not the calling process's own ambient zone) so SSR
- * and the first client render always compute the identical string.
- *
- * ROOT CAUSE (prod React #418 on /players/[id]/game): this footnote used to
- * call `new Date(generatedAt).toLocaleString()` with no locale/timeZone
- * argument, which resolves to whatever default `Intl` locale AND timezone
- * the CALLING PROCESS happens to have — Vercel SSR (Node, typically UTC) vs.
- * the visitor's own browser (any locale, any zone). This component is the
- * default tab on the route (PlayerDeepDiveTabs renders it on the initial
- * server + first client render whenever `?tab` isn't `scouting`), so the two
- * environments produced two different strings for the SAME instant and
- * React's hydration diff failed on this exact text node. Anchoring to a
- * fixed, explicit zone (the same `DEFAULT_TIMEZONE` the calendar surfaces
- * already use) makes the output independent of which process computes it.
+ * Format the aggregator's `generated_at` ISO timestamp deterministically, in
+ * a fixed zone, so SSR and the first client render agree (prod React #418).
  */
 export function formatGeneratedAt(iso: string): string {
   const date = new Date(iso);
@@ -190,6 +142,7 @@ export function FairwayPlayerGameFingerprint({
   fingerprint,
   mode = 'coach',
   sectionAddenda,
+  approachLadder,
 }: FairwayPlayerGameFingerprintProps) {
   const router = useRouter();
   const golfUser = useGolfUser();
@@ -321,584 +274,366 @@ export function FairwayPlayerGameFingerprint({
     [sections],
   );
 
-  const { player, composite, trend, generated_at: generatedAt } = fingerprint;
-  const fullName =
-    `${player.first_name ?? ''} ${player.last_name ?? ''}`.trim() || 'Player';
-  const rating = composite.rating;
-  const hasRating = rating != null;
-  const sample = composite.rounds_in_calculation;
-  // The section metrics rest on a DIFFERENT sample from the rating — the stats
-  // cache's window, not the ten rounds the composite is computed from. Cole
-  // Bennett read "Based on 10 rounds" beside a 71% GIR that was the 18-round
-  // number (his last-10 GIR is 76.1%). Both are printed now, each next to what
-  // it actually measures.
+  const { player, composite, generated_at: generatedAt } = fingerprint;
+  const fullName = `${player.first_name ?? ''} ${player.last_name ?? ''}`.trim() || 'Player';
   const metricsSample = fingerprint.metrics_rounds;
 
-  // Composite trend → an honest delta direction. Lower scores are better in
-  // golf, but the composite is already a 0-100 "higher is better" rating, so
-  // an "up" trend is the good direction.
-  const trendChip =
-    composite.trend === 'up'
-      ? { tone: 'success' as const, label: 'Trending up' }
-      : composite.trend === 'down'
-        ? { tone: 'danger' as const, label: 'Trending down' }
-        : { tone: 'neutral' as const, label: 'Holding steady' };
+  const waterfall = useMemo(() => buildWaterfall(fingerprint.sections), [fingerprint.sections]);
+  const verdict = buildVerdict(waterfall);
+  const form = presentForm(composite);
+  const areas = useMemo(
+    () => buildAreas(orderedSections, waterfall, (key) => Boolean(sectionAddenda?.[key]) || (key === 'approach' && Boolean(approachLadder))),
+    [orderedSections, waterfall, sectionAddenda, approachLadder],
+  );
+  const shownAreas = areas.filter((a) => !a.empty);
+  const emptyAreas = areas.filter((a) => a.empty);
+  const earlyRead = metricsSample > 0 && metricsSample < SECTION_SAMPLE_FLOOR;
+
+  const [sheetKey, setSheetKey] = useState<SgAreaKey | null>(null);
+  const sheetArea = sheetKey ? areas.find((a) => a.key === sheetKey) ?? null : null;
+
+  const onClaimAction = useCallback(
+    (action: ClaimAction, insightId: string) => handleAction(action, insightId),
+    [handleAction],
+  );
+
+  const roundsLabel = `${metricsSample} tracked ${metricsSample === 1 ? 'round' : 'rounds'}`;
 
   return (
-    <div className="mx-auto w-full max-w-[1160px] overflow-x-clip">
-      <div className="flex flex-col gap-7 md:gap-9">
-        {/* ════════════════ 1 · MASTHEAD (the ONE masthead) ═════════════════ */}
-        <ViewHeader
-          eyebrow="Game Fingerprint"
-          title={
-            <span className="flex min-w-0 items-center gap-3">
-              <Avatar decorative src={player.avatar_url} name={fullName} size="lg" className="shrink-0" />
-              <span className="min-w-0 truncate">{fullName}</span>
-            </span>
-          }
-          description={player.team_name ?? 'No team'}
-          primaryAction={
-            isCoachMode ? (
-              <Button asChild variant="secondary">
-                <Link href={`/golf/dashboard/players/${player.id}/game/print`}>
-                  Print report
-                </Link>
-              </Button>
-            ) : undefined
-          }
-          secondaryActions={
-            isCoachMode ? (
-              // The Scouting Report is already the adjacent in-page tab. Keep
-              // this action row to true sibling destinations so the header
-              // does not repeat the same control twice.
-              <>
-                <Button asChild variant="ghost" size="sm" leftIcon={<IconLayers size={15} />}>
-                  <Link href={`/golf/dashboard/players/${player.id}/genome`}>Genome</Link>
-                </Button>
-                <Button asChild variant="ghost" size="sm">
-                  <Link href={`/golf/dashboard/roster/${player.id}`}>Player page</Link>
-                </Button>
-              </>
-            ) : undefined
-            // Player mode: "Print report" is a coach-gated route (the print
-            // page redirects any non-coach session) and "Genome" is already
-            // ProfileDrill's sibling tab — neither applies here, so the
-            // action cluster is dropped rather than pointed at dead links.
-          }
-        />
-
-        {/* ════════════════ 2 · HERO — compact decision summary ════════════ */}
-        <InstrumentCluster
-          ariaLabel="Composite rating"
-          balance="even"
-          primary={
-            <InstrumentPanel
-              depth="raised"
-              tone="accent"
-              padding="md"
-              eyebrow="Composite rating"
-              as="section"
-              className="flex h-full min-h-[190px] flex-col justify-between gap-4 transition-[transform,box-shadow] duration-200 hover:-translate-y-0.5 hover:shadow-raise motion-reduce:transform-none"
-            >
-              <Readout
-                size="lg"
-                value={hasRating ? rating : undefined}
-                format={{ maximumFractionDigits: 0 }}
-                state={hasRating ? 'live' : 'awaiting'}
-                samples={hasRating ? undefined : { have: sample, need: SECTION_SAMPLE_FLOOR }}
-                awaitingLabel="Not enough rounds"
-                label="Overall game"
-              />
-              <div className="flex flex-wrap items-center gap-2">
-                <Chip tone={trendChip.tone} size="md">
-                  {trendChip.label}
-                </Chip>
-                {sample > 0 ? (
-                  <span className="font-fw-sans text-caption text-text-tertiary">
-                    {/* Names what this sample is OF. It governs the rating
-                        above and nothing else on the screen: the category
-                        metrics come from the stats cache over `metricsSample`
-                        rounds, which is usually a wider window. */}
-                    Rating from {sample} {sample === 1 ? 'round' : 'rounds'}
-                  </span>
+    <article className="mx-auto w-full max-w-[1160px] overflow-x-clip" data-slot="game-fingerprint" data-mode={mode}>
+      <div className="flex flex-col gap-8 lg:grid lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:items-start lg:gap-12">
+        {/* ════════════ Left column (sticky on desktop): masthead + stage ═══════════ */}
+        <div className="flex flex-col gap-8 lg:sticky lg:top-6">
+          <header className="flex flex-col gap-3">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                {isCoachMode ? (
+                  <h1 className="font-fw-display text-h1 text-text-primary md:text-display">{fullName}</h1>
                 ) : null}
+                <p className={cn('font-fw-sans text-caption text-text-tertiary', isCoachMode && 'mt-1')}>
+                  Game Fingerprint
+                  {player.team_name ? ` · ${player.team_name}` : ''}
+                  {metricsSample > 0 ? ` · ${roundsLabel}` : ''}
+                </p>
               </div>
-            </InstrumentPanel>
-          }
-          secondary={[
-            <InstrumentPanel
-              key="trend"
-              depth="base"
-              padding="md"
-              header="Recent trend"
-              className="flex h-full min-h-[190px] flex-col justify-center gap-4 transition-[transform,box-shadow] duration-200 hover:-translate-y-0.5 hover:shadow-raise motion-reduce:transform-none"
-            >
-              <TrendPulse trend={trend} />
-            </InstrumentPanel>,
-          ]}
-        />
+              {isCoachMode ? <CoachMoreMenu playerId={player.id} /> : null}
+            </div>
 
-        <nav aria-label="Jump to game area" className="min-w-0">
-          {metricsSample > 0 ? (
-            <p className="mb-2 font-fw-sans text-caption text-text-tertiary">
-              Area averages from {metricsSample}{' '}
-              {metricsSample === 1 ? 'round' : 'rounds'}
+            <p className="max-w-[40ch] font-fw-sans text-body-lg text-text-primary" data-slot="fingerprint-verdict">
+              {verdict ??
+                (metricsSample > 0
+                  ? `Strokes gained has not been measured yet across ${roundsLabel}.`
+                  : 'No rounds logged yet. The fingerprint fills in after the first tracked round.')}
+            </p>
+
+            <FormLine form={form} />
+          </header>
+
+          {/* ── Signature instrument ── */}
+          <section aria-labelledby="fp-strokes-heading" data-slot="fingerprint-stage">
+            <div className="flex items-baseline justify-between gap-3 border-b border-border-subtle pb-2">
+              <h2 id="fp-strokes-heading" className="font-fw-display text-h3 text-text-primary">
+                Where the strokes go
+              </h2>
+              <span className="font-fw-sans text-caption text-text-tertiary">per round</span>
+            </div>
+            {waterfall.measuredCount > 0 ? (
+              <div className={cn('pt-3', earlyRead && 'opacity-60')}>
+                <StrokesWaterfall waterfall={waterfall} onSelect={setSheetKey} />
+              </div>
+            ) : (
+              <p className="py-6 font-fw-sans text-body-sm text-text-secondary">
+                Strokes gained needs shot-tracked rounds. Nothing to draw yet.
+              </p>
+            )}
+            <p className="mt-2 font-fw-sans text-caption text-text-tertiary">
+              {earlyRead ? `Early read · ${roundsLabel}. ` : ''}
+              Strokes gained per round across all {roundsLabel}
+              {waterfall.measuredCount > 0 && waterfall.measuredCount < 4
+                ? `; net covers the ${waterfall.measuredCount} measured areas`
+                : ''}
+              . Tap a row for the evidence.
+            </p>
+          </section>
+        </div>
+
+        {/* ════════════ Right column: the ledger ═══════════ */}
+        <div className="flex flex-col gap-10" data-slot="fingerprint-ledger">
+          {shownAreas.map((area) => (
+            <AreaSection
+              key={area.key}
+              area={area}
+              mode={mode}
+              pendingIds={pendingIds}
+              onAction={onClaimAction}
+              addendum={sectionAddenda?.[area.key]}
+              approachLadder={area.key === 'approach' ? approachLadder : undefined}
+            />
+          ))}
+
+          {emptyAreas.length > 0 ? (
+            <p className="border-t border-border-subtle pt-4 font-fw-sans text-body-sm text-text-secondary" data-slot="fingerprint-empty-areas">
+              <span className="text-text-primary">Waiting on more rounds:</span> {joinNames(emptyAreas.map((a) => a.title))}.
             </p>
           ) : null}
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
-            {orderedSections.map((section, index) => {
-              const leadMetric = section.metrics[0];
-              return (
-                <a
-                  key={section.key}
-                  href={`#fingerprint-${section.key}`}
-                  className="group min-w-0 rounded-fw-md border border-border-subtle bg-surface px-3 py-3 outline-none transition-[transform,box-shadow,border-color] duration-200 hover:-translate-y-0.5 hover:border-accent-300 hover:shadow-soft focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas motion-reduce:transform-none"
-                >
-                  <span className="block font-fw-mono text-eyebrow text-text-tertiary tabular-nums">
-                    {String(index + 1).padStart(2, '0')}
-                  </span>
-                  <span className="mt-1 block truncate font-fw-display text-label font-semibold text-text-primary">
-                    {section.category}
-                  </span>
-                  <span className="mt-1 block truncate font-fw-mono text-caption text-text-secondary tabular-nums">
-                    {leadMetric ? `${leadMetric.value} · ${leadMetric.label}` : section.sparse ? 'Calibrating' : 'Open area'}
-                  </span>
-                </a>
-              );
-            })}
-          </div>
-        </nav>
 
-        {/* ════════════════ 3 · GAME AREAS — the six sections ═══════════════ */}
-        {orderedSections.map((section, index) => {
-          const addendum = sectionAddenda?.[section.key];
-          // Only wrap in the extra `space-y-4` div when there is actually an
-          // addendum to append — every existing call site (no `sectionAddenda`
-          // prop, or one that omits this key) renders the exact same
-          // `<FingerprintSection>` markup as before this prop existed, not a
-          // new wrapper div around it. A prior version of this map always
-          // added the wrapper, so "byte-for-byte unaffected" was true only
-          // when compared component-for-component, not against the actual
-          // rendered DOM.
-          if (!addendum) {
-            return (
-              <FingerprintSection
-                key={section.key}
-                section={section}
-                index={index}
-                pendingIds={pendingIds}
-                onAction={handleAction}
-              />
-            );
-          }
-          return (
-            <div key={section.key} className="space-y-4">
-              <FingerprintSection
-                section={section}
-                index={index}
-                pendingIds={pendingIds}
-                onAction={handleAction}
-              />
-              {addendum}
-            </div>
-          );
-        })}
-
-        {/* ════════════════ 4 · GENERATED-AT footnote ═══════════════════════ */}
-        <p className="text-center font-fw-sans text-caption text-text-tertiary">
-          Generated {formatGeneratedAt(generatedAt)}
-        </p>
+          <p className="font-fw-sans text-caption text-text-tertiary">Updated {formatGeneratedAt(generatedAt)}</p>
+        </div>
       </div>
-    </div>
+
+      <Sheet
+        open={sheetArea != null}
+        onOpenChange={(open) => {
+          if (!open) setSheetKey(null);
+        }}
+        title={sheetArea?.title ?? 'Evidence'}
+        description={
+          sheetArea?.sg != null
+            ? `${formatSignedValue(sheetArea.sg)} strokes per round · all ${roundsLabel}`
+            : `Not measured · all ${roundsLabel}`
+        }
+      >
+        {sheetArea ? (
+          <Sheet.Body className="flex flex-col gap-6 pb-8">
+            <AreaInstruments area={sheetArea} />
+            {sheetArea.section.insights.length > 0 ? (
+              <ul className="flex flex-col">
+                {sheetArea.section.insights.map((insight) => (
+                  <ClaimRow key={insight.id} claim={buildClaim(insight)} mode={mode} readOnly />
+                ))}
+              </ul>
+            ) : (
+              <p className="font-fw-sans text-body-sm text-text-secondary">CoachHelm has no claims in this area yet.</p>
+            )}
+            <a
+              href={`#fingerprint-${sheetArea.key}`}
+              onClick={() => setSheetKey(null)}
+              className="inline-flex min-h-[44px] items-center font-fw-sans text-body font-medium text-accent-700 outline-none focus-visible:ring-2 focus-visible:ring-border-focus"
+            >
+              Go to {sheetArea.title} in the ledger
+            </a>
+          </Sheet.Body>
+        ) : null}
+      </Sheet>
+    </article>
   );
 }
 
 /* ════════════════════════════════════════════════════════════════════════════
- * TrendPulse — the recent rolling score-to-par. Honest: when there are < 2
- * scored rounds it renders a quiet "awaiting" line, never a fabricated line.
+ * Form: one number, formula on tap. Never a confident 0 or 100.
  * ══════════════════════════════════════════════════════════════════════════ */
 
-function TrendPulse({ trend }: { trend: PlayerFingerprint['trend'] }) {
-  const series = useMemo(
-    () =>
-      trend.rolling
-        .map((p) => p.score_to_par)
-        .filter((v): v is number => typeof v === 'number' && Number.isFinite(v)),
-    [trend.rolling],
-  );
-  const latest = series.length > 0 ? series[series.length - 1] ?? null : null;
-
-  if (series.length < 2) {
+function FormLine({ form }: { form: ReturnType<typeof presentForm> }) {
+  const [open, setOpen] = useState(false);
+  if (form.kind === 'none') {
     return (
-      <Readout
-        size="md"
-        state="awaiting"
-        samples={{ have: series.length, need: 2 }}
-        awaitingLabel="Awaiting rounds"
-        label="Score to par"
-      />
+      <p className="font-fw-sans text-body-sm text-text-secondary">
+        Form appears after {SECTION_SAMPLE_FLOOR} rounds{form.rounds > 0 ? ` · ${form.rounds} so far` : ''}.
+      </p>
     );
   }
-
+  const trendInk =
+    form.trendWord === 'improving' ? 'text-fw-success-ink' : form.trendWord === 'slipping' ? 'text-fw-warning-ink' : 'text-text-secondary';
+  const muted = form.early || form.capped != null;
   return (
-    <div className="flex items-center justify-between gap-4">
-      <div className="min-w-0 overflow-x-auto">
-        <Sparkline
-          data={series}
-          goodDirection="down"
-          width={220}
-          height={56}
-          strokeWidth={2}
-          label="Rolling score to par"
-        />
-      </div>
-      <div className="shrink-0">
-        <Readout size="md" display={formatToPar(latest)} state="live" label="Latest" />
-      </div>
+    <div data-slot="fingerprint-form">
+      <button
+        type="button"
+        aria-expanded={open}
+        aria-controls="fp-form-formula"
+        onClick={() => setOpen((v) => !v)}
+        className={cn(
+          '-ml-2 inline-flex min-h-[44px] flex-wrap items-baseline gap-x-2 rounded-fw-sm px-2 text-left font-fw-sans text-body outline-none',
+          'transition-colors [transition-duration:150ms] active:bg-surface-sunken focus-visible:ring-2 focus-visible:ring-border-focus',
+          '[@media(hover:hover)]:hover:bg-surface-sunken',
+        )}
+      >
+        <span className="text-text-secondary">Form</span>
+        <span className={cn('font-semibold tabular-nums', muted ? 'text-text-secondary' : 'text-text-primary')}>
+          {form.value}
+        </span>
+        {form.capped ? (
+          <span className="text-body-sm text-text-secondary">at the {form.capped === 'top' ? '100' : '0'} cap</span>
+        ) : null}
+        {form.early ? <span className="text-body-sm text-text-secondary">Early read</span> : null}
+        <span className={cn('text-body-sm', trendInk)}>{form.trendWord}</span>
+        <span className="text-body-sm text-text-tertiary">
+          · {form.rounds} {form.rounds === 1 ? 'round' : 'rounds'} · {open ? 'hide formula' : 'how it’s figured'}
+        </span>
+      </button>
+      {open ? (
+        <p id="fp-form-formula" className="mt-1 max-w-[56ch] font-fw-sans text-body-sm text-text-secondary">
+          {FORM_FORMULA}
+          {form.capped
+            ? ` This one sits on the ${form.capped === 'top' ? 'top' : 'bottom'} of the scale, so the real reading is past it. Check the recent rounds before quoting it.`
+            : ''}
+        </p>
+      ) : (
+        <span id="fp-form-formula" hidden />
+      )}
     </div>
   );
 }
 
 /* ════════════════════════════════════════════════════════════════════════════
- * FingerprintSection — one game-area band: metrics rail + small chart + the
- * evidence-backed InsightCards. Honest "Not enough data" when sparse.
+ * Coach masthead overflow: print, genome, player page. No filled primary.
  * ══════════════════════════════════════════════════════════════════════════ */
 
-function FingerprintSection({
-  section,
-  index,
-  pendingIds,
-  onAction,
-}: {
-  section: SectionData;
-  index: number;
-  pendingIds: ReadonlySet<string>;
-  onAction: (
-    action: 'acknowledged' | 'dismissed' | 'create_focus_area',
-    insightId: string,
-  ) => void;
-}) {
-  const hasMetrics = section.metrics.length > 0;
-  const hasInsights = section.insights.length > 0;
-  const leadInsights = section.insights.slice(0, 2);
-  const additionalInsights = section.insights.slice(2);
-
+function CoachMoreMenu({ playerId }: { playerId: string }) {
+  const [open, setOpen] = useState(false);
+  const links = [
+    { href: `/golf/dashboard/players/${playerId}/game/print`, label: 'Print report' },
+    { href: `/golf/dashboard/players/${playerId}/genome`, label: 'Genome' },
+    { href: `/golf/dashboard/roster/${playerId}`, label: 'Player page' },
+  ];
   return (
-    <section
-      id={`fingerprint-${section.key}`}
-      className="scroll-mt-28 overflow-hidden rounded-card border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-card)] transition-[transform,box-shadow,border-color] duration-200 hover:-translate-y-0.5 hover:border-accent-200 hover:shadow-raise motion-reduce:transform-none"
-    >
-      <header className="flex flex-wrap items-end justify-between gap-3 border-b border-border-subtle bg-surface-tint px-4 py-4 sm:px-5 md:px-6">
-        <div className="flex min-w-0 items-baseline gap-3">
-          <span className="font-fw-mono text-eyebrow text-accent-700 tabular-nums">
-            {String(index + 1).padStart(2, '0')}
-          </span>
-          <h2 className="font-fw-display text-h3 font-semibold text-text-primary">
-            {section.category}
-          </h2>
-        </div>
-        <span className="font-fw-sans text-caption text-text-tertiary">
-          {section.sparse
-            ? 'Calibrating'
-            : `${pluralize(section.metrics.length, 'metric')} · ${pluralize(section.insights.length, 'insight')}`}
-        </span>
-      </header>
-
-      {section.sparse ? (
-        <div className="p-4 sm:p-5 md:p-6">
-          <EmptyState
-            variant="subtle"
-            title="Not enough data yet"
-            description={`Needs ${SECTION_SAMPLE_FLOOR}+ rounds before this area calibrates.`}
-          />
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 gap-5 p-4 sm:p-5 md:p-6 lg:grid-cols-[minmax(0,0.82fr)_minmax(0,1.18fr)]">
-          {/* ── Metrics + chart rail ── */}
-          <div className="flex min-w-0 flex-col gap-4">
-            {hasMetrics ? (
-              <InstrumentPanel depth="base" padding="md" header="Key numbers">
-                <div className="grid grid-cols-2 gap-2.5">
-                  {section.metrics.map((m) => (
-                    <MetricRow key={m.label} metric={m} />
-                  ))}
-                </div>
-              </InstrumentPanel>
-            ) : null}
-
-            <SectionChart section={section} />
-          </div>
-
-          {/* ── Evidence insights ── */}
-          <div className="flex min-w-0 flex-col gap-3">
-            {hasInsights ? (
-              <>
-                {leadInsights.map((insight, i) => (
-                  <FingerprintInsightCard
-                    key={insight.id}
-                    insight={insight}
-                    featured={i === 0}
-                    pending={pendingIds.has(insight.id)}
-                    onAction={onAction}
-                  />
-                ))}
-                {additionalInsights.length > 0 ? (
-                  <details className="group rounded-card border border-border-subtle bg-surface-sunken">
-                    <summary className="cursor-pointer list-none rounded-card px-4 py-3 font-fw-sans text-label font-semibold text-text-secondary outline-none transition-colors hover:bg-surface-tint hover:text-text-primary focus-visible:ring-2 focus-visible:ring-border-focus [&::-webkit-details-marker]:hidden">
-                      <span className="flex items-center justify-between gap-3">
-                        <span>View {additionalInsights.length} more insight{additionalInsights.length === 1 ? '' : 's'}</span>
-                        <span aria-hidden className="text-accent-700 transition-transform group-open:rotate-45">+</span>
-                      </span>
-                    </summary>
-                    <div className="flex flex-col gap-3 border-t border-border-subtle p-3">
-                      {additionalInsights.map((insight) => (
-                        <FingerprintInsightCard
-                          key={insight.id}
-                          insight={insight}
-                          pending={pendingIds.has(insight.id)}
-                          onAction={onAction}
-                        />
-                      ))}
-                    </div>
-                  </details>
-                ) : null}
-              </>
-            ) : (
-              <Surface elevation="border" padding="none">
-                <EmptyState
-                  variant="subtle"
-                  title="No insights in this area"
-                  description="CoachHelm hasn't flagged anything here yet."
-                />
-              </Surface>
-            )}
-          </div>
-        </div>
-      )}
-    </section>
-  );
-}
-
-function FingerprintInsightCard({
-  insight,
-  featured = false,
-  pending,
-  onAction,
-}: {
-  insight: SectionData['insights'][number];
-  featured?: boolean;
-  pending: boolean;
-  onAction: (
-    action: 'acknowledged' | 'dismissed' | 'create_focus_area',
-    insightId: string,
-  ) => void;
-}) {
-  return (
-    <InsightCard
-      id={`insight-${insight.id}`}
-      priority={toInsightPriority(insight.priority)}
-      variant={featured ? 'default' : 'compact'}
-      title={insight.title}
-      evidence={<InsightEvidenceLine insight={insight} />}
-      actions={
-        insight.status === 'acknowledged' ? (
-          <Chip tone="success" size="sm">
-            Acknowledged
-          </Chip>
-        ) : (
-          <div className="flex flex-wrap items-center gap-2">
-            <Button
-              variant="primary"
-              size="sm"
-              disabled={pending}
-              onClick={() => onAction('create_focus_area', insight.id)}
-            >
-              {pending ? 'Working…' : 'Make focus area'}
-            </Button>
-            <Button
-              variant="secondary"
-              size="sm"
-              disabled={pending}
-              onClick={() => onAction('acknowledged', insight.id)}
-            >
-              Acknowledge
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              disabled={pending}
-              onClick={() => onAction('dismissed', insight.id)}
-            >
-              Dismiss
-            </Button>
-          </div>
-        )
+    <PopoverPanel
+      open={open}
+      onOpenChange={setOpen}
+      surface="matte"
+      align="end"
+      ariaLabel="More for this player"
+      trigger={
+        <button
+          type="button"
+          aria-label="More for this player"
+          className={cn(
+            '-mr-2 inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-text-secondary outline-none',
+            'transition-colors [transition-duration:150ms] active:bg-surface-sunken focus-visible:ring-2 focus-visible:ring-border-focus',
+            '[@media(hover:hover)]:hover:bg-surface-sunken',
+          )}
+        >
+          <IconMoreHorizontal size={20} aria-hidden="true" />
+        </button>
       }
     >
-      {insight.content ? insight.content : null}
-    </InsightCard>
-  );
-}
-
-/* ── One metric row — label, value, tone dot, optional comparison ── */
-function MetricRow({ metric }: { metric: FingerprintMetric }) {
-  return (
-    <div className="min-w-0 rounded-fw-md bg-surface-sunken px-3 py-3">
-      <span className="flex min-w-0 items-center gap-2 font-fw-sans text-caption text-text-secondary">
-        <ToneDot tone={metric.tone} />
-        <span className="truncate">{metric.label}</span>
-      </span>
-      <span className="mt-1.5 flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-0.5">
-        <span className="font-fw-mono text-body-lg font-semibold tabular-nums text-text-primary">
-          {metric.value}
-        </span>
-        {metric.comparison ? (
-          <span className="font-fw-sans text-caption text-text-tertiary">
-            {metric.comparison}
-          </span>
-        ) : null}
-      </span>
-    </div>
-  );
-}
-
-/** Quiet tone dot — green = strength, rose = weakness, neutral = neither. */
-function ToneDot({ tone }: { tone: FingerprintMetric['tone'] }) {
-  const cls =
-    tone === 'good'
-      ? 'bg-fw-success'
-      : tone === 'bad'
-        ? 'bg-fw-danger'
-        : 'bg-border-strong';
-  const label = tone === 'good' ? 'Strength' : tone === 'bad' ? 'Needs attention' : 'Neutral';
-  return (
-    <span
-      role="img"
-      aria-label={label}
-      className={`inline-block h-1.5 w-1.5 shrink-0 rounded-full ${cls}`}
-    />
-  );
-}
-
-/* ── Evidence line — the "why" behind the card, quoted verbatim ── */
-function InsightEvidenceLine({
-  insight,
-}: {
-  insight: SectionData['insights'][number];
-}) {
-  const ev = insight.evidence;
-  const parts: string[] = [];
-  if (ev.metric_label) parts.push(ev.metric_label);
-  const impact = Number(ev.strokes_impact ?? 0);
-  if (Number.isFinite(impact) && impact !== 0) {
-    parts.push(`impact ${Math.abs(impact).toFixed(1)} str`);
-  }
-  if (typeof ev.sample_n === 'number') parts.push(`n=${ev.sample_n}`);
-  if (typeof ev.confidence === 'number') {
-    parts.push(`conf ${Math.round(ev.confidence * 100)}%`);
-  }
-  const drills = insight.drills ?? [];
-  const drillLine =
-    drills.length > 0
-      ? `Drills: ${drills
-          .map((d) => `${d.title}${d.duration_min != null ? ` (${d.duration_min}m)` : ''}`)
-          .join(', ')}`
-      : null;
-
-  if (parts.length === 0 && !drillLine) return null;
-
-  return (
-    <span className="flex flex-col gap-1">
-      {parts.length > 0 ? (
-        <span className="font-fw-mono tabular-nums">{parts.join(' · ')}</span>
-      ) : null}
-      {drillLine ? <span className="text-text-tertiary">{drillLine}</span> : null}
-    </span>
+      <ul className="flex min-w-[200px] flex-col py-1">
+        {links.map((l) => (
+          <li key={l.href}>
+            <Link
+              href={l.href}
+              onClick={() => setOpen(false)}
+              className="flex min-h-[44px] items-center px-4 font-fw-sans text-body text-text-primary outline-none active:bg-surface-sunken focus-visible:bg-surface-sunken [@media(hover:hover)]:hover:bg-surface-sunken"
+            >
+              {l.label}
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </PopoverPanel>
   );
 }
 
 /* ════════════════════════════════════════════════════════════════════════════
- * SectionChart — the small per-section chart, recomputed honestly from the
- * aggregator's chart_data. Bars AND pills both render as flat matte chips —
- * every `bars` section here is an independent-scale value (a make-rate
- * percentage, a strokes average on its own max), never a shared-total part,
- * so there is no honest proportional bar to draw (Package 11 follow-up).
- * Null chart_data renders nothing (no fabricated chart).
+ * One ledger section per area: header, one instrument, claims inline.
  * ══════════════════════════════════════════════════════════════════════════ */
 
-function SectionChart({ section }: { section: SectionData }) {
-  const chart = section.chart_data;
-  if (!chart) return null;
-
-  if (chart.kind === 'pills') {
-    if (chart.pills.length === 0) return null;
-    // `tee`'s pills are a fairway hit/miss split (no direction data exists
-    // for tee shots); `approach`'s pills are the four-way miss direction —
-    // the panel header stays honest to which one is actually rendering.
-    const header = section.key === 'tee' ? 'Fairways' : 'Miss direction';
+function AreaInstruments({ area, approachLadder }: { area: AreaView; approachLadder?: ReactNode }) {
+  const s = area.section;
+  if (s.sparse) {
     return (
-      <InstrumentPanel depth="base" padding="md" header={header}>
-        <div className="flex flex-wrap gap-2">
-          {chart.pills.map((p) => (
-            <span
-              key={p.label}
-              className="inline-flex items-center gap-2 rounded-fw-md bg-surface-sunken px-3 py-1.5"
-            >
-              <span className="font-fw-sans text-caption text-text-secondary">
-                {p.label}
-              </span>
-              <span className="font-fw-mono text-body-sm font-semibold tabular-nums text-text-primary">
-                {p.value}
-              </span>
-            </span>
-          ))}
-        </div>
-      </InstrumentPanel>
+      <p className="font-fw-sans text-body-sm text-text-secondary">
+        Not enough rounds to chart this yet. It needs {SECTION_SAMPLE_FLOOR}.
+      </p>
     );
   }
+  switch (area.key) {
+    case 'tee':
+      return <FairwayStrip section={s} />;
+    case 'approach':
+      return (
+        <div className="flex flex-col gap-6">
+          <StatLine items={statItems(s, ['GIR', 'Proximity'])} />
+          {approachLadder}
+          <MissCompass section={s} />
+        </div>
+      );
+    case 'short_game':
+      return <RateMeters section={s} labels={['Up-and-down', 'Scrambling', 'Sand saves']} />;
+    case 'putting':
+      return (
+        <div className="flex flex-col gap-4">
+          <PuttingMakeCurve section={s} />
+          <StatLine items={statItems(s, ['Putts / round', '1-putt %', '3-putt %'])} />
+        </div>
+      );
+    case 'scoring':
+      return (
+        <div className="flex flex-col gap-4">
+          <StatLine items={statItems(s, [['Scoring avg', 'Scoring average']])} />
+          <ParDeltas section={s} />
+        </div>
+      );
+    case 'pressure':
+      return <PressureSplit section={s} />;
+    default:
+      return null;
+  }
+}
 
-  // bars
-  if (chart.bars.length === 0) return null;
-  // Package 11 (follow-up): these were rendered as SegmentBar "categorical
-  // parts" — a 100%-segmented bar whose each part's on-screen width is
-  // value / SUM(all values). That's only honest when the values are counts
-  // of one whole (e.g. improved/no-change/worsened rounds). None of these
-  // three sections are: putting/short-game are INDEPENDENT make-rate
-  // percentages that don't sum to 100 (0-3ft make% and 20+ft make% aren't
-  // parts of a shared total), and scoring's par-type averages are STROKES on
-  // three different maxes (par 3 ≤5, par 4 ≤6, par 5 ≤7) — sharing one
-  // sum-normalized bar with those silently rendered a stroke average as a
-  // slice of a 100% strokes-vs-strokes-vs-strokes bar. Using the pills
-  // treatment already used above renders each bar's own value on its own
-  // terms instead.
-  const header =
-    section.key === 'putting'
-      ? 'Make % by distance'
-      : section.key === 'short_game'
-        ? 'Recovery rates'
-        : 'Averages';
-  // `max === 100` is this aggregator's convention for a percentage bar
-  // (buildPuttingBars / buildShortGameBars); anything else (buildScoringSection's
-  // par-type maxes of 5/6/7) is a raw strokes value and must never get a "%".
-  const formatBarValue = (b: { value: number; max?: number }) =>
-    b.max === 100 ? `${Math.round(b.value)}%` : b.value.toFixed(1);
-
+function AreaSection({
+  area,
+  mode,
+  pendingIds,
+  onAction,
+  addendum,
+  approachLadder,
+}: {
+  area: AreaView;
+  mode: FingerprintMode;
+  pendingIds: ReadonlySet<string>;
+  onAction: (action: ClaimAction, insightId: string) => void;
+  addendum?: ReactNode;
+  approachLadder?: ReactNode;
+}) {
+  const insights = area.section.insights;
+  const sg = area.sg;
   return (
-    <InstrumentPanel depth="base" padding="md" header={header}>
-      <div className="flex flex-wrap gap-2">
-        {chart.bars.map((b) => (
-          <span
-            key={b.label}
-            className="inline-flex items-center gap-2 rounded-fw-md bg-surface-sunken px-3 py-1.5"
-          >
-            <span className="font-fw-sans text-caption text-text-secondary">{b.label}</span>
-            <span className="font-fw-mono text-body-sm font-semibold tabular-nums text-text-primary">
-              {formatBarValue(b)}
-            </span>
+    <section
+      id={`fingerprint-${area.key}`}
+      aria-labelledby={`fingerprint-${area.key}-title`}
+      className="scroll-mt-24"
+      data-slot="fingerprint-area"
+    >
+      <header className="flex items-baseline justify-between gap-3 border-b border-border-strong pb-2">
+        <h2 id={`fingerprint-${area.key}-title`} className="font-fw-display text-h3 text-text-primary">
+          {area.title}
+        </h2>
+        {sg != null ? (
+          <span className="font-fw-sans text-caption text-text-tertiary">
+            <span
+              className={cn(
+                'text-body font-semibold tabular-nums',
+                sg > 0.05 ? 'text-fw-success-ink' : sg < -0.05 ? 'text-fw-warning-ink' : 'text-text-secondary',
+              )}
+            >
+              {formatSignedValue(sg)}
+            </span>{' '}
+            strokes/rd
           </span>
-        ))}
+        ) : null}
+      </header>
+
+      <div className="pt-4">
+        <AreaInstruments area={area} approachLadder={approachLadder} />
       </div>
-    </InstrumentPanel>
+
+      {insights.length > 0 ? (
+        <ul className="mt-4 flex flex-col" aria-label={`CoachHelm on ${area.title.toLowerCase()}`}>
+          {insights.map((insight) => (
+            <ClaimRow
+              key={insight.id}
+              claim={buildClaim(insight)}
+              mode={mode}
+              pending={pendingIds.has(insight.id)}
+              onAction={onAction}
+            />
+          ))}
+        </ul>
+      ) : null}
+
+      {addendum ? <div className="mt-6">{addendum}</div> : null}
+    </section>
   );
 }
 

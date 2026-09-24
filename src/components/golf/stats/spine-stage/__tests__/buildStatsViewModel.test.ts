@@ -531,25 +531,41 @@ describe('buildCategoryTrends', () => {
     expect(buildCategoryTrends(undefined).driving).toBeNull();
   });
 
+  // REQUIREMENT CHANGED ON PURPOSE: the delta used to be newest − oldest
+  // (two points), which turned one outlier round into "↑ −39.0". It is now the
+  // mean of the latest w points vs the w before them, w = min(5, floor(n/2)),
+  // and needs at least 3 points per side.
+  const pts = (...vs: number[]) => vs.map((value) => ({ value }));
+
   it('marks a higher-is-better rise (fairway%) as a GOOD up delta', () => {
-    const trends = buildCategoryTrends({ fairway: [{ value: 55 }, { value: 63 }] });
+    const trends = buildCategoryTrends({ fairway: pts(55, 55, 55, 63, 63, 63) });
     expect(trends.driving?.delta).toEqual({ text: '+8%', direction: 'up', good: true });
+    expect(trends.driving?.deltaWindow).toBe('last 3 vs prior 3 rounds');
   });
 
   it('marks fewer putts per round (lower-is-better) as a GOOD delta even though the raw number fell', () => {
-    const trends = buildCategoryTrends({ putts: [{ value: 30.2 }, { value: 28.6 }] });
+    const trends = buildCategoryTrends({ putts: pts(30.2, 30.2, 30.2, 28.6, 28.6, 28.6) });
     expect(trends.putting?.delta).toEqual({ text: '−1.6', direction: 'down', good: true });
   });
 
   it('marks a rising score (lower-is-better) as a BAD up delta', () => {
-    const trends = buildCategoryTrends({ score: [{ value: 74 }, { value: 78 }] });
+    const trends = buildCategoryTrends({ score: pts(74, 74, 74, 78, 78, 78) });
     expect(trends.scoring?.delta).toEqual({ text: '+4.0', direction: 'up', good: false });
   });
 
-  it('omits the delta (but keeps the series) when fewer than 2 finite points exist', () => {
-    const trends = buildCategoryTrends({ gir: [{ value: 42 }] });
-    expect(trends.approach?.series).toEqual([42]);
+  it('compares last 5 vs prior 5, not newest vs oldest', () => {
+    // Oldest 76 and newest 37 used to read as −39.0.
+    const trends = buildCategoryTrends({ score: pts(76, 80, 74, 72, 75, 71, 73, 70, 74, 37) });
+    // prior 5 = 76,80,74,72,75 → 75.4; last 5 = 71,73,70,74,37 → 65.0
+    expect(trends.scoring?.delta).toEqual({ text: '−10.4', direction: 'down', good: true });
+    expect(trends.scoring?.deltaWindow).toBe('last 5 vs prior 5 rounds');
+  });
+
+  it('omits the delta (but keeps the series) with fewer than 3 points per side', () => {
+    const trends = buildCategoryTrends({ gir: pts(42, 44, 46, 48, 50) });
+    expect(trends.approach?.series).toEqual([42, 44, 46, 48, 50]);
     expect(trends.approach?.delta).toBeUndefined();
+    expect(buildCategoryTrends({ gir: pts(42) }).approach?.delta).toBeUndefined();
   });
 
   it('drops non-finite points from the series before computing anything', () => {

@@ -16,6 +16,7 @@
  * subscribe-to-changes wiring lean.
  */
 import { useEffect, useMemo, useState } from 'react';
+import { confidenceLabel } from '@/lib/coachhelm/confidence-label';
 import { cn } from '@/lib/utils';
 import { IconHelp } from '@/components/icons';
 import {
@@ -181,7 +182,7 @@ function buildExplanation(insight: EvidenceInsight): string {
   );
   const gap = Math.abs(Number(evidence.your_value ?? 0) - Number(evidence.comparison_value ?? 0));
   const gapLabel = formatGapLabel(gap, evidence.unit);
-  const confidencePct = Math.round(Math.max(0, Math.min(1, Number(evidence.confidence ?? 0))) * 100);
+  const confidenceWord = confidenceLabel(Number(evidence.confidence ?? 0), Number(evidence.sample_n ?? 0));
   const factors = evidence.confidence_factors
     ? formatFactors(evidence.confidence_factors)
     : '';
@@ -189,7 +190,7 @@ function buildExplanation(insight: EvidenceInsight): string {
   return [
     `Fired because ${evidence.sample_n} ${noun} in ${evidence.window_days} days at ${yourValue}`,
     `vs ${comparisonValue} ${evidence.comparison_label} → ${gapLabel} gap.`,
-    `Confidence ${confidencePct}%${factors ? ` (${factors})` : ''}.`,
+    `${confidenceWord ?? 'Thin read'}${factors ? ` (${factors})` : ''}.`,
   ].join(' ');
 }
 

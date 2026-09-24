@@ -50,6 +50,7 @@ import type { Database, Json } from '@/lib/types/database';
 import { getQualifierAutomaticTransition } from '@/lib/golf/qualifier-lifecycle';
 import { resolveQualifierRoundNumber } from '@/lib/golf/qualifier-round-number';
 import { assertHolesPlayedMatchesPayload } from '@/lib/golf/holes-played-assert';
+import { validateRoundEntry, clampPuttDistanceFeet } from '@/lib/golf/round-entry-validation';
 import { getUserResilient } from '@/lib/auth/resilient-get-user';
 import {
   createHelmFlightRecorder,
@@ -985,7 +986,9 @@ export interface QualifierRoundCourse {
 
 function derivePuttDistanceFeet(shot: ShotRecord): number | null {
   if (shot.shotType !== 'putting') return null;
-  if (shot.puttDistanceFeet !== undefined) return shot.puttDistanceFeet ?? null;
+  // A client-supplied putt distance is clamped to 0–150 ft like every other
+  // on-green distance; unclamped, a typo'd 2000 ft "putt" went straight into SG.
+  if (shot.puttDistanceFeet !== undefined) return clampPuttDistanceFeet(shot.puttDistanceFeet);
   const distance = shot.distanceToHoleBefore;
   if (!Number.isFinite(distance)) return null;
   // SG-2: a putt distance is ALWAYS in feet. Converting a 'yards'-unit value to
@@ -1771,6 +1774,33 @@ async function submitGolfRoundComprehensiveImpl(
       endTrace('failure');
       return { success: false, error: 'A round with zero putts on every hole is not valid.' };
     }
+    // Plausibility gate (shared with the live entry panel — see
+    // src/lib/golf/round-entry-validation.ts). Zod checks each field's range;
+    // this checks the round is physically possible: putts ≤ score − 1, score
+    // within par + 10, no duplicated hole rows, no tee shot onto a green
+    // 500+ yards away, and no round total better than one under par per hole
+    // (the 2026-09-17 round: 18 holes, 37 strokes). `confirm`-severity issues
+    // (a 420-yard drive onto the green) are the player's call and pass here.
+    const roundEntry = validateRoundEntry(data.holes);
+    const blockingIssue = roundEntry.blocking[0];
+    if (blockingIssue) {
+      const code = blockingIssue.holeNumber != null ? 'hole_invalid' : 'round_implausible';
+      void logServerError(`Round submit rejected: ${blockingIssue.rule}`, {
+        action: 'submitGolfRoundComprehensive',
+        featureArea: 'shot_tracking',
+        extra: {
+          courseName: data.courseName,
+          holesCount: data.holes.length,
+          rule: blockingIssue.rule,
+          hole: blockingIssue.holeNumber ?? null,
+          shot: blockingIssue.shotNumber ?? null,
+          blockingRules: roundEntry.blocking.slice(0, 5).map(i => `${i.rule}@${i.holeNumber ?? 'round'}`),
+        },
+      }, 'warning');
+      void flightRecorder.fail('server.validation', { errorSummary: blockingIssue.rule });
+      endTrace('failure');
+      return { success: false, error: blockingIssue.message, code };
+    }
     void flightRecorder.complete('server.validation');
 
     const supabase = await createClient();
@@ -2109,7 +2139,10 @@ async function submitGolfRoundComprehensiveImpl(
       tee_id: data.teeId || null,
       round_type: effectiveRoundType,
       round_date: data.roundDate,
-      holes_played: data.holes.length,
+      // Derived from the distinct hole rows (duplicates were refused above),
+      // never from a client-supplied count — so the A4 assert below compares
+      // two independently computed numbers instead of one value with itself.
+      holes_played: roundEntry.holesPlayed,
       total_score: totalScore,
       score_to_par: totalToPar,
       total_putts: totalPutts,

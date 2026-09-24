@@ -15,6 +15,14 @@ import { fetchAllRows, fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows'
 import { getTeamLeakMaps } from '@/app/golf/actions/stats-leak-maps';
 import { loadPlayersStandingMap } from '@/lib/coachhelm/v3/standing/loader';
 import { computeScoringTrendFromRounds } from '@/lib/golf/scoring-trend';
+import { withCanonicalRoundTotal } from '@/lib/golf/round-total';
+import { isCountableRound } from '@/lib/golf/round-countable';
+import {
+  aggregateCountableRounds,
+  ROUND_STATS_CACHE_COLUMNS,
+  type RoundStatsCacheRow,
+  type SgPerRound,
+} from '@/lib/golf/countable-round-stats';
 import { calculatePuttsPerRound } from '@/lib/golf/putts-per-round';
 import type { Metadata } from 'next';
 
@@ -67,6 +75,13 @@ export interface TeamPlayerStats {
    * this field keep type-checking; the board falls back to an honest em-dash.
    */
   last_round_score?: number | null;
+  /**
+   * Mean strokes gained per round over this player's COUNTABLE rounds, read
+   * from golf_round_stats_cache (see src/lib/golf/round-countable.ts). Null
+   * when the per-round read failed; the board then falls back to the
+   * standing snapshot (lifetime player cache). `rounds` = rounds with SG.
+   */
+  sg_countable?: SgPerRound | null;
   /**
    * Last-7 normalized (18-hole-equivalent) scores, oldest → newest — Team
    * Stats board Sparkline. Derived from the SAME `allRounds` fetch below;
@@ -188,21 +203,41 @@ export default async function TeamStatsPage() {
   // engine output and doesn't block the raw stats query.
   const allPlayerIds = players.map((p) => p.id);
 
-  const [roundsResult, intelligenceResult] = await Promise.all([
+  const [roundsResult, intelligenceResult, roundStatsResult] = await Promise.all([
     // Paginated: PostgREST caps each response at 1000 rows; a full roster's
     // season exceeds that and silently dropped the oldest rounds. Keep
     // round_date DESC first (the trend math below expects newest-first) with
     // id ASC as a unique tiebreak so page boundaries are stable.
-    fetchAllRowsResult((from, to) => supabase.from('golf_rounds').select('id, player_id, total_score, round_date, holes_played').in('player_id', allPlayerIds).eq('status', 'completed').not('total_score', 'is', null).order('round_date', { ascending: false }).order('id', { ascending: true }).range(from, to)),
+    fetchAllRowsResult((from, to) => supabase.from('golf_rounds').select('id, player_id, total_score, round_date, holes_played, front_nine, back_nine, total_putts').in('player_id', allPlayerIds).eq('status', 'completed').not('total_score', 'is', null).order('round_date', { ascending: false }).order('id', { ascending: true }).range(from, to)),
     getTeamStatsIntelligence(teamId),
+    // Per-round SG, so Team SG and the SG category bars average COUNTABLE
+    // rounds only instead of the lifetime player cache (which counts a
+    // +34.5 round).
+    fetchAllRowsResult<RoundStatsCacheRow>((from, to) =>
+      supabase
+        .from('golf_round_stats_cache')
+        .select(ROUND_STATS_CACHE_COLUMNS)
+        .in('player_id', allPlayerIds)
+        .order('round_id', { ascending: true })
+        .range(from, to),
+    ),
   ]);
+  const roundStatsById = roundStatsResult.error
+    ? null
+    : new Map((roundStatsResult.data ?? []).map((r) => [r.round_id, r] as const));
   // Honesty flag: a genuinely FAILED rounds fetch must read as "couldn't
   // load" (with retry), not as a silent cold-start — `fetchAllRowsResult`
   // resolves `{ data: null, error }` on the first-page error instead of
   // throwing, so an unchecked `error` here previously rendered every
   // player's per-round stats as "no rounds yet".
-  const { data: allRounds, error: roundsFetchError } = roundsResult;
+  const { data: fetchedRounds, error: roundsFetchError } = roundsResult;
   const roundsError = roundsFetchError !== null;
+  // Countable rounds only (src/lib/golf/round-countable.ts): completed, every
+  // declared hole scored, plausible total, canonical hole-sum totals. Every
+  // number below (scoring, trajectory, rounds in 30 days, the hole-level
+  // FW/GIR/putts/scrambling pools, sparklines) reads this set, so a 37-stroke
+  // round or a hole-less QA round no longer moves team or player figures.
+  const allRounds = fetchedRounds ? fetchedRounds.map(withCanonicalRoundTotal).filter(isCountableRound) : null;
 
   // Fetch ALL holes for calculating GIR and fairway stats
   const roundIds = (allRounds || []).map((r) => r.id);
@@ -228,6 +263,9 @@ export default async function TeamStatsPage() {
     total_score: number | null;
     round_date: string;
     holes_played: number | null;
+    front_nine: number | null;
+    back_nine: number | null;
+    total_putts: number | null;
   };
   type HoleData = {
     round_id: string;
@@ -437,6 +475,9 @@ export default async function TeamStatsPage() {
       // normalizedScores is built in scoredRounds' order (most-recent-first);
       // take the last 7, then reverse to oldest -> newest for the Sparkline.
       recent_scores: normalizedScores.slice(0, 7).reverse(),
+      sg_countable: roundStatsById
+        ? aggregateCountableRounds(scoredRounds, roundStatsById).sg
+        : null,
     };
   });
 

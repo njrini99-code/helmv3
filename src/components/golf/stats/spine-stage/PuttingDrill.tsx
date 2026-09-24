@@ -407,7 +407,7 @@ export function PuttingDrill({
       format: { maximumFractionDigits: 1 },
       awaitingLabel: 'No rounds',
       caption: 'All putts, 18 holes',
-      delta: readoutDeltaFromTrend(puttingTrend, 'vs prior period'),
+      delta: readoutDeltaFromTrend(puttingTrend, puttingTrend?.deltaWindow ?? 'vs prior rounds'),
       tone: 'accent',
       depth: 'raised',
     },

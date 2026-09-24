@@ -1,5 +1,4 @@
 import { redirect } from 'next/navigation';
-import { createClient } from '@/lib/supabase/server';
 import { logServerError } from '@/lib/server-error-logger';
 import { describeError } from '@/lib/utils/describe-error';
 import { getGolfSessionProfile } from '@/lib/auth/session';
@@ -19,7 +18,7 @@ import type { CalendarEvent } from '@/lib/types/calendar';
 import { fairwayScope } from '@/lib/redesign/flag';
 import { FairwayCoachDashboard } from '@/components/fairway/pages/dashboard/FairwayCoachDashboard';
 import { FairwayPlayerDashboard, type PlayerDashboardData } from '@/components/fairway/pages/dashboard/FairwayPlayerDashboard';
-import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
+import { getActivePlayerTeamMembership, resolveCoachActiveTeamIdForRequest } from '@/lib/golf/dashboard-request-cache';
 import { getPlayerHubSummaryData, type PlayerHubSummaryData } from '@/app/golf/actions/player-hub-data';
 import { getTeamJoinRequests, type JoinRequestData } from '@/app/golf/actions/teams';
 import { getCurrentDecimalHourInTz } from '@/lib/utils/timezone';
@@ -153,9 +152,6 @@ export default async function GolfDashboardPage({
 
     const { userId, coach, player } = session;
 
-    // Supabase client only needed for team lookups (not auth)
-    const supabase = await createClient();
-
     // ── Coach dashboard ──
     if (coach) {
         // Get team via organization (deterministic: handles orgs with >1 team).
@@ -166,7 +162,10 @@ export default async function GolfDashboardPage({
         // letting this throw only fires on a true failure.
         let teamId: string | undefined;
         if (coach.organization_id) {
-            teamId = (await resolveCoachTeamIdWithCookie(supabase, coach.organization_id, coach.id)) ?? undefined;
+            // Request-scoped: the dashboard layout already resolved this exact
+            // team for this request (dashboard-request-cache.ts), so this is a
+            // cache hit instead of a second cookie-validation + staff read.
+            teamId = (await resolveCoachActiveTeamIdForRequest(coach.organization_id, coach.id)) ?? undefined;
         }
 
         if (teamId) {
@@ -249,12 +248,10 @@ export default async function GolfDashboardPage({
         // the failure surfaces to the route error boundary. A genuine new player
         // is unaffected — `.maybeSingle()` reports "no membership row" as
         // { data: null, error: null }, which is a real answer, not a failure.
-        const { data: teamMember, error: teamMemberError } = await supabase
-            .from('golf_team_members')
-            .select('team_id')
-            .eq('player_id', player.id)
-            .eq('status', 'active')
-            .maybeSingle();
+        //
+        // Request-scoped: shared with the dashboard layout's identical read
+        // (dashboard-request-cache.ts) — one query per request, not two.
+        const { data: teamMember, error: teamMemberError } = await getActivePlayerTeamMembership(player.id);
 
         if (teamMemberError) {
             await logServerError(

@@ -139,14 +139,35 @@ export function buildPlayerStandingTrack(
 /* ───────────────────────────────────────────────────────────────────────────
  * Hero — the predicted-score readout + its verdict sentence.
  * ────────────────────────────────────────────────────────────────────────── */
+/** Signed to-par at 1 decimal: "+2.3", "−1.2", "E" (U+2212 minus). */
+export function formatToParDecimal(n: number): string {
+  const fixed = Math.abs(n).toFixed(1);
+  if (Number(fixed) === 0) return 'E';
+  return n > 0 ? `+${fixed}` : `\u2212${fixed}`;
+}
+
+function formatPredictionValue(n: number, metric?: string | null): string {
+  return metric === 'score_to_par' ? formatToParDecimal(n) : n.toFixed(1);
+}
+
 export function formatPredictionHero(
   predictedValue: number | null | undefined,
   metric?: string | null,
 ): { value: string; unit?: string } {
   const n = finite(predictedValue);
   if (n === null) return { value: '—' };
-  return { value: n.toFixed(1), unit: metric ? metric.replace(/_/g, ' ') : 'predicted score' };
+  return { value: formatPredictionValue(n, metric), unit: metric ? metric.replace(/_/g, ' ') : 'predicted score' };
 }
+
+/**
+ * The predictor's band is a nominal 80% interval (mean ± 1.28·sd, t-inflated;
+ * performance-predictor.ts `ciMultiplier`). Its `confidence` field (0.6–0.8)
+ * is a volatility heuristic, NOT the interval's level, so the band is labelled
+ * "80% range" and never with that number.
+ */
+export const PREDICTION_INTERVAL_LEVEL_PCT = 80;
+/** A band wider than this many strokes says nothing useful; hide it (owner decision D4). */
+export const MAX_PREDICTION_BAND_STROKES = 8;
 
 /** Normalize a confidence value that may arrive as 0..1 or 0..100. */
 function confidencePct(confidence: number | null): number | null {
@@ -173,6 +194,7 @@ export function buildPredictionVerdict(
   confidence: number | null | undefined,
   topFocusLabel: string | null,
   range?: { low: number | null | undefined; high: number | null | undefined },
+  metric?: string | null,
 ): string {
   const n = finite(predictedValue);
   if (n === null) {
@@ -185,16 +207,19 @@ export function buildPredictionVerdict(
 
   const low = finite(range?.low);
   const high = finite(range?.high);
+  const unit = metric === 'score_to_par' ? ' to par' : '';
   if (low !== null && high !== null && high >= low) {
-    const rangeText = `Predicted ${low.toFixed(1)}\u2013${high.toFixed(1)}`;
-    return conf !== null
-      ? `${rangeText} (${conf}% of predictions like this land in that range).${focusText}`
-      : `${rangeText}.${focusText}`;
+    if (high - low <= MAX_PREDICTION_BAND_STROKES) {
+      // "to", not a dash: a dash between signed numbers ("−1.2–+3.4") misreads.
+      return `Predicted ${formatPredictionValue(low, metric)} to ${formatPredictionValue(high, metric)}${unit} (${PREDICTION_INTERVAL_LEVEL_PCT}% range).${focusText}`;
+    }
+    // Too wide to be useful: show the estimate, never the band.
+    return `Predicted ${formatPredictionValue(n, metric)}${unit}. The range is still too wide to show; it narrows as you log more rounds.${focusText}`;
   }
 
   return conf !== null
-    ? `Predicted to shoot ${n.toFixed(1)} \u2014 predictions like this have been accurate about ${conf}% of the time.${focusText}`
-    : `Predicted to shoot ${n.toFixed(1)}.${focusText}`;
+    ? `Predicted to shoot ${formatPredictionValue(n, metric)}${unit} \u2014 predictions like this have been accurate about ${conf}% of the time.${focusText}`
+    : `Predicted to shoot ${formatPredictionValue(n, metric)}${unit}.${focusText}`;
 }
 
 /* ───────────────────────────────────────────────────────────────────────────
@@ -236,8 +261,12 @@ export interface StandingPreviewRow {
 export function buildStandingPreviewRows(
   standingByMetric: Readonly<Record<string, StandingPctEntry | undefined>>,
   max = 3,
+  /** Metric ids already shown elsewhere in the cell (the headline), so the
+   *  rail never repeats them ("SG: Total" twice). */
+  excludeIds: readonly string[] = [],
 ): StandingPreviewRow[] {
   const entries = Object.entries(standingByMetric)
+    .filter(([id]) => !excludeIds.includes(id))
     .map(([id, row]) => ({ id, pct: finite(row?.team_pct) }))
     .filter((e): e is { id: string; pct: number } => e.pct !== null)
     .sort((a, b) => b.pct - a.pct);

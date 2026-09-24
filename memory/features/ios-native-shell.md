@@ -86,6 +86,10 @@ offline page. `src/test/proxy-middleware.test.ts` pins the exemption.
   instead (`FairwayMessages`) carries `data-fw-keyboard-aware`, which tells the
   provider's scroll-into-view to leave it alone. Contract test:
   `src/components/fairway/app-shell/__tests__/keyboard-inset.test.ts`.
+- The iOS keyboard accessory bar is hidden except while a numeric, decimal or
+  tel input has focus (`installNumericAccessoryBar` in
+  `src/lib/utils/capacitor.ts`, installed once from `initCapacitor`), so number
+  pads get a Done key. Test: `src/lib/utils/__tests__/capacitor-accessory-bar.test.ts`.
 
 ## Tests
 

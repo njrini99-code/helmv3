@@ -82,6 +82,15 @@ export interface FairwayCoursePickerProps {
 
 type Stage = 'courses' | 'tees';
 
+/**
+ * vaul's exit slide for this sheet (~500ms, `cubic-bezier(0.32, 0.72, 0, 1)`).
+ * A tee pick closes the sheet first and hands the tee to the parent only after
+ * this, so the setup screen does not restructure (hero swap, scorecard mount +
+ * entrance) underneath a sheet that is still sliding away. Under reduced motion
+ * the global CSS collapses vaul's transition to ~0 and the hand-off is immediate.
+ */
+export const PICKER_EXIT_MS = 500;
+
 export function FairwayCoursePicker({
   open, onOpenChange, onPick, canManageLibrary = false,
 }: FairwayCoursePickerProps) {
@@ -117,8 +126,38 @@ export function FairwayCoursePicker({
   const [createCourseOpen, setCreateCourseOpen] = useState(false);
   const [createTeeOpen, setCreateTeeOpen] = useState(false);
 
+  // Reset to the course list on OPEN, never on close. vaul keeps this content
+  // mounted for its whole exit slide, and every close here is parent-driven
+  // (tee pick, the X, quick-pick), which vaul's Root onAnimationEnd never
+  // reports — so a reset on close swapped the sliding sheet from the tee list
+  // back to "Choose a course" mid-dismissal (the owner's "flicker"). Done in
+  // render (the prev-prop pattern) rather than in an effect so the very first
+  // open frame is already the course list: an effect would paint the stale tee
+  // stage first and then play the AnimatePresence stage swap on the way in.
+  const [prevOpen, setPrevOpen] = useState(open);
+  if (open !== prevOpen) {
+    setPrevOpen(open);
+    if (open) {
+      setStage('courses');
+      setSelected(null);
+      setTees([]);
+      setQuery('');
+      setLoadingTees(false);
+      setPicking(false);
+    }
+  }
+
+  // Set once any library load has landed. Reopening then shows the cached
+  // shelves while they refresh in the background instead of a skeleton.
+  const hasLoadedCoursesRef = useRef(false);
+  // A tee pick waiting for the sheet's exit before it reaches the parent.
+  const pickTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => {
+    if (pickTimerRef.current) clearTimeout(pickTimerRef.current);
+  }, []);
+
   const refreshCourses = useCallback(async (): Promise<GolfCourse[]> => {
-    setLoadingCourses(true);
+    if (!hasLoadedCoursesRef.current) setLoadingCourses(true);
     try {
       // Three independent feeds, one carousel each — ALL best-effort so one
       // failing feed never blanks the others (e.g. a transient library error
@@ -136,6 +175,7 @@ export function FairwayCoursePicker({
       setCourses(library);
       setRecent(rec);
       setTeam(tm);
+      hasLoadedCoursesRef.current = true;
       return library;
     } catch (err) {
       // A toast is not a record. Until 2026-09-17 every failure in this
@@ -151,13 +191,9 @@ export function FairwayCoursePicker({
   }, []);
 
   useEffect(() => {
-    if (!open) {
-      setStage('courses');
-      setSelected(null);
-      setTees([]);
-      setQuery('');
-      return;
-    }
+    if (!open) return;
+    // Any tee response still in flight from the previous session is stale.
+    teeReqRef.current += 1;
     void refreshCourses();
   }, [open, refreshCourses]);
 
@@ -220,38 +256,53 @@ export function FairwayCoursePicker({
       // golf_courses row this picker already loaded to build the tee list, so
       // this costs nothing — and it lets the setup screen show the actual
       // course photo instead of a name-derived stock scene.
-      try {
-        onPick({
-          ...defaults,
-          courseImageUrl: selected?.image_url ?? null,
-          courseNormalizedName: selected?.normalized_name ?? null,
-        });
-      } catch (onPickErr) {
-        // Anything the parent's onPick throws — a cache-write exception,
-        // a bad state update — used to fall through to the outer catch and
-        // be misreported as "could not load that tee". Log it as itself.
-        logError(
-          onPickErr instanceof Error ? onPickErr : new Error(String(onPickErr)),
-          {
-            component: 'FairwayCoursePicker',
-            action: 'onPick threw',
-            featureArea: 'round_tracking',
-            courseId: selected?.id ?? null,
-            teeId: tee.id,
-            bypassStaleActionFilter: true,
-          },
-          'medium',
-        );
-        throw onPickErr;
+      const picked: TeeRoundDefaults = {
+        ...defaults,
+        courseImageUrl: selected?.image_url ?? null,
+        courseNormalizedName: selected?.normalized_name ?? null,
+      };
+      // Warm the course photo so the setup hero doesn't pop in from grey
+      // when the sheet uncovers it.
+      if (picked.courseImageUrl && typeof Image !== 'undefined') {
+        new Image().src = picked.courseImageUrl;
       }
+      // Close FIRST, then hand the tee over once the sheet has left. The
+      // parent's onPick re-lays out the setup screen (hero, photo card, the
+      // scorecard mount with its entrance); doing that under a sliding sheet
+      // is the second half of the flicker. The sheet keeps showing the tee
+      // stage while it slides (see the reset-on-open above).
       onOpenChange(false);
+      const courseId = selected?.id ?? null;
+      if (pickTimerRef.current) clearTimeout(pickTimerRef.current);
+      pickTimerRef.current = setTimeout(() => {
+        pickTimerRef.current = null;
+        try {
+          onPick(picked);
+        } catch (onPickErr) {
+          // Anything the parent's onPick throws — a cache-write exception,
+          // a bad state update — is logged as itself, not as a tee-load failure.
+          logError(
+            onPickErr instanceof Error ? onPickErr : new Error(String(onPickErr)),
+            {
+              component: 'FairwayCoursePicker',
+              action: 'onPick threw',
+              featureArea: 'round_tracking',
+              courseId,
+              teeId: tee.id,
+              bypassStaleActionFilter: true,
+            },
+            'medium',
+          );
+          fairwayToast.danger('Could not use that tee');
+        }
+      }, reduceMotion ? 0 : PICKER_EXIT_MS);
     } catch (err) {
       logError(err instanceof Error ? err : new Error(String(err)), { component: 'FairwayCoursePicker', action: 'pick tee', featureArea: 'round_tracking', courseId: selected?.id ?? null, teeId: tee.id, bypassStaleActionFilter: true }, 'medium');
       fairwayToast.danger('Could not load that tee');
     } finally {
       setPicking(false);
     }
-  }, [onPick, onOpenChange, selected]);
+  }, [onPick, onOpenChange, selected, reduceMotion]);
 
   // A freshly created course has no tees — drop the user straight into its tee
   // stage so adding the tee they're about to play is the obvious next step.

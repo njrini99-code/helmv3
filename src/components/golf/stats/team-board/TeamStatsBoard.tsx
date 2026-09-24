@@ -79,11 +79,11 @@ export interface TeamStatsBoardProps {
   freshness: TeamStatsFreshness;
 }
 
-const SG_CATEGORY_BARS: ReadonlyArray<{ metric: MetricId; label: string }> = [
-  { metric: 'sg_ott', label: 'Off the Tee' },
-  { metric: 'sg_approach', label: 'Approach' },
-  { metric: 'sg_around_green', label: 'Around the Green' },
-  { metric: 'sg_putting', label: 'Putting' },
+const SG_CATEGORY_BARS: ReadonlyArray<{ metric: MetricId; label: string; key: 'offTee' | 'approach' | 'aroundGreen' | 'putting' }> = [
+  { metric: 'sg_ott', label: 'Off the Tee', key: 'offTee' },
+  { metric: 'sg_approach', label: 'Approach', key: 'approach' },
+  { metric: 'sg_around_green', label: 'Around the Green', key: 'aroundGreen' },
+  { metric: 'sg_putting', label: 'Putting', key: 'putting' },
 ];
 
 function tourLabel(isWomens: boolean): string {
@@ -186,6 +186,8 @@ export function TeamStatsBoard({ teamName, players, intelligenceByPlayer, intell
       holesWithScore: p.holes_with_score,
       scoringTrend: p.scoring_trend,
       lastRoundScore: p.last_round_score ?? null,
+      sgTotalPerRound: p.sg_countable?.total ?? null,
+      sgRounds: p.sg_countable?.rounds ?? 0,
       recentScores: p.recent_scores ?? [],
       composite: intelligenceByPlayer[p.id]?.composite ?? null,
       topInsightTitle: intelligenceByPlayer[p.id]?.topInsightTitle ?? null,
@@ -240,14 +242,23 @@ export function TeamStatsBoard({ teamName, players, intelligenceByPlayer, intell
 
   const sgData: SGCategory[] = React.useMemo(
     () =>
-      SG_CATEGORY_BARS.map(({ metric, label }) => ({
+      SG_CATEGORY_BARS.map(({ metric, label, key }) => ({
         label,
-        value: weightedMean(
-          players.map((p) => ({
-            value: standingByPlayer.get(p.id)?.get(metric)?.player_value ?? null,
-            weight: p.rounds_played,
-          })),
-        ),
+        // Countable-round SG when the page supplied it (weighted by the rounds
+        // that carry SG); the standing snapshot (lifetime cache) otherwise.
+        value: players.some((p) => p.sg_countable)
+          ? weightedMean(
+              players.map((p) => ({
+                value: p.sg_countable?.[key] ?? null,
+                weight: p.sg_countable?.rounds ?? 0,
+              })),
+            )
+          : weightedMean(
+              players.map((p) => ({
+                value: standingByPlayer.get(p.id)?.get(metric)?.player_value ?? null,
+                weight: p.rounds_played,
+              })),
+            ),
       })).filter((d): d is { label: string; value: number } => d.value !== null),
     [players, standingByPlayer],
   );
@@ -342,7 +353,7 @@ export function TeamStatsBoard({ teamName, players, intelligenceByPlayer, intell
       <ViewHeader
         eyebrow="Team Stats"
         title="Team Stats"
-        description={`Every player on ${teamName}'s roster: ranked, tracked, and measured against Tour.`}
+        description={`Every player on ${teamName}'s roster, listed by last name, with category ranks measured against Tour.`}
         meta={<p className="max-w-[90ch] font-fw-sans text-caption leading-relaxed text-text-secondary">{formatTeamStatsFreshness(freshness)}</p>}
         secondaryActions={
           <div className="flex w-full min-w-0 flex-wrap items-center gap-2 sm:w-auto sm:flex-nowrap">
@@ -402,7 +413,7 @@ export function TeamStatsBoard({ teamName, players, intelligenceByPlayer, intell
 
       {/* ── TEAM STROKES GAINED — demoted below the board ──────────────────────── */}
       <section className="mt-10 grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
-        <StrokesGainedTornado overline="Strokes Gained" title="Team Strokes Gained" subtitle={`vs ${tourLabel(isWomens)} baseline · season to date`} takeaway={sgTakeaway} data={sgData} state={hasSg ? undefined : 'insufficient-data'} stateMessage={hasSg ? undefined : 'Strokes Gained appears once players log rounds with shot-level tracking. Add players to your roster and have them enter rounds shot by shot.'} />
+        <StrokesGainedTornado overline="Strokes Gained" title="Team Strokes Gained" subtitle={`vs ${tourLabel(isWomens)} baseline · all rounds, per round`} takeaway={sgTakeaway} data={sgData} state={hasSg ? undefined : 'insufficient-data'} stateMessage={hasSg ? undefined : 'Strokes Gained appears once players log rounds with shot-level tracking. Add players to your roster and have them enter rounds shot by shot.'} />
         <InstrumentPanel depth="raised" tone="accent" eyebrow="Season to date" header="SG: Total" className="flex flex-col justify-center">
           {vm.kpis.teamSgRaw !== null ? <Readout size="hero" label="Team SG · per round" display={fmtSg(vm.kpis.teamSgRaw)} unit="sg" /> : <Readout size="hero" label="Team SG · per round" state="awaiting" awaitingLabel="Awaiting standing" />}
           <p className="mt-4 font-fw-sans text-caption text-text-tertiary">The sum of every category vs the {tourLabel(isWomens)} baseline. Negative means the team is losing strokes to Tour over a round.</p>
@@ -415,7 +426,7 @@ export function TeamStatsBoard({ teamName, players, intelligenceByPlayer, intell
           <h2 className="font-fw-display text-h3 font-medium tracking-[-0.005em] text-text-primary">Where the strokes leak</h2>
           {leakMaps && leakRoundsIncluded > 0 ? (
             <span className="font-fw-sans text-caption text-text-secondary">
-              {leakRoundsIncluded} round{leakRoundsIncluded !== 1 ? 's' : ''} with shot tracking
+              Pooled from {leakRoundsIncluded} counted round{leakRoundsIncluded !== 1 ? 's' : ''}
             </span>
           ) : null}
         </div>

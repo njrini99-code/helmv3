@@ -2,7 +2,7 @@
 /* eslint-disable helm/no-raw-button -- deliberately minimal test doubles */
 
 import React from 'react';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { GroupedSignal, SignalGroup } from '@/lib/coachhelm/signal-grouping';
 import { TriageDesk } from '../TriageDesk';
@@ -80,7 +80,7 @@ function group(): SignalGroup {
   };
 }
 
-function renderDesk() {
+function renderDesk(effectivenessDrillProps: unknown = {}) {
   return render(
     <TriageDesk
       coachId="coach-1"
@@ -106,7 +106,7 @@ function renderDesk() {
         playerStats: {},
         todayIso: '2026-09-23',
       }}
-      effectivenessDrillProps={{} as never}
+      effectivenessDrillProps={effectivenessDrillProps as never}
     />,
   );
 }
@@ -196,5 +196,122 @@ describe('TriageDesk URL-driven drill-ins', () => {
     expect(screen.getByTestId('players-view')).toBeInTheDocument();
     expect(navigation.replace).not.toHaveBeenCalled();
     expect(navigation.refresh).toHaveBeenCalledTimes(1);
+  });
+  it('switches views with history.replaceState(null, …) — never router.replace — so Next syncs without a server trip', () => {
+    const spy = vi.spyOn(window.history, 'replaceState');
+    renderDesk();
+    fireEvent.click(screen.getByRole('link', { name: 'Effectiveness' }));
+    expect(spy).toHaveBeenCalledWith(null, '', '/golf/dashboard/intelligence?view=effectiveness');
+    expect(navigation.replace).not.toHaveBeenCalled();
+    expect(navigation.refresh).not.toHaveBeenCalled();
+    spy.mockRestore();
+  });
+
+  it('does not write history when re-selecting the view already in the URL', () => {
+    window.history.replaceState({}, '', '/golf/dashboard/intelligence?view=players');
+    navigation.params = new URLSearchParams('view=players');
+    renderDesk();
+    const spy = vi.spyOn(window.history, 'replaceState');
+    fireEvent.click(screen.getByRole('link', { name: 'Players' }));
+    expect(spy).not.toHaveBeenCalled();
+    spy.mockRestore();
+  });
+
+  it('holds the view region open on a switch so a shorter view cannot clamp scrollY', () => {
+    const { container } = renderDesk();
+    const region = container.querySelector<HTMLElement>('[data-triage-view-region]');
+    expect(region).not.toBeNull();
+    // The switch row sits 200px down a 800px viewport; the region starts at 260px.
+    const switchRow = screen.getByRole('navigation', { name: 'CoachHelm view' }).parentElement!;
+    vi.spyOn(switchRow, 'getBoundingClientRect').mockReturnValue({ top: 200, bottom: 240 } as DOMRect);
+    vi.spyOn(region!, 'getBoundingClientRect').mockReturnValue({ top: 260, bottom: 2000 } as DOMRect);
+    const innerHeight = window.innerHeight;
+    Object.defineProperty(window, 'innerHeight', { configurable: true, value: 800 });
+    const scrollSpy = vi.fn();
+    switchRow.scrollIntoView = scrollSpy;
+
+    fireEvent.click(screen.getByRole('link', { name: 'Effectiveness' }));
+
+    expect(region!.style.minHeight).toBe('540px');
+    expect(scrollSpy).not.toHaveBeenCalled();
+    Object.defineProperty(window, 'innerHeight', { configurable: true, value: innerHeight });
+  });
+
+  it('brings the switch into view instead of holding blank space when the switch was scrolled off-screen', () => {
+    const { container } = renderDesk();
+    const region = container.querySelector<HTMLElement>('[data-triage-view-region]')!;
+    const switchRow = screen.getByRole('navigation', { name: 'CoachHelm view' }).parentElement!;
+    vi.spyOn(switchRow, 'getBoundingClientRect').mockReturnValue({ top: -900, bottom: -860 } as DOMRect);
+    const scrollSpy = vi.fn();
+    switchRow.scrollIntoView = scrollSpy;
+
+    // Same code path TeamSignalSummary's player rows use, deep below the switch.
+    fireEvent.click(screen.getByRole('link', { name: 'Players' }));
+
+    expect(region.style.minHeight).toBe('');
+    expect(scrollSpy).toHaveBeenCalledWith({ block: 'nearest' });
+  });
+
+  it('ignores a search-param snapshot that trails the live URL after rapid taps', () => {
+    const { rerender } = renderDesk();
+    fireEvent.click(screen.getByRole('link', { name: 'Players' }));
+    fireEvent.click(screen.getByRole('link', { name: 'Effectiveness' }));
+    // Next's sync of tap 1 lands after tap 2 already rewrote the address bar.
+    navigation.params = new URLSearchParams('view=players');
+    rerender(
+      <TriageDesk
+        coachId="coach-1"
+        groups={[group()]}
+        scannedAt={null}
+        groupsError={null}
+        categoryInsights={{ success: false, error: 'not fetched in this test' }}
+        playersDrillProps={{ players: [], focusAreas: [], coachId: 'coach-1', playerStats: {}, todayIso: '2026-09-23' }}
+        effectivenessDrillProps={{} as never}
+      />,
+    );
+    expect(screen.getByTestId('effectiveness-view')).toBeInTheDocument();
+    expect(screen.queryByTestId('players-view')).not.toBeInTheDocument();
+  });
+
+  it('follows a real external navigation (address bar and snapshot agree)', () => {
+    const { rerender } = renderDesk();
+    window.history.replaceState({}, '', '/golf/dashboard/intelligence?view=effectiveness');
+    navigation.params = new URLSearchParams('view=effectiveness');
+    rerender(
+      <TriageDesk
+        coachId="coach-1"
+        groups={[group()]}
+        scannedAt={null}
+        groupsError={null}
+        categoryInsights={{ success: false, error: 'not fetched in this test' }}
+        playersDrillProps={{ players: [], focusAreas: [], coachId: 'coach-1', playerStats: {}, todayIso: '2026-09-23' }}
+        effectivenessDrillProps={{} as never}
+      />,
+    );
+    expect(screen.getByTestId('effectiveness-view')).toBeInTheDocument();
+  });
+
+  it('streams the effectiveness payload: suspends behind a fallback, then renders the scoreboard', async () => {
+    let resolve!: (value: unknown) => void;
+    const pending = new Promise((r) => {
+      resolve = r;
+    });
+    navigation.params = new URLSearchParams('view=effectiveness');
+    window.history.replaceState({}, '', '/golf/dashboard/intelligence?view=effectiveness');
+    await act(async () => {
+      renderDesk(pending);
+    });
+    expect(screen.getByText('Loading effectiveness…')).toBeInTheDocument();
+    expect(screen.queryByTestId('effectiveness-view')).not.toBeInTheDocument();
+    await act(async () => {
+      resolve({ initialOverview: undefined });
+      await pending;
+    });
+    expect(await screen.findByTestId('effectiveness-view')).toBeInTheDocument();
+  });
+
+  it('does not suspend the signals view on the streamed effectiveness payload', () => {
+    renderDesk(new Promise(() => {}));
+    expect(screen.getByTestId('signal-queue')).toBeInTheDocument();
   });
 });

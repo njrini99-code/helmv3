@@ -52,6 +52,7 @@
  * ========================================================================== */
 
 import { computeSeriesTrend } from './trend';
+import { isPlausibleToPar } from '@/lib/golf/round-countable';
 
 /** Only the round fields the rating reads. */
 export interface CompositeRoundInput {
@@ -97,9 +98,14 @@ const TREND_THRESHOLD = 1;
  * observed results, minus a penalty for severe observed patterns.
  */
 export function computeCompositeRating(
-  rounds: CompositeRoundInput[],
+  inputRounds: CompositeRoundInput[],
   patterns: CompositePatternInput[] = [],
 ): CompositeRatingResult {
+  // Belt and braces for callers that pass raw rounds: a to-par below the
+  // stroke floor (the 37-stroke "18-hole" round, −35) is not a real round and
+  // pinned the rating at 100. Loaders should also apply the full
+  // `isCountableRound` rule (src/lib/golf/round-countable.ts) before calling.
+  const rounds = inputRounds.filter((r) => isPlausibleToPar(r.score_to_par, r.holes_played));
   if (rounds.length === 0) {
     return { rating: null, trend: 'flat', rounds_in_calculation: 0 };
   }

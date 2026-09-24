@@ -375,15 +375,18 @@
           display + sans resolve to the Apple SF Pro SYSTEM stack (no webfont
           download — SF Pro renders natively on Apple devices and falls back
           cleanly elsewhere), so the old Fraunces/General Sans next/font loads
-          were dead weight and have been removed from src/app/layout.tsx. Only
-          mono still pulls a webfont (--font-fairway-mono = Fragment Mono). ---- */
+          were dead weight and have been removed from src/app/layout.tsx. The
+          numeric role (`--fw-font-mono`) rides the same stack: Fragment Mono
+          was retired 2026-09-23 (owner decision: SF with tabular figures for
+          every number, no slashed zero), so Fairway loads no webfont at all. ---- */
   /* Apple system sans — the real "built by Steve Jobs" type. SF Pro renders
      natively on Apple devices via -apple-system / BlinkMacSystemFont; clean
-     system fallbacks elsewhere. NO serif (Fraunces dropped). Numbers stay mono. */
+     system fallbacks elsewhere. NO serif (Fraunces dropped). Numbers are SF
+     with tabular figures (pair --fw-font-mono with --fw-numeric-features). */
   --fw-font-display: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", "Segoe UI", Roboto, ui-sans-serif, system-ui, sans-serif;
   --fw-font-sans:    -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", "Segoe UI", Roboto, ui-sans-serif, system-ui, sans-serif;
-  --fw-font-mono:    var(--font-fairway-mono), ui-monospace, "SF Mono", monospace;
-  --fw-numeric-features: "tnum" 1, "lnum" 1;
+  --fw-font-mono:    -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", "Segoe UI", Roboto, ui-sans-serif, system-ui, sans-serif;
+  --fw-numeric-features: "tnum" 1, "lnum" 1, "zero" 0;
 
   /* ---- Tailwind neutral/brand SCALES as channel triplets (THEME-AWARE) ----
           The tailwind.config `warm` / `cream` / `primary` scales point at these

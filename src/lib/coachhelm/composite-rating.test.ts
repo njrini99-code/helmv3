@@ -115,3 +115,15 @@ describe('computeCompositeRating — trend (canonical windowed classifier)', () 
     expect(computeCompositeRating(rounds, []).trend).toBe('flat');
   });
 });
+
+describe('computeCompositeRating — implausible rounds (countable-round rule)', () => {
+  it('drops a to-par below the stroke floor instead of clamping to 100', () => {
+    const r = computeCompositeRating([
+      { score_to_par: -35, holes_played: 18 }, // 37 strokes "over 18" (prod 91301a75)
+      { score_to_par: 4, holes_played: 18 },
+      { score_to_par: 2, holes_played: 18 },
+    ]);
+    expect(r.rating).toBe(71); // 80 − 3 × mean(4, 2)
+    expect(r.rounds_in_calculation).toBe(2);
+  });
+});

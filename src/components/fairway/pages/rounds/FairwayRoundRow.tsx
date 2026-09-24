@@ -113,8 +113,9 @@ export function FairwayRoundRow({ round, isBestOfPeriod, userRole }: FairwayRoun
             {cleanCourseName(round.course_name) || 'Unknown course'}
           </span>
           {isBestOfPeriod && (
+            // "Best" alone read as a career best; it is the best of this month's group.
             <Badge tone="accent" size="sm" className="flex-shrink-0 uppercase tracking-[0.06em]">
-              Best
+              Best of month
             </Badge>
           )}
         </div>

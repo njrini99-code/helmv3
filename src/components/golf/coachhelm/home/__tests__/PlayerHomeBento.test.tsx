@@ -143,11 +143,15 @@ describe('PlayerHomeBento — mini-visual cells (realistic data)', () => {
 
     const rail = container.querySelector('[data-slot="rail-bars"]') as HTMLElement | null;
     expect(rail).not.toBeNull();
-    // Strongest (Putting 88%, Off the Tee 61%) + the single weakest (Around the Green 12%) —
-    // scoped to the rail itself since the headline above it separately repeats the strongest metric's label/value.
-    expect(within(rail!).getByText('SG: Putting')).toBeInTheDocument();
+    // REQUIREMENT CHANGED ON PURPOSE: the headline above the rail already names
+    // the strongest metric (Putting 88%), so the rail no longer repeats it.
+    // The rail carries the next strongest (Off the Tee 61%) + the single
+    // weakest (Around the Green 12%).
+    expect(within(cell).getAllByText(/SG: Putting/).length).toBeGreaterThan(0);
+    expect(within(rail!).queryByText('SG: Putting')).toBeNull();
+    expect(within(rail!).getByText('SG: Off the Tee')).toBeInTheDocument();
     expect(within(rail!).getByText('SG: Around the Green')).toBeInTheDocument();
-    expect(within(rail!).getByText('88%')).toBeInTheDocument();
+    expect(within(rail!).getByText('61%')).toBeInTheDocument();
     expect(within(rail!).getByText('12%')).toBeInTheDocument();
   });
 

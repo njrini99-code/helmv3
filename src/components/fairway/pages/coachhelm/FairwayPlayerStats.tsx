@@ -29,13 +29,20 @@ import { Surface, EmptyState } from '@/components/fairway';
 import { useGolfUser } from '@/contexts/golf-user-context';
 import { getPlayerDisplayName } from '@/app/golf/actions/stats-data';
 import { CoachHelmShell } from './CoachHelmShell';
-import { StatsSpineStage } from '@/components/golf/stats/spine-stage/StatsSpineStage';
+import { StatsSpineStage, type StatsSpineStageInitialData } from '@/components/golf/stats/spine-stage/StatsSpineStage';
 
 export interface FairwayPlayerStatsProps {
   initialPlayerId?: string | null;
+  /** Server-read first load for the resolved player (stats/page.tsx). */
+  initialStats?: StatsSpineStageInitialData | null;
+  /**
+   * Coach view: the viewed player's display name, read on the server
+   * alongside the stats. `undefined` = not provided (fetch on the client).
+   */
+  initialPlayerName?: string | null;
 }
 
-export function FairwayPlayerStats({ initialPlayerId = null }: FairwayPlayerStatsProps) {
+export function FairwayPlayerStats({ initialPlayerId = null, initialStats = null, initialPlayerName }: FairwayPlayerStatsProps) {
   const golfUser = useGolfUser();
 
   const resolvedPlayerId = initialPlayerId || golfUser.playerId || null;
@@ -44,10 +51,14 @@ export function FairwayPlayerStats({ initialPlayerId = null }: FairwayPlayerStat
   // A coach drilling into a teammate must see THAT player's name — not the
   // coach's own (golfUser.name) and not the generic "Player stats". The name
   // isn't in any cockpit payload, so resolve it here (authorized server action).
-  const [viewedPlayerName, setViewedPlayerName] = useState<string | null>(null);
+  // Seeded from the server when the page already read it for this player.
+  const nameSeeded = initialPlayerName !== undefined && initialStats?.playerId === resolvedPlayerId;
+  const [viewedPlayerName, setViewedPlayerName] = useState<string | null>(nameSeeded ? (initialPlayerName ?? null) : null);
   useEffect(() => {
     let cancelled = false;
-    if (isCoachView && resolvedPlayerId) {
+    if (nameSeeded) {
+      setViewedPlayerName(initialPlayerName ?? null);
+    } else if (isCoachView && resolvedPlayerId) {
       getPlayerDisplayName(resolvedPlayerId)
         .then((name) => { if (!cancelled) setViewedPlayerName(name); })
         .catch(() => { if (!cancelled) setViewedPlayerName(null); });
@@ -55,7 +66,7 @@ export function FairwayPlayerStats({ initialPlayerId = null }: FairwayPlayerStat
       setViewedPlayerName(null);
     }
     return () => { cancelled = true; };
-  }, [isCoachView, resolvedPlayerId]);
+  }, [isCoachView, resolvedPlayerId, nameSeeded, initialPlayerName]);
 
   const playerName = isCoachView ? viewedPlayerName : golfUser.name;
 
@@ -127,6 +138,7 @@ export function FairwayPlayerStats({ initialPlayerId = null }: FairwayPlayerStat
               // Bug #915: label the coach-facing SG cards with the actual
               // teammate name instead of the generic "Player" fallback.
               playerName={isCoachView ? (playerName ?? undefined) : undefined}
+              initialData={initialStats}
             />
           )}
         </CoachHelmShell>

@@ -7,7 +7,8 @@ import { isUuid } from '@/lib/utils/uuid';
 import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
 import { Metadata } from 'next';
 import { fairwayScope } from '@/lib/redesign/flag';
-import { FairwayPlayerProfile } from '@/components/fairway/pages/roster/FairwayPlayerProfile';
+import { PlayerDetailScreen } from '@/components/fairway/pages/player-detail/PlayerDetailScreen';
+import { loadPlayerDetail } from '@/components/fairway/pages/player-detail/loadPlayerDetail';
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -115,9 +116,27 @@ export default async function PlayerProfilePage({ params }: PageProps) {
     notFound();
   }
 
+  // One parallel server batch (rounds, round stats, genome, insights, focus
+  // areas, goals), started now and streamed: identity paints immediately and
+  // the body resolves behind Suspense. Nothing is fetched after hydration.
+  const firstName = player.first_name?.trim() || 'This player';
+  const detail = loadPlayerDetail(supabase, id, firstName);
+
   return (
     <div className={fairwayScope('min-h-full bg-canvas')}>
-      <FairwayPlayerProfile player={player} membershipStatus={membership.status} />
+      <PlayerDetailScreen
+        player={{
+          id: player.id,
+          firstName,
+          fullName: `${player.first_name ?? ''} ${player.last_name ?? ''}`.trim() || 'Player',
+          avatarUrl: player.avatar_url,
+          graduationYear: player.graduation_year,
+          email: player.email,
+          phone: player.phone,
+          membershipStatus: membership.status,
+        }}
+        detail={detail}
+      />
     </div>
   );
 }

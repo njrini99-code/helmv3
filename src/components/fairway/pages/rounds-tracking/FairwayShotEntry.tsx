@@ -19,6 +19,7 @@
  *  • ApproachMissSelector / PuttMissTagSelector reused AS-IS.
  * ========================================================================== */
 
+import { useState } from 'react';
 import { cn } from '@/lib/utils';
 import { fwHaptic } from '@/lib/fairway/haptics';
 import { Button } from '@/components/fairway/controls/button';
@@ -30,6 +31,13 @@ import { PuttMissTagSelector } from '@/components/golf/putt-miss-tag-selector';
 import { calculateShotDistanceWithDirection } from '@/lib/utils/shot-helpers';
 import { useDistanceUnits } from '@/hooks/golf/use-distance-units';
 import { displayToFeet, displayToYards, yardsToDisplay } from '@/lib/golf/distance-units';
+import {
+  validateShot,
+  validateHoleTotals,
+  deriveScoreAndPutts,
+  type RoundEntryIssue,
+  type ValidatableShot,
+} from '@/lib/golf/round-entry-validation';
 import type { ShotRecord, RoundHole, PuttMissTag, ApproachMissDirection } from '@/lib/types/golf';
 import type { ShotAction } from '@/hooks/golf/use-shot-state-machine';
 
@@ -180,6 +188,79 @@ export function FairwayShotEntry({
   const isMeters = distancePref === 'meters';
 
   const ready = isReadyForNextShot();
+
+  // ── Plausibility (shared rules — src/lib/golf/round-entry-validation.ts) ──
+  // Runs only once the parent's own field gates pass, on the shot as it WILL
+  // be recorded. `block` disables the primary action with the reason at the
+  // field; `confirm` asks once ("A 420-yard drive onto the green? Tap to
+  // confirm") and is remembered for exactly this hole/shot/result/distance.
+  // Valid, ordinary shots produce no issue, so their flow is unchanged.
+  const [confirmedIssueKey, setConfirmedIssueKey] = useState<string | null>(null);
+  const plausibilityIssue: RoundEntryIssue | null = (() => {
+    if (!ready || !resultOfShot) return null;
+    let afterValue = 0;
+    let afterUnit: 'yards' | 'feet' = 'feet';
+    if (resultOfShot !== 'hole') {
+      const parsed = parseFloat(distanceAfterShot);
+      if (!Number.isFinite(parsed)) return null;
+      afterUnit = isPutting || resultOfShot === 'green' ? 'feet' : 'yards';
+      afterValue = isMeters
+        ? (afterUnit === 'feet' ? displayToFeet(parsed, 'meters') : displayToYards(parsed, 'meters'))
+        : parsed;
+    }
+    const pending: ValidatableShot = {
+      shotNumber: currentShot,
+      shotType: isTeeShot ? 'tee' : isPutting ? 'putting' : 'approach',
+      distanceToHoleBefore: distanceToHole,
+      distanceUnitBefore: distanceUnit,
+      result: resultOfShot,
+      distanceToHoleAfter: afterValue,
+      distanceUnitAfter: afterUnit,
+      isPenalty: false,
+      missDirection,
+      approachMissDirection,
+      puttMissTags,
+    };
+    const hole = { holeNumber: currentHole.number, par: currentHole.par, yardage: currentHole.yardage };
+    const issues = validateShot(pending, hole);
+    if (resultOfShot === 'hole') {
+      const { score, putts } = deriveScoreAndPutts([...shotHistory, pending]);
+      issues.push(...validateHoleTotals({ holeNumber: currentHole.number, par: currentHole.par, score, putts }));
+    }
+    return issues.find((i) => i.severity === 'block') ?? issues[0] ?? null;
+  })();
+  const plausibilityKey = plausibilityIssue
+    ? `${currentHole.number}:${currentShot}:${plausibilityIssue.rule}:${resultOfShot}:${distanceAfterShot}`
+    : null;
+  const plausibilityBlocks =
+    plausibilityIssue != null
+    && (plausibilityIssue.severity === 'block' || plausibilityKey !== confirmedIssueKey);
+  const canRecord = ready && !plausibilityBlocks;
+  const plausibilityNotice = plausibilityIssue ? (
+    <div className="mt-3">
+      {plausibilityIssue.severity === 'block' ? (
+        <InlineNotice tone="danger">{plausibilityIssue.message}</InlineNotice>
+      ) : plausibilityKey === confirmedIssueKey ? (
+        <p role="status" className="font-fw-sans text-sm text-text-secondary">Confirmed — tap Next when ready.</p>
+      ) : (
+        <InlineNotice
+          tone="warning"
+          action={
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => setConfirmedIssueKey(plausibilityKey)}
+            >
+              Confirm
+            </Button>
+          }
+        >
+          {plausibilityIssue.message}
+        </InlineNotice>
+      )}
+    </div>
+  ) : null;
+  const noticeAtDistance = plausibilityIssue?.rule === 'distance_not_decreasing';
   const distanceInvalid =
     !!distanceAfterShot && (!Number.isFinite(parseFloat(distanceAfterShot)) || parseFloat(distanceAfterShot) < 0);
 
@@ -188,7 +269,12 @@ export function FairwayShotEntry({
   // the user knows what to do. The order/conditions mirror isReadyForNextShot()
   // VERBATIM so the hint can never disagree with the disabled state.
   const nextShotBlocker: string | null = (() => {
-    if (ready) return null;
+    if (ready) {
+      if (!plausibilityBlocks || !plausibilityIssue) return null;
+      return plausibilityIssue.severity === 'block'
+        ? plausibilityIssue.message
+        : 'Confirm the result above to continue';
+    }
     if (!resultOfShot) return isPutting ? 'Select a putt result' : 'Select a shot result';
     if (isTeeShot && currentHole.par !== 3 && usedDriver === null) return 'Choose driver or non-driver';
     if (isPutting && !puttBreak) return 'Select a putt break';
@@ -367,6 +453,7 @@ export function FairwayShotEntry({
                 });
               })()}
             </div>
+            {!noticeAtDistance && plausibilityNotice}
           </Section>
 
           {/* Miss Direction */}
@@ -438,6 +525,7 @@ export function FairwayShotEntry({
                   )}
                 />
                 {distanceInvalid && <p className="font-fw-sans text-sm text-fw-danger-ink">Please enter a valid distance</p>}
+                {noticeAtDistance && plausibilityNotice}
 
                 {isPutting && (
                   <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
@@ -584,7 +672,7 @@ export function FairwayShotEntry({
             fwHaptic(resultOfShot === 'hole' ? 'medium' : 'light');
             onNextShot();
           }}
-          disabled={!ready}
+          disabled={!canRecord}
           aria-describedby={nextShotBlocker ? 'fw-next-shot-blocker' : undefined}
           aria-label={resultOfShot === 'hole' ? `Complete hole with score ${currentShot}` : 'Record next shot'}
         >

@@ -33,10 +33,14 @@ const DARK_QUERY = '(prefers-color-scheme: dark)';
 
 /**
  * Mobile browser-chrome colour, kept in lockstep with the canvas the shell
- * actually paints (`--fw-color-canvas` in design-tokens.css): #0e0e10 is
- * oklch(0.148 0.003 250), #f7efdf is oklch(0.953 0.022 83). Without these the
- * address bar / status bar stayed at the UA default and framed a dark page in
- * white on iOS and Android.
+ * actually paints (`--fw-color-canvas` in design-tokens.css), converted
+ * OKLCH → sRGB: light oklch(0.953 0.022 83) = #f7efdf, dark
+ * oklch(0.175 0.003 150) = #101110. The native shell uses the same pair
+ * (ios/App/App/Assets.xcassets/LaunchCanvas.colorset, the splash images and
+ * GolfBridgeViewController), so launch → webview → page is one colour. If the
+ * canvas token changes, update all of them (and ThemeScript's pre-paint copy).
+ * Without these the address bar / status bar stayed at the UA default and
+ * framed a dark page in white on iOS and Android.
  *
  * NOT expressed as a Next `viewport.themeColor` media query: that can only key
  * off the OS `prefers-color-scheme`, so an explicit light/dark choice held in
@@ -44,7 +48,7 @@ const DARK_QUERY = '(prefers-color-scheme: dark)';
  * chrome. Driving it from `applyTheme` means the meta always tracks the theme
  * the app actually resolved, however it was chosen.
  */
-const THEME_COLOR = { dark: '#0e0e10', light: '#f7efdf' } as const;
+const THEME_COLOR = { dark: '#101110', light: '#f7efdf' } as const;
 
 function isTheme(v: unknown): v is GolfTheme {
   return v === 'light' || v === 'dark' || v === 'system';

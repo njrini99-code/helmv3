@@ -19,13 +19,14 @@
  * Presentation only; suppressed entirely when the player has no recent courses.
  * ========================================================================== */
 
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { MapPin, ArrowRight } from 'lucide-react';
 
 import { Sheet } from '@/components/fairway/overlays/Sheet';
 import { Inset } from '@/components/fairway/surfaces/surface';
 import { Button } from '@/components/fairway/controls/button';
 import { triggerHaptic } from '@/lib/utils/capacitor';
+import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
 import { formatCourseName } from '@/components/golf/courses/CourseImage';
 import type { RecentPlayedCourse } from '@/app/golf/actions/golf';
 
@@ -35,6 +36,16 @@ export interface FairwayRecentCoursesProps {
   /** Called when the player confirms a course in the sheet. Parent pre-fills setup. */
   onConfirmCourse: (course: RecentPlayedCourse) => void;
 }
+
+/**
+ * How long the confirm sheet takes to leave: vaul's exit slide (~500ms,
+ * `cubic-bezier(0.32, 0.72, 0, 1)`). The parent's confirm handler advances the
+ * round step, which unmounts this whole setup screen — sheet included — so it
+ * must not run until the sheet is gone, or the sheet vanishes mid-slide and the
+ * tracking screen hard-cuts in. Under reduced motion the global CSS collapses
+ * vaul's transition to ~0, so the hand-off is immediate.
+ */
+export const QUICK_PICK_EXIT_MS = 500;
 
 function fmtLoc(c: RecentPlayedCourse): string {
   return [c.courseCity, c.courseState].filter((p): p is string => Boolean(p && p.trim())).join(', ');
@@ -48,26 +59,49 @@ function subtitle(c: RecentPlayedCourse): string {
 }
 
 export function FairwayRecentCourses({ courses, onConfirmCourse }: FairwayRecentCoursesProps) {
+  const reduceMotion = useReducedMotionGuard();
   const [pending, setPending] = useState<RecentPlayedCourse | null>(null);
+  // The course the sheet last showed. `open` follows `pending`, but the title
+  // and body render from this so the closing sheet keeps its content for the
+  // whole exit instead of collapsing to an empty "Start a new round?" shell.
+  const [shown, setShown] = useState<RecentPlayedCourse | null>(null);
+  // Set between "Start round" and the deferred hand-off: blocks a double tap
+  // and a rail tap that would reopen a sheet about to be torn down.
+  const confirmingRef = useRef(false);
+  const confirmTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const onConfirmRef = useRef(onConfirmCourse);
+  useEffect(() => {
+    onConfirmRef.current = onConfirmCourse;
+  }, [onConfirmCourse]);
+
+  useEffect(() => () => {
+    if (confirmTimerRef.current) clearTimeout(confirmTimerRef.current);
+  }, []);
 
   // Cap at 8 to keep the rail scannable (the action already caps; this is defensive).
   const visible = courses.slice(0, 8);
 
   const onTap = useCallback((c: RecentPlayedCourse) => {
+    if (confirmingRef.current) return;
     triggerHaptic('light');
+    setShown(c);
     setPending(c);
   }, []);
 
   const onConfirm = useCallback(() => {
-    setPending((c) => {
-      if (c) {
-        triggerHaptic('medium');
-        // Close first so the unmount-anim runs before the parent transitions step.
-        onConfirmCourse(c);
-      }
-      return null;
-    });
-  }, [onConfirmCourse]);
+    const c = pending;
+    if (!c || confirmingRef.current) return;
+    confirmingRef.current = true;
+    triggerHaptic('medium');
+    // Close first. The parent is called from the handler (never from inside a
+    // state updater) and only after the sheet's exit has finished.
+    setPending(null);
+    confirmTimerRef.current = setTimeout(() => {
+      confirmTimerRef.current = null;
+      confirmingRef.current = false;
+      onConfirmRef.current(c);
+    }, reduceMotion ? 0 : QUICK_PICK_EXIT_MS);
+  }, [pending, reduceMotion]);
 
   if (visible.length === 0) return null;
 
@@ -128,10 +162,10 @@ export function FairwayRecentCourses({ courses, onConfirmCourse }: FairwayRecent
         onOpenChange={(next) => {
           if (!next) setPending(null);
         }}
-        title={pending ? `Start a new round at ${formatCourseName(pending.courseName)}?` : 'Start a new round?'}
-        description={pending ? subtitle(pending) : undefined}
+        title={shown ? `Start a new round at ${formatCourseName(shown.courseName)}?` : 'Start a new round?'}
+        description={shown ? subtitle(shown) : undefined}
       >
-        {pending && (
+        {shown && (
           <>
             <Sheet.Body>
               <Inset padding="md">
@@ -139,19 +173,19 @@ export function FairwayRecentCourses({ courses, onConfirmCourse }: FairwayRecent
                   <div>
                     <dt className="font-fw-sans text-eyebrow uppercase tracking-[0.12em] text-text-tertiary">Tees</dt>
                     <dd className="mt-1 font-fw-sans text-body-sm font-medium text-text-primary">
-                      {pending.teesPlayed ?? '—'}
+                      {shown.teesPlayed ?? '—'}
                     </dd>
                   </div>
                   <div className="border-x border-border-subtle">
                     <dt className="font-fw-sans text-eyebrow uppercase tracking-[0.12em] text-text-tertiary">Holes</dt>
                     <dd className="mt-1 font-fw-sans text-body-sm font-medium text-text-primary">
-                      {pending.holesPerRound}
+                      {shown.holesPerRound}
                     </dd>
                   </div>
                   <div>
                     <dt className="font-fw-sans text-eyebrow uppercase tracking-[0.12em] text-text-tertiary">Played</dt>
                     <dd className="mt-1 font-fw-sans text-body-sm font-medium tabular-nums text-text-primary">
-                      {pending.roundCount > 0 ? `${pending.roundCount}×` : 'New'}
+                      {shown.roundCount > 0 ? `${shown.roundCount}×` : 'New'}
                     </dd>
                   </div>
                 </dl>

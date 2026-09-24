@@ -38,6 +38,11 @@ const tokenColor = (cssVar: string) =>
   `color-mix(in oklab, var(${cssVar}) calc(<alpha-value> * 100%), transparent)`;
 
 const config: Config = {
+  // Emit every `hover:` variant inside `@media (hover: hover) and (pointer: fine)`
+  // so a tap on iOS/Android never leaves a card stuck in its hover lift. Touch
+  // press feedback comes from `active:` (see fwPressSurface in
+  // src/components/fairway/controls/_internal.ts).
+  future: { hoverOnlyWhenSupported: true },
   darkMode: ["class"],
   content: ["./src/**/*.{js,ts,jsx,tsx,mdx}"],
   theme: {
@@ -296,37 +301,38 @@ const config: Config = {
         },
       },
       fontFamily: {
-        // Geist Sans is Vercel's display-light grotesque — sub-pixel
-        // optical sizing + range from weight 100 to 900 lets the
-        // California-modern × neo-futurism brief breathe at every
-        // scale. Fraunces stays available as the editorial serif
-        // companion for eyebrows and quotes (used sparingly).
-        sans: ['var(--font-geist-sans)', 'DM Sans', '-apple-system', 'BlinkMacSystemFont', 'system-ui', 'sans-serif'],
-        // Wave 6 will use Fraunces for editorial accents (one italicized
-        // hero word, eyebrows, pull quotes). `--font-fraunces` is loaded
-        // by next/font in src/app/layout.tsx; `--font-serif` is the
-        // legacy alias kept for backward-compat.
-        serif: ['var(--font-fraunces)', 'var(--font-serif)', 'Playfair Display', 'Georgia', 'serif'],
-        mono: ['var(--font-geist-mono)', 'ui-monospace', 'SFMono-Regular', 'monospace'],
-        display: ['var(--font-geist-sans)', '-apple-system', 'BlinkMacSystemFont', 'system-ui', 'sans-serif'],
+        // ONE sans face app-wide: the Apple SF system stack (2026-09-23 owner
+        // decision). `sans` and `display` used to lead with Geist / DM Sans
+        // webfonts while Fairway rendered in SF, so a golf screen could mix
+        // three sans faces. No webfont is loaded for any sans role now.
+        sans: ['-apple-system', 'BlinkMacSystemFont', '"SF Pro Text"', '"Helvetica Neue"', '"Segoe UI"', 'Roboto', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        // Fraunces is loaded only by the BaseballHelm layout
+        // (src/app/baseball/layout.tsx). Every var() below carries an inline
+        // fallback: an undefined var() with no fallback makes the whole
+        // font-family declaration invalid at computed time, and the element
+        // silently inherits instead of using the rest of the stack.
+        serif: ['var(--font-fraunces, Georgia)', 'Georgia', 'serif'],
+        // Geist Mono is loaded only by the BaseballHelm layout; everywhere
+        // else code-like text uses the platform monospace (SF Mono on Apple).
+        mono: ['var(--font-geist-mono, ui-monospace)', 'ui-monospace', 'SFMono-Regular', 'monospace'],
+        display: ['-apple-system', 'BlinkMacSystemFont', '"SF Pro Display"', '"Helvetica Neue"', '"Segoe UI"', 'Roboto', 'ui-sans-serif', 'system-ui', 'sans-serif'],
         // ── BaseballHelm "Living Annual" display + number face (ADDITIVE) ──
         // Space Grotesk carries player names, hero numerals, section titles AND
-        // stat figures (always `tabular-nums`). Loaded by next/font in layout.tsx
-        // (`--font-space-grotesk`). Founder-locked 2026-07-01; replaces the serif
-        // + Fragment-Mono roles for baseball surfaces only.
-        annual: ['var(--font-space-grotesk)', 'Space Grotesk', 'var(--font-geist-sans)', 'system-ui', 'sans-serif'],
-        // ── Fairway design-system type roles (ADDITIVE) ──
-        // Distinct names (`font-fw-*`) so they never override the active
-        // `font-sans` / `font-display` / `font-mono` utilities above. Mirror
-        // the --fw-font-* vars in src/styles/design-tokens.css. Loaded by
-        // next/font in src/app/layout.tsx (Fraunces variable / General Sans
-        // local / Fragment Mono). Only opted-in Fairway components use these.
-        // Apple system sans (SF Pro on Apple devices) — no serif. The headline
-        // (`fw-display`) + body (`fw-sans`) both ride the system stack so the UI
-        // reads like a native Apple app; numbers stay on Fragment Mono (`fw-mono`).
+        // stat figures (always `tabular-nums`). Loaded by next/font in
+        // src/app/baseball/layout.tsx (`--font-space-grotesk`). Founder-locked
+        // 2026-07-01; baseball surfaces only.
+        annual: ['var(--font-space-grotesk, system-ui)', '"Space Grotesk"', '-apple-system', 'BlinkMacSystemFont', 'system-ui', 'sans-serif'],
+        // ── Fairway design-system type roles ──
+        // Mirror the --fw-font-* vars in src/styles/design-tokens.css. All
+        // three ride the Apple system stack, so Fairway ships zero font bytes.
         'fw-display': ['-apple-system', 'BlinkMacSystemFont', '"SF Pro Display"', '"Helvetica Neue"', '"Segoe UI"', 'Roboto', 'ui-sans-serif', 'system-ui', 'sans-serif'],
         'fw-sans':    ['-apple-system', 'BlinkMacSystemFont', '"SF Pro Text"', '"Helvetica Neue"', '"Segoe UI"', 'Roboto', 'ui-sans-serif', 'system-ui', 'sans-serif'],
-        'fw-mono':    ['var(--font-fairway-mono)', 'ui-monospace', '"SF Mono"', 'monospace'],
+        // `fw-mono` is the NUMERIC role, not a monospace face (2026-09-23 owner
+        // decision: Fragment Mono and its slashed zero are retired). Numbers
+        // render in SF with tabular figures; globals.css gives `.font-fw-mono`
+        // `font-variant-numeric: tabular-nums` so columns still align. The
+        // utility name is kept so ~270 call sites need no edit.
+        'fw-mono':    ['-apple-system', 'BlinkMacSystemFont', '"SF Pro Text"', '"Helvetica Neue"', '"Segoe UI"', 'Roboto', 'ui-sans-serif', 'system-ui', 'sans-serif'],
       },
       fontSize: {
         // ═══════════════════════════════════════════════════════════════

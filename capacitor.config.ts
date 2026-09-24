@@ -11,8 +11,10 @@ const config: CapacitorConfig = {
     // sequential shells on every cold start. Landing on the dashboard lets
     // middleware pass authed users straight through (one skeleton) and 307s
     // signed-out users to /golf/login?returnTo=... server-side. Matches the
-    // PWA manifest's start_url.
-    url: 'https://www.helmsportslabs.com/golf/dashboard',
+    // PWA manifest's start_url. Apex host, not www: www answers every request
+    // with a non-cacheable 307 to the apex, which cost a redirect round trip
+    // before the first byte of every cold start.
+    url: 'https://helmsportslabs.com/golf/dashboard',
     cleartext: false,
     // Shown when the remote app fails to load — no connectivity, DNS failure,
     // origin down. Without it the WebView renders Chromium's raw "can't reach
@@ -22,7 +24,9 @@ const config: CapacitorConfig = {
     // network to display. Its Try Again button detects the local origin and
     // navigates back to the app rather than reloading itself.
     errorPath: 'offline.html',
-    allowNavigation: ['*.helmsportslabs.com', 'helmsportslabs.com'],
+    // Apex first (the app's origin); `*.helmsportslabs.com` keeps old www links
+    // and any subdomain inside the app.
+    allowNavigation: ['helmsportslabs.com', '*.helmsportslabs.com', 'www.helmsportslabs.com'],
   },
   ios: {
     allowsLinkPreview: false,
@@ -36,6 +40,11 @@ const config: CapacitorConfig = {
     // Marker appended to UA so the server-side proxy can detect native iOS
     // requests and block marketing/membership pages (App Store Guideline 3.1.1).
     appendUserAgent: 'HelmSportsLabsApp',
+    // Light page canvas (--fw-color-canvas, #F7EFDF) for the webview before
+    // the first paint. GolfBridgeViewController then swaps in the dynamic
+    // LaunchCanvas colour (light #F7EFDF / dark #101110), which this static
+    // config cannot express.
+    backgroundColor: '#F7EFDF',
   },
   android: {
     // Mirrors the iOS block. Every value here has a reason — do not drop one
@@ -76,10 +85,15 @@ const config: CapacitorConfig = {
     // frozen rather than merely slow. Reproduced on an Android 16 emulator:
     // stuck on the splash indefinitely. launchShowDuration is the ceiling, not
     // the target -- a healthy cold start still hides early via hideSplashScreen().
+    // backgroundColor is the light page canvas (--fw-color-canvas, #F7EFDF),
+    // the same colour baked into the iOS Splash images, LaunchScreen.storyboard
+    // (LaunchCanvas colour asset) and the native webview background, so a cold
+    // start has no colour step. Android's own splash resources
+    // (android/app/src/main/res) still use the older #EDE0C8.
     SplashScreen: {
       launchAutoHide: true,
       launchShowDuration: 10000,
-      backgroundColor: '#EDE0C8',
+      backgroundColor: '#F7EFDF',
       showSpinner: false,
     },
     StatusBar: { style: 'LIGHT' },

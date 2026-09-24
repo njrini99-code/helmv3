@@ -464,7 +464,34 @@ export interface CategoryTrendsInput {
 export interface CategoryTrend {
   series: number[];
   delta?: NonNullable<SpineLedgerRow['delta']>;
+  /** What the delta compares, e.g. "last 5 vs prior 5 rounds". */
+  deltaWindow?: string;
   label: string;
+}
+
+/** Largest window per side of a trend comparison. */
+export const TREND_WINDOW_MAX = 5;
+/** Smallest window per side — fewer rounds is noise, so no delta at all. */
+export const TREND_WINDOW_MIN = 3;
+
+/**
+ * Recent-vs-prior trend delta: the mean of the latest `w` points minus the
+ * mean of the `w` points before them, `w = min(5, floor(n / 2))`. Replaces a
+ * newest-minus-oldest diff that read one outlier round (a 37 against a 76)
+ * as "−39.0". Series must be oldest → newest.
+ */
+export function recentVsPriorDelta(
+  series: readonly number[],
+  higherIsBetter: boolean,
+  formatMagnitude: (delta: number) => string,
+): { delta: NonNullable<SpineLedgerRow['delta']>; window: number } | undefined {
+  const w = Math.min(TREND_WINDOW_MAX, Math.floor(series.length / 2));
+  if (w < TREND_WINDOW_MIN) return undefined;
+  const avg = (xs: readonly number[]) => xs.reduce((a, b) => a + b, 0) / xs.length;
+  const recent = avg(series.slice(series.length - w));
+  const prior = avg(series.slice(series.length - 2 * w, series.length - w));
+  const delta = ledgerDelta(recent, prior, higherIsBetter, formatMagnitude);
+  return delta ? { delta, window: w } : undefined;
 }
 
 function toFiniteSeries(points: ReadonlyArray<CategoryTrendPoint> | null | undefined): number[] {
@@ -480,11 +507,13 @@ function buildCategoryTrend(
 ): CategoryTrend | null {
   const series = toFiniteSeries(points);
   if (series.length === 0) return null;
-  const delta =
-    series.length >= 2
-      ? ledgerDelta(series[series.length - 1], series[0], higherIsBetter, formatMagnitude)
-      : undefined;
-  return { series, label, delta };
+  const trend = recentVsPriorDelta(series, higherIsBetter, formatMagnitude);
+  return {
+    series,
+    label,
+    delta: trend?.delta,
+    deltaWindow: trend ? `last ${trend.window} vs prior ${trend.window} rounds` : undefined,
+  };
 }
 
 /** Per-category `?area=` trends: `null` where genuinely absent (short game),
@@ -508,7 +537,9 @@ export function buildCategoryTrends(input: CategoryTrendsInput | null | undefine
     driving: buildCategoryTrend(input?.fairway, 'Fairways hit', true, fmtPctDelta),
     approach: buildCategoryTrend(input?.gir, 'Greens in regulation', true, fmtPctDelta),
     putting: buildCategoryTrend(input?.putts, 'Putts per round', false, (d) => fmtNumDelta(d, 1)),
-    scoring: buildCategoryTrend(input?.score, 'Score to par', false, (d) => fmtNumDelta(d, 1)),
+    // The series is the 18-hole-normalized SCORE (getTrendAnalysis
+    // trends.score), not score to par — label it for what it is.
+    scoring: buildCategoryTrend(input?.score, 'Score per 18 holes', false, (d) => fmtNumDelta(d, 1)),
     short_game: null,
   };
 }

@@ -47,6 +47,22 @@ describe('rankByValue', () => {
     expect(ranks.get('b')).toEqual({ rank: 2, of: 2 });
   });
 
+  it('gives tied values the same rank (competition ranking)', () => {
+    const ranks = rankByValue(
+      [
+        { id: 'cole', value: 74.35 },
+        { id: 'dylan', value: 75.25 },
+        { id: 'mason', value: 75.25 },
+        { id: 'jackson', value: 75.33 },
+      ],
+      'lower_better',
+    );
+    expect(ranks.get('cole')).toEqual({ rank: 1, of: 4 });
+    expect(ranks.get('dylan')).toEqual({ rank: 2, of: 4 });
+    expect(ranks.get('mason')).toEqual({ rank: 2, of: 4 });
+    expect(ranks.get('jackson')).toEqual({ rank: 4, of: 4 });
+  });
+
   it('excludes null/non-finite values from both the ranking and the denominator', () => {
     const ranks = rankByValue(
       [
@@ -411,6 +427,23 @@ describe('buildTeamBoardViewModel', () => {
     });
     expect(vm.kpis.teamScoring).toBe('—');
     expect(vm.kpis.teamSg).toBe('—');
+  });
+
+  it('prefers countable-round SG over the lifetime standing value for Team SG', () => {
+    const vm = buildTeamBoardViewModel({
+      players: [
+        player({ id: 'a', roundsPlayed: 21, sgTotalPerRound: -3.6, sgRounds: 18 }),
+        player({ id: 'b', roundsPlayed: 10, sgTotalPerRound: -6, sgRounds: 2 }),
+      ],
+      // The poisoned lifetime value (includes a +34.5 round) must not be used.
+      standingByPlayer: new Map<string, Map<MetricId, PlayerStanding>>([
+        ['a', new Map<MetricId, PlayerStanding>([['sg_total', standing({ player_value: -1.61 })]])],
+      ]),
+      intelligenceSampleSize: 0,
+      rounds30d: 0,
+    });
+    // (-3.6 * 18 + -6 * 2) / 20
+    expect(vm.kpis.teamSgRaw).toBeCloseTo(-3.84, 5);
   });
 
   it('pools raw attempts for team fundamentals and exposes player drill-in values', () => {

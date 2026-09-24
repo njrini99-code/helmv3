@@ -26,6 +26,7 @@ import {
   pgaOmissionNote,
   pgaReferenceLabel,
   resolveDisplayScale,
+  unitHardBounds,
   shouldShowTeamMarker,
   standingSubjectLabel,
   teamRelativeText,
@@ -61,7 +62,7 @@ export function Card(props: CardProps) {
   const effectiveScale = resolveDisplayScale(
     props.scale,
     [props.player_value, showTeam ? props.team_avg : null, props.pga_omitted ? null : props.pga_value],
-    { symmetric: isSgMetric },
+    { symmetric: isSgMetric, hardBounds: unitHardBounds(props.unit) },
   );
   const youPct = toScalePct(props.player_value, effectiveScale);
   const teamPct = showTeam && props.team_avg !== null ? toScalePct(props.team_avg, effectiveScale) : null;

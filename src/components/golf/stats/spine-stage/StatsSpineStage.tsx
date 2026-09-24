@@ -77,6 +77,54 @@ export interface StatsSpineStageProps {
   isOwnStats?: boolean;
   playerName?: string;
   className?: string;
+  /**
+   * Server-rendered first load (stats/page.tsx). When it belongs to
+   * `playerId`, the career ('overall') view renders from it at first paint
+   * and the mount-time client fetch is skipped — that fetch used to be a
+   * post-hydration server-action POST queued behind every other action.
+   * Scope changes and retries still fetch on the client.
+   */
+  initialData?: StatsSpineStageInitialData | null;
+}
+
+type StatsDashboardBundle = Awaited<ReturnType<typeof getPlayerStatsDashboardBundle>>;
+
+export interface StatsSpineStageInitialData {
+  playerId: string;
+  /** The 'overall' bundle, exactly as `getPlayerStatsDashboardBundle` returns it. */
+  bundle: StatsDashboardBundle;
+  /** `getPlayerRoundOptions` result: null = read failed, [] = no rounds. Omit to fetch on the client. */
+  roundOptions?: RoundOption[] | null;
+}
+
+/**
+ * Bundle → rendered state. One place, so the server-seeded first paint and the
+ * client refetch can never disagree about how a failed part is shown.
+ */
+function bundleToState(bundle: StatsDashboardBundle) {
+  const standingFailed = !bundle.standing.ok || !bundle.standing.value.success;
+  const leakFailed = !bundle.leak.ok || !bundle.leak.value.success;
+  const sw = bundle.strengthsWeaknesses.ok ? bundle.strengthsWeaknesses.value : null;
+  return {
+    detailedStats: bundle.detailed.ok ? bundle.detailed.value : null,
+    trendData: bundle.trend.ok ? bundle.trend.value : null,
+    standingRows:
+      bundle.standing.ok && bundle.standing.value.success ? (bundle.standing.value.data ?? []) : [],
+    leakMaps: bundle.leak.ok && bundle.leak.value.success ? (bundle.leak.value.data ?? null) : null,
+    sprayData: bundle.spray.ok ? bundle.spray.value : null,
+    strengths: sw ? (sw.strengths ?? []) : [],
+    weaknesses: sw ? (sw.weaknesses ?? []) : [],
+    worstHoles: bundle.worstHoles.ok ? bundle.worstHoles.value : null,
+    // CoachHelm patterns are a non-blocking enrichment — a failure (or a
+    // CoachHelm-disabled player) just hides the section, never errors the page.
+    patterns:
+      bundle.patterns.ok && bundle.patterns.value.success ? (bundle.patterns.value.patterns ?? []) : [],
+    loadError: standingFailed && leakFailed ? 'Failed to load stats. Please try again.' : null,
+    // The page is otherwise healthy, but the leak-map enrichment failed on its
+    // own — surface a scoped, retryable notice in the Approach/Putting drills
+    // rather than letting them read as "not enough data". (P354)
+    leakError: !(standingFailed && leakFailed) && leakFailed,
+  };
 }
 
 function finite(n: number | null | undefined): number | null {
@@ -110,24 +158,28 @@ function roundOptionLabel(round: RoundOption): string {
     .join(' · ');
 }
 
-export function StatsSpineStage({ playerId, isOwnStats = false, playerName, className }: StatsSpineStageProps) {
+export function StatsSpineStage({ playerId, isOwnStats = false, playerName, className, initialData = null }: StatsSpineStageProps) {
   const standingViewerContext = isOwnStats ? 'self' : 'coach';
 
-  const [detailedStats, setDetailedStats] = useState<GolfStats | null>(null);
-  const [trendData, setTrendData] = useState<TrendAnalysisResponse | null>(null);
-  const [standingRows, setStandingRows] = useState<PlayerStandingRow[] | null>(null);
-  const [leakMaps, setLeakMaps] = useState<PlayerLeakMaps | null>(null);
+  // Server-seeded first paint — only when the seed is for THIS player.
+  const [seed] = useState(() =>
+    initialData && initialData.playerId === playerId ? bundleToState(initialData.bundle) : null,
+  );
+  const [detailedStats, setDetailedStats] = useState<GolfStats | null>(seed?.detailedStats ?? null);
+  const [trendData, setTrendData] = useState<TrendAnalysisResponse | null>(seed?.trendData ?? null);
+  const [standingRows, setStandingRows] = useState<PlayerStandingRow[] | null>(seed?.standingRows ?? null);
+  const [leakMaps, setLeakMaps] = useState<PlayerLeakMaps | null>(seed?.leakMaps ?? null);
   // Distinguish a leak-maps FETCH FAILURE from genuine no-data, so the
   // Approach/Putting drills render an honest "couldn't load — retry" notice
   // instead of masking a backend error as the insufficient-data empty state.
   // Mirrors FairwayStatsCockpit's P354 `leakError` pattern.
-  const [leakError, setLeakError] = useState(false);
-  const [sprayData, setSprayData] = useState<SprayChartResponse | null>(null);
-  const [strengths, setStrengths] = useState<StatisticalStrengthWeakness[]>([]);
-  const [weaknesses, setWeaknesses] = useState<StatisticalStrengthWeakness[]>([]);
-  const [worstHoles, setWorstHoles] = useState<WorstHoleResponse | null>(null);
-  const [patterns, setPatterns] = useState<CoachHelmPattern[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [leakError, setLeakError] = useState(seed?.leakError ?? false);
+  const [sprayData, setSprayData] = useState<SprayChartResponse | null>(seed?.sprayData ?? null);
+  const [strengths, setStrengths] = useState<StatisticalStrengthWeakness[]>(seed?.strengths ?? []);
+  const [weaknesses, setWeaknesses] = useState<StatisticalStrengthWeakness[]>(seed?.weaknesses ?? []);
+  const [worstHoles, setWorstHoles] = useState<WorstHoleResponse | null>(seed?.worstHoles ?? null);
+  const [patterns, setPatterns] = useState<CoachHelmPattern[]>(seed?.patterns ?? []);
+  const [loading, setLoading] = useState(!seed);
   // A02/A06: `loading` blanks the WHOLE spine+stage region. It may therefore
   // only be set when there is nothing on screen worth preserving — the first
   // load for a player. Two narrower flags cover the cases where usable content
@@ -139,17 +191,36 @@ export function StatsSpineStage({ playerId, isOwnStats = false, playerName, clas
   //   leakLoading  — the Approach/Putting leak maps are being retried ALONE.
   const [scopeLoading, setScopeLoading] = useState(false);
   const [leakLoading, setLeakLoading] = useState(false);
-  const [loadError, setLoadError] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(seed?.loadError ?? null);
+  const seededRoundOptions =
+    initialData && initialData.playerId === playerId && initialData.roundOptions !== undefined
+      ? initialData.roundOptions
+      : undefined;
   // Round scope. 'overall' is the career aggregate this page has always shown;
   // an explicit array is an owned, coach-adjustable round set. The server
   // verifies it against this player's completed rounds before reading shots.
-  const [roundOptions, setRoundOptions] = useState<RoundOption[]>([]);
+  const [roundOptions, setRoundOptions] = useState<RoundOption[]>(seededRoundOptions ?? []);
   // Distinguishes "this player has no rounds" (hide the picker — nothing to
   // pick) from "the round list failed to load" (say so). Same distinction
   // `leakError` makes for the leak maps.
-  const [roundOptionsError, setRoundOptionsError] = useState(false);
+  const [roundOptionsError, setRoundOptionsError] = useState(seededRoundOptions === null);
   const [roundScope, setRoundScope] = useState<StatsRoundScope>('overall');
   const [qualifierPresetId, setQualifierPresetId] = useState('');
+
+  const applyBundle = useCallback((bundle: StatsDashboardBundle) => {
+    const next = bundleToState(bundle);
+    setDetailedStats(next.detailedStats);
+    setTrendData(next.trendData);
+    setStandingRows(next.standingRows);
+    setLeakMaps(next.leakMaps);
+    setSprayData(next.sprayData);
+    setStrengths(next.strengths);
+    setWeaknesses(next.weaknesses);
+    setWorstHoles(next.worstHoles);
+    setPatterns(next.patterns);
+    setLoadError(next.loadError);
+    setLeakError(next.leakError);
+  }, []);
 
   const loadAll = useCallback(async (id: string, roundId: StatsRoundScope, opts?: { quiet?: boolean }) => {
     // `quiet` keeps the currently-rendered page mounted and marks only the
@@ -160,58 +231,14 @@ export function StatsSpineStage({ playerId, isOwnStats = false, playerName, clas
     setLeakError(false);
     try {
       const bundle = await getPlayerStatsDashboardBundle(id, roundId);
-
-      if (bundle.detailed.ok) setDetailedStats(bundle.detailed.value);
-      else setDetailedStats(null);
-      if (bundle.trend.ok) setTrendData(bundle.trend.value);
-      else setTrendData(null);
-      if (bundle.standing.ok && bundle.standing.value.success) {
-        setStandingRows(bundle.standing.value.data ?? []);
-      } else {
-        setStandingRows([]);
-      }
-      if (bundle.leak.ok && bundle.leak.value.success) {
-        setLeakMaps(bundle.leak.value.data ?? null);
-      } else {
-        setLeakMaps(null);
-      }
-      if (bundle.spray.ok) setSprayData(bundle.spray.value);
-      else setSprayData(null);
-      if (bundle.strengthsWeaknesses.ok && bundle.strengthsWeaknesses.value) {
-        setStrengths(bundle.strengthsWeaknesses.value.strengths ?? []);
-        setWeaknesses(bundle.strengthsWeaknesses.value.weaknesses ?? []);
-      } else {
-        setStrengths([]);
-        setWeaknesses([]);
-      }
-      if (bundle.worstHoles.ok) setWorstHoles(bundle.worstHoles.value);
-      else setWorstHoles(null);
-      // CoachHelm patterns are a non-blocking enrichment — a failure (or a
-      // CoachHelm-disabled player) just hides the section, never errors the page.
-      if (bundle.patterns.ok && bundle.patterns.value.success) {
-        setPatterns(bundle.patterns.value.patterns ?? []);
-      } else {
-        setPatterns([]);
-      }
-
-      const standingFailed =
-        !bundle.standing.ok || !bundle.standing.value.success;
-      const leakFailed = !bundle.leak.ok || !bundle.leak.value.success;
-      if (standingFailed && leakFailed) {
-        setLoadError('Failed to load stats. Please try again.');
-      } else if (leakFailed) {
-        // The page is otherwise healthy, but the leak-map enrichment failed on
-        // its own — surface a scoped, retryable notice in the Approach/Putting
-        // drills rather than letting them read as "not enough data". (P354)
-        setLeakError(true);
-      }
+      applyBundle(bundle);
     } catch {
       setLoadError('Failed to load stats. Please try again.');
     } finally {
       setLoading(false);
       setScopeLoading(false);
     }
-  }, []);
+  }, [applyBundle]);
 
   /**
    * Retry ONLY the leak maps.
@@ -245,12 +272,33 @@ export function StatsSpineStage({ playerId, isOwnStats = false, playerName, clas
   // quiet; a first mount (or a different player) has nothing on screen, so it
   // takes the full skeleton.
   const loadedForPlayerRef = useRef<string | null>(null);
+  // Which server seed the rendered content currently came from. Compared by
+  // identity (not a one-shot boolean) so StrictMode's double effect run and
+  // plain rerenders are no-ops, while a NEW seed (navigation to another
+  // player, router.refresh) is applied without a client round-trip.
+  const appliedSeedRef = useRef<StatsSpineStageInitialData | null>(seed ? initialData : null);
+  const initialDataRef = useRef(initialData);
+  // Declared before the effects that read it, so it is current when they run.
+  useEffect(() => {
+    initialDataRef.current = initialData;
+  }, [initialData]);
 
   useEffect(() => {
     const quiet = loadedForPlayerRef.current === playerId;
     loadedForPlayerRef.current = playerId;
+    if (initialData && initialData.playerId === playerId && roundScope === 'overall') {
+      // The server already read the career view for this player.
+      if (appliedSeedRef.current !== initialData) {
+        applyBundle(initialData.bundle);
+        appliedSeedRef.current = initialData;
+      }
+      setLoading(false);
+      setScopeLoading(false);
+      return;
+    }
+    appliedSeedRef.current = null;
     void loadAll(playerId, roundScope, { quiet });
-  }, [playerId, roundScope, loadAll]);
+  }, [playerId, roundScope, loadAll, initialData, applyBundle]);
 
   // Round list for the scope picker. Loaded once per player and independent of
   // the stats bundle: a failure here costs the picker, never the page.
@@ -259,6 +307,14 @@ export function StatsSpineStage({ playerId, isOwnStats = false, playerName, clas
     setRoundScope('overall');
     setQualifierPresetId('');
     setRoundOptionsError(false);
+    // Read through a ref so a new seed object alone (e.g. router.refresh) does
+    // not re-run this effect and reset the viewer's chosen scope.
+    const seedNow = initialDataRef.current;
+    if (seedNow && seedNow.playerId === playerId && seedNow.roundOptions !== undefined) {
+      setRoundOptions(seedNow.roundOptions ?? []);
+      setRoundOptionsError(seedNow.roundOptions === null);
+      return;
+    }
     void (async () => {
       try {
         const rounds = await getPlayerRoundOptions(playerId);
@@ -463,7 +519,9 @@ export function StatsSpineStage({ playerId, isOwnStats = false, playerName, clas
         />
         <p className="font-fw-sans text-caption text-text-tertiary">
           {roundScope === 'overall'
-            ? 'Every completed round is included.'
+            ? // Accurate since the countable-round rule (src/lib/golf/round-countable.ts):
+              // partial, hole-less and implausible rounds are left out of every number.
+              'Every fully scored round counts. Partial rounds are left out.'
             : selectedRounds.length === 0
               ? 'Choose one or more completed rounds to compare.'
               : `${selectedRounds.length} selected round${selectedRounds.length === 1 ? '' : 's'}.`}

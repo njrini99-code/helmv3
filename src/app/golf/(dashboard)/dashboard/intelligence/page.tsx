@@ -11,7 +11,13 @@ import {
   getPatternImpact,
 } from '@/app/golf/actions/coachhelm-analytics';
 import { fairwayScope } from '@/lib/redesign/flag';
-import { FeatureUnavailable, type PlayersGridPlayer, type PlayersGridFocusArea, type PlayersGridStats } from '@/components/fairway';
+import {
+  FeatureUnavailable,
+  type FairwayEffectivenessProps,
+  type PlayersGridPlayer,
+  type PlayersGridFocusArea,
+  type PlayersGridStats,
+} from '@/components/fairway';
 import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
 import { surfaceName } from '@/lib/golf/surface-registry';
 import { CoachIntelligenceHome } from '@/components/golf/coachhelm/home/CoachIntelligenceHome';
@@ -121,6 +127,11 @@ export default async function IntelligenceDashboardPage({ searchParams }: Intell
     redirect('/golf/login');
   }
 
+  // Request-cached and team-independent, so it starts now. `loadCommand`
+  // never rejects (it degrades to null), so leaving it in flight past the
+  // redirect below cannot surface as an unhandled rejection.
+  const commandPromise = loadCommand(coach.full_name);
+
   const supabase = await createClient();
 
   // Single org→team lookup shared by every fetch below. Deterministic
@@ -130,6 +141,21 @@ export default async function IntelligenceDashboardPage({ searchParams }: Intell
   if (!teamId) {
     redirect('/golf/dashboard');
   }
+
+  // Started here and awaited nowhere on the critical path: the four
+  // Effectiveness-view reads stream to the client as one promise (the
+  // Effectiveness tab suspends on it only if opened before it lands), so the
+  // Brief header and the signal queue never wait on them. `.catch` → null so
+  // the promise always RESOLVES — a rejection would throw through `use()`
+  // into error.tsx and take the whole Brief down, where each read already
+  // degrades to "no data" on its own.
+  const effectivenessReads = Promise.all([
+    getCoachHelmOverview(teamId),
+    getInsightEffectiveness(teamId),
+    getPredictionPerformance(teamId),
+    getPatternImpact(teamId),
+  ]).catch(() => null);
+  const rosterPromise = loadPlayersDrillData(supabase, teamId);
 
   // ── Home-gate + Triage Desk data — `getTeamOverview` still drives the
   // overview-failure-vs-empty-roster gate (Triage Desk spec §5); `alertCounts`
@@ -150,22 +176,16 @@ export default async function IntelligenceDashboardPage({ searchParams }: Intell
     signalGroupsResult,
     causalByPlayer,
     coachIntents,
-    coachHelmOverviewResult,
-    effectivenessResult,
-    performanceResult,
-    patternResult,
     categoryInsightsResult,
     teamTimezoneResult,
+    roster,
+    command,
   ] = await Promise.all([
     getTeamOverview(teamId),
     getAlertCounts(coach.id),
     getSignalGroups(teamId),
     getTeamCausalRelationships(teamId).catch(() => ({}) as Record<string, CausalRelationshipRow[]>),
     loadCoachIntents(coach.id).catch(() => new Map<string, CoachPlayerIntent>()),
-    getCoachHelmOverview(teamId),
-    getInsightEffectiveness(teamId),
-    getPredictionPerformance(teamId),
-    getPatternImpact(teamId),
     // Team-wide "where is the team bleeding strokes" band (categories[] +
     // teamHealth) — computed on every request already by
     // getTeamCategoryInsights, previously never fetched by this page at all
@@ -177,6 +197,13 @@ export default async function IntelligenceDashboardPage({ searchParams }: Intell
     // #1998 review — "due for review" needs the TEAM's wall-clock calendar
     // day, not the server's UTC day (dashboard-data.ts's own pattern).
     supabase.from('golf_team_settings').select('timezone').eq('team_id', teamId).maybeSingle(),
+    // The whole Players-drill chain (roster → players → focus areas/stats/
+    // goals/standing → everything keyed off focus areas) runs BESIDE this
+    // batch rather than after it: it needs only teamId. It stays on the
+    // critical path because CoachIntelligenceHome's empty-roster gate reads
+    // the roster.
+    rosterPromise,
+    commandPromise,
   ]);
   const alertCounts = countsRes.success ? (countsRes.counts ?? null) : null;
   const signalGroups = signalGroupsResult.success ? signalGroupsResult.groups : [];
@@ -198,167 +225,28 @@ export default async function IntelligenceDashboardPage({ searchParams }: Intell
   // recomputed client-side (see due-for-review.ts's module doc).
   const todayIso = todayIsoInZone(teamTimezone);
 
-  // ── `players` drill reads — a port of development/page.tsx's roster +
-  // focus-area fetch. The goals/causal/silent-posture extras (goalsByPlayer,
-  // playerNameById, causalByPlayer, silentPostureByPlayer) are assembled
-  // further below, once playerIds/coachIntents/goalsAndStandingPromise are
-  // available. ───────────────────────────────────────────────────────────
-  const { data: teamMembers, error: teamMembersError } = await supabase
-    .from('golf_team_members')
-    .select('player_id')
-    .eq('team_id', teamId)
-    .eq('status', 'active');
-
-  // This roster read gates the entire Players view. `|| []` turns a failed
-  // read into an empty squad, and every drill below keys off activePlayerIds —
-  // so the coach's intelligence surface renders as a team with no players, no
-  // focus areas and no goals. That is not a degraded view of a real team, it is
-  // a different team, and nothing on the page says a read failed.
-  if (teamMembersError) {
-    void logServerError(
-      `[intelligence] roster read failed for team ${teamId}; the Players view will render as an empty squad: ${describeError(teamMembersError)}`,
-      { action: 'intelligence.loadRoster', featureArea: 'coachhelm' },
-      'error',
-    );
-  }
-
-  const activePlayerIds = (teamMembers || []).map((tm) => tm.player_id);
-
-  const { data: rawPlayers, error: playersError } =
-    activePlayerIds.length > 0
-      ? await supabase
-          .from('golf_players')
-          .select('id, first_name, last_name, avatar_url, graduation_year, handicap, hometown, state')
-          .in('id', activePlayerIds)
-          .order('last_name')
-      : { data: [], error: null };
-  const players: PlayersGridPlayer[] = rawPlayers ?? [];
-  const playerIds = players.map((p) => p.id);
-
-  // Page loads are read-only. Progress evaluation belongs to round ingestion /
-  // scheduled refreshes; running two write-heavy recomputations here made every
-  // tab click wait on database writes before the controls could hydrate.
-  // A8 slice 3: only extend the select (and only route it through the
-  // untyped escape hatch) when the flag is on — with it off, this must be
-  // byte-for-byte the same select as before slice 1/3, since the column
-  // doesn't exist in prod until the owner applies the migration.
-  const evidenceRevisionFlagOn = isFlagEnabled('coachhelm_focus_area_evidence_revision');
-  const focusAreaSelectColumns = `id, player_id, coach_id, area_type, title, description, status, target_metric,
-             current_value, baseline_value, snapshots,
-             target_value, target_kind, target_date, target_rounds,
-             started_at, completed_at, created_at, updated_at,
-             from_review_id, from_insight_id, review_context, progress_notes,
-             outcome_status${evidenceRevisionFlagOn ? ', evidence_revision' : ''}`;
-
-  const [focusResult, statsResult, goalsByPlayerMap, standingByPlayer] = await Promise.all([
-    playerIds.length > 0
-      ? // fromUntyped is `client.from(table) as any` at runtime — identical to
-        // the typed call below for every column this select already carried
-        // before slice 1/3; only the column LIST varies on the flag, never
-        // the client, which keeps this branch simple to type.
-        fromUntyped(supabase, 'golf_player_focus_areas')
-          .select(focusAreaSelectColumns)
-          .in('player_id', playerIds)
-          .order('created_at', { ascending: false })
-      : Promise.resolve({ data: [], error: null }),
-    playerIds.length > 0
-      ? supabase
-          .from('golf_player_stats_cache')
-          .select('player_id, rounds_played, scoring_average, putts_per_round, driving_accuracy_percentage, gir_percentage, best_round, trend_direction')
-          .in('player_id', playerIds)
-      : Promise.resolve({ data: [], error: null }),
-    loadActiveGoalsForPlayers(playerIds).catch(() => new Map<string, Goal[]>()),
-    loadPlayersStandingMap(playerIds).catch(() => new Map<string, Map<MetricId, PlayerStanding>>()),
-  ]);
-  // fromUntyped's `any` return means `focusResult`/`focusAreas` are only
-  // reliably typed by this cast — the select is a plain string either way
-  // (flag off never even touches fromUntyped's row shape), so this reflects
-  // what the query actually returns rather than widening anything further.
-  const { data: focusAreas, error: focusAreasError } = focusResult as {
-    data: RawFocusAreaRow[] | null;
-    error: unknown;
-  };
-  const { data: statsRows } = statsResult;
-
-  const sourceInsightIds = Array.from(
-    new Set((focusAreas || []).map((fa) => fa.from_insight_id).filter(Boolean)),
-  ) as string[];
-  const outcomeByInsightId: Record<string, string> = {};
-  const reviewIds = Array.from(
-    new Set((focusAreas || []).map((fa) => fa.from_review_id).filter(Boolean)),
-  ) as string[];
-  const [insightOutcomesResult, reviewRowsResult] = await Promise.all([
-    sourceInsightIds.length > 0
-      ? supabase
-      .from('golf_coach_insights')
-      .select('id, outcome_status')
-      .in('id', sourceInsightIds)
-          .not('outcome_status', 'is', null)
-      : Promise.resolve({ data: [], error: null }),
-    reviewIds.length > 0
-      ? supabase.from('golf_round_reviews').select('id, round_id').in('id', reviewIds)
-      : Promise.resolve({ data: [], error: null }),
-  ]);
-  // The "did the coaching land" outcome mix and the review back-links. Both
-  // read as absence — "no outcomes recorded", "no review attached" — which is a
-  // claim about the coaching rather than about the query, on the surface a
-  // coach uses to decide what to work on next.
-  for (const [dataset, failed] of [
-    ['insight outcome', insightOutcomesResult.error],
-    ['review back-link', reviewRowsResult.error],
-  ] as const) {
-    if (!failed) continue;
-    void logServerError(
-      `[intelligence] ${dataset} read failed for team ${teamId}; that panel will render as "none recorded": ${describeError(failed)}`,
-      { action: 'intelligence.loadOutcomes', featureArea: 'coachhelm' },
-      'warning',
-    );
-  }
-
-  for (const row of insightOutcomesResult.data || []) {
-      if (row.outcome_status) outcomeByInsightId[row.id] = row.outcome_status;
-  }
-
-  const roundIdByReviewId: Record<string, string> = {};
-  for (const row of reviewRowsResult.data || []) {
-      if (row.round_id) roundIdByReviewId[row.id] = row.round_id;
-  }
-
-  const evidenceRevisionStatusByFocusAreaId = await computeEvidenceRevisionStatuses(
-    supabase,
-    focusAreas || [],
-  );
+  const {
+    players,
+    playerIds,
+    focusAreas,
+    focusAreasError,
+    playersError,
+    statsRows,
+    goalsByPlayerMap,
+    standingByPlayer,
+    outcomeByInsightId,
+    roundIdByReviewId,
+    evidenceRevisionStatusByFocusAreaId,
+    criteriaByFocusArea,
+    practiceSummaryByFocusArea,
+    followUpRoundCounts,
+  } = roster;
   // `null` means the live-insight read failed — render no badge, same as an
   // id simply missing from a successful map, but NEVER by silently
   // defaulting the whole result to `{}` first (that's the exact collapse
   // that hid a failed read behind "nothing changed").
   const evidenceRevisionStatusFor = (id: string): EvidenceRevisionComparison | undefined =>
     evidenceRevisionStatusByFocusAreaId ? evidenceRevisionStatusByFocusAreaId[id] : undefined;
-
-  // A8 slice 2 (read side): zero .from() calls against either new table
-  // while coachhelm_focus_area_practice_log is off — the loader checks the
-  // flag first and returns empty maps immediately in that case.
-  // Pkg 9 gap 2 (follow-up eligibility, owner decision 2026-09-23): a batch
-  // golf_rounds read, independent of the practice-log tables above, run in
-  // parallel with them. `null` (read failed) is threaded down as-is —
-  // DueForReviewPanel treats it the same "unknown, not zero" way
-  // criteriaByFocusArea/practiceSummaryByFocusArea already do.
-  const [{ criteriaByFocusArea, practiceSummaryByFocusArea }, followUpRoundCountsMap] = await Promise.all([
-    loadFocusAreaPracticeLogData(
-      supabase,
-      (focusAreas || []).map((fa) => fa.id),
-    ),
-    loadFollowUpRoundCounts(
-      supabase,
-      (focusAreas || []).map((fa) => ({ id: fa.id, player_id: fa.player_id, started_at: fa.started_at })),
-    ),
-  ]);
-  // Client components can't receive a Map across the server/client boundary
-  // — DueForReviewPanel (and everything between it and this page) is
-  // 'use client', so this crosses as a plain object.
-  const followUpRoundCounts: Record<string, number> | null = followUpRoundCountsMap
-    ? Object.fromEntries(followUpRoundCountsMap)
-    : null;
   // A8 slice 3 (write side): `isFlagEnabled` is server-only — resolved once
   // here and threaded down opaquely through `playersDrillProps` (see
   // PlayersGridViewProps.practiceLogEnabled) rather than re-derived from the
@@ -447,29 +335,21 @@ export default async function IntelligenceDashboardPage({ searchParams }: Intell
     }
   }
 
-  // ── The AI-first opening's inputs. Individually degraded: if the chat
-  // context or the pulse cannot be read, the Brief still renders its existing
-  // intelligence surfaces and simply omits the composer. ────────────────────
-  let command: React.ComponentProps<typeof CoachIntelligenceHome>['command'] = null;
-  try {
-    // Request-cached: the dashboard layout resolves this same context and pulse
-    // for the CoachHelm drawer on every /golf/dashboard/* render. Going through
-    // the cached zero-arg getters means this page reuses that work instead of
-    // repeating six serial round trips plus the pulse's query wave.
-    const chatCtx = await getCoachChatContext();
-    const pulse = await getCoachProgramPulse();
-    if (!pulse) throw new Error('program pulse unavailable');
-    command = {
-      teamName: chatCtx.team_name,
-      // `golf_coaches` stores one `full_name`; the greeting wants the first
-      // word of it, and nothing at all rather than a guess when it is unset.
-      coachFirstName: coach.full_name?.trim().split(/\s+/)[0] ?? null,
-      players: chatCtx.roster.map((p) => ({ id: p.id, name: p.name })),
-      pulse,
+  const signalCount = alertCounts?.critical ?? null;
+  const effectivenessDrillProps: Promise<FairwayEffectivenessProps> = effectivenessReads.then((reads) => {
+    const [coachHelmOverviewResult, effectivenessResult, performanceResult, patternResult] = reads ?? [];
+    return {
+      teamId,
+      coachId: coach.id,
+      initialOverview: coachHelmOverviewResult?.success ? coachHelmOverviewResult.data : undefined,
+      initialEffectiveness: effectivenessResult?.success ? effectivenessResult.data : undefined,
+      initialPerformance: performanceResult?.success ? performanceResult.data : undefined,
+      initialPatternImpact: patternResult?.success ? patternResult.data : undefined,
+      signalCount,
+      initialView: 'cockpit',
+      initialRange: '30d',
     };
-  } catch {
-    command = null;
-  }
+  });
 
   return (
     <div className={fairwayScope('min-h-full bg-canvas bg-canvas-gradient font-fw-sans text-text-primary')}>
@@ -502,19 +382,224 @@ export default async function IntelligenceDashboardPage({ searchParams }: Intell
             practiceLogEnabled,
             followUpRoundCounts,
           }}
-          effectivenessDrillProps={{
-            teamId,
-            coachId: coach.id,
-            initialOverview: coachHelmOverviewResult.success ? coachHelmOverviewResult.data : undefined,
-            initialEffectiveness: effectivenessResult.success ? effectivenessResult.data : undefined,
-            initialPerformance: performanceResult.success ? performanceResult.data : undefined,
-            initialPatternImpact: patternResult.success ? patternResult.data : undefined,
-            signalCount: alertCounts?.critical ?? null,
-            initialView: 'cockpit',
-            initialRange: '30d',
-          }}
+          effectivenessDrillProps={effectivenessDrillProps}
         />
       </div>
     </div>
   );
+}
+
+/**
+ * The Players drill's read chain — a port of development/page.tsx's roster +
+ * focus-area fetch. Four dependent waves (roster → players →
+ * focus/stats/goals/standing → everything keyed off focus areas); it needs
+ * only `teamId`, so the page runs it concurrently with its other reads.
+ */
+async function loadPlayersDrillData(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  teamId: string,
+) {
+  // ── `players` drill reads — a port of development/page.tsx's roster +
+  // focus-area fetch. The goals/causal/silent-posture extras (goalsByPlayer,
+  // playerNameById, causalByPlayer, silentPostureByPlayer) are assembled
+  // further below, once playerIds/coachIntents/goals/standing are
+  // available. ───────────────────────────────────────────────────────────
+  const { data: teamMembers, error: teamMembersError } = await supabase
+    .from('golf_team_members')
+    .select('player_id')
+    .eq('team_id', teamId)
+    .eq('status', 'active');
+
+  // This roster read gates the entire Players view. `|| []` turns a failed
+  // read into an empty squad, and every drill below keys off activePlayerIds —
+  // so the coach's intelligence surface renders as a team with no players, no
+  // focus areas and no goals. That is not a degraded view of a real team, it is
+  // a different team, and nothing on the page says a read failed.
+  if (teamMembersError) {
+    void logServerError(
+      `[intelligence] roster read failed for team ${teamId}; the Players view will render as an empty squad: ${describeError(teamMembersError)}`,
+      { action: 'intelligence.loadRoster', featureArea: 'coachhelm' },
+      'error',
+    );
+  }
+
+  const activePlayerIds = (teamMembers || []).map((tm) => tm.player_id);
+
+  const { data: rawPlayers, error: playersError } =
+    activePlayerIds.length > 0
+      ? await supabase
+          .from('golf_players')
+          .select('id, first_name, last_name, avatar_url, graduation_year, handicap, hometown, state')
+          .in('id', activePlayerIds)
+          .order('last_name')
+      : { data: [], error: null };
+  const players: PlayersGridPlayer[] = rawPlayers ?? [];
+  const playerIds = players.map((p) => p.id);
+
+  // Page loads are read-only. Progress evaluation belongs to round ingestion /
+  // scheduled refreshes; running two write-heavy recomputations here made every
+  // tab click wait on database writes before the controls could hydrate.
+  // A8 slice 3: only extend the select (and only route it through the
+  // untyped escape hatch) when the flag is on — with it off, this must be
+  // byte-for-byte the same select as before slice 1/3, since the column
+  // doesn't exist in prod until the owner applies the migration.
+  const evidenceRevisionFlagOn = isFlagEnabled('coachhelm_focus_area_evidence_revision');
+  const focusAreaSelectColumns = `id, player_id, coach_id, area_type, title, description, status, target_metric,
+             current_value, baseline_value, snapshots,
+             target_value, target_kind, target_date, target_rounds,
+             started_at, completed_at, created_at, updated_at,
+             from_review_id, from_insight_id, review_context, progress_notes,
+             outcome_status${evidenceRevisionFlagOn ? ', evidence_revision' : ''}`;
+
+  const [focusResult, statsResult, goalsByPlayerMap, standingByPlayer] = await Promise.all([
+    playerIds.length > 0
+      ? // fromUntyped is `client.from(table) as any` at runtime — identical to
+        // the typed call below for every column this select already carried
+        // before slice 1/3; only the column LIST varies on the flag, never
+        // the client, which keeps this branch simple to type.
+        fromUntyped(supabase, 'golf_player_focus_areas')
+          .select(focusAreaSelectColumns)
+          .in('player_id', playerIds)
+          .order('created_at', { ascending: false })
+      : Promise.resolve({ data: [], error: null }),
+    playerIds.length > 0
+      ? supabase
+          .from('golf_player_stats_cache')
+          .select('player_id, rounds_played, scoring_average, putts_per_round, driving_accuracy_percentage, gir_percentage, best_round, trend_direction')
+          .in('player_id', playerIds)
+      : Promise.resolve({ data: [], error: null }),
+    loadActiveGoalsForPlayers(playerIds).catch(() => new Map<string, Goal[]>()),
+    loadPlayersStandingMap(playerIds).catch(() => new Map<string, Map<MetricId, PlayerStanding>>()),
+  ]);
+  // fromUntyped's `any` return means `focusResult`/`focusAreas` are only
+  // reliably typed by this cast — the select is a plain string either way
+  // (flag off never even touches fromUntyped's row shape), so this reflects
+  // what the query actually returns rather than widening anything further.
+  const { data: focusAreas, error: focusAreasError } = focusResult as {
+    data: RawFocusAreaRow[] | null;
+    error: unknown;
+  };
+  const { data: statsRows } = statsResult;
+
+  const sourceInsightIds = Array.from(
+    new Set((focusAreas || []).map((fa) => fa.from_insight_id).filter(Boolean)),
+  ) as string[];
+  const outcomeByInsightId: Record<string, string> = {};
+  const reviewIds = Array.from(
+    new Set((focusAreas || []).map((fa) => fa.from_review_id).filter(Boolean)),
+  ) as string[];
+  // One wave for everything that needs only `focusAreas`: the outcome and
+  // review back-link reads, the evidence-revision comparison, and the A8
+  // practice-log + follow-up loaders (previously three serial waves).
+  // A8 slice 2 (read side): zero .from() calls against either practice-log
+  // table while coachhelm_focus_area_practice_log is off — the loader checks
+  // the flag first and returns empty maps immediately in that case.
+  // Pkg 9 gap 2 (follow-up eligibility, owner decision 2026-09-23): a batch
+  // golf_rounds read, independent of the practice-log tables. `null` (read
+  // failed) is threaded down as-is — DueForReviewPanel treats it the same
+  // "unknown, not zero" way criteriaByFocusArea/practiceSummaryByFocusArea
+  // already do.
+  const [
+    insightOutcomesResult,
+    reviewRowsResult,
+    evidenceRevisionStatusByFocusAreaId,
+    { criteriaByFocusArea, practiceSummaryByFocusArea },
+    followUpRoundCountsMap,
+  ] = await Promise.all([
+    sourceInsightIds.length > 0
+      ? supabase
+      .from('golf_coach_insights')
+      .select('id, outcome_status')
+      .in('id', sourceInsightIds)
+          .not('outcome_status', 'is', null)
+      : Promise.resolve({ data: [], error: null }),
+    reviewIds.length > 0
+      ? supabase.from('golf_round_reviews').select('id, round_id').in('id', reviewIds)
+      : Promise.resolve({ data: [], error: null }),
+    computeEvidenceRevisionStatuses(supabase, focusAreas || []),
+    loadFocusAreaPracticeLogData(
+      supabase,
+      (focusAreas || []).map((fa) => fa.id),
+    ),
+    loadFollowUpRoundCounts(
+      supabase,
+      (focusAreas || []).map((fa) => ({ id: fa.id, player_id: fa.player_id, started_at: fa.started_at })),
+    ),
+  ]);
+  // The "did the coaching land" outcome mix and the review back-links. Both
+  // read as absence — "no outcomes recorded", "no review attached" — which is a
+  // claim about the coaching rather than about the query, on the surface a
+  // coach uses to decide what to work on next.
+  for (const [dataset, failed] of [
+    ['insight outcome', insightOutcomesResult.error],
+    ['review back-link', reviewRowsResult.error],
+  ] as const) {
+    if (!failed) continue;
+    void logServerError(
+      `[intelligence] ${dataset} read failed for team ${teamId}; that panel will render as "none recorded": ${describeError(failed)}`,
+      { action: 'intelligence.loadOutcomes', featureArea: 'coachhelm' },
+      'warning',
+    );
+  }
+
+  for (const row of insightOutcomesResult.data || []) {
+      if (row.outcome_status) outcomeByInsightId[row.id] = row.outcome_status;
+  }
+
+  const roundIdByReviewId: Record<string, string> = {};
+  for (const row of reviewRowsResult.data || []) {
+      if (row.round_id) roundIdByReviewId[row.id] = row.round_id;
+  }
+
+  // Client components can't receive a Map across the server/client boundary
+  // — DueForReviewPanel (and everything between it and this page) is
+  // 'use client', so this crosses as a plain object.
+  const followUpRoundCounts: Record<string, number> | null = followUpRoundCountsMap
+    ? Object.fromEntries(followUpRoundCountsMap)
+    : null;
+
+  return {
+    players,
+    playerIds,
+    focusAreas,
+    focusAreasError,
+    playersError,
+    statsRows,
+    goalsByPlayerMap,
+    standingByPlayer,
+    outcomeByInsightId,
+    roundIdByReviewId,
+    evidenceRevisionStatusByFocusAreaId,
+    criteriaByFocusArea,
+    practiceSummaryByFocusArea,
+    followUpRoundCounts,
+  };
+}
+
+// ── The AI-first opening's inputs. Individually degraded: if the chat
+  // context or the pulse cannot be read, the Brief still renders its existing
+  // intelligence surfaces and simply omits the composer. ────────────────────
+async function loadCommand(
+  coachFullName: string | null | undefined,
+): Promise<React.ComponentProps<typeof CoachIntelligenceHome>['command']> {
+  try {
+    // Request-cached: the dashboard layout resolves this same context and pulse
+    // for the CoachHelm drawer on every /golf/dashboard/* render. Going through
+    // the cached zero-arg getters means this page reuses that work instead of
+    // repeating six serial round trips plus the pulse's query wave.
+    // Independent getters (the pulse reuses the cached context), so they
+    // resolve together rather than back to back.
+    const [chatCtx, pulse] = await Promise.all([getCoachChatContext(), getCoachProgramPulse()]);
+    if (!pulse) throw new Error('program pulse unavailable');
+    return {
+      teamName: chatCtx.team_name,
+      // `golf_coaches` stores one `full_name`; the greeting wants the first
+      // word of it, and nothing at all rather than a guess when it is unset.
+      coachFirstName: coachFullName?.trim().split(/\s+/)[0] ?? null,
+      players: chatCtx.roster.map((p) => ({ id: p.id, name: p.name })),
+      pulse,
+    };
+  } catch {
+    return null;
+  }
 }

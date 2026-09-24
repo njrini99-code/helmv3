@@ -177,9 +177,13 @@ describe('StatsBento — Scoring cell trend mini-viz', () => {
       rounds: [],
       trends: {
         score: [
+          // Six rounds: the chip compares last 3 vs prior 3 (mean 3 → mean −1).
           { date: '2026-01-01', value: 3, roundId: 'r1', courseName: 'c' },
-          { date: '2026-01-08', value: 1, roundId: 'r2', courseName: 'c' },
-          { date: '2026-01-15', value: -1, roundId: 'r3', courseName: 'c' },
+          { date: '2026-01-08', value: 3, roundId: 'r2', courseName: 'c' },
+          { date: '2026-01-15', value: 3, roundId: 'r3', courseName: 'c' },
+          { date: '2026-01-22', value: -1, roundId: 'r4', courseName: 'c' },
+          { date: '2026-01-29', value: -1, roundId: 'r5', courseName: 'c' },
+          { date: '2026-02-05', value: -1, roundId: 'r6', courseName: 'c' },
         ],
         gir: [],
         fairway: [],

@@ -355,7 +355,9 @@ export function ShotAnalysisCard({
                   </span>
                 </div>
                 <div>
-                  <p className="text-body-sm font-medium text-text-primary">Scramble Rate</p>
+                  {/* Window named: this is the live 90-day read (calculateScrambleRate);
+                      Stats and the Fingerprint show the all-rounds cache value. */}
+                  <p className="text-body-sm font-medium text-text-primary">Scramble rate · last 90 days</p>
                   <p className="text-caption text-text-secondary">
                     <span className="font-fw-mono font-medium tabular-nums text-text-primary">
                       {Number(resolvedScrambleRate ?? 0).toFixed(0)}%

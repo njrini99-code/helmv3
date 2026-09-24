@@ -262,7 +262,16 @@ function metricEmpty(card: SparklineStatCard | undefined, value: number | null):
  * rather than showing an unreliable 2-point comparison.
  */
 function seriesDeltaLabel(points: number): string {
-  return `last ${points} round${points === 1 ? '' : 's'}`;
+  // The chip is the CHANGE across the latest rounds (split-half), not the
+  // value beside it. The value is the all-countable-rounds average (see the
+  // card footnote), so say "trend" — "last 5 rounds" read as the value's window.
+  return `trend, last ${points} round${points === 1 ? '' : 's'}`;
+}
+
+/** "Avg of 18 rounds" footnote for the headline value's real window. */
+function averageWindowNote(rounds: number | null | undefined): string | undefined {
+  if (rounds == null || rounds <= 0) return undefined;
+  return `All ${rounds} counted round${rounds === 1 ? '' : 's'}`;
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
@@ -501,6 +510,7 @@ export function FairwayPlayerDashboard({
                   decimals={1}
                   goodDirection="down"
                   icon={<TrendingUp />}
+                  footnote={averageWindowNote(enhancedData?.stats.scoringAverageRounds)}
                   empty={metricEmpty(sparklines?.scoringAvg, sparklines?.scoringAvg.value ?? stats.scoringAverage ?? null)}
                   emptyMessage="—"
                   delta={
@@ -642,7 +652,7 @@ export function FairwayPlayerDashboard({
                   />
                   <MetricCard
                     labelLines={2}
-                    label="Birdies / round"
+                    label="Birdies / 18 holes"
                     value={Number(secondary.birdiesPerRound ?? 0)}
                     decimals={1}
                     empty={secondary.birdiesPerRound == null}
@@ -650,7 +660,7 @@ export function FairwayPlayerDashboard({
                   />
                   <MetricCard
                     labelLines={2}
-                    label="Best round"
+                    label="Best 18-hole round"
                     value={Number(secondary.bestRound ?? stats.bestRound ?? 0)}
                     empty={(secondary.bestRound ?? stats.bestRound) == null}
                     emptyMessage="—"

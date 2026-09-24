@@ -104,7 +104,8 @@ export function PlayerHomeBento({
   const worstCfg = worstId ? getMetricRenderConfig(worstId) : null;
   const bestRow = bestId ? standingByMetric[bestId] : undefined;
 
-  const standingPreviewRows = buildStandingPreviewRows(standingByMetric, 3).map((row) => ({
+  // The headline already shows the best metric; the rail must not repeat it.
+  const standingPreviewRows = buildStandingPreviewRows(standingByMetric, 3, bestId ? [bestId] : []).map((row) => ({
     label: getMetricRenderConfig(row.id)?.display_label ?? row.id,
     pct: row.pct,
     value: fmtPct(row.pct),
@@ -256,7 +257,8 @@ export function PlayerHomeBento({
         label="Standing"
         span={2}
         headline={
-          bestCfg && bestRow ? { value: fmtPct(finite(bestRow.team_pct)), unit: bestCfg.display_label } : undefined
+          // A team PERCENTILE, not the metric's value — say so.
+          bestCfg && bestRow ? { value: fmtPct(finite(bestRow.team_pct)), unit: `${bestCfg.display_label} · team percentile` } : undefined
         }
         sentence={
           bestCfg && worstCfg

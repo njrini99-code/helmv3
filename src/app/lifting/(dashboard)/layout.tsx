@@ -4,6 +4,13 @@ import { fromUntyped } from '@/lib/supabase/untyped';
 import { LabShell } from '@/components/lifting/shell/LabShell';
 import { SessionActivityProvider } from '@/components/providers/SessionActivityProvider';
 import type { HelmLiftingCoachRow } from '@/lib/types/helm-lifting';
+import { baseballFontVariables, rootFontVariablesCss } from '@/lib/fonts';
+
+// The Lift Lab dashboard renders BaseballHelm "Living Annual" primitives
+// (SectionMasthead, RuledStatLine) that use `font-annual` / `font-serif`.
+// Those faces are no longer registered by the root layout, so declare them
+// here for Lift Lab routes only (see rootFontVariablesCss for why :root).
+const fontVariablesCss = rootFontVariablesCss(baseballFontVariables);
 
 /**
  * Auth-gate layout for all /lifting/dashboard/** routes.
@@ -46,6 +53,7 @@ export default async function LiftingDashboardLayout({
     // Full Lab — coach is active
     return (
       <SessionActivityProvider>
+        <style dangerouslySetInnerHTML={{ __html: fontVariablesCss }} />
         <LabShell coachRow={coachRow} isViewOnly={false}>
           {children}
         </LabShell>
@@ -63,6 +71,7 @@ export default async function LiftingDashboardLayout({
     // View-only access for head coaches
     return (
       <SessionActivityProvider>
+        <style dangerouslySetInnerHTML={{ __html: fontVariablesCss }} />
         <LabShell coachRow={null} isViewOnly={true}>
           {children}
         </LabShell>
@@ -83,6 +92,7 @@ export default async function LiftingDashboardLayout({
   if (athleteRows && athleteRows.length > 0) {
     return (
       <SessionActivityProvider>
+        <style dangerouslySetInnerHTML={{ __html: fontVariablesCss }} />
         <LabShell coachRow={null} isViewOnly={true}>
           {children}
         </LabShell>

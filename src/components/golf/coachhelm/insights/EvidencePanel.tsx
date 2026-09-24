@@ -15,6 +15,7 @@
  * docs/superpowers/plans/2026-04-22-insight-quality/00-design-contract.md
  */
 import { cn } from '@/lib/utils';
+import { confidenceLabel } from '@/lib/coachhelm/confidence-label';
 import type {
   InsightEvidence,
   InsightUnit,
@@ -329,6 +330,9 @@ export function EvidencePanel({
   if (!evidence) return null;
 
   const confPct = Math.round(Math.max(0, Math.min(1, evidence.confidence)) * 100);
+  // Players see a word ("Solid read"), not "100% confidence": the value is a
+  // sample-size ramp (e.g. min(n/30, 1)), not certainty about the claim.
+  const confWord = confidenceLabel(evidence.confidence, evidence.sample_n) ?? '—';
   const colors = confidenceColor(evidence.confidence);
 
   // FID-5: clamp the stroke magnitude at render so an impossible upstream
@@ -364,7 +368,7 @@ export function EvidencePanel({
             className={cn('inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full font-medium', colors.bg, colors.text)}
             data-testid="evidence-confidence"
           >
-            {confPct}% confidence
+            {confWord}
           </span>
         </div>
       </div>
@@ -464,10 +468,11 @@ export function EvidencePanel({
         <div className="contents" data-testid="evidence-row-confidence">
           <dt className="text-warm-500">Confidence</dt>
           <dd className="flex items-center gap-2 tabular-nums">
-            <span className={cn('font-medium', colors.text)}>{confPct}%</span>
+            <span className={cn('font-medium', colors.text)}>{confWord}</span>
             <div
               role="progressbar"
               aria-valuenow={confPct}
+              aria-valuetext={confWord}
               aria-valuemin={0}
               aria-valuemax={100}
               className="relative flex-1 h-1.5 rounded-full bg-warm-100 overflow-hidden max-w-[160px]"

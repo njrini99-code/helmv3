@@ -1,12 +1,21 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { requestPasswordResetAction } from '@/app/golf/actions/auth';
 import { isNativeApp } from '@/lib/utils/capacitor';
-import { IconCheck, IconMail } from '@/components/icons';
-import { Input } from '@/components/ui/input';
-import { GolfAuthShell, AuthPrimaryButton } from '@/components/auth/GolfAuthShell';
+import {
+  AuthCanvas,
+  AuthFieldError,
+  AuthSubmitButton,
+  GroupedFieldRow,
+  GroupedFields,
+  authPrimaryButtonClass,
+  authTextLinkClass,
+} from '@/components/auth/golf-auth-canvas';
+import { cn } from '@/lib/utils';
+
+const ERROR_ID = 'golf-forgot-error';
 
 // Pragmatic format check, not a full RFC 5322 validator — matches the intent
 // of the native `type="email"` check the form skips via `noValidate`.
@@ -21,6 +30,13 @@ export default function ForgotPasswordPage() {
   // The normalized address actually submitted — shown in the confirmation
   // copy instead of the raw input, so it always reflects what was sent.
   const [submittedEmail, setSubmittedEmail] = useState('');
+  // Bumped on each validation/server failure so focus returns to the field.
+  const [errorNonce, setErrorNonce] = useState(0);
+  const emailRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (errorNonce > 0) emailRef.current?.focus();
+  }, [errorNonce]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -32,10 +48,12 @@ export default function ForgotPasswordPage() {
     const normalizedEmail = email.trim().toLowerCase();
     if (!normalizedEmail) {
       setError('Enter your email address.');
+      setErrorNonce((n) => n + 1);
       return;
     }
     if (!EMAIL_FORMAT.test(normalizedEmail)) {
       setError('Enter a valid email address.');
+      setErrorNonce((n) => n + 1);
       return;
     }
 
@@ -47,6 +65,7 @@ export default function ForgotPasswordPage() {
       const result = await requestPasswordResetAction(normalizedEmail);
       if (!result.success) {
         setError(result.error ?? 'An unexpected error occurred. Please try again.');
+        setErrorNonce((n) => n + 1);
         setLoading(false);
         return;
       }
@@ -59,97 +78,91 @@ export default function ForgotPasswordPage() {
     }
   };
 
-  const footer = (
-    <>
-      {!success && (
-        <p className="text-center mt-5 text-warm-600 text-body-sm">
-          Remember your password?{' '}
-          <Link href="/golf/login" className="text-primary-700 font-semibold hover:text-primary-600 transition-colors">
-            Sign in
-          </Link>
-        </p>
-      )}
-      {!isNative && (
-        <p className="text-center mt-3 text-warm-500 text-body-sm">
-          <Link
-            href="/"
-            className="inline-flex items-center gap-1 rounded-lg px-3 py-3 -my-3 min-h-[44px] transition-colors hover:text-warm-700 active:bg-warm-100/50"
-          >
-            ← Back to HelmLabs
-          </Link>
-        </p>
-      )}
-    </>
-  );
+  const homeLink = !isNative ? (
+    <Link
+      href="/"
+      aria-label="Back to home"
+      className="-ml-2 inline-flex min-h-[44px] items-center gap-0.5 rounded-lg px-2 text-body-lg text-accent-700 outline-none focus-visible:ring-2 focus-visible:ring-accent-600 active:opacity-60"
+    >
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <path d="M15 18l-6-6 6-6" />
+      </svg>
+      Home
+    </Link>
+  ) : null;
 
   return (
-    <GolfAuthShell
-      idSuffix="golf-forgot"
-      heading={success ? 'Check your email' : 'Reset your password'}
-      subheading={
-        success
-          ? <>We&rsquo;ve sent a reset link to <span className="font-medium text-warm-700">{submittedEmail}</span></>
-          : 'Enter your email and we’ll send you a reset link.'
+    <AuthCanvas
+      contentId="auth-card"
+      contentLabel={success ? 'Check your email' : 'Reset your password'}
+      title={success ? 'Check your email' : 'Reset password'}
+      subtitle={
+        success ? (
+          <>
+            We sent a reset link to <span className="font-medium text-text-primary">{submittedEmail}</span>
+          </>
+        ) : (
+          'Enter your email and we’ll send you a link.'
+        )
       }
-      footer={footer}
+      topBar={homeLink}
+      footer={
+        !success ? (
+          <p className="flex items-center text-body text-text-secondary">
+            <span>Remember it?</span>
+            <Link href="/golf/login" className={authTextLinkClass}>
+              Sign in
+            </Link>
+          </p>
+        ) : undefined
+      }
     >
       {success ? (
-        <div className="space-y-4">
-          <div className="flex justify-center">
-            <span className="flex h-16 w-16 items-center justify-center rounded-full bg-primary-50 text-primary-600">
-              <IconMail size={30} aria-hidden />
-            </span>
-          </div>
-          <div className="rounded-xl border border-primary-200 bg-primary-50 px-4 py-3">
-            <div className="flex items-start gap-2.5">
-              <IconCheck size={16} aria-hidden className="mt-0.5 shrink-0 text-primary-600" />
-              <div className="text-body-sm text-primary-700">
-                <p>Click the link in the email to reset your password.</p>
-                <p className="mt-1 text-primary-600">The link expires in 1 hour.</p>
-              </div>
-            </div>
-          </div>
-          <p className="text-center text-caption text-warm-500">
-            Didn’t get it? Check your spam folder, or try again with a different email.
+        <div>
+          <p className="px-4 text-center text-body text-text-secondary">
+            Open the link in the email to choose a new password. It expires in 1 hour. If it
+            doesn’t arrive, check your spam folder or try a different email.
           </p>
-          <Link
-            href="/golf/login"
-            className="block w-full rounded-xl border border-warm-200 bg-cream-50 py-2.5 text-center text-body-sm font-semibold text-warm-700 transition-all duration-200 hover:bg-warm-50 hover:border-warm-300 active:scale-[0.98]"
-          >
+          <Link href="/golf/login" className={cn(authPrimaryButtonClass, 'mt-8')}>
             Back to sign in
           </Link>
         </div>
       ) : (
-        <form onSubmit={handleSubmit} className="space-y-4" noValidate>
-          {error && (
-            <div
-              className="flex items-start gap-2.5 rounded-xl border border-danger/25 bg-danger/10 px-4 py-3 text-body-sm text-danger"
-              role="alert"
-            >
-              <span aria-hidden className="mt-px font-semibold">!</span>
-              <span>{error}</span>
-            </div>
-          )}
-          <Input
-            id="golf-forgot-email"
-            label="Email"
-            type="email"
-            value={email}
-            onChange={(e) => {
-              setEmail(e.target.value);
-              if (error) setError('');
-            }}
-            placeholder="you@example.com"
-            required
-            // eslint-disable-next-line jsx-a11y/no-autofocus -- primary input on a single-field auth page
-            autoFocus
-            enterKeyHint="send"
-          />
-          <AuthPrimaryButton type="submit" loading={loading} loadingLabel="Sending reset link">
+        <form onSubmit={handleSubmit} noValidate aria-label="Reset your password">
+          <GroupedFields>
+            <GroupedFieldRow
+              ref={emailRef}
+              id="golf-forgot-email"
+              label="Email"
+              placeholder="Email"
+              type="email"
+              inputMode="email"
+              autoComplete="username"
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck={false}
+              enterKeyHint="send"
+              required
+              aria-required="true"
+              aria-invalid={error ? true : undefined}
+              aria-describedby={error ? ERROR_ID : undefined}
+              // eslint-disable-next-line jsx-a11y/no-autofocus -- primary input on a single-field auth page
+              autoFocus
+              value={email}
+              onChange={(e) => {
+                setEmail(e.target.value);
+                if (error) setError('');
+              }}
+            />
+          </GroupedFields>
+          {error && <AuthFieldError id={ERROR_ID}>{error}</AuthFieldError>}
+          {/* Stays enabled when the field is empty: tapping it shows the
+              inline "Enter your email address." guidance (see page.test.tsx). */}
+          <AuthSubmitButton className="mt-6" pending={loading} pendingLabel="Sending reset link…">
             Send reset link
-          </AuthPrimaryButton>
+          </AuthSubmitButton>
         </form>
       )}
-    </GolfAuthShell>
+    </AuthCanvas>
   );
 }

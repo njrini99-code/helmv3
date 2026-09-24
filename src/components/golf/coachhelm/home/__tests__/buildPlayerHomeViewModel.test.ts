@@ -136,7 +136,12 @@ describe('formatPredictionHero', () => {
     expect(formatPredictionHero(null)).toEqual({ value: '—' });
   });
   it('formats a finite value with a humanized metric unit', () => {
-    expect(formatPredictionHero(74.234, 'score_to_par')).toEqual({ value: '74.2', unit: 'score to par' });
+    expect(formatPredictionHero(74.234, 'round_score')).toEqual({ value: '74.2', unit: 'round score' });
+  });
+  it('signs a score-to-par value ("+" was missing on positives)', () => {
+    expect(formatPredictionHero(2.34, 'score_to_par')).toEqual({ value: '+2.3', unit: 'score to par' });
+    expect(formatPredictionHero(-0.44, 'score_to_par')).toEqual({ value: '\u22120.4', unit: 'score to par' });
+    expect(formatPredictionHero(0.02, 'score_to_par')).toEqual({ value: 'E', unit: 'score to par' });
   });
   it('falls back to "predicted score" when metric is omitted', () => {
     expect(formatPredictionHero(72)).toEqual({ value: '72.0', unit: 'predicted score' });
@@ -154,15 +159,28 @@ describe('buildPredictionVerdict', () => {
       'Your next-round prediction fills in with more tracked rounds. Top focus: putting.',
     );
   });
-  it('states the interval and attributes the percentage to it, not to the point estimate', () => {
+  // REQUIREMENT CHANGED ON PURPOSE: the band is a nominal 80% interval; the
+  // `confidence` beside it (0.6–0.8) is a volatility heuristic and was being
+  // printed as the band's level ("60%"). The band now says "80% range".
+  it('labels the interval as the 80% range it is, never with the confidence number', () => {
     expect(buildPredictionVerdict(74.2, 0.68, 'Putting', { low: 72, high: 77 })).toBe(
-      'Predicted 72.0\u201377.0 (68% of predictions like this land in that range). Top focus: putting.',
+      'Predicted 72.0 to 77.0 (80% range). Top focus: putting.',
+    );
+    expect(buildPredictionVerdict(74.2, 68, null, { low: 72, high: 77 })).toBe(
+      'Predicted 72.0 to 77.0 (80% range).',
     );
   });
-  it('accepts a 0..100 confidence unchanged', () => {
-    expect(buildPredictionVerdict(74.2, 68, null, { low: 72, high: 77 })).toBe(
-      'Predicted 72.0\u201377.0 (68% of predictions like this land in that range).',
+  it('signs a to-par band and joins it with "to", not a dash', () => {
+    expect(buildPredictionVerdict(1.1, 0.6, null, { low: -1.2, high: 3.4 }, 'score_to_par')).toBe(
+      'Predicted \u22121.2 to +3.4 to par (80% range).',
     );
+  });
+  it('hides a band wider than 8 strokes (the "−11.8–13.6" case)', () => {
+    const sentence = buildPredictionVerdict(-0.4, 0.6, null, { low: -11.8, high: 13.6 }, 'score_to_par');
+    expect(sentence).toBe(
+      'Predicted \u22120.4 to par. The range is still too wide to show; it narrows as you log more rounds.',
+    );
+    expect(sentence).not.toMatch(/11\.8|13\.6/);
   });
   it('falls back to a track-record framing when no interval is available', () => {
     expect(buildPredictionVerdict(74.2, 0.68, 'Putting')).toBe(
@@ -179,7 +197,7 @@ describe('buildPredictionVerdict', () => {
   });
   it('drops the confidence clause entirely when confidence is unknown', () => {
     expect(buildPredictionVerdict(74.2, null, null, { low: 72, high: 77 })).toBe(
-      'Predicted 72.0\u201377.0.',
+      'Predicted 72.0 to 77.0 (80% range).',
     );
     expect(buildPredictionVerdict(74.2, null, null)).toBe('Predicted to shoot 74.2.');
   });
@@ -419,5 +437,17 @@ describe('classifyTrendSignal', () => {
     expect(classifyTrendSignal(undefined)).toBeNull();
     expect(classifyTrendSignal('')).toBeNull();
     expect(classifyTrendSignal('some unrelated sentence')).toBeNull();
+  });
+});
+
+describe('buildStandingPreviewRows — never repeats the headline metric', () => {
+  it('drops excluded ids (the headline) from the rail', () => {
+    const rows = buildStandingPreviewRows(
+      { sg_total: { team_pct: 100 }, sg_ott: { team_pct: 90 }, sg_approach: { team_pct: 40 }, sg_putting: { team_pct: 10 } },
+      3,
+      ['sg_total'],
+    );
+    expect(rows.map((r) => r.id)).not.toContain('sg_total');
+    expect(rows.map((r) => r.id)).toEqual(['sg_ott', 'sg_approach', 'sg_putting']);
   });
 });

@@ -56,7 +56,6 @@ import { NotificationBadgeProvider, useNotificationBadges } from '@/contexts/not
 import { NotificationBell } from '@/components/fairway/notifications/NotificationBell';
 import { NotificationPanelProvider } from '@/components/fairway/notifications/NotificationPanelContext';
 import { OfflineProvider } from '@/components/golf/OfflineProvider';
-import { LastSeenUpdater } from '@/components/admin/LastSeenUpdater';
 import { DemoEnterTracker } from '@/components/demo/DemoEnterTracker';
 import { DemoPricingNudge } from '@/components/golf/demo/DemoPricingNudge';
 import { NoTeamBanner } from '@/components/golf/NoTeamBanner';
@@ -739,7 +738,10 @@ export function FairwayDashboardShell({
               <NotificationPanelProvider>
                 <LazyMotion features={loadFeatures}>
                   <OfflineProvider showSyncStatus={false} showWarningBanner={false}>
-                    <LastSeenUpdater />
+                    {/* No <LastSeenUpdater /> here: usePresence() (below, in
+                        FairwayDashboardContent) calls public.heartbeat(), which
+                        already writes users.last_seen. The updater only added a
+                        second auth round-trip + RPC at every shell mount. */}
                     {/* Must mount BEFORE DemoEnterTracker — see DemoPricingNudge.tsx
                         header: it reads window.location.search for `demo=1` before
                         DemoEnterTracker's own effect strips that param from the URL. */}

@@ -47,6 +47,8 @@ import {
 } from '@/app/golf/actions/insight-delivery';
 import { withAdminObserved } from '@/lib/admin/observed-action';
 import { computeCompositeRating } from '@/lib/coachhelm/composite-rating';
+import { isCountableRound } from '@/lib/golf/round-countable';
+import { withCanonicalRoundTotal } from '@/lib/golf/round-total';
 
 // ---------------------------------------------------------------------------
 // Public types — the Fingerprint shape. Downstream UI imports these.
@@ -205,8 +207,8 @@ interface StatsCacheRow {
   putt_make_pct_3_5ft: number | null;
   putt_make_pct_5_10ft: number | null;
   putt_make_pct_10_15ft: number | null;
-  putt_make_pct_15_20ft: number | null;
-  putt_make_pct_20_plus_ft: number | null;
+  putt_make_pct_15_25ft: number | null;
+  putt_make_pct_25_plus_ft: number | null;
   sg_total_per_round: number | null;
   sg_tee_per_round: number | null;
   sg_approach_per_round: number | null;
@@ -227,7 +229,15 @@ interface RoundRow {
   course_name: string | null;
   holes_played: number | null;
   round_type: string | null;
+  // Read for the countable-round rule (src/lib/golf/round-countable.ts).
+  status: string | null;
+  front_nine: number | null;
+  back_nine: number | null;
+  total_putts: number | null;
 }
+
+/** Rounds the fingerprint reads (composite, trend, pressure, scoring). */
+const FINGERPRINT_ROUND_WINDOW = 10;
 
 // ---------------------------------------------------------------------------
 // Public API
@@ -289,19 +299,22 @@ async function getPlayerFingerprintImpl(
     supabase
       .from('golf_player_stats_cache')
       .select(
-        'rounds_in_calculation, scoring_average, scoring_average_vs_par, par3_average, par4_average, par5_average, driving_distance_average, driving_accuracy_percentage, fairways_hit, fairways_total, gir_percentage, greens_hit, greens_total, approach_proximity_average, approach_miss_left_pct, approach_miss_right_pct, approach_miss_short_pct, approach_miss_long_pct, scrambling_percentage, sand_save_percentage, up_and_down_percentage, putts_per_round, putts_per_gir, one_putt_percentage, three_putt_percentage, putt_make_pct_0_3ft, putt_make_pct_3_5ft, putt_make_pct_5_10ft, putt_make_pct_10_15ft, putt_make_pct_15_20ft, putt_make_pct_20_plus_ft, sg_total_per_round, sg_tee_per_round, sg_approach_per_round, sg_around_green_per_round, sg_putting_per_round, last_5_average, last_10_average, improvement_trend, trend_direction, last_round_date',
+        'rounds_in_calculation, scoring_average, scoring_average_vs_par, par3_average, par4_average, par5_average, driving_distance_average, driving_accuracy_percentage, fairways_hit, fairways_total, gir_percentage, greens_hit, greens_total, approach_proximity_average, approach_miss_left_pct, approach_miss_right_pct, approach_miss_short_pct, approach_miss_long_pct, scrambling_percentage, sand_save_percentage, up_and_down_percentage, putts_per_round, putts_per_gir, one_putt_percentage, three_putt_percentage, putt_make_pct_0_3ft, putt_make_pct_3_5ft, putt_make_pct_5_10ft, putt_make_pct_10_15ft, putt_make_pct_15_25ft, putt_make_pct_25_plus_ft, sg_total_per_round, sg_tee_per_round, sg_approach_per_round, sg_around_green_per_round, sg_putting_per_round, last_5_average, last_10_average, improvement_trend, trend_direction, last_round_date',
       )
       .eq('player_id', playerId)
       .maybeSingle(),
     supabase
       .from('golf_rounds')
       .select(
-        'id, round_date, total_score, score_to_par, course_name, holes_played, round_type',
+        'id, round_date, total_score, score_to_par, course_name, holes_played, round_type, status, front_nine, back_nine, total_putts',
       )
       .eq('player_id', playerId)
+      .eq('status', 'completed')
       .not('total_score', 'is', null)
       .order('round_date', { ascending: false })
-      .limit(10),
+      .order('id', { ascending: true })
+      // Over-fetch: the countable filter below must still leave 10.
+      .limit(FINGERPRINT_ROUND_WINDOW * 3),
     // Wave 2 composite-rating unification — the SAME active-pattern severity
     // read the Scouting Report tab's composite already used (same table,
     // same `is_active`/order/limit shape), run in parallel so the canonical
@@ -355,7 +368,13 @@ async function getPlayerFingerprintImpl(
       { action: 'player-fingerprint.getPlayerFingerprint', featureArea: 'insights', playerId },
     );
   }
-  const rounds = (roundsResult.data as RoundRow[] | null) ?? [];
+  // Countable rounds only: a partial or implausible round (the 37-stroke
+  // "18-hole" round) pinned the composite at 100, set "Latest −35" and a
+  // +17.4 pressure gap. Hole-summed totals, same as the Rounds list.
+  const rounds = ((roundsResult.data as RoundRow[] | null) ?? [])
+    .map(withCanonicalRoundTotal)
+    .filter(isCountableRound)
+    .slice(0, FINGERPRINT_ROUND_WINDOW);
 
   if (patternsResult.error) {
     // Non-fatal — composite falls back to the no-penalty score component.
@@ -729,6 +748,9 @@ function buildShortGameSection(
     metrics.push({
       label: 'Scrambling',
       value: `${scramble}%`,
+      // Window named: the stats cache covers all rounds; the Deep dive and
+      // Genome read a live 90-day window (27 vs 34 for the same player).
+      comparison: 'all rounds',
       tone: scramble >= 55 ? 'good' : scramble >= 35 ? 'neutral' : 'bad',
     });
   }
@@ -846,8 +868,10 @@ function buildPuttingBars(stats: StatsCacheRow | null): FingerprintChartData {
     { label: '3-5 ft', raw: stats.putt_make_pct_3_5ft },
     { label: '5-10 ft', raw: stats.putt_make_pct_5_10ft },
     { label: '10-15 ft', raw: stats.putt_make_pct_10_15ft },
-    { label: '15-20 ft', raw: stats.putt_make_pct_15_20ft },
-    { label: '20+ ft', raw: stats.putt_make_pct_20_plus_ft },
+    // Same band edges as Insights / Standing (v3 registry: 15-25, 25+). The
+    // legacy 15_20/20_plus cache columns gave a second, conflicting read.
+    { label: '15-25 ft', raw: stats.putt_make_pct_15_25ft },
+    { label: '25+ ft', raw: stats.putt_make_pct_25_plus_ft },
   ];
   const hasAny = buckets.some((b) => typeof b.raw === 'number');
   if (!hasAny) return null;
@@ -939,10 +963,16 @@ function buildPressureSection(
   rounds: RoundRow[],
   insights: EvidenceInsight[],
 ): SectionData {
-  const withDiff = rounds.filter(
-    (r): r is RoundRow & { score_to_par: number } =>
-      typeof r.score_to_par === 'number',
-  );
+  // 18-hole basis so a 9-hole round's to-par is comparable.
+  const withDiff = rounds
+    .filter(
+      (r): r is RoundRow & { score_to_par: number } =>
+        typeof r.score_to_par === 'number',
+    )
+    .map((r) => {
+      const holes = r.holes_played ?? 18;
+      return holes > 0 && holes !== 18 ? { ...r, score_to_par: (r.score_to_par * 18) / holes } : r;
+    });
   const practice = withDiff.filter((r) => r.round_type === 'practice');
   const competitive = withDiff.filter((r) => r.round_type && r.round_type !== 'practice');
 

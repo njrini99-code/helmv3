@@ -18,6 +18,7 @@ import {
   standingSubjectLabel,
   teamRelativeText,
   resolveDisplayScale,
+  unitHardBounds,
   toScalePct,
 } from './utils';
 
@@ -35,7 +36,7 @@ export function Hero(props: StandingBarProps) {
   const effectiveScale = resolveDisplayScale(
     props.scale,
     [props.player_value, showTeam ? props.team_avg : null, props.pga_omitted ? null : props.pga_value],
-    { symmetric: /^sg_/.test(props.metric_id) },
+    { symmetric: /^sg_/.test(props.metric_id), hardBounds: unitHardBounds(props.unit) },
   );
   const youPct = toScalePct(props.player_value, effectiveScale);
   const teamPct = showTeam && props.team_avg !== null ? toScalePct(props.team_avg, effectiveScale) : null;

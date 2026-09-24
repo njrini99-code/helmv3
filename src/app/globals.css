@@ -288,9 +288,10 @@
         /* warmest — cream-200/300 blend */
       );
     background-attachment: scroll;
+    /* 100dvh only. A trailing `min-height: -webkit-fill-available` used to
+       win in WebKit, so dvh never applied on iOS (Safari 15.4+ has dvh). */
     min-height: 100dvh;
-    min-height: -webkit-fill-available;
-    /* Canonical body font — resolves to Geist via tokens.css.
+    /* Canonical body font — the SF system stack via tokens.css.
        Was var(--font-family) which silently fell back to system-ui
        because Tailwind never defined that custom property. */
     font-family: var(--font-sans);
@@ -414,10 +415,9 @@
     -webkit-touch-callout: none;
   }
 
-  /* Scroll containers on iOS — momentum + no rubber-band at body level */
-  body.capacitor {
-    overscroll-behavior-y: none;
-  }
+  /* Page-level rubber-band is ON (2026-09-23 owner decision): iOS bounce at
+     the top and bottom of a scroll is what makes the shell feel native. Only
+     nested scroll containers and sheets contain their overscroll. */
 
   body.capacitor [data-scroll-container],
   body.capacitor main {
@@ -697,9 +697,11 @@
     box-shadow: var(--shadow-elevation-low);
   }
 
-  .bento-item:hover {
-    box-shadow: var(--shadow-elevation-medium);
-    @apply -translate-y-1 border-warm-200;
+  @media (hover: hover) and (pointer: fine) {
+    .bento-item:hover {
+      box-shadow: var(--shadow-elevation-medium);
+      @apply -translate-y-1 border-warm-200;
+    }
   }
 
   .bento-item-lg {
@@ -777,8 +779,10 @@
     @apply hover:-translate-y-1 hover:border-warm-200 cursor-pointer;
   }
 
-  .card-lift:hover {
-    box-shadow: var(--shadow-elevation-medium);
+  @media (hover: hover) and (pointer: fine) {
+    .card-lift:hover {
+      box-shadow: var(--shadow-elevation-medium);
+    }
   }
 
   .card-interactive {
@@ -832,12 +836,14 @@
     transition: background-color 0.4s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.4s cubic-bezier(0.16, 1, 0.3, 1), transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
   }
 
-  .glass-premium:hover {
-    background: rgba(247, 245, 242, 0.88);
-    box-shadow:
-      0 2px 4px rgba(58, 50, 40, 0.05),
-      0 24px 44px rgba(58, 50, 40, 0.08),
-      inset 0 1px 0 rgba(255, 255, 255, 0.65);
+  @media (hover: hover) and (pointer: fine) {
+    .glass-premium:hover {
+      background: rgba(247, 245, 242, 0.88);
+      box-shadow:
+        0 2px 4px rgba(58, 50, 40, 0.05),
+        0 24px 44px rgba(58, 50, 40, 0.08),
+        inset 0 1px 0 rgba(255, 255, 255, 0.65);
+    }
   }
 
   /* surface-apple — DEPRECATED naming retained as a synonym for
@@ -972,8 +978,10 @@
       transform var(--v3-duration-short) var(--v3-ease-tap),
       box-shadow var(--v3-duration-short) var(--v3-ease-tap);
   }
-  .v3-lift:hover {
-    transform: translateY(-2px);
+  @media (hover: hover) and (pointer: fine) {
+    .v3-lift:hover {
+      transform: translateY(-2px);
+    }
   }
   .v3-lift:active {
     transform: translateY(0);
@@ -1005,10 +1013,12 @@
     background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.8), transparent);
   }
 
-  .glass-card:hover {
-    @apply -translate-y-0.5;
-    border-color: var(--glass-standard-border);
-    box-shadow: var(--glass-shadow-lg);
+  @media (hover: hover) and (pointer: fine) {
+    .glass-card:hover {
+      @apply -translate-y-0.5;
+      border-color: var(--glass-standard-border);
+      box-shadow: var(--glass-shadow-lg);
+    }
   }
 
   /* Modal overlay — standardized across all modals/dialogs/drawers */
@@ -1060,15 +1070,19 @@
                 border-color 360ms cubic-bezier(0.16, 1, 0.3, 1),
                 box-shadow 360ms cubic-bezier(0.16, 1, 0.3, 1);
   }
-  .pill-soft:hover {
-    @apply text-warm-900 bg-cream-50 border-warm-300/65;
-    box-shadow: 0 1px 3px rgba(58, 50, 40, 0.06), 0 8px 18px rgba(58, 50, 40, 0.05);
+  @media (hover: hover) and (pointer: fine) {
+    .pill-soft:hover {
+      @apply text-warm-900 bg-cream-50 border-warm-300/65;
+      box-shadow: 0 1px 3px rgba(58, 50, 40, 0.06), 0 8px 18px rgba(58, 50, 40, 0.05);
+    }
   }
   .pill-soft-primary {
     @apply text-primary-700 bg-primary-50/85 border-primary-100;
   }
-  .pill-soft-primary:hover {
-    @apply text-primary-800 bg-primary-50 border-primary-200;
+  @media (hover: hover) and (pointer: fine) {
+    .pill-soft-primary:hover {
+      @apply text-primary-800 bg-primary-50 border-primary-200;
+    }
   }
 
   /* room — architectural section panel. Generous spacing, hairline
@@ -1271,8 +1285,10 @@
     @apply border-b border-warm-50 transition-colors duration-150;
   }
 
-  .table-premium tbody tr:hover {
-    @apply bg-warm-50;
+  @media (hover: hover) and (pointer: fine) {
+    .table-premium tbody tr:hover {
+      @apply bg-warm-50;
+    }
   }
 
   .table-premium td {
@@ -1283,8 +1299,17 @@
     @apply opacity-0 transition-opacity duration-150;
   }
 
-  .table-premium tbody tr:hover .row-actions {
-    @apply opacity-100;
+  @media (hover: hover) and (pointer: fine) {
+    .table-premium tbody tr:hover .row-actions {
+      @apply opacity-100;
+    }
+  }
+
+  /* Touch has no hover to reveal them, so row actions stay visible there. */
+  @media not all and (hover: hover) and (pointer: fine) {
+    .table-premium .row-actions {
+      @apply opacity-100;
+    }
   }
 
   /* ===== AVATAR SYSTEM ===== */
@@ -1292,8 +1317,10 @@
     @apply relative inline-flex items-center justify-center rounded-full bg-warm-100 overflow-hidden ring-2 ring-transparent transition-all duration-200;
   }
 
-  .avatar:hover {
-    @apply ring-warm-200;
+  @media (hover: hover) and (pointer: fine) {
+    .avatar:hover {
+      @apply ring-warm-200;
+    }
   }
 
   .avatar-initials {
@@ -1456,8 +1483,10 @@
     @apply bg-warm-100;
   }
 
-  .cmdk-item:hover {
-    @apply bg-warm-50;
+  @media (hover: hover) and (pointer: fine) {
+    .cmdk-item:hover {
+      @apply bg-warm-50;
+    }
   }
 
   .cmdk-item-shortcut {
@@ -1569,9 +1598,11 @@
     transition: all 200ms ease-out;
   }
 
-  .glass-card-inner:hover {
-    background: rgba(255, 255, 255, 0.60);
-    border-color: rgba(255, 255, 255, 0.40);
+  @media (hover: hover) and (pointer: fine) {
+    .glass-card-inner:hover {
+      background: rgba(255, 255, 255, 0.60);
+      border-color: rgba(255, 255, 255, 0.40);
+    }
   }
 
   /* Tier 3: Subtle Glass (inputs, buttons) */
@@ -1645,6 +1676,16 @@
 }
 
 @layer utilities {
+
+  /* ===== FAIRWAY NUMERIC ROLE =====
+     `font-fw-mono` is the numeric role, not a monospace face (2026-09-23 owner
+     decision: numbers use SF with tabular figures, never Fragment Mono and its
+     slashed zero). Tabular + lining figures keep columns aligned the way the
+     old monospace did; "zero" 0 guarantees a plain zero. */
+  .font-fw-mono {
+    font-variant-numeric: lining-nums tabular-nums;
+    font-feature-settings: "tnum" 1, "lnum" 1, "zero" 0;
+  }
 
   /* ===== PREMIUM DASHBOARD GRADIENT BACKGROUND =====
      Linen base (cream-100 → warm-linen) overlaid with helm-green aurora
@@ -1810,9 +1851,11 @@
     @apply transition-all duration-200 ease-out;
   }
 
-  .hover-lift:hover {
-    @apply -translate-y-1;
-    box-shadow: var(--shadow-elevation-medium);
+  @media (hover: hover) and (pointer: fine) {
+    .hover-lift:hover {
+      @apply -translate-y-1;
+      box-shadow: var(--shadow-elevation-medium);
+    }
   }
 
   /*
@@ -1832,7 +1875,7 @@
     will-change: transform;
   }
 
-  @media (hover: hover) {
+  @media (hover: hover) and (pointer: fine) {
     .surface-tile-hover:hover {
       transform: translateY(-1px);
       border-color: rgba(22, 163, 74, 0.22);
@@ -1857,8 +1900,10 @@
     @apply transition-transform duration-200 ease-out;
   }
 
-  .hover-scale:hover {
-    @apply scale-[1.02];
+  @media (hover: hover) and (pointer: fine) {
+    .hover-scale:hover {
+      @apply scale-[1.02];
+    }
   }
 
   .active-scale {
@@ -2370,10 +2415,11 @@
   /* Mobile scroll optimization */
   @media (max-width: 1024px) {
 
-    /* Prevent scroll chaining on body */
+    /* Page-level overscroll is left at the default so iOS rubber-band bounce
+       works (owner decision 2026-09-23); [data-scroll-container] and
+       [data-scroll-lock] below still contain their own scroll chaining. */
     html,
     body {
-      overscroll-behavior-y: none;
       /* `clip` (with `hidden` fallback) — see the note on the earlier
          max-width:1024px block: `hidden` would force overflow-y→auto and
          break position:sticky on the document-scrolling Fairway shell. */
@@ -2417,7 +2463,10 @@
     footer,
     [role="tablist"],
     [role="toolbar"] {
-      -webkit-tap-highlight-color: rgba(22, 163, 74, 0.1);
+      /* No grey/green WebKit flash on tap: press feedback comes from each
+         control's :active state (fwPressSurface / fwPressKey), as in a
+         native app. */
+      -webkit-tap-highlight-color: transparent;
       -webkit-touch-callout: none;
       -webkit-user-select: none;
       user-select: none;
@@ -2447,7 +2496,6 @@
     @supports (-webkit-touch-callout: none) {
       .h-dvh {
         height: 100dvh;
-        height: -webkit-fill-available;
       }
     }
 

@@ -11,7 +11,9 @@
  *   • Escape to close, scrim-click to close    (Radix Dialog, free)
  *   • Body scroll-lock while open              (Radix Dialog, free)
  *   • Cheap dim warm scrim (NOT blurred — §4.3 perf rule)
- *   • `.glass-strong` Elevated body, rounded-lg (28px), shadow-modal
+ *   • OPAQUE `Surface` body by default (content/forms are never glass, §4.3);
+ *     `material="glass"` opts a chrome-like overlay into `.fw-glass-strong`
+ *   • rounded-lg (28px), shadow-modal
  *   • Slow cinematic materialize (opacity + scale 0.97→1), prefers-reduced-motion honored
  *   • Green focus-visible ring that survives black + cream (§7.2)
  *   • Header / Body / Footer / Title / Description compound parts
@@ -28,7 +30,8 @@
 
 import * as React from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
-import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
+import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
 import { X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useMediaQuery } from '@/hooks/use-media-query';
@@ -40,8 +43,10 @@ import {
   panelVariantsReduced,
   panelTransition,
   GLASS_STRONG_CLASS,
+  SURFACE_CLASS,
   CLOSE_BUTTON_CLASS,
   ModalPortalContext,
+  type OverlayMaterial,
 } from './_shared';
 
 /* ── size variants ────────────────────────────────────────────────────────── */
@@ -88,6 +93,12 @@ export interface ModalShellProps {
   /** Viewport occupation. Default `dialog`. See ModalShellPresentation. */
   presentation?: ModalShellPresentation;
   /**
+   * Panel material. Default `surface` — opaque --fw-color-surface, because a
+   * modal carries content or form fields and glass lets the page behind read
+   * through them. `glass` is for chrome-like overlays with no reading content.
+   */
+  material?: OverlayMaterial;
+  /**
    * Accessible title. REQUIRED for a11y. Either pass a string (rendered as the
    * styled `ModalShell.Title`) or render your own `<ModalShell.Title>` in
    * `children` and pass a string here for the visually-hidden fallback — Radix
@@ -115,6 +126,7 @@ function ModalShellRoot({
   trigger,
   size = 'md',
   presentation = 'dialog',
+  material = 'surface',
   title,
   hideTitle = false,
   description,
@@ -123,7 +135,7 @@ function ModalShellRoot({
   className,
   'data-slot': dataSlot = 'modal-shell',
 }: ModalShellProps) {
-  const reduced = useReducedMotion() ?? false;
+  const reduced = useReducedMotionGuard();
 
   // The Dialog.Content DOM node, captured once mounted — provided down via
   // ModalPortalContext so a floating popup (fairway/forms/Select.tsx) can
@@ -344,7 +356,7 @@ function ModalShellRoot({
                   'overflow-hidden',
                   'text-text-primary',
                   'flex flex-col',
-                  GLASS_STRONG_CLASS,
+                  material === 'glass' ? GLASS_STRONG_CLASS : SURFACE_CLASS,
                   workspace
                     ? // Phone: edge to edge, full height (the inline top/bottom
                       // pin it; h-auto lets them size it). sm+: a wide stage.
@@ -353,6 +365,7 @@ function ModalShellRoot({
                   className,
                 )}
                 data-presentation={presentation}
+                data-material={material}
                 variants={reduced ? panelVariantsReduced : panelVariants}
                 initial="hidden"
                 animate="visible"
@@ -479,6 +492,8 @@ const ModalBody = React.forwardRef<
       // panel's max-h cap where overflow-y-auto takes over — identical layout
       // where it already worked, unbroken on iOS.
       'min-h-0 flex-auto overflow-y-auto px-6 py-2 font-fw-sans text-body text-text-secondary',
+      // Page rubber-band is ON; never chain this body's scroll to the page.
+      'overscroll-contain',
       // breathing room when there is no header/footer
       'first:pt-6 last:pb-6',
       className,

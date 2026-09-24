@@ -107,7 +107,14 @@ export function rankByValue(entries: ReadonlyArray<{ id: string; value: number |
   const sorted = [...usable].sort((a, b) => (direction === 'higher_better' ? b.value - a.value : a.value - b.value));
   const of = sorted.length;
   const out = new Map<string, RankInfo>();
-  sorted.forEach((entry, i) => out.set(entry.id, { rank: i + 1, of }));
+  // Competition ranking ("1, 2, 2, 4"): players equal to 2 decimals share a
+  // rank instead of being split by roster order.
+  const key = (v: number) => Math.round(v * 100);
+  sorted.forEach((entry, i) => {
+    const prev = i > 0 ? sorted[i - 1]! : null;
+    const rank = prev && key(prev.value) === key(entry.value) ? out.get(prev.id)!.rank : i + 1;
+    out.set(entry.id, { rank, of });
+  });
   return out;
 }
 
@@ -254,6 +261,13 @@ export interface TeamBoardPlayerInput {
   /** recent-minus-prior normalized-score delta; null = not enough rounds for a signal yet (never a fabricated 0). */
   scoringTrend: number | null;
   lastRoundScore: number | null;
+  /**
+   * Mean SG: Total per round over countable rounds and the number of rounds
+   * that carried it. Undefined/null = not supplied; the Team SG KPI then
+   * falls back to the standing snapshot (lifetime player cache).
+   */
+  sgTotalPerRound?: number | null;
+  sgRounds?: number;
   /** Oldest → newest normalized scores, for the Sparkline. May be empty (honest em-dash). */
   recentScores: number[];
   composite: number | null;
@@ -461,12 +475,24 @@ export function buildTeamBoardViewModel(input: TeamBoardInput): TeamBoardViewMod
   );
   const teamScoring = teamScoringRaw === null ? '—' : teamScoringRaw.toFixed(1);
 
-  const teamSgRaw = weightedMean(
-    players.map((p) => ({
-      value: standingByPlayer.get(p.id)?.get('sg_total')?.player_value ?? null,
-      weight: p.roundsPlayed,
-    })),
-  );
+  // Prefer SG averaged over countable rounds (weighted by the rounds that
+  // carry SG); fall back to the standing snapshot only when the page could
+  // not supply it. The snapshot is the lifetime player cache, which counts
+  // implausible rounds and weights by rounds that carry no SG.
+  const hasCountableSg = players.some((p) => p.sgTotalPerRound !== undefined && p.sgTotalPerRound !== null);
+  const teamSgRaw = hasCountableSg
+    ? weightedMean(
+        players.map((p) => ({
+          value: p.sgTotalPerRound ?? null,
+          weight: p.sgRounds ?? 0,
+        })),
+      )
+    : weightedMean(
+        players.map((p) => ({
+          value: standingByPlayer.get(p.id)?.get('sg_total')?.player_value ?? null,
+          weight: p.roundsPlayed,
+        })),
+      );
 
   // Pool raw successes and attempts across the roster. Averaging player
   // percentages would give a one-round player the same influence as a

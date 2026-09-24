@@ -42,8 +42,11 @@ export interface CoachIntelligenceHomeProps {
   /** `players` view — copied from development/page.tsx, mounted UNCHANGED. */
   playersDrillProps: PlayersGridViewProps;
 
-  /** `effectiveness` view — copied from analytics/coachhelm/page.tsx, mounted UNCHANGED. */
-  effectivenessDrillProps: FairwayEffectivenessProps;
+  /** `effectiveness` view — copied from analytics/coachhelm/page.tsx, mounted UNCHANGED.
+   *  The page streams it as a promise (secondary to the Brief header and the
+   *  signal queue); `TriageDesk` suspends on it only inside the Effectiveness
+   *  tab. Passed straight through — this component never reads it. */
+  effectivenessDrillProps: FairwayEffectivenessProps | Promise<FairwayEffectivenessProps>;
 
   /**
    * The AI-first opening. Null when the chat context could not be resolved —

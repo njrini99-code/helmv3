@@ -63,6 +63,7 @@ export {
   initialsFromName,
   standingSubjectLabel,
   resolveDisplayScale,
+  unitHardBounds,
   layoutMarkerPositions,
   MARKER_MIN_GAP_PCT,
 } from './utils';

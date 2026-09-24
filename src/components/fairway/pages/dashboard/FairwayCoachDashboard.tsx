@@ -225,7 +225,9 @@ function shortDate(iso: string): string {
  * `trend` field is a qualitative direction, not a magnitude.
  */
 function seriesDeltaLabel(points: number): string {
-  return `last ${points} round${points === 1 ? '' : 's'}`;
+  // The chip is the movement across the team's latest rounds, while the value
+  // beside it covers the whole window. Say so, so the two are not read as one.
+  return `trend, last ${points} team round${points === 1 ? '' : 's'}`;
 }
 
 /* ──────────────────────────────────────────────────────────────────────────
@@ -731,7 +733,7 @@ export function FairwayCoachDashboard({
                   />
                 ) : undefined
               }
-              footnote={`${roundsLogged} ${roundsLogged === 1 ? 'round' : 'rounds'} in window`}
+              footnote={`${roundsLogged} counted ${roundsLogged === 1 ? 'round' : 'rounds'} in window`}
             />
           ) : (
             // Keep ONE tile silhouette across the KPI row (P010): the null metric

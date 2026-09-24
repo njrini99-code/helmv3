@@ -14,6 +14,7 @@
 // ============================================================================
 
 import { createClient } from '@/lib/supabase/server';
+import { isCountableRound } from '@/lib/golf/round-countable';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { logServerError } from '@/lib/server-error-logger';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
@@ -762,10 +763,12 @@ async function getPlayerShotContextImpl(
     sinceDate.setDate(sinceDate.getDate() - periodDays);
     const sinceDateStr = sinceDate.toISOString().split('T')[0];
 
-    // Fetch rounds in the period
-    const { data: roundsData, error: roundsError } = await supabase
+    // Fetch rounds in the period — countable ones only
+    // (src/lib/golf/round-countable.ts), so an implausible round's shots never
+    // feed the yardage curve, weaknesses or scramble rate.
+    const { data: rawRoundsData, error: roundsError } = await supabase
       .from('golf_rounds')
-      .select('id')
+      .select('id, holes_played, total_score, front_nine, back_nine, total_putts')
       .eq('player_id', playerId)
       .eq('status', 'completed')
       .gte('round_date', sinceDateStr);
@@ -773,6 +776,7 @@ async function getPlayerShotContextImpl(
     if (roundsError) {
       return { success: false, error: 'Failed to fetch rounds' };
     }
+    const roundsData = (rawRoundsData ?? []).filter(isCountableRound);
 
     if (!roundsData || roundsData.length === 0) {
       return { success: false, error: 'No completed rounds found in the specified period', code: 'no_rounds_in_period' };
