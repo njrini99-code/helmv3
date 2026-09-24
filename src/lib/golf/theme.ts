@@ -23,6 +23,7 @@
  * ========================================================================== */
 
 import { useCallback, useEffect, useSyncExternalStore } from 'react';
+import { syncNativeAppearance } from '@/lib/native/helm-appearance';
 
 export type GolfTheme = 'light' | 'dark' | 'system';
 
@@ -126,6 +127,8 @@ export function applyTheme(theme: GolfTheme): void {
   root.classList.toggle('dark', dark);
   root.setAttribute('data-fw-theme', dark ? 'dark' : 'light');
   applyThemeColorMeta(dark);
+  // MOT-14: the native bounce/canvas colour follows the app's choice too.
+  syncNativeAppearance(theme);
 }
 
 /**

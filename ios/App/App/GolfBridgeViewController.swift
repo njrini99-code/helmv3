@@ -42,6 +42,7 @@ class GolfBridgeViewController: CAPBridgeViewController {
     /// manifest is CLI-managed, so it cannot host first-party targets).
     override open func capacitorDidLoad() {
         bridge?.registerPluginInstance(HelmHapticsPlugin())
+        bridge?.registerPluginInstance(HelmAppearancePlugin())
 
         // Native edge-swipe back/forward through the web history, like any
         // iOS navigation stack (Capacitor leaves this WKWebView default off).
@@ -185,5 +186,37 @@ private final class HelmNavMessageHandler: NSObject, WKScriptMessageHandler {
     func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
         guard let body = message.body as? [String: Any], let open = body["overlayOpen"] as? Bool else { return }
         owner?.setOverlayOpen(open)
+    }
+}
+
+/// MOT-14: the web layer's theme choice, applied to the window so the dynamic
+/// `canvasColor` (web view, scroll view and root view backgrounds, which the
+/// rubber-band bounce exposes) and the status bar resolve against the APP's
+/// light/dark choice rather than only the system's. "system" clears the
+/// override. Lives in this file, not its own, so the Xcode target needs no new
+/// file reference. Web bridge: src/lib/native/helm-appearance.ts.
+@objc(HelmAppearancePlugin)
+public class HelmAppearancePlugin: CAPPlugin, CAPBridgedPlugin {
+    public let identifier = "HelmAppearancePlugin"
+    public let jsName = "HelmAppearance"
+    public let pluginMethods: [CAPPluginMethod] = [
+        CAPPluginMethod(name: "setStyle", returnType: CAPPluginReturnPromise),
+    ]
+
+    @objc func setStyle(_ call: CAPPluginCall) {
+        let style: UIUserInterfaceStyle
+        switch call.getString("style") {
+        case "dark": style = .dark
+        case "light": style = .light
+        default: style = .unspecified
+        }
+        DispatchQueue.main.async { [weak self] in
+            guard let window = self?.bridge?.viewController?.view.window else {
+                call.resolve()
+                return
+            }
+            window.overrideUserInterfaceStyle = style
+            call.resolve()
+        }
     }
 }
