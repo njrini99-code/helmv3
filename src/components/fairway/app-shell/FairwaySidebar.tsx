@@ -211,7 +211,7 @@ function SidebarRow({ item, active, collapsed, Link, onNavigate }: SidebarRowPro
           </span>
         ) : null}
         {typeof item.badge === 'number' && item.badge > 0 && !collapsed && (
-          <span className="ml-auto inline-flex min-w-[18px] items-center justify-center rounded-full bg-accent-650 px-1.5 py-0.5 font-fw-mono text-micro font-medium leading-none text-text-on-accent">
+          <span className="ml-auto inline-flex min-w-[18px] items-center justify-center rounded-full bg-accent-fill px-1.5 py-0.5 font-fw-mono text-micro font-medium leading-none text-text-on-accent-fill">
             {item.badge > 99 ? '99+' : item.badge}
           </span>
         )}

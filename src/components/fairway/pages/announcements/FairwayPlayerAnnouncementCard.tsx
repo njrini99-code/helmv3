@@ -146,7 +146,7 @@ function FairwayTaskItem({
       <span
         className={cn(
           'mt-0.5 grid h-5 w-5 flex-shrink-0 place-items-center rounded-fw-sm border-2 transition-colors',
-          completed ? 'border-accent-500 bg-accent-650 text-text-on-accent' : 'border-border-strong',
+          completed ? 'border-accent-500 bg-accent-fill text-text-on-accent-fill' : 'border-border-strong',
         )}
         aria-hidden
       >
@@ -168,7 +168,7 @@ function FairwayTaskItem({
           <span
             className={cn(
               'mt-1 inline-flex items-center gap-1 font-fw-sans text-caption font-medium',
-              isOverdue ? 'text-fw-danger-ink' : completed ? 'text-accent-600' : 'text-text-tertiary',
+              isOverdue ? 'text-fw-danger-ink' : completed ? 'text-accent-ink' : 'text-text-tertiary',
             )}
             suppressHydrationWarning
           >
@@ -480,7 +480,7 @@ export function FairwayPlayerAnnouncementCard({
                           {hasDoc && (
                             <IconDownload
                               size={15}
-                              className="flex-shrink-0 text-text-tertiary transition-colors group-hover/doc:text-accent-600"
+                              className="flex-shrink-0 text-text-tertiary transition-colors group-hover/doc:text-accent-ink"
                             />
                           )}
                         </button>

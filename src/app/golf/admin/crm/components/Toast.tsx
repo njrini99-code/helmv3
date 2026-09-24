@@ -43,7 +43,7 @@ const TOAST_CONFIG: Record<ToastType, {
   success: {
     icon: IconCheckCircle2,
     containerClass: 'border-accent-200/50 bg-accent-50/80',
-    iconClass: 'text-accent-600',
+    iconClass: 'text-accent-ink',
   },
   error: {
     icon: IconXCircle,

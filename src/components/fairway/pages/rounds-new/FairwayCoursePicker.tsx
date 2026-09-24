@@ -2,53 +2,53 @@
 
 /**
  * ============================================================================
- * Fairway · Rounds · FairwayCoursePicker — the premium "choose a course" screen
+ * Fairway · Rounds · FairwayCoursePicker — "choose a course" as a pushed screen
  * ----------------------------------------------------------------------------
- * The first thing you see after tapping "New round" in the redesign shell. A
- * full-screen, cinematic course chooser that replaces the plain TeePickerDrawer
- * list (flag-OFF still falls back to that list — see new-round-client.tsx).
+ * Owner decision D-PICKER (2026-09-23): the picker is a full-screen
+ * navigation-stack PUSH, not a sheet. It slides in from the trailing edge over
+ * the setup screen, carries its search field in the nav bar, and the tee list
+ * is the NEXT screen on the same stack (pushed from the right, popped by the
+ * back button, the Escape key, or — on the tee screen — nothing else).
  *
- * TWO STAGES, one full-page surface (the picker IS the page, not an overlay):
- *   • Stage A — an airy header over a cream canvas carrying THREE labelled feeds,
- *     ONE image-forward carousel each: "Recently played", "Team courses", and the
- *     full "Course library" (which ends in a dashed "Add a course" tile). Searching
- *     collapses to a single results carousel. Each shelf is a plain native
- *     scroll-snap track of featured CourseCards (peek the next card), with desktop
- *     arrows and a staggered entrance — deliberately NO per-frame coverflow
- *     transforms and NO framer-motion useScroll/useTransform on the track. That
- *     earlier coverflow crashed under concurrent React when the conditionally
- *     rendered track ref wasn't hydrated at hook-call time (React #310); pure
- *     native scroll holds 60fps, keeps the whole card a reliable tap target, and
- *     can't reintroduce that hook-order hazard. Edge-triggered arrow state only.
- *   • Stage B — choose a tee at the picked course. Reuses TeePickRow/SkeletonRows
- *     from TeePickerDrawer (single source of truth for that row), then returns
- *     the tee's TeeRoundDefaults via onPick so the round form pre-fills pars/
- *     yards and links golf_rounds.tee_id. The round still snapshots its holes.
+ *   • Courses screen — nav bar (close · title · search), then vertical grouped
+ *     lists: "Recently played", "Team courses" (minus anything already in
+ *     Recently played), and the whole "Course library" A–Z with letter
+ *     headers and a section index rail. Searching collapses to one results
+ *     list. The earlier horizontal 65-card carousels are gone (RE-P7).
+ *   • Tees screen — the tee cards for the chosen course.
  *
- * Only framer-motion usage is the `m` entrance + AnimatePresence stage swap +
- * useReducedMotion (all proven safe under the dashboard LazyMotion). Every
- * motion is reduced-motion gated (coverflow flattens to a plain snap list).
- * Accessibility follows the ARIA APG carousel pattern (region + roledescription,
- * per-slide group + position, focusable track, polite live region).
- * Public props are IDENTICAL to TeePickerDrawer so the two are drop-in swappable.
+ * Mechanics:
+ *   • Radix Dialog underneath: focus trap, body scroll lock, and focus RESTORE
+ *     to whatever opened the picker (RE-P5 — focus used to land on <body>).
+ *   • Escape pops ONE level: tees → courses, then courses → closed (RE-P5).
+ *   • The screen stays mounted for PICKER_EXIT_MS after `open` goes false so
+ *     the slide-out plays with the content the player was looking at (the
+ *     "flicker" contract — see the close-sequence test). A tee pick closes
+ *     first and hands the tee to the parent only after that exit.
+ *   • A library-load failure is an inline "Couldn't load · Retry" notice, not
+ *     a misleading "No courses yet" (RE-P3).
+ *   • Tees are prefetched on pointer-down so a tap on a course usually lands on
+ *     real tee cards instead of a skeleton (RE-P6).
+ *
+ * Public props are unchanged: the qualifier create/edit screens share this.
  * ========================================================================== */
 
 import {
-  useCallback, useEffect, useMemo, useRef, useState,
+  useCallback, useEffect, useMemo, useRef, useState, type ReactNode,
 } from 'react';
+import * as Dialog from '@radix-ui/react-dialog';
 import { m, AnimatePresence } from 'framer-motion';
 import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
 import { cn } from '@/lib/utils';
-import { Drawer, DrawerContent, DrawerTitle } from '@/components/ui/drawer';
 import { Button } from '@/components/fairway/controls/button';
 import { fairwayToast } from '@/components/fairway/feedback/ToastStack';
+import { Skeleton, EmptyState, InlineNotice } from '@/components/fairway/feedback';
+import { fwHaptic } from '@/lib/fairway/haptics';
 import { logError } from '@/lib/error-logging';
 import {
-  IconSearch, IconPlus, IconChevronLeft, IconArrowLeft, IconArrowRight, IconFlag, IconX,
+  IconSearch, IconPlus, IconChevronLeft, IconChevronRight, IconFlag, IconX, IconMapPin,
 } from '@/components/icons';
-import { Skeleton, EmptyState } from '@/components/fairway/feedback';
-import { CourseCard } from '@/components/golf/courses/CourseCard';
-import { formatCourseName } from '@/components/golf/courses/CourseImage';
+import { CourseImage, formatCourseName } from '@/components/golf/courses/CourseImage';
 import { CourseFormDrawer } from '@/components/golf/courses/CourseFormDrawer';
 import { TeeFormDrawer } from '@/components/golf/courses/TeeFormDrawer';
 import { FairwayTeeCard } from './FairwayTeeCard';
@@ -83,36 +83,38 @@ export interface FairwayCoursePickerProps {
 type Stage = 'courses' | 'tees';
 
 /**
- * vaul's exit slide for this sheet (~500ms, `cubic-bezier(0.32, 0.72, 0, 1)`).
- * A tee pick closes the sheet first and hands the tee to the parent only after
- * this, so the setup screen does not restructure (hero swap, scorecard mount +
- * entrance) underneath a sheet that is still sliding away. Under reduced motion
- * the global CSS collapses vaul's transition to ~0 and the hand-off is immediate.
+ * How long the pushed screen keeps rendering after `open` goes false: the
+ * slide-out. A tee pick closes the picker first and hands the tee to the
+ * parent only after this, so the setup screen does not restructure (hero
+ * swap, scorecard mount + entrance) underneath a screen that is still moving.
+ * Under reduced motion the hand-off is immediate.
  */
 export const PICKER_EXIT_MS = 500;
+
+/** iOS push curve (UINavigationController-like). */
+const PUSH_EASE = [0.32, 0.72, 0, 1] as const;
+/** A pick that opens within this window of mount is the landing screen: no slide. */
+const LANDING_WINDOW_MS = 600;
+/** Show the A–Z rail only when the list is long enough to need it. */
+const INDEX_RAIL_MIN = 12;
 
 export function FairwayCoursePicker({
   open, onOpenChange, onPick, canManageLibrary = false,
 }: FairwayCoursePickerProps) {
-  // The `showToastRef` dance that used to live here is gone with the hook that
-  // caused it: `useToast()` returned a FRESH object every render, so depending
-  // on its `showToast` in a useCallback re-created that callback every render,
-  // which re-fired the course-load effect (it keys off refreshCourses),
-  // thrashing loadingCourses and refetching the library in a loop. The ref was
-  // the workaround. `fairwayToast` is a module-level singleton with a stable
-  // identity, so the data callbacks are referentially stable without it.
   const reduceMotion = useReducedMotionGuard();
 
   const [stage, setStage] = useState<Stage>('courses');
+  /** +1 = push (courses → tees), −1 = pop. Drives the horizontal slide. */
+  const [direction, setDirection] = useState<1 | -1>(1);
   const [courses, setCourses] = useState<GolfCourse[]>([]);     // full shared library
   const [recent, setRecent] = useState<GolfCourse[]>([]);       // this player's recently played
   const [team, setTeam] = useState<GolfCourse[]>([]);           // the team's saved courses
-  // #146 — starts true (not false) so the very first paint after opening
-  // shows the shelf skeleton instead of one frame of the wrong state (the
-  // library/recent/team feeds are all still empty arrays at that point, so a
-  // `false` initial value briefly rendered the "No courses yet" empty state,
-  // or a blank void, ahead of the real skeleton the loading effect turns on).
+  // #146 — starts true so the very first paint after opening is the skeleton,
+  // never one frame of the empty state.
   const [loadingCourses, setLoadingCourses] = useState(true);
+  // RE-P3: the library feed failed. Shown inline with a Retry, whether or not
+  // the recent/team feeds loaded — never as "No courses yet".
+  const [libraryFailed, setLibraryFailed] = useState(false);
   const [query, setQuery] = useState('');
 
   const [selected, setSelected] = useState<GolfCourse | null>(null);
@@ -122,35 +124,61 @@ export function FairwayCoursePicker({
   // Monotonic token so a fast second course tap can't have its (slower) tee
   // response overwrite the newer selection's tees.
   const teeReqRef = useRef(0);
+  // RE-P6: tee lists fetched on pointer-down (or already seen this session).
+  const teeCacheRef = useRef(new Map<string, Promise<GolfCourseTee[]>>());
+  const teeResolvedRef = useRef(new Map<string, GolfCourseTee[]>());
 
   const [createCourseOpen, setCreateCourseOpen] = useState(false);
   const [createTeeOpen, setCreateTeeOpen] = useState(false);
 
-  // Reset to the course list on OPEN, never on close. vaul keeps this content
-  // mounted for its whole exit slide, and every close here is parent-driven
-  // (tee pick, the X, quick-pick), which vaul's Root onAnimationEnd never
-  // reports — so a reset on close swapped the sliding sheet from the tee list
-  // back to "Choose a course" mid-dismissal (the owner's "flicker"). Done in
-  // render (the prev-prop pattern) rather than in an effect so the very first
-  // open frame is already the course list: an effect would paint the stale tee
-  // stage first and then play the AnimatePresence stage swap on the way in.
+  // Keep the screen mounted through its slide-out (see PICKER_EXIT_MS).
+  const [present, setPresent] = useState(open);
+  useEffect(() => {
+    if (open) {
+      setPresent(true);
+      return;
+    }
+    const t = setTimeout(() => setPresent(false), reduceMotion ? 0 : PICKER_EXIT_MS);
+    return () => clearTimeout(t);
+  }, [open, reduceMotion]);
+  const shown = open || present;
+
+  // The New Round page opens the picker as its landing screen. A push that
+  // plays on page load reads as a glitch, so an open inside the first moments
+  // after mount appears in place.
+  const [landing, setLanding] = useState(true);
+  useEffect(() => {
+    const t = setTimeout(() => setLanding(false), LANDING_WINDOW_MS);
+    return () => clearTimeout(t);
+  }, []);
+  const [slideIn, setSlideIn] = useState(false);
+  // The title only slides on a push/pop inside the stack, never on open.
+  const [titleAnimates, setTitleAnimates] = useState(false);
+
+  // Reset to the course list on OPEN, never on close: the screen keeps
+  // rendering through its exit, and resetting on close swapped the tee list
+  // back to "Choose a course" mid-slide (the owner's "flicker"). Done in
+  // render (the prev-prop pattern) so the first open frame is already right.
   const [prevOpen, setPrevOpen] = useState(open);
   if (open !== prevOpen) {
     setPrevOpen(open);
     if (open) {
       setStage('courses');
+      setDirection(1);
       setSelected(null);
       setTees([]);
       setQuery('');
       setLoadingTees(false);
       setPicking(false);
+      setSlideIn(!landing);
+      setTitleAnimates(false);
     }
   }
 
   // Set once any library load has landed. Reopening then shows the cached
-  // shelves while they refresh in the background instead of a skeleton.
+  // lists while they refresh in the background instead of a skeleton.
   const hasLoadedCoursesRef = useRef(false);
-  // A tee pick waiting for the sheet's exit before it reaches the parent.
+  // A tee pick waiting for the exit before it reaches the parent.
   const pickTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => () => {
     if (pickTimerRef.current) clearTimeout(pickTimerRef.current);
@@ -159,31 +187,28 @@ export function FairwayCoursePicker({
   const refreshCourses = useCallback(async (): Promise<GolfCourse[]> => {
     if (!hasLoadedCoursesRef.current) setLoadingCourses(true);
     try {
-      // Three independent feeds, one carousel each — ALL best-effort so one
-      // failing feed never blanks the others (e.g. a transient library error
-      // shouldn't also hide the recent/team shelves that loaded fine).
+      // Three independent feeds — ALL best-effort so one failing feed never
+      // blanks the others.
       const [lib, rec, tm] = await Promise.all([
-        listCourses({ limit: 200 }).catch(() => null),
+        listCourses({ limit: 200 }).catch((err: unknown) => {
+          logError(err instanceof Error ? err : new Error(String(err)), { component: 'FairwayCoursePicker', action: 'load course library', featureArea: 'round_tracking', bypassStaleActionFilter: true }, 'medium');
+          return null;
+        }),
         getRecentlyPlayedCourses(12).catch(() => [] as GolfCourse[]),
         getTeamSavedCourses().then((rows) => rows.map((r) => r.course)).catch(() => [] as GolfCourse[]),
       ]);
-      // Only the library failing (null) is worth surfacing — recent/team degrade silently.
-      if (lib === null && rec.length === 0 && tm.length === 0) {
-        fairwayToast.danger('Could not load the course library');
-      }
+      setLibraryFailed(lib === null);
       const library = lib ?? [];
-      setCourses(library);
+      // A failed refresh keeps whatever library this session already showed.
+      if (lib !== null || !hasLoadedCoursesRef.current) setCourses(library);
       setRecent(rec);
       setTeam(tm);
       hasLoadedCoursesRef.current = true;
       return library;
     } catch (err) {
-      // A toast is not a record. Until 2026-09-17 every failure in this
-      // picker was swallowed here — a stale server action, a killed fetch —
-      // and the field report was "it won't let them pick the course, no
-      // error" with nothing in error_logs to go on.
+      // A toast is not a record: log every unexpected failure here.
       logError(err instanceof Error ? err : new Error(String(err)), { component: 'FairwayCoursePicker', action: 'load course library', featureArea: 'round_tracking', bypassStaleActionFilter: true }, 'medium');
-      fairwayToast.danger('Could not load the course library');
+      setLibraryFailed(true);
       return [];
     } finally {
       setLoadingCourses(false);
@@ -194,6 +219,8 @@ export function FairwayCoursePicker({
     if (!open) return;
     // Any tee response still in flight from the previous session is stale.
     teeReqRef.current += 1;
+    teeCacheRef.current.clear();
+    teeResolvedRef.current.clear();
     void refreshCourses();
   }, [open, refreshCourses]);
 
@@ -210,77 +237,129 @@ export function FairwayCoursePicker({
     );
   }, [courses, query]);
 
-  const loadTees = useCallback(async (course: GolfCourse) => {
+  /** Start (or reuse) the tee fetch for a course. */
+  const fetchTees = useCallback((courseId: string, fresh = false): Promise<GolfCourseTee[]> => {
+    const cache = teeCacheRef.current;
+    const hit = fresh ? undefined : cache.get(courseId);
+    if (hit) return hit;
+    const p = getCourseDetail(courseId).then((detail) => {
+      const list = detail?.tees ?? [];
+      teeResolvedRef.current.set(courseId, list);
+      return list;
+    });
+    // A failed prefetch must not poison the next real tap.
+    p.catch(() => { if (cache.get(courseId) === p) cache.delete(courseId); });
+    cache.set(courseId, p);
+    return p;
+  }, []);
+
+  const prefetchTees = useCallback((courseId: string) => {
+    void fetchTees(courseId).catch(() => { /* surfaced by the real tap */ });
+  }, [fetchTees]);
+
+  /** Loads the course's tees into the tee screen; resolves with the list (null if superseded or failed). */
+  const loadTees = useCallback(async (course: GolfCourse, fresh = false): Promise<GolfCourseTee[] | null> => {
     const req = ++teeReqRef.current;
+    const ready = fresh ? undefined : teeResolvedRef.current.get(course.id);
+    if (ready) {
+      // Already fetched (prefetch landed first): no skeleton at all.
+      setTees(ready);
+      setLoadingTees(false);
+      return ready;
+    }
     setLoadingTees(true);
     setTees([]);
     try {
-      const detail = await getCourseDetail(course.id);
-      if (teeReqRef.current !== req) return; // superseded by a newer selection
-      setTees(detail?.tees ?? []);
+      const list = await fetchTees(course.id, fresh);
+      if (teeReqRef.current !== req) return null; // superseded by a newer selection
+      setTees(list);
+      return list;
     } catch (err) {
       logError(err instanceof Error ? err : new Error(String(err)), { component: 'FairwayCoursePicker', action: 'load tees', featureArea: 'round_tracking', courseId: course.id, bypassStaleActionFilter: true }, 'medium');
       if (teeReqRef.current === req) fairwayToast.danger('Could not load tees for that course');
+      return null;
     } finally {
       if (teeReqRef.current === req) setLoadingTees(false);
     }
-  }, []);
+  }, [fetchTees]);
 
   const scrollRef = useRef<HTMLDivElement | null>(null);
+  /** The courses screen's scroll offset, restored when the tee screen pops. */
+  const coursesScrollRef = useRef(0);
 
+  // pickTee is declared below selectCourse (it closes over `selected`); the
+  // ref lets selectCourse call the current one.
+  const pickTeeRef = useRef<((tee: GolfCourseTee, course?: GolfCourse) => Promise<void>) | null>(null);
   const selectCourse = useCallback(async (course: GolfCourse) => {
-    if (scrollRef.current) scrollRef.current.scrollTop = 0;
+    if (scrollRef.current) {
+      coursesScrollRef.current = scrollRef.current.scrollTop;
+      scrollRef.current.scrollTop = 0;
+    }
     setSelected(course);
+    // RE-P6: a course with exactly one tee has nothing to choose. When the
+    // prefetch already knows that, skip the tee screen and pick it; otherwise
+    // the tee screen shows while the list loads and the lone tee is picked the
+    // moment it arrives. Both go through pickTee's normal close sequence.
+    const known = teeResolvedRef.current.get(course.id);
+    if (known?.length === 1 && known[0]) {
+      await pickTeeRef.current?.(known[0], course);
+      return;
+    }
+    setDirection(1);
+    setTitleAnimates(true);
     setStage('tees');
-    await loadTees(course);
+    const list = await loadTees(course);
+    if (list?.length === 1 && list[0]) await pickTeeRef.current?.(list[0], course);
   }, [loadTees]);
 
   const backToCourses = useCallback(() => {
+    setDirection(-1);
+    setTitleAnimates(true);
     setStage('courses');
     setSelected(null);
     setTees([]);
+    // Restore where the player was in the list once the courses screen is back.
+    requestAnimationFrame(() => {
+      if (scrollRef.current) scrollRef.current.scrollTop = coursesScrollRef.current;
+    });
   }, []);
 
-  const pickTee = useCallback(async (tee: GolfCourseTee) => {
+  const pickTee = useCallback(async (tee: GolfCourseTee, courseOverride?: GolfCourse) => {
+    // `selected` from this render can lag a same-tick selectCourse (the
+    // single-tee auto-pick below), so the course can be passed in.
+    const course = courseOverride ?? selected;
     setPicking(true);
     try {
       const defaults = await getTeeRoundDefaults(tee.id);
       if (!defaults) {
         // The tee exists in the list but the server returned nothing for it —
         // a data gap (deleted tee, RLS, missing holes), not a transport loss.
-        logError(new Error('Tee defaults unavailable'), { component: 'FairwayCoursePicker', action: 'pick tee', featureArea: 'round_tracking', courseId: selected?.id ?? null, teeId: tee.id, bypassStaleActionFilter: true }, 'medium');
+        logError(new Error('Tee defaults unavailable'), { component: 'FairwayCoursePicker', action: 'pick tee', featureArea: 'round_tracking', courseId: course?.id ?? null, teeId: tee.id, bypassStaleActionFilter: true }, 'medium');
         fairwayToast.danger('Could not load that tee');
         return;
       }
-      // Carry the course's imagery out with the tee. `selected` is the full
-      // golf_courses row this picker already loaded to build the tee list, so
-      // this costs nothing — and it lets the setup screen show the actual
-      // course photo instead of a name-derived stock scene.
+      // Carry the course's imagery out with the tee so the setup screen shows
+      // the actual course photo instead of a name-derived stock scene.
       const picked: TeeRoundDefaults = {
         ...defaults,
-        courseImageUrl: selected?.image_url ?? null,
-        courseNormalizedName: selected?.normalized_name ?? null,
+        courseImageUrl: course?.image_url ?? null,
+        courseNormalizedName: course?.normalized_name ?? null,
       };
-      // Warm the course photo so the setup hero doesn't pop in from grey
-      // when the sheet uncovers it.
+      // Warm the course photo so the setup hero doesn't pop in from grey.
       if (picked.courseImageUrl && typeof Image !== 'undefined') {
         new Image().src = picked.courseImageUrl;
       }
-      // Close FIRST, then hand the tee over once the sheet has left. The
-      // parent's onPick re-lays out the setup screen (hero, photo card, the
-      // scorecard mount with its entrance); doing that under a sliding sheet
-      // is the second half of the flicker. The sheet keeps showing the tee
-      // stage while it slides (see the reset-on-open above).
+      // Close FIRST, then hand the tee over once the screen has left.
       onOpenChange(false);
-      const courseId = selected?.id ?? null;
+      const courseId = course?.id ?? null;
       if (pickTimerRef.current) clearTimeout(pickTimerRef.current);
       pickTimerRef.current = setTimeout(() => {
         pickTimerRef.current = null;
         try {
           onPick(picked);
         } catch (onPickErr) {
-          // Anything the parent's onPick throws — a cache-write exception,
-          // a bad state update — is logged as itself, not as a tee-load failure.
+          // Anything the parent's onPick throws is logged as itself, not as a
+          // tee-load failure.
           logError(
             onPickErr instanceof Error ? onPickErr : new Error(String(onPickErr)),
             {
@@ -297,15 +376,16 @@ export function FairwayCoursePicker({
         }
       }, reduceMotion ? 0 : PICKER_EXIT_MS);
     } catch (err) {
-      logError(err instanceof Error ? err : new Error(String(err)), { component: 'FairwayCoursePicker', action: 'pick tee', featureArea: 'round_tracking', courseId: selected?.id ?? null, teeId: tee.id, bypassStaleActionFilter: true }, 'medium');
+      logError(err instanceof Error ? err : new Error(String(err)), { component: 'FairwayCoursePicker', action: 'pick tee', featureArea: 'round_tracking', courseId: course?.id ?? null, teeId: tee.id, bypassStaleActionFilter: true }, 'medium');
       fairwayToast.danger('Could not load that tee');
     } finally {
       setPicking(false);
     }
   }, [onPick, onOpenChange, selected, reduceMotion]);
+  pickTeeRef.current = pickTee;
 
-  // A freshly created course has no tees — drop the user straight into its tee
-  // stage so adding the tee they're about to play is the obvious next step.
+  // A freshly created course has no tees — push straight to its tee screen so
+  // adding the tee they're about to play is the obvious next step.
   const handleCourseCreated = useCallback(async (course: GolfCourse) => {
     setCreateCourseOpen(false);
     const next = await refreshCourses();
@@ -313,141 +393,203 @@ export function FairwayCoursePicker({
     await selectCourse(fresh);
   }, [refreshCourses, selectCourse]);
 
-  const heroTitle = stage === 'tees' && selected ? formatCourseName(selected.name) : 'Choose a course';
-  const heroDesc = stage === 'tees'
+  const onTees = stage === 'tees' && !!selected;
+  const heroTitle = onTees ? formatCourseName(selected.name) : 'Choose a course';
+  const heroDesc = onTees
     ? 'Pick the tee set you played — it pre-fills your pars and yardages.'
     : 'Pick from your library, or add a new course in seconds.';
 
-  const stageMotion = reduceMotion
-    ? { initial: { opacity: 0 }, animate: { opacity: 1 }, exit: { opacity: 0 }, transition: { duration: 0.12 } }
+  // Horizontal push/pop between the two screens of the stack.
+  const stageVariants = reduceMotion
+    ? {
+        enter: { opacity: 0 },
+        center: { opacity: 1 },
+        exit: { opacity: 0 },
+      }
     : {
-        initial: { opacity: 0.5, y: 6 },
-        animate: { opacity: 1, y: 0 },
-        exit: { opacity: 0, y: -4 },
-        transition: { duration: 0.18, ease: [0.16, 1, 0.3, 1] as const },
+        enter: (dir: 1 | -1) => ({ x: dir > 0 ? '100%' : '-28%', opacity: dir > 0 ? 1 : 0.6 }),
+        center: { x: 0, opacity: 1 },
+        exit: (dir: 1 | -1) => ({ x: dir > 0 ? '-28%' : '100%', opacity: dir > 0 ? 0.6 : 1 }),
       };
+  const stageTransition = reduceMotion
+    ? { duration: 0.12 }
+    : { duration: 0.36, ease: PUSH_EASE };
+
+  // The whole picker pushes in from the trailing edge and pops back out.
+  const screenInitial = reduceMotion ? { opacity: 0 } : { x: '100%' };
+  const screenAnimate = reduceMotion
+    ? { opacity: open ? 1 : 0 }
+    : { x: open ? '0%' : '100%' };
 
   return (
     <>
-      {/* shouldScaleBackground off: the sheet is full-screen (background scale is
-          invisible) and it avoids compounding transforms when CourseForm/TeeForm
-          drawers stack on top. */}
-      <Drawer open={open} onOpenChange={onOpenChange} shouldScaleBackground={false}>
-        <DrawerContent
-          showHandle={false}
-          data-slot="course-picker"
-          className={cn(
-            // The picker IS the page, not a sheet floating over the setup:
-            // full-viewport on every breakpoint with the opaque canvas covering
-            // the setup entirely (mt-0 overrides the base sheet's mt-24 gap).
-            'inset-0 mt-0 h-[calc(100dvh-var(--keyboard-height,0px))] max-h-[calc(100dvh-var(--keyboard-height,0px))] w-screen max-w-none rounded-none p-0 outline-none',
-          )}
-        >
-          <DrawerTitle className="sr-only">
-            {stage === 'tees' && selected ? `Choose a tee at ${formatCourseName(selected.name)}` : 'Choose a course'}
-          </DrawerTitle>
-
-          {/* Close — always reachable; backs out to the setup screen. */}
-          {/* eslint-disable-next-line helm/no-raw-button -- floating dismiss control on a full-screen surface */}
-          <button
-            type="button"
-            onClick={() => onOpenChange(false)}
-            aria-label="Close"
-            className="absolute right-4 top-[max(1rem,calc(env(safe-area-inset-top,0px)+0.5rem))] z-20 inline-flex h-11 w-11 items-center justify-center rounded-full bg-surface/80 text-text-secondary shadow-soft backdrop-blur transition-[transform,color] [transition-duration:var(--fw-dur-fast)] hover:scale-105 hover:text-text-primary active:scale-95 sm:right-6 sm:top-[max(1.5rem,calc(env(safe-area-inset-top,0px)+0.5rem))]"
+      <Dialog.Root
+        open={shown}
+        onOpenChange={(next) => { if (!next && open) onOpenChange(false); }}
+      >
+        <Dialog.Portal>
+          <Dialog.Content
+            data-slot="course-picker"
+            data-state-stage={stage}
+            aria-describedby={undefined}
+            // Escape pops ONE level: tees → courses; only the courses screen closes.
+            onEscapeKeyDown={(e) => {
+              if (stage === 'tees') {
+                e.preventDefault();
+                backToCourses();
+              }
+            }}
+            className={cn(
+              'fixed inset-x-0 top-0 z-50 flex h-[calc(100dvh-var(--keyboard-height,0px))] w-screen flex-col overflow-hidden outline-none',
+              !open && 'pointer-events-none',
+            )}
           >
-            <IconX size={18} aria-hidden />
-          </button>
+            <Dialog.Title className="sr-only">
+              {onTees ? `Choose a tee at ${formatCourseName(selected.name)}` : 'Choose a course'}
+            </Dialog.Title>
 
-          {/* Scroll wrapper. The picker group (header + carousel/tee list) is
-              top-aligned directly under the header and only horizontally
-              centered on wide viewports — it used to be `m-auto`, which also
-              centers VERTICALLY: fine for the courses stage's tall shelves,
-              but on the tees stage a single tee card floated in the middle of
-              the screen with hundreds of px of empty canvas above and below
-              (UI-9). Auto top/bottom margins on a flex-column child absorb
-              leftover main-axis space either way, so this alone fixes both
-              stages without a stage-specific branch. */}
-          <div ref={scrollRef} data-slot="course-picker-scroll" className="flex min-h-0 w-full flex-1 flex-col overflow-y-auto overscroll-contain px-4 pt-[calc(env(safe-area-inset-top,0px)+1.5rem)] pb-[calc(env(safe-area-inset-bottom,0px)+1.5rem)] sm:px-6 sm:pt-[calc(env(safe-area-inset-top,0px)+2.5rem)] sm:pb-[calc(env(safe-area-inset-bottom,0px)+2.5rem)]">
-            <div className="mx-auto flex w-full max-w-3xl flex-col">
-            {/* Reserve the close control lane; long course names wrap inside it. */}
-            <header className="px-1 pr-12 sm:pr-14">
-              <div className="flex items-start gap-2.5">
-                {stage === 'tees' && (
-                  // eslint-disable-next-line helm/no-raw-button -- compact back affordance
+            <m.div
+              initial={slideIn ? screenInitial : false}
+              animate={screenAnimate}
+              transition={reduceMotion ? { duration: 0.12 } : { duration: PICKER_EXIT_MS / 1000, ease: PUSH_EASE }}
+              className="flex min-h-0 flex-1 flex-col bg-canvas shadow-fw-modal"
+            >
+              {/* Nav bar: back/close, the screen's small title, and (courses
+                  screen) the search field. Sticky chrome over the scroller. */}
+              <div
+                data-slot="course-picker-navbar"
+                className="relative z-10 flex-shrink-0 border-b border-border-subtle bg-canvas/95 pt-[env(safe-area-inset-top,0px)] backdrop-blur"
+              >
+                <div className="mx-auto flex h-12 w-full max-w-3xl items-center gap-1 px-2 sm:px-4">
+                  {onTees ? (
+                    // eslint-disable-next-line helm/no-raw-button -- iOS nav-bar back item (chevron + parent title)
+                    <button
+                      type="button"
+                      onClick={backToCourses}
+                      aria-label="Back to courses"
+                      className="inline-flex h-11 min-w-11 items-center gap-0.5 rounded-full pl-1 pr-3 font-fw-sans text-body font-medium text-accent-700 transition-colors hover:bg-surface-sunken focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-600"
+                    >
+                      <IconChevronLeft size={22} aria-hidden />
+                      <span>Courses</span>
+                    </button>
+                  ) : (
+                    <span className="h-11 w-11" aria-hidden />
+                  )}
+                  <p
+                    aria-hidden
+                    className="min-w-0 flex-1 truncate text-center font-fw-sans text-body font-semibold text-text-primary"
+                  >
+                    {onTees ? 'Choose a tee' : 'New round'}
+                  </p>
+                  {/* eslint-disable-next-line helm/no-raw-button -- nav-bar close item */}
                   <button
                     type="button"
-                    onClick={backToCourses}
-                    aria-label="Back to courses"
-                    className="-ml-1 mt-1 inline-flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full text-text-secondary transition-colors hover:bg-surface-sunken hover:text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-600 focus-visible:ring-offset-2 focus-visible:ring-offset-canvas"
+                    onClick={() => onOpenChange(false)}
+                    aria-label="Close"
+                    className="inline-flex h-11 w-11 items-center justify-center rounded-full text-text-secondary transition-colors hover:bg-surface-sunken hover:text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-600"
                   >
-                    <IconChevronLeft size={20} aria-hidden />
+                    <IconX size={20} aria-hidden />
                   </button>
-                )}
-                <div className="min-w-0 flex-1">
-                  <p className="font-fw-sans text-eyebrow font-semibold uppercase tracking-[0.18em] text-accent-700">
-                    {stage === 'tees' ? 'New round · Tee' : 'New round'}
-                  </p>
-                  <h1 className="mt-1.5 break-words font-fw-display text-h1 font-semibold tracking-[-0.02em] text-text-primary">
-                    {heroTitle}
-                  </h1>
-                  <p className="mt-1.5 max-w-md font-fw-sans text-body text-text-secondary">{heroDesc}</p>
                 </div>
+
+                {stage === 'courses' && (
+                  <div className="mx-auto w-full max-w-3xl px-4 pb-3 sm:px-6">
+                    <div className="relative">
+                      <IconSearch size={18} aria-hidden className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-text-tertiary" />
+                      {/* eslint-disable-next-line helm/no-raw-input -- native type=search in the nav bar */}
+                      <input
+                        type="search"
+                        value={query}
+                        onChange={(e) => setQuery(e.target.value)}
+                        placeholder="Search courses"
+                        aria-label="Search courses"
+                        enterKeyHint="search"
+                        autoComplete="off"
+                        autoCorrect="off"
+                        autoCapitalize="none"
+                        spellCheck={false}
+                        className="h-11 w-full rounded-full border border-border-subtle bg-surface pl-10 pr-4 font-fw-sans text-body text-text-primary shadow-flat placeholder:text-text-tertiary focus:border-accent-500 focus:outline-none focus:ring-4 focus:ring-accent-500/25"
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
 
-              {/* Search — Stage A only. */}
-              {stage === 'courses' && (
-                <div className="relative mt-5">
-                  <IconSearch size={18} aria-hidden className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-text-tertiary" />
-                  {/* eslint-disable-next-line helm/no-raw-input -- native type=search with a leading icon */}
-                  <input
-                    type="search"
-                    value={query}
-                    onChange={(e) => setQuery(e.target.value)}
-                    placeholder="Search courses…"
-                    aria-label="Search courses"
-                    className="h-12 w-full rounded-full border border-border-subtle bg-surface pl-11 pr-4 font-fw-sans text-body text-text-primary shadow-flat placeholder:text-text-tertiary focus:border-accent-500 focus:outline-none focus:ring-4 focus:ring-accent-500/25"
-                  />
+              <div
+                ref={scrollRef}
+                data-slot="course-picker-scroll"
+                className="relative flex min-h-0 w-full flex-1 flex-col overflow-y-auto overflow-x-hidden overscroll-contain pb-[calc(env(safe-area-inset-bottom,0px)+1.5rem)]"
+              >
+                {/* Top-aligned group, horizontally centered on wide screens
+                    (UI-9: never m-auto, which floats short content). */}
+                <div className="mx-auto flex w-full max-w-3xl flex-col px-4 pt-5 sm:px-6">
+                  {/* The large title rides in with its screen but has no exit
+                      copy: exactly one h1 is ever in the tree. */}
+                  <m.header
+                    key={`title-${stage}`}
+                    custom={direction}
+                    variants={stageVariants}
+                    initial={titleAnimates ? 'enter' : false}
+                    animate="center"
+                    transition={stageTransition}
+                    className="px-1"
+                  >
+                    <h1 className="break-words font-fw-display text-h1 font-semibold tracking-[-0.02em] text-text-primary">
+                      {heroTitle}
+                    </h1>
+                    <p className="mt-1.5 max-w-md font-fw-sans text-body text-text-secondary">{heroDesc}</p>
+                  </m.header>
+                  <div className="relative mt-5 flex flex-col">
+                    <AnimatePresence mode="popLayout" initial={false} custom={direction}>
+                      <m.div
+                        key={stage}
+                        custom={direction}
+                        variants={stageVariants}
+                        initial="enter"
+                        animate="center"
+                        exit="exit"
+                        transition={stageTransition}
+                        className="flex w-full flex-col"
+                      >
+                        {stage === 'courses'
+                          ? <CoursesStage
+                              loading={loadingCourses}
+                              libraryFailed={libraryFailed}
+                              onRetryLibrary={() => { void refreshCourses(); }}
+                              library={courses}
+                              recent={recent}
+                              team={team}
+                              filtered={filtered}
+                              query={query}
+                              scrollRef={scrollRef}
+                              onPrefetch={prefetchTees}
+                              onSelect={(id) => {
+                                const c = [...courses, ...recent, ...team].find((x) => x.id === id);
+                                if (c) void selectCourse(c);
+                              }}
+                              onCreate={canManageLibrary ? () => setCreateCourseOpen(true) : undefined}
+                            />
+                          : <TeesStage
+                              loading={loadingTees}
+                              tees={tees}
+                              picking={picking}
+                              onPick={pickTee}
+                              onAddTee={canManageLibrary ? () => setCreateTeeOpen(true) : undefined}
+                            />}
+                      </m.div>
+                    </AnimatePresence>
+                  </div>
                 </div>
-              )}
-            </header>
-
-            {/* Body (the ground) — stage transition. */}
-            <div className="relative mt-4 flex flex-col">
-              <AnimatePresence mode="popLayout" initial={false}>
-                <m.div key={stage} {...stageMotion} className="flex flex-col">
-                  {stage === 'courses'
-                    ? <CoursesStage
-                        loading={loadingCourses}
-                        library={courses}
-                        recent={recent}
-                        team={team}
-                        filtered={filtered}
-                        query={query}
-                        reduceMotion={reduceMotion}
-                        onSelect={(id) => {
-                          const c = [...courses, ...recent, ...team].find((x) => x.id === id);
-                          if (c) void selectCourse(c);
-                        }}
-                        onCreate={canManageLibrary ? () => setCreateCourseOpen(true) : undefined}
-                      />
-                    : <TeesStage
-                        loading={loadingTees}
-                        tees={tees}
-                        picking={picking}
-                        onPick={pickTee}
-                        onAddTee={canManageLibrary ? () => setCreateTeeOpen(true) : undefined}
-                      />}
-                </m.div>
-              </AnimatePresence>
-            </div>
-            </div>
-          </div>
-        </DrawerContent>
-      </Drawer>
+              </div>
+            </m.div>
+          </Dialog.Content>
+        </Dialog.Portal>
+      </Dialog.Root>
 
       {/* Grow the shared catalog from inside the flow. Coach-only: both drawers
           submit into requireCoachActor-gated actions, so they stay unmounted
-          rather than merely unreachable — nothing can open them by accident. */}
+          rather than merely unreachable. They portal after the picker, so they
+          stack above it at the same z-index. */}
       {canManageLibrary && (
         <CourseFormDrawer
           open={createCourseOpen}
@@ -464,54 +606,58 @@ export function FairwayCoursePicker({
           onOpenChange={setCreateTeeOpen}
           mode="create"
           courseId={selected.id}
-          onSaved={() => { setCreateTeeOpen(false); if (selected) void loadTees(selected); }}
+          onSaved={() => { setCreateTeeOpen(false); if (selected) void loadTees(selected, true); }}
         />
       )}
     </>
   );
 }
 
-// ── Stage A: sectioned course shelves ───────────────────────────────────────
+// ── Courses screen ──────────────────────────────────────────────────────────
 
-/**
- * Stage A — the "choose a course" screen. Three independent feeds, ONE course
- * shelf each: Recently played, Team courses, and the full Course library (which
- * carries the "Add a course" tile). Searching collapses to a single results
- * shelf across the whole library.
- */
+/** Index letter for a course: A–Z, anything else under '#'. */
+function indexLetter(course: GolfCourse): string {
+  const ch = formatCourseName(course.name).trim().charAt(0).toUpperCase();
+  return ch >= 'A' && ch <= 'Z' ? ch : '#';
+}
+
 function CoursesStage({
-  loading, library, recent, team, filtered, query, reduceMotion, onSelect, onCreate,
+  loading, libraryFailed, onRetryLibrary, library, recent, team, filtered, query,
+  scrollRef, onPrefetch, onSelect, onCreate,
 }: {
   loading: boolean;
+  libraryFailed: boolean;
+  onRetryLibrary: () => void;
   library: GolfCourse[];
   recent: GolfCourse[];
   team: GolfCourse[];
   filtered: GolfCourse[];
   query: string;
-  reduceMotion: boolean;
+  scrollRef: React.RefObject<HTMLDivElement | null>;
+  onPrefetch: (courseId: string) => void;
   onSelect: (courseId: string) => void;
   /** Undefined for a viewer who may not manage the library — see canManageLibrary. */
   onCreate?: () => void;
 }) {
   if (loading) {
-    // Shape-matched to the real browse layout (labelled shelves of featured
-    // cards) so there is ZERO layout shift when the feeds resolve: the tiles use
-    // the EXACT slideCls footprint (aspect-[3/2], w-[80vw] max-w-[360px] sm:w-[340px])
-    // and the same track padding/gap as CourseCarousel. Shimmer, not animate-pulse.
+    // Shape-matched to the real list rows (64px, thumbnail + two lines).
     return (
-      <div role="status" aria-busy="true" aria-live="polite" className="flex flex-col gap-7">
+      <div role="status" aria-busy="true" aria-live="polite" className="flex flex-col gap-6">
         <span className="sr-only">Loading courses…</span>
-        {[0, 1].map((shelf) => (
-          <div key={shelf} className="flex flex-col">
+        {[0, 1].map((section) => (
+          <div key={section} className="flex flex-col">
             <div className="mb-2 px-1">
               <Skeleton className="h-3 w-28 rounded-full" />
             </div>
-            <div className="flex gap-4 overflow-hidden px-1 py-2">
-              {[0, 1, 2].map((i) => (
-                <Skeleton
-                  key={i}
-                  className="aspect-[3/2] w-[80vw] max-w-[360px] flex-shrink-0 rounded-[1.5rem] sm:w-[340px]"
-                />
+            <div className="overflow-hidden rounded-card border border-border-subtle bg-surface">
+              {[0, 1, 2, 3].map((i) => (
+                <div key={i} className="flex h-16 items-center gap-3 px-3">
+                  <Skeleton className="h-11 w-11 flex-shrink-0 rounded-md" />
+                  <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+                    <Skeleton className="h-3.5 w-2/3 rounded-full" />
+                    <Skeleton className="h-3 w-1/3 rounded-full" />
+                  </div>
+                </div>
               ))}
             </div>
           </div>
@@ -520,85 +666,104 @@ function CoursesStage({
     );
   }
 
+  const failedNotice = libraryFailed ? (
+    <InlineNotice
+      tone="danger"
+      title="Couldn't load the course library"
+      action={
+        <Button variant="secondary" size="sm" onClick={onRetryLibrary}>
+          Retry
+        </Button>
+      }
+      className="mb-6"
+    >
+      Check your connection and try again.
+    </InlineNotice>
+  ) : null;
+
   const q = query.trim();
 
-  // Search mode — one results carousel across the whole library.
+  // Search mode — one results list across the whole library.
   if (q) {
-    if (filtered.length === 0) {
-      return onCreate ? (
-        <EmptyState
-          variant="subtle"
-          icon={<IconFlag aria-hidden />}
-          title={`No courses match “${q}”.`}
-          description="Add it to the shared library so it’s there next time."
-          action={
-            <Button variant="primary" className="min-w-0" onClick={onCreate}>
-              <IconPlus size={16} aria-hidden />
-              <span className="truncate">Add “{q}”</span>
-            </Button>
-          }
-        />
-      ) : (
-        <EmptyState
-          variant="subtle"
-          icon={<IconFlag aria-hidden />}
-          title={`No courses match “${q}”.`}
-          description="Close this and type the course name on the setup screen — it’ll be added to the library when you save the round."
-        />
-      );
-    }
     return (
-      <CourseCarousel
-        courses={filtered}
-        reduceMotion={reduceMotion}
-        onSelect={onSelect}
-        regionLabel={`Search results for ${q}`}
-        withCreateTile={!!onCreate}
-        onCreate={onCreate}
-      />
+      <div className="flex flex-col">
+        {failedNotice}
+        {filtered.length === 0 ? (
+          onCreate ? (
+            <EmptyState
+              variant="subtle"
+              icon={<IconFlag aria-hidden />}
+              title={`No courses match “${q}”.`}
+              description="Add it to the shared library so it’s there next time."
+              action={
+                <Button variant="primary" className="min-w-0" onClick={onCreate}>
+                  <IconPlus size={16} aria-hidden />
+                  <span className="truncate">Add “{q}”</span>
+                </Button>
+              }
+            />
+          ) : (
+            <EmptyState
+              variant="subtle"
+              icon={<IconFlag aria-hidden />}
+              title={`No courses match “${q}”.`}
+              description="Close this and type the course name on the setup screen — it’ll be added to the library when you save the round."
+            />
+          )
+        ) : (
+          <CourseSection label="Results" count={filtered.length}>
+            <CourseList courses={filtered} onPrefetch={onPrefetch} onSelect={onSelect} />
+          </CourseSection>
+        )}
+      </div>
     );
   }
 
   if (library.length === 0 && recent.length === 0 && team.length === 0) {
-    return <EmptyCourses onCreate={onCreate} />;
+    // A failed library is not an empty one (RE-P3).
+    return failedNotice ?? <EmptyCourses onCreate={onCreate} />;
   }
 
-  // Browse mode — a labelled coverflow per feed.
+  const recentIds = new Set(recent.map((c) => c.id));
+  const teamOnly = team.filter((c) => !recentIds.has(c.id));
+
   return (
     <div className="flex flex-col gap-7">
+      {failedNotice}
       {recent.length > 0 && (
         <CourseSection label="Recently played" count={recent.length}>
-          <CourseCarousel courses={recent} reduceMotion={reduceMotion} onSelect={onSelect} regionLabel="Recently played courses" />
+          <CourseList courses={recent} onPrefetch={onPrefetch} onSelect={onSelect} />
         </CourseSection>
       )}
-      {team.length > 0 && (
-        <CourseSection label="Team courses" count={team.length}>
-          <CourseCarousel courses={team} reduceMotion={reduceMotion} onSelect={onSelect} regionLabel="Team courses" />
+      {teamOnly.length > 0 && (
+        <CourseSection label="Team courses" count={teamOnly.length}>
+          <CourseList courses={teamOnly} onPrefetch={onPrefetch} onSelect={onSelect} />
         </CourseSection>
       )}
-      <CourseSection label="Course library" count={library.length}>
-        <CourseCarousel
-          courses={library}
-          reduceMotion={reduceMotion}
-          onSelect={onSelect}
-          regionLabel="Course library"
-          withCreateTile={!!onCreate}
-          onCreate={onCreate}
-        />
-      </CourseSection>
+      {(library.length > 0 || onCreate) && (
+        <CourseSection label="Course library" count={library.length}>
+          <IndexedCourseList
+            courses={library}
+            scrollRef={scrollRef}
+            onPrefetch={onPrefetch}
+            onSelect={onSelect}
+            onCreate={onCreate}
+          />
+        </CourseSection>
+      )}
     </div>
   );
 }
 
-/** Eyebrow label + count above a shelf; aligned to the shelf's left edge. */
-function CourseSection({ label, count, children }: { label: string; count: number; children: React.ReactNode }) {
+/** Eyebrow label + count above a grouped list. */
+function CourseSection({ label, count, children }: { label: string; count: number; children: ReactNode }) {
   return (
     <section className="flex flex-col">
       <div className="mb-2 flex items-baseline justify-between px-1">
         <h2 className="font-fw-sans text-eyebrow font-semibold uppercase tracking-[0.16em] text-text-secondary">
           {label}
         </h2>
-        <span className="font-fw-sans text-caption text-text-tertiary">
+        <span className="font-fw-sans text-caption tabular-nums text-text-secondary">
           {count} {count === 1 ? 'course' : 'courses'}
         </span>
       </div>
@@ -607,158 +772,167 @@ function CourseSection({ label, count, children }: { label: string; count: numbe
   );
 }
 
-/**
- * One horizontal course shelf: featured cards on a left-aligned scroll-snap
- * track (peek the next card), arrows on desktop, a tasteful staggered entrance.
- * No per-frame transforms — pure native scroll, so it holds 60fps and the whole
- * card stays a clean, reliable tap target (→ tee stage). Reduced-motion safe.
- */
-function CourseCarousel({
-  courses, reduceMotion, onSelect, regionLabel, withCreateTile = false, onCreate,
+/** One grouped (inset) list of course rows. */
+function CourseList({
+  courses, onPrefetch, onSelect, children,
 }: {
   courses: GolfCourse[];
-  reduceMotion: boolean;
+  onPrefetch: (courseId: string) => void;
   onSelect: (courseId: string) => void;
-  regionLabel: string;
-  withCreateTile?: boolean;
+  children?: ReactNode;
+}) {
+  return (
+    <ul className="overflow-hidden rounded-card border border-border-subtle bg-surface">
+      {courses.map((course) => (
+        <li key={course.id} className="border-b border-border-subtle last:border-b-0">
+          <CourseRow course={course} onPrefetch={onPrefetch} onSelect={onSelect} />
+        </li>
+      ))}
+      {children}
+    </ul>
+  );
+}
+
+function CourseRow({
+  course, onPrefetch, onSelect,
+}: {
+  course: GolfCourse;
+  onPrefetch: (courseId: string) => void;
+  onSelect: (courseId: string) => void;
+}) {
+  const name = formatCourseName(course.name);
+  const location = [course.city, course.state].filter(Boolean).join(', ');
+  return (
+    // eslint-disable-next-line helm/no-raw-button -- full-width list row is a single tap target
+    <button
+      type="button"
+      onPointerDown={() => onPrefetch(course.id)}
+      onClick={() => onSelect(course.id)}
+      aria-label={location ? `${name}, ${location}` : name}
+      className="group flex min-h-16 w-full items-center gap-3 px-3 py-2.5 text-left transition-colors [transition-duration:var(--fw-dur-fast)] hover:bg-surface-sunken active:bg-surface-sunken focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent-600"
+    >
+      <span className="relative h-11 w-11 flex-shrink-0 overflow-hidden rounded-md" aria-hidden>
+        <CourseImage
+          name={course.name}
+          imageUrl={course.image_url}
+          normalizedName={course.normalized_name}
+          sizes="44px"
+        />
+      </span>
+      <span className="flex min-w-0 flex-1 flex-col">
+        <span className="truncate font-fw-sans text-body font-semibold text-text-primary">{name}</span>
+        {location && (
+          <span className="mt-0.5 inline-flex min-w-0 items-center gap-1 font-fw-sans text-caption text-text-secondary">
+            <IconMapPin size={12} aria-hidden className="flex-shrink-0" />
+            <span className="truncate">{location}</span>
+          </span>
+        )}
+      </span>
+      <IconChevronRight
+        size={16}
+        aria-hidden
+        className="flex-shrink-0 text-text-secondary transition-transform [transition-duration:var(--fw-dur-fast)] group-hover:translate-x-0.5 motion-reduce:transition-none"
+      />
+    </button>
+  );
+}
+
+/**
+ * The full library, A–Z: a grouped list per letter plus a section index rail
+ * (the iOS Contacts pattern) once the list is long enough to need one.
+ */
+function IndexedCourseList({
+  courses, scrollRef, onPrefetch, onSelect, onCreate,
+}: {
+  courses: GolfCourse[];
+  scrollRef: React.RefObject<HTMLDivElement | null>;
+  onPrefetch: (courseId: string) => void;
+  onSelect: (courseId: string) => void;
   onCreate?: () => void;
 }) {
-  const trackRef = useRef<HTMLDivElement>(null);
-  const [canLeft, setCanLeft] = useState(false);
-  const [canRight, setCanRight] = useState(false);
+  const groups = useMemo(() => {
+    const sorted = [...courses].sort((a, b) =>
+      formatCourseName(a.name).localeCompare(formatCourseName(b.name), undefined, { sensitivity: 'base' }));
+    const map = new Map<string, GolfCourse[]>();
+    for (const c of sorted) {
+      const k = indexLetter(c);
+      const list = map.get(k);
+      if (list) list.push(c);
+      else map.set(k, [c]);
+    }
+    // '#' sorts last, like iOS.
+    return [...map.entries()].sort(([a], [b]) => (a === '#' ? 1 : b === '#' ? -1 : a.localeCompare(b)));
+  }, [courses]);
 
-  // Edge-triggered only: flips when you reach/leave an end, so no per-frame
-  // re-render mid-scroll. A plain scrollLeft read — no layout writes, no thrash.
-  const updateArrows = useCallback(() => {
-    const el = trackRef.current;
-    if (!el) return;
-    const max = el.scrollWidth - el.clientWidth;
-    setCanLeft((p) => { const n = el.scrollLeft > 8; return p !== n ? n : p; });
-    setCanRight((p) => { const n = el.scrollLeft < max - 8; return p !== n ? n : p; });
-  }, []);
+  const sectionRefs = useRef(new Map<string, HTMLElement>());
+  const showRail = courses.length >= INDEX_RAIL_MIN && groups.length > 1;
 
-  useEffect(() => { updateArrows(); }, [updateArrows, courses.length, withCreateTile]);
-  useEffect(() => {
-    window.addEventListener('resize', updateArrows);
-    return () => window.removeEventListener('resize', updateArrows);
-  }, [updateArrows]);
-
-  const scrollByCards = (dir: 1 | -1) => {
-    const el = trackRef.current;
-    if (!el) return;
-    el.scrollBy({ left: dir * Math.min(el.clientWidth * 0.85, 340), behavior: reduceMotion ? 'auto' : 'smooth' });
+  const jumpTo = (letter: string) => {
+    const el = sectionRefs.current.get(letter);
+    const scroller = scrollRef.current;
+    if (!el || !scroller) return;
+    fwHaptic('selection');
+    const top = el.getBoundingClientRect().top - scroller.getBoundingClientRect().top + scroller.scrollTop - 8;
+    scroller.scrollTo({ top, behavior: 'auto' });
   };
 
-  const enter = (i: number) =>
-    reduceMotion
-      ? {}
-      : {
-          initial: { opacity: 0, y: 14 },
-          animate: { opacity: 1, y: 0 },
-          transition: { duration: 0.3, ease: [0.16, 1, 0.3, 1] as const, delay: Math.min(i, 5) * 0.04 },
-        };
-
-  const count = courses.length + (withCreateTile ? 1 : 0);
-  const slideCls = 'w-[80vw] max-w-[360px] flex-shrink-0 snap-start sm:w-[340px]';
-
   return (
-    <div className="relative">
-      <CarouselArrow side="left" show={canLeft} onClick={() => scrollByCards(-1)} />
-      <CarouselArrow side="right" show={canRight} onClick={() => scrollByCards(1)} />
+    <div className={cn('relative flex flex-col gap-4', showRail && 'pr-7')}>
+      {groups.map(([letter, list]) => (
+        <div
+          key={letter}
+          ref={(el) => { if (el) sectionRefs.current.set(letter, el); else sectionRefs.current.delete(letter); }}
+          className="flex flex-col"
+        >
+          {groups.length > 1 && (
+            <h3 className="mb-1 px-1 font-fw-sans text-caption font-semibold text-accent-700">{letter}</h3>
+          )}
+          <CourseList courses={list} onPrefetch={onPrefetch} onSelect={onSelect} />
+        </div>
+      ))}
 
-      <div
-        ref={trackRef}
-        onScroll={updateArrows}
-        // eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- a scrollable region MUST be focusable for keyboard scrolling; Safari (unlike Chrome) does not add this implicitly (WCAG 2.1.1, ACT 0ssw9k)
-        tabIndex={0}
-        role="region"
-        aria-roledescription="carousel"
-        aria-label={regionLabel}
-        className={cn(
-          'flex snap-x snap-mandatory items-stretch gap-4 overflow-x-auto overscroll-x-contain scroll-smooth',
-          'px-1 py-2',
-          'rounded-[1.5rem] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-600 focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
-          '[scrollbar-width:none] [-webkit-overflow-scrolling:touch] [&::-webkit-scrollbar]:hidden',
-          'motion-reduce:scroll-auto',
-        )}
-      >
-        {courses.map((course, i) => (
-          <m.div
-            key={course.id}
-            {...enter(i)}
-            role="group"
-            aria-roledescription="slide"
-            aria-label={`${formatCourseName(course.name)}, ${i + 1} of ${count}`}
-            className={slideCls}
-          >
-            <CourseCard course={course} variant="featured" priority={i === 0} onSelect={onSelect} />
-          </m.div>
-        ))}
+      {onCreate && (
+        // eslint-disable-next-line helm/no-raw-button -- dashed "add" row closing the library list
+        <button
+          type="button"
+          onClick={onCreate}
+          className="flex min-h-16 w-full items-center gap-3 rounded-card border-2 border-dashed border-border-strong bg-surface-sunken px-3 py-2.5 text-left transition-colors hover:border-accent-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-600"
+        >
+          <span className="grid h-11 w-11 flex-shrink-0 place-items-center rounded-full bg-surface text-accent-700 shadow-flat">
+            <IconPlus size={20} aria-hidden />
+          </span>
+          <span className="flex min-w-0 flex-col">
+            <span className="font-fw-sans text-body font-semibold text-text-primary">Add a course</span>
+            <span className="font-fw-sans text-caption text-text-secondary">
+              Can’t find it? Add the facility to the shared library.
+            </span>
+          </span>
+        </button>
+      )}
 
-        {/* Final slide — add a new course (library shelf only). */}
-        {withCreateTile && onCreate && (
-          <m.div
-            key="__create"
-            {...enter(courses.length)}
-            role="group"
-            aria-roledescription="slide"
-            aria-label={`Add a course, ${count} of ${count}`}
-            className={slideCls}
-          >
-            <CreateCourseTile onClick={onCreate} />
-          </m.div>
-        )}
-      </div>
+      {showRail && (
+        <nav
+          aria-label="Jump to letter"
+          className="absolute right-0 top-0 flex h-full flex-col items-center"
+        >
+          <ol className="sticky top-2 flex flex-col items-center py-1">
+            {groups.map(([letter]) => (
+              <li key={letter}>
+                {/* eslint-disable-next-line helm/no-raw-button -- section index rail item (iOS table index) */}
+                <button
+                  type="button"
+                  onClick={() => jumpTo(letter)}
+                  aria-label={`Jump to ${letter === '#' ? 'other' : letter}`}
+                  className="flex h-5 w-6 items-center justify-center rounded font-fw-sans text-eyebrow text-accent-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-600"
+                >
+                  {letter}
+                </button>
+              </li>
+            ))}
+          </ol>
+        </nav>
+      )}
     </div>
-  );
-}
-
-function CarouselArrow({ side, show, onClick }: { side: 'left' | 'right'; show: boolean; onClick: () => void }) {
-  return (
-    // eslint-disable-next-line helm/no-raw-button -- floating carousel control, hidden on touch
-    <button
-      type="button"
-      onClick={onClick}
-      aria-label={side === 'left' ? 'Previous course' : 'Next course'}
-      tabIndex={show ? 0 : -1}
-      className={cn(
-        'absolute top-1/2 z-10 hidden h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full sm:flex',
-        'border border-border-subtle bg-surface/90 text-text-secondary shadow-soft backdrop-blur',
-        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-600 focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
-        'transition-[opacity,transform] [transition-duration:var(--fw-dur-fast)] hover:scale-105 hover:text-text-primary active:scale-95',
-        'motion-reduce:transition-none motion-reduce:hover:scale-100',
-        side === 'left' ? 'left-0' : 'right-0',
-        show ? 'opacity-100' : 'pointer-events-none opacity-0',
-      )}
-    >
-      {side === 'left' ? <IconArrowLeft size={18} aria-hidden /> : <IconArrowRight size={18} aria-hidden />}
-    </button>
-  );
-}
-
-function CreateCourseTile({ onClick }: { onClick: () => void }) {
-  return (
-    // eslint-disable-next-line helm/no-raw-button -- full-bleed tile matching the featured CourseCard footprint
-    <button
-      type="button"
-      onClick={onClick}
-      className={cn(
-        'group flex aspect-[3/2] w-full flex-col items-center justify-center gap-3 rounded-[1.5rem] text-center',
-        'border-2 border-dashed border-border-strong bg-surface-sunken',
-        'transition-[transform,border-color,background-color] [transition-duration:var(--fw-dur-base)] [transition-timing-function:var(--fw-ease-glide)]',
-        'hover:-translate-y-1.5 hover:border-accent-500 hover:bg-accent-50/60 active:-translate-y-0.5',
-        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-600 focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
-        'motion-reduce:transition-none motion-reduce:hover:translate-y-0',
-      )}
-    >
-      <span className="grid h-12 w-12 place-items-center rounded-full bg-surface text-accent-700 shadow-flat transition-[transform,background-color,color] [transition-duration:var(--fw-dur-base)] group-hover:scale-110 group-hover:bg-accent-800 group-hover:text-white motion-reduce:group-hover:scale-100">
-        <IconPlus size={22} aria-hidden />
-      </span>
-      <span className="font-fw-display text-title-3 font-semibold text-text-primary">Add a course</span>
-      <span className="max-w-[16rem] font-fw-sans text-body-sm text-text-tertiary">
-        Can’t find it? Add the facility to the shared library.
-      </span>
-    </button>
   );
 }
 
@@ -787,9 +961,7 @@ function EmptyCourses({ onCreate }: { onCreate?: () => void }) {
 
 /**
  * Loading state for the tee grid. Shape-matched to FairwayTeeCard (two up from
- * `sm`, ~132px tall) rather than reusing TeePickerDrawer's SkeletonRows, which
- * is calibrated to that drawer's 64px list row and is still right there — a
- * skeleton that doesn't match its own first paint is a layout jump.
+ * `sm`, ~132px tall).
  */
 function TeeCardSkeletons() {
   return (
@@ -801,7 +973,7 @@ function TeeCardSkeletons() {
   );
 }
 
-// ── Stage B: choose a tee ────────────────────────────────────────────────────
+// ── Tees screen ─────────────────────────────────────────────────────────────
 
 function TeesStage({
   loading, tees, picking, onPick, onAddTee,
@@ -814,9 +986,7 @@ function TeesStage({
    *  behind the SAME requireCoachActor gate as createCourse. */
   onAddTee?: () => void;
 }) {
-  // Scale the length bars against the longest tee AT THIS COURSE. Comparing to
-  // anything else (a fixed 7,000, the longest in the library) would make the
-  // bar a decoration instead of a fact.
+  // Scale the length bars against the longest tee AT THIS COURSE.
   const longestYards = tees.reduce<number | null>(
     (max, t) => (typeof t.total_yards === 'number' && (max === null || t.total_yards > max) ? t.total_yards : max),
     null,
@@ -845,9 +1015,7 @@ function TeesStage({
         />
       ) : (
         <>
-          {/* One per row on a phone, two up from `sm`. A course carries 3-6 tee
-              sets, so this never needs a rail — and pairing them on desktop
-              keeps the whole decision in one glance instead of a long column. */}
+          {/* One per row on a phone, two up from `sm`. */}
           <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             {tees.map((tee) => (
               <li key={tee.id} className="min-w-0">

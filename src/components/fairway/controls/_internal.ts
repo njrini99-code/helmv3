@@ -74,7 +74,7 @@ export const fwPress =
  * the surface settles from its resting elevation onto the page, which is what
  * "pressed" looks like physically.
  *
- * Paired with `future.hoverOnlyWhenSupported` (tailwind.config.ts), touch devices see
+ * Paired with the golf `hover:` variant (golfHoverVariant, tailwind.config.ts), touch devices see
  * only this and never a stuck hover lift.
  */
 export const fwPressSurface =

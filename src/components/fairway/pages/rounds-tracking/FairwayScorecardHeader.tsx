@@ -237,7 +237,7 @@ export const FairwayScorecardHeader = memo(function FairwayScorecardHeader({
     // Score-to-par color ramp → Fairway LIGHT tones. Same thresholds as legacy.
     const scoreColor = (() => {
       if (isCurrent) return 'text-accent-700';
-      if (!hasScore) return 'text-text-tertiary/50';
+      if (!hasScore) return 'text-text-tertiary';
       if (scoreToPar <= -1) return 'text-fw-success-ink';
       if (scoreToPar === 0) return 'text-text-primary';
       if (scoreToPar === 1) return 'text-fw-warning-ink';
@@ -272,7 +272,7 @@ export const FairwayScorecardHeader = memo(function FairwayScorecardHeader({
           {hole.number}
         </div>
         <div className="truncate font-fw-sans text-microbadge uppercase tracking-wide text-text-tertiary">Par {hole.par}</div>
-        <div className="truncate font-fw-sans text-microbadge text-text-tertiary/80">
+        <div className="truncate font-fw-sans text-microbadge text-text-tertiary">
           {isMeters ? yardsToDisplay(hole.yardage, 'meters') : hole.yardage} {isMeters ? 'm' : 'yds'}
         </div>
         <div className={cn('mt-1 font-fw-display text-body-lg font-semibold tabular-nums', scoreColor)}>
@@ -309,7 +309,7 @@ export const FairwayScorecardHeader = memo(function FairwayScorecardHeader({
     >
       <div className="truncate font-fw-sans text-microlabel font-semibold uppercase tracking-wide text-text-secondary">{label}</div>
       <div className="font-fw-sans text-microbadge uppercase tracking-wide text-text-tertiary">Par {par}</div>
-      <div className="font-fw-sans text-microbadge text-text-tertiary/80">{isMeters ? yardsToDisplay(yards, 'meters') : yards}</div>
+      <div className="font-fw-sans text-microbadge text-text-tertiary">{isMeters ? yardsToDisplay(yards, 'meters') : yards}</div>
       <div className="mt-1 font-fw-display text-body-lg font-semibold tabular-nums text-text-primary">{hasScores ? score : '–'}</div>
     </div>
   );

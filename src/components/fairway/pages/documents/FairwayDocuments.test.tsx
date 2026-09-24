@@ -108,3 +108,27 @@ describe('FairwayDocuments — player view given a server-scoped documents list 
     expect(screen.queryByRole('button', { name: /document actions/i })).not.toBeInTheDocument();
   });
 });
+
+describe('FairwayDocuments — card controls are siblings, dates render after mount (A11Y-R1, HYD-04)', () => {
+  it('the preview control does not contain the other card buttons', () => {
+    const docs = [makeDoc({ id: 'd1', title: 'Spring schedule', is_public: true })];
+    render(<FairwayDocuments documents={docs} coachId="coach-1" teamId="team-1" isCoach />);
+
+    const previews = screen.getAllByRole('button', { name: 'Preview Spring schedule' });
+    const actions = screen.getByRole('button', { name: /document actions/i });
+    for (const preview of previews) {
+      expect(preview.contains(actions)).toBe(false);
+      expect(preview.querySelector('button')).toBeNull();
+    }
+  });
+
+  it('server markup carries no clock-relative age', async () => {
+    const { renderToString } = await import('react-dom/server');
+    const docs = [makeDoc({ id: 'd1', title: 'Spring schedule', is_public: true })];
+    const html = renderToString(
+      <FairwayDocuments documents={docs} coachId="coach-1" teamId="team-1" isCoach={false} />,
+    );
+    expect(html).toContain('Spring schedule');
+    expect(html).not.toMatch(/Just now|\dm ago|\dh ago/);
+  });
+});

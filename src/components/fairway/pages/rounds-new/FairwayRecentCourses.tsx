@@ -19,13 +19,14 @@
  * Presentation only; suppressed entirely when the player has no recent courses.
  * ========================================================================== */
 
+import { haptic } from '@/lib/haptics';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { MapPin, ArrowRight } from 'lucide-react';
 
 import { Sheet } from '@/components/fairway/overlays/Sheet';
 import { Inset } from '@/components/fairway/surfaces/surface';
 import { Button } from '@/components/fairway/controls/button';
-import { triggerHaptic } from '@/lib/utils/capacitor';
+
 import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
 import { formatCourseName } from '@/components/golf/courses/CourseImage';
 import type { RecentPlayedCourse } from '@/app/golf/actions/golf';
@@ -83,7 +84,7 @@ export function FairwayRecentCourses({ courses, onConfirmCourse }: FairwayRecent
 
   const onTap = useCallback((c: RecentPlayedCourse) => {
     if (confirmingRef.current) return;
-    triggerHaptic('light');
+    haptic('commit');
     setShown(c);
     setPending(c);
   }, []);
@@ -92,7 +93,7 @@ export function FairwayRecentCourses({ courses, onConfirmCourse }: FairwayRecent
     const c = pending;
     if (!c || confirmingRef.current) return;
     confirmingRef.current = true;
-    triggerHaptic('medium');
+    haptic('checkpoint');
     // Close first. The parent is called from the handler (never from inside a
     // state updater) and only after the sheet's exit has finished.
     setPending(null);

@@ -312,7 +312,7 @@ function TrustTrendGlyph({ trend }: { trend: TrustSignal['recentTrend'] }) {
   // than a genuine flat trend.
   return (
     <span
-      className="inline-flex items-center gap-1 text-text-tertiary/50"
+      className="inline-flex items-center gap-1 text-text-tertiary"
       title="Not enough outcomes measured yet to show a trend"
     >
       <Minus className="h-3.5 w-3.5" aria-hidden />

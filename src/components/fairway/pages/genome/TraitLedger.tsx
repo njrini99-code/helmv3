@@ -69,6 +69,7 @@ function LedgerRow({
   const ghost = isGhost(trait, baseline);
   const mag = r.magnitude ?? 0;
   return (
+    // eslint-disable-next-line helm/no-raw-button -- a full-width ledger row (grid of columns), not a button-shaped control
     <button
       type="button"
       onClick={() => onOpen(trait)}
@@ -94,7 +95,7 @@ function LedgerRow({
               ? (r.missingReason ?? 'No comparison')
               : r.thin
                 ? 'Team average thin'
-                : `${readWord(trait.read)}${trait.n != null ? ` · n=${trait.n}` : ''}`}
+                : readWord(trait.readN)}
           </span>
         ) : null}
       </span>

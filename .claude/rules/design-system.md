@@ -35,13 +35,22 @@ see `stats/loading.tsx` for the bar).
 ### Type roles + banned classes
 `font-fw-display`/`font-fw-sans`/`font-fw-mono` — Fraunces and General
 Sans were **deliberately removed**; display/sans now resolve to the
-system SF Pro stack, only `fw-mono` still loads a webfont (Fragment
-Mono). Banned in golf-dashboard surfaces: raw `red-*`/`amber-*`/
+system SF Pro stack, and `fw-mono` is now the SF stack too (Fragment Mono
+was removed, owner decision 2026-09-23): numerals use `tabular-nums`,
+lining figures, and no slashed zero. No golf surface loads a web font. Banned in golf-dashboard surfaces: raw `red-*`/`amber-*`/
 `rose-*`/`violet-*`, `glass-*`, new `cream-*`/`warm-*`. **Legacy
 exception**: `src/components/ui/skeleton.tsx`
 (`GenericPageSkeleton`/`DetailPageSkeleton`/`FormPageSkeleton`) is still
 correctly used by non-golf routes (admin, auth, baseball, onboarding) —
 don't import it for new golf `loading.tsx` files.
+
+### Contrast + green roles
+Green is the contrasting colour: `text-accent-ink` for green text,
+`bg-accent-fill` + `text-text-on-accent-fill` for the primary action,
+`bg-accent-wash` + `text-accent-ink` for a selected segment, `border-border-control`
+for control edges, `text-fw-warning-text` for amber ink. No `/NN` or `opacity-NN`
+on text. `helm/no-low-contrast-text` (golf lint) and
+`src/test/static/fairway-token-contrast.test.ts` enforce AA.
 
 ### Hard-won invariants
 - Never nest interactive children inside a `BentoCell` with `onOpen` —

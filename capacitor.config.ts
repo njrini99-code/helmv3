@@ -40,11 +40,11 @@ const config: CapacitorConfig = {
     // Marker appended to UA so the server-side proxy can detect native iOS
     // requests and block marketing/membership pages (App Store Guideline 3.1.1).
     appendUserAgent: 'HelmSportsLabsApp',
-    // Light page canvas (--fw-color-canvas, #F7EFDF) for the webview before
+    // Light page canvas (--fw-color-canvas, #F2E6D2) for the webview before
     // the first paint. GolfBridgeViewController then swaps in the dynamic
-    // LaunchCanvas colour (light #F7EFDF / dark #101110), which this static
+    // FwColorCanvas colour (light #F2E6D2 / dark #0D0F0D), which this static
     // config cannot express.
-    backgroundColor: '#F7EFDF',
+    backgroundColor: '#F2E6D2',
   },
   android: {
     // Mirrors the iOS block. Every value here has a reason — do not drop one
@@ -63,9 +63,9 @@ const config: CapacitorConfig = {
     allowMixedContent: false,
     // Same posture as iOS: no inspector in shipped builds.
     webContentsDebuggingEnabled: false,
-    // Cream (#EDE0C8) matches the splash and the app's canvas, so the window
+    // Cream (#F2E6D2, --fw-color-canvas) matches the splash and the app's canvas, so the window
     // behind the WebView never flashes white during navigation or rotation.
-    backgroundColor: '#EDE0C8',
+    backgroundColor: '#F2E6D2',
   },
   plugins: {
     Keyboard: {
@@ -85,15 +85,15 @@ const config: CapacitorConfig = {
     // frozen rather than merely slow. Reproduced on an Android 16 emulator:
     // stuck on the splash indefinitely. launchShowDuration is the ceiling, not
     // the target -- a healthy cold start still hides early via hideSplashScreen().
-    // backgroundColor is the light page canvas (--fw-color-canvas, #F7EFDF),
+    // backgroundColor is the light page canvas (--fw-color-canvas, #F2E6D2),
     // the same colour baked into the iOS Splash images, LaunchScreen.storyboard
-    // (LaunchCanvas colour asset) and the native webview background, so a cold
-    // start has no colour step. Android's own splash resources
-    // (android/app/src/main/res) still use the older #EDE0C8.
+    // (FwColorCanvas colour asset) and the native webview background, so a cold
+    // start has no colour step. Android's splash resources
+    // (android/app/src/main/res: splash.xml, styles.xml) carry the same value.
     SplashScreen: {
       launchAutoHide: true,
       launchShowDuration: 10000,
-      backgroundColor: '#F7EFDF',
+      backgroundColor: '#F2E6D2',
       showSpinner: false,
     },
     StatusBar: { style: 'LIGHT' },

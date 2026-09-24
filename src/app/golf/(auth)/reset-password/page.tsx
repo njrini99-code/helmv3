@@ -1,15 +1,25 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { Loader2 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { PasswordStrengthIndicator } from '@/components/auth/password-strength-indicator';
 import { isNativeApp } from '@/lib/utils/capacitor';
 import { cn } from '@/lib/utils';
-import { IconCheck, IconShield } from '@/components/icons';
-import { Input } from '@/components/ui/input';
-import { GolfAuthShell, AuthPrimaryButton } from '@/components/auth/GolfAuthShell';
+import {
+  AuthCanvas,
+  AuthFieldError,
+  AuthSubmitButton,
+  GroupedFieldRow,
+  GroupedFields,
+  authPrimaryButtonClass,
+  authTextLinkClass,
+} from '@/components/auth/golf-auth-canvas';
+
+const ERROR_ID = 'golf-reset-error';
+const MISMATCH_ID = 'golf-reset-mismatch';
 
 type RecoveryState = 'verifying' | 'ready' | 'invalid';
 
@@ -24,6 +34,14 @@ export default function ResetPasswordPage() {
   // `createClient()` returns a fresh browser client per call — memoize so the
   // recovery-session effect below isn't re-run on every render.
   const supabase = useMemo(() => createClient(), []);
+  // Bumped on each validation/server failure so focus returns to the field
+  // (same pattern as forgot-password).
+  const [errorNonce, setErrorNonce] = useState(0);
+  const passwordRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (errorNonce > 0) passwordRef.current?.focus();
+  }, [errorNonce]);
 
   // Establish the recovery session BEFORE allowing updateUser. Supabase delivers
   // the reset link as either a PKCE `?code=` query param (exchangeCodeForSession)
@@ -86,13 +104,15 @@ export default function ResetPasswordPage() {
     setError('');
 
     if (password !== confirmPassword) {
-      setError('Passwords do not match');
+      setError('Passwords do not match.');
+      setErrorNonce((n) => n + 1);
       setLoading(false);
       return;
     }
 
     if (password.length < 8) {
-      setError('Password must be at least 8 characters');
+      setError('Use at least 8 characters.');
+      setErrorNonce((n) => n + 1);
       setLoading(false);
       return;
     }
@@ -101,6 +121,7 @@ export default function ResetPasswordPage() {
       const { error: updateError } = await supabase.auth.updateUser({ password });
       if (updateError) {
         setError(updateError.message);
+        setErrorNonce((n) => n + 1);
         setLoading(false);
         return;
       }
@@ -111,139 +132,126 @@ export default function ResetPasswordPage() {
     }
   };
 
-  const heading = recoveryState === 'invalid' ? 'Link expired' : 'Reset your password';
+  const heading = recoveryState === 'invalid' ? 'Link expired' : 'Reset password';
   const subheading =
     recoveryState === 'verifying'
-      ? 'Verifying your reset link…'
+      ? 'Checking your reset link…'
       : recoveryState === 'invalid'
-        ? 'This password reset link is invalid or has expired.'
-        : 'Choose a new password for your account.';
+        ? 'This reset link is invalid or has expired.'
+        : 'Choose a new password.';
+
+  const homeLink = !isNative ? (
+    <Link
+      href="/"
+      aria-label="Back to home"
+      className="-ml-2 inline-flex min-h-[44px] items-center gap-0.5 rounded-lg px-2 text-body-lg text-accent-700 outline-none focus-visible:ring-2 focus-visible:ring-accent-600 active:opacity-60"
+    >
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <path d="M15 18l-6-6 6-6" />
+      </svg>
+      Home
+    </Link>
+  ) : null;
 
   const footer = (
-    <>
-      <p className="text-center mt-5 text-warm-600 text-body-sm">
-        Remember your password?{' '}
-        <Link href="/golf/login" className="text-primary-700 font-semibold hover:text-primary-600 transition-colors">
-          Sign in
-        </Link>
-      </p>
-      {!isNative && (
-        <p className="text-center mt-3 text-warm-500 text-body-sm">
-          <Link
-            href="/"
-            className="inline-flex items-center gap-1 rounded-lg px-3 py-3 -my-3 min-h-[44px] transition-colors hover:text-warm-700 active:bg-warm-100/50"
-          >
-            ← Back to HelmLabs
-          </Link>
-        </p>
-      )}
-    </>
+    <p className="text-center text-body text-text-secondary">
+      Remember it?{' '}
+      <Link href="/golf/login" className={authTextLinkClass}>
+        Sign in
+      </Link>
+    </p>
   );
 
   const passwordsMismatch = confirmPassword.length > 0 && confirmPassword !== password;
-  const passwordsMatch = confirmPassword.length > 0 && confirmPassword === password;
+  const showMismatch = passwordsMismatch && !error;
+  const describedBy = [error ? ERROR_ID : null, showMismatch ? MISMATCH_ID : null]
+    .filter(Boolean)
+    .join(' ') || undefined;
 
+  // AUTH-02: the same flat AuthCanvas as /golf/login and /golf/forgot-password
+  // (2026-09 redesign), replacing the old card-on-an-illustration GolfAuthShell.
   return (
-    <GolfAuthShell idSuffix="golf-reset" heading={heading} subheading={subheading} footer={footer}>
+    <AuthCanvas
+      contentId="auth-card"
+      contentLabel={heading}
+      title={heading}
+      subtitle={subheading}
+      topBar={homeLink}
+      footer={footer}
+    >
       {recoveryState === 'verifying' ? (
         <div className="flex justify-center py-6" role="status" aria-label="Verifying reset link">
-          <span className="flex items-center gap-1.5">
-            <span className="h-2 w-2 rounded-full bg-primary-600 skeleton-shimmer" style={{ animationDelay: '0ms' }} />
-            <span className="h-2 w-2 rounded-full bg-primary-600 skeleton-shimmer" style={{ animationDelay: '150ms' }} />
-            <span className="h-2 w-2 rounded-full bg-primary-600 skeleton-shimmer" style={{ animationDelay: '300ms' }} />
-          </span>
+          <Loader2 className="h-6 w-6 animate-spin text-text-tertiary motion-reduce:animate-none" aria-hidden="true" />
         </div>
       ) : recoveryState === 'invalid' ? (
-        <div className="space-y-4">
-          <div
-            className="flex items-start gap-2.5 rounded-xl border border-danger/25 bg-danger/10 px-4 py-3 text-body-sm text-danger"
-            role="alert"
-          >
-            <span aria-hidden className="mt-px font-semibold">!</span>
-            <span>Your reset link is invalid or has expired. Please request a new one.</span>
-          </div>
-          <Link
-            href="/golf/forgot-password"
-            className="flex w-full min-h-[48px] items-center justify-center rounded-xl bg-primary-600 py-3 text-body font-semibold text-white shadow-lg shadow-primary-600/25 transition-all duration-200 hover:bg-primary-700 hover:shadow-primary-600/30 active:scale-[0.98]"
-          >
+        <div>
+          <p role="alert" className="px-4 text-center text-body text-text-secondary">
+            Reset links expire after 1 hour and work once. Request a new one to continue.
+          </p>
+          <Link href="/golf/forgot-password" className={cn(authPrimaryButtonClass, 'mt-8')}>
             Request a new reset link
           </Link>
         </div>
       ) : (
-        <form onSubmit={handleSubmit} className="space-y-4" noValidate>
-          {error && (
-            <div
-              className="flex items-start gap-2.5 rounded-xl border border-danger/25 bg-danger/10 px-4 py-3 text-body-sm text-danger"
-              role="alert"
-            >
-              <span aria-hidden className="mt-px font-semibold">!</span>
-              <span>{error}</span>
-            </div>
-          )}
-
-          <div className="space-y-1.5">
-            <Input
+        <form onSubmit={handleSubmit} noValidate aria-label="Choose a new password">
+          <GroupedFields>
+            <GroupedFieldRow
+              ref={passwordRef}
               id="golf-reset-password"
               label="New password"
+              placeholder="New password"
               type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Enter your new password"
-              required
-              // eslint-disable-next-line jsx-a11y/no-autofocus -- primary input on this auth page
-              autoFocus
               autoComplete="new-password"
               enterKeyHint="next"
+              required
+              aria-required="true"
+              aria-invalid={error ? true : undefined}
+              aria-describedby={error ? ERROR_ID : undefined}
+              // eslint-disable-next-line jsx-a11y/no-autofocus -- primary input on this auth page
+              autoFocus
+              value={password}
+              onChange={(e) => {
+                setPassword(e.target.value);
+                if (error) setError('');
+              }}
             />
-            <PasswordStrengthIndicator password={password} />
-          </div>
-
-          <div className="space-y-1.5">
-            <Input
+            <GroupedFieldRow
               id="golf-reset-confirm"
               label="Confirm password"
+              placeholder="Confirm password"
               type="password"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              placeholder="Confirm your new password"
-              required
               autoComplete="new-password"
               enterKeyHint="go"
-              className={cn(
-                passwordsMismatch
-                  ? 'border-danger/60 focus:border-danger focus:ring-danger/20'
-                  : passwordsMatch
-                    ? 'border-primary-300 focus:border-primary-500 focus:ring-primary-500/25'
-                    : '',
-              )}
+              required
+              aria-required="true"
+              aria-invalid={passwordsMismatch || undefined}
+              aria-describedby={describedBy}
+              value={confirmPassword}
+              onChange={(e) => {
+                setConfirmPassword(e.target.value);
+                if (error) setError('');
+              }}
             />
-            {passwordsMismatch && (
-              <p className="flex items-center gap-1 text-caption text-danger">
-                <span aria-hidden className="font-semibold">!</span>
-                Passwords do not match
-              </p>
-            )}
-            {passwordsMatch && password.length >= 8 && (
-              <p className="flex items-center gap-1 text-caption text-primary-600">
-                <IconShield size={12} aria-hidden />
-                Passwords match
-              </p>
-            )}
+          </GroupedFields>
+          {showMismatch && (
+            <p id={MISMATCH_ID} className="mt-2.5 px-4 text-body-sm text-fw-danger">
+              Passwords do not match.
+            </p>
+          )}
+          {error && <AuthFieldError id={ERROR_ID}>{error}</AuthFieldError>}
+          <div className="mt-3 px-1">
+            <PasswordStrengthIndicator password={password} />
           </div>
-
-          <AuthPrimaryButton
-            type="submit"
-            loading={loading}
-            loadingLabel="Updating password"
+          <AuthSubmitButton
+            className="mt-6"
+            pending={loading}
+            pendingLabel="Updating password…"
             disabled={!password || !confirmPassword || recoveryState !== 'ready'}
           >
-            <span className="inline-flex items-center gap-1.5">
-              <IconCheck size={16} aria-hidden />
-              Update password
-            </span>
-          </AuthPrimaryButton>
+            Update password
+          </AuthSubmitButton>
         </form>
       )}
-    </GolfAuthShell>
+    </AuthCanvas>
   );
 }

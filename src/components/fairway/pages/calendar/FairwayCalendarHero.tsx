@@ -224,13 +224,15 @@ export function FairwayCalendarHero({
       aria-label="Calendar controls"
       className={cn(
         // Sticky under the app header + hub sub-nav (AppShell publishes both
-        // offsets). The shell's chrome material keeps scrolled rows from
-        // reading as ghost text behind the controls.
-        'fw-glass-chrome sticky top-[calc(var(--golf-mobile-header-offset)+var(--fw-hub-subnav-offset,0px))] z-[9]',
+        // offsets). OPAQUE cream bar (owner OD-20; CON-11): the translucent
+        // champagne glass read as a tan gradient on the darker canvas and
+        // let scrolled rows ghost through. The bar is the card cream, one clear
+        // step above the dark-cream page, with a hairline under it.
+        'bg-surface sticky top-[calc(var(--golf-mobile-header-offset)+var(--fw-hub-subnav-offset,0px))] z-[9]',
         // A warm rim along the bottom edge plus the resting whisper: the
         // masthead sits ON the list, the way a native bar floats over content.
         '-mx-4 px-4 pb-2.5 pt-2 md:-mx-6 md:px-6 md:pb-3 md:pt-3',
-        '[box-shadow:0_1px_0_var(--fw-glass-border-bot),var(--fw-shadow-flat)]',
+        'border-b border-border-subtle [box-shadow:var(--fw-shadow-flat)]',
       )}
     >
       {/* Row 1 — the period, and the primary action. */}
@@ -267,11 +269,11 @@ export function FairwayCalendarHero({
                     title.main
                   )}
                   {title.quiet ? (
-                    <span className="font-medium text-text-tertiary">{title.quiet}</span>
+                    <span className="font-medium text-text-secondary">{title.quiet}</span>
                   ) : null}
                 </motion.span>
                 <span className="sr-only">, jump to a date</span>
-                <ChevronDown className="h-4 w-4 shrink-0 text-text-tertiary" aria-hidden />
+                <ChevronDown className="h-4 w-4 shrink-0 text-accent-ink" aria-hidden />
               </PressTarget>
             }
           >

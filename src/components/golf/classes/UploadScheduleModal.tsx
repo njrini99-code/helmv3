@@ -8,11 +8,7 @@ import { IconX, IconUpload, IconFileText, IconImage, IconSparkles } from '@/comp
 import { parseScheduleText, type ParsedClass } from '@/lib/utils/schedule-parser';
 import { extractClassesFromScheduleImage } from '@/app/golf/actions/schedule-image';
 import { fairwayToast } from '@/components/fairway/feedback/ToastStack';
-import {
-  Drawer,
-  DrawerContent,
-  DrawerTitle,
-} from '@/components/ui/drawer';
+import { Sheet } from '@/components/fairway/overlays/Sheet';
 
 type PdfJsTextItem = { str: string; transform?: number[] };
 type PdfJsPage = { getTextContent: () => Promise<{ items: PdfJsTextItem[] }> };
@@ -396,16 +392,16 @@ export function UploadScheduleModal({ isOpen, onClose, onParsed }: UploadSchedul
   };
 
   return (
-    <Drawer
+    <Sheet
       open={isOpen}
       onOpenChange={(next) => {
         if (!next) onClose();
       }}
+      title="Import Schedule"
+      customTitle
+      hideClose
+      className="overflow-hidden sm:mx-auto sm:max-w-xl"
     >
-      <DrawerContent
-        className="sm:max-w-xl sm:mx-auto sm:rounded-3xl p-0 overflow-hidden"
-        aria-labelledby="upload-schedule-title"
-      >
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-border-subtle">
           <div className="flex items-center gap-3">
@@ -413,9 +409,9 @@ export function UploadScheduleModal({ isOpen, onClose, onParsed }: UploadSchedul
               <IconSparkles size={20} className="text-accent-700" />
             </div>
             <div>
-              <DrawerTitle id="upload-schedule-title" className="text-body-lg font-medium text-text-primary tracking-[-0.012em]">
+              <Sheet.Title className="font-fw-sans text-body-lg font-medium text-text-primary tracking-[-0.012em]">
                 Import Schedule
-              </DrawerTitle>
+              </Sheet.Title>
               <p className="text-sm text-text-tertiary">Screenshot, upload, or paste your class schedule</p>
             </div>
           </div>
@@ -429,14 +425,14 @@ export function UploadScheduleModal({ isOpen, onClose, onParsed }: UploadSchedul
         </div>
 
         {/* Content */}
-        <div className="min-h-0 flex-1 overflow-y-auto p-6">
+        <div className="min-h-0 flex-1 overflow-y-auto p-6 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
           {/* Toggle */}
           <div className="flex gap-2 mb-6">
             <Button variant="primary"
               onClick={() => setPasteMode(false)}
               className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all ${
                 !pasteMode
-                  ? 'bg-accent-650 text-text-on-accent'
+                  ? 'bg-accent-fill text-text-on-accent-fill'
                   : 'bg-surface-sunken text-text-secondary hover:bg-surface-sunken/80'
               }`}
             >
@@ -446,7 +442,7 @@ export function UploadScheduleModal({ isOpen, onClose, onParsed }: UploadSchedul
               onClick={() => setPasteMode(true)}
               className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all ${
                 pasteMode
-                  ? 'bg-accent-650 text-text-on-accent'
+                  ? 'bg-accent-fill text-text-on-accent-fill'
                   : 'bg-surface-sunken text-text-secondary hover:bg-surface-sunken/80'
               }`}
             >
@@ -566,7 +562,6 @@ export function UploadScheduleModal({ isOpen, onClose, onParsed }: UploadSchedul
             </ul>
           </div>
         </div>
-      </DrawerContent>
-    </Drawer>
+    </Sheet>
   );
 }

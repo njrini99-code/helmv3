@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   MAX_ABS_SG_TOTAL_PER_ROUND,
+  MAX_SG_TOTAL_PER_ROUND,
   MIN_PLAUSIBLE_STROKES_PER_18,
   filterCountableRounds,
   isCountableRound,
@@ -34,7 +35,8 @@ const SEP_17_FIXTURE: CountableRoundInput = {
 describe('round-countable', () => {
   it('exports the thresholds', () => {
     expect(MIN_PLAUSIBLE_STROKES_PER_18).toBe(50);
-    expect(MAX_ABS_SG_TOTAL_PER_ROUND).toBe(15);
+    expect(MAX_SG_TOTAL_PER_ROUND).toBe(15);
+    expect(MAX_ABS_SG_TOTAL_PER_ROUND).toBe(MAX_SG_TOTAL_PER_ROUND);
   });
 
   it('excludes the Sep 17 round (37 strokes over 18 holes)', () => {
@@ -99,10 +101,19 @@ describe('round-countable', () => {
     expect(isCountableRound(full18(54, 36))).toBe(true);
   });
 
-  it('rejects an |SG total| above 15 when supplied', () => {
+  it('rejects an SG total above +15 when supplied', () => {
     expect(roundExclusionReason({ ...full18(70), strokes_gained_total: 15.5 })).toBe('implausible_sg');
-    expect(roundExclusionReason({ ...full18(90), strokes_gained_total: -16 })).toBe('implausible_sg');
     expect(isCountableRound({ ...full18(70), strokes_gained_total: 15 })).toBe(true);
+  });
+
+  // Requirement change (W13, 2026-09-24): the ceiling is one-sided. A real bad
+  // round has a large negative SG (SG tracks −strokes over the baseline). The
+  // old ±15 rule dropped 15 real prod rounds, e.g. 56ffffd4: 88 strokes, +17,
+  // SG −18.77, and 2f343331: 95 strokes, +23, SG −24.11.
+  it('counts a real high-scoring round with a large negative SG', () => {
+    expect(isCountableRound({ ...full18(88, 34), strokes_gained_total: -18.77 })).toBe(true);
+    expect(isCountableRound({ ...full18(95, 40), strokes_gained_total: -24.11 })).toBe(true);
+    expect(isCountableRound({ ...full18(90), strokes_gained_total: -16 })).toBe(true);
   });
 
   it('filterCountableRounds keeps order', () => {

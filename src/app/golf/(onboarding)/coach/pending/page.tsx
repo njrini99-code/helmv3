@@ -6,7 +6,7 @@ import { logServerError } from '@/lib/server-error-logger';
 import { describeError } from '@/lib/utils/describe-error';
 
 export const metadata = {
-  title: 'Waiting for approval | GolfHelm',
+  title: 'Waiting for approval',
 };
 
 /**
@@ -115,7 +115,7 @@ export default async function CoachPendingPage() {
         <div className="mt-8 flex flex-wrap gap-3">
           <Link
             href="/golf/coach/pending"
-            className="rounded-xl bg-primary-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-primary-700"
+            className="rounded-xl bg-accent-fill px-4 py-2.5 text-sm font-medium text-text-on-accent-fill transition-colors hover:bg-accent-fill-hover"
           >
             Check again
           </Link>
@@ -130,7 +130,7 @@ export default async function CoachPendingPage() {
 
       <p className="mt-6 text-center text-sm text-text-secondary">
         Expected to be a player instead?{' '}
-        <Link href="/golf/signup" className="font-medium text-primary-600 hover:underline">
+        <Link href="/golf/signup" className="font-medium text-accent-ink hover:underline">
           Sign up with your team code as a player
         </Link>
         .

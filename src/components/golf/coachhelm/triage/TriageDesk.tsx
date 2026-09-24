@@ -60,6 +60,7 @@ import {
   findSignalInGroups,
   formatRelativeScanTime,
   removeSignalFromGroups,
+  restoreSignalToGroups,
   resolveQueueFilter,
   resolveTriageView,
 } from './buildTriageViewModel';
@@ -450,7 +451,19 @@ export function TriageDesk({
 
   const counts = useMemo(() => computeBriefCounts(groups), [groups]);
   const verdict = useMemo(() => buildBriefVerdict(groups, counts), [groups, counts]);
-  const lastScanLabel = useMemo(() => formatRelativeScanTime(scannedAt), [scannedAt]);
+  // HYD-10: the relative scan time reads the clock, which differs between the
+  // server render and hydration. Render a clock-free label first, then fill in
+  // the elapsed time after mount and keep it current once a minute.
+  const [nowTs, setNowTs] = useState<number | null>(null);
+  useEffect(() => {
+    setNowTs(Date.now());
+    const id = window.setInterval(() => setNowTs(Date.now()), 60_000);
+    return () => window.clearInterval(id);
+  }, []);
+  const lastScanLabel = useMemo(
+    () => formatRelativeScanTime(scannedAt, nowTs === null ? null : new Date(nowTs)),
+    [scannedAt, nowTs],
+  );
   const categories = useMemo(() => distinctCategories(groups), [groups]);
   const filteredGroups = useMemo(() => filterGroupSignals(groups, queueFilter), [groups, queueFilter]);
   const selectedEntry = useMemo(() => findSignalInGroups(groups, selectedSignalId), [groups, selectedSignalId]);
@@ -520,21 +533,25 @@ export function TriageDesk({
     if (signal.kind === 'team_synthesis') return;
     if (pendingIds.has(signal.id)) return;
     setPendingIds((prev) => new Set(prev).add(signal.id));
+    // Snapshot for THIS signal only. On failure it is re-inserted into the
+    // current groups (DATA-12): restoring the whole snapshot would resurrect
+    // any signal another action or a refresh removed in the meantime.
     const prevGroups = groups;
-    setGroups(removeSignalFromGroups(groups, signal.id));
+    const rollback = () => setGroups((current) => restoreSignalToGroups(current, prevGroups, signal.id));
+    setGroups((current) => removeSignalFromGroups(current, signal.id));
     if (selectedSignalId === signal.id) navigate({ signal: null });
 
     try {
       const res = await action(signal.id, signal.kind);
       if (!res.success) {
-        setGroups(prevGroups);
+        rollback();
         fairwayToast.error(res.error ?? 'Could not update the signal. Try again.');
         return;
       }
       fairwayToast.success(successLabel);
       router.refresh();
     } catch {
-      setGroups(prevGroups);
+      rollback();
       fairwayToast.error('Could not update the signal. Try again.');
     } finally {
       setPendingIds((prev) => {

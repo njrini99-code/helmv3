@@ -139,7 +139,7 @@ export function CoachHelmDrawer({ players, suggestions, teamName }: CoachHelmDra
             // wins.
             className={cn(
               'fixed bottom-6 right-6 z-[var(--fw-z-nav,40)] hidden h-14 items-center justify-center gap-2 px-5 md:inline-flex [@media(max-height:500px)]:!hidden',
-              'rounded-full bg-accent-650 text-text-on-accent shadow-soft',
+              'rounded-full bg-accent-fill text-text-on-accent-fill shadow-soft',
               'font-fw-sans text-label font-semibold',
               'transition-colors hover:bg-accent-800',
               'outline-none focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',

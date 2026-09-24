@@ -2,14 +2,10 @@
 
 import { useState } from 'react';
 import { Button, IconButton } from '@/components/ui/button';
-import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import { ConfirmAlert } from '@/components/fairway/overlays/ConfirmAlert';
 import { IconX, IconClock, IconMapPin, IconUser } from '@/components/icons';
 import { formatTimeDisplay, formatDaysDisplay } from '@/lib/utils/schedule-parser';
-import {
-  Drawer,
-  DrawerContent,
-  DrawerTitle,
-} from '@/components/ui/drawer';
+import { Sheet } from '@/components/fairway/overlays/Sheet';
 
 interface ClassDetailModalProps {
   isOpen: boolean;
@@ -62,16 +58,17 @@ export function ClassDetailModal({ isOpen, onClose, onEdit, onDelete, classData 
   };
 
   return (
-    <Drawer
+    <>
+    <Sheet
       open={isOpen}
       onOpenChange={(next) => {
         if (!next) onClose();
       }}
+      title={classData.course_name || 'Untitled Class'}
+      customTitle
+      hideClose
+      className="overflow-hidden sm:mx-auto sm:max-w-md"
     >
-      <DrawerContent
-        className="sm:max-w-md sm:mx-auto sm:rounded-3xl p-0 overflow-hidden"
-        aria-labelledby="class-detail-title"
-      >
         {/* Color header */}
         {/* `--fw-color-accent-500` (NOT `--color-primary-600`, which has no
             dark-mode override and stays the flat light-mode green under dark
@@ -88,9 +85,9 @@ export function ClassDetailModal({ isOpen, onClose, onEdit, onDelete, classData 
               <span className="font-mono text-sm font-medium text-accent-700">
                 {classData.course_code}
               </span>
-              <DrawerTitle id="class-detail-title" className="text-h3 font-medium text-text-primary tracking-[-0.015em] mt-1">
+              <Sheet.Title className="font-fw-sans text-h3 font-medium text-text-primary tracking-[-0.015em] mt-1">
                 {classData.course_name || 'Untitled Class'}
-              </DrawerTitle>
+              </Sheet.Title>
               {classData.semester.trim() && (
                 <p className="text-sm text-text-tertiary mt-1">{classData.semester}</p>
               )}
@@ -153,7 +150,7 @@ export function ClassDetailModal({ isOpen, onClose, onEdit, onDelete, classData 
           )}
 
           {/* Credits */}
-          {classData.credits && (
+          {classData.credits != null && classData.credits > 0 && (
             <div className="flex items-center gap-2 text-sm">
               <span className="px-2 py-1 bg-surface-sunken rounded-md text-text-secondary font-medium">
                 {classData.credits} credits
@@ -171,7 +168,7 @@ export function ClassDetailModal({ isOpen, onClose, onEdit, onDelete, classData 
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-between px-6 py-4 border-t border-border-subtle bg-surface-sunken">
+        <div className="flex items-center justify-between px-6 pt-4 pb-[max(1rem,env(safe-area-inset-bottom))] border-t border-border-subtle bg-surface-sunken">
           <Button
             variant="secondary"
             onClick={handleDeleteClick}
@@ -184,9 +181,10 @@ export function ClassDetailModal({ isOpen, onClose, onEdit, onDelete, classData 
             Edit Class
           </Button>
         </div>
+    </Sheet>
 
-        {/* Delete Confirmation Dialog */}
-        <ConfirmDialog
+        {/* Delete Confirmation Dialog: a sibling of the Sheet, stacked above it. */}
+        <ConfirmAlert
           open={showDeleteConfirm}
           title="Delete Class"
           message={`Are you sure you want to delete ${classData.course_code}? This will remove the class and all associated calendar events. This action cannot be undone.`}
@@ -197,7 +195,6 @@ export function ClassDetailModal({ isOpen, onClose, onEdit, onDelete, classData 
           onConfirm={handleDeleteConfirm}
           onCancel={handleDeleteCancel}
         />
-      </DrawerContent>
-    </Drawer>
+    </>
   );
 }

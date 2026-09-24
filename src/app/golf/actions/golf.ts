@@ -50,7 +50,7 @@ import type { Database, Json } from '@/lib/types/database';
 import { getQualifierAutomaticTransition } from '@/lib/golf/qualifier-lifecycle';
 import { resolveQualifierRoundNumber } from '@/lib/golf/qualifier-round-number';
 import { assertHolesPlayedMatchesPayload } from '@/lib/golf/holes-played-assert';
-import { validateRoundEntry, clampPuttDistanceFeet } from '@/lib/golf/round-entry-validation';
+import { validateRoundEntry, validateHolesPlayed, firstBlockingPartialHoleIssue, clampPuttDistanceFeet } from '@/lib/golf/round-entry-validation';
 import { getUserResilient } from '@/lib/auth/resilient-get-user';
 import {
   createHelmFlightRecorder,
@@ -1781,7 +1781,10 @@ async function submitGolfRoundComprehensiveImpl(
     // 500+ yards away, and no round total better than one under par per hole
     // (the 2026-09-17 round: 18 holes, 37 strokes). `confirm`-severity issues
     // (a 420-yard drive onto the green) are the player's call and pass here.
-    const roundEntry = validateRoundEntry(data.holes);
+    // RE-S4/RE-V1: a submit is a FINISHED round — 9 or 18 holes, numbered as
+    // one run (1–18, 1–9 or 10–18). The in-progress row's configured count is
+    // checked below, once the row has been read.
+    const roundEntry = validateRoundEntry(data.holes, { requireCompleteRound: true });
     const blockingIssue = roundEntry.blocking[0];
     if (blockingIssue) {
       const code = blockingIssue.holeNumber != null ? 'hole_invalid' : 'round_implausible';
@@ -1899,7 +1902,7 @@ async function submitGolfRoundComprehensiveImpl(
       // SECURITY: Verify the round belongs to this player and is not already completed
       const { data: existingRound, error: verifyError } = await supabase
         .from('golf_rounds')
-        .select('id, player_id, status, round_type, qualifier_id, qualifier_round_number')
+        .select('id, player_id, status, round_type, qualifier_id, qualifier_round_number, holes_played')
         .eq('id', existingRoundId)
         .eq('player_id', player.id)
         .single();
@@ -1927,6 +1930,32 @@ async function submitGolfRoundComprehensiveImpl(
           userEmail: user.email,
         }, 'warning');
         return { success: false, error: 'This round has already been submitted. It cannot be submitted again.' };
+      }
+
+      // RE-S4: the payload's own length used to be the only hole count, so an
+      // 18-hole round submitted with 9 scored holes was saved as a completed
+      // 9-hole round. The in-progress row carries the count it was started
+      // with; a missing/non-9/18 value (older rows, test doubles) skips this.
+      if (existingRound.status === 'in_progress') {
+        const configuredIssue = validateHolesPlayed(
+          roundEntry.holesPlayed,
+          (existingRound as { holes_played?: number | null }).holes_played,
+        )[0];
+        if (configuredIssue) {
+          void logServerError(`Round submit rejected: ${configuredIssue.rule}`, {
+            action: 'submitGolfRoundComprehensive',
+            featureArea: 'shot_tracking',
+            roundId: existingRoundId,
+            playerId: player.id,
+            extra: {
+              courseName: data.courseName,
+              holesCount: data.holes.length,
+              holesPlayed: roundEntry.holesPlayed,
+              configuredHoles: (existingRound as { holes_played?: number | null }).holes_played ?? null,
+            },
+          }, 'warning');
+          return { success: false, error: configuredIssue.message, code: 'round_implausible' };
+        }
       }
 
       effectiveRoundType = (existingRound.round_type ?? data.roundType) as GolfRoundInputComprehensive['roundType'];
@@ -6763,6 +6792,40 @@ async function savePartialRoundImpl(
     void (validated.success
       ? flightRecorder.complete('server.validation')
       : flightRecorder.warn('server.validation', { metadata: { dropped_holes: salvagedAwayHoleNumbers.length } }));
+
+    // RE-V1: the submit gate's per-hole rules also hold mid-round, on every
+    // COMPLETED hole (score + putts present): score range, putts ≤ score − 1,
+    // score/putts matching a complete shot chain, no tee shot onto a green
+    // 500+ yards away. Before this, a hole the submit would refuse was
+    // checkpointed as done and the player only learned at the end of the
+    // round. Same `hole_invalid` shape the client already surfaces (B5). The
+    // 9/18 round shape is never applied to a round in progress.
+    const partialHoleIssue = firstBlockingPartialHoleIssue(
+      (data.holes ?? []) as Parameters<typeof firstBlockingPartialHoleIssue>[0],
+    );
+    if (partialHoleIssue && partialHoleIssue.holeNumber != null) {
+      void logServerError(`Auto-save refused: ${partialHoleIssue.rule} on hole ${partialHoleIssue.holeNumber}`, {
+        action: 'savePartialRound.plausibility',
+        featureArea: 'shot_tracking',
+        roundId: existingRoundId,
+        extra: {
+          courseName: data.courseName,
+          currentHole: data.currentHole,
+          rule: partialHoleIssue.rule,
+          hole: partialHoleIssue.holeNumber,
+          shot: partialHoleIssue.shotNumber ?? null,
+        },
+      }, 'warning');
+      endTrace('failure');
+      return {
+        success: false,
+        error: 'hole_invalid',
+        code: 'hole_invalid',
+        hole: partialHoleIssue.holeNumber,
+        field: partialHoleIssue.rule === 'putts_exceed_score' || partialHoleIssue.rule === 'putts_mismatch_shots' ? 'putts' : 'score',
+        message: partialHoleIssue.message,
+      };
+    }
 
     // Bug #3: Clamp currentHole to holesToPlay for 9-hole rounds
     if (data.currentHole && data.holesToPlay) {

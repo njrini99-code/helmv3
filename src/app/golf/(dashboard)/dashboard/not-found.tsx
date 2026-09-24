@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { Compass } from 'lucide-react';
 import { EmptyState } from '@/components/fairway/feedback/EmptyState';
 import { Button } from '@/components/fairway/controls/button';
+import { getGolfSessionProfile } from '@/lib/auth/session';
 
 /**
  * Golf dashboard-scoped 404 (P431).
@@ -16,8 +17,17 @@ import { Button } from '@/components/fairway/controls/button';
  * Token-correct Fairway surface (EmptyState + Fairway Button) with golf-only
  * CTAs. The (dashboard) shell already establishes the `.fairway-ds` scope +
  * bg-canvas, so the Fairway tokens resolve here.
+ *
+ * Also reached for any unmatched `/golf/dashboard/*` URL via the
+ * `[...missing]` catch-all (DASH-13). The secondary link is role-aware
+ * (DASH-14): a coach goes back to the roster, a player to their rounds.
  */
-export default function GolfDashboardNotFound() {
+export default async function GolfDashboardNotFound() {
+  const session = await getGolfSessionProfile().catch(() => null);
+  const secondary =
+    session?.role === 'coach'
+      ? { href: '/golf/dashboard/roster', label: 'Back to roster' }
+      : { href: '/golf/dashboard/rounds', label: 'Your rounds' };
   return (
     <div className="flex min-h-[60vh] items-center justify-center px-4 py-16">
       <EmptyState
@@ -31,7 +41,7 @@ export default function GolfDashboardNotFound() {
         }
         secondaryAction={
           <Button asChild variant="ghost" size="sm">
-            <Link href="/golf/dashboard/roster">Back to roster</Link>
+            <Link href={secondary.href}>{secondary.label}</Link>
           </Button>
         }
       />

@@ -14,7 +14,9 @@ const mockLimit = vi.fn(() => ({ data: [], error: null }));
 const mockRange = vi.fn(() => ({ data: [], error: null }));
 const mockOrder: ReturnType<typeof vi.fn> = vi.fn(() => ({ limit: mockLimit, order: mockOrder, range: mockRange, data: [], error: null }));
 const mockNot = vi.fn(() => ({ order: mockOrder, limit: mockLimit, data: [], error: null }));
-const mockIn = vi.fn(() => ({ order: mockOrder, not: mockNot, limit: mockLimit, data: [], error: null }));
+// The active-qualifier count bounds `start_date` (NUMC-07): `.in().gte().lte()`.
+const mockInDateBound = { lte: vi.fn(() => ({ data: [], error: null, count: 0 })) };
+const mockIn = vi.fn(() => ({ order: mockOrder, not: mockNot, limit: mockLimit, gte: vi.fn(() => mockInDateBound), data: [], error: null }));
 // `.or()` is part of the real PostgREST builder and the Today query now uses it
 // (#1496 — Today is an OVERLAP window, so a running tournament is fetched and
 // then filtered exactly). Extending the stub to match the client it stands in
@@ -93,7 +95,7 @@ function createChainableMock({
     count: Array.isArray(data) ? data.length : 0,
   };
   // `or` is on the list because the Today query is an OVERLAP window (#1496).
-  for (const method of ['select', 'eq', 'neq', 'in', 'gte', 'lt', 'or', 'not', 'order', 'limit']) {
+  for (const method of ['select', 'eq', 'neq', 'in', 'gte', 'lte', 'lt', 'or', 'not', 'order', 'limit']) {
     chain[method] = vi.fn(() => chain);
   }
   chain.range = vi.fn((from: number, to: number) => ({
@@ -340,8 +342,8 @@ describe('dashboard-data server actions', () => {
 
     it('computes Team Putts/Rd hole-weighted (sum putts ÷ sum holes × 18)', async () => {
       mockCoachTables([
-        { id: 'r1', player_id: 'p1', total_score: 72, score_to_par: 0, round_date: '2026-06-01', holes_played: 18, total_putts: 36, total_gir: null, total_gir_possible: null },
-        { id: 'r2', player_id: 'p1', total_score: 36, score_to_par: 0, round_date: '2026-05-28', holes_played: 9, total_putts: 9, total_gir: null, total_gir_possible: null },
+        { id: 'r1', player_id: 'p1', total_score: 72, score_to_par: 0, round_date: '2026-06-01', holes_played: 18, front_nine: 36, back_nine: 36, total_putts: 36, total_gir: null, total_gir_possible: null },
+        { id: 'r2', player_id: 'p1', total_score: 36, score_to_par: 0, round_date: '2026-05-28', holes_played: 9, front_nine: 36, back_nine: null, total_putts: 9, total_gir: null, total_gir_possible: null },
       ]);
 
       const result = await getCoachDashboardData('coach-1', 'user-1', 'team-1');
@@ -353,6 +355,25 @@ describe('dashboard-data server actions', () => {
       expect(result.stats.teamScoringAverage).toBe(72);
     });
 
+    it('leaves implausible and hole-less rounds out of every team KPI and Top Performers', async () => {
+      mockCoachTables([
+        // Sep 17 shape: declared 18 holes, 37 strokes.
+        { id: 'bad', player_id: 'p1', total_score: 37, score_to_par: -35, round_date: '2026-06-03', holes_played: 18, front_nine: 19, back_nine: 18, total_putts: 18, total_gir: 18, total_gir_possible: 18 },
+        // QA round: declared 18, no hole rows.
+        { id: 'qa', player_id: 'p1', total_score: 70, score_to_par: -2, round_date: '2026-06-02', holes_played: 18, front_nine: null, back_nine: null, total_putts: null, total_gir: null, total_gir_possible: null },
+        { id: 'r1', player_id: 'p1', total_score: 76, score_to_par: 4, round_date: '2026-06-01', holes_played: 18, front_nine: 38, back_nine: 38, total_putts: 34, total_gir: 9, total_gir_possible: 18 },
+        { id: 'r2', player_id: 'p1', total_score: 74, score_to_par: 2, round_date: '2026-05-28', holes_played: 18, front_nine: 37, back_nine: 37, total_putts: 32, total_gir: 11, total_gir_possible: 18 },
+      ]);
+
+      const result = await getCoachDashboardData('coach-1', 'user-1', 'team-1');
+
+      expect(result.stats.teamScoringAverage).toBe(75);
+      expect(result.topPlayers[0]).toMatchObject({ avg_score: 75, rounds: 2 });
+      expect(result.sparklines.puttsPerRound.value).toBe(33);
+      expect(result.sparklines.girPct.value).toBe(55.6);
+      expect(result.recentRounds.map((r) => r.id)).toEqual(['r1', 'r2']);
+    });
+
     it('paginates past the 1000-row PostgREST cap so KPIs and round counts cover the full window', async () => {
       const manyRounds = Array.from({ length: 1001 }, (_, i) => ({
         id: `r${i}`,
@@ -361,6 +382,8 @@ describe('dashboard-data server actions', () => {
         score_to_par: 0,
         round_date: '2026-05-01',
         holes_played: 18,
+        front_nine: 36,
+        back_nine: 36,
         total_putts: 30,
         total_gir: 10,
         total_gir_possible: 18,
@@ -393,25 +416,25 @@ describe('dashboard-data server actions', () => {
     it('Team Pulse classifies per-player trend via the canonical computeScoringTrendFromRounds — parity with the roster/Team Stats classifier', async () => {
       // Rising: 5 recent rounds well below the 3 previous rounds (improving).
       const risingRounds = [
-        { id: 'r1', player_id: 'p1', total_score: 68, score_to_par: -4, round_date: '2026-07-10', holes_played: 18, total_putts: null, total_gir: null, total_gir_possible: null },
-        { id: 'r2', player_id: 'p1', total_score: 69, score_to_par: -3, round_date: '2026-07-08', holes_played: 18, total_putts: null, total_gir: null, total_gir_possible: null },
-        { id: 'r3', player_id: 'p1', total_score: 70, score_to_par: -2, round_date: '2026-07-06', holes_played: 18, total_putts: null, total_gir: null, total_gir_possible: null },
-        { id: 'r4', player_id: 'p1', total_score: 71, score_to_par: -1, round_date: '2026-07-04', holes_played: 18, total_putts: null, total_gir: null, total_gir_possible: null },
-        { id: 'r5', player_id: 'p1', total_score: 70, score_to_par: -2, round_date: '2026-07-02', holes_played: 18, total_putts: null, total_gir: null, total_gir_possible: null },
-        { id: 'r6', player_id: 'p1', total_score: 80, score_to_par: 8, round_date: '2026-06-20', holes_played: 18, total_putts: null, total_gir: null, total_gir_possible: null },
-        { id: 'r7', player_id: 'p1', total_score: 82, score_to_par: 10, round_date: '2026-06-18', holes_played: 18, total_putts: null, total_gir: null, total_gir_possible: null },
-        { id: 'r8', player_id: 'p1', total_score: 81, score_to_par: 9, round_date: '2026-06-16', holes_played: 18, total_putts: null, total_gir: null, total_gir_possible: null },
+        { id: 'r1', player_id: 'p1', total_score: 68, score_to_par: -4, round_date: '2026-07-10', holes_played: 18, front_nine: 34, back_nine: 34, total_putts: null, total_gir: null, total_gir_possible: null },
+        { id: 'r2', player_id: 'p1', total_score: 69, score_to_par: -3, round_date: '2026-07-08', holes_played: 18, front_nine: 34, back_nine: 35, total_putts: null, total_gir: null, total_gir_possible: null },
+        { id: 'r3', player_id: 'p1', total_score: 70, score_to_par: -2, round_date: '2026-07-06', holes_played: 18, front_nine: 35, back_nine: 35, total_putts: null, total_gir: null, total_gir_possible: null },
+        { id: 'r4', player_id: 'p1', total_score: 71, score_to_par: -1, round_date: '2026-07-04', holes_played: 18, front_nine: 35, back_nine: 36, total_putts: null, total_gir: null, total_gir_possible: null },
+        { id: 'r5', player_id: 'p1', total_score: 70, score_to_par: -2, round_date: '2026-07-02', holes_played: 18, front_nine: 35, back_nine: 35, total_putts: null, total_gir: null, total_gir_possible: null },
+        { id: 'r6', player_id: 'p1', total_score: 80, score_to_par: 8, round_date: '2026-06-20', holes_played: 18, front_nine: 40, back_nine: 40, total_putts: null, total_gir: null, total_gir_possible: null },
+        { id: 'r7', player_id: 'p1', total_score: 82, score_to_par: 10, round_date: '2026-06-18', holes_played: 18, front_nine: 41, back_nine: 41, total_putts: null, total_gir: null, total_gir_possible: null },
+        { id: 'r8', player_id: 'p1', total_score: 81, score_to_par: 9, round_date: '2026-06-16', holes_played: 18, front_nine: 40, back_nine: 41, total_putts: null, total_gir: null, total_gir_possible: null },
       ];
       // Falling: 5 recent rounds well above the 3 previous rounds (declining).
       const fallingRounds = [
-        { id: 's1', player_id: 'p2', total_score: 82, score_to_par: 10, round_date: '2026-07-10', holes_played: 18, total_putts: null, total_gir: null, total_gir_possible: null },
-        { id: 's2', player_id: 'p2', total_score: 83, score_to_par: 11, round_date: '2026-07-08', holes_played: 18, total_putts: null, total_gir: null, total_gir_possible: null },
-        { id: 's3', player_id: 'p2', total_score: 81, score_to_par: 9, round_date: '2026-07-06', holes_played: 18, total_putts: null, total_gir: null, total_gir_possible: null },
-        { id: 's4', player_id: 'p2', total_score: 84, score_to_par: 12, round_date: '2026-07-04', holes_played: 18, total_putts: null, total_gir: null, total_gir_possible: null },
-        { id: 's5', player_id: 'p2', total_score: 80, score_to_par: 8, round_date: '2026-07-02', holes_played: 18, total_putts: null, total_gir: null, total_gir_possible: null },
-        { id: 's6', player_id: 'p2', total_score: 70, score_to_par: -2, round_date: '2026-06-20', holes_played: 18, total_putts: null, total_gir: null, total_gir_possible: null },
-        { id: 's7', player_id: 'p2', total_score: 71, score_to_par: -1, round_date: '2026-06-18', holes_played: 18, total_putts: null, total_gir: null, total_gir_possible: null },
-        { id: 's8', player_id: 'p2', total_score: 69, score_to_par: -3, round_date: '2026-06-16', holes_played: 18, total_putts: null, total_gir: null, total_gir_possible: null },
+        { id: 's1', player_id: 'p2', total_score: 82, score_to_par: 10, round_date: '2026-07-10', holes_played: 18, front_nine: 41, back_nine: 41, total_putts: null, total_gir: null, total_gir_possible: null },
+        { id: 's2', player_id: 'p2', total_score: 83, score_to_par: 11, round_date: '2026-07-08', holes_played: 18, front_nine: 41, back_nine: 42, total_putts: null, total_gir: null, total_gir_possible: null },
+        { id: 's3', player_id: 'p2', total_score: 81, score_to_par: 9, round_date: '2026-07-06', holes_played: 18, front_nine: 40, back_nine: 41, total_putts: null, total_gir: null, total_gir_possible: null },
+        { id: 's4', player_id: 'p2', total_score: 84, score_to_par: 12, round_date: '2026-07-04', holes_played: 18, front_nine: 42, back_nine: 42, total_putts: null, total_gir: null, total_gir_possible: null },
+        { id: 's5', player_id: 'p2', total_score: 80, score_to_par: 8, round_date: '2026-07-02', holes_played: 18, front_nine: 40, back_nine: 40, total_putts: null, total_gir: null, total_gir_possible: null },
+        { id: 's6', player_id: 'p2', total_score: 70, score_to_par: -2, round_date: '2026-06-20', holes_played: 18, front_nine: 35, back_nine: 35, total_putts: null, total_gir: null, total_gir_possible: null },
+        { id: 's7', player_id: 'p2', total_score: 71, score_to_par: -1, round_date: '2026-06-18', holes_played: 18, front_nine: 35, back_nine: 36, total_putts: null, total_gir: null, total_gir_possible: null },
+        { id: 's8', player_id: 'p2', total_score: 69, score_to_par: -3, round_date: '2026-06-16', holes_played: 18, front_nine: 34, back_nine: 35, total_putts: null, total_gir: null, total_gir_possible: null },
       ];
       const roundsChain = createChainableMock({ data: [...risingRounds, ...fallingRounds] });
       mockFrom.mockImplementation((table: string) => {

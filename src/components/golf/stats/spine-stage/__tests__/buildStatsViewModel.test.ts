@@ -12,6 +12,7 @@ import {
   buildCategoryTrends,
   type CategorizablePatternWithImpact,
 } from '../buildStatsViewModel';
+import { formatMetricText } from '@/lib/golf/metrics/display-registry';
 
 describe('biggestLeakArea', () => {
   it('picks putting given a fixture where sg_putting is the most negative category', () => {
@@ -209,8 +210,19 @@ describe('formatSgSigned', () => {
   it('formats a negative value with a minus sign', () => {
     expect(formatSgSigned(-0.31)).toBe('−0.31');
   });
-  it('formats exactly zero as E', () => {
-    expect(formatSgSigned(0)).toBe('E');
+  // Changed on purpose (W9, §5.2 number rule via the display registry): "E"
+  // means level par, which strokes gained is not. SG zero prints "0.00".
+  it('formats zero as 0.00, never E', () => {
+    expect(formatSgSigned(0)).toBe('0.00');
+  });
+  it('never prints a signed zero for a value that rounds to zero', () => {
+    expect(formatSgSigned(-0.004)).toBe('0.00');
+    expect(formatSgSigned(0.004)).toBe('0.00');
+  });
+  it('matches the display registry for every SG value', () => {
+    for (const v of [-2.345, -0.005, 0.125, 1.978]) {
+      expect(formatSgSigned(v)).toBe(formatMetricText('sg_total', v));
+    }
   });
   it('formats null/undefined as an em dash', () => {
     expect(formatSgSigned(null)).toBe('—');

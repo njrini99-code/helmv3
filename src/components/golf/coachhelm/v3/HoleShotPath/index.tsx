@@ -687,11 +687,11 @@ export function HoleShotPath({
   const scoreLabel = scoreToParLabel(score, par);
   const scoreColor =
     scoreLabel === null
-      ? 'text-warm-500'
+      ? 'text-text-tertiary'
       : scoreLabel === 'E'
         ? 'text-warm-700'
         : scoreLabel.startsWith('-') || ['Albatross', 'Eagle', 'Birdie'].includes(scoreLabel)
-          ? 'text-primary-600'
+          ? 'text-accent-ink'
           : 'text-rose-600';
 
   // Touch fallback: pixel-precise dot targeting is impractical at strip/
@@ -730,12 +730,12 @@ export function HoleShotPath({
           <div className="mb-2 grid min-w-0 grid-cols-[minmax(0,1fr)_auto] gap-x-1 gap-y-0.5 overflow-clip px-1">
             <div className="flex min-w-0 items-baseline gap-1 overflow-hidden whitespace-nowrap">
               {hole_number !== undefined && (
-                <span className="shrink-0 text-eyebrow uppercase tracking-[0.12em] text-warm-500">
+                <span className="shrink-0 text-eyebrow uppercase tracking-[0.12em] text-text-tertiary">
                   Hole {hole_number}
                 </span>
               )}
               {par !== undefined && (
-                <span className="shrink-0 text-eyebrow text-warm-400 tabular-nums">
+                <span className="shrink-0 text-eyebrow text-text-tertiary tabular-nums">
                   Par {par}
                 </span>
               )}
@@ -746,7 +746,7 @@ export function HoleShotPath({
               </span>
             )}
             {plot.total_yardage > 0 && (
-              <span className="col-span-2 truncate text-eyebrow text-warm-400 tabular-nums">
+              <span className="col-span-2 truncate text-eyebrow text-text-tertiary tabular-nums">
                 {Math.round(plot.total_yardage)}y
               </span>
             )}
@@ -1303,10 +1303,10 @@ export function HoleShotPath({
                   Shot {hovered.display_index} of {plot.shots.length}
                 </span>
                 {hovered.club_type && (
-                  <span className="text-warm-400">· {CLUB_LABEL[hovered.club_type] ?? hovered.club_type}</span>
+                  <span className="text-text-tertiary">· {CLUB_LABEL[hovered.club_type] ?? hovered.club_type}</span>
                 )}
               </div>
-              <div className="text-warm-500 tabular-nums">
+              <div className="text-text-tertiary tabular-nums">
                 {formatYards(hovered.shot_yards)}
                 {hovered.distance_to_pin === 0 ? (
                   <> · holed</>
@@ -1315,7 +1315,7 @@ export function HoleShotPath({
                 ) : null}
                 {hovered.miss_direction && <> · missed {hovered.miss_direction}</>}
                 {hovered.is_penalty && (
-                  <span className="ml-1.5 font-medium text-danger">
+                  <span className="ml-1.5 font-medium text-fw-danger-ink">
                     {hovered.penalty_type
                       ? `penalty: ${PENALTY_LABEL[hovered.penalty_type] ?? hovered.penalty_type}`
                       : 'penalty'}
@@ -1334,22 +1334,22 @@ export function HoleShotPath({
                   SG {formatSG(hovered.sg)}
                 </div>
               )}
-              <div className="text-warm-500">
+              <div className="text-text-tertiary">
                 {LIE_LABEL[lieBeforeShot(hoveredIndex)]} → {LIE_LABEL[hovered.lie]}
               </div>
               {hovered.lie === 'green' &&
                 (insetFeetByShotIndex.get(hoveredIndex) != null || hovered.putt_break || hovered.putt_slope) && (
-                  <div className="text-warm-500">
+                  <div className="text-text-tertiary">
                     {formatFeet(insetFeetByShotIndex.get(hoveredIndex) ?? null)}
                     {hovered.putt_break ? `, ${PUTT_BREAK_SHORT[hovered.putt_break] ?? hovered.putt_break}` : ''}
                     {hovered.putt_slope ? `, ${PUTT_SLOPE_LABEL[hovered.putt_slope] ?? hovered.putt_slope}` : ''}
                   </div>
                 )}
               {hovered.lie === 'green' && hovered.miss_tags && hovered.miss_tags.length > 0 && (
-                <div className="text-warm-500">Miss: {hovered.miss_tags.join(', ')}</div>
+                <div className="text-text-tertiary">Miss: {hovered.miss_tags.join(', ')}</div>
               )}
               {hovered.notes && (
-                <div className="mt-0.5 max-w-[200px] whitespace-normal text-warm-500 italic">
+                <div className="mt-0.5 max-w-[200px] whitespace-normal text-text-tertiary italic">
                   “{hovered.notes}”
                 </div>
               )}
@@ -1362,7 +1362,7 @@ export function HoleShotPath({
             typed in, not a GPS/laser reading. Skipped at `strip` (no room,
             18 simultaneous copies would just be noise). */}
         {variant.showHeader && (
-          <p className="mt-1.5 px-1 text-eyebrow leading-snug text-warm-400/80">
+          <p className="mt-1.5 px-1 text-eyebrow leading-snug text-text-tertiary">
             Distances are player-logged, not GPS-measured.
           </p>
         )}

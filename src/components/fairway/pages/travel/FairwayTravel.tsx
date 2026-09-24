@@ -38,8 +38,8 @@
 
 import * as React from 'react';
 import { useRouter } from 'next/navigation';
-import { useReducedMotion } from 'framer-motion';
-import { Plane } from 'lucide-react';
+import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
+import { ChevronLeft, Plane } from 'lucide-react';
 
 import {
   ViewHeader,
@@ -49,6 +49,7 @@ import {
   fairwayToast,
 } from '@/components/fairway';
 import { IconPlus } from '@/components/icons';
+import { cn } from '@/lib/utils';
 import { markTravelSeen } from '@/app/golf/actions/player-notifications';
 import { useNotificationBadges } from '@/contexts/notification-badge-context';
 import {
@@ -114,7 +115,7 @@ export function FairwayTravel({
 }: FairwayTravelProps) {
   const router = useRouter();
   const badges = useNotificationBadges();
-  const prefersReducedMotion = useReducedMotion();
+  const prefersReducedMotion = useReducedMotionGuard();
 
   const [itineraries, setItineraries] = React.useState(initialItineraries);
   const [selectedId, setSelectedId] = React.useState<string | null>(null);
@@ -144,7 +145,11 @@ export function FairwayTravel({
   // Players: mark travel seen on mount, then refresh the badge (verbatim).
   React.useEffect(() => {
     if (!isCoach) {
-      markTravelSeen().then(() => badges.refetch());
+      // Best-effort: a failed mark only leaves the badge stale until the next
+      // visit. Without the catch it surfaced as an unhandled rejection (DATA-03).
+      markTravelSeen()
+        .then(() => badges.refetch())
+        .catch(() => {});
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isCoach]);
@@ -403,7 +408,11 @@ export function FairwayTravel({
       ) : (
         <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-3 lg:items-start">
           {/* ── Itinerary list ─────────────────────────────────────────── */}
-          <div className="flex flex-col gap-3 lg:col-span-1">
+          {/* NAT-05: below lg this is a navigation stack, not a split view.
+              The list is the root; picking a trip pushes its detail in the
+              list's place, with a Back control. The "Select a trip" pane is a
+              desktop-only affordance (it read as an empty screen on a phone). */}
+          <div className={cn('flex flex-col gap-3 lg:col-span-1', selected && 'hidden lg:flex')}>
             <h3 className="px-1 font-fw-display text-eyebrow font-medium uppercase tracking-[0.14em] text-text-tertiary">
               Trips
             </h3>
@@ -435,7 +444,22 @@ export function FairwayTravel({
               desktop instead (mirrors FairwayTasks's templates rail), so it —
               and the real detail view once a trip IS selected — stay visible
               the whole time the list scrolls beside them. ─────────────────── */}
-          <div ref={detailPanelRef} className="lg:col-span-2 lg:sticky lg:top-6 lg:self-start">
+          <div
+            ref={detailPanelRef}
+            className={cn('lg:col-span-2 lg:sticky lg:top-6 lg:self-start', !selected && 'hidden lg:block')}
+          >
+            {selected ? (
+              <div className="mb-3 lg:hidden">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  leftIcon={<ChevronLeft size={16} aria-hidden />}
+                  onClick={() => setSelectedId(null)}
+                >
+                  All trips
+                </Button>
+              </div>
+            ) : null}
             {selected ? (
               <FairwayTripDetail
                 itinerary={selected}

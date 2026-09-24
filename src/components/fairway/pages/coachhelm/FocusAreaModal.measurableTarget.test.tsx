@@ -32,7 +32,7 @@ function numberFieldInputs(): HTMLInputElement[] {
 }
 
 describe('FocusAreaModal — Measurable target renders real inputs (#59)', () => {
-  it('a fresh create (with player stats) pre-selects the first metric, autofills values, and shows the unit', () => {
+  it('a fresh create (5+ countable rounds) preselects the weakest SG area and a metric for it, with values + unit (SHEET-04)', () => {
     render(
       <FocusAreaModal
         open
@@ -42,6 +42,12 @@ describe('FocusAreaModal — Measurable target renders real inputs (#59)', () =>
         playerStats={{
           p1: {
             rounds_played: 5,
+            rounds_in_calculation: 5,
+            // Off the tee is the biggest leak → Driving is preselected.
+            sg_tee_per_round: -1.4,
+            sg_approach_per_round: -0.3,
+            sg_around_green_per_round: 0.1,
+            sg_putting_per_round: -0.6,
             driving_distance: 250,
             fairway_pct: 60,
             gir_pct: 55,
@@ -69,28 +75,21 @@ describe('FocusAreaModal — Measurable target renders real inputs (#59)', () =>
     expect(screen.getAllByText('yds').length).toBeGreaterThanOrEqual(2);
   });
 
-  it('a fresh create with NO player stats still pre-selects a metric + shows its unit (fields never look decorative)', () => {
+  it('a fresh create with too little data picks no category and asks (SHEET-04)', () => {
     render(
       <FocusAreaModal
         open
         onOpenChange={() => {}}
         mode="player"
         playerId="p1"
-        playerStats={{}}
+        playerStats={{ p1: { rounds_played: 3, avg_score: 80, avg_putts: 31, fairway_pct: 50, gir_pct: 40, sg_tee_per_round: -2 } }}
         onSubmit={vi.fn().mockResolvedValue({ success: true })}
       />,
     );
 
-    const active = document.querySelector('[aria-pressed="true"]');
-    expect(active).not.toBeNull();
-
-    const inputs = numberFieldInputs();
-    expect(inputs).toHaveLength(2);
-    // No stats to autofill from — the numeric inputs are legitimately empty...
-    expect(inputs[0]?.value).toBe('');
-    // ...but the unit is still shown, so an empty box still reads as a real,
-    // metric-scoped input rather than inert decoration.
-    expect(screen.getAllByText('yds').length).toBeGreaterThanOrEqual(2);
+    expect(screen.getByText('Pick a category')).toBeInTheDocument();
+    expect(document.querySelector('[aria-pressed="true"]')).toBeNull();
+    expect(screen.getByRole('button', { name: 'Add focus area' })).toBeDisabled();
   });
 
   it('editing an existing focus area keeps the caller-resolved initial values untouched', () => {

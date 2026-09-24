@@ -98,6 +98,16 @@ export function ciMultiplier(n: number): number {
   return 1.28 * Math.sqrt(n / (n - 2));
 }
 
+/**
+ * A signed stroke delta for driver text (NUM-07): always carries its sign
+ * ("+0.4", "−1.2", true minus), one decimal. Positive = more strokes.
+ */
+function signedStrokes(n: number): string {
+  const r = Math.round(n * 10) / 10;
+  if (r === 0) return '0.0';
+  return r > 0 ? `+${r.toFixed(1)}` : `\u2212${Math.abs(r).toFixed(1)}`;
+}
+
 /** Build a data-backed driver description naming the actual numbers. */
 export function describeFactor(
   key: string,
@@ -107,11 +117,12 @@ export function describeFactor(
   const worse = contribution > 0; // positive contribution raises score_to_par = worse
   switch (key) {
     case 'recentForm': {
-      const fs = features.temporal.recentFormScore;
+      // NUM-07 / OD-02: this is not the 0–100 Form score, so it must not be
+      // called "form score". Say what it does to the estimate, in strokes.
       const dir = worse ? 'below your baseline' : 'sharper than your baseline';
       return {
         name: 'Recent Form',
-        explanation: `Your last 5 rounds are scoring ${dir} (form score ${fs.toFixed(2)}).`,
+        explanation: `Your last 5 rounds are scoring ${dir} (${signedStrokes(contribution)} strokes on the estimate).`,
       };
     }
     case 'trendMomentum':
@@ -148,7 +159,7 @@ export function describeFactor(
           : 'A historical context pattern that helps your scoring applies here.',
       };
     default:
-      return { name: key, explanation: `Adjusts the estimate by ${contribution.toFixed(2)} strokes.` };
+      return { name: key, explanation: `Adjusts the estimate by ${signedStrokes(contribution)} strokes.` };
   }
 }
 

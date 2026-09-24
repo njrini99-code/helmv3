@@ -94,12 +94,19 @@ function initials(first: string | null, last: string | null): string {
   return `${first?.[0] ?? ''}${last?.[0] ?? ''}`.toUpperCase() || EM_DASH;
 }
 
-function formatDate(value: string | null): string {
+/**
+ * A timestamp as a calendar date in the TEAM's zone. The locale and zone used
+ * to be the runtime default (`undefined`): Node's on the server, the browser's
+ * on the client, so the server markup and hydration disagreed near midnight
+ * (audit HYD-03). Both are explicit now.
+ */
+function formatDate(value: string | null, timeZone: string | null | undefined): string {
   if (!value) return EM_DASH;
-  return new Date(value).toLocaleDateString(undefined, {
+  return new Date(value).toLocaleDateString('en-US', {
     year: 'numeric',
     month: 'long',
     day: 'numeric',
+    timeZone: timeZone || 'America/New_York',
   });
 }
 
@@ -288,7 +295,7 @@ export function FairwayTeamInfo({
                     </p>
                   ) : null}
                   <p className="mt-2 font-fw-sans text-caption text-text-tertiary">
-                    {a.created_at ? formatDate(a.created_at) : EM_DASH}
+                    {a.created_at ? formatDate(a.created_at, team.timezone) : EM_DASH}
                   </p>
                 </Surface>
               ))}
@@ -512,7 +519,7 @@ export function FairwayTeamInfo({
                   Established
                 </dt>
                 <dd className="mt-0.5 font-fw-sans text-body font-medium text-text-primary">
-                  {formatDate(team.created_at)}
+                  {formatDate(team.created_at, team.timezone)}
                 </dd>
               </div>
             </dl>

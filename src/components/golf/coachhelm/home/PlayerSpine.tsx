@@ -63,12 +63,12 @@ export function PlayerSpine({ hero, verdict, track, priorities, ledger, classNam
              chips; wrapping costs one line and shows all of them. */
           <div className="mt-3 flex min-w-0 flex-wrap gap-2 border-t border-white/15 pt-3 lg:flex-nowrap lg:overflow-x-auto lg:[scrollbar-width:none] lg:[&::-webkit-scrollbar]:hidden">
             {priorities.map((item) => (
-              <span key={`${item.rank}-${item.title}`} className="shrink-0 rounded-full bg-accent-650 px-3 py-1.5 font-fw-sans text-caption text-ink-on-deep">
+              <span key={`${item.rank}-${item.title}`} className="shrink-0 rounded-full bg-accent-fill px-3 py-1.5 font-fw-sans text-caption text-text-on-accent-fill">
                 {item.title} <b className="ml-1 font-fw-mono font-medium tabular-nums text-text-on-accent">{item.value}</b>
               </span>
             ))}
             {ledger.map((item) => (
-              <span key={item.label} className="shrink-0 rounded-full bg-accent-650 px-3 py-1.5 font-fw-sans text-caption text-ink-on-deep">
+              <span key={item.label} className="shrink-0 rounded-full bg-accent-fill px-3 py-1.5 font-fw-sans text-caption text-text-on-accent-fill">
                 {item.label} <b className="ml-1 font-fw-mono font-medium tabular-nums text-text-on-accent">{item.value}</b>
               </span>
             ))}

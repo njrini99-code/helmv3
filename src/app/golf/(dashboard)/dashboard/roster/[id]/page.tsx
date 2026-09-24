@@ -26,11 +26,11 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     .maybeSingle();
 
   if (!player) {
-    return { title: 'Player Not Found | Helm Golf' };
+    return { title: 'Player Not Found' };
   }
 
   return {
-    title: `${player.first_name} ${player.last_name} | Helm Golf`,
+    title: `${player.first_name} ${player.last_name}`,
     description: `View ${player.first_name} ${player.last_name}'s golf profile and stats`,
   };
 }

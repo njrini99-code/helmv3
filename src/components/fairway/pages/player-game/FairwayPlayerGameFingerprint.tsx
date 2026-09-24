@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 /**
  * ============================================================================
@@ -31,33 +31,46 @@
  * revert-on-failure as before.
  * ========================================================================== */
 
-import { useCallback, useMemo, useState, useTransition, type ReactNode } from 'react';
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import {
+  useCallback,
+  useMemo,
+  useState,
+  useTransition,
+  type ReactNode,
+} from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 
-import { fairwayToast } from '@/components/fairway';
-import { Sheet } from '@/components/fairway/overlays/Sheet';
-import { PopoverPanel } from '@/components/fairway/overlays/PopoverPanel';
-import { IconMoreHorizontal } from '@/components/icons';
+import { fairwayToast } from "@/components/fairway";
+import { Sheet } from "@/components/fairway/overlays/Sheet";
+import { Segmented } from "@/components/fairway/controls/segmented";
+import { PopoverPanel } from "@/components/fairway/overlays/PopoverPanel";
+import { IconMoreHorizontal } from "@/components/icons";
 
-import type { PlayerFingerprint } from '@/app/golf/actions/player-fingerprint';
+import type { PlayerFingerprint } from "@/app/golf/actions/player-fingerprint";
 import {
   FINGERPRINT_SECTION_ORDER,
   type FingerprintSectionKey,
-
-} from '@/app/golf/actions/player-fingerprint-types';
+} from "@/app/golf/actions/player-fingerprint-types";
 // PRESERVED WRITE ACTIONS — imported UNCHANGED.
-import { acknowledgeInsight, dismissInsight } from '@/app/golf/actions/insights';
-import { createFocusAreaFromInsight, createPlayerFocusArea } from '@/app/golf/actions/development';
-import { rateInsightAsPlayer } from '@/app/golf/actions/player-feedback';
-import { useGolfUser } from '@/contexts/golf-user-context';
-import { DEFAULT_TIMEZONE } from '@/lib/calendar/timezone';
-import { cn } from '@/lib/utils';
+import {
+  acknowledgeInsight,
+  dismissInsight,
+} from "@/app/golf/actions/insights";
+import {
+  createFocusAreaFromInsight,
+  createPlayerFocusArea,
+} from "@/app/golf/actions/development";
+import { rateInsightAsPlayer } from "@/app/golf/actions/player-feedback";
+import { useGolfUser } from "@/contexts/golf-user-context";
+import { DEFAULT_TIMEZONE } from "@/lib/calendar/timezone";
+import { cn } from "@/lib/utils";
 
 import {
-  FORM_FORMULA,
   buildAreas,
   buildClaim,
+  buildScopeWaterfall,
+  sgScopeOptions,
   buildVerdict,
   buildWaterfall,
   formatSignedValue,
@@ -65,9 +78,9 @@ import {
   presentForm,
   type AreaView,
   type SgAreaKey,
-} from './fingerprint/fingerprint-model';
-import { StrokesWaterfall } from './fingerprint/StrokesWaterfall';
-import { ClaimRow, type ClaimAction } from './fingerprint/ClaimRow';
+} from "./fingerprint/fingerprint-model";
+import { StrokesWaterfall } from "./fingerprint/StrokesWaterfall";
+import { ClaimRow, type ClaimAction } from "./fingerprint/ClaimRow";
 import {
   FairwayStrip,
   MissCompass,
@@ -77,13 +90,13 @@ import {
   RateMeters,
   StatLine,
   statItems,
-} from './fingerprint/instruments';
+} from "./fingerprint/instruments";
 
 /* ───────────────────────────────────────────────────────────────────────────
  * Props
  * ────────────────────────────────────────────────────────────────────────── */
 
-export type FingerprintMode = 'coach' | 'player';
+export type FingerprintMode = "coach" | "player";
 
 export interface FairwayPlayerGameFingerprintProps {
   fingerprint: PlayerFingerprint;
@@ -112,12 +125,12 @@ const SECTION_SAMPLE_FLOOR = 5;
 
 /** Player-mode "Add to my plan": fingerprint section → `area_type`. */
 const AREA_TYPE_BY_SECTION: Record<FingerprintSectionKey, string> = {
-  tee: 'driving',
-  approach: 'iron_play',
-  short_game: 'short_game',
-  putting: 'putting',
-  scoring: 'course_management',
-  pressure: 'mental_game',
+  tee: "driving",
+  approach: "iron_play",
+  short_game: "short_game",
+  putting: "putting",
+  scoring: "course_management",
+  pressure: "mental_game",
 };
 
 /**
@@ -126,11 +139,11 @@ const AREA_TYPE_BY_SECTION: Record<FingerprintSectionKey, string> = {
  */
 export function formatGeneratedAt(iso: string): string {
   const date = new Date(iso);
-  if (Number.isNaN(date.getTime())) return '';
-  return new Intl.DateTimeFormat('en-US', {
+  if (Number.isNaN(date.getTime())) return "";
+  return new Intl.DateTimeFormat("en-US", {
     timeZone: DEFAULT_TIMEZONE,
-    dateStyle: 'medium',
-    timeStyle: 'short',
+    dateStyle: "medium",
+    timeStyle: "short",
   }).format(date);
 }
 
@@ -140,14 +153,14 @@ export function formatGeneratedAt(iso: string): string {
 
 export function FairwayPlayerGameFingerprint({
   fingerprint,
-  mode = 'coach',
+  mode = "coach",
   sectionAddenda,
   approachLadder,
 }: FairwayPlayerGameFingerprintProps) {
   const router = useRouter();
   const golfUser = useGolfUser();
   const coachId = golfUser.coachId ?? null;
-  const isCoachMode = mode === 'coach';
+  const isCoachMode = mode === "coach";
   const [, startActionTransition] = useTransition();
 
   // Mirror insight lists per section into local state so actions (ack / dismiss
@@ -156,59 +169,68 @@ export function FairwayPlayerGameFingerprint({
   const [pendingIds, setPendingIds] = useState<ReadonlySet<string>>(new Set());
 
   const handleAction = useCallback(
-    (action: 'acknowledged' | 'dismissed' | 'create_focus_area', insightId: string) => {
+    (
+      action: "acknowledged" | "dismissed" | "create_focus_area",
+      insightId: string,
+    ) => {
       if (pendingIds.has(insightId)) return;
       const prev = sections;
       setPendingIds((current) => new Set(current).add(insightId));
       startActionTransition(async () => {
         try {
-          if (action === 'acknowledged') {
+          if (action === "acknowledged") {
             setSections((current) =>
               mapInsights(current, insightId, (i) => ({
                 ...i,
                 acknowledged_at: new Date().toISOString(),
-                status: 'acknowledged' as const,
+                status: "acknowledged" as const,
               })),
             );
             if (isCoachMode) {
               const res = await acknowledgeInsight(insightId);
               if (!res.success) {
                 setSections(prev);
-                fairwayToast.error(res.error ?? 'Could not acknowledge this insight.');
+                fairwayToast.error(
+                  res.error ?? "Could not acknowledge this insight.",
+                );
               } else {
-                fairwayToast.success('Insight acknowledged.');
+                fairwayToast.success("Insight acknowledged.");
               }
             } else {
               // Player-self path — writes `golf_insight_player_feedback`, the
               // SAME round-trip the Insights sub-tab's `onRate` uses. Throws
               // on failure (no `.success` flag), caught by the shared catch
               // below, which already reverts + toasts identically.
-              await rateInsightAsPlayer({ insightId, rating: 'acknowledged' });
-              fairwayToast.success('Insight acknowledged.');
+              await rateInsightAsPlayer({ insightId, rating: "acknowledged" });
+              fairwayToast.success("Insight acknowledged.");
             }
-          } else if (action === 'dismissed') {
+          } else if (action === "dismissed") {
             setSections((current) => removeInsight(current, insightId));
             if (isCoachMode) {
               const res = await dismissInsight(insightId);
               if (!res.success) {
                 setSections(prev);
-                fairwayToast.error(res.error ?? 'Could not dismiss this insight.');
+                fairwayToast.error(
+                  res.error ?? "Could not dismiss this insight.",
+                );
               } else {
-                fairwayToast.success('Insight dismissed.');
+                fairwayToast.success("Insight dismissed.");
               }
             } else {
-              await rateInsightAsPlayer({ insightId, rating: 'dismissed' });
-              fairwayToast.success('Insight dismissed.');
+              await rateInsightAsPlayer({ insightId, rating: "dismissed" });
+              fairwayToast.success("Insight dismissed.");
             }
-          } else if (action === 'create_focus_area') {
+          } else if (action === "create_focus_area") {
             const target = findInsight(sections, insightId);
             if (!target) {
-              fairwayToast.error('That insight is no longer available.');
+              fairwayToast.error("That insight is no longer available.");
               return;
             }
             if (isCoachMode) {
               if (!coachId) {
-                fairwayToast.error('A coach profile is required to create a focus area.');
+                fairwayToast.error(
+                  "A coach profile is required to create a focus area.",
+                );
                 return;
               }
               const res = await createFocusAreaFromInsight({
@@ -216,16 +238,19 @@ export function FairwayPlayerGameFingerprint({
                 player_id: target.player_id,
                 coach_id: coachId,
                 title: target.title,
-                description: target.content ?? '',
-                insight_type: (target.category as string | undefined) ?? 'general',
+                description: target.content ?? "",
+                insight_type:
+                  (target.category as string | undefined) ?? "general",
               });
               if (res.success) {
-                fairwayToast.success('Focus area created.');
+                fairwayToast.success("Focus area created.");
                 router.push(
                   `/golf/dashboard/intelligence?view=players&player=${target.player_id}&playersTab=areas`,
                 );
               } else {
-                fairwayToast.error(res.error ?? 'Could not create the focus area.');
+                fairwayToast.error(
+                  res.error ?? "Could not create the focus area.",
+                );
               }
             } else {
               // Player-self path — no coach attribution (`createPlayerFocusArea`
@@ -238,7 +263,9 @@ export function FairwayPlayerGameFingerprint({
               const sectionKey = findInsightSection(sections, insightId);
               const res = await createPlayerFocusArea({
                 player_id: target.player_id,
-                area_type: sectionKey ? AREA_TYPE_BY_SECTION[sectionKey] : 'other',
+                area_type: sectionKey
+                  ? AREA_TYPE_BY_SECTION[sectionKey]
+                  : "other",
                 title: target.title,
                 description: target.content ?? null,
                 target_metric: target.evidence?.metric ?? null,
@@ -247,16 +274,18 @@ export function FairwayPlayerGameFingerprint({
                 from_insight_id: target.id,
               });
               if (res.success) {
-                fairwayToast.success('Added to your development plan.');
-                router.push('/golf/dashboard/coachhelm?view=development');
+                fairwayToast.success("Added to your development plan.");
+                router.push("/golf/dashboard/coachhelm?view=development");
               } else {
-                fairwayToast.error(res.error ?? 'Could not create the focus area.');
+                fairwayToast.error(
+                  res.error ?? "Could not create the focus area.",
+                );
               }
             }
           }
         } catch {
           setSections(prev);
-          fairwayToast.error('That action did not complete. Try again.');
+          fairwayToast.error("That action did not complete. Try again.");
         } finally {
           setPendingIds((current) => {
             const next = new Set(current);
@@ -275,32 +304,69 @@ export function FairwayPlayerGameFingerprint({
   );
 
   const { player, composite, generated_at: generatedAt } = fingerprint;
-  const fullName = `${player.first_name ?? ''} ${player.last_name ?? ''}`.trim() || 'Player';
+  const fullName =
+    `${player.first_name ?? ""} ${player.last_name ?? ""}`.trim() || "Player";
   const metricsSample = fingerprint.metrics_rounds;
 
-  const waterfall = useMemo(() => buildWaterfall(fingerprint.sections), [fingerprint.sections]);
+  const waterfall = useMemo(
+    () => buildWaterfall(fingerprint.sections),
+    [fingerprint.sections],
+  );
   const verdict = buildVerdict(waterfall);
+  // FP-09: the stage can read the last 5 / last 10 / all countable rounds.
+  // The verdict, ledger and sheet stay on all rounds (the ledger metrics are
+  // all-rounds cache values); only the stage and its caption switch.
+  const scopeOptions = useMemo(
+    () => sgScopeOptions(fingerprint.sg_scopes),
+    [fingerprint.sg_scopes],
+  );
+  const [scopeKey, setScopeKey] = useState<(typeof scopeOptions)[number]["key"]>("all");
+  const activeScope =
+    scopeKey === "all"
+      ? null
+      : (fingerprint.sg_scopes?.find((sc) => sc.key === scopeKey) ?? null);
+  const activeScopeOption = scopeOptions.find((o) => o.key === scopeKey) ?? null;
+  const stageWaterfall = useMemo(
+    () => (activeScope ? buildScopeWaterfall(activeScope) : waterfall),
+    [activeScope, waterfall],
+  );
   const form = presentForm(composite);
   const areas = useMemo(
-    () => buildAreas(orderedSections, waterfall, (key) => Boolean(sectionAddenda?.[key]) || (key === 'approach' && Boolean(approachLadder))),
-    [orderedSections, waterfall, sectionAddenda, approachLadder],
+    () =>
+      buildAreas(
+        orderedSections,
+        waterfall,
+        (key) =>
+          Boolean(sectionAddenda?.[key]) ||
+          (key === "approach" && metricsSample > 0 && Boolean(approachLadder)),
+      ),
+    [orderedSections, waterfall, sectionAddenda, approachLadder, metricsSample],
   );
   const shownAreas = areas.filter((a) => !a.empty);
-  const emptyAreas = areas.filter((a) => a.empty);
+  // STATE-R1: ONE empty state for every area still waiting on rounds, whether
+  // it is hidden (no claims) or shown for its claims without a chart. Before,
+  // each shown sparse area repeated "Not enough rounds to chart this yet".
+  const waitingAreas = areas.filter((a) => a.section.sparse);
   const earlyRead = metricsSample > 0 && metricsSample < SECTION_SAMPLE_FLOOR;
 
   const [sheetKey, setSheetKey] = useState<SgAreaKey | null>(null);
-  const sheetArea = sheetKey ? areas.find((a) => a.key === sheetKey) ?? null : null;
+  const sheetArea = sheetKey
+    ? (areas.find((a) => a.key === sheetKey) ?? null)
+    : null;
 
   const onClaimAction = useCallback(
     (action: ClaimAction, insightId: string) => handleAction(action, insightId),
     [handleAction],
   );
 
-  const roundsLabel = `${metricsSample} tracked ${metricsSample === 1 ? 'round' : 'rounds'}`;
+  const roundsLabel = `${metricsSample} tracked ${metricsSample === 1 ? "round" : "rounds"}`;
 
   return (
-    <article className="mx-auto w-full max-w-[1160px] overflow-x-clip" data-slot="game-fingerprint" data-mode={mode}>
+    <article
+      className="mx-auto w-full max-w-[1160px] overflow-x-clip"
+      data-slot="game-fingerprint"
+      data-mode={mode}
+    >
       <div className="flex flex-col gap-8 lg:grid lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:items-start lg:gap-12">
         {/* ════════════ Left column (sticky on desktop): masthead + stage ═══════════ */}
         <div className="flex flex-col gap-8 lg:sticky lg:top-6">
@@ -308,57 +374,105 @@ export function FairwayPlayerGameFingerprint({
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
                 {isCoachMode ? (
-                  <h1 className="font-fw-display text-h1 text-text-primary md:text-display">{fullName}</h1>
+                  <h1 className="font-fw-display text-h1 text-text-primary md:text-display">
+                    {fullName}
+                  </h1>
                 ) : null}
-                <p className={cn('font-fw-sans text-caption text-text-tertiary', isCoachMode && 'mt-1')}>
+                <p
+                  className={cn(
+                    "font-fw-sans text-caption text-text-tertiary",
+                    isCoachMode && "mt-1",
+                  )}
+                >
                   Game Fingerprint
-                  {player.team_name ? ` · ${player.team_name}` : ''}
-                  {metricsSample > 0 ? ` · ${roundsLabel}` : ''}
+                  {player.team_name ? ` · ${player.team_name}` : ""}
+                  {metricsSample > 0 ? ` · ${roundsLabel}` : ""}
                 </p>
               </div>
               {isCoachMode ? <CoachMoreMenu playerId={player.id} /> : null}
             </div>
 
-            <p className="max-w-[40ch] font-fw-sans text-body-lg text-text-primary" data-slot="fingerprint-verdict">
+            <p
+              className="max-w-[40ch] font-fw-sans text-body-lg text-text-primary"
+              data-slot="fingerprint-verdict"
+            >
               {verdict ??
                 (metricsSample > 0
                   ? `Strokes gained has not been measured yet across ${roundsLabel}.`
-                  : 'No rounds logged yet. The fingerprint fills in after the first tracked round.')}
+                  : "No rounds logged yet. The fingerprint fills in after the first tracked round.")}
             </p>
 
             <FormLine form={form} />
           </header>
 
           {/* ── Signature instrument ── */}
-          <section aria-labelledby="fp-strokes-heading" data-slot="fingerprint-stage">
+          <section
+            aria-labelledby="fp-strokes-heading"
+            data-slot="fingerprint-stage"
+          >
             <div className="flex items-baseline justify-between gap-3 border-b border-border-subtle pb-2">
-              <h2 id="fp-strokes-heading" className="font-fw-display text-h3 text-text-primary">
+              <h2
+                id="fp-strokes-heading"
+                className="font-fw-display text-h3 text-text-primary"
+              >
                 Where the strokes go
               </h2>
-              <span className="font-fw-sans text-caption text-text-tertiary">per round</span>
+              <span className="font-fw-sans text-caption text-text-tertiary">
+                per round
+              </span>
             </div>
-            {waterfall.measuredCount > 0 ? (
-              <div className={cn('pt-3', earlyRead && 'opacity-60')}>
-                <StrokesWaterfall waterfall={waterfall} onSelect={setSheetKey} />
+            {scopeOptions.length > 1 && waterfall.measuredCount > 0 ? (
+              <div className="pt-3" data-slot="fingerprint-scope">
+                <Segmented
+                  options={scopeOptions.map((o) => ({ value: o.key, label: o.label }))}
+                  value={scopeKey}
+                  onValueChange={setScopeKey}
+                  size="sm"
+                  aria-label="Rounds the strokes-gained chart reads"
+                />
+              </div>
+            ) : null}
+            {stageWaterfall.measuredCount > 0 ? (
+              <div className={cn("pt-3", earlyRead && !activeScope && "opacity-60")}>
+                <StrokesWaterfall
+                  waterfall={stageWaterfall}
+                  onSelect={setSheetKey}
+                />
               </div>
             ) : (
               <p className="py-6 font-fw-sans text-body-sm text-text-secondary">
                 Strokes gained needs shot-tracked rounds. Nothing to draw yet.
               </p>
             )}
-            <p className="mt-2 font-fw-sans text-caption text-text-tertiary">
-              {earlyRead ? `Early read · ${roundsLabel}. ` : ''}
-              Strokes gained per round across all {roundsLabel}
-              {waterfall.measuredCount > 0 && waterfall.measuredCount < 4
-                ? `; net covers the ${waterfall.measuredCount} measured areas`
-                : ''}
-              . Tap a row for the evidence.
-            </p>
+            {stageWaterfall.measuredCount > 0 ? (
+              <p className="mt-2 font-fw-sans text-caption text-text-tertiary">
+                {earlyRead && !activeScope ? `Early read · ${roundsLabel}. ` : ""}
+                Strokes gained per round across{" "}
+                {activeScope && activeScopeOption
+                  ? activeScopeOption.phrase
+                  : `all ${roundsLabel}`}
+                {stageWaterfall.measuredCount > 0 && stageWaterfall.measuredCount < 4
+                  ? `; net covers the ${stageWaterfall.measuredCount} measured areas`
+                  : ""}
+                . Tap a row for the evidence.
+              </p>
+            ) : null}
           </section>
         </div>
 
         {/* ════════════ Right column: the ledger ═══════════ */}
         <div className="flex flex-col gap-10" data-slot="fingerprint-ledger">
+          {waitingAreas.length > 0 ? (
+            <p
+              className="font-fw-sans text-body-sm text-text-secondary"
+              data-slot="fingerprint-empty-areas"
+            >
+              <span className="text-text-primary">Waiting on more rounds:</span>{" "}
+              {joinNames(waitingAreas.map((a) => a.title))}. Each chart needs{" "}
+              {SECTION_SAMPLE_FLOOR} rounds.
+            </p>
+          ) : null}
+
           {shownAreas.map((area) => (
             <AreaSection
               key={area.key}
@@ -367,17 +481,15 @@ export function FairwayPlayerGameFingerprint({
               pendingIds={pendingIds}
               onAction={onClaimAction}
               addendum={sectionAddenda?.[area.key]}
-              approachLadder={area.key === 'approach' ? approachLadder : undefined}
+              approachLadder={
+                area.key === "approach" ? approachLadder : undefined
+              }
             />
           ))}
 
-          {emptyAreas.length > 0 ? (
-            <p className="border-t border-border-subtle pt-4 font-fw-sans text-body-sm text-text-secondary" data-slot="fingerprint-empty-areas">
-              <span className="text-text-primary">Waiting on more rounds:</span> {joinNames(emptyAreas.map((a) => a.title))}.
-            </p>
-          ) : null}
-
-          <p className="font-fw-sans text-caption text-text-tertiary">Updated {formatGeneratedAt(generatedAt)}</p>
+          <p className="font-fw-sans text-caption text-text-tertiary">
+            Updated {formatGeneratedAt(generatedAt)}
+          </p>
         </div>
       </div>
 
@@ -386,7 +498,7 @@ export function FairwayPlayerGameFingerprint({
         onOpenChange={(open) => {
           if (!open) setSheetKey(null);
         }}
-        title={sheetArea?.title ?? 'Evidence'}
+        title={sheetArea?.title ?? "Evidence"}
         description={
           sheetArea?.sg != null
             ? `${formatSignedValue(sheetArea.sg)} strokes per round · all ${roundsLabel}`
@@ -399,11 +511,18 @@ export function FairwayPlayerGameFingerprint({
             {sheetArea.section.insights.length > 0 ? (
               <ul className="flex flex-col">
                 {sheetArea.section.insights.map((insight) => (
-                  <ClaimRow key={insight.id} claim={buildClaim(insight)} mode={mode} readOnly />
+                  <ClaimRow
+                    key={insight.id}
+                    claim={buildClaim(insight)}
+                    mode={mode}
+                    readOnly
+                  />
                 ))}
               </ul>
             ) : (
-              <p className="font-fw-sans text-body-sm text-text-secondary">CoachHelm has no claims in this area yet.</p>
+              <p className="font-fw-sans text-body-sm text-text-secondary">
+                CoachHelm has no claims in this area yet.
+              </p>
             )}
             <a
               href={`#fingerprint-${sheetArea.key}`}
@@ -420,54 +539,73 @@ export function FairwayPlayerGameFingerprint({
 }
 
 /* ════════════════════════════════════════════════════════════════════════════
- * Form: one number, formula on tap. Never a confident 0 or 100.
+ * Form (OD-02): one number, formula on tap. It never reaches 100; under 5
+ * countable rounds it says "Early read".
  * ══════════════════════════════════════════════════════════════════════════ */
 
 function FormLine({ form }: { form: ReturnType<typeof presentForm> }) {
   const [open, setOpen] = useState(false);
-  if (form.kind === 'none') {
+  if (form.kind === "none") {
     return (
       <p className="font-fw-sans text-body-sm text-text-secondary">
-        Form appears after {SECTION_SAMPLE_FLOOR} rounds{form.rounds > 0 ? ` · ${form.rounds} so far` : ''}.
+        Form appears after the first full round.
       </p>
     );
   }
   const trendInk =
-    form.trendWord === 'improving' ? 'text-fw-success-ink' : form.trendWord === 'slipping' ? 'text-fw-warning-ink' : 'text-text-secondary';
+    form.trendWord === "improving"
+      ? "text-fw-success-ink"
+      : form.trendWord === "slipping"
+        ? "text-fw-warning-ink"
+        : "text-text-secondary";
   const muted = form.early || form.capped != null;
   return (
     <div data-slot="fingerprint-form">
+      {/* eslint-disable-next-line helm/no-raw-button -- full-width disclosure row (Form line) that expands its formula; <Button> is a pill, not a row */}
       <button
         type="button"
         aria-expanded={open}
         aria-controls="fp-form-formula"
         onClick={() => setOpen((v) => !v)}
         className={cn(
-          '-ml-2 inline-flex min-h-[44px] flex-wrap items-baseline gap-x-2 rounded-fw-sm px-2 text-left font-fw-sans text-body outline-none',
-          'transition-colors [transition-duration:150ms] active:bg-surface-sunken focus-visible:ring-2 focus-visible:ring-border-focus',
-          '[@media(hover:hover)]:hover:bg-surface-sunken',
+          "-ml-2 inline-flex min-h-[44px] flex-wrap items-baseline gap-x-2 rounded-fw-sm px-2 text-left font-fw-sans text-body outline-none",
+          "transition-colors [transition-duration:150ms] active:bg-surface-sunken focus-visible:ring-2 focus-visible:ring-border-focus",
+          "[@media(hover:hover)]:hover:bg-surface-sunken",
         )}
       >
         <span className="text-text-secondary">Form</span>
-        <span className={cn('font-semibold tabular-nums', muted ? 'text-text-secondary' : 'text-text-primary')}>
+        <span
+          className={cn(
+            "font-semibold tabular-nums",
+            muted ? "text-text-secondary" : "text-text-primary",
+          )}
+        >
           {form.value}
         </span>
         {form.capped ? (
-          <span className="text-body-sm text-text-secondary">at the {form.capped === 'top' ? '100' : '0'} cap</span>
+          <span className="text-body-sm text-text-secondary">at the floor</span>
         ) : null}
-        {form.early ? <span className="text-body-sm text-text-secondary">Early read</span> : null}
-        <span className={cn('text-body-sm', trendInk)}>{form.trendWord}</span>
+        {form.qualityLabel ? (
+          <span className="text-body-sm text-text-secondary">{form.qualityLabel}</span>
+        ) : null}
+        <span className={cn("text-body-sm", trendInk)}>{form.trendWord}</span>
         <span className="text-body-sm text-text-tertiary">
-          · {form.rounds} {form.rounds === 1 ? 'round' : 'rounds'} · {open ? 'hide formula' : 'how it’s figured'}
+          · last {form.rounds} {form.rounds === 1 ? "round" : "rounds"} ·{" "}
+          {open ? "hide formula" : "how it’s figured"}
         </span>
       </button>
       {open ? (
-        <p id="fp-form-formula" className="mt-1 max-w-[56ch] font-fw-sans text-body-sm text-text-secondary">
-          {FORM_FORMULA}
-          {form.capped
-            ? ` This one sits on the ${form.capped === 'top' ? 'top' : 'bottom'} of the scale, so the real reading is past it. Check the recent rounds before quoting it.`
-            : ''}
-        </p>
+        <div
+          id="fp-form-formula"
+          className="mt-1 flex max-w-[56ch] flex-col gap-1 font-fw-sans text-body-sm text-text-secondary"
+        >
+          {form.formula.map((line) => (
+            <p key={line}>{line}</p>
+          ))}
+          {form.capped ? (
+            <p>This one sits on the floor of the scale, so the real reading is below it. Check the recent rounds before quoting it.</p>
+          ) : null}
+        </div>
       ) : (
         <span id="fp-form-formula" hidden />
       )}
@@ -482,9 +620,12 @@ function FormLine({ form }: { form: ReturnType<typeof presentForm> }) {
 function CoachMoreMenu({ playerId }: { playerId: string }) {
   const [open, setOpen] = useState(false);
   const links = [
-    { href: `/golf/dashboard/players/${playerId}/game/print`, label: 'Print report' },
-    { href: `/golf/dashboard/players/${playerId}/genome`, label: 'Genome' },
-    { href: `/golf/dashboard/roster/${playerId}`, label: 'Player page' },
+    {
+      href: `/golf/dashboard/players/${playerId}/game/print`,
+      label: "Print report",
+    },
+    { href: `/golf/dashboard/players/${playerId}/genome`, label: "Genome" },
+    { href: `/golf/dashboard/roster/${playerId}`, label: "Player page" },
   ];
   return (
     <PopoverPanel
@@ -494,13 +635,14 @@ function CoachMoreMenu({ playerId }: { playerId: string }) {
       align="end"
       ariaLabel="More for this player"
       trigger={
+        // eslint-disable-next-line helm/no-raw-button -- icon-only overflow trigger passed to the menu primitive, which needs a forwardable native button
         <button
           type="button"
           aria-label="More for this player"
           className={cn(
-            '-mr-2 inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-text-secondary outline-none',
-            'transition-colors [transition-duration:150ms] active:bg-surface-sunken focus-visible:ring-2 focus-visible:ring-border-focus',
-            '[@media(hover:hover)]:hover:bg-surface-sunken',
+            "-mr-2 inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-text-secondary outline-none",
+            "transition-colors [transition-duration:150ms] active:bg-surface-sunken focus-visible:ring-2 focus-visible:ring-border-focus",
+            "[@media(hover:hover)]:hover:bg-surface-sunken",
           )}
         >
           <IconMoreHorizontal size={20} aria-hidden="true" />
@@ -528,43 +670,53 @@ function CoachMoreMenu({ playerId }: { playerId: string }) {
  * One ledger section per area: header, one instrument, claims inline.
  * ══════════════════════════════════════════════════════════════════════════ */
 
-function AreaInstruments({ area, approachLadder }: { area: AreaView; approachLadder?: ReactNode }) {
+function AreaInstruments({
+  area,
+  approachLadder,
+}: {
+  area: AreaView;
+  approachLadder?: ReactNode;
+}) {
   const s = area.section;
-  if (s.sparse) {
-    return (
-      <p className="font-fw-sans text-body-sm text-text-secondary">
-        Not enough rounds to chart this yet. It needs {SECTION_SAMPLE_FLOOR}.
-      </p>
-    );
-  }
+  // The ledger's one "Waiting on more rounds" line names this area already.
+  if (s.sparse) return null;
   switch (area.key) {
-    case 'tee':
+    case "tee":
       return <FairwayStrip section={s} />;
-    case 'approach':
+    case "approach":
       return (
         <div className="flex flex-col gap-6">
-          <StatLine items={statItems(s, ['GIR', 'Proximity'])} />
+          <StatLine items={statItems(s, ["GIR", "Proximity"])} />
           {approachLadder}
           <MissCompass section={s} />
         </div>
       );
-    case 'short_game':
-      return <RateMeters section={s} labels={['Up-and-down', 'Scrambling', 'Sand saves']} />;
-    case 'putting':
+    case "short_game":
+      return (
+        <RateMeters
+          section={s}
+          labels={["Up-and-down", "Scrambling", "Sand saves"]}
+        />
+      );
+    case "putting":
       return (
         <div className="flex flex-col gap-4">
           <PuttingMakeCurve section={s} />
-          <StatLine items={statItems(s, ['Putts / round', '1-putt %', '3-putt %'])} />
+          <StatLine
+            items={statItems(s, ["Putts / round", "1-putt %", "3-putt %"])}
+          />
         </div>
       );
-    case 'scoring':
+    case "scoring":
       return (
         <div className="flex flex-col gap-4">
-          <StatLine items={statItems(s, [['Scoring avg', 'Scoring average']])} />
+          <StatLine
+            items={statItems(s, [["Scoring avg", "Scoring average"]])}
+          />
           <ParDeltas section={s} />
         </div>
       );
-    case 'pressure':
+    case "pressure":
       return <PressureSplit section={s} />;
     default:
       return null;
@@ -596,19 +748,26 @@ function AreaSection({
       data-slot="fingerprint-area"
     >
       <header className="flex items-baseline justify-between gap-3 border-b border-border-strong pb-2">
-        <h2 id={`fingerprint-${area.key}-title`} className="font-fw-display text-h3 text-text-primary">
+        <h2
+          id={`fingerprint-${area.key}-title`}
+          className="font-fw-display text-h3 text-text-primary"
+        >
           {area.title}
         </h2>
         {sg != null ? (
           <span className="font-fw-sans text-caption text-text-tertiary">
             <span
               className={cn(
-                'text-body font-semibold tabular-nums',
-                sg > 0.05 ? 'text-fw-success-ink' : sg < -0.05 ? 'text-fw-warning-ink' : 'text-text-secondary',
+                "text-body font-semibold tabular-nums",
+                sg > 0.05
+                  ? "text-fw-success-ink"
+                  : sg < -0.05
+                    ? "text-fw-warning-ink"
+                    : "text-text-secondary",
               )}
             >
               {formatSignedValue(sg)}
-            </span>{' '}
+            </span>{" "}
             strokes/rd
           </span>
         ) : null}
@@ -619,7 +778,10 @@ function AreaSection({
       </div>
 
       {insights.length > 0 ? (
-        <ul className="mt-4 flex flex-col" aria-label={`CoachHelm on ${area.title.toLowerCase()}`}>
+        <ul
+          className="mt-4 flex flex-col"
+          aria-label={`CoachHelm on ${area.title.toLowerCase()}`}
+        >
           {insights.map((insight) => (
             <ClaimRow
               key={insight.id}
@@ -643,12 +805,12 @@ function AreaSection({
  * ══════════════════════════════════════════════════════════════════════════ */
 
 function mapInsights(
-  sections: PlayerFingerprint['sections'],
+  sections: PlayerFingerprint["sections"],
   insightId: string,
   transform: (
-    insight: PlayerFingerprint['sections'][keyof PlayerFingerprint['sections']]['insights'][number],
-  ) => PlayerFingerprint['sections'][keyof PlayerFingerprint['sections']]['insights'][number],
-): PlayerFingerprint['sections'] {
+    insight: PlayerFingerprint["sections"][keyof PlayerFingerprint["sections"]]["insights"][number],
+  ) => PlayerFingerprint["sections"][keyof PlayerFingerprint["sections"]]["insights"][number],
+): PlayerFingerprint["sections"] {
   const next = { ...sections };
   for (const key of FINGERPRINT_SECTION_ORDER) {
     const section = next[key];
@@ -663,9 +825,9 @@ function mapInsights(
 }
 
 function removeInsight(
-  sections: PlayerFingerprint['sections'],
+  sections: PlayerFingerprint["sections"],
   insightId: string,
-): PlayerFingerprint['sections'] {
+): PlayerFingerprint["sections"] {
   const next = { ...sections };
   for (const key of FINGERPRINT_SECTION_ORDER) {
     const section = next[key];
@@ -680,9 +842,11 @@ function removeInsight(
 }
 
 function findInsight(
-  sections: PlayerFingerprint['sections'],
+  sections: PlayerFingerprint["sections"],
   insightId: string,
-): PlayerFingerprint['sections'][keyof PlayerFingerprint['sections']]['insights'][number] | null {
+):
+  | PlayerFingerprint["sections"][keyof PlayerFingerprint["sections"]]["insights"][number]
+  | null {
   for (const key of FINGERPRINT_SECTION_ORDER) {
     const match = sections[key].insights.find((i) => i.id === insightId);
     if (match) return match;
@@ -693,7 +857,7 @@ function findInsight(
 /** Player-mode only — which fingerprint section an insight lives under, used
  *  to resolve `AREA_TYPE_BY_SECTION` for `createPlayerFocusArea`. */
 function findInsightSection(
-  sections: PlayerFingerprint['sections'],
+  sections: PlayerFingerprint["sections"],
   insightId: string,
 ): FingerprintSectionKey | null {
   for (const key of FINGERPRINT_SECTION_ORDER) {

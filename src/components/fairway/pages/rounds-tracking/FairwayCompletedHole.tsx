@@ -76,14 +76,15 @@ export function FairwayCompletedHole({
         {shotHistory.map((shot) => {
           // VERBATIM label derivation from the legacy file.
           const formatResult = (r: string) => r.charAt(0).toUpperCase() + r.slice(1);
+          // COPY-04: a number and its unit are separate words ("12 ft", "150 yd").
           const distLabel = shot.distanceUnitBefore === 'feet'
-            ? `${shot.distanceToHoleBefore}ft`
-            : `${shot.distanceToHoleBefore}y`;
+            ? `${shot.distanceToHoleBefore} ft`
+            : `${shot.distanceToHoleBefore} yd`;
           const afterLabel = shot.result === 'hole'
             ? 'Holed'
             : shot.distanceUnitAfter === 'feet'
-              ? `${shot.distanceToHoleAfter}ft left`
-              : `${shot.distanceToHoleAfter}y left`;
+              ? `${shot.distanceToHoleAfter} ft left`
+              : `${shot.distanceToHoleAfter} yd left`;
           return (
             <Button
               key={shot.shotNumber}
@@ -137,7 +138,7 @@ export function FairwayCompletedHole({
                 {/* Shot distance + result badge */}
                 <span className="flex flex-shrink-0 items-center gap-2">
                   {!shot.isPenalty && (
-                    <span className="font-fw-mono text-body-sm font-medium tabular-nums text-accent-700">{shot.shotDistance}y</span>
+                    <span className="font-fw-mono text-body-sm font-medium tabular-nums text-accent-700">{shot.shotDistance} yd</span>
                   )}
                   <StatusPill tone={resultTone(shot.result)} size="sm" dot={false}>
                     {formatResult(shot.result)}

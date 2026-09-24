@@ -62,8 +62,8 @@ function DotPair({ v }: { v: Extract<ClaimVisualModel, { kind: 'pair' }> }) {
   const pad = (hi - lo || Math.abs(hi) || 1) * 0.18;
   lo -= pad;
   hi += pad;
-  const x0 = 24;
-  const x1 = W - 24;
+  const x0 = 56;
+  const x1 = W - 56;
   const sx = (n: number) => {
     const t = (n - lo) / (hi - lo);
     return v.reversed ? x1 - t * (x1 - x0) : x0 + t * (x1 - x0);
@@ -71,8 +71,9 @@ function DotPair({ v }: { v: Extract<ClaimVisualModel, { kind: 'pair' }> }) {
   const fx = sx(v.from);
   const tx = sx(v.to);
   const cx = v.comparison !== null ? sx(v.comparison) : null;
+  const fromLeft = fx <= tx;
   return (
-    <svg viewBox={`0 0 ${W} 52`} className="h-[52px] w-full max-w-[320px]" aria-hidden="true" focusable="false">
+    <svg viewBox={`0 0 ${W} 40`} className="h-10 w-full max-w-[320px]" aria-hidden="true" focusable="false">
       <line x1={x0} x2={x1} y1={24} y2={24} className="stroke-border-subtle" strokeWidth={1} />
       {cx !== null ? (
         <>
@@ -85,10 +86,11 @@ function DotPair({ v }: { v: Extract<ClaimVisualModel, { kind: 'pair' }> }) {
       <line x1={fx} x2={tx} y1={24} y2={24} className={TONE_STROKE[v.tone]} strokeWidth={2} />
       <circle cx={fx} cy={24} r={4} className="fill-canvas stroke-text-tertiary" strokeWidth={1.5} />
       <circle cx={tx} cy={24} r={5} className={TONE_FILL[v.tone]} />
-      <text x={fx} y={46} textAnchor="middle" className={LABEL_QUIET}>
+      {/* Labels sit on the OUTER side of each dot so a small move never collides. */}
+      <text x={fromLeft ? fx - 9 : fx + 9} y={28} textAnchor={fromLeft ? 'end' : 'start'} className={LABEL_QUIET}>
         {v.fromText}
       </text>
-      <text x={tx} y={46} textAnchor="middle" className={cn(LABEL, 'font-semibold')}>
+      <text x={fromLeft ? tx + 9 : tx - 9} y={28} textAnchor={fromLeft ? 'start' : 'end'} className={cn(LABEL, 'font-semibold')}>
         {v.toText}
       </text>
     </svg>

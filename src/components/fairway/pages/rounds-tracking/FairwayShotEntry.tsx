@@ -95,7 +95,7 @@ const segBtn = (active: boolean) =>
   cn(
     'min-h-[48px] flex-1 rounded-fw-sm px-2 font-fw-sans text-sm font-medium',
     'focus-visible:ring-2 focus-visible:ring-accent-600 focus-visible:ring-inset focus-visible:ring-offset-0',
-    active ? 'bg-accent-650 text-text-on-accent shadow-flat' : 'text-text-secondary hover:text-text-primary',
+    active ? 'bg-accent-fill text-text-on-accent-fill shadow-flat' : 'text-text-secondary hover:text-text-primary',
   );
 
 /**
@@ -277,7 +277,6 @@ export function FairwayShotEntry({
     }
     if (!resultOfShot) return isPutting ? 'Select a putt result' : 'Select a shot result';
     if (isTeeShot && currentHole.par !== 3 && usedDriver === null) return 'Choose driver or non-driver';
-    if (isPutting && !puttBreak) return 'Select a putt break';
     if (isTeeShot && ['rough', 'sand', 'other'].includes(resultOfShot) && !missDirection)
       return 'Choose a miss direction';
     if (isApproachOrAroundGreen && !['green', 'hole'].includes(resultOfShot) && !approachMissDirection)
@@ -358,7 +357,9 @@ export function FairwayShotEntry({
             <Section
               label="Putting details"
               tint
-              hint={<StatusPill tone="accent" dot={false} size="sm">Fill first</StatusPill>}
+              // RE-F13: optional — required on every putt, tap-ins included, it was a
+              // tap nobody's stats needed. Unset stays unset (not "straight").
+              hint={<StatusPill tone="neutral" dot={false} size="sm">Optional</StatusPill>}
             >
               <div className="space-y-4">
                 <div>
@@ -432,7 +433,7 @@ export function FairwayShotEntry({
                         'min-h-[52px] rounded-fw-md px-3 font-fw-sans text-sm font-medium transition-colors',
                         'outline-none focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
                         isSelected
-                          ? 'bg-accent-650 text-text-on-accent shadow-flat ring-1 ring-accent-600'
+                          ? 'bg-accent-fill text-text-on-accent-fill shadow-flat ring-1 ring-accent-600'
                           : isSubtle
                             ? 'bg-surface-sunken text-text-tertiary ring-1 ring-border-subtle hover:bg-surface-tint hover:text-text-secondary hover:ring-border-strong'
                             : 'bg-surface-sunken text-text-primary ring-1 ring-border-subtle hover:bg-surface-tint hover:ring-border-strong',
@@ -518,7 +519,7 @@ export function FairwayShotEntry({
                   onWheel={(e) => (e.target as HTMLInputElement).blur()}
                   placeholder="0"
                   className={cn(
-                    'h-16 w-full min-w-0 rounded-fw-md border-2 bg-surface px-4 text-center font-fw-display text-display font-light tracking-[-0.025em] tabular-nums text-text-primary transition-colors placeholder:text-text-tertiary/50 focus:outline-none focus:ring-4',
+                    'h-16 w-full min-w-0 rounded-fw-md border-2 bg-surface px-4 text-center font-fw-display text-display font-light tracking-[-0.025em] tabular-nums text-text-primary transition-colors placeholder:text-text-tertiary focus:outline-none focus:ring-4',
                     distanceInvalid
                       ? 'border-fw-danger focus:border-fw-danger focus:ring-fw-danger/15'
                       : 'border-accent-300 focus:border-accent-500 focus:ring-accent-500/15',
@@ -544,7 +545,7 @@ export function FairwayShotEntry({
                           'min-h-[44px] rounded-fw-md transition-colors',
                           'outline-none focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
                           distanceAfterShot === String(val) && distanceAfterUnit === 'feet'
-                            ? 'bg-accent-650 text-text-on-accent shadow-flat'
+                            ? 'bg-accent-fill text-text-on-accent-fill shadow-flat'
                             : 'border border-accent-200 bg-surface text-accent-700 hover:bg-accent-50',
                         )}
                       >
@@ -668,10 +669,12 @@ export function FairwayShotEntry({
           // Round COMPLETION deliberately stays out of here; that is a
           // `success` outcome owned by the round-submit path, and spending it
           // on a per-hole action would leave nothing left for the real one.
-          onClick={() => {
-            fwHaptic(resultOfShot === 'hole' ? 'medium' : 'light');
-            onNextShot();
-          }}
+          //
+          // The Button fires this itself (its `haptic` prop REPLACES its
+          // built-in tick), so exactly one haptic lands per tap and the 32ms
+          // throttle can no longer swallow the hole-out weight (RE-F14).
+          haptic={resultOfShot === 'hole' ? 'checkpoint' : 'commit'}
+          onClick={onNextShot}
           disabled={!canRecord}
           aria-describedby={nextShotBlocker ? 'fw-next-shot-blocker' : undefined}
           aria-label={resultOfShot === 'hole' ? `Complete hole with score ${currentShot}` : 'Record next shot'}

@@ -76,6 +76,7 @@ export function StrokesWaterfall({ waterfall, onSelect }: StrokesWaterfallProps)
           const prev = i > 0 ? steps[i - 1] : null;
           return (
             <li key={step.key}>
+              {/* eslint-disable-next-line helm/no-raw-button -- 48pt tappable chart row that opens the evidence sheet; the row is the chart, not a pill button */}
               <button
                 type="button"
                 onClick={() => onSelect?.(step.key)}
@@ -113,7 +114,7 @@ export function StrokesWaterfall({ waterfall, onSelect }: StrokesWaterfallProps)
                   {step.value != null ? (
                     <span
                       aria-hidden="true"
-                      className={cn('absolute top-[14px] h-5 rounded-[3px]', BAR_CLASS[t])}
+                      className={cn('absolute top-[14px] h-5 rounded-sm', BAR_CLASS[t])}
                       style={span(step.start, step.end)}
                     />
                   ) : (
@@ -138,7 +139,7 @@ export function StrokesWaterfall({ waterfall, onSelect }: StrokesWaterfallProps)
           {net != null ? (
             <span
               aria-hidden="true"
-              className={cn('absolute top-[16px] h-6 rounded-[3px]', BAR_CLASS[tone(net)])}
+              className={cn('absolute top-[16px] h-6 rounded-sm', BAR_CLASS[tone(net)])}
               style={span(0, net)}
             />
           ) : null}

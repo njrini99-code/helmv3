@@ -149,9 +149,11 @@ describe('G-49 — the own bubble needs a variant no token expresses', () => {
     // be minted from the ramp rather than introducing a new colour.
     const ambient = artboardShadow('lit-accent').match(/oklch\(([\d.]+ [\d.]+ [\d.]+) \/ 0\.22\)/)?.[1];
     expect(ambient, 'expected the hued ambient layer in .lit-accent').toBeTypeOf('string');
-    const accent700 = tokens.match(/--fw-color-accent-700:\s*oklch\(([^)]+)\)/)?.[1];
-    expect(accent700, 'expected --fw-color-accent-700 in design-tokens.css').toBeTypeOf('string');
-    expect(norm(String(accent700))).toBe(norm(String(ambient)));
+    // accent-750 holds this value (accent-700 became an alias of the darker
+    // accent-ink in the 2026-09-24 contrast pass; 750 kept the old literal).
+    const accent750 = tokens.match(/--fw-color-accent-750:\s*oklch\(([^)]+)\)/)?.[1];
+    expect(accent750, 'expected --fw-color-accent-750 in design-tokens.css').toBeTypeOf('string');
+    expect(norm(String(accent750))).toBe(norm(String(ambient)));
   });
 });
 

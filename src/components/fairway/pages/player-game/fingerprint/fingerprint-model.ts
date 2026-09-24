@@ -23,8 +23,16 @@ import type {
   PlayerFingerprint,
   SectionData,
   FingerprintMetric,
+  FingerprintSgScope,
+  FingerprintSgScopeKey,
 } from '@/app/golf/actions/player-fingerprint-types';
 import type { EvidenceInsight } from '@/app/golf/actions/insight-delivery';
+import {
+  describeFormFormula,
+  FORM_EARLY_READ_BELOW,
+  FORM_EARLY_READ_LABEL,
+  FORM_MAX,
+} from '@/lib/golf/form-score';
 
 /* ── Numbers ─────────────────────────────────────────────────────────────── */
 
@@ -94,11 +102,58 @@ export interface Waterfall {
 }
 
 export function buildWaterfall(sections: PlayerFingerprint['sections']): Waterfall {
+  return waterfallFromValues((key) => {
+    const section = sections[key];
+    const label = SG_AREAS.find((a) => a.key === key)!.metricLabel;
+    return section ? metricNumber(section, label) : null;
+  });
+}
+
+/* ── Scope switch (FP-09) ─────────────────────────────────────────────────── */
+
+export interface SgScopeOption {
+  key: FingerprintSgScopeKey;
+  label: string;
+  /** "the last 5 rounds" / "all 18 rounds", for the caption. */
+  phrase: string;
+}
+
+const SCOPE_SIZE: Record<Exclude<FingerprintSgScopeKey, 'all'>, number> = { last5: 5, last10: 10 };
+
+/**
+ * The windows worth offering: a "last N" scope only when the player has more
+ * than N countable rounds (otherwise it equals "all"), and only when at least
+ * two scopes remain. An empty list means no switch.
+ */
+export function sgScopeOptions(scopes: readonly FingerprintSgScope[] | undefined): SgScopeOption[] {
+  if (!scopes?.length) return [];
+  const all = scopes.find((s) => s.key === 'all');
+  if (!all || all.sgRounds === 0) return [];
+  const options: SgScopeOption[] = [];
+  for (const key of ['last5', 'last10'] as const) {
+    const scope = scopes.find((s) => s.key === key);
+    if (scope && all.rounds > SCOPE_SIZE[key] && scope.sgRounds > 0) {
+      options.push({ key, label: `Last ${SCOPE_SIZE[key]}`, phrase: `the last ${SCOPE_SIZE[key]} rounds` });
+    }
+  }
+  if (options.length === 0) return [];
+  options.push({ key: 'all', label: 'All', phrase: `all ${all.rounds} ${all.rounds === 1 ? 'round' : 'rounds'}` });
+  return options;
+}
+
+/** The waterfall for one scope's per-round strokes gained. */
+export function buildScopeWaterfall(scope: FingerprintSgScope): Waterfall {
+  return waterfallFromValues((key) => {
+    const v = scope[key];
+    return typeof v === 'number' && Number.isFinite(v) ? v : null;
+  });
+}
+
+function waterfallFromValues(valueFor: (key: SgAreaKey) => number | null): Waterfall {
   let running = 0;
   let measuredCount = 0;
   const steps: WaterfallStep[] = SG_AREAS.map((area) => {
-    const section = sections[area.key];
-    const value = section ? metricNumber(section, area.metricLabel) : null;
+    const value = valueFor(area.key);
     const start = running;
     if (value != null) {
       running += value;
@@ -177,38 +232,90 @@ export function buildVerdict(waterfall: Waterfall): string | null {
 
 /* ── Form ────────────────────────────────────────────────────────────────── */
 
-export const FORM_EARLY_ROUNDS = 5;
+/**
+ * Form is the ONE 0–100 score (OD-02), computed in src/lib/golf/form-score.ts.
+ * This file only presents it: the early-read threshold, the label and the
+ * formula text all come from that module, so the words cannot drift from the
+ * number again (the old "80 − 3 ×" text outlived the formula it described).
+ */
+export const FORM_EARLY_ROUNDS = FORM_EARLY_READ_BELOW;
 
 export type FormPresentation =
   | { kind: 'none'; rounds: number }
   | {
       kind: 'value';
       value: number;
+      /** Rounds that fed the number (at most FORM_WINDOW). */
       rounds: number;
-      /** Fewer than FORM_EARLY_ROUNDS rounds behind the number. */
+      /** Fewer than FORM_EARLY_READ_BELOW countable rounds behind the number. */
       early: boolean;
-      /** The formula clamps to 0..100; a value on the clamp is not a reading. */
-      capped: 'top' | 'bottom' | null;
+      /** "Early read" or null. */
+      qualityLabel: string | null;
+      /**
+       * Form's curve never reaches 100, so the only reachable floor is 0
+       * (a very high average plus the full pattern penalty). A 0 on the floor
+       * is not a precise reading.
+       */
+      capped: 'bottom' | null;
       trendWord: 'improving' | 'slipping' | 'steady';
+      /** The tap-to-explain lines, with this player's numbers. */
+      formula: string[];
     };
 
 export function presentForm(composite: PlayerFingerprint['composite']): FormPresentation {
-  const rounds = composite.rounds_in_calculation;
-  if (composite.rating == null || !Number.isFinite(composite.rating)) return { kind: 'none', rounds };
-  const value = Math.round(composite.rating);
+  const form = composite.form;
+  if (form.score == null || !Number.isFinite(form.score)) {
+    return { kind: 'none', rounds: form.roundsCounted };
+  }
+  const value = Math.min(FORM_MAX, Math.max(0, Math.round(form.score)));
+  const early = form.quality === 'early';
   return {
     kind: 'value',
     value,
-    rounds,
-    early: rounds < FORM_EARLY_ROUNDS,
-    capped: value >= 100 ? 'top' : value <= 0 ? 'bottom' : null,
+    rounds: form.roundsInWindow,
+    early,
+    qualityLabel: early ? FORM_EARLY_READ_LABEL : null,
+    capped: value <= 0 ? 'bottom' : null,
     trendWord: composite.trend === 'up' ? 'improving' : composite.trend === 'down' ? 'slipping' : 'steady',
+    formula: describeFormFormula(form),
   };
 }
 
-/** The formula as implemented in lib/coachhelm/composite-rating.ts. */
-export const FORM_FORMULA =
-  '80 − 3 × average strokes over par across the last 5 rounds, minus 5 for each severe pattern (up to 20), kept between 0 and 100. Nine-hole rounds count double.';
+/* ── Player voice (FP-03) ────────────────────────────────────────────────── */
+
+/**
+ * Engine copy is written for the coach ("Recommended: have the player call the
+ * carry number…", src/lib/coachhelm/v3/engine/diagnosis.ts) and is stored in
+ * the insight row, so the player's own Fingerprint printed instructions about
+ * "the player". The player view reads it in the second person. Only the
+ * phrasings the engine emits are rewritten; anything else passes through.
+ */
+const PLAYER_VOICE_RULES: ReadonlyArray<readonly [RegExp, string]> = [
+  [/\bthe player's\b/g, 'your'],
+  [/\bThe player's\b/g, 'Your'],
+  [/\bthe player\b/g, 'you'],
+  [/\bThe player\b/g, 'You'],
+  [/\bthis player's\b/g, 'your'],
+  [/\bThis player's\b/g, 'Your'],
+  [/\bthis player\b/g, 'you'],
+  [/\bThis player\b/g, 'You'],
+  [/\btogether\./g, 'with your coach.'],
+];
+
+export function toPlayerVoice(text: string): string;
+export function toPlayerVoice(text: string | null): string | null;
+export function toPlayerVoice(text: string | null): string | null {
+  if (!text) return text;
+  // "Recommended: have the player call…" → "Recommended: Call…"; a sentence
+  // that starts "Have the player…" keeps its capital the same way.
+  let out = text.replace(
+    /(^|[.:!?]\s+)[Hh]ave the player\s+([a-z])/g,
+    (_m, lead: string, ch: string) => lead + ch.toUpperCase(),
+  );
+  out = out.replace(/\bhave the player\s+/g, '');
+  for (const [re, to] of PLAYER_VOICE_RULES) out = out.replace(re, to);
+  return out;
+}
 
 /* ── Claims (insights) ───────────────────────────────────────────────────── */
 
@@ -370,8 +477,8 @@ export function joinNames(names: string[]): string {
 
 export interface PuttBand {
   label: string;
-  /** null = gap. The data layer coerces a missing band to 0, so a 0 is drawn
-   *  as a gap too and footnoted rather than plotted as a real 0%. */
+  /** null = gap (no data for the band). A real 0% is 0 and is drawn (FP-05:
+   *  the data layer passes null through instead of coercing it to 0). */
   pct: number | null;
 }
 
@@ -380,6 +487,6 @@ export function puttingBands(section: SectionData): PuttBand[] {
   if (!chart || chart.kind !== 'bars') return [];
   return chart.bars.map((b) => ({
     label: b.label.replace(/-/g, '–'),
-    pct: Number.isFinite(b.value) && b.value > 0 ? Math.round(b.value) : null,
+    pct: typeof b.value === 'number' && Number.isFinite(b.value) ? Math.round(b.value) : null,
   }));
 }

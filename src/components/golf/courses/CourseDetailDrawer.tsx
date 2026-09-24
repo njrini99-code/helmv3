@@ -8,8 +8,8 @@ import { TeeFormDrawer } from './TeeFormDrawer';
 import { Button } from '@/components/fairway/controls/button';
 import { Skeleton } from '@/components/fairway/feedback/Skeleton';
 import { InlineNotice } from '@/components/fairway/feedback/InlineNotice';
-import { ConfirmDialog } from '@/components/ui/confirm-dialog';
-import { Drawer, DrawerContent, DrawerTitle } from '@/components/ui/drawer';
+import { ConfirmAlert } from '@/components/fairway/overlays/ConfirmAlert';
+import { Sheet } from '@/components/fairway/overlays/Sheet';
 import { useToast } from '@/components/ui/sonner';
 import {
   IconX, IconMapPin, IconFlag, IconPlus, IconPencil, IconStar, IconUpload, IconTrash, IconCheck,
@@ -64,7 +64,7 @@ export function CourseDetailDrawer({
   const [pending, startTransition] = useTransition();
 
   // Destructive confirmations (Nielsen #5 error prevention): photo removal,
-  // tee-set deletion, and whole-course removal each route through ConfirmDialog.
+  // tee-set deletion, and whole-course removal each route through ConfirmAlert.
   const [removePhotoConfirm, setRemovePhotoConfirm] = useState(false);
   const [deleteTee, setDeleteTee] = useState<{ id: string; name: string } | null>(null);
   const [deleteCourseConfirm, setDeleteCourseConfirm] = useState(false);
@@ -272,45 +272,25 @@ export function CourseDetailDrawer({
 
   return (
     <>
-      <Drawer open={open} onOpenChange={onOpenChange}>
-        <DrawerContent
-          className={cn(
-            // #94 (round 2) — the base DrawerContent primitive is `fixed
-            // inset-x-0 bottom-0 mt-24 rounded-t-3xl` (a bottom-pinned
-            // mobile sheet). Recoloring it alone (round 1) left the panel
-            // still hugging the bottom edge of a 1440px viewport — it read
-            // as a tall, oddly-glassed bottom sheet, not a centered floating
-            // modal. `inset-0 m-auto h-fit` (the same recipe ModalShell uses)
-            // overrides ALL FOUR offsets + the top margin so the panel is
-            // truly centered — width still capped by max-w-2xl, height by
-            // max-h — instead of just recoloring a panel still pinned to
-            // the bottom edge.
-            'sm:inset-0 sm:m-auto sm:bottom-auto sm:top-auto sm:mt-0 sm:h-fit sm:max-h-[85vh] sm:max-w-2xl sm:rounded-fw-lg',
-            // #94 — the vaul primitive is a mobile bottom-sheet (drag handle +
-            // matte surface-stone chrome) that's correct at phone width but
-            // wrong at desktop, where it should read as the ModalShell
-            // cream-glass modal language instead. This component owns only
-            // its own instance (the shared Drawer primitive stays untouched
-            // for the other sheets that DO want the mobile-sheet look at every
-            // width, e.g. CourseFormDrawer/TeeFormDrawer), so the override
-            // lives here via arbitrary sm: variants rather than editing the
-            // primitive. Utilities always win over the primitive's
-            // `@layer components` surface-stone/rounded-t-3xl, regardless of
-            // className order, because Tailwind emits the utilities layer last.
-            'sm:[&>div:first-child]:hidden',
-            'sm:[background:var(--fw-glass-bg-strong)]',
-            'sm:[backdrop-filter:blur(var(--fw-blur-strong))_saturate(150%)]',
-            'sm:[-webkit-backdrop-filter:blur(var(--fw-blur-strong))_saturate(150%)]',
-            'sm:[border:1px_solid_var(--fw-glass-border)]',
-            'sm:[box-shadow:var(--fw-shadow-modal)]',
-          )}
-        >
-
-          <DrawerTitle className="sr-only">
-            {course ? formatCourseName(course.name) : (isUnavailable ? 'Course unavailable' : 'Course details')}
-          </DrawerTitle>
-
-          <div className="max-h-[88vh] overflow-y-auto">
+      <Sheet
+        open={open}
+        onOpenChange={onOpenChange}
+        title={course ? formatCourseName(course.name) : (isUnavailable ? 'Course unavailable' : 'Course details')}
+        hideTitle
+        // The hero carries its own close control over the image.
+        hideClose
+        className={cn(
+          // A bottom sheet on phones. From `sm` up it floats centred like a
+          // modal: `inset-0 m-auto h-fit` (the ModalShell recipe) overrides
+          // all four offsets and the top margin, width capped by max-w-2xl
+          // and height by max-h, and the grabber hides. The surface stays
+          // the Sheet's opaque one at every width: this panel carries
+          // reading content, which never sits on glass (audit SHEET-08).
+          'sm:inset-0 sm:m-auto sm:bottom-auto sm:top-auto sm:mt-0 sm:h-fit sm:max-h-[85vh] sm:max-w-2xl sm:rounded-fw-lg',
+          'sm:[&>[data-slot=sheet-grabber]]:hidden',
+        )}
+      >
+          <div className="min-h-0 flex-auto overflow-y-auto overscroll-contain">
             {/* Hero */}
             <div className="relative aspect-[2/1] w-full">
               <CourseImage name={course?.name ?? '…'} imageUrl={course?.image_url} scrim priority />
@@ -438,7 +418,7 @@ export function CourseDetailDrawer({
                     <IconStar
                       size={14}
                       aria-hidden
-                      className={pinned ? 'text-primary-600' : undefined}
+                      className={pinned ? 'text-accent-ink' : undefined}
                     />
                     {pinned ? 'Pinned' : 'Pin to top'}
                   </Button>
@@ -478,7 +458,7 @@ export function CourseDetailDrawer({
                         href={safeWebsite}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-primary-600 underline-offset-2 hover:underline"
+                        className="text-accent-ink underline-offset-2 hover:underline"
                       >
                         {safeWebsite.replace(/^https?:\/\//, '')}
                       </a>
@@ -559,8 +539,7 @@ export function CourseDetailDrawer({
               ) : null}
             </div>
           </div>
-        </DrawerContent>
-      </Drawer>
+      </Sheet>
 
       {/* Edit course */}
       {course && (
@@ -586,7 +565,7 @@ export function CourseDetailDrawer({
       )}
 
       {/* Destructive confirmations (Nielsen #5) */}
-      <ConfirmDialog
+      <ConfirmAlert
         open={removePhotoConfirm}
         variant="danger"
         title="Remove photo?"
@@ -596,7 +575,7 @@ export function CourseDetailDrawer({
         onConfirm={handleRemoveImage}
         onCancel={() => setRemovePhotoConfirm(false)}
       />
-      <ConfirmDialog
+      <ConfirmAlert
         open={deleteTee !== null}
         variant="danger"
         title="Delete tee set?"
@@ -610,7 +589,7 @@ export function CourseDetailDrawer({
         onConfirm={handleDeleteTee}
         onCancel={() => { if (!deleting) setDeleteTee(null); }}
       />
-      <ConfirmDialog
+      <ConfirmAlert
         open={deleteCourseConfirm}
         variant="danger"
         title="Remove course?"
@@ -722,7 +701,7 @@ function TeeRow({
       <div className="flex min-w-0 flex-1 items-center gap-3">
         <span
           aria-hidden
-          className="inline-flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-primary-50 text-primary-600"
+          className="inline-flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-primary-50 text-accent-ink"
         >
           <IconFlag size={16} />
         </span>
@@ -740,7 +719,7 @@ function TeeRow({
               </span>
             )}
             {tee.is_draft && (
-              <span className="rounded-full bg-warning/15 px-2 py-0.5 text-caption font-medium text-warning">
+              <span className="rounded-full bg-fw-warning-bg px-2 py-0.5 text-caption font-medium text-fw-warning-ink">
                 Draft · partial of {tee.holes_count} holes
               </span>
             )}

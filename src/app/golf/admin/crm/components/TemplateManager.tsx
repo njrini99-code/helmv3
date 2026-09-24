@@ -188,7 +188,7 @@ function PreviewPane({
   return (
     <div className="rounded-card border border-border-subtle border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-card)] overflow-clip">
       <div className="flex items-center gap-2 px-4 py-2.5 border-b border-border-subtle bg-surface-sunken/60">
-        <IconEye size={14} className="text-accent-600" aria-hidden />
+        <IconEye size={14} className="text-accent-ink" aria-hidden />
         <span className="text-xs font-semibold uppercase tracking-wider text-text-secondary">
           Live preview
         </span>
@@ -374,7 +374,7 @@ function TemplateEditor({
     <div className="rounded-card border border-accent-200/70 bg-surface [box-shadow:var(--fw-shadow-card)] p-5 space-y-5">
       <div className="flex items-center justify-between">
         <h3 className="flex items-center gap-2 text-base font-bold text-text-primary">
-          <IconSparkles size={18} className="text-accent-600" aria-hidden />
+          <IconSparkles size={18} className="text-accent-ink" aria-hidden />
           {isEditing ? 'Edit template' : 'Create template'}
         </h3>
         <IconButton
@@ -471,7 +471,7 @@ function TemplateEditor({
                         : 'bg-surface-sunken border-border-subtle text-text-secondary hover:bg-surface-sunken',
                     )}
                   >
-                    {present && <IconCheck size={11} className="mr-1 text-accent-600" aria-hidden />}
+                    {present && <IconCheck size={11} className="mr-1 text-accent-ink" aria-hidden />}
                     {`{${token}}`}
                   </Button>
                 );
@@ -579,7 +579,7 @@ function TemplateCard({
             className="shrink-0 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-eyebrow font-bold uppercase tracking-wider bg-accent-50 text-accent-700"
             title="Default for this category"
           >
-            <IconStarFilled size={10} className="text-accent-600" aria-hidden />
+            <IconStarFilled size={10} className="text-accent-ink" aria-hidden />
             Default
           </span>
         )}

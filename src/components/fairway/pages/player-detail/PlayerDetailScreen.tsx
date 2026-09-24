@@ -39,7 +39,7 @@ import { RoundStrip } from './RoundStrip';
 import { RoundSummarySheet } from './RoundSummarySheet';
 import { MiniStrand, MiniWaterfall } from './MiniPreviews';
 import { PlayerDetailBodySkeleton } from './PlayerDetailSkeleton';
-import { formatSigned, formatToPar } from './buildPlayerDetailModel';
+import { formatSigned, formatRoundToPar } from './buildPlayerDetailModel';
 import type { LedgerStat, PlanItem, PlayerDetailModel, PlayerIdentity, RoundPoint, ScopeKey } from './types';
 
 // The full stats surface (leak maps, drills, standings) stays reachable, but
@@ -306,7 +306,10 @@ function waterfallReading(model: PlayerDetailModel): string {
   const top = measured.reduce((a, b) => (b.value > a.value ? b : a));
   const low = measured.reduce((a, b) => (b.value < a.value ? b : a));
   if (top.key === low.key) return `${top.label} ${formatSigned(top.value)} per round`;
-  return `Gains most ${sgPhrase(top.key)} (${formatSigned(top.value)}), loses most ${sgPhrase(low.key)} (${formatSigned(low.value)})`;
+  // Never say "gains" about a negative number: when every area loses, the
+  // honest phrasing is which one loses least.
+  const lead = top.value > 0 ? `Gains most ${sgPhrase(top.key)}` : `Loses least ${sgPhrase(top.key)}`;
+  return `${lead} (${formatSigned(top.value)}), loses most ${sgPhrase(low.key)} (${formatSigned(low.value)})`;
 }
 
 function sgPhrase(key: string): string {
@@ -471,7 +474,7 @@ function RoundTable({ rounds }: { rounds: RoundPoint[] }) {
                   r.toPar == null ? 'text-text-tertiary' : r.toPar > 0 ? 'text-fw-warning-ink' : r.toPar < 0 ? 'text-accent-700' : 'text-text-secondary',
                 )}
               >
-                {r.toPar == null ? '—' : formatToPar(r.toPar)}
+                {r.toPar == null ? '—' : formatRoundToPar(r.toPar)}
               </td>
             </tr>
           ))}

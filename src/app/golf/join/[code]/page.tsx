@@ -6,7 +6,7 @@ import { resolveGolfCoachEntry } from '@/lib/golf/coach-entry-path';
 import { GolfJoinTeamClient } from './golf-join-team-client';
 
 export const metadata = {
-  title: 'Join Team | Helm Golf',
+  title: 'Join Team',
   description: 'Join a golf team',
 };
 
@@ -127,7 +127,7 @@ export default async function GolfJoinTeamPage({ params }: PageProps) {
             </p>
             <a
               href="/golf/dashboard"
-              className="inline-block px-6 py-2.5 bg-primary-600 text-white font-semibold rounded-xl hover:bg-primary-700 transition-colors shadow-lg shadow-primary-900/10"
+              className="inline-block px-6 py-2.5 bg-accent-fill text-text-on-accent-fill font-semibold rounded-xl hover:bg-accent-fill-hover transition-colors shadow-lg shadow-primary-900/10"
             >
               Go to Dashboard
             </a>

@@ -41,7 +41,7 @@ function Spinner({ progress, isActive, isRefreshing, reducedMotion }: SpinnerPro
       height={SPINNER_SIZE}
       viewBox={`0 0 ${SPINNER_SIZE} ${SPINNER_SIZE}`}
       className={cn(
-        'text-primary-600',
+        'text-accent-ink',
         isRefreshing && !reducedMotion && 'animate-spin',
       )}
       style={{

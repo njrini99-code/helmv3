@@ -1,5 +1,5 @@
 /**
- * GoalCreationModal ("Set a goal" → New goal sheet) — UI audit 2026-09-23.
+ * GoalCreationModal ("Set a goal" → New focus area sheet) — UI audit 2026-09-23.
  *
  * The hand-rolled glass panel it replaced ignored Escape, never moved focus
  * into the dialog, let the page read through the form, and had no grabber.
@@ -42,11 +42,11 @@ async function openSheet() {
   render(<Harness />);
   const opener = screen.getByRole('button', { name: 'Set a goal' });
   await user.click(opener);
-  const dialog = await screen.findByRole('dialog', { name: 'New goal' });
+  const dialog = await screen.findByRole('dialog', { name: 'New focus area' });
   return { user, opener, dialog };
 }
 
-describe('GoalCreationModal — New goal sheet', () => {
+describe('GoalCreationModal — New focus area sheet', () => {
   it('moves focus into the sheet on open', async () => {
     const { dialog } = await openSheet();
     await waitFor(() => {
@@ -58,7 +58,7 @@ describe('GoalCreationModal — New goal sheet', () => {
     const { user, opener } = await openSheet();
     await user.keyboard('{Escape}');
     await waitFor(() => {
-      expect(screen.queryByRole('dialog', { name: 'New goal' })).not.toBeInTheDocument();
+      expect(screen.queryByRole('dialog', { name: 'New focus area' })).not.toBeInTheDocument();
     });
     await waitFor(() => {
       expect(opener).toHaveFocus();
@@ -71,11 +71,11 @@ describe('GoalCreationModal — New goal sheet', () => {
     // calls setPointerCapture, which jsdom does not implement.
     fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
     await waitFor(() => {
-      expect(screen.queryByRole('dialog', { name: 'New goal' })).not.toBeInTheDocument();
+      expect(screen.queryByRole('dialog', { name: 'New focus area' })).not.toBeInTheDocument();
     });
   });
 
-  it('is an opaque sheet with a grabber and the HIG header (Cancel · title · Start goal)', async () => {
+  it('is an opaque sheet with a grabber and the HIG header (Cancel · title · Start focus area)', async () => {
     const { dialog } = await openSheet();
     expect(dialog.className).toContain('bg-surface');
     expect(dialog.className).not.toMatch(/surface-lift|glass|backdrop-blur/);
@@ -84,6 +84,6 @@ describe('GoalCreationModal — New goal sheet', () => {
     const header = dialog.querySelector('[data-slot="sheet-header"]') as HTMLElement;
     expect(header).not.toBeNull();
     expect(header).toContainElement(screen.getByRole('button', { name: 'Cancel' }));
-    expect(header).toContainElement(screen.getByRole('button', { name: 'Start goal' }));
+    expect(header).toContainElement(screen.getByRole('button', { name: 'Start focus area' }));
   });
 });

@@ -75,9 +75,9 @@ export const VIZ_DEFS = {
  * ------------------------------------------------------------------------- */
 
 export const VIZ_FONT = {
-  /** numerics: tabular General Sans (the spec default for changing figures) */
+  /** numerics: tabular SF (the system stack; the spec default for changing figures) */
   numeric: 'var(--fw-font-sans)',
-  /** ledger / code-like monospace columns */
+  /** ledger columns: SF with tabular figures (no monospace face, owner decision 2026-09-23) */
   mono: 'var(--fw-font-mono)',
   /** axis tick + label size in px */
   tickSize: 11,

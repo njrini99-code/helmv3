@@ -7,11 +7,7 @@ import { Select } from '@/components/ui/select';
 import { IconX, IconPlus, IconCheck, IconWarning } from '@/components/icons';
 import { cn } from '@/lib/utils';
 import { generateClassColor, detectSemester } from '@/lib/utils/schedule-parser';
-import {
-  Drawer,
-  DrawerContent,
-  DrawerTitle,
-} from '@/components/ui/drawer';
+import { Sheet } from '@/components/fairway/overlays/Sheet';
 
 interface ExistingClass {
   id?: string;
@@ -72,8 +68,8 @@ const QUICK_DAY_PATTERNS = [
  * its own legacy default: the shared `<Input>`/`<Select>` render a flat
  * near-white `bg-cream-50/92` well with no blur, and the Notes `<Textarea>`
  * previously overrode to `bg-surface` (the flat CARD-level cream token, not
- * an input well) — both read as plain white against this Drawer's warm
- * `surface-stone` chrome. This override swaps in the same warm SUNKEN well
+ * an input well) — both read as plain white against this sheet's warm
+ * surface chrome. This override swaps in the same warm SUNKEN well
  * + hairline border + accent-600 focus ring that the canonical Fairway
  * forms primitive uses for every field (`fieldControlBase`,
  * src/components/fairway/forms/styles.ts) — reusing the exact override
@@ -252,6 +248,10 @@ export function isClassFormSubmittable(form: {
 export function AddClassModal({ isOpen, onClose, onSave, editingClass, existingClasses = [] }: AddClassModalProps) {
   const uid = useId();
   const [loading, setLoading] = useState(false);
+  // Synchronous in-flight guard: `loading` is state, so two submits inside
+  // one frame (a double tap, Enter plus a click) both saw it false and both
+  // inserted the class (audit DATA-02).
+  const submittingRef = useRef(false);
   const [conflicts, setConflicts] = useState<ClassConflict[]>([]);
   const [showConflictWarning, setShowConflictWarning] = useState(false);
   const [formData, setFormData] = useState<ClassFormData>(() => editingClass ?? emptyClassForm());
@@ -263,7 +263,7 @@ export function AddClassModal({ isOpen, onClose, onSave, editingClass, existingC
     setShowConflictWarning(false);
   };
 
-  // The Drawer (vaul) keeps this modal mounted even while closed, so the lazy
+  // The Sheet (vaul) keeps this modal mounted even while closed, so the lazy
   // useState initializer above only ever captures the FIRST editingClass value
   // (null at first paint). Sync formData whenever the modal opens or the target
   // class changes — otherwise editing always shows a blank form. Also clear any
@@ -330,6 +330,8 @@ export function AddClassModal({ isOpen, onClose, onSave, editingClass, existingC
       }
     }
 
+    if (submittingRef.current) return;
+    submittingRef.current = true;
     setLoading(true);
     try {
       // Combine building and room into location if needed
@@ -346,6 +348,7 @@ export function AddClassModal({ isOpen, onClose, onSave, editingClass, existingC
     } catch {
       // Save failed - UI will show original state
     } finally {
+      submittingRef.current = false;
       setLoading(false);
     }
   };
@@ -375,21 +378,21 @@ export function AddClassModal({ isOpen, onClose, onSave, editingClass, existingC
   }, [formData.semester]);
 
   return (
-    <Drawer
+    <Sheet
       open={isOpen}
       onOpenChange={(next) => {
         if (!next) onClose();
       }}
+      title={editingClass ? 'Edit Class' : 'Add Class'}
+      customTitle
+      hideClose
+      className="overflow-hidden sm:mx-auto sm:max-w-lg"
     >
-      <DrawerContent
-        className="sm:max-w-lg sm:mx-auto sm:rounded-3xl p-0 overflow-hidden flex flex-col"
-        aria-labelledby="add-class-title"
-      >
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-border-subtle">
-          <DrawerTitle id="add-class-title" className="text-body-lg font-medium text-text-primary tracking-[-0.012em]">
+          <Sheet.Title className="font-fw-sans text-body-lg font-medium text-text-primary tracking-[-0.012em]">
             {editingClass ? 'Edit Class' : 'Add Class'}
-          </DrawerTitle>
+          </Sheet.Title>
           <IconButton variant="default"
             onClick={onClose}
             aria-label="Close"
@@ -400,7 +403,7 @@ export function AddClassModal({ isOpen, onClose, onSave, editingClass, existingC
         </div>
 
         {/* Content */}
-        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-5">
+        <form onSubmit={handleSubmit} className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-6 space-y-5">
           {/* Course Code & Name */}
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
             <div>
@@ -445,7 +448,7 @@ export function AddClassModal({ isOpen, onClose, onSave, editingClass, existingC
                   className={cn(
                     'w-11 h-11 rounded-lg text-sm font-medium transition-all',
                     formData.days.includes(day.abbrev)
-                      ? 'bg-accent-650 text-text-on-accent'
+                      ? 'bg-accent-fill text-text-on-accent-fill'
                       : 'bg-surface-sunken text-text-secondary hover:bg-surface-sunken/80'
                   )}
                 >
@@ -644,9 +647,9 @@ export function AddClassModal({ isOpen, onClose, onSave, editingClass, existingC
                     : 'This class overlaps with existing class times:'}
                 </p>
                 <ul className="space-y-2 mb-3">
-                  {conflicts.map((conflict, index) => (
+                  {conflicts.map((conflict) => (
                     <li
-                      key={index}
+                      key={`${conflict.existingClass.id ?? conflict.existingClass.class_name}-${conflict.existingClass.start_time ?? ''}-${conflict.conflictingDays.join('')}`}
                       className="text-sm text-fw-warning-ink bg-fw-warning-bg/60 rounded-lg px-3 py-2"
                     >
                       <span className="font-medium">{conflict.existingClass.class_name}</span>
@@ -696,7 +699,7 @@ export function AddClassModal({ isOpen, onClose, onSave, editingClass, existingC
         )}
 
         {/* Footer */}
-        <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-border-subtle bg-surface-sunken">
+        <div className="flex items-center justify-end gap-3 px-6 pt-4 pb-[max(1rem,env(safe-area-inset-bottom))] border-t border-border-subtle bg-surface-sunken">
           <Button type="button" variant="secondary" onClick={onClose}>
             Cancel
           </Button>
@@ -719,7 +722,6 @@ export function AddClassModal({ isOpen, onClose, onSave, editingClass, existingC
             )}
           </Button>
         </div>
-      </DrawerContent>
-    </Drawer>
+    </Sheet>
   );
 }

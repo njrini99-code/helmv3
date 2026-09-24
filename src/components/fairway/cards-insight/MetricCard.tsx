@@ -373,7 +373,7 @@ export const MetricCard = forwardRef<HTMLDivElement, MetricCardProps>(
             // metric icon is the card's green note — four of them across a KPI
             // row tie the grid together without putting colour back on the data.
             // `dark:` rather than a token so the light card is untouched.
-            <span className="shrink-0 text-text-tertiary dark:text-accent-500 [&_svg]:h-5 [&_svg]:w-5">
+            <span className="shrink-0 text-text-tertiary dark:text-accent-ink [&_svg]:h-5 [&_svg]:w-5">
               {icon}
             </span>
           ) : null}

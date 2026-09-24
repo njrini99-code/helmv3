@@ -34,12 +34,16 @@ import { DEFAULT_MIN_PLAYS } from '@/lib/golf/worst-hole-ranking';
 import { CategoryInsightStrip } from './CategoryInsightStrip';
 import { buildCategoryInsights, buildCategoryTrends } from './buildStatsViewModel';
 import type { CategorizablePatternWithImpact } from './buildStatsViewModel';
+import { formatDateOnlyShort } from '@/lib/golf/date-only';
 
 function finite(n: number | null | undefined): number | null {
   return typeof n === 'number' && Number.isFinite(n) ? n : null;
 }
+/** Round dates are DATE columns: format the calendar day as stored, never
+ *  shifted by the viewer's offset (HYD-13: `new Date('2026-06-02')` is UTC
+ *  midnight and read locally it becomes Jun 1 anywhere west of UTC). */
 function fmtShortDate(iso: string): string {
-  return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  return formatDateOnlyShort(iso);
 }
 /** Signed avg-strokes delta display, e.g. "+0.4" / "−0.4" / "0.0" — mirrors
  *  `RoundsDrill`'s `fmtSignedNum` verbatim (kept as a small local duplicate

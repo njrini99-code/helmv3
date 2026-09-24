@@ -26,7 +26,7 @@ const FairwayCalendar = dynamic(
 );
 
 export const metadata: Metadata = {
-  title: 'Calendar | Helm Sports',
+  title: 'Calendar',
   description: 'View and manage your team events, practices, and class schedule',
 };
 

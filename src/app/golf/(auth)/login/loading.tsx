@@ -28,7 +28,7 @@ export default function Loading() {
         <div className="mt-5 h-[34px]" />
         <div className="mt-1.5 h-5" />
         <div className="mt-8 h-[104px] w-full rounded-xl bg-surface" />
-        <div className="mt-6 h-[50px] w-full rounded-xl bg-accent-650 opacity-40" />
+        <div className="mt-6 h-[50px] w-full rounded-xl bg-accent-fill opacity-40" />
       </div>
     </div>
   );

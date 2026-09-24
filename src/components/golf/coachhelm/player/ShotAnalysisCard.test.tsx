@@ -84,7 +84,24 @@ describe('ShotAnalysisCard — Key Weaknesses excludes net-positive contexts (Pa
 
     expect(screen.getByText('50 shots')).toBeInTheDocument();
     expect(screen.getAllByText(/shots$/)).toHaveLength(1);
-    expect(screen.getByText('-0.40')).toBeInTheDocument();
+    // SG through formatMetric: 2 dp with a true minus (display-registry §5.2).
+    expect(screen.getByText('−0.40')).toBeInTheDocument();
+  });
+});
+
+describe('ShotAnalysisCard — scramble window and null safety (NUM-20, FP-06)', () => {
+  it('names the 90-day window next to the deep-dive scramble rate', () => {
+    const { container } = render(<ShotAnalysisCard scrambleRate={0.55} />);
+    const block = container.querySelector('[data-slot="deep-dive-scramble"]');
+    expect(block?.textContent).toContain('Last 90 days');
+  });
+
+  it('prints no scramble rate when the engine reports no attempts (null), never 0%', () => {
+    const { container } = render(
+      <ShotAnalysisCard shotData={{ scrambleRate: { scrambleRate: null, totalScrambleAttempts: 0 }, resilience: 1.2 }} />,
+    );
+    expect(container.querySelector('[data-slot="deep-dive-scramble"]')).toBeNull();
+    expect(container.textContent).not.toContain('0%');
   });
 });
 
@@ -92,8 +109,8 @@ describe('ShotAnalysisCard — teamScrambleRate scale (Package 11 follow-up)', (
   it('scales a 0-1 teamScrambleRate fraction to a percent, same as the player scrambleRate', () => {
     const { container } = render(<ShotAnalysisCard scrambleRate={0.55} teamScrambleRate={0.62} />);
 
-    // Player rate: 55% (rendered twice — the badge circle and the caption).
-    expect(screen.getAllByText('55%').length).toBeGreaterThan(0);
+    // Player rate: 55%, printed once (the duplicate badge was removed, DD-01).
+    expect(screen.getAllByText('55%')).toHaveLength(1);
     // Team avg: 62%, not the unscaled "0.62%".
     expect(container.textContent).toContain('team avg: 62%');
     expect(container.textContent).not.toContain('team avg: 0.62%');

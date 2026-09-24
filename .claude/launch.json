@@ -4,8 +4,18 @@
     {
       "name": "golf-dev",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev", "--", "--webpack", "-p", "3217"],
-      "port": 3217
+      "runtimeArgs": [
+        "run",
+        "dev",
+        "--",
+        "--webpack",
+        "-p",
+        "3217"
+      ],
+      "port": 3217,
+      "env": {
+        "NODE_OPTIONS": "--max-old-space-size=6144"
+      }
     }
   ]
 }

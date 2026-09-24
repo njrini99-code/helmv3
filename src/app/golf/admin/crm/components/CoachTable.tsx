@@ -179,7 +179,7 @@ function AssigneeSubmenu({
                 coach.assigned_to === label ? 'bg-accent-50 font-semibold text-accent-700' : 'text-text-secondary hover:bg-surface-sunken active:bg-surface-sunken',
               )}
             >
-              <IconUser size={14} className={coach.assigned_to === label ? 'text-accent-600' : 'text-text-tertiary'} />
+              <IconUser size={14} className={coach.assigned_to === label ? 'text-accent-ink' : 'text-text-tertiary'} />
               <span className="flex-1">{label}</span>
               {coach.assigned_to === label && <IconCheck size={13} className="text-accent-700" />}
             </Button>
@@ -567,8 +567,8 @@ const CoachTableRow = React.memo(
                     className="w-full px-3 py-2 text-left text-sm text-text-secondary hover:bg-surface-sunken transition-colors active:bg-surface-sunken flex items-center gap-2"
                   >
                     {gmailDirectSend
-                      ? <><IconMail size={16} className="text-accent-600" /> Send via Gmail</>
-                      : <><IconExternalLink size={16} className="text-accent-600" /> Open in Gmail</>}
+                      ? <><IconMail size={16} className="text-accent-ink" /> Send via Gmail</>
+                      : <><IconExternalLink size={16} className="text-accent-ink" /> Open in Gmail</>}
                   </Button>
                 )}
                 {coach.phone && (
@@ -837,8 +837,8 @@ const CoachTableCard = React.memo(
                       className="w-full px-3 py-2 text-left text-sm text-text-secondary hover:bg-surface-sunken transition-colors active:bg-surface-sunken flex items-center gap-2"
                     >
                       {gmailDirectSend
-                        ? <><IconMail size={16} className="text-accent-600" /> Send via Gmail</>
-                        : <><IconExternalLink size={16} className="text-accent-600" /> Open in Gmail</>}
+                        ? <><IconMail size={16} className="text-accent-ink" /> Send via Gmail</>
+                        : <><IconExternalLink size={16} className="text-accent-ink" /> Open in Gmail</>}
                     </Button>
                   )}
                   {coach.phone && (

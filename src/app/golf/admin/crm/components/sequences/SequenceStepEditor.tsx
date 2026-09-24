@@ -346,7 +346,7 @@ export function SequenceStepEditor({
             className="w-full flex items-center justify-between px-2 py-2 min-h-0 text-xs font-semibold text-text-secondary hover:text-text-primary hover:bg-surface transition-colors"
           >
             <span className="flex items-center gap-1.5">
-              <IconEye size={13} className="text-accent-600" aria-hidden />
+              <IconEye size={13} className="text-accent-ink" aria-hidden />
               Preview
             </span>
             <IconChevronDown

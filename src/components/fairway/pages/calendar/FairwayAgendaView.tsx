@@ -389,7 +389,7 @@ export function FairwayAgendaView({
                 type="button"
                 variant="ghost"
                 onClick={onCreateEvent}
-                className="inline h-auto min-h-0 w-auto border-0 p-0 font-medium text-accent-600 underline-offset-4 outline-none hover:bg-transparent hover:text-accent-700 hover:underline focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas"
+                className="inline h-auto min-h-0 w-auto border-0 p-0 font-medium text-accent-ink underline-offset-4 outline-none hover:bg-transparent hover:text-accent-700 hover:underline focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas"
               >
                 Schedule something
               </Button>
@@ -425,7 +425,7 @@ export function FairwayAgendaView({
             leftIcon={<History className="h-4 w-4" aria-hidden />}
             onClick={() => setShowPast((v) => !v)}
             aria-expanded={showPast}
-            className="-ml-2"
+            className="-ml-2 text-accent-ink"
           >
             {showPast
               ? 'Hide earlier events'

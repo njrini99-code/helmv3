@@ -148,7 +148,7 @@ export const Readout = React.forwardRef<HTMLDivElement, ReadoutProps>(function R
           data-slot="readout-label"
           className={cn(
             'font-fw-display text-eyebrow uppercase tracking-[0.14em] text-text-tertiary',
-            // NOTE: `text-text-tertiary/80` here would compile to NOTHING before
+            // NOTE: `text-text-tertiary` here would compile to NOTHING before
             // the tokenColor() fix in tailwind.config.ts — a slash-opacity
             // modifier on a bare `var(--fw-color-*)` value emits no rule at
             // all. That is why this used the plain `opacity-80` utility.
@@ -172,7 +172,7 @@ export const Readout = React.forwardRef<HTMLDivElement, ReadoutProps>(function R
             className={cn(
               'inline-flex items-center gap-2 font-fw-mono font-semibold tabular-nums',
               // A dim, recessive reading — never an authoritative value. Was
-              // `text-text-tertiary/70`: Tailwind cannot apply a slash-opacity
+              // `text-text-tertiary`: Tailwind cannot apply a slash-opacity
               // modifier to a custom color backed by a bare `var(--fw-color-*)`
               // reference, so that class compiled to NOTHING. With no color
               // rule at all, this huge bold mono em-dash (up to the 72px

@@ -7,7 +7,7 @@ import {
   evidenceSignature,
   formatCalendarDate,
   formatGap,
-  formatToPar,
+  formatAverageToPar,
   isFullRound,
   readLabel,
   readQuality,
@@ -55,8 +55,8 @@ describe('buildVerdict', () => {
 
 describe('formatting', () => {
   it('uses a real minus and "E" for even', () => {
-    expect(formatToPar(0)).toBe('E');
-    expect(formatToPar(-1.26)).toBe('−1.3');
+    expect(formatAverageToPar(0)).toBe('E');
+    expect(formatAverageToPar(-1.26)).toBe('−1.3');
     expect(formatGap(-27.7, 'percent')).toBe('−28 pts');
     expect(formatGap(7, 'feet')).toBe('+7 ft');
   });

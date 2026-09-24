@@ -158,6 +158,64 @@ export function removeSignalFromGroups(groups: readonly SignalGroup[], signalId:
     .filter((g): g is SignalGroup => g !== null);
 }
 
+function signalGroupKey(group: SignalGroup): string {
+  return group.playerId ?? '__team__';
+}
+
+/**
+ * Rollback for ONE failed optimistic removal (DATA-12). Re-inserts only
+ * `signalId`, taken from `snapshot` (the groups as they were before that
+ * removal), into the CURRENT groups — so a concurrent action that already
+ * succeeded (another signal dismissed, or a server refresh) is not undone by
+ * restoring the whole stale snapshot. Keeps the snapshot's ordering, recreates
+ * the group if the removal emptied it, and is a no-op when the signal is
+ * already back (e.g. a refresh re-seeded it).
+ */
+export function restoreSignalToGroups(
+  current: readonly SignalGroup[],
+  snapshot: readonly SignalGroup[],
+  signalId: string,
+): SignalGroup[] {
+  if (current.some((g) => g.signals.some((s) => s.id === signalId))) return [...current];
+  const snapshotGroupIndex = snapshot.findIndex((g) => g.signals.some((s) => s.id === signalId));
+  if (snapshotGroupIndex === -1) return [...current];
+  const snapshotGroup = snapshot[snapshotGroupIndex]!;
+  const key = signalGroupKey(snapshotGroup);
+  const restored = snapshotGroup.signals.find((s) => s.id === signalId)!;
+
+  const existingIndex = current.findIndex((g) => signalGroupKey(g) === key);
+  if (existingIndex !== -1) {
+    const existing = current[existingIndex]!;
+    const currentById = new Map(existing.signals.map((s) => [s.id, s] as const));
+    const snapshotIds = new Set(snapshotGroup.signals.map((s) => s.id));
+    // Snapshot order for the signals both sides know; anything new since the
+    // snapshot (a refresh) keeps its current object and goes last.
+    const signals = [
+      ...snapshotGroup.signals
+        .filter((s) => s.id === signalId || currentById.has(s.id))
+        .map((s) => (s.id === signalId ? restored : currentById.get(s.id)!)),
+      ...existing.signals.filter((s) => !snapshotIds.has(s.id)),
+    ];
+    const worstSeverity = worstSeverityOf(signals);
+    const next = [...current];
+    next[existingIndex] = { ...existing, signals, worstSeverity, attentionScore: attentionScore({ worstSeverity, signals }) };
+    return next;
+  }
+
+  // The removal emptied the group — recreate it where it sat in the snapshot:
+  // after every current group that preceded it there.
+  const precedingKeys = new Set(snapshot.slice(0, snapshotGroupIndex).map(signalGroupKey));
+  let insertAt = 0;
+  current.forEach((g, i) => {
+    if (precedingKeys.has(signalGroupKey(g))) insertAt = i + 1;
+  });
+  const signals = [restored];
+  const worstSeverity = worstSeverityOf(signals);
+  const next = [...current];
+  next.splice(insertAt, 0, { ...snapshotGroup, signals, worstSeverity, attentionScore: attentionScore({ worstSeverity, signals }) });
+  return next;
+}
+
 /** Locates a signal (+ its group) by id across every group — powers the
  *  `?signal=` deep link and the dossier's own lookup. `null` id or a miss
  *  (already reviewed/dismissed elsewhere) both return `null`, an honest
@@ -222,10 +280,17 @@ export function buildBriefVerdict(groups: readonly SignalGroup[], counts: BriefC
 
 /** Relative "last scan" caption. `null` (no scan on record) reads as an
  *  honest "No scans yet" rather than a fabricated duration. */
-export function formatRelativeScanTime(scannedAt: string | null, now: Date = new Date()): string {
+/**
+ * `now: null` is the server render / pre-hydration pass (HYD-10): the elapsed
+ * time depends on the clock, which differs between server and client, so it
+ * renders a clock-free label and the desk fills in the relative time after
+ * mount.
+ */
+export function formatRelativeScanTime(scannedAt: string | null, now: Date | null = new Date()): string {
   if (!scannedAt) return 'No scans yet';
   const then = new Date(scannedAt).getTime();
   if (!Number.isFinite(then)) return 'No scans yet';
+  if (now === null) return 'Last scan';
   const diffMs = Math.max(0, now.getTime() - then);
   const minutes = Math.floor(diffMs / 60_000);
   if (minutes < 1) return 'Last scan just now';

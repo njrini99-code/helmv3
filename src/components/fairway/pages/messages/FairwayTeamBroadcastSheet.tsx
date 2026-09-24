@@ -316,7 +316,7 @@ export function FairwayTeamBroadcastSheet({
                             'grid h-5 w-5 shrink-0 place-items-center rounded-fw-sm border-2',
                             'transition-colors [transition-duration:var(--fw-dur-fast)]',
                             isSelected
-                              ? 'border-accent-600 bg-accent-600 text-text-on-accent'
+                              ? 'border-accent-fill bg-accent-fill text-text-on-accent-fill'
                               : 'border-border-strong',
                           )}
                         >

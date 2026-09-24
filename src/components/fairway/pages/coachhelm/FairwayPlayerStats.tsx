@@ -124,7 +124,7 @@ export function FairwayPlayerStats({ initialPlayerId = null, initialStats = null
                 action={
                   <Link
                     href="/golf/dashboard/stats"
-                    className="font-fw-sans text-label font-medium text-accent-600 hover:text-accent-700"
+                    className="font-fw-sans text-label font-medium text-accent-ink hover:text-accent-700"
                   >
                     Back to team stats
                   </Link>

@@ -2283,7 +2283,7 @@ function ManualGmailTemplateBar({
   return (
     <div className="flex flex-wrap items-center gap-2 rounded-card border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-card)] px-3 py-2">
       <span className="flex items-center gap-1.5 text-sm font-medium text-text-secondary">
-        <IconMail size={15} className="text-accent-600" />
+        <IconMail size={15} className="text-accent-ink" />
         Gmail template:
       </span>
       <div className="relative inline-flex items-center">
@@ -2402,7 +2402,7 @@ function AssigneeScopeBar({
   return (
     <div className="flex flex-wrap items-center gap-2 rounded-card border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-card)] px-3 py-2">
       <span className="flex items-center gap-1.5 text-sm font-medium text-text-secondary">
-        <IconUser size={15} className="text-accent-600" />
+        <IconUser size={15} className="text-accent-ink" />
         Assignee:
       </span>
       <div className="relative inline-flex items-center">

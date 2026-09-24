@@ -173,6 +173,8 @@ describe('RosterHealthHeader — render', () => {
     );
     expect(screen.getByText('Who needs your attention')).toBeInTheDocument();
     expect(screen.getByText(/Awaiting roster/)).toBeInTheDocument();
+    // A11Y-04: section titles sit directly under the page h1.
+    expect(screen.getByRole('heading', { level: 2, name: 'Who needs your attention' })).toBeInTheDocument();
   });
 
   it('renders the ranked needs list and routes "Add focus area" with the player id', async () => {

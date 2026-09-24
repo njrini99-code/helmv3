@@ -60,7 +60,7 @@ import {
 } from '@/app/golf/actions/development';
 import { logFocusAreaPracticeSession } from '@/app/golf/actions/focus-area-practice-log';
 import { useToast } from '@/components/ui/sonner';
-import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription } from '@/components/ui/drawer';
+import { Sheet } from '@/components/fairway/overlays/Sheet';
 
 export interface DevelopmentDrillProps {
   activeAreas: FocusAreaCardData[];
@@ -174,15 +174,16 @@ function LogProgressDrawer({ state, onClose }: { state: LogProgressState | null;
   }
 
   return (
-    <Drawer open={open} onOpenChange={(next) => { if (!next) handleClose(); }}>
-      <DrawerContent className="sm:max-w-md sm:mx-auto sm:rounded-3xl sm:bottom-1/2 sm:translate-y-1/2">
-        <DrawerHeader>
-          <DrawerTitle>Log progress</DrawerTitle>
-          <DrawerDescription>{fa?.title || 'Focus area'}</DrawerDescription>
-        </DrawerHeader>
+    <Sheet
+      open={open}
+      onOpenChange={(next) => { if (!next) handleClose(); }}
+      title="Log progress"
+      description={fa?.title || 'Focus area'}
+      className="sm:mx-auto sm:max-w-md"
+    >
         <form
           onSubmit={handleSubmit}
-          className="space-y-5 px-6 pb-6 overflow-y-auto overscroll-contain"
+          className="min-h-0 space-y-5 px-6 pb-6 overflow-y-auto overscroll-contain"
           style={{ paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom))' }}
         >
           <div>
@@ -228,8 +229,7 @@ function LogProgressDrawer({ state, onClose }: { state: LogProgressState | null;
             </Button>
           </div>
         </form>
-      </DrawerContent>
-    </Drawer>
+    </Sheet>
   );
 }
 
@@ -559,7 +559,7 @@ export function DevelopmentDrill({
           {proposedAreas.length > 0 ? (
             <section>
               <h2 className="mb-4 flex items-center gap-2 font-fw-display text-h3 font-medium text-text-primary">
-                <Target className="h-5 w-5 text-accent-600" aria-hidden />
+                <Target className="h-5 w-5 text-accent-ink" aria-hidden />
                 Prescribed for you
                 <span className="ml-auto font-fw-sans text-body-sm font-normal text-text-tertiary">
                   {proposedAreas.length} pending
@@ -609,7 +609,7 @@ export function DevelopmentDrill({
               {activeAreas.length > 0 ? (
                 <section>
                   <h2 className="mb-4 flex items-center gap-2 font-fw-display text-h3 font-medium text-text-primary">
-                    <Clock className="h-5 w-5 text-accent-600" aria-hidden />
+                    <Clock className="h-5 w-5 text-accent-ink" aria-hidden />
                     Active focus areas
                     <span className="ml-auto font-fw-sans text-body-sm font-normal text-text-tertiary">
                       {activeAreas.length} {activeAreas.length === 1 ? 'area' : 'areas'}

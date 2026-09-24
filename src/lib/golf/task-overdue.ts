@@ -88,3 +88,23 @@ export function isGolfTaskOverdueInZone(
   if (!/^\d{4}-\d{2}-\d{2}$/.test(dueDay)) return false;
   return dueDay < todayIsoInZone(timeZone, now);
 }
+
+/**
+ * A task's due date as a Date on the VIEWER's calendar: a bare `YYYY-MM-DD` is
+ * local midnight of that day (never `new Date('YYYY-MM-DD')`, which is UTC
+ * midnight and lands on the previous local day anywhere west of UTC); a full
+ * timestamp parses as `new Date` would.
+ *
+ * Shared by the task cards (FairwayTasks) and the realtime hook's `is_overdue`
+ * so the overdue banner count and the overdue cards can never disagree
+ * (audit HYD-06).
+ */
+export function parseTaskDueDate(dueDate: string): Date {
+  const dateOnlyMatch = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dueDate);
+  if (dateOnlyMatch) {
+    const [, y, m, d] = dateOnlyMatch;
+    return new Date(Number(y), Number(m) - 1, Number(d));
+  }
+  return new Date(dueDate);
+}
+

@@ -57,7 +57,12 @@ export type RoundEntryRule =
   | 'distance_not_decreasing'
   | 'tee_shot_unreachable'
   | 'duplicate_hole'
-  | 'round_total_implausible';
+  | 'round_total_implausible'
+  | 'shot_start_mismatch'
+  | 'tee_shot_unjudgeable'
+  | 'hole_count_invalid'
+  | 'holes_not_sequential'
+  | 'holes_played_mismatch';
 
 export interface RoundEntryIssue {
   rule: RoundEntryRule;
@@ -92,6 +97,13 @@ export const TEE_TO_GREEN_CONFIRM_YARDS = 400;
  */
 export const TEE_TO_GREEN_BLOCK_YARDS = 500;
 
+/**
+ * A shot should start where the previous one finished. Beyond this gap the
+ * player is asked to confirm (a mistyped distance, or a shot that was never
+ * entered). Not a block: GPS-free entry is approximate by nature.
+ */
+export const SHOT_CONTINUITY_TOLERANCE_YARDS = 5;
+
 /*
  * Round-total floor: `minPlausibleStrokes` from ./round-countable — the SAME
  * rule that decides whether a stored round feeds player-facing stats (50
@@ -118,14 +130,34 @@ function isRecoveryOrLongMiss(shot: ValidatableShot): boolean {
   return tags.some((t) => typeof t === 'string' && t.includes('long'));
 }
 
-/** Score and putts as the tracker derives them (mirrors calculateHoleStats). */
-export function deriveScoreAndPutts(shots: readonly ValidatableShot[]): { score: number; putts: number } {
+type CountableShot = Pick<ValidatableShot, 'shotType' | 'result' | 'isPenalty'>;
+
+/**
+ * Score, putts and penalty strokes from a hole's shot records — the ONE
+ * definition (RE-V4). `calculateHoleStats` (shot-helpers) and the validator
+ * both read it, so the tracker and the submit gate can never count a hole
+ * differently. A `result: 'penalty'` shot without its own penalty record still
+ * costs a stroke: that stroke is added back.
+ */
+export function deriveHoleCounts(shots: readonly CountableShot[]): { score: number; putts: number; penalties: number } {
   const penaltyRecords = shots.filter((s) => s.isPenalty).length;
   const penaltyResults = shots.filter((s) => s.result === 'penalty' && !s.isPenalty).length;
+  const missingPenalties = Math.max(0, penaltyResults - penaltyRecords);
   return {
-    score: shots.length + Math.max(0, penaltyResults - penaltyRecords),
+    score: shots.length + missingPenalties,
     putts: shots.filter((s) => s.shotType === 'putting').length,
+    penalties: penaltyRecords + missingPenalties,
   };
+}
+
+/** Score and putts as the tracker derives them (see deriveHoleCounts). */
+export function deriveScoreAndPutts(shots: readonly CountableShot[]): { score: number; putts: number } {
+  const { score, putts } = deriveHoleCounts(shots);
+  return { score, putts };
+}
+
+function isPenaltyShot(shot: ValidatableShot): boolean {
+  return shot.isPenalty || shot.shotType === 'penalty' || shot.result === 'penalty';
 }
 
 // ── Shot-level rules ────────────────────────────────────────────────────────
@@ -152,7 +184,17 @@ export function validateShot(
     const teeYards = beforeYards > 0 ? beforeYards : Number(hole.yardage ?? 0);
     const yds = Math.round(teeYards);
     const what = shot.result === 'hole' ? 'hole-in-one' : 'drive onto the green';
-    if (teeYards > TEE_TO_GREEN_BLOCK_YARDS) {
+    if (!(teeYards > 0)) {
+      // RE-V2: no tee distance AND no hole yardage — the reachability rule
+      // has nothing to judge. Flag it for a confirm instead of passing silently.
+      issues.push({
+        rule: 'tee_shot_unjudgeable',
+        severity: 'confirm',
+        message: `Hole ${hole.holeNumber} has no yardage, so we can't check this ${what}. Tap to confirm.`,
+        holeNumber: hole.holeNumber,
+        shotNumber: shot.shotNumber,
+      });
+    } else if (teeYards > TEE_TO_GREEN_BLOCK_YARDS) {
       issues.push({
         rule: 'tee_shot_unreachable',
         severity: 'block',
@@ -254,11 +296,107 @@ export function validateHoleShotConsistency(hole: ValidatableHole): RoundEntryIs
   return issues;
 }
 
+/**
+ * Each shot should start where the previous one finished (±5 yd, feet
+ * converted). Skipped across a penalty — a drop or a re-tee legitimately moves
+ * the ball — and wherever either distance is unknown (0). `confirm` only.
+ */
+export function validateShotContinuity(
+  shots: readonly ValidatableShot[],
+  hole: { holeNumber: number },
+): RoundEntryIssue[] {
+  const issues: RoundEntryIssue[] = [];
+  const ordered = [...shots].sort((a, b) => a.shotNumber - b.shotNumber);
+  for (let i = 1; i < ordered.length; i++) {
+    const prev = ordered[i - 1]!;
+    const cur = ordered[i]!;
+    if (isPenaltyShot(prev) || isPenaltyShot(cur) || prev.result === 'hole') continue;
+    if (!(prev.distanceToHoleAfter > 0) || !(cur.distanceToHoleBefore > 0)) continue;
+    const ended = toYards(prev.distanceToHoleAfter, prev.distanceUnitAfter);
+    const starts = toYards(cur.distanceToHoleBefore, cur.distanceUnitBefore);
+    if (Math.abs(ended - starts) > SHOT_CONTINUITY_TOLERANCE_YARDS) {
+      const unit = cur.distanceUnitBefore === 'feet' ? 'ft' : 'yds';
+      const prevUnit = prev.distanceUnitAfter === 'feet' ? 'ft' : 'yds';
+      issues.push({
+        rule: 'shot_start_mismatch',
+        severity: 'confirm',
+        message: `Shot ${cur.shotNumber} starts at ${Math.round(cur.distanceToHoleBefore)} ${unit}, but shot ${prev.shotNumber} finished at ${Math.round(prev.distanceToHoleAfter)} ${prevUnit}. Tap to confirm.`,
+        holeNumber: hole.holeNumber,
+        shotNumber: cur.shotNumber,
+      });
+    }
+  }
+  return issues;
+}
+
 export function validateHole(hole: ValidatableHole): RoundEntryIssue[] {
   const issues = validateHoleTotals(hole);
   issues.push(...validateHoleShotConsistency(hole));
   for (const shot of hole.shots ?? []) issues.push(...validateShot(shot, hole));
+  issues.push(...validateShotContinuity(hole.shots ?? [], hole));
   return issues;
+}
+
+/**
+ * A finished round is exactly 9 or 18 holes, numbered as one contiguous run:
+ * 1–18, or a nine (1–9 or 10–18 — the setup's back-nine option keeps the
+ * course's real hole numbers). Only for a COMPLETED round; a partial save is
+ * a round in progress and is never held to this.
+ */
+export function validateHoleSequence(holeNumbers: readonly number[]): RoundEntryIssue[] {
+  const distinct = [...new Set(holeNumbers)].sort((a, b) => a - b);
+  const count = distinct.length;
+  if (count !== 9 && count !== 18) {
+    return [{
+      rule: 'hole_count_invalid',
+      severity: 'block',
+      message: `A finished round is 9 or 18 holes — this one has ${count}. Finish the remaining holes, or save the round for later.`,
+    }];
+  }
+  const first = distinct[0]!;
+  const contiguous = distinct.every((n, i) => n === first + i);
+  const validStart = count === 18 ? first === 1 : first === 1 || first === 10;
+  if (!contiguous || !validStart) {
+    return [{
+      rule: 'holes_not_sequential',
+      severity: 'block',
+      message: count === 18
+        ? 'An 18-hole round must include holes 1 through 18, each once.'
+        : 'A 9-hole round must be holes 1–9 or 10–18, each once.',
+    }];
+  }
+  return [];
+}
+
+/**
+ * The finished round must have the hole count it was started with. A round
+ * configured for 18 that arrives with 9 scored holes is not "a 9-hole round".
+ */
+export function validateHolesPlayed(holesPlayed: number, configuredHoles: number | null | undefined): RoundEntryIssue[] {
+  if (configuredHoles !== 9 && configuredHoles !== 18) return [];
+  if (holesPlayed === configuredHoles) return [];
+  return [{
+    rule: 'holes_played_mismatch',
+    severity: 'block',
+    message: `This round was started as ${configuredHoles} holes, but ${holesPlayed} ${holesPlayed === 1 ? 'hole was' : 'holes were'} submitted. Finish every hole before submitting.`,
+  }];
+}
+
+/**
+ * The per-hole rules for a round still in progress (savePartialRound): only
+ * holes with a score AND putts are judged, only `block` issues matter, and the
+ * 9/18 shape is never applied. The first blocking issue, or null.
+ */
+export function firstBlockingPartialHoleIssue(
+  holes: readonly (Omit<ValidatableHole, 'score' | 'putts'> & { score?: number | null; putts?: number | null } | null | undefined)[],
+): RoundEntryIssue | null {
+  for (const hole of holes) {
+    if (!hole || hole.score == null || hole.putts == null) continue;
+    const blocking = validateHole({ ...hole, score: hole.score, putts: hole.putts })
+      .find((i) => i.severity === 'block');
+    if (blocking) return blocking;
+  }
+  return null;
 }
 
 // ── Round-level rules ───────────────────────────────────────────────────────
@@ -270,7 +408,20 @@ export interface RoundEntryValidation {
   holesPlayed: number;
 }
 
-export function validateRoundEntry(holes: readonly ValidatableHole[]): RoundEntryValidation {
+export interface RoundEntryOptions {
+  /**
+   * Hold the round to a finished round's shape: 9 or 18 holes, one contiguous
+   * run (validateHoleSequence). The submit action sets this; nothing else does.
+   */
+  requireCompleteRound?: boolean;
+  /** The hole count the round was started with (the in-progress row's holes_played). */
+  configuredHoles?: number | null;
+}
+
+export function validateRoundEntry(
+  holes: readonly ValidatableHole[],
+  options: RoundEntryOptions = {},
+): RoundEntryValidation {
   const issues: RoundEntryIssue[] = [];
 
   const seen = new Set<number>();
@@ -286,6 +437,11 @@ export function validateRoundEntry(holes: readonly ValidatableHole[]): RoundEntr
     seen.add(hole.holeNumber);
   }
   const holesPlayed = seen.size;
+
+  if (options.requireCompleteRound) {
+    issues.push(...validateHoleSequence(holes.map((h) => h.holeNumber)));
+  }
+  issues.push(...validateHolesPlayed(holesPlayed, options.configuredHoles));
 
   for (const hole of holes) issues.push(...validateHole(hole));
 

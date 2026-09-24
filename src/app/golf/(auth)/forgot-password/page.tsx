@@ -108,8 +108,8 @@ export default function ForgotPasswordPage() {
       topBar={homeLink}
       footer={
         !success ? (
-          <p className="flex items-center text-body text-text-secondary">
-            <span>Remember it?</span>
+          <p className="text-center text-body text-text-secondary">
+            Remember it?{' '}
             <Link href="/golf/login" className={authTextLinkClass}>
               Sign in
             </Link>

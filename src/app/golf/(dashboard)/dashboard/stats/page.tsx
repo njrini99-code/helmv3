@@ -10,7 +10,7 @@ import { getPlayerDisplayName, getPlayerRoundOptions } from '@/app/golf/actions/
 import type { StatsSpineStageInitialData } from '@/components/golf/stats/spine-stage/StatsSpineStage';
 
 export const metadata: Metadata = {
-  title: 'Stats | GolfHelm',
+  title: 'Stats',
   description: 'View your golf performance statistics, strokes gained analysis, and scoring trends.',
 };
 

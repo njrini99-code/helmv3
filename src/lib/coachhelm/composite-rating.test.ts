@@ -40,8 +40,12 @@ describe('computeCompositeRating — P2-16 data honesty', () => {
     // Even par across recent rounds → 80; +10 over par → 50.
     expect(computeCompositeRating([round(0)], []).rating).toBe(80);
     expect(computeCompositeRating([round(10)], []).rating).toBe(50);
-    // Under par lifts toward the cap.
-    expect(computeCompositeRating([round(-5)], []).rating).toBe(95);
+    // Under par lifts toward 100 but never reaches it. Requirement change
+    // (OD-02, 2026-09-24): the rating is the Form curve, which keeps the par /
+    // +10 / +20 anchors above but bends instead of clamping, so −5 reads 89
+    // (it was 95 on the old linear 80 − 3x line, which hit 100 at −7).
+    expect(computeCompositeRating([round(-5)], []).rating).toBe(89);
+    expect(computeCompositeRating([round(-15)], []).rating).toBeLessThan(100);
   });
 
   it('penalizes severe observed patterns (capped at 20)', () => {
@@ -123,7 +127,8 @@ describe('computeCompositeRating — implausible rounds (countable-round rule)',
       { score_to_par: 4, holes_played: 18 },
       { score_to_par: 2, holes_played: 18 },
     ]);
-    expect(r.rating).toBe(71); // 80 − 3 × mean(4, 2)
+    expect(r.rating).toBe(73); // Form curve at mean(4, 2) = +3 (old linear line: 71)
+    expect(r.form.quality).toBe('early');
     expect(r.rounds_in_calculation).toBe(2);
   });
 });

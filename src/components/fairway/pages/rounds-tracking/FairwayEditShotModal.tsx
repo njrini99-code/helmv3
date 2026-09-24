@@ -14,6 +14,7 @@
  * live-entry distanceInputRef is), so token-styled native inputs are fine here.
  * ========================================================================== */
 
+import { useState } from 'react';
 import { cn } from '@/lib/utils';
 import { ModalShell } from '@/components/fairway/overlays/ModalShell';
 import { Button, IconButton } from '@/components/fairway/controls/button';
@@ -24,6 +25,80 @@ import { PuttMissTagSelector } from '@/components/golf/putt-miss-tag-selector';
 import { calculateShotDistanceWithDirection } from '@/lib/utils/shot-helpers';
 import type { ShotRecord } from '@/lib/types/golf';
 import type { ShotAction, EditFormData } from '@/hooks/golf/use-shot-state-machine';
+import {
+  validateShot,
+  validateShotContinuity,
+  type RoundEntryIssue,
+  type ValidatableShot,
+} from '@/lib/golf/round-entry-validation';
+
+/** The hole an edited shot belongs to — what the shared shot rules judge against. */
+export interface EditShotHoleContext {
+  holeNumber: number;
+  par: number;
+  yardage?: number | null;
+}
+
+/**
+ * RE-S5: the edit modal saved whatever was typed — a negative distance, or a
+ * shot that left the ball further away — with no check at all, while the live
+ * entry panel ran the shared rules on the same shot. Run those rules here too:
+ * malformed or negative distances block; the shared `confirm` rules (further
+ * away than before, a shot that doesn't start where the last one finished, a
+ * 400+ yd drive onto the green) ask once; the shared `block` rules block.
+ */
+export function editedShotIssues(
+  form: EditFormData,
+  shot: ShotRecord,
+  hole?: EditShotHoleContext,
+  shotHistory?: readonly ShotRecord[],
+): RoundEntryIssue[] {
+  if (form.isPenalty || shot.isPenalty) return [];
+  const blockMsg = (message: string): RoundEntryIssue => ({
+    rule: 'distance_not_decreasing',
+    severity: 'block',
+    message,
+    holeNumber: hole?.holeNumber,
+    shotNumber: shot.shotNumber,
+  });
+  const before = Number.parseFloat(form.distanceToHoleBefore);
+  if (form.distanceToHoleBefore.trim() === '' || !Number.isFinite(before)) {
+    return [blockMsg('Enter the distance to the hole before this shot.')];
+  }
+  if (before < 0) return [blockMsg("The distance before the shot can't be negative.")];
+  const holed = form.result === 'hole';
+  const after = holed ? 0 : Number.parseFloat(form.distanceToHoleAfter);
+  if (!holed && (form.distanceToHoleAfter.trim() === '' || !Number.isFinite(after))) {
+    return [blockMsg('Enter the distance to the hole after this shot.')];
+  }
+  if (after < 0) return [blockMsg("The distance after the shot can't be negative.")];
+  if (!hole) return [];
+
+  const candidate: ValidatableShot = {
+    shotNumber: shot.shotNumber,
+    shotType: shot.shotType,
+    distanceToHoleBefore: before,
+    distanceUnitBefore: form.distanceUnitBefore,
+    result: form.result,
+    distanceToHoleAfter: after,
+    distanceUnitAfter: form.distanceUnitAfter,
+    isPenalty: form.isPenalty,
+    lieBefore: form.lieBefore,
+    missDirection: form.missDirection,
+    approachMissDirection: form.approachMissDirection,
+    puttMissTags: form.puttMissTags,
+  };
+  const issues = validateShot(candidate, hole);
+  if (shotHistory && shotHistory.length > 1) {
+    const chain = shotHistory.map((s) => (s.shotNumber === shot.shotNumber ? candidate : (s as ValidatableShot)));
+    issues.push(
+      ...validateShotContinuity(chain, hole).filter(
+        (i) => i.shotNumber === shot.shotNumber || i.shotNumber === shot.shotNumber + 1,
+      ),
+    );
+  }
+  return issues;
+}
 
 interface FairwayEditShotModalProps {
   open: boolean;
@@ -37,6 +112,10 @@ interface FairwayEditShotModalProps {
   onClose: () => void;
   onSave: () => void;
   onDelete: () => void;
+  /** The hole this shot belongs to; enables the shared shot rules (RE-S5). */
+  hole?: EditShotHoleContext;
+  /** The hole's shots, for the "starts where the last one finished" check. */
+  shotHistory?: readonly ShotRecord[];
 }
 
 const sectionLabel = 'mb-3 font-fw-sans text-eyebrow font-medium uppercase tracking-wider text-text-secondary';
@@ -54,7 +133,7 @@ function gridBtn(selected: boolean): string {
     'min-h-[48px] rounded-fw-md py-3 font-fw-sans text-sm font-medium transition-colors',
     'outline-none focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
     selected
-      ? 'bg-accent-650 text-text-on-accent shadow-flat ring-1 ring-accent-600'
+      ? 'bg-accent-fill text-text-on-accent-fill shadow-flat ring-1 ring-accent-600'
       : 'bg-surface-sunken text-text-primary ring-1 ring-border-subtle hover:ring-border-strong',
   );
 }
@@ -71,7 +150,34 @@ export function FairwayEditShotModal({
   onClose,
   onSave,
   onDelete,
+  hole,
+  shotHistory,
 }: FairwayEditShotModalProps) {
+  // The issue currently shown for this form. A `confirm` issue already shown
+  // turns the next Save into "save anyway"; any edit re-arms the check.
+  const [issue, setIssue] = useState<RoundEntryIssue | null>(null);
+  const [checkedForm, setCheckedForm] = useState(editFormData);
+  if (checkedForm !== editFormData) {
+    setCheckedForm(editFormData);
+    if (issue) setIssue(null);
+  }
+
+  const handleSave = () => {
+    const issues = editedShotIssues(editFormData, editingShot, hole, shotHistory);
+    const blocking = issues.find((i) => i.severity === 'block');
+    if (blocking) {
+      setIssue(blocking);
+      return;
+    }
+    const confirm = issues.find((i) => i.severity === 'confirm');
+    if (confirm && issue?.message !== confirm.message) {
+      setIssue(confirm);
+      return;
+    }
+    setIssue(null);
+    onSave();
+  };
+
   return (
     <ModalShell
       open={open}
@@ -98,6 +204,11 @@ export function FairwayEditShotModal({
         {editError && (
           <div className="mt-3">
             <InlineNotice tone="danger">{editError}</InlineNotice>
+          </div>
+        )}
+        {issue && !showDeleteConfirm && (
+          <div className="mt-3" data-slot="edit-shot-issue">
+            <InlineNotice tone={issue.severity === 'block' ? 'danger' : 'warning'}>{issue.message}</InlineNotice>
           </div>
         )}
       </div>
@@ -286,11 +397,11 @@ export function FairwayEditShotModal({
                               'min-h-[44px] rounded-fw-md py-2 font-fw-sans text-eyebrow font-medium transition-colors',
                               'outline-none focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
                               editFormData.distanceToHoleAfter === String(ft) && editFormData.distanceUnitAfter === 'feet'
-                                ? 'bg-accent-650 text-text-on-accent shadow-flat'
+                                ? 'bg-accent-fill text-text-on-accent-fill shadow-flat'
                                 : 'bg-surface-sunken text-text-primary ring-1 ring-border-subtle hover:ring-border-strong',
                             )}
                           >
-                            {ft}ft
+                            {ft} ft
                           </Button>
                         ))}
                       </div>
@@ -305,7 +416,7 @@ export function FairwayEditShotModal({
                               'rounded-fw-md py-2 font-fw-sans text-eyebrow font-medium transition-colors',
                               'outline-none focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
                               editFormData.distanceToHoleAfter === String(yds) && editFormData.distanceUnitAfter === 'yards'
-                                ? 'bg-accent-650 text-text-on-accent shadow-flat'
+                                ? 'bg-accent-fill text-text-on-accent-fill shadow-flat'
                                 : 'bg-surface-sunken text-text-primary ring-1 ring-border-subtle hover:ring-border-strong',
                             )}
                           >
@@ -437,8 +548,14 @@ export function FairwayEditShotModal({
             <Button variant="secondary" className="flex-1" onClick={onClose} disabled={editSaving}>
               Cancel
             </Button>
-            <Button variant="primary" className="flex-1" onClick={onSave} disabled={editSaving} busy={editSaving}>
-              {editSaving ? 'Saving...' : 'Save Changes'}
+            <Button
+              variant="primary"
+              className="flex-1"
+              onClick={handleSave}
+              disabled={editSaving || issue?.severity === 'block'}
+              busy={editSaving}
+            >
+              {editSaving ? 'Saving…' : issue?.severity === 'confirm' ? 'Save anyway' : 'Save changes'}
             </Button>
           </div>
         </div>

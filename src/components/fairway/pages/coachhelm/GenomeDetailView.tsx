@@ -66,6 +66,7 @@ import { GENOME_DIMENSIONS, getDimension } from '@/lib/coachhelm/v3/genome/regis
 import { formatGenomeRefreshed } from '@/lib/coachhelm/v3/genome/format-refreshed';
 import { normalizeForRadar } from '@/lib/coachhelm/v3/genome/normalize';
 import { GENOME_WINDOW_DAYS } from '@/lib/coachhelm/v3/genome/types';
+import { confidenceLabel } from '@/lib/coachhelm/confidence-label';
 import type { GenomeVector, DimensionResult } from '@/lib/coachhelm/v3/genome/types';
 import type { Persona, PersonaEntry } from '@/lib/coachhelm/v3/genome/persona';
 import {
@@ -672,7 +673,7 @@ function PersonaInstrument({
       {/* Strengths */}
       <div>
         <div className="mb-2 flex items-center gap-2">
-          <IconCheckCircle2 size={15} className="text-accent-600" />
+          <IconCheckCircle2 size={15} className="text-accent-ink" />
           <h3 className="font-fw-sans text-body-sm font-semibold uppercase tracking-wide text-text-secondary">
             Strengths
           </h3>
@@ -778,9 +779,11 @@ function PersonaRow({ entry, tone }: { entry: PersonaEntry; tone: 'accent' }) {
           <span className="ml-1.5 text-text-tertiary">· {entry.qualitative}</span>
         ) : null}
       </span>
-      {entry.confidence != null ? (
-        <Badge tone={tone === 'accent' ? 'accent' : 'neutral'} size="sm" numeric>
-          {Math.round(entry.confidence * 100)}%
+      {/* NUM-08: confidence is a word, never a percentage (a sample ramp read
+          as certainty). */}
+      {confidenceLabel(entry.confidence) ? (
+        <Badge tone={tone === 'accent' ? 'accent' : 'neutral'} size="sm">
+          {confidenceLabel(entry.confidence)}
         </Badge>
       ) : null}
     </li>

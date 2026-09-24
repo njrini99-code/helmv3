@@ -634,6 +634,14 @@ reload (`lieFromShotResult`) restore position from.
   back to "the player") both as a fact and in the third-person rule. Until
   2026-09-02 the prompt named nobody and offered "Nick" as an example, and the
   model copied the example into a Shenandoah player's stored recap.
+- (2026-09-23, UI/UX audit DATA-04) The round detail page no longer calls
+  `generateRoundRecap` during Server Component render. It reads the persisted
+  `golf_rounds.ai_recap` and passes `recapPending` (completed round, no recap)
+  to `FairwayRoundDetail`, whose `useDeferredRoundRecap` hook calls the action
+  once after mount (ref-guarded per round id, `revalidate` off) and shows a
+  short skeleton until the recap arrives. A render or RSC prefetch therefore
+  never spends an LLM call or writes the recap/provenance rows; the first real
+  viewer still triggers generation, so the product behavior is unchanged.
 - (2026-09-23, Package 8) `round-recap.ts` now takes a per-round, per-revision
   single-flight lock BEFORE the LLM call, gated behind
   `coachhelm_recap_single_flight_lock` (default off — with the flag off,

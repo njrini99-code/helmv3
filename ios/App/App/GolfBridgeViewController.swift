@@ -15,12 +15,14 @@ class GolfBridgeViewController: CAPBridgeViewController {
     /// UserDefaults key holding the CFBundleVersion that last cleared the web cache.
     private static let cacheClearedBuildKey = "HelmWebCacheClearedForBuild"
 
-    /// The page canvas (`--fw-color-canvas` in src/styles/design-tokens.css):
-    /// light #F7EFDF, dark #101110. Read from the LaunchCanvas colour asset that
-    /// LaunchScreen.storyboard also uses, so launch screen, native view and
-    /// webview are one colour in both appearances. The inline dynamic colour is
-    /// only a fallback if the asset is missing.
-    static let canvasColor: UIColor = UIColor(named: "LaunchCanvas") ?? UIColor { traits in
+    /// The page canvas, `--fw-color-canvas` in src/styles/design-tokens.css
+    /// (light #F2E6D2, dark #0D0F0D). It is read from the FwColorCanvas colour
+    /// asset, which LaunchScreen.storyboard also uses, so the launch screen,
+    /// native view and webview are one colour in both appearances. The asset
+    /// is named after the token; src/test/static/canvas-color-sync.test.ts
+    /// fails if its values drift from the token. The inline dynamic colour is
+    /// only a fallback in case the asset is missing.
+    static let canvasColor: UIColor = UIColor(named: "FwColorCanvas") ?? UIColor { traits in
         traits.userInterfaceStyle == .dark
             ? UIColor(red: 16.0/255.0, green: 17.0/255.0, blue: 16.0/255.0, alpha: 1.0)
             : UIColor(red: 247.0/255.0, green: 239.0/255.0, blue: 223.0/255.0, alpha: 1.0)

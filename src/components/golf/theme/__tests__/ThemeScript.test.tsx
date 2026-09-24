@@ -70,7 +70,7 @@ describe('ThemeScript (#1044)', () => {
 
   // The redesigned sign-in screens paint only on Fairway tokens, so they boot
   // the same theme as the dashboard they lead to (and follow the OS on 'system').
-  it.each(['/golf/login', '/golf/forgot-password'])('boots the saved theme on %s', (pathname) => {
+  it.each(['/golf/login', '/golf/forgot-password', '/golf/reset-password'])('boots the saved theme on %s', (pathname) => {
     window.history.replaceState({}, '', pathname);
     window.localStorage.setItem('golf_theme', 'dark');
 
@@ -92,11 +92,19 @@ describe('ThemeScript (#1044)', () => {
     expect(document.documentElement).toHaveClass('dark');
   });
 
+  it('marks golf paths for the golf-only touch rules and nothing else', () => {
+    window.history.replaceState({}, '', '/golf/join/abc');
+    runBoot();
+    expect(document.documentElement).toHaveAttribute('data-helm-sport', 'golf');
+    window.history.replaceState({}, '', '/baseball/dashboard');
+    runBoot();
+    expect(document.documentElement).not.toHaveAttribute('data-helm-sport');
+  });
+
   // '/administration' guards the /admin prefix test: the boot script matches
   // the exact path or the '/admin/' prefix, never a bare startsWith('/admin').
-  // '/golf/reset-password' still renders the legacy hard-coded cream card, and
   // '/golf/login-help' guards that the login match is exact, not a prefix.
-  it.each(['/baseball/dashboard', '/golf/dashboard-preview', '/administration', '/golf/reset-password', '/golf/login-help'])(
+  it.each(['/baseball/dashboard', '/golf/dashboard-preview', '/administration', '/golf/login-help'])(
     'does not apply a GolfHelm preference on %s',
     (pathname) => {
       window.history.replaceState({}, '', pathname);

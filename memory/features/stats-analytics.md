@@ -88,6 +88,28 @@ Round completion
 - Strokes-gained and putting tendency gaps should be called out rather than silently treated as complete.
 - Team analytics should not mix players across teams or organizations.
 - CoachHelm can consume stats but should not own stat calculation truth.
+- **Countable rounds (2026-09-23).** A round feeds any average, best, trend,
+  strokes-gained figure, percentile, prediction or team rollup only if
+  `isCountableRound` (`src/lib/golf/round-countable.ts`) accepts it: it is
+  completed, 9 or 18 holes, has every declared hole scored (`front_nine`/
+  `back_nine` proxy or `recorded_holes`), clears the stroke floor
+  (`MIN_PLAUSIBLE_STROKES_PER_18 = 50`, putts-aware), and has |SG: Total| <=
+  `MAX_ABS_SG_TOTAL_PER_ROUND = 15` when SG is known. Totals are the canonical
+  hole sums (`withCanonicalRoundTotal`). Headline aggregates over countable
+  rounds come from `aggregateCountableRounds`
+  (`src/lib/golf/countable-round-stats.ts`), which reads per-round
+  `golf_round_stats_cache` rows. The DB-side `golf_player_stats_cache`
+  (trigger `update_player_stats_complete`) and `golf_player_standing`
+  (`refresh_player_standing_round_metrics`) do NOT apply this rule yet, so
+  loaders that need a correct number aggregate per-round rows instead of
+  reading those caches. Adopting the rule in SQL is an owner-approved
+  migration.
+- **One scoring-average definition.** "Scoring average" everywhere (player
+  dashboard, coach dashboard Top Performers, roster, Team Stats, Team
+  Health) is the mean of countable 18-hole rounds. 9-hole rounds count toward
+  per-hole rates (putts/18, birdies/18) only.
+- Standing captions from `teamCohortText` describe a RANK (`team_pct`), so
+  they read "Upper/Lower half of your team", never "above/below team average".
 
 ## UI Contract
 

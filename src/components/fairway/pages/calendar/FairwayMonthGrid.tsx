@@ -274,7 +274,7 @@ export function FairwayMonthGrid({
                     // today is selected the fill wins.
                     'flex h-6 w-6 items-center justify-center rounded-full font-fw-sans text-caption font-semibold tabular-nums transition-colors',
                     isSelected
-                      ? 'bg-accent-650 text-text-on-accent'
+                      ? 'bg-accent-fill text-text-on-accent-fill'
                       : isToday
                         ? 'ring-1 ring-inset ring-accent-650 text-accent-700'
                         : inMonth
@@ -291,7 +291,7 @@ export function FairwayMonthGrid({
                 className={cn(
                   'pointer-events-none flex h-6 w-6 items-center justify-center rounded-full font-fw-sans text-caption font-semibold tabular-nums sm:hidden',
                   isSelected
-                    ? 'bg-accent-650 text-text-on-accent'
+                    ? 'bg-accent-fill text-text-on-accent-fill'
                     : isToday
                       ? 'ring-1 ring-inset ring-accent-650 text-accent-700'
                       : inMonth

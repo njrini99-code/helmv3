@@ -117,6 +117,11 @@ export interface ModalShellProps {
   className?: string;
   /** data-slot override for instrumentation. */
   'data-slot'?: string;
+  /**
+   * ARIA role of the panel. `alertdialog` for a confirm that interrupts the
+   * user and demands an answer (ConfirmAlert). Default `dialog`.
+   */
+  role?: 'dialog' | 'alertdialog';
 }
 
 function ModalShellRoot({
@@ -134,6 +139,7 @@ function ModalShellRoot({
   children,
   className,
   'data-slot': dataSlot = 'modal-shell',
+  role = 'dialog',
 }: ModalShellProps) {
   const reduced = useReducedMotionGuard();
 
@@ -286,7 +292,11 @@ function ModalShellRoot({
               forceMount
               // The fairway-ds scope gives child elements the warm tokens/fonts.
               className="fairway-ds"
-              aria-describedby={description ? undefined : ''}
+              // Only pass the prop to SILENCE Radix's missing-description
+              // warning. Passing `aria-describedby={undefined}` when a
+              // description exists overrode Radix's own descriptionId (its
+              // content props spread last), so no modal was ever described.
+              {...(description ? {} : { 'aria-describedby': '' })}
               onEscapeKeyDown={handleContentEscapeKeyDown}
               onOpenAutoFocus={handleOpenAutoFocus}
               onCloseAutoFocus={handleCloseAutoFocus}
@@ -294,7 +304,7 @@ function ModalShellRoot({
               <motion.div
                 ref={setContentNode}
                 data-slot={dataSlot}
-                role="dialog"
+                role={role}
                 // Radix's Dialog.Content does not set this itself (asChild
                 // merges role/aria-describedby/aria-labelledby/data-state
                 // onto this element, but never aria-modal) — the JS focus

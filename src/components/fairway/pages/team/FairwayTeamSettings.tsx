@@ -62,7 +62,7 @@ import {
   type PendingAssistantCoach,
 } from '@/app/golf/actions/teams';
 import { setActiveTeam } from '@/app/golf/actions/team-switcher';
-import { triggerHaptic } from '@/lib/utils/capacitor';
+import { haptic } from '@/lib/haptics';
 
 /* ---------------------------------------------------------------------------
  * Props — mirror the legacy TeamSettingsClient loader output EXACTLY
@@ -80,6 +80,9 @@ export interface FairwayTeamSettingsTeam {
    * chip when this is a recognised value. (P365)
    */
   gender?: string | null;
+  /** `golf_teams.timezone`. Pins the "Established" date so the server render
+   *  and hydration print the same day (audit HYD-03). */
+  timezone?: string | null;
 }
 
 export interface FairwayTeamSettingsCoach {
@@ -182,7 +185,7 @@ export function FairwayTeamSettings({ team, programTeams }: FairwayTeamSettingsP
     startAddTeamTransition(async () => {
       const result = await addSecondTeam(secondTeamName.trim(), secondTeamGender);
       if (result.success) {
-        void triggerHaptic('success');
+        void haptic('success');
         fairwayToast.success('Second team created successfully');
         setShowAddTeam(false);
         setSecondTeamName('');
@@ -193,7 +196,7 @@ export function FairwayTeamSettings({ team, programTeams }: FairwayTeamSettingsP
         }
         router.refresh();
       } else {
-        void triggerHaptic('error');
+        void haptic('error');
         fairwayToast.error(result.error || 'Failed to create team');
       }
     });
@@ -204,12 +207,12 @@ export function FairwayTeamSettings({ team, programTeams }: FairwayTeamSettingsP
     startSwitchTransition(async () => {
       const result = await setActiveTeam(createdTeam.id);
       if (result.success) {
-        void triggerHaptic('success');
+        void haptic('success');
         fairwayToast.success(`Switched to ${createdTeam.name}`);
         setCreatedTeam(null);
         router.refresh();
       } else {
-        void triggerHaptic('error');
+        void haptic('error');
         fairwayToast.error('Could not switch teams. Use the team switcher in the top bar.');
       }
     });
@@ -224,11 +227,11 @@ export function FairwayTeamSettings({ team, programTeams }: FairwayTeamSettingsP
     startTransition(async () => {
       const result = await createTeam(teamName, season, firstTeamGender);
       if (result.success) {
-        void triggerHaptic('success');
+        void haptic('success');
         fairwayToast.success('Team created');
         router.refresh();
       } else {
-        void triggerHaptic('error');
+        void haptic('error');
         fairwayToast.error(result.error || 'Failed to create team');
       }
     });
@@ -242,7 +245,7 @@ export function FairwayTeamSettings({ team, programTeams }: FairwayTeamSettingsP
     // guard here before mutating — a blank name would otherwise persist and
     // render verbatim across the app.
     if (!teamName.trim()) {
-      void triggerHaptic('error');
+      void haptic('error');
       fairwayToast.error('Team name is required');
       return;
     }
@@ -252,11 +255,11 @@ export function FairwayTeamSettings({ team, programTeams }: FairwayTeamSettingsP
         season,
       });
       if (result.success) {
-        void triggerHaptic('success');
+        void haptic('success');
         fairwayToast.success('Team updated');
         router.refresh();
       } else {
-        void triggerHaptic('error');
+        void haptic('error');
         fairwayToast.error(result.error || 'Failed to update team');
       }
     });
@@ -271,7 +274,7 @@ export function FairwayTeamSettings({ team, programTeams }: FairwayTeamSettingsP
     try {
       const inviteUrl = `${window.location.origin}/golf/join/${team.join_code}`;
       await navigator.clipboard.writeText(inviteUrl);
-      void triggerHaptic('light');
+      void haptic('commit');
       setCopied(true);
       fairwayToast.success('Invite link copied');
       setTimeout(() => setCopied(false), 2000);
@@ -296,7 +299,7 @@ export function FairwayTeamSettings({ team, programTeams }: FairwayTeamSettingsP
     }
     try {
       await navigator.clipboard.writeText(team.join_code);
-      void triggerHaptic('light');
+      void haptic('commit');
       setCodeCopied(true);
       fairwayToast.success('Team code copied');
       setTimeout(() => setCodeCopied(false), 2000);
@@ -318,7 +321,7 @@ export function FairwayTeamSettings({ team, programTeams }: FairwayTeamSettingsP
     }
     try {
       await navigator.clipboard.writeText(pt.join_code);
-      void triggerHaptic('light');
+      void haptic('commit');
       setCopiedTeamId(pt.id);
       fairwayToast.success(`${squadLabel(pt.gender) ?? pt.name} code copied`);
       setTimeout(() => setCopiedTeamId((cur) => (cur === pt.id ? null : cur)), 2000);
@@ -336,7 +339,7 @@ export function FairwayTeamSettings({ team, programTeams }: FairwayTeamSettingsP
     }
     try {
       await navigator.clipboard.writeText(`${origin}/golf/join/${pt.join_code}`);
-      void triggerHaptic('light');
+      void haptic('commit');
       setCopiedLinkTeamId(pt.id);
       fairwayToast.success(`${squadLabel(pt.gender) ?? pt.name} invite link copied`);
       setTimeout(() => setCopiedLinkTeamId((cur) => (cur === pt.id ? null : cur)), 2000);
@@ -347,15 +350,15 @@ export function FairwayTeamSettings({ team, programTeams }: FairwayTeamSettingsP
 
   const handleRegenerateInviteCode = () => {
     if (!team) return;
-    void triggerHaptic('warning');
+    void haptic('warning');
     startTransition(async () => {
       const result = await regenerateJoinCode(team.id);
       if (result.success) {
-        void triggerHaptic('success');
+        void haptic('success');
         fairwayToast.success('Invite code regenerated');
         router.refresh();
       } else {
-        void triggerHaptic('error');
+        void haptic('error');
         fairwayToast.error(result.error || 'Failed to regenerate invite code');
       }
     });
@@ -447,10 +450,13 @@ export function FairwayTeamSettings({ team, programTeams }: FairwayTeamSettingsP
     ? `${origin}/golf/join/${team.join_code}`
     : '';
   const established = team.created_at
-    ? new Date(team.created_at).toLocaleDateString(undefined, {
+    ? new Date(team.created_at).toLocaleDateString('en-US', {
         year: 'numeric',
         month: 'long',
         day: 'numeric',
+        // Explicit locale + zone: `undefined` meant Node's on the server and
+        // the browser's on the client, which disagree near midnight (HYD-03).
+        timeZone: team.timezone || 'America/New_York',
       })
     : EM_DASH;
 

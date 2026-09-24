@@ -199,7 +199,7 @@ export function GoalCreationModal({
         if (!next) onClose();
       }}
       side="bottom"
-      title="New goal"
+      title="New focus area"
       data-slot="goal-creation-modal"
       // A save in flight can't be abandoned by a drag, a scrim tap or Escape.
       dismissible={!pending}
@@ -211,7 +211,7 @@ export function GoalCreationModal({
       }
       trailingAction={
         <Button variant="primary" size="sm" type="button" onClick={submit} disabled={pending}>
-          {pending ? 'Saving…' : 'Start goal'}
+          {pending ? 'Saving…' : 'Start focus area'}
         </Button>
       }
     >

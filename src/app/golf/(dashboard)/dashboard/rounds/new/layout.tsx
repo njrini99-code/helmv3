@@ -1,7 +1,7 @@
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'New Round | Helm Sports',
+  title: 'New Round',
   description: 'Track your golf round shot-by-shot with comprehensive statistics including driving distance, approach accuracy, and putting performance',
 };
 

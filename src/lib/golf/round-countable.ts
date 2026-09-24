@@ -9,7 +9,7 @@
  *      (`front_nine`/`back_nine` — the audited proxy for Σgolf_holes.score,
  *      see ./round-total.ts — or an explicit `recorded_holes` count);
  *   3. plausible: the canonical total clears a stroke floor, and (when the
- *      loader has it) the round's SG: Total sits inside ±15.
+ *      loader has it) the round's SG: Total is not above +15.
  *
  * Why this exists: before it, every surface filtered only on
  * `status = 'completed'`. A tracked round on Sep 17 2026 (91301a75, declared
@@ -38,12 +38,23 @@ export const COUNTABLE_HOLE_COUNTS: readonly number[] = [9, 18];
 export const MIN_PLAUSIBLE_STROKES_PER_18 = 50;
 
 /**
- * Largest believable |SG: Total| for one round. Tour-level rounds sit within
- * roughly ±10 of the baseline; ±15 only trips on rounds whose shot data is
- * physically impossible (Sep 17 is +34.51). Applied only when the loader
- * supplies `strokes_gained_total`.
+ * Largest believable SG: Total GAINED in one round. Tour-level rounds sit
+ * within roughly +10 of the baseline; +15 only trips on rounds whose shot
+ * data is physically impossible (Sep 17 is +34.51). Applied only when the
+ * loader supplies `strokes_gained_total`.
+ *
+ * One-sided on purpose (W13, 2026-09-24). A large NEGATIVE SG is what a
+ * genuinely bad round looks like: SG: Total tracks −(strokes over the
+ * baseline), so an 88 (+17) reads about −18. Prod check (2026-09-24): the
+ * old ±15 rule dropped 15 real 18-hole rounds (82–95 strokes, +10 to +23,
+ * SG −15.6 to −24.1) from every average. An implausibly LOW score is
+ * already caught by the stroke floor above, so there is no negative case
+ * left for SG to catch.
  */
-export const MAX_ABS_SG_TOTAL_PER_ROUND = 15;
+export const MAX_SG_TOTAL_PER_ROUND = 15;
+
+/** @deprecated The ceiling is one-sided now; use `MAX_SG_TOTAL_PER_ROUND`. */
+export const MAX_ABS_SG_TOTAL_PER_ROUND = MAX_SG_TOTAL_PER_ROUND;
 
 /**
  * Fallback for callers that only have `score_to_par`: the stroke floor on a
@@ -112,7 +123,7 @@ export function roundExclusionReason(round: CountableRoundInput): RoundExclusion
   }
 
   const sg = round.strokes_gained_total;
-  if (sg != null && Number.isFinite(sg) && Math.abs(sg) > MAX_ABS_SG_TOTAL_PER_ROUND) {
+  if (sg != null && Number.isFinite(sg) && sg > MAX_SG_TOTAL_PER_ROUND) {
     return 'implausible_sg';
   }
   return null;

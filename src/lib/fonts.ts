@@ -12,8 +12,9 @@
  * (src/app/baseball/layout.tsx); a golf import would re-ship these faces to
  * the golf app.
  */
-import { Fraunces, Space_Grotesk } from 'next/font/google';
+import { Fraunces, Fragment_Mono, Space_Grotesk } from 'next/font/google';
 import { GeistMono } from 'geist/font/mono';
+import { GeistSans } from 'geist/font/sans';
 
 /**
  * Fraunces — the editorial serif (`font-serif`), single weight 600 + latin
@@ -40,7 +41,24 @@ export const spaceGrotesk = Space_Grotesk({
 });
 
 /** Geist Mono — BaseballHelm's code-like identifiers (`font-mono`). */
+// Fragment Mono — Fairway's old numeric face. GolfHelm dropped it (numbers are
+// SF with tabular figures), but BaseballHelm/Lift Lab render Fairway primitives
+// exactly as before (OD-17), so they still load it via `--font-fairway-mono`.
+export const fragmentMono = Fragment_Mono({
+  subsets: ['latin'],
+  weight: '400',
+  variable: '--font-fairway-mono',
+  display: 'swap',
+});
+
 export const geistMono = GeistMono;
+
+/**
+ * Geist Sans — BaseballHelm / Lift Lab body + display sans, exactly as the root
+ * layout served it before GolfHelm moved to SF (owner: don't change Baseball or
+ * Lift Lab). Golf never defines `--font-geist-sans`, so its stacks fall to SF.
+ */
+export const geistSans = GeistSans;
 
 /**
  * CSS that defines the font variables on `:root` for the lifetime of the
@@ -61,7 +79,9 @@ export function rootFontVariablesCss(
 
 /** The BaseballHelm font variables, ready for `rootFontVariablesCss`. */
 export const baseballFontVariables = [
+  { variable: '--font-geist-sans', family: geistSans.style.fontFamily },
   { variable: '--font-fraunces', family: fraunces.style.fontFamily },
   { variable: '--font-space-grotesk', family: spaceGrotesk.style.fontFamily },
   { variable: '--font-geist-mono', family: geistMono.style.fontFamily },
+  { variable: '--font-fairway-mono', family: fragmentMono.style.fontFamily },
 ] as const;

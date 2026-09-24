@@ -39,7 +39,9 @@
 import * as React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { motion, useReducedMotion } from 'framer-motion';
+import { motion } from 'framer-motion';
+import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
+import { useScrollFade } from '@/lib/fairway/use-scroll-fade';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/fairway/controls/badge';
 import { fwFocusRing, fwTransition } from '@/components/fairway/controls/_internal';
@@ -212,12 +214,13 @@ export function CoachHelmSubNav({
   'aria-label': ariaLabel = 'CoachHelm sections',
   className,
 }: CoachHelmSubNavProps) {
-  const reduceMotion = useReducedMotion();
+  const reduceMotion = useReducedMotionGuard();
   const pathname = usePathname();
   const reactId = React.useId();
   const underlineLayoutId = `fw-coachhelm-subnav-underline-${reactId}`;
 
   const tabs = role === 'player' ? PLAYER_TABS : COACH_TABS;
+  const { ref: fadeRef, fadeStyle } = useScrollFade<HTMLUListElement>('x');
 
   // Client pathname wins once it resolves to a known tab; else the SSR `active`.
   const resolved = resolveTabFromPath(pathname, tabs) ?? active;
@@ -262,6 +265,10 @@ export function CoachHelmSubNav({
   const showSignalBadge =
     role === 'coach' && typeof signalCount === 'number' && signalCount > 0;
 
+  // DASH-06: a one-tab strip is a label pretending to be navigation — the
+  // player's CoachHelm has a single view, so it renders no strip at all.
+  if (tabs.length < 2) return null;
+
   return (
     <nav
       aria-label={ariaLabel}
@@ -275,7 +282,13 @@ export function CoachHelmSubNav({
           pattern (WCAG 2.2 4.1.2). The <nav aria-label> landmark supplies the
           accessible grouping; roving tabindex + arrow keys remain as a keyboard
           enhancement over the link list. */}
-      <ul className="flex items-center gap-1 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      {/* DASH-17: the coach's six tabs overflow a phone; the edge fade says
+          more tabs sit off-screen (same affordance as FairwayHubSubNav). */}
+      <ul
+        ref={fadeRef}
+        style={fadeStyle}
+        className="flex items-center gap-1 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+      >
         {tabs.map((t, i) => {
           const isActive = t.tab === resolved;
           const isSignals = t.tab === 'signals';

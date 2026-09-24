@@ -301,6 +301,11 @@
     /* Remove tap highlight on mobile */
   }
 
+  /* BaseballHelm and Lift Lab keep the old WebKit body height (OD-17b). */
+  html:not([data-helm-sport='golf']) body {
+    min-height: -webkit-fill-available;
+  }
+
   /* DARK: the light linen gradient above is unconditional, so before this
      rule existed the only full-bleed painted layer in dark mode was a CREAM
      body — the dark appearance came entirely from opaque child panels
@@ -400,6 +405,14 @@
     -webkit-user-select: text;
     user-select: text;
   }
+  /* GolfHelm: a bare <span> is chrome far more often than prose (chips,
+     labels, tab text), and making it selectable let a long-press on a
+     control start a text selection (NAT-08). Prose is <p>/<h*>; opt a span
+     in with `.selectable`. Golf only (OD-17b). */
+  html[data-helm-sport='golf'] body.capacitor span:not(.selectable) {
+    -webkit-user-select: none;
+    user-select: none;
+  }
 
   /* Message bubbles own their long-press gesture (MessageThreadPane.tsx
      opens the reactions row on a 500ms hold, and Copy in that row replaces
@@ -415,9 +428,13 @@
     -webkit-touch-callout: none;
   }
 
-  /* Page-level rubber-band is ON (2026-09-23 owner decision): iOS bounce at
-     the top and bottom of a scroll is what makes the shell feel native. Only
-     nested scroll containers and sheets contain their overscroll. */
+  /* Page-level rubber-band is ON for GolfHelm (2026-09-23 owner decision):
+     iOS bounce at the top and bottom of a scroll is what makes the shell feel
+     native. BaseballHelm and Lift Lab keep the old no-bounce body (OD-17b);
+     `data-helm-sport` is stamped by ThemeScript on /golf paths only. */
+  html:not([data-helm-sport='golf']) body.capacitor {
+    overscroll-behavior-y: none;
+  }
 
   body.capacitor [data-scroll-container],
   body.capacitor main {
@@ -469,6 +486,12 @@
   a[href],
   button {
     scroll-margin-top: 120px;
+  }
+
+  /* GolfHelm: clear exactly the sticky nav bar (safe area included) plus a
+     little air, instead of a guessed 120px (NAV-S1). Golf only (OD-17b). */
+  html[data-helm-sport='golf'] :is(input, textarea, select, [tabindex]:not([tabindex='-1']), a[href], button) {
+    scroll-margin-top: calc(var(--golf-mobile-header-offset) + 1rem);
   }
 
   /* Native browser tooltips never fire on touch devices, but on the off-chance
@@ -697,11 +720,9 @@
     box-shadow: var(--shadow-elevation-low);
   }
 
-  @media (hover: hover) and (pointer: fine) {
-    .bento-item:hover {
-      box-shadow: var(--shadow-elevation-medium);
-      @apply -translate-y-1 border-warm-200;
-    }
+  .bento-item:hover {
+    box-shadow: var(--shadow-elevation-medium);
+    @apply -translate-y-1 border-warm-200;
   }
 
   .bento-item-lg {
@@ -779,10 +800,8 @@
     @apply hover:-translate-y-1 hover:border-warm-200 cursor-pointer;
   }
 
-  @media (hover: hover) and (pointer: fine) {
-    .card-lift:hover {
-      box-shadow: var(--shadow-elevation-medium);
-    }
+  .card-lift:hover {
+    box-shadow: var(--shadow-elevation-medium);
   }
 
   .card-interactive {
@@ -836,14 +855,12 @@
     transition: background-color 0.4s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.4s cubic-bezier(0.16, 1, 0.3, 1), transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
   }
 
-  @media (hover: hover) and (pointer: fine) {
-    .glass-premium:hover {
-      background: rgba(247, 245, 242, 0.88);
-      box-shadow:
-        0 2px 4px rgba(58, 50, 40, 0.05),
-        0 24px 44px rgba(58, 50, 40, 0.08),
-        inset 0 1px 0 rgba(255, 255, 255, 0.65);
-    }
+  .glass-premium:hover {
+    background: rgba(247, 245, 242, 0.88);
+    box-shadow:
+      0 2px 4px rgba(58, 50, 40, 0.05),
+      0 24px 44px rgba(58, 50, 40, 0.08),
+      inset 0 1px 0 rgba(255, 255, 255, 0.65);
   }
 
   /* surface-apple — DEPRECATED naming retained as a synonym for
@@ -978,10 +995,8 @@
       transform var(--v3-duration-short) var(--v3-ease-tap),
       box-shadow var(--v3-duration-short) var(--v3-ease-tap);
   }
-  @media (hover: hover) and (pointer: fine) {
-    .v3-lift:hover {
-      transform: translateY(-2px);
-    }
+  .v3-lift:hover {
+    transform: translateY(-2px);
   }
   .v3-lift:active {
     transform: translateY(0);
@@ -1013,12 +1028,10 @@
     background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.8), transparent);
   }
 
-  @media (hover: hover) and (pointer: fine) {
-    .glass-card:hover {
-      @apply -translate-y-0.5;
-      border-color: var(--glass-standard-border);
-      box-shadow: var(--glass-shadow-lg);
-    }
+  .glass-card:hover {
+    @apply -translate-y-0.5;
+    border-color: var(--glass-standard-border);
+    box-shadow: var(--glass-shadow-lg);
   }
 
   /* Modal overlay — standardized across all modals/dialogs/drawers */
@@ -1070,19 +1083,15 @@
                 border-color 360ms cubic-bezier(0.16, 1, 0.3, 1),
                 box-shadow 360ms cubic-bezier(0.16, 1, 0.3, 1);
   }
-  @media (hover: hover) and (pointer: fine) {
-    .pill-soft:hover {
-      @apply text-warm-900 bg-cream-50 border-warm-300/65;
-      box-shadow: 0 1px 3px rgba(58, 50, 40, 0.06), 0 8px 18px rgba(58, 50, 40, 0.05);
-    }
+  .pill-soft:hover {
+    @apply text-warm-900 bg-cream-50 border-warm-300/65;
+    box-shadow: 0 1px 3px rgba(58, 50, 40, 0.06), 0 8px 18px rgba(58, 50, 40, 0.05);
   }
   .pill-soft-primary {
     @apply text-primary-700 bg-primary-50/85 border-primary-100;
   }
-  @media (hover: hover) and (pointer: fine) {
-    .pill-soft-primary:hover {
-      @apply text-primary-800 bg-primary-50 border-primary-200;
-    }
+  .pill-soft-primary:hover {
+    @apply text-primary-800 bg-primary-50 border-primary-200;
   }
 
   /* room — architectural section panel. Generous spacing, hairline
@@ -1285,10 +1294,8 @@
     @apply border-b border-warm-50 transition-colors duration-150;
   }
 
-  @media (hover: hover) and (pointer: fine) {
-    .table-premium tbody tr:hover {
-      @apply bg-warm-50;
-    }
+  .table-premium tbody tr:hover {
+    @apply bg-warm-50;
   }
 
   .table-premium td {
@@ -1299,17 +1306,8 @@
     @apply opacity-0 transition-opacity duration-150;
   }
 
-  @media (hover: hover) and (pointer: fine) {
-    .table-premium tbody tr:hover .row-actions {
-      @apply opacity-100;
-    }
-  }
-
-  /* Touch has no hover to reveal them, so row actions stay visible there. */
-  @media not all and (hover: hover) and (pointer: fine) {
-    .table-premium .row-actions {
-      @apply opacity-100;
-    }
+  .table-premium tbody tr:hover .row-actions {
+    @apply opacity-100;
   }
 
   /* ===== AVATAR SYSTEM ===== */
@@ -1317,10 +1315,8 @@
     @apply relative inline-flex items-center justify-center rounded-full bg-warm-100 overflow-hidden ring-2 ring-transparent transition-all duration-200;
   }
 
-  @media (hover: hover) and (pointer: fine) {
-    .avatar:hover {
-      @apply ring-warm-200;
-    }
+  .avatar:hover {
+    @apply ring-warm-200;
   }
 
   .avatar-initials {
@@ -1483,10 +1479,8 @@
     @apply bg-warm-100;
   }
 
-  @media (hover: hover) and (pointer: fine) {
-    .cmdk-item:hover {
-      @apply bg-warm-50;
-    }
+  .cmdk-item:hover {
+    @apply bg-warm-50;
   }
 
   .cmdk-item-shortcut {
@@ -1598,11 +1592,9 @@
     transition: all 200ms ease-out;
   }
 
-  @media (hover: hover) and (pointer: fine) {
-    .glass-card-inner:hover {
-      background: rgba(255, 255, 255, 0.60);
-      border-color: rgba(255, 255, 255, 0.40);
-    }
+  .glass-card-inner:hover {
+    background: rgba(255, 255, 255, 0.60);
+    border-color: rgba(255, 255, 255, 0.40);
   }
 
   /* Tier 3: Subtle Glass (inputs, buttons) */
@@ -1682,7 +1674,8 @@
      decision: numbers use SF with tabular figures, never Fragment Mono and its
      slashed zero). Tabular + lining figures keep columns aligned the way the
      old monospace did; "zero" 0 guarantees a plain zero. */
-  .font-fw-mono {
+  /* Golf only: BaseballHelm/Lift Lab keep Fragment Mono's own figures (OD-17). */
+  :where(html[data-helm-sport='golf']) .font-fw-mono {
     font-variant-numeric: lining-nums tabular-nums;
     font-feature-settings: "tnum" 1, "lnum" 1, "zero" 0;
   }
@@ -1851,11 +1844,9 @@
     @apply transition-all duration-200 ease-out;
   }
 
-  @media (hover: hover) and (pointer: fine) {
-    .hover-lift:hover {
-      @apply -translate-y-1;
-      box-shadow: var(--shadow-elevation-medium);
-    }
+  .hover-lift:hover {
+    @apply -translate-y-1;
+    box-shadow: var(--shadow-elevation-medium);
   }
 
   /*
@@ -1875,7 +1866,7 @@
     will-change: transform;
   }
 
-  @media (hover: hover) and (pointer: fine) {
+  @media (hover: hover) {
     .surface-tile-hover:hover {
       transform: translateY(-1px);
       border-color: rgba(22, 163, 74, 0.22);
@@ -1900,10 +1891,8 @@
     @apply transition-transform duration-200 ease-out;
   }
 
-  @media (hover: hover) and (pointer: fine) {
-    .hover-scale:hover {
-      @apply scale-[1.02];
-    }
+  .hover-scale:hover {
+    @apply scale-[1.02];
   }
 
   .active-scale {
@@ -2118,6 +2107,14 @@
 
   .animate-pulse-subtle {
     animation: pulse-subtle 3s ease-in-out infinite;
+  }
+
+  /* An infinite pulse is exactly what Reduce Motion asks to stop (MOT-RM2).
+     Golf only (OD-17b). */
+  @media (prefers-reduced-motion: reduce) {
+    :where(html[data-helm-sport='golf']) .animate-pulse-subtle {
+      animation: none;
+    }
   }
 
   @keyframes pulse-subtle {
@@ -2417,7 +2414,12 @@
 
     /* Page-level overscroll is left at the default so iOS rubber-band bounce
        works (owner decision 2026-09-23); [data-scroll-container] and
-       [data-scroll-lock] below still contain their own scroll chaining. */
+       [data-scroll-lock] below still contain their own scroll chaining.
+       Golf only: other sports keep the old no-bounce page (OD-17b). */
+    html:not([data-helm-sport='golf']),
+    html:not([data-helm-sport='golf']) body {
+      overscroll-behavior-y: none;
+    }
     html,
     body {
       /* `clip` (with `hidden` fallback) — see the note on the earlier
@@ -2463,13 +2465,17 @@
     footer,
     [role="tablist"],
     [role="toolbar"] {
-      /* No grey/green WebKit flash on tap: press feedback comes from each
-         control's :active state (fwPressSurface / fwPressKey), as in a
-         native app. */
-      -webkit-tap-highlight-color: transparent;
+      -webkit-tap-highlight-color: rgba(22, 163, 74, 0.1);
       -webkit-touch-callout: none;
       -webkit-user-select: none;
       user-select: none;
+    }
+
+    /* GolfHelm: no grey/green WebKit flash on tap. Press feedback comes from
+       each control's :active state (fwPressSurface / fwPressKey), as in a
+       native app. Other sports keep the green flash (OD-17b). */
+    html[data-helm-sport='golf'] :is(button, a, nav, aside, header, footer, [role="tablist"], [role="toolbar"]) {
+      -webkit-tap-highlight-color: transparent;
     }
 
     /* Mobile blur reduction for glass surfaces - improves scroll performance */
@@ -2496,6 +2502,10 @@
     @supports (-webkit-touch-callout: none) {
       .h-dvh {
         height: 100dvh;
+      }
+      /* Other sports keep the old fill-available height (OD-17b). */
+      html:not([data-helm-sport='golf']) .h-dvh {
+        height: -webkit-fill-available;
       }
     }
 
@@ -3275,14 +3285,18 @@ html[data-baseball-branded='true'] .baseball-shell .nav-item-active-icon {
   -webkit-backdrop-filter: blur(16px) saturate(var(--fw-glass-saturate));
   backdrop-filter: blur(16px) saturate(var(--fw-glass-saturate));
 }
+/* The active tab pill is THE primary green (accent-fill) with its paired
+   label ink: cream on mid-green in light, near-black on bright green in dark.
+   It used accent-700, which is green INK — in dark it flipped to a light mint
+   under a cream label (≈1.7:1). */
 .fw-nav-selection,
 .fw-message-filters [data-slot='fw-segment-pill'] {
-  background-color: var(--fw-color-accent-700);
+  background-color: var(--fw-color-accent-fill);
   background-image: linear-gradient(165deg, rgb(255 255 255 / 0.08), transparent 65%);
-  border-color: var(--fw-color-accent-600);
+  border-color: var(--fw-color-accent-fill-hover);
 }
 .fw-message-filters [data-slot='fw-segment'][data-state='on'] {
-  color: var(--fw-color-text-on-accent);
+  color: var(--fw-color-text-on-accent-fill);
 }
 .fw-message-filters [data-slot='fw-segment-pill'] > span {
   display: none;

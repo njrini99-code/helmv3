@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
-import { LazyMotion, m, AnimatePresence, useReducedMotion } from 'framer-motion';
+import { LazyMotion, m, AnimatePresence } from 'framer-motion';
+import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
 import { loadFeatures } from '@/lib/motion/load-features';
 import { CoastalScene } from '@/components/golf/scenes/CoastalScene';
 import { CourseScene } from '@/components/golf/scenes/CourseScene';
@@ -60,7 +61,7 @@ type CoachOnboardingDraft = {
 // ─── Main Component ─────────────────────────────────────────────────────────
 
 export default function GolfCoachOnboarding() {
-  const prefersReducedMotion = useReducedMotion();
+  const prefersReducedMotion = useReducedMotionGuard();
   // Matches the signup gate: one scene per viewport, swapped after hydration.
   const isDesktop = useMediaQuery('(min-width: 768px)');
   const router = useRouter();
@@ -237,12 +238,22 @@ export default function GolfCoachOnboarding() {
 
   // ─── Navigation ─────────────────────────────────────────────────────────
 
+  // STATE-O2: a step change swaps the whole card, so focus would otherwise
+  // stay on a button that no longer exists (it falls to <body>). Only a user
+  // navigation moves focus; the first paint and a restored draft do not.
+  const navigatedRef = useRef(false);
+  const focusStepHeading = useCallback((el: HTMLHeadingElement | null) => {
+    if (el && navigatedRef.current) el.focus();
+  }, []);
+
   function goForward(to: Step) {
+    navigatedRef.current = true;
     setDirection(1);
     setStep(to);
   }
 
   function goBack(to: Step) {
+    navigatedRef.current = true;
     setDirection(-1);
     setStep(to);
   }
@@ -289,9 +300,9 @@ export default function GolfCoachOnboarding() {
     }
   }
 
-  function handleGoToDashboard() {
+  function handleGoTo(href: string) {
     router.refresh();
-    setTimeout(() => router.push('/golf/dashboard'), 150);
+    setTimeout(() => router.push(href), 150);
   }
 
   async function handleCopyCode() {
@@ -380,7 +391,7 @@ export default function GolfCoachOnboarding() {
                 <m.div variants={staggerContainer} initial="initial" animate="animate" className="space-y-5">
                   {/* Header */}
                   <m.div variants={staggerItem} className="text-center">
-                    <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-text-primary">
+                    <h1 ref={focusStepHeading} tabIndex={-1} className="outline-none text-2xl sm:text-3xl font-bold tracking-tight text-text-primary">
                       Set up your program
                     </h1>
                     <p className="text-text-secondary mt-2 text-sm sm:text-base">
@@ -490,7 +501,7 @@ export default function GolfCoachOnboarding() {
                       <Button
                         onClick={() => goForward('profile')}
                         disabled={!orgName.trim()}
-                        className="w-full bg-primary-600 hover:bg-primary-700 shadow-lg shadow-primary-900/10 hover:shadow-xl hover:shadow-primary-900/15 transition-all"
+                        className="w-full bg-accent-fill hover:bg-accent-fill-hover shadow-lg shadow-primary-900/10 hover:shadow-xl hover:shadow-primary-900/15 transition-all"
                         size="lg"
                       >
                         Continue
@@ -527,7 +538,7 @@ export default function GolfCoachOnboarding() {
 
                   {/* Header */}
                   <m.div variants={staggerItem} className="text-center">
-                    <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-text-primary">
+                    <h1 ref={focusStepHeading} tabIndex={-1} className="outline-none text-2xl sm:text-3xl font-bold tracking-tight text-text-primary">
                       Your profile
                     </h1>
                     <p className="text-text-secondary mt-2 text-sm sm:text-base">
@@ -573,14 +584,17 @@ export default function GolfCoachOnboarding() {
                         onClick={handleSubmitOnboarding}
                         disabled={!fullName.trim()}
                         isLoading={loading}
-                        className="w-full bg-primary-600 hover:bg-primary-700 shadow-lg shadow-primary-900/10 hover:shadow-xl hover:shadow-primary-900/15 transition-all"
+                        className="w-full bg-accent-fill hover:bg-accent-fill-hover shadow-lg shadow-primary-900/10 hover:shadow-xl hover:shadow-primary-900/15 transition-all"
                         size="lg"
+                        aria-describedby={error ? 'onboarding-submit-error' : undefined}
                       >
                         Complete Setup
                         <IconCheck size={16} className="ml-2" />
                       </Button>
                       {error && (
                         <m.p
+                          id="onboarding-submit-error"
+                          role="alert"
                           initial={{ opacity: 0, y: -8 }}
                           animate={{ opacity: 1, y: 0 }}
                           className="text-sm text-red-600 mt-3 bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-center"
@@ -653,8 +667,8 @@ export default function GolfCoachOnboarding() {
 
                   {/* Personalized Heading */}
                   <m.div variants={staggerItem} className="text-center">
-                    <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-text-primary mb-2">
-                      {orgName ? `${orgName} Golf is ready on GolfHelm` : 'Your team is ready!'}
+                    <h1 ref={focusStepHeading} tabIndex={-1} className="outline-none text-2xl sm:text-3xl font-bold tracking-tight text-text-primary mb-2">
+                      {orgName ? `${orgName} Golf is ready on GolfHelm` : 'Your team is ready'}
                     </h1>
                     <p className="text-text-secondary text-sm sm:text-base leading-relaxed max-w-sm mx-auto">
                       Share your team code with players to get them on board.
@@ -681,7 +695,7 @@ export default function GolfCoachOnboarding() {
                             {copied ? (
                               <>
                                 <IconCheck size={14} />
-                                Copied!
+                                Copied
                               </>
                             ) : (
                               <>
@@ -695,15 +709,26 @@ export default function GolfCoachOnboarding() {
                     </m.div>
                   )}
 
-                  {/* Dashboard CTA */}
-                  <m.div variants={staggerItem} className="text-center">
+                  {/* Next step (STATE-O3): a new team's dashboard is empty until
+                      players join, so the primary action is the roster, where the
+                      invite code and invite flow live. The dashboard stays one tap
+                      away as the secondary action. */}
+                  <m.div variants={staggerItem} className="flex flex-col items-center gap-2">
                     <Button
                       size="lg"
-                      onClick={handleGoToDashboard}
-                      className="w-full sm:w-auto px-10 bg-primary-600 hover:bg-primary-700 shadow-lg shadow-primary-900/10 hover:shadow-xl hover:shadow-primary-900/15 transition-all"
+                      onClick={() => handleGoTo('/golf/dashboard/roster')}
+                      className="w-full sm:w-auto px-10 bg-accent-fill hover:bg-accent-fill-hover shadow-lg shadow-primary-900/10 hover:shadow-xl hover:shadow-primary-900/15 transition-all"
                     >
-                      Go to Dashboard
+                      Invite players
                       <IconArrowRight size={16} className="ml-2" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="lg"
+                      onClick={() => handleGoTo('/golf/dashboard')}
+                      className="w-full sm:w-auto"
+                    >
+                      Go to dashboard
                     </Button>
                   </m.div>
                 </m.div>

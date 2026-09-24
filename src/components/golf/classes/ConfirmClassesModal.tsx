@@ -6,11 +6,7 @@ import { Input } from '@/components/ui/input';
 import { IconX, IconCheck, IconPencil, IconTrash, IconClock, IconMapPin, IconCalendar, IconUser, IconSparkles, IconAlertCircle } from '@/components/icons';
 import { cn } from '@/lib/utils';
 import { formatTimeDisplay, formatDaysDisplay, generateClassColor, type ParsedClass } from '@/lib/utils/schedule-parser';
-import {
-  Drawer,
-  DrawerContent,
-  DrawerTitle,
-} from '@/components/ui/drawer';
+import { Sheet } from '@/components/fairway/overlays/Sheet';
 
 interface ConfirmClassesModalProps {
   isOpen: boolean;
@@ -49,8 +45,15 @@ export function ConfirmClassesModal({ isOpen, onClose, onConfirm, parsedClasses 
       const today = new Date();
       const nextMonday = new Date(today);
       nextMonday.setDate(today.getDate() + ((1 + 7 - today.getDay()) % 7 || 7));
-      const defaultDate = nextMonday.toISOString().split('T')[0];
-      setSemesterStartDate(defaultDate || '');
+      // The viewer's LOCAL calendar date. `toISOString()` is the UTC date, so
+      // any evening west of UTC defaulted the term start to the day after the
+      // Monday it computed (audit HYD-05).
+      const defaultDate = [
+        nextMonday.getFullYear(),
+        String(nextMonday.getMonth() + 1).padStart(2, '0'),
+        String(nextMonday.getDate()).padStart(2, '0'),
+      ].join('-');
+      setSemesterStartDate(defaultDate);
     }
   }, [parsedClasses]);
 
@@ -111,16 +114,16 @@ export function ConfirmClassesModal({ isOpen, onClose, onConfirm, parsedClasses 
   };
 
   return (
-    <Drawer
+    <Sheet
       open={isOpen}
       onOpenChange={(next) => {
         if (!next) onClose();
       }}
+      title="Review Your Schedule"
+      customTitle
+      hideClose
+      className="overflow-hidden sm:mx-auto sm:max-w-2xl"
     >
-      <DrawerContent
-        className="sm:max-w-2xl sm:mx-auto sm:rounded-3xl p-0 overflow-hidden flex flex-col"
-        aria-labelledby="confirm-classes-title"
-      >
         {/* Top accent bar */}
         <div className="h-1 bg-gradient-to-r from-accent-500 via-accent-400 to-accent-700" />
 
@@ -132,9 +135,9 @@ export function ConfirmClassesModal({ isOpen, onClose, onConfirm, parsedClasses 
                 <IconSparkles size={20} className="text-accent-700" />
               </div>
               <div>
-                <DrawerTitle id="confirm-classes-title" className="text-body-lg font-medium text-text-primary tracking-[-0.012em]">
+                <Sheet.Title className="font-fw-sans text-body-lg font-medium text-text-primary tracking-[-0.012em]">
                   Review Your Schedule
-                </DrawerTitle>
+                </Sheet.Title>
                 <p className="text-sm text-text-tertiary mt-0.5">
                   We found {classes.length} class{classes.length !== 1 ? 'es' : ''} — review and confirm
                 </p>
@@ -179,7 +182,7 @@ export function ConfirmClassesModal({ isOpen, onClose, onConfirm, parsedClasses 
         <div className="h-px bg-border-subtle mx-6" />
 
         {/* Class List */}
-        <div className="flex-1 overflow-y-auto px-6 py-4">
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-6 py-4">
           {classes.length === 0 ? (
             <div className="text-center py-12">
               <div className="w-12 h-12 rounded-2xl bg-surface-sunken flex items-center justify-center mx-auto mb-3">
@@ -369,7 +372,7 @@ export function ConfirmClassesModal({ isOpen, onClose, onConfirm, parsedClasses 
                               {cls.instructor}
                             </span>
                           )}
-                          {cls.credits && (
+                          {cls.credits != null && cls.credits > 0 && (
                             <span className="text-xs text-text-tertiary">{cls.credits} cr</span>
                           )}
                         </div>
@@ -467,7 +470,6 @@ export function ConfirmClassesModal({ isOpen, onClose, onConfirm, parsedClasses 
             </div>
           </div>
         </div>
-      </DrawerContent>
-    </Drawer>
+    </Sheet>
   );
 }

@@ -22,13 +22,17 @@ import { DrillPanel, useStage } from '@/components/fairway/modules';
 import { EmptyState, Eyebrow, InstrumentPanel, Readout, Ribbon } from '@/components/fairway';
 import type { RibbonPoint } from '@/components/fairway';
 import type { TrendAnalysisResponse } from '@/app/golf/actions/stats-data-types';
+import { formatDateOnlyShort } from '@/lib/golf/date-only';
 
 function finite(n: number | null | undefined): number | null {
   return typeof n === 'number' && Number.isFinite(n) ? n : null;
 }
 
+/** Round dates are DATE columns: format the calendar day as stored, never
+ *  shifted by the viewer's offset (HYD-13: `new Date('2026-06-02')` is UTC
+ *  midnight and read locally it becomes Jun 1 anywhere west of UTC). */
 function fmtShortDate(iso: string): string {
-  return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  return formatDateOnlyShort(iso);
 }
 
 /** Signed integer to-par, e.g. "+3" / "−2" / "E" — the same convention the
@@ -268,7 +272,7 @@ export function RoundsDrill({
             <div className="flex flex-col gap-2">
               {recent.map((round) => {
                 const toPar = round.toPar ?? 0;
-                const toneClass = toPar < 0 ? 'text-accent-600' : toPar > 0 ? 'text-fw-warning-ink' : 'text-text-secondary';
+                const toneClass = toPar < 0 ? 'text-accent-ink' : toPar > 0 ? 'text-fw-warning-ink' : 'text-text-secondary';
                 const formattedDate = fmtShortDate(round.date);
                 return (
                   <Link

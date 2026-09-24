@@ -27,7 +27,7 @@ function TeamLoadFailure() {
 }
 
 export const metadata: Metadata = {
-  title: 'Team | GolfHelm',
+  title: 'Team',
   description: 'View and manage your golf team information, settings, and roster details.',
 };
 

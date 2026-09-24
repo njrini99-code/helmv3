@@ -5,6 +5,7 @@ import { Button } from '@/components/fairway';
 import { IconWarning, IconX } from '@/components/icons';
 import { useFocusTrap } from '@/hooks/use-focus-trap';
 import { triggerHaptic, isNativeApp } from '@/lib/utils/capacitor';
+import { isGolfSurface } from '@/lib/haptics';
 
 interface ConfirmDialogProps {
   open: boolean;
@@ -31,8 +32,10 @@ export function ConfirmDialog({
 }: ConfirmDialogProps) {
   const { modalRef } = useFocusTrap(open, onCancel);
 
+  // One haptic per decision (MOT-04): GolfHelm fires on confirm only, not on
+  // open as well. Other sports keep the open tick they had.
   useEffect(() => {
-    if (open) {
+    if (open && !isGolfSurface()) {
       void triggerHaptic(variant === 'danger' ? 'warning' : 'light');
     }
   }, [open, variant]);

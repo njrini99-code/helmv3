@@ -249,7 +249,7 @@ export function CourseLibraryClient({
                 <div className="flex items-start gap-3 rounded-fw-lg border border-dashed border-border-subtle bg-surface px-5 py-4">
                   <span
                     aria-hidden
-                    className="mt-0.5 inline-flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-primary-50 text-primary-600"
+                    className="mt-0.5 inline-flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-primary-50 text-accent-ink"
                   >
                     <IconStar size={16} />
                   </span>
@@ -328,7 +328,7 @@ function Grid({ children }: { children: React.ReactNode }) {
 function EmptyState({ onAdd, canManage }: { onAdd: () => void; canManage: boolean }) {
   return (
     <div className="flex flex-col items-center justify-center rounded-fw-lg border border-dashed border-border-subtle bg-surface px-6 py-16 text-center">
-      <span className="mb-4 inline-flex h-14 w-14 items-center justify-center rounded-full bg-primary-50 text-primary-600">
+      <span className="mb-4 inline-flex h-14 w-14 items-center justify-center rounded-full bg-primary-50 text-accent-ink">
         <IconFlag size={24} aria-hidden />
       </span>
       <h3 className="font-fw-display text-title-3 font-semibold text-text-primary">No courses yet</h3>

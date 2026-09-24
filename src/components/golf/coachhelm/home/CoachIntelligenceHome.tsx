@@ -13,6 +13,7 @@
  * that replaces the old Spine + Bento entirely (Triage Desk spec).
  * ========================================================================== */
 
+import { markAskHandoff } from '@/lib/golf/ask-handoff';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import type { ProgramPulse } from '@/lib/coachhelm/v3/chat/program-pulse';
@@ -114,9 +115,12 @@ export function CoachIntelligenceHome({
           coachFirstName={command.coachFirstName}
           players={command.players}
           pulse={command.pulse}
-          onAsk={(text) =>
-            router.push(`/golf/dashboard/coachhelm/chat?q=${encodeURIComponent(text)}`)
-          }
+          onAsk={(text) => {
+            // The coach pressed Send here: let the Ask page send it on arrival
+            // (a bare `?q=` link only pre-fills; see ask-handoff.ts, DATA-15).
+            markAskHandoff(text);
+            router.push(`/golf/dashboard/coachhelm/chat?q=${encodeURIComponent(text)}`);
+          }}
         />
       )}
 

@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+import { computeFormFromCountableRounds } from '@/lib/golf/form-score';
 import { rankByValue, weightedMean, signalToneFor, scoringTrendVerdict, worstCategoryLabel, worstStandingMetric, formatMetricValue, fmtSg, buildTeamBoardViewModel, TREND_SIGNAL_MIN_ROUNDS, type TeamBoardPlayerInput } from '../buildTeamBoardViewModel';
 import type { MetricId } from '@/lib/coachhelm/v3/metrics/registry';
 import type { PlayerStanding } from '@/lib/coachhelm/v3/standing/types';
@@ -284,11 +285,17 @@ describe('formatMetricValue', () => {
   it('formats percent/strokes/feet/yards/count', () => {
     expect(formatMetricValue(41.4, 'percent')).toBe('41%');
     expect(formatMetricValue(-1.6, 'strokes')).toBe(fmtSg(-1.6));
-    expect(formatMetricValue(12.34, 'feet')).toBe('12.3 ft');
-    expect(formatMetricValue(220.5, 'yards')).toBe('220.5 yd');
+    // §5.2 registry: distances are integers with a spaced unit (were 1 dp).
+    expect(formatMetricValue(12.34, 'feet')).toBe('12 ft');
+    expect(formatMetricValue(220.5, 'yards')).toBe('221 yd');
     expect(formatMetricValue(1.2, 'count')).toBe('1.2');
   });
 });
+
+/** Five countable 18-hole rounds at the given to par. */
+function fiveRounds(toPar: number) {
+  return Array.from({ length: 5 }, () => ({ score_to_par: toPar, holes_played: 18 }));
+}
 
 function player(overrides: Partial<TeamBoardPlayerInput>): TeamBoardPlayerInput {
   return {
@@ -320,7 +327,7 @@ function player(overrides: Partial<TeamBoardPlayerInput>): TeamBoardPlayerInput 
     scoringTrend: null,
     lastRoundScore: 74,
     recentScores: [],
-    composite: null,
+    form: null,
     topInsightTitle: null,
     topInsightPriority: null,
     ...overrides,
@@ -328,15 +335,15 @@ function player(overrides: Partial<TeamBoardPlayerInput>): TeamBoardPlayerInput 
 }
 
 describe('buildTeamBoardViewModel', () => {
-  it('ranks cells from the standing map and marks the top composite hot', () => {
+  it('ranks cells from the standing map and marks the top settled Form hot', () => {
     const jackson = player({
       id: 'jackson',
-      composite: 82,
+      form: computeFormFromCountableRounds(fiveRounds(-1)),
       scoringTrend: -0.1,
     });
     const mason = player({
       id: 'mason',
-      composite: 65,
+      form: computeFormFromCountableRounds(fiveRounds(6)),
       scoringTrend: 0.9,
       topInsightPriority: 'high',
     });
@@ -497,7 +504,8 @@ describe('buildTeamBoardViewModel', () => {
     expect(vm.fundamentals.scramblingPct).toBeCloseTo((26 / 101) * 100);
     expect(vm.fundamentals.puttsPerRound).toBeCloseTo(30);
     expect(vm.fundamentals.birdiesPerRound).toBeCloseTo(2);
-    expect(vm.rows.find((row) => row.id === 'small')?.expand.scrambling).toBe('100.0%');
+    // §5.2 registry: integer percentages (was '100.0%').
+    expect(vm.rows.find((row) => row.id === 'small')?.expand.scrambling).toBe('100%');
   });
 
   // FIX 2: "Team scoring" must be round-weighted like the coach dashboard's
@@ -571,3 +579,29 @@ describe('buildTeamBoardViewModel', () => {
     expect(vm.kpis.teamScoring).toBe('72.5');
   });
 });
+
+describe('buildTeamBoardViewModel: Form (OD-02)', () => {
+  it('never crowns an early read, and needs two settled Forms', () => {
+    const settled = player({ id: 'settled', form: computeFormFromCountableRounds(fiveRounds(4)) });
+    const early = player({ id: 'early', form: computeFormFromCountableRounds([{ score_to_par: -6, holes_played: 18 }]) });
+    const vm = buildTeamBoardViewModel({ players: [settled, early], standingByPlayer: new Map(), rounds30d: 0 });
+    expect(vm.rows.find((r) => r.id === 'early')?.form.early).toBe(true);
+    expect(vm.rows.find((r) => r.id === 'early')?.signal.label).not.toBe('Top performer');
+    expect(vm.rows.find((r) => r.id === 'settled')?.signal.label).not.toBe('Top performer');
+  });
+
+  it('carries the score and its formula into the row', () => {
+    const p = player({ id: 'p', form: computeFormFromCountableRounds(fiveRounds(0)) });
+    const row = buildTeamBoardViewModel({ players: [p], standingByPlayer: new Map(), rounds30d: 0 }).rows[0]!;
+    expect(row.form.score).toBe(80);
+    expect(row.form.early).toBe(false);
+    expect(row.form.formula.join(' ')).toContain('= 80.');
+  });
+
+  it('prints SG through the registry: 2 dp, true minus, no E', () => {
+    expect(fmtSg(-1.6)).toBe('\u22121.60');
+    expect(fmtSg(0.004)).toBe('0.00');
+    expect(fmtSg(null)).toBe('—');
+  });
+});
+

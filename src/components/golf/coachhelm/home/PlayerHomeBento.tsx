@@ -38,6 +38,7 @@
  * fetches — see `buildPlayerHomeViewModel.ts`).
  * ========================================================================== */
 
+import { ChevronRight } from 'lucide-react';
 import { Bento, BentoCell, RailBars, SignalChip, TickerStrip, useStage } from '@/components/fairway/modules';
 import { Button, type GenomeAxis } from '@/components/fairway';
 import { IconClock } from '@/components/icons';
@@ -168,7 +169,8 @@ export function PlayerHomeBento({
                 Dismiss
               </Button>
               <Button variant="ghost" size="sm" className="ml-auto" onClick={() => stage.open('insights')}>
-                More insights →
+                More insights
+                <ChevronRight size={14} aria-hidden />
               </Button>
             </div>
           </div>
@@ -178,7 +180,8 @@ export function PlayerHomeBento({
               No standout signal yet — insights appear once a pattern holds across multiple rounds.
             </p>
             <Button variant="ghost" size="sm" className="mt-auto w-fit" onClick={() => stage.open('insights')}>
-              View insights →
+              View insights
+              <ChevronRight size={14} aria-hidden />
             </Button>
           </div>
         )}

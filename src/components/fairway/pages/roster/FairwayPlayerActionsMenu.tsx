@@ -342,7 +342,7 @@ export function FairwayPlayerActionsMenu({
                   </span>
                   {active ? (
                     <svg
-                      className="h-5 w-5 flex-shrink-0 text-accent-600"
+                      className="h-5 w-5 flex-shrink-0 text-accent-ink"
                       viewBox="0 0 24 24"
                       fill="none"
                       stroke="currentColor"

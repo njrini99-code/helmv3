@@ -9,7 +9,7 @@ import { Button, EmptyState } from '@/components/fairway';
 import { FairwayRecruitingPage } from '@/components/fairway/pages/recruiting';
 
 export const metadata: Metadata = {
-  title: 'Recruiting HQ | Helm Golf',
+  title: 'Recruiting HQ',
   description: 'Track prospects from watchlist to commitment.',
 };
 

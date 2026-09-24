@@ -10,6 +10,7 @@ import {
   rankTraits,
   readLevel,
   readWord,
+  readTierWord,
   summarize,
   type StrandStandingInput,
 } from '../strand-model';
@@ -104,13 +105,16 @@ describe('buildStrand', () => {
 
 describe('read words', () => {
   it('never shows a percentage, only a word', () => {
-    expect(readWord(readLevel(4))).toBe('Early read');
-    expect(readWord(readLevel(12))).toBe('Fair read');
-    expect(readWord(readLevel(24))).toBe('Solid read');
-    expect(readWord(readLevel(null))).toBe('Early read');
+    expect(readWord(4)).toBe('Thin read, n=4');
+    expect(readWord(12)).toBe('Early read');
+    expect(readWord(24)).toBe('Solid read');
+    expect(readWord(null)).toBe('Thin read');
+    expect(readTierWord(4)).toBe('Thin read');
+    expect(readLevel(4)).toBe('thin');
+    expect(readLevel(14)).toBe('solid');
   });
 
-  it('ghosts every trait on an early read', () => {
+  it('ghosts every trait on a thin read', () => {
     const strand = buildStrand([row('gir_pct', { player_value: 60, team_avg: 55 })], { roundsOnFile: 4, rounds90: 4 });
     expect(isGhost(strand.find((t) => t.id === 'gir_pct')!, 'team')).toBe(true);
   });
@@ -165,6 +169,6 @@ describe('headToHead', () => {
     const pen = h.find((x) => x.id === 'penalty_rate_per_round')!;
     expect(pen.margin).toBeCloseTo(1);
     // Sorted by the size of the split.
-    expect(Math.abs(h[0].magnitude)).toBeGreaterThanOrEqual(Math.abs(h[1].magnitude));
+    expect(Math.abs(h[0]!.magnitude)).toBeGreaterThanOrEqual(Math.abs(h[1]!.magnitude));
   });
 });

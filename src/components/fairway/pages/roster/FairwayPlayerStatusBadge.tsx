@@ -28,15 +28,16 @@
  * values (the write cast them through and the DB CHECK would reject them), so
  * they are dropped from the picker. Active + Inactive only.
  *
- * Haptics: a quiet `triggerHaptic('light')` on open + on a real status change
+ * Haptics: a quiet `haptic('commit')` on open + on a real status change
  * (fire-and-forget; silent no-op on web).
  * ========================================================================== */
 
+import { haptic } from '@/lib/haptics';
 import * as React from 'react';
 import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { updatePlayerStatus } from '@/app/golf/actions/golf';
-import { triggerHaptic } from '@/lib/utils/capacitor';
+
 import { StatusPill } from '@/components/fairway/controls/status-pill';
 import { Button } from '@/components/fairway/controls/button';
 import { PopoverPanel } from '@/components/fairway/overlays/PopoverPanel';
@@ -143,7 +144,7 @@ export function FairwayPlayerStatusBadge({
     // Optimistic flip + light haptic.
     setStatus(next);
     setLoading(true);
-    void triggerHaptic('light');
+    void haptic('commit');
 
     try {
       const result = await updatePlayerStatus(playerId, next);
@@ -213,7 +214,7 @@ export function FairwayPlayerStatusBadge({
       open={open}
       onOpenChange={(next) => {
         // Light haptic when the menu opens (not on close).
-        if (next && !open) void triggerHaptic('light');
+        if (next && !open) void haptic('commit');
         setOpen(next);
       }}
       trigger={trigger}
@@ -245,7 +246,7 @@ export function FairwayPlayerStatusBadge({
                 {s.label}
               </StatusPill>
               {selected ? (
-                <Check size={16} className="ml-auto text-accent-600" aria-hidden="true" />
+                <Check size={16} className="ml-auto text-accent-ink" aria-hidden="true" />
               ) : null}
             </PopoverPanel.Item>
           );

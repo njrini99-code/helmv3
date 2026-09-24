@@ -26,6 +26,7 @@ import Link from 'next/link';
 import { RotateCw } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
+import { cleanCourseName } from '@/lib/golf/course-name';
 import { Surface, Button, Combobox, EmptyState, Eyebrow, InlineNotice, Skeleton, Select } from '@/components/fairway';
 import { RoundStatReport } from '@/components/golf/stats/round-report/RoundStatReport';
 
@@ -71,6 +72,7 @@ import { ShortGameDrill } from './ShortGameDrill';
 import { ScoringDrill } from './ScoringDrill';
 import { StandingDrill } from './StandingDrill';
 import { RoundsDrill } from './RoundsDrill';
+import { StatsSpineStageBodySkeleton } from './StatsSpineStageSkeleton';
 
 export interface StatsSpineStageProps {
   playerId: string;
@@ -147,10 +149,61 @@ function formatRoundDate(iso: string): string {
 
 const MAX_SELECTED_STATS_ROUNDS = 100;
 
+/**
+ * Cold-start copy (STATE-01, STATE-02). "More rounds needed" is wrong at zero
+ * rounds, and player-directed copy ("Log a round") gives a coach nothing to do.
+ * Exported for tests.
+ */
+export function coldStartCopy({
+  isOwnStats,
+  playerName,
+  roundsLogged,
+}: {
+  isOwnStats: boolean;
+  playerName?: string;
+  roundsLogged: number;
+}): { title: string; description: string; actionLabel: string } {
+  const firstName = playerName?.trim().split(/\s+/)[0] || 'this player';
+  if (!isOwnStats) {
+    return roundsLogged === 0
+      ? {
+          title: `${firstName === 'this player' ? 'This player has' : `${firstName} has`} not logged a round yet`,
+          description:
+            'Strokes gained, team standing and the putting and approach leak maps fill in once rounds come in.',
+          actionLabel: `Message ${firstName} to log a first round`,
+        }
+      : {
+          title: 'Not enough shot detail yet',
+          description: `Stats fill in after 5 rounds with shot detail. ${roundsLogged} logged so far.`,
+          actionLabel: `Message ${firstName}`,
+        };
+  }
+  return roundsLogged === 0
+    ? {
+        title: 'Log your first round',
+        description:
+          'Strokes gained, your standing against the team and the Tour, and the putting and approach leak maps all start with one round.',
+        actionLabel: 'Log your first round',
+      }
+    : {
+        title: 'More rounds needed',
+        description: `Log 5 rounds with shot detail and strokes gained, team standing and the leak maps fill in. ${roundsLogged} logged so far.`,
+        actionLabel: 'Log a round',
+      };
+}
+
+/** Scope Select values. Qualifier presets are `qualifier:<qualifierId>`. */
+const SCOPE_ALL = 'all';
+const SCOPE_CUSTOM = 'custom';
+const SCOPE_QUALIFIER_PREFIX = 'qualifier:';
+
 function roundOptionLabel(round: RoundOption): string {
   return [
     formatRoundDate(round.date),
-    round.courseName,
+    // DASH-07: the round list read does not clean course names, so a seed
+    // artifact like "(real)" reached the picker. Same render backstop the
+    // round rows use.
+    cleanCourseName(round.courseName) || null,
     round.totalScore !== null ? `(${round.totalScore})` : null,
     round.qualifierRoundNumber !== null ? `Qualifier ${round.qualifierRoundNumber}` : null,
   ]
@@ -204,8 +257,27 @@ export function StatsSpineStage({ playerId, isOwnStats = false, playerName, clas
   // pick) from "the round list failed to load" (say so). Same distinction
   // `leakError` makes for the leak maps.
   const [roundOptionsError, setRoundOptionsError] = useState(seededRoundOptions === null);
-  const [roundScope, setRoundScope] = useState<StatsRoundScope>('overall');
-  const [qualifierPresetId, setQualifierPresetId] = useState('');
+  // PERF-R11: the chosen scope belongs to ONE player. It used to be plain state
+  // that an effect reset to 'overall' after a player switch, so the load
+  // effect ran twice on a coach's `?player=` change: once with the previous
+  // player's scope, then again with 'overall'. Keying it by player makes the
+  // reset part of the same render, and the load effect runs once.
+  const [scopeState, setScopeState] = useState<{
+    playerId: string;
+    scope: StatsRoundScope;
+    presetId: string;
+  }>({ playerId, scope: 'overall', presetId: '' });
+  const scopeIsCurrent = scopeState.playerId === playerId;
+  const roundScope: StatsRoundScope = scopeIsCurrent ? scopeState.scope : 'overall';
+  const qualifierPresetId = scopeIsCurrent ? scopeState.presetId : '';
+  const setScope = useCallback(
+    (scope: StatsRoundScope, presetId = '') => setScopeState({ playerId, scope, presetId }),
+    [playerId],
+  );
+  // PERF-R3: only the newest load may write state. A rapid scope switch (or a
+  // player switch) left an older, slower response free to land last and
+  // overwrite the newer one.
+  const loadRequestRef = useRef(0);
 
   const applyBundle = useCallback((bundle: StatsDashboardBundle) => {
     const next = bundleToState(bundle);
@@ -225,18 +297,23 @@ export function StatsSpineStage({ playerId, isOwnStats = false, playerName, clas
   const loadAll = useCallback(async (id: string, roundId: StatsRoundScope, opts?: { quiet?: boolean }) => {
     // `quiet` keeps the currently-rendered page mounted and marks only the
     // scope-dependent regions as refreshing. See the scopeLoading comment.
+    const requestId = ++loadRequestRef.current;
     if (opts?.quiet) setScopeLoading(true);
     else setLoading(true);
     setLoadError(null);
     setLeakError(false);
     try {
       const bundle = await getPlayerStatsDashboardBundle(id, roundId);
+      if (requestId !== loadRequestRef.current) return;
       applyBundle(bundle);
     } catch {
+      if (requestId !== loadRequestRef.current) return;
       setLoadError('Failed to load stats. Please try again.');
     } finally {
-      setLoading(false);
-      setScopeLoading(false);
+      if (requestId === loadRequestRef.current) {
+        setLoading(false);
+        setScopeLoading(false);
+      }
     }
   }, [applyBundle]);
 
@@ -287,7 +364,9 @@ export function StatsSpineStage({ playerId, isOwnStats = false, playerName, clas
     const quiet = loadedForPlayerRef.current === playerId;
     loadedForPlayerRef.current = playerId;
     if (initialData && initialData.playerId === playerId && roundScope === 'overall') {
-      // The server already read the career view for this player.
+      // The server already read the career view for this player. Retire any
+      // client load still in flight so it cannot overwrite the seed.
+      loadRequestRef.current += 1;
       if (appliedSeedRef.current !== initialData) {
         applyBundle(initialData.bundle);
         appliedSeedRef.current = initialData;
@@ -297,15 +376,22 @@ export function StatsSpineStage({ playerId, isOwnStats = false, playerName, clas
       return;
     }
     appliedSeedRef.current = null;
+    if (Array.isArray(roundScope) && roundScope.length === 0) {
+      // "Choose rounds" with nothing chosen yet: the page shows a prompt, not
+      // stats, so there is nothing to read.
+      loadRequestRef.current += 1;
+      setLoading(false);
+      setScopeLoading(false);
+      return;
+    }
     void loadAll(playerId, roundScope, { quiet });
   }, [playerId, roundScope, loadAll, initialData, applyBundle]);
 
   // Round list for the scope picker. Loaded once per player and independent of
-  // the stats bundle: a failure here costs the picker, never the page.
+  // the stats bundle: a failure here costs the picker, never the page. The
+  // scope itself resets with the player (see scopeState), not here.
   useEffect(() => {
     let cancelled = false;
-    setRoundScope('overall');
-    setQualifierPresetId('');
     setRoundOptionsError(false);
     // Read through a ref so a new seed object alone (e.g. router.refresh) does
     // not re-run this effect and reset the viewer's chosen scope.
@@ -372,19 +458,48 @@ export function StatsSpineStage({ playerId, isOwnStats = false, playerName, clas
   }, [roundOptions]);
 
   const handleRoundSelectionChange = useCallback((ids: string[]) => {
-    setQualifierPresetId('');
-    setRoundScope(Array.from(new Set(ids)).slice(0, MAX_SELECTED_STATS_ROUNDS));
-  }, []);
+    setScope(Array.from(new Set(ids)).slice(0, MAX_SELECTED_STATS_ROUNDS));
+  }, [setScope]);
 
-  const handleQualifierPresetChange = useCallback((qualifierId: string | null) => {
-    const preset = qualifierOptions.find((option) => option.value === qualifierId);
-    if (!preset) {
-      setQualifierPresetId('');
-      return;
-    }
-    setQualifierPresetId(preset.value);
-    setRoundScope(preset.roundIds.slice(0, MAX_SELECTED_STATS_ROUNDS));
-  }, [qualifierOptions]);
+  /**
+   * DASH-07: ONE scope control. "All rounds", each qualifier preset, and
+   * "Choose rounds…" live in a single Select; the per-round Combobox appears
+   * only once the viewer is in a round set, so the career view opens with one
+   * control above the data instead of three.
+   */
+  const scopeSelectValue =
+    roundScope === 'overall'
+      ? SCOPE_ALL
+      : qualifierPresetId
+        ? `${SCOPE_QUALIFIER_PREFIX}${qualifierPresetId}`
+        : SCOPE_CUSTOM;
+  const scopeSelectOptions = useMemo(
+    () => [
+      { value: SCOPE_ALL, label: 'All rounds' },
+      ...qualifierOptions.map((q) => ({ value: `${SCOPE_QUALIFIER_PREFIX}${q.value}`, label: q.label })),
+      { value: SCOPE_CUSTOM, label: 'Choose rounds…' },
+    ],
+    [qualifierOptions],
+  );
+  const handleScopeSelectChange = useCallback(
+    (value: string | null) => {
+      if (value == null || value === SCOPE_ALL) {
+        setScope('overall');
+        return;
+      }
+      if (value === SCOPE_CUSTOM) {
+        // Keep the current round set when there is one; otherwise start empty.
+        setScope(Array.isArray(roundScope) ? roundScope : []);
+        return;
+      }
+      const preset = qualifierOptions.find(
+        (option) => `${SCOPE_QUALIFIER_PREFIX}${option.value}` === value,
+      );
+      if (!preset) return;
+      setScope(preset.roundIds.slice(0, MAX_SELECTED_STATS_ROUNDS), preset.value);
+    },
+    [qualifierOptions, roundScope, setScope],
+  );
 
   const standingByMetric = useMemo(() => {
     const map = new Map<string, PlayerStandingRow>();
@@ -475,48 +590,35 @@ export function StatsSpineStage({ playerId, isOwnStats = false, playerName, clas
           <span id="stats-round-scope-label" className="text-fw-sm text-text-secondary">
             Stats for
           </span>
-          <Button
-            variant={roundScope === 'overall' ? 'primary' : 'secondary'}
+          <Select
+            aria-labelledby="stats-round-scope-label"
             size="sm"
-            aria-pressed={roundScope === 'overall'}
+            className="min-w-0 w-full sm:w-[17rem]"
+            value={scopeSelectValue}
             disabled={loading || scopeLoading}
-            onClick={() => {
-              setQualifierPresetId('');
-              setRoundScope('overall');
-            }}
-          >
-            All rounds
-          </Button>
-          {qualifierOptions.length > 0 ? (
-            <Select
-              aria-label="Load a qualifier's rounds"
-              size="sm"
-              className="min-w-0 w-full sm:w-[17rem]"
-              placeholder="Load qualifier rounds…"
-              value={qualifierPresetId}
-              disabled={loading || scopeLoading}
-              onValueChange={handleQualifierPresetChange}
-              options={qualifierOptions}
-            />
-          ) : null}
+            onValueChange={handleScopeSelectChange}
+            options={scopeSelectOptions}
+          />
           {scopeLoading ? (
             <span role="status" className="text-fw-sm text-text-tertiary">
               Updating…
             </span>
           ) : null}
         </div>
-        <Combobox
-          multiple
-          aria-label="Select rounds for stats"
-          size="sm"
-          className="min-h-11"
-          placeholder="Add or remove individual rounds…"
-          emptyMessage="No matching rounds"
-          options={roundScopeOptions}
-          value={selectedRoundIds}
-          disabled={loading || scopeLoading}
-          onValueChange={handleRoundSelectionChange}
-        />
+        {roundScope !== 'overall' ? (
+          <Combobox
+            multiple
+            aria-label="Select rounds for stats"
+            size="sm"
+            className="min-h-11"
+            placeholder="Add or remove individual rounds…"
+            emptyMessage="No matching rounds"
+            options={roundScopeOptions}
+            value={selectedRoundIds}
+            disabled={loading || scopeLoading}
+            onValueChange={handleRoundSelectionChange}
+          />
+        ) : null}
         <p className="font-fw-sans text-caption text-text-tertiary">
           {roundScope === 'overall'
             ? // Accurate since the countable-round rule (src/lib/golf/round-countable.ts):
@@ -533,10 +635,7 @@ export function StatsSpineStage({ playerId, isOwnStats = false, playerName, clas
     return (
       <div className={cn('flex flex-col gap-4', className)} aria-busy="true">
         {roundPicker}
-        <div className="flex flex-col gap-6 min-[940px]:grid min-[940px]:grid-cols-[300px_1fr] min-[940px]:items-start">
-          <Skeleton className="h-[480px] rounded-fw-lg min-[940px]:sticky min-[940px]:top-20" />
-          <Skeleton className="h-[480px] rounded-fw-lg" />
-        </div>
+        <StatsSpineStageBodySkeleton />
       </div>
     );
   }
@@ -585,7 +684,7 @@ export function StatsSpineStage({ playerId, isOwnStats = false, playerName, clas
     const subtitle = isSingleRound
       ? [
           formatRoundDate(selectedRound.date),
-          selectedRound.courseName,
+          cleanCourseName(selectedRound.courseName) || null,
           selectedRound.totalScore !== null ? `${selectedRound.totalScore} strokes` : null,
         ]
           .filter(Boolean)
@@ -656,17 +755,28 @@ export function StatsSpineStage({ playerId, isOwnStats = false, playerName, clas
   }
 
   if (isColdStart) {
+    const copy = coldStartCopy({
+      isOwnStats,
+      playerName,
+      // The round list is the only count here that includes rounds without
+      // shot detail; `roundsAnalyzed` is 0 in both cases by construction.
+      roundsLogged: roundOptions.length,
+    });
     return (
       <Surface padding="lg" className={className}>
         <EmptyState
-          title="More rounds needed"
-          description="Log 5+ rounds and the strokes-gained standing vs PGA Tour and the team fills in — plus the putting and approach leak maps."
+          title={copy.title}
+          description={copy.description}
           action={
             isOwnStats ? (
               <Button asChild variant="primary">
-                <Link href="/golf/dashboard/rounds/new">Log a round</Link>
+                <Link href="/golf/dashboard/rounds/new">{copy.actionLabel}</Link>
               </Button>
-            ) : undefined
+            ) : (
+              <Button asChild variant="secondary">
+                <Link href={`/golf/dashboard/messages?player=${playerId}`}>{copy.actionLabel}</Link>
+              </Button>
+            )
           }
         />
       </Surface>

@@ -5,7 +5,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ScoutingReport, type ScoutingReportProps } from '../ScoutingReport';
 import { SEEN_STORAGE_KEY } from '../scouting-model';
 import { GolfUserProvider, type GolfUserData } from '@/contexts/golf-user-context';
-import type { FairwayPlayerInsightProps } from '@/components/fairway/pages/coachhelm/FairwayPlayerInsight';
 import { makeInsight, makeRound } from './fixtures';
 
 const getInsightsForCoachWithMeta = vi.fn();
@@ -39,7 +38,9 @@ beforeEach(() => {
 
 describe('ScoutingReport', () => {
   it('accepts the /game route insight props unchanged (the host swap is a one-liner)', () => {
-    const hostProps = {
+    // The /game route still passes its wider insight payload; the extra keys
+    // are ignored, so the host swap stays a one-liner.
+    const hostProps: ScoutingReportProps & Record<string, unknown> = {
       player,
       compositeRating: 70,
       categoryBreakdown: { teeGame: 1, approach: 1, shortGame: 1, putting: 1, scoring: 1 },
@@ -51,7 +52,7 @@ describe('ScoutingReport', () => {
       focusAreas: [],
       predictions: [],
       themes: [],
-    } satisfies FairwayPlayerInsightProps;
+    };
     render(
       <GolfUserProvider userData={coach}>
         <ScoutingReport {...hostProps} />

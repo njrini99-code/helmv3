@@ -20,6 +20,7 @@ import * as React from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
+import { Button } from '@/components/fairway/controls/button';
 import { fairwayToast } from '@/components/fairway/feedback';
 import { createFocusArea } from '@/app/golf/actions/development';
 import { BaselineSwitch } from './BaselineSwitch';
@@ -35,7 +36,6 @@ import {
   readLevel,
   readWord,
   summarize,
-  EARLY_READ_BELOW,
 } from './strand-model';
 
 export interface GenomeForm {
@@ -133,17 +133,12 @@ export function CoachGenomeView({
         ) : null}
         <div className="mt-2 flex flex-wrap items-center gap-x-1 gap-y-1">
           <p className="mr-3 font-fw-sans text-caption tabular-nums text-text-tertiary">
-            {samples.roundsOnFile != null ? `${samples.roundsOnFile} rounds on file · ${readWord(overallRead)}` : 'No rounds on file'}
+            {samples.roundsOnFile != null ? `${samples.roundsOnFile} rounds on file · ${readWord(samples.roundsOnFile)}` : 'No rounds on file'}
           </p>
           {form ? (
-            <button
-              type="button"
-              onClick={() => setFormOpen((o) => !o)}
-              aria-expanded={formOpen}
-              className="mr-3 inline-flex h-11 items-center font-fw-sans text-caption tabular-nums text-text-secondary"
-            >
+            <Button variant="ghost" size="sm" className="mr-3 tabular-nums" onClick={() => setFormOpen((o) => !o)} aria-expanded={formOpen}>
               Form {form.value}
-            </button>
+            </Button>
           ) : null}
           <nav aria-label={`${firstName}'s other views`} className="flex flex-wrap items-center">
             <QuietLink href={`/golf/dashboard/players/${playerId}/game`}>Fingerprint</QuietLink>
@@ -190,8 +185,8 @@ export function CoachGenomeView({
               <StrandReadout trait={selected} baseline={baseline} onOpenEvidence={openEvidence} />
             </div>
             <p className="mt-2 font-fw-sans text-caption text-text-tertiary">
-              {overallRead === 'early'
-                ? `Early read · n=${samples.roundsOnFile ?? 0} rounds. Gaps draw as outlines until ${EARLY_READ_BELOW} rounds.`
+              {overallRead === 'thin'
+                ? `${readWord(samples.roundsOnFile)} rounds. Gaps draw as outlines until the sample firms up.`
                 : 'Bar length is scaled per skill; the number is the real gap. Outlines are thin reads.'}
             </p>
             <StrandTable traits={traits} caption={`${playerName}: skills against team and ${tourLabel}`} />

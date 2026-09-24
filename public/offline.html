@@ -4,31 +4,31 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <meta name="color-scheme" content="light dark">
-    <meta name="theme-color" content="#F7EFDF" media="(prefers-color-scheme: light)">
-    <meta name="theme-color" content="#101110" media="(prefers-color-scheme: dark)">
+    <meta name="theme-color" content="#F2E6D2" media="(prefers-color-scheme: light)">
+    <meta name="theme-color" content="#0D0F0D" media="(prefers-color-scheme: dark)">
     <title>You're offline</title>
     <style>
         /* Fairway tokens, resolved to sRGB because this page must render with
            no network and no app CSS (src/styles/design-tokens.css):
-             canvas        --fw-color-canvas           light #F7EFDF / dark #101110
+             canvas        --fw-color-canvas           light #F2E6D2 / dark #0D0F0D
              ink           --fw-color-text-primary     light #1C1917 / dark #F1F3F2
-             secondary     --fw-color-text-secondary   light #59524C / dark #BCBEBD
+             secondary     --fw-color-text-secondary   light #4E4741 / dark #C6C8C6
              button fill   --fw-color-accent-650       #248342 (not flipped in dark)
              button ink    --fw-color-text-on-accent   #FEFDF9
              CTA radius    --fw-radius-full */
         :root {
-            --canvas: #F7EFDF;
+            --canvas: #F2E6D2;
             --ink: #1C1917;
-            --secondary: #59524C;
+            --secondary: #4E4741;
             --accent: #248342;
             --on-accent: #FEFDF9;
             color-scheme: light dark;
         }
         @media (prefers-color-scheme: dark) {
             :root {
-                --canvas: #101110;
+                --canvas: #0D0F0D;
                 --ink: #F1F3F2;
-                --secondary: #BCBEBD;
+                --secondary: #C6C8C6;
             }
         }
         * { margin: 0; padding: 0; box-sizing: border-box; }

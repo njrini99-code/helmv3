@@ -373,6 +373,7 @@ export default async function GolfRosterPage() {
     player_id: string;
     status: string | null;
     total_score: number | null;
+    score_to_par: number | null;
     holes_played: number | null;
     front_nine: number | null;
     back_nine: number | null;
@@ -418,7 +419,7 @@ export default async function GolfRosterPage() {
       fetchAllRowsResult<RoundStatRow>((from, to) =>
         supabase
           .from('golf_rounds')
-          .select('id, player_id, status, total_score, holes_played, front_nine, back_nine, total_putts, round_date')
+          .select('id, player_id, status, total_score, score_to_par, holes_played, front_nine, back_nine, total_putts, round_date')
           .in('player_id', playerIds)
           .eq('status', 'completed')
           .not('total_score', 'is', null)

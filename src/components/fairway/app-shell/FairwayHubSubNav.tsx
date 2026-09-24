@@ -196,7 +196,7 @@ export function FairwayHubSubNav({ tabs, ariaLabel, className }: FairwayHubSubNa
                     aria-hidden="true"
                     className={cn(
                       'flex-shrink-0 transition-colors duration-150',
-                      isActive ? 'text-accent-600' : 'text-text-tertiary group-hover:text-text-secondary',
+                      isActive ? 'text-accent-ink' : 'text-text-tertiary group-hover:text-text-secondary',
                     )}
                   />
                 ) : null}

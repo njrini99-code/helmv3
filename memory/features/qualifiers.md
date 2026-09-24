@@ -143,6 +143,12 @@ Leaderboard reads qualifier
   no geometry, and no real `<h1>` for a screen that never mounts.
   Reference implementation: `dashboard/alerts/loading.tsx`.
 
+- Edit qualifier (`FairwayEditQualifier`, audit DATA-06/07, 2026-09-23): the
+  save is two writes (details, then round courses). If the second write fails,
+  the error says the details WERE saved and asks for another save to retry
+  the courses. An empty or zero "Rounds" value blocks the save with an inline
+  field error. Test: `__tests__/FairwayEditQualifier.save.test.tsx`.
+
 ## Known Risk Areas
 
 - Leaderboard totals can drift if entry stats are updated outside round submission.

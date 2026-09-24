@@ -178,7 +178,7 @@ describe('buildPredictionVerdict', () => {
   it('hides a band wider than 8 strokes (the "−11.8–13.6" case)', () => {
     const sentence = buildPredictionVerdict(-0.4, 0.6, null, { low: -11.8, high: 13.6 }, 'score_to_par');
     expect(sentence).toBe(
-      'Predicted \u22120.4 to par. The range is still too wide to show; it narrows as you log more rounds.',
+      'Predicted \u22120.4 to par. Not enough rounds yet for a range; it narrows as you log more.',
     );
     expect(sentence).not.toMatch(/11\.8|13\.6/);
   });

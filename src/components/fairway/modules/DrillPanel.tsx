@@ -20,6 +20,7 @@
  * ========================================================================== */
 
 import { cn } from '@/lib/utils';
+import { ChevronLeft } from 'lucide-react';
 import { PressTarget } from '../controls';
 import type { DrillPanelProps } from './types';
 
@@ -27,11 +28,8 @@ export function DrillPanel({ title, backLabel, onBack, chip, children }: DrillPa
   return (
     <div
       data-slot="drill"
-      className={cn(
-        'rounded-fw-lg border border-border-subtle bg-surface',
-        '[box-shadow:var(--fw-shadow-card)]',
-        'p-5 sm:p-6',
-      )}
+      // A drill sits on the page, not in another card (HUB-08).
+      className="py-1"
     >
       <div className="mb-1.5 flex flex-wrap items-center gap-3.5">
         <PressTarget
@@ -43,12 +41,12 @@ export function DrillPanel({ title, backLabel, onBack, chip, children }: DrillPa
             'hover:bg-accent-100',
           )}
         >
-          <span aria-hidden>←</span>
+          <ChevronLeft size={14} strokeWidth={2.25} aria-hidden />
           {backLabel}
         </PressTarget>
-        <span className="font-fw-display text-body-lg font-semibold text-text-primary">
+        <h2 className="font-fw-display text-body-lg font-semibold text-text-primary">
           {title}
-        </span>
+        </h2>
         {chip ? <span className="w-full min-w-0 sm:ml-auto sm:w-auto">{chip}</span> : null}
       </div>
       <div className="mt-3">{children}</div>

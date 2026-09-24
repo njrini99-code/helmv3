@@ -1,7 +1,7 @@
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Tasks | Helm Golf',
+  title: 'Tasks',
   description: 'Assign and track player tasks, monitor completion status, and manage team assignments.',
 };
 

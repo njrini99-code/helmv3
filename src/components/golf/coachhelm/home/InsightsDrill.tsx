@@ -95,6 +95,9 @@ export interface InsightsDrillProps {
    *  `PlayerHomeBento` already rendered the first one. Empty/undefined when
    *  the top insight has 0 or 1 attached drills. */
   topInsightDrills?: InsightAttachedDrill[];
+  /** Deep link (`?view=insights&insight=<id>`): open this insight's evidence
+   *  sheet on arrival. It may be the top insight, which is not in `insights`. */
+  initialOpenInsight?: EvidenceInsight | null;
 }
 
 export function InsightsDrill({
@@ -106,9 +109,10 @@ export function InsightsDrill({
   onMakePlan,
   makePlanPendingId,
   topInsightDrills = [],
+  initialOpenInsight = null,
 }: InsightsDrillProps) {
   const { home } = useStage();
-  const [openInsight, setOpenInsight] = useState<EvidenceInsight | null>(null);
+  const [openInsight, setOpenInsight] = useState<EvidenceInsight | null>(initialOpenInsight);
 
   const showThemes = themesEnabled && themes.length > 0;
 

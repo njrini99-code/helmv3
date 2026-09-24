@@ -126,7 +126,7 @@ function OverflowRow({ item, active, Link, prefetch }: OverflowRowProps) {
         <span
           className={cn(
             'flex-shrink-0 min-w-[20px] max-w-[48px] truncate rounded-full px-1.5 py-0.5 text-center',
-            'bg-accent-600 font-fw-mono text-eyebrow font-semibold leading-4 tabular-nums text-text-on-accent',
+            'bg-accent-fill font-fw-mono text-eyebrow font-semibold leading-4 tabular-nums text-text-on-accent-fill',
           )}
         >
           {item.badge > 99 ? '99+' : item.badge}

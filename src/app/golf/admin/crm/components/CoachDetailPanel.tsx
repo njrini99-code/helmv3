@@ -471,7 +471,7 @@ function CoachDetailPanelInner({
                       placeholder="Email address" className="flex-1 bg-surface border border-border-subtle rounded-fw-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-border-focus/30 min-h-0" />
                   </div>
                   <div className="flex items-center gap-1.5">
-                    <IconPhone size={12} className="text-accent-600 flex-shrink-0" />
+                    <IconPhone size={12} className="text-accent-ink flex-shrink-0" />
                     <Input type="tel" value={contactForm.phone} onChange={e => setContactForm({ ...contactForm, phone: e.target.value })}
                       placeholder="Phone number" className="flex-1 bg-surface border border-border-subtle rounded-fw-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-border-focus/30 min-h-0" />
                   </div>
@@ -853,8 +853,8 @@ function CoachDetailPanelInner({
                   : 'Open a pre-filled Gmail compose window for this coach'}
                 className={cn(CRM_SECONDARY_ACTION_CLASS, 'inline-flex items-center justify-center gap-1.5')}>
                 {gmailDirectSend
-                  ? <><IconSend size={14} className="text-accent-600" /> Send</>
-                  : <><IconExternalLink size={14} className="text-accent-600" /> Gmail</>}
+                  ? <><IconSend size={14} className="text-accent-ink" /> Send</>
+                  : <><IconExternalLink size={14} className="text-accent-ink" /> Gmail</>}
               </Button>
             )}
             {coach.phone ? (

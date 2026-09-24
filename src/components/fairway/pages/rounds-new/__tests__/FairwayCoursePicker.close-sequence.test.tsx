@@ -45,7 +45,7 @@ vi.mock('@/app/golf/actions/course-library', () => ({
   ]),
   getRecentlyPlayedCourses: vi.fn(async () => []),
   getTeamSavedCourses: vi.fn(async () => []),
-  getCourseDetail: vi.fn(async () => ({ tees: [{ id: 'tee-blue', name: 'Blue', total_yards: 6800 }] })),
+  getCourseDetail: vi.fn(async () => ({ tees: [{ id: 'tee-blue', name: 'Blue', total_yards: 6800 }, { id: 'tee-white', name: 'White', total_yards: 6300 }] })),
   getTeeRoundDefaults: vi.fn(async () => ({ teeId: 'tee-blue', courseId: '1', courseName: 'Pebble Beach', teeName: 'Blue', holes: [] })),
 }));
 

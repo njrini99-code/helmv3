@@ -39,15 +39,18 @@
 // `/golf/login` and `/golf/forgot-password` (exact paths) joined in the 2026-09
 // sign-in redesign. Both now paint only on Fairway tokens (AuthCanvas), so they
 // follow the device's GolfHelm/OS theme instead of always painting light
-// before a dark dashboard. `/golf/reset-password` is deliberately NOT here yet:
-// it still renders GolfAuthShell's hard-coded cream card, and the flipped
-// `warm-*` ink would be unreadable on it. Add it once it moves to AuthCanvas.
+// before a dark dashboard. `/golf/reset-password` joined once it moved onto
+// the same AuthCanvas (AUTH-02 / OD-07).
+// Before the theme guard, every `/golf` path gets `data-helm-sport="golf"` on
+// <html>. The golf-only touch rules (hover only on a real pointer, no tap
+// highlight, page rubber-band) key off it, so BaseballHelm and Lift Lab keep
+// rendering exactly as before (owner OD-17b).
 // It also stamps `<meta name="theme-color">` so the mobile browser/status bar
 // is already the right colour on the first frame instead of framing a dark page
 // in the UA-default white. Values mirror THEME_COLOR in src/lib/golf/theme.ts
 // (= --fw-color-canvas per theme); `applyTheme` rewrites this same tag — matched
 // on `data-fw-theme-color` — on every runtime theme change.
-const BOOT = `(function(){try{var p=location.pathname;if(p!='/golf/dashboard'&&p.indexOf('/golf/dashboard/')!==0&&p!='/golf/welcome'&&p!='/golf/login'&&p!='/golf/forgot-password'&&p!='/admin'&&p.indexOf('/admin/')!==0)return;var k='golf_theme',t=localStorage.getItem(k);if(t!=='light'&&t!=='dark'&&t!=='system')t='system';var d=t==='dark'||(t==='system'&&window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches);var r=document.documentElement;if(d){r.classList.add('dark');r.setAttribute('data-fw-theme','dark');}else{r.classList.remove('dark');r.setAttribute('data-fw-theme','light');}var m=document.head.querySelector('meta[data-fw-theme-color]');if(!m){m=document.createElement('meta');m.setAttribute('name','theme-color');m.setAttribute('data-fw-theme-color','');document.head.appendChild(m);}m.setAttribute('content',d?'#0e0e10':'#f7efdf');}catch(e){}})();`;
+const BOOT = `(function(){try{var p=location.pathname,h=document.documentElement;if(p=='/golf'||p.indexOf('/golf/')===0)h.setAttribute('data-helm-sport','golf');else h.removeAttribute('data-helm-sport');if(p!='/golf/dashboard'&&p.indexOf('/golf/dashboard/')!==0&&p!='/golf/welcome'&&p!='/golf/login'&&p!='/golf/forgot-password'&&p!='/golf/reset-password'&&p!='/admin'&&p.indexOf('/admin/')!==0)return;var k='golf_theme',t=localStorage.getItem(k);if(t!=='light'&&t!=='dark'&&t!=='system')t='system';var d=t==='dark'||(t==='system'&&window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches);var r=document.documentElement;if(d){r.classList.add('dark');r.setAttribute('data-fw-theme','dark');}else{r.classList.remove('dark');r.setAttribute('data-fw-theme','light');}var m=document.head.querySelector('meta[data-fw-theme-color]');if(!m){m=document.createElement('meta');m.setAttribute('name','theme-color');m.setAttribute('data-fw-theme-color','');document.head.appendChild(m);}m.setAttribute('content',d?'#0d0f0d':'#f2e6d2');}catch(e){}})();`;
 
 export function ThemeScript() {
   return <script dangerouslySetInnerHTML={{ __html: BOOT }} suppressHydrationWarning />;

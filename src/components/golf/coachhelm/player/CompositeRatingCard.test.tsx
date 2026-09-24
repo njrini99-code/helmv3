@@ -13,6 +13,7 @@
 import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { CompositeRatingCard } from './CompositeRatingCard';
+import { computeFormFromCountableRounds } from '@/lib/golf/form-score';
 
 describe('CompositeRatingCard — gauge honesty (#970)', () => {
   it('always renders a visible gauge track, even at a low value', () => {
@@ -52,6 +53,28 @@ describe('CompositeRatingCard — midpoint-default detection (#973)', () => {
 
   it('shows an honest empty state when there is no composite or category data at all', () => {
     render(<CompositeRatingCard />);
-    expect(screen.getByText(/game strength warming up/i)).toBeInTheDocument();
+    // OD-02 rename: the card is Form now (was "Game strength warming up").
+    expect(screen.getByText(/form warming up/i)).toBeInTheDocument();
+  });
+});
+
+describe('CompositeRatingCard — Form (OD-02)', () => {
+  it('labels an early read and explains the formula on tap', () => {
+    const form = computeFormFromCountableRounds([
+      { score_to_par: 4, holes_played: 18 },
+      { score_to_par: 6, holes_played: 18 },
+    ]);
+    render(<CompositeRatingCard composite={form.score ?? undefined} form={form} categories={{ teeGame: 71, approach: 44, shortGame: 58, putting: 33, scoring: 60 }} />);
+    expect(screen.getByText('Early read')).toBeInTheDocument();
+    const summary = screen.getByText('How Form works');
+    expect(summary.tagName).toBe('SUMMARY');
+    expect(screen.getByText(/\+5\.0 over 2 rounds/)).toBeInTheDocument();
+  });
+
+  it('reads Form from profileData and shows no early-read label once settled', () => {
+    const form = computeFormFromCountableRounds(Array.from({ length: 5 }, () => ({ score_to_par: 0, holes_played: 18 })));
+    render(<CompositeRatingCard profileData={{ composite: form.score, form, categories: { teeGame: 71, approach: 44, shortGame: 58, putting: 33, scoring: 60 } }} />);
+    expect(screen.queryByText('Early read')).not.toBeInTheDocument();
+    expect(screen.getAllByText('Form').length).toBeGreaterThan(0);
   });
 });

@@ -91,8 +91,9 @@ describe('CausalWhyPanel — root-cause chains', () => {
     );
 
     const chain = screen.getByRole('group', { name: /root-cause chain/i });
-    expect(chain).toHaveTextContent('40%');
-    expect(chain).not.toHaveTextContent('90%');
+    // Confidence reads as a word band (NUM-08), from the weakest hop.
+    expect(chain).toHaveTextContent('Early read');
+    expect(chain).not.toHaveTextContent('Solid read');
   });
 
   it('says every step was detected separately, so a chain never reads as proven', () => {

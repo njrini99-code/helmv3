@@ -4,6 +4,7 @@ import { getPlayerNotificationCounts } from './player-notifications';
 import { getCoachNotificationCounts } from './coach-notifications';
 import { getAlertCounts } from './alerts';
 import { getNotificationsUnreadCount } from './unified-notifications';
+import { withAdminObserved } from '@/lib/admin/observed-action';
 import type { NotificationBadgeBundle, NotificationBadgeRequest } from './notification-badges-types';
 
 /** A rejected part degrades to `null` instead of failing the whole bundle. */
@@ -29,7 +30,7 @@ function settle<T>(promise: Promise<T>): Promise<T | null> {
  * coach-notifications.ts), so this wrapper adds no trust in the request args
  * beyond what those actions already accept.
  */
-export async function getNotificationBadgeBundle(
+async function getNotificationBadgeBundleImpl(
   request: NotificationBadgeRequest,
 ): Promise<NotificationBadgeBundle> {
   const { role, userId, playerId, teamId, coachId } = request;
@@ -44,4 +45,16 @@ export async function getNotificationBadgeBundle(
   ]);
 
   return { player, coach, alerts, unread };
+}
+
+const observedGetNotificationBadgeBundle = withAdminObserved(
+  'getNotificationBadgeBundle',
+  { sport: 'golf', feature: 'notifications' },
+  getNotificationBadgeBundleImpl,
+);
+
+export async function getNotificationBadgeBundle(
+  request: NotificationBadgeRequest,
+): Promise<NotificationBadgeBundle> {
+  return observedGetNotificationBadgeBundle(request);
 }

@@ -172,8 +172,8 @@ function groupIntoCampaigns(emails: EmailRecord[]): Campaign[] {
 const STATUS_ICON_CONFIG: Record<string, { icon: React.ReactNode; color: string; label: string }> = {
   // Escalating accent ramp (see resend/shared.tsx STATUS_CONFIG for the rule).
   sent:      { icon: <IconClock size={14} />,          color: 'text-text-tertiary', label: 'Sent' },
-  delivered: { icon: <IconCheckCircle2 size={14} />,   color: 'text-accent-500',    label: 'Delivered' },
-  opened:    { icon: <IconEye size={14} />,            color: 'text-accent-600',    label: 'Opened' },
+  delivered: { icon: <IconCheckCircle2 size={14} />,   color: 'text-accent-ink',    label: 'Delivered' },
+  opened:    { icon: <IconEye size={14} />,            color: 'text-accent-ink',    label: 'Opened' },
   clicked:   { icon: <MousePointerClick size={14} />,  color: 'text-fw-success-ink',    label: 'Clicked' },
   bounced:   { icon: <Ban size={14} />,                color: 'text-fw-danger',     label: 'Bounced' },
 };
@@ -774,7 +774,7 @@ export function EmailTrackingView() {
                             </div>
                             <div className="hidden sm:flex items-center gap-2 text-xs">
                               {deliveredCount > 0 && (
-                                <span className="flex items-center gap-0.5 text-accent-600">
+                                <span className="flex items-center gap-0.5 text-accent-ink">
                                   <IconCheckCircle2 size={12} />
                                   <span className="tabular-nums">{deliveredCount}</span>
                                 </span>
@@ -880,7 +880,7 @@ export function EmailTrackingView() {
               {bouncedCoaches.length === 0 ? (
                 <div className="py-12 text-center">
                   <div className="w-10 h-10 rounded-fw-md bg-accent-50 flex items-center justify-center mx-auto mb-2">
-                    <IconCheckCircle2 size={18} className="text-accent-500" />
+                    <IconCheckCircle2 size={18} className="text-accent-ink" />
                   </div>
                   <p className="text-sm font-medium text-text-tertiary">No bounced emails</p>
                   <p className="text-xs text-text-tertiary mt-0.5">All email addresses are healthy</p>

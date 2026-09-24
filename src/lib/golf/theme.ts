@@ -32,15 +32,17 @@ export const DEFAULT_THEME: GolfTheme = 'system';
 const DARK_QUERY = '(prefers-color-scheme: dark)';
 
 /**
- * Mobile browser-chrome colour, kept in lockstep with the canvas the shell
- * actually paints (`--fw-color-canvas` in design-tokens.css), converted
- * OKLCH → sRGB: light oklch(0.953 0.022 83) = #f7efdf, dark
- * oklch(0.175 0.003 150) = #101110. The native shell uses the same pair
- * (ios/App/App/Assets.xcassets/LaunchCanvas.colorset, the splash images and
- * GolfBridgeViewController), so launch → webview → page is one colour. If the
- * canvas token changes, update all of them (and ThemeScript's pre-paint copy).
- * Without these the address bar / status bar stayed at the UA default and
- * framed a dark page in white on iOS and Android.
+ * Mobile browser-chrome colour. `applyThemeColorMeta` reads the live
+ * `--fw-color-canvas` token, so the chrome follows whatever value the token
+ * holds. These hex values are only the fallback for when the token can't be
+ * read. They are the token converted OKLCH → sRGB: light
+ * oklch(0.93 0.03 82) = #f2e6d2, dark oklch(0.165 0.004 150) = #0d0f0d.
+ * The native shell can't read CSS, so it carries the same pair in the
+ * FwColorCanvas colour asset (ios/App/App/Assets.xcassets), capacitor.config.ts
+ * and the splash images. src/test/static/canvas-color-sync.test.ts fails when
+ * the token and those copies drift apart. Without a theme-color the address
+ * bar / status bar stayed at the UA default and framed a dark page in white
+ * on iOS and Android.
  *
  * NOT expressed as a Next `viewport.themeColor` media query: that can only key
  * off the OS `prefers-color-scheme`, so an explicit light/dark choice held in
@@ -48,7 +50,7 @@ const DARK_QUERY = '(prefers-color-scheme: dark)';
  * chrome. Driving it from `applyTheme` means the meta always tracks the theme
  * the app actually resolved, however it was chosen.
  */
-const THEME_COLOR = { dark: '#101110', light: '#f7efdf' } as const;
+const THEME_COLOR = { dark: '#0d0f0d', light: '#f2e6d2' } as const;
 
 function isTheme(v: unknown): v is GolfTheme {
   return v === 'light' || v === 'dark' || v === 'system';
@@ -67,7 +69,24 @@ function applyThemeColorMeta(dark: boolean): void {
     meta.setAttribute('data-fw-theme-color', '');
     document.head.appendChild(meta);
   }
-  meta.content = dark ? THEME_COLOR.dark : THEME_COLOR.light;
+  meta.content = canvasColor(dark);
+}
+
+/**
+ * The painted canvas colour for the resolved theme: the live
+ * `--fw-color-canvas` value (read after the `.dark` class has been set), or
+ * the hex fallback when the token is unavailable.
+ */
+function canvasColor(dark: boolean): string {
+  try {
+    const live = getComputedStyle(document.documentElement)
+      .getPropertyValue('--fw-color-canvas')
+      .trim();
+    if (live) return live;
+  } catch {
+    // fall through to the static value
+  }
+  return dark ? THEME_COLOR.dark : THEME_COLOR.light;
 }
 
 /** The stored choice, or the default when unset/unreadable. */

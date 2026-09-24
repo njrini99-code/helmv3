@@ -88,13 +88,13 @@ export function SectionHeader({
     return (
         <div className={cn('flex items-end justify-between mb-4 md:mb-5', className)}>
             <div className="flex items-center gap-2.5 min-w-0">
-                {icon && <span className="text-primary-600 flex-shrink-0">{icon}</span>}
+                {icon && <span className="text-accent-ink flex-shrink-0">{icon}</span>}
                 <h2 className="text-body md:text-body-lg font-medium text-warm-700 tracking-[-0.012em] truncate">
                     {title}
                 </h2>
             </div>
             {action && (
-                <Button asChild variant="ghost" className="group flex-shrink-0 inline-flex items-center gap-1 min-h-[44px] px-2 -mx-2 rounded-lg text-body-sm font-medium text-warm-500 hover:text-primary-700 transition-colors duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-cream-50">
+                <Button asChild variant="ghost" className="group flex-shrink-0 inline-flex items-center gap-1 min-h-[44px] px-2 -mx-2 rounded-lg text-body-sm font-medium text-text-tertiary hover:text-primary-700 transition-colors duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-cream-50">
                     <Link href={action.href} prefetch={true}>
                         {action.label}
                         <IconArrowRight

@@ -1,12 +1,9 @@
 'use client';
 
+import { haptic } from '@/lib/haptics';
 import { useEffect, useState } from 'react';
 import { m, useReducedMotion } from 'framer-motion';
-import {
-  Drawer,
-  DrawerContent,
-  DrawerTitle,
-} from '@/components/ui/drawer';
+import { Sheet } from '@/components/fairway/overlays/Sheet';
 import { Button } from '@/components/ui/button';
 import {
   IconBell,
@@ -19,7 +16,7 @@ import {
   requestPushPermission,
   setPushSoftAskState,
 } from '@/lib/utils/push-registration';
-import { triggerHaptic } from '@/lib/utils/capacitor';
+
 import { useToast } from '@/components/ui/sonner';
 
 /**
@@ -28,7 +25,7 @@ import { useToast } from '@/components/ui/sonner';
  * Apple HIG: ask for permission in context, after the user has seen the
  * app and understands its value — NEVER on cold launch. Once the system
  * prompt is shown the user gets ONE chance to answer, so we front this
- * with our own Drawer explaining why notifications help them.
+ * with our own Sheet explaining why notifications help them.
  *
  * This component mounts invisibly, checks native state + localStorage,
  * and shows the sheet exactly once until the user decides.
@@ -57,36 +54,36 @@ export function PushPermissionSoftAsk() {
 
   async function handleEnable() {
     setSubmitting(true);
-    await triggerHaptic('light');
+    await haptic('commit');
     const result = await requestPushPermission();
     setSubmitting(false);
     setOpen(false);
     if (result === 'granted') {
-      await triggerHaptic('success');
+      await haptic('success');
       showToast('Notifications enabled', 'success');
     }
     // If denied, stay quiet — no nag. User can re-enable in Settings.
   }
 
   function handleDismiss() {
-    void triggerHaptic('light');
+    void haptic('commit');
     setPushSoftAskState('dismissed');
     setOpen(false);
   }
 
   return (
-    <Drawer
+    <Sheet
       open={open}
       onOpenChange={(next) => {
         if (!next) handleDismiss();
       }}
+      // Accessible title for the dialog, visually hidden so the designed hero
+      // heading below stays the visual title. Without a Dialog.Title, Radix
+      // logs a console error on every open (Sentry JAVASCRIPT-NEXTJS-2F).
+      title="Stay in the loop"
+      hideTitle
+      hideClose
     >
-      <DrawerContent>
-      {/* Accessible title for the Radix/vaul dialog — visually hidden so the
-          designed hero heading below remains the visual title. Without a
-          Dialog.Title, Radix logs a console error on every open (Sentry
-          JAVASCRIPT-NEXTJS-2F). */}
-      <DrawerTitle className="sr-only">Stay in the loop</DrawerTitle>
       <div
         className="flex flex-col items-center text-center pt-2 pb-6 px-6 overflow-y-auto overscroll-contain"
         style={{ paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom))' }}
@@ -111,17 +108,17 @@ export function PushPermissionSoftAsk() {
         {/* Value props */}
         <ul className="w-full max-w-sm mt-5 space-y-3 text-left">
           <SoftAskBullet
-            icon={<IconCalendar size={16} className="text-primary-600" />}
+            icon={<IconCalendar size={16} className="text-accent-ink" />}
             title="Events & schedule changes"
             description="Know the moment practice, tee times, or travel updates."
           />
           <SoftAskBullet
-            icon={<IconMessageSquare size={16} className="text-primary-600" />}
+            icon={<IconMessageSquare size={16} className="text-accent-ink" />}
             title="Messages from coaches"
             description="Get pinged when your coach reaches out directly."
           />
           <SoftAskBullet
-            icon={<IconCheck size={16} className="text-primary-600" />}
+            icon={<IconCheck size={16} className="text-accent-ink" />}
             title="Task reminders"
             description="Gentle nudges for qualifiers, reviews, and assignments."
           />
@@ -150,8 +147,7 @@ export function PushPermissionSoftAsk() {
           You can change this anytime in Settings.
         </p>
       </div>
-      </DrawerContent>
-    </Drawer>
+    </Sheet>
   );
 }
 

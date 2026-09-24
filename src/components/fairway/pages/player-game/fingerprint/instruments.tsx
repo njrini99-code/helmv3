@@ -129,12 +129,12 @@ export function MissCompass({ section }: { section: SectionData }) {
   const num = 'block text-body font-semibold tabular-nums text-text-primary';
   return (
     <figure className="m-0" aria-label={`Approach misses: left ${fmt(left)}, right ${fmt(right)}, short ${fmt(short)}, long ${fmt(long)}`}>
-      <div aria-hidden="true" className="mx-auto grid w-full max-w-[280px] grid-cols-[1fr_auto_1fr] grid-rows-[auto_auto_auto] items-center gap-2 text-center">
+      <div aria-hidden="true" data-slot="miss-compass" className="mx-auto grid w-full max-w-[280px] grid-cols-[1fr_auto_1fr] lg:max-w-[360px] lg:gap-3 grid-rows-[auto_auto_auto] items-center gap-2 text-center">
         <span />
         <span className={cell}><span className={num}>{fmt(long)}</span>long</span>
         <span />
         <span className={cn(cell, 'text-right')}><span className={num}>{fmt(left)}</span>left</span>
-        <svg viewBox="0 0 96 64" className="h-16 w-24" role="presentation">
+        <svg viewBox="0 0 96 64" className="h-16 w-24 lg:h-24 lg:w-36" role="presentation">
           <ellipse cx="48" cy="32" rx="44" ry="28" className="fill-surface-sunken stroke-border-strong" strokeWidth="1" />
           <line x1="48" y1="6" x2="48" y2="58" className="stroke-border-subtle" strokeWidth="1" />
           <line x1="6" y1="32" x2="90" y2="32" className="stroke-border-subtle" strokeWidth="1" />
@@ -180,7 +180,7 @@ export function ApproachLadder({ data }: { data: ApproachLadderData }) {
                   <span className="absolute inset-y-[-4px] left-1/2 w-px bg-border-strong" />
                   <span
                     className={cn(
-                      'absolute top-0 h-3 rounded-[3px]',
+                      'absolute top-0 h-3 rounded-sm',
                       thin
                         ? cn('border bg-transparent', gain ? 'border-fw-success' : 'border-fw-warning')
                         : gain
@@ -254,14 +254,14 @@ export function RateMeters({ section, labels }: { section: SectionData; labels: 
           <li key={r.label} className="grid grid-cols-[108px_minmax(0,1fr)_44px] items-center gap-x-3">
             <span className="font-fw-sans text-body-sm text-text-secondary">{r.label}</span>
             <span aria-hidden="true" className="relative block h-2 rounded-full bg-surface-sunken">
-              <span className="absolute inset-y-0 left-0 rounded-full bg-text-secondary" style={{ width: `${Math.min(100, Math.max(0, r.v))}%` }} />
+              <span className="absolute inset-y-0 left-0 rounded-full bg-fw-success" style={{ width: `${Math.min(100, Math.max(0, r.v))}%` }} />
               <span className="absolute inset-y-[-3px] left-1/2 w-px bg-border-strong" />
             </span>
             <span className="text-right font-fw-sans text-body font-semibold tabular-nums text-text-primary">{Math.round(r.v)}%</span>
           </li>
         ))}
       </ul>
-      <InstrumentNote>Percent of chances converted. The tick marks 50%.</InstrumentNote>
+      <InstrumentNote>Percent of chances converted, all tracked rounds. The tick marks 50%.</InstrumentNote>
     </div>
   );
 }
@@ -269,8 +269,8 @@ export function RateMeters({ section, labels }: { section: SectionData; labels: 
 /* ── Putting: make curve ─────────────────────────────────────────────────── */
 
 const CURVE_W = 320;
-const CURVE_H = 148;
-const CURVE_PAD = { top: 12, right: 10, bottom: 26, left: 32 };
+const CURVE_H = 158;
+const CURVE_PAD = { top: 22, right: 22, bottom: 26, left: 32 };
 
 export function PuttingMakeCurve({ section }: { section: SectionData }) {
   const bands = puttingBands(section);
@@ -297,9 +297,9 @@ export function PuttingMakeCurve({ section }: { section: SectionData }) {
     <figure className="m-0">
       <svg
         viewBox={`0 0 ${CURVE_W} ${CURVE_H}`}
-        className="block h-auto w-full"
+        className="block h-auto w-full max-w-[420px]"
         role="img"
-        aria-label={`Putts made by distance: ${bands.map((b) => `${b.label} ${b.pct == null ? 'no makes recorded' : `${b.pct}%`}`).join(', ')}`}
+        aria-label={`Putts made by distance: ${bands.map((b) => `${b.label} ${b.pct == null ? 'no putts tracked' : `${b.pct}%`}`).join(', ')}`}
       >
         {[0, 50, 100].map((t) => (
           <g key={t}>
@@ -348,7 +348,7 @@ export function PuttingMakeCurve({ section }: { section: SectionData }) {
         ))}
       </svg>
       <InstrumentNote>
-        Putts made by starting distance, all tracked rounds.{hasGap ? ' A dashed tick means no makes recorded in that band.' : ''}
+        Putts made by starting distance, all tracked rounds.{hasGap ? ' A dashed tick means no putts tracked from that distance.' : ''}
       </InstrumentNote>
     </figure>
   );
@@ -379,7 +379,7 @@ export function ParDeltas({ section }: { section: SectionData }) {
               <span aria-hidden="true" className="relative block h-3">
                 <span className="absolute inset-y-[-3px] left-1/2 w-px bg-border-strong" />
                 <span
-                  className={cn('absolute top-0 h-3 rounded-[3px]', over ? 'bg-fw-warning' : 'bg-fw-success')}
+                  className={cn('absolute top-0 h-3 rounded-sm', over ? 'bg-fw-warning' : 'bg-fw-success')}
                   style={over ? { left: '50%', width: `${Math.max(w, 1)}%` } : { right: '50%', width: `${Math.max(w, 1)}%` }}
                 />
               </span>
@@ -416,8 +416,10 @@ export function PressureSplit({ section }: { section: SectionData }) {
     { label: 'Competition', v: t, n: tourn?.comparison },
   ];
   return (
-    <div>
-      <ul className="flex flex-col gap-3">
+    <div data-slot="pressure-split">
+      {/* A11Y-06: each row's label, sample and value are real text; only the
+          dot track is decorative. The list name says what the pairs compare. */}
+      <ul className="flex flex-col gap-3" aria-label="Average score to par, practice and competition rounds">
         {rows.map((r) => (
           <li key={r.label} className="grid grid-cols-[88px_minmax(0,1fr)_52px] items-center gap-x-3">
             <span className="font-fw-sans text-body-sm text-text-secondary">
@@ -441,7 +443,7 @@ export function PressureSplit({ section }: { section: SectionData }) {
           {gap?.comparison ? ` · ${gap.comparison.toLowerCase()}` : ''}
         </p>
       ) : null}
-      <InstrumentNote>Average score to par per round, from the last 10 rounds. The line marks even par.</InstrumentNote>
+      <InstrumentNote>Average score to par per 18 holes, tournament and qualifier rounds against practice, from the last 10 rounds. The line marks even par.</InstrumentNote>
     </div>
   );
 }

@@ -515,7 +515,7 @@ export function ReviewHero({
                         {row.distance}
                       </span>
                       {row.isPenalty ? (
-                        <span className="shrink-0 rounded-full bg-danger/10 px-1.5 py-0.5 text-eyebrow font-semibold uppercase tracking-[0.06em] text-danger">
+                        <span className="shrink-0 rounded-full bg-fw-danger-bg px-1.5 py-0.5 text-eyebrow font-semibold uppercase tracking-[0.06em] text-fw-danger-ink">
                           Penalty
                         </span>
                       ) : null}

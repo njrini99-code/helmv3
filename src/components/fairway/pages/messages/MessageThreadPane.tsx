@@ -5,7 +5,8 @@
 
 import { MESSAGE_REACTIONS, summarizeReactions, type MessageReactionsState } from '@/hooks/golf/use-message-reactions';
 import * as React from 'react';
-import { AnimatePresence, m, useReducedMotion } from 'framer-motion';
+import { AnimatePresence, m } from 'framer-motion';
+import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
 import { ArrowLeft, Pencil, Trash2, Check, X, Copy, Paperclip, MessageSquare, Users, FileText, Download, AlertTriangle, RotateCw, Info, SmilePlus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { fwHaptic } from '@/lib/fairway/haptics';
@@ -570,7 +571,7 @@ export function MessageThreadPane({
   children,
   className,
 }: MessageThreadPaneProps & { children?: React.ReactNode }) {
-  const reduceMotion = useReducedMotion() ?? false;
+  const reduceMotion = useReducedMotionGuard();
   const reactions = reactionProps ?? EMPTY_REACTIONS;
   const messagesEndRef = React.useRef<HTMLDivElement>(null);
   const messagesContainerRef = React.useRef<HTMLDivElement>(null);
@@ -1524,7 +1525,7 @@ export function MessageThreadPane({
                     )}
 
                     {editingMessageId !== msg.id && deleteConfirmId !== msg.id && (
-                      <div className={cn('absolute top-1/2 hidden -translate-y-1/2 items-center opacity-0 transition-opacity duration-150 group-hover:opacity-100 focus-within:opacity-100 motion-reduce:transition-none md:flex', isOwn ? 'right-full mr-2' : 'left-full ml-2')}>
+                      <div className={cn('absolute top-1/2 hidden -translate-y-1/2 items-center opacity-0 transition-opacity duration-150 group-hover:opacity-100 focus-within:opacity-100 [@media(hover:none)]:opacity-100 motion-reduce:transition-none md:flex', isOwn ? 'right-full mr-2' : 'left-full ml-2')}>
                         <IconButton variant="ghost" aria-label="Message actions" title="React or more actions" onClick={() => onSetMobileActions(msg.id)}>
                           <SmilePlus size={18} aria-hidden="true" />
                         </IconButton>
@@ -1651,7 +1652,7 @@ export function MessageThreadPane({
                           // gradient — same G-50b logic, and no new machinery two
                           // rounds after "you're doing too much with the cards".
                           isOwn
-                            ? 'bg-accent-650 text-text-on-accent'
+                            ? 'bg-accent-fill text-text-on-accent-fill'
                             : 'bg-surface text-text-primary',
                           // G-49 (F14) — every bubble in the artboard casts a
                           // shadow; the repo drew them flat. Same systemic gap
@@ -1940,7 +1941,7 @@ export function MessageThreadPane({
             data-fw-selected-message
             className={cn(
               'order-2 mb-3 w-fit max-w-[90%] overflow-clip rounded-fw-md border px-3 py-2.5 [box-shadow:var(--fw-shadow-card)]',
-              isOwnMessage(actionsMessage) ? 'self-end border-accent-700 bg-accent-650 text-text-on-accent' : 'self-start border-border-subtle bg-surface text-text-primary',
+              isOwnMessage(actionsMessage) ? 'self-end border-accent-700 bg-accent-fill text-text-on-accent-fill' : 'self-start border-border-subtle bg-surface text-text-primary',
             )}
             initial={reduceMotion ? false : { opacity: 0, y: 4, scale: 0.98 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}

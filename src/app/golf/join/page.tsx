@@ -84,10 +84,10 @@ export default function JoinTeamPage() {
           >
             <div className="text-center mb-6">
               <div className="w-16 h-16 bg-primary-50/80 backdrop-blur-sm rounded-full flex items-center justify-center mx-auto mb-4">
-                <IconUsers size={32} className="text-primary-600" />
+                <IconUsers size={32} className="text-accent-ink" />
               </div>
               <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-warm-900">Join a Team</h1>
-              <p className="text-warm-500 mt-2 text-sm sm:text-base">
+              <p className="text-text-tertiary mt-2 text-sm sm:text-base">
                 Enter the invite code your coach gave you to join their team.
               </p>
             </div>
@@ -110,7 +110,7 @@ export default function JoinTeamPage() {
                     className="text-center text-lg font-mono tracking-widest"
                   />
                   {!error && (
-                    <p id="invite-code-hint" className="mt-2 text-xs text-warm-400 text-center">
+                    <p id="invite-code-hint" className="mt-2 text-xs text-text-tertiary text-center">
                       {trimmed.length > 0
                         ? `${trimmed.length} / 10 characters`
                         : '4\u201310 characters, letters and numbers'}
@@ -120,13 +120,13 @@ export default function JoinTeamPage() {
                 <Button variant="primary"
                   type="submit"
                   disabled={!trimmed}
-                  className="w-full px-4 py-3 bg-primary-600 text-white font-semibold rounded-xl hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-lg shadow-primary-900/10 hover:shadow-xl hover:shadow-primary-900/15"
+                  className="w-full px-4 py-3 bg-accent-fill text-text-on-accent-fill font-semibold rounded-xl hover:bg-accent-fill-hover disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-lg shadow-primary-900/10 hover:shadow-xl hover:shadow-primary-900/15"
                 >
                   Join Team
                 </Button>
               </form>
 
-              <p className="text-center text-xs text-warm-400 mt-4">
+              <p className="text-center text-xs text-text-tertiary mt-4">
                 Don&apos;t have a code? Ask your coach for the team invite code.
               </p>
             </div>

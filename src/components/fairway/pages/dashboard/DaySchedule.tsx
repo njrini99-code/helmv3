@@ -210,7 +210,7 @@ export function DaySchedule({
   const headerAction = viewAllHref ? (
     <Link
       href={viewAllHref}
-      className="inline-flex items-center gap-1 py-3 -my-3 font-fw-sans text-body-sm font-medium text-accent-700 hover:text-accent-600"
+      className="inline-flex items-center gap-1 py-3 -my-3 font-fw-sans text-body-sm font-medium text-accent-700 hover:text-accent-ink"
     >
       Calendar
       <ChevronRight aria-hidden className="h-3.5 w-3.5" />

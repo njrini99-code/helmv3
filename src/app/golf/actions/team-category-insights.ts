@@ -885,12 +885,12 @@ async function getTeamCategoryInsightsImpl(
     // Countable rounds only (src/lib/golf/round-countable.ts), canonical
     // hole-sum totals. A 37-stroke round or a hole-less QA round no longer
     // moves a category trend, Putts/Round or Avg vs Par.
-    type CountableRow = Record<string, unknown> & CountableRoundInput & { player_id: unknown };
+    type CountableRow = Record<string, unknown> & CountableRoundInput & { player_id: unknown; score_to_par: number | null };
     const countableRounds = ((roundsResult.data ?? []) as unknown as CountableRow[])
       .map((r) => withCanonicalRoundTotal(r))
       .filter(isCountableRound);
     const sampledRounds = samplePerPlayerRounds(
-      countableRounds.filter((r) => String(r.round_date ?? '') >= trendSinceStr),
+      countableRounds.filter((r) => String(r.round_date ?? '') >= (trendSinceStr ?? '')),
       ROUNDS_PER_PLAYER,
     );
 

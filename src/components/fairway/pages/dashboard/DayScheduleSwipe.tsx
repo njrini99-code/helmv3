@@ -198,7 +198,7 @@ export function DayScheduleSwipe({
       /* -my-2.5 keeps the visual rhythm while the padding lifts the hit area
          to 44px — it measured 72x20 at every viewport, failing both the touch
          minimum and WCAG 2.2 2.5.8 (audit 2026-07-24, P-15). */
-      className="-my-2.5 inline-flex min-h-11 items-center gap-1 px-2 py-2.5 font-fw-sans text-body-sm font-medium text-accent-700 hover:text-accent-600"
+      className="-my-2.5 inline-flex min-h-11 items-center gap-1 px-2 py-2.5 font-fw-sans text-body-sm font-medium text-accent-700 hover:text-accent-ink"
     >
       Calendar
       <ChevronRight aria-hidden className="h-3.5 w-3.5" />
@@ -232,7 +232,7 @@ export function DayScheduleSwipe({
                   variant="ghost"
                   size="sm"
                   onClick={() => goto(0)}
-                  className="-ml-2 px-2 text-caption font-medium text-accent-700 hover:text-accent-600"
+                  className="-ml-2 px-2 text-caption font-medium text-accent-700 hover:text-accent-ink"
                 >
                   Back to today
                 </Button>
@@ -328,7 +328,7 @@ export function DayScheduleSwipe({
                   className={cn(
                     'flex min-h-11 min-w-11 flex-1 shrink-0 basis-0 flex-col items-center justify-center gap-1 rounded-fw-sm px-1 py-1.5 transition-colors',
                     selected
-                      ? 'bg-accent-650 text-text-on-accent'
+                      ? 'bg-accent-fill text-text-on-accent-fill'
                       : 'text-text-tertiary hover:bg-surface-sunken',
                   )}
                 >

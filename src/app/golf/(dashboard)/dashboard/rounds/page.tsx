@@ -15,7 +15,7 @@ import {
 } from '@/components/fairway/pages/rounds/FairwayRoundsLibrary';
 
 export const metadata: Metadata = {
-  title: 'Rounds | Helm Golf',
+  title: 'Rounds',
   description: 'View and manage all golf rounds for your team. Track scores, stats, and player performance over time.',
 };
 

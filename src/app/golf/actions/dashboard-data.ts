@@ -9,6 +9,7 @@ import { withAdminObserved } from '@/lib/admin/observed-action';
 import { computeScoringTrendFromRounds } from '@/lib/golf/scoring-trend';
 import { withCanonicalRoundTotal } from '@/lib/golf/round-total';
 import { isCountableRound } from '@/lib/golf/round-countable';
+import { plausibleQualifierDateBounds } from '@/lib/golf/qualifier-date';
 import {
     aggregateCountableRounds,
     ROUND_STATS_CACHE_COLUMNS,
@@ -325,6 +326,8 @@ async function getCoachDashboardDataImpl(
         }
     }
 
+    const qualifierDateBounds = plausibleQualifierDateBounds();
+
     // ── Parallel batch 1: Team info + roster + events + qualifiers + today's events + tasks + announcements + calendar ──
     const [
         teamResult,
@@ -344,7 +347,9 @@ async function getCoachDashboardDataImpl(
         // with 22 real ones (coach report, 2026-08-05). event_type is NOT NULL,
         // so .neq() can't silently drop untyped rows.
         supabase.from('golf_events').select('id', { count: 'exact', head: true }).eq('team_id', teamId).neq('event_type', CLASS_EVENT_TYPE).gte('start_time', now),
-        supabase.from('golf_qualifiers').select('id', { count: 'exact', head: true }).eq('team_id', teamId).in('status', ['upcoming', 'in_progress']),
+        // NUMC-07: an impossible start date (prod has year 60824) is not "active".
+        supabase.from('golf_qualifiers').select('id', { count: 'exact', head: true }).eq('team_id', teamId).in('status', ['upcoming', 'in_progress'])
+          .gte('start_date', qualifierDateBounds.from).lte('start_date', qualifierDateBounds.to),
         // Today's events + RSVP counts in a single RPC (consolidates the
         // sequential RSVP fetch that previously ran outside this Promise.all).
         // Returns jsonb array of { id, title, event_type, start_time, end_time, location, rsvp_yes, rsvp_total }.

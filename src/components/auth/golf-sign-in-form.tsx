@@ -1,12 +1,13 @@
 'use client';
 
+import { haptic } from '@/lib/haptics';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { loginAction } from '@/app/golf/actions/auth';
 import { logError } from '@/lib/error-logging';
 import { Eye, EyeOff } from 'lucide-react';
-import { triggerHaptic } from '@/lib/utils/capacitor';
+
 import { fwHapticSequence } from '@/lib/fairway/haptics';
 import { isSafeInternalPath } from '@/lib/utils/safe-redirect';
 import { IconButton } from '@/components/fairway/controls/button';
@@ -174,7 +175,7 @@ export function GolfSignInForm() {
     setError(null);
     setInvalidField(null);
     // Light haptic when the user taps Sign In — matches native iOS button feel.
-    void triggerHaptic('light');
+    void haptic('commit');
 
     try {
       // Read ref from sessionStorage (set on mount from URL param, persists through any redirect cycle)
@@ -182,7 +183,7 @@ export function GolfSignInForm() {
       const result = await loginAction(trimmedEmail, password, storedRef);
 
       if (!result.success) {
-        void triggerHaptic('error');
+        void haptic('error');
         const message = getErrorMessage(result.error || 'Login failed');
         setError(message);
         // A credentials rejection is about both fields. Other failures

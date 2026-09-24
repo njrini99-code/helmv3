@@ -125,7 +125,7 @@ export function OfflineIndicator({
                     ? 'bg-red-500/20 text-red-400 border border-red-500/30'
                     : pendingCount.total > 0
                       ? 'bg-primary-500/20 text-primary-400 border border-primary-500/30'
-                      : 'bg-warm-500/20 text-warm-400 border border-warm-500/30',
+                      : 'bg-warm-500/20 text-text-tertiary border border-warm-500/30',
             )}
           >
             {/* Status Icon */}
@@ -166,7 +166,7 @@ export function OfflineIndicator({
         <PopoverContent align="end" sideOffset={8} className="w-64 bg-warm-800/95 border border-warm-700 p-3 space-y-3">
           {/* Connection Status */}
           <div className="flex items-center justify-between">
-            <span className="text-xs text-warm-500">Connection</span>
+            <span className="text-xs text-text-tertiary">Connection</span>
             <span className={`text-xs font-medium ${isOnline ? 'text-primary-400' : 'text-amber-400'}`}>
               {isOnline ? 'Online' : 'Offline'}
             </span>
@@ -175,7 +175,7 @@ export function OfflineIndicator({
           {/* Pending Items */}
           {pendingCount.total > 0 && (
             <div className="flex items-center justify-between">
-              <span className="text-xs text-warm-500">Pending</span>
+              <span className="text-xs text-text-tertiary">Pending</span>
               <span className="text-xs font-medium text-warm-200">
                 {pendingCount.rounds > 0 && `${pendingCount.rounds} round${pendingCount.rounds !== 1 ? 's' : ''}`}
                 {pendingCount.rounds > 0 && pendingCount.shots > 0 && ', '}
@@ -186,7 +186,7 @@ export function OfflineIndicator({
 
           {/* Last Sync */}
           <div className="flex items-center justify-between">
-            <span className="text-xs text-warm-500">Last sync</span>
+            <span className="text-xs text-text-tertiary">Last sync</span>
             <span className="text-xs font-medium text-warm-200">{lastSyncText}</span>
           </div>
 
@@ -217,7 +217,7 @@ export function OfflineIndicator({
             )}
             <Button variant="ghost"
               onClick={() => setOpen(false)}
-              className="flex-1 inline-flex items-center justify-center min-h-[44px] px-3 py-2 text-xs font-medium text-warm-500 hover:text-warm-700 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-cream-50 rounded"
+              className="flex-1 inline-flex items-center justify-center min-h-[44px] px-3 py-2 text-xs font-medium text-text-tertiary hover:text-warm-700 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-cream-50 rounded"
             >
               Dismiss
             </Button>

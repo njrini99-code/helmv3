@@ -1278,6 +1278,13 @@ REVOKE ALL ON FUNCTION "public"."update_player_putt_make_pct"("p_player_id" "uui
 
 GRANT ALL ON FUNCTION "public"."update_player_putt_make_pct"("p_player_id" "uuid") TO "service_role";
 
+-- Pure helpers: callable by authenticated because update_player_stats_strokes_gained
+-- is SECURITY INVOKER and reached over RPC; no anon/PUBLIC access.
+REVOKE ALL ON FUNCTION "public"."golf_round_is_countable"("p_status" "text", "p_holes_played" integer, "p_total_score" integer, "p_front_nine" integer, "p_back_nine" integer, "p_total_putts" integer, "p_strokes_gained_total" numeric) FROM PUBLIC, "anon";
+GRANT EXECUTE ON FUNCTION "public"."golf_round_is_countable"("p_status" "text", "p_holes_played" integer, "p_total_score" integer, "p_front_nine" integer, "p_back_nine" integer, "p_total_putts" integer, "p_strokes_gained_total" numeric) TO "authenticated", "service_role";
+REVOKE ALL ON FUNCTION "public"."golf_round_canonical_total"("p_total_score" integer, "p_front_nine" integer, "p_back_nine" integer) FROM PUBLIC, "anon";
+GRANT EXECUTE ON FUNCTION "public"."golf_round_canonical_total"("p_total_score" integer, "p_front_nine" integer, "p_back_nine" integer) TO "authenticated", "service_role";
+
 REVOKE ALL ON FUNCTION "public"."update_player_stats_complete"() FROM PUBLIC;
 
 GRANT ALL ON FUNCTION "public"."update_player_stats_complete"() TO "service_role";

@@ -61,15 +61,15 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
         data-slot="input-wrapper"
         className={cn(
           "flex w-full items-center gap-2 rounded-fw-sm",
-          "bg-surface-sunken border border-border-subtle",
+          "bg-surface-sunken border border-border-control",
           "transition-[border-color,box-shadow] [transition-duration:var(--fw-dur-fast)] [transition-timing-function:var(--fw-ease-soft)]",
-          "hover:border-border-strong",
+          "hover:border-text-tertiary",
           // Solid accent-600 ring — matches fieldControlBase's AA-fixed recipe
           // (the old accent-500/70 composited to ~2:1 over cream and failed the
           // WCAG 2.2 3:1 focus-indicator floor; keep the two rings in sync).
           "focus-within:border-border-focus focus-within:ring-2 focus-within:ring-accent-600 focus-within:ring-offset-1 focus-within:ring-offset-canvas",
           "has-[[data-invalid]]:border-fw-danger/60 has-[[data-invalid]]:focus-within:ring-fw-danger/40",
-          "has-[:disabled]:opacity-50 has-[:disabled]:hover:border-border-subtle",
+          "has-[:disabled]:opacity-50 has-[:disabled]:hover:border-border-control",
           sizeClasses[size],
           "py-0",
           className,

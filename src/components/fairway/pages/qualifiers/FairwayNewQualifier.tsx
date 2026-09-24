@@ -21,7 +21,7 @@
  * Tokens / primitives ONLY. No glass / warm-* / blur.
  * ========================================================================== */
 
-import { useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
@@ -72,7 +72,14 @@ const todayISO = () => localDayIso();
 
 export function FairwayNewQualifier({ players }: FairwayNewQualifierProps) {
   const router = useRouter();
-  const today = useMemo(todayISO, []);
+  // The viewer's local day, read AFTER mount. A useMemo ran on the server too,
+  // whose day (UTC on Vercel) differs from the viewer's for hours every
+  // evening, so the date inputs' `min` mismatched on hydration (audit HYD-07).
+  // Until mount the inputs carry no `min`; the server re-validates dates anyway.
+  const [today, setToday] = useState<string | undefined>(undefined);
+  useEffect(() => {
+    setToday(todayISO());
+  }, []);
 
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');

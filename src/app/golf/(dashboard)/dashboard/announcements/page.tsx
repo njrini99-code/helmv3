@@ -10,7 +10,7 @@ import { logServerError } from '@/lib/server-error-logger';
 import { describeError } from '@/lib/utils/describe-error';
 
 export const metadata: Metadata = {
-  title: 'Team Announcements | Helm Sports',
+  title: 'Team Announcements',
   description: 'View team news, updates, and important announcements from your golf coaching staff',
 };
 

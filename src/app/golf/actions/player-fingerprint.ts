@@ -47,8 +47,18 @@ import {
 } from '@/app/golf/actions/insight-delivery';
 import { withAdminObserved } from '@/lib/admin/observed-action';
 import { computeCompositeRating } from '@/lib/coachhelm/composite-rating';
-import { isCountableRound } from '@/lib/golf/round-countable';
+import type { FormScore } from '@/lib/golf/form-score';
+import type { FingerprintSgScope } from '@/app/golf/actions/player-fingerprint-types';
+import { computePressureGap } from '@/lib/golf/metrics/pressure-gap';
+import { isCountableRound, roundExclusionReason } from '@/lib/golf/round-countable';
 import { withCanonicalRoundTotal } from '@/lib/golf/round-total';
+import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
+import {
+  aggregateCountableRounds,
+  ROUND_STATS_CACHE_COLUMNS,
+  type CountableRoundRow,
+  type RoundStatsCacheRow,
+} from '@/lib/golf/countable-round-stats';
 
 // ---------------------------------------------------------------------------
 // Public types — the Fingerprint shape. Downstream UI imports these.
@@ -91,7 +101,8 @@ export interface FingerprintMetric {
 /** Shape passed to the per-section chart primitive. Unknown on purpose — each
  *  section knows its own chart and reads the fields it needs. */
 export type FingerprintChartData =
-  | { kind: 'bars'; bars: Array<{ label: string; value: number; max?: number }> }
+  /** `value` null = no data for that bar (drawn as a gap, never as 0). */
+  | { kind: 'bars'; bars: Array<{ label: string; value: number | null; max?: number }> }
   | {
       kind: 'pills';
       pills: Array<{ label: string; value: string; tone: 'good' | 'neutral' | 'bad' }>;
@@ -131,9 +142,12 @@ export interface PlayerFingerprint {
     avatar_url: string | null;
   };
   composite: {
+    /** The Form score (OD-02), 0–99; null with no countable rounds. */
     rating: number | null;
     trend: 'up' | 'flat' | 'down';
     rounds_in_calculation: number;
+    /** Form's quality ("Early read") and formula inputs. */
+    form: FormScore;
   };
   /**
    * How many rounds the SECTION METRICS rest on — a different, usually larger
@@ -154,6 +168,8 @@ export interface PlayerFingerprint {
    * rounds.length`) so the printed sample is the one the metrics were built on.
    */
   metrics_rounds: number;
+  /** Strokes gained per round by window (FP-09); see the types module. */
+  sg_scopes?: FingerprintSgScope[];
   sections: Record<FingerprintSectionKey, SectionData>;
   trend: {
     rolling: FingerprintTrendPoint[];
@@ -238,6 +254,8 @@ interface RoundRow {
 
 /** Rounds the fingerprint reads (composite, trend, pressure, scoring). */
 const FINGERPRINT_ROUND_WINDOW = 10;
+/** Rounds needed on each side of the pressure gap inside that window. */
+const FINGERPRINT_PRESSURE_MIN_PER_SIDE = 2;
 
 // ---------------------------------------------------------------------------
 // Public API
@@ -283,6 +301,8 @@ async function getPlayerFingerprintImpl(
     roundsResult,
     patternsResult,
     insights,
+    sgRoundsResult,
+    roundStatsResult,
   ] = await Promise.all([
     supabase
       .from('golf_players')
@@ -315,22 +335,48 @@ async function getPlayerFingerprintImpl(
       .order('id', { ascending: true })
       // Over-fetch: the countable filter below must still leave 10.
       .limit(FINGERPRINT_ROUND_WINDOW * 3),
-    // Wave 2 composite-rating unification — the SAME active-pattern severity
-    // read the Scouting Report tab's composite already used (same table,
-    // same `is_active`/order/limit shape), run in parallel so the canonical
-    // `computeCompositeRating` below gets the identical penalty input on
-    // BOTH tabs. Additive: no other section reads this result.
+    // Form's pattern penalty (OD-02): the SAME read Team Stats and
+    // getPlayerProfile use (active AND critical/high, no limit), so the
+    // penalty cannot differ by surface. A `.limit(8)` over all severities
+    // could drop severe patterns behind low ones and under-penalize.
     supabase
       .from('golf_patterns_v2')
       .select('severity')
       .eq('player_id', playerId)
       .eq('is_active', true)
-      .order('stroke_impact', { ascending: true })
-      .limit(8),
+      .in('severity', ['critical', 'high']),
+    // coachId is also the exposure row's coach_id (golf_insight_exposure).
+    // Pass the matched golf_coaches.id, the id every other coach_feed reader
+    // passes (Scouting, the Brief), so the per-day exposure dedupe
+    // (insight, coach, surface) sees Fingerprint + Scouting as ONE coach and
+    // does not log the game route twice (DATA-16). A self-view keeps user.id.
     getInsightsForCoach(
-      user.id,
+      access.reason === 'coach' && access.coachId ? access.coachId : user.id,
       { player_id: playerId, limit: 40 },
       supabase,
+    ),
+    // Strokes gained over COUNTABLE rounds (all of them, not the 10-round
+    // window above), from the per-round cache. The player cache's sg_*_per_round
+    // counts implausible rounds (the +34.5 "37-stroke" round moved one player's
+    // SG: Total from -3.6 to -1.6). Same rows + aggregator as the roster player
+    // page's preview (loadPlayerDetail.ts), so the two screens agree.
+    fetchAllRowsResult<CountableRoundRow & { score_to_par: number | null }>((from, to) =>
+      supabase
+        .from('golf_rounds')
+        .select('id, round_date, status, holes_played, total_score, score_to_par, front_nine, back_nine, total_putts')
+        .eq('player_id', playerId)
+        .eq('status', 'completed')
+        .order('round_date', { ascending: false })
+        .order('id', { ascending: true })
+        .range(from, to),
+    ),
+    fetchAllRowsResult<RoundStatsCacheRow>((from, to) =>
+      supabase
+        .from('golf_round_stats_cache')
+        .select(ROUND_STATS_CACHE_COLUMNS)
+        .eq('player_id', playerId)
+        .order('round_id', { ascending: true })
+        .range(from, to),
     ),
   ]);
 
@@ -360,7 +406,32 @@ async function getPlayerFingerprintImpl(
       { action: 'player-fingerprint.getPlayerFingerprint', featureArea: 'insights', playerId },
     );
   }
-  const stats = (statsResult.data as StatsCacheRow | null) ?? null;
+  const cachedStats = (statsResult.data as StatsCacheRow | null) ?? null;
+  // SG from countable rounds replaces the cache's sg_*_per_round. If either
+  // per-round read fails, the cache values stay (logged) rather than blanking.
+  let stats = cachedStats;
+  let sgScopes: FingerprintSgScope[] | undefined;
+  if (sgRoundsResult.error || roundStatsResult.error) {
+    await logServerError(
+      `getPlayerFingerprint.countableSg failed; falling back to cached SG: ${describeError(sgRoundsResult.error ?? roundStatsResult.error)}`,
+      { action: 'player-fingerprint.getPlayerFingerprint', featureArea: 'insights', playerId },
+    );
+  } else {
+    const statsById = new Map((roundStatsResult.data ?? []).map((r) => [r.round_id, r] as const));
+    const canonicalRows = (sgRoundsResult.data ?? []).map((r) => withCanonicalRoundTotal(r));
+    sgScopes = buildSgScopes(canonicalRows, statsById);
+    if (cachedStats) {
+      const sg = aggregateCountableRounds(canonicalRows, statsById).sg;
+      stats = {
+        ...cachedStats,
+        sg_total_per_round: sg.total,
+        sg_tee_per_round: sg.offTee,
+        sg_approach_per_round: sg.approach,
+        sg_around_green_per_round: sg.aroundGreen,
+        sg_putting_per_round: sg.putting,
+      };
+    }
+  }
 
   if (roundsResult.error) {
     await logServerError(
@@ -425,6 +496,7 @@ async function getPlayerFingerprintImpl(
     // Same resolution buildSections uses for its own sparse gate, surfaced so
     // the screen can say which sample each number rests on.
     metrics_rounds: stats?.rounds_in_calculation ?? rounds.length,
+    ...(sgScopes ? { sg_scopes: sgScopes } : {}),
     sections,
     trend,
     generated_at: new Date().toISOString(),
@@ -798,7 +870,7 @@ function buildShortGameBars(stats: StatsCacheRow | null): FingerprintChartData {
     kind: 'bars',
     bars: buckets.map((b) => ({
       label: b.label,
-      value: toPct(b.raw) ?? 0,
+      value: toPct(b.raw),
       max: 100,
     })),
   };
@@ -880,7 +952,7 @@ function buildPuttingBars(stats: StatsCacheRow | null): FingerprintChartData {
     kind: 'bars',
     bars: buckets.map((b) => ({
       label: b.label,
-      value: toPct(b.raw) ?? 0,
+      value: toPct(b.raw),
       max: 100,
     })),
   };
@@ -922,9 +994,9 @@ function buildScoringSection(
     chart = {
       kind: 'bars',
       bars: [
-        { label: 'Par 3', value: par3 ?? 0, max: 5 },
-        { label: 'Par 4', value: par4 ?? 0, max: 6 },
-        { label: 'Par 5', value: par5 ?? 0, max: 7 },
+        { label: 'Par 3', value: par3, max: 5 },
+        { label: 'Par 4', value: par4, max: 6 },
+        { label: 'Par 5', value: par5, max: 7 },
       ],
     };
   }
@@ -963,37 +1035,28 @@ function buildPressureSection(
   rounds: RoundRow[],
   insights: EvidenceInsight[],
 ): SectionData {
-  // 18-hole basis so a 9-hole round's to-par is comparable.
-  const withDiff = rounds
-    .filter(
-      (r): r is RoundRow & { score_to_par: number } =>
-        typeof r.score_to_par === 'number',
-    )
-    .map((r) => {
-      const holes = r.holes_played ?? 18;
-      return holes > 0 && holes !== 18 ? { ...r, score_to_par: (r.score_to_par * 18) / holes } : r;
-    });
-  const practice = withDiff.filter((r) => r.round_type === 'practice');
-  const competitive = withDiff.filter((r) => r.round_type && r.round_type !== 'practice');
+  // The ONE pressure-gap rule (src/lib/golf/metrics/pressure-gap.ts), shared
+  // with the Genome pressure_delta dimension: tournament + qualifier vs
+  // practice, 18-hole basis. Fingerprint's floor is 2 rounds a side over its
+  // 10-round window; Genome keeps 4 over 90 days.
+  const pressureGap = computePressureGap(rounds, { minPerSide: FINGERPRINT_PRESSURE_MIN_PER_SIDE });
 
   const metrics: FingerprintMetric[] = [];
   let sparse = false;
 
-  if (practice.length >= 2 && competitive.length >= 2) {
-    const practiceAvg = avgOf(practice.map((r) => r.score_to_par));
-    const competitiveAvg = avgOf(competitive.map((r) => r.score_to_par));
-    const gap = competitiveAvg - practiceAvg;
+  if (pressureGap) {
+    const { gap, practiceAverage, pressureAverage, practiceRounds, pressureRounds } = pressureGap;
 
     metrics.push({
       label: 'Practice avg',
-      value: formatSigned(practiceAvg, 1),
-      comparison: `${practice.length} rd`,
+      value: formatSigned(practiceAverage, 1),
+      comparison: `${practiceRounds} rd`,
       tone: 'neutral',
     });
     metrics.push({
       label: 'Tournament avg',
-      value: formatSigned(competitiveAvg, 1),
-      comparison: `${competitive.length} rd`,
+      value: formatSigned(pressureAverage, 1),
+      comparison: `${pressureRounds} rd`,
       tone: 'neutral',
     });
     metrics.push({
@@ -1056,6 +1119,42 @@ function buildTrend(
 // ---------------------------------------------------------------------------
 // Small helpers
 // ---------------------------------------------------------------------------
+
+/**
+ * FP-09: strokes gained per round for the last 5, last 10 and all countable
+ * rounds. Countable is the same rule aggregateCountableRounds applies (the
+ * stats-cache SG included), so each window slices countable rounds only.
+ */
+function buildSgScopes(
+  rowsNewestFirst: Array<CountableRoundRow & { score_to_par: number | null }>,
+  statsById: ReadonlyMap<string, RoundStatsCacheRow>,
+): FingerprintSgScope[] {
+  const countable = rowsNewestFirst.filter(
+    (r) =>
+      roundExclusionReason({
+        ...r,
+        strokes_gained_total: r.strokes_gained_total ?? statsById.get(r.id)?.strokes_gained_total ?? null,
+      }) === null,
+  );
+  const windows: Array<[FingerprintSgScope['key'], typeof countable]> = [
+    ['last5', countable.slice(0, 5)],
+    ['last10', countable.slice(0, 10)],
+    ['all', countable],
+  ];
+  return windows.map(([key, rows]) => {
+    const { sg } = aggregateCountableRounds(rows, statsById);
+    return {
+      key,
+      rounds: rows.length,
+      sgRounds: sg.rounds,
+      total: sg.total,
+      tee: sg.offTee,
+      approach: sg.approach,
+      short_game: sg.aroundGreen,
+      putting: sg.putting,
+    };
+  });
+}
 
 function toPct(v: number | null | undefined): number | null {
   if (v == null || !Number.isFinite(v)) return null;

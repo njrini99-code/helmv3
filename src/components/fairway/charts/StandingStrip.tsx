@@ -124,7 +124,7 @@ export function StandingStrip(props: StandingStripProps) {
   // with a genuinely-red error state, and matches the amber "behind Tour"
   // read used elsewhere on the same stats surfaces.
   const deltaToneClass =
-    delta.tone === 'good' ? 'text-accent-600' :
+    delta.tone === 'good' ? 'text-accent-ink' :
     delta.tone === 'bad'  ? 'text-fw-warning-ink' :
                             'text-text-tertiary';
 
@@ -157,7 +157,7 @@ export function StandingStrip(props: StandingStripProps) {
             className={cn(
               'inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 font-fw-mono text-caption font-bold tabular-nums',
               delta.tone === 'good'
-                ? 'bg-accent-650 text-text-on-accent'
+                ? 'bg-accent-fill text-text-on-accent-fill'
                 : delta.tone === 'bad'
                   ? 'bg-fw-warning-bg text-fw-warning-ink'
                   : 'bg-inset text-text-secondary',
@@ -316,7 +316,7 @@ function StripTrack({
           are — this is a structural guarantee, not a distance threshold. */}
       <div className="relative h-7" data-slot="you-badge-tier">
         <div
-          className="absolute top-0 z-20 -translate-x-1/2 whitespace-nowrap rounded-full bg-accent-650 px-2.5 py-1 font-fw-mono text-caption font-bold tabular-nums text-text-on-accent shadow-soft"
+          className="absolute top-0 z-20 -translate-x-1/2 whitespace-nowrap rounded-full bg-accent-fill px-2.5 py-1 font-fw-mono text-caption font-bold tabular-nums text-text-on-accent-fill shadow-soft"
           style={{ left: `${you}%` }}
         >
           {youValue}
@@ -414,7 +414,7 @@ function Readout({
       <span
         className={cn(
           'font-fw-mono text-body font-semibold tabular-nums',
-          tone === 'accent' ? 'text-accent-600' : tone === 'muted' ? 'text-text-tertiary' : 'text-text-primary',
+          tone === 'accent' ? 'text-accent-ink' : tone === 'muted' ? 'text-text-tertiary' : 'text-text-primary',
         )}
       >
         {value}
@@ -449,7 +449,7 @@ function StripError({ message }: { message?: string }) {
       data-state="error"
       className="rounded-card border border-border-subtle bg-surface p-4"
     >
-      <p className="font-fw-sans text-body-sm text-danger">Couldn&rsquo;t load standing.</p>
+      <p className="font-fw-sans text-body-sm text-fw-danger-ink">Couldn&rsquo;t load standing.</p>
       {message ? (
         <p className="mt-1 truncate font-fw-sans text-caption text-text-tertiary" title={message}>
           {message}

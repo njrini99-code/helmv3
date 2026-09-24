@@ -39,6 +39,7 @@ export function BaselineSwitch({ value, onChange, tourLabel = 'Tour', className 
   }
 
   return (
+    // eslint-disable-next-line jsx-a11y/interactive-supports-focus -- focus lives on the checked radio (roving tabindex); the group only delegates arrow keys
     <div
       role="radiogroup"
       aria-label="Compare against"
@@ -57,6 +58,7 @@ export function BaselineSwitch({ value, onChange, tourLabel = 'Tour', className 
       {options.map((o) => {
         const selected = o.value === value;
         return (
+          // eslint-disable-next-line helm/no-raw-button -- segment of a two-option radiogroup with its own sliding thumb; <Button>'s pill chrome would double the thumb
           <button
             key={o.value}
             type="button"

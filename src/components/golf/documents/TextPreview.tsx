@@ -222,7 +222,7 @@ export function TextPreview({
             title="Copy to clipboard"
           >
             {copied ? (
-              <CheckIcon className="h-4 w-4 text-primary-600" />
+              <CheckIcon className="h-4 w-4 text-accent-ink" />
             ) : (
               <CopyIcon className="h-4 w-4" />
             )}

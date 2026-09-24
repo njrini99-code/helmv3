@@ -166,7 +166,7 @@ export function formatPredictionHero(
  * "80% range" and never with that number.
  */
 export const PREDICTION_INTERVAL_LEVEL_PCT = 80;
-/** A band wider than this many strokes says nothing useful; hide it (owner decision D4). */
+/** A band wider than this many strokes says nothing useful; hide it (owner decisions D4, OD-09). */
 export const MAX_PREDICTION_BAND_STROKES = 8;
 
 /** Normalize a confidence value that may arrive as 0..1 or 0..100. */
@@ -214,7 +214,7 @@ export function buildPredictionVerdict(
       return `Predicted ${formatPredictionValue(low, metric)} to ${formatPredictionValue(high, metric)}${unit} (${PREDICTION_INTERVAL_LEVEL_PCT}% range).${focusText}`;
     }
     // Too wide to be useful: show the estimate, never the band.
-    return `Predicted ${formatPredictionValue(n, metric)}${unit}. The range is still too wide to show; it narrows as you log more rounds.${focusText}`;
+    return `Predicted ${formatPredictionValue(n, metric)}${unit}. Not enough rounds yet for a range; it narrows as you log more.${focusText}`;
   }
 
   return conf !== null

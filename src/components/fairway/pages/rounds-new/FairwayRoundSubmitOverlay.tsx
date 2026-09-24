@@ -17,12 +17,25 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { LazyMotion, m, AnimatePresence, useReducedMotion } from 'framer-motion';
+import { LazyMotion, m, AnimatePresence } from 'framer-motion';
+import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
+import { fwHaptic } from '@/lib/fairway/haptics';
 import { loadFeatures } from '@/lib/motion/load-features';
-import { TriangleAlert, Check } from 'lucide-react';
+import { TriangleAlert } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/fairway/controls/button';
+
+/**
+ * D-SUBMIT (owner decision): the round-submitted moment is a checkmark that
+ * DRAWS itself (~400ms, after the badge lands) and ONE signature success
+ * haptic timed to the moment the stroke completes. Owned here, not by the
+ * callers, so New Round and Continue Round feel identical and neither can
+ * double it. Reduced motion: the check is drawn already and the haptic fires
+ * at once. Tune on device.
+ */
+export const CHECK_DRAW_DELAY_MS = 250;
+export const CHECK_DRAW_MS = 400;
 
 // Elements a keyboard user can land on inside the dialog panel, for the Tab
 // trap and for picking an initial-focus target.
@@ -65,7 +78,7 @@ export function FairwayRoundSubmitOverlay({
   secondaryActionLabel,
   onSecondaryAction,
 }: FairwayRoundSubmitOverlayProps) {
-  const prefersReducedMotion = useReducedMotion();
+  const prefersReducedMotion = useReducedMotionGuard();
   const router = useRouter();
   const [showSafetyEscape, setShowSafetyEscape] = useState(false);
   const [showSuccessEscape, setShowSuccessEscape] = useState(false);
@@ -139,6 +152,16 @@ export function FairwayRoundSubmitOverlay({
       if (successEscapeTimerRef.current) clearTimeout(successEscapeTimerRef.current);
     };
   }, [isSuccess, navigateToRound]);
+
+  // The signature success haptic, once per success, when the check finishes.
+  useEffect(() => {
+    if (!isSuccess) return undefined;
+    const t = setTimeout(
+      () => fwHaptic('success'),
+      prefersReducedMotion ? 0 : CHECK_DRAW_DELAY_MS + CHECK_DRAW_MS,
+    );
+    return () => clearTimeout(t);
+  }, [isSuccess, prefersReducedMotion]);
 
   // Reset navigation flag when overlay hides
   useEffect(() => {
@@ -252,16 +275,37 @@ export function FairwayRoundSubmitOverlay({
                 <div className="relative overflow-hidden bg-accent-600 px-6 pb-6 pt-8 text-center">
                   <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.16),transparent_60%)]" />
                   <m.div
-                    initial={{ scale: 0, rotate: -45 }}
-                    animate={{ scale: 1, rotate: 0 }}
+                    initial={prefersReducedMotion ? false : { scale: 0.6, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
                     transition={
                       prefersReducedMotion
                         ? { duration: 0 }
-                        : { delay: 0.15, duration: 0.5, type: 'spring', stiffness: 200, damping: 14 }
+                        : { duration: 0.3, type: 'spring', stiffness: 260, damping: 20 }
                     }
                     className="relative mx-auto mb-4 grid h-16 w-16 place-items-center rounded-2xl bg-text-on-accent/20 backdrop-blur-sm"
                   >
-                    <Check className="h-8 w-8 text-white" strokeWidth={3} aria-hidden />
+                    <svg
+                      viewBox="0 0 24 24"
+                      className="h-8 w-8 text-white"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth={3}
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      aria-hidden
+                      data-slot="submit-check"
+                    >
+                      <m.path
+                        d="M5 12.5l4.5 4.5L19 7.5"
+                        initial={prefersReducedMotion ? false : { pathLength: 0 }}
+                        animate={{ pathLength: 1 }}
+                        transition={
+                          prefersReducedMotion
+                            ? { duration: 0 }
+                            : { delay: CHECK_DRAW_DELAY_MS / 1000, duration: CHECK_DRAW_MS / 1000, ease: [0.65, 0, 0.35, 1] }
+                        }
+                      />
+                    </svg>
                   </m.div>
                   <m.h3
                     initial={{ opacity: 0, y: 6 }}
@@ -430,7 +474,7 @@ export function FairwayRoundSubmitOverlay({
                     strokeDasharray="213.6"
                     strokeDashoffset="213.6"
                     strokeLinecap="round"
-                    className="animate-[submitRingSpin_2s_ease-in-out_infinite] text-accent-500"
+                    className="animate-[submitRingSpin_2s_ease-in-out_infinite] text-accent-ink"
                   />
                 </svg>
                 <div className="absolute inset-0 flex items-center justify-center">

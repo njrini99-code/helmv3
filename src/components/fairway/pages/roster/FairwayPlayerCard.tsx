@@ -77,8 +77,8 @@ export function FairwayPlayerCard({ player, intent }: FairwayPlayerCardProps) {
   const hasScore = player.avg_score && player.avg_score > 0;
 
   return (
+    // In-flow roster card: the resting hairline, not a drop shadow (DS-E4).
     <Surface
-      elevation="shadow"
       padding="none"
       className="overflow-hidden"
       // Session Replay masks all text by default (instrumentation-client.ts,

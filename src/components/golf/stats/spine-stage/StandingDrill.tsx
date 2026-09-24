@@ -265,7 +265,7 @@ export function StandingDrill({
                     ? '/golf/dashboard/coachhelm'
                     : `/golf/dashboard/players/${playerId}/game?tab=scouting`
                 }
-                className="inline-flex items-center gap-1 rounded-fw-sm font-fw-sans text-label font-medium text-accent-600 outline-none transition-colors [transition-duration:180ms] hover:text-accent-700 focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas motion-reduce:transition-none"
+                className="inline-flex items-center gap-1 rounded-fw-sm font-fw-sans text-label font-medium text-accent-ink outline-none transition-colors [transition-duration:180ms] hover:text-accent-700 focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas motion-reduce:transition-none"
               >
                 Open CoachHelm
                 <ArrowRight className="h-3.5 w-3.5" aria-hidden />

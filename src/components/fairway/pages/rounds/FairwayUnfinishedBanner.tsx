@@ -50,10 +50,10 @@ export interface FairwayUnfinishedBannerProps {
   playerId: string;
 }
 
-function relativeTime(round: RoundLibraryRound): string {
+function relativeTime(round: RoundLibraryRound, now: number): string {
   const ts = round.updated_at ?? round.created_at;
   if (!ts) return '';
-  const diff = Date.now() - new Date(ts).getTime();
+  const diff = now - new Date(ts).getTime();
   const hours = Math.floor(diff / (1000 * 60 * 60));
   const days = Math.floor(hours / 24);
   if (days > 0) return `${days}d ago`;
@@ -130,7 +130,11 @@ function UnfinishedRow({
   const city = round.course_city
     ? [round.course_city, round.course_state].filter(Boolean).join(', ')
     : null;
-  const timeAgo = relativeTime(round);
+  // "3h ago" depends on the clock, so it is computed after mount: the server
+  // render and hydration would otherwise disagree (HYD-15).
+  const [now, setNow] = React.useState<number | null>(null);
+  React.useEffect(() => setNow(Date.now()), []);
+  const timeAgo = now === null ? '' : relativeTime(round, now);
 
   const handleContinue = () => {
     router.push(`/golf/dashboard/rounds/continue/${round.id}`);

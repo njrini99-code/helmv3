@@ -97,7 +97,8 @@ export function PlayerCoachHelmNav() {
                   setActive(section.key);
                   replaceStageUrl('view', section.key, 'home');
                 }}
-                aria-current={selected ? 'page' : undefined}
+                // In-page view switch, not a route: `true`, not `page` (A11Y-R6).
+                aria-current={selected ? 'true' : undefined}
                 className={cn(
                   'relative inline-flex min-h-11 items-center justify-center whitespace-nowrap rounded-t-fw-sm px-3.5 py-2',
                   'font-fw-sans text-label font-medium outline-none transition-colors duration-150',

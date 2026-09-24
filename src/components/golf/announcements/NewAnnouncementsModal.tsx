@@ -6,12 +6,7 @@ import { m, useReducedMotion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { IconBell, IconCheck, IconChevronRight } from '@/components/icons';
 import { Button } from '@/components/ui/button';
-import {
-  Drawer,
-  DrawerContent,
-  DrawerFooter,
-  DrawerTitle,
-} from '@/components/ui/drawer';
+import { Sheet } from '@/components/fairway/overlays/Sheet';
 import { useToast } from '@/components/ui/sonner';
 import { acknowledgeAnnouncement } from '@/app/golf/actions/communication';
 import type { GolfAnnouncementMeta } from '@/lib/types/golf';
@@ -37,17 +32,17 @@ const urgencyConfig: Record<string, UrgencyStyle> = {
     label: 'Low',
   },
   normal: {
-    bar: 'bg-primary-600',
+    bar: 'bg-accent-fill',
     badgeBg: 'bg-primary-600/10',
     badgeText: 'text-primary-700',
-    badgeDot: 'bg-primary-600',
+    badgeDot: 'bg-accent-fill',
     label: 'Normal',
   },
   high: {
-    bar: 'bg-warning',
-    badgeBg: 'bg-warning/10',
-    badgeText: 'text-warning',
-    badgeDot: 'bg-warning',
+    bar: 'bg-fw-warning',
+    badgeBg: 'bg-fw-warning-bg',
+    badgeText: 'text-fw-warning-text',
+    badgeDot: 'bg-fw-warning',
     label: 'High',
   },
   urgent: {
@@ -82,7 +77,7 @@ interface NewAnnouncementsModalProps {
 /**
  * Shown to players when unseen announcements exist.
  *
- * Uses the shared Drawer primitive so it inherits iOS-native behaviors:
+ * Uses the Fairway Sheet primitive so it inherits iOS-native behaviors:
  * swipe-to-close, drag handle, safe-area padding, haptics, focus trap, and
  * Escape key handling — keeping this modal visually consistent with the
  * rest of the app (command palette, event sheets, etc.).
@@ -115,31 +110,32 @@ export function NewAnnouncementsModal({ announcements, onDismiss }: NewAnnouncem
   const title = count === 1 ? 'New Announcement' : `${count} New Announcements`;
 
   return (
-    <Drawer
+    <Sheet
       open={announcements.length > 0}
       onOpenChange={(next) => {
         if (!next) onDismiss();
       }}
+      // Accessible title, visually hidden so the designed header below stays
+      // the visual title. Without a Dialog.Title, Radix logs a console error
+      // on every open (Sentry JAVASCRIPT-NEXTJS-2F).
+      title={title}
+      hideTitle
+      hideClose
+      className="overflow-hidden"
     >
-      <DrawerContent className="overflow-hidden">
-      {/* Accessible title for the Radix/vaul dialog — visually hidden so the
-          designed header below remains the visual title. Without a
-          Dialog.Title, Radix logs a console error on every open (Sentry
-          JAVASCRIPT-NEXTJS-2F). */}
-      <DrawerTitle className="sr-only">{title}</DrawerTitle>
       <div
         className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-6 pb-4"
       >
       {/* Header */}
       <div className="flex items-center gap-3 pb-4">
         <div className="w-11 h-11 rounded-2xl bg-primary-50 border border-primary-200/60 flex items-center justify-center flex-shrink-0">
-          <IconBell size={20} className="text-primary-600" />
+          <IconBell size={20} className="text-accent-ink" />
         </div>
         <div className="flex-1 min-w-0">
           <h2 className="text-headline text-warm-900">
             {title}
           </h2>
-          <p className="text-footnote text-warm-500">From your coaching staff</p>
+          <p className="text-footnote text-text-tertiary">From your coaching staff</p>
         </div>
       </div>
 
@@ -179,7 +175,7 @@ export function NewAnnouncementsModal({ announcements, onDismiss }: NewAnnouncem
                 <div className="flex items-start gap-2 mb-1">
                   <h3 className={cn(
                     'text-subhead font-medium text-warm-900 line-clamp-2 flex-1 leading-snug',
-                    isAcked && 'text-warm-500',
+                    isAcked && 'text-text-tertiary',
                   )}>
                     {ann.title}
                   </h3>
@@ -195,14 +191,14 @@ export function NewAnnouncementsModal({ announcements, onDismiss }: NewAnnouncem
                 {/* Body preview */}
                 <p className={cn(
                   'text-body-sm text-warm-600 line-clamp-3 leading-relaxed mb-2.5',
-                  isAcked && 'text-warm-400',
+                  isAcked && 'text-text-tertiary',
                 )}>
                   {ann.body}
                 </p>
 
                 {/* Footer: time + action */}
                 <div className="flex items-center justify-between">
-                  <span className="text-caption-1 text-warm-500 tabular-nums">
+                  <span className="text-caption-1 text-text-tertiary tabular-nums">
                     {ann.published_at ? relativeTime(ann.published_at) : ''}
                   </span>
 
@@ -218,7 +214,7 @@ export function NewAnnouncementsModal({ announcements, onDismiss }: NewAnnouncem
                     </Button>
                   )}
                   {isAcked && (
-                    <span className="inline-flex items-center gap-1 text-caption text-primary-600 font-medium">
+                    <span className="inline-flex items-center gap-1 text-caption text-accent-ink font-medium">
                       <IconCheck size={12} />
                       Acknowledged
                     </span>
@@ -230,7 +226,7 @@ export function NewAnnouncementsModal({ announcements, onDismiss }: NewAnnouncem
         })}
       </div>
       </div>
-      <DrawerFooter className="pt-4 pb-[max(1rem,env(safe-area-inset-bottom,0px))]">
+      <div className="mt-auto flex flex-col gap-2 px-6 pt-4 pb-[max(1rem,env(safe-area-inset-bottom,0px))]">
         <div className="flex items-center gap-3">
           <Button
             variant="primary"
@@ -250,8 +246,7 @@ export function NewAnnouncementsModal({ announcements, onDismiss }: NewAnnouncem
             </Button>
           )}
         </div>
-      </DrawerFooter>
-      </DrawerContent>
-    </Drawer>
+      </div>
+    </Sheet>
   );
 }

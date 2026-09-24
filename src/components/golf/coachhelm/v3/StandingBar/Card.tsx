@@ -150,11 +150,11 @@ export function Card(props: CardProps) {
 
       {/* A2: a suppressed reference with a reason says why (not "missing data"). */}
       {omissionNote && (
-        <p className="text-xs text-warm-500 mt-2">{omissionNote}</p>
+        <p className="text-xs text-text-tertiary mt-2">{omissionNote}</p>
       )}
 
       {state === 'cold-start' && (
-        <p className="text-xs text-warm-500 mt-2">
+        <p className="text-xs text-text-tertiary mt-2">
           Team marker appears once 5+ teammates have 5+ rounds each.
         </p>
       )}
@@ -241,7 +241,7 @@ function CardEmpty({ label }: { label: string }) {
       className="glass-standard rounded-2xl shadow-glass p-5"
     >
       <h3 className="text-sm font-medium text-warm-900 tracking-[-0.01em]">{label}</h3>
-      <p className="text-xs text-warm-500 mt-2">
+      <p className="text-xs text-text-tertiary mt-2">
         Log 5 rounds to see how you stack up.
       </p>
     </div>
@@ -345,7 +345,7 @@ export function Bar({ youPct, teamPct, pgaPct, size, zeroPct = null, fill = null
           leftPct={drawnPct.get('pga')!}
           markerSize={markerSize}
           label="P"
-          toneClass="bg-warm-400 text-white"
+          toneClass="bg-text-tertiary text-surface"
           delay={0.08}
         />
       )}
@@ -356,7 +356,7 @@ export function Bar({ youPct, teamPct, pgaPct, size, zeroPct = null, fill = null
           leftPct={drawnPct.get('team')!}
           markerSize={markerSize}
           label="T"
-          toneClass="bg-warm-600 text-white"
+          toneClass="bg-text-secondary text-surface"
           delay={0.14}
         />
       )}
@@ -364,7 +364,7 @@ export function Bar({ youPct, teamPct, pgaPct, size, zeroPct = null, fill = null
        *
        * The label is EMPTY on purpose: the filled circle IS the mark. It used
        * to pass '●', which rendered an 11px (`text-eyebrow`) white bullet glyph
-       * inside a 12px (`w-3 h-3`) `bg-primary-600` circle — the glyph covered
+       * inside a 12px (`w-3 h-3`) `bg-accent-fill` circle — the glyph covered
        * the middle and the "you" marker read as a hollow white donut with a
        * thin green rim (Nick's 07-24 round-review screenshot). That inverted
        * the hierarchy: the two REFERENCE chips ('T'/'P') were legible while the
@@ -376,7 +376,7 @@ export function Bar({ youPct, teamPct, pgaPct, size, zeroPct = null, fill = null
         leftPct={drawnPct.get('you')!}
         markerSize={markerSize}
         label=""
-        toneClass="bg-primary-600 ring-2 ring-primary-200 shadow-[0_0_0_4px_rgba(22,163,74,0.16)]"
+        toneClass="bg-accent-fill ring-2 ring-primary-200 shadow-[0_0_0_4px_rgba(22,163,74,0.16)]"
         delay={0.22}
       />
     </div>

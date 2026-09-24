@@ -753,7 +753,7 @@ export function PuttingZoom({ plot, className, puttMakePct }: PuttingZoomProps) 
               {isEntryHovered ? `Shot ${hovered.display_index} · reached green` : `Putt ${hovered.display_index}`}
             </div>
             <div
-              className="text-warm-500 tabular-nums"
+              className="text-text-tertiary tabular-nums"
               style={hoveredMeta.isMade ? { color: 'var(--fw-color-accent-500)' } : undefined}
             >
               {isEntryHovered
@@ -762,21 +762,21 @@ export function PuttingZoom({ plot, className, puttMakePct }: PuttingZoomProps) 
                   ? 'holed'
                   : `${formatFeet(hovered.shot_feet)} putt`}
             </div>
-            {hoveredMeta.isUnresolved && <div className="text-warm-500">Not holed out</div>}
+            {hoveredMeta.isUnresolved && <div className="text-text-tertiary">Not holed out</div>}
             {hoveredRich?.putt_break || hoveredRich?.putt_slope ? (
-              <div className="text-warm-500">
+              <div className="text-text-tertiary">
                 {hoveredRich.putt_break ? PUTT_BREAK_SHORT[hoveredRich.putt_break] ?? hoveredRich.putt_break : ''}
                 {hoveredRich.putt_break && hoveredRich.putt_slope ? ', ' : ''}
                 {hoveredRich.putt_slope ? PUTT_SLOPE_LABEL[hoveredRich.putt_slope] ?? hoveredRich.putt_slope : ''}
               </div>
             ) : null}
             {!isEntryHovered && formatPuttMakePctContext(puttMakePct, hovered.shot_feet) && (
-              <div className="text-warm-500">
+              <div className="text-text-tertiary">
                 {formatPuttMakePctContext(puttMakePct, hovered.shot_feet)}
               </div>
             )}
             {!isEntryHovered && formatMissTags(hoveredRich?.miss_tags) && (
-              <div className="text-warm-500">{formatMissTags(hoveredRich?.miss_tags)}</div>
+              <div className="text-text-tertiary">{formatMissTags(hoveredRich?.miss_tags)}</div>
             )}
             {typeof hoveredRich?.sg === 'number' && Number.isFinite(hoveredRich.sg) && (
               <div className="tabular-nums" style={{ color: sgTooltipColor(hoveredRich.sg) }}>

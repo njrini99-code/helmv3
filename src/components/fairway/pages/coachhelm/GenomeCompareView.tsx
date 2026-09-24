@@ -102,7 +102,7 @@ export interface GenomeCompareViewProps {
 }
 
 const PLAYER_A_DOT = 'var(--fw-color-accent-500, #16A34A)'; // helm green
-const PLAYER_B_DOT = '#F59E0B'; // amber 500
+const PLAYER_B_DOT = 'var(--fw-color-warning, #F59E0B)'; // amber (theme-aware token)
 
 /* ---------------------------------------------------------------------------
  * Vector → fingerprint dimensions (shared label set; null when not computed)
@@ -490,7 +490,7 @@ function ComparePicker({
                       {p.name}
                     </span>
                     {selected ? (
-                      <IconCheck size={15} className="flex-shrink-0 text-accent-600" />
+                      <IconCheck size={15} className="flex-shrink-0 text-accent-ink" />
                     ) : null}
                   </Link>
                 )}

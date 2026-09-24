@@ -71,7 +71,7 @@ export function SpamCompliancePanel({
   return (
     <div className="rounded-card border border-border-subtle border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-card)] overflow-clip">
       <div className="flex items-center gap-2 px-4 py-2.5 border-b border-border-subtle bg-surface-sunken/60">
-        <IconShieldCheck size={14} className="text-accent-600" aria-hidden />
+        <IconShieldCheck size={14} className="text-accent-ink" aria-hidden />
         <span className="text-xs font-semibold uppercase tracking-wider text-text-secondary">
           Spam compliance
         </span>

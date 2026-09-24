@@ -437,7 +437,7 @@ function CauseCard({ cause, onMakePlan, makePlanPending = false }: CauseCardProp
           {hasDrill ? (
             <div className="flex flex-col gap-2">
               <Eyebrow className="inline-flex items-center gap-1.5">
-                <Target className="h-3 w-3 text-accent-600" aria-hidden />
+                <Target className="h-3 w-3 text-accent-ink" aria-hidden />
                 Drills
               </Eyebrow>
               <div className="flex flex-wrap gap-2">

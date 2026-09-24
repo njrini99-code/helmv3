@@ -13,6 +13,7 @@
  *   - A failed read is `unavailable`, never `empty`.
  */
 
+import { formatToPar as formatToParShared } from '@/lib/golf/format-to-par';
 import { roundExclusionReason } from '@/lib/golf/round-countable';
 import {
   aggregateCountableRounds,
@@ -108,11 +109,9 @@ export function formatSigned(n: number, digits = 1): string {
   return r > 0 ? `+${r.toFixed(digits)}` : `${MINUS}${Math.abs(r).toFixed(digits)}`;
 }
 
-/** Score to par: "E", "+2", "−3". */
-export function formatToPar(n: number): string {
-  const r = Math.round(n);
-  if (r === 0) return 'E';
-  return r > 0 ? `+${r}` : `${MINUS}${Math.abs(r)}`;
+/** Score to par: "E", "+2", "−3" (the shared formatter, whole strokes). */
+export function formatRoundToPar(n: number): string {
+  return formatToParShared(Math.round(n));
 }
 
 function plural(n: number, one: string, many = `${one}s`): string {
@@ -190,7 +189,7 @@ function buildLedger(
       key: 'scoring',
       label: 'Scoring average',
       value: agg.scoringAverage == null ? null : agg.scoringAverage.toFixed(1),
-      aside: avgToPar == null ? null : formatSigned(avgToPar),
+      aside: avgToPar == null ? null : `${formatSigned(avgToPar)} to par`,
       tone: 'neutral',
       sample: n === 0 ? 'No 18-hole rounds' : plural(n, 'round'),
       thin: n > 0 && n < THIN_ROUNDS,
@@ -451,7 +450,7 @@ export function buildPlayerDetailModel(inputs: PlayerDetailInputs): PlayerDetail
   let statusLine: string | null = null;
   let statusNote: string | null = null;
   if (latest) {
-    const par = latest.toPar == null ? '' : ` (${formatToPar(latest.toPar)})`;
+    const par = latest.toPar == null ? '' : ` (${formatRoundToPar(latest.toPar)})`;
     statusLine = `Last round ${latest.dateLabel} · ${latest.score}${par}${latest.holes === 9 ? ' · 9 holes' : ''}`;
     const newerExcluded = excludedDates.filter((d) => d > latest.date).length;
     if (newerExcluded > 0) statusNote = `${plural(newerExcluded, 'later round')} not counted`;

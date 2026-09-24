@@ -4,7 +4,7 @@ import {
   buildPlayerDetailModel,
   formatDayLabel,
   formatSigned,
-  formatToPar,
+  formatRoundToPar,
   rollingMean,
   type PlayerDetailInputs,
   type RawRound,
@@ -79,9 +79,9 @@ describe('formatters', () => {
   it('signs numbers with a real minus and E for level par', () => {
     expect(formatSigned(0.43)).toBe('+0.4');
     expect(formatSigned(-1.61)).toBe('−1.6');
-    expect(formatToPar(0)).toBe('E');
-    expect(formatToPar(-3)).toBe('−3');
-    expect(formatToPar(2)).toBe('+2');
+    expect(formatRoundToPar(0)).toBe('E');
+    expect(formatRoundToPar(-3)).toBe('−3');
+    expect(formatRoundToPar(2)).toBe('+2');
   });
   it('computes a trailing mean', () => {
     expect(rollingMean([1, 2, 3, 4], 3)).toEqual([null, null, 2, 3]);
@@ -143,7 +143,7 @@ describe('buildPlayerDetailModel', () => {
     const ledger = m.scopes.find((s) => s.key === 'last5')!.ledger;
     const scoring = ledger.find((l) => l.key === 'scoring')!;
     expect(scoring.value).toBe('75.0');
-    expect(scoring.aside).toBe('+3.0');
+    expect(scoring.aside).toBe('+3.0 to par');
     expect(scoring.thin).toBe(true);
     expect(ledger.find((l) => l.key === 'fir')!.sample).toBe('18 of 28 fairways');
     expect(ledger.find((l) => l.key === 'sg')!.value).toBe('−1.0');

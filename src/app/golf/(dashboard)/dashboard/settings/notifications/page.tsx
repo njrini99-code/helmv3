@@ -49,7 +49,7 @@ import { FeatureUnavailable } from '@/components/fairway';
 import { FairwaySettingsNotifications } from '@/components/fairway/pages/settings';
 
 export const metadata: Metadata = {
-  title: 'Notification preferences · GolfHelm',
+  title: 'Notification preferences',
 };
 
 export default async function NotificationPrefsPage() {

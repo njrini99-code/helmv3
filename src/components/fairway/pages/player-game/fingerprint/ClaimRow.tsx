@@ -16,7 +16,7 @@ import { useState } from 'react';
 import { PopoverPanel } from '@/components/fairway/overlays/PopoverPanel';
 import { IconMoreHorizontal } from '@/components/icons';
 import { cn } from '@/lib/utils';
-import type { ClaimView } from './fingerprint-model';
+import { toPlayerVoice, type ClaimView } from './fingerprint-model';
 
 export type ClaimAction = 'acknowledged' | 'dismissed' | 'create_focus_area';
 
@@ -50,8 +50,13 @@ export function ClaimMeta({ claim }: { claim: ClaimView }) {
   );
 }
 
-export function ClaimRow({ claim, mode, pending = false, onAction, readOnly = false }: ClaimRowProps) {
+export function ClaimRow({ claim: rawClaim, mode, pending = false, onAction, readOnly = false }: ClaimRowProps) {
   const [menuOpen, setMenuOpen] = useState(false);
+  // FP-03: engine copy is coach-voiced; the player reads it as "you".
+  const claim =
+    mode === 'player'
+      ? { ...rawClaim, title: toPlayerVoice(rawClaim.title), body: toPlayerVoice(rawClaim.body) }
+      : rawClaim;
   const hasWhy = Boolean(claim.body || claim.impact || claim.drills.length || claim.tags.length || claim.movement);
 
   const run = (action: ClaimAction) => {
@@ -91,6 +96,7 @@ export function ClaimRow({ claim, mode, pending = false, onAction, readOnly = fa
             side="bottom"
             ariaLabel={`Actions for ${claim.title}`}
             trigger={
+              // eslint-disable-next-line helm/no-raw-button -- icon-only overflow trigger passed to the menu primitive, which needs a forwardable native button
               <button
                 type="button"
                 disabled={pending}
@@ -109,6 +115,7 @@ export function ClaimRow({ claim, mode, pending = false, onAction, readOnly = fa
             <ul role="menu" className="flex min-w-[200px] flex-col py-1">
               {items.map((it) => (
                 <li key={it.action} role="none">
+                  {/* eslint-disable-next-line helm/no-raw-button -- role="menuitem" row inside the claim menu; <Button> cannot carry menu-row semantics or layout */}
                   <button
                     type="button"
                     role="menuitem"

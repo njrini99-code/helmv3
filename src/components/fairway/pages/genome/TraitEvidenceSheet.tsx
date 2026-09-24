@@ -7,6 +7,7 @@
  */
 
 import { Sheet } from '@/components/fairway/overlays/Sheet';
+import { Button } from '@/components/fairway/controls/button';
 import { cn } from '@/lib/utils';
 import { getMetricDirection } from '@/lib/coachhelm/v3/metrics/registry';
 import {
@@ -16,7 +17,7 @@ import {
   familyOf,
   formatAdvantage,
   percentilePhrase,
-  readWord,
+  readTierWord,
   windowLabel,
   TEAM_FLOOR,
 } from './strand-model';
@@ -56,7 +57,7 @@ export function TraitEvidenceSheet({ trait, open, onOpenChange, onMakeFocus, foc
             <CompareRow label={`${t.tourLabel} reference`} t={t} read={t.tour} note={null} />
             <Row label="Window" value={windowLabel(t.window)} />
             <Row label="Sample" value={t.n != null ? `${t.n} rounds` : 'Shot count not stored'} />
-            <Row label="Read" value={readWord(t.read)} />
+            <Row label="Read" value={readTierWord(t.readN)} />
             {percentilePhrase(t.teamPercentile) ? <Row label="On the team" value={percentilePhrase(t.teamPercentile)!} /> : null}
           </dl>
 
@@ -66,14 +67,9 @@ export function TraitEvidenceSheet({ trait, open, onOpenChange, onMakeFocus, foc
           </p>
 
           {onMakeFocus && t.valueText ? (
-            <button
-              type="button"
-              onClick={() => onMakeFocus(t)}
-              disabled={focusBusy}
-              className="inline-flex h-12 w-full items-center justify-center rounded-fw-md bg-accent-650 font-fw-sans text-body font-semibold text-text-on-accent transition-[background-color,transform] duration-150 active:scale-[0.97] active:bg-accent-750 disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2"
-            >
-              {focusBusy ? 'Creating focus area…' : 'Make it a focus area'}
-            </button>
+            <Button variant="primary" size="lg" fullWidth busy={focusBusy} onClick={() => onMakeFocus(t)}>
+              Make it a focus area
+            </Button>
           ) : null}
         </div>
       ) : null}

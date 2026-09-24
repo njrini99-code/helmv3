@@ -260,7 +260,7 @@ describe('Card — dynamic domain render (founder screenshot repro)', () => {
     // inside a 12px green circle rendered as a hollow donut (07-24 screenshot).
     // Assert the marker element exists via its brand fill instead of by text.
     expect(screen.queryByText('●')).toBeNull();
-    expect(container.querySelector('.bg-primary-600')).toBeTruthy();
+    expect(container.querySelector('.bg-accent-fill')).toBeTruthy();
   });
 
   it('still shows the real Team value in the comparison cell (not a suppressed "—")', () => {
@@ -330,7 +330,7 @@ describe('Bar — team/you fill band tracks the NUDGED marker positions, not the
         fill={{ fromPct: 52, toPct: 50, tone: 'good' }}
       />,
     );
-    const youMarker = container.querySelector('.bg-primary-600') as HTMLElement;
+    const youMarker = container.querySelector('.bg-accent-fill') as HTMLElement;
     const teamMarker = screen.getByText('T');
     expect(youMarker.style.left).toBe('48.75%');
     expect(teamMarker.style.left).toBe('53.25%');

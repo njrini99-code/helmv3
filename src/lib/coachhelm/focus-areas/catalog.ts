@@ -46,6 +46,45 @@ export interface AreaAutoFillStats {
   par3_avg?: number | null;
   par4_avg?: number | null;
   par5_avg?: number | null;
+  // ── Strokes gained per round (golf_player_stats_cache) — pick the weakest
+  //    area to preselect in the focus-area sheet (SHEET-04). ──
+  sg_tee_per_round?: number | null;
+  sg_approach_per_round?: number | null;
+  sg_around_green_per_round?: number | null;
+  sg_putting_per_round?: number | null;
+  /** Rounds the SG figures were computed from (countable rounds). */
+  rounds_in_calculation?: number | null;
+}
+
+/** Rounds needed before the weakest SG area is trusted enough to preselect. */
+export const WEAKEST_AREA_MIN_ROUNDS = 5;
+
+/**
+ * The focus-area category where the player loses the most strokes, or null
+ * when there are fewer than {@link WEAKEST_AREA_MIN_ROUNDS} countable rounds
+ * or no SG figures (owner decision SHEET-04: no guess on thin data).
+ */
+export function weakestSgArea(
+  stats: AreaAutoFillStats | undefined,
+): 'driving' | 'iron_play' | 'short_game' | 'putting' | null {
+  if (!stats) return null;
+  const rounds = stats.rounds_in_calculation ?? stats.rounds_played ?? 0;
+  if (rounds < WEAKEST_AREA_MIN_ROUNDS) return null;
+  const candidates = [
+    ['driving', stats.sg_tee_per_round],
+    ['iron_play', stats.sg_approach_per_round],
+    ['short_game', stats.sg_around_green_per_round],
+    ['putting', stats.sg_putting_per_round],
+  ] as const;
+  let best: (typeof candidates)[number][0] | null = null;
+  let bestValue = Infinity;
+  for (const [area, value] of candidates) {
+    if (typeof value === 'number' && Number.isFinite(value) && value < bestValue) {
+      best = area;
+      bestValue = value;
+    }
+  }
+  return best;
 }
 
 /** Which direction counts as improvement for a metric. */

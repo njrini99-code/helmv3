@@ -21,6 +21,7 @@
 import type { MetricId } from '@/lib/coachhelm/v3/metrics/registry';
 import { getMetricDirection } from '@/lib/coachhelm/v3/metrics/registry';
 import { getMetricRenderConfig } from '@/lib/coachhelm/v3/standing/metric-config';
+import { confidenceLabel, confidenceTier, type ConfidenceTier } from '@/lib/coachhelm/confidence-label';
 
 /* ------------------------------------------------------------------------- */
 /* Inputs (serializable: the server page maps PlayerStanding into these)      */
@@ -119,23 +120,35 @@ export const TRAITS: readonly TraitDef[] = [
 /* Read words (never a percentage; owner decision)                            */
 /* ------------------------------------------------------------------------- */
 
-/** Below this many rounds a trait is an early read and draws ghosted. */
-export const EARLY_READ_BELOW = 10;
-/** At or above this many rounds a trait is a solid read. */
-export const SOLID_READ_AT = 20;
+/**
+ * Rounds at which a sample counts as full. The read word comes from the shared
+ * confidenceLabel() on n / SAMPLE_FULL_AT, the same sample-size ramp the rest of
+ * CoachHelm uses: Solid from 14 rounds, Early from 8, Thin below (ghosted).
+ */
+export const SAMPLE_FULL_AT = 20;
 /** Below this many team players the team average is itself thin. */
 export const TEAM_FLOOR = 5;
 
-export type ReadLevel = 'early' | 'fair' | 'solid';
+export type ReadLevel = ConfidenceTier;
 
-export function readLevel(n: number | null): ReadLevel {
-  if (n == null || n < EARLY_READ_BELOW) return 'early';
-  if (n < SOLID_READ_AT) return 'fair';
-  return 'solid';
+/** Sample size as a 0–1 ramp (the confidence confidenceLabel() words). */
+export function sampleConfidence(n: number | null): number {
+  if (n == null || !Number.isFinite(n) || n <= 0) return 0;
+  return Math.min(1, n / SAMPLE_FULL_AT);
 }
 
-export function readWord(level: ReadLevel): string {
-  return level === 'early' ? 'Early read' : level === 'fair' ? 'Fair read' : 'Solid read';
+export function readLevel(n: number | null): ReadLevel {
+  return confidenceTier(sampleConfidence(n)) ?? 'thin';
+}
+
+/** "Solid read", "Early read", or "Thin read, n=4" (never a percentage). */
+export function readWord(n: number | null): string {
+  return confidenceLabel(sampleConfidence(n), n) ?? 'Thin read';
+}
+
+/** The read word alone, for lines that already print n. */
+export function readTierWord(n: number | null): string {
+  return confidenceLabel(sampleConfidence(n)) ?? 'Thin read';
 }
 
 export function windowLabel(w: TraitWindow): string {
@@ -248,6 +261,8 @@ export interface StrandTrait {
   /** Rounds behind the value (null for shot-tracked traits: not stored). */
   n: number | null;
   read: ReadLevel;
+  /** The sample the read word is built from (rounds). */
+  readN: number | null;
   /** Label of the Tour line ("Tour", or "LPGA" for a women's anchor). */
   tourLabel: string;
 }
@@ -297,7 +312,8 @@ export function buildStrand(rows: readonly StrandStandingInput[], samples: Stran
     const tourOmitted = row ? row.pga_omitted === true || row.pga_value == null : false;
     const n = nFor(def.window, samples);
     // Shot-tracked traits carry no player n; their read follows the rounds on file.
-    const read = readLevel(n ?? samples.roundsOnFile);
+    const readN = n ?? samples.roundsOnFile;
+    const read = readLevel(readN);
     return {
       id: def.id,
       family: def.family,
@@ -319,6 +335,7 @@ export function buildStrand(rows: readonly StrandStandingInput[], samples: Stran
       teamN: row?.team_n ?? 0,
       n,
       read,
+      readN,
       tourLabel: row?.is_womens ? 'LPGA' : 'Tour',
     };
   });
@@ -331,7 +348,7 @@ export function readFor(t: StrandTrait, baseline: Baseline): BaselineRead {
 /** A trait is drawn solid only when it has a comparison and the read is not early. */
 export function isGhost(t: StrandTrait, baseline: Baseline): boolean {
   const r = readFor(t, baseline);
-  return r.magnitude == null || r.thin || t.read === 'early';
+  return r.magnitude == null || r.thin || t.read === 'thin';
 }
 
 /** Traits ranked by advantage (largest edge first, largest gap last). */
@@ -359,7 +376,7 @@ export function summarize(traits: readonly StrandTrait[], baseline: Baseline): S
     ahead: ahead.length,
     behind: behind.length,
     best: ahead[0] ?? null,
-    worst: behind.length > 0 ? behind[behind.length - 1] : null,
+    worst: behind[behind.length - 1] ?? null,
   };
 }
 
@@ -389,7 +406,7 @@ export function groupByFamily(traits: readonly StrandTrait[]): Array<{ family: F
 }
 
 export function familyOf(id: FamilyId): Family {
-  return FAMILIES.find((f) => f.id === id) ?? FAMILIES[0];
+  return FAMILIES.find((f) => f.id === id) ?? (FAMILIES[0] as Family);
 }
 
 /** Ordinal for a team percentile shown as a rank phrase ("top third"). */

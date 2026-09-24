@@ -263,7 +263,7 @@ export function FairwayRecruitingPage({
                         'font-fw-mono text-h2 font-semibold leading-none tabular-nums',
                         // P119: a real value is authoritative; an all-zero plate
                         // (no data) is de-emphasized so it doesn't read as a metric.
-                        hasRecruits ? 'text-text-primary' : 'text-text-tertiary/60',
+                        hasRecruits ? 'text-text-primary' : 'text-text-tertiary',
                       )}
                     >
                       {counts[s.value]}

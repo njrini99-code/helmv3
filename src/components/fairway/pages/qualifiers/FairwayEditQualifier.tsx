@@ -154,9 +154,15 @@ export function FairwayEditQualifier({
       setError('Fix the highlighted dates before saving.');
       return;
     }
+    // DATA-07: an emptied Rounds field used to save as 1 round without a word.
+    if (numRounds == null || numRounds < 1) {
+      setError('Enter how many rounds this qualifier has (1 or more).');
+      return;
+    }
 
     setLoading(true);
     setError(null);
+    let detailsSaved = false;
     try {
       const detailsResult = await updateGolfQualifierDetails(qualifierId, {
         name: name.trim(),
@@ -174,6 +180,7 @@ export function FairwayEditQualifier({
         setLoading(false);
         return;
       }
+      detailsSaved = true;
 
       const coursesResult = await setQualifierRoundCourses(
         qualifierId,
@@ -190,8 +197,13 @@ export function FairwayEditQualifier({
           : [],
       );
 
+      // DATA-06: the details write above has already landed. Say so, so a
+      // coach does not assume nothing saved; saving again retries the round
+      // courses (the details update is idempotent).
       if (!coursesResult.success) {
-        setError(coursesResult.error);
+        setError(
+          `The qualifier details were saved, but the round courses were not: ${coursesResult.error} Save again to retry the courses.`,
+        );
         setLoading(false);
         return;
       }
@@ -199,7 +211,12 @@ export function FairwayEditQualifier({
       router.push(detailHref);
       router.refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to save the qualifier.');
+      const message = err instanceof Error ? err.message : 'Failed to save the qualifier.';
+      setError(
+        detailsSaved
+          ? `The qualifier details were saved, but the round courses were not: ${message} Save again to retry the courses.`
+          : message,
+      );
       setLoading(false);
     }
   };
@@ -294,7 +311,11 @@ export function FairwayEditQualifier({
         <FormSection title="Course & rules" description="Where it's played and how it's scored.">
           <div className="flex flex-col gap-5">
             <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-              <FormField label="Rounds" help="How many rounds count toward this qualifier.">
+              <FormField
+                label="Rounds"
+                help="How many rounds count toward this qualifier."
+                error={numRounds == null || numRounds < 1 ? 'Enter 1 or more rounds.' : undefined}
+              >
                 <NumberField value={numRounds} onValueChange={setNumRounds} min={1} max={50} unit="rounds" />
               </FormField>
               <FormField label="Spots available" showOptional help="Total roster spots for this qualifier.">

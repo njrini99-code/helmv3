@@ -112,8 +112,8 @@ function LoginContent() {
         footer={
           <>
             {!isNative && (
-              <p className="flex items-center text-body text-text-secondary">
-                <span>New here?</span>
+              <p className="text-center text-body text-text-secondary">
+                New here?{' '}
                 <Link href={signupHref} className={authTextLinkClass}>
                   Create an account
                 </Link>

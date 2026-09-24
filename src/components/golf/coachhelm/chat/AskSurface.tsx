@@ -15,6 +15,7 @@
  * button away, and the answer gets the width.
  * ========================================================================== */
 
+import { clearAskHandoff, hasAskHandoff } from '@/lib/golf/ask-handoff';
 import * as React from 'react';
 import Link from 'next/link';
 import { PanelLeft, Plus, X } from 'lucide-react';
@@ -103,9 +104,18 @@ export function AskSurface({
    * but the guard is what makes that true by construction rather than by luck.
    */
   const strippedPendingQuestionRef = React.useRef(false);
+  // DATA-15: only a question the Brief tab handed off in THIS tab moments ago
+  // sends itself. A bare `?q=` (a pasted link, a crawler, an email) pre-fills
+  // the composer and waits for the coach to press Send. Read once at mount
+  // (the composer's auto-submit is mount-only). It changes no markup, so
+  // reading the browser's storage here cannot cause a hydration mismatch.
+  const [autoSubmitPendingQuestion] = React.useState(
+    () => typeof window !== 'undefined' && !!pendingQuestion && hasAskHandoff(pendingQuestion),
+  );
   React.useEffect(() => {
     if (!pendingQuestion || strippedPendingQuestionRef.current) return;
     strippedPendingQuestionRef.current = true;
+    clearAskHandoff();
     const url = new URL(window.location.href);
     url.searchParams.delete('q');
     window.history.replaceState(window.history.state, '', url.toString());
@@ -261,7 +271,7 @@ export function AskSurface({
             onConversationId={adoptConversationInUrl}
             variant="page"
             initialInput={pendingQuestion ?? undefined}
-            autoSubmitInitialInput={Boolean(pendingQuestion)}
+            autoSubmitInitialInput={autoSubmitPendingQuestion}
             greeting={<Greeting teamName={teamName} />}
             opening={(ask) => (
               <ProgramOpening

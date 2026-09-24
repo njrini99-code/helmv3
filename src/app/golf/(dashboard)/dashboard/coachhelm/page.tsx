@@ -66,7 +66,7 @@ interface RawFocusAreaRow {
 }
 
 export const metadata: Metadata = {
-  title: 'CoachHelm | GolfHelm',
+  title: 'CoachHelm',
   description: 'AI-powered insights, predictions, and focus areas for your golf performance.',
 };
 
@@ -345,7 +345,7 @@ export default async function PlayerCoachHelmPage() {
         supabase
           .from('golf_player_stats_cache')
           .select(
-            'rounds_played, scoring_average, putts_per_round, driving_accuracy_percentage, gir_percentage, best_round, driving_distance_average, approach_proximity_average, scrambling_percentage, up_and_down_percentage, sand_save_percentage, one_putt_percentage, three_putt_percentage, par3_average, par4_average, par5_average',
+            'rounds_played, scoring_average, putts_per_round, driving_accuracy_percentage, gir_percentage, best_round, driving_distance_average, approach_proximity_average, scrambling_percentage, up_and_down_percentage, sand_save_percentage, one_putt_percentage, three_putt_percentage, par3_average, par4_average, par5_average, rounds_in_calculation, sg_tee_per_round, sg_approach_per_round, sg_around_green_per_round, sg_putting_per_round',
           )
           .eq('player_id', player.id)
           .maybeSingle(),
@@ -467,6 +467,12 @@ export default async function PlayerCoachHelmPage() {
         par3_avg: sr?.par3_average ?? null,
         par4_avg: sr?.par4_average ?? null,
         par5_avg: sr?.par5_average ?? null,
+        // SHEET-04: the focus-area sheet preselects the weakest SG area.
+        rounds_in_calculation: sr?.rounds_in_calculation ?? null,
+        sg_tee_per_round: sr?.sg_tee_per_round ?? null,
+        sg_approach_per_round: sr?.sg_approach_per_round ?? null,
+        sg_around_green_per_round: sr?.sg_around_green_per_round ?? null,
+        sg_putting_per_round: sr?.sg_putting_per_round ?? null,
       };
       goals = activeGoals.map((g) => ({ goal: g, standing: standingMap.get(g.metric_id) ?? null }));
       achievedGoals = achievedGoalsRes.map((g) => ({ goal: g, standing: standingMap.get(g.metric_id) ?? null }));
@@ -657,7 +663,7 @@ export default async function PlayerCoachHelmPage() {
   const themes = themesRes?.data?.themes ?? [];
 
   return (
-    <div className={fairwayScope('min-h-full bg-canvas bg-canvas-gradient font-fw-sans text-text-primary')}>
+    <div className={fairwayScope('min-h-full bg-canvas font-fw-sans text-text-primary')}>
       <div className="mx-auto w-full max-w-[1440px] px-4 py-5 md:px-6 md:py-6">
         <PlayerCoachHelmHome
           data={dashboardResult.data}

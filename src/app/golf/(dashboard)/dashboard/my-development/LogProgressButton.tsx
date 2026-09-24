@@ -2,13 +2,7 @@
 
 import { useId, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import {
-  Drawer,
-  DrawerContent,
-  DrawerHeader,
-  DrawerTitle,
-  DrawerDescription,
-} from '@/components/ui/drawer';
+import { Sheet } from '@/components/fairway/overlays/Sheet';
 import { Input, Textarea } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/sonner';
@@ -114,17 +108,15 @@ export function LogProgressButton({
         Log progress
       </Button>
 
-      <Drawer
+      <Sheet
         open={open}
         onOpenChange={(next) => {
           if (!next) handleClose();
         }}
+        title="Log progress"
+        description={focusAreaTitle}
+        className="overflow-hidden sm:mx-auto sm:max-w-lg"
       >
-        <DrawerContent className="sm:max-w-lg sm:mx-auto sm:rounded-3xl overflow-hidden flex flex-col">
-          <DrawerHeader className="flex-shrink-0">
-            <DrawerTitle>Log progress</DrawerTitle>
-            <DrawerDescription>{focusAreaTitle}</DrawerDescription>
-          </DrawerHeader>
           <form
             id={formId}
             onSubmit={handleSubmit}
@@ -138,12 +130,12 @@ export function LogProgressButton({
             <div className="px-3 py-2.5 rounded-lg bg-warm-50 border border-warm-200 text-warm-700">
               {currentValue ?? '—'}
               {targetValue != null && (
-                <span className="text-warm-400 font-normal">
+                <span className="text-text-tertiary font-normal">
                   {' '}/ {targetValue}
                 </span>
               )}
               {targetMetric && (
-                <span className="ml-2 text-xs text-warm-500">{targetMetric}</span>
+                <span className="ml-2 text-xs text-text-tertiary">{targetMetric}</span>
               )}
             </div>
           </div>
@@ -193,8 +185,7 @@ export function LogProgressButton({
               Save progress
             </Button>
           </div>
-        </DrawerContent>
-      </Drawer>
+      </Sheet>
     </>
   );
 }
@@ -258,7 +249,7 @@ export function MarkCompleteButton({
       aria-label={confirming ? 'Confirm mark complete' : 'Mark complete'}
       className={
         confirming
-          ? 'inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 border border-primary-600 rounded-lg transition-colors disabled:opacity-60'
+          ? 'inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-text-on-accent-fill bg-accent-fill hover:bg-accent-fill-hover border border-primary-600 rounded-lg transition-colors disabled:opacity-60'
           : 'inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-warm-700 bg-cream-100/75 hover:bg-cream-100 border border-warm-200 rounded-lg transition-colors disabled:opacity-60'
       }
     >

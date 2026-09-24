@@ -24,6 +24,7 @@ import {
   type SgPerRound,
 } from '@/lib/golf/countable-round-stats';
 import { calculatePuttsPerRound } from '@/lib/golf/putts-per-round';
+import { computeFormFromCountableRounds, type FormPatternInput, type FormScore } from '@/lib/golf/form-score';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
@@ -203,12 +204,12 @@ export default async function TeamStatsPage() {
   // engine output and doesn't block the raw stats query.
   const allPlayerIds = players.map((p) => p.id);
 
-  const [roundsResult, intelligenceResult, roundStatsResult] = await Promise.all([
+  const [roundsResult, intelligenceResult, roundStatsResult, severePatternsResult] = await Promise.all([
     // Paginated: PostgREST caps each response at 1000 rows; a full roster's
     // season exceeds that and silently dropped the oldest rounds. Keep
     // round_date DESC first (the trend math below expects newest-first) with
     // id ASC as a unique tiebreak so page boundaries are stable.
-    fetchAllRowsResult((from, to) => supabase.from('golf_rounds').select('id, player_id, total_score, round_date, holes_played, front_nine, back_nine, total_putts').in('player_id', allPlayerIds).eq('status', 'completed').not('total_score', 'is', null).order('round_date', { ascending: false }).order('id', { ascending: true }).range(from, to)),
+    fetchAllRowsResult((from, to) => supabase.from('golf_rounds').select('id, player_id, total_score, score_to_par, round_date, holes_played, front_nine, back_nine, total_putts').in('player_id', allPlayerIds).eq('status', 'completed').not('total_score', 'is', null).order('round_date', { ascending: false }).order('id', { ascending: true }).range(from, to)),
     getTeamStatsIntelligence(teamId),
     // Per-round SG, so Team SG and the SG category bars average COUNTABLE
     // rounds only instead of the lifetime player cache (which counts a
@@ -221,7 +222,28 @@ export default async function TeamStatsPage() {
         .order('round_id', { ascending: true })
         .range(from, to),
     ),
+    // Form (OD-02) subtracts 5 per active critical/high pattern, like the
+    // player's Fingerprint. One batched read for the whole roster.
+    supabase
+      .from('golf_patterns_v2')
+      .select('player_id, severity')
+      .in('player_id', allPlayerIds)
+      .eq('is_active', true)
+      .in('severity', ['critical', 'high']),
   ]);
+  if (severePatternsResult.error) {
+    // Non-fatal: Form falls back to no pattern penalty, as on the Fingerprint.
+    await logServerError(
+      `[team stats] severe-pattern read failed for team ${teamId}; Form shows without the pattern penalty: ${describeError(severePatternsResult.error)}`,
+      { action: 'golf.teamStatsPage.loadSeverePatterns', featureArea: 'stats' },
+    );
+  }
+  const severePatternsByPlayer = new Map<string, FormPatternInput[]>();
+  for (const row of (severePatternsResult.data ?? []) as { player_id: string; severity: string | null }[]) {
+    const list = severePatternsByPlayer.get(row.player_id) ?? [];
+    list.push({ severity: row.severity });
+    severePatternsByPlayer.set(row.player_id, list);
+  }
   const roundStatsById = roundStatsResult.error
     ? null
     : new Map((roundStatsResult.data ?? []).map((r) => [r.round_id, r] as const));
@@ -248,19 +270,26 @@ export default async function TeamStatsPage() {
   // rows — a team season exceeds 1000 golf_holes rows, which previously
   // truncated the per-player putts / GIR% / fairway% aggregates below. Page
   // through ALL holes in every chunk with a stable order.
+  // PERF-R12: the batches are independent, so they run in parallel.
   const HOLES_ROUND_BATCH = 300;
-  const allHoles: HoleData[] = [];
+  const roundIdBatches: string[][] = [];
   for (let i = 0; i < roundIds.length; i += HOLES_ROUND_BATCH) {
-    const roundIdBatch = roundIds.slice(i, i + HOLES_ROUND_BATCH);
-    const batchHoles = (await fetchAllRows((from, to) => supabase.from('golf_holes').select('round_id, par, fairway_hit, gir, putts, score').in('round_id', roundIdBatch).order('id', { ascending: true }).range(from, to))) as HoleData[];
-    allHoles.push(...batchHoles);
+    roundIdBatches.push(roundIds.slice(i, i + HOLES_ROUND_BATCH));
   }
+  const holeBatches = await Promise.all(
+    roundIdBatches.map(
+      (roundIdBatch) =>
+        fetchAllRows<HoleData>((from, to) => supabase.from('golf_holes').select('round_id, par, fairway_hit, gir, putts, score').in('round_id', roundIdBatch).order('id', { ascending: true }).range(from, to)),
+    ),
+  );
+  const allHoles: HoleData[] = holeBatches.flat();
 
   // Define types for the grouped data
   type RoundData = {
     id: string;
     player_id: string;
     total_score: number | null;
+    score_to_par: number | null;
     round_date: string;
     holes_played: number | null;
     front_nine: number | null;
@@ -481,6 +510,15 @@ export default async function TeamStatsPage() {
     };
   });
 
+  // Form (OD-02): the same countable, canonical-total rounds (newest first)
+  // as every other figure on the row, plus the severe-pattern penalty.
+  const formByPlayer: Record<string, FormScore> = {};
+  if (allRounds) {
+    for (const player of players) {
+      formByPlayer[player.id] = computeFormFromCountableRounds(roundsByPlayer[player.id] ?? [], severePatternsByPlayer.get(player.id) ?? []);
+    }
+  }
+
   // The data-rich Fairway team-stats surface inside the .fairway-ds scope on
   // a bg-canvas page. It receives the SAME data the route already resolved
   // (teamId-scoped players + per-player intelligence) plus two thin reads
@@ -531,7 +569,7 @@ export default async function TeamStatsPage() {
   };
   return (
     <div className={fairwayScope('min-h-full bg-canvas bg-canvas-gradient font-fw-sans text-text-primary')}>
-      <TeamStatsBoard teamName={team?.name ?? 'Your Team'} players={playersWithStats} intelligenceByPlayer={intelligenceByPlayer} intelligenceError={intelligenceError} intelligenceSampleSize={intelligenceSampleSize} leakMaps={leakRes.success ? (leakRes.data ?? null) : null} leakError={leakError} roundsError={roundsError} standingByPlayer={standingByPlayer} teamRounds30d={teamRounds30d} freshness={freshness} />
+      <TeamStatsBoard teamName={team?.name ?? 'Your Team'} players={playersWithStats} intelligenceByPlayer={intelligenceByPlayer} formByPlayer={formByPlayer} intelligenceError={intelligenceError} intelligenceSampleSize={intelligenceSampleSize} leakMaps={leakRes.success ? (leakRes.data ?? null) : null} leakError={leakError} roundsError={roundsError} standingByPlayer={standingByPlayer} teamRounds30d={teamRounds30d} freshness={freshness} />
     </div>
   );
 }

@@ -23,7 +23,7 @@ import {
 } from '@/lib/coachhelm/v3/counterfactual/compute';
 
 const CATEGORY_ORDER: ReadonlyArray<{ category: string; label: string; description: string }> = [
-  { category: 'sg', label: 'Strokes Gained', description: 'Per-round vs field — Mark Broadie’s SG framework.' },
+  { category: 'sg', label: 'Strokes Gained', description: 'Strokes gained or lost per round against the field.' },
   { category: 'putting', label: 'Putting', description: 'Make % by distance and miss patterns.' },
   { category: 'approach', label: 'Approach', description: 'Proximity to hole + greens in regulation.' },
   { category: 'short_game', label: 'Short Game', description: 'Scrambling by lie type.' },

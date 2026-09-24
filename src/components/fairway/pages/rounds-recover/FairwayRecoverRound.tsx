@@ -579,7 +579,7 @@ export function FairwayRecoverRound({ playerId }: FairwayRecoverRoundProps) {
         // Non-critical
       }
 
-      fairwayToast.success('Round recovered successfully!');
+      fairwayToast.success('Round recovered.');
       router.push(`/golf/dashboard/rounds/${result.data.roundId}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Recovery failed. Please try again.');

@@ -18,7 +18,7 @@ import {
   type PlayersGridFocusArea,
   type PlayersGridStats,
 } from '@/components/fairway';
-import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
+import { resolveCoachActiveTeamIdForRequest } from '@/lib/golf/dashboard-request-cache';
 import { surfaceName } from '@/lib/golf/surface-registry';
 import { CoachIntelligenceHome } from '@/components/golf/coachhelm/home/CoachIntelligenceHome';
 import { getCoachChatContext, getCoachProgramPulse } from '@/lib/coachhelm/v3/chat/request-cache';
@@ -40,6 +40,11 @@ import { computeEvidenceRevisionStatuses } from '@/lib/coachhelm/focus-areas/loa
 import type { EvidenceRevisionComparison } from '@/lib/coachhelm/focus-areas/evidence-revision-status';
 import { loadFocusAreaPracticeLogData } from '@/lib/coachhelm/focus-areas/practice-log-loader';
 import { loadFollowUpRoundCounts } from '@/lib/coachhelm/focus-areas/follow-up-eligibility-loader';
+import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
+import { withCanonicalRoundTotal } from '@/lib/golf/round-total';
+import { isCountableRound } from '@/lib/golf/round-countable';
+import { aggregateCountableRounds, type CountableRoundRow } from '@/lib/golf/countable-round-stats';
+import { computeScoringTrendFromRounds } from '@/lib/golf/scoring-trend';
 
 /**
  * A8 slice 3: the focus-area select is routed through `fromUntyped` (see
@@ -135,8 +140,9 @@ export default async function IntelligenceDashboardPage({ searchParams }: Intell
   const supabase = await createClient();
 
   // Single org→team lookup shared by every fetch below. Deterministic
-  // resolution: handles orgs with >1 team.
-  const teamId = await resolveCoachTeamIdWithCookie(supabase, coach.organization_id, coach.id);
+  // resolution: handles orgs with >1 team. Request-cached, so the dashboard
+  // layout's identical lookup is reused rather than repeated.
+  const teamId = await resolveCoachActiveTeamIdForRequest(coach.organization_id ?? null, coach.id);
 
   if (!teamId) {
     redirect('/golf/dashboard');
@@ -232,6 +238,7 @@ export default async function IntelligenceDashboardPage({ searchParams }: Intell
     focusAreasError,
     playersError,
     statsRows,
+    countableByPlayer,
     goalsByPlayerMap,
     standingByPlayer,
     outcomeByInsightId,
@@ -279,19 +286,30 @@ export default async function IntelligenceDashboardPage({ searchParams }: Intell
 
   const gridStats: Record<string, PlayersGridStats> = {};
   for (const row of statsRows || []) {
+    const countable = countableByPlayer?.get(row.player_id);
+    const headline = countableByPlayer ? aggregateCountableRounds(countable ?? []) : null;
+    const trend = countableByPlayer ? computeScoringTrendFromRounds(countable ?? []) : null;
     gridStats[row.player_id] = {
-      rounds_played: row.rounds_played ?? 0,
-      avg_score: row.scoring_average ?? null,
+      rounds_played: headline ? headline.roundsCounted : (row.rounds_played ?? 0),
+      avg_score: headline ? headline.scoringAverage : (row.scoring_average ?? null),
       avg_putts: row.putts_per_round ?? null,
       fairway_pct: row.driving_accuracy_percentage ?? null,
       gir_pct: row.gir_percentage ?? null,
-      best_score: row.best_round ?? null,
+      best_score: headline ? headline.bestRound : (row.best_round ?? null),
       // `golf_player_stats_cache.trend_direction` is written by the same
       // canonical trend classifier Team Stats/the Players roster read
       // (CHECK constraint: 'improving' | 'stable' | 'declining') — pass it
       // straight through rather than the old hard-coded null so the Trend
       // column actually renders instead of always reading '—'.
-      recent_trend: (row.trend_direction as 'improving' | 'declining' | 'stable' | null) ?? null,
+      recent_trend: trend
+        ? (trend.hasSignal ? trend.trend : null)
+        : ((row.trend_direction as 'improving' | 'declining' | 'stable' | null) ?? null),
+      // SHEET-04: the focus-area sheet preselects this player's weakest SG area.
+      rounds_in_calculation: row.rounds_in_calculation ?? null,
+      sg_tee_per_round: row.sg_tee_per_round ?? null,
+      sg_approach_per_round: row.sg_approach_per_round ?? null,
+      sg_around_green_per_round: row.sg_around_green_per_round ?? null,
+      sg_putting_per_round: row.sg_putting_per_round ?? null,
     };
   }
   for (const pid of playerIds) {
@@ -451,7 +469,7 @@ async function loadPlayersDrillData(
              from_review_id, from_insight_id, review_context, progress_notes,
              outcome_status${evidenceRevisionFlagOn ? ', evidence_revision' : ''}`;
 
-  const [focusResult, statsResult, goalsByPlayerMap, standingByPlayer] = await Promise.all([
+  const [focusResult, statsResult, goalsByPlayerMap, standingByPlayer, countableRoundsResult] = await Promise.all([
     playerIds.length > 0
       ? // fromUntyped is `client.from(table) as any` at runtime — identical to
         // the typed call below for every column this select already carried
@@ -465,11 +483,28 @@ async function loadPlayersDrillData(
     playerIds.length > 0
       ? supabase
           .from('golf_player_stats_cache')
-          .select('player_id, rounds_played, scoring_average, putts_per_round, driving_accuracy_percentage, gir_percentage, best_round, trend_direction')
+          .select('player_id, rounds_played, scoring_average, putts_per_round, driving_accuracy_percentage, gir_percentage, best_round, trend_direction, rounds_in_calculation, sg_tee_per_round, sg_approach_per_round, sg_around_green_per_round, sg_putting_per_round')
           .in('player_id', playerIds)
       : Promise.resolve({ data: [], error: null }),
     loadActiveGoalsForPlayers(playerIds).catch(() => new Map<string, Goal[]>()),
     loadPlayersStandingMap(playerIds).catch(() => new Map<string, Map<MetricId, PlayerStanding>>()),
+    // Avg / best / rounds / trend from COUNTABLE rounds (the same rule the
+    // roster, Team Stats and dashboards use). The stats cache's
+    // scoring_average and trend_direction include implausible and hole-less
+    // rounds (audit: a 37-stroke round moved one player's average by ~2).
+    // Paginated: PostgREST caps each response at 1000 rows.
+    playerIds.length > 0
+      ? fetchAllRowsResult<CountableRoundRow & { player_id: string; score_to_par: number | null }>((from, to) =>
+          supabase
+            .from('golf_rounds')
+            .select('id, player_id, status, total_score, score_to_par, holes_played, front_nine, back_nine, total_putts, strokes_gained_total, round_date')
+            .in('player_id', playerIds)
+            .eq('status', 'completed')
+            .not('total_score', 'is', null)
+            .order('id', { ascending: true })
+            .range(from, to),
+        )
+      : Promise.resolve({ data: [], error: null }),
   ]);
   // fromUntyped's `any` return means `focusResult`/`focusAreas` are only
   // reliably typed by this cast — the select is a plain string either way
@@ -480,6 +515,29 @@ async function loadPlayersDrillData(
     error: unknown;
   };
   const { data: statsRows } = statsResult;
+  // Countable rounds per player, newest first (id as a stable tiebreak).
+  // `null` when the read failed: fall back to the cache rather than show zeros.
+  const countableByPlayer: Map<string, CountableRoundRow[]> | null = countableRoundsResult.error
+    ? null
+    : (() => {
+        const byPlayer = new Map<string, CountableRoundRow[]>();
+        for (const r of (countableRoundsResult.data ?? []).map(withCanonicalRoundTotal).filter(isCountableRound)) {
+          const list = byPlayer.get(r.player_id) ?? [];
+          list.push(r);
+          byPlayer.set(r.player_id, list);
+        }
+        for (const list of byPlayer.values()) {
+          list.sort((a, b) => (b.round_date ?? '').localeCompare(a.round_date ?? '') || a.id.localeCompare(b.id));
+        }
+        return byPlayer;
+      })();
+  if (countableRoundsResult.error) {
+    void logServerError(
+      `[intelligence] countable-rounds read failed for team ${teamId}; Players tab falls back to the stats cache: ${describeError(countableRoundsResult.error)}`,
+      { action: 'intelligence.loadCountableRounds', featureArea: 'coachhelm' },
+    );
+  }
+
 
   const sourceInsightIds = Array.from(
     new Set((focusAreas || []).map((fa) => fa.from_insight_id).filter(Boolean)),
@@ -565,6 +623,7 @@ async function loadPlayersDrillData(
     focusAreasError,
     playersError,
     statsRows,
+    countableByPlayer,
     goalsByPlayerMap,
     standingByPlayer,
     outcomeByInsightId,

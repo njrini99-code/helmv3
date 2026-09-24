@@ -59,9 +59,9 @@ export function Inline(props: StandingBarProps) {
   const subjectLabel = standingSubjectLabel(props.viewer_context, props.player_name);
 
   const toneColor =
-    delta.tone === 'good' ? 'text-primary-700' :
-    delta.tone === 'bad'  ? 'text-red-600' :
-                            'text-warm-500';
+    delta.tone === 'good' ? 'text-accent-ink' :
+    delta.tone === 'bad'  ? 'text-fw-danger-ink' :
+                            'text-text-tertiary';
 
   return (
     <div
@@ -117,7 +117,7 @@ export function Inline(props: StandingBarProps) {
 
       {/* A2: a suppressed reference with a reason says why (not "missing data"). */}
       {omissionNote && (
-        <p className="text-eyebrow text-warm-500 mt-1 truncate" title={omissionNote}>{omissionNote}</p>
+        <p className="text-eyebrow text-text-tertiary mt-1 truncate" title={omissionNote}>{omissionNote}</p>
       )}
     </div>
   );
@@ -146,7 +146,7 @@ function InlineError({ message }: { message?: string }) {
     >
       <p className="text-eyebrow text-red-700">Couldn’t load standing.</p>
       {message && (
-        <p className="text-eyebrow text-red-600 truncate" title={message}>{message}</p>
+        <p className="text-eyebrow text-fw-danger-ink truncate" title={message}>{message}</p>
       )}
     </div>
   );
@@ -159,7 +159,7 @@ function InlineEmpty({ label }: { label: string }) {
       className="glass-standard rounded-xl px-3 py-2"
     >
       <p className="text-xs font-medium text-warm-900 truncate">{label}</p>
-      <p className="text-eyebrow text-warm-500 mt-1">Log 5 rounds to unlock standing.</p>
+      <p className="text-eyebrow text-text-tertiary mt-1">Log 5 rounds to unlock standing.</p>
     </div>
   );
 }

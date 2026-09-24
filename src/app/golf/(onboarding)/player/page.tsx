@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, useRef, useCallback, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
-import { LazyMotion, m, AnimatePresence, useReducedMotion } from 'framer-motion';
+import { LazyMotion, m, AnimatePresence } from 'framer-motion';
+import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
 import { loadFeatures } from '@/lib/motion/load-features';
 import { CoastalScene } from '@/components/golf/scenes/CoastalScene';
 import { CourseScene } from '@/components/golf/scenes/CourseScene';
@@ -50,7 +51,7 @@ function parseHandicapInput(raw: string): number | undefined {
 // ─── Main Component ─────────────────────────────────────────────────────────
 
 function GolfPlayerOnboardingContent() {
-  const prefersReducedMotion = useReducedMotion();
+  const prefersReducedMotion = useReducedMotionGuard();
   // Matches the signup gate: one scene per viewport, swapped after hydration.
   const isDesktop = useMediaQuery('(min-width: 768px)');
   const router = useRouter();
@@ -151,12 +152,22 @@ function GolfPlayerOnboardingContent() {
 
   // ─── Navigation ─────────────────────────────────────────────────────────
 
+  // STATE-O2: a step change swaps the whole card, so focus would otherwise
+  // stay on a button that no longer exists (it falls to <body>). Only a user
+  // navigation moves focus; the first paint and a restored draft do not.
+  const navigatedRef = useRef(false);
+  const focusStepHeading = useCallback((el: HTMLHeadingElement | null) => {
+    if (el && navigatedRef.current) el.focus();
+  }, []);
+
   function goForward(to: Step) {
+    navigatedRef.current = true;
     setDirection(1);
     setStep(to);
   }
 
   function goBack(to: Step) {
+    navigatedRef.current = true;
     setDirection(-1);
     setStep(to);
   }
@@ -290,7 +301,7 @@ function GolfPlayerOnboardingContent() {
                 <m.div variants={staggerContainer} initial="initial" animate="animate" className="space-y-5">
                   {/* Header */}
                   <m.div variants={staggerItem} className="text-center">
-                    <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-text-primary">
+                    <h1 ref={focusStepHeading} tabIndex={-1} className="outline-none text-2xl sm:text-3xl font-bold tracking-tight text-text-primary">
                       About you
                     </h1>
                     <p className="text-text-secondary mt-2 text-sm sm:text-base">
@@ -377,7 +388,7 @@ function GolfPlayerOnboardingContent() {
                       <Button
                         onClick={() => goForward('profile')}
                         disabled={!firstName.trim() || !lastName.trim()}
-                        className="w-full bg-primary-600 hover:bg-primary-700 shadow-lg shadow-primary-900/10 hover:shadow-xl hover:shadow-primary-900/15 transition-all"
+                        className="w-full bg-accent-fill hover:bg-accent-fill-hover shadow-lg shadow-primary-900/10 hover:shadow-xl hover:shadow-primary-900/15 transition-all"
                         size="lg"
                       >
                         Continue
@@ -414,7 +425,7 @@ function GolfPlayerOnboardingContent() {
 
                   {/* Header */}
                   <m.div variants={staggerItem} className="text-center">
-                    <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-text-primary">
+                    <h1 ref={focusStepHeading} tabIndex={-1} className="outline-none text-2xl sm:text-3xl font-bold tracking-tight text-text-primary">
                       Your profile
                     </h1>
                     <p className="text-text-secondary mt-2 text-sm sm:text-base">
@@ -456,14 +467,17 @@ function GolfPlayerOnboardingContent() {
                       <Button
                         onClick={handleSubmitOnboarding}
                         isLoading={loading}
-                        className="w-full bg-primary-600 hover:bg-primary-700 shadow-lg shadow-primary-900/10 hover:shadow-xl hover:shadow-primary-900/15 transition-all"
+                        className="w-full bg-accent-fill hover:bg-accent-fill-hover shadow-lg shadow-primary-900/10 hover:shadow-xl hover:shadow-primary-900/15 transition-all"
                         size="lg"
+                        aria-describedby={error ? 'onboarding-submit-error' : undefined}
                       >
                         Complete Setup
                         <IconCheck size={16} className="ml-2" />
                       </Button>
                       {error && (
                         <m.p
+                          id="onboarding-submit-error"
+                          role="alert"
                           initial={{ opacity: 0, y: -8 }}
                           animate={{ opacity: 1, y: 0 }}
                           className="text-sm text-red-600 mt-3 bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-center"
@@ -542,8 +556,8 @@ function GolfPlayerOnboardingContent() {
                       stays. What changes is the claim about the TEAM, which is the
                       part that can be false. */}
                   <m.div variants={staggerItem} className="text-center">
-                    <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-text-primary mb-2">
-                      Welcome, {firstName || 'Player'}!
+                    <h1 ref={focusStepHeading} tabIndex={-1} className="outline-none font-fw-display text-2xl sm:text-3xl font-semibold tracking-tight text-text-primary mb-2">
+                      Welcome, {firstName || 'Player'}
                     </h1>
                     {joinedTeam === false ? (
                       <p className="text-text-secondary text-sm sm:text-base leading-relaxed max-w-sm mx-auto">
@@ -566,7 +580,7 @@ function GolfPlayerOnboardingContent() {
                       <Button
                         size="lg"
                         onClick={() => router.push('/golf/join')}
-                        className="w-full sm:w-auto px-10 bg-primary-600 hover:bg-primary-700 shadow-lg shadow-primary-900/10 hover:shadow-xl hover:shadow-primary-900/15 transition-all"
+                        className="w-full sm:w-auto px-10 bg-accent-fill hover:bg-accent-fill-hover shadow-lg shadow-primary-900/10 hover:shadow-xl hover:shadow-primary-900/15 transition-all"
                       >
                         Enter a join code
                         <IconArrowRight size={16} className="ml-2" />
@@ -575,7 +589,7 @@ function GolfPlayerOnboardingContent() {
                       <Button
                         size="lg"
                         onClick={handleGoToDashboard}
-                        className="w-full sm:w-auto px-10 bg-primary-600 hover:bg-primary-700 shadow-lg shadow-primary-900/10 hover:shadow-xl hover:shadow-primary-900/15 transition-all"
+                        className="w-full sm:w-auto px-10 bg-accent-fill hover:bg-accent-fill-hover shadow-lg shadow-primary-900/10 hover:shadow-xl hover:shadow-primary-900/15 transition-all"
                       >
                         Go to Dashboard
                         <IconArrowRight size={16} className="ml-2" />

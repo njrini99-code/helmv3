@@ -72,6 +72,11 @@ Player opens hub
 - RSVP actions update event attendance, not generic task state.
 - Task completion truth must match the write path used by `completeTask()`.
 - Travel details can include sensitive logistics and should stay team/player scoped.
+- Headline numbers (scoring average, best round, putts/18, birdies/18, SG)
+  count only countable rounds; see "Countable rounds" in
+  `memory/features/stats-analytics.md`. The dashboard aggregates per-round
+  rows (`aggregateCountableRounds`) and falls back to the player cache only
+  when the per-round read fails.
 
 ## UI Contract
 

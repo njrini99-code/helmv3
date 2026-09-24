@@ -1695,7 +1695,7 @@ export default function ContinueRoundClient({
           statusSlot={
             pendingFinalStats && !showFinishConfirm && !submitting && (
               <div className={fairwayScope('on-dark bg-nav-bg px-4 py-3 text-nav-text flex items-center justify-between gap-3')}>
-                <p className="font-fw-sans text-body-sm font-medium text-nav-text">All holes completed — ready to submit!</p>
+                <p className="font-fw-sans text-body-sm font-medium text-nav-text">All holes entered. Ready to submit.</p>
                 <FwButton
                   variant="primary"
                   size="sm"

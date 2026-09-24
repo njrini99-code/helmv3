@@ -17,8 +17,11 @@
  * visibly the Tasks page overdue banner). Surface is a soft tinted matte fill
  * with a single hairline border (never border + shadow at rest, §4.1).
  *
- * A11y: assertive tones (warning/danger) render `role="alert"` (interrupts);
- * quiet tones (info/success) render `role="status"` + `aria-live="polite"`.
+ * A11y: assertive tones (warning/danger) render `role="alert"` (interrupts).
+ * A quiet tone (info/success) is a live region only when `live` is set — for a
+ * notice whose content changes after mount (a save result, a sync state). A
+ * static explainer is plain content: a screen reader reads it in place instead
+ * of hearing it announced out of context (A11Y-03).
  * Dismiss is a real ≥24px button with hover + focus-visible + active states.
  * Motion: gentle reveal honoring `prefers-reduced-motion` (motion.ts).
  * ========================================================================== */
@@ -33,6 +36,13 @@ import { revealVariants } from './motion';
 export interface InlineNoticeProps {
   /** Semantic tone — drives icon, tint, left bar, and ARIA role. */
   tone?: FeedbackTone;
+  /**
+   * Announce a quiet (info/success) notice politely as it changes. Set it when
+   * the notice reports something that just happened; leave it off for static
+   * copy. Defaults to on for `success`, off for `info`. Assertive tones are
+   * always announced.
+   */
+  live?: boolean;
   /** Short bold headline (label voice). Optional — message can stand alone. */
   title?: React.ReactNode;
   /** The body message. */
@@ -54,6 +64,7 @@ export const InlineNotice = forwardRef<HTMLDivElement, InlineNoticeProps>(
   function InlineNotice(
     {
       tone = 'info',
+      live,
       title,
       children,
       icon,
@@ -68,6 +79,9 @@ export const InlineNotice = forwardRef<HTMLDivElement, InlineNoticeProps>(
     const reduced = useReducedMotion() ?? false;
     const variants = revealVariants(reduced);
     const t = toneStyle(tone);
+    // A success notice nearly always reports an action that just finished, so
+    // it stays a live region unless told otherwise; info is static by default.
+    const isLive = live ?? tone === 'success';
     const Icon = icon === null ? null : (icon ?? t.Icon);
     const titleId = useId();
     const bodyId = useId();
@@ -78,8 +92,8 @@ export const InlineNotice = forwardRef<HTMLDivElement, InlineNoticeProps>(
           <motion.div
             ref={ref}
             // assertive tones interrupt; quiet tones are polite (§7.4)
-            role={t.assertive ? 'alert' : 'status'}
-            aria-live={t.assertive ? 'assertive' : 'polite'}
+            role={t.assertive ? 'alert' : isLive ? 'status' : undefined}
+            aria-live={t.assertive ? 'assertive' : isLive ? 'polite' : undefined}
             aria-labelledby={title ? titleId : undefined}
             aria-describedby={children ? bodyId : undefined}
             variants={variants}

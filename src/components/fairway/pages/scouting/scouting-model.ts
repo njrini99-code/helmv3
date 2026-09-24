@@ -78,7 +78,7 @@ export function signed(value: number, digits = 1): string {
 }
 
 /** Strokes to par: "+4.2", "E", "−1.3". */
-export function formatToPar(value: number, digits = 1): string {
+export function formatAverageToPar(value: number, digits = 1): string {
   const r = Number(value.toFixed(digits));
   if (r === 0) return 'E';
   return signed(r, digits);
@@ -234,7 +234,7 @@ export function buildVerdict(rounds: ScoutingRound[], themes: ThemeNode[]): Scou
   const leverClause = lever ? `. ${lever.displayLabel} is the biggest lever` : '';
 
   return {
-    sentence: `Averaging ${formatToPar(avg)} across ${n} full rounds${trendClause}${leverClause}.`,
+    sentence: `Averaging ${formatAverageToPar(avg)} across ${n} full rounds${trendClause}${leverClause}.`,
     tone,
     fullRounds: n,
   };
@@ -572,7 +572,9 @@ export function activePlanAreas(areas: ScoutingFocusArea[]): ScoutingFocusArea[]
 export function formatPlanValue(value: number, metric: string | null): string {
   const pct = !!metric && /(_pct|percent|percentage|_rate)$/.test(metric);
   const text = trimNumber(value, Math.abs(value) < 10 ? 1 : 0);
-  return pct ? `${text}%` : text;
+  if (pct) return `${text}%`;
+  if (metric && /proximity|_ft$|_feet/.test(metric)) return `${text} ft`;
+  return text;
 }
 
 /* ---------------------------------------------------------------------------

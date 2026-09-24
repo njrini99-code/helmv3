@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useSyncExternalStore } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { sendGolfMessage, markGolfMessagesAsRead, updateGolfMessage, deleteGolfMessage, getGolfActiveTeamConversationIds, getGolfConversationParticipantIdentities } from '@/app/golf/actions/messages';
 import { isTransientNetworkErrorMessage, withOneTransportRetry } from '@/lib/transient-network-error';
@@ -380,19 +380,65 @@ function cacheableMessages(rows: MessageWithReadStatus[]): MessageWithReadStatus
   return rows.filter((m) => !m.sendFailed);
 }
 
+const noopSubscribe = () => () => {};
+
+/**
+ * True when this render may read the client resource cache synchronously.
+ *
+ * The cache lives in sessionStorage (and a module-level Map filled from it),
+ * which the server render cannot see. Reading it inside a `useState`
+ * initializer during HYDRATION painted cached rows over a server skeleton and
+ * React threw #418 (audit HYD-01). `useSyncExternalStore` returns the server
+ * snapshot (`false`) on the server and during hydration, and the client
+ * snapshot (`true`) on every client-only render, so a client navigation back
+ * to Messages still warm-starts on its first render while the hydration pass
+ * matches the server markup. Hooks that seed empty because of this repaint
+ * from the cache in a mount effect.
+ */
+function useCanReadClientCache(): boolean {
+  return useSyncExternalStore(
+    noopSubscribe,
+    () => true,
+    () => false,
+  );
+}
+
 /**
  * @param viewerUserId The signed-in user's id when the caller already has it
  *   (FairwayMessages does, via `useGolfUser()`). Passing it skips the
  *   `auth.getUser()` network round trip that otherwise gates the first query.
  */
-export function useGolfMessages(conversationId: string, viewerUserId?: string | null) {
+export interface UseGolfMessagesOptions {
+  /**
+   * Hold back mark-as-read until the viewer engages with the thread (audit
+   * DATA-01). Desktop auto-opens the first conversation beside the rail; that
+   * is the product showing a thread, not the person reading it, so it must not
+   * clear their unread badge or flip the sender's receipt. While true, neither
+   * the load-time mark nor the on-arrival mark fires. The caller clears it on
+   * engagement and calls `markRead()`.
+   */
+  deferMarkRead?: boolean;
+}
+
+export function useGolfMessages(
+  conversationId: string,
+  viewerUserId?: string | null,
+  options: UseGolfMessagesOptions = {},
+) {
+  // Read through a ref so toggling it never re-creates fetchMessages or
+  // re-runs the fetch+subscribe effect (see use-golf-messages.single-load).
+  const deferMarkReadRef = useRef(options.deferMarkRead === true);
+  deferMarkReadRef.current = options.deferMarkRead === true;
   // Warm start: the last fetched page for this thread, if we have seen it
   // this session. Painted immediately; the fetch below refreshes it silently.
   // Requires the viewer id UP FRONT (only available when the caller hands it
   // in) — the cache key is viewer-scoped, so without it there is nothing safe
   // to read yet.
+  // Not during hydration: see useCanReadClientCache. The conversationId effect
+  // below repaints from the cache right after a hydrating mount.
+  const canReadCache = useCanReadClientCache();
   const warm =
-    conversationId && viewerUserId
+    canReadCache && conversationId && viewerUserId
       ? readCachedResource<MessageWithReadStatus[]>(messagesCacheKey(conversationId, viewerUserId))
       : null;
   const [messages, setMessages] = useState<MessageWithReadStatus[]>(warm?.data ?? []);
@@ -623,7 +669,7 @@ export function useGolfMessages(conversationId: string, viewerUserId?: string | 
     // it bumps the participant's last_read_at + flips read=true on others' messages,
     // which fires the realtime refetch in useGolfConversations (F124).
     try {
-      await markGolfMessagesAsRead(conversationId);
+      if (!deferMarkReadRef.current) await markGolfMessagesAsRead(conversationId);
     } catch (err) {
       console.error('[useGolfMessages] Failed to mark messages as read:', describeError(err));
       logError(
@@ -711,6 +757,7 @@ export function useGolfMessages(conversationId: string, viewerUserId?: string | 
      */
     let markReadTimer: ReturnType<typeof setTimeout> | null = null;
     const markReadSoon = () => {
+      if (deferMarkReadRef.current) return;
       if (typeof document !== 'undefined' && document.visibilityState !== 'visible') return;
       if (markReadTimer) clearTimeout(markReadTimer);
       markReadTimer = setTimeout(() => {
@@ -1069,10 +1116,28 @@ export function useGolfMessages(conversationId: string, viewerUserId?: string | 
     return true;
   };
 
+  /**
+   * Mark the open thread read now: the explicit counterpart of
+   * `deferMarkRead`, called when the viewer engages with an auto-opened thread.
+   */
+  const markRead = useCallback(async () => {
+    if (!conversationId) return;
+    try {
+      await markGolfMessagesAsRead(conversationId);
+    } catch (err) {
+      logError(
+        err instanceof Error ? err : new Error(String(err)),
+        { component: 'useGolfMessages', action: 'mark-read-on-engage', sport: 'golf', conversationId },
+        'low'
+      );
+    }
+  }, [conversationId]);
+
   return {
     messages,
     loading,
     error,
+    markRead,
     sendMessage,
     retryMessage,
     discardFailedMessage,
@@ -1739,9 +1804,13 @@ export async function loadGolfConversationRail(
  *   refetches: it's a dependency of `fetchConversations` below.
  */
 export function useGolfConversations(viewerUserId?: string | null, activeTeamId?: string | null) {
-  const warm = viewerUserId
-    ? readCachedResource<GolfConversationWithMeta[]>(conversationsCacheKey(viewerUserId, activeTeamId))
-    : null;
+  // Not during hydration (audit HYD-01): see useCanReadClientCache and the
+  // repaint effect below.
+  const canReadCache = useCanReadClientCache();
+  const warm =
+    canReadCache && viewerUserId
+      ? readCachedResource<GolfConversationWithMeta[]>(conversationsCacheKey(viewerUserId, activeTeamId))
+      : null;
   const [conversations, setConversations] = useState<GolfConversationWithMeta[]>(warm?.data ?? []);
   const [loading, setLoading] = useState(!warm);
   // P257: distinguishes "the rail failed to load" from "the inbox is truly
@@ -1755,6 +1824,23 @@ export function useGolfConversations(viewerUserId?: string | null, activeTeamId?
   const supabase = supabaseRef.current;
   const conversationIdsRef = useRef<Set<string>>(new Set(warm?.data.map((c) => c.id) ?? []));
   const fetchDebounceRef = useRef<NodeJS.Timeout | null>(null);
+
+  // A hydrating mount seeded the rail empty (the server cannot see the cache).
+  // Paint the cached rail now, before the silent revalidate below, so a hard
+  // reload keeps the warm start without a hydration mismatch. A client-only
+  // mount already seeded from the cache and skips this.
+  const seededFromCacheRef = useRef(warm !== null);
+  useEffect(() => {
+    if (seededFromCacheRef.current || !viewerUserId) return;
+    seededFromCacheRef.current = true;
+    const cached = readCachedResource<GolfConversationWithMeta[]>(conversationsCacheKey(viewerUserId, activeTeamId));
+    if (!cached) return;
+    setConversations(cached.data);
+    conversationIdsRef.current = new Set(cached.data.map((c) => c.id));
+    setLoading(false);
+  // Mount-only by design: later team switches refetch through fetchConversations.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Get the current user on mount — only when the caller could not hand it in.
   useEffect(() => {

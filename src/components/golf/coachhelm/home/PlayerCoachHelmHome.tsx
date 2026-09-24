@@ -22,7 +22,7 @@
  * `ThemesPanel`), every focus-area write action (inside `DevelopmentDrill`).
  * ========================================================================== */
 
-import { useCallback, useMemo, useState, useTransition } from 'react';
+import { useCallback, useMemo, useRef, useState, useTransition } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 
@@ -174,6 +174,16 @@ export function PlayerCoachHelmHome({
     [secondaryInsights, topInsight],
   );
 
+  // Deep link from the dashboard's insight card: `?view=insights&insight=<id>`.
+  const focusInsightId = searchParams.get('insight');
+  const focusInsight = useMemo(
+    () =>
+      focusInsightId
+        ? [topInsight, ...secondaryInsights].find((i) => i?.id === focusInsightId) ?? null
+        : null,
+    [focusInsightId, topInsight, secondaryInsights],
+  );
+
   const hasAnyInsight = Boolean(topInsight) || secondaryDeduped.length > 0;
   const hasData =
     hasAnyInsight ||
@@ -199,8 +209,13 @@ export function PlayerCoachHelmHome({
   const topInsightDrills = useMemo(() => (topInsight?.drills ?? []).slice(1), [topInsight]);
 
   /* ── Feedback handler — PRESERVED rateInsightAsPlayer round-trip + toasts. ── */
+  // DATA-14: one rating in flight per insight. A double tap on Helpful used
+  // to send two writes and two toasts.
+  const ratingInFlight = useRef(new Set<string>());
   const handleRate = useCallback(
     async (insightId: string, rating: 'helpful' | 'not_helpful' | 'acknowledged' | 'dismissed') => {
+      if (ratingInFlight.current.has(insightId)) return;
+      ratingInFlight.current.add(insightId);
       try {
         await rateInsightAsPlayer({ insightId, rating });
         addToast({
@@ -214,6 +229,8 @@ export function PlayerCoachHelmHome({
           title: 'Could not save feedback',
           description: err instanceof Error ? err.message : 'Please try again in a moment.',
         });
+      } finally {
+        ratingInFlight.current.delete(insightId);
       }
     },
     [addToast, router],
@@ -401,6 +418,8 @@ export function PlayerCoachHelmHome({
       key: 'insights',
       node: (
         <InsightsDrill
+          key={focusInsight?.id ?? 'feed'}
+          initialOpenInsight={focusInsight}
           insights={secondaryDeduped}
           standingByMetric={standingByMetric}
           themesEnabled={isThemesEnabled()}

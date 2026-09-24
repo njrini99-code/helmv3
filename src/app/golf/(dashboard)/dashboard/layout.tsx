@@ -7,7 +7,7 @@ import { getCoachChatContext, getCoachProgramPulse } from '@/lib/coachhelm/v3/ch
 import { SmoothScrollMount } from '@/components/golf/layout/SmoothScrollMount';
 
 export const metadata: Metadata = {
-  title: 'Dashboard | GolfHelm',
+  title: 'Dashboard',
   description: 'Your golf team dashboard — performance tracking, team management, and coaching tools.',
 };
 

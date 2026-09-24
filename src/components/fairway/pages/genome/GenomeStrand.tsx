@@ -22,6 +22,7 @@
 
 import * as React from 'react';
 import { cn } from '@/lib/utils';
+import { Button } from '@/components/fairway/controls/button';
 import { fwHaptic } from '@/lib/fairway/haptics';
 import {
   type Baseline,
@@ -32,6 +33,7 @@ import {
   isGhost,
   readFor,
   readWord,
+  readTierWord,
   windowLabel,
 } from './strand-model';
 
@@ -124,6 +126,7 @@ export function StrandBand({
     const i = selectedId ? ids.indexOf(selectedId as StrandTrait['id']) : -1;
     const next = e.key === 'ArrowRight' ? Math.min(ids.length - 1, i + 1) : Math.max(0, i - 1);
     const id = ids[next];
+    if (!id) return;
     onSelect(id, 'key');
     const btn = e.currentTarget.querySelector<HTMLElement>(`[data-trait-id="${id}"]`);
     btn?.focus();
@@ -131,6 +134,7 @@ export function StrandBand({
 
   return (
     <div className={cn('w-full', className)}>
+      {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- delegates arrow keys and scrub to the rung buttons inside it */}
       <div
         role="group"
         aria-label={ariaLabel}
@@ -140,7 +144,7 @@ export function StrandBand({
         onPointerUp={endScrub}
         onPointerCancel={endScrub}
         onPointerLeave={endScrub}
-        className="relative flex w-full touch-pan-y select-none gap-1.5"
+        className="relative flex w-full touch-pan-y select-none gap-1 font-fw-sans text-caption"
         style={{ height: bandH }}
       >
         {/* The midline: the baseline itself. */}
@@ -149,7 +153,7 @@ export function StrandBand({
           <div
             key={family.id}
             className="flex min-w-0"
-            style={{ flexGrow: fam.length, flexBasis: 0, minWidth: `${family.label.length + 0.5}ch` }}
+            style={{ flexGrow: fam.length, flexBasis: 0, minWidth: `${family.label.length}ch` }}
           >
             {fam.map((t) => (
               <Rung
@@ -166,12 +170,12 @@ export function StrandBand({
           </div>
         ))}
       </div>
-      <div aria-hidden className="mt-2 flex w-full gap-1.5">
+      <div aria-hidden className="mt-2 flex w-full gap-1 font-fw-sans text-caption">
         {groups.map(({ family, traits: fam }) => (
           <div
             key={family.id}
             className="min-w-0 border-t border-border-subtle pt-1.5 text-center font-fw-sans text-caption text-text-tertiary"
-            style={{ flexGrow: fam.length, flexBasis: 0, minWidth: `${family.label.length + 0.5}ch` }}
+            style={{ flexGrow: fam.length, flexBasis: 0, minWidth: `${family.label.length}ch` }}
           >
             {family.label}
           </div>
@@ -213,9 +217,10 @@ function Rung({
       : measured
         ? `${trait.valueText}, ${formatAdvantage(trait.unit, r.advantage ?? 0)} ${advantageUnit(trait.unit)} vs ${baseline === 'team' ? 'team' : trait.tourLabel}`
         : `${trait.valueText}, ${r.missingReason ?? 'no comparison'}`
-  }${ghost && measured ? `, ${readWord(trait.read).toLowerCase()}` : ''}`;
+  }${ghost && measured ? `, ${readWord(trait.readN).toLowerCase()}` : ''}`;
 
   return (
+    // eslint-disable-next-line helm/no-raw-button -- a strand rung is a 44pt-tall hit area drawn as a capsule; <Button>'s padding and pill chrome would break the band's alignment
     <button
       type="button"
       data-trait-id={trait.id}
@@ -224,7 +229,7 @@ function Rung({
       tabIndex={selected ? 0 : -1}
       onClick={onTap}
       className={cn(
-        'group relative h-full min-w-0 flex-1 rounded-[6px] outline-none transition-colors duration-150',
+        'group relative h-full min-w-0 flex-1 rounded-sm outline-none transition-colors duration-150',
         'focus-visible:ring-2 focus-visible:ring-border-focus',
         selected ? 'bg-surface-sunken' : 'active:bg-surface-sunken',
       )}
@@ -322,17 +327,13 @@ export function StrandReadout({
           {windowLabel(trait.window)}
           {n != null ? <span className="tabular-nums"> · n={n} rounds</span> : null}
           {' · '}
-          {readWord(trait.read)}
+          {n != null ? readTierWord(trait.readN) : readWord(trait.readN)}
           {r.thin ? ' · team average thin' : null}
         </p>
         {trait.valueText ? (
-          <button
-            type="button"
-            onClick={() => onOpenEvidence(trait)}
-            className="-mr-2 inline-flex h-11 shrink-0 items-center rounded-fw-md px-2 font-fw-sans text-body-sm font-semibold text-accent-700 transition-colors duration-150 active:bg-surface-sunken focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus"
-          >
+          <Button variant="ghost" size="sm" className="-mr-2 shrink-0 text-accent-700" onClick={() => onOpenEvidence(trait)}>
             Evidence
-          </button>
+          </Button>
         ) : null}
       </div>
     </div>
@@ -382,7 +383,7 @@ export function StrandTable({ traits, caption }: { traits: readonly StrandTrait[
             <td>{t.team.value != null ? formatBase(t, t.team.value) : (t.team.missingReason ?? 'None')}</td>
             <td>{t.tour.value != null ? formatBase(t, t.tour.value) : (t.tour.missingReason ?? 'None')}</td>
             <td>{windowLabel(t.window)}{t.n != null ? `, ${t.n} rounds` : ''}</td>
-            <td>{readWord(t.read)}</td>
+            <td>{readWord(t.readN)}</td>
           </tr>
         ))}
       </tbody>

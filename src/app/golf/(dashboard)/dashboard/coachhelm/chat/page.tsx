@@ -27,7 +27,7 @@ import { surfaceName } from '@/lib/golf/surface-registry';
 import { AskSurface } from '@/components/golf/coachhelm/chat/AskSurface';
 
 export const metadata: Metadata = {
-  title: `${surfaceName('ask')} | CoachHelm`,
+  title: `${surfaceName('ask')}`,
   description: 'Ask CoachHelm about your program — grounded in your recorded rounds and schedule.',
 };
 

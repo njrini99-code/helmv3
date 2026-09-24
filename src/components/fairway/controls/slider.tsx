@@ -202,7 +202,7 @@ export const Slider = React.forwardRef<HTMLInputElement, SliderProps>(function S
         {/* Track */}
         <div
           aria-hidden="true"
-          className="absolute inset-x-0 top-1/2 h-1.5 -translate-y-1/2 rounded-full bg-surface-sunken ring-1 ring-inset ring-border-subtle"
+          className="absolute inset-x-0 top-1/2 h-1.5 -translate-y-1/2 rounded-full bg-surface-sunken ring-1 ring-inset ring-border-control"
         />
         {/* Fill — accent-700, not accent-500: this rail sits on cream and the
             lighter green failed contrast as a UI boundary (audit H10/P-26). */}

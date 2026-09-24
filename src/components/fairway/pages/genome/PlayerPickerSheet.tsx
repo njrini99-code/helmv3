@@ -44,6 +44,7 @@ export function PlayerPickerSheet({ open, onOpenChange, title, roster, selectedI
         <label className="sr-only" htmlFor="genome-picker-search">
           Search players
         </label>
+        {/* eslint-disable-next-line helm/no-raw-input -- sheet-local search field on the Fairway sunken-field style; no form, no validation */}
         <input
           id="genome-picker-search"
           type="search"
@@ -62,6 +63,7 @@ export function PlayerPickerSheet({ open, onOpenChange, title, roster, selectedI
               const selected = p.id === selectedId;
               const taken = p.id === takenId;
               return (
+                // eslint-disable-next-line helm/no-raw-button -- a full-width radio row in the roster list
                 <button
                   key={p.id}
                   type="button"

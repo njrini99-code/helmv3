@@ -7,7 +7,7 @@
  */
 
 import { Sheet } from '@/components/fairway/overlays/Sheet';
-import { formatSigned, formatToPar } from './buildPlayerDetailModel';
+import { formatSigned, formatRoundToPar } from './buildPlayerDetailModel';
 import type { RoundPoint } from './types';
 
 const ROUND_TYPE_LABEL: Record<string, string> = {
@@ -69,7 +69,7 @@ export function RoundSummarySheet({
                       : 'font-fw-sans text-body-lg tabular-nums text-text-secondary'
                 }
               >
-                {r.toPar === 0 ? 'Even par' : `${formatToPar(r.toPar)} to par`}
+                {r.toPar === 0 ? 'Even par' : `${formatRoundToPar(r.toPar)} to par`}
               </span>
             ) : null}
           </p>

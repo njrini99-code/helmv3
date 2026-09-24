@@ -321,3 +321,11 @@ describe('evidence.window_end carries the newest contributing round', () => {
     expect(c.evidence.window_end).toBe('2026-05-25');
   });
 });
+
+describe('NUM-12: the frozen window text is always dated', () => {
+  it('stamps "Data through <newest round>" even when the data is fresh', () => {
+    const g = new PuttDistanceGenerator(PLAYER_ID, '10_15ft');
+    const c = g.composeContent(makeAgg({ bucket: '10_15ft', playerValue: 32, rounds_played: 18 }));
+    expect(c.content).toContain('Data through 2026-05-25.');
+  });
+});

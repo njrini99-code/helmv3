@@ -27,8 +27,9 @@ export default function IntelligenceLoading() {
   return (
     <div className={fairwayScope('min-h-full bg-canvas bg-canvas-gradient font-fw-sans')}>
       <div className="mx-auto w-full max-w-[1200px] px-4 py-6 md:px-6">
-        <div role="status" aria-busy="true" aria-live="polite" className="flex flex-col gap-8">
-          <span className="sr-only">Loading the CoachHelm brief…</span>
+        <div aria-busy="true" className="flex flex-col gap-8">
+          {/* A11Y-02: the live region is only this line, not the whole skeleton (Skeleton is aria-hidden). */}
+          <span role="status" aria-live="polite" className="sr-only">Loading the CoachHelm brief…</span>
 
           {/* ── CommandOpening: greeting h1 + status line, quick-action chip
               row, the composer frame, then the Program pulse panel. ── */}

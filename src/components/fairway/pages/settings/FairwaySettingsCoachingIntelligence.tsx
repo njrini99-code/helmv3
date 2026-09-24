@@ -154,7 +154,12 @@ export function FairwaySettingsCoachingIntelligence() {
   // coachId-keyed fetch effect from scratch — a clean retry without mutating
   // the (verbatim-reused) hook.
   const [reloadKey, setReloadKey] = useState(0);
-  const supabase = createClient();
+  // PERF-R2 — one browser client for the component's lifetime. A bare
+  // `createClient()` here made a new object every render, and because it is a
+  // dependency of the coach-resolution effect below, every re-render (each
+  // setCoachId / setTeamId / setTeamSettings) re-ran getUser + the coach
+  // lookup + the team-settings server actions. The lazy initializer runs once.
+  const [supabase] = useState(() => createClient());
 
   useEffect(() => {
     async function getCoach() {
@@ -249,6 +254,11 @@ function CoachingIntelligenceBody({
   const { philosophy, loading, saving, error, save } = useCoachPhilosophy(coachId);
 
   const [hasEverSaved, setHasEverSaved] = useState(false);
+  // DATA-10 — PriorityRanker keeps its dragged order locally until the saved
+  // order changes. A failed save leaves the saved order unchanged, so bump this
+  // key to remount the ranker onto the last-good order (matching the
+  // "control has reverted" notice).
+  const [priorityResetKey, setPriorityResetKey] = useState(0);
 
   const debounceTimersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
   useEffect(() => {
@@ -265,6 +275,7 @@ function CoachingIntelligenceBody({
       if (ok) {
         setHasEverSaved(true);
       }
+      return ok;
     },
     [save],
   );
@@ -284,7 +295,9 @@ function CoachingIntelligenceBody({
   );
 
   const handlePriorityChange = (newValues: PriorityValues) => {
-    void flushSave(newValues);
+    void flushSave(newValues).then((ok) => {
+      if (!ok) setPriorityResetKey((k) => k + 1);
+    });
   };
 
   const handleSensitivityChange = (newValue: CoachPhilosophy['alertSensitivity']) => {
@@ -441,6 +454,7 @@ function CoachingIntelligenceBody({
               cut it. */}
           <div className="[&_.truncate]:overflow-visible [&_.truncate]:whitespace-normal [&_.truncate]:text-clip">
             <PriorityRanker
+              key={priorityResetKey}
               values={{
                 priorityBallStriking: philosophy.priorityBallStriking,
                 priorityShortGame: philosophy.priorityShortGame,
@@ -754,7 +768,7 @@ function CoachingIntelligenceBody({
                         'transition-colors [transition-duration:var(--fw-dur-fast)] [transition-timing-function:var(--fw-ease-soft)]',
                         'outline-none focus-visible:ring-2 focus-visible:ring-accent-500/70 focus-visible:ring-offset-1 focus-visible:ring-offset-canvas',
                         active
-                          ? 'bg-accent-650 text-text-on-accent'
+                          ? 'bg-accent-fill text-text-on-accent-fill'
                           : 'bg-surface-sunken text-text-secondary hover:bg-inset',
                       ].join(' ')}
                     >

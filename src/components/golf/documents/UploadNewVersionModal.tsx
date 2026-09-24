@@ -5,11 +5,7 @@ import { IconX, IconUpload, IconFile } from '@/components/icons';
 import { Button, IconButton } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import {
-  Drawer,
-  DrawerContent,
-  DrawerTitle,
-} from '@/components/ui/drawer';
+import { Sheet } from '@/components/fairway/overlays/Sheet';
 
 interface UploadNewVersionModalProps {
   open: boolean;
@@ -100,22 +96,23 @@ export function UploadNewVersionModal({
   };
 
   return (
-    <Drawer
+    <Sheet
       open={open}
       onOpenChange={(next) => {
         if (!next && !uploading) handleClose();
       }}
+      title="Upload New Version"
+      customTitle
+      hideClose
+      dismissible={!uploading}
+      className="overflow-hidden sm:mx-auto sm:max-w-lg"
     >
-      <DrawerContent
-        className="sm:max-w-lg sm:mx-auto sm:rounded-3xl p-0 overflow-hidden"
-        aria-labelledby="upload-version-title"
-      >
         {/* Header — P306: Fairway tokens (warm-matte) only. */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-border-subtle">
           <div>
-            <DrawerTitle id="upload-version-title" className="text-body-lg font-medium text-text-primary tracking-[-0.012em]">
+            <Sheet.Title className="font-fw-sans text-body-lg font-medium text-text-primary tracking-[-0.012em]">
               Upload New Version
-            </DrawerTitle>
+            </Sheet.Title>
             <p className="text-sm text-text-tertiary mt-0.5">{documentTitle}</p>
           </div>
           <IconButton variant="default"
@@ -174,7 +171,7 @@ export function UploadNewVersionModal({
             {selectedFile ? (
               <div>
                 <div className="w-12 h-12 bg-accent-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                  <IconFile size={24} className="text-accent-600" />
+                  <IconFile size={24} className="text-accent-ink" />
                 </div>
                 <p className="font-medium text-text-primary">{selectedFile.name}</p>
                 <p className="text-sm text-text-tertiary mt-1">
@@ -239,7 +236,7 @@ export function UploadNewVersionModal({
           <Button variant="primary"
             onClick={handleSubmit}
             disabled={!selectedFile || uploading}
-            className="px-4 py-2 bg-accent-650 hover:bg-accent-800 text-text-on-accent font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+            className="px-4 py-2 bg-accent-fill hover:bg-accent-800 text-text-on-accent-fill font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
           >
             {uploading ? (
               <>
@@ -258,7 +255,6 @@ export function UploadNewVersionModal({
             )}
           </Button>
         </div>
-      </DrawerContent>
-    </Drawer>
+    </Sheet>
   );
 }

@@ -27,13 +27,13 @@ describe('buildTendencies', () => {
 
   it('re-expresses stored values in plain units with a confidence word', () => {
     expect(t[0]).toMatchObject({ status: 'live', word: 'Bomber', detail: '82% of tee shots', read: 'Solid read' });
-    expect(t[1]).toMatchObject({ detail: '70% of side misses go right', read: 'Fair read' });
-    expect(t[2]).toMatchObject({ detail: '−0.12 strokes a hole vs the front', read: 'Early read' });
+    expect(t[1]).toMatchObject({ detail: '70% of side misses go right', read: 'Early read' });
+    expect(t[2]).toMatchObject({ detail: '−0.12 strokes a hole vs the front', read: 'Thin read' });
   });
 
   it('marks uncomputed dimensions locked and weather not tracked', () => {
-    expect(t[3].status).toBe('locked');
-    expect(t[4].status).toBe('not_tracked');
+    expect(t[3]!.status).toBe('locked');
+    expect(t[4]!.status).toBe('not_tracked');
   });
 
   it('locks everything when there is no genome', () => {

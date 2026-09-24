@@ -15,7 +15,7 @@
  */
 
 import { cn } from '@/lib/utils';
-import { bestOf, formatSigned, formatToPar, rollingMean } from './buildPlayerDetailModel';
+import { bestOf, formatSigned, formatRoundToPar, rollingMean } from './buildPlayerDetailModel';
 import type { RoundPoint } from './types';
 
 export interface RoundStripProps {
@@ -172,14 +172,14 @@ export function RoundStrip({ rounds, onSelect, className }: RoundStripProps) {
           style={{ height: TOTAL_H }}
         >
           <span className="absolute right-0 -translate-y-1/2" style={{ top: y(over) }}>
-            {formatToPar(over)}
+            {formatRoundToPar(over)}
           </span>
           <span className="absolute right-0 -translate-y-1/2" style={{ top: zeroY }}>
             Par
           </span>
           {maxUnder > 0 ? (
             <span className="absolute right-0 -translate-y-1/2" style={{ top: y(-under) }}>
-              {formatToPar(-under)}
+              {formatRoundToPar(-under)}
             </span>
           ) : null}
         </div>

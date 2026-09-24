@@ -17,6 +17,7 @@ import * as React from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
+import { Button } from '@/components/fairway/controls/button';
 import { GENOME_WINDOW_DAYS } from '@/lib/coachhelm/v3/genome/types';
 import { BaselineSwitch } from './BaselineSwitch';
 import { StrandBand, StrandTable, useStrandSelection, formatBaselineValue } from './GenomeStrand';
@@ -29,7 +30,6 @@ import {
   formatAdvantage,
   groupByFamily,
   headToHead,
-  readLevel,
   readWord,
 } from './strand-model';
 
@@ -103,15 +103,9 @@ export function GenomeCompareStrands({ roster, a, b }: GenomeCompareStrandsProps
       {/* Slots: the picker, not a tile grid. */}
       <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:items-stretch">
         <SlotButton label="Player 1" side={a} marker="a" onClick={() => openPicker('a')} />
-        <button
-          type="button"
-          onClick={swap}
-          disabled={!a || !b}
-          aria-label="Swap players"
-          className="inline-flex h-11 shrink-0 items-center justify-center self-center rounded-full px-4 font-fw-sans text-body-sm font-medium text-accent-700 transition-colors duration-150 active:bg-surface-sunken disabled:text-text-tertiary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus"
-        >
+        <Button variant="ghost" size="sm" className="shrink-0 self-center text-accent-700" onClick={swap} disabled={!a || !b} aria-label="Swap players">
           Swap
-        </button>
+        </Button>
         <SlotButton label="Player 2" side={b} marker="b" onClick={() => openPicker('b')} />
       </div>
 
@@ -173,6 +167,7 @@ export function GenomeCompareStrands({ roster, a, b }: GenomeCompareStrandsProps
             <ol className="border-t border-border-strong">
               {h2h.map((h) => (
                 <li key={h.id} className="border-b border-border-subtle">
+                  {/* eslint-disable-next-line helm/no-raw-button -- a full-width ledger row (label + leader), not a button-shaped control */}
                   <button
                     type="button"
                     onClick={() => select(h.id, 'tap')}
@@ -213,7 +208,7 @@ export function GenomeCompareStrands({ roster, a, b }: GenomeCompareStrandsProps
                 <div key={s.playerId} className="flex min-h-12 flex-wrap items-center justify-between gap-x-4 gap-y-1 py-2.5">
                   <dt className="font-fw-sans text-body text-text-primary">{s.name}</dt>
                   <dd className="font-fw-sans text-caption tabular-nums text-text-tertiary">
-                    {s.roundsOnFile != null ? `${s.roundsOnFile} rounds on file · ${readWord(readLevel(s.roundsOnFile))}` : 'No rounds on file'}
+                    {s.roundsOnFile != null ? `${s.roundsOnFile} rounds on file · ${readWord(s.roundsOnFile)}` : 'No rounds on file'}
                     {s.genomeRoundsBasis != null ? ` · tendencies from ${s.genomeRoundsBasis} rounds, last ${GENOME_WINDOW_DAYS} days` : ''}
                     {s.genomeRefreshed ? ` · refreshed ${s.genomeRefreshed}` : ''}
                   </dd>
@@ -248,10 +243,10 @@ function valueOf(side: CompareSide, id: string): string {
 }
 
 function compareVerdict(a: CompareSide, b: CompareSide, h2h: HeadToHead[]): string | null {
-  if (h2h.length === 0) return null;
+  const widest = h2h[0];
+  if (!widest) return null;
   const aLeads = h2h.filter((h) => h.margin > 0).length;
   const bLeads = h2h.filter((h) => h.margin < 0).length;
-  const widest = h2h[0];
   const who = widest.margin > 0 ? firstName(a.name) : firstName(b.name);
   const leader = aLeads === bLeads ? null : aLeads > bLeads ? a : b;
   const head = leader
@@ -271,6 +266,7 @@ function Marker({ marker }: { marker: 'a' | 'b' }) {
 
 function SlotButton({ label, side, marker, onClick }: { label: string; side: CompareSide | null; marker: 'a' | 'b'; onClick: () => void }) {
   return (
+    // eslint-disable-next-line helm/no-raw-button -- a player slot is a two-line field that opens the picker sheet, not a pill action
     <button
       type="button"
       onClick={onClick}
@@ -299,7 +295,7 @@ function StrandLabel({ side, marker, className }: { side: CompareSide; marker: '
       <Marker marker={marker} />
       <span className="font-fw-sans text-body-sm font-semibold text-text-primary">{side.name}</span>
       <span className="font-fw-sans text-caption tabular-nums text-text-tertiary">
-        {side.roundsOnFile != null ? `${side.roundsOnFile} rounds · ${readWord(readLevel(side.roundsOnFile))}` : 'No rounds on file'}
+        {side.roundsOnFile != null ? `${side.roundsOnFile} rounds · ${readWord(side.roundsOnFile)}` : 'No rounds on file'}
       </span>
     </div>
   );
@@ -327,12 +323,12 @@ function MarginStrip({
   const groups = groupByFamily(a.traits);
   const HALF = 12;
   return (
-    <div aria-hidden className="my-2 flex h-8 w-full gap-1.5" title={`Margin: up means ${a.name} leads, down means ${b.name} leads`}>
+    <div aria-hidden className="my-2 flex h-8 w-full gap-1 font-fw-sans text-caption" title={`Margin: up means ${a.name} leads, down means ${b.name} leads`}>
       {groups.map(({ family, traits }) => (
         <div
           key={family.id}
           className="flex min-w-0"
-          style={{ flexGrow: traits.length, flexBasis: 0, minWidth: `${family.label.length + 0.5}ch` }}
+          style={{ flexGrow: traits.length, flexBasis: 0, minWidth: `${family.label.length}ch` }}
         >
           {traits.map((t) => {
             const h = byId.get(t.id);
@@ -341,7 +337,7 @@ function MarginStrip({
             return (
               <span
                 key={t.id}
-                className={cn('relative h-full min-w-0 flex-1', selectedId === t.id && 'rounded-[4px] bg-surface-sunken')}
+                className={cn('relative h-full min-w-0 flex-1', selectedId === t.id && 'rounded-sm bg-surface-sunken')}
               >
                 {h ? (
                   <span

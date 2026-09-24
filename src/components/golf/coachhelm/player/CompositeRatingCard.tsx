@@ -2,8 +2,14 @@
 
 /**
  * ============================================================================
- * CompositeRatingCard — GAME STRENGTH (Fairway rebuild, #969/#970/#973)
+ * CompositeRatingCard — FORM (Fairway rebuild, #969/#970/#973; OD-02)
  * ----------------------------------------------------------------------------
+ * OD-02 (2026-09-24): the headline number is Form, the ONE 0–100 score
+ * (src/lib/golf/form-score.ts) that Fingerprint and Team Stats also print.
+ * It replaces the "Game strength" team z-score. Under 5 countable rounds it
+ * reads "Early read"; the formula, with the player's own numbers, opens
+ * from the "How Form works" disclosure. It never shows a clamped 100.
+ *
  * #969 — this card used to be the last piece of legacy chrome (`Card
  * variant="overlay"`, a bespoke inline SVG ring, ad-hoc bar divs) sitting right
  * next to the Fairway-rebuilt FairwayTrendBrain in the same "Performance
@@ -32,6 +38,7 @@ import { InstrumentPanel } from '@/components/fairway/instrument/InstrumentPanel
 import { Dial } from '@/components/fairway/charts/Dial';
 import { TrendChip, type TrendDirection } from '@/components/fairway/charts/TrendChip';
 import { InsufficientData } from '@/components/fairway/feedback/InsufficientData';
+import { describeFormFormula, FORM_EARLY_READ_LABEL, FORM_LABEL, type FormScore } from '@/lib/golf/form-score';
 
 interface CompositeRatingCardProps {
   // Typed props (used when data is pre-parsed)
@@ -45,6 +52,8 @@ interface CompositeRatingCardProps {
   };
   percentiles?: Record<string, { team: number }>;
   trend?: { direction: 'improving' | 'stable' | 'declining'; delta: number };
+  /** Form with read quality and formula inputs (getPlayerProfile().form). */
+  form?: FormScore;
   // Raw data prop (from server action — parsed internally)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   profileData?: Record<string, any>;
@@ -92,11 +101,21 @@ function toTrendDirection(direction: 'improving' | 'stable' | 'declining'): Tren
   return direction === 'stable' ? 'flat' : direction;
 }
 
+const ONE_DP = new Intl.NumberFormat('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+
+/** "+1.2", "−0.4", "0.0": signed, 1 dp, true minus sign. */
+function signedOneDp(n: number): string {
+  const text = ONE_DP.format(Math.abs(n));
+  if (text === '0.0') return text;
+  return `${n > 0 ? '+' : '\u2212'}${text}`;
+}
+
 function CompositeRatingCardImpl({
   composite,
   categories,
   percentiles,
   trend,
+  form,
   profileData,
   playerState: _playerState,
   playerName: _playerName,
@@ -107,23 +126,28 @@ function CompositeRatingCardImpl({
   const resolvedCategories = categories ?? (profileData?.categories as typeof categories | undefined);
   const resolvedPercentiles = percentiles ?? (profileData?.percentiles as typeof percentiles | undefined);
   const resolvedTrend = trend ?? (profileData?.trend as typeof trend | undefined);
+  const resolvedForm = form ?? (profileData?.form as FormScore | undefined);
 
   // Show empty state when no real data exists (avoids contradictory 0 composite / 50 categories)
   const hasData = resolvedComposite != null || resolvedCategories != null;
 
   if (!hasData) {
     return (
-      <InstrumentPanel depth="base" className={className} eyebrow="Game Strength">
+      <InstrumentPanel depth="base" className={className} eyebrow={FORM_LABEL}>
         <InsufficientData
-          title="Game strength warming up"
-          description="Complete more rounds to unlock your composite rating."
+          title="Form warming up"
+          description="Log a full round to get your first Form reading."
           unit="rounds"
         />
       </InstrumentPanel>
     );
   }
 
-  const displayComposite = Math.max(0, Math.min(100, Number(resolvedComposite ?? 0)));
+  // Form never reaches 100 (see form-score.ts), so there is no top clamp to
+  // hide; the floor guard only protects the gauge from a malformed value.
+  const displayComposite = Math.max(0, Number(resolvedComposite ?? 0));
+  const early = resolvedForm?.quality === 'early';
+  const formula = resolvedForm ? describeFormFormula(resolvedForm) : [];
   const displayCategories = resolvedCategories ?? { teeGame: 50, approach: 50, shortGame: 50, putting: 50, scoring: 50 };
   const categoriesAreMidpointDefault = isMidpointDefault(displayCategories);
 
@@ -131,15 +155,14 @@ function CompositeRatingCardImpl({
     <InstrumentPanel
       depth="base"
       className={className}
-      eyebrow="Game Strength"
+      eyebrow={FORM_LABEL}
       readout={
         resolvedTrend ? (
           <TrendChip
             direction={toTrendDirection(resolvedTrend.direction)}
             label={
               <>
-                {Number(resolvedTrend.delta ?? 0) > 0 ? '+' : ''}
-                {Number(resolvedTrend.delta ?? 0).toFixed(1)} / 30d
+                {signedOneDp(Number(resolvedTrend.delta ?? 0))} / 30d
               </>
             }
             numeric
@@ -149,13 +172,28 @@ function CompositeRatingCardImpl({
     >
       <div className="flex flex-col items-center gap-6">
         <Dial
-          label="Composite"
+          label={FORM_LABEL}
           value={displayComposite / 100}
           benchmark={0.6}
           goodDirection="up"
           valueFormatter={(v) => Math.round(v * 100).toString()}
           size={176}
         />
+        {early ? (
+          <p className="-mt-3 font-fw-sans text-body-sm font-semibold text-text-secondary">{FORM_EARLY_READ_LABEL}</p>
+        ) : null}
+        {formula.length > 0 ? (
+          <details className="w-full rounded-lg bg-surface-sunken">
+            <summary className="flex min-h-11 cursor-pointer items-center px-3 font-fw-sans text-body-sm font-semibold text-accent-700">
+              How Form works
+            </summary>
+            <ul className="space-y-1 px-3 pb-3 font-fw-sans text-body-sm leading-relaxed text-text-secondary">
+              {formula.map((line) => (
+                <li key={line}>{line}</li>
+              ))}
+            </ul>
+          </details>
+        ) : null}
 
         {categoriesAreMidpointDefault ? (
           <InsufficientData
@@ -181,14 +219,14 @@ function CompositeRatingCardImpl({
                   </div>
                   <span
                     className={cn(
-                      'w-8 shrink-0 text-right font-fw-mono text-body-sm tabular-nums',
+                      'w-8 shrink-0 text-right text-body-sm tabular-nums',
                       categoryValueColor(value),
                     )}
                   >
                     {Math.round(value)}
                   </span>
                   {resolvedPercentiles?.[key] ? (
-                    <span className="w-16 shrink-0 text-right font-fw-mono text-caption tabular-nums text-text-tertiary">
+                    <span className="w-16 shrink-0 text-right text-caption tabular-nums text-text-secondary">
                       {resolvedPercentiles[key].team}th %ile
                     </span>
                   ) : null}

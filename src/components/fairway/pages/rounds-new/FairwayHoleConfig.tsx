@@ -15,6 +15,9 @@
  *     with missing holes, still seeds a complete, editable hole set.
  *   • Only when there is NO baseline at all do we fall back to the standard
  *     par/yardage template (verbatim from legacy).
+ *   • RE-F11: a baseline hole with no yardage stays BLANK and is flagged —
+ *     never filled from the template, which would put invented yardages into
+ *     a real course's round (and every SG number built on them).
  *   • Edits are LOCAL to this component's state — they flow out via onSave into
  *     the round only. The shared catalog course/tee is never mutated here.
  *
@@ -32,7 +35,8 @@
  * ========================================================================== */
 
 import { useEffect, useRef, useState } from 'react';
-import { m, useReducedMotion } from 'framer-motion';
+import { m } from 'framer-motion';
+import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
 import { ChevronLeft, Flag } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
@@ -85,15 +89,22 @@ const MAX_HOLE_YARDAGE = 999;
  * standard template. Pure — no mutation of the incoming baseline.
  */
 function seedHoles(initialHoles: HoleConfig[] | undefined, holesPerRound: 9 | 18): HoleConfig[] {
+  const hasBaseline = !!initialHoles && initialHoles.length > 0;
   return Array.from({ length: holesPerRound }, (_, i) => {
     const seed = initialHoles?.[i];
+    const seededYardage = seed?.yardage && seed.yardage > 0 ? seed.yardage : null;
     return {
       holeNumber: i + 1,
       par: seed?.par && seed.par > 0 ? seed.par : DEFAULT_PARS[i]!,
-      yardage: seed?.yardage && seed.yardage > 0 ? seed.yardage : DEFAULT_YARDAGES[i]!,
+      // RE-F11: with a real baseline, a missing yardage stays 0 (rendered
+      // blank + flagged); only a no-baseline editor uses the template.
+      yardage: seededYardage ?? (hasBaseline ? 0 : DEFAULT_YARDAGES[i]!),
     };
   });
 }
+
+/** RE-F10: the server's hole schema (and the check below) allow par 3-6. */
+const PAR_OPTIONS = [3, 4, 5, 6] as const;
 
 /**
  * Stable identity of the seed inputs, so the editor can tell "the baseline
@@ -114,7 +125,8 @@ export function FairwayHoleConfig({
   submitError,
   submitting = false,
 }: FairwayHoleConfigProps) {
-  const prefersReducedMotion = useReducedMotion();
+  // RE-F15: the guard, never raw useReducedMotion (null pre-hydration → #418).
+  const prefersReducedMotion = useReducedMotionGuard();
   // Bring a start failure into view: the notice sits beside the dock, but the
   // dock itself may already be under the keyboard-safe padding or the toast
   // lane when the failure lands.
@@ -173,7 +185,15 @@ export function FairwayHoleConfig({
     if (validationError) setValidationError(null);
   }
 
+  const missingYardage = holes.filter((h) => !(h.yardage > 0)).map((h) => h.holeNumber);
+  const missingList = `${missingYardage.length === 1 ? 'hole' : 'holes'} ${missingYardage.join(', ')}`;
+
   function handleSubmit() {
+    if (missingYardage.length > 0) {
+      setValidationError(`Enter a yardage for ${missingList} before you start.`);
+      if (!is9Hole) setActiveTab(missingYardage[0]! > 9 ? 'back' : 'front');
+      return;
+    }
     const isValid = holes.every((h) => h.par >= 3 && h.par <= 6 && h.yardage > 0 && h.yardage <= MAX_HOLE_YARDAGE);
     if (!isValid) {
       // B5: the server's own comprehensiveHoleSchema puts no upper bound on
@@ -239,9 +259,15 @@ export function FairwayHoleConfig({
         </Surface>
       </m.div>
 
-      {/* Hole grid */}
+      {/* Hole grid. RE-F9: tighter card padding on phones so four par targets
+          and a 44pt yardage well fit a 375pt screen. */}
       <m.div {...enter(baselineLabel ? 2 : 1)}>
-        <Surface elevation="shadow" padding="lg" className="flex flex-col gap-4">
+        <Surface elevation="shadow" padding="lg" className="flex flex-col gap-4 p-4 sm:p-8">
+          {missingYardage.length > 0 && (
+            <InlineNotice tone="warning" title="No yardage on this tee for some holes">
+              {`Enter ${missingList} before you start. We don't fill in guessed yardages.`}
+            </InlineNotice>
+          )}
           {!is9Hole && (
             <Segmented<'front' | 'back'>
               size="md"
@@ -257,7 +283,7 @@ export function FairwayHoleConfig({
 
           <div className="overflow-hidden rounded-fw-md border border-border-subtle">
             {/* Header bar (sunken well) */}
-            <div className="grid grid-cols-[52px_1fr_104px] items-center bg-surface-sunken">
+            <div className="grid grid-cols-[44px_1fr_96px] sm:grid-cols-[52px_1fr_104px] items-center bg-surface-sunken">
               <div className="px-3 py-2.5 font-fw-sans text-eyebrow font-semibold uppercase tracking-[0.1em] text-text-tertiary">
                 Hole
               </div>
@@ -274,17 +300,21 @@ export function FairwayHoleConfig({
               <div
                 key={hole.holeNumber}
                 className={cn(
-                  'grid grid-cols-[52px_1fr_104px] items-center border-t border-border-subtle',
+                  'grid grid-cols-[44px_1fr_96px] sm:grid-cols-[52px_1fr_104px] items-center border-t border-border-subtle',
                   idx % 2 === 1 && 'bg-surface-sunken/40',
                 )}
               >
-                <div className="px-3 py-2.5">
+                <div className="px-1.5 py-2.5 sm:px-3">
                   <span className="grid h-8 w-8 place-items-center rounded-full bg-surface-sunken font-fw-mono text-body-sm font-medium tabular-nums text-text-secondary ring-1 ring-border-subtle">
                     {hole.holeNumber}
                   </span>
                 </div>
-                <div className="flex items-center justify-center gap-1.5 px-2 py-2">
-                  {[3, 4, 5].map((par) => {
+                <div
+                  role="group"
+                  aria-label={`Hole ${hole.holeNumber} par`}
+                  className="flex items-center justify-center gap-1 px-1 py-2 sm:gap-1.5 sm:px-2"
+                >
+                  {PAR_OPTIONS.map((par) => {
                     const selected = hole.par === par;
                     return (
                       // eslint-disable-next-line helm/no-raw-button -- custom par-selector chip (aria-pressed segmented control), not a design-system Button
@@ -301,9 +331,11 @@ export function FairwayHoleConfig({
                           updateHole(hole.holeNumber, 'par', par);
                         }}
                         className={cn(
-                          'h-9 w-9 rounded-fw-md font-fw-mono text-body-sm font-semibold tabular-nums transition-colors',
+                          // RE-F9: 44pt tall on touch, up to 44pt wide (the
+                          // four share the column on a 375pt phone).
+                          'h-9 w-9 rounded-fw-md font-fw-mono [@media(pointer:coarse)]:h-11 [@media(pointer:coarse)]:w-auto [@media(pointer:coarse)]:min-w-0 [@media(pointer:coarse)]:max-w-[44px] [@media(pointer:coarse)]:flex-1 text-body-sm font-semibold tabular-nums transition-colors',
                           selected
-                            ? 'bg-accent-650 text-text-on-accent shadow-flat'
+                            ? 'bg-accent-fill text-text-on-accent-fill shadow-flat'
                             : 'border border-border-subtle bg-surface text-text-secondary hover:bg-surface-tint',
                         )}
                       >
@@ -312,14 +344,20 @@ export function FairwayHoleConfig({
                     );
                   })}
                 </div>
-                <div className="flex items-center justify-center px-2 py-2">
+                <div className="flex items-center justify-center px-1 py-2 sm:px-2">
                   <Input
                     type="number"
                     inputMode="numeric"
-                    value={hole.yardage}
+                    // RE-F11: 0 = unknown on this tee — shown blank and flagged.
+                    value={hole.yardage > 0 ? hole.yardage : ''}
+                    placeholder="Yds"
+                    aria-invalid={hole.yardage > 0 ? undefined : true}
                     onChange={(e) => updateHole(hole.holeNumber, 'yardage', parseInt(e.target.value) || 0)}
                     onWheel={(e) => (e.target as HTMLInputElement).blur()}
-                    className="w-[84px] rounded-fw-md border border-border-subtle bg-surface-sunken px-2 py-2 text-center font-fw-mono text-body-sm font-medium tabular-nums text-text-primary outline-none transition-colors focus:border-accent-500 focus:bg-surface focus:ring-2 focus:ring-accent-500/25"
+                    className={cn(
+                      'w-[84px] rounded-fw-md border px-2 py-2 text-center font-fw-mono text-body-sm font-medium tabular-nums text-text-primary outline-none transition-colors focus:border-accent-500 focus:bg-surface focus:ring-2 focus:ring-accent-500/25 [@media(pointer:coarse)]:min-h-[44px]',
+                      hole.yardage > 0 ? 'border-border-subtle bg-surface-sunken' : 'border-fw-warning bg-fw-warning-bg',
+                    )}
                     min={1}
                     max={MAX_HOLE_YARDAGE}
                     aria-label={`Hole ${hole.holeNumber} yardage`}
@@ -329,7 +367,7 @@ export function FairwayHoleConfig({
             ))}
 
             {/* Total footer */}
-            <div className="grid grid-cols-[52px_1fr_104px] items-center border-t border-border-strong bg-accent-50">
+            <div className="grid grid-cols-[44px_1fr_96px] sm:grid-cols-[52px_1fr_104px] items-center border-t border-border-strong bg-accent-50">
               <div className="px-3 py-3 font-fw-sans text-eyebrow font-semibold uppercase tracking-[0.1em] text-accent-700">
                 {footerLabel}
               </div>
@@ -358,8 +396,12 @@ export function FairwayHoleConfig({
         </div>
       )}
 
-      {/* Action dock */}
-      <m.div {...enter(baselineLabel ? 3 : 2)} className="flex gap-3 pt-1">
+      {/* Action dock: pinned above the home indicator, same as the setup step's dock */}
+      <m.div
+        {...enter(baselineLabel ? 3 : 2)}
+        data-slot="hole-config-dock"
+        className="sticky bottom-0 z-10 flex gap-3 bg-canvas pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom,0px))]"
+      >
         <Button variant="secondary" type="button" onClick={onBack} disabled={submitting} leftIcon={<ChevronLeft className="h-4 w-4" />} className="flex-1">
           Back
         </Button>

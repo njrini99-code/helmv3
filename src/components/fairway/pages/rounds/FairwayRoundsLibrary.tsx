@@ -381,7 +381,7 @@ export function FairwayRoundsLibrary({
 
   // ── Masthead copy + honest meta ────────────────────────────────────────--
   const eyebrow = isCoach ? 'Team Rounds' : 'Your Rounds';
-  const title = isCoach ? 'The library.' : 'Your rounds.';
+  const title = isCoach ? 'The library' : 'Your rounds';
 
   const meta = (() => {
     const n = rounds.length;

@@ -74,7 +74,7 @@ function makeFingerprint(): PlayerFingerprint {
       team_name: 'Helmetta CC',
       avatar_url: null,
     },
-    composite: { rating: 71, trend: 'up', rounds_in_calculation: 12 },
+    composite: { rating: 71, trend: 'up', rounds_in_calculation: 12, form: { score: 71, quality: 'established', qualityLabel: null, roundsCounted: 12, roundsInWindow: 5, averageToPar18: 3.3, curveScore: 71.2, severePatterns: 0, patternPenalty: 0 } },
     // Deliberately NOT 12. The composite is computed from the fetched rounds
     // and the area metrics come from the stats cache, so these two samples
     // genuinely differ in production — 10 vs 18 for Cole Bennett on 2026-08-17.
@@ -147,44 +147,93 @@ function renderFingerprint(mode: 'coach' | 'player', user: GolfUserData) {
 beforeEach(() => {
   vi.clearAllMocks();
 });
+async function openClaimMenu(user: ReturnType<typeof userEvent.setup>) {
+  await user.click(screen.getByRole('button', { name: /more actions for putting is costing you strokes/i }));
+}
 
-describe('FairwayPlayerGameFingerprint — section count label', () => {
-  /**
-   * Observed on production 2026-08-18, Luke Wise / Guilford College: the
-   * "From the tee" section header read "3 metrics · 1 insights". The counts
-   * were interpolated into hardcoded plurals, so any section with exactly one
-   * of either rendered "1 metrics" / "1 insights".
-   *
-   * The `putting` fixture carries exactly one metric and one insight, which is
-   * the singular case.
-   */
-  it('says "1 metric · 1 insight", not "1 metrics · 1 insights"', () => {
+describe('FairwayPlayerGameFingerprint — claim meta honesty', () => {
+  // Replaces the old "1 metric · 1 insight" tile-header test: the tile header
+  // is gone. The row now prints value + comparison + window + sample and a
+  // confidence WORD, never the raw engine meta ("n=40 · conf 70%").
+  it('prints the evidence line with a confidence word and no raw n= / conf %', () => {
     renderFingerprint('coach', coachUser);
-    expect(screen.getByText('1 metric · 1 insight')).toBeInTheDocument();
-    expect(screen.queryByText('1 metrics · 1 insights')).not.toBeInTheDocument();
+    const row = document.querySelector('[data-slot="claim-row"]') as HTMLElement;
+    expect(row).toBeTruthy();
+    expect(row.textContent).toContain('38%');
+    expect(row.textContent).toContain('vs Team avg');
+    expect(row.textContent).toContain('last 30 days');
+    expect(row.textContent).toContain('40 samples');
+    expect(row.textContent).toContain('Fair read');
+    expect(row.textContent).not.toMatch(/n=\d/);
+    expect(row.textContent).not.toMatch(/conf \d+%/);
   });
 });
 
-describe('FairwayPlayerGameFingerprint — sectionAddenda structural no-op', () => {
-  it('renders no extra wrapper around a section when sectionAddenda is absent', () => {
+describe('FairwayPlayerGameFingerprint — SG scope switch (FP-09)', () => {
+  function withScopes(): PlayerFingerprint {
+    const fp = makeFingerprint();
+    const sgMetric = (label: string, value: string) => ({ label, value, tone: 'neutral' as const });
+    fp.sections.tee = { ...fp.sections.tee, sparse: false, metrics: [sgMetric('SG: Tee', '+0.50')] };
+    fp.sections.putting = { ...fp.sections.putting, metrics: [...fp.sections.putting.metrics, sgMetric('SG: Putting', '-0.40')] };
+    fp.sg_scopes = [
+      { key: 'last5', rounds: 5, sgRounds: 5, total: -2, tee: -1.2, approach: null, short_game: null, putting: -0.8 },
+      { key: 'last10', rounds: 10, sgRounds: 10, total: 0, tee: 0.2, approach: null, short_game: null, putting: -0.2 },
+      { key: 'all', rounds: 18, sgRounds: 18, total: 0.1, tee: 0.5, approach: null, short_game: null, putting: -0.4 },
+    ];
+    return fp;
+  }
+
+  it('switches the stage to the last 5 rounds and says so in the caption', async () => {
+    const user = userEvent.setup();
     render(
       <GolfUserProvider userData={coachUser}>
-        <FairwayPlayerGameFingerprint fingerprint={makeFingerprint()} />
+        <FairwayPlayerGameFingerprint fingerprint={withScopes()} mode="coach" />
       </GolfUserProvider>,
     );
-    const putting = document.getElementById('fingerprint-putting');
-    expect(putting).toBeInTheDocument();
-    // The section's own <section> must be a DIRECT child of the page's
-    // "flex flex-col gap-7 md:gap-9" body — never wrapped in an extra
-    // `space-y-4` div when this section has no addendum. A prior version
-    // added that wrapper unconditionally, which meant the new
-    // `sectionAddenda` prop's own doc comment ("byte-for-byte unaffected")
-    // was false the moment it shipped, even though every existing test
-    // still passed.
-    expect(putting?.parentElement?.className).not.toContain('space-y-4');
+    const stage = document.querySelector('[data-slot="fingerprint-stage"]') as HTMLElement;
+    expect(stage.textContent).toContain('across all 18 tracked rounds');
+    await user.click(screen.getByRole('radio', { name: 'Last 5' }));
+    expect(stage.textContent).toContain('across the last 5 rounds');
+    expect(stage.textContent).toContain('Off the tee−1.2');
+    expect(stage.textContent).not.toContain('Off the tee+0.5');
   });
 
-  it('wraps only the section that actually receives an addendum', () => {
+  it('shows no switch without scopes', () => {
+    renderFingerprint('coach', coachUser);
+    expect(document.querySelector('[data-slot="fingerprint-scope"]')).toBeNull();
+  });
+});
+
+describe('FairwayPlayerGameFingerprint — one empty state (STATE-R1)', () => {
+  it('names every area waiting on rounds once, even when a sparse area is shown for its claims', () => {
+    const fp = makeFingerprint();
+    // Putting is shown (it has a claim) but has no chart yet.
+    fp.sections.putting = { ...fp.sections.putting, sparse: true, metrics: [] };
+    render(
+      <GolfUserProvider userData={coachUser}>
+        <FairwayPlayerGameFingerprint fingerprint={fp} mode="coach" />
+      </GolfUserProvider>,
+    );
+    expect(document.getElementById('fingerprint-putting')).not.toBeNull();
+    const lines = document.querySelectorAll('[data-slot="fingerprint-empty-areas"]');
+    expect(lines).toHaveLength(1);
+    expect(lines[0]?.textContent).toContain('Putting');
+    expect(lines[0]?.textContent).toContain('Approach');
+    expect(screen.queryByText(/Not enough rounds to chart/i)).toBeNull();
+    expect(screen.getAllByText(/Waiting on more rounds/)).toHaveLength(1);
+  });
+});
+
+describe('FairwayPlayerGameFingerprint — sectionAddenda', () => {
+  it('renders nothing extra when sectionAddenda is absent', () => {
+    renderFingerprint('coach', coachUser);
+    expect(screen.queryByTestId('approach-addendum')).toBeNull();
+    // A sparse area with no claims collapses into the one summary line.
+    expect(document.getElementById('fingerprint-approach')).toBeNull();
+    expect(document.querySelector('[data-slot="fingerprint-empty-areas"]')?.textContent).toContain('Approach');
+  });
+
+  it('renders the addendum inside its own area section only', () => {
     render(
       <GolfUserProvider userData={coachUser}>
         <FairwayPlayerGameFingerprint
@@ -193,79 +242,64 @@ describe('FairwayPlayerGameFingerprint — sectionAddenda structural no-op', () 
         />
       </GolfUserProvider>,
     );
-    expect(screen.getByTestId('approach-addendum')).toBeInTheDocument();
     const approach = document.getElementById('fingerprint-approach');
-    const putting = document.getElementById('fingerprint-putting');
-    expect(approach?.parentElement?.className).toContain('space-y-4');
-    expect(putting?.parentElement?.className).not.toContain('space-y-4');
+    expect(approach).toContainElement(screen.getByTestId('approach-addendum'));
+    expect(document.getElementById('fingerprint-putting')).not.toContainElement(screen.getByTestId('approach-addendum'));
   });
 });
 
 describe('FairwayPlayerGameFingerprint — mode branching', () => {
-  it('coach mode (default prop) shows the coach-only header actions + avatar initials', () => {
+  it('coach mode (default prop) titles the page with the name and keeps print/genome/player page in one menu', async () => {
+    const user = userEvent.setup();
     render(
       <GolfUserProvider userData={coachUser}>
         <FairwayPlayerGameFingerprint fingerprint={makeFingerprint()} />
       </GolfUserProvider>,
     );
-    expect(screen.getByRole('link', { name: /print report/i })).toHaveAttribute(
+    expect(screen.getByRole('heading', { level: 1, name: 'Jake Doe' })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /more for this player/i }));
+    expect(await screen.findByRole('link', { name: /print report/i })).toHaveAttribute(
       'href',
       '/golf/dashboard/players/p-1/game/print',
     );
-    expect(screen.getByRole('link', { name: /genome/i })).toHaveAttribute(
-      'href',
-      '/golf/dashboard/players/p-1/genome',
-    );
+    expect(screen.getByRole('link', { name: /genome/i })).toHaveAttribute('href', '/golf/dashboard/players/p-1/genome');
     expect(screen.getByRole('link', { name: /player page/i })).toBeInTheDocument();
-    // Avatar identity header — initials fallback (no avatar_url in the fixture).
-    expect(screen.getByText('JD')).toBeInTheDocument();
   });
 
-  it('labels the rating sample and the area-average sample separately', () => {
-    // One screen, two windows. The composite comes from the fetched rounds
-    // (`.limit(10)`); the six area chips come from `golf_player_stats_cache`,
-    // whose window is whatever the last recompute covered. Measured for Cole
-    // Bennett on 2026-08-17 the card read:
-    //
-    //   OVERALL GAME 67 · "Based on 10 rounds"
-    //   71% · GIR   33.8 · Putts / round   74.7 · Scoring avg
-    //
-    // 71% is the 18-round GIR. His actual last-10 GIR is 76.1%. One unqualified
-    // sample line sat above numbers it did not describe, and the wider sample
-    // was not exposed at all, so the screen could not have said otherwise.
-    render(
-      <GolfUserProvider userData={coachUser}>
-        <FairwayPlayerGameFingerprint fingerprint={makeFingerprint()} />
-      </GolfUserProvider>,
-    );
-
-    // Scoped to the rating, and no longer the bare "Based on N".
-    expect(screen.getByText(/Rating from 12 rounds/i)).toBeInTheDocument();
-    // The wider sample the area chips actually rest on.
-    expect(screen.getByText(/Area averages from 18 rounds/i)).toBeInTheDocument();
-    // The old wording claimed the whole screen; it must not come back.
+  it('labels the Form sample and the area sample separately', () => {
+    // One screen, two windows: the Form number reads the last 5 countable
+    // rounds (OD-02: form.roundsInWindow), the area metrics the stats cache
+    // (Cole Bennett, 2026-08-17: 10 vs 18).
+    renderFingerprint('coach', coachUser);
+    const formText = document.querySelector('[data-slot="fingerprint-form"]')?.textContent ?? '';
+    expect(formText).toContain('last 5 rounds');
+    expect(formText).not.toMatch(/Early read/);
+    expect(screen.getAllByText(/18 tracked rounds/).length).toBeGreaterThan(0);
     expect(screen.queryByText(/^Based on 12 rounds$/i)).toBeNull();
   });
 
-  it('player mode drops the coach-only header actions but keeps the avatar + name', () => {
-    renderFingerprint('player', playerUser);
-    expect(screen.queryByRole('link', { name: /print report/i })).not.toBeInTheDocument();
-    expect(screen.queryByRole('link', { name: /^genome$/i })).not.toBeInTheDocument();
-    expect(screen.queryByRole('link', { name: /player page/i })).not.toBeInTheDocument();
-    expect(screen.getByText('JD')).toBeInTheDocument();
-    // Exactly ONCE. The Avatar used to emit an sr-only copy of the name beside
-    // the visible title, so the h1 announced "J D Jake Doe Jake Doe" (audit
-    // M4/P-21). `decorative` suppresses that copy wherever a visible name label
-    // sits next to the avatar — this asserts the duplicate is gone, and would
-    // fail again the moment someone drops the prop.
-    expect(screen.getAllByText('Jake Doe')).toHaveLength(1);
+  it('the Form formula on tap is form-score\'s, never the old "80 − 3 ×" text (OD-02)', async () => {
+    const user = userEvent.setup();
+    renderFingerprint('coach', coachUser);
+    await user.click(screen.getByRole('button', { name: /how it’s figured/i }));
+    const formula = document.getElementById('fp-form-formula')?.textContent ?? '';
+    expect(formula).toContain('It never reaches 100');
+    expect(formula).not.toMatch(/80 − 3|kept between 0 and 100/);
   });
 
-  it('coach mode "Make focus area" calls createFocusAreaFromInsight, not the player path', async () => {
+  it('player mode drops the coach menu and the page title (the drill titles itself)', () => {
+    renderFingerprint('player', playerUser);
+    expect(screen.queryByRole('button', { name: /more for this player/i })).toBeNull();
+    expect(screen.queryByRole('heading', { level: 1 })).toBeNull();
+    expect(screen.queryByText('Jake Doe')).toBeNull();
+  });
+
+  it('coach mode "Assign as focus area" calls createFocusAreaFromInsight, not the player path', async () => {
     const user = userEvent.setup();
     renderFingerprint('coach', coachUser);
 
-    await user.click(screen.getByRole('button', { name: /make focus area/i }));
+    await openClaimMenu(user);
+    await user.click(await screen.findByRole('menuitem', { name: /assign as focus area/i }));
 
     await waitFor(() => expect(createFocusAreaFromInsightMock).toHaveBeenCalledTimes(1));
     expect(createFocusAreaFromInsightMock).toHaveBeenCalledWith(
@@ -277,11 +311,12 @@ describe('FairwayPlayerGameFingerprint — mode branching', () => {
     );
   });
 
-  it('player mode "Make focus area" calls createPlayerFocusArea with a section-derived area_type and no coach attribution', async () => {
+  it('player mode "Add to my plan" calls createPlayerFocusArea with a section-derived area_type and no coach attribution', async () => {
     const user = userEvent.setup();
     renderFingerprint('player', playerUser);
 
-    await user.click(screen.getByRole('button', { name: /make focus area/i }));
+    await openClaimMenu(user);
+    await user.click(await screen.findByRole('menuitem', { name: /add to my plan/i }));
 
     await waitFor(() => expect(createPlayerFocusAreaMock).toHaveBeenCalledTimes(1));
     expect(createPlayerFocusAreaMock).toHaveBeenCalledWith(
@@ -297,25 +332,34 @@ describe('FairwayPlayerGameFingerprint — mode branching', () => {
     expect(pushMock).toHaveBeenCalledWith('/golf/dashboard/coachhelm?view=development');
   });
 
-  it('player mode Acknowledge/Dismiss route through rateInsightAsPlayer, not the coach actions', async () => {
+  it('player mode seen / not useful route through rateInsightAsPlayer, not the coach actions', async () => {
     const user = userEvent.setup();
-    renderFingerprint('player', playerUser);
+    const first = renderFingerprint('player', playerUser);
 
-    await user.click(screen.getByRole('button', { name: /^acknowledge$/i }));
+    await openClaimMenu(user);
+    await user.click(await screen.findByRole('menuitem', { name: /mark as seen/i }));
     await waitFor(() =>
       expect(rateInsightAsPlayerMock).toHaveBeenCalledWith({ insightId: 'insight-1', rating: 'acknowledged' }),
     );
     expect(acknowledgeInsightMock).not.toHaveBeenCalled();
 
-    // Optimistic UI: the card now shows the "Acknowledged" chip instead of
-    // the action row, so "Dismiss" is exercised on a second fixture render.
+    first.unmount();
     rateInsightAsPlayerMock.mockClear();
     renderFingerprint('player', playerUser);
-    const dismissButtons = screen.getAllByRole('button', { name: /^dismiss$/i });
-    await user.click(dismissButtons[dismissButtons.length - 1]!);
+    await openClaimMenu(user);
+    await user.click(await screen.findByRole('menuitem', { name: /not useful/i }));
     await waitFor(() =>
       expect(rateInsightAsPlayerMock).toHaveBeenCalledWith({ insightId: 'insight-1', rating: 'dismissed' }),
     );
     expect(dismissInsightMock).not.toHaveBeenCalled();
+  });
+
+  it('coach mode Acknowledge routes through acknowledgeInsight', async () => {
+    const user = userEvent.setup();
+    renderFingerprint('coach', coachUser);
+    await openClaimMenu(user);
+    await user.click(await screen.findByRole('menuitem', { name: /^acknowledge$/i }));
+    await waitFor(() => expect(acknowledgeInsightMock).toHaveBeenCalledWith('insight-1'));
+    expect(rateInsightAsPlayerMock).not.toHaveBeenCalled();
   });
 });

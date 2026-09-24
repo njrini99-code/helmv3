@@ -105,7 +105,7 @@ function SortGlyph({ dir }: { dir: false | 'asc' | 'desc' }) {
         viewBox="0 0 8 5"
         className={cn(
           'transition-colors [transition-duration:180ms]',
-          dir === 'asc' ? 'text-accent-600' : 'text-text-tertiary/50',
+          dir === 'asc' ? 'text-accent-ink' : 'text-text-tertiary',
         )}
       >
         <path d="M4 0L8 5H0z" fill="currentColor" />
@@ -116,7 +116,7 @@ function SortGlyph({ dir }: { dir: false | 'asc' | 'desc' }) {
         viewBox="0 0 8 5"
         className={cn(
           'transition-colors [transition-duration:180ms]',
-          dir === 'desc' ? 'text-accent-600' : 'text-text-tertiary/50',
+          dir === 'desc' ? 'text-accent-ink' : 'text-text-tertiary',
         )}
       >
         <path d="M4 5L0 0h8z" fill="currentColor" />

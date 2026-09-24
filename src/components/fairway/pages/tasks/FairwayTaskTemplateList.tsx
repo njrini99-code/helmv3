@@ -23,6 +23,7 @@ import {
   Surface,
   Button,
   Chip,
+  PressTarget,
   EmptyState,
   ModalShell,
   Skeleton,
@@ -304,40 +305,39 @@ export function FairwayTaskTemplateList({ teamId, onSelectTemplate }: FairwayTas
               </p>
               <div className="flex flex-col gap-2">
                 {items.map((t) => (
+                  // The row is a plain container with two SIBLING controls: the
+                  // "use this template" press target and the Edit/Delete icon
+                  // buttons. It used to be a div[role=button] wrapping those
+                  // buttons, so Enter on Edit also fired onSelectTemplate and
+                  // screen readers met nested interactive controls (A11Y-R3).
                   <div
                     key={t.id}
-                    role="button"
-                    tabIndex={0}
-                    onClick={() => onSelectTemplate(t)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' || e.key === ' ') {
-                        e.preventDefault();
-                        onSelectTemplate(t);
-                      }
-                    }}
                     className={cn(
-                      'group flex cursor-pointer items-start justify-between gap-2 rounded-fw-md border border-border-subtle bg-surface px-3 py-2.5',
+                      'group flex items-start justify-between gap-2 rounded-fw-md border border-border-subtle bg-surface px-3 py-2.5',
                       'transition-[border-color,box-shadow] [transition-duration:180ms] hover:border-border-strong hover:shadow-soft motion-reduce:transition-none',
-                      'outline-none focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
                     )}
                   >
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2">
-                        <p className="truncate font-fw-sans text-body-sm font-medium text-text-primary">
+                    <PressTarget
+                      onClick={() => onSelectTemplate(t)}
+                      aria-label={`Use template ${t.title}`}
+                      className="min-w-0 flex-1 rounded-fw-sm text-left"
+                    >
+                      <span className="flex items-center gap-2">
+                        <span className="block truncate font-fw-sans text-body-sm font-medium text-text-primary">
                           {t.title}
-                        </p>
+                        </span>
                         {t.category && (
                           <Chip tone="neutral" size="sm">
                             {t.category}
                           </Chip>
                         )}
-                      </div>
+                      </span>
                       {t.description && (
-                        <p className="mt-0.5 line-clamp-1 font-fw-sans text-caption text-text-tertiary">
+                        <span className="mt-0.5 line-clamp-1 block font-fw-sans text-caption text-text-tertiary">
                           {t.description}
-                        </p>
+                        </span>
                       )}
-                      <div className="mt-1 flex items-center gap-3 font-fw-sans text-caption text-text-tertiary">
+                      <span className="mt-1 flex items-center gap-3 font-fw-sans text-caption text-text-tertiary">
                         {t.default_due_days != null && (
                           <span className="tabular-nums">Due in {t.default_due_days} days</span>
                         )}
@@ -346,30 +346,24 @@ export function FairwayTaskTemplateList({ teamId, onSelectTemplate }: FairwayTas
                             {t.default_priority}
                           </span>
                         )}
-                      </div>
-                    </div>
-                    <div className="flex flex-shrink-0 items-center gap-1 opacity-100 md:opacity-0 md:transition-opacity md:group-hover:opacity-100 md:group-focus-within:opacity-100">
+                      </span>
+                    </PressTarget>
+                    <div className="flex flex-shrink-0 items-center gap-1 opacity-100 md:opacity-0 md:transition-opacity md:group-hover:opacity-100 md:group-focus-within:opacity-100 [@media(hover:none)]:opacity-100">
                       <Button
                         variant="ghost"
                         size="sm"
-                        aria-label="Edit template"
+                        aria-label={`Edit template ${t.title}`}
                         className="h-7 w-7 p-0 [@media(pointer:coarse)]:min-w-[44px]"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          startEdit(t);
-                        }}
+                        onClick={() => startEdit(t)}
                       >
                         <IconEdit size={14} />
                       </Button>
                       <Button
                         variant="ghost"
                         size="sm"
-                        aria-label="Delete template"
+                        aria-label={`Delete template ${t.title}`}
                         className="h-7 w-7 p-0 [@media(pointer:coarse)]:min-w-[44px]"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setPendingDelete(t);
-                        }}
+                        onClick={() => setPendingDelete(t)}
                       >
                         <IconTrash size={14} />
                       </Button>

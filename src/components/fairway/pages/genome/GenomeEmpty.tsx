@@ -42,7 +42,7 @@ export function GenomeEmpty({
         </p>
         <Link
           href={`/golf/dashboard/messages?player=${playerId}`}
-          className="mt-5 inline-flex h-11 items-center justify-center rounded-fw-md bg-accent-650 px-5 font-fw-sans text-body font-semibold text-text-on-accent transition-[background-color,transform] duration-150 active:scale-[0.97] active:bg-accent-750 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2"
+          className="mt-5 inline-flex h-11 items-center justify-center rounded-fw-md bg-accent-fill px-5 font-fw-sans text-body font-semibold text-text-on-accent-fill transition-[background-color,transform] duration-150 active:scale-[0.97] active:bg-accent-fill-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2"
         >
           Message {firstName}
         </Link>

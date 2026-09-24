@@ -25,6 +25,9 @@ export interface DeepDiveDrillProps {
 
 export function DeepDiveDrill({ playerId, shotData, profileData }: DeepDiveDrillProps) {
   const { home } = useStage();
+  const rawPrediction = profileData?.currentPrediction;
+  const baselinePrediction =
+    typeof rawPrediction === 'number' && Number.isFinite(rawPrediction) ? rawPrediction : null;
 
   return (
     <DrillPanel title="Deep dive" backLabel="Home" onBack={home}>
@@ -42,16 +45,17 @@ export function DeepDiveDrill({ playerId, shotData, profileData }: DeepDiveDrill
           <WhatIfPanel
             playerId={playerId}
             profileData={profileData ?? undefined}
-            onSimulate={async (metric, amount) => {
-              // PRESERVED: getPlayerWhatIf simulation contract (verbatim from
-              // FairwayPlayerCoachHelm).
-              const baseline = (profileData?.currentPrediction as number | undefined) ?? 0;
+            onSimulate={baselinePrediction == null ? undefined : async (metric, amount) => {
+              // getPlayerWhatIf simulation contract (from FairwayPlayerCoachHelm).
+              // Only offered when a real prediction exists (DD-01): projecting
+              // from a missing prediction used `?? 0` and printed a projected
+              // score of "+0.0 + change" as if the player were even par.
               const res = await getPlayerWhatIf(playerId, { metric, amount });
               if (!res.success || !res.data) {
-                return { projectedScore: baseline, rankChange: 0 };
+                return { projectedScore: baselinePrediction, rankChange: 0 };
               }
               return {
-                projectedScore: baseline + res.data.scenario.projectedScoringChange,
+                projectedScore: baselinePrediction + res.data.scenario.projectedScoringChange,
                 rankChange: res.data.scenario.projectedRankChange,
               };
             }}

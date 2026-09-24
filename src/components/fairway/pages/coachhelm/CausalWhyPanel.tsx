@@ -38,6 +38,7 @@
  * is always `[]`.
  * ========================================================================== */
 
+import { confidenceLabel } from '@/lib/coachhelm/confidence-label';
 import { useMemo } from 'react';
 import { ArrowRight, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -128,7 +129,7 @@ export function CausalWhyPanel({
     <section className={cn('flex flex-col gap-4', className)} aria-label={title}>
       <div className="flex items-baseline justify-between gap-3">
         <h2 className="flex items-center gap-2 font-fw-display text-h3 font-medium text-text-primary">
-          <Sparkles className="h-5 w-5 text-accent-600" aria-hidden />
+          <Sparkles className="h-5 w-5 text-accent-ink" aria-hidden />
           {title}
         </h2>
         {relationships.length > 0 ? (
@@ -209,7 +210,7 @@ function CausalChainCard({ chain }: { chain: CausalChain }) {
           <span key={node} className="flex items-center gap-x-2.5">
             {i > 0 ? (
               <ArrowRight
-                className="h-4 w-4 flex-shrink-0 text-accent-600"
+                className="h-4 w-4 flex-shrink-0 text-accent-ink"
                 aria-hidden
               />
             ) : null}
@@ -230,12 +231,12 @@ function CausalChainCard({ chain }: { chain: CausalChain }) {
           report the weakest hop rather than an average or a product. */}
       <Inset padding="sm" className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <CausalReadout
-          label="Weakest link — confidence"
-          value={pct(chain.confidence)}
+          label="Confidence"
+          value={confidenceLabel(chain.confidence) ?? '—'}
           hint="The least certain step in the chain"
         />
         <CausalReadout
-          label="Weakest link — strength"
+          label="Strength"
           value={pct(chain.strength)}
           hint="The loosest step in the chain"
         />
@@ -259,7 +260,7 @@ function CausalRelationshipRowCard({ rel }: { rel: CausalRelationshipRow }) {
         <span className="font-fw-display text-body-lg font-medium text-text-primary">
           {causeLabel(rel)}
         </span>
-        <ArrowRight className="h-4 w-4 flex-shrink-0 text-accent-600" aria-hidden />
+        <ArrowRight className="h-4 w-4 flex-shrink-0 text-accent-ink" aria-hidden />
         <span className="font-fw-display text-body-lg font-medium text-text-primary">
           {effectLabel(rel)}
         </span>
@@ -289,7 +290,7 @@ function CausalRelationshipRowCard({ rel }: { rel: CausalRelationshipRow }) {
         />
         <CausalReadout
           label="Confidence"
-          value={pct(rel.confidence)}
+          value={confidenceLabel(rel.confidence) ?? '—'}
           hint="How sure the engine is it's causal"
         />
         <CausalReadout

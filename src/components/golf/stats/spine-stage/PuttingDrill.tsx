@@ -530,7 +530,7 @@ export function PuttingDrill({
                         <span className={cn('inline-flex min-w-[46px] items-center justify-center rounded-fw-sm px-1.5 py-1 font-fw-mono', RAMP_CLASSES[makeBand])}>
                           {num(s?.[band.make], 0)}%
                         </span>
-                        {makeN > 0 ? <span className="mt-0.5 block font-fw-sans text-microbadge normal-case tracking-normal text-text-tertiary opacity-75">n={makeN}</span> : null}
+                        {makeN > 0 ? <span className="mt-0.5 block font-fw-sans text-microbadge normal-case tracking-normal text-text-tertiary">n={makeN}</span> : null}
                       </td>
                       <td className="px-3">{num(s?.firstPuttDistanceByBand?.[band.key], 0)}%</td>
                       <td className="px-3">{num(s?.approachPuttAvgLeaveByBand?.[band.key], 1)} ft</td>

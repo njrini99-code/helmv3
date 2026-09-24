@@ -44,7 +44,9 @@ import { useRouteRevealMotion } from '@/lib/motion/route-motion';
 import { isGolfLateralDestination } from '@/lib/golf/nav-registry';
 
 export default function DashboardTemplate({ children }: { children: React.ReactNode }) {
-  const reveal = useRouteRevealMotion(isGolfLateralDestination);
+  // Back/forward lands instantly: swipe-back already showed its own motion
+  // (audit MOT-12). Pushes keep the short opacity reveal.
+  const reveal = useRouteRevealMotion(isGolfLateralDestination, { instantOnPop: true });
   return (
     <m.div
       key={reveal.routeKey}

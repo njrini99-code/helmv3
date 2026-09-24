@@ -8,6 +8,7 @@
  * - Verbosity adaptation
  */
 
+import { confidenceLabel } from '@/lib/coachhelm/confidence-label';
 import type {
   ComposedInsight,
   InsightTone,
@@ -17,6 +18,9 @@ import type {
   PerformancePrediction,
   ExtractedFeatures,
 } from '../types';
+
+/** Owner OD-09: prediction bands wider than this are hidden. */
+const MAX_SHOWN_PREDICTION_BAND_STROKES = 8;
 
 /**
  * Strip NaN artifacts from generated text.
@@ -331,7 +335,14 @@ export class InsightComposer {
       const rangeHigh = Number.isFinite(pred.predictedRangeHigh) ? pred.predictedRangeHigh : 0;
       const score = predictedValue >= 0 ? `+${predictedValue.toFixed(1)}` : predictedValue.toFixed(1);
 
-      parts.push(`Expected score: ${score} (range: ${rangeLow.toFixed(1)} to ${rangeHigh.toFixed(1)})`);
+      // OD-09: a band wider than 8 strokes says nothing; say so instead. Both
+      // ends carry their sign ("−1.2 to +3.4"), like the point estimate.
+      const signed = (v: number) => (v >= 0 ? `+${v.toFixed(1)}` : v.toFixed(1));
+      if (rangeHigh >= rangeLow && rangeHigh - rangeLow <= MAX_SHOWN_PREDICTION_BAND_STROKES) {
+        parts.push(`Expected score: ${score} (range: ${signed(rangeLow)} to ${signed(rangeHigh)})`);
+      } else {
+        parts.push(`Expected score: ${score}. Not enough rounds yet for a range.`);
+      }
 
       if (verbosity !== 'brief' && pred.keyFactors && pred.keyFactors.length > 0) {
         const topFactor = pred.keyFactors[0];
@@ -341,8 +352,10 @@ export class InsightComposer {
       }
 
       if (verbosity === 'detailed' && insight.reasoning) {
-        const confPct = Number.isFinite(pred.confidence) ? pred.confidence : 0;
-        parts.push(`Confidence: ${(confPct * 100).toFixed(0)}%`);
+        // A word band, not a percent: `confidence` is a volatility heuristic,
+        // not the interval's level (NUM-07).
+        const word = confidenceLabel(Number.isFinite(pred.confidence) ? pred.confidence : null);
+        if (word) parts.push(`Confidence: ${word.toLowerCase()}.`);
       }
     }
 

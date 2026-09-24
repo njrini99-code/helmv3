@@ -73,6 +73,11 @@ export function FairwayMessages() {
   };
 
   const [selectedConversationId, setSelectedConversationId] = React.useState<string | null>(null);
+  // DATA-01: the thread desktop opened on its own (the first conversation
+  // beside the rail). It is shown, not read: mark-as-read waits until the
+  // viewer engages with it (a click or focus inside the thread pane, or picking
+  // it in the rail).
+  const [autoOpenedId, setAutoOpenedId] = React.useState<string | null>(null);
   const [showNewMessageModal, setShowNewMessageModal] = React.useState(false);
   const [showTeamBroadcastModal, setShowTeamBroadcastModal] = React.useState(false);
   const [mobileShowChat, setMobileShowChat] = React.useState(false);
@@ -97,7 +102,15 @@ export function FairwayMessages() {
     isOtherTyping,
     sendTypingStatus,
     currentUserId,
-  } = useGolfMessages(selectedConversationId || '', userId);
+    markRead,
+  } = useGolfMessages(selectedConversationId || '', userId, {
+    deferMarkRead: !!selectedConversationId && selectedConversationId === autoOpenedId,
+  });
+  const engageAutoOpenedThread = React.useCallback(() => {
+    if (!autoOpenedId || autoOpenedId !== selectedConversationId) return;
+    setAutoOpenedId(null);
+    void markRead();
+  }, [autoOpenedId, selectedConversationId, markRead]);
   const reactions = useMessageReactions(selectedConversationId ?? '', messages.filter((message) => message.conversation_id === selectedConversationId && !message.sendFailed).map((message) => message.id), currentUserId ?? userId);
 
   // ── UNCHANGED hook: attachment send ─────────────────────────────────────────
@@ -353,6 +366,7 @@ export function FairwayMessages() {
       !conversationIdFromUrl
     ) {
       setSelectedConversationId(firstConversation.id);
+      setAutoOpenedId(firstConversation.id);
     }
   }, [isDesktop, conversations, conversationsLoading, selectedConversationId, playerIdFromUrl, conversationIdFromUrl]);
 
@@ -365,6 +379,13 @@ export function FairwayMessages() {
   const handleSelectConversation = (id: string) => {
     setMobileActionsId(null);
     setShowGroupDetails(false);
+    // Picking a thread is engagement. Re-picking the auto-opened one keeps
+    // the same id (no refetch), so mark it read explicitly.
+    if (id === autoOpenedId && id === selectedConversationId) {
+      engageAutoOpenedThread();
+    } else {
+      setAutoOpenedId(null);
+    }
     setSelectedConversationId(id);
     setMobileShowChat(true);
   };
@@ -620,7 +641,13 @@ export function FairwayMessages() {
           <div className={mobileShowChat
             ? 'flex w-full min-h-0 min-w-0 flex-col'
             : 'hidden min-h-0 min-w-0 flex-col md:flex'}>
-            <div className="flex w-full min-h-0 min-w-0 flex-1 flex-col">
+            <div
+              className="flex w-full min-h-0 min-w-0 flex-1 flex-col"
+              // Engagement with an auto-opened thread (DATA-01). Capture phase so
+              // a click on any control inside the pane counts.
+              onPointerDownCapture={autoOpenedId ? engageAutoOpenedThread : undefined}
+              onFocusCapture={autoOpenedId ? engageAutoOpenedThread : undefined}
+            >
               <MessageThreadPane
                 reactions={reactions}
                 conversation={selectedConversation}

@@ -105,6 +105,14 @@ export interface SheetProps {
   title: React.ReactNode;
   /** Render the title for screen-readers only. */
   hideTitle?: boolean;
+  /**
+   * The children render their own visible `<Sheet.Title>` (a custom header
+   * with an eyebrow, badge or bespoke layout). Skips the automatic title —
+   * both the styled header and the sr-only fallback — so the dialog has
+   * exactly ONE `Drawer.Title` (two would share Radix's title id). `title`
+   * is still required so the prop contract reads the same at every site.
+   */
+  customTitle?: boolean;
   /** Optional description (announced + shown under title). */
   description?: React.ReactNode;
   /** Hide the top-right close affordance. */
@@ -149,6 +157,29 @@ export interface SheetProps {
   peek?: boolean;
   /** Whether the sheet is dismissible by drag / scrim. Default true. */
   dismissible?: boolean;
+  /**
+   * Skip vaul's Safari-only `position: fixed` body hack. The WKWebView has
+   * no collapsing toolbar for it to protect, and the hack re-lays out the
+   * page behind the scrim on open/close (motion spec §6.1 #7). OPT-IN so
+   * existing sheets keep today's behaviour.
+   * @default false
+   */
+  noBodyStyles?: boolean;
+  /**
+   * Fires once after the sheet has finished closing, for EVERY close path
+   * (Escape, scrim, drag, Cancel, or a parent flipping `open` to false).
+   * Driven by the panel's `transform` transitionend while closed, with a
+   * 600 ms fallback for reduced motion / no transition. Use it for cleanup
+   * that must not flash mid-exit (resetting a form, clearing a selection).
+   */
+  onExited?: () => void;
+  /**
+   * Escape pressed while the sheet is the top layer and no nested popup is
+   * open. Runs before the sheet closes; `preventDefault()` keeps it open.
+   * With `dismissible={false}` it is the only Escape signal a caller gets,
+   * e.g. to ask "Discard your changes?" instead of closing.
+   */
+  onEscapeKeyDown?: (event: KeyboardEvent) => void;
   /** Sheet content. */
   children?: React.ReactNode;
   /** Extra classes merged (last-wins) onto the panel. */
@@ -167,6 +198,7 @@ function SheetRoot({
   mobileSide,
   title,
   hideTitle = false,
+  customTitle = false,
   description,
   hideClose = false,
   leadingAction,
@@ -175,6 +207,9 @@ function SheetRoot({
   snapPoints,
   peek,
   dismissible = true,
+  noBodyStyles = false,
+  onExited,
+  onEscapeKeyDown,
   children,
   className,
   'data-slot': dataSlot = 'sheet',
@@ -189,6 +224,56 @@ function SheetRoot({
   // outside-pointer layer treat it as "outside" (dead dropdown / tapping an
   // option dismisses the sheet). State, not a ref, so children re-render.
   const [contentNode, setContentNode] = React.useState<HTMLDivElement | null>(null);
+
+  // Open state as the sheet sees it — the prop when controlled, otherwise
+  // tracked through onOpenChange — so onExited can tell a close apart.
+  const isControlled = open !== undefined;
+  const [uncontrolledOpen, setUncontrolledOpen] = React.useState(defaultOpen ?? false);
+  const isOpen = isControlled ? !!open : uncontrolledOpen;
+  const handleOpenChange = React.useCallback(
+    (next: boolean) => {
+      if (!isControlled) setUncontrolledOpen(next);
+      onOpenChange?.(next);
+    },
+    [isControlled, onOpenChange],
+  );
+  const onExitedRef = React.useRef(onExited);
+  React.useEffect(() => {
+    onExitedRef.current = onExited;
+  }, [onExited]);
+  // The panel node, readable from the close effect without making it a
+  // dependency: Radix unmounts the panel when the exit ends, and that node
+  // change must not cancel the pending onExited.
+  const panelRef = React.useRef<HTMLDivElement | null>(null);
+  const setPanelNode = React.useCallback((node: HTMLDivElement | null) => {
+    panelRef.current = node;
+    setContentNode(node);
+  }, []);
+  const wasOpen = React.useRef(isOpen);
+  React.useEffect(() => {
+    const closing = wasOpen.current && !isOpen;
+    wasOpen.current = isOpen;
+    if (!closing) return;
+    let done = false;
+    const finish = () => {
+      if (done) return;
+      done = true;
+      onExitedRef.current?.();
+    };
+    const node = panelRef.current;
+    const onEnd = (event: TransitionEvent) => {
+      if (event.target === node && event.propertyName === 'transform') finish();
+    };
+    node?.addEventListener('transitionend', onEnd);
+    // Fallback: reduced motion, no transition, or the panel unmounted first.
+    const fallback = window.setTimeout(finish, 600);
+    return () => {
+      // Re-opened (or the Sheet itself unmounted) before the exit finished.
+      done = true;
+      window.clearTimeout(fallback);
+      node?.removeEventListener('transitionend', onEnd);
+    };
+  }, [isOpen]);
 
   // Below `md`, `mobileSide` (when given) overrides `side` — e.g. a desktop
   // docked `side="right"` panel becomes a bottom sheet on phone for free.
@@ -211,9 +296,10 @@ function SheetRoot({
   return (
     <Drawer.Root
       open={open}
-      onOpenChange={onOpenChange}
+      onOpenChange={handleOpenChange}
       defaultOpen={defaultOpen}
       direction={resolvedSide}
+      noBodyStyles={noBodyStyles}
       snapPoints={resolvedSnapPoints}
       dismissible={dismissible}
       modal
@@ -237,12 +323,15 @@ function SheetRoot({
         />
 
         <Drawer.Content
-          ref={setContentNode}
+          ref={setPanelNode}
           data-slot={dataSlot}
           onAnimationEnd={onAnimationEnd}
           onOpenAutoFocus={focus.onOpenAutoFocus}
           onCloseAutoFocus={focus.onCloseAutoFocus}
-          onEscapeKeyDown={(event) => preventEscapeWhilePopupOpen(event, contentNode)}
+          onEscapeKeyDown={(event) => {
+            preventEscapeWhilePopupOpen(event, contentNode);
+            if (!event.defaultPrevented) onEscapeKeyDown?.(event);
+          }}
           // Lifted above the keyboard by SIDE_CLASS; the provider's global
           // keyboardWillShow scroll-into-view must not also scroll the page
           // behind the scrim.
@@ -262,14 +351,14 @@ function SheetRoot({
           ) : null}
 
           {/* a11y title always present; visually-hidden when asked / non-string. */}
-          {hideTitle || !titleIsString ? (
+          {!customTitle && (hideTitle || !titleIsString) ? (
             <Drawer.Title className="sr-only">
               {titleIsString ? title : 'Sheet'}
             </Drawer.Title>
           ) : null}
 
           <ModalPortalContext.Provider value={contentNode}>
-          {navHeader ? (
+          {customTitle ? null : navHeader ? (
             <SheetNavHeader
               leading={leadingAction}
               trailing={trailingAction}

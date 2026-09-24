@@ -24,7 +24,8 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { AlertCircle, Loader2, Send } from 'lucide-react';
-import { AnimatePresence, m, useReducedMotion } from 'framer-motion';
+import { AnimatePresence, m } from 'framer-motion';
+import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
 import { cn } from '@/lib/utils';
 import { AttachmentButton } from '@/components/golf/messages/AttachmentButton';
 import { AttachmentPreview } from '@/components/golf/messages/AttachmentPreview';
@@ -133,7 +134,7 @@ export function MessageComposer({
   onTyping,
   recipientName,
 }: MessageComposerProps) {
-  const reducedMotion = useReducedMotion() ?? false;
+  const reducedMotion = useReducedMotionGuard();
   const [message, setMessage] = useState('');
   const [sending, setSending] = useState(false);
   const [pendingAttachments, setPendingAttachments] = useState<PendingAttachment[]>([]);
@@ -712,7 +713,7 @@ export function MessageComposer({
             'focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-surface',
             'active:scale-95 motion-reduce:active:scale-100',
             canSend
-              ? 'bg-accent-650 text-text-on-accent shadow-flat hover:bg-accent-750 hover:shadow-soft'
+              ? 'bg-accent-fill text-text-on-accent-fill shadow-flat hover:bg-accent-fill-hover hover:shadow-soft'
               : 'cursor-not-allowed bg-surface-sunken text-text-tertiary',
           )}
         >

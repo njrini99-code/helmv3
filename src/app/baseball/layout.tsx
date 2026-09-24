@@ -1,4 +1,5 @@
 import { baseballFontVariables, rootFontVariablesCss } from '@/lib/fonts';
+import { LEGACY_SPORT_TOKENS_CSS } from '@/lib/legacy-sport-tokens';
 
 /**
  * BaseballHelm root segment layout: loads the BaseballHelm-only web fonts.
@@ -13,7 +14,9 @@ import { baseballFontVariables, rootFontVariablesCss } from '@/lib/fonts';
  * The variables are declared on :root (not on a wrapper element) so dialogs,
  * popovers and toasts that Radix portals into <body> still resolve them.
  */
-const fontVariablesCss = rootFontVariablesCss(baseballFontVariables);
+// Font variables, then the pre-contrast-pass Fairway token values (OD-17:
+// the GolfHelm redesign does not change how this sport looks).
+const fontVariablesCss = rootFontVariablesCss(baseballFontVariables) + LEGACY_SPORT_TOKENS_CSS;
 
 export default function BaseballLayout({ children }: { children: React.ReactNode }) {
   return (

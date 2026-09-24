@@ -19,7 +19,7 @@
 		"preferredContentMode": "mobile",
 		"contentInset": "never",
 		"appendUserAgent": "HelmSportsLabsApp",
-		"backgroundColor": "#F7EFDF"
+		"backgroundColor": "#F2E6D2"
 	},
 	"android": {
 		"appendUserAgent": "HelmSportsLabsApp",
@@ -44,7 +44,7 @@
 		"SplashScreen": {
 			"launchAutoHide": true,
 			"launchShowDuration": 10000,
-			"backgroundColor": "#F7EFDF",
+			"backgroundColor": "#F2E6D2",
 			"showSpinner": false
 		},
 		"StatusBar": {

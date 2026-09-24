@@ -4,8 +4,7 @@
  * GolfHelm auth canvas: the flat, iOS-native sign-in treatment (2026-09 redesign).
  *
  * This replaces the old card-on-an-illustrated-scene look (GolfAuthShell) for
- * /golf/login and /golf/forgot-password. Reset-password still uses
- * GolfAuthShell until it is migrated.
+ * /golf/login, /golf/forgot-password and /golf/reset-password (AUTH-02).
  *
  *   AuthCanvas         flat `bg-canvas` page: optional top bar, app mark and
  *                      ONE title, content, and a footer pinned above the home
@@ -134,20 +133,26 @@ export const GroupedFieldRow = forwardRef<HTMLInputElement, GroupedFieldRowProps
         'flex h-[52px] items-center gap-2 pl-4 pr-1.5',
         // Keyboard users on a pointer device get a visible focus indicator.
         // On touch the caret is the indicator, as it is in iOS.
-        '[@media(pointer:fine)]:focus-within:[box-shadow:inset_0_0_0_2px_var(--fw-color-border-focus)]',
+        // An inset rounded outline, not a box-shadow, so it isn't clipped by the
+        // group's overflow-hidden corners.
+        'rounded-xl [@media(pointer:fine)]:focus-within:outline [@media(pointer:fine)]:focus-within:outline-2',
+        '[@media(pointer:fine)]:focus-within:-outline-offset-2 [@media(pointer:fine)]:focus-within:outline-accent-600',
         !trailing && 'pr-4',
       )}
     >
       <label htmlFor={id} className="sr-only">
         {label}
       </label>
+      {/* eslint-disable-next-line helm/no-raw-input -- grouped-field primitive: hairline-separated rows inside one container; <Input> brings its own border and radius */}
       <input
         ref={ref}
         id={id}
         className={cn(
           // 17px (iOS body) stays over 16px, so iOS Safari never zooms on focus.
           'h-full min-w-0 flex-1 bg-transparent text-body-lg text-text-primary caret-accent-600',
-          'placeholder:text-text-tertiary focus:outline-none',
+          // The ROW draws the focus indicator. Suppress the global input ring
+          // (globals.css), which the group's rounded clip cut into two bars.
+          'placeholder:text-text-tertiary focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0',
           'aria-[invalid=true]:placeholder:text-fw-danger',
         )}
         {...inputProps}
@@ -190,6 +195,7 @@ export const AuthSubmitButton = forwardRef<HTMLButtonElement, AuthSubmitButtonPr
   ref,
 ) {
   return (
+    // eslint-disable-next-line helm/no-raw-button -- the auth canvas primary button: full-bleed 50pt solid button with its own pending state; <Button> sizing does not fit the grouped auth form
     <button
       ref={ref}
       type={type}
@@ -219,5 +225,6 @@ export const AuthSubmitButton = forwardRef<HTMLButtonElement, AuthSubmitButtonPr
 /* ── Quiet text link styling (Forgot password?, Create an account) ─────────── */
 
 export const authTextLinkClass =
-  'inline-flex min-h-[44px] items-center rounded-lg px-2 text-body text-accent-700 ' +
+  // Inline-flex with a 44px hit area; -mx-1/px-1 keeps it sitting in running text.
+  'inline-flex min-h-[44px] items-center rounded-lg px-1 -mx-1 align-middle text-body text-accent-700 ' +
   'outline-none focus-visible:ring-2 focus-visible:ring-accent-600 [@media(hover:hover)]:hover:underline active:opacity-60';

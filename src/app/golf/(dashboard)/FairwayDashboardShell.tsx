@@ -6,9 +6,10 @@
  * ----------------------------------------------------------------------------
  * The dashboard frame mounted unconditionally by (dashboard)/layout.tsx.
  * Renders the premium Fairway `AppShell` — the warm-black recessive rail on
- * desktop, a 4-tab bottom bar + More sheet on mobile (M1, 2026-07-10 —
- * docs/MOBILE_DOCTRINE.md Rule 6/10; the old hamburger → slide-in drawer is
- * retired), and the one glass top bar. The legacy GolfDashboardShell /
+ * desktop, a 5-tab bottom bar on mobile (OD-14, 2026-09-24 — player Home ·
+ * Rounds · Game · Plan · Team; coach Home · Players · CoachHelm · Schedule ·
+ * Team) with the More sheet opened from the nav bar's "More" button, and the
+ * one opaque top bar (OD-20). The legacy GolfDashboardShell /
  * GolfSidebar fork it used to be gated against was deleted in Wave W1
  * (2026-07-09).
  *
@@ -18,11 +19,12 @@
  * overflow surfaces.
  * ========================================================================== */
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { haptic } from '@/lib/haptics';
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import Image from 'next/image';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { LazyMotion, MotionConfig } from 'framer-motion';
 import { loadFeatures } from '@/lib/motion/load-features';
 
@@ -68,10 +70,10 @@ import { useGolfSurfacePrewarm } from '@/hooks/golf/use-surface-prewarm';
 import { clearAllCachedResources } from '@/lib/golf/client-resource-cache';
 import { createClient } from '@/lib/supabase/client';
 import { clearActiveTeam } from '@/app/golf/actions/team-switcher';
-import { triggerHaptic } from '@/lib/utils/capacitor';
+
 import { teardownDeviceTokenOnSignOut } from '@/lib/utils/push-registration';
 import { cn } from '@/lib/utils';
-import { IconSettings, IconLogout } from '@/components/icons';
+import { IconSettings, IconLogout, IconLayoutGrid } from '@/components/icons';
 
 // PERF: lazy-load the same heavy globals GolfDashboardShell mounts.
 const CommandPalette = dynamic(
@@ -234,7 +236,7 @@ function useGolfSignOut() {
   const handleSignOut = useCallback(async () => {
     if (isSigningOut) return; // guard double-tap (legacy shell guarded this too)
     setIsSigningOut(true);
-    void triggerHaptic('heavy');
+    void haptic('checkpoint');
     // BEFORE signOut (the action authenticates the caller), fire-and-forget
     // (sign-out must never hang on token cleanup): stop this device receiving
     // the signed-out user's pushes (M2-1).
@@ -333,6 +335,64 @@ function GolfMoreSheetFooter() {
       signingOut={isSigningOut}
       linkComponent={ShellLink}
     />
+  );
+}
+
+/** Reports the current `?view=` to the shell (OD-14 Game/Plan tabs). Lives
+ *  under its own <Suspense> so useSearchParams never bails the dashboard
+ *  layout out of server rendering. */
+function SearchViewProbe({ onChange }: { onChange: (view: string | null) => void }) {
+  const view = useSearchParams()?.get('view') ?? null;
+  useEffect(() => {
+    onChange(view);
+  }, [view, onChange]);
+  return null;
+}
+
+/**
+ * Mobile-only nav-bar entry to the More sheet (OD-14: the tab bar is five
+ * destinations and no longer carries a "More" column). Shows the current
+ * state when the route is reachable only through the sheet (Settings,
+ * Courses, …) and carries the sheet's aggregate unread badge.
+ */
+function MobileMoreButton({
+  onOpen,
+  open,
+  active,
+  badge,
+}: {
+  onOpen: () => void;
+  open: boolean;
+  active: boolean;
+  badge?: number;
+}) {
+  return (
+    <Button
+      type="button"
+      variant="ghost"
+      size="icon"
+      haptic="light"
+      aria-label={badge ? `More, ${badge} unread` : 'More'}
+      aria-haspopup="dialog"
+      aria-expanded={open}
+      aria-current={active ? 'page' : undefined}
+      data-active={active || undefined}
+      onClick={onOpen}
+      className={cn(
+        'relative h-11 w-11 rounded-full md:hidden',
+        active ? 'bg-accent-50 text-accent-ink' : 'text-text-secondary',
+      )}
+    >
+      <IconLayoutGrid size={20} aria-hidden />
+      {badge ? (
+        <span
+          aria-hidden
+          className="absolute right-1 top-1 min-w-[16px] rounded-full bg-accent-fill px-1 text-center text-eyebrow font-semibold leading-4 tabular-nums text-text-on-accent-fill ring-1 ring-surface"
+        >
+          {badge > 9 ? '9+' : badge}
+        </span>
+      ) : null}
+    </Button>
   );
 }
 
@@ -458,15 +518,6 @@ function FairwayDashboardContent({
   // Same stability contract as `teamSwitcher`/`brand`/etc below — combined
   // once here so `topBarActions` (passed verbatim into AppShell → FairwayTopBar)
   // only changes identity when one of its two children actually changes.
-  const topBarActions = useMemo(
-    () => (
-      <>
-        {notificationBell}
-        {teamSwitcher}
-      </>
-    ),
-    [notificationBell, teamSwitcher],
-  );
 
   // Track presence (deferred internally so it doesn't compete with page load).
   usePresence();
@@ -493,10 +544,14 @@ function FairwayDashboardContent({
     [role, navBadges],
   );
 
-  // P413: mobile bottom-tab destinations (subset of the rail, badge-aware).
+  // OD-14: the five mobile tabs. The player Game and Plan tabs share one
+  // pathname and differ by `?view=`, which the Suspense-wrapped probe below
+  // reports (a bare useSearchParams in this layout-level component would force
+  // a client-side-rendering bailout of the whole dashboard).
+  const [searchView, setSearchView] = useState<string | null>(null);
   const bottomNavItems = useMemo(
-    () => (role === 'coach' ? buildCoachBottomNavItems(navBadges) : buildPlayerBottomNavItems()),
-    [role, navBadges],
+    () => (role === 'coach' ? buildCoachBottomNavItems(navBadges) : buildPlayerBottomNavItems(navBadges, searchView)),
+    [role, navBadges, searchView],
   );
 
   // M1 (more-sheet-nav, docs/MOBILE_DOCTRINE.md Rule 6/10): the More sheet's
@@ -508,6 +563,39 @@ function FairwayDashboardContent({
   const overflow = useMemo(() => selectOverflow(sections, bottomNavHrefs), [sections, bottomNavHrefs]);
   const more = useMemo(() => summarizeMoreTab(overflow, pathname), [overflow, pathname]);
   const openMoreSheet = useCallback(() => setMobileOpen(true), [setMobileOpen]);
+  // The nav-bar More button is "current" when the route is reachable only
+  // through the sheet: an overflow row no tab already claims, or Settings
+  // (the sheet's footer, which `summarizeMoreTab` never sees). W5 NAT-07.
+  const anyTabActive = bottomNavItems.some((item) =>
+    item.activeMatch ? item.activeMatch(pathname) : pathname === item.href,
+  );
+  const moreRouteActive =
+    (more.active && !anyTabActive) ||
+    pathname === '/golf/dashboard/settings' ||
+    pathname.startsWith('/golf/dashboard/settings/');
+
+  const mobileMoreButton = useMemo(
+    () => (
+      <MobileMoreButton
+        onOpen={openMoreSheet}
+        open={mobileOpen}
+        active={moreRouteActive}
+        badge={more.badge}
+      />
+    ),
+    [openMoreSheet, mobileOpen, moreRouteActive, more.badge],
+  );
+
+  const topBarActions = useMemo(
+    () => (
+      <>
+        {notificationBell}
+        {teamSwitcher}
+        {mobileMoreButton}
+      </>
+    ),
+    [notificationBell, teamSwitcher, mobileMoreButton],
+  );
 
   // WAVE W2: the sub-tab strip for whichever multi-tab hub owns the current
   // route (Team / Calendar / Rounds & Stats / Messages / Operations for
@@ -530,7 +618,7 @@ function FairwayDashboardContent({
   );
 
   const openCommandPalette = useCallback(() => {
-    void triggerHaptic('light');
+    void haptic('commit');
     // WKWebView-safe imperative open (synthetic ⌘K keystrokes are unreliable
     // there); CommandPalette listens for this event additively.
     window.dispatchEvent(new Event('helm:open-command-palette'));
@@ -569,17 +657,9 @@ function FairwayDashboardContent({
   // cluster-4 finding 4 / React Doctor).
   const bottomNav = useMemo(
     () => (
-      <FairwayBottomNav
-        items={bottomNavItems}
-        pathname={pathname}
-        linkComponent={ShellLink}
-        onMoreOpen={openMoreSheet}
-        moreActive={more.active}
-        moreBadge={more.badge}
-        moreOpen={mobileOpen}
-      />
+      <FairwayBottomNav items={bottomNavItems} pathname={pathname} linkComponent={ShellLink} />
     ),
-    [bottomNavItems, pathname, openMoreSheet, more.active, more.badge, mobileOpen],
+    [bottomNavItems, pathname],
   );
 
   // Live shot-entry flows own their full screen (their own sticky control header
@@ -599,7 +679,7 @@ function FairwayDashboardContent({
   const skipLink = (
     <a
       href="#main-content"
-      className="sr-only focus:not-sr-only focus:absolute focus:z-modal focus:top-[max(1rem,env(safe-area-inset-top))] focus:left-4 bg-accent-650 text-text-on-accent px-4 py-2 rounded-fw-md font-fw-sans font-medium shadow-soft focus:outline-none focus:ring-2 focus:ring-accent-600 focus:ring-offset-2 focus:ring-offset-canvas"
+      className="sr-only focus:not-sr-only focus:absolute focus:z-modal focus:top-[max(1rem,env(safe-area-inset-top))] focus:left-4 bg-accent-fill text-text-on-accent-fill px-4 py-2 rounded-fw-md font-fw-sans font-medium shadow-soft focus:outline-none focus:ring-2 focus:ring-accent-600 focus:ring-offset-2 focus:ring-offset-canvas"
     >
       Skip to main content
     </a>
@@ -668,9 +748,8 @@ function FairwayDashboardContent({
         settingsHref="/golf/dashboard/settings"
         bottomNavHrefs={bottomNavHrefs}
         moreSheetFooter={moreSheetFooter}
-        // P413: persistent mobile bottom-tab bar for the core destinations
-        // (md:hidden; the 5th "More" column opens the sheet, which keeps the
-        // long tail — see docs/MOBILE_DOCTRINE.md Rule 6/10).
+        // OD-14: persistent five-tab mobile bar (md:hidden). The long tail
+        // lives in the More sheet, opened from the nav bar's More button.
         bottomNav={bottomNav}
         className={cn(displayDensity === 'compact' && 'density-compact', !showAnimations && 'reduce-motion')}
       >
@@ -700,6 +779,9 @@ function FairwayDashboardContent({
               'md:[--fw-shell-offset:calc(4rem+env(safe-area-inset-top,0px)+2rem+env(safe-area-inset-bottom,0px)+7rem)]',
           )}
         >
+          <Suspense fallback={null}>
+            <SearchViewProbe onChange={setSearchView} />
+          </Suspense>
           <NoTeamBanner />
           {children}
         </div>

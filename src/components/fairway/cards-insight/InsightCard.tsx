@@ -275,7 +275,10 @@ const InsightCardImpl = forwardRef<HTMLDivElement, InsightCardProps>(
 
     /* -- shell classes -- */
     const shell = cn(
-      'group relative flex rounded-card text-left',
+      // `isolate` (DASH-04): the action row and overlay children are
+      // `relative z-20`. Without a stacking context on the card they competed
+      // with the sticky top bar (z 10) and painted over it on scroll.
+      'group relative isolate flex rounded-card text-left',
       'transition-[box-shadow,transform,border-color] ease-soft',
       // matte default vs hero glass
       isHero

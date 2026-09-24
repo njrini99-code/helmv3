@@ -7,6 +7,7 @@ import { cn, formatMetricLabel } from '@/lib/utils';
 import { Card } from '@/components/ui/card';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Button } from '@/components/ui/button';
+import { fairwayToast } from '@/components/fairway';
 import {
   IconSparkles,
   IconZap,
@@ -34,8 +35,8 @@ interface WhatIfPanelProps {
 
 const difficultyConfig = {
   easy: { label: 'Easy', color: 'bg-primary-100 text-primary-700 border-primary-200' },
-  moderate: { label: 'Moderate', color: 'bg-amber-100 text-amber-700 border-amber-200' },
-  hard: { label: 'Hard', color: 'bg-red-100 text-red-700 border-red-200' },
+  moderate: { label: 'Moderate', color: 'bg-fw-warning-bg text-fw-warning-ink border-fw-warning-ring' },
+  hard: { label: 'Hard', color: 'bg-fw-danger-bg text-fw-danger-ink border-fw-danger/30' },
 };
 
 export function WhatIfPanel({
@@ -66,6 +67,10 @@ export function WhatIfPanel({
     try {
       const result = await onSimulate(metric, impact);
       setSimResult({ metric, ...result });
+    } catch {
+      // DATA-13: a failed simulation used to be silent (and an unhandled
+      // rejection). Say so; the button re-enables in `finally`.
+      fairwayToast.error("Couldn't run that simulation. Try again.");
     } finally {
       setSimulating(null);
     }
@@ -93,7 +98,7 @@ export function WhatIfPanel({
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-primary-100 flex items-center justify-center">
-              <IconSparkles size={20} className="text-primary-600" />
+              <IconSparkles size={20} className="text-accent-ink" />
             </div>
             <h3 className="text-body-lg font-medium text-warm-900 tracking-[-0.012em]">Improvement Opportunities</h3>
           </div>
@@ -106,7 +111,7 @@ export function WhatIfPanel({
           animate={{ opacity: 1, scale: 1 }}
           transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.1 })}
         >
-          <IconTarget size={18} className="text-warm-500" />
+          <IconTarget size={18} className="text-text-tertiary" />
           <span className="text-sm font-medium text-warm-600">Predicted:</span>
           <span className="text-h1 font-light text-warm-900 tabular-nums tracking-[-0.025em]">
             {hasPrediction ? (
@@ -126,7 +131,7 @@ export function WhatIfPanel({
               transition={{ duration: prefersReducedMotion ? 0 : 0.18 }}
             >
               <div className="flex items-center gap-2">
-                <IconTrendingUp size={16} className="text-primary-600" />
+                <IconTrendingUp size={16} className="text-accent-ink" />
                 <span className="text-sm text-primary-800">
                   If you improve <span className="font-medium">{formatMetricLabel(simResult.metric)}</span>:
                 </span>
@@ -136,7 +141,7 @@ export function WhatIfPanel({
                   {Number(simResult.projectedScore ?? 0) > 0 ? '+' : ''}{Number(simResult.projectedScore ?? 0).toFixed(1)}
                 </p>
                 {simResult.rankChange !== 0 && (
-                  <p className="text-xs text-primary-500 tabular-nums">
+                  <p className="text-xs text-accent-ink tabular-nums">
                     {simResult.rankChange > 0 ? '+' : ''}{simResult.rankChange} rank
                   </p>
                 )}
@@ -178,11 +183,11 @@ export function WhatIfPanel({
                     </div>
                     <p className="text-sm text-warm-600 mt-1">
                       Improve to average{' '}
-                      <span className="font-medium text-primary-600 tabular-nums">
+                      <span className="font-medium text-accent-ink tabular-nums">
                         &rarr; save {Math.abs(Number(item.projectedScoringImpact ?? 0)).toFixed(1)} strokes/round
                       </span>
                     </p>
-                    <p className="text-xs text-warm-400 mt-0.5">{item.timeEstimate}</p>
+                    <p className="text-xs text-text-tertiary mt-0.5">{item.timeEstimate}</p>
                   </div>
 
                   {onSimulate && (

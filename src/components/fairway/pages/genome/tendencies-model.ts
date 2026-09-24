@@ -13,6 +13,7 @@
  */
 
 import type { GenomeVector } from '@/lib/coachhelm/v3/genome/types';
+import { confidenceLabel } from '@/lib/coachhelm/confidence-label';
 
 export type TendencyStatus = 'live' | 'locked' | 'not_tracked';
 
@@ -34,13 +35,6 @@ function signed(n: number, digits: number): string {
   const r = Number(n.toFixed(digits));
   if (r === 0) return (0).toFixed(digits);
   return `${r > 0 ? '+' : MINUS}${Math.abs(r).toFixed(digits)}`;
-}
-
-function confidenceWord(c: number | null | undefined): string | null {
-  if (c == null || !Number.isFinite(c)) return null;
-  if (c >= 0.8) return 'Solid read';
-  if (c >= 0.5) return 'Fair read';
-  return 'Early read';
 }
 
 interface TendencyDef {
@@ -98,7 +92,7 @@ export function buildTendencies(vector: GenomeVector | null): Tendency[] {
       status: 'live',
       word: r.label ?? null,
       detail: def.detail(r.value),
-      read: confidenceWord(r.confidence),
+      read: confidenceLabel(r.confidence),
     };
   });
 }

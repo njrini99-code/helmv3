@@ -76,6 +76,13 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
 ## Business Rules
 
 - LLM work must never run client-side.
+- Player-facing confidence is shown as a word ("Solid read" / "Early read" /
+  "Thin read, n=8") from `src/lib/coachhelm/confidence-label.ts`, never as a
+  percentage; the numeric confidence still drives ranking.
+- The performance predictor, composite rating, Game Fingerprint (including
+  its SG metrics), team health categories and program pulse read countable
+  rounds only (see "Countable rounds" in `memory/features/stats-analytics.md`).
+  Prediction bands wider than `MAX_PREDICTION_BAND_STROKES = 8` are not shown.
 - Coach-facing insight reads must scope through assigned teams, not broad player access.
 - Player-facing feedback must be tied to the authenticated player and revalidate the affected dashboard surfaces.
 - Coach-to-team ownership is via `golf_team_coach_staff`; do not infer it from `golf_coaches.team_id`.

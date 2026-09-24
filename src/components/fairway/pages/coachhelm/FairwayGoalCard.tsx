@@ -373,7 +373,7 @@ export function FairwayGoalCard({ data, role, playerName }: FairwayGoalCardProps
               size="sm"
               busy={isPending}
               disabled={isPending}
-              onClick={() => runTransition(() => pauseGoal(goal.id), 'Goal paused')}
+              onClick={() => runTransition(() => pauseGoal(goal.id), 'Focus area paused')}
             >
               Pause
             </Button>
@@ -382,7 +382,7 @@ export function FairwayGoalCard({ data, role, playerName }: FairwayGoalCardProps
               size="sm"
               busy={isPending}
               disabled={isPending}
-              onClick={() => runTransition(() => abandonGoal(goal.id), 'Goal abandoned')}
+              onClick={() => runTransition(() => abandonGoal(goal.id), 'Focus area dropped')}
             >
               Abandon
             </Button>

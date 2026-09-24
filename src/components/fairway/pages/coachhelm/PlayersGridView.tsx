@@ -167,6 +167,12 @@ export interface PlayersGridStats {
   par3_avg?: number | null;
   par4_avg?: number | null;
   par5_avg?: number | null;
+  // SG per round + the rounds behind it (SHEET-04 weakest-area preselect).
+  rounds_in_calculation?: number | null;
+  sg_tee_per_round?: number | null;
+  sg_approach_per_round?: number | null;
+  sg_around_green_per_round?: number | null;
+  sg_putting_per_round?: number | null;
 }
 
 export interface PlayersGridViewProps {

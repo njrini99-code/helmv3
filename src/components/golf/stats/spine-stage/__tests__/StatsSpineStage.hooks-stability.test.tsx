@@ -23,10 +23,11 @@
  * stop (an error-boundary-swallowed crash would otherwise read as a false
  * pass here, matching the "renders nothing below the ViewHeader" symptom).
  * ========================================================================== */
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { StatsSpineStage } from '../StatsSpineStage';
+import { StatsSpineStage, coldStartCopy } from '../StatsSpineStage';
 import type { GolfStats } from '@/lib/utils/golf-stats-calculator-shots';
 import type { PlayerStandingRow } from '@/app/golf/actions/stats-leak-maps-types';
 import type { TrendAnalysisResponse } from '@/app/golf/actions/stats-data-types';
@@ -182,7 +183,11 @@ function fixtureEmptySprayGroup(family: 'driving' | 'approach') {
 }
 
 function mockHealthyBundle() {
-  getPlayerStatsDashboardBundle.mockResolvedValue({
+  getPlayerStatsDashboardBundle.mockResolvedValue(healthyBundle());
+}
+
+function healthyBundle() {
+  return {
     detailed: ok(fixtureStats()),
     trend: ok(fixtureTrend()),
     standing: ok({ success: true, data: fixtureStanding() }),
@@ -198,7 +203,7 @@ function mockHealthyBundle() {
     strengthsWeaknesses: ok({ strengths: [], weaknesses: [] }),
     worstHoles: ok({ holes: [], worstHoles: [], bestHoles: [], par3Average: null, par4Average: null, par5Average: null, closingHolesAverage: null }),
     patterns: ok({ success: true, patterns: [] }),
-  });
+  };
 }
 
 /** Every real `?area=` stage view StatsSpineStage registers (buildStatsViewModel.ts's StatsArea union + 'home'). */
@@ -341,8 +346,13 @@ describe('StatsSpineStage — hooks-order stability across ?area= switches', { t
     render(<StatsSpineStage playerId="p-1" />);
     await screen.findByText('Core ball striking');
 
-    fireEvent.click(screen.getByRole('combobox', { name: "Load a qualifier's rounds" }));
-    fireEvent.click(await screen.findByText('Fall qualifier · 2 rounds'));
+    // DASH-07 (changed on purpose): "All rounds", the qualifier presets and
+    // "Choose rounds…" are ONE Select named by its "Stats for" label; the
+    // per-round Combobox only appears once a round set is in scope.
+    expect(screen.queryByRole('combobox', { name: 'Select rounds for stats' })).toBeNull();
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('combobox', { name: 'Stats for' }));
+    await user.click(await screen.findByRole('option', { name: 'Fall qualifier · 2 rounds' }));
 
     await waitFor(() => {
       expect(getPlayerStatsDashboardBundle).toHaveBeenLastCalledWith('p-1', ['qualifier-1', 'qualifier-2']);
@@ -423,5 +433,91 @@ describe('StatsSpineStage — hooks-order stability across ?area= switches', { t
     // another update-render pair that must call the same hooks in the same
     // order for React not to throw #310.
     expect(await screen.findByText('Core ball striking')).toBeInTheDocument();
+  });
+
+  it('PERF-R11: a player switch loads the new player once, in the career scope', async () => {
+    getPlayerRoundOptions.mockResolvedValue([
+      {
+        id: 'qualifier-1',
+        date: '2026-07-01',
+        courseName: 'North Course',
+        totalScore: 72,
+        roundType: 'qualifier',
+        qualifierId: 'fall-qualifier',
+        qualifierName: 'Fall qualifier',
+        qualifierRoundNumber: 1,
+      },
+    ]);
+    const { rerender } = render(<StatsSpineStage playerId="p-1" />);
+    await screen.findByText('Core ball striking');
+
+    // Put p-1 into a round-set scope first, so a stale scope is available to leak.
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('combobox', { name: 'Stats for' }));
+    await user.click(await screen.findByRole('option', { name: 'Fall qualifier · 1 round' }));
+    await waitFor(() => {
+      expect(getPlayerStatsDashboardBundle).toHaveBeenLastCalledWith('p-1', ['qualifier-1']);
+    });
+
+    getPlayerStatsDashboardBundle.mockClear();
+    rerender(<StatsSpineStage playerId="p-2" />);
+    await screen.findByText('Core ball striking');
+
+    const p2Calls = getPlayerStatsDashboardBundle.mock.calls.filter(([id]) => id === 'p-2');
+    expect(p2Calls).toEqual([['p-2', 'overall']]);
+    // Never a read of the new player with the previous player's round set.
+    expect(getPlayerStatsDashboardBundle).not.toHaveBeenCalledWith('p-2', ['qualifier-1']);
+  });
+
+  it('PERF-R3: an older, slower response never overwrites the newer one', async () => {
+    getPlayerStatsDashboardBundle.mockReset();
+    let resolveSlow: ((v: unknown) => void) | null = null;
+    // First load (p-1) hangs; the second (p-2) answers immediately with data
+    // whose cold-start copy differs, so a late p-1 answer would be visible.
+    getPlayerStatsDashboardBundle.mockImplementationOnce(
+      () => new Promise((resolve) => { resolveSlow = resolve; }),
+    );
+    const { rerender } = render(<StatsSpineStage playerId="p-1" />);
+    await waitFor(() => expect(resolveSlow).not.toBeNull());
+
+    getPlayerStatsDashboardBundle.mockResolvedValueOnce({
+      detailed: ok(fixtureStats({ roundsPlayed: 0 })),
+      trend: ok(fixtureTrend()),
+      standing: ok({ success: true, data: [] }),
+      leak: ok({ success: true, data: { playerId: 'p-2', putting: [], approach: [], roundsIncluded: 0 } }),
+      spray: ok(null),
+      strengthsWeaknesses: ok({ strengths: [], weaknesses: [] }),
+      worstHoles: ok(null),
+      patterns: ok({ success: true, patterns: [] }),
+    });
+    rerender(<StatsSpineStage playerId="p-2" isOwnStats />);
+    expect((await screen.findAllByText('Log your first round')).length).toBeGreaterThan(0);
+
+    // The stale p-1 response lands last. It must be dropped.
+    await act(async () => {
+      resolveSlow!(healthyBundle());
+    });
+    expect(screen.queryByText('Core ball striking')).toBeNull();
+    expect(screen.getAllByText('Log your first round').length).toBeGreaterThan(0);
+  });
+});
+
+describe('coldStartCopy (STATE-01, STATE-02)', () => {
+  it('asks a player with zero rounds to log their FIRST round, not "5+"', () => {
+    const copy = coldStartCopy({ isOwnStats: true, roundsLogged: 0 });
+    expect(copy.title).toBe('Log your first round');
+    expect(copy.description).not.toMatch(/5\+/);
+  });
+
+  it('keeps "More rounds needed" once rounds exist, and says how many', () => {
+    const copy = coldStartCopy({ isOwnStats: true, roundsLogged: 2 });
+    expect(copy.title).toBe('More rounds needed');
+    expect(copy.description).toContain('2 logged so far');
+  });
+
+  it('gives a coach coach-directed copy and a message action', () => {
+    const copy = coldStartCopy({ isOwnStats: false, playerName: 'Cole Ruff', roundsLogged: 0 });
+    expect(copy.title).toBe('Cole has not logged a round yet');
+    expect(copy.actionLabel).toBe('Message Cole to log a first round');
   });
 });
