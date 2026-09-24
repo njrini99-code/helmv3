@@ -1,5 +1,5 @@
 /**
- * GoalCreationModal ("Set a goal" → New focus area sheet) — UI audit 2026-09-23.
+ * GoalCreationModal ("Set a target" sheet) — UI audit 2026-09-23.
  *
  * The hand-rolled glass panel it replaced ignored Escape, never moved focus
  * into the dialog, let the page read through the form, and had no grabber.
@@ -42,11 +42,11 @@ async function openSheet() {
   render(<Harness />);
   const opener = screen.getByRole('button', { name: 'Set a goal' });
   await user.click(opener);
-  const dialog = await screen.findByRole('dialog', { name: 'New focus area' });
+  const dialog = await screen.findByRole('dialog', { name: 'Set a target' });
   return { user, opener, dialog };
 }
 
-describe('GoalCreationModal — New focus area sheet', () => {
+describe('GoalCreationModal — Set a target sheet', () => {
   it('moves focus into the sheet on open', async () => {
     const { dialog } = await openSheet();
     await waitFor(() => {
@@ -58,7 +58,7 @@ describe('GoalCreationModal — New focus area sheet', () => {
     const { user, opener } = await openSheet();
     await user.keyboard('{Escape}');
     await waitFor(() => {
-      expect(screen.queryByRole('dialog', { name: 'New focus area' })).not.toBeInTheDocument();
+      expect(screen.queryByRole('dialog', { name: 'Set a target' })).not.toBeInTheDocument();
     });
     await waitFor(() => {
       expect(opener).toHaveFocus();
@@ -71,7 +71,7 @@ describe('GoalCreationModal — New focus area sheet', () => {
     // calls setPointerCapture, which jsdom does not implement.
     fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
     await waitFor(() => {
-      expect(screen.queryByRole('dialog', { name: 'New focus area' })).not.toBeInTheDocument();
+      expect(screen.queryByRole('dialog', { name: 'Set a target' })).not.toBeInTheDocument();
     });
   });
 

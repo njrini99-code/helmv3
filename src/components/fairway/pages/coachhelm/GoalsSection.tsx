@@ -319,9 +319,12 @@ export function GoalsSection({
 
   // Touch target: md (44px min-height) unconditionally — not sm, which is
   // only 44px behind a `(pointer: coarse)` media query (mustFix #194).
+  // HUB-14: this opens the target (a number on a focus area) sheet, not the
+  // new-focus-area sheet, so it says so, and it is secondary: the drill's
+  // "New focus area" is the screen's one primary action.
   const setGoalButton = (
-    <Button variant="primary" onClick={() => setCreateOpen(true)}>
-      New focus area
+    <Button variant="secondary" onClick={() => setCreateOpen(true)}>
+      Set a target
     </Button>
   );
 
@@ -379,18 +382,12 @@ export function GoalsSection({
         <Surface padding="lg">
           <EmptyState
             icon={Target}
-            title={
-              role === 'coach'
-                ? 'No tracked focus areas yet'
-                : focusAreaCount > 0
-                  ? 'No tracked focus areas yet'
-                  : 'No tracked focus areas yet'
-            }
+            title="No targets yet"
             description={
               role === 'coach'
                 ? 'Give this player a focus area with a number to move. Shared and assigned focus areas show up here.'
                 : focusAreaCount > 0
-                  ? `Put a number on a focus area to track it here. You have ${focusAreaCount} focus ${
+                  ? `Set a target on a focus area to track it here. You have ${focusAreaCount} focus ${
                       focusAreaCount === 1 ? 'area' : 'areas'
                     } below.`
                   : 'Add a focus area to track a stat you want to improve, or accept one CoachHelm suggests below.'

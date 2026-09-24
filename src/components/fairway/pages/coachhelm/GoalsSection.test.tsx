@@ -98,7 +98,7 @@ describe('GoalsSection — "Tracked focus areas" never contradicts the empty sta
       />,
     );
     expect(screen.queryByText('Tracked focus areas')).toBeNull();
-    expect(screen.getByText('No tracked focus areas yet')).not.toBeNull();
+    expect(screen.getByText('No targets yet')).not.toBeNull();
   });
 
   it('renders the real "Tracked focus areas" count for the coach view when active goals exist (coach never gets the "one thing" hero)', () => {
@@ -126,7 +126,7 @@ describe('GoalsSection — "Tracked focus areas" never contradicts the empty sta
       />,
     );
     expect(screen.queryByText('Tracked focus areas')).toBeNull();
-    expect(screen.getByText('No tracked focus areas yet')).not.toBeNull();
+    expect(screen.getByText('No targets yet')).not.toBeNull();
   });
 });
 
@@ -148,7 +148,7 @@ describe('GoalsSection — 44px touch targets', () => {
     }
   });
 
-  it('renders "New focus area" (empty state) at the 44px md size', () => {
+  it('renders "Set a target" (empty state) at the 44px md size', () => {
     render(
       <GoalsSection
         // eslint-disable-next-line jsx-a11y/aria-role -- domain prop, not ARIA
@@ -158,7 +158,7 @@ describe('GoalsSection — 44px touch targets', () => {
         suggestions={[]}
       />,
     );
-    const setGoal = screen.getByRole('button', { name: /new focus area/i });
+    const setGoal = screen.getByRole('button', { name: /set a target/i });
     expect(setGoal.className).toMatch(/min-h-\[44px\]/);
   });
 

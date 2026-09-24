@@ -199,7 +199,7 @@ export function GoalCreationModal({
         if (!next) onClose();
       }}
       side="bottom"
-      title="New focus area"
+      title="Set a target"
       data-slot="goal-creation-modal"
       // A save in flight can't be abandoned by a drag, a scrim tap or Escape.
       dismissible={!pending}
