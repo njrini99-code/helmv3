@@ -17,9 +17,10 @@
  * ========================================================================== */
 
 import { useMemo, useState } from 'react';
+import { Check, MoreHorizontal, X } from 'lucide-react';
 
 import { DrillPanel } from '@/components/fairway/modules';
-import { InsightCard, InsightPanel, Eyebrow, type InsightPanelAction, type InsightPriority } from '@/components/fairway';
+import { Button, InsightCard, InsightPanel, Eyebrow, PopoverPanel, type InsightPriority } from '@/components/fairway';
 import { StandingStrip } from '@/components/fairway/charts/StandingStrip';
 import { PracticeRxPanel } from '@/components/fairway/pages/coachhelm/PracticeRxPanel';
 import { CategoryInsightsPanel } from '@/components/golf/coachhelm/insights/CategoryInsightsPanel';
@@ -221,25 +222,17 @@ export function InsightsDrill({
             ) : undefined
           }
           evidenceLabel={openInsight.evidence?.metric_label ? 'The evidence' : undefined}
-          actions={
-            [
-              {
-                key: 'acknowledge',
-                label: 'Acknowledge',
-                onClick: () => {
-                  onRate(openInsight.id, 'acknowledged');
-                  setOpenInsight(null);
-                },
-              },
-              {
-                key: 'dismiss',
-                label: 'Dismiss',
-                onClick: () => {
-                  onRate(openInsight.id, 'dismissed');
-                  setOpenInsight(null);
-                },
-              },
-            ] satisfies InsightPanelAction[]
+          actionsSlot={
+            <InsightOverflowMenu
+              onAcknowledge={() => {
+                onRate(openInsight.id, 'acknowledged');
+                setOpenInsight(null);
+              }}
+              onDismiss={() => {
+                onRate(openInsight.id, 'dismissed');
+                setOpenInsight(null);
+              }}
+            />
           }
         >
           {openInsight.content}
@@ -247,5 +240,51 @@ export function InsightsDrill({
         </InsightPanel>
       ) : null}
     </DrillPanel>
+  );
+}
+
+/**
+ * HUB-04: an insight shows at most one visible action. Feedback on the read
+ * itself (acknowledge, dismiss) is secondary, so it lives behind one "More"
+ * trigger instead of two buttons competing with the drills above. Handlers
+ * are the same `onRate` calls the buttons used.
+ */
+function InsightOverflowMenu({ onAcknowledge, onDismiss }: { onAcknowledge: () => void; onDismiss: () => void }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <PopoverPanel
+      open={open}
+      onOpenChange={setOpen}
+      surface="matte"
+      side="top"
+      align="start"
+      width="sm"
+      ariaLabel="Insight feedback"
+      data-slot="insight-overflow-menu"
+      trigger={
+        <Button type="button" variant="ghost" aria-label="More insight actions" leftIcon={<MoreHorizontal aria-hidden className="h-4 w-4" />}>
+          More
+        </Button>
+      }
+    >
+      <PopoverPanel.Item
+        onClick={() => {
+          setOpen(false);
+          onAcknowledge();
+        }}
+      >
+        <Check aria-hidden className="h-4 w-4" />
+        Acknowledge
+      </PopoverPanel.Item>
+      <PopoverPanel.Item
+        onClick={() => {
+          setOpen(false);
+          onDismiss();
+        }}
+      >
+        <X aria-hidden className="h-4 w-4" />
+        Dismiss
+      </PopoverPanel.Item>
+    </PopoverPanel>
   );
 }

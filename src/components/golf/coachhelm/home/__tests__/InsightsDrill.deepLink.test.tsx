@@ -5,7 +5,7 @@
  * Before the audit fix it pushed `?focus=<id>`, which nothing read, so the
  * player landed on the CoachHelm home with nothing opened.
  */
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { StageRouter } from '@/components/fairway/modules';
 import { InsightsDrill } from '../InsightsDrill';
@@ -35,7 +35,7 @@ const topInsight = {
   updated_at: '2026-09-12T00:00:00Z',
 } as unknown as EvidenceInsight;
 
-function renderDrill(initialOpenInsight: EvidenceInsight | null) {
+function renderDrill(initialOpenInsight: EvidenceInsight | null, onRate = vi.fn()) {
   return render(
     <StageRouter
       param="view"
@@ -49,7 +49,7 @@ function renderDrill(initialOpenInsight: EvidenceInsight | null) {
               standingByMetric={{}}
               themesEnabled={false}
               themes={[]}
-              onRate={vi.fn()}
+              onRate={onRate}
               onMakePlan={vi.fn()}
               makePlanPendingId={null}
               initialOpenInsight={initialOpenInsight}
@@ -71,5 +71,27 @@ describe('InsightsDrill deep link', () => {
   it('opens nothing without a deep link', () => {
     renderDrill(null);
     expect(screen.queryByRole('dialog')).toBeNull();
+  });
+});
+
+describe('InsightsDrill sheet actions (HUB-04)', () => {
+  it('shows one visible action; acknowledge and dismiss sit in the overflow menu', async () => {
+    const onRate = vi.fn();
+    renderDrill(topInsight, onRate);
+    await screen.findByRole('dialog');
+    expect(screen.queryByRole('button', { name: /^acknowledge$/i })).toBeNull();
+    expect(screen.queryByRole('button', { name: /^dismiss$/i })).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: /more insight actions/i }));
+    fireEvent.click(await screen.findByText('Dismiss'));
+    expect(onRate).toHaveBeenCalledWith('top-1', 'dismissed');
+  });
+
+  it('acknowledge from the overflow menu keeps the same rating call', async () => {
+    const onRate = vi.fn();
+    renderDrill(topInsight, onRate);
+    await screen.findByRole('dialog');
+    fireEvent.click(screen.getByRole('button', { name: /more insight actions/i }));
+    fireEvent.click(await screen.findByText('Acknowledge'));
+    expect(onRate).toHaveBeenCalledWith('top-1', 'acknowledged');
   });
 });
