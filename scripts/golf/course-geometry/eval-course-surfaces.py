@@ -60,6 +60,7 @@ def _load_module(name, filename):
 
 
 dcs = _load_module('detect_course_surfaces', 'detect-course-surfaces.py')
+dtc = _load_module('detect_tee_complexes', 'detect-tee-complexes.py')
 routes = _load_module('propose_routes', 'propose-routes.py')
 from course_crs import utm_epsg  # noqa: E402
 from factory import osm as osmlib  # noqa: E402
@@ -391,27 +392,48 @@ def summarize(rows):
 
 
 TUNE_GRID = {
-    'green.seed_percentile': [95.0, 97.0, 99.0],
-    'green.grow_percentile': [75.0, 85.0, 92.0],
+    'green.core_percentile': [80.0, 85.0, 90.0],
+    'green.crown_smooth_m': [12.0, 20.0, 30.0],
     'green.min_roundness': [0.30, 0.45],
 }
 
+# The keys a tuning combo is allowed to touch, keyed by the `options` group
+# name (`green`/`tee`/`bunker`) `_apply_combo` splits `'group.field'` on.
+# `detect_greens`/`detect_bunkers` do `dict(DEFAULTS, **options)`, which
+# silently accepts an unknown field name rather than raising -- a grid
+# keyed on a param a prior detector revision renamed or dropped (this
+# happened once already: TUNE_GRID still named the abandoned hysteresis
+# rework's `seed_percentile`/`grow_percentile` after that rework was
+# reverted) would run every combo as a no-op against the same real
+# defaults, with no error to say so. `tune()` calls `_known_option_keys()`
+# once and `_apply_combo` checks every combo's keys against it.
+_OPTION_DEFAULTS_BY_GROUP = {'green': 'GREEN_DEFAULTS', 'bunker': 'BUNKER_DEFAULTS', 'tee': 'DEFAULTS'}
 
-def _apply_combo(base_options, combo, keys):
+
+def _known_option_keys():
+    return {'green': set(dcs.GREEN_DEFAULTS), 'bunker': set(dcs.BUNKER_DEFAULTS), 'tee': set(dtc.DEFAULTS)}
+
+
+def _apply_combo(base_options, combo, keys, known_keys=None):
     options = copy.deepcopy(base_options)
     for key, value in zip(keys, combo):
         group, field = key.split('.')
+        if known_keys is not None and field not in known_keys.get(group, ()):
+            raise KeyError(f"TUNE_GRID key {key!r}: {field!r} is not in the current "
+                            f"{_OPTION_DEFAULTS_BY_GROUP.get(group, group + '_DEFAULTS')} -- "
+                            f"the detector's option schema moved on and this grid didn't")
         options.setdefault(group, {})[field] = value
     return options
 
 
 def tune(courses, base_options):
+    known_keys = _known_option_keys()
     keys = list(TUNE_GRID.keys())
     combos = list(itertools.product(*(TUNE_GRID[k] for k in keys)))
     print(f'tuning over {len(combos)} combinations x {len(courses)} course(s)...', file=sys.stderr)
     best_score, best_options, best_rows = -1.0, None, None
     for combo in combos:
-        options = _apply_combo(base_options, combo, keys)
+        options = _apply_combo(base_options, combo, keys, known_keys)
         rows = [run_course(c['courseId'], c['facilityDir'], options) for c in courses]
         s = summarize(rows)
         green_r = s['greenRecall']['median'] or 0.0

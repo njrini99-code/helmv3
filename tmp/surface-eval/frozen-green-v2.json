@@ -1,0 +1,7 @@
+{
+  "green": {
+    "core_percentile": 90.0,
+    "crown_smooth_m": 30.0,
+    "min_roundness": 0.3
+  }
+}

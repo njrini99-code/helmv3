@@ -1,0 +1,156 @@
+{
+  "options": {
+    "green": {
+      "core_percentile": 90.0,
+      "crown_smooth_m": 30.0,
+      "min_roundness": 0.3
+    }
+  },
+  "summary": {
+    "greenRecall": {
+      "median": 0.4139,
+      "n": 2
+    },
+    "greenPrecision": {
+      "median": 0.1118,
+      "n": 2
+    },
+    "teeComplexRecall": {
+      "median": 0.3523,
+      "n": 2
+    },
+    "teeComplexPrecision": {
+      "median": 0.1315,
+      "n": 2
+    }
+  },
+  "courses": {
+    "winchester-country-club": {
+      "courseId": "winchester-country-club",
+      "lidarStatus": "covered",
+      "truthExcludedOutsideAoi": 0,
+      "greens": {
+        "truthCount": 18,
+        "detectedCount": 67,
+        "matchedCount": 14,
+        "precision": 0.209,
+        "recall": 0.7778,
+        "matches": [
+          [
+            5,
+            11,
+            2.8
+          ],
+          [
+            6,
+            5,
+            2.9
+          ],
+          [
+            2,
+            6,
+            3.5
+          ],
+          [
+            8,
+            2,
+            3.5
+          ],
+          [
+            0,
+            7,
+            4.1
+          ],
+          [
+            9,
+            12,
+            4.4
+          ],
+          [
+            11,
+            0,
+            4.6
+          ],
+          [
+            12,
+            1,
+            4.8
+          ],
+          [
+            4,
+            3,
+            5.0
+          ],
+          [
+            3,
+            8,
+            5.3
+          ],
+          [
+            16,
+            25,
+            6.0
+          ],
+          [
+            7,
+            4,
+            7.1
+          ],
+          [
+            15,
+            10,
+            10.9
+          ],
+          [
+            17,
+            13,
+            13.1
+          ]
+        ]
+      },
+      "teeComplexes": {
+        "truthComplexCount": 32,
+        "detectedComplexCount": 87,
+        "matchedCount": 10,
+        "precision": 0.1149,
+        "recall": 0.3125
+      },
+      "detectedCounts": {
+        "bunkers": 98,
+        "greens": 67,
+        "tees": 118
+      }
+    },
+    "statesville-country-club": {
+      "courseId": "statesville-country-club",
+      "lidarStatus": null,
+      "truthExcludedOutsideAoi": 0,
+      "greens": {
+        "truthCount": 20,
+        "detectedCount": 68,
+        "matchedCount": 1,
+        "precision": 0.0147,
+        "recall": 0.05,
+        "matches": [
+          [
+            8,
+            1,
+            4.4
+          ]
+        ]
+      },
+      "teeComplexes": {
+        "truthComplexCount": 51,
+        "detectedComplexCount": 135,
+        "matchedCount": 20,
+        "precision": 0.1481,
+        "recall": 0.3922
+      },
+      "detectedCounts": {
+        "bunkers": 365,
+        "greens": 68,
+        "tees": 191
+      }
+    }
+  }
+}

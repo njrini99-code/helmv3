@@ -1,0 +1,24 @@
+tuning over 18 combinations x 2 course(s)...
+Warning 1: DeprecationWarning: 'Memory' driver is deprecated since GDAL 3.11. Use 'MEM' onwards. Further messages of this type will be suppressed.
+  {'green.core_percentile': 80.0, 'green.crown_smooth_m': 12.0, 'green.min_roundness': 0.3} -> greenR=0.3028 greenP=0.0678 teeR=0.3523 score=0.2688
+  {'green.core_percentile': 80.0, 'green.crown_smooth_m': 12.0, 'green.min_roundness': 0.45} -> greenR=0.3028 greenP=0.0678 teeR=0.3523 score=0.2688
+  {'green.core_percentile': 80.0, 'green.crown_smooth_m': 20.0, 'green.min_roundness': 0.3} -> greenR=0.3584 greenP=0.0776 teeR=0.3523 score=0.2852
+  {'green.core_percentile': 80.0, 'green.crown_smooth_m': 20.0, 'green.min_roundness': 0.45} -> greenR=0.3584 greenP=0.0776 teeR=0.3523 score=0.2852
+  {'green.core_percentile': 80.0, 'green.crown_smooth_m': 30.0, 'green.min_roundness': 0.3} -> greenR=0.3584 greenP=0.0676 teeR=0.3523 score=0.2827
+  {'green.core_percentile': 80.0, 'green.crown_smooth_m': 30.0, 'green.min_roundness': 0.45} -> greenR=0.3584 greenP=0.0676 teeR=0.3523 score=0.2827
+  {'green.core_percentile': 85.0, 'green.crown_smooth_m': 12.0, 'green.min_roundness': 0.3} -> greenR=0.3028 greenP=0.0817 teeR=0.3523 score=0.2723
+  {'green.core_percentile': 85.0, 'green.crown_smooth_m': 12.0, 'green.min_roundness': 0.45} -> greenR=0.3028 greenP=0.0817 teeR=0.3523 score=0.2723
+  {'green.core_percentile': 85.0, 'green.crown_smooth_m': 20.0, 'green.min_roundness': 0.3} -> greenR=0.3861 greenP=0.0989 teeR=0.3523 score=0.2974
+  {'green.core_percentile': 85.0, 'green.crown_smooth_m': 20.0, 'green.min_roundness': 0.45} -> greenR=0.3861 greenP=0.0989 teeR=0.3523 score=0.2974
+  {'green.core_percentile': 85.0, 'green.crown_smooth_m': 30.0, 'green.min_roundness': 0.3} -> greenR=0.3861 greenP=0.0817 teeR=0.3523 score=0.2931
+  {'green.core_percentile': 85.0, 'green.crown_smooth_m': 30.0, 'green.min_roundness': 0.45} -> greenR=0.3861 greenP=0.0817 teeR=0.3523 score=0.2931
+  {'green.core_percentile': 90.0, 'green.crown_smooth_m': 12.0, 'green.min_roundness': 0.3} -> greenR=0.3555 greenP=0.123 teeR=0.3523 score=0.2958
+  {'green.core_percentile': 90.0, 'green.crown_smooth_m': 12.0, 'green.min_roundness': 0.45} -> greenR=0.3555 greenP=0.123 teeR=0.3523 score=0.2958
+  {'green.core_percentile': 90.0, 'green.crown_smooth_m': 20.0, 'green.min_roundness': 0.3} -> greenR=0.3584 greenP=0.1146 teeR=0.3523 score=0.2944
+  {'green.core_percentile': 90.0, 'green.crown_smooth_m': 20.0, 'green.min_roundness': 0.45} -> greenR=0.3584 greenP=0.1146 teeR=0.3523 score=0.2944
+  {'green.core_percentile': 90.0, 'green.crown_smooth_m': 30.0, 'green.min_roundness': 0.3} -> greenR=0.4139 greenP=0.1118 teeR=0.3523 score=0.3076
+  {'green.core_percentile': 90.0, 'green.crown_smooth_m': 30.0, 'green.min_roundness': 0.45} -> greenR=0.4139 greenP=0.1118 teeR=0.3523 score=0.3076
+winning options: {'green': {'core_percentile': 90.0, 'crown_smooth_m': 30.0, 'min_roundness': 0.3}} (score=0.3076)
+winchester-country-club: lidar=covered green R/P=0.7778/0.209 (14/18 matched, 67 detected) tee-complex R/P=0.3125/0.1149 (10/32 matched, 87 detected)
+statesville-country-club: lidar=None green R/P=0.05/0.0147 (1/20 matched, 68 detected) tee-complex R/P=0.3922/0.1481 (20/51 matched, 135 detected)
+SUMMARY: {'greenRecall': {'median': 0.4139, 'n': 2}, 'greenPrecision': {'median': 0.1118, 'n': 2}, 'teeComplexRecall': {'median': 0.3523, 'n': 2}, 'teeComplexPrecision': {'median': 0.1315, 'n': 2}}

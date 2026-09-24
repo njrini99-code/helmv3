@@ -1,0 +1,109 @@
+{
+  "options": {},
+  "summary": {
+    "greenRecall": {
+      "median": 0.6667,
+      "n": 1
+    },
+    "greenPrecision": {
+      "median": 0.2143,
+      "n": 1
+    },
+    "teeComplexRecall": {
+      "median": 0.3125,
+      "n": 1
+    },
+    "teeComplexPrecision": {
+      "median": 0.1149,
+      "n": 1
+    }
+  },
+  "courses": {
+    "winchester-country-club": {
+      "courseId": "winchester-country-club",
+      "lidarStatus": "covered",
+      "truthExcludedOutsideAoi": 0,
+      "greens": {
+        "truthCount": 18,
+        "detectedCount": 56,
+        "matchedCount": 12,
+        "precision": 0.2143,
+        "recall": 0.6667,
+        "matches": [
+          [
+            5,
+            4,
+            2.0
+          ],
+          [
+            6,
+            7,
+            2.8
+          ],
+          [
+            8,
+            3,
+            3.5
+          ],
+          [
+            11,
+            0,
+            4.5
+          ],
+          [
+            2,
+            2,
+            4.6
+          ],
+          [
+            9,
+            12,
+            4.7
+          ],
+          [
+            12,
+            1,
+            4.8
+          ],
+          [
+            4,
+            5,
+            5.0
+          ],
+          [
+            3,
+            10,
+            5.0
+          ],
+          [
+            0,
+            8,
+            5.8
+          ],
+          [
+            16,
+            23,
+            6.4
+          ],
+          [
+            7,
+            6,
+            6.5
+          ]
+        ]
+      },
+      "teeComplexes": {
+        "truthComplexCount": 32,
+        "detectedComplexCount": 87,
+        "matchedCount": 10,
+        "precision": 0.1149,
+        "recall": 0.3125
+      },
+      "detectedCounts": {
+        "bunkers": 98,
+        "greens": 56,
+        "tees": 118
+      }
+    }
+  }
+}

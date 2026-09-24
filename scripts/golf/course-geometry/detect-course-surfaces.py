@@ -538,13 +538,16 @@ def gate_tees_by_green_distance(tee_candidates, green_candidates, epsg, min_m=TE
     to drop every tee candidate than to pass all of them through
     unfiltered.
 
-    MEASURED, NOT DEFAULT-ON: on winchester+statesville this gate cut
-    tee-complex recall from 0.31-0.39 to ~0.03-0.20 (see eval report),
-    because it gates off *detected* greens, and this module's green
-    precision is far below the point where that is safe -- a false green
-    silently deletes real, correctly-detected tee complexes near it. Callers
-    that want the gate must pass `gate_tees=True` to `detect_all`
-    explicitly; it is not applied by default."""
+    MEASURED, NOT DEFAULT-ON: reproduced against the un-gated baseline
+    (untuned green/tee defaults) --
+      winchester-country-club:  tee-complex recall 0.3125 -> 0.1250, precision 0.1149 -> 0.5000
+      statesville-country-club: tee-complex recall 0.3922 -> 0.1569, precision 0.1481 -> 0.2963
+    Precision roughly triples, but recall falls well under the 0.70 bar
+    either way, because the gate gates off *detected* greens and this
+    module's green precision (~0.21) is far below the point where that's
+    safe -- a false green silently deletes real, correctly-detected tee
+    complexes near it. Callers that want the gate must pass `gate_tees=True`
+    to `detect_all` explicitly; it is not applied by default."""
     if not green_candidates:
         return list(tee_candidates)
     green_xy = [cr.wgs84_to_epsg(cr.to_shapely({'type': 'Point', 'coordinates': g['centroidWgs84']}), epsg).coords[0]
