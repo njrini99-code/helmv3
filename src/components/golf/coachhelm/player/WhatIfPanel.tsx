@@ -9,7 +9,7 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { Button } from '@/components/ui/button';
 import { fairwayToast } from '@/components/fairway';
 import {
-  IconSparkles,
+  IconBulb,
   IconZap,
   IconTarget,
   IconTrendingUp,
@@ -82,7 +82,7 @@ export function WhatIfPanel({
         <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-primary-400 via-primary-500 to-primary-600" />
         <EmptyState
           variant="minimal"
-          icon={<IconSparkles size={20} />}
+          icon={<IconBulb size={20} />}
           description="No improvement data yet. Check back after more rounds are analyzed."
         />
       </Card>
@@ -98,7 +98,7 @@ export function WhatIfPanel({
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-primary-100 flex items-center justify-center">
-              <IconSparkles size={20} className="text-accent-ink" />
+              <IconBulb size={20} className="text-accent-ink" />
             </div>
             <h3 className="text-body-lg font-medium text-warm-900 tracking-[-0.012em]">Improvement Opportunities</h3>
           </div>

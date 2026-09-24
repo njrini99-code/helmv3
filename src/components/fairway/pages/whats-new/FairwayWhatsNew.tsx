@@ -39,7 +39,7 @@ import { todayIsoInZone } from '@/lib/golf/timezone';
 import { formatDateOnlyShort } from '@/lib/golf/date-only';
 import {
   CheckCircle2,
-  Sparkles,
+  Lightbulb,
   Activity,
   Target,
   Trophy,
@@ -106,7 +106,7 @@ const TYPE_DESCRIPTORS: Record<WhatsNewType, TypeDescriptor> = {
   },
   insight_detected: {
     label: 'New insight',
-    Icon: Sparkles,
+    Icon: Lightbulb,
     iconClass: 'text-text-secondary',
     bgClass: 'bg-surface-sunken',
   },
@@ -383,7 +383,7 @@ export function FairwayWhatsNew({ success, error, items, truncated, timeZone, se
   // visible before clicking. Filters with zero items stay reachable but quiet.
   const filterSegments: ViewHeaderSegment[] = [
     { value: 'all', label: 'All', icon: <LayoutGrid aria-hidden />, badge: filterCounts.all },
-    { value: 'insights', label: 'Insights', icon: <Sparkles aria-hidden />, badge: filterCounts.insights },
+    { value: 'insights', label: 'Insights', icon: <Lightbulb aria-hidden />, badge: filterCounts.insights },
     { value: 'patterns', label: 'Patterns', icon: <Activity aria-hidden />, badge: filterCounts.patterns },
     { value: 'focus', label: 'Focus areas', icon: <Target aria-hidden />, badge: filterCounts.focus },
   ];
@@ -470,7 +470,7 @@ export function FairwayWhatsNew({ success, error, items, truncated, timeZone, se
           // Honest empty state that points back to the unfiltered view (P397).
           <Surface elevation="shadow" padding="lg">
             <EmptyState
-              icon={Sparkles}
+              icon={Lightbulb}
               title="No matching activity"
               description="No updates of this type in the past 7 days. Clear the filter to see everything across your team."
               action={
@@ -483,7 +483,7 @@ export function FairwayWhatsNew({ success, error, items, truncated, timeZone, se
         ) : dayKeys.length === 0 ? (
           <Surface elevation="shadow" padding="lg">
             <EmptyState
-              icon={Sparkles}
+              icon={Lightbulb}
               title="No activity yet"
               description="No CoachHelm activity in the past 7 days. New insights and lifecycle changes will appear here as your team plays more rounds."
               action={

@@ -41,7 +41,6 @@ import { motion, type HTMLMotionProps } from 'framer-motion';
 import {
   AlertTriangle,
   Flame,
-  Sparkles,
   Info,
   Lightbulb,
   TrendingUp,
@@ -182,7 +181,7 @@ export const PRIORITY: Record<InsightPriority, PriorityTone> = {
   medium: {
     bar: 'bg-accent-500',
     iconWrap: 'text-accent-700 bg-accent-50',
-    icon: Sparkles,
+    icon: Lightbulb,
     word: 'Medium priority',
   },
   low: {

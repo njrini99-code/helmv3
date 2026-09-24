@@ -28,7 +28,7 @@ import { IconButton } from '@/components/fairway/controls/button';
 import { ModalShell } from '@/components/fairway/overlays/ModalShell';
 import {
   IconSearch, IconUsers, IconCalendar, IconChartBar, IconMessage,
-  IconSettings, IconGolf, IconFlag, IconBook, IconAirplane, IconSparkles,
+  IconSettings, IconGolf, IconFlag, IconBook, IconAirplane, IconBulb,
   IconTarget, IconTrophy, IconClipboardList, IconBell, IconAlertCircle,
   IconBrain, IconGauge, IconBot, IconChartRadar, IconCrosshair, IconWrench,
   IconRocket, IconLayoutGrid, IconMapPin, IconX,
@@ -90,7 +90,7 @@ export function CommandPalette({ isCoach = true }: CommandPaletteProps) {
     // "insights" all resolve to their tab) so nothing becomes unreachable.
     { id: 'intelligence', label: surfaceName('rail-coachhelm-ai-coach'), description: "Brief, today's calls & command center", icon: <IconBrain size={18} />, href: '/golf/dashboard/intelligence', keywords: ['intelligence', 'ai', 'hub', 'coachhelm', 'overview', 'brief', 'today', "today's calls", 'calls', 'priority', 'commandcenter', 'command center'] },
     { id: 'signals', label: surfaceName('signals'), description: 'Alerts, insights & patterns', icon: <IconBell size={18} />, href: surfaceHref('signals'), keywords: ['signals', 'alerts', 'notifications', 'priority', 'attention', 'insights', 'feed', 'recommendations', 'patterns', 'mining', 'evidence', 'triage', 'coachhelm'] },
-    { id: 'coachhelm-insights', label: surfaceName('insights'), description: 'AI-generated coaching insights', icon: <IconSparkles size={18} />, href: surfaceHref('insights'), keywords: ['insights', 'recommendations', 'ai', 'coachhelm', 'signals'] },
+    { id: 'coachhelm-insights', label: surfaceName('insights'), description: 'AI-generated coaching insights', icon: <IconBulb size={18} />, href: surfaceHref('insights'), keywords: ['insights', 'recommendations', 'ai', 'coachhelm', 'signals'] },
     { id: 'coachhelm-patterns', label: surfaceName('patterns'), description: 'Recurring player and team patterns', icon: <IconTarget size={18} />, href: surfaceHref('patterns'), keywords: ['patterns', 'mining', 'trends', 'evidence', 'coachhelm'] },
     { id: 'coachhelm-analytics', label: surfaceName('effectiveness'), description: 'Insight effectiveness', icon: <IconGauge size={18} />, href: surfaceHref('effectiveness'), keywords: ['analytics', 'effectiveness', 'coachhelm', 'metrics'] },
     { id: 'coachhelm-chat', label: surfaceName('ask'), description: 'Chat history', icon: <IconBot size={18} />, href: '/golf/dashboard/coachhelm/chat', keywords: ['chat', 'conversation', 'coachhelm', 'history', 'ask'] },
@@ -118,7 +118,7 @@ export function CommandPalette({ isCoach = true }: CommandPaletteProps) {
 
   const playerQuickActions: CommandItemSpec[] = [
     { id: 'log-round', label: 'Log a Round', description: 'Start a new round entry', icon: <IconGolf size={18} />, href: '/golf/dashboard/rounds/new', keywords: ['log', 'new', 'submit', 'enter', 'round'] },
-    { id: 'insights', label: surfaceName('rail-coachhelm-ai-player'), description: 'Personalized AI insights', icon: <IconSparkles size={18} />, href: '/golf/dashboard/coachhelm', keywords: ['ai', 'insights', 'coachhelm', 'focus'] },
+    { id: 'insights', label: surfaceName('rail-coachhelm-ai-player'), description: 'Personalized AI insights', icon: <IconBulb size={18} />, href: '/golf/dashboard/coachhelm', keywords: ['ai', 'insights', 'coachhelm', 'focus'] },
     { id: 'rounds', label: 'My Rounds', description: 'View and submit rounds', icon: <IconGolf size={18} />, href: '/golf/dashboard/rounds', keywords: ['scores', 'games'] },
     { id: 'courses', label: 'Course Library', description: 'Browse courses & tee sets', icon: <IconMapPin size={18} />, href: '/golf/dashboard/courses', keywords: ['course', 'courses', 'library', 'tees', 'tee', 'facility'] },
     { id: 'development', label: surfaceName('my-development-tab'), description: 'Assigned focus areas', icon: <IconTarget size={18} />, href: surfaceHref('my-development-tab'), keywords: ['focus', 'improvement', 'plan'] },
@@ -211,7 +211,7 @@ export function CommandPalette({ isCoach = true }: CommandPaletteProps) {
 
   const severityIcon = (sev: string | null) => {
     if (sev === 'urgent' || sev === 'high') return <IconAlertCircle size={18} />;
-    return <IconSparkles size={18} />;
+    return <IconBulb size={18} />;
   };
 
   return (

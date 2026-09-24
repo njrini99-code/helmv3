@@ -38,7 +38,7 @@
 
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import { Sparkles, Target, Trophy } from 'lucide-react';
+import { Lightbulb, Target, Trophy } from 'lucide-react';
 
 // Imported from each module's own leaf path, not the top `@/components/fairway`
 // barrel — this file is itself re-exported (via pages/coachhelm/index.ts) from
@@ -427,7 +427,7 @@ export function GoalsSection({
       {role === 'player' && hasSuggestions ? (
         <Surface padding="md">
           <div className="mb-3 flex items-center gap-2">
-            <Sparkles className="h-4 w-4 text-accent-ink" aria-hidden />
+            <Lightbulb className="h-4 w-4 text-accent-ink" aria-hidden />
             <h3 className="font-fw-display text-body-lg font-medium text-text-primary">
               CoachHelm suggests
             </h3>

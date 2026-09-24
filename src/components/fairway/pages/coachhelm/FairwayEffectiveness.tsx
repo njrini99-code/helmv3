@@ -50,7 +50,7 @@ import * as React from 'react';
 import Link from 'next/link';
 import {
   ArrowRight,
-  Sparkles,
+  Lightbulb,
   TrendingUp,
   TrendingDown,
   Minus,
@@ -637,7 +637,7 @@ function CockpitView({
   if (noSignalYet) {
     return (
       <EmptyState
-        icon={Sparkles}
+        icon={Lightbulb}
         title="No effectiveness signal yet"
         description="As CoachHelm surfaces insights and predictions resolve, these instruments power up. Until outcomes are recorded, effectiveness reads as ‘awaiting signal,’ never 0%."
         action={
@@ -1181,7 +1181,7 @@ export function PredictionsSection({ data }: { data?: PredictionPerformanceData 
   return (
     <div className="flex flex-col gap-6">
       {lowConfidence ? (
-        <InlineNotice tone="info" title="Low-confidence read" icon={Sparkles}>
+        <InlineNotice tone="info" title="Low-confidence read" icon={Lightbulb}>
           Based on {resolved} resolved prediction{resolved === 1 ? '' : 's'}
           {total > 0 ? ` of ${total} made` : ''}. These figures will firm up as more
           predictions resolve, treat them as directional, not authoritative.

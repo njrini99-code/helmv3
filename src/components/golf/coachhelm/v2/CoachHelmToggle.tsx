@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
-import { IconSparkles, IconCheck, IconX } from '@/components/icons';
+import { IconBulb, IconCheck, IconX } from '@/components/icons';
 import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
 import { useCoachHelmSettings } from '@/hooks/coachhelm/useCoachHelmSettings';
 import { Surface, Switch } from '@/components/fairway';
@@ -65,7 +65,7 @@ export function CoachHelmToggle({ coachId, onToggle }: CoachHelmToggleProps) {
               enabled ? 'bg-accent-50 text-accent-ink' : 'bg-surface-sunken text-text-tertiary',
             )}
           >
-            <IconSparkles size={20} aria-hidden />
+            <IconBulb size={20} aria-hidden />
           </span>
 
           <div className="min-w-0 flex-1">

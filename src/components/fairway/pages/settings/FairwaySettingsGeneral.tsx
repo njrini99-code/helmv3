@@ -84,7 +84,7 @@ import {
   IconSun,
   IconMoon,
   IconMonitor,
-  IconSparkles,
+  IconBulb,
 } from '@/components/icons';
 import { useGolfTheme, type GolfTheme } from '@/lib/golf/theme';
 
@@ -1430,7 +1430,7 @@ export function HapticsPanel() {
 
   return (
     <SectionCard
-      icon={<IconSparkles size={18} aria-hidden />}
+      icon={<IconBulb size={18} aria-hidden />}
       title="Haptics"
       description="Subtle taps when you toggle, submit, or pull to refresh. Saved on this device only. Your phone's system-wide haptics setting still applies on top."
       headerAction={<AutoSaveBadge savedAt={savedAt} />}

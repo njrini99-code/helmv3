@@ -4,7 +4,7 @@ import { useState, useRef } from 'react';
 import { Button, IconButton } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { IconX, IconUpload, IconFileText, IconImage, IconSparkles } from '@/components/icons';
+import { IconX, IconUpload, IconFileText, IconImage, IconScanText } from '@/components/icons';
 import { parseScheduleText, type ParsedClass } from '@/lib/utils/schedule-parser';
 import { extractClassesFromScheduleImage } from '@/app/golf/actions/schedule-image';
 import { fairwayToast } from '@/components/fairway/feedback/ToastStack';
@@ -406,7 +406,7 @@ export function UploadScheduleModal({ isOpen, onClose, onParsed }: UploadSchedul
         <div className="flex items-center justify-between px-6 py-4 border-b border-border-subtle">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-accent-500/10 flex items-center justify-center">
-              <IconSparkles size={20} className="text-accent-700" />
+              <IconScanText size={20} className="text-accent-700" />
             </div>
             <div>
               <Sheet.Title className="font-fw-sans text-body-lg font-medium text-text-primary tracking-[-0.012em]">
@@ -538,7 +538,7 @@ export function UploadScheduleModal({ isOpen, onClose, onParsed }: UploadSchedul
                 isLoading={loading}
                 className="w-full mt-4 gap-2"
               >
-                <IconSparkles size={18} />
+                <IconScanText size={18} />
                 Parse Schedule
               </Button>
             </div>

@@ -86,7 +86,7 @@ import {
   IconCircleDot,
   IconClock,
   IconFileText,
-  IconSparkles,
+  IconBulb,
   IconChevronRight,
   IconTarget,
   IconTrendingUp,
@@ -439,7 +439,7 @@ export function SourceChip({
       ? `/golf/dashboard/intelligence?view=signals&filter=insights&id=${insightId}`
       : `/golf/dashboard/coachhelm#insight-${insightId}`;
   const label = reviewId ? 'From a round review' : 'From a CoachHelm insight';
-  const Icon = reviewId ? IconFileText : IconSparkles;
+  const Icon = reviewId ? IconFileText : IconBulb;
 
   return (
     <div className="flex min-w-0 items-center gap-2">

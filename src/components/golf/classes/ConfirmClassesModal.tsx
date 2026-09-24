@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo, useId } from 'react';
 import { Button, IconButton } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { IconX, IconCheck, IconPencil, IconTrash, IconClock, IconMapPin, IconCalendar, IconUser, IconSparkles, IconAlertCircle } from '@/components/icons';
+import { IconX, IconCheck, IconPencil, IconTrash, IconClock, IconMapPin, IconCalendar, IconUser, IconScanText, IconAlertCircle } from '@/components/icons';
 import { cn } from '@/lib/utils';
 import { formatTimeDisplay, formatDaysDisplay, generateClassColor, type ParsedClass } from '@/lib/utils/schedule-parser';
 import { Sheet } from '@/components/fairway/overlays/Sheet';
@@ -132,7 +132,7 @@ export function ConfirmClassesModal({ isOpen, onClose, onConfirm, parsedClasses 
           <div className="flex items-start justify-between">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-accent-500/10 flex items-center justify-center">
-                <IconSparkles size={20} className="text-accent-700" />
+                <IconScanText size={20} className="text-accent-700" />
               </div>
               <div>
                 <Sheet.Title className="font-fw-sans text-body-lg font-medium text-text-primary tracking-[-0.012em]">

@@ -75,7 +75,7 @@ import {
   IconLock,
   IconMinus,
   IconArrowRight,
-  IconSparkles,
+  IconFileText,
   IconChartRadar,
 } from '@/components/icons';
 import { GitCompare as LucideGitCompare, Dna as LucideDna } from 'lucide-react';
@@ -318,7 +318,7 @@ export function GenomeDetailView({
     // Player profile, so the genome is never a dead-end reachable only from the
     // grid. Compare stays primary (only meaningful once a genome exists).
     <div className="flex flex-wrap items-center gap-1.5">
-      <Button variant="ghost" size="sm" leftIcon={<IconSparkles size={15} />} asChild>
+      <Button variant="ghost" size="sm" leftIcon={<IconFileText size={15} />} asChild>
         <Link href={`/golf/dashboard/players/${playerId}/game?tab=scouting`}>
           Scouting report
         </Link>

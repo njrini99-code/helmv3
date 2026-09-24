@@ -18,7 +18,7 @@
  * "Scan team" button is the one green fill.
  * ========================================================================== */
 
-import { Sparkles } from 'lucide-react';
+import { ScanSearch } from 'lucide-react';
 import { Button } from '@/components/fairway';
 import { FROSTED_CARD_CLASS } from '@/components/fairway/modules/frosted';
 import { cn } from '@/lib/utils';
@@ -70,7 +70,7 @@ export function BriefBand({ verdict, counts, lastScanLabel, scanning, onScan }: 
           size="md"
           busy={scanning}
           disabled={scanning}
-          leftIcon={<Sparkles className="h-4 w-4" strokeWidth={2} aria-hidden />}
+          leftIcon={<ScanSearch className="h-4 w-4" strokeWidth={2} aria-hidden />}
           onClick={onScan}
           aria-label={scanning ? 'Scanning team for new signals' : 'Scan team for new signals'}
         >

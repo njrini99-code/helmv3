@@ -33,7 +33,7 @@ import { getRoundReviewNarrative } from '@/app/golf/actions/round-review-narrati
 import { getPlayerDisplayName, getDetailedStats } from '@/app/golf/actions/stats-data';
 import { RoundStatsPanel } from '@/components/golf/coachhelm/round-review/RoundStatsPanel';
 import type { GolfStats } from '@/lib/utils/golf-stats-calculator-shots';
-import { IconSparkles, IconRefresh } from '@/components/icons';
+import { IconBulb, IconRefresh } from '@/components/icons';
 import {
   ViewHeader as FwViewHeader,
   Button as FwButton,
@@ -733,7 +733,7 @@ export default function RoundReviewPage() {
             <p className="flex items-center justify-center gap-2 text-center font-fw-sans text-body-sm text-text-tertiary">
               {isGenerating ? (
                 <FwStatusPill tone="accent" dot={false} size="sm">
-                  <IconSparkles size={14} />
+                  <IconBulb size={14} />
                   {fairwayStatusCopy}
                 </FwStatusPill>
               ) : (
@@ -919,7 +919,7 @@ export default function RoundReviewPage() {
             meta={
               hasComposedNarrative ? (
                 <FwStatusPill tone="accent" dot={false} size="sm">
-                  <IconSparkles size={14} />
+                  <IconBulb size={14} />
                   CoachHelm AI
                 </FwStatusPill>
               ) : undefined

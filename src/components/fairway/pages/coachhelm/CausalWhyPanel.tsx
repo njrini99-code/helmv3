@@ -40,7 +40,7 @@
 
 import { confidenceLabel } from '@/lib/coachhelm/confidence-label';
 import { useMemo } from 'react';
-import { ArrowRight, Sparkles } from 'lucide-react';
+import { ArrowRight, Lightbulb } from 'lucide-react';
 import { cn } from '@/lib/utils';
 // Imported from each module's own leaf path, not the top `@/components/fairway`
 // barrel — this file sits under pages/coachhelm/ (re-exported from that
@@ -129,7 +129,7 @@ export function CausalWhyPanel({
     <section className={cn('flex flex-col gap-4', className)} aria-label={title}>
       <div className="flex items-baseline justify-between gap-3">
         <h2 className="flex items-center gap-2 font-fw-display text-h3 font-medium text-text-primary">
-          <Sparkles className="h-5 w-5 text-accent-ink" aria-hidden />
+          <Lightbulb className="h-5 w-5 text-accent-ink" aria-hidden />
           {title}
         </h2>
         {relationships.length > 0 ? (
@@ -145,7 +145,7 @@ export function CausalWhyPanel({
         <Surface padding="lg">
           <EmptyState
             variant="subtle"
-            icon={Sparkles}
+            icon={Lightbulb}
             title="Not enough rounds yet to map what's driving scores"
             description="Once there are enough completed rounds, the engine surfaces the factors that actually move scoring, and how much each one matters."
           />

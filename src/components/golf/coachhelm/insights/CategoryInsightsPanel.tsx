@@ -34,7 +34,7 @@
  * ========================================================================== */
 
 import { useId, useMemo, useState } from 'react';
-import { ChevronDown, Sparkles, Target, TrendingDown, TrendingUp } from 'lucide-react';
+import { ChevronDown, Lightbulb, Target, TrendingDown, TrendingUp } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 import {
@@ -77,7 +77,7 @@ export function CategoryInsightsPanel({
   if (themes.length === 0) {
     return (
       <EmptyState
-        icon={Sparkles}
+        icon={Lightbulb}
         title="No themes yet"
         description="Log a few rounds with shot detail and CoachHelm will surface the strokes-gained themes worth working on: putting, approach, off-the-tee, around-the-green, and your scoring patterns."
       />
@@ -88,7 +88,7 @@ export function CategoryInsightsPanel({
   if (substantive.length === 0) {
     return (
       <InsufficientData
-        icon={Sparkles}
+        icon={Lightbulb}
         title="Not enough rounds yet"
         description="Log a few rounds with shot detail and CoachHelm will surface the strokes-gained themes worth working on: putting, approach, off-the-tee, around-the-green, and your scoring patterns."
       />
