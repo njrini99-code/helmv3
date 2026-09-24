@@ -272,4 +272,22 @@ describe('StandingTrack (render)', () => {
     expect(STANDING_TRACK_SUBJECT_KEY).not.toBe('Team');
     expect(STANDING_TRACK_SUBJECT_KEY).not.toBe('Tour');
   });
+
+  it('defaults to the dark tone and paints the light tone with tokens only', () => {
+    const props = { pct: 60, subjectLabel: 'You', benchmarks: [{ label: 'Tour', pct: 50, emphasis: true }] };
+    const dark = render(<StandingTrack {...props} />);
+    expect(dark.container.querySelector('[data-slot="standing-track"]')).toHaveAttribute('data-tone', 'dark');
+    dark.unmount();
+
+    const { container } = render(<StandingTrack {...props} tone="light" />);
+    const rail = container.querySelector('[data-slot="standing-track-rail"]') as HTMLElement;
+    expect(rail.className).toMatch(/bg-border-subtle/);
+    expect(rail.style.background).toBe('');
+    expect(container.querySelector('[data-slot="standing-track-fill"]')!.className).toMatch(/bg-accent-fill/);
+    const pin = container.querySelector('[data-slot="standing-track-pin"]') as HTMLElement;
+    expect(pin.className).toMatch(/bg-surface/);
+    expect(pin.style.left).toBe('60%');
+    const subject = container.querySelector('[data-slot="standing-track-subject-label"]')!;
+    expect(subject.className).toMatch(/text-text-primary/);
+  });
 });

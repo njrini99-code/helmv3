@@ -75,7 +75,8 @@ import { clearActiveTeam } from '@/app/golf/actions/team-switcher';
 
 import { teardownDeviceTokenOnSignOut } from '@/lib/utils/push-registration';
 import { cn } from '@/lib/utils';
-import { IconSettings, IconLogout, IconLayoutGrid } from '@/components/icons';
+import { IconSettings, IconLogout } from '@/components/icons';
+import { MobileMoreButton } from './MobileMoreButton';
 
 // PERF: lazy-load the same heavy globals GolfDashboardShell mounts.
 const CommandPalette = dynamic(
@@ -375,53 +376,6 @@ function SearchViewProbe({ onChange }: { onChange: (view: string | null) => void
   return null;
 }
 
-/**
- * Mobile-only nav-bar entry to the More sheet (OD-14: the tab bar is five
- * destinations and no longer carries a "More" column). Shows the current
- * state when the route is reachable only through the sheet (Settings,
- * Courses, …) and carries the sheet's aggregate unread badge.
- */
-function MobileMoreButton({
-  onOpen,
-  open,
-  active,
-  badge,
-}: {
-  onOpen: () => void;
-  open: boolean;
-  active: boolean;
-  badge?: number;
-}) {
-  return (
-    <Button
-      type="button"
-      variant="ghost"
-      size="icon"
-      haptic="light"
-      aria-label={badge ? `More, ${badge} unread` : 'More'}
-      aria-haspopup="dialog"
-      aria-expanded={open}
-      aria-current={active ? 'page' : undefined}
-      data-active={active || undefined}
-      onClick={onOpen}
-      className={cn(
-        'relative h-11 w-11 rounded-full md:hidden',
-        active ? 'bg-accent-50 text-accent-ink' : 'text-text-secondary',
-      )}
-    >
-      <IconLayoutGrid size={20} aria-hidden />
-      {badge ? (
-        <span
-          aria-hidden
-          className="absolute right-1 top-1 min-w-[16px] rounded-full bg-accent-fill px-1 text-center text-eyebrow font-semibold leading-4 tabular-nums text-text-on-accent-fill ring-1 ring-surface"
-        >
-          {badge > 9 ? '9+' : badge}
-        </span>
-      ) : null}
-    </Button>
-  );
-}
-
 function FairwayDashboardContent({
   children,
   userData,
@@ -607,9 +561,11 @@ function FairwayDashboardContent({
         open={mobileOpen}
         active={moreRouteActive}
         badge={more.badge}
+        name={userData.name}
+        avatarUrl={userData.avatarUrl}
       />
     ),
-    [openMoreSheet, mobileOpen, moreRouteActive, more.badge],
+    [openMoreSheet, mobileOpen, moreRouteActive, more.badge, userData.name, userData.avatarUrl],
   );
 
   const topBarActions = useMemo(
