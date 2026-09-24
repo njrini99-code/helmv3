@@ -9,7 +9,7 @@
  * pure-adapter testing style for the rest of this surface.
  */
 import { describe, it, expect } from 'vitest';
-import { formatHoleSgNarrative } from '../ReviewHero';
+import { formatHoleSgNarrative, toParInkClass } from '../ReviewHero';
 import type { HoleStrokesGainedByCategory } from '../shot-strokes-gained';
 
 function sg(overrides: Partial<HoleStrokesGainedByCategory> = {}): HoleStrokesGainedByCategory {
@@ -84,5 +84,14 @@ describe('formatHoleSgNarrative', () => {
     // Ranked by |value|: tee (1.9) > approach (0.8) > putting (0.5) — only
     // the top two make the breakdown clause.
     expect(result!.text).toBe('Lost 0.6 strokes here: 1.9 off the tee, 0.8 approach.');
+  });
+});
+
+describe('toParInkClass (frosted score panel)', () => {
+  it('reads under par as a gain, over par as a loss, even par neutral', () => {
+    expect(toParInkClass(-2)).toBe('text-fw-success-ink');
+    expect(toParInkClass(3)).toBe('text-fw-danger-ink');
+    expect(toParInkClass(0)).toBe('text-text-secondary');
+    expect(toParInkClass(Number.NaN)).toBe('text-text-secondary');
   });
 });

@@ -17,8 +17,8 @@
  * shadow, and a very faint `accent-wash` tint fading down from the top edge.
  * It replaced the old dark accent-900→800 gradient slab ("the big green
  * thing"). Every colour is a token, so the card follows light/dark theme.
- * Without `backdrop-filter` support it falls back to the opaque `bg-surface`
- * card (same pattern as `ChartTooltip`).
+ * The surface is `FROSTED_CARD_CLASS` from `./frosted.ts`, shared with the
+ * other golf hero cards so the look is defined once.
  *
  * Sticky positioning is the CONSUMER's job (per plan: "sticky top-20 handled
  * by the CONSUMER via className prop passthrough") — this component only
@@ -34,6 +34,7 @@ import { TABULAR_NUMS } from '../charts/theme';
 import { StandingTrack } from './StandingTrack';
 import { PriorityList } from './PriorityList';
 import { SpineLedger } from './SpineLedger';
+import { FROSTED_CARD_CLASS } from './frosted';
 import type { SpineProps } from './types';
 
 export type SpineHeroDirection = 'gain' | 'loss';
@@ -101,13 +102,9 @@ export function Spine({
     <aside
       data-slot="spine"
       className={cn(
-        // Frosted card: translucent surface + blur, with a faint green wash
-        // fading down from the top edge (a gradient on the card itself, so it
-        // needs no overflow clipping). Opaque surface where blur is missing.
-        'rounded-fw-lg border border-border-subtle p-6 text-text-primary shadow-soft',
-        'bg-gradient-to-b from-accent-wash/40 via-surface/70 via-35% to-surface/70',
-        'backdrop-blur-xl backdrop-saturate-150',
-        'supports-[not(backdrop-filter:blur(0))]:bg-surface',
+        // The shared frosted surface (./frosted.ts) — defined once.
+        FROSTED_CARD_CLASS,
+        'p-6',
         className,
       )}
     >

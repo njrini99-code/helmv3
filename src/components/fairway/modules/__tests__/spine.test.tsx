@@ -9,6 +9,7 @@
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { Spine, spineHeroDirection } from '../Spine';
+import { FROSTED_CARD_CLASS } from '../frosted';
 import { SpineLedger, spineLedgerColumns } from '../SpineLedger';
 import { PriorityList, isLossValue } from '../PriorityList';
 import type { PriorityItem, SpineProps } from '../types';
@@ -70,6 +71,7 @@ describe('Spine — render smoke', () => {
     const { container } = render(<Spine {...fixture} className="sticky top-20" />);
     const aside = container.querySelector('[data-slot="spine"]')!;
     expect(aside.className).toMatch(/backdrop-blur/);
+    for (const cls of FROSTED_CARD_CLASS.split(' ')) expect(aside.classList).toContain(cls);
     expect(aside.className).toMatch(/text-text-primary/);
     expect(aside.className).not.toMatch(/from-accent-900|text-text-on-accent/);
     expect(aside.className).toMatch(/sticky top-20/);

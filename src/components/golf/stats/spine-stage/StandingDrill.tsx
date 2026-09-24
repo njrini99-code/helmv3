@@ -15,6 +15,7 @@ import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
 
 import { DrillPanel, StandingTrack, useStage } from '@/components/fairway/modules';
+import { FROSTED_CARD_CLASS } from '@/components/fairway/modules/frosted';
 import { StandingStrip } from '@/components/fairway';
 import { TABULAR_NUMS } from '@/components/fairway/charts/theme';
 import { cn } from '@/lib/utils';
@@ -49,11 +50,14 @@ function prettyPatternType(t: string | null | undefined): string {
   return t.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
-// On-dark hairline — matches `Spine`'s own `HAIRLINE_COLOR` exactly (no
-// `bg-surface-*` token covers a translucent-white overlay on the accent
-// gradient, so both components share this inline value rather than the
-// Tailwind `border-white/N` opacity utility).
-const SG_INSTRUMENT_HAIRLINE = 'oklch(1 0 0 / 0.14)';
+/** SG ink on the light instrument: a loss (negative) in danger ink, a gain in
+ *  accent ink, zero/missing neutral. The signed text carries the direction
+ *  too, so colour is never the only channel. */
+function sgValueInkClass(value: number | null | undefined): string {
+  const n = finite(value);
+  if (n === null || n === 0) return 'text-text-primary';
+  return n < 0 ? 'text-fw-danger-ink' : 'text-accent-ink';
+}
 
 /**
  * StrokesGainedInstrument — the "grouped visually apart from traditional
@@ -61,8 +65,9 @@ const SG_INSTRUMENT_HAIRLINE = 'oklch(1 0 0 / 0.14)';
  * (so the label / You-value / rail columns align pixel-for-pixel across
  * every row — the plain generic `StandingStrip` cards below can't do this,
  * each is its OWN box with its own internal layout) mounted on the SAME
- * dark accent-gradient surface `Spine` uses for exactly this "you vs
- * benchmarks" read. Each row's You/Team/Tour reference ticks are drawn by
+ * frosted light surface `Spine` uses (`FROSTED_CARD_CLASS`, owner redesign
+ * 2026-09 — it used to be a dark accent-gradient slab) for exactly this
+ * "you vs benchmarks" read, with the track in its `tone="light"` paint. Each row's You/Team/Tour reference ticks are drawn by
  * the REAL, fixed `StandingTrack` (not a reimplementation) — the component
  * doc on `StandingTrack.tsx` calls out standalone reuse outside `Spine` as
  * the intended pattern.
@@ -79,7 +84,7 @@ function StrokesGainedInstrument({
       data-slot="sg-instrument"
       // overflow-clip: containment safety net for the StandingTrack rows
       // below — see the `edgeMarginPct` note on each row for the actual fix.
-      className="overflow-clip rounded-fw-lg border border-accent-700 bg-gradient-to-b from-accent-900 via-accent-800 to-accent-800 p-5 shadow-raise"
+      className={cn(FROSTED_CARD_CLASS, 'overflow-clip p-5')}
     >
       <div className="grid grid-cols-[1fr_4.25rem] items-baseline gap-x-3 gap-y-1.5">
         {rows.map(({ id, row, cfg }) => {
@@ -98,14 +103,17 @@ function StrokesGainedInstrument({
               <span
                 className={cn(
                   'truncate font-fw-sans text-body-sm',
-                  isTotal ? 'font-semibold text-text-on-accent' : 'text-ink-on-deep',
+                  isTotal ? 'font-semibold text-text-primary' : 'text-text-secondary',
                 )}
               >
                 {cfg.display_label}
               </span>
               <span
                 style={TABULAR_NUMS}
-                className="text-right font-fw-mono text-body-sm font-semibold tabular-nums text-text-on-accent"
+                className={cn(
+                  'text-right font-fw-sans text-body-sm font-semibold tabular-nums',
+                  sgValueInkClass(row.player_value),
+                )}
               >
                 {formatSgSigned(row.player_value)}
               </span>
@@ -119,10 +127,10 @@ function StrokesGainedInstrument({
                     Widen it here, at the one call site that actually needs
                     it — Spine's own (short-label) use of StandingTrack on
                     the home dashboard is untouched. */}
-                <StandingTrack pct={youPct} subjectLabel="You" benchmarks={benchmarks} edgeMarginPct={13} />
+                <StandingTrack pct={youPct} subjectLabel="You" benchmarks={benchmarks} edgeMarginPct={13} tone="light" />
               </div>
               {isTotal ? (
-                <div aria-hidden="true" className="col-span-2 mb-1 border-t" style={{ borderTopColor: SG_INSTRUMENT_HAIRLINE }} />
+                <div aria-hidden="true" className="col-span-2 mb-1 border-t border-border-subtle" />
               ) : null}
             </Fragment>
           );

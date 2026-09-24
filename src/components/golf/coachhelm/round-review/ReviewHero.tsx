@@ -4,9 +4,12 @@
  * ============================================================================
  * ReviewHero — the round-review "film" unit (mockup §04 `.film`)
  * ----------------------------------------------------------------------------
- * The green left panel (score + to-par mono, course/date, `GradeDots`, mix
- * line) beside the 18-hole `Filmstrip` + its scrub detail line, as ONE
- * bordered hero unit — never two separate cards. Hover/focus/click on any
+ * The score panel (score + to-par, course/date, `GradeDots`, mix line)
+ * beside the 18-hole `Filmstrip` + its scrub detail line, as ONE bordered
+ * hero unit — never two separate cards. The unit is the shared frosted light
+ * surface (`FROSTED_CARD_CLASS`, owner redesign 2026-09 — the score panel
+ * used to be a dark green gradient slab): dark text, the to-par in success
+ * ink under par / danger ink over par, green only as an accent. Hover/focus/click on any
  * filmstrip column updates the detail line inline (cheap, non-navigating,
  * per spec §3.4's "hover/tap/focus scrubs a detail line"). A deliberate
  * The same hover/focus/tap scrub also previews that hole's existing
@@ -56,6 +59,16 @@ import {
   type PuttMakePctByBand,
 } from './round-review-shots';
 import { sumHoleStrokesGainedByCategory, type HoleStrokesGainedByCategory } from './shot-strokes-gained';
+import { FROSTED_CARD_CLASS } from '@/components/fairway/modules/frosted';
+import { cn } from '@/lib/utils';
+
+/** To-par ink on the frosted score panel: under par is a gain (success ink),
+ *  over par a loss (danger ink), even par neutral. The signed text ("−2",
+ *  "+3", "E") carries the direction too, so colour is never the only channel. */
+export function toParInkClass(scoreToPar: number): string {
+  if (!Number.isFinite(scoreToPar) || scoreToPar === 0) return 'text-text-secondary';
+  return scoreToPar < 0 ? 'text-fw-success-ink' : 'text-fw-danger-ink';
+}
 
 // Only renders once a reader explicitly taps "View shot path" — code-split so
 // its framer-motion + SVG reconstruction never lands in the review page's
@@ -362,34 +375,38 @@ export function ReviewHero({
   return (
     <div
       data-slot="review-hero"
-      className="grid min-w-0 grid-cols-1 overflow-clip rounded-fw-lg border border-accent-700 bg-border-subtle shadow-raise sm:grid-cols-[240px_minmax(0,1fr)]"
+      className={cn(FROSTED_CARD_CLASS, 'grid min-w-0 grid-cols-1 overflow-clip sm:grid-cols-[240px_minmax(0,1fr)]')}
     >
-      {/* Green left panel */}
-      <div className="bg-gradient-to-b from-accent-900 via-accent-800 to-accent-800 p-5 text-text-on-accent sm:p-6">
-        <p className="font-fw-display text-eyebrow uppercase tracking-[0.13em] text-accent-300">
-          Round score
-        </p>
+      {/* Score panel — on the shared frosted surface, divided from the strip */}
+      <div
+        data-slot="review-hero-score"
+        className="border-b border-border-subtle p-5 sm:border-b-0 sm:border-r sm:p-6"
+      >
+        <p className="font-fw-sans text-caption font-semibold text-text-secondary">Round score</p>
         <p className="mt-2 flex items-baseline gap-1.5">
-          <span className="font-fw-mono text-stat-lg font-semibold leading-none tracking-[-0.03em] tabular-nums">
+          <span className="font-fw-display text-stat-lg font-semibold leading-none tracking-[-0.03em] tabular-nums text-text-primary">
             {totalScore}
           </span>
-          <span className="font-fw-mono text-body-lg tabular-nums text-accent-300">
+          <span
+            data-slot="review-hero-to-par"
+            className={cn('font-fw-sans text-body-lg font-semibold tabular-nums', toParInkClass(scoreToPar))}
+          >
             {formatToPar(scoreToPar)}
           </span>
         </p>
         {courseDateLine ? (
-          <p className="mt-1.5 font-fw-sans text-body-sm text-ink-on-deep">{courseDateLine}</p>
+          <p className="mt-1.5 font-fw-sans text-body-sm text-text-secondary">{courseDateLine}</p>
         ) : null}
-        <GradeDots score={grade.score} label={grade.label} onGreen />
+        <GradeDots score={grade.score} label={grade.label} onGreen={false} />
         {mixLine ? (
-          <p className="mt-4 font-fw-sans text-caption text-ink-on-deep">
-            Mix: <span className="font-fw-mono font-normal text-text-on-accent">{mixLine}</span>
+          <p className="mt-4 font-fw-sans text-caption text-text-secondary">
+            Mix: <span className="font-normal tabular-nums text-text-primary">{mixLine}</span>
           </p>
         ) : null}
       </div>
 
       {/* Filmstrip + scrub detail */}
-      <div className="min-w-0 bg-surface p-4 sm:p-5">
+      <div className="min-w-0 p-4 sm:p-5">
         <Filmstrip
           holes={filmstripHoles}
           activeHole={activeHole ?? undefined}

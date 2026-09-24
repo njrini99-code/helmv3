@@ -1,5 +1,7 @@
 import { fairwayScope } from '@/lib/redesign/flag';
 import { Skeleton } from '@/components/fairway/feedback/Skeleton';
+import { FROSTED_CARD_CLASS } from '@/components/fairway/modules/frosted';
+import { cn } from '@/lib/utils';
 
 /**
  * Route Suspense fallback for the CoachHelm Brief (/dashboard/intelligence).
@@ -13,15 +15,13 @@ import { Skeleton } from '@/components/fairway/feedback/Skeleton';
  * Signals view) the team-diagnostics disclosure + `TeamSignalSummary`
  * pressure map + `SignalQueue`/`SignalDossier` two-pane grid.
  *
- * This fallback used to open directly on a `BriefBand`-shaped dark banner —
+ * This fallback used to open directly on a `BriefBand`-shaped banner —
  * the shape of an EARLIER Triage Desk revision that no longer exists as the
  * page's first paint now that CommandOpening + TeamCategoryLeakBand sit
  * above it. That mismatch caused a visible re-layout jump the moment data
  * landed (live evidence, 2026-08). Ordering below matches the real DOM order
  * top to bottom so nothing above the fold moves once data resolves.
  */
-
-const DARK_BAR = 'bg-text-on-accent/12';
 
 export default function IntelligenceLoading() {
   return (
@@ -96,29 +96,32 @@ export default function IntelligenceLoading() {
             </div>
           </div>
 
-          {/* ── BriefBand — the dark accent-900→accent-800 masthead. ── */}
+          {/* ── BriefBand — the shared frosted light masthead (FROSTED_CARD_CLASS). ── */}
           <div
             aria-hidden="true"
-            className="flex flex-col gap-4 rounded-fw-lg border border-accent-700 bg-gradient-to-r from-accent-900 via-accent-800 to-accent-800 p-5 shadow-raise sm:flex-row sm:items-center sm:justify-between sm:p-6"
+            className={cn(
+              FROSTED_CARD_CLASS,
+              'flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6',
+            )}
           >
             <div className="flex flex-col gap-2.5">
-              <Skeleton className={`h-2.5 w-24 ${DARK_BAR}`} />
-              <Skeleton className={`h-4 w-full max-w-md ${DARK_BAR}`} />
-              <div className="flex flex-wrap items-center gap-5 pt-1">
+              <Skeleton className="h-4 w-24 rounded-fw-sm" />
+              <Skeleton className="h-5 w-full max-w-md rounded-fw-sm" />
+              <div className="flex flex-wrap items-center gap-5 pt-0.5">
                 {/* Exactly two count chips (Urgent, Players flagged) — the
                     third ("New this week") was removed as an unreliable
-                    counter, BriefBand.tsx:47-52. */}
+                    counter, BriefBand.tsx. Value + label side by side. */}
                 {[0, 1].map((i) => (
-                  <div key={i} className="flex flex-col gap-1">
-                    <Skeleton className={`h-6 w-8 ${DARK_BAR}`} />
-                    <Skeleton className={`h-2 w-16 ${DARK_BAR}`} />
+                  <div key={i} className="flex items-baseline gap-1.5">
+                    <Skeleton className="h-6 w-8 rounded-fw-sm" />
+                    <Skeleton className="h-3 w-16 rounded-fw-sm" />
                   </div>
                 ))}
               </div>
             </div>
             <div className="flex flex-col items-start gap-2 sm:items-end">
-              <Skeleton className={`h-10 w-32 rounded-full ${DARK_BAR}`} />
-              <Skeleton className={`h-2.5 w-24 ${DARK_BAR}`} />
+              <Skeleton className="h-10 w-32 rounded-full" />
+              <Skeleton className="h-3 w-24 rounded-fw-sm" />
             </div>
           </div>
 

@@ -153,17 +153,35 @@ export function StandingTrack({
   const you = clampPct(pct);
   const light = tone === 'light';
 
+  // The subject's label sits ABOVE the rail, directly over its pin, and the
+  // benchmark labels sit below. Sharing one row used to nudge "You" away from
+  // a nearby benchmark (Team), leaving it floating with no mark under it.
   const labelPositions = layoutTrackLabels(
-    [
-      { key: STANDING_TRACK_SUBJECT_KEY, pct: you },
-      ...benchmarks.map((b) => ({ key: b.label, pct: clampPct(b.pct) })),
-    ],
+    benchmarks.map((b) => ({ key: b.label, pct: clampPct(b.pct) })),
     minGapPct,
     edgeMarginPct,
   );
+  const subjectPct = Math.min(100 - edgeMarginPct, Math.max(edgeMarginPct, you));
 
   return (
     <div data-slot="standing-track" data-tone={tone} className={cn('w-full', className)}>
+      <div
+        className={cn(
+          'relative mb-[7px] overflow-clip font-fw-sans text-caption font-semibold',
+          light ? 'h-[18px]' : 'h-[15px]',
+        )}
+      >
+        <span
+          data-slot="standing-track-subject-label"
+          className={cn(
+            'absolute top-0 -translate-x-1/2 whitespace-nowrap',
+            light ? 'text-text-primary' : 'text-text-on-accent',
+          )}
+          style={{ left: `${subjectPct}%` }}
+        >
+          {subjectLabel}
+        </span>
+      </div>
       <div
         data-slot="standing-track-rail"
         className={cn('relative h-[7px] rounded-full', light && 'bg-border-subtle')}
@@ -223,23 +241,16 @@ export function StandingTrack({
           light ? 'text-text-secondary' : 'text-ink-on-deep-soft',
         )}
       >
-        {labelPositions.map((pos) => {
-          const isSubject = pos.key === STANDING_TRACK_SUBJECT_KEY;
-          return (
-            <span
-              key={pos.key}
-              data-slot={isSubject ? 'standing-track-subject-label' : 'standing-track-bench-label'}
-              className={cn(
-                'absolute top-0 -translate-x-1/2 whitespace-nowrap',
-                isSubject && 'font-semibold',
-                isSubject && (light ? 'text-text-primary' : 'text-text-on-accent'),
-              )}
-              style={{ left: `${pos.pct}%` }}
-            >
-              {isSubject ? subjectLabel : pos.key}
-            </span>
-          );
-        })}
+        {labelPositions.map((pos) => (
+          <span
+            key={pos.key}
+            data-slot="standing-track-bench-label"
+            className="absolute top-0 -translate-x-1/2 whitespace-nowrap"
+            style={{ left: `${pos.pct}%` }}
+          >
+            {pos.key}
+          </span>
+        ))}
       </div>
     </div>
   );

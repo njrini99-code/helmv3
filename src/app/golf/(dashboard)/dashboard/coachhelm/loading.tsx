@@ -1,5 +1,7 @@
 import { fairwayScope } from '@/lib/redesign/flag';
 import { Skeleton } from '@/components/fairway/feedback';
+import { FROSTED_CARD_CLASS } from '@/components/fairway/modules/frosted';
+import { cn } from '@/lib/utils';
 
 /* ============================================================================
  * Route Suspense fallback for the Player CoachHelm home
@@ -32,21 +34,23 @@ import { Skeleton } from '@/components/fairway/feedback';
  *    fallback previously drew only the desktop one at every width, forcing
  *    a ~500px-tall dark rail onto mobile where the real page never shows
  *    it (a mobile-audit violation — rule 7):
- *      • `<940px` — a compact horizontal `<aside>` (`min-[940px]:hidden`):
+ *      • `<940px` — a compact horizontal `<aside>` (`min-[940px]:hidden`)
+ *        on the plain card surface (`bg-surface`, border-subtle — HUB-05):
  *        eyebrow/hero/verdict on the left + a "Log round" pill top-right,
  *        then priorities+ledger flattened into ONE wrapped row of pill
  *        chips below a hairline (`PlayerSpine.tsx`'s post-P-07 fix — it used
  *        to horizontally scroll and hide 48% of the row on a phone).
- *      • `≥940px` — `Spine.tsx`'s vertical rail (`rounded-fw-lg
- *        border-accent-700 bg-gradient-to-b ... shadow-raise`): eyebrow →
- *        hero → verdict → `StandingTrack` → `PriorityList` (3 rows) →
- *        `SpineLedger` (4 rows) → the pill CTA. `PlayerSpine` renders BOTH
- *        as literal siblings gated by `min-[940px]:hidden` / `hidden
- *        min-[940px]:block`, so this fallback reproduces both slots the
- *        same way instead of picking one shape for every width. Bars use
- *        `bg-text-on-accent/12` — a cream whisper on the deep-green band —
- *        so they read as "on-dark" content, not a mismatched light-surface
- *        skeleton; hairlines reuse Spine's own `oklch(1 0 0 / 0.14)` divider.
+ *      • `≥940px` — `Spine.tsx`'s frosted light card (`FROSTED_CARD_CLASS`,
+ *        owner redesign 2026-09 — it used to be a dark green gradient rail):
+ *        eyebrow → hero figure (+ direction chip slot) → verdict →
+ *        `StandingTrack` + label row → "Priorities" + `PriorityList`
+ *        (3 rows: rank circle · title · value) → `SpineLedger` (a 4-up stat
+ *        row, value on top, label below) → the pill CTA. `PlayerSpine`
+ *        renders BOTH as literal siblings gated by `min-[940px]:hidden` /
+ *        `hidden min-[940px]:block`, so this fallback reproduces both slots
+ *        the same way instead of picking one shape for every width. Both
+ *        are light surfaces now, so the bars are the default Skeleton tint
+ *        and the dividers are `border-border-subtle`.
  *
  *  - Stage (`PlayerHomeBento.tsx`) is NOT the gapless `grid-cols-2
  *    min-[940px]:grid-cols-4` hairline-seam shell this fallback previously
@@ -77,8 +81,6 @@ import { Skeleton } from '@/components/fairway/feedback';
  *    Insight library (line 314).
  * ========================================================================== */
 
-const HAIRLINE_COLOR = 'oklch(1 0 0 / 0.14)';
-const SPINE_BAR = 'bg-text-on-accent/12';
 const CELL = 'rounded-card border border-border-subtle bg-surface px-[18px] py-4 shadow-soft';
 
 export default function CoachHelmLoading() {
@@ -100,67 +102,73 @@ export default function CoachHelmLoading() {
           </div>
 
           <div className="flex min-w-0 flex-col gap-5 min-[940px]:grid min-[940px]:grid-cols-[280px_minmax(0,1fr)] min-[940px]:items-start min-[1180px]:grid-cols-[300px_minmax(0,1fr)]">
-            {/* Spine, mobile — PlayerSpine's compact <aside>, <940px only.
-                Hero + verdict + pill CTA, then ONE wrapped row combining the
-                3 priority chips + 4 ledger chips (7 total). */}
+            {/* Spine, mobile — PlayerSpine's compact <aside>, <940px only,
+                on the plain card surface. Hero + verdict + "Log round" pill,
+                then ONE wrapped row combining the 3 priority chips + 4 ledger
+                chips (7 total). */}
             <div
               aria-hidden="true"
-              className="overflow-clip rounded-fw-lg border border-accent-700 bg-gradient-to-r from-accent-900 to-accent-800 p-4 min-[940px]:hidden"
+              className="overflow-clip rounded-fw-lg border border-border-subtle bg-surface p-4 min-[940px]:hidden"
             >
               <div className="flex min-w-0 items-start justify-between gap-4">
                 <div className="min-w-0 flex-1">
-                  <Skeleton className={`h-2.5 w-24 ${SPINE_BAR}`} />
-                  <Skeleton className={`mt-1.5 h-7 w-20 ${SPINE_BAR}`} />
-                  <Skeleton className={`mt-2 h-3.5 w-full ${SPINE_BAR}`} />
+                  <Skeleton className="h-2.5 w-24" />
+                  <Skeleton className="mt-1.5 h-7 w-20" />
+                  <Skeleton className="mt-2 h-3.5 w-full" />
                 </div>
-                <Skeleton className={`h-8 w-24 shrink-0 rounded-full ${SPINE_BAR}`} />
+                <Skeleton className="h-11 w-24 shrink-0 rounded-full" />
               </div>
-              <div className="mt-3 flex min-w-0 flex-wrap gap-2 border-t pt-3" style={{ borderTopColor: HAIRLINE_COLOR }}>
+              <div className="mt-3 flex min-w-0 flex-wrap gap-2 border-t border-border-subtle pt-3">
                 {Array.from({ length: 7 }).map((_, i) => (
-                  <Skeleton key={i} className={`h-6 w-20 shrink-0 rounded-full ${SPINE_BAR}`} />
+                  <Skeleton key={i} className="h-7 w-20 shrink-0 rounded-full" />
                 ))}
               </div>
             </div>
 
-            {/* Spine, desktop — Spine.tsx's vertical rail, hidden <940px. */}
+            {/* Spine, desktop — Spine.tsx's frosted card, hidden <940px. */}
             <div
               aria-hidden="true"
-              className="hidden flex-col rounded-fw-lg border border-accent-700 bg-gradient-to-b from-accent-900 via-accent-800 to-accent-800 p-6 shadow-raise min-[940px]:flex min-[940px]:sticky min-[940px]:top-20"
+              className={cn(
+                FROSTED_CARD_CLASS,
+                'hidden flex-col p-6 min-[940px]:flex min-[940px]:sticky min-[940px]:top-20',
+              )}
             >
-              <Skeleton className={`h-2.5 w-28 ${SPINE_BAR}`} />
-              <Skeleton className={`mt-2.5 h-9 w-24 ${SPINE_BAR}`} />
-              <Skeleton className={`mt-2.5 h-3.5 w-full ${SPINE_BAR}`} />
-
-              <hr className="my-5 border-t" style={{ borderTopColor: HAIRLINE_COLOR }} />
-              <Skeleton className={`h-[7px] w-full rounded-full ${SPINE_BAR}`} />
-              <div className="mt-[7px] flex items-center justify-between">
-                <Skeleton className={`h-3 w-8 ${SPINE_BAR}`} />
-                <Skeleton className={`h-3 w-8 ${SPINE_BAR}`} />
+              {/* eyebrow → hero figure + chip slot → verdict */}
+              <Skeleton className="h-4 w-28 rounded-fw-sm" />
+              <div className="mt-2 flex items-center gap-2">
+                <Skeleton className="h-14 w-28 rounded-fw-sm" />
               </div>
+              <Skeleton className="mt-3 h-4 w-full rounded-fw-sm" />
+              <Skeleton className="mt-1.5 h-4 w-3/4 rounded-fw-sm" />
 
-              <hr className="my-5 border-t" style={{ borderTopColor: HAIRLINE_COLOR }} />
-              <Skeleton className={`h-2.5 w-16 ${SPINE_BAR}`} />
-              <div className="mt-2.5 flex flex-col gap-2.5">
+              <hr className="my-5 border-t border-border-subtle" />
+              <Skeleton className="h-[7px] w-full rounded-full" />
+              <Skeleton className="mt-[7px] h-3 w-1/2 rounded-fw-sm" />
+
+              <hr className="my-5 border-t border-border-subtle" />
+              <Skeleton className="mb-3 h-4 w-20 rounded-fw-sm" />
+              <div className="flex flex-col gap-3">
                 {[0, 1, 2].map((i) => (
-                  <div key={i} className="grid grid-cols-[22px_1fr_auto] items-center gap-2.5">
-                    <Skeleton className={`h-3 w-4 ${SPINE_BAR}`} />
-                    <Skeleton className={`h-3.5 ${SPINE_BAR}`} />
-                    <Skeleton className={`h-3 w-8 ${SPINE_BAR}`} />
+                  <div key={i} className="grid grid-cols-[1.5rem_1fr_auto] items-center gap-3">
+                    <Skeleton className="h-6 w-6 rounded-full" />
+                    <Skeleton className="h-4 rounded-fw-sm" />
+                    <Skeleton className="h-3.5 w-10 rounded-fw-sm" />
                   </div>
                 ))}
               </div>
 
-              <hr className="my-5 border-t" style={{ borderTopColor: HAIRLINE_COLOR }} />
-              <div className="flex flex-col gap-1.5">
+              <hr className="my-5 border-t border-border-subtle" />
+              {/* SpineLedger: 4-up stat row, value on top, label below */}
+              <div className="grid grid-cols-4 gap-x-2">
                 {[0, 1, 2, 3].map((i) => (
-                  <div key={i} className="flex items-center justify-between gap-3">
-                    <Skeleton className={`h-3 w-16 ${SPINE_BAR}`} />
-                    <Skeleton className={`h-3 w-10 ${SPINE_BAR}`} />
+                  <div key={i} className="flex flex-col gap-1.5">
+                    <Skeleton className="h-6 w-10 max-w-full rounded-fw-sm" />
+                    <Skeleton className="h-3 w-12 max-w-full rounded-fw-sm" />
                   </div>
                 ))}
               </div>
 
-              <Skeleton className={`mt-5 h-10 w-full rounded-full ${SPINE_BAR}`} />
+              <Skeleton className="mt-5 h-10 w-full rounded-full" />
             </div>
 
             {/* Stage — PlayerHomeBento's SEPARATED card grid (own borders +

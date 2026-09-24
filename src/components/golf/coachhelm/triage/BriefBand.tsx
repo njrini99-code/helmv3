@@ -6,15 +6,22 @@
  * spec §1)
  * ----------------------------------------------------------------------------
  * Deliberately a HORIZONTAL band, not a vertical spine — this is the visual
- * differentiator from the Stats tab's left green rail + bento. Eyebrow, a
- * plain-language verdict of what needs attention today, three mono count
- * chips, a working "Scan team" Button (real busy state, disabled while
- * running — no separate progress affordance layered on top), and a
- * "last scan <relative time>" mono caption.
+ * differentiator from the Stats tab's left spine + bento. Eyebrow, a
+ * plain-language verdict of what needs attention today, tabular count chips,
+ * a working "Scan team" Button (real busy state, disabled while running — no
+ * separate progress affordance layered on top), and a "last scan <relative
+ * time>" caption.
+ *
+ * LOOK (owner redesign, 2026-09): the shared frosted light surface
+ * (`FROSTED_CARD_CLASS`, same as `Spine`) with dark text — it used to be a
+ * dark accent-900→800 gradient slab. Green stays an accent: the primary
+ * "Scan team" button is the one green fill.
  * ========================================================================== */
 
 import { Sparkles } from 'lucide-react';
 import { Button } from '@/components/fairway';
+import { FROSTED_CARD_CLASS } from '@/components/fairway/modules/frosted';
+import { cn } from '@/lib/utils';
 import type { BriefCounts } from './buildTriageViewModel';
 
 export interface BriefBandProps {
@@ -28,10 +35,10 @@ export interface BriefBandProps {
 function CountChip({ label, value }: { label: string; value: number }) {
   return (
     <div className="flex items-baseline gap-1.5">
-      <span className="font-fw-mono text-h3 font-semibold leading-none tabular-nums text-text-on-accent">
+      <span className="font-fw-sans text-h3 font-semibold leading-none tabular-nums text-text-primary">
         {value}
       </span>
-      <span className="font-fw-sans text-caption uppercase tracking-wide text-accent-300">{label}</span>
+      <span className="font-fw-sans text-caption text-text-secondary">{label}</span>
     </div>
   );
 }
@@ -40,11 +47,14 @@ export function BriefBand({ verdict, counts, lastScanLabel, scanning, onScan }: 
   return (
     <div
       data-slot="brief-band"
-      className="flex flex-col gap-4 rounded-fw-lg border border-accent-700 bg-gradient-to-r from-accent-900 via-accent-800 to-accent-800 p-5 shadow-raise sm:flex-row sm:items-center sm:justify-between sm:p-6"
+      className={cn(
+        FROSTED_CARD_CLASS,
+        'flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6',
+      )}
     >
       <div className="flex flex-col gap-2.5">
-        <p className="font-fw-display text-eyebrow uppercase tracking-[0.13em] text-accent-300">CoachHelm</p>
-        <p className="max-w-2xl font-fw-sans text-body-lg text-text-on-accent">{verdict}</p>
+        <p className="font-fw-sans text-caption font-semibold text-accent-ink">CoachHelm</p>
+        <p className="max-w-2xl font-fw-sans text-body-lg text-text-primary">{verdict}</p>
         <div className="flex flex-wrap items-center gap-5 pt-0.5">
           <CountChip label="Urgent" value={counts.urgent} />
           {/* "New this week" removed: it counted `created_at <= 7d`, so it read
@@ -66,7 +76,7 @@ export function BriefBand({ verdict, counts, lastScanLabel, scanning, onScan }: 
         >
           {scanning ? 'Scanning…' : 'Scan team'}
         </Button>
-        <p className="font-fw-mono text-caption tabular-nums text-accent-300">{lastScanLabel}</p>
+        <p className="font-fw-sans text-caption tabular-nums text-text-secondary">{lastScanLabel}</p>
       </div>
     </div>
   );
