@@ -21,7 +21,7 @@
  * ========================================================================== */
 
 import * as React from 'react';
-import { motion, useInView } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { VIZ_COLOR, VIZ_EASE, VIZ_REVEAL_MS } from './theme';
 import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
@@ -67,8 +67,6 @@ export function EkgSparkline({
   className,
 }: EkgSparklineProps) {
   const reduced = useReducedMotionGuard() ?? false;
-  const wrapRef = React.useRef<HTMLSpanElement>(null);
-  const inView = useInView(wrapRef, { once: true, amount: 0.4 });
 
   const pad = 4;
   const innerW = Math.max(1, width - pad * 2 - 10); // reserve 10px for the halo dot
@@ -89,7 +87,6 @@ export function EkgSparkline({
 
   return (
     <span
-      ref={wrapRef}
       data-slot="ekg-sparkline"
       data-halo={halo}
       role="img"
@@ -109,8 +106,8 @@ export function EkgSparkline({
           strokeWidth={1}
         />
         <motion.g
-          initial={reduced ? false : { opacity: 0 }}
-          animate={reduced || inView ? { opacity: 1 } : { opacity: 0 }}
+          initial={false}
+          animate={{ opacity: 1 }}
           transition={reduced ? { duration: 0 } : { duration: VIZ_REVEAL_MS / 1000, ease: VIZ_EASE }}
         >
           {buckets.map((b, i) => {
@@ -156,8 +153,8 @@ export function EkgSparkline({
 
         {/* Trailing halo dot — shape-coded, not color-only. */}
         <motion.g
-          initial={reduced ? false : { opacity: 0, scale: 0.5 }}
-          animate={reduced || inView ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.5 }}
+          initial={false}
+          animate={{ opacity: 1, scale: 1 }}
           transition={
             reduced
               ? { duration: 0 }

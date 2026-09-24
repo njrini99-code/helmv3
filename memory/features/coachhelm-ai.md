@@ -1119,7 +1119,7 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
   entry above already named) — it is read-only, display-only. See
   `attribution-read.test.ts`, `attribution-view-model.test.ts`,
   `src/test/golf/actions/insight-attribution.test.ts`, and
-  `src/test/golf/components/AttributionReadout.test.tsx`.
+  `src/test/golf/components/AttributionReadout.test.tsx`. (this file was removed in the 2026-09-24 golf audit dead-code sweep)
 
 ## Tests To Prefer
 

@@ -179,6 +179,10 @@ export function useReducedMotionGuard(): boolean {
   return useReducedMotion() ?? false;
 }
 
+// Golf motion tokens (MOT-01): one import site for springs, durations, eases.
+export { SPRING, DURATION_MS, DURATION_S, EASE, PRESS_SCALE, SHAKE } from '@/lib/motion/tokens';
+import { SHAKE } from '@/lib/motion/tokens';
+
 /** Re-export the raw framer-motion hook so consumers have a single import site. */
 export { useReducedMotion };
 
@@ -237,6 +241,19 @@ export const celebrationVariants: Variants = {
  * Animates `pathLength` 0 → 1 + a scale/rotate settle for normal users; for
  * reduced-motion users the check is simply present (pathLength 1, no draw).
  */
+/**
+ * Error shake (MOT-18; spec §4 #14): 3 × 6px over 240ms. Reduced motion gets
+ * no movement; the error copy and haptic carry the signal instead.
+ */
+export function errorShake(reduce: boolean): { animate: TargetAndTransition; transition: Transition } {
+  if (reduce) return { animate: { x: 0 }, transition: { duration: 0 } };
+  const d = SHAKE.distancePx;
+  return {
+    animate: { x: [0, -d, d, -d, d, -d, 0] },
+    transition: { duration: SHAKE.durationMs / 1000, ease: 'easeOut' },
+  };
+}
+
 export function successCheckmark(reduce: boolean): {
   ring: { initial: TargetAndTransition | false; animate: TargetAndTransition; transition: Transition };
   path: { initial: TargetAndTransition | false; animate: TargetAndTransition; transition: Transition };

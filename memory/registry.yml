@@ -449,6 +449,8 @@ features:
         - supabase/migrations/*golf_round*.sql
         - supabase/migrations/*golf_shot*.sql
         - supabase/migrations/*round_review*.sql
+        # OD-03 QA/demo hide flag (rounds, teams, players, qualifiers); held.
+        - supabase/migrations/*golf_is_test_flag*.sql
         # Reclassified 2026-09-06 off team_access_control's retired blanket
         # glob (Phase 5 registry glob lint) by topic — round lifecycle,
         # course library, and their storage/RLS surface.
@@ -1147,7 +1149,6 @@ features:
         - src/components/fairway/pages/tasks/**
         - src/components/golf/documents/**
         - src/components/fairway/pages/travel/**
-        - src/components/golf/player-hub/**
         - src/components/fairway/pages/team-hub/**
       api:
         - src/components/fairway/pages/documents/**
@@ -1426,8 +1427,7 @@ features:
     code:
       routes:
         - src/app/golf/(dashboard)/dashboard/hub/**
-      components:
-        - src/components/golf/player-hub/**
+      components: []
       api:
         - src/components/fairway/pages/hub/**
       actions:

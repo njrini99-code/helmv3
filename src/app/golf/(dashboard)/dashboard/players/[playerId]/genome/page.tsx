@@ -26,7 +26,7 @@ import { loadGenome } from '@/lib/coachhelm/v3/genome/loader';
 import { formatGenomeRefreshed } from '@/lib/coachhelm/v3/genome/format-refreshed';
 import { GENOME_WINDOW_DAYS } from '@/lib/coachhelm/v3/genome/types';
 import { loadPlayerStandingMap } from '@/lib/coachhelm/v3/standing/loader';
-import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
+import { resolveCoachActiveTeamIdForRequest } from '@/lib/golf/dashboard-request-cache';
 import { fairwayScope } from '@/lib/redesign/flag';
 import { Skeleton } from '@/components/fairway/feedback/Skeleton';
 import type { FocusAreaCardData } from '@/components/fairway/pages/coachhelm/FocusAreaCard';
@@ -71,7 +71,8 @@ export default async function PlayerGenomePage({ params }: PageProps) {
 
   // Scope to the coach's ACTIVE team (cookie-resolved), matching
   // `/players/[playerId]/game`.
-  const teamId = await resolveCoachTeamIdWithCookie(sb, session.coach.organization_id, session.coach.id);
+  // Request-cached: reuses the dashboard layout's identical lookup.
+  const teamId = await resolveCoachActiveTeamIdForRequest(session.coach.organization_id ?? null, session.coach.id);
   if (!teamId) redirect('/golf/dashboard/roster');
 
   const [membershipRes, playerRes, genome, cacheRes, recentRes] = await Promise.all([

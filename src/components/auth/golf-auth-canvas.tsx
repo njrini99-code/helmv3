@@ -89,7 +89,7 @@ export function AuthCanvas({ title, subtitle, topBar, children, footer, contentI
         />
         <div
           className={cn(
-            'mt-5 rounded-[24px] border border-border-subtle bg-elevated px-5 pb-6 pt-6',
+            'mt-5 rounded-3xl border border-border-subtle bg-elevated px-5 pb-6 pt-6',
             'shadow-[0_24px_48px_-12px_rgb(40_30_15/0.28),0_4px_12px_rgb(40_30_15/0.08)]',
           )}
         >
@@ -199,7 +199,12 @@ export const GroupedFieldRow = forwardRef<HTMLInputElement, GroupedFieldRowProps
 
 export function AuthFieldError({ id, children }: { id: string; children: ReactNode }) {
   return (
-    <p id={id} role="alert" className="mt-2.5 px-4 text-body-sm text-fw-danger">
+    <p
+      id={id}
+      role="alert"
+      // A short shake when the error appears (MOT-18); none under reduced motion.
+      className="mt-2.5 px-4 text-body-sm text-fw-danger-ink motion-safe:animate-[fw-shake_240ms_cubic-bezier(0.2,0,0,1)]"
+    >
       {children}
     </p>
   );
@@ -210,9 +215,9 @@ export function AuthFieldError({ id, children }: { id: string; children: ReactNo
 /** The primary-action look, shared by AuthSubmitButton and link-styled primaries. */
 export const authPrimaryButtonClass = cn(
   'relative flex h-[50px] w-full select-none items-center justify-center gap-2 rounded-xl',
-  // accent-650/750 are the fills that DON'T flip in dark (see design-tokens.css).
-  'bg-accent-650 text-body-lg font-semibold text-text-on-accent',
-  '[@media(hover:hover)]:hover:bg-accent-750 active:bg-accent-750',
+  // The primary-action role fill (green is the contrasting colour).
+  'bg-accent-fill text-body-lg font-semibold text-text-on-accent-fill',
+  '[@media(hover:hover)]:hover:bg-accent-fill-hover active:bg-accent-fill-hover',
   'transition-transform duration-[120ms] ease-out active:scale-[0.98] motion-reduce:transition-none motion-reduce:active:scale-100',
   'outline-none focus-visible:ring-2 focus-visible:ring-accent-600 focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
 );

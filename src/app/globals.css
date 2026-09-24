@@ -3111,6 +3111,13 @@ select:-webkit-autofill {
 /* ============================================================
  * SCENE KEYFRAMES — shared by Course/Coastal/etc. painterly scenes
  * ============================================================ */
+/* Error shake: 3 x 6px over 240ms (MOT-18; SHAKE in src/lib/motion/tokens.ts). */
+@keyframes fw-shake {
+  0%, 100% { transform: translateX(0); }
+  16%, 50%, 84% { transform: translateX(-6px); }
+  33%, 67% { transform: translateX(6px); }
+}
+
 @keyframes helmSceneSunPulse {
   0%, 100% { opacity: 0.55; transform: scale(1); }
   50%      { opacity: 0.75; transform: scale(1.06); }

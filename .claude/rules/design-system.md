@@ -28,16 +28,16 @@ displays) · `Segmented` (`controls/segmented.tsx`, THE tab-switcher — style o
 here) · `ViewHeader` (`view-header/`) ·
 `EmptyState`/`InsufficientData` (`feedback/`, never hand-roll a raw
 "No X yet" line) · `InlineNotice` · `ModalShell`/`Sheet` (`overlays/`,
-the ONE modal / ONE slide-over) · `Skeleton` (`feedback/Skeleton.tsx` —
+the ONE modal / ONE slide-over) · `ConfirmAlert` (`overlays/`, THE golf
+confirm on ModalShell/Sheet; same props as `ui/confirm-dialog`, which stays
+for Baseball only) · `Skeleton` (`feedback/Skeleton.tsx` —
 `loading.tsx` must shape-match its page's real Fairway first paint;
 see `stats/loading.tsx` for the bar).
 
 ### Type roles + banned classes
-`font-fw-display`/`font-fw-sans`/`font-fw-mono` — Fraunces and General
-Sans were **deliberately removed**; display/sans now resolve to the
-system SF Pro stack, and `fw-mono` is now the SF stack too (Fragment Mono
-was removed, owner decision 2026-09-23): numerals use `tabular-nums`,
-lining figures, and no slashed zero. No golf surface loads a web font. Banned in golf-dashboard surfaces: raw `red-*`/`amber-*`/
+`font-fw-display`/`font-fw-sans`/`font-fw-mono` all resolve to the system SF
+Pro stack on golf (no web font); numerals use `tabular-nums`, lining figures,
+no slashed zero. Banned in golf-dashboard surfaces: raw `red-*`/`amber-*`/
 `rose-*`/`violet-*`, `glass-*`, new `cream-*`/`warm-*`. **Legacy
 exception**: `src/components/ui/skeleton.tsx`
 (`GenericPageSkeleton`/`DetailPageSkeleton`/`FormPageSkeleton`) is still
@@ -51,6 +51,18 @@ Green is the contrasting colour: `text-accent-ink` for green text,
 for control edges, `text-fw-warning-text` for amber ink. No `/NN` or `opacity-NN`
 on text. `helm/no-low-contrast-text` (golf lint) and
 `src/test/static/fairway-token-contrast.test.ts` enforce AA.
+
+### Golf scoping (golf changes never restyle Baseball / Lift Lab)
+`<html data-helm-sport="golf">` (ThemeScript) scopes golf-only CSS; `hover:` is
+the `golfHoverVariant` plugin. Baseball/lifting layouts inject
+`LEGACY_SPORT_TOKENS_CSS`. Shared Fairway primitives change via opt-in props
+(e.g. `FairwayTopBar` `backLink`), not defaults. `src/components/golf/calendar/**`
+renders in Baseball and stays on legacy scales.
+
+### Motion + haptics (golf)
+`useReducedMotionGuard()` + tokens from `src/lib/coachhelm/v3/motion.ts`;
+`haptic(...)` from `@/lib/haptics` (raw `useReducedMotion`/`triggerHaptic` are
+lint errors on golf paths). Data renders final on mount: no count-up or draw-on.
 
 ### Hard-won invariants
 - Never nest interactive children inside a `BentoCell` with `onOpen` —

@@ -15,7 +15,7 @@
  * instrument look (spine-stage drills are the quality bar):
  *
  *   1. SG TOTAL as the hero instrument reading (`primary`) — signed, colored
- *      (helm green = gain, warm amber = loss), animated via `AnimatedNumber`
+ *      (helm green = gain, warm amber = loss), shown at its final value on first paint
  *      (@number-flow), tabular-nums — with a small honest baseline caption
  *      naming which curve the number is measured against.
  *   2. SG BY CATEGORY (`secondary`) via the flagship `StrokesGainedTornado` —
@@ -38,14 +38,12 @@
  * curve `sg_expected_strokes()` actually used to compute the cached value,
  * so the caption never misstates a women's-team round as "vs PGA Tour".
  *
- * Reduced-motion safe: `AnimatedNumber` already gates its mount-roll on
- * `useReducedMotion` (snaps to the final value, no 0→value spin);
+ * Reduced-motion safe: the hero total is plain text (no mount roll);
  * `StrokesGainedTornado` has no framer-motion of its own (plain SVG geometry,
  * no draw-in animation) — nothing else here needs gating.
  * ========================================================================== */
 
 import { cn } from '@/lib/utils';
-import { AnimatedNumber } from '@/components/ui/animated-number';
 import {
   InstrumentPanel,
   InstrumentCluster,
@@ -159,6 +157,8 @@ const HERO_VALUE_CLASS = 'text-[64px] leading-[68px]';
  * near the top of Round Review (before/above the hole filmstrip) so the
  * reader sees the accuracy-forward headline before the hole-by-hole detail.
  */
+const SG_TOTAL_FORMAT = new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
 export function RoundSGSummary({
   strokesGainedTotal,
   strokesGainedTee,
@@ -194,16 +194,17 @@ export function RoundSGSummary({
             Total
           </span>
           <div className="flex items-baseline gap-2">
-            <AnimatedNumber
-              value={Math.abs(strokesGainedTotal)}
-              decimals={2}
-              prefix={heroSign}
+            {/* The final value on first paint, no 0 → value roll (MOT-07). */}
+            <span
               className={cn(
                 'font-fw-mono font-semibold tabular-nums',
                 HERO_VALUE_CLASS,
                 TONE_CLASS[heroTone],
               )}
-            />
+            >
+              {heroSign}
+              {SG_TOTAL_FORMAT.format(Math.abs(strokesGainedTotal))}
+            </span>
             <span className="font-fw-mono text-body-lg font-medium uppercase tracking-wide text-text-tertiary">
               sg
             </span>

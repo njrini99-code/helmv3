@@ -149,9 +149,9 @@ describe('RoundSGSummary — live state', () => {
   it('renders the signed hero total, the PGA Tour baseline caption by default, and the takeaway line', () => {
     render(<RoundSGSummary {...liveProps} />);
     expect(screen.getByText('sg')).toBeInTheDocument();
-    // Mocked NumberFlow renders `{prefix}{value}{suffix}` verbatim (no Intl
-    // formatting) — "+0.4" is heroSign ('+') + Math.abs(0.4).
-    expect(screen.getByText('+0.4')).toBeInTheDocument();
+    // The hero is plain text at its final value (MOT-07): heroSign ('+') +
+    // Math.abs(0.4) to 2 dp.
+    expect(screen.getByText('+0.40')).toBeInTheDocument();
     expect(screen.getByText(/vs the PGA Tour baseline used for this round/)).toBeInTheDocument();
     expect(
       screen.getByText('Best: putting +1.90 · Worst: off the tee −1.80'),

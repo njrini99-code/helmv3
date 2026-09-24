@@ -348,8 +348,29 @@ export const MetricCard = forwardRef<HTMLDivElement, MetricCardProps>(
       ? { tabIndex: 0, role: 'button' as const }
       : {};
 
+    // One spoken sentence per KPI (A11Y-01): the figure is split across an
+    // eyebrow, NumberFlow's shadow digits and a delta chip, which a screen
+    // reader otherwise reads as disconnected fragments. Only when the parts
+    // are plain text; a caller-supplied aria-label in `rest` still wins.
+    const spokenLabel = (() => {
+      if (typeof label !== 'string') return undefined;
+      if (empty) return `${label}: ${emptyMessage}`;
+      const figure = `${prefix ?? ''}${new Intl.NumberFormat('en-US', numberFormat).format(value)}${suffix ?? ''}`;
+      const parts = [`${label}: ${figure}`];
+      if (delta) {
+        const d = new Intl.NumberFormat('en-US', { ...deltaFormat, signDisplay: 'never' }).format(delta.value);
+        const change = delta.value === 0 ? 'no change' : `${delta.value > 0 ? 'up' : 'down'} ${delta.prefix ?? ''}${d}${delta.suffix ?? ''}`;
+        parts.push(delta.label ? `${change} ${delta.label}` : change);
+      }
+      if (typeof footnote === 'string') parts.push(footnote);
+      return parts.join(', ');
+    })();
+    const a11yProps = spokenLabel
+      ? { 'aria-label': spokenLabel, ...(interactive ? {} : { role: 'group' as const }) }
+      : {};
+
     return (
-      <div ref={ref} className={base} {...interactiveProps} {...rest}>
+      <div ref={ref} className={base} {...interactiveProps} {...a11yProps} {...rest}>
         {/* header: overline label + optional icon */}
         <div className="flex items-start justify-between gap-3">
           <span

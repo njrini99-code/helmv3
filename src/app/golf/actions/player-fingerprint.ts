@@ -47,7 +47,6 @@ import {
 } from '@/app/golf/actions/insight-delivery';
 import { withAdminObserved } from '@/lib/admin/observed-action';
 import { computeCompositeRating } from '@/lib/coachhelm/composite-rating';
-import type { FormScore } from '@/lib/golf/form-score';
 import type { FingerprintSgScope } from '@/app/golf/actions/player-fingerprint-types';
 import { computePressureGap } from '@/lib/golf/metrics/pressure-gap';
 import { isCountableRound, roundExclusionReason } from '@/lib/golf/round-countable';
@@ -64,13 +63,24 @@ import {
 // Public types — the Fingerprint shape. Downstream UI imports these.
 // ---------------------------------------------------------------------------
 
-export type FingerprintSectionKey =
-  | 'tee'
-  | 'approach'
-  | 'short_game'
-  | 'putting'
-  | 'scoring'
-  | 'pressure';
+// One definition, in the types module; re-exported so existing imports from
+// this file keep working (W12: the two copies had drifted in their docs).
+export type {
+  FingerprintSectionKey,
+  FingerprintMetric,
+  FingerprintChartData,
+  SectionData,
+  FingerprintTrendPoint,
+  PlayerFingerprint,
+} from './player-fingerprint-types';
+import type {
+  FingerprintSectionKey,
+  FingerprintMetric,
+  FingerprintChartData,
+  SectionData,
+  FingerprintTrendPoint,
+  PlayerFingerprint,
+} from './player-fingerprint-types';
 
 /** Ordered category mapping for routing evidence insights into sections.
  *  `scoring` in the UI catches `course_management` too, since those insights
@@ -89,93 +99,6 @@ const SECTION_CATEGORIES: Record<FingerprintSectionKey, string[]> = {
 // is a runtime value the build collector rejects here. Consumers import it
 // from the types module directly.
 
-export interface FingerprintMetric {
-  label: string;
-  value: string;
-  comparison?: string;
-  /** `good` = strength; `bad` = weakness; `neutral` = neither. Drives the
-   *  small coloured dot + copy tone per metric pill. */
-  tone: 'good' | 'neutral' | 'bad';
-}
-
-/** Shape passed to the per-section chart primitive. Unknown on purpose — each
- *  section knows its own chart and reads the fields it needs. */
-export type FingerprintChartData =
-  /** `value` null = no data for that bar (drawn as a gap, never as 0). */
-  | { kind: 'bars'; bars: Array<{ label: string; value: number | null; max?: number }> }
-  | {
-      kind: 'pills';
-      pills: Array<{ label: string; value: string; tone: 'good' | 'neutral' | 'bad' }>;
-    }
-  | null;
-
-export interface SectionData {
-  key: FingerprintSectionKey;
-  category: string;
-  /** `true` when we have < 5 qualifying samples for this section's
-   *  underlying metric(s). UI renders "Not enough data" but preserves the
-   *  slot so the layout doesn't shift. */
-  sparse: boolean;
-  metrics: FingerprintMetric[];
-  insights: EvidenceInsight[];
-  chart_data: FingerprintChartData;
-}
-
-export interface FingerprintTrendPoint {
-  round_id: string;
-  round_date: string;
-  score_to_par: number | null;
-  total_score: number | null;
-  course_name: string | null;
-  notable: boolean;
-}
-
-export interface PlayerFingerprint {
-  player: {
-    id: string;
-    first_name: string | null;
-    last_name: string | null;
-    team_name: string | null;
-    /** `golf_players.avatar_url` — feeds the identity-header Avatar on both
-     *  the coach Game Fingerprint page and the player's own Game profile
-     *  tab. Null → the Avatar primitive falls back to initials. */
-    avatar_url: string | null;
-  };
-  composite: {
-    /** The Form score (OD-02), 0–99; null with no countable rounds. */
-    rating: number | null;
-    trend: 'up' | 'flat' | 'down';
-    rounds_in_calculation: number;
-    /** Form's quality ("Early read") and formula inputs. */
-    form: FormScore;
-  };
-  /**
-   * How many rounds the SECTION METRICS rest on — a different, usually larger
-   * number than `composite.rounds_in_calculation`.
-   *
-   * The composite is derived from the fetched rounds (`.limit(10)`) and never
-   * from the stats cache; that is deliberate and is pinned by its own test. The
-   * section metrics come from `golf_player_stats_cache`, whose window is
-   * whatever the last recompute covered. So one screen carries numbers from two
-   * samples, and until this field existed the UI could only label one of them.
-   *
-   * Measured for Cole Bennett on 2026-08-17: the card read "OVERALL GAME 67 ·
-   * Based on 10 rounds" directly above "71% · GIR", where 71% is the 18-round
-   * figure — his actual last-10 GIR is 76.1%. The sample line was true of the
-   * rating and false of everything beside it.
-   *
-   * Mirrors `buildSections`' own resolution (`rounds_in_calculation ??
-   * rounds.length`) so the printed sample is the one the metrics were built on.
-   */
-  metrics_rounds: number;
-  /** Strokes gained per round by window (FP-09); see the types module. */
-  sg_scopes?: FingerprintSgScope[];
-  sections: Record<FingerprintSectionKey, SectionData>;
-  trend: {
-    rolling: FingerprintTrendPoint[];
-  };
-  generated_at: string;
-}
 
 // ---------------------------------------------------------------------------
 // Internal row shapes — we pull exactly the columns each section consumes.

@@ -739,11 +739,6 @@
         "category": "components"
       },
       {
-        "id": "components:src/components/golf/player-hub/**",
-        "pattern": "src/components/golf/player-hub/**",
-        "category": "components"
-      },
-      {
         "id": "components:src/components/golf/roster/**",
         "pattern": "src/components/golf/roster/**",
         "category": "components"
@@ -12691,6 +12686,11 @@
           "kind": "import_graph",
           "path": "src/lib/coachhelm/v2/insights/types.ts",
           "anchor": "src/lib/coachhelm/insight-types"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v2/nlg/insight-composer.ts",
+          "anchor": "src/lib/coachhelm/confidence-label"
         }
       ]
     },
@@ -12805,6 +12805,21 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/app/golf/actions/team-category-insights.ts",
+          "anchor": "src/lib/golf/round-total"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/team-category-insights.ts",
+          "anchor": "src/lib/golf/round-countable"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/team-category-insights.ts",
+          "anchor": "src/lib/golf/countable-round-stats"
+        },
+        {
+          "kind": "import_graph",
           "path": "src/lib/coachhelm/v2/mining/approach-analytics.ts",
           "anchor": "src/lib/golf/approach-plausibility"
         },
@@ -12812,6 +12827,16 @@
           "kind": "import_graph",
           "path": "src/lib/coachhelm/v2/orchestrator.ts",
           "anchor": "src/lib/golf/player-signal-settings"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v2/prediction/performance-predictor.ts",
+          "anchor": "src/lib/golf/round-countable"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v2/prediction/performance-predictor.ts",
+          "anchor": "src/lib/golf/round-total"
         },
         {
           "kind": "import_graph",
@@ -13571,6 +13596,11 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/app/golf/actions/player-fingerprint.ts",
+          "anchor": "src/lib/supabase/fetch-all-rows"
+        },
+        {
+          "kind": "import_graph",
           "path": "src/app/golf/actions/v3/goals.ts",
           "anchor": "src/lib/supabase/server"
         },
@@ -13859,6 +13889,16 @@
       "evidence": [
         {
           "kind": "import_graph",
+          "path": "src/app/golf/actions/coachhelm-data.ts",
+          "anchor": "src/lib/golf/round-countable"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/coachhelm-data.ts",
+          "anchor": "src/lib/golf/form-score"
+        },
+        {
+          "kind": "import_graph",
           "path": "src/app/golf/actions/insights.ts",
           "anchor": "src/lib/golf/resolve-team-server"
         },
@@ -13879,6 +13919,31 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/app/golf/actions/player-fingerprint-types.ts",
+          "anchor": "src/lib/golf/form-score"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/player-fingerprint.ts",
+          "anchor": "src/lib/golf/metrics/pressure-gap"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/player-fingerprint.ts",
+          "anchor": "src/lib/golf/round-countable"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/player-fingerprint.ts",
+          "anchor": "src/lib/golf/round-total"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/player-fingerprint.ts",
+          "anchor": "src/lib/golf/countable-round-stats"
+        },
+        {
+          "kind": "import_graph",
           "path": "src/app/golf/actions/v3/goals.ts",
           "anchor": "src/lib/golf/resolve-team"
         },
@@ -13891,6 +13956,16 @@
           "kind": "import_graph",
           "path": "src/app/golf/actions/v3/team-practice-rx.ts",
           "anchor": "src/lib/golf/resolve-team"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/composite-rating.ts",
+          "anchor": "src/lib/golf/round-countable"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/composite-rating.ts",
+          "anchor": "src/lib/golf/form-score"
         }
       ]
     },
@@ -15544,6 +15619,11 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/lib/golf/dashboard-request-cache.ts",
+          "anchor": "src/lib/supabase/server"
+        },
+        {
+          "kind": "import_graph",
           "path": "src/lib/golf/progress-drivers.ts",
           "anchor": "src/lib/supabase/untyped"
         },
@@ -15632,6 +15712,11 @@
           "kind": "import_graph",
           "path": "src/app/golf/actions/round-review-narrative.ts",
           "anchor": "src/lib/coachhelm/round-single-flight-lock"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/golf/form-score.test.ts",
+          "anchor": "src/lib/coachhelm/composite-rating"
         },
         {
           "kind": "import_graph",
@@ -15897,6 +15982,16 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/lib/golf/metrics/display-registry.test.ts",
+          "anchor": "src/lib/coachhelm/v3/metrics/registry"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/golf/metrics/display-registry.ts",
+          "anchor": "src/lib/coachhelm/v3/metrics/registry"
+        },
+        {
+          "kind": "import_graph",
           "path": "src/lib/golf/progress-drivers.ts",
           "anchor": "src/lib/coachhelm/v3/goals/loader"
         },
@@ -15971,6 +16066,11 @@
       "target": "roster_team",
       "kind": "feature_relation",
       "evidence": [
+        {
+          "kind": "import_graph",
+          "path": "src/lib/golf/dashboard-request-cache.ts",
+          "anchor": "src/app/golf/actions/team-switcher.constants"
+        },
         {
           "kind": "import_graph",
           "path": "src/lib/golf/resolve-team-server.ts",
@@ -18052,6 +18152,16 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/chat/program-pulse.ts",
+          "anchor": "src/lib/golf/round-total"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/chat/program-pulse.ts",
+          "anchor": "src/lib/golf/round-countable"
+        },
+        {
+          "kind": "import_graph",
           "path": "src/lib/coachhelm/v3/chat/provenance.ts",
           "anchor": "src/lib/golf/timezone"
         },
@@ -18069,6 +18179,11 @@
           "kind": "import_graph",
           "path": "src/lib/coachhelm/v3/generators/scrambling.ts",
           "anchor": "src/lib/golf/stat-formulas"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/genome/dimensions/pressure-delta.ts",
+          "anchor": "src/lib/golf/metrics/pressure-gap"
         },
         {
           "kind": "import_graph",
@@ -18461,18 +18576,6 @@
     },
     {
       "source": "player_hub",
-      "target": "components:src/components/golf/player-hub/**",
-      "kind": "feature_component",
-      "evidence": [
-        {
-          "kind": "registry_glob",
-          "path": "memory/registry.yml",
-          "pattern": "src/components/golf/player-hub/**"
-        }
-      ]
-    },
-    {
-      "source": "player_hub",
       "target": "get_coach_today_schedule",
       "kind": "feature_rpc",
       "evidence": [
@@ -18530,6 +18633,21 @@
           "kind": "import_graph",
           "path": "src/app/golf/actions/dashboard-data.ts",
           "anchor": "src/lib/golf/round-total"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/dashboard-data.ts",
+          "anchor": "src/lib/golf/round-countable"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/dashboard-data.ts",
+          "anchor": "src/lib/golf/qualifier-date"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/dashboard-data.ts",
+          "anchor": "src/lib/golf/countable-round-stats"
         },
         {
           "kind": "import_graph",
@@ -19781,6 +19899,16 @@
       "evidence": [
         {
           "kind": "import_graph",
+          "path": "src/lib/coachhelm/v2/shot-analysis/__tests__/stats-cache-baseline.test.ts",
+          "anchor": "src/lib/golf/strokes-gained"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v2/shot-analysis/stats-cache-baseline.ts",
+          "anchor": "src/lib/golf/strokes-gained"
+        },
+        {
+          "kind": "import_graph",
           "path": "src/lib/offline/partial-save-beacon.ts",
           "anchor": "src/app/golf/actions/golf"
         },
@@ -20222,6 +20350,16 @@
         {
           "kind": "import_graph",
           "path": "src/app/golf/actions/stats-data.ts",
+          "anchor": "src/lib/golf/round-countable"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/stats-data.ts",
+          "anchor": "src/lib/golf/round-total"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/stats-data.ts",
           "anchor": "src/lib/golf/stats-date-range"
         },
         {
@@ -20258,6 +20396,11 @@
           "kind": "import_graph",
           "path": "src/app/golf/actions/stats-intelligence.ts",
           "anchor": "src/lib/golf/resolve-team"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/stats-leak-maps.ts",
+          "anchor": "src/lib/golf/round-countable"
         },
         {
           "kind": "import_graph",
@@ -21597,18 +21740,6 @@
           "kind": "registry_glob",
           "path": "memory/registry.yml",
           "pattern": "src/components/golf/documents/**"
-        }
-      ]
-    },
-    {
-      "source": "team_operations",
-      "target": "components:src/components/golf/player-hub/**",
-      "kind": "feature_component",
-      "evidence": [
-        {
-          "kind": "registry_glob",
-          "path": "memory/registry.yml",
-          "pattern": "src/components/golf/player-hub/**"
         }
       ]
     },
