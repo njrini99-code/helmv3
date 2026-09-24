@@ -18199,6 +18199,16 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/generators/pressure-gap.ts",
+          "anchor": "src/lib/golf/round-countable"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/generators/pressure-gap.ts",
+          "anchor": "src/lib/golf/metrics/pressure-gap"
+        },
+        {
+          "kind": "import_graph",
           "path": "src/lib/coachhelm/v3/generators/scrambling.ts",
           "anchor": "src/lib/golf/stat-formulas"
         },

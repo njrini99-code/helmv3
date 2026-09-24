@@ -88,6 +88,14 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
   with a nine-hole round's to-par, putts and SG scaled to 18 holes as Stats
   does. `computeSgTrends` also skips any single-category SG beyond
   `MAX_PLAUSIBLE_ROUND_SG = 10` per 18 as a backstop.
+- The pressure-gap insight (`v3/generators/pressure-gap.ts`) follows the one
+  rule in `src/lib/golf/metrics/pressure-gap.ts`: countable rounds, each
+  round's to-par on an 18-hole basis, and tournament, qualifier and legacy
+  'qualifying' rounds on the pressure side. Standing's SQL
+  (`refresh_player_standing_round_metrics`) follows the same rule from
+  migration `20260924140000_golf_standing_pressure_gap_parity.sql`, which is
+  held and applies after OD-01's `20260924120000`. Both keep a 90-day window
+  and at least 3 rounds per side.
 - Coach-facing insight reads must scope through assigned teams, not broad player access.
 - Player-facing feedback must be tied to the authenticated player and revalidate the affected dashboard surfaces.
 - Coach-to-team ownership is via `golf_team_coach_staff`; do not infer it from `golf_coaches.team_id`.

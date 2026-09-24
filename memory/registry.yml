@@ -748,6 +748,7 @@ features:
         - supabase/migrations/*penalty*.sql
         - supabase/migrations/*attribution_metric*.sql
         - supabase/migrations/*pressure_gate*.sql
+        - supabase/migrations/*standing_pressure_gap*.sql
         - supabase/migrations/*_standards.sql
       tests:
         - src/app/golf/actions/__tests__/stats-data.test.ts

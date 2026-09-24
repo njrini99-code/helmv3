@@ -46,12 +46,19 @@ const PLAYER_ID = 'p-1';
 
 /** N rounds of a given type with a fixed score_to_par. Each round gets a recent,
  *  parseable round_date (i days ago) so SV-1's round_dates are non-empty. */
-function rounds(round_type: string, n: number, scoreToPar: number): Row[] {
+function rounds(round_type: string, n: number, scoreToPar: number, holes = 18): Row[] {
+  const par = holes === 9 ? 36 : 72;
   return Array.from({ length: n }, (_, i) => ({
-    id: `${round_type}-${i}`,
+    id: holes === 18 ? `${round_type}-${i}` : `${round_type}-9h-${i}`,
     round_type,
     score_to_par: scoreToPar,
     round_date: new Date(Date.now() - i * 86400_000).toISOString().slice(0, 10),
+    // Countable-round columns (isCountableRound): fully recorded and plausible.
+    holes_played: holes,
+    total_score: par + scoreToPar,
+    front_nine: holes === 9 ? par + scoreToPar : 36,
+    back_nine: holes === 9 ? null : 36 + scoreToPar,
+    total_putts: null,
   }));
 }
 
@@ -192,6 +199,45 @@ describe('PressureGapGenerator.aggregate (pg-1/pg-2 per-bucket floor)', () => {
     expect(agg!.competitive_count).toBe(3);
   });
 
+  // NUM-24: the shared pressure-gap rule (src/lib/golf/metrics/pressure-gap.ts),
+  // which Standing's SQL also follows.
+  it("counts the legacy 'qualifying' spelling as pressure", async () => {
+    roundRows = [
+      ...rounds('practice', 3, 1),
+      ...rounds('tournament', 2, 3),
+      ...rounds('qualifying', 1, 3),
+    ];
+    const agg = await new PressureGapGenerator(PLAYER_ID).aggregate();
+    expect(agg).not.toBeNull();
+    expect(agg!.competitive_count).toBe(3);
+    expect(agg!.playerValue).toBeCloseTo(2);
+  });
+
+  it('scales 9-hole rounds to 18 holes before averaging', async () => {
+    roundRows = [
+      ...rounds('practice', 3, 2),
+      // A 9-hole +2 is +4 over 18 holes, so pressure averages +4, not +2.
+      ...rounds('tournament', 3, 2, 9),
+    ];
+    const agg = await new PressureGapGenerator(PLAYER_ID).aggregate();
+    expect(agg).not.toBeNull();
+    expect(agg!.competitive_avg).toBeCloseTo(4);
+    expect(agg!.playerValue).toBeCloseTo(2);
+  });
+
+  it('leaves out rounds that are not countable', async () => {
+    roundRows = [
+      ...rounds('practice', 3, 0),
+      ...rounds('tournament', 3, 2),
+      // A 37-stroke "18-hole" round (the Sep 17 round) is implausible.
+      { ...rounds('tournament', 1, -35)[0], id: 'implausible' },
+    ];
+    const agg = await new PressureGapGenerator(PLAYER_ID).aggregate();
+    expect(agg).not.toBeNull();
+    expect(agg!.competitive_count).toBe(3);
+    expect(agg!.playerValue).toBeCloseTo(2);
+  });
+
   it('decomposes the gap into component deltas from the joined holes (C5)', async () => {
     roundRows = [
       ...rounds('practice', 3, 0.5),
@@ -252,9 +298,9 @@ describe('PressureGapGenerator.aggregate (pg-1/pg-2 per-bucket floor)', () => {
     // Competitive rounds with GENUINE score-to-par spread so stddev > 0.
     roundRows = [
       ...rounds('practice', 3, 0.5),
-      { id: 'tournament-0', round_type: 'tournament', score_to_par: 1, round_date: new Date(Date.now() - 1 * 86400_000).toISOString().slice(0, 10) },
-      { id: 'tournament-1', round_type: 'tournament', score_to_par: 5, round_date: new Date(Date.now() - 2 * 86400_000).toISOString().slice(0, 10) },
-      { id: 'tournament-2', round_type: 'tournament', score_to_par: 3, round_date: new Date(Date.now() - 3 * 86400_000).toISOString().slice(0, 10) },
+      { ...rounds('tournament', 1, 1)[0], id: 'tournament-0', round_date: new Date(Date.now() - 1 * 86400_000).toISOString().slice(0, 10) },
+      { ...rounds('tournament', 1, 5)[0], id: 'tournament-1', round_date: new Date(Date.now() - 2 * 86400_000).toISOString().slice(0, 10) },
+      { ...rounds('tournament', 1, 3)[0], id: 'tournament-2', round_date: new Date(Date.now() - 3 * 86400_000).toISOString().slice(0, 10) },
     ];
     holeRows = []; // component deltas irrelevant here; only SV-1 dispersion matters.
     const agg = await new PressureGapGenerator(PLAYER_ID).aggregate();

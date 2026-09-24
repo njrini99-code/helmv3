@@ -7901,13 +7901,15 @@ BEGIN
   IF p_team_ids IS NULL OR array_length(p_team_ids, 1) IS NULL THEN
     RETURN;
   END IF;
+  -- NUM-24: pressure gap per src/lib/golf/metrics/pressure-gap.ts: 18-hole
+  -- to-par basis and the legacy 'qualifying' spelling. Floors stay 3/3/5.
   WITH team_values AS (
     SELECT
       p.id AS player_id,
       tm.team_id,
       COALESCE(t.gender, 'mens') AS gender,
-      AVG(r.score_to_par) FILTER (WHERE r.round_type IN ('tournament','qualifier'))
-        - AVG(r.score_to_par) FILTER (WHERE r.round_type = 'practice')
+      AVG(r.score_to_par::numeric * 18 / NULLIF(COALESCE(r.holes_played, 18), 0)) FILTER (WHERE r.round_type IN ('tournament','qualifier','qualifying'))
+        - AVG(r.score_to_par::numeric * 18 / NULLIF(COALESCE(r.holes_played, 18), 0)) FILTER (WHERE r.round_type = 'practice')
         AS player_value
     FROM public.golf_players p
     JOIN public.golf_team_members tm
@@ -7922,8 +7924,8 @@ BEGIN
     WHERE tm.team_id = ANY(p_team_ids)
     GROUP BY p.id, tm.team_id, COALESCE(t.gender, 'mens')
     HAVING
-      COUNT(*) FILTER (WHERE r.round_type IN ('tournament','qualifier')) >= 3
-      AND COUNT(*) FILTER (WHERE r.round_type = 'practice') >= 3
+      COUNT(*) FILTER (WHERE r.round_type IN ('tournament','qualifier','qualifying') AND r.score_to_par IS NOT NULL) >= 3
+      AND COUNT(*) FILTER (WHERE r.round_type = 'practice' AND r.score_to_par IS NOT NULL) >= 3
       AND COUNT(*) >= v_min_rounds
   ),
   team_stats AS (
@@ -7951,8 +7953,8 @@ BEGIN
         p.id AS player_id,
         tm.team_id,
         COALESCE(t.gender, 'mens') AS gender,
-        AVG(r.score_to_par) FILTER (WHERE r.round_type IN ('tournament','qualifier'))
-          - AVG(r.score_to_par) FILTER (WHERE r.round_type = 'practice')
+        AVG(r.score_to_par::numeric * 18 / NULLIF(COALESCE(r.holes_played, 18), 0)) FILTER (WHERE r.round_type IN ('tournament','qualifier','qualifying'))
+          - AVG(r.score_to_par::numeric * 18 / NULLIF(COALESCE(r.holes_played, 18), 0)) FILTER (WHERE r.round_type = 'practice')
           AS player_value
       FROM public.golf_players p
       JOIN public.golf_team_members tm
@@ -7966,8 +7968,8 @@ BEGIN
        AND r.round_date > (CURRENT_DATE - (v_window_days || ' days')::interval)
       GROUP BY p.id, tm.team_id, COALESCE(t.gender, 'mens')
       HAVING
-        COUNT(*) FILTER (WHERE r.round_type IN ('tournament','qualifier')) >= 3
-        AND COUNT(*) FILTER (WHERE r.round_type = 'practice') >= 3
+        COUNT(*) FILTER (WHERE r.round_type IN ('tournament','qualifier','qualifying') AND r.score_to_par IS NOT NULL) >= 3
+        AND COUNT(*) FILTER (WHERE r.round_type = 'practice' AND r.score_to_par IS NOT NULL) >= 3
         AND COUNT(*) >= v_min_rounds
     ) pop
     WHERE pop.player_value IS NOT NULL
