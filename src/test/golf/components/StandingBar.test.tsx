@@ -81,9 +81,11 @@ describe('deltaVsTeam', () => {
     expect(deltaVsTeam(35, 38, 'higher_better')).toEqual({ arrow: '↓', tone: 'bad' });
   });
   it('inverts for lower_better metrics', () => {
-    // Penalty rate: 0.4 < 0.6 means player is BETTER
-    expect(deltaVsTeam(0.4, 0.6, 'lower_better')).toEqual({ arrow: '↓', tone: 'good' });
-    expect(deltaVsTeam(0.8, 0.6, 'lower_better')).toEqual({ arrow: '↑', tone: 'bad' });
+    // Penalty rate: 0.4 < 0.6 means player is BETTER. Audit NUM-13 changed
+    // the contract on purpose: the arrow follows better/worse (↑ = better),
+    // not the raw value, so it can never disagree with tone and caption.
+    expect(deltaVsTeam(0.4, 0.6, 'lower_better')).toEqual({ arrow: '↑', tone: 'good' });
+    expect(deltaVsTeam(0.8, 0.6, 'lower_better')).toEqual({ arrow: '↓', tone: 'bad' });
   });
   it('treats sub-noise deltas as neutral', () => {
     expect(deltaVsTeam(38.001, 38, 'higher_better').tone).toBe('neutral');

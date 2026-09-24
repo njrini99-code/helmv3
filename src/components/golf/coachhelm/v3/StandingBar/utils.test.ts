@@ -6,7 +6,7 @@
  */
 import { describe, expect, it } from 'vitest';
 
-import { fitScale, formatValue, toScalePct } from './utils';
+import { deltaVsTeam, fitScale, formatValue, teamRelativeText, toScalePct } from './utils';
 
 describe('toScalePct — NaN guard', () => {
   it('returns 0 instead of NaN for a NaN value', () => {
@@ -60,5 +60,33 @@ describe('fitScale', () => {
     const scale = fitScale({ min: 60, max: 100 }, [48, null, Number.NaN]);
     expect(scale.max).toBe(100);
     expect(scale.min).toBeLessThan(48);
+  });
+});
+
+// Audit NUM-13: one sign convention across CoachHelm. The "vs team" pill's
+// arrow, tone and caption must all derive from the same better/worse value,
+// so a lower-is-better metric where the player beats the team reads
+// "↑ … Above team average", never "↓ … Above team average".
+describe('deltaVsTeam — arrow follows better/worse, not raw direction (NUM-13)', () => {
+  it('points up for a lower-is-better metric where the player beats the team', () => {
+    // Approach proximity 125-175 yd: you 37 ft vs team 45 ft (lower is better).
+    expect(deltaVsTeam(37, 45, 'lower_better', 'feet')).toEqual({ arrow: '↑', tone: 'good' });
+    expect(teamRelativeText(37, 45, 'lower_better', 'feet')).toBe('Above team average');
+  });
+  it('points down for a lower-is-better metric where the player trails the team', () => {
+    expect(deltaVsTeam(0.8, 0.6, 'lower_better', 'count')).toEqual({ arrow: '↓', tone: 'bad' });
+    expect(teamRelativeText(0.8, 0.6, 'lower_better', 'count')).toBe('Below team average');
+  });
+  it('agrees with the tone for every direction and side', () => {
+    const cases: Array<[number, number, 'higher_better' | 'lower_better']> = [
+      [42, 38, 'higher_better'],
+      [35, 38, 'higher_better'],
+      [0.4, 0.6, 'lower_better'],
+      [0.8, 0.6, 'lower_better'],
+    ];
+    for (const [you, team, dir] of cases) {
+      const d = deltaVsTeam(you, team, dir);
+      expect(d.arrow).toBe(d.tone === 'good' ? '↑' : '↓');
+    }
   });
 });

@@ -151,7 +151,8 @@ export function valuesDisplayEqual(a: number, b: number, unit?: Unit): boolean {
 
 /**
  * Derive an arrow + semantic tone for "player vs team" comparison.
- * Used by the size-variant headers (↑ vs team / ↓ vs team).
+ * Used by the size-variant headers (↑ vs team / ↓ vs team). ↑ = better than
+ * the team, ↓ = worse, for every metric direction.
  *
  * Returns 'neutral' when the values render identically (see
  * `valuesDisplayEqual`) or team is null.
@@ -169,11 +170,14 @@ export function deltaVsTeam(
     return { arrow: '·', tone: 'neutral' };
   }
   const diff = player_value - team_avg;
-  // Arrow describes WHERE the player sits relative to team (above/below).
-  // Tone describes whether that's good or bad for this metric's direction.
-  const arrow: '↑' | '↓' = diff > 0 ? '↑' : '↓';
+  // ONE SIGN CONVENTION (audit NUM-13, same rule as the CoachHelm overview):
+  // arrow, tone and the `teamRelativeText` caption all derive from the SAME
+  // better/worse judgement. ↑ means better than the team, ↓ means worse,
+  // whatever the metric's direction. The arrow used to follow the raw value,
+  // so a lower-is-better row the player won read "↓ vs team … Above team
+  // average" (proximity 37 ft vs team 45 ft).
   const better = direction === 'higher_better' ? diff > 0 : diff < 0;
-  return { arrow, tone: better ? 'good' : 'bad' };
+  return better ? { arrow: '↑', tone: 'good' } : { arrow: '↓', tone: 'bad' };
 }
 
 /**
