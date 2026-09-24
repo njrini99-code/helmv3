@@ -10,12 +10,6 @@ import type { ReactNode } from 'react';
 const whatIfProps = vi.fn();
 const getPlayerWhatIfMock = vi.fn();
 
-vi.mock('@/components/fairway', () => ({
-  Tabs: ({ children }: { children: ReactNode }) => <div>{children}</div>,
-  TabsList: ({ children }: { children: ReactNode }) => <div>{children}</div>,
-  TabsTrigger: ({ children }: { children: ReactNode }) => <div>{children}</div>,
-  TabsContent: ({ children }: { children: ReactNode }) => <div>{children}</div>,
-}));
 vi.mock('@/components/fairway/modules', () => ({
   DrillPanel: ({ children }: { children: ReactNode }) => <div>{children}</div>,
   useStage: () => ({ home: vi.fn() }),
