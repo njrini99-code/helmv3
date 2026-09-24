@@ -24,6 +24,7 @@ import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'rea
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import Image from 'next/image';
+import { TopBarRouteActionOutlet, TopBarRouteActionProvider } from '@/components/fairway/app-shell/TopBarRouteAction';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { LazyMotion, MotionConfig } from 'framer-motion';
 import { loadFeatures } from '@/lib/motion/load-features';
@@ -571,6 +572,7 @@ function FairwayDashboardContent({
   const topBarActions = useMemo(
     () => (
       <>
+        <TopBarRouteActionOutlet />
         {notificationBell}
         {teamSwitcher}
         {mobileMoreButton}
@@ -695,81 +697,83 @@ function FairwayDashboardContent({
     <MotionConfig reducedMotion={showAnimations ? 'user' : 'always'}>
       {skipLink}
 
-      <AppShell
-        sections={sections}
-        user={shellUser}
-        brand={brand}
-        sidebarFooter={sidebarFooter}
-        topBarActions={topBarActions}
-        accentColor={accentColor}
-        pathname={pathname}
-        linkComponent={ShellLink}
-        breadcrumbs={breadcrumbs}
-        backLink={backLink}
-        collapsible={true}
-        // The dashboard route `template.tsx` already owns the route-reveal fade
-        // (one keyed motion div). Disabling the shell's own RouteTransition here
-        // prevents BOTH from fading on navigation — that compounded the opacity
-        // and read as a heavy, laggy double-fade. One fade, one source of truth.
-        disableRouteTransition
-        // Pages own their gutters (horizontal padding + max-width) and their
-        // page-title blocks, exactly as in the legacy shell whose <main> had no
-        // content padding. The shell keeps only the bottom home-indicator pad.
-        contentPadding={false}
-        constrainContent={false}
-        mobileOpen={mobileOpen}
-        onMobileOpenChange={setMobileOpen}
-        onSearchOpen={openCommandPalette}
-        searchPlaceholder="Search players, rounds, pages…"
-        // The shared sub-tab strip renders as part of AppShell's ONE sticky
-        // chrome unit; `pageTitle` is the name the bar shows on phone (see
-        // `mobilePageTitle` above — hub label inside a hub, crumb leaf
-        // otherwise).
-        subNav={subNav}
-        pageTitle={mobilePageTitle}
-        // M1: the More sheet's identity row links here; its footer is the
-        // light-themed Settings + Sign out row (moreSheetFooter, below).
-        settingsHref="/golf/dashboard/settings"
-        bottomNavHrefs={bottomNavHrefs}
-        moreSheetFooter={moreSheetFooter}
-        // OD-14: persistent five-tab mobile bar (md:hidden). The long tail
-        // lives in the More sheet, opened from the nav bar's More button.
-        bottomNav={bottomNav}
-        className={cn(displayDensity === 'compact' && 'density-compact', !showAnimations && 'reduce-motion')}
-      >
-        <div
-          id="main-content"
-          tabIndex={-1}
-          className={cn(
-            'outline-none',
-            // #948 follow-up — ChatDrawer's coach-only launcher FAB (v3/Chat/
-            // ChatDrawer.tsx) is `fixed bottom-6 right-6` at `md:flex` (desktop
-            // only), mounted once for every coach dashboard route. Nothing in
-            // AppShell's own bottom padding (see AppShell.tsx's home-indicator
-            // + mobile bottom-nav clearance, both md:-scoped away to near-zero)
-            // accounts for it, so the last row of any content that reaches the
-            // page's true bottom edge sat directly under the FAB on desktop —
-            // confirmed on roster/dashboard/round-review at 1440x900. Reserve
-            // real clearance (the FAB's ~80px footprint + a comfortable buffer)
-            // at md+ ONLY, and only for coach routes (players never render the
-            // launcher at all, so their pages keep the tighter default).
-            role === 'coach' && 'md:pb-28',
-            // That FAB clearance is real height this shell consumes, so a
-            // full-viewport surface has to subtract it too. Re-declare
-            // `--fw-shell-offset` (AppShell sets the base) for this subtree at
-            // the same breakpoint and the same 7rem, or `/dashboard/coachhelm/
-            // chat` overshoots by exactly that much on a coach's desktop.
-            role === 'coach' &&
-              'md:[--fw-shell-offset:calc(4rem+env(safe-area-inset-top,0px)+2rem+env(safe-area-inset-bottom,0px)+7rem)]',
-          )}
+      <TopBarRouteActionProvider>
+        <AppShell
+          sections={sections}
+          user={shellUser}
+          brand={brand}
+          sidebarFooter={sidebarFooter}
+          topBarActions={topBarActions}
+          accentColor={accentColor}
+          pathname={pathname}
+          linkComponent={ShellLink}
+          breadcrumbs={breadcrumbs}
+          backLink={backLink}
+          collapsible={true}
+          // The dashboard route `template.tsx` already owns the route-reveal fade
+          // (one keyed motion div). Disabling the shell's own RouteTransition here
+          // prevents BOTH from fading on navigation — that compounded the opacity
+          // and read as a heavy, laggy double-fade. One fade, one source of truth.
+          disableRouteTransition
+          // Pages own their gutters (horizontal padding + max-width) and their
+          // page-title blocks, exactly as in the legacy shell whose <main> had no
+          // content padding. The shell keeps only the bottom home-indicator pad.
+          contentPadding={false}
+          constrainContent={false}
+          mobileOpen={mobileOpen}
+          onMobileOpenChange={setMobileOpen}
+          onSearchOpen={openCommandPalette}
+          searchPlaceholder="Search players, rounds, pages…"
+          // The shared sub-tab strip renders as part of AppShell's ONE sticky
+          // chrome unit; `pageTitle` is the name the bar shows on phone (see
+          // `mobilePageTitle` above — hub label inside a hub, crumb leaf
+          // otherwise).
+          subNav={subNav}
+          pageTitle={mobilePageTitle}
+          // M1: the More sheet's identity row links here; its footer is the
+          // light-themed Settings + Sign out row (moreSheetFooter, below).
+          settingsHref="/golf/dashboard/settings"
+          bottomNavHrefs={bottomNavHrefs}
+          moreSheetFooter={moreSheetFooter}
+          // OD-14: persistent five-tab mobile bar (md:hidden). The long tail
+          // lives in the More sheet, opened from the nav bar's More button.
+          bottomNav={bottomNav}
+          className={cn(displayDensity === 'compact' && 'density-compact', !showAnimations && 'reduce-motion')}
         >
-          <Suspense fallback={null}>
-            <SearchViewProbe onChange={setSearchView} />
-          </Suspense>
-          <NoTeamBanner />
-          <GolfRouteRefresh pathname={pathname}>{children}</GolfRouteRefresh>
-        </div>
-      </AppShell>
+          <div
+            id="main-content"
+            tabIndex={-1}
+            className={cn(
+              'outline-none',
+              // #948 follow-up — ChatDrawer's coach-only launcher FAB (v3/Chat/
+              // ChatDrawer.tsx) is `fixed bottom-6 right-6` at `md:flex` (desktop
+              // only), mounted once for every coach dashboard route. Nothing in
+              // AppShell's own bottom padding (see AppShell.tsx's home-indicator
+              // + mobile bottom-nav clearance, both md:-scoped away to near-zero)
+              // accounts for it, so the last row of any content that reaches the
+              // page's true bottom edge sat directly under the FAB on desktop —
+              // confirmed on roster/dashboard/round-review at 1440x900. Reserve
+              // real clearance (the FAB's ~80px footprint + a comfortable buffer)
+              // at md+ ONLY, and only for coach routes (players never render the
+              // launcher at all, so their pages keep the tighter default).
+              role === 'coach' && 'md:pb-28',
+              // That FAB clearance is real height this shell consumes, so a
+              // full-viewport surface has to subtract it too. Re-declare
+              // `--fw-shell-offset` (AppShell sets the base) for this subtree at
+              // the same breakpoint and the same 7rem, or `/dashboard/coachhelm/
+              // chat` overshoots by exactly that much on a coach's desktop.
+              role === 'coach' &&
+                'md:[--fw-shell-offset:calc(4rem+env(safe-area-inset-top,0px)+2rem+env(safe-area-inset-bottom,0px)+7rem)]',
+            )}
+          >
+            <Suspense fallback={null}>
+              <SearchViewProbe onChange={setSearchView} />
+            </Suspense>
+            <NoTeamBanner />
+            <GolfRouteRefresh pathname={pathname}>{children}</GolfRouteRefresh>
+          </div>
+        </AppShell>
+      </TopBarRouteActionProvider>
 
       {/* Globals — the same set GolfDashboardShell mounts. */}
       <NativeSwipeBackBridge />

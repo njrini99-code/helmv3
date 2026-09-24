@@ -42,6 +42,7 @@ import {
   type GroupMember,
   type GroupAddCandidate,
 } from './GroupDetailsSheet';
+import { TopBarRouteAction } from '@/components/fairway/app-shell/TopBarRouteAction';
 import { MessageComposer } from './MessageComposer';
 import { isTransientNetworkErrorMessage } from '@/lib/transient-network-error';
 
@@ -594,14 +595,31 @@ export function FairwayMessages() {
     );
   }
 
+  const composeActions = (
+    <>
+      {userRole === 'coach' && teamId ? (
+        <IconButton variant="ghost" aria-label="Message team" title="Message team" onClick={() => setShowTeamBroadcastModal(true)}>
+          <Users size={20} aria-hidden="true" />
+        </IconButton>
+      ) : null}
+      <IconButton variant="primary" aria-label="New message" title="New message" onClick={() => setShowNewMessageModal(true)}>
+        <SquarePen size={20} aria-hidden="true" />
+      </IconButton>
+    </>
+  );
+
   return (
     <div
       data-fw-messages
+      data-fw-thread-open={mobileShowChat ? '' : undefined}
       data-fw-keyboard-aware
       className={fairwayScope(
         mobileShowChat
           ? 'flex h-[calc(100dvh-var(--keyboard-height,0px))] flex-col overflow-hidden bg-canvas bg-canvas-gradient pt-[env(safe-area-inset-top,0px)] md:h-dvh md:pt-0'
-          : 'flex h-[calc(100dvh-var(--fw-mobile-nav-height))] flex-col overflow-hidden bg-canvas bg-canvas-gradient pt-[env(safe-area-inset-top,0px)] md:h-dvh md:pt-0'
+          : // DASH-18: the list sits under the shared top bar on mobile (4rem +
+            // the top safe area, which the bar itself pads), so it no longer
+            // pads the safe area or draws its own title row there.
+            'flex h-[calc(100dvh-var(--fw-mobile-nav-height)-4rem-env(safe-area-inset-top,0px))] flex-col overflow-hidden bg-canvas bg-canvas-gradient md:h-dvh'
       )}
     >
       <div className="flex w-full min-h-0 flex-1 flex-col overflow-hidden">
@@ -610,18 +628,10 @@ export function FairwayMessages() {
           <aside className={mobileShowChat
             ? 'hidden min-h-0 md:flex md:flex-col md:border-r md:border-border-subtle md:bg-surface'
             : 'flex w-full min-h-0 flex-col md:border-r md:border-border-subtle md:bg-surface'}>
-            <div className="flex min-h-16 shrink-0 items-center justify-between gap-1 px-4 md:border-b md:border-border-subtle">
+            {mobileShowChat ? null : <TopBarRouteAction>{composeActions}</TopBarRouteAction>}
+            <div className="hidden min-h-16 shrink-0 items-center justify-between gap-1 px-4 md:flex md:border-b md:border-border-subtle">
               <h1 className="font-fw-sans text-h2 font-semibold tracking-tight text-text-primary md:text-h3">Messages</h1>
-              <div className="flex items-center gap-1">
-                {userRole === 'coach' && teamId ? (
-                  <IconButton variant="ghost" aria-label="Message team" title="Message team" onClick={() => setShowTeamBroadcastModal(true)}>
-                    <Users size={20} aria-hidden="true" />
-                  </IconButton>
-                ) : null}
-                <IconButton variant="primary" aria-label="New message" title="New message" onClick={() => setShowNewMessageModal(true)}>
-                  <SquarePen size={20} aria-hidden="true" />
-                </IconButton>
-              </div>
+              <div className="flex items-center gap-1">{composeActions}</div>
             </div>
             <PullToRefresh onRefresh={handleConversationsRefresh} className="min-h-0 flex-1 overflow-y-auto overscroll-contain touch-pan-y px-3 py-3">
               <MessageConversationRail

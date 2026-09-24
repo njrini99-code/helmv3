@@ -166,9 +166,17 @@
 
   /* The messaging workspace supplies its own header and bottom budget.
      Keep app navigation; remove duplicate chrome only while this route exists. */
-  body:has([data-fw-messages]) [data-slot='fw-topbar'],
+  /* DASH-18: on a phone the conversation list keeps the shared top bar (bell,
+     avatar, compose as the route action); an open thread and the wide
+     two-pane workspace still draw their own header. */
+  body:has([data-fw-messages][data-fw-thread-open]) [data-slot='fw-topbar'],
   body:has([data-fw-messages]) [data-slot='fairway-hub-subnav'] {
     display: none;
+  }
+  @media (min-width: 768px) {
+    body:has([data-fw-messages]) [data-slot='fw-topbar'] {
+      display: none;
+    }
   }
   body:has([data-fw-messages]) [data-slot='fw-shell-content'] {
     padding-bottom: 0;
