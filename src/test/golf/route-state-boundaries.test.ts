@@ -31,14 +31,6 @@ const REDIRECT_ONLY = new Set([
   'src/app/golf/(dashboard)/dashboard/[...missing]',
 ]);
 
-/** Real pages still without a page-shaped loading.tsx (STATE-X1 debt; shrink only). */
-const LOADING_DEBT = new Set([
-  'src/app/golf/admin/demo-sessions',
-  'src/app/golf/(onboarding)/coach/pending',
-  'src/app/golf/staff/join/[token]',
-  'src/app/golf/(dashboard)/dashboard/dev/haptics',
-]);
-
 function pageDirs(dir: string, out: string[] = []): string[] {
   for (const name of readdirSync(dir)) {
     const p = join(dir, name);
@@ -62,9 +54,9 @@ describe('golf route segments own their error and loading states (STATE-X1)', ()
     expect(missing).toEqual([]);
   });
 
-  it('every non-redirect segment has its own loading.tsx, apart from the listed debt', () => {
+  it('every non-redirect segment has its own loading.tsx', () => {
     const missing = SEGMENTS.filter(
-      (s) => !REDIRECT_ONLY.has(s) && !LOADING_DEBT.has(s) && !existsSync(resolve(ROOT, s, 'loading.tsx')),
+      (s) => !REDIRECT_ONLY.has(s) && !existsSync(resolve(ROOT, s, 'loading.tsx')),
     );
     expect(missing).toEqual([]);
   });
@@ -74,12 +66,6 @@ describe('golf route segments own their error and loading states (STATE-X1)', ()
       const page = resolve(ROOT, s, 'page.tsx');
       expect(existsSync(page), `${s} no longer exists; drop it from REDIRECT_ONLY`).toBe(true);
       expect(readFileSync(page, 'utf8'), `${s} is listed as redirect-only`).toMatch(/\b(permanentRedirect|redirect|notFound)\(/);
-    }
-    for (const s of LOADING_DEBT) {
-      expect(existsSync(resolve(ROOT, s, 'page.tsx')), `${s} no longer exists; drop it from LOADING_DEBT`).toBe(true);
-      expect(existsSync(resolve(ROOT, s, 'loading.tsx')), `${s} now has loading.tsx; drop it from LOADING_DEBT`).toBe(
-        false,
-      );
     }
   });
 
