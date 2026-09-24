@@ -833,8 +833,11 @@ a new maturation confirmation.
 - `memory/context/golfhelm-features.md`
 - `docs/v3-feature-audit.md`
 
-Stats uses CoachHelmShell as its only horizontal container, including the loading fallback. On
-phones, selected development/standing/detail views prioritize their content over the overview spine;
-desktop retains its side-by-side context. The round scope picker and Log round action retain 44px
+Stats uses CoachHelmShell as its only horizontal container, including the loading fallback. The
+Player CoachHelm overview (2026-09-24 rebuild) has no spine at any width: the section tabs sit above one
+full-width stage whose home view is `PlayerHubFeed` (masthead with the next-round window, last round
+and the one primary action, then What's changing, Why, Patterns behind your scores, Your plan). Its
+numbers come from one source each (`buildPlayerHubViewModel.ts`); the 30-day shot-analytics ledger that
+contradicted the stats-cache snapshot (audit NUM-22) and its `getPlayerShotAnalytics` read are gone. The round scope picker and Log round action retain 44px
 touch targets. What-if results reveal with opacity/translation rather than animated layout height,
 and honor reduced motion.

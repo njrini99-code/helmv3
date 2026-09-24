@@ -9,7 +9,7 @@
  * one level deep).
  * ========================================================================== */
 
-import { DrillPanel, useStage } from '@/components/fairway/modules';
+import { DrillPanel } from '@/components/fairway/modules';
 import { ShotAnalysisCard } from '@/components/golf/coachhelm/player/ShotAnalysisCard';
 import { WhatIfPanel } from '@/components/golf/coachhelm/player/WhatIfPanel';
 import { getPlayerWhatIf } from '@/app/golf/actions/coachhelm-data';
@@ -23,13 +23,12 @@ export interface DeepDiveDrillProps {
 }
 
 export function DeepDiveDrill({ playerId, shotData, profileData }: DeepDiveDrillProps) {
-  const { home } = useStage();
   const rawPrediction = profileData?.currentPrediction;
   const baselinePrediction =
     typeof rawPrediction === 'number' && Number.isFinite(rawPrediction) ? rawPrediction : null;
 
   return (
-    <DrillPanel title="Deep dive" backLabel="Home" onBack={home}>
+    <DrillPanel title="Deep dive">
       <div className="space-y-4">
         <ShotAnalysisCard shotData={shotData ?? undefined} playerId={playerId} />
         <WhatIfPanel

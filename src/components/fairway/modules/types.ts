@@ -64,8 +64,10 @@ export interface StageRouterProps {
 
 export interface DrillPanelProps {
   title: string;
-  backLabel: string;             // e.g. "All areas"
-  onBack: () => void;
+  /** Back chip label, e.g. "All areas". Only rendered with `onBack`. */
+  backLabel?: string;
+  /** Omit to render no back chip (a surface whose tabs already lead home). */
+  onBack?: () => void;
   chip?: ReactNode;
   children: ReactNode;
 }

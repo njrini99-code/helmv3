@@ -38,7 +38,7 @@ const SECTION_KEYS = new Set<string>(SECTIONS.map((section) => section.key));
 /**
  * Label of the CoachHelm section the `?view=` param currently selects.
  *
- * The stage has no visible page title — `PlayerSpine` is the hero — so the
+ * The stage has no visible page title (the overview opens on its masthead), so the
  * surface shipped with NO `<h1>` at all and jumped straight to `<h2>`
  * (audit P-21). Callers render this inside a visually-hidden heading so the
  * document has a top-level title that tracks the active section.

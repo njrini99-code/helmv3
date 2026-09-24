@@ -18,7 +18,7 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Clock, CheckCircle2, Target } from 'lucide-react';
 
-import { DrillPanel, useStage } from '@/components/fairway/modules';
+import { DrillPanel } from '@/components/fairway/modules';
 import { useMediaQuery } from '@/hooks/use-media-query';
 import {
   Button,
@@ -357,7 +357,6 @@ export function DevelopmentDrill({
   achievedGoals = [],
   practiceLogEnabled = false,
 }: DevelopmentDrillProps) {
-  const { home } = useStage();
   const router = useRouter();
   const { addToast } = useToast();
   const [, startTransition] = useTransition();
@@ -555,7 +554,7 @@ export function DevelopmentDrill({
   );
 
   return (
-    <DrillPanel title="Development" backLabel="Home" onBack={home} chip={headerActions}>
+    <DrillPanel title="Development" chip={headerActions}>
       {loadError ? (
         <InlineNotice
           tone="danger"

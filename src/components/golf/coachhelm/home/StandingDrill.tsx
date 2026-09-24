@@ -9,7 +9,7 @@
  * verbatim from `my-standing/page.tsx` (now a redirect shim onto this view).
  * ========================================================================== */
 
-import { DrillPanel, useStage } from '@/components/fairway/modules';
+import { DrillPanel } from '@/components/fairway/modules';
 import { StandingStrip, Surface, EmptyState } from '@/components/fairway';
 import {
   METRIC_RENDER_CONFIG,
@@ -50,7 +50,6 @@ export interface PlayerStandingDrillProps {
 }
 
 export function StandingDrill({ standingByMetric, playerBaseline }: PlayerStandingDrillProps) {
-  const { home } = useStage();
 
   const byCategory = new Map<string, Array<{ id: MetricId; standing: PlayerStanding; cfg: MetricRenderConfig }>>();
   for (const id of METRIC_IDS) {
@@ -66,7 +65,7 @@ export function StandingDrill({ standingByMetric, playerBaseline }: PlayerStandi
   const totalRows = groups.reduce((a, g) => a + (byCategory.get(g.category)?.length ?? 0), 0);
 
   return (
-    <DrillPanel title="Standing" backLabel="Home" onBack={home}>
+    <DrillPanel title="Standing">
       {totalRows === 0 ? (
         <Surface elevation="border" padding="lg">
           <EmptyState

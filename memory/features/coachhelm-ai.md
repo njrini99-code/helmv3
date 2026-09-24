@@ -307,6 +307,15 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
   (present in this repo) rather than reintroducing a DetailGrid-style text
   table. (STU, source: `spine-stage-redesign.md` dated 2026-07-20; verified
   2026-09-05 that `src/components/fairway/modules/` exists.)
+  **Exception, 2026-09-24:** the Player CoachHelm overview
+  (`/golf/dashboard/coachhelm`, no `?view=`) no longer uses the spine or the
+  bento. It is `PlayerHubFeed` (`components/golf/coachhelm/home/`), a
+  single-column read of trends, root-cause insight units, patterns and the
+  plan, built by `buildPlayerHubViewModel.ts` (one source per number, one sign
+  convention: a signed number is always + better / − worse). Stats owns the
+  SG hero, snapshot and standing; the overview does not repeat them. The
+  section tabs are the only navigation, so CoachHelm drills render no "Home"
+  back chip (`DrillPanel` renders one only when `onBack` is passed).
 - **A "Rendered more hooks than during the previous render" / React #310
   report on this surface is not automatically the same bug twice.** On
   `/golf/dashboard/stats` it was a Turbopack HMR/Fast-Refresh and stale-chunk

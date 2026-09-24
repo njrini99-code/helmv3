@@ -3,7 +3,6 @@ import Link from 'next/link';
 import { getGolfSessionProfile } from '@/lib/auth/session';
 import { createClient } from '@/lib/supabase/server';
 import { getPlayerCoachHelmDashboard } from '@/app/golf/actions/insights';
-import { getPlayerShotAnalytics } from '@/app/golf/actions/shot-analytics';
 import { getPlayerFingerprint } from '@/app/golf/actions/player-fingerprint';
 import type { PlayerFingerprint } from '@/app/golf/actions/player-fingerprint-types';
 import {
@@ -565,12 +564,14 @@ export default async function PlayerCoachHelmPage() {
     }
   })();
 
-  // Fetch CoachHelm dashboard data, shot analytics, and the new evidence-backed
-  // insight feed (top + secondary) in parallel. The insight-delivery fetchers
+  // Fetch CoachHelm dashboard data and the evidence-backed insight feed
+  // (top + secondary) in parallel. The 30-day shot-analytics read that used to
+  // join this batch fed only the old spine ledger, whose numbers contradicted
+  // the stats-cache snapshot beside it (audit NUM-22); the overview no longer
+  // prints either, so the read is gone. The insight-delivery fetchers
   // are the canonical source for the hero-card layout; `getPlayerCoachHelmDashboard`
   // still provides focus areas, prediction, and recent-round metadata.
   let dashboardResult: Awaited<ReturnType<typeof getPlayerCoachHelmDashboard>>;
-  let analyticsResult: Awaited<ReturnType<typeof getPlayerShotAnalytics>>;
   let topInsight: Awaited<ReturnType<typeof getTopInsightForPlayer>> = null;
   let secondaryInsights: Awaited<ReturnType<typeof getInsightsForPlayer>> = [];
   // Hierarchical THEME scaffold (flag-gated read; only consumed in the redesign
@@ -579,10 +580,9 @@ export default async function PlayerCoachHelmPage() {
   // wrapper rather than the fail-the-page Promise.all alongside it.
   let themesRes: Awaited<ReturnType<typeof getThemesForPlayer>> | null = null;
   try {
-    [dashboardResult, analyticsResult, topInsight, secondaryInsights, themesRes] =
+    [dashboardResult, topInsight, secondaryInsights, themesRes] =
       await Promise.all([
         getPlayerCoachHelmDashboard(player.id),
-        getPlayerShotAnalytics(player.id, 30),
         getTopInsightForPlayer(player.id),
         // Pull a small buffer — the client dedupes the hero id and displays up to 5.
         getInsightsForPlayer(player.id, { limit: 6 }),
@@ -669,7 +669,6 @@ export default async function PlayerCoachHelmPage() {
         <PlayerCoachHelmHome
           data={dashboardResult.data}
           playerId={player.id}
-          initialShotAnalytics={analyticsResult.success ? analyticsResult.data : null}
           profileData={profileData}
           trendData={trendData}
           shotData={shotData}

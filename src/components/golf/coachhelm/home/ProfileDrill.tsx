@@ -29,7 +29,7 @@
 
 import { useState } from 'react';
 
-import { DrillPanel, useStage } from '@/components/fairway/modules';
+import { DrillPanel } from '@/components/fairway/modules';
 import { Surface, InsufficientData } from '@/components/fairway';
 import { PlayerGenomeProfile } from '@/components/fairway/pages/genome/PlayerGenomeProfile';
 import { Segmented, type SegmentedOption } from '@/components/fairway/controls/segmented';
@@ -100,7 +100,6 @@ export function ProfileDrill({
   v3EmptyCodes = {},
   fingerprint = null,
 }: ProfileDrillProps) {
-  const { home } = useStage();
   const hasFingerprint = fingerprint != null;
   const [tab, setTab] = useState<ProfileTab>(hasFingerprint ? 'fingerprint' : 'genome');
 
@@ -162,7 +161,7 @@ export function ProfileDrill({
   );
 
   return (
-    <DrillPanel title="Game profile" backLabel="Home" onBack={home}>
+    <DrillPanel title="Game profile">
       {hasFingerprint ? (
         <div className="flex flex-col gap-6">
           <Segmented<ProfileTab>

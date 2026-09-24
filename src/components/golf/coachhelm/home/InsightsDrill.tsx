@@ -7,18 +7,18 @@
  * The secondary insight feed (ported from `FairwayPlayerCoachHelm`'s "More
  * for you" section) — hierarchical THEMES (flag on + present) REPLACE the
  * flat feed, exactly as the monolith did; the top insight itself lives on
- * the bento home, so this feed is the REST of the evidence (deduped).
+ * the overview (`PlayerHubFeed`), so this feed is the REST of the evidence (deduped).
  *
  * FIX 1: `topInsightDrills` carries the OVERFLOW of the top insight's
- * prescribed drills — `PlayerHomeBento` renders only the first attached
- * drill (space-constrained bento cell), so anything beyond that (indices
+ * prescribed drills — the overview shows only the first attached drill,
+ * so anything beyond that (indices
  * 1+, still ranked/capped at 3 by `insight-delivery.ts`) surfaces here via
  * `PracticeRxPanel` so every attached drill stays visible somewhere.
  * ========================================================================== */
 
 import { useMemo, useState } from 'react';
 
-import { DrillPanel, useStage } from '@/components/fairway/modules';
+import { DrillPanel } from '@/components/fairway/modules';
 import { InsightCard, InsightPanel, Eyebrow, type InsightPanelAction, type InsightPriority } from '@/components/fairway';
 import { StandingStrip } from '@/components/fairway/charts/StandingStrip';
 import { PracticeRxPanel } from '@/components/fairway/pages/coachhelm/PracticeRxPanel';
@@ -92,7 +92,7 @@ export interface InsightsDrillProps {
   onMakePlan: (cause: CauseNode, theme: ThemeNode) => void;
   makePlanPendingId: string | null;
   /** FIX 1: overflow of the top insight's prescribed drills (index 1+) —
-   *  `PlayerHomeBento` already rendered the first one. Empty/undefined when
+   *  the overview already rendered the first one. Empty/undefined when
    *  the top insight has 0 or 1 attached drills. */
   topInsightDrills?: InsightAttachedDrill[];
   /** Deep link (`?view=insights&insight=<id>`): open this insight's evidence
@@ -111,7 +111,6 @@ export function InsightsDrill({
   topInsightDrills = [],
   initialOpenInsight = null,
 }: InsightsDrillProps) {
-  const { home } = useStage();
   const [openInsight, setOpenInsight] = useState<EvidenceInsight | null>(initialOpenInsight);
 
   const showThemes = themesEnabled && themes.length > 0;
@@ -122,7 +121,7 @@ export function InsightsDrill({
   const groupedInsights = useMemo(() => groupInsightsByCategory(insights), [insights]);
 
   return (
-    <DrillPanel title="Insights" backLabel="Home" onBack={home}>
+    <DrillPanel title="Insights">
       {topInsightDrills.length > 0 ? (
         <div className="mb-6">
           <Eyebrow>More drills for your top insight</Eyebrow>

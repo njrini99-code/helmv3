@@ -14,7 +14,9 @@
  * `onBack` is caller-supplied — the usual wiring is `useStage().home()`, but
  * DrillPanel takes a plain callback so a stage view can also route back to a
  * SIBLING view (e.g. a nested drill returning to a filtered list) without
- * DrillPanel needing to know about StageRouter's internals.
+ * DrillPanel needing to know about StageRouter's internals. Omit `onBack`
+ * (and `backLabel`) on a surface whose section tabs already lead home, so the
+ * chip does not duplicate the tab (Player CoachHelm, audit HUB-01).
  *
  * ADDITIVE ONLY. No Supabase imports — pure props.
  * ========================================================================== */
@@ -32,18 +34,20 @@ export function DrillPanel({ title, backLabel, onBack, chip, children }: DrillPa
       className="py-1"
     >
       <div className="mb-1.5 flex flex-wrap items-center gap-3.5">
-        <PressTarget
-          onClick={onBack}
-          className={cn(
-            'inline-flex items-center gap-1.5 rounded-full border border-accent-200 bg-accent-50',
-            'min-h-11 px-3 py-1.5 text-caption font-bold text-accent-700',
-            'transition-colors [transition-duration:150ms]',
-            'hover:bg-accent-100',
-          )}
-        >
-          <ChevronLeft size={14} strokeWidth={2.25} aria-hidden />
-          {backLabel}
-        </PressTarget>
+        {onBack ? (
+          <PressTarget
+            onClick={onBack}
+            className={cn(
+              'inline-flex items-center gap-1.5 rounded-full border border-accent-200 bg-accent-50',
+              'min-h-11 px-3 py-1.5 text-caption font-bold text-accent-700',
+              'transition-colors [transition-duration:150ms]',
+              'hover:bg-accent-100',
+            )}
+          >
+            <ChevronLeft size={14} strokeWidth={2.25} aria-hidden />
+            {backLabel}
+          </PressTarget>
+        ) : null}
         <h2 className="font-fw-display text-body-lg font-semibold text-text-primary">
           {title}
         </h2>
