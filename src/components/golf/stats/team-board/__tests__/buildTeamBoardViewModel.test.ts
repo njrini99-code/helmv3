@@ -604,4 +604,3 @@ describe('buildTeamBoardViewModel: Form (OD-02)', () => {
     expect(fmtSg(null)).toBe('—');
   });
 });
-

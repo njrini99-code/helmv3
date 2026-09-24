@@ -107,4 +107,3 @@ export function parseTaskDueDate(dueDate: string): Date {
   }
   return new Date(dueDate);
 }
-
