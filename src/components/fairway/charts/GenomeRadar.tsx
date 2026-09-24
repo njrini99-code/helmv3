@@ -29,7 +29,7 @@ import {
   type ChartTableData,
 } from './ChartFrame';
 import { makeChartTooltip } from './ChartTooltip';
-import { VIZ_CHROME, VIZ_COLOR, VIZ_REVEAL_MS, VIZ_FONT } from './theme';
+import { VIZ_CHROME, VIZ_COLOR, VIZ_FONT } from './theme';
 
 export interface GenomeAxis {
   /** dimension name, e.g. "Driving", "Approach", "Putting", "Around Green" */
@@ -151,8 +151,7 @@ export function GenomeRadar({
             strokeWidth={2}
             fill={VIZ_COLOR.accent}
             fillOpacity={0.18}
-            isAnimationActive
-            animationDuration={VIZ_REVEAL_MS}
+            isAnimationActive={false}
             dot={{ r: 2.5, fill: VIZ_COLOR.accent, strokeWidth: 0 }}
           />
         </RadarChart>
