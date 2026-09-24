@@ -5,7 +5,10 @@ import { mapLegacyStatsTab } from '@/components/fairway/modules';
 import { FeatureUnavailable } from '@/components/fairway';
 import { surfaceHref, surfaceName } from '@/lib/golf/surface-registry';
 import type { Metadata } from 'next';
-import { getPlayerStatsDashboardBundle } from '@/app/golf/actions/stats-dashboard';
+import {
+  getPlayerStatsDashboardCritical,
+  getPlayerStatsDashboardDeferred,
+} from '@/app/golf/actions/stats-dashboard';
 import { getPlayerDisplayName, getPlayerRoundOptions } from '@/app/golf/actions/stats-data';
 import type { StatsSpineStageInitialData } from '@/components/golf/stats/spine-stage/StatsSpineStage';
 
@@ -98,15 +101,20 @@ export default async function GolfStatsPage({ searchParams }: GolfStatsPageProps
   let initialStats: StatsSpineStageInitialData | null = null;
   let initialPlayerName: string | null | undefined;
   if (targetPlayerId) {
+    // PERF-R10: the first paint waits only for the critical half (spine and
+    // bento). The deferred half (leak maps, spray, strengths, worst holes,
+    // patterns) starts now and streams to the client as a promise; a failed
+    // read resolves to null and the client fetches the whole bundle itself.
+    const deferred = getPlayerStatsDashboardDeferred(targetPlayerId, 'overall').catch(() => null);
     const [bundle, roundOptions, name] = await Promise.all([
-      getPlayerStatsDashboardBundle(targetPlayerId, 'overall').catch(() => null),
+      getPlayerStatsDashboardCritical(targetPlayerId, 'overall').catch(() => null),
       getPlayerRoundOptions(targetPlayerId).catch(() => null),
       // Only the coach view titles the page with the viewed player's name.
       playerId ? getPlayerDisplayName(targetPlayerId).catch(() => null) : Promise.resolve(undefined),
     ]);
     // A thrown bundle read leaves `initialStats` null → the client fetches
     // and owns the error state, as before.
-    if (bundle) initialStats = { playerId: targetPlayerId, bundle, roundOptions };
+    if (bundle) initialStats = { playerId: targetPlayerId, bundle, roundOptions, deferred };
     initialPlayerName = name;
   }
 

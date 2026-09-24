@@ -97,6 +97,26 @@ export interface StatsSpineStageInitialData {
   bundle: StatsDashboardBundle;
   /** `getPlayerRoundOptions` result: null = read failed, [] = no rounds. Omit to fetch on the client. */
   roundOptions?: RoundOption[] | null;
+  /**
+   * PERF-R10: when the server seeded only the critical half, the deferred
+   * half streams in here. `bundle`'s deferred parts read `reason: 'deferred'`
+   * until it lands; null means the read failed and the client refetches.
+   */
+  deferred?: Promise<StatsDashboardBundle | null>;
+}
+
+const isDeferred = (part: { ok: boolean; reason?: string }) => !part.ok && part.reason === 'deferred';
+
+/** The deferred half's parts laid over the critical half's. */
+function mergeDeferred(critical: StatsDashboardBundle, deferred: StatsDashboardBundle): StatsDashboardBundle {
+  return {
+    ...critical,
+    leak: deferred.leak,
+    spray: deferred.spray,
+    strengthsWeaknesses: deferred.strengthsWeaknesses,
+    worstHoles: deferred.worstHoles,
+    patterns: deferred.patterns,
+  };
 }
 
 /**
@@ -105,7 +125,8 @@ export interface StatsSpineStageInitialData {
  */
 function bundleToState(bundle: StatsDashboardBundle) {
   const standingFailed = !bundle.standing.ok || !bundle.standing.value.success;
-  const leakFailed = !bundle.leak.ok || !bundle.leak.value.success;
+  // A deferred part is still on its way, not failed (PERF-R10).
+  const leakFailed = !isDeferred(bundle.leak) && (!bundle.leak.ok || !bundle.leak.value.success);
   const sw = bundle.strengthsWeaknesses.ok ? bundle.strengthsWeaknesses.value : null;
   return {
     detailedStats: bundle.detailed.ok ? bundle.detailed.value : null,
@@ -386,6 +407,31 @@ export function StatsSpineStage({ playerId, isOwnStats = false, playerName, clas
     }
     void loadAll(playerId, roundScope, { quiet });
   }, [playerId, roundScope, loadAll, initialData, applyBundle]);
+
+  // PERF-R10: the server painted the critical half; lay the deferred half over
+  // it when it streams in. Declared after the seed effect so a seed re-apply
+  // (scope back to 'overall') is followed by this fill. A newer client load
+  // (scope change) retires it through loadRequestRef.
+  useEffect(() => {
+    const seedNow = initialData;
+    if (!seedNow?.deferred || seedNow.playerId !== playerId || roundScope !== 'overall') return;
+    if (!isDeferred(seedNow.bundle.leak)) return;
+    let cancelled = false;
+    const requestId = loadRequestRef.current;
+    setLeakLoading(true);
+    void seedNow.deferred
+      .then((rest) => {
+        if (cancelled || requestId !== loadRequestRef.current) return;
+        if (rest) applyBundle(mergeDeferred(seedNow.bundle, rest));
+        else void loadAll(playerId, 'overall', { quiet: true });
+      })
+      .finally(() => {
+        if (!cancelled) setLeakLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [initialData, playerId, roundScope, applyBundle, loadAll]);
 
   // Round list for the scope picker. Loaded once per player and independent of
   // the stats bundle: a failure here costs the picker, never the page. The

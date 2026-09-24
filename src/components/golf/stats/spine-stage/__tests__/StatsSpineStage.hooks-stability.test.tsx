@@ -502,6 +502,58 @@ describe('StatsSpineStage — hooks-order stability across ?area= switches', { t
   });
 });
 
+describe('StatsSpineStage — PERF-R10 critical/deferred seed', () => {
+  const deferredPart = { ok: false as const, reason: 'deferred' as const };
+  function criticalOnly() {
+    const full = healthyBundle();
+    return {
+      ...full,
+      leak: deferredPart,
+      spray: deferredPart,
+      strengthsWeaknesses: deferredPart,
+      worstHoles: deferredPart,
+      patterns: deferredPart,
+    };
+  }
+
+  beforeEach(() => {
+    getPlayerStatsDashboardBundle.mockReset();
+    mockHealthyBundle();
+    getPlayerRoundOptions.mockReset();
+    getPlayerRoundOptions.mockResolvedValue([]);
+  });
+
+  it('paints the critical half at once and fills the deferred half without a client read', async () => {
+    let resolveDeferred: ((v: ReturnType<typeof healthyBundle>) => void) | null = null;
+    const deferred = new Promise<ReturnType<typeof healthyBundle>>((resolve) => {
+      resolveDeferred = resolve;
+    });
+    render(
+      <StatsSpineStage
+        playerId="p-1"
+        initialData={{ playerId: 'p-1', bundle: criticalOnly() as never, roundOptions: [], deferred: deferred as never }}
+      />,
+    );
+    // The spine renders from the critical half; a pending part is not an error.
+    expect(await screen.findByText('Core ball striking')).toBeInTheDocument();
+    expect(screen.queryByText(/Failed to load stats/)).toBeNull();
+    await act(async () => {
+      resolveDeferred!(healthyBundle());
+    });
+    expect(getPlayerStatsDashboardBundle).not.toHaveBeenCalled();
+  });
+
+  it('fetches the whole bundle when the deferred half failed on the server', async () => {
+    render(
+      <StatsSpineStage
+        playerId="p-1"
+        initialData={{ playerId: 'p-1', bundle: criticalOnly() as never, roundOptions: [], deferred: Promise.resolve(null) }}
+      />,
+    );
+    await waitFor(() => expect(getPlayerStatsDashboardBundle).toHaveBeenCalledWith('p-1', 'overall'));
+  });
+});
+
 describe('coldStartCopy (STATE-01, STATE-02)', () => {
   it('asks a player with zero rounds to log their FIRST round, not "5+"', () => {
     const copy = coldStartCopy({ isOwnStats: true, roundsLogged: 0 });
