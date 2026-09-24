@@ -24,4 +24,3 @@ export const FROSTED_CARD_CLASS = [
   'backdrop-blur-xl backdrop-saturate-150',
   'supports-[not(backdrop-filter:blur(0))]:bg-surface',
 ].join(' ');
-
