@@ -574,7 +574,7 @@ export function FairwayMessages() {
     return (
       // Mobile subtracts FairwayBottomNav's 56px (md:hidden) too, so this empty
       // state never renders taller than the visible viewport above the tab bar.
-      <div className={fairwayScope('flex h-[calc(100dvh-4rem-env(safe-area-inset-top,0px)-2rem-56px-env(safe-area-inset-bottom,0px))] items-center justify-center bg-canvas bg-canvas-gradient p-6 md:h-[calc(100dvh-4rem-env(safe-area-inset-top,0px)-2rem-env(safe-area-inset-bottom,0px))]')}>
+      <div className={fairwayScope('flex h-[calc(100dvh-var(--golf-mobile-header-offset)-2rem-56px-env(safe-area-inset-bottom,0px))] items-center justify-center bg-canvas bg-canvas-gradient p-6 md:h-[calc(100dvh-4rem-env(safe-area-inset-top,0px)-2rem-env(safe-area-inset-bottom,0px))]')}>
         <EmptyState
           icon={Users}
           title="No team found"
@@ -616,10 +616,10 @@ export function FairwayMessages() {
       className={fairwayScope(
         mobileShowChat
           ? 'flex h-[calc(100dvh-var(--keyboard-height,0px))] flex-col overflow-hidden bg-canvas bg-canvas-gradient pt-[env(safe-area-inset-top,0px)] md:h-dvh md:pt-0'
-          : // DASH-18: the list sits under the shared top bar on mobile (4rem +
+          : // DASH-18: the list sits under the shared top bar on mobile (its height +
             // the top safe area, which the bar itself pads), so it no longer
             // pads the safe area or draws its own title row there.
-            'flex h-[calc(100dvh-var(--fw-mobile-nav-height)-4rem-env(safe-area-inset-top,0px))] flex-col overflow-hidden bg-canvas bg-canvas-gradient md:h-dvh'
+            'flex h-[calc(100dvh-var(--fw-mobile-nav-height)-var(--golf-mobile-header-offset))] flex-col overflow-hidden bg-canvas bg-canvas-gradient md:h-dvh'
       )}
     >
       <div className="flex w-full min-h-0 flex-1 flex-col overflow-hidden">

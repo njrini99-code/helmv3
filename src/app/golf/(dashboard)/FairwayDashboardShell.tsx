@@ -704,6 +704,7 @@ function FairwayDashboardContent({
           brand={brand}
           sidebarFooter={sidebarFooter}
           topBarActions={topBarActions}
+          nativeTopBar
           accentColor={accentColor}
           pathname={pathname}
           linkComponent={ShellLink}

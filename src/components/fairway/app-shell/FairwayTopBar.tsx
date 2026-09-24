@@ -130,6 +130,12 @@ export interface FairwayTopBarProps {
    * surface with a single hairline (the sub-nav's own bottom border).
    */
   flush?: boolean;
+  /**
+   * NAT-04 (opt-in, golf): the phone bar as an iOS navigation bar: 44pt tall
+   * with the title centred at 17pt semibold. Desktop is unchanged. Off by
+   * default so Baseball and Lift Lab keep their 64px bar.
+   */
+  nativeBar?: boolean;
   /** Link element (defaults to a plain `<a>`). */
   linkComponent?: ShellLinkComponent;
   className?: string;
@@ -206,6 +212,7 @@ export const FairwayTopBar = memo(forwardRef<HTMLElement, FairwayTopBarProps>(fu
     accentColor,
     pageTitle,
     flush,
+    nativeBar,
     linkComponent,
     className,
   },
@@ -253,7 +260,7 @@ export const FairwayTopBar = memo(forwardRef<HTMLElement, FairwayTopBarProps>(fu
           that renders as part of this same sticky chrome unit — sat on 16px.
           Measured at 390px on every golf route: title left 24, content left 16.
           Nothing in the mobile frame shared a left edge. */}
-      <div className="flex h-16 items-center gap-3 px-4 sm:px-6 lg:px-8 xl:grid xl:grid-cols-[minmax(0,1fr)_340px_minmax(0,1fr)] xl:gap-6">
+      <div className={cn(nativeBar ? 'relative h-11 md:h-16' : 'h-16', 'flex items-center gap-3 px-4 sm:px-6 lg:px-8 xl:grid xl:grid-cols-[minmax(0,1fr)_340px_minmax(0,1fr)] xl:gap-6')}>
         {/* Leading slot — PHONE: the standing destination title. Present from
             first paint, never gated on scroll, never animated. `min-w-0
             flex-1` + `truncate` against the `flex-shrink-0` action cluster
@@ -281,7 +288,10 @@ export const FairwayTopBar = memo(forwardRef<HTMLElement, FairwayTopBarProps>(fu
               the bar shows it only once that has scrolled away. */}
           <span
             className={cn(
-              'pointer-events-none truncate font-fw-sans text-body-sm font-medium text-text-primary',
+              'pointer-events-none truncate font-fw-sans text-text-primary',
+              nativeBar
+                ? 'absolute left-1/2 top-1/2 max-w-[50%] -translate-x-1/2 -translate-y-1/2 text-center text-headline'
+                : 'text-body-sm font-medium',
               'transition-opacity [transition-duration:var(--fw-dur-fast)] motion-reduce:transition-none',
               registeredTitle && !scrolled && 'opacity-0',
             )}

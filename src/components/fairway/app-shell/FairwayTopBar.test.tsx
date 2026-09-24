@@ -192,3 +192,21 @@ describe('FairwayTopBar — phone back link on pushed routes (NAT-04)', () => {
     expect(screen.queryByRole('link', { name: /^Back to/ })).toBeNull();
   });
 });
+
+describe('FairwayTopBar — nativeBar (NAT-04)', () => {
+  it('is a 44pt phone bar with the title centred at 17pt when opted in', () => {
+    const { container } = render(<FairwayTopBar pageTitle="Stats" nativeBar />);
+    const title = container.querySelector('[data-slot="fw-topbar-title"] span')!;
+    expect(title.className).toMatch(/text-headline/);
+    expect(title.className).toMatch(/left-1\/2/);
+    expect(title.closest('[data-slot="fw-topbar-title"]')!.parentElement!.className).toMatch(/\bh-11\b.*md:h-16|md:h-16.*\bh-11\b/);
+  });
+
+  it('keeps the 64px leading-title bar by default (Baseball and Lift Lab)', () => {
+    const { container } = render(<FairwayTopBar pageTitle="Stats" />);
+    const title = container.querySelector('[data-slot="fw-topbar-title"] span')!;
+    expect(title.className).not.toMatch(/text-headline/);
+    expect(title.closest('[data-slot="fw-topbar-title"]')!.parentElement!.className).toMatch(/\bh-16\b/);
+    expect(title.closest('[data-slot="fw-topbar-title"]')!.parentElement!.className).not.toMatch(/\bh-11\b/);
+  });
+});
