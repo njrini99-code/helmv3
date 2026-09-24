@@ -364,7 +364,7 @@ export function OfflineSyncStatus({
               <Button variant="ghost"
                 aria-label={`Sync status: ${statusDisplay.label}. ${isExpanded ? 'Collapse' : 'Expand'} details`}
                 className={cn(
-                  'flex items-center gap-2 px-3 py-2 rounded-xl border shadow-lg backdrop-blur-sm transition-all',
+                  'flex items-center gap-2 px-3 py-2 rounded-xl border shadow-lg backdrop-blur-sm transition',
                   statusDisplay.bgColor,
                   'hover:shadow-xl'
                 )}
@@ -455,7 +455,7 @@ export function OfflineSyncStatus({
                     aria-label={`Sync progress: ${syncProgress.percentComplete}%`}
                   >
                     <div
-                      className="h-full bg-blue-500 rounded-full transition-all duration-300"
+                      className="h-full bg-blue-500 rounded-full transition-[width] duration-300"
                       style={{ width: `${syncProgress.percentComplete}%` }}
                     />
                   </div>
@@ -611,7 +611,7 @@ export function OfflineSyncStatus({
                 aria-label={`Sync progress: ${syncProgress.percentComplete}%`}
               >
                 <div
-                  className="h-full bg-blue-500 rounded-full transition-all duration-300"
+                  className="h-full bg-blue-500 rounded-full transition-[width] duration-300"
                   style={{ width: `${syncProgress.percentComplete}%` }}
                 />
               </div>

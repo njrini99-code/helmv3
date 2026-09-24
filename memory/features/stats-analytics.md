@@ -67,6 +67,14 @@ Round completion
   -> player stats, team stats, roster profile, CoachHelm reads consume cache/source data
 ```
 
+Player Stats first paint (PERF-R10): `stats/page.tsx` awaits
+`getPlayerStatsDashboardCritical` (detailed, trend, standing) and streams
+`getPlayerStatsDashboardDeferred` (leak maps, spray, strengths, worst holes,
+patterns) to `StatsSpineStage` as a promise. Parts owned by the other half
+read `{ ok: false, reason: 'deferred' }`, which is "coming", not "failed". A
+failed deferred read makes the client fetch the whole bundle; scope changes
+still use `getPlayerStatsDashboardBundle`.
+
 ## Business Rules
 
 - Round and shot data remain the source of truth; cached stats are derived.

@@ -221,8 +221,8 @@ export function FairwayDayStrip({
             aria-pressed={dayIsSelected}
             aria-label={`${format(day, 'EEEE, MMMM d')}${
               dayEvents.length
-                ? ` — ${dayEvents.length} event${dayEvents.length === 1 ? '' : 's'}`
-                : ' — no events'
+                ? `, ${dayEvents.length} event${dayEvents.length === 1 ? '' : 's'}`
+                : ', no events'
             }`}
             className={cn(
               'group relative block h-auto min-h-[60px] w-full border-0 font-normal md:min-h-[68px]',

@@ -1039,7 +1039,7 @@ export function HoleShotPath({
                         s.symbolic
                           ? `Penalty, shot ${s.display_index}`
                           : isEntryShot
-                            ? `Reached the green, shot ${s.display_index} — see putting detail`
+                            ? `Reached the green, shot ${s.display_index}, see putting detail`
                             : undefined
                       }
                     >
@@ -1322,7 +1322,7 @@ export function HoleShotPath({
                     {/* Symbolic shots never got a real flight to measure —
                         say so explicitly rather than leaving the reader to
                         infer it from the bare "—" above. */}
-                    {hovered.symbolic ? ' — no distance recorded' : ''}
+                    {hovered.symbolic ? ', no distance recorded' : ''}
                   </span>
                 )}
               </div>

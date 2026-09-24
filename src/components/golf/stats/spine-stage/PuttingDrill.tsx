@@ -113,7 +113,7 @@ function LeakLoadError({ onRetry, retrying }: { onRetry: () => void; retrying: b
       }
     >
       The strokes-gained leak detail failed to load. Your other stats are
-      up to date — retry to pull the make-rate and proximity bands.
+      up to date. Retry to pull the make-rate and proximity bands.
     </InlineNotice>
   );
 }
@@ -530,7 +530,7 @@ export function PuttingDrill({
                         <span className={cn('inline-flex min-w-[46px] items-center justify-center rounded-fw-sm px-1.5 py-1 font-fw-mono', RAMP_CLASSES[makeBand])}>
                           {num(s?.[band.make], 0)}%
                         </span>
-                        {makeN > 0 ? <span className="mt-0.5 block font-fw-sans text-microbadge normal-case tracking-normal text-text-tertiary">n={makeN}</span> : null}
+                        {makeN > 0 ? <span className="mt-0.5 block font-fw-sans text-microlabel normal-case tracking-normal text-text-tertiary">n={makeN}</span> : null}
                       </td>
                       <td className="px-3">{num(s?.firstPuttDistanceByBand?.[band.key], 0)}%</td>
                       <td className="px-3">{num(s?.approachPuttAvgLeaveByBand?.[band.key], 1)} ft</td>
@@ -541,7 +541,7 @@ export function PuttingDrill({
                 })}</tbody>
               </table>
             </div>
-            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 font-fw-sans text-microbadge normal-case tracking-normal text-text-tertiary">
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 font-fw-sans text-microlabel normal-case tracking-normal text-text-tertiary">
               <span className="font-medium text-text-secondary">Make % ·</span>
               {RAMP_LEGEND.map((item) => (
                 <span key={item.band} className="inline-flex items-center gap-1">
@@ -567,7 +567,7 @@ export function PuttingDrill({
             </Surface>
             <div className="flex flex-col gap-4">
               <RxCard title="Work on next">
-                {worst ? `${worst.distance} putts breaking ${worst.band.toLowerCase()} are converting at ${Math.round(worst.pct)}% (n=${worst.n}) — the weakest reliable practice target.` : `No distance × break cell has ${RX_MIN_N} tracked putts yet, so there is not a reliable practice target.`}
+                {worst ? `${worst.distance} putts breaking ${worst.band.toLowerCase()} are converting at ${Math.round(worst.pct)}% (n=${worst.n}), the weakest reliable practice target.` : `No distance × break cell has ${RX_MIN_N} tracked putts yet, so there is not a reliable practice target.`}
               </RxCard>
               {puttingCost > 0 ? <p className="font-fw-sans text-caption text-text-tertiary">Putting is costing an estimated {puttingCost.toFixed(1)} strokes per round vs the field.</p> : null}
             </div>

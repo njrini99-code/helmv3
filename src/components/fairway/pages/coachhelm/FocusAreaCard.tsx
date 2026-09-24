@@ -589,8 +589,8 @@ function ProgressMeter({
         // authoritative; a one-line reason is honest and actionable.
         <p className="font-fw-sans text-eyebrow text-text-tertiary">
           {!autoTracked
-            ? 'Tracked manually — log progress to move this one.'
-            : 'Progress starts from the next update — no starting value on record.'}
+            ? 'Tracked manually. Log progress to move this one.'
+            : 'Progress starts from the next update. No starting value on record.'}
         </p>
       )}
     </div>
@@ -828,7 +828,7 @@ function LogPracticeSheet({
           <FormField
             label="Reps completed"
             showOptional
-            help="What you actually did — not the target above."
+            help="What you actually did, not the target above."
           >
             <NumberField
               value={reps ?? undefined}

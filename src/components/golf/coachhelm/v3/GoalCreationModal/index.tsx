@@ -176,7 +176,7 @@ export function GoalCreationModal({
     startTransition(async () => {
       const result = await createGoal({
         metric_id: metricId,
-        title: `${cfg.display_label} — ${windowDays}-day goal`,
+        title: `${cfg.display_label}, ${windowDays}-day goal`,
         category: 'manual',
         ends_at: endsAt,
         target_value: target,
@@ -281,7 +281,7 @@ export function GoalCreationModal({
             suggestion.pga_value !== null ? (
             <span className="mt-1 block text-caption text-text-tertiary">
               {userEdited ? 'Suggested' : 'Auto-filled'}:{' '}
-              {formatValue(suggestion.suggested_target, cfg.unit)} — halfway to Tour
+              {formatValue(suggestion.suggested_target, cfg.unit)}, halfway to Tour
               ({formatValue(suggestion.pga_value, cfg.unit)}) from your{' '}
               {formatValue(suggestion.baseline, cfg.unit)}
             </span>
@@ -291,7 +291,7 @@ export function GoalCreationModal({
             </span>
           ) : suggestion && !suggestion.hasStanding ? (
             <span className="mt-1 block text-caption text-text-tertiary">
-              No baseline logged yet — set a target to aim for.
+              No baseline logged yet. Set a target to aim for.
             </span>
           ) : null}
         </label>

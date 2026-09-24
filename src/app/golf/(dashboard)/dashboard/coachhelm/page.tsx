@@ -140,7 +140,7 @@ function DashboardWarmingUpState() {
             </Button>
           }
         >
-          Your CoachHelm insights are being recalculated right now — refresh in a moment and they&apos;ll be ready.
+          Your CoachHelm insights are being recalculated right now, refresh in a moment and they&apos;ll be ready.
         </InlineNotice>
       </div>
     </div>

@@ -74,7 +74,7 @@ function MetricCell({ metric }: { metric: RoundReportMetric }) {
         awaitingLabel={metric.awaitingLabel}
       />
       {metric.note && !isAwaiting ? (
-        <p className="mt-1.5 font-fw-mono text-microbadge normal-case tracking-normal text-text-tertiary">
+        <p className="mt-1.5 font-fw-mono text-microlabel normal-case tracking-normal text-text-tertiary">
           {metric.note}
         </p>
       ) : null}
@@ -192,7 +192,7 @@ function BreakMatrixTable({ matrix }: { matrix: RoundBreakMatrix }) {
                     {cell ? (
                       <>
                         <span className="text-text-primary">{cell.display}</span>
-                        <span className="mt-0.5 block font-fw-sans text-microbadge normal-case tracking-normal text-text-tertiary">
+                        <span className="mt-0.5 block font-fw-sans text-microlabel normal-case tracking-normal text-text-tertiary">
                           n={cell.n}
                         </span>
                       </>
@@ -209,7 +209,7 @@ function BreakMatrixTable({ matrix }: { matrix: RoundBreakMatrix }) {
         </table>
       </div>
 
-      <dl className="mt-3 flex flex-wrap gap-x-5 gap-y-1 font-fw-sans text-microbadge normal-case tracking-normal text-text-tertiary">
+      <dl className="mt-3 flex flex-wrap gap-x-5 gap-y-1 font-fw-sans text-microlabel normal-case tracking-normal text-text-tertiary">
         {matrix.overall.map((o) => (
           <div key={o.label} className="flex items-baseline gap-1.5">
             <dt>{o.label}</dt>
@@ -264,7 +264,7 @@ export function RoundStatReport({
           ) : null}
           <p className="mt-2 max-w-prose font-fw-sans text-caption text-text-tertiary">
             Every figure below is from {isSelection ? 'the selected rounds' : 'this round alone'}. A dimmed tile means{' '}
-            {isSelection ? 'those rounds produced' : 'this round produced'} no sample for that metric — not a zero.
+            {isSelection ? 'those rounds produced' : 'this round produced'} no sample for that metric, not a zero.
             Where the calculator reports an exact count, it is printed under the figure.
           </p>
         </header>

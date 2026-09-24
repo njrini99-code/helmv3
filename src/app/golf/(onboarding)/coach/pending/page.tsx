@@ -100,7 +100,7 @@ export default async function CoachPendingPage() {
     <main className="mx-auto flex min-h-screen w-full max-w-lg flex-col justify-center px-6 py-16">
       <div className="rounded-2xl border border-border-subtle bg-surface p-8">
         <h1 className="text-2xl font-semibold text-text-primary">
-          You&rsquo;re all set — pending approval
+          You&rsquo;re all set, pending approval
         </h1>
         <p className="mt-3 text-text-secondary">
           Your account is created{programName ? <> and your request to join <strong className="font-semibold text-text-primary">{programName}</strong> as an assistant coach has been sent</> : <> and your request has been sent</>}.
@@ -109,7 +109,7 @@ export default async function CoachPendingPage() {
         </p>
         <p className="mt-4 text-sm text-text-secondary">
           Nothing else is needed from you. Team data appears the moment they
-          approve — reload this page to check.
+          approve, reload this page to check.
         </p>
 
         <div className="mt-8 flex flex-wrap gap-3">

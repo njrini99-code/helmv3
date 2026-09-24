@@ -317,7 +317,7 @@ export function RoundTypeEditor({
 
               {chosen && chosen.playerEntered === false && (
                 <p className="font-fw-sans text-caption text-text-secondary">
-                  This player isn&apos;t in {chosen.name} yet — saving will add them to it, and
+                  This player isn&apos;t in {chosen.name} yet, saving will add them to it, and
                   this round will count as the round number you pick below.
                 </p>
               )}
@@ -359,7 +359,7 @@ export function RoundTypeEditor({
                         // would renumber the list and read as data loss.
                         <option key={n} value={n} disabled={taken}>
                           Round {n}
-                          {taken ? ' — already recorded' : ''}
+                          {taken ? ', already recorded' : ''}
                         </option>
                       );
                     })}

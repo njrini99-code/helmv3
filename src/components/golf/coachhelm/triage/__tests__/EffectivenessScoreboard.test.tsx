@@ -91,7 +91,7 @@ describe('EffectivenessScoreboard — triple "no data" consolidation', () => {
     expect(screen.getByText('Not enough resolved outcomes yet')).toBeInTheDocument();
     expect(screen.queryByText('Working')).not.toBeInTheDocument();
     expect(screen.queryByText('Not working')).not.toBeInTheDocument();
-    expect(screen.queryByText(/Calibration — awaiting/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Calibration: awaiting/)).not.toBeInTheDocument();
   });
 
   it('keeps the three separate cards when only ONE of them is starved (not a repeated message)', () => {
@@ -119,7 +119,7 @@ describe('EffectivenessScoreboard — triple "no data" consolidation', () => {
     expect(screen.queryByText('Not enough resolved outcomes yet')).not.toBeInTheDocument();
     expect(screen.getByText('Working')).toBeInTheDocument();
     expect(screen.getByText('Not working')).toBeInTheDocument();
-    expect(screen.getByText(/Calibration — awaiting/)).toBeInTheDocument();
+    expect(screen.getByText(/Calibration: awaiting/)).toBeInTheDocument();
   });
 
   it('renders a normal, non-consolidated calibration line once enough validated predictions exist', () => {
@@ -138,6 +138,6 @@ describe('EffectivenessScoreboard — triple "no data" consolidation', () => {
     });
 
     expect(screen.queryByText('Not enough resolved outcomes yet')).not.toBeInTheDocument();
-    expect(screen.getByText(/Calibration 82% — trends overconfident\./)).toBeInTheDocument();
+    expect(screen.getByText(/Calibration 82%: trends overconfident\./)).toBeInTheDocument();
   });
 });

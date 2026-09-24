@@ -272,8 +272,8 @@ export const FairwayScorecardHeader = memo(function FairwayScorecardHeader({
         <div className={cn('font-fw-sans text-microlabel font-semibold', isCurrent ? 'text-accent-700' : 'text-text-secondary')}>
           {hole.number}
         </div>
-        <div className="truncate font-fw-sans text-microbadge uppercase tracking-wide text-text-tertiary">Par {hole.par}</div>
-        <div className="truncate font-fw-sans text-microbadge text-text-tertiary">
+        <div className="truncate font-fw-sans text-microlabel uppercase tracking-wide text-text-tertiary">Par {hole.par}</div>
+        <div className="truncate font-fw-sans text-microlabel text-text-tertiary">
           {isMeters ? yardsToDisplay(hole.yardage, 'meters') : hole.yardage} {isMeters ? 'm' : 'yds'}
         </div>
         <div className={cn('mt-1 font-fw-display text-body-lg font-semibold tabular-nums', scoreColor)}>
@@ -287,7 +287,7 @@ export const FairwayScorecardHeader = memo(function FairwayScorecardHeader({
           </div>
         )}
         {canNavigate && !isCurrent && !hasScore && (
-          <div className="mt-0.5 truncate font-fw-sans text-microbadge text-text-tertiary">Edit</div>
+          <div className="mt-0.5 truncate font-fw-sans text-microlabel text-text-tertiary">Edit</div>
         )}
       </Button>
     );
@@ -309,8 +309,8 @@ export const FairwayScorecardHeader = memo(function FairwayScorecardHeader({
       )}
     >
       <div className="truncate font-fw-sans text-microlabel font-semibold uppercase tracking-wide text-text-secondary">{label}</div>
-      <div className="font-fw-sans text-microbadge uppercase tracking-wide text-text-tertiary">Par {par}</div>
-      <div className="font-fw-sans text-microbadge text-text-tertiary">{isMeters ? yardsToDisplay(yards, 'meters') : yards}</div>
+      <div className="font-fw-sans text-microlabel uppercase tracking-wide text-text-tertiary">Par {par}</div>
+      <div className="font-fw-sans text-microlabel text-text-tertiary">{isMeters ? yardsToDisplay(yards, 'meters') : yards}</div>
       <div className="mt-1 font-fw-display text-body-lg font-semibold tabular-nums text-text-primary">{hasScores ? score : '–'}</div>
     </div>
   );
@@ -377,7 +377,7 @@ export const FairwayScorecardHeader = memo(function FairwayScorecardHeader({
           }}
           disabled={!canGoNext}
           title={nextBlockedReason}
-          aria-label={nextBlockedReason ? `Next hole — ${nextBlockedReason}` : 'Next hole'}
+          aria-label={nextBlockedReason ? `Next hole, ${nextBlockedReason}` : 'Next hole'}
         >
           Next →
         </Button>

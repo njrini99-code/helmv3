@@ -452,7 +452,7 @@ export function FairwayMessages() {
       );
       fairwayToast.danger(
         unknownCommit
-          ? 'Couldn’t confirm this send — check the thread before sending again.'
+          ? 'Couldn’t confirm this send. Check the thread before sending again.'
           : error instanceof Error ? error.message : 'Failed to send message',
       );
       logError(

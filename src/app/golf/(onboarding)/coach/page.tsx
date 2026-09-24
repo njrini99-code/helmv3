@@ -439,7 +439,7 @@ export default function GolfCoachOnboarding() {
 
                       {/* Location */}
                       <div>
-                        <p className="text-label font-semibold text-text-tertiary uppercase tracking-wider mb-3">
+                        <p className="text-microlabel font-semibold text-text-tertiary uppercase tracking-wider mb-3">
                           Location
                         </p>
                         <div className="grid grid-cols-3 gap-3">
@@ -463,7 +463,7 @@ export default function GolfCoachOnboarding() {
 
                       {/* Team */}
                       <div>
-                        <p className="text-label font-semibold text-text-tertiary uppercase tracking-wider mb-3">
+                        <p className="text-microlabel font-semibold text-text-tertiary uppercase tracking-wider mb-3">
                           Team
                         </p>
                         <div className="space-y-3">
@@ -501,7 +501,7 @@ export default function GolfCoachOnboarding() {
                       <Button
                         onClick={() => goForward('profile')}
                         disabled={!orgName.trim()}
-                        className="w-full bg-accent-fill hover:bg-accent-fill-hover shadow-lg shadow-primary-900/10 hover:shadow-xl hover:shadow-primary-900/15 transition-all"
+                        className="w-full bg-accent-fill hover:bg-accent-fill-hover shadow-lg shadow-primary-900/10 hover:shadow-xl hover:shadow-primary-900/15 transition"
                         size="lg"
                       >
                         Continue
@@ -584,7 +584,7 @@ export default function GolfCoachOnboarding() {
                         onClick={handleSubmitOnboarding}
                         disabled={!fullName.trim()}
                         isLoading={loading}
-                        className="w-full bg-accent-fill hover:bg-accent-fill-hover shadow-lg shadow-primary-900/10 hover:shadow-xl hover:shadow-primary-900/15 transition-all"
+                        className="w-full bg-accent-fill hover:bg-accent-fill-hover shadow-lg shadow-primary-900/10 hover:shadow-xl hover:shadow-primary-900/15 transition"
                         size="lg"
                         aria-describedby={error ? 'onboarding-submit-error' : undefined}
                       >
@@ -680,7 +680,7 @@ export default function GolfCoachOnboarding() {
                     <m.div variants={staggerItem}>
                       <Card variant="overlay" glow="green" hover={false} padding="lg" className="rounded-2xl">
                         <div className="text-center">
-                          <p className="text-label font-semibold text-text-tertiary uppercase tracking-wider mb-3">
+                          <p className="text-microlabel font-semibold text-text-tertiary uppercase tracking-wider mb-3">
                             Team Join Code
                           </p>
                           <p className="font-mono text-3xl sm:text-4xl font-bold tracking-[0.25em] text-text-primary mb-4">
@@ -717,7 +717,7 @@ export default function GolfCoachOnboarding() {
                     <Button
                       size="lg"
                       onClick={() => handleGoTo('/golf/dashboard/roster')}
-                      className="w-full sm:w-auto px-10 bg-accent-fill hover:bg-accent-fill-hover shadow-lg shadow-primary-900/10 hover:shadow-xl hover:shadow-primary-900/15 transition-all"
+                      className="w-full sm:w-auto px-10 bg-accent-fill hover:bg-accent-fill-hover shadow-lg shadow-primary-900/10 hover:shadow-xl hover:shadow-primary-900/15 transition"
                     >
                       Invite players
                       <IconArrowRight size={16} className="ml-2" />

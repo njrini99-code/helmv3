@@ -215,8 +215,8 @@ export function RosterHealthHeader({
             </span>
             <span className="mb-2 font-fw-sans text-body-sm text-text-secondary">
               {noAreasYet
-                ? `player${needs.length === 1 ? '' : 's'} ready for a focus area — none set on this roster yet.`
-                : `player${needs.length === 1 ? '' : 's'} to look at — trending down or without a focus area.`}
+                ? `player${needs.length === 1 ? '' : 's'} ready for a focus area, none set on this roster yet.`
+                : `player${needs.length === 1 ? '' : 's'} to look at, trending down or without a focus area.`}
             </span>
           </div>
           <ul className="flex flex-col">
@@ -259,7 +259,7 @@ export function RosterHealthHeader({
           {needs.length > NEEDS_ATTENTION_LIST_CAP ? (
             <span className="font-fw-sans text-caption text-text-tertiary">
               +{needs.length - NEEDS_ATTENTION_LIST_CAP} more player
-              {needs.length - NEEDS_ATTENTION_LIST_CAP === 1 ? '' : 's'} need a look — showing the top{' '}
+              {needs.length - NEEDS_ATTENTION_LIST_CAP === 1 ? '' : 's'} need a look, showing the top{' '}
               {NEEDS_ATTENTION_LIST_CAP} by priority.
             </span>
           ) : null}
@@ -274,7 +274,7 @@ export function RosterHealthHeader({
           </span>
           <span className="font-fw-sans text-body-sm text-text-secondary">
             {totalPlayers === 0
-              ? 'Awaiting roster — add players to start tracking who needs attention.'
+              ? 'Awaiting roster. Add players to start tracking who needs attention.'
               : playersWithRounds === 0
                 ? // A roster with no rounds is not a covered roster. This branch
                   // used to fall through to the all-clear below, which is
@@ -282,8 +282,8 @@ export function RosterHealthHeader({
                   // to a coach as an assurance that their squad has been assessed.
                   // Shenandoah has 9 and 6 players and zero rounds between them,
                   // so the all-clear is the first thing both new coaches saw.
-                  'Nothing to assess yet — attention flags appear once players start logging rounds.'
-                : 'Roster’s covered — everyone with rounds has a focus area and no one’s trending down.'}
+                  'Nothing to assess yet, attention flags appear once players start logging rounds.'
+                : 'Roster’s covered. Everyone with rounds has a focus area and no one’s trending down.'}
           </span>
           <span className="font-fw-sans text-caption text-text-tertiary">{coveredText}.</span>
         </div>

@@ -510,7 +510,7 @@ export function TriageDesk({
             `Scan finished with ${res.playersFailed} player${res.playersFailed === 1 ? '' : 's'} needing another pass.`,
           );
         } else {
-          fairwayToast.success('Scan complete — team signals refreshed.');
+          fairwayToast.success('Scan complete, team signals refreshed.');
         }
         router.refresh();
       } catch {
@@ -640,7 +640,7 @@ export function TriageDesk({
         groupsError ? (
           <InlineNotice
             tone="danger"
-            title="Couldn't load signals — retry"
+            title="Couldn't load signals, retry"
             action={
               <Button variant="secondary" size="sm" onClick={() => router.refresh()}>
                 Try again

@@ -215,7 +215,7 @@ export function FairwayTeamInfo({
       <ViewHeader
         eyebrow="Team"
         title={team.name || 'Team'}
-        description="Your program — coach, announcements, tasks, and roster all in one place."
+        description="Your program, coach, announcements, tasks, and roster all in one place."
         meta={
           <>
             <span>{team.season || 'Season not set'}</span>

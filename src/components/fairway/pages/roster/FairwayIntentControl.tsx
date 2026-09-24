@@ -334,7 +334,7 @@ function IntentSheet({
         {/* Narrative goal */}
         <FormField
           label="Narrative goal"
-          help="The story this season — drives how CoachHelm frames this player."
+          help="The story this season, drives how CoachHelm frames this player."
         >
           <RadioGroup
             value={narrativeGoal}
@@ -385,7 +385,7 @@ function IntentSheet({
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             rows={3}
-            placeholder="What's the story this season — e.g. 'rebuilding stroke after injury'."
+            placeholder="What's the story this season, e.g. 'rebuilding stroke after injury'."
           />
         </FormField>
 

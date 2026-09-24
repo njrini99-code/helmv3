@@ -12,7 +12,7 @@ import { CourseLibraryClient } from '@/components/golf/courses/CourseLibraryClie
 
 export const metadata: Metadata = {
   title: 'Courses',
-  description: 'The cloud course library — browse courses, manage tee sets, and save your team’s home courses.',
+  description: 'The cloud course library, browse courses, manage tee sets, and save your team’s home courses.',
 };
 
 // The library must reflect new courses / tees / photos immediately.

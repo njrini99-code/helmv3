@@ -570,7 +570,7 @@ export function AnnouncementsList({
           }
         >
           Something went wrong fetching your team&rsquo;s announcements. This is a
-          temporary hiccup — retry to load them again.
+          temporary hiccup. Retry to load them again.
         </InlineNotice>
       </section>
     );
@@ -675,7 +675,7 @@ export function NoUpcomingTrips() {
         variant="subtle"
         icon={Plane}
         title="No upcoming trips"
-        description="Your last trip has wrapped — new itineraries from your coach will show up here."
+        description="Your last trip has wrapped, new itineraries from your coach will show up here."
       />
     </Surface>
   );
@@ -690,7 +690,7 @@ export function NoTasks() {
         variant="subtle"
         icon={ClipboardList}
         title="No tasks assigned"
-        description="You're clear — assigned tasks will show up here."
+        description="You're clear, assigned tasks will show up here."
       />
     </Surface>
   );

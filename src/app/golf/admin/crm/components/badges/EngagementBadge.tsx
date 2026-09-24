@@ -68,7 +68,7 @@ export function EngagementBadge({
   if (!engagement) {
     return (
       <span
-        className="text-micro text-text-tertiary tabular-nums"
+        className="text-microlabel text-text-tertiary tabular-nums"
         aria-label="No engagement data"
       >
         &mdash;

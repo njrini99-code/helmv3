@@ -281,7 +281,7 @@ export async function loadDistanceProfileAndScoringAddenda(
 export const metadata: Metadata = {
   title: 'Game Fingerprint',
   description:
-    "Scouting report for a player's game — tee, approach, short game, putting, scoring, pressure, and trend.",
+    "Scouting report for a player's game, tee, approach, short game, putting, scoring, pressure, and trend.",
 };
 
 export const revalidate = 60;

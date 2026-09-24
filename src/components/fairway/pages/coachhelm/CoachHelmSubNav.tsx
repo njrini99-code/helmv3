@@ -305,7 +305,7 @@ export function CoachHelmSubNav({
                 data-active={isActive ? '' : undefined}
                 className={cn(
                   'group relative inline-flex select-none items-center gap-2 whitespace-nowrap rounded-fw-sm px-3.5 pb-3 pt-2.5',
-                  'font-fw-sans text-label font-medium',
+                  'font-fw-sans text-microlabel font-medium',
                   fwTransition,
                   fwFocusRing,
                   // Active tab reads in brand green, not graphite. The

@@ -353,7 +353,7 @@ export function ScoutingReport({ player, rounds, focusAreas, themes, evidenceIns
       <p
         data-slot="scouting-verdict"
         data-tone={verdict.tone}
-        className="max-w-[36ch] font-fw-display text-title-2 text-text-primary md:text-title-1"
+        className="max-w-[36ch] font-fw-display text-h2 text-text-primary md:text-h1"
       >
         {verdict.sentence}
       </p>

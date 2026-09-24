@@ -202,7 +202,7 @@ export function FairwayTeamHub({
       <ViewHeader
         eyebrow={teamName}
         title="Team Hub"
-        description="Your team at a glance — open a card for the full picture."
+        description="Your team at a glance. Open a card for the full picture."
         className="mb-8"
       />
 
@@ -437,7 +437,7 @@ export function FairwayTeamHub({
                 </>
               ) : (
                 <span className="font-fw-sans text-body-sm text-text-tertiary">
-                  No teammates yet — your roster fills in as players join the team.
+                  No teammates yet. Your roster fills in as players join the team.
                 </span>
               )}
             </div>

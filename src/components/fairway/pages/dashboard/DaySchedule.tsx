@@ -247,7 +247,7 @@ export function DaySchedule({
               ever-growing card. `overscroll-contain` keeps a mouse-wheel
               scroll here from bleeding into the page behind it. */}
           <ul
-            aria-label={`${title} — day groups`}
+            aria-label={`${title}, day groups`}
             ref={scrollerRef}
             // eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- axe scrollable-region-focusable (serious) REQUIRES a keyboard-reachable scroll container; a labelled region with tabIndex is the WCAG-recommended shape
             tabIndex={0}

@@ -385,7 +385,7 @@ export function TemplatePicker({ onSelect }: TemplatePickerProps) {
                   onClick={() => handleSelect(template)}
                   aria-pressed={isSelected}
                   className={cn(
-                    'w-full text-left rounded-fw-md border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-card)] p-4 cursor-pointer transition-all duration-200 hover:bg-surface-tint hover:shadow-flat',
+                    'w-full text-left rounded-fw-md border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-card)] p-4 cursor-pointer transition duration-200 hover:bg-surface-tint hover:shadow-flat',
                     isSelected && 'border-accent-300 ring-2 ring-accent-500'
                   )}
                 >
@@ -427,7 +427,7 @@ export function TemplatePicker({ onSelect }: TemplatePickerProps) {
           ) : (
             <Button variant="ghost"
               onClick={() => setShowNewForm(true)}
-              className="flex flex-col items-center justify-center gap-2 rounded-fw-md border-2 border-dashed border-border-subtle p-4 cursor-pointer transition-all duration-200 hover:border-border-strong hover:bg-surface-sunken/60 min-h-[120px]"
+              className="flex flex-col items-center justify-center gap-2 rounded-fw-md border-2 border-dashed border-border-subtle p-4 cursor-pointer transition duration-200 hover:border-border-strong hover:bg-surface-sunken/60 min-h-[120px]"
             >
               <IconPlus size={20} className="text-text-tertiary" />
               <span className="text-sm font-medium text-text-tertiary">Create Template</span>

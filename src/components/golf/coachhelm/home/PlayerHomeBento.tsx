@@ -183,7 +183,7 @@ export function PlayerHomeBento({
         ) : (
           <div className="flex h-full flex-col gap-3">
             <p className="font-fw-sans text-caption text-text-tertiary">
-              No standout signal yet — insights appear once a pattern holds across multiple rounds.
+              No standout signal yet, insights appear once a pattern holds across multiple rounds.
             </p>
             <Button variant="ghost" size="sm" className="mt-auto w-fit" onClick={() => stage.open('insights')}>
               View insights
@@ -205,7 +205,7 @@ export function PlayerHomeBento({
               <span key={i} className="h-1.5 w-1.5 shrink-0 rounded-full bg-accent-500" />
             ))}
             {activeFocusAreaCount > 6 ? (
-              <span className="font-fw-mono text-microbadge text-text-tertiary">+{activeFocusAreaCount - 6}</span>
+              <span className="font-fw-mono text-microlabel text-text-tertiary">+{activeFocusAreaCount - 6}</span>
             ) : null}
           </div>
         ) : null}

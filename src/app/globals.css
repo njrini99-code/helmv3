@@ -3338,3 +3338,14 @@ html[data-helm-sport='golf'][data-fw-dynamic-type] main .text-caption {
   font-size: calc(12px * var(--fw-type-scale, 1));
   line-height: calc(18px * var(--fw-type-scale, 1));
 }
+
+/* TYPE-03: eyebrows in sentence case on golf. The tracked all-caps label
+   above nearly every block read as shouting; iOS section headers are
+   sentence case. Scoped to golf, so BaseballHelm and Lift Lab keep theirs
+   (OD-17). Beats a paired `uppercase`/`tracking-*` utility on specificity. */
+html[data-helm-sport='golf'] .text-eyebrow {
+  text-transform: none;
+  letter-spacing: 0.005em;
+  font-size: 12px;
+  line-height: 16px;
+}

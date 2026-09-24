@@ -623,7 +623,7 @@ export function PlayersGridView({
                     tone="neutral"
                     variant="outline"
                     size="sm"
-                    title="Alert posture is set to Silent for this player — CoachHelm keeps analyzing but never surfaces an insight. Change it from the Roster page."
+                    title="Alert posture is set to Silent for this player, CoachHelm keeps analyzing but never surfaces an insight. Change it from the Roster page."
                   >
                     Insights muted
                   </Badge>
@@ -1133,7 +1133,7 @@ export function PlayersGridView({
               <TextArea
                 value={logNote}
                 onChange={(e) => setLogNote(e.target.value)}
-                placeholder="e.g. Drilled dispersion on the range — tighter today."
+                placeholder="e.g. Drilled dispersion on the range, tighter today."
                 rows={2}
               />
             </FormField>
@@ -1248,7 +1248,7 @@ export function RosterPlayerCard({
                 tone="neutral"
                 variant="outline"
                 size="sm"
-                title="Alert posture is set to Silent for this player — CoachHelm keeps analyzing but never surfaces an insight. Change it from the Roster page."
+                title="Alert posture is set to Silent for this player, CoachHelm keeps analyzing but never surfaces an insight. Change it from the Roster page."
               >
                 Insights muted
               </Badge>

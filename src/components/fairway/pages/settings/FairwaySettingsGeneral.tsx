@@ -1054,7 +1054,7 @@ export function EmailPanel({ currentEmail }: { currentEmail: string }) {
               address isn't read as the request having failed. */}
           {pendingEmail ? (
             <InlineNotice tone="info" className="mt-2">
-              Change pending — we sent a confirmation to{' '}
+              Change pending, we sent a confirmation to{' '}
               <span className="font-medium text-text-primary">{pendingEmail}</span>. Click the link
               in that email to switch your address.
             </InlineNotice>
@@ -1291,7 +1291,7 @@ export function AppearancePanel() {
       // P382: be honest about scope — these prefs are saved on THIS device only
       // (localStorage, no per-user DB column), so they don't follow you to
       // another machine or browser.
-      description="Changes apply instantly across the app. Saved on this device only — they won't carry over to another computer or browser."
+      description="Changes apply instantly across the app. Saved on this device only. They won't carry over to another computer or browser."
       headerAction={<AutoSaveBadge savedAt={savedAt} />}
     >
       <div className="space-y-5">
@@ -1432,14 +1432,14 @@ export function HapticsPanel() {
     <SectionCard
       icon={<IconSparkles size={18} aria-hidden />}
       title="Haptics"
-      description="Subtle taps when you toggle, submit, or pull to refresh. Saved on this device only — your phone's system-wide haptics setting still applies on top."
+      description="Subtle taps when you toggle, submit, or pull to refresh. Saved on this device only. Your phone's system-wide haptics setting still applies on top."
       headerAction={<AutoSaveBadge savedAt={savedAt} />}
     >
       <div className="flex items-center justify-between gap-4">
         <div className="min-w-0">
           <p className="font-fw-sans text-body text-text-primary">Haptic feedback</p>
           <p className="font-fw-sans text-caption text-text-tertiary">
-            {enabled ? 'On for taps, toggles and confirmations.' : 'Off — the app stays silent.'}
+            {enabled ? 'On for taps, toggles and confirmations.' : 'Off. The app stays silent.'}
           </p>
         </div>
         <Switch
@@ -1507,7 +1507,7 @@ export function DistanceUnitsPanel() {
       title="Distance units"
       // P382: honest scope — display-only AND device-local (localStorage, no
       // per-user DB column), so it won't follow you to another machine.
-      description="Only affects display — all data is stored in yards and feet. Saved on this device only."
+      description="Only affects display, all data is stored in yards and feet. Saved on this device only."
       headerAction={<AutoSaveBadge savedAt={savedAt} />}
     >
       <div className="grid grid-cols-2 gap-2">
@@ -2042,7 +2042,7 @@ function EventRemindersPanel({ teamId }: { teamId: string }) {
             </div>
             <p className="px-1 pt-3 font-fw-sans text-caption text-text-tertiary">
               {ordering
-                ? `Players are reminded ${formatLead(earlyHours * 60)} before an event, then again ${formatLead(lateMinutes)} before it starts. Reminders are checked hourly, so one can arrive up to 15 minutes early — never late.`
+                ? `Players are reminded ${formatLead(earlyHours * 60)} before an event, then again ${formatLead(lateMinutes)} before it starts. Reminders are checked hourly, so one can arrive up to 15 minutes early, never late.`
                 : 'The first reminder has to come before the final one.'}
             </p>
           </>

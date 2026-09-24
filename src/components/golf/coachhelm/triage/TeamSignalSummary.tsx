@@ -77,7 +77,7 @@ export function TeamSignalSummary({ groups, playerHref, onOpenPlayer }: TeamSign
           <div>
             <Eyebrow as="h2" tone="accent">Game pressure map</Eyebrow>
             <p className="mt-1 max-w-xl text-body-sm text-text-secondary">
-              Where repeatable evidence is concentrating across the team — weighted by volume, severity, and recency.
+              Where repeatable evidence is concentrating across the team, weighted by volume, severity, and recency.
             </p>
           </div>
           <div className="flex items-center gap-2">

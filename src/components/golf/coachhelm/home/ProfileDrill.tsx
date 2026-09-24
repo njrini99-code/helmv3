@@ -155,7 +155,7 @@ export function ProfileDrill({
 
         <Surface elevation="border" padding="md">
           <p className="font-fw-sans text-caption leading-5 text-text-tertiary">
-            Your coach sees this exact profile. It updates automatically as you log rounds — no extra steps.
+            Your coach sees this exact profile. It updates automatically as you log rounds. No extra steps.
           </p>
         </Surface>
       </div>

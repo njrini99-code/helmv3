@@ -1420,7 +1420,7 @@ export default function CRMPage() {
       <aside className={cn(
         'fixed left-0 top-0 bottom-0 z-50 flex flex-col',
         'bg-nav-bg border-r border-nav-text/10',
-        'transition-all duration-300 ease-in-out',
+        'transition-[width] duration-300 ease-in-out',
         sidebarCollapsed ? 'w-[72px]' : 'w-[260px]',
         'hidden lg:flex'
       )}>
@@ -1437,7 +1437,7 @@ export default function CRMPage() {
         <div className="px-3 mb-2">
           <a href="/admin" className={cn(
             'flex items-center gap-3 px-3 py-2 rounded-fw-sm',
-            'text-nav-text-dim hover:bg-nav-surface hover:text-nav-text transition-all duration-200',
+            'text-nav-text-dim hover:bg-nav-surface hover:text-nav-text transition duration-200',
             sidebarCollapsed && 'justify-center'
           )}>
             <ArrowLeft size={16} className="flex-shrink-0" />
@@ -1476,7 +1476,7 @@ export default function CRMPage() {
                         aria-current={isActive ? 'page' : undefined}
                         title={sidebarCollapsed ? tab.label : undefined}
                         className={cn(
-                          'group relative flex items-center gap-3 w-full rounded-fw-sm transition-all duration-200',
+                          'group relative flex items-center gap-3 w-full rounded-fw-sm transition duration-200',
                           sidebarCollapsed ? 'justify-center p-3' : 'px-3 py-2.5',
                           isActive ? 'bg-nav-surface text-nav-text' : 'text-nav-text-dim hover:bg-nav-surface hover:text-nav-text'
                         )}
@@ -1490,7 +1490,7 @@ export default function CRMPage() {
                           </span>
                         )}
                         {sidebarCollapsed && (
-                          <div aria-hidden className="absolute left-full ml-3 px-3 py-1.5 bg-nav-bg text-nav-text text-sm rounded-fw-sm opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 whitespace-nowrap z-50 shadow-raise">
+                          <div aria-hidden className="absolute left-full ml-3 px-3 py-1.5 bg-nav-bg text-nav-text text-sm rounded-fw-sm opacity-0 invisible group-hover:opacity-100 group-hover:visible transition duration-200 whitespace-nowrap z-50 shadow-raise">
                             {tab.label}
                           </div>
                         )}
@@ -1517,7 +1517,7 @@ export default function CRMPage() {
             aria-label="Add coach"
             title={sidebarCollapsed ? 'Add coach' : undefined}
             className={cn(
-              'w-full flex items-center justify-center gap-2 py-2.5 rounded-fw-sm font-medium transition-all duration-200',
+              'w-full flex items-center justify-center gap-2 py-2.5 rounded-fw-sm font-medium transition duration-200',
               'bg-accent-650 text-text-on-accent hover:bg-accent-750'
             )}
           >
@@ -1526,10 +1526,10 @@ export default function CRMPage() {
           </Button>
           {!sidebarCollapsed && (
             <div className="flex gap-2">
-              <Button variant="ghost" onClick={() => setShowImportModal(true)} className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-fw-sm text-sm font-medium bg-nav-surface hover:bg-nav-surface/70 text-nav-text-dim transition-all duration-200">
+              <Button variant="ghost" onClick={() => setShowImportModal(true)} className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-fw-sm text-sm font-medium bg-nav-surface hover:bg-nav-surface/70 text-nav-text-dim transition duration-200">
                 <IconUpload size={14} /> Import
               </Button>
-              <Button variant="ghost" onClick={exportToCSV} className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-fw-sm text-sm font-medium bg-nav-surface hover:bg-nav-surface/70 text-nav-text-dim transition-all duration-200">
+              <Button variant="ghost" onClick={exportToCSV} className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-fw-sm text-sm font-medium bg-nav-surface hover:bg-nav-surface/70 text-nav-text-dim transition duration-200">
                 <IconDownload size={14} /> Export
               </Button>
             </div>
@@ -1542,7 +1542,7 @@ export default function CRMPage() {
           aria-label={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
           aria-expanded={!sidebarCollapsed}
           title={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-          className="absolute -right-3 top-20 w-6 h-6 rounded-full bg-nav-bg border border-nav-text/20 flex items-center justify-center text-nav-text-dim hover:text-nav-text transition-all duration-200 shadow-soft"
+          className="absolute -right-3 top-20 w-6 h-6 rounded-full bg-nav-bg border border-nav-text/20 flex items-center justify-center text-nav-text-dim hover:text-nav-text transition duration-200 shadow-soft"
         >
           {sidebarCollapsed ? <IconChevronRight size={14} /> : <ChevronLeft size={14} />}
         </Button>
@@ -1554,7 +1554,7 @@ export default function CRMPage() {
         // and won't shrink below its content's intrinsic width, so a wide
         // descendant (tables, charts, long subjects) pushed the whole panel past
         // the mobile viewport — the right-edge clipping seen on phones.
-        'flex-1 min-w-0 flex flex-col min-h-dvh transition-all duration-300',
+        'flex-1 min-w-0 flex flex-col min-h-dvh transition-[margin] duration-300',
         'pt-14 lg:pt-0',
         sidebarCollapsed ? 'lg:ml-[72px]' : 'lg:ml-[260px]'
       )}>
@@ -2374,7 +2374,7 @@ function ManualGmailTemplateBar({
             </Button>
           )}
           {sendStatus && (
-            <span className="text-micro text-text-tertiary tabular-nums">
+            <span className="text-microlabel text-text-tertiary tabular-nums">
               {sendStatus.sentToday} of {sendStatus.dailyCap} sent today
             </span>
           )}

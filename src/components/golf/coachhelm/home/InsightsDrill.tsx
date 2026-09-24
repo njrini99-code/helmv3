@@ -199,7 +199,7 @@ export function InsightsDrill({
         </div>
       ) : (
         <p className="font-fw-sans text-body-sm text-text-tertiary">
-          No more insights right now — log a few more rounds and CoachHelm will surface the next pattern.
+          No more insights right now. Log a few more rounds and CoachHelm will surface the next pattern.
         </p>
       )}
 

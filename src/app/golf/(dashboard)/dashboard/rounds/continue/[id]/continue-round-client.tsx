@@ -1629,7 +1629,7 @@ export default function ContinueRoundClient({
             <p className="font-fw-mono text-caption font-medium tabular-nums text-text-secondary">
               {completedHoleStats.filter(s => s != null).length}/{holes.length}
             </p>
-            <p className="font-fw-sans text-microbadge uppercase tracking-wide text-text-tertiary">saved</p>
+            <p className="font-fw-sans text-microlabel uppercase tracking-wide text-text-tertiary">saved</p>
           </div>
         </div>
         {roundTypeEditor && (

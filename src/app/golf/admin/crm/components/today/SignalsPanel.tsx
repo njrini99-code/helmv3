@@ -132,11 +132,11 @@ export function SignalsPanel({ onCoachClick, onFollowUpSet }: SignalsPanelProps)
               <SignalRow key={coach.id} coach={coach} onCoachClick={onCoachClick}>
                 <span className="flex flex-shrink-0 items-center gap-1.5">
                   {typeof coach.score === 'number' && (
-                    <span className="rounded-full bg-fw-danger-bg px-2 text-micro font-semibold tabular-nums text-fw-danger-ink">
+                    <span className="rounded-full bg-fw-danger-bg px-2 text-microlabel font-semibold tabular-nums text-fw-danger-ink">
                       {coach.score}
                     </span>
                   )}
-                  <span className="text-micro tabular-nums text-text-tertiary">
+                  <span className="text-microlabel tabular-nums text-text-tertiary">
                     {relativeCompact(coach.last_event_at)}
                   </span>
                 </span>
@@ -157,7 +157,7 @@ export function SignalsPanel({ onCoachClick, onFollowUpSet }: SignalsPanelProps)
             {signals.overdue.slice(0, 8).map((coach) => (
               <SignalRow key={coach.id} coach={coach} onCoachClick={onCoachClick}>
                 <span className="flex flex-shrink-0 items-center gap-1.5">
-                  <span className="text-micro font-medium tabular-nums text-fw-warning-ink">
+                  <span className="text-microlabel font-medium tabular-nums text-fw-warning-ink">
                     {overdueLabel(coach.next_follow_up_at)}
                   </span>
                   <Button
@@ -171,7 +171,7 @@ export function SignalsPanel({ onCoachClick, onFollowUpSet }: SignalsPanelProps)
                     }}
                     aria-label={`Push ${coach.name}'s follow-up out one week`}
                     title="Push out one week"
-                    className="min-h-[32px] rounded-fw-sm bg-canvas px-2 py-0 text-micro font-medium text-text-secondary hover:bg-surface-tint disabled:opacity-50"
+                    className="min-h-[32px] rounded-fw-sm bg-canvas px-2 py-0 text-microlabel font-medium text-text-secondary hover:bg-surface-tint disabled:opacity-50"
                   >
                     +1w
                   </Button>
@@ -210,7 +210,7 @@ export function SignalsPanel({ onCoachClick, onFollowUpSet }: SignalsPanelProps)
                         void quickSet(coach, days, 'noNextStep');
                       }}
                       aria-label={`Set ${coach.name}'s next follow-up ${label.slice(1)} from now`}
-                      className="min-h-[32px] rounded-fw-sm bg-canvas px-2 py-0 text-micro font-medium text-text-secondary hover:bg-surface-tint disabled:opacity-50"
+                      className="min-h-[32px] rounded-fw-sm bg-canvas px-2 py-0 text-microlabel font-medium text-text-secondary hover:bg-surface-tint disabled:opacity-50"
                     >
                       {label}
                     </Button>
@@ -247,7 +247,7 @@ function SignalCard({ title, iconBg, icon, emptyLabel, headline, children }: Sig
         </span>
         <h3 className="text-sm font-bold text-text-primary">{title}</h3>
       </div>
-      {headline && <p className="mb-2 ml-[42px] text-micro text-text-tertiary">{headline}</p>}
+      {headline && <p className="mb-2 ml-[42px] text-microlabel text-text-tertiary">{headline}</p>}
       <div className={headline ? '' : 'mt-3'}>
         {isEmptyChildren(children) ? (
           <p className="text-caption text-text-tertiary">{emptyLabel}</p>
@@ -292,7 +292,7 @@ function SignalRow({ coach, onCoachClick, children }: SignalRowProps) {
       >
         <span className="min-w-0 flex-1">
           <span className="block truncate font-medium text-text-primary">{coach.name}</span>
-          <span className="block truncate text-micro text-text-tertiary">{coach.school ?? '—'}</span>
+          <span className="block truncate text-microlabel text-text-tertiary">{coach.school ?? '—'}</span>
         </span>
       </Button>
       {children}

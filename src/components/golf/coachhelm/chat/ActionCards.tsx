@@ -116,7 +116,7 @@ export function ActionProposalCard({
 
       {proposal.missing.length > 0 && !decided && (
         <p className="border-t border-border-subtle px-4 py-2.5 font-fw-sans text-caption text-text-tertiary">
-          {proposal.missing.join(', ')} not set — this will be created without{' '}
+          {proposal.missing.join(', ')} not set, this will be created without{' '}
           {proposal.missing.length === 1 ? 'it' : 'them'}.
         </p>
       )}
@@ -124,7 +124,7 @@ export function ActionProposalCard({
       <footer className="flex items-center gap-2 border-t border-border-subtle px-4 py-3">
         {decided ? (
           <p className="font-fw-sans text-body-sm text-text-secondary">
-            {decision === 'approved' ? 'Confirmed.' : 'Cancelled — nothing was created.'}
+            {decision === 'approved' ? 'Confirmed.' : 'Cancelled. Nothing was created.'}
           </p>
         ) : (
           <>
@@ -179,7 +179,7 @@ export function ActionReceiptCard({
 
   return (
     <section
-      aria-label={`${receipt.action} — ${receipt.status}`}
+      aria-label={`${receipt.action}, ${receipt.status}`}
       className="rounded-card border border-border-subtle bg-surface"
     >
       <header className="flex items-start gap-3 px-4 py-3">
@@ -192,7 +192,7 @@ export function ActionReceiptCard({
         />
         <div className="min-w-0 flex-1">
           <p className="font-fw-sans text-body-sm font-semibold text-text-primary">
-            {failed ? `${receipt.action} — not completed` : receipt.action}
+            {failed ? `${receipt.action}, not completed` : receipt.action}
           </p>
           <p className="mt-0.5 font-fw-sans text-body-sm text-text-secondary">
             {receipt.error ?? receipt.summary}

@@ -369,7 +369,7 @@ export function FairwayNewRoundEntry(props: FairwayNewRoundEntryProps) {
             title={seededHoles ? 'Review the scorecard.' : 'Configure the holes.'}
             description={
               seededHoles
-                ? 'These pars and yardages come from the course you picked — tweak any hole, then start tracking.'
+                ? 'These pars and yardages come from the course you picked, tweak any hole, then start tracking.'
                 : 'Set par and yardage for each hole, then start tracking.'
             }
           />
@@ -461,7 +461,7 @@ export function FairwayNewRoundEntry(props: FairwayNewRoundEntryProps) {
             }
             description={
               courseConfirmed
-                ? 'These pars and yardages came with the tee you picked — tweak any hole, then start.'
+                ? 'These pars and yardages came with the tee you picked, tweak any hole, then start.'
                 : 'Pick a course, set up your scorecard, then start tracking.'
             }
             onBack={props.onExitToDashboard}
@@ -1023,7 +1023,7 @@ export function FairwayNewRoundEntry(props: FairwayNewRoundEntryProps) {
           <m.div {...enter(i++)} className="flex items-start gap-3 px-1">
             <BarChart3 className="mt-0.5 h-4 w-4 flex-shrink-0 text-accent-700" />
             <p className="font-fw-sans text-caption text-text-tertiary">
-              <span className="font-medium text-text-secondary">50+ stats tracked</span> — driving, approach
+              <span className="font-medium text-text-secondary">50+ stats tracked</span>, driving, approach
               proximity, putting, scrambling and more. Use your rangefinder for accurate distances.
             </p>
           </m.div>

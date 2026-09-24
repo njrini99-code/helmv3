@@ -133,10 +133,10 @@ export function NewAnnouncementsModal({ announcements, onDismiss }: NewAnnouncem
           <IconBell size={20} className="text-accent-ink" />
         </div>
         <div className="flex-1 min-w-0">
-          <h2 className="text-headline text-warm-900">
+          <h2 className="text-body-lg font-semibold text-warm-900">
             {title}
           </h2>
-          <p className="text-footnote text-text-tertiary">From your coaching staff</p>
+          <p className="text-body-sm text-text-tertiary">From your coaching staff</p>
         </div>
       </div>
 
@@ -157,7 +157,7 @@ export function NewAnnouncementsModal({ announcements, onDismiss }: NewAnnouncem
               animate={{ opacity: 1, y: 0 }}
               transition={prefersReducedMotion ? { duration: 0 } : ({ delay: i * 0.04, type: 'spring', stiffness: 400, damping: 30 })}
               className={cn(
-                'relative rounded-2xl overflow-hidden border transition-all duration-200',
+                'relative rounded-2xl overflow-hidden border transition duration-200',
                 needsAck
                   ? 'border-primary-200/70 bg-gradient-to-br from-primary-50/40 via-white to-white shadow-[0_1px_2px_rgba(16,24,40,0.04),0_1px_3px_rgba(16,24,40,0.06)]'
                   : isAcked
@@ -199,7 +199,7 @@ export function NewAnnouncementsModal({ announcements, onDismiss }: NewAnnouncem
 
                 {/* Footer: time + action */}
                 <div className="flex items-center justify-between">
-                  <span className="text-caption-1 text-text-tertiary tabular-nums">
+                  <span className="text-caption text-text-tertiary tabular-nums">
                     {ann.published_at ? relativeTime(ann.published_at) : ''}
                   </span>
 

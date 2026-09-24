@@ -247,7 +247,7 @@ describe('computeBriefCounts', () => {
 describe('buildBriefVerdict', () => {
   it('reports an honest all-clear when there are no groups', () => {
     expect(buildBriefVerdict([], { urgent: 0, playersFlagged: 0 })).toBe(
-      'All clear — no open signals right now.',
+      'All clear. No open signals right now.',
     );
   });
 
@@ -261,7 +261,7 @@ describe('buildBriefVerdict', () => {
   it('reports a calm sentence when nothing is urgent but signals exist', () => {
     const groups = [group({ playerId: 'p1', playerName: 'Alex Rivera', signals: [signal({ severity: 'low' })] })];
     const verdict = buildBriefVerdict(groups, { urgent: 0, playersFlagged: 1 });
-    expect(verdict).toBe('Nothing urgent — Alex Rivera has the highest-priority open signal.');
+    expect(verdict).toBe('Nothing urgent, Alex Rivera has the highest-priority open signal.');
   });
 });
 

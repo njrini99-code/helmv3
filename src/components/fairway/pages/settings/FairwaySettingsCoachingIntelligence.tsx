@@ -365,7 +365,7 @@ function CoachingIntelligenceBody({
           <EmptyState
             icon={IconWarning as unknown as React.ComponentProps<typeof EmptyState>['icon']}
             title="Couldn’t load your coaching settings"
-            description="Something went wrong while loading your CoachHelm philosophy. Your saved settings are safe — try again."
+            description="Something went wrong while loading your CoachHelm philosophy. Your saved settings are safe. Try again."
             action={
               <Button
                 variant="secondary"
@@ -618,7 +618,7 @@ function CoachingIntelligenceBody({
               <h2 className="font-fw-display text-h2 text-text-primary">Strokes Gained baseline</h2>
             </div>
             <p className="text-body-sm text-text-secondary">
-              Set automatically from your team’s gender — PGA Tour for men’s teams, LPGA for women’s.
+              Set automatically from your team’s gender, PGA Tour for men’s teams, LPGA for women’s.
             </p>
           </Surface>
         ) : null}
@@ -631,7 +631,7 @@ function CoachingIntelligenceBody({
           description="How much evidence CoachHelm needs before it says anything."
           footnote={
             confidenceFloorIsPresetBound
-              ? `Your ${philosophy.alertSensitivity} preset already requires ${Math.round(presetConfidenceFloor * 100)}% — this only matters above that.`
+              ? `Your ${philosophy.alertSensitivity} preset already requires ${Math.round(presetConfidenceFloor * 100)}%, this only matters above that.`
               : `Above your ${philosophy.alertSensitivity} preset's ${Math.round(presetConfidenceFloor * 100)}% floor, so this is the number in effect.`
           }
         >

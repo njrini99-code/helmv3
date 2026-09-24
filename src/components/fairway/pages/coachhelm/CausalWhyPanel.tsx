@@ -147,7 +147,7 @@ export function CausalWhyPanel({
             variant="subtle"
             icon={Sparkles}
             title="Not enough rounds yet to map what's driving scores"
-            description="Once there are enough completed rounds, the engine surfaces the factors that actually move scoring — and how much each one matters."
+            description="Once there are enough completed rounds, the engine surfaces the factors that actually move scoring, and how much each one matters."
           />
         </Surface>
       ) : (
@@ -223,7 +223,7 @@ function CausalChainCard({ chain }: { chain: CausalChain }) {
 
       <p className="font-fw-sans text-body text-text-secondary leading-6">
         Each step was detected separately over this player&apos;s own rounds.
-        Read the chain as the lead to check first — the engine did not test the
+        Read the chain as the lead to check first. The engine did not test the
         path end to end.
       </p>
 

@@ -245,7 +245,7 @@ function generateCategoryInsights(
   if (improvingCount > decliningCount) {
     insights.push({
       id: `${category.id}-trend`,
-      message: `Team ${category.label.toLowerCase()} trending up — ${improvingCount} of ${players.length} players improving`,
+      message: `Team ${category.label.toLowerCase()} trending up, ${improvingCount} of ${players.length} players improving`,
       tone: 'positive',
     });
   } else if (decliningCount > improvingCount) {
@@ -262,7 +262,7 @@ function generateCategoryInsights(
     const names = attentionPlayers.map((p) => p.playerName.split(' ')[0]).join(', ');
     insights.push({
       id: `${category.id}-attention`,
-      message: `${attentionPlayers.length} player${attentionPlayers.length > 1 ? 's' : ''} below team average — ${names}`,
+      message: `${attentionPlayers.length} player${attentionPlayers.length > 1 ? 's' : ''} below team average, ${names}`,
       tone: 'negative',
     });
   }
@@ -1023,7 +1023,7 @@ async function getTeamCategoryInsightsImpl(
       if (catDef.id === 'short_game' && categoryTrend === 'stable' && playerStats.every((p) => p.trend === 'stable')) {
         insights.unshift({
           id: `${catDef.id}-trend-unavailable`,
-          message: 'Short game trend based on aggregate scramble stats — per-round trend data unavailable',
+          message: 'Short game trend based on aggregate scramble stats, per-round trend data unavailable',
           tone: 'neutral',
         });
       }

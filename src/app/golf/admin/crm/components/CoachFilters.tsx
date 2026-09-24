@@ -278,7 +278,7 @@ export function CoachFilters({
               'bg-surface border border-border-subtle',
               'text-text-primary placeholder:text-text-tertiary',
               'focus:outline-none focus:ring-2 focus:ring-border-focus/30 focus:border-accent-400',
-              'transition-all duration-200',
+              'transition duration-200',
             )}
           />
         </div>

@@ -80,7 +80,7 @@ export function RoundStatsPanel({ stats, loading, error, onRetry, className }: R
             </Button>
           }
         >
-          The review above is unaffected — only the full stat breakdown failed to load.
+          The review above is unaffected. Only the full stat breakdown failed to load.
         </InlineNotice>
       </Surface>
     );

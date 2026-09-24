@@ -239,7 +239,7 @@ export function FairwayHoleConfig({
             </span>
             <p className="font-fw-sans text-body-sm text-text-secondary">
               <span className="font-medium text-text-primary">Baseline from {baselineLabel}.</span>{' '}
-              Tune any hole for the way it played today — your edits apply to this round only.
+              Tune any hole for the way it played today. Your edits apply to this round only.
             </p>
           </div>
         </m.div>

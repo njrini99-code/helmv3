@@ -795,7 +795,7 @@ export function StatsSpineStage({ playerId, isOwnStats = false, playerName, clas
           </Surface>
         ) : null}
         <p className="font-fw-sans text-caption text-text-tertiary">
-          Team standing, 30-day trends and the strokes-gained leak maps are not shown here — they are
+          Team standing, 30-day trends and the strokes-gained leak maps are not shown here, they are
           career measures, not measures of this selected round set.
           Switch back to <span className="text-text-secondary">All rounds</span> for those.
         </p>

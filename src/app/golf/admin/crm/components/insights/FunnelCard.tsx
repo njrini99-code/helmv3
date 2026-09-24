@@ -54,7 +54,7 @@ export function FunnelCard({ funnel, loading }: FunnelCardProps) {
     <div className="rounded-card border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-card)] p-6">
       <div className="mb-5">
         <h3 className="text-base font-bold text-text-primary tracking-tight">Outreach funnel</h3>
-        <p className="text-micro text-text-tertiary mt-0.5">
+        <p className="text-microlabel text-text-tertiary mt-0.5">
           Emails sent → replies, this window
         </p>
       </div>
@@ -88,7 +88,7 @@ export function FunnelCard({ funnel, loading }: FunnelCardProps) {
                   <span className="w-16 text-caption tabular-nums text-text-primary text-right flex-shrink-0">
                     {value.toLocaleString()}
                   </span>
-                  <span className="w-14 text-micro tabular-nums text-text-tertiary text-right flex-shrink-0">
+                  <span className="w-14 text-microlabel tabular-nums text-text-tertiary text-right flex-shrink-0">
                     {conversion === null ? '—' : `${conversion}%`}
                   </span>
                 </div>
@@ -96,7 +96,7 @@ export function FunnelCard({ funnel, loading }: FunnelCardProps) {
             })}
           </div>
 
-          <p className="text-micro text-text-tertiary mt-4">
+          <p className="text-microlabel text-text-tertiary mt-4">
             {funnel.coaches_emailed.toLocaleString()} coaches emailed{' '}
             · {funnel.coaches_opened.toLocaleString()} opened{' '}
             · {funnel.coaches_clicked.toLocaleString()} clicked{' '}

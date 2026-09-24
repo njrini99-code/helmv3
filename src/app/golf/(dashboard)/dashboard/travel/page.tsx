@@ -75,7 +75,7 @@ export default async function GolfTravelPage({ searchParams }: GolfTravelPagePro
           <ViewHeader
             eyebrow="Travel"
             title="Trips on the calendar."
-            description="Travel itineraries live with your team — join one to see and manage trips."
+            description="Travel itineraries live with your team, join one to see and manage trips."
           />
           <div className="mt-8">
             <Surface elevation="shadow" padding="lg">

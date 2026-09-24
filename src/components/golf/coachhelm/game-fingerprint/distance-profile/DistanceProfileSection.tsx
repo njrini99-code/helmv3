@@ -161,7 +161,7 @@ function DistanceProfileTile({ row }: { row: DistanceProfileRowViewModel }) {
     // constants, rather than a generic count with no stated floor.
     return (
       <InsufficientData
-        description={`${describeSupportGap(row.row)} — below the support floor.`}
+        description={`${describeSupportGap(row.row)}, below the support floor.`}
         compact
       />
     );

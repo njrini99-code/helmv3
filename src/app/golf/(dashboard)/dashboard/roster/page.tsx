@@ -128,7 +128,7 @@ export default async function GolfRosterPage() {
         <div className={fairwayScope('min-h-full bg-canvas')}>
           <div className="mx-auto w-full max-w-2xl px-5 py-10 md:px-8">
             <InlineNotice tone="danger" title="Couldn't load your roster">
-              <p>We couldn&apos;t reach your team just now. This is on us, not your account — try again in a moment.</p>
+              <p>We couldn&apos;t reach your team just now. This is on us, not your account. Try again in a moment.</p>
             </InlineNotice>
           </div>
         </div>
@@ -606,7 +606,7 @@ export default async function GolfRosterPage() {
                 .map((d) => `${d.name} (${d.emails.filter(Boolean).join(' and ')})`)
                 .join('; ')}{' '}
               {suspectedDuplicates.length === 1 ? 'appears' : 'appear'} on this roster more than
-              once — usually a personal address and a school one. Their rounds and stats attach to
+              once, usually a personal address and a school one. Their rounds and stats attach to
               only one of the entries.
             </p>
           </InlineNotice>

@@ -71,7 +71,7 @@ export function StepIndicator<T extends string>({ currentStep, steps }: StepIndi
             >
               <div
                 className={cn(
-                  'w-8 h-8 rounded-full flex items-center justify-center transition-all duration-500 text-sm font-medium',
+                  'w-8 h-8 rounded-full flex items-center justify-center transition duration-500 text-sm font-medium',
                   isCompleted && 'bg-accent-fill text-text-on-accent-fill shadow-sm shadow-primary-600/30',
                   isCurrent && 'bg-surface border-2 border-primary-600 text-accent-ink shadow-sm',
                   !isCompleted && !isCurrent && 'bg-surface-sunken text-text-tertiary'
@@ -82,7 +82,7 @@ export function StepIndicator<T extends string>({ currentStep, steps }: StepIndi
               </div>
               <span
                 className={cn(
-                  'text-label font-medium transition-colors duration-500',
+                  'text-microlabel font-medium transition-colors duration-500',
                   isCurrent ? 'text-text-primary' : isCompleted ? 'text-accent-ink' : 'text-text-tertiary'
                 )}
               >

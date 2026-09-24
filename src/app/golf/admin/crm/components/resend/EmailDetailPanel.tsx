@@ -335,7 +335,7 @@ function CopyButton({ text }: { text: string }) {
         setCopied(true);
         setTimeout(() => setCopied(false), 1500);
       }}
-      className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-surface-sunken text-text-tertiary hover:text-text-secondary transition-all"
+      className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-surface-sunken text-text-tertiary hover:text-text-secondary transition"
       title={copied ? 'Copied!' : 'Copy'}
       aria-label="Copy to clipboard"
     >

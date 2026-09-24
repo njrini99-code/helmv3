@@ -90,6 +90,13 @@ offline page. `src/test/proxy-middleware.test.ts` pins the exemption.
   tel input has focus (`installNumericAccessoryBar` in
   `src/lib/utils/capacitor.ts`, installed once from `initCapacitor`), so number
   pads get a Done key. Test: `src/lib/utils/__tests__/capacitor-accessory-bar.test.ts`.
+- Edge swipe-back (`allowsBackForwardNavigationGestures`) is on, except on
+  the round-entry routes (`/golf/dashboard/rounds/new`, `/rounds/continue`)
+  and while the page reports an open sheet or dialog through the `helmNav`
+  script message (`{ overlayOpen }`, sent by
+  `src/components/golf/NativeSwipeBackBridge.tsx`). Both live in
+  `GolfBridgeViewController.swift` (MOT-13, RE-D1); older binaries ignore the
+  message. Test: `src/components/golf/__tests__/NativeSwipeBackBridge.test.tsx`.
 
 ## Tests
 

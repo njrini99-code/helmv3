@@ -124,7 +124,7 @@ export function CourseLibraryClient({
           <p className="font-fw-sans text-eyebrow font-semibold uppercase tracking-[0.07em] text-accent-700">
             Courses
           </p>
-          <h1 className="font-fw-display text-title-1 font-semibold tracking-tight text-text-primary">
+          <h1 className="font-fw-display text-h1 font-semibold tracking-tight text-text-primary">
             Course library.
           </h1>
           <p className="mt-1 text-body-sm text-text-secondary">
@@ -331,7 +331,7 @@ function EmptyState({ onAdd, canManage }: { onAdd: () => void; canManage: boolea
       <span className="mb-4 inline-flex h-14 w-14 items-center justify-center rounded-full bg-primary-50 text-accent-ink">
         <IconFlag size={24} aria-hidden />
       </span>
-      <h3 className="font-fw-display text-title-3 font-semibold text-text-primary">No courses yet</h3>
+      <h3 className="font-fw-display text-h3 font-semibold text-text-primary">No courses yet</h3>
       <p className="mt-1 max-w-sm text-body-sm text-text-secondary">
         {canManage
           ? 'Add the courses your team plays. Each course can hold multiple tee sets with their own pars and yardages.'

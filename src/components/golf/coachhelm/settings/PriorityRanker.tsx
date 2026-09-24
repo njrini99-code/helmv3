@@ -58,7 +58,7 @@ function SortableItem({ metric, rank }: { metric: PriorityMetric; rank: number }
             ref={setNodeRef}
             style={style}
             className={cn(
-                'flex items-center gap-4 p-4 rounded-xl border bg-surface transition-all duration-150',
+                'flex items-center gap-4 p-4 rounded-xl border bg-surface transition duration-150',
                 isDragging
                     ? 'shadow-raise border-accent-300 scale-[1.02] z-10 relative'
                     : 'border-border-subtle hover:border-border-strong'
@@ -102,7 +102,7 @@ function SortableItem({ metric, rank }: { metric: PriorityMetric; rank: number }
             {/* Priority bar */}
             <div className="w-12 h-1.5 bg-surface-sunken rounded-full overflow-hidden">
                 <div
-                    className="h-full bg-accent-500 rounded-full transition-all duration-300"
+                    className="h-full bg-accent-500 rounded-full transition-[width] duration-300"
                     style={{ width: `${(6 - rank) * 20}%` }}
                 />
             </div>

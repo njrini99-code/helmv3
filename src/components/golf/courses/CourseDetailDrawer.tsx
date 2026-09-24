@@ -348,13 +348,13 @@ export function CourseDetailDrawer({
               {/* title overlay */}
               <div className="absolute inset-x-0 bottom-0 p-5">
                 <div className="flex flex-wrap items-center gap-2">
-                  <h2 className="font-fw-display text-title-2 font-semibold tracking-tight text-white drop-shadow-sm">
+                  <h2 className="font-fw-display text-h2 font-semibold tracking-tight text-white drop-shadow-sm">
                     {course ? formatCourseName(course.name) : (loadError ? 'Course unavailable' : 'Loading course…')}
                   </h2>
                   {isLibraryOwned && (
                     <span
                       className="inline-flex items-center rounded-full bg-black/35 px-2 py-0.5 text-caption font-medium text-white/85 backdrop-blur-sm"
-                      title="A shared course from the cloud library — editing and removal are admin-only"
+                      title="A shared course from the cloud library, editing and removal are admin-only"
                     >
                       Library course
                     </span>

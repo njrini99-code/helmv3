@@ -65,7 +65,7 @@ export function ApproachMissSelector({
                 aria-pressed={isSelected}
                 whileTap={{ scale: 0.95 }}
                 className={cn(
-                  'relative flex flex-col items-center justify-center rounded-fw-md border transition-all duration-200 aspect-square',
+                  'relative flex flex-col items-center justify-center rounded-fw-md border transition duration-200 aspect-square',
                   'font-fw-sans font-medium',
                   'outline-none focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
                   isSelected
@@ -81,7 +81,7 @@ export function ApproachMissSelector({
                   {config.icon}
                 </span>
                 <span className={cn(
-                  'text-micro font-medium leading-none mt-1.5',
+                  'text-microlabel font-medium leading-none mt-1.5',
                   isSelected ? 'text-text-on-accent' : config.color
                 )}>
                   {config.shortLabel}

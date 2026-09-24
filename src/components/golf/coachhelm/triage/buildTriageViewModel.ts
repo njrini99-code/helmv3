@@ -259,7 +259,7 @@ export function computeBriefCounts(groups: readonly SignalGroup[]): BriefCounts 
  *  count. */
 export function buildBriefVerdict(groups: readonly SignalGroup[], counts: BriefCounts): string {
   if (groups.length === 0) {
-    return 'All clear — no open signals right now.';
+    return 'All clear. No open signals right now.';
   }
   const topPlayerGroup = groups.find((g) => g.playerId !== null) ?? null;
 
@@ -272,10 +272,10 @@ export function buildBriefVerdict(groups: readonly SignalGroup[], counts: BriefC
 
   const totalSignals = groups.reduce((n, g) => n + g.signals.length, 0);
   if (topPlayerGroup) {
-    return `Nothing urgent — ${topPlayerGroup.playerName} has the highest-priority open signal.`;
+    return `Nothing urgent, ${topPlayerGroup.playerName} has the highest-priority open signal.`;
   }
   const signalWord = totalSignals === 1 ? 'signal' : 'signals';
-  return `${totalSignals} open ${signalWord} to review — nothing urgent right now.`;
+  return `${totalSignals} open ${signalWord} to review, nothing urgent right now.`;
 }
 
 /** Relative "last scan" caption. `null` (no scan on record) reads as an

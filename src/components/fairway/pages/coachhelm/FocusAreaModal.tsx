@@ -484,7 +484,7 @@ export function FocusAreaModal({
         editing
           ? 'Update the target and details for this development focus area.'
           : mode === 'coach'
-            ? 'Set a measurable development focus — the player accepts to start tracking.'
+            ? 'Set a measurable development focus. The player accepts to start tracking.'
             : 'Set a measurable focus area to track over your next rounds.'
       }
       leadingAction={
@@ -571,7 +571,7 @@ export function FocusAreaModal({
                   </div>
                 ) : (
                   <span className="font-fw-sans text-eyebrow italic text-text-tertiary">
-                    No rounds recorded yet — values won&apos;t auto-fill.
+                    No rounds recorded yet. Values won&apos;t auto-fill.
                   </span>
                 )}
               </Inset>
@@ -615,7 +615,7 @@ export function FocusAreaModal({
           {/* Measurable target — catalog-driven picker with real player values */}
           <FormSection
             title="Measurable target"
-            description="Pick the stat to improve — the player's current value is shown, and a target is suggested (golf metrics like putts/score are lower-is-better)."
+            description="Pick the stat to improve. The player's current value is shown, and a target is suggested (golf metrics like putts/score are lower-is-better)."
           >
             {areaMetrics.length > 0 ? (
               <FormField label="Stat to improve" showOptional>
@@ -634,7 +634,7 @@ export function FocusAreaModal({
                         aria-pressed={active}
                         className={cn(
                           'group flex items-center justify-between gap-3 rounded-fw-md border px-3 py-2.5 text-left',
-                          'transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)]',
+                          'transition duration-200 ease-[cubic-bezier(0.32,0.72,0,1)]',
                           active
                             ? 'border-accent-400 bg-accent-50 ring-1 ring-accent-300'
                             : 'border-border-subtle bg-surface hover:border-border-strong hover:bg-surface-tint',
@@ -670,7 +670,7 @@ export function FocusAreaModal({
                     aria-pressed={showCustom}
                     className={cn(
                       'flex items-center justify-center rounded-fw-md border border-dashed px-3 py-2.5 text-left',
-                      'font-fw-sans text-body-sm transition-all duration-200',
+                      'font-fw-sans text-body-sm transition duration-200',
                       showCustom
                         ? 'border-accent-400 bg-accent-50 text-fw-success-ink'
                         : 'border-border-subtle bg-surface text-text-secondary hover:border-border-strong hover:bg-surface-tint',
@@ -692,7 +692,7 @@ export function FocusAreaModal({
                   placeholder="e.g. Pre-shot routine consistency"
                 />
                 <p className="mt-1 font-fw-sans text-eyebrow text-text-tertiary">
-                  Custom metrics won&apos;t auto-track — update progress manually.
+                  Custom metrics won&apos;t auto-track. Update progress manually.
                 </p>
               </FormField>
             ) : null}
@@ -727,7 +727,7 @@ export function FocusAreaModal({
                     onClick={applySuggested}
                     className="mt-1 font-fw-sans text-eyebrow text-accent-700 underline-offset-2 hover:underline"
                   >
-                    Suggested: {formatMetricValue(form.target_metric, suggested)} — use it
+                    Suggested: {formatMetricValue(form.target_metric, suggested)}, use it
                   </button>
                 ) : null}
               </FormField>
@@ -781,7 +781,7 @@ export function FocusAreaModal({
 
             {previewDelta ? (
               <p className="font-fw-sans text-eyebrow text-text-tertiary">
-                {previewDelta.improving ? 'Asking for a' : 'Heads up — this target moves the wrong way by'}{' '}
+                {previewDelta.improving ? 'Asking for a' : 'Heads up, this target moves the wrong way by'}{' '}
                 <Badge tone={previewDelta.improving ? 'neutral' : 'warning'} size="sm" numeric>
                   {previewDelta.magnitude}
                 </Badge>{' '}

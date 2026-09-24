@@ -117,7 +117,7 @@ export function OfflineIndicator({
         <PopoverTrigger asChild>
           <Button variant="danger"
             className={cn(
-              'flex items-center gap-2 px-2 py-1 rounded-md text-xs font-medium transition-all duration-200',
+              'flex items-center gap-2 px-2 py-1 rounded-md text-xs font-medium transition duration-200',
               !isOnline
                 ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
                 : isSyncing

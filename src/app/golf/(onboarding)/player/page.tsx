@@ -360,7 +360,7 @@ function GolfPlayerOnboardingContent() {
 
                       {/* Hometown */}
                       <div>
-                        <p className="text-label font-semibold text-text-tertiary uppercase tracking-wider mb-3">
+                        <p className="text-microlabel font-semibold text-text-tertiary uppercase tracking-wider mb-3">
                           Hometown
                         </p>
                         <div className="grid grid-cols-3 gap-3">
@@ -388,7 +388,7 @@ function GolfPlayerOnboardingContent() {
                       <Button
                         onClick={() => goForward('profile')}
                         disabled={!firstName.trim() || !lastName.trim()}
-                        className="w-full bg-accent-fill hover:bg-accent-fill-hover shadow-lg shadow-primary-900/10 hover:shadow-xl hover:shadow-primary-900/15 transition-all"
+                        className="w-full bg-accent-fill hover:bg-accent-fill-hover shadow-lg shadow-primary-900/10 hover:shadow-xl hover:shadow-primary-900/15 transition"
                         size="lg"
                       >
                         Continue
@@ -467,7 +467,7 @@ function GolfPlayerOnboardingContent() {
                       <Button
                         onClick={handleSubmitOnboarding}
                         isLoading={loading}
-                        className="w-full bg-accent-fill hover:bg-accent-fill-hover shadow-lg shadow-primary-900/10 hover:shadow-xl hover:shadow-primary-900/15 transition-all"
+                        className="w-full bg-accent-fill hover:bg-accent-fill-hover shadow-lg shadow-primary-900/10 hover:shadow-xl hover:shadow-primary-900/15 transition"
                         size="lg"
                         aria-describedby={error ? 'onboarding-submit-error' : undefined}
                       >
@@ -580,7 +580,7 @@ function GolfPlayerOnboardingContent() {
                       <Button
                         size="lg"
                         onClick={() => router.push('/golf/join')}
-                        className="w-full sm:w-auto px-10 bg-accent-fill hover:bg-accent-fill-hover shadow-lg shadow-primary-900/10 hover:shadow-xl hover:shadow-primary-900/15 transition-all"
+                        className="w-full sm:w-auto px-10 bg-accent-fill hover:bg-accent-fill-hover shadow-lg shadow-primary-900/10 hover:shadow-xl hover:shadow-primary-900/15 transition"
                       >
                         Enter a join code
                         <IconArrowRight size={16} className="ml-2" />
@@ -589,7 +589,7 @@ function GolfPlayerOnboardingContent() {
                       <Button
                         size="lg"
                         onClick={handleGoToDashboard}
-                        className="w-full sm:w-auto px-10 bg-accent-fill hover:bg-accent-fill-hover shadow-lg shadow-primary-900/10 hover:shadow-xl hover:shadow-primary-900/15 transition-all"
+                        className="w-full sm:w-auto px-10 bg-accent-fill hover:bg-accent-fill-hover shadow-lg shadow-primary-900/10 hover:shadow-xl hover:shadow-primary-900/15 transition"
                       >
                         Go to Dashboard
                         <IconArrowRight size={16} className="ml-2" />

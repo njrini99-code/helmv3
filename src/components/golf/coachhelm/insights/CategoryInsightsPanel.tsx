@@ -79,7 +79,7 @@ export function CategoryInsightsPanel({
       <EmptyState
         icon={Sparkles}
         title="No themes yet"
-        description="Log a few rounds with shot detail and CoachHelm will surface the strokes-gained themes worth working on — putting, approach, off-the-tee, around-the-green, and your scoring patterns."
+        description="Log a few rounds with shot detail and CoachHelm will surface the strokes-gained themes worth working on, putting, approach, off-the-tee, around-the-green, and your scoring patterns."
       />
     );
   }
@@ -90,7 +90,7 @@ export function CategoryInsightsPanel({
       <InsufficientData
         icon={Sparkles}
         title="Not enough rounds yet"
-        description="Log a few rounds with shot detail and CoachHelm will surface the strokes-gained themes worth working on — putting, approach, off-the-tee, around-the-green, and your scoring patterns."
+        description="Log a few rounds with shot detail and CoachHelm will surface the strokes-gained themes worth working on, putting, approach, off-the-tee, around-the-green, and your scoring patterns."
       />
     );
   }
@@ -230,7 +230,7 @@ function CategorySection({ theme, onMakePlan, makePlanPendingId }: CategorySecti
 
       {state === 'thin' ? (
         <p className="max-w-prose font-fw-sans text-body-sm leading-relaxed text-text-tertiary">
-          Not enough rounds yet — log a few with shot detail (and tag your putt misses) and this
+          Not enough rounds yet. Log a few with shot detail (and tag your putt misses) and this
           theme will light up.
         </p>
       ) : causes.length > 0 ? (
@@ -247,8 +247,8 @@ function CategorySection({ theme, onMakePlan, makePlanPendingId }: CategorySecti
       ) : (
         <p className="max-w-prose font-fw-sans text-body-sm leading-relaxed text-text-tertiary">
           {isStrength
-            ? 'Keep doing what’s working here — no leak to address.'
-            : 'No specific cause surfaced yet — keep logging rounds to pinpoint it.'}
+            ? 'Keep doing what’s working here. No leak to address.'
+            : 'No specific cause surfaced yet. Keep logging rounds to pinpoint it.'}
         </p>
       )}
     </section>
@@ -393,7 +393,7 @@ function CauseCard({ cause, onMakePlan, makePlanPending = false }: CauseCardProp
         <div id={panelId} className="flex flex-col gap-3 px-2 pb-1 pt-0.5">
           {suppressed ? (
             <p className="max-w-prose font-fw-sans text-caption leading-relaxed text-text-tertiary">
-              A directional read from your pattern — there isn&rsquo;t a reliable stroke estimate
+              A directional read from your pattern. There isn&rsquo;t a reliable stroke estimate
               for this yet, so treat it as a tendency to watch rather than a measured leak.
             </p>
           ) : null}
@@ -472,7 +472,7 @@ function CauseCard({ cause, onMakePlan, makePlanPending = false }: CauseCardProp
           ) : needsDrill ? (
             <Inset padding="sm" className="flex items-center">
               <span className="font-fw-sans text-caption text-text-tertiary">
-                No drill yet — talk to your coach.
+                No drill yet. Talk to your coach.
               </span>
             </Inset>
           ) : null}

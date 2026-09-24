@@ -44,7 +44,7 @@ export function SequenceCard({
       className={cn(
         'group relative w-full text-left flex items-center gap-3 px-4 py-3',
         'rounded-fw-md border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-card)]',
-        'transition-all duration-200 cursor-pointer',
+        'transition duration-200 cursor-pointer',
         'hover:bg-surface-tint hover:shadow-raise',
         isSelected && 'ring-2 ring-accent-500 border-accent-300',
       )}

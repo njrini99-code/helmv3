@@ -101,7 +101,7 @@ export function PlayerCoachHelmNav() {
                 aria-current={selected ? 'true' : undefined}
                 className={cn(
                   'relative inline-flex min-h-11 items-center justify-center whitespace-nowrap rounded-t-fw-sm px-3.5 py-2',
-                  'font-fw-sans text-label font-medium outline-none transition-colors duration-150',
+                  'font-fw-sans text-microlabel font-medium outline-none transition-colors duration-150',
                   'focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
                   selected ? 'text-text-primary' : 'text-text-secondary hover:bg-surface-tint hover:text-text-primary',
                 )}

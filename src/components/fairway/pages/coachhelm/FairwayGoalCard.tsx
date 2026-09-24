@@ -305,7 +305,7 @@ export function FairwayGoalCard({ data, role, playerName }: FairwayGoalCardProps
                   Hit {achievedAt} · validated on rounds
                 </span>
               ) : notStarted ? (
-                'Not started — baseline captured'
+                'Not started, baseline captured'
               ) : (
                 <>
                   {pct}% to target
@@ -352,7 +352,7 @@ export function FairwayGoalCard({ data, role, playerName }: FairwayGoalCardProps
           />
           {windowed ? (
             <p className="mt-1.5 font-fw-sans text-eyebrow text-text-tertiary">
-              Career average vs team &amp; Tour — your progress above tracks rounds since you set this goal.
+              Career average vs team &amp; Tour. Your progress above tracks rounds since you set this goal.
             </p>
           ) : null}
         </div>

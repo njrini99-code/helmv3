@@ -304,7 +304,7 @@ export function CalendarView({
                             onMouseEnter={() => setHoveredEvent(event.id)}
                             onMouseLeave={() => setHoveredEvent(null)}
                             className={cn(
-                              'pointer-events-auto relative z-10 flex h-auto min-h-0 items-center gap-1 text-eyebrow leading-tight px-1.5 py-[3px] rounded-fw-sm truncate cursor-pointer transition-all font-medium w-full text-left justify-start',
+                              'pointer-events-auto relative z-10 flex h-auto min-h-0 items-center gap-1 text-eyebrow leading-tight px-1.5 py-[3px] rounded-fw-sm truncate cursor-pointer transition font-medium w-full text-left justify-start',
                               config.pillBg,
                               config.pillText,
                               hoveredEvent === event.id && 'ring-1 ring-offset-1 ring-border-strong shadow-flat'
@@ -431,7 +431,7 @@ export function CalendarView({
                         onMouseEnter={() => setHoveredEvent(event.id)}
                         onMouseLeave={() => setHoveredEvent(null)}
                         className={cn(
-                          'block h-auto min-h-0 absolute left-1 right-1 rounded-fw-sm px-2 py-1 cursor-pointer transition-all overflow-hidden text-left',
+                          'block h-auto min-h-0 absolute left-1 right-1 rounded-fw-sm px-2 py-1 cursor-pointer transition overflow-hidden text-left',
                           config.softBg,
                           hoveredEvent === event.id && 'ring-1 ring-border-strong shadow-soft z-10'
                         )}
@@ -533,7 +533,7 @@ export function CalendarView({
                     onMouseEnter={() => setHoveredEvent(event.id)}
                     onMouseLeave={() => setHoveredEvent(null)}
                     className={cn(
-                      'block h-auto min-h-0 absolute left-2 right-4 rounded-fw-md px-4 py-2.5 cursor-pointer transition-all text-left',
+                      'block h-auto min-h-0 absolute left-2 right-4 rounded-fw-md px-4 py-2.5 cursor-pointer transition text-left',
                       config.softBg,
                       'shadow-flat',
                       hoveredEvent === event.id && 'ring-1 ring-border-strong shadow-soft z-10'
@@ -627,7 +627,7 @@ export function CalendarView({
                 key={view}
                 onClick={() => setViewMode(view)}
                 className={cn(
-                  'px-3 py-1.5 rounded-fw-sm text-xs font-semibold transition-all capitalize',
+                  'px-3 py-1.5 rounded-fw-sm text-xs font-semibold transition capitalize',
                   viewMode === view
                     ? 'bg-surface text-text-primary shadow-flat'
                     : 'text-text-tertiary hover:text-text-secondary'

@@ -208,7 +208,7 @@ export function formatHoleSgNarrative(sg: HoleStrokesGainedByCategory | null): H
     .slice(0, 2)
     .map((c) => `${Math.abs(c.value).toFixed(1)} ${SG_CATEGORY_LABEL[c.category]}`)
     .join(', ');
-  return { text: `${headline} — ${breakdown}.`, tone };
+  return { text: `${headline}, ${breakdown}.`, tone };
 }
 
 export interface ReviewHoleMeta {

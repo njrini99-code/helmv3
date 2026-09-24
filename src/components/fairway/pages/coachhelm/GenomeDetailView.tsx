@@ -260,7 +260,7 @@ export function GenomeDetailView({
         fairwayToast.error('Could not compute genome');
         return;
       }
-      fairwayToast.success('Genome computed — refreshing');
+      fairwayToast.success('Genome computed, refreshing');
       router.refresh();
     } catch {
       setComputeError('Compute failed — please try again.');
@@ -301,7 +301,7 @@ export function GenomeDetailView({
         target_value: null,
       });
       if (res.success) {
-        fairwayToast.success(`Focus area created — ${w.label}`);
+        fairwayToast.success(`Focus area created, ${w.label}`);
         router.push(`/golf/dashboard/intelligence?view=players&player=${playerId}`);
       } else {
         fairwayToast.error(res.error ?? 'Could not create focus area');
@@ -528,7 +528,7 @@ function GenomeHeroInstrument({
       ) : (
         <InsufficientData
           title="Fingerprint still forming"
-          description="A genome needs at least 3 live dimensions to plot a trustworthy radar shape. Locked spokes are excluded — never drawn as a fake 0."
+          description="A genome needs at least 3 live dimensions to plot a trustworthy radar shape. Locked spokes are excluded, never drawn as a fake 0."
           unit="live dimensions"
           current={liveCount}
           required={3}
@@ -644,7 +644,7 @@ function PersonaInstrument({
         className="flex h-full flex-col gap-5"
       >
         <p className="font-fw-sans text-body-sm text-text-secondary">
-          No standout strengths or watchouts yet — a few more rounds and this player&rsquo;s
+          No standout strengths or watchouts yet, a few more rounds and this player&rsquo;s
           persona will fill in.
         </p>
         {persona.course_profile ? (

@@ -88,7 +88,7 @@ export function CommandPalette({ isCoach = true }: CommandPaletteProps) {
     // Signals) instead of repeating a single tab's member routes. The member
     // routes stay searchable via keywords ("today's calls", "patterns",
     // "insights" all resolve to their tab) so nothing becomes unreachable.
-    { id: 'intelligence', label: surfaceName('rail-coachhelm-ai-coach'), description: "Brief — today's calls & command center", icon: <IconBrain size={18} />, href: '/golf/dashboard/intelligence', keywords: ['intelligence', 'ai', 'hub', 'coachhelm', 'overview', 'brief', 'today', "today's calls", 'calls', 'priority', 'commandcenter', 'command center'] },
+    { id: 'intelligence', label: surfaceName('rail-coachhelm-ai-coach'), description: "Brief, today's calls & command center", icon: <IconBrain size={18} />, href: '/golf/dashboard/intelligence', keywords: ['intelligence', 'ai', 'hub', 'coachhelm', 'overview', 'brief', 'today', "today's calls", 'calls', 'priority', 'commandcenter', 'command center'] },
     { id: 'signals', label: surfaceName('signals'), description: 'Alerts, insights & patterns', icon: <IconBell size={18} />, href: surfaceHref('signals'), keywords: ['signals', 'alerts', 'notifications', 'priority', 'attention', 'insights', 'feed', 'recommendations', 'patterns', 'mining', 'evidence', 'triage', 'coachhelm'] },
     { id: 'coachhelm-insights', label: surfaceName('insights'), description: 'AI-generated coaching insights', icon: <IconSparkles size={18} />, href: surfaceHref('insights'), keywords: ['insights', 'recommendations', 'ai', 'coachhelm', 'signals'] },
     { id: 'coachhelm-patterns', label: surfaceName('patterns'), description: 'Recurring player and team patterns', icon: <IconTarget size={18} />, href: surfaceHref('patterns'), keywords: ['patterns', 'mining', 'trends', 'evidence', 'coachhelm'] },
@@ -145,7 +145,7 @@ export function CommandPalette({ isCoach = true }: CommandPaletteProps) {
     const teamHubEntry: CommandItemSpec = {
       id: 'team-hub',
       label: 'Team Hub',
-      description: 'Your team at a glance — tasks, announcements, travel, classes & teammates',
+      description: 'Your team at a glance, tasks, announcements, travel, classes & teammates',
       icon: <IconLayoutGrid size={18} />,
       href: '/golf/dashboard/team-hub',
       keywords: ['team', 'hub', 'tasks', 'announcements', 'travel', 'classes', 'updates'],

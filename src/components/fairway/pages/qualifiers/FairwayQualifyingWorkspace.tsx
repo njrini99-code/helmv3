@@ -165,7 +165,7 @@ function ConcludeQualifier({ qualifierId, status }: { qualifierId: string; statu
       if (!r.success) {
         fairwayToast.danger("Couldn't reopen the qualifier", { description: r.error });
       } else {
-        fairwayToast.success('Qualifier reopened — players can post rounds again');
+        fairwayToast.success('Qualifier reopened, players can post rounds again');
         router.refresh();
       }
     });
@@ -186,7 +186,7 @@ function ConcludeQualifier({ qualifierId, status }: { qualifierId: string; statu
               Completed
             </StatusPill>
             <p className="font-fw-sans text-body-sm text-text-secondary">
-              This qualifier is closed out — it now shows under Concluded on the qualifiers list.
+              This qualifier is closed out. It now shows under Concluded on the qualifiers list.
               Reopen it if anyone still needs to post a round.
             </p>
           </div>
@@ -219,7 +219,7 @@ function ConcludeQualifier({ qualifierId, status }: { qualifierId: string; statu
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div className="space-y-1">
           <p className="font-fw-sans text-body font-medium text-text-primary">
-            Roster committed — ready to close this out?
+            Roster committed. Ready to close this out?
           </p>
           <p className="font-fw-sans text-caption text-text-tertiary">
             Marks the qualifier Completed so it moves to Concluded for the whole team.
@@ -268,7 +268,7 @@ function StateBar({
     startTransition(async () => {
       const r = await confirmQualifierSelection(qualifierId);
       if (!r.ok) fairwayToast.danger("Couldn't confirm selection", { description: r.error });
-      else fairwayToast.success('Selection confirmed — roster committed');
+      else fairwayToast.success('Selection confirmed, roster committed');
     });
   };
 
@@ -459,7 +459,7 @@ function CoachPicks({
       } else {
         fairwayToast.success('Coach pick removed', {
           description: priorReasoning
-            ? `${playerName}'s reasoning was saved — undo to restore it.`
+            ? `${playerName}'s reasoning was saved, undo to restore it.`
             : `${playerName} is no longer a coach pick.`,
           action: priorReasoning
             ? {
@@ -510,7 +510,7 @@ function CoachPicks({
             variant="subtle"
             icon={Flag}
             title="Everyone's auto-locked"
-            description="Every entry is auto-locked on merit — no discretionary picks needed."
+            description="Every entry is auto-locked on merit. No discretionary picks needed."
           />
         ) : (
           // Same rationale as SlotLeaderboard above: the name column plus the

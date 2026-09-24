@@ -446,7 +446,7 @@ export function AddClassModal({ isOpen, onClose, onSave, editingClass, existingC
                   type="button"
                   onClick={() => handleDayToggle(day.abbrev)}
                   className={cn(
-                    'w-11 h-11 rounded-lg text-sm font-medium transition-all',
+                    'w-11 h-11 rounded-lg text-sm font-medium transition',
                     formData.days.includes(day.abbrev)
                       ? 'bg-accent-fill text-text-on-accent-fill'
                       : 'bg-surface-sunken text-text-secondary hover:bg-surface-sunken/80'
@@ -463,7 +463,7 @@ export function AddClassModal({ isOpen, onClose, onSave, editingClass, existingC
                   type="button"
                   onClick={() => handleQuickPattern(pattern.days)}
                   className={cn(
-                    'px-3 py-1 text-xs font-medium rounded-full transition-all',
+                    'px-3 py-1 text-xs font-medium rounded-full transition',
                     JSON.stringify(formData.days) === JSON.stringify(pattern.days)
                       ? 'bg-accent-500/15 text-fw-success-ink'
                       : 'bg-surface-sunken text-text-secondary hover:bg-surface-sunken/80'

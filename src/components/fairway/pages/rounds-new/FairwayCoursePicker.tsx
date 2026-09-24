@@ -707,7 +707,7 @@ function CoursesStage({
               variant="subtle"
               icon={<IconFlag aria-hidden />}
               title={`No courses match “${q}”.`}
-              description="Close this and type the course name on the setup screen — it’ll be added to the library when you save the round."
+              description="Close this and type the course name on the setup screen, it’ll be added to the library when you save the round."
             />
           )
         ) : (
@@ -945,8 +945,8 @@ function EmptyCourses({ onCreate }: { onCreate?: () => void }) {
       title="No courses yet"
       description={
         onCreate
-          ? 'Add the first course to the shared library — everyone on your team can play it from here.'
-          : 'Close this and type the course name on the setup screen — it’ll be added to the library when you save the round.'
+          ? 'Add the first course to the shared library. Everyone on your team can play it from here.'
+          : 'Close this and type the course name on the setup screen, it’ll be added to the library when you save the round.'
       }
       action={
         onCreate ? (

@@ -209,7 +209,7 @@ export function GolfJoinTeamClient({
                   <Button variant="primary"
                     onClick={handleJoinTeam}
                     disabled={loading || success}
-                    className="w-full px-6 py-3 bg-accent-fill text-text-on-accent-fill font-semibold rounded-xl hover:bg-accent-fill-hover active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-primary-900/10 hover:shadow-xl hover:shadow-primary-900/15"
+                    className="w-full px-6 py-3 bg-accent-fill text-text-on-accent-fill font-semibold rounded-xl hover:bg-accent-fill-hover active:scale-95 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-primary-900/10 hover:shadow-xl hover:shadow-primary-900/15"
                   >
                     {loading ? (
                       <>
@@ -239,7 +239,7 @@ export function GolfJoinTeamClient({
                   <Button variant="ghost"
                     onClick={() => router.push('/golf/dashboard')}
                     disabled={success}
-                    className="w-full px-6 py-3 bg-cream-100/68 text-warm-700 font-semibold rounded-xl border border-warm-200/50 hover:bg-cream-100/82 active:bg-warm-100 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full px-6 py-3 bg-cream-100/68 text-warm-700 font-semibold rounded-xl border border-warm-200/50 hover:bg-cream-100/82 active:bg-warm-100 transition disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     Cancel
                   </Button>

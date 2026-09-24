@@ -324,7 +324,7 @@ export function DayScheduleSwipe({
                   onClick={() => goto(dayOffset)}
                   aria-current={selected ? 'true' : undefined}
                   aria-label={`${dayLabel(key, todayKey as string)}${
-                    count > 0 ? ` — ${count} event${count === 1 ? '' : 's'}` : ' — nothing scheduled'
+                    count > 0 ? `, ${count} event${count === 1 ? '' : 's'}` : ', nothing scheduled'
                   }`}
                   className={cn(
                     'flex min-h-11 min-w-11 flex-1 shrink-0 basis-0 flex-col items-center justify-center gap-1 rounded-fw-sm px-1 py-1.5 transition-colors',
@@ -333,7 +333,7 @@ export function DayScheduleSwipe({
                       : 'text-text-tertiary hover:bg-surface-sunken',
                   )}
                 >
-                  <span className="font-fw-sans text-micro font-medium uppercase tracking-wide">
+                  <span className="font-fw-sans text-microlabel font-medium uppercase tracking-wide">
                     {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'][d.getUTCDay()]}
                   </span>
                   <span className="font-fw-mono text-caption font-semibold tabular-nums">
@@ -398,12 +398,12 @@ export function DayScheduleSwipe({
                   <p className="font-fw-sans text-body-sm text-text-secondary">
                     Nothing scheduled
                     <span className="text-text-tertiary">
-                      {clampedOffset === 0 ? ' — a clear day.' : ' for this day yet.'}
+                      {clampedOffset === 0 ? ', a clear day.' : ' for this day yet.'}
                     </span>
                   </p>
                 </div>
               ) : (
-                <ul aria-label={`Events — ${label}`} className="flex flex-col gap-1">
+                <ul aria-label={`Events, ${label}`} className="flex flex-col gap-1">
                   {dayEvents.map((event) => {
                     const tone = EVENT_TONE[event.event_type] ?? 'neutral';
                     const typeLabel = EVENT_LABEL[event.event_type] ?? 'Event';

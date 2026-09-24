@@ -139,7 +139,7 @@ export function TeamSwitcher({ teams, activeTeamId, canSwitch, onOptimisticSwitc
               type="button"
               role="radio"
               aria-checked={isActive}
-              aria-label={`${teamGenderLabel(gender)} team — ${team.name}`}
+              aria-label={`${teamGenderLabel(gender)} team, ${team.name}`}
               disabled={isPending}
               onClick={() => handleSelect(team.id)}
               className={cn(

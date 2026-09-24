@@ -475,7 +475,7 @@ function QualifierHero({ qualifier }: { qualifier: GolfQualifier }) {
 
         <QualifierMeta qualifier={qualifier} />
 
-        <span className="inline-flex items-center gap-1.5 font-fw-sans text-label font-medium text-accent-700 transition-colors [transition-duration:180ms] group-hover:text-accent-ink motion-reduce:transition-none">
+        <span className="inline-flex items-center gap-1.5 font-fw-sans text-microlabel font-medium text-accent-700 transition-colors [transition-duration:180ms] group-hover:text-accent-ink motion-reduce:transition-none">
           {ctaLabel(status)}
           <IconArrowRight size={16} className="transition-transform [transition-duration:180ms] group-hover:translate-x-0.5 motion-reduce:transition-none" />
         </span>
@@ -521,7 +521,7 @@ function QualifierCard({ qualifier }: { qualifier: GolfQualifier }) {
 
       <QualifierMeta qualifier={qualifier} />
 
-      <span className="mt-auto inline-flex items-center gap-1.5 font-fw-sans text-label font-medium text-text-tertiary transition-colors [transition-duration:180ms] group-hover:text-accent-700 motion-reduce:transition-none">
+      <span className="mt-auto inline-flex items-center gap-1.5 font-fw-sans text-microlabel font-medium text-text-tertiary transition-colors [transition-duration:180ms] group-hover:text-accent-700 motion-reduce:transition-none">
         {ctaLabel(status)}
         <IconArrowRight size={15} className="transition-transform [transition-duration:180ms] group-hover:translate-x-0.5 motion-reduce:transition-none" />
       </span>

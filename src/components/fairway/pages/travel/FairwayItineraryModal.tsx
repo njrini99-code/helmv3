@@ -481,7 +481,7 @@ export function FairwayItineraryModal({
               onChange={(e) => set('room_assignments', e.target.value)}
               disabled={saving}
               rows={2}
-              placeholder="e.g. Room 201 — A. Lopez & J. Chen…"
+              placeholder="e.g. Room 201, A. Lopez & J. Chen…"
               className={cn(fieldCls, 'resize-none')}
             />
           </div>

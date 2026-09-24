@@ -99,7 +99,7 @@ export function FairwayPlayerStats({ initialPlayerId = null, initialStats = null
   const backAction = isCoachView ? (
     <Link
       href="/golf/dashboard/stats"
-      className="rounded-fw-sm font-fw-sans text-label font-medium text-text-secondary outline-none transition-colors [transition-duration:180ms] hover:text-text-primary focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas motion-reduce:transition-none"
+      className="rounded-fw-sm font-fw-sans text-microlabel font-medium text-text-secondary outline-none transition-colors [transition-duration:180ms] hover:text-text-primary focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas motion-reduce:transition-none"
     >
       ← Team stats
     </Link>
@@ -124,7 +124,7 @@ export function FairwayPlayerStats({ initialPlayerId = null, initialStats = null
                 action={
                   <Link
                     href="/golf/dashboard/stats"
-                    className="font-fw-sans text-label font-medium text-accent-ink hover:text-accent-700"
+                    className="font-fw-sans text-microlabel font-medium text-accent-ink hover:text-accent-700"
                   >
                     Back to team stats
                   </Link>

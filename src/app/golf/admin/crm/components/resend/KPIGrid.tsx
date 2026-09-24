@@ -133,7 +133,7 @@ export function KPIGrid({ stats, loading }: KPIGridProps) {
             transition={prefersReducedMotion ? { duration: 0 } : ({ delay: i * 0.03, duration: 0.25 })}
             className={cn(
               'rounded-card border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-card)] p-6',
-              'hover:bg-surface-tint hover:shadow-raise transition-all duration-200'
+              'hover:bg-surface-tint hover:shadow-raise transition duration-200'
             )}
           >
             <div className="flex items-start justify-between mb-3">
@@ -228,7 +228,7 @@ export function DailyTrendChart({ data }: DailyTrendChartProps) {
               </div>
               <div className="flex flex-col justify-end items-stretch gap-px h-full">
                 <div
-                  className="bg-border-strong rounded-t-fw-sm transition-all"
+                  className="bg-border-strong rounded-t-fw-sm transition-[height]"
                   style={{ height: `${sentH}%` }}
                 />
                 <div

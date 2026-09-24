@@ -185,7 +185,7 @@ function AttachmentPreviewItem({ attachment, onRemove }: AttachmentPreviewItemPr
       {status === 'uploading' && (
         <div className="absolute bottom-0 left-0 right-0 h-1 bg-surface-sunken">
           <div
-            className="h-full bg-accent-500 transition-all duration-200"
+            className="h-full bg-accent-500 transition-[width] duration-200"
             style={{ width: `${uploadProgress}%` }}
           />
         </div>

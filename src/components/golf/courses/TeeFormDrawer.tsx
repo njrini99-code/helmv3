@@ -307,7 +307,7 @@ export function TeeFormDrawer({
         {/* Header — pinned above the scrolling body */}
         <div className="flex items-start justify-between gap-3 px-6 pt-4 pb-3">
           <div className="min-w-0">
-            <Sheet.Title className="font-fw-display text-title-2 font-semibold tracking-tight text-text-primary">
+            <Sheet.Title className="font-fw-display text-h2 font-semibold tracking-tight text-text-primary">
               {title}
             </Sheet.Title>
             <p className="mt-1 flex items-center gap-1.5 text-caption text-text-tertiary">
@@ -442,7 +442,7 @@ export function TeeFormDrawer({
 
           {willBeDraft && (
             <p className="mb-3 text-caption text-text-tertiary">
-              Some holes are missing yardages — this tee will be saved as a draft until every hole
+              Some holes are missing yardages. This tee will be saved as a draft until every hole
               is filled in.
             </p>
           )}

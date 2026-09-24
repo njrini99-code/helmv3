@@ -571,7 +571,7 @@ function TemplateCard({
   const fmt = FORMAT_META[template.format];
 
   return (
-    <div className="group relative rounded-card border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-card)] p-4 transition-all duration-200 hover:bg-surface-tint hover:shadow-raise">
+    <div className="group relative rounded-card border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-card)] p-4 transition duration-200 hover:bg-surface-tint hover:shadow-raise">
       <div className="flex items-start gap-2 mb-1.5">
         <span className="font-semibold text-sm text-text-primary truncate flex-1">{template.name}</span>
         {template.is_default && (

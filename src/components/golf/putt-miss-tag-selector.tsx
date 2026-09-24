@@ -57,7 +57,7 @@ export function PuttMissTagSelector({
               disabled={disabled}
               whileTap={prefersReducedMotion ? undefined : ({ scale: 0.96 })}
               className={cn(
-                'relative px-4 py-3 rounded-fw-md border transition-all duration-200',
+                'relative px-4 py-3 rounded-fw-md border transition duration-200',
                 'font-fw-sans text-sm font-medium',
                 'outline-none focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
                 isSelected

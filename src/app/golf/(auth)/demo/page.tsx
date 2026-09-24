@@ -245,7 +245,7 @@ function DemoGateContent() {
               style={{ filter: 'drop-shadow(0 1px 1px rgba(255,255,255,0.5))' }}
             >
               Explore a fully-populated roster, real strokes-gained stats, and
-              CoachHelm AI insights — no setup, no credit card.
+              CoachHelm AI insights. No setup, no credit card.
             </p>
 
             {/* Value prop pills */}
@@ -324,12 +324,12 @@ function DemoGateContent() {
             ) : isDemoUser ? (
               <div className="space-y-3">
                 <div className="bg-primary-400/10 border border-primary-400/30 text-primary-800 px-4 py-3 rounded-xl text-sm text-center">
-                  You&apos;re already in the demo — continue where you left off.
+                  You&apos;re already in the demo, continue where you left off.
                 </div>
                 <Button
                   variant="primary"
                   onClick={() => router.push(landingPath)}
-                  className="w-full min-h-[50px] py-3 bg-accent-fill text-text-on-accent-fill font-semibold tracking-[-0.01em] rounded-xl shadow-lg shadow-primary-600/25 transition-all duration-200 ease-ios hover:bg-accent-fill-hover active:scale-[0.97] active:duration-75"
+                  className="w-full min-h-[50px] py-3 bg-accent-fill text-text-on-accent-fill font-semibold tracking-[-0.01em] rounded-xl shadow-lg shadow-primary-600/25 transition duration-200 ease-ios hover:bg-accent-fill-hover active:scale-[0.97] active:duration-75"
                   rightIcon={<ArrowRight className="w-4 h-4" aria-hidden />}
                 >
                   Continue to dashboard
@@ -407,7 +407,7 @@ function DemoGateContent() {
                     font-semibold tracking-[-0.01em]
                     rounded-xl
                     shadow-lg shadow-primary-600/25
-                    transition-all duration-200 ease-ios
+                    transition duration-200 ease-ios
                     hover:bg-primary-700 hover:shadow-primary-600/30
                     active:scale-[0.97] active:duration-75
                     disabled:opacity-70 disabled:cursor-not-allowed disabled:active:scale-100

@@ -2888,7 +2888,7 @@ export default function NewRoundClient({ playerId }: NewRoundClientProps) {
             </h2>
             <p className="mb-6 text-center font-fw-sans text-sm text-text-tertiary">
               You already have an in-progress round for this course and date.
-              Resume it, discard it, or start a genuinely separate round — for
+              Resume it, discard it, or start a genuinely separate round, for
               example, a second round on a 36-hole day.
             </p>
             <div className="flex flex-col gap-3">
@@ -3066,7 +3066,7 @@ export default function NewRoundClient({ playerId }: NewRoundClientProps) {
       {/* Submit banner — shown when all holes are done but finish confirm was dismissed */}
       {pendingFinalStats && !showFinishConfirm && step === 'tracking' && (
         <div className={fairwayScope('sticky top-[var(--golf-mobile-header-offset)] z-20 flex items-center justify-between gap-3 bg-accent-fill px-4 py-3 text-text-on-accent-fill lg:top-[49px]')}>
-          <p className="font-fw-sans text-sm font-medium">All holes completed — ready to submit!</p>
+          <p className="font-fw-sans text-sm font-medium">All holes completed. Ready to submit!</p>
           <FwButton
             variant="secondary"
             size="sm"

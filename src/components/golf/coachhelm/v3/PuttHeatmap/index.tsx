@@ -223,7 +223,7 @@ export function PuttHeatmap({ putts, title = 'Putting heatmap', className }: Put
                 <span className="font-medium text-text-primary">
                   {MISS_SIDE_LABEL[data.miss_bias.dominant].toLowerCase()}
                 </span>
-                {' — '}
+                {', '}
                 {Math.round(data.miss_bias.share * 100)}% of misses.
               </p>
             ) : null}

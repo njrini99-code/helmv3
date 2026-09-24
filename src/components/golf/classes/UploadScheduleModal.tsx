@@ -430,7 +430,7 @@ export function UploadScheduleModal({ isOpen, onClose, onParsed }: UploadSchedul
           <div className="flex gap-2 mb-6">
             <Button variant="primary"
               onClick={() => setPasteMode(false)}
-              className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all ${
+              className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition ${
                 !pasteMode
                   ? 'bg-accent-fill text-text-on-accent-fill'
                   : 'bg-surface-sunken text-text-secondary hover:bg-surface-sunken/80'
@@ -440,7 +440,7 @@ export function UploadScheduleModal({ isOpen, onClose, onParsed }: UploadSchedul
             </Button>
             <Button variant="primary"
               onClick={() => setPasteMode(true)}
-              className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all ${
+              className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition ${
                 pasteMode
                   ? 'bg-accent-fill text-text-on-accent-fill'
                   : 'bg-surface-sunken text-text-secondary hover:bg-surface-sunken/80'
@@ -472,7 +472,7 @@ export function UploadScheduleModal({ isOpen, onClose, onParsed }: UploadSchedul
                 }
               }}
               className={`
-                border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all
+                border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition
                 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/70 focus-visible:ring-offset-2 focus-visible:ring-offset-surface
                 ${dragActive
                   ? 'border-accent-500 bg-accent-500/10'
@@ -554,9 +554,9 @@ export function UploadScheduleModal({ isOpen, onClose, onParsed }: UploadSchedul
           <div className="mt-6 p-4 bg-surface-sunken rounded-xl">
             <p className="text-sm font-medium text-text-secondary mb-2">Tips for best results:</p>
             <ul className="text-xs text-text-tertiary space-y-1">
-              <li>• Screenshot your schedule right from your student portal — Workday, Banner, PeopleSoft, and weekly calendar views all work</li>
+              <li>• Screenshot your schedule right from your student portal, Workday, Banner, PeopleSoft, and weekly calendar views all work</li>
               <li>• Capture the whole schedule; a scrolling screenshot is fine</li>
-              <li>• Photos of a printed schedule work too — shoot straight-on in good light</li>
+              <li>• Photos of a printed schedule work too, shoot straight-on in good light</li>
               <li>• PDF, TXT, and Paste Text are also supported</li>
               <li>• You'll review every class before anything is saved</li>
             </ul>

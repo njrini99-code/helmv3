@@ -101,7 +101,7 @@ async function generateTeamPracticeRxImpl(
       coach_id: coach.id,
       goal: {
         id: `team:${input.area_id}`,
-        title: `Team practice — ${input.area_label}`,
+        title: `Team practice, ${input.area_label}`,
         metric_id,
         target_value: null,
         current_value: null,

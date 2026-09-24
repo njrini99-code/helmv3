@@ -241,7 +241,7 @@ export function FairwayNewQualifier({ players }: FairwayNewQualifierProps) {
                 required
               />
             </FormField>
-            <FormField label="Description" showOptional help="What players should expect — format, stakes, vibe.">
+            <FormField label="Description" showOptional help="What players should expect, format, stakes, vibe.">
               <TextArea
                 name="description"
                 rows={3}
@@ -286,7 +286,7 @@ export function FairwayNewQualifier({ players }: FairwayNewQualifierProps) {
             <FormField
               label="Entry deadline"
               showOptional
-              help="When players must confirm in — on or before the start date."
+              help="When players must confirm in, on or before the start date."
               error={entryDeadlineError ?? undefined}
             >
               <Input
@@ -351,7 +351,7 @@ export function FairwayNewQualifier({ players }: FairwayNewQualifierProps) {
             {isMultiRound ? (
               <FormField
                 label="Course per round"
-                help="Pick the course each round is played at — players see it on the qualifier."
+                help="Pick the course each round is played at, players see it on the qualifier."
               >
                 <div className="flex flex-col gap-2.5">
                   {Array.from({ length: rounds }, (_, i) => i + 1).map((roundNumber) => {
@@ -412,7 +412,7 @@ export function FairwayNewQualifier({ players }: FairwayNewQualifierProps) {
             <FormField
               label="Scoring rules"
               showOptional
-              help="Shown on the qualifier page — e.g. tiebreak order, counted rounds."
+              help="Shown on the qualifier page, e.g. tiebreak order, counted rounds."
             >
               <TextArea
                 name="rules"
@@ -496,7 +496,7 @@ export function FairwayNewQualifier({ players }: FairwayNewQualifierProps) {
                 variant="subtle"
                 icon={Users}
                 title="No active players on your roster"
-                description="Add players to your team first — then you can enter them into a qualifier."
+                description="Add players to your team first, then you can enter them into a qualifier."
               />
             </Surface>
           ) : (

@@ -89,7 +89,7 @@ function LeakLoadError({ onRetry, retrying }: { onRetry: () => void; retrying: b
       }
     >
       The strokes-gained leak detail failed to load. Your other stats are
-      up to date — retry to pull the make-rate and proximity bands.
+      up to date. Retry to pull the make-rate and proximity bands.
     </InlineNotice>
   );
 }
@@ -406,7 +406,7 @@ export function ApproachDrill({
           <Surface elevation="shadow" padding="md" className="space-y-4 overflow-hidden">
             <div>
               <Eyebrow as="h4">Approach efficiency by distance and lie</Eyebrow>
-              <p className="mt-1 text-caption text-text-tertiary">Average strokes to hole out and proximity to the hole. Lower is better — darker cells are stronger.</p>
+              <p className="mt-1 text-caption text-text-tertiary">Average strokes to hole out and proximity to the hole. Lower is better, darker cells are stronger.</p>
             </div>
             <div className="overflow-x-auto">
               <RampMatrix

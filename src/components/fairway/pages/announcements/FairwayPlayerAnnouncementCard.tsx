@@ -82,7 +82,7 @@ function ProgressTrack({ pct, complete }: { pct: number; complete: boolean }) {
   return (
     <div className="h-1.5 overflow-hidden rounded-full bg-surface-sunken">
       <div
-        className={cn('h-full rounded-full transition-all duration-500', complete ? 'bg-fw-success' : 'bg-accent-400')}
+        className={cn('h-full rounded-full transition-[width] duration-500', complete ? 'bg-fw-success' : 'bg-accent-400')}
         style={{ width: `${Math.max(0, Math.min(100, pct))}%` }}
       />
     </div>

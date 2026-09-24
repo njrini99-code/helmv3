@@ -814,7 +814,7 @@ export function BulkEmailModal({ coaches, onClose, onSuccess, prefilledRecipient
                     type="button"
                     onClick={coachesWithEmail.length === 1 ? handlePersonalize : handlePersonalizeBulk}
                     disabled={personalizing || !body.trim()}
-                    className="flex items-center gap-2 px-4 py-2 rounded-fw-md text-sm font-semibold bg-accent-650 text-text-on-accent hover:bg-accent-750 disabled:opacity-50 transition-all shadow-flat"
+                    className="flex items-center gap-2 px-4 py-2 rounded-fw-md text-sm font-semibold bg-accent-650 text-text-on-accent hover:bg-accent-750 disabled:opacity-50 transition shadow-flat"
                   >
                     {personalizing ? (
                       <>
@@ -948,7 +948,7 @@ export function BulkEmailModal({ coaches, onClose, onSuccess, prefilledRecipient
                   </div>
                   <div className="w-full bg-surface-sunken rounded-full h-2 overflow-hidden">
                     <div
-                      className="h-full bg-accent-500 rounded-full transition-all duration-500"
+                      className="h-full bg-accent-500 rounded-full transition-[width] duration-500"
                       style={{ width: `${(sendProgress.current / sendProgress.total) * 100}%` }}
                     />
                   </div>
@@ -968,7 +968,7 @@ export function BulkEmailModal({ coaches, onClose, onSuccess, prefilledRecipient
                   </div>
                   <div className="w-full bg-accent-100 rounded-full h-2 overflow-hidden">
                     <div
-                      className="h-full bg-accent-500 rounded-full transition-all duration-500"
+                      className="h-full bg-accent-500 rounded-full transition-[width] duration-500"
                       style={{ width: `${(sendProgress.current / sendProgress.total) * 100}%` }}
                     />
                   </div>
@@ -1214,7 +1214,7 @@ export function BulkEmailModal({ coaches, onClose, onSuccess, prefilledRecipient
                 onClick={openInGmail}
                 disabled={suppressionsLoading || coachesWithEmail.length === 0}
                 className={cn(
-                  'flex items-center justify-center gap-2 min-h-[44px] px-6 py-2.5 rounded-fw-md text-sm font-semibold transition-all shadow-flat',
+                  'flex items-center justify-center gap-2 min-h-[44px] px-6 py-2.5 rounded-fw-md text-sm font-semibold transition shadow-flat',
                   'bg-accent-650 text-text-on-accent hover:bg-accent-750',
                   'disabled:opacity-50 disabled:cursor-not-allowed'
                 )}
@@ -1237,7 +1237,7 @@ export function BulkEmailModal({ coaches, onClose, onSuccess, prefilledRecipient
                 onClick={handleSendViaHelm}
                 disabled={sending || suppressionsLoading || coachesWithEmail.length === 0 || !!helmResult}
                 className={cn(
-                  'flex items-center justify-center gap-2 min-h-[44px] px-6 py-2.5 rounded-fw-md text-sm font-semibold transition-all shadow-flat',
+                  'flex items-center justify-center gap-2 min-h-[44px] px-6 py-2.5 rounded-fw-md text-sm font-semibold transition shadow-flat',
                   'bg-accent-650 text-text-on-accent hover:bg-accent-750',
                   'disabled:opacity-50 disabled:cursor-not-allowed'
                 )}

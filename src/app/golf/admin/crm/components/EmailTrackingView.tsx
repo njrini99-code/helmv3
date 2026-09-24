@@ -441,7 +441,7 @@ export function EmailTrackingView() {
           <p className="text-sm text-text-tertiary max-w-md mx-auto leading-relaxed mb-6">{fetchError}</p>
           <Button variant="primary"
             onClick={() => fetchData()}
-            className="px-6 py-2.5 bg-accent-650 text-text-on-accent rounded-fw-md hover:bg-accent-750 font-medium transition-all duration-200 shadow-flat"
+            className="px-6 py-2.5 bg-accent-650 text-text-on-accent rounded-fw-md hover:bg-accent-750 font-medium transition duration-200 shadow-flat"
           >
             Try Again
           </Button>

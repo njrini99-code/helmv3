@@ -241,7 +241,7 @@ export function FairwayShotEntry({
       {plausibilityIssue.severity === 'block' ? (
         <InlineNotice tone="danger">{plausibilityIssue.message}</InlineNotice>
       ) : plausibilityKey === confirmedIssueKey ? (
-        <p role="status" className="font-fw-sans text-sm text-text-secondary">Confirmed — tap Next when ready.</p>
+        <p role="status" className="font-fw-sans text-sm text-text-secondary">Confirmed. Tap Next when ready.</p>
       ) : (
         <InlineNotice
           tone="warning"
@@ -612,7 +612,7 @@ export function FairwayShotEntry({
         <InlineNotice tone="warning">
           {currentShot >= 15
             ? 'Maximum recordable score (15) reached. Please hole out or pick up.'
-            : `Shot ${currentShot} of 15 max — ${15 - currentShot} shot${15 - currentShot !== 1 ? 's' : ''} remaining before the limit.`}
+            : `Shot ${currentShot} of 15 max, ${15 - currentShot} shot${15 - currentShot !== 1 ? 's' : ''} remaining before the limit.`}
         </InlineNotice>
       )}
 

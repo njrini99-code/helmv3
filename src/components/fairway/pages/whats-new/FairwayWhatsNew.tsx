@@ -437,7 +437,7 @@ export function FairwayWhatsNew({ success, error, items, truncated, timeZone, se
         title="What’s new across your team."
         description={
           totalItems > 0
-            ? 'CoachHelm lifecycle activity from the past 7 days — insights, patterns, and focus areas as your team plays.'
+            ? 'CoachHelm lifecycle activity from the past 7 days, insights, patterns, and focus areas as your team plays.'
             : 'CoachHelm activity will appear here as your team plays more rounds.'
         }
         meta={meta}

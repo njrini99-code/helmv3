@@ -640,7 +640,7 @@ export function FairwayTeamSettings({ team, programTeams }: FairwayTeamSettingsP
                     </Button>
                   </div>
                   <p className="font-fw-sans text-caption text-text-secondary">
-                    Players enter this when they sign up — it joins them to this team automatically.
+                    Players enter this when they sign up. It joins them to this team automatically.
                   </p>
                 </div>
               )}
@@ -744,7 +744,7 @@ export function FairwayTeamSettings({ team, programTeams }: FairwayTeamSettingsP
             {genderLabel && (
               <FormField
                 label="Program"
-                help="Set when the team is created — can't be changed."
+                help="Set when the team is created, can't be changed."
               >
                 <div className="flex min-h-[2.5rem] items-center">
                   <Badge tone="accent" size="md">
@@ -1199,7 +1199,7 @@ function StaffInviteSection({ teamId }: { teamId: string | null }) {
         {code && (
           <div className="flex flex-col gap-2">
             <p className="font-fw-sans text-body-sm text-text-secondary">
-              They can enter this code on the sign-up screen — it already carries
+              They can enter this code on the sign-up screen. It already carries
               the role, so there is nothing for them to pick.
             </p>
             <code className="rounded-card border border-border-subtle bg-surface p-3 text-center font-fw-mono text-h3 tracking-[0.2em] text-text-primary">

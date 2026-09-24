@@ -93,7 +93,7 @@ export function CoachIntelligenceHome({
       <Surface padding="lg">
         <EmptyState
           title="No active players yet"
-          description="Invite players and log rounds — CoachHelm names what to work on as the stats cache builds."
+          description="Invite players and log rounds. CoachHelm names what to work on as the stats cache builds."
           action={
             <Button asChild variant="primary">
               <Link href="/golf/dashboard/roster">Open Roster</Link>
@@ -131,7 +131,7 @@ export function CoachIntelligenceHome({
         <Surface padding="md">
           <InlineNotice
             tone="danger"
-            title="Couldn't load team intelligence — retry"
+            title="Couldn't load team intelligence"
             action={
               <Button
                 variant="secondary"

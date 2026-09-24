@@ -113,7 +113,7 @@ export function CourseCard({
 
           {/* Bottom content */}
           <div className="absolute inset-x-0 bottom-0 p-3.5 sm:p-5">
-            <h3 className="line-clamp-2 font-fw-display text-title-3 font-semibold leading-tight tracking-tight text-white [text-shadow:0_1px_4px_rgba(0,0,0,0.55)] sm:text-title-2">
+            <h3 className="line-clamp-2 font-fw-display text-h3 font-semibold leading-tight tracking-tight text-white [text-shadow:0_1px_4px_rgba(0,0,0,0.55)] sm:text-h2">
               {displayName}
             </h3>
             {location && (

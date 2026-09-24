@@ -480,7 +480,7 @@ function StandingPinPreview({ standingByMetric }: { standingByMetric: Map<string
           style={{ left: `${youPct}%` }}
         />
       </div>
-      <div className="relative h-[12px] font-fw-mono text-microbadge normal-case tracking-normal text-text-tertiary">
+      <div className="relative h-[12px] font-fw-mono text-microlabel normal-case tracking-normal text-text-tertiary">
         {labelPositions.map((pos) => {
           const isSubject = pos.key === STANDING_TRACK_SUBJECT_KEY;
           return (

@@ -187,7 +187,7 @@ export function SavedSegmentsRail({
         <IconButton variant="default"
           onClick={() => setDialogOpen(true)}
           aria-label="Save current filters as segment"
-          className="w-full flex items-center justify-center p-2.5 rounded-fw-sm text-nav-text-dim hover:bg-nav-surface hover:text-nav-text transition-all duration-200"
+          className="w-full flex items-center justify-center p-2.5 rounded-fw-sm text-nav-text-dim hover:bg-nav-surface hover:text-nav-text transition duration-200"
         >
           <IconBookmark size={16} />
         </IconButton>

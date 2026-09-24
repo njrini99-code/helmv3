@@ -227,7 +227,7 @@ export function FairwayRecruitingPage({
             </Button>
           }
         >
-          {loadError} Your prospects are safe — this is just a display hiccup.
+          {loadError} Your prospects are safe. This is just a display hiccup.
         </InlineNotice>
       ) : (
         <>

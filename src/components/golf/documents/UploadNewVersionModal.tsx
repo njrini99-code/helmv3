@@ -152,7 +152,7 @@ export function UploadNewVersionModal({
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
             className={`
-              relative border-2 border-dashed rounded-xl p-8 text-center transition-all
+              relative border-2 border-dashed rounded-xl p-8 text-center transition
               ${dragOver
                 ? 'border-accent-400 bg-accent-50'
                 : selectedFile

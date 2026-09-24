@@ -461,7 +461,7 @@ const TREND_SIGNAL_CHIPS: Record<string, TrendSignalChip> = {
   'short term spike': {
     tone: 'hot',
     label: 'Spiking',
-    sentence: 'A sharp recent gain — too new to call a trend, worth protecting.',
+    sentence: 'A sharp recent gain, too new to call a trend, worth protecting.',
   },
   'strong declining': {
     tone: 'watch',
@@ -481,7 +481,7 @@ const TREND_SIGNAL_CHIPS: Record<string, TrendSignalChip> = {
   mixed: {
     tone: 'quiet',
     label: 'Mixed signals',
-    sentence: 'Windows disagree — some parts of your game are moving, others are flat.',
+    sentence: 'Windows disagree, some parts of your game are moving, others are flat.',
   },
   stable: {
     tone: 'quiet',

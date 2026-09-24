@@ -290,7 +290,7 @@ export function FairwayQualifierLeaderboard({
             title="Awaiting first round"
             description={
               entrantCount > 0
-                ? `${entrantCount} player${entrantCount === 1 ? '' : 's'} entered — scores post here as rounds are submitted.`
+                ? `${entrantCount} player${entrantCount === 1 ? '' : 's'} entered, scores post here as rounds are submitted.`
                 : 'Scores post here as rounds are submitted.'
             }
           />

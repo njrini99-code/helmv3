@@ -834,7 +834,7 @@ export function FairwayDocuments({
         title={inFolder ? (currentFolder as string) : 'Team documents.'}
         description={
           isCoach
-            ? 'Plans, releases, and forms — all in one place. Upload files and organize them into folders for your team.'
+            ? 'Plans, releases, and forms, all in one place. Upload files and organize them into folders for your team.'
             : 'Plans, releases, and forms your coach shares with the team show up here.'
         }
         meta={meta}
@@ -1049,11 +1049,11 @@ export function FairwayDocuments({
               <EmptyState
                 variant="subtle"
                 icon={Folder}
-                title={currentFolderIsUnsaved && isCoach ? 'Draft folder — add a file to keep it' : 'This folder is empty'}
+                title={currentFolderIsUnsaved && isCoach ? 'Draft folder, add a file to keep it' : 'This folder is empty'}
                 description={
                   isCoach
                     ? currentFolderIsUnsaved
-                      ? `“${currentFolder}” won't be saved until you add a file to it. Upload one now, or drag & drop here — leaving it empty discards the folder.`
+                      ? `“${currentFolder}” won't be saved until you add a file to it. Upload one now, or drag & drop here, leaving it empty discards the folder.`
                       : 'Upload files to get started, or drag & drop them here.'
                     : 'No files have been added to this folder yet.'
                 }

@@ -76,8 +76,8 @@ function CausalityChip({ level }: { level: Diagnosis['causality_level'] }) {
       )}
       title={
         measured
-          ? 'Measured directly in your shot sequence — an observed fact.'
-          : 'Inferred from your aggregate stats — a coaching hypothesis to test, not a measured shot sequence. Confidence is capped accordingly.'
+          ? 'Measured directly in your shot sequence, an observed fact.'
+          : 'Inferred from your aggregate stats, a coaching hypothesis to test, not a measured shot sequence. Confidence is capped accordingly.'
       }
     >
       <span aria-hidden className="leading-none">{measured ? '■' : '◇'}</span>

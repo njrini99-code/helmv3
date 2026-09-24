@@ -304,7 +304,7 @@ export function ShortGameDrill({ detailedStats, patterns = [] }: ShortGameDrillP
           <Surface elevation="shadow" padding="md" className="space-y-4 overflow-hidden">
             <div>
               <Eyebrow as="h4">Short-game efficiency by distance and lie</Eyebrow>
-              <p className="mt-1 text-caption text-text-tertiary">Average strokes to hole out. Lower is better — darker cells convert in fewer strokes.</p>
+              <p className="mt-1 text-caption text-text-tertiary">Average strokes to hole out. Lower is better, darker cells convert in fewer strokes.</p>
             </div>
             <div className="overflow-x-auto">
               <RampMatrix
@@ -346,7 +346,7 @@ export function ShortGameDrill({ detailedStats, patterns = [] }: ShortGameDrillP
             <Surface elevation="border" padding="md" className="flex flex-col gap-4">
               <div>
                 <Eyebrow as="h4">Up-and-down by lie</Eyebrow>
-                <p className="mt-1 text-caption text-text-tertiary">Fairway, rough, sand, and fringe chips — conversion rate and sample size.</p>
+                <p className="mt-1 text-caption text-text-tertiary">Fairway, rough, sand, and fringe chips, conversion rate and sample size.</p>
               </div>
               <div className="overflow-x-auto">
                 <RampMatrix cols={lieCols.map((c) => c.label)} rows={[lieRow]} legend={UD_LEGEND} />
