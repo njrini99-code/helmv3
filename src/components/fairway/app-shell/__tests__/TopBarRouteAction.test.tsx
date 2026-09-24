@@ -14,7 +14,7 @@ describe('TopBarRouteAction (DASH-18)', () => {
         </header>
         <main>
           <TopBarRouteAction>
-            <button type="button">New message</button>
+            <span>New message</span>
           </TopBarRouteAction>
         </main>
       </TopBarRouteActionProvider>,
@@ -27,7 +27,7 @@ describe('TopBarRouteAction (DASH-18)', () => {
   it('renders nothing without a shell outlet', () => {
     const { container } = render(
       <TopBarRouteAction>
-        <button type="button">New message</button>
+        <span>New message</span>
       </TopBarRouteAction>,
     );
     expect(container.textContent).toBe('');

@@ -13899,6 +13899,11 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/app/golf/actions/insight-delivery.ts",
+          "anchor": "src/lib/golf/round-countable"
+        },
+        {
+          "kind": "import_graph",
           "path": "src/app/golf/actions/insights.ts",
           "anchor": "src/lib/golf/resolve-team-server"
         },
@@ -15885,6 +15890,18 @@
         {
           "kind": "migration_schema",
           "path": "supabase/migrations/20260613160000_course_library_phase1.sql"
+        }
+      ]
+    },
+    {
+      "source": "golf_round_lifecycle",
+      "target": "ios_native_shell",
+      "kind": "feature_relation",
+      "evidence": [
+        {
+          "kind": "import_graph",
+          "path": "src/lib/golf/theme.ts",
+          "anchor": "src/lib/native/helm-appearance"
         }
       ]
     },
@@ -17933,6 +17950,11 @@
           "kind": "import_graph",
           "path": "src/lib/coachhelm/v3/composite/synthesis.ts",
           "anchor": "src/lib/coachhelm/insight-types"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/goals/suggestion-writer.ts",
+          "anchor": "src/lib/coachhelm/focus-areas/catalog"
         },
         {
           "kind": "import_graph",
