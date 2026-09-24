@@ -414,7 +414,7 @@ export async function getProgramPulse(sb: Sb, ctx: CoachChatContext): Promise<Pr
       headline: `${stalled.length} active focus area${stalled.length === 1 ? '' : 's'} ${stalled.length === 1 ? 'has' : 'have'} no recent progress`,
       evidence: stalled
         .slice(0, 3)
-        .map((f) => `${nameById.get(f.player_id) ?? 'Player'} — ${f.title}`)
+        .map((f) => `${nameById.get(f.player_id) ?? 'Player'}: ${f.title}`)
         .join(' · '),
       tone: 'attention',
       weight: 65,
@@ -508,7 +508,7 @@ export function coverageLine(pulse: ProgramPulse): string | null {
   if (withRounds === pulse.active_roster) {
     return `All ${pulse.active_roster} players have recorded rounds.`;
   }
-  return `${withRounds} of ${pulse.active_roster} players have recorded rounds — answers cover those ${withRounds}.`;
+  return `${withRounds} of ${pulse.active_roster} players have recorded rounds. Answers cover those ${withRounds}.`;
 }
 
 /**

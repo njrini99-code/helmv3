@@ -258,7 +258,7 @@ function composeWorstHolesContent(
     })
     .join('; ');
   const patternLine = pattern
-    ? ` Pattern: ${pattern} — the common thread is ${pattern.includes('par 4') ? 'tee-shot demand and long-iron approach' : pattern.includes('par 5') ? 'three-shot execution on a long hole' : 'long forced-carry par-3 tee shots'}.`
+    ? ` Pattern: ${pattern}. The common thread is ${pattern.includes('par 4') ? 'tee-shot demand and long-iron approach' : pattern.includes('par 5') ? 'three-shot execution on a long hole' : 'long forced-carry par-3 tee shots'}.`
     : '';
   // COUNT THE HOLES, don't assume three. `eligible` is whatever cleared the
   // threshold, capped at WORST_HOLES_TOP_N — it is frequently fewer. Production
@@ -272,7 +272,7 @@ function composeWorstHolesContent(
   return (
     `On ${courseLabel}, ${subject} costing you the most: ${list}. ` +
     `Projected impact: ~${strokesImpact.toFixed(2)} strokes per round played here.${patternLine} ` +
-    `Pre-round, rebuild a specific plan for these holes — the recurring bogey source is identifiable rather than random.`
+    `Pre-round, rebuild a specific plan for these holes. The recurring bogey source is identifiable rather than random.`
   );
 }
 

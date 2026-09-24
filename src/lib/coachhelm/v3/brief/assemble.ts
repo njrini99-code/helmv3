@@ -134,7 +134,7 @@ export function assembleBriefEngineInsights(
     const label = cat.label.toLowerCase();
     const message =
       strokesSaved != null
-        ? `~${formatStrokes(strokesSaved)} strokes/round on the table in ${label} — ${prose}`
+        ? `~${formatStrokes(strokesSaved)} strokes/round on the table in ${label}: ${prose}`
         : `Top signal in ${label}: ${prose}`;
 
     out.set(cat.id, {

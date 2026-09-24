@@ -1751,7 +1751,7 @@ class CoachHelmIntelligence {
     return {
       headline: 'Round Damage Pattern: missed greens kept turning into bogeys',
       body: `${scrambleFails.length} of ${missedGreens.length} missed greens became bogey or worse in this round.`,
-      callToAction: 'Check where the recovery shots finished on those holes — the leave, not the miss, is what to look at first. Recommended: treat the first recovery shot as a scoring save: leave uphill and favor center green.',
+      callToAction: 'Check where the recovery shots finished on those holes. The leave, not the miss, is what to look at first. Recommended: treat the first recovery shot as a scoring save: leave uphill and favor center green.',
       tone: 'cautionary',
       confidence: Math.min(0.86, 0.55 + missedGreens.length * 0.04),
       // fail share × 2: a ranking heuristic, not strokes.
@@ -2382,9 +2382,9 @@ class CoachHelmIntelligence {
         const numValue = parseFloat(String(metric.value).replace(/[^0-9.-]/g, ''));
         const gap = !isNaN(numValue) ? numValue - Number(metric.benchmark) : 0;
         conclusion = gap < 0
-          ? `${Math.abs(gap).toFixed(1)} below benchmark — area for improvement`
+          ? `${Math.abs(gap).toFixed(1)} below benchmark: area for improvement`
           : gap > 0
-            ? `${gap.toFixed(1)} above benchmark — performing well`
+            ? `${gap.toFixed(1)} above benchmark: performing well`
             : `At benchmark level`;
       } else {
         conclusion = `Data point from ${insight.category} analysis`;
@@ -2410,7 +2410,7 @@ class CoachHelmIntelligence {
         type: 'deductive' as ReasoningType,
         premise: `Estimated stroke impact: ${insight.strokeImpact.toFixed(1)} strokes per round`,
         inference: insight.strokeImpact >= 1.0
-          ? 'This is a major area for improvement — fixing this changes scores'
+          ? 'This is a major area for improvement: fixing this changes scores'
           : insight.strokeImpact >= 0.5
             ? 'This is a significant area for improvement'
             : 'Addressing this would provide incremental gains',

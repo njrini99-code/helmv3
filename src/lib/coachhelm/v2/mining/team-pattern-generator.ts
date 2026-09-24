@@ -245,7 +245,7 @@ function detectScoringComposition(
           ],
           outcome: { metric: 'scoring_composition', direction: isStrength ? 'increase' : 'decrease', comparison: 'vs_baseline' },
           strokeImpact: Math.abs(sgCat),
-          description: `${playerName(player)}'s scoring is ${isStrength ? 'driven by' : 'held back by'} ${cat.label} (${sgCat > 0 ? '+' : ''}${sgCat.toFixed(1)} SG) — accounts for ${(proportion * 100).toFixed(0)}% of total strokes gained`,
+          description: `${playerName(player)}'s scoring is ${isStrength ? 'driven by' : 'held back by'} ${cat.label} (${sgCat > 0 ? '+' : ''}${sgCat.toFixed(1)} SG), accounting for ${(proportion * 100).toFixed(0)}% of total strokes gained`,
           recommendation: isStrength
             ? `${cat.label} is ${playerName(player)}'s strength. Maintain through targeted practice while developing weaker areas.`
             : `${cat.label} is ${playerName(player)}'s biggest area for improvement. Dedicated ${cat.label.toLowerCase()} work could unlock significant scoring drops.`,
@@ -289,7 +289,7 @@ function detectMissDirectionPatterns(
         ],
         outcome: { metric: 'miss_pattern', direction: 'specific', comparison: 'absolute' },
         strokeImpact: 0.3,
-        description: `${playerName(player)} misses left ${left.toFixed(0)}% of the time on approach — suggests a consistent swing path issue`,
+        description: `${playerName(player)} misses left ${left.toFixed(0)}% of the time on approach, suggesting a consistent swing path issue`,
         recommendation: `Aim slightly right of target to play the natural miss. Work with a swing coach on face/path relationship to reduce left misses.`,
         actionability: 0.85,
         lastOccurrence: now,
@@ -304,7 +304,7 @@ function detectMissDirectionPatterns(
         ],
         outcome: { metric: 'miss_pattern', direction: 'specific', comparison: 'absolute' },
         strokeImpact: 0.3,
-        description: `${playerName(player)} misses right ${right.toFixed(0)}% of the time on approach — suggests consistent path/face issue`,
+        description: `${playerName(player)} misses right ${right.toFixed(0)}% of the time on approach, suggesting a consistent path/face issue`,
         recommendation: `Play the miss by aiming slightly left. Address the root cause with swing path or grip adjustments.`,
         actionability: 0.85,
         lastOccurrence: now,
@@ -323,7 +323,7 @@ function detectMissDirectionPatterns(
           ],
           outcome: { metric: 'miss_pattern', direction: 'specific', comparison: 'absolute' },
           strokeImpact: 0.2,
-          description: `${playerName(player)} misses short ${short.toFixed(0)}% of the time — distance control or club selection issue`,
+          description: `${playerName(player)} misses short ${short.toFixed(0)}% of the time: a distance control or club selection issue`,
           recommendation: `Club up one more often. Work on distance control with stock yardages and partial shots.`,
           lastOccurrence: now,
         }));
@@ -382,7 +382,7 @@ function detectPressureDifferential(
         confidence: Math.min(0.85, 0.5 + (data.qualifying.length + data.practice.length) * 0.05),
         sampleSize: data.qualifying.length + data.practice.length,
         description: `${playerName(player)} scores ${gap.toFixed(1)} strokes higher in qualifying/tournament rounds (${qualAvg.toFixed(1)}) vs practice (${pracAvg.toFixed(1)})`,
-        recommendation: `Simulate pressure in practice — use consequences for bad shots, play practice rounds with scoring stakes. Mental game work (pre-shot routines, breathing) will help.`,
+        recommendation: `Simulate pressure in practice: use consequences for bad shots, play practice rounds with scoring stakes. Mental game work (pre-shot routines, breathing) will help.`,
         actionability: 0.85,
         lastOccurrence: now,
       }));
@@ -445,7 +445,7 @@ function detectPuttingDistancePatterns(
           ],
           outcome: { metric: 'putting_efficiency', direction: 'decrease', comparison: 'vs_baseline' },
           strokeImpact: gap * 0.02, // rough estimate: each % below converts to ~0.02 strokes
-          description: `${playerName(player)} makes only ${val.toFixed(0)}% from ${puttLabels[key]} (benchmark: ${benchmark}%) — a key distance for scoring`,
+          description: `${playerName(player)} makes only ${val.toFixed(0)}% from ${puttLabels[key]} (benchmark: ${benchmark}%), a key distance for scoring`,
           recommendation: `Dedicated putting drills from ${puttLabels[key]}. Focus on speed control and green reading at this range.`,
           lastOccurrence: now,
         }));
@@ -460,7 +460,7 @@ function detectPuttingDistancePatterns(
           ],
           outcome: { metric: 'putting_efficiency', direction: 'increase', comparison: 'vs_baseline' },
           strokeImpact: (val - benchmark) * 0.02,
-          description: `${playerName(player)} is elite from ${puttLabels[key]} — making ${val.toFixed(0)}% (${(val - benchmark).toFixed(0)}% above benchmark)`,
+          description: `${playerName(player)} is elite from ${puttLabels[key]}, making ${val.toFixed(0)}% (${(val - benchmark).toFixed(0)}% above benchmark)`,
           recommendation: `Maintain this strength. Study ${playerName(player)}'s green-reading and stroke mechanics from this distance to share with teammates.`,
           lastOccurrence: now,
         }));
@@ -502,7 +502,7 @@ function detectScramblingPatterns(
       ],
       outcome: { metric: 'scrambling_percentage', direction: 'decrease', comparison: 'vs_baseline' },
       strokeImpact: (BENCHMARKS.scramblingPct - avg) * 0.03,
-      description: `Team scrambling average is ${avg.toFixed(0)}% (benchmark: ${BENCHMARKS.scramblingPct}%) — the team is leaving strokes around the green`,
+      description: `Team scrambling average is ${avg.toFixed(0)}% (benchmark: ${BENCHMARKS.scramblingPct}%): the team is leaving strokes around the green`,
       recommendation: `Dedicate 30% of practice time to up-and-down situations from various lies. Run scrambling competitions to build pressure resilience.`,
       actionability: 0.9,
       lastOccurrence: now,
@@ -525,7 +525,7 @@ function detectScramblingPatterns(
         outcome: { metric: 'scrambling_percentage', direction: 'decrease', comparison: 'vs_baseline' },
         strokeImpact: gap * 0.03,
         description: `${playerName(player)}'s scrambling (${val.toFixed(0)}%) is ${gap.toFixed(0)}% below team average (${avg.toFixed(0)}%)`,
-        recommendation: `${playerName(player)} needs focused short game work — chipping, pitching from various lies, and bunker saves.`,
+        recommendation: `${playerName(player)} needs focused short game work: chipping, pitching from various lies, and bunker saves.`,
         lastOccurrence: now,
       }));
     }
@@ -576,7 +576,7 @@ function detectClassYearTrends(
         ],
         outcome: { metric: 'scoring_average', direction: 'decrease', comparison: 'vs_baseline' },
         strokeImpact: gap,
-        description: `Freshmen average ${freshAvg.toFixed(1)} vs upperclassmen ${upperAvg.toFixed(1)} — a ${gap.toFixed(1)} stroke gap that narrows with experience`,
+        description: `Freshmen average ${freshAvg.toFixed(1)} vs upperclassmen ${upperAvg.toFixed(1)}, a ${gap.toFixed(1)} stroke gap that narrows with experience`,
         recommendation: `Pair freshmen with upperclassmen mentors for course management tips. Freshmen often have the talent but lack competitive experience.`,
         lastOccurrence: now,
       }));
@@ -620,7 +620,7 @@ function detectPenaltyPatterns(
         outcome: { metric: 'penalty_strokes_per_round', direction: 'decrease', comparison: 'vs_baseline' },
         strokeImpact: val - BENCHMARKS.penaltiesPerRound,
         description: `${playerName(player)} averages ${val.toFixed(1)} penalty strokes per round (team avg: ${avg.toFixed(1)}, benchmark: ${BENCHMARKS.penaltiesPerRound})`,
-        recommendation: `Penalty strokes are free strokes to the field. Focus on course management — play safer off the tee on penalty-prone holes. Smarter is better than heroic.`,
+        recommendation: `Penalty strokes are free strokes to the field. Focus on course management: play safer off the tee on penalty-prone holes. Smarter is better than heroic.`,
         actionability: 0.9,
         lastOccurrence: now,
       }));
@@ -661,7 +661,7 @@ function detectThreePuttPatterns(
       ],
       outcome: { metric: 'three_putt_percentage', direction: 'decrease', comparison: 'vs_baseline' },
       strokeImpact: (avg - BENCHMARKS.threePuttPct) * 0.18, // ~18 greens/round
-      description: `Team three-putt rate is ${avg.toFixed(1)}% (benchmark: ${BENCHMARKS.threePuttPct}%) — this is costing the team strokes on the green`,
+      description: `Team three-putt rate is ${avg.toFixed(1)}% (benchmark: ${BENCHMARKS.threePuttPct}%), which is costing the team strokes on the green`,
       recommendation: `Speed control is the #1 factor in avoiding three-putts. Run lag putting drills from 30+ feet, and practice pace on both uphill and downhill putts.`,
       lastOccurrence: now,
     }));
@@ -681,8 +681,8 @@ function detectThreePuttPatterns(
         ],
         outcome: { metric: 'three_putt_percentage', direction: 'decrease', comparison: 'vs_baseline' },
         strokeImpact: (val - BENCHMARKS.threePuttPct) * 0.18,
-        description: `${playerName(player)}'s three-putt rate (${val.toFixed(1)}%) is well above team average (${avg.toFixed(1)}%) — speed control issue`,
-        recommendation: `Focus on lag putting from 25+ feet. The goal isn't to make it — it's to leave every putt inside 3 feet.`,
+        description: `${playerName(player)}'s three-putt rate (${val.toFixed(1)}%) is well above team average (${avg.toFixed(1)}%): a speed control issue`,
+        recommendation: `Focus on lag putting from 25+ feet. The goal isn't to make it, it's to leave every putt inside 3 feet.`,
         lastOccurrence: now,
       }));
     }
@@ -727,7 +727,7 @@ function detectTrendDivergence(
         outcome: { metric: 'scoring_trend', direction: 'decrease', comparison: 'vs_baseline' },
         strokeImpact: trend - avgTrend,
         confidence: 0.7,
-        description: `While team scores are improving (${avgTrend.toFixed(1)} trend), ${playerName(player)}'s are rising by ${trend.toFixed(1)} strokes — diverging from team trajectory`,
+        description: `While team scores are improving (${avgTrend.toFixed(1)} trend), ${playerName(player)}'s are rising by ${trend.toFixed(1)} strokes, diverging from team trajectory`,
         recommendation: `Check in with ${playerName(player)} about any changes in routine, confidence, or mechanics. Early intervention can reverse a declining trend.`,
         actionability: 0.85,
         lastOccurrence: now,
@@ -746,7 +746,7 @@ function detectTrendDivergence(
         outcome: { metric: 'scoring_trend', direction: 'increase', comparison: 'vs_baseline' },
         strokeImpact: Math.abs(trend),
         confidence: 0.7,
-        description: `${playerName(player)} is bucking the team trend — improving by ${Math.abs(trend).toFixed(1)} strokes while the team average is rising`,
+        description: `${playerName(player)} is bucking the team trend, improving by ${Math.abs(trend).toFixed(1)} strokes while the team average is rising`,
         recommendation: `Study what ${playerName(player)} is doing differently. Their approach may contain lessons for teammates who are struggling.`,
         lastOccurrence: now,
       }));

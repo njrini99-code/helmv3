@@ -198,7 +198,7 @@ export function validateShot(
       issues.push({
         rule: 'tee_shot_unreachable',
         severity: 'block',
-        message: `A ${yds}-yard ${what} isn't possible. Check the result — did it finish in the fairway or rough?`,
+        message: `A ${yds}-yard ${what} isn't possible. Check the result: did it finish in the fairway or rough?`,
         holeNumber: hole.holeNumber,
         shotNumber: shot.shotNumber,
       });
@@ -251,7 +251,7 @@ export function validateHoleTotals(hole: Pick<ValidatableHole, 'holeNumber' | 'p
     issues.push({
       rule: 'putts_exceed_score',
       severity: 'block',
-      message: `Hole ${hole.holeNumber}: ${hole.putts} putt${hole.putts === 1 ? '' : 's'} can't fit in a score of ${hole.score} — the tee shot isn't a putt.`,
+      message: `Hole ${hole.holeNumber}: ${hole.putts} putt${hole.putts === 1 ? '' : 's'} can't fit in a score of ${hole.score}. The tee shot isn't a putt.`,
       holeNumber: hole.holeNumber,
     });
   }
@@ -350,7 +350,7 @@ export function validateHoleSequence(holeNumbers: readonly number[]): RoundEntry
     return [{
       rule: 'hole_count_invalid',
       severity: 'block',
-      message: `A finished round is 9 or 18 holes — this one has ${count}. Finish the remaining holes, or save the round for later.`,
+      message: `A finished round is 9 or 18 holes, and this one has ${count}. Finish the remaining holes, or save the round for later.`,
     }];
   }
   const first = distinct[0]!;

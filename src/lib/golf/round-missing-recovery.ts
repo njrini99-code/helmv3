@@ -28,7 +28,7 @@ export const ROUND_MISSING_ERROR = 'round_missing';
  */
 export const ROUND_RECREATE_FAILED_MESSAGE =
   'This round is no longer on the server and could not be re-created yet. '
-  + 'Every hole is still saved on this device — check your connection and try again.';
+  + 'Every hole is still saved on this device. Check your connection and try again.';
 
 /**
  * B2/B6: the ONE sentence for an optimistic-lock conflict, shared by the bare

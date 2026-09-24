@@ -413,12 +413,12 @@ export class ApproachMissGenerator extends BaseGenerator<ApproachMissAggregate> 
     const dialInSentence =
       prox != null
         ? ` When you do reach it you finish ${prox.toFixed(0)} ft from the hole ` +
-          `(over ${agg.green_hit_n} greens) — that's the dial-in once you're on.`
-        : ` Too few greens hit from here (${agg.green_hit_n}) to read a reliable proximity yet — the gap is ` +
+          `(over ${agg.green_hit_n} greens), that's the dial-in once you're on.`
+        : ` Too few greens hit from here (${agg.green_hit_n}) to read a reliable proximity yet. The gap is ` +
           `finding the green, not distance control on it.`;
     const penaltySentence =
       agg.penalty_rate_pct > 5
-        ? ` Note: ${agg.penalty_rate_pct.toFixed(0)}% of these approaches incurred a penalty — worth flagging in practice.`
+        ? ` Note: ${agg.penalty_rate_pct.toFixed(0)}% of these approaches incurred a penalty, worth flagging in practice.`
         : '';
 
     // Dominant miss axis → observation / check / action. Short/long leads (the

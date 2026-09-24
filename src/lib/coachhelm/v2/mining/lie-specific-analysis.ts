@@ -1699,7 +1699,7 @@ class LieSpecificAnalyzer {
           id: crypto.randomUUID(),
           category: 'driving',
           headline: 'Wide Driving Dispersion',
-          body: `You're hitting ${Math.round(driving.fairwayHitRate)}% of fairways vs a ${fairwayBenchmark}% benchmark — your tee shots are scattering off-line more than a strong college player's.`,
+          body: `You're hitting ${Math.round(driving.fairwayHitRate)}% of fairways vs a ${fairwayBenchmark}% benchmark. Your tee shots are scattering off-line more than a strong college player's.`,
           evidence: [
             `Fairway hit rate: ${Math.round(driving.fairwayHitRate)}%`,
             `Benchmark: ${fairwayBenchmark}%`,

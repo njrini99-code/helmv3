@@ -313,7 +313,7 @@ export function buildDiagnosis(
     `vs ${evidence.comparison_label} ${evidence.comparison_value}`;
   return {
     symptom,
-    root_cause: `${evidence.metric_label} is off its benchmark — likely cause inferred from the aggregate, not a measured shot sequence`,
+    root_cause: `${evidence.metric_label} is off its benchmark. Likely cause inferred from the aggregate, not a measured shot sequence`,
     causality_level: 'inferred_hypothesis',
     drivers: [driver],
     recommended_action: `Target ${evidence.metric_label.toLowerCase()} in the next practice block`,

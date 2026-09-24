@@ -136,7 +136,7 @@ export function describeFactor(
       const days = features.temporal.daysSinceLastRound;
       return {
         name: 'Rest / Rust',
-        explanation: `It has been ${days} day${days === 1 ? '' : 's'} since your last round — ${worse ? 'a rust penalty applies' : 'optimal rest'}.`,
+        explanation: `It has been ${days} day${days === 1 ? '' : 's'} since your last round. ${worse ? 'A rust penalty applies.' : 'Rest is optimal.'}`,
       };
     }
     case 'pressure':

@@ -257,10 +257,10 @@ export class InsightComposer {
           ? `+${pred.predictedValue.toFixed(1)}`
           : pred.predictedValue.toFixed(1);
         if (tone === 'encouraging' || tone === 'celebratory') {
-          return `Forecast: ${score} — Trending Up`;
+          return `Forecast ${score}, trending up`;
         }
         if (tone === 'cautionary' || tone === 'urgent') {
-          return `Forecast: ${score} — Watch Form`;
+          return `Forecast ${score}, watch form`;
         }
         return `Next Round Forecast: ${score}`;
       }

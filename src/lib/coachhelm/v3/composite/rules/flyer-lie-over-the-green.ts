@@ -73,7 +73,7 @@ const rule: CompositeRule = {
       title: 'Flyer lies are jumping past the green',
       content:
         `From light rough you've hit ${attempts} approaches averaging ` +
-        `${avgDistance.toFixed(0)} yd in — and ended up ${avgProximity.toFixed(0)} ft ` +
+        `${avgDistance.toFixed(0)} yd in, ending up ${avgProximity.toFixed(0)} ft ` +
         `from the hole on average. The flyer effect is real: grass between ` +
         `face and ball reduces spin, and the ball releases hot. Plan one ` +
         `less club from light rough when the lie sits up.`,

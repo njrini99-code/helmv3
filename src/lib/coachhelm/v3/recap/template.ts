@@ -95,7 +95,7 @@ export function buildWeeklyRecapHtml(recap: WeeklyRecap): { subject: string; htm
 </html>`;
 
   const text = [
-    `${recap.team_name} — weekly recap (${formatDate(recap.week_start_iso)}–${formatDate(recap.week_end_iso)})`,
+    `${recap.team_name}: weekly recap (${formatDate(recap.week_start_iso)}–${formatDate(recap.week_end_iso)})`,
     ``,
     `Rounds: ${recap.totals.rounds_played}`,
     `Avg to par: ${formatAvgToPar(recap.totals.avg_score_to_par)}`,

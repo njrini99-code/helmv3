@@ -112,7 +112,7 @@ export function planFocusArea(
   }
   facts.push({
     label: 'Status',
-    value: `Proposed — ${player.name} accepts before the window starts`,
+    value: `Proposed: ${player.name} accepts before the window starts`,
   });
 
   const missing: string[] = [];
@@ -243,7 +243,7 @@ export function planTask(
     plan,
     proposal: {
       action: 'Assign a task',
-      summary: `${title} — ${ids.length} player${ids.length === 1 ? '' : 's'}.`,
+      summary: `${title}: ${ids.length} player${ids.length === 1 ? '' : 's'}.`,
       facts,
       affects: ids.map((id, i) => ({ kind: 'player' as const, id, label: names[i] ?? 'Player' })),
       notifications: [`${ids.length} player${ids.length === 1 ? ' is' : 's are'} notified in-app`],

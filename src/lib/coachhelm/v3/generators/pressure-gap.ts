@@ -235,7 +235,7 @@ export class PressureGapGenerator extends BaseGenerator<PressureGapAggregate> {
     const content =
       `Across the last 90 days you averaged ${competitiveDisp} in ` +
       `${agg.competitive_count} competitive rounds vs ${practiceDisp} in ` +
-      `${agg.practice_count} practice rounds — a ${absDelta}-stroke gap. ` +
+      `${agg.practice_count} practice rounds, a ${absDelta}-stroke gap. ` +
       `You play ${direction} when it counts.` + driverClause +
       ` PGA Tour gap is ~0.5 strokes; college typical is 2-5 (Research doc §9).`;
 
