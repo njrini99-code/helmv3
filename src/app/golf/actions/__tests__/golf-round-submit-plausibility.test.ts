@@ -157,7 +157,7 @@ describe('submitGolfRoundComprehensive — round-entry plausibility gate', () =>
     expect(result.success).toBe(false);
     if (!result.success) {
       expect((result as { code?: string }).code).toBe('hole_invalid');
-      expect(result.error).toMatch(/^Hole 3: .*the tee shot isn't a putt/);
+      expect(result.error).toMatch(/^Hole 3: .*The tee shot isn't a putt/);
     }
   });
 

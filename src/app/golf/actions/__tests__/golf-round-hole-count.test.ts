@@ -121,7 +121,7 @@ describe('submitGolfRoundComprehensive — finished-round shape', () => {
     const holes = PARS.slice(0, 12).map((par, i) => ordinaryHole(i + 1, par));
     const result = await submit(holes);
     expect(result).toMatchObject({ success: false, code: 'round_implausible' });
-    if (!result.success) expect(result.error).toMatch(/9 or 18 holes — this one has 12/);
+    if (!result.success) expect(result.error).toMatch(/9 or 18 holes, and this one has 12/);
     const rounds = await fake.from('golf_rounds').select('*');
     expect(rounds.data).toHaveLength(0);
   });
@@ -186,7 +186,7 @@ describe('savePartialRound — completed-hole plausibility (RE-V1)', () => {
     } as unknown as Parameters<typeof savePartialRound>[0], ROUND_ID);
     expect(result.success).toBe(false);
     expect(result).toMatchObject({ error: 'hole_invalid', code: 'hole_invalid', hole: 3, field: 'putts' });
-    expect((result as { message?: string }).message).toMatch(/^Hole 3: .*the tee shot isn't a putt/);
+    expect((result as { message?: string }).message).toMatch(/^Hole 3: .*The tee shot isn't a putt/);
   });
 
   it('does not apply the 9/18 shape to a round in progress', async () => {
