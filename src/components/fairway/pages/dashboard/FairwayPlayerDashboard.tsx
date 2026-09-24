@@ -68,6 +68,7 @@ import { SectionTitle, TodayCard, RecentRoundsList, GameLinks } from './player-d
 import { type DayScheduleEvent } from './DaySchedule';
 import { DayScheduleSwipe } from './DayScheduleSwipe';
 import { NotificationsLatestModule } from '@/components/fairway/notifications';
+import type { UnifiedNotificationItem } from '@/app/golf/actions/unified-notifications-model';
 
 /* ─────────────────────────────────────────────────────────────────────────
  * Props — the legacy PlayerDashboard data shape.
@@ -94,6 +95,8 @@ export interface PlayerDashboardData {
 
 interface FairwayPlayerDashboardProps {
   data: PlayerDashboardData;
+  /** PERF-03: the Latest module's items, read on the server. */
+  initialLatestNotifications?: UnifiedNotificationItem[];
   enhancedData?: PlayerDashboardPayload | null;
   /**
    * The former Hub's triage data. Its only remaining use here was the
@@ -208,6 +211,7 @@ function Readout({ caption, metric }: { caption: string; metric: FormattedMetric
 
 export function FairwayPlayerDashboard({
   data,
+  initialLatestNotifications,
   enhancedData,
   greeting: serverGreeting,
   initialFocusAreas,
@@ -425,9 +429,9 @@ export function FairwayPlayerDashboard({
               <div className="md:col-span-5">{focusSection}</div>
             </div>
 
-            {/* Latest notifications: self-fetching, renders nothing when
-                there is nothing new. */}
-            <NotificationsLatestModule />
+            {/* Latest notifications: seeded from the server (PERF-03),
+                renders nothing when there is nothing new. */}
+            <NotificationsLatestModule initialItems={initialLatestNotifications} />
 
             {/* ── Table: recent rounds, then where the rest of the game lives ─ */}
             <section aria-labelledby="home-rounds-title">

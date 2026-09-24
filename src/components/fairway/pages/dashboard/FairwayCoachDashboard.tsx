@@ -88,6 +88,7 @@ import {
 import { cn } from '@/lib/utils';
 import { FairwayJoinRequestAlert } from '@/components/fairway/pages/roster/FairwayJoinRequestAlert';
 import { NotificationsLatestModule } from '@/components/fairway/notifications';
+import type { UnifiedNotificationItem } from '@/app/golf/actions/unified-notifications-model';
 import type { JoinRequestData } from '@/app/golf/actions/teams';
 import type {
   CoachDashboardPayload,
@@ -133,6 +134,8 @@ const TrendChart = nextDynamic(
 
 export interface FairwayCoachDashboardProps {
   data: CoachDashboardData;
+  /** PERF-03: the Latest module's items, read on the server. */
+  initialLatestNotifications?: UnifiedNotificationItem[];
   enhancedData?: CoachDashboardPayload | null;
   dateRange?: DashboardDateRange;
   /**
@@ -266,6 +269,7 @@ function MetaFact({ icon, children }: { icon: React.ReactNode; children: React.R
 
 export function FairwayCoachDashboard({
   data,
+  initialLatestNotifications,
   enhancedData,
   dateRange: initialRange = 'all',
   joinRequests,
@@ -712,7 +716,7 @@ export function FairwayCoachDashboard({
           module; renders nothing when there's genuinely nothing new (the bell
           in the top bar stays the source of truth either way). "View all"
           opens that same bell panel via NotificationPanelContext. */}
-      <NotificationsLatestModule />
+      <NotificationsLatestModule initialItems={initialLatestNotifications} />
 
       {/* ── 3 · TODAY — schedule timeline (matte, calm) ────────────────────── */}
       <TodayPanel
@@ -942,7 +946,7 @@ export function FairwayCoachDashboard({
                 variant="subtle"
                 icon={LucideFlag}
                 title="Couldn’t load rounds"
-                description="Something went wrong reading this team’s rounds. Refresh to try again — nothing has been lost."
+                description="Something went wrong reading this team’s rounds. Refresh to try again. Nothing has been lost."
               />
             ) : (
               <EmptyState
@@ -952,7 +956,7 @@ export function FairwayCoachDashboard({
                 description={
                   range !== 'all'
                     ? 'Try a wider window, or have players log rounds from their dashboard.'
-                    : 'Players can submit rounds from their dashboard — they’ll appear here.'
+                    : 'Players can submit rounds from their dashboard, they’ll appear here.'
                 }
               />
             )}
@@ -1171,7 +1175,7 @@ function TeamPulsePanel({ pulse }: { pulse?: CoachDashboardPayload['teamPulse'] 
           title="No movement to read yet"
           description={
             roundsThisWeek > 0
-              ? `${roundsThisWeek} round${roundsThisWeek === 1 ? '' : 's'} logged this week — not enough yet to classify movement. Pulse compares recent rounds against each player's baseline.`
+              ? `${roundsThisWeek} round${roundsThisWeek === 1 ? '' : 's'} logged this week, not enough yet to classify movement. Pulse compares recent rounds against each player's baseline.`
               : 'Pulse compares recent rounds. It fills in as players log activity.'
           }
         />

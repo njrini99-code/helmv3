@@ -24,16 +24,27 @@ import type { UnifiedNotificationItem } from '@/app/golf/actions/unified-notific
 
 const LATEST_LIMIT = 5;
 
-export function NotificationsLatestModule() {
+export interface NotificationsLatestModuleProps {
+  /**
+   * PERF-03: the items read on the server with the dashboard. When given,
+   * the module renders them at first paint and makes no client read (a
+   * client read queued behind the shell's own actions). Omit to fetch here.
+   */
+  initialItems?: UnifiedNotificationItem[];
+}
+
+export function NotificationsLatestModule({ initialItems }: NotificationsLatestModuleProps = {}) {
   const router = useRouter();
   const badges = useNotificationBadges();
   const { setOpen } = useNotificationPanel();
 
-  const [items, setItems] = useState<UnifiedNotificationItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [loaded, setLoaded] = useState(false);
+  const seeded = initialItems !== undefined;
+  const [items, setItems] = useState<UnifiedNotificationItem[]>(() => (initialItems ?? []).slice(0, LATEST_LIMIT));
+  const [loading, setLoading] = useState(!seeded);
+  const [loaded, setLoaded] = useState(seeded);
 
   useEffect(() => {
+    if (seeded) return;
     let cancelled = false;
     void (async () => {
       try {
@@ -56,7 +67,7 @@ export function NotificationsLatestModule() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [seeded]);
 
   const handleItemClick = useCallback(
     (item: UnifiedNotificationItem) => {

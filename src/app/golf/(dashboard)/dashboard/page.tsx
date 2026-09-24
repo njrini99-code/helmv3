@@ -16,6 +16,8 @@ import type { CoachDashboardData } from './components/coach-dashboard-types';
 import type { GolfCoach, GolfTeam, GolfPlayer } from '@/lib/types/golf';
 import type { CalendarEvent } from '@/lib/types/calendar';
 import { fairwayScope } from '@/lib/redesign/flag';
+import { getUnifiedNotifications } from '@/app/golf/actions/unified-notifications';
+import type { UnifiedNotificationItem } from '@/app/golf/actions/unified-notifications-model';
 import { FairwayCoachDashboard } from '@/components/fairway/pages/dashboard/FairwayCoachDashboard';
 import { FairwayPlayerDashboard, type PlayerDashboardData } from '@/components/fairway/pages/dashboard/FairwayPlayerDashboard';
 import { getActivePlayerTeamMembership, resolveCoachActiveTeamIdForRequest } from '@/lib/golf/dashboard-request-cache';
@@ -92,6 +94,7 @@ function renderCoachDashboard(props: {
     // first paint instead of self-fetching on mount — no post-hydration
     // reflow of everything below the banner.
     joinRequests?: JoinRequestData[];
+    latestNotifications?: UnifiedNotificationItem[];
 }) {
     // Opener text resolved server-side in the team's timezone (see
     // resolveOpener) so the greeting never rewrites itself after hydration.
@@ -103,6 +106,7 @@ function renderCoachDashboard(props: {
                 enhancedData={props.enhancedData ?? undefined}
                 dateRange={props.dateRange}
                 joinRequests={props.joinRequests}
+                initialLatestNotifications={props.latestNotifications}
                 greeting={opener?.greeting}
                 todayLabel={opener?.todayLabel || undefined}
             />
@@ -119,6 +123,7 @@ function renderPlayerDashboard(props: {
     data: PlayerDashboardData;
     enhancedData?: PlayerDashboardPayload | null;
     hubData?: PlayerHubSummaryData | null;
+    latestNotifications?: UnifiedNotificationItem[];
 }) {
     return (
         <div className={fairwayScope('min-h-full')}>
@@ -126,12 +131,26 @@ function renderPlayerDashboard(props: {
                 data={props.data}
                 enhancedData={props.enhancedData ?? undefined}
                 hubData={props.hubData ?? undefined}
+                initialLatestNotifications={props.latestNotifications}
                 greeting={
                     props.enhancedData ? resolveOpener(props.enhancedData.timezone).greeting : undefined
                 }
             />
         </div>
     );
+}
+
+/**
+ * PERF-03: the home "Latest" module's items. A failed read returns undefined,
+ * so the module falls back to reading them itself.
+ */
+async function loadLatestNotifications(): Promise<UnifiedNotificationItem[] | undefined> {
+    try {
+        const result = await getUnifiedNotifications({ limit: 5 });
+        return result.success && result.data ? result.data.items : undefined;
+    } catch {
+        return undefined;
+    }
 }
 
 export default async function GolfDashboardPage({
@@ -184,9 +203,12 @@ export default async function GolfDashboardPage({
             // KPI/rounds content below it. A request failure degrades to "no
             // pending requests" (an empty array) rather than surfacing an error
             // here — the banner is a convenience callout, not core dashboard data.
-            const [payload, joinRequestsResult] = await Promise.all([
+            // PERF-03: the Latest notifications ride along too, so the home
+            // module paints with the page instead of queueing a client read.
+            const [payload, joinRequestsResult, latestNotifications] = await Promise.all([
                 getCachedCoachDashboardData(coach.id, userId, teamId, dateRange),
                 getTeamJoinRequests(),
+                loadLatestNotifications(),
             ]).catch(redirectToLoginOnExpiredSession);
             const joinRequests: JoinRequestData[] =
                 joinRequestsResult.success && joinRequestsResult.data ? joinRequestsResult.data : [];
@@ -210,7 +232,7 @@ export default async function GolfDashboardPage({
                 teamScoringTrend: payload.teamScoringTrend.length > 0 ? payload.teamScoringTrend : undefined,
             };
 
-            return renderCoachDashboard({ data, enhancedData: payload, dateRange, joinRequests });
+            return renderCoachDashboard({ data, enhancedData: payload, dateRange, joinRequests, latestNotifications });
         }
 
         // Coach without team — empty state
@@ -272,9 +294,10 @@ export default async function GolfDashboardPage({
         // WAVE W2: fetch the former Hub's triage data (tasks/RSVP/announcements/
         // trips) in parallel — teamless players get `null` (skip), exactly like
         // the standalone Hub page skipped them before.
-        const [payload, hubData] = await Promise.all([
+        const [payload, hubData, latestNotifications] = await Promise.all([
             getCachedPlayerDashboardData(player.id, userId, teamId),
             teamId ? getPlayerHubSummaryData(teamId, player.id) : Promise.resolve(null),
+            loadLatestNotifications(),
         ]).catch(redirectToLoginOnExpiredSession);
         const nameParts = `${player.first_name} ${player.last_name}`.split(' ');
 
@@ -295,7 +318,7 @@ export default async function GolfDashboardPage({
             recentRounds: payload.recentRounds,
         };
 
-        return renderPlayerDashboard({ data, enhancedData: payload, hubData });
+        return renderPlayerDashboard({ data, enhancedData: payload, hubData, latestNotifications });
     }
 
     // No role found — redirect to onboarding
