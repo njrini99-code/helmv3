@@ -3349,3 +3349,12 @@ html[data-helm-sport='golf'] .text-eyebrow {
   font-size: 12px;
   line-height: 16px;
 }
+
+/* TYPE-03: every other tracked all-caps label on golf (bento cell labels,
+   ledger units, table heads) reads in the case it is written in. Labels
+   are authored in sentence case; `uppercase` stays a no-op on golf so a new
+   one cannot bring the shouting back. Golf-scoped, so Baseball keeps it. */
+html[data-helm-sport='golf'] .uppercase {
+  text-transform: none;
+  letter-spacing: 0.005em;
+}

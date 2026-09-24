@@ -79,7 +79,7 @@ export function CategoryInsightsPanel({
       <EmptyState
         icon={Sparkles}
         title="No themes yet"
-        description="Log a few rounds with shot detail and CoachHelm will surface the strokes-gained themes worth working on, putting, approach, off-the-tee, around-the-green, and your scoring patterns."
+        description="Log a few rounds with shot detail and CoachHelm will surface the strokes-gained themes worth working on: putting, approach, off-the-tee, around-the-green, and your scoring patterns."
       />
     );
   }
@@ -90,7 +90,7 @@ export function CategoryInsightsPanel({
       <InsufficientData
         icon={Sparkles}
         title="Not enough rounds yet"
-        description="Log a few rounds with shot detail and CoachHelm will surface the strokes-gained themes worth working on, putting, approach, off-the-tee, around-the-green, and your scoring patterns."
+        description="Log a few rounds with shot detail and CoachHelm will surface the strokes-gained themes worth working on: putting, approach, off-the-tee, around-the-green, and your scoring patterns."
       />
     );
   }

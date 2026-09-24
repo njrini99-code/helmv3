@@ -543,6 +543,46 @@ describe('StatsSpineStage — PERF-R10 critical/deferred seed', () => {
     expect(getPlayerStatsDashboardBundle).not.toHaveBeenCalled();
   });
 
+  it('holds a drill on a loading placeholder until the deferred half lands', async () => {
+    let resolveDeferred: ((v: ReturnType<typeof healthyBundle>) => void) | null = null;
+    const deferred = new Promise<ReturnType<typeof healthyBundle>>((resolve) => {
+      resolveDeferred = resolve;
+    });
+    render(
+      <StatsSpineStage
+        playerId="p-1"
+        initialData={{ playerId: 'p-1', bundle: criticalOnly() as never, roundOptions: [], deferred: deferred as never }}
+      />,
+    );
+    await screen.findByText('Core ball striking');
+    const cell = screen.getAllByRole('button').find((btn) => btn.textContent?.includes('Putting'));
+    fireEvent.click(cell!);
+    expect(await screen.findByLabelText('Loading this area')).toBeInTheDocument();
+    await act(async () => {
+      resolveDeferred!(healthyBundle());
+    });
+    expect(screen.queryByLabelText('Loading this area')).toBeNull();
+  });
+
+  it('accepts the server promise as a Flight thenable whose then returns nothing', async () => {
+    // React Flight hands a server promise to the client as a thenable whose
+    // `.then` returns undefined; chaining `.finally` on it crashed the page.
+    const thenable = {
+      then(onFulfilled: (v: unknown) => void) {
+        onFulfilled(healthyBundle());
+      },
+    };
+    render(
+      <StatsSpineStage
+        playerId="p-1"
+        initialData={{ playerId: 'p-1', bundle: criticalOnly() as never, roundOptions: [], deferred: thenable as never }}
+      />,
+    );
+    expect(await screen.findByText('Core ball striking')).toBeInTheDocument();
+    await waitFor(() => expect(screen.queryByText(/Failed to load/)).toBeNull());
+    expect(getPlayerStatsDashboardBundle).not.toHaveBeenCalled();
+  });
+
   it('fetches the whole bundle when the deferred half failed on the server', async () => {
     render(
       <StatsSpineStage

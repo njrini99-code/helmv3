@@ -943,7 +943,7 @@ export function FairwayGolfClasses({
                                   >
                                     <AlertTriangle className="h-3.5 w-3.5" aria-hidden />
                                     <span className="sr-only">
-                                      Not synced to your calendar, the last sync attempt failed
+                                      Not synced to your calendar. The last sync attempt failed
                                     </span>
                                   </span>
                                 ) : null}

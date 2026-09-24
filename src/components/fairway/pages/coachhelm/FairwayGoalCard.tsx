@@ -305,7 +305,7 @@ export function FairwayGoalCard({ data, role, playerName }: FairwayGoalCardProps
                   Hit {achievedAt} · validated on rounds
                 </span>
               ) : notStarted ? (
-                'Not started, baseline captured'
+                'Not started. Baseline captured'
               ) : (
                 <>
                   {pct}% to target

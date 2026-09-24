@@ -139,7 +139,7 @@ export function FairwayMyQualifiers({ qualifiers, error, loadError }: FairwayMyQ
       <ViewHeader
         eyebrow="My Qualifiers"
         title="Your qualifier scorecard."
-        description="Qualifier entries your coach posts appear here, post the rounds, climb the board."
+        description="Qualifier entries your coach posts appear here. Post the rounds, climb the board."
         meta={meta}
       />
 

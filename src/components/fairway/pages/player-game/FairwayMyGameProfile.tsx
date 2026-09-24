@@ -257,7 +257,7 @@ export function FairwayMyGameProfile({
                 />
                 <p className="max-w-[44ch] font-fw-sans text-body-sm leading-relaxed text-text-secondary">
                   Your genome needs {GENOME_ROUND_FLOOR}+ completed rounds before the
-                  radar lights up. Keep logging rounds, we&rsquo;ll surface your
+                  radar lights up. Keep logging rounds. We&rsquo;ll surface your
                   shape automatically.
                 </p>
                 <Button asChild variant="primary">

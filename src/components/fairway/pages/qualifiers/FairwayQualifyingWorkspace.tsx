@@ -165,7 +165,7 @@ function ConcludeQualifier({ qualifierId, status }: { qualifierId: string; statu
       if (!r.success) {
         fairwayToast.danger("Couldn't reopen the qualifier", { description: r.error });
       } else {
-        fairwayToast.success('Qualifier reopened, players can post rounds again');
+        fairwayToast.success('Qualifier reopened. Players can post rounds again');
         router.refresh();
       }
     });
@@ -459,7 +459,7 @@ function CoachPicks({
       } else {
         fairwayToast.success('Coach pick removed', {
           description: priorReasoning
-            ? `${playerName}'s reasoning was saved, undo to restore it.`
+            ? `${playerName}'s reasoning was saved. Undo to restore it.`
             : `${playerName} is no longer a coach pick.`,
           action: priorReasoning
             ? {

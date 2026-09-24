@@ -1539,7 +1539,7 @@ function InsightTrustBand({ trust }: { trust: InsightTrustState }) {
       <Surface padding="md">
         <InsufficientData
           title="No tracked insights yet"
-          description="Once CoachHelm surfaces insights, their trust signals, how often each was delivered, acted on, and actually worked, roll up here from the unified ledger."
+          description="Once CoachHelm surfaces insights: their trust signals, how often each was delivered, acted on, and actually worked, roll up here from the unified ledger."
           unit="surfaced insights"
           current={0}
           required={1}
@@ -1627,7 +1627,7 @@ function InsightTrustTable({ trust }: { trust: InsightTrustState }) {
       <div className="border-b border-border-subtle px-5 py-4">
         <h3 className="font-fw-display text-h3 text-text-primary">Insight by insight</h3>
         <p className="font-fw-sans text-caption text-text-tertiary">
-          Each insight’s standing in the trust ledger, what it claimed, and whether it has held up.
+          Each insight’s standing in the trust ledger: what it claimed, and whether it has held up.
         </p>
       </div>
       {/* Phone: card list — every table column carries over (title/type/player,

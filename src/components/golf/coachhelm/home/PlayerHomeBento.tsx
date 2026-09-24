@@ -183,7 +183,7 @@ export function PlayerHomeBento({
         ) : (
           <div className="flex h-full flex-col gap-3">
             <p className="font-fw-sans text-caption text-text-tertiary">
-              No standout signal yet, insights appear once a pattern holds across multiple rounds.
+              No standout signal yet. Insights appear once a pattern holds across multiple rounds.
             </p>
             <Button variant="ghost" size="sm" className="mt-auto w-fit" onClick={() => stage.open('insights')}>
               View insights

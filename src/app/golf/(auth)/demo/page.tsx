@@ -324,7 +324,7 @@ function DemoGateContent() {
             ) : isDemoUser ? (
               <div className="space-y-3">
                 <div className="bg-primary-400/10 border border-primary-400/30 text-primary-800 px-4 py-3 rounded-xl text-sm text-center">
-                  You&apos;re already in the demo, continue where you left off.
+                  You&apos;re already in the demo. Continue where you left off.
                 </div>
                 <Button
                   variant="primary"

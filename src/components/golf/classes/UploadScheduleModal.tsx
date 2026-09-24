@@ -554,9 +554,9 @@ export function UploadScheduleModal({ isOpen, onClose, onParsed }: UploadSchedul
           <div className="mt-6 p-4 bg-surface-sunken rounded-xl">
             <p className="text-sm font-medium text-text-secondary mb-2">Tips for best results:</p>
             <ul className="text-xs text-text-tertiary space-y-1">
-              <li>• Screenshot your schedule right from your student portal, Workday, Banner, PeopleSoft, and weekly calendar views all work</li>
+              <li>• Screenshot your schedule right from your student portal: Workday, Banner, PeopleSoft, and weekly calendar views all work</li>
               <li>• Capture the whole schedule; a scrolling screenshot is fine</li>
-              <li>• Photos of a printed schedule work too, shoot straight-on in good light</li>
+              <li>• Photos of a printed schedule work too. Shoot straight-on in good light</li>
               <li>• PDF, TXT, and Paste Text are also supported</li>
               <li>• You'll review every class before anything is saved</li>
             </ul>

@@ -255,6 +255,11 @@ export function StatsSpineStage({ playerId, isOwnStats = false, playerName, clas
   const [worstHoles, setWorstHoles] = useState<WorstHoleResponse | null>(seed?.worstHoles ?? null);
   const [patterns, setPatterns] = useState<CoachHelmPattern[]>(seed?.patterns ?? []);
   const [loading, setLoading] = useState(!seed);
+  // PERF-R10: the deferred half of a server seed is still streaming. Drills
+  // wait on it (a pending read is not "no data"); the home bento does not.
+  const [deferredPending, setDeferredPending] = useState(
+    () => seed != null && !!initialData?.deferred && isDeferred(initialData.bundle.leak),
+  );
   // MOT-17: a slow first load fades the page in; a fast one swaps.
   const reveal = useSkeletonSwap(loading);
   // A02/A06: `loading` blanks the WHOLE spine+stage region. It may therefore
@@ -305,6 +310,7 @@ export function StatsSpineStage({ playerId, isOwnStats = false, playerName, clas
 
   const applyBundle = useCallback((bundle: StatsDashboardBundle) => {
     const next = bundleToState(bundle);
+    setDeferredPending(Object.values(bundle).some(isDeferred));
     setDetailedStats(next.detailedStats);
     setTrendData(next.trendData);
     setStandingRows(next.standingRows);
@@ -422,7 +428,9 @@ export function StatsSpineStage({ playerId, isOwnStats = false, playerName, clas
     let cancelled = false;
     const requestId = loadRequestRef.current;
     setLeakLoading(true);
-    void seedNow.deferred
+    // A promise passed from the server arrives as a Flight thenable whose
+    // `.then` returns nothing, so it is wrapped before chaining.
+    void Promise.resolve(seedNow.deferred)
       .then((rest) => {
         if (cancelled || requestId !== loadRequestRef.current) return;
         if (rest) applyBundle(mergeDeferred(seedNow.bundle, rest));
@@ -926,6 +934,13 @@ export function StatsSpineStage({ playerId, isOwnStats = false, playerName, clas
       ),
     },
   ];
+  const shownViews: StageView[] = deferredPending
+    ? views.map((v) =>
+        v.key === 'home'
+          ? v
+          : { ...v, node: <Skeleton className="h-72 rounded-card" aria-label="Loading this area" /> },
+      )
+    : views;
 
   return (
     <div className={cn('flex flex-col gap-4', reveal.className, className)} aria-busy={scopeLoading || undefined}>
@@ -949,7 +964,7 @@ export function StatsSpineStage({ playerId, isOwnStats = false, playerName, clas
               Older rounds aren&apos;t included in the totals below.
             </InlineNotice>
           ) : null}
-          <StageRouter param="area" homeKey="home" views={views} />
+          <StageRouter param="area" homeKey="home" views={shownViews} />
         </div>
       </div>
     </div>

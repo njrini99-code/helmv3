@@ -15,7 +15,7 @@ import { describeError } from '@/lib/utils/describe-error';
 
 export const metadata: Metadata = {
   title: 'Team Hub',
-  description: 'Your team at a glance, tasks, announcements, travel, classes, and teammates.',
+  description: 'Your team at a glance: tasks, announcements, travel, classes, and teammates.',
 };
 
 interface RawAssignment {

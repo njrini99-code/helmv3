@@ -115,11 +115,11 @@ export function ProfileDrill({
           roundFloor={GENOME_ROUND_FLOOR}
         />
 
-        <section className="flex flex-col gap-3">
+        <section className="flex flex-col gap-3 [container-type:inline-size]">
           <h2 className="font-fw-sans text-h3 text-text-primary">
             Composite and trend
           </h2>
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+          <div className="grid grid-cols-1 gap-6 [@container(min-width:720px)]:grid-cols-2">
             {profileData != null ? (
               <CompositeRatingCard profileData={profileData} playerState={playerState} playerName={playerName} />
             ) : (

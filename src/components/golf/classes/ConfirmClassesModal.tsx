@@ -242,7 +242,7 @@ export function ConfirmClassesModal({ isOpen, onClose, onConfirm, parsedClasses 
                              4 live rows at Guilford, 2026-08-20. */
                           <p className="mb-2 flex items-center gap-1.5 rounded-lg bg-fw-warning-bg px-2.5 py-1.5 text-xs font-medium text-fw-warning-ink">
                             <IconAlertCircle size={14} className="flex-shrink-0" aria-hidden />
-                            We couldn&rsquo;t read this class&rsquo;s days. Tap the days it meets, without them it won&rsquo;t appear on your calendar.
+                            We couldn&rsquo;t read this class&rsquo;s days. Tap the days it meets. Without them it won&rsquo;t appear on your calendar.
                           </p>
                         ) : null}
                         <div className="flex gap-2">

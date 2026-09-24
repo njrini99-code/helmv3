@@ -1054,7 +1054,7 @@ export function EmailPanel({ currentEmail }: { currentEmail: string }) {
               address isn't read as the request having failed. */}
           {pendingEmail ? (
             <InlineNotice tone="info" className="mt-2">
-              Change pending, we sent a confirmation to{' '}
+              Change pending. We sent a confirmation to{' '}
               <span className="font-medium text-text-primary">{pendingEmail}</span>. Click the link
               in that email to switch your address.
             </InlineNotice>
@@ -1507,7 +1507,7 @@ export function DistanceUnitsPanel() {
       title="Distance units"
       // P382: honest scope — display-only AND device-local (localStorage, no
       // per-user DB column), so it won't follow you to another machine.
-      description="Only affects display, all data is stored in yards and feet. Saved on this device only."
+      description="Only affects display. All data is stored in yards and feet. Saved on this device only."
       headerAction={<AutoSaveBadge savedAt={savedAt} />}
     >
       <div className="grid grid-cols-2 gap-2">

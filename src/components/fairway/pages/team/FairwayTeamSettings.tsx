@@ -744,7 +744,7 @@ export function FairwayTeamSettings({ team, programTeams }: FairwayTeamSettingsP
             {genderLabel && (
               <FormField
                 label="Program"
-                help="Set when the team is created, can't be changed."
+                help="Set when the team is created and can't be changed."
               >
                 <div className="flex min-h-[2.5rem] items-center">
                   <Badge tone="accent" size="md">

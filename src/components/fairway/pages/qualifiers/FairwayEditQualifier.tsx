@@ -335,7 +335,7 @@ export function FairwayEditQualifier({
             ) : (
               <FormField
                 label="Course per round"
-                help="Pick the course each round is played at, players see it on the qualifier."
+                help="Pick the course each round is played at. Players see it on the qualifier."
               >
                 <div className="flex flex-col gap-2.5">
                   {Array.from({ length: rounds }, (_, i) => i + 1).map((roundNumber) => {

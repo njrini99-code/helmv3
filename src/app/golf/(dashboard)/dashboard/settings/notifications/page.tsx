@@ -63,7 +63,7 @@ export default async function NotificationPrefsPage() {
     return session.coach ? (
       <FeatureUnavailable
         title="Notification preferences"
-        message="This per-category matrix is a player-only control, coach accounts don't have one. Your own alert preferences (push, email, in-app) live in the Notifications section, further down the Settings page."
+        message="This per-category matrix is a player-only control. Coach accounts don't have one. Your own alert preferences (push, email, in-app) live in the Notifications section, further down the Settings page."
         actionHref="/golf/dashboard/settings"
         actionLabel="Manage your notifications"
       />

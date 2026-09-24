@@ -261,7 +261,7 @@ describe('buildBriefVerdict', () => {
   it('reports a calm sentence when nothing is urgent but signals exist', () => {
     const groups = [group({ playerId: 'p1', playerName: 'Alex Rivera', signals: [signal({ severity: 'low' })] })];
     const verdict = buildBriefVerdict(groups, { urgent: 0, playersFlagged: 1 });
-    expect(verdict).toBe('Nothing urgent, Alex Rivera has the highest-priority open signal.');
+    expect(verdict).toBe('Nothing urgent. Alex Rivera has the highest-priority open signal.');
   });
 });
 

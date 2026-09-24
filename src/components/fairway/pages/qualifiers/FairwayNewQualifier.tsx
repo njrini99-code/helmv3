@@ -241,7 +241,7 @@ export function FairwayNewQualifier({ players }: FairwayNewQualifierProps) {
                 required
               />
             </FormField>
-            <FormField label="Description" showOptional help="What players should expect, format, stakes, vibe.">
+            <FormField label="Description" showOptional help="What players should expect: format, stakes, vibe.">
               <TextArea
                 name="description"
                 rows={3}
@@ -351,7 +351,7 @@ export function FairwayNewQualifier({ players }: FairwayNewQualifierProps) {
             {isMultiRound ? (
               <FormField
                 label="Course per round"
-                help="Pick the course each round is played at, players see it on the qualifier."
+                help="Pick the course each round is played at. Players see it on the qualifier."
               >
                 <div className="flex flex-col gap-2.5">
                   {Array.from({ length: rounds }, (_, i) => i + 1).map((roundNumber) => {

@@ -481,7 +481,7 @@ const TREND_SIGNAL_CHIPS: Record<string, TrendSignalChip> = {
   mixed: {
     tone: 'quiet',
     label: 'Mixed signals',
-    sentence: 'Windows disagree, some parts of your game are moving, others are flat.',
+    sentence: 'Windows disagree: some parts of your game are moving, others are flat.',
   },
   stable: {
     tone: 'quiet',

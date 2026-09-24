@@ -126,6 +126,9 @@ export function PullToRefresh({
   function handleTouchStart(e: React.TouchEvent<HTMLDivElement>) {
     if (effectivelyDisabled || isRefreshing) return;
     if (!containerRef.current || scrolledAway()) return;
+    // React touch events bubble through portals: a drag on a sheet or dialog
+    // rendered into document.body must not arm the page's pull.
+    if (!containerRef.current.contains(e.target as Node)) return;
     const touch = e.touches[0];
     if (!touch) return;
     startY.current = touch.clientY;

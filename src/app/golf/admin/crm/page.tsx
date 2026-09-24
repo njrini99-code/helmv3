@@ -1490,7 +1490,7 @@ export default function CRMPage() {
                           </span>
                         )}
                         {sidebarCollapsed && (
-                          <div aria-hidden className="absolute left-full ml-3 px-3 py-1.5 bg-nav-bg text-nav-text text-sm rounded-fw-sm opacity-0 invisible group-hover:opacity-100 group-hover:visible transition duration-200 whitespace-nowrap z-50 shadow-raise">
+                          <div aria-hidden className="absolute left-full ml-3 px-3 py-1.5 bg-nav-bg text-nav-text text-sm rounded-fw-sm opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-[opacity,visibility] duration-200 whitespace-nowrap z-50 shadow-raise">
                             {tab.label}
                           </div>
                         )}

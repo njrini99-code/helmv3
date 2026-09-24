@@ -1049,11 +1049,11 @@ export function FairwayDocuments({
               <EmptyState
                 variant="subtle"
                 icon={Folder}
-                title={currentFolderIsUnsaved && isCoach ? 'Draft folder, add a file to keep it' : 'This folder is empty'}
+                title={currentFolderIsUnsaved && isCoach ? 'Draft folder. Add a file to keep it.' : 'This folder is empty'}
                 description={
                   isCoach
                     ? currentFolderIsUnsaved
-                      ? `“${currentFolder}” won't be saved until you add a file to it. Upload one now, or drag & drop here, leaving it empty discards the folder.`
+                      ? `“${currentFolder}” won't be saved until you add a file to it. Upload one now, or drag & drop here. Leaving it empty discards the folder.`
                       : 'Upload files to get started, or drag & drop them here.'
                     : 'No files have been added to this folder yet.'
                 }

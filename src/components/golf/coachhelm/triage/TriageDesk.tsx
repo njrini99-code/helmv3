@@ -640,7 +640,7 @@ export function TriageDesk({
         groupsError ? (
           <InlineNotice
             tone="danger"
-            title="Couldn't load signals, retry"
+            title="Couldn't load signals"
             action={
               <Button variant="secondary" size="sm" onClick={() => router.refresh()}>
                 Try again

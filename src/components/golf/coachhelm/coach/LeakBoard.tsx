@@ -120,7 +120,7 @@ export function LeakBoard({ insights, flameThreshold, className }: LeakBoardProp
     return (
       <InstrumentPanel depth="base" className={className} eyebrow="CoachHelm · team" header="Where the team is bleeding">
         <p className="text-body-sm text-text-secondary">
-          No live leaks right now, analyze the team or log a few more rounds and the board fills in.
+          No live leaks right now. Analyze the team or log a few more rounds and the board fills in.
         </p>
       </InstrumentPanel>
     );

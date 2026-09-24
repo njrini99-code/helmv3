@@ -363,13 +363,15 @@ export function FairwayPlayerGameFingerprint({
 
   return (
     <article
-      className="mx-auto w-full max-w-[1160px] overflow-x-clip"
+      className="mx-auto w-full max-w-[1160px] overflow-x-clip [container-type:inline-size]"
       data-slot="game-fingerprint"
       data-mode={mode}
     >
-      <div className="flex flex-col gap-8 lg:grid lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:items-start lg:gap-12">
-        {/* ════════════ Left column (sticky on desktop): masthead + stage ═══════════ */}
-        <div className="flex flex-col gap-8 lg:sticky lg:top-6">
+      <div className="flex flex-col gap-8 [@container(min-width:880px)]:grid [@container(min-width:880px)]:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] [@container(min-width:880px)]:items-start [@container(min-width:880px)]:gap-12">
+        {/* ════════════ Left column (sticky when the article is wide enough): masthead + stage ═══════════
+            Split by the article's own width, not the viewport: inside CoachHelm
+            it sits beside the spine card and a viewport breakpoint squeezed it. */}
+        <div className="flex flex-col gap-8 [@container(min-width:880px)]:sticky [@container(min-width:880px)]:top-6">
           <header className="flex flex-col gap-3">
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">

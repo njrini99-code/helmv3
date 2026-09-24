@@ -8,7 +8,7 @@ import { SmoothScrollMount } from '@/components/golf/layout/SmoothScrollMount';
 
 export const metadata: Metadata = {
   title: 'Dashboard',
-  description: 'Your golf team dashboard, performance tracking, team management, and coaching tools.',
+  description: 'Your golf team dashboard: performance tracking, team management, and coaching tools.',
 };
 
 /**

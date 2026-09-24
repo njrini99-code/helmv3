@@ -282,7 +282,7 @@ function DayTimeline({ person, timeZone, dayStart, isToday, onOpenClass, onEvent
         >
           {!verified ? (
             <div className={cn('absolute inset-x-2 z-10 rounded-fw-sm px-3 py-2 font-fw-sans text-caption', surfaces.hatch)} style={{ top: `${TOP_PAD_PX + 4}px` }}>
-              Not verified, missing time is not confirmed availability.
+              Not verified. Missing time is not confirmed availability.
             </div>
           ) : null}
 

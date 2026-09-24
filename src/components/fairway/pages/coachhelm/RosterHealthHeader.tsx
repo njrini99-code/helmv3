@@ -282,7 +282,7 @@ export function RosterHealthHeader({
                   // to a coach as an assurance that their squad has been assessed.
                   // Shenandoah has 9 and 6 players and zero rounds between them,
                   // so the all-clear is the first thing both new coaches saw.
-                  'Nothing to assess yet, attention flags appear once players start logging rounds.'
+                  'Nothing to assess yet. Attention flags appear once players start logging rounds.'
                 : 'Roster’s covered. Everyone with rounds has a focus area and no one’s trending down.'}
           </span>
           <span className="font-fw-sans text-caption text-text-tertiary">{coveredText}.</span>

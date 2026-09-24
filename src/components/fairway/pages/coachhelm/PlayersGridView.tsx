@@ -623,7 +623,7 @@ export function PlayersGridView({
                     tone="neutral"
                     variant="outline"
                     size="sm"
-                    title="Alert posture is set to Silent for this player, CoachHelm keeps analyzing but never surfaces an insight. Change it from the Roster page."
+                    title="Alert posture is set to Silent for this player. CoachHelm keeps analyzing but never surfaces an insight. Change it from the Roster page."
                   >
                     Insights muted
                   </Badge>
@@ -1248,7 +1248,7 @@ export function RosterPlayerCard({
                 tone="neutral"
                 variant="outline"
                 size="sm"
-                title="Alert posture is set to Silent for this player, CoachHelm keeps analyzing but never surfaces an insight. Change it from the Roster page."
+                title="Alert posture is set to Silent for this player. CoachHelm keeps analyzing but never surfaces an insight. Change it from the Roster page."
               >
                 Insights muted
               </Badge>

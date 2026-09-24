@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { fireEvent, render } from '@testing-library/react';
+import { createPortal } from 'react-dom';
 import { describe, expect, it, vi } from 'vitest';
 
 const refresh = vi.fn();
@@ -55,6 +56,23 @@ describe('GolfRouteRefresh (NAV-R3)', () => {
     fireEvent.touchMove(root, { touches: [{ clientX: 200, clientY: 120 }] });
     fireEvent.touchMove(root, { touches: [{ clientX: 300, clientY: 400 }] });
     fireEvent.touchEnd(root);
+    expect(refresh).not.toHaveBeenCalled();
+  });
+
+  it('ignores a drag that starts in a portal (a sheet being dismissed)', () => {
+    refresh.mockClear();
+    const host = document.createElement('div');
+    document.body.appendChild(host);
+    render(
+      <GolfRouteRefresh pathname="/golf/dashboard">
+        {createPortal(<div data-testid="sheet">sheet</div>, host)}
+      </GolfRouteRefresh>,
+    );
+    const sheet = host.querySelector('[data-testid="sheet"]') as HTMLElement;
+    fireEvent.touchStart(sheet, { touches: [{ clientX: 100, clientY: 100 }] });
+    fireEvent.touchMove(sheet, { touches: [{ clientX: 100, clientY: 150 }] });
+    fireEvent.touchMove(sheet, { touches: [{ clientX: 100, clientY: 400 }] });
+    fireEvent.touchEnd(sheet);
     expect(refresh).not.toHaveBeenCalled();
   });
 });

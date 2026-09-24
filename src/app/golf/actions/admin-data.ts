@@ -2996,7 +2996,7 @@ function assembleAdminDashboardData(parts: AssemblyInput): AdminDashboardData {
     needsAttention.push({
       label: `${unresolvedCriticalCount} unresolved critical error${unresolvedCriticalCount > 1 ? 's' : ''}`,
       severity: 'critical',
-      detail: 'Immediate attention required, review and resolve in System tab',
+      detail: 'Immediate attention required. Review and resolve in System tab',
       tab: 'system',
     });
   }
@@ -3026,7 +3026,7 @@ function assembleAdminDashboardData(parts: AssemblyInput): AdminDashboardData {
     needsAttention.push({
       label: `${lockedAccountCount} locked account${lockedAccountCount > 1 ? 's' : ''}`,
       severity: 'warning',
-      detail: 'Users locked out due to failed login attempts, unlock in People tab',
+      detail: 'Users locked out due to failed login attempts. Unlock in People tab',
       tab: 'people',
     });
   }

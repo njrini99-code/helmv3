@@ -1729,7 +1729,7 @@ export function MessageThreadPane({
                               variant="ghost"
                               size="sm"
                               onClick={retryAttachments}
-                              aria-label="Couldn’t load attachment, tap to retry"
+                              aria-label="Couldn’t load attachment. Tap to retry"
                               className={cn(
                                 'mt-1 min-h-0 rounded-fw-md px-2 py-1 font-fw-sans text-eyebrow',
                                 'focus-visible:ring-offset-1',
@@ -1739,7 +1739,7 @@ export function MessageThreadPane({
                               )}
                             >
                               <RotateCw size={12} aria-hidden="true" />
-                              Couldn’t load attachment, tap to retry
+                              Couldn’t load attachment. Tap to retry
                             </Button>
                           ) : (
                             <span className={cn('mt-1 inline-flex items-center gap-1 font-fw-sans text-eyebrow', isOwn ? 'text-ink-on-deep' : 'text-text-tertiary')}>

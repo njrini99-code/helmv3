@@ -317,7 +317,7 @@ export function RoundTypeEditor({
 
               {chosen && chosen.playerEntered === false && (
                 <p className="font-fw-sans text-caption text-text-secondary">
-                  This player isn&apos;t in {chosen.name} yet, saving will add them to it, and
+                  This player isn&apos;t in {chosen.name} yet. Saving will add them to it, and
                   this round will count as the round number you pick below.
                 </p>
               )}

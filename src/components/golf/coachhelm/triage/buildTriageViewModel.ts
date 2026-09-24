@@ -272,7 +272,7 @@ export function buildBriefVerdict(groups: readonly SignalGroup[], counts: BriefC
 
   const totalSignals = groups.reduce((n, g) => n + g.signals.length, 0);
   if (topPlayerGroup) {
-    return `Nothing urgent, ${topPlayerGroup.playerName} has the highest-priority open signal.`;
+    return `Nothing urgent. ${topPlayerGroup.playerName} has the highest-priority open signal.`;
   }
   const signalWord = totalSignals === 1 ? 'signal' : 'signals';
   return `${totalSignals} open ${signalWord} to review, nothing urgent right now.`;

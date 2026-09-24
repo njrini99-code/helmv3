@@ -46,6 +46,12 @@ export interface TrendSignal {
 export interface PlayerStatsIntelligence {
   playerId: string;
   categories: CategoryRatings | null;
+  /**
+   * Team-relative rating, 0–100: 50 + (weighted z-score vs teammates × 10),
+   * clamped (`z-score.ts`). 50 is the team middle, not a pass mark, and it
+   * moves when the roster changes, so it is not comparable across teams or
+   * against the benchmark-graded team composite in team-category-insights (W11).
+   */
   composite: number | null;
   /** Number of teammates (including self) with stats-cache rows that fed the
    *  normalization. < 3 = z-score too unstable; UI should warn. */
@@ -59,6 +65,7 @@ export interface TeamStatsIntelligence {
   players: Array<{
     playerId: string;
     categories: CategoryRatings | null;
+    /** Team-relative 0–100 (50 = team middle); see PlayerStatsIntelligence.composite. */
     composite: number | null;
     topInsight: EvidenceInsight | null;
     /** Raw persisted timestamp for the surfaced insight; null when unavailable. */

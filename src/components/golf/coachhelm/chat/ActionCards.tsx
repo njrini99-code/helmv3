@@ -116,7 +116,7 @@ export function ActionProposalCard({
 
       {proposal.missing.length > 0 && !decided && (
         <p className="border-t border-border-subtle px-4 py-2.5 font-fw-sans text-caption text-text-tertiary">
-          {proposal.missing.join(', ')} not set, this will be created without{' '}
+          {proposal.missing.join(', ')} not set. This will be created without{' '}
           {proposal.missing.length === 1 ? 'it' : 'them'}.
         </p>
       )}

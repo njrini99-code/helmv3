@@ -145,7 +145,7 @@ export function CommandPalette({ isCoach = true }: CommandPaletteProps) {
     const teamHubEntry: CommandItemSpec = {
       id: 'team-hub',
       label: 'Team Hub',
-      description: 'Your team at a glance, tasks, announcements, travel, classes & teammates',
+      description: 'Your team at a glance: tasks, announcements, travel, classes & teammates',
       icon: <IconLayoutGrid size={18} />,
       href: '/golf/dashboard/team-hub',
       keywords: ['team', 'hub', 'tasks', 'announcements', 'travel', 'classes', 'updates'],
