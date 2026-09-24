@@ -415,6 +415,7 @@ async function suggestGoalTargetImpl(
       suggested_target: computeTargetValue({
         playerValue: standing.player_value,
         pgaValue: standing.pga_value,
+        metricId,
       }),
     };
   } catch (err) {

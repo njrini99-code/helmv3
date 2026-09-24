@@ -220,7 +220,7 @@ export function PlayerCoachHelmHome({
               ? cause.standingPlayerValue
               : null;
           const canTarget = baseline !== null && typeof cause.standingPgaValue === 'number' && Number.isFinite(cause.standingPgaValue);
-          const target = canTarget ? computeTargetValue({ playerValue: baseline, pgaValue: cause.standingPgaValue as number }) : null;
+          const target = canTarget ? computeTargetValue({ playerValue: baseline, pgaValue: cause.standingPgaValue as number, metricId: cause.metric }) : null;
 
           const result = await createGoal({
             metric_id: cause.metric,
