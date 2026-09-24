@@ -276,6 +276,14 @@ export function TriageDesk({
   const [queueFilter, setQueueFilter] = useState(initialNav.queueFilter);
   const [selectedSignalId, setSelectedSignalId] = useState<string | null>(initialNav.signalId);
   const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(initialNav.playerId);
+  // MOT-19: the signal the coach just closed, so the queue can scroll back to
+  // its row and highlight it on Back.
+  const [returnSignalId, setReturnSignalId] = useState<string | null>(null);
+  const lastSignalRef = useRef<string | null>(initialNav.signalId);
+  useEffect(() => {
+    if (lastSignalRef.current && !selectedSignalId) setReturnSignalId(lastSignalRef.current);
+    lastSignalRef.current = selectedSignalId;
+  }, [selectedSignalId]);
   const [playersTab, setPlayersTab] = useState<'roster' | 'areas'>(initialNav.playersTab);
 
   function applyNavState(next: ReturnType<typeof readTriageNavState>) {
@@ -702,6 +710,7 @@ export function TriageDesk({
                   selectedSignalId={selectedSignalId}
                   onSelectSignal={(id) => navigate({ signal: id })}
                   signalHref={(id) => hrefFor({ signal: id })}
+                  returnSignalId={returnSignalId}
                 />
               </div>
               <div className={cn(!isSignalSelected && 'hidden min-[940px]:block')}>
