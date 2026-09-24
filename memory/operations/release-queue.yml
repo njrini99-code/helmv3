@@ -113,3 +113,19 @@ items:
       - src/lib/reliability/__tests__/resolution.test.ts
     queued_for_release: false
     first_seen: '2026-08-27T03:00:00Z'
+  - id: coachhelm-page-read-no-generators-2026-09-24
+    feature_id: player_coachhelm_development
+    root_cause: >-
+      The player CoachHelm page read called analyzePlayer, which ran all 20
+      Tier-1 insight generators plus composite synthesis (raw golf_shots reads
+      and golf_coach_insights upserts) on every view; two automated sessions
+      saturated Postgres for ~35 minutes on 2026-09-24.
+    incident_id: memory/incidents/player_coachhelm_development/INC-2026-09-24-page-read-ran-insight-generators.md
+    status: verified
+    risk: R1
+    sha: null
+    pr: null
+    regression_tests:
+      - src/app/golf/actions/__tests__/player-coachhelm-dashboard-readonly.test.ts
+    queued_for_release: false
+    first_seen: '2026-09-24T00:50:00Z'
