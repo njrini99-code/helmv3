@@ -136,10 +136,22 @@ export async function getPlayerStatsDashboardBundle(
  * awaits the critical half and streams the deferred half to the client as a
  * promise; the parts the other half owns come back as `reason: 'deferred'`.
  */
+const observedGetPlayerStatsDashboardCritical = withAdminObserved(
+  'getPlayerStatsDashboardCritical',
+  { sport: 'golf', feature: 'stats_analytics', contextFrom: ([playerId]) => ({ playerId }) },
+  (playerId: string, roundId?: StatsRoundScope) => getPlayerStatsDashboardBundleImpl(playerId, roundId, 'critical'),
+);
+
+const observedGetPlayerStatsDashboardDeferred = withAdminObserved(
+  'getPlayerStatsDashboardDeferred',
+  { sport: 'golf', feature: 'stats_analytics', contextFrom: ([playerId]) => ({ playerId }) },
+  (playerId: string, roundId?: StatsRoundScope) => getPlayerStatsDashboardBundleImpl(playerId, roundId, 'deferred'),
+);
+
 export async function getPlayerStatsDashboardCritical(playerId: string, roundId?: StatsRoundScope) {
-  return getPlayerStatsDashboardBundleImpl(playerId, roundId, 'critical');
+  return observedGetPlayerStatsDashboardCritical(playerId, roundId);
 }
 
 export async function getPlayerStatsDashboardDeferred(playerId: string, roundId?: StatsRoundScope) {
-  return getPlayerStatsDashboardBundleImpl(playerId, roundId, 'deferred');
+  return observedGetPlayerStatsDashboardDeferred(playerId, roundId);
 }
