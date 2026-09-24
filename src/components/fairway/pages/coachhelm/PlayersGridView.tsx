@@ -863,8 +863,7 @@ export function PlayersGridView({
   return (
     <CoachHelmShell
       active="players"
-      // eslint-disable-next-line jsx-a11y/aria-role
-      role="coach"
+      viewerRole="coach"
       signalCount={signalCount}
       embedded={embedded}
       title="Players"

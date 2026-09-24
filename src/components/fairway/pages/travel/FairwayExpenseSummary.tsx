@@ -23,7 +23,7 @@
  * ========================================================================== */
 
 import { useState, useMemo } from 'react';
-import { m, useReducedMotion } from 'framer-motion';
+import { m } from 'framer-motion';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 import { IconTrendingUp, IconTrendingDown, IconEdit } from '@/components/icons';
 import { Button, IconButton, fairwayToast } from '@/components/fairway';
@@ -38,6 +38,7 @@ import {
 // Shared with FairwayExpenseList's row swatches so the pie legend and the
 // list's category dots can never independently drift.
 import { CATEGORY_CONFIG, ALL_CATEGORIES } from './expense-category';
+import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
 
 export interface FairwayExpenseSummaryProps {
   summary: ExpenseSummaryType;
@@ -69,7 +70,7 @@ export function FairwayExpenseSummary({
   isCoach,
   onBudgetUpdated,
 }: FairwayExpenseSummaryProps) {
-  const prefersReducedMotion = useReducedMotion();
+  const prefersReducedMotion = useReducedMotionGuard();
   const [editingBudget, setEditingBudget] = useState<ExpenseCategory | null>(null);
   const [budgetValue, setBudgetValue] = useState('');
   const [savingBudget, setSavingBudget] = useState(false);

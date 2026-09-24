@@ -22,7 +22,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
-import { m, useReducedMotion } from 'framer-motion';
+import { m } from 'framer-motion';
 import { CalendarClock, ChevronLeft, ChevronRight, MapPin } from 'lucide-react';
 import { Surface } from '@/components/fairway/surfaces/surface';
 import { StatusPill } from '@/components/fairway/controls/status-pill';
@@ -39,6 +39,7 @@ import {
   dayLabel,
   type DayScheduleEvent,
 } from './DaySchedule';
+import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
 
 export interface DayScheduleSwipeProps {
   /** Today + upcoming events, any order (same feed as DaySchedule). */
@@ -83,7 +84,7 @@ export function DayScheduleSwipe({
   /** +1 → arrived by going forward, -1 backward — drives the slide direction. */
   const [direction, setDirection] = useState(1);
   const dragStartX = useRef<number | null>(null);
-  const reduce = useReducedMotion();
+  const reduce = useReducedMotionGuard();
   const { ref: dayRailRef, fadeStyle: dayRailFade } = useScrollFade<HTMLDivElement>('x');
   const selectedDayRef = useRef<HTMLButtonElement>(null);
 

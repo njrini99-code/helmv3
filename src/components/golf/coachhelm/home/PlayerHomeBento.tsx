@@ -97,6 +97,7 @@ export function PlayerHomeBento({
   onRateTopInsight,
 }: PlayerHomeBentoProps) {
   const stage = useStage();
+  const hasSnapshot = Object.values(performanceSnapshot).some((v) => v != null);
 
   const firstDrill = topInsight?.drills?.[0] ?? null;
 
@@ -124,20 +125,25 @@ export function PlayerHomeBento({
 
   return (
     <Bento separated className="min-[940px]:grid-cols-2">
-      <BentoCell
-        label="Performance snapshot"
-        span={2}
-        sentence="Your scoring inputs, together—not isolated stat cards."
-        onOpen={() => stage.open('standing')}
-      >
-        <div className="grid grid-cols-2 overflow-clip rounded-fw-md border border-border-subtle bg-surface-sunken/45 min-[520px]:grid-cols-5 min-[520px]:divide-x min-[520px]:divide-border-subtle">
-          <SnapshotMetric label="Score" value={fmtOne(performanceSnapshot.scoringAverage)} />
-          <SnapshotMetric label="Fairways" value={fmtPct(performanceSnapshot.fairwayPct)} />
-          <SnapshotMetric label="GIR" value={fmtPct(performanceSnapshot.girPct)} />
-          <SnapshotMetric label="Scramble" value={fmtPct(performanceSnapshot.scramblingPct)} />
-          <SnapshotMetric label="Putts" value={fmtOne(performanceSnapshot.puttsPerRound)} />
-        </div>
-      </BentoCell>
+      {hasSnapshot ? (
+        <BentoCell
+          label="Performance snapshot"
+          span={2}
+          sentence="Your scoring inputs, together—not isolated stat cards."
+          onOpen={() => stage.open('standing')}
+        >
+          <div className="grid grid-cols-2 overflow-clip rounded-fw-md border border-border-subtle bg-surface-sunken/45 min-[520px]:grid-cols-5 min-[520px]:divide-x min-[520px]:divide-border-subtle">
+            <SnapshotMetric label="Score" value={fmtOne(performanceSnapshot.scoringAverage)} />
+            <SnapshotMetric label="Fairways" value={fmtPct(performanceSnapshot.fairwayPct)} />
+            <SnapshotMetric label="GIR" value={fmtPct(performanceSnapshot.girPct)} />
+            <SnapshotMetric label="Scramble" value={fmtPct(performanceSnapshot.scramblingPct)} />
+            <SnapshotMetric label="Putts" value={fmtOne(performanceSnapshot.puttsPerRound)} />
+          </div>
+        </BentoCell>
+      ) : (
+        // No countable round yet: one honest line, not five dashes (STATE-O4).
+        <BentoCell label="Performance snapshot" span={2} sentence="Log a round and your scoring inputs show up here." />
+      )}
 
       <BentoCell label="Your edge this week" span={2} rows={topInsight ? 2 : 1}>
         {topInsight ? (

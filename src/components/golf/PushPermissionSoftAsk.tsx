@@ -2,7 +2,7 @@
 
 import { haptic } from '@/lib/haptics';
 import { useEffect, useState } from 'react';
-import { m, useReducedMotion } from 'framer-motion';
+import { m } from 'framer-motion';
 import { Sheet } from '@/components/fairway/overlays/Sheet';
 import { Button } from '@/components/ui/button';
 import {
@@ -18,6 +18,7 @@ import {
 } from '@/lib/utils/push-registration';
 
 import { useToast } from '@/components/ui/sonner';
+import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
 
 /**
  * iOS-native "soft ask" before the system push permission prompt.
@@ -31,7 +32,7 @@ import { useToast } from '@/components/ui/sonner';
  * and shows the sheet exactly once until the user decides.
  */
 export function PushPermissionSoftAsk() {
-  const prefersReducedMotion = useReducedMotion();
+  const prefersReducedMotion = useReducedMotionGuard();
   const [open, setOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const { showToast } = useToast();

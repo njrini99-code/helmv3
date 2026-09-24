@@ -27,11 +27,12 @@
  * ========================================================================== */
 
 import { forwardRef, useId } from 'react';
-import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 import { X, type LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toneStyle, type FeedbackTone } from './tone';
 import { revealVariants } from './motion';
+import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
 
 export interface InlineNoticeProps {
   /** Semantic tone — drives icon, tint, left bar, and ARIA role. */
@@ -76,7 +77,7 @@ export const InlineNotice = forwardRef<HTMLDivElement, InlineNoticeProps>(
     },
     ref,
   ) {
-    const reduced = useReducedMotion() ?? false;
+    const reduced = useReducedMotionGuard() ?? false;
     const variants = revealVariants(reduced);
     const t = toneStyle(tone);
     // A success notice nearly always reports an action that just finished, so

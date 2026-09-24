@@ -1,8 +1,9 @@
 'use client';
 
-import { motion, useReducedMotion } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { PuttMissTag } from '@/lib/types/golf';
+import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
 
 interface PuttMissTagSelectorProps {
   selectedTags: PuttMissTag[];
@@ -15,7 +16,7 @@ export function PuttMissTagSelector({
   onTagsChange, 
   disabled,
 }: PuttMissTagSelectorProps) {
-  const prefersReducedMotion = useReducedMotion();
+  const prefersReducedMotion = useReducedMotionGuard();
   const tags: PuttMissTag[] = ['short', 'long', 'low', 'high'];
   const tagLabels: Record<PuttMissTag, string> = {
     short: 'Short',

@@ -69,7 +69,7 @@ interface RawFocusAreaRow {
 // ============================================================================
 
 export const metadata = {
-  title: `${surfaceName('brief')} | CoachHelm`,
+  title: surfaceName('brief'),
   description: 'AI-powered insights, patterns, predictions, and coaching intelligence for your team',
 };
 

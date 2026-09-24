@@ -31,9 +31,10 @@
  * rest of the Fairway stats surfaces already follow.
  * ========================================================================== */
 
-import { motion, useReducedMotion } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { VIZ_EASE, VIZ_REVEAL_MS } from './theme';
+import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
 
 export type RuledLeaderStatSize = 'hero' | 'row' | 'lg' | 'compact';
 
@@ -105,7 +106,7 @@ export function RuledLeaderStat({
   ghost = false,
   className,
 }: RuledLeaderStatProps) {
-  const reduced = useReducedMotion() ?? false;
+  const reduced = useReducedMotionGuard() ?? false;
   const isLeader = leader && !ghost;
   const position = labelPosition ?? DEFAULT_LABEL_POSITION[size];
   const dense = size === 'lg' || size === 'compact';

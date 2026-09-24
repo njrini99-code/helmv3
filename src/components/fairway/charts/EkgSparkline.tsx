@@ -21,9 +21,10 @@
  * ========================================================================== */
 
 import * as React from 'react';
-import { motion, useInView, useReducedMotion } from 'framer-motion';
+import { motion, useInView } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { VIZ_COLOR, VIZ_EASE, VIZ_REVEAL_MS } from './theme';
+import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
 
 export type EkgHalo = 'fresh' | 'cooling' | 'silent';
 
@@ -65,7 +66,7 @@ export function EkgSparkline({
   height = 32,
   className,
 }: EkgSparklineProps) {
-  const reduced = useReducedMotion() ?? false;
+  const reduced = useReducedMotionGuard() ?? false;
   const wrapRef = React.useRef<HTMLSpanElement>(null);
   const inView = useInView(wrapRef, { once: true, amount: 0.4 });
 

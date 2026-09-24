@@ -22,12 +22,13 @@
  * ========================================================================== */
 
 import { createContext, forwardRef, memo, useCallback, useContext, useRef, useState } from 'react';
-import { motion, useReducedMotion } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { NavPendingDot } from './NavPending';
 import { IconChevronLeft, IconChevronRight } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import type { NavItem, NavSection, ShellLinkComponent, ShellUser } from './types';
+import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
 
 /**
  * `item.shortcut` (Bridge's only current producer, `AdminShell.tsx`) has
@@ -283,7 +284,7 @@ export const FairwaySidebar = memo(forwardRef<HTMLElement, FairwaySidebarProps>(
   },
   ref,
 ) {
-  const reduceMotion = useReducedMotion();
+  const reduceMotion = useReducedMotionGuard();
   const Link = linkComponent ?? DefaultLink;
   const isCollapsed = isMobile ? false : collapsed;
 

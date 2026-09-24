@@ -8,7 +8,7 @@
  */
 
 import { useState, useEffect } from 'react';
-import { motion, useReducedMotion } from 'framer-motion';
+import { motion } from 'framer-motion';
 import {
   Popover,
   PopoverTrigger,
@@ -16,6 +16,7 @@ import {
 } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
 import { Button, IconButton } from '@/components/ui/button';
+import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
 
 // ============================================================================
 // TYPES
@@ -83,7 +84,7 @@ export function OfflineIndicator({
   variant = 'compact',
   position = 'header',
 }: OfflineIndicatorProps) {
-  const prefersReducedMotion = useReducedMotion();
+  const prefersReducedMotion = useReducedMotionGuard();
   const [open, setOpen] = useState(false);
   const [lastSyncText, setLastSyncText] = useState('');
 

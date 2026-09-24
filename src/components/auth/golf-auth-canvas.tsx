@@ -3,12 +3,12 @@
 /**
  * GolfHelm auth canvas: the flat, iOS-native sign-in treatment (2026-09 redesign).
  *
- * This replaces the old card-on-an-illustrated-scene look (GolfAuthShell) for
- * /golf/login, /golf/forgot-password and /golf/reset-password (AUTH-02).
+ * Used by /golf/login, /golf/forgot-password and /golf/reset-password
+ * (AUTH-02). The painted course scene stays behind an opaque card (OD-15).
  *
- *   AuthCanvas         flat `bg-canvas` page: optional top bar, app mark and
- *                      ONE title, content, and a footer pinned above the home
- *                      indicator. It sits in normal document flow
+ *   AuthCanvas         the course scene, an optional top bar, the app mark,
+ *                      ONE card holding the title and content, and a footer
+ *                      pinned above the home indicator. It sits in normal document flow
  *                      (min-height, not a fixed height with overflow hidden),
  *                      so the page can scroll when the keyboard opens.
  *   GroupedFields      iOS inset-grouped container: one radius-12 surface with
@@ -26,6 +26,8 @@
 import { forwardRef, type ReactNode, type InputHTMLAttributes, type ButtonHTMLAttributes } from 'react';
 import { Loader2 } from 'lucide-react';
 import { HelmMark } from '@/components/brand/HelmMark';
+import { CourseScene } from '@/components/golf/scenes/CourseScene';
+import { CoastalScene } from '@/components/golf/scenes/CoastalScene';
 import { cn } from '@/lib/utils';
 
 /* ── Canvas ─────────────────────────────────────────────────────────────── */
@@ -54,7 +56,7 @@ export function AuthCanvas({ title, subtitle, topBar, children, footer, contentI
         // Normal flow and min-height: when the keyboard opens, the document
         // grows (body.keyboard-open pads by --keyboard-height in native) and
         // scrolls instead of clipping the submit button under the keyboard.
-        'flex min-h-[100dvh] flex-col bg-canvas font-fw-sans text-text-primary antialiased',
+        'relative isolate flex min-h-[100dvh] flex-col font-fw-sans text-text-primary antialiased',
         // At most a 150ms fade of the whole view on first load. It is a CSS
         // keyframe, so the server-rendered HTML is visible without waiting on
         // hydration. It is removed entirely under reduced motion.
@@ -67,31 +69,62 @@ export function AuthCanvas({ title, subtitle, topBar, children, footer, contentI
         paddingRight: 'max(16px, env(safe-area-inset-right))',
       }}
     >
+      <AuthScene />
+
       <div className="flex h-11 shrink-0 items-center">{topBar}</div>
 
       <main
         id={contentId}
         aria-label={contentLabel}
-        className="mx-auto flex w-full max-w-[400px] flex-col pt-[clamp(16px,9vh,88px)]"
+        className="mx-auto flex w-full max-w-[400px] flex-col pt-[clamp(8px,5vh,56px)]"
       >
-        <header className="flex flex-col items-center text-center">
-          <HelmMark sport="golf" size={60} className="h-[60px] w-[60px]" priority />
-          <h1 className="mt-5 text-title-1 font-semibold text-text-primary">
-            {title}
-          </h1>
-          {subtitle ? (
-            <p className="mt-1.5 text-body text-text-secondary">{subtitle}</p>
-          ) : null}
-        </header>
+        {/* The mark sits on the scene's pale sky; everything that has to be
+            read sits on the opaque card (OD-15: keep the illustration, make
+            the card better). */}
+        <HelmMark
+          sport="golf"
+          size={56}
+          className="mx-auto h-14 w-14 drop-shadow-[0_2px_6px_rgb(60_40_20/0.22)]"
+          priority
+        />
+        <div
+          className={cn(
+            'mt-5 rounded-[24px] border border-border-subtle bg-elevated px-5 pb-6 pt-6',
+            'shadow-[0_24px_48px_-12px_rgb(40_30_15/0.28),0_4px_12px_rgb(40_30_15/0.08)]',
+          )}
+        >
+          <header className="flex flex-col items-center text-center">
+            <h1 className="text-title-1 font-semibold text-text-primary">{title}</h1>
+            {subtitle ? <p className="mt-1.5 text-body text-text-secondary">{subtitle}</p> : null}
+          </header>
 
-        <div className="mt-8">{children}</div>
+          <div className="mt-6">{children}</div>
+        </div>
       </main>
 
       {footer ? (
-        <footer className="mx-auto mt-auto flex w-full max-w-[400px] flex-col items-center pt-10">
-          {footer}
+        <footer className="mx-auto mt-auto flex w-full max-w-[400px] flex-col items-center pt-8">
+          <div className="flex w-full flex-col items-center rounded-2xl bg-elevated px-4 py-3 shadow-[0_8px_24px_-8px_rgb(40_30_15/0.22)]">
+            {footer}
+          </div>
         </footer>
       ) : null}
+    </div>
+  );
+}
+
+/**
+ * The painted course behind the card. Both scenes are server-rendered and CSS
+ * picks one per breakpoint, so there is no post-hydration swap (the old
+ * GolfAuthShell swapped on a media query). In dark mode a canvas scrim keeps
+ * the scene as a quiet backdrop instead of a bright cream panel.
+ */
+function AuthScene() {
+  return (
+    <div aria-hidden="true" className="pointer-events-none fixed inset-0 -z-10 overflow-hidden bg-canvas">
+      <CourseScene idSuffix="auth-course" className="md:hidden" />
+      <CoastalScene idSuffix="auth-coastal" className="hidden md:block" />
+      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-canvas/40 dark:from-canvas/80 dark:via-canvas/85 dark:to-canvas/95" />
     </div>
   );
 }
@@ -102,7 +135,7 @@ export function GroupedFields({ children, className }: { children: ReactNode; cl
   return (
     <div
       className={cn(
-        'overflow-hidden rounded-xl bg-surface',
+        'overflow-hidden rounded-xl bg-surface ring-1 ring-inset ring-border-control',
         // Hairline separators between rows, inset from the leading edge the
         // way UITableView insets them.
         '[&>*+*]:relative [&>*+*]:before:absolute [&>*+*]:before:left-4 [&>*+*]:before:right-0 [&>*+*]:before:top-0',

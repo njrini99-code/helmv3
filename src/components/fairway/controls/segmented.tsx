@@ -58,11 +58,12 @@
 
 import { type ReactNode, useEffect, useId, useRef } from 'react';
 import * as ToggleGroup from '@radix-ui/react-toggle-group';
-import { motion, useReducedMotion } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { fwFocusRing, fwTransition } from './_internal';
 import { fwHaptic } from '@/lib/fairway/haptics';
 import { useScrollFade } from '@/lib/fairway/use-scroll-fade';
+import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
 
 export interface SegmentedOption<T extends string = string> {
   value: T;
@@ -287,7 +288,7 @@ export function Segmented<T extends string = string>({
   className,
   ...aria
 }: SegmentedProps<T>) {
-  const reduceMotion = useReducedMotion();
+  const reduceMotion = useReducedMotionGuard();
   // Unique layoutId so multiple Segmented instances on one page don't share a pill.
   const pillId = useId();
   // Graceful narrow-screen behavior: when the segments' intrinsic width

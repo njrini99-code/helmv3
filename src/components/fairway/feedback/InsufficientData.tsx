@@ -27,10 +27,11 @@
  * ========================================================================== */
 
 import { forwardRef } from 'react';
-import { motion, useReducedMotion } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { Hourglass, type LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { revealVariants } from './motion';
+import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
 
 export interface InsufficientDataProps {
   /** Headline — defaults to a calm, honest standard line. */
@@ -67,7 +68,7 @@ export const InsufficientData = forwardRef<HTMLDivElement, InsufficientDataProps
     },
     ref,
   ) {
-    const reduced = useReducedMotion() ?? false;
+    const reduced = useReducedMotionGuard() ?? false;
     const Icon = icon === null ? null : (icon ?? Hourglass);
 
     const hasCounts =

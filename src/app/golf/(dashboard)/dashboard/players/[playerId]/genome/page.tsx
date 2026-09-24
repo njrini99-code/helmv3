@@ -52,7 +52,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     .eq('id', playerId)
     .maybeSingle();
   const name = data ? `${data.first_name ?? ''} ${data.last_name ?? ''}`.trim() : 'Player';
-  return { title: `${name} · Genome · CoachHelm` };
+  return { title: `${name} · Genome` };
 }
 
 /** UTC calendar date N days ago, matching the genome orchestrator's window. */

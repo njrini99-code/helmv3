@@ -170,9 +170,13 @@ export function SignalQueue({
           groups.map((group) => {
             const key = groupKey(group);
             const isCollapsed = collapsed.has(key);
+            const headerId = `signal-group-${key}`;
+            // A listbox's children are options or groups: each player is a
+            // named group of signal options, not a bare button (A11Y-R4).
             return (
-              <div key={key}>
+              <div key={key} role="group" aria-labelledby={headerId}>
                 <PressTarget
+                  id={headerId}
                   onClick={() => toggleCollapsed(key)}
                   aria-expanded={!isCollapsed}
                   className={cn(

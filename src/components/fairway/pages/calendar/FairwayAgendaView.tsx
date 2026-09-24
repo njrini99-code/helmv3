@@ -454,6 +454,8 @@ export function FairwayAgendaView({
           <section
             key={bucket.key}
             aria-label={bucket.label}
+            // Land the day heading below the sticky mobile header, not under it (NAV-S2).
+            className="scroll-mt-[calc(var(--golf-mobile-header-offset,0px)+0.5rem)]"
             ref={(el) => {
               if (el) bucketNodesRef.current.set(bucket.key, el);
               else bucketNodesRef.current.delete(bucket.key);

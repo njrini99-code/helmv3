@@ -1,6 +1,6 @@
 'use client';
 
-import { motion, useReducedMotion } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import {
   IconSend,
@@ -13,6 +13,7 @@ import {
 } from '@/components/icons';
 import type { ResendActivityStats } from '@/app/golf/actions/resend-activity';
 import { formatCount, formatRate } from './shared';
+import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
 
 interface KPIGridProps {
   stats: ResendActivityStats | null;
@@ -37,7 +38,7 @@ const ACCENT_CONFIG = {
 };
 
 export function KPIGrid({ stats, loading }: KPIGridProps) {
-  const prefersReducedMotion = useReducedMotion();
+  const prefersReducedMotion = useReducedMotionGuard();
   if (loading || !stats) {
     return (
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">

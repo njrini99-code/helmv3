@@ -125,8 +125,7 @@ export function FairwayMyGameProfile({
     <div className="mx-auto w-full max-w-[760px] px-4 py-6 md:px-6">
       <CoachHelmShell
         active="effectiveness"
-        // eslint-disable-next-line jsx-a11y/aria-role
-        role="player"
+        viewerRole="player"
         eyebrow="My Game Profile"
         title={`${firstName}'s genome`}
         description={

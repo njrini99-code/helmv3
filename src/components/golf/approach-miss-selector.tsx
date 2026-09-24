@@ -1,8 +1,9 @@
 'use client';
 
-import { motion, useReducedMotion } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { ApproachMissDirection, APPROACH_MISS_CONFIG } from '@/lib/types/golf';
+import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
 
 interface ApproachMissSelectorProps {
   selectedDirection: ApproachMissDirection | null;
@@ -15,7 +16,7 @@ export function ApproachMissSelector({
   onDirectionChange,
   disabled
 }: ApproachMissSelectorProps) {
-  const prefersReducedMotion = useReducedMotion();
+  const prefersReducedMotion = useReducedMotionGuard();
   // Grid layout mimics a green from player's perspective
   // Player is at bottom, green is the center
   const gridLayout: (ApproachMissDirection | 'green' | null)[][] = [

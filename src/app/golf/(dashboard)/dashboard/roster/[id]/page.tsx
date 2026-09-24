@@ -56,23 +56,29 @@ export default async function PlayerProfilePage({ params }: PageProps) {
   // so a coach clicking a player on their OWN roster was told that player does
   // not exist. Absent and unreadable are not the same answer, and only the
   // first one is a 404.
-  const { data: player, error: playerError } = await supabase
-    .from('golf_players')
-    .select(`
-      id,
-      first_name,
-      last_name,
-      avatar_url,
-      hometown,
-      state,
-      graduation_year,
-      handicap,
-      phone,
-      email,
-      created_at
-    `)
-    .eq('id', id)
-    .maybeSingle();
+  // The team lookup does not depend on the player row, so both reads run
+  // together (PERF-R6).
+  const [{ data: player, error: playerError }, teamId] = await Promise.all([
+    supabase
+      .from('golf_players')
+      .select(`
+        id,
+        first_name,
+        last_name,
+        avatar_url,
+        hometown,
+        state,
+        graduation_year,
+        handicap,
+        phone,
+        email,
+        created_at
+      `)
+      .eq('id', id)
+      .maybeSingle(),
+    // Deterministic: handles orgs with >1 team.
+    resolveCoachTeamIdWithCookie(supabase, coach.organization_id, coach.id),
+  ]);
 
   if (playerError) {
     await logServerError(
@@ -86,9 +92,7 @@ export default async function PlayerProfilePage({ params }: PageProps) {
     notFound();
   }
 
-  // Verify player is on coach's team (deterministic: handles orgs with >1 team)
-  const teamId = await resolveCoachTeamIdWithCookie(supabase, coach.organization_id, coach.id);
-
+  // Verify player is on coach's team.
   if (!teamId) {
     notFound();
   }

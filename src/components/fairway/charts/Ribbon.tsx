@@ -20,7 +20,7 @@
  * ========================================================================== */
 
 import * as React from 'react';
-import { motion, useReducedMotion } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { InstrumentPanel } from '../instrument/InstrumentPanel';
 import { Readout } from '../instrument/Readout';
@@ -36,6 +36,7 @@ import {
   VIZ_REVEAL_MS,
   chartAriaLabel,
 } from './theme';
+import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
 
 export interface RibbonPoint {
   /** x label (date / round number / category). */
@@ -122,7 +123,7 @@ export function Ribbon({
   readoutLabels,
   className,
 }: RibbonProps) {
-  const reduced = useReducedMotion() ?? false;
+  const reduced = useReducedMotionGuard() ?? false;
   const uid = React.useId();
   const gradId = `fw-ribbon-grad-${uid}`;
   const clipId = `fw-ribbon-clip-${uid}`;

@@ -15,7 +15,7 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import { motion, useReducedMotion } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import {
   Popover,
@@ -25,6 +25,7 @@ import {
 import { useOfflineSyncStore } from '@/stores/offline-sync-store';
 import { useConnectionStatus } from '@/hooks/golf/use-connection-status';
 import { Button, IconButton } from '@/components/ui/button';
+import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
 
 // ============================================================================
 // TYPES
@@ -185,7 +186,7 @@ export function OfflineSyncStatus({
   onRetryFailed,
   onDismissError,
 }: OfflineSyncStatusProps) {
-  const prefersReducedMotion = useReducedMotion();
+  const prefersReducedMotion = useReducedMotionGuard();
   // Store state
   const {
     isOnline,

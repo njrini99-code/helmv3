@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { Button, IconButton } from '@/components/ui/button';
 import {
@@ -27,6 +27,7 @@ import {
   formatFullTimestamp,
   formatRelative,
 } from './shared';
+import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
 
 export type FollowupRecipient = {
   email: string;
@@ -45,7 +46,7 @@ export function EmailDetailPanel({
   onClose,
   onSendFollowup,
 }: EmailDetailPanelProps) {
-  const prefersReducedMotion = useReducedMotion();
+  const prefersReducedMotion = useReducedMotionGuard();
   const [email, setEmail] = useState<EmailRow | null>(null);
   const [events, setEvents] = useState<EmailEventRow[]>([]);
   const [clicks, setClicks] = useState<EmailClick[]>([]);

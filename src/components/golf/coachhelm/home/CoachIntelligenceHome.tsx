@@ -106,6 +106,9 @@ export function CoachIntelligenceHome({
 
   return (
     <div className="flex flex-col gap-8">
+      {/* The opening carries the page's h1; without it the page still needs
+          one (A11Y-R7). */}
+      {!command ? <h1 className="sr-only">CoachHelm</h1> : null}
       {/* ── The AI-first opening. Everything below it is the existing Triage
             Desk, unchanged — the intelligence system is recomposed here, not
             replaced by a decorative empty chat. ── */}

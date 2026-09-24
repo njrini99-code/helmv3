@@ -13,9 +13,9 @@
  * imported UNCHANGED — only the page-chrome wrapper is retired.
  * ========================================================================== */
 
-import { useCallback, useState, useTransition } from 'react';
+import { useCallback, useEffect, useState, useTransition } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Clock, CheckCircle2, Target } from 'lucide-react';
 
 import { DrillPanel, useStage } from '@/components/fairway/modules';
@@ -368,6 +368,16 @@ export function DevelopmentDrill({
   const [decidingId, setDecidingId] = useState<string | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
 
+  // `?focus=<id>` from a dashboard focus card lands on that card (HUB-15).
+  const focusParam = useSearchParams().get('focus');
+  useEffect(() => {
+    if (!focusParam) return;
+    const node = document.getElementById(`focus-area-${focusParam}`);
+    if (!node) return;
+    node.scrollIntoView({ block: 'start' });
+    node.focus({ preventScroll: true });
+  }, [focusParam]);
+
   const total = activeAreas.length + completedAreas.length;
   const hasAnyArea = total + proposedAreas.length > 0;
   const canCreateOwn = Boolean(playerId);
@@ -461,7 +471,22 @@ export function DevelopmentDrill({
             setReopeningId(null);
             return;
           }
-          addToast({ type: 'success', title: 'Reopened', description: focusArea.title || 'Focus area' });
+          // Reopen is one tap, so it gets the same Undo that Complete has
+          // rather than a confirm (SHEET-05).
+          addToast({
+            type: 'success',
+            title: 'Reopened',
+            description: focusArea.title || 'Focus area',
+            action: {
+              label: 'Undo',
+              onClick: () => {
+                void completeFocusArea(focusArea.id).then((undo) => {
+                  if (undo.success) router.refresh();
+                  else addToast({ type: 'error', title: undo.error || 'Could not undo' });
+                });
+              },
+            },
+          });
           setReopeningId(null);
           router.refresh();
         } catch {
@@ -620,18 +645,24 @@ export function DevelopmentDrill({
                       const m = fa.target_metric;
                       const st = m && isMetricId(m) ? standingByMetric?.[m] : undefined;
                       return (
-                        <FocusAreaCard
+                        <div
                           key={fa.id}
-                          focusArea={fa}
-                          // eslint-disable-next-line jsx-a11y/aria-role
-                          role="player"
-                          index={i}
-                          onLogProgress={handleLogProgress}
-                          onComplete={handleComplete}
-                          completing={completingId === fa.id}
-                          standing={st}
-                          onLogPracticeSession={practiceLogEnabled ? handleLogPracticeSession : undefined}
-                        />
+                          id={`focus-area-${fa.id}`}
+                          tabIndex={-1}
+                          className="scroll-mt-[calc(var(--golf-mobile-header-offset,0px)+1rem)] rounded-card outline-none"
+                        >
+                          <FocusAreaCard
+                            focusArea={fa}
+                            // eslint-disable-next-line jsx-a11y/aria-role
+                            role="player"
+                            index={i}
+                            onLogProgress={handleLogProgress}
+                            onComplete={handleComplete}
+                            completing={completingId === fa.id}
+                            standing={st}
+                            onLogPracticeSession={practiceLogEnabled ? handleLogPracticeSession : undefined}
+                          />
+                        </div>
                       );
                     })}
                   </div>

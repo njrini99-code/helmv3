@@ -24,12 +24,13 @@
  * ========================================================================== */
 
 import * as React from 'react';
-import { motion, useReducedMotion } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { InstrumentPanel } from '../instrument/InstrumentPanel';
 import { Readout } from '../instrument/Readout';
 import { InstrumentTable, InstrumentTableToggle } from './InstrumentTable';
 import type { ChartTableData } from './ChartFrame';
 import { TABULAR_NUMS, VIZ_COLOR, VIZ_EASE, VIZ_REVEAL_MS, chartAriaLabel, formatPercent } from './theme';
+import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
 
 /** Semantic tone for a segment — maps to a locked viz token. */
 export type SegmentTone = 'good' | 'caution' | 'neutral';
@@ -82,7 +83,7 @@ export function SegmentBar({
   awaiting = false,
   className,
 }: SegmentBarProps) {
-  const reduced = useReducedMotion() ?? false;
+  const reduced = useReducedMotionGuard() ?? false;
   const [showTable, setShowTable] = React.useState(false);
 
   const total = React.useMemo(

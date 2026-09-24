@@ -28,7 +28,7 @@ import { computeFormFromCountableRounds, type FormPatternInput, type FormScore }
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Team Stats Overview | Helm Golf',
+  title: 'Team stats',
   description: 'View and compare statistics for all players on your team',
 };
 

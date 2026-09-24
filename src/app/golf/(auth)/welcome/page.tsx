@@ -68,7 +68,7 @@
 import { Suspense, useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import Image from 'next/image';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { LazyMotion, m, useReducedMotion } from 'framer-motion';
+import { LazyMotion, m } from 'framer-motion';
 import { loadFeatures } from '@/lib/motion/load-features';
 import { createClient } from '@/lib/supabase/client';
 import { isSafeInternalPath } from '@/lib/utils/safe-redirect';
@@ -87,6 +87,7 @@ import { fairwayScope } from '@/lib/redesign/flag';
 // a component this page has no business knowing about. `controls/button` costs
 // react + radix Slot + cn + haptics and nothing else.
 import { Button } from '@/components/fairway/controls/button';
+import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
 
 /**
  * Timings, in ms, ALL measured from mount.
@@ -157,7 +158,7 @@ function WelcomeContent() {
   // `null` would make an `initial` prop truthy-check misbehave. Every consumer
   // below also gates its `initial` prop on this, which is the half of the
   // contract that actually prevents the React #418 hydration mismatch.
-  const prefersReducedMotion = useReducedMotion() ?? false;
+  const prefersReducedMotion = useReducedMotionGuard() ?? false;
 
   // Destination resolved SYNCHRONOUSLY at mount from the query param the
   // sign-in form always supplies. The identity effect may upgrade it (admin

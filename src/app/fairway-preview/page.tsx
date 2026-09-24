@@ -1045,7 +1045,7 @@ export default function FairwayPreviewPage() {
                 <div className="mt-3 overflow-hidden rounded-card border border-border-subtle">
                   <CoachHelmShell
                     active="players"
-                    role="coach"
+                    viewerRole="coach"
                     signalCount={4}
                     title="Players"
                     description="Roster-wide focus areas and genome reads."

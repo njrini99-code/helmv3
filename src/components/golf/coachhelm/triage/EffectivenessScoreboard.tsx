@@ -50,8 +50,8 @@ function RankedList({
         <ol className="flex flex-col gap-2">
           {items.map((item, i) => (
             <li key={item.insightType} className="flex items-center gap-2.5">
-              <span className="font-fw-mono text-caption tabular-nums text-text-tertiary">
-                {String(i + 1).padStart(2, '0')}
+              <span className="text-caption tabular-nums text-text-tertiary">
+                {i + 1}
               </span>
               <span className="min-w-0 flex-1 truncate font-fw-sans text-body-sm text-text-primary">
                 {formatCategoryLabel(item.insightType)}

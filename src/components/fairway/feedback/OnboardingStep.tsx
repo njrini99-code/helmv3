@@ -25,10 +25,11 @@
  * ========================================================================== */
 
 import { forwardRef, Children, isValidElement, cloneElement } from 'react';
-import { motion, useReducedMotion } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { Check, type LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { staggerVariants } from './motion';
+import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
 
 export type OnboardingStepStatus = 'upcoming' | 'active' | 'complete';
 
@@ -194,7 +195,7 @@ export function OnboardingSteps({
   label = 'Onboarding steps',
   className,
 }: OnboardingStepsProps) {
-  const reduced = useReducedMotion() ?? false;
+  const reduced = useReducedMotionGuard() ?? false;
   const { container, item } = staggerVariants(reduced);
 
   const steps = Children.toArray(children).filter(isValidElement);

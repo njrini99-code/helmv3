@@ -32,7 +32,7 @@ import type { PlayersGridFocusArea } from '@/components/fairway';
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Team Roster | Helm Golf',
+  title: 'Roster',
   description: 'Manage your golf team roster, view player stats, and track team performance',
 };
 

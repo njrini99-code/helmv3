@@ -48,7 +48,7 @@ import {
   type ReactNode,
 } from 'react';
 import NumberFlow, { type Format } from '@number-flow/react';
-import { motion, useReducedMotion } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { ArrowUpRight, ArrowDownRight, Minus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Skeleton } from '@/components/fairway/feedback';
@@ -56,6 +56,7 @@ import { Skeleton } from '@/components/fairway/feedback';
 // above. Direct-file import (not the `charts` barrel) mirrors how Sparkline
 // itself imports these from the same module.
 import { classifyTrend, TREND_TONE_CLASS } from '@/components/fairway/charts/TrendChip';
+import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
 
 /** Visual weight of the tile. `default` is the everyday KPI; `hero` gets a
  *  touch more air + a slightly larger numeric for the one lead metric. */
@@ -252,7 +253,7 @@ export const MetricCard = forwardRef<HTMLDivElement, MetricCardProps>(
     },
     ref,
   ) {
-    const prefersReduced = useReducedMotion();
+    const prefersReduced = useReducedMotionGuard();
     const { ref: sparklineWrapRef, width: sparklineWidth } = useSparklineWidth();
 
     const numberFormat = useMemo<Format>(

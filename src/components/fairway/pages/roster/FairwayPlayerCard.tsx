@@ -4,16 +4,15 @@
 
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Users } from 'lucide-react';
+import { ChevronRight } from 'lucide-react';
 
 import { cn, pluralize } from '@/lib/utils';
 import { Surface } from '@/components/fairway/surfaces/surface';
-import { Button } from '@/components/fairway/controls/button';
 import { Badge } from '@/components/fairway/controls/badge';
 import { TrendGlyph } from '@/components/fairway';
 import type { CoachPlayerIntent } from '@/lib/coachhelm/v3/intent/types';
 import type { TrendVerdict } from '@/lib/coachhelm/trend';
-import { FairwayYearBadge } from './FairwayYearBadge';
+import { yearLabel } from './FairwayYearBadge';
 import { FairwayPlayerStatusBadge } from './FairwayPlayerStatusBadge';
 import { FairwayIntentControl } from './FairwayIntentControl';
 import { FairwayPlayerActionsMenu } from './FairwayPlayerActionsMenu';
@@ -75,6 +74,14 @@ export function FairwayPlayerCard({ player, intent }: FairwayPlayerCardProps) {
   const online = isUserOnline(player.last_seen);
   const tint = tintFor(player.id);
   const hasScore = player.avg_score && player.avg_score > 0;
+  const playerHref = `/golf/dashboard/roster/${player.id}`;
+  // One quiet metadata line instead of a year pill plus a coloured dot (DS-N6).
+  const year = yearLabel(player.graduation_year);
+  const meta = [
+    ...(online ? ['Online'] : []),
+    ...(year ? [year] : []),
+    ...(player.hometown && player.state ? [`${player.hometown}, ${player.state}`] : []),
+  ];
 
   return (
     // In-flow roster card: the resting hairline, not a drop shadow (DS-E4).
@@ -95,18 +102,19 @@ export function FairwayPlayerCard({ player, intent }: FairwayPlayerCardProps) {
               style={player.avatar_url ? undefined : { backgroundColor: tint.bg, color: tint.text }}
             >
               {player.avatar_url ? (
-                <img src={player.avatar_url} alt="" className="h-full w-full object-cover" />
+                <img src={player.avatar_url} alt="" loading="lazy" decoding="async" className="h-full w-full object-cover" />
               ) : (
                 `${player.first_name?.[0] ?? ''}${player.last_name?.[0] ?? ''}`.toUpperCase() || '—'
               )}
             </span>
-            <span
-              className={cn(
-                'absolute -bottom-1 -right-1 h-5 w-5 rounded-full border-[3px] border-surface',
-                online ? 'bg-accent-500' : 'bg-border-strong',
-              )}
-              title={online ? 'Online' : 'Offline'}
-            />
+            {/* Only "online" earns a dot, and the meta line below says it in
+                words, so the colour never has to be decoded (DS-N7). */}
+            {online ? (
+              <span
+                aria-hidden
+                className="absolute -bottom-1 -right-1 h-5 w-5 rounded-full border-[3px] border-surface bg-accent-fill"
+              />
+            ) : null}
           </div>
 
           {/* Info — name + year badge + hometown. Hand-rolled here rather than
@@ -122,15 +130,17 @@ export function FairwayPlayerCard({ player, intent }: FairwayPlayerCardProps) {
               keeps single-line truncate (min-w-0 so it clips at the string's
               end, not to two letters). */}
           <div className="min-w-0 flex-1 pt-0.5">
-            <div className="flex min-w-0 flex-wrap items-center gap-2">
-              <span className="min-w-0 line-clamp-2 break-words font-fw-display text-body-lg font-semibold leading-snug tracking-[-0.01em] text-text-primary [overflow-wrap:anywhere]">
-                {name}
-              </span>
-              <FairwayYearBadge year={player.graduation_year} />
-            </div>
-            {player.hometown && player.state ? (
-              <p className="mt-0.5 min-w-0 truncate font-fw-sans text-caption text-text-tertiary">
-                {player.hometown}, {player.state}
+            <Link
+              href={playerHref}
+              className="min-w-0 line-clamp-2 break-words rounded-fw-sm font-fw-display text-body-lg font-semibold leading-snug tracking-[-0.01em] text-text-primary outline-none [overflow-wrap:anywhere] focus-visible:ring-2 focus-visible:ring-border-focus"
+            >
+              {name}
+            </Link>
+            {meta.length > 0 ? (
+              <p className="mt-0.5 min-w-0 truncate font-fw-sans text-caption text-text-secondary">
+                {online ? <span className="font-medium text-accent-ink">Online</span> : null}
+                {online && meta.length > 1 ? ' · ' : ''}
+                {meta.filter((part) => part !== 'Online').join(' · ')}
               </p>
             ) : null}
             <div className="mt-2 flex flex-wrap items-center gap-2">
@@ -239,12 +249,15 @@ export function FairwayPlayerCard({ player, intent }: FairwayPlayerCardProps) {
         </div>
       </div>
 
-      {/* CTA */}
-      <div className="px-5 pb-5 md:px-6 md:pb-6">
-        <Button asChild variant="primary" size="md" className="w-full" leftIcon={<Users className="h-4 w-4" />}>
-          <Link href={`/golf/dashboard/roster/${player.id}`}>View player</Link>
-        </Button>
-      </div>
+      {/* A list of cards is not a list of primary actions: one quiet row link
+          per card, the way an iOS grouped list drills in (NAT-06). */}
+      <Link
+        href={playerHref}
+        className="flex min-h-[48px] items-center justify-between border-t border-border-subtle px-5 font-fw-sans text-body-sm font-semibold text-accent-ink outline-none transition-colors hover:bg-surface-sunken focus-visible:bg-surface-sunken active:bg-surface-sunken md:px-6"
+      >
+        View player
+        <ChevronRight className="h-4 w-4 text-text-tertiary" aria-hidden />
+      </Link>
     </Surface>
   );
 }

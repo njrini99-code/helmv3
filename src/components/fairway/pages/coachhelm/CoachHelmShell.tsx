@@ -70,7 +70,7 @@ export interface CoachHelmShellProps {
   /** The SSR-known active sub-nav tab (no-flash fallback before hydration). */
   active: CoachHelmTab;
   /** Coach (5 tabs) or player (Brief + Players). Default 'coach'. */
-  role?: CoachHelmRole;
+  viewerRole?: CoachHelmRole;
   /**
    * Unread urgent/high open-signal count, computed ONCE server-side and passed
    * down. Feeds the Signals tab badge. `null`/0 → no badge (honest, never "0").
@@ -120,7 +120,7 @@ const DEFAULT_TITLE: Record<CoachHelmTab, string> = {
 
 export function CoachHelmShell({
   active,
-  role = 'coach',
+  viewerRole = 'coach',
   signalCount,
   title,
   eyebrow = 'CoachHelm AI',
@@ -138,7 +138,7 @@ export function CoachHelmShell({
     <div
       data-slot="coachhelm-shell"
       data-active={active}
-      data-role={role}
+      data-role={viewerRole}
       data-embedded={embedded ? '' : undefined}
       className={cn('flex w-full flex-col', className)}
     >
@@ -177,7 +177,7 @@ export function CoachHelmShell({
               {breadcrumbs!.map((c, i) => {
                 const last = i === breadcrumbs!.length - 1;
                 return (
-                  <li key={i} className="flex items-center gap-1.5">
+                  <li key={`${c.href ?? ''}:${c.label}`} className="flex items-center gap-1.5">
                     {c.href && !last ? (
                       <Link
                         href={c.href}
@@ -204,7 +204,7 @@ export function CoachHelmShell({
         ) : null}
 
         {embedded ? null : (
-          <CoachHelmSubNav active={active} role={role} signalCount={signalCount} />
+          <CoachHelmSubNav active={active} role={viewerRole} signalCount={signalCount} />
         )}
       </div>
 

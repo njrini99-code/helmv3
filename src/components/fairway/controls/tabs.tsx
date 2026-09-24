@@ -27,11 +27,12 @@ import {
 } from 'react';
 import * as RadixTabs from '@radix-ui/react-tabs';
 import { useComposedRefs } from '@radix-ui/react-compose-refs';
-import { motion, useReducedMotion } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { fwHaptic } from '@/lib/fairway/haptics';
 import { useScrollFade } from '@/lib/fairway/use-scroll-fade';
 import { fwFocusRing, fwTransition } from './_internal';
+import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
 
 /** Shares the per-Tabs layoutId so each instance animates its own indicator. */
 const TabsCtx = createContext<{ indicatorId: string; reduceMotion: boolean }>({
@@ -48,7 +49,7 @@ export const Tabs = forwardRef<HTMLDivElement, TabsProps>(function Tabs(
   ref,
 ) {
   const indicatorId = useId();
-  const reduceMotion = useReducedMotion() ?? false;
+  const reduceMotion = useReducedMotionGuard() ?? false;
   // Selection tick when the active tab changes (fire-and-forget, no-op on web).
   const handleValueChange = (value: string) => {
     fwHaptic('selection');

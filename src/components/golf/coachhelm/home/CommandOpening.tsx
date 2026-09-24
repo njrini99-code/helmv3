@@ -154,10 +154,16 @@ export function CommandOpening({
 }
 
 function StatusLine({ pulse, teamName }: { pulse: ProgramPulse; teamName: string }) {
+  // "Today / 3 days ago" reads the clock, so it is computed after mount; the
+  // server and first client render show the calendar date (HYD-12).
+  const [mounted, setMounted] = React.useState(false);
+  React.useEffect(() => setMounted(true), []);
   const bits: string[] = [teamName];
   bits.push(`${pulse.active_roster} active player${pulse.active_roster === 1 ? '' : 's'}`);
   if (pulse.latest_round_at) {
-    bits.push(`last round ${relativeDays(pulse.latest_round_at)}`);
+    bits.push(
+      `last round ${mounted ? relativeDays(pulse.latest_round_at) : formatDateOnlyShort(pulse.latest_round_at)}`,
+    );
   } else {
     bits.push('no rounds recorded yet');
   }

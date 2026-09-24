@@ -53,9 +53,9 @@ import { Command } from 'cmdk';
 import {
   AnimatePresence,
   motion,
-  useReducedMotion,
   type Variants,
 } from 'framer-motion';
+import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
 import { cn } from '@/lib/utils';
 import { useScrollFade } from '@/lib/fairway/use-scroll-fade';
 import { Skeleton } from '@/components/fairway/feedback';
@@ -250,7 +250,7 @@ export function CommandMenu({
   label = 'Command menu',
   className,
 }: CommandMenuProps) {
-  const reduceMotion = useReducedMotion();
+  const reduceMotion = useReducedMotionGuard();
   const [query, setQuery] = useState('');
   const [mounted, setMounted] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);

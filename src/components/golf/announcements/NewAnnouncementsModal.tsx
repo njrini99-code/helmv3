@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { m, useReducedMotion } from 'framer-motion';
+import { m } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { IconBell, IconCheck, IconChevronRight } from '@/components/icons';
 import { Button } from '@/components/ui/button';
@@ -10,6 +10,7 @@ import { Sheet } from '@/components/fairway/overlays/Sheet';
 import { useToast } from '@/components/ui/sonner';
 import { acknowledgeAnnouncement } from '@/app/golf/actions/communication';
 import type { GolfAnnouncementMeta } from '@/lib/types/golf';
+import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
 
 // ─── Urgency config ─────────────────────────────────────────────────────────
 
@@ -83,7 +84,7 @@ interface NewAnnouncementsModalProps {
  * rest of the app (command palette, event sheets, etc.).
  */
 export function NewAnnouncementsModal({ announcements, onDismiss }: NewAnnouncementsModalProps) {
-  const prefersReducedMotion = useReducedMotion();
+  const prefersReducedMotion = useReducedMotionGuard();
   const router = useRouter();
   const { showToast } = useToast();
   const [acknowledging, setAcknowledging] = useState<string | null>(null);

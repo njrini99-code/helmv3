@@ -21,7 +21,7 @@
  * ========================================================================== */
 
 import * as React from 'react';
-import { motion, useInView, useReducedMotion } from 'framer-motion';
+import { motion, useInView } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import {
   classifyTrend,
@@ -30,6 +30,7 @@ import {
   type TrendDirection,
 } from './TrendChip';
 import { VIZ_EASE, VIZ_REVEAL_MS } from './theme';
+import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
 
 export interface SparklineProps {
   /** The series, oldest → newest. Non-finite entries are dropped. */
@@ -104,7 +105,7 @@ export const Sparkline = React.forwardRef<HTMLSpanElement, SparklineProps>(funct
   },
   ref,
 ) {
-  const reduced = useReducedMotion() ?? false;
+  const reduced = useReducedMotionGuard() ?? false;
   const wrapRef = React.useRef<HTMLSpanElement>(null);
   // Draw on ONCE the first time it enters the viewport (not every re-render).
   const inView = useInView(wrapRef, { once: true, amount: 0.6 });

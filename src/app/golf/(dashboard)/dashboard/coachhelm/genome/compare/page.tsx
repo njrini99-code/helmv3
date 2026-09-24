@@ -30,7 +30,7 @@ interface PageProps {
 }
 
 export const metadata: Metadata = {
-  title: 'Compare players · Genome · CoachHelm',
+  title: 'Compare players · Genome',
 };
 
 function toInputs(map: Map<MetricId, PlayerStanding> | undefined): StrandStandingInput[] {

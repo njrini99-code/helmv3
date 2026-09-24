@@ -476,7 +476,7 @@ const TREND_SIGNAL_CHIPS: Record<string, TrendSignalChip> = {
   'trajectory change': {
     tone: 'watch',
     label: 'Shifting',
-    sentence: 'Your trajectory changed direction recently.',
+    sentence: 'Your recent rounds are moving the other way from your longer trend. Open Standing to see which stats turned.',
   },
   mixed: {
     tone: 'quiet',

@@ -39,17 +39,19 @@ export interface PlayerSpineProps {
 export function PlayerSpine({ hero, verdict, track, priorities, ledger, className, mobileClassName }: PlayerSpineProps) {
   return (
     <>
-      <aside className={cn('overflow-clip rounded-fw-lg border border-accent-700 bg-gradient-to-r from-accent-900 to-accent-800 p-4 text-text-on-accent [box-shadow:var(--fw-shadow-card)] min-[940px]:hidden', mobileClassName)}>
+      {/* Mobile summary: the masthead-verdict treatment on the card surface,
+          not a deep-green gradient slab (HUB-05). Green is the one action. */}
+      <aside className={cn('overflow-clip rounded-fw-lg border border-border-subtle bg-surface p-4 text-text-primary min-[940px]:hidden', mobileClassName)}>
         <div className="flex min-w-0 items-start justify-between gap-4">
           <div className="min-w-0 flex-1">
-            <p className="font-fw-display text-eyebrow uppercase tracking-[0.13em] text-accent-300">CoachHelm AI</p>
+            <p className="font-fw-display text-eyebrow uppercase tracking-[0.13em] text-accent-ink">CoachHelm AI</p>
             <p className="mt-1.5 flex items-baseline gap-1.5 font-fw-mono text-h2 font-semibold leading-none tracking-[-0.03em] tabular-nums">
               {hero.value}
-              {hero.unit ? <span className="font-fw-sans text-caption font-normal tracking-normal text-accent-300">{hero.unit}</span> : null}
+              {hero.unit ? <span className="font-fw-sans text-caption font-normal tracking-normal text-text-secondary">{hero.unit}</span> : null}
             </p>
-            <p className="mt-2 line-clamp-2 font-fw-sans text-caption leading-relaxed text-ink-on-deep">{verdict}</p>
+            <p className="mt-2 line-clamp-2 font-fw-sans text-caption leading-relaxed text-text-secondary">{verdict}</p>
           </div>
-          <Link href="/golf/dashboard/rounds/new" className="inline-flex min-h-11 shrink-0 items-center rounded-full border border-white/25 px-3 py-2 text-caption font-semibold text-text-on-accent transition-opacity duration-150 hover:opacity-80">
+          <Link href="/golf/dashboard/rounds/new" className="inline-flex min-h-11 shrink-0 items-center rounded-full bg-accent-fill px-4 py-2 text-caption font-semibold text-text-on-accent-fill transition-colors duration-150 hover:bg-accent-fill-hover">
             Log round
           </Link>
         </div>
@@ -61,15 +63,15 @@ export function PlayerSpine({ hero, verdict, track, priorities, ledger, classNam
              scrollbar and no tabindex, so the content was neither visible nor
              keyboard-reachable (audit 2026-07-24, P-07). These are five short
              chips; wrapping costs one line and shows all of them. */
-          <div className="mt-3 flex min-w-0 flex-wrap gap-2 border-t border-white/15 pt-3 lg:flex-nowrap lg:overflow-x-auto lg:[scrollbar-width:none] lg:[&::-webkit-scrollbar]:hidden">
+          <div className="mt-3 flex min-w-0 flex-wrap gap-2 border-t border-border-subtle pt-3 lg:flex-nowrap lg:overflow-x-auto lg:[scrollbar-width:none] lg:[&::-webkit-scrollbar]:hidden">
             {priorities.map((item) => (
-              <span key={`${item.rank}-${item.title}`} className="shrink-0 rounded-full bg-accent-fill px-3 py-1.5 font-fw-sans text-caption text-text-on-accent-fill">
-                {item.title} <b className="ml-1 font-fw-mono font-medium tabular-nums text-text-on-accent">{item.value}</b>
+              <span key={`${item.rank}-${item.title}`} className="shrink-0 rounded-full bg-surface-sunken px-3 py-1.5 font-fw-sans text-caption text-text-secondary">
+                {item.title} <b className="ml-1 font-fw-mono font-medium tabular-nums text-text-primary">{item.value}</b>
               </span>
             ))}
             {ledger.map((item) => (
-              <span key={item.label} className="shrink-0 rounded-full bg-accent-fill px-3 py-1.5 font-fw-sans text-caption text-text-on-accent-fill">
-                {item.label} <b className="ml-1 font-fw-mono font-medium tabular-nums text-text-on-accent">{item.value}</b>
+              <span key={item.label} className="shrink-0 rounded-full bg-surface-sunken px-3 py-1.5 font-fw-sans text-caption text-text-secondary">
+                {item.label} <b className="ml-1 font-fw-mono font-medium tabular-nums text-text-primary">{item.value}</b>
               </span>
             ))}
           </div>

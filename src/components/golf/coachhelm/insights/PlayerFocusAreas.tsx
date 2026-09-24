@@ -106,7 +106,7 @@ export function PlayerFocusAreas({ playerId, initialFocusAreas }: PlayerFocusAre
           // DASH-02: number by position in the priority-ordered list. The raw
           // `priority` column is not unique, so two cards both read "1".
           rank={i + 1}
-          onClick={() => router.push('/golf/dashboard/coachhelm?view=development')}
+          onClick={() => router.push(`/golf/dashboard/coachhelm?view=development&focus=${area.id}`)}
         />
       ))}
       {hiddenCount > 0 ? (

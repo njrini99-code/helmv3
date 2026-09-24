@@ -166,8 +166,7 @@ export function GenomeCompareView({
   return (
     <CoachHelmShell
       active="players"
-      // eslint-disable-next-line jsx-a11y/aria-role
-      role="coach"
+      viewerRole="coach"
       signalCount={signalCount}
       title={title}
       description={anySelected ? maturityCaption : 'Overlay two players to see who is stronger where.'}

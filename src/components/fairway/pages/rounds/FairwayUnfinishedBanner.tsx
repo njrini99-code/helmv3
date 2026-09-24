@@ -50,6 +50,14 @@ export interface FairwayUnfinishedBannerProps {
   playerId: string;
 }
 
+/** How many unfinished rounds show before "Show N more" (DASH-10). */
+const VISIBLE_UNFINISHED = 2;
+
+function roundTime(round: RoundLibraryRound): number {
+  const ts = round.updated_at ?? round.created_at;
+  return ts ? new Date(ts).getTime() : 0;
+}
+
 function relativeTime(round: RoundLibraryRound, now: number): string {
   const ts = round.updated_at ?? round.created_at;
   if (!ts) return '';
@@ -69,7 +77,16 @@ export function FairwayUnfinishedBanner({ rounds, playerId }: FairwayUnfinishedB
   // Keep local state in sync if the server passes a fresh list.
   React.useEffect(() => setLocalRounds(rounds), [rounds]);
 
+  const [expanded, setExpanded] = React.useState(false);
+
   if (localRounds.length === 0) return null;
+
+  // Newest first, and only the most recent few until asked: a player with a
+  // backlog of stale drafts got one full card per round stacked above their
+  // library (DASH-10).
+  const sorted = [...localRounds].sort((a, b) => roundTime(b) - roundTime(a));
+  const shown = expanded ? sorted : sorted.slice(0, VISIBLE_UNFINISHED);
+  const hiddenCount = sorted.length - shown.length;
 
   return (
     <section aria-label="Rounds in progress" className="flex flex-col gap-3">
@@ -83,7 +100,7 @@ export function FairwayUnfinishedBanner({ rounds, playerId }: FairwayUnfinishedB
       </div>
 
       <div className="flex flex-col gap-2.5">
-        {localRounds.map((round) => (
+        {shown.map((round) => (
           <UnfinishedRow
             key={round.id}
             round={round}
@@ -94,6 +111,11 @@ export function FairwayUnfinishedBanner({ rounds, playerId }: FairwayUnfinishedB
             }}
           />
         ))}
+        {hiddenCount > 0 ? (
+          <Button variant="ghost" size="sm" className="self-start" onClick={() => setExpanded(true)}>
+            Show {hiddenCount} more
+          </Button>
+        ) : null}
       </div>
     </section>
   );

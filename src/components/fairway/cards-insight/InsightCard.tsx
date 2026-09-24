@@ -37,7 +37,7 @@ import {
   type MouseEventHandler,
   type ReactNode,
 } from 'react';
-import { motion, useReducedMotion, type HTMLMotionProps } from 'framer-motion';
+import { motion, type HTMLMotionProps } from 'framer-motion';
 import {
   AlertTriangle,
   Flame,
@@ -57,6 +57,7 @@ import {
   heroGlassClassName,
   heroGlassStyle,
 } from './glass';
+import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
 
 /**
  * Inject the §4.3 reduced-transparency / forced-colors fallback CSS exactly
@@ -256,7 +257,7 @@ const InsightCardImpl = forwardRef<HTMLDivElement, InsightCardProps>(
     },
     ref,
   ) {
-    const prefersReduced = useReducedMotion();
+    const prefersReduced = useReducedMotionGuard();
     const tone = PRIORITY[priority];
     // Bug #915: an explicit iconTone overrides the icon glyph AND its
     // background/text color independent of priority — see ICON_TONE's

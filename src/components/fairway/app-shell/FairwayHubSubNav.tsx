@@ -32,11 +32,12 @@
 import * as React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { motion, useReducedMotion } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { fwFocusRing, fwTransition } from '@/components/fairway/controls/_internal';
 import { useScrollFade } from '@/lib/fairway/use-scroll-fade';
 import type { GolfSubTab } from '@/lib/golf/nav-registry';
+import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
 
 export interface FairwayHubSubNavProps {
   /** The tabs for this hub, in visual order (from a GolfHubDef). */
@@ -86,7 +87,7 @@ function resolveActiveTabId(pathname: string | null, tabs: readonly GolfSubTab[]
 }
 
 export function FairwayHubSubNav({ tabs, ariaLabel, className }: FairwayHubSubNavProps) {
-  const reduceMotion = useReducedMotion();
+  const reduceMotion = useReducedMotionGuard();
   const pathname = usePathname();
   const reactId = React.useId();
   const underlineLayoutId = `fw-hub-subnav-underline-${reactId}`;

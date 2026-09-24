@@ -18,14 +18,7 @@ const GOLF_DIR = join(process.cwd(), 'src/app/golf');
  * Files other in-flight work still owns. Each still carries a suffix that the
  * owning change strips; remove the entry when it does. Do not add new ones.
  */
-const PENDING = new Set<string>([
-  'src/app/golf/(dashboard)/dashboard/roster/page.tsx',
-  'src/app/golf/(dashboard)/dashboard/intelligence/page.tsx',
-  'src/app/golf/(dashboard)/dashboard/players/[playerId]/game/page.tsx',
-  'src/app/golf/(dashboard)/dashboard/players/[playerId]/genome/page.tsx',
-  'src/app/golf/(dashboard)/dashboard/coachhelm/genome/compare/page.tsx',
-  'src/app/golf/(dashboard)/dashboard/stats/team/page.tsx',
-]);
+const PENDING = new Set<string>([]);
 
 /** A `title` whose string literal ends with a separator + brand. */
 const SUFFIXED_TITLE =

@@ -3,10 +3,11 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
-import { LazyMotion, m, useReducedMotion } from 'framer-motion';
+import { LazyMotion, m } from 'framer-motion';
 import { loadFeatures } from '@/lib/motion/load-features';
 import { processGolfTeamInvitation } from '@/app/golf/actions/teams';
 import { Button } from '@/components/ui/button';
+import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
 
 interface GolfJoinTeamClientProps {
   inviteCode: string;
@@ -50,7 +51,7 @@ export function GolfJoinTeamClient({
   playerYear,
   team,
 }: GolfJoinTeamClientProps) {
-  const prefersReducedMotion = useReducedMotion();
+  const prefersReducedMotion = useReducedMotionGuard();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);

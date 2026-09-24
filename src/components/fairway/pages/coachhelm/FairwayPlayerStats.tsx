@@ -110,7 +110,7 @@ export function FairwayPlayerStats({ initialPlayerId = null, initialStats = null
       <div className="w-full py-2">
         <CoachHelmShell
           active={activeTab}
-          role={shellRole}
+          viewerRole={shellRole}
           eyebrow="Stats"
           title={title}
           description={description}

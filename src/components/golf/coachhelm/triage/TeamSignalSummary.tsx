@@ -1,5 +1,6 @@
 'use client';
 
+import { useId } from 'react';
 import Link from 'next/link';
 import {
   ArrowRight,
@@ -103,11 +104,11 @@ export function TeamSignalSummary({ groups, playerHref, onOpenPlayer }: TeamSign
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
                       <div className="flex items-center gap-2">
-                        <span className="font-fw-mono text-eyebrow tabular-nums text-text-tertiary">{String(index + 1).padStart(2, '0')}</span>
+                        <span className="text-caption tabular-nums text-text-tertiary">{index + 1}</span>
                         <p className="truncate text-body-sm font-semibold text-text-primary">{formatCategoryLabel(entry.category)}</p>
                       </div>
                       <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-caption text-text-tertiary">
-                        <span>{entry.highPriority} high priority</span>
+                        {entry.highPriority > 0 ? <span>{entry.highPriority} high priority</span> : null}
                         {entry.impact > 0 ? <span>{entry.impact.toFixed(1)} strokes</span> : null}
                       </div>
                     </div>
@@ -168,8 +169,8 @@ export function TeamSignalSummary({ groups, playerHref, onOpenPlayer }: TeamSign
                   }}
                   className="group flex min-h-14 items-center gap-3 rounded-fw-md border border-border-subtle bg-surface-raised px-3 py-3 outline-none transition-[transform,border-color,box-shadow] hover:-translate-y-0.5 hover:border-accent-200 hover:[box-shadow:var(--fw-shadow-soft)] focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 motion-reduce:hover:translate-y-0"
                 >
-                  <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-accent-50 font-fw-mono text-caption font-semibold text-fw-success-ink">
-                    {String(index + 1).padStart(2, '0')}
+                  <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-accent-wash text-caption font-semibold tabular-nums text-accent-ink">
+                    {index + 1}
                   </span>
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-body-sm font-semibold text-text-primary">{group.playerName}</p>
@@ -243,6 +244,8 @@ function buildCategoryPressure(signals: readonly GroupedSignal[]): CategoryPress
 }
 
 function PressureRadar({ categories, total }: { categories: readonly CategoryPressure[]; total: number }) {
+  // Unique per instance: two radars on one page shared one pattern id (QA-R7).
+  const gridId = useId();
   const chartCategories = categories.length >= 3 ? categories : [
     ...categories,
     ...Array.from({ length: 3 - categories.length }, (_, index) => ({
@@ -277,11 +280,11 @@ function PressureRadar({ categories, total }: { categories: readonly CategoryPre
       className="absolute inset-0 h-full w-full"
     >
       <defs>
-        <pattern id="coachhelm-pressure-grid" width="18" height="18" patternUnits="userSpaceOnUse">
+        <pattern id={gridId} width="18" height="18" patternUnits="userSpaceOnUse">
           <path d="M 18 0 L 0 0 0 18" fill="none" className="stroke-border-subtle" strokeWidth="0.45" opacity="0.55" />
         </pattern>
       </defs>
-      <rect width="280" height="260" fill="url(#coachhelm-pressure-grid)" />
+      <rect width="280" height="260" fill={`url(#${gridId})`} />
       {[1, 0.72, 0.44].map((scale) => (
         <polygon key={scale} points={ringPoints(scale)} fill="none" className="stroke-border-subtle" strokeWidth="1" />
       ))}

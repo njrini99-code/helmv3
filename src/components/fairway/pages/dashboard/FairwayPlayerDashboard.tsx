@@ -320,7 +320,7 @@ export function FairwayPlayerDashboard({
 
   const focusSection = (
     <section aria-labelledby="home-focus-title">
-      <SectionTitle id="home-focus-title" action={{ label: 'My development', href: '/golf/dashboard/my-development' }}>
+      <SectionTitle id="home-focus-title" action={{ label: 'My development', href: '/golf/dashboard/coachhelm?view=development' }}>
         Focus areas
       </SectionTitle>
       {/* No card around the list: each focus area is already its own card. */}

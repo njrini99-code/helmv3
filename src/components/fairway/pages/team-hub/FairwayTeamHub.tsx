@@ -572,7 +572,7 @@ function TeammateAvatar({ teammate, stacked }: { teammate: TeamHubTeammate; stac
     >
       {teammate.avatar_url ? (
         /* Plain <img>: a 32px avatar chip — next/image adds nothing at this size. */
-        <img src={teammate.avatar_url} alt="" className="h-full w-full object-cover" />
+        <img src={teammate.avatar_url} alt="" loading="lazy" decoding="async" className="h-full w-full object-cover" />
       ) : (
         initials
       )}

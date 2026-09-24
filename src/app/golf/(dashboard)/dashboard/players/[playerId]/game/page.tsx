@@ -279,7 +279,7 @@ export async function loadDistanceProfileAndScoringAddenda(
 }
 
 export const metadata: Metadata = {
-  title: 'Game Fingerprint | Helm Golf',
+  title: 'Game Fingerprint',
   description:
     "Scouting report for a player's game — tee, approach, short game, putting, scoring, pressure, and trend.",
 };

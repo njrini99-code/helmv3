@@ -212,8 +212,55 @@ export default tseslint.config(
       "src/components/golf/**/*.{ts,tsx}",
       "src/app/golf/**/*.{ts,tsx}",
     ],
+    // Rendered by BaseballHelm's PremiumCalendarClient (golf only imports its
+    // types), so it stays on the legacy scales with Baseball (OD-17).
+    ignores: ["src/components/golf/calendar/**"],
     rules: {
       "helm/no-low-contrast-text": "error",
+    },
+  },
+  {
+    // MOT-RM / haptics (2026-09 golf audit): golf surfaces go through the
+    // hydration-safe motion guard and the semantic haptic vocabulary. Raw
+    // framer-motion useReducedMotion() returns null before hydration (#418
+    // class), and raw triggerHaptic() bypasses the golf haptic mapping and the
+    // user's haptics preference. src/components/golf/calendar is shared with
+    // BaseballHelm and keeps its legacy calls; the dev haptics lab calls the
+    // raw bridge on purpose.
+    files: [
+      "src/components/fairway/**/*.{ts,tsx}",
+      "src/components/golf/**/*.{ts,tsx}",
+      "src/app/golf/**/*.{ts,tsx}",
+    ],
+    ignores: [
+      "src/components/golf/calendar/**",
+      "src/app/golf/(dashboard)/dashboard/dev/haptics/**",
+      "**/*.test.{ts,tsx}",
+      "**/__tests__/**",
+    ],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          paths: [
+            {
+              name: "framer-motion",
+              importNames: ["useReducedMotion"],
+              message: "Use useReducedMotionGuard() from '@/lib/coachhelm/v3/motion'.",
+            },
+            {
+              name: "motion/react",
+              importNames: ["useReducedMotion"],
+              message: "Use useReducedMotionGuard() from '@/lib/coachhelm/v3/motion'.",
+            },
+            {
+              name: "@/lib/utils/capacitor",
+              importNames: ["triggerHaptic"],
+              message: "Use haptic('select' | 'commit' | ...) from '@/lib/haptics'.",
+            },
+          ],
+        },
+      ],
     },
   },
   {
