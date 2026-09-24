@@ -57,6 +57,7 @@ import { Skeleton } from '@/components/fairway/feedback';
 // itself imports these from the same module.
 import { classifyTrend, TREND_TONE_CLASS } from '@/components/fairway/charts/TrendChip';
 import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
+import { fwPressSurface } from '@/components/fairway/controls';
 
 /** Visual weight of the tile. `default` is the everyday KPI; `hero` gets a
  *  touch more air + a slightly larger numeric for the one lead metric. */
@@ -310,9 +311,8 @@ export const MetricCard = forwardRef<HTMLDivElement, MetricCardProps>(
         // Press is the touch-side affordance: the hover lift above never fires
         // on a phone, so `active:translate-y-0` alone cancelled nothing and a
         // tapped KPI card sat inert. Settle below rest instead of back to it.
-        'active:translate-y-0 active:scale-[0.994] active:shadow-flat active:brightness-[0.985]',
-        'active:[transition-duration:110ms] active:[transition-timing-function:var(--fw-ease-spring)]',
-        'motion-reduce:active:scale-100 motion-reduce:active:brightness-100',
+        'active:translate-y-0',
+        fwPressSurface,
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
       ],
       !interactive && 'duration-base',

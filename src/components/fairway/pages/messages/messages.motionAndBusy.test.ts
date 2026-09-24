@@ -145,23 +145,17 @@ describe('every touch point acknowledges a tap', () => {
   });
 
   it('the raw recipient rows carry the canonical press recipe', () => {
-    // Raw <button>s inherit nothing from the control family. Inlined rather
-    // than imported: nothing outside controls/ imports _internal, and the
-    // underscore is announcing a boundary. Both halves are pinned against the
-    // source of truth so the copy cannot drift from it.
+    // Raw <button>s inherit nothing from the control family, so they use the
+    // shared recipe from the controls barrel (DS-15) rather than a copy.
     expect(press).toContain('active:translate-y-[0.5px] active:scale-[0.98]');
     expect(press).toContain('motion-reduce:active:translate-y-0 motion-reduce:active:scale-100');
     for (const [name, src] of [
       ['FairwayNewMessageSheet', newMessage],
       ['FairwayTeamBroadcastSheet', broadcast],
     ] as const) {
-      expect(src, name).toContain("'active:translate-y-[0.5px] active:scale-[0.98]',");
-      expect(src, name).toContain(
-        "'active:[transition-timing-function:var(--fw-ease-spring)]',",
-      );
-      expect(src, name).toContain(
-        "'motion-reduce:active:translate-y-0 motion-reduce:active:scale-100',",
-      );
+      expect(src, name).toMatch(/import \{[^}]*\bfwPress\b[^}]*\} from '@\/components\/fairway\/controls';/);
+      expect(src, name).toContain('fwPress,');
+      expect(src, name).not.toMatch(/active:scale-/);
       // and the transform has to be transitioned for the spring to mean anything
       expect(src, name).toContain(
         "'transition-[color,background-color,transform] [transition-duration:var(--fw-dur-fast)]',",
@@ -177,7 +171,8 @@ describe('every touch point acknowledges a tap', () => {
       ['FairwayNewMessageSheet', newMessage],
       ['FairwayTeamBroadcastSheet', broadcast],
     ] as const) {
-      expect(src, name).toMatch(/motion-reduce:|useReducedMotion|motion-safe:/);
+      // fwPress carries its own motion-reduce collapse (pinned above).
+      expect(src, name).toMatch(/motion-reduce:|useReducedMotion|motion-safe:|\bfwPress\b/);
     }
   });
 });

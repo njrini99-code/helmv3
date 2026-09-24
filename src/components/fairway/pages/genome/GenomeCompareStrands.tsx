@@ -32,6 +32,7 @@ import {
   headToHead,
   readWord,
 } from './strand-model';
+import { fwPress } from '@/components/fairway/controls';
 
 export interface CompareSide {
   playerId: string;
@@ -271,7 +272,7 @@ function SlotButton({ label, side, marker, onClick }: { label: string; side: Com
       type="button"
       onClick={onClick}
       aria-haspopup="dialog"
-      className="flex min-h-14 flex-1 items-center justify-between gap-3 rounded-fw-md border border-border-subtle bg-surface px-4 text-left transition-[background-color,transform] duration-150 active:scale-[0.985] active:bg-surface-sunken focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus"
+      className={`flex min-h-14 flex-1 items-center justify-between gap-3 rounded-fw-md border border-border-subtle bg-surface px-4 text-left transition-[background-color,transform] duration-150 active:bg-surface-sunken focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus ${fwPress}`}
     >
       <span className="flex min-w-0 items-center gap-3">
         <Marker marker={marker} />

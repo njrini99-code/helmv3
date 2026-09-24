@@ -33,6 +33,7 @@ import type { PendingAttachment } from '@/lib/storage/attachments';
 import { Textarea } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useMediaQuery } from '@/hooks/use-media-query';
+import { fwPress } from '@/components/fairway/controls';
 
 /* ─── Length limit — mirrors sendMessageSchema (action-schemas.ts:42,
  *     content.max(5000)) so the field hard-prevents overflow (maxLength) and the
@@ -711,7 +712,7 @@ export function MessageComposer({
             'after:absolute after:-inset-0.5 after:rounded-full after:content-[\'\']',
             'outline-none transition-[color,background-color,box-shadow,transform] duration-200',
             'focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-surface',
-            'active:scale-95 motion-reduce:active:scale-100',
+            fwPress,
             canSend
               ? 'bg-accent-fill text-text-on-accent-fill shadow-flat hover:bg-accent-fill-hover hover:shadow-soft'
               : 'cursor-not-allowed bg-surface-sunken text-text-tertiary',

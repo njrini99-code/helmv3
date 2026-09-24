@@ -13,6 +13,7 @@
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { readWord } from './strand-model';
+import { fwPress } from '@/components/fairway/controls';
 
 export interface PlayerGenomeDimension {
   id: string;
@@ -70,7 +71,7 @@ export function PlayerGenomeProfile({
         </div>
         <Link
           href="/golf/dashboard/rounds/new"
-          className="mt-2 inline-flex h-11 w-fit items-center justify-center rounded-fw-md bg-accent-fill px-5 font-fw-sans text-body font-semibold text-text-on-accent-fill transition-[background-color,transform] duration-150 active:scale-[0.97] active:bg-accent-fill-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2"
+          className={`mt-2 inline-flex h-11 w-fit items-center justify-center rounded-fw-md bg-accent-fill px-5 font-fw-sans text-body font-semibold text-text-on-accent-fill transition-[background-color,transform] duration-150 active:bg-accent-fill-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 ${fwPress}`}
         >
           Log a round
         </Link>
