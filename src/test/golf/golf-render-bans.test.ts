@@ -22,6 +22,8 @@
  *   rawTriggerHaptic → fwHaptic (src/lib/fairway/haptics.ts)
  *   activeScale      → Pressable (controls/press-target.tsx, fwPress 0.97)
  *   retiredImport    → the §5 replacement component (design-direction §5.1)
+ *   eyebrow          → a plain heading; at most one eyebrow per screen (TYPE-03)
+ *   rawRadius        → the Fairway ramp: rounded-fw-sm / fw-md / card / fw-lg / full (DS-R1)
  *
  * Arbitrary `text-[Npx]` is already enforced by the `helm/no-arbitrary-text-px`
  * ESLint rule, so it is not repeated here.
@@ -80,7 +82,9 @@ type RuleId =
   | 'rawReducedMotion'
   | 'rawTriggerHaptic'
   | 'activeScale'
-  | 'retiredImport';
+  | 'retiredImport'
+  | 'eyebrow'
+  | 'rawRadius';
 
 function stripComments(src: string): string {
   return src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:"'`])\/\/.*$/gm, '$1');
@@ -119,6 +123,12 @@ const RULES: Record<RuleId, (code: string, rel: string) => number> = {
   rawTriggerHaptic: (code) => countMatches(code, /\btriggerHaptic\s*\(/g),
   activeScale: (code) => countMatches(code, /\bactive:scale-/g),
   retiredImport: (code, rel) => (RETIRED_SCOPE.some((p) => rel.startsWith(p)) ? countRetiredImports(code) : 0),
+  eyebrow: (code) => countMatches(code, /\btext-eyebrow(?![\w-])/g),
+  // The calendar tree also renders in Baseball and keeps the legacy scale.
+  rawRadius: (code, rel) =>
+    rel.startsWith('src/components/golf/calendar/')
+      ? 0
+      : countMatches(code, /\brounded(?:-[trblse]{1,2})?-(?:sm|md|lg|xl|2xl|3xl|\[[^\]]+\])(?![\w-])/g),
 };
 
 function walk(dir: string, out: string[]): void {
@@ -182,5 +192,9 @@ describe('golf render-path bans (ratchet)', () => {
     expect(RULES.rawReducedMotion('const r = useReducedMotionGuard();', 'x')).toBe(0);
     expect(RULES.rawReducedMotion('const r = useReducedMotion();', 'x')).toBe(1);
     expect(RULES.activeScale('className="active:scale-[0.97]"', 'x')).toBe(1);
+    expect(RULES.rawRadius('rounded-xl rounded-t-2xl rounded-[18px]', 'x')).toBe(3);
+    expect(RULES.rawRadius('rounded-fw-md rounded-card rounded-full rounded-lg-x', 'x')).toBe(0);
+    expect(RULES.rawRadius('rounded-xl', 'src/components/golf/calendar/A.tsx')).toBe(0);
+    expect(RULES.eyebrow('text-eyebrow text-eyebrow-x', 'x')).toBe(1);
   });
 });
