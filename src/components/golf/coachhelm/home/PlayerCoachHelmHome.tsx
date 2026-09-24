@@ -34,7 +34,7 @@ import { isThemesEnabled } from '@/lib/redesign/flag';
 
 import type { EvidenceInsight } from '@/app/golf/actions/insight-delivery';
 import type { PlayerCoachHelmDashboardData } from '@/app/golf/actions/insights';
-import type { PlayerFingerprint } from '@/app/golf/actions/player-fingerprint';
+import type { PlayerFingerprint } from '@/app/golf/actions/player-fingerprint-types';
 import type { PlayerShotAnalytics } from '@/app/golf/actions/shot-analytics';
 import type { PlayerStanding } from '@/lib/coachhelm/v3/standing/types';
 import type { CauseNode, ThemeNode } from '@/lib/coachhelm/v3/themes/types';

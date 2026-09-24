@@ -47,10 +47,10 @@ import { Segmented } from "@/components/fairway/controls/segmented";
 import { PopoverPanel } from "@/components/fairway/overlays/PopoverPanel";
 import { IconMoreHorizontal } from "@/components/icons";
 
-import type { PlayerFingerprint } from "@/app/golf/actions/player-fingerprint";
 import {
   FINGERPRINT_SECTION_ORDER,
   type FingerprintSectionKey,
+  type PlayerFingerprint,
 } from "@/app/golf/actions/player-fingerprint-types";
 // PRESERVED WRITE ACTIONS — imported UNCHANGED.
 import {

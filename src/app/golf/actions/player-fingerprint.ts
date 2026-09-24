@@ -63,16 +63,9 @@ import {
 // Public types — the Fingerprint shape. Downstream UI imports these.
 // ---------------------------------------------------------------------------
 
-// One definition, in the types module; re-exported so existing imports from
-// this file keep working (W12: the two copies had drifted in their docs).
-export type {
-  FingerprintSectionKey,
-  FingerprintMetric,
-  FingerprintChartData,
-  SectionData,
-  FingerprintTrendPoint,
-  PlayerFingerprint,
-} from './player-fingerprint-types';
+// One definition, in the types module (W12: the two copies had drifted).
+// A 'use server' module may not re-export types, so callers import them from
+// './player-fingerprint-types' directly.
 import type {
   FingerprintSectionKey,
   FingerprintMetric,

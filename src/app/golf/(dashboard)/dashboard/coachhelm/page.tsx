@@ -4,7 +4,8 @@ import { getGolfSessionProfile } from '@/lib/auth/session';
 import { createClient } from '@/lib/supabase/server';
 import { getPlayerCoachHelmDashboard } from '@/app/golf/actions/insights';
 import { getPlayerShotAnalytics } from '@/app/golf/actions/shot-analytics';
-import { getPlayerFingerprint, type PlayerFingerprint } from '@/app/golf/actions/player-fingerprint';
+import { getPlayerFingerprint } from '@/app/golf/actions/player-fingerprint';
+import type { PlayerFingerprint } from '@/app/golf/actions/player-fingerprint-types';
 import {
   getTopInsightForPlayer,
   getInsightsForPlayer,

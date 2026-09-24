@@ -40,7 +40,7 @@ import {
 } from '@/components/fairway/pages/player-game';
 import { CoachHelmShell } from '@/components/fairway/pages/coachhelm/CoachHelmShell';
 import { ScoutingReport, type ScoutingReportProps } from '@/components/fairway/pages/scouting/ScoutingReport';
-import type { PlayerFingerprint } from '@/app/golf/actions/player-fingerprint';
+import type { PlayerFingerprint } from '@/app/golf/actions/player-fingerprint-types';
 
 type DeepDiveTab = 'fingerprint' | 'scouting';
 

@@ -22,7 +22,7 @@ import { describe, expect, it, vi, beforeEach } from 'vitest';
 
 import { FairwayPlayerGameFingerprint } from './FairwayPlayerGameFingerprint';
 import { GolfUserProvider, type GolfUserData } from '@/contexts/golf-user-context';
-import type { PlayerFingerprint, SectionData } from '@/app/golf/actions/player-fingerprint';
+import type { PlayerFingerprint, SectionData } from '@/app/golf/actions/player-fingerprint-types';
 import type { FingerprintSectionKey } from '@/app/golf/actions/player-fingerprint-types';
 
 const pushMock = vi.fn();

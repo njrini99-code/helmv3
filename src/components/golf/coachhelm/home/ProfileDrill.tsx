@@ -37,7 +37,7 @@ import { FairwayPlayerGameFingerprint } from '@/components/fairway/pages/player-
 import { CompositeRatingCard } from '@/components/golf/coachhelm/player/CompositeRatingCard';
 import { FairwayTrendBrain } from '@/components/golf/coachhelm/player/FairwayTrendBrain';
 import { expectedEmptyStateCopy } from '@/lib/view-state/expected-empty-states';
-import type { PlayerFingerprint } from '@/app/golf/actions/player-fingerprint';
+import type { PlayerFingerprint } from '@/app/golf/actions/player-fingerprint-types';
 
 export interface GameProfileAxis {
   label: string;
