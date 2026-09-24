@@ -3199,7 +3199,7 @@ async function submitGolfRoundComprehensiveImpl(
             await sendBulkPushNotification(
               'round_submitted',
               userIds,
-              { playerName, courseName: data.courseName, totalScore, scoreToPar: totalToPar }
+              { playerName, courseName: data.courseName, totalScore, scoreToPar: totalToPar, roundId: round.id }
             );
           }
         } catch (pushErr) {
@@ -3485,6 +3485,7 @@ async function createGolfEventImpl(data: GolfEventInput): Promise<ActionResult<{
           const { sendBulkPushNotification } = await import('@/lib/notifications/push');
           await sendBulkPushNotification('event_rsvp_reminder', userIds, {
             eventName: fanOutTitle,
+            eventId: fanOutEventId,
           });
         })();
 
