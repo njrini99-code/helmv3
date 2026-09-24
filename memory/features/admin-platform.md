@@ -363,7 +363,10 @@ them would have broken those routes, not the dead one.
   `background_job_logs` recorded 72 consecutive `completed` runs. Reasons
   written into a cron response must be SCALARS: `recordJobRun`'s
   `extractOutcomeMetadata` keeps only top-level scalars and silently drops
-  arrays.
+  arrays. Since 2026-09-24 the same bounded scalar snapshot is taken from a
+  job that returns a PLAIN OBJECT (not a Response), which is how
+  `selfheal-close` reports `AutoResolveResult`; before that every
+  `selfheal-close` row carried `metadata = null`.
 - **A source that could not be read is never reported as zero problems.** The
   reliability collector's arms each return `{status, reason, signals}`, and the
   run's status is the WORST arm — so a run whose Sentry token is missing writes
