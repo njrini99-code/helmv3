@@ -62,6 +62,7 @@ import { DemoEnterTracker } from '@/components/demo/DemoEnterTracker';
 import { DemoPricingNudge } from '@/components/golf/demo/DemoPricingNudge';
 import { NoTeamBanner } from '@/components/golf/NoTeamBanner';
 import { GolfRouteRefresh } from '@/components/golf/GolfRouteRefresh';
+import { NativeSwipeBackBridge } from '@/components/golf/NativeSwipeBackBridge';
 import { KeyboardShortcutHint } from '@/components/golf/KeyboardShortcutHint';
 import { TeamSwitcher } from '@/components/golf/TeamSwitcher';
 import { normalizeTeamGender, teamAccentVar, type TeamGender } from '@/lib/golf/team-theme';
@@ -815,6 +816,7 @@ function FairwayDashboardContent({
       </AppShell>
 
       {/* Globals — the same set GolfDashboardShell mounts. */}
+      <NativeSwipeBackBridge />
       <CommandPalette isCoach={role === 'coach'} />
       <KeyboardShortcutHint />
       <NewAnnouncementsModalWrapper />

@@ -12,6 +12,15 @@ class GolfBridgeViewController: CAPBridgeViewController {
 
     private var urlObservation: NSKeyValueObservation?
 
+    /// Edge swipe-back (MOT-13, RE-D1) is off while a round is being tracked
+    /// (a stray edge swipe must not leave the scorecard mid-hole) and while
+    /// the page reports an open sheet or dialog (the swipe would navigate the
+    /// page underneath it). The page reports overlays through the `helmNav`
+    /// message handler (src/components/golf/NativeSwipeBackBridge.tsx).
+    private var onTrackingRoute = false
+    private var overlayOpen = false
+    private static let navMessageName = "helmNav"
+
     /// UserDefaults key holding the CFBundleVersion that last cleared the web cache.
     private static let cacheClearedBuildKey = "HelmWebCacheClearedForBuild"
 
@@ -36,7 +45,24 @@ class GolfBridgeViewController: CAPBridgeViewController {
 
         // Native edge-swipe back/forward through the web history, like any
         // iOS navigation stack (Capacitor leaves this WKWebView default off).
-        webView?.allowsBackForwardNavigationGestures = true
+        webView?.configuration.userContentController.add(
+            HelmNavMessageHandler(owner: self), name: Self.navMessageName)
+        applySwipeBack()
+    }
+
+    fileprivate func setOverlayOpen(_ open: Bool) {
+        overlayOpen = open
+        applySwipeBack()
+    }
+
+    private func applySwipeBack() {
+        webView?.allowsBackForwardNavigationGestures = !(onTrackingRoute || overlayOpen)
+    }
+
+    /// Round entry: new round and continue round (FairwayDashboardShell
+    /// renders both without chrome for the same reason).
+    private static func isTrackingRoute(_ url: String) -> Bool {
+        url.contains("/golf/dashboard/rounds/new") || url.contains("/golf/dashboard/rounds/continue")
     }
 
     /// Clears the WKWebView HTTP cache once per installed build instead of on
@@ -119,6 +145,13 @@ class GolfBridgeViewController: CAPBridgeViewController {
         urlObservation = webView?.observe(\.url, options: [.new]) { [weak self] _, change in
             guard let url = change.newValue??.absoluteString else { return }
 
+            // pushState navigations update `url` too, so this follows the SPA.
+            let tracking = Self.isTrackingRoute(url)
+            if tracking != self?.onTrackingRoute {
+                self?.onTrackingRoute = tracking
+                self?.applySwipeBack()
+            }
+
             // If the URL is NOT a /golf/ page (e.g. landing page "/", "/products", etc.)
             // then return to the native home screen
             let isGolfPage = url.contains("/golf/")
@@ -135,5 +168,22 @@ class GolfBridgeViewController: CAPBridgeViewController {
 
     deinit {
         urlObservation?.invalidate()
+        webView?.configuration.userContentController.removeScriptMessageHandler(forName: Self.navMessageName)
+    }
+}
+
+/// Receives `{ overlayOpen: Bool }` from the page. Holds the controller weakly:
+/// WKUserContentController retains its handlers, so a strong reference would
+/// keep the controller alive forever.
+private final class HelmNavMessageHandler: NSObject, WKScriptMessageHandler {
+    private weak var owner: GolfBridgeViewController?
+
+    init(owner: GolfBridgeViewController) {
+        self.owner = owner
+    }
+
+    func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
+        guard let body = message.body as? [String: Any], let open = body["overlayOpen"] as? Bool else { return }
+        owner?.setOverlayOpen(open)
     }
 }
