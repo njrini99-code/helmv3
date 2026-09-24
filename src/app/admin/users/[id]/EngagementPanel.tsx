@@ -83,24 +83,27 @@ export async function EngagementPanel({ userId }: { userId: string }) {
               </div>
             </div>
 
-            <div className="grid flex-1 grid-cols-3 gap-3">
-              <div className="rounded-fw-md bg-surface-sunken p-3">
+            {/* gap-2/p-2.5 and tracking-wider below `sm`: a third of a 375px
+                card is ~95px, and "INSIGHTS" at p-3 + tracking-widest filled it
+                to the edge. */}
+            <div className="grid flex-1 grid-cols-3 gap-2 sm:gap-3">
+              <div className="min-w-0 rounded-fw-md bg-surface-sunken p-2.5 sm:p-3">
                 <span className="block font-fw-mono text-lg font-bold tabular-nums text-warm-900">
                   {engagement.rounds30d}
                 </span>
-                <span className="text-eyebrow uppercase tracking-widest text-warm-500">Rounds 30d</span>
+                <span className="block text-eyebrow uppercase tracking-wider text-warm-500 sm:tracking-widest">Rounds 30d</span>
               </div>
-              <div className="rounded-fw-md bg-surface-sunken p-3">
+              <div className="min-w-0 rounded-fw-md bg-surface-sunken p-2.5 sm:p-3">
                 <span className="block font-fw-mono text-lg font-bold tabular-nums text-warm-900">
                   {engagement.insightsEngaged30d}
                 </span>
-                <span className="text-eyebrow uppercase tracking-widest text-warm-500">Insights 30d</span>
+                <span className="block text-eyebrow uppercase tracking-wider text-warm-500 sm:tracking-widest">Insights 30d</span>
               </div>
-              <div className="rounded-fw-md bg-surface-sunken p-3">
+              <div className="min-w-0 rounded-fw-md bg-surface-sunken p-2.5 sm:p-3">
                 <span className="block font-fw-mono text-lg font-bold tabular-nums text-warm-900">
                   {engagement.reviewsViewed30d}
                 </span>
-                <span className="text-eyebrow uppercase tracking-widest text-warm-500">Reviews 30d</span>
+                <span className="block text-eyebrow uppercase tracking-wider text-warm-500 sm:tracking-widest">Reviews 30d</span>
               </div>
             </div>
           </div>
@@ -114,8 +117,8 @@ export async function EngagementPanel({ userId }: { userId: string }) {
               <span className="text-eyebrow uppercase tracking-widest text-warm-500">
                 {KIND_LABEL[item.kind] ?? item.kind}
               </span>
-              <span className="min-w-0 flex-1 basis-full truncate text-warm-800 sm:basis-auto">{item.label}</span>
-              <span className="font-fw-mono text-xs tabular-nums text-warm-500">
+              <span className="min-w-0 flex-1 basis-full break-words text-warm-800 sm:basis-auto sm:truncate">{item.label}</span>
+              <span className="whitespace-nowrap font-fw-mono text-xs tabular-nums text-warm-500">
                 {item.at ? <LocalTime iso={item.at} variant="datetime" /> : '—'}
               </span>
             </li>

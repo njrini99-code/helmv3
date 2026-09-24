@@ -408,8 +408,10 @@ export default async function FingerprintDetailPage({
         <ul className="space-y-3">
           {events.map((e) => (
             <Surface as="li" key={e.id} padding="sm" className="min-w-0">
-              <div className="flex min-w-0 items-start justify-between gap-3">
-                <p className="min-w-0 flex-1 break-words text-sm font-medium text-warm-900 [overflow-wrap:anywhere]">{e.title}</p>
+              {/* flex-wrap: two pills held beside the title left it ~170px on
+                  a phone; now they drop under a long title instead. */}
+              <div className="flex min-w-0 flex-wrap items-start justify-between gap-x-3 gap-y-1">
+                <p className="min-w-0 flex-1 basis-48 break-words text-sm font-medium text-warm-900 [overflow-wrap:anywhere]">{e.title}</p>
                 <div className="flex shrink-0 items-center gap-2">
                   <SportBadge sport={normalizeSport(e.sport)} />
                   <StatusPill tone={severityTone(e.severity)} dot size="sm">
@@ -422,8 +424,11 @@ export default async function FingerprintDetailPage({
               </p>
               <EventDetailLine source={e.source} feature={e.feature} metadata={e.metadata} />
               {e.user_id ? (
-                <span className="inline-flex items-center gap-1.5">
-                  <Link href={`/admin/users/${e.user_id}`} className="text-xs text-accent-700 underline">
+                <span className="inline-flex max-w-full flex-wrap items-center gap-1.5">
+                  <Link
+                    href={`/admin/users/${e.user_id}`}
+                    className="inline-flex min-w-0 items-center break-all text-xs text-accent-700 underline [@media(pointer:coarse)]:min-h-11"
+                  >
                     {e.user_email ?? e.user_id}
                   </Link>
                   {extractUserIdUnverified(e.metadata) ? (
@@ -458,7 +463,14 @@ export default async function FingerprintDetailPage({
 
   return (
     <div className="space-y-4">
-      <Link href="/admin/errors" className="text-xs text-warm-500 underline">← Errors</Link>
+      {/* "Incidents", matching the tab this returns to (admin-nav.ts renamed
+          it from Errors); 44px tall so it is a real target on a phone. */}
+      <Link
+        href="/admin/errors"
+        className="inline-flex items-center text-body-sm text-warm-600 underline [@media(pointer:coarse)]:min-h-11"
+      >
+        ← Incidents
+      </Link>
       <h1 className="break-words font-fw-mono text-lg text-warm-900 [overflow-wrap:anywhere]">fingerprint {fingerprint}</h1>
       <PanelBoundary title="Fingerprint detail" skeleton={<PanelPageSkeleton stats={3} rows={4} />}>
         <Body />

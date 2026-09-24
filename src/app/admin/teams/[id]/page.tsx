@@ -77,13 +77,15 @@ function GraphiteStat({
   label,
   value,
   tone = 'default',
+  className,
 }: {
   label: string;
   value: ReactNode;
   tone?: 'default' | 'danger';
+  className?: string;
 }) {
   return (
-    <div className="flex h-full flex-col gap-1 rounded-fw-md bg-surface-sunken p-4">
+    <div className={cn('flex h-full min-w-0 flex-col gap-1 rounded-fw-md bg-surface-sunken p-3 sm:p-4', className)}>
       <span
         className={cn(
           'font-fw-mono text-2xl font-bold tabular-nums',
@@ -92,7 +94,10 @@ function GraphiteStat({
       >
         {value}
       </span>
-      <span className="text-xs uppercase tracking-widest text-warm-500">{label}</span>
+      {/* tracking-wider on a phone: half of 375px minus padding is ~118px, and
+          a single uppercase word like ACKNOWLEDGED at tracking-widest is
+          already ~110px — one more letter and it overflows the tile. */}
+      <span className="break-words text-xs uppercase tracking-wider text-warm-500 sm:tracking-widest">{label}</span>
     </div>
   );
 }
@@ -187,7 +192,9 @@ async function TeamDetailBody({ teamId }: { teamId: string }) {
                   content size. Long team names would otherwise just push
                   the health pill/grade badge onto their own row instead of
                   truncating. */}
-              <h1 className="min-w-0 truncate text-xl font-semibold text-warm-900">{team.name}</h1>
+              <h1 className="min-w-0 break-words text-xl font-semibold text-warm-900 [overflow-wrap:anywhere] sm:truncate">
+                {team.name}
+              </h1>
               <StatusPill tone={HEALTH_TONE[health]} dot size="sm">
                 {health}
               </StatusPill>
@@ -206,7 +213,7 @@ async function TeamDetailBody({ teamId }: { teamId: string }) {
               </span>
               <Link
                 href={`/admin/thread/team/${teamId}`}
-                className="text-xs text-accent-700 underline-offset-2 hover:underline"
+                className="inline-flex items-center text-xs text-accent-700 underline-offset-2 hover:underline [@media(pointer:coarse)]:min-h-11"
               >
                 View journey →
               </Link>
@@ -221,7 +228,11 @@ async function TeamDetailBody({ teamId }: { teamId: string }) {
                 {coaches.map((c) => {
                   const disambiguator = buildCoachDisambiguator(c, coaches);
                   return (
-                    <Link key={c.id} href={c.href} className="text-accent-700 underline-offset-2 hover:underline">
+                    <Link
+                      key={c.id}
+                      href={c.href}
+                      className="inline-flex items-center text-accent-700 underline-offset-2 hover:underline [@media(pointer:coarse)]:min-h-11"
+                    >
                       {coachDisplayName(c)}
                       {disambiguator ? ` (${disambiguator})` : ''}
                       {c.isPrimary ? ' (primary)' : ''}
@@ -277,7 +288,11 @@ async function TeamDetailBody({ teamId }: { teamId: string }) {
           <GraphiteStat label="Rounds 30d" value={rounds30d} />
           <GraphiteStat label="Active / roster" value={`${activeCount}/${roster.length}`} />
           <GraphiteStat label="Logins 30d" value={logins30d} />
+          {/* Full width on a phone: a date-and-time in `text-2xl` inside half
+              of 375px wrapped into a three-line column, and as the fifth of
+              five tiles it left a ragged half-row anyway. */}
           <GraphiteStat
+            className="col-span-2 md:col-span-1"
             label="Last activity"
             value={teamLastActivity ? <LocalTime iso={teamLastActivity} variant="datetime" /> : 'never'}
           />
@@ -336,7 +351,7 @@ async function TeamDetailBody({ teamId }: { teamId: string }) {
                         {r.playerName ?? 'Unknown player'}
                       </span>
                     )}
-                    <span className="text-xs text-warm-500">
+                    <span className="break-words text-xs text-warm-500">
                       {r.courseName ?? 'no course'} · hole {r.currentHole ?? '—'}
                     </span>
                     <span className="font-fw-mono text-xs tabular-nums text-warm-500">
@@ -403,7 +418,9 @@ async function TeamDetailBody({ teamId }: { teamId: string }) {
         <div className="flex flex-wrap items-center justify-between gap-2">
           <SectionLabel rule={false}>Team errors</SectionLabel>
           {errorHealth.worstSeverity ? (
-            <span className="flex items-center gap-2 text-xs text-warm-500">
+            // Wraps: the top signature is an error TITLE, and in a no-wrap
+            // flex row a long one ran straight past the card's right edge.
+            <span className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-xs text-warm-500">
               Worst:
               <StatusPill tone={ERROR_SEVERITY_TONE[errorHealth.worstSeverity] ?? 'neutral'} size="sm">
                 {errorHealth.worstSeverity}
@@ -411,7 +428,10 @@ async function TeamDetailBody({ teamId }: { teamId: string }) {
               {errorHealth.topSignature ? (
                 <>
                   · Top signature:{' '}
-                  <Link href={errorHealth.topSignature.href} className="text-accent-700 hover:underline">
+                  <Link
+                    href={errorHealth.topSignature.href}
+                    className="min-w-0 break-words text-accent-700 [overflow-wrap:anywhere] hover:underline"
+                  >
                     {errorHealth.topSignature.title} ({errorHealth.topSignature.occurrences}×)
                   </Link>
                 </>
@@ -498,7 +518,10 @@ export default async function TeamDetailPage({ params }: { params: Promise<{ id:
 
   return (
     <div className="space-y-4">
-      <Link href="/admin/teams" className="text-xs text-warm-500 underline">
+      <Link
+        href="/admin/teams"
+        className="inline-flex items-center text-xs text-warm-600 underline [@media(pointer:coarse)]:min-h-11"
+      >
         ← Teams
       </Link>
       <PanelBoundary title="Team detail" skeleton={<PanelPageSkeleton rows={8} />}>

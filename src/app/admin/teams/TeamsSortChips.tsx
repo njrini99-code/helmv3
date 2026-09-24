@@ -20,9 +20,23 @@ export interface TeamsSortChip {
  */
 export function TeamsSortChips({ chips }: { chips: readonly TeamsSortChip[] }) {
   return (
-    <nav className="flex flex-wrap gap-2" aria-label="Sort teams">
+    // One horizontally-scrolling row on a phone (its own scroller — never the
+    // page's), wrapping from `sm` up. `py-1` keeps the focus ring inside the
+    // scroller's clip box. Pills reach 44px on touch, matching Fairway
+    // Button's own coarse-pointer bump.
+    <nav
+      className="-mx-1 flex min-w-0 gap-2 overflow-x-auto px-1 py-1 [scrollbar-width:none] sm:flex-wrap sm:overflow-visible [&::-webkit-scrollbar]:hidden"
+      aria-label="Sort teams"
+    >
       {chips.map((chip) => (
-        <FilterPillLink key={chip.key} href={chip.href} size="sm" showCheck={false} selected={chip.selected}>
+        <FilterPillLink
+          key={chip.key}
+          href={chip.href}
+          size="sm"
+          showCheck={false}
+          selected={chip.selected}
+          className="shrink-0 [@media(pointer:coarse)]:min-h-11"
+        >
           {chip.label}
         </FilterPillLink>
       ))}

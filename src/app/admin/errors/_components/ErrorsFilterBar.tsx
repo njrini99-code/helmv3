@@ -69,7 +69,7 @@ export function ErrorsFilterBar({
       className="group rounded-fw-md border border-warm-200 bg-surface"
     >
       <summary className="flex cursor-pointer list-none flex-wrap items-center gap-x-3 gap-y-2 px-3 py-2.5 [&::-webkit-details-marker]:hidden">
-        <span className="flex items-center gap-1.5 text-body-sm font-semibold text-warm-900">
+        <span className="flex min-h-8 items-center gap-1.5 text-body-sm font-semibold text-warm-900">
           <ChevronRight size={14} aria-hidden className="transition-transform group-open:rotate-90 motion-reduce:transition-none" />
           Filters
         </span>
@@ -84,7 +84,7 @@ export function ErrorsFilterBar({
                 href={filter.clearHref}
                 onClick={(event) => event.stopPropagation()}
                 aria-label={`Clear ${filter.label}: ${filter.value}`}
-                className="inline-flex min-h-8 items-center gap-1 rounded-full bg-warm-900 px-2.5 text-caption text-warm-50 hover:bg-warm-800"
+                className="inline-flex min-h-8 max-w-full items-center gap-1 rounded-full bg-warm-900 px-2.5 text-caption text-warm-50 hover:bg-warm-800 [@media(pointer:coarse)]:min-h-11 [@media(pointer:coarse)]:px-3"
               >
                 <span className="text-warm-300">{filter.label}</span>
                 <span className="font-medium">{filter.value}</span>
@@ -94,7 +94,7 @@ export function ErrorsFilterBar({
             <Link
               href={clearAllHref}
               onClick={(event) => event.stopPropagation()}
-              className="text-caption text-accent-700 underline"
+              className="inline-flex items-center px-1 text-caption text-accent-700 underline [@media(pointer:coarse)]:min-h-11"
             >
               Clear all
             </Link>
@@ -109,7 +109,7 @@ export function ErrorsFilterBar({
               <p className="text-body-sm font-medium text-warm-800">{group.label}</p>
               <p className="text-caption leading-4 text-warm-500">{group.hint}</p>
             </div>
-            <div className="flex flex-wrap gap-1.5">
+            <div className="flex flex-wrap gap-2 sm:gap-1.5">
               {group.options.map((option) => (
                 <FilterPill
                   key={option.value}
@@ -118,7 +118,10 @@ export function ErrorsFilterBar({
                   selected={option.selected}
                   title={option.description}
                   onClick={() => router.push(option.href)}
-                  className={cn(option.selected && 'font-semibold')}
+                  // FilterPill `sm` is 30px — under the 44px phone tap floor.
+                  // cn() is tailwind-merge, so this overrides its min-height
+                  // below `sm` and restores the compact pill above it.
+                  className={cn('[@media(pointer:coarse)]:min-h-11', option.selected && 'font-semibold')}
                 >
                   {option.label}
                 </FilterPill>

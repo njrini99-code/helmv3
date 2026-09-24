@@ -68,13 +68,13 @@ export function TracerPlayerList({
                   {i === 0 && <span aria-hidden className="mb-1 block h-[2px] w-7 rounded-full bg-accent-500" />}
                   <span className="block truncate text-warm-900">{playerName(p)}</span>
                 </span>
-                <span className="font-fw-mono text-xs tabular-nums text-warm-600">
+                <span className="whitespace-nowrap font-fw-mono text-xs tabular-nums text-warm-600">
                   {p.completed_rounds}/{p.total_rounds} completed
                 </span>
-                <span className="font-fw-mono text-xs tabular-nums text-warm-600">
+                <span className="whitespace-nowrap font-fw-mono text-xs tabular-nums text-warm-600">
                   {p.in_progress_rounds} in-progress · {p.draft_rounds} draft
                 </span>
-                <span className="font-fw-mono text-xs tabular-nums text-warm-500">
+                <span className="whitespace-nowrap font-fw-mono text-xs tabular-nums text-warm-500">
                   {p.last_activity ? <LocalTime iso={p.last_activity} variant="datetime" /> : 'never'}
                 </span>
                 <ChevronRight size={14} className="shrink-0 text-warm-300" aria-hidden />
@@ -152,7 +152,7 @@ function PlayerRoundsList({ playerId, rounds }: { playerId: string; rounds: Trac
                     {round.errors.length} issue{round.errors.length === 1 ? '' : 's'}
                   </span>
                 ) : null}
-                <span className="font-fw-mono text-xs tabular-nums text-warm-500">
+                <span className="whitespace-nowrap font-fw-mono text-xs tabular-nums text-warm-500">
                   {round.round_date ? <LocalTime iso={round.round_date} variant="datetime" /> : 'no date'}
                 </span>
                 <ChevronDown

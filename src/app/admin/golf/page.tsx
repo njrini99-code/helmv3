@@ -17,6 +17,7 @@ import { TeamCommandCard } from '../_components/TeamCommandCard';
 import { PlayerWatchlist } from '../_components/PlayerWatchlist';
 import { LocalTime } from '../_components/LocalTime';
 import { AutoRefresh } from '../_components/AutoRefresh';
+import { DetailsDisclosure, TabHeader } from '../_components/TabHeader';
 import { FeatureHealthRollup } from '../_components/FeatureHealthRollup';
 import { honestRoundsDelta } from './honest-rounds-delta';
 import { parseView, type AdminViewOf } from '@/lib/admin/views';
@@ -132,14 +133,6 @@ async function GolfBody() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <KeyPanelRule />
-        <p className="text-xs font-semibold uppercase tracking-widest text-warm-500">Golf command center</p>
-        <h2 className="mt-2 text-h3 font-semibold tracking-normal text-warm-900 md:text-2xl">
-          Team-by-team, player-by-player visibility
-        </h2>
-      </div>
-
       <InlineNotice tone="warning" title={`Includes ${DEMO_TEAM_IDS.size} demo teams`}>
         {demoRoundsThisWeek} of {r.roundsThisWeek} rounds this week come from seed/demo teams — the counts on this
         page are real, they just aren&rsquo;t all live customers yet.
@@ -202,14 +195,14 @@ async function GolfBody() {
             </h3>
             <ul className="divide-y divide-warm-200/60 text-sm">
               <li className="flex items-center justify-between gap-3 py-2">
-                <span className="text-warm-700">Coaches onboarded</span>
-                <span className="font-fw-mono text-xs tabular-nums text-warm-600">
+                <span className="min-w-0 text-warm-700">Coaches onboarded</span>
+                <span className="shrink-0 whitespace-nowrap font-fw-mono text-xs tabular-nums text-warm-600">
                   {ratioLabel(u.coachesOnboarded, u.totalCoaches) ?? 'no coaches yet'}
                 </span>
               </li>
               <li className="flex items-center justify-between gap-3 py-2">
-                <span className="text-warm-700">Players onboarded</span>
-                <span className="font-fw-mono text-xs tabular-nums text-warm-600">
+                <span className="min-w-0 text-warm-700">Players onboarded</span>
+                <span className="shrink-0 whitespace-nowrap font-fw-mono text-xs tabular-nums text-warm-600">
                   {ratioLabel(u.playersOnboarded, u.totalPlayers) ?? 'no players yet'}
                 </span>
               </li>
@@ -253,8 +246,8 @@ async function GolfBody() {
               const pair: FeatureCountPair = adoption[key];
               return (
                 <li key={key} className="flex items-center justify-between gap-3 py-2 sm:border-b sm:border-warm-200/60">
-                  <span className="text-warm-700">{label}</span>
-                  <span className="font-fw-mono text-xs tabular-nums text-warm-600">
+                  <span className="min-w-0 flex-1 text-warm-700">{label}</span>
+                  <span className="shrink-0 whitespace-nowrap font-fw-mono text-xs tabular-nums text-warm-600">
                     <span className="font-semibold text-warm-900">{pair.total}</span> total ·{' '}
                     {pair.last30d} in 30d
                   </span>
@@ -311,13 +304,18 @@ async function GolfBody() {
             <TeamHealthTable teams={tab.teams} />
           )}
         </div>
-        <p className="mt-2 text-xs text-warm-500">
-          Errors 7d counts an incident for a team when{' '}
-          <span className="font-fw-mono">admin_events.team_id</span> matches <em>or</em> the event&rsquo;s{' '}
-          <span className="font-fw-mono">user_id</span> is on that team&rsquo;s active roster or coaching
-          staff. A 0 here is a real 0. Someone on two teams credits the same incident to both — there is no
-          field saying which team they were acting for, and picking one would under-report the other.
-        </p>
+        {/* The attribution rule is reference detail, not something to re-read
+            on every visit — a Details disclosure keeps it one tap away without
+            pushing the team cards below it down a phone screen. */}
+        <DetailsDisclosure className="mt-2">
+          <p>
+            Errors 7d counts an incident for a team when{' '}
+            <span className="font-fw-mono">admin_events.team_id</span> matches <em>or</em> the event&rsquo;s{' '}
+            <span className="font-fw-mono">user_id</span> is on that team&rsquo;s active roster or coaching
+            staff. A 0 here is a real 0. Someone on two teams credits the same incident to both — there is no
+            field saying which team they were acting for, and picking one would under-report the other.
+          </p>
+        </DetailsDisclosure>
       </Surface>
 
       {/* Team command map + watchlist + error-trace hooks — golf's parity
@@ -348,14 +346,14 @@ async function GolfBody() {
             <div className="mt-4 flex flex-wrap gap-2">
               <Link
                 href="/admin/errors?sport=golf&window=168"
-                className="inline-flex items-center gap-2 rounded-full border border-warm-200 bg-surface-sunken px-3 py-1.5 text-xs font-medium text-warm-800 hover:bg-surface"
+                className="inline-flex min-h-11 items-center gap-2 rounded-full border border-warm-200 bg-surface-sunken px-4 py-2 text-xs font-medium text-warm-800 hover:bg-surface"
               >
                 <RadioTower size={14} aria-hidden />
                 Open golf errors
               </Link>
               <Link
                 href="/admin/users?sport=golf&attention=watch"
-                className="inline-flex items-center gap-2 rounded-full border border-warm-200 bg-surface-sunken px-3 py-1.5 text-xs font-medium text-warm-800 hover:bg-surface"
+                className="inline-flex min-h-11 items-center gap-2 rounded-full border border-warm-200 bg-surface-sunken px-4 py-2 text-xs font-medium text-warm-800 hover:bg-surface"
               >
                 <Activity size={14} aria-hidden />
                 Open launch watchlist
@@ -399,7 +397,7 @@ async function GolfBody() {
                 {ch.insightEffectiveness.map((row) => (
                   <li key={row.insight_type} className="flex items-center justify-between gap-3 py-2">
                     <span className="min-w-0 flex-1 truncate text-warm-800">{row.insight_type}</span>
-                    <span className="font-fw-mono text-xs tabular-nums text-warm-600">
+                    <span className="shrink-0 whitespace-nowrap font-fw-mono text-xs tabular-nums text-warm-600">
                       {row.effectiveness_score != null
                         ? new Intl.NumberFormat(undefined, PERCENT_FORMAT).format(row.effectiveness_score)
                         : '—'}
@@ -423,7 +421,7 @@ async function GolfBody() {
                 {ch.modelPerformance.map((row) => (
                   <li key={row.model_type} className="flex items-center justify-between gap-3 py-2">
                     <span className="min-w-0 flex-1 truncate text-warm-800">{row.model_type}</span>
-                    <span className="font-fw-mono text-xs tabular-nums text-warm-600">
+                    <span className="shrink-0 whitespace-nowrap font-fw-mono text-xs tabular-nums text-warm-600">
                       {row.accuracy_rate != null
                         ? new Intl.NumberFormat(undefined, PERCENT_FORMAT).format(row.accuracy_rate)
                         : '—'}{' '}
@@ -504,6 +502,7 @@ export default async function GolfAdminPage({
   return (
     <div className="space-y-6">
       <AutoRefresh />
+      <TabHeader title="Golf" />
       <ViewRail
         host="/admin/golf"
         active={view}

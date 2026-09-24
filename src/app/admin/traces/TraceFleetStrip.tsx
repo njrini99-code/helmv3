@@ -78,7 +78,7 @@ export function TraceFleetStrip({ traces }: { traces: readonly FlightTraceRun[] 
       <div className="mt-2 grid gap-4 sm:grid-cols-2">
         {/* Axis 1 — how much of the pipeline is instrumented. */}
         <div className="rounded-fw-md bg-surface-sunken p-3">
-          <p className="text-eyebrow font-semibold uppercase tracking-widest text-warm-400">
+          <p className="text-eyebrow font-semibold uppercase tracking-widest text-warm-500">
             Instrumentation coverage
           </p>
           <div className="mt-2 flex items-start gap-5">
@@ -105,7 +105,7 @@ export function TraceFleetStrip({ traces }: { traces: readonly FlightTraceRun[] 
 
         {/* Axis 2 — whether the work succeeded. Counted separately. */}
         <div className="rounded-fw-md bg-surface-sunken p-3">
-          <p className="text-eyebrow font-semibold uppercase tracking-widest text-warm-400">Outcome</p>
+          <p className="text-eyebrow font-semibold uppercase tracking-widest text-warm-500">Outcome</p>
           <div className="mt-2 flex items-start gap-5">
             <Figure value={fleet.succeeded.toLocaleString()} label="succeeded" tone="success" />
             <Figure

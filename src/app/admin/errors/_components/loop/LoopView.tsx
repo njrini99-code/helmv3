@@ -54,7 +54,7 @@ function ThroughputStep({
 }) {
   return (
     <div className="min-w-0 flex-1 rounded-fw-md bg-surface-sunken p-3">
-      <p className="text-eyebrow font-semibold uppercase tracking-widest text-warm-400">{label}</p>
+      <p className="text-eyebrow font-semibold uppercase tracking-widest text-warm-500">{label}</p>
       {count === null ? (
         <p className="mt-1 text-sm font-semibold text-fw-warning-ink">unknown</p>
       ) : (

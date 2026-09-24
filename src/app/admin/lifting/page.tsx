@@ -6,6 +6,7 @@ import { PanelPageSkeleton } from '../_components/PanelSkeletons';
 import { PanelNoData } from '../_components/PanelStates';
 import { KpiTile } from '../_components/KpiTile';
 import { AutoRefresh } from '../_components/AutoRefresh';
+import { DetailsDisclosure, TabHeader } from '../_components/TabHeader';
 import { LocalTime } from '../_components/LocalTime';
 import { parseView, type AdminViewOf } from '@/lib/admin/views';
 import { ViewRail } from '../_components/ViewRail';
@@ -14,13 +15,6 @@ import { SectionLabel } from '../_components/SectionLabel';
 
 export const dynamic = 'force-dynamic';
 
-// Dateline rule — replaces the retired border-l-2 "key panel" left-edge
-// stripe. Chrome, not a status signal: a helm-green h-[2px] w-7 rounded-full
-// rule above the card title.
-function KeyPanelRule() {
-  return <span aria-hidden className="mb-3 block h-[2px] w-7 rounded-full bg-accent-500" />;
-}
-
 const SPORT_TONE: Record<string, 'success' | 'warning' | 'neutral'> = {
   baseball: 'neutral',
   golf: 'neutral',
@@ -28,16 +22,21 @@ const SPORT_TONE: Record<string, 'success' | 'warning' | 'neutral'> = {
 
 function SessionRow({ session }: { session: LiftingSessionFeedRow }) {
   const isDone = session.status === 'completed';
+  // Two lines, not a wrapping flex row: athlete + status on top (the pill
+  // never shrinks), then ONE fact line that wraps as prose. The old layout
+  // dropped the timestamp+pill cluster to its own line at 375px, where the
+  // truncated org/sport line had already lost the scheduled date.
   return (
-    <div className="flex flex-wrap items-center justify-between gap-3 py-3">
-      <div className="min-w-0">
-        <p className="truncate text-sm font-medium text-warm-900">{session.athleteName}</p>
-        <p className="truncate font-fw-mono text-xs text-warm-500">
-          {session.orgName} · {session.sport} · scheduled {session.scheduledDate}
-        </p>
+    <div className="py-3">
+      <div className="flex items-start justify-between gap-3">
+        <p className="min-w-0 flex-1 break-words text-sm font-medium text-warm-900">{session.athleteName}</p>
+        <StatusPill tone={isDone ? 'success' : SPORT_TONE[session.sport] ?? 'neutral'} dot size="sm" className="shrink-0">
+          {session.status}
+        </StatusPill>
       </div>
-      <div className="flex items-center gap-3">
-        <span className="font-fw-mono text-xs tabular-nums text-warm-500">
+      <p className="mt-0.5 break-words font-fw-mono text-xs leading-5 text-warm-500 [overflow-wrap:anywhere]">
+        {session.orgName} · {session.sport} · scheduled {session.scheduledDate} ·{' '}
+        <span className="whitespace-nowrap tabular-nums">
           {session.completedAt ? (
             <>
               done <LocalTime iso={session.completedAt} variant="datetime" fallback="—" />
@@ -48,10 +47,7 @@ function SessionRow({ session }: { session: LiftingSessionFeedRow }) {
             </>
           )}
         </span>
-        <StatusPill tone={isDone ? 'success' : SPORT_TONE[session.sport] ?? 'neutral'} dot size="sm">
-          {session.status}
-        </StatusPill>
-      </div>
+      </p>
     </div>
   );
 }
@@ -62,18 +58,20 @@ async function LiftingBody() {
 
   return (
     <div className="space-y-6">
-      <Surface padding="sm">
-        <KeyPanelRule />
-        <p className="text-xs font-semibold uppercase tracking-widest text-warm-500">Lift Lab command center</p>
-        <h2 className="mt-2 text-h3 font-semibold tracking-normal text-warm-900 md:text-2xl">
-          Cross-sport strength program activity
-        </h2>
-        <p className="mt-2 hidden max-w-3xl text-sm leading-6 text-warm-600 md:block">
-          The third Helm product — helm_lifting_* is genuinely cross-sport (its own `sport` column per row, not a
-          golf_/baseball_ table prefix), so every number below is platform-wide, not filtered to one app. The golf and
-          baseball tabs each show their own sport-scoped Lift Lab slice; this is the whole picture.
-        </p>
-      </Surface>
+      {/* Was a second masthead card (eyebrow + tagline + a desktop-only
+          paragraph). The tab's one header is the TabHeader above the rail;
+          the one fact a reader needs — these numbers are platform-wide — is
+          stated here, and the reason is one tap away on every screen. */}
+      <div>
+        <p className="text-body-sm text-warm-600">Platform-wide: every sport&apos;s Lift Lab activity, not one app&apos;s.</p>
+        <DetailsDisclosure>
+          <p>
+            The third Helm product — helm_lifting_* is genuinely cross-sport (its own `sport` column per row, not a
+            golf_/baseball_ table prefix), so every number below is platform-wide, not filtered to one app. The golf and
+            baseball tabs each show their own sport-scoped Lift Lab slice; this is the whole picture.
+          </p>
+        </DetailsDisclosure>
+      </div>
 
       {lift.allSessionsAreDemoOrgs && (
         <InlineNotice tone="warning" title="Every session below is seed/demo data">
@@ -145,6 +143,7 @@ export default async function LiftingAdminPage({
   return (
     <div className="space-y-6">
       <AutoRefresh />
+      <TabHeader title="Lift Lab" />
       <ViewRail
         host="/admin/lifting"
         active={view}

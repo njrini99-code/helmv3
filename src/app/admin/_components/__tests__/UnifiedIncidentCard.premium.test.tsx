@@ -72,6 +72,19 @@ describe('UnifiedIncidentCard — Phase 1 additions', () => {
     expect(screen.queryByText('raw description a')).not.toBeInTheDocument();
   });
 
+  it('drops the "signature unavailable" placeholder line instead of printing it on every card', () => {
+    const presentation: IncidentPresentation = {
+      title: 'An unexpected error occurred',
+      operationContext: 'Golf > Intelligence Hub',
+      technicalSignature: 'signature unavailable',
+      resolvedBy: 'generic',
+      matchedRule: 'generic-fallback',
+    };
+    render(<UnifiedIncidentCard incident={baseIncident('a')} series={null} presentation={presentation} />);
+    expect(screen.queryByText('signature unavailable')).not.toBeInTheDocument();
+    expect(screen.getByText('Golf > Intelligence Hub')).toBeInTheDocument();
+  });
+
   it('renders a hatched "unknown" release relationship when the prop is explicitly null, not omitted', () => {
     render(<UnifiedIncidentCard incident={baseIncident('a')} series={null} releaseRelationship={null} />);
     const el = screen.getByText('UNKNOWN');

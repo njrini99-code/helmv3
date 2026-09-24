@@ -67,14 +67,19 @@ export function AffectedPeoplePanel({
                       that carried an email alone renders as plain text rather
                       than a link that cannot land. */}
                   {person.href ? (
-                    <Link href={person.href} className="text-body-sm text-warm-900 underline">
+                    <Link
+                      href={person.href}
+                      className="inline-flex items-center break-words text-body-sm text-warm-900 underline [overflow-wrap:anywhere] [@media(pointer:coarse)]:min-h-11"
+                    >
                       {person.name}
                     </Link>
                   ) : (
-                    <span className="text-body-sm text-warm-900">{person.name}</span>
+                    <span className="break-words text-body-sm text-warm-900 [overflow-wrap:anywhere]">{person.name}</span>
                   )}
+                  {/* Its own line, and breakable: inline beside the name, an
+                      unspaced address ran past the card's right edge. */}
                   {person.email && person.email !== person.name ? (
-                    <span className="ml-2 font-fw-mono text-caption text-warm-500">
+                    <span className="block break-all font-fw-mono text-caption text-warm-500">
                       {person.email}
                     </span>
                   ) : null}

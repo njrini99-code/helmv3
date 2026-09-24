@@ -75,7 +75,7 @@ function EventBody({ event }: { event: ChangeEvent }) {
           {KIND_LABEL[event.kind]}
         </span>
         {event.ref ? (
-          <span className="font-fw-mono text-caption text-warm-400">{event.ref}</span>
+          <span className="font-fw-mono text-caption text-warm-500">{event.ref}</span>
         ) : null}
       </div>
       <p className="break-words text-body-sm font-semibold leading-snug text-warm-900 [overflow-wrap:anywhere]">
@@ -94,7 +94,7 @@ function EventRow({ event, isLast }: { event: ChangeEvent; isLast: boolean }) {
   return (
     <li className="relative flex gap-3">
       <div className="flex w-14 shrink-0 flex-col items-end pt-3.5">
-        <span className="font-fw-mono text-caption tabular-nums text-warm-400">
+        <span className="font-fw-mono text-caption tabular-nums text-warm-500">
           <LocalTime iso={event.at} variant="time" />
         </span>
       </div>
@@ -151,7 +151,7 @@ export function ChangeTimeline({ snapshot }: { snapshot: ChangeTimelineSnapshot 
       ) : null}
 
       {snapshot.incidentsCapped ? (
-        <p className="mt-1 text-caption text-warm-400">
+        <p className="mt-1 text-caption text-warm-500">
           Incident volume exceeded this strip&rsquo;s per-refresh cap — only the most severe and
           most recent are shown.
         </p>

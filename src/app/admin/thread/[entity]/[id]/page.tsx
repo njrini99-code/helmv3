@@ -36,9 +36,17 @@ const SEVERITY_TONE: Record<string, FwStatusTone> = {
   info: 'neutral',
 };
 
-function GraphiteStat({ label, value }: { label: string; value: React.ReactNode }) {
+function GraphiteStat({
+  label,
+  value,
+  className,
+}: {
+  label: string;
+  value: React.ReactNode;
+  className?: string;
+}) {
   return (
-    <div className="flex h-full flex-col gap-1 rounded-fw-md bg-surface-sunken p-4">
+    <div className={cn('flex h-full min-w-0 flex-col gap-1 rounded-fw-md bg-surface-sunken p-4', className)}>
       <span className="font-fw-mono text-2xl font-bold tabular-nums text-warm-900">{value}</span>
       <span className="text-xs uppercase tracking-widest text-warm-500">{label}</span>
     </div>
@@ -56,7 +64,9 @@ function EventRow({ event }: { event: ThreadEvent }) {
       </span>
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-          <p className="min-w-0 flex-1 basis-full text-sm text-warm-900 sm:basis-auto">{event.title}</p>
+          <p className="min-w-0 flex-1 basis-full break-words text-sm text-warm-900 [overflow-wrap:anywhere] sm:basis-auto">
+            {event.title}
+          </p>
           {event.severity ? (
             <StatusPill tone={SEVERITY_TONE[event.severity] ?? 'neutral'} dot size="sm">
               {event.severity}
@@ -68,9 +78,11 @@ function EventRow({ event }: { event: ThreadEvent }) {
             </span>
           ) : null}
         </div>
-        {event.detail ? <p className="mt-0.5 text-xs text-warm-500">{event.detail}</p> : null}
+        {event.detail ? (
+          <p className="mt-0.5 break-words text-xs text-warm-500 [overflow-wrap:anywhere]">{event.detail}</p>
+        ) : null}
       </div>
-      <span className="shrink-0 font-fw-mono text-xs tabular-nums text-warm-400">
+      <span className="shrink-0 whitespace-nowrap font-fw-mono text-xs tabular-nums text-warm-500">
         <LocalTime iso={event.ts} variant="time" />
       </span>
     </div>
@@ -106,7 +118,9 @@ async function Body({ kind, id }: { kind: ThreadEntityKind; id: string }) {
           <div className="min-w-0">
             <span aria-hidden className="mb-3 block h-[2px] w-7 rounded-full bg-accent-500" />
             <div className="flex flex-wrap items-center gap-2">
-              <h1 className="min-w-0 truncate text-xl font-semibold text-warm-900">{header.name}</h1>
+              <h1 className="min-w-0 break-words text-xl font-semibold text-warm-900 [overflow-wrap:anywhere] sm:truncate">
+                {header.name}
+              </h1>
               <StatusPill tone={header.statusTone} dot size="sm">
                 {header.statusLabel}
               </StatusPill>
@@ -115,16 +129,21 @@ async function Body({ kind, id }: { kind: ThreadEntityKind; id: string }) {
           </div>
           <Link
             href={kind === 'team' ? `/admin/teams/${id}` : `/admin/users/${id}`}
-            className="shrink-0 text-xs text-accent-700 underline-offset-2 hover:underline"
+            className="inline-flex shrink-0 items-center text-xs text-accent-700 underline-offset-2 hover:underline [@media(pointer:coarse)]:min-h-11"
           >
             {kind === 'team' ? 'Roster & health →' : 'User detail →'}
           </Link>
         </div>
 
-        <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
+        {/* Two counts side by side on a phone, the date on its own full-width
+            row: a `text-2xl` date squeezed into a third of 375px wraps into a
+            narrow column, and three stacked full-width tiles cost a screenful
+            before the thread even starts. */}
+        <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
           <GraphiteStat label="Days in system" value={header.daysInSystem ?? '—'} />
           <GraphiteStat label="Total events" value={header.totalEvents} />
           <GraphiteStat
+            className="col-span-2 sm:col-span-1"
             label="Last event"
             value={header.lastEventAt ? <LocalTime iso={header.lastEventAt} variant="date" /> : 'never'}
           />
@@ -155,9 +174,14 @@ async function Body({ kind, id }: { kind: ThreadEntityKind; id: string }) {
           <div className="mt-2">
             {dayGroups.map((group) => (
               <div key={group.day} className="border-t border-warm-200/60 py-2 first:border-t-0">
-                <p className="sticky top-0 z-0 bg-surface py-1 font-fw-mono text-xs uppercase tracking-widest text-warm-400">
+                {/* Sticks BELOW the shell's glass top bar (the same offset
+                    GroupHeading uses): `top-0` parked this date under the top
+                    bar on a phone, so the day you were reading was hidden
+                    exactly while you scrolled through it. z-10 so the event
+                    rows scroll beneath it, not over it. */}
+                <p className="sticky top-[var(--golf-mobile-header-offset,0px)] z-10 bg-surface py-1 font-fw-mono text-xs uppercase tracking-widest text-warm-500">
                   <LocalTime iso={`${group.day}T12:00:00Z`} variant="date" />
-                  <span className="ml-2 text-warm-300">· {group.events.length} event{group.events.length === 1 ? '' : 's'}</span>
+                  <span className="ml-2 text-warm-500">· {group.events.length} event{group.events.length === 1 ? '' : 's'}</span>
                 </p>
                 <div className="divide-y divide-warm-200/40">
                   {group.events.map((event) => (
@@ -194,7 +218,10 @@ export default async function EntityThreadPage({
 
   return (
     <div className="space-y-4">
-      <Link href={entity === 'team' ? '/admin/teams' : '/admin/users'} className="text-xs text-warm-500 underline">
+      <Link
+        href={entity === 'team' ? '/admin/teams' : '/admin/users'}
+        className="inline-flex items-center text-xs text-warm-600 underline [@media(pointer:coarse)]:min-h-11"
+      >
         ← {entity === 'team' ? 'Teams pulse' : 'Users'}
       </Link>
       <PanelBoundary title="Thread" skeleton={<PanelPageSkeleton stats={3} rows={8} />}>

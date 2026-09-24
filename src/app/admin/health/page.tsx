@@ -3,7 +3,7 @@ import { fetchFeatureHealth, summarizeFeatureHealth } from '@/lib/admin/data/fea
 import type { FeatureHealth } from '@/lib/admin/data/feature-health';
 import { fetchFeatureHealthDetail } from '@/lib/admin/data/feature-health-detail';
 import { fetchAiAvailability } from '@/lib/admin/data/ai-availability';
-import { Eyebrow, Skeleton } from '@/components/fairway';
+import { Skeleton } from '@/components/fairway';
 import { PanelBoundary } from '../_components/PanelBoundary';
 import { PanelStale } from '../_components/PanelStates';
 import { AutoRefresh } from '../_components/AutoRefresh';
@@ -14,6 +14,8 @@ import { FeatureHealthDetailPanel } from './_components/FeatureHealthDetailPanel
 import { BudgetsView } from './_components/BudgetsView';
 import { HeartbeatsView } from './_components/HeartbeatsView';
 import { ViewRail } from '../_components/ViewRail';
+import { SectionLabel } from '../_components/SectionLabel';
+import { DetailsDisclosure, TabHeader } from '../_components/TabHeader';
 import { parseView, type AdminViewOf } from '@/lib/admin/views';
 
 export const dynamic = 'force-dynamic';
@@ -110,7 +112,7 @@ export default async function FeatureHealthPage({
 
     return (
       <>
-        <p className="font-fw-mono text-xs tabular-nums text-warm-400">
+        <p className="font-fw-mono text-xs tabular-nums text-warm-500">
           generated <LocalTime iso={generatedAt} variant="time" />
         </p>
         <div className="mt-4">
@@ -195,20 +197,12 @@ export default async function FeatureHealthPage({
   return (
     <div className="space-y-4">
       <AutoRefresh />
-      <div>
-        <Eyebrow as="p" tone="accent">
-          Feature Health
-        </Eyebrow>
-        {/* Mobile Doctrine rule 2: eyebrow + long title + paragraph is a
-            desktop cover treatment. Below `md` the headline condenses to
-            text-h3 and the descriptive paragraph is dropped entirely
-            (mirrors admin/page.tsx CommandHeader and admin/baseball's
-            masthead) so the feature grid — the actual daily-loop content —
-            is reachable at 390px without scrolling past decoration first. */}
-        <h1 className="mt-1 text-h3 font-semibold text-warm-900 md:text-2xl">
-          Every GolfHelm, CoachHelm, and BaseballHelm feature, at a glance
-        </h1>
-      </div>
+      {/* One header: the tab's name as the title, and one line saying what
+          it covers. This was an accent eyebrow over a sentence-long h1 —
+          three lines of heading on a phone before the view rail, and the
+          only Bridge tab whose title was not its name (Mobile Doctrine rule
+          2: an eyebrow + long title is a desktop cover treatment). */}
+      <TabHeader title="Health" description="Every GolfHelm, CoachHelm, and BaseballHelm feature, at a glance." />
       <ViewRail
         host="/admin/health"
         active={view}
@@ -250,13 +244,15 @@ export default async function FeatureHealthPage({
               <Body />
             </PanelBoundary>
             <div>
-              <h2 className="border-b border-accent-600/25 pb-2 text-xs font-semibold uppercase tracking-widest text-warm-500">
-                Feature Health — Detail
-              </h2>
-              <p className="mt-2 hidden max-w-2xl text-sm text-warm-500 md:block">
-                Trailing-7d error/warning counts and true last-event recency per feature, straight from admin_events —
-                ranked so a feature failing right now always outranks a louder one that has already gone quiet.
-              </p>
+              <SectionLabel>Feature Health — Detail</SectionLabel>
+              {/* Was desktop-only prose (`hidden md:block`) — a phone never
+                  saw how the ranking works. One tap away on every screen now. */}
+              <DetailsDisclosure className="mt-1 max-w-2xl">
+                <p>
+                  Trailing-7d error/warning counts and true last-event recency per feature, straight from admin_events —
+                  ranked so a feature failing right now always outranks a louder one that has already gone quiet.
+                </p>
+              </DetailsDisclosure>
               <div className="mt-3">
                 <PanelBoundary title="Feature Health — Detail" skeleton={DETAIL_SKELETON}>
                   <DetailBody />

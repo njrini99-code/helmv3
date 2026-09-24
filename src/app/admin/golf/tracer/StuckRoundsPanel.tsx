@@ -99,7 +99,7 @@ export function StuckRoundsPanel({ rounds }: { rounds: readonly StuckRound[] }) 
           <li key={r.round_id} className="flex flex-wrap items-center gap-x-3 gap-y-2 py-2.5 text-sm">
             <AlertTriangle size={15} className="shrink-0 text-fw-warning-ink" aria-hidden />
             <div className="min-w-0 flex-1 basis-full sm:basis-auto">
-              <p className="truncate font-medium text-warm-900">
+              <p className="break-words font-medium text-warm-900">
                 {r.player_name}
                 {r.course_name ? ` — ${r.course_name}` : ''}
               </p>
@@ -107,10 +107,10 @@ export function StuckRoundsPanel({ rounds }: { rounds: readonly StuckRound[] }) 
                 hole {r.current_hole ?? '?'}/{r.expected_holes} · {formatStuckDuration(r.hours_stuck)} · last touched{' '}
                 <LocalTime iso={r.updated_at} variant="datetime" />
               </p>
-              {fb ? <p className="mt-0.5 text-xs text-fw-danger-ink">{fb.message}</p> : null}
+              {fb ? <p className="mt-0.5 break-words text-xs text-fw-danger-ink">{fb.message}</p> : null}
             </div>
             {confirmingId === r.round_id ? (
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <Button type="button" variant="secondary" size="sm" disabled={isPending} onClick={() => setConfirmingId(null)}>
                   Cancel
                 </Button>

@@ -361,17 +361,38 @@ describe('UnifiedIncidentCard — feature tag', () => {
 });
 
 describe('UnifiedIncidentCard — lifecycle headline and details', () => {
-  it('renders the lifecycle headline sentence on the row', () => {
+  // 2026-09-23 mobile readability pass: a routine state's headline repeated
+  // on every card, so it moved into Details (and the chip's tooltip). A state
+  // that needs an operator keeps it on the row.
+  it('keeps a routine state\'s headline off the row, in Details and the chip tooltip', () => {
+    const headline = 'Seen recently — Diagnose has not had a chance to analyse it yet.';
     render(
       <UnifiedIncidentCard
         incident={{
           ...baseIncident,
-          lifecycle: { state: 'diagnosing', headline: 'Seen recently — Diagnose has not had a chance to analyse it yet.', because: [] },
+          // Seen minutes before the board's clock, so the flow is not stalled
+          // (a stall is its own reason to put the sentence back on the row).
+          firstSeen: '2026-08-27T23:50:00Z',
+          lastSeen: '2026-08-27T23:55:00Z',
+          lifecycle: { state: 'diagnosing', headline, because: [] },
         }}
         series={null}
       />,
     );
-    expect(screen.getByText('Seen recently — Diagnose has not had a chance to analyse it yet.')).toBeInTheDocument();
+    expect(screen.queryByTestId('unified-incident-headline')).not.toBeInTheDocument();
+    expect(screen.getByText(headline).closest('details')).not.toBeNull();
+    expect(screen.getByText(LIFECYCLE_LABEL.diagnosing)).toHaveAttribute('title', headline);
+  });
+
+  it('renders the headline on the row when the state needs an operator', () => {
+    const headline = 'A fix was proven, then the fault came back.';
+    render(
+      <UnifiedIncidentCard
+        incident={{ ...baseIncident, lifecycle: { state: 'regressed', headline, because: [] } }}
+        series={null}
+      />,
+    );
+    expect(screen.getByTestId('unified-incident-headline')).toHaveTextContent(headline);
   });
 
   it('carries the error code hint, every source with its health, and the lifecycle checks in the details disclosure', () => {

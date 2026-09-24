@@ -2,8 +2,9 @@ import { GitPullRequest, ScrollText } from 'lucide-react';
 import { requireSuperAdmin } from '@/lib/admin/require-super-admin';
 import { fetchWorkLog, type PrLifecycleState } from '@/lib/admin/github-pr-timeline';
 import type { WorkArea } from '@/lib/admin/pr-body-parser';
-import { Eyebrow, Skeleton, SkeletonList, Surface, StatusPill } from '@/components/fairway';
+import { Skeleton, SkeletonList, Surface } from '@/components/fairway';
 import { PanelBoundary } from '../_components/PanelBoundary';
+import { TabHeader } from '../_components/TabHeader';
 import { PanelNoData, PanelStale } from '../_components/PanelStates';
 import { AutoRefresh } from '../_components/AutoRefresh';
 import { WorkTimeline, AREA_META, STATE_META } from './WorkTimeline';
@@ -144,27 +145,10 @@ export default async function WorkLogPage({
 
   return (
     <div className="space-y-6">
-      <div>
-        <Eyebrow as="p" tone="accent">
-          Work log
-        </Eyebrow>
-        <div className="mt-2 flex flex-wrap items-end justify-between gap-4">
-          <div className="min-w-0">
-            <h1 className="text-2xl font-semibold text-warm-900">Work log</h1>
-            <p className="mt-1 hidden max-w-3xl text-sm text-warm-600 md:block">
-              A partner-readable history of your pull requests — what broke, what shipped, and which Helm surface it touched.
-            </p>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <StatusPill tone="accent" dot size="sm">
-              PR template
-            </StatusPill>
-            <StatusPill tone="neutral" dot={false} size="sm">
-              no AI summaries
-            </StatusPill>
-          </div>
-        </div>
-      </div>
+      {/* One header. The eyebrow repeated the title, and the two feature-badge
+          pills ("PR template", "no AI summaries") restated the
+          "Where these summaries come from" disclosure in the timeline. */}
+      <TabHeader title="Work log" />
 
       <ViewRail
         host="/admin/work"

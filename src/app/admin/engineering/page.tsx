@@ -4,13 +4,15 @@ import { fetchAgentRuns } from '@/lib/admin/agent-runs/fetch';
 import { fetchMutationGateCharter, fetchContractsCharter, fetchJanitorCharter } from '@/lib/admin/engineering/charter';
 import { fetchBlastRadius } from '@/lib/admin/engineering/blast-radius';
 import { fetchRepairQuality, type RepairStayedFixed } from '@/lib/admin/engineering/work-log';
-import { Eyebrow, InlineNotice, StatusPill, Surface, Skeleton, SkeletonList, type FwStatusTone } from '@/components/fairway';
+import { InlineNotice, StatusPill, Surface, Skeleton, SkeletonList, type FwStatusTone } from '@/components/fairway';
 import { DatelineRule } from '@/components/ui/card';
 import { PanelBoundary } from '../_components/PanelBoundary';
 import { PanelNoData, PanelAllClear } from '../_components/PanelStates';
 import { AutoRefresh } from '../_components/AutoRefresh';
 import { LocalTime } from '../_components/LocalTime';
 import { SectionLabel } from '../_components/SectionLabel';
+import { FactLine } from '../_components/Row';
+import { DetailsDisclosure, TabHeader } from '../_components/TabHeader';
 
 export const dynamic = 'force-dynamic';
 
@@ -33,12 +35,14 @@ function DecisionItemRow({ item }: { item: EngineeringDecisionItem }) {
       <div className="flex flex-wrap items-center justify-between gap-2">
         <StatusPill tone={item.tone} size="sm">{item.state}</StatusPill>
         {item.ageMs != null ? (
-          <span className="text-xs text-warm-500">{Math.floor(item.ageMs / 3_600_000)}h old</span>
+          <span className="whitespace-nowrap text-xs text-warm-500">{Math.floor(item.ageMs / 3_600_000)}h old</span>
         ) : null}
       </div>
-      <p className="mt-1.5 text-sm font-medium text-text-primary">{item.headline}</p>
-      <p className="mt-0.5 text-xs text-warm-500">{item.why}</p>
-      <p className="mt-1.5 font-fw-mono text-caption text-text-tertiary">{item.evidenceCommand}</p>
+      <p className="mt-1.5 break-words text-sm font-medium text-text-primary [overflow-wrap:anywhere]">{item.headline}</p>
+      <p className="mt-0.5 break-words text-xs text-warm-500">{item.why}</p>
+      {/* A shell command is one long token — without overflow-wrap it ran past
+          the card edge at 375px. */}
+      <p className="mt-1.5 break-words font-fw-mono text-caption text-text-tertiary [overflow-wrap:anywhere]">{item.evidenceCommand}</p>
     </li>
   );
 }
@@ -115,19 +119,26 @@ async function AgentFlightRecorderBody() {
       {result.data.map((run) => (
         <li key={run.runId} className="rounded-xl border border-warm-200/70 bg-surface px-3 py-2.5">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <div className="flex items-center gap-2">
+            <div className="flex min-w-0 flex-wrap items-center gap-2">
               <StatusPill tone={RUN_STATUS_TONE[run.status] ?? 'neutral'} size="sm">{run.status}</StatusPill>
-              <span className="font-fw-mono text-xs text-text-tertiary">{run.workflow}</span>
+              <span className="min-w-0 break-words font-fw-mono text-xs text-text-tertiary [overflow-wrap:anywhere]">{run.workflow}</span>
             </div>
-            <LocalTime iso={run.startedAt} variant="datetime" />
+            <span className="whitespace-nowrap font-fw-mono text-xs tabular-nums text-warm-500">
+              <LocalTime iso={run.startedAt} variant="datetime" />
+            </span>
           </div>
-          {run.charter ? <p className="mt-1.5 text-sm text-text-primary">{run.charter}</p> : null}
-          <div className="mt-1.5 flex flex-wrap gap-3 text-xs text-warm-500">
-            {run.incidentFingerprint ? <span>incident {run.incidentFingerprint}</span> : null}
-            {run.verifierVerdict ? <span>verifier: {run.verifierVerdict}</span> : null}
-            {run.productionOutcome ? <span>production: {run.productionOutcome}</span> : null}
-            {run.confidence != null ? <span>confidence {Math.round(run.confidence * 100)}%</span> : null}
-          </div>
+          {run.charter ? <p className="mt-1.5 break-words text-sm text-text-primary">{run.charter}</p> : null}
+          {/* FactLine, not four loose spans: an incident fingerprint is a long
+              unbroken hash, and the spans had no overflow-wrap. */}
+          <FactLine
+            className="mt-1.5"
+            items={[
+              run.incidentFingerprint ? `incident ${run.incidentFingerprint}` : null,
+              run.verifierVerdict ? `verifier: ${run.verifierVerdict}` : null,
+              run.productionOutcome ? `production: ${run.productionOutcome}` : null,
+              run.confidence != null ? `confidence ${Math.round(run.confidence * 100)}%` : null,
+            ]}
+          />
         </li>
       ))}
     </ul>
@@ -149,14 +160,14 @@ async function CharterBody() {
         <p className="text-xs font-semibold uppercase tracking-widest text-warm-500">Mutation gate</p>
         {mutationGate.status === 'ok' && mutationGate.data ? (
           <div className="mt-2 space-y-1 text-sm">
-            <p>
+            <p className="break-words [overflow-wrap:anywhere]">
               Floor <span className="font-fw-mono">{mutationGate.data.floor}%</span> over{' '}
               <span className="font-fw-mono text-xs">{mutationGate.data.scope}</span>
             </p>
             {mutationGate.data.provisional ? (
               <StatusPill tone="warning" size="sm" dot={false}>PROVISIONAL floor</StatusPill>
             ) : null}
-            <p className="font-fw-mono text-caption text-text-tertiary">{mutationGate.data.evidenceCommand}</p>
+            <p className="break-words font-fw-mono text-caption text-text-tertiary [overflow-wrap:anywhere]">{mutationGate.data.evidenceCommand}</p>
           </div>
         ) : (
           <p className="mt-2 text-xs text-warm-500">{mutationGate.error ?? 'Not configured.'}</p>
@@ -168,7 +179,7 @@ async function CharterBody() {
         {contracts.status === 'ok' && contracts.data && contracts.data.length > 0 ? (
           <ul className="mt-2 space-y-1.5 text-sm">
             {contracts.data.map((c) => (
-              <li key={c.featureId}>
+              <li key={c.featureId} className="break-words [overflow-wrap:anywhere]">
                 <span className="font-medium">{c.featureId}</span>{' '}
                 <span className="text-xs text-warm-500">
                   {c.claimCount} claims{c.supersededCount > 0 ? `, ${c.supersededCount} superseded` : ''} · {c.resolvedVia}
@@ -186,7 +197,7 @@ async function CharterBody() {
         {janitor.status === 'ok' && janitor.data ? (
           <div className="mt-2 space-y-1.5 text-sm">
             {janitor.data.topFindings.slice(0, 5).map((f) => (
-              <p key={f.id} className="text-xs">
+              <p key={f.id} className="break-words text-xs [overflow-wrap:anywhere]">
                 <span className="font-fw-mono text-caption text-text-tertiary">{f.confidence}</span> {f.scope}
               </p>
             ))}
@@ -211,7 +222,7 @@ async function BlastRadiusBody({ entityId }: { entityId: string }) {
   return (
     <div className="grid gap-4 md:grid-cols-2">
       <div>
-        <p className="text-xs font-semibold uppercase tracking-widest text-warm-500">
+        <p className="break-words text-xs font-semibold uppercase tracking-widest text-warm-500 [overflow-wrap:anywhere]">
           Blast radius — <span className="font-fw-mono normal-case">{entityId}</span>
         </p>
         {result.status === 'unconfigured' ? (
@@ -232,12 +243,12 @@ async function BlastRadiusBody({ entityId }: { entityId: string }) {
             ) : null}
             <ul className="space-y-1 text-sm">
               {result.data.nodes.map((node) => (
-                <li key={`${node.id}-${node.depth}`} className="flex items-center gap-2">
-                  <StatusPill tone={node.weak ? 'neutral' : 'accent'} size="sm" dot={false}>
+                <li key={`${node.id}-${node.depth}`} className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                  <StatusPill tone={node.weak ? 'neutral' : 'accent'} size="sm" dot={false} className="shrink-0">
                     depth {node.depth} · {node.direction}
                     {node.weak ? ' (weak)' : ''}
                   </StatusPill>
-                  <span className="font-fw-mono text-xs">{node.id}</span>
+                  <span className="min-w-0 break-all font-fw-mono text-xs">{node.id}</span>
                 </li>
               ))}
               {result.data.nodes.length === 0 ? <li className="text-xs text-warm-500">No neighbors within 2 hops.</li> : null}
@@ -247,14 +258,19 @@ async function BlastRadiusBody({ entityId }: { entityId: string }) {
       </div>
       <div>
         <p className="text-xs font-semibold uppercase tracking-widest text-warm-500">Causal confidence</p>
-        <p className="mt-1 text-xs text-warm-500">
-          <code className="font-fw-mono">formatCausalConfidenceLadder</code> renders an evidence ladder
-          (&ldquo;LIKELY CAUSED BY RELEASE … confidence NN%, + evidence, − counter-evidence&rdquo;) from
-          `release-context.ts`&apos;s existing <code className="font-fw-mono">classifyReleaseRelationship</code>{' '}
-          verdict — confidence is never 1.0 from correlation alone. This panel has no live incident selected to
-          run it against yet — per-incident causal confidence renders on the incident detail view once that
-          selection exists (Phase 1). No fabricated numbers are shown here in the meantime.
-        </p>
+        {/* The state is the one line an operator needs; how the ladder is built
+            is reference detail, one tap away. */}
+        <p className="mt-1 text-sm text-warm-600">No live incident selected — no fabricated numbers shown.</p>
+        <DetailsDisclosure>
+          <p>
+            <code className="font-fw-mono">formatCausalConfidenceLadder</code> renders an evidence ladder
+            (&ldquo;LIKELY CAUSED BY RELEASE … confidence NN%, + evidence, − counter-evidence&rdquo;) from
+            `release-context.ts`&apos;s existing <code className="font-fw-mono">classifyReleaseRelationship</code>{' '}
+            verdict — confidence is never 1.0 from correlation alone. This panel has no live incident selected to
+            run it against yet — per-incident causal confidence renders on the incident detail view once that
+            selection exists (Phase 1). No fabricated numbers are shown here in the meantime.
+          </p>
+        </DetailsDisclosure>
       </div>
     </div>
   );
@@ -303,10 +319,10 @@ async function RepairQualityBody() {
       <ul className="space-y-2">
         {result.data.rows.map((row) => (
           <li key={row.number} className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-warm-200/70 bg-surface px-3 py-2">
-            <span className="min-w-0 truncate text-sm">
+            <span className="line-clamp-2 min-w-0 flex-1 basis-48 break-words text-sm [overflow-wrap:anywhere]">
               #{row.number} {row.title}
             </span>
-            <StatusPill tone={STAYED_FIXED_TONE[row.stayedFixed]} size="sm" dot={false}>
+            <StatusPill tone={STAYED_FIXED_TONE[row.stayedFixed]} size="sm" dot={false} className="shrink-0">
               {STAYED_FIXED_LABEL[row.stayedFixed]}
             </StatusPill>
           </li>
@@ -328,15 +344,10 @@ export default async function EngineeringOsPage({
   return (
     <div className="space-y-6">
       <AutoRefresh intervalMs={60_000} />
-      <div className="space-y-1">
-        <Eyebrow>Bridge Premium — Phase 5</Eyebrow>
-        <h1 className="text-h2 font-fw-display text-text-primary">Engineering OS</h1>
-        <p className="max-w-2xl text-sm text-warm-500">
-          What&apos;s waiting on a human decision, what the autonomous loop has been doing, what the charter and
-          verifier gates currently require, blast radius and causal confidence over the World Model, and whether
-          shipped repairs stayed fixed.
-        </p>
-      </div>
+      {/* One header. The "Bridge Premium — Phase 5" eyebrow was a project
+          phase, not something an operator reads, and the summary paragraph
+          restated the one-line description every section below carries. */}
+      <TabHeader title="Engineering OS" />
 
       <Surface padding="sm">
         <KeyPanelRule />

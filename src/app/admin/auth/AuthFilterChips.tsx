@@ -28,6 +28,10 @@ export function AuthFilterChips({ chips, ariaLabel }: { chips: readonly AuthFilt
           showCheck={false}
           selected={chip.selected}
           onClick={() => router.push(chip.href)}
+          // FilterPill `sm` is 30px — a mis-tap target on a phone. Coarse
+          // pointers get the 44px floor (same idiom as Fairway Button `sm`);
+          // mouse keeps the dense row.
+          className="[@media(pointer:coarse)]:min-h-11"
         >
           {chip.label}
         </FilterPill>
