@@ -35,7 +35,8 @@ import {
   type ToasterProps,
   type ExternalToast,
 } from 'sonner';
-import { CheckCircle2, Info, AlertTriangle, AlertOctagon, Loader2 } from 'lucide-react';
+import { Info, AlertTriangle, AlertOctagon, Loader2 } from 'lucide-react';
+import { SuccessCheck } from './SuccessCheck';
 import { fwHaptic } from '@/lib/fairway/haptics';
 
 /* --------------------------------------------------------------------------
@@ -89,7 +90,7 @@ export function ToastStack({ mobileBreakpointPx = 768, ...props }: ToastStackPro
       // We render our own tone icons, so disable sonner's rich colors.
       richColors={false}
       icons={{
-        success: <CheckCircle2 className="h-5 w-5 text-fw-success-ink" aria-hidden="true" />,
+        success: <SuccessCheck className="text-fw-success-ink" />,
         info: <Info className="h-5 w-5 text-text-secondary" aria-hidden="true" />,
         warning: <AlertTriangle className="h-5 w-5 text-fw-warning-ink" aria-hidden="true" />,
         error: <AlertOctagon className="h-5 w-5 text-fw-danger-ink" aria-hidden="true" />,

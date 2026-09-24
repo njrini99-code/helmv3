@@ -266,14 +266,15 @@ export function successCheckmark(reduce: boolean): {
   }
   return {
     ring: {
-      initial: { scale: 0, rotate: -45 },
-      animate: { scale: 1, rotate: 0 },
-      transition: { delay: 0.15, duration: 0.5, type: 'spring', stiffness: 200, damping: 14 },
+      initial: { scale: 0.6, opacity: 0 },
+      animate: { scale: 1, opacity: 1 },
+      // MOT-18: the whole mark lands in 260ms (was a 0.9s spring and sweep).
+      transition: { duration: 0.16, ease: [0.22, 0.61, 0.36, 1] },
     },
     path: {
       initial: { pathLength: 0, opacity: 0 },
       animate: { pathLength: 1, opacity: 1 },
-      transition: { delay: 0.4, duration: 0.4 },
+      transition: { delay: 0.08, duration: 0.18, ease: [0.22, 0.61, 0.36, 1] },
     },
   };
 }
