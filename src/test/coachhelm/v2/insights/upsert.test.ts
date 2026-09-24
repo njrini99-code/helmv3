@@ -7,10 +7,11 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 // on severity/skipSentry, which real code never exposes another way.
 vi.mock('@/lib/server-error-logger', () => ({
   logServerError: vi.fn(async () => undefined),
+  logServerEvent: vi.fn(async () => undefined),
 }));
 
 import { upsertInsight } from '@/lib/coachhelm/v2/insights/upsert';
-import { logServerError } from '@/lib/server-error-logger';
+import { logServerError, logServerEvent } from '@/lib/server-error-logger';
 import { calcConfidence, type InsightInput, type InsightEvidence } from '@/lib/coachhelm/v2/insights/types';
 
 // -----------------------------------------------------------------------------
@@ -582,6 +583,45 @@ describe('upsertInsight', () => {
         // stale evidence is NOT newer than the fresh re-read — no retry
         // write happened. The fresher evidence is never overwritten.
         expect(calls.filter((c) => c.op === 'update')).toHaveLength(1);
+      });
+
+      it('records a stale-worker backoff as info telemetry, collapsed, never on the warning board (INC 57d84dd1)', async () => {
+        // Production 2026-09-24 00:53-01:41Z: 166 unresolved `warning` rows
+        // under /admin/errors/57d84dd1 in 48 minutes, every one the designed
+        // CAS backoff with EQUAL evidence on both sides. It is the benign
+        // outcome the code comment names, so it must not reach the triage
+        // queue (warning+) or insert one row per occurrence.
+        vi.mocked(logServerError).mockClear();
+        vi.mocked(logServerEvent).mockClear();
+        const persisted = {
+          id: 'existing-equal',
+          evidence: baseEvidence({ sample_n: 138, window_end: '2026-09-17', your_value: 0.4 }),
+          metadata: {},
+          lifecycle_state: 'detected' as const,
+          updated_at: '2026-09-24T00:53:09.000Z',
+        };
+        const observed = { ...persisted, updated_at: '2026-09-24T00:53:00.000Z' };
+        const { client } = createFakeSupabase({
+          selectResults: [{ data: [observed], error: null }, { data: [persisted], error: null }],
+          updateResult: { data: [], error: null },
+        });
+
+        await upsertInsight(
+          client,
+          baseInput({ evidence: baseEvidence({ sample_n: 138, window_end: '2026-09-17', your_value: 0.4 }) }),
+        );
+
+        const staleWarnings = vi
+          .mocked(logServerError)
+          .mock.calls.filter(([message]) => String(message).includes('dropped a stale evidence write'));
+        expect(staleWarnings).toHaveLength(0);
+        const staleEvents = vi
+          .mocked(logServerEvent)
+          .mock.calls.filter(([message]) => String(message).includes('dropped a stale evidence write'));
+        expect(staleEvents).toHaveLength(1);
+        const [, context, severity] = staleEvents[0];
+        expect(severity).toBe('info');
+        expect(context).toMatchObject({ action: 'coachhelm.upsert.updateExisting.cas', skipSentry: true, durableCollapse: true });
       });
 
       it('retries once and lands the write when the incoming evidence really is newer than the fresh read', async () => {

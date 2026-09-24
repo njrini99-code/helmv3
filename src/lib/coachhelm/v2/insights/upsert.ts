@@ -54,7 +54,7 @@ import {
 } from './lifecycle-policy';
 import { getActiveGate, incrementGatedCount } from './gate-context';
 import { notifyInsightLanded } from '@/lib/notifications/insight-notifier';
-import { logServerError } from '@/lib/server-error-logger';
+import { logServerError, logServerEvent } from '@/lib/server-error-logger';
 import { describeError } from '@/lib/utils/describe-error';
 
 /**
@@ -471,7 +471,14 @@ async function updateExisting(
         );
         return existing.id;
       }
-      await logServerError(
+      // Expected, benign outcome of the CAS design itself (a losing
+      // concurrent writer backing off) — telemetry, not an incident. It was
+      // logged at 'warning', which put it on the Bridge triage queue: 166
+      // unresolved rows under /admin/errors/57d84dd1 in 48 minutes on
+      // 2026-09-24, every one with EQUAL evidence on both sides. 'info' keeps
+      // it discoverable in the admin feed without asking anyone to triage it,
+      // and durableCollapse folds a burst into one row with a count.
+      await logServerEvent(
         `upsertInsight.updateExisting: dropped a stale evidence write for insight=${existing.id} ` +
           `(incoming sample_n=${evidence.sample_n}/window_end=${evidence.window_end} is not newer than the ` +
           `already-persisted sample_n=${freshRow.evidence?.sample_n ?? 'null'}/window_end=${freshRow.evidence?.window_end ?? 'null'}; ` +
@@ -480,11 +487,10 @@ async function updateExisting(
           action: 'coachhelm.upsert.updateExisting.cas',
           featureArea: 'coachhelm',
           extra: { insightId: existing.id },
-          // Expected, benign outcome of the CAS design itself (a losing
-          // concurrent writer backing off) — not an anomaly worth paging on.
           skipSentry: true,
+          durableCollapse: true,
         },
-        'warning',
+        'info',
       );
       return existing.id;
     }
