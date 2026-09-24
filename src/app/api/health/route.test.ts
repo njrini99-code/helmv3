@@ -174,6 +174,30 @@ describe('GET /api/health — degraded (thrown exception, e.g. an abort/timeout)
     const [, ctx] = mocks.logServerError.mock.calls[0] as [string, Record<string, unknown>];
     expect(ctx).toMatchObject({ action: 'api.health', skipSentry: true });
   });
+
+  // 5725d96a asked for the same missing evidence three self-heal runs in a
+  // row (2026-09-24): how long the failing probe took, split into client
+  // setup vs the query itself, and how old the serving instance was. The
+  // row carried only `errorDetails`, so a cold start, a thawed instance and
+  // a slow database all looked identical.
+  it('records the timing evidence triage needs: failure kind, phase durations, instance uptime', async () => {
+    currentSupabase = makeQueryBuilder(() => {
+      throw new DOMException('The operation was aborted due to timeout', 'TimeoutError');
+    });
+    await GET();
+    const [, ctx] = mocks.logServerError.mock.calls[0] as [string, { metadata?: Record<string, unknown> }];
+    expect(ctx.metadata).toMatchObject({ failureKind: 'timeout', queryTimeoutMs: 2_500 });
+    expect(typeof ctx.metadata?.createClientMs).toBe('number');
+    expect(typeof ctx.metadata?.queryMs).toBe('number');
+    expect(typeof ctx.metadata?.instanceUptimeMs).toBe('number');
+  });
+
+  it('labels a PostgREST error shape as an error, not a timeout', async () => {
+    currentSupabase = makeQueryBuilder({ data: null, error: { message: 'boom' } });
+    await GET();
+    const [, ctx] = mocks.logServerError.mock.calls[0] as [string, { metadata?: Record<string, unknown> }];
+    expect(ctx.metadata).toMatchObject({ failureKind: 'error' });
+  });
 });
 
 describe('GET /api/health — bounded query (abortSignal wired with the 2.5s budget)', () => {
