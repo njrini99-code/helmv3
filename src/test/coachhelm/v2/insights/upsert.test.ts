@@ -619,7 +619,7 @@ describe('upsertInsight', () => {
           .mocked(logServerEvent)
           .mock.calls.filter(([message]) => String(message).includes('dropped a stale evidence write'));
         expect(staleEvents).toHaveLength(1);
-        const [, context, severity] = staleEvents[0];
+        const [, context, severity] = staleEvents[0]!;
         expect(severity).toBe('info');
         expect(context).toMatchObject({ action: 'coachhelm.upsert.updateExisting.cas', skipSentry: true, durableCollapse: true });
       });
