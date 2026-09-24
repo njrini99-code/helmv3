@@ -123,6 +123,42 @@ describe('incident feed', () => {
     expect(summarizeIncidentFeed(incidents)).toEqual(counts);
   });
 
+  // server-error-logger.ts persists a code at metadata.errorCode (context.errorCode)
+  // OR at metadata.extra.errorCode (context.extra, e.g. coachhelm-analytics.ts's
+  // `extra: { teamId, errorCode: error.code }`). The second never reached the
+  // incident, so the Bridge rendered "signature unavailable" beside a real code.
+  describe('errorCode from admin_events metadata', () => {
+    function codeFor(metadata: unknown): string | null {
+      const { incidents } = buildIncidentFeedFromSources(
+        [appEvent({ id: 'e1', fingerprint: 'fp-code', metadata })],
+        [],
+        24,
+      );
+      expect(incidents).toHaveLength(1);
+      return incidents[0]!.errorCode;
+    }
+
+    it('maps top-level metadata.errorCode onto the incident', () => {
+      expect(codeFor({ errorCode: '57014' })).toBe('57014');
+    });
+
+    it('maps metadata.extra.errorCode onto the incident when no top-level code exists', () => {
+      expect(codeFor({ errorCode: null, extra: { teamId: 't1', errorCode: 'PGRST002' } })).toBe('PGRST002');
+    });
+
+    it('top-level metadata.errorCode wins over metadata.extra.errorCode', () => {
+      expect(codeFor({ errorCode: '57014', extra: { errorCode: 'PGRST002' } })).toBe('57014');
+    });
+
+    it('never invents a code: absent, empty, or non-string values stay null', () => {
+      expect(codeFor(null)).toBeNull();
+      expect(codeFor({ errorCode: null, extra: {} })).toBeNull();
+      expect(codeFor({ errorCode: '', extra: { errorCode: '' } })).toBeNull();
+      expect(codeFor({ extra: { errorCode: 57014 } })).toBeNull();
+      expect(codeFor({ metadata: { errorCode: '57014' } })).toBeNull();
+    });
+  });
+
   it('filterSentryIssuesByDeploy passes everything through when deploy data is unavailable', () => {
     const issues = [sentryIssue({ id: 'a', lastSeen: '2020-01-01T00:00:00Z' })];
     expect(filterSentryIssuesByDeploy(issues, null)).toEqual(issues);
