@@ -251,3 +251,12 @@ describe('computeSgTrends — nine-hole rounds are scaled to 18', () => {
     expect(computeSgTrends(rounds).putting!.recentAvg).toBeCloseTo(1);
   });
 });
+
+describe('computeSgTrends — implausible rounds are left out', () => {
+  test('a +17.9 round does not turn a flat series into a jump', () => {
+    const rounds = puttingSeries([17.9, -3, -3, -3, -3, -3, -3]);
+    const t = computeSgTrends(rounds).putting!;
+    expect(t.recentAvg).toBeCloseTo(-3);
+    expect(t.direction).toBe('steady');
+  });
+});

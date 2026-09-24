@@ -60,6 +60,14 @@ export const WINDOW = 5;
  */
 export const STEADY_THRESHOLD = 0.15;
 
+/**
+ * A single round's per-category SG beyond this (per 18 holes) is not golf: the
+ * best Tour rounds gain about 10 strokes in total, not in one category. Such a
+ * sample is a mis-stored round (a nine-hole score saved as 18 holes produced
+ * +17.9 off the tee) and is left out of the trend rather than headlined.
+ */
+export const MAX_PLAUSIBLE_ROUND_SG = 10;
+
 /** Direction of a per-category SG trend — canonical definition lives in `./types`;
  *  re-exported here so existing `import { ThemeTrendDirection } from './trend'` callers keep working. */
 export type { ThemeTrendDirection };
@@ -120,7 +128,8 @@ function mean(xs: readonly number[]): number {
  *
  * For each SG category independently:
  *   1. Collect that category's non-null, finite samples IN ORDER (newest first),
- *      each scaled to 18 holes (a nine-hole round's SG is doubled).
+ *      each scaled to 18 holes (a nine-hole round's SG is doubled), skipping
+ *      any beyond {@link MAX_PLAUSIBLE_ROUND_SG}.
  *   2. BALANCED split: window size = min(WINDOW, floor(available / 2)). The
  *      most-recent `size` samples form the RECENT window; the `size` before
  *      them form the PRIOR window (recent and prior are always equal-sized, so
@@ -145,7 +154,9 @@ export function computeSgTrends(
     const series: number[] = [];
     for (const r of rounds) {
       const v = r?.[field];
-      if (typeof v === 'number' && Number.isFinite(v)) series.push(v * per18(r.holes));
+      if (typeof v !== 'number' || !Number.isFinite(v)) continue;
+      const scaled = v * per18(r.holes);
+      if (Math.abs(scaled) <= MAX_PLAUSIBLE_ROUND_SG) series.push(scaled);
     }
 
     // 2. BALANCED split: equal-sized recent vs prior windows, each capped at
