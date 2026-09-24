@@ -10,10 +10,10 @@
  * one opaque stage holding the strand with its Team / Tour switch → the ranked
  * ledger → "How they play" (genome tendencies) → focus areas (streamed).
  *
- * No composite score: the single "Form" number is owned by the data layer and
- * has not landed, so this screen shows none rather than a competing one. When
- * it lands, pass `form` and it renders on the masthead meta row with its
- * formula one tap away.
+ * One headline number: Form (OD-02, src/lib/golf/form-score.ts), the same
+ * score Fingerprint, Team Stats and the print view show. It sits on the
+ * masthead meta row with its formula one tap away, and is absent when the
+ * player has no countable rounds.
  */
 
 import * as React from 'react';
@@ -40,10 +40,10 @@ import {
 
 export interface GenomeForm {
   value: number;
-  /** The formula typeset in words, e.g. "80 − 3 × avg to par (last 5) − penalties". */
-  formula: string;
-  window: string;
-  n: number;
+  /** "Early read" below 5 countable rounds, otherwise null. */
+  qualityLabel: string | null;
+  /** The formula in words with this player's numbers (describeFormFormula). */
+  formula: string[];
 }
 
 export interface CoachGenomeViewProps {
@@ -138,6 +138,7 @@ export function CoachGenomeView({
           {form ? (
             <Button variant="ghost" size="sm" className="mr-3 tabular-nums" onClick={() => setFormOpen((o) => !o)} aria-expanded={formOpen}>
               Form {form.value}
+              {form.qualityLabel ? <span className="ml-1 text-text-secondary">· {form.qualityLabel}</span> : null}
             </Button>
           ) : null}
           <nav aria-label={`${firstName}'s other views`} className="flex flex-wrap items-center">
@@ -147,9 +148,11 @@ export function CoachGenomeView({
           </nav>
         </div>
         {form && formOpen ? (
-          <p className="font-fw-sans text-caption tabular-nums text-text-secondary">
-            Form {form.value} = {form.formula} · {form.window} · n={form.n}
-          </p>
+          <ul className="mt-1 max-w-[60ch] space-y-0.5 font-fw-sans text-caption tabular-nums text-text-secondary">
+            {form.formula.map((line) => (
+              <li key={line}>{line}</li>
+            ))}
+          </ul>
         ) : null}
       </header>
 

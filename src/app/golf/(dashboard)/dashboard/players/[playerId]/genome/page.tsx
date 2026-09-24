@@ -9,7 +9,7 @@
  * Load order (the page must paint fast):
  *   1. session → active team (the gate everything else needs)
  *   2. in parallel, under RLS: membership, player, genome, stats cache,
- *      90-day completed rounds
+ *      90-day completed rounds, Form inputs (last 20 rounds + severe patterns)
  *   3. only after membership is proven: the standing snapshot (admin client)
  *   Focus areas stream in their own Suspense boundary.
  */
@@ -26,11 +26,13 @@ import { loadGenome } from '@/lib/coachhelm/v3/genome/loader';
 import { formatGenomeRefreshed } from '@/lib/coachhelm/v3/genome/format-refreshed';
 import { GENOME_WINDOW_DAYS } from '@/lib/coachhelm/v3/genome/types';
 import { loadPlayerStandingMap } from '@/lib/coachhelm/v3/standing/loader';
+import { describeFormFormula, FORM_MAX } from '@/lib/golf/form-score';
+import { loadPlayerFormScore } from '@/lib/golf/form-score-loader';
 import { resolveCoachActiveTeamIdForRequest } from '@/lib/golf/dashboard-request-cache';
 import { fairwayScope } from '@/lib/redesign/flag';
 import { Skeleton } from '@/components/fairway/feedback/Skeleton';
 import type { FocusAreaCardData } from '@/components/fairway/pages/coachhelm/FocusAreaCard';
-import { CoachGenomeView } from '@/components/fairway/pages/genome/CoachGenomeView';
+import { CoachGenomeView, type GenomeForm } from '@/components/fairway/pages/genome/CoachGenomeView';
 import { GenomeEmpty } from '@/components/fairway/pages/genome/GenomeEmpty';
 import { GenomeTendencies } from '@/components/fairway/pages/genome/GenomeTendencies';
 import { GenomeComputeButton } from '@/components/fairway/pages/genome/GenomeComputeButton';
@@ -75,7 +77,7 @@ export default async function PlayerGenomePage({ params }: PageProps) {
   const teamId = await resolveCoachActiveTeamIdForRequest(session.coach.organization_id ?? null, session.coach.id);
   if (!teamId) redirect('/golf/dashboard/roster');
 
-  const [membershipRes, playerRes, genome, cacheRes, recentRes] = await Promise.all([
+  const [membershipRes, playerRes, genome, cacheRes, recentRes, formScore] = await Promise.all([
     sb.from('golf_team_members').select('player_id').eq('team_id', teamId).eq('player_id', playerId).maybeSingle(),
     sb.from('golf_players').select('id, first_name, last_name').eq('id', playerId).maybeSingle(),
     loadGenome(sb, playerId),
@@ -86,6 +88,7 @@ export default async function PlayerGenomePage({ params }: PageProps) {
       .eq('player_id', playerId)
       .eq('status', 'completed')
       .gte('round_date', windowStart(GENOME_WINDOW_DAYS)),
+    loadPlayerFormScore(sb, playerId),
   ]);
 
   // On a detail page a discarded read error must not wear notFound(): absent
@@ -147,6 +150,15 @@ export default async function PlayerGenomePage({ params }: PageProps) {
   }
 
   const traits = buildStrand(standingRows, { roundsOnFile, rounds90 });
+  // Form (OD-02): the same score Fingerprint shows; none without countable rounds.
+  const form: GenomeForm | null =
+    formScore?.score != null
+      ? {
+          value: Math.min(FORM_MAX, Math.max(0, Math.round(formScore.score))),
+          qualityLabel: formScore.qualityLabel,
+          formula: describeFormFormula(formScore),
+        }
+      : null;
   const vector = genome?.vector ?? null;
 
   return (
@@ -159,6 +171,7 @@ export default async function PlayerGenomePage({ params }: PageProps) {
         samples={{ roundsOnFile, rounds90 }}
         archetype={buildArchetype(vector)}
         coachId={session.coach.id}
+        form={form}
         tendencies={
           <GenomeTendencies
             tendencies={buildTendencies(vector)}

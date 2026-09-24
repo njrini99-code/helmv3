@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
-import { render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
+import type * as React from 'react';
 import { describe, expect, it, vi } from 'vitest';
 
 vi.mock('@/app/golf/actions/development', () => ({
@@ -29,7 +30,7 @@ const rows = [
   }),
 ];
 
-function renderCoach(roundsOnFile: number) {
+function renderCoach(roundsOnFile: number, form: React.ComponentProps<typeof CoachGenomeView>['form'] = null) {
   const samples = { roundsOnFile, rounds90: 6 };
   return render(
     <CoachGenomeView
@@ -40,6 +41,7 @@ function renderCoach(roundsOnFile: number) {
       samples={samples}
       archetype="Bomber off the tee, misses right"
       coachId="c1"
+      form={form}
       tendencies={<div>tendencies</div>}
     />,
   );
@@ -63,6 +65,22 @@ describe('CoachGenomeView', () => {
     expect(container.querySelectorAll('[data-trait-id]').length).toBeGreaterThanOrEqual(19);
     const sw = screen.getByRole('radiogroup');
     expect(within(sw).getAllByRole('radio')).toHaveLength(2);
+  });
+
+  it('shows the one Form score (OD-02) with its formula one tap away', () => {
+    renderCoach(3, { value: 71, qualityLabel: 'Early read', formula: ['Line one.', 'This player: +3.0 over 3 rounds → 71.0 = 71.'] });
+    const button = screen.getByRole('button', { name: /Form 71/ });
+    expect(button.textContent).toContain('Early read');
+    expect(button.getAttribute('aria-expanded')).toBe('false');
+    expect(screen.queryByText('Line one.')).toBeNull();
+    fireEvent.click(button);
+    expect(button.getAttribute('aria-expanded')).toBe('true');
+    expect(screen.getByText('Line one.')).toBeTruthy();
+  });
+
+  it('shows no Form without countable rounds', () => {
+    renderCoach(0, null);
+    expect(screen.queryByRole('button', { name: /^Form/ })).toBeNull();
   });
 
   it('says the read is thin on a small sample, as a word with n', () => {
