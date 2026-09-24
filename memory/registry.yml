@@ -1620,8 +1620,10 @@ features:
         # subtree is admin/Bridge-facing infrastructure, not round-tracking
         # specific, even though it shares the parent directory.
         - src/lib/observability/supabase/**
-        # The self-heal loop's Repair stage runs ONLY as the GitHub Actions
-        # workflow (.github/workflows/selfheal-repair.yml) as of 2026-09-05 —
+        # The self-heal loop's Repair stage runs as the Claude desktop health
+        # routine since 2026-09-23 (the GitHub Actions workflow
+        # .github/workflows/selfheal-repair.yml ran it 2026-09-05..09-23 and is
+        # now disabled). On 2026-09-05
         # the launchd agent, its outer bounded-runner script, and its
         # launchd-only support tooling (scripts/run-selfheal-repair.mjs,
         # scripts/lib/selfheal-repair-runner.mjs,
@@ -1893,8 +1895,9 @@ features:
         - src/lib/admin/rca*.ts
         - src/lib/admin/triage-*.ts
         - src/lib/admin/auto-resolve.ts
-        # Repair runs ONLY as .github/workflows/selfheal-repair.yml as of
-        # 2026-09-05 — the launchd agent, its outer runner
+        # Repair runs as the Claude desktop health routine since 2026-09-23
+        # (.github/workflows/selfheal-repair.yml 2026-09-05..09-23, disabled).
+        # On 2026-09-05 the launchd agent, its outer runner
         # (scripts/run-selfheal-repair.mjs, scripts/lib/selfheal-repair-runner.mjs),
         # its install/doctor tooling, and config/launchd/** were retired in
         # the same change (see memory/features/admin-selfheal.md).
