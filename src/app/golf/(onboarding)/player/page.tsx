@@ -264,7 +264,7 @@ function GolfPlayerOnboardingContent() {
             className="mb-6 sm:mb-8"
           >
             <div className="relative">
-              <div className="absolute inset-0 bg-primary-500/25 rounded-full blur-xl scale-150" />
+              <div className="absolute inset-0 bg-accent-wash rounded-full blur-xl scale-150" />
               <Image
                 src="/helm-golf-logo-transparent.png"
                 alt="GolfHelm"
@@ -301,7 +301,7 @@ function GolfPlayerOnboardingContent() {
                 <m.div variants={staggerContainer} initial="initial" animate="animate" className="space-y-5">
                   {/* Header */}
                   <m.div variants={staggerItem} className="text-center">
-                    <h1 ref={focusStepHeading} tabIndex={-1} className="outline-none text-2xl sm:text-3xl font-bold tracking-tight text-text-primary">
+                    <h1 ref={focusStepHeading} tabIndex={-1} className="outline-none font-fw-display text-h1 font-semibold tracking-tight text-text-primary">
                       About you
                     </h1>
                     <p className="text-text-secondary mt-2 text-sm sm:text-base">
@@ -388,7 +388,7 @@ function GolfPlayerOnboardingContent() {
                       <Button
                         onClick={() => goForward('profile')}
                         disabled={!firstName.trim() || !lastName.trim()}
-                        className="w-full bg-accent-fill hover:bg-accent-fill-hover shadow-lg shadow-primary-900/10 hover:shadow-xl hover:shadow-primary-900/15 transition"
+                        className="w-full bg-accent-fill hover:bg-accent-fill-hover shadow-soft transition"
                         size="lg"
                       >
                         Continue
@@ -425,7 +425,7 @@ function GolfPlayerOnboardingContent() {
 
                   {/* Header */}
                   <m.div variants={staggerItem} className="text-center">
-                    <h1 ref={focusStepHeading} tabIndex={-1} className="outline-none text-2xl sm:text-3xl font-bold tracking-tight text-text-primary">
+                    <h1 ref={focusStepHeading} tabIndex={-1} className="outline-none font-fw-display text-h1 font-semibold tracking-tight text-text-primary">
                       Your profile
                     </h1>
                     <p className="text-text-secondary mt-2 text-sm sm:text-base">
@@ -467,7 +467,7 @@ function GolfPlayerOnboardingContent() {
                       <Button
                         onClick={handleSubmitOnboarding}
                         isLoading={loading}
-                        className="w-full bg-accent-fill hover:bg-accent-fill-hover shadow-lg shadow-primary-900/10 hover:shadow-xl hover:shadow-primary-900/15 transition"
+                        className="w-full bg-accent-fill hover:bg-accent-fill-hover shadow-soft transition"
                         size="lg"
                         aria-describedby={error ? 'onboarding-submit-error' : undefined}
                       >
@@ -531,21 +531,21 @@ function GolfPlayerOnboardingContent() {
                       ))}
 
                       {/* Glow */}
-                      <div className="absolute inset-0 bg-primary-500/20 blur-2xl rounded-full scale-[2]" />
+                      <div className="absolute inset-0 bg-accent-wash blur-2xl rounded-full scale-[2]" />
 
                       {/* Check Icon */}
                       <m.div
                         initial={{ scale: 0, rotate: -20 }}
                         animate={{ scale: 1, rotate: 0 }}
                         transition={prefersReducedMotion ? { duration: 0 } : ({ type: 'spring', stiffness: 200, damping: 12, delay: 0.15 })}
-                        className="relative w-20 h-20 bg-gradient-to-br from-primary-500 to-primary-600 rounded-2xl flex items-center justify-center shadow-xl shadow-primary-900/20"
+                        className="relative w-20 h-20 bg-accent-fill rounded-fw-lg flex items-center justify-center shadow-soft"
                       >
                         <m.div
                           initial={{ scale: 0, opacity: 0 }}
                           animate={{ scale: 1, opacity: 1 }}
                           transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.4, type: 'spring', stiffness: 300 })}
                         >
-                          <IconCheck size={40} className="text-white" />
+                          <IconCheck size={40} className="text-text-on-accent-fill" />
                         </m.div>
                       </m.div>
                     </div>
@@ -556,7 +556,7 @@ function GolfPlayerOnboardingContent() {
                       stays. What changes is the claim about the TEAM, which is the
                       part that can be false. */}
                   <m.div variants={staggerItem} className="text-center">
-                    <h1 ref={focusStepHeading} tabIndex={-1} className="outline-none font-fw-display text-2xl sm:text-3xl font-semibold tracking-tight text-text-primary mb-2">
+                    <h1 ref={focusStepHeading} tabIndex={-1} className="outline-none font-fw-display text-h1 font-semibold tracking-tight text-text-primary mb-2">
                       Welcome, {firstName || 'Player'}
                     </h1>
                     {joinedTeam === false ? (
@@ -580,7 +580,7 @@ function GolfPlayerOnboardingContent() {
                       <Button
                         size="lg"
                         onClick={() => router.push('/golf/join')}
-                        className="w-full sm:w-auto px-10 bg-accent-fill hover:bg-accent-fill-hover shadow-lg shadow-primary-900/10 hover:shadow-xl hover:shadow-primary-900/15 transition"
+                        className="w-full sm:w-auto px-10 bg-accent-fill hover:bg-accent-fill-hover shadow-soft transition"
                       >
                         Enter a join code
                         <IconArrowRight size={16} className="ml-2" />
@@ -589,7 +589,7 @@ function GolfPlayerOnboardingContent() {
                       <Button
                         size="lg"
                         onClick={handleGoToDashboard}
-                        className="w-full sm:w-auto px-10 bg-accent-fill hover:bg-accent-fill-hover shadow-lg shadow-primary-900/10 hover:shadow-xl hover:shadow-primary-900/15 transition"
+                        className="w-full sm:w-auto px-10 bg-accent-fill hover:bg-accent-fill-hover shadow-soft transition"
                       >
                         Go to Dashboard
                         <IconArrowRight size={16} className="ml-2" />

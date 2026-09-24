@@ -99,7 +99,7 @@ export default async function CoachPendingPage() {
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-lg flex-col justify-center px-6 py-16">
       <div className="rounded-2xl border border-border-subtle bg-surface p-8">
-        <h1 className="text-2xl font-semibold text-text-primary">
+        <h1 className="font-fw-display text-h1 font-semibold tracking-tight text-text-primary">
           You&rsquo;re all set, pending approval
         </h1>
         <p className="mt-3 text-text-secondary">

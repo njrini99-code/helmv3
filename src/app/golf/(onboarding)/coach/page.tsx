@@ -354,7 +354,7 @@ export default function GolfCoachOnboarding() {
             className="mb-6 sm:mb-8"
           >
             <div className="relative">
-              <div className="absolute inset-0 bg-primary-500/25 rounded-full blur-xl scale-150" />
+              <div className="absolute inset-0 bg-accent-wash rounded-full blur-xl scale-150" />
               <Image
                 src="/helm-golf-logo-transparent.png"
                 alt="GolfHelm"
@@ -391,7 +391,7 @@ export default function GolfCoachOnboarding() {
                 <m.div variants={staggerContainer} initial="initial" animate="animate" className="space-y-5">
                   {/* Header */}
                   <m.div variants={staggerItem} className="text-center">
-                    <h1 ref={focusStepHeading} tabIndex={-1} className="outline-none text-2xl sm:text-3xl font-bold tracking-tight text-text-primary">
+                    <h1 ref={focusStepHeading} tabIndex={-1} className="outline-none font-fw-display text-h1 font-semibold tracking-tight text-text-primary">
                       Set up your program
                     </h1>
                     <p className="text-text-secondary mt-2 text-sm sm:text-base">
@@ -501,7 +501,7 @@ export default function GolfCoachOnboarding() {
                       <Button
                         onClick={() => goForward('profile')}
                         disabled={!orgName.trim()}
-                        className="w-full bg-accent-fill hover:bg-accent-fill-hover shadow-lg shadow-primary-900/10 hover:shadow-xl hover:shadow-primary-900/15 transition"
+                        className="w-full bg-accent-fill hover:bg-accent-fill-hover shadow-soft transition"
                         size="lg"
                       >
                         Continue
@@ -538,7 +538,7 @@ export default function GolfCoachOnboarding() {
 
                   {/* Header */}
                   <m.div variants={staggerItem} className="text-center">
-                    <h1 ref={focusStepHeading} tabIndex={-1} className="outline-none text-2xl sm:text-3xl font-bold tracking-tight text-text-primary">
+                    <h1 ref={focusStepHeading} tabIndex={-1} className="outline-none font-fw-display text-h1 font-semibold tracking-tight text-text-primary">
                       Your profile
                     </h1>
                     <p className="text-text-secondary mt-2 text-sm sm:text-base">
@@ -584,7 +584,7 @@ export default function GolfCoachOnboarding() {
                         onClick={handleSubmitOnboarding}
                         disabled={!fullName.trim()}
                         isLoading={loading}
-                        className="w-full bg-accent-fill hover:bg-accent-fill-hover shadow-lg shadow-primary-900/10 hover:shadow-xl hover:shadow-primary-900/15 transition"
+                        className="w-full bg-accent-fill hover:bg-accent-fill-hover shadow-soft transition"
                         size="lg"
                         aria-describedby={error ? 'onboarding-submit-error' : undefined}
                       >
@@ -645,21 +645,21 @@ export default function GolfCoachOnboarding() {
                       ))}
 
                       {/* Glow */}
-                      <div className="absolute inset-0 bg-primary-500/20 blur-2xl rounded-full scale-[2]" />
+                      <div className="absolute inset-0 bg-accent-wash blur-2xl rounded-full scale-[2]" />
 
                       {/* Check Icon */}
                       <m.div
                         initial={{ scale: 0, rotate: -20 }}
                         animate={{ scale: 1, rotate: 0 }}
                         transition={prefersReducedMotion ? { duration: 0 } : ({ type: 'spring', stiffness: 200, damping: 12, delay: 0.15 })}
-                        className="relative w-20 h-20 bg-gradient-to-br from-primary-500 to-primary-600 rounded-2xl flex items-center justify-center shadow-xl shadow-primary-900/20"
+                        className="relative w-20 h-20 bg-accent-fill rounded-fw-lg flex items-center justify-center shadow-soft"
                       >
                         <m.div
                           initial={{ scale: 0, opacity: 0 }}
                           animate={{ scale: 1, opacity: 1 }}
                           transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.4, type: 'spring', stiffness: 300 })}
                         >
-                          <IconCheck size={40} className="text-white" />
+                          <IconCheck size={40} className="text-text-on-accent-fill" />
                         </m.div>
                       </m.div>
                     </div>
@@ -667,7 +667,7 @@ export default function GolfCoachOnboarding() {
 
                   {/* Personalized Heading */}
                   <m.div variants={staggerItem} className="text-center">
-                    <h1 ref={focusStepHeading} tabIndex={-1} className="outline-none text-2xl sm:text-3xl font-bold tracking-tight text-text-primary mb-2">
+                    <h1 ref={focusStepHeading} tabIndex={-1} className="outline-none font-fw-display text-h1 font-semibold tracking-tight text-text-primary mb-2">
                       {orgName ? `${orgName} Golf is ready on GolfHelm` : 'Your team is ready'}
                     </h1>
                     <p className="text-text-secondary text-sm sm:text-base leading-relaxed max-w-sm mx-auto">
@@ -717,7 +717,7 @@ export default function GolfCoachOnboarding() {
                     <Button
                       size="lg"
                       onClick={() => handleGoTo('/golf/dashboard/roster')}
-                      className="w-full sm:w-auto px-10 bg-accent-fill hover:bg-accent-fill-hover shadow-lg shadow-primary-900/10 hover:shadow-xl hover:shadow-primary-900/15 transition"
+                      className="w-full sm:w-auto px-10 bg-accent-fill hover:bg-accent-fill-hover shadow-soft transition"
                     >
                       Invite players
                       <IconArrowRight size={16} className="ml-2" />
