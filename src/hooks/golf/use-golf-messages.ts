@@ -1253,6 +1253,12 @@ export async function loadGolfConversationRail(
 ): Promise<{ ok: true; rows: GolfConversationWithMeta[] } | { ok: false }> {
   // Use optimized DB function - single query replaces N+1 pattern (was 50-60 queries)
   // Note: Function added in migration, types may need regeneration with `npm run db:types`
+  // The active-team allow-list is independent of the RPC, so the two run in
+  // parallel instead of the server action waiting on the RPC (PERF-03).
+  const allowedIdsPromise = getGolfActiveTeamConversationIds().then(
+    (ids) => ({ ok: true as const, ids }),
+    (err: unknown) => ({ ok: false as const, err }),
+  );
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: rawData, error } = await (supabase.rpc as any)(
     'get_golf_conversations_with_details',
@@ -1263,8 +1269,9 @@ export async function loadGolfConversationRail(
   // as before. Fail-open: a scoping error leaves the rail unscoped, never blank.
   let teamAllow: Set<string> | null = null;
   try {
-    const allowedIds = await getGolfActiveTeamConversationIds();
-    if (allowedIds !== null) teamAllow = new Set(allowedIds);
+    const allowed = await allowedIdsPromise;
+    if (!allowed.ok) throw allowed.err;
+    if (allowed.ids !== null) teamAllow = new Set(allowed.ids);
   } catch (teamAllowErr) {
     teamAllow = null;
     logError(
