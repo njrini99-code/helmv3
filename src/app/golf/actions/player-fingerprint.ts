@@ -904,18 +904,10 @@ function buildScoringSection(
 
   const sparse = rounds.length < 5 && metrics.length === 0;
 
-  // Simple bar chart of par-type averages (if we have them).
-  let chart: FingerprintChartData = null;
-  if (par3 != null || par4 != null || par5 != null) {
-    chart = {
-      kind: 'bars',
-      bars: [
-        { label: 'Par 3', value: par3, max: 5 },
-        { label: 'Par 4', value: par4, max: 6 },
-        { label: 'Par 5', value: par5, max: 7 },
-      ],
-    };
-  }
+  // No chart: the Par 3/4/5 metric cards above already show each average and
+  // its gap to par, and a bar chart of the same three numbers printed every
+  // figure twice (NUM-31).
+  const chart: FingerprintChartData = null;
 
   return {
     key: 'scoring',
