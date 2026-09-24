@@ -29,9 +29,9 @@ Recounted after the 2026-09-24 afternoon pass (PR #2069).
 | Status | Count |
 |---|---|
 | done | 302 |
-| partial | 14 |
+| partial | 13 |
 | residual | 8 |
-| blocked | 25 |
+| blocked | 26 |
 | not-a-bug | 15 |
 | unknown | 0 |
 | **total** | **364** |
@@ -122,7 +122,7 @@ Owner decisions (OD-01 to OD-24) and workstreams (W1 to W15) have their own tabl
 | NUM-21 | [P1] Putting bands: Fingerprint reads legacy 15_20/20_plus; everything else 15_25/25_plus (43% vs 19%) | done: Already DONE in the ledger | before ledger stamp | per transcript |
 | NUM-22 | [P1] Hero pills "Fairways 7% · Greens 100% · Putts 18.0" contradict the Performance Snapshot (62/72/29.7) on the ... | done: Overview no longer shows the 30-day stat pills; round count from the stats cache (894cfab86) | 894cfab86 | this session |
 | NUM-23 | [P1] Dashboard SG table labelled "Strokes gained" shows 0-100 scores (83/36/53/1); radar axis 0-100 | done: Already DONE in the ledger | before ledger stamp | per transcript |
-| NUM-24 | [P2] Pressure gap 15.75 (Standing) vs +17.4 (Fingerprint); "Pressure delta 0" hero vs "Tightens up" | partial: One "Pressure gap" label and signed format everywhere; Standing says 90 days, Fingerprint last 10 rounds (f07c0cdee). The Standing SQL still skips 9-hole scaling and the "qualifying" spelling: needs a migration (owner) | f07c0cdee | this session |
+| NUM-24 | [P2] Pressure gap 15.75 (Standing) vs +17.4 (Fingerprint); "Pressure delta 0" hero vs "Tightens up" | blocked: Label and format unified (f07c0cdee). Standing SQL now follows the shared rule (18-hole basis, legacy 'qualifying') and so does the v3 generator (7dc04fe5b); the migration 20260924140000 is HELD and applies after OD-01 | f07c0cdee, 7dc04fe5b | this session |
 | NUM-25 | [P2] Scoring avg to par: +0.9 (FP) vs +0.44/18 (Stats) vs +0.7 (Rounds); stats 72.3 vs dash 72.8 vs rounds 72.5 ... | blocked: TS sources unified; cached averages change only after OD-01 | countable rule in TS | per transcript |
 | NUM-26 | [P2] Putting make% non-monotonic (10-15ft 16% < 15-20ft 43%; 5-10 28% < 15-20 43%) | blocked: Still open; re-check putt make% after OD-01 is applied | - | per transcript |
 | NUM-27 | [P2] "3-5 ft putts · 15 shots" (deep dive) vs 44 attempts elsewhere | done: Graded DONE in the 12:20 regrade | cd01022e2 / 397587774 (W11/W12 agents) | per transcript |
@@ -616,7 +616,7 @@ Owner decisions (OD-01 to OD-24) and workstreams (W1 to W15) have their own tabl
 | W10 | CoachHelm hub (player side) | done | Hub rebuilt as a feed (894cfab86); Overview HubInsight still shows Helpful/Dismiss |
 | W11 | Coach intelligence and triage | done | - |
 | W12 | Deep dive and analysis follow-ups | done | DD-01, NUM-31, FP-12 done; FP-11 screenshots blocked |
-| W13 | Coach numbers, qualifiers and team stats | partial | OD-01 migration held; NUM-24 Standing SQL needs a migration |
+| W13 | Coach numbers, qualifiers and team stats | partial | OD-01 and NUM-24 migrations held (apply OD-01 first); SQL team percentile floor is still 3 vs 5 in TS |
 | W14 | Perf leftovers | done | PERF-R10 and PERF-03 done; PERF-01 capacity and live timings not re-measured |
 | W15 | Formatting registry and parity tests | partial | DS-12, DS-13, DS-15 partial |
 
