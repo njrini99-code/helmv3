@@ -438,6 +438,7 @@ export function PressureSplit({ section }: { section: SectionData }) {
       </ul>
       {g != null ? (
         <p className="mt-3 font-fw-sans text-body-sm text-text-secondary">
+          Pressure gap{' '}
           <span className={cn('font-semibold tabular-nums', g > 2 ? 'text-fw-warning-ink' : g <= 0 ? 'text-fw-success-ink' : 'text-text-primary')}>
             {formatSignedValue(g)}
           </span>{' '}

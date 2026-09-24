@@ -29,5 +29,7 @@ describe('PressureSplit text alternative (A11Y-06)', () => {
     expect(items[0]?.textContent).toMatch(/Practice.*6 rounds.*\+2\.0/);
     expect(items[1]?.textContent).toMatch(/Competition.*4 rounds.*\+4\.5/);
     expect(screen.getByText(/strokes to par in competition/).textContent).toContain('tightens up');
+    // NUM-24: the gap line carries the same "Pressure gap" label as Standing.
+    expect(screen.getByText(/strokes to par in competition/).textContent).toMatch(/^Pressure gap \+2\.5/);
   });
 });

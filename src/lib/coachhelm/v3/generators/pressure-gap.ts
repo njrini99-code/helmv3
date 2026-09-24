@@ -254,7 +254,7 @@ export class PressureGapGenerator extends BaseGenerator<PressureGapAggregate> {
       signature: `pressure_gap:practice_vs_tournament`,
       evidence: {
         metric: this.metricId,
-        metric_label: 'Practice vs Tournament Delta',
+        metric_label: 'Pressure gap',
         unit: 'strokes',
         your_value: agg.playerValue,
         your_value_display: deltaDisp,

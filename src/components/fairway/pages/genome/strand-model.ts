@@ -112,7 +112,7 @@ export const TRAITS: readonly TraitDef[] = [
   { id: 'big_number_rate', family: 'scoring', label: 'Doubles or worse', short: 'Doubles+', unit: 'percent', window: 'rounds_on_file' },
   { id: 'penalty_rate_per_round', family: 'scoring', label: 'Penalties', short: 'Penalties', unit: 'per_round', window: 'rounds_on_file' },
 
-  { id: 'practice_tournament_delta', family: 'pressure', label: 'Tournament vs practice', short: 'Tournaments', unit: 'strokes', window: 'last_90_days' },
+  { id: 'practice_tournament_delta', family: 'pressure', label: 'Pressure gap', short: 'Tournaments', unit: 'strokes', window: 'last_90_days' },
   { id: 'opening_hole_delta', family: 'pressure', label: 'First hole', short: 'First hole', unit: 'strokes', window: 'last_90_days' },
 ];
 

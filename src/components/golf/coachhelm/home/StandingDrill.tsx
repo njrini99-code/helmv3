@@ -29,7 +29,7 @@ const CATEGORY_ORDER: ReadonlyArray<{ category: string; label: string; descripti
   { category: 'short_game', label: 'Short Game', description: 'Scrambling by lie type.' },
   { category: 'scoring', label: 'Scoring', description: 'Per-par scoring vs PGA + cohort.' },
   { category: 'course_mgmt', label: 'Course Mgmt', description: 'Penalty avoidance + big-number rate.' },
-  { category: 'pressure', label: 'Pressure', description: 'Tournament vs practice + opening-hole tax.' },
+  { category: 'pressure', label: 'Pressure', description: 'Pressure gap: tournament and qualifier scoring to par against practice, last 90 days. Plus the opening-hole tax.' },
 ];
 
 function metricCategory(metricId: string): string {

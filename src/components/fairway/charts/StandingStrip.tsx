@@ -44,17 +44,45 @@ import {
   layoutMarkerPositions,
   MARKER_MIN_GAP_PCT,
 } from '@/components/golf/coachhelm/v3/StandingBar';
+import { formatMetricText, getMetricDefinition, isGolfMetricId } from '@/lib/golf/metrics/display-registry';
+
+/**
+ * NUM-24: a signed gap metric (the pressure gap, the opening-hole gap) prints
+ * through the display registry, "+15.8", the same sign and precision the
+ * Fingerprint uses. Every other metric keeps the strip's unit formatter.
+ */
+export function formatStripValue(metricId: string, value: number | null, unit: StandingBarProps['unit']): string {
+  if (value === null) return formatValue(Number.NaN, unit);
+  if (isGolfMetricId(metricId) && getMetricDefinition(metricId).kind === 'strokes_delta') {
+    return formatMetricText(metricId, value);
+  }
+  return formatValue(value, unit);
+}
+
+/**
+ * NUM-24: a gap metric's header reads the display-registry label ("Pressure
+ * gap"), the words the Fingerprint uses, not the seed's "Practice vs
+ * Tournament Delta". The seed label itself is pinned by a parity test to the
+ * golf_metrics table, so it is renamed here at display time only.
+ */
+export function stripMetricLabel(metricId: string, fallback: string): string {
+  if (isGolfMetricId(metricId)) {
+    const def = getMetricDefinition(metricId);
+    if (def.kind === 'strokes_delta') return def.label;
+  }
+  return fallback;
+}
 
 /** StandingStrip shares the legacy StandingBar prop surface verbatim. */
 export type StandingStripProps = StandingBarProps;
 
 export function StandingStrip(props: StandingStripProps) {
   const state: RenderState = deriveState(props);
-  const ariaLabel = deriveAriaLabel(props);
+  const ariaLabel = deriveAriaLabel({ ...props, metric_label: stripMetricLabel(props.metric_id, props.metric_label) });
 
   if (state === 'loading') return <StripSkeleton />;
   if (state === 'error') return <StripError message={props.errorMessage} />;
-  if (state === 'empty') return <StripEmpty label={props.metric_label} />;
+  if (state === 'empty') return <StripEmpty label={stripMetricLabel(props.metric_id, props.metric_label)} />;
 
   const showTeam = shouldShowTeamMarker(props);
   // CF-3's SG-metric detector, hoisted above the scale math below — the SAME
@@ -150,7 +178,7 @@ export function StandingStrip(props: StandingStripProps) {
           vertically center-crush the delta pill beside it. */}
       <div className="mb-1 flex items-start justify-between gap-2">
         <h4 className="min-w-0 flex-1 break-words font-fw-display text-body font-semibold tracking-[-0.01em] text-text-primary">
-          {props.metric_label}
+          {stripMetricLabel(props.metric_id, props.metric_label)}
         </h4>
         {showTeam ? (
           <span
@@ -173,7 +201,7 @@ export function StandingStrip(props: StandingStripProps) {
         youPct={youPct}
         teamPct={teamPct}
         pgaPct={pgaPct}
-        youValue={formatValue(props.player_value, props.unit)}
+        youValue={formatStripValue(props.metric_id, props.player_value, props.unit)}
         refLabel={refLabel.toUpperCase()}
       />
 
@@ -185,11 +213,11 @@ export function StandingStrip(props: StandingStripProps) {
           visual anchor); the redundant, unchanging number does not. Non-SG
           metrics keep the real, informative PGA/LPGA readout. */}
       <div className={cn('grid gap-2', isFieldAvgRef ? 'grid-cols-2' : 'grid-cols-3')}>
-        <Readout label={heroLabel} value={formatValue(props.player_value, props.unit)} tone="accent" align="start" />
+        <Readout label={heroLabel} value={formatStripValue(props.metric_id, props.player_value, props.unit)} tone="accent" align="start" />
         {showTeam && props.team_avg !== null ? (
           <Readout
             label="Team"
-            value={formatValue(props.team_avg, props.unit)}
+            value={formatStripValue(props.metric_id, props.team_avg, props.unit)}
             align={isFieldAvgRef ? 'end' : 'center'}
           />
         ) : (
@@ -204,7 +232,7 @@ export function StandingStrip(props: StandingStripProps) {
         {isFieldAvgRef ? null : props.pga_omitted ? (
           <Readout label={refLabel} value="—" tone="muted" align="end" />
         ) : (
-          <Readout label={refLabel} value={formatValue(props.pga_value, props.unit)} align="end" />
+          <Readout label={refLabel} value={formatStripValue(props.metric_id, props.pga_value, props.unit)} align="end" />
         )}
       </div>
 
