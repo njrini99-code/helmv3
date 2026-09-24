@@ -38,12 +38,15 @@ writes a row there.
 > automated cron cannot perform (no git checkout in a Vercel function) — see
 > `triage-contract.md` STEP 4.
 
-**Repair** — heartbeat `selfheal-repair`. As of 2026-09-05, a **GitHub Actions
-workflow only**: `.github/workflows/selfheal-repair.yml`, scheduled daily
-06:40 UTC (plus `workflow_dispatch` for a manual/dry run), invoking the Claude
-Code CLI directly and following [`repair-contract.md`](repair-contract.md).
-Reports through a `background_job_logs` heartbeat step written by the
-workflow itself, `if: always()`.
+**Repair** — heartbeat `selfheal-repair`. As of 2026-09-23, the **Claude
+desktop health routine** on the owner's Mac: a scheduled task every 6h at :47
+past 03/09/15/21 UTC (30 minutes after Diagnose), following
+[`repair-contract.md`](repair-contract.md). It writes its own heartbeat with
+`metadata.runner = 'desktop-routine'`, lands its own PR once required checks
+are green (owner-authorized 2026-09-23; never deploys), and performs the
+fix-is-live resolutions the Close cron cannot. The GitHub Actions workflow
+`.github/workflows/selfheal-repair.yml` that ran Repair from 2026-09-05 is
+disabled; its heartbeats (`metadata.runtime = 'github-actions'`) are history.
 >
 > **Previously ran as a launchd agent on the owner's Mac in parallel with the
 > GHA workflow, retired 2026-09-05.** Both runners read the same

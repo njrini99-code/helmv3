@@ -36,13 +36,18 @@ output" (distinct from `/admin/jobs`, which answers "did the crons run").
 Collect (admin_reliability_collector, Vercel cron, 3h)
   -> Diagnose (Vercel cron, 6h, since 2026-09-02 — moved off an
      Anthropic-hosted cloud routine)
-  -> Repair (GitHub Actions, .github/workflows/selfheal-repair.yml,
-     06:40 UTC daily — opens a PR, never merges/deploys)
+  -> Repair (Claude desktop health routine on the owner's Mac, every 6h at
+     :47 past 03/09/15/21 UTC since 2026-09-23 — opens a PR and lands it once
+     green, never deploys; the GHA workflow it replaced is disabled)
   -> Close (Vercel cron log-retention -> auto-resolve.ts)
 ```
 
-**Repair runs as a GitHub Actions workflow only, as of 2026-09-05.** It
-previously also ran as a launchd agent on the owner's Mac
+**Repair runs as the Claude desktop health routine as of 2026-09-23**
+(`SELFHEAL_STAGES.repair.runner` is `'local-agent'`, cadence 6h; heartbeats
+carry `metadata.runner = 'desktop-routine'`). From 2026-09-05 to 2026-09-23 it
+ran as the GitHub Actions workflow `.github/workflows/selfheal-repair.yml`,
+now disabled. Before 2026-09-05 it
+also ran as a launchd agent on the owner's Mac
 (`com.helm.bridge-rca-repair`) in parallel with the GHA workflow — a live
 duplicate-effort risk (two separately-billed agent sessions per day, each
 capable of opening a PR against the same backlog, with no cross-runner
@@ -86,8 +91,8 @@ owner's machine, for anyone who needs to see exactly what ran before.
   shared with the `npm run triage` CLI (`scripts/run-triage.ts`, now a thin
   wrapper over both).
 - `src/lib/admin/auto-resolve.ts` — the Close stage's nightly auto-resolution.
-- `.github/workflows/selfheal-repair.yml` — the Repair stage's ONLY runner as
-  of 2026-09-05. Invokes the Claude Code CLI directly (not
+- `.github/workflows/selfheal-repair.yml` — the Repair stage's runner from
+  2026-09-05 to 2026-09-23 (now disabled; the desktop routine replaced it). Invokes the Claude Code CLI directly (not
   `anthropics/claude-code-action`, which is trigger-driven and skips
   everything on a `schedule`/`workflow_dispatch` event) following
   `docs/ai-system/selfheal/repair-contract.md`. The launchd agent and its

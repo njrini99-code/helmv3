@@ -498,9 +498,10 @@ function IntegrityGrid({ checks }: { checks: IntegrityRow[] }) {
 /**
  * The self-healing loop.
  *
- * One of its three stages runs OUTSIDE this deployment — a GitHub Actions
- * workflow (Repair; it was a launchd agent on the owner's laptop until
- * 2026-09-05) — so nothing in the app can observe it failing.
+ * One of its three stages runs OUTSIDE this deployment — the Claude desktop
+ * health routine on the owner's Mac (Repair since 2026-09-23; a GitHub
+ * Actions workflow before that, and a launchd agent until 2026-09-05) — so
+ * nothing in the app can observe it failing.
  * Its only evidence of life is a heartbeat row, and this panel is where its
  * absence becomes visible. Without it, a dead stage and a quiet week look the
  * same. (Diagnose moved from an Anthropic-hosted cloud routine onto a Vercel
