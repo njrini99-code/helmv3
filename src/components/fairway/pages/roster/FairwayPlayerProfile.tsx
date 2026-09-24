@@ -2,60 +2,60 @@
 
 /**
  * ============================================================================
- * Fairway · Roster · FairwayPlayerProfile (D1) — coach player dossier
+ * Fairway · Roster · FairwayPlayerProfile — the coach player field sheet
  * ----------------------------------------------------------------------------
- * FACELIFT (docs/design/fairway-facelift/screens/player-dossier.md): the
- * coach-facing player page reached from the roster (Roster → player). It is
- * an unboxed identity MASTHEAD (avatar, name, class year, one-line standing
- * summary) with ONE primary action (Message) and an overflow Menu, then a
- * StatMatrix of headline numbers, a StandingBars readout, focus areas and
- * recent rounds as seam rows inside single Surfaces, and a tab row (Game /
- * Genome / Rounds) — replacing the old hero card + Message pill + "member
- * since" line, the three link cards, and the always-on StatsSpineStage block.
+ * Rebuilt against docs/design/fairway-facelift/screens/roster-player.v3.md and
+ * the page language in LANGUAGE.md. The page answers one question — "is this
+ * player getting better, and where's my next conversation with them?" — in the
+ * documented anatomy:
  *
- * `Game` and `Genome` navigate to their own routes (`/players/[id]/game`,
- * `/players/[id]/genome`) — each already has its own data loader and its own
- * internal tab switcher (Game Fingerprint / Scouting Report). `Rounds` stays
- * on THIS page and mounts `<StatsSpineStage>` unchanged: it is a separately-
- * loaded, shared component (also used by the player's own `/dashboard/stats`)
- * with its own `?area=` StageRouter — composed here, not forked or edited.
+ *   1. Masthead, bare on the canvas: identity, then one honest verdict
+ *      sentence carrying the two links a coach can act on.
+ *   2. The stage, the ONE Surface: `RoundStrip` (every plottable round against
+ *      par on a real date axis) beside a divided readouts column.
+ *   3. The ledger row, bare columns on hairlines: strokes-gained standing off
+ *      one shared vertical zero rule, and the open focus areas.
+ *   4. The round log as a dense table, with a stacked list for phone.
  *
- * The only mutations reachable here are non-destructive: status change and
- * "Remove from Team" (behind an explicit confirm) inside
- * `FairwayPlayerActionsMenu`, already the roster board's own row-action menu.
+ * What this replaced: a StatMatrix mislabeled "Season" over career numbers, a
+ * standalone Standing Surface whose four sibling SG rows were fetched and
+ * thrown away, a two-Surface Focus/Recent grid, and a Game/Genome/Rounds
+ * Segmented row whose only on-page tab mounted `StatsSpineStage`. See the
+ * spec's Risks section: dropping that mount also drops its in-page `?area=`
+ * drill, which is a deliberate trade, not an oversight.
  *
- * ADDITIVE ONLY — a client component; the server page hands it plain
- * serializable props (including a `serverNowMs` anchor so relative-freshness
- * text agrees between server and client first paint — see `relativeTimeFrom`).
+ * No clock is read during render. `today` arrives as a bare `YYYY-MM-DD`
+ * string from the route loader; every derivation lives in
+ * `roster-player-logic.ts`, which has no JSX and no React.
  * ========================================================================== */
 
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { ArrowLeft } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
-import {
-  Surface,
-  Button,
-  Chip,
-  Eyebrow,
-  InsetGroup,
-  InsufficientData,
-  Segmented,
-  StatMatrix,
-  type StatMatrixItem,
-  type SegmentedOption,
-} from '@/components/fairway';
-import { StandingBars } from '@/components/fairway/charts/StandingBars';
+import { Surface, Button, InlineNotice, InsufficientData } from '@/components/fairway';
+import { Avatar } from '@/components/fairway/controls/avatar';
+import { scoreFieldCap } from '@/components/fairway/modules/ScoreField';
+import { FieldReadouts, SectionHead, VerdictLine } from '@/components/fairway/pages/dashboard/coach-home-parts';
 import { IconMessage } from '@/components/icons';
 import { FairwayYearBadge } from './FairwayYearBadge';
 import { FairwayPlayerStatusBadge } from './FairwayPlayerStatusBadge';
 import { FairwayPlayerActionsMenu } from './FairwayPlayerActionsMenu';
-import { tintFor } from '@/components/fairway/pages/calendar/FairwayCalendarMemberRail';
-import { StatsSpineStage } from '@/components/golf/stats/spine-stage/StatsSpineStage';
-import { buildStandingBars, buildVerdict } from '@/components/golf/stats/spine-stage/buildStatsViewModel';
-import { relativeTimeFrom } from '@/components/fairway/notifications/time-format';
+import { OVERLINE, FocusLedger, RoundLog, RoundStrip, StandingLedger } from './roster-player-parts';
+import {
+  allRoundsHref,
+  buildDossierReadouts,
+  buildDossierVerdict,
+  gameHref,
+  genomeHref,
+  plottableRounds,
+  scoringTrend,
+  standingHalfSpan,
+  standingLedgerRows,
+  stripDomain,
+  stripRow,
+  type DossierRound,
+} from './roster-player-logic';
 import type { GolfStats } from '@/lib/utils/golf-stats-calculator-shots';
 import type { PlayerStandingRow } from '@/app/golf/actions/stats-leak-maps-types';
 
@@ -87,13 +87,7 @@ export interface FairwayPlayerProfileFocusArea {
   created_at: string | null;
 }
 
-export interface FairwayPlayerProfileRound {
-  id: string;
-  round_date: string | null;
-  course_name: string | null;
-  total_score: number | null;
-  score_to_par: number | null;
-}
+export type FairwayPlayerProfileRound = DossierRound;
 
 export interface FairwayPlayerProfileProps {
   player: FairwayPlayerProfilePlayer;
@@ -101,53 +95,29 @@ export interface FairwayPlayerProfileProps {
   membershipStatus: string | null;
   /** Career (`overall`) detailed stats — null when the read failed. */
   detailedStats: GolfStats | null;
-  /** SG standing rows (you / team / Tour) — [] when unavailable. */
+  /** SG standing rows (you / team / Tour) — [] when there are none. */
   standingRows: PlayerStandingRow[];
+  /**
+   * True when `getPlayerStandingRows` itself FAILED. Distinct from an empty
+   * `standingRows`, which is the honest state of a player without five
+   * shot-tracked rounds: a failed read must never render as that empty state,
+   * or a coach reads "no data" as "this kid isn't tracked".
+   */
+  standingUnavailable: boolean;
   /** Up to 3 non-completed focus areas, newest first. */
   focusAreas: FairwayPlayerProfileFocusArea[];
-  /** Up to 4 most recent scored rounds, newest first. */
+  /** Up to 12 most recent scored rounds, newest first. */
   recentRounds: FairwayPlayerProfileRound[];
-  /** Server wall-clock at render time — anchors relative-time text. */
-  serverNowMs: number;
+  /** True when the rounds query errored. Same honesty rule as above. */
+  roundsUnavailable: boolean;
+  /** The coach's today as a bare `YYYY-MM-DD`, resolved once by the loader. */
+  today: string;
   className?: string;
 }
-
-/* ---------------------------------------------------------------------------
- * Local formatters (presentation only)
- * ------------------------------------------------------------------------- */
 
 function fullName(p: FairwayPlayerProfilePlayer): string {
   return `${p.first_name ?? ''} ${p.last_name ?? ''}`.trim() || 'Player';
 }
-
-function initials(p: FairwayPlayerProfilePlayer): string {
-  return `${p.first_name?.[0] ?? ''}${p.last_name?.[0] ?? ''}`.toUpperCase() || '—';
-}
-
-/** `round_date` is a plain YYYY-MM-DD calendar date — split it rather than
- * routing it through `new Date()`, which resolves midnight UTC and renders
- * the previous day for anyone west of Greenwich (same rule StatsSpineStage's
- * `formatRoundDate` follows). */
-function formatRoundDate(iso: string): string {
-  const [y, m, d] = iso.slice(0, 10).split('-');
-  return y && m && d ? `${Number(m)}/${Number(d)}/${y.slice(2)}` : iso;
-}
-
-function formatPct(value: number | null | undefined): string {
-  return value != null && Number.isFinite(value) ? `${Math.round(value)}%` : '—';
-}
-
-function formatOne(value: number | null | undefined): string {
-  return value != null && Number.isFinite(value) ? value.toFixed(1) : '—';
-}
-
-type DossierTab = 'game' | 'genome' | 'rounds';
-
-const TAB_OPTIONS: SegmentedOption<DossierTab>[] = [
-  { value: 'game', label: 'Game' },
-  { value: 'genome', label: 'Genome' },
-  { value: 'rounds', label: 'Rounds' },
-];
 
 /* ---------------------------------------------------------------------------
  * FairwayPlayerProfile
@@ -158,110 +128,61 @@ export function FairwayPlayerProfile({
   membershipStatus,
   detailedStats,
   standingRows,
+  standingUnavailable,
   focusAreas,
   recentRounds,
-  serverNowMs,
+  roundsUnavailable,
+  today,
   className,
 }: FairwayPlayerProfileProps) {
-  const router = useRouter();
   const name = fullName(player);
-  const tint = tintFor(player.id);
   const location = [player.hometown, player.state].filter(Boolean).join(', ');
 
-  // Mount-gated "now" — starts at the server's timestamp (agrees with first
-  // paint) then advances, matching the relativeTimeFrom contract (a
-  // Date.now() default here would drift between server and client renders).
-  const [nowMs, setNowMs] = useState(serverNowMs);
-  useEffect(() => {
-    setNowMs(Date.now());
-    const id = window.setInterval(() => setNowMs(Date.now()), 60_000);
-    return () => window.clearInterval(id);
-  }, []);
+  /* ── The stage ─────────────────────────────────────────────────────────── */
+  // One fetch, three consumers. The PLOTTABLE subset drives the axis, the
+  // strip and the stage's own round count; the table below shows every fetched
+  // row, because a round dated in year 60824 is still a real row — it just
+  // cannot sit on an axis without destroying it for the other eleven.
+  const plotted = useMemo(() => plottableRounds(recentRounds, today), [recentRounds, today]);
+  const domain = useMemo(() => stripDomain(plotted, today), [plotted, today]);
+  const cap = useMemo(() => scoreFieldCap([stripRow(player.id, name, plotted)]), [player.id, name, plotted]);
+  const trend = useMemo(() => scoringTrend(recentRounds), [recentRounds]);
 
-  const [tab, setTab] = useState<DossierTab>('rounds');
-
-  function onTabChange(next: DossierTab) {
-    if (next === 'game') {
-      router.push(`/golf/dashboard/players/${player.id}/game`);
-      return;
-    }
-    if (next === 'genome') {
-      router.push(`/golf/dashboard/players/${player.id}/genome`);
-      return;
-    }
-    setTab('rounds');
-  }
-
-  const sgTotalRow = useMemo(
-    () => standingRows.find((r) => r.metric_id === 'sg_total') ?? null,
-    [standingRows],
-  );
-  const standingBarsProps = useMemo(
-    () => buildStandingBars(sgTotalRow, 'coach', name),
-    [sgTotalRow, name],
-  );
-  const verdict = useMemo(
-    () => buildVerdict(sgTotalRow?.player_value ?? null, null),
-    [sgTotalRow],
+  const readouts = useMemo(
+    () => buildDossierReadouts({
+      detailedStats,
+      standingRows,
+      standingUnavailable,
+      roundsUnavailable,
+      trend,
+      plottedCount: plotted.length,
+    }),
+    [detailedStats, standingRows, standingUnavailable, roundsUnavailable, trend, plotted.length],
   );
 
-  const statMatrixItems: StatMatrixItem[] = [
-    { label: 'Scoring avg', value: formatOne(detailedStats?.scoringAverage) },
-    { label: 'Rounds', value: detailedStats?.roundsPlayed ?? 0 },
-    { label: 'Fairways', value: formatPct(detailedStats?.fairwayPercentage) },
-    { label: 'GIR', value: formatPct(detailedStats?.girPercentage) },
-    { label: 'Putts/rd', value: formatOne(detailedStats?.puttsPerRound) },
-  ];
+  const verdictParts = useMemo(
+    () => buildDossierVerdict({ playerId: player.id, standingRows, standingUnavailable, trend }),
+    [player.id, standingRows, standingUnavailable, trend],
+  );
+
+  const sgRows = useMemo(() => standingLedgerRows(standingRows, player.id), [standingRows, player.id]);
+  const sgHalf = useMemo(() => standingHalfSpan(sgRows), [sgRows]);
 
   return (
-    <div className={cn('mx-auto w-full max-w-[1200px] px-4 py-6 md:px-6 md:py-8', className)}>
-      {/* ── Back to roster ── */}
-      <Button
-        asChild
-        variant="ghost"
-        size="sm"
-        leftIcon={<ArrowLeft className="h-4 w-4" />}
-        className="mb-5 -ml-2 text-text-tertiary"
-      >
-        <Link href="/golf/dashboard/roster">Roster</Link>
-      </Button>
-
-      <div className="flex flex-col gap-6">
-        {/* ── Masthead — unboxed identity, one primary action, overflow Menu ── */}
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-          <div className="flex min-w-0 items-start gap-4">
-            <span
-              className="grid h-14 w-14 flex-shrink-0 place-items-center overflow-hidden rounded-fw-md font-fw-display text-h3 font-semibold ring-1 ring-border-subtle"
-              style={player.avatar_url ? undefined : { backgroundColor: tint.bg, color: tint.text }}
-            >
-              {player.avatar_url ? (
-                <img src={player.avatar_url} alt="" className="h-full w-full object-cover" />
-              ) : (
-                initials(player)
-              )}
-            </span>
-
-            <div className="min-w-0">
-              <h1 className="break-words font-fw-display text-h1 font-semibold tracking-[-0.02em] text-text-primary">
-                {name}
-              </h1>
-              <div className="mt-1.5 flex flex-wrap items-center gap-2">
-                <FairwayYearBadge year={player.graduation_year} />
-                <FairwayPlayerStatusBadge
-                  playerId={player.id}
-                  currentStatus={membershipStatus}
-                  editable
-                  size="sm"
-                />
-                {location ? (
-                  <span className="font-fw-sans text-caption text-text-tertiary">{location}</span>
-                ) : null}
-              </div>
-              <p className="mt-1.5 font-fw-sans text-body-sm text-text-secondary">{verdict}</p>
-            </div>
-          </div>
-
-          <div className="flex flex-shrink-0 items-center gap-2 self-start">
+    <div
+      className={cn(
+        'mx-auto flex w-full max-w-[1200px] flex-col overflow-x-clip px-5 pt-6 pb-10 md:px-8 md:pt-8 md:pb-28',
+        className,
+      )}
+    >
+      {/* ── 1 · Masthead ────────────────────────────────────────────────── */}
+      <header className="flex flex-col gap-4">
+        <div className="flex items-center justify-between gap-3">
+          {/* No arrow glyph: the control carries its destination in words. */}
+          <Button asChild variant="ghost" size="sm" className="-ml-2 text-text-tertiary">
+            <Link href="/golf/dashboard/roster">Roster</Link>
+          </Button>
+          <div className="flex items-center gap-2">
             <Button asChild variant="primary" size="sm" leftIcon={<IconMessage size={16} />}>
               <Link href={`/golf/dashboard/messages?player=${player.id}`}>Message</Link>
             </Button>
@@ -275,105 +196,118 @@ export function FairwayPlayerProfile({
           </div>
         </div>
 
-        {/* ── Headline numbers ── */}
-        <StatMatrix label="Season" items={statMatrixItems} variant="matte" />
-
-        {/* ── Standing ── */}
-        <Surface elevation="border" padding="md">
-          <Eyebrow as="h3" tone="accent">
-            Standing
-          </Eyebrow>
-          {standingBarsProps ? (
-            <div className="mt-3">
-              <StandingBars {...standingBarsProps} frame="bare" />
-            </div>
-          ) : (
-            <div className="mt-3">
-              <InsufficientData
-                title="Standing fills in after 5+ rounds"
-                description="Strokes-gained vs the team and Tour needs a minimum sample of shot-tracked rounds."
+        <div className="flex min-w-0 items-center gap-4">
+          <Avatar name={name} src={player.avatar_url} size="md" className="shrink-0" />
+          <div className="min-w-0">
+            <h1 className="break-words font-fw-display text-h1 tracking-[-0.02em] text-text-primary md:text-display">
+              {name}
+            </h1>
+            <div className="mt-1.5 flex flex-wrap items-center gap-2">
+              <FairwayYearBadge year={player.graduation_year} />
+              <FairwayPlayerStatusBadge
+                playerId={player.id}
+                currentStatus={membershipStatus}
+                editable
+                size="sm"
               />
+              {location ? (
+                <span className="font-fw-sans text-caption text-text-tertiary">{location}</span>
+              ) : null}
             </div>
-          )}
-        </Surface>
-
-        {/* ── Focus areas + recent rounds — seam rows, not card grids ── */}
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-          <Surface elevation="border" padding="md">
-            <Eyebrow as="h3" tone="accent">
-              Focus areas
-            </Eyebrow>
-            {focusAreas.length > 0 ? (
-              <InsetGroup className="mt-3">
-                {focusAreas.map((fa) => (
-                  <InsetGroup.Row
-                    key={fa.id}
-                    trailing={
-                      <Chip size="sm" tone={fa.status === 'in_progress' ? 'accent' : 'neutral'}>
-                        {fa.status === 'in_progress' ? 'In progress' : (fa.status ?? 'Open')}
-                      </Chip>
-                    }
-                  >
-                    {fa.title ?? fa.area_type ?? 'Focus area'}
-                  </InsetGroup.Row>
-                ))}
-              </InsetGroup>
-            ) : (
-              <p className="mt-3 font-fw-sans text-body-sm text-text-tertiary">
-                No open focus areas. Add one from the Genome tab.
-              </p>
-            )}
-          </Surface>
-
-          <Surface elevation="border" padding="md">
-            <Eyebrow as="h3" tone="accent">
-              Recent rounds
-            </Eyebrow>
-            {recentRounds.length > 0 ? (
-              <InsetGroup className="mt-3">
-                {recentRounds.map((r) => (
-                  <InsetGroup.Row
-                    key={r.id}
-                    as={Link}
-                    href={`/golf/dashboard/rounds/${r.id}`}
-                    trailing={
-                      r.total_score != null ? (
-                        <span className="font-fw-mono text-body-sm tabular-nums text-text-primary">
-                          {r.total_score}
-                        </span>
-                      ) : undefined
-                    }
-                  >
-                    {[r.round_date ? formatRoundDate(r.round_date) : null, r.course_name]
-                      .filter(Boolean)
-                      .join(' · ') || 'Round'}
-                  </InsetGroup.Row>
-                ))}
-              </InsetGroup>
-            ) : (
-              <p className="mt-3 font-fw-sans text-body-sm text-text-tertiary">
-                No scored rounds yet.
-              </p>
-            )}
-            {recentRounds[0]?.round_date ? (
-              <p className="mt-2 font-fw-sans text-caption text-text-tertiary">
-                Last played {relativeTimeFrom(recentRounds[0].round_date, nowMs)}
-              </p>
-            ) : null}
-          </Surface>
+          </div>
         </div>
 
-        {/* ── Tabs: Game / Genome / Rounds ── */}
-        <div className="flex flex-col gap-4">
-          <Segmented<DossierTab>
-            options={TAB_OPTIONS}
-            value={tab}
-            onValueChange={onTabChange}
-            aria-label="Player dossier view"
+        <VerdictLine parts={verdictParts} />
+      </header>
+
+      {/* ── 2 · The stage ───────────────────────────────────────────────── */}
+      <Surface as="section" aria-label="Round strip" elevation="border" padding="none" className="mt-10 overflow-hidden">
+        <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3 border-b border-border-subtle px-5 py-4 md:px-6">
+          <div className="flex min-w-0 flex-col gap-1">
+            {/* The count is what the strip actually DREW, not what was
+                fetched: a round with an impossible date is excluded from the
+                axis, and an overline claiming twelve above eleven marks is a
+                small lie the reader can see. */}
+            <p className={OVERLINE}>
+              Round history
+              {plotted.length > 0 ? (
+                <>
+                  {' '}
+                  <span aria-hidden="true">·</span> last {plotted.length}{' '}
+                  {plotted.length === 1 ? 'round' : 'rounds'}
+                </>
+              ) : null}
+            </p>
+            <h2 className="font-fw-display text-h2 text-text-primary">Round strip</h2>
+            <p className="max-w-[60ch] font-fw-sans text-caption text-text-tertiary">
+              Each bar is one round against par, oldest to today. Amber rises over par, green drops
+              under; par is the line, scale ±{cap}.
+            </p>
+          </div>
+        </div>
+        <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_15rem] xl:divide-x xl:divide-border-subtle">
+          <div className="order-2 flex min-w-0 flex-col justify-center px-5 py-5 md:px-6 xl:order-1">
+            {roundsUnavailable ? (
+              <InlineNotice tone="warning" title="Couldn’t load this player’s rounds">
+                Something went wrong reading their rounds. Refresh to try again; nothing has been
+                lost.
+              </InlineNotice>
+            ) : plotted.length === 0 ? (
+              <InsufficientData
+                title="No scored rounds yet"
+                description="Rounds land here as this player logs them, and the strip draws each one against par."
+              />
+            ) : (
+              <RoundStrip rounds={plotted} domain={domain} cap={cap} />
+            )}
+          </div>
+          <div className="order-1 border-b border-border-subtle px-5 py-4 md:px-6 md:py-5 xl:order-2 xl:border-b-0">
+            <FieldReadouts items={readouts} />
+          </div>
+        </div>
+      </Surface>
+
+      {/* ── 3 · The ledger row ──────────────────────────────────────────── */}
+      {/* The split's floor is measured, not assumed. At `md` the Standing
+          column is 298px and its row needs 316 (8rem label + 6rem bar +
+          4.25rem value + two 12px gaps), so the row spilled into Focus. At
+          `lg` the column is 334 and the same row fits with slack, so the even
+          two-up starts there. The unequal 7/5 and the vertical divider wait
+          for `xl`, where the column is 526. Below `lg`, one column. */}
+      <div className="mt-12 grid grid-cols-1 gap-y-10 lg:grid-cols-2 lg:gap-x-8 xl:grid-cols-12 xl:gap-x-0 xl:gap-y-0 xl:divide-x xl:divide-border-subtle">
+        <section aria-label="Strokes gained" className="flex flex-col gap-3 xl:col-span-7 xl:pr-8">
+          <SectionHead title="Strokes gained" action={{ label: 'Game', href: gameHref(player.id) }} />
+          <StandingLedger rows={sgRows} half={sgHalf} unavailable={standingUnavailable} />
+        </section>
+        <section aria-label="Focus areas" className="flex flex-col gap-3 xl:col-span-5 xl:pl-8">
+          <SectionHead
+            title="Focus"
+            count={focusAreas.length > 0 ? focusAreas.length : undefined}
+            action={{ label: 'Genome', href: genomeHref(player.id) }}
           />
-          {tab === 'rounds' ? <StatsSpineStage playerId={player.id} isOwnStats={false} playerName={name} /> : null}
-        </div>
+          <FocusLedger areas={focusAreas} genomeHref={genomeHref(player.id)} />
+        </section>
       </div>
+
+      {/* ── 4 · The round log ───────────────────────────────────────────── */}
+      <section id="rounds" aria-label="Round log" className="mt-10 flex scroll-mt-24 flex-col gap-3">
+        <SectionHead
+          title="Round log"
+          count={roundsUnavailable ? undefined : recentRounds.length}
+          action={{ label: 'View all', href: allRoundsHref(name) }}
+        />
+        {roundsUnavailable ? (
+          <InlineNotice tone="warning" title="Couldn’t load this player’s rounds">
+            Something went wrong reading their rounds. Refresh to try again; nothing has been lost.
+          </InlineNotice>
+        ) : recentRounds.length === 0 ? (
+          <p className="px-0.5 py-1 font-fw-sans text-body-sm text-text-tertiary">
+            No scored rounds yet.
+          </p>
+        ) : (
+          <RoundLog rounds={recentRounds} />
+        )}
+      </section>
     </div>
   );
 }

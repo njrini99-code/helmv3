@@ -49,9 +49,13 @@ Roster list
   -> read team members, players, join requests, recent round summaries
   -> render roster cards, status, online state, pending requests
 
-Player profile
-  -> read player profile and recent rounds
-  -> suspense-load stats sections
+Player profile (coach player field sheet, /roster/[id])
+  -> read player, membership, career stats, SG standing rows,
+     open focus areas and the last 12 scored rounds in ONE parallel batch
+  -> each optional read carries its own `*Unavailable` boolean beside its
+     array, so a failed fetch never renders as the honest empty state
+  -> one round fetch feeds three regions: the round strip's date axis,
+     the 5-vs-5 scoring trend, and the round log table
 
 Team page
   -> coach sees editable team settings
@@ -87,6 +91,27 @@ by `roster-health.ts`. Below it a bare `Toolbar` (search, Needs attention
 filter, sort `Segmented`, export) and a `MatrixBoard` with row selection. The
 page keeps the shell's symmetric `md:px-6` gutter; launcher clearance is the
 shell's `md:pb-28`, not a page gutter.
+
+The coach player detail (`FairwayPlayerProfile.tsx`, spec
+`docs/design/fairway-facelift/screens/roster-player.v3.md`) follows the same
+field-sheet language: a bare masthead (avatar, name, badges, one linked
+verdict sentence), ONE `Surface` holding the page-local `RoundStrip`
+instrument beside the shared `FieldReadouts` column, a bare two-column ledger
+row (strokes-gained off one shared VERTICAL zero rule, open focus areas), and
+a round log table with a `md:hidden` stacked list beside it. Derivations live
+in `roster-player-logic.ts` (pure, no JSX); parts in
+`roster-player-parts.tsx`. `RoundStrip` is PAGE-LOCAL by design — it reuses
+`ScoreField`'s exported geometry (`dateFraction`, `scoreFieldTicks`,
+`scoreFieldCap`) at single-row scale and is deliberately NOT registered in
+`modules/index.ts`, `modules/types.ts` or `registry.ts`. `today` arrives as a
+bare `YYYY-MM-DD` prop from the loader; nothing reads a clock during render,
+and date-only columns are parsed at local midnight. Plotted rounds are bounded
+to ±5 years of today (`DOMAIN_LIMIT_YEARS`) so a corrupt production date
+cannot collapse the axis; the table still lists every fetched row. This
+replaced the `StatMatrix` mislabeled "Season", the standalone Standing
+`Surface`, the Focus/Recent two-`Surface` grid, and the Game/Genome/Rounds
+`Segmented` row — which also removed the in-page `?area=` `StatsSpineStage`
+drill (a conscious trade, logged in the spec's Risks).
 
 ## Known Risk Areas
 

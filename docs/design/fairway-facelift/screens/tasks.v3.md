@@ -581,8 +581,67 @@ Built on `agent/frost-facelift`. Files:
 - The spec's `ScoreField.tsx:253` baseline citation matched but is
   deliberately not followed; see deviation 5.
 
+### Corrected after reading the captures
+
+The first build passed every gate and still shipped six defects that only the
+rendered page showed. Recorded here because each one is a rule, not a typo.
+
+13. **The instrument inverted its own hierarchy.** Overdue bars scaled from a
+    2px floor into a 19px half-height while a not-yet-due stroke was a flat
+    12px, so across the whole realistic cap range (3-21 days) an amber "late"
+    mark drew SHORTER than a grey "scheduled" one. Late bars now scale through
+    `[MIN_LATE_PX=12, HALF_HEIGHT_PX=19]`; shape and colour still separate the
+    two. **Rule: a magnitude scale that starts at a hairline will rank its own
+    most urgent marks last.**
+14. **The masthead crowned an alphabetical winner.** A coach assigns one task
+    to the whole squad, so the worst lateness is a tie *by construction*: the
+    capture showed seven lanes reading `50d late` beneath a sentence naming one
+    of them "furthest behind". `worstOffenderTie` counts the tied lanes and the
+    verdict says "and 6 others", dropping the task title when the tied lanes
+    are late on different tasks. The one-function rule is intact —
+    `worstOffender` still has exactly two call sites.
+15. **Two headings, one word, different sets.** "By category" listed five while
+    the facts line above it said "7 categories": the ledger counts OPEN tasks,
+    the facts line counts all of them. The heading is now "Open by category".
+    This is the same collision the stage's "Open"→"Load" rename fixed, caught
+    the second time only by looking at the page.
+16. **An unresolvable assignee borrowed the team lane's identity.** An
+    assignment row whose player id did not resolve fell through to `TEAM_LANE`,
+    so the terminal lane took that row's name and rendered as "Unnamed player"
+    while claiming to be the bucket for work nobody owns. It gets its own lane,
+    keyed on the assignment.
+17. **`truncate` on a ledger title destroys the title.** At 390 four of five
+    "Overdue now" rows lost their identifying half ("Watch Pre-Tournament
+    Course Overvi…") while the table directly below showed the same titles
+    whole. Ledger titles are `line-clamp-2`; the table's cells keep `truncate`,
+    which is conventional for a table.
+18. **Percentage margins are not margins.** `TODAY_LABEL_MARGIN` is 12 points
+    *of the plot*, and the plot is ~230px at 768 against ~380px at 1440, so
+    "Sep" and "Today" printed as `SepToday` at 768 and nearly touched at 1024.
+    A label inside `TODAY_CROWD_MARGIN` now anchors to the left of its own tick
+    so it grows away from the rule. Still pure percentages: no measurement
+    pass, no runtime breakpoint read.
+
+Two smaller ones: the `Open` readout carried a blank note while its three
+neighbours carried real ones, which rendered as a hole in the rail; and the
+table's `Due` cell broke `Jul 11` across two lines at 768, stretching every row
+in the table to hold one wrapped date.
+
+### Captured and read
+
+`ui-intelligence/facelift/captures/coach/tasks__w{390,768,1024,1280,1440}__full.png`
+— one login, five widths, each gated on `[data-slot="verdict"]` so it cannot
+photograph the skeleton. No horizontal overflow at any width
+(`scrollWidth === clientWidth` at all five).
+
 ### Not verified
 
 - Only the coach persona was captured. The player variant (one `You` lane,
   first-person verdict, no team lane) is covered by unit tests, not by a
   screenshot.
+- The shared capture pipeline (`capture-golf-facelift.mjs`) does not wait for
+  real content and has no login retry, so under four-agent load it photographs
+  `FairwayTasksSkeleton` or fails at the sign-in form. Its
+  `tasks__desktop__full.png` (real content) and `tasks__phone__full.png`
+  (skeleton) therefore predate the fixes above; the five width shots are the
+  evidence for the current build.

@@ -79,20 +79,121 @@ export function SeverityChip({ severity }: { severity: SignalSeverity }) {
 
 /* ── The stage: the leak rail ─────────────────────────────────────────────── */
 
-const LABEL_COL = 108;
+const LABEL_COL = 132;
 const VALUE_COL = 120;
 
-export function LeakRail({
-  field,
-  hrefForCategory,
-  ariaLabel,
-}: {
+/**
+ * One row's mono figure: the strokes at risk, with the signal count that built
+ * it one step down. A category standing on one low-confidence signal must not
+ * read the same as one standing on seven, and length alone cannot say that.
+ */
+function LeakValue({ value, sample, measured }: { value: string; sample: string; measured: boolean }) {
+  return (
+    <span className="flex flex-col items-end leading-tight">
+      <span
+        className={cn(
+          'whitespace-nowrap font-fw-mono text-caption tabular-nums',
+          measured ? 'font-medium text-text-primary' : 'text-text-tertiary',
+        )}
+      >
+        {value}
+      </span>
+      <span className="whitespace-nowrap font-fw-mono text-microlabel text-text-tertiary">{sample}</span>
+    </span>
+  );
+}
+
+function LeakBar({ pct, index, reduceMotion }: { pct: number; index: number; reduceMotion: boolean }) {
+  return (
+    <m.span
+      aria-hidden="true"
+      className="block h-full rounded-r-full bg-fw-warning"
+      initial={reduceMotion ? false : { opacity: 0, scaleX: 0 }}
+      animate={{ opacity: 1, scaleX: 1 }}
+      style={{ width: `${pct}%`, transformOrigin: 'left center' }}
+      transition={{ duration: DURATION.short, delay: stagger(index), ease: EASE_CINEMATIC }}
+    />
+  );
+}
+
+/** The zero rule and the across-category mean rule, both spanning every row.
+ *  This is the instrument's only ground: no row carries a rail of its own. */
+function LeakGround({ meanPct }: { meanPct: number | null }) {
+  return (
+    <>
+      <span className="absolute inset-y-0 left-0 w-px bg-border-strong" />
+      {meanPct != null ? (
+        <span
+          className="absolute inset-y-0 w-px bg-warm-400"
+          style={{ left: `${Math.min(100, Math.max(0, meanPct))}%` }}
+        />
+      ) : null}
+    </>
+  );
+}
+
+export interface LeakRailProps {
   field: LeakField;
   hrefForCategory: (category: string) => string;
   ariaLabel: string;
-}) {
+  /**
+   * `aligned` is the desktop instrument: one grid for every row, so the bar
+   * tracks line up whatever the mono figures measure.
+   *
+   * `stacked` is the phone one. At 390px an aligned row leaves the track about
+   * 88px wide, which turns every bar into a stub sitting beside a vertical
+   * rule — the handle-on-a-slider shape this instrument exists to avoid. The
+   * label and figure take the first line and the bar runs the full width
+   * beneath them, so the ranking is still read by length. Both variants stay
+   * in the DOM with CSS choosing; nothing reads a breakpoint at runtime.
+   */
+  layout: 'aligned' | 'stacked';
+}
+
+export function LeakRail({ field, hrefForCategory, ariaLabel, layout }: LeakRailProps) {
   const prefersReducedMotion = useReducedMotionGuard();
   const { rows, meanPct } = field;
+
+  if (layout === 'stacked') {
+    return (
+      <LazyMotion features={loadFeatures}>
+        <div data-slot="leak-rail-stacked" role="list" aria-label={ariaLabel} className="relative flex flex-col">
+          {/* Every bar below spans this container, so one pair of rules is the
+              shared ground for all of them. */}
+          <span aria-hidden="true" className="pointer-events-none absolute inset-0">
+            <LeakGround meanPct={meanPct} />
+          </span>
+          {rows.map((row, i) => (
+            <Link
+              key={row.category}
+              href={hrefForCategory(row.category)}
+              role="listitem"
+              aria-label={`${row.label}, ${row.value}, ${row.sample}`}
+              className={cn(
+                'group relative -mx-1.5 flex flex-col gap-1.5 rounded-fw-sm px-1.5 py-2',
+                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-300',
+              )}
+            >
+              {/* The rules run the height of the list, so this line sits on the
+                  surface colour and the ground passes BEHIND it. Without that
+                  the mean rule struck straight through `Course Management`.
+                  It is also why this row carries no hover fill: a tinted row
+                  under an opaque label line is a band that only half-lights. */}
+              <span className="relative flex items-baseline justify-between gap-3 bg-surface">
+                <span className="min-w-0 truncate font-fw-sans text-body-sm font-medium text-text-primary group-hover:underline">
+                  {row.label}
+                </span>
+                <LeakValue value={row.value} sample={row.sample} measured={row.measured} />
+              </span>
+              <span className="relative flex h-[10px] items-center">
+                {row.measured ? <LeakBar pct={row.pct} index={i} reduceMotion={prefersReducedMotion} /> : null}
+              </span>
+            </Link>
+          ))}
+        </div>
+      </LazyMotion>
+    );
+  }
 
   return (
     <LazyMotion features={loadFeatures}>
@@ -105,23 +206,12 @@ export function LeakRail({
           gridTemplateColumns: `${LABEL_COL}px minmax(0,1fr) ${VALUE_COL}px`,
         }}
       >
-        {/* Vertical ground. The zero rule is the true baseline — a magnitude
-            ranking has no negative side (see intelligence-logic's header) —
-            and the mean rule is the only reference mark on the instrument.
-            Both span every row rather than repeating per row, which is the
-            difference between ground and eight sliders. */}
         <div
           aria-hidden="true"
           className="pointer-events-none relative"
           style={{ gridColumn: 2, gridRow: `1 / ${rows.length + 1}` }}
         >
-          <span className="absolute inset-y-0 left-0 w-px bg-border-strong" />
-          {meanPct != null ? (
-            <span
-              className="absolute inset-y-0 w-px bg-warm-400"
-              style={{ left: `${Math.min(100, Math.max(0, meanPct))}%` }}
-            />
-          ) : null}
+          <LeakGround meanPct={meanPct} />
         </div>
 
         {rows.map((row, i) => (
@@ -132,45 +222,18 @@ export function LeakRail({
             >
               {row.label}
             </span>
-            <span
-              className="relative flex h-[10px] items-center"
-              style={{ gridColumn: 2, gridRow: i + 1 }}
-            >
-              {row.measured ? (
-                <m.span
-                  aria-hidden="true"
-                  className="block h-full rounded-r-full bg-fw-warning"
-                  initial={prefersReducedMotion ? false : { opacity: 0, scaleX: 0 }}
-                  animate={{ opacity: 1, scaleX: 1 }}
-                  style={{ width: `${row.pct}%`, transformOrigin: 'left center' }}
-                  transition={{ duration: DURATION.short, delay: stagger(i), ease: EASE_CINEMATIC }}
-                />
-              ) : null}
+            <span className="relative flex h-[10px] items-center" style={{ gridColumn: 2, gridRow: i + 1 }}>
+              {row.measured ? <LeakBar pct={row.pct} index={i} reduceMotion={prefersReducedMotion} /> : null}
             </span>
-            <span
-              className="flex flex-col items-end leading-tight"
-              style={{ gridColumn: 3, gridRow: i + 1 }}
-            >
-              <span
-                className={cn(
-                  'whitespace-nowrap font-fw-mono text-caption tabular-nums',
-                  row.measured ? 'font-medium text-text-primary' : 'text-text-tertiary',
-                )}
-              >
-                {row.value}
-              </span>
-              {/* The evidence behind the figure. A category built on one
-                  low-confidence signal must not read the same as one built on
-                  seven, and the rail cannot show that with length alone. */}
-              <span className="whitespace-nowrap font-fw-mono text-microlabel text-text-tertiary">
-                {row.sample}
-              </span>
+            <span style={{ gridColumn: 3, gridRow: i + 1 }}>
+              <LeakValue value={row.value} sample={row.sample} measured={row.measured} />
             </span>
-            {/* One link per row, laid over the whole row rather than wrapping
-                it, so every row shares ONE grid and the bar tracks stay aligned
-                across rows whatever the mono figures measure. */}
+            {/* One link per row, laid OVER the row rather than wrapping it, so
+                every row shares one grid and the bar tracks stay aligned
+                whatever the mono figures measure. */}
             <Link
               href={hrefForCategory(row.category)}
+              role="listitem"
               aria-label={`${row.label}, ${row.value}, ${row.sample}`}
               className={cn(
                 '-mx-1.5 rounded-fw-sm px-1.5 transition-colors [transition-duration:150ms]',
@@ -242,12 +305,16 @@ export function LedgerColumn({
   id,
   title,
   count,
+  more,
   className,
   children,
 }: {
   id?: string;
   title: string;
   count?: number | null;
+  /** Rendered under the rows when the heading's count is larger than the
+   *  number of rows shown, so a list of six never sits mute under a seven. */
+  more?: ReactNode;
   className?: string;
   children: ReactNode;
 }) {
@@ -260,7 +327,18 @@ export function LedgerColumn({
         ) : null}
       </div>
       <div className="flex min-w-0 flex-col">{children}</div>
+      {more}
     </section>
+  );
+}
+
+/** The one line a capped ledger column owes its heading. */
+export function LedgerMore({ hidden, children }: { hidden: number; children?: ReactNode }) {
+  if (hidden <= 0) return null;
+  return (
+    <p className="pt-2 font-fw-sans text-caption text-text-tertiary">
+      {children ?? `+${hidden} more`}
+    </p>
   );
 }
 
@@ -278,12 +356,19 @@ export function QueueLedgerRow({ entry, onOpen }: { entry: QueueEntry; onOpen: (
       onClick={onOpen}
       className={cn(LEDGER_ROW, 'transition-colors [transition-duration:150ms] hover:bg-surface-hover/60')}
     >
-      <span className="shrink-0 pt-px">
+      {/* A fixed column, not a shrink-wrapped chip: `Medium` is twice the width
+          of `Low`, and letting the chip size the column started every claim at
+          a different x. */}
+      <span className="w-16 shrink-0 pt-px">
         <SeverityChip severity={signal.severity} />
       </span>
       <span className="flex min-w-0 flex-1 flex-col gap-0.5">
         <span className="truncate font-fw-sans text-body-sm font-medium text-text-primary">{group.playerName}</span>
-        <span className="truncate font-fw-sans text-caption text-text-secondary">
+        {/* Two lines, not one truncated one. At 1280 a ledger column is about
+            253px, where a single truncated line of a claim shows six words and
+            says nothing — and the claim is the only thing separating six rows
+            that all carry the same player's name. */}
+        <span className="font-fw-sans text-caption leading-snug text-text-secondary [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2] overflow-hidden">
           {toCoachVoice(signal.claim || signal.title, group.playerId ? group.playerName : null)}
         </span>
       </span>
@@ -293,7 +378,7 @@ export function QueueLedgerRow({ entry, onOpen }: { entry: QueueEntry; onOpen: (
 
 export function PlayerLedgerRow({ row, href }: { row: PlayerRow; href: string }) {
   return (
-    <div className={LEDGER_ROW}>
+    <div className={cn(LEDGER_ROW, 'items-baseline')}>
       <Link href={href} className="min-w-0 flex-1 truncate font-fw-sans text-body-sm font-medium text-text-primary hover:text-accent-700">
         {row.playerName}
       </Link>
@@ -307,6 +392,12 @@ export function PlayerLedgerRow({ row, href }: { row: PlayerRow; href: string })
   );
 }
 
+/**
+ * The focus area leads and the player is the fact beside it. A focus title is
+ * the long string ("Approach play is the biggest leak this month") and a name
+ * is the short one, so putting the name first clipped the half that says what
+ * is actually being worked on.
+ */
 export function FocusLedgerRow({ row, onOpen }: { row: FocusRow; onOpen: () => void }) {
   return (
     <PressTarget
@@ -314,11 +405,9 @@ export function FocusLedgerRow({ row, onOpen }: { row: FocusRow; onOpen: () => v
       className={cn(LEDGER_ROW, 'items-baseline transition-colors [transition-duration:150ms] hover:bg-surface-hover/60')}
     >
       <span className="min-w-0 flex-1 truncate font-fw-sans text-body-sm font-medium text-text-primary">
-        {row.playerName}
-      </span>
-      <span className="min-w-0 max-w-[60%] shrink truncate font-fw-sans text-caption text-text-tertiary">
         {row.title}
       </span>
+      <span className="shrink-0 truncate font-fw-sans text-caption text-text-tertiary">{row.playerName}</span>
     </PressTarget>
   );
 }
@@ -424,7 +513,7 @@ export function SignalsTable({
                   <td className={cn(TD, NUM, strokes.measured ? 'font-medium text-fw-warning-ink' : 'text-text-tertiary')}>
                     {strokes.text}
                   </td>
-                  <td className={cn(TD, NUM, 'hidden lg:table-cell')}>{occurrences ?? ''}</td>
+                  <td className={cn(TD, NUM, 'hidden lg:table-cell')}>{occurrences}</td>
                 </tr>
               );
             })}

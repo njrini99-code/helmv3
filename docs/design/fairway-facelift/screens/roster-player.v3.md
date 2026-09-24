@@ -619,3 +619,102 @@ CSS-only breakpoint gating throughout, no client-only measurement:
   `detailedStats` figure specifically, it needs its own team-average source
   verified against the same pipeline first — not assumed compatible with
   `standingRows`.
+
+## Result
+
+Built on `agent/frost-facelift`. Files: `roster-player-logic.ts` (pure, no JSX,
+unit-tested in `__tests__/roster-player-logic.test.ts`),
+`roster-player-parts.tsx` (`RoundStrip`, `StandingLedger`, `FocusLedger`,
+`RoundLog`), a rewritten `FairwayPlayerProfile.tsx`, a rebuilt
+`FairwayPlayerProfile.test.tsx`, and the widened loader at
+`roster/[id]/page.tsx`. `RoundStrip` stayed page-local: nothing was added to
+`modules/index.ts`, `modules/types.ts` or `registry.ts`.
+
+Followed as written: the three-branch SG headline and its stop-on-failure
+order, the leak clause linked to Game Fingerprint, the glyph-free number-free
+trend clause anchored at `#rounds`, the `roundsUnavailable` /
+`standingUnavailable` split carried as two booleans beside their arrays, the
+widened 10-column / 12-row round query, the four readouts and their
+career-vs-window labelling, the 7/5 ledger split gated at `xl`, the twelve-row
+table, and the CSS-only phone gating.
+
+### Deviations, and why
+
+- **Standing rows are drawn off a shared VERTICAL zero rule, not as plain
+  text rows.** The spec's Standing column was label / signed value / cohort
+  caption with no mark. The lead's standing instruction for this pass is
+  "StandingBars off a zero rule rather than any dot-on-a-track control," and
+  the blanket rule is that no full-width rail may sit under a mark. Both
+  shipped candidates fail that rule on inspection — `modules/DivergingBars.tsx:27`
+  and `StandingBars.tsx:255` each paint a `bg-surface-sunken` rounded track
+  behind every row — and four `StandingBars frame="bare"` instances stacked
+  would put four captions, four delta pills and twelve You/Team/Field rows in
+  one ledger column, which is a card deck without the borders. What shipped is
+  a page-local row set whose ground is one vertical hairline the four rows
+  share (each row's rule spans its full height, so they abut into a single
+  continuous zero line), a bar growing left or right from it, and the signed
+  value in mono at the right — the spec's row content, drawn.
+- **The `SG: ` prefix is stripped from the four row labels.** The column
+  heading already reads "Strokes gained", so `display_label` renders as
+  "Off the Tee / Approach / Around the Green / Putting". The full
+  `display_label` stays on each row's `aria-label`. The prefix cost ~30px of
+  label width in the tightest cell on the page (the `md` 2-up Standing column
+  at 768).
+- **`teamRelativeText` is called with its `unit` argument.** The spec's call
+  omits it. `StandingBar/utils.ts`'s own docstring describes the bug that
+  produces: a player on 64.6% and a team on 65.3% both render "65%" and get
+  narrated as one being below the other. `'percent'` is passed for `gir_pct`.
+- **Both cohort strings go through `neutralizeForCoach`.** `teamCohortText`
+  and `teamRelativeText` speak in the player's voice ("your team"); this page
+  is read by the coach. The spec omitted the wrapper the existing code already
+  passed `viewer_context: 'coach'` for.
+- **`formatSgSigned` / `formatToPar` are wrapped, not called on nulls.** Both
+  fall back to an EM dash, which LANGUAGE.md bans and which would disagree
+  with the readouts' own EN dash two lines away. Local `formatSg`,
+  `formatToParCell`, `formatOne`, `formatPct` and `girCell` all return the one
+  `MISSING` glyph (`'–'`) instead; `formatSgSigned` is only ever handed a
+  number that exists.
+- **The plotted subset is bounded to ±5 years of today, and it — not the
+  fetch — drives the stage.** `DOMAIN_LIMIT_YEARS` / `isPlottable` mirror
+  `qualifiers-field-logic.ts`. Production carries golf rows dated year 60824,
+  and one is enough to collapse every real bar to a hairline. The stage
+  overline's `{n}` and Readout 4's "strip shows the last {n plotted}" both
+  report the drawn count; the table still lists every fetched row, because a
+  row with a bad date is real data and a table has no axis to wreck.
+- **The Scoring avg caption reads "▲ 0.8 across last 5 vs prior 5".** The
+  spec's wording omits "across". The shared `FieldReadouts` builds its own
+  caption from `delta` + `spanLabel` and owns the good/bad tone; passing the
+  wording as a plain `note` would have dropped the colour. One word of drift
+  bought zero drift from the reference component.
+- **Table column `GIR` renamed to `Greens`, section head `Rounds` renamed to
+  `Round log`.** Two headers on one screen must not share a word while showing
+  different numbers. "GIR %" (a rate over shot-tracked rounds, from
+  `standingRows`) sat next to a per-round `11/18` headed "GIR"; "Rounds ·
+  career" (21) sat next to a section head counting 12 fetched rows.
+- **The round log renders two branches.** The spec hides columns below `md`;
+  this also ships a `md:hidden` stacked list beside the `hidden md:block`
+  table, both always in the DOM with CSS choosing, per the lead's mobile rule.
+- **`today` is the server's local day.** The loader has no team timezone in
+  hand (it resolves `teamId`, not the team row), so `today` is built from the
+  server clock's date parts — same fidelity as the `serverNowMs` prop it
+  replaces, and it is a prop, so nothing reads a clock during render. Wiring
+  the team timezone through would need a second read this route does not make.
+
+### Spec citations that still hold, and the ones that moved
+
+Every `path:line` citation checked against this branch resolved to the code
+the spec described, with one exception worth noting: `FieldReadouts` is at
+`coach-home-parts.tsx:111` as cited, but its `<dl>` responsive classes have no
+`xl:grid-cols-none` mention in the spec's summary — they are reused verbatim
+regardless. No citation was found stale enough to change a decision.
+
+### Known limitations, unchanged from the spec's Risks
+
+`?area=` deep-linking still does not exist on Game Fingerprint, so all four
+Standing rows and the masthead leak link resolve to the same URL. Deleting the
+`StatsSpineStage` mount removes the in-page `?area=` drill; that is a real
+capability loss, taken deliberately. `FairwayRoundsLibrary`'s `playerFilter`
+still ignores an incoming `?player=` query param, so the "View all" link lands
+unfiltered. `registry.ts`'s `Spine` entry still lists "Player dossier" in its
+examples and is now stale; it was left alone because those three files belong
+to the lead.

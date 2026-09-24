@@ -8,6 +8,7 @@ import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
 import { Metadata } from 'next';
 import { fairwayScope } from '@/lib/redesign/flag';
 import { FairwayPlayerProfile } from '@/components/fairway/pages/roster/FairwayPlayerProfile';
+import { DOSSIER_ROUND_LIMIT } from '@/components/fairway/pages/roster/roster-player-logic';
 import { getDetailedStats } from '@/app/golf/actions/stats-data';
 import { getPlayerStandingRows } from '@/app/golf/actions/stats-leak-maps';
 
@@ -118,8 +119,8 @@ export default async function PlayerProfilePage({ params }: PageProps) {
   }
 
   // ---------------------------------------------------------------------
-  // Masthead snapshot reads — headline numbers (StatMatrix), SG standing
-  // (StandingBars), focus areas and recent rounds (seam rows). Each is an
+  // Field-sheet reads — the readouts column (headline numbers), the SG
+  // standing ledger, focus areas and the round log. Each is an
   // ADDITIVE enrichment of an already-loaded page: a failure degrades that
   // one section to its honest empty state rather than throwing, matching
   // the pattern `/players/[playerId]/game` already uses for its optional
@@ -132,7 +133,7 @@ export default async function PlayerProfilePage({ params }: PageProps) {
   const [detailedStatsResult, standingResult, focusAreasResult, roundsResult] = await Promise.all([
     getDetailedStats(id, 'overall').catch((err) => {
       void logServerError(
-        `[player detail] headline stats read failed (StatMatrix will show placeholders): ${describeError(err)}`,
+        `[player detail] headline stats read failed (readouts will show dashes, never zeros): ${describeError(err)}`,
         { action: 'playerDetail.detailedStats', featureArea: 'roster', playerId: id },
         'warning',
       );
@@ -140,7 +141,7 @@ export default async function PlayerProfilePage({ params }: PageProps) {
     }),
     getPlayerStandingRows(id).catch((err) => {
       void logServerError(
-        `[player detail] standing rows read failed (StandingBars will show insufficient-data): ${describeError(err)}`,
+        `[player detail] standing rows read failed (the page says so rather than rendering an empty column): ${describeError(err)}`,
         { action: 'playerDetail.standingRows', featureArea: 'roster', playerId: id },
         'warning',
       );
@@ -155,11 +156,17 @@ export default async function PlayerProfilePage({ params }: PageProps) {
       .limit(3),
     supabase
       .from('golf_rounds')
-      .select('id, round_date, course_name, total_score, score_to_par')
+      // Widened from five columns / four rows: the field sheet reads ONE
+      // fetch three ways (the round strip's date axis, the scoring trend's
+      // 5-vs-5 window, the round log table), so a second query here would be
+      // three regions able to disagree about the same window. Every column
+      // below already exists on `golf_rounds` and is selected identically by
+      // `players/[playerId]/game` — no schema change.
+      .select('id, round_date, course_name, round_type, total_score, score_to_par, holes_played, total_putts, total_gir, total_gir_possible')
       .eq('player_id', id)
       .not('total_score', 'is', null)
       .order('round_date', { ascending: false })
-      .limit(4),
+      .limit(DOSSIER_ROUND_LIMIT),
   ]);
 
   if (focusAreasResult.error) {
@@ -171,13 +178,28 @@ export default async function PlayerProfilePage({ params }: PageProps) {
   }
   if (roundsResult.error) {
     void logServerError(
-      `[player detail] recent rounds read failed (that section will render empty): ${describeError(roundsResult.error)}`,
+      `[player detail] recent rounds read failed (the stage and table say so rather than rendering empty): ${describeError(roundsResult.error)}`,
       { action: 'playerDetail.recentRounds', featureArea: 'roster', playerId: id },
       'warning',
     );
   }
 
-  const standingRows = standingResult?.success ? (standingResult.data ?? []) : [];
+  // A FAILED read and an honestly-empty player used to reach the component
+  // looking identical — both as `[]`. The dossier needs to tell them apart in
+  // six places (the verdict, the strip, three readouts and the standing
+  // ledger), so each failure travels as its own boolean beside its array,
+  // the same shape the coach home already ships as `teamStatsUnavailable`.
+  const standingUnavailable = standingResult == null || standingResult.success !== true;
+  const standingRows = standingUnavailable ? [] : (standingResult.data ?? []);
+  const roundsUnavailable = Boolean(roundsResult.error);
+
+  // `today` as a bare YYYY-MM-DD resolved ONCE, here, and handed down as a
+  // prop: the page must not read a clock during render, or the server's day
+  // and the client's first paint can disagree and hydration mismatches. Built
+  // from the date parts rather than a `toLocale*` call, which would pick up
+  // an implicit locale.
+  const now = new Date();
+  const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 
   return (
     <div className={fairwayScope('min-h-full bg-canvas')}>
@@ -186,9 +208,11 @@ export default async function PlayerProfilePage({ params }: PageProps) {
         membershipStatus={membership.status}
         detailedStats={detailedStatsResult}
         standingRows={standingRows}
+        standingUnavailable={standingUnavailable}
         focusAreas={focusAreasResult.data ?? []}
         recentRounds={roundsResult.data ?? []}
-        serverNowMs={Date.now()}
+        roundsUnavailable={roundsUnavailable}
+        today={today}
       />
     </div>
   );

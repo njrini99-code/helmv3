@@ -103,6 +103,7 @@ import {
   FocusLedgerRow,
   LedgerColumn,
   LedgerEmpty,
+  LedgerMore,
   LeakRail,
   PlayerLedgerRow,
   QueueLedgerRow,
@@ -528,16 +529,22 @@ export function TriageDesk({
       <header className="flex flex-col gap-3">
         <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
           <p className={OVERLINE}>{lastScanLabel}</p>
-          <div className="flex flex-wrap items-center gap-2">
-            {/* The view control belongs to the PAGE, not the stage: Players and
-                Effectiveness replace the whole field sheet. Leaving it above
-                the table (where the spec drew it) would put the only route to
-                those two views below the fold on every load. */}
+          {/* The view control belongs to the PAGE, not the stage: Players and
+              Effectiveness replace the whole field sheet. Leaving it above the
+              table (where the spec drew it) would put the only route to those
+              two views below the fold on every load.
+
+              It takes its OWN row below phone, where three segments plus the
+              eyebrow plus two actions wrapped into three stacked rows and ate
+              the first 380px of the screen before the title started. */}
+          <div className="order-last w-full md:order-none md:w-auto">
             <ViewSwitch
               view={view}
               hrefFor={(next) => hrefFor({ view: next, signal: null })}
               onSelect={(next) => navigate({ view: next, signal: null })}
             />
+          </div>
+          <div className="flex items-center gap-2">
             <Menu
               trigger={
                 <IconButton aria-label="More options">
@@ -584,10 +591,12 @@ export function TriageDesk({
                 <h2 className="font-fw-display text-h2 text-text-primary">Leak ranking</h2>
                 <p className="max-w-[64ch] font-fw-sans text-caption text-text-tertiary">
                   {leakField.allUnmeasured
-                    ? 'No measured stroke impact yet, so this is ranked by signal count. Roster roll-ups are excluded: their strokes are already counted in the per-player rows.'
-                    : `Open per-player signals summed by category. Bars run from zero; the second rule is the across-category mean${
-                        leakField.meanStrokes != null ? `, ${leakField.meanStrokes.toFixed(1)} str/rd` : ''
-                      }. Roster roll-ups are excluded: their strokes are already counted in the per-player rows.`}
+                    ? 'Ranked by signal count: nothing here carries a measured stroke impact yet. Roster roll-ups are left out, their strokes already counting once per player.'
+                    : `Strokes at risk per round, summed by category from zero${
+                        leakField.meanStrokes != null
+                          ? `; the second rule is the ${leakField.meanStrokes.toFixed(1)} average`
+                          : ''
+                      }. Roster roll-ups are left out, their strokes already counting once per player.`}
                 </p>
               </div>
               {groupsError ? null : (
@@ -609,11 +618,26 @@ export function TriageDesk({
                   </p>
                 ) : (
                   <>
-                    <LeakRail
-                      field={leakField}
-                      hrefForCategory={(category) => hrefFor({ filter: `category:${category}` })}
-                      ariaLabel="Strokes at risk by category"
-                    />
+                    {/* Both variants stay mounted. At 390px the aligned grid
+                        leaves an 88px track and every bar becomes a stub beside
+                        a vertical rule; the stacked one gives each bar the full
+                        width under its own label and figure. */}
+                    <div className="md:hidden">
+                      <LeakRail
+                        field={leakField}
+                        hrefForCategory={(category) => hrefFor({ filter: `category:${category}` })}
+                        ariaLabel="Strokes at risk by category"
+                        layout="stacked"
+                      />
+                    </div>
+                    <div className="hidden md:block">
+                      <LeakRail
+                        field={leakField}
+                        hrefForCategory={(category) => hrefFor({ filter: `category:${category}` })}
+                        ariaLabel="Strokes at risk by category"
+                        layout="aligned"
+                      />
+                    </div>
                     {leakField.overflow > 0 ? (
                       <p className="mt-3 font-fw-sans text-caption text-text-tertiary">
                         {leakField.overflow} more {leakField.overflow === 1 ? 'category' : 'categories'} sit below the top eight. Every signal in them is still in the table.
@@ -641,6 +665,15 @@ export function TriageDesk({
                   title="Queue"
                   count={triageable}
                   className="xl:col-span-4 xl:pr-8 2xl:col-span-5"
+                  more={
+                    <LedgerMore hidden={triageable - queueRows.length}>
+                      {/* A same-page anchor, so it is a jump rather than a
+                          navigation: the table it points at is already here. */}
+                      <a href="#signals-table" className="underline decoration-accent-300 underline-offset-4">
+                        {`+${triageable - queueRows.length} more in the table below`}
+                      </a>
+                    </LedgerMore>
+                  }
                 >
                   {queueRows.length === 0 ? (
                     <LedgerEmpty>
@@ -662,6 +695,7 @@ export function TriageDesk({
                   title="Players"
                   count={counts.playersFlagged}
                   className="xl:col-span-4 xl:px-8 2xl:col-span-3"
+                  more={<LedgerMore hidden={counts.playersFlagged - flaggedPlayers.length} />}
                 >
                   {flaggedPlayers.length === 0 ? (
                     <LedgerEmpty>No players flagged.</LedgerEmpty>
@@ -682,6 +716,7 @@ export function TriageDesk({
               id="ledger-focus"
               title="Focus areas"
               count={focusError ? null : focusCount}
+              more={focusError ? null : <LedgerMore hidden={focusCount - focusLedger.length} />}
               className={cn(
                 'md:col-span-2',
                 groupsError ? 'xl:col-span-12' : 'xl:col-span-4 xl:pl-8 2xl:col-span-4',

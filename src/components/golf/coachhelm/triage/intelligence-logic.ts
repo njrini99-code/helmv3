@@ -234,11 +234,18 @@ const SEVERITY_TEXT: Record<SignalSeverity, string> = {
 };
 
 /**
- * The mix across the SAME signals the rail ranks (roll-ups excluded), so the
- * legend and the instrument above it never describe different populations.
+ * The mix across EVERY open signal, roster roll-ups included.
+ *
+ * The rail excludes roll-ups because SUMMING one double-counts the per-player
+ * leaks inside it. Counting one by severity double-counts nothing, and the two
+ * numbers a reader can compare this against — the masthead verdict's urgent
+ * count (`computeBriefCounts`) and the Signals table's own Severity column —
+ * both include them. Measured over the queue-only population this legend read
+ * "0 urgent" three inches under a verdict that said "1 urgent" and directly
+ * above a table whose first row was an urgent one.
  */
 export function severityMix(groups: readonly SignalGroup[]): SeveritySegment[] {
-  const signals = flatSignals(groups).filter((s) => !isRollup(s));
+  const signals = flatSignals(groups);
   const total = signals.length;
   return SEVERITY_ORDER.map((severity) => {
     const count = signals.filter((s) => s.severity === severity).length;
@@ -291,18 +298,37 @@ export interface PlayerRow {
   signalCount: number;
 }
 
-/** Flagged players, already attention-ordered by `groupSignals`. The team
- *  bucket (`playerId === null`) is excluded by definition: it is not a player. */
+/**
+ * Flagged players, already attention-ordered by `groupSignals`. The team
+ * bucket (`playerId === null`) is excluded by definition: it is not a player.
+ *
+ * The population is deliberately the SAME one `computeBriefCounts` counts as
+ * `playersFlagged` — one entry per distinct player who has at least one open
+ * signal — because that count is the caption this list sits under. Taking the
+ * groups as they come would have shown two rows for a player who happens to
+ * hold two groups, and a row for a group carrying no signals at all, either of
+ * which puts a list of N under a heading that says something other than N.
+ */
 export function playerRows(groups: readonly SignalGroup[], limit = PLAYER_LIMIT): PlayerRow[] {
-  return groups
-    .filter((g): g is SignalGroup & { playerId: string } => g.playerId !== null)
-    .slice(0, limit)
-    .map((g) => ({
-      playerId: g.playerId,
-      playerName: g.playerName,
-      severity: g.worstSeverity,
-      signalCount: g.signals.length,
-    }));
+  const byPlayer = new Map<string, PlayerRow>();
+  for (const group of groups) {
+    if (group.playerId === null || group.signals.length === 0) continue;
+    const existing = byPlayer.get(group.playerId);
+    if (!existing) {
+      byPlayer.set(group.playerId, {
+        playerId: group.playerId,
+        playerName: group.playerName,
+        severity: group.worstSeverity,
+        signalCount: group.signals.length,
+      });
+      continue;
+    }
+    existing.signalCount += group.signals.length;
+    if (SEVERITY_ORDER.indexOf(group.worstSeverity) < SEVERITY_ORDER.indexOf(existing.severity)) {
+      existing.severity = group.worstSeverity;
+    }
+  }
+  return [...byPlayer.values()].slice(0, limit);
 }
 
 export interface FocusRow {
@@ -420,8 +446,16 @@ export function formatSignalStrokes(strokeImpact: number | null): string | null 
 
 /** How many times this signal has been re-detected. `SignalDossier.tsx:201-205`
  *  is the precedent: the superseded rows plus the live one. */
-export function occurrencesOf(signal: GroupedSignal): number | null {
-  return signal.supersededCount > 0 ? signal.supersededCount + 1 : null;
+/**
+ * How many times the scan has raised this reading, the kept signal included.
+ *
+ * Always a number, never null. This used to return null for an un-superseded
+ * signal so the table column would stay sparse, which printed an empty cell
+ * under a heading that reads `Occurrences` — the shape of a missing
+ * measurement, for a signal we know occurred exactly once.
+ */
+export function occurrencesOf(signal: GroupedSignal): number {
+  return signal.supersededCount + 1;
 }
 
 /** The active filter, said in words, so the table's heading never carries the

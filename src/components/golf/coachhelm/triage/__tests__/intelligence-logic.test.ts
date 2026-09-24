@@ -10,6 +10,7 @@
 
 import { describe, expect, it } from 'vitest';
 import type { GroupedSignal, SignalGroup } from '@/lib/coachhelm/signal-grouping';
+import { computeBriefCounts } from '../buildTriageViewModel';
 import {
   activeFocusCount,
   aggregateCategoryLeaks,
@@ -202,6 +203,23 @@ describe('the two signal counts', () => {
     expect(playerRows(groups).map((r) => r.playerId)).toEqual(['p1']);
   });
 
+  it('shows one row per flagged player, counted the way the heading counts them', () => {
+    // Two groups, one player, and a third group holding nothing. The heading
+    // over this list is `computeBriefCounts(...).playersFlagged`, so the list
+    // has to be that same population or a list of N sits under a different N.
+    const split = [
+      grp('p1', [sig({ id: 'a', severity: 'low' })]),
+      grp('p1', [sig({ id: 'b', severity: 'urgent' })], { worstSeverity: 'urgent' }),
+      grp('p2', []),
+      grp(null, [sig({ id: 'c', kind: 'team_synthesis' })]),
+    ];
+    const rows = playerRows(split);
+    expect(rows.map((r) => r.playerId)).toEqual(['p1']);
+    expect(rows[0]!.signalCount).toBe(2);
+    expect(rows[0]!.severity).toBe('urgent');
+    expect(rows).toHaveLength(computeBriefCounts(split).playersFlagged);
+  });
+
   it('respects the queue cap in the order the grouping already produced', () => {
     const wide = [grp('p1', Array.from({ length: 10 }, (_, i) => sig({ id: `s${i}` })))];
     expect(queueEntries(wide)).toHaveLength(6);
@@ -210,14 +228,20 @@ describe('the two signal counts', () => {
 });
 
 describe('severityMix', () => {
-  it('measures the same population the rail ranks', () => {
+  it('counts roll-ups too, so the legend agrees with the verdict and the table', () => {
+    // Summing a roll-up double-counts strokes, which is why the rail drops it.
+    // COUNTING one double-counts nothing, and both numbers a reader compares
+    // this against — the verdict's urgent count and the table's Severity
+    // column — include it. Measured queue-only, this legend printed
+    // "0 urgent" beneath a verdict reading "1 urgent".
     const groups = [
       grp(null, [sig({ id: 'team:x', kind: 'team_synthesis', playerId: null, severity: 'urgent' })]),
       grp('p1', [sig({ id: 'a', severity: 'urgent' }), sig({ id: 'b', severity: 'low' })]),
     ];
     const mix = severityMix(groups);
-    expect(mix.map((s) => s.count)).toEqual([1, 0, 0, 1]);
-    expect(mix[0]!.pct).toBe(50);
+    expect(mix.map((s) => s.count)).toEqual([2, 0, 0, 1]);
+    expect(mix.reduce((n, s) => n + s.count, 0)).toBe(openSignalCount(groups));
+    expect(mix[0]!.pct).toBeCloseTo(200 / 3, 10);
   });
 
   it('reports zeroes rather than NaN for an empty queue', () => {
@@ -340,9 +364,12 @@ describe('small formatters', () => {
     expect(formatSignalStrokes(null)).toBeNull();
   });
 
-  it('counts occurrences as the superseded rows plus the live one, blank when there are none', () => {
+  it('counts occurrences as the superseded rows plus the live one, never blank', () => {
     expect(occurrencesOf(sig({ supersededCount: 3 }))).toBe(4);
-    expect(occurrencesOf(sig({ supersededCount: 0 }))).toBeNull();
+    // A signal raised once has occurred once. Returning null here printed an
+    // empty cell under a heading that reads `Occurrences`, which is the shape
+    // of a missing measurement rather than of the number 1.
+    expect(occurrencesOf(sig({ supersededCount: 0 }))).toBe(1);
   });
 
   it('names the active filter so a filtered count never wears an unfiltered caption', () => {
