@@ -343,9 +343,20 @@ describe('one metric, one number', () => {
     expect(card).toMatch(/formatMetric\('scrambling_pct', resolvedScrambleRate, \{ window: SCRAMBLE_WINDOW \}\)/);
     expect(card).toMatch(/scramble\.windowChip/);
   });
-  it.todo(
-    'Team board and Stats print strokes gained through formatMetric (2 dp, no "E" for SG zero; team-board fmtSg is 1 dp, stats formatSgSigned prints "−0.00"; W9/W13)',
-  );
+  it('Team board and Stats print strokes gained through formatMetric (W9/W13)', () => {
+    // Both helpers are one-line wrappers over the registry, so the board, the
+    // Stats spine and the player page print SG identically: 2 dp, the true
+    // minus sign, no "E" and no "−0.00" for a near-zero value.
+    for (const rel of [
+      'src/components/golf/stats/team-board/buildTeamBoardViewModel.ts',
+      'src/components/golf/stats/spine-stage/buildStatsViewModel.ts',
+    ]) {
+      expect(stripComments(source(rel)), rel).toMatch(/formatMetricText\('sg_total', finite\(value\)\)/);
+    }
+    expect(formatMetricText('sg_total', -1.6)).toBe('\u22121.60');
+    expect(formatMetricText('sg_total', -0.004)).toBe('0.00');
+    expect(formatMetricText('sg_total', 0)).toBe('0.00');
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -372,7 +383,21 @@ describe('no 15–20 ft or 20+ ft band on player-analysis surfaces', () => {
     expect(hit?.[0] ?? null, `${rel} prints a legacy band`).toBeNull();
   });
 
-  it.todo(
-    'Stats putting views drop the legacy 15–20 ft band (StatsBento.tsx, PuttingDrill.tsx, buildRoundStatReport.ts; W9)',
-  );
+  it.each([
+    'src/components/golf/stats/spine-stage/StatsBento.tsx',
+    'src/components/golf/stats/spine-stage/PuttingDrill.tsx',
+    'src/components/golf/stats/round-report/buildRoundStatReport.ts',
+  ])('%s: no legacy "15–20 ft / 20+ ft" pair; any 15–20 ft row sits in a contiguous 5 ft ladder (W9)', (rel) => {
+    // The legacy fault was a 15–20 ft band beside an open "20+ ft" bucket.
+    // The Stats drill and round report keep a fine 5 ft ladder
+    // (…15–20, 20–25, 25–30…), which is contiguous and allowed.
+    const code = stripComments(source(rel));
+    expect(code.match(/['"`][^'"`]*20\s*\+\s*ft[^'"`]*['"`]/)?.[0] ?? null, rel).toBeNull();
+    const labels = [...code.matchAll(/'(?:Make )?(\d+)-(\d+)ft'/g)].map((m) => [Number(m[1]), Number(m[2])] as const);
+    for (const [lo, hi] of labels) {
+      if (lo === 15 && hi === 20) {
+        expect(labels.some(([a]) => a === 20), `${rel} has 15–20 ft without a 20–25 ft band`).toBe(true);
+      }
+    }
+  });
 });
