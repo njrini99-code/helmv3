@@ -15027,11 +15027,14 @@ export type Database = {
       }
       golf_player_standing: {
         Row: {
+          basis: string | null
           computed_at: string
+          layup_excluded_n: number | null
           level_avg: number | null
           level_n: number
           level_pct: number | null
           metric_id: string
+          on_green_proximity_feet: number | null
           pga_delta: number | null
           pga_value: number
           player_id: string
@@ -15041,11 +15044,14 @@ export type Database = {
           team_pct: number | null
         }
         Insert: {
+          basis?: string | null
           computed_at?: string
+          layup_excluded_n?: number | null
           level_avg?: number | null
           level_n?: number
           level_pct?: number | null
           metric_id: string
+          on_green_proximity_feet?: number | null
           pga_delta?: number | null
           pga_value: number
           player_id: string
@@ -15055,11 +15061,14 @@ export type Database = {
           team_pct?: number | null
         }
         Update: {
+          basis?: string | null
           computed_at?: string
+          layup_excluded_n?: number | null
           level_avg?: number | null
           level_n?: number
           level_pct?: number | null
           metric_id?: string
+          on_green_proximity_feet?: number | null
           pga_delta?: number | null
           pga_value?: number
           player_id?: string
