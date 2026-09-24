@@ -78,3 +78,28 @@ describe('CompositeRatingCard — Form (OD-02)', () => {
     expect(screen.getAllByText('Form').length).toBeGreaterThan(0);
   });
 });
+
+// NUM-35: a team percentile ranked among fewer than 5 teammates is not printed;
+// on a team of one or two a single outlier reads as the 100th percentile.
+describe('CompositeRatingCard — team percentile floor (NUM-35)', () => {
+  const categories = { teeGame: 70, approach: 40, shortGame: 55, putting: 62, scoring: 48 };
+
+  it('hides "100th %ile" when the team distribution has fewer than 5 players', () => {
+    const { container } = render(
+      <CompositeRatingCard composite={62} categories={categories} percentiles={{ teeGame: { team: 100, teamN: 2 } }} />,
+    );
+    expect(container.textContent).not.toMatch(/%ile/);
+  });
+
+  it('prints the percentile once the team is large enough to rank against', () => {
+    render(<CompositeRatingCard composite={62} categories={categories} percentiles={{ teeGame: { team: 80, teamN: 8 } }} />);
+    expect(screen.getByText('80th %ile')).toBeInTheDocument();
+  });
+
+  it('hides a percentile with no team size at all', () => {
+    const { container } = render(
+      <CompositeRatingCard composite={62} categories={categories} percentiles={{ teeGame: { team: 100 } }} />,
+    );
+    expect(container.textContent).not.toMatch(/%ile/);
+  });
+});

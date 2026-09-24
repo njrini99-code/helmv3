@@ -508,13 +508,12 @@ async function getPlayerProfileImpl(
       teamDistributions[key] = teamPlayerMetrics.map((p) => p.metrics[key] ?? 0);
     }
 
-    // Platform distributions default to team (could be expanded later)
-    const platformDistributions = teamDistributions;
-
+    // No platform-wide distribution exists yet. Pass null so the profile
+    // reports no platform percentile rather than a copy of the team one (NUM-35).
     const percentiles = buildPercentileProfile(
       playerMetricsForPercentile,
       teamDistributions,
-      platformDistributions,
+      null,
       playerId,
     );
 

@@ -39,6 +39,7 @@ import { Dial } from '@/components/fairway/charts/Dial';
 import { TrendChip, type TrendDirection } from '@/components/fairway/charts/TrendChip';
 import { InsufficientData } from '@/components/fairway/feedback/InsufficientData';
 import { describeFormFormula, FORM_EARLY_READ_LABEL, FORM_LABEL, type FormScore } from '@/lib/golf/form-score';
+import { teamPercentileReadout } from '@/lib/coachhelm/v2/stats/percentiles';
 
 interface CompositeRatingCardProps {
   // Typed props (used when data is pre-parsed)
@@ -50,7 +51,8 @@ interface CompositeRatingCardProps {
     putting: number;
     scoring: number;
   };
-  percentiles?: Record<string, { team: number }>;
+  /** Team percentile per category; `teamN` gates the readout (NUM-35). */
+  percentiles?: Record<string, { team: number; teamN?: number | null }>;
   trend?: { direction: 'improving' | 'stable' | 'declining'; delta: number };
   /** Form with read quality and formula inputs (getPlayerProfile().form). */
   form?: FormScore;
@@ -225,9 +227,10 @@ function CompositeRatingCardImpl({
                   >
                     {Math.round(value)}
                   </span>
-                  {resolvedPercentiles?.[key] ? (
+                  {/* NUM-35: no "100th %ile" from a team of one or two. */}
+                  {teamPercentileReadout(resolvedPercentiles?.[key]) ? (
                     <span className="w-16 shrink-0 text-right text-caption tabular-nums text-text-secondary">
-                      {resolvedPercentiles[key].team}th %ile
+                      {teamPercentileReadout(resolvedPercentiles?.[key])}
                     </span>
                   ) : null}
                 </div>
