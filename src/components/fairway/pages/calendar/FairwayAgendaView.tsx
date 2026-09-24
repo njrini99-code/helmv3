@@ -503,6 +503,27 @@ export function FairwayAgendaView({
           </section>
         );
       })}
+      {/* DASH-16: a short agenda ends on a sentence, not a void. Says what the
+          list covered so one event reads as "that's all", not "still loading". */}
+      {mode === 'range' ? (
+        <p data-slot="agenda-end" className="border-t border-border-subtle pt-4 font-fw-sans text-body-sm text-text-tertiary">
+          {periodLabel ? `That's everything for ${periodLabel}.` : "That's everything scheduled."}
+          {isCoach && onCreateEvent ? (
+            <>
+              {' '}
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={onCreateEvent}
+                className="inline h-auto min-h-0 w-auto border-0 p-0 font-medium text-accent-ink underline-offset-4 outline-none hover:bg-transparent hover:text-accent-700 hover:underline focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas"
+              >
+                Add an event
+              </Button>
+              .
+            </>
+          ) : null}
+        </p>
+      ) : null}
     </div>
   );
 }
