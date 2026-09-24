@@ -1,5 +1,7 @@
 'use client';
 
+import { cn } from '@/lib/utils';
+import { useSkeletonSwap } from '@/hooks/golf/use-skeleton-swap';
 import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { FocusAreaCard } from './FocusAreaCard';
@@ -68,6 +70,7 @@ export function PlayerFocusAreas({ playerId, initialFocusAreas }: PlayerFocusAre
     [focusAreas, showAll],
   );
   const hiddenCount = focusAreas.length - visibleAreas.length;
+  const reveal = useSkeletonSwap(loading);
 
   if (loading) {
     return <SkeletonList rows={VISIBLE_CAP} label="Loading focus areas" />;
@@ -88,7 +91,7 @@ export function PlayerFocusAreas({ playerId, initialFocusAreas }: PlayerFocusAre
   }
 
   return (
-    <div className="space-y-3">
+    <div className={cn('space-y-3', reveal.className)}>
       {visibleAreas.map((area, i) => (
         // conn-golf-player Finding 2: these cards were a dead-end duplicate of
         // My Development (no onClick at all). My Development is the SAME

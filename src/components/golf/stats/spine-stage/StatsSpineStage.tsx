@@ -21,6 +21,7 @@
  * ========================================================================== */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useSkeletonSwap } from '@/hooks/golf/use-skeleton-swap';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { RotateCw } from 'lucide-react';
@@ -254,6 +255,8 @@ export function StatsSpineStage({ playerId, isOwnStats = false, playerName, clas
   const [worstHoles, setWorstHoles] = useState<WorstHoleResponse | null>(seed?.worstHoles ?? null);
   const [patterns, setPatterns] = useState<CoachHelmPattern[]>(seed?.patterns ?? []);
   const [loading, setLoading] = useState(!seed);
+  // MOT-17: a slow first load fades the page in; a fast one swaps.
+  const reveal = useSkeletonSwap(loading);
   // A02/A06: `loading` blanks the WHOLE spine+stage region. It may therefore
   // only be set when there is nothing on screen worth preserving — the first
   // load for a player. Two narrower flags cover the cases where usable content
@@ -925,7 +928,7 @@ export function StatsSpineStage({ playerId, isOwnStats = false, playerName, clas
   ];
 
   return (
-    <div className={cn('flex flex-col gap-4', className)} aria-busy={scopeLoading || undefined}>
+    <div className={cn('flex flex-col gap-4', reveal.className, className)} aria-busy={scopeLoading || undefined}>
       {roundPicker}
       <div className="flex flex-col gap-6 min-[940px]:grid min-[940px]:grid-cols-[300px_1fr] min-[940px]:items-start">
         <StatsSpine

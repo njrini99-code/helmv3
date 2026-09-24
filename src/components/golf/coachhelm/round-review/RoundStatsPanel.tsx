@@ -42,6 +42,8 @@
  * (no fabricated zeros)").
  * ========================================================================== */
 
+import { cn } from '@/lib/utils';
+import { useSkeletonSwap } from '@/hooks/golf/use-skeleton-swap';
 import { Surface, InlineNotice, Skeleton, Button } from '@/components/fairway';
 import { RotateCw } from 'lucide-react';
 import { RoundStatReport } from '@/components/golf/stats/round-report/RoundStatReport';
@@ -57,6 +59,7 @@ export interface RoundStatsPanelProps {
 }
 
 export function RoundStatsPanel({ stats, loading, error, onRetry, className }: RoundStatsPanelProps) {
+  const reveal = useSkeletonSwap(loading);
   if (loading) {
     return (
       <Surface padding="lg" className={className}>
@@ -88,5 +91,5 @@ export function RoundStatsPanel({ stats, loading, error, onRetry, className }: R
   // no shot detail — `RoundStatReport` owns that state and says so in words.
   if (!stats) return null;
 
-  return <RoundStatReport stats={stats} className={className} />;
+  return <RoundStatReport stats={stats} className={cn(reveal.className, className)} />;
 }
