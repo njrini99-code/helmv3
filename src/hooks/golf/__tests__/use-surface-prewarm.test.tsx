@@ -25,6 +25,17 @@ async function flush(ms = 1300) {
   });
 }
 
+/** The rail fetch ran (rpc called) and its rows landed in the session cache. */
+async function waitForRail(teamId: string) {
+  await vi.waitFor(
+    () => {
+      expect(mock.rpc).toHaveBeenCalled();
+      expect(readCachedResource(`golf.conversations:viewer:${teamId}`)?.data).toBeTruthy();
+    },
+    { timeout: 5000, interval: 50 },
+  );
+}
+
 const mock = vi.hoisted(() => ({
   prefetch: vi.fn(),
   rpc: vi.fn(),
@@ -87,13 +98,19 @@ describe('useGolfSurfacePrewarm', () => {
 
     expect(mock.prefetch).toHaveBeenCalledWith('/golf/dashboard/calendar');
     expect(mock.prefetch).toHaveBeenCalledWith('/golf/dashboard/messages');
-    expect(mock.rpc).toHaveBeenCalled();
-    expect(readCachedResource('golf.conversations:viewer:team-a')?.data).toBeTruthy();
-  }, 10000);
+    // The rail fetch sits behind a dynamic import(). On a cold module graph
+    // (the first test in a shard to load use-golf-messages) that import can
+    // outlast flush()'s two microtask ticks: Nightly run 36006901516
+    // (2026-09-24, Pacific/Kiritimati shard 3/3) failed here with rpc never
+    // called. Wait for the outcome itself, bounded, instead of for a guessed
+    // number of ticks. The assertions are unchanged.
+    await waitForRail('team-a');
+  }, 15000);
 
   it('does not warm the OLD team a coach just switched away from', async () => {
     renderHook(() => useGolfSurfacePrewarm('viewer', 'team-a'));
     await flush();
+    await waitForRail('team-a');
     mock.rpc.mockClear();
 
     // Re-render as if TeamSwitcher just flipped the active team (a new
@@ -101,9 +118,9 @@ describe('useGolfSurfacePrewarm', () => {
     // were team-b's).
     renderHook(() => useGolfSurfacePrewarm('viewer', 'team-b'));
     await flush();
+    await waitForRail('team-b');
 
-    expect(mock.rpc).toHaveBeenCalled();
     expect(readCachedResource('golf.conversations:viewer:team-a')).not.toBeNull();
     expect(readCachedResource('golf.conversations:viewer:team-b')).not.toBeNull();
-  }, 15000);
+  }, 20000);
 });
