@@ -83,7 +83,8 @@ export function Inline(props: StandingBarProps) {
       </div>
 
       {/* Compact dot-separated values */}
-      <div className="text-eyebrow text-warm-600 tabular-nums mb-1.5 truncate">
+      {/* NUM-38: wraps instead of truncating, so no value is ever cut to "5…". */}
+      <div className="text-eyebrow text-warm-600 tabular-nums mb-1.5 break-words" data-slot="standing-inline-values">
         {showTeam && props.team_avg !== null && (
           <>T {formatValue(props.team_avg, props.unit)} · </>
         )}

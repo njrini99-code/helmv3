@@ -104,8 +104,11 @@ export function Card(props: CardProps) {
         )}
       </div>
 
-      {/* Explicit comparison cells — no cryptic loose labels floating over a rail. */}
-      <div className="mb-4 grid grid-cols-3 gap-2 tabular-nums">
+      {/* Explicit comparison cells — no cryptic loose labels floating over a rail.
+          NUM-38: cells never truncate ("TE… 5…" at 390px). They keep a
+          minimum width and wrap to a second row when the card is too narrow
+          for three. */}
+      <div className="mb-4 grid grid-cols-[repeat(auto-fit,minmax(5.5rem,1fr))] gap-2 tabular-nums" data-slot="standing-comparison-cells">
         <ComparisonCell
           label="Team"
           value={showTeam && props.team_avg !== null ? formatValue(props.team_avg, props.unit) : '—'}
@@ -180,14 +183,14 @@ function ComparisonCell({
       }
     >
       <span className="sr-only">{label} {value}</span>
-      <span className="block truncate font-fw-display text-eyebrow font-semibold uppercase tracking-[0.08em] text-text-tertiary">
+      <span className="block break-words font-fw-display text-eyebrow font-semibold uppercase tracking-[0.08em] text-text-tertiary">
         {label}
       </span>
       <strong
         className={
           emphasis
-            ? 'mt-0.5 block truncate font-fw-mono text-body-lg font-semibold text-fw-success-ink tabular-nums'
-            : 'mt-0.5 block truncate font-fw-mono text-body font-medium text-text-primary tabular-nums'
+            ? 'mt-0.5 block whitespace-nowrap font-fw-mono text-body-lg font-semibold text-fw-success-ink tabular-nums'
+            : 'mt-0.5 block whitespace-nowrap font-fw-mono text-body font-medium text-text-primary tabular-nums'
         }
       >
         {value}
