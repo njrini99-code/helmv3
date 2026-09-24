@@ -30,21 +30,15 @@
  * ========================================================================== */
 
 import type { ShotRecord, RoundHole } from '@/lib/types/golf';
+import { HOLE_HERO_LIE_RING, HOLE_HERO_SCENE } from '@/lib/golf/course-illustration-palette';
 
-const HELM_GREEN = '#16A34A';
+const HELM_GREEN = HOLE_HERO_SCENE.helmGreen;
 
 /** Ball/landing ring tint per lie. Greens anchor to the LOCKED brand green
  *  (HELM_GREEN) — fairway is the on-brand accent (was a too-light primary-400
  *  that blended into the white ball halo); rough is a deeper, distinct green
  *  (was an off-palette hunter/teal). */
-const LIE_RING: Record<string, string> = {
-  tee: '#cbb892',
-  fairway: HELM_GREEN,
-  rough: '#0f5a36',
-  sand: '#e8d9a6',
-  green: '#34d17a',
-  other: '#cfcac3',
-};
+const LIE_RING: Readonly<Record<string, string>> = HOLE_HERO_LIE_RING;
 
 type Pt = { x: number; y: number };
 
@@ -134,17 +128,17 @@ function HoleViz({
       <defs>
         {/* soft turf wash — calm, not garish */}
         <linearGradient id="fwTurf" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#1a6e44" />
-          <stop offset="100%" stopColor="#0f5a36" />
+          <stop offset="0%" stopColor={HOLE_HERO_SCENE.turfTop} />
+          <stop offset="100%" stopColor={HOLE_HERO_SCENE.deepTurf} />
         </linearGradient>
         <radialGradient id="fwGreen" cx="50%" cy="42%" r="62%">
-          <stop offset="0%" stopColor="#3fd585" />
+          <stop offset="0%" stopColor={HOLE_HERO_SCENE.greenLight} />
           <stop offset="62%" stopColor={HELM_GREEN} />
-          <stop offset="100%" stopColor="#0e7034" />
+          <stop offset="100%" stopColor={HOLE_HERO_SCENE.greenShade} />
         </radialGradient>
         <radialGradient id="fwBall" cx="34%" cy="28%" r="80%">
-          <stop offset="0%" stopColor="#ffffff" />
-          <stop offset="100%" stopColor="#dfe4df" />
+          <stop offset="0%" stopColor={HOLE_HERO_SCENE.ballLight} />
+          <stop offset="100%" stopColor={HOLE_HERO_SCENE.ballShade} />
         </radialGradient>
       </defs>
 
@@ -152,31 +146,31 @@ function HoleViz({
       <rect x="0" y="0" width="320" height="120" fill="url(#fwTurf)" rx="0" />
 
       {/* Fairway corridor — a lighter mown lane down the middle */}
-      <line x1={TEE_X} y1={MID_Y} x2={PIN_X} y2={MID_Y} stroke="#2e9b63" strokeOpacity="0.55" strokeWidth="44" strokeLinecap="round" />
-      <line x1={TEE_X} y1={MID_Y} x2={PIN_X} y2={MID_Y} stroke="#ffffff" strokeOpacity="0.05" strokeWidth="44" strokeLinecap="round" />
+      <line x1={TEE_X} y1={MID_Y} x2={PIN_X} y2={MID_Y} stroke={HOLE_HERO_SCENE.mownLane} strokeOpacity="0.55" strokeWidth="44" strokeLinecap="round" />
+      <line x1={TEE_X} y1={MID_Y} x2={PIN_X} y2={MID_Y} stroke={HOLE_HERO_SCENE.ballLight} strokeOpacity="0.05" strokeWidth="44" strokeLinecap="round" />
 
       {/* Green — helm green putting surface */}
       <ellipse cx={PIN_X} cy={MID_Y} rx="19" ry="27" fill="url(#fwGreen)" />
-      <ellipse cx={PIN_X} cy={MID_Y} rx="19" ry="27" fill="none" stroke="#ffffff" strokeOpacity="0.18" strokeWidth="0.8" />
+      <ellipse cx={PIN_X} cy={MID_Y} rx="19" ry="27" fill="none" stroke={HOLE_HERO_SCENE.ballLight} strokeOpacity="0.18" strokeWidth="0.8" />
 
       {/* Pin */}
-      <line x1={PIN_X} y1={MID_Y} x2={PIN_X} y2={MID_Y - 25} stroke="#ffffff" strokeOpacity="0.9" strokeWidth="1.3" strokeLinecap="round" />
-      <path d={`M${PIN_X},${MID_Y - 25} L${PIN_X + 11},${MID_Y - 21} L${PIN_X},${MID_Y - 17} Z`} fill="#e0563b" />
-      <circle cx={PIN_X} cy={MID_Y} r="2" fill="#0a1410" />
+      <line x1={PIN_X} y1={MID_Y} x2={PIN_X} y2={MID_Y - 25} stroke={HOLE_HERO_SCENE.ballLight} strokeOpacity="0.9" strokeWidth="1.3" strokeLinecap="round" />
+      <path d={`M${PIN_X},${MID_Y - 25} L${PIN_X + 11},${MID_Y - 21} L${PIN_X},${MID_Y - 17} Z`} fill={HOLE_HERO_SCENE.flag} />
+      <circle cx={PIN_X} cy={MID_Y} r="2" fill={HOLE_HERO_SCENE.cup} />
 
       {/* Tee */}
-      <circle cx={TEE_X} cy={MID_Y} r="3" fill="#d8c79e" />
-      <circle cx={TEE_X} cy={MID_Y} r="3" fill="none" stroke="#ffffff" strokeOpacity="0.2" strokeWidth="0.8" />
+      <circle cx={TEE_X} cy={MID_Y} r="3" fill={HOLE_HERO_SCENE.teeBox} />
+      <circle cx={TEE_X} cy={MID_Y} r="3" fill="none" stroke={HOLE_HERO_SCENE.ballLight} strokeOpacity="0.2" strokeWidth="0.8" />
 
       {/* Shot trail */}
       {svgPts.length > 1 && (
-        <polyline points={trail} fill="none" stroke="#ffffff" strokeOpacity="0.6" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" strokeDasharray="0.5 4.5" />
+        <polyline points={trail} fill="none" stroke={HOLE_HERO_SCENE.ballLight} strokeOpacity="0.6" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" strokeDasharray="0.5 4.5" />
       )}
 
       {/* Landing dots — where the ball came to rest each shot */}
       {landings.map((p, i) => (
         <g key={i}>
-          <circle cx={p.x} cy={p.y} r="3.4" fill="#ffffff" opacity="0.94" />
+          <circle cx={p.x} cy={p.y} r="3.4" fill={HOLE_HERO_SCENE.ballLight} opacity="0.94" />
           <circle cx={p.x} cy={p.y} r="3.4" fill="none" stroke={LIE_RING.fairway} strokeWidth="1" strokeOpacity="0.7" />
         </g>
       ))}
@@ -185,7 +179,7 @@ function HoleViz({
       <g style={{ transform: `translate(${ball.x.toFixed(1)}px, ${ball.y.toFixed(1)}px)`, transition: 'transform 600ms cubic-bezier(0.22,1,0.36,1)' }}>
         <circle r="8" fill={ring} opacity="0.24" />
         <circle r="4" fill="url(#fwBall)" stroke={ring} strokeWidth="1.2" />
-        <circle cx="-1.1" cy="-1.1" r="1.1" fill="#ffffff" opacity="0.9" />
+        <circle cx="-1.1" cy="-1.1" r="1.1" fill={HOLE_HERO_SCENE.ballLight} opacity="0.9" />
       </g>
     </svg>
   );

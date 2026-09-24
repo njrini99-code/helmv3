@@ -49,6 +49,7 @@ import { useId } from 'react';
 import type { PlottedHazard } from './geometry';
 import type { HoleShotPathProps } from './types';
 import { EASE_CINEMATIC, useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
+import { COURSE_SCENE } from '@/lib/golf/course-illustration-palette';
 
 type Size = NonNullable<HoleShotPathProps['size']>;
 
@@ -102,8 +103,8 @@ export function Hazards({ hazards, staticRender = false, size = 'card', activeOr
         {/* One crisp 2-stop water gradient — a touch of depth, no photoreal
             ripple texture. Flat and clean to match the schematic corridor. */}
         <linearGradient id={waterGrad} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#4aa6cc" />
-          <stop offset="100%" stopColor="#2f7ba0" />
+          <stop offset="0%" stopColor={COURSE_SCENE.waterTop} />
+          <stop offset="100%" stopColor={COURSE_SCENE.waterBottom} />
         </linearGradient>
       </defs>
 
@@ -128,14 +129,14 @@ export function Hazards({ hazards, staticRender = false, size = 'card', activeOr
               style={{ transformOrigin: `${h.x}px ${h.y}px` }}
             >
               {active && (
-                <ellipse cx={h.x} cy={h.y} rx={h.r * 1.2} ry={h.r * 0.92} fill="none" stroke="#f4ecd8" strokeOpacity="0.5" strokeWidth={0.6 * ss} />
+                <ellipse cx={h.x} cy={h.y} rx={h.r * 1.2} ry={h.r * 0.92} fill="none" stroke={COURSE_SCENE.cream} strokeOpacity="0.5" strokeWidth={0.6 * ss} />
               )}
               {/* Crisp bank ring — a clean edge, not a soft dark smudge. */}
-              <ellipse cx={h.x} cy={h.y} rx={h.r * 1.08} ry={h.r * 0.82} fill="#1f5d80" />
+              <ellipse cx={h.x} cy={h.y} rx={h.r * 1.08} ry={h.r * 0.82} fill={COURSE_SCENE.waterBank} />
               {/* Flat pool. */}
               <ellipse cx={h.x} cy={h.y} rx={h.r} ry={h.r * 0.74} fill={`url(#${waterGrad})`} />
               {tierCfg.showDetail && (
-                <ellipse cx={h.x - h.r * 0.14} cy={h.y - h.r * 0.18} rx={h.r * 0.5} ry={h.r * 0.13} fill="none" stroke="#d8f1fb" strokeOpacity="0.5" strokeWidth={0.3 * ss} />
+                <ellipse cx={h.x - h.r * 0.14} cy={h.y - h.r * 0.18} rx={h.r * 0.5} ry={h.r * 0.13} fill="none" stroke={COURSE_SCENE.waterGlint} strokeOpacity="0.5" strokeWidth={0.3 * ss} />
               )}
             </m.g>
           );
@@ -151,12 +152,12 @@ export function Hazards({ hazards, staticRender = false, size = 'card', activeOr
               style={{ transformOrigin: `${h.x}px ${h.y}px` }}
             >
               {active && (
-                <ellipse cx={h.x} cy={h.y} rx={h.r * 1.18} ry={h.r * 0.86} fill="none" stroke="#f4ecd8" strokeOpacity="0.5" strokeWidth={0.6 * ss} />
+                <ellipse cx={h.x} cy={h.y} rx={h.r * 1.18} ry={h.r * 0.86} fill="none" stroke={COURSE_SCENE.cream} strokeOpacity="0.5" strokeWidth={0.6 * ss} />
               )}
               {/* Flat bunker with a thin rim. */}
-              <ellipse cx={h.x} cy={h.y} rx={h.r * 1.02} ry={h.r * 0.72} fill="#d9be7f" stroke="#a8915a" strokeWidth={0.4 * ss} />
+              <ellipse cx={h.x} cy={h.y} rx={h.r * 1.02} ry={h.r * 0.72} fill={COURSE_SCENE.sand} stroke={COURSE_SCENE.sandEdge} strokeWidth={0.4 * ss} />
               {tierCfg.showDetail && (
-                <ellipse cx={h.x - h.r * 0.12} cy={h.y - h.r * 0.1} rx={h.r * 0.44} ry={h.r * 0.24} fill="#f2e1af" opacity="0.55" />
+                <ellipse cx={h.x - h.r * 0.12} cy={h.y - h.r * 0.1} rx={h.r * 0.44} ry={h.r * 0.24} fill={COURSE_SCENE.sandHighlight} opacity="0.55" />
               )}
             </m.g>
           );
@@ -181,10 +182,10 @@ export function Hazards({ hazards, staticRender = false, size = 'card', activeOr
               style={{ transformOrigin: `${bx}px ${by}px` }}
             >
               {active && (
-                <circle cx={bx} cy={by} r={4.4 * ss} fill="none" stroke="#f4ecd8" strokeOpacity="0.5" strokeWidth={0.5 * ss} />
+                <circle cx={bx} cy={by} r={4.4 * ss} fill="none" stroke={COURSE_SCENE.cream} strokeOpacity="0.5" strokeWidth={0.5 * ss} />
               )}
               {tierCfg.showDetail && (
-                <ellipse cx={bx} cy={postBottom + 0.3 * ss} rx={1.3 * ss} ry={0.45 * ss} fill="#10241c" opacity="0.35" />
+                <ellipse cx={bx} cy={postBottom + 0.3 * ss} rx={1.3 * ss} ry={0.45 * ss} fill={COURSE_SCENE.punch} opacity="0.35" />
               )}
               {/* Post. */}
               <rect
@@ -193,8 +194,8 @@ export function Hazards({ hazards, staticRender = false, size = 'card', activeOr
                 width={postW}
                 height={postBottom - postTop}
                 rx={0.2 * ss}
-                fill="#f4ecd8"
-                stroke="#10241c"
+                fill={COURSE_SCENE.cream}
+                stroke={COURSE_SCENE.punch}
                 strokeWidth={0.25 * ss}
               />
               {/* Flat cap. */}
@@ -204,8 +205,8 @@ export function Hazards({ hazards, staticRender = false, size = 'card', activeOr
                 width={2.0 * ss}
                 height={0.85 * ss}
                 rx={0.15 * ss}
-                fill="#f8f2dd"
-                stroke="#10241c"
+                fill={COURSE_SCENE.creamBright}
+                stroke={COURSE_SCENE.punch}
                 strokeWidth={0.25 * ss}
               />
             </m.g>
@@ -228,10 +229,10 @@ export function Hazards({ hazards, staticRender = false, size = 'card', activeOr
               style={{ transformOrigin: `${bx}px ${by}px` }}
             >
               {active && (
-                <circle cx={bx} cy={by} r={4.4 * ss} fill="none" stroke="#f4ecd8" strokeOpacity="0.5" strokeWidth={0.5 * ss} />
+                <circle cx={bx} cy={by} r={4.4 * ss} fill="none" stroke={COURSE_SCENE.cream} strokeOpacity="0.5" strokeWidth={0.5 * ss} />
               )}
-              <circle cx={bx} cy={by} r={r} fill="#16332a" fillOpacity="0.7" stroke="#f0715c" strokeWidth={0.55 * ss} />
-              <line x1={bx - d} y1={by + d} x2={bx + d} y2={by - d} stroke="#f0715c" strokeWidth={0.55 * ss} strokeLinecap="round" />
+              <circle cx={bx} cy={by} r={r} fill={COURSE_SCENE.outOfBoundsFill} fillOpacity="0.7" stroke={COURSE_SCENE.penaltyRed} strokeWidth={0.55 * ss} />
+              <line x1={bx - d} y1={by + d} x2={bx + d} y2={by - d} stroke={COURSE_SCENE.penaltyRed} strokeWidth={0.55 * ss} strokeLinecap="round" />
             </m.g>
           );
         }
@@ -253,13 +254,13 @@ export function Hazards({ hazards, staticRender = false, size = 'card', activeOr
               style={{ transformOrigin: `${bx}px ${by}px` }}
             >
               {active && (
-                <circle cx={bx} cy={by} r={4.4 * ss} fill="none" stroke="#f4ecd8" strokeOpacity="0.5" strokeWidth={0.5 * ss} />
+                <circle cx={bx} cy={by} r={4.4 * ss} fill="none" stroke={COURSE_SCENE.cream} strokeOpacity="0.5" strokeWidth={0.5 * ss} />
               )}
-              <line x1={bx} y1={postBottom} x2={bx} y2={postTop} stroke="#f4ecd8" strokeWidth={0.5 * ss} strokeLinecap="round" />
+              <line x1={bx} y1={postBottom} x2={bx} y2={postTop} stroke={COURSE_SCENE.cream} strokeWidth={0.5 * ss} strokeLinecap="round" />
               <polygon
                 points={`${bx},${postTop} ${bx + 2.6 * ss},${postTop + 0.85 * ss} ${bx},${postTop + 1.7 * ss}`}
-                fill="#f0715c"
-                stroke="#7a2e22"
+                fill={COURSE_SCENE.penaltyRed}
+                stroke={COURSE_SCENE.penaltyFlagEdge}
                 strokeWidth={0.25 * ss}
               />
             </m.g>
@@ -278,9 +279,9 @@ export function Hazards({ hazards, staticRender = false, size = 'card', activeOr
             style={{ transformOrigin: `${h.x}px ${h.y}px` }}
           >
             {active && (
-              <ellipse cx={h.x} cy={h.y} rx={h.r} ry={h.r * 0.68} fill="none" stroke="#f4ecd8" strokeOpacity="0.4" strokeWidth={0.5 * ss} />
+              <ellipse cx={h.x} cy={h.y} rx={h.r} ry={h.r * 0.68} fill="none" stroke={COURSE_SCENE.cream} strokeOpacity="0.4" strokeWidth={0.5 * ss} />
             )}
-            <ellipse cx={h.x} cy={h.y} rx={h.r * 0.82} ry={h.r * 0.54} fill="#2f5a44" stroke="#3a6b50" strokeWidth={0.3 * ss} opacity="0.9" />
+            <ellipse cx={h.x} cy={h.y} rx={h.r * 0.82} ry={h.r * 0.54} fill={COURSE_SCENE.roughPatch} stroke={COURSE_SCENE.roughPatchEdge} strokeWidth={0.3 * ss} opacity="0.9" />
           </m.g>
         );
       })}
