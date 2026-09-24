@@ -26,4 +26,24 @@ describe('NotificationsLatestModule seed (PERF-03)', () => {
     render(<NotificationsLatestModule />);
     expect(getUnifiedNotifications).toHaveBeenCalledWith({ limit: 5 });
   });
+
+  it('keys the unread dot in words (DS-N7)', () => {
+    const item = (id: string, read_at: string | null) => ({
+      id, source: 'notification' as never, category: 'team' as never, title: `Item ${id}`, body: null,
+      action_url: null, created_at: '2026-09-24T12:00:00Z', read_at,
+    });
+    const { container } = render(
+      <NotificationsLatestModule initialItems={[item('a', null), item('b', null), item('c', '2026-09-24T13:00:00Z')]} />,
+    );
+    expect(container.querySelector('[data-slot="latest-unread-key"]')?.textContent).toBe('2 new');
+  });
+
+  it('shows no key when everything is read', () => {
+    const { container } = render(
+      <NotificationsLatestModule
+        initialItems={[{ id: 'a', source: 'notification' as never, category: 'team' as never, title: 'A', body: null, action_url: null, created_at: '2026-09-24T12:00:00Z', read_at: '2026-09-24T13:00:00Z' }]}
+      />,
+    );
+    expect(container.querySelector('[data-slot="latest-unread-key"]')).toBeNull();
+  });
 });

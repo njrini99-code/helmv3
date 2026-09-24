@@ -20,7 +20,7 @@ import { NotificationRow } from './NotificationRow';
 import { useNotificationPanel } from './NotificationPanelContext';
 import { useNotificationBadges } from '@/contexts/notification-badge-context';
 import { getUnifiedNotifications, markNotificationRead } from '@/app/golf/actions/unified-notifications';
-import type { UnifiedNotificationItem } from '@/app/golf/actions/unified-notifications-model';
+import { countUnread, type UnifiedNotificationItem } from '@/app/golf/actions/unified-notifications-model';
 
 const LATEST_LIMIT = 5;
 
@@ -110,10 +110,21 @@ export function NotificationsLatestModule({ initialItems }: NotificationsLatestM
 
   if (!loaded || items.length === 0) return null;
 
+  const unreadCount = countUnread(items);
+
   return (
     <section aria-label="Latest notifications" className="flex flex-col gap-3">
       <div className="flex items-center justify-between gap-3">
-        <h2 className="font-fw-sans text-h3 font-semibold text-text-primary">Latest</h2>
+        <div className="flex items-baseline gap-3">
+          <h2 className="font-fw-sans text-h3 font-semibold text-text-primary">Latest</h2>
+          {/* DS-N7: the key for the rows' unread dot, in words. */}
+          {unreadCount > 0 ? (
+            <span data-slot="latest-unread-key" className="flex items-center gap-1.5 font-fw-sans text-caption text-text-secondary">
+              <span aria-hidden className="h-2 w-2 rounded-full bg-accent-500" />
+              {unreadCount} new
+            </span>
+          ) : null}
+        </div>
         <Button variant="ghost" size="sm" onClick={() => setOpen(true)}>
           View all
         </Button>
