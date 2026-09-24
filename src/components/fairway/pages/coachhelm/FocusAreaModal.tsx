@@ -46,6 +46,7 @@ import {
   type MetricCatalogEntry,
 } from './areaTypes';
 import { weakestSgArea } from '@/lib/coachhelm/focus-areas/catalog';
+import { formatMetricText } from '@/lib/golf/metrics/display-registry';
 import { Inset } from '@/components/fairway/surfaces';
 import { Button } from '@/components/fairway/controls/button';
 import { Segmented } from '@/components/fairway/controls/segmented';
@@ -546,26 +547,26 @@ export function FocusAreaModal({
                   <div className="flex flex-wrap gap-x-4 gap-y-1 font-fw-sans text-eyebrow text-text-secondary">
                     <span>
                       Avg{' '}
-                      <span className="font-fw-mono tabular-nums text-text-primary">
-                        {stats.avg_score ?? '—'}
+                      <span className="font-fw-sans font-semibold tabular-nums text-text-primary">
+                        {formatMetricText('scoring_average', stats.avg_score)}
                       </span>
                     </span>
                     <span>
                       Putts{' '}
-                      <span className="font-fw-mono tabular-nums text-text-primary">
-                        {stats.avg_putts ?? '—'}
+                      <span className="font-fw-sans font-semibold tabular-nums text-text-primary">
+                        {formatMetricText('putts_per_round', stats.avg_putts)}
                       </span>
                     </span>
                     <span>
                       FW{' '}
-                      <span className="font-fw-mono tabular-nums text-text-primary">
-                        {stats.fairway_pct != null ? `${stats.fairway_pct}%` : '—'}
+                      <span className="font-fw-sans font-semibold tabular-nums text-text-primary">
+                        {formatMetricText('fairway_pct', stats.fairway_pct)}
                       </span>
                     </span>
                     <span>
                       GIR{' '}
-                      <span className="font-fw-mono tabular-nums text-text-primary">
-                        {stats.gir_pct != null ? `${stats.gir_pct}%` : '—'}
+                      <span className="font-fw-sans font-semibold tabular-nums text-text-primary">
+                        {formatMetricText('gir_pct', stats.gir_pct)}
                       </span>
                     </span>
                   </div>
