@@ -30,6 +30,16 @@ import type {
 
 /** Per-arm caps. The Vercel function ceiling is 300s; three unbounded arms find it. */
 const SENTRY_ISSUE_LIMIT = 50;
+
+/**
+ * The only Sentry environment this collector reads. `resolveServerEnvironment`
+ * (`src/lib/sentry-environment.ts`) tags every other runtime — `next dev`
+ * (`development`), a local optimized build (`local-production-build`), Vercel
+ * previews (`preview`) — so a genuine production event is always `production`.
+ * Unscoped, those non-production issues became `rel:` groups that Diagnose
+ * spent its analyses on (2026-09-24: most of the 21:17 UTC run).
+ */
+const SENTRY_ENVIRONMENTS = ['production'] as const;
 const SUPABASE_ROW_LIMIT = 1000;
 const VERCEL_DEPLOY_LIMIT = 20;
 
@@ -127,7 +137,11 @@ function windowInclusive(whenIso: string | null | undefined, windowStartIso: str
 
 export async function collectSentry(windowStartIso: string): Promise<SourceResult> {
   const startedAt = Date.now();
-  const res = await fetchSentryIssues({ query: 'is:unresolved', limit: SENTRY_ISSUE_LIMIT });
+  const res = await fetchSentryIssues({
+    query: 'is:unresolved',
+    limit: SENTRY_ISSUE_LIMIT,
+    environment: SENTRY_ENVIRONMENTS,
+  });
   const { status, reason } = statusFromFetch(res);
 
   // `is:unresolved` is a LIFETIME query — an issue stays unresolved for months.
