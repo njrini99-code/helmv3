@@ -141,6 +141,24 @@ describe('collectSupabase — the self-feeding read is closed at the query', () 
   });
 });
 
+describe('collectSentry — production events only', () => {
+  // 2026-09-24: the 21:17 UTC Diagnose run spent most of its 24 analyses on
+  // `rel:` groups that only ever fired on developer machines — `globals.css`
+  // webpack/postcss build failures from a `Downloads/helmv3` checkout
+  // (Sentry JAVASCRIPT-NEXTJS-10F/10G/10H/10J/10K), dev-only `.finally`
+  // TypeErrors (10B-10E), the Next router-init race (105). The unscoped
+  // `is:unresolved` pull carried every environment into the snapshot.
+  it('asks Sentry for the production environment only', async () => {
+    vi.mocked(fetchSentryIssues).mockResolvedValue({
+      status: 'ok', data: [], fetchedAt: '2026-09-24T22:00:00.000Z',
+    });
+    await collectSentry(ANY_WINDOW);
+    expect(vi.mocked(fetchSentryIssues)).toHaveBeenCalledWith(
+      expect.objectContaining({ environment: ['production'] }),
+    );
+  });
+});
+
 describe('collectSentry — degradation is reported, never swallowed', () => {
   it('reports blind with a reason when the token is missing', async () => {
     vi.mocked(fetchSentryIssues).mockResolvedValue({

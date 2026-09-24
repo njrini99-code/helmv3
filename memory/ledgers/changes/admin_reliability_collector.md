@@ -89,3 +89,13 @@
 - See `memory/features/admin-slo.md` for the invariants themselves
   (round-graph orphaned-shots / completed-without-holes,
   `memory/invariants/registry.yml`) and the downstream reads.
+
+## 2026-09-24 — Sentry arm scoped to production
+
+- `collectSentry` now asks Sentry for `environment=production` only, through
+  a new opt-in `environment` option on `fetchSentryIssues`
+  (`src/lib/admin/sentry-api.ts`, sent as URL params). Non-production events
+  (`development`, `local-production-build`, `preview`) no longer become
+  `rel:` triage groups. Other `fetchSentryIssues` callers are unchanged.
+- Evidence: the 2026-09-24 21:17 UTC selfheal-triage run analysed 24 groups,
+  most of them dev-only Sentry issues (JAVASCRIPT-NEXTJS-10B..10K, 102, 105).
