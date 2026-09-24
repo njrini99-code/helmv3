@@ -13,6 +13,7 @@ import { applyInsightVisibility } from '@/lib/coachhelm/v3/insight-visibility';
 import { withAdminObserved } from '@/lib/admin/observed-action';
 import { describeError } from '@/lib/utils/describe-error';
 import { gateCoachHelmEngineCall } from '@/lib/auth/action-rate-limit';
+import { mapWithConcurrency } from '@/lib/supabase/bounded-query';
 
 type CoachInsightInsert = Database['public']['Tables']['golf_coach_insights']['Insert'];
 
@@ -190,6 +191,9 @@ async function getCoachAlerts(
 // ============================================================================
 
 const EMPTY_ALERT_COUNTS = { critical: 0, warning: 0, info: 0, total: 0 };
+
+/** Players analyzed at once by generateAlerts (each runs the Tier-1 pipeline). */
+const GENERATE_ALERTS_PLAYER_CONCURRENCY = 4;
 
 async function getAlertCountsImpl(
   coachId: string
@@ -439,8 +443,13 @@ async function generateAlertsImpl(
       return { success: true, alerts: [], generated: 0 };
     }
 
-    // Analyze each player in parallel
-    const analysisPromises = players.map(async (player) => {
+    // Analyze players at most GENERATE_ALERTS_PLAYER_CONCURRENCY at a time.
+    // This was an unbounded `Promise.all` over the whole roster, and each
+    // analyzePlayer runs the full Tier-1 generator pipeline (raw shot reads +
+    // golf_coach_insights upserts) through the service-role client, so one
+    // scan of a 15-player roster put every player's pipeline on the database
+    // at once (#2061, 2026-09-24 pool exhaustion). Results keep roster order.
+    const results = await mapWithConcurrency(players, GENERATE_ALERTS_PLAYER_CONCURRENCY, async (player) => {
       try {
         const analysis = await coachHelmIntelligence.analyzePlayer(player.id, {
           includePatterns: true,
@@ -462,8 +471,6 @@ async function generateAlertsImpl(
         return { player, analysis: null, success: false };
       }
     });
-
-    const results = await Promise.all(analysisPromises);
 
     // Generate alerts from analysis results
     const newAlerts: CoachInsightInsert[] = [];
