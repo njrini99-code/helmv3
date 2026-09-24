@@ -3,6 +3,8 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 const mocks = vi.hoisted(() => ({
   inserts: [] as Array<{ table: string; row: Record<string, unknown> }>,
   transientFailures: {} as Record<string, number>,
+  /** Non-transient write errors (returned, not thrown), per table. */
+  hardFailures: {} as Record<string, number>,
   /** Durable collapse: the unresolved row the lookup finds inside the window, if any. */
   recentRow: null as { id: string; metadata: unknown } | null,
   lookupError: null as { message: string } | null,
@@ -53,6 +55,10 @@ vi.mock('@/lib/supabase/admin', () => ({
             mocks.transientFailures[table] = (mocks.transientFailures[table] ?? 0) - 1;
             return Promise.reject(new TypeError('fetch failed'));
           }
+          if ((mocks.hardFailures[table] ?? 0) > 0) {
+            mocks.hardFailures[table] = (mocks.hardFailures[table] ?? 0) - 1;
+            return Promise.resolve({ data: null, error: { code: '42501', message: 'permission denied' } });
+          }
           return Promise.resolve({ data: null, error: null });
         },
       };
@@ -69,11 +75,14 @@ vi.mock('@sentry/nextjs', () => ({
 
 import { logServerError, logServerEvent } from '@/lib/server-error-logger';
 import { buildIncidentSignature } from '@/lib/admin/incident-grouping';
+import { __resetEmitThrottleForTests } from '@/lib/admin/emit-throttle';
 
 describe('server-error-logger bridge columns', () => {
   beforeEach(() => {
     mocks.inserts.length = 0;
     mocks.transientFailures = {};
+    mocks.hardFailures = {};
+    __resetEmitThrottleForTests();
     mocks.recentRow = null;
     mocks.lookupError = null;
     mocks.lookups = 0;
@@ -266,5 +275,84 @@ describe('server-error-logger bridge columns', () => {
     expect(attempts).toHaveLength(2);
     expect(attempts[0]!.row.id).toBeTruthy();
     expect(attempts[1]!.row.id).toBe(attempts[0]!.row.id);
+  });
+
+  // 2026-09-24 brownout (#2061): every failing read during a pool-exhaustion
+  // storm also wrote two Bridge rows into the saturated database.
+  describe('database-saturation write throttle', () => {
+    const adminRows = () => mocks.inserts.filter((i) => i.table === 'admin_events');
+    const errorRows = () => mocks.inserts.filter((i) => i.table === 'error_logs');
+    const TIMEOUT = 'getInsightsForCoach failed: canceling statement due to statement timeout';
+
+    afterEach(() => { vi.useRealTimers(); });
+
+    it('writes the first saturation row, then suppresses identical repeats inside the window', async () => {
+      for (let i = 0; i < 5; i += 1) {
+        await logServerError(TIMEOUT, { action: 'getInsightsForCoach', route: '/golf/coach' });
+      }
+      expect(adminRows()).toHaveLength(1);
+      expect(errorRows()).toHaveLength(1);
+    });
+
+    it('still reports every occurrence to Sentry', async () => {
+      for (let i = 0; i < 3; i += 1) {
+        await logServerError(TIMEOUT, { action: 'getInsightsForCoach', route: '/golf/coach' });
+      }
+      expect(mocks.captureException).toHaveBeenCalledTimes(3);
+    });
+
+    it('the next row after the window carries the suppressed count as collapsed_count', async () => {
+      vi.useFakeTimers();
+      vi.setSystemTime(new Date('2026-09-24T01:00:00Z'));
+      for (let i = 0; i < 4; i += 1) {
+        await logServerError(TIMEOUT, { action: 'getInsightsForCoach', route: '/golf/coach' });
+      }
+      vi.setSystemTime(new Date('2026-09-24T01:01:01Z'));
+      await logServerError(TIMEOUT, { action: 'getInsightsForCoach', route: '/golf/coach', metadata: { collapsed_count: 2 } });
+
+      expect(adminRows()).toHaveLength(2);
+      expect(adminRows()[0]!.row.metadata).toMatchObject({ metadata: {} });
+      // 3 suppressed by this throttle + 2 a caller-side throttle already collapsed
+      expect(adminRows()[1]!.row.metadata).toMatchObject({ metadata: { collapsed_count: 5 } });
+      expect(errorRows()[1]!.row.context).toMatchObject({ metadata: { collapsed_count: 5 } });
+    });
+
+    it('recognises the codes, including a code passed via extra', async () => {
+      await logServerError('a', { action: 'x', errorCode: 'PGRST003' });
+      await logServerError('a', { action: 'x', errorCode: 'PGRST003' });
+      await logServerError('b', { action: 'y', extra: { errorCode: '57014' } });
+      await logServerError('b', { action: 'y', extra: { errorCode: '57014' } });
+      await logServerError('Could not query the database for the schema cache. Retrying.', { action: 'z' });
+      await logServerError('Could not query the database for the schema cache. Retrying.', { action: 'z' });
+      expect(adminRows()).toHaveLength(3);
+    });
+
+    it('collapses the brownout shape: the same failure for different players is one row', async () => {
+      const msg = (player: string) =>
+        `PuttDistanceGenerator run() failed for player=${player}: putt-distance aggregate query failed: Could not query the database for the schema cache. Retrying.`;
+      await logServerError(msg('0d647d6e-cf24-4a86-bddf-a3b4b4f4a7ad'), { action: 'generator.run', route: '/api/cron/coachhelm-safety-net' });
+      await logServerError(msg('9307bc0f-5cf3-40fa-a33e-06b560d4fe0d'), { action: 'generator.run', route: '/api/cron/coachhelm-safety-net' });
+      expect(adminRows()).toHaveLength(1);
+    });
+
+    it('different fingerprints are throttled independently', async () => {
+      await logServerError(TIMEOUT, { action: 'a', route: '/golf/a' });
+      await logServerError(TIMEOUT, { action: 'b', route: '/golf/b' });
+      expect(adminRows()).toHaveLength(2);
+    });
+
+    it('never throttles an ordinary error', async () => {
+      for (let i = 0; i < 3; i += 1) {
+        await logServerError('save failed', { action: 'saveThing', errorCode: '23505' });
+      }
+      expect(adminRows()).toHaveLength(3);
+    });
+
+    it('a saturation row that failed to land does not silence the next one', async () => {
+      mocks.hardFailures.admin_events = 1;
+      await logServerError(TIMEOUT, { action: 'getInsightsForCoach', route: '/golf/coach' });
+      await logServerError(TIMEOUT, { action: 'getInsightsForCoach', route: '/golf/coach' });
+      expect(adminRows()).toHaveLength(2);
+    });
   });
 });
