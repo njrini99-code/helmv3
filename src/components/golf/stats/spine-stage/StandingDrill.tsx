@@ -23,6 +23,7 @@ import { getMetricRenderConfig, type MetricRenderConfig } from '@/lib/coachhelm/
 import { METRIC_IDS, type MetricId } from '@/lib/coachhelm/v3/metrics/registry';
 import {
   toScalePct,
+  fitScale,
   shouldShowTeamMarker,
   pgaReferenceLabel,
 } from '@/components/golf/coachhelm/v3/StandingBar';
@@ -89,14 +90,15 @@ function StrokesGainedInstrument({
       <div className="grid grid-cols-[1fr_4.25rem] items-baseline gap-x-3 gap-y-1.5">
         {rows.map(({ id, row, cfg }) => {
           const isTotal = id === 'sg_total';
-          const youPct = toScalePct(row.player_value, cfg.default_scale);
           const showTeam = shouldShowTeamMarker({ team_avg: row.team_avg, team_n: row.team_n });
+          const scale = fitScale(cfg.default_scale, [row.player_value, showTeam ? row.team_avg : null, row.pga_value]);
+          const youPct = toScalePct(row.player_value, scale);
           const refLabel = pgaReferenceLabel(id, row.is_womens).short;
           const benchmarks: { label: string; pct: number; emphasis?: boolean }[] = [
             ...(showTeam && row.team_avg !== null
-              ? [{ label: 'Team', pct: toScalePct(row.team_avg, cfg.default_scale) }]
+              ? [{ label: 'Team', pct: toScalePct(row.team_avg, scale) }]
               : []),
-            { label: refLabel, pct: toScalePct(row.pga_value, cfg.default_scale), emphasis: true },
+            { label: refLabel, pct: toScalePct(row.pga_value, scale), emphasis: true },
           ];
           return (
             <Fragment key={id}>
@@ -250,7 +252,7 @@ export function StandingDrill({
                       is_womens={row.is_womens}
                       direction={cfg.direction}
                       unit={cfg.unit}
-                      scale={cfg.default_scale}
+                      scale={fitScale(cfg.default_scale, [row.player_value, row.team_avg, row.pga_value])}
                       size="card"
                       viewer_context={standingViewerContext}
                       player_name={playerName}

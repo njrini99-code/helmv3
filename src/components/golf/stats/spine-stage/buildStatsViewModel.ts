@@ -170,6 +170,10 @@ export function buildLedger(input: LedgerInput): SpineLedgerRow[] {
 export interface PriorityInput {
   label: string;
   strokeImpact: number | null | undefined;
+  /** The measured strokes-gained figure for this same area, when one exists.
+   *  Shown instead of the estimate so "SG: Putting" never reads two numbers
+   *  on one screen. */
+  measured?: number | null;
 }
 
 /**
@@ -181,8 +185,8 @@ export function buildPriorities(
   max = 3,
 ): PriorityItem[] {
   const scored = weaknesses
-    .map((w) => ({ label: w.label, impact: finite(w.strokeImpact) }))
-    .filter((w): w is { label: string; impact: number } => w.impact !== null && w.impact !== 0)
+    .map((w) => ({ label: w.label, impact: finite(w.strokeImpact), measured: finite(w.measured) }))
+    .filter((w): w is { label: string; impact: number; measured: number | null } => w.impact !== null && w.impact !== 0)
     .sort((a, b) => Math.abs(b.impact) - Math.abs(a.impact))
     .slice(0, max);
 
@@ -194,7 +198,10 @@ export function buildPriorities(
     // carries its own `confidence`, not a measured figure) rendered with the
     // exact same "+X.XX" typography as the spine's measured SG total —
     // visually indistinguishable from a real number.
-    value: `${formatMetricText('sg_total', w.impact)} est.`,
+    value:
+      w.measured !== null
+        ? formatMetricText('sg_total', w.measured)
+        : `${formatMetricText('sg_total', w.impact)} est.`,
   }));
 }
 

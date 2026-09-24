@@ -233,6 +233,15 @@ function roundOptionLabel(round: RoundOption): string {
     .join(' · ');
 }
 
+/** The strengths engine names SG areas by their display label; the standing
+ *  rows key them by metric id. */
+const SG_METRIC_BY_LABEL: Record<string, string> = {
+  'SG: Off the Tee': 'sg_ott',
+  'SG: Approach': 'sg_approach',
+  'SG: Around the Green': 'sg_around_green',
+  'SG: Putting': 'sg_putting',
+};
+
 export function StatsSpineStage({ playerId, isOwnStats = false, playerName, className, initialData = null }: StatsSpineStageProps) {
   const standingViewerContext = isOwnStats ? 'self' : 'coach';
 
@@ -608,9 +617,13 @@ export function StatsSpineStage({ playerId, isOwnStats = false, playerName, clas
   const priorities = useMemo(
     () =>
       buildPriorities(
-        weaknesses.map((w) => ({ label: w.label, strokeImpact: w.strokeImpact })),
+        weaknesses.map((w) => ({
+          label: w.label,
+          strokeImpact: w.strokeImpact,
+          measured: finite(standingByMetric.get(SG_METRIC_BY_LABEL[w.label] ?? '')?.player_value ?? null),
+        })),
       ),
-    [weaknesses],
+    [weaknesses, standingByMetric],
   );
 
   const track = useMemo(

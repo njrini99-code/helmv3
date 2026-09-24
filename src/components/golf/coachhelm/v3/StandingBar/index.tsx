@@ -49,6 +49,7 @@ export type {
 
 export {
   toScalePct,
+  fitScale,
   formatValue,
   deltaVsTeam,
   teamCohortText,

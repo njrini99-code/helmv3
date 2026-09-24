@@ -164,6 +164,15 @@ describe('buildLedger', () => {
 });
 
 describe('buildPriorities', () => {
+  it('shows the measured strokes-gained figure when the area has one, not the estimate', () => {
+    const items = buildPriorities([
+      { label: 'SG: Putting', strokeImpact: -2.99, measured: -2.93 },
+      { label: 'Three-putts per round', strokeImpact: -1.09 },
+    ]);
+    expect(items[0]).toMatchObject({ title: 'SG: Putting', value: '\u22122.93' });
+    expect(items[1]!.value).toBe('\u22121.09 est.');
+  });
+
   it('ranks weaknesses by absolute stroke impact, numbered by order', () => {
     const items = buildPriorities([
       { label: 'Putting 5-10ft', strokeImpact: -0.3 },

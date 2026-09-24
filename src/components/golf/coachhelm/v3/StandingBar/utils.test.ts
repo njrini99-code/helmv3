@@ -6,7 +6,7 @@
  */
 import { describe, expect, it } from 'vitest';
 
-import { formatValue, toScalePct } from './utils';
+import { fitScale, formatValue, toScalePct } from './utils';
 
 describe('toScalePct — NaN guard', () => {
   it('returns 0 instead of NaN for a NaN value', () => {
@@ -36,5 +36,29 @@ describe('formatValue — non-finite guard', () => {
 
   it('still formats normally for a finite value', () => {
     expect(formatValue(64.6, 'percent')).toBe('65%');
+  });
+});
+
+describe('fitScale', () => {
+  const sg = { min: -1.5, max: 1.5 };
+
+  it('keeps the default scale when every value fits', () => {
+    expect(fitScale(sg, [-0.8, 0.2, 0])).toBe(sg);
+  });
+
+  it('grows a zero-centred scale so an off-range value is not pinned to the edge', () => {
+    const scale = fitScale(sg, [-2.93, -1.6, 0]);
+    expect(scale).toEqual({ min: -3.5, max: 3.5 });
+    const you = toScalePct(-2.93, scale);
+    const team = toScalePct(-1.6, scale);
+    expect(you).toBeGreaterThan(0);
+    expect(team - you).toBeGreaterThan(15);
+    expect(toScalePct(0, scale)).toBe(50);
+  });
+
+  it('pads a one-sided scale on the side that overflows', () => {
+    const scale = fitScale({ min: 60, max: 100 }, [48, null, Number.NaN]);
+    expect(scale.max).toBe(100);
+    expect(scale.min).toBeLessThan(48);
   });
 });

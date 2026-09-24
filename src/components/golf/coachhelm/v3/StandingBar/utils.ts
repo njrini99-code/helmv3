@@ -15,6 +15,31 @@ import type {
 import { TEAM_MARKER_MIN_N, PCT_LANGUAGE_MIN_N } from './types';
 
 /**
+ * Widen a metric's default scale so every value on the bar fits inside it.
+ * A value past the default range used to clamp to the edge, which put a
+ * -2.93 putting player on the same pixel as a -1.6 team. A scale that
+ * straddles zero (strokes gained) stays centred on zero and grows in steps
+ * of 0.5, so the field line keeps its place in the middle.
+ */
+export function fitScale(
+  scale: { min: number; max: number },
+  values: ReadonlyArray<number | null | undefined>,
+): { min: number; max: number } {
+  const finite = values.filter((v): v is number => typeof v === 'number' && Number.isFinite(v));
+  let min = Math.min(scale.min, ...finite);
+  let max = Math.max(scale.max, ...finite);
+  if (min === scale.min && max === scale.max) return scale;
+  if (scale.min < 0 && scale.max > 0) {
+    const half = Math.ceil((Math.max(-min, max) * 1.1) / 0.5) * 0.5;
+    return { min: -half, max: half };
+  }
+  const pad = (max - min) * 0.05;
+  if (min < scale.min) min -= pad;
+  if (max > scale.max) max += pad;
+  return { min, max };
+}
+
+/**
  * Position a value within [scale.min, scale.max] as a 0-100 percentage.
  * Clamped — out-of-range values stick to the edge.
  */
