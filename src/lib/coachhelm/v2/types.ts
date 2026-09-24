@@ -657,6 +657,24 @@ export interface AnalysisOptions {
    * shot-pattern-miner.ts's `persistPatterns` option.
    */
   persistPatterns?: boolean;
+  /**
+   * Whether to run the Tier-1 insight generators (20 of them, each reading
+   * raw `golf_shots` / cache rows and upserting into `golf_coach_insights`)
+   * and the composite synthesis that reads what they just wrote. Defaults to
+   * `true` so the legitimate writers — the post-round trigger, the
+   * safety-net and roster-sweep crons, the explicit analyze/generate
+   * actions — keep generating exactly as before.
+   *
+   * Set to `false` for READ-ONLY callers (the player CoachHelm page load).
+   * A page read must not write: on 2026-09-24 00:50–01:28 UTC two
+   * automated sessions reloading /golf/dashboard/coachhelm each fanned out
+   * all 20 generators per view, which saturated Postgres (statement
+   * timeouts across CoachHelm, Intelligence, login and /api/health, ~630
+   * Bridge rows) and produced 166 stale-writer CAS backoffs from renders
+   * racing the same insights. The read path still shows every generated
+   * insight — it reads the persisted rows the writers above produce.
+   */
+  runInsightGenerators?: boolean;
   depth?: 'quick' | 'standard' | 'deep';
   /**
    * Coach's persisted Insight Detail Level (golf_coach_philosophy.insight_verbosity).
