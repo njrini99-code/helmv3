@@ -117,3 +117,13 @@ describe('ThemeScript (#1044)', () => {
     },
   );
 });
+
+describe('ThemeScript Dynamic Type (OD-06, TYPE-02)', () => {
+  it('reads the iOS body size and caps the reading-text scale at XXL', () => {
+    const html = renderToStaticMarkup(<ThemeScript />);
+    expect(html).toContain("q.style.font='-apple-system-body'");
+    expect(html).toContain('Math.min(23/17,z/17)');
+    // Only above the default size, so nothing changes at the default or off iOS.
+    expect(html).toContain('if(z>17)');
+  });
+});

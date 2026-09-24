@@ -3316,3 +3316,25 @@ html[data-baseball-branded='true'] .baseball-shell .nav-item-active-icon {
     backdrop-filter: none;
   }
 }
+
+/* OD-06 / TYPE-02: Dynamic Type for golf reading text. ThemeScript stamps
+   data-fw-dynamic-type and --fw-type-scale (≤ 23/17, XXL) only when the iOS
+   text size is above default, so desktop and default-size phones are
+   unchanged. Scoped to <main>: the top bar, bottom nav, sidebar and sub-nav
+   are chrome and stay fixed. */
+html[data-helm-sport='golf'][data-fw-dynamic-type] main .text-body-lg {
+  font-size: calc(17px * var(--fw-type-scale, 1));
+  line-height: calc(26px * var(--fw-type-scale, 1));
+}
+html[data-helm-sport='golf'][data-fw-dynamic-type] main .text-body {
+  font-size: calc(15px * var(--fw-type-scale, 1));
+  line-height: calc(24px * var(--fw-type-scale, 1));
+}
+html[data-helm-sport='golf'][data-fw-dynamic-type] main .text-body-sm {
+  font-size: calc(13px * var(--fw-type-scale, 1));
+  line-height: calc(20px * var(--fw-type-scale, 1));
+}
+html[data-helm-sport='golf'][data-fw-dynamic-type] main .text-caption {
+  font-size: calc(12px * var(--fw-type-scale, 1));
+  line-height: calc(18px * var(--fw-type-scale, 1));
+}

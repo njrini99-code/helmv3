@@ -253,8 +253,10 @@ export function RateMeters({ section, labels }: { section: SectionData; labels: 
         {rows.map((r) => (
           <li key={r.label} className="grid grid-cols-[108px_minmax(0,1fr)_44px] items-center gap-x-3">
             <span className="font-fw-sans text-body-sm text-text-secondary">{r.label}</span>
-            <span aria-hidden="true" className="relative block h-2 rounded-full bg-surface-sunken">
-              <span className="absolute inset-y-0 left-0 rounded-full bg-fw-success" style={{ width: `${Math.min(100, Math.max(0, r.v))}%` }} />
+            {/* FP-12: an outlined track and the accent fill, so the meters
+                read as green on the card instead of flat grey. */}
+            <span aria-hidden="true" className="relative block h-2.5 rounded-full bg-surface-sunken ring-1 ring-inset ring-border-subtle">
+              <span className="absolute inset-y-0 left-0 rounded-full bg-accent-fill" style={{ width: `${Math.min(100, Math.max(0, r.v))}%` }} />
               <span className="absolute inset-y-[-3px] left-1/2 w-px bg-border-strong" />
             </span>
             <span className="text-right font-fw-sans text-body font-semibold tabular-nums text-text-primary">{Math.round(r.v)}%</span>
