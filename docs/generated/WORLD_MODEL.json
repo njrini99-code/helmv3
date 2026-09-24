@@ -5246,6 +5246,11 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/lib/admin/data/event-error-code.ts",
+          "anchor": "src/lib/admin/incident-report"
+        },
+        {
+          "kind": "import_graph",
           "path": "src/lib/admin/data/triage.ts",
           "anchor": "src/lib/admin/incident-report"
         },
@@ -12480,6 +12485,11 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/app/golf/actions/alerts.ts",
+          "anchor": "src/lib/supabase/bounded-query"
+        },
+        {
+          "kind": "import_graph",
           "path": "src/app/golf/actions/causal-relationships.ts",
           "anchor": "src/lib/supabase/server"
         },
@@ -12595,6 +12605,11 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/lib/coachhelm/v2/dashboard-error-classifier.ts",
+          "anchor": "src/lib/supabase/bounded-query"
+        },
+        {
+          "kind": "import_graph",
           "path": "src/lib/coachhelm/v2/features/sequence.ts",
           "anchor": "src/lib/supabase/fetch-all-rows"
         },
@@ -12632,6 +12647,11 @@
           "kind": "import_graph",
           "path": "src/lib/coachhelm/v2/mining/tee-strategy.ts",
           "anchor": "src/lib/supabase/fetch-all-rows"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v2/tier1-runner.ts",
+          "anchor": "src/lib/supabase/bounded-query"
         }
       ]
     },
@@ -15827,6 +15847,16 @@
           "kind": "import_graph",
           "path": "src/app/golf/actions/golf.ts",
           "anchor": "src/lib/observability/helm-flight-recorder"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/golf/new-round-setup-restore-signal.ts",
+          "anchor": "src/lib/observability/structured-log"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/golf/new-round-setup-restore-signal.ts",
+          "anchor": "src/lib/observability/client-breadcrumbs"
         },
         {
           "kind": "import_graph",
