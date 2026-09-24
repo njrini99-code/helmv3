@@ -12,7 +12,8 @@ refuses to proceed on the first FAIL.
    `-- ROLLBACK:` block (how to undo it, or a named reason none is needed)
    and a `-- VERIFY:` block (`SELECT`s that must each return >= 1 row
    post-apply; continuation lines are joined until a `;`, so one query may
-   span several lines). See `docs/operations/DECLARATIVE_SCHEMA.md` for the schema
+   span several lines, and a line starting a new top-level `select` or
+   `with <name> as` ends the query before it, terminated or not). See `docs/operations/DECLARATIVE_SCHEMA.md` for the schema
    file this migration should also update if one exists for the object
    changed.
 2. **pgTAP** — add/extend a test under `supabase/tests/rls/`; `npm run
@@ -90,6 +91,16 @@ ledger re-read and the `-- VERIFY:` queries still run even when the apply
 reports failure, and that is deliberate: the apply can fail on the response
 while the server has already committed, and those two steps are the only
 partial-commit detector. Do not restructure them into an early exit.
+
+Every read passes `--agent no` and goes through `scripts/db/query-json.mjs`.
+The CLI's `--output-format json` prints `{"rows": [...]}` only when it
+detects an AI agent (`CLAUDECODE`, `CODEX_*`, …) and a bare `[...]` array
+everywhere else, including the workflow runner. Reading `.rows` with a `[]`
+fallback turned every CI result into 0 rows: three applied migrations
+(2026-09-23/24) reported FAIL on the ledger re-read and VERIFY, and the
+preflight "ledger does not already carry this version" check passed
+vacuously on every run until then. The parser now throws on any shape it
+does not recognise instead of defaulting to zero rows.
 
 The CONCURRENTLY refusal strips whole-line `--` comments only. A trailing
 comment on a code line (`create index x; -- CONCURRENTLY was considered`)

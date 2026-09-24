@@ -54,6 +54,16 @@ describe('SELFHEAL_STAGES', () => {
     expect(triage.contract).toBe('docs/ai-system/selfheal/triage-contract.md');
   });
 
+  it('runs Repair as the desktop health routine every 6h, not the retired GitHub Actions workflow', () => {
+    // The GHA workflow was disabled 2026-09-23. A Bridge that still named it
+    // would send an operator to check a runner that no longer exists — the
+    // same failure as the 2026-09-05..09 launchd label.
+    const repair = SELFHEAL_STAGES.find((s) => s.id === 'repair')!;
+    expect(repair.runner).toBe('local-agent');
+    expect(repair.cadenceMinutes).toBe(6 * 60);
+    expect(repair.contract).toBe('docs/ai-system/selfheal/repair-contract.md');
+  });
+
   it('names an in-repo contract for every stage', () => {
     // The whole reason this registry exists is that the routine contracts used
     // to live only in routine configuration, where nothing diffed them.

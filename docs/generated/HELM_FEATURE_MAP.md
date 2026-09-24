@@ -159,8 +159,8 @@ is a second thing to keep true.
 - **Behaviour:** `memory/features/player-coachhelm-development.md`
 - **Code:** `src/app/golf/(dashboard)/dashboard/coachhelm/**`, `src/app/golf/(dashboard)/dashboard/my-insights/**`, `src/app/golf/(dashboard)/dashboard/my-development/**`, `src/app/golf/(dashboard)/dashboard/development/**`, `src/app/golf/(dashboard)/dashboard/rounds/[id]/review/**`, `src/components/golf/coachhelm/player/**` … and 25 more in the registry
 - **Telemetry:** `player_coachhelm_dashboard` (coachhelm, med), `development_plans_coach` (coachhelm, med), `my_development` (coachhelm, low), `drills_practice_rx` (coachhelm, low), `coachhelm_v3_goals` (coachhelm, med)
-- **Incidents:** none recorded
-- **Repair units:** none in the queue
+- **Incidents:** `memory/incidents/player_coachhelm_development/INC-2026-09-24-page-read-ran-insight-generators.md`
+- **Repair units:** `coachhelm-page-read-no-generators-2026-09-24` (verified)
 - **History:** `memory/ledgers/changes/player_coachhelm_development.md`, `memory/ledgers/tests/player_coachhelm_development.md`
 
 ## `team_communications`

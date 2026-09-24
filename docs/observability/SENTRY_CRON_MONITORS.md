@@ -35,7 +35,7 @@ alert exists for, and exactly the gap this deliverable closes.
 | Vercel cron (`vercel.json`) | `recordJobRun` → `src/lib/observability/cron-monitors.ts` | `api-cron-<path>` (slashes to dashes), derived from the route path | The REAL crontab schedule, from `CRON_REGISTRY.schedule` — byte-identical to `vercel.json`, contract-tested |
 | A `recordJobRun` call with no `CRON_REGISTRY` entry (manual-trigger-only route, or a sub-step inside another job's single invocation) | Same `cron-monitors.ts`, same `recordJobRun` | `job-<jobType>` | A deliberately generous 30-day fallback interval (see below) |
 | Inngest function (`src/lib/inngest/functions.ts`) | The shared `withBridgeLogging(fnId, run)` wrapper every function routes through | `job-<function id>` (no `CRON_REGISTRY` entry — Inngest scheduling isn't `vercel.json`) | Same 30-day fallback |
-| ~~launchd Repair job~~ (RETIRED 2026-09-05 — see §7) | ~~`scripts/lib/sentry-cron-checkin.mjs`~~ (removed) | `job-selfheal-repair` (no longer written) | Repair now reports via a `background_job_logs` heartbeat step in `.github/workflows/selfheal-repair.yml`, not a Sentry Cron Monitor |
+| ~~launchd Repair job~~ (RETIRED 2026-09-05 — see §7) | ~~`scripts/lib/sentry-cron-checkin.mjs`~~ (removed) | `job-selfheal-repair` (no longer written) | Repair now reports via a `background_job_logs` heartbeat written by the Claude desktop health routine (since 2026-09-23; `.github/workflows/selfheal-repair.yml` before that, now disabled), not a Sentry Cron Monitor |
 
 **Every check-in carries a `monitorConfig` — never omitted.** Sentry's own
 "upsert" mechanism only creates/attaches a monitor when `monitor_config` is
@@ -191,9 +191,10 @@ different places.
 
 **Historical.** The launchd agent, `scripts/run-selfheal-repair.mjs`,
 `scripts/lib/selfheal-repair-runner.mjs`, and `scripts/lib/sentry-cron-checkin.mjs`
-described in this section were all removed 2026-09-05 — Repair now runs only
-as `.github/workflows/selfheal-repair.yml`, which reports through a
-`background_job_logs` heartbeat step, not a Sentry Cron Monitor check-in.
+described in this section were all removed 2026-09-05 — Repair then ran as
+`.github/workflows/selfheal-repair.yml` and, since 2026-09-23, runs as the
+Claude desktop health routine; both report through a
+`background_job_logs` heartbeat, not a Sentry Cron Monitor check-in.
 This section is kept for anyone reconstructing what the launchd path did.
 
 One check-in pair per invocation, around the whole run (`in_progress` at

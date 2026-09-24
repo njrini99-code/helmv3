@@ -6,9 +6,10 @@
  * routine, REPAIRED into pull requests by a local routine running against the
  * real checkout, and CLOSED — with evidence — into `admin_error_resolutions`
  * by the nightly cron. Each stage is a different runner in a different place:
- * two Vercel crons and a GitHub Actions workflow (Repair — a launchd agent
- * on the owner's laptop until 2026-09-05, and an Anthropic-hosted routine
- * for Diagnose until 2026-09-02).
+ * two Vercel crons and the Claude desktop health routine on the owner's Mac
+ * (Repair since 2026-09-23 — a GitHub Actions workflow 2026-09-05..09-23 and
+ * a launchd agent before that; Diagnose was an Anthropic-hosted routine until
+ * 2026-09-02).
  *
  * WHICH IS EXACTLY WHY THIS FILE EXISTS. Two of those three runners are
  * outside this deployment entirely — nothing in the app invokes them, nothing
@@ -105,13 +106,16 @@ export const SELFHEAL_STAGES: readonly SelfHealStage[] = [
     jobType: 'selfheal-repair',
     step: 2,
     title: 'Repair',
-    // .github/workflows/selfheal-repair.yml since 2026-09-05; the launchd
-    // agent on the owner's laptop is retired (README.md). The Bridge kept
-    // saying "Local agent — on the owner's laptop" for four more days, which
-    // sent an operator to wake a machine that was not the runner.
-    runner: 'github-actions',
-    cadenceMinutes: DAILY,
-    what: 'Takes the repairable analyses, reproduces each with a failing test, and opens a verified PR. Never merges, never deploys.',
+    // Since 2026-09-23: the Claude desktop health routine on the owner's Mac,
+    // every 6h at :47 past 03/09/15/21 UTC (30 min after Diagnose). It
+    // replaced .github/workflows/selfheal-repair.yml (disabled; its
+    // `metadata.runtime = 'github-actions'` heartbeats are history). Its own
+    // heartbeats carry `metadata.runner = 'desktop-routine'`. The label must
+    // name the real runner: from 2026-09-05 to 2026-09-09 the Bridge named a
+    // retired one and sent an operator to wake the wrong machine.
+    runner: 'local-agent',
+    cadenceMinutes: 6 * 60,
+    what: 'Takes the repairable analyses, reproduces each with a failing test, opens a verified PR and lands it once required checks are green (owner-authorized 2026-09-23). Never deploys.',
     contract: 'docs/ai-system/selfheal/repair-contract.md',
   },
   {
