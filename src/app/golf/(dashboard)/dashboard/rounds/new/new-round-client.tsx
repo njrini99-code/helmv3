@@ -65,6 +65,7 @@ import { localDayIso } from '@/lib/golf/local-day';
 import { useActiveWork } from '@/lib/recovery/use-active-work';
 import { logError } from '@/lib/error-logging';
 import { clearPendingTeePick, loadPendingTeePick, savePendingTeePick } from '@/lib/golf/new-round-pick-cache';
+import { reportRoundSetupRestoredAfterReload } from '@/lib/golf/new-round-setup-restore-signal';
 
 /**
  * Same relative-time style as FairwayUnfinishedBanner's own `relativeTime` —
@@ -1277,21 +1278,10 @@ export default function NewRoundClient({ playerId }: NewRoundClientProps) {
     const pending = loadPendingTeePick(playerId);
     if (pending) {
       // Not a failure, but the only evidence we get that the page reloaded
-      // mid-setup — the process kill that caused it never reaches JS.
-      logError(
-        new Error('Round setup restored after reload'),
-        {
-          component: 'NewRoundClient',
-          action: 'round setup restore',
-          route: '/golf/dashboard/rounds/new',
-          featureArea: 'round_tracking',
-          courseId: pending.courseId,
-          teeId: pending.teeId,
-          navigatorOnLine: typeof navigator !== 'undefined' ? navigator.onLine : null,
-          isNative: typeof navigator !== 'undefined' && /HelmSportsLabsApp/.test(navigator.userAgent),
-        },
-        'low',
-      );
+      // mid-setup — the process kill that caused it never reaches JS. Logged
+      // as an info-level Sentry log + breadcrumb, never as an exception
+      // (see new-round-setup-restore-signal.ts).
+      reportRoundSetupRestoredAfterReload({ courseId: pending.courseId, teeId: pending.teeId });
       handleTeePick(pending);
       return;
     }
