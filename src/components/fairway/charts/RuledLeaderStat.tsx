@@ -153,7 +153,7 @@ export function RuledLeaderStat({
       {showRule ? (
         <motion.div
           aria-hidden
-          initial={reduced ? false : { scaleX: 0 }}
+          initial={false}
           animate={{ scaleX: 1 }}
           transition={reduced ? { duration: 0 } : { duration: VIZ_REVEAL_MS / 1000, ease: VIZ_EASE }}
           className={cn(

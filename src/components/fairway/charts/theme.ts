@@ -94,7 +94,7 @@ export const TABULAR_NUMS: React.CSSProperties = {
  * Motion — slow cinematic reveal, honoring prefers-reduced-motion
  * ------------------------------------------------------------------------- */
 
-/** Chart draw-on duration (ms). §5.3: ~600–800ms ease-out, once on in-view. */
+/** Chart change-tween duration (ms). Never on mount: data renders final (MOT-07). */
 export const VIZ_REVEAL_MS = 720;
 
 /** ease-out cubic-bezier matching `--fw-ease-soft`. */
