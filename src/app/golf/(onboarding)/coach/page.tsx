@@ -60,6 +60,20 @@ type CoachOnboardingDraft = {
 
 // ─── Main Component ─────────────────────────────────────────────────────────
 
+/**
+ * Field-level validation for a wizard step (STATE-O2): the Continue button is
+ * never silently disabled. A press with a required field empty marks each
+ * empty field inline (the Input wires aria-invalid + aria-describedby) and
+ * moves focus to the first one.
+ */
+function firstMissing(fields: ReadonlyArray<{ id: string; value: string; message: string }>): Record<string, string> {
+  const errors: Record<string, string> = {};
+  for (const f of fields) if (!f.value.trim()) errors[f.id] = f.message;
+  const first = fields.find((f) => errors[f.id]);
+  if (first) document.getElementById(first.id)?.focus();
+  return errors;
+}
+
 export default function GolfCoachOnboarding() {
   const prefersReducedMotion = useReducedMotionGuard();
   // Matches the signup gate: one scene per viewport, swapped after hydration.
@@ -75,6 +89,7 @@ export default function GolfCoachOnboarding() {
 
   // Program data
   const [orgName, setOrgName] = useState('');
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [division, setDivision] = useState('');
   const [conference, setConference] = useState('');
   const [city, setCity] = useState('');
@@ -408,9 +423,14 @@ export default function GolfCoachOnboarding() {
                       {/* Program Details */}
                       <div className="space-y-4">
                         <Input
+                          id="onboarding-org-name"
                           label="School / Organization"
                           value={orgName}
-                          onChange={(e) => setOrgName(e.target.value)}
+                          error={fieldErrors['onboarding-org-name']}
+                          onChange={(e) => {
+                            setOrgName(e.target.value);
+                            setFieldErrors((prev) => ({ ...prev, 'onboarding-org-name': '' }));
+                          }}
                           placeholder="Texas A&M University"
                           required
                           // eslint-disable-next-line jsx-a11y/no-autofocus -- intentional: primary input in onboarding wizard step
@@ -499,8 +519,13 @@ export default function GolfCoachOnboarding() {
                     {/* Actions */}
                     <div className="mt-8">
                       <Button
-                        onClick={() => goForward('profile')}
-                        disabled={!orgName.trim()}
+                        onClick={() => {
+                          const errors = firstMissing([
+                            { id: 'onboarding-org-name', value: orgName, message: 'Enter your school or organization.' },
+                          ]);
+                          setFieldErrors(errors);
+                          if (Object.keys(errors).length === 0) goForward('profile');
+                        }}
                         className="w-full bg-accent-fill hover:bg-accent-fill-hover shadow-soft transition"
                         size="lg"
                       >
@@ -563,9 +588,14 @@ export default function GolfCoachOnboarding() {
                       </div>
 
                       <Input
+                        id="onboarding-full-name"
                         label="Full Name"
                         value={fullName}
-                        onChange={(e) => setFullName(e.target.value)}
+                        error={fieldErrors['onboarding-full-name']}
+                        onChange={(e) => {
+                          setFullName(e.target.value);
+                          setFieldErrors((prev) => ({ ...prev, 'onboarding-full-name': '' }));
+                        }}
                         placeholder="John Smith"
                         required
                       />
@@ -581,8 +611,13 @@ export default function GolfCoachOnboarding() {
                     {/* Actions */}
                     <div className="mt-8">
                       <Button
-                        onClick={handleSubmitOnboarding}
-                        disabled={!fullName.trim()}
+                        onClick={() => {
+                          const errors = firstMissing([
+                            { id: 'onboarding-full-name', value: fullName, message: 'Enter your full name.' },
+                          ]);
+                          setFieldErrors(errors);
+                          if (Object.keys(errors).length === 0) void handleSubmitOnboarding();
+                        }}
                         isLoading={loading}
                         className="w-full bg-accent-fill hover:bg-accent-fill-hover shadow-soft transition"
                         size="lg"

@@ -74,6 +74,7 @@ function GolfPlayerOnboardingContent() {
 
   // About You data
   const [firstName, setFirstName] = useState('');
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [lastName, setLastName] = useState('');
   const [graduationYear, setGraduationYear] = useState<number>(
     graduationYears[3] || new Date().getFullYear() + 3
@@ -318,18 +319,28 @@ function GolfPlayerOnboardingContent() {
                       {/* Name */}
                       <div className="grid grid-cols-2 gap-3">
                         <Input
+                          id="onboarding-first-name"
                           label="First Name"
                           value={firstName}
-                          onChange={(e) => setFirstName(e.target.value)}
+                          error={fieldErrors['onboarding-first-name']}
+                          onChange={(e) => {
+                            setFirstName(e.target.value);
+                            setFieldErrors((prev) => ({ ...prev, 'onboarding-first-name': '' }));
+                          }}
                           placeholder="John"
                           required
                           // eslint-disable-next-line jsx-a11y/no-autofocus -- intentional: primary input in onboarding wizard step
                           autoFocus
                         />
                         <Input
+                          id="onboarding-last-name"
                           label="Last Name"
                           value={lastName}
-                          onChange={(e) => setLastName(e.target.value)}
+                          error={fieldErrors['onboarding-last-name']}
+                          onChange={(e) => {
+                            setLastName(e.target.value);
+                            setFieldErrors((prev) => ({ ...prev, 'onboarding-last-name': '' }));
+                          }}
                           placeholder="Smith"
                           required
                         />
@@ -386,8 +397,14 @@ function GolfPlayerOnboardingContent() {
                     {/* Actions */}
                     <div className="mt-8">
                       <Button
-                        onClick={() => goForward('profile')}
-                        disabled={!firstName.trim() || !lastName.trim()}
+                        onClick={() => {
+                          const errors = firstMissing([
+                            { id: 'onboarding-first-name', value: firstName, message: 'Enter your first name.' },
+                            { id: 'onboarding-last-name', value: lastName, message: 'Enter your last name.' },
+                          ]);
+                          setFieldErrors(errors);
+                          if (Object.keys(errors).length === 0) goForward('profile');
+                        }}
                         className="w-full bg-accent-fill hover:bg-accent-fill-hover shadow-soft transition"
                         size="lg"
                       >
@@ -610,6 +627,20 @@ function GolfPlayerOnboardingContent() {
 // `useSearchParams()` triggers a client-side bail (and a Next.js prerender
 // error) unless it's read inside a <Suspense> boundary — mirror the sibling
 // auth pages and wrap the reader.
+
+/**
+ * Field-level validation for a wizard step (STATE-O2): the Continue button is
+ * never silently disabled. A press with a required field empty marks each
+ * empty field inline (the Input wires aria-invalid + aria-describedby) and
+ * moves focus to the first one.
+ */
+function firstMissing(fields: ReadonlyArray<{ id: string; value: string; message: string }>): Record<string, string> {
+  const errors: Record<string, string> = {};
+  for (const f of fields) if (!f.value.trim()) errors[f.id] = f.message;
+  const first = fields.find((f) => errors[f.id]);
+  if (first) document.getElementById(first.id)?.focus();
+  return errors;
+}
 
 export default function GolfPlayerOnboarding() {
   return (
