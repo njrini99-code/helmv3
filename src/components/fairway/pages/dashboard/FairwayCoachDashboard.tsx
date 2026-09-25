@@ -241,9 +241,10 @@ function shortDate(iso: string): string {
  * `trend` field is a qualitative direction, not a magnitude.
  */
 function seriesDeltaLabel(points: number): string {
-  // The chip is the movement across the team's latest rounds, while the value
-  // beside it covers the whole window. Say so, so the two are not read as one.
-  return `last ${points} team round${points === 1 ? '' : 's'}`;
+  // The chip is the movement across each player's own latest rounds, averaged
+  // (buildPerPlayerSparkline), while the value beside it covers the whole
+  // window. Say so, so the two are not read as one.
+  return `players' last ${points} round${points === 1 ? '' : 's'}`;
 }
 
 /* ──────────────────────────────────────────────────────────────────────────

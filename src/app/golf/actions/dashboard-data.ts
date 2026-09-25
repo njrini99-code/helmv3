@@ -9,6 +9,7 @@ import { withAdminObserved } from '@/lib/admin/observed-action';
 import { computeScoringTrendFromRounds } from '@/lib/golf/scoring-trend';
 import { withCanonicalRoundTotal } from '@/lib/golf/round-total';
 import { isCountableRound } from '@/lib/golf/round-countable';
+import { buildPerPlayerSparkline } from '@/lib/golf/per-player-sparkline';
 import { plausibleQualifierDateBounds } from '@/lib/golf/qualifier-date';
 import {
     aggregateCountableRounds,
@@ -683,26 +684,27 @@ async function getCoachDashboardDataImpl(
                     value: Number((s.reduce((a, b) => a + b, 0) / s.length).toFixed(1))
                 }));
 
-            // Sparklines — group last 5 rounds for each metric (team-wide)
-            // Per-18 so a 9-hole round does not read as a 36-stroke dip.
-            const scoringSparkRounds = allRounds.slice(0, 20).map(r => {
-                const holes = (r as { holes_played?: number | null }).holes_played ?? 18;
-                return {
-                    round_date: r.round_date,
-                    value: r.total_score != null && holes > 0 ? Math.round((r.total_score / holes) * 18) : null,
-                };
-            });
-            const puttsSparkRounds = allRounds.slice(0, 20).map(r => ({ round_date: r.round_date, value: r.total_putts }));
-            const girSparkRounds = allRounds.slice(0, 20).map(r => ({
-                round_date: r.round_date,
+            // Sparklines — per-player: point k is the mean of each player's own
+            // k-th most recent round (src/lib/golf/per-player-sparkline.ts). The
+            // team's latest 5 rounds mixed different players point to point, so
+            // the delta chip swung with whoever posted last (e.g. −9.0).
+            // Scoring and putts per-18 so a 9-hole round does not read as a dip.
+            const holesOf = (r: typeof allRounds[number]) =>
+                (r as { holes_played?: number | null }).holes_played ?? 18;
+            const scoringSparkline = buildPerPlayerSparkline(allRounds.map(r => ({
+                player_id: r.player_id,
+                value: r.total_score != null && holesOf(r) > 0 ? (r.total_score / holesOf(r)) * 18 : null,
+            })));
+            const puttsSparkline = buildPerPlayerSparkline(allRounds.map(r => ({
+                player_id: r.player_id,
+                value: r.total_putts != null && holesOf(r) > 0 ? (r.total_putts / holesOf(r)) * 18 : null,
+            })));
+            const girSparkline = buildPerPlayerSparkline(allRounds.map(r => ({
+                player_id: r.player_id,
                 value: r.total_gir !== null && r.total_gir_possible && r.total_gir_possible > 0
-                    ? Math.round((r.total_gir / r.total_gir_possible) * 100)
-                    : null
-            }));
-
-            const scoringSparkline = buildSparkline(scoringSparkRounds);
-            const puttsSparkline = buildSparkline(puttsSparkRounds);
-            const girSparkline = buildSparkline(girSparkRounds);
+                    ? (r.total_gir / r.total_gir_possible) * 100
+                    : null,
+            })));
 
             // Compute current KPI values over the FULL windowed round set.
             // `allRounds` already respects the selected window (via dateCutoff).
