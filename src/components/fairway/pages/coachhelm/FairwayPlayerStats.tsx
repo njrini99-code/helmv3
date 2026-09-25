@@ -79,8 +79,10 @@ export function FairwayPlayerStats({ initialPlayerId = null, initialStats = null
   // Third-person framing for a coach viewing a teammate; first-person for a
   // player viewing their own page.
   const description = isCoachView
-    ? `Where ${playerName ?? 'this player'} stands vs PGA Tour and the team, and where the strokes are leaking.`
-    : 'Where you stand vs PGA Tour and your team, and where the strokes are leaking.';
+    ? `${playerName ?? 'This player'} vs Tour and team, and where strokes leak.`
+    : // ViewHeader clamps the description to one line on phones (P-22); the
+      // longer copy was cut to "…and where th…" at 390px.
+      'You vs Tour and your team, and where strokes leak.';
 
   // golf-ia-plan.json step 8 — the shell's role/active-tab must track WHO is
   // viewing, not a hardcoded value: a coach drilling into a teammate gets the

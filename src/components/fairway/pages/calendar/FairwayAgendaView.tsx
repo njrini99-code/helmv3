@@ -465,7 +465,9 @@ function AgendaBody({
         reader never asked for. Collapsing them makes the list agree with its
         own header while keeping every past event one tap away.
       */}
-      {mode === 'range' && pastBuckets.length > 0 ? (
+      {/* Not when everything is past: those days are already listed, and the
+          button offered to "Show 1 earlier event" that was on screen. */}
+      {mode === 'range' && pastBuckets.length > 0 && !allPast ? (
         // History is a secondary action: a quiet ghost control at the list's
         // own gutter, never a raised chip competing with the schedule.
         <div className="-mt-1 flex">

@@ -108,6 +108,22 @@ export function FairwayHubSubNav({ tabs, ariaLabel, className }: FairwayHubSubNa
   const itemRefs = React.useRef<Array<HTMLAnchorElement | null>>([]);
   const activeIndex = Math.max(0, tabs.findIndex((t) => t.id === resolved));
 
+  // Bring the active tab into view. On a 390px phone the player Team hub's
+  // 4th tab (the one you are ON) rendered clipped as "Te…" past the right
+  // edge. Horizontal only: scrollIntoView would also scroll the page.
+  React.useLayoutEffect(() => {
+    const item = itemRefs.current[activeIndex];
+    const list = item?.closest('ul');
+    if (!item || !list) return;
+    const listBox = list.getBoundingClientRect();
+    const itemBox = item.getBoundingClientRect();
+    if (itemBox.right > listBox.right) {
+      list.scrollLeft += itemBox.right - listBox.right + 16;
+    } else if (itemBox.left < listBox.left) {
+      list.scrollLeft -= listBox.left - itemBox.left + 16;
+    }
+  }, [activeIndex, pathname]);
+
   const onKeyDown = React.useCallback(
     (e: React.KeyboardEvent) => {
       const count = tabs.length;

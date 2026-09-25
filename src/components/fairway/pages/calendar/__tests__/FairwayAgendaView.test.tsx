@@ -168,6 +168,10 @@ describe('FairwayAgendaView — anchor scroll', () => {
       />,
     );
     expect(scrollIntoViewMock).not.toHaveBeenCalled();
+    // The past event is already listed, so there is nothing "earlier" to show
+    // (walk-through 2026-09-24: "Show 1 earlier event" above that one event).
+    expect(screen.queryByRole('button', { name: /earlier event/i })).toBeNull();
+    expect(screen.getByText('Event old')).toBeInTheDocument();
   });
 
   it('does not re-scroll on a data-only refresh of the same navigation range', () => {
