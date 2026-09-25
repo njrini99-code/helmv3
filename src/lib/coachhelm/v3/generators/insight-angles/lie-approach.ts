@@ -145,6 +145,7 @@ export interface LieApproachResult {
 interface ShotObs {
   round_id: string;
   hole_number: number;
+  hole_id: string | null;
   date: string;
   finish: string;
   gir: boolean;
@@ -259,6 +260,7 @@ export function computeLieApproach(data: AngleData, peers: readonly PeerRound[] 
     arr.push({
       round_id: s.round_id,
       hole_number: s.hole_number ?? -1,
+      hole_id: hole?.id ?? s.hole_id ?? null,
       date: dateOf.get(s.round_id) ?? '',
       finish: holed ? 'holed' : gir ? `green${prox !== null ? `, ${Math.round(prox)} ft` : ''}` : ((s.lie_after ?? s.result ?? 'not recorded').toLowerCase()),
       gir,
@@ -384,6 +386,7 @@ export function computeLieApproach(data: AngleData, peers: readonly PeerRound[] 
       (cause === 'rough_execution' ? qualifyingRough : roughAll).map((o) => ({
         round_id: o.round_id,
         hole_number: o.hole_number,
+        hole_id: o.hole_id,
         date: o.date,
         note: `approach from the rough, ${Math.round(o.yards)} yd, finished ${o.finish}${o.sg !== null ? `, SG ${o.sg > 0 ? '+' : ''}${o.sg.toFixed(2)}` : ''}`,
       })),

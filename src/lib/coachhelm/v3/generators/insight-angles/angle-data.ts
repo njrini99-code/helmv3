@@ -343,6 +343,8 @@ export const RECEIPT_MAX_EXAMPLES = 5;
 export interface ReceiptExample {
   round_id: string;
   hole_number: number;
+  /** `golf_holes.id` when the hole row is known. */
+  hole_id: string | null;
   /** Round date, YYYY-MM-DD. */
   date: string;
   /** One descriptive line — what was recorded on that hole. */

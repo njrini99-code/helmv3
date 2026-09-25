@@ -161,6 +161,7 @@ export interface TeeMissResult {
 interface TeeObs {
   round_id: string;
   hole_number: number;
+  hole_id: string;
   par: number;
   approachYards: number | null;
   nextSg: number | null;
@@ -193,7 +194,18 @@ export function computeTeeMiss(data: AngleData): TeeMissResult | null {
   const holesWithShots = shotsByHole(data.shots.filter((s) => roundIds.has(s.round_id) && s.shot_type === 'tee'));
   for (const [key, list] of holesWithShots) {
     const tee = list[0]!;
-    const next = (allByHole.get(key) ?? []).find((s) => s.shot_number > tee.shot_number && s.shot_type !== 'penalty');
+    // The next shot is the first non-penalty row after the tee with no gap
+    // in shot numbers; a gap means the next shot is not known (counted as
+    // missing, never guessed).
+    const holeShots = allByHole.get(key) ?? [];
+    let next: (typeof holeShots)[number] | undefined;
+    for (let n = tee.shot_number + 1; ; n++) {
+      const row = holeShots.find((x) => x.shot_number === n);
+      if (!row) break;
+      if (row.shot_type === 'penalty' || row.is_penalty === true) continue;
+      next = row;
+      break;
+    }
     const hole = (tee.hole_id ? byId.get(tee.hole_id) : undefined) ?? byKey.get(key);
     if (!hole || hole.score === null || (hole.par !== 4 && hole.par !== 5)) {
       excluded.no_hole += 1;
@@ -219,6 +231,7 @@ export function computeTeeMiss(data: AngleData): TeeMissResult | null {
     obs.push({
       round_id: tee.round_id,
       hole_number: tee.hole_number ?? -1,
+      hole_id: hole.id,
       par: hole.par,
       approachYards:
         yardsOf(tee.distance_to_hole_after, tee.distance_unit_after) ??
@@ -353,6 +366,7 @@ export function computeTeeMiss(data: AngleData): TeeMissResult | null {
             .map((o) => ({
               round_id: o.round_id,
               hole_number: o.hole_number,
+              hole_id: o.hole_id,
               date: dateOf.get(o.round_id) ?? '',
               note: `par ${o.par}, ${o.driver ? 'driver' : 'non-driver'}, ${worse} miss into ${o.lieAfter}${o.approachYards !== null ? `, ${Math.round(o.approachYards)} yd left` : ''}, hole ${o.toPar > 0 ? '+' : ''}${o.toPar}${o.penalty ? ', penalty on the hole' : ''}`,
             })),
@@ -428,6 +442,10 @@ export function composeTeeMiss(agg: TeeMissAggregate): ComposedContent {
     baseline: agg.baseline,
     weeks: 16,
   });
+  const nextNotWorse = w.next_shot_sg !== null && b.next_shot_sg !== null && w.next_shot_sg >= b.next_shot_sg;
+  const nextLine =
+    `Strokes gained on the next shot: ${sgText(w.next_shot_sg, w.next_shot_sg_n)} after a ${r.worse} miss vs ${sgText(b.next_shot_sg, b.next_shot_sg_n)} after a ${r.better} miss` +
+    `${nextNotWorse ? ', so the extra cost is not in the next shot' : ''}; a penalty was recorded on ${w.penalties} of ${w.shots} ${r.worse}-miss holes vs ${b.penalties} of ${b.shots}.`;
   const coverageNote = `Miss side recorded on ${r.side_recorded} of ${r.missed} missed fairways (${r.coverage_pct}%).`;
   const evidence: InsightEvidence & { counterfactual: CounterfactualProjection } = {
     metric: 'tee_miss_next_shot_cost',
@@ -489,7 +507,7 @@ export function composeTeeMiss(agg: TeeMissAggregate): ComposedContent {
     title: `Your ${r.worse} tee misses cost more than your ${r.better} ones`,
     content:
       `A ${r.worse} miss costs you ${wCost.toFixed(2)} strokes on the hole compared with finding the fairway (same par and driver/non-driver), vs ${bCost.toFixed(2)} for a ${r.better} miss ` +
-      `(${w.costed} ${r.worse} and ${b.costed} ${r.better} misses). The next shot after a ${r.worse} miss gains ${sgText(w.next_shot_sg, w.next_shot_sg_n)} strokes vs ${sgText(b.next_shot_sg, b.next_shot_sg_n)} after a ${r.better} miss. ` +
+      `(${w.costed} ${r.worse} and ${b.costed} ${r.better} misses). ${nextLine} ` +
       `If your ${r.worse} misses cost what your ${r.better} ones do, that is about ${r.cost_per_round.toFixed(1)} strokes a round. ${coverageNote}`,
     priority: r.cost_per_round >= 0.5 ? 'medium' : 'low',
     framing: 'leak',

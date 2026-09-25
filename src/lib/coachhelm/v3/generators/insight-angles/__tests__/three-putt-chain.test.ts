@@ -105,6 +105,16 @@ describe('computeThreePuttChain', () => {
     expect(r.exposure.find((e) => e.band === 'lt10')!.six_plus_pct).toBeNull();
   });
 
+  it('excludes a hole whose putting rows are out of order or short of golf_holes.putts', () => {
+    const data = build({ firstFt: () => 15, threePutt: (_i, h) => h % 5 === 0 });
+    // r0 hole 5: drop the second putt row (3 putts recorded, 2 rows, gap 3→5).
+    data.shots = data.shots.filter((s) => !(s.round_id === 'r0' && s.hole_number === 5 && s.shot_number === 4));
+    const r = computeThreePuttChain(data)!;
+    expect(r.excluded.putt_rows_incomplete).toBe(1);
+    expect(r.holes_putted).toBe(107);
+    expect(r.three_putts).toBe(17);
+  });
+
   it('carries up to 5 example holes', () => {
     const r = computeThreePuttChain(build({ firstFt: () => 15, threePutt: (_i, h) => h % 5 === 0 }))!;
     expect(r.examples).toHaveLength(5);
@@ -155,7 +165,7 @@ describe('composeThreePuttChain', () => {
     expect(receipts.examples.length).toBeLessThanOrEqual(5);
     expect(receipts.samples.holes_putted).toBe(108);
     expect(receipts.definition).toContain('35+ ft');
-    expect(c.content).toContain('Of 18 3-putts with both putt distances recorded');
+    expect(c.content).toContain('Of 18 classified 3-putts');
   });
 
   it('files a length-led chain under approach', () => {

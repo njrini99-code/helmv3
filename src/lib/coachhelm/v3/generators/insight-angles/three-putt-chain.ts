@@ -23,8 +23,10 @@
  * A 3-putt from < 35 ft whose second-putt distance is not recorded is
  * SUPPRESSED from the autopsy and counted — a leave is never invented. The
  * second-putt distance is the second putt's own recorded start
- * (`putt_distance_feet` / `distance_to_hole_before`), else the first putt's
- * recorded `distance_to_hole_after`.
+ * (`putt_distance_feet` / `distance_to_hole_before`). A hole whose putting
+ * rows are non-contiguous, or fewer than `golf_holes.putts`, is excluded
+ * from everything and counted (production 2026-09-25: 1 of 880 3-putt
+ * holes non-contiguous, 0 short of rows).
  *
  * Second-putt exposure: for each first-putt band, the distribution of
  * second-putt distances (< 3, 3–6, 6–10, 10+ ft) on holes where the first
@@ -199,7 +201,7 @@ export interface ThreePuttResult {
   gir_holes: number;
   avg_first_putt_ft: number | null;
   slope: { lag_first_putts: number; fill_pct: number; rows: SlopeRow[]; qualifies: boolean };
-  excluded: { no_first_putt_distance: number };
+  excluded: { no_first_putt_distance: number; putt_rows_incomplete: number };
   examples: ReceiptExample[];
   qualifies: boolean;
 }
@@ -207,6 +209,7 @@ export interface ThreePuttResult {
 interface HoleObs {
   round_id: string;
   hole_number: number;
+  hole_id: string | null;
   date: string;
   ft: number;
   putts: number;
@@ -223,26 +226,36 @@ export function computeThreePuttChain(data: AngleData): ThreePuttResult | null {
   const byHole = shotsByHole(data.shots.filter((s) => dateOf.has(s.round_id) && s.shot_type === 'putting'));
   const obs: HoleObs[] = [];
   let noFirst = 0;
+  let incomplete = 0;
   for (const [key, putts] of byHole) {
     const first = putts[0]!;
+    const hole0 = byKey.get(key) ?? byKey.get(holeKey(first.round_id, first.hole_number));
+    // Putting rows must be complete and contiguous, or the "first" and
+    // "second" rows may not be the first and second putts. Such holes are
+    // excluded and counted — never read with a guessed putt order.
+    const contiguous = putts.every((p, i) => p.shot_number === first.shot_number + i);
+    const recordedPutts = hole0?.putts != null && hole0.putts > 0 ? hole0.putts : null;
+    if (!contiguous || (recordedPutts !== null && putts.length < recordedPutts)) {
+      incomplete += 1;
+      continue;
+    }
     const ft = first.putt_distance_feet ?? feetOf(first.distance_to_hole_before, first.distance_unit_before);
     if (ft === null || !(ft > 0)) {
       noFirst += 1;
       continue;
     }
-    const hole = byKey.get(key) ?? byKey.get(holeKey(first.round_id, first.hole_number));
-    const n = hole?.putts != null && hole.putts > 0 ? hole.putts : putts.length;
+    const hole = hole0;
+    const n = recordedPutts ?? putts.length;
     const second = putts[1];
     let leave: number | null = null;
-    if (n >= 2) {
-      leave =
-        (second ? (second.putt_distance_feet ?? feetOf(second.distance_to_hole_before, second.distance_unit_before)) : null) ??
-        feetOf(first.distance_to_hole_after, first.distance_unit_after);
+    if (n >= 2 && second) {
+      leave = second.putt_distance_feet ?? feetOf(second.distance_to_hole_before, second.distance_unit_before);
       if (leave !== null && !(leave > 0)) leave = null;
     }
     obs.push({
       round_id: first.round_id,
       hole_number: first.hole_number ?? -1,
+      hole_id: hole?.id ?? null,
       date: dateOf.get(first.round_id) ?? '',
       ft,
       putts: n,
@@ -324,6 +337,7 @@ export function computeThreePuttChain(data: AngleData): ThreePuttResult | null {
     threes.map((o) => ({
       round_id: o.round_id,
       hole_number: o.hole_number,
+      hole_id: o.hole_id,
       date: o.date,
       note: `${o.putts} putts; first putt ${round1(o.ft)} ft, second putt ${o.leave === null ? 'not recorded' : `${round1(o.leave)} ft`}${pathwayOf.has(o) ? ` (${PATHWAY_LABEL[pathwayOf.get(o)!]})` : ''}`,
     })),
@@ -377,7 +391,7 @@ export function computeThreePuttChain(data: AngleData): ThreePuttResult | null {
       rows: slopeRows,
       qualifies: slopeQualifies,
     },
-    excluded: { no_first_putt_distance: noFirst },
+    excluded: { no_first_putt_distance: noFirst, putt_rows_incomplete: incomplete },
     examples,
     qualifies,
   };
@@ -414,10 +428,10 @@ export function composeThreePuttChain(agg: ThreePuttAggregate): ComposedContent 
     .sort((a, b) => b.six_plus_pct! - a.six_plus_pct!)[0];
   const pathwayLine =
     r.classified > 0
-      ? ` Of ${r.classified} 3-putts with both putt distances recorded: ${r.pathways
+      ? ` Of ${r.classified} classified 3-putts: ${r.pathways
           .map((p) => `${p.three_putts} ${p.pathway === 'long_approach_leave' ? `from first putts of ${LONG_LEAVE_FT}+ ft` : p.pathway === 'poor_first_putt_leave' ? `with the first putt leaving ${POOR_LEAVE_FT}+ ft` : `missing the second putt from inside ${POOR_LEAVE_FT} ft`}`)
-          .join(', ')}${r.pathway_suppressed ? `; ${r.pathway_suppressed} more had no second-putt distance recorded and are left out` : ''}.`
-      : ` No 3-putt had a recorded second-putt distance, so the pathways are not shown.`;
+          .join(', ')}${r.pathway_suppressed ? `; ${r.pathway_suppressed} more from inside ${LONG_LEAVE_FT} ft had no second-putt distance recorded and are left out` : ''}.`
+      : ` No 3-putt could be classified (second-putt distances not recorded), so the pathways are not shown.`;
   const exposureLine = worstExposure
     ? ` From ${worstExposure.label}, ${worstExposure.six_plus_pct}% of your second putts were ${POOR_LEAVE_FT}+ ft (${worstExposure.buckets['6_10'] + worstExposure.buckets['10_plus']} of ${worstExposure.leave_recorded} recorded${worstExposure.leave_missing ? `; ${worstExposure.leave_missing} not recorded` : ''}).`
     : '';
@@ -439,6 +453,7 @@ export function composeThreePuttChain(agg: ThreePuttAggregate): ComposedContent 
     },
     exclusions: {
       holes_without_first_putt_distance: r.excluded.no_first_putt_distance,
+      holes_with_missing_or_out_of_order_putt_rows: r.excluded.putt_rows_incomplete,
       three_putts_without_second_putt_distance: r.pathway_suppressed,
     },
     examples: r.examples,
@@ -494,7 +509,7 @@ export function composeThreePuttChain(agg: ThreePuttAggregate): ComposedContent 
       symptom: `${r.three_putts_per_18.toFixed(1)} three-putts per round vs ${r.expected_peer_per_18.toFixed(1)} for GolfHelm players`,
       root_cause: lead
         ? `Most classified 3-putts (${lead.three_putts} of ${r.classified}) follow one pattern: ${lead.label.toLowerCase()}.`
-        : `Too few 3-putts have both putt distances recorded (${r.classified}) to say which pattern leads.`,
+        : `Too few 3-putts could be classified (${r.classified}) to say which pattern leads.`,
       causality_level: 'inferred_hypothesis',
       drivers: [
         { metric: 'three_putt_chain', label: '3-putts per 18', value: r.three_putts_per_18, unit: 'count', sample_n: r.holes_putted, source: 'golf_holes.putts / golf_shots (putting)' },
