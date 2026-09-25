@@ -24,12 +24,15 @@ import { cn } from '@/lib/utils';
 import { Eyebrow } from '@/components/fairway';
 import {
   CONFIDENCE_LABEL,
-  ROOT_STYLE_LABEL,
+  ROOT_AREA_LABEL,
   formatStrokes,
+  rootStyleLabel,
   type AreaBranch,
   type CauseBranch,
+  type RootAudience,
   type RootMapModel,
   type RootStyle,
+  type UnsizedCause,
 } from '@/lib/coachhelm/root-map/build-root-map';
 
 const NEG = 'var(--fw-viz-div-neg)';
@@ -114,17 +117,41 @@ function ribbonPath(sx: number, sw: number, dx: number, dw: number): string {
   return `M${a},0 C${a},20 ${c},20 ${c},40 L${d},40 C${d},20 ${b},20 ${b},0 Z`;
 }
 
-export function branchSpokenLabel(b: CauseBranch, areaLabel: string, showWhy: boolean): string {
+/** "3 players" / "1 player". */
+export function playersText(n: number): string {
+  return `${n} ${n === 1 ? 'player' : 'players'}`;
+}
+
+export function branchSpokenLabel(
+  b: CauseBranch,
+  areaLabel: string,
+  showWhy: boolean,
+  audience: RootAudience = 'player',
+): string {
   const parts = [`${areaLabel}: ${b.label}, ${formatStrokes(b.strokes)} strokes a round`];
+  if (b.players !== undefined) parts.push(playersText(b.players));
   if (showWhy) {
     if (b.contextPath) parts.push(`where it concentrates: ${b.contextPath}`);
-    if (b.rootCause && b.style !== 'unexplained') parts.push(`root: ${b.rootCause}, ${ROOT_STYLE_LABEL[b.style].toLowerCase()}`);
-    else parts.push(ROOT_STYLE_LABEL[b.style].toLowerCase());
+    if (b.rootCause && b.style !== 'unexplained') parts.push(`root: ${b.rootCause}, ${rootStyleLabel(b.style, audience).toLowerCase()}`);
+    else parts.push(rootStyleLabel(b.style, audience).toLowerCase());
   }
   if (b.tier) parts.push(CONFIDENCE_LABEL[b.tier]);
-  if (b.isNew) parts.push('new since your last round');
+  if (b.isNew) parts.push(audience === 'coach' ? 'new since the last round' : 'new since your last round');
   return parts.join('. ');
 }
+
+function unsizedSpokenLabel(u: UnsizedCause, areaLabel: string, audience: RootAudience): string {
+  const parts = [`${areaLabel}: ${u.label}, no stroke value stored`];
+  if (u.players !== undefined) parts.push(playersText(u.players));
+  parts.push(rootStyleLabel(u.style, audience).toLowerCase());
+  if (u.tier) parts.push(CONFIDENCE_LABEL[u.tier]);
+  return parts.join('. ');
+}
+
+/** Where-row slices narrower than this carry their label outside the bar. */
+const WHERE_LABEL_MIN_W = 0.3;
+/** Remainder slots at least this wide carry a label and the unsized nodes. */
+const REMAINDER_LABEL_MIN_W = 0.16;
 
 export interface RootMapProps {
   model: RootMapModel;
@@ -138,6 +165,11 @@ export interface RootMapProps {
   whatEyebrow?: string;
   /** Accessible name of the whole figure. */
   figureLabel?: string;
+  /** Voice for style labels ("Seen in shots" for a coach). */
+  audience?: RootAudience;
+  /** Draw the model's unsized causes as outlined nodes inside their area's
+   *  unexplained remainder (team map). The player map lists them below. */
+  unsizedInRow?: boolean;
   className?: string;
 }
 
@@ -150,11 +182,27 @@ export function RootMap({
   lossEyebrow = 'Losing · where',
   whatEyebrow = 'What',
   figureLabel = 'Root map',
+  audience = 'player',
+  unsizedInRow = false,
   className,
 }: RootMapProps) {
   const hasLosses = model.losses.length > 0;
   const hasCauses = model.losses.some((a) => a.causes.length > 0 || a.remainder);
   const slots = layoutWhatRow(model);
+  const narrowAreas = model.losses.filter((a) => a.w < WHERE_LABEL_MIN_W);
+  const narrowGains = model.gains.filter((g) => g.w < WHERE_LABEL_MIN_W);
+  // Unsized causes drawn inside a remainder slot wide enough to hold them.
+  const unsizedBySlot = new Map<string, UnsizedCause[]>();
+  if (unsizedInRow) {
+    for (const sl of slots) {
+      if (sl.cause || sl.w < REMAINDER_LABEL_MIN_W) continue;
+      const list = model.unsized.filter((u) => u.area === sl.area.area);
+      if (list.length > 0) unsizedBySlot.set(sl.key, list);
+    }
+  }
+  const stack = Math.max(0, ...[...unsizedBySlot.values()].map((l) => l.length));
+  // 44px node + 8px gap per stacked unsized node, under the 44px header row.
+  const whatHeight = showWhy ? 88 : 44 + stack * 52;
 
   return (
     <figure className={cn('m-0 flex min-w-0 flex-col gap-2', className)} aria-label={figureLabel}>
@@ -171,18 +219,31 @@ export function RootMap({
                 style={{ left: pct(g.x), width: pct(g.w) }}
               >
                 <div
-                  className="flex h-full min-w-0 items-center justify-between gap-1 overflow-hidden rounded-fw-sm px-2 text-caption font-medium text-text-primary"
+                  className="flex h-full min-w-1 items-center justify-between gap-1 overflow-hidden rounded-fw-sm px-2 text-caption font-medium text-text-primary"
                   style={{ background: mix(POS, 55) }}
                   title={`${g.label} ${formatStrokes(g.sg, { signed: true })}`}
                 >
-                  {g.w >= 0.2 ? <span className="truncate">{g.label}</span> : null}
-                  {g.w >= 0.1 ? (
-                    <span className="shrink-0 font-fw-mono tabular-nums">{formatStrokes(g.sg, { signed: true })}</span>
+                  {g.w >= WHERE_LABEL_MIN_W ? (
+                    <>
+                      <span className="truncate">{g.label}</span>
+                      <span className="shrink-0 font-fw-mono tabular-nums">{formatStrokes(g.sg, { signed: true })}</span>
+                    </>
                   ) : null}
                 </div>
               </div>
             ))}
           </div>
+          {narrowGains.length > 0 ? (
+            <ul className="mt-1 flex flex-wrap gap-x-3 text-caption text-text-secondary" data-slot="gain-callouts">
+              {narrowGains.map((g) => (
+                <li key={g.area} className="flex items-center gap-1">
+                  <span aria-hidden className="inline-block h-2 w-2 rounded-sm" style={{ background: mix(POS, 55) }} />
+                  <span className="font-medium text-text-primary">{g.label}</span>
+                  <span className="font-fw-mono tabular-nums text-text-primary">{formatStrokes(g.sg, { signed: true })}</span>
+                </li>
+              ))}
+            </ul>
+          ) : null}
         </div>
       ) : null}
 
@@ -208,16 +269,34 @@ export function RootMap({
             {model.losses.map((a) => (
               <div key={a.area} className="absolute inset-y-0 px-px" style={{ left: pct(a.x), width: pct(a.w) }}>
                 <div
-                  className="flex h-full min-w-0 items-center justify-between gap-1 overflow-hidden rounded-fw-sm px-2 text-caption font-medium text-text-primary"
+                  className="flex h-full min-w-1 items-center justify-between gap-1 overflow-hidden rounded-fw-sm px-2 text-caption font-medium text-text-primary"
                   style={{ background: mix(NEG, 55) }}
                   title={`${a.label} ${formatStrokes(a.sg, { signed: true })}`}
                 >
-                  {a.w >= 0.3 ? <span className="truncate">{a.label}</span> : null}
-                  <span className="shrink-0 font-fw-mono tabular-nums">{formatStrokes(a.sg, { signed: true })}</span>
+                  {a.w >= WHERE_LABEL_MIN_W ? (
+                    <>
+                      <span className="truncate">{a.label}</span>
+                      <span className="shrink-0 font-fw-mono tabular-nums">{formatStrokes(a.sg, { signed: true })}</span>
+                    </>
+                  ) : null}
                 </div>
               </div>
             ))}
           </div>
+          {narrowAreas.length > 0 ? (
+            // A slice too narrow for its own label keeps its true width; the
+            // label and value sit just under it, so a small area never reads
+            // as a cut-off sliver.
+            <ul className="-mt-0.5 flex flex-wrap justify-end gap-x-3 text-caption text-text-secondary" data-slot="where-callouts">
+              {narrowAreas.map((a) => (
+                <li key={a.area} className="flex items-center gap-1">
+                  <span aria-hidden className="inline-block h-2 w-2 rounded-sm" style={{ background: mix(NEG, 55) }} />
+                  <span className="font-medium text-text-primary">{a.label}</span>
+                  <span className="font-fw-mono tabular-nums text-text-primary">{formatStrokes(a.sg, { signed: true })}</span>
+                </li>
+              ))}
+            </ul>
+          ) : null}
 
           {hasCauses ? (
             <>
@@ -248,19 +327,59 @@ export function RootMap({
                 <Eyebrow as="p">{whatEyebrow}</Eyebrow>
                 {showWhy ? <Eyebrow as="p">Why · root driver</Eyebrow> : null}
               </div>
-              <div className={cn('relative', showWhy ? 'h-[5.5rem]' : 'h-11')}>
+              <div className="relative" style={{ height: whatHeight }}>
                 {slots.map((sl) => {
                   const c = sl.cause;
                   if (!c) {
+                    const rest = sl.area.remainder;
+                    const inside = unsizedBySlot.get(sl.key) ?? [];
                     return (
                       <div
                         key={sl.key}
-                        aria-hidden
                         className="absolute inset-y-0 flex flex-col gap-2 px-px"
                         style={{ left: pct(sl.x), width: pct(sl.w) }}
+                        data-slot="what-remainder"
                       >
-                        <div className="h-11 rounded-fw-sm border border-dashed border-border-strong" />
-                        {showWhy ? <div className="h-8 rounded-fw-sm" style={rootStyleCss('unexplained')} /> : null}
+                        <div
+                          className="flex h-11 min-w-0 items-center justify-between gap-1 overflow-hidden rounded-fw-sm border border-dashed border-border-strong px-1.5 text-caption text-text-secondary"
+                          title={rest ? `Unexplained ${formatStrokes(rest.strokes)} a round` : undefined}
+                        >
+                          {rest && sl.w >= REMAINDER_LABEL_MIN_W ? (
+                            <>
+                              <span className="truncate">Unexplained</span>
+                              <span className="shrink-0 font-fw-mono tabular-nums">{formatStrokes(rest.strokes)}</span>
+                            </>
+                          ) : (
+                            <span className="sr-only">
+                              {rest ? `Unexplained ${formatStrokes(rest.strokes)} a round` : 'Unexplained'}
+                            </span>
+                          )}
+                        </div>
+                        {showWhy ? <div aria-hidden className="h-8 rounded-fw-sm" style={rootStyleCss('unexplained')} /> : null}
+                        {inside.map((u) => {
+                          const selected = u.id === selectedId;
+                          return (
+                            <button
+                              key={u.id}
+                              type="button"
+                              aria-pressed={selected}
+                              aria-label={unsizedSpokenLabel(u, sl.area.label, audience)}
+                              onClick={onSelect ? () => onSelect(u.id) : undefined}
+                              disabled={!onSelect}
+                              data-slot="what-unsized"
+                              className={cn(
+                                'flex h-11 min-w-0 flex-col justify-center rounded-fw-sm border border-dashed border-text-secondary bg-surface px-1.5 text-left outline-none',
+                                'focus-visible:ring-2 focus-visible:ring-border-focus',
+                                selected ? 'ring-2 ring-text-primary' : 'hover:border-text-primary',
+                              )}
+                            >
+                              <span className="truncate text-caption font-medium text-text-primary">{u.label}</span>
+                              {u.players !== undefined ? (
+                                <span className="truncate text-caption text-text-tertiary">{playersText(u.players)} · not sized</span>
+                              ) : null}
+                            </button>
+                          );
+                        })}
                       </div>
                     );
                   }
@@ -270,7 +389,7 @@ export function RootMap({
                       key={c.id}
                       type="button"
                       aria-pressed={selected}
-                      aria-label={branchSpokenLabel(c, sl.area.label, showWhy)}
+                      aria-label={branchSpokenLabel(c, sl.area.label, showWhy, audience)}
                       onClick={onSelect ? () => onSelect(c.id) : undefined}
                       disabled={!onSelect}
                       className={cn(
@@ -287,7 +406,14 @@ export function RootMap({
                         )}
                         style={{ background: mix(NEG, 75) }}
                       >
-                        {sl.w >= 0.24 ? <span className="truncate">{c.label}</span> : null}
+                        {sl.w >= 0.24 ? (
+                          <span className="flex min-w-0 flex-col leading-tight">
+                            <span className="truncate">{c.label}</span>
+                            {c.players !== undefined ? (
+                              <span className="truncate font-normal text-text-secondary">{playersText(c.players)}</span>
+                            ) : null}
+                          </span>
+                        ) : null}
                         {sl.w >= 0.1 ? (
                           <span className="shrink-0 font-fw-mono tabular-nums">{formatStrokes(c.strokes)}</span>
                         ) : null}
@@ -323,21 +449,36 @@ export function RootMap({
       ) : null}
 
       {!hasCauses ? <figcaption className="sr-only">{summary}</figcaption> : null}
-      <RootLegend showWhy={showWhy} />
+      <RootLegend showWhy={showWhy} audience={audience} unsized={unsizedInRow && unsizedBySlot.size > 0} />
     </figure>
   );
 }
 
-export function RootLegend({ showWhy = true }: { showWhy?: boolean }) {
+export function RootLegend({
+  showWhy = true,
+  audience = 'player',
+  unsized = false,
+}: {
+  showWhy?: boolean;
+  audience?: RootAudience;
+  /** Add the outlined "not sized" node entry. */
+  unsized?: boolean;
+}) {
   const items: RootStyle[] = showWhy ? ['observed', 'likely', 'forming', 'unexplained'] : ['observed', 'likely', 'forming'];
   return (
     <ul className="flex flex-wrap items-center gap-x-4 gap-y-1 pt-1 text-caption text-text-secondary" aria-label="Legend">
       {items.map((s) => (
         <li key={s} className="flex items-center gap-1.5">
           <span aria-hidden className="inline-block h-3 w-4 rounded-sm" style={rootStyleCss(s)} />
-          {ROOT_STYLE_LABEL[s]}
+          {rootStyleLabel(s, audience)}
         </li>
       ))}
+      {unsized ? (
+        <li className="flex items-center gap-1.5">
+          <span aria-hidden className="inline-block h-3 w-4 rounded-sm border border-dashed border-text-secondary" />
+          Not sized (no stroke value stored)
+        </li>
+      ) : null}
       <li className="flex items-center gap-1.5">
         <span aria-hidden className="inline-block h-2.5 w-2.5 rounded-full bg-accent-500" />
         New
@@ -355,16 +496,20 @@ export function RootBranchList({
   selectedId,
   onSelect,
   label = 'Branches',
+  includeUnsized = false,
 }: {
   model: RootMapModel;
   selectedId: string | null;
   onSelect: (id: string) => void;
   label?: string;
+  /** Also list the model's unsized causes (outlined, no value). */
+  includeUnsized?: boolean;
 }) {
   const branches = model.losses
     .flatMap((a) => a.causes.map((c) => ({ c, area: a.label })))
     .sort((x, y) => y.c.strokes - x.c.strokes);
-  if (branches.length === 0) return null;
+  const unsized = includeUnsized ? model.unsized : [];
+  if (branches.length === 0 && unsized.length === 0) return null;
   return (
     <div role="group" aria-label={label} className="flex flex-wrap gap-2">
       {branches.map(({ c, area }) => {
@@ -389,7 +534,30 @@ export function RootBranchList({
               <span className="sr-only"> ({area})</span>
             </span>
             <span className="font-fw-mono tabular-nums">{formatStrokes(c.strokes)}</span>
+            {c.players !== undefined ? <span className="text-caption text-text-tertiary">{playersText(c.players)}</span> : null}
             {c.isNew ? <span aria-label="new" className="h-2 w-2 rounded-full bg-accent-500" /> : null}
+          </button>
+        );
+      })}
+      {unsized.map((u) => {
+        const selected = u.id === selectedId;
+        return (
+          <button
+            key={u.id}
+            type="button"
+            aria-pressed={selected}
+            onClick={() => onSelect(u.id)}
+            className={cn(
+              'inline-flex min-h-11 items-center gap-2 rounded-full border border-dashed px-3 text-body-sm outline-none transition-colors',
+              'focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
+              selected ? 'border-text-primary bg-surface text-text-primary' : 'border-border-strong text-text-secondary hover:text-text-primary',
+            )}
+          >
+            <span className="max-w-[14rem] truncate">
+              {u.label}
+              <span className="sr-only"> ({ROOT_AREA_LABEL[u.area]}, no stroke value stored)</span>
+            </span>
+            {u.players !== undefined ? <span className="text-caption text-text-tertiary">{playersText(u.players)}</span> : null}
           </button>
         );
       })}

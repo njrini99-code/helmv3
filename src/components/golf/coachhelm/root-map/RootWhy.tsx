@@ -26,7 +26,7 @@
  * evidence visual (your value against the comparison, with the sample).
  * ========================================================================== */
 
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { ChevronLeft } from 'lucide-react';
@@ -39,6 +39,7 @@ import {
   formatStrokes,
   shortDate,
   type BranchDetail,
+  type RootAudience,
   type RootMapModel,
 } from '@/lib/coachhelm/root-map/build-root-map';
 import { COACHHELM_HOME } from './RootToday';
@@ -72,7 +73,42 @@ export interface RootWhyProps {
   greenView?: GreenView | null;
   /** Insight id → approach band evidence; absent ids show none. */
   approachWhy?: Record<string, ApproachWhyView> | null;
+  /** The player map speaks to the player ("your"). A coach drilling into a
+   *  player reads it in the third person, by the player's first name. */
+  audience?: RootAudience;
+  /** Coach view: the player's first name (required for `audience='coach'`). */
+  playerName?: string;
+  /** The insight to show. Defaults to the `?insight=` search param (the
+   *  player route); the coach drill passes it explicitly. */
+  insightId?: string | null;
+  /** Replaces the default "Today" back link; `null` renders none (the coach
+   *  drill has its own back to Team roots). */
+  backLink?: ReactNode | null;
+  /** Extra secondary actions under the primary one (e.g. "Open signal"). */
+  secondaryActions?: ReactNode;
 }
+
+/** How the Why view names the player: "your" / "You", or "Ava's" / "Ava". */
+interface Voice {
+  audience: RootAudience;
+  /** "You" / "Ava" */
+  subject: string;
+  /** "your" / "Ava's" (lower-case form for mid-sentence use) */
+  possessive: string;
+  /** "Your" / "Ava's" */
+  Possessive: string;
+}
+
+function voiceFor(audience: RootAudience, playerName: string | undefined): Voice {
+  if (audience === 'coach') {
+    const name = playerName?.trim() || 'The player';
+    const poss = name === 'The player' ? "the player's" : `${name}'s`;
+    return { audience, subject: name, possessive: poss, Possessive: poss.charAt(0).toUpperCase() + poss.slice(1) };
+  }
+  return { audience, subject: 'You', possessive: 'your', Possessive: 'Your' };
+}
+
+const PLAYER_VOICE = voiceFor('player', undefined);
 
 function areaTypeFor(category: string | null): string {
   switch (category) {
@@ -97,9 +133,9 @@ function scaleValue(v: number, unit: BranchDetail['unit']): number {
   return unit === 'percent' && Math.abs(v) <= 1 ? v * 100 : v;
 }
 
-function EvidenceCompare({ detail }: { detail: BranchDetail }) {
+function EvidenceCompare({ detail, voice = PLAYER_VOICE }: { detail: BranchDetail; voice?: Voice }) {
   const marks = [
-    { key: 'you', label: 'You', value: detail.yourValue, display: formatValue(detail.yourValue, detail.unit, detail.yourDisplay ?? undefined) },
+    { key: 'you', label: voice.subject, value: detail.yourValue, display: formatValue(detail.yourValue, detail.unit, detail.yourDisplay ?? undefined) },
     { key: 'cmp', label: detail.comparisonLabel, value: detail.comparisonValue, display: formatValue(detail.comparisonValue, detail.unit) },
     ...(detail.secondaryValue !== null && detail.secondaryLabel
       ? [{ key: 'sec', label: detail.secondaryLabel, value: detail.secondaryValue, display: formatValue(detail.secondaryValue, detail.unit) }]
@@ -120,7 +156,7 @@ function EvidenceCompare({ detail }: { detail: BranchDetail }) {
       <p className="font-fw-display text-title-1 tabular-nums text-text-primary">{marks[0]!.display}</p>
       <svg
         role="img"
-        aria-label={`${detail.metricLabel}: you ${marks[0]!.display}; ${marks
+        aria-label={`${detail.metricLabel}: ${voice.audience === 'coach' ? voice.subject : 'you'} ${marks[0]!.display}; ${marks
           .slice(1)
           .map((m) => `${m.label} ${m.display}`)
           .join('; ')}. ${detail.sampleN} tracked.`}
@@ -181,13 +217,13 @@ function RegionStat({ stat }: { stat: GreenRegionStat }) {
  * 4-6 ft putts count; closer ones are faint. No comparison is written here:
  * each region states its own rate, and a thin region says so.
  */
-function GreenPlot({ view }: { view: GreenView }) {
+function GreenPlot({ view, voice = PLAYER_VOICE }: { view: GreenView; voice?: Voice }) {
   const c = GREEN_CENTER;
   const diag = (GREEN_MAX_FT + 0.5) * GREEN_PX_PER_FT * Math.SQRT1_2;
   return (
     <section aria-labelledby="why-green-heading" className="flex flex-col gap-3" data-slot="green-plot">
       <h3 id="why-green-heading" className="border-b border-text-primary pb-2 font-fw-display text-body-lg font-semibold text-text-primary">
-        Your putts from {GREEN_MIN_FT}–{GREEN_MAX_FT} ft
+        {voice.Possessive} putts from {GREEN_MIN_FT}–{GREEN_MAX_FT} ft
       </h3>
       <div className="flex justify-center">
         <RegionStat stat={view.regions.downhill} />
@@ -270,7 +306,7 @@ function GreenPlot({ view }: { view: GreenView }) {
         <li>Faint: {GREEN_INNER_RING_FT} ft or less, not counted</li>
       </ul>
       <p className="text-caption text-text-tertiary">
-        Across your last {view.rounds} rounds. Position around the hole is illustrative; distance and slope are recorded.
+        Across {voice.possessive} last {view.rounds} rounds. Position around the hole is illustrative; distance and slope are recorded.
       </p>
     </section>
   );
@@ -457,12 +493,12 @@ function pctText(v: number | null): string {
 }
 
 /** The three ranges side by side (A2 distance profile), this one emphasised. */
-function BandMetrics({ view }: { view: ApproachWhyView }) {
+function BandMetrics({ view, voice = PLAYER_VOICE }: { view: ApproachWhyView; voice?: Voice }) {
   if (view.metrics.length === 0) return null;
   return (
     <section aria-labelledby="why-bands-heading" className="flex flex-col gap-3" data-slot="band-metrics">
       <h3 id="why-bands-heading" className="border-b border-text-primary pb-2 font-fw-display text-body-lg font-semibold text-text-primary">
-        This range against your others
+        This range against {voice.possessive} others
       </h3>
       <table className="w-full border-collapse text-body-sm">
         <caption className="sr-only">Approach results by distance range, last {view.rounds} rounds</caption>
@@ -504,7 +540,7 @@ function BandMetrics({ view }: { view: ApproachWhyView }) {
 }
 
 /** Length → par → shape for one approach range, read from recorded shots. */
-function ApproachContextSection({ view }: { view: ApproachWhyView }) {
+function ApproachContextSection({ view, voice = PLAYER_VOICE }: { view: ApproachWhyView; voice?: Voice }) {
   const passed = view.narrowing.steps.filter((s) => s.passed);
   const stop = view.narrowing.steps.find((s) => !s.passed) ?? null;
   return (
@@ -525,17 +561,17 @@ function ApproachContextSection({ view }: { view: ApproachWhyView }) {
         {view.strokesLost !== null ? (
           <p className="text-body-sm text-text-secondary">
             <span className="font-fw-mono tabular-nums text-text-primary">{formatStrokes(view.strokesLost)}</span> strokes a round
-            lost from {view.bandLabel}: your approach strokes gained split shot by shot.
+            lost from {view.bandLabel}: {voice.possessive} approach strokes gained split shot by shot.
           </p>
         ) : null}
         <p className="text-caption text-text-tertiary">
-          Read from your last {view.rounds} counted rounds. Where the ball finished is recorded; why is not (club, wind and
+          Read from {voice.possessive} last {view.rounds} counted rounds. Where the ball finished is recorded; why is not (club, wind and
           target are not logged), so this is where the misses gather, not what causes them.
         </p>
       </section>
       {view.compass ? <MissCompass compass={view.compass} /> : null}
       {view.grid ? <ParLengthGrid view={view} /> : null}
-      <BandMetrics view={view} />
+      <BandMetrics view={view} voice={voice} />
     </div>
   );
 }
@@ -589,16 +625,32 @@ function Worth({ now, ifClosed }: { now: number; ifClosed: number }) {
   );
 }
 
-export function RootWhy({ model, details, insights, greenView = null, approachWhy = null }: RootWhyProps) {
+export function RootWhy({
+  model,
+  details,
+  insights,
+  greenView = null,
+  approachWhy = null,
+  audience = 'player',
+  playerName,
+  insightId,
+  backLink,
+  secondaryActions,
+}: RootWhyProps) {
   const searchParams = useSearchParams();
-  const id = searchParams.get('insight');
+  const id = insightId !== undefined ? insightId : searchParams.get('insight');
+  const voice = voiceFor(audience, playerName);
+  const isCoach = audience === 'coach';
   const insight = insights.find((i) => i.id === id) ?? null;
   const detail = id ? details[id] ?? null : null;
   const branch = findBranch(model, id);
   const area = branch ? model.losses.find((a) => a.area === branch.area) ?? null : null;
   const [open, setOpen] = useState(false);
 
-  const back = (
+  const back =
+    backLink !== undefined ? (
+      backLink
+    ) : (
     <Link
       href={COACHHELM_HOME}
       className="inline-flex min-h-11 items-center gap-1 text-body-sm font-medium text-accent-700 outline-none hover:underline focus-visible:ring-2 focus-visible:ring-border-focus"
@@ -606,21 +658,28 @@ export function RootWhy({ model, details, insights, greenView = null, approachWh
       <ChevronLeft aria-hidden className="h-4 w-4" />
       Today
     </Link>
-  );
+    );
 
   if (!insight || !detail) {
     return (
       <div className="flex flex-col gap-4">
         {back}
-        <EmptyState
-          title="This read is not on your map right now"
-          description="It may have been resolved, dismissed, or replaced by a newer read. Your current map is on Today."
-          action={
-            <Button asChild variant="primary">
-              <Link href={COACHHELM_HOME}>Back to Today</Link>
-            </Button>
-          }
-        />
+        {isCoach ? (
+          <EmptyState
+            title={`This read is not on ${voice.possessive} map right now`}
+            description="It may have been resolved, dismissed, or replaced by a newer read. Pick a branch of the map above."
+          />
+        ) : (
+          <EmptyState
+            title="This read is not on your map right now"
+            description="It may have been resolved, dismissed, or replaced by a newer read. Your current map is on Today."
+            action={
+              <Button asChild variant="primary">
+                <Link href={COACHHELM_HOME}>Back to Today</Link>
+              </Button>
+            }
+          />
+        )}
       </div>
     );
   }
@@ -668,19 +727,19 @@ export function RootWhy({ model, details, insights, greenView = null, approachWh
 
       <header className="flex flex-col gap-3">
         <h2 className="font-fw-display text-title-1 text-text-primary md:text-h1">{detail.title}</h2>
-        <SupportChips style={style} tier={detail.tier} />
+        <SupportChips style={style} tier={detail.tier} audience={audience} />
         {detail.symptom ? <p className="text-body text-text-secondary">{detail.symptom}</p> : null}
       </header>
 
-      <EvidenceCompare detail={detail} />
+      <EvidenceCompare detail={detail} voice={voice} />
 
-      {greenView && insight.category === 'putting' ? <GreenPlot view={greenView} /> : null}
+      {greenView && insight.category === 'putting' ? <GreenPlot view={greenView} voice={voice} /> : null}
 
-      {approachWhy?.[insight.id] ? <ApproachContextSection view={approachWhy[insight.id]!} /> : null}
+      {approachWhy?.[insight.id] ? <ApproachContextSection view={approachWhy[insight.id]!} voice={voice} /> : null}
 
       <section aria-labelledby="why-root-heading" className="flex flex-col gap-2">
         <h3 id="why-root-heading" className="border-b border-text-primary pb-2 font-fw-display text-body-lg font-semibold text-text-primary">
-          {style === 'observed' ? 'Seen in your shots' : style === 'likely' ? 'The likely root' : style === 'forming' ? 'A root that is still forming' : 'Why'}
+          {style === 'observed' ? (isCoach ? 'Seen in shots' : 'Seen in your shots') : style === 'likely' ? 'The likely root' : style === 'forming' ? 'A root that is still forming' : 'Why'}
         </h3>
         <p className="text-body text-text-primary">
           {detail.rootCause ?? 'The cause behind this one is not explained yet.'}
@@ -717,13 +776,14 @@ export function RootWhy({ model, details, insights, greenView = null, approachWh
       {detail.projection ? <Worth now={detail.projection.now} ifClosed={detail.projection.ifClosed} /> : null}
 
       <Button variant="primary" size="lg" fullWidth type="button" onClick={() => setOpen(true)}>
-        Make this my focus
+        {isCoach ? `Propose as a focus for ${voice.subject}` : 'Make this my focus'}
       </Button>
+      {secondaryActions}
       <FocusAreaModal
         open={open}
         onOpenChange={setOpen}
-        mode="player"
-        players={[{ id: insight.playerId, name: 'You' }]}
+        mode={isCoach ? 'coach' : 'player'}
+        players={[{ id: insight.playerId, name: isCoach ? voice.subject : 'You' }]}
         playerStats={{}}
         playerId={insight.playerId}
         sourceInsightId={insight.id}

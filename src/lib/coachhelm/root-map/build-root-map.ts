@@ -96,6 +96,19 @@ export const ROOT_STYLE_LABEL: Record<RootStyle, string> = {
   unexplained: 'Not yet explained',
 };
 
+/**
+ * Who a root-map surface is speaking to. The player map says "your"; the
+ * coach surfaces (team roots, the coach's drill into one player) never do.
+ */
+export type RootAudience = 'player' | 'coach';
+
+/** {@link ROOT_STYLE_LABEL} in the audience's voice ("Seen in shots" for a
+ *  coach). */
+export function rootStyleLabel(style: RootStyle, audience: RootAudience = 'player'): string {
+  if (audience === 'coach' && style === 'observed') return 'Seen in shots';
+  return ROOT_STYLE_LABEL[style];
+}
+
 type EvidenceWithExtras = InsightEvidence & {
   counterfactual?: { strokes_saved_per_round?: unknown; suppressed?: unknown; current_baseline_score?: unknown; projected_score_if_closed?: unknown } | null;
 };
@@ -205,6 +218,8 @@ export interface CauseBranch {
   /** The gated length → par → shape path, e.g. "175+ yd → par 4s →
    *  short-right" (`context-narrowing.ts`); null when it did not narrow. */
   contextPath?: string | null;
+  /** Team map only: how many players carry this cause. */
+  players?: number;
 }
 
 export interface AreaBranch {
@@ -236,6 +251,8 @@ export interface UnsizedCause {
   contextPath?: string | null;
   /** Why it has no width, when there is a specific reason. */
   note?: string | null;
+  /** Team map only: how many players carry this cause. */
+  players?: number;
 }
 
 export interface OtherRead {
@@ -420,7 +437,11 @@ function lowerFirst(s: string): string {
  * "likely", a thin/early read → "still forming". Null when there is no area
  * SG at all (the page shows an honest empty state instead).
  */
-export function buildRootHeadline(model: RootMapModel, selected: CauseBranch | null): string | null {
+export function buildRootHeadline(
+  model: RootMapModel,
+  selected: CauseBranch | null,
+  audience: RootAudience = 'player',
+): string | null {
   if (model.gains.length === 0 && model.losses.length === 0) return null;
   const parts: string[] = [];
   const topGain = model.gains[0];
@@ -437,7 +458,7 @@ export function buildRootHeadline(model: RootMapModel, selected: CauseBranch | n
       parts.push(`${base}.`);
     } else {
       const what = lowerFirst(branch.label);
-      if (branch.style === 'observed') parts.push(`${base}, ${what} is where, seen in your shots.`);
+      if (branch.style === 'observed') parts.push(`${base}, ${what} is where, ${supportPhrase('observed', audience)}.`);
       else if (branch.style === 'likely') parts.push(`${base}, likely around ${what}.`);
       else if (branch.style === 'forming') parts.push(`${base}; the read on ${what} is still forming.`);
       else parts.push(`${base}; ${what} is part of it, the cause is not explained yet.`);
@@ -548,10 +569,10 @@ export function branchDetailOf(insight: {
 }
 
 /** Wording for a root per its support. Never states a hypothesis as fact. */
-export function supportPhrase(style: RootStyle): string {
+export function supportPhrase(style: RootStyle, audience: RootAudience = 'player'): string {
   switch (style) {
     case 'observed':
-      return 'seen in your shots';
+      return audience === 'coach' ? 'seen in shots' : 'seen in your shots';
     case 'likely':
       return 'likely';
     case 'forming':

@@ -134,7 +134,84 @@ describe('TeamRootsView, a stored miss concentration', () => {
     expect(
       within(table).getByRole('link', { name: /Where it concentrates: 175\+ yd → long par 3s → short-right, observed, not a cause/ }),
     ).toBeInTheDocument();
-    expect(screen.getByText('Concentrates by par or shape (open the signal)')).toBeInTheDocument();
+    expect(screen.getByText('Concentrates by par or shape (open the cell)')).toBeInTheDocument();
     expect(screen.getByText(/Observed, not a cause\.$/)).toBeInTheDocument();
+  });
+});
+
+describe('TeamRootsView, team map What row and matrix labels (2026-09-25)', () => {
+  function putting(playerId: string, metric: string, label: string, strokes: number | null): GroupedSignal {
+    return {
+      ...signal(playerId, 'lag', 'putting', strokes),
+      id: `${playerId}-${metric}`,
+      evidence: {
+        metric,
+        metric_label: label,
+        confidence: 0.8,
+        counterfactual: strokes === null ? null : { strokes_saved_per_round: strokes, suppressed: false },
+        diagnosis: { causality_level: 'observed_sequence', root_cause: 'r', drivers: [] },
+      },
+    };
+  }
+  const hrefFor = (u: { view?: string; player?: string | null; cause?: string | null }) =>
+    `/golf/dashboard/intelligence?view=${u.view ?? 'team'}${u.player ? `&player=${u.player}` : ''}${u.cause ? `&cause=${u.cause}` : ''}`;
+
+  const puttingHeavy: TeamRosterPlayer[] = players.map((p) => ({
+    ...p,
+    sg: { tee: 0.2, approach: -0.3, short_game: -0.1, putting: -1.5 },
+  }));
+
+  function renderView() {
+    const model = buildTeamRoots({
+      players: puttingHeavy,
+      signals: [
+        ...['a', 'b', 'c'].map((p) =>
+          putting(p, 'putt_slope_downhill_penalty_pct', 'Downhill vs level putt make % (distance-controlled)', null),
+        ),
+        putting('a', 'sized_one', 'Lag putting', 0.3),
+      ],
+    });
+    render(
+      <TeamRootsView
+        model={model}
+        headline={buildTeamHeadline(model)}
+        trend={[]}
+        slopes={[]}
+        needsYou={[]}
+        signalsFailed={false}
+        hrefFor={hrefFor}
+        navigate={() => {}}
+      />,
+    );
+    return model;
+  }
+
+  it('draws a single-player sized cause and unsized causes as labelled nodes, with the unexplained remainder named', () => {
+    renderView();
+    const figure = screen.getByRole('figure', { name: 'Team root map' });
+    // sized even though only one player carries it
+    expect(within(figure).getByRole('button', { name: /Lag putting, 0\.10 strokes a round\. 1 player/ })).toBeInTheDocument();
+    // unsized cause: outlined node with its short label and carrier count
+    expect(
+      within(figure).getByRole('button', { name: /Putting: Downhill putts, no stroke value stored\. 3 players/ }),
+    ).toBeInTheDocument();
+    expect(within(figure).getAllByText('Unexplained').length).toBeGreaterThan(0);
+    // legend once, in the coach voice
+    expect(screen.getAllByRole('list', { name: 'Legend' })).toHaveLength(1);
+    expect(screen.queryByText(/your/i)).not.toBeInTheDocument();
+  });
+
+  it('gives matrix columns a short header with the full label kept, and cells open the player drill', () => {
+    renderView();
+    const table = screen.getByRole('table');
+    const header = within(table).getByRole('columnheader', { name: /Downhill vs level putt make % \(distance-controlled\)/ });
+    expect(header).toHaveAttribute('title', 'Downhill vs level putt make % (distance-controlled)');
+    expect(within(header).getByText('Downhill putts')).toBeInTheDocument();
+    const cell = within(table).getAllByRole('link', { name: /Player A: Downhill vs level putt make %/ })[0]!;
+    expect(cell).toHaveAttribute('href', '/golf/dashboard/intelligence?view=team&player=a&cause=a-putt_slope_downhill_penalty_pct');
+    expect(within(table).getByRole('link', { name: "Open Player A's root map" })).toHaveAttribute(
+      'href',
+      '/golf/dashboard/intelligence?view=team&player=a',
+    );
   });
 });

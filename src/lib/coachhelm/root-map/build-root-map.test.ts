@@ -332,6 +332,22 @@ describe('area trends', () => {
     expect(weeks[1]!.values.approach).toBeNull();
     expect(weeks[1]!.players).toBe(2);
     expect(weeks[1]!.rounds).toBe(3);
+    expect([weeks[1]!.firstRound, weeks[1]!.lastRound]).toEqual(['2026-09-15', '2026-09-17']);
+  });
+
+  it('windows to the weeks ending at the latest counted round, not at today', () => {
+    // Latest counted round Aug 2 (a Sunday, week of Jul 27); newer rounds were
+    // dropped upstream (not countable / no SG), so they never anchor it.
+    const r = (date: string) => ({ playerId: 'a', date, tee: 0.5, approach: -1, short_game: null, putting: -2 });
+    const weeks = buildTeamTrend([r('2026-05-04'), r('2026-06-30'), r('2026-07-14'), r('2026-08-02')], { maxWeeks: 4 });
+    expect(weeks.map((w) => w.weekStart)).toEqual(['2026-07-13', '2026-07-27']);
+    expect(weeks[weeks.length - 1]!.lastRound).toBe('2026-08-02');
+    // rounds with no stored area SG at all neither count nor anchor
+    const withEmpty = buildTeamTrend(
+      [r('2026-07-14'), { playerId: 'b', date: '2026-09-17', tee: null, approach: null, short_game: null, putting: null }],
+      { maxWeeks: 2 },
+    );
+    expect(withEmpty.map((w) => w.lastRound)).toEqual(['2026-07-14']);
   });
 });
 
@@ -391,10 +407,31 @@ describe('team roots', () => {
     expect(model.rows.map((r) => r.playerId)).toEqual(['b', 'a', 'd', 'c']);
     // unsized cell kept as present-but-unsized
     expect(model.rows.find((r) => r.playerId === 'c')!.cells.short_putts!.strokes).toBeNull();
-    // team map: only shared SG columns become branches
+    // team map: the top causes per losing area by summed team strokes, not
+    // only 3+-player ones (owner request 2026-09-25); each says how many
+    // players carry it
     const branches = model.map.losses.flatMap((l) => l.causes);
-    expect(branches.map((b) => b.id)).toEqual(['team:short_putts']);
+    expect(branches.map((b) => b.id)).toEqual(['team:short_putts', 'team:lag']);
+    expect(branches.map((b) => b.players)).toEqual([3, 1]);
     expect(branches[0]!.style).toBe('likely');
+  });
+
+  it('lists unsized causes under a losing area, capped per area, most-carried first', () => {
+    const model = buildTeamRoots({
+      players,
+      signals: [
+        ...['a', 'b', 'c'].map((p) => signal({ playerId: p, metric: 'putt_slope_downhill_penalty_pct', strokes: null })),
+        ...['a', 'b'].map((p) => signal({ playerId: p, metric: 'm2', strokes: null })),
+        signal({ playerId: 'a', metric: 'm3', strokes: null }),
+        signal({ playerId: 'a', metric: 'm4', strokes: null }),
+        signal({ playerId: 'b', metric: 'sized', strokes: 0.4 }),
+      ],
+    });
+    expect(model.map.losses.flatMap((l) => l.causes).map((c) => c.id)).toEqual(['team:sized']);
+    expect(model.map.unsized.map((u) => [u.id, u.label, u.players])).toEqual([
+      ['team:putt_slope_downhill_penalty_pct', 'Downhill putts', 3],
+      ['team:m2', 'm2', 2],
+    ]);
   });
 
   it('marks a shared column forming when its mean confidence is below solid', () => {

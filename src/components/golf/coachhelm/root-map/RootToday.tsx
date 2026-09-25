@@ -30,6 +30,7 @@ import {
   supportPhrase,
   type BranchDetail,
   type CauseBranch,
+  type RootAudience,
   type RootMapModel,
   type RootStyle,
 } from '@/lib/coachhelm/root-map/build-root-map';
@@ -74,11 +75,19 @@ function supportTone(style: RootStyle): 'success' | 'warning' | 'neutral' {
   return 'neutral';
 }
 
-export function SupportChips({ style, tier }: { style: RootStyle; tier: BranchDetail['tier'] }) {
+export function SupportChips({
+  style,
+  tier,
+  audience = 'player',
+}: {
+  style: RootStyle;
+  tier: BranchDetail['tier'];
+  audience?: RootAudience;
+}) {
   return (
     <div className="flex flex-wrap items-center gap-2">
       <Chip tone={supportTone(style)} size="sm">
-        {style === 'unexplained' ? ROOT_STYLE_LABEL.unexplained : supportPhrase(style).replace(/^./, (c) => c.toUpperCase())}
+        {style === 'unexplained' ? ROOT_STYLE_LABEL.unexplained : supportPhrase(style, audience).replace(/^./, (c) => c.toUpperCase())}
       </Chip>
       {tier ? (
         <Chip tone="neutral" variant="outline" size="sm">

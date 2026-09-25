@@ -110,7 +110,7 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
   `detected`/`matured` row to `resolved` (+ `resolved_at`,
   `metadata.resolved_by='engine-recheck'`, `resolve_reason`,
   `resolved_from_state`, `resolved_recheck`); `holds` reopens ONLY a row the
-  recheck itself resolved (back to `detected`, `metadata.reopened_*`). A
+  recheck itself resolved (back to `metadata.resolved_from_state` when it was `matured`, else `detected`; `metadata.reopened_*`). A
   `thin` sample (putts below `ATTEMPT_FLOOR`, par below `minSampleN` rounds)
   never moves a row. `tentative`, `addressed`, archived rows, coach- or
   cron-resolved rows, and the coach `status` axis are never touched; the write
@@ -276,6 +276,39 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
     is labelled with its own round window (the last 40 countable rounds).
   - Team roots mark cells, and list "Needs you" rows, only from a stored
     narrowing that got past the length step.
+- Team roots (coach, `?view=team`, 2026-09-25):
+  - The map's What row shows the top causes per losing area, ranked by
+    summed team strokes, up to 3 per area (`TEAM_MAP_CAUSES_PER_AREA`), each
+    with how many players carry it. A cause no longer needs 3+ players to
+    appear there; "shared" marks 3+ players in the matrix only.
+  - Causes with no stored stroke value are outlined nodes inside the
+    area's "Unexplained <strokes>" remainder. Where-row and gain slices too
+    narrow for their own label keep their true width and carry the label and
+    value just under the bar.
+  - Matrix columns show a short header (`shortCauseLabel`). The full
+    stored label stays in `title` and in the spoken text.
+  - The trend reads 52 weeks back and shows the 12 weeks ending at the
+    team's latest counted SG round, not at today (`buildTeamTrend` with
+    `maxWeeks`). It is labelled with the real first and last round dates.
+    Non-countable rounds and rounds without stored SG never anchor it.
+  - Coach-facing copy never says "your": `RootAudience` 'coach' gives
+    "Seen in shots" and third-person Why copy.
+  - Drill-in: a player name or a matrix cell navigates (a push, so back and
+    forward work) to `?view=team&player=<id>&cause=<insightId>`. The page
+    then builds that player's own root map server-side
+    (`loadCoachPlayerDrill`, `coach-player-drill.ts`). It uses the same
+    loaders and builders as the player's Today view, with the coach's
+    request client. Insights come from `getInsightsForCoachWithMeta`
+    (`verifyPlayerAccess` + `applyInsightVisibility`, no `player_feed`
+    exposure). A clicked cause that the ranked list dropped falls back to the
+    Brief's visibility-filtered signal.
+  - `TeamPlayerDrill` renders `RootMap` and `RootWhy` with `audience='coach'`
+    and the clicked cause's Why open. Picking another branch keeps
+    `?cause=` in step. The one primary action is "Propose as a focus for
+    <first name>" (coach mode, which proposes). "Open signal" and the back
+    link to Team roots are secondary.
+  - Stored insight prose (title, symptom, root cause) is shown verbatim.
+    Some generators write it to the player in the second person.
 - Root map area SG (2026-09-25) is averaged by `loadPlayersAreaSg` over
   COUNTABLE completed rounds (`isCountableRound`), per 18 holes (a 9-hole
   round's SG is doubled), from `golf_rounds.strokes_gained_*`. It does not

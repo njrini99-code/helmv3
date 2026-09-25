@@ -93,7 +93,7 @@ describe('buildNeedsYou', () => {
 });
 
 describe('stackTeamTrend', () => {
-  const week = (values: TeamTrendWeek['values']): TeamTrendWeek => ({ weekStart: '2026-09-07', values, players: 3, rounds: 4 });
+  const week = (values: TeamTrendWeek['values']): TeamTrendWeek => ({ weekStart: '2026-09-07', values, players: 3, rounds: 4, firstRound: '2026-09-07', lastRound: '2026-09-12' });
 
   it('stacks gains up and losses down from the Tour line, contiguously', () => {
     const s = stackTeamTrend([week({ tee: 0.5, approach: -1, short_game: 0.25, putting: -0.5 })]);

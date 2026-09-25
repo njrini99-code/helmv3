@@ -175,6 +175,9 @@ export interface TeamTrendWeek {
   values: Record<RootArea, number | null>;
   players: number;
   rounds: number;
+  /** Date-only `round_date` of the week's first and last counted round. */
+  firstRound: string;
+  lastRound: string;
 }
 
 /** Monday of the week containing a `YYYY-MM-DD` date, computed in UTC so the
@@ -191,11 +194,26 @@ export function weekStartOf(day: string): string {
  * Weekly team averages, oldest week first. Each player counts once per week
  * (their own weekly mean), so a player who logged four rounds does not
  * outweigh one who logged one. Weeks with no stored values are skipped.
+ *
+ * `maxWeeks` windows the trend to the weeks ending at the LATEST counted
+ * round with a stored area SG, not at today: a team whose newest counted
+ * round is two months old still gets its last `maxWeeks` of play, labelled
+ * with the real dates, instead of a window that is mostly empty. Rounds the
+ * loader dropped (not countable, or no stored SG) never anchor it.
  */
-export function buildTeamTrend(rounds: TeamSgRound[]): TeamTrendWeek[] {
+export function buildTeamTrend(rounds: TeamSgRound[], opts: { maxWeeks?: number } = {}): TeamTrendWeek[] {
+  const dated = rounds.filter(
+    (r) => /^\d{4}-\d{2}-\d{2}/.test(r.date) && ROOT_AREAS.some((a) => finite(r[a])),
+  );
+  let inWindow = dated;
+  if (opts.maxWeeks !== undefined && opts.maxWeeks > 0 && dated.length > 0) {
+    const latest = dated.reduce((m, r) => (r.date.slice(0, 10) > m ? r.date.slice(0, 10) : m), '');
+    const [y = 1970, m = 1, d = 1] = weekStartOf(latest).split('-').map(Number);
+    const firstWeek = new Date(Date.UTC(y, m - 1, d) - (opts.maxWeeks - 1) * 7 * 86_400_000).toISOString().slice(0, 10);
+    inWindow = dated.filter((r) => r.date.slice(0, 10) >= firstWeek);
+  }
   const byWeek = new Map<string, Map<string, AreaSgRound[]>>();
-  for (const r of rounds) {
-    if (!/^\d{4}-\d{2}-\d{2}/.test(r.date)) continue;
+  for (const r of inWindow) {
     const wk = weekStartOf(r.date.slice(0, 10));
     const players = byWeek.get(wk) ?? new Map<string, AreaSgRound[]>();
     const list = players.get(r.playerId) ?? [];
@@ -207,7 +225,16 @@ export function buildTeamTrend(rounds: TeamSgRound[]): TeamTrendWeek[] {
   for (const [weekStart, players] of byWeek) {
     const values = {} as Record<RootArea, number | null>;
     let roundCount = 0;
-    for (const list of players.values()) roundCount += list.length;
+    let firstRound = '';
+    let lastRound = '';
+    for (const list of players.values()) {
+      roundCount += list.length;
+      for (const r of list) {
+        const day = r.date.slice(0, 10);
+        if (!firstRound || day < firstRound) firstRound = day;
+        if (day > lastRound) lastRound = day;
+      }
+    }
     for (const area of ROOT_AREAS) {
       const playerMeans: number[] = [];
       for (const list of players.values()) {
@@ -217,7 +244,7 @@ export function buildTeamTrend(rounds: TeamSgRound[]): TeamTrendWeek[] {
       values[area] = playerMeans.length > 0 ? playerMeans.reduce((s, v) => s + v, 0) / playerMeans.length : null;
     }
     if (ROOT_AREAS.every((a) => values[a] === null)) continue;
-    weeks.push({ weekStart, values, players: players.size, rounds: roundCount });
+    weeks.push({ weekStart, values, players: players.size, rounds: roundCount, firstRound, lastRound });
   }
   return weeks.sort((a, b) => (a.weekStart < b.weekStart ? -1 : 1));
 }

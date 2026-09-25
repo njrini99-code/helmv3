@@ -52,9 +52,13 @@ export function TeamTrendChart({ weeks }: { weeks: TeamTrendWeek[] }) {
 
   const first = weeks[0];
   const last = weeks[n - 1];
+  // The real span of counted rounds (not week starts): "Jun 30 – Aug 2".
+  const from = first ? shortDate(first.firstRound || first.weekStart) : null;
+  const to = last ? shortDate(last.lastRound || last.weekStart) : null;
+  const range = from && to ? (from === to ? from : `${from} – ${to}`) : null;
   const spoken =
     first && last
-      ? `Team strokes gained per round by area, weekly, ${shortDate(first.weekStart)} to ${shortDate(last.weekStart)}. ` +
+      ? `Team strokes gained per round by area, weekly, rounds from ${from} to ${to}. ` +
         `Latest week: ${ROOT_AREAS.map((a) => `${ROOT_AREA_LABEL[a]} ${last.values[a] === null ? 'no rounds' : formatStrokes(last.values[a] as number, { signed: true })}`).join(', ')}.`
       : 'Team trend';
 
@@ -65,13 +69,11 @@ export function TeamTrendChart({ weeks }: { weeks: TeamTrendWeek[] }) {
           Team trend
         </h3>
         <p className="text-caption text-text-tertiary">
-          {n} {n === 1 ? 'week' : 'weeks'} · team average per round
+          {range ? `${range} · ` : ''}
+          {n} {n === 1 ? 'week' : 'weeks'} with rounds
         </p>
       </div>
-      <div className="flex items-center justify-between text-caption text-text-tertiary">
-        <span>Above the Tour line</span>
-        <span className="font-fw-mono tabular-nums">{formatStrokes(extent, { signed: true })}</span>
-      </div>
+      <p className="text-caption text-text-tertiary">Gaining on the Tour line ↑</p>
       <svg role="img" aria-label={spoken} viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" className="h-36 w-full">
         {polygons.map((p) => (
           <path key={p.key} d={p.d} style={{ fill: p.fill, stroke: 'var(--fw-color-surface)' }} strokeWidth={0.5} vectorEffect="non-scaling-stroke" />
@@ -81,14 +83,16 @@ export function TeamTrendChart({ weeks }: { weeks: TeamTrendWeek[] }) {
           <path d={netPath} fill="none" style={{ stroke: 'var(--fw-color-text-primary)' }} strokeWidth={1.5} vectorEffect="non-scaling-stroke" />
         ) : null}
       </svg>
-      <div className="flex items-center justify-between text-caption text-text-tertiary">
-        <span>Below the Tour line</span>
-        <span className="font-fw-mono tabular-nums">{formatStrokes(-extent, { signed: true })}</span>
-      </div>
+      <p className="text-caption text-text-tertiary">Losing to the Tour line ↓</p>
       <div className="flex justify-between text-caption text-text-tertiary">
-        <span>{first ? shortDate(first.weekStart) : ''}</span>
-        <span>{last ? shortDate(last.weekStart) : ''}</span>
+        <span>{from ?? ''}</span>
+        <span>{to ?? ''}</span>
       </div>
+      <p className="text-caption text-text-tertiary">
+        Team average per round, each player once per week. The dashed line is the Tour line; the chart spans{' '}
+        <span className="font-fw-mono tabular-nums">±{formatStrokes(extent)}</span> strokes. Ends at the latest counted
+        round with strokes gained.
+      </p>
       <ul className="flex flex-wrap gap-x-4 gap-y-1 text-caption text-text-secondary" aria-label="Legend">
         {ROOT_AREAS.map((a) => (
           <li key={a} className="flex items-center gap-1.5">

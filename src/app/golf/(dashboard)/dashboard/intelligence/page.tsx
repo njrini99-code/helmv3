@@ -42,11 +42,16 @@ import {
 import { buildTeamHeadline, buildTeamRoots, type TeamRosterPlayer } from '@/lib/coachhelm/root-map/build-team-roots';
 import { buildTeamTrend } from '@/lib/coachhelm/root-map/area-trends';
 import { buildFocusSlopes, buildNeedsYou, type MetricMeta } from '@/lib/coachhelm/root-map/build-team-extras';
+import { loadCoachPlayerDrill } from '@/lib/coachhelm/root-map/coach-player-drill';
 import { getMetricRenderConfig } from '@/lib/coachhelm/v3/standing/metric-config';
 import type { TeamRootsData } from '@/components/golf/coachhelm/root-map/TeamRootsView';
 
-/** Weeks of stored per-round SG the team trend reads. */
+/** Weeks the team trend shows, ending at the latest counted SG round. */
 const TEAM_TREND_WEEKS = 12;
+/** How far back the trend read looks for that latest round. The window is
+ *  anchored on the team's newest counted round, not on today, so a team
+ *  whose last SG round is weeks old still gets its last 12 weeks of play. */
+const TEAM_TREND_LOOKBACK_WEEKS = 52;
 
 function isoDaysBefore(dayIso: string, days: number): string {
   const [y = 1970, m = 1, d = 1] = dayIso.split('-').map(Number);
@@ -96,6 +101,10 @@ interface IntelligencePageProps {
     // one deep-link param this page still resolves server-side (F133,
     // forwarded by the `/development` redirect shim).
     player?: string;
+    /** Team roots drill: `?view=team&player=<id>&cause=<insightId>` opens
+     *  that player's root map (built server-side, coach-scoped). */
+    view?: string;
+    cause?: string;
   }>;
 }
 
@@ -258,7 +267,7 @@ export default async function IntelligenceDashboardPage({ searchParams }: Intell
   // below; each loader returns null on failure instead of throwing.
   const teamRootReads = Promise.all([
     loadPlayersAreaSg(supabase, playerIds),
-    loadTeamSgRounds(supabase, playerIds, isoDaysBefore(todayIso, TEAM_TREND_WEEKS * 7)),
+    loadTeamSgRounds(supabase, playerIds, isoDaysBefore(todayIso, TEAM_TREND_LOOKBACK_WEEKS * 7)),
   ]);
 
   // Page loads are read-only. Progress evaluation belongs to round ingestion /
@@ -515,7 +524,7 @@ export default async function IntelligenceDashboardPage({ searchParams }: Intell
       teamRoots = {
         model,
         headline: buildTeamHeadline(model),
-        trend: buildTeamTrend(teamRounds),
+        trend: buildTeamTrend(teamRounds, { maxWeeks: TEAM_TREND_WEEKS }),
         slopes: attribution
           ? buildFocusSlopes({
               focusAreas: (focusAreas || []).map((fa) => ({
@@ -541,7 +550,21 @@ export default async function IntelligenceDashboardPage({ searchParams }: Intell
           playerNameById,
         }),
         signalsFailed: signalGroupsError !== null,
+        drill: null,
       };
+
+      // Drill into one player (`?view=team&player=`): only for a player on
+      // this coach's roster; access is re-checked inside the insight read.
+      const drillPlayer = sp.view === 'team' && sp.player ? players.find((p) => p.id === sp.player) ?? null : null;
+      if (drillPlayer) {
+        teamRoots.drill = await loadCoachPlayerDrill(supabase, {
+          coachId: coach.id,
+          playerId: drillPlayer.id,
+          playerName: drillPlayer.first_name?.trim() || playerNameById[drillPlayer.id] || 'Player',
+          causeId: typeof sp.cause === 'string' && sp.cause.length > 0 ? sp.cause : null,
+          signals,
+        });
+      }
     }
   } catch (err) {
     void logServerError(

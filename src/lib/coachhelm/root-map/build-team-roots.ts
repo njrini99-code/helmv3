@@ -39,6 +39,7 @@ import {
   type RootArea,
   type RootMapModel,
   type RootStyle,
+  type UnsizedCause,
   humanizeCauseLabel,
 } from './build-root-map';
 
@@ -66,6 +67,9 @@ export interface TeamRootCell {
 export interface TeamRootColumn {
   metric: string;
   label: string;
+  /** A short header for the matrix and the map ("Downhill putts"); the full
+   *  stored label stays in `label` (title / spoken). */
+  shortLabel: string;
   /** Area the column sits under, or 'other' for non-SG categories. */
   area: RootArea | 'other';
   players: number;
@@ -97,6 +101,42 @@ export interface TeamRootsModel {
 }
 
 export const TEAM_MATRIX_MAX_COLUMNS = 10;
+
+/** Causes drawn per losing area on the team map (sized first, then unsized). */
+export const TEAM_MAP_CAUSES_PER_AREA = 3;
+
+/**
+ * Short, plain names for stored metric ids whose `metric_label` reads like a
+ * column name. Named by what the generator actually measures:
+ * - `sg_ott` is only written by the tee_strategy generator (category `tee`):
+ *   driver vs other-tee-club fairway % on par 4s and 5s.
+ * - `putt_miss_bias_left_pct` / `_right_pct` are the putt_bias generator's
+ *   left-to-right / right-to-left BREAK make-rate gaps (not miss direction).
+ */
+const SHORT_METRIC_LABEL: Record<string, string> = {
+  sg_ott: 'Driver vs layback',
+  putt_slope_downhill_penalty_pct: 'Downhill putts',
+  putt_miss_bias_left_pct: 'L-to-R breaks',
+  putt_miss_bias_right_pct: 'R-to-L breaks',
+  opening_hole_delta: 'First hole',
+  scoring_par_3: 'Par 3s',
+  scoring_par_4: 'Par 4s',
+  scoring_par_5: 'Par 5s',
+  scrambling_pct_sand: 'Sand saves',
+  approach_proximity_50_125ft: 'Approach 50–125 yd',
+  approach_proximity_125_175ft: 'Approach 125–175 yd',
+  approach_proximity_175_plus_ft: 'Approach 175+ yd',
+};
+
+/** Short header for a cause column: a known metric id's plain name, else the
+ *  humanized stored label with trailing qualifiers ("(distance-controlled)")
+ *  dropped. */
+export function shortCauseLabel(metric: string, label: string): string {
+  const known = SHORT_METRIC_LABEL[metric];
+  if (known) return known;
+  const trimmed = label.replace(/\s*\([^)]*\)\s*$/, '').trim();
+  return trimmed.length > 0 ? trimmed : label;
+}
 
 function finite(v: unknown): v is number {
   return typeof v === 'number' && Number.isFinite(v);
@@ -205,6 +245,7 @@ export function buildTeamRoots(input: {
       column: {
         metric,
         label: e.label,
+        shortLabel: shortCauseLabel(metric, e.label),
         area: e.area,
         players: e.cells.size,
         teamStrokes,
@@ -244,31 +285,60 @@ export function buildTeamRoots(input: {
       return a.sgTotal - b.sgTotal;
     });
 
-  // Team root map: WHERE = team-average area SG; WHAT = shared SG columns.
+  // Team root map: WHERE = team-average area SG; WHAT = the top causes under
+  // each losing area, ranked by summed team strokes (a cause carried by one
+  // player still shows when it is among the largest; `players` says how many
+  // carry it). Sized causes take their team-average width; causes with no
+  // stored stroke value are listed as unsized (drawn as outlined nodes).
   const losing = new Set(ROOT_AREAS.filter((a) => (teamAreaSg[a] ?? 0) < 0));
   const sized: CauseSeed[] = [];
-  for (const { column, entry } of allColumns) {
-    if (!column.shared || column.area === 'other' || !losing.has(column.area)) continue;
-    if (column.teamStrokes === null || column.teamStrokes <= 0) continue;
-    const cells = [...entry.cells.values()];
-    const agg = aggregateStyle(cells, [...entry.conf.values()]);
-    sized.push({
-      id: `team:${column.metric}`,
-      area: column.area,
-      title: column.label,
-      label: column.label,
-      strokes: column.teamStrokes,
-      style: agg.style,
-      tier: agg.tier,
-      causality: null,
-      rootCause: null,
-      isNew: false,
-    });
+  const unsized: UnsizedCause[] = [];
+  for (const area of losing) {
+    const inArea = allColumns.filter(({ column }) => column.area === area);
+    const sizedCols = inArea
+      .filter(({ column }) => column.teamStrokes !== null && column.teamStrokes > 0)
+      .sort((a, b) => (b.column.teamStrokes ?? 0) - (a.column.teamStrokes ?? 0) || b.column.players - a.column.players)
+      .slice(0, TEAM_MAP_CAUSES_PER_AREA);
+    for (const { column, entry } of sizedCols) {
+      const agg = aggregateStyle([...entry.cells.values()], [...entry.conf.values()]);
+      sized.push({
+        id: `team:${column.metric}`,
+        area,
+        title: column.label,
+        label: column.shortLabel,
+        strokes: column.teamStrokes as number,
+        style: agg.style,
+        tier: agg.tier,
+        causality: null,
+        rootCause: null,
+        isNew: false,
+        players: column.players,
+      });
+    }
+    const room = TEAM_MAP_CAUSES_PER_AREA - sizedCols.length;
+    if (room <= 0) continue;
+    const unsizedCols = inArea
+      .filter(({ column }) => column.teamStrokes === null)
+      .sort((a, b) => b.column.players - a.column.players || a.column.label.localeCompare(b.column.label))
+      .slice(0, room);
+    for (const { column, entry } of unsizedCols) {
+      const agg = aggregateStyle([...entry.cells.values()], [...entry.conf.values()]);
+      unsized.push({
+        id: `team:${column.metric}`,
+        area,
+        title: column.label,
+        label: column.shortLabel,
+        style: agg.style,
+        tier: agg.tier,
+        isNew: false,
+        players: column.players,
+      });
+    }
   }
   const map = layoutRootMap({
     areas: ROOT_AREAS.map((area) => ({ area, sgPerRound: teamAreaSg[area] })),
     sized,
-    unsized: [],
+    unsized,
     other: [],
     newCount: 0,
   });
@@ -311,6 +381,6 @@ export function buildTeamHeadline(model: TeamRootsModel): string | null {
   };
   const lead = `On average the team gives back ${formatStrokes(-worst.v)} a round to the Tour line ${where[worst.a]}`;
   return shared
-    ? `${lead}; ${shared.players} players carry “${shared.label}” there.`
+    ? `${lead}; ${shared.players} players carry “${shared.shortLabel}” there.`
     : `${lead}.`;
 }

@@ -157,6 +157,8 @@ type TriageNavigationUpdates = Partial<{
   signal: string | null;
   player: string | null;
   playersTab: 'roster' | 'areas' | null;
+  /** Team roots drill: the cause whose Why is open (`?cause=`). */
+  cause: string | null;
 }>;
 
 export interface TriageDeskProps {
@@ -294,8 +296,11 @@ export function TriageDesk({
         params.delete('filter');
         params.delete('signal');
         params.delete('id');
-        params.delete('player');
         params.delete('playersTab');
+        // `?view=team&player=` is the drill into one player's root map; it
+        // only survives when the update names it.
+        if (!('player' in updates)) params.delete('player');
+        if (!('cause' in updates)) params.delete('cause');
       } else if (targetView === 'signals') {
         params.delete('player');
         params.delete('playersTab');
@@ -312,6 +317,11 @@ export function TriageDesk({
         params.delete('player');
         params.delete('playersTab');
       }
+    }
+    if (updates.view !== undefined && resolveTriageView(updates.view) !== 'team') params.delete('cause');
+    if ('cause' in updates) {
+      if (updates.cause) params.set('cause', updates.cause);
+      else params.delete('cause');
     }
     if ('filter' in updates) {
       if (updates.filter) params.set('filter', updates.filter);
@@ -538,7 +548,15 @@ export function TriageDesk({
       </div>
 
       {view === 'team' && teamRoots ? (
-        <TeamRootsView {...teamRoots} hrefFor={hrefFor} navigate={navigate} />
+        <TeamRootsView
+          {...teamRoots}
+          // The drill was built server-side for `?player=`; show it only while
+          // the URL still names that player (a shallow move back to the team
+          // map clears the param without a server render).
+          drillOpen={selectedPlayerId !== null && teamRoots.drill?.playerId === selectedPlayerId}
+          hrefFor={hrefFor}
+          navigate={navigate}
+        />
       ) : null}
 
       {view === 'signals' ? (
