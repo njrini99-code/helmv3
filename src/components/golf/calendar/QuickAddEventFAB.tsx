@@ -26,6 +26,7 @@ import {
 } from 'lucide-react';
 import { useHapticFeedback } from '@/hooks/use-mobile-detection';
 import { Button } from '@/components/ui/button';
+import { fwPress } from '@/components/fairway/controls';
 
 type QuickEventType = 'practice' | 'tournament' | 'qualifier' | 'meeting' | 'travel' | 'other';
 
@@ -209,7 +210,8 @@ export function QuickAddEventFAB({
                   'flex items-center gap-3 pr-4 pl-3 py-2.5 rounded-full',
                   'bg-cream-50 shadow-lg',
                   'transition-[transform,box-shadow] duration-200',
-                  'hover:shadow-xl active:scale-95',
+                  'hover:shadow-xl',
+              fwPress,
                   'touch-manipulation',
                   'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40'
                 )}
@@ -239,7 +241,8 @@ export function QuickAddEventFAB({
               'flex items-center gap-3 pr-4 pl-3 py-2.5 rounded-full',
               'bg-cream-50 shadow-lg',
               'transition-all duration-200',
-              'hover:shadow-xl active:scale-95',
+              'hover:shadow-xl',
+              fwPress,
               'touch-manipulation',
               'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40'
             )}
@@ -273,7 +276,7 @@ export function QuickAddEventFAB({
             isExpanded
               ? 'bg-primary-800 rotate-0 rounded-xl'
               : 'bg-primary-600 hover:bg-primary-500 hover:scale-105 shadow-lg shadow-primary-600/40',
-            'active:scale-95',
+            fwPress,
             disabled && 'opacity-50 cursor-not-allowed'
           )}
         >

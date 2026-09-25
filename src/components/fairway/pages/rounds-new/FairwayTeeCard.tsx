@@ -39,6 +39,7 @@ import { cn } from '@/lib/utils';
 import { IconChevronRight } from '@/components/icons';
 import type { GolfCourseTee } from '@/lib/types/golf-course';
 import { TEE_SWATCH, NEEDS_RIM } from '@/lib/golf/tee-colors';
+import { fwPressSurface } from '@/components/fairway/controls';
 
 const CATEGORY_LABEL: Record<string, string> = {
   mens: "Men's",
@@ -181,7 +182,8 @@ export function FairwayTeeCard({
       className={cn(
         'group flex w-full flex-col gap-3 rounded-card border border-border-subtle bg-surface p-4 text-left',
         'transition-[border-color,background-color,transform] [transition-duration:var(--fw-dur-fast)]',
-        'hover:border-accent-300 hover:bg-surface-sunken active:scale-[0.995] motion-reduce:active:scale-100',
+        'hover:border-accent-300 hover:bg-surface-sunken',
+        fwPressSurface,
         'outline-none focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
         'disabled:pointer-events-none disabled:opacity-60',
         className,

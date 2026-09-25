@@ -17,6 +17,7 @@ import { createClient } from '@/lib/supabase/client';
 import { DEMO_COACHHELM_LANDING_PATH, DEMO_LANDING_PATH } from '@/lib/demo/config';
 import { enterDemo } from '@/app/golf/actions/demo-access';
 import { probeSignedIn } from '@/lib/demo/gate-probe';
+import { fwPress } from '@/components/fairway/controls';
 
 // ---------------------------------------------------------------------------
 // Value-prop pill items shown below the headline
@@ -329,7 +330,7 @@ function DemoGateContent() {
                 <Button
                   variant="primary"
                   onClick={() => router.push(landingPath)}
-                  className="w-full min-h-[50px] py-3 bg-accent-fill text-text-on-accent-fill font-semibold tracking-[-0.01em] rounded-xl shadow-lg shadow-primary-600/25 transition duration-200 ease-ios hover:bg-accent-fill-hover active:scale-[0.97] active:duration-75"
+                  className={`w-full min-h-[50px] py-3 bg-accent-fill text-text-on-accent-fill font-semibold tracking-[-0.01em] rounded-xl shadow-lg shadow-primary-600/25 transition duration-200 ease-ios hover:bg-accent-fill-hover active:duration-75 ${fwPress}`}
                   rightIcon={<ArrowRight className="w-4 h-4" aria-hidden />}
                 >
                   Continue to dashboard
@@ -401,7 +402,7 @@ function DemoGateContent() {
                   type="submit"
                   disabled={isLoading}
                   aria-busy={isLoading}
-                  className="
+                  className={`
                     w-full min-h-[50px] py-3
                     bg-accent-fill text-text-on-accent-fill
                     font-semibold tracking-[-0.01em]
@@ -409,11 +410,11 @@ function DemoGateContent() {
                     shadow-lg shadow-primary-600/25
                     transition duration-200 ease-ios
                     hover:bg-primary-700 hover:shadow-primary-600/30
-                    active:scale-[0.97] active:duration-75
+                    active:duration-75 ${fwPress}
                     disabled:opacity-70 disabled:cursor-not-allowed disabled:active:scale-100
                     flex items-center justify-center gap-2
                     focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2
-                  "
+                  `}
                 >
                   {isLoading ? (
                     <>

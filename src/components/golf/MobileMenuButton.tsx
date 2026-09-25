@@ -6,6 +6,7 @@ import { IconMenu } from '@/components/icons';
 import { useSidebarSafe } from '@/contexts/sidebar-context';
 
 import { IconButton } from '@/components/ui/button';
+import { fwPress } from '@/components/fairway/controls';
 
 interface MobileMenuButtonProps {
   className?: string;
@@ -22,7 +23,7 @@ interface MobileMenuButtonProps {
  *
  * Design spec:
  * - 44×44px touch target (p-2.5 on 22px icon)
- * - active:scale-95 for tactile tap feedback
+ * - fwPress (the shared Fairway press recipe) for tactile tap feedback
  * - touch-manipulation for instant tap response (no 300ms delay)
  * - Consistent hover/focus ring across all dashboard pages
  */
@@ -52,7 +53,8 @@ export function MobileMenuButton({ className, onClick, label = 'Open navigation 
         'lg:hidden p-2.5 -ml-2 rounded-xl flex-shrink-0',
         'text-text-tertiary hover:text-warm-700 hover:bg-warm-100/80',
         'transition-colors duration-150',
-        'active:scale-95 active:bg-warm-200/60',
+        fwPress,
+        'active:bg-warm-200/60',
         'touch-manipulation',
         'focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40',
         className

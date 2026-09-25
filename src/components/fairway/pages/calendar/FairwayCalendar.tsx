@@ -99,6 +99,7 @@ import { useConflictInbox } from '@/hooks/golf/use-conflict-inbox';
 import type { ConflictInboxRequest, ConflictInboxResult, ConflictGroup } from '@/app/golf/actions/conflict-inbox';
 import type { ScheduleWindowRequest, ScheduleProposal } from '@/lib/calendar/scheduling-contracts';
 import { attributeClassEvents, isClassEvent, type ClassOwnerIndex } from '@/lib/calendar/class-events';
+import { fwPress } from '@/components/fairway/controls';
 
 /** `YYYY-MM-DD` for an instant as read on the team's calendar, not the
  * device's — the conflict window and a class occurrence's date are both
@@ -1189,7 +1190,8 @@ export function FairwayCalendar({
             // Lit from above and lifted well off the page: this is the one
             // element on the screen that genuinely floats.
             '[box-shadow:inset_0_1px_0_oklch(1_0_0/0.28),var(--fw-shadow-raise)]',
-            'active:scale-[0.96] active:[transition-duration:110ms] motion-reduce:active:scale-100',
+            'active:[transition-duration:110ms]',
+            fwPress,
           )}
           style={{ bottom: 'calc(var(--fw-mobile-nav-height, 64px) + 1rem)' }}
         >

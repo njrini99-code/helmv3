@@ -29,6 +29,7 @@ import { HelmMark } from '@/components/brand/HelmMark';
 import { CourseScene } from '@/components/golf/scenes/CourseScene';
 import { CoastalScene } from '@/components/golf/scenes/CoastalScene';
 import { cn } from '@/lib/utils';
+import { fwPress } from '@/components/fairway/controls';
 
 /* ── Canvas ─────────────────────────────────────────────────────────────── */
 
@@ -218,7 +219,8 @@ export const authPrimaryButtonClass = cn(
   // The primary-action role fill (green is the contrasting colour).
   'bg-accent-fill text-body-lg font-semibold text-text-on-accent-fill',
   '[@media(hover:hover)]:hover:bg-accent-fill-hover active:bg-accent-fill-hover',
-  'transition-transform duration-[120ms] ease-out active:scale-[0.98] motion-reduce:transition-none motion-reduce:active:scale-100',
+  'transition-transform duration-[120ms] ease-out motion-reduce:transition-none',
+  fwPress,
   'outline-none focus-visible:ring-2 focus-visible:ring-accent-600 focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
 );
 

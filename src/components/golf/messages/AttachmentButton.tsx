@@ -32,6 +32,7 @@ import {
   formatFileSize,
   validateFile,
 } from '@/lib/storage/attachments';
+import { fwPress } from '@/components/fairway/controls';
 
 interface AttachmentButtonProps {
   onFilesSelected: (files: File[]) => void;
@@ -168,7 +169,8 @@ export function AttachmentButton({
       // now the same accent-600 ring every other control uses.
       className={cn(
         'w-11 h-11 flex items-center justify-center rounded-fw-md',
-        'text-text-tertiary hover:text-text-primary hover:bg-surface-sunken active:bg-surface-sunken active:scale-95 motion-reduce:active:scale-100',
+        'text-text-tertiary hover:text-text-primary hover:bg-surface-sunken active:bg-surface-sunken',
+        fwPress,
         'transition-[color,background-color,transform] duration-150',
         'focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-600 focus-visible:ring-offset-2 focus-visible:ring-offset-surface',
         'data-[state=open]:bg-surface-sunken data-[state=open]:text-text-primary',

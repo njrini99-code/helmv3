@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 
 import type { SignupCodeScope } from '@/app/golf/actions/access-code';
+import { fwPress } from '@/components/fairway/controls';
 
 type Role = GolfSignupRole;
 
@@ -419,17 +420,17 @@ export function GolfSignUpForm({
       <Button variant="primary"
         type="submit"
         disabled={isLoading}
-        className="
+        className={`
           w-full py-3
           bg-primary-600 text-white font-semibold text-sm
           rounded-xl shadow-lg shadow-primary-600/25
           transition-all duration-200
           hover:bg-primary-700 hover:shadow-primary-600/30
-          active:scale-[0.98]
+          ${fwPress}
           disabled:opacity-50 disabled:cursor-not-allowed
           flex items-center justify-center
           focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2
-        "
+        `}
       >
         {isLoading ? (
           <div className="flex items-center gap-1" role="status" aria-label="Creating account">

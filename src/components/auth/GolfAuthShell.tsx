@@ -17,6 +17,7 @@ import { CoastalScene } from '@/components/golf/scenes/CoastalScene';
 import { CourseScene } from '@/components/golf/scenes/CourseScene';
 import { useMediaQuery } from '@/hooks/use-media-query';
 import { Button } from '@/components/ui/button';
+import { fwPress } from '@/components/fairway/controls';
 
 interface GolfAuthShellProps {
   /** Card heading, e.g. "Reset your password". */
@@ -196,7 +197,7 @@ export function AuthPrimaryButton({
     <Button
       variant="primary"
       disabled={loading || disabled}
-      className="w-full min-h-[50px] py-3 bg-primary-600 text-white font-semibold text-body tracking-[-0.01em] rounded-xl shadow-lg shadow-primary-600/25 transition duration-200 ease-ios hover:bg-primary-700 hover:shadow-primary-600/30 active:scale-[0.97] active:duration-75 disabled:opacity-50 disabled:active:scale-100 flex items-center justify-center"
+      className={`w-full min-h-[50px] py-3 bg-primary-600 text-white font-semibold text-body tracking-[-0.01em] rounded-xl shadow-lg shadow-primary-600/25 transition duration-200 ease-ios hover:bg-primary-700 hover:shadow-primary-600/30 active:duration-75 disabled:opacity-50 disabled:active:scale-100 flex items-center justify-center ${fwPress}`}
       {...buttonProps}
     >
       {loading ? (
