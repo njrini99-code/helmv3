@@ -653,3 +653,32 @@ flags:
       Either promote to a permanent `release` flag once the section has
       been reviewed, or remove the section and its wiring if the review
       asks for a different surface/placement instead.
+
+  # Root-cause diagnosis (owner decision 2026-09-25, "Own flag, on"). Split
+  # from coachhelm_a4_sequence_attribution_surface so the insight diagnosis
+  # text and the Round Review section can be turned off independently.
+  - feature_id: coachhelm_root_cause_diagnosis
+    owner: golf/coachhelm
+    purpose: >-
+      Gates the shot-based root-cause diagnosis text on v3 CoachHelm
+      insights: when on, BaseGenerator.run() may ship an observed_sequence
+      diagnosis (count/denominator of a repeated recorded shot path from
+      root-cause.ts); when off, the same checks still run but the diagnosis
+      stays an inferred_hypothesis that lists them. Independent of the
+      Round Review sequence-attribution surface flag.
+      ON since 2026-09-25 by owner decision.
+    type: release
+    status: active
+    created_at: "2026-09-25"
+    expires_at: null
+    default: true
+    environment:
+      production: true
+      preview: true
+      development: true
+    kill_switch_behavior: null
+    cleanup_plan: >-
+      Remove the flag and its single check in generator-base.ts once the
+      observed_sequence diagnosis has run in production for a full season
+      without a wording or accuracy complaint; if coaches reject it, turn it
+      off and remove the observed branch from root-cause.ts instead.

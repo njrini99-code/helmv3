@@ -311,7 +311,10 @@ player + window):
   **no** `diagnosis` key. The v2 upsert replaces `evidence`, so a stale
   diagnosis clears on the next run.
 - **Observed** (`causality_level: 'observed_sequence'`). This requires the
-  A10 gate `coachhelm_a4_sequence_attribution_surface`, a metric with a
+  A10 gate `coachhelm_root_cause_diagnosis` (its own flag since
+  2026-09-25, independent of the Round Review section's
+  `coachhelm_a4_sequence_attribution_surface`; off → the same checks run
+  and the row ships the inferred hypothesis below), a metric with a
   sequence family (`sequenceTargetFor`), and a supported A4 rollup row. It
   also requires at least 10 failures across at least 3 rounds, and one
   recorded path that repeats at least 3 times and covers at least 25% of
@@ -1841,6 +1844,13 @@ prerequisite migration.
   `round-review-sequence-attribution.test.ts` — "flag off: returns null
   and makes ZERO DB calls — createClient is never invoked." Prerequisite
   migration: none.
+
+- **Root-cause diagnosis text** — `coachhelm_root_cause_diagnosis`, ON in
+  all envs since 2026-09-25 (owner decision). Gates only the
+  `observed_sequence` branch of `BaseGenerator.run()`'s diagnosis; off, the
+  row ships an `inferred_hypothesis` listing the same checks. Flag tests:
+  `generator-base-root-cause.test.ts` (both independence directions).
+  Prerequisite migration: none.
 
 - **Controlled hypotheses (A5)** — no surface exists to gate.
   `hypothesis-policy.ts` is pure core, not wired to `diagnosis.ts`,

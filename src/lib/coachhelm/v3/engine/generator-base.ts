@@ -376,11 +376,13 @@ export function mergeDiagnosis(
 }
 
 /**
- * A10 capability gate for the observed-sequence branch: the A4 sequence
- * attribution family's coach-visible flag. Off → the same checks still run,
- * but the diagnosis stays an honest hypothesis listing them.
+ * A10 capability gate for the observed-sequence branch: its own flag
+ * (owner decision 2026-09-25), independent of the Round Review
+ * `coachhelm_a4_sequence_attribution_surface` section. Off → the same checks
+ * still run, but the diagnosis stays an honest `inferred_hypothesis` listing
+ * them; it never falls back to the old "off its benchmark" template.
  */
-export const OBSERVED_SEQUENCE_FLAG = 'coachhelm_a4_sequence_attribution_surface';
+export const ROOT_CAUSE_DIAGNOSIS_FLAG = 'coachhelm_root_cause_diagnosis';
 
 
 export abstract class BaseGenerator<A extends GeneratorAggregate = GeneratorAggregate> {
@@ -614,7 +616,7 @@ export abstract class BaseGenerator<A extends GeneratorAggregate = GeneratorAggr
       evidence,
       ctx,
       loadFailed,
-      observedEnabled: isFlagEnabled(OBSERVED_SEQUENCE_FLAG),
+      observedEnabled: isFlagEnabled(ROOT_CAUSE_DIAGNOSIS_FLAG),
     });
     return mergeDiagnosis(
       base,

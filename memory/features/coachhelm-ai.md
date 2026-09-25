@@ -113,8 +113,10 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
   `v3/engine/root-cause.ts` in `BaseGenerator.run()`:
   - strength and neutral rows ship no diagnosis;
   - a leak with a repeated recorded shot path (A4 rollup floors, and gate
-    `coachhelm_a4_sequence_attribution_surface`) ships `observed_sequence`
-    with its count and denominator;
+    `coachhelm_root_cause_diagnosis`, ON since 2026-09-25 and independent of
+    the Round Review `coachhelm_a4_sequence_attribution_surface` flag) ships
+    `observed_sequence` with its count and denominator; with the gate off
+    the same checks run and the row ships the `inferred_hypothesis` below;
   - every other leak ships an `inferred_hypothesis` that names the checks
     that fell short, plus the A5 hypothesis label where one applies.
   `Diagnosis.basis` is additive and optional. The contract is in the

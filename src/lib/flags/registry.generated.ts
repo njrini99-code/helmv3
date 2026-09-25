@@ -183,6 +183,23 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     cleanup_plan: "Flip on (development, then preview, then production) only after the owner applies migration 20260923100000_round_recap_single_flight_lock to each environment and confirms both public.claim_round_recap_lock and public.release_round_recap_lock exist via `pg_proc`. expires_at is a review reminder, not an automatic kill — if the migration still hasn't landed by then, re-date it rather than silently expiring. Once on everywhere and stable for a season, consider promoting to a permanent `release` flag or removing the flag branch entirely (the lock becomes the only code path) — owner's call, not automatic.",
   },
   {
+    feature_id: "coachhelm_root_cause_diagnosis",
+    owner: "golf/coachhelm",
+    purpose: "Gates the shot-based root-cause diagnosis text on v3 CoachHelm insights: when on, BaseGenerator.run() may ship an observed_sequence diagnosis (count/denominator of a repeated recorded shot path from root-cause.ts); when off, the same checks still run but the diagnosis stays an inferred_hypothesis that lists them. Independent of the Round Review sequence-attribution surface flag. ON since 2026-09-25 by owner decision.",
+    type: "release",
+    status: "active",
+    created_at: "2026-09-25",
+    expires_at: null,
+    default: true,
+    environment: {
+      production: true,
+      preview: true,
+      development: true,
+    },
+    kill_switch_behavior: null,
+    cleanup_plan: "Remove the flag and its single check in generator-base.ts once the observed_sequence diagnosis has run in production for a full season without a wording or accuracy complaint; if coaches reject it, turn it off and remove the observed branch from root-cause.ts instead.",
+  },
+  {
     feature_id: "coachhelm_round_review_narrative",
     owner: "golf/coachhelm",
     purpose: "Gates the round-review narrative end to end: checked FIRST, before any DB read tied to generation (mirroring the A4 slice 3b pattern — zero cost while off), so no code path selects, claims a lock for, or writes golf_round_reviews.ai_narrative unless this is on. Requires migration 20260923100000_round_recap_single_flight_lock applied in prod — it carries both the shared lock table/functions AND (folded into the same migration, revised in place before either piece was applied anywhere) the ai_narrative column and the golf_coachhelm_llm_calls.task CHECK widening to accept 'round_review_narrative', so neither piece can land half-applied. Until it is applied, turning this on would make every narrative generation attempt fail against columns/functions that don't exist there yet. Off by default in every environment for exactly that reason, same as coachhelm_recap_single_flight_lock's own migration-ordering rationale. ON since 2026-09-25 by owner decision; its migrations are applied in production (checked 2026-09-25).",

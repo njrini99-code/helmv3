@@ -26,7 +26,7 @@ vi.mock('@/lib/coachhelm/v3/engine/root-cause-context', () => ({
   loadRootCauseContext: (...a: unknown[]) => loadRootCauseContextMock(...a),
 }));
 
-import { BaseGenerator, mergeDiagnosis, buildDiagnosis, OBSERVED_SEQUENCE_FLAG } from '@/lib/coachhelm/v3/engine/generator-base';
+import { BaseGenerator, mergeDiagnosis, buildDiagnosis, ROOT_CAUSE_DIAGNOSIS_FLAG } from '@/lib/coachhelm/v3/engine/generator-base';
 import type { ComposedContent, GeneratorAggregate, InsightCategory, MetricId } from '@/lib/coachhelm/v3/engine/types';
 import type { Diagnosis, InsightInput } from '@/lib/coachhelm/v2/insights/types';
 import { establishedRosterComplete } from './fixtures/shadow-eval-snapshots';
@@ -121,7 +121,9 @@ describe('BaseGenerator.run() — root cause', () => {
     expect(d.causality_level).toBe('observed_sequence');
     expect(d.basis?.sequence).toMatchObject({ occurrences: 10, of: 13 });
     expect(d.confidence_reason).toContain('13 observations');
-    expect(isFlagEnabledMock).toHaveBeenCalledWith(OBSERVED_SEQUENCE_FLAG);
+    expect(ROOT_CAUSE_DIAGNOSIS_FLAG).toBe('coachhelm_root_cause_diagnosis');
+    expect(isFlagEnabledMock).toHaveBeenCalledWith('coachhelm_root_cause_diagnosis');
+    expect(isFlagEnabledMock).not.toHaveBeenCalledWith('coachhelm_a4_sequence_attribution_surface');
     expect(loadRootCauseContextMock).toHaveBeenCalledWith('player-1', expect.objectContaining({ window_days: 90 }));
   });
 
@@ -129,6 +131,22 @@ describe('BaseGenerator.run() — root cause', () => {
     isFlagEnabledMock.mockReturnValue(false);
     await new ApproachLikeGenerator().run();
     expect(written().evidence.diagnosis!.causality_level).toBe('inferred_hypothesis');
+  });
+
+  it('the Round Review surface flag off does not turn the diagnosis off (independent flags)', async () => {
+    isFlagEnabledMock.mockImplementation((id: string) => id !== 'coachhelm_a4_sequence_attribution_surface');
+    await new ApproachLikeGenerator().run();
+    expect(written().evidence.diagnosis!.causality_level).toBe('observed_sequence');
+  });
+
+  it('the diagnosis flag off with the surface flag on still ships an inferred_hypothesis', async () => {
+    isFlagEnabledMock.mockImplementation((id: string) => id !== 'coachhelm_root_cause_diagnosis');
+    await new ApproachLikeGenerator().run();
+    const d = written().evidence.diagnosis!;
+    expect(d.causality_level).toBe('inferred_hypothesis');
+    // Same checks listed; never the removed template sentence.
+    expect(d.basis?.checked.length).toBeGreaterThan(0);
+    expect(d.root_cause).not.toMatch(/off its benchmark/);
   });
 
   it('a shot-load failure degrades to a stated hypothesis and never fails the run', async () => {
