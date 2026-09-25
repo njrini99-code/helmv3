@@ -94,6 +94,10 @@ export interface RoundLibraryRound {
   // final submit was attempted and never confirmed committed. Never
   // auto-finalized from this signal, only used to change the resume CTA.
   hasPendingSubmission?: boolean;
+  // Server verdict from isCountableRound (src/lib/golf/round-countable.ts).
+  // false = listed but excluded from every average, best and trend; the row
+  // says "Not counted". Undefined (older callers) is treated as countable.
+  countable?: boolean;
   player: {
     first_name: string | null;
     last_name: string | null;
@@ -222,7 +226,11 @@ function monthSummary(rounds: RoundLibraryRound[]) {
   // An implausible round (37 strokes "over 18") stays in the list but never
   // sets the month's avg/best (src/lib/golf/round-countable.ts).
   const scored = rounds.filter(
-    (r) => r.total_score !== null && r.total_score > 0 && isPlausibleToPar(r.score_to_par, r.holes_played),
+    (r) =>
+      r.countable !== false &&
+      r.total_score !== null &&
+      r.total_score > 0 &&
+      isPlausibleToPar(r.score_to_par, r.holes_played),
   );
   const spark = scored
     .slice()
@@ -362,7 +370,8 @@ export function FairwayRoundsLibrary({
   const chronoScored = React.useMemo(
     () =>
       rounds
-        .filter((r) => r.total_score !== null && r.total_score > 0)
+        // Same countable set as the server's KPI tiles + trend pill.
+        .filter((r) => r.countable !== false && r.total_score !== null && r.total_score > 0)
         .slice()
         // round_date is a bare 'YYYY-MM-DD' — lexicographic string comparison
         // IS chronological order for that format, and sidesteps any
@@ -425,7 +434,9 @@ export function FairwayRoundsLibrary({
           correct, so stretch comes back. */}
       <div className="grid grid-cols-2 items-start gap-3 md:grid-cols-5 md:items-stretch">
         <StatTile
-          label="Rounds"
+          // Countable rounds only; the masthead's "N rounds recorded" counts
+          // every completed round, so an unqualified "Rounds" read as a mismatch.
+          label="Counted rounds"
           value={starved ? undefined : stats!.totalRounds}
           format={{ maximumFractionDigits: 0 }}
           starved={starved}
@@ -656,6 +667,7 @@ export function FairwayRoundsLibrary({
                 let bestId: string | null = null;
                 let bestScore = Infinity;
                 for (const r of group.rounds) {
+                  if (r.countable === false) continue;
                   if (r.score_to_par === null || !isPlausibleToPar(r.score_to_par, r.holes_played)) continue;
                   const holes = r.holes_played ?? 18;
                   const toPar18 = holes > 0 ? (r.score_to_par * 18) / holes : r.score_to_par;

@@ -253,6 +253,27 @@ export default async function RoundsPage() {
   // Countable rounds only (src/lib/golf/round-countable.ts): the list still
   // shows every round, but a partial, hole-less or implausible round (a
   // 37-stroke "18-hole" round) never sets Best or moves the averages.
+  // One countable verdict per round, shared by the KPI tiles, the trend pill
+  // and the client's sparklines + "Not counted" row marker, so the hero can
+  // never read "Improving" off a round the trend pill ignored.
+  const countableIds = new Set(
+    (rounds as Array<typeof rounds[number] & {
+      holes_played?: number | null;
+      front_nine?: number | null;
+      back_nine?: number | null;
+      total_putts?: number | null;
+    }>)
+      .filter((r) =>
+        isCountableRound({
+          holes_played: r.holes_played ?? null,
+          total_score: r.total_score ?? null,
+          front_nine: r.front_nine ?? null,
+          back_nine: r.back_nine ?? null,
+          total_putts: r.total_putts ?? null,
+        }),
+      )
+      .map((r) => r.id),
+  );
   const roundStats = (() => {
     if (rounds.length === 0) return null;
     type RoundWithHoles = typeof rounds[number] & {
@@ -261,15 +282,7 @@ export default async function RoundsPage() {
       back_nine?: number | null;
       total_putts?: number | null;
     };
-    const countable = (rounds as RoundWithHoles[]).filter((r) =>
-      isCountableRound({
-        holes_played: r.holes_played ?? null,
-        total_score: r.total_score ?? null,
-        front_nine: r.front_nine ?? null,
-        back_nine: r.back_nine ?? null,
-        total_putts: r.total_putts ?? null,
-      }),
-    );
+    const countable = (rounds as RoundWithHoles[]).filter((r) => countableIds.has(r.id));
     const scoredRounds = countable.filter(r => r.total_score !== null && r.total_score > 0);
     // 18-hole basis, like avg/best on this same object: a 9-hole +3 is +6/18.
     const toParScores = countable
@@ -313,7 +326,7 @@ export default async function RoundsPage() {
   return (
     <div className={fairwayScope('min-h-full bg-canvas')}>
       <FairwayRoundsLibrary
-        rounds={rounds as unknown as FairwayRoundLibraryRound[]}
+        rounds={rounds.map((r) => ({ ...r, countable: countableIds.has(r.id) })) as unknown as FairwayRoundLibraryRound[]}
         inProgressRounds={inProgressRounds as unknown as FairwayRoundLibraryRound[]}
         userRole={userRole as 'coach' | 'player'}
         playerId={player?.id}

@@ -165,3 +165,31 @@ describe('FairwayRoundRow — #139 date-only display agrees across surfaces (non
     expect(rowDate).toBe(dashboardShortDate('2026-02-01'));
   });
 });
+
+describe('FairwayRoundRow — countable marker and mobile truncation (walk-through 2026-09-24)', () => {
+  it('marks a non-countable round "Not counted" and drops its graded to-par pill', () => {
+    render(
+      <FairwayRoundRow
+        round={makeRound({ total_score: 37, score_to_par: -35, countable: false })}
+        isBestOfPeriod={false}
+        userRole="player"
+      />,
+    );
+    expect(screen.getByText(/Not counted/)).toBeInTheDocument();
+    expect(screen.queryByText('−35')).toBeNull();
+    expect(screen.queryByText('-35')).toBeNull();
+  });
+
+  it('keeps the to-par pill for a countable round', () => {
+    render(<FairwayRoundRow round={makeRound({ countable: true })} isBestOfPeriod={false} userRole="player" />);
+    expect(screen.queryByText(/Not counted/)).toBeNull();
+    expect(screen.getByText('+2')).toBeInTheDocument();
+  });
+
+  it('shows the city and the full "Best of month" badge only from sm up; phones get a labelled star', () => {
+    render(<FairwayRoundRow round={makeRound()} isBestOfPeriod userRole="player" />);
+    expect(screen.getByText('Pebble Beach, CA')).toHaveClass('hidden', 'sm:inline');
+    expect(screen.getByText('Best of month')).toHaveClass('hidden', 'sm:inline-flex');
+    expect(screen.getByRole('img', { name: 'Best of month' })).toHaveClass('sm:hidden');
+  });
+});

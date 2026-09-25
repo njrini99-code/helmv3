@@ -175,3 +175,25 @@ describe('FairwayRoundsLibrary — in-progress round discoverability', () => {
     expect(screen.getByText('Augusta National')).toBeInTheDocument();
   });
 });
+
+describe('FairwayRoundsLibrary — server countable verdict (walk-through 2026-09-24)', () => {
+  it('keeps a non-countable round out of the month best/avg and the Best-of-month pick', () => {
+    render(
+      <FairwayRoundsLibrary
+        rounds={[
+          // Plausible to-par, but the server ruled it not countable (e.g. no hole scores).
+          makeRound({ id: 'nc', round_date: '2026-06-20', total_score: 60, score_to_par: -12, countable: false }),
+          makeRound({ id: 'a', round_date: '2026-06-15', total_score: 74, score_to_par: 2, countable: true }),
+          makeRound({ id: 'b', round_date: '2026-06-10', total_score: 76, score_to_par: 4, countable: true }),
+        ]}
+        inProgressRounds={[]}
+        userRole="player"
+        stats={null}
+      />,
+    );
+    expect(screen.getByText('best 74')).toBeInTheDocument();
+    expect(screen.getByText('avg 75.0')).toBeInTheDocument();
+    expect(screen.getByText('2 rounds')).toBeInTheDocument();
+    expect(screen.getByText(/Not counted/)).toBeInTheDocument();
+  });
+});
