@@ -34,7 +34,7 @@ const LOOKUP =
 
 function terminals(file: string): string[] {
   const src = readFileSync(join(ROOT, file), 'utf8');
-  return [...src.matchAll(LOOKUP)].map((m) => m[1]);
+  return [...src.matchAll(LOOKUP)].map((m) => m[1] ?? '');
 }
 
 describe('golf_players lookup by user_id treats "no profile" as data, not an error', () => {
