@@ -7814,7 +7814,7 @@ DECLARE
   v_n int := array_length(v_bindings, 1);
   v_i int; v_metric text; v_expr text; v_dir text; v_rank_order text; v_sql text; v_rows bigint;
   v_min_cohort_n constant int := 8;
-  v_min_team_n constant int := 3;
+  v_min_team_n constant int := 5;
 BEGIN
   IF p_team_ids IS NULL OR array_length(p_team_ids, 1) IS NULL THEN RETURN; END IF;
   v_i := 1;
@@ -7885,7 +7885,7 @@ $_$;
 
 ALTER FUNCTION "public"."refresh_player_standing"("p_team_ids" "uuid"[]) OWNER TO "postgres";
 
-COMMENT ON FUNCTION "public"."refresh_player_standing"("p_team_ids" "uuid"[]) IS 'v3 W11 + gender-scoped level cohort (audit P3, 2026-06-09). Loops over the metric bindings and upserts golf_player_standing rows for the given team chunk. team_avg/team_pct per team (MIN_TEAM_N=3); level_avg/level_n/level_pct are now an app-wide cohort SCOPED BY golf_teams.gender (MIN_COHORT_N=8) so women and men no longer share a pooled baseline. Trusted SECURITY DEFINER — value expressions come from the function body, not the caller.';
+COMMENT ON FUNCTION "public"."refresh_player_standing"("p_team_ids" "uuid"[]) IS 'v3 W11 + gender-scoped level cohort (audit P3, 2026-06-09). Loops over the metric bindings and upserts golf_player_standing rows for the given team chunk. team_avg/team_pct per team (MIN_TEAM_N=5); level_avg/level_n/level_pct are now an app-wide cohort SCOPED BY golf_teams.gender (MIN_COHORT_N=8) so women and men no longer share a pooled baseline. Trusted SECURITY DEFINER — value expressions come from the function body, not the caller.';
 
 CREATE OR REPLACE FUNCTION "public"."refresh_player_standing_round_metrics"("p_team_ids" "uuid"[]) RETURNS TABLE("out_metric_id" "text", "out_rows_upserted" bigint)
     LANGUAGE "plpgsql" SECURITY DEFINER
@@ -7895,7 +7895,7 @@ DECLARE
   v_window_days int := 90;
   v_min_rounds int := 5;
   v_rows bigint;
-  v_min_team_n constant int := 3;
+  v_min_team_n constant int := 5;
   v_min_cohort_n constant int := 8;
 BEGIN
   IF p_team_ids IS NULL OR array_length(p_team_ids, 1) IS NULL THEN
@@ -8172,7 +8172,7 @@ $$;
 
 ALTER FUNCTION "public"."refresh_player_standing_round_metrics"("p_team_ids" "uuid"[]) OWNER TO "postgres";
 
-COMMENT ON FUNCTION "public"."refresh_player_standing_round_metrics"("p_team_ids" "uuid"[]) IS 'v3 W24 prep + cohort baseline (SC3, 2026-06-06) + gender-scoped level cohort (audit P3, 2026-06-09). Round-level standing for practice_tournament_delta + opening_hole_delta with per-team team_avg/team_pct AND an app-wide college-population level_avg/level_n/level_pct now SCOPED BY golf_teams.gender (MIN_COHORT_N=8) so women and men no longer share a pooled baseline. team_pct is NULLed when team_n<3 (tiny-N percentile guard, EC-2). Companion to refresh_player_standing. Same (metric_id, rows_upserted) return shape (aliased out_*). pg-2 (2026-06-09): pressure buckets gated at >=3 to match the TS MIN_ROUNDS_PER_BUCKET floor.';
+COMMENT ON FUNCTION "public"."refresh_player_standing_round_metrics"("p_team_ids" "uuid"[]) IS 'v3 W24 prep + cohort baseline (SC3, 2026-06-06) + gender-scoped level cohort (audit P3, 2026-06-09). Round-level standing for practice_tournament_delta + opening_hole_delta with per-team team_avg/team_pct AND an app-wide college-population level_avg/level_n/level_pct now SCOPED BY golf_teams.gender (MIN_COHORT_N=8) so women and men no longer share a pooled baseline. team_pct is NULLed when team_n<5 (tiny-N percentile guard, EC-2). Companion to refresh_player_standing. Same (metric_id, rows_upserted) return shape (aliased out_*). pg-2 (2026-06-09): pressure buckets gated at >=3 to match the TS MIN_ROUNDS_PER_BUCKET floor.';
 
 CREATE OR REPLACE FUNCTION "public"."refresh_player_standing_shot_metrics"("p_team_ids" "uuid"[]) RETURNS TABLE("out_metric_id" "text", "out_rows_upserted" bigint)
     LANGUAGE "plpgsql" SECURITY DEFINER
@@ -8192,7 +8192,7 @@ DECLARE
   v_rows bigint;
   v_min_greens constant int := 3;
   v_min_cohort_n constant int := 8;
-  v_min_team_n constant int := 3;
+  v_min_team_n constant int := 5;
 BEGIN
   IF p_team_ids IS NULL OR array_length(p_team_ids, 1) IS NULL THEN
     RETURN;
@@ -8303,7 +8303,7 @@ $$;
 
 ALTER FUNCTION "public"."refresh_player_standing_shot_metrics"("p_team_ids" "uuid"[]) OWNER TO "postgres";
 
-COMMENT ON FUNCTION "public"."refresh_player_standing_shot_metrics"("p_team_ids" "uuid"[]) IS 'v3 2026-06-05 + tiny-N team_pct guard (EC-2, 2026-06-06) + gender-scoped level cohort (audit P3, 2026-06-09). Shot-level approach-proximity-by-band standings (50-125 / 125-175 / 175+ yd, on-green feet) with team + app-wide cohort (now SCOPED BY golf_teams.gender, MIN_COHORT_N=8) + PGA. team_pct is NULLed when team_n<3. Companion to refresh_player_standing; same (metric_id, rows_upserted) shape (aliased out_*). MIN_GREENS=3 per band.';
+COMMENT ON FUNCTION "public"."refresh_player_standing_shot_metrics"("p_team_ids" "uuid"[]) IS 'v3 2026-06-05 + tiny-N team_pct guard (EC-2, 2026-06-06) + gender-scoped level cohort (audit P3, 2026-06-09). Shot-level approach-proximity-by-band standings (50-125 / 125-175 / 175+ yd, on-green feet) with team + app-wide cohort (now SCOPED BY golf_teams.gender, MIN_COHORT_N=8) + PGA. team_pct is NULLed when team_n<5. Companion to refresh_player_standing; same (metric_id, rows_upserted) shape (aliased out_*). MIN_GREENS=3 per band.';
 
 CREATE OR REPLACE FUNCTION "public"."refresh_player_stats_cache"("p_player_id" "uuid") RETURNS "void"
     LANGUAGE "plpgsql" SECURITY DEFINER
