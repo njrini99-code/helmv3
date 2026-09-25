@@ -26,7 +26,7 @@ function fillFor(area: RootArea, sign: 'pos' | 'neg'): string {
   return `color-mix(in srgb, ${token} ${MIX[area]}%, transparent)`;
 }
 
-export function TeamTrendChart({ weeks }: { weeks: TeamTrendWeek[] }) {
+export function TeamTrendChart({ weeks, bare = false }: { weeks: TeamTrendWeek[]; /** Inside a titled disclosure: no own heading. */ bare?: boolean }) {
   const stack = useMemo(() => stackTeamTrend(weeks), [weeks]);
   const extent = stack.extent > 0 ? stack.extent : 1;
   const n = weeks.length;
@@ -63,11 +63,17 @@ export function TeamTrendChart({ weeks }: { weeks: TeamTrendWeek[] }) {
       : 'Team trend';
 
   return (
-    <section aria-labelledby="team-trend-heading" className="flex flex-col gap-2">
-      <div className="flex items-baseline justify-between gap-3 border-b border-text-primary pb-2">
-        <h3 id="team-trend-heading" className="font-fw-display text-body-lg font-semibold text-text-primary">
-          Team trend
-        </h3>
+    <section
+      aria-labelledby={bare ? undefined : 'team-trend-heading'}
+      aria-label={bare ? 'Team trend' : undefined}
+      className="flex flex-col gap-2"
+    >
+      <div className={bare ? '' : 'flex items-baseline justify-between gap-3 border-b border-text-primary pb-2'}>
+        {bare ? null : (
+          <h3 id="team-trend-heading" className="font-fw-display text-body-lg font-semibold text-text-primary">
+            Team trend
+          </h3>
+        )}
         <p className="text-caption text-text-tertiary">
           {range ? `${range} · ` : ''}
           {n} {n === 1 ? 'week' : 'weeks'} with rounds

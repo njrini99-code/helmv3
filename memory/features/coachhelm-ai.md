@@ -286,6 +286,39 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
   Solid). A change to those evidence fields' shape or meaning must update
   `build-root-map.ts` and its tests. Details: `player-coachhelm-development.md`
   and `coach-intelligence-triage.md`.
+- Summary first (owner direction 2026-09-25): every root-map screen leads
+  with one `RootSummary` card: the strokes lost a round (sum of losing
+  areas, net and gains beside it), the stored headline, ONE stacked bar of
+  the loss by area (the screen's single `role="img"`, one hue stepped by
+  rank), the two biggest spots (`topSpots`) with one line of Why on the
+  first (`leadWhyLine`: an inferred root keeps its label; a measured spot
+  with no read says so), and the screen's one primary action. Everything
+  else sits behind a `Disclosure` (44px trigger, `aria-expanded`, body
+  mounted only while open, height animation or opacity-only under reduced
+  motion), closed by default:
+  - `RootMap`: one row per losing area (label, mini bar, signed SG); tapping
+    it opens its leak ladder (at most 3 spots, then "+N more", then the
+    rest). A row opens itself when the selected spot is inside it. Desktop
+    adds a collapsed "Full root map" (the ribbon, tooltips for narrow
+    nodes). Exceptions to the reconcile line (share-mode areas, areas not
+    split by shot) always show inline; the one reconcile line, the per-area
+    notes and the one legend (only the fills drawn) sit in "About this map".
+  - `RootWhy`: the header, root and chain stay open; "The evidence"
+    (comparison, angle visual, green plot, approach context, worth) is
+    collapsed.
+  - Player Today: a spot opens a sheet with its chain and "See the evidence"
+    (the Why route). Not-sized causes and other reads are collapsed lists.
+  - Team roots: the card adds "Needs you"; its action ("Open <area>
+    signals") follows the biggest leak until the coach picks a spot on the
+    team map. "Team map by area", "Who carries which root" and "Team trend"
+    (with "Did the focus work?") are collapsed.
+- Insight-angle Why visuals (`angle-why.ts`, `AngleWhy.tsx`): a stored read
+  whose `evidence.detail.angle` matches its metric (lie-adjusted approach,
+  bad-day floor, three-putt autopsy, tee and approach miss compasses) draws
+  its picture in the Why evidence, with receipts: date window, denominators,
+  exclusions and example holes linking to the round (UUID round ids only).
+  A row without the tag (legacy `three_putt_chain`) or an unknown shape
+  parses to null and the generic Why renders.
 - Approach branches on the root map (2026-09-25):
   - Sizing: a branch uses its stored counterfactual, else the band's strokes
     lost from a per-shot SG split. The split is used only when it reconciles
@@ -305,9 +338,9 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
     with how many players carry it. A cause no longer needs 3+ players to
     appear there; "shared" marks 3+ players in the matrix only.
   - Causes with no stored stroke value are outlined nodes inside the
-    area's "Unexplained <strokes>" remainder. Where-row and gain slices too
-    narrow for their own label keep their true width and carry the label and
-    value just under the bar.
+    area's "Unexplained <strokes>" remainder. On the desktop ribbon, slices
+    and nodes too narrow for their own label keep their true width; nodes
+    name themselves in a hover / focus tooltip.
   - Matrix columns show a short header (`shortCauseLabel`). The full
     stored label stays in `title` and in the spoken text.
   - The trend reads 52 weeks back and shows the 12 weeks ending at the
@@ -325,11 +358,15 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
     (`verifyPlayerAccess` + `applyInsightVisibility`, no `player_feed`
     exposure). A clicked cause that the ranked list dropped falls back to the
     Brief's visibility-filtered signal.
-  - `TeamPlayerDrill` renders `RootMap` and `RootWhy` with `audience='coach'`
-    and the clicked cause's Why open. Picking another branch keeps
-    `?cause=` in step. The one primary action is "Propose as a focus for
-    <first name>" (coach mode, which proposes). "Open signal" and the back
-    link to Team roots are secondary.
+  - `TeamPlayerDrill` renders the summary card, the collapsed `RootMap`
+    and `RootWhy` with `audience='coach'`. The Why opens in a `Sheet`
+    (bottom on phones, a right-hand panel from md). A `?cause=` link opens
+    that sheet on load; picking a spot keeps `?cause=` in step; closing the
+    sheet clears `?cause=`. The drill headline describes the map
+    (`defaultSelectedId`), not the linked cause. In the sheet the one
+    primary action is "Propose as a focus for <first name>" (coach mode,
+    which proposes); "Open signal" is secondary. On the page the one
+    primary action is "See why" (the biggest leak).
   - Stored insight prose (title, symptom, root cause) is shown verbatim.
     Some generators write it to the player in the second person.
 - Measured What row (owner decision 2026-09-25, `measured-what.ts`):
@@ -351,9 +388,10 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
     otherwise the stored-insight What row stays (legacy, "Unexplained").
     Calibrated 2026-09-25 over all 72 players with SG rounds: measured for
     67–69 per area, share for 2–5, none for 0–2; median |diff| ≤ 0.006.
-  - Gate: 10 events over 3 rounds, else the spot folds into "Other"; at most
-    3 spots per area plus Other (375px). Spots that GAIN inside a losing area
-    are listed in the area note as offsets. The remainder is "Not tracked by
+  - Gate: 10 events over 3 rounds, else the spot folds into "Other". The
+    ladder shows at most 3 spots per area, then "+N more" (expands to 44px
+    rows). Spots that GAIN inside a losing area are listed in the area note
+    as offsets. The remainder is "Not tracked by
     shot", never "Unexplained".
   - Stored insights attach by metric to their spot as the Why (styles as
     before); the best read opens the Why view (`whyId`), and `findBranch`

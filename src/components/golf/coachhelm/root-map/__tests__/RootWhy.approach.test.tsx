@@ -17,6 +17,7 @@ vi.mock('@/app/golf/actions/development', () => ({ createFocusAreaFromInsightV2:
 vi.mock('@/components/fairway/pages/coachhelm/FocusAreaModal', () => ({ FocusAreaModal: () => null }));
 
 import { RootWhy } from '../RootWhy';
+import { closedDisclosureTriggers, openDisclosures } from './open-disclosures';
 
 const model: RootMapModel = {
   scale: 1,
@@ -103,8 +104,8 @@ function view(over: Partial<ApproachWhyView> = {}): ApproachWhyView {
   };
 }
 
-function renderWhy(v: ApproachWhyView | null) {
-  return render(
+function renderWhy(v: ApproachWhyView | null, { open = true }: { open?: boolean } = {}) {
+  const r = render(
     <RootWhy
       model={model}
       details={{ far: detail }}
@@ -112,9 +113,20 @@ function renderWhy(v: ApproachWhyView | null) {
       approachWhy={v ? { far: v } : null}
     />,
   );
+  if (open) openDisclosures();
+  return r;
 }
 
 describe('RootWhy — approach context', () => {
+  it('keeps the evidence behind one closed disclosure until asked', () => {
+    renderWhy(view(), { open: false });
+    expect(screen.queryByRole('img', { name: /Where 13 recorded misses finished/ })).toBeNull();
+    const [evidence] = closedDisclosureTriggers();
+    expect(evidence).toHaveAccessibleName('The evidence');
+    openDisclosures();
+    expect(screen.getByRole('img', { name: /Where 13 recorded misses finished/ })).toBeTruthy();
+  });
+
   it('renders the path, the counted steps, the compass image, the grid and the ranges', () => {
     renderWhy(view());
     expect(screen.getByText('175+ yd → par 4s → short-right')).toBeTruthy();

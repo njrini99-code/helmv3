@@ -4,10 +4,12 @@
  * ============================================================================
  * TeamRootsView: the coach landing view of the CoachHelm desk (?view=team)
  * ----------------------------------------------------------------------------
- * Team root map (Where → What: the top causes per losing area by summed team
- * strokes, sized or outlined) with ONE primary action → "Who carries which
- * root" matrix → team trend (diverging stacked area) → "Did the focus work?"
- * before/after slopes → a short "Needs you" list.
+ * Summary first: `RootSummary` for the team (the team-average loss by area,
+ * the two biggest shared leaks with how many players carry them, "Needs you",
+ * and ONE primary action), then, collapsed by default: the team map by area
+ * (`RootMap`, the top causes per losing area by summed team strokes), "Who
+ * carries which root" matrix, and the team trend (diverging stacked area)
+ * with the "Did the focus work?" before/after slopes.
  *
  * A player name or a matrix cell opens that player's own root map in place
  * (`?view=team&player=<id>&cause=<insightId>`, see `TeamPlayerDrill`), a real
@@ -38,6 +40,8 @@ import type { FocusSlopeRow, NeedsYouItem } from '@/lib/coachhelm/root-map/build
 import { RootMap, playersText, rootStyleCss } from './RootMap';
 import { TeamTrendChart } from './TeamTrendChart';
 import { TeamPlayerDrill } from './TeamPlayerDrill';
+import { RootSummary, topSpots } from './RootSummary';
+import { Disclosure } from './Disclosure';
 
 export interface TeamNavUpdate {
   view?: string;
@@ -168,7 +172,15 @@ function TeamRootsOverview({ model, headline, trend, slopes, needsYou, signalsFa
   const [selectedId, setSelectedId] = useState<string | null>(model.map.defaultSelectedId);
   const selected = selectedId ? findBranch(model.map, selectedId) : null;
   const selectedUnsized: UnsizedCause | null = selected ? null : model.map.unsized.find((u) => u.id === selectedId) ?? null;
-  const primaryArea = areaOf(selected ?? selectedUnsized, model);
+  // The primary action follows the summary's biggest leak until the coach
+  // picks a spot on the team map.
+  const [picked, setPicked] = useState(false);
+  const lead = topSpots(model.map, 1)[0] ?? null;
+  const primaryArea = picked || !lead ? areaOf(selected ?? selectedUnsized, model) : lead.area;
+  const pick = (id: string) => {
+    setPicked(true);
+    setSelectedId(id);
+  };
   const hasSg = model.playersWithSg > 0;
   const hasCause = model.map.losses.some((a) => a.causes.length > 0) || model.map.unsized.length > 0;
 
@@ -187,79 +199,102 @@ function TeamRootsOverview({ model, headline, trend, slopes, needsYou, signalsFa
         .join('; ')}${model.map.gains.length > 0 ? `. Gaining: ${model.map.gains.map((g) => `${g.label} ${formatStrokes(g.sg, { signed: true })}`).join(', ')}` : ''}.`
     : 'Team root map: no strokes-gained data yet.';
 
+  const needsSection = (
+    <section aria-labelledby="team-needs-heading" className="flex flex-col gap-1 border-t border-border-subtle pt-4">
+      <h3 id="team-needs-heading" className="text-body-sm font-semibold uppercase tracking-wide text-text-secondary">
+        Needs you
+      </h3>
+    {needsYou.length === 0 ? (
+        <p className="text-body-sm text-text-secondary">
+          {signalsFailed ? 'Signals did not load, so this list may be incomplete. Open Signals to retry.' : 'Nothing urgent or changed right now.'}
+        </p>
+      ) : (
+        <ul className="flex flex-col divide-y divide-border-subtle">
+          {needsYou.map((item) => {
+            const body = (
+              <>
+                <span className="text-body-sm text-text-primary">
+                  <span className="font-medium">{item.playerName}</span> · {item.title}
+                </span>
+                <span className="text-caption text-text-secondary">{item.detail}</span>
+              </>
+            );
+            const rowClass =
+              'flex min-h-11 flex-col justify-center gap-0.5 py-2 outline-none hover:bg-surface-tint focus-visible:ring-2 focus-visible:ring-border-focus';
+            return (
+              <li key={item.key}>
+                {item.signalId ? (
+                  // A read: open it on the player's own root map.
+                  <DrillLink playerId={item.playerId} cause={item.signalId} hrefFor={hrefFor} className={rowClass}>
+                    {body}
+                  </DrillLink>
+                ) : (
+                  // A focus area waiting on the coach: its actions live on
+                  // the player's focus areas.
+                  <NavLink
+                    update={{ view: 'players', player: item.playerId, playersTab: 'areas' }}
+                    hrefFor={hrefFor}
+                    navigate={navigate}
+                    className={rowClass}
+                  >
+                    {body}
+                  </NavLink>
+                )}
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </section>
+  );
+
   return (
-    <div className="flex flex-col gap-8" data-slot="team-roots">
-      <section aria-labelledby="team-roots-heading" className="flex flex-col gap-4">
-        <header className="flex flex-col gap-1.5">
-          <Eyebrow as="p">
-            {model.rosterSize} {model.rosterSize === 1 ? 'player' : 'players'}
-            {hasSg ? ` · ${model.playersWithSg} with strokes gained` : ''} · team average per round
-          </Eyebrow>
-          <h2 id="team-roots-heading" className="font-fw-display text-title-2 font-semibold text-text-primary md:text-title-1">
-            <span className="block">Team roots</span>
-            {headline ? (
-              <span className="mt-1 block font-fw-sans text-body font-normal text-text-secondary md:text-body-lg">{headline}</span>
-            ) : null}
-          </h2>
-        </header>
-        {hasSg ? (
-          <>
-            <RootMap
-              model={model.map}
-              selectedId={selectedId}
-              onSelect={setSelectedId}
-              showWhy={false}
-              summary={mapSummary}
-              lossEyebrow="Team losing · where"
-              whatEyebrow="What · top causes"
-              figureLabel="Team root map"
-              audience="coach"
-              unsizedInRow
-            />
-            {model.map.other.length > 0 ? (
-              <p className="text-body-sm text-text-secondary" data-slot="team-other-reads">
-                <span className="font-medium text-text-primary">Other reads under a losing area: </span>
-                {model.map.other.map((o) => o.title).join(' · ')}
-              </p>
-            ) : null}
-            {!hasCause && !signalsFailed ? (
-              <p className="text-body-sm text-text-secondary">
-                No stored cause sits under a losing area yet. As player reads land, the largest causes show here.
-              </p>
-            ) : null}
-            {selected ? (
-              <p className="text-body-sm text-text-secondary">
-                <span className="font-medium text-text-primary" title={selected.title}>{selected.label}</span> under{' '}
-                {ROOT_AREA_LABEL[selected.area]}: {formatStrokes(selected.strokes)} a round across the team
-                {selected.measured ? ', measured from recorded shots' : ''}
-                {selected.players !== undefined
-                  ? ` · ${playersText(selected.players)}${selected.measured ? ' losing strokes here' : ''}`
-                  : ''}
-                {' · '}
-                {selected.measured && (selected.insightIds?.length ?? 0) === 0
-                  ? 'no stored read on this spot yet'
-                  : rootStyleLabel(selected.style, 'coach')}
-                {selected.tier ? ` · ${CONFIDENCE_LABEL[selected.tier]}` : ''}
-              </p>
-            ) : selectedUnsized ? (
-              <p className="text-body-sm text-text-secondary">
-                <span className="font-medium text-text-primary" title={selectedUnsized.title}>{selectedUnsized.label}</span> under{' '}
-                {ROOT_AREA_LABEL[selectedUnsized.area]}: no stroke value stored
-                {selectedUnsized.players !== undefined ? ` · ${playersText(selectedUnsized.players)}` : ''}
-                {' · '}
-                {rootStyleLabel(selectedUnsized.style, 'coach')}
-                {selectedUnsized.tier ? ` · ${CONFIDENCE_LABEL[selectedUnsized.tier]}` : ''}. Open a player in the matrix below
-                to see why.
-              </p>
-            ) : null}
-          </>
-        ) : (
+    <div className="flex flex-col gap-6" data-slot="team-roots">
+      <header className="flex flex-col gap-1.5">
+        <Eyebrow as="p">
+          {model.rosterSize} {model.rosterSize === 1 ? 'player' : 'players'}
+          {hasSg ? ` · ${model.playersWithSg} with strokes gained` : ''} · team average per round
+        </Eyebrow>
+        <h2 id="team-roots-heading" className="font-fw-display text-title-2 font-semibold text-text-primary md:text-title-1">
+          <span className="block">Team roots</span>
+          {headline && !hasSg ? (
+            <span className="mt-1 block font-fw-sans text-body font-normal text-text-secondary md:text-body-lg">{headline}</span>
+          ) : null}
+        </h2>
+      </header>
+
+      {hasSg ? (
+        <RootSummary
+          model={model.map}
+          headline={headline}
+          summary={mapSummary}
+          audience="coach"
+          eyebrow="Team average · strokes lost a round to the Tour line"
+          selectedId={selectedId}
+          action={
+            <Button asChild variant="primary" size="lg" fullWidth>
+              <NavLink
+                update={{ view: 'signals', filter: primaryArea ? `category:${primaryArea}` : null, signal: null }}
+                hrefFor={hrefFor}
+                navigate={navigate}
+              >
+                {primaryArea && primaryArea in ROOT_AREA_LABEL
+                  ? `Open ${ROOT_AREA_LABEL[primaryArea as keyof typeof ROOT_AREA_LABEL]} signals`
+                  : 'Open signals'}
+              </NavLink>
+            </Button>
+          }
+        >
+          {needsSection}
+        </RootSummary>
+      ) : (
+        <section aria-label="Team summary" className="flex flex-col gap-4">
           <EmptyState
             title="No strokes-gained data yet"
             description="The team map fills in once players have rounds with shot data in the stats cache."
           />
-        )}
-        <div>
+          {needsSection}
+          <div>
           <Button asChild variant="primary" size="lg" fullWidth>
             <NavLink
               update={{ view: 'signals', filter: primaryArea ? `category:${primaryArea}` : null, signal: null }}
@@ -271,68 +306,77 @@ function TeamRootsOverview({ model, headline, trend, slopes, needsYou, signalsFa
                 : 'Open signals'}
             </NavLink>
           </Button>
-        </div>
-      </section>
-
-      <CarriersMatrix model={model} signalsFailed={signalsFailed} hrefFor={hrefFor} />
-
-      {trend.length >= 2 ? (
-        <TeamTrendChart weeks={trend} />
-      ) : (
-        <section aria-labelledby="team-trend-heading" className="flex flex-col gap-2">
-          <SectionHead id="team-trend-heading" title="Team trend" />
-          <p className="text-body-sm text-text-secondary">
-            A trend needs strokes-gained rounds in at least two weeks. It fills in as players log rounds.
-          </p>
+          </div>
         </section>
       )}
 
-      <FocusSlopes slopes={slopes} hrefFor={hrefFor} navigate={navigate} />
+      {hasSg ? (
+        <Disclosure title="Team map by area" slot="team-map" bodyClassName="flex flex-col gap-3">
+          <RootMap
+            model={model.map}
+            selectedId={selectedId}
+            onSelect={pick}
+            showWhy={false}
+            summary={mapSummary}
+            lossEyebrow="Team losing · where"
+            whatEyebrow="What · top causes"
+            figureLabel="Team root map"
+            audience="coach"
+            unsizedInRow
+          />
+          {model.map.other.length > 0 ? (
+            <p className="text-body-sm text-text-secondary" data-slot="team-other-reads">
+              <span className="font-medium text-text-primary">Other reads under a losing area: </span>
+              {model.map.other.map((o) => o.title).join(' · ')}
+            </p>
+          ) : null}
+          {!hasCause && !signalsFailed ? (
+            <p className="text-body-sm text-text-secondary">
+              No stored cause sits under a losing area yet. As player reads land, the largest causes show here.
+            </p>
+          ) : null}
+          {selected ? (
+            <p className="text-body-sm text-text-secondary">
+              <span className="font-medium text-text-primary" title={selected.title}>{selected.label}</span> under{' '}
+              {ROOT_AREA_LABEL[selected.area]}: {formatStrokes(selected.strokes)} a round across the team
+              {selected.measured ? ', measured from recorded shots' : ''}
+              {selected.players !== undefined
+                ? ` · ${playersText(selected.players)}${selected.measured ? ' losing strokes here' : ''}`
+                : ''}
+              {' · '}
+              {selected.measured && (selected.insightIds?.length ?? 0) === 0
+                ? 'no stored read on this spot yet'
+                : rootStyleLabel(selected.style, 'coach')}
+              {selected.tier ? ` · ${CONFIDENCE_LABEL[selected.tier]}` : ''}
+            </p>
+          ) : selectedUnsized ? (
+            <p className="text-body-sm text-text-secondary">
+              <span className="font-medium text-text-primary" title={selectedUnsized.title}>{selectedUnsized.label}</span> under{' '}
+              {ROOT_AREA_LABEL[selectedUnsized.area]}: no stroke value stored
+              {selectedUnsized.players !== undefined ? ` · ${playersText(selectedUnsized.players)}` : ''}
+              {' · '}
+              {rootStyleLabel(selectedUnsized.style, 'coach')}
+              {selectedUnsized.tier ? ` · ${CONFIDENCE_LABEL[selectedUnsized.tier]}` : ''}. Open a player in the matrix below
+              to see why.
+            </p>
+          ) : null}
+        </Disclosure>
+      ) : null}
 
-      <section aria-labelledby="team-needs-heading" className="flex flex-col gap-2">
-        <SectionHead id="team-needs-heading" title="Needs you" />
-        {needsYou.length === 0 ? (
-          <p className="text-body-sm text-text-secondary">
-            {signalsFailed ? 'Signals did not load, so this list may be incomplete. Open Signals to retry.' : 'Nothing urgent or changed right now.'}
-          </p>
+      <Disclosure title="Who carries which root" slot="team-matrix">
+        <CarriersMatrix model={model} signalsFailed={signalsFailed} hrefFor={hrefFor} bare />
+      </Disclosure>
+
+      <Disclosure title="Team trend" slot="team-trend" bodyClassName="flex flex-col gap-6">
+        {trend.length >= 2 ? (
+          <TeamTrendChart weeks={trend} bare />
         ) : (
-          <ul className="flex flex-col divide-y divide-border-subtle">
-            {needsYou.map((item) => {
-              const body = (
-                <>
-                  <span className="text-body-sm text-text-primary">
-                    <span className="font-medium">{item.playerName}</span> · {item.title}
-                  </span>
-                  <span className="text-caption text-text-secondary">{item.detail}</span>
-                </>
-              );
-              const rowClass =
-                'flex min-h-11 flex-col justify-center gap-0.5 py-2 outline-none hover:bg-surface-tint focus-visible:ring-2 focus-visible:ring-border-focus';
-              return (
-                <li key={item.key}>
-                  {item.signalId ? (
-                    // A read: open it on the player's own root map.
-                    <DrillLink playerId={item.playerId} cause={item.signalId} hrefFor={hrefFor} className={rowClass}>
-                      {body}
-                    </DrillLink>
-                  ) : (
-                    // A focus area waiting on the coach: its actions live on
-                    // the player's focus areas.
-                    <NavLink
-                      update={{ view: 'players', player: item.playerId, playersTab: 'areas' }}
-                      hrefFor={hrefFor}
-                      navigate={navigate}
-                      className={rowClass}
-                    >
-                      {body}
-                    </NavLink>
-                  )}
-                </li>
-              );
-            })}
-          </ul>
+          <p className="text-body-sm text-text-secondary">
+            A trend needs strokes-gained rounds in at least two weeks. It fills in as players log rounds.
+          </p>
         )}
-      </section>
+        <FocusSlopes slopes={slopes} hrefFor={hrefFor} navigate={navigate} />
+      </Disclosure>
     </div>
   );
 }
@@ -352,10 +396,13 @@ function CarriersMatrix({
   model,
   signalsFailed,
   hrefFor,
+  bare = false,
 }: {
   model: TeamRootsModel;
   signalsFailed: boolean;
   hrefFor: TeamRootsViewProps['hrefFor'];
+  /** Inside a titled disclosure: no own heading. */
+  bare?: boolean;
 }) {
   const { columns, rows } = model;
   const maxStrokes = Math.max(
@@ -363,8 +410,16 @@ function CarriersMatrix({
     ...rows.flatMap((r) => Object.values(r.cells).map((c) => c.strokes ?? 0)),
   );
   return (
-    <section aria-labelledby="team-matrix-heading" className="flex flex-col gap-2">
-      <SectionHead id="team-matrix-heading" title="Who carries which root" note="tap a player or a cell" />
+    <section
+      aria-labelledby={bare ? undefined : 'team-matrix-heading'}
+      aria-label={bare ? 'Who carries which root' : undefined}
+      className="flex flex-col gap-2"
+    >
+      {bare ? (
+        <p className="text-caption text-text-tertiary">Tap a player or a cell.</p>
+      ) : (
+        <SectionHead id="team-matrix-heading" title="Who carries which root" note="tap a player or a cell" />
+      )}
       {columns.length === 0 ? (
         <p className="text-body-sm text-text-secondary">
           {signalsFailed ? 'Signals did not load, so causes cannot be shown. Open Signals to retry.' : 'No open player insights carry a metric yet.'}

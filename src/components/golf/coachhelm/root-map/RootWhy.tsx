@@ -6,10 +6,11 @@
  * (`/golf/dashboard/coachhelm?view=root&insight=<id>`)
  * ----------------------------------------------------------------------------
  * Breadcrumb path (area → cause → root), headline, support + confidence
- * chips, the evidence visual, the stored diagnosis, "How it happens" (only
- * when the diagnosis stored a traced shot sequence), what closing it is
- * worth (only when the insight stores a scoring projection), and ONE primary
- * action: make it a focus (the existing `createFocusAreaFromInsightV2` path
+ * chips, the stored diagnosis, "How it happens" (only when the diagnosis
+ * stored a traced shot sequence), then "The evidence" collapsed by default
+ * (summary first): the evidence visual, the angle / green / approach visuals
+ * and what closing it is worth (only when the insight stores a scoring
+ * projection). ONE primary action: make it a focus (the existing `createFocusAreaFromInsightV2` path
  * through the shared `FocusAreaModal`).
  *
  * Putting branches also get the top-down green (`GreenPlot`): recorded 4-6 ft
@@ -52,6 +53,7 @@ import { COACHHELM_HOME } from './RootToday';
 import { MeasuredFacts, SupportChips } from './RootToday';
 import { rootStyleCss } from './RootMap';
 import { AngleWhy } from './AngleWhy';
+import { Disclosure } from './Disclosure';
 import {
   GREEN_CENTER,
   GREEN_INNER_RING_FT,
@@ -749,13 +751,6 @@ export function RootWhy({
         ) : null}
       </header>
 
-      <EvidenceCompare detail={detail} voice={voice} />
-
-      {detail.angle ? <AngleWhy view={detail.angle} /> : null}
-
-      {greenView && insight.category === 'putting' ? <GreenPlot view={greenView} voice={voice} /> : null}
-
-      {approachWhy?.[insight.id] ? <ApproachContextSection view={approachWhy[insight.id]!} voice={voice} /> : null}
 
       <section aria-labelledby="why-root-heading" className="flex flex-col gap-2">
         <h3 id="why-root-heading" className="border-b border-text-primary pb-2 font-fw-display text-body-lg font-semibold text-text-primary">
@@ -811,7 +806,13 @@ export function RootWhy({
         </section>
       ) : null}
 
-      {detail.projection ? <Worth now={detail.projection.now} ifClosed={detail.projection.ifClosed} /> : null}
+      <Disclosure title="The evidence" slot="why-evidence" bodyClassName="flex flex-col gap-6">
+        <EvidenceCompare detail={detail} voice={voice} />
+        {detail.angle ? <AngleWhy view={detail.angle} /> : null}
+        {greenView && insight.category === 'putting' ? <GreenPlot view={greenView} voice={voice} /> : null}
+        {approachWhy?.[insight.id] ? <ApproachContextSection view={approachWhy[insight.id]!} voice={voice} /> : null}
+        {detail.projection ? <Worth now={detail.projection.now} ifClosed={detail.projection.ifClosed} /> : null}
+      </Disclosure>
 
       <Button variant="primary" size="lg" fullWidth type="button" onClick={() => setOpen(true)}>
         {isCoach ? `Propose as a focus for ${voice.subject}` : 'Make this my focus'}

@@ -1,9 +1,10 @@
 // @vitest-environment jsdom
 /**
- * Team roots → one player's root map (coach drill). The drill renders the
- * player's Where → What → Why map and the clicked cause's Why pre-opened, in
- * the coach's voice (the player's first name, never "you"/"your"), with one
- * primary action, a secondary "Open signal", and a back to Team roots.
+ * Team roots → one player's root map (coach drill). Summary first: the
+ * player's summary card and the collapsed map; the clicked cause's Why opens
+ * in a sheet, in the coach's voice (the player's first name, never
+ * "you"/"your"), with one primary action, a secondary "Open signal", and a
+ * back to Team roots. Closing the sheet clears ?cause=.
  */
 import React from 'react';
 import { fireEvent, render, screen, within } from '@testing-library/react';
@@ -27,6 +28,7 @@ vi.mock('framer-motion', async () => {
 });
 
 import { TeamRootsView } from '../TeamRootsView';
+import { openDisclosures } from './open-disclosures';
 
 function detail(id: string, over: Partial<BranchDetail> = {}): BranchDetail {
   return {
@@ -128,36 +130,58 @@ function renderDrill(drill: CoachPlayerDrill, navigate = vi.fn()) {
 }
 
 describe('Team roots player drill', () => {
-  it("shows the player's map with the clicked cause's Why open, in the coach's voice", () => {
-    renderDrill(ready);
-    expect(screen.getByRole('heading', { level: 2, name: 'Ava' })).toBeInTheDocument();
-    expect(screen.getByRole('figure', { name: "Ava's root map" })).toBeInTheDocument();
-    // the clicked cause's Why is pre-opened
-    expect(screen.getByRole('heading', { name: 'Short putts are leaking' })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: 'Seen in shots' })).toBeInTheDocument();
-    expect(screen.getByRole('img', { name: /3–5 ft putts made: Ava 48%/ })).toBeInTheDocument();
-    // one primary action + secondary open-signal + back
-    expect(screen.getByRole('button', { name: 'Propose as a focus for Ava' })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Open signal' })).toHaveAttribute(
+  it("opens the clicked cause's Why in a sheet over the player's map, in the coach's voice", () => {
+    const navigate = renderDrill(ready);
+    const sheet = screen.getByRole('dialog', { name: 'Putting › 3–5 ft putts' });
+    // the clicked cause's Why is pre-opened in the sheet
+    expect(within(sheet).getByRole('heading', { name: 'Short putts are leaking' })).toBeInTheDocument();
+    expect(within(sheet).getByRole('heading', { name: 'Seen in shots' })).toBeInTheDocument();
+    // its evidence waits behind one disclosure
+    expect(within(sheet).queryByRole('img', { name: /3–5 ft putts made: Ava 48%/ })).toBeNull();
+    openDisclosures(sheet);
+    expect(within(sheet).getByRole('img', { name: /3–5 ft putts made: Ava 48%/ })).toBeInTheDocument();
+    // one primary action + secondary open-signal
+    expect(within(sheet).getByRole('button', { name: 'Propose as a focus for Ava' })).toBeInTheDocument();
+    expect(within(sheet).getByRole('link', { name: 'Open signal' })).toHaveAttribute(
       'href',
       '/golf/dashboard/intelligence?view=signals&signal=putt',
     );
-    expect(screen.getByRole('link', { name: 'Team roots' })).toHaveAttribute('href', '/golf/dashboard/intelligence?view=team');
-    // never the player's voice
+    // never the player's voice, in the sheet or behind it
     const text = document.body.textContent ?? '';
     expect(text).not.toMatch(/\byour\b|\bYou\b/);
     const labels = [...document.querySelectorAll('[aria-label]')].map((el) => el.getAttribute('aria-label') ?? '');
     expect(labels.filter((l) => /\byour?\b/i.test(l))).toEqual([]);
+    // closing the sheet clears ?cause= and leaves the summary-first page
+    fireEvent.click(within(sheet).getByRole('button', { name: 'Close' }));
+    expect(navigate).toHaveBeenCalledWith({ cause: null });
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 2, name: 'Ava' })).toBeInTheDocument();
+    expect(screen.getByRole('figure', { name: "Ava's root map" })).toBeInTheDocument();
+    expect(screen.getByRole('region', { name: 'Summary' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Team roots' })).toHaveAttribute('href', '/golf/dashboard/intelligence?view=team');
+  });
+
+  it('keeps the map collapsed and the sheet shut when no cause is named', () => {
+    renderDrill({ ...ready, causeId: null } as CoachPlayerDrill);
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    const summary = screen.getByRole('region', { name: 'Summary' });
+    expect(within(summary).getByRole('img', { name: /Ava's root map/ })).toBeInTheDocument();
+    // the per-area ladders wait behind their rows
+    expect(document.querySelector('[data-slot="ladder-segment"]')).toBeNull();
+    // the one primary action on the page opens the biggest leak's Why
+    fireEvent.click(within(summary).getByRole('button', { name: 'See why' }));
+    expect(screen.getByRole('dialog', { name: 'Putting › 3–5 ft putts' })).toBeInTheDocument();
   });
 
   it('picking another branch swaps the Why in place and keeps ?cause= in step', () => {
-    const navigate = renderDrill(ready);
-    // The phone ladder's segment is the tap target (the chip list is gone).
+    const navigate = renderDrill({ ...ready, causeId: null } as CoachPlayerDrill);
+    openDisclosures(document.querySelector('[data-slot="leak-ladder"]') as HTMLElement);
     const ladder = document.querySelector('[data-slot="leak-ladder"]') as HTMLElement;
     fireEvent.click(within(ladder).getByRole('button', { name: /Greens hit from 175\+ yd/ }));
     expect(navigate).toHaveBeenCalledWith({ cause: 'far' });
-    expect(screen.getByRole('heading', { name: 'Greens from 175+' })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: 'The likely root' })).toBeInTheDocument();
+    const sheet = screen.getByRole('dialog', { name: 'Approach › Greens hit from 175+ yd' });
+    expect(within(sheet).getByRole('heading', { name: 'Greens from 175+' })).toBeInTheDocument();
+    expect(within(sheet).getByRole('heading', { name: 'The likely root' })).toBeInTheDocument();
   });
 
   it("quotes the stored read's richer text as the Why, keeping the inferred label", () => {
@@ -208,7 +232,7 @@ describe('Team roots player drill', () => {
   });
 
   it('back to Team roots navigates in place without the player', () => {
-    const navigate = renderDrill(ready);
+    const navigate = renderDrill({ ...ready, causeId: null } as CoachPlayerDrill);
     fireEvent.click(screen.getByRole('link', { name: 'Team roots' }));
     expect(navigate).toHaveBeenCalledWith({ view: 'team', player: null, cause: null });
   });

@@ -32,10 +32,10 @@
 
 import { useState, type CSSProperties } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Eyebrow } from '@/components/fairway';
 import { DURATION, EASE_CINEMATIC, useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
+import { Disclosure } from './Disclosure';
 import {
   CONFIDENCE_LABEL,
   ROOT_STYLE_LABEL,
@@ -358,6 +358,7 @@ function LadderRowView({
   showWhy,
   audience,
   unsized,
+  maxLoss,
 }: {
   row: LadderRow;
   selectedId: string | null;
@@ -365,11 +366,23 @@ function LadderRowView({
   showWhy: boolean;
   audience: RootAudience;
   unsized: UnsizedCause[];
+  /** The largest area loss (the mini bars' scale). */
+  maxLoss: number;
 }) {
   const reduce = useReducedMotionGuard();
   const moreSelected = row.more.some((c) => c.id === selectedId);
   const [open, setOpen] = useState(false);
   const expanded = open || moreSelected;
+  // The row opens itself when the selection moves into it (a ?cause= link,
+  // a tap on the summary card); the coach can still close it after.
+  const contains =
+    row.segments.some((c) => c.id === selectedId) || moreSelected || unsized.some((u) => u.id === selectedId);
+  const [rowOpen, setRowOpen] = useState(contains);
+  const [prevContains, setPrevContains] = useState(contains);
+  if (contains !== prevContains) {
+    setPrevContains(contains);
+    if (contains) setRowOpen(true);
+  }
   const moreStrokes = row.more.reduce((t, c) => t + c.strokes, 0);
   const base = row.total > 0 ? row.total : 1;
   const parts = [
@@ -379,11 +392,26 @@ function LadderRowView({
   ];
   const { area } = row;
   return (
-    <li className="flex flex-col gap-1.5" data-slot="ladder-row" data-area={area.area}>
-      <div className="flex items-baseline justify-between gap-2">
-        <span className="text-body-sm font-medium text-text-primary">{area.label}</span>
-        <span className="font-fw-mono text-body-sm tabular-nums text-text-primary">{formatStrokes(area.sg, { signed: true })}</span>
-      </div>
+    <li data-slot="ladder-row" data-area={area.area}>
+      <Disclosure
+        variant="row"
+        headingLevel={null}
+        open={rowOpen}
+        onOpenChange={setRowOpen}
+        title={
+          <span className="flex min-w-0 items-center gap-3">
+            <span className="w-32 shrink-0 truncate">{area.label}</span>
+            <span aria-hidden className="flex h-2 min-w-0 flex-1 items-center">
+              <span
+                className="block h-2 rounded-full"
+                style={{ width: `${maxLoss > 0 ? Math.max(4, (area.loss / maxLoss) * 100) : 0}%`, background: mix(NEG, 60) }}
+              />
+            </span>
+          </span>
+        }
+        meta={<span className="shrink-0 font-fw-mono text-body-sm tabular-nums text-text-primary">{formatStrokes(area.sg, { signed: true })}</span>}
+        bodyClassName="flex flex-col gap-1.5"
+      >
       <div role="group" aria-label={`${area.label}: where the strokes go`} className="grid gap-0.5" style={{ gridTemplateColumns: cols(parts) }}>
         {row.segments.map((c) => (
           <LadderSegment
@@ -469,6 +497,7 @@ function LadderRowView({
         ) : null}
       </AnimatePresence>
       <UnsizedButtons list={unsized} area={area.label} selectedId={selectedId} onSelect={onSelect} audience={audience} />
+      </Disclosure>
     </li>
   );
 }
@@ -512,27 +541,14 @@ export function measuredSummary(model: RootMapModel): MeasuredSummary | null {
 
 function MeasuredNote({ summary }: { summary: MeasuredSummary }) {
   return (
-    <div className="flex flex-col gap-1 text-caption text-text-tertiary" data-slot="measured-summary">
+    <div className="flex flex-col gap-1 text-caption text-text-secondary" data-slot="measured-summary">
       <p>{summary.line}</p>
-      {summary.exceptions.length > 0 ? (
-        <ul className="flex flex-col gap-0.5 text-text-secondary" data-slot="measured-exceptions">
-          {summary.exceptions.map((e) => (
-            <li key={e}>{e}</li>
+      {summary.details.length > 0 ? (
+        <ul className="flex flex-col gap-0.5 text-text-tertiary" data-slot="measured-details">
+          {summary.details.map((d) => (
+            <li key={d}>{d}</li>
           ))}
         </ul>
-      ) : null}
-      {summary.details.length > 0 ? (
-        <details className="group" data-slot="measured-details">
-          <summary className="inline-flex min-h-11 cursor-pointer list-none items-center gap-1 font-medium text-text-secondary outline-none hover:text-text-primary focus-visible:ring-2 focus-visible:ring-border-focus [&::-webkit-details-marker]:hidden">
-            <ChevronDown aria-hidden className="h-3.5 w-3.5 motion-safe:transition-transform group-open:rotate-180" />
-            Per-area check
-          </summary>
-          <ul className="flex flex-col gap-0.5 pb-1">
-            {summary.details.map((d) => (
-              <li key={d}>{d}</li>
-            ))}
-          </ul>
-        </details>
       ) : null}
     </div>
   );
@@ -608,290 +624,306 @@ export function RootMap({
   const tintMeasured = model.losses.some((a) => a.measured && a.causes.some((c) => c.style === 'unexplained'));
   const hasNew = model.losses.some((a) => a.causes.some((c) => c.isNew));
 
+  const maxLoss = Math.max(0, ...model.losses.map((a) => a.loss));
+  const legend = (
+    <RootLegend
+      fills={[...fills]}
+      audience={audience}
+      tintLabel={tintMeasured ? 'Measured, no stored read yet' : undefined}
+      unsized={listUnsized && model.unsized.length > 0}
+      showNew={hasNew}
+    />
+  );
+
   return (
-    <figure className={cn('m-0 flex min-w-0 flex-col gap-2', className)} aria-label={figureLabel}>
-      {model.gains.length > 0 ? (
-        <div>
-          <Eyebrow as="p" className="mb-1.5">
-            Gaining on Tour
-          </Eyebrow>
-          <div className="relative h-10">
-            {model.gains.map((g) => (
-              <div
-                key={g.area}
-                className="absolute inset-y-0 px-px"
-                style={{ left: pct(g.x), width: pct(g.w) }}
-              >
-                <div
-                  className="flex h-full min-w-1 items-center justify-between gap-1 overflow-hidden rounded-fw-sm px-2 text-caption font-medium text-text-primary"
-                  style={{ background: mix(POS, 55) }}
-                  title={`${g.label} ${formatStrokes(g.sg, { signed: true })}`}
-                >
-                  {g.w >= WHERE_LABEL_MIN_W ? (
-                    <>
-                      <span className="truncate">{g.label}</span>
-                      <span className="shrink-0 font-fw-mono tabular-nums">{formatStrokes(g.sg, { signed: true })}</span>
-                    </>
-                  ) : null}
-                </div>
-              </div>
+    <figure className={cn('m-0 flex min-w-0 flex-col', className)} aria-label={figureLabel}>
+      {hasLosses && hasCauses ? (
+        <div className="flex flex-col gap-1" data-slot="leak-ladder">
+          <Eyebrow as="p">{whatEyebrow}</Eyebrow>
+          <ol className="flex flex-col divide-y divide-border-subtle">
+            {ladder.map((row) => (
+              <LadderRowView
+                key={row.area.area}
+                row={row}
+                selectedId={selectedId}
+                onSelect={onSelect}
+                showWhy={showWhy}
+                audience={audience}
+                maxLoss={maxLoss}
+                unsized={listUnsized ? model.unsized.filter((u) => u.area === row.area.area) : []}
+              />
             ))}
-          </div>
-          {narrowGains.length > 0 ? (
-            <ul className="mt-1 flex flex-wrap gap-x-3 text-caption text-text-secondary" data-slot="gain-callouts">
-              {narrowGains.map((g) => (
-                <li key={g.area} className="flex items-center gap-1">
-                  <span aria-hidden className="inline-block h-2 w-2 rounded-sm" style={{ background: mix(POS, 55) }} />
-                  <span className="font-medium text-text-primary">{g.label}</span>
-                  <span className="font-fw-mono tabular-nums text-text-primary">{formatStrokes(g.sg, { signed: true })}</span>
-                </li>
-              ))}
-            </ul>
-          ) : null}
+          </ol>
         </div>
       ) : null}
+      {measured && measured.exceptions.length > 0 ? (
+        <ul className="flex flex-col gap-0.5 pt-2 text-caption text-text-secondary" data-slot="measured-exceptions">
+          {measured.exceptions.map((e) => (
+            <li key={e}>{e}</li>
+          ))}
+        </ul>
+      ) : null}
 
-      <div className="flex items-baseline justify-between border-b-2 border-text-primary pb-1">
-        <Eyebrow as="p" tone="secondary">
-          Tour line
-        </Eyebrow>
-        {model.netSg !== null ? (
-          <p className="text-caption text-text-secondary">
-            net{' '}
-            <span className="font-fw-mono tabular-nums text-text-primary">
-              {formatStrokes(model.netSg, { signed: true })}
-            </span>{' '}
-            a round
-          </p>
-        ) : null}
-      </div>
-
-      {hasLosses ? (
-        <div className="flex flex-col gap-1.5">
-          <Eyebrow as="p">{lossEyebrow}</Eyebrow>
-          {/* The Where row is the diagram's one image for screen readers;
-              the branches below are the interactive layer. */}
-          <div role="img" aria-label={summary} className="relative h-10">
-            {model.losses.map((a) => (
-              <div key={a.area} className="absolute inset-y-0 px-px" style={{ left: pct(a.x), width: pct(a.w) }}>
-                <div
-                  className="flex h-full min-w-1 items-center justify-between gap-1 overflow-hidden rounded-fw-sm px-2 text-caption font-medium text-text-primary"
-                  style={{ background: mix(NEG, 55) }}
-                  title={`${a.label} ${formatStrokes(a.sg, { signed: true })}`}
-                >
-                  {a.w >= WHERE_LABEL_MIN_W ? (
-                    <>
-                      <span className="truncate">{a.label}</span>
-                      <span className="shrink-0 font-fw-mono tabular-nums">{formatStrokes(a.sg, { signed: true })}</span>
-                    </>
-                  ) : null}
-                </div>
+      {hasLosses || model.gains.length > 0 ? (
+        <Disclosure title="Full root map" className="mt-4 hidden md:block" slot="full-map" bodyClassName="flex flex-col gap-2">
+      {model.gains.length > 0 ? (
+            <div>
+              <Eyebrow as="p" className="mb-1.5">
+                Gaining on Tour
+              </Eyebrow>
+              <div className="relative h-10">
+                {model.gains.map((g) => (
+                  <div
+                    key={g.area}
+                    className="absolute inset-y-0 px-px"
+                    style={{ left: pct(g.x), width: pct(g.w) }}
+                  >
+                    <div
+                      className="flex h-full min-w-1 items-center justify-between gap-1 overflow-hidden rounded-fw-sm px-2 text-caption font-medium text-text-primary"
+                      style={{ background: mix(POS, 55) }}
+                      title={`${g.label} ${formatStrokes(g.sg, { signed: true })}`}
+                    >
+                      {g.w >= WHERE_LABEL_MIN_W ? (
+                        <>
+                          <span className="truncate">{g.label}</span>
+                          <span className="shrink-0 font-fw-mono tabular-nums">{formatStrokes(g.sg, { signed: true })}</span>
+                        </>
+                      ) : null}
+                    </div>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-          {narrowAreas.length > 0 ? (
-            // A slice too narrow for its own label keeps its true width; the
-            // label and value sit just under it, so a small area never reads
-            // as a cut-off sliver.
-            <ul aria-hidden className="-mt-0.5 flex flex-wrap justify-end gap-x-3 text-caption text-text-secondary" data-slot="where-callouts">
-              {narrowAreas.map((a) => (
-                <li key={a.area} className="flex items-center gap-1">
-                  <span aria-hidden className="inline-block h-2 w-2 rounded-sm" style={{ background: mix(NEG, 55) }} />
-                  <span className="font-medium text-text-primary">{a.label}</span>
-                  <span className="font-fw-mono tabular-nums text-text-primary">{formatStrokes(a.sg, { signed: true })}</span>
-                </li>
-              ))}
-            </ul>
+              {narrowGains.length > 0 ? (
+                <ul className="mt-1 flex flex-wrap gap-x-3 text-caption text-text-secondary" data-slot="gain-callouts">
+                  {narrowGains.map((g) => (
+                    <li key={g.area} className="flex items-center gap-1">
+                      <span aria-hidden className="inline-block h-2 w-2 rounded-sm" style={{ background: mix(POS, 55) }} />
+                      <span className="font-medium text-text-primary">{g.label}</span>
+                      <span className="font-fw-mono tabular-nums text-text-primary">{formatStrokes(g.sg, { signed: true })}</span>
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
+            </div>
           ) : null}
 
-          {hasCauses ? (
-            <>
-              {/* Phones: the leak ladder. */}
-              <div className="flex flex-col gap-2 pt-2 md:hidden" data-slot="leak-ladder">
-                <Eyebrow as="p">{whatEyebrow}</Eyebrow>
-                <ol className="flex flex-col gap-4">
-                  {ladder.map((row) => (
-                    <LadderRowView
-                      key={row.area.area}
-                      row={row}
-                      selectedId={selectedId}
-                      onSelect={onSelect}
-                      showWhy={showWhy}
-                      audience={audience}
-                      unsized={listUnsized ? model.unsized.filter((u) => u.area === row.area.area) : []}
-                    />
-                  ))}
-                </ol>
+          <div className="flex items-baseline justify-between border-b-2 border-text-primary pb-1">
+            <Eyebrow as="p" tone="secondary">
+              Tour line
+            </Eyebrow>
+            {model.netSg !== null ? (
+              <p className="text-caption text-text-secondary">
+                net{' '}
+                <span className="font-fw-mono tabular-nums text-text-primary">
+                  {formatStrokes(model.netSg, { signed: true })}
+                </span>{' '}
+                a round
+              </p>
+            ) : null}
+          </div>
+
+          {hasLosses ? (
+            <div className="flex flex-col gap-1.5">
+              <Eyebrow as="p">{lossEyebrow}</Eyebrow>
+          <div aria-hidden className="relative h-10">
+                {model.losses.map((a) => (
+                  <div key={a.area} className="absolute inset-y-0 px-px" style={{ left: pct(a.x), width: pct(a.w) }}>
+                    <div
+                      className="flex h-full min-w-1 items-center justify-between gap-1 overflow-hidden rounded-fw-sm px-2 text-caption font-medium text-text-primary"
+                      style={{ background: mix(NEG, 55) }}
+                      title={`${a.label} ${formatStrokes(a.sg, { signed: true })}`}
+                    >
+                      {a.w >= WHERE_LABEL_MIN_W ? (
+                        <>
+                          <span className="truncate">{a.label}</span>
+                          <span className="shrink-0 font-fw-mono tabular-nums">{formatStrokes(a.sg, { signed: true })}</span>
+                        </>
+                      ) : null}
+                    </div>
+                  </div>
+                ))}
               </div>
-
-              {/* md and up: the Where → What → Why ribbon map. */}
-              <div className="hidden flex-col gap-1.5 md:flex" data-slot="ribbon-map">
-                <svg aria-hidden viewBox="0 0 100 40" preserveAspectRatio="none" className="block h-12 w-full">
-                  {slots.map((sl) => (
-                    <path
-                      key={sl.key}
-                      d={ribbonPath(sl.srcX, sl.srcW, sl.x, sl.w)}
-                      className="motion-safe:transition-[fill-opacity] motion-safe:duration-200"
-                      style={
-                        sl.cause
-                          ? { fill: NEG, fillOpacity: sl.cause.id === selectedId ? 0.42 : 0.16 }
-                          : { fill: 'var(--fw-color-border-strong)', fillOpacity: 0.12 }
-                      }
-                    />
+              {narrowAreas.length > 0 ? (
+                // A slice too narrow for its own label keeps its true width; the
+                // label and value sit just under it, so a small area never reads
+                // as a cut-off sliver.
+                <ul aria-hidden className="-mt-0.5 flex flex-wrap justify-end gap-x-3 text-caption text-text-secondary" data-slot="where-callouts">
+                  {narrowAreas.map((a) => (
+                    <li key={a.area} className="flex items-center gap-1">
+                      <span aria-hidden className="inline-block h-2 w-2 rounded-sm" style={{ background: mix(NEG, 55) }} />
+                      <span className="font-medium text-text-primary">{a.label}</span>
+                      <span className="font-fw-mono tabular-nums text-text-primary">{formatStrokes(a.sg, { signed: true })}</span>
+                    </li>
                   ))}
-                </svg>
+                </ul>
+              ) : null}
 
-                <div className="flex items-baseline justify-between">
-                  <Eyebrow as="p">{whatEyebrow}</Eyebrow>
-                  {whyStrip ? <Eyebrow as="p">Why · root driver</Eyebrow> : null}
-                </div>
-                <div className="relative" style={{ height: whatHeight }}>
-                  {slots.map((sl) => {
-                    const c = sl.cause;
-                    if (!c) {
-                      const rest = sl.area.remainder;
-                      const inside = unsizedBySlot.get(sl.key) ?? [];
-                      const restLabel = sl.area.measured ? 'Not tracked by shot' : 'Unexplained';
-                      return (
-                        <div
-                          key={sl.key}
-                          className="absolute inset-y-0 flex flex-col gap-2 px-px"
-                          style={{ left: pct(sl.x), width: pct(sl.w) }}
-                          data-slot="what-remainder"
-                        >
+              {hasCauses ? (
+              <div className="flex flex-col gap-1.5" data-slot="ribbon-map">
+                  <svg aria-hidden viewBox="0 0 100 40" preserveAspectRatio="none" className="block h-12 w-full">
+                    {slots.map((sl) => (
+                      <path
+                        key={sl.key}
+                        d={ribbonPath(sl.srcX, sl.srcW, sl.x, sl.w)}
+                        className="motion-safe:transition-[fill-opacity] motion-safe:duration-200"
+                        style={
+                          sl.cause
+                            ? { fill: NEG, fillOpacity: sl.cause.id === selectedId ? 0.42 : 0.16 }
+                            : { fill: 'var(--fw-color-border-strong)', fillOpacity: 0.12 }
+                        }
+                      />
+                    ))}
+                  </svg>
+
+                  <div className="flex items-baseline justify-between">
+                    <Eyebrow as="p">{whatEyebrow}</Eyebrow>
+                    {whyStrip ? <Eyebrow as="p">Why · root driver</Eyebrow> : null}
+                  </div>
+                  <div className="relative" style={{ height: whatHeight }}>
+                    {slots.map((sl) => {
+                      const c = sl.cause;
+                      if (!c) {
+                        const rest = sl.area.remainder;
+                        const inside = unsizedBySlot.get(sl.key) ?? [];
+                        const restLabel = sl.area.measured ? 'Not tracked by shot' : 'Unexplained';
+                        return (
                           <div
-                            className="flex h-11 min-w-0 items-center justify-between gap-1 overflow-hidden rounded-fw-sm border border-dashed border-border-strong px-1.5 text-caption text-text-secondary"
-                            title={rest ? `${restLabel} ${formatStrokes(rest.strokes)} a round` : undefined}
-                            data-kind={sl.area.measured ? 'not-tracked' : 'unexplained'}
+                            key={sl.key}
+                            className="absolute inset-y-0 flex flex-col gap-2 px-px"
+                            style={{ left: pct(sl.x), width: pct(sl.w) }}
+                            data-slot="what-remainder"
                           >
-                            {rest && sl.w >= REMAINDER_LABEL_MIN_W ? (
-                              <>
-                                <span className="truncate">{restLabel}</span>
-                                <span className="shrink-0 font-fw-mono tabular-nums">{formatStrokes(rest.strokes)}</span>
-                              </>
-                            ) : (
-                              <span className="sr-only">
-                                {rest ? `${restLabel} ${formatStrokes(rest.strokes)} a round` : restLabel}
-                              </span>
-                            )}
+                            <div
+                              className="flex h-11 min-w-0 items-center justify-between gap-1 overflow-hidden rounded-fw-sm border border-dashed border-border-strong px-1.5 text-caption text-text-secondary"
+                              title={rest ? `${restLabel} ${formatStrokes(rest.strokes)} a round` : undefined}
+                              data-kind={sl.area.measured ? 'not-tracked' : 'unexplained'}
+                            >
+                              {rest && sl.w >= REMAINDER_LABEL_MIN_W ? (
+                                <>
+                                  <span className="truncate">{restLabel}</span>
+                                  <span className="shrink-0 font-fw-mono tabular-nums">{formatStrokes(rest.strokes)}</span>
+                                </>
+                              ) : (
+                                <span className="sr-only">
+                                  {rest ? `${restLabel} ${formatStrokes(rest.strokes)} a round` : restLabel}
+                                </span>
+                              )}
+                            </div>
+                            {inside.map((u) => {
+                              const selected = u.id === selectedId;
+                              return (
+                                <button
+                                  key={u.id}
+                                  type="button"
+                                  aria-pressed={selected}
+                                  aria-label={unsizedSpokenLabel(u, sl.area.label, audience)}
+                                  onClick={onSelect ? () => onSelect(u.id) : undefined}
+                                  disabled={!onSelect}
+                                  data-slot="what-unsized"
+                                  className={cn(
+                                    'flex h-11 min-w-0 flex-col justify-center rounded-fw-sm border border-dashed border-text-secondary bg-surface px-1.5 text-left outline-none',
+                                    'focus-visible:ring-2 focus-visible:ring-border-focus',
+                                    selected ? 'ring-2 ring-text-primary' : 'hover:border-text-primary',
+                                  )}
+                                >
+                                  <span className="truncate text-caption font-medium text-text-primary">{u.label}</span>
+                                  {u.players !== undefined ? (
+                                    <span className="truncate text-caption text-text-tertiary">{playersText(u.players)} · not sized</span>
+                                  ) : null}
+                                </button>
+                              );
+                            })}
                           </div>
-                          {inside.map((u) => {
-                            const selected = u.id === selectedId;
-                            return (
-                              <button
-                                key={u.id}
-                                type="button"
-                                aria-pressed={selected}
-                                aria-label={unsizedSpokenLabel(u, sl.area.label, audience)}
-                                onClick={onSelect ? () => onSelect(u.id) : undefined}
-                                disabled={!onSelect}
-                                data-slot="what-unsized"
-                                className={cn(
-                                  'flex h-11 min-w-0 flex-col justify-center rounded-fw-sm border border-dashed border-text-secondary bg-surface px-1.5 text-left outline-none',
-                                  'focus-visible:ring-2 focus-visible:ring-border-focus',
-                                  selected ? 'ring-2 ring-text-primary' : 'hover:border-text-primary',
-                                )}
-                              >
-                                <span className="truncate text-caption font-medium text-text-primary">{u.label}</span>
-                                {u.players !== undefined ? (
-                                  <span className="truncate text-caption text-text-tertiary">{playersText(u.players)} · not sized</span>
-                                ) : null}
-                              </button>
-                            );
-                          })}
-                        </div>
-                      );
-                    }
-                    const selected = c.id === selectedId;
-                    const fill = evidenceFillOf(c.style);
-                    const labelled = sl.w >= WHAT_LABEL_MIN_W;
-                    return (
-                      <button
-                        key={c.id}
-                        type="button"
-                        aria-pressed={selected}
-                        aria-label={branchSpokenLabel(c, sl.area.label, showWhy, audience)}
-                        onClick={onSelect ? () => onSelect(c.id) : undefined}
-                        disabled={!onSelect}
-                        data-fill={fill}
-                        className={cn(
-                          'group absolute inset-y-0 flex flex-col gap-2 px-px text-left outline-none',
-                          'focus-visible:[&>span:first-child]:ring-2 focus-visible:[&>span:first-child]:ring-border-focus',
-                          onSelect ? 'cursor-pointer' : 'cursor-default',
-                        )}
-                        style={{ left: pct(sl.x), width: pct(sl.w) }}
-                      >
-                        <span
+                        );
+                      }
+                      const selected = c.id === selectedId;
+                      const fill = evidenceFillOf(c.style);
+                      const labelled = sl.w >= WHAT_LABEL_MIN_W;
+                      return (
+                        <button
+                          key={c.id}
+                          type="button"
+                          aria-pressed={selected}
+                          aria-label={branchSpokenLabel(c, sl.area.label, showWhy, audience)}
+                          onClick={onSelect ? () => onSelect(c.id) : undefined}
+                          disabled={!onSelect}
+                          data-fill={fill}
                           className={cn(
-                            'relative flex h-11 min-w-0 items-center justify-between gap-1 overflow-hidden rounded-fw-sm px-1.5 text-caption font-medium text-text-primary motion-safe:transition-shadow',
-                            selected ? 'ring-2 ring-text-primary' : 'group-hover:ring-1 group-hover:ring-text-secondary',
+                            'group absolute inset-y-0 flex flex-col gap-2 px-px text-left outline-none',
+                            'focus-visible:[&>span:first-child]:ring-2 focus-visible:[&>span:first-child]:ring-border-focus',
+                            onSelect ? 'cursor-pointer' : 'cursor-default',
                           )}
-                          style={{ background: showWhy ? TINT : mix(NEG, 55) }}
+                          style={{ left: pct(sl.x), width: pct(sl.w) }}
                         >
-                          {labelled ? (
-                            <span className="flex min-w-0 flex-col leading-tight">
-                              <span className="truncate">{c.label}</span>
-                              {c.players !== undefined ? (
-                                <span className="truncate font-normal text-text-secondary">{playersText(c.players)}</span>
+                          <span
+                            className={cn(
+                              'relative flex h-11 min-w-0 items-center justify-between gap-1 overflow-hidden rounded-fw-sm px-1.5 text-caption font-medium text-text-primary motion-safe:transition-shadow',
+                              selected ? 'ring-2 ring-text-primary' : 'group-hover:ring-1 group-hover:ring-text-secondary',
+                            )}
+                            style={{ background: showWhy ? TINT : mix(NEG, 55) }}
+                          >
+                            {labelled ? (
+                              <span className="flex min-w-0 flex-col leading-tight">
+                                <span className="truncate">{c.label}</span>
+                                {c.players !== undefined ? (
+                                  <span className="truncate font-normal text-text-secondary">{playersText(c.players)}</span>
+                                ) : null}
+                              </span>
+                            ) : null}
+                            {sl.w >= 0.1 ? (
+                              <span className="shrink-0 font-fw-mono tabular-nums">{formatStrokes(c.strokes)}</span>
+                            ) : null}
+                            {!showWhy ? (
+                              <span aria-hidden className="absolute inset-x-0 bottom-0 h-1.5" style={evidenceFillCss(fill)} />
+                            ) : null}
+                          </span>
+                          {whyStrip && fill !== 'tint' ? (
+                            <span
+                              className={cn(
+                                'relative flex h-8 min-w-0 items-center overflow-hidden rounded-fw-sm px-1',
+                                selected ? 'ring-2 ring-text-primary' : '',
+                              )}
+                              style={rootStyleCss(c.style)}
+                            >
+                              {c.contextPath && sl.w >= 0.2 ? (
+                                <span className="truncate rounded-sm bg-surface px-1 text-caption text-text-primary">
+                                  {c.contextPath}
+                                </span>
                               ) : null}
                             </span>
                           ) : null}
-                          {sl.w >= 0.1 ? (
-                            <span className="shrink-0 font-fw-mono tabular-nums">{formatStrokes(c.strokes)}</span>
+                          {c.isNew ? <NewDot className="absolute -right-0.5 -top-1" /> : null}
+                          {!labelled ? (
+                            // Too narrow for its own label: name and value on
+                            // hover or keyboard focus.
+                            <span
+                              aria-hidden
+                              className="pointer-events-none absolute bottom-full left-1/2 z-10 mb-1.5 -translate-x-1/2 whitespace-nowrap rounded-fw-sm bg-text-primary px-2 py-1 text-caption text-canvas opacity-0 shadow-sm group-hover:opacity-100 group-focus-visible:opacity-100 motion-safe:transition-opacity"
+                              data-slot="what-tooltip"
+                            >
+                              {c.label} <span className="font-fw-mono tabular-nums">{formatStrokes(c.strokes)}</span>
+                              {c.players !== undefined ? ` · ${playersText(c.players)}` : ''}
+                            </span>
                           ) : null}
-                          {!showWhy ? (
-                            <span aria-hidden className="absolute inset-x-0 bottom-0 h-1.5" style={evidenceFillCss(fill)} />
-                          ) : null}
-                        </span>
-                        {whyStrip && fill !== 'tint' ? (
-                          <span
-                            className={cn(
-                              'relative flex h-8 min-w-0 items-center overflow-hidden rounded-fw-sm px-1',
-                              selected ? 'ring-2 ring-text-primary' : '',
-                            )}
-                            style={rootStyleCss(c.style)}
-                          >
-                            {c.contextPath && sl.w >= 0.2 ? (
-                              <span className="truncate rounded-sm bg-surface px-1 text-caption text-text-primary">
-                                {c.contextPath}
-                              </span>
-                            ) : null}
-                          </span>
-                        ) : null}
-                        {c.isNew ? <NewDot className="absolute -right-0.5 -top-1" /> : null}
-                        {!labelled ? (
-                          // Too narrow for its own label: name and value on
-                          // hover or keyboard focus.
-                          <span
-                            aria-hidden
-                            className="pointer-events-none absolute bottom-full left-1/2 z-10 mb-1.5 -translate-x-1/2 whitespace-nowrap rounded-fw-sm bg-text-primary px-2 py-1 text-caption text-canvas opacity-0 shadow-sm group-hover:opacity-100 group-focus-visible:opacity-100 motion-safe:transition-opacity"
-                            data-slot="what-tooltip"
-                          >
-                            {c.label} <span className="font-fw-mono tabular-nums">{formatStrokes(c.strokes)}</span>
-                            {c.players !== undefined ? ` · ${playersText(c.players)}` : ''}
-                          </span>
-                        ) : null}
-                      </button>
-                    );
-                  })}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {unsizedBelow.length > 0 ? (
+                    <UnsizedButtons list={unsizedBelow} area="" selectedId={selectedId} onSelect={onSelect} audience={audience} />
+                  ) : null}
                 </div>
-                {unsizedBelow.length > 0 ? (
-                  <UnsizedButtons list={unsizedBelow} area="" selectedId={selectedId} onSelect={onSelect} audience={audience} />
-                ) : null}
-              </div>
-              {measured ? <MeasuredNote summary={measured} /> : null}
-            </>
+              ) : null}
+            </div>
           ) : null}
-        </div>
+        </Disclosure>
       ) : null}
 
-      <RootLegend
-        fills={[...fills]}
-        audience={audience}
-        tintLabel={tintMeasured ? 'Measured, no stored read yet' : undefined}
-        unsized={listUnsized && model.unsized.length > 0}
-        showNew={hasNew}
-      />
+      <Disclosure title="About this map" className="mt-1" slot="map-about" bodyClassName="flex flex-col gap-3">
+        {measured ? <MeasuredNote summary={measured} /> : null}
+        {legend}
+      </Disclosure>
+      <p className="sr-only">{summary}</p>
     </figure>
   );
 }

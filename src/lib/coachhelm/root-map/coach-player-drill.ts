@@ -186,7 +186,9 @@ export async function loadCoachPlayerDrill(
       model,
       details,
       insights,
-      headline: buildRootHeadline(model, findBranch(model, causeId ?? model.defaultSelectedId), 'coach'),
+      // The headline leads the summary card, so it describes the map (as on
+      // the player's own page), not the cause a link opened in the sheet.
+      headline: buildRootHeadline(model, findBranch(model, model.defaultSelectedId), 'coach'),
       roundsRead: sgRow?.roundsPlayed ?? null,
       throughDate,
       daysSinceThrough: daysBetween(throughDate, new Date().toISOString()),

@@ -6,11 +6,12 @@
  * sections with nothing stored.
  */
 import React from 'react';
-import { render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import type { GroupedSignal } from '@/lib/coachhelm/signal-grouping';
 import { buildTeamHeadline, buildTeamRoots, type TeamRosterPlayer } from '@/lib/coachhelm/root-map/build-team-roots';
 import { TeamRootsView } from '../TeamRootsView';
+import { closedDisclosureTriggers, openDisclosures } from './open-disclosures';
 
 vi.mock('framer-motion', async () => {
   const R = await import('react');
@@ -53,6 +54,35 @@ function signal(playerId: string, metric: string, category: string, strokes: num
 }
 
 describe('TeamRootsView, no observed roots and unsized approach', () => {
+  it('leads with the summary card and keeps map, matrix and trend collapsed', () => {
+    const model = buildTeamRoots({
+      players,
+      signals: ['a', 'b', 'c'].flatMap((p) => [signal(p, 'appr', 'approach', null), signal(p, 'lag', 'putting', 0.3)]),
+    });
+    render(
+      <TeamRootsView
+        model={model}
+        headline={buildTeamHeadline(model)}
+        trend={[]}
+        slopes={[]}
+        needsYou={[]}
+        signalsFailed={false}
+        hrefFor={() => '/golf/dashboard/intelligence?view=signals'}
+        navigate={() => {}}
+      />,
+    );
+    const summary = screen.getByRole('region', { name: 'Summary' });
+    expect(within(summary).getByRole('img', { name: /Team root map/ })).toBeInTheDocument();
+    expect(within(summary).getByRole('heading', { name: 'Needs you' })).toBeInTheDocument();
+    expect(within(summary).getByRole('link', { name: 'Open Putting signals' })).toBeInTheDocument();
+    expect(screen.queryByRole('table')).not.toBeInTheDocument();
+    expect(screen.queryByRole('figure', { name: 'Team root map' })).not.toBeInTheDocument();
+    expect(closedDisclosureTriggers().map((b) => b.textContent)).toEqual(['Team map by area', 'Who carries which root', 'Team trend']);
+    fireEvent.click(screen.getByRole('button', { name: 'Who carries which root' }));
+    expect(screen.getByRole('table')).toBeInTheDocument();
+  });
+
+
   it('renders every section with honest copy and one primary action', () => {
     const model = buildTeamRoots({
       players,
@@ -70,7 +100,10 @@ describe('TeamRootsView, no observed roots and unsized approach', () => {
         navigate={() => {}}
       />,
     );
-    expect(screen.getByRole('heading', { level: 2 }).textContent).toContain('gives back 1.10 a round');
+    openDisclosures();
+    expect(screen.getByRole('heading', { level: 2 }).textContent).toBe('Team roots');
+    // the headline leads the summary card
+    expect(within(screen.getByRole('region', { name: 'Summary' })).getByText(/gives back 1\.10 a round/)).toBeInTheDocument();
     expect(screen.getByText(/A trend needs strokes-gained rounds/)).toBeInTheDocument();
     expect(screen.getByRole('img', { name: /Team root map/ })).toBeInTheDocument();
     // the forming branch is a real button
@@ -97,6 +130,7 @@ describe('TeamRootsView, no observed roots and unsized approach', () => {
         navigate={() => {}}
       />,
     );
+    openDisclosures();
     expect(screen.getByText(/Signals did not load, so causes cannot be shown/)).toBeInTheDocument();
     expect(screen.getByText(/Focus before-and-after reads are not available/)).toBeInTheDocument();
     expect(screen.queryByText(/No cause is carried by three or more/)).not.toBeInTheDocument();
@@ -130,6 +164,7 @@ describe('TeamRootsView, a stored miss concentration', () => {
         navigate={() => {}}
       />,
     );
+    openDisclosures();
     const table = screen.getByRole('table');
     expect(
       within(table).getByRole('link', { name: /Where it concentrates: 175\+ yd → long par 3s → short-right, observed, not a cause/ }),
@@ -154,6 +189,7 @@ describe('TeamRootsView, a stored miss concentration', () => {
         navigate={() => {}}
       />,
     );
+    openDisclosures();
     const heading = screen.getByRole('heading', { name: 'Needs you' });
     const section = heading.closest('section') as HTMLElement;
     expect(within(section).getByRole('link')).toHaveAttribute('href', '/golf/dashboard/intelligence?view=team&player=a&cause=a-appr');
@@ -204,6 +240,7 @@ describe('TeamRootsView, team map What row and matrix labels (2026-09-25)', () =
         navigate={() => {}}
       />,
     );
+    openDisclosures();
     return model;
   }
 

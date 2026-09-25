@@ -12,6 +12,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { buildRootMap } from '@/lib/coachhelm/root-map/build-player-root-map';
 import type { MeasuredArea } from '@/lib/coachhelm/root-map/measured-what';
 import { RootMap, buildLadder, measuredSummary } from '../RootMap';
+import { closedDisclosureTriggers, openDisclosures } from './open-disclosures';
 
 const approachMeasured: MeasuredArea = {
       area: 'approach',
@@ -64,8 +65,27 @@ const many = buildRootMap({
 });
 
 describe('RootMap measured What row', () => {
+  it('shows only the area rows by default; ladders, full map and notes wait for a tap', () => {
+    render(<RootMap model={model} selectedId={null} summary="s" />);
+    expect(document.querySelectorAll('[data-slot="ladder-row"]')).toHaveLength(2);
+    expect(document.querySelector('[data-slot="ladder-segment"]')).toBeNull();
+    expect(document.querySelector('[data-slot="ribbon-map"]')).toBeNull();
+    expect(screen.queryByRole('list', { name: 'Legend' })).toBeNull();
+    // area rows + full map + about
+    expect(closedDisclosureTriggers()).toHaveLength(4);
+    fireEvent.click(screen.getByRole('button', { name: /Approach/ }));
+    expect(document.querySelectorAll('[data-area="approach"] [data-slot="ladder-segment"]')).toHaveLength(3);
+  });
+
+  it('opens the row holding the selected spot', () => {
+    render(<RootMap model={model} selectedId="measured:approach:125_175" onSelect={() => {}} summary="s" />);
+    expect(document.querySelector('[data-area="approach"] [data-open]')).toHaveAttribute('data-open', 'true');
+    expect(document.querySelector('[data-area="putting"] [data-open]')).toHaveAttribute('data-open', 'false');
+  });
+
   it('labels the unmeasured rest "Not tracked by shot", never "Unexplained"', () => {
     render(<RootMap model={model} selectedId={null} summary="s" />);
+    openDisclosures();
     const approachRest = document.querySelector('[data-kind="not-tracked"]');
     expect(approachRest).not.toBeNull();
     expect(approachRest?.getAttribute('title')).toBe('Not tracked by shot 0.10 a round');
@@ -75,12 +95,15 @@ describe('RootMap measured What row', () => {
 
   it('collapses the reconcile notes to one quiet line with the per-area check behind a disclosure', () => {
     render(<RootMap model={model} selectedId={null} summary="s" />);
+    // putting is losing but not split by shot: an exception, shown inline even while collapsed
+    const exceptions = document.querySelector('[data-slot="measured-exceptions"]') as HTMLElement;
+    expect(within(exceptions).getByText(/Putting: not split by shot/)).toBeInTheDocument();
+    // the line and the per-area check sit behind "About this map", closed by default
+    expect(document.querySelector('[data-slot="measured-summary"]')).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'About this map' }));
     const note = document.querySelector('[data-slot="measured-summary"]') as HTMLElement;
-    // putting is losing but not split by shot: an exception, shown inline
     expect(note.textContent).toMatch(/Measured from 12 rounds of shots; 1 of 2 losing areas match their strokes-gained total\./);
-    expect(within(note).getByText(/Putting: not split by shot/)).toBeInTheDocument();
     const details = note.querySelector('[data-slot="measured-details"]') as HTMLElement;
-    expect(details.tagName).toBe('DETAILS');
     expect(details.textContent).toMatch(/Approach: measured from 12 rounds of recorded shots/);
     // no long per-area paragraphs outside the disclosure
     expect(document.querySelector('[data-slot="measured-notes"]')).toBeNull();
@@ -102,6 +125,7 @@ describe('RootMap measured What row', () => {
   it('draws one ladder row per losing area, largest first, with each spot a button', () => {
     const onSelect = vi.fn();
     render(<RootMap model={model} selectedId={null} onSelect={onSelect} summary="s" audience="coach" />);
+    openDisclosures();
     const ladder = document.querySelector('[data-slot="leak-ladder"]') as HTMLElement;
     const rows = [...ladder.querySelectorAll('[data-slot="ladder-row"]')].map((r) => r.getAttribute('data-area'));
     expect(rows).toEqual(['approach', 'putting']);
@@ -125,6 +149,7 @@ describe('RootMap measured What row', () => {
     expect(row!.more.map((c) => c.label)).toEqual(['25+ ft putts', '3–5 ft putts', '0–3 ft putts']);
     const onSelect = vi.fn();
     render(<RootMap model={many} selectedId={null} onSelect={onSelect} summary="s" />);
+    openDisclosures();
     const ladder = document.querySelector('[data-slot="leak-ladder"]') as HTMLElement;
     expect(ladder.querySelector('[data-slot="ladder-more-list"]')).toBeNull();
     const more = within(ladder).getByRole('button', { name: /3 more spots, 0\.85 strokes a round together/ });
@@ -138,6 +163,7 @@ describe('RootMap measured What row', () => {
 
   it('opens "+N more" when the selected spot is folded inside it', () => {
     render(<RootMap model={many} selectedId="measured:putting:0_3" onSelect={() => {}} summary="s" />);
+    openDisclosures();
     const ladder = document.querySelector('[data-slot="leak-ladder"]') as HTMLElement;
     const list = ladder.querySelector('[data-slot="ladder-more-list"]') as HTMLElement;
     expect(within(list).getByRole('button', { name: /0–3 ft putts/ })).toHaveAttribute('aria-pressed', 'true');
@@ -145,6 +171,7 @@ describe('RootMap measured What row', () => {
 
   it('desktop: names a node too narrow for its label in a tooltip, not a list under the row', () => {
     render(<RootMap model={model} selectedId={null} summary="s" />);
+    openDisclosures();
     expect(document.querySelector('[data-slot="what-callouts"]')).toBeNull();
     const ribbon = document.querySelector('[data-slot="ribbon-map"]') as HTMLElement;
     const tips = [...ribbon.querySelectorAll('[data-slot="what-tooltip"]')].map((t) => t.textContent);
