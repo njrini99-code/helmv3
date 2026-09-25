@@ -31,6 +31,14 @@ vi.mock('@/lib/coachhelm/v2/trigger-insights-bridge', () => ({
   triggerPlayerInsightsAfterRound: vi.fn(async () => ({ success: true, insights_created: 1 })),
 }));
 
+// Stale-refresh anchors: the loader runs a visibility-filtered PostgREST query
+// the fake client cannot model; the pure selector stays real.
+const anchorsMock = vi.fn(async (_ids: readonly string[]) => [] as Array<Record<string, unknown>>);
+vi.mock('@/lib/coachhelm/v3/engine/stale-refresh', async (importActual) => {
+  const actual = await importActual<typeof import('@/lib/coachhelm/v3/engine/stale-refresh')>();
+  return { ...actual, loadVisibleRefreshAnchors: (ids: readonly string[]) => anchorsMock(ids) };
+});
+
 vi.mock('@/lib/server-error-logger', () => ({
   logServerError: vi.fn(async () => {}),
   logServerException: vi.fn(async () => {}),
@@ -70,6 +78,8 @@ beforeEach(() => {
   triggerMock.mockClear();
   triggerMock.mockResolvedValue({ success: true, insights_created: 1 });
   process.env.CRON_SECRET = 'cs';
+  anchorsMock.mockReset();
+  anchorsMock.mockResolvedValue([]);
 });
 
 describe('GET /api/cron/coachhelm-roster-sweep — latest-round-only skip (#920 fix 2)', () => {
@@ -138,5 +148,52 @@ describe('GET /api/cron/coachhelm-roster-sweep — latest-round-only skip (#920 
     const calledPlayerIds = triggerMock.mock.calls.map((call) => call[0]);
     expect(calledPlayerIds.sort()).toEqual(['player-B', 'player-C']);
     expect(calledPlayerIds).not.toContain('player-A');
+  });
+});
+
+describe('GET /api/cron/coachhelm-roster-sweep — stale-insight refresh', () => {
+  const analyzedRound = (player: string) => ({
+    id: `r-${player}`,
+    player_id: player,
+    status: 'completed',
+    round_date: '2026-07-01',
+    created_at: '2026-07-01T10:00:00Z',
+    coachhelm_analyzed_at: '2026-07-01T12:00:00Z',
+  });
+  const daysAgo = (d: number) => new Date(Date.now() - d * 86_400_000).toISOString();
+
+  it('re-analyzes an already-analyzed player whose visible insights all went stale, and only that one', async () => {
+    seed([analyzedRound('player-A'), analyzedRound('player-B'), analyzedRound('player-C')]);
+    anchorsMock.mockResolvedValue([
+      // A: newest visible refresh 30 days ago → stale.
+      { player_id: 'player-A', created_at: daysAgo(90), metadata: { last_refreshed_at: daysAgo(30) } },
+      { player_id: 'player-A', created_at: daysAgo(60), metadata: null },
+      // B: one old row but analyzed 2 days ago → not stale.
+      { player_id: 'player-B', created_at: daysAgo(90), metadata: { last_refreshed_at: daysAgo(40) } },
+      { player_id: 'player-B', created_at: daysAgo(90), metadata: { last_refreshed_at: daysAgo(2) } },
+    ]);
+
+    const res = await callGet();
+    const body = (await res.json()) as {
+      alreadyAnalyzedSkipped: number;
+      analyzed: number;
+      staleRefresh: { selected: number; refreshed: number; cap: number; selectFailed: boolean };
+    };
+    expect(triggerMock.mock.calls.map((c) => c[0])).toEqual(['player-A']);
+    expect(body.alreadyAnalyzedSkipped).toBe(2);
+    expect(body.analyzed).toBe(1);
+    expect(body.staleRefresh).toMatchObject({ selected: 1, refreshed: 1, selectFailed: false });
+    expect(anchorsMock).toHaveBeenCalledWith(expect.arrayContaining(['player-A', 'player-B', 'player-C']));
+  });
+
+  it('a failed anchor lookup costs only the extra refreshes, never the sweep', async () => {
+    seed([analyzedRound('player-A')]);
+    anchorsMock.mockRejectedValue(new Error('boom'));
+    const res = await callGet();
+    const body = (await res.json()) as { success: boolean; staleRefresh: { selectFailed: boolean } };
+    expect(res.status).toBe(200);
+    expect(body.success).toBe(true);
+    expect(body.staleRefresh.selectFailed).toBe(true);
+    expect(triggerMock.mock.calls.map((c) => c[0])).not.toContain('player-A');
   });
 });

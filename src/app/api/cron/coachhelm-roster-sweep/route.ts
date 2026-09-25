@@ -13,6 +13,11 @@
  * lifecycle — depends on the insight state this sweep produces, so it must
  * complete before any of them. See scripts/coachhelm-refresh-all.sh for the
  * canonical order.
+ *
+ * Stale refresh (2026-09-25): a player whose latest round is already analyzed
+ * is normally skipped, but up to STALE_REFRESH_CAP players per run whose
+ * visible v3 insights were all last refreshed STALE_REFRESH_DAYS+ days ago are
+ * re-analyzed anyway, oldest first (see engine/stale-refresh.ts).
  * Auth: Vercel Cron sends `Authorization: Bearer ${CRON_SECRET}`.
  */
 import { NextResponse, type NextRequest } from 'next/server';
@@ -29,6 +34,12 @@ import { requireCronAuth } from '@/lib/cron/auth';
 import { recordJobRun } from '@/lib/admin/job-log';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import { describeError } from '@/lib/utils/describe-error';
+import {
+  loadVisibleRefreshAnchors,
+  selectStaleRefreshPlayers,
+  STALE_REFRESH_CAP,
+  STALE_REFRESH_DAYS,
+} from '@/lib/coachhelm/v3/engine/stale-refresh';
 
 const isFailureKind = (kind: AnalysisOutcomeKind): boolean =>
   kind === 'retryable_failure' || kind === 'permanent_failure';
@@ -84,6 +95,36 @@ async function handleRosterSweep(): Promise<NextResponse> {
     new Set((memberships ?? []).map((m) => m.player_id).filter(Boolean)),
   );
 
+  // Stale-insight refresh (owner decision 2026-09-25, see
+  // `src/lib/coachhelm/v3/engine/stale-refresh.ts`): players whose visible v3
+  // insights were all last refreshed STALE_REFRESH_DAYS+ days ago are
+  // re-analyzed even without a new round, at most STALE_REFRESH_CAP per run,
+  // oldest first — the backlog drains across nights. Deterministic engine
+  // only (same trigger as below; no AI model calls). A lookup failure only
+  // costs tonight's extra refreshes, never the sweep.
+  let staleRefreshIds = new Set<string>();
+  let staleRefreshSelectFailed = false;
+  try {
+    const anchors = await loadVisibleRefreshAnchors(uniquePlayerIds);
+    staleRefreshIds = new Set(selectStaleRefreshPlayers(anchors, Date.now()).map((p) => p.playerId));
+  } catch (err) {
+    staleRefreshSelectFailed = true;
+    await logServerError(
+      `cron.rosterSweep.staleRefresh select failed: ${describeError(err)}`,
+      { action: 'cron.coachhelm.rosterSweep.staleRefresh', featureArea: 'coachhelm' },
+      'warning',
+    );
+  }
+  // Stale players re-analyzed although their latest round was already analyzed.
+  let staleRefreshed = 0;
+  // Put the stale picks first so they share CONCURRENCY batches instead of
+  // each stretching a different batch — the extra wall time is then
+  // ceil(cap / CONCURRENCY) analyses, not `cap`.
+  const sweepOrder = [
+    ...uniquePlayerIds.filter((id) => staleRefreshIds.has(id)),
+    ...uniquePlayerIds.filter((id) => !staleRefreshIds.has(id)),
+  ];
+
   let analyzed = 0;
   // Player's MOST RECENT completed round already had coachhelm_analyzed_at
   // set — genuinely nothing new to analyze.
@@ -94,8 +135,8 @@ async function handleRosterSweep(): Promise<NextResponse> {
   let failed = 0;
 
   // Process players in small batches to keep engine load bounded.
-  for (let i = 0; i < uniquePlayerIds.length; i += CONCURRENCY) {
-    const batch = uniquePlayerIds.slice(i, i + CONCURRENCY);
+  for (let i = 0; i < sweepOrder.length; i += CONCURRENCY) {
+    const batch = sweepOrder.slice(i, i + CONCURRENCY);
     const pairs = await Promise.all(
       batch.map(async (playerId) => {
         try {
@@ -133,12 +174,13 @@ async function handleRosterSweep(): Promise<NextResponse> {
               },
               'warning',
             );
-          } else if (latestRound?.coachhelm_analyzed_at) {
+          } else if (latestRound?.coachhelm_analyzed_at && !staleRefreshIds.has(playerId)) {
             return { playerId, ok: true as const, alreadyAnalyzed: true as const };
           }
+          const staleRefresh = Boolean(latestRound?.coachhelm_analyzed_at);
 
           const result = await triggerPlayerInsightsAfterRound(playerId);
-          return { playerId, ok: true as const, alreadyAnalyzed: false as const, result };
+          return { playerId, ok: true as const, alreadyAnalyzed: false as const, staleRefresh, result };
         } catch (err) {
           return { playerId, ok: false as const, err };
         }
@@ -162,6 +204,7 @@ async function handleRosterSweep(): Promise<NextResponse> {
         alreadyAnalyzedSkipped++;
         continue;
       }
+      if (p.staleRefresh) staleRefreshed++;
       if (p.result.success) {
         analyzed++;
       } else if (isAnalysisOutcomeCode(p.result.code) && isFailureKind(kindForCode(p.result.code))) {
@@ -185,5 +228,12 @@ async function handleRosterSweep(): Promise<NextResponse> {
     analyzed,
     skipped,
     failed,
+    staleRefresh: {
+      selected: staleRefreshIds.size,
+      refreshed: staleRefreshed,
+      cap: STALE_REFRESH_CAP,
+      staleDays: STALE_REFRESH_DAYS,
+      selectFailed: staleRefreshSelectFailed,
+    },
   });
 }
