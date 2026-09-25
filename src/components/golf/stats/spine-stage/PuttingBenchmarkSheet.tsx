@@ -31,13 +31,10 @@ import type { LeakBucket } from '@/app/golf/actions/stats-leak-maps-types';
 export interface PuttingBenchmarkSheetProps {
   buckets: readonly LeakBucket[];
   roundsIncluded: number;
-  /**
-   * The team's tour, or null when the client can't tell (no standing rows).
-   * The leak map already carries the server's gender-routed references, so
-   * null only neutralises the label and citation, never the numbers.
-   */
+  /** The tour the leak map's references came from (`PlayerLeakMaps.tour`);
+   *  null only for a payload without it, which keeps the label neutral. */
   tour: PuttingTour | null;
-  /** Oldest and newest completed-round dates (ISO date-only), when known. */
+  /** Oldest / newest date of the same countable rounds (`PlayerLeakMaps`). */
   window: { from: string; to: string } | null;
 }
 

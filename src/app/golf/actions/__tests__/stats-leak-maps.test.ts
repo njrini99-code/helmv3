@@ -15,10 +15,20 @@ const ROUND_COUNT = 1500; // > 1000 → requires two pages
 // Fully scored 18-hole rounds: the loader keeps countable rounds only
 // (src/lib/golf/round-countable.ts), so a fixture without nine totals would
 // be read as a hole-less round and dropped.
-const roundRows: Array<{ id: string; holes_played: number; total_score: number; front_nine: number; back_nine: number; total_putts: number }> = Array.from(
-  { length: ROUND_COUNT },
-  (_, i) => ({ id: `round-${i}`, holes_played: 18, total_score: 74, front_nine: 37, back_nine: 37, total_putts: 32 }),
-);
+// Dates run 2025-01-01 upward. One extra hole-less round dated EARLIER is not
+// countable, so it must stay out of both the count and the date window.
+const roundRows: Array<{ id: string; round_date: string; holes_played: number | null; total_score: number | null; front_nine: number | null; back_nine: number | null; total_putts: number | null }> = [
+  ...Array.from({ length: ROUND_COUNT }, (_, i) => ({
+    id: `round-${i}`,
+    round_date: new Date(Date.UTC(2025, 0, 1 + i)).toISOString().slice(0, 10),
+    holes_played: 18,
+    total_score: 74,
+    front_nine: 37,
+    back_nine: 37,
+    total_putts: 32,
+  })),
+  { id: 'round-partial', round_date: '2024-06-01', holes_played: null, total_score: null, front_nine: null, back_nine: null, total_putts: null },
+];
 
 let shotRows: Array<Record<string, unknown>> = [];
 
@@ -85,7 +95,7 @@ vi.mock('../stats-data', () => ({
 // Import after mocks
 // ---------------------------------------------------------------------------
 
-import { getPuttMakeLeakMap, getApproachProximityLeakMap } from '../stats-leak-maps';
+import { getPuttMakeLeakMap, getApproachProximityLeakMap, getPlayerLeakMaps } from '../stats-leak-maps';
 
 // ---------------------------------------------------------------------------
 // Tests
@@ -180,6 +190,21 @@ describe('stats-leak-maps pagination (PostgREST 1000-row cap)', () => {
       const band = result.data?.approach.find((b) => b.bucket_id === '125_175');
       expect(band?.sample_n).toBe(1200);
       expect(band?.team_value).toBe(30);
+    });
+  });
+
+  describe('getPlayerLeakMaps', () => {
+    it('returns the countable-round date window and the reference tour (DASH-12)', async () => {
+      const result = await getPlayerLeakMaps('player-1');
+
+      expect(result.success).toBe(true);
+      expect(result.data?.roundsIncluded).toBe(ROUND_COUNT);
+      // Window spans the countable rounds across both pages; the earlier
+      // hole-less round is excluded.
+      expect(result.data?.windowFrom).toBe('2025-01-01');
+      expect(result.data?.windowTo).toBe(roundRows[ROUND_COUNT - 1]!.round_date);
+      // No women's team membership → PGA references.
+      expect(result.data?.tour).toBe('pga');
     });
   });
 });

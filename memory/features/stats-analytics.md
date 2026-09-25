@@ -98,7 +98,9 @@ still use `getPlayerStatsDashboardBundle`.
   five bands from 3 ft; 0-3 ft has no standard) with each row's source cited.
   The Putting drill's benchmark sheet grades the career leak-map buckets
   against it, prefers the live reference on the bucket, and grades a band only
-  at 10+ putts.
+  at 10+ putts. `getPlayerLeakMaps` returns `windowFrom`/`windowTo` (dates of
+  the same countable rounds as `roundsIncluded`) and `tour` (the reference
+  set it routed to), so the sheet and LeakMap never guess either.
 - Strokes-gained and putting tendency gaps should be called out rather than silently treated as complete.
 - Team analytics should not mix players across teams or organizations.
 - CoachHelm can consume stats but should not own stat calculation truth.

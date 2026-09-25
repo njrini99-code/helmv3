@@ -242,22 +242,30 @@ async function resolvePlayerTeamGender(
   return team?.gender ?? null;
 }
 
+/** The countable completed rounds a leak map reads, with their date span. */
+interface CompletedRoundSet {
+  ids: string[];
+  /** Oldest / newest `round_date` (ISO date-only) in `ids`; null when empty. */
+  windowFrom: string | null;
+  windowTo: string | null;
+}
+
 /**
- * Resolve completed-round ids for a set of player ids. Self-contained so the
- * loader doesn't depend on the calling page recomputing the round window.
+ * Resolve the countable completed rounds for a set of player ids. Self-contained
+ * so the loader doesn't depend on the calling page recomputing the round window.
  */
-async function completedRoundIds(
+async function completedRoundSet(
   supabase: Awaited<ReturnType<typeof createClient>>,
   playerIds: string[],
-): Promise<string[]> {
-  if (playerIds.length === 0) return [];
+): Promise<CompletedRoundSet> {
+  if (playerIds.length === 0) return { ids: [], windowFrom: null, windowTo: null };
   // Paginated: PostgREST caps each response at 1000 rows, so a roster's
   // season can silently truncate an unpaginated id fetch (rounds beyond the
   // first 1000 would vanish from every leak map).
   const { data, error } = await fetchAllRowsResult((from, to) =>
     supabase
       .from('golf_rounds')
-      .select('id, holes_played, total_score, front_nine, back_nine, total_putts')
+      .select('id, round_date, holes_played, total_score, front_nine, back_nine, total_putts')
       .in('player_id', playerIds)
       .eq('status', 'completed')
       .order('id', { ascending: true })
@@ -273,11 +281,27 @@ async function completedRoundIds(
   // Countable rounds only (src/lib/golf/round-countable.ts): a partial,
   // hole-less or implausible round must not feed the leak maps or the
   // "rounds included" count shown above them.
-  type Row = CountableRoundInput & { id: string };
-  return ((data ?? []) as Row[])
+  type Row = CountableRoundInput & { id: string; round_date?: string | null };
+  const rows = ((data ?? []) as Row[])
     .filter(isCountableRound)
-    .map((r) => r.id)
-    .filter((id): id is string => typeof id === 'string');
+    .filter((r) => typeof r.id === 'string');
+  // round_date is a DATE column, so ISO strings order lexically.
+  const dates = rows
+    .map((r) => r.round_date)
+    .filter((d): d is string => typeof d === 'string' && d.length > 0)
+    .sort();
+  return {
+    ids: rows.map((r) => r.id),
+    windowFrom: dates[0] ?? null,
+    windowTo: dates[dates.length - 1] ?? null,
+  };
+}
+
+async function completedRoundIds(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  playerIds: string[],
+): Promise<string[]> {
+  return (await completedRoundSet(supabase, playerIds)).ids;
 }
 
 // ============================================================================
@@ -597,17 +621,27 @@ async function getPlayerLeakMapsImpl(
     if (!(await verifyPlayerAccess(supabase, user.id, playerId))) {
       return { success: false, error: 'Unauthorized' };
     }
-    const [roundIds, teamGender] = await Promise.all([
-      completedRoundIds(supabase, [playerId]),
+    const [rounds, teamGender] = await Promise.all([
+      completedRoundSet(supabase, [playerId]),
       resolvePlayerTeamGender(supabase, playerId),
     ]);
+    const roundIds = rounds.ids;
     const [putting, approach] = await Promise.all([
       buildPuttBuckets(supabase, roundIds, teamGender),
       buildApproachBuckets(supabase, roundIds, teamGender),
     ]);
     return {
       success: true,
-      data: { playerId, putting, approach, roundsIncluded: roundIds.length },
+      data: {
+        playerId,
+        putting,
+        approach,
+        roundsIncluded: roundIds.length,
+        windowFrom: rounds.windowFrom,
+        windowTo: rounds.windowTo,
+        // Same routing loadPgaRefs applied to the references above.
+        tour: teamGender === 'womens' ? 'lpga' : 'pga',
+      },
     };
   } catch (error) {
     await logServerError(`[LeakMaps] getPlayerLeakMaps: ${describeError(error)}`, {

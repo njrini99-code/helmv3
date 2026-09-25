@@ -731,6 +731,7 @@ features:
       services:
         - src/lib/cache/golf-stats-calculator.ts
         - src/lib/coachhelm/v2/stats/**
+        - src/lib/golf/benchmarks/**
       db:
         - supabase/migrations/*stats*.sql
         - supabase/migrations/*strokes_gained*.sql

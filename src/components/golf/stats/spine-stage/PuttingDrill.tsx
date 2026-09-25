@@ -287,9 +287,6 @@ export interface PuttingDrillProps {
    *  `buildCategoryInsights(...).putting` for the "What CoachHelm sees"
    *  strip. Optional — defaults to `[]` (an honest empty strip). */
   patterns?: ReadonlyArray<CategorizablePatternWithImpact>;
-  /** Oldest and newest completed-round dates, for the benchmark sheet's
-   *  date window (DASH-12). Omit when the round list is unavailable. */
-  roundWindow?: { from: string; to: string } | null;
 }
 
 export function PuttingDrill({
@@ -302,7 +299,6 @@ export function PuttingDrill({
   retryingLeak = false,
   trends = null,
   patterns = [],
-  roundWindow = null,
 }: PuttingDrillProps) {
   const { home } = useStage();
   const s = detailedStats;
@@ -609,17 +605,15 @@ export function PuttingDrill({
             <PuttingBenchmarkSheet
               buckets={leakMaps.putting}
               roundsIncluded={leakMaps.roundsIncluded}
-              tour={
-                standingByMetric.size === 0
-                  ? null
-                  : Array.from(standingByMetric.values()).some((row) => row.is_womens)
-                    ? 'lpga'
-                    : 'pga'
+              tour={leakMaps.tour ?? null}
+              window={
+                leakMaps.windowFrom && leakMaps.windowTo
+                  ? { from: leakMaps.windowFrom, to: leakMaps.windowTo }
+                  : null
               }
-              window={roundWindow}
             />
           ) : null}
-          {leakError ? <LeakLoadError onRetry={() => onRetryLeak?.()} retrying={retryingLeak} /> : <LeakMap title="Putt make %" overline="Putting" subtitle="Make rate by distance vs PGA Tour" takeaway="Bands below the dashed Tour line are where putts are leaking." direction="higher_better" unit="percent" data={leakMaps ? toBuckets(leakMaps.putting) : []} />}
+          {leakError ? <LeakLoadError onRetry={() => onRetryLeak?.()} retrying={retryingLeak} /> : <LeakMap title="Putt make %" overline="Putting" subtitle={`Make rate by distance vs ${leakMaps?.tour === 'lpga' ? 'LPGA' : 'PGA Tour'}`} takeaway="Bands below the dashed Tour line are where putts are leaking." direction="higher_better" unit="percent" data={leakMaps ? toBuckets(leakMaps.putting) : []} />}
         </div>
       </div>
     </DrillPanel>

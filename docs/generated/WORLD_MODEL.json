@@ -1820,6 +1820,11 @@
         "category": "services"
       },
       {
+        "id": "services:src/lib/golf/benchmarks/**",
+        "pattern": "src/lib/golf/benchmarks/**",
+        "category": "services"
+      },
+      {
         "id": "services:src/lib/golf/client-resource-cache.ts",
         "pattern": "src/lib/golf/client-resource-cache.ts",
         "category": "services"
@@ -18219,6 +18224,11 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/genome/orchestrator.ts",
+          "anchor": "src/lib/golf/round-countable"
+        },
+        {
+          "kind": "import_graph",
           "path": "src/lib/coachhelm/v3/llm/round-review-narrative.ts",
           "anchor": "src/lib/golf/stat-formulas"
         },
@@ -18670,6 +18680,11 @@
           "kind": "import_graph",
           "path": "src/app/golf/actions/dashboard-data.ts",
           "anchor": "src/lib/golf/round-countable"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/dashboard-data.ts",
+          "anchor": "src/lib/golf/per-player-sparkline"
         },
         {
           "kind": "import_graph",
@@ -20492,6 +20507,11 @@
           "kind": "import_graph",
           "path": "src/app/golf/actions/stats-leak-maps.ts",
           "anchor": "src/lib/coachhelm/v3/standing/loader"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/golf/benchmarks/__tests__/putting.test.ts",
+          "anchor": "src/lib/coachhelm/v3/counterfactual/cohort-baselines"
         }
       ]
     },
@@ -20576,6 +20596,18 @@
           "kind": "registry_glob",
           "path": "memory/registry.yml",
           "pattern": "src/lib/coachhelm/v2/stats/**"
+        }
+      ]
+    },
+    {
+      "source": "stats_analytics",
+      "target": "services:src/lib/golf/benchmarks/**",
+      "kind": "feature_service",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/lib/golf/benchmarks/**"
         }
       ]
     },

@@ -26,8 +26,6 @@ import type { GolfStats } from '@/lib/utils/golf-stats-calculator-shots';
 import type { TrendAnalysisResponse } from '@/app/golf/actions/stats-data-types';
 import type { CategorizablePatternWithImpact } from '../buildStatsViewModel';
 
-import type { PlayerStandingRow } from '@/app/golf/actions/stats-leak-maps-types';
-
 type PuttingDrillProps = ComponentProps<typeof PuttingDrill>;
 
 function renderPutting(props: Partial<PuttingDrillProps> = {}) {
@@ -232,10 +230,19 @@ describe('PuttingDrill', () => {
   });
 
   it('offers the putting benchmark sheet only when the leak map loaded rounds (DASH-12)', () => {
-    const leakMaps = { playerId: 'p1', putting: [], approach: [], roundsIncluded: 3 };
-    const womens = new Map([['putts_made_3_5ft_pct', { is_womens: true } as PlayerStandingRow]]);
-    const { unmount } = renderPutting({ leakMaps, standingByMetric: womens });
+    const leakMaps = {
+      playerId: 'p1',
+      putting: [],
+      approach: [],
+      roundsIncluded: 3,
+      windowFrom: '2026-01-05',
+      windowTo: '2026-09-20',
+      tour: 'lpga' as const,
+    };
+    const { unmount } = renderPutting({ leakMaps });
     expect(screen.getByRole('button', { name: 'Compare with LPGA and D1' })).toBeInTheDocument();
+    // The LeakMap names the tour the server routed the references to.
+    expect(screen.getByText('Make rate by distance vs LPGA')).toBeInTheDocument();
     unmount();
 
     renderPutting({ leakMaps, leakError: true });
