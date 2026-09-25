@@ -271,4 +271,16 @@ describe('ScramblingGenerator — attempt rate over every countable round', () =
     expect(await new ScramblingGenerator(PLAYER_ID, 'sand').aggregate()).toBeNull();
     expect(mockLoadSandShots).not.toHaveBeenCalled();
   });
+
+  it('ships a coach-voice copy with no second person for every failure mode', () => {
+    const g = new ScramblingGenerator('p1', 'sand');
+    for (const failure_mode of ['lag', 'escape', 'mixed'] as const) {
+      const c = g.composeContent(makeAgg({ attempts: 20, failure_mode }));
+      expect(c.coach, failure_mode).toBeDefined();
+      expect(c.coach!.content, failure_mode).not.toMatch(/\byou(r|'re)?\b/i);
+      expect(c.coach!.title, failure_mode).not.toMatch(/\byou(r|'re)?\b/i);
+      // Same numbers as the player copy: only the voice changes.
+      for (const n of c.content.match(/\d+(\.\d+)?%?/g) ?? []) expect(c.coach!.content, failure_mode).toContain(n);
+    }
+  });
 });

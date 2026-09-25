@@ -121,6 +121,12 @@ export interface ComposedContent {
    * trustworthy (`resolveInsightFraming` in `root-cause.ts`).
    */
   framing?: 'leak' | 'strength' | 'neutral';
+  /**
+   * The same title/content for a coach, in neutral third person ("the
+   * player", "they"). Stored as `evidence.coach_copy`; coach readers show it
+   * instead of the second-person copy. Omitted → coaches see `title`/`content`.
+   */
+  coach?: { title: string; content: string };
 }
 
 /** Convenience re-exports for generator authors. */

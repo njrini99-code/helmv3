@@ -34,6 +34,7 @@ import { acknowledgeInsight, dismissInsight } from './intelligence-dashboard';
 import { markPatternAddressed, dismissPattern } from './pattern-management';
 import { describeError } from '@/lib/utils/describe-error';
 import { getUserResilient } from '@/lib/auth/resilient-get-user';
+import { coachCopyOf } from '@/lib/coachhelm/v3/insights/coach-copy';
 
 // ============================================================================
 // AUTH
@@ -199,8 +200,9 @@ async function getSignalGroupsImpl(
         // always present and is the de facto category for those rows.
         category: row.category || row.insight_type || 'general',
         severity: severityFromInsightPriority(row.priority),
-        title: row.title || 'Untitled insight',
-        claim: row.content || row.title || '',
+        // Coach surface: the coach-voice copy when the generator stored one.
+        title: coachCopyOf(row.evidence)?.title || row.title || 'Untitled insight',
+        claim: coachCopyOf(row.evidence)?.content || row.content || row.title || '',
         ageDays: ageDaysFromCreatedAt(row.created_at),
         status: row.status || 'active',
         // From `evidence`, which is where the generators actually write it.

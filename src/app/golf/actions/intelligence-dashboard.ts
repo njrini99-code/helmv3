@@ -14,6 +14,7 @@ import { withAdminObserved } from '@/lib/admin/observed-action';
 import { recordInsightAction } from '@/lib/coachhelm/v3/effectiveness/event-ledger';
 import { compareBySeverity } from '@/lib/coachhelm/v3/ranking/score';
 import { describeError } from '@/lib/utils/describe-error';
+import { coachCopyOf } from '@/lib/coachhelm/v3/insights/coach-copy';
 
 // ============================================================================
 // TYPES
@@ -278,6 +279,7 @@ async function getTeamInsightsSummaryImpl(
       dismissed,
       dismissed_at,
       metadata,
+      coach_copy:evidence->coach_copy,
       created_at,
       updated_at,
       player:golf_players(id, first_name, last_name)
@@ -297,6 +299,7 @@ async function getTeamInsightsSummaryImpl(
       dismissed: boolean | null;
       dismissed_at: string | null;
       metadata: unknown;
+      coach_copy: unknown;
       created_at: string | null;
       updated_at: string | null;
       player: { id: string; first_name: string; last_name: string } | null;
@@ -310,8 +313,9 @@ async function getTeamInsightsSummaryImpl(
         teamId: record.team_id || undefined,
         coachId: record.coach_id || undefined,
         insightType: record.insight_type || 'performance',
-        headline: record.title || '',
-        body: record.content || '',
+        // Coach dashboard: the coach-voice copy when the generator stored one.
+        headline: coachCopyOf({ coach_copy: record.coach_copy })?.title || record.title || '',
+        body: coachCopyOf({ coach_copy: record.coach_copy })?.content || record.content || '',
         recommendation: (metadata.recommendation as string) || undefined,
         confidence: (metadata.confidence as number) || 0.7,
         priority: (record.priority as DashboardInsight['priority']) || 'medium',

@@ -44,7 +44,7 @@ class ApproachLikeGenerator extends BaseGenerator<Agg> {
   readonly minSampleN = 5;
   protected override readonly requiresStanding = false;
 
-  constructor(private readonly opts: { framing?: ComposedContent['framing']; value?: number; diagnosis?: Diagnosis } = {}) {
+  constructor(private readonly opts: { framing?: ComposedContent['framing']; value?: number; diagnosis?: Diagnosis; coach?: ComposedContent['coach'] } = {}) {
     super('player-1');
   }
 
@@ -59,6 +59,7 @@ class ApproachLikeGenerator extends BaseGenerator<Agg> {
       signature: 'approach_miss:50_125ft',
       priority: 'low',
       ...(this.opts.framing ? { framing: this.opts.framing } : {}),
+      ...(this.opts.coach ? { coach: this.opts.coach } : {}),
       evidence: {
         metric: 'approach_proximity_50_125ft',
         metric_label: 'Greens hit from 50-125 yds',
@@ -98,6 +99,20 @@ beforeEach(() => {
     holes: establishedRosterComplete.holes,
     scope: establishedRosterComplete.scope,
     windowLabel: '2026-05-01 to 2026-07-31',
+  });
+});
+
+describe('BaseGenerator.run() — coach voice', () => {
+  it('stores the coach copy in evidence and leaves title/content in the player voice', async () => {
+    await new ApproachLikeGenerator({ coach: { title: 'Coach title', content: 'The player misses short.' } }).run();
+    expect(written().title).toBe('Greens hit from 50-125 yds');
+    expect(written().content).toBe('content');
+    expect(written().evidence.coach_copy).toEqual({ title: 'Coach title', content: 'The player misses short.' });
+  });
+
+  it('writes no coach_copy key when the generator has none', async () => {
+    await new ApproachLikeGenerator().run();
+    expect('coach_copy' in written().evidence).toBe(false);
   });
 });
 

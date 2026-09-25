@@ -911,6 +911,8 @@ export abstract class BaseGenerator<A extends GeneratorAggregate = GeneratorAggr
         ...composed.evidence,
         confidence_factors: confidenceFactors,
         confidence: calcConfidence({ confidence_factors: confidenceFactors }),
+        // Coach voice rides in evidence; title/content stay the player's.
+        ...(composed.coach ? { coach_copy: composed.coach } : {}),
       };
 
       // A generator may pin priority:'low' for a descriptive standing row, but

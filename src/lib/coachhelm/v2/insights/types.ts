@@ -206,6 +206,17 @@ export interface InsightEvidence {
   // lifetime-window generator's own metric recomputed over the last 90 days,
   // checked against this row's comparison value. Optional + additive.
   recheck?: InsightRecheck;
+
+  // Coach voice (2026-09-25, `v3/insights/coach-copy.ts`): the generator's
+  // title/content retold for a coach, in neutral third person ("the player",
+  // "they"). `title`/`content` stay in the player's voice (player feed, push);
+  // coach readers prefer this copy and fall back to them. Optional + additive.
+  coach_copy?: InsightCoachCopy;
+}
+
+export interface InsightCoachCopy {
+  title: string;
+  content: string;
 }
 
 /**

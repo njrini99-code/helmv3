@@ -423,6 +423,14 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
   read, the plan, trends, tracking (focus areas + predictions) and the
   trajectory are closed disclosures. "Message player" is the one primary
   action; the stats-cockpit link is secondary.
+- Coach voice (2026-09-25, `v3/insights/coach-copy.ts`): a generator may
+  return `coach: { title, content }` in neutral third person ("the player",
+  "they"); `BaseGenerator` stores it as `evidence.coach_copy`. Stored
+  `title`/`content` stay in the player's voice (player feed, push). Coach
+  readers swap it in: `getInsightsForCoachWithMeta` (Scouting tab, coach
+  drill), `getTopInsightsForPlayers` (team stats), `getSignalGroups`, and the
+  team dashboard insight read. Player readers never do. Rows without coach
+  copy (older rows, unconverted generators) keep their stored text.
 - Insight ownership on write (2026-09-25, `v2/insights/upsert.ts`): a team
   or coach-staff lookup that errors past its retry throws
   `InsightOwnershipLookupError` (transient code kept, so the analysis run
