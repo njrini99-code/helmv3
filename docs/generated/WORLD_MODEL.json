@@ -12895,6 +12895,11 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/app/golf/actions/intelligence-dashboard.ts",
+          "anchor": "src/lib/coachhelm/v3/insights/coach-copy"
+        },
+        {
+          "kind": "import_graph",
           "path": "src/app/golf/actions/signal-groups.ts",
           "anchor": "src/lib/coachhelm/v3/insight-visibility"
         },
@@ -12902,6 +12907,11 @@
           "kind": "import_graph",
           "path": "src/app/golf/actions/signal-groups.ts",
           "anchor": "src/lib/coachhelm/v3/insights/team-synthesis"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/signal-groups.ts",
+          "anchor": "src/lib/coachhelm/v3/insights/coach-copy"
         },
         {
           "kind": "import_graph",
@@ -14064,6 +14074,11 @@
           "kind": "import_graph",
           "path": "src/app/golf/actions/insight-delivery.ts",
           "anchor": "src/lib/coachhelm/v3/effectiveness/event-ledger"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/insight-delivery.ts",
+          "anchor": "src/lib/coachhelm/v3/insights/coach-copy"
         },
         {
           "kind": "import_graph",
@@ -18001,6 +18016,11 @@
         {
           "kind": "import_graph",
           "path": "src/lib/coachhelm/v3/generators/putt-distance.ts",
+          "anchor": "src/lib/coachhelm/v2/insights/types"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/insights/coach-copy.ts",
           "anchor": "src/lib/coachhelm/v2/insights/types"
         },
         {
