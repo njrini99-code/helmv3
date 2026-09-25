@@ -122,3 +122,25 @@ describe('C7 par-normalized opening tax', () => {
     expect(c.content).toContain('60%');
   });
 });
+
+describe('WarmupHoleGenerator — coach voice', () => {
+  const SECOND_PERSON = /\byou(r|'re|'ll|'ve)?\b/i;
+  const cases: Array<[string, ReturnType<typeof makeAgg>]> = [
+    ['harder, no cause', makeAgg({ playerValue: 0.35 })],
+    ['easier', makeAgg({ playerValue: -0.20, hole1_avg: -0.10, rest_avg: 0.10 })],
+    ['putting cause', makeAgg({ playerValue: 0.4, cause_putt_pct: 60, cause_tee_pct: 25, cause_penalty_pct: 15 })],
+    ['tee cause', makeAgg({ playerValue: 0.4, cause_putt_pct: 10, cause_tee_pct: 70, cause_penalty_pct: 20 })],
+    ['penalty cause, even rest', makeAgg({ playerValue: 0.4, rest_avg: 0, cause_penalty_pct: 55, cause_tee_pct: 30 })],
+  ];
+
+  it('ships a coach-voice copy with no second person and the same numbers for every branch', () => {
+    for (const [name, agg] of cases) {
+      const c = new WarmupHoleGenerator(PLAYER_ID).composeContent(agg);
+      expect(c.coach, name).toBeDefined();
+      expect(c.coach!.title, name).not.toMatch(SECOND_PERSON);
+      expect(c.coach!.content, name).not.toMatch(SECOND_PERSON);
+      // Same numbers as the player copy: only the voice changes.
+      for (const n of c.content.match(/\d+(\.\d+)?%?/g) ?? []) expect(c.coach!.content, name).toContain(n);
+    }
+  });
+});
