@@ -228,6 +228,17 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
   Solid). A change to those evidence fields' shape or meaning must update
   `build-root-map.ts` and its tests. Details: `player-coachhelm-development.md`
   and `coach-intelligence-triage.md`.
+- Root map area SG (2026-09-25) is averaged by `loadPlayersAreaSg` over
+  COUNTABLE completed rounds (`isCountableRound`), per 18 holes (a 9-hole
+  round's SG is doubled), from `golf_rounds.strokes_gained_*`. It does not
+  read `golf_player_stats_cache.sg_*_per_round`. That cache's writer, the SQL
+  function `update_player_stats_strokes_gained(uuid)` (called from
+  `src/lib/cache/golf-stats-calculator.ts`), still averages every completed
+  round, broken ones included. Fixing it needs a migration (open follow-up).
+- Putting counterfactuals are sized on the player's own band attempts per
+  round (`attempts_used`), and a slope-penalty row says "sloped", not
+  "downhill", when uphill is as weak. Both rules are in the evidence contract
+  doc.
 - Coach views need fast triage: new, acknowledged, dismissed, resolved, and priority states must be visible.
 - Player views need clear actionability: what changed, why it matters, and what to do next.
 - Loading states should use skeletons that match final layout.

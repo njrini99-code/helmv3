@@ -13911,6 +13911,16 @@
           "kind": "import_graph",
           "path": "src/app/golf/actions/v3/team-practice-rx.ts",
           "anchor": "src/lib/golf/resolve-team"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/root-map/area-trends.ts",
+          "anchor": "src/lib/golf/round-countable"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/root-map/loaders.ts",
+          "anchor": "src/lib/golf/round-countable"
         }
       ]
     },

@@ -95,8 +95,9 @@ Player opens round review
   `?view=` renders `RootToday` when the page could build a model (falls
   back to the older `PlayerHomeBento`, still in the tree, when it could
   not). Layout: a headline built from data → the strokes-weighted root map
-  (gains above the Tour line from stats-cache SG; losses below in three
-  rows: Where = area SG, What = v3 cause insights sized by the stored
+  (gains above the Tour line from area SG averaged over countable rounds,
+  per 18 holes, by `loadPlayersAreaSg`, not the stats-cache average, which
+  still counts broken rounds; losses below in three rows: Where = area SG, What = v3 cause insights sized by the stored
   `evidence.counterfactual.strokes_saved_per_round`, Why = diagnosis
   styled solid/observed, hatched/likely, dashed/forming (confidence below
   Solid read), gray/unexplained) → the selected branch's chain with ONE
@@ -122,8 +123,17 @@ Player opens round review
   "How it happens" only when `diagnosis.basis.sequence` is stored, a worth
   line only when a stored counterfactual projection exists, and one
   primary action ("Make this my focus", the existing
-  `createFocusAreaFromInsightV2`). The green/slope plot is not built:
-  `putt_details` stores no slope.
+  `createFocusAreaFromInsightV2`). Putting branches also show the green
+  (`GreenPlot`, `root-map/green-view.ts`). It plots recorded 4-6 ft putts
+  from the last 40 countable rounds, using `golf_shots.putt_slope` and
+  `putt_distance_feet`: downhill in the wedge above the hole, uphill below,
+  level to the sides. Made putts are filled dots and misses are rings. Each
+  region states "X of N made", and a region with n < 15 says "thin read". No
+  comparison is written. Putts of 3 ft or less are faint and not counted, and
+  `severe` and unrecorded slopes are left out. The green is omitted below
+  10 downhill or 10 level putts. The angle inside a region is seeded from the
+  shot id, because putt direction is not recorded, and the caption says so.
+  `loadShortPuttSlopes` is the bounded read.
 - Production on 2026-09-25 has no `observed_sequence` diagnoses and no
   approach counterfactuals, so Today shows hatched/forming branches and
   unsized approach chips; `build-root-map.test.ts` pins that case.

@@ -295,6 +295,31 @@ benchmark: `counterfactualComparable` (false → `counterfactual: null`) and
 true`, the same render path the women's gender-anchor omission uses).
 `ApproachMissGenerator` sets both false.
 
+## Counterfactual attempt sizing (`attempts_used`, 2026-09-25)
+
+`evidence.counterfactual.attempts_used` is the player's OWN per-round attempt
+rate the projection was sized on, or null when it fell back to the global
+`stroke_impact_per_unit`. A metric with an `attempt_metric` in
+`v3/counterfactual/lookup-tables.ts` is sized as
+`(gap / 100) × attempts_used × value_per_unit` when the generator's aggregate
+exposes `attempts_per_round` (or `holes_per_round`). `PuttDistanceGenerator`
+now supplies `attempts_per_round = band attempts ÷ rounds_played` from the same
+`golf_player_stats_cache` row as `sample_n` and `detail.rounds_played`, so every
+`putts_made_*` row written after 2026-09-25 carries a non-null `attempts_used`.
+Putt bands use `value_per_unit = 1.0`: one more make is one fewer stroke at any
+distance. Rows written before that still carry `attempts_used: null` and the
+old per-pp sizing until the generator reruns.
+
+## Putt slope penalty copy (2026-09-25)
+
+`PuttSlopeBiasGenerator` (`putt_slope_downhill_penalty_pct`) still tests
+downhill against level within one distance band. It also counts uphill putts in
+that band: when at least 8 are recorded and uphill make % is within 10 points
+of downhill (`UPHILL_SIMILAR_PP`) or below it, the row reads "Sloped putts
+inside <band>". It names uphill and downhill, uses the label "Sloped vs level
+putt make % (distance-controlled)", and stores the three rates in
+`evidence.detail`. A row only says "Downhill" when uphill is measurably better.
+
 ## Root-cause diagnosis (2026-09-24)
 
 `evidence.diagnosis` on a v3 generator row is no longer the fixed
