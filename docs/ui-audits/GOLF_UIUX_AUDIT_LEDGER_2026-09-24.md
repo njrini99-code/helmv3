@@ -272,7 +272,7 @@ Owner decisions (OD-01 to OD-24) and workstreams (W1 to W15) have their own tabl
 |---|---|---|---|---|
 | TYPE-01 | [P2] Four parallel type scales; 9-10px sizes; cap eyebrows at one per screen; sentence-case heads | done: Legacy type classes mapped to the canonical scale on golf | d3d1a5f6e | per transcript |
 | TYPE-02 | [P2] Dynamic Type ignored (px scale; no `font: -apple-system-body` root) | done: Dynamic Type for reading text, capped at XXL (OD-06) | cd4be3a72 | per transcript |
-| TYPE-03 | [P2] ALL-CAPS tracked eyebrow above nearly every block (text-eyebrow ×1065) | partial: Sentence-case eyebrows; eyebrow count ratcheted per file so it can only fall (909e18f93). One-per-screen cap not swept | 909e18f93 | this session |
+| TYPE-03 | [P2] ALL-CAPS tracked eyebrow above nearly every block (text-eyebrow ×1065) | partial: Sentence-case eyebrows; eyebrow count ratcheted per file so it can only fall (909e18f93). One-per-screen cap swept on the 15 densest golf player/coach files, 120 → 1 eyebrows (51e975f87): section titles are now h2/h3/h4 in `font-fw-sans text-body-sm font-semibold text-text-primary`, meta/labels use `text-caption`; the print scouting report keeps its page kicker. Remaining: ~420 uses across ~200 lower-count golf files, including admin CRM (skipped as non player/coach) and `components/golf/calendar/**` (shared with Baseball). Ratchet baseline not yet lowered for the swept files | 909e18f93, 51e975f87 | this session |
 
 ### DS (22)
 
