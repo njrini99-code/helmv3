@@ -58,12 +58,20 @@ import {
 } from '../metrics/sequence-attribution';
 import type { MetricResult } from '../metrics/types';
 import { buildHypotheses, type Hypothesis } from '../reasoning/hypothesis-policy';
+import {
+  isNarrowBand,
+  narrowApproach,
+  narrowParScoring,
+  narrowTee,
+  type Narrowing,
+} from './context-narrowing';
 import { getMetricRenderConfig } from '../standing/metric-config';
 import type {
   Diagnosis,
   DiagnosisBasis,
   DiagnosisDriver,
   DiagnosisHypothesisLabel,
+  DiagnosisNarrowing,
   InsightEvidence,
 } from '@/lib/coachhelm/v2/insights/types';
 
@@ -386,6 +394,11 @@ function holeOccurrences(
         if (s.is_penalty || s.shot_type !== 'approach' || s.intent === 'layup') continue;
         if (bandOf(s) !== target.band) continue;
         const failed = !onGreen(s);
+        // A2's eligibility rule (`metrics/distance-profile.ts`): from 175+ a
+        // par-5 shot that did not find the green is a likely lay-up, not a
+        // missed green. `intent` is never tagged in production, so without
+        // this 49 of one player's 83 "missed greens from 175+" were lay-ups.
+        if (failed && target.band === '175_plus_ft' && hole.par === 5) continue;
         const ev = eventFor(events, s.shot_number);
         let pattern: string | null = null;
         if (failed) {
@@ -742,6 +755,49 @@ export function scopeForEvidence(
 }
 
 // ---------------------------------------------------------------------------
+// 5c. Context narrowing — length → par × length → shape (evidence-gated)
+// ---------------------------------------------------------------------------
+
+/**
+ * The context narrowing for this metric's failing population, or null when
+ * no subject applies (putting keeps its own attempt-sized reading; sand,
+ * penalty and big-number rows are not a length/par/shape question). See
+ * `context-narrowing.ts` for the gates. `holes` must already be scoped.
+ */
+export function narrowingFor(
+  target: SequenceTarget | null,
+  facts: readonly ShotFact[],
+  holes: readonly HoleContext[],
+): Narrowing | null {
+  if (!target) return null;
+  if (target.family === 'approach' && isNarrowBand(target.band)) return narrowApproach(facts, holes, target.band);
+  if (target.family === 'tee') return narrowTee(facts, holes);
+  if (target.family === 'par' && (target.par === 3 || target.par === 4 || target.par === 5)) {
+    return narrowParScoring(facts, holes, target.par);
+  }
+  return null;
+}
+
+export function toDiagnosisNarrowing(n: Narrowing): DiagnosisNarrowing {
+  return {
+    subject: n.subject,
+    path: n.path,
+    stopped_at: n.stoppedAt,
+    steps: n.steps.map((s) => ({ level: s.level, passed: s.passed, label: s.label, statement: s.statement })),
+    sentence: n.sentence,
+    ...(Object.keys(n.excluded).length > 0 ? { excluded: n.excluded } : {}),
+  };
+}
+
+/** True when the narrowing got past its population step (something worth
+ *  putting in the root-cause text, not just the basis). */
+export function narrowingSpeaks(n: DiagnosisNarrowing | Narrowing | null | undefined): boolean {
+  if (!n) return false;
+  const first = n.steps[0];
+  return !!first && first.passed;
+}
+
+// ---------------------------------------------------------------------------
 // 6. Compose the typed Diagnosis
 // ---------------------------------------------------------------------------
 
@@ -820,6 +876,7 @@ function observedDiagnosis(
   metricId: string,
   obs: SequenceObservation,
   ctx: RootCauseContext,
+  narrowing: Narrowing | null,
 ): Omit<Diagnosis, 'confidence_reason'> {
   const top = obs.top!;
   const lost =
@@ -859,13 +916,15 @@ function observedDiagnosis(
     symptom: symptomOf(evidence),
     root_cause:
       `${top.pattern} — ${top.count} of ${obs.failures} ${obs.target.populationLabel} ` +
-      `across ${rounds(top.rounds)} (${ctx.windowLabel})${lost}`,
+      `across ${rounds(top.rounds)} (${ctx.windowLabel})${lost}` +
+      (narrowingSpeaks(narrowing) ? `. ${narrowing!.sentence.replace(/\.$/, '')}` : ''),
     causality_level: 'observed_sequence',
     drivers,
     recommended_action: observedAction(obs.target, top.pattern),
     basis: {
       kind: 'shot_sequence',
-      checked: checkedLines(obs, null),
+      checked: checkedLines(obs, null, narrowing),
+      ...(narrowing ? { narrowing: toDiagnosisNarrowing(narrowing) } : {}),
       sequence: {
         pattern: top.pattern,
         occurrences: top.count,
@@ -878,8 +937,11 @@ function observedDiagnosis(
   };
 }
 
-function checkedLines(obs: SequenceObservation | null, hyp: Hypothesis | null): string[] {
+function checkedLines(obs: SequenceObservation | null, hyp: Hypothesis | null, narrowing: Narrowing | null = null): string[] {
   const lines: string[] = [];
+  if (narrowing) {
+    for (const st of narrowing.steps) lines.push(`${st.level}: ${st.passed ? '' : 'not narrowed — '}${st.statement}`);
+  }
   if (obs) {
     lines.push(`${obs.holesAttributed} of ${obs.holesChecked} holes have complete shot records`);
     lines.push(`${obs.failures} ${obs.target.populationLabel} of ${obs.universe} ${obs.target.universeLabel}, ${rounds(obs.failureRounds)}`);
@@ -897,8 +959,12 @@ function hypothesisDiagnosis(
   hyp: Hypothesis | null,
   ctx: RootCauseContext | null,
   loadFailed: boolean,
+  narrowing: Narrowing | null = null,
 ): Omit<Diagnosis, 'confidence_reason'> {
   const parts: string[] = [];
+  // The narrowing leads: it is the most specific supported reading. It is an
+  // observed concentration, so the row stays `inferred_hypothesis`.
+  if (narrowingSpeaks(narrowing)) parts.push(narrowing!.sentence.replace(/\.$/, ''));
   if (loadFailed) {
     parts.push('Not traced to shot sequences: the shot records could not be read for this run');
   } else if (!obs) {
@@ -932,7 +998,8 @@ function hypothesisDiagnosis(
   const basis: DiagnosisBasis = {
     kind: hyp ? 'hypothesis_policy' : 'aggregate_only',
     hypothesis_label: label,
-    checked: checkedLines(obs, hyp),
+    checked: checkedLines(obs, hyp, narrowing),
+    ...(narrowing ? { narrowing: toDiagnosisNarrowing(narrowing) } : {}),
   };
   return {
     symptom: symptomOf(evidence),
@@ -968,13 +1035,18 @@ export function diagnoseRootCause(input: {
   const metric = input.evidence.metric || input.metricId;
   const target = sequenceTargetFor(metric);
   const obs = target && input.ctx ? observeSequence(target, input.ctx.facts, input.ctx.holes, input.ctx.scope) : null;
+  const narrowing = input.ctx ? narrowingFor(target, input.ctx.facts, input.ctx.holes) : null;
   if (obs && obs.observed && input.observedEnabled !== false && input.ctx) {
-    return { kind: 'diagnosis', diagnosis: observedDiagnosis(input.evidence, input.metricId, obs, input.ctx), observation: obs };
+    return {
+      kind: 'diagnosis',
+      diagnosis: observedDiagnosis(input.evidence, input.metricId, obs, input.ctx, narrowing),
+      observation: obs,
+    };
   }
   const hyp = input.ctx ? relevantHypothesis(target, metric, input.ctx.facts, input.ctx.holes, input.ctx.scope) : null;
   return {
     kind: 'diagnosis',
-    diagnosis: hypothesisDiagnosis(input.evidence, input.metricId, obs, hyp, input.ctx, input.loadFailed === true),
+    diagnosis: hypothesisDiagnosis(input.evidence, input.metricId, obs, hyp, input.ctx, input.loadFailed === true, narrowing),
     observation: obs,
   };
 }

@@ -308,6 +308,26 @@ export interface DiagnosisBasis {
     distinct_rounds: number;
     window: string;
   };
+  /**
+   * Context narrowing (2026-09-25, `v3/engine/context-narrowing.ts`): the
+   * failing population narrowed by length → par × length → miss shape, each
+   * step only when its sample/concentration gate passed. An OBSERVED
+   * concentration with counts, never a cause. Optional + additive.
+   */
+  narrowing?: DiagnosisNarrowing;
+}
+
+export interface DiagnosisNarrowing {
+  subject: 'approach' | 'tee' | 'par_scoring';
+  /** Labels of the steps that passed, e.g. ["175+ yd", "long par 4s", "short-right"]. */
+  path: string[];
+  /** First step that failed its gate; null when every step passed. */
+  stopped_at: 'length' | 'par' | 'shape' | null;
+  steps: Array<{ level: 'length' | 'par' | 'shape'; passed: boolean; label: string | null; statement: string }>;
+  /** The plain sentence (counts stated). */
+  sentence: string;
+  /** Items left out and why (e.g. `{ layup: 49 }`). */
+  excluded?: Record<string, number>;
 }
 
 export interface InsightMovement {

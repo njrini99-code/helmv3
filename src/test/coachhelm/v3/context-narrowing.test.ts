@@ -36,11 +36,19 @@ describe('evaluateSlice', () => {
     expect(c.via).toBe('share');
   });
 
-  it('share boundary: exactly 60% of failures with an equal rate passes', () => {
-    // slice 9/15 (60%), rest 6/10 (60%), share 9/15 = 60%
-    const c = evaluateSlice(k, { attempts: 15, failures: 9 }, { attempts: 25, failures: 15 });
+  it('share boundary: exactly 60% of failures at a higher rate passes', () => {
+    // slice 9/12 (75%), rest 6/13 (46%), share 9/15 = 60%
+    const c = evaluateSlice(k, { attempts: 12, failures: 9 }, { attempts: 25, failures: 15 });
     expect(c.share).toBeCloseTo(0.6);
     expect(c.passed).toBe(true);
+    expect(c.via).toBe('share');
+  });
+
+  it('share path needs a strictly higher rate: 60% share at the SAME rate fails', () => {
+    // slice 9/15 (60%), rest 6/10 (60%) — everything misses alike, so the
+    // share only says where the attempts were.
+    const c = evaluateSlice(k, { attempts: 15, failures: 9 }, { attempts: 25, failures: 15 });
+    expect(c.passed).toBe(false);
   });
 
   it('failure floor: 7 failures never passes, whatever the share', () => {

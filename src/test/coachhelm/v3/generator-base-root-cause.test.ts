@@ -171,8 +171,11 @@ describe('BaseGenerator.run() — root cause', () => {
     }).run();
     const d = written().evidence.diagnosis!;
     expect(d.causality_level).toBe('inferred_hypothesis');
-    // The generator's sharper text survives; the checks are attached.
-    expect(d.root_cause).toBe('generator reading');
+    // The generator's sharper text survives (2026-09-25: led by the context
+    // narrowing when its population gate passes); the checks are attached.
+    expect(d.root_cause.endsWith('generator reading')).toBe(true);
+    expect(d.root_cause).toMatch(/^Observed, not a cause: 13 of 13 approaches from 50–125 yd missed the green/);
+    expect(d.basis?.narrowing?.subject).toBe('approach');
     expect(d.basis?.checked.length).toBeGreaterThan(0);
   });
 });

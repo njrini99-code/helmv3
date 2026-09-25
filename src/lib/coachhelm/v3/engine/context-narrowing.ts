@@ -24,7 +24,7 @@
  *   failures.
  * - slice: >= NARROW_MIN_FAILURES failures in the slice, AND either
  *     (share)  it holds >= NARROW_MIN_SHARE of the population's failures and
- *              fails at least as often as the rest of the population, or
+ *              fails MORE often than the rest of the population, or
  *     (lift)   its failure rate is >= NARROW_MIN_LIFT × the rest's and at
  *              least NARROW_MIN_LIFT_POINTS higher, with the rest holding
  *              >= NARROW_MIN_REST_ATTEMPTS attempts.
@@ -185,7 +185,7 @@ export function evaluateSlice(
   const share = total.failures > 0 ? slice.failures / total.failures : 0;
   let via: SliceCheck['via'] = null;
   if (slice.failures >= NARROW_MIN_FAILURES && restAttempts > 0 && restRate !== null) {
-    if (share >= NARROW_MIN_SHARE && rate >= restRate) via = 'share';
+    if (share >= NARROW_MIN_SHARE && rate > restRate) via = 'share';
     else if (
       restAttempts >= NARROW_MIN_REST_ATTEMPTS &&
       rate >= NARROW_MIN_LIFT * restRate &&

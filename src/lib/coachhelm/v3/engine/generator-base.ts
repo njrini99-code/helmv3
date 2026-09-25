@@ -39,6 +39,7 @@ import { logServerError } from '@/lib/server-error-logger';
 import { isFlagEnabled } from '@/lib/flags/is-enabled';
 import {
   diagnoseRootCause,
+  narrowingSpeaks,
   resolveInsightFraming,
   sequenceTargetFor,
   type RootCauseContext,
@@ -363,9 +364,18 @@ export function mergeDiagnosis(
     for (const d of rootCause.drivers) {
       if (!drivers.some((x) => x.metric === d.metric)) drivers.push(d);
     }
+    // The context narrowing (length → par × length → shape) is the most
+    // specific supported reading; it leads the generator's own sharper text
+    // so an approach row says WHERE the misses concentrate, then what the
+    // record cannot say. Only when it got past its population gate.
+    const narrowing = rootCause.basis?.narrowing;
+    const rootCauseText = narrowingSpeaks(narrowing)
+      ? `${narrowing!.sentence} ${composed.root_cause}`
+      : composed.root_cause;
     return {
       ...base,
       ...composed,
+      root_cause: rootCauseText,
       drivers,
       causality_level: 'inferred_hypothesis',
       ...(rootCause.basis ? { basis: rootCause.basis } : {}),
