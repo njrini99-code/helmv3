@@ -48,7 +48,9 @@ import { FocusAreaCard, type FocusAreaCardData } from './FocusAreaCard';
 // barrel — this file is itself re-exported (via pages/coachhelm/index.ts) from
 // that barrel, so importing the barrel back here created an import cycle,
 // flagged by npm run check:cycles.
-import { InstrumentPanel, InstrumentCluster, Readout } from '@/components/fairway/instrument';
+import { InstrumentPanel } from '@/components/fairway/instrument';
+import { Eyebrow } from '@/components/fairway/controls/eyebrow';
+import { Disclosure } from '@/components/golf/coachhelm/root-map/Disclosure';
 import { GenomeRadar, type GenomeAxis } from '@/components/fairway/charts';
 import { Button, Badge, StatusPill } from '@/components/fairway/controls';
 import {
@@ -358,7 +360,9 @@ export function GenomeDetailView({
       title={playerName}
       description={
         genome
-          ? `${genome.rounds_basis} rounds in the last ${GENOME_WINDOW_DAYS} days · last refreshed ${formatAgo(genome.computed_at)}`
+          ? // The window and freshness lead the summary card below; the
+            // header stays a plain name for the page.
+            'Game genome'
           : 'Genome not computed yet'
       }
       breadcrumbs={[
@@ -371,89 +375,100 @@ export function GenomeDetailView({
       <div className="flex flex-col gap-6">
         {genome ? (
           <>
-            {/* ── THE COCKPIT — radar hero focal, persona rail, micro foot row ── */}
-            <InstrumentCluster
-              ariaLabel={`${playerName} genome instrument cluster`}
-              balance="focal"
-              tertiaryColumns={3}
-              primary={
-                <GenomeHeroInstrument
-                  data={radarData}
-                  liveCount={liveRows.length}
-                  maturityCaption={maturityCaption}
-                  courseProfile={persona?.course_profile}
-                />
-              }
-              secondary={[
+            {/* ── Summary first (owner direction 2026-09-25): the window, the
+                live-dimension count, one takeaway, and the radar. ── */}
+            <section
+              aria-label={`${playerName} genome summary`}
+              data-slot="genome-summary"
+              className="flex flex-col gap-5 rounded-fw-lg border border-border-subtle bg-surface p-5 md:p-6"
+            >
+              <div className="flex flex-col gap-1">
+                <Eyebrow as="p">
+                  {`${genome.rounds_basis} ${genome.rounds_basis === 1 ? 'round' : 'rounds'} in the last ${GENOME_WINDOW_DAYS} days · refreshed ${formatAgo(genome.computed_at)}`}
+                </Eyebrow>
+                <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+                  <p className="font-fw-mono text-display tabular-nums text-text-primary" data-slot="genome-live">
+                    {liveRows.length}
+                    <span className="text-title-2 text-text-tertiary">/{totalDims}</span>
+                  </p>
+                  <p className="text-caption text-text-secondary">{maturityCaption}</p>
+                </div>
+                <p className="text-body text-text-secondary" data-slot="genome-takeaway">
+                  {genomeTakeaway(persona, liveRows.length)}
+                </p>
+              </div>
+              <GenomeHeroInstrument
+                data={radarData}
+                liveCount={liveRows.length}
+                maturityCaption={maturityCaption}
+              />
+            </section>
+
+            {/* ── Every dimension, one row each: live rows carry their score
+                bar; calibrating rows are hatched; untracked rows say so. ── */}
+            <section aria-labelledby="genome-dimensions-heading" className="flex flex-col gap-2">
+              <h2
+                id="genome-dimensions-heading"
+                className="border-b border-text-primary pb-2 font-fw-display text-body-lg font-semibold text-text-primary"
+              >
+                Dimensions
+              </h2>
+              <ul className="flex flex-col divide-y divide-border-subtle">
+                {dimRows.map((d) => (
+                  <DimensionRow key={d.id} dim={d} />
+                ))}
+              </ul>
+            </section>
+
+            <div className="flex flex-col">
+              <Disclosure title="Strengths and watchouts" slot="genome-persona">
                 <PersonaInstrument
-                  key="persona"
                   persona={persona}
                   playerId={playerId}
                   playerName={playerName}
                   coachId={coachId}
                   onCreateFocusArea={handleCreateFocusArea}
                   creatingFocusDim={creatingFocusDim}
-                />,
-              ]}
-              tertiary={[
-                <LiveDimensionsReadout key="live" live={liveRows.length} total={totalDims} />,
-                <RoundsBasisReadout key="rounds" rounds={genome.rounds_basis} />,
-                <RefreshedReadout key="refreshed" computedAt={genome.computed_at} />,
-              ]}
-            />
-
-            {/* ── Dimension grid — inset readout cells; locked = dim "needs rounds" ── */}
-            <InstrumentPanel
-              depth="base"
-              padding="lg"
-              header="Dimensions"
-              as="section"
-              readout={
-                <span className="font-fw-sans text-eyebrow text-text-tertiary">
-                  {maturityCaption}
-                </span>
-              }
-            >
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                {dimRows.map((d) => (
-                  <DimensionCell key={d.id} dim={d} />
-                ))}
-              </div>
-            </InstrumentPanel>
-
-            {/* ── This player's focus areas — outcome capture loop PRESERVED ── */}
-            <InstrumentPanel
-              depth="base"
-              padding="lg"
-              header="Focus areas"
-              as="section"
-              readout={
-                <Button variant="ghost" size="sm" asChild>
-                  <Link href={`/golf/dashboard/intelligence?view=players&player=${playerId}`}>Manage</Link>
-                </Button>
-              }
-            >
-              {displayAreas.length > 0 ? (
-                <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-                  {displayAreas.map((fa, i) => (
-                    <FocusAreaCard
-                      key={fa.id}
-                      focusArea={fa}
-                      // eslint-disable-next-line jsx-a11y/aria-role
-                      role="coach"
-                      index={i}
-                      onRecordOutcome={handleRecordOutcome}
-                    />
-                  ))}
-                </div>
-              ) : (
-                <InsufficientData
-                  compact
-                  title="No active focus areas"
-                  description="Assign a development focus area from the Players tab to close the loop from genome to action."
                 />
-              )}
-            </InstrumentPanel>
+              </Disclosure>
+
+              {/* This player's focus areas — outcome capture loop PRESERVED. */}
+              <Disclosure
+                title="Focus areas"
+                slot="genome-focus-areas"
+                meta={
+                  <span className="shrink-0 font-fw-mono text-caption font-normal tabular-nums text-text-secondary">
+                    {displayAreas.length}
+                  </span>
+                }
+                bodyClassName="flex flex-col gap-4"
+              >
+                {displayAreas.length > 0 ? (
+                  <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+                    {displayAreas.map((fa, i) => (
+                      <FocusAreaCard
+                        key={fa.id}
+                        focusArea={fa}
+                        role="coach"
+                        index={i}
+                        onRecordOutcome={handleRecordOutcome}
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <InsufficientData
+                    compact
+                    title="No active focus areas"
+                    description="Assign a development focus area from the Players tab to close the loop from genome to action."
+                  />
+                )}
+                <div>
+                  <Button variant="ghost" size="sm" asChild className="min-h-11">
+                    <Link href={`/golf/dashboard/intelligence?view=players&player=${playerId}`}>Manage focus areas</Link>
+                  </Button>
+                </div>
+              </Disclosure>
+            </div>
           </>
         ) : (
           /* ── NO-GENOME: real "Compute now" (replaces the dev API instruction) ── */
@@ -490,117 +505,34 @@ function GenomeHeroInstrument({
   data,
   liveCount,
   maturityCaption,
-  courseProfile,
 }: {
   data: GenomeAxis[];
   liveCount: number;
   maturityCaption: string;
-  courseProfile?: string;
 }) {
-  const enough = data.length >= 3;
-  return (
-    <InstrumentPanel
-      depth="raised"
-      tone={enough ? 'accent' : 'neutral'}
-      padding="lg"
-      as="section"
-      className="flex h-full flex-col gap-5"
-    >
-      {enough ? (
-        <GenomeRadar
-          title="Game profile"
-          subtitle={maturityCaption}
-          takeaway={
-            courseProfile && courseProfile.length > 0 ? courseProfile : undefined
-          }
-          data={data}
-          // `data`'s value is normalizeForRadar()'s [0,1] "good-axis" score
-          // rounded to 0-100 (lib/coachhelm/v3/genome/normalize.ts) — a
-          // linear/symmetric mapping per-dimension, never a rank against a
-          // population. Every other GenomeRadar caller (ProfileDrill,
-          // FairwayMyGameProfile) already overrides the shared default of
-          // "Percentile" to "Score" for the same underlying value; this
-          // caller was the one left on the misleading default.
-          seriesName="Score"
-          height={360}
-          className="border-0 bg-transparent p-0 shadow-none backdrop-blur-none"
-        />
-      ) : (
-        <InsufficientData
-          title="Fingerprint still forming"
-          description="A genome needs at least 3 live dimensions to plot a trustworthy radar shape. Locked spokes are excluded — never drawn as a fake 0."
-          unit="live dimensions"
-          current={liveCount}
-          required={3}
-        />
-      )}
-    </InstrumentPanel>
-  );
-}
-
-/* ────────────────────────────────────────────────────────────────────────────
- * TERTIARY MICRO-READOUTS — the cockpit foot row. Each a base inset panel with a
- * single honest Readout (live/awaiting).
- * ─────────────────────────────────────────────────────────────────────────── */
-function LiveDimensionsReadout({ live, total }: { live: number; total: number }) {
-  return (
-    <InstrumentPanel depth="base" padding="md" className="h-full">
-      <Readout
-        value={live}
-        format={{ maximumFractionDigits: 0 }}
-        unit={`of ${total}`}
-        label="Live dimensions"
-        size="md"
-        state={live > 0 ? 'live' : 'awaiting'}
-        samples={live === 0 ? { have: 0, need: 3 } : undefined}
-        awaitingLabel="Awaiting data"
+  // Drawn bare inside the summary card (it is the card's one visual).
+  if (data.length >= 3) {
+    return (
+      <GenomeRadar
+        title="Game profile"
+        subtitle={maturityCaption}
+        data={data}
+        seriesName="Score"
+        height={320}
+        className="border-0 bg-transparent p-0 shadow-none backdrop-blur-none"
       />
-    </InstrumentPanel>
-  );
-}
-
-function RoundsBasisReadout({ rounds }: { rounds: number }) {
+    );
+  }
   return (
-    <InstrumentPanel depth="base" padding="md" className="h-full">
-      <Readout
-        value={rounds}
-        format={{ maximumFractionDigits: 0 }}
-        unit="rounds"
-        label="Computed on"
-        size="md"
-        state={rounds > 0 ? 'live' : 'awaiting'}
-        samples={rounds === 0 ? { have: 0, need: 1 } : undefined}
-        awaitingLabel="No rounds yet"
-      />
-      {/* The window is load-bearing, not a footnote: `rounds_basis` counts only
-          rounds inside it, so without this line "Computed on 6 rounds" reads as
-          a career total and contradicts the Game Fingerprint's "16 rounds" for
-          the same player. */}
-      <span className="mt-1 block font-fw-sans text-caption text-text-tertiary">
-        {`Last ${GENOME_WINDOW_DAYS} days`}
-      </span>
-    </InstrumentPanel>
+    <InsufficientData
+      title="Fingerprint still forming"
+      description="A genome needs at least 3 live dimensions to plot a trustworthy radar shape. Locked spokes are excluded — never drawn as a fake 0."
+      unit="live dimensions"
+      current={liveCount}
+      required={3}
+    />
   );
 }
-
-function RefreshedReadout({ computedAt }: { computedAt: string | null }) {
-  return (
-    <InstrumentPanel depth="base" padding="md" className="flex h-full flex-col justify-center">
-      <span className="font-fw-display text-eyebrow uppercase tracking-[0.14em] text-text-tertiary">
-        Last refreshed
-      </span>
-      <span className="mt-1 font-fw-mono text-h3 font-semibold tabular-nums text-text-primary">
-        {formatAgo(computedAt)}
-      </span>
-    </InstrumentPanel>
-  );
-}
-
-/* ────────────────────────────────────────────────────────────────────────────
- * PERSONA INSTRUMENT — the secondary rail. Strengths as Readout-style rows +
- * watchouts that each link to a Focus Area (close the loop). On a base glass
- * panel with a recessed inset course-profile sub-readout.
- * ─────────────────────────────────────────────────────────────────────────── */
 function PersonaInstrument({
   persona,
   playerId,
@@ -792,70 +724,74 @@ function PersonaRow({ entry, tone }: { entry: PersonaEntry; tone: 'accent' }) {
  * a DIM "needs more rounds" calibration tile (never a fake 0).
  * ─────────────────────────────────────────────────────────────────────────── */
 
-function DimensionCell({ dim }: { dim: DimRow }) {
-  // Permanent stub (e.g. weather) — visually distinct from "needs more
-  // rounds": more muted, a dash/off icon instead of a lock (a lock implies
-  // it opens later), and an honest "Not tracked" label so a coach never
-  // waits on rounds to unlock a spoke that has no data source at all.
-  if (dim.locked && dim.notTracked) {
-    return (
-      <InstrumentPanel
-        depth="inset"
-        padding="sm"
-        className={cn('flex flex-col gap-1 opacity-45')}
-        aria-label={`${dim.label}: not tracked`}
-      >
-        <div className="flex items-center justify-between gap-2">
-          <span className="font-fw-sans text-eyebrow uppercase tracking-wide text-text-tertiary">
-            {dim.label}
-          </span>
-          <IconMinus size={12} className="text-text-tertiary" />
-        </div>
-        <Readout
-          size="md"
-          state="awaiting"
-          awaitingLabel={dim.qualitative ?? 'Not tracked'}
-        />
-      </InstrumentPanel>
-    );
-  }
+/** One plain line for the summary: the course profile when there is one,
+ *  else the lead strength and watchout. Never claims more than the persona
+ *  holds. */
+function genomeTakeaway(persona: Persona | null, live: number): string {
+  if (live < 3) return 'The profile is still forming: it needs at least 3 live dimensions to draw a shape.';
+  if (persona?.course_profile) return persona.course_profile;
+  const strength = persona?.strengths[0];
+  const watch = persona?.watchouts[0];
+  if (strength && watch) return `Leans on ${strength.label.toLowerCase()}; watch ${watch.label.toLowerCase()}.`;
+  if (strength) return `Leans on ${strength.label.toLowerCase()}.`;
+  if (watch) return `Watch ${watch.label.toLowerCase()}.`;
+  return 'No standout strengths or watchouts yet.';
+}
 
-  if (dim.locked) {
-    return (
-      <InstrumentPanel
-        depth="inset"
-        padding="sm"
-        className={cn('flex flex-col gap-1 opacity-70')}
-        aria-label={`${dim.label}: needs more rounds`}
-      >
-        <div className="flex items-center justify-between gap-2">
-          <span className="font-fw-sans text-eyebrow uppercase tracking-wide text-text-tertiary">
-            {dim.label}
-          </span>
-          <IconLock size={12} className="text-text-tertiary" />
-        </div>
-        <Readout
-          size="md"
-          state="awaiting"
-          awaitingLabel="Needs more rounds"
-        />
-      </InstrumentPanel>
-    );
-  }
+/** Thin evidence reads hatched, never as a solid (fake) bar. */
+const HATCH = 'repeating-linear-gradient(135deg, var(--fw-color-border-subtle) 0 1px, transparent 1px 6px)';
 
+function DimensionRow({ dim }: { dim: DimRow }) {
+  const state = !dim.locked ? 'live' : dim.notTracked ? 'untracked' : 'calibrating';
   return (
-    <InstrumentPanel depth="inset" padding="sm" className="flex flex-col gap-2">
-      <span className="font-fw-sans text-eyebrow uppercase tracking-wide text-text-tertiary">
-        {dim.label}
+    <li
+      className={cn('flex min-h-11 flex-col justify-center gap-1.5 py-2.5', state === 'untracked' && 'opacity-60')}
+      aria-label={
+        state === 'untracked'
+          ? `${dim.label}: not tracked`
+          : state === 'calibrating'
+            ? `${dim.label}: needs more rounds`
+            : undefined
+      }
+      data-state={state}
+    >
+      <span className="flex items-baseline justify-between gap-3">
+        <span className="min-w-0 truncate text-body-sm font-medium text-text-primary">{dim.label}</span>
+        <span className="flex shrink-0 items-center gap-2">
+          {state === 'live' ? (
+            <>
+              {dim.qualitative ? (
+                <StatusPill tone="neutral" size="sm">
+                  {dim.qualitative}
+                </StatusPill>
+              ) : null}
+              <span className="font-fw-mono text-body tabular-nums text-text-primary">{dim.score}</span>
+            </>
+          ) : state === 'untracked' ? (
+            <span className="flex items-center gap-1 text-caption text-text-tertiary">
+              <IconMinus size={12} aria-hidden />
+              {dim.qualitative ?? 'Not tracked'}
+            </span>
+          ) : (
+            <span className="flex items-center gap-1 text-caption text-text-tertiary">
+              <IconLock size={12} aria-hidden />
+              Needs more rounds
+            </span>
+          )}
+        </span>
       </span>
-      <div className="flex items-baseline justify-between gap-2">
-        <Readout value={dim.score ?? 0} format={{ maximumFractionDigits: 0 }} size="md" />
-        {dim.qualitative ? (
-          <StatusPill tone="neutral" size="sm">
-            {dim.qualitative}
-          </StatusPill>
+      <span
+        aria-hidden
+        className="block h-2 w-full overflow-hidden rounded-full bg-surface-sunken"
+        style={state === 'calibrating' ? { backgroundImage: HATCH } : undefined}
+      >
+        {state === 'live' ? (
+          <span
+            className="block h-full rounded-full bg-accent-500 motion-safe:transition-[width] motion-safe:duration-500"
+            style={{ width: `${Math.max(2, dim.score ?? 0)}%` }}
+          />
         ) : null}
-      </div>
-    </InstrumentPanel>
+      </span>
+    </li>
   );
 }
