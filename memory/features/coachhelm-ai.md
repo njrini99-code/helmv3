@@ -109,6 +109,16 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
   `hole_number`); derived tee distances carry `distance_method:
   'derived_progress'`. The metric identity table lives in
   `docs/architecture/coachhelm-evidence-contract.md`.
+- Root-cause diagnosis (2026-09-24). `evidence.diagnosis` is resolved by
+  `v3/engine/root-cause.ts` in `BaseGenerator.run()`:
+  - strength and neutral rows ship no diagnosis;
+  - a leak with a repeated recorded shot path (A4 rollup floors, and gate
+    `coachhelm_a4_sequence_attribution_surface`) ships `observed_sequence`
+    with its count and denominator;
+  - every other leak ships an `inferred_hypothesis` that names the checks
+    that fell short, plus the A5 hypothesis label where one applies.
+  `Diagnosis.basis` is additive and optional. The contract is in the
+  evidence contract doc under "Root-cause diagnosis".
 - Standing Tour basis (2026-09-22, Package 7B / addendum A2): the three
   `approach_proximity_*` standing rows carry a `basis` column
   (`'on_green' | 'all_shot' | null`) written by

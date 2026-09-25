@@ -36,6 +36,14 @@ import { isFloorExemptMetric } from '@/lib/coachhelm/v3/ranking/score';
 import { METRIC_RENDER_CONFIG } from '@/lib/coachhelm/v3/standing/metric-config';
 import { calcConfidence, type InsightConfidenceFactors } from '@/lib/coachhelm/v2/insights/types';
 import { logServerError } from '@/lib/server-error-logger';
+import { isFlagEnabled } from '@/lib/flags/is-enabled';
+import {
+  diagnoseRootCause,
+  resolveInsightFraming,
+  sequenceTargetFor,
+  type RootCauseContext,
+} from './root-cause';
+import { loadRootCauseContext } from './root-cause-context';
 
 import type { Diagnosis, DiagnosisDriver, InsightEvidence } from '@/lib/coachhelm/v2/insights/types';
 
@@ -266,20 +274,16 @@ export function buildConfidenceReason(
 }
 
 /**
- * P0-05: synthesize the typed {@link Diagnosis} for a single-metric V3 insight
- * from data the base class already has. Nothing is invented: the symptom states
- * the measured value vs its benchmark, the driver cites that same metric/sample,
- * and the confidence reason is derived from the confidence factors.
- *
- * `causality_level` is always `inferred_hypothesis` here — a single-metric
- * generator reasons over an aggregated statistic, it never replays a measured
- * shot sequence (that level is reserved for composites that prove the sequence).
- * So the diagnosis must render as a coach hypothesis, never as observed fact.
- *
- * The root_cause + recommended_action default to honest, non-fabricated text
- * derived from the metric label; a generator that has a sharper, data-grounded
- * driver sentence (e.g. approach-miss's dominant-axis driver) should pass it via
- * `composed.evidence.diagnosis` and the base preserves it (see run()).
+ * P0-05 baseline: the symptom + metric driver + confidence reason for a
+ * single-metric V3 insight, from data the base class already has. Kept as the
+ * shape `mergeDiagnosis` fills in; it is NO LONGER what ships as the root
+ * cause. Since 2026-09-24 the root cause comes from `root-cause.ts`
+ * (`diagnoseRootCause`): no diagnosis for a strength/neutral row, an
+ * `observed_sequence` path with its count/denominator when the player's
+ * recorded shots show one, else an `inferred_hypothesis` that states what was
+ * checked (and the A5 hypothesis label where a family applies). The old
+ * "{metric} is off its benchmark — likely cause inferred from the aggregate"
+ * sentence (877 of 877 production rows) is gone.
  *
  * Pure + exported for direct unit testing.
  */
@@ -313,13 +317,71 @@ export function buildDiagnosis(
     `vs ${evidence.comparison_label} ${evidence.comparison_value}`;
   return {
     symptom,
-    root_cause: `${evidence.metric_label} is off its benchmark — likely cause inferred from the aggregate, not a measured shot sequence`,
+    root_cause: `Not yet traced: ${evidence.metric_label.toLowerCase()} has not been checked against recorded shot sequences`,
     causality_level: 'inferred_hypothesis',
     drivers: [driver],
     recommended_action: `Target ${evidence.metric_label.toLowerCase()} in the next practice block`,
     confidence_reason: buildConfidenceReason(evidence),
   };
 }
+
+/**
+ * Combine the base diagnosis, a generator-composed diagnosis (e.g.
+ * approach-miss's dominant-axis reading) and the root-cause outcome into the
+ * one diagnosis the row ships. Pure + exported for tests.
+ *
+ *  - `rootCause === null` → the row is a strength/neutral reading: no
+ *    diagnosis (returns `undefined`).
+ *  - an `observed_sequence` root cause wins the headline; the generator's
+ *    own drivers are appended (deduped by metric) so nothing it measured is
+ *    lost.
+ *  - otherwise a generator-composed diagnosis keeps its sharper text (it is
+ *    data-grounded), pinned to `inferred_hypothesis`, with the root-cause
+ *    `basis` (what was checked) and drivers attached; without one, the
+ *    root-cause hypothesis ships as-is.
+ *
+ * Only this function may produce `observed_sequence`, and only from a
+ * root-cause outcome that cleared `root-cause.ts`'s floors — a generator can
+ * never claim it. The confidence reason always reflects the row's FINAL
+ * confidence factors.
+ */
+export function mergeDiagnosis(
+  base: Diagnosis,
+  composed: Diagnosis | undefined,
+  rootCause: Omit<Diagnosis, 'confidence_reason'> | null,
+): Diagnosis | undefined {
+  if (!rootCause) return undefined;
+  if (rootCause.causality_level === 'observed_sequence') {
+    const drivers = [...rootCause.drivers];
+    for (const d of composed?.drivers ?? []) {
+      if (!drivers.some((x) => x.metric === d.metric)) drivers.push(d);
+    }
+    return { ...rootCause, drivers, confidence_reason: base.confidence_reason };
+  }
+  if (composed) {
+    const drivers = [...composed.drivers];
+    for (const d of rootCause.drivers) {
+      if (!drivers.some((x) => x.metric === d.metric)) drivers.push(d);
+    }
+    return {
+      ...base,
+      ...composed,
+      drivers,
+      causality_level: 'inferred_hypothesis',
+      ...(rootCause.basis ? { basis: rootCause.basis } : {}),
+      confidence_reason: base.confidence_reason,
+    };
+  }
+  return { ...rootCause, causality_level: 'inferred_hypothesis', confidence_reason: base.confidence_reason };
+}
+
+/**
+ * A10 capability gate for the observed-sequence branch: the A4 sequence
+ * attribution family's coach-visible flag. Off → the same checks still run,
+ * but the diagnosis stays an honest hypothesis listing them.
+ */
+export const OBSERVED_SEQUENCE_FLAG = 'coachhelm_a4_sequence_attribution_surface';
+
 
 export abstract class BaseGenerator<A extends GeneratorAggregate = GeneratorAggregate> {
   // Generator identity — concrete classes override
@@ -518,6 +580,50 @@ export abstract class BaseGenerator<A extends GeneratorAggregate = GeneratorAggr
   }
 
   /**
+   * Compose this row's diagnosis (see `mergeDiagnosis`). Loads shot context
+   * only for a LEAK whose metric a shot sequence (or an A5 family) can speak
+   * to; a load error degrades to the honest "could not be read" hypothesis
+   * and is logged — it never fails the run.
+   */
+  private async diagnose(
+    composed: ComposedContent,
+    evidence: InsightEvidence,
+  ): Promise<Diagnosis | undefined> {
+    const framing = resolveInsightFraming(composed.framing, evidence);
+    const base = buildDiagnosis(this.metricId, evidence);
+    if (framing !== 'leak') return undefined;
+
+    const metric = evidence.metric || this.metricId;
+    let ctx: RootCauseContext | null = null;
+    let loadFailed = false;
+    if (sequenceTargetFor(metric) || metric === 'scoring_par_5') {
+      try {
+        ctx = await loadRootCauseContext(this.playerId, evidence);
+      } catch (err) {
+        loadFailed = true;
+        await logServerError(
+          `${this.name} root-cause shot context load failed for player=${this.playerId}: ${describeError(err)}`,
+          { action: `v3.generator.${this.name}.root_cause`, metadata: { dbError: toDbErrorMetadata(err) } },
+          'warning',
+        );
+      }
+    }
+    const outcome = diagnoseRootCause({
+      metricId: this.metricId,
+      framing,
+      evidence,
+      ctx,
+      loadFailed,
+      observedEnabled: isFlagEnabled(OBSERVED_SEQUENCE_FLAG),
+    });
+    return mergeDiagnosis(
+      base,
+      evidence.diagnosis,
+      outcome.kind === 'diagnosis' ? outcome.diagnosis : null,
+    );
+  }
+
+  /**
    * Full lifecycle entry point. Cron / orchestrator code calls this.
    */
   async run(): Promise<RunResult> {
@@ -678,25 +784,16 @@ export abstract class BaseGenerator<A extends GeneratorAggregate = GeneratorAggr
         evidence.confidence,
       );
 
-      // P0-05: stamp a typed, machine-readable diagnosis on EVERY v3 row so the
-      // root cause is filterable/auditable instead of buried in prose. The base
-      // synthesizes an honest default from the cited metric; a generator that
-      // already composed a sharper, data-grounded diagnosis (its driver+action
-      // sentence promoted to a structure) is preserved verbatim. The confidence
-      // reason is always recomputed from the FINAL confidence factors so it can
-      // never disagree with the value the row ships. Never an observed sequence
-      // — a single-metric verdict is an inferred hypothesis, framed as such.
-      const baseDiagnosis = buildDiagnosis(this.metricId, evidence);
-      const diagnosis: Diagnosis = {
-        ...baseDiagnosis,
-        ...(evidence.diagnosis ?? {}),
-        // Single-metric generators never replay a measured sequence: pin the
-        // honesty level even if a generator forgot to.
-        causality_level: 'inferred_hypothesis',
-        // Always reflect the row's actual confidence factors.
-        confidence_reason: baseDiagnosis.confidence_reason,
-      };
-      evidence = { ...evidence, diagnosis } as typeof composed.evidence;
+      // Root cause (2026-09-24, see `root-cause.ts`). A strength/neutral
+      // reading ships NO diagnosis; a leak gets an observed shot-sequence path
+      // when the recorded shots show one, else an honest hypothesis stating
+      // what was checked. Never the old "off its benchmark" template.
+      const diagnosis = await this.diagnose(composed, evidence);
+      const { diagnosis: _composedDiagnosis, ...evidenceWithoutDiagnosis } = evidence;
+      void _composedDiagnosis;
+      evidence = (
+        diagnosis ? { ...evidenceWithoutDiagnosis, diagnosis } : evidenceWithoutDiagnosis
+      ) as typeof composed.evidence;
 
       const supabase = createAdminClient();
       const result = await upsertInsightV3(supabase, {

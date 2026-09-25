@@ -264,6 +264,50 @@ export interface Diagnosis {
   recommended_action: string;
   /** Plain-language reason for the confidence value (sample/recency/variance). */
   confidence_reason: string;
+  /**
+   * What the root cause rests on (2026-09-24, `v3/engine/root-cause.ts`).
+   * Optional + additive: rows written before it existed (and every non-v3
+   * producer) omit it, and every reader treats absence as "not stated".
+   */
+  basis?: DiagnosisBasis;
+}
+
+/**
+ * A5 controlled-hypothesis label, surfaced on a diagnosis. `corroborated` is
+ * `hypothesis-policy.ts`'s `supported_association` — an association a
+ * supported metric agrees with, never a causal claim.
+ */
+export type DiagnosisHypothesisLabel = 'no_data' | 'candidate' | 'corroborated';
+
+/**
+ * The evidence a {@link Diagnosis} rests on.
+ *
+ * - `shot_sequence`: a repeated recorded shot path (`causality_level:
+ *   'observed_sequence'`), with its count over a named denominator.
+ * - `hypothesis_policy`: not traced to a sequence; an A5 family was
+ *   evaluated and its label is stated.
+ * - `aggregate_only`: not traced, and no A5 family applies — the diagnosis
+ *   says what was checked and why it did not qualify.
+ */
+export interface DiagnosisBasis {
+  kind: 'shot_sequence' | 'hypothesis_policy' | 'aggregate_only';
+  /** Present for the two hypothesis kinds. */
+  hypothesis_label?: DiagnosisHypothesisLabel;
+  /** Plain statements of what was actually checked (coverage, population,
+   *  A5 state) — the drivers the reasoning really looked at. */
+  checked: string[];
+  /** Present iff `kind === 'shot_sequence'`. */
+  sequence?: {
+    /** The shot-by-shot path, e.g. "approach missed short into the rough →
+     *  chip to 10–20 ft → 2 putts". */
+    pattern: string;
+    occurrences: number;
+    /** Size of the failing population the count is quoted against. */
+    of: number;
+    population: string;
+    distinct_rounds: number;
+    window: string;
+  };
 }
 
 export interface InsightMovement {

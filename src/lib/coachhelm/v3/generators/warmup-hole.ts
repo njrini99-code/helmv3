@@ -172,6 +172,9 @@ export class WarmupHoleGenerator extends BaseGenerator<WarmupHoleAggregate> {
       content,
       // Opening-hole gap vs the ~0.1 PGA tax: at/under is fine; a large opener tax escalates.
       priority: agg.playerValue <= 0.1 ? 'low' : agg.playerValue <= 0.4 ? 'medium' : 'high',
+      // Hole 1 easier than the rest → strength; within the ~0.1-stroke Tour
+      // reference → neutral; only a harder opener is a leak to diagnose.
+      framing: agg.playerValue <= 0 ? 'strength' : agg.playerValue <= 0.1 ? 'neutral' : 'leak',
       signature: `warmup_hole:hole_1`,
       evidence: {
         metric: this.metricId,

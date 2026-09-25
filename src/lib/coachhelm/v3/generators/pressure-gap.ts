@@ -251,6 +251,9 @@ export class PressureGapGenerator extends BaseGenerator<PressureGapAggregate> {
       // target, so this Tour anchor becomes the ceiling fallback only). College
       // typical is 2-5 strokes (Research doc §9) — far above Tour 0.5.
       priority: agg.playerValue > 0.5 ? 'high' : agg.playerValue <= 0 ? 'low' : 'medium',
+      // Better in tournaments → strength; a gap at/under the ~0.5-stroke Tour
+      // reference → neutral; only a larger gap is a leak worth diagnosing.
+      framing: agg.playerValue <= 0 ? 'strength' : agg.playerValue <= 0.5 ? 'neutral' : 'leak',
       signature: `pressure_gap:practice_vs_tournament`,
       evidence: {
         metric: this.metricId,

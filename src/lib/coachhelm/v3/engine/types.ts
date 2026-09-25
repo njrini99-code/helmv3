@@ -105,6 +105,14 @@ export interface ComposedContent {
   /** Optional severity, threaded by BaseGenerator into the upsert. Absent →
    *  the DB default 'medium' stands. A generator sets it from its verdict. */
   priority?: InsightPriority;
+  /**
+   * The generator's own verdict framing (2026-09-24). `strength` / `neutral`
+   * rows get NO root-cause diagnosis (there is no problem to diagnose — e.g.
+   * tee-strategy "Driver is performing"); `leak` rows do. Omitted → the base
+   * derives it from `your_value` vs `comparison_value` when the polarity is
+   * trustworthy (`resolveInsightFraming` in `root-cause.ts`).
+   */
+  framing?: 'leak' | 'strength' | 'neutral';
 }
 
 /** Convenience re-exports for generator authors. */

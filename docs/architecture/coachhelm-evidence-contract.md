@@ -275,6 +275,46 @@ benchmark: `counterfactualComparable` (false → `counterfactual: null`) and
 true`, the same render path the women's gender-anchor omission uses).
 `ApproachMissGenerator` sets both false.
 
+## Root-cause diagnosis (2026-09-24)
+
+`evidence.diagnosis` on a v3 generator row is no longer the fixed
+"{metric} is off its benchmark — likely cause inferred" template.
+`BaseGenerator.run()` resolves it through `v3/engine/root-cause.ts` (pure)
+and `v3/engine/root-cause-context.ts` (A1 `loadPlayerContext`, memoized per
+player + window):
+
+- **Framing.** `ComposedContent.framing` (`leak` / `strength` / `neutral`)
+  wins when the generator declares it (tee-strategy, putt-bias,
+  pressure-gap, warmup-hole do); otherwise `resolveInsightFraming` compares
+  `your_value` to `comparison_value` using `evidence.polarity`, else the
+  registry direction when the units match. A strength or neutral row ships
+  **no** `diagnosis` key. The v2 upsert replaces `evidence`, so a stale
+  diagnosis clears on the next run.
+- **Observed** (`causality_level: 'observed_sequence'`). This requires the
+  A10 gate `coachhelm_a4_sequence_attribution_surface`, a metric with a
+  sequence family (`sequenceTargetFor`), and a supported A4 rollup row. It
+  also requires at least 10 failures across at least 3 rounds, and one
+  recorded path that repeats at least 3 times and covers at least 25% of
+  failures. `root_cause` names the path, its count, its denominator, the
+  rounds and the window, plus the SG cost per occurrence.
+  `basis.sequence` carries these as numbers.
+- **Hypothesis** (`inferred_hypothesis`). This is used otherwise.
+  `root_cause` states which floor was not met, or that no shot path
+  measures the metric, or that the shot read failed. Where A5 has a
+  relevant hypothesis (par-5 opportunities, approach short/rough), it adds
+  that as the working hypothesis with its label (`candidate` /
+  `corroborated`; A5 `supported_association` maps to `corroborated`).
+- **`Diagnosis.basis`** (additive, optional). It has these fields:
+  - `kind`: `shot_sequence` / `hypothesis_policy` / `aggregate_only`
+  - `hypothesis_label`
+  - `checked[]`: the drivers and paths that were examined
+  - `sequence?`
+  Rows written earlier have no `basis`; `DiagnosisPanel` does not read it.
+- A generator-composed diagnosis can never self-claim `observed_sequence`:
+  `mergeDiagnosis` pins it to `inferred_hypothesis` unless the root-cause
+  core observed the path.
+- Read-only preview: `scripts/coachhelm/preview-root-cause.ts`.
+
 ## Delivered vs. viewed (N11, 2026-09-23)
 
 `recordExposureForReturned` (`insight-delivery.ts:312-330`) writes a

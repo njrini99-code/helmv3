@@ -249,6 +249,8 @@ export class PuttBiasGenerator extends BaseGenerator<PuttBiasAggregate> {
         content: `Across your last ${agg.rounds_played} rounds, your make rate on left-break vs right-break putts is statistically even once distance is controlled for — no single break direction stands out. Keep working both ways on the practice green.`,
         priority: 'low',
         signature: 'putt_bias:balanced',
+        // No directional bias → nothing to diagnose.
+        framing: 'neutral',
         evidence: {
           metric: 'putt_miss_bias_left_pct',
           metric_label: 'Break-direction make % (distance-controlled)',
@@ -295,6 +297,7 @@ export class PuttBiasGenerator extends BaseGenerator<PuttBiasAggregate> {
       content: `On ${agg.band}${slopeText} putts you're making ${weakDisp} of ${breakLabel} breaks vs ${strongDisp} the other way — a ${gap}-point gap at matched distance (n=${agg.weak_n}/${agg.strong_n}). ${action}${slopeAction}`,
       priority: 'medium',
       signature: `putt_bias:${agg.weakest_direction}:${agg.band}`,
+      framing: 'leak',
       evidence: {
         metric: computedMetricId,
         metric_label: 'Break-direction make % (distance-controlled)',

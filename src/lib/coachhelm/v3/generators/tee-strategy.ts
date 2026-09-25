@@ -278,6 +278,9 @@ export class TeeStrategyGenerator extends BaseGenerator<TeeStrategyAggregate> {
       content: content + staleDataSuffix(agg.last_round_date),
       // laggy is the only branch framed as costing strokes; sharp/inconclusive are strength/neutral.
       priority: agg.pattern === 'laggy' ? 'high' : 'low',
+      // Only 'laggy' is a leak with a root cause to find; 'sharp' is a
+      // strength and 'inconclusive' a no-verdict reading (no diagnosis).
+      framing: agg.pattern === 'laggy' ? 'leak' : agg.pattern === 'sharp' ? 'strength' : 'neutral',
       signature: `tee_strategy:${agg.pattern}`,
       evidence: {
         metric: this.metricId,

@@ -17296,7 +17296,17 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/engine/generator-base.ts",
+          "anchor": "src/lib/flags/is-enabled"
+        },
+        {
+          "kind": "import_graph",
           "path": "src/lib/coachhelm/v3/engine/hole-diagnosis.ts",
+          "anchor": "src/lib/supabase/admin"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/engine/root-cause-context.ts",
           "anchor": "src/lib/supabase/admin"
         },
         {
@@ -17715,6 +17725,16 @@
         {
           "kind": "import_graph",
           "path": "src/lib/coachhelm/v3/engine/generator-base.ts",
+          "anchor": "src/lib/coachhelm/v2/insights/types"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/engine/root-cause-context.ts",
+          "anchor": "src/lib/coachhelm/v2/insights/types"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/engine/root-cause.ts",
           "anchor": "src/lib/coachhelm/v2/insights/types"
         },
         {
