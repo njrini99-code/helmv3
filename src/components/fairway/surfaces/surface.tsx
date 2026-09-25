@@ -31,6 +31,11 @@ import { cn } from '@/lib/utils';
  *  never both. Default `border`; `shadow` gives a borderless soft-lit card. */
 export type SurfaceElevation = 'border' | 'shadow';
 
+/** `card` is the default matte card. `stage` is the field sheet's one Stage
+ *  (design-direction §4.1, §5 #5): radius 20, a hairline and nothing else (no
+ *  lit-edge shadow, elevation level 0), 16 padding by default. */
+export type SurfaceVariant = 'card' | 'stage';
+
 /** Padding rhythm on the 4px base (DESIGN-SYSTEM.md §4.2: p-6 default, p-8 hero). */
 export type SurfacePadding = 'none' | 'sm' | 'md' | 'lg';
 
@@ -46,6 +51,9 @@ const PADDING: Record<SurfacePadding, string> = {
  * ──────────────────────────────────────────────────────────────────────── */
 
 export interface SurfaceProps extends HTMLAttributes<HTMLDivElement> {
+  /** `stage` opts into the Stage treatment; `elevation` is ignored for it.
+   *  Default `card`, unchanged for every existing caller. */
+  variant?: SurfaceVariant;
   /** Resting elevation: a warm hairline (`border`, default) or a soft warm
    *  shadow (`shadow`). Never both — that is the cheap-UI tell. */
   elevation?: SurfaceElevation;
@@ -70,8 +78,9 @@ export interface SurfaceProps extends HTMLAttributes<HTMLDivElement> {
  */
 const SurfaceRoot = forwardRef<HTMLDivElement, SurfaceProps>(function Surface(
   {
+    variant = 'card',
     elevation = 'border',
-    padding = 'md',
+    padding,
     interactive = false,
     as,
     className,
@@ -86,17 +95,20 @@ const SurfaceRoot = forwardRef<HTMLDivElement, SurfaceProps>(function Surface(
     <Comp
       ref={ref}
       data-slot="surface"
+      data-variant={variant === 'stage' ? 'stage' : undefined}
       data-interactive={interactive ? '' : undefined}
       className={cn(
         // base matte card
         'relative bg-surface rounded-card text-text-primary',
-        PADDING[padding],
+        PADDING[padding ?? (variant === 'stage' ? 'sm' : 'md')],
         // resting elevation: a warm hairline + the lit-edge card whisper
         // (--fw-shadow-card, light-cards-only so the top highlight is safe), or
-        // a borderless soft-lit shadow card.
-        elevation === 'border'
-          ? 'border border-border-subtle [box-shadow:var(--fw-shadow-card)]'
-          : 'shadow-soft',
+        // a borderless soft-lit shadow card. The Stage is a hairline only.
+        variant === 'stage'
+          ? 'border border-border-subtle'
+          : elevation === 'border'
+            ? 'border border-border-subtle [box-shadow:var(--fw-shadow-card)]'
+            : 'shadow-soft',
         // Interactive affordance, split by input capability.
         //
         // The hover lift used to be the WHOLE affordance, and `active:` only
