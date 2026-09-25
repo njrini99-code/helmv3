@@ -35,7 +35,7 @@
  * serif / skeuomorphic gauges).
  * ========================================================================== */
 
-import { useCallback, useMemo, useState, useTransition, type ReactNode } from 'react';
+import { useCallback, useMemo, useState, useTransition, type CSSProperties, type ReactNode } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
@@ -51,9 +51,14 @@ import {
   Sparkline,
   Button,
   Avatar,
+  Eyebrow,
   fairwayToast,
   type InsightPriority,
 } from '@/components/fairway';
+import { Disclosure } from '@/components/golf/coachhelm/root-map/Disclosure';
+import { toCoachVoice } from '@/lib/golf/claim-voice';
+import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
+import { cn } from '@/lib/utils';
 
 import { IconLayers } from '@/components/icons';
 
@@ -109,6 +114,14 @@ export interface FairwayPlayerGameFingerprintProps {
    * site is byte-for-byte unaffected by this prop's addition.
    */
   sectionAddenda?: Partial<Record<FingerprintSectionKey, ReactNode>>;
+  /**
+   * `full` (default): the original layout, every section open. `summary`:
+   * the coach deep-dive's summary-first layout (owner direction 2026-09-25)
+   * — one summary card (rating, one-line takeaway, the six-area strip), then
+   * each area behind a closed disclosure. Opt-in, so the player-side
+   * `ProfileDrill` mount is unchanged.
+   */
+  layout?: 'full' | 'summary';
 }
 
 /* ───────────────────────────────────────────────────────────────────────────
@@ -183,6 +196,399 @@ export function formatGeneratedAt(iso: string): string {
 }
 
 /* ───────────────────────────────────────────────────────────────────────────
+ * Summary layout (coach deep-dive, `layout="summary"`)
+ * ────────────────────────────────────────────────────────────────────────── */
+
+type ActionHandler = (
+  action: 'acknowledged' | 'dismissed' | 'create_focus_area',
+  insightId: string,
+) => void;
+
+type AreaStanding = 'leak' | 'strength' | 'even' | 'calibrating' | 'unrated';
+
+/** An area's standing from the aggregator's own metric tones (never a new
+ *  score): more "needs attention" tones than strengths is a leak, the reverse
+ *  a strength. Sparse areas are calibrating; an area with no toned metric is
+ *  unrated, not "even". */
+export function areaStanding(section: SectionData): AreaStanding {
+  if (section.sparse) return 'calibrating';
+  const good = section.metrics.filter((m) => m.tone === 'good').length;
+  const bad = section.metrics.filter((m) => m.tone === 'bad').length;
+  if (good === 0 && bad === 0) return 'unrated';
+  if (bad > good) return 'leak';
+  if (good > bad) return 'strength';
+  return 'even';
+}
+
+function firstToned(section: SectionData, tone: 'good' | 'bad'): FingerprintMetric | undefined {
+  return section.metrics.find((m) => m.tone === tone);
+}
+
+/** One sentence naming where the game leaks and where it is strong, from
+ *  the same metric tones. Says so plainly when nothing stands out. */
+export function fingerprintTakeaway(sections: readonly SectionData[]): string {
+  const live = sections.filter((s) => !s.sparse);
+  const score = (s: SectionData, tone: 'good' | 'bad') => s.metrics.filter((m) => m.tone === tone).length;
+  const weak = [...live]
+    .filter((s) => score(s, 'bad') > score(s, 'good'))
+    .sort((a, b) => score(b, 'bad') - score(b, 'good') - (score(a, 'bad') - score(a, 'good')))[0];
+  const strong = [...live]
+    .filter((s) => score(s, 'good') > score(s, 'bad') && s !== weak)
+    .sort((a, b) => score(b, 'good') - score(b, 'bad') - (score(a, 'good') - score(a, 'bad')))[0];
+  const cite = (m: FingerprintMetric | undefined) => (m ? ` (${m.label} ${m.value})` : '');
+  const parts: string[] = [];
+  if (weak) parts.push(`Needs work in ${weak.category.toLowerCase()}${cite(firstToned(weak, 'bad'))}.`);
+  if (strong) parts.push(`Strongest ${strong.category.toLowerCase()}${cite(firstToned(strong, 'good'))}.`);
+  if (parts.length === 0) {
+    return live.length === 0
+      ? 'Every area is still calibrating.'
+      : 'No area stands apart from the benchmarks yet.';
+  }
+  return parts.join(' ');
+}
+
+const STANDING_LABEL: Record<AreaStanding, string> = {
+  leak: 'Needs work',
+  strength: 'Strength',
+  even: 'Mixed',
+  calibrating: 'Calibrating',
+  unrated: 'No benchmark',
+};
+
+/** Area texture: leaks and strengths wear a tinted fill with a solid edge;
+ *  calibrating areas are hatched (thin evidence), never a solid colour. */
+function standingStyle(standing: AreaStanding): CSSProperties {
+  const surface = 'var(--fw-color-surface)';
+  switch (standing) {
+    case 'leak':
+      return {
+        background: `color-mix(in oklch, var(--fw-viz-div-neg) 16%, ${surface})`,
+        borderColor: 'color-mix(in oklch, var(--fw-viz-div-neg) 55%, transparent)',
+      };
+    case 'strength':
+      return {
+        background: `color-mix(in oklch, var(--fw-color-accent-500) 14%, ${surface})`,
+        borderColor: 'color-mix(in oklch, var(--fw-color-accent-500) 55%, transparent)',
+      };
+    case 'calibrating':
+      return {
+        backgroundImage:
+          'repeating-linear-gradient(135deg, var(--fw-color-border-subtle) 0 1px, transparent 1px 7px)',
+      };
+    default:
+      return {};
+  }
+}
+
+function FingerprintSummaryLayout({
+  fingerprint,
+  sections,
+  isCoachMode,
+  pendingIds,
+  onAction,
+  sectionAddenda,
+  trendChip,
+}: {
+  fingerprint: PlayerFingerprint;
+  sections: SectionData[];
+  isCoachMode: boolean;
+  pendingIds: ReadonlySet<string>;
+  onAction: ActionHandler;
+  sectionAddenda?: Partial<Record<FingerprintSectionKey, ReactNode>>;
+  trendChip: { tone: 'success' | 'danger' | 'neutral'; label: string };
+}) {
+  const reduceMotion = useReducedMotionGuard();
+  const [open, setOpen] = useState<ReadonlySet<FingerprintSectionKey>>(new Set());
+  const { player, composite, trend, generated_at: generatedAt } = fingerprint;
+  const fullName = `${player.first_name ?? ''} ${player.last_name ?? ''}`.trim() || 'Player';
+  const subjectName = isCoachMode ? player.first_name : null;
+  const rating = composite.rating;
+  const sample = composite.rounds_in_calculation;
+  const metricsSample = fingerprint.metrics_rounds;
+  const series = trend.rolling
+    .map((p) => p.score_to_par)
+    .filter((v): v is number => typeof v === 'number' && Number.isFinite(v));
+  const latest = series.length > 0 ? series[series.length - 1] ?? null : null;
+  const takeaway = fingerprintTakeaway(sections);
+
+  const setSection = (key: FingerprintSectionKey, next: boolean) =>
+    setOpen((prev) => {
+      const out = new Set(prev);
+      if (next) out.add(key);
+      else out.delete(key);
+      return out;
+    });
+
+  const jumpTo = (key: FingerprintSectionKey) => {
+    setSection(key, true);
+    // After the disclosure mounts its body.
+    window.setTimeout(() => {
+      document
+        .getElementById(`fingerprint-${key}`)
+        ?.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'start' });
+    }, 60);
+  };
+
+  return (
+    <div className="mx-auto w-full max-w-[1160px] overflow-x-clip" data-slot="fingerprint-summary-layout">
+      <div className="flex flex-col gap-6">
+        <ViewHeader
+          title={
+            <span className="flex min-w-0 items-center gap-3">
+              <Avatar decorative src={player.avatar_url} name={fullName} size="lg" className="shrink-0" />
+              <span className="min-w-0 truncate">{fullName}</span>
+            </span>
+          }
+          description={player.team_name ?? 'No team'}
+          primaryAction={
+            isCoachMode ? (
+              <Button asChild variant="secondary">
+                <Link href={`/golf/dashboard/players/${player.id}/game/print`}>Print report</Link>
+              </Button>
+            ) : undefined
+          }
+          secondaryActions={
+            isCoachMode ? (
+              <>
+                <Button asChild variant="ghost" size="sm" leftIcon={<IconLayers size={15} />}>
+                  <Link href={`/golf/dashboard/players/${player.id}/genome`}>Genome</Link>
+                </Button>
+                <Button asChild variant="ghost" size="sm">
+                  <Link href={`/golf/dashboard/roster/${player.id}`}>Player page</Link>
+                </Button>
+              </>
+            ) : undefined
+          }
+        />
+
+        {/* ── Summary: rating, one takeaway, the six-area strip ── */}
+        <section
+          aria-label="Game fingerprint summary"
+          data-slot="fingerprint-summary"
+          className="flex flex-col gap-5 rounded-fw-lg border border-border-subtle bg-surface p-5 md:p-6"
+        >
+          <div className="flex flex-col gap-1">
+            <Eyebrow as="p">
+              Composite rating{sample > 0 ? ` · from ${pluralize(sample, 'round')}` : ''}
+            </Eyebrow>
+            <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-2">
+              <p className="font-fw-mono text-display tabular-nums text-text-primary" data-slot="fingerprint-rating">
+                {rating != null ? Math.round(rating) : '—'}
+              </p>
+              <span className="flex flex-wrap items-center gap-2">
+                <Chip tone={trendChip.tone} size="sm">
+                  {trendChip.label}
+                </Chip>
+                {latest != null ? (
+                  <span className="text-caption text-text-secondary">
+                    last round{' '}
+                    <span className="font-fw-mono tabular-nums text-text-primary">{formatToPar(latest)}</span>
+                  </span>
+                ) : null}
+              </span>
+            </div>
+            {rating == null ? (
+              <p className="text-caption text-text-tertiary">
+                A rating needs {SECTION_SAMPLE_FLOOR} rounds ({sample} so far).
+              </p>
+            ) : null}
+            <p className="text-body text-text-secondary" data-slot="fingerprint-takeaway">
+              {takeaway}
+            </p>
+          </div>
+
+          <nav aria-label="Game areas" className="flex flex-col gap-2">
+            <ol className="grid grid-cols-2 gap-2 min-[420px]:grid-cols-3 lg:grid-cols-6">
+              {sections.map((section, index) => {
+                const standing = areaStanding(section);
+                const lead = section.metrics[0];
+                return (
+                  <li key={section.key} className="min-w-0">
+                    {/* eslint-disable-next-line helm/no-raw-button -- a textured data tile (area, value, standing), not a pill control; the Fairway Button cannot host this two-row layout */}
+                    <button
+                      type="button"
+                      onClick={() => jumpTo(section.key)}
+                      aria-label={`${section.category}: ${STANDING_LABEL[standing]}${lead ? `, ${lead.label} ${lead.value}` : ''}. Open this area.`}
+                      data-standing={standing}
+                      className={cn(
+                        'flex h-full min-h-[88px] w-full flex-col justify-between gap-2 rounded-fw-md border border-border-subtle bg-surface-sunken p-3 text-left outline-none',
+                        'focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
+                        'motion-safe:transition-[transform,box-shadow] motion-safe:duration-200 hover:shadow-soft motion-safe:hover:-translate-y-0.5',
+                      )}
+                      style={standingStyle(standing)}
+                    >
+                      <span className="flex items-baseline justify-between gap-2">
+                        <span className="truncate font-fw-display text-label font-semibold text-text-primary">
+                          {section.category}
+                        </span>
+                        <span className="font-fw-mono text-eyebrow tabular-nums text-text-tertiary">
+                          {String(index + 1).padStart(2, '0')}
+                        </span>
+                      </span>
+                      <span className="flex flex-col">
+                        <span className="font-fw-mono text-body-lg font-semibold tabular-nums text-text-primary">
+                          {section.sparse ? '—' : (lead?.value ?? '—')}
+                        </span>
+                        <span className="truncate text-caption text-text-secondary">
+                          {section.sparse ? 'Calibrating' : lead ? lead.label : STANDING_LABEL[standing]}
+                        </span>
+                      </span>
+                    </button>
+                  </li>
+                );
+              })}
+            </ol>
+            <p className="flex flex-wrap items-center gap-x-4 gap-y-1 text-caption text-text-tertiary">
+              {metricsSample > 0 ? <span>Area averages from {pluralize(metricsSample, 'round')}</span> : null}
+              <span className="inline-flex items-center gap-1.5">
+                <span aria-hidden className="inline-block h-2.5 w-2.5 rounded-sm border" style={standingStyle('leak')} />
+                Needs work
+              </span>
+              <span className="inline-flex items-center gap-1.5">
+                <span aria-hidden className="inline-block h-2.5 w-2.5 rounded-sm border" style={standingStyle('strength')} />
+                Strength
+              </span>
+              <span className="inline-flex items-center gap-1.5">
+                <span aria-hidden className="inline-block h-2.5 w-2.5 rounded-sm border border-border-subtle" style={standingStyle('calibrating')} />
+                Calibrating
+              </span>
+            </p>
+          </nav>
+        </section>
+
+        {/* ── Detail on tap: each area, then the scoring trend ── */}
+        <div className="flex flex-col">
+          {sections.map((section, index) => {
+            const insightCount = section.insights.length;
+            return (
+              <div key={section.key} id={`fingerprint-${section.key}`} className="scroll-mt-28">
+                <Disclosure
+                  open={open.has(section.key)}
+                  onOpenChange={(next) => setSection(section.key, next)}
+                  headingLevel={2}
+                  slot={`fingerprint-area-${section.key}`}
+                  title={
+                    <span className="flex items-baseline gap-3">
+                      <span className="font-fw-mono text-eyebrow tabular-nums text-text-tertiary">
+                        {String(index + 1).padStart(2, '0')}
+                      </span>
+                      {section.category}
+                    </span>
+                  }
+                  meta={
+                    <span className="shrink-0 text-caption font-normal text-text-secondary">
+                      {section.sparse
+                        ? 'Calibrating'
+                        : insightCount > 0
+                          ? pluralize(insightCount, 'read')
+                          : STANDING_LABEL[areaStanding(section)]}
+                    </span>
+                  }
+                  bodyClassName="flex flex-col gap-5"
+                >
+                  <SummarySectionBody
+                    section={section}
+                    pendingIds={pendingIds}
+                    onAction={onAction}
+                    subjectName={subjectName}
+                  />
+                  {sectionAddenda?.[section.key] ?? null}
+                </Disclosure>
+              </div>
+            );
+          })}
+          <Disclosure title="Recent scoring trend" slot="fingerprint-trend" headingLevel={2}>
+            <TrendPulse trend={trend} />
+          </Disclosure>
+        </div>
+
+        <p className="text-center font-fw-sans text-caption text-text-tertiary">
+          Generated {formatGeneratedAt(generatedAt)}
+        </p>
+      </div>
+    </div>
+  );
+}
+
+/** True when every chart label repeats a key-number label, so the chart
+ *  would only print the same values a second time. */
+function chartRepeatsMetrics(section: SectionData): boolean {
+  const chart = section.chart_data;
+  if (!chart) return true;
+  const labels = new Set(section.metrics.map((m) => m.label.toLowerCase()));
+  const chartLabels = chart.kind === 'pills' ? chart.pills.map((p) => p.label) : chart.bars.map((b) => b.label);
+  if (chartLabels.length === 0) return true;
+  return chartLabels.every((l) => labels.has(l.toLowerCase()));
+}
+
+function SummarySectionBody({
+  section,
+  pendingIds,
+  onAction,
+  subjectName,
+}: {
+  section: SectionData;
+  pendingIds: ReadonlySet<string>;
+  onAction: ActionHandler;
+  subjectName: string | null;
+}) {
+  if (section.sparse) {
+    return (
+      <EmptyState
+        variant="subtle"
+        title="Not enough data yet"
+        description={`This area needs ${SECTION_SAMPLE_FLOOR}+ qualifying samples before it calibrates.`}
+      />
+    );
+  }
+  const lead = section.insights.slice(0, 2);
+  const more = section.insights.slice(2);
+  return (
+    <>
+      {section.metrics.length > 0 ? (
+        <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
+          {section.metrics.map((m) => (
+            <MetricRow key={m.label} metric={m} />
+          ))}
+        </div>
+      ) : null}
+      {chartRepeatsMetrics(section) ? null : <SectionChart section={section} bare />}
+      {section.insights.length === 0 ? (
+        <p className="text-body-sm text-text-secondary">CoachHelm has not flagged anything in this area yet.</p>
+      ) : (
+        <div className="flex flex-col gap-3">
+          {lead.map((insight, i) => (
+            <FingerprintInsightCard
+              key={insight.id}
+              insight={insight}
+              featured={i === 0}
+              pending={pendingIds.has(insight.id)}
+              onAction={onAction}
+              subjectName={subjectName}
+              focusVariant="secondary"
+            />
+          ))}
+          {more.length > 0 ? (
+            <Disclosure variant="row" headingLevel={null} title={`${pluralize(more.length, 'more read')}`} bodyClassName="flex flex-col gap-3">
+              {more.map((insight) => (
+                <FingerprintInsightCard
+                  key={insight.id}
+                  insight={insight}
+                  pending={pendingIds.has(insight.id)}
+                  onAction={onAction}
+                  subjectName={subjectName}
+                  focusVariant="secondary"
+                />
+              ))}
+            </Disclosure>
+          ) : null}
+        </div>
+      )}
+    </>
+  );
+}
+
+/* ───────────────────────────────────────────────────────────────────────────
  * Component
  * ────────────────────────────────────────────────────────────────────────── */
 
@@ -190,6 +596,7 @@ export function FairwayPlayerGameFingerprint({
   fingerprint,
   mode = 'coach',
   sectionAddenda,
+  layout = 'full',
 }: FairwayPlayerGameFingerprintProps) {
   const router = useRouter();
   const golfUser = useGolfUser();
@@ -343,6 +750,20 @@ export function FairwayPlayerGameFingerprint({
       : composite.trend === 'down'
         ? { tone: 'danger' as const, label: 'Trending down' }
         : { tone: 'neutral' as const, label: 'Holding steady' };
+
+  if (layout === 'summary') {
+    return (
+      <FingerprintSummaryLayout
+        fingerprint={fingerprint}
+        sections={orderedSections}
+        isCoachMode={isCoachMode}
+        pendingIds={pendingIds}
+        onAction={handleAction}
+        sectionAddenda={sectionAddenda}
+        trendChip={trendChip}
+      />
+    );
+  }
 
   return (
     <div className="mx-auto w-full max-w-[1160px] overflow-x-clip">
@@ -684,10 +1105,18 @@ function FingerprintInsightCard({
   featured = false,
   pending,
   onAction,
+  subjectName,
+  focusVariant = 'primary',
 }: {
   insight: SectionData['insights'][number];
   featured?: boolean;
   pending: boolean;
+  /** Coach reading about a player: retell second-person copy in the third
+   *  person. Omitted = copy exactly as generated. */
+  subjectName?: string | null;
+  /** The summary layout keeps ONE primary action per screen, so its
+   *  per-insight "Make focus area" is secondary. */
+  focusVariant?: 'primary' | 'secondary';
   onAction: (
     action: 'acknowledged' | 'dismissed' | 'create_focus_area',
     insightId: string,
@@ -698,7 +1127,7 @@ function FingerprintInsightCard({
       id={`insight-${insight.id}`}
       priority={toInsightPriority(insight.priority)}
       variant={featured ? 'default' : 'compact'}
-      title={insight.title}
+      title={toCoachVoice(insight.title, subjectName)}
       evidence={<InsightEvidenceLine insight={insight} />}
       actions={
         insight.status === 'acknowledged' ? (
@@ -708,7 +1137,7 @@ function FingerprintInsightCard({
         ) : (
           <div className="flex flex-wrap items-center gap-2">
             <Button
-              variant="primary"
+              variant={focusVariant}
               size="sm"
               disabled={pending}
               onClick={() => onAction('create_focus_area', insight.id)}
@@ -735,7 +1164,7 @@ function FingerprintInsightCard({
         )
       }
     >
-      {insight.content ? insight.content : null}
+      {insight.content ? toCoachVoice(insight.content, subjectName) : null}
     </InsightCard>
   );
 }
@@ -826,7 +1255,25 @@ function InsightEvidenceLine({
  * Null chart_data renders nothing (no fabricated chart).
  * ══════════════════════════════════════════════════════════════════════════ */
 
-function SectionChart({ section }: { section: SectionData }) {
+/** The chart's frame: a titled instrument card, or (inside a summary-layout
+ *  disclosure, which is already the card) a bare eyebrow + body. */
+function ChartFrame({ bare, header, children }: { bare: boolean; header: string; children: ReactNode }) {
+  if (bare) {
+    return (
+      <div className="flex flex-col gap-2">
+        <Eyebrow as="p">{header}</Eyebrow>
+        {children}
+      </div>
+    );
+  }
+  return (
+    <InstrumentPanel depth="base" padding="md" header={header}>
+      {children}
+    </InstrumentPanel>
+  );
+}
+
+function SectionChart({ section, bare = false }: { section: SectionData; bare?: boolean }) {
   const chart = section.chart_data;
   if (!chart) return null;
 
@@ -837,7 +1284,7 @@ function SectionChart({ section }: { section: SectionData }) {
     // the panel header stays honest to which one is actually rendering.
     const header = section.key === 'tee' ? 'Fairways' : 'Miss direction';
     return (
-      <InstrumentPanel depth="base" padding="md" header={header}>
+      <ChartFrame bare={bare} header={header}>
         <div className="flex flex-wrap gap-2">
           {chart.pills.map((p) => (
             <span
@@ -853,7 +1300,7 @@ function SectionChart({ section }: { section: SectionData }) {
             </span>
           ))}
         </div>
-      </InstrumentPanel>
+      </ChartFrame>
     );
   }
 
@@ -884,7 +1331,7 @@ function SectionChart({ section }: { section: SectionData }) {
     b.max === 100 ? `${Math.round(b.value)}%` : b.value.toFixed(1);
 
   return (
-    <InstrumentPanel depth="base" padding="md" header={header}>
+    <ChartFrame bare={bare} header={header}>
       <div className="flex flex-wrap gap-2">
         {chart.bars.map((b) => (
           <span
@@ -898,7 +1345,7 @@ function SectionChart({ section }: { section: SectionData }) {
           </span>
         ))}
       </div>
-    </InstrumentPanel>
+    </ChartFrame>
   );
 }
 
