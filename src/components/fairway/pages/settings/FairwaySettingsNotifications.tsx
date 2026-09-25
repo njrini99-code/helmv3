@@ -223,7 +223,7 @@ export function FairwaySettingsNotifications({
       <ViewHeader
         eyebrow="Settings"
         title="Notifications"
-        description="Choose how each kind of update reaches you. Quiet mode silences everything except round-review-ready and coach-assigned goals."
+        description="Choose how each kind of update reaches you."
       />
 
       {/* ── Quiet mode — the one master switch ──────────────────────────────── */}

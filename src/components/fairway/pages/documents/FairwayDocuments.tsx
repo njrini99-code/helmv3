@@ -835,7 +835,7 @@ export function FairwayDocuments({
         description={
           isCoach
             ? 'Plans, releases, and forms, all in one place. Upload files and organize them into folders for your team.'
-            : 'Plans, releases, and forms your coach shares with the team show up here.'
+            : 'Plans, releases, and forms from your coach.'
         }
         meta={meta}
         primaryAction={uploadCta}
