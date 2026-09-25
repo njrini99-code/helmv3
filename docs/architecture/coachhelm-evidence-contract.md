@@ -310,6 +310,31 @@ Putt bands use `value_per_unit = 1.0`: one more make is one fewer stroke at any
 distance. Rows written before that still carry `attempts_used: null` and the
 old per-pp sizing until the generator reruns.
 
+**Sand save denominator (2026-09-25).** `ScramblingGenerator`'s
+`attempts_per_round` is greenside-bunker shots ÷ EVERY countable round in the
+90-day window (`shot-source.ts#loadCountableRoundIds`, `isCountableRound`),
+including rounds with no bunker shot. It used to divide by the rounds that had a
+sand shot, which inflated the rate (6 shots in 2 of 5 rounds read 3.0 a round,
+not 1.2) and the strokes sized from it. The shots are loaded from the same
+countable-round set, so a half-entered round adds to neither side; that can move
+`sample_n`, the sand-save % and the "Across N rounds" count slightly.
+
+**GIR is attempt-rate only (2026-09-25).** `gir_pct` sets
+`requires_attempt_rate: true`: it is sized as
+`(gap_pp / 100) × gir_attempts_per_round × GIR_VALUE_PER_GREEN`, where the rate
+is the player's GIR opportunities per round (`greens_total` ÷ countable rounds,
+the metric's own denominator) and the per-green value is
+`getExpectedStrokes('fairway', 20) − getExpectedStrokes('green', 0, 30)` =
+2.40 − 1.98 = 0.42 strokes from the canonical expected-strokes table (the
+smallest of the greenside lies: sand gives 0.55, rough 0.61). With no
+player-own rate the projection is suppressed with
+`suppress_reason: 'no_attempt_rate'` and 0 strokes, so no strokes_impact or
+priority floor comes from it. The old path (0.09 per pp = a fixed 18 holes ×
+0.5, the fallback whenever no rate was passed; and "misses per round" as the
+attempt metric, which multiplied the gap by the wrong count) is gone. No
+generator emits `gir_pct` today (0 rows in production on 2026-09-25), so this
+changes no stored row.
+
 ## Putt slope penalty copy (2026-09-25)
 
 `PuttSlopeBiasGenerator` (`putt_slope_downhill_penalty_pct`) still tests

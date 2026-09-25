@@ -421,6 +421,12 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
   round (`attempts_used`), and a slope-penalty row says "sloped", not
   "downhill", when uphill is as weak. Both rules are in the evidence contract
   doc.
+- Sand save attempts per round divide by every countable round in the 90-day
+  window, not only rounds with a bunker shot. `gir_pct` is sized only on the
+  player's own GIR opportunities per round × 0.42 strokes per green (canonical
+  expected-strokes table); with no rate it is suppressed (`no_attempt_rate`),
+  never the old 0.09-per-pp constant. Details in the evidence contract doc's
+  "Counterfactual attempt sizing" section.
 - Coach views need fast triage: new, acknowledged, dismissed, resolved, and priority states must be visible.
 - Player views need clear actionability: what changed, why it matters, and what to do next.
 - Loading states should use skeletons that match final layout.

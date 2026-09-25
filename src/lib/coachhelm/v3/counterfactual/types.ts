@@ -33,7 +33,13 @@ export interface CounterfactualProjection {
    */
   suppressed: boolean;
   /** Reason for suppression (logged for debugging, not user-facing). */
-  suppress_reason?: 'below_threshold' | 'no_baseline' | 'no_gap' | 'unknown_metric';
+  suppress_reason?:
+    | 'below_threshold'
+    | 'no_baseline'
+    | 'no_gap'
+    | 'unknown_metric'
+    /** Metric is sized only off the player's own attempt rate and none was supplied. */
+    | 'no_attempt_rate';
   /**
    * True when `strokes_saved_per_round` was capped at the per-metric ceiling
    * (CF-1/CF-2). The raw uncapped value is descriptive-only; surfaces a

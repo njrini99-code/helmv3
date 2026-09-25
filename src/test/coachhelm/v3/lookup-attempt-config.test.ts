@@ -9,9 +9,13 @@ describe('counterfactual lookup — attempt-rate config', () => {
     expect(cfg.value_per_unit).toBeLessThanOrEqual(1.0);
   });
 
-  it('GIR carries a green-miss attempt metric', () => {
+  // Changed on purpose (2026-09-25): the GIR gap is a share of the player's GIR
+  // OPPORTUNITIES (gir_pct's denominator), so the rate is opportunities per
+  // round; gap × misses per round was dimensionally wrong.
+  it('GIR carries a GIR-opportunity attempt metric and requires a player-own rate', () => {
     const cfg = getCounterfactualConfig('gir_pct')!;
-    expect(cfg.attempt_metric).toBe('gir_misses_per_round');
+    expect(cfg.attempt_metric).toBe('gir_attempts_per_round');
+    expect(cfg.requires_attempt_rate).toBe(true);
   });
 
   it('SG metrics keep the legacy 1:1 stroke_impact_per_unit and NO attempt_metric', () => {

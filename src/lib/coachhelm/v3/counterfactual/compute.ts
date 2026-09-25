@@ -128,6 +128,16 @@ export function computeCounterfactual(
     attempts != null &&
     Number.isFinite(attempts) &&
     attempts > 0;
+  // A metric whose legacy constant is known to overstate (gir_pct) is sized
+  // ONLY on the attempt-rate path. No player-own rate → unsized (0 strokes,
+  // suppressed), never the constant.
+  if (cfg.requires_attempt_rate && !useAttemptRate) {
+    return {
+      ...zeroProjection(input.player_30d_scoring_avg, 'no_attempt_rate'),
+      weeks_to_typical_close: cfg.coachable_timeframe_weeks,
+      attempts_used: null,
+    };
+  }
   const pctDivisor = getMetricRenderConfig(input.metric_id)?.unit === 'percent' ? 100 : 1;
   const raw_strokes_saved_per_round = useAttemptRate
     ? (gap / pctDivisor) * (attempts as number) * (cfg.value_per_unit as number)
