@@ -134,6 +134,21 @@ Player opens round review
   10 downhill or 10 level putts. The angle inside a region is seeded from the
   shot id, because putt direction is not recorded, and the caption says so.
   `loadShortPuttSlopes` is the bounded read.
+- **Player drills, summary first (2026-09-25)**: `?view=development`,
+  `profile`, `standing` and `insights` each open with one `DrillSummary`
+  card (`home/DrillSummary.tsx`: key number in mono, one takeaway line,
+  one visual, a basis line naming the sample / refresh date, at most one
+  action); every secondary section sits behind the root-map `Disclosure`,
+  closed by default (Insights opens its first category group). One primary
+  per screen: Development's first prescribed "Accept", or the empty
+  state's "New focus area"; the header "New focus area" is secondary, and
+  active areas stay closed because each `FocusAreaCard` carries its own
+  "Mark complete" primary. Profile states the composite rating, the
+  fingerprint's category stats (`metrics_rounds`) and the genome
+  (`rounds_basis`) samples separately, and labels the radar as a 0-100
+  per-dimension scale, not a percentile. The route `loading.tsx` draws the
+  root-map Today shape (no mobile spine). Pinned by
+  `home/__tests__/PlayerDrills.summary-first.test.tsx`.
 - **Standing drill counterfactual (2026-09-25)**: `?view=standing` sizes
   attempt-rate metrics off the player's own attempts per round
   (`home/standingAttemptRates.ts`): putt bands = `putt_attempts_*` ÷
