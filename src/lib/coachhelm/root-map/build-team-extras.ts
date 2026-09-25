@@ -10,14 +10,15 @@
  *   - needs you: focus areas whose source evidence changed since approval
  *     (`evidence_revision_status === 'changed'`), the most severe open
  *     insight signals, then open signals whose STORED context narrowing
- *     reached a gated par or shape concentration (one per player). The
- *     narrowing is read from the row, never recomputed here.
+ *     reached a gated par or shape concentration (one per player; the last
+ *     slot is held for one when it exists). The narrowing is read from the
+ *     row, never recomputed here.
  * ========================================================================== */
 
 import type { GroupedSignal } from '@/lib/coachhelm/signal-grouping';
 import { describeMethodVersion, MIN_SUFFICIENT_ROUNDS } from '@/lib/coachhelm/v3/effectiveness/attribution-view-model';
 import type { StoredAttributionRow } from './loaders';
-import { concentrationPathText, storedConcentration } from './build-team-roots';
+import { concentrationLead, concentrationPathText, storedConcentration } from './build-team-roots';
 
 export interface SlopeFocusInput {
   id: string;
@@ -165,18 +166,21 @@ export function buildNeedsYou(input: {
         s.status !== 'reviewed',
     )
     .sort((a, b) => (a.severity === b.severity ? a.ageDays - b.ageDays : a.severity === 'urgent' ? -1 : 1));
-  for (const s of severe) {
-    if (items.length >= max) break;
-    items.push({
-      key: `sig:${s.id}`,
-      kind: 'signal',
-      playerId: s.playerId as string,
-      playerName: input.playerNameById[s.playerId as string] ?? 'Player',
-      title: s.title,
-      detail: s.severity === 'urgent' ? 'Urgent signal' : 'High-priority signal',
-      signalId: s.id,
-    });
-  }
+  const severeItem = (s: GroupedSignal): NeedsYouItem => ({
+    key: `sig:${s.id}`,
+    kind: 'signal',
+    playerId: s.playerId as string,
+    playerName: input.playerNameById[s.playerId as string] ?? 'Player',
+    title: s.title,
+    detail: s.severity === 'urgent' ? 'Urgent signal' : 'High-priority signal',
+    signalId: s.id,
+  });
+  // Severe signals take all but the last slot: production teams routinely
+  // hold 4+ open high/urgent rows (6 of 7 on 2026-09-25), which would
+  // otherwise starve the concentration row entirely. The slot goes back to
+  // severe signals when no gated concentration exists.
+  let severeAt = 0;
+  while (severeAt < severe.length && items.length < max - 1) items.push(severeItem(severe[severeAt++]!));
 
   // Gated miss concentrations: a shape step outranks a par-only one, then the
   // larger stored size. One per player, and never a signal already listed.
@@ -203,9 +207,10 @@ export function buildNeedsYou(input: {
       playerId,
       playerName: input.playerNameById[playerId] ?? 'Player',
       title: s.title,
-      detail: `Misses concentrate: ${concentrationPathText(n)}${last ? ` (${last.statement})` : ''}. Observed, not a cause.`,
+      detail: `${concentrationLead(n)}: ${concentrationPathText(n)}${last ? ` — ${last.statement}` : ''}. Observed, not a cause.`,
       signalId: s.id,
     });
   }
+  while (severeAt < severe.length && items.length < max) items.push(severeItem(severe[severeAt++]!));
   return items.slice(0, max);
 }

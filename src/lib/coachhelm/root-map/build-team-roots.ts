@@ -122,9 +122,18 @@ export function storedConcentration(signal: GroupedSignal): DiagnosisNarrowing |
   const cand = n as Partial<DiagnosisNarrowing>;
   if (!Array.isArray(cand.path) || !cand.path.every((x) => typeof x === 'string')) return null;
   if (!Array.isArray(cand.steps) || typeof cand.sentence !== 'string') return null;
-  const passed = cand.steps.filter((st) => st && typeof st === 'object' && st.passed === true);
-  if (cand.path.length < 2 || passed.length < 2) return null;
+  const gated = cand.steps.some(
+    (st) => !!st && typeof st === 'object' && st.passed === true && (st.level === 'par' || st.level === 'shape'),
+  );
+  if (!gated || cand.path.length === 0) return null;
   return cand as DiagnosisNarrowing;
+}
+
+/** Subject-aware lead: approach misses, missed fairways, or over-par holes. */
+export function concentrationLead(n: Pick<DiagnosisNarrowing, 'subject'>): string {
+  if (n.subject === 'tee') return 'Missed fairways concentrate';
+  if (n.subject === 'par_scoring') return 'Over-par holes concentrate';
+  return 'Misses concentrate';
 }
 
 /** "175+ yd → long par 3s → short-right". */

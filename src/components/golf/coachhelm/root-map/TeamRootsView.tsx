@@ -244,7 +244,7 @@ export function TeamRootsView({ model, headline, trend, slopes, needsYou, signal
 function cellSpoken(name: string, label: string, cell: TeamRootCell): string {
   const size = cell.strokes !== null ? `${formatStrokes(cell.strokes)} a round` : 'no stroke value stored';
   const tier = cell.tier ? `, ${CONFIDENCE_LABEL[cell.tier]}` : '';
-  const where = cell.contextPath ? ` Misses concentrate: ${cell.contextPath}, observed, not a cause.` : '';
+  const where = cell.contextPath ? ` Where it concentrates: ${cell.contextPath}, observed, not a cause.` : '';
   return `${name}: ${label}, ${size}, ${ROOT_STYLE_LABEL[cell.style]}${tier}.${where} Open the signal.`;
 }
 
@@ -368,7 +368,7 @@ function CarriersMatrix({
             {rows.some((r) => Object.values(r.cells).some((c) => c.contextPath)) ? (
               <li className="flex items-center gap-1.5">
                 <span aria-hidden className="inline-block h-1.5 w-1.5 rounded-full bg-text-primary" />
-                Misses concentrate by par or shape (open the signal)
+                Concentrates by par or shape (open the signal)
               </li>
             ) : null}
           </ul>

@@ -121,7 +121,7 @@ describe('TeamRootsView, a stored miss concentration', () => {
             playerId: 'a',
             playerName: 'Player A',
             title: 'appr',
-            detail: 'Misses concentrate: 175+ yd → long par 3s → short-right (8 of 10 short). Observed, not a cause.',
+            detail: 'Misses concentrate: 175+ yd → long par 3s → short-right — 8 of 10 short. Observed, not a cause.',
             signalId: 'a-appr',
           },
         ]}
@@ -132,9 +132,9 @@ describe('TeamRootsView, a stored miss concentration', () => {
     );
     const table = screen.getByRole('table');
     expect(
-      within(table).getByRole('link', { name: /Misses concentrate: 175\+ yd → long par 3s → short-right, observed, not a cause/ }),
+      within(table).getByRole('link', { name: /Where it concentrates: 175\+ yd → long par 3s → short-right, observed, not a cause/ }),
     ).toBeInTheDocument();
-    expect(screen.getByText('Misses concentrate by par or shape (open the signal)')).toBeInTheDocument();
+    expect(screen.getByText('Concentrates by par or shape (open the signal)')).toBeInTheDocument();
     expect(screen.getByText(/Observed, not a cause\.$/)).toBeInTheDocument();
   });
 });

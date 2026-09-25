@@ -251,7 +251,34 @@ describe('stored miss concentrations (team roots)', () => {
     expect(conc.kind).toBe('concentration');
     expect(conc.signalId).toBe('s1');
     expect(conc.detail).toBe(
-      'Misses concentrate: 175+ yd → long par 3s → short-right (most misses finish short-right (8 of 10 short, 7 of 11 right)). Observed, not a cause.',
+      'Misses concentrate: 175+ yd → long par 3s → short-right — most misses finish short-right (8 of 10 short, 7 of 11 right). Observed, not a cause.',
+    );
+  });
+
+  it('keeps the last slot for a concentration when severe signals would fill the list', () => {
+    const severe = ['u1', 'u2', 'u3', 'u4', 'u5'].map((id) => signal(id, 'b', null, { severity: 'urgent' }));
+    const withConc = buildNeedsYou({ focusAreas: [], signals: [...severe, signal('s1', 'a', narrowingShape)], playerNameById: {} });
+    expect(withConc.map((i) => i.key)).toEqual(['sig:u1', 'sig:u2', 'sig:u3', 'conc:s1']);
+    const without = buildNeedsYou({ focusAreas: [], signals: severe, playerNameById: {} });
+    expect(without.map((i) => i.key)).toEqual(['sig:u1', 'sig:u2', 'sig:u3', 'sig:u4']);
+  });
+
+  it('a tee narrowing that passed only its par step counts, and is worded as missed fairways', () => {
+    const tee = {
+      subject: 'tee',
+      path: ['par 4 and 5 tee shots', 'long par 4s'],
+      stopped_at: 'shape',
+      steps: [
+        step('length', true, 'par 4 and 5 tee shots', '40 of 90 missed the fairway'),
+        step('par', true, 'long par 4s', 'on long par 4s 14 of 20 missed the fairway (70%), vs 26 of 70 elsewhere (37%)'),
+        step('shape', false, null, 'direction not stated on long par 4s: no side holds 60%'),
+      ],
+      sentence: 's',
+    };
+    const items = buildNeedsYou({ focusAreas: [], signals: [signal('t1', 'a', tee, { category: 'tee' })], playerNameById: { a: 'Ann' } });
+    expect(items).toHaveLength(1);
+    expect(items[0]!.detail).toBe(
+      'Missed fairways concentrate: par 4 and 5 tee shots → long par 4s — on long par 4s 14 of 20 missed the fairway (70%), vs 26 of 70 elsewhere (37%). Observed, not a cause.',
     );
   });
 

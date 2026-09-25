@@ -403,9 +403,18 @@ first step that fails. Every step states its counts.
 - **Freshness**: stored rows pick this up only on the next generator run.
   Readers treat a missing field as "not stated".
 - **Team roots**: `build-team-roots.ts#storedConcentration` accepts a stored
-  narrowing only when it passed more than the length step. Such a row marks
-  its matrix cell, and one row per player is listed in "Needs you" after the
-  severe signals. Nothing is recomputed on read.
+  narrowing only when its par or shape step passed. Such a row:
+  - marks its matrix cell;
+  - lists one row per player in "Needs you". The last of the 4 slots is held
+    for a concentration when one exists, because most teams hold 4+ open
+    high/urgent signals.
+  The wording follows `subject`: misses (approach), missed fairways (tee),
+  over-par holes (par scoring). Nothing is recomputed on read.
+  Matrix approach columns split by band because the approach generators key
+  `evidence.metric` per band (`approach_proximity_{50_125ft,125_175ft,
+  175_plus_ft}`). The few band-agnostic approach rows
+  (`bubble_player_approach`, `scoring_decline_approach`) stay one column
+  each.
 
 ### Approach band sizing and Why evidence (player Today, 2026-09-25)
 
