@@ -74,11 +74,11 @@ import { FocusAreaModal, type FocusAreaModalSubmit } from './FocusAreaModal';
 import { InstrumentPanel, Readout } from '@/components/fairway/instrument';
 import { TrendGlyph } from '@/components/fairway/charts';
 import {
-  RosterHealthHeader,
   computeRosterHealth,
   computeNeedsAttention,
 } from './RosterHealthHeader';
 import { DueForReviewPanel } from './DueForReviewPanel';
+import { RosterSummaryCard, RosterDetail } from './PlayersSummaryCard';
 import {
   DataTable,
   type ColumnDef,
@@ -873,25 +873,26 @@ export function PlayersGridView({
           </InlineNotice>
         ) : null}
 
-        {/* ── ROSTER-HEALTH HEADER INSTRUMENT — the hero. A ranked cluster on
-              warm glass: coverage gauge focal, outcome-mix rail, micro-readout
-              foot row. Reads from the same props (no new fetch). ── */}
-        <RosterHealthHeader health={rosterHealth} needs={needsAttention} onAdd={openCreate} />
+        {/* ── Summary first (owner direction 2026-09-25): the Roster tab opens
+              on the key number, one takeaway and the coverage bar. ── */}
+        {view === 'grid' ? <RosterSummaryCard health={rosterHealth} needs={needsAttention} /> : null}
 
         {/* ── DUE FOR REVIEW (Pkg 9 slice 4) — overdue/due-soon focus areas,
               derived from the SAME focusAreas prop above (no new fetch).
-              Renders nothing when the queue is empty. ── */}
-        <DueForReviewPanel
-          players={players}
-          focusAreas={focusAreas}
-          todayIso={todayIso}
-          followUpRoundCounts={followUpRoundCounts}
-          onSelectPlayer={(playerId) => {
-            setSelectedPlayerId(playerId);
-            setView('areas');
-            onNavigationChange?.({ view: 'areas', playerId });
-          }}
-        />
+              Renders nothing when the queue is empty. Focus-areas view only:
+              every row drills into that board. ── */}
+        {view === 'areas' ? (
+          <DueForReviewPanel
+            players={players}
+            focusAreas={focusAreas}
+            todayIso={todayIso}
+            followUpRoundCounts={followUpRoundCounts}
+            onSelectPlayer={(playerId) => {
+              setSelectedPlayerId(playerId);
+              onNavigationChange?.({ view: 'areas', playerId });
+            }}
+          />
+        ) : null}
 
         {/* Player filter chip strip (selecting a player scopes the areas view). */}
         {selectedPlayer ? (
@@ -980,6 +981,7 @@ export function PlayersGridView({
                 emptyState={rosterEmptyState}
               />
             </div>
+            <RosterDetail health={rosterHealth} needs={needsAttention} onAdd={openCreate} />
           </section>
         ) : (
           <div className="flex flex-col gap-6">
