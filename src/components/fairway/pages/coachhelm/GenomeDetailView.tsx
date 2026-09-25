@@ -397,11 +397,7 @@ export function GenomeDetailView({
                   {genomeTakeaway(persona, liveRows.length)}
                 </p>
               </div>
-              <GenomeHeroInstrument
-                data={radarData}
-                liveCount={liveRows.length}
-                maturityCaption={maturityCaption}
-              />
+              <GenomeHeroInstrument data={radarData} liveCount={liveRows.length} />
             </section>
 
             {/* ── Every dimension, one row each: live rows carry their score
@@ -449,6 +445,7 @@ export function GenomeDetailView({
                       <FocusAreaCard
                         key={fa.id}
                         focusArea={fa}
+                        // eslint-disable-next-line jsx-a11y/aria-role -- FocusAreaCard's audience prop, not an ARIA role
                         role="coach"
                         index={i}
                         onRecordOutcome={handleRecordOutcome}
@@ -501,24 +498,16 @@ export function GenomeDetailView({
  * shape IS the hero art. Honest <3-dim awaiting state via GenomeRadar's own
  * insufficient-data path (locked spokes are never plotted).
  * ══════════════════════════════════════════════════════════════════════════ */
-function GenomeHeroInstrument({
-  data,
-  liveCount,
-  maturityCaption,
-}: {
-  data: GenomeAxis[];
-  liveCount: number;
-  maturityCaption: string;
-}) {
+function GenomeHeroInstrument({ data, liveCount }: { data: GenomeAxis[]; liveCount: number }) {
   // Drawn bare inside the summary card (it is the card's one visual).
   if (data.length >= 3) {
     return (
       <GenomeRadar
         title="Game profile"
-        subtitle={maturityCaption}
+        subtitle="Each spoke scored 0–100 · live dimensions only"
         data={data}
         seriesName="Score"
-        height={320}
+        height={280}
         className="border-0 bg-transparent p-0 shadow-none backdrop-blur-none"
       />
     );
