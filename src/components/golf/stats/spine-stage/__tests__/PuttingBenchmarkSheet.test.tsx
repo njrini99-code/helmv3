@@ -77,4 +77,12 @@ describe('PuttingBenchmarkSheet', () => {
       '3-5 ft: 92% on 25 putts, LPGA 86%, D1 80%. At or above LPGA.',
     );
   });
+
+  it('keeps the label neutral when the tour is unknown', async () => {
+    const user = userEvent.setup();
+    render(<PuttingBenchmarkSheet buckets={BUCKETS} roundsIncluded={4} tour={null} window={null} />);
+    await user.click(screen.getByRole('button', { name: 'Compare with Tour and D1' }));
+    const content = sheetContent() as HTMLElement;
+    expect(within(content).getByText(/PGA Tour or LPGA by your team/)).toBeInTheDocument();
+  });
 });

@@ -609,7 +609,13 @@ export function PuttingDrill({
             <PuttingBenchmarkSheet
               buckets={leakMaps.putting}
               roundsIncluded={leakMaps.roundsIncluded}
-              tour={Array.from(standingByMetric.values()).some((row) => row.is_womens) ? 'lpga' : 'pga'}
+              tour={
+                standingByMetric.size === 0
+                  ? null
+                  : Array.from(standingByMetric.values()).some((row) => row.is_womens)
+                    ? 'lpga'
+                    : 'pga'
+              }
               window={roundWindow}
             />
           ) : null}

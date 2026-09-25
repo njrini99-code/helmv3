@@ -31,7 +31,12 @@ import type { LeakBucket } from '@/app/golf/actions/stats-leak-maps-types';
 export interface PuttingBenchmarkSheetProps {
   buckets: readonly LeakBucket[];
   roundsIncluded: number;
-  tour: PuttingTour;
+  /**
+   * The team's tour, or null when the client can't tell (no standing rows).
+   * The leak map already carries the server's gender-routed references, so
+   * null only neutralises the label and citation, never the numbers.
+   */
+  tour: PuttingTour | null;
   /** Oldest and newest completed-round dates (ISO date-only), when known. */
   window: { from: string; to: string } | null;
 }
@@ -104,7 +109,7 @@ function BenchmarkRow({ row, tourLabel }: { row: PuttingBenchmarkRow; tourLabel:
 
 export function PuttingBenchmarkSheet({ buckets, roundsIncluded, tour, window }: PuttingBenchmarkSheetProps) {
   const [open, setOpen] = useState(false);
-  const rows = useMemo(() => buildPuttingBenchmarkRows(buckets, tour), [buckets, tour]);
+  const rows = useMemo(() => buildPuttingBenchmarkRows(buckets, tour ?? 'pga'), [buckets, tour]);
   const tourLabel = tour === 'lpga' ? 'LPGA' : 'Tour';
 
   return (
@@ -144,7 +149,9 @@ export function PuttingBenchmarkSheet({ buckets, roundsIncluded, tour, window }:
           <p className="text-caption text-text-tertiary">
             {tour === 'lpga'
               ? 'LPGA averages: LPGA ShotLink, 2024 season. D1 averages are college reference estimates.'
-              : 'Tour averages: PGA Tour ShotLink, 2024 season. D1 averages are estimates from Shot Scope scratch-golfer data.'}{' '}
+              : tour === 'pga'
+                ? 'Tour averages: PGA Tour ShotLink, 2024 season. D1 averages are estimates from Shot Scope scratch-golfer data.'
+                : "Tour averages: 2024 ShotLink, PGA Tour or LPGA by your team. D1 averages are college reference estimates."}{' '}
             Putts inside 3 ft have no published standard, so they are not compared.
           </p>
         </Sheet.Body>
