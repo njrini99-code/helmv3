@@ -148,8 +148,11 @@ export function FairwayRoundRow({ round, isBestOfPeriod, userRole }: FairwayRoun
             row to keep mobile parity (the snapshot the cards hid). Honest: each
             stat shows only when its real value is present. */}
         {notCounted && (
-          <div className="mt-1 font-fw-sans text-caption text-fw-warning-text">
-            Not counted · incomplete or implausible score
+          <div
+            className="mt-1 font-fw-sans text-caption text-fw-warning-text"
+            title="Incomplete or implausible score: left out of averages, bests and trends"
+          >
+            Not counted
           </div>
         )}
         {hasAnyMicroStat && (
