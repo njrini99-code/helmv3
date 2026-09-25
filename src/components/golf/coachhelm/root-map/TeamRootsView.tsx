@@ -416,7 +416,7 @@ function FocusSlopes({
         <p className="text-body-sm text-text-secondary">Focus before-and-after reads are not available right now.</p>
       ) : slopes.length === 0 ? (
         <p className="text-body-sm text-text-secondary">
-          No focus has three or more measured rounds on both sides yet.
+          None of the before-and-after reads you can see has three or more measured rounds on both sides yet.
         </p>
       ) : (
         <ul className="grid grid-cols-1 gap-4 min-[520px]:grid-cols-2">

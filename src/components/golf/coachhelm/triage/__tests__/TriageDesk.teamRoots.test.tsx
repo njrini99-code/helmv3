@@ -53,7 +53,13 @@ vi.mock('@/components/golf/coachhelm/root-map/TeamRootsView', () => ({
 
 vi.mock('../BriefBand', () => ({ BriefBand: () => <div data-testid="brief-band" /> }));
 vi.mock('../TeamSignalSummary', () => ({ TeamSignalSummary: () => <div data-testid="team-signal-summary" /> }));
-vi.mock('../SignalQueue', () => ({ SignalQueue: () => <div data-testid="signal-queue" /> }));
+vi.mock('../SignalQueue', () => ({
+  SignalQueue: ({ onSelectFilter }: { onSelectFilter: (f: string) => void }) => (
+    <div data-testid="signal-queue">
+      <button onClick={() => onSelectFilter('all')}>All chip</button>
+    </div>
+  ),
+}));
 vi.mock('../EffectivenessScoreboard', () => ({
   EffectivenessScoreboard: () => <div data-testid="effectiveness-view" />,
 }));
@@ -61,9 +67,10 @@ vi.mock('@/components/fairway/pages/coachhelm/TeamCategoryLeakBand', () => ({
   TeamCategoryLeakBand: () => <div data-testid="team-category-leak-band" />,
 }));
 vi.mock('../SignalDossier', () => ({
-  SignalDossier: ({ entry, onPromoted }: { entry: { signal: GroupedSignal } | null; onPromoted: (signal: GroupedSignal) => void }) => (
+  SignalDossier: ({ entry, onPromoted, onBack }: { entry: { signal: GroupedSignal } | null; onPromoted: (signal: GroupedSignal) => void; onBack: () => void }) => (
     <div data-testid="signal-dossier">
       {entry ? <button onClick={() => onPromoted(entry.signal)}>Test prescribe complete</button> : 'No selection'}
+      <button onClick={() => onBack()}>Dossier back</button>
     </div>
   ),
 }));
@@ -171,6 +178,26 @@ describe('TriageDesk team roots landing', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Open Putting signals' }));
     expect(screen.getByTestId('signal-queue')).toBeInTheDocument();
     expect(window.location.search).toBe('?view=signals&filter=category%3Aputting');
+  });
+
+  it('stays on Signals after leaving a deep-linked dossier or clearing a deep-linked filter', () => {
+    for (const search of ['signal=signal-1', 'id=signal-1']) {
+      navigation.params = new URLSearchParams(search);
+      window.history.replaceState({}, '', `/golf/dashboard/intelligence?${search}`);
+      const { unmount } = renderDesk();
+      fireEvent.click(screen.getByRole('button', { name: 'Dossier back' }));
+      expect(screen.getByTestId('signal-queue'), search).toBeInTheDocument();
+      expect(screen.queryByTestId('team-roots-view')).not.toBeInTheDocument();
+      expect(window.location.search).toBe('?view=signals');
+      unmount();
+    }
+    navigation.params = new URLSearchParams('filter=urgent');
+    window.history.replaceState({}, '', '/golf/dashboard/intelligence?filter=urgent');
+    renderDesk();
+    fireEvent.click(screen.getByRole('button', { name: 'All chip' }));
+    expect(screen.getByTestId('signal-queue')).toBeInTheDocument();
+    expect(screen.queryByTestId('team-roots-view')).not.toBeInTheDocument();
+    expect(window.location.search).toBe('?view=signals');
   });
 
   it('without the team model keeps Signals as default, hides the tab and ignores ?view=team', () => {

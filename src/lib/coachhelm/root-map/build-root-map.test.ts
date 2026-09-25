@@ -221,6 +221,8 @@ describe('buildRootMap routing (every returned row lands somewhere)', () => {
     const model = buildRootMap({ areas: AREAS, insights: [old, fresh] });
     const ids = model.losses.flatMap((l) => l.causes).map((c) => c.id);
     expect(ids).toEqual(['fresh']);
+    // the folded-away row was exposed upstream, so it still renders as an other read
+    expect(model.other.map((o) => o.id)).toEqual(['old']);
   });
 
   it('marks insights first detected on/after the last round as new', () => {

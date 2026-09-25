@@ -280,6 +280,13 @@ export function TriageDesk({
     // Each top-level view owns a disjoint set of params. Clearing foreign
     // params prevents an old signal/player scope from resurrecting when the
     // coach moves away and comes back.
+    // With Team roots as the landing view, a URL with no `view` resolves to
+    // team once its signal/filter deep-link param is cleared. Pin the view
+    // the coach is on, so Back from a dossier or the "All" chip stays on
+    // Signals (and so the link hrefs say so too).
+    if (updates.view === undefined && teamAvailable && !params.get('view')) {
+      params.set('view', view);
+    }
     if (updates.view !== undefined) {
       const targetView = resolveTriageView(updates.view);
       params.set('view', targetView);

@@ -100,7 +100,9 @@ CoachHelm generates insight/pattern/prediction
 - **Team roots is the landing view (owner direction, 2026-09-25).** An
   absent or unknown `?view=` opens `view=team` when the page built the
   team roots model, unless the URL is a `?signal=`, legacy `?id=` or
-  `?filter=` deep link (those still open Signals). When the model is
+  `?filter=` deep link (those still open Signals, and every in-desk link or
+  navigation writes the current `view` so clearing that param, e.g. Back
+  from a dossier or the All chip, stays on Signals). When the model is
   missing (its SG reads failed) the desk keeps the Signals default and
   hides the tab. Signals, Players and Effectiveness remain tabs. The view
   reads: a diverging stacked team trend (weekly team mean of each

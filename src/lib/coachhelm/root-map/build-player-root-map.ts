@@ -58,7 +58,8 @@ export function buildRootMap<T extends RankableEvidenceInsight>(input: RootMapIn
   // One card per issue: collapse par-scoring rows, then dedupe by subject,
   // the same helpers every delivery surface uses. Idempotent on rows that
   // were already deduped upstream.
-  const insights = dedupeBySubject(collapseParScoring(input.insights));
+  const collapsed = collapseParScoring(input.insights);
+  const insights = dedupeBySubject(collapsed);
 
   const sized: CauseSeed[] = [];
   const unsized: UnsizedCause[] = [];
@@ -96,6 +97,21 @@ export function buildRootMap<T extends RankableEvidenceInsight>(input: RootMapIn
     } else {
       other.push({ id: insight.id, title: insight.title, category: category ?? null, tier, isNew });
     }
+  }
+
+  // A row the page was handed but this dedupe folded away (e.g. a feed row
+  // sharing a subject with the separately fetched top insight) was still
+  // recorded as exposed upstream, so it must still render: as an other read.
+  const kept = new Set(insights.map((i) => i.id));
+  for (const insight of collapsed) {
+    if (kept.has(insight.id)) continue;
+    other.push({
+      id: insight.id,
+      title: insight.title,
+      category: insight.category ?? null,
+      tier: confidenceTier(insight.evidence?.confidence),
+      isNew: isNewSince(insight, since),
+    });
   }
 
   return layoutRootMap({
