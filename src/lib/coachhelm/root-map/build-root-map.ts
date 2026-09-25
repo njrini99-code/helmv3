@@ -38,6 +38,7 @@
  * ========================================================================== */
 
 import type { CausalityLevel, Diagnosis, InsightEvidence } from '@/lib/coachhelm/v2/insights/types';
+import { isTemplatedRootCause, plainMetricLabel, plainRootCause, richWhySentence } from './plain-copy';
 
 /** The four strokes-gained areas the map is drawn over. */
 export type RootArea = 'tee' | 'approach' | 'short_game' | 'putting';
@@ -500,7 +501,12 @@ export interface BranchDetail {
   style: RootStyle;
   causality: CausalityLevel | null;
   symptom: string | null;
+  /** `diagnosis.root_cause` in plain words (a templated "off its benchmark"
+   *  row is rewritten, see `plain-copy.ts`). */
   rootCause: string | null;
+  /** The stored insight text's own explanation, when richer than a
+   *  templated diagnosis: the Why's main sentence. Null otherwise. */
+  whySentence: string | null;
   recommendedAction: string | null;
   confidenceReason: string | null;
   /** The first quantified driver behind the diagnosis, when stored. */
@@ -551,12 +557,17 @@ export function branchDetailOf(insight: {
     style: rootStyleFor(ev),
     causality: causalityOf(ev),
     symptom: diag?.symptom?.trim() || null,
-    rootCause: diag?.root_cause?.trim() || null,
+    rootCause: plainRootCause(diag?.root_cause, typeof ev.metric === 'string' ? ev.metric : null),
+    whySentence: isTemplatedRootCause(diag?.root_cause) ? richWhySentence(insight.content) : null,
     recommendedAction: diag?.recommended_action?.trim() || null,
     confidenceReason: diag?.confidence_reason?.trim() || null,
     driver: d0
       ? {
-          label: (typeof d0.label === 'string' && d0.label) || d0.metric,
+          label:
+            (typeof d0.label === 'string' && d0.label.trim() && d0.label !== d0.metric && d0.label) ||
+            (d0.metric === ev.metric && typeof ev.metric_label === 'string' && ev.metric_label.trim()
+              ? humanizeCauseLabel(ev.metric_label)
+              : plainMetricLabel(d0.metric)),
           value: d0.value,
           unit: d0.unit,
           sampleN: finiteOrNull(d0.sample_n) ?? 0,

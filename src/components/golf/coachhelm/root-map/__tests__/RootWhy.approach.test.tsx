@@ -50,6 +50,7 @@ const detail: BranchDetail = {
   causality: 'inferred_hypothesis',
   symptom: null,
   rootCause: 'The record does not say why.',
+  whySentence: null,
   recommendedAction: null,
   confidenceReason: null,
   driver: null,

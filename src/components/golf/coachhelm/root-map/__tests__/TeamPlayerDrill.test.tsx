@@ -50,6 +50,7 @@ function detail(id: string, over: Partial<BranchDetail> = {}): BranchDetail {
     causality: 'observed_sequence',
     symptom: null,
     rootCause: 'Reads the break short on downhill putts.',
+    whySentence: null,
     recommendedAction: null,
     confidenceReason: null,
     driver: null,
@@ -156,6 +157,23 @@ describe('Team roots player drill', () => {
     expect(navigate).toHaveBeenCalledWith({ cause: 'far' });
     expect(screen.getByRole('heading', { name: 'Greens from 175+' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'The likely root' })).toBeInTheDocument();
+  });
+
+  it("quotes the stored read's richer text as the Why, keeping the inferred label", () => {
+    renderDrill({
+      ...ready,
+      details: {
+        ...ready.details,
+        putt: detail('putt', {
+          style: 'likely',
+          causality: 'inferred_hypothesis',
+          whySentence: 'Gets it close from 6 ft but misses the comebacker.',
+        }),
+      },
+    } as CoachPlayerDrill);
+    expect(screen.getByText('Gets it close from 6 ft but misses the comebacker.').tagName).toBe('BLOCKQUOTE');
+    expect(screen.getByText('From the read as Ava sees it.')).toBeInTheDocument();
+    expect(screen.getByText('Likely, not yet seen in shot sequences')).toBeInTheDocument();
   });
 
   it('calls out a last round more than 30 days old', () => {

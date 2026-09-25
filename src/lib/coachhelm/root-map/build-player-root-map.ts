@@ -29,6 +29,7 @@ import {
   type UnsizedCause,
   humanizeCauseLabel,
 } from './build-root-map';
+import { plainRootCause } from './plain-copy';
 
 /** Per approach band, what the page read from recorded shots
  *  (`approach-context.ts`): the strokes lost from the band when the band
@@ -110,7 +111,7 @@ export function buildRootMap<T extends RankableEvidenceInsight>(input: RootMapIn
           style: rootStyleFor(insight.evidence),
           tier,
           causality: causalityOf(insight.evidence),
-          rootCause: diagnosisOf(insight.evidence)?.root_cause ?? null,
+          rootCause: plainRootCause(diagnosisOf(insight.evidence)?.root_cause, insight.evidence?.metric ?? null),
           isNew,
           sizedBy: bySg ? 'band_sg' : 'counterfactual',
           sizingNote:

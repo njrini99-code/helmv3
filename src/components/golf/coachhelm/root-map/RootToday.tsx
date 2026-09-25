@@ -107,7 +107,7 @@ function areaLabelOf(category: string | null): string | null {
 }
 
 function rootSentence(detail: BranchDetail | null, branch: CauseBranch): string {
-  const cause = detail?.rootCause ?? branch.rootCause;
+  const cause = detail?.whySentence ?? detail?.rootCause ?? branch.rootCause;
   if (!cause || branch.style === 'unexplained') return 'The cause behind this one is not explained yet.';
   if (branch.style === 'observed') return `Seen in your shots: ${cause}`;
   if (branch.style === 'likely') return `Likely: ${cause}`;

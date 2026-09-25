@@ -58,6 +58,7 @@ import {
   type GreenView,
 } from '@/lib/coachhelm/root-map/green-view';
 import type { ApproachCompass, ApproachWhyView } from '@/lib/coachhelm/root-map/approach-context';
+import { INFERRED_LABEL } from '@/lib/coachhelm/root-map/plain-copy';
 
 export interface RootWhyInsight {
   id: string;
@@ -742,9 +743,27 @@ export function RootWhy({
         <h3 id="why-root-heading" className="border-b border-text-primary pb-2 font-fw-display text-body-lg font-semibold text-text-primary">
           {style === 'observed' ? (isCoach ? 'Seen in shots' : 'Seen in your shots') : style === 'likely' ? 'The likely root' : style === 'forming' ? 'A root that is still forming' : 'Why'}
         </h3>
-        <p className="text-body text-text-primary">
-          {detail.rootCause ?? 'The cause behind this one is not explained yet.'}
-        </p>
+        {detail.whySentence ? (
+          isCoach ? (
+            <figure className="m-0 flex flex-col gap-1">
+              <blockquote className="border-l-2 border-border-strong pl-3 text-body text-text-primary">
+                {detail.whySentence}
+              </blockquote>
+              <figcaption className="text-caption text-text-tertiary">From the read as {voice.subject} sees it.</figcaption>
+            </figure>
+          ) : (
+            <p className="text-body text-text-primary">{detail.whySentence}</p>
+          )
+        ) : (
+          <p className="text-body text-text-primary">
+            {detail.rootCause ?? 'The cause behind this one is not explained yet.'}
+          </p>
+        )}
+        {detail.causality === 'inferred_hypothesis' && detail.rootCause ? (
+          <p className="text-caption font-medium text-text-secondary" data-slot="why-inferred">
+            {INFERRED_LABEL}
+          </p>
+        ) : null}
         {detail.driver ? (
           <p className="text-body-sm text-text-secondary">
             {detail.driver.label}:{' '}
