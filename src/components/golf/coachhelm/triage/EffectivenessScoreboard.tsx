@@ -88,7 +88,13 @@ export function EffectivenessScoreboard({
   const working = topInsightTypes(initialEffectiveness?.byType, 'best');
   const notWorking = topInsightTypes(initialEffectiveness?.byType, 'worst');
   const calibration = summarizeCalibration(initialPerformance);
-  const trendPoints = (initialPerformance?.accuracyOverTime ?? []).map((p) => ({ x: p.date, y: p.accuracyRate }));
+  // Only snapshots with validated predictions carry an accuracy. The action
+  // coerces a missing rate to 0, so unvalidated windows drew a line crashing
+  // to "0% ▼−100%" beside "Not enough resolved outcomes yet". Same filter as
+  // FairwayEffectiveness.
+  const trendPoints = (initialPerformance?.accuracyOverTime ?? [])
+    .filter((p) => p.predictionsValidated > 0)
+    .map((p) => ({ x: p.date, y: p.accuracyRate }));
 
   // The Working / Not-working / calibration line each independently render an
   // honest "no data yet" — fine when only one is starved (its siblings carry
@@ -116,6 +122,8 @@ export function EffectivenessScoreboard({
         </div>
       </Surface>
 
+      {/* Hidden while starved: the consolidated empty state below covers it. */}
+      {!(showConsolidatedEmptyState && trendPoints.length < 2) && (
       <Surface padding="md">
         <Ribbon
           title="Prediction accuracy"
@@ -127,13 +135,14 @@ export function EffectivenessScoreboard({
           height={140}
         />
       </Surface>
+      )}
 
       {showConsolidatedEmptyState ? (
         <Surface padding="md" className="lg:col-span-2">
           <EmptyState
             variant="subtle"
             title="Not enough resolved outcomes yet"
-            description="Working / not-working rankings and prediction calibration fill in together once insights get acted on and predictions resolve."
+            description="Working / not-working rankings, prediction accuracy and calibration fill in together once insights get acted on and predictions resolve."
           />
         </Surface>
       ) : (
