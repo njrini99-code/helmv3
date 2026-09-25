@@ -13012,6 +13012,11 @@
         {
           "kind": "import_graph",
           "path": "src/lib/coachhelm/v2/orchestrator.ts",
+          "anchor": "src/lib/coachhelm/v3/generators/insight-angles/approach-miss-compass"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v2/orchestrator.ts",
           "anchor": "src/lib/coachhelm/v3/composite"
         },
         {
@@ -17473,6 +17478,11 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/generators/insight-angles/approach-miss-compass.ts",
+          "anchor": "src/lib/flags/is-enabled"
+        },
+        {
+          "kind": "import_graph",
           "path": "src/lib/coachhelm/v3/generators/insight-angles/bad-day-floor.ts",
           "anchor": "src/lib/flags/is-enabled"
         },
@@ -17947,6 +17957,11 @@
         {
           "kind": "import_graph",
           "path": "src/lib/coachhelm/v3/generators/approach-miss.ts",
+          "anchor": "src/lib/coachhelm/v2/insights/types"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/generators/insight-angles/approach-miss-compass.ts",
           "anchor": "src/lib/coachhelm/v2/insights/types"
         },
         {
