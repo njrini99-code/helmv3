@@ -110,9 +110,9 @@ export function FairwayRecentCourses({ courses, onConfirmCourse }: FairwayRecent
     <section aria-label="Recently played courses" className="flex flex-col gap-3">
       <div className="flex items-center gap-2 px-0.5">
         <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-accent-500" />
-        <p className="font-fw-sans text-eyebrow font-semibold uppercase tracking-[0.16em] text-text-tertiary">
+        <h2 className="font-fw-sans text-body-sm font-semibold text-text-primary">
           Pick up where you left off
-        </p>
+        </h2>
       </div>
 
       <ul className="scrollbar-hide -mx-1 flex gap-2.5 overflow-x-auto px-1 pb-1">
@@ -133,7 +133,7 @@ export function FairwayRecentCourses({ courses, onConfirmCourse }: FairwayRecent
                       <MapPin className="h-3.5 w-3.5" />
                     </span>
                     {c.roundCount > 0 && (
-                      <span className="truncate font-fw-mono text-eyebrow tabular-nums text-text-tertiary transition-colors group-hover:text-accent-700">
+                      <span className="truncate font-fw-mono text-caption tabular-nums text-text-tertiary transition-colors group-hover:text-accent-700">
                         {c.roundCount} {c.roundCount === 1 ? 'round' : 'rounds'}
                       </span>
                     )}
@@ -172,19 +172,19 @@ export function FairwayRecentCourses({ courses, onConfirmCourse }: FairwayRecent
               <Inset padding="md">
                 <dl className="grid grid-cols-3 gap-3 text-center">
                   <div>
-                    <dt className="font-fw-sans text-eyebrow uppercase tracking-[0.12em] text-text-tertiary">Tees</dt>
+                    <dt className="font-fw-sans text-caption text-text-tertiary">Tees</dt>
                     <dd className="mt-1 font-fw-sans text-body-sm font-medium text-text-primary">
                       {shown.teesPlayed ?? '—'}
                     </dd>
                   </div>
                   <div className="border-x border-border-subtle">
-                    <dt className="font-fw-sans text-eyebrow uppercase tracking-[0.12em] text-text-tertiary">Holes</dt>
+                    <dt className="font-fw-sans text-caption text-text-tertiary">Holes</dt>
                     <dd className="mt-1 font-fw-sans text-body-sm font-medium text-text-primary">
                       {shown.holesPerRound}
                     </dd>
                   </div>
                   <div>
-                    <dt className="font-fw-sans text-eyebrow uppercase tracking-[0.12em] text-text-tertiary">Played</dt>
+                    <dt className="font-fw-sans text-caption text-text-tertiary">Played</dt>
                     <dd className="mt-1 font-fw-sans text-body-sm font-medium tabular-nums text-text-primary">
                       {shown.roundCount > 0 ? `${shown.roundCount}×` : 'New'}
                     </dd>

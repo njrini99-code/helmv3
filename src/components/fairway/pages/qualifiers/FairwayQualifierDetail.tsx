@@ -333,9 +333,9 @@ export function FairwayQualifierDetail(props: FairwayQualifierDetailProps) {
 
             {rules ? (
               <div className="space-y-2">
-                <p className="font-fw-sans text-eyebrow font-semibold uppercase tracking-[0.07em] text-text-tertiary">
+                <h2 className="font-fw-sans text-body-sm font-semibold text-text-primary">
                   Rules
-                </p>
+                </h2>
                 <Inset padding="md">
                   <p className="whitespace-pre-wrap font-fw-sans text-body text-text-secondary">
                     {rules}
@@ -427,7 +427,7 @@ function DetailItem({
 }) {
   return (
     <div className="space-y-1">
-      <dt className="font-fw-sans text-eyebrow font-semibold uppercase tracking-[0.07em] text-text-tertiary">
+      <dt className="font-fw-sans text-caption font-semibold text-text-tertiary">
         {label}
       </dt>
       <dd
@@ -541,24 +541,24 @@ function RoundBreakdownTable({
         <table className="w-full min-w-[480px] border-collapse font-fw-sans text-body">
           <thead>
             <tr className="border-b border-border-strong text-left">
-              <th className="w-8 pb-2 pr-3 font-fw-sans text-eyebrow font-semibold uppercase tracking-[0.07em] text-text-tertiary">
+              <th className="w-8 pb-2 pr-3 font-fw-sans text-caption font-semibold text-text-tertiary">
                 #
               </th>
-              <th className="pb-2 pr-3 font-fw-sans text-eyebrow font-semibold uppercase tracking-[0.07em] text-text-tertiary">
+              <th className="pb-2 pr-3 font-fw-sans text-caption font-semibold text-text-tertiary">
                 Player
               </th>
               {roundColumns.map((n) => (
                 <th
                   key={n}
-                  className="px-2 pb-2 text-center font-fw-sans text-eyebrow font-semibold uppercase tracking-[0.07em] text-text-tertiary"
+                  className="px-2 pb-2 text-center font-fw-sans text-caption font-semibold text-text-tertiary"
                 >
                   R{n}
                 </th>
               ))}
-              <th className="pb-2 pl-3 text-right font-fw-sans text-eyebrow font-semibold uppercase tracking-[0.07em] text-text-tertiary">
+              <th className="pb-2 pl-3 text-right font-fw-sans text-caption font-semibold text-text-tertiary">
                 Total
               </th>
-              <th className="pb-2 pl-3 text-right font-fw-sans text-eyebrow font-semibold uppercase tracking-[0.07em] text-text-tertiary">
+              <th className="pb-2 pl-3 text-right font-fw-sans text-caption font-semibold text-text-tertiary">
                 To par
               </th>
             </tr>
@@ -674,7 +674,7 @@ function RoundCoursesSection({
                   {roundNumber}
                 </span>
                 <div className="min-w-0 flex-1">
-                  <p className="font-fw-sans text-eyebrow font-semibold uppercase tracking-[0.07em] text-text-tertiary">
+                  <p className="font-fw-sans text-caption font-semibold text-text-tertiary">
                     Round {roundNumber}
                   </p>
                   {assigned?.courseName ? (

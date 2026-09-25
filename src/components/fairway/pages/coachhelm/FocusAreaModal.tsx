@@ -544,7 +544,7 @@ export function FocusAreaModal({
                   <area.icon size={16} />
                 </span>
                 {stats && stats.rounds_played > 0 ? (
-                  <div className="flex flex-wrap gap-x-4 gap-y-1 font-fw-sans text-eyebrow text-text-secondary">
+                  <div className="flex flex-wrap gap-x-4 gap-y-1 font-fw-sans text-caption text-text-secondary">
                     <span>
                       Avg{' '}
                       <span className="font-fw-sans font-semibold tabular-nums text-text-primary">
@@ -571,7 +571,7 @@ export function FocusAreaModal({
                     </span>
                   </div>
                 ) : (
-                  <span className="font-fw-sans text-eyebrow italic text-text-tertiary">
+                  <span className="font-fw-sans text-caption italic text-text-tertiary">
                     No rounds recorded yet. Values won&apos;t auto-fill.
                   </span>
                 )}
@@ -692,7 +692,7 @@ export function FocusAreaModal({
                   }
                   placeholder="e.g. Pre-shot routine consistency"
                 />
-                <p className="mt-1 font-fw-sans text-eyebrow text-text-tertiary">
+                <p className="mt-1 font-fw-sans text-caption text-text-tertiary">
                   Custom metrics won&apos;t auto-track. Update progress manually.
                 </p>
               </FormField>
@@ -726,7 +726,7 @@ export function FocusAreaModal({
                   <button
                     type="button"
                     onClick={applySuggested}
-                    className="mt-1 font-fw-sans text-eyebrow text-accent-700 underline-offset-2 hover:underline"
+                    className="mt-1 font-fw-sans text-caption text-accent-700 underline-offset-2 hover:underline"
                   >
                     Suggested: {formatMetricValue(form.target_metric, suggested)}, use it
                   </button>
@@ -781,7 +781,7 @@ export function FocusAreaModal({
             </FormField>
 
             {previewDelta ? (
-              <p className="font-fw-sans text-eyebrow text-text-tertiary">
+              <p className="font-fw-sans text-caption text-text-tertiary">
                 {previewDelta.improving ? 'Asking for a' : 'Heads up, this target moves the wrong way by'}{' '}
                 <Badge tone={previewDelta.improving ? 'neutral' : 'warning'} size="sm" numeric>
                   {previewDelta.magnitude}

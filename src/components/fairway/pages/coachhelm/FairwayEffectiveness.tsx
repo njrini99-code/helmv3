@@ -588,7 +588,7 @@ export function FairwayEffectiveness({
           aria-label="Effectiveness detail views"
           className="flex flex-wrap items-center gap-3 border-t border-border-subtle pt-5"
         >
-          <span className="font-fw-display text-eyebrow uppercase tracking-[0.14em] text-text-tertiary">
+          <span className="font-fw-display text-caption text-text-tertiary">
             Go deeper
           </span>
           <Segmented<ViewType>
@@ -1032,7 +1032,7 @@ function PatternImpactDeck({
     return (
       <InstrumentPanel depth="base" padding="lg" className="flex flex-col gap-4">
         <div className="flex flex-col gap-1">
-          <span className="font-fw-display text-eyebrow uppercase tracking-[0.14em] text-text-tertiary">
+          <span className="font-fw-display text-caption text-text-tertiary">
             Impact ledger
           </span>
           <h3 className="font-fw-display text-h3 text-text-primary">Pattern impact</h3>
@@ -1059,7 +1059,7 @@ function PatternImpactDeck({
     return (
       <InstrumentPanel depth="base" padding="lg" className="flex flex-col gap-4">
         <div className="flex flex-col gap-1">
-          <span className="font-fw-display text-eyebrow uppercase tracking-[0.14em] text-text-tertiary">
+          <span className="font-fw-display text-caption text-text-tertiary">
             Impact ledger
           </span>
           <h3 className="font-fw-display text-h3 text-text-primary">Pattern impact</h3>
@@ -1082,7 +1082,7 @@ function PatternImpactDeck({
     <InstrumentPanel depth="base" padding="lg" className="flex flex-col gap-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="flex flex-col gap-1">
-          <span className="font-fw-display text-eyebrow uppercase tracking-[0.14em] text-text-tertiary">
+          <span className="font-fw-display text-caption text-text-tertiary">
             Impact ledger
           </span>
           <h3 className="font-fw-display text-h3 text-text-primary">Pattern impact</h3>
@@ -1559,7 +1559,7 @@ function InsightTrustBand({ trust }: { trust: InsightTrustState }) {
   return (
     <Surface padding="md">
       <div className="mb-4 flex flex-col gap-0.5">
-        <span className="font-fw-display text-eyebrow uppercase tracking-[0.14em] text-text-tertiary">
+        <span className="font-fw-display text-caption text-text-tertiary">
           Trust ledger
         </span>
         <h3 className="font-fw-display text-h3 text-text-primary">Are these insights earning trust?</h3>
@@ -1665,19 +1665,19 @@ function InsightTrustTable({ trust }: { trust: InsightTrustState }) {
             <tr className="border-b border-border-subtle">
               <th
                 scope="col"
-                className="px-5 py-3 font-fw-sans text-eyebrow uppercase tracking-[0.08em] text-text-tertiary"
+                className="px-5 py-3 font-fw-sans text-caption text-text-tertiary"
               >
                 Insight
               </th>
               <th
                 scope="col"
-                className="px-5 py-3 text-center font-fw-sans text-eyebrow uppercase tracking-[0.08em] text-text-tertiary"
+                className="px-5 py-3 text-center font-fw-sans text-caption text-text-tertiary"
               >
                 Trend
               </th>
               <th
                 scope="col"
-                className="px-5 py-3 text-right font-fw-sans text-eyebrow uppercase tracking-[0.08em] text-text-tertiary"
+                className="px-5 py-3 text-right font-fw-sans text-caption text-text-tertiary"
               >
                 Trust
               </th>

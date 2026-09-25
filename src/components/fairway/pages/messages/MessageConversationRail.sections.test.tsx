@@ -104,9 +104,9 @@ const FIXTURE: GolfConversationWithMeta[] = [
   conv('c6', 'Qualifier Week', 0, daysAgo(10)),
 ];
 
-/** Every eyebrow section label the rail rendered, in document order. */
+/** Every section heading (h2) the rail rendered, in document order. */
 function sectionLabels(container: HTMLElement): string[] {
-  return Array.from(container.querySelectorAll('p'))
+  return Array.from(container.querySelectorAll('h2'))
     .map((p) => p.textContent?.trim() ?? '')
     .filter((t) => ['Unread', 'Today', 'Yesterday', 'This Week', 'Earlier'].includes(t));
 }

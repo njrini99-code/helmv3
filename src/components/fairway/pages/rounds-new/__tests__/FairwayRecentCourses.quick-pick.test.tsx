@@ -68,7 +68,9 @@ describe('FairwayRecentCourses quick-pick', () => {
 
     // The sheet is closing, but still shows the course the player confirmed.
     expect(screen.getByTestId('sheet')).toHaveAttribute('data-open', 'false');
-    expect(screen.getByRole('heading', { level: 2 })).toHaveTextContent('Start a new round at Alamance CC?');
+    expect(
+      screen.getByRole('heading', { level: 2, name: 'Start a new round at Alamance CC?' }),
+    ).toBeInTheDocument();
     expect(screen.getByText('Blue')).toBeInTheDocument();
     // The parent (which advances the step and unmounts this screen) waits for the exit.
     expect(onConfirm).not.toHaveBeenCalled();

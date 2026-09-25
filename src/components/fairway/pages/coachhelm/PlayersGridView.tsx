@@ -676,7 +676,7 @@ export function PlayersGridView({
         cell: ({ row }) => {
           const t = row.original.stats?.recent_trend ?? null;
           if (!t) {
-            return <span className="font-fw-sans text-eyebrow text-text-tertiary">—</span>;
+            return <span className="font-fw-sans text-caption text-text-tertiary">—</span>;
           }
           // Canonical arrow/color primitive (#945) — arrow is ALWAYS the
           // performance direction (up-ish for improving, down-ish for
@@ -693,7 +693,7 @@ export function PlayersGridView({
         cell: ({ row }) => {
           const { activeCount, completedCount } = row.original;
           if (activeCount === 0 && completedCount === 0) {
-            return <span className="font-fw-sans text-eyebrow text-text-tertiary">None yet</span>;
+            return <span className="font-fw-sans text-caption text-text-tertiary">None yet</span>;
           }
           return (
             <div className="flex items-center justify-end gap-1.5">
@@ -721,7 +721,7 @@ export function PlayersGridView({
         cell: ({ row }) => {
           const goalCount = (goalsByPlayer[row.original.player.id] ?? []).length;
           if (goalCount === 0) {
-            return <span className="font-fw-sans text-eyebrow text-text-tertiary">None yet</span>;
+            return <span className="font-fw-sans text-caption text-text-tertiary">None yet</span>;
           }
           return (
             <div className="flex items-center justify-end">
@@ -924,9 +924,9 @@ export function PlayersGridView({
                  A sparse Fraunces section label organizes it. ---- */
           <section aria-label="Team roster" className="flex flex-col gap-3">
             <div className="flex items-baseline justify-between gap-3">
-              <p className="font-fw-display text-eyebrow uppercase tracking-[0.14em] text-text-tertiary">
+              <h2 className="font-fw-sans text-body-sm font-semibold text-text-primary">
                 Roster · {rosterRows.length} player{rosterRows.length === 1 ? '' : 's'}
-              </p>
+              </h2>
               <p className="font-fw-sans text-caption text-text-tertiary">
                 Tap a player to scope their focus areas
               </p>
@@ -1102,7 +1102,7 @@ export function PlayersGridView({
                     </span>
                   ) : null}
                   {logTarget.target_metric && (
-                    <span className="ml-2 font-fw-sans text-eyebrow text-text-tertiary">
+                    <span className="ml-2 font-fw-sans text-caption text-text-tertiary">
                       {logTarget.target_metric}
                     </span>
                   )}
@@ -1261,7 +1261,7 @@ export function RosterPlayerCard({
                   {formatScoringAverage(stats.avg_score)}
                 </span>
               ) : (
-                <span className="font-fw-sans text-eyebrow text-text-tertiary">—</span>
+                <span className="font-fw-sans text-caption text-text-tertiary">—</span>
               )}
               {trend ? (
                 <TrendGlyph direction={trend} className="font-fw-sans text-caption font-medium" />
@@ -1440,9 +1440,9 @@ function FocusAreaBoard({
           fix or retract the prescription before the player acts on it. */}
       {proposed.length > 0 ? (
         <div className="space-y-3">
-          <p className="font-fw-sans text-eyebrow uppercase tracking-wide text-text-tertiary">
+          <h2 className="font-fw-sans text-body-sm font-semibold text-text-primary">
             Pending acceptance ({proposed.length})
-          </p>
+          </h2>
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
             {proposed.map((fa, i) => (
               <FocusAreaCard
@@ -1465,9 +1465,9 @@ function FocusAreaBoard({
           prescribed area never shows up as active; Edit/Delete only. */}
       {declined.length > 0 ? (
         <div className="space-y-3">
-          <p className="font-fw-sans text-eyebrow uppercase tracking-wide text-text-tertiary">
+          <h2 className="font-fw-sans text-body-sm font-semibold text-text-primary">
             Declined ({declined.length})
-          </p>
+          </h2>
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
             {declined.map((fa, i) => (
               <FocusAreaCard
@@ -1487,9 +1487,9 @@ function FocusAreaBoard({
 
       {completed.length > 0 ? (
         <div className="space-y-3">
-          <p className="font-fw-sans text-eyebrow uppercase tracking-wide text-text-tertiary">
+          <h2 className="font-fw-sans text-body-sm font-semibold text-text-primary">
             Completed ({completed.length})
-          </p>
+          </h2>
           <div className="space-y-2">
             {completed.map((fa, i) => (
               <FocusAreaCard

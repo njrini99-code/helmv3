@@ -221,7 +221,7 @@ export function FairwayHoleConfig({
       >
         {value}
       </div>
-      <div className="mt-0.5 font-fw-sans text-eyebrow font-medium uppercase tracking-[0.1em] text-text-tertiary">
+      <div className="mt-0.5 font-fw-sans text-caption font-medium text-text-tertiary">
         {label}
       </div>
     </div>
@@ -284,13 +284,13 @@ export function FairwayHoleConfig({
           <div className="overflow-hidden rounded-fw-md border border-border-subtle">
             {/* Header bar (sunken well) */}
             <div className="grid grid-cols-[44px_1fr_96px] sm:grid-cols-[52px_1fr_104px] items-center bg-surface-sunken">
-              <div className="px-3 py-2.5 font-fw-sans text-eyebrow font-semibold uppercase tracking-[0.1em] text-text-tertiary">
+              <div className="px-3 py-2.5 font-fw-sans text-caption font-semibold text-text-tertiary">
                 Hole
               </div>
-              <div className="px-3 py-2.5 text-center font-fw-sans text-eyebrow font-semibold uppercase tracking-[0.1em] text-text-tertiary">
+              <div className="px-3 py-2.5 text-center font-fw-sans text-caption font-semibold text-text-tertiary">
                 Par
               </div>
-              <div className="px-3 py-2.5 text-center font-fw-sans text-eyebrow font-semibold uppercase tracking-[0.1em] text-text-tertiary">
+              <div className="px-3 py-2.5 text-center font-fw-sans text-caption font-semibold text-text-tertiary">
                 Yards
               </div>
             </div>
@@ -368,7 +368,7 @@ export function FairwayHoleConfig({
 
             {/* Total footer */}
             <div className="grid grid-cols-[44px_1fr_96px] sm:grid-cols-[52px_1fr_104px] items-center border-t border-border-strong bg-accent-50">
-              <div className="px-3 py-3 font-fw-sans text-eyebrow font-semibold uppercase tracking-[0.1em] text-accent-700">
+              <div className="px-3 py-3 font-fw-sans text-caption font-semibold text-accent-700">
                 {footerLabel}
               </div>
               <div className="px-3 py-3 text-center font-fw-mono text-body-sm font-semibold tabular-nums text-accent-700">

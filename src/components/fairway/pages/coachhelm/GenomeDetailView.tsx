@@ -409,7 +409,7 @@ export function GenomeDetailView({
               header="Dimensions"
               as="section"
               readout={
-                <span className="font-fw-sans text-eyebrow text-text-tertiary">
+                <span className="font-fw-sans text-caption text-text-tertiary">
                   {maturityCaption}
                 </span>
               }
@@ -586,7 +586,7 @@ function RoundsBasisReadout({ rounds }: { rounds: number }) {
 function RefreshedReadout({ computedAt }: { computedAt: string | null }) {
   return (
     <InstrumentPanel depth="base" padding="md" className="flex h-full flex-col justify-center">
-      <span className="font-fw-display text-eyebrow uppercase tracking-[0.14em] text-text-tertiary">
+      <span className="font-fw-display text-caption text-text-tertiary">
         Last refreshed
       </span>
       <span className="mt-1 font-fw-mono text-h3 font-semibold tabular-nums text-text-primary">
@@ -649,9 +649,9 @@ function PersonaInstrument({
         </p>
         {persona.course_profile ? (
           <InstrumentPanel depth="inset" padding="sm">
-            <p className="font-fw-sans text-eyebrow uppercase tracking-wide text-text-tertiary">
+            <h3 className="font-fw-sans text-body-sm font-semibold text-text-primary">
               Course profile
-            </p>
+            </h3>
             <p className="mt-1 font-fw-sans text-body-sm leading-relaxed text-text-secondary">
               {persona.course_profile}
             </p>
@@ -710,7 +710,7 @@ function PersonaInstrument({
                     {w.label}
                   </p>
                   {w.qualitative ? (
-                    <p className="truncate font-fw-sans text-eyebrow text-text-tertiary">
+                    <p className="truncate font-fw-sans text-caption text-text-tertiary">
                       {w.qualitative}
                     </p>
                   ) : null}
@@ -757,9 +757,9 @@ function PersonaInstrument({
       {/* Course profile — a recessed inset sub-readout on the same instrument. */}
       {persona.course_profile ? (
         <InstrumentPanel depth="inset" padding="sm">
-          <p className="font-fw-sans text-eyebrow uppercase tracking-wide text-text-tertiary">
+          <h3 className="font-fw-sans text-body-sm font-semibold text-text-primary">
             Course profile
-          </p>
+          </h3>
           <p className="mt-1 font-fw-sans text-body-sm leading-relaxed text-text-secondary">
             {persona.course_profile}
           </p>
@@ -808,7 +808,7 @@ function DimensionCell({ dim }: { dim: DimRow }) {
         aria-label={`${dim.label}: not tracked`}
       >
         <div className="flex items-center justify-between gap-2">
-          <span className="font-fw-sans text-eyebrow uppercase tracking-wide text-text-tertiary">
+          <span className="font-fw-sans text-caption text-text-tertiary">
             {dim.label}
           </span>
           <IconMinus size={12} className="text-text-tertiary" />
@@ -831,7 +831,7 @@ function DimensionCell({ dim }: { dim: DimRow }) {
         aria-label={`${dim.label}: needs more rounds`}
       >
         <div className="flex items-center justify-between gap-2">
-          <span className="font-fw-sans text-eyebrow uppercase tracking-wide text-text-tertiary">
+          <span className="font-fw-sans text-caption text-text-tertiary">
             {dim.label}
           </span>
           <IconLock size={12} className="text-text-tertiary" />
@@ -847,7 +847,7 @@ function DimensionCell({ dim }: { dim: DimRow }) {
 
   return (
     <InstrumentPanel depth="inset" padding="sm" className="flex flex-col gap-2">
-      <span className="font-fw-sans text-eyebrow uppercase tracking-wide text-text-tertiary">
+      <span className="font-fw-sans text-caption text-text-tertiary">
         {dim.label}
       </span>
       <div className="flex items-baseline justify-between gap-2">

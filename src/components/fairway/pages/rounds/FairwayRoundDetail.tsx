@@ -543,7 +543,7 @@ export function FairwayRoundDetail({
         {/* ════════════════ 3 · SCORECARD — the real spine (golf_holes) ═════ */}
         {hasHoles ? (
           <section className="flex flex-col gap-3">
-            <h2 className="px-1 font-fw-display text-eyebrow font-medium uppercase tracking-[0.14em] text-text-tertiary">
+            <h2 className="px-1 font-fw-sans text-body-sm font-semibold text-text-primary">
               Scorecard
             </h2>
             <Surface padding="none" elevation="border" className="overflow-hidden">
@@ -617,7 +617,7 @@ export function FairwayRoundDetail({
 
         {/* ════════════════ 5 · WHAT'S-NEXT — areas to work on ══════════════ */}
         <section className="flex flex-col gap-3">
-          <h2 className="px-1 font-fw-display text-eyebrow font-medium uppercase tracking-[0.14em] text-text-tertiary">
+          <h2 className="px-1 font-fw-sans text-body-sm font-semibold text-text-primary">
             Areas to work on
           </h2>
           <Surface padding={hasReview && hasNextWork ? 'md' : 'none'} elevation="border">
@@ -1088,7 +1088,7 @@ function ScorecardNine({
       {/* Phone — per-hole row strips (Rule 8: never a squeezed table) */}
       <div className="flex flex-col gap-2 px-3 py-3 md:hidden">
         <div className="flex items-center justify-between px-1">
-          <span className="font-fw-display text-eyebrow font-medium uppercase tracking-[0.14em] text-text-tertiary">
+          <span className="font-fw-display text-caption font-medium text-text-tertiary">
             {label} nine
           </span>
           {parTotal ? (
@@ -1239,7 +1239,7 @@ function ScorecardHoleRow({ hole }: { hole: RoundHoleRow }) {
         {hole.hole_number}
       </span>
       <div className="w-8 shrink-0 leading-tight">
-        <p className="font-fw-display text-eyebrow font-medium uppercase tracking-[0.06em] text-text-tertiary">
+        <p className="font-fw-display text-caption font-medium text-text-tertiary">
           Par
         </p>
         <p className="font-fw-mono text-body-sm font-medium tabular-nums text-text-secondary">
@@ -1262,7 +1262,7 @@ function ScorecardHoleRow({ hole }: { hole: RoundHoleRow }) {
       {/* Label-over-value, mirroring the Par block — one micro-pattern
           across the row's small data blocks. */}
       <div className="w-10 shrink-0 text-right leading-tight">
-        <p className="font-fw-display text-eyebrow font-medium uppercase tracking-[0.06em] text-text-tertiary">
+        <p className="font-fw-display text-caption font-medium text-text-tertiary">
           Putts
         </p>
         <p className="font-fw-mono text-body-sm tabular-nums text-text-secondary">
@@ -1271,13 +1271,13 @@ function ScorecardHoleRow({ hole }: { hole: RoundHoleRow }) {
       </div>
       <div className="flex shrink-0 flex-col items-end gap-1 pl-1">
         <span className="inline-flex items-center gap-1.5">
-          <span className="font-fw-display text-eyebrow font-medium uppercase tracking-[0.06em] text-text-tertiary">
+          <span className="font-fw-display text-caption font-medium text-text-tertiary">
             FW
           </span>
           <HitMark value={hole.fairway_hit} />
         </span>
         <span className="inline-flex items-center gap-1.5">
-          <span className="font-fw-display text-eyebrow font-medium uppercase tracking-[0.06em] text-text-tertiary">
+          <span className="font-fw-display text-caption font-medium text-text-tertiary">
             GIR
           </span>
           <HitMark value={hole.gir} />
@@ -1291,7 +1291,7 @@ function Th({ children, className = '' }: { children?: React.ReactNode; classNam
   return (
     <th
       scope="col"
-      className={`px-1.5 py-1.5 font-fw-display text-eyebrow font-medium uppercase tracking-[0.1em] text-text-tertiary ${className}`}
+      className={`px-1.5 py-1.5 font-fw-display text-caption font-medium text-text-tertiary ${className}`}
     >
       {children}
     </th>

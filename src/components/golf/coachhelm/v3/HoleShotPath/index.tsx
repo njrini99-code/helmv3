@@ -705,12 +705,12 @@ export function HoleShotPath({
           <div className="mb-2 grid min-w-0 grid-cols-[minmax(0,1fr)_auto] gap-x-1 gap-y-0.5 overflow-clip px-1">
             <div className="flex min-w-0 items-baseline gap-1 overflow-hidden whitespace-nowrap">
               {hole_number !== undefined && (
-                <span className="shrink-0 text-eyebrow uppercase tracking-[0.12em] text-text-tertiary">
+                <span className="shrink-0 text-caption text-text-tertiary">
                   Hole {hole_number}
                 </span>
               )}
               {par !== undefined && (
-                <span className="shrink-0 text-eyebrow text-text-tertiary tabular-nums">
+                <span className="shrink-0 text-caption text-text-tertiary tabular-nums">
                   Par {par}
                 </span>
               )}
@@ -721,7 +721,7 @@ export function HoleShotPath({
               </span>
             )}
             {plot.total_yardage > 0 && (
-              <span className="col-span-2 truncate text-eyebrow text-text-tertiary tabular-nums">
+              <span className="col-span-2 truncate text-caption text-text-tertiary tabular-nums">
                 {Math.round(plot.total_yardage)}y
               </span>
             )}
@@ -1270,7 +1270,7 @@ export function HoleShotPath({
               animate={{ opacity: 1 }}
               transition={prefersReducedMotion ? { duration: 0 } : { duration: 0.15, ease: EASE_CINEMATIC }}
               style={tooltipPlacement(hovered.x, hovered.y)}
-              className="absolute z-10 pointer-events-none surface-lift rounded-xl px-3 py-2 text-eyebrow text-warm-800 whitespace-nowrap shadow-lg"
+              className="absolute z-10 pointer-events-none surface-lift rounded-xl px-3 py-2 text-caption text-warm-800 whitespace-nowrap shadow-lg"
               role="tooltip"
             >
               <div className="flex items-baseline gap-2">
@@ -1337,7 +1337,7 @@ export function HoleShotPath({
             typed in, not a GPS/laser reading. Skipped at `strip` (no room,
             18 simultaneous copies would just be noise). */}
         {variant.showHeader && (
-          <p className="mt-1.5 px-1 text-eyebrow leading-snug text-text-tertiary">
+          <p className="mt-1.5 px-1 text-caption leading-snug text-text-tertiary">
             Distances are player-logged, not GPS-measured.
           </p>
         )}
@@ -1351,7 +1351,7 @@ export function HoleShotPath({
             transition={prefersReducedMotion ? { duration: 0 } : (enterTransition)}
             className="absolute inset-0 flex items-center justify-center pointer-events-none"
           >
-            <span className="text-eyebrow uppercase tracking-[0.14em] text-warm-100/70">
+            <span className="text-caption text-warm-100/70">
               No shots logged
             </span>
           </m.div>

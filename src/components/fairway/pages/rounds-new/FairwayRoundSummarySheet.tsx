@@ -168,20 +168,20 @@ export function FairwayRoundSummarySheet({
               animate={{ opacity: 1, y: 0 }}
               transition={prefersReducedMotion ? { duration: 0 } : { delay: 0.3, duration: 0.3 }}
             >
-              <p className="mb-2 font-fw-sans text-eyebrow font-medium uppercase tracking-[0.12em] text-text-tertiary">Scorecard</p>
+              <h3 className="mb-2 font-fw-sans text-body-sm font-semibold text-text-primary">Scorecard</h3>
               <div className="overflow-x-auto overflow-hidden rounded-fw-md border border-border-subtle">
                 {/* Front 9 (or all 9 for a 9-hole round) */}
                 <div className="grid gap-px bg-border-subtle" style={{ gridTemplateColumns: `repeat(${colCount}, 1fr)` }}>
                   {finalStats.slice(0, 9).map((_, idx) => (
                     <div key={`h${idx}`} className="bg-surface-sunken py-1 text-center">
-                      <span className="font-fw-sans text-eyebrow font-medium text-text-tertiary">{idx + 1}</span>
+                      <span className="font-fw-sans text-caption font-medium text-text-tertiary">{idx + 1}</span>
                     </div>
                   ))}
                 </div>
                 <div className="grid gap-px bg-border-subtle" style={{ gridTemplateColumns: `repeat(${colCount}, 1fr)` }}>
                   {finalStats.slice(0, 9).map((h, idx) => (
                     <div key={`p${idx}`} className="bg-surface py-1 text-center">
-                      <span className="font-fw-mono text-eyebrow text-text-tertiary">{h?.par}</span>
+                      <span className="font-fw-mono text-caption text-text-tertiary">{h?.par}</span>
                     </div>
                   ))}
                 </div>
@@ -198,14 +198,14 @@ export function FairwayRoundSummarySheet({
                     <div className="grid gap-px bg-border-subtle" style={{ gridTemplateColumns: 'repeat(9, 1fr)' }}>
                       {finalStats.slice(9, 18).map((_, idx) => (
                         <div key={`h2${idx}`} className="bg-surface-sunken py-1 text-center">
-                          <span className="font-fw-sans text-eyebrow font-medium text-text-tertiary">{idx + 10}</span>
+                          <span className="font-fw-sans text-caption font-medium text-text-tertiary">{idx + 10}</span>
                         </div>
                       ))}
                     </div>
                     <div className="grid gap-px bg-border-subtle" style={{ gridTemplateColumns: 'repeat(9, 1fr)' }}>
                       {finalStats.slice(9, 18).map((h, idx) => (
                         <div key={`p2${idx}`} className="bg-surface py-1 text-center">
-                          <span className="font-fw-mono text-eyebrow text-text-tertiary">{h?.par}</span>
+                          <span className="font-fw-mono text-caption text-text-tertiary">{h?.par}</span>
                         </div>
                       ))}
                     </div>
