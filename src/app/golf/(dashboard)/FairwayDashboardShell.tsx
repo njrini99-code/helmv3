@@ -166,18 +166,27 @@ const COACHHELM_TAB_LABELS: Record<string, string> = {
   coachhelm: surfaceName('ask'), // /coachhelm/chat, /coachhelm/genome
 };
 
+/** /coachhelm/<sub> pages that are not the Ask chat. Without these the phone
+ *  top bar titled the qualifier Selection workspace (and Genome Compare) "Ask". */
+const COACHHELM_SUBPATH_LABELS: Record<string, string> = {
+  genome: surfaceName('genome-compare'),
+  qualifying: 'Selection',
+};
+
 /** Pathname → breadcrumb trail. Two levels normally (Dashboard / Section); for
  *  the CoachHelm cluster, three (Dashboard / CoachHelm AI / Tab) so the top-bar
  *  breadcrumb agrees with the CoachHelm masthead + sub-nav instead of showing a
  *  competing trail for the same screen (P409). */
-function buildBreadcrumbs(pathname: string): Breadcrumb[] {
+export function buildBreadcrumbs(pathname: string): Breadcrumb[] {
   const rest = pathname.replace(/^\/golf\/dashboard\/?/, '');
   if (!rest) return [{ label: 'Dashboard' }];
   const seg = rest.split('/')[0] ?? '';
 
   // CoachHelm cluster → reconcile with the masthead's "CoachHelm AI / <Tab>".
   if (COACHHELM_CLUSTER_SEGMENTS.has(seg) && isCoachHelmCoachCluster(pathname)) {
-    const tabLabel = COACHHELM_TAB_LABELS[seg] ?? SEGMENT_LABELS[seg] ?? toTitle(seg);
+    const sub = seg === 'coachhelm' ? rest.split('/')[1] : undefined;
+    const tabLabel =
+      (sub ? COACHHELM_SUBPATH_LABELS[sub] : undefined) ?? COACHHELM_TAB_LABELS[seg] ?? SEGMENT_LABELS[seg] ?? toTitle(seg);
     return [
       { label: 'Dashboard', href: '/golf/dashboard' },
       { label: surfaceName('rail-coachhelm-ai-coach'), href: surfaceHref('rail-coachhelm-ai-coach') },

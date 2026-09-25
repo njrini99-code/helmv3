@@ -341,7 +341,7 @@ function SlotLeaderboard({
           // min-width and the list scrolls horizontally (matching the detail-page
           // tables) instead of squeezing/wrapping the name.
           <div className="-mx-1 overflow-x-auto px-1">
-          <ul className="flex min-w-[460px] flex-col">
+          <ul className="flex flex-col sm:min-w-[460px]">
             {ranked.map((c) => {
               const locked = c.is_top_score_slot;
               const picked = c.selection?.selection_type === 'coach_pick';
@@ -361,19 +361,28 @@ function SlotLeaderboard({
                   >
                     {c.leaderboard_rank ?? '—'}
                   </span>
-                  <Link
-                    href={`/golf/dashboard/stats?player=${c.player_id}`}
-                    className="flex-1 truncate rounded-fw-sm font-fw-sans text-body font-medium text-text-primary underline-offset-2 outline-none hover:text-accent-700 hover:underline focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas"
-                  >
-                    {c.player_first_name} {c.player_last_name}
-                  </Link>
-                  <span className="w-12 text-right font-fw-mono text-body-sm tabular-nums text-text-tertiary">
-                    {c.rounds_completed}r
+                  <div className="flex min-w-0 flex-1 flex-col">
+                    <Link
+                      href={`/golf/dashboard/stats?player=${c.player_id}`}
+                      className="truncate rounded-fw-sm font-fw-sans text-body font-medium text-text-primary underline-offset-2 outline-none hover:text-accent-700 hover:underline focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas"
+                    >
+                      {c.player_first_name} {c.player_last_name}
+                    </Link>
+                    {/* Phones: the columns below scrolled offscreen (to-par and
+                        Locked hidden past a 460px min-width), so they ride
+                        under the name instead. */}
+                    <span className="mt-0.5 font-fw-mono text-caption tabular-nums text-text-tertiary sm:hidden">
+                      {c.rounds_completed} {c.rounds_completed === 1 ? 'rd' : 'rds'} · {formatToPar(c.total_to_par)}
+                      {locked ? ' · Locked' : picked ? ' · Coach pick' : ''}
+                    </span>
+                  </div>
+                  <span className="hidden w-14 text-right font-fw-mono text-body-sm tabular-nums text-text-tertiary sm:inline">
+                    {c.rounds_completed} {c.rounds_completed === 1 ? 'rd' : 'rds'}
                   </span>
-                  <span className="w-14 text-right font-fw-mono text-body-sm tabular-nums text-text-primary">
+                  <span className="hidden w-14 text-right font-fw-mono text-body-sm tabular-nums text-text-primary sm:inline">
                     {formatToPar(c.total_to_par)}
                   </span>
-                  <span className="w-28 text-right">
+                  <span className="hidden w-28 text-right sm:inline">
                     {locked ? (
                       <StatusPill tone="accent" size="sm" dot>
                         Locked
