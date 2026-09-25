@@ -17438,6 +17438,11 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/engine/stale-refresh.ts",
+          "anchor": "src/lib/supabase/admin"
+        },
+        {
+          "kind": "import_graph",
           "path": "src/lib/coachhelm/v3/generators/course-mgmt.ts",
           "anchor": "src/lib/supabase/admin"
         },
@@ -17713,6 +17718,11 @@
         {
           "kind": "import_graph",
           "path": "src/lib/coachhelm/v3/engine/shot-source.ts",
+          "anchor": "src/lib/supabase/fetch-all-rows"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/engine/stale-refresh.ts",
           "anchor": "src/lib/supabase/fetch-all-rows"
         },
         {
