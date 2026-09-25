@@ -78,6 +78,19 @@ export const COUNTERFACTUAL_LOOKUP: Record<MetricId, CounterfactualConfig> = {
   // makeable (Tour ~90%), so a missed pp here is the single highest-leverage,
   // fastest-to-fix putting gap. Bumped 0.06→0.10 so a large short-putt gap
   // floors to `high` (the counterfactual ceiling + 0.3 floor still bound it).
+  //
+  // The putt-distance generator supplies the player's OWN band attempts per
+  // round (band attempts ÷ rounds_played), so these rows are sized on the
+  // attempt-rate path: (gap_pp / 100) × attempts_per_round × value_per_unit.
+  // `stroke_impact_per_unit` above is only the fallback when no rate is known.
+  //
+  // value_per_unit = 1.0 for EVERY band, on purpose: the gap is counted in
+  // makes, and each extra make is a putt that was a miss, which costs one
+  // more stroke at minimum (a miss is followed by at least one more putt).
+  // That holds at 25 ft as at 4 ft. "Longer putts cost less than a stroke per
+  // miss" is true of expected-strokes SG (a 25-ft miss is expected), not of a
+  // make-% gap: converting one more 25-ft putt still saves a full stroke.
+  // The long-band discount lives in the tiny gaps (Tour 5.5% from 25+ ft).
   putts_made_3_5ft_pct:      { stroke_impact_per_unit: 0.10,  coachable_timeframe_weeks: 4,  attempt_metric: 'putt_attempts_per_round', value_per_unit: 1.0 },
   putts_made_5_10ft_pct:     { stroke_impact_per_unit: 0.03,  coachable_timeframe_weeks: 6,  attempt_metric: 'putt_attempts_per_round', value_per_unit: 1.0 },
   putts_made_10_15ft_pct:    { stroke_impact_per_unit: 0.02,  coachable_timeframe_weeks: 8,  attempt_metric: 'putt_attempts_per_round', value_per_unit: 1.0 },

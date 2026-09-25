@@ -125,6 +125,16 @@ interface PuttDistanceAggregate extends GeneratorAggregate {
   /** True lifetime span in days (first→last round); null when unknown. */
   spanDays: number | null;
   last_round_date: string | null;
+  /**
+   * The player's OWN putts per round in this band: band attempts ÷
+   * rounds_played, both from the same stats-cache row that produces
+   * `sample_n` and `detail.rounds_played`. `BaseGenerator` passes it to
+   * `computeCounterfactual` as `player_attempts_per_round`, so the projection
+   * is sized off the attempt-rate path (gap × attempts × value_per_unit)
+   * instead of the global `stroke_impact_per_unit`, which assumed a Tour-like
+   * ~6 attempts/round from 3-5 ft. Null when rounds_played is 0.
+   */
+  attempts_per_round?: number | null;
 }
 
 export class PuttDistanceGenerator extends BaseGenerator<PuttDistanceAggregate> {
@@ -189,6 +199,7 @@ export class PuttDistanceGenerator extends BaseGenerator<PuttDistanceAggregate> 
       attempts,
       spanDays,
       last_round_date: (data.last_round_date as string | null) ?? null,
+      attempts_per_round: roundsPlayed > 0 ? attempts / roundsPlayed : null,
     };
   }
 
