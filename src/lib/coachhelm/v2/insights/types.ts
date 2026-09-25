@@ -209,15 +209,20 @@ export interface InsightEvidence {
 }
 
 /**
- * Outcome of the recent-window recheck. `cleared` = the recent window no
- * longer crosses the generator's trigger; `holds` = it still does; `thin` =
- * too few recent observations to say (never moves lifecycle).
+ * Outcome of the recent-window recheck. `cleared` = the recent window beats
+ * the row's target by more than chance (90% one-sided bound); `holds` = the
+ * point estimate is still on the wrong side; `inconclusive` = better, but
+ * inside the margin; `thin` = too few recent observations to say.
  */
 export interface InsightRecheck {
-  status: 'holds' | 'cleared' | 'thin';
+  status: 'holds' | 'cleared' | 'inconclusive' | 'thin';
   checked_at: string;
   window_days: number;
   recent_value: number | null;
+  /** One-sided 90% bound on `recent_value` in the direction that must clear
+   *  the target (Wilson lower bound for a make %, mean upper bound for a
+   *  lower-is-better average). */
+  bound: number | null;
   sample_n: number;
   min_sample_n: number;
   comparison_value: number;

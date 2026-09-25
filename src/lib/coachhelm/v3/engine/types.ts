@@ -78,12 +78,13 @@ export interface RunResult {
    */
   retracted?: number;
   /**
-   * Lifecycle edge the recent-window recheck applied to the written row
-   * (`recent-recheck.ts`): `resolve` = the recent window cleared the
-   * generator's trigger; `reopen` = an engine-resolved row's leak came back.
-   * Absent when nothing moved.
+   * What the recent-window recheck did (`recent-recheck.ts`): `retire` = the
+   * recent window cleared the target by more than chance and the row was
+   * archived; `restore` = a recheck-retired row was resurrected because the
+   * leak re-appeared; `kept_retired` = a recheck-retired row stayed archived
+   * (its re-emit was suppressed). Absent when nothing moved.
    */
-  recheck?: 'resolve' | 'reopen';
+  recheck?: 'retire' | 'restore' | 'kept_retired';
   /**
    * The raw caught error when `status === 'failed'` — absent on every other
    * status. `run()`'s own catch logs this with `describeError` already, but

@@ -13789,6 +13789,11 @@
           "kind": "import_graph",
           "path": "src/lib/coachhelm/root-map/build-team-roots.ts",
           "anchor": "src/lib/coachhelm/v2/insights/types"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/root-map/coach-player-drill.ts",
+          "anchor": "src/lib/coachhelm/v2/insights/types"
         }
       ]
     },

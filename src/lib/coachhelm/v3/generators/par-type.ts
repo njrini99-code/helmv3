@@ -21,8 +21,8 @@ import { BaseGenerator } from '@/lib/coachhelm/v3/engine/generator-base';
 import { loadCompletedHoles, LIFETIME_WINDOW_DAYS } from '@/lib/coachhelm/v3/engine/hole-diagnosis';
 import { lifetimeSpanDays, staleDataSuffix } from '@/lib/coachhelm/v3/engine/window-honesty';
 import {
+  loadRecentHoles,
   parScoringRecheck,
-  RECHECK_WINDOW_DAYS,
   type InsightRecheck,
 } from '@/lib/coachhelm/v3/engine/recent-recheck';
 import type { InsightEvidence } from '@/lib/coachhelm/v2/insights/types';
@@ -92,12 +92,15 @@ export class ParTypeGenerator extends BaseGenerator<ParTypeAggregate> {
    * The aggregate is LIFETIME (cache average + lifetime holes), so recheck
    * this par type's scoring average over the recent window against the row's
    * own comparison (par), gated on the same rounds floor as the aggregate.
+   * The hole load is shared across the three par instances.
    */
+  protected override readonly rechecksRecentWindow = true;
+
   protected override async recentWindowRecheck(
     _agg: ParTypeAggregate,
     evidence: InsightEvidence,
   ): Promise<InsightRecheck | null> {
-    const holes = await loadCompletedHoles(this.playerId, RECHECK_WINDOW_DAYS);
+    const holes = await loadRecentHoles(this.playerId);
     return parScoringRecheck(
       holes,
       this.par,

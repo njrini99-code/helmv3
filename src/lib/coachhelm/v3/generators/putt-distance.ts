@@ -93,6 +93,17 @@ const BUCKET_BAND_FEET: Record<PuttBucketKey, PuttBand> = {
   '25_plus_ft': { lo: 25, hi: null },
 };
 
+/** Minimum recent attempts in the band before the recheck may grade it
+ *  (owner decision 2026-09-25). The 25+ ft band sits near a 5.5% target where
+ *  a single make swings the rate, so it needs 40. */
+const BUCKET_RECHECK_MIN_N: Record<PuttBucketKey, number> = {
+  '3_5ft': 20,
+  '5_10ft': 20,
+  '10_15ft': 20,
+  '15_25ft': 20,
+  '25_plus_ft': 40,
+};
+
 const BUCKET_LABEL: Record<PuttBucketKey, string> = {
   '3_5ft':    '3-5 ft',
   '5_10ft':   '5-10 ft',
@@ -177,9 +188,11 @@ export class PuttDistanceGenerator extends BaseGenerator<PuttDistanceAggregate> 
   /**
    * The aggregate is LIFETIME (stats cache), so recheck the band over the
    * recent window against this row's own anchor (`comparison_value` — the
-   * gender-aware target composeContent chose), gated on the same attempt
-   * floor the aggregate uses.
+   * gender-aware target composeContent chose), gated on the band's recheck
+   * floor. The putt load is shared across the five bucket instances.
    */
+  protected override readonly rechecksRecentWindow = true;
+
   protected override async recentWindowRecheck(
     _agg: PuttDistanceAggregate,
     evidence: InsightEvidence,
@@ -189,7 +202,7 @@ export class PuttDistanceGenerator extends BaseGenerator<PuttDistanceAggregate> 
       putts,
       BUCKET_BAND_FEET[this.bucket],
       evidence.comparison_value,
-      ATTEMPT_FLOOR,
+      BUCKET_RECHECK_MIN_N[this.bucket],
       new Date().toISOString(),
     );
   }

@@ -48,6 +48,8 @@ import { loadRootCauseContext } from './root-cause-context';
 import {
   decideRecheckTransition,
   RECHECK_RESOLVED_BY,
+  RECHECK_RETIRED_REASON,
+  shouldSuppressReemit,
   type InsightRecheck,
   type RecheckTransition,
 } from './recent-recheck';
@@ -495,12 +497,15 @@ export abstract class BaseGenerator<A extends GeneratorAggregate = GeneratorAggr
   /**
    * Recent-window recheck (owner decision 2026-09-25, `recent-recheck.ts`).
    * A generator whose aggregate is LIFETIME (putt_distance, par_type) cannot
-   * see a recent improvement on its nightly re-run, so it recomputes its own
-   * metric over the recent window here and checks it against the row's own
-   * comparison value. Default null = the generator's window is already recent
+   * see a recent improvement on its re-run, so it opts in
+   * (`rechecksRecentWindow = true`) and recomputes its own metric over the
+   * recent window in `recentWindowRecheck`, graded against the row's own
+   * comparison value. Default off = the generator's window is already recent
    * (its re-run is the recheck). Called only for a LEAK row; a throw is
    * logged and treated as "no recheck" — it never fails the run.
    */
+  protected readonly rechecksRecentWindow: boolean = false;
+
   protected async recentWindowRecheck(
     _agg: A,
     _evidence: InsightEvidence,
@@ -508,11 +513,42 @@ export abstract class BaseGenerator<A extends GeneratorAggregate = GeneratorAggr
     return null;
   }
 
+  /** The row this run's signature would upsert onto (newest first), read
+   *  before the write so a recheck-retired row is not resurrected by a
+   *  re-emit that has not shown the leak again. */
+  private async loadExistingForRecheck(
+    signature: string,
+  ): Promise<{ id: string; lifecycle_state: InsightLifecycleState | null; metadata: Record<string, unknown> | null } | null> {
+    const supabase = createAdminClient();
+    const { data, error } = await supabase
+      .from('golf_coach_insights')
+      .select('id, lifecycle_state, metadata')
+      .eq('player_id', this.playerId)
+      .eq('signature', signature)
+      .order('created_at', { ascending: false })
+      .limit(1);
+    if (error) throw new Error(`recheck existing-row lookup failed: ${error.message}`);
+    const row = (data as Array<{ id: string; lifecycle_state: string | null; metadata: unknown }> | null)?.[0];
+    return row
+      ? {
+          id: row.id,
+          lifecycle_state: row.lifecycle_state as InsightLifecycleState | null,
+          metadata: (row.metadata as Record<string, unknown> | null) ?? null,
+        }
+      : null;
+  }
+
   /**
    * Apply the recheck's lifecycle edge to the row this run just wrote
    * (`decideRecheckTransition`). Engine axis only — `status` is never
-   * written. Optimistic guard on the observed lifecycle_state + updated_at so
-   * a concurrent coach action or engine write is never clobbered. Failure is
+   * written.
+   *  - retire: lifecycle → `archived` (the engine-retraction state every
+   *    reader hides) with `resolved_by='engine-recheck'`,
+   *    `retired_reason='recheck_cleared'` and the recheck summary.
+   *  - restore: the upsert just resurrected a recheck-retired row; clear the
+   *    retirement markers (lifecycle is already set by the upsert).
+   * Optimistic guard on the observed lifecycle_state + updated_at so a
+   * concurrent coach action or engine write is never clobbered. Failure is
    * logged and swallowed.
    */
   private async applyRecheckLifecycle(
@@ -520,7 +556,6 @@ export abstract class BaseGenerator<A extends GeneratorAggregate = GeneratorAggr
     isLeak: boolean,
     recheck: InsightRecheck | null,
   ): Promise<RecheckTransition> {
-    if (!recheck || !isLeak || recheck.status === 'thin') return 'none';
     try {
       const supabase = createAdminClient();
       const { data: row, error: selErr } = await supabase
@@ -539,45 +574,47 @@ export abstract class BaseGenerator<A extends GeneratorAggregate = GeneratorAggr
       }
       const metadata = { ...((row.metadata as Record<string, unknown> | null) ?? {}) };
       const lifecycle = row.lifecycle_state as InsightLifecycleState | null;
-      const transition = decideRecheckTransition({
-        lifecycle,
-        resolvedBy: metadata.resolved_by,
-        isLeak,
-        recheck,
-      });
+      const transition = decideRecheckTransition({ lifecycle, metadata, isLeak, recheck });
       if (transition === 'none') return 'none';
 
       const nowIso = new Date().toISOString();
-      const summary = {
-        recent_value: recheck.recent_value,
-        sample_n: recheck.sample_n,
-        comparison_value: recheck.comparison_value,
-        window_days: recheck.window_days,
-      };
       let patch: Record<string, unknown>;
-      if (transition === 'resolve') {
+      if (transition === 'retire' && recheck) {
         patch = {
-          lifecycle_state: 'resolved',
-          resolved_at: nowIso,
+          lifecycle_state: 'archived',
+          archived_at: nowIso,
           updated_at: nowIso,
           metadata: {
             ...metadata,
             resolved_by: RECHECK_RESOLVED_BY,
-            resolve_reason: `recent_window_cleared:${recheck.window_days}d`,
-            resolved_from_state: lifecycle,
-            resolved_recheck: summary,
+            retired_reason: RECHECK_RETIRED_REASON,
+            // Same provenance keys the other engine archivers stamp.
+            archived_by: RECHECK_RESOLVED_BY,
+            archive_reason: RECHECK_RETIRED_REASON,
+            retired_from_state: lifecycle,
+            retired_at: nowIso,
+            retired_recheck: {
+              checked_at: recheck.checked_at,
+              recent_value: recheck.recent_value,
+              bound: recheck.bound,
+              sample_n: recheck.sample_n,
+              comparison_value: recheck.comparison_value,
+              window_days: recheck.window_days,
+            },
           },
         };
       } else {
-        const { resolved_by: _rb, resolve_reason: _rr, resolved_from_state: priorState, ...rest } = metadata;
-        void _rb; void _rr;
-        // Back to the state it was resolved from (a matured row keeps its
-        // maturity); anything unexpected reopens as plain `detected`.
+        const {
+          resolved_by: _rb,
+          retired_reason: _rr,
+          archived_by: _ab,
+          archive_reason: _ar,
+          ...rest
+        } = metadata;
+        void _rb; void _rr; void _ab; void _ar;
         patch = {
-          lifecycle_state: priorState === 'matured' ? 'matured' : 'detected',
-          resolved_at: null,
           updated_at: nowIso,
-          metadata: { ...rest, reopened_at: nowIso, reopened_by: RECHECK_RESOLVED_BY, reopened_recheck: summary },
+          metadata: { ...rest, restored_at: nowIso, restored_by: RECHECK_RESOLVED_BY },
         };
       }
       let q = supabase
@@ -927,19 +964,36 @@ export abstract class BaseGenerator<A extends GeneratorAggregate = GeneratorAggr
 
       // Recent-window recheck (lifetime-window generators only). Stamped on
       // the evidence this write persists, then applied to lifecycle below.
+      const fullSignature = `${V3_SIGNATURE_PREFIX}${composed.signature}`;
       const isLeak = resolveInsightFraming(composed.framing, evidence) === 'leak';
       let recheck: InsightRecheck | null = null;
-      if (isLeak) {
-        try {
-          recheck = await this.recentWindowRecheck(agg, evidence);
-        } catch (err) {
-          await logServerError(
-            `${this.name} recent-window recheck failed for player=${this.playerId}: ${describeError(err)}`,
-            { action: `v3.generator.${this.name}.recheck`, metadata: { dbError: toDbErrorMetadata(err) } },
-            'warning',
-          );
+      if (this.rechecksRecentWindow) {
+        if (isLeak) {
+          try {
+            recheck = await this.recentWindowRecheck(agg, evidence);
+          } catch (err) {
+            await logServerError(
+              `${this.name} recent-window recheck failed for player=${this.playerId}: ${describeError(err)}`,
+              { action: `v3.generator.${this.name}.recheck`, metadata: { dbError: toDbErrorMetadata(err) } },
+              'warning',
+            );
+          }
+          if (recheck) evidence = { ...evidence, recheck } as typeof composed.evidence;
         }
-        if (recheck) evidence = { ...evidence, recheck } as typeof composed.evidence;
+        // A re-emit onto an archived row resurrects it. A row this recheck
+        // retired may only come back when the leak has actually re-appeared.
+        const existing = await this.loadExistingForRecheck(fullSignature);
+        if (
+          existing &&
+          shouldSuppressReemit({
+            existingLifecycle: existing.lifecycle_state,
+            existingMetadata: existing.metadata,
+            isLeak,
+            recheck,
+          })
+        ) {
+          return { id: existing.id, gated: true, status: 'gated', recheck: 'kept_retired' };
+        }
       }
 
       const supabase = createAdminClient();
@@ -947,7 +1001,7 @@ export abstract class BaseGenerator<A extends GeneratorAggregate = GeneratorAggr
         player_id: this.playerId,
         category: this.category,
         insight_type: this.insightType,
-        signature: `${V3_SIGNATURE_PREFIX}${composed.signature}`,
+        signature: fullSignature,
         title: composed.title,
         content: composed.content,
         priority: honestPriority,
@@ -961,10 +1015,10 @@ export abstract class BaseGenerator<A extends GeneratorAggregate = GeneratorAggr
       }
       // Fresh row written — retract siblings in scope it superseded (e.g.
       // a data-derived signature suffix moved: old band/pattern row goes).
-      const retracted = await this.retractStaleInScope(
-        `${V3_SIGNATURE_PREFIX}${composed.signature}`,
-      );
-      const recheckTransition = await this.applyRecheckLifecycle(result, isLeak, recheck);
+      const retracted = await this.retractStaleInScope(fullSignature);
+      const recheckTransition = this.rechecksRecentWindow
+        ? await this.applyRecheckLifecycle(result, isLeak, recheck)
+        : 'none';
       return {
         id: result,
         gated: false,

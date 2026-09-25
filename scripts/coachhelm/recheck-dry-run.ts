@@ -30,29 +30,27 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import { applyInsightVisibility } from '@/lib/coachhelm/v3/insight-visibility';
 import { resolveInsightFraming } from '@/lib/coachhelm/v3/engine/root-cause';
-import { loadCompletedHoles } from '@/lib/coachhelm/v3/engine/hole-diagnosis';
-import { ATTEMPT_FLOOR } from '@/lib/coachhelm/v3/engine/window-honesty';
 import {
   decideRecheckTransition,
+  loadRecentHoles,
   loadRecentPutts,
   parScoringRecheck,
   puttBandRecheck,
   RECHECK_WINDOW_DAYS,
   type InsightRecheck,
   type PuttBand,
-  type RecentHole,
-  type RecentPutt,
 } from '@/lib/coachhelm/v3/engine/recent-recheck';
 import type { InsightEvidence, InsightLifecycleState } from '@/lib/coachhelm/v2/insights/types';
 
-// Mirrors the generators' own constants (putt-distance BUCKET_BAND_FEET,
-// par-type minSampleN). Kept here so the script needs no generator instance.
-const PUTT_BANDS: Record<string, PuttBand> = {
-  '3_5ft': { lo: 3, hi: 5 },
-  '5_10ft': { lo: 5, hi: 10 },
-  '10_15ft': { lo: 10, hi: 15 },
-  '15_25ft': { lo: 15, hi: 25 },
-  '25_plus_ft': { lo: 25, hi: null },
+// Mirrors the generators' own constants (putt-distance BUCKET_BAND_FEET +
+// BUCKET_RECHECK_MIN_N, par-type minSampleN). Kept here so the script needs no
+// generator instance.
+const PUTT_BANDS: Record<string, PuttBand & { minN: number }> = {
+  '3_5ft': { lo: 3, hi: 5, minN: 20 },
+  '5_10ft': { lo: 5, hi: 10, minN: 20 },
+  '10_15ft': { lo: 10, hi: 15, minN: 20 },
+  '15_25ft': { lo: 15, hi: 25, minN: 20 },
+  '25_plus_ft': { lo: 25, hi: null, minN: 40 },
 };
 const PAR_MIN_ROUNDS = 5;
 
@@ -82,11 +80,9 @@ async function main(): Promise<void> {
   if (error) throw new Error(`insight select failed: ${error.message}`);
   const rows = data ?? [];
 
-  const puttCache = new Map<string, RecentPutt[]>();
-  const holeCache = new Map<string, RecentHole[]>();
   const checkedAt = new Date().toISOString();
 
-  type Outcome = 'resolve' | 'reopen' | 'holds' | 'thin' | 'cleared_not_movable' | 'strength_skip' | 'unmapped';
+  type Outcome = 'retire' | 'restore' | 'holds' | 'inconclusive' | 'thin' | 'cleared_not_movable' | 'strength_skip' | 'unmapped';
   const counts = new Map<string, Map<Outcome, number>>();
   const examples = new Map<Outcome, string[]>();
   const bump = (key: string, o: Outcome, example: string) => {
@@ -114,20 +110,18 @@ async function main(): Promise<void> {
       const bucket = row.signature.replace(/^v3:putt_distance:/, '');
       const band = PUTT_BANDS[bucket];
       if (!band) { bump(key, 'unmapped', `${id8} ${row.signature}`); continue; }
-      let putts = puttCache.get(row.player_id);
-      if (!putts) { putts = await loadRecentPutts(row.player_id); puttCache.set(row.player_id, putts); }
-      recheck = puttBandRecheck(putts, band, ev.comparison_value, ATTEMPT_FLOOR, checkedAt);
+      const putts = await loadRecentPutts(row.player_id);
+      recheck = puttBandRecheck(putts, band, ev.comparison_value, band.minN, checkedAt);
     } else {
       const par = Number(row.signature.replace(/^v3:par_scoring:par/, ''));
       if (![3, 4, 5].includes(par)) { bump(key, 'unmapped', `${id8} ${row.signature}`); continue; }
-      let holes = holeCache.get(row.player_id);
-      if (!holes) { holes = await loadCompletedHoles(row.player_id, RECHECK_WINDOW_DAYS); holeCache.set(row.player_id, holes); }
+      const holes = await loadRecentHoles(row.player_id);
       recheck = parScoringRecheck(holes, par, ev.comparison_value, PAR_MIN_ROUNDS, checkedAt);
     }
 
     const t = decideRecheckTransition({
       lifecycle: row.lifecycle_state,
-      resolvedBy: row.metadata?.resolved_by,
+      metadata: row.metadata,
       isLeak,
       recheck,
     });
@@ -137,7 +131,7 @@ async function main(): Promise<void> {
       key,
       outcome,
       `${id8} ${ev.metric} lifetime=${ev.your_value} (n=${ev.sample_n}) recent=${recheck.recent_value} ` +
-        `(n=${recheck.sample_n}/${recheck.min_sample_n}) vs ${ev.comparison_value} [${row.lifecycle_state}]`,
+        `bound=${recheck.bound} (n=${recheck.sample_n}/${recheck.min_sample_n}) vs ${ev.comparison_value} [${row.lifecycle_state}]`,
     );
   }
 

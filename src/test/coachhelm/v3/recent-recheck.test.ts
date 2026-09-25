@@ -1,11 +1,12 @@
 /**
  * Recent-window recheck (owner decision 2026-09-25): a lifetime-window
- * insight is rechecked against the player's recent rounds; when the problem
- * no longer holds the row moves to lifecycle 'resolved' (engine axis only),
- * and an engine-resolved row whose leak returns is reopened.
+ * insight is rechecked against the player's recent rounds. When the recent
+ * window beats the target by more than chance the row is retired to
+ * lifecycle 'archived' (engine axis only, provenance in metadata); it is
+ * re-emitted — and so resurrected — only when the leak actually re-appears.
  *
- * Covers the pure pieces (band/par recomputation, the transition decision)
- * and BaseGenerator.run()'s application of them against a fake DB boundary.
+ * Covers the statistics, the grading, the pure lifecycle decisions, and
+ * BaseGenerator.run()'s application of them against a fake DB boundary.
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
@@ -18,7 +19,9 @@ interface RecordedUpdate {
   filters: Array<{ op: string; args: unknown[] }>;
 }
 const recordedUpdates: RecordedUpdate[] = [];
-/** The row the post-upsert SELECT returns. */
+/** The row the pre-upsert signature lookup finds (null = none yet). */
+let existingRow: Record<string, unknown> | null = null;
+/** The row the post-upsert SELECT (by id) returns. */
 let currentRow: Record<string, unknown> | null = null;
 /** Whether the CAS update matches a row. */
 let casMatches = true;
@@ -30,6 +33,8 @@ function makeSelectBuilder() {
     in: vi.fn(() => b),
     is: vi.fn(() => b),
     neq: vi.fn(() => b),
+    order: vi.fn(() => b),
+    limit: vi.fn(() => Promise.resolve({ data: existingRow ? [existingRow] : [], error: null })),
     maybeSingle: vi.fn(() => Promise.resolve({ data: currentRow, error: null })),
     // The scope sweep awaits the builder itself; no scope in these tests.
     then: (resolve: (v: unknown) => unknown) => Promise.resolve(resolve({ data: [], error: null })),
@@ -76,9 +81,13 @@ vi.mock('@/lib/server-error-logger', () => ({
 import { BaseGenerator } from '@/lib/coachhelm/v3/engine/generator-base';
 import {
   decideRecheckTransition,
+  meanUpperBound,
   parScoringRecheck,
   puttBandRecheck,
   RECHECK_RESOLVED_BY,
+  RECHECK_RETIRED_REASON,
+  shouldSuppressReemit,
+  wilsonLowerBound,
   type InsightRecheck,
   type RecentPutt,
 } from '@/lib/coachhelm/v3/engine/recent-recheck';
@@ -95,6 +104,9 @@ const NOW = '2026-09-25T00:00:00.000Z';
 function putt(d: number | null, made: boolean): RecentPutt {
   return { round_id: 'r', distance_to_hole_before: d, result: made ? 'hole' : 'green', putt_made: made };
 }
+function putts(n: number, made: number, d = 4): RecentPutt[] {
+  return Array.from({ length: n }, (_, i) => putt(d, i < made));
+}
 
 function recheck(status: InsightRecheck['status']): InsightRecheck {
   return {
@@ -102,49 +114,79 @@ function recheck(status: InsightRecheck['status']): InsightRecheck {
     checked_at: NOW,
     window_days: 90,
     recent_value: 1,
-    sample_n: 10,
-    min_sample_n: 8,
+    bound: 1,
+    sample_n: 30,
+    min_sample_n: 20,
     comparison_value: 1,
   };
 }
 
+const RETIRED_META = {
+  resolved_by: RECHECK_RESOLVED_BY,
+  retired_reason: RECHECK_RETIRED_REASON,
+  archived_by: RECHECK_RESOLVED_BY,
+  archive_reason: RECHECK_RETIRED_REASON,
+  movement_count: 2,
+};
+
+describe('bounds', () => {
+  it('Wilson lower bound sits below the point estimate and tightens with n', () => {
+    const small = wilsonLowerBound(9, 10);
+    const large = wilsonLowerBound(90, 100);
+    expect(small).toBeLessThan(0.9);
+    expect(large).toBeLessThan(0.9);
+    expect(large).toBeGreaterThan(small);
+    expect(wilsonLowerBound(0, 0)).toBe(0);
+  });
+
+  it('mean upper bound sits above the mean; null under 2 values', () => {
+    expect(meanUpperBound([4, 5, 4, 5])!).toBeGreaterThan(4.5);
+    expect(meanUpperBound([4])).toBeNull();
+  });
+});
+
 describe('puttBandRecheck', () => {
   it('uses the cache band rule (lo, hi]: 3 ft is out of the 3–5 band, 5 ft is in', () => {
-    const putts = [putt(3, true), putt(3, true), putt(5, false), putt(4, true)];
-    const r = puttBandRecheck(putts, { lo: 3, hi: 5 }, 90.5, 1, NOW);
+    const r = puttBandRecheck([putt(3, true), putt(3, true), putt(5, false), putt(4, true)], { lo: 3, hi: 5 }, 90.5, 1, NOW);
     expect(r.sample_n).toBe(2);
     expect(r.recent_value).toBe(50);
   });
 
   it('counts putt_made=true as made even without result=hole, and clamps distance to 120', () => {
-    const putts: RecentPutt[] = [
+    const ps: RecentPutt[] = [
       { round_id: 'r', distance_to_hole_before: 4, result: null, putt_made: true },
       { round_id: 'r', distance_to_hole_before: 400, result: 'green', putt_made: false },
     ];
-    expect(puttBandRecheck(putts, { lo: 3, hi: 5 }, 90.5, 1, NOW).recent_value).toBe(100);
-    expect(puttBandRecheck(putts, { lo: 25, hi: null }, 5.5, 1, NOW).sample_n).toBe(1);
+    expect(puttBandRecheck(ps, { lo: 3, hi: 5 }, 90.5, 1, NOW).recent_value).toBe(100);
+    expect(puttBandRecheck(ps, { lo: 25, hi: null }, 5.5, 1, NOW).sample_n).toBe(1);
   });
 
-  it('cleared when the recent make % reaches the row anchor; holds while below it', () => {
-    const cleared = Array.from({ length: 10 }, (_, i) => putt(4, i < 10));
-    expect(puttBandRecheck(cleared, { lo: 3, hi: 5 }, 90.5, 8, NOW).status).toBe('cleared');
-    const holds = Array.from({ length: 10 }, (_, i) => putt(4, i < 8));
-    expect(puttBandRecheck(holds, { lo: 3, hi: 5 }, 90.5, 8, NOW).status).toBe('holds');
+  it('clears only when the Wilson lower bound beats the anchor', () => {
+    // 30/30 → lower bound ~95% > 90.5 → cleared.
+    expect(puttBandRecheck(putts(30, 30), { lo: 3, hi: 5 }, 90.5, 20, NOW).status).toBe('cleared');
+    // 28/30 = 93.3% beats 90.5 on the point, but not by more than chance.
+    const r = puttBandRecheck(putts(30, 28), { lo: 3, hi: 5 }, 90.5, 20, NOW);
+    expect(r.status).toBe('inconclusive');
+    expect(r.bound!).toBeLessThan(90.5);
   });
 
-  it('thin below the attempt floor — even at 100%', () => {
-    const putts = Array.from({ length: 7 }, () => putt(4, true));
-    const r = puttBandRecheck(putts, { lo: 3, hi: 5 }, 90.5, 8, NOW);
-    expect(r.status).toBe('thin');
-    expect(r.sample_n).toBe(7);
-    expect(r.min_sample_n).toBe(8);
-  });
-
-  it('reproduces the 0c82eefb shape: 56/68 recent is still below a 90.5 anchor', () => {
-    const putts = Array.from({ length: 68 }, (_, i) => putt(4.5, i < 56));
-    const r = puttBandRecheck(putts, { lo: 3, hi: 5 }, 90.5, 8, NOW);
+  it('holds while the point estimate is below the anchor', () => {
+    // The 0c82eefb shape: 56/68 = 82.4% against 90.5.
+    const r = puttBandRecheck(putts(68, 56, 4.5), { lo: 3, hi: 5 }, 90.5, 20, NOW);
     expect(r.recent_value).toBe(82.4);
     expect(r.status).toBe('holds');
+  });
+
+  it('thin below the band minimum — even at 100%', () => {
+    const r = puttBandRecheck(putts(39, 39, 30), { lo: 25, hi: null }, 5.5, 40, NOW);
+    expect(r.status).toBe('thin');
+    expect(r.min_sample_n).toBe(40);
+  });
+
+  it('a 25+ ft 1-in-18 is not a clearance', () => {
+    const r = puttBandRecheck(putts(18, 1, 30), { lo: 25, hi: null }, 5.5, 1, NOW);
+    expect(r.recent_value).toBe(5.6);
+    expect(r.status).toBe('inconclusive');
   });
 });
 
@@ -159,37 +201,53 @@ describe('parScoringRecheck', () => {
     expect(r.status).toBe('holds');
   });
 
-  it('cleared at or under par; thin under the rounds floor', () => {
-    const holes = ['a', 'b', 'c', 'd', 'e'].map((r) => hole(r, 3, 3));
-    expect(parScoringRecheck(holes, 3, 3, 5, NOW).status).toBe('cleared');
-    expect(parScoringRecheck(holes.slice(0, 4), 3, 3, 5, NOW).status).toBe('thin');
+  it('clears only when the upper bound is under par; thin under the rounds floor', () => {
+    const rounds = ['a', 'b', 'c', 'd', 'e'];
+    const under = rounds.flatMap((r) => [hole(r, 3, 2), hole(r, 3, 3), hole(r, 3, 2), hole(r, 3, 3)]);
+    expect(parScoringRecheck(under, 3, 3, 5, NOW).status).toBe('cleared');
+    const level = rounds.flatMap((r) => [hole(r, 3, 3), hole(r, 3, 3)]);
+    expect(parScoringRecheck(level, 3, 3, 5, NOW).status).toBe('inconclusive');
+    expect(parScoringRecheck(under.slice(0, 16), 3, 3, 5, NOW).status).toBe('thin');
   });
 });
 
 describe('decideRecheckTransition', () => {
-  it('resolves a visible, coach-untouched leak when the recent window cleared', () => {
+  it('retires a visible, coach-untouched leak only on cleared', () => {
     for (const lifecycle of ['detected', 'matured'] as const) {
-      expect(decideRecheckTransition({ lifecycle, resolvedBy: undefined, isLeak: true, recheck: recheck('cleared') })).toBe('resolve');
+      expect(decideRecheckTransition({ lifecycle, metadata: {}, isLeak: true, recheck: recheck('cleared') })).toBe('retire');
+      for (const s of ['holds', 'inconclusive', 'thin'] as const) {
+        expect(decideRecheckTransition({ lifecycle, metadata: {}, isLeak: true, recheck: recheck(s) })).toBe('none');
+      }
     }
   });
 
-  it('never moves tentative, addressed, archived, or a strength row', () => {
-    for (const lifecycle of ['tentative', 'addressed', 'archived'] as const) {
-      expect(decideRecheckTransition({ lifecycle, resolvedBy: undefined, isLeak: true, recheck: recheck('cleared') })).toBe('none');
+  it('never retires tentative, addressed, resolved, archived, or a strength row', () => {
+    for (const lifecycle of ['tentative', 'addressed', 'resolved', 'archived'] as const) {
+      expect(decideRecheckTransition({ lifecycle, metadata: {}, isLeak: true, recheck: recheck('cleared') })).toBe('none');
     }
-    expect(decideRecheckTransition({ lifecycle: 'detected', resolvedBy: undefined, isLeak: false, recheck: recheck('cleared') })).toBe('none');
+    expect(decideRecheckTransition({ lifecycle: 'detected', metadata: {}, isLeak: false, recheck: recheck('cleared') })).toBe('none');
   });
 
-  it('a thin or missing recheck never moves a row either way', () => {
-    expect(decideRecheckTransition({ lifecycle: 'detected', resolvedBy: undefined, isLeak: true, recheck: recheck('thin') })).toBe('none');
-    expect(decideRecheckTransition({ lifecycle: 'resolved', resolvedBy: RECHECK_RESOLVED_BY, isLeak: true, recheck: recheck('thin') })).toBe('none');
-    expect(decideRecheckTransition({ lifecycle: 'detected', resolvedBy: undefined, isLeak: true, recheck: null })).toBe('none');
+  it('restores the markers once an upsert has resurrected a recheck-retired row', () => {
+    expect(decideRecheckTransition({ lifecycle: 'detected', metadata: RETIRED_META, isLeak: true, recheck: recheck('holds') })).toBe('restore');
+    expect(decideRecheckTransition({ lifecycle: 'archived', metadata: RETIRED_META, isLeak: true, recheck: recheck('holds') })).toBe('none');
+  });
+});
+
+describe('shouldSuppressReemit', () => {
+  it('keeps a recheck-retired row archived unless the leak re-appeared', () => {
+    const base = { existingLifecycle: 'archived' as const, existingMetadata: RETIRED_META };
+    expect(shouldSuppressReemit({ ...base, isLeak: true, recheck: recheck('holds') })).toBe(false);
+    for (const s of ['cleared', 'inconclusive', 'thin'] as const) {
+      expect(shouldSuppressReemit({ ...base, isLeak: true, recheck: recheck(s) })).toBe(true);
+    }
+    expect(shouldSuppressReemit({ ...base, isLeak: true, recheck: null })).toBe(true);
+    expect(shouldSuppressReemit({ ...base, isLeak: false, recheck: null })).toBe(true);
   });
 
-  it('reopens only rows the recheck itself resolved — never a coach/cron resolution', () => {
-    expect(decideRecheckTransition({ lifecycle: 'resolved', resolvedBy: RECHECK_RESOLVED_BY, isLeak: true, recheck: recheck('holds') })).toBe('reopen');
-    expect(decideRecheckTransition({ lifecycle: 'resolved', resolvedBy: undefined, isLeak: true, recheck: recheck('holds') })).toBe('none');
-    expect(decideRecheckTransition({ lifecycle: 'resolved', resolvedBy: RECHECK_RESOLVED_BY, isLeak: true, recheck: recheck('cleared') })).toBe('none');
+  it('never suppresses rows it did not retire — other archives resurrect as before', () => {
+    expect(shouldSuppressReemit({ existingLifecycle: 'archived', existingMetadata: { archived_by: 'generator-scope-sweep' }, isLeak: true, recheck: recheck('cleared') })).toBe(false);
+    expect(shouldSuppressReemit({ existingLifecycle: 'detected', existingMetadata: {}, isLeak: true, recheck: recheck('cleared') })).toBe(false);
   });
 });
 
@@ -209,13 +267,16 @@ class RecheckGenerator extends BaseGenerator<TestAgg> {
   readonly category: InsightCategory = 'putting';
   readonly minSampleN = 5;
   protected override readonly requiresStanding = false;
+  protected override readonly rechecksRecentWindow: boolean;
   recheckCalls = 0;
 
   constructor(
     private readonly framing: 'leak' | 'strength',
     private readonly result: InsightRecheck | null | Error,
+    optIn = true,
   ) {
     super('player-1');
+    this.rechecksRecentWindow = optIn;
   }
 
   protected override async recentWindowRecheck(): Promise<InsightRecheck | null> {
@@ -262,71 +323,74 @@ describe('BaseGenerator.run() recent-window recheck', () => {
     upsertInsightV3Mock.mockReset().mockResolvedValue('row-1');
     logServerErrorMock.mockReset();
     recordedUpdates.length = 0;
+    existingRow = { id: 'row-1', lifecycle_state: 'detected', metadata: { movement_count: 2 } };
     currentRow = { id: 'row-1', lifecycle_state: 'detected', metadata: { movement_count: 2 }, updated_at: '2026-09-24T12:00:00Z' };
     casMatches = true;
   });
 
-  it('stamps evidence.recheck and resolves a cleared leak on the engine axis only', async () => {
-    const gen = new RecheckGenerator('leak', { ...recheck('cleared'), recent_value: 95, sample_n: 20 });
-    const res = await gen.run();
+  it('cleared: stamps evidence.recheck and archives on the engine axis only', async () => {
+    const res = await new RecheckGenerator('leak', { ...recheck('cleared'), recent_value: 97, bound: 93, sample_n: 40 }).run();
 
     expect(lastUpsertEvidence().recheck?.status).toBe('cleared');
-    expect(res.recheck).toBe('resolve');
+    expect(res.recheck).toBe('retire');
     expect(recordedUpdates).toHaveLength(1);
     const { payload, filters } = recordedUpdates[0]!;
-    expect(payload.lifecycle_state).toBe('resolved');
-    expect(typeof payload.resolved_at).toBe('string');
+    expect(payload.lifecycle_state).toBe('archived');
+    expect(typeof payload.archived_at).toBe('string');
     expect(payload).not.toHaveProperty('status');
+    expect(payload).not.toHaveProperty('resolved_at');
     const meta = payload.metadata as Record<string, unknown>;
     expect(meta.resolved_by).toBe(RECHECK_RESOLVED_BY);
-    expect(meta.resolved_from_state).toBe('detected');
+    expect(meta.retired_reason).toBe(RECHECK_RETIRED_REASON);
+    expect(meta.retired_from_state).toBe('detected');
+    expect(meta.retired_recheck).toMatchObject({ recent_value: 97, bound: 93, sample_n: 40, window_days: 90 });
     expect(meta.movement_count).toBe(2);
-    // Optimistic guard on the observed lifecycle + revision.
     expect(filters).toContainEqual({ op: 'eq', args: ['lifecycle_state', 'detected'] });
     expect(filters).toContainEqual({ op: 'eq', args: ['updated_at', '2026-09-24T12:00:00Z'] });
   });
 
-  it('leaves the row when the leak still holds, and records the recheck', async () => {
-    const res = await new RecheckGenerator('leak', recheck('holds')).run();
-    expect(lastUpsertEvidence().recheck?.status).toBe('holds');
-    expect(res.recheck).toBeUndefined();
+  for (const s of ['holds', 'inconclusive', 'thin'] as const) {
+    it(`${s}: recorded on the evidence, row left as is`, async () => {
+      const res = await new RecheckGenerator('leak', recheck(s)).run();
+      expect(lastUpsertEvidence().recheck?.status).toBe(s);
+      expect(res.recheck).toBeUndefined();
+      expect(recordedUpdates).toHaveLength(0);
+    });
+  }
+
+  it('a recheck-retired row is NOT re-emitted (so not resurrected) while the leak stays away', async () => {
+    existingRow = { id: 'row-1', lifecycle_state: 'archived', metadata: RETIRED_META };
+    for (const s of ['cleared', 'inconclusive', 'thin'] as const) {
+      upsertInsightV3Mock.mockClear();
+      const res = await new RecheckGenerator('leak', recheck(s)).run();
+      expect(upsertInsightV3Mock).not.toHaveBeenCalled();
+      expect(res).toMatchObject({ id: 'row-1', status: 'gated', recheck: 'kept_retired' });
+    }
     expect(recordedUpdates).toHaveLength(0);
   });
 
-  it('a thin recent sample is recorded but never resolves', async () => {
-    const res = await new RecheckGenerator('leak', recheck('thin')).run();
-    expect(lastUpsertEvidence().recheck?.status).toBe('thin');
-    expect(res.recheck).toBeUndefined();
-    expect(recordedUpdates).toHaveLength(0);
-  });
-
-  it('reopens an engine-resolved row whose leak came back', async () => {
-    currentRow = {
-      id: 'row-1',
-      lifecycle_state: 'resolved',
-      metadata: { resolved_by: RECHECK_RESOLVED_BY, resolve_reason: 'x', resolved_from_state: 'detected' },
-      updated_at: '2026-09-24T12:00:00Z',
-    };
+  it('a recheck-retired row comes back when the leak re-appears, with its markers cleared', async () => {
+    existingRow = { id: 'row-1', lifecycle_state: 'archived', metadata: RETIRED_META };
+    // upsertInsight resurrects it (archived → detected); the run then clears markers.
+    currentRow = { id: 'row-1', lifecycle_state: 'detected', metadata: RETIRED_META, updated_at: '2026-09-25T02:00:00Z' };
     const res = await new RecheckGenerator('leak', recheck('holds')).run();
-    expect(res.recheck).toBe('reopen');
-    expect(recordedUpdates[0]!.filters).toContainEqual({ op: 'eq', args: ['lifecycle_state', 'resolved'] });
-    const { payload } = recordedUpdates[0]!;
-    expect(payload.lifecycle_state).toBe('detected');
-    expect(payload.resolved_at).toBeNull();
+    expect(upsertInsightV3Mock).toHaveBeenCalledTimes(1);
+    expect(res.recheck).toBe('restore');
+    const { payload, filters } = recordedUpdates[0]!;
+    expect(payload).not.toHaveProperty('lifecycle_state');
     const meta = payload.metadata as Record<string, unknown>;
     expect(meta).not.toHaveProperty('resolved_by');
-    expect(meta.reopened_by).toBe(RECHECK_RESOLVED_BY);
+    expect(meta).not.toHaveProperty('retired_reason');
+    expect(meta).not.toHaveProperty('archived_by');
+    expect(meta.restored_by).toBe(RECHECK_RESOLVED_BY);
+    expect(meta.movement_count).toBe(2);
+    expect(filters).toContainEqual({ op: 'eq', args: ['lifecycle_state', 'detected'] });
   });
 
-  it('a reopen restores a matured row to matured', async () => {
-    currentRow = {
-      id: 'row-1',
-      lifecycle_state: 'resolved',
-      metadata: { resolved_by: RECHECK_RESOLVED_BY, resolved_from_state: 'matured' },
-      updated_at: '2026-09-24T12:00:00Z',
-    };
-    await new RecheckGenerator('leak', recheck('holds')).run();
-    expect(recordedUpdates[0]!.payload.lifecycle_state).toBe('matured');
+  it('rows archived by other sweeps still resurrect on re-emit', async () => {
+    existingRow = { id: 'row-1', lifecycle_state: 'archived', metadata: { archived_by: 'generator-scope-sweep' } };
+    await new RecheckGenerator('leak', recheck('inconclusive')).run();
+    expect(upsertInsightV3Mock).toHaveBeenCalledTimes(1);
   });
 
   it('a lost CAS race is not reported as a transition', async () => {
@@ -344,7 +408,16 @@ describe('BaseGenerator.run() recent-window recheck', () => {
     expect(res.recheck).toBeUndefined();
   });
 
-  it('a throwing recheck is logged and the insight still ships', async () => {
+  it('a generator that does not opt in never rechecks or looks up', async () => {
+    existingRow = { id: 'row-1', lifecycle_state: 'archived', metadata: RETIRED_META };
+    const gen = new RecheckGenerator('leak', recheck('cleared'), false);
+    const res = await gen.run();
+    expect(gen.recheckCalls).toBe(0);
+    expect(upsertInsightV3Mock).toHaveBeenCalledTimes(1);
+    expect(res.recheck).toBeUndefined();
+  });
+
+  it('a throwing recheck is logged, the insight still ships, and nothing moves', async () => {
     const res = await new RecheckGenerator('leak', new Error('boom')).run();
     expect(res.status).toBe('generated');
     expect(lastUpsertEvidence().recheck).toBeUndefined();

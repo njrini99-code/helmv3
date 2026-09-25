@@ -96,30 +96,39 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
   closeness bar.
 - Recent-window recheck (owner decision 2026-09-25,
   `src/lib/coachhelm/v3/engine/recent-recheck.ts`). The 90-day generators
-  recheck themselves on every nightly re-run (a closed leak re-emits framed as
-  a strength or dequalifies and is retracted). The two LIFETIME-window
+  recheck themselves whenever they re-run (a closed leak re-emits framed as a
+  strength or dequalifies and is retracted). The two LIFETIME-window
   generators, `putt_distance` (stats cache) and `par_type` (cache average +
-  lifetime holes), opt in via `BaseGenerator.recentWindowRecheck()`: for a leak
-  row they recompute their own metric over the last 90 days with the same
-  definitions (putts: `update_player_putt_make_pct` band `(lo, hi]`, made =
-  `result='hole' OR putt_made`; par: hole-score average), compare it to the
-  row's own `comparison_value`, and stamp `evidence.recheck = {status:
-  holds|cleared|thin, checked_at, window_days, recent_value, sample_n,
-  min_sample_n, comparison_value}`. `run()` then applies
-  `decideRecheckTransition`: `cleared` on an adequate sample moves a
-  `detected`/`matured` row to `resolved` (+ `resolved_at`,
-  `metadata.resolved_by='engine-recheck'`, `resolve_reason`,
-  `resolved_from_state`, `resolved_recheck`); `holds` reopens ONLY a row the
-  recheck itself resolved (back to `metadata.resolved_from_state` when it was `matured`, else `detected`; `metadata.reopened_*`). A
-  `thin` sample (putts below `ATTEMPT_FLOOR`, par below `minSampleN` rounds)
-  never moves a row. `tentative`, `addressed`, archived rows, coach- or
-  cron-resolved rows, and the coach `status` axis are never touched; the write
-  is a CAS on the observed `lifecycle_state` + `updated_at`. A re-emit keeps a
-  resolved row resolved (`resolveLifecycleOnWrite` has no edge out of it). NOTE:
-  `resolved` is still in `VISIBLE_LIFECYCLE_STATES`, so readers that place
-  causes/problems (root map, Today) must exclude `lifecycle_state='resolved'`
-  themselves. Read-only report:
-  `scripts/coachhelm/recheck-dry-run.ts`.
+  lifetime holes), opt in (`rechecksRecentWindow = true` +
+  `recentWindowRecheck()`): for a leak row they recompute their own metric
+  over the last 90 days with the same definitions (putts:
+  `update_player_putt_make_pct` band `(lo, hi]`, made = `result='hole' OR
+  putt_made`; par: hole-score average) and grade it against the row's own
+  `comparison_value` with a one-sided 90% margin: `cleared` = the Wilson lower
+  bound (make %) or the mean upper bound (lower-is-better par average) beats
+  the target; `holds` = the point estimate is still on the wrong side;
+  `inconclusive` = better, inside the margin; `thin` = below the minimum
+  sample (putts: 20 recent attempts per band, 40 for 25+ ft; par: 5 rounds).
+  The result is stamped on `evidence.recheck` (`status, checked_at,
+  window_days, recent_value, bound, sample_n, min_sample_n,
+  comparison_value`). On `cleared`, a `detected`/`matured` row is RETIRED to
+  lifecycle `archived` (hidden by every reader through
+  `applyInsightVisibility`) with `metadata.resolved_by='engine-recheck'`,
+  `retired_reason='recheck_cleared'`, `archived_by`/`archive_reason` (same
+  keys as the other engine archivers), `retired_from_state` and
+  `retired_recheck`. A retired row's re-emit is SUPPRESSED (run returns
+  `recheck:'kept_retired'`) unless the recheck says `holds`: only then does the
+  upsert resurrect it (`resolveLifecycleOnWrite`), after which the run clears
+  the retirement markers (`restored_at`/`restored_by`). The gap between
+  `cleared` and `holds` is the anti-flap hysteresis. The lifecycle cron only
+  scans `tentative/detected/matured/addressed` (asserted in
+  `coachhelm-insight-lifecycle-bounds.test.ts`), so it never un-archives
+  these. `tentative`, `addressed`, `resolved` and coach-owned `status` are
+  never touched; every write is a CAS on the observed `lifecycle_state` +
+  `updated_at`. Recent putts/holes load once per player per analysis run
+  (2-minute in-process cache shared by the bucket instances). The recheck only
+  runs when the generator runs, i.e. when the player's analysis is re-run.
+  Read-only report: `scripts/coachhelm/recheck-dry-run.ts`.
 - Honest-mode confidence (`factors_measured=false`) is `sample_adequacy × freshness` (`honest_v2`); it is a support score, never a probability, and can never rise as evidence ages.
 - Citations, evidence, and baseline comparisons are part of the trust contract. Do not emit fabricated comparisons or uncited claims.
 - Claim honesty (2026-09-12, repair plan Package 2): prose states what was
