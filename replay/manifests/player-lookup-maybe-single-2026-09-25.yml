@@ -1,0 +1,28 @@
+schema_version: 1
+replay_id: player-lookup-maybe-single-2026-09-25
+incident_id: memory/incidents/golf_round_lifecycle/INC-2026-09-25-player-lookup-pgrst116.md
+feature_id: golf_round_lifecycle
+title: >-
+  golf_players lookups by user_id used .single(), so a user without a player
+  row raised PGRST116 on the round-continue path (rel:72be7f89).
+bad_version: e5adf2e4141662af6b3389fe56c86eabe00dfbe4
+fixed_version: 67d2f727f6c9599f8b51b9f5d125d65487dde615
+fixture:
+  - source: player-lookup-maybe-single.test.ts
+    target: src/app/golf/actions/__tests__/player-lookup-maybe-single.test.ts
+test_command: "./node_modules/.bin/vitest run src/app/golf/actions/__tests__/player-lookup-maybe-single.test.ts"
+expected:
+  bad_version: fail
+  fixed_version: pass
+expected_failure_mode: assertion
+sanitization:
+  reviewed: true
+  contains_production_data: false
+  notes: >-
+    Static source check over four action files; no rows, IDs, PII, tokens or
+    logs.
+source_incident_status: fixed
+created_at: "2026-09-25"
+notes: >-
+  Behavioral reproduction: the test reads the action sources at whichever
+  version is checked out and fails on bad_version with 4 assertion failures.
