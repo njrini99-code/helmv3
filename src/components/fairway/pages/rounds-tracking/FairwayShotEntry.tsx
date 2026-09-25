@@ -38,6 +38,7 @@ import {
   type RoundEntryIssue,
   type ValidatableShot,
 } from '@/lib/golf/round-entry-validation';
+import { KeyboardDoneBar } from '@/components/fairway/primitives/KeyboardDoneBar';
 import type { ShotRecord, RoundHole, PuttMissTag, ApproachMissDirection } from '@/lib/types/golf';
 import type { ShotAction } from '@/hooks/golf/use-shot-state-machine';
 
@@ -637,6 +638,10 @@ export function FairwayShotEntry({
             : `${shotHistory[shotHistory.length - 1]!.shotType.replace('_', ' ')} → ${shotHistory[shotHistory.length - 1]!.result}`}
         </InlineNotice>
       )}
+
+      {/* The distance box opens a numeric pad, which has no Done key in the
+          iOS shell (RE-F3). */}
+      <KeyboardDoneBar />
 
       {/* ── Sticky action bar (thumb zone) ──────────────────────────────────────
           On mobile it spans the full content width (negative margins) and pins
