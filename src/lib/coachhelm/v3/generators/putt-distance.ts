@@ -270,27 +270,37 @@ export class PuttDistanceGenerator extends BaseGenerator<PuttDistanceAggregate> 
     const bandClass = BUCKET_BAND_CLASS[agg.bucket];
     const gapPp = pgaValue - agg.playerValue; // positive = below anchor
     const gate = attemptGate(agg.attempts);
-    const base =
-      `Across your last ${agg.rounds_played} rounds${agg.spanDays && agg.spanDays > 0 ? ` (${agg.spanDays} days)` : ''} ` +
-      `you're making ${valueDisp} of putts from ${label}${gate.disclosure} ` +
+    const span = agg.spanDays && agg.spanDays > 0 ? ` (${agg.spanDays} days)` : '';
+    const makingClause =
+      `${valueDisp} of putts from ${label}${gate.disclosure} ` +
       `(${agg.cohort_gender === 'womens'
         ? `women's college target ~${pgaValue.toFixed(0)}%, estimated`
         : `PGA Tour ~${pgaValue.toFixed(0)}%`}).`;
+    const base = `Across your last ${agg.rounds_played} rounds${span} you're making ${makingClause}`;
+    // Coach voice: the same read in neutral third person (evidence.coach_copy).
+    const coachBase = `Across the player's last ${agg.rounds_played} rounds${span} they're making ${makingClause}`;
 
     let verdict: string;
+    let coachVerdict: string;
     let composedPriority: InsightPriority;
     if (gapPp <= 0) {
       verdict = ` You're at or above the Tour rate here — a strength, leave it alone.`;
+      coachVerdict = ` They're at or above the Tour rate here — a strength, leave it alone.`;
       composedPriority = 'low';
     } else if (bandClass === 'makeable') {
       // Makeable distance below Tour = the highest-leverage, fastest-to-fix leak.
       const lead = gapPp >= MAKEABLE_BIG_GAP_PP
         ? `This is your highest-leverage putting band:`
         : `Worth tightening:`;
-      verdict =
-        ` ${lead} ${label} is makeable distance and you're ${Math.round(gapPp)} points below Tour. ` +
+      const coachLead = gapPp >= MAKEABLE_BIG_GAP_PP
+        ? `This is their highest-leverage putting band:`
+        : lead;
+      const fix =
         `The fix is a gate drill (two tees a ball-width apart) plus a daily short-putt ladder — ` +
         `pure-strike reps, not green-reading.`;
+      verdict = ` ${lead} ${label} is makeable distance and you're ${Math.round(gapPp)} points below Tour. ${fix}`;
+      coachVerdict =
+        ` ${coachLead} ${label} is makeable distance and they're ${Math.round(gapPp)} points below Tour. ${fix}`;
       composedPriority = gapPp >= MAKEABLE_BIG_GAP_PP ? 'medium' : 'low';
     } else {
       // Lag band: a low make% here is speed + how far the approach/chip left you,
@@ -299,15 +309,22 @@ export class PuttDistanceGenerator extends BaseGenerator<PuttDistanceAggregate> 
         ` From ${label} make% is mostly lag: the driver is speed control and how far your ` +
         `approach/chip leaves you, not your stroke. Work distance-control lags to a 3-ft ` +
         `circle and tighter approach proximity — don't drill the stroke.`;
+      coachVerdict =
+        ` From ${label} make% is mostly lag: the driver is speed control and how far their ` +
+        `approach/chip leaves them, not their stroke. Have them work distance-control lags to a 3-ft ` +
+        `circle and tighter approach proximity — don't drill the stroke.`;
       composedPriority = 'low';
     }
 
     const title = `${label} putting: ${valueDisp}`;
     const content = base + verdict + staleDataSuffix(agg.last_round_date);
+    const coachContent = coachBase + coachVerdict + staleDataSuffix(agg.last_round_date);
 
     return {
       title,
       content,
+      // The title carries no second person, so the coach title is the same.
+      coach: { title, content: coachContent },
       // Composed from the band's anchor-relative gap; Phase A's
       // leveragePriorityFloor can still upgrade from the counterfactual leverage.
       priority: composedPriority,

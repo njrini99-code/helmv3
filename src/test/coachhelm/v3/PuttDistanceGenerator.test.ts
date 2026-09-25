@@ -360,3 +360,25 @@ describe('evidence.window_end carries the newest contributing round', () => {
     expect(c.evidence.window_end).toBe('2026-05-25');
   });
 });
+
+describe('PuttDistanceGenerator — coach voice', () => {
+  const SECOND_PERSON = /\byou(r|'re|'ll|'ve)?\b/i;
+  const cases: Array<[string, ReturnType<typeof makeAgg>]> = [
+    ['strength', makeAgg({ bucket: '5_10ft', playerValue: 70 })],
+    ['makeable, big gap', makeAgg({ bucket: '3_5ft', playerValue: 46.5, rounds_played: 15 })],
+    ['makeable, worth tightening', makeAgg({ bucket: '10_15ft', playerValue: 30, spanDays: null })],
+    ['lag', makeAgg({ bucket: '25_plus_ft', playerValue: 0, rounds_played: 15 })],
+    ['womens', makeAgg({ bucket: '15_25ft', playerValue: 5, cohort_gender: 'womens' })],
+  ];
+
+  it('ships a coach-voice copy with no second person and the same numbers for every branch', () => {
+    for (const [name, agg] of cases) {
+      const c = new PuttDistanceGenerator(PLAYER_ID, agg.bucket).composeContent(agg);
+      expect(c.coach, name).toBeDefined();
+      expect(c.coach!.title, name).not.toMatch(SECOND_PERSON);
+      expect(c.coach!.content, name).not.toMatch(SECOND_PERSON);
+      // Same numbers as the player copy: only the voice changes.
+      for (const n of c.content.match(/\d+(\.\d+)?%?/g) ?? []) expect(c.coach!.content, name).toContain(n);
+    }
+  });
+});
