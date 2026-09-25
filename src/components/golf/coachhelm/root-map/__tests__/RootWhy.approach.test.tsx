@@ -129,7 +129,8 @@ describe('RootWhy — approach context', () => {
 
   it('renders the path, the counted steps, the compass image, the grid and the ranges', () => {
     renderWhy(view());
-    expect(screen.getByText('175+ yd → par 4s → short-right')).toBeTruthy();
+    const crumbs = within(screen.getByRole('list', { name: 'Where it concentrates' })).getAllByRole('listitem');
+    expect(crumbs.map((li) => li.textContent?.replace('›', '').trim())).toEqual(['175+ yd', 'par 4s', 'short-right']);
     expect(screen.getByText(/On par 4s 13 of 18 missed the green/)).toBeTruthy();
     expect(screen.getByText(/strokes a round\s+lost from 175\+ yd/)).toBeTruthy();
     const compass = screen.getByRole('img', { name: /Where 13 recorded misses finished, par 4s from 175\+ yd/ });

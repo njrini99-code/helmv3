@@ -54,6 +54,7 @@ import { MeasuredFacts, SupportChips } from './RootToday';
 import { rootStyleCss } from './RootMap';
 import { AngleWhy } from './AngleWhy';
 import { Disclosure } from './Disclosure';
+import { PathCrumbs } from './SpotVisuals';
 import {
   GREEN_CENTER,
   GREEN_INNER_RING_FT,
@@ -560,7 +561,7 @@ function ApproachContextSection({ view, voice = PLAYER_VOICE }: { view: Approach
           Where it concentrates
         </h3>
         {view.narrowing.path.length > 0 ? (
-          <p className="font-fw-display text-title-2 text-text-primary">{view.narrowing.path.join(' → ')}</p>
+          <PathCrumbs steps={view.narrowing.path} />
         ) : null}
         <ol className="flex flex-col gap-1 text-body-sm text-text-primary">
           {passed.map((s) => (

@@ -412,6 +412,11 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
     Per player because Next skips data-cache entries over 2 MB (a roster is
     several MB; the largest player is under 1 MB). Null on a failed gate or
     read, like the loaders.
+  - Spot visuals (2026-09-25, `SpotVisuals.tsx`): a measured approach spot's
+    lie split draws as bars (`LieSplitBars`, loss and gain coloured and
+    labelled separately; a gaining lie used to print as a loss), and the
+    length → par → shape path draws as steps (`PathCrumbs`) in the coach
+    drill's "See why" sheet and RootWhy's "Where it concentrates".
 - Root map copy (2026-09-25, `plain-copy.ts`): raw metric ids never reach
   the Why view (`plainMetricLabel`); the old "X is off its benchmark — likely
   cause inferred from the aggregate" diagnosis is rewritten at render and an

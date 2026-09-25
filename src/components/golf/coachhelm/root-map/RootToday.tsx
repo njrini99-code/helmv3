@@ -46,6 +46,7 @@ import { RootMap, rootStyleCss } from './RootMap';
 import { AreaSparklines } from './AreaSparklines';
 import { RootSummary } from './RootSummary';
 import { Disclosure } from './Disclosure';
+import { LieSplitBars } from './SpotVisuals';
 
 export const COACHHELM_HOME = surfaceHref('overview');
 
@@ -132,11 +133,15 @@ export function MeasuredFacts({ branch }: { branch: CauseBranch }) {
   return (
     <div className="flex flex-col gap-1 text-body-sm text-text-secondary" data-slot="measured-facts">
       {m.lies ? (
-        <p>
-          <span className="font-medium text-text-primary">By lie: </span>
-          {m.lies.map((l) => `${formatStrokes(-l.sg)} ${l.label} (${l.n})`).join(' · ')}
-          {m.liesRest !== null ? ` · ${formatStrokes(-m.liesRest)} from thinner lies` : ''}
-        </p>
+        <div className="flex flex-col gap-1.5">
+          <p className="font-medium text-text-primary">By lie</p>
+          <LieSplitBars
+            rows={[
+              ...m.lies.map((l) => ({ label: l.label, sg: l.sg, n: l.n })),
+              ...(m.liesRest !== null ? [{ label: 'Thinner lies', sg: m.liesRest, n: null }] : []),
+            ]}
+          />
+        </div>
       ) : null}
       {m.merged.length > 0 ? <p>Together: {m.merged.join(', ')}.</p> : null}
       {m.mode === 'share' ? (

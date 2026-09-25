@@ -39,6 +39,7 @@ import { RootSummary } from './RootSummary';
 import { Disclosure } from './Disclosure';
 import { RootWhy } from './RootWhy';
 import { MeasuredFacts, StaleRoundNote } from './RootToday';
+import { PathCrumbs, pathSteps } from './SpotVisuals';
 import type { TeamRootsViewProps } from './TeamRootsView';
 
 export interface TeamPlayerDrillProps {
@@ -181,10 +182,10 @@ export function TeamPlayerDrill({ drill, hrefFor, navigate }: TeamPlayerDrillPro
         </p>
         <MeasuredFacts branch={selectedBranch} />
         {selectedBranch.contextPath ? (
-          <p className="text-body-sm text-text-primary" data-slot="drill-spot-path">
-            <span className="font-medium">Where it concentrates: </span>
-            {selectedBranch.contextPath}
-          </p>
+          <div className="flex flex-col gap-1.5 text-body-sm" data-slot="drill-spot-path">
+            <p className="font-medium text-text-primary">Where it concentrates</p>
+            <PathCrumbs steps={pathSteps(selectedBranch.contextPath)} />
+          </div>
         ) : null}
         <p className="text-body-sm text-text-secondary">No stored read on {name}&apos;s map matches this spot yet.</p>
       </section>
