@@ -262,7 +262,7 @@ function StepSpine({ step }: { step: Step }) {
             <span
               className={cn(
                 'font-fw-sans text-eyebrow font-medium uppercase tracking-[0.08em]',
-                active ? 'text-nav-text' : done ? 'text-nav-text-dim' : 'text-white/35',
+                active ? 'text-nav-text' : 'text-nav-text-dim',
               )}
             >
               <span className="hidden sm:inline">{s.label}</span>
