@@ -7,6 +7,7 @@
  * stored per-round numbers the loaders hand in.
  * ========================================================================== */
 
+import { isCountableRound, type CountableRoundInput } from '@/lib/golf/round-countable';
 import { computeSgTrends, type SgRoundSample } from '@/lib/coachhelm/v3/themes/trend';
 import type { ThemeTrend } from '@/lib/coachhelm/v3/themes/types';
 import { ROOT_AREAS, ROOT_AREA_LABEL, type RootArea } from './build-root-map';
@@ -18,6 +19,94 @@ export interface AreaSgRound {
   approach: number | null;
   short_game: number | null;
   putting: number | null;
+  /** SG: Total, per 18 holes. Optional: only the area-average path reads it. */
+  total?: number | null;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+ * Stored round → countable, per-18 area SG
+ * ──────────────────────────────────────────────────────────────────────── */
+
+/** The `golf_rounds` columns the root map selects for per-round SG. */
+export const STORED_SG_COLUMNS =
+  'round_date, holes_played, total_score, front_nine, back_nine, total_putts, strokes_gained_total, strokes_gained_tee, strokes_gained_approach, strokes_gained_around_green, strokes_gained_putting';
+
+export interface StoredSgRoundRow extends CountableRoundInput {
+  round_date: string | null;
+  strokes_gained_total: number | null;
+  strokes_gained_tee: number | null;
+  strokes_gained_approach: number | null;
+  strokes_gained_around_green: number | null;
+  strokes_gained_putting: number | null;
+}
+
+function toNum(v: unknown): number | null {
+  if (v === null || v === undefined) return null;
+  const n = Number(v);
+  return Number.isFinite(n) ? n : null;
+}
+
+/**
+ * One stored round as root-map SG, or null when the round is not countable.
+ *
+ * Partial or mis-entered rounds (e.g. 37 strokes logged as 18 holes, SG tee
+ * +17.89) carry absurd per-round SG and would swamp every average and trend,
+ * so the same `isCountableRound` rule as the rest of CoachHelm applies.
+ *
+ * Values are per 18 holes: a 9-hole round's stored SG is a 9-hole total, so
+ * it is doubled (the same per-18 convention as putts per round), otherwise a
+ * 9-hole round reads as half a round's worth of gain or loss.
+ */
+export function areaRoundFromStored(row: StoredSgRoundRow): AreaSgRound | null {
+  const date = typeof row.round_date === 'string' ? row.round_date.slice(0, 10) : null;
+  if (!date || !isCountableRound(row)) return null;
+  const holes = row.holes_played ?? 18;
+  const per18 = (v: unknown): number | null => {
+    const n = toNum(v);
+    return n === null ? null : (n * 18) / holes;
+  };
+  return {
+    date,
+    tee: per18(row.strokes_gained_tee),
+    approach: per18(row.strokes_gained_approach),
+    short_game: per18(row.strokes_gained_around_green),
+    putting: per18(row.strokes_gained_putting),
+    total: per18(row.strokes_gained_total),
+  };
+}
+
+export interface PlayerAreaSg {
+  /** Countable rounds that carry a stored SG: Total (the averaged set). */
+  roundsPlayed: number;
+  sgTotal: number | null;
+  sg: Record<RootArea, number | null>;
+}
+
+/**
+ * Per-round area SG averaged over COUNTABLE rounds only (per 18 holes).
+ *
+ * Replaces the `golf_player_stats_cache.sg_*_per_round` read for the root
+ * map: that cache is written by the SQL function
+ * `update_player_stats_strokes_gained(p_player_id)`, which averages every
+ * completed round with an SG total, broken ones included. Mirrors its set
+ * (rounds with a stored SG: Total), minus the non-countable rounds.
+ */
+export function averageAreaSg(rounds: AreaSgRound[]): PlayerAreaSg {
+  const counted = rounds.filter((r) => finite(r.total));
+  const mean = (pick: (r: AreaSgRound) => number | null | undefined): number | null => {
+    const vals = counted.map(pick).filter(finite);
+    return vals.length > 0 ? vals.reduce((s, v) => s + v, 0) / vals.length : null;
+  };
+  return {
+    roundsPlayed: counted.length,
+    sgTotal: mean((r) => r.total),
+    sg: {
+      tee: mean((r) => r.tee),
+      approach: mean((r) => r.approach),
+      short_game: mean((r) => r.short_game),
+      putting: mean((r) => r.putting),
+    },
+  };
 }
 
 export interface AreaSparkline {

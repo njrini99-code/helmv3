@@ -34,6 +34,7 @@ import {
   type RootStyle,
 } from '@/lib/coachhelm/root-map/build-root-map';
 import type { AreaSparkline } from '@/lib/coachhelm/root-map/area-trends';
+import type { GreenView } from '@/lib/coachhelm/root-map/green-view';
 import { RootBranchList, RootMap, rootStyleCss } from './RootMap';
 import { AreaSparklines } from './AreaSparklines';
 
@@ -60,6 +61,8 @@ export interface RootTodayProps {
   throughDate: string | null;
   sparklines: AreaSparkline[];
   newSince: NewSinceItem[];
+  /** Short-putt green for putting branches' Why view; null when below its gate. */
+  greenView?: GreenView | null;
 }
 
 function supportTone(style: RootStyle): 'success' | 'warning' | 'neutral' {

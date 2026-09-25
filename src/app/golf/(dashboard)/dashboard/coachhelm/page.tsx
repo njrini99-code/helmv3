@@ -59,7 +59,8 @@ import {
   type BranchDetail,
 } from '@/lib/coachhelm/root-map/build-root-map';
 import { buildAreaSparklines } from '@/lib/coachhelm/root-map/area-trends';
-import { loadPlayersSgCache, loadRecentAreaSgRounds } from '@/lib/coachhelm/root-map/loaders';
+import { loadPlayersAreaSg, loadRecentAreaSgRounds, loadShortPuttSlopes } from '@/lib/coachhelm/root-map/loaders';
+import { buildGreenView } from '@/lib/coachhelm/root-map/green-view';
 import type { RootTodayProps } from '@/components/golf/coachhelm/root-map/RootToday';
 
 /**
@@ -362,8 +363,9 @@ export default async function PlayerCoachHelmPage() {
   // Root-map reads start now and are awaited below, so they overlap the
   // development/profile reads instead of adding a serial round trip.
   const rootMapReads = Promise.all([
-    loadPlayersSgCache(supabase, [player.id]),
+    loadPlayersAreaSg(supabase, [player.id]),
     loadRecentAreaSgRounds(supabase, player.id, 10),
+    loadShortPuttSlopes(supabase, player.id),
   ]);
   // A8 slice 3 (write side): `isFlagEnabled` is server-only (DevelopmentDrill/
   // FocusAreaCard are client components), so the boolean is computed here
@@ -580,14 +582,15 @@ export default async function PlayerCoachHelmPage() {
     playerBaseline = await loadPlayerScoringBaseline(player.id);
   } catch { /* counterfactual line degrades honestly (suppressed) */ }
 
-  // ── Root-map Today view. Two bounded reads of STORED data (the stats-cache
-  // SG row and the last 10 rounds' stored per-round SG), then pure shaping
+  // ── Root-map Today view. Bounded reads of STORED data (per-round SG averaged
+  // over countable rounds, the last 10 rounds' stored per-round SG, and the
+  // short-putt slope sample for the green view), then pure shaping
   // of those plus the insights already fetched above. No generator, no shot
   // scan, no narrative generation. A failed read degrades to "no map" /
   // "no sparklines", never to a made-up number. ─────────────────────────────
   let rootMap: RootTodayProps | null = null;
   try {
-    const [sgRows, recentRounds] = await rootMapReads;
+    const [sgRows, recentRounds, shortPutts] = await rootMapReads;
     const sgRow = sgRows?.[0] ?? null;
     const shownInsights = [...(topInsight ? [topInsight] : []), ...secondaryInsights.filter((i) => !topInsight || i.id !== topInsight.id)];
     const throughDate = recentRounds?.[0]?.date ?? null;
@@ -616,6 +619,8 @@ export default async function PlayerCoachHelmPage() {
       throughDate,
       sparklines: recentRounds ? buildAreaSparklines(recentRounds) : [],
       newSince,
+      // Putting branches' Why view: null (omitted) below the sample gate.
+      greenView: shortPutts ? buildGreenView(shortPutts.putts, shortPutts.rounds) : null,
     };
   } catch (err) {
     void logServerError(

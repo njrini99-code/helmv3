@@ -12,9 +12,11 @@
  * action: make it a focus (the existing `createFocusAreaFromInsightV2` path
  * through the shared `FocusAreaModal`).
  *
- * The top-down green plot from the design is NOT drawn: `putt_details` stores
- * no slope, so there is nothing honest to plot. The generic evidence visual
- * (your value against the comparison, with the sample) renders instead.
+ * Putting branches also get the top-down green (`GreenPlot`): recorded 4-6 ft
+ * putts placed by slope (`golf_shots.putt_slope`, recorded on ~96% of putts)
+ * and distance, with a make rate per region. It is omitted below its sample
+ * gate (see `buildGreenView`). Other branches show only the generic evidence
+ * visual (your value against the comparison, with the sample).
  * ========================================================================== */
 
 import { useState } from 'react';
@@ -35,6 +37,18 @@ import {
 import { COACHHELM_HOME } from './RootToday';
 import { SupportChips } from './RootToday';
 import { rootStyleCss } from './RootMap';
+import {
+  GREEN_CENTER,
+  GREEN_INNER_RING_FT,
+  GREEN_MAX_FT,
+  GREEN_MIN_FT,
+  GREEN_PX_PER_FT,
+  GREEN_REGION_LABEL,
+  GREEN_SIZE,
+  greenAriaLabel,
+  type GreenRegionStat,
+  type GreenView,
+} from '@/lib/coachhelm/root-map/green-view';
 
 export interface RootWhyInsight {
   id: string;
@@ -46,6 +60,8 @@ export interface RootWhyProps {
   model: RootMapModel;
   details: Record<string, BranchDetail>;
   insights: RootWhyInsight[];
+  /** Short-putt green, shown on putting branches; null omits it. */
+  greenView?: GreenView | null;
 }
 
 function areaTypeFor(category: string | null): string {
@@ -131,6 +147,125 @@ function EvidenceCompare({ detail }: { detail: BranchDetail }) {
   );
 }
 
+function RegionStat({ stat }: { stat: GreenRegionStat }) {
+  const label = GREEN_REGION_LABEL[stat.slope];
+  return (
+    <div className="flex min-w-0 flex-col" data-slot="green-region" data-slope={stat.slope}>
+      <span className="text-caption font-medium text-text-secondary">
+        {label.place} · {label.slope}
+      </span>
+      <span className="font-fw-display text-title-1 tabular-nums text-text-primary">
+        {stat.pct === null ? '–' : `${stat.pct}%`}
+      </span>
+      <span className="text-caption text-text-secondary">
+        {stat.made} of {stat.n} made
+        {stat.thin ? <span className="text-text-tertiary"> · thin read</span> : null}
+      </span>
+    </div>
+  );
+}
+
+/**
+ * Top-down green: hole at the centre, downhill putts in the wedge above it,
+ * uphill below, level to the sides; made = filled dot, missed = ring. Only
+ * 4-6 ft putts count; closer ones are faint. No comparison is written here:
+ * each region states its own rate, and a thin region says so.
+ */
+function GreenPlot({ view }: { view: GreenView }) {
+  const c = GREEN_CENTER;
+  const diag = (GREEN_MAX_FT + 0.5) * GREEN_PX_PER_FT * Math.SQRT1_2;
+  return (
+    <section aria-labelledby="why-green-heading" className="flex flex-col gap-3" data-slot="green-plot">
+      <h3 id="why-green-heading" className="border-b border-text-primary pb-2 font-fw-display text-body-lg font-semibold text-text-primary">
+        Your putts from {GREEN_MIN_FT}–{GREEN_MAX_FT} ft
+      </h3>
+      <div className="flex justify-center">
+        <RegionStat stat={view.regions.downhill} />
+      </div>
+      <svg
+        role="img"
+        aria-label={greenAriaLabel(view)}
+        viewBox={`0 0 ${GREEN_SIZE} ${GREEN_SIZE}`}
+        className="mx-auto h-auto w-full max-w-[330px]"
+      >
+        <circle cx={c} cy={c} r={c - 2} style={{ fill: 'var(--fw-color-success-bg)' }} />
+        {[1, -1].map((s) => (
+          <line
+            key={s}
+            x1={c - diag}
+            y1={c - s * diag}
+            x2={c + diag}
+            y2={c + s * diag}
+            style={{ stroke: 'var(--fw-viz-grid)' }}
+            strokeWidth={1}
+          />
+        ))}
+        {[GREEN_INNER_RING_FT, GREEN_MAX_FT].map((ft) => (
+          <g key={ft}>
+            <circle
+              cx={c}
+              cy={c}
+              r={ft * GREEN_PX_PER_FT}
+              fill="none"
+              style={{ stroke: 'var(--fw-viz-axis)' }}
+              strokeWidth={1.2}
+              strokeDasharray="4 4"
+            />
+            <text
+              x={c + 4}
+              y={c + ft * GREEN_PX_PER_FT - 4}
+              fontSize={10.5}
+              style={{ fill: 'var(--fw-color-text-tertiary)' }}
+            >
+              {ft} ft
+            </text>
+          </g>
+        ))}
+        {view.points.map((p, i) =>
+          p.made ? (
+            <circle key={i} cx={p.x} cy={p.y} r={3.4} opacity={p.faint ? 0.3 : 1} style={{ fill: 'var(--fw-color-success)' }} />
+          ) : (
+            <circle
+              key={i}
+              cx={p.x}
+              cy={p.y}
+              r={3.6}
+              opacity={p.faint ? 0.3 : 1}
+              strokeWidth={2}
+              style={{ fill: 'var(--fw-color-surface)', stroke: 'var(--fw-color-warning)' }}
+            />
+          ),
+        )}
+        <circle cx={c} cy={c} r={6} style={{ fill: 'var(--fw-color-text-primary)' }} />
+      </svg>
+      <div className="grid grid-cols-2 gap-3">
+        <RegionStat stat={view.regions.level} />
+        <div className="flex justify-end text-right">
+          <RegionStat stat={view.regions.uphill} />
+        </div>
+      </div>
+      <ul className="flex flex-wrap gap-x-4 gap-y-1 text-caption text-text-secondary">
+        <li className="inline-flex items-center gap-1.5">
+          <svg aria-hidden width={10} height={10}>
+            <circle cx={5} cy={5} r={4} style={{ fill: 'var(--fw-color-success)' }} />
+          </svg>
+          Made
+        </li>
+        <li className="inline-flex items-center gap-1.5">
+          <svg aria-hidden width={10} height={10}>
+            <circle cx={5} cy={5} r={3.6} fill="none" strokeWidth={2} style={{ stroke: 'var(--fw-color-warning)' }} />
+          </svg>
+          Missed
+        </li>
+        <li>Faint: {GREEN_INNER_RING_FT} ft or less, not counted</li>
+      </ul>
+      <p className="text-caption text-text-tertiary">
+        Across your last {view.rounds} rounds. Position around the hole is illustrative; distance and slope are recorded.
+      </p>
+    </section>
+  );
+}
+
 function Worth({ now, ifClosed }: { now: number; ifClosed: number }) {
   const lo = Math.floor(Math.min(now, ifClosed) - 1);
   const hi = Math.ceil(Math.max(now, ifClosed) + 1);
@@ -180,7 +315,7 @@ function Worth({ now, ifClosed }: { now: number; ifClosed: number }) {
   );
 }
 
-export function RootWhy({ model, details, insights }: RootWhyProps) {
+export function RootWhy({ model, details, insights, greenView = null }: RootWhyProps) {
   const searchParams = useSearchParams();
   const id = searchParams.get('insight');
   const insight = insights.find((i) => i.id === id) ?? null;
@@ -264,6 +399,8 @@ export function RootWhy({ model, details, insights }: RootWhyProps) {
       </header>
 
       <EvidenceCompare detail={detail} />
+
+      {greenView && insight.category === 'putting' ? <GreenPlot view={greenView} /> : null}
 
       <section aria-labelledby="why-root-heading" className="flex flex-col gap-2">
         <h3 id="why-root-heading" className="border-b border-text-primary pb-2 font-fw-display text-body-lg font-semibold text-text-primary">

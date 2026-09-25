@@ -378,6 +378,7 @@ export function PlayerCoachHelmHome({
               <RootWhy
                 model={rootMap.model}
                 details={rootMap.details}
+                greenView={rootMap.greenView ?? null}
                 insights={[...(topInsight ? [topInsight] : []), ...secondaryDeduped].map((i) => ({
                   id: i.id,
                   playerId: i.player_id,

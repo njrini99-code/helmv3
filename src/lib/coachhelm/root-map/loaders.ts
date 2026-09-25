@@ -14,14 +14,22 @@
  * a number.
  * ========================================================================== */
 
-import { isCountableRound, type CountableRoundInput } from '@/lib/golf/round-countable';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/types/database';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import { logServerError } from '@/lib/server-error-logger';
 import { describeError } from '@/lib/utils/describe-error';
-import type { AreaSgRound, TeamSgRound } from './area-trends';
-import type { RootArea } from './build-root-map';
+import {
+  STORED_SG_COLUMNS as SG_COLUMNS,
+  areaRoundFromStored as toAreaRound,
+  averageAreaSg,
+  type AreaSgRound,
+  type PlayerAreaSg,
+  type StoredSgRoundRow as SgRoundRow,
+  type TeamSgRound,
+} from './area-trends';
+import { isCountableRound, type CountableRoundInput } from '@/lib/golf/round-countable';
+import { GREEN_MAX_FT, type GreenPuttInput } from './green-view';
 
 type Sb = SupabaseClient<Database>;
 
@@ -45,32 +53,6 @@ function warn(message: string, action: string, err: unknown): void {
   void logServerError(`${message}: ${describeError(err)}`, { action, featureArea: 'coachhelm', skipSentry: true }, 'warning').catch(
     () => undefined,
   );
-}
-
-const SG_COLUMNS =
-  'round_date, holes_played, total_score, front_nine, back_nine, total_putts, strokes_gained_tee, strokes_gained_approach, strokes_gained_around_green, strokes_gained_putting';
-
-interface SgRoundRow extends CountableRoundInput {
-  round_date: string | null;
-  strokes_gained_tee: number | null;
-  strokes_gained_approach: number | null;
-  strokes_gained_around_green: number | null;
-  strokes_gained_putting: number | null;
-}
-
-function toAreaRound(row: SgRoundRow): AreaSgRound | null {
-  const date = typeof row.round_date === 'string' ? row.round_date.slice(0, 10) : null;
-  // Partial or mis-entered rounds (e.g. 37 strokes logged as 18 holes) carry
-  // absurd per-round SG and would swamp every trend: same countable rule as
-  // the rest of CoachHelm.
-  if (!date || !isCountableRound(row)) return null;
-  return {
-    date,
-    tee: num(row.strokes_gained_tee),
-    approach: num(row.strokes_gained_approach),
-    short_game: num(row.strokes_gained_around_green),
-    putting: num(row.strokes_gained_putting),
-  };
 }
 
 /**
@@ -136,43 +118,130 @@ export async function loadTeamSgRounds(sb: Sb, playerIds: string[], sinceDate: s
   }
 }
 
-export interface PlayerSgCacheRow {
+export interface PlayerAreaSgRow extends PlayerAreaSg {
   playerId: string;
-  roundsPlayed: number | null;
-  sgTotal: number | null;
-  sg: Record<RootArea, number | null>;
 }
 
-/** Stored SG per round (stats cache) for each player that has a cache row. */
-export async function loadPlayersSgCache(sb: Sb, playerIds: string[]): Promise<PlayerSgCacheRow[] | null> {
+/**
+ * Per-round area SG for each player, averaged over their COUNTABLE completed
+ * rounds (per 18 holes) from the stored `golf_rounds.strokes_gained_*`.
+ *
+ * Deliberately NOT `golf_player_stats_cache.sg_*_per_round`: that cache is
+ * written by the SQL function `update_player_stats_strokes_gained(uuid)`
+ * (called from `src/lib/cache/golf-stats-calculator.ts`), which averages every
+ * completed round, so one mis-entered round (37 strokes over "18 holes", SG
+ * tee +17.89) moved one player's putting from -4.09 to -2.93 per round. Fixing the writer
+ * is a migration; until then the root map computes its own average here.
+ *
+ * Bounded: one indexed select per chunk of players, paged past the 1000-row
+ * cap on a stable order. Players with no countable SG round get no row.
+ */
+export async function loadPlayersAreaSg(sb: Sb, playerIds: string[]): Promise<PlayerAreaSgRow[] | null> {
   if (playerIds.length === 0) return [];
   try {
-    const out: PlayerSgCacheRow[] = [];
+    const byPlayer = new Map<string, AreaSgRound[]>();
     for (const ids of chunk(playerIds)) {
-      const { data, error } = await sb
-        .from('golf_player_stats_cache')
-        .select(
-          'player_id, rounds_played, sg_total_per_round, sg_tee_per_round, sg_approach_per_round, sg_around_green_per_round, sg_putting_per_round',
-        )
-        .in('player_id', ids);
+      const { data, error } = await fetchAllRowsResult<SgRoundRow & { id: string; player_id: string }>(
+        (from, to) =>
+          sb
+            .from('golf_rounds')
+            .select(`id, player_id, ${SG_COLUMNS}`)
+            .in('player_id', ids)
+            .eq('status', 'completed')
+            .not('strokes_gained_total', 'is', null)
+            .order('id', { ascending: true })
+            .range(from, to) as unknown as PromiseLike<{
+            data: (SgRoundRow & { id: string; player_id: string })[] | null;
+            error: { message: string; code?: string | null } | null;
+          }>,
+        undefined,
+        { table: 'golf_rounds', action: 'rootMap.loadPlayersAreaSg', feature: 'coachhelm_ai_engine', sport: 'golf' },
+      );
       if (error) throw error;
       for (const row of data ?? []) {
-        out.push({
-          playerId: row.player_id,
-          roundsPlayed: num(row.rounds_played),
-          sgTotal: num(row.sg_total_per_round),
-          sg: {
-            tee: num(row.sg_tee_per_round),
-            approach: num(row.sg_approach_per_round),
-            short_game: num(row.sg_around_green_per_round),
-            putting: num(row.sg_putting_per_round),
-          },
-        });
+        const r = toAreaRound(row);
+        if (!r) continue;
+        const list = byPlayer.get(row.player_id) ?? [];
+        list.push(r);
+        byPlayer.set(row.player_id, list);
       }
+    }
+    const out: PlayerAreaSgRow[] = [];
+    for (const [playerId, rounds] of byPlayer) {
+      const avg = averageAreaSg(rounds);
+      if (avg.roundsPlayed > 0) out.push({ playerId, ...avg });
     }
     return out;
   } catch (err) {
-    warn('[root-map] stats-cache SG read failed', 'rootMap.loadPlayersSgCache', err);
+    warn('[root-map] countable area SG read failed', 'rootMap.loadPlayersAreaSg', err);
+    return null;
+  }
+}
+
+/** Rounds the green view reads back (newest countable rounds). */
+export const GREEN_ROUND_LIMIT = 40;
+
+export interface ShortPuttSample {
+  rounds: number;
+  putts: GreenPuttInput[];
+}
+
+/**
+ * Recorded putts inside 6 ft with a slope, from the player's most recent
+ * {@link GREEN_ROUND_LIMIT} countable completed rounds: the Why view's green.
+ *
+ * Bounded: one select for the rounds (over-fetched so non-countable ones do
+ * not shrink the window) and one paged select for their putts, filtered in the
+ * query to putting shots at 0-6 ft with a downhill/level/uphill slope.
+ */
+export async function loadShortPuttSlopes(sb: Sb, playerId: string): Promise<ShortPuttSample | null> {
+  try {
+    const { data: rounds, error: rErr } = await sb
+      .from('golf_rounds')
+      .select('id, holes_played, total_score, front_nine, back_nine, total_putts, strokes_gained_total')
+      .eq('player_id', playerId)
+      .eq('status', 'completed')
+      .order('round_date', { ascending: false })
+      .limit(GREEN_ROUND_LIMIT + 20);
+    if (rErr) throw rErr;
+    const roundIds = ((rounds ?? []) as Array<CountableRoundInput & { id: string }>)
+      .filter(isCountableRound)
+      .slice(0, GREEN_ROUND_LIMIT)
+      .map((r) => r.id);
+    if (roundIds.length === 0) return { rounds: 0, putts: [] };
+
+    type Row = { id: string; putt_distance_feet: number | null; putt_slope: string | null; putt_made: boolean | null };
+    const putts: GreenPuttInput[] = [];
+    for (const ids of chunk(roundIds)) {
+      const { data, error } = await fetchAllRowsResult<Row>(
+        (from, to) =>
+          sb
+            .from('golf_shots')
+            .select('id, putt_distance_feet, putt_slope, putt_made')
+            .in('round_id', ids)
+            .eq('shot_type', 'putting')
+            .gt('putt_distance_feet', 0)
+            .lte('putt_distance_feet', GREEN_MAX_FT)
+            .in('putt_slope', ['downhill', 'level', 'uphill'])
+            .not('putt_made', 'is', null)
+            .order('id', { ascending: true })
+            .range(from, to) as unknown as PromiseLike<{
+            data: Row[] | null;
+            error: { message: string; code?: string | null } | null;
+          }>,
+        undefined,
+        { table: 'golf_shots', action: 'rootMap.loadShortPuttSlopes', feature: 'coachhelm_ai_engine', sport: 'golf' },
+      );
+      if (error) throw error;
+      for (const row of data ?? []) {
+        const feet = num(row.putt_distance_feet);
+        if (feet === null || row.putt_made === null) continue;
+        putts.push({ id: row.id, feet, slope: row.putt_slope, made: row.putt_made });
+      }
+    }
+    return { rounds: roundIds.length, putts };
+  } catch (err) {
+    warn(`[root-map] short-putt slope read failed for player ${playerId}`, 'rootMap.loadShortPuttSlopes', err);
     return null;
   }
 }

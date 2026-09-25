@@ -36,7 +36,7 @@ import { loadFocusAreaPracticeLogData } from '@/lib/coachhelm/focus-areas/practi
 import { loadFollowUpRoundCounts } from '@/lib/coachhelm/focus-areas/follow-up-eligibility-loader';
 import {
   loadAttributionForInsights,
-  loadPlayersSgCache,
+  loadPlayersAreaSg,
   loadTeamSgRounds,
 } from '@/lib/coachhelm/root-map/loaders';
 import { buildTeamHeadline, buildTeamRoots, type TeamRosterPlayer } from '@/lib/coachhelm/root-map/build-team-roots';
@@ -253,11 +253,11 @@ export default async function IntelligenceDashboardPage({ searchParams }: Intell
   const players: PlayersGridPlayer[] = rawPlayers ?? [];
   const playerIds = players.map((p) => p.id);
 
-  // Team roots reads (the coach landing view): stored stats-cache SG and
-  // stored per-round SG. Started here so they overlap the focus-area reads
+  // Team roots reads (the coach landing view): per-round SG averaged over
+  // each player's countable rounds, and stored per-round SG. Started here so they overlap the focus-area reads
   // below; each loader returns null on failure instead of throwing.
   const teamRootReads = Promise.all([
-    loadPlayersSgCache(supabase, playerIds),
+    loadPlayersAreaSg(supabase, playerIds),
     loadTeamSgRounds(supabase, playerIds, isoDaysBefore(todayIso, TEAM_TREND_WEEKS * 7)),
   ]);
 
