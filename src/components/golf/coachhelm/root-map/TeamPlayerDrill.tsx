@@ -31,7 +31,7 @@ import {
   staleRoundLine,
 } from '@/lib/coachhelm/root-map/build-root-map';
 import type { CoachPlayerDrill } from '@/lib/coachhelm/root-map/coach-player-drill';
-import { RootBranchList, RootMap } from './RootMap';
+import { RootMap } from './RootMap';
 import { RootWhy } from './RootWhy';
 import { MeasuredFacts, StaleRoundNote } from './RootToday';
 import type { TeamRootsViewProps } from './TeamRootsView';
@@ -174,13 +174,6 @@ export function TeamPlayerDrill({ drill, hrefFor, navigate }: TeamPlayerDrillPro
             summary={summary}
             audience="coach"
             figureLabel={`${name}'s root map`}
-          />
-          <RootBranchList
-            model={ready.model}
-            selectedId={selectedBranch?.id ?? selectedId}
-            onSelect={select}
-            includeUnsized
-            label={`Branches of ${name}'s map`}
           />
           {ready.model.other.length > 0 ? (
             <section aria-labelledby="drill-other-heading" className="flex flex-col gap-2">

@@ -210,17 +210,24 @@ describe('TeamRootsView, team map What row and matrix labels (2026-09-25)', () =
   it('draws a single-player sized cause and unsized causes as labelled nodes, with the unexplained remainder named', () => {
     renderView();
     const figure = screen.getByRole('figure', { name: 'Team root map' });
-    // sized even though only one player carries it
-    expect(within(figure).getByRole('button', { name: /Lag putting, 0\.10 strokes a round\. 1 player/ })).toBeInTheDocument();
+    const ribbon = figure.querySelector('[data-slot="ribbon-map"]') as HTMLElement;
+    const ladder = figure.querySelector('[data-slot="leak-ladder"]') as HTMLElement;
+    // sized even though only one player carries it, on both layouts
+    expect(within(ribbon).getByRole('button', { name: /Lag putting, 0\.10 strokes a round\. 1 player/ })).toBeInTheDocument();
+    expect(within(ladder).getByRole('button', { name: /Lag putting, 0\.10 strokes a round\. 1 player/ })).toBeInTheDocument();
     // unsized cause: outlined node with its short label and carrier count
     expect(
-      within(figure).getByRole('button', { name: /Putting: Downhill putts, no stroke value stored\. 3 players/ }),
+      within(ribbon).getByRole('button', { name: /Putting: Downhill putts, no stroke value stored\. 3 players/ }),
     ).toBeInTheDocument();
-    expect(within(figure).getAllByText('Unexplained').length).toBeGreaterThan(0);
-    // a sized node too narrow for its own label is named just under the row
-    const callouts = figure.querySelector('[data-slot="what-callouts"]') as HTMLElement;
-    expect(within(callouts).getByText('Lag putting')).toBeInTheDocument();
-    expect(within(callouts).getByText('· 1 player')).toBeInTheDocument();
+    expect(
+      within(ladder).getByRole('button', { name: /Putting: Downhill putts, no stroke value stored\. 3 players/ }),
+    ).toBeInTheDocument();
+    expect(within(ribbon).getAllByText('Unexplained').length).toBeGreaterThan(0);
+    // a desktop node too narrow for its own label names itself in a
+    // hover / focus tooltip (no duplicate list under the row)
+    expect(figure.querySelector('[data-slot="what-callouts"]')).toBeNull();
+    const tips = [...ribbon.querySelectorAll('[data-slot="what-tooltip"]')].map((el) => el.textContent);
+    expect(tips).toContain('Lag putting 0.10 · 1 player');
     // legend once, in the coach voice
     expect(screen.getAllByRole('list', { name: 'Legend' })).toHaveLength(1);
     expect(screen.queryByText(/your/i)).not.toBeInTheDocument();

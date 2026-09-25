@@ -35,7 +35,7 @@ import type { CoachPlayerDrill } from '@/lib/coachhelm/root-map/coach-player-dri
 import type { TeamTrendWeek } from '@/lib/coachhelm/root-map/area-trends';
 import type { TeamRootCell, TeamRootsModel } from '@/lib/coachhelm/root-map/build-team-roots';
 import type { FocusSlopeRow, NeedsYouItem } from '@/lib/coachhelm/root-map/build-team-extras';
-import { RootBranchList, RootMap, playersText, rootStyleCss } from './RootMap';
+import { RootMap, playersText, rootStyleCss } from './RootMap';
 import { TeamTrendChart } from './TeamTrendChart';
 import { TeamPlayerDrill } from './TeamPlayerDrill';
 
@@ -215,13 +215,6 @@ function TeamRootsOverview({ model, headline, trend, slopes, needsYou, signalsFa
               figureLabel="Team root map"
               audience="coach"
               unsizedInRow
-            />
-            <RootBranchList
-              model={model.map}
-              selectedId={selectedId}
-              onSelect={setSelectedId}
-              includeUnsized
-              label="Team causes"
             />
             {model.map.other.length > 0 ? (
               <p className="text-body-sm text-text-secondary" data-slot="team-other-reads">

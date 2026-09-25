@@ -152,8 +152,9 @@ describe('Team roots player drill', () => {
 
   it('picking another branch swaps the Why in place and keeps ?cause= in step', () => {
     const navigate = renderDrill(ready);
-    const list = screen.getByRole('group', { name: "Branches of Ava's map" });
-    fireEvent.click(within(list).getByRole('button', { name: /Greens hit from 175\+ yd/ }));
+    // The phone ladder's segment is the tap target (the chip list is gone).
+    const ladder = document.querySelector('[data-slot="leak-ladder"]') as HTMLElement;
+    fireEvent.click(within(ladder).getByRole('button', { name: /Greens hit from 175\+ yd/ }));
     expect(navigate).toHaveBeenCalledWith({ cause: 'far' });
     expect(screen.getByRole('heading', { name: 'Greens from 175+' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'The likely root' })).toBeInTheDocument();

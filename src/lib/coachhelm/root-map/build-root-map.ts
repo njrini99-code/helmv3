@@ -38,6 +38,7 @@
  * ========================================================================== */
 
 import type { CausalityLevel, Diagnosis, InsightEvidence } from '@/lib/coachhelm/v2/insights/types';
+import { angleWhyOf, type AngleWhyView } from './angle-why';
 import { isTemplatedRootCause, plainMetricLabel, plainRootCause, richWhySentence } from './plain-copy';
 
 /** The four strokes-gained areas the map is drawn over. */
@@ -578,6 +579,9 @@ export interface BranchDetail {
   sequence: NonNullable<NonNullable<Diagnosis['basis']>['sequence']> | null;
   strokes: number | null;
   projection: { now: number; ifClosed: number } | null;
+  /** Insight-angle drill-down (`evidence.detail`, see `angle-why.ts`); null
+   *  or absent for every other metric. */
+  angle?: AngleWhyView | null;
 }
 
 function finiteOrNull(v: unknown): number | null {
@@ -639,6 +643,7 @@ export function branchDetailOf(insight: {
     sequence: seq && finiteOrNull(seq.occurrences) !== null && finiteOrNull(seq.of) !== null ? seq : null,
     strokes: strokesPerRound(ev),
     projection: scoringProjection(ev),
+    angle: angleWhyOf(ev),
   };
 }
 

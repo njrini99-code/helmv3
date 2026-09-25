@@ -39,7 +39,7 @@ import {
 import type { AreaSparkline } from '@/lib/coachhelm/root-map/area-trends';
 import type { GreenView } from '@/lib/coachhelm/root-map/green-view';
 import type { ApproachWhyView } from '@/lib/coachhelm/root-map/approach-context';
-import { RootBranchList, RootMap, rootStyleCss } from './RootMap';
+import { RootMap, rootStyleCss } from './RootMap';
 import { AreaSparklines } from './AreaSparklines';
 
 export const COACHHELM_HOME = surfaceHref('overview');
@@ -295,8 +295,7 @@ export function RootToday({ model, details, headline, roundsRead, throughDate, d
 
       {hasMap ? (
         <>
-          <RootMap model={model} selectedId={selectedId} onSelect={setSelectedId} summary={summary} />
-          <RootBranchList model={model} selectedId={selectedId} onSelect={setSelectedId} label="Branches of the map" />
+          <RootMap model={model} selectedId={selectedId} onSelect={setSelectedId} summary={summary} listUnsized={false} />
 
           {model.unsized.length > 0 ? (
             <section aria-labelledby="root-unsized-heading" className="flex flex-col gap-2">

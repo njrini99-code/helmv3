@@ -22,8 +22,14 @@
  * labelled with its own window): the gated narrowing steps, a miss compass
  * (short/long × left/right, coverage stated; omitted below the coverage
  * gate), the par × length grid with the chosen slice emphasised, and the
- * three ranges' A2 metrics side by side. Other branches show only the generic
- * evidence visual (your value against the comparison, with the sample).
+ * three ranges' A2 metrics side by side.
+ *
+ * Insight-angle reads (`coachhelm_insight_angles_v1`: rough vs fairway
+ * approaches, the bad-day floor, the 3-putt autopsy, the tee and approach
+ * miss-cost compasses) add their own visual under the evidence line
+ * (`AngleWhy`, parsed by metric in `angle-why.ts`). Every other branch shows
+ * only the generic evidence visual (your value against the comparison, with
+ * the sample).
  * ========================================================================== */
 
 import { useState, type ReactNode } from 'react';
@@ -45,6 +51,7 @@ import {
 import { COACHHELM_HOME } from './RootToday';
 import { MeasuredFacts, SupportChips } from './RootToday';
 import { rootStyleCss } from './RootMap';
+import { AngleWhy } from './AngleWhy';
 import {
   GREEN_CENTER,
   GREEN_INNER_RING_FT,
@@ -743,6 +750,8 @@ export function RootWhy({
       </header>
 
       <EvidenceCompare detail={detail} voice={voice} />
+
+      {detail.angle ? <AngleWhy view={detail.angle} /> : null}
 
       {greenView && insight.category === 'putting' ? <GreenPlot view={greenView} voice={voice} /> : null}
 
