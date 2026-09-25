@@ -417,6 +417,12 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
     labelled separately; a gaining lie used to print as a loss), and the
     length → par → shape path draws as steps (`PathCrumbs`) in the coach
     drill's "See why" sheet and RootWhy's "Where it concentrates".
+- Coach Scouting tab (2026-09-25, `FairwayPlayerInsight.tsx`, mounted by
+  `/players/[playerId]/game?tab=scouting`): opens on one card (identity,
+  rating, verdict, the standing bars). The top read stays open; the second
+  read, the plan, trends, tracking (focus areas + predictions) and the
+  trajectory are closed disclosures. "Message player" is the one primary
+  action; the stats-cockpit link is secondary.
 - Root map copy (2026-09-25, `plain-copy.ts`): raw metric ids never reach
   the Why view (`plainMetricLabel`); the old "X is off its benchmark — likely
   cause inferred from the aggregate" diagnosis is rewritten at render and an
