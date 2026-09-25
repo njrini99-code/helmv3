@@ -43,7 +43,9 @@ import { CoachHelmShell } from './CoachHelmShell';
 // barrel — this file is itself re-exported (via pages/coachhelm/index.ts) from
 // that barrel, so importing the barrel back here created an import cycle,
 // flagged by npm run check:cycles.
-import { InstrumentPanel, InstrumentCluster, Readout } from '@/components/fairway/instrument';
+import { InstrumentPanel } from '@/components/fairway/instrument';
+import { Eyebrow } from '@/components/fairway/controls/eyebrow';
+import { Disclosure } from '@/components/golf/coachhelm/root-map/Disclosure';
 import {
   GenomeFingerprint,
   type GenomeDimension as FingerprintDimension,
@@ -102,7 +104,7 @@ export interface GenomeCompareViewProps {
 }
 
 const PLAYER_A_DOT = 'var(--fw-color-accent-500, #16A34A)'; // helm green
-const PLAYER_B_DOT = '#F59E0B'; // amber 500
+const PLAYER_B_DOT = 'var(--fw-viz-div-neg)'; // the chart's amber side
 
 /* ---------------------------------------------------------------------------
  * Vector → fingerprint dimensions (shared label set; null when not computed)
@@ -126,9 +128,55 @@ function liveCount(vector: GenomeVector | null): number {
   }, 0);
 }
 
-/* ---------------------------------------------------------------------------
+/** One dimension both players have live, with who leads it. */
+export interface CompareLead {
+  label: string;
+  a: number;
+  b: number;
+  /** a − b on the shared 0–100 scale. */
+  diff: number;
+}
+
+/** Dimensions both players have live, largest gap first. Never invents a
+ *  reading: a dimension missing on either side is left out. */
+export function compareLeads(
+  a: ReadonlyArray<FingerprintDimension>,
+  b: ReadonlyArray<FingerprintDimension>,
+): CompareLead[] {
+  const bByLabel = new Map(b.map((d) => [d.label, d.value]));
+  const out: CompareLead[] = [];
+  for (const d of a) {
+    const bv = bByLabel.get(d.label);
+    if (d.value == null || bv == null) continue;
+    out.push({ label: d.label, a: d.value, b: bv, diff: d.value - bv });
+  }
+  return out.sort((x, y) => Math.abs(y.diff) - Math.abs(x.diff));
+}
+
+function joinLabels(labels: string[]): string {
+  const lower = labels.map((l) => l.toLowerCase());
+  if (lower.length <= 1) return lower.join('');
+  return `${lower.slice(0, -1).join(', ')} and ${lower[lower.length - 1]}`;
+}
+
+/** One plain line for the head-to-head: who leads where, top two per side. */
+export function compareTakeaway(nameA: string, nameB: string, leads: CompareLead[]): string {
+  if (leads.length < 3) {
+    return `Only ${leads.length} ${leads.length === 1 ? 'dimension is' : 'dimensions are'} live for both players; a fair comparison needs at least 3.`;
+  }
+  const aTop = leads.filter((l) => l.diff > 0).slice(0, 2).map((l) => l.label);
+  const bTop = leads.filter((l) => l.diff < 0).slice(0, 2).map((l) => l.label);
+  if (aTop.length && bTop.length) {
+    return `${nameA} leads on ${joinLabels(aTop)}; ${nameB} leads on ${joinLabels(bTop)}.`;
+  }
+  if (aTop.length) return `${nameA} leads on every shared dimension, most on ${joinLabels(aTop)}.`;
+  if (bTop.length) return `${nameB} leads on every shared dimension, most on ${joinLabels(bTop)}.`;
+  return 'The two players read level on every shared dimension.';
+}
+
+/* ────────────────────────────────────────────────────────────────────────────
  * GenomeCompareView
- * ------------------------------------------------------------------------- */
+ * ─────────────────────────────────────────────────────────────────────────── */
 
 export function GenomeCompareView({
   roster,
@@ -148,20 +196,29 @@ export function GenomeCompareView({
   const bHasGenome = Boolean(seriesB?.vector);
   const isCompare = aHasGenome && bHasGenome;
 
-  // Honest "N of M live" — the lower of the two live counts (the comparable set).
   const aLive = liveCount(seriesA?.vector ?? null);
   const bLive = liveCount(seriesB?.vector ?? null);
-  const comparableLive = isCompare ? Math.min(aLive, bLive) : aHasGenome ? aLive : bLive;
-  const maturityCaption = `${comparableLive} of ${totalDims} dimensions live · more land as data matures`;
+  const leads = React.useMemo(() => (isCompare ? compareLeads(aData, bData) : []), [isCompare, aData, bData]);
+  const aLeads = leads.filter((l) => l.diff > 0).length;
+  const bLeads = leads.filter((l) => l.diff < 0).length;
 
   const title =
     seriesA && seriesB
       ? `${seriesA.name} vs ${seriesB.name}`
       : seriesA
         ? `Add a second player to compare ${seriesA.name}`
-        : 'Pick two players to compare';
+        : seriesB
+          ? `Add a second player to compare ${seriesB.name}`
+          : 'Pick two players to compare';
 
   const anySelected = Boolean(seriesA || seriesB);
+  const bothSelected = Boolean(seriesA && seriesB);
+  // The one side that has a genome when the other does not.
+  const solo = !isCompare ? (aHasGenome ? seriesA : bHasGenome ? seriesB : null) : null;
+  const soloData = aHasGenome ? aData : bData;
+  const missing = [seriesA && !aHasGenome ? seriesA.name : null, seriesB && !bHasGenome ? seriesB.name : null].filter(
+    (n): n is string => Boolean(n),
+  );
 
   return (
     <CoachHelmShell
@@ -170,192 +227,165 @@ export function GenomeCompareView({
       role="coach"
       signalCount={signalCount}
       title={title}
-      description={anySelected ? maturityCaption : 'Overlay two players to see who is stronger where.'}
-      // Canonical destination directly, not the /development redirect shim
-      // (React #310 legacy-link audit, 2026-07-22).
+      description="Genome comparison"
       breadcrumbs={[{ label: 'Players', href: '/golf/dashboard/intelligence?view=players' }, { label: 'Compare' }]}
       className={className}
     >
       <div className="flex flex-col gap-6">
-        {/* ── THE COCKPIT — the diverging-bar fingerprint as the focal hero ── */}
         {!anySelected ? (
-          <InstrumentPanel depth="raised" tone="accent" padding="lg" as="section">
+          <section className="rounded-fw-lg border border-border-subtle bg-surface p-5 md:p-6">
             <EmptyState
               icon={LucideUsers}
               title="Pick two players to compare"
-              description="Select a player from each list below to overlay their game-profile fingerprints."
+              description="Choose a player for each slot below to put their genomes side by side."
             />
-          </InstrumentPanel>
+          </section>
         ) : (
-          <InstrumentCluster
-            ariaLabel="Genome comparison instrument cluster"
-            balance="focal"
-            tertiaryColumns={2}
-            primary={
-              <InstrumentPanel
-                depth="raised"
-                tone={isCompare ? 'accent' : 'neutral'}
-                padding="lg"
-                as="section"
-                className="flex h-full flex-col gap-5"
-              >
-                <GenomeFingerprint
-                  title="Genome fingerprint"
-                  subtitle={maturityCaption}
-                  data={aHasGenome ? aData : bData}
-                  seriesName={aHasGenome ? (seriesA?.name ?? 'Player A') : (seriesB?.name ?? 'Player B')}
-                  compareWith={isCompare ? bData : undefined}
-                  compareName={seriesB?.name ?? 'Player B'}
-                  height={Math.max(320, totalDims * 30 + 64)}
-                  takeaway={
-                    isCompare
-                      ? `Green bars lead for ${seriesA?.name}; amber bars lead for ${seriesB?.name}.`
-                      : undefined
-                  }
-                  actions={
-                    <div className="flex flex-wrap items-center gap-4">
-                      {seriesA ? (
-                        <LegendItem name={seriesA.name} dot={PLAYER_A_DOT} hasGenome={aHasGenome} />
-                      ) : null}
-                      {seriesB ? (
-                        <LegendItem name={seriesB.name} dot={PLAYER_B_DOT} hasGenome={bHasGenome} />
-                      ) : null}
-                    </div>
-                  }
-                  className="border-0 bg-transparent p-0 shadow-none backdrop-blur-none"
-                />
-              </InstrumentPanel>
-            }
-            secondary={[
-              <CompareReadoutRail
-                key="rail"
-                seriesA={seriesA}
-                seriesB={seriesB}
-                aLive={aLive}
-                bLive={bLive}
-                aHasGenome={aHasGenome}
-                bHasGenome={bHasGenome}
-                comparableLive={comparableLive}
-                totalDims={totalDims}
-              />,
-            ]}
-          />
+          /* ── Summary first (owner direction 2026-09-25): the key number,
+              one takeaway, and the one visual — the diverging bars. ── */
+          <section
+            aria-label="Genome comparison summary"
+            data-slot="genome-compare-summary"
+            className="flex flex-col gap-5 rounded-fw-lg border border-border-subtle bg-surface p-5 md:p-6"
+          >
+            <div className="flex flex-col gap-1">
+              <Eyebrow as="p">
+                {isCompare
+                  ? `Head to head · ${leads.length} of ${totalDims} dimensions live for both`
+                  : solo
+                    ? `${solo.name} · ${solo === seriesA ? aLive : bLive} of ${totalDims} dimensions live`
+                    : 'Head to head'}
+              </Eyebrow>
+              {isCompare ? (
+                <p
+                  className="flex items-center gap-3 font-fw-mono text-display tabular-nums text-text-primary"
+                  data-slot="genome-compare-score"
+                >
+                  <span className="sr-only">{`${seriesA?.name} leads ${aLeads}, ${seriesB?.name} leads ${bLeads}`}</span>
+                  <span aria-hidden className="flex items-center gap-2">
+                    <span className="h-3 w-3 rounded-full" style={{ backgroundColor: PLAYER_A_DOT }} />
+                    {aLeads}
+                  </span>
+                  <span aria-hidden className="text-title-2 text-text-tertiary">–</span>
+                  <span aria-hidden className="flex items-center gap-2">
+                    {bLeads}
+                    <span className="h-3 w-3 rounded-full" style={{ backgroundColor: PLAYER_B_DOT }} />
+                  </span>
+                </p>
+              ) : null}
+              <p className="text-body text-text-secondary" data-slot="genome-compare-takeaway">
+                {isCompare
+                  ? compareTakeaway(seriesA?.name ?? 'Player 1', seriesB?.name ?? 'Player 2', leads)
+                  : !bothSelected
+                    ? 'Pick a second player below to compare.'
+                    : solo
+                      ? `${missing.join(' and ')} has no genome yet, so there is nothing to compare. Below: ${solo.name} against the 50 midline.`
+                      : 'Neither player has a genome yet. One is built after enough recent rounds.'}
+              </p>
+            </div>
+
+            <ul className="flex flex-col gap-2 border-t border-border-subtle pt-4" aria-label="Players compared">
+              {seriesA ? <SeriesLine series={seriesA} dot={PLAYER_A_DOT} live={aLive} totalDims={totalDims} /> : null}
+              {seriesB ? <SeriesLine series={seriesB} dot={PLAYER_B_DOT} live={bLive} totalDims={totalDims} /> : null}
+            </ul>
+
+            {isCompare ? (
+              <GenomeFingerprint
+                title="Who leads where"
+                data={aData}
+                seriesName={seriesA?.name ?? 'Player 1'}
+                compareWith={bData}
+                compareName={seriesB?.name ?? 'Player 2'}
+                height={Math.max(260, leads.length * 36 + 48)}
+                className="border-0 bg-transparent p-0 shadow-none backdrop-blur-none"
+              />
+            ) : solo ? (
+              <GenomeFingerprint
+                title={`${solo.name} vs the 50 midline`}
+                data={soloData}
+                seriesName={solo.name}
+                height={Math.max(260, (solo === seriesA ? aLive : bLive) * 36 + 48)}
+                className="border-0 bg-transparent p-0 shadow-none backdrop-blur-none"
+              />
+            ) : null}
+          </section>
         )}
 
-        {/* ── Pickers (preserve the ?p1=&p2= Link-based selection) ── */}
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          <ComparePicker
-            heading="Player 1"
-            paramName="p1"
-            selectedId={p1}
-            otherId={p2}
-            otherParamValue={p2}
-            roster={roster}
-            dotColor={PLAYER_A_DOT}
-          />
-          <ComparePicker
-            heading="Player 2"
-            paramName="p2"
-            selectedId={p2}
-            otherId={p1}
-            otherParamValue={p1}
-            roster={roster}
-            dotColor={PLAYER_B_DOT}
-          />
-        </div>
+        {/* ── Pickers (preserve the ?p1=&p2= Link-based selection). Open until
+            both slots are filled; one tap away after that. ── */}
+        <Disclosure
+          title="Change players"
+          slot="genome-compare-pickers"
+          defaultOpen={!bothSelected}
+          meta={
+            <span className="min-w-0 truncate text-caption font-normal text-text-secondary">
+              {[seriesA?.name, seriesB?.name].filter(Boolean).join(' vs ') || 'None picked'}
+            </span>
+          }
+        >
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <ComparePicker
+              heading="Player 1"
+              paramName="p1"
+              selectedId={p1}
+              otherId={p2}
+              otherParamValue={p2}
+              roster={roster}
+              dotColor={PLAYER_A_DOT}
+            />
+            <ComparePicker
+              heading="Player 2"
+              paramName="p2"
+              selectedId={p2}
+              otherId={p1}
+              otherParamValue={p1}
+              roster={roster}
+              dotColor={PLAYER_B_DOT}
+            />
+          </div>
+        </Disclosure>
       </div>
     </CoachHelmShell>
   );
 }
 
 /* ────────────────────────────────────────────────────────────────────────────
- * COMPARE READOUT RAIL — the secondary rail. Honest per-player live-dimension
- * Readouts + the comparable-set count, on base inset panels.
+ * SeriesLine — one player: colour key, live dimensions, and provenance
+ * (rounds basis + when the genome was computed). A player with no genome says
+ * so and claims no freshness.
  * ─────────────────────────────────────────────────────────────────────────── */
-function CompareReadoutRail({
-  seriesA,
-  seriesB,
-  aLive,
-  bLive,
-  aHasGenome,
-  bHasGenome,
-  comparableLive,
+
+function SeriesLine({
+  series,
+  dot,
+  live,
   totalDims,
 }: {
-  seriesA: CompareSeries | null;
-  seriesB: CompareSeries | null;
-  aLive: number;
-  bLive: number;
-  aHasGenome: boolean;
-  bHasGenome: boolean;
-  comparableLive: number;
+  series: CompareSeries;
+  dot: string;
+  live: number;
   totalDims: number;
 }) {
   return (
-    <InstrumentPanel
-      depth="base"
-      padding="lg"
-      header="Comparable set"
-      as="section"
-      className="flex h-full flex-col gap-4"
-    >
-      {seriesA ? (
-        <InstrumentPanel depth="inset" padding="sm">
-          <Readout
-            value={aLive}
-            format={{ maximumFractionDigits: 0 }}
-            unit={`of ${totalDims}`}
-            label={`${seriesA.name} · live dims`}
-            size="md"
-            state={aHasGenome && aLive > 0 ? 'live' : 'awaiting'}
-            samples={!aHasGenome || aLive === 0 ? { have: aLive, need: 3 } : undefined}
-            awaitingLabel={aHasGenome ? 'Awaiting data' : 'No genome'}
-          />
-          <GenomeProvenance series={seriesA} />
-        </InstrumentPanel>
-      ) : null}
-
-      {seriesB ? (
-        <InstrumentPanel depth="inset" padding="sm">
-          <Readout
-            value={bLive}
-            format={{ maximumFractionDigits: 0 }}
-            unit={`of ${totalDims}`}
-            label={`${seriesB.name} · live dims`}
-            size="md"
-            state={bHasGenome && bLive > 0 ? 'live' : 'awaiting'}
-            samples={!bHasGenome || bLive === 0 ? { have: bLive, need: 3 } : undefined}
-            awaitingLabel={bHasGenome ? 'Awaiting data' : 'No genome'}
-          />
-          <GenomeProvenance series={seriesB} />
-        </InstrumentPanel>
-      ) : null}
-
-      <InstrumentPanel depth="inset" padding="sm">
-        <Readout
-          value={comparableLive}
-          format={{ maximumFractionDigits: 0 }}
-          unit={`of ${totalDims}`}
-          label="Comparable dims"
-          size="md"
-          state={comparableLive > 0 ? 'live' : 'awaiting'}
-          samples={comparableLive === 0 ? { have: 0, need: 3 } : undefined}
-          awaitingLabel="Need both genomes"
-        />
-      </InstrumentPanel>
-    </InstrumentPanel>
+    <li className="flex flex-col gap-0.5">
+      <span className="flex flex-wrap items-center gap-x-2 gap-y-1 text-body-sm">
+        <span aria-hidden className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: dot }} />
+        <span className="font-medium text-text-primary">{series.name}</span>
+        {series.vector ? (
+          <span className="text-caption text-text-secondary">
+            <span className="font-fw-mono tabular-nums text-text-primary">{live}</span> of {totalDims} live
+          </span>
+        ) : (
+          <StatusPill tone="neutral" size="sm">
+            No genome computed
+          </StatusPill>
+        )}
+      </span>
+      <GenomeProvenance series={series} />
+    </li>
   );
 }
 
-/* ────────────────────────────────────────────────────────────────────────────
- * GENOME PROVENANCE — how old this vector is, and how much it was built from.
- *
- * Mirrors `GenomeDetailView`'s "N rounds · last refreshed {ago}" caption so the
- * two genome surfaces read as one product rather than two. Renders nothing at
- * all when there is no genome or no timestamp: the "no genome computed" chip
- * already says the former, and inventing a freshness for the latter is exactly
- * what `formatGenomeRefreshed` refuses to do.
- * ─────────────────────────────────────────────────────────────────────────── */
 function GenomeProvenance({ series }: { series: CompareSeries }) {
   if (!series.vector) return null;
   const refreshed = formatGenomeRefreshed(series.computedAt);
@@ -367,42 +397,11 @@ function GenomeProvenance({ series }: { series: CompareSeries }) {
       : `${series.roundsBasis} ${series.roundsBasis === 1 ? 'round' : 'rounds'}`;
 
   return (
-    <p className="mt-1.5 font-fw-sans text-eyebrow text-text-tertiary">
+    <p className="pl-[18px] font-fw-mono text-caption tabular-nums text-text-tertiary">
       {[rounds, refreshed ? `last refreshed ${refreshed}` : null].filter(Boolean).join(' · ')}
     </p>
   );
 }
-
-/* ────────────────────────────────────────────────────────────────────────────
- * LegendItem — colored dot + name + honest "no genome" chip
- * ─────────────────────────────────────────────────────────────────────────── */
-
-function LegendItem({
-  name,
-  dot,
-  hasGenome,
-}: {
-  name: string;
-  dot: string;
-  hasGenome: boolean;
-}) {
-  return (
-    <span className="flex items-center gap-2 font-fw-sans text-body-sm text-text-secondary">
-      <span
-        aria-hidden
-        className="h-2.5 w-2.5 rounded-full"
-        style={{ backgroundColor: dot }}
-      />
-      <span className="font-medium text-text-primary">{name}</span>
-      {!hasGenome ? (
-        <StatusPill tone="neutral" size="sm">
-          No genome computed
-        </StatusPill>
-      ) : null}
-    </span>
-  );
-}
-
 /* ────────────────────────────────────────────────────────────────────────────
  * ComparePicker — real <Link> rows; locks the other slot, preserves other param.
  * Dense list stays MATTE + legible (glass is for the hero instruments, not this).
@@ -460,7 +459,7 @@ function ComparePicker({
                   <div
                     aria-disabled
                     className={cn(
-                      'flex cursor-not-allowed items-center gap-3 rounded-fw-sm px-2.5 py-2 opacity-50',
+                      'flex min-h-11 cursor-not-allowed items-center gap-3 rounded-fw-sm px-2.5 py-2 opacity-50',
                     )}
                   >
                     <Avatar decorative src={p.avatar_url} name={p.name} size="xs" />
@@ -476,7 +475,7 @@ function ComparePicker({
                     href={hrefFor(p.id)}
                     aria-current={selected ? 'true' : undefined}
                     className={cn(
-                      'flex items-center gap-3 rounded-fw-sm px-2.5 py-2',
+                      'flex min-h-11 items-center gap-3 rounded-fw-sm px-2.5 py-2',
                       'transition-[background-color,color] [transition-duration:180ms] [transition-timing-function:cubic-bezier(0.22,0.61,0.36,1)]',
                       'outline-none focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
                       'motion-reduce:transition-none',
