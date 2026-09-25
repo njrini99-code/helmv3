@@ -12992,6 +12992,26 @@
         {
           "kind": "import_graph",
           "path": "src/lib/coachhelm/v2/orchestrator.ts",
+          "anchor": "src/lib/coachhelm/v3/generators/insight-angles/lie-approach"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v2/orchestrator.ts",
+          "anchor": "src/lib/coachhelm/v3/generators/insight-angles/bad-day-floor"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v2/orchestrator.ts",
+          "anchor": "src/lib/coachhelm/v3/generators/insight-angles/three-putt-chain"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v2/orchestrator.ts",
+          "anchor": "src/lib/coachhelm/v3/generators/insight-angles/tee-miss-cost"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v2/orchestrator.ts",
           "anchor": "src/lib/coachhelm/v3/composite"
         },
         {
@@ -17448,6 +17468,36 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/generators/insight-angles/__tests__/lie-approach.test.ts",
+          "anchor": "src/lib/flags/is-enabled"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/generators/insight-angles/bad-day-floor.ts",
+          "anchor": "src/lib/flags/is-enabled"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/generators/insight-angles/lie-approach.ts",
+          "anchor": "src/lib/flags/is-enabled"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/generators/insight-angles/load-angle-data.ts",
+          "anchor": "src/lib/supabase/admin"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/generators/insight-angles/tee-miss-cost.ts",
+          "anchor": "src/lib/flags/is-enabled"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/generators/insight-angles/three-putt-chain.ts",
+          "anchor": "src/lib/flags/is-enabled"
+        },
+        {
+          "kind": "import_graph",
           "path": "src/lib/coachhelm/v3/generators/par-type.ts",
           "anchor": "src/lib/supabase/admin"
         },
@@ -17727,6 +17777,11 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/generators/insight-angles/load-angle-data.ts",
+          "anchor": "src/lib/supabase/fetch-all-rows"
+        },
+        {
+          "kind": "import_graph",
           "path": "src/lib/coachhelm/v3/generators/pressure-gap.ts",
           "anchor": "src/lib/supabase/untyped"
         },
@@ -17896,6 +17951,26 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/generators/insight-angles/bad-day-floor.ts",
+          "anchor": "src/lib/coachhelm/v2/insights/types"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/generators/insight-angles/lie-approach.ts",
+          "anchor": "src/lib/coachhelm/v2/insights/types"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/generators/insight-angles/tee-miss-cost.ts",
+          "anchor": "src/lib/coachhelm/v2/insights/types"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/generators/insight-angles/three-putt-chain.ts",
+          "anchor": "src/lib/coachhelm/v2/insights/types"
+        },
+        {
+          "kind": "import_graph",
           "path": "src/lib/coachhelm/v3/generators/par-type.ts",
           "anchor": "src/lib/coachhelm/v2/insights/types"
         },
@@ -18010,6 +18085,11 @@
           "kind": "import_graph",
           "path": "src/lib/coachhelm/v3/composite/synthesis.ts",
           "anchor": "src/lib/coachhelm/insight-types"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/generators/insight-angles/angle-data.ts",
+          "anchor": "src/lib/coachhelm/root-map/approach-context"
         },
         {
           "kind": "import_graph",
@@ -18244,6 +18324,11 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/generators/insight-angles/load-angle-data.ts",
+          "anchor": "src/lib/golf/round-countable"
+        },
+        {
+          "kind": "import_graph",
           "path": "src/lib/coachhelm/v3/generators/scrambling.ts",
           "anchor": "src/lib/golf/stat-formulas"
         },
@@ -18421,6 +18506,11 @@
         {
           "kind": "rpc_call",
           "path": "src/components/golf/coachhelm/round-review/FilmstripReview.tsx",
+          "anchor": "sg_scale_for_player"
+        },
+        {
+          "kind": "rpc_call",
+          "path": "src/lib/coachhelm/v3/generators/insight-angles/load-angle-data.ts",
           "anchor": "sg_scale_for_player"
         }
       ]
