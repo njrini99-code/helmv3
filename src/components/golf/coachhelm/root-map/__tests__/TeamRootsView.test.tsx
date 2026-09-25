@@ -77,7 +77,7 @@ describe('TeamRootsView, no observed roots and unsized approach', () => {
     expect(screen.getAllByRole('button', { name: /Lag putting/ }).length).toBeGreaterThan(0);
     // unsized approach cells are links that say so
     const table = screen.getByRole('table');
-    expect(within(table).getAllByRole('link', { name: /Approach 125-150, no stroke value stored/ })).toHaveLength(3);
+    expect(within(table).getAllByRole('link', { name: /Approach 125–150, no stroke value stored/ })).toHaveLength(3);
     expect(screen.getByText(/before-and-after reads you can see has three or more measured rounds/)).toBeInTheDocument();
     expect(screen.getByText(/Nothing urgent or changed right now/)).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Open Putting signals' })).toBeInTheDocument();

@@ -26,6 +26,7 @@ import {
   CONFIDENCE_LABEL,
   ROOT_STYLE_LABEL,
   formatStrokes,
+  type AreaBranch,
   type CauseBranch,
   type RootMapModel,
   type RootStyle,
@@ -56,6 +57,61 @@ export function rootStyleCss(style: RootStyle): CSSProperties {
 
 function pct(v: number): string {
   return `${(Math.max(0, v) * 100).toFixed(4)}%`;
+}
+
+/** A slot in the WHAT row: a cause, or an area's unexplained remainder. */
+interface WhatSlot {
+  key: string;
+  area: AreaBranch;
+  cause: CauseBranch | null;
+  /** Width fraction (same strokes scale as the area row). */
+  w: number;
+  /** Left edge and width of this slot's slice inside its parent area bar. */
+  srcX: number;
+  srcW: number;
+  /** Drawn left edge in the WHAT row, spread with gaps. */
+  x: number;
+}
+
+const MAX_GAP = 0.03;
+
+/**
+ * Lays the WHAT row out left to right with gaps, so each branch flows out of
+ * its slice of the area bar as a curved ribbon. Widths keep the area row's
+ * strokes scale; only the gaps use the space the unsized areas leave free.
+ */
+export function layoutWhatRow(model: RootMapModel): WhatSlot[] {
+  const slots: WhatSlot[] = [];
+  for (const area of model.losses) {
+    let cur = area.x;
+    for (const c of area.causes) {
+      slots.push({ key: c.id, area, cause: c, w: c.w, srcX: cur, srcW: c.w, x: 0 });
+      cur += c.w;
+    }
+    if (area.remainder) {
+      slots.push({ key: `${area.area}-rest`, area, cause: null, w: area.remainder.w, srcX: cur, srcW: area.remainder.w, x: 0 });
+    }
+  }
+  const used = slots.reduce((sum, sl) => sum + sl.w, 0);
+  if (slots.length < 2 || used <= 0) return slots;
+  // Always leave a gap between branches so each ribbon visibly curves out of
+  // its slice; when the row is full, shrink the drawn widths evenly to make
+  // room (labels carry the exact strokes).
+  const gap = MAX_GAP;
+  const room = 1 - gap * (slots.length - 1);
+  const k = used > room ? room / used : 1;
+  let x = 0;
+  for (const sl of slots) {
+    sl.w *= k;
+    sl.x = x;
+    x += sl.w + gap;
+  }
+  return slots;
+}
+
+function ribbonPath(sx: number, sw: number, dx: number, dw: number): string {
+  const [a, b, c, d] = [sx * 100, (sx + sw) * 100, dx * 100, (dx + dw) * 100];
+  return `M${a},0 C${a},20 ${c},20 ${c},40 L${d},40 C${d},20 ${b},20 ${b},0 Z`;
 }
 
 export function branchSpokenLabel(b: CauseBranch, areaLabel: string, showWhy: boolean): string {
@@ -97,6 +153,7 @@ export function RootMap({
 }: RootMapProps) {
   const hasLosses = model.losses.length > 0;
   const hasCauses = model.losses.some((a) => a.causes.length > 0 || a.remainder);
+  const slots = layoutWhatRow(model);
 
   return (
     <figure className={cn('m-0 flex min-w-0 flex-col gap-2', className)} aria-label={figureLabel}>
@@ -117,8 +174,10 @@ export function RootMap({
                   style={{ background: mix(POS, 55) }}
                   title={`${g.label} ${formatStrokes(g.sg, { signed: true })}`}
                 >
-                  <span className="truncate">{g.label}</span>
-                  <span className="shrink-0 font-fw-mono tabular-nums">{formatStrokes(g.sg, { signed: true })}</span>
+                  {g.w >= 0.2 ? <span className="truncate">{g.label}</span> : null}
+                  {g.w >= 0.1 ? (
+                    <span className="shrink-0 font-fw-mono tabular-nums">{formatStrokes(g.sg, { signed: true })}</span>
+                  ) : null}
                 </div>
               </div>
             ))}
@@ -133,7 +192,7 @@ export function RootMap({
         {model.netSg !== null ? (
           <p className="text-caption text-text-secondary">
             net{' '}
-            <span className="font-fw-mono font-medium tabular-nums text-text-primary">
+            <span className="font-fw-mono tabular-nums text-text-primary">
               {formatStrokes(model.netSg, { signed: true })}
             </span>{' '}
             a round
@@ -152,7 +211,7 @@ export function RootMap({
                   style={{ background: mix(NEG, 55) }}
                   title={`${a.label} ${formatStrokes(a.sg, { signed: true })}`}
                 >
-                  <span className="truncate">{a.label}</span>
+                  {a.w >= 0.3 ? <span className="truncate">{a.label}</span> : null}
                   <span className="shrink-0 font-fw-mono tabular-nums">{formatStrokes(a.sg, { signed: true })}</span>
                 </div>
               </div>
@@ -161,28 +220,27 @@ export function RootMap({
 
           {hasCauses ? (
             <>
-              {/* Bands from each area down to its causes. Decorative geometry,
-                  labelled once for screen readers; the branches below are the
-                  interactive layer. */}
+              {/* Ribbons from each area slice down to its branch. Decorative
+                  geometry, labelled once for screen readers; the branches
+                  below are the interactive layer. */}
               <svg
                 role="img"
                 aria-label={summary}
-                viewBox="0 0 100 10"
+                viewBox="0 0 100 40"
                 preserveAspectRatio="none"
-                className="block h-3 w-full"
+                className="block h-12 w-full"
               >
-                {model.losses.flatMap((a) =>
-                  a.causes.map((c) => (
-                    <rect
-                      key={c.id}
-                      x={c.x * 100 + 0.15}
-                      y={0}
-                      width={Math.max(0, c.w * 100 - 0.3)}
-                      height={10}
-                      style={{ fill: NEG, fillOpacity: c.id === selectedId ? 0.45 : 0.18 }}
-                    />
-                  )),
-                )}
+                {slots.map((sl) => (
+                  <path
+                    key={sl.key}
+                    d={ribbonPath(sl.srcX, sl.srcW, sl.x, sl.w)}
+                    style={
+                      sl.cause
+                        ? { fill: NEG, fillOpacity: sl.cause.id === selectedId ? 0.42 : 0.16 }
+                        : { fill: 'var(--fw-color-border-strong)', fillOpacity: 0.12 }
+                    }
+                  />
+                ))}
               </svg>
 
               <div className="flex items-baseline justify-between">
@@ -190,63 +248,64 @@ export function RootMap({
                 {showWhy ? <Eyebrow as="p">Why · root driver</Eyebrow> : null}
               </div>
               <div className={cn('relative', showWhy ? 'h-[5.5rem]' : 'h-11')}>
-                {model.losses.map((a) =>
-                  a.remainder ? (
-                    <div
-                      key={`${a.area}-rest`}
-                      aria-hidden
-                      className="absolute inset-y-0 flex flex-col gap-2 px-px"
-                      style={{ left: pct(a.remainder.x), width: pct(a.remainder.w) }}
-                    >
-                      <div className="h-11 rounded-fw-sm border border-dashed border-border-strong" />
-                      {showWhy ? <div className="h-8 rounded-fw-sm" style={rootStyleCss('unexplained')} /> : null}
-                    </div>
-                  ) : null,
-                )}
-                {model.losses.flatMap((a) =>
-                  a.causes.map((c) => {
-                    const selected = c.id === selectedId;
+                {slots.map((sl) => {
+                  const c = sl.cause;
+                  if (!c) {
                     return (
-                      <button
-                        key={c.id}
-                        type="button"
-                        aria-pressed={selected}
-                        aria-label={branchSpokenLabel(c, a.label, showWhy)}
-                        onClick={onSelect ? () => onSelect(c.id) : undefined}
-                        disabled={!onSelect}
-                        className={cn(
-                          'group absolute inset-y-0 flex flex-col gap-2 px-px text-left outline-none',
-                          'focus-visible:[&>span:first-child]:ring-2 focus-visible:[&>span:first-child]:ring-border-focus',
-                          onSelect ? 'cursor-pointer' : 'cursor-default',
-                        )}
-                        style={{ left: pct(c.x), width: pct(c.w) }}
+                      <div
+                        key={sl.key}
+                        aria-hidden
+                        className="absolute inset-y-0 flex flex-col gap-2 px-px"
+                        style={{ left: pct(sl.x), width: pct(sl.w) }}
                       >
-                        <span
-                          className={cn(
-                            'relative flex h-11 min-w-0 items-center justify-between gap-1 overflow-hidden rounded-fw-sm px-1.5 text-caption font-medium text-text-primary transition-shadow',
-                            selected ? 'ring-2 ring-text-primary' : 'group-hover:ring-1 group-hover:ring-text-secondary',
-                          )}
-                          style={{ background: mix(NEG, 75) }}
-                        >
-                          <span className="truncate">{c.label}</span>
-                          <span className="shrink-0 font-fw-mono tabular-nums">{formatStrokes(c.strokes)}</span>
-                        </span>
-                        {showWhy ? (
-                          <span
-                            className={cn('relative block h-8 rounded-fw-sm', selected ? 'ring-2 ring-text-primary' : '')}
-                            style={rootStyleCss(c.style)}
-                          />
-                        ) : null}
-                        {c.isNew ? (
-                          <span
-                            aria-hidden
-                            className="absolute -right-0.5 -top-1 h-2.5 w-2.5 rounded-full border-2 border-surface bg-accent-500"
-                          />
-                        ) : null}
-                      </button>
+                        <div className="h-11 rounded-fw-sm border border-dashed border-border-strong" />
+                        {showWhy ? <div className="h-8 rounded-fw-sm" style={rootStyleCss('unexplained')} /> : null}
+                      </div>
                     );
-                  }),
-                )}
+                  }
+                  const selected = c.id === selectedId;
+                  return (
+                    <button
+                      key={c.id}
+                      type="button"
+                      aria-pressed={selected}
+                      aria-label={branchSpokenLabel(c, sl.area.label, showWhy)}
+                      onClick={onSelect ? () => onSelect(c.id) : undefined}
+                      disabled={!onSelect}
+                      className={cn(
+                        'group absolute inset-y-0 flex flex-col gap-2 px-px text-left outline-none',
+                        'focus-visible:[&>span:first-child]:ring-2 focus-visible:[&>span:first-child]:ring-border-focus',
+                        onSelect ? 'cursor-pointer' : 'cursor-default',
+                      )}
+                      style={{ left: pct(sl.x), width: pct(sl.w) }}
+                    >
+                      <span
+                        className={cn(
+                          'relative flex h-11 min-w-0 items-center justify-between gap-1 overflow-hidden rounded-fw-sm px-1.5 text-caption font-medium text-text-primary transition-shadow',
+                          selected ? 'ring-2 ring-text-primary' : 'group-hover:ring-1 group-hover:ring-text-secondary',
+                        )}
+                        style={{ background: mix(NEG, 75) }}
+                      >
+                        {sl.w >= 0.24 ? <span className="truncate">{c.label}</span> : null}
+                        {sl.w >= 0.1 ? (
+                          <span className="shrink-0 font-fw-mono tabular-nums">{formatStrokes(c.strokes)}</span>
+                        ) : null}
+                      </span>
+                      {showWhy ? (
+                        <span
+                          className={cn('relative block h-8 rounded-fw-sm', selected ? 'ring-2 ring-text-primary' : '')}
+                          style={rootStyleCss(c.style)}
+                        />
+                      ) : null}
+                      {c.isNew ? (
+                        <span
+                          aria-hidden
+                          className="absolute -right-0.5 -top-1 h-2.5 w-2.5 rounded-full border-2 border-surface bg-accent-500"
+                        />
+                      ) : null}
+                    </button>
+                  );
+                })}
               </div>
             </>
           ) : null}

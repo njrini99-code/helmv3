@@ -14,6 +14,7 @@
  * a number.
  * ========================================================================== */
 
+import { isCountableRound, type CountableRoundInput } from '@/lib/golf/round-countable';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/types/database';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
@@ -47,9 +48,9 @@ function warn(message: string, action: string, err: unknown): void {
 }
 
 const SG_COLUMNS =
-  'round_date, strokes_gained_tee, strokes_gained_approach, strokes_gained_around_green, strokes_gained_putting';
+  'round_date, holes_played, total_score, front_nine, back_nine, total_putts, strokes_gained_tee, strokes_gained_approach, strokes_gained_around_green, strokes_gained_putting';
 
-interface SgRoundRow {
+interface SgRoundRow extends CountableRoundInput {
   round_date: string | null;
   strokes_gained_tee: number | null;
   strokes_gained_approach: number | null;
@@ -59,7 +60,10 @@ interface SgRoundRow {
 
 function toAreaRound(row: SgRoundRow): AreaSgRound | null {
   const date = typeof row.round_date === 'string' ? row.round_date.slice(0, 10) : null;
-  if (!date) return null;
+  // Partial or mis-entered rounds (e.g. 37 strokes logged as 18 holes) carry
+  // absurd per-round SG and would swamp every trend: same countable rule as
+  // the rest of CoachHelm.
+  if (!date || !isCountableRound(row)) return null;
   return {
     date,
     tee: num(row.strokes_gained_tee),
@@ -81,9 +85,13 @@ export async function loadRecentAreaSgRounds(sb: Sb, playerId: string, limit = 1
       .eq('player_id', playerId)
       .eq('status', 'completed')
       .order('round_date', { ascending: false })
-      .limit(limit);
+      // Over-fetch so non-countable rounds dropped below don't shrink the window.
+      .limit(limit * 2);
     if (error) throw error;
-    return ((data ?? []) as SgRoundRow[]).map(toAreaRound).filter((r): r is AreaSgRound => r !== null);
+    return ((data ?? []) as SgRoundRow[])
+      .map(toAreaRound)
+      .filter((r): r is AreaSgRound => r !== null)
+      .slice(0, limit);
   } catch (err) {
     warn(`[root-map] recent SG rounds read failed for player ${playerId}`, 'rootMap.loadRecentAreaSgRounds', err);
     return null;

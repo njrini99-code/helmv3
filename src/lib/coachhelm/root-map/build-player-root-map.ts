@@ -27,6 +27,7 @@ import {
   type RootMapAreaInput,
   type RootMapModel,
   type UnsizedCause,
+  humanizeCauseLabel,
 } from './build-root-map';
 
 export interface RootMapInput<T extends RankableEvidenceInsight = RankableEvidenceInsight> {
@@ -38,7 +39,7 @@ export interface RootMapInput<T extends RankableEvidenceInsight = RankableEviden
 
 function labelOf(insight: RankableEvidenceInsight): string {
   const l = insight.evidence?.metric_label;
-  return typeof l === 'string' && l.trim().length > 0 ? l.trim() : insight.title;
+  return humanizeCauseLabel(typeof l === 'string' && l.trim().length > 0 ? l : insight.title);
 }
 
 function isNewSince(insight: RankableEvidenceInsight, since: string | null | undefined): boolean {

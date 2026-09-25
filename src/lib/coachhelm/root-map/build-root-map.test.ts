@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { RankableEvidenceInsight } from '@/app/golf/actions/insight-delivery-ranking';
 import type { InsightEvidence } from '@/lib/coachhelm/v2/insights/types';
 import {
+  humanizeCauseLabel,
   buildRootHeadline,
   confidenceTier,
   findBranch,
@@ -272,7 +273,7 @@ describe('headline wording follows causality', () => {
     const model = buildRootMap({ areas: AREAS, insights: [likely] });
     const text = buildRootHeadline(model, findBranch(model, model.defaultSelectedId))!;
     expect(text).toContain('Off the tee is gaining 1.98');
-    expect(text).toContain('Putting gives back 2.93, likely around 3-5 ft putts.');
+    expect(text).toContain('Putting gives back 2.93, likely around 3–5 ft putts.');
     expect(text).not.toMatch(/seen in your shots/i);
   });
 
@@ -402,5 +403,12 @@ describe('team roots', () => {
       signals: ['a', 'b', 'c'].map((p) => signal({ playerId: p, metric: 'short_putts', strokes: 0.5, confidence: 0.5 })),
     });
     expect(model.map.losses.flatMap((l) => l.causes)[0]!.style).toBe('forming');
+  });
+});
+
+describe('humanizeCauseLabel', () => {
+  it('turns stored metric labels into plain phrases', () => {
+    expect(humanizeCauseLabel('Putts Made 3-5 ft')).toBe('3–5 ft putts');
+    expect(humanizeCauseLabel('Greens hit from 125-175 yd')).toBe('Greens hit from 125–175 yd');
   });
 });

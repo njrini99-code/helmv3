@@ -39,6 +39,7 @@ import {
   type RootArea,
   type RootMapModel,
   type RootStyle,
+  humanizeCauseLabel,
 } from './build-root-map';
 
 export interface TeamRosterPlayer {
@@ -138,7 +139,7 @@ export function buildTeamRoots(input: {
     const ev = evidenceOf(s);
     const metric = ev?.metric;
     if (!ev || typeof metric !== 'string' || metric.length === 0) continue;
-    const label = typeof ev.metric_label === 'string' && ev.metric_label.length > 0 ? ev.metric_label : metric;
+    const label = humanizeCauseLabel(typeof ev.metric_label === 'string' && ev.metric_label.length > 0 ? ev.metric_label : metric);
     const area: RootArea | 'other' = isRootArea(s.category) ? s.category : 'other';
     const entry = byMetric.get(metric) ?? { label, area, cells: new Map(), conf: new Map() };
     const cell: TeamRootCell = {

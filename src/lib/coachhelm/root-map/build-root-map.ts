@@ -369,6 +369,17 @@ export function findBranch(model: RootMapModel, id: string | null | undefined): 
  * Copy
  * ──────────────────────────────────────────────────────────────────────── */
 
+/**
+ * Stored metric labels read like column names ("Putts Made 3-5 ft"). Turn the
+ * common shapes into plain phrases for the map and headline ("3–5 ft putts").
+ */
+export function humanizeCauseLabel(raw: string): string {
+  let s = raw.trim().replace(/(\d)\s*-\s*(\d)/g, '$1–$2');
+  const putts = /^putts made\s+(.+)$/i.exec(s);
+  if (putts?.[1]) s = `${putts[1]} putts`;
+  return s;
+}
+
 export function formatStrokes(value: number, opts: { signed?: boolean } = {}): string {
   const abs = Math.abs(value).toFixed(2);
   if (!opts.signed) return abs;
