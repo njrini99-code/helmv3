@@ -24,14 +24,14 @@ Work the lead listed that has no ledger ID: the Stats Flight crash fix (`f3ef34d
 
 ## Summary (364 ledger findings)
 
-Recounted after the 2026-09-24 afternoon pass (PR #2069).
+Recounted 2026-09-25 (PR #2069): the 2026-09-24 afternoon pass plus the 09-25 leftovers (DS-12, DS-13, DS-15, HUB-19, MOT-21 done; DASH-07, NUM-24 blocked on held migrations; DASH-12 partial).
 
 | Status | Count |
 |---|---|
-| done | 302 |
-| partial | 13 |
-| residual | 8 |
-| blocked | 26 |
+| done | 307 |
+| partial | 7 |
+| residual | 7 |
+| blocked | 28 |
 | not-a-bug | 15 |
 | unknown | 0 |
 | **total** | **364** |
@@ -224,7 +224,7 @@ Owner decisions (OD-01 to OD-24) and workstreams (W1 to W15) have their own tabl
 | MOT-18 | [P2] Error shake + inline message; success checkmark retime (260ms) | done: successCheckmark retimed to 260ms and used by the success toast (c0b049e4d) | c0b049e4d | this session |
 | MOT-19 | [P2] Add-to-plan morph plus an Undo toast; triage row highlight and scroll restore on pop; PTR on Home, Rounds ... | not-a-bug: Owner decision 2026-09-24: keep the confirm step, no player Undo (no new write path on minors' data). Triage return-to-row done | owner decision | this session |
 | MOT-20 | [P1] Hole pager with drag (lazy domMax for tracking only) | residual: Owner decision: hole pager ships in its own PR with a device test (with OD-05 quick score) | owner decision | this session |
-| MOT-21 | [P2] Tests: e2e motion-stillness.spec.ts and course-picker-flicker.spec.ts; unit tests for tokens/haptics | partial: Specs written (2e5bbccb0): e2e/golf-motion-stillness.spec.ts, e2e/golf-course-picker-flicker.spec.ts. Local run failed at the sign-in fixture (dev server restarted); not yet green | 2e5bbccb0 | this session |
+| MOT-21 | [P2] Tests: e2e motion-stillness.spec.ts and course-picker-flicker.spec.ts; unit tests for tokens/haptics | done: Specs (2e5bbccb0) e2e/golf-motion-stillness.spec.ts and e2e/golf-course-picker-flicker.spec.ts green 2026-09-25: 11/11 passed on chromium against a production build (`next start`) of this branch, twice (before and after the TYPE-03/DS-15 sweeps) | 2e5bbccb0 | verified (e2e run) |
 | MOT-22 | [P3] Core Haptics signature (helm-haptics.ts) stays gated until the owner's device pass | blocked: Waits on the owner device pass | lib/native/helm-haptics.ts | per transcript |
 | MOT-23 | [P1] D-NUM: numerals in SF tabular, no mono, no slashed zero; Fragment Mono retired | done: Already DONE in the ledger; native parts need a new build | native shell agent a93750 (cd01022e2) | per transcript |
 | MOT-R1 | [P2] Raw `useReducedMotion()` in Messages composer/thread and round-detail ScoringDistribution | done: 0 raw framer useReducedMotion imports left in golf paths | lint ban + 44-file codemod (3e2b51b77) | verified in code |
@@ -272,7 +272,7 @@ Owner decisions (OD-01 to OD-24) and workstreams (W1 to W15) have their own tabl
 |---|---|---|---|---|
 | TYPE-01 | [P2] Four parallel type scales; 9-10px sizes; cap eyebrows at one per screen; sentence-case heads | done: Legacy type classes mapped to the canonical scale on golf | d3d1a5f6e | per transcript |
 | TYPE-02 | [P2] Dynamic Type ignored (px scale; no `font: -apple-system-body` root) | done: Dynamic Type for reading text, capped at XXL (OD-06) | cd4be3a72 | per transcript |
-| TYPE-03 | [P2] ALL-CAPS tracked eyebrow above nearly every block (text-eyebrow ×1065) | partial: Sentence-case eyebrows; eyebrow count ratcheted per file so it can only fall (909e18f93). One-per-screen cap swept on the 15 densest golf player/coach files, 120 → 1 eyebrows (51e975f87): section titles are now h2/h3/h4 in `font-fw-sans text-body-sm font-semibold text-text-primary`, meta/labels use `text-caption`; the print scouting report keeps its page kicker. Remaining: ~420 uses across ~200 lower-count golf files, including admin CRM (skipped as non player/coach) and `components/golf/calendar/**` (shared with Baseball). Ratchet baseline not yet lowered for the swept files | 909e18f93, 51e975f87 | this session |
+| TYPE-03 | [P2] ALL-CAPS tracked eyebrow above nearly every block (text-eyebrow ×1065) | partial: Sentence-case eyebrows; eyebrow count ratcheted per file so it can only fall (909e18f93). One-per-screen cap swept on the 15 densest golf player/coach files, 120 → 1 eyebrows (51e975f87): section titles are now h2/h3/h4 in `font-fw-sans text-body-sm font-semibold text-text-primary`, meta/labels use `text-caption`; the print scouting report keeps its page kicker. Remaining: ~420 uses across ~200 lower-count golf files, including admin CRM (skipped as non player/coach) and `components/golf/calendar/**` (held out to avoid colliding with the DS-15 sweep). Ratchet baseline not yet lowered for the swept files | 909e18f93, 51e975f87 | this session |
 
 ### DS (22)
 
@@ -288,7 +288,7 @@ Owner decisions (OD-01 to OD-24) and workstreams (W1 to W15) have their own tabl
 | DS-12 | [P1] Phase 2 primitives: Masthead, VerdictLine, Row, MetricValue, TemplateSkeleton, KeyboardDoneBar; Stage variant ... | done: Masthead, VerdictLine, Row/RowGroup, TemplateSkeleton, KeyboardDoneBar in fairway/primitives/ (direct-path imports) and Surface variant="stage", each with tests. Adopted: KeyboardDoneBar in FairwayShotEntry (RE-F3; device check still open). Masthead/Row/TemplateSkeleton not yet swapped into screens (no clearly equivalent low-risk site) | 75b90b7a8, 2732b8051, c27406840, acb46b6c2, 069ccf706, f12a8a71b, 1977c31ff | this session |
 | DS-13 | [P1] Instruments RoundStrip, TeamField, SignedBars, TargetTrack, SplitStrip | done: TeamField, SignedBars, TargetTrack, SplitStrip built in fairway/charts/ (registry numbers, role=img or real lists, tests); RoundStrip already in modules/ and player-detail/. Not yet placed on a screen: they land with the Game/Plan/Coach Home IA work | 6e00d220f, 96e36974d, b1e86dd41, 101e9812f, 701a16fa2, 9602532df | this session |
 | DS-14 | [P2] Lint bans: retired components, font-mono, arbitrary text-[Npx], .toFixed( in render, transition-all, raw ... | done: Registry, parity test, render-bans ratchet; parity todos closed in d76d77dd4 | cd01022e2/397587774 (W15); d76d77dd4 | per transcript |
-| DS-15 | [P2] 108 ad-hoc `active:scale` → one Pressable (fwPress 0.97) | partial: Shared fwPress/fwPressSurface exported; golf page sites migrated, 52 to 40 (c7dc95a08); the remaining golf press sites (Baseball-shared golf calendar, MobileMenuButton, AttachmentButton, FairwayTeeCard, FairwayCalendar FAB, demo gate, golf auth canvas/shell/sign-up) migrated in af443ba4f, 32 to 4 in those files. The 4 left are press neutralizers, not presses (`active:scale-100` on the MobileEventSheet backdrop, `disabled:active:scale-100` on three auth submits). Remaining: primitive definitions (_internal.ts, surface.tsx, ui/button, ui/modal), admin CRM, `golf/join/[code]/golf-join-team-client.tsx` (1, outside this slice), shared recruiting/coach-discover, Baseball and Lift Lab | c7dc95a08; af443ba4f | this session |
+| DS-15 | [P2] 108 ad-hoc `active:scale` → one Pressable (fwPress 0.97) | done (golf): Shared fwPress/fwPressSurface exported; golf page sites migrated, 52 to 40 (c7dc95a08); the remaining golf press sites (Baseball-shared golf calendar, MobileMenuButton, AttachmentButton, FairwayTeeCard, FairwayCalendar FAB, demo gate, golf auth canvas/shell/sign-up) migrated in af443ba4f, 32 to 4 in those files. The 4 left are press neutralizers, not presses (`active:scale-100` on the MobileEventSheet backdrop, `disabled:active:scale-100` on three auth submits). Remaining: primitive definitions (_internal.ts, surface.tsx, ui/button, ui/modal), admin CRM, shared recruiting/coach-discover, Baseball and Lift Lab. The last golf site (join-team, a duplicate press on ui/Button) dropped in d38ec947e | c7dc95a08; af443ba4f; d38ec947e | this session |
 | DS-16 | [P2] Glossary: one name per concept (Profile, Report, Outcomes, Insights, Focus area); retire Genome/Game ... | not-a-bug: OD-13: keep Genome and Fingerprint names; goal vs focus area unified (OD-10) | - | per transcript |
 | DS-D6 | [P2] 147 fixed min-h-[…] dead-space blocks (drill panels 112-132px) | done: Graded DONE in the 12:20 regrade | cd01022e2 / 397587774 (W11/W12 agents) | per transcript |
 | DS-E4 | [P3] Drop shadows on in-flow rows (roster cards, event rows) | done: No elevation shadow on roster cards | FairwayPlayerCard.tsx | verified in code |
@@ -316,7 +316,7 @@ Owner decisions (OD-01 to OD-24) and workstreams (W1 to W15) have their own tabl
 | CON-09 | [P2] No guard against regressions: lint ban on failing classes plus a token contrast test | done: Token level; enforced by fairway-token-contrast.test.ts and lint | 397587774 (W1) | per transcript |
 | CON-10 | [P1] Live contrast pass (cc.mjs background-resolving; axe incomplete on gradient cards) never ran | blocked: Live WCAG after-pass never ran (dev server down, then signed out) | live contrast pass | per transcript |
 | CON-11 | [P1] Owner's Calendar screenshot (iPhone light): header, Calendar/Travel tabs, Day/Week/Month/Agenda segmented ... | done: Calendar fixed in code; not live-verified | 397587774 (W1) | per transcript |
-| CON-12 | [P2] Checklist items graded on contrast/colour that the green decision changes: E1 (one accent, one neutral ramp) ... | partial: E7 passes at token level; E1/E5/I8 re-grade on screen not done | W1 | per transcript |
+| CON-12 | [P2] Checklist items graded on contrast/colour that the green decision changes: E1 (one accent, one neutral ramp) ... | partial: E7 passes at token level. On-screen contrast regraded 2026-09-25 with axe `color-contrast` on a production build at 390px, light and dark: /golf/dashboard, stats, coachhelm, rounds, calendar, rounds/new are all 0 violations after d38ec947e (new-round upcoming step labels were text-white/35, 3.14:1). E1 (one accent, one neutral ramp) is a visual judgement still open for the owner's screenshot pass | W1; d38ec947e | verified (axe run) |
 
 ### DARK (5)
 
