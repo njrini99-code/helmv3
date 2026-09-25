@@ -94,6 +94,32 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
   `tone-derivation.ts`): a player at least as good as the comparison is always
   healthy regardless of gap size; only the adverse direction is gated by the 20%
   closeness bar.
+- Recent-window recheck (owner decision 2026-09-25,
+  `src/lib/coachhelm/v3/engine/recent-recheck.ts`). The 90-day generators
+  recheck themselves on every nightly re-run (a closed leak re-emits framed as
+  a strength or dequalifies and is retracted). The two LIFETIME-window
+  generators, `putt_distance` (stats cache) and `par_type` (cache average +
+  lifetime holes), opt in via `BaseGenerator.recentWindowRecheck()`: for a leak
+  row they recompute their own metric over the last 90 days with the same
+  definitions (putts: `update_player_putt_make_pct` band `(lo, hi]`, made =
+  `result='hole' OR putt_made`; par: hole-score average), compare it to the
+  row's own `comparison_value`, and stamp `evidence.recheck = {status:
+  holds|cleared|thin, checked_at, window_days, recent_value, sample_n,
+  min_sample_n, comparison_value}`. `run()` then applies
+  `decideRecheckTransition`: `cleared` on an adequate sample moves a
+  `detected`/`matured` row to `resolved` (+ `resolved_at`,
+  `metadata.resolved_by='engine-recheck'`, `resolve_reason`,
+  `resolved_from_state`, `resolved_recheck`); `holds` reopens ONLY a row the
+  recheck itself resolved (back to `detected`, `metadata.reopened_*`). A
+  `thin` sample (putts below `ATTEMPT_FLOOR`, par below `minSampleN` rounds)
+  never moves a row. `tentative`, `addressed`, archived rows, coach- or
+  cron-resolved rows, and the coach `status` axis are never touched; the write
+  is a CAS on the observed `lifecycle_state` + `updated_at`. A re-emit keeps a
+  resolved row resolved (`resolveLifecycleOnWrite` has no edge out of it). NOTE:
+  `resolved` is still in `VISIBLE_LIFECYCLE_STATES`, so readers that place
+  causes/problems (root map, Today) must exclude `lifecycle_state='resolved'`
+  themselves. Read-only report:
+  `scripts/coachhelm/recheck-dry-run.ts`.
 - Honest-mode confidence (`factors_measured=false`) is `sample_adequacy × freshness` (`honest_v2`); it is a support score, never a probability, and can never rise as evidence ages.
 - Citations, evidence, and baseline comparisons are part of the trust contract. Do not emit fabricated comparisons or uncited claims.
 - Claim honesty (2026-09-12, repair plan Package 2): prose states what was

@@ -78,6 +78,13 @@ export interface RunResult {
    */
   retracted?: number;
   /**
+   * Lifecycle edge the recent-window recheck applied to the written row
+   * (`recent-recheck.ts`): `resolve` = the recent window cleared the
+   * generator's trigger; `reopen` = an engine-resolved row's leak came back.
+   * Absent when nothing moved.
+   */
+  recheck?: 'resolve' | 'reopen';
+  /**
    * The raw caught error when `status === 'failed'` — absent on every other
    * status. `run()`'s own catch logs this with `describeError` already, but
    * that text-only log line is all the orchestrator's caller ever saw: the

@@ -201,6 +201,26 @@ export interface InsightEvidence {
   // filter/compare/audit/learn from the root cause instead of parsing prose
   // out of `content`. Optional + additive — every legacy v2 row is unchanged.
   diagnosis?: Diagnosis;
+
+  // Recent-window recheck (2026-09-25, `v3/engine/recent-recheck.ts`): a
+  // lifetime-window generator's own metric recomputed over the last 90 days,
+  // checked against this row's comparison value. Optional + additive.
+  recheck?: InsightRecheck;
+}
+
+/**
+ * Outcome of the recent-window recheck. `cleared` = the recent window no
+ * longer crosses the generator's trigger; `holds` = it still does; `thin` =
+ * too few recent observations to say (never moves lifecycle).
+ */
+export interface InsightRecheck {
+  status: 'holds' | 'cleared' | 'thin';
+  checked_at: string;
+  window_days: number;
+  recent_value: number | null;
+  sample_n: number;
+  min_sample_n: number;
+  comparison_value: number;
 }
 
 /**

@@ -20,6 +20,12 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { BaseGenerator } from '@/lib/coachhelm/v3/engine/generator-base';
 import { loadCompletedHoles, LIFETIME_WINDOW_DAYS } from '@/lib/coachhelm/v3/engine/hole-diagnosis';
 import { lifetimeSpanDays, staleDataSuffix } from '@/lib/coachhelm/v3/engine/window-honesty';
+import {
+  parScoringRecheck,
+  RECHECK_WINDOW_DAYS,
+  type InsightRecheck,
+} from '@/lib/coachhelm/v3/engine/recent-recheck';
+import type { InsightEvidence } from '@/lib/coachhelm/v2/insights/types';
 import type {
   ComposedContent,
   GeneratorAggregate,
@@ -80,6 +86,25 @@ export class ParTypeGenerator extends BaseGenerator<ParTypeAggregate> {
 
   protected override signatureScope(): string {
     return `par_scoring:par${this.par}`;
+  }
+
+  /**
+   * The aggregate is LIFETIME (cache average + lifetime holes), so recheck
+   * this par type's scoring average over the recent window against the row's
+   * own comparison (par), gated on the same rounds floor as the aggregate.
+   */
+  protected override async recentWindowRecheck(
+    _agg: ParTypeAggregate,
+    evidence: InsightEvidence,
+  ): Promise<InsightRecheck | null> {
+    const holes = await loadCompletedHoles(this.playerId, RECHECK_WINDOW_DAYS);
+    return parScoringRecheck(
+      holes,
+      this.par,
+      evidence.comparison_value,
+      this.minSampleN,
+      new Date().toISOString(),
+    );
   }
 
   async aggregate(): Promise<ParTypeAggregate | null> {

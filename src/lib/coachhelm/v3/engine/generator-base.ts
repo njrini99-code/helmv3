@@ -45,8 +45,14 @@ import {
   type RootCauseContext,
 } from './root-cause';
 import { loadRootCauseContext } from './root-cause-context';
+import {
+  decideRecheckTransition,
+  RECHECK_RESOLVED_BY,
+  type InsightRecheck,
+  type RecheckTransition,
+} from './recent-recheck';
 
-import type { Diagnosis, DiagnosisDriver, InsightEvidence } from '@/lib/coachhelm/v2/insights/types';
+import type { Diagnosis, DiagnosisDriver, InsightEvidence, InsightLifecycleState } from '@/lib/coachhelm/v2/insights/types';
 
 import type {
   ComposedContent,
@@ -487,6 +493,116 @@ export abstract class BaseGenerator<A extends GeneratorAggregate = GeneratorAggr
   }
 
   /**
+   * Recent-window recheck (owner decision 2026-09-25, `recent-recheck.ts`).
+   * A generator whose aggregate is LIFETIME (putt_distance, par_type) cannot
+   * see a recent improvement on its nightly re-run, so it recomputes its own
+   * metric over the recent window here and checks it against the row's own
+   * comparison value. Default null = the generator's window is already recent
+   * (its re-run is the recheck). Called only for a LEAK row; a throw is
+   * logged and treated as "no recheck" — it never fails the run.
+   */
+  protected async recentWindowRecheck(
+    _agg: A,
+    _evidence: InsightEvidence,
+  ): Promise<InsightRecheck | null> {
+    return null;
+  }
+
+  /**
+   * Apply the recheck's lifecycle edge to the row this run just wrote
+   * (`decideRecheckTransition`). Engine axis only — `status` is never
+   * written. Optimistic guard on the observed lifecycle_state + updated_at so
+   * a concurrent coach action or engine write is never clobbered. Failure is
+   * logged and swallowed.
+   */
+  private async applyRecheckLifecycle(
+    insightId: string,
+    isLeak: boolean,
+    recheck: InsightRecheck | null,
+  ): Promise<RecheckTransition> {
+    if (!recheck || !isLeak || recheck.status === 'thin') return 'none';
+    try {
+      const supabase = createAdminClient();
+      const { data: row, error: selErr } = await supabase
+        .from('golf_coach_insights')
+        .select('id, lifecycle_state, metadata, updated_at')
+        .eq('id', insightId)
+        .maybeSingle();
+      if (selErr || !row) {
+        if (selErr) {
+          await logServerError(
+            `${this.name} recheck select failed for insight=${insightId}: ${selErr.message}`,
+            { action: `v3.generator.${this.name}.recheck`, metadata: { dbError: toDbErrorMetadata(selErr) } },
+          );
+        }
+        return 'none';
+      }
+      const metadata = { ...((row.metadata as Record<string, unknown> | null) ?? {}) };
+      const lifecycle = row.lifecycle_state as InsightLifecycleState | null;
+      const transition = decideRecheckTransition({
+        lifecycle,
+        resolvedBy: metadata.resolved_by,
+        isLeak,
+        recheck,
+      });
+      if (transition === 'none') return 'none';
+
+      const nowIso = new Date().toISOString();
+      const summary = {
+        recent_value: recheck.recent_value,
+        sample_n: recheck.sample_n,
+        comparison_value: recheck.comparison_value,
+        window_days: recheck.window_days,
+      };
+      let patch: Record<string, unknown>;
+      if (transition === 'resolve') {
+        patch = {
+          lifecycle_state: 'resolved',
+          resolved_at: nowIso,
+          updated_at: nowIso,
+          metadata: {
+            ...metadata,
+            resolved_by: RECHECK_RESOLVED_BY,
+            resolve_reason: `recent_window_cleared:${recheck.window_days}d`,
+            resolved_from_state: lifecycle,
+            resolved_recheck: summary,
+          },
+        };
+      } else {
+        const { resolved_by: _rb, resolve_reason: _rr, resolved_from_state: _rf, ...rest } = metadata;
+        void _rb; void _rr; void _rf;
+        patch = {
+          lifecycle_state: 'detected',
+          resolved_at: null,
+          updated_at: nowIso,
+          metadata: { ...rest, reopened_at: nowIso, reopened_by: RECHECK_RESOLVED_BY, reopened_recheck: summary },
+        };
+      }
+      let q = supabase
+        .from('golf_coach_insights')
+        .update(patch as never)
+        .eq('id', insightId)
+        .eq('lifecycle_state', lifecycle as string);
+      q = row.updated_at === null ? q.is('updated_at', null) : q.eq('updated_at', row.updated_at as string);
+      const { data: updated, error } = await q.select('id');
+      if (error) {
+        await logServerError(
+          `${this.name} recheck ${transition} failed for insight=${insightId}: ${error.message}`,
+          { action: `v3.generator.${this.name}.recheck`, metadata: { dbError: toDbErrorMetadata(error) } },
+        );
+        return 'none';
+      }
+      return updated && updated.length > 0 ? transition : 'none';
+    } catch (err) {
+      await logServerError(
+        `${this.name} recheck threw for insight=${insightId}: ${describeError(err)}`,
+        { action: `v3.generator.${this.name}.recheck`, metadata: { dbError: toDbErrorMetadata(err) } },
+      );
+      return 'none';
+    }
+  }
+
+  /**
    * Archive still-active, coach-untouched rows in this generator's scope,
    * except `keepSignature` (the row the run just wrote). Only `tentative`/
    * `detected` lifecycle states are touched — matured/addressed/resolved
@@ -807,6 +923,23 @@ export abstract class BaseGenerator<A extends GeneratorAggregate = GeneratorAggr
         diagnosis ? { ...evidenceWithoutDiagnosis, diagnosis } : evidenceWithoutDiagnosis
       ) as typeof composed.evidence;
 
+      // Recent-window recheck (lifetime-window generators only). Stamped on
+      // the evidence this write persists, then applied to lifecycle below.
+      const isLeak = resolveInsightFraming(composed.framing, evidence) === 'leak';
+      let recheck: InsightRecheck | null = null;
+      if (isLeak) {
+        try {
+          recheck = await this.recentWindowRecheck(agg, evidence);
+        } catch (err) {
+          await logServerError(
+            `${this.name} recent-window recheck failed for player=${this.playerId}: ${describeError(err)}`,
+            { action: `v3.generator.${this.name}.recheck`, metadata: { dbError: toDbErrorMetadata(err) } },
+            'warning',
+          );
+        }
+        if (recheck) evidence = { ...evidence, recheck } as typeof composed.evidence;
+      }
+
       const supabase = createAdminClient();
       const result = await upsertInsightV3(supabase, {
         player_id: this.playerId,
@@ -829,7 +962,14 @@ export abstract class BaseGenerator<A extends GeneratorAggregate = GeneratorAggr
       const retracted = await this.retractStaleInScope(
         `${V3_SIGNATURE_PREFIX}${composed.signature}`,
       );
-      return { id: result, gated: false, status: 'generated', retracted };
+      const recheckTransition = await this.applyRecheckLifecycle(result, isLeak, recheck);
+      return {
+        id: result,
+        gated: false,
+        status: 'generated',
+        retracted,
+        ...(recheckTransition !== 'none' ? { recheck: recheckTransition } : {}),
+      };
     } catch (err) {
       // P0-04: a thrown generator MUST NOT be reported as a clean no-data exit.
       // The legacy `{ id: null, gated: false }` here was indistinguishable from

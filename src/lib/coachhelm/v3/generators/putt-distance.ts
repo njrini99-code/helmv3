@@ -43,6 +43,13 @@ import {
 } from '@/lib/coachhelm/v3/counterfactual/cohort-baselines';
 import { loadPlayerCohort } from '@/lib/coachhelm/v3/counterfactual/player-cohort-loader';
 import { attemptGate, lifetimeSpanDays, staleDataSuffix, ATTEMPT_FLOOR } from '@/lib/coachhelm/v3/engine/window-honesty';
+import {
+  loadRecentPutts,
+  puttBandRecheck,
+  type InsightRecheck,
+  type PuttBand,
+} from '@/lib/coachhelm/v3/engine/recent-recheck';
+import type { InsightEvidence } from '@/lib/coachhelm/v2/insights/types';
 
 type PuttBucketKey = '3_5ft' | '5_10ft' | '10_15ft' | '15_25ft' | '25_plus_ft';
 
@@ -73,6 +80,17 @@ const BUCKET_TO_ATTEMPTS_COLUMN: Record<PuttBucketKey, string> = {
   '10_15ft':  'putt_attempts_10_15ft',
   '15_25ft':  'putt_attempts_15_25ft',
   '25_plus_ft':'putt_attempts_25_plus_ft',
+};
+
+/** Feet bands `(lo, hi]` — the exact bands `update_player_putt_make_pct`
+ *  writes into the cache columns above, so the recent recheck measures the
+ *  same quantity the lifetime row does. */
+const BUCKET_BAND_FEET: Record<PuttBucketKey, PuttBand> = {
+  '3_5ft':    { lo: 3, hi: 5 },
+  '5_10ft':   { lo: 5, hi: 10 },
+  '10_15ft':  { lo: 10, hi: 15 },
+  '15_25ft':  { lo: 15, hi: 25 },
+  '25_plus_ft': { lo: 25, hi: null },
 };
 
 const BUCKET_LABEL: Record<PuttBucketKey, string> = {
@@ -154,6 +172,26 @@ export class PuttDistanceGenerator extends BaseGenerator<PuttDistanceAggregate> 
 
   protected override signatureScope(): string {
     return `putt_distance:${this.bucket}`;
+  }
+
+  /**
+   * The aggregate is LIFETIME (stats cache), so recheck the band over the
+   * recent window against this row's own anchor (`comparison_value` — the
+   * gender-aware target composeContent chose), gated on the same attempt
+   * floor the aggregate uses.
+   */
+  protected override async recentWindowRecheck(
+    _agg: PuttDistanceAggregate,
+    evidence: InsightEvidence,
+  ): Promise<InsightRecheck | null> {
+    const putts = await loadRecentPutts(this.playerId);
+    return puttBandRecheck(
+      putts,
+      BUCKET_BAND_FEET[this.bucket],
+      evidence.comparison_value,
+      ATTEMPT_FLOOR,
+      new Date().toISOString(),
+    );
   }
 
   async aggregate(): Promise<PuttDistanceAggregate | null> {

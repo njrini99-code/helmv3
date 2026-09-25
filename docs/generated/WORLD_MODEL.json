@@ -14113,6 +14113,11 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/app/golf/actions/v3/llm.ts",
+          "anchor": "src/lib/coachhelm/v3/insight-visibility"
+        },
+        {
+          "kind": "import_graph",
           "path": "src/app/golf/actions/v3/practice-rx.ts",
           "anchor": "src/lib/coachhelm/v3/practice-rx/composer"
         },
@@ -17403,6 +17408,11 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/engine/recent-recheck.ts",
+          "anchor": "src/lib/supabase/admin"
+        },
+        {
+          "kind": "import_graph",
           "path": "src/lib/coachhelm/v3/engine/root-cause-context.ts",
           "anchor": "src/lib/supabase/admin"
         },
@@ -17672,6 +17682,16 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/engine/recent-recheck.ts",
+          "anchor": "src/lib/supabase/untyped"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/engine/recent-recheck.ts",
+          "anchor": "src/lib/supabase/fetch-all-rows"
+        },
+        {
+          "kind": "import_graph",
           "path": "src/lib/coachhelm/v3/engine/shot-source.ts",
           "anchor": "src/lib/supabase/untyped"
         },
@@ -17826,6 +17846,11 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/engine/recent-recheck.ts",
+          "anchor": "src/lib/coachhelm/v2/insights/types"
+        },
+        {
+          "kind": "import_graph",
           "path": "src/lib/coachhelm/v3/engine/root-cause-context.ts",
           "anchor": "src/lib/coachhelm/v2/insights/types"
         },
@@ -17842,6 +17867,16 @@
         {
           "kind": "import_graph",
           "path": "src/lib/coachhelm/v3/generators/approach-miss.ts",
+          "anchor": "src/lib/coachhelm/v2/insights/types"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/generators/par-type.ts",
+          "anchor": "src/lib/coachhelm/v2/insights/types"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/generators/putt-distance.ts",
           "anchor": "src/lib/coachhelm/v2/insights/types"
         },
         {
