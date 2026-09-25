@@ -25,10 +25,12 @@ import {
   formatStrokes,
   rootStyleLabel,
   shortDate,
+  staleRoundLine,
 } from '@/lib/coachhelm/root-map/build-root-map';
 import type { CoachPlayerDrill } from '@/lib/coachhelm/root-map/coach-player-drill';
 import { RootBranchList, RootMap } from './RootMap';
 import { RootWhy } from './RootWhy';
+import { StaleRoundNote } from './RootToday';
 import type { TeamRootsViewProps } from './TeamRootsView';
 
 export interface TeamPlayerDrillProps {
@@ -102,7 +104,8 @@ export function TeamPlayerDrill({ drill, hrefFor, navigate }: TeamPlayerDrillPro
     </Link>
   );
 
-  const through = ready ? shortDate(ready.throughDate) : null;
+  const stale = ready ? staleRoundLine(ready.throughDate, ready.daysSinceThrough) : null;
+  const through = ready && !stale ? shortDate(ready.throughDate) : null;
   const readLine = ready
     ? [ready.roundsRead ? `Read from ${ready.roundsRead} rounds` : null, through ? `through ${through}` : null].filter(Boolean).join(' · ')
     : '';
@@ -112,6 +115,7 @@ export function TeamPlayerDrill({ drill, hrefFor, navigate }: TeamPlayerDrillPro
       {back}
       <header className="flex flex-col gap-2">
         <Eyebrow as="p">{['Player root map', readLine].filter(Boolean).join(' · ')}</Eyebrow>
+        {stale ? <StaleRoundNote text={stale} /> : null}
         <h2
           ref={headingRef}
           tabIndex={-1}

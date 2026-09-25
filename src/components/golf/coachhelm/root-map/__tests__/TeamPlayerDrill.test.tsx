@@ -89,6 +89,7 @@ const ready: CoachPlayerDrill = {
   headline: 'Putting gives back 1.20, 3–5 ft putts is where, seen in shots.',
   roundsRead: 18,
   throughDate: '2026-08-02',
+  daysSinceThrough: 5,
   greenView: null,
   approachWhy: {},
 };
@@ -155,6 +156,17 @@ describe('Team roots player drill', () => {
     expect(navigate).toHaveBeenCalledWith({ cause: 'far' });
     expect(screen.getByRole('heading', { name: 'Greens from 175+' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'The likely root' })).toBeInTheDocument();
+  });
+
+  it('calls out a last round more than 30 days old', () => {
+    renderDrill({ ...ready, throughDate: '2026-07-10', daysSinceThrough: 77 } as CoachPlayerDrill);
+    expect(screen.getByText('Last round Jul 10 — 11 weeks ago')).toBeInTheDocument();
+  });
+
+  it('keeps a recent last round in the quiet read line', () => {
+    renderDrill(ready);
+    expect(screen.queryByText(/Last round/)).not.toBeInTheDocument();
+    expect(screen.getByText(/through Aug 2/)).toBeInTheDocument();
   });
 
   it('back to Team roots navigates in place without the player', () => {

@@ -54,6 +54,7 @@ import {
   ROOT_AREAS,
   branchDetailOf,
   buildRootHeadline,
+  daysBetween,
   findBranch,
   isoDay,
   type BranchDetail,
@@ -647,6 +648,7 @@ export default async function PlayerCoachHelmPage() {
       headline: buildRootHeadline(model, findBranch(model, model.defaultSelectedId)),
       roundsRead: sgRow?.roundsPlayed ?? null,
       throughDate,
+      daysSinceThrough: daysBetween(throughDate, new Date().toISOString()),
       sparklines: recentRounds ? buildAreaSparklines(recentRounds) : [],
       newSince,
       // Putting branches' Why view: null (omitted) below the sample gate.

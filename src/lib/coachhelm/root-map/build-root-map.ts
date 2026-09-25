@@ -592,3 +592,39 @@ export function shortDate(day: string | null | undefined): string | null {
   const name = months[mi];
   return name ? `${name} ${Number(dd)}` : null;
 }
+
+/* ─────────────────────────────────────────────────────────────────────────
+ * Staleness of the data the map is read from
+ * ──────────────────────────────────────────────────────────────────────── */
+
+/** A map older than this many days calls out its last round. */
+export const STALE_AFTER_DAYS = 30;
+
+/** Whole days from `fromDay` to `toDay` (both date-only), or null. Pure date
+ *  arithmetic in UTC, so server and client agree. */
+export function daysBetween(fromDay: string | null | undefined, toDay: string | null | undefined): number | null {
+  const a = isoDay(fromDay ?? null);
+  const b = isoDay(toDay ?? null);
+  if (!a || !b) return null;
+  const ms = Date.parse(`${b}T00:00:00Z`) - Date.parse(`${a}T00:00:00Z`);
+  return Number.isFinite(ms) ? Math.round(ms / 86_400_000) : null;
+}
+
+function agoText(days: number): string {
+  if (days < 14) return `${days} days ago`;
+  if (days < 120) return `${Math.floor(days / 7)} weeks ago`;
+  const months = Math.floor(days / 30.4);
+  return `${months} ${months === 1 ? 'month' : 'months'} ago`;
+}
+
+/**
+ * "Last round Jul 10 — 11 weeks ago" when the latest counted round is more
+ * than {@link STALE_AFTER_DAYS} old; null when it is recent or unknown.
+ * `daysAgo` is computed on the server (see the pages) so the client render
+ * never reads the clock.
+ */
+export function staleRoundLine(throughDate: string | null | undefined, daysAgo: number | null | undefined): string | null {
+  const day = shortDate(throughDate ?? null);
+  if (!day || typeof daysAgo !== 'number' || !Number.isFinite(daysAgo) || daysAgo <= STALE_AFTER_DAYS) return null;
+  return `Last round ${day} — ${agoText(daysAgo)}`;
+}

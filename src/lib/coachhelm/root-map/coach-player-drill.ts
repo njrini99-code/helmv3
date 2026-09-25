@@ -39,6 +39,7 @@ import {
   ROOT_AREAS,
   branchDetailOf,
   buildRootHeadline,
+  daysBetween,
   findBranch,
   type BranchDetail,
   type RootMapModel,
@@ -67,6 +68,8 @@ export interface CoachPlayerDrillReady {
   headline: string | null;
   roundsRead: number | null;
   throughDate: string | null;
+  /** Days from `throughDate` to today (server clock). */
+  daysSinceThrough: number | null;
   greenView: GreenView | null;
   approachWhy: Record<string, ApproachWhyView>;
 }
@@ -162,6 +165,7 @@ export async function loadCoachPlayerDrill(
       headline: buildRootHeadline(model, findBranch(model, causeId ?? model.defaultSelectedId), 'coach'),
       roundsRead: sgRow?.roundsPlayed ?? null,
       throughDate,
+      daysSinceThrough: daysBetween(throughDate, new Date().toISOString()),
       greenView: shortPutts ? buildGreenView(shortPutts.putts, shortPutts.rounds) : null,
       approachWhy,
     };

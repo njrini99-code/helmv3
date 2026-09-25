@@ -27,6 +27,7 @@ import {
   formatStrokes,
   isRootArea,
   shortDate,
+  staleRoundLine,
   supportPhrase,
   type BranchDetail,
   type CauseBranch,
@@ -61,6 +62,9 @@ export interface RootTodayProps {
   roundsRead: number | null;
   /** Date-only `round_date` of the latest counted round. */
   throughDate: string | null;
+  /** Days from `throughDate` to today, computed on the server (the client
+   *  never reads the clock). Over 30 the header calls out the last round. */
+  daysSinceThrough?: number | null;
   sparklines: AreaSparkline[];
   newSince: NewSinceItem[];
   /** Short-putt green for putting branches' Why view; null when below its gate. */
@@ -163,6 +167,18 @@ function Chain({ model, branch, detail }: { model: RootMapModel; branch: CauseBr
   );
 }
 
+/** The map's data is old: say when the last round was, so it stands out. */
+export function StaleRoundNote({ text }: { text: string }) {
+  return (
+    <p
+      className="self-start rounded-fw-sm border border-fw-warning-ring bg-fw-warning-bg px-2 py-1 text-body-sm font-medium text-fw-warning-ink"
+      data-slot="stale-round"
+    >
+      {text}
+    </p>
+  );
+}
+
 function NewSinceTimeline({ date, items }: { date: string | null; items: NewSinceItem[] }) {
   if (items.length === 0) return null;
   const shown = items.slice(0, 3);
@@ -198,7 +214,7 @@ function NewSinceTimeline({ date, items }: { date: string | null; items: NewSinc
   );
 }
 
-export function RootToday({ model, details, headline, roundsRead, throughDate, sparklines, newSince }: RootTodayProps) {
+export function RootToday({ model, details, headline, roundsRead, throughDate, daysSinceThrough = null, sparklines, newSince }: RootTodayProps) {
   const [selectedId, setSelectedId] = useState<string | null>(model.defaultSelectedId);
   const branch = findBranch(model, selectedId);
   const detail = branch ? details[branch.id] ?? null : null;
@@ -221,7 +237,8 @@ export function RootToday({ model, details, headline, roundsRead, throughDate, s
   }, [model]);
 
   const hasMap = model.gains.length > 0 || model.losses.length > 0;
-  const through = shortDate(throughDate);
+  const stale = staleRoundLine(throughDate, daysSinceThrough);
+  const through = stale ? null : shortDate(throughDate);
   const readLine = [roundsRead ? `Read from ${roundsRead} rounds` : null, through ? `through ${through}` : null]
     .filter(Boolean)
     .join(' · ');
@@ -230,6 +247,7 @@ export function RootToday({ model, details, headline, roundsRead, throughDate, s
     <div className="flex min-w-0 flex-col gap-6" data-slot="root-today">
       <header className="flex flex-col gap-2">
         {readLine ? <Eyebrow as="p">{readLine}</Eyebrow> : null}
+        {stale ? <StaleRoundNote text={stale} /> : null}
         <h2 className="font-fw-display text-title-1 md:text-h1 text-text-primary">
           {headline ?? 'Your root map fills in as your rounds are counted.'}
         </h2>

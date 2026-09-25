@@ -508,3 +508,19 @@ describe('buildRootMap — approach bands (2026-09-25)', () => {
     expect(model.unsized[0]).toMatchObject({ id: 'far3', contextPath: null, note: null });
   });
 });
+
+describe('staleness line', () => {
+  it('counts whole days in UTC', async () => {
+    const { daysBetween } = await import('./build-root-map');
+    expect(daysBetween('2026-07-10', '2026-09-25T18:00:00Z')).toBe(77);
+    expect(daysBetween(null, '2026-09-25')).toBeNull();
+  });
+  it('calls out a last round older than 30 days, in weeks then months', async () => {
+    const { staleRoundLine } = await import('./build-root-map');
+    expect(staleRoundLine('2026-07-10', 77)).toBe('Last round Jul 10 — 11 weeks ago');
+    expect(staleRoundLine('2026-08-20', 30)).toBeNull();
+    expect(staleRoundLine('2026-08-20', 31)).toBe('Last round Aug 20 — 4 weeks ago');
+    expect(staleRoundLine('2026-03-01', 208)).toBe('Last round Mar 1 — 6 months ago');
+    expect(staleRoundLine(null, 90)).toBeNull();
+  });
+});
