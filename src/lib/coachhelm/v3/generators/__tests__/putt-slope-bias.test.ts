@@ -250,3 +250,25 @@ describe('selectDownhillPenaltyCut — uphill as weak as downhill means "sloped"
     expect(c.signature).toBe('putt_slope_bias:4-6 ft');
   });
 });
+
+describe('PuttSlopeBiasGenerator — coach voice', () => {
+  const SECOND_PERSON = /\byou(r|'re|'ll|'ve)?\b/i;
+  const cases: Array<[string, PuttSlopeBiasAggregate]> = [
+    ['downhill', agg({ band: '4-6 ft', downhill_pct: 40, level_pct: 65, gap_pp: 25, downhill_n: 20, level_n: 18 })],
+    ['sloped', agg({
+      band: '4-6 ft', downhill_pct: 42.3, level_pct: 66.7, gap_pp: 24.4, downhill_n: 26, level_n: 12,
+      uphill_pct: 44, uphill_n: 25, sloped: true,
+    })],
+  ];
+
+  it('ships a coach-voice copy with no second person and the same numbers for every branch', () => {
+    for (const [name, a] of cases) {
+      const c = gen.composeContent(a);
+      expect(c.coach, name).toBeDefined();
+      expect(c.coach!.title, name).not.toMatch(SECOND_PERSON);
+      expect(c.coach!.content, name).not.toMatch(SECOND_PERSON);
+      // Same numbers as the player copy: only the voice changes.
+      for (const n of c.content.match(/\d+(\.\d+)?%?/g) ?? []) expect(c.coach!.content, name).toContain(n);
+    }
+  });
+});

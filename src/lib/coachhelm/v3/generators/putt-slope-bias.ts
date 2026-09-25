@@ -349,14 +349,24 @@ export class PuttSlopeBiasGenerator extends BaseGenerator<PuttSlopeBiasAggregate
     const downhillDisp = `${Math.round(agg.downhill_pct)}%`;
     const levelDisp = `${Math.round(agg.level_pct)}%`;
     const gap = Math.round(agg.gap_pp);
+    const leverage = (whose: string) =>
+      `Short putts carry the highest leverage per attempt in ${whose} bag (a miss costs a full stroke), so this gap is worth closing.`;
 
     // Uphill as weak as downhill at this distance: the finding is sloped
     // putts, so neither the title, the label nor the drill singles out downhill.
     if (agg.sloped && agg.uphill_pct !== null) {
       const uphillDisp = `${Math.round(agg.uphill_pct)}%`;
+      const title = `Sloped putts inside ${agg.band}: a real penalty`;
+      const reading = `${downhillDisp} of downhill putts and ${uphillDisp} of uphill putts vs ${levelDisp} of level putts at the same distance (n=${agg.downhill_n} downhill / ${agg.uphill_n} uphill / ${agg.level_n} level). Uphill is as weak as downhill, so this is about putts on a slope, not downhill speed alone.`;
+      const ladder = `a slope ladder on both sides of the hole: start 3 ft away and add a foot at a time, reading the slope before each putt and committing to one pace.`;
       return {
-        title: `Sloped putts inside ${agg.band}: a real penalty`,
-        content: `Inside ${agg.band} you're making ${downhillDisp} of downhill putts and ${uphillDisp} of uphill putts vs ${levelDisp} of level putts at the same distance (n=${agg.downhill_n} downhill / ${agg.uphill_n} uphill / ${agg.level_n} level). Uphill is as weak as downhill, so this is about putts on a slope, not downhill speed alone. Short putts carry the highest leverage per attempt in your bag (a miss costs a full stroke), so this gap is worth closing. Rehearse a slope ladder on both sides of the hole: start 3 ft away and add a foot at a time, reading the slope before each putt and committing to one pace.`,
+        title,
+        content: `Inside ${agg.band} you're making ${reading} ${leverage('your')} Rehearse ${ladder}`,
+        // Coach voice: the same read in neutral third person (evidence.coach_copy).
+        coach: {
+          title,
+          content: `Inside ${agg.band} the player is making ${reading} ${leverage('their')} Have them rehearse ${ladder}`,
+        },
         priority: 'medium',
         signature: `putt_slope_bias:${agg.band}`,
         evidence: {
@@ -394,9 +404,18 @@ export class PuttSlopeBiasGenerator extends BaseGenerator<PuttSlopeBiasAggregate
       };
     }
 
+    const title = `Downhill putts inside ${agg.band}: a real penalty`;
+    const reading = `${downhillDisp} of downhill putts vs ${levelDisp} of level putts at the same distance — a ${gap}-point gap (n=${agg.downhill_n} downhill / ${agg.level_n} level).`;
+    const pattern = `It's consistent with a pace-control pattern rather than a green-reading one — the gap shows up inside 6 ft and not beyond it, where line matters more than speed.`;
+    const ladder = `a downhill-only ladder drill: start 2 ft below the hole and add a foot at a time, focused on dying the ball into the front of the cup rather than a firm strike.`;
     return {
-      title: `Downhill putts inside ${agg.band}: a real penalty`,
-      content: `Inside ${agg.band} you're making ${downhillDisp} of downhill putts vs ${levelDisp} of level putts at the same distance — a ${gap}-point gap (n=${agg.downhill_n} downhill / ${agg.level_n} level). Short putts carry the highest leverage per attempt in your bag (a miss costs a full stroke), so this gap is worth closing. It's consistent with a pace-control pattern rather than a green-reading one — the gap shows up inside 6 ft and not beyond it, where line matters more than speed. Rehearse a downhill-only ladder drill: start 2 ft below the hole and add a foot at a time, focused on dying the ball into the front of the cup rather than a firm strike.`,
+      title,
+      content: `Inside ${agg.band} you're making ${reading} ${leverage('your')} ${pattern} Rehearse ${ladder}`,
+      // Coach voice: the same read in neutral third person (evidence.coach_copy).
+      coach: {
+        title,
+        content: `Inside ${agg.band} the player is making ${reading} ${leverage('their')} ${pattern} Have them rehearse ${ladder}`,
+      },
       priority: 'medium',
       signature: `putt_slope_bias:${agg.band}`,
       evidence: {
