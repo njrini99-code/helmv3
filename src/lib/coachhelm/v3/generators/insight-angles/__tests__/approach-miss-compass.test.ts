@@ -136,6 +136,7 @@ describe('computeApproachCompass', () => {
     const r = computeApproachCompass(build({ rounds: 10, pattern, putts: (d, k) => (d === 'short' ? 2 + (k % 2) : 1 + (k % 2)) }))!;
     expect(r.excluded.no_direction).toBeGreaterThan(0);
     expect(r.coverage_pct).toBeLessThan(80);
+    expect(r.missed_greens).toBe(r.direction_recorded + r.excluded.no_direction);
     expect(r.qualifies).toBe(false);
   });
 
@@ -153,6 +154,9 @@ describe('computeApproachCompass', () => {
     data.shots.push(extra);
     const r = computeApproachCompass(data)!;
     expect(r.excluded.earlier_miss_on_hole).toBe(1);
+    // Coverage population = last-approach misses only.
+    expect(r.missed_greens).toBe(r.direction_recorded + r.excluded.no_direction);
+    expect(r.coverage_pct).toBe(100);
   });
 
   it('scales misses to per 18 on 9-hole rounds', () => {

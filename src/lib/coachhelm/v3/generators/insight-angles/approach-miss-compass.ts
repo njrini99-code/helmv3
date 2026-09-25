@@ -135,6 +135,8 @@ export interface CompassResult {
   window: AngleWindow;
   rounds: number;
   approaches: number;
+  /** Missed greens on the LAST approach of a hole (the coverage population):
+   *  = direction_recorded + excluded.no_direction. */
   missed_greens: number;
   direction_recorded: number;
   coverage_pct: number;
@@ -187,13 +189,14 @@ export function computeApproachCompass(data: AngleData): CompassResult | null {
       const result = (s.result ?? '').toLowerCase();
       const lieAfter = (s.lie_after ?? '').toLowerCase();
       if (ON_GREEN.has(result) || lieAfter === 'green' || s.putt_made === true) continue;
-      missed += 1;
       // One miss per hole: only the LAST approach on the hole is costed, so
-      // two misses on one hole never share recovery strokes.
+      // two misses on one hole never share recovery strokes. Earlier misses
+      // are their own exclusion and are NOT in the coverage population.
       if (list.some((x) => x.shot_type === 'approach' && x.is_penalty !== true && x.shot_number > s.shot_number)) {
         excluded.earlier_miss_on_hole += 1;
         continue;
       }
+      missed += 1;
       const sides = sidesOf(s.miss_direction);
       if (sides.length === 0) {
         excluded.no_direction += 1;

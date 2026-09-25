@@ -441,9 +441,9 @@ export const THREE_PUTT_DEFINITION =
 
 /** Shot-by-shot path of each pathway, in recorded putt order. */
 export const PATHWAY_PATTERN: Record<ThreePuttPathway, string> = {
-  long_approach_leave: `first putt from ${LONG_LEAVE_FT}+ ft → 2 more putts`,
-  poor_first_putt_leave: `first putt from inside ${LONG_LEAVE_FT} ft → second putt from ${POOR_LEAVE_FT}+ ft → 3 putts`,
-  short_followup_miss: `first putt from inside ${LONG_LEAVE_FT} ft → second putt from inside ${POOR_LEAVE_FT} ft missed → 3 putts`,
+  long_approach_leave: `first putt from ${LONG_LEAVE_FT}+ ft → 3+ putts on the hole`,
+  poor_first_putt_leave: `first putt from inside ${LONG_LEAVE_FT} ft → second putt from ${POOR_LEAVE_FT}+ ft → 3+ putts on the hole`,
+  short_followup_miss: `first putt from inside ${LONG_LEAVE_FT} ft → second putt from inside ${POOR_LEAVE_FT} ft missed → 3+ putts on the hole`,
 };
 
 /**
@@ -595,7 +595,9 @@ export function composeThreePuttChain(agg: ThreePuttAggregate): ComposedContent 
   // shared floors; mergeDiagnosis re-checks it before shipping.
   const diag = evidence.diagnosis as Diagnosis;
   if (hasGeneratorSequenceEvidence({ ...diag, causality_level: 'observed_sequence' })) {
+    const q = diag.basis!.sequence!;
     diag.causality_level = 'observed_sequence';
+    diag.root_cause = `${q.pattern}: ${q.occurrences} of ${q.of} ${q.population} over ${q.distinct_rounds} rounds.`;
   }
   return {
     category: lengthLed ? 'approach' : 'putting',

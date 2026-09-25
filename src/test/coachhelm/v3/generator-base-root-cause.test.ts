@@ -298,3 +298,96 @@ describe('mergeDiagnosis — generator-supplied sequence evidence', () => {
     expect(mergeDiagnosis(base, claim(), null, { generatorObservedEnabled: true })).toBeUndefined();
   });
 });
+
+/** A generator whose alias metric has no root-cause sequence target and
+ *  which supplies its own sequence evidence (like ThreePuttChainGenerator). */
+class SequenceClaimGenerator extends BaseGenerator<Agg> {
+  readonly name = 'sequence-claim-test';
+  readonly metricId: MetricId = 'sg_putting';
+  readonly insightType = 'putting';
+  readonly category: InsightCategory = 'putting';
+  readonly minSampleN = 5;
+  protected override readonly requiresStanding = false;
+
+  constructor(private readonly withEvidence: boolean) {
+    super('player-1');
+  }
+
+  async aggregate(): Promise<Agg> {
+    return { sampleN: 141, playerValue: 3.1 };
+  }
+
+  composeContent(agg: Agg): ComposedContent {
+    return {
+      title: '3-putts',
+      content: 'content',
+      signature: 'three_putt_chain:all',
+      priority: 'low',
+      framing: 'leak',
+      evidence: {
+        metric: 'three_putt_chain',
+        metric_label: '3-putts per 18 holes',
+        unit: 'count',
+        polarity: 'lower_better',
+        your_value: agg.playerValue,
+        your_value_display: '3.1 per round',
+        comparison_value: 1.4,
+        comparison_label: 'GolfHelm players',
+        comparison_source: 'estimated_target',
+        sample_n: agg.sampleN,
+        window_days: 90,
+        window_start: '',
+        window_end: '',
+        strokes_impact: 0,
+        strokes_impact_method: 'peer_delta',
+        confidence: 0,
+        confidence_factors: { sample_adequacy: 1, recency: 1, variance: 0.5 },
+        diagnosis: {
+          symptom: '3-putts above peers',
+          root_cause: 'first putt from 35+ ft → 3+ putts on the hole: 14 of 25 classified 3-putts over 6 rounds.',
+          causality_level: 'observed_sequence',
+          drivers: [{ metric: 'three_putt_chain', value: 3.1, unit: 'count', sample_n: 141, source: 'golf_shots' }],
+          recommended_action: 'a',
+          confidence_reason: '',
+          ...(this.withEvidence
+            ? {
+                basis: {
+                  kind: 'shot_sequence' as const,
+                  checked: ['25 classified'],
+                  sequence: {
+                    pattern: 'first putt from 35+ ft → 3+ putts on the hole',
+                    occurrences: 14,
+                    of: 25,
+                    population: 'classified 3-putts',
+                    distinct_rounds: 6,
+                    window: 'w',
+                    examples: [{ round_id: 'r1', hole_number: 4 }],
+                  },
+                },
+              }
+            : {}),
+        },
+      },
+    };
+  }
+}
+
+describe('BaseGenerator.run() — generator-supplied sequence evidence', () => {
+  it('ships observed_sequence when the generator supplies the evidence and the capability flag is on', async () => {
+    await new SequenceClaimGenerator(true).run();
+    const d = written().evidence.diagnosis!;
+    expect(d.causality_level).toBe('observed_sequence');
+    expect(d.basis?.sequence?.examples).toEqual([{ round_id: 'r1', hole_number: 4 }]);
+  });
+
+  it('the same claim without evidence ships as inferred_hypothesis', async () => {
+    await new SequenceClaimGenerator(false).run();
+    expect(written().evidence.diagnosis!.causality_level).toBe('inferred_hypothesis');
+  });
+
+  it('capability flag off → inferred_hypothesis even with evidence', async () => {
+    isFlagEnabledMock.mockImplementation((id: string) => id !== ROOT_CAUSE_DIAGNOSIS_FLAG);
+    await new SequenceClaimGenerator(true).run();
+    expect(written().evidence.diagnosis!.causality_level).toBe('inferred_hypothesis');
+  });
+});

@@ -191,7 +191,8 @@ interface TeeObs {
 
 function teeSequence(obs: readonly TeeObs[], side: TeeSide, dateOf: Map<string, string>): TeeMissResult['sequence'] {
   const pop = obs.filter((o) => o.outcome === side && o.nextKnown);
-  const bad = pop.filter((o) => o.toPar >= 1);
+  // An unrecorded lie is not a path step; it never becomes the named lie.
+  const bad = pop.filter((o) => o.toPar >= 1 && o.lieAfter !== 'unknown');
   if (bad.length === 0) return null;
   const byLie = new Map<string, TeeObs[]>();
   for (const o of bad) byLie.set(o.lieAfter, [...(byLie.get(o.lieAfter) ?? []), o]);
@@ -571,7 +572,10 @@ export function composeTeeMiss(agg: TeeMissAggregate): ComposedContent {
   };
   const diag = evidence.diagnosis as Diagnosis;
   if (hasGeneratorSequenceEvidence({ ...diag, causality_level: 'observed_sequence' })) {
+    const q = diag.basis!.sequence!;
     diag.causality_level = 'observed_sequence';
+    // Lead with the recorded path and its counts, as root-cause.ts does.
+    diag.root_cause = `${q.pattern}: ${q.occurrences} of ${q.of} ${q.population} over ${q.distinct_rounds} rounds. ${diag.root_cause}`;
   }
   return {
     title: `Your ${r.worse} tee misses cost more than your ${r.better} ones`,
