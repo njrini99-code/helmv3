@@ -361,7 +361,7 @@ export class PuttSlopeBiasGenerator extends BaseGenerator<PuttSlopeBiasAggregate
         signature: `putt_slope_bias:${agg.band}`,
         evidence: {
           metric: 'putt_slope_downhill_penalty_pct',
-          metric_label: 'Sloped vs level putt make % (distance-controlled)',
+          metric_label: 'Downhill vs level putt make % (distance-controlled; uphill as weak)',
           unit: 'percent',
           your_value: agg.downhill_pct,
           your_value_display: downhillDisp,

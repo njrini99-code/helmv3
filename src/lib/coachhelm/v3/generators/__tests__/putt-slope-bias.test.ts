@@ -246,7 +246,7 @@ describe('selectDownhillPenaltyCut — uphill as weak as downhill means "sloped"
     expect(c.content).toContain('44% of uphill putts');
     expect(c.content).toContain('n=26 downhill / 25 uphill / 12 level');
     expect(c.content.toLowerCase()).not.toMatch(/downhill-only/);
-    expect(c.evidence.metric_label).toBe('Sloped vs level putt make % (distance-controlled)');
+    expect(c.evidence.metric_label).toBe('Downhill vs level putt make % (distance-controlled; uphill as weak)');
     expect(c.signature).toBe('putt_slope_bias:4-6 ft');
   });
 });

@@ -316,9 +316,9 @@ old per-pp sizing until the generator reruns.
 downhill against level within one distance band. It also counts uphill putts in
 that band: when at least 8 are recorded and uphill make % is within 10 points
 of downhill (`UPHILL_SIMILAR_PP`) or below it, the row reads "Sloped putts
-inside <band>". It names uphill and downhill, uses the label "Sloped vs level
-putt make % (distance-controlled)", and stores the three rates in
-`evidence.detail`. A row only says "Downhill" when uphill is measurably better.
+inside <band>". It names uphill and downhill. Its label is "Downhill vs level
+putt make % (distance-controlled; uphill as weak)", because `your_value`
+stays the downhill rate. It stores all three rates in `evidence.detail`. A row only says "Downhill" when uphill is measurably better.
 
 ## Root-cause diagnosis (2026-09-24)
 
