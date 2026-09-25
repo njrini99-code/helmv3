@@ -30,7 +30,11 @@ import { staleDataSuffix } from '@/lib/coachhelm/v3/engine/window-honesty';
 import { loadLastRoundDate } from '@/lib/coachhelm/v3/engine/hole-diagnosis';
 import { round } from '@/lib/golf/stat-formulas';
 import { BaseGenerator } from '@/lib/coachhelm/v3/engine/generator-base';
-import { loadSandShots, type SandShot } from '@/lib/coachhelm/v3/engine/shot-source';
+import {
+  loadCountableRoundIds,
+  loadSandShots,
+  type SandShot,
+} from '@/lib/coachhelm/v3/engine/shot-source';
 import { loadPlayerCohort } from '@/lib/coachhelm/v3/counterfactual/player-cohort-loader';
 import {
   cohortAnchor,
@@ -67,7 +71,9 @@ interface ScramblingAggregate extends GeneratorAggregate {
   failure_mode: ScramblingFailureMode;
   /** Cohort gender resolved in aggregate() — selects the anchor + copy. */
   cohort_gender: CohortGender;
-  /** Player's own sand attempts per round (attempts / rounds_played). */
+  /** Player's own greenside-bunker attempts per countable round in the window
+   *  (attempts / rounds_played, where rounds_played counts every countable
+   *  round, with or without a bunker shot). Sizes the counterfactual. */
   attempts_per_round: number;
 }
 
@@ -95,7 +101,11 @@ export class ScramblingGenerator extends BaseGenerator<ScramblingAggregate> {
   }
 
   async aggregate(): Promise<ScramblingAggregate | null> {
-    const shots = await loadSandShots(this.playerId);
+    // One countable-round set for both sides of the attempt rate: the shots
+    // come from these rounds, and the per-round denominator is all of them.
+    const countableRoundIds = await loadCountableRoundIds(this.playerId);
+    if (countableRoundIds.length === 0) return null;
+    const shots = await loadSandShots(this.playerId, undefined, countableRoundIds);
     if (shots.length === 0) return null;
 
     const attempts = shots.length;
@@ -125,9 +135,13 @@ export class ScramblingGenerator extends BaseGenerator<ScramblingAggregate> {
       .filter((d): d is number => typeof d === 'number' && Number.isFinite(d));
     const avgLeave = leaves.length > 0 ? round(leaves.reduce((a, d) => a + d, 0) / leaves.length, 1) : null;
     const twoPuttAfterReach = reached.filter((s) => s.putts_after >= 2).length;
-    const roundsPlayed = new Set(shots.map((s) => s.round_id)).size;
+    // Every countable round in the window, including the ones with no bunker
+    // shot. Counting only rounds that HAD a sand shot inflated the rate (and
+    // the counterfactual sized from it): 6 bunker shots in 2 of 10 rounds read
+    // as 3.0 a round instead of 0.6.
+    const roundsPlayed = countableRoundIds.length;
     const cohort = await loadPlayerCohort(this.playerId);
-    const attemptsPerRound = roundsPlayed > 0 ? attempts / roundsPlayed : 0;
+    const attemptsPerRound = attempts / roundsPlayed;
 
     // Failure mode: if a meaningful share never reaches the green it's an ESCAPE
     // problem; if most reach but don't get up-and-down it's a LAG/proximity

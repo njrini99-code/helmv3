@@ -18,6 +18,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { fromUntyped } from '@/lib/supabase/untyped';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import { logServerError } from '@/lib/server-error-logger';
+import { isCountableRound, type CountableRoundInput } from '@/lib/golf/round-countable';
 
 export type ApproachBucket = '50_125ft' | '125_175ft' | '175_plus_ft';
 
@@ -213,6 +214,37 @@ export async function loadApproachShots(
  *  denominator matches the engine's `sand_save_percentage`. */
 const AROUND_GREEN_THRESHOLD_YARDS = 50;
 
+/** The `golf_rounds` columns `isCountableRound` reads. */
+const COUNTABLE_ROUND_COLUMNS =
+  'id, status, holes_played, total_score, front_nine, back_nine, total_putts, strokes_gained_total';
+
+/**
+ * Ids of this player's COUNTABLE completed rounds in the last N days
+ * (`isCountableRound`: 9 or 18 holes, fully scored, plausible total/SG).
+ *
+ * This is the denominator of any per-round attempt rate the engine sizes a
+ * counterfactual with. It includes rounds where the player never hit the shot
+ * in question: a player with 6 bunker shots over 10 rounds takes 0.6 bunker
+ * shots a round, not 3.0 because only 2 of those rounds had one.
+ */
+export async function loadCountableRoundIds(
+  playerId: string,
+  windowDays = DEFAULT_WINDOW_DAYS,
+): Promise<string[]> {
+  const supabase = createAdminClient();
+  const since = new Date(Date.now() - windowDays * 86400_000).toISOString().slice(0, 10);
+  const { data: rounds, error } = await supabase
+    .from('golf_rounds')
+    .select(COUNTABLE_ROUND_COLUMNS)
+    .eq('player_id', playerId)
+    .eq('status', 'completed')
+    .gte('round_date', since);
+  if (error) throw new Error(`shot-source rounds query failed: ${error.message}`);
+  return ((rounds ?? []) as unknown as Array<CountableRoundInput & { id: string }>)
+    .filter(isCountableRound)
+    .map((r) => r.id);
+}
+
 /**
  * Load this player's GREENSIDE-bunker shots in the window, each resolved against
  * its hole's subsequent putts + canonical sand_save flag. The escape signal
@@ -227,19 +259,16 @@ const AROUND_GREEN_THRESHOLD_YARDS = 50;
 export async function loadSandShots(
   playerId: string,
   windowDays = DEFAULT_WINDOW_DAYS,
+  /** Countable round ids in the window, when the caller already loaded them
+   *  (ScramblingGenerator does, to use the same set as its per-round
+   *  denominator). Omitted → loaded here with the same rule. */
+  countableRoundIds?: readonly string[],
 ): Promise<SandShot[]> {
   const supabase = createAdminClient();
-  const since = new Date(Date.now() - windowDays * 86400_000).toISOString().slice(0, 10);
-
-  const { data: rounds, error: rErr } = await supabase
-    .from('golf_rounds')
-    .select('id')
-    .eq('player_id', playerId)
-    .eq('status', 'completed')
-    .gte('round_date', since);
-  if (rErr) throw new Error(`shot-source rounds query failed: ${rErr.message}`);
-  if (!rounds || rounds.length === 0) return [];
-  const roundIds = rounds.map((r) => r.id);
+  // Countable rounds only, so the attempts come from the same round set the
+  // generator divides by (a half-entered round contributes to neither).
+  const roundIds = [...(countableRoundIds ?? (await loadCountableRoundIds(playerId, windowDays)))];
+  if (roundIds.length === 0) return [];
 
   // All shots in those rounds (we need putting rows to count putts_after).
   interface SandSourceRow {
