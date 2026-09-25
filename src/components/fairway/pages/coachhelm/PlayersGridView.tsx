@@ -840,13 +840,13 @@ export function PlayersGridView({
     <EmptyState
       icon={LucideTarget}
       title="Couldn't load the roster"
-      description="We hit an error loading your players. Try refreshing the page."
+      description="The player list failed to load. Refresh the page to retry."
     />
   ) : (
     <EmptyState
       icon={LucideTarget}
       title="No players on the active roster"
-      description="Add players to your team to assign development focus areas."
+      description="Add players to the team to assign development focus areas."
     />
   );
 
@@ -889,7 +889,7 @@ export function PlayersGridView({
       signalCount={signalCount}
       embedded={embedded}
       title="Players"
-      description="Assign and track measurable development focus areas across your roster."
+      description="Assign and track measurable development focus areas across the roster."
       actions={headerActions}
       className={className}
     >
@@ -1029,7 +1029,7 @@ export function PlayersGridView({
                   slot="players-areas-due"
                   meta={
                     <span className="font-fw-mono text-caption font-normal tabular-nums text-text-secondary">
-                      {dueSummary.due}
+                      {dueSummary.due + followUpCount}
                     </span>
                   }
                 >
