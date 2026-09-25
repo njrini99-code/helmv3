@@ -44,11 +44,23 @@ describe('evaluateSlice', () => {
     expect(c.via).toBe('share');
   });
 
-  it('share path needs a strictly higher rate: 60% share at the SAME rate fails', () => {
+  it('share path needs a clearly higher rate: 60% share at the same rate fails', () => {
     // slice 9/15 (60%), rest 6/10 (60%) — everything misses alike, so the
     // share only says where the attempts were.
     const c = evaluateSlice(k, { attempts: 15, failures: 9 }, { attempts: 25, failures: 15 });
     expect(c.passed).toBe(false);
+  });
+
+  it('share path edge: 14 of 21 misses on par 4s at 26% vs 24% is exposure (2656b02f, 50–125 yd)', () => {
+    const c = evaluateSlice({ par: 4, length: null }, { attempts: 53, failures: 14 }, { attempts: 82, failures: 21 });
+    expect(c.share).toBeGreaterThanOrEqual(0.6);
+    expect(c.passed).toBe(false);
+  });
+
+  it('share path edge boundary: exactly +10 points passes', () => {
+    // slice 8/20 = 40%, rest 3/10 = 30%, share 8/11 = 73%; rest < 8 is fine on the share path
+    const c = evaluateSlice(k, { attempts: 20, failures: 8 }, { attempts: 30, failures: 11 });
+    expect(c.via).toBe('share');
   });
 
   it('failure floor: 7 failures never passes, whatever the share', () => {

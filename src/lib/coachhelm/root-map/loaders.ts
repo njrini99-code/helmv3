@@ -30,6 +30,9 @@ import {
 } from './area-trends';
 import { isCountableRound, type CountableRoundInput } from '@/lib/golf/round-countable';
 import { GREEN_MAX_FT, type GreenPuttInput } from './green-view';
+import type { ApproachRoundInput, RawHoleRow, RawShotRow } from './approach-context';
+import { normalizeShot } from '@/lib/coachhelm/v3/context/normalize-shot';
+import type { HoleContext, ShotFact } from '@/lib/coachhelm/v3/context/types';
 
 type Sb = SupabaseClient<Database>;
 
@@ -291,4 +294,148 @@ export async function loadAttributionForInsights(sb: Sb, insightIds: string[]): 
     warn('[root-map] attribution read failed', 'rootMap.loadAttributionForInsights', err);
     return null;
   }
+}
+
+/** Rounds the approach context reads back (newest countable rounds). */
+export const APPROACH_ROUND_LIMIT = 40;
+
+const APPROACH_SHOT_COLUMNS =
+  'id, round_id, hole_id, hole_number, shot_number, shot_type, club_type, lie_before, lie_after, result, ' +
+  'distance_to_hole_before, distance_unit_before, distance_to_hole_after, distance_unit_after, ' +
+  'is_penalty, putt_made, miss_direction, created_at';
+
+const APPROACH_HOLE_COLUMNS = 'id, round_id, hole_number, par, yardage, score, penalty_strokes, putts, gir';
+
+export interface ApproachContextLoad {
+  rounds: ApproachRoundInput[];
+  holes: RawHoleRow[];
+  shots: RawShotRow[];
+  /** `sg_scale_for_player` (1 when it could not be read; the band sizing's
+   *  reconciliation against the stored SG catches a wrong scale). */
+  scale: number;
+}
+
+/**
+ * The player's most recent {@link APPROACH_ROUND_LIMIT} countable completed
+ * rounds with a stored SG, their holes and every recorded shot: the input to
+ * the approach band sizing and the Why view's length / par / shape evidence
+ * (`approach-context.ts`). Request client, so RLS applies (`golf_holes_select`
+ * / `golf_shots_select` let a player read their own rows).
+ *
+ * Bounded: one select for the rounds (over-fetched so non-countable ones do
+ * not shrink the window), then one paged select per chunk for holes and for
+ * shots. Nothing is computed here.
+ */
+export async function loadApproachContext(sb: Sb, playerId: string): Promise<ApproachContextLoad | null> {
+  try {
+    const { data: roundRows, error: rErr } = await sb
+      .from('golf_rounds')
+      .select(`id, ${SG_COLUMNS}`)
+      .eq('player_id', playerId)
+      .eq('status', 'completed')
+      .not('strokes_gained_total', 'is', null)
+      .order('round_date', { ascending: false })
+      .limit(APPROACH_ROUND_LIMIT + 20);
+    if (rErr) throw rErr;
+    const rounds: ApproachRoundInput[] = [];
+    for (const row of (roundRows ?? []) as Array<SgRoundRow & { id: string }>) {
+      const r = toAreaRound(row);
+      if (!r) continue;
+      rounds.push({ id: row.id, date: r.date, holesPlayed: row.holes_played ?? 18, storedApproach: num(row.strokes_gained_approach) });
+      if (rounds.length >= APPROACH_ROUND_LIMIT) break;
+    }
+    if (rounds.length === 0) return { rounds: [], holes: [], shots: [], scale: 1 };
+    const ids = rounds.map((r) => r.id);
+
+    const holes: RawHoleRow[] = [];
+    const shots: RawShotRow[] = [];
+    for (const idChunk of chunk(ids)) {
+      const { data: h, error: hErr } = await fetchAllRowsResult<RawHoleRow>(
+        (from, to) =>
+          sb
+            .from('golf_holes')
+            .select(APPROACH_HOLE_COLUMNS)
+            .in('round_id', idChunk)
+            .order('id', { ascending: true })
+            .range(from, to) as unknown as PromiseLike<{
+            data: RawHoleRow[] | null;
+            error: { message: string; code?: string | null } | null;
+          }>,
+        undefined,
+        { table: 'golf_holes', action: 'rootMap.loadApproachContext', feature: 'coachhelm_ai_engine', sport: 'golf' },
+      );
+      if (hErr) throw hErr;
+      holes.push(...(h ?? []));
+      const { data: s, error: sErr } = await fetchAllRowsResult<RawShotRow>(
+        (from, to) =>
+          sb
+            .from('golf_shots')
+            .select(APPROACH_SHOT_COLUMNS)
+            .in('round_id', idChunk)
+            .order('id', { ascending: true })
+            .range(from, to) as unknown as PromiseLike<{
+            data: RawShotRow[] | null;
+            error: { message: string; code?: string | null } | null;
+          }>,
+        undefined,
+        { table: 'golf_shots', action: 'rootMap.loadApproachContext', feature: 'coachhelm_ai_engine', sport: 'golf' },
+      );
+      if (sErr) throw sErr;
+      shots.push(...(s ?? []));
+    }
+
+    let scale = 1;
+    const { data: sc, error: scErr } = await sb.rpc('sg_scale_for_player', { p_player_id: playerId });
+    if (!scErr && num(sc) !== null && (num(sc) as number) > 0) scale = num(sc) as number;
+    return { rounds, holes, shots, scale };
+  } catch (err) {
+    warn(`[root-map] approach context read failed for player ${playerId}`, 'rootMap.loadApproachContext', err);
+    return null;
+  }
+}
+
+/** Raw rows → the A1 shapes the narrowing reads (holes need a score). */
+export function toContextFacts(load: ApproachContextLoad): { facts: ShotFact[]; holes: HoleContext[] } {
+  const holes: HoleContext[] = [];
+  for (const h of load.holes) {
+    if (h.score === null || typeof h.par !== 'number' || h.hole_number === null) continue;
+    holes.push({
+      round_id: h.round_id,
+      course_id: null,
+      hole_number: h.hole_number,
+      par: h.par,
+      yardage: h.yardage,
+      total_strokes: h.score,
+      penalty_strokes: h.penalty_strokes,
+      putts: h.putts,
+      gir: h.gir,
+    });
+  }
+  const scored = new Set(holes.map((h) => `${h.round_id}:${h.hole_number}`));
+  const dateByRound = new Map(load.rounds.map((r) => [r.id, r.date]));
+  const facts: ShotFact[] = [];
+  for (const s of load.shots) {
+    if (!scored.has(`${s.round_id}:${s.hole_number}`)) continue;
+    facts.push(
+      normalizeShot({
+        round_id: s.round_id,
+        hole_number: s.hole_number,
+        shot_number: s.shot_number,
+        shot_type: s.shot_type,
+        club_type: s.club_type,
+        distance_to_hole_before: s.distance_to_hole_before,
+        distance_unit_before: s.distance_unit_before,
+        distance_to_hole_after: s.distance_to_hole_after,
+        distance_unit_after: s.distance_unit_after,
+        lie_before: s.lie_before,
+        lie_after: s.lie_after,
+        result: s.result,
+        is_penalty: s.is_penalty,
+        putt_made: s.putt_made,
+        miss_direction: s.miss_direction,
+        observed_at: s.created_at ?? `${dateByRound.get(s.round_id) ?? '1970-01-01'}T00:00:00Z`,
+      }),
+    );
+  }
+  return { facts, holes };
 }

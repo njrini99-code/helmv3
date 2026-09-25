@@ -24,7 +24,8 @@
  *   failures.
  * - slice: >= NARROW_MIN_FAILURES failures in the slice, AND either
  *     (share)  it holds >= NARROW_MIN_SHARE of the population's failures and
- *              fails MORE often than the rest of the population, or
+ *              fails at least NARROW_MIN_LIFT_POINTS more often than the
+ *              rest of the population (any rest size), or
  *     (lift)   its failure rate is >= NARROW_MIN_LIFT × the rest's and at
  *              least NARROW_MIN_LIFT_POINTS higher, with the rest holding
  *              >= NARROW_MIN_REST_ATTEMPTS attempts.
@@ -32,6 +33,10 @@
  *   approaches on par 3s will have most of those misses there even when par
  *   3s are where they miss LEAST. The rate condition on the share path is
  *   what stops that reading (the 49ffe06d calibration case in the tests).
+ *   Calibration 2026-09-25 (3 players, last 18–28 countable rounds): a
+ *   share-only rule named "par 4s" for 50–125 yd at 26% vs 24% and for
+ *   125–175 yd at 39% vs 33% — where par 4s simply are most of the shots.
+ *   The 10-point edge drops those and keeps 32% vs 11% and 24% vs 3%.
  * - shape: >= SHAPE_MIN_COVERED misses carry a recorded direction and they
  *   are >= SHAPE_MIN_COVERAGE of the misses; per axis (short/long,
  *   left/right) the leading side needs >= SHAPE_MIN_AXIS_N directional
@@ -185,7 +190,7 @@ export function evaluateSlice(
   const share = total.failures > 0 ? slice.failures / total.failures : 0;
   let via: SliceCheck['via'] = null;
   if (slice.failures >= NARROW_MIN_FAILURES && restAttempts > 0 && restRate !== null) {
-    if (share >= NARROW_MIN_SHARE && rate > restRate) via = 'share';
+    if (share >= NARROW_MIN_SHARE && rate - restRate >= NARROW_MIN_LIFT_POINTS - 1e-9) via = 'share';
     else if (
       restAttempts >= NARROW_MIN_REST_ATTEMPTS &&
       rate >= NARROW_MIN_LIFT * restRate &&
@@ -405,6 +410,8 @@ interface NarrowSpec {
   excluded: Record<string, number>;
   excludedNote: string | null;
   shapeAxes: { shortLong: boolean; leftRight: boolean } | null;
+  /** What the shape step counts ("misses", "tee-shot misses on those holes"). */
+  shapeNoun?: string;
   /** Directions to read the shape from, given the chosen slice (or null for
    *  the whole population). Defaults to the failing items' own directions. */
   shapeDirections?: (slice: SliceKey | null) => (string | null)[];
@@ -476,7 +483,7 @@ function narrow(spec: NarrowSpec): Narrowing {
             level: 'shape',
             passed: true,
             label: shape.label,
-            statement: `most misses${where} finish ${shape.label} (${shapeCounts(shape)}; ${shape.covered} of ${shape.misses} with a recorded direction)`,
+            statement: `most ${spec.shapeNoun ?? 'misses'}${where} finish ${shape.label} (${shapeCounts(shape)}; ${shape.covered} of ${shape.misses} with a recorded direction)`,
           }
         : { level: 'shape', passed: false, label: null, statement: `direction not stated${where}: ${shape.reason}` },
     );
@@ -643,6 +650,7 @@ export function narrowTee(facts: readonly ShotFact[], holes: readonly HoleContex
     excluded: unknown > 0 ? { no_finish_recorded: unknown } : {},
     excludedNote: null,
     shapeAxes: { shortLong: false, leftRight: true },
+    shapeNoun: 'missed fairways',
   });
 }
 
@@ -686,6 +694,7 @@ export function narrowParScoring(
     excluded: {},
     excludedNote: null,
     shapeAxes: par === 3 ? { shortLong: true, leftRight: true } : null,
+    shapeNoun: 'missed tee shots on the over-par holes',
     shapeDirections: (slice) =>
       ofPar
         .filter((h) => h.total_strokes > h.par)
