@@ -74,6 +74,7 @@ describe('resolveIncidentPresentation — tier 1: known code (SQLSTATE / PostgRE
     ['PGRST116', 'Database expected exactly one row and found none or several'],
     ['PGRST301', 'Session token was rejected by the database'],
     ['PGRST204', 'Database schema cache is out of date'],
+    ['PGRST002', 'Database API could not reach the database'],
     ['BadDeviceToken', 'Push notifications rejected stale Apple device tokens'],
     ['401', 'Request was not authenticated'],
     ['403', 'Request was forbidden by an authorization check'],
@@ -203,6 +204,105 @@ describe('resolveIncidentPresentation — tier 4: normalized stack/fingerprint',
   });
 });
 
+describe('resolveIncidentPresentation — production message shapes with no captured code (2026-09-23 Bridge mislabel)', () => {
+  // Real admin_events messages, UUIDs replaced. Before these rules every one
+  // of them resolved to "An unexpected error occurred" / "signature unavailable".
+  const STATEMENT_TIMEOUT = 'getInsightsForCoach failed: canceling statement due to statement timeout';
+  const SCHEMA_CACHE =
+    'PuttDistanceGenerator run() failed for player=<id>: putt-distance aggregate query failed: Could not query the database for the schema cache. Retrying.';
+  const ABORT_TIMEOUT = 'The operation was aborted due to timeout';
+  const WRAPPED_TIMEOUT_ERROR =
+    '[getPlayerHubSummaryData] events read failed — refusing to render an empty hub: msg=TimeoutError: The operation was aborted due to timeout';
+
+  it('statement timeout message -> the same title as code 57014, with a named signature', () => {
+    const byMessage = resolveIncidentPresentation(subject({ message: STATEMENT_TIMEOUT, klass: 'defect' }));
+    const byCode = resolveIncidentPresentation(subject({ errorCode: '57014' }));
+    expect(byMessage.title).toBe(byCode.title);
+    expect(byMessage.title).toBe('Database query timed out');
+    expect(byMessage.operationContext).toBe('Platform > Database > Query');
+    expect(byMessage.resolvedBy).toBe('fingerprint');
+    expect(byMessage.matchedRule).toBe('fp-statement-timeout');
+    expect(byMessage.technicalSignature).toBe('Postgres: statement timeout');
+  });
+
+  it('PostgREST "could not query the database for the schema cache" -> the same title as code PGRST002', () => {
+    const byMessage = resolveIncidentPresentation(subject({ message: SCHEMA_CACHE, klass: 'defect' }));
+    const byCode = resolveIncidentPresentation(subject({ errorCode: 'PGRST002' }));
+    expect(byMessage.title).toBe(byCode.title);
+    expect(byMessage.title).toBe('Database API could not reach the database');
+    expect(byMessage.matchedRule).toBe('fp-schema-cache-unreachable');
+    expect(byMessage.technicalSignature).toBe('PostgREST: schema cache unavailable');
+  });
+
+  it('a PGRST204-shaped "column ... in the schema cache" message is NOT read as the unreachable-database rule', () => {
+    const p = resolveIncidentPresentation(
+      subject({ message: "Could not find the 'status' column of 'golf_players' in the schema cache", klass: 'defect' }),
+    );
+    expect(p.matchedRule).not.toBe('fp-schema-cache-unreachable');
+    expect(p.resolvedBy).toBe('generic');
+  });
+
+  it('the signature names the failure, never a code the row did not carry', () => {
+    const a = resolveIncidentPresentation(subject({ message: STATEMENT_TIMEOUT }));
+    const b = resolveIncidentPresentation(subject({ message: SCHEMA_CACHE }));
+    expect(a.technicalSignature).not.toContain('57014');
+    expect(b.technicalSignature).not.toContain('PGRST002');
+  });
+
+  it('a captured code still wins over the message, and its signature shows the real code', () => {
+    const p = resolveIncidentPresentation(subject({ errorCode: '57014', message: STATEMENT_TIMEOUT }));
+    expect(p.resolvedBy).toBe('code');
+    expect(p.matchedRule).toBe('pg-57014');
+    expect(p.technicalSignature).toContain('57014');
+  });
+
+  it('TimeoutError / "aborted due to timeout" on a server render or action -> Request timed out', () => {
+    for (const message of [ABORT_TIMEOUT, WRAPPED_TIMEOUT_ERROR, 'AbortError: request timed out after 8000ms']) {
+      const p = resolveIncidentPresentation(subject({ message, klass: 'defect' }));
+      expect(p.title).toBe('Request timed out');
+      expect(p.matchedRule).toBe('fp-request-timeout');
+      expect(p.technicalSignature).toBe('TimeoutError: operation aborted');
+    }
+  });
+
+  it('a bare AbortError with no timeout (e.g. the user navigated away) is not called a timeout', () => {
+    const p = resolveIncidentPresentation(subject({ message: 'AbortError: The user aborted a request.', klass: 'defect' }));
+    expect(p.matchedRule).not.toBe('fp-request-timeout');
+    expect(p.resolvedBy).toBe('generic');
+  });
+
+  it('a network failure keeps its own title even when a timeout word is also present', () => {
+    const p = resolveIncidentPresentation(subject({ message: 'TypeError: fetch failed (cause: TimeoutError)' }));
+    expect(p.matchedRule).toBe('fp-transient-network');
+  });
+
+  it('feature tier keeps its title but now carries the fingerprint signature instead of "signature unavailable"', () => {
+    const p = resolveIncidentPresentation(subject({ featureId: 'coachhelm_ai_engine', message: STATEMENT_TIMEOUT }));
+    expect(p.resolvedBy).toBe('feature');
+    expect(p.title).toBe('CoachHelm AI request failed');
+    expect(p.technicalSignature).toBe('Postgres: statement timeout');
+  });
+
+  it('operation tier keeps its title but now carries the fingerprint signature', () => {
+    const p = resolveIncidentPresentation(subject({ actionName: 'getCommandPaletteData', message: SCHEMA_CACHE }));
+    expect(p.resolvedBy).toBe('operation');
+    expect(p.title).toBe('Coach command palette failed to load');
+    expect(p.technicalSignature).toBe('PostgREST: schema cache unavailable');
+  });
+
+  it('feature tier with an unrecognised message still says "signature unavailable" rather than guessing', () => {
+    const p = resolveIncidentPresentation(subject({ featureId: 'coachhelm_ai_engine', message: 'kaboom' }));
+    expect(p.technicalSignature).toBe('signature unavailable');
+  });
+
+  it('an event with neither a code nor a recognised message still yields the generic fallback', () => {
+    const p = resolveIncidentPresentation(subject({ message: 'something odd happened', klass: 'defect' }));
+    expect(p.resolvedBy).toBe('generic');
+    expect(p.title).toBe('An unexpected error occurred');
+    expect(p.technicalSignature).toBe('signature unavailable');
+  });
+});
+
 describe('resolveIncidentPresentation — tier 5: generic fallback', () => {
   it('nothing recognised, no klass -> the honest unclassified fallback', () => {
     const p = resolveIncidentPresentation(subject({ message: 'kaboom' }));
@@ -257,6 +357,10 @@ describe('resolveIncidentPresentation — safety: never a UUID, an email, or raw
     subject({ featureId: 'auth_onboarding', message: RAW_MESSAGE }),
     subject({ message: `TypeError: fetch failed — ${RAW_MESSAGE}` }),
     subject({ message: `Minified React error #310 ${RAW_MESSAGE}` }),
+    subject({ message: `canceling statement due to statement timeout ${RAW_MESSAGE}` }),
+    subject({ message: `Could not query the database for the schema cache. ${RAW_MESSAGE}` }),
+    subject({ message: `TimeoutError: The operation was aborted due to timeout ${RAW_MESSAGE}` }),
+    subject({ featureId: 'coachhelm_ai_engine', message: `canceling statement due to statement timeout ${RAW_MESSAGE}` }),
     subject({ message: RAW_MESSAGE, klass: 'defect' }),
     subject({ errorCode: 'provider_x', message: RAW_MESSAGE }),
   ];

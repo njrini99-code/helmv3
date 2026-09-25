@@ -570,6 +570,18 @@ them would have broken those routes, not the dead one.
   `durableCollapse: true`, out with `false`. Severity is never changed by it.
   The Vercel insights reader additionally negative-caches its own failure for
   5 minutes per process so a dead endpoint is not re-probed on every refresh.
+- **Database-saturation rows are throttled per process before they write.**
+  During the 2026-09-24 pool-exhaustion brownout (#2061) every failing read
+  also wrote an `error_logs` row and an `admin_events` row into the database
+  that was already saturated. `server-error-logger.ts` now treats a trace
+  whose code (`errorCode` or `extra.errorCode`) is `57014`, `PGRST003`,
+  `PGRST002` or `53300`, or whose message is one of those failures' own text,
+  as a saturation signal: within `DB_SATURATION_WRITE_WINDOW_MS` (60s) a
+  repeat of the same fingerprint in the same process writes nothing, and the
+  next row that does write carries the suppressed count in
+  `metadata.metadata.collapsed_count`. Sentry still gets every occurrence. A
+  row that does not land gives the window back (`releaseEmit`). Every other
+  trace writes exactly as before.
 - **In production a MISSING Inngest credential is a fault, not a config
   state.** `integration-health.ts`'s "never report unconfigured" is right for
   an optional Bridge reader and wrong for Inngest, on which round analysis,

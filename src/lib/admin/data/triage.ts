@@ -13,7 +13,6 @@ import {
   extractRoute,
   extractUserIdUnverified,
   extractRoundId,
-  extractErrorCode,
   extractErrorHint,
   extractRequestId,
   extractHelmTraceId,
@@ -23,6 +22,7 @@ import {
 import { classifyIncident, type IncidentClass } from '@/lib/admin/incident-classification';
 import { resolveFeatureId } from '@/lib/reliability/normalize';
 import { isQaFixtureRoundId } from '@/lib/admin/qa-fixture-rounds';
+import { extractEventErrorCode } from '@/lib/admin/data/event-error-code';
 
 export type TriageSeverity = 'critical' | 'error' | 'warning' | 'info';
 
@@ -453,8 +453,10 @@ export function mergeTriage(input: {
     const stackTrace = mostRecentFirst.map((r) => r.stack_trace).find((s) => !!s) ?? null;
     const collapsedCount = bucket.rows.reduce((sum, r) => sum + extractCollapsedCount(r.metadata), 0);
 
+    // extractEventErrorCode, not extractErrorCode: it also reads the code a
+    // caller passed via `extra` (metadata.extra.errorCode). See its doc.
     const errorCode =
-      mostRecentFirst.map((r) => extractErrorCode(r.metadata)).find((c) => c !== null) ?? null;
+      mostRecentFirst.map((r) => extractEventErrorCode(r.metadata)).find((c) => c !== null) ?? null;
 
     // Identity fields the fingerprint page has always passed and this call
     // site never did (see fetchFingerprintDetail -> buildFingerprintIncidentReport).

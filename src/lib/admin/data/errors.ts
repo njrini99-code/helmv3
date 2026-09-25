@@ -32,7 +32,6 @@ import {
   extractCollapsedCount,
   extractRoute,
   extractUserIdUnverified,
-  extractErrorCode,
   extractErrorHint,
   extractRequestId,
   extractHelmTraceId,
@@ -44,6 +43,7 @@ import {
   type IncidentReportDeploy,
 } from '@/lib/admin/incident-report';
 import { rcaAnalysisSchema, type RcaAnalysis } from '@/lib/admin/rca';
+import { extractEventErrorCode } from '@/lib/admin/data/event-error-code';
 
 export interface ErrorsTabFilters {
   sport?: 'golf' | 'baseball' | 'shared';
@@ -571,7 +571,9 @@ export async function fetchFingerprintDetail(rawFingerprint: string) {
       'info',
     );
     const actionName = events.map((e) => extractActionName(e.metadata)).find((a) => a !== null) ?? null;
-    const errorCode = events.map((e) => extractErrorCode(e.metadata)).find((c) => c !== null) ?? null;
+    // Same reader as the triage list (data/triage.ts), so the detail page and
+    // the list agree on a code passed via `extra`.
+    const errorCode = events.map((e) => extractEventErrorCode(e.metadata)).find((c) => c !== null) ?? null;
     forensics = {
       severity: worst,
       classification: classifyIncident({

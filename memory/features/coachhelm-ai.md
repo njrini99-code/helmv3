@@ -204,6 +204,23 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
   failures retry one tick apart up to `RETRY_MAX_ATTEMPTS` and then stay
   failed as `:exhausted`. A failed wake-decision read is logged and leaves
   the round parked.
+- **Database fan-out is bounded (#2061, 2026-09-24 pool exhaustion).**
+  `analyzePlayer` runs its ~21 Tier-1 generators through
+  `runTier1Generators` (`src/lib/coachhelm/v2/tier1-runner.ts`): at most
+  `TIER1_GENERATOR_CONCURRENCY` (4) in flight, not all at once, and each
+  generator retried ONCE after a short backoff (250–500ms) when it fails on
+  a transient database fault — a v2 rejection or a v3 `{ status: 'failed' }`
+  receipt whose error is a statement timeout (57014), pool timeout
+  (PGRST003), unreachable schema cache (PGRST002), deadlock or connection
+  fault. Never a second retry, never a retry of a non-transient failure.
+  The settled array keeps input order, so the caller's summary is unchanged.
+  `generateAlerts` (`src/app/golf/actions/alerts.ts`) analyzes at most 4
+  players at once instead of the whole roster. The transient definition
+  lives in one place, `isTransientDbError`
+  (`src/lib/supabase/bounded-query.ts`), which
+  `classifyDashboardFailure` now uses too — so a PGRST003/PGRST002 on the
+  player dashboard takes the page's one server-side retry and soft state
+  instead of the hard error.
 
 ## UI Contract
 

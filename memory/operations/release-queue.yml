@@ -123,9 +123,30 @@ items:
     incident_id: memory/incidents/player_coachhelm_development/INC-2026-09-24-page-read-ran-insight-generators.md
     status: verified
     risk: R1
+    sha: dd9d417e9
+    pr: 2068
+    regression_tests:
+      - src/app/golf/actions/__tests__/player-coachhelm-dashboard-readonly.test.ts
+    queued_for_release: false
+    first_seen: '2026-09-24T00:50:00Z'
+  - id: coachhelm-bounded-fanout-and-saturation-throttle-2026-09-25
+    feature_id: player_coachhelm_development
+    root_cause: >-
+      Defence in depth for the 2026-09-24 brownout: analyzePlayer started all
+      ~21 Tier-1 generators at once and generateAlerts analyzed the whole
+      roster in one Promise.all, with no retry on transient pool faults; every
+      failing read also wrote error_logs and admin_events rows into the
+      saturated database, and PGRST002/57014 rows showed on the Bridge as
+      "signature unavailable".
+    incident_id: memory/incidents/player_coachhelm_development/INC-2026-09-24-page-read-ran-insight-generators.md
+    status: verified
+    risk: R1
     sha: null
     pr: null
     regression_tests:
-      - src/app/golf/actions/__tests__/player-coachhelm-dashboard-readonly.test.ts
+      - src/lib/supabase/__tests__/bounded-query.test.ts
+      - src/lib/coachhelm/v2/__tests__/tier1-runner.test.ts
+      - src/lib/__tests__/server-error-logger-bridge.test.ts
+      - src/lib/admin/incidents/__tests__/present.test.ts
     queued_for_release: false
     first_seen: '2026-09-24T00:50:00Z'
