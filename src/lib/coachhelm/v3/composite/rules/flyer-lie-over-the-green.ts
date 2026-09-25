@@ -69,14 +69,24 @@ const rule: CompositeRule = {
     const attempts = Number(match.signals.attempts ?? 0);
     const avgProximity = Number(match.signals.avg_proximity_ft ?? 0);
     const avgDistance = Number(match.signals.avg_distance_yd ?? 0);
+    const title = 'Flyer lies are jumping past the green';
+    const reading =
+      `${attempts} approaches averaging ` +
+      `${avgDistance.toFixed(0)} yd in — and ended up ${avgProximity.toFixed(0)} ft ` +
+      `from the hole on average. The flyer effect is real: grass between ` +
+      `face and ball reduces spin, and the ball releases hot.`;
     return {
-      title: 'Flyer lies are jumping past the green',
+      title,
       content:
-        `From light rough you've hit ${attempts} approaches averaging ` +
-        `${avgDistance.toFixed(0)} yd in — and ended up ${avgProximity.toFixed(0)} ft ` +
-        `from the hole on average. The flyer effect is real: grass between ` +
-        `face and ball reduces spin, and the ball releases hot. Plan one ` +
+        `From light rough you've hit ${reading} Plan one ` +
         `less club from light rough when the lie sits up.`,
+      // Coach voice: the same read in neutral third person (evidence.coach_copy).
+      coach: {
+        title,
+        content:
+          `From light rough the player has hit ${reading} Have them plan one ` +
+          `less club from light rough when the lie sits up.`,
+      },
       signature: 'flyer_lie_over_the_green',
       evidence: {
         metric: 'flyer_lie_proximity',

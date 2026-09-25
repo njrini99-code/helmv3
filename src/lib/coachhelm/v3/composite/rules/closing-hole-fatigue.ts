@@ -70,16 +70,27 @@ const rule: CompositeRule = {
     const earlyAvg = Number(match.signals.early_avg ?? 0);
     const lateAvg = Number(match.signals.late_avg ?? 0);
 
+    const title = 'Closing 6 holes are leaking strokes';
+    const stretch =
+      `${rounds} rounds, holes 1-12 average ${earlyAvg.toFixed(2)} ` +
+      `to par while holes 13-18 average ${lateAvg.toFixed(2)} to par — ` +
+      `that's +${delta.toFixed(2)} strokes/hole on the closing stretch. ` +
+      `This is a pattern worth watching, not a diagnosis — late-round drop-off ` +
+      `can come from energy, focus, or just where the harder holes fall on`;
     return {
-      title: 'Closing 6 holes are leaking strokes',
+      title,
       content:
-        `Across your last ${rounds} rounds, holes 1-12 average ${earlyAvg.toFixed(2)} ` +
-        `to par while holes 13-18 average ${lateAvg.toFixed(2)} to par — ` +
-        `that's +${delta.toFixed(2)} strokes/hole on the closing stretch. ` +
-        `This is a pattern worth watching, not a diagnosis — late-round drop-off ` +
-        `can come from energy, focus, or just where the harder holes fall on your ` +
+        `Across your last ${stretch} your ` +
         `course. Try a routine reset before hole 13 — hydrate, recommit to your ` +
         `pre-shot — and see if the gap holds over more rounds.`,
+      // Coach voice: the same read in neutral third person (evidence.coach_copy).
+      coach: {
+        title,
+        content:
+          `Across the player's last ${stretch} their ` +
+          `course. Try a routine reset before hole 13 — hydrate, recommit to their ` +
+          `pre-shot — and see if the gap holds over more rounds.`,
+      },
       signature: 'closing_hole_fatigue',
       evidence: {
         metric: 'closing_hole_delta',

@@ -69,6 +69,12 @@ export interface CompositeMatch {
 export interface CompositeContent {
   title: string;
   content: string;
+  /**
+   * The same title/content for a coach, in neutral third person ("the
+   * player", "they"). The runner stores it as `evidence.coach_copy`; coach
+   * readers show it instead of the second-person copy.
+   */
+  coach?: { title: string; content: string };
   /** Generator-specific signature stable part. Runner prefixes "v3:composite:<rule_id>:" */
   signature: string;
   evidence: InsightEvidence;

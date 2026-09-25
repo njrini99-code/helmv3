@@ -86,15 +86,19 @@ const rule: CompositeRule = {
       Math.max(0, (avgProximity - TOUR_LEAVE_FT) / FT_PER_STROKE),
       1.5,
     );
+    const title = 'Rough and sand recoveries are leaving long putts';
+    const rest =
+      `${attempts} short-game shots from rough or bunker (${dominant}); ` +
+      `the average leave was ${avgProximity.toFixed(0)} ft — outside make-able range. ` +
+      `Whether these were short-sided misses is not recorded: check pin position and ` +
+      `miss side on the next few rounds before treating this as a short-side pattern. ` +
+      `Recommended: recovery reps from rough and sand to a 10-ft circle — the ` +
+      `measurable target is leave distance.`;
     return {
-      title: 'Rough and sand recoveries are leaving long putts',
-      content:
-        `You attempted ${attempts} short-game shots from rough or bunker (${dominant}); ` +
-        `the average leave was ${avgProximity.toFixed(0)} ft — outside make-able range. ` +
-        `Whether these were short-sided misses is not recorded: check pin position and ` +
-        `miss side on the next few rounds before treating this as a short-side pattern. ` +
-        `Recommended: recovery reps from rough and sand to a 10-ft circle — the ` +
-        `measurable target is leave distance.`,
+      title,
+      content: `You attempted ${rest}`,
+      // Coach voice: the same read in neutral third person (evidence.coach_copy).
+      coach: { title, content: `The player attempted ${rest}` },
       signature: 'short_side_scrambling_chain',
       evidence: {
         metric: 'recovery_proximity_rough_sand',

@@ -75,17 +75,25 @@ const rule: CompositeRule = {
   compose(match: CompositeMatch): CompositeContent {
     const proximity = Math.round(Number(match.signals.approach_proximity_ft ?? 0));
     const scramble = Math.round(Number(match.signals.scramble_pct ?? 0));
+    const title = 'Short approaches + scrambling are stacking up';
+    const lead =
+      `From 50-125 yd, the approaches that hit the green are finishing ` +
+      `${proximity} ft from the hole on average (on-green only; dial-in ` +
+      `target ~${DIAL_IN_TARGET_FT} ft, estimated) —`;
+    const rest =
+      `The two stack: a long first ` +
+      `putt and a weak recovery both feed bogey. Check whether the long leaves ` +
+      `share a club or a yardage (full swing vs partial wedge) before naming ` +
+      `the cause. Recommended: wedge distance-control reps to a 20-ft circle ` +
+      `first, then re-check the scrambling rate.`;
     return {
-      title: 'Short approaches + scrambling are stacking up',
-      content:
-        `From 50-125 yd, the approaches that hit the green are finishing ` +
-        `${proximity} ft from the hole on average (on-green only; dial-in ` +
-        `target ~${DIAL_IN_TARGET_FT} ft, estimated) — and you are saving par ` +
-        `${scramble}% of the time when you miss. The two stack: a long first ` +
-        `putt and a weak recovery both feed bogey. Check whether the long leaves ` +
-        `share a club or a yardage (full swing vs partial wedge) before naming ` +
-        `the cause. Recommended: wedge distance-control reps to a 20-ft circle ` +
-        `first, then re-check the scrambling rate.`,
+      title,
+      content: `${lead} and you are saving par ${scramble}% of the time when you miss. ${rest}`,
+      // Coach voice: the same read in neutral third person (evidence.coach_copy).
+      coach: {
+        title,
+        content: `${lead} and the player is saving par ${scramble}% of the time when they miss. ${rest}`,
+      },
       signature: 'short_approach_proximity_gap',
       evidence: {
         metric: 'approach_proximity_50_125ft',
