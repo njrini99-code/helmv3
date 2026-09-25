@@ -332,7 +332,8 @@ export const METRIC_SOURCE_ALIASES: Record<string, MetricSourceDef> = {
   // `v3/generators/insight-angles/`). `three_putt_chain` above now has a
   // producer (ThreePuttChainGenerator); its classification is unchanged — the
   // per-round cache still has no first-putt-length sequencing.
-  //  - approach_rough_lie_penalty / tee_miss_next_shot_cost: per-shot SG and
+  //  - approach_rough_lie_penalty / tee_miss_next_shot_cost /
+  //    approach_miss_recovery_cost: per-shot SG and
   //    tee-outcome costs exist only at shot level (same gap as
   //    approach_proximity_*).
   //  - round_bad_day_floor: a between-round percentile gap (P80 − median),
@@ -341,6 +342,7 @@ export const METRIC_SOURCE_ALIASES: Record<string, MetricSourceDef> = {
   //    that per-round ratio source verbatim (same population, same numbers).
   approach_rough_lie_penalty: { kind: 'intentional-null', reason: 'needs-shot-level-join' },
   tee_miss_next_shot_cost: { kind: 'intentional-null', reason: 'needs-shot-level-join' },
+  approach_miss_recovery_cost: { kind: 'intentional-null', reason: 'needs-shot-level-join' },
   round_bad_day_floor: { kind: 'intentional-null', reason: 'between-round-dispersion-not-per-round' },
   tee_fairway_rough_exposure: {
     kind: 'round_stats_cache_ratio',

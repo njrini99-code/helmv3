@@ -170,3 +170,20 @@ describe('composeTeeMiss', () => {
     expect(toTeeMissAggregate(computeTeeMiss(build({ pattern: PATTERN, toPar: { fairway: 0, left: 1, right: 1 } })), 74)).toBeNull();
   });
 });
+
+describe('observed sequence claim', () => {
+  it('claims observed_sequence only when the next shot is recorded in order', () => {
+    const withNext = computeTeeMiss(build({ pattern: PATTERN, toPar: { fairway: 0, left: 1.5, right: 0.5 }, withApproach: true }))!;
+    expect(withNext.sequence).toMatchObject({ side: 'left', lie: 'rough' });
+    const c = composeTeeMiss(toTeeMissAggregate(withNext, 74)!);
+    const d = c.evidence.diagnosis!;
+    expect(d.causality_level).toBe('observed_sequence');
+    expect(d.basis?.sequence?.pattern).toBe('left miss off the tee → next shot from the rough → bogey or worse');
+    expect(d.basis?.sequence?.examples?.[0]).toHaveProperty('round_id');
+
+    // No next-shot rows: no sequence, the row stays a hypothesis.
+    const noNext = computeTeeMiss(build({ pattern: PATTERN, toPar: { fairway: 0, left: 1.5, right: 0.5 } }))!;
+    expect(noNext.sequence).toBeNull();
+    expect(composeTeeMiss(toTeeMissAggregate(noNext, 74)!).evidence.diagnosis!.causality_level).toBe('inferred_hypothesis');
+  });
+});

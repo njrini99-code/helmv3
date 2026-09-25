@@ -1340,9 +1340,10 @@ Owner decisions 2026-09-25: `course_management` insights and `tee_strategy` insi
 
 ## Insight angles v1 (2026-09-25, flag `coachhelm_insight_angles_v1`, default off)
 
-Four golf-only generators in `src/lib/coachhelm/v3/generators/insight-angles/`,
+Five golf-only generators in `src/lib/coachhelm/v3/generators/insight-angles/`,
 run as tier-1 entries in `src/lib/coachhelm/v2/orchestrator.ts` (`v3.lieApproach`,
-`v3.badDayFloor`, `v3.threePuttChain`, `v3.teeMissCost`). Flag off:
+`v3.badDayFloor`, `v3.threePuttChain`, `v3.teeMissCost`,
+`v3.approachMissCompass`). Flag off:
 `isEnabled()` is false, nothing is written, and the base's stale-scope sweep
 archives any row a scope wrote while on. Preview read-only with
 `scripts/coachhelm/insight-angles-dry-run.ts [--calibrate]` (never calls
@@ -1380,17 +1381,32 @@ archives any row a scope wrote while on. Preview read-only with
   driver/non-driver stratum; next-shot SG per side (missing counted, not
   zeroed); driver vs non-driver chain per par in `detail.club_chain` with a
   selection-bias note (never sized). Metric `tee_miss_next_shot_cost`.
-  Approach-miss compass NOT built (approach `miss_direction` is 8-way,
-  ~99% filled; needs its own row and gates).
+- **Approach-miss compass** (`approach-miss-compass.ts`): the 8 recorded
+  miss directions collapse onto short/long and left/right (a diagonal
+  counts on both axes; one axis is sized per row). Recovery cost = −Σ
+  per-shot SG after the LAST approach on the hole (strokes to hole out vs
+  the canonical expected strokes from where the ball finished); used only
+  when the rows after it are contiguous and hole out. Par-3 tee shots
+  included; 175+ yd par-5 approaches excluded. Gate ≥ 5 rounds, coverage ≥
+  80%, ≥ 12 costed per side, gap ≥ 0.2, z ≥ 1.645, ≥ 0.3/round. Category
+  `short_game`, metric `approach_miss_recovery_cost`, signature
+  `approach_miss_compass:<axis>:<side>`.
 - **Contract**: every row carries `detail.receipts` (window, definition,
   samples, exclusions, ≤ 5 example `round_id`/`hole_number`), a
-  counterfactual sized on the player's own attempts, and
-  `causality_level: 'inferred_hypothesis'` — `mergeDiagnosis` in
-  `src/lib/coachhelm/v3/engine/generator-base.ts` pins composed diagnoses to that level, and only
-  the root-cause step can emit `observed_sequence`.
+  counterfactual sized on the player's own attempts. Causality: three-putt
+  and tee rows claim `observed_sequence` with a `shot_sequence` basis (the
+  dominant pathway / the costlier side's recorded path, counts over a named
+  population, distinct rounds, 1–5 example holes in shot order).
+  `mergeDiagnosis` in `src/lib/coachhelm/v3/engine/generator-base.ts` keeps
+  it only when `hasGeneratorSequenceEvidence` passes (root-cause's own
+  floors: population ≥ 10 over ≥ 3 rounds, path ≥ 3 times and ≥ 25%) and the
+  `coachhelm_root_cause_diagnosis` capability flag is on; any other
+  generator claim is pinned to `inferred_hypothesis`. Lie, floor and compass
+  rows stay `inferred_hypothesis` (aggregates, not a repeated path).
 - **Why visuals (for the UI pass)**: lie — per-band fairway vs rough GIR /
   proximity / SG bars plus the tee → approach link; floor — median vs P80
   markers with the three-part split bar; 3-putt — pathway bars and a
   second-putt bucket histogram per first-putt band; tee — a three-spoke
   compass (left / fairway / right) with cost and next-shot SG, and the
-  driver / non-driver chain table.
+  driver / non-driver chain table; compass — a short/long × left/right
+  cross with recovery cost and got-down-in-2 % per side, counts on each arm.

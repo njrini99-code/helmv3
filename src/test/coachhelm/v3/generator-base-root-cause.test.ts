@@ -26,7 +26,7 @@ vi.mock('@/lib/coachhelm/v3/engine/root-cause-context', () => ({
   loadRootCauseContext: (...a: unknown[]) => loadRootCauseContextMock(...a),
 }));
 
-import { BaseGenerator, mergeDiagnosis, buildDiagnosis, ROOT_CAUSE_DIAGNOSIS_FLAG } from '@/lib/coachhelm/v3/engine/generator-base';
+import { BaseGenerator, mergeDiagnosis, buildDiagnosis, hasGeneratorSequenceEvidence, ROOT_CAUSE_DIAGNOSIS_FLAG } from '@/lib/coachhelm/v3/engine/generator-base';
 import type { ComposedContent, GeneratorAggregate, InsightCategory, MetricId } from '@/lib/coachhelm/v3/engine/types';
 import type { Diagnosis, InsightInput } from '@/lib/coachhelm/v2/insights/types';
 import { establishedRosterComplete } from './fixtures/shadow-eval-snapshots';
@@ -212,5 +212,89 @@ describe('mergeDiagnosis (pure)', () => {
     expect(merged.causality_level).toBe('observed_sequence');
     expect(merged.drivers.map((d) => d.metric)).toEqual(['sequence_pattern_share', 'approach_miss_short_share']);
     expect(merged.confidence_reason).toBe(base.confidence_reason);
+  });
+});
+
+describe('mergeDiagnosis — generator-supplied sequence evidence', () => {
+  const base = buildDiagnosis('x', {
+    metric: 'x',
+    metric_label: 'X',
+    unit: 'count',
+    your_value: 1,
+    your_value_display: '1',
+    comparison_value: 2,
+    comparison_label: 'peers',
+    sample_n: 50,
+    confidence_factors: { sample_adequacy: 1, recency: 1, variance: 1 },
+  });
+  const hypothesis = {
+    symptom: 's',
+    root_cause: 'not traced',
+    causality_level: 'inferred_hypothesis' as const,
+    drivers: [{ metric: 'root_cause_driver', value: 1, unit: 'count' as const, sample_n: 1, source: 's' }],
+    recommended_action: 'a',
+  };
+  const examples = [
+    { round_id: 'r1', hole_number: 3 },
+    { round_id: 'r2', hole_number: 7, hole_id: 'h-2-7' },
+  ];
+  const claim = (over: Partial<NonNullable<Diagnosis['basis']>['sequence']> = {}, level: Diagnosis['causality_level'] = 'observed_sequence'): Diagnosis => ({
+    symptom: '3-putts above peers',
+    root_cause: '14 of 25 classified 3-putts start from 35+ ft',
+    causality_level: level,
+    drivers: [{ metric: 'three_putt_chain', value: 3, unit: 'count', sample_n: 141, source: 'golf_shots' }],
+    recommended_action: 'a',
+    confidence_reason: '',
+    basis: {
+      kind: 'shot_sequence',
+      checked: ['25 classified'],
+      sequence: {
+        pattern: 'first putt from 35+ ft → 2 more putts',
+        occurrences: 14,
+        of: 25,
+        population: 'classified 3-putts',
+        distinct_rounds: 6,
+        window: '2026-01-01 – 2026-03-01',
+        examples,
+        ...over,
+      },
+    },
+  });
+
+  it('upgrades to observed_sequence when the generator supplies sequence evidence and the capability flag is on', () => {
+    const merged = mergeDiagnosis(base, claim(), hypothesis, { generatorObservedEnabled: true })!;
+    expect(merged.causality_level).toBe('observed_sequence');
+    expect(merged.basis?.sequence?.examples).toEqual(examples);
+    expect(merged.drivers.map((d) => d.metric)).toEqual(['three_putt_chain', 'root_cause_driver']);
+    expect(merged.confidence_reason).toBe(base.confidence_reason);
+  });
+
+  it('without sequence evidence a generator claim is still forced to inferred_hypothesis', () => {
+    const noBasis: Diagnosis = { ...claim(), basis: undefined };
+    expect(mergeDiagnosis(base, noBasis, hypothesis, { generatorObservedEnabled: true })!.causality_level).toBe('inferred_hypothesis');
+    const noExamples = claim({ examples: [] });
+    expect(mergeDiagnosis(base, noExamples, hypothesis, { generatorObservedEnabled: true })!.causality_level).toBe('inferred_hypothesis');
+    const aggregateBasis: Diagnosis = { ...claim(), basis: { kind: 'aggregate_only', checked: ['x'] } };
+    expect(mergeDiagnosis(base, aggregateBasis, hypothesis, { generatorObservedEnabled: true })!.causality_level).toBe('inferred_hypothesis');
+  });
+
+  it('evidence below the shared floors does not upgrade (population, rounds, share, example cap)', () => {
+    for (const over of [{ of: 9, occurrences: 5 }, { distinct_rounds: 2 }, { occurrences: 2 }, { occurrences: 5, of: 25 }, { examples: Array.from({ length: 6 }, (_, i) => ({ round_id: `r${i}`, hole_number: 1 })) }]) {
+      expect(hasGeneratorSequenceEvidence(claim(over))).toBe(false);
+      expect(mergeDiagnosis(base, claim(over), hypothesis, { generatorObservedEnabled: true })!.causality_level).toBe('inferred_hypothesis');
+    }
+  });
+
+  it('stays inferred when the observed-sequence capability flag is off (the default)', () => {
+    expect(mergeDiagnosis(base, claim(), hypothesis)!.causality_level).toBe('inferred_hypothesis');
+    expect(mergeDiagnosis(base, claim(), hypothesis, { generatorObservedEnabled: false })!.causality_level).toBe('inferred_hypothesis');
+  });
+
+  it('a generator that asks for inferred_hypothesis is never upgraded', () => {
+    expect(mergeDiagnosis(base, claim({}, 'inferred_hypothesis'), hypothesis, { generatorObservedEnabled: true })!.causality_level).toBe('inferred_hypothesis');
+  });
+
+  it('a strength row (no root cause) still gets no diagnosis', () => {
+    expect(mergeDiagnosis(base, claim(), null, { generatorObservedEnabled: true })).toBeUndefined();
   });
 });

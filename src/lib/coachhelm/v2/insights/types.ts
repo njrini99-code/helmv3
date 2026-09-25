@@ -332,6 +332,13 @@ export interface DiagnosisBasis {
     population: string;
     distinct_rounds: number;
     window: string;
+    /**
+     * Example holes where the path was recorded, in shot order (2026-09-25).
+     * Required when a GENERATOR (not `root-cause.ts`) claims the sequence —
+     * `mergeDiagnosis` only accepts a generator's `observed_sequence` with
+     * 1–5 of these. Optional + additive otherwise.
+     */
+    examples?: Array<{ round_id: string; hole_number: number; hole_id?: string | null }>;
   };
   /**
    * Context narrowing (2026-09-25, `v3/engine/context-narrowing.ts`): the

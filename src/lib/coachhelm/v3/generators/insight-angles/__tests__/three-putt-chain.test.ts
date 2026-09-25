@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 vi.mock('@/lib/flags/is-enabled', () => ({ isFlagEnabled: vi.fn(() => false) }));
 
+import { hasGeneratorSequenceEvidence } from '@/lib/coachhelm/v3/engine/generator-base';
 import {
   PEER_THREE_PUTT,
   PUTT_BANDS,
@@ -159,7 +160,8 @@ describe('composeThreePuttChain', () => {
     expect(c.category).toBe('putting');
     expect(ev.counterfactual.attempts_used).toBe(18);
     expect(ev.counterfactual.strokes_saved_per_round).toBeCloseTo((18 / 108 - peerRate) * 18, 1);
-    expect(ev.diagnosis?.causality_level).toBe('inferred_hypothesis');
+    // 18 poor-leave 3-putts over 6 rounds clear the shared floors: observed, with its sequence basis.
+    expect(ev.diagnosis?.causality_level).toBe('observed_sequence');
     expect((ev.detail as { chain: string[] }).chain).toEqual(['approach', 'putting']);
     const receipts = (ev.detail as { receipts: { examples: unknown[]; samples: Record<string, number>; definition: string } }).receipts;
     expect(receipts.examples.length).toBeLessThanOrEqual(5);
@@ -173,5 +175,27 @@ describe('composeThreePuttChain', () => {
     const r = computeThreePuttChain(build({ rounds: 8, firstFt: () => 40, threePutt: (i, h) => (i * 18 + h) % 13 < 4 }))!;
     gen.composeContent(toThreePuttAggregate(r, 74)!);
     expect(gen.category).toBe('approach');
+  });
+});
+
+describe('observed sequence claim', () => {
+  it('claims observed_sequence with the dominant pathway, counts and example holes in putt order', () => {
+    const r = computeThreePuttChain(build({ firstFt: (h) => 12 + (h % 6), threePutt: (_i, h) => h % 5 === 0 }))!;
+    expect(r.sequence).toMatchObject({ pathway: 'poor_first_putt_leave', occurrences: 18, of: 18, distinct_rounds: 6 });
+    const c = composeThreePuttChain(toThreePuttAggregate(r, 74)!);
+    const d = c.evidence.diagnosis!;
+    expect(d.causality_level).toBe('observed_sequence');
+    expect(d.basis?.kind).toBe('shot_sequence');
+    expect(d.basis?.sequence?.examples?.length).toBeGreaterThan(0);
+    expect(d.basis?.sequence?.examples?.length).toBeLessThanOrEqual(5);
+    expect(hasGeneratorSequenceEvidence(d)).toBe(true);
+  });
+
+  it('stays inferred when the pathway is below the shared floors (too few rounds)', () => {
+    // 2 rounds of 3-putts only: 18 holes a round → pathway over < 3 rounds.
+    const r = computeThreePuttChain(build({ firstFt: () => 15, threePutt: (i, h) => i < 2 && h % 2 === 0 }))!;
+    expect(r.sequence!.distinct_rounds).toBe(2);
+    const c = composeThreePuttChain({ result: { ...r, qualifies: true }, baseline: 74, sampleN: r.holes_putted, playerValue: r.three_putts_per_18 });
+    expect(c.evidence.diagnosis!.causality_level).toBe('inferred_hypothesis');
   });
 });

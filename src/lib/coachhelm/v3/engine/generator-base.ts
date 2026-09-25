@@ -38,6 +38,8 @@ import { calcConfidence, type InsightConfidenceFactors } from '@/lib/coachhelm/v
 import { logServerError } from '@/lib/server-error-logger';
 import { isFlagEnabled } from '@/lib/flags/is-enabled';
 import {
+  MIN_PATTERN_OCCURRENCES,
+  MIN_PATTERN_SHARE,
   diagnoseRootCause,
   narrowingSpeaks,
   resolveInsightFraming,
@@ -45,6 +47,7 @@ import {
   type RootCauseContext,
 } from './root-cause';
 import { loadRootCauseContext } from './root-cause-context';
+import { SEQUENCE_MIN_EVENTS, SEQUENCE_MIN_ROUNDS } from '@/lib/coachhelm/v3/metrics/sequence-attribution';
 import {
   decideRecheckTransition,
   RECHECK_RESOLVED_BY,
@@ -349,17 +352,40 @@ export function buildDiagnosis(
  *    `basis` (what was checked) and drivers attached; without one, the
  *    root-cause hypothesis ships as-is.
  *
- * Only this function may produce `observed_sequence`, and only from a
- * root-cause outcome that cleared `root-cause.ts`'s floors — a generator can
- * never claim it. The confidence reason always reflects the row's FINAL
- * confidence factors.
+ * Only this function may produce `observed_sequence`: from a root-cause
+ * outcome that cleared `root-cause.ts`'s floors, or (2026-09-25) from a
+ * generator-composed diagnosis that carries its own sequence evidence —
+ * see {@link hasGeneratorSequenceEvidence}, which holds it to the same
+ * floors — and only when `opts.generatorObservedEnabled` (the A10
+ * observed-sequence capability flag) is on. A generator claim without that
+ * evidence is still pinned to `inferred_hypothesis`. The confidence reason
+ * always reflects the row's FINAL confidence factors.
  */
 export function mergeDiagnosis(
   base: Diagnosis,
   composed: Diagnosis | undefined,
   rootCause: Omit<Diagnosis, 'confidence_reason'> | null,
+  opts: { generatorObservedEnabled?: boolean } = {},
 ): Diagnosis | undefined {
   if (!rootCause) return undefined;
+  if (
+    rootCause.causality_level !== 'observed_sequence' &&
+    composed &&
+    opts.generatorObservedEnabled === true &&
+    hasGeneratorSequenceEvidence(composed)
+  ) {
+    const drivers = [...composed.drivers];
+    for (const d of rootCause.drivers) {
+      if (!drivers.some((x) => x.metric === d.metric)) drivers.push(d);
+    }
+    return {
+      ...base,
+      ...composed,
+      drivers,
+      causality_level: 'observed_sequence',
+      confidence_reason: base.confidence_reason,
+    };
+  }
   if (rootCause.causality_level === 'observed_sequence') {
     const drivers = [...rootCause.drivers];
     for (const d of composed?.drivers ?? []) {
@@ -391,6 +417,29 @@ export function mergeDiagnosis(
     };
   }
   return { ...rootCause, causality_level: 'inferred_hypothesis', confidence_reason: base.confidence_reason };
+}
+
+/**
+ * Does a generator-composed diagnosis carry the sequence evidence an
+ * `observed_sequence` claim needs? It must say `observed_sequence`, rest on a
+ * `shot_sequence` basis, and quote a recorded path that clears the same
+ * floors `root-cause.ts` applies: a population of at least
+ * SEQUENCE_MIN_EVENTS over SEQUENCE_MIN_ROUNDS rounds, the path seen at least
+ * MIN_PATTERN_OCCURRENCES times and on at least MIN_PATTERN_SHARE of the
+ * population, with 1–5 example holes (round id + hole number) from the
+ * recorded shot order. Pure + exported for tests.
+ */
+export function hasGeneratorSequenceEvidence(d: Diagnosis): boolean {
+  if (d.causality_level !== 'observed_sequence') return false;
+  const b = d.basis;
+  const seq = b?.kind === 'shot_sequence' ? b.sequence : undefined;
+  if (!seq || !seq.pattern.trim()) return false;
+  const { occurrences, of, distinct_rounds: rounds, examples } = seq;
+  if (![occurrences, of, rounds].every((n) => Number.isInteger(n) && n > 0)) return false;
+  if (occurrences > of || of < SEQUENCE_MIN_EVENTS || rounds < SEQUENCE_MIN_ROUNDS) return false;
+  if (occurrences < MIN_PATTERN_OCCURRENCES || occurrences / of < MIN_PATTERN_SHARE) return false;
+  if (!examples || examples.length === 0 || examples.length > 5) return false;
+  return examples.every((e) => typeof e.round_id === 'string' && e.round_id !== '' && Number.isInteger(e.hole_number) && e.hole_number > 0);
 }
 
 /**
@@ -787,6 +836,7 @@ export abstract class BaseGenerator<A extends GeneratorAggregate = GeneratorAggr
       base,
       evidence.diagnosis,
       outcome.kind === 'diagnosis' ? outcome.diagnosis : null,
+      { generatorObservedEnabled: isFlagEnabled(ROOT_CAUSE_DIAGNOSIS_FLAG) },
     );
   }
 

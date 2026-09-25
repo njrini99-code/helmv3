@@ -42,11 +42,11 @@
  * the column and may be a default.
  */
 
-import { BaseGenerator } from '@/lib/coachhelm/v3/engine/generator-base';
+import { BaseGenerator, hasGeneratorSequenceEvidence } from '@/lib/coachhelm/v3/engine/generator-base';
 import { isFlagEnabled } from '@/lib/flags/is-enabled';
 import type { CounterfactualProjection } from '@/lib/coachhelm/v3/counterfactual/types';
 import type { ComposedContent, GeneratorAggregate, InsightCategory, MetricId } from '@/lib/coachhelm/v3/engine/types';
-import type { InsightEvidence } from '@/lib/coachhelm/v2/insights/types';
+import type { Diagnosis, DiagnosisBasis, InsightEvidence } from '@/lib/coachhelm/v2/insights/types';
 import {
   ANGLE_MIN_Z,
   INSIGHT_ANGLES_FLAG,
@@ -196,6 +196,14 @@ export interface ThreePuttResult {
   classified: number;
   /** Dominant pathway; null when fewer than {@link CHAIN_MIN_THREE_PUTTS} are classified. */
   cause: ThreePuttPathway | null;
+  /** The dominant pathway as a recorded putt sequence (for an observed_sequence claim). */
+  sequence: {
+    pathway: ThreePuttPathway;
+    occurrences: number;
+    of: number;
+    distinct_rounds: number;
+    examples: ReceiptExample[];
+  } | null;
   /** Mean first-putt length (ft) on greens hit in regulation — the approach → putt link. */
   gir_first_putt_ft: number | null;
   gir_holes: number;
@@ -332,6 +340,24 @@ export function computeThreePuttChain(data: AngleData): ThreePuttResult | null {
   }));
   const dominant = [...pathways].sort((a, b) => b.three_putts - a.three_putts)[0]!;
   const cause = classified >= CHAIN_MIN_THREE_PUTTS ? dominant.pathway : null;
+  const causeHoles = cause ? threes.filter((o) => pathwayOf.get(o) === cause) : [];
+  const sequence = cause
+    ? {
+        pathway: cause,
+        occurrences: causeHoles.length,
+        of: classified,
+        distinct_rounds: new Set(causeHoles.map((o) => o.round_id)).size,
+        examples: pickExamples(
+          causeHoles.map((o) => ({
+            round_id: o.round_id,
+            hole_number: o.hole_number,
+            hole_id: o.hole_id,
+            date: o.date,
+            note: `${o.putts} putts; first putt ${round1(o.ft)} ft, second putt ${o.leave === null ? 'not recorded' : `${round1(o.leave)} ft`}`,
+          })),
+        ),
+      }
+    : null;
 
   const examples = pickExamples(
     threes.map((o) => ({
@@ -382,6 +408,7 @@ export function computeThreePuttChain(data: AngleData): ThreePuttResult | null {
     pathway_suppressed: suppressed,
     classified,
     cause,
+    sequence,
     gir_first_putt_ft: girObs.length ? round1(mean(girObs.map((o) => o.ft))!) : null,
     gir_holes: girObs.length,
     avg_first_putt_ft: round1(mean(obs.map((o) => o.ft))!),
@@ -412,8 +439,43 @@ export const THREE_PUTT_DEFINITION =
   `Pathways (one per 3-putt): first putt ${LONG_LEAVE_FT}+ ft; else second putt ${POOR_LEAVE_FT}+ ft; else second putt inside ${POOR_LEAVE_FT} ft. ` +
   'A 3-putt with no recorded second-putt distance is left out of the pathways and counted.';
 
+/** Shot-by-shot path of each pathway, in recorded putt order. */
+export const PATHWAY_PATTERN: Record<ThreePuttPathway, string> = {
+  long_approach_leave: `first putt from ${LONG_LEAVE_FT}+ ft → 2 more putts`,
+  poor_first_putt_leave: `first putt from inside ${LONG_LEAVE_FT} ft → second putt from ${POOR_LEAVE_FT}+ ft → 3 putts`,
+  short_followup_miss: `first putt from inside ${LONG_LEAVE_FT} ft → second putt from inside ${POOR_LEAVE_FT} ft missed → 3 putts`,
+};
+
+/**
+ * The sequence basis for the dominant pathway: counts over the classified
+ * 3-putts, distinct rounds and example holes in recorded putt order. The
+ * row claims `observed_sequence` only when this clears the shared floors
+ * (`hasGeneratorSequenceEvidence`); otherwise it stays a hypothesis.
+ */
+export function threePuttSequenceBasis(r: ThreePuttResult): DiagnosisBasis | null {
+  if (!r.sequence) return null;
+  const q = r.sequence;
+  return {
+    kind: 'shot_sequence',
+    checked: [
+      `${r.classified} of ${r.three_putts} 3-putts classified from contiguous putt records (${r.pathway_suppressed} without a second-putt distance left out)`,
+      `pathways: ${r.pathways.map((p) => `${p.pathway} ${p.three_putts}`).join(', ')}`,
+    ],
+    sequence: {
+      pattern: PATHWAY_PATTERN[q.pathway],
+      occurrences: q.occurrences,
+      of: q.of,
+      population: 'classified 3-putts',
+      distinct_rounds: q.distinct_rounds,
+      window: `${r.window.window_start} – ${r.window.window_end}`,
+      examples: q.examples.map((e) => ({ round_id: e.round_id, hole_number: e.hole_number, hole_id: e.hole_id })),
+    },
+  };
+}
+
 export function composeThreePuttChain(agg: ThreePuttAggregate): ComposedContent & { category: InsightCategory } {
   const r = agg.result;
+  const seqBasis = threePuttSequenceBasis(r);
   const peerRate = r.expected_peer_per_18 / (r.holes_per_18 || 1);
   const cf = attemptCounterfactual({
     strokesPerAttempt: r.rate_pct / 100 - peerRate,
@@ -511,6 +573,7 @@ export function composeThreePuttChain(agg: ThreePuttAggregate): ComposedContent 
         ? `Most classified 3-putts (${lead.three_putts} of ${r.classified}) follow one pattern: ${lead.label.toLowerCase()}.`
         : `Too few 3-putts could be classified (${r.classified}) to say which pattern leads.`,
       causality_level: 'inferred_hypothesis',
+      ...(seqBasis ? { basis: seqBasis } : {}),
       drivers: [
         { metric: 'three_putt_chain', label: '3-putts per 18', value: r.three_putts_per_18, unit: 'count', sample_n: r.holes_putted, source: 'golf_holes.putts / golf_shots (putting)' },
         ...(r.avg_first_putt_ft !== null
@@ -528,6 +591,12 @@ export function composeThreePuttChain(agg: ThreePuttAggregate): ComposedContent 
       confidence_reason: '',
     },
   };
+  // Claim the observed sequence only when the recorded pathway clears the
+  // shared floors; mergeDiagnosis re-checks it before shipping.
+  const diag = evidence.diagnosis as Diagnosis;
+  if (hasGeneratorSequenceEvidence({ ...diag, causality_level: 'observed_sequence' })) {
+    diag.causality_level = 'observed_sequence';
+  }
   return {
     category: lengthLed ? 'approach' : 'putting',
     title:

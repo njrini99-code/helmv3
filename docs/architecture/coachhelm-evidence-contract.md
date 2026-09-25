@@ -2157,7 +2157,7 @@ structured `ShadowEvalReport`.
 
 ## Insight angles v1 — receipts and metric aliases (2026-09-25)
 
-The four `src/lib/coachhelm/v3/generators/insight-angles/` generators (flag
+The five `src/lib/coachhelm/v3/generators/insight-angles/` generators (flag
 `coachhelm_insight_angles_v1`, default off) write evidence with alias metric
 ids registered in `src/lib/coachhelm/v3/causality/metric-sources.ts` and
 `src/lib/coachhelm/v3/metrics/registry.ts`:
@@ -2169,6 +2169,7 @@ ids registered in `src/lib/coachhelm/v3/causality/metric-sources.ts` and
 | `round_bad_day_floor` | intentional-null (between-round) | `team_avg` | SG area, else `scoring` |
 | `three_putt_chain` | intentional-null (unchanged) | `estimated_target` (measured peer rate) | `approach` / `putting` |
 | `tee_miss_next_shot_cost` | intentional-null (shot-level join) | `your_baseline` | `tee` |
+| `approach_miss_recovery_cost` | intentional-null (shot-level join) | `your_baseline` | `short_game` |
 
 Rules these rows follow on top of the base contract:
 
@@ -2180,11 +2181,19 @@ Rules these rows follow on top of the base contract:
 - Counterfactuals are sized on the player's own attempts per round
   (`attemptCounterfactual` in the angles' `angle-data.ts`), clamped at 2.5 and suppressed
   below 0.3, like `computeCounterfactual`.
-- `causality_level` is `inferred_hypothesis` on all four:
-  `mergeDiagnosis` pins composed diagnoses to it. Letting a generator emit
-  `observed_sequence` would need `mergeDiagnosis` to honor a
-  generator-supplied level when the generator attaches its own sequence
-  evidence (not done; `src/lib/coachhelm/v3/engine/generator-base.ts` is owned elsewhere).
+- `causality_level`: a generator may claim `observed_sequence` only with a
+  `basis.kind: 'shot_sequence'` whose `sequence` quotes the recorded path,
+  `occurrences` over `of` (a named population), `distinct_rounds`, and 1–5
+  `examples` (`round_id`, `hole_number`, optional `hole_id`) from the
+  recorded shot order. `mergeDiagnosis`
+  (`src/lib/coachhelm/v3/engine/generator-base.ts`) keeps the claim only
+  when `hasGeneratorSequenceEvidence` passes — the same floors
+  `root-cause.ts` uses (population ≥ 10 over ≥ 3 rounds, path ≥ 3 times and
+  ≥ 25% of the population) — and the `coachhelm_root_cause_diagnosis`
+  capability flag is on. Without that evidence the claim is pinned to
+  `inferred_hypothesis`, as before. Three-putt and tee rows claim it; lie,
+  floor and compass rows do not (their evidence is an aggregate, not a
+  repeated path).
 - Copy is descriptive: no club names (only driver / non-driver is
   recorded), no intent, nerves or mechanics. The driver vs non-driver chain
   carries a selection-bias note and is never sized.

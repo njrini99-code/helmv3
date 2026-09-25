@@ -53,11 +53,11 @@
  * number per tee shot, so nothing is summed across sequence events.
  */
 
-import { BaseGenerator } from '@/lib/coachhelm/v3/engine/generator-base';
+import { BaseGenerator, hasGeneratorSequenceEvidence } from '@/lib/coachhelm/v3/engine/generator-base';
 import { isFlagEnabled } from '@/lib/flags/is-enabled';
 import type { CounterfactualProjection } from '@/lib/coachhelm/v3/counterfactual/types';
 import type { ComposedContent, GeneratorAggregate, InsightCategory, MetricId } from '@/lib/coachhelm/v3/engine/types';
-import type { InsightEvidence } from '@/lib/coachhelm/v2/insights/types';
+import type { Diagnosis, DiagnosisBasis, InsightEvidence } from '@/lib/coachhelm/v2/insights/types';
 import {
   ANGLE_MIN_Z,
   INSIGHT_ANGLES_FLAG,
@@ -155,6 +155,19 @@ export interface TeeMissResult {
   excluded: { other_outcome: number; no_hole: number };
   club_chain: ClubChainRow[];
   examples: ReceiptExample[];
+  /**
+   * The costlier side's most common recorded path — tee miss → lie the next
+   * shot was played from → bogey or worse — counted over that side's misses
+   * whose next shot is recorded in order.
+   */
+  sequence: {
+    side: TeeSide;
+    lie: string;
+    occurrences: number;
+    of: number;
+    distinct_rounds: number;
+    examples: ReceiptExample[];
+  } | null;
   qualifies: boolean;
 }
 
@@ -165,6 +178,8 @@ interface TeeObs {
   par: number;
   approachYards: number | null;
   nextSg: number | null;
+  /** The next shot is recorded with no gap in shot numbers. */
+  nextKnown: boolean;
   outcome: TeeOutcome;
   toPar: number;
   stratum: string;
@@ -172,6 +187,31 @@ interface TeeObs {
   lieAfter: string;
   gir: boolean | null;
   driver: boolean;
+}
+
+function teeSequence(obs: readonly TeeObs[], side: TeeSide, dateOf: Map<string, string>): TeeMissResult['sequence'] {
+  const pop = obs.filter((o) => o.outcome === side && o.nextKnown);
+  const bad = pop.filter((o) => o.toPar >= 1);
+  if (bad.length === 0) return null;
+  const byLie = new Map<string, TeeObs[]>();
+  for (const o of bad) byLie.set(o.lieAfter, [...(byLie.get(o.lieAfter) ?? []), o]);
+  const [lie, rows] = [...byLie.entries()].sort((a, b) => b[1].length - a[1].length)[0]!;
+  return {
+    side,
+    lie,
+    occurrences: rows.length,
+    of: pop.length,
+    distinct_rounds: new Set(rows.map((o) => o.round_id)).size,
+    examples: pickExamples(
+      rows.map((o) => ({
+        round_id: o.round_id,
+        hole_number: o.hole_number,
+        hole_id: o.hole_id,
+        date: dateOf.get(o.round_id) ?? '',
+        note: `par ${o.par}, ${o.driver ? 'driver' : 'non-driver'}, ${side} miss → next shot from the ${lie} → hole +${o.toPar}`,
+      })),
+    ),
+  };
 }
 
 /** Pure compute. Null when no tee shot can be read. */
@@ -237,6 +277,7 @@ export function computeTeeMiss(data: AngleData): TeeMissResult | null {
         yardsOf(tee.distance_to_hole_after, tee.distance_unit_after) ??
         (next ? yardsOf(next.distance_to_hole_before, next.distance_unit_before) : null),
       nextSg: nextSg === undefined || !Number.isFinite(nextSg) ? null : nextSg,
+      nextKnown: next !== undefined,
       outcome,
       toPar: hole.score - hole.par,
       stratum: `${hole.par}|${driver ? 'driver' : 'non_driver'}`,
@@ -359,6 +400,7 @@ export function computeTeeMiss(data: AngleData): TeeMissResult | null {
     cost_per_round: round2(cost),
     excluded,
     club_chain: clubChain,
+    sequence: worse ? teeSequence(obs, worse, dateOf) : null,
     examples: worse
       ? pickExamples(
           obs
@@ -409,8 +451,31 @@ function sgText(v: number | null, n: number): string {
   return v === null ? `n/a (n=${n})` : `${v > 0 ? '+' : ''}${v.toFixed(2)} (n=${n})`;
 }
 
+/** The costlier side's recorded path as a sequence basis (see {@link TeeMissResult.sequence}). */
+export function teeSequenceBasis(r: TeeMissResult): DiagnosisBasis | null {
+  if (!r.sequence) return null;
+  const q = r.sequence;
+  return {
+    kind: 'shot_sequence',
+    checked: [
+      `${q.of} ${q.side} misses with the next shot recorded in order`,
+      `miss side recorded on ${r.side_recorded} of ${r.missed} missed fairways`,
+    ],
+    sequence: {
+      pattern: `${q.side} miss off the tee → next shot from the ${q.lie} → bogey or worse`,
+      occurrences: q.occurrences,
+      of: q.of,
+      population: `${q.side} tee misses`,
+      distinct_rounds: q.distinct_rounds,
+      window: `${r.window.window_start} – ${r.window.window_end}`,
+      examples: q.examples.map((e) => ({ round_id: e.round_id, hole_number: e.hole_number, hole_id: e.hole_id })),
+    },
+  };
+}
+
 export function composeTeeMiss(agg: TeeMissAggregate): ComposedContent {
   const r = agg.result;
+  const seqBasis = teeSequenceBasis(r);
   const w = r.sides[r.worse];
   const b = r.sides[r.better];
   const wCost = w.cost_vs_fairway as number;
@@ -495,6 +560,7 @@ export function composeTeeMiss(agg: TeeMissAggregate): ComposedContent {
         `${w.penalties} of ${w.shots} ${r.worse} misses carried a penalty on the hole (vs ${b.penalties} of ${b.shots}). ` +
         `The record shows what follows the miss, not why the ball went ${r.worse}.`,
       causality_level: 'inferred_hypothesis',
+      ...(seqBasis ? { basis: seqBasis } : {}),
       drivers: [
         { metric: 'tee_miss_next_shot_cost', label: `Strokes per ${r.worse} miss`, value: wCost, unit: 'strokes', sample_n: w.costed, source: 'golf_shots (tee) + golf_holes.score' },
         { metric: 'tee_miss_next_shot_cost', label: `Strokes per ${r.better} miss`, value: bCost, unit: 'strokes', sample_n: b.costed, source: 'golf_shots (tee) + golf_holes.score' },
@@ -503,6 +569,10 @@ export function composeTeeMiss(agg: TeeMissAggregate): ComposedContent {
       confidence_reason: '',
     },
   };
+  const diag = evidence.diagnosis as Diagnosis;
+  if (hasGeneratorSequenceEvidence({ ...diag, causality_level: 'observed_sequence' })) {
+    diag.causality_level = 'observed_sequence';
+  }
   return {
     title: `Your ${r.worse} tee misses cost more than your ${r.better} ones`,
     content:

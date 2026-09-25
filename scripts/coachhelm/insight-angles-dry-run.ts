@@ -43,6 +43,13 @@ import {
   toThreePuttAggregate,
 } from '@/lib/coachhelm/v3/generators/insight-angles/three-putt-chain';
 import {
+  composeApproachCompass,
+  computeApproachCompass,
+  toCompassAggregate,
+} from '@/lib/coachhelm/v3/generators/insight-angles/approach-miss-compass';
+import { hasGeneratorSequenceEvidence } from '@/lib/coachhelm/v3/engine/generator-base';
+import type { Diagnosis } from '@/lib/coachhelm/v2/insights/types';
+import {
   composeTeeMiss,
   computeTeeMiss,
   toTeeMissAggregate,
@@ -58,6 +65,7 @@ interface Example {
 }
 
 interface AngleTally {
+  observed: number;
   evaluated: number;
   qualifying: number;
   examples: Example[];
@@ -67,7 +75,7 @@ interface AngleTally {
 
 const angles: Record<string, AngleTally> = {};
 function tally(name: string): AngleTally {
-  return (angles[name] ??= { evaluated: 0, qualifying: 0, examples: [], strokes: [], byCategory: {} });
+  return (angles[name] ??= { observed: 0, evaluated: 0, qualifying: 0, examples: [], strokes: [], byCategory: {} });
 }
 
 function record(
@@ -77,6 +85,9 @@ function record(
   composed: { title: string; content: string; evidence: unknown },
 ): void {
   const t = tally(name);
+  const diag = (composed.evidence as { diagnosis?: Diagnosis }).diagnosis;
+  // Same test mergeDiagnosis applies (with the capability flag on).
+  if (diag && hasGeneratorSequenceEvidence(diag)) t.observed += 1;
   const receipts = (composed.evidence as { detail?: { receipts?: { examples?: unknown[]; definition?: string } } }).detail?.receipts;
   calib.receiptsChecked += 1;
   if (receipts?.definition && Array.isArray(receipts.examples) && receipts.examples.length > 0 && receipts.examples.length <= 5) calib.receiptsOk += 1;
@@ -111,6 +122,10 @@ const calib = {
   teeGap: [] as number[],
   teeZ: [] as number[],
   teeCoverage: [] as number[],
+  compassGap: [] as number[],
+  compassCoverage: [] as number[],
+  compassIncomplete: 0,
+  compassCosted: 0,
   bandHoles: Object.fromEntries(PUTT_BANDS.map((b) => [b, 0])) as Record<string, number>,
   bandThree: Object.fromEntries(PUTT_BANDS.map((b) => [b, 0])) as Record<string, number>,
   slopeFill: [] as number[],
@@ -204,12 +219,32 @@ async function main(): Promise<void> {
       const c = composeTeeMiss(teeAgg);
       record('4 tee miss cost', playerId, 'tee', c);
     }
+
+    // 5. Approach-miss compass
+    const compass = computeApproachCompass(d);
+    tally('5 approach-miss compass').evaluated += 1;
+    if (compass) {
+      if (compass.missed_greens > 0) calib.compassCoverage.push(compass.coverage_pct);
+      calib.compassIncomplete += compass.excluded.recovery_incomplete;
+      calib.compassCosted += (['short', 'long', 'left', 'right'] as const).reduce((a, k) => a + compass.sides[k].costed, 0);
+      for (const ax of ['depth', 'line'] as const) {
+        const [a, b] = ax === 'depth' ? (['short', 'long'] as const) : (['left', 'right'] as const);
+        if (compass.axes[ax].gap_per_miss !== null && compass.sides[a].costed >= 12 && compass.sides[b].costed >= 12) {
+          calib.compassGap.push(compass.axes[ax].gap_per_miss!);
+        }
+      }
+    }
+    const compassAgg = toCompassAggregate(compass, d.scoringBaseline);
+    if (compassAgg) {
+      const c = composeApproachCompass(compassAgg);
+      record('5 approach-miss compass', playerId, `${c.category} (${compassAgg.result.lead})`, c);
+    }
   }
 
   for (const [name, t] of Object.entries(angles)) {
     const sum = t.strokes.reduce((a, b) => a + b, 0);
     console.log(`\n=== ${name} ===`);
-    console.log(`evaluated ${t.evaluated}, qualifying ${t.qualifying}; by category ${JSON.stringify(t.byCategory)}`);
+    console.log(`evaluated ${t.evaluated}, qualifying ${t.qualifying}; by category ${JSON.stringify(t.byCategory)}; observed_sequence-eligible ${t.observed} of ${t.qualifying}`);
     console.log(
       `sizing: total ${sum.toFixed(2)} strokes/round across qualifying players, mean ${(t.qualifying ? sum / t.qualifying : 0).toFixed(2)}, max ${(t.strokes.length ? Math.max(...t.strokes) : 0).toFixed(2)}`,
     );
@@ -239,6 +274,9 @@ async function main(): Promise<void> {
     console.log(`tee side gap (strokes/miss, ≥12 each side): ${q(calib.teeGap)}`);
     console.log(`tee side z: ${q(calib.teeZ)}`);
     console.log(`tee miss-side coverage %: ${q(calib.teeCoverage)}`);
+    console.log(`compass side gap (strokes/miss, ≥12 costed each side): ${q(calib.compassGap)}`);
+    console.log(`compass miss-direction coverage %: ${q(calib.compassCoverage)}`);
+    console.log(`compass misses costed ${calib.compassCosted} (side-counted), recovery records incomplete ${calib.compassIncomplete}`);
     const holes = Object.values(calib.bandHoles).reduce((a, b) => a + b, 0);
     console.log(`first-putt bands over countable rounds (newest 40 per player), ${holes} holes:`);
     for (const b of PUTT_BANDS) {

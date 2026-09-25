@@ -188,6 +188,7 @@ const METRIC_DIRECTION_ALIASES: Record<string, MetricDirection> = {
   tee_fairway_rough_exposure: 'higher_better',
   round_bad_day_floor: 'lower_better',
   tee_miss_next_shot_cost: 'lower_better',
+  approach_miss_recovery_cost: 'lower_better',
 };
 
 /**
