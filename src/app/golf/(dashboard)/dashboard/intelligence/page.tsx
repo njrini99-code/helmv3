@@ -37,9 +37,9 @@ import { loadFollowUpRoundCounts } from '@/lib/coachhelm/focus-areas/follow-up-e
 import {
   loadAttributionForInsights,
   loadPlayersAreaSg,
-  loadTeamShotContext,
   loadTeamSgRounds,
 } from '@/lib/coachhelm/root-map/loaders';
+import { loadTeamShotContextCached } from '@/lib/coachhelm/root-map/team-shot-cache';
 import { buildTeamHeadline, buildTeamRoots, type TeamRosterPlayer } from '@/lib/coachhelm/root-map/build-team-roots';
 import { buildTeamTrend } from '@/lib/coachhelm/root-map/area-trends';
 import { buildFocusSlopes, buildNeedsYou, type MetricMeta } from '@/lib/coachhelm/root-map/build-team-extras';
@@ -270,9 +270,10 @@ export default async function IntelligenceDashboardPage({ searchParams }: Intell
   const teamRootReads = Promise.all([
     loadPlayersAreaSg(supabase, playerIds),
     loadTeamSgRounds(supabase, playerIds, isoDaysBefore(todayIso, TEAM_TREND_LOOKBACK_WEEKS * 7)),
-    // Recorded shots for the team map's measured What row (null on failure:
-    // the map then keeps the stored-cause What row).
-    loadTeamShotContext(supabase, playerIds),
+    // Recorded shots for the team map's measured What row, cached per player
+    // after the coach and roster gate (null on failure: the map then keeps
+    // the stored-cause What row).
+    loadTeamShotContextCached(supabase, teamId, playerIds),
   ]);
 
   // Page loads are read-only. Progress evaluation belongs to round ingestion /

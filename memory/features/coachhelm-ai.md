@@ -401,6 +401,17 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
     `players` counts players losing strokes on that spot; players with no
     measured split stay in "Not tracked by shot". `loadTeamShotContext`
     batches the roster's rounds, holes and shots.
+  - Team shot cache (2026-09-25, `team-shot-cache.ts`,
+    `loadTeamShotContextCached(sb, teamId, playerIds)`): on the request
+    client it first checks `is_golf_team_coach(teamId)`, keeps only players
+    on that team's active roster, and picks rounds under RLS
+    (`selectTeamShotRounds`). Only then, per player, `unstable_cache` reads
+    those rounds' holes, shots and SG scale with the service client
+    (`loadTeamShotChildren`). Key: team id + player id + round ids + newest
+    round `updated_at`; TTL 600 s; tag `coachhelm-team-shots:<teamId>`.
+    Per player because Next skips data-cache entries over 2 MB (a roster is
+    several MB; the largest player is under 1 MB). Null on a failed gate or
+    read, like the loaders.
 - Root map copy (2026-09-25, `plain-copy.ts`): raw metric ids never reach
   the Why view (`plainMetricLabel`); the old "X is off its benchmark — likely
   cause inferred from the aggregate" diagnosis is rewritten at render and an

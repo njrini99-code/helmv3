@@ -440,6 +440,147 @@ export function toContextFacts(load: ApproachContextLoad): { facts: ShotFact[]; 
   return { facts, holes };
 }
 
+/** One player's rounds for the team shot read, plus a freshness stamp. */
+export interface TeamShotRounds {
+  rounds: ApproachRoundInput[];
+  /** Newest `updated_at` (else `created_at`) over the chosen rounds: an edit
+   *  to one of them moves it, so the cache key moves with it. */
+  stamp: string;
+}
+
+/**
+ * Step 1 of the team shot read: each roster player's newest
+ * {@link APPROACH_ROUND_LIMIT} countable completed rounds with a stored SG.
+ * Always run with the REQUEST client, so RLS (`golf_rounds_select_team`)
+ * decides which rounds the coach may see. Throws on a failed read.
+ */
+export async function selectTeamShotRounds(sb: Sb, playerIds: string[]): Promise<Map<string, TeamShotRounds>> {
+  const out = new Map<string, TeamShotRounds>();
+  if (playerIds.length === 0) return out;
+  type RoundRow = SgRoundRow & { id: string; player_id: string; updated_at: string | null; created_at: string | null };
+  const byPlayer = new Map<string, RoundRow[]>();
+  for (const ids of chunk(playerIds)) {
+    const { data, error } = await fetchAllRowsResult<RoundRow>(
+      (from, to) =>
+        sb
+          .from('golf_rounds')
+          .select(`id, player_id, updated_at, created_at, ${SG_COLUMNS}`)
+          .in('player_id', ids)
+          .eq('status', 'completed')
+          .not('strokes_gained_total', 'is', null)
+          .order('id', { ascending: true })
+          .range(from, to) as unknown as PromiseLike<{
+          data: RoundRow[] | null;
+          error: { message: string; code?: string | null } | null;
+        }>,
+      undefined,
+      { table: 'golf_rounds', action: 'rootMap.loadTeamShotContext', feature: 'coachhelm_ai_engine', sport: 'golf' },
+    );
+    if (error) throw error;
+    for (const row of data ?? []) {
+      const list = byPlayer.get(row.player_id) ?? [];
+      list.push(row);
+      byPlayer.set(row.player_id, list);
+    }
+  }
+  for (const [playerId, rows] of byPlayer) {
+    rows.sort((a, b) => ((a.round_date ?? '') < (b.round_date ?? '') ? 1 : -1));
+    const rounds: ApproachRoundInput[] = [];
+    let stamp = '';
+    for (const row of rows) {
+      const r = toAreaRound(row);
+      if (!r) continue;
+      rounds.push({ id: row.id, date: r.date, holesPlayed: row.holes_played ?? 18, storedApproach: num(row.strokes_gained_approach) });
+      const ts = row.updated_at ?? row.created_at ?? '';
+      if (ts > stamp) stamp = ts;
+      if (rounds.length >= APPROACH_ROUND_LIMIT) break;
+    }
+    if (rounds.length > 0) out.set(playerId, { rounds, stamp });
+  }
+  return out;
+}
+
+/** Holes, shots and SG scale for one player's chosen rounds. */
+export interface TeamShotChildren {
+  holes: RawHoleRow[];
+  shots: RawShotRow[];
+  scale: number;
+}
+
+/**
+ * Step 2 of the team shot read: the holes and shots of rounds step 1 already
+ * returned, and each player's SG scale. Only ever called with round ids from
+ * {@link selectTeamShotRounds} (so the rounds were RLS-checked first), which
+ * lets the cached path run it with the service client. Throws on a failed
+ * read.
+ */
+export async function loadTeamShotChildren(sb: Sb, roundIdsByPlayer: ReadonlyMap<string, readonly string[]>): Promise<Map<string, TeamShotChildren>> {
+  const out = new Map<string, TeamShotChildren>();
+  const playerOfRound = new Map<string, string>();
+  const roundIds: string[] = [];
+  for (const [playerId, ids] of roundIdsByPlayer) {
+    out.set(playerId, { holes: [], shots: [], scale: 1 });
+    for (const id of ids) {
+      playerOfRound.set(id, playerId);
+      roundIds.push(id);
+    }
+  }
+  if (roundIds.length === 0) return out;
+
+  // Chunks run in parallel (a 15-player roster is ~20k shots, ~7 chunks):
+  // sequential paging took 3–6 s against production.
+  const loadChunk = async (idChunk: string[]) => {
+    const [h, s] = await Promise.all([
+      fetchAllRowsResult<RawHoleRow>(
+        (from, to) =>
+          sb
+            .from('golf_holes')
+            .select(APPROACH_HOLE_COLUMNS)
+            .in('round_id', idChunk)
+            .order('id', { ascending: true })
+            .range(from, to) as unknown as PromiseLike<{
+            data: RawHoleRow[] | null;
+            error: { message: string; code?: string | null } | null;
+          }>,
+        undefined,
+        { table: 'golf_holes', action: 'rootMap.loadTeamShotContext', feature: 'coachhelm_ai_engine', sport: 'golf' },
+      ),
+      fetchAllRowsResult<RawShotRow>(
+        (from, to) =>
+          sb
+            .from('golf_shots')
+            .select(APPROACH_SHOT_COLUMNS)
+            .in('round_id', idChunk)
+            .order('id', { ascending: true })
+            .range(from, to) as unknown as PromiseLike<{
+            data: RawShotRow[] | null;
+            error: { message: string; code?: string | null } | null;
+          }>,
+        undefined,
+        { table: 'golf_shots', action: 'rootMap.loadTeamShotContext', feature: 'coachhelm_ai_engine', sport: 'golf' },
+      ),
+    ]);
+    if (h.error) throw h.error;
+    if (s.error) throw s.error;
+    return { holes: h.data ?? [], shots: s.data ?? [] };
+  };
+  const chunks = chunk(roundIds, 40);
+  const loaded: Array<{ holes: RawHoleRow[]; shots: RawShotRow[] }> = [];
+  for (let i = 0; i < chunks.length; i += 6) loaded.push(...(await Promise.all(chunks.slice(i, i + 6).map(loadChunk))));
+  for (const part of loaded) {
+    for (const row of part.holes) out.get(playerOfRound.get(row.round_id) ?? '')?.holes.push(row);
+    for (const row of part.shots) out.get(playerOfRound.get(row.round_id) ?? '')?.shots.push(row);
+  }
+
+  await Promise.all(
+    [...out.entries()].map(async ([playerId, load]) => {
+      const { data: sc, error } = await sb.rpc('sg_scale_for_player', { p_player_id: playerId });
+      if (!error && num(sc) !== null && (num(sc) as number) > 0) load.scale = num(sc) as number;
+    }),
+  );
+  return out;
+}
+
 /**
  * The team root map's measured What row input: for every roster player, the
  * same countable rounds `loadApproachContext` reads (newest
@@ -448,105 +589,19 @@ export function toContextFacts(load: ApproachContextLoad): { facts: ShotFact[]; 
  * chunk of players or rounds) instead of one approach load per player.
  * Request client, so RLS applies (`is_golf_team_coach`). Null on a failed
  * read; players with no countable round are absent from the map.
+ *
+ * Uncached. The coach Brief uses `loadTeamShotContextCached`
+ * (`team-shot-cache.ts`), which runs the same two steps.
  */
 export async function loadTeamShotContext(sb: Sb, playerIds: string[]): Promise<Map<string, ApproachContextLoad> | null> {
-  const out = new Map<string, ApproachContextLoad>();
-  if (playerIds.length === 0) return out;
   try {
-    type RoundRow = SgRoundRow & { id: string; player_id: string };
-    const byPlayer = new Map<string, RoundRow[]>();
-    for (const ids of chunk(playerIds)) {
-      const { data, error } = await fetchAllRowsResult<RoundRow>(
-        (from, to) =>
-          sb
-            .from('golf_rounds')
-            .select(`id, player_id, ${SG_COLUMNS}`)
-            .in('player_id', ids)
-            .eq('status', 'completed')
-            .not('strokes_gained_total', 'is', null)
-            .order('id', { ascending: true })
-            .range(from, to) as unknown as PromiseLike<{
-            data: RoundRow[] | null;
-            error: { message: string; code?: string | null } | null;
-          }>,
-        undefined,
-        { table: 'golf_rounds', action: 'rootMap.loadTeamShotContext', feature: 'coachhelm_ai_engine', sport: 'golf' },
-      );
-      if (error) throw error;
-      for (const row of data ?? []) {
-        const list = byPlayer.get(row.player_id) ?? [];
-        list.push(row);
-        byPlayer.set(row.player_id, list);
-      }
+    const picked = await selectTeamShotRounds(sb, playerIds);
+    const children = await loadTeamShotChildren(sb, new Map([...picked].map(([p, v]) => [p, v.rounds.map((r) => r.id)])));
+    const out = new Map<string, ApproachContextLoad>();
+    for (const [playerId, { rounds }] of picked) {
+      const c = children.get(playerId) ?? { holes: [], shots: [], scale: 1 };
+      out.set(playerId, { rounds, holes: c.holes, shots: c.shots, scale: c.scale });
     }
-    const roundIds: string[] = [];
-    for (const [playerId, rows] of byPlayer) {
-      rows.sort((a, b) => ((a.round_date ?? '') < (b.round_date ?? '') ? 1 : -1));
-      const rounds: ApproachRoundInput[] = [];
-      for (const row of rows) {
-        const r = toAreaRound(row);
-        if (!r) continue;
-        rounds.push({ id: row.id, date: r.date, holesPlayed: row.holes_played ?? 18, storedApproach: num(row.strokes_gained_approach) });
-        if (rounds.length >= APPROACH_ROUND_LIMIT) break;
-      }
-      if (rounds.length === 0) continue;
-      out.set(playerId, { rounds, holes: [], shots: [], scale: 1 });
-      roundIds.push(...rounds.map((r) => r.id));
-    }
-    const playerOfRound = new Map<string, string>();
-    for (const [playerId, load] of out) for (const r of load.rounds) playerOfRound.set(r.id, playerId);
-
-    // Chunks run in parallel (a 15-player roster is ~20k shots, ~7 chunks):
-    // sequential paging took 3–6 s against production.
-    const loadChunk = async (idChunk: string[]) => {
-      const [h, s] = await Promise.all([
-        fetchAllRowsResult<RawHoleRow>(
-          (from, to) =>
-            sb
-              .from('golf_holes')
-              .select(APPROACH_HOLE_COLUMNS)
-              .in('round_id', idChunk)
-              .order('id', { ascending: true })
-              .range(from, to) as unknown as PromiseLike<{
-              data: RawHoleRow[] | null;
-              error: { message: string; code?: string | null } | null;
-            }>,
-          undefined,
-          { table: 'golf_holes', action: 'rootMap.loadTeamShotContext', feature: 'coachhelm_ai_engine', sport: 'golf' },
-        ),
-        fetchAllRowsResult<RawShotRow>(
-          (from, to) =>
-            sb
-              .from('golf_shots')
-              .select(APPROACH_SHOT_COLUMNS)
-              .in('round_id', idChunk)
-              .order('id', { ascending: true })
-              .range(from, to) as unknown as PromiseLike<{
-              data: RawShotRow[] | null;
-              error: { message: string; code?: string | null } | null;
-            }>,
-          undefined,
-          { table: 'golf_shots', action: 'rootMap.loadTeamShotContext', feature: 'coachhelm_ai_engine', sport: 'golf' },
-        ),
-      ]);
-      if (h.error) throw h.error;
-      if (s.error) throw s.error;
-      return { holes: h.data ?? [], shots: s.data ?? [] };
-    };
-    const chunks = chunk(roundIds, 40);
-    const loaded: Array<{ holes: RawHoleRow[]; shots: RawShotRow[] }> = [];
-    for (let i = 0; i < chunks.length; i += 6) loaded.push(...(await Promise.all(chunks.slice(i, i + 6).map(loadChunk))));
-    for (const part of loaded) {
-      for (const row of part.holes) out.get(playerOfRound.get(row.round_id) ?? '')?.holes.push(row);
-      for (const row of part.shots) out.get(playerOfRound.get(row.round_id) ?? '')?.shots.push(row);
-    }
-
-    await Promise.all(
-      [...out.entries()].map(async ([playerId, load]) => {
-        const { data: sc, error } = await sb.rpc('sg_scale_for_player', { p_player_id: playerId });
-        if (!error && num(sc) !== null && (num(sc) as number) > 0) load.scale = num(sc) as number;
-      }),
-    );
     return out;
   } catch (err) {
     warn('[root-map] team shot context read failed', 'rootMap.loadTeamShotContext', err);
