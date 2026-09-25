@@ -243,7 +243,7 @@ function shortDate(iso: string): string {
 function seriesDeltaLabel(points: number): string {
   // The chip is the movement across the team's latest rounds, while the value
   // beside it covers the whole window. Say so, so the two are not read as one.
-  return `trend, last ${points} team round${points === 1 ? '' : 's'}`;
+  return `last ${points} team round${points === 1 ? '' : 's'}`;
 }
 
 /* ──────────────────────────────────────────────────────────────────────────

@@ -522,7 +522,10 @@ function DeltaChip({
   const Icon = direction === 'up' ? ArrowUpRight : direction === 'down' ? ArrowDownRight : Minus;
 
   return (
-    <span className="inline-flex items-center gap-1.5">
+    // flex-wrap: in a half-width phone tile the label used to wrap into a
+    // one-word column beside the chip ("trend, / last 5 / team / rounds").
+    // Wrapping drops it under the chip at full width instead.
+    <span className="inline-flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
       <motion.span
         initial={prefersReduced ? false : { opacity: 0, y: 2 }}
         animate={{ opacity: 1, y: 0 }}
