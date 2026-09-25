@@ -266,16 +266,20 @@ export function CourseLibraryClient({
               the team rail above (deduped so no course renders twice). */}
           {restCourses.length > 0 && (
             <Section title={shownAboveIds.size > 0 ? 'More courses' : 'All courses'}>
-              <Grid>
+              {/* Thumbnail rows, not photo cards: the long tail is looked up,
+                  not browsed, and 65 cards ran ~21,500px on a phone. */}
+              <ul className="grid grid-cols-1 divide-y divide-border-subtle overflow-hidden rounded-fw-card border border-border-subtle bg-surface shadow-flat md:grid-cols-2 md:divide-y-0">
                 {restCourses.map((c) => (
-                  <CourseCard
-                    key={c.id}
-                    course={c}
-                    teeCount={teeCounts[c.id]}
-                    onSelect={setSelectedCourseId}
-                  />
+                  <li key={c.id} className="md:border-b md:border-border-subtle">
+                    <CourseCard
+                      variant="row"
+                      course={c}
+                      teeCount={teeCounts[c.id]}
+                      onSelect={setSelectedCourseId}
+                    />
+                  </li>
                 ))}
-              </Grid>
+              </ul>
             </Section>
           )}
         </div>
