@@ -494,6 +494,15 @@ export function StatsSpineStage({ playerId, isOwnStats = false, playerName, clas
     () => roundOptions.filter((round) => selectedRoundIds.includes(round.id)),
     [roundOptions, selectedRoundIds],
   );
+  // DASH-12: the putting benchmark sheet's date window, from the completed
+  // round list (ISO date-only strings order lexically). That list stops at
+  // 200 rounds (getPlayerRoundOptions), so at the cap the oldest date is not
+  // the real start and no window is shown rather than a wrong one.
+  const completedRoundWindow = useMemo(() => {
+    if (roundOptions.length >= 200) return null;
+    const dates = roundOptions.map((round) => round.date).filter(Boolean).sort();
+    return dates.length > 0 ? { from: dates[0]!, to: dates[dates.length - 1]! } : null;
+  }, [roundOptions]);
   const roundScopeOptions = useMemo(
     () => roundOptions.map((round) => ({
       value: round.id,
@@ -880,6 +889,7 @@ export function StatsSpineStage({ playerId, isOwnStats = false, playerName, clas
           retryingLeak={leakLoading}
           patterns={patterns}
           trends={trendData?.trends}
+          roundWindow={completedRoundWindow}
         />
       ),
     },

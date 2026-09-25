@@ -59,6 +59,7 @@ import { cn } from '@/lib/utils';
 import type { GolfStats } from '@/lib/utils/golf-stats-calculator-shots';
 import type { LeakBucket, PlayerLeakMaps } from '@/app/golf/actions/stats-leak-maps-types';
 import type { PlayerStandingRow } from '@/app/golf/actions/stats-leak-maps-types';
+import { PuttingBenchmarkSheet } from './PuttingBenchmarkSheet';
 import type { StatisticalStrengthWeakness } from '@/lib/golf/strokes-gained';
 import type { TrendAnalysisResponse } from '@/app/golf/actions/stats-data-types';
 import {
@@ -286,6 +287,9 @@ export interface PuttingDrillProps {
    *  `buildCategoryInsights(...).putting` for the "What CoachHelm sees"
    *  strip. Optional — defaults to `[]` (an honest empty strip). */
   patterns?: ReadonlyArray<CategorizablePatternWithImpact>;
+  /** Oldest and newest completed-round dates, for the benchmark sheet's
+   *  date window (DASH-12). Omit when the round list is unavailable. */
+  roundWindow?: { from: string; to: string } | null;
 }
 
 export function PuttingDrill({
@@ -298,6 +302,7 @@ export function PuttingDrill({
   retryingLeak = false,
   trends = null,
   patterns = [],
+  roundWindow = null,
 }: PuttingDrillProps) {
   const { home } = useStage();
   const s = detailedStats;
@@ -600,6 +605,14 @@ export function PuttingDrill({
             height={200}
           />
           <MakeCurve points={heroPoints} ariaLabel={heroAriaLabel} />
+          {!leakError && leakMaps && leakMaps.roundsIncluded > 0 ? (
+            <PuttingBenchmarkSheet
+              buckets={leakMaps.putting}
+              roundsIncluded={leakMaps.roundsIncluded}
+              tour={Array.from(standingByMetric.values()).some((row) => row.is_womens) ? 'lpga' : 'pga'}
+              window={roundWindow}
+            />
+          ) : null}
           {leakError ? <LeakLoadError onRetry={() => onRetryLeak?.()} retrying={retryingLeak} /> : <LeakMap title="Putt make %" overline="Putting" subtitle="Make rate by distance vs PGA Tour" takeaway="Bands below the dashed Tour line are where putts are leaking." direction="higher_better" unit="percent" data={leakMaps ? toBuckets(leakMaps.putting) : []} />}
         </div>
       </div>

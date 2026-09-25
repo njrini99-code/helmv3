@@ -26,6 +26,8 @@ import type { GolfStats } from '@/lib/utils/golf-stats-calculator-shots';
 import type { TrendAnalysisResponse } from '@/app/golf/actions/stats-data-types';
 import type { CategorizablePatternWithImpact } from '../buildStatsViewModel';
 
+import type { PlayerStandingRow } from '@/app/golf/actions/stats-leak-maps-types';
+
 type PuttingDrillProps = ComponentProps<typeof PuttingDrill>;
 
 function renderPutting(props: Partial<PuttingDrillProps> = {}) {
@@ -227,5 +229,16 @@ describe('PuttingDrill', () => {
     // RampMatrix's own legend renders the same 4 labels.
     const legendLabels = screen.getAllByText('Ahead of Tour');
     expect(legendLabels.length).toBeGreaterThan(0);
+  });
+
+  it('offers the putting benchmark sheet only when the leak map loaded rounds (DASH-12)', () => {
+    const leakMaps = { playerId: 'p1', putting: [], approach: [], roundsIncluded: 3 };
+    const womens = new Map([['putts_made_3_5ft_pct', { is_womens: true } as PlayerStandingRow]]);
+    const { unmount } = renderPutting({ leakMaps, standingByMetric: womens });
+    expect(screen.getByRole('button', { name: 'Compare with LPGA and D1' })).toBeInTheDocument();
+    unmount();
+
+    renderPutting({ leakMaps, leakError: true });
+    expect(screen.queryByRole('button', { name: /Compare with/ })).not.toBeInTheDocument();
   });
 });
