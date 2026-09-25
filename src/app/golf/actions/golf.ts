@@ -9058,7 +9058,7 @@ async function getPlayerSavedCoursesImpl(): Promise<ActionResult<SavedCourse[]>>
     .from('golf_players')
     .select('id')
     .eq('user_id', user.id)
-    .single();
+    .maybeSingle();
 
   if (!player) {
     return { success: false, error: 'Player profile not found' };
@@ -9126,7 +9126,7 @@ async function savePlayerCourseImpl(input: SaveCourseInput): Promise<ActionResul
     .from('golf_players')
     .select('id')
     .eq('user_id', user.id)
-    .single();
+    .maybeSingle();
 
   if (!player) {
     return { success: false, error: 'Player profile not found' };
@@ -9284,7 +9284,7 @@ async function getRecentCoursesForPlayerImpl(
     .from('golf_players')
     .select('id')
     .eq('user_id', user.id)
-    .single();
+    .maybeSingle();
 
   if (!player) {
     return { success: false, error: 'Player profile not found' };

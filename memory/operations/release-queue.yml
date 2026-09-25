@@ -141,8 +141,8 @@ items:
     incident_id: memory/incidents/player_coachhelm_development/INC-2026-09-24-page-read-ran-insight-generators.md
     status: verified
     risk: R1
-    sha: null
-    pr: null
+    sha: e5adf2e41
+    pr: 2072
     regression_tests:
       - src/lib/supabase/__tests__/bounded-query.test.ts
       - src/lib/coachhelm/v2/__tests__/tier1-runner.test.ts
@@ -150,3 +150,19 @@ items:
       - src/lib/admin/incidents/__tests__/present.test.ts
     queued_for_release: false
     first_seen: '2026-09-24T00:50:00Z'
+  - id: player-lookup-maybe-single-2026-09-25
+    feature_id: golf_round_lifecycle
+    root_cause: >-
+      golf_players lookups by user_id ended in .single(), so a signed-in user
+      without a player row raised PGRST116, which instrumentation recorded as
+      an exception although every caller handled the null; bdc09c915 had
+      converted only the first 8 golf.ts sites.
+    incident_id: memory/incidents/golf_round_lifecycle/INC-2026-09-25-player-lookup-pgrst116.md
+    status: verified
+    risk: R2
+    sha: 67d2f727f6c9599f8b51b9f5d125d65487dde615
+    pr: null
+    regression_tests:
+      - src/app/golf/actions/__tests__/player-lookup-maybe-single.test.ts
+    queued_for_release: false
+    first_seen: '2026-09-07T00:00:00Z'

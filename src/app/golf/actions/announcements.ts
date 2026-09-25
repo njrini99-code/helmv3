@@ -1173,7 +1173,7 @@ async function completeAnnouncementTaskImpl(
       .from('golf_players')
       .select('id')
       .eq('user_id', user.id)
-      .single();
+      .maybeSingle();
     if (!player) return { success: false, error: 'Player not found' };
 
     // Update the assignment status

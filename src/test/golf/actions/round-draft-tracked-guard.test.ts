@@ -45,7 +45,10 @@ function chain(table: string) {
     }),
     maybeSingle: async () => ({
       data:
-        table === 'golf_team_members'
+        // the player lookup moved to maybeSingle (rel:72be7f89)
+        table === 'golf_players'
+          ? { id: 'p1' }
+          : table === 'golf_team_members'
           ? { team_id: 't1' }
           : table === 'golf_rounds'
             ? { id: 'r1' }
