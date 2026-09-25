@@ -64,6 +64,16 @@ describe('TeamField', () => {
     expect(avg.className).toContain('text-text-secondary');
   });
 
+  it('says "No change" for a zero change instead of even par', () => {
+    const { container } = render(
+      <TeamField players={[{ ...PLAYERS[0]!, delta: 0 }]} label="Team" />,
+    );
+    const delta = container.querySelector('[data-delta]')!;
+    expect(delta.textContent).toBe('No change');
+    expect(delta.className).toContain('text-text-secondary');
+    expect(screen.getByRole('link').textContent).toContain('average plus 1.0, Early read, no change');
+  });
+
   it('prints a dash and the floor note for a thin average', () => {
     const { container } = render(
       <TeamField players={[{ id: 'x', name: 'New Player', rounds: pts('x', [3]), average: 3, delta: 1 }]} label="Team" />,

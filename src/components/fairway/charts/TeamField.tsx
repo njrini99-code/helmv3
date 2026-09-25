@@ -115,11 +115,13 @@ export function TeamField({ players, label, sort = 'trend', className }: TeamFie
         const sample = p.sample ?? rounds.length;
         const avg = formatMetric(METRIC, p.average, { sample });
         const delta = formatMetric(METRIC, avg.missing ? null : p.delta, { delta: true });
+        // A to-par average prints 0 as "E"; for a change that reads as "even par".
+        const unchanged = !delta.missing && delta.number === 'E';
         const spoken = [
           p.name,
           formatSample(sample),
           `average ${spokenMetric(avg)}`,
-          delta.missing ? null : `change ${spokenMetric(delta)}`,
+          delta.missing ? null : unchanged ? 'no change' : `change ${spokenMetric(delta)}`,
         ]
           .filter(Boolean)
           .join(', ');
@@ -157,7 +159,7 @@ export function TeamField({ players, label, sort = 'trend', className }: TeamFie
                         : 'text-text-secondary',
                   )}
                 >
-                  {delta.text}
+                  {unchanged ? 'No change' : delta.text}
                 </span>
               ) : null}
             </span>
