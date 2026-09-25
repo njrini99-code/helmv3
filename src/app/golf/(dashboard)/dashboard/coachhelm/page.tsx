@@ -59,7 +59,14 @@ import {
   type BranchDetail,
 } from '@/lib/coachhelm/root-map/build-root-map';
 import { buildAreaSparklines } from '@/lib/coachhelm/root-map/area-trends';
-import { loadPlayersAreaSg, loadRecentAreaSgRounds, loadShortPuttSlopes } from '@/lib/coachhelm/root-map/loaders';
+import {
+  loadApproachContext,
+  loadPlayersAreaSg,
+  loadRecentAreaSgRounds,
+  loadShortPuttSlopes,
+} from '@/lib/coachhelm/root-map/loaders';
+import { buildPlayerApproachRoot } from '@/lib/coachhelm/root-map/approach-root';
+import type { ApproachWhyView } from '@/lib/coachhelm/root-map/approach-context';
 import { buildGreenView } from '@/lib/coachhelm/root-map/green-view';
 import type { RootTodayProps } from '@/components/golf/coachhelm/root-map/RootToday';
 
@@ -366,6 +373,7 @@ export default async function PlayerCoachHelmPage() {
     loadPlayersAreaSg(supabase, [player.id]),
     loadRecentAreaSgRounds(supabase, player.id, 10),
     loadShortPuttSlopes(supabase, player.id),
+    loadApproachContext(supabase, player.id),
   ]);
   // A8 slice 3 (write side): `isFlagEnabled` is server-only (DevelopmentDrill/
   // FocusAreaCard are client components), so the boolean is computed here
@@ -590,7 +598,20 @@ export default async function PlayerCoachHelmPage() {
   // "no sparklines", never to a made-up number. ─────────────────────────────
   let rootMap: RootTodayProps | null = null;
   try {
-    const [sgRows, recentRounds, shortPutts] = await rootMapReads;
+    const [sgRows, recentRounds, shortPutts, approachLoad] = await rootMapReads;
+    // Approach bands: sized from the per-shot split of the stored approach SG
+    // (only when it reconciles) and narrowed by length → par → shape. A failed
+    // read or assembly leaves approach rows as they were (unsized).
+    let approachRoot: ReturnType<typeof buildPlayerApproachRoot> = null;
+    try {
+      approachRoot = approachLoad ? buildPlayerApproachRoot(approachLoad, player.id) : null;
+    } catch (err) {
+      void logServerError(
+        `[player coachhelm] approach context assembly failed for player ${player.id}: ${describeError(err)}`,
+        { action: 'playerCoachHelm.rootMap.approach', featureArea: 'coachhelm' },
+        'warning',
+      );
+    }
     const sgRow = sgRows?.[0] ?? null;
     const shownInsights = [...(topInsight ? [topInsight] : []), ...secondaryInsights.filter((i) => !topInsight || i.id !== topInsight.id)];
     const throughDate = recentRounds?.[0]?.date ?? null;
@@ -598,7 +619,16 @@ export default async function PlayerCoachHelmPage() {
       areas: ROOT_AREAS.map((area) => ({ area, sgPerRound: sgRow?.sg[area] ?? null })),
       insights: shownInsights,
       newSinceDate: throughDate,
+      approachBands: approachRoot?.bands ?? null,
     });
+    const approachWhy: Record<string, ApproachWhyView> = {};
+    if (approachRoot) {
+      for (const insight of shownInsights) {
+        const m = typeof insight.evidence?.metric === 'string' ? insight.evidence.metric.match(/^approach_proximity_(50_125ft|125_175ft|175_plus_ft)$/) : null;
+        const view = m?.[1] ? approachRoot.context.why[m[1] as keyof typeof approachRoot.context.why] : undefined;
+        if (view) approachWhy[insight.id] = view;
+      }
+    }
     const details: Record<string, BranchDetail> = {};
     for (const insight of shownInsights) {
       const d = branchDetailOf(insight);
@@ -621,6 +651,7 @@ export default async function PlayerCoachHelmPage() {
       newSince,
       // Putting branches' Why view: null (omitted) below the sample gate.
       greenView: shortPutts ? buildGreenView(shortPutts.putts, shortPutts.rounds) : null,
+      approachWhy,
     };
   } catch (err) {
     void logServerError(

@@ -9,14 +9,19 @@
  *           `src/lib/golf/strokes-gained.ts` and the stats cache use)
  *   WHERE   areas with negative SG/round, width = |SG/round|
  *   WHAT    v3 cause insights under each losing area, width = the insight's
- *           stored `evidence.counterfactual.strokes_saved_per_round`
+ *           stored `evidence.counterfactual.strokes_saved_per_round`; an
+ *           approach-band row with no counterfactual is sized by its band's
+ *           share of the stored approach SG (`sizedBy: 'band_sg'`, see
+ *           `approach-context.ts`) when that split reconciles
  *   WHY     the root driver from `evidence.diagnosis`, styled by how firmly
- *           it is supported (see {@link rootStyleFor})
+ *           it is supported (see {@link rootStyleFor}); approach branches also
+ *           carry the gated length → par → shape path (`contextPath`)
  *
  * PURE and read-only. Every number comes from rows the page already read
- * (stats-cache SG, stored insight evidence). Nothing is recomputed from
- * shots, nothing is generated. A value that is missing is left out and
- * reported as such (`unsized`, `other`), never filled in.
+ * (stored round SG, stored insight evidence, the approach band split the
+ * page built from recorded shots). Nothing is generated. A value that is
+ * missing is left out and reported as such (`unsized`, `other`), never
+ * filled in.
  *
  * WIDTHS vs VALUES. Area SG and a cause's counterfactual are different
  * quantities: the cache SG is an average over every counted round, while a
@@ -187,6 +192,19 @@ export interface CauseBranch {
   /** `diagnosis.root_cause`, or null when there is none. */
   rootCause: string | null;
   isNew: boolean;
+  /**
+   * Where `strokes` comes from. `counterfactual` (default): the stored
+   * `evidence.counterfactual.strokes_saved_per_round`. `band_sg`: an approach
+   * band's share of the stored approach strokes gained, split per shot on the
+   * same baseline (`approach-context.ts`), only when that split reconciled.
+   */
+  sizedBy?: 'counterfactual' | 'band_sg';
+  /** One line naming what the number is, e.g. "approach strokes gained from
+   *  175+ yd, last 18 rounds". */
+  sizingNote?: string | null;
+  /** The gated length → par → shape path, e.g. "175+ yd → par 4s →
+   *  short-right" (`context-narrowing.ts`); null when it did not narrow. */
+  contextPath?: string | null;
 }
 
 export interface AreaBranch {
@@ -214,6 +232,10 @@ export interface UnsizedCause {
   style: RootStyle;
   tier: ConfidenceTier | null;
   isNew: boolean;
+  /** Gated length → par → shape path (approach bands), when it narrowed. */
+  contextPath?: string | null;
+  /** Why it has no width, when there is a specific reason. */
+  note?: string | null;
 }
 
 export interface OtherRead {

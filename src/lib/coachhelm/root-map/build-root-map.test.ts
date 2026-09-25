@@ -412,3 +412,62 @@ describe('humanizeCauseLabel', () => {
     expect(humanizeCauseLabel('Greens hit from 125-175 yd')).toBe('Greens hit from 125–175 yd');
   });
 });
+
+describe('buildRootMap — approach bands (2026-09-25)', () => {
+  const areas: RootMapAreaInput[] = [
+    { area: 'tee', sgPerRound: 0.3 },
+    { area: 'approach', sgPerRound: -0.93 },
+    { area: 'short_game', sgPerRound: null },
+    { area: 'putting', sgPerRound: -0.4 },
+  ];
+  const band = (strokesLost: number | null, path: string | null, unsizedNote: string | null = null) => ({
+    strokesLost,
+    path,
+    rounds: 18,
+    unsizedNote,
+  });
+
+  it('an approach row with no counterfactual is sized by its band split, with its path and note', () => {
+    const far = insight({ id: 'far', category: 'approach', metric: 'approach_proximity_175_plus_ft', label: 'Greens hit from 175+ yds', strokes: null });
+    const model = buildRootMap({
+      areas,
+      insights: [far],
+      approachBands: { '175_plus_ft': band(0.57, '175+ yd → par 4s → short-right') },
+    });
+    const b = findBranch(model, 'far')!;
+    expect(b.strokes).toBeCloseTo(0.57);
+    expect(b.sizedBy).toBe('band_sg');
+    expect(b.sizingNote).toBe('approach strokes gained from 175+ yd, last 18 rounds');
+    expect(b.contextPath).toBe('175+ yd → par 4s → short-right');
+    expect(model.unsized).toHaveLength(0);
+  });
+
+  it('a stored counterfactual still wins over the band split', () => {
+    const far = insight({ id: 'far2', category: 'approach', metric: 'approach_proximity_175_plus_ft', strokes: 0.2 });
+    const model = buildRootMap({ areas, insights: [far], approachBands: { '175_plus_ft': band(0.57, null) } });
+    const b = findBranch(model, 'far2')!;
+    expect(b.strokes).toBeCloseTo(0.2);
+    expect(b.sizedBy).toBe('counterfactual');
+  });
+
+  it('a band that is not losing (or did not reconcile) stays unsized, with its reason and path', () => {
+    const mid = insight({ id: 'mid', category: 'approach', metric: 'approach_proximity_125_175ft', strokes: null });
+    const model = buildRootMap({
+      areas,
+      insights: [mid],
+      approachBands: { '125_175ft': band(null, '125–175 yd → par 4s', 'Not losing strokes from this range over your last 18 rounds') },
+    });
+    expect(findBranch(model, 'mid')).toBeNull();
+    expect(model.unsized[0]).toMatchObject({
+      id: 'mid',
+      contextPath: '125–175 yd → par 4s',
+      note: 'Not losing strokes from this range over your last 18 rounds',
+    });
+  });
+
+  it('without band input, approach rows behave as before (unsized, no path)', () => {
+    const far = insight({ id: 'far3', category: 'approach', metric: 'approach_proximity_175_plus_ft', strokes: null });
+    const model = buildRootMap({ areas, insights: [far] });
+    expect(model.unsized[0]).toMatchObject({ id: 'far3', contextPath: null, note: null });
+  });
+});

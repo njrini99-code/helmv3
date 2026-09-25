@@ -117,6 +117,7 @@ function ribbonPath(sx: number, sw: number, dx: number, dw: number): string {
 export function branchSpokenLabel(b: CauseBranch, areaLabel: string, showWhy: boolean): string {
   const parts = [`${areaLabel}: ${b.label}, ${formatStrokes(b.strokes)} strokes a round`];
   if (showWhy) {
+    if (b.contextPath) parts.push(`where it concentrates: ${b.contextPath}`);
     if (b.rootCause && b.style !== 'unexplained') parts.push(`root: ${b.rootCause}, ${ROOT_STYLE_LABEL[b.style].toLowerCase()}`);
     else parts.push(ROOT_STYLE_LABEL[b.style].toLowerCase());
   }
@@ -293,9 +294,18 @@ export function RootMap({
                       </span>
                       {showWhy ? (
                         <span
-                          className={cn('relative block h-8 rounded-fw-sm', selected ? 'ring-2 ring-text-primary' : '')}
+                          className={cn(
+                            'relative flex h-8 min-w-0 items-center overflow-hidden rounded-fw-sm px-1',
+                            selected ? 'ring-2 ring-text-primary' : '',
+                          )}
                           style={rootStyleCss(c.style)}
-                        />
+                        >
+                          {c.contextPath && sl.w >= 0.2 ? (
+                            <span className="truncate rounded-sm bg-surface px-1 text-caption text-text-primary">
+                              {c.contextPath}
+                            </span>
+                          ) : null}
+                        </span>
                       ) : null}
                       {c.isNew ? (
                         <span

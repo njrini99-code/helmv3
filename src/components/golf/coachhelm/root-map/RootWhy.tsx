@@ -15,8 +15,15 @@
  * Putting branches also get the top-down green (`GreenPlot`): recorded 4-6 ft
  * putts placed by slope (`golf_shots.putt_slope`, recorded on ~96% of putts)
  * and distance, with a make rate per region. It is omitted below its sample
- * gate (see `buildGreenView`). Other branches show only the generic evidence
- * visual (your value against the comparison, with the sample).
+ * gate (see `buildGreenView`).
+ *
+ * Approach branches get the length → par → shape evidence
+ * (`approach-context.ts`, read live from the last countable rounds, so it is
+ * labelled with its own window): the gated narrowing steps, a miss compass
+ * (short/long × left/right, coverage stated; omitted below the coverage
+ * gate), the par × length grid with the chosen slice emphasised, and the
+ * three ranges' A2 metrics side by side. Other branches show only the generic
+ * evidence visual (your value against the comparison, with the sample).
  * ========================================================================== */
 
 import { useState } from 'react';
@@ -49,6 +56,7 @@ import {
   type GreenRegionStat,
   type GreenView,
 } from '@/lib/coachhelm/root-map/green-view';
+import type { ApproachCompass, ApproachWhyView } from '@/lib/coachhelm/root-map/approach-context';
 
 export interface RootWhyInsight {
   id: string;
@@ -62,6 +70,8 @@ export interface RootWhyProps {
   insights: RootWhyInsight[];
   /** Short-putt green, shown on putting branches; null omits it. */
   greenView?: GreenView | null;
+  /** Insight id → approach band evidence; absent ids show none. */
+  approachWhy?: Record<string, ApproachWhyView> | null;
 }
 
 function areaTypeFor(category: string | null): string {
@@ -266,6 +276,270 @@ function GreenPlot({ view }: { view: GreenView }) {
   );
 }
 
+const COMPASS_CELLS: Array<{ key: keyof ApproachCompass['quadrants'] | 'center'; col: number; row: number; label: string }> = [
+  { key: 'long_left', col: 0, row: 0, label: 'long left' },
+  { key: 'long', col: 1, row: 0, label: 'long' },
+  { key: 'long_right', col: 2, row: 0, label: 'long right' },
+  { key: 'left', col: 0, row: 1, label: 'left' },
+  { key: 'center', col: 1, row: 1, label: 'green' },
+  { key: 'right', col: 2, row: 1, label: 'right' },
+  { key: 'short_left', col: 0, row: 2, label: 'short left' },
+  { key: 'short', col: 1, row: 2, label: 'short' },
+  { key: 'short_right', col: 2, row: 2, label: 'short right' },
+];
+
+/** Whether a compass cell belongs to the stated shape ("short-right" lights
+ *  short_right; "short" lights every short cell). */
+function inShape(cell: string, shape: string | null): boolean {
+  if (!shape || cell === 'center') return false;
+  const parts = shape.split('-');
+  return parts.every((p) => cell.split('_').includes(p));
+}
+
+/**
+ * Miss compass: where the recorded misses finished around the green, long
+ * at the top, short at the bottom. Dot area follows the count; the cells of
+ * the stated shape are filled, the rest outlined.
+ */
+function MissCompass({ compass }: { compass: ApproachCompass }) {
+  const size = 240;
+  const cell = size / 3;
+  const max = Math.max(1, ...Object.values(compass.quadrants));
+  const aria =
+    `Where ${compass.covered} recorded misses finished, ${compass.population}: ` +
+    COMPASS_CELLS.filter((c) => c.key !== 'center')
+      .map((c) => `${c.label} ${compass.quadrants[c.key as keyof ApproachCompass['quadrants']]}`)
+      .join(', ') +
+    `. ${compass.short} short, ${compass.long} long, ${compass.left} left, ${compass.right} right.` +
+    (compass.shape ? ` Most finish ${compass.shape}.` : ' No side dominates.');
+  return (
+    <section aria-labelledby="why-compass-heading" className="flex flex-col gap-3" data-slot="miss-compass">
+      <h3 id="why-compass-heading" className="border-b border-text-primary pb-2 font-fw-display text-body-lg font-semibold text-text-primary">
+        Where the misses finish
+      </h3>
+      <p className="text-body-sm text-text-secondary">{compass.population}</p>
+      <svg role="img" aria-label={aria} viewBox={`0 0 ${size} ${size}`} className="mx-auto h-auto w-full max-w-[280px]">
+        {[1, 2].map((i) => (
+          <g key={i}>
+            <line x1={cell * i} x2={cell * i} y1={0} y2={size} style={{ stroke: 'var(--fw-viz-grid)' }} strokeWidth={1} />
+            <line y1={cell * i} y2={cell * i} x1={0} x2={size} style={{ stroke: 'var(--fw-viz-grid)' }} strokeWidth={1} />
+          </g>
+        ))}
+        {COMPASS_CELLS.map((c) => {
+          const cx = c.col * cell + cell / 2;
+          const cy = c.row * cell + cell / 2;
+          if (c.key === 'center') {
+            return (
+              <g key="center">
+                <circle cx={cx} cy={cy} r={cell * 0.32} style={{ fill: 'var(--fw-color-success-bg)' }} />
+                <circle cx={cx} cy={cy} r={4} style={{ fill: 'var(--fw-color-text-primary)' }} />
+              </g>
+            );
+          }
+          const count = compass.quadrants[c.key];
+          const lit = inShape(c.key, compass.shape);
+          const r = count > 0 ? 6 + (cell * 0.3 - 6) * Math.sqrt(count / max) : 0;
+          return (
+            <g key={c.key}>
+              {count > 0 ? (
+                <circle
+                  cx={cx}
+                  cy={cy - 6}
+                  r={r}
+                  strokeWidth={1.5}
+                  style={
+                    lit
+                      ? { fill: 'var(--fw-viz-div-neg)', stroke: 'var(--fw-viz-div-neg)' }
+                      : { fill: 'var(--fw-color-surface)', stroke: 'var(--fw-color-border-strong)' }
+                  }
+                />
+              ) : null}
+              <text
+                x={cx}
+                y={c.row * cell + cell - 8}
+                textAnchor="middle"
+                fontSize={11}
+                style={{ fill: lit ? 'var(--fw-color-text-primary)' : 'var(--fw-color-text-tertiary)' }}
+              >
+                {c.label} · {count}
+              </text>
+            </g>
+          );
+        })}
+      </svg>
+      <p className="text-caption text-text-tertiary">
+        {compass.covered} of {compass.misses} misses have a recorded direction.
+        {compass.shape ? ` Most finish ${compass.shape}.` : ' No side dominates.'}
+      </p>
+    </section>
+  );
+}
+
+const LENGTHS = ['short', 'mid', 'long'] as const;
+
+/** Par × hole length: misses of attempts from this range, the chosen slice
+ *  emphasised (a whole-par slice emphasises its row). */
+function ParLengthGrid({ view }: { view: ApproachWhyView }) {
+  const grid = view.grid!;
+  const pars = ([3, 4, 5] as const).filter((p) => grid.cells.some((c) => c.par === p));
+  if (pars.length === 0) return null;
+  const selected = (par: number, length: string) =>
+    grid.selectedId === `par${par}_${length}` || grid.selectedId === `par${par}`;
+  return (
+    <section aria-labelledby="why-grid-heading" className="flex flex-col gap-3" data-slot="par-length-grid">
+      <h3 id="why-grid-heading" className="border-b border-text-primary pb-2 font-fw-display text-body-lg font-semibold text-text-primary">
+        By par and hole length
+      </h3>
+      <table className="w-full table-fixed border-collapse text-body-sm">
+        <caption className="sr-only">
+          Missed greens of approaches from {view.bandLabel}, by par and hole length
+          {grid.selectedLabel ? `; misses concentrate on ${grid.selectedLabel}` : ''}
+        </caption>
+        <thead>
+          <tr>
+            <th scope="col" className="w-16 pb-1 text-left text-caption font-medium text-text-tertiary">
+              <span className="sr-only">Par</span>
+            </th>
+            {LENGTHS.map((l) => (
+              <th key={l} scope="col" className="pb-1 text-left text-caption font-medium capitalize text-text-tertiary">
+                {l}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {pars.map((p) => (
+            <tr key={p}>
+              <th scope="row" className="py-1 text-left text-caption font-medium text-text-secondary">
+                Par {p}
+              </th>
+              {LENGTHS.map((l) => {
+                const c = grid.cells.find((x) => x.par === p && x.length === l);
+                const on = selected(p, l) && !!c;
+                return (
+                  <td key={l} className="p-0.5">
+                    <div
+                      className={
+                        on
+                          ? 'flex min-h-11 flex-col justify-center rounded-fw-sm px-2 ring-2 ring-text-primary'
+                          : 'flex min-h-11 flex-col justify-center rounded-fw-sm px-2'
+                      }
+                      style={{ background: c && c.attempts > 0 ? `color-mix(in oklch, var(--fw-viz-div-neg) ${Math.round((c.misses / c.attempts) * 60)}%, var(--fw-color-surface))` : 'var(--fw-color-surface-sunken)' }}
+                    >
+                      {c ? (
+                        <>
+                          <span className="font-fw-mono tabular-nums text-text-primary">
+                            {c.misses}/{c.attempts}
+                          </span>
+                          <span className="text-caption text-text-secondary">missed</span>
+                        </>
+                      ) : (
+                        <span className="text-caption text-text-tertiary">–</span>
+                      )}
+                    </div>
+                  </td>
+                );
+              })}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <p className="text-caption text-text-tertiary">
+        Hole length bands: par 3 under 150 / 150–189 / 190+ yd, par 4 under 380 / 380–429 / 430+, par 5 under 500 /
+        500–539 / 540+.
+      </p>
+    </section>
+  );
+}
+
+function pctText(v: number | null): string {
+  return v === null ? '–' : `${Math.round(v)}%`;
+}
+
+/** The three ranges side by side (A2 distance profile), this one emphasised. */
+function BandMetrics({ view }: { view: ApproachWhyView }) {
+  if (view.metrics.length === 0) return null;
+  return (
+    <section aria-labelledby="why-bands-heading" className="flex flex-col gap-3" data-slot="band-metrics">
+      <h3 id="why-bands-heading" className="border-b border-text-primary pb-2 font-fw-display text-body-lg font-semibold text-text-primary">
+        This range against your others
+      </h3>
+      <table className="w-full border-collapse text-body-sm">
+        <caption className="sr-only">Approach results by distance range, last {view.rounds} rounds</caption>
+        <thead>
+          <tr className="text-caption text-text-tertiary">
+            <th scope="col" className="pb-1 text-left font-medium">Range</th>
+            <th scope="col" className="pb-1 text-right font-medium">Greens hit</th>
+            <th scope="col" className="pb-1 text-right font-medium">Proximity on</th>
+            <th scope="col" className="pb-1 text-right font-medium">Severe</th>
+          </tr>
+        </thead>
+        <tbody>
+          {view.metrics.map((m) => {
+            const on = m.band === view.band;
+            return (
+              <tr key={m.band} className={on ? 'font-semibold text-text-primary' : 'text-text-secondary'} aria-current={on ? 'true' : undefined}>
+                <th scope="row" className="py-1.5 text-left font-medium">
+                  {m.label}
+                </th>
+                <td className="py-1.5 text-right font-fw-mono tabular-nums">
+                  {pctText(m.greensPct)}
+                  <span className="pl-1 text-caption font-normal text-text-tertiary">
+                    {m.greensHit ?? 0}/{m.attempts}
+                  </span>
+                </td>
+                <td className="py-1.5 text-right font-fw-mono tabular-nums">{m.proximityFt === null ? '–' : `${Math.round(m.proximityFt)} ft`}</td>
+                <td className="py-1.5 text-right font-fw-mono tabular-nums">{pctText(m.severePct)}</td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+      <p className="text-caption text-text-tertiary">
+        – = too few shots to state (fewer than 10 over 3 rounds). Severe = a penalty, a bunker or other trouble. From 175+ yd,
+        par-5 shots that did not find the green are left out as likely lay-ups.
+      </p>
+    </section>
+  );
+}
+
+/** Length → par → shape for one approach range, read from recorded shots. */
+function ApproachContextSection({ view }: { view: ApproachWhyView }) {
+  const passed = view.narrowing.steps.filter((s) => s.passed);
+  const stop = view.narrowing.steps.find((s) => !s.passed) ?? null;
+  return (
+    <div className="flex flex-col gap-6" data-slot="approach-context">
+      <section aria-labelledby="why-where-heading" className="flex flex-col gap-2">
+        <h3 id="why-where-heading" className="border-b border-text-primary pb-2 font-fw-display text-body-lg font-semibold text-text-primary">
+          Where it concentrates
+        </h3>
+        {view.narrowing.path.length > 0 ? (
+          <p className="font-fw-display text-title-2 text-text-primary">{view.narrowing.path.join(' → ')}</p>
+        ) : null}
+        <ol className="flex flex-col gap-1 text-body-sm text-text-primary">
+          {passed.map((s) => (
+            <li key={s.level}>{s.statement.charAt(0).toUpperCase() + s.statement.slice(1)}.</li>
+          ))}
+        </ol>
+        {stop ? <p className="text-body-sm text-text-secondary">Not narrowed further: {stop.statement}.</p> : null}
+        {view.strokesLost !== null ? (
+          <p className="text-body-sm text-text-secondary">
+            <span className="font-fw-mono tabular-nums text-text-primary">{formatStrokes(view.strokesLost)}</span> strokes a round
+            lost from {view.bandLabel}: your approach strokes gained split shot by shot.
+          </p>
+        ) : null}
+        <p className="text-caption text-text-tertiary">
+          Read from your last {view.rounds} counted rounds. Where the ball finished is recorded; why is not (club, wind and
+          target are not logged), so this is where the misses gather, not what causes them.
+        </p>
+      </section>
+      {view.compass ? <MissCompass compass={view.compass} /> : null}
+      {view.grid ? <ParLengthGrid view={view} /> : null}
+      <BandMetrics view={view} />
+    </div>
+  );
+}
+
 function Worth({ now, ifClosed }: { now: number; ifClosed: number }) {
   const lo = Math.floor(Math.min(now, ifClosed) - 1);
   const hi = Math.ceil(Math.max(now, ifClosed) + 1);
@@ -315,7 +589,7 @@ function Worth({ now, ifClosed }: { now: number; ifClosed: number }) {
   );
 }
 
-export function RootWhy({ model, details, insights, greenView = null }: RootWhyProps) {
+export function RootWhy({ model, details, insights, greenView = null, approachWhy = null }: RootWhyProps) {
   const searchParams = useSearchParams();
   const id = searchParams.get('insight');
   const insight = insights.find((i) => i.id === id) ?? null;
@@ -401,6 +675,8 @@ export function RootWhy({ model, details, insights, greenView = null }: RootWhyP
       <EvidenceCompare detail={detail} />
 
       {greenView && insight.category === 'putting' ? <GreenPlot view={greenView} /> : null}
+
+      {approachWhy?.[insight.id] ? <ApproachContextSection view={approachWhy[insight.id]!} /> : null}
 
       <section aria-labelledby="why-root-heading" className="flex flex-col gap-2">
         <h3 id="why-root-heading" className="border-b border-text-primary pb-2 font-fw-display text-body-lg font-semibold text-text-primary">

@@ -35,6 +35,7 @@ import {
 } from '@/lib/coachhelm/root-map/build-root-map';
 import type { AreaSparkline } from '@/lib/coachhelm/root-map/area-trends';
 import type { GreenView } from '@/lib/coachhelm/root-map/green-view';
+import type { ApproachWhyView } from '@/lib/coachhelm/root-map/approach-context';
 import { RootBranchList, RootMap, rootStyleCss } from './RootMap';
 import { AreaSparklines } from './AreaSparklines';
 
@@ -63,6 +64,8 @@ export interface RootTodayProps {
   newSince: NewSinceItem[];
   /** Short-putt green for putting branches' Why view; null when below its gate. */
   greenView?: GreenView | null;
+  /** Insight id → approach band Why evidence (length / par / shape). */
+  approachWhy?: Record<string, ApproachWhyView> | null;
 }
 
 function supportTone(style: RootStyle): 'success' | 'warning' | 'neutral' {
@@ -98,6 +101,12 @@ function rootSentence(detail: BranchDetail | null, branch: CauseBranch): string 
   return `Still forming: ${cause}`;
 }
 
+/** What a branch's stroke value is, in words. */
+function strokesText(branch: CauseBranch): string {
+  if (branch.sizedBy === 'band_sg' && branch.sizingNote) return `strokes a round lost to the Tour line: ${branch.sizingNote}`;
+  return `strokes a round on ${branch.label.toLowerCase()}, to the Tour line`;
+}
+
 function Chain({ model, branch, detail }: { model: RootMapModel; branch: CauseBranch; detail: BranchDetail | null }) {
   const area = model.losses.find((a) => a.area === branch.area);
   const rows: { value: string; text: string }[] = [];
@@ -113,10 +122,12 @@ function Chain({ model, branch, detail }: { model: RootMapModel; branch: CauseBr
         text: `${detail.driver.label}${detail.driver.sampleN > 0 ? ` · ${detail.driver.sampleN} tracked` : ''}`,
       });
     } else {
-      rows.push({ value: formatStrokes(branch.strokes), text: `strokes a round on ${branch.label.toLowerCase()}, to the Tour line` });
+      rows.push({ value: formatStrokes(branch.strokes), text: strokesText(branch) });
     }
+    // A band-sized branch also states its width, whatever the driver row says.
+    if (detail.driver && branch.sizedBy === 'band_sg') rows.push({ value: formatStrokes(branch.strokes), text: strokesText(branch) });
   } else {
-    rows.push({ value: formatStrokes(branch.strokes), text: `strokes a round on ${branch.label.toLowerCase()}, to the Tour line` });
+    rows.push({ value: formatStrokes(branch.strokes), text: strokesText(branch) });
   }
   return (
     <section aria-labelledby="root-chain-heading" className="flex flex-col gap-3 border-t border-text-primary pt-4">
@@ -132,6 +143,12 @@ function Chain({ model, branch, detail }: { model: RootMapModel; branch: CauseBr
           </div>
         ))}
       </dl>
+      {branch.contextPath ? (
+        <p className="text-body-sm text-text-primary">
+          <span className="font-medium">Where it concentrates: </span>
+          {branch.contextPath}
+        </p>
+      ) : null}
       <p className="text-body-sm text-text-primary">{rootSentence(detail, branch)}</p>
     </section>
   );
@@ -219,6 +236,17 @@ export function RootToday({ model, details, headline, roundsRead, throughDate, s
               <h3 id="root-unsized-heading" className="text-body-sm font-medium text-text-secondary">
                 Also under a losing area, not sized yet (no stroke value stored)
               </h3>
+              {model.unsized.some((u) => u.note) ? (
+                <ul className="flex flex-col gap-0.5 text-caption text-text-tertiary">
+                  {model.unsized
+                    .filter((u) => u.note)
+                    .map((u) => (
+                      <li key={u.id}>
+                        {u.label}: {u.note}
+                      </li>
+                    ))}
+                </ul>
+              ) : null}
               <ul className="flex flex-wrap gap-2">
                 {model.unsized.map((u) => (
                   <li key={u.id}>
@@ -228,6 +256,9 @@ export function RootToday({ model, details, headline, roundsRead, throughDate, s
                     >
                       <span aria-hidden className="inline-block h-3 w-3 rounded-sm" style={rootStyleCss(u.style)} />
                       <span className="max-w-[14rem] truncate">{u.label}</span>
+                      {u.contextPath ? (
+                        <span className="max-w-[16rem] truncate text-caption text-text-primary">{u.contextPath}</span>
+                      ) : null}
                       <span className="text-caption text-text-tertiary">{ROOT_AREA_LABEL[u.area]}</span>
                       {u.isNew ? <span aria-label="new" className="h-2 w-2 rounded-full bg-accent-500" /> : null}
                     </Link>
