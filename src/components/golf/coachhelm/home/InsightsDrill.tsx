@@ -134,7 +134,13 @@ export function InsightsDrill({
   const newest = shortDay(
     insights.reduce<string | null>((max, i) => (max === null || i.created_at > max ? i.created_at : max), null),
   );
-  const topGroup = groupedInsights[0] ?? null;
+  // The LARGEST named group (not the first, which is priority order); the
+  // "General" fallback group never leads the sentence.
+  const topGroup =
+    [...groupedInsights]
+      .filter((g) => g.key !== '__general__')
+      .sort((a, b) => b.insights.length - a.insights.length)[0] ?? null;
+  const topIsMajority = topGroup !== null && topGroup.insights.length * 2 > insights.length;
 
   return (
     <DrillPanel title="Insights" backLabel="Home" onBack={home}>
@@ -147,13 +153,15 @@ export function InsightsDrill({
             unit={insights.length === 1 ? 'insight' : 'insights'}
             takeaway={
               topGroup && insights.length > 0
-                ? groupedInsights.length > 1
-                  ? `Most are about ${topGroup.label.toLowerCase()}. Tap one for the evidence and a drill.`
-                  : `All about ${topGroup.label.toLowerCase()}. Tap one for the evidence and a drill.`
-                : 'Grouped by theme below. Tap one for the evidence and a drill.'
+                ? topGroup.insights.length === insights.length
+                  ? `All about ${topGroup.label.toLowerCase()}. Tap one for the evidence and a drill.`
+                  : topIsMajority
+                    ? `Most are about ${topGroup.label.toLowerCase()}. Tap one for the evidence and a drill.`
+                    : `Led by ${topGroup.label.toLowerCase()}. Tap one for the evidence and a drill.`
+                : 'Grouped by category below. Tap one for the evidence and a drill.'
             }
             visual={insights.length > 0 ? <CategorySplit groups={groupedInsights} total={insights.length} /> : null}
-            basis={newest ? `Newest from ${newest} · your top insight lives on Today` : 'Your top insight lives on Today'}
+            basis={newest ? `Newest from ${newest} · your top insight is on Overview` : 'Your top insight is on Overview'}
           />
         ) : null}
 
@@ -243,7 +251,7 @@ export function InsightsDrill({
           <Surface elevation="border" padding="lg">
             <EmptyState
               title="No more insights right now"
-              description="Your top insight is on Today. Log a few more rounds and CoachHelm will surface the next pattern here."
+              description="Your top insight is on Overview. Log a few more rounds and CoachHelm will surface the next pattern here."
             />
           </Surface>
         )}

@@ -157,8 +157,10 @@ export function StandingDrill({ standingByMetric, playerBaseline, attemptsPerRou
   // ── Summary ─────────────────────────────────────────────────────────────
   const teamComparable = allRows.filter((r) => r.aheadOfTeam !== null);
   const aheadCount = teamComparable.filter((r) => r.aheadOfTeam).length;
+  // SG: Total is the sum of the other SG rows and already the summary's
+  // visual; as a "win" it would bury the gap the player can act on.
   const best = allRows
-    .filter((r) => r.line && r.projection)
+    .filter((r) => r.id !== 'sg_total' && r.line && r.projection)
     .sort((a, b) => (b.projection?.strokes_saved_per_round ?? 0) - (a.projection?.strokes_saved_per_round ?? 0))[0];
   const worstVsTeam = teamComparable
     .filter((r) => r.aheadOfTeam === false)
@@ -173,10 +175,9 @@ export function StandingDrill({ standingByMetric, playerBaseline, attemptsPerRou
   const updated = shortDay(
     allRows.reduce<string | null>((max, r) => (max === null || r.standing.computed_at > max ? r.standing.computed_at : max), null),
   );
-  const teamN = teamComparable[0]?.standing.team_n ?? null;
   const basis = [
     `${allRows.length} metrics tracked`,
-    teamN !== null ? `team of ${teamN}` : 'team comparison needs 5+ teammates',
+    teamComparable.length > 0 ? 'team average from teammates with enough rounds' : 'team comparison needs 5+ teammates',
     updated ? `updated ${updated}, refreshes nightly` : 'refreshes nightly',
   ].join(' · ');
 

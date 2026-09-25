@@ -206,9 +206,11 @@ describe('InsightsDrill', () => {
     const { container } = inStage(
       <InsightsDrill
         insights={[
+          // Priority order puts the smaller approach group first; the
+          // summary must name the LARGEST group, not the first.
+          insight('3', 'approach', '2026-09-18T00:00:00Z'),
           insight('1', 'putting', '2026-09-20T00:00:00Z'),
           insight('2', 'putting', '2026-09-22T00:00:00Z'),
-          insight('3', 'approach', '2026-09-18T00:00:00Z'),
         ]}
         standingByMetric={{}}
         themesEnabled={false}
@@ -224,6 +226,7 @@ describe('InsightsDrill', () => {
     expect(summary.textContent).toContain('Newest from Sep 22');
     const groups = container.querySelectorAll('[data-slot="flat-category-section"]');
     expect(groups).toHaveLength(2);
+    expect(groups[0]!.textContent).toContain('Approach');
     expect(groups[0]!.getAttribute('data-open')).toBe('true');
     expect(groups[1]!.getAttribute('data-open')).toBe('false');
     expect(container.textContent).not.toContain('not_a_metric');

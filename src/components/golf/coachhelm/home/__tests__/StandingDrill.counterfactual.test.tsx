@@ -136,8 +136,9 @@ describe('StandingDrill render', () => {
     expect(summary).not.toBeNull();
     // gir 50 vs team 48 is ahead; sg_total and 3-5 ft are behind.
     expect(within(summary).getByText('1 of 3')).toBeTruthy();
-    // SG: Total's 1.2 beats the putting row's 0.9 once putting is sized honestly.
-    expect(summary.textContent).toContain('Biggest win: SG: Total');
+    // SG: Total (the aggregate, drawn as the visual) is never the "win"; the
+    // putting row leads at its honest own-rate size (0.9, not the legacy 2+).
+    expect(summary.textContent).toContain('Biggest win: Putts Made 3-5 ft. Closing it is worth about 0.9 strokes a round.');
     expect(summary.textContent).toContain('updated Sep 24');
     // Detail stays behind closed disclosures until tapped.
     expect(container.querySelector('[data-slot="standing-row"]')).toBeNull();
