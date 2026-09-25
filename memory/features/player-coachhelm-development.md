@@ -134,6 +134,16 @@ Player opens round review
   10 downhill or 10 level putts. The angle inside a region is seeded from the
   shot id, because putt direction is not recorded, and the caption says so.
   `loadShortPuttSlopes` is the bounded read.
+- **Standing drill counterfactual (2026-09-25)**: `?view=standing` sizes
+  attempt-rate metrics off the player's own attempts per round
+  (`home/standingAttemptRates.ts`): putt bands = `putt_attempts_*` ÷
+  `rounds_played` and sand = `sand_attempts` ÷ `rounds_played` from the
+  same `golf_player_stats_cache` row the standing values refresh from;
+  par-type = ParTypeGenerator's 4/10/4 hole counts. An attempt-rate metric
+  with no known rate (`gir_pct`, `scrambling_pct_rough`/`_fairway`, or a
+  failed cache read) shows no strokes line: the legacy per-unit constant
+  overstated 3-5 ft putting 2.3 vs 0.9 strokes a round. Pinned by
+  `home/__tests__/StandingDrill.counterfactual.test.tsx`.
 - Production on 2026-09-25 has no `observed_sequence` diagnoses and no
   approach counterfactuals, so Today shows hatched/forming branches and
   unsized approach chips; `build-root-map.test.ts` pins that case.

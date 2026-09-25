@@ -40,6 +40,7 @@ import { normalizeForRadar } from '@/lib/coachhelm/v3/genome/normalize';
 // ── `standing` drill read — copied from my-standing/page.tsx (the
 // counterfactual baseline; the standing map itself is already fetched below). ─
 import { loadPlayerScoringBaseline } from '@/lib/coachhelm/v3/counterfactual/baseline-loader';
+import { resolveStandingAttemptRates } from '@/components/golf/coachhelm/home/standingAttemptRates';
 import { logServerError } from '@/lib/server-error-logger';
 import { describeError } from '@/lib/utils/describe-error';
 import { isFlagEnabled } from '@/lib/flags';
@@ -399,6 +400,10 @@ export default async function PlayerCoachHelmPage() {
   let achievedGoals: FairwayGoalCardData[] = [];
   let suggestions: GoalSuggestionView[] = [];
   let causalRelationships: Awaited<ReturnType<typeof getPlayerCausalRelationships>> = [];
+  // Standing counterfactual: the player's own attempts per round (from the
+  // same stats-cache row the standing values refresh from). Null when the
+  // read fails; attempt-rate metrics then show no strokes line.
+  let standingAttemptsPerRound: Record<string, number> | null = null;
   try {
     // A8 slice 3: only extend the select (and only route it through the
     // untyped escape hatch) when the flag is on — with it off, this must be
@@ -495,7 +500,10 @@ export default async function PlayerCoachHelmPage() {
       supabase
         .from('golf_player_stats_cache')
         .select(
-          'rounds_played, scoring_average, putts_per_round, driving_accuracy_percentage, gir_percentage, best_round, driving_distance_average, approach_proximity_average, scrambling_percentage, up_and_down_percentage, sand_save_percentage, one_putt_percentage, three_putt_percentage, par3_average, par4_average, par5_average',
+          // The putt_attempts_* / sand_attempts columns size the Standing
+          // panel's counterfactual line off the player's own attempts per
+          // round (resolveStandingAttemptRates).
+          'rounds_played, scoring_average, putts_per_round, driving_accuracy_percentage, gir_percentage, best_round, driving_distance_average, approach_proximity_average, scrambling_percentage, up_and_down_percentage, sand_save_percentage, one_putt_percentage, three_putt_percentage, par3_average, par4_average, par5_average, putt_attempts_3_5ft, putt_attempts_5_10ft, putt_attempts_10_15ft, putt_attempts_15_25ft, putt_attempts_25_plus_ft, sand_attempts',
         )
         .eq('player_id', player.id)
         .maybeSingle(),
@@ -512,6 +520,7 @@ export default async function PlayerCoachHelmPage() {
     }
 
     const sr = statsRow.data;
+    standingAttemptsPerRound = resolveStandingAttemptRates(sr);
     developmentPlayerStats = {
       rounds_played: sr?.rounds_played ?? 0,
       avg_score: sr?.scoring_average ?? null,
@@ -720,6 +729,7 @@ export default async function PlayerCoachHelmPage() {
           genomeRoundsBasis={genomeRoundsBasis}
           fingerprint={fingerprint}
           playerBaseline={playerBaseline}
+          standingAttemptsPerRound={standingAttemptsPerRound}
           practiceLogEnabled={practiceLogEnabled}
           rootMap={rootMap}
         />

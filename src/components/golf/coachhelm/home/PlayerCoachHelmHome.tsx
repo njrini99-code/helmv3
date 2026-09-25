@@ -129,6 +129,9 @@ export interface PlayerCoachHelmHomeProps {
 
   /** `standing` drill — copied from `my-standing/page.tsx`. */
   playerBaseline: number | null;
+  /** The player's own attempts per round by metric id, for the Standing
+   *  counterfactual line (see `resolveStandingAttemptRates`). */
+  standingAttemptsPerRound?: Record<string, number> | null;
 
   /**
    * Root-map Today view + its `?view=root&insight=` Why drill, built
@@ -168,6 +171,7 @@ export function PlayerCoachHelmHome({
   genomeRoundsBasis,
   fingerprint = null,
   playerBaseline,
+  standingAttemptsPerRound = null,
   rootMap = null,
 }: PlayerCoachHelmHomeProps) {
   const router = useRouter();
@@ -430,7 +434,13 @@ export function PlayerCoachHelmHome({
     },
     {
       key: 'standing',
-      node: <StandingDrill standingByMetric={standingByMetric} playerBaseline={playerBaseline} />,
+      node: (
+        <StandingDrill
+          standingByMetric={standingByMetric}
+          playerBaseline={playerBaseline}
+          attemptsPerRoundByMetric={standingAttemptsPerRound}
+        />
+      ),
     },
     {
       key: 'insights',
