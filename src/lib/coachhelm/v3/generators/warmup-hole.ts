@@ -164,7 +164,7 @@ export class WarmupHoleGenerator extends BaseGenerator<WarmupHoleAggregate> {
       `${absDelta} strokes ${direction} than same-par holes 2-18 ` +
       `(hole 1 = ${hole1Disp}/hole; matched rest of round = ${restDisp}/hole).` +
       causeClause +
-      ` Tour avg is ~0.1 strokes (Research doc §9).` +
+      ` Tour avg is ~0.1 strokes.` +
       staleDataSuffix(agg.last_round_date);
 
     return {

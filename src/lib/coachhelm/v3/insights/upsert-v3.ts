@@ -22,10 +22,43 @@ import {
   GATED_OUT,
 } from '@/lib/coachhelm/v2/insights/upsert';
 import type { InsightInput } from '@/lib/coachhelm/v2/insights/types';
+import { sanitizeProse } from '@/lib/coachhelm/v3/themes/assemble';
 import { logServerError } from '@/lib/server-error-logger';
 import { describeError } from '@/lib/utils/describe-error';
 
 const V3_SIGNATURE_PREFIX = 'v3:';
+
+/**
+ * Write-boundary prose hygiene. Every v3 row (single-metric generators via
+ * `generator-base.ts` and composites via `composite/synthesis.ts`) passes
+ * through here, so this is the one place that guarantees no internal
+ * authoring artifact ("(Research doc §N)", "Per Research doc §N …", the
+ * dangling "standing card below" sentence) is ever PERSISTED into
+ * player/coach-facing copy — the read-time `sanitizeProse` calls in
+ * `insight-delivery*.ts` only cover the surfaces that remember to call it,
+ * and `DiagnosisPanel` renders `evidence.diagnosis` prose raw. Sanitizes
+ * `title`, `content`, and the diagnosis prose fields; every other evidence
+ * field is untouched. Pure + exported for tests.
+ */
+export function sanitizeInsightProse(input: InsightInput): InsightInput {
+  const diagnosis = input.evidence.diagnosis;
+  return {
+    ...input,
+    title: sanitizeProse(input.title),
+    content: sanitizeProse(input.content),
+    evidence: diagnosis
+      ? {
+          ...input.evidence,
+          diagnosis: {
+            ...diagnosis,
+            symptom: sanitizeProse(diagnosis.symptom),
+            root_cause: sanitizeProse(diagnosis.root_cause),
+            recommended_action: sanitizeProse(diagnosis.recommended_action),
+          },
+        }
+      : input.evidence,
+  };
+}
 
 /**
  * Upserts an insight with engine_version='v3' stamped on the returned
@@ -46,7 +79,7 @@ export async function upsertInsightV3(
     );
   }
 
-  const result = await v2UpsertInsight(supabase, input);
+  const result = await v2UpsertInsight(supabase, sanitizeInsightProse(input));
   if (result === GATED_OUT) return result;
 
   // Stamp engine_version. Best-effort — a stamp failure should NOT

@@ -237,7 +237,7 @@ export class PressureGapGenerator extends BaseGenerator<PressureGapAggregate> {
       `${agg.competitive_count} competitive rounds vs ${practiceDisp} in ` +
       `${agg.practice_count} practice rounds — a ${absDelta}-stroke gap. ` +
       `You play ${direction} when it counts.` + driverClause +
-      ` PGA Tour gap is ~0.5 strokes; college typical is 2-5 (Research doc §9).`;
+      ` PGA Tour gap is ~0.5 strokes; college typical is 2-5.`;
 
     return {
       title,

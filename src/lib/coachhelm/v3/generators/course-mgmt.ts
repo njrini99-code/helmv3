@@ -372,8 +372,8 @@ export class CourseMgmtGenerator extends BaseGenerator<CourseMgmtAggregate> {
       title: `Double bogey-or-worse rate: ${valueDisp}`,
       content:
         `Across your last ${agg.rounds_played} rounds, ${valueDisp} of holes ` +
-        `ended in double bogey or worse. ${anchorClause}. Per Research doc §4 ` +
-        `this is the #1 separator between 70s and 80s rounds.` +
+        `ended in double bogey or worse. ${anchorClause}. Big numbers are the ` +
+        `#1 separator between 70s and 80s rounds.` +
         causeClause + worstClause + staleDataSuffix(agg.last_round_date),
       // Severity anchored to the cohort the counterfactual uses (cm-1): >2pp over
       // anchor is high, >0.5pp over medium, at/under the anchor low. PGA fallback

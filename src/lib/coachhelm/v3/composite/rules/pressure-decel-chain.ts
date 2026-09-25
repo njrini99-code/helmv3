@@ -95,7 +95,7 @@ const rule: CompositeRule = {
         `tournaments vs practice AND making only ${shortPuttPct}% from ${bucket}. ` +
         `These are two separate stats; whether the short putts are where the ` +
         `tournament strokes go is not measured here. Short putts are where a ` +
-        `pressure gap tends to show first (Research doc §9), so check: compare ` +
+        `pressure gap tends to show first, so check: compare ` +
         `make rate from ${bucket} in tournament rounds vs practice rounds. ` +
         `Recommended: practice the routine, not the stroke — same alignment, ` +
         `same number of looks, same trigger.`,

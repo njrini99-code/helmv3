@@ -82,6 +82,17 @@ describe('CourseMgmtGenerator', () => {
     expect(c.evidence.comparison_value).toBe(2);
   });
 
+  it('big_number composeContent authors no internal "Research doc" reference (leak regression)', () => {
+    const g = new CourseMgmtGenerator(PLAYER_ID, 'big_number');
+    for (const extra of [{}, { anchor_value: 6, anchor_is_cohort: true }]) {
+      const c = g.composeContent(makeAgg('big_number', 7.3, 20, extra));
+      expect(c.content).not.toMatch(/Research doc|§\s*\d/);
+      expect(c.title).not.toMatch(/Research doc|§\s*\d/);
+      // The claim itself survives, just without the internal citation.
+      expect(c.content).toContain('#1 separator between 70s and 80s rounds');
+    }
+  });
+
   // cm-1: priority + prose anchor to the cohort the counterfactual uses, not
   // the raw PGA value. An at/below-cohort player must NOT get a HIGH "3× Tour"
   // card whose strokes_impact is 0.
