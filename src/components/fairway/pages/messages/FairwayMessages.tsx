@@ -595,16 +595,21 @@ export function FairwayMessages() {
     );
   }
 
+  const canBroadcast = userRole === 'coach' && Boolean(teamId);
+  const messageTeamButton = canBroadcast ? (
+    <IconButton variant="ghost" aria-label="Message team" title="Message team" onClick={() => setShowTeamBroadcastModal(true)}>
+      <Users size={20} aria-hidden="true" />
+    </IconButton>
+  ) : null;
+  const newMessageButton = (
+    <IconButton variant="primary" aria-label="New message" title="New message" onClick={() => setShowNewMessageModal(true)}>
+      <SquarePen size={20} aria-hidden="true" />
+    </IconButton>
+  );
   const composeActions = (
     <>
-      {userRole === 'coach' && teamId ? (
-        <IconButton variant="ghost" aria-label="Message team" title="Message team" onClick={() => setShowTeamBroadcastModal(true)}>
-          <Users size={20} aria-hidden="true" />
-        </IconButton>
-      ) : null}
-      <IconButton variant="primary" aria-label="New message" title="New message" onClick={() => setShowNewMessageModal(true)}>
-        <SquarePen size={20} aria-hidden="true" />
-      </IconButton>
+      {messageTeamButton}
+      {newMessageButton}
     </>
   );
 
@@ -628,7 +633,18 @@ export function FairwayMessages() {
           <aside className={mobileShowChat
             ? 'hidden min-h-0 md:flex md:flex-col md:border-r md:border-border-subtle md:bg-surface'
             : 'flex w-full min-h-0 flex-col md:border-r md:border-border-subtle md:bg-surface'}>
-            {mobileShowChat ? null : <TopBarRouteAction>{composeActions}</TopBarRouteAction>}
+            {/* Mobile top bar: New message only. With Message team as well,
+                the bar's action cluster (+ bell + avatar) ran under the
+                centered title ("Te[icon]m") at 390px; Message team moves to
+                a row above the list instead. */}
+            {mobileShowChat ? null : <TopBarRouteAction>{newMessageButton}</TopBarRouteAction>}
+            {canBroadcast && !mobileShowChat ? (
+              <div className="flex shrink-0 justify-end px-3 pt-2 md:hidden">
+                <Button variant="ghost" size="sm" leftIcon={<Users size={16} aria-hidden="true" />} onClick={() => setShowTeamBroadcastModal(true)}>
+                  Message team
+                </Button>
+              </div>
+            ) : null}
             <div className="hidden min-h-16 shrink-0 items-center justify-between gap-1 px-4 md:flex md:border-b md:border-border-subtle">
               <h1 className="font-fw-sans text-h2 font-semibold tracking-tight text-text-primary md:text-h3">Messages</h1>
               <div className="flex items-center gap-1">{composeActions}</div>
