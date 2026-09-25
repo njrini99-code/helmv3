@@ -66,6 +66,7 @@ import { useActiveWork } from '@/lib/recovery/use-active-work';
 import { logError } from '@/lib/error-logging';
 import { clearPendingTeePick, loadPendingTeePick, savePendingTeePick } from '@/lib/golf/new-round-pick-cache';
 import { reportRoundSetupRestoredAfterReload } from '@/lib/golf/new-round-setup-restore-signal';
+import { reportDuplicateCompletedRoundWarned, reportRoundStartValidationBlocked } from '@/lib/golf/round-start-guard-signal';
 
 /**
  * Same relative-time style as FairwayUnfinishedBanner's own `relativeTime` —
@@ -1517,7 +1518,16 @@ export default function NewRoundClient({ playerId }: NewRoundClientProps) {
         // second tap of the same "Start round" control (duplicateCourseConfirmedRef)
         // proceeds — one primary action, confirmed by repeating it.
         if (result.error === 'duplicate_completed_round' && 'completedRoundId' in result) {
-          reportStartFailure('duplicate_completed_round', { completedRoundId: result.completedRoundId });
+          // Expected guard, not a failure: the server found a completed round
+          // on this course/date and the next tap proceeds. Counted as an info
+          // log, never a Bridge incident (633f48a5).
+          reportDuplicateCompletedRoundWarned({
+            completedRoundId: result.completedRoundId,
+            courseId: resolvedCourseIdRef.current ?? null,
+            teeId: selectedTeeIdRef.current ?? null,
+            roundType: setupData.roundType,
+            roundDate: setupData.roundDate,
+          });
           duplicateCourseConfirmedRef.current = true;
           setError('You already have a completed round for this course on this date. Tap Start round again to start a new one anyway.');
           return false;
@@ -1724,11 +1734,12 @@ export default function NewRoundClient({ playerId }: NewRoundClientProps) {
   const handleConfirmedHolesSave = async (configuredHoles: HoleConfig[]) => {
     const validationError = validateBeforeStart();
     if (validationError) {
-      logError(
-        new Error(`Round start blocked: ${validationError}`),
-        { component: 'NewRoundClient', action: 'round start validation', route: '/golf/dashboard/rounds/new', featureArea: 'round_tracking', roundType: setupData.roundType, roundDate: setupData.roundDate },
-        'low',
-      );
+      // A validation block is the form working (e2530283): info log, not an error.
+      reportRoundStartValidationBlocked({
+        validationError,
+        roundType: setupData.roundType,
+        roundDate: setupData.roundDate,
+      });
       setError(validationError);
       return;
     }
