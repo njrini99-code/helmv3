@@ -204,3 +204,35 @@ describe('CourseMgmtGenerator', () => {
     });
   });
 });
+
+describe('CourseMgmtGenerator — coach voice', () => {
+  const SECOND_PERSON = /\byou(r|'re|'ll|'ve)?\b/i;
+  const holes = {
+    worst_holes: [
+      { course_id: 'c-1', course_name: 'Pine Valley', hole_number: 7, avg_to_par: 0.9, n: 6 },
+      { course_id: 'c-2', course_name: null, hole_number: 14, avg_to_par: 0.7, n: 5 },
+    ],
+    worst_holes_excluded_rounds: 1,
+  };
+  const cases: Array<[string, ReturnType<typeof makeAgg>]> = [
+    ['penalty, bare', makeAgg('penalty', 0.8, 22)],
+    ['penalty, cohort + 3-putt + holes', makeAgg('penalty', 1.4, 20, { anchor_value: 0.9, anchor_is_cohort: true },
+      { cause_three_putt_pct: 50, ...holes })],
+    ['penalty, womens + penalty cause', makeAgg('penalty', 0.6, 20, {}, { cause_penalty_pct: 45 }, 'womens')],
+    ['big_number, bare', makeAgg('big_number', 7.3)],
+    ['big_number, missed-GIR cause + holes', makeAgg('big_number', 9, 20, { anchor_value: 6, anchor_is_cohort: true },
+      { cause_missed_gir_pct: 60, cause_three_putt_pct: 20, ...holes })],
+    ['big_number, womens', makeAgg('big_number', 5, 20, {}, {}, 'womens')],
+  ];
+
+  it('ships a coach-voice copy with no second person and the same numbers for every branch', () => {
+    for (const [name, agg] of cases) {
+      const c = new CourseMgmtGenerator(PLAYER_ID, agg.variant).composeContent(agg);
+      expect(c.coach, name).toBeDefined();
+      expect(c.coach!.title, name).not.toMatch(SECOND_PERSON);
+      expect(c.coach!.content, name).not.toMatch(SECOND_PERSON);
+      // Same numbers as the player copy: only the voice changes.
+      for (const n of c.content.match(/\d+(\.\d+)?%?/g) ?? []) expect(c.coach!.content, name).toContain(n);
+    }
+  });
+});
