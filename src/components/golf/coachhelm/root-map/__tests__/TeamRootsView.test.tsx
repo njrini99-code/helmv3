@@ -102,3 +102,39 @@ describe('TeamRootsView, no observed roots and unsized approach', () => {
     expect(screen.queryByText(/No cause is carried by three or more/)).not.toBeInTheDocument();
   });
 });
+
+describe('TeamRootsView, a stored miss concentration', () => {
+  it('speaks the path on the cell and adds the legend entry', () => {
+    const model = buildTeamRoots({ players, signals: [signal('a', 'appr', 'approach', null)] });
+    const row = model.rows.find((r) => r.playerId === 'a')!;
+    row.cells.appr = { ...row.cells.appr!, contextPath: '175+ yd → long par 3s → short-right' };
+    render(
+      <TeamRootsView
+        model={model}
+        headline={null}
+        trend={[]}
+        slopes={[]}
+        needsYou={[
+          {
+            key: 'conc:a-appr',
+            kind: 'concentration',
+            playerId: 'a',
+            playerName: 'Player A',
+            title: 'appr',
+            detail: 'Misses concentrate: 175+ yd → long par 3s → short-right (8 of 10 short). Observed, not a cause.',
+            signalId: 'a-appr',
+          },
+        ]}
+        signalsFailed={false}
+        hrefFor={() => '/golf/dashboard/intelligence?view=signals'}
+        navigate={() => {}}
+      />,
+    );
+    const table = screen.getByRole('table');
+    expect(
+      within(table).getByRole('link', { name: /Misses concentrate: 175\+ yd → long par 3s → short-right, observed, not a cause/ }),
+    ).toBeInTheDocument();
+    expect(screen.getByText('Misses concentrate by par or shape (open the signal)')).toBeInTheDocument();
+    expect(screen.getByText(/Observed, not a cause\.$/)).toBeInTheDocument();
+  });
+});

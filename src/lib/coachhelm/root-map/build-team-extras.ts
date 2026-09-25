@@ -8,13 +8,16 @@
  *     insight a focus area came from. No new measurement, no causal claim:
  *     the copy states the stored before/after and the stored method.
  *   - needs you: focus areas whose source evidence changed since approval
- *     (`evidence_revision_status === 'changed'`) plus the most severe open
- *     insight signals.
+ *     (`evidence_revision_status === 'changed'`), the most severe open
+ *     insight signals, then open signals whose STORED context narrowing
+ *     reached a gated par or shape concentration (one per player). The
+ *     narrowing is read from the row, never recomputed here.
  * ========================================================================== */
 
 import type { GroupedSignal } from '@/lib/coachhelm/signal-grouping';
 import { describeMethodVersion, MIN_SUFFICIENT_ROUNDS } from '@/lib/coachhelm/v3/effectiveness/attribution-view-model';
 import type { StoredAttributionRow } from './loaders';
+import { concentrationPathText, storedConcentration } from './build-team-roots';
 
 export interface SlopeFocusInput {
   id: string;
@@ -119,7 +122,7 @@ export interface NeedsYouFocusInput {
 
 export interface NeedsYouItem {
   key: string;
-  kind: 'focus_changed' | 'signal';
+  kind: 'focus_changed' | 'signal' | 'concentration';
   playerId: string;
   playerName: string;
   title: string;
@@ -171,6 +174,36 @@ export function buildNeedsYou(input: {
       playerName: input.playerNameById[s.playerId as string] ?? 'Player',
       title: s.title,
       detail: s.severity === 'urgent' ? 'Urgent signal' : 'High-priority signal',
+      signalId: s.id,
+    });
+  }
+
+  // Gated miss concentrations: a shape step outranks a par-only one, then the
+  // larger stored size. One per player, and never a signal already listed.
+  const listed = new Set(items.map((i) => i.signalId).filter((id): id is string => id !== null));
+  const concentrations = input.signals
+    .filter((s) => s.kind === 'insight' && s.playerId !== null && s.status !== 'dismissed' && s.status !== 'reviewed' && !listed.has(s.id))
+    .map((s) => ({ s, n: storedConcentration(s) }))
+    .filter((x): x is { s: GroupedSignal; n: NonNullable<ReturnType<typeof storedConcentration>> } => x.n !== null)
+    .sort((a, b) => {
+      const shapeA = a.n.steps.some((st) => st.level === 'shape' && st.passed) ? 1 : 0;
+      const shapeB = b.n.steps.some((st) => st.level === 'shape' && st.passed) ? 1 : 0;
+      return shapeB - shapeA || (b.s.strokeImpact ?? 0) - (a.s.strokeImpact ?? 0) || a.s.ageDays - b.s.ageDays;
+    });
+  const concentrationPlayers = new Set<string>();
+  for (const { s, n } of concentrations) {
+    if (items.length >= max) break;
+    const playerId = s.playerId as string;
+    if (concentrationPlayers.has(playerId)) continue;
+    concentrationPlayers.add(playerId);
+    const last = [...n.steps].reverse().find((st) => st.passed);
+    items.push({
+      key: `conc:${s.id}`,
+      kind: 'concentration',
+      playerId,
+      playerName: input.playerNameById[playerId] ?? 'Player',
+      title: s.title,
+      detail: `Misses concentrate: ${concentrationPathText(n)}${last ? ` (${last.statement})` : ''}. Observed, not a cause.`,
       signalId: s.id,
     });
   }

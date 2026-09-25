@@ -23,7 +23,7 @@
  * ========================================================================== */
 
 import type { GroupedSignal } from '@/lib/coachhelm/signal-grouping';
-import type { InsightEvidence } from '@/lib/coachhelm/v2/insights/types';
+import type { DiagnosisNarrowing, InsightEvidence } from '@/lib/coachhelm/v2/insights/types';
 import { TEAM_SIGNAL_MIN_PLAYERS } from '@/lib/coachhelm/v3/insights/team-synthesis';
 import {
   confidenceTier,
@@ -58,6 +58,9 @@ export interface TeamRootCell {
   strokes: number | null;
   style: RootStyle;
   tier: ConfidenceTier | null;
+  /** The stored context narrowing's path ("175+ yd → long par 3s →
+   *  short-right") when it got past the length step; null otherwise. */
+  contextPath: string | null;
 }
 
 export interface TeamRootColumn {
@@ -104,6 +107,31 @@ function evidenceOf(signal: GroupedSignal): InsightEvidence | null {
   return ev && typeof ev === 'object' ? (ev as InsightEvidence) : null;
 }
 
+/**
+ * The context narrowing a generator stored on this signal
+ * (`evidence.diagnosis.basis.narrowing`), validated, or null. Only a
+ * narrowing that passed MORE than its length step is returned: the par and
+ * shape steps are the gated concentrations (`v3/engine/context-narrowing.ts`)
+ * — a bare length band says nothing the column does not already say. Rows
+ * written before narrowing existed have none; that is "not stated", not "no
+ * concentration". Nothing is recomputed on read.
+ */
+export function storedConcentration(signal: GroupedSignal): DiagnosisNarrowing | null {
+  const n = evidenceOf(signal)?.diagnosis?.basis?.narrowing as unknown;
+  if (!n || typeof n !== 'object') return null;
+  const cand = n as Partial<DiagnosisNarrowing>;
+  if (!Array.isArray(cand.path) || !cand.path.every((x) => typeof x === 'string')) return null;
+  if (!Array.isArray(cand.steps) || typeof cand.sentence !== 'string') return null;
+  const passed = cand.steps.filter((st) => st && typeof st === 'object' && st.passed === true);
+  if (cand.path.length < 2 || passed.length < 2) return null;
+  return cand as DiagnosisNarrowing;
+}
+
+/** "175+ yd → long par 3s → short-right". */
+export function concentrationPathText(n: DiagnosisNarrowing): string {
+  return n.path.join(' → ');
+}
+
 /** A column's aggregate style: observed only if every diagnosed member is
  *  observed; forming if the mean confidence is below solid; unexplained if
  *  no member carries a diagnosis. */
@@ -147,6 +175,10 @@ export function buildTeamRoots(input: {
       strokes: strokesPerRound(ev),
       style: rootStyleFor(ev),
       tier: confidenceTier(ev.confidence),
+      contextPath: (() => {
+        const n = storedConcentration(s);
+        return n ? concentrationPathText(n) : null;
+      })(),
     };
     const held = entry.cells.get(s.playerId);
     if (!held || (cell.strokes ?? -1) > (held.strokes ?? -1)) {

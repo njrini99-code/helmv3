@@ -172,3 +172,91 @@ describe('team roots before the new engine is deployed (all hatched/forming, app
     expect(buildTeamHeadline(model)).toBeNull();
   });
 });
+
+describe('stored miss concentrations (team roots)', () => {
+  const players: TeamRosterPlayer[] = ['a', 'b'].map((id) => ({
+    id,
+    name: id.toUpperCase(),
+    roundsPlayed: 12,
+    sgTotal: -1,
+    sg: { tee: 0, approach: -0.8, short_game: 0, putting: 0 },
+  }));
+  const step = (level: 'length' | 'par' | 'shape', passed: boolean, label: string | null, statement: string) => ({ level, passed, label, statement });
+  const narrowingShape = {
+    subject: 'approach',
+    path: ['175+ yd', 'long par 3s', 'short-right'],
+    stopped_at: null,
+    steps: [
+      step('length', true, '175+ yd', '34 of 75 approaches from 175+ yd missed the green (18 rounds)'),
+      step('par', true, 'long par 3s', 'on long par 3s 13 of 18 missed the green (72%), vs 21 of 57 elsewhere (37%)'),
+      step('shape', true, 'short-right', 'most misses finish short-right (8 of 10 short, 7 of 11 right)'),
+    ],
+    sentence: 'Observed, not a cause: …',
+  };
+  const narrowingLengthOnly = {
+    subject: 'approach',
+    path: ['175+ yd'],
+    stopped_at: 'par',
+    steps: [step('length', true, '175+ yd', 'x'), step('par', false, null, 'no par slice concentrates')],
+    sentence: 's',
+  };
+  const signal = (id: string, playerId: string, narrowing: unknown, over: Partial<GroupedSignal> = {}): GroupedSignal => ({
+    id,
+    kind: 'insight',
+    category: 'approach',
+    severity: 'medium',
+    title: `Greens from 175+ (${id})`,
+    claim: '',
+    ageDays: 2,
+    status: 'active',
+    strokeImpact: 0.4,
+    playerId,
+    supersededCount: 0,
+    evidence: {
+      metric: 'approach_175_plus',
+      metric_label: 'Greens from 175+',
+      confidence: 0.8,
+      diagnosis: { causality_level: 'inferred_hypothesis', root_cause: 'r', drivers: [], basis: { kind: 'hypothesis_policy', checked: [], ...(narrowing ? { narrowing } : {}) } },
+    },
+    ...over,
+  });
+
+  it('carries the gated path on a matrix cell, and none for a length-only or absent narrowing', () => {
+    const model = buildTeamRoots({ players, signals: [signal('s1', 'a', narrowingShape), signal('s2', 'b', narrowingLengthOnly)] });
+    const byPlayer = Object.fromEntries(model.rows.map((r) => [r.playerId, r.cells.approach_175_plus!.contextPath]));
+    expect(byPlayer).toEqual({ a: '175+ yd → long par 3s → short-right', b: null });
+    const legacy = buildTeamRoots({ players, signals: [signal('s3', 'a', null)] });
+    expect(legacy.rows.find((r) => r.playerId === 'a')!.cells.approach_175_plus!.contextPath).toBeNull();
+  });
+
+  it('rejects a malformed stored narrowing instead of trusting it', () => {
+    const model = buildTeamRoots({ players, signals: [signal('s1', 'a', { path: ['175+ yd', 'par 4s'], steps: 'nope', sentence: 's' })] });
+    expect(model.rows.find((r) => r.playerId === 'a')!.cells.approach_175_plus!.contextPath).toBeNull();
+  });
+
+  it('Needs you lists a gated concentration with its counts, one per player, after severe signals', () => {
+    const items = buildNeedsYou({
+      focusAreas: [],
+      signals: [
+        signal('s1', 'a', narrowingShape),
+        signal('s1b', 'a', { ...narrowingShape, path: ['175+ yd', 'par 4s'], steps: narrowingShape.steps.slice(0, 2) }),
+        signal('s2', 'b', narrowingLengthOnly),
+        signal('u1', 'b', null, { severity: 'urgent' }),
+        signal('d1', 'b', narrowingShape, { status: 'dismissed' }),
+      ],
+      playerNameById: { a: 'Ann', b: 'Bo' },
+    });
+    expect(items.map((i) => i.key)).toEqual(['sig:u1', 'conc:s1']);
+    const conc = items[1]!;
+    expect(conc.kind).toBe('concentration');
+    expect(conc.signalId).toBe('s1');
+    expect(conc.detail).toBe(
+      'Misses concentrate: 175+ yd → long par 3s → short-right (most misses finish short-right (8 of 10 short, 7 of 11 right)). Observed, not a cause.',
+    );
+  });
+
+  it('Needs you lists nothing for concentrations that did not pass the par step', () => {
+    const items = buildNeedsYou({ focusAreas: [], signals: [signal('s2', 'b', narrowingLengthOnly)], playerNameById: {} });
+    expect(items).toEqual([]);
+  });
+});

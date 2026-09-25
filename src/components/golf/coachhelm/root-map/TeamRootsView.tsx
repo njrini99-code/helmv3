@@ -244,7 +244,8 @@ export function TeamRootsView({ model, headline, trend, slopes, needsYou, signal
 function cellSpoken(name: string, label: string, cell: TeamRootCell): string {
   const size = cell.strokes !== null ? `${formatStrokes(cell.strokes)} a round` : 'no stroke value stored';
   const tier = cell.tier ? `, ${CONFIDENCE_LABEL[cell.tier]}` : '';
-  return `${name}: ${label}, ${size}, ${ROOT_STYLE_LABEL[cell.style]}${tier}. Open the signal.`;
+  const where = cell.contextPath ? ` Misses concentrate: ${cell.contextPath}, observed, not a cause.` : '';
+  return `${name}: ${label}, ${size}, ${ROOT_STYLE_LABEL[cell.style]}${tier}.${where} Open the signal.`;
 }
 
 function CarriersMatrix({
@@ -327,9 +328,12 @@ function CarriersMatrix({
                               hrefFor={hrefFor}
                               navigate={navigate}
                               ariaLabel={cellSpoken(r.name, c.label, cell)}
-                              className="mx-auto flex h-11 w-11 items-center justify-center rounded-full outline-none focus-visible:ring-2 focus-visible:ring-border-focus"
+                              className="relative mx-auto flex h-11 w-11 items-center justify-center rounded-full outline-none focus-visible:ring-2 focus-visible:ring-border-focus"
                             >
                               <Bubble cell={cell} max={maxStrokes} />
+                              {cell.contextPath ? (
+                                <span aria-hidden className="absolute right-1 top-1 h-1.5 w-1.5 rounded-full bg-text-primary" />
+                              ) : null}
                             </NavLink>
                           ) : (
                             <span aria-hidden className="block h-11" />
@@ -361,6 +365,12 @@ function CarriersMatrix({
               <span aria-hidden className="inline-block h-3 w-4 rounded-sm bg-surface-sunken" />
               Shared by 3+ players
             </li>
+            {rows.some((r) => Object.values(r.cells).some((c) => c.contextPath)) ? (
+              <li className="flex items-center gap-1.5">
+                <span aria-hidden className="inline-block h-1.5 w-1.5 rounded-full bg-text-primary" />
+                Misses concentrate by par or shape (open the signal)
+              </li>
+            ) : null}
           </ul>
         </>
       )}
