@@ -34,6 +34,24 @@ import { computeEvidenceRevisionStatuses } from '@/lib/coachhelm/focus-areas/loa
 import type { EvidenceRevisionComparison } from '@/lib/coachhelm/focus-areas/evidence-revision-status';
 import { loadFocusAreaPracticeLogData } from '@/lib/coachhelm/focus-areas/practice-log-loader';
 import { loadFollowUpRoundCounts } from '@/lib/coachhelm/focus-areas/follow-up-eligibility-loader';
+import {
+  loadAttributionForInsights,
+  loadPlayersSgCache,
+  loadTeamSgRounds,
+} from '@/lib/coachhelm/root-map/loaders';
+import { buildTeamHeadline, buildTeamRoots, type TeamRosterPlayer } from '@/lib/coachhelm/root-map/build-team-roots';
+import { buildTeamTrend } from '@/lib/coachhelm/root-map/area-trends';
+import { buildFocusSlopes, buildNeedsYou, type MetricMeta } from '@/lib/coachhelm/root-map/build-team-extras';
+import { getMetricRenderConfig } from '@/lib/coachhelm/v3/standing/metric-config';
+import type { TeamRootsData } from '@/components/golf/coachhelm/root-map/TeamRootsView';
+
+/** Weeks of stored per-round SG the team trend reads. */
+const TEAM_TREND_WEEKS = 12;
+
+function isoDaysBefore(dayIso: string, days: number): string {
+  const [y = 1970, m = 1, d = 1] = dayIso.split('-').map(Number);
+  return new Date(Date.UTC(y, m - 1, d) - days * 86_400_000).toISOString().slice(0, 10);
+}
 
 /**
  * A8 slice 3: the focus-area select is routed through `fromUntyped` (see
@@ -235,6 +253,14 @@ export default async function IntelligenceDashboardPage({ searchParams }: Intell
   const players: PlayersGridPlayer[] = rawPlayers ?? [];
   const playerIds = players.map((p) => p.id);
 
+  // Team roots reads (the coach landing view): stored stats-cache SG and
+  // stored per-round SG. Started here so they overlap the focus-area reads
+  // below; each loader returns null on failure instead of throwing.
+  const teamRootReads = Promise.all([
+    loadPlayersSgCache(supabase, playerIds),
+    loadTeamSgRounds(supabase, playerIds, isoDaysBefore(todayIso, TEAM_TREND_WEEKS * 7)),
+  ]);
+
   // Page loads are read-only. Progress evaluation belongs to round ingestion /
   // scheduled refreshes; running two write-heavy recomputations here made every
   // tab click wait on database writes before the controls could hydrate.
@@ -287,6 +313,11 @@ export default async function IntelligenceDashboardPage({ searchParams }: Intell
   const reviewIds = Array.from(
     new Set((focusAreas || []).map((fa) => fa.from_review_id).filter(Boolean)),
   ) as string[];
+  // Stored before/after for the insight each focus area came from. Off with
+  // the attribution flag: no read at all, and the section says unavailable.
+  const attributionRead = isFlagEnabled('coachhelm_comparable_opportunity_attribution')
+    ? loadAttributionForInsights(supabase, sourceInsightIds)
+    : Promise.resolve(null);
   const [insightOutcomesResult, reviewRowsResult] = await Promise.all([
     sourceInsightIds.length > 0
       ? supabase
@@ -447,6 +478,80 @@ export default async function IntelligenceDashboardPage({ searchParams }: Intell
     }
   }
 
+  // ── Team roots (coach landing view). Pure shaping of the reads above; a
+  // failed SG read leaves the view out (the desk keeps Signals as default)
+  // rather than drawing an empty team as if it were real. ─────────────────
+  let teamRoots: TeamRootsData | null = null;
+  try {
+    const [[sgCache, teamRounds], attribution] = await Promise.all([teamRootReads, attributionRead]);
+    if (sgCache && teamRounds) {
+      const sgByPlayer = new Map(sgCache.map((r) => [r.playerId, r]));
+      const roster: TeamRosterPlayer[] = players.map((p) => {
+        const row = sgByPlayer.get(p.id);
+        return {
+          id: p.id,
+          name: playerNameById[p.id] ?? 'Player',
+          roundsPlayed: row?.roundsPlayed ?? null,
+          sgTotal: row?.sgTotal ?? null,
+          sg: row?.sg ?? { tee: null, approach: null, short_game: null, putting: null },
+        };
+      });
+      const signals = signalGroups.flatMap((g) => g.signals);
+      const model = buildTeamRoots({ players: roster, signals });
+
+      // Metric label/unit/direction: the metric registry first, then the
+      // label the insight itself stored, then the raw id.
+      const storedLabel = new Map<string, string>();
+      for (const sig of signals) {
+        const ev = sig.evidence as { metric?: unknown; metric_label?: unknown } | null | undefined;
+        if (ev && typeof ev.metric === 'string' && typeof ev.metric_label === 'string') storedLabel.set(ev.metric, ev.metric_label);
+      }
+      const metricMeta = (id: string): MetricMeta => {
+        const cfg = getMetricRenderConfig(id);
+        if (cfg) return { label: cfg.display_label, unit: cfg.unit, direction: cfg.direction };
+        return { label: storedLabel.get(id) ?? id.replace(/_/g, ' '), unit: null, direction: null };
+      };
+
+      teamRoots = {
+        model,
+        headline: buildTeamHeadline(model),
+        trend: buildTeamTrend(teamRounds),
+        slopes: attribution
+          ? buildFocusSlopes({
+              focusAreas: (focusAreas || []).map((fa) => ({
+                id: fa.id,
+                playerId: fa.player_id,
+                title: typeof fa.title === 'string' ? fa.title : 'Focus',
+                fromInsightId: fa.from_insight_id ?? null,
+              })),
+              attribution,
+              playerNameById,
+              metricMeta,
+            })
+          : null,
+        needsYou: buildNeedsYou({
+          focusAreas: (focusAreas || []).map((fa) => ({
+            id: fa.id,
+            playerId: fa.player_id,
+            title: typeof fa.title === 'string' ? fa.title : 'Focus',
+            status: typeof fa.status === 'string' ? fa.status : null,
+            evidenceRevisionStatus: evidenceRevisionStatusFor(fa.id),
+          })),
+          signals,
+          playerNameById,
+        }),
+        signalsFailed: signalGroupsError !== null,
+      };
+    }
+  } catch (err) {
+    void logServerError(
+      `[intelligence] team roots build failed for team ${teamId}; the desk falls back to Signals: ${describeError(err)}`,
+      { action: 'intelligence.teamRoots', featureArea: 'coachhelm' },
+      'warning',
+    );
+    teamRoots = null;
+  }
+
   // ── The AI-first opening's inputs. Individually degraded: if the chat
   // context or the pulse cannot be read, the Brief still renders its existing
   // intelligence surfaces and simply omits the composer. ────────────────────
@@ -482,6 +587,7 @@ export default async function IntelligenceDashboardPage({ searchParams }: Intell
           groups={signalGroups}
           scannedAt={signalGroupsResult.scannedAt}
           groupsError={signalGroupsError}
+          teamRoots={teamRoots}
           playersDrillProps={{
             players,
             focusAreas: focusAreasWithPlayers,

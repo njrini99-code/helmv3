@@ -46,7 +46,8 @@ import {
   formatDistanceRange,
 } from '@/lib/coachhelm/v2/shot-analysis/format';
 import { BriefBand } from './BriefBand';
-import { ViewSwitch } from './ViewSwitch';
+import { ViewSwitch, DEFAULT_VIEW_OPTIONS, TEAM_ROOTS_OPTION } from './ViewSwitch';
+import { TeamRootsView, type TeamRootsData } from '@/components/golf/coachhelm/root-map/TeamRootsView';
 import { SignalQueue } from './SignalQueue';
 import { TeamSignalSummary } from './TeamSignalSummary';
 import { SignalDossier } from './SignalDossier';
@@ -61,6 +62,7 @@ import {
   removeSignalFromGroups,
   resolveQueueFilter,
   resolveTriageView,
+  type TriageView,
 } from './buildTriageViewModel';
 
 /**
@@ -180,6 +182,28 @@ export interface TriageDeskProps {
   /** Same SSR-fetched shape the retired cockpit consumed — `EffectivenessScoreboard`
    *  only reads its `initialOverview`/`initialEffectiveness`/`initialPerformance` fields. */
   effectivenessDrillProps: FairwayEffectivenessProps;
+  /** Team roots (coach landing view). When present, an absent `?view=`
+   *  lands on 'team' unless the URL is a signal/filter deep link; when
+   *  null/absent the desk keeps its old Signals default and hides the tab. */
+  teamRoots?: TeamRootsData | null;
+}
+
+/** Which view an absent/unknown `?view=` resolves to. Signal/filter deep
+ *  links (`?signal=`, legacy `?id=`, `?filter=`) keep opening Signals. */
+export function landingViewFor(
+  params: { get: (key: string) => string | null },
+  teamAvailable: boolean,
+): TriageView {
+  if (!teamAvailable) return 'signals';
+  return params.get('signal') || params.get('id') || params.get('filter') ? 'signals' : 'team';
+}
+
+function resolveDeskView(
+  params: { get: (key: string) => string | null },
+  teamAvailable: boolean,
+): TriageView {
+  const v = resolveTriageView(params.get('view'), landingViewFor(params, teamAvailable));
+  return v === 'team' && !teamAvailable ? 'signals' : v;
 }
 
 export function TriageDesk({
@@ -191,13 +215,15 @@ export function TriageDesk({
   teamShotAnalysis,
   playersDrillProps,
   effectivenessDrillProps,
+  teamRoots = null,
 }: TriageDeskProps) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const rosterPlayers = playersDrillProps.players ?? [];
 
-  const requestedView = resolveTriageView(searchParams.get('view'));
+  const teamAvailable = teamRoots !== null;
+  const requestedView = resolveDeskView(searchParams, teamAvailable);
   const requestedQueueFilter = resolveQueueFilter(searchParams.get('filter'));
   // `signal` is the canonical param this desk writes; `id` is the legacy
   // insight deep-link CommandPalette.tsx:326 and FocusAreaCard.tsx:315 still
@@ -257,7 +283,13 @@ export function TriageDesk({
     if (updates.view !== undefined) {
       const targetView = resolveTriageView(updates.view);
       params.set('view', targetView);
-      if (targetView === 'signals') {
+      if (targetView === 'team') {
+        params.delete('filter');
+        params.delete('signal');
+        params.delete('id');
+        params.delete('player');
+        params.delete('playersTab');
+      } else if (targetView === 'signals') {
         params.delete('player');
         params.delete('playersTab');
       } else if (targetView === 'players') {
@@ -307,7 +339,7 @@ export function TriageDesk({
     );
     const nextPlayerId = next.searchParams.get('player');
 
-    setView(resolveTriageView(next.searchParams.get('view')));
+    setView(resolveDeskView(next.searchParams, teamAvailable));
     setQueueFilter(resolveQueueFilter(next.searchParams.get('filter')));
     setSelectedSignalId(next.searchParams.get('signal') ?? next.searchParams.get('id'));
     setSelectedPlayerId(
@@ -447,7 +479,7 @@ export function TriageDesk({
 
   return (
     <div className="flex flex-col gap-6">
-      {categoryBandData ? (
+      {categoryBandData && view !== 'team' ? (
         <TeamCategoryLeakBand
           categories={categoryBandData.categories}
           teamHealth={categoryBandData.teamHealth}
@@ -488,6 +520,7 @@ export function TriageDesk({
           view={view}
           hrefFor={(next) => hrefFor({ view: next, signal: null })}
           onSelect={(next) => navigate({ view: next, signal: null })}
+          options={teamAvailable ? [TEAM_ROOTS_OPTION, ...DEFAULT_VIEW_OPTIONS] : DEFAULT_VIEW_OPTIONS}
         />
         <Button asChild variant="secondary" size="sm">
           <Link href={surfaceHref('ask')}>
@@ -496,6 +529,10 @@ export function TriageDesk({
           </Link>
         </Button>
       </div>
+
+      {view === 'team' && teamRoots ? (
+        <TeamRootsView {...teamRoots} hrefFor={hrefFor} navigate={navigate} />
+      ) : null}
 
       {view === 'signals' ? (
         groupsError ? (

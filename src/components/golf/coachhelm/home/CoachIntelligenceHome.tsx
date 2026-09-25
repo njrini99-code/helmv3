@@ -23,6 +23,7 @@ import type { PlayersGridViewProps, FairwayEffectivenessProps } from '@/componen
 import type { TeamOverviewResult, TeamCategoryInsightsResult } from '@/app/golf/actions/team-category-insights';
 import type { SignalGroup } from '@/lib/coachhelm/signal-grouping';
 import { TriageDesk } from '@/components/golf/coachhelm/triage/TriageDesk';
+import type { TeamRootsData } from '@/components/golf/coachhelm/root-map/TeamRootsView';
 
 export interface CoachIntelligenceHomeProps {
   overview: TeamOverviewResult;
@@ -44,6 +45,10 @@ export interface CoachIntelligenceHomeProps {
 
   /** `effectiveness` view — copied from analytics/coachhelm/page.tsx, mounted UNCHANGED. */
   effectivenessDrillProps: FairwayEffectivenessProps;
+
+  /** Team roots, the coach landing view. Null when its reads failed; the
+   *  desk then keeps Signals as the default and hides the tab. */
+  teamRoots?: TeamRootsData | null;
 
   /**
    * The AI-first opening. Null when the chat context could not be resolved —
@@ -67,6 +72,7 @@ export function CoachIntelligenceHome({
   groupsError,
   playersDrillProps,
   effectivenessDrillProps,
+  teamRoots = null,
   command,
 }: CoachIntelligenceHomeProps) {
   const router = useRouter();
@@ -146,6 +152,7 @@ export function CoachIntelligenceHome({
         teamShotAnalysis={ov?.teamShotAnalysis}
         playersDrillProps={playersDrillProps}
         effectivenessDrillProps={effectivenessDrillProps}
+        teamRoots={teamRoots}
       />
     </div>
   );

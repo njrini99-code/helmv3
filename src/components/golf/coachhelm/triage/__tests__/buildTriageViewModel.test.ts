@@ -59,6 +59,13 @@ describe('resolveTriageView', () => {
   it('takes the first value of an array param', () => {
     expect(resolveTriageView(['players', 'effectiveness'])).toBe('players');
   });
+
+  it('recognizes team and uses the caller fallback for absent or unknown', () => {
+    expect(resolveTriageView('team')).toBe('team');
+    expect(resolveTriageView(undefined, 'team')).toBe('team');
+    expect(resolveTriageView('bogus', 'team')).toBe('team');
+    expect(resolveTriageView('signals', 'team')).toBe('signals');
+  });
 });
 
 describe('resolveQueueFilter', () => {

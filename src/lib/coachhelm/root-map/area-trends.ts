@@ -132,3 +132,45 @@ export function buildTeamTrend(rounds: TeamSgRound[]): TeamTrendWeek[] {
   }
   return weeks.sort((a, b) => (a.weekStart < b.weekStart ? -1 : 1));
 }
+
+/* ─────────────────────────────────────────────────────────────────────────
+ * Diverging stack geometry (value space; the chart maps it to pixels)
+ * ──────────────────────────────────────────────────────────────────────── */
+
+export interface StackBand {
+  area: RootArea;
+  /** Per week: [lower, upper] in strokes. Gains stack upward from 0, losses
+   *  downward from 0, in ROOT_AREAS order. A null week value adds nothing. */
+  bounds: Array<[number, number]>;
+}
+
+export interface DivergingStack {
+  bands: StackBand[];
+  /** Per week: the sum of the four stored team values (null values as 0). */
+  net: number[];
+  /** Largest absolute stacked extent across weeks (≥ 0). */
+  extent: number;
+}
+
+export function stackTeamTrend(weeks: TeamTrendWeek[]): DivergingStack {
+  const pos = weeks.map(() => 0);
+  const neg = weeks.map(() => 0);
+  const bands: StackBand[] = ROOT_AREAS.map((area) => ({
+    area,
+    bounds: weeks.map((w, i) => {
+      const v = w.values[area];
+      if (!finite(v) || v === 0) return [pos[i]!, pos[i]!] as [number, number];
+      if (v > 0) {
+        const lo = pos[i]!;
+        pos[i] = lo + v;
+        return [lo, lo + v] as [number, number];
+      }
+      const hi = neg[i]!;
+      neg[i] = hi + v;
+      return [hi + v, hi] as [number, number];
+    }),
+  }));
+  const net = weeks.map((w) => ROOT_AREAS.reduce((s, a) => s + (finite(w.values[a]) ? (w.values[a] as number) : 0), 0));
+  const extent = Math.max(0, ...pos, ...neg.map((v) => -v));
+  return { bands, net, extent };
+}

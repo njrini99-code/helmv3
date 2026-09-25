@@ -27,10 +27,12 @@ import type { InsightEvidence } from '@/lib/coachhelm/v2/insights/types';
 import { TEAM_SIGNAL_MIN_PLAYERS } from '@/lib/coachhelm/v3/insights/team-synthesis';
 import {
   confidenceTier,
+  formatStrokes,
   isRootArea,
   layoutRootMap,
   rootStyleFor,
   ROOT_AREAS,
+  ROOT_AREA_LABEL,
   strokesPerRound,
   type CauseSeed,
   type ConfidenceTier,
@@ -238,4 +240,35 @@ export function buildTeamRoots(input: {
     hiddenColumns: allColumns.length - kept.length,
     rows,
   };
+}
+
+/**
+ * One sentence for the team view, from the stored team-average area SG and
+ * the shared columns. Null when no player has a stored SG row.
+ */
+export function buildTeamHeadline(model: TeamRootsModel): string | null {
+  if (model.playersWithSg === 0) return null;
+  const areas = ROOT_AREAS.map((a) => ({ a, v: model.teamAreaSg[a] })).filter(
+    (x): x is { a: RootArea; v: number } => finite(x.v),
+  );
+  if (areas.length === 0) return null;
+  const worst = areas.reduce((m, x) => (x.v < m.v ? x : m));
+  const best = areas.reduce((m, x) => (x.v > m.v ? x : m));
+  const label = (a: RootArea) => ROOT_AREA_LABEL[a];
+  if (worst.v >= 0) {
+    return `On average the team sits at or above the Tour line in every area; ${label(best.a)} leads at ${formatStrokes(best.v, { signed: true })} a round.`;
+  }
+  const shared = model.columns
+    .filter((c) => c.shared && c.area === worst.a)
+    .sort((x, y) => y.players - x.players)[0];
+  const where: Record<RootArea, string> = {
+    tee: 'off the tee',
+    approach: 'on approach',
+    short_game: 'around the green',
+    putting: 'in putting',
+  };
+  const lead = `On average the team gives back ${formatStrokes(-worst.v)} a round to the Tour line ${where[worst.a]}`;
+  return shared
+    ? `${lead}; ${shared.players} players carry “${shared.label}” there.`
+    : `${lead}.`;
 }
