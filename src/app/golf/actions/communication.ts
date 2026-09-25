@@ -62,7 +62,7 @@ async function acknowledgeAnnouncementImpl(
       .from('golf_players')
       .select('id')
       .eq('user_id', user.id)
-      .single();
+      .maybeSingle();
 
     if (playerError || !player) {
       return { success: false, error: 'Player not found' };
@@ -295,7 +295,7 @@ async function hasPlayerAcknowledgedImpl(
       .from('golf_players')
       .select('id')
       .eq('user_id', user.id)
-      .single();
+      .maybeSingle();
 
     if (!player) {
       return { success: true, data: { acknowledged: false, acknowledgedAt: null } };

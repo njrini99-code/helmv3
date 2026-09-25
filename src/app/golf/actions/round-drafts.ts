@@ -126,7 +126,7 @@ async function saveRoundDraftImpl(
       .from('golf_players')
       .select('id')
       .eq('user_id', user.id)
-      .single();
+      .maybeSingle();
 
     if (!player) {
       return { success: false, error: 'Player profile not found' };
@@ -433,7 +433,7 @@ async function loadRoundDraftImpl(): Promise<ActionResult<DraftInfo | null>> {
       .from('golf_players')
       .select('id')
       .eq('user_id', user.id)
-      .single();
+      .maybeSingle();
 
     if (!player) {
       return { success: false, error: 'Player profile not found' };
@@ -562,7 +562,7 @@ async function clearRoundDraftImpl(roundId: string): Promise<ActionResult<void>>
       .from('golf_players')
       .select('id')
       .eq('user_id', user.id)
-      .single();
+      .maybeSingle();
 
     if (!player) {
       return { success: false, error: 'Player profile not found' };
