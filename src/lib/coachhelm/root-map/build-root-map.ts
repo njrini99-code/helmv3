@@ -419,7 +419,9 @@ export function layoutRootMap(input: RootMapLayoutInput): RootMapModel {
       x: lx,
       w,
       causes,
-      remainder: remainderStrokes > 1e-9 ? { x: cx, w: remainderW, strokes: remainderStrokes } : null,
+      // A measured area's rest under half a hundredth prints as 0.00: drop it.
+      remainder:
+        remainderStrokes > (input.areaMeta?.[area] ? 0.005 : 1e-9) ? { x: cx, w: remainderW, strokes: remainderStrokes } : null,
       scaledToFit,
       measured: input.areaMeta?.[area] ?? null,
     });

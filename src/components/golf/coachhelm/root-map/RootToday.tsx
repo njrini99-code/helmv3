@@ -145,7 +145,7 @@ export function MeasuredFacts({ branch }: { branch: CauseBranch }) {
 
 /** What a branch's stroke value is, in words. */
 function strokesText(branch: CauseBranch): string {
-  if (branch.measured && branch.sizingNote) return `strokes a round lost to the Tour line on ${branch.label.toLowerCase()}, ${branch.sizingNote}`;
+  if (branch.measured && branch.sizingNote) return `strokes a round lost to the Tour line: ${branch.title.toLowerCase()}, ${branch.sizingNote}`;
   if (branch.sizedBy === 'band_sg' && branch.sizingNote) return `strokes a round lost to the Tour line: ${branch.sizingNote}`;
   return `strokes a round on ${branch.label.toLowerCase()}, to the Tour line`;
 }

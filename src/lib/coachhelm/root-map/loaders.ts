@@ -496,7 +496,9 @@ export async function loadTeamShotContext(sb: Sb, playerIds: string[]): Promise<
     const playerOfRound = new Map<string, string>();
     for (const [playerId, load] of out) for (const r of load.rounds) playerOfRound.set(r.id, playerId);
 
-    for (const idChunk of chunk(roundIds)) {
+    // Chunks run in parallel (a 15-player roster is ~20k shots, ~7 chunks):
+    // sequential paging took 3–6 s against production.
+    const loadChunk = async (idChunk: string[]) => {
       const [h, s] = await Promise.all([
         fetchAllRowsResult<RawHoleRow>(
           (from, to) =>
@@ -529,8 +531,14 @@ export async function loadTeamShotContext(sb: Sb, playerIds: string[]): Promise<
       ]);
       if (h.error) throw h.error;
       if (s.error) throw s.error;
-      for (const row of h.data ?? []) out.get(playerOfRound.get(row.round_id) ?? '')?.holes.push(row);
-      for (const row of s.data ?? []) out.get(playerOfRound.get(row.round_id) ?? '')?.shots.push(row);
+      return { holes: h.data ?? [], shots: s.data ?? [] };
+    };
+    const chunks = chunk(roundIds, 40);
+    const loaded: Array<{ holes: RawHoleRow[]; shots: RawShotRow[] }> = [];
+    for (let i = 0; i < chunks.length; i += 6) loaded.push(...(await Promise.all(chunks.slice(i, i + 6).map(loadChunk))));
+    for (const part of loaded) {
+      for (const row of part.holes) out.get(playerOfRound.get(row.round_id) ?? '')?.holes.push(row);
+      for (const row of part.shots) out.get(playerOfRound.get(row.round_id) ?? '')?.shots.push(row);
     }
 
     await Promise.all(

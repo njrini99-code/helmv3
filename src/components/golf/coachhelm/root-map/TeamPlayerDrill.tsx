@@ -61,7 +61,27 @@ export function TeamPlayerDrill({ drill, hrefFor, navigate }: TeamPlayerDrillPro
     if (!h) return;
     h.focus({ preventScroll: true });
     // Scroll the drill's top (its back link) into view, not the heading.
-    rootRef.current?.scrollIntoView?.({ block: 'start' });
+    // The Brief above the drill keeps streaming in after the drill mounts
+    // (measured at 375px: the drill landed 1,200px below the fold), so the
+    // scroll is repeated while that layout settles, and stops for good the
+    // moment the coach scrolls, touches or types.
+    const align = () => rootRef.current?.scrollIntoView?.({ block: 'start' });
+    align();
+    let stopped = false;
+    const stop = () => {
+      stopped = true;
+    };
+    const events = ['wheel', 'touchstart', 'keydown', 'pointerdown'] as const;
+    for (const e of events) window.addEventListener(e, stop, { passive: true, once: true });
+    const timers = [100, 300, 700, 1500].map((ms) =>
+      window.setTimeout(() => {
+        if (!stopped) align();
+      }, ms),
+    );
+    return () => {
+      for (const t of timers) window.clearTimeout(t);
+      for (const e of events) window.removeEventListener(e, stop);
+    };
   }, [drill.playerId]);
 
   const name = drill.playerName;
@@ -165,7 +185,7 @@ export function TeamPlayerDrill({ drill, hrefFor, navigate }: TeamPlayerDrillPro
           {ready.model.other.length > 0 ? (
             <section aria-labelledby="drill-other-heading" className="flex flex-col gap-2">
               <h3 id="drill-other-heading" className="text-body-sm font-medium text-text-secondary">
-                Other reads (not under a strokes-gained area)
+                Other reads
               </h3>
               <ul className="flex flex-wrap gap-2">
                 {ready.model.other.map((o) => (

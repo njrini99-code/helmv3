@@ -115,6 +115,12 @@ export function measuredAreaNote(
   return `${parts.join('. ')}.`;
 }
 
+/** "72 holes over 12 rounds" / "1 shot over 1 round". */
+function sampleText(sub: MeasuredSub, area: RootArea): string {
+  const unit = area === 'putting' ? (sub.n === 1 ? 'hole' : 'holes') : sub.n === 1 ? 'shot' : 'shots';
+  return `${sub.n} ${unit} over ${sub.rounds} ${sub.rounds === 1 ? 'round' : 'rounds'}`;
+}
+
 function measuredNode(sub: MeasuredSub, mode: 'measured' | 'share', area: RootArea): Pick<CauseSeed, 'measured'> {
   const listed = sub.lies ? sub.lies.reduce((t, l) => t + l.sg, 0) : 0;
   const rest = sub.lies ? sub.sg - listed : null;
@@ -253,8 +259,8 @@ export function buildRootMap<T extends RankableEvidenceInsight>(input: RootMapIn
         sizedBy: mode,
         sizingNote:
           mode === 'share'
-            ? `its share of the stored ${ROOT_AREA_LABEL[area].toLowerCase()} strokes gained, ${sub.n} ${area === 'putting' ? 'holes' : 'shots'} over ${sub.rounds} rounds`
-            : `measured from ${sub.n} ${area === 'putting' ? 'holes' : 'shots'} over ${sub.rounds} rounds`,
+            ? `its share of the stored ${ROOT_AREA_LABEL[area].toLowerCase()} strokes gained, ${sampleText(sub, area)}`
+            : `measured from ${sampleText(sub, area)}`,
         contextPath: band ? input.approachBands?.[band]?.path ?? null : null,
         insightIds: reads.map((r) => r.id),
         whyId: lead?.id ?? null,

@@ -176,6 +176,25 @@ describe('Team roots player drill', () => {
     expect(screen.getByText('Likely, not yet seen in shot sequences')).toBeInTheDocument();
   });
 
+  it('keeps the drill top in view while the Brief above it settles, until the coach scrolls', () => {
+    vi.useFakeTimers();
+    const spy = vi.fn();
+    const orig = HTMLElement.prototype.scrollIntoView;
+    HTMLElement.prototype.scrollIntoView = spy;
+    try {
+      renderDrill(ready);
+      expect(spy).toHaveBeenCalledTimes(1);
+      vi.advanceTimersByTime(350);
+      expect(spy).toHaveBeenCalledTimes(3);
+      window.dispatchEvent(new Event('wheel'));
+      vi.advanceTimersByTime(2000);
+      expect(spy).toHaveBeenCalledTimes(3);
+    } finally {
+      HTMLElement.prototype.scrollIntoView = orig;
+      vi.useRealTimers();
+    }
+  });
+
   it('calls out a last round more than 30 days old', () => {
     renderDrill({ ...ready, throughDate: '2026-07-10', daysSinceThrough: 77 } as CoachPlayerDrill);
     expect(screen.getByText('Last round Jul 10 — 11 weeks ago')).toBeInTheDocument();

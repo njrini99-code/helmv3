@@ -734,8 +734,8 @@ export function RootWhy({
         {branch?.measured ? (
           <div className="flex flex-col gap-1" data-slot="why-measured">
             <p className="text-body-sm text-text-primary">
-              <span className="font-fw-mono tabular-nums">{formatStrokes(branch.strokes)}</span> strokes a round lost on{' '}
-              {branch.label.toLowerCase()}, {branch.sizingNote}.
+              <span className="font-fw-mono tabular-nums">{formatStrokes(branch.strokes)}</span> strokes a round lost:{' '}
+              {branch.title.toLowerCase()}, {branch.sizingNote}.
             </p>
             <MeasuredFacts branch={branch} />
           </div>
