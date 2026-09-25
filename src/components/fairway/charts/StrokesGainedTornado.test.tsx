@@ -296,6 +296,20 @@ describe('StrokesGainedTornado — mobile-squeeze fix: responsive gutters', () =
     expect(title!.textContent).toBe('Around the Green');
   });
 
+  it('a ~310px card fits the Team Stats labels whole (walk-through 2026-09-24: "Approa…", "Short …")', () => {
+    const data: SGCategory[] = [
+      { label: 'Tee', value: 0.75 },
+      { label: 'Approach', value: -2.24 },
+      { label: 'Short game', value: -0.12 },
+      { label: 'Putting', value: -3.22 },
+    ];
+    const { container } = render(<TornadoInner width={310} height={220} data={data} />);
+    const texts = Array.from(container.querySelectorAll('text')).map((el) => el.textContent);
+    expect(texts).toContain('Approach');
+    expect(texts).toContain('Short game');
+    expect(texts.some((t) => t?.includes('…'))).toBe(false);
+  });
+
   it('at a comfortable desktop width, the same long label renders whole (no truncation, no <title>) — matches pre-fix behavior', () => {
     const data: SGCategory[] = [
       { label: 'Around the Green', value: -2.1 },

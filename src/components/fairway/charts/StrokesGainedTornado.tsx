@@ -285,7 +285,15 @@ export function TornadoInner({
 }) {
   // Mobile-squeeze fix: gutters scale with the ACTUAL container width instead
   // of staying pinned at their desktop pixel constants (see `scaledGutter`).
-  const labelGutter = scaledGutter(width, LABEL_GUTTER_MIN, LABEL_GUTTER);
+  // Never narrower than the longest label needs (up to 35% of the card): at a
+  // ~310px phone card the interpolated gutter was ~66px and "Approach" /
+  // "Short game" read "Approa…" / "Short …" while the bar track had room.
+  const labelNeed =
+    data.reduce((m, d) => Math.max(m, estimateLabelWidth(d.label, VIZ_FONT.labelSize)), 0) + 12;
+  const labelGutter = Math.min(
+    LABEL_GUTTER,
+    Math.max(scaledGutter(width, LABEL_GUTTER_MIN, LABEL_GUTTER), Math.min(labelNeed, width * 0.35)),
+  );
   const valueGutter = scaledGutter(width, VALUE_GUTTER_MIN, VALUE_GUTTER);
   const margin = { top: 8, right: valueGutter, bottom: 22, left: labelGutter };
 
@@ -348,7 +356,7 @@ export function TornadoInner({
   // desktop constant would truncate a label the desktop margin was
   // explicitly sized to fit — a regression. Truncation only ever engages
   // once the gutter has actually shrunk below the desktop constant.
-  const labelMaxWidth = labelGutter >= LABEL_GUTTER ? Infinity : Math.max(20, labelGutter - 12);
+  const labelMaxWidth = labelGutter >= LABEL_GUTTER || labelGutter >= labelNeed ? Infinity : Math.max(20, labelGutter - 12);
 
   return (
     <svg width={width} height={height} aria-hidden>
