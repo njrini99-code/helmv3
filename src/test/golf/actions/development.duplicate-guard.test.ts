@@ -259,6 +259,13 @@ describe('createFocusAreaFromReview — self-promote path (admin client)', () =>
 });
 
 describe('createFocusAreaFromInsightV2 — self-promote path (admin client), double-submit + ledger dedup', () => {
+  // coachhelm_focus_area_evidence_revision is on: the create also reads the
+  // source insight (.eq(id).eq(player_id).maybeSingle()) to stamp its evidence
+  // revision. No row here, so no stamp; development.evidence-revision.test.ts
+  // covers the stamp itself.
+  const evidenceRevisionRead = {
+    select: () => ({ eq: () => ({ eq: () => ({ maybeSingle: async () => ({ data: null, error: null }) }) }) }),
+  };
   function harness(fa: ReturnType<typeof makeFocusAreaTable>) {
     verifyPlayerAccessMock.mockResolvedValue({ allowed: true, reason: 'self' });
     createClientMock.mockResolvedValue({
@@ -270,7 +277,11 @@ describe('createFocusAreaFromInsightV2 — self-promote path (admin client), dou
       },
     });
     createAdminClientMock.mockReturnValue({
-      from: (table: string) => (table === 'golf_player_focus_areas' ? fa.handler : emptyTable()),
+      from: (table: string) => {
+        if (table === 'golf_player_focus_areas') return fa.handler;
+        if (table === 'golf_coach_insights') return evidenceRevisionRead;
+        return emptyTable();
+      },
     });
   }
 
