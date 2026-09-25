@@ -2155,6 +2155,40 @@ structured `ShadowEvalReport`.
   matrix, including the established-roster ones where a violation would
   actually have something to happen to.
 
+## Insight angles v1 — receipts and metric aliases (2026-09-25)
+
+The four `src/lib/coachhelm/v3/generators/insight-angles/` generators (flag
+`coachhelm_insight_angles_v1`, default off) write evidence with alias metric
+ids registered in `src/lib/coachhelm/v3/causality/metric-sources.ts` and
+`src/lib/coachhelm/v3/metrics/registry.ts`:
+
+| Metric | Source kind | comparison_source | Category |
+|---|---|---|---|
+| `approach_rough_lie_penalty` | intentional-null (shot-level join) | `pga_baseline` (0 = Tour SG) | `approach` |
+| `tee_fairway_rough_exposure` | `round_stats_cache_ratio` fairways | `team_avg` (estimated) | `tee` |
+| `round_bad_day_floor` | intentional-null (between-round) | `team_avg` | SG area, else `scoring` |
+| `three_putt_chain` | intentional-null (unchanged) | `estimated_target` (measured peer rate) | `approach` / `putting` |
+| `tee_miss_next_shot_cost` | intentional-null (shot-level join) | `your_baseline` | `tee` |
+
+Rules these rows follow on top of the base contract:
+
+- `evidence.detail.receipts` = `{ window, definition, samples, exclusions,
+  examples }`; `examples` holds at most 5 `{ round_id, hole_number, date,
+  note }`. Exclusions and samples are counts, so every rate has its
+  denominator; a missing value is excluded and counted, never read as 0
+  (prose prints `n/a (n=0)`).
+- Counterfactuals are sized on the player's own attempts per round
+  (`attemptCounterfactual` in the angles' `angle-data.ts`), clamped at 2.5 and suppressed
+  below 0.3, like `computeCounterfactual`.
+- `causality_level` is `inferred_hypothesis` on all four:
+  `mergeDiagnosis` pins composed diagnoses to it. Letting a generator emit
+  `observed_sequence` would need `mergeDiagnosis` to honor a
+  generator-supplied level when the generator attaches its own sequence
+  evidence (not done; `src/lib/coachhelm/v3/engine/generator-base.ts` is owned elsewhere).
+- Copy is descriptive: no club names (only driver / non-driver is
+  recorded), no intent, nerves or mechanics. The driver vs non-driver chain
+  carries a selection-bias note and is never sized.
+
 ## How to add a new comparison source
 
 1. Append to `InsightComparisonSource` and `COMPARISON_SOURCES` in `types.ts`.

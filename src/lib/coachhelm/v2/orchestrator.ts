@@ -37,6 +37,10 @@ import { PressureGapGenerator } from '@/lib/coachhelm/v3/generators/pressure-gap
 import { WarmupHoleGenerator } from '@/lib/coachhelm/v3/generators/warmup-hole';
 import { ApproachMissGenerator } from '@/lib/coachhelm/v3/generators/approach-miss';
 import { TeeStrategyGenerator } from '@/lib/coachhelm/v3/generators/tee-strategy';
+import { LieApproachGenerator } from '@/lib/coachhelm/v3/generators/insight-angles/lie-approach';
+import { BadDayFloorGenerator } from '@/lib/coachhelm/v3/generators/insight-angles/bad-day-floor';
+import { ThreePuttChainGenerator } from '@/lib/coachhelm/v3/generators/insight-angles/three-putt-chain';
+import { TeeMissCostGenerator } from '@/lib/coachhelm/v3/generators/insight-angles/tee-miss-cost';
 
 // W28: composite-rule synthesis runs after Tier-1 generators finish so
 // rules can detect cross-insight patterns in this round's freshly-written
@@ -442,6 +446,15 @@ class CoachHelmIntelligence {
       // v3 — tee strategy (W43; gated by per-team toggle in
       // golf_team_coachhelm_settings.preferences.tee_strategy_enabled)
       { name: 'v3.teeStrategy',  fn: () => new TeeStrategyGenerator(playerId).run() },
+      // v3 — insight angles (2026-09-25; all four behind the
+      // coachhelm_insight_angles_v1 flag, default OFF). Each checks the flag
+      // in isEnabled(), so with the flag off they write nothing and their
+      // scope sweep archives any row left from a period it was on. They
+      // share one memoized countable-round read per player.
+      { name: 'v3.lieApproach',     fn: () => new LieApproachGenerator(playerId).run() },
+      { name: 'v3.badDayFloor',     fn: () => new BadDayFloorGenerator(playerId).run() },
+      { name: 'v3.threePuttChain',  fn: () => new ThreePuttChainGenerator(playerId).run() },
+      { name: 'v3.teeMissCost',     fn: () => new TeeMissCostGenerator(playerId).run() },
       // v2 (still deferred — worst-holes pattern rework planned post-launch)
       { name: 'v2.worstHoles',   fn: () => generateWorstHolesInsights(playerId) },
     ];

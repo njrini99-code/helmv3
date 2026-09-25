@@ -682,3 +682,32 @@ flags:
       observed_sequence diagnosis has run in production for a full season
       without a wording or accuracy complaint; if coaches reject it, turn it
       off and remove the observed branch from root-cause.ts instead.
+
+  # CoachHelm v3 insight angles (owner-picked 2026-09-25): lie-adjusted
+  # approach, Bad-Day Floor, Three-Putt Autopsy + Second-Putt Exposure,
+  # Miss-Cost Compass + driver vs non-driver chain. Built OFF; enabling is
+  # the owner's decision.
+  - feature_id: coachhelm_insight_angles_v1
+    owner: golf/coachhelm
+    purpose: >-
+      Gates the four v3 insight-angle generators under
+      src/lib/coachhelm/v3/generators/insight-angles/ (LieApproach,
+      BadDayFloor, ThreePuttChain, TeeMissCost). Off: each generator's
+      isEnabled() returns false, so the orchestrator run writes nothing and
+      the stale-scope sweep archives any row they wrote while on. Preview
+      the output read-only with scripts/coachhelm/insight-angles-dry-run.ts.
+    type: release
+    status: active
+    created_at: "2026-09-25"
+    expires_at: "2026-12-31"
+    default: false
+    environment:
+      production: false
+      preview: false
+      development: false
+    kill_switch_behavior: null
+    cleanup_plan: >-
+      If the owner enables it and coaches keep the angles through one full
+      season, remove the flag and the isEnabled() overrides; if they are
+      rejected, delete the insight-angles directory, its orchestrator
+      entries and its metric aliases, then archive this flag.

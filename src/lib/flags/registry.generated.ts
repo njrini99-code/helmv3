@@ -132,6 +132,23 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     cleanup_plan: "Once 20260923110000_golf_focus_area_practice_log.sql is applied in every environment and the read/write paths have run in production without incident, flip default to true, then remove this flag and the now-dead off-branches once the write paths no longer need a migration-safety gate.",
   },
   {
+    feature_id: "coachhelm_insight_angles_v1",
+    owner: "golf/coachhelm",
+    purpose: "Gates the four v3 insight-angle generators under src/lib/coachhelm/v3/generators/insight-angles/ (LieApproach, BadDayFloor, ThreePuttChain, TeeMissCost). Off: each generator's isEnabled() returns false, so the orchestrator run writes nothing and the stale-scope sweep archives any row they wrote while on. Preview the output read-only with scripts/coachhelm/insight-angles-dry-run.ts.",
+    type: "release",
+    status: "active",
+    created_at: "2026-09-25",
+    expires_at: "2026-12-31",
+    default: false,
+    environment: {
+      production: false,
+      preview: false,
+      development: false,
+    },
+    kill_switch_behavior: null,
+    cleanup_plan: "If the owner enables it and coaches keep the angles through one full season, remove the flag and the isEnabled() overrides; if they are rejected, delete the insight-angles directory, its orchestrator entries and its metric aliases, then archive this flag.",
+  },
+  {
     feature_id: "coachhelm_learned_personalization",
     owner: "golf/coachhelm",
     purpose: "Gates whether v3 insight ranking's loadCoachWeightsForPlayer applies stored golf_coachhelm_coach_weights instead of neutral 1.0 defaults; default off because production's weights were computed under v1's broken outcome-attribution math (see score.ts's own docblock), not because of any evidence problem with this flag.",

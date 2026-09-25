@@ -1337,3 +1337,60 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
 ## Hidden categories
 
 Owner decisions 2026-09-25: `course_management` insights and `tee_strategy` insights (the driver-vs-layback read, category `tee`) are never shown to players or coaches. `HIDDEN_INSIGHT_CATEGORIES` (`course_management`, by `category`) and `HIDDEN_INSIGHT_TYPES` (`tee_strategy`, by `insight_type`, because other tee generators share its category) in `src/lib/coachhelm/v3/insight-visibility.ts` are applied by `applyInsightVisibility` and by `excludeHiddenCategories` (themes, composite loader, causality cron) as one `.neq` per hidden value. `insight_type` is NOT NULL, so the type filter drops no row through NULL semantics (0 of 1,203 rows NULL on 2026-09-25). Rows are still generated and stored; the learning loop does not train on them.
+
+## Insight angles v1 (2026-09-25, flag `coachhelm_insight_angles_v1`, default off)
+
+Four golf-only generators in `src/lib/coachhelm/v3/generators/insight-angles/`,
+run as tier-1 entries in `src/lib/coachhelm/v2/orchestrator.ts` (`v3.lieApproach`,
+`v3.badDayFloor`, `v3.threePuttChain`, `v3.teeMissCost`). Flag off:
+`isEnabled()` is false, nothing is written, and the base's stale-scope sweep
+archives any row a scope wrote while on. Preview read-only with
+`scripts/coachhelm/insight-angles-dry-run.ts [--calibrate]` (never calls
+`run()`; ids truncated to 8 chars).
+
+- **Data**: one read per player (`src/lib/coachhelm/v3/generators/insight-angles/load-angle-data.ts`): newest 40
+  `isCountableRound` rounds, their holes and shots, `sg_scale_for_player`,
+  scoring baseline; team peers read `golf_rounds` only. Not
+  `src/lib/coachhelm/v3/context/load-player-context.ts`: it has no `putt_distance_feet`,
+  `putt_slope`, `fairway_hit` or shot ids (needed by the per-shot SG port
+  `shotSgForRound` in `src/lib/coachhelm/root-map/approach-context.ts`), and no countable filter.
+  Club is only `driver` / `non_driver` / `putter`; no copy names a club.
+- **Lie-adjusted approach** (`lie-approach.ts` in that folder): per band (50–125 / 125–175 /
+  175+ yd) × lie; `rough_execution` (category `approach`, metric
+  `approach_rough_lie_penalty`, benchmark 0 = Tour SG, `pga_baseline`) or
+  `fairway_exposure` (category `tee`, metric `tee_fairway_rough_exposure`,
+  teammates' median, estimated). Par-3 tee shots EXCLUDED and counted.
+- **Bad-Day Floor** (`bad-day-floor.ts`): P80 − median of per-18 score to
+  par (9-hole rounds × 2, stated); bad (≥ P80) vs middle (P30–P70) split
+  into penalties / strokes beyond bogey on double-or-worse holes /
+  everything else (non-overlapping per hole, sum to to-par). Category = SG
+  area bad rounds lose most in, else `scoring`. Teammates' median gap from
+  `golf_rounds.score_to_par`. Gate ≥ 10 rounds, ≥ 3 peers, extra ≥ 1.5;
+  sizing extra × 0.2. Metric `round_bad_day_floor`.
+- **Three-Putt Autopsy + Second-Putt Exposure** (`three-putt-chain.ts`):
+  3-putts per 18 vs a MEASURED GolfHelm peer rate (`PEER_THREE_PUTT`); each
+  3-putt in one pathway (first putt 35+ ft / second putt 6+ ft / second putt
+  < 6 ft); a 3-putt from < 35 ft with no second-putt distance is
+  suppressed and counted. Second-putt distance buckets per first-putt band.
+  Category `approach` when long leaves lead, else `putting`. Metric
+  `three_putt_chain`. `putt_slope` fill is ~100% per player (median), not
+  41%; slope split is descriptive with its own gate.
+- **Miss-Cost Compass + driver chain** (`tee-miss-cost.ts`): cost of a
+  left/right miss = hole to-par vs own fairway holes in the same par ×
+  driver/non-driver stratum; next-shot SG per side (missing counted, not
+  zeroed); driver vs non-driver chain per par in `detail.club_chain` with a
+  selection-bias note (never sized). Metric `tee_miss_next_shot_cost`.
+  Approach-miss compass NOT built (approach `miss_direction` is 8-way,
+  ~99% filled; needs its own row and gates).
+- **Contract**: every row carries `detail.receipts` (window, definition,
+  samples, exclusions, ≤ 5 example `round_id`/`hole_number`), a
+  counterfactual sized on the player's own attempts, and
+  `causality_level: 'inferred_hypothesis'` — `mergeDiagnosis` in
+  `src/lib/coachhelm/v3/engine/generator-base.ts` pins composed diagnoses to that level, and only
+  the root-cause step can emit `observed_sequence`.
+- **Why visuals (for the UI pass)**: lie — per-band fairway vs rough GIR /
+  proximity / SG bars plus the tee → approach link; floor — median vs P80
+  markers with the three-part split bar; 3-putt — pathway bars and a
+  second-putt bucket histogram per first-putt band; tee — a three-spoke
+  compass (left / fairway / right) with cost and next-shot SG, and the
+  driver / non-driver chain table.
