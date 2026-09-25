@@ -46,6 +46,15 @@ export const VISIBLE_LIFECYCLE_STATES = ['detected', 'matured', 'addressed', 're
 export const HIDDEN_INSIGHT_CATEGORIES = ['course_management'] as const;
 
 /**
+ * Insight types the product never surfaces (owner decision 2026-09-25: tee
+ * strategy, the driver-vs-layback read, is hidden). Its category is `tee`,
+ * which other generators share, so it is hidden by `insight_type`, not by
+ * category. `insight_type` is NOT NULL in the schema (checked 2026-09-25:
+ * 0 of 1,203 rows NULL), so `.neq` drops no row through NULL semantics.
+ */
+export const HIDDEN_INSIGHT_TYPES = ['tee_strategy'] as const;
+
+/**
  * Structural shape of the (only) three PostgREST filter-builder methods this
  * helper chains. The supabase builders are nominally typed per-table, but the
  * `.or()` / `.in()` / `.neq()` signatures are identical across every builder,
@@ -65,6 +74,7 @@ interface InsightVisibilityFilterable {
  *   2. `.in('lifecycle_state', VISIBLE…)`   — no `tentative`/`archived` rows
  *   3. `.neq('status', 'dismissed')`        — no coach-dismissed rows
  *   4. `.neq('category', …)` per hidden one — no owner-hidden categories
+ *   5. `.neq('insight_type', …)` per hidden one — no owner-hidden types
  *
  * Status-only filtering (`status='active'`) is NOT a substitute: v3 stale-scope
  * retraction archives by `lifecycle_state` while leaving `status='active'`, so
@@ -92,7 +102,7 @@ export function applyInsightVisibility<Q>(query: Q): Q {
 }
 
 /**
- * Applies only the hidden-category predicate, for the few readers that chain
+ * Applies only the hidden-category and hidden-type predicates, for the few readers that chain
  * the engine + lifecycle predicates by hand (themes, composite loader,
  * causality cron). `category` is nullable in the schema, but every v3
  * generator sets it (0 of 977 v3 rows NULL, checked 2026-09-25), so `.neq`
@@ -101,5 +111,6 @@ export function applyInsightVisibility<Q>(query: Q): Q {
 export function excludeHiddenCategories<Q>(query: Q): Q {
   let q = query as InsightVisibilityFilterable;
   for (const category of HIDDEN_INSIGHT_CATEGORIES) q = q.neq('category', category);
+  for (const type of HIDDEN_INSIGHT_TYPES) q = q.neq('insight_type', type);
   return q as Q;
 }

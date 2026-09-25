@@ -4,6 +4,7 @@
  * layer must apply the SAME product-visibility contract through THIS one helper:
  *
  *   .or(V3_ENGINE_FILTER).in('lifecycle_state', VISIBLE).neq('status','dismissed')
+ *   then .neq('category', …) and .neq('insight_type', …) per hidden one
  *
  * These tests pin the exact methods, order, and shared-constant arguments, so a
  * future drift in the contract (or a reader that hand-rolls a copy) is caught.
@@ -12,7 +13,9 @@
 import { describe, it, expect, vi } from 'vitest';
 import {
   HIDDEN_INSIGHT_CATEGORIES,
+  HIDDEN_INSIGHT_TYPES,
   applyInsightVisibility,
+  excludeHiddenCategories,
   V3_ENGINE_FILTER,
   VISIBLE_LIFECYCLE_STATES,
 } from '@/lib/coachhelm/v3/insight-visibility';
@@ -43,6 +46,18 @@ describe('applyInsightVisibility', () => {
       { method: 'in', args: ['lifecycle_state', [...VISIBLE_LIFECYCLE_STATES]] },
       { method: 'neq', args: ['status', 'dismissed'] },
       ...HIDDEN_INSIGHT_CATEGORIES.map((c) => ({ method: 'neq', args: ['category', c] })),
+      ...HIDDEN_INSIGHT_TYPES.map((t) => ({ method: 'neq', args: ['insight_type', t] })),
+    ]);
+  });
+
+  it('hides course management by category and tee strategy by insight type (owner decisions)', () => {
+    expect(HIDDEN_INSIGHT_CATEGORIES).toContain('course_management');
+    expect(HIDDEN_INSIGHT_TYPES).toContain('tee_strategy');
+    const { builder, calls } = makeBuilder();
+    excludeHiddenCategories(builder);
+    expect(calls).toEqual([
+      { method: 'neq', args: ['category', 'course_management'] },
+      { method: 'neq', args: ['insight_type', 'tee_strategy'] },
     ]);
   });
 

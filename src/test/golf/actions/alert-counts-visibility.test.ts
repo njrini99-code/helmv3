@@ -16,6 +16,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import {
   HIDDEN_INSIGHT_CATEGORIES,
+  HIDDEN_INSIGHT_TYPES,
   V3_ENGINE_FILTER,
   VISIBLE_LIFECYCLE_STATES,
 } from '@/lib/coachhelm/v3/insight-visibility';
@@ -150,7 +151,7 @@ describe('getAlertCounts visibility + priority bucketing (audit P1/P2)', () => {
 
     expect(calls.or).toEqual([[V3_ENGINE_FILTER]]);
     expect(calls.in).toEqual([['lifecycle_state', [...VISIBLE_LIFECYCLE_STATES]]]);
-    expect(calls.neq).toEqual([['status', 'dismissed'], ...HIDDEN_INSIGHT_CATEGORIES.map((c) => ['category', c])]);
+    expect(calls.neq).toEqual([['status', 'dismissed'], ...HIDDEN_INSIGHT_CATEGORIES.map((c) => ['category', c]), ...HIDDEN_INSIGHT_TYPES.map((t) => ['insight_type', t])]);
   });
 
   it('counts urgent + high as critical; excludes archived / tentative / v2 rows', async () => {
