@@ -113,6 +113,26 @@ forever). Two coaches at different organizations on the same transferred
 athlete cannot silently overwrite each other's evidence — they each get a
 distinct row.
 
+A benchmark change does not create a new row. The signature carries no
+comparison value, so the same key updates in place and the evidence is
+replaced.
+
+On read, every ranked surface collapses rows through `dedupeBySubject`
+(`insight-delivery-ranking.ts`), keyed on `player:category:canonical metric`:
+
+- **What it ignores.** The key ignores coach, team and signature suffix, so
+  a coach-scoped row, its coach_id-NULL orphan, and two signatures for one
+  metric all show as one card.
+- **Which row survives.** Since 2026-09-24, the member with the newest
+  `updated_at` survives, at its own rank position. Before that, the first
+  member in rank order won, so a stale copy could outrank the current
+  reading.
+- **Why not A6 `groupIssues`.** It groups on shot-id overlap only, and
+  insight rows carry no shot ids.
+- **Known gap.** Visibility filters out dismissed rows before this collapse.
+  If the newest member of a group is dismissed, an older non-dismissed copy
+  can still show. Production had 0 such cases on 2026-09-24.
+
 ## Confidence method (`honest_v2`, 2026-09-12)
 
 `calcConfidence` (`src/lib/coachhelm/v2/insights/types.ts`) is recomputed by

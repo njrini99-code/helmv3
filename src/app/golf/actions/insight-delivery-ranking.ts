@@ -178,18 +178,47 @@ export async function rankEvidenceInsights<T extends RankableEvidenceInsight>(
   return scored.map((row) => row.insight);
 }
 
+/** The issue key one card per issue collapses on. */
+export function issueSubjectKey(insight: RankableEvidenceInsight): string {
+  const subject = canonicalMetricSubject(insight.evidence?.metric) || insight.title;
+  return `${insight.player_id}:${insight.category}:${subject}`;
+}
+
+function evidenceRecency(insight: RankableEvidenceInsight): string {
+  return insight.updated_at || insight.created_at || '';
+}
+
 /**
- * Cross-surface dedupe by `(player_id:category:metric-subject)`.
+ * Cross-surface collapse: one card per issue, keyed on
+ * `(player_id:category:metric-subject)`.
+ *
+ * The key deliberately ignores `coach_id`, `team_id` and the signature
+ * suffix. In production the duplicates are the same issue written twice:
+ * - once coach-scoped and once as a coach_id-NULL orphan, or
+ * - under two signatures for one metric (tee_strategy laggy vs
+ *   inconclusive, for example).
+ *
+ * Within a group, the member with the NEWEST evidence (`updated_at`, then
+ * `created_at`) survives, so a stale copy never outranks the current
+ * reading. Ties keep rank order.
+ *
+ * The survivor stays at ITS OWN position in the ranked input, so it is
+ * ranked by its own score and never inherits a stale sibling's higher one.
+ *
+ * Why not A6 `groupIssues`? It keys on shot-id overlap, and its contract
+ * forbids inferring overlap from metric or label. Insight rows carry no
+ * shot ids, so this row-level key is the honest grouping for the read path.
  */
 export function dedupeBySubject<T extends RankableEvidenceInsight>(insights: T[]): T[] {
-  const seenSignatures = new Set<string>();
-  return insights.filter((insight) => {
-    const subject = canonicalMetricSubject(insight.evidence?.metric) || insight.title;
-    const sig = `${insight.player_id}:${insight.category}:${subject}`;
-    if (seenSignatures.has(sig)) return false;
-    seenSignatures.add(sig);
-    return true;
-  });
+  const winner = new Map<string, T>();
+  for (const insight of insights) {
+    const key = issueSubjectKey(insight);
+    const current = winner.get(key);
+    if (!current || evidenceRecency(insight) > evidenceRecency(current)) {
+      winner.set(key, insight);
+    }
+  }
+  return insights.filter((insight) => winner.get(issueSubjectKey(insight)) === insight);
 }
 
 /**
