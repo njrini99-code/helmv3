@@ -530,7 +530,7 @@ function finish(
 
 function isOnGreen(f: ShotFact): boolean {
   const r = (f.result ?? '').toLowerCase();
-  if (r === 'green' || r === 'hole' || r === 'gir') return true;
+  if (r === 'green' || r === 'hole' || r === 'holed' || r === 'gir') return true;
   if (f.putt_made === true) return true;
   return (f.lie_after ?? '').toLowerCase() === 'green';
 }

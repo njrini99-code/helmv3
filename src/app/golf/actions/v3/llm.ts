@@ -32,6 +32,7 @@ import { withAdminObserved } from '@/lib/admin/observed-action';
 import { describeError } from '@/lib/utils/describe-error';
 import { gateUserAction, LLM_COMPOSE_RATE_LIMIT } from '@/lib/auth/action-rate-limit';
 import { verifyPlayerAccess } from '@/lib/auth/verify-player-access';
+import { applyInsightVisibility } from '@/lib/coachhelm/v3/insight-visibility';
 
 export interface LlmRoundReviewActionResult {
   ok: boolean;
@@ -484,9 +485,9 @@ async function loadCompositeInsightTitles(
   // composite rows (W28 synthesis pass). Cap at 3 to keep prompt budget
   // bounded — the composer also defends with .slice(0, 3) but
   // pre-trimming saves a few tokens.
-  const { data } = await supabase
-    .from('golf_coach_insights')
-    .select('title, signature, created_at')
+  const { data } = await applyInsightVisibility(
+    supabase.from('golf_coach_insights').select('title, signature, created_at'),
+  )
     .eq('player_id', args.player_id)
     .eq('source_id', args.round_id)
     .like('signature', 'v3:composite:%')
