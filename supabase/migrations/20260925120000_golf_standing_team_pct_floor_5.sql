@@ -29,7 +29,10 @@
 --
 -- Read-only production sizing (2026-09-25): golf_player_standing has 994
 -- rows, 956 with a team_pct. 10 rows (7 players) have team_n 3 or 4 and would
--- lose their team_pct on the next refresh. The app already hides those.
+-- lose their team_pct on the next refresh. percentiles.ts and StandingBar
+-- already gate on team_n >= 5; other team_pct readers (roster and genome
+-- pages, stats-leak-maps, v3/llm.ts, EvidencePanel) were not audited and may
+-- show fewer rows after apply.
 --
 -- SAFETY: CREATE OR REPLACE of existing SECURITY DEFINER functions with the
 -- same signatures; owner (postgres), search_path and grants
