@@ -21,7 +21,7 @@
  * ========================================================================== */
 
 import React from 'react';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, waitFor, render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { GroupedSignal, SignalGroup } from '@/lib/coachhelm/signal-grouping';
 import type { TeamShotAnalysis } from '@/app/golf/actions/team-category-insights';
@@ -154,6 +154,7 @@ describe('TriageDesk — Team diagnostics section', () => {
         ],
       },
     });
+    fireEvent.click(screen.getByRole('button', { name: /Team diagnostics/i }));
     expect(screen.getByText('Team shot weaknesses')).toBeInTheDocument();
     expect(screen.getByText('150-175 yd approach from fairway')).toBeInTheDocument();
     expect(screen.getByText('Dead zones')).toBeInTheDocument();
@@ -161,21 +162,25 @@ describe('TriageDesk — Team diagnostics section', () => {
 
   it('shows an honest empty state (never a fabricated instrument) when teamShotAnalysis is absent', () => {
     renderDesk({ teamShotAnalysis: undefined });
+    fireEvent.click(screen.getByRole('button', { name: /Team diagnostics/i }));
     expect(screen.getByText('No team shot analysis yet')).toBeInTheDocument();
   });
 
-  it('the disclosure toggle hides and re-shows the diagnostics section', () => {
+  // Layout contract changed on purpose (summary first, owner direction
+  // 2026-09-25): Team diagnostics now starts CLOSED below the queue. The
+  // content assertions are unchanged; only the default state flipped.
+  it('the disclosure starts closed, then shows and hides the diagnostics section', async () => {
     renderDesk({ teamShotAnalysis: undefined });
     const toggle = screen.getByRole('button', { name: /Team diagnostics/i });
-    expect(toggle).toHaveAttribute('aria-expanded', 'true');
-    expect(screen.getByText('No team shot analysis yet')).toBeInTheDocument();
-
-    fireEvent.click(toggle);
     expect(toggle).toHaveAttribute('aria-expanded', 'false');
     expect(screen.queryByText('No team shot analysis yet')).not.toBeInTheDocument();
 
     fireEvent.click(toggle);
     expect(toggle).toHaveAttribute('aria-expanded', 'true');
     expect(screen.getByText('No team shot analysis yet')).toBeInTheDocument();
+
+    fireEvent.click(toggle);
+    expect(toggle).toHaveAttribute('aria-expanded', 'false');
+    await waitFor(() => expect(screen.queryByText('No team shot analysis yet')).not.toBeInTheDocument());
   });
 });

@@ -130,11 +130,13 @@ describe('summarizeCalibration', () => {
     expect(result.label).toContain('underconfident');
   });
 
-  it('reads as well matched when neither rate leads by the gap threshold', () => {
+  // Copy changed on purpose: "well matched" overclaimed for a low score. The
+  // no-lean verdict and its tone are unchanged.
+  it('reads as no consistent lean when neither rate leads by the gap threshold', () => {
     const result = summarizeCalibration(
       performance({ validatedPredictions: 20, overconfidenceRate: 0.12, underconfidenceRate: 0.1 }),
     );
     expect(result.tone).toBe('positive');
-    expect(result.label).toContain('well matched');
+    expect(result.label).toContain('no consistent lean');
   });
 });

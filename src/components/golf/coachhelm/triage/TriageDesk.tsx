@@ -27,7 +27,7 @@
 
 import { useEffect, useMemo, useState, useTransition } from 'react';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
-import { ChevronDown, MessageCircle } from 'lucide-react';
+import { MessageCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
 import { Button, fairwayToast, InlineNotice, PlayersGridView } from '@/components/fairway';
@@ -48,6 +48,7 @@ import {
 import { BriefBand } from './BriefBand';
 import { ViewSwitch, DEFAULT_VIEW_OPTIONS, TEAM_ROOTS_OPTION } from './ViewSwitch';
 import { TeamRootsView, type TeamRootsData } from '@/components/golf/coachhelm/root-map/TeamRootsView';
+import { Disclosure } from '@/components/golf/coachhelm/root-map/Disclosure';
 import { SignalQueue } from './SignalQueue';
 import { TeamSignalSummary } from './TeamSignalSummary';
 import { SignalDossier } from './SignalDossier';
@@ -263,12 +264,6 @@ export function TriageDesk({
     setGroups(initialGroups);
   }, [initialGroups]);
 
-  // Team diagnostics — the team shot weaknesses instrument, supplementary to
-  // the primary Signal Queue below. Expanded by default: a coach shouldn't
-  // need an extra click to see data that was already being fetched and
-  // simply discarded before this.
-  const [showDiagnostics, setShowDiagnostics] = useState(true);
-
   const [pendingIds, setPendingIds] = useState<ReadonlySet<string>>(new Set());
   const [isScanning, startScanTransition] = useTransition();
 
@@ -376,6 +371,11 @@ export function TriageDesk({
   }
 
   const counts = useMemo(() => computeBriefCounts(groups), [groups]);
+  const severityMix = useMemo(() => {
+    const mix = { urgent: 0, high: 0, medium: 0, low: 0 };
+    for (const group of groups) for (const signal of group.signals) mix[signal.severity] += 1;
+    return mix;
+  }, [groups]);
   const verdict = useMemo(() => buildBriefVerdict(groups, counts), [groups, counts]);
   const lastScanLabel = useMemo(() => formatRelativeScanTime(scannedAt), [scannedAt]);
   const categories = useMemo(() => distinctCategories(groups), [groups]);
@@ -496,21 +496,6 @@ export function TriageDesk({
 
   return (
     <div className="flex flex-col gap-6">
-      {categoryBandData && view !== 'team' ? (
-        <TeamCategoryLeakBand
-          categories={categoryBandData.categories}
-          teamHealth={categoryBandData.teamHealth}
-        />
-      ) : null}
-
-      <BriefBand
-        verdict={verdict}
-        counts={counts}
-        lastScanLabel={lastScanLabel}
-        scanning={isScanning}
-        onScan={handleScan}
-      />
-
       {/*
         Ask sits BESIDE the view switcher, not inside it.
 
@@ -532,14 +517,18 @@ export function TriageDesk({
         so this cannot drift from the breadcrumb and page title that already
         read from it.
       */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <ViewSwitch
-          view={view}
-          hrefFor={(next) => hrefFor({ view: next, signal: null })}
-          onSelect={(next) => navigate({ view: next, signal: null })}
-          options={teamAvailable ? [TEAM_ROOTS_OPTION, ...DEFAULT_VIEW_OPTIONS] : DEFAULT_VIEW_OPTIONS}
-        />
-        <Button asChild variant="secondary" size="sm">
+      <div className="flex items-center justify-between gap-2 sm:gap-3">
+        {/* One row on phones: the switch scrolls inside its own track (with
+            an edge fade) and Ask keeps its place beside it. */}
+        <div className="min-w-0 flex-1 sm:flex-none">
+          <ViewSwitch
+            view={view}
+            hrefFor={(next) => hrefFor({ view: next, signal: null })}
+            onSelect={(next) => navigate({ view: next, signal: null })}
+            options={teamAvailable ? [TEAM_ROOTS_OPTION, ...DEFAULT_VIEW_OPTIONS] : DEFAULT_VIEW_OPTIONS}
+          />
+        </div>
+        <Button asChild variant="secondary" size="sm" className="min-h-11 shrink-0">
           <Link href={surfaceHref('ask')}>
             <MessageCircle aria-hidden className="h-3.5 w-3.5" />
             {surfaceName('ask')}
@@ -574,43 +563,17 @@ export function TriageDesk({
           </InlineNotice>
         ) : (
           <>
-            <div className="space-y-3">
-              {/* eslint-disable-next-line helm/no-raw-button -- borderless full-bleed disclosure toggle; the Fairway Button's pill surface can't host this justify-between row + chevron layout (matches FairwayCoachAnnouncementCard's identical disclosure toggle) */}
-              <button
-                type="button"
-                onClick={() => setShowDiagnostics((prev) => !prev)}
-                aria-expanded={showDiagnostics}
-                aria-controls="triage-team-diagnostics"
-                className={cn(
-                  'flex w-full items-center justify-between gap-2 rounded-fw-sm border border-border-subtle bg-surface-sunken px-4 py-2.5 text-left',
-                  'font-fw-sans text-body-sm font-medium text-text-secondary transition-colors hover:bg-surface-tint hover:text-text-primary',
-                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-inset',
-                )}
-              >
-                <span>Team diagnostics</span>
-                <ChevronDown
-                  className={cn('h-4 w-4 shrink-0 transition-transform duration-medium', showDiagnostics && 'rotate-180')}
-                  aria-hidden
-                />
-              </button>
-              {showDiagnostics ? (
-                <div id="triage-team-diagnostics">
-                  <TeamShotWeaknessesPanel data={teamShotAnalysis} />
-                </div>
-              ) : null}
-            </div>
-
-            {/* Per-category signal pressure, above the queue it summarises.
-                Distinct from Team diagnostics above it: that panel reads shot
-                analysis, this one aggregates the SIGNAL GROUPS themselves —
-                count, high-priority share, freshness and impact per category —
-                which nothing else on this surface does. `SignalQueue` shows a
-                severity chip per group and trailing filter counts, but never
-                the shape of the whole queue at a glance. */}
-            <TeamSignalSummary
-              groups={groups}
-              playerHref={(playerId) => hrefFor({ view: 'players', player: playerId, playersTab: 'areas' })}
-              onOpenPlayer={(playerId) => navigate({ view: 'players', player: playerId, playersTab: 'areas' })}
+            {/* Summary first: the count, the verdict, the severity split and
+                Scan team. The queue and its dossier follow; everything that
+                describes the team as a whole sits in closed disclosures
+                below them. */}
+            <BriefBand
+              verdict={verdict}
+              counts={counts}
+              lastScanLabel={lastScanLabel}
+              scanning={isScanning}
+              onScan={handleScan}
+              mix={severityMix}
             />
 
             <div className="grid grid-cols-1 gap-4 min-[940px]:grid-cols-[380px_1fr] min-[940px]:items-stretch">
@@ -642,6 +605,32 @@ export function TriageDesk({
                   playerStats={dossierPlayerStats}
                 />
               </div>
+            </div>
+
+            <div className="flex flex-col">
+              {/* Per-category signal pressure: the shape of the whole queue
+                  (count, high-priority share and impact per category). */}
+              <Disclosure title="Where signals concentrate" slot="signals-concentrate">
+                <TeamSignalSummary
+                  groups={groups}
+                  playerHref={(playerId) => hrefFor({ view: 'players', player: playerId, playersTab: 'areas' })}
+                  onOpenPlayer={(playerId) => navigate({ view: 'players', player: playerId, playersTab: 'areas' })}
+                />
+              </Disclosure>
+              {categoryBandData ? (
+                <Disclosure title="Team by game area" slot="signals-leak-band">
+                  <TeamCategoryLeakBand
+                    categories={categoryBandData.categories}
+                    teamHealth={categoryBandData.teamHealth}
+                  />
+                </Disclosure>
+              ) : null}
+              {/* Team diagnostics: the team shot weaknesses instrument,
+                  supplementary to the queue. Closed by default under the
+                  summary-first layout (owner direction 2026-09-25). */}
+              <Disclosure title="Team diagnostics" slot="triage-team-diagnostics">
+                <TeamShotWeaknessesPanel data={teamShotAnalysis} />
+              </Disclosure>
             </div>
           </>
         )

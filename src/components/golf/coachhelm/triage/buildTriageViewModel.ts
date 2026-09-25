@@ -12,6 +12,7 @@
  * `getSignalGroups` already produced.
  * ========================================================================== */
 
+import { getMetricRenderConfig } from '@/lib/coachhelm/v3/standing/metric-config';
 import {
   SEVERITY_ORDER,
   attentionScore,
@@ -244,7 +245,12 @@ export function formatRelativeScanTime(scannedAt: string | null, now: Date = new
  * Display formatting — category labels, severity labels, age.
  * ────────────────────────────────────────────────────────────────────────── */
 
+/** A category is usually a game area (`short_game`), but a roster roll-up is
+ *  keyed by its metric id (`putts_made_5_10ft_pct`). Metric ids read through
+ *  the registry's display label, never as a title-cased raw id. */
 export function formatCategoryLabel(category: string): string {
+  const metric = getMetricRenderConfig(category);
+  if (metric) return metric.display_label;
   return category
     .split('_')
     .filter(Boolean)
