@@ -217,31 +217,44 @@ export class PressureGapGenerator extends BaseGenerator<PressureGapAggregate> {
     const practiceDisp = formatVsPar(agg.practice_avg);
     const competitiveDisp = formatVsPar(agg.competitive_avg);
 
-    const components: Array<{ label: string; val: number; unit: 'pp' | 'pr' }> = [
-      { label: 'double bogeys', val: agg.double_rate_delta, unit: 'pp' as const },
-      { label: '3-putts', val: agg.three_putt_delta, unit: 'pp' as const },
-      { label: 'penalties', val: agg.penalty_delta, unit: 'pr' as const },
-      { label: 'your opening 3 holes', val: agg.opening3_delta, unit: 'pr' as const },
+    // `coachLabel`: the same component in neutral third person (evidence.coach_copy).
+    const components: Array<{ label: string; coachLabel: string; val: number; unit: 'pp' | 'pr' }> = [
+      { label: 'double bogeys', coachLabel: 'double bogeys', val: agg.double_rate_delta, unit: 'pp' as const },
+      { label: '3-putts', coachLabel: '3-putts', val: agg.three_putt_delta, unit: 'pp' as const },
+      { label: 'penalties', coachLabel: 'penalties', val: agg.penalty_delta, unit: 'pr' as const },
+      { label: 'your opening 3 holes', coachLabel: 'their opening 3 holes', val: agg.opening3_delta, unit: 'pr' as const },
     ].sort((a, b) => b.val - a.val);
     const lead = components[0];
-    const driverClause =
-      agg.playerValue > 0 && lead && lead.val > 0
-        ? lead.unit === 'pp'
-          ? ` Most of that gap is ${lead.label}: +${lead.val.toFixed(0)}% of holes vs your practice rate.`
-          : ` Most of that gap is ${lead.label}: +${lead.val.toFixed(1)} per round vs practice.`
-        : '';
+    const hasDriver = agg.playerValue > 0 && lead && lead.val > 0;
+    const driverClause = hasDriver
+      ? lead.unit === 'pp'
+        ? ` Most of that gap is ${lead.label}: +${lead.val.toFixed(0)}% of holes vs your practice rate.`
+        : ` Most of that gap is ${lead.label}: +${lead.val.toFixed(1)} per round vs practice.`
+      : '';
+    const coachDriverClause = hasDriver
+      ? lead.unit === 'pp'
+        ? ` Most of that gap is ${lead.coachLabel}: +${lead.val.toFixed(0)}% of holes vs their practice rate.`
+        : ` Most of that gap is ${lead.coachLabel}: +${lead.val.toFixed(1)} per round vs practice.`
+      : '';
 
     const title = `Pressure gap: ${deltaDisp} strokes (tournament vs practice)`;
-    const content =
-      `Across the last 90 days you averaged ${competitiveDisp} in ` +
+    const averagedClause =
+      `averaged ${competitiveDisp} in ` +
       `${agg.competitive_count} competitive rounds vs ${practiceDisp} in ` +
-      `${agg.practice_count} practice rounds — a ${absDelta}-stroke gap. ` +
-      `You play ${direction} when it counts.` + driverClause +
-      ` PGA Tour gap is ~0.5 strokes; college typical is 2-5.`;
+      `${agg.practice_count} practice rounds — a ${absDelta}-stroke gap.`;
+    const tourSentence = ` PGA Tour gap is ~0.5 strokes; college typical is 2-5.`;
+    const content =
+      `Across the last 90 days you ${averagedClause} ` +
+      `You play ${direction} when it counts.` + driverClause + tourSentence;
+    const coachContent =
+      `Across the last 90 days the player ${averagedClause} ` +
+      `They play ${direction} when it counts.` + coachDriverClause + tourSentence;
 
     return {
       title,
       content,
+      // The title carries no second person, so the coach title is the same.
+      coach: { title, content: coachContent },
       // Severity from the gap itself (competitive − practice): >0.5 over the PGA
       // reference is a real pressure weakness; at/under practice is fine.
       // pg-3 (Tour-anchor caveat): the 0.5 reference + the counterfactual the base
