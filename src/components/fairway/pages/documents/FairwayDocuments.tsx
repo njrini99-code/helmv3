@@ -784,9 +784,10 @@ export function FairwayDocuments({
 
   // ── ONE coach-only primary action (upload) ───────────────────────────────--
   const uploadCta = isCoach ? (
-    <Button variant="primary" onClick={() => fileInputRef.current?.click()}>
-      <IconUpload size={16} />
-      <span>Upload</span>
+    // leftIcon, not icon + <span> children: the children stacked the icon
+    // above the label in a tall pill on phones.
+    <Button variant="primary" leftIcon={<IconUpload size={16} />} onClick={() => fileInputRef.current?.click()}>
+      Upload
     </Button>
   ) : undefined;
 
@@ -834,7 +835,7 @@ export function FairwayDocuments({
         title={inFolder ? (currentFolder as string) : 'Team documents.'}
         description={
           isCoach
-            ? 'Plans, releases, and forms, all in one place. Upload files and organize them into folders for your team.'
+            ? 'Plans, releases, and forms for your team.'
             : 'Plans, releases, and forms from your coach.'
         }
         meta={meta}

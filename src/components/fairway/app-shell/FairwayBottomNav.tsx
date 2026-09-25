@@ -122,8 +122,10 @@ export const FairwayBottomNav = memo(function FairwayBottomNav({
   const control = cn('group relative m-0 flex h-12 min-h-[44px] w-full min-w-0 items-center justify-center rounded-full outline-none transition-colors motion-reduce:transition-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-border-focus', stackLabel ? 'flex-col gap-0.5 px-1' : 'gap-1.5 px-2');
   const labelClass = stackLabel
     ? // px-1 + tight tracking: at 390px a five-item bar leaves ~65px per
-      // item, and "CoachHelm" was cut to "CoachH…" with px-2.
-      'relative z-10 min-w-0 max-w-full truncate font-fw-sans text-microlabel font-semibold tracking-[-0.01em]'
+      // item, and "CoachHelm" was cut to "CoachH…" with px-2. The label may
+      // also run into the control's own px-1 (-mx-1): still truncates, but
+      // only past the item's full width.
+      '-mx-1 relative z-10 min-w-0 max-w-[calc(100%+0.5rem)] truncate font-fw-sans text-microlabel font-semibold tracking-[-0.01em]'
     : 'relative z-10 min-w-0 max-w-full truncate font-fw-sans text-caption font-semibold';
 
   return (
