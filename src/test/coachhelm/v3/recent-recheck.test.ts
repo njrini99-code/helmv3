@@ -309,12 +309,24 @@ describe('BaseGenerator.run() recent-window recheck', () => {
     };
     const res = await new RecheckGenerator('leak', recheck('holds')).run();
     expect(res.recheck).toBe('reopen');
+    expect(recordedUpdates[0]!.filters).toContainEqual({ op: 'eq', args: ['lifecycle_state', 'resolved'] });
     const { payload } = recordedUpdates[0]!;
     expect(payload.lifecycle_state).toBe('detected');
     expect(payload.resolved_at).toBeNull();
     const meta = payload.metadata as Record<string, unknown>;
     expect(meta).not.toHaveProperty('resolved_by');
     expect(meta.reopened_by).toBe(RECHECK_RESOLVED_BY);
+  });
+
+  it('a reopen restores a matured row to matured', async () => {
+    currentRow = {
+      id: 'row-1',
+      lifecycle_state: 'resolved',
+      metadata: { resolved_by: RECHECK_RESOLVED_BY, resolved_from_state: 'matured' },
+      updated_at: '2026-09-24T12:00:00Z',
+    };
+    await new RecheckGenerator('leak', recheck('holds')).run();
+    expect(recordedUpdates[0]!.payload.lifecycle_state).toBe('matured');
   });
 
   it('a lost CAS race is not reported as a transition', async () => {

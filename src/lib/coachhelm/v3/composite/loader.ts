@@ -35,6 +35,10 @@ export async function loadRecentInsightsForPlayer(
       .gte('created_at', cutoff)
       .or(V3_ENGINE_FILTER)
       .in('lifecycle_state', [...VISIBLE_LIFECYCLE_STATES])
+      // A resolved problem is not a live cause: the recent-window recheck
+      // (engine/recent-recheck.ts) resolves a leak the player has closed, and
+      // a composite built on it would re-surface the closed problem.
+      .neq('lifecycle_state', 'resolved')
       .neq('status', 'dismissed'),
   )
     .order('created_at', { ascending: false }) as {

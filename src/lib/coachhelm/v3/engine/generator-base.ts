@@ -569,10 +569,12 @@ export abstract class BaseGenerator<A extends GeneratorAggregate = GeneratorAggr
           },
         };
       } else {
-        const { resolved_by: _rb, resolve_reason: _rr, resolved_from_state: _rf, ...rest } = metadata;
-        void _rb; void _rr; void _rf;
+        const { resolved_by: _rb, resolve_reason: _rr, resolved_from_state: priorState, ...rest } = metadata;
+        void _rb; void _rr;
+        // Back to the state it was resolved from (a matured row keeps its
+        // maturity); anything unexpected reopens as plain `detected`.
         patch = {
-          lifecycle_state: 'detected',
+          lifecycle_state: priorState === 'matured' ? 'matured' : 'detected',
           resolved_at: null,
           updated_at: nowIso,
           metadata: { ...rest, reopened_at: nowIso, reopened_by: RECHECK_RESOLVED_BY, reopened_recheck: summary },
