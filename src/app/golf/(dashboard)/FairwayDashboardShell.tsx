@@ -642,7 +642,7 @@ function FairwayDashboardContent({
   // cluster-4 finding 4 / React Doctor).
   const bottomNav = useMemo(
     () => (
-      <FairwayBottomNav items={bottomNavItems} pathname={pathname} linkComponent={ShellLink} />
+      <FairwayBottomNav items={bottomNavItems} pathname={pathname} linkComponent={ShellLink} stackLabel />
     ),
     [bottomNavItems, pathname],
   );

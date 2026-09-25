@@ -11,8 +11,8 @@
  * "data through" line that says when the player has played since (NUM-12),
  * the movement since the insight was first seen, and the prescribed drill.
  *
- * Actions: one secondary "See the evidence" per unit; the lead unit adds
- * Helpful / Dismiss as ghost buttons. The page's one primary action (Log a
+ * Actions: one secondary "See the evidence" per unit; the lead unit puts
+ * Helpful / Dismiss behind a "More" menu (HUB-04: one visible action). The page's one primary action (Log a
  * round) lives in the masthead, so nothing here is filled green.
  * ========================================================================== */
 
@@ -21,6 +21,7 @@ import { FROSTED_CARD_CLASS } from '@/components/fairway/modules/frosted';
 import { IconClock } from '@/components/icons';
 import { cn } from '@/lib/utils';
 import type { InsightUnit } from './buildPlayerHubViewModel';
+import { InsightOverflowMenu } from './InsightOverflowMenu';
 import { EvidenceRailView, ReadBand, SenseWord } from './HubInstruments';
 
 export interface HubInsightProps {
@@ -120,14 +121,11 @@ export function HubInsight({ unit, lead = false, onOpen, onRate }: HubInsightPro
           See the evidence
         </Button>
         {lead && onRate ? (
-          <>
-            <Button variant="ghost" size="sm" onClick={() => onRate('helpful')}>
-              Helpful
-            </Button>
-            <Button variant="ghost" size="sm" onClick={() => onRate('dismissed')}>
-              Dismiss
-            </Button>
-          </>
+          <InsightOverflowMenu
+            positiveLabel="Helpful"
+            onPositive={() => onRate('helpful')}
+            onDismiss={() => onRate('dismissed')}
+          />
         ) : null}
       </div>
     </article>

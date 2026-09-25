@@ -395,7 +395,18 @@ export function buildInsightUnit(
 
   const chain: ChainStep[] = [];
   const yourDisplay = ev && finite(ev.your_value) !== null ? formatValue(ev.your_value, ev.unit, ev.your_value_display) : null;
-  const see = diagnosis?.symptom?.trim() || (ev?.metric_label && yourDisplay ? `${ev.metric_label}: ${yourDisplay}` : '');
+  // The v3 base generator writes a template symptom ("<label>: 48% vs <benchmark>
+  // 90.5") with the benchmark unformatted. Rebuild that one from the structured
+  // evidence so both sides carry the unit; keep any hand-written symptom.
+  const benchmark = ev && finite(ev.comparison_value) !== null && ev.comparison_label
+    ? `${ev.comparison_label} ${formatValue(ev.comparison_value, ev.unit)}`
+    : null;
+  const templated = Boolean(
+    ev?.metric_label && diagnosis?.symptom?.trim().startsWith(`${ev.metric_label}: `) && benchmark,
+  );
+  const see = templated && yourDisplay
+    ? `${ev!.metric_label}: ${yourDisplay} vs ${benchmark}`
+    : diagnosis?.symptom?.trim() || (ev?.metric_label && yourDisplay ? `${ev.metric_label}: ${yourDisplay}` : '');
   if (see) chain.push({ key: 'see', label: 'What we see', text: see });
 
   const impact = finite(ev?.strokes_impact);
@@ -404,7 +415,12 @@ export function buildInsightUnit(
   }
 
   const cause = diagnosis?.root_cause?.trim();
-  if (cause) {
+  // The template root cause ("<label> is off its benchmark. Likely cause
+  // inferred from the aggregate, not a measured shot sequence") restates the
+  // line above in engine language; the "Likely" marker already says it is
+  // inferred, so the step is left out rather than shown to a player.
+  const genericCause = Boolean(cause && /\bis off its benchmark\b/i.test(cause));
+  if (cause && !genericCause) {
     const measured = (diagnosis?.causality_level ?? ev?.causality_level) === 'observed_sequence';
     chain.push({ key: 'cause', label: 'Why', text: cause, marker: measured ? 'Measured' : 'Likely' });
   }
@@ -643,12 +659,17 @@ export interface LastRound {
 export function buildLastRound(
   rounds: ReadonlyArray<{ score: number; scoreToPar: number; date: string; courseName: string }>,
 ): LastRound | null {
-  const r = rounds[0];
-  if (!r || !finite(r.score) || r.score <= 0) return null;
-  const tp = finite(r.scoreToPar);
   // Nobody shoots 16 under; a figure that low is a nine-hole score saved
-  // against an 18-hole par, so the score shows without it.
-  const plausible = tp !== null && tp >= -15;
+  // against an 18-hole par (the Sep 17 "37"). Headline the newest round that
+  // is believable instead of printing the bad number with its to-par hidden.
+  const r = rounds.find((x) => {
+    if (!finite(x.score) || x.score <= 0) return false;
+    const t = finite(x.scoreToPar);
+    return t === null || t >= -15;
+  });
+  if (!r) return null;
+  const tp = finite(r.scoreToPar);
+  const plausible = tp !== null;
   return {
     score: r.score,
     toParText: !plausible ? null : tp === 0 ? 'E' : tp > 0 ? `+${tp}` : `${MINUS}${Math.abs(tp)}`,

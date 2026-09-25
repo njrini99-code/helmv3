@@ -75,6 +75,10 @@ export interface FairwayBottomNavProps {
    *  caller already holds this as the same bridged `mobileOpen` state it
    *  passes to `AppShell`. */
   moreOpen?: boolean;
+  /** Opt-in: the active label sits under its icon (11px) instead of beside
+   *  it. With five equal-width slots on a 390pt phone a slot is ~70pt, and
+   *  icon + gap + label side by side cut "Home" to "H…". */
+  stackLabel?: boolean;
 }
 
 const DefaultLink: ShellLinkComponent = ({ href, children, ...rest }) => (
@@ -97,6 +101,7 @@ export const FairwayBottomNav = memo(function FairwayBottomNav({
   moreLabel = 'More',
   moreIcon,
   moreOpen,
+  stackLabel = false,
 }: FairwayBottomNavProps) {
   const Link = linkComponent ?? DefaultLink;
   const MoreIcon = moreIcon ?? IconLayoutGrid;
@@ -114,7 +119,10 @@ export const FairwayBottomNav = memo(function FairwayBottomNav({
       {count! > cap ? `${cap}+` : count}
     </span>
   );
-  const control = 'group relative m-0 flex h-12 min-h-[44px] w-full min-w-0 items-center justify-center gap-1.5 rounded-full px-2 outline-none transition-colors motion-reduce:transition-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-border-focus';
+  const control = cn('group relative m-0 flex h-12 min-h-[44px] w-full min-w-0 items-center justify-center rounded-full px-2 outline-none transition-colors motion-reduce:transition-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-border-focus', stackLabel ? 'flex-col gap-0.5' : 'gap-1.5');
+  const labelClass = stackLabel
+    ? 'relative z-10 min-w-0 max-w-full truncate font-fw-sans text-microlabel font-semibold'
+    : 'relative z-10 min-w-0 max-w-full truncate font-fw-sans text-caption font-semibold';
 
   return (
     <nav data-slot="fw-bottom-nav" aria-label="Primary"
@@ -136,7 +144,7 @@ export const FairwayBottomNav = memo(function FairwayBottomNav({
                     <Icon size={21} aria-hidden className="flex-shrink-0" />
                     {badge(item.badge)}
                   </span>
-                  <span className={cn('relative z-10 min-w-0 max-w-full truncate font-fw-sans text-caption font-semibold', !active && 'sr-only')}>
+                  <span className={cn(labelClass, !active && 'sr-only')}>
                     {item.shortLabel ?? item.label}
                   </span>
                   <span className="absolute right-1 top-1"><NavPendingDot className="ml-0" /></span>
@@ -154,7 +162,7 @@ export const FairwayBottomNav = memo(function FairwayBottomNav({
                   <MoreIcon size={21} aria-hidden className="flex-shrink-0" />
                   {badge(moreBadge, 9)}
                 </span>
-                <span className={cn('relative z-10 min-w-0 max-w-full truncate font-fw-sans text-caption font-semibold', !moreSelected && 'sr-only')}>{moreLabel}</span>
+                <span className={cn(labelClass, !moreSelected && 'sr-only')}>{moreLabel}</span>
               </Button>
             </m.li>
           )}

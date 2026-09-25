@@ -17,10 +17,10 @@
  * ========================================================================== */
 
 import { useMemo, useState } from 'react';
-import { Check, MoreHorizontal, X } from 'lucide-react';
 
 import { DrillPanel } from '@/components/fairway/modules';
-import { Button, InsightCard, InsightPanel, Eyebrow, PopoverPanel, type InsightPriority } from '@/components/fairway';
+import { InsightCard, InsightPanel, Eyebrow, type InsightPriority } from '@/components/fairway';
+import { InsightOverflowMenu } from './InsightOverflowMenu';
 import { StandingStrip } from '@/components/fairway/charts/StandingStrip';
 import { PracticeRxPanel } from '@/components/fairway/pages/coachhelm/PracticeRxPanel';
 import { CategoryInsightsPanel } from '@/components/golf/coachhelm/insights/CategoryInsightsPanel';
@@ -224,7 +224,7 @@ export function InsightsDrill({
           evidenceLabel={openInsight.evidence?.metric_label ? 'The evidence' : undefined}
           actionsSlot={
             <InsightOverflowMenu
-              onAcknowledge={() => {
+              onPositive={() => {
                 onRate(openInsight.id, 'acknowledged');
                 setOpenInsight(null);
               }}
@@ -240,51 +240,5 @@ export function InsightsDrill({
         </InsightPanel>
       ) : null}
     </DrillPanel>
-  );
-}
-
-/**
- * HUB-04: an insight shows at most one visible action. Feedback on the read
- * itself (acknowledge, dismiss) is secondary, so it lives behind one "More"
- * trigger instead of two buttons competing with the drills above. Handlers
- * are the same `onRate` calls the buttons used.
- */
-function InsightOverflowMenu({ onAcknowledge, onDismiss }: { onAcknowledge: () => void; onDismiss: () => void }) {
-  const [open, setOpen] = useState(false);
-  return (
-    <PopoverPanel
-      open={open}
-      onOpenChange={setOpen}
-      surface="matte"
-      side="top"
-      align="start"
-      width="sm"
-      ariaLabel="Insight feedback"
-      data-slot="insight-overflow-menu"
-      trigger={
-        <Button type="button" variant="ghost" aria-label="More insight actions" leftIcon={<MoreHorizontal aria-hidden className="h-4 w-4" />}>
-          More
-        </Button>
-      }
-    >
-      <PopoverPanel.Item
-        onClick={() => {
-          setOpen(false);
-          onAcknowledge();
-        }}
-      >
-        <Check aria-hidden className="h-4 w-4" />
-        Acknowledge
-      </PopoverPanel.Item>
-      <PopoverPanel.Item
-        onClick={() => {
-          setOpen(false);
-          onDismiss();
-        }}
-      >
-        <X aria-hidden className="h-4 w-4" />
-        Dismiss
-      </PopoverPanel.Item>
-    </PopoverPanel>
   );
 }

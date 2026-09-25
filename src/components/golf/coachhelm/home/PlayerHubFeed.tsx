@@ -231,9 +231,9 @@ export function PlayerHubFeed({
               </div>
             ))}
             {insightTotal > units.length ? (
-              <Button variant="ghost" size="sm" className="w-fit" onClick={() => stage.open('insights')}>
+              <Button variant="ghost" size="sm" className="w-fit" onClick={() => stage.open('insights')}
+                rightIcon={<ChevronRight size={14} aria-hidden />}>
                 All {insightTotal} insights
-                <ChevronRight size={14} aria-hidden />
               </Button>
             ) : null}
           </div>

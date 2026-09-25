@@ -52,4 +52,18 @@ describe('FairwayBottomNav — #905 negative-shift fix', () => {
     render(<FairwayBottomNav items={ITEMS} pathname="/baseball/dashboard/command-center" onMoreOpen={() => {}} />);
     expect(screen.getByRole('link', { name: 'Home' })).toBeInTheDocument();
   });
+
+  it('stackLabel puts the active label under its icon so it is not cut to "H…"', () => {
+    const { rerender } = render(
+      <FairwayBottomNav items={ITEMS} pathname="/baseball/dashboard/command-center" onMoreOpen={() => {}} />,
+    );
+    const side = screen.getByRole('link', { name: 'Home' });
+    expect(side.className).not.toContain('flex-col');
+    expect(side.querySelector('span.text-caption')).toHaveTextContent('Home');
+
+    rerender(<FairwayBottomNav items={ITEMS} pathname="/baseball/dashboard/command-center" onMoreOpen={() => {}} stackLabel />);
+    const stacked = screen.getByRole('link', { name: 'Home' });
+    expect(stacked.className).toContain('flex-col');
+    expect(stacked.querySelector('span.text-microlabel')).toHaveTextContent('Home');
+  });
 });

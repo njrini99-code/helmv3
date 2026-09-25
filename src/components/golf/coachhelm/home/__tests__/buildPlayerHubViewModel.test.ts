@@ -214,6 +214,26 @@ describe('buildInsightUnit', () => {
     expect(unit.read?.word).toBe('Strong read');
   });
 
+  it('formats the benchmark in a template symptom and drops the template root cause', () => {
+    const unit = buildInsightUnit(
+      insight({}, {
+        metric_label: 'Putts Made 3-5 ft',
+        comparison_value: 90.5,
+        comparison_label: 'PGA Tour make % avg',
+        diagnosis: {
+          symptom: 'Putts Made 3-5 ft: 48% vs PGA Tour make % avg 90.5',
+          root_cause: 'Putts Made 3-5 ft is off its benchmark. Likely cause inferred from the aggregate, not a measured shot sequence',
+          causality_level: 'inferred_hypothesis',
+          drivers: [],
+          recommended_action: '',
+          confidence_reason: '',
+        },
+      }),
+    );
+    expect(unit.chain.find((s) => s.key === 'see')?.text).toBe('Putts Made 3-5 ft: 48% vs PGA Tour make % avg 91%');
+    expect(unit.chain.find((s) => s.key === 'cause')).toBeUndefined();
+  });
+
   it('marks a cause measured only when it was observed in a shot sequence', () => {
     const unit = buildInsightUnit(
       insight({}, {
@@ -356,8 +376,17 @@ describe('buildLastRound / buildPlanRows', () => {
       course: null,
     });
     expect(buildLastRound([])).toBeNull();
-    // A nine-hole score saved against an 18-hole par keeps its score, loses the to-par.
-    expect(buildLastRound([{ score: 37, scoreToPar: -35, date: '2026-09-17', courseName: 'Peek' }])?.toParText).toBeNull();
+    // A nine-hole score saved against an 18-hole par is not headlined: the
+    // card skips to the newest believable round, or shows nothing.
+    expect(buildLastRound([{ score: 37, scoreToPar: -35, date: '2026-09-17', courseName: 'Peek' }])).toBeNull();
+    expect(
+      buildLastRound([
+        { score: 37, scoreToPar: -35, date: '2026-09-17', courseName: 'Peek' },
+        { score: 71, scoreToPar: -1, date: '2026-08-02', courseName: 'Pebble Beach' },
+      ]),
+    ).toEqual({ score: 71, toParText: '−1', date: 'Aug 2', course: 'Pebble Beach' });
+    // An unknown to-par still shows the score.
+    expect(buildLastRound([{ score: 80, scoreToPar: Number.NaN, date: '2026-09-20', courseName: 'X' }])?.toParText).toBeNull();
   });
 
   it('measures plan progress from the baseline, not current / target', () => {

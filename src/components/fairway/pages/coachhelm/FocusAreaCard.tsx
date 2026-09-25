@@ -26,7 +26,8 @@
  *
  * REAL SOURCE CHIPS (no teases):
  *   - from_review_id  → /golf/dashboard/rounds/<id>/review
- *   - from_insight_id → role-aware: player → /golf/dashboard/coachhelm#insight-<id>
+ *   - from_insight_id → role-aware: player → /golf/dashboard/coachhelm?view=insights&insight=<id>
+ *     (the hub's deep link; a #insight-<id> hash opened nothing)
  *     (player anchor); coach → /golf/dashboard/insights?id=<id> (coaches have no
  *     player profile, so the player front door always 404s them into
  *     NotPlayerState — the Insights workspace's `?id=` deep-link is the coach-
@@ -437,7 +438,7 @@ export function SourceChip({
     ? `/golf/dashboard/rounds/${reviewRoundId ?? reviewId}/review`
     : role === 'coach'
       ? `/golf/dashboard/intelligence?view=signals&filter=insights&id=${insightId}`
-      : `/golf/dashboard/coachhelm#insight-${insightId}`;
+      : `/golf/dashboard/coachhelm?view=insights&insight=${encodeURIComponent(insightId ?? '')}`;
   const label = reviewId ? 'From a round review' : 'From a CoachHelm insight';
   const Icon = reviewId ? IconFileText : IconBulb;
 
@@ -448,6 +449,8 @@ export function SourceChip({
         className={cn(
           'group/source inline-flex flex-shrink-0 items-center gap-1.5 rounded-full',
           'border border-accent-200 bg-accent-50 px-2.5 py-1',
+          // 44pt touch target around the compact chip (HIG).
+          'relative after:absolute after:-inset-y-2 after:inset-x-0 after:content-[""]',
           'font-fw-sans text-eyebrow font-medium text-accent-700',
           'transition-[color,background-color,border-color] [transition-duration:180ms] [transition-timing-function:cubic-bezier(0.22,0.61,0.36,1)]',
           'hover:bg-accent-100 hover:border-accent-300',

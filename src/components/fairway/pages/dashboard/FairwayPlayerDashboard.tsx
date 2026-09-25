@@ -371,6 +371,7 @@ export function FairwayPlayerDashboard({
           events={scheduleEvents}
           timezone={enhancedData?.timezone}
           viewAllHref="/golf/dashboard/calendar"
+          className="mb-8"
         />
 
         {!hasRounds ? (

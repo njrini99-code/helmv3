@@ -183,14 +183,17 @@ describe('PlayerHubFeed', () => {
     expect(screen.getByRole('button', { name: /all 4 insights/i })).toBeInTheDocument();
   });
 
-  it('fires the rating for the lead insight only (Helpful / Dismiss are ghost actions)', () => {
+  it('rates the lead insight only, from a More menu (HUB-04: one visible action)', async () => {
     const { props: p } = renderFeed();
-    expect(screen.getAllByRole('button', { name: 'Helpful' })).toHaveLength(1);
-    fireEvent.click(screen.getByRole('button', { name: 'Helpful' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Dismiss' }));
+    // Not visible buttons any more; one "More" trigger on the lead insight.
+    expect(screen.queryByRole('button', { name: 'Helpful' })).toBeNull();
+    expect(screen.getAllByRole('button', { name: /more insight actions/i })).toHaveLength(1);
+    fireEvent.click(screen.getByRole('button', { name: /more insight actions/i }));
+    fireEvent.click(await screen.findByText('Helpful'));
+    fireEvent.click(screen.getByRole('button', { name: /more insight actions/i }));
+    fireEvent.click(await screen.findByText('Dismiss'));
     expect(p.onRate).toHaveBeenNthCalledWith(1, 'top', 'helpful');
     expect(p.onRate).toHaveBeenNthCalledWith(2, 'top', 'dismissed');
-    expect(screen.getByRole('button', { name: 'Helpful' })).toHaveAttribute('data-variant', 'ghost');
   });
 
   it('opens the insight deep link and the plan in place', () => {
