@@ -38,6 +38,14 @@ export const V3_ENGINE_FILTER = 'engine_version.eq.v3,signature.like.v3:%' as co
 export const VISIBLE_LIFECYCLE_STATES = ['detected', 'matured', 'addressed', 'resolved'] as const;
 
 /**
+ * Insight categories the product never surfaces (owner decision 2026-09-25:
+ * course-management insights are hidden from players and coaches). Rows are
+ * still generated and stored; they are excluded on read, which also keeps the
+ * learning loop from training on them.
+ */
+export const HIDDEN_INSIGHT_CATEGORIES = ['course_management'] as const;
+
+/**
  * Structural shape of the (only) three PostgREST filter-builder methods this
  * helper chains. The supabase builders are nominally typed per-table, but the
  * `.or()` / `.in()` / `.neq()` signatures are identical across every builder,
@@ -56,6 +64,7 @@ interface InsightVisibilityFilterable {
  *   1. `.or(V3_ENGINE_FILTER)`              — modern v3 engine only (no stale v2)
  *   2. `.in('lifecycle_state', VISIBLE…)`   — no `tentative`/`archived` rows
  *   3. `.neq('status', 'dismissed')`        — no coach-dismissed rows
+ *   4. `.neq('category', …)` per hidden one — no owner-hidden categories
  *
  * Status-only filtering (`status='active'`) is NOT a substitute: v3 stale-scope
  * retraction archives by `lifecycle_state` while leaving `status='active'`, so
@@ -75,8 +84,22 @@ interface InsightVisibilityFilterable {
  * identical across every builder, so this is sound at runtime.
  */
 export function applyInsightVisibility<Q>(query: Q): Q {
-  return (query as InsightVisibilityFilterable)
+  const q = (query as InsightVisibilityFilterable)
     .or(V3_ENGINE_FILTER)
     .in('lifecycle_state', [...VISIBLE_LIFECYCLE_STATES])
-    .neq('status', 'dismissed') as Q;
+    .neq('status', 'dismissed');
+  return excludeHiddenCategories(q) as Q;
+}
+
+/**
+ * Applies only the hidden-category predicate, for the few readers that chain
+ * the engine + lifecycle predicates by hand (themes, composite loader,
+ * causality cron). `category` is nullable in the schema, but every v3
+ * generator sets it (0 of 977 v3 rows NULL, checked 2026-09-25), so `.neq`
+ * drops no row through NULL semantics.
+ */
+export function excludeHiddenCategories<Q>(query: Q): Q {
+  let q = query as InsightVisibilityFilterable;
+  for (const category of HIDDEN_INSIGHT_CATEGORIES) q = q.neq('category', category);
+  return q as Q;
 }

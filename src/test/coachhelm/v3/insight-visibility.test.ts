@@ -11,6 +11,7 @@
 
 import { describe, it, expect, vi } from 'vitest';
 import {
+  HIDDEN_INSIGHT_CATEGORIES,
   applyInsightVisibility,
   V3_ENGINE_FILTER,
   VISIBLE_LIFECYCLE_STATES,
@@ -41,6 +42,7 @@ describe('applyInsightVisibility', () => {
       { method: 'or', args: [V3_ENGINE_FILTER] },
       { method: 'in', args: ['lifecycle_state', [...VISIBLE_LIFECYCLE_STATES]] },
       { method: 'neq', args: ['status', 'dismissed'] },
+      ...HIDDEN_INSIGHT_CATEGORIES.map((c) => ({ method: 'neq', args: ['category', c] })),
     ]);
   });
 

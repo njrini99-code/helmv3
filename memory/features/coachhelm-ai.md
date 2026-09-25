@@ -1178,3 +1178,7 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
 - `docs/architecture/coachhelm-evidence-contract.md`
 - `docs/v3-research-golf-domain.md`
 - `docs/v3-testing-standards.md`
+
+## Hidden categories
+
+Owner decision 2026-09-25: `course_management` insights are never shown to players or coaches. `HIDDEN_INSIGHT_CATEGORIES` in `src/lib/coachhelm/v3/insight-visibility.ts` is applied by `applyInsightVisibility` and by `excludeHiddenCategories` (themes, composite loader, causality cron). Rows are still generated and stored; the learning loop does not train on them.

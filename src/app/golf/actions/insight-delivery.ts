@@ -48,6 +48,7 @@ import {
 } from './insight-delivery-ranking';
 import {
   V3_ENGINE_FILTER,
+  excludeHiddenCategories,
   VISIBLE_LIFECYCLE_STATES,
   applyInsightVisibility,
 } from '@/lib/coachhelm/v3/insight-visibility';
@@ -1427,14 +1428,16 @@ async function assembleForPlayer(
   playerId: string,
 ): Promise<AssembledThemes> {
   const runQuery = () =>
-    supabase
-      .from('golf_coach_insights')
-      .select(INSIGHT_SELECT)
-      .eq('player_id', playerId)
-      .not('evidence', 'is', null)
-      .or(V3_ENGINE_FILTER)
-      .in('lifecycle_state', [...VISIBLE_LIFECYCLE_STATES])
-      .eq('status', 'active')
+    excludeHiddenCategories(
+      supabase
+        .from('golf_coach_insights')
+        .select(INSIGHT_SELECT)
+        .eq('player_id', playerId)
+        .not('evidence', 'is', null)
+        .or(V3_ENGINE_FILTER)
+        .in('lifecycle_state', [...VISIBLE_LIFECYCLE_STATES])
+        .eq('status', 'active'),
+    )
       .order('created_at', { ascending: false })
       .limit(THEMES_FETCH_CAP);
 
