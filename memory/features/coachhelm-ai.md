@@ -380,6 +380,22 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
   the data keeps accumulating for whenever an owner flips the flag with
   evidence to support it. Resetting the 4 existing rows (built from the v1
   formula) is a separate owner decision, not made here.
+  **Recompute tool (2026-09-24).** `scripts/coachhelm/recompute-coach-weights.ts`
+  (logic in `v3/causality/recompute-weights.ts`) replays the weights from
+  the stored attributions using the current math:
+  - it keeps round-level rows only;
+  - it keeps insights that are cron-eligible today;
+  - it takes the direction-corrected observed lift from the stored
+    baseline/post values;
+  - it applies the same `nextWeight` EMA as the cron.
+  The default is a dry run (SELECT only). `--apply` upserts, and `--prune`
+  deletes keys with no support; running either is the owner decision above.
+  The 2026-09-24 dry run used 54 attributions (34 ineligible, 11 null
+  lift) and produced 12 keys:
+  - coach `09256463…` course_management and par_scoring reproduce the
+    live values exactly;
+  - coach `0fc49ef3…` falls from n=24/36/11/12 to n=2/3/1/3.
+  Only 2 keys would stay calibrated (n>=10).
 - **v2 coach-alert family (bubble_player, pattern_detected, streak,
   surge_player, plateau, tournament_pressure, closing_holes, par_3_issues,
   recurring_weakness, team_trend, scoring_decline) is still live-written,
