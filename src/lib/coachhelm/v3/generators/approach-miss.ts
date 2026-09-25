@@ -190,7 +190,7 @@ const PAR_MIX_MIN_MINORITY = 5;
  * the composition and the par-4 rate — the one taken while actually hunting a
  * green — and lets the coach read it.
  */
-export function parMixSentence(split: ParSplit): string | null {
+export function parMixSentence(split: ParSplit, voice: 'player' | 'coach' = 'player'): string | null {
   const known = split.par4.attempts + split.par5.attempts;
   if (known === 0) return null;
   if (split.par4.attempts < PAR_MIX_MIN_MINORITY || split.par5.attempts < PAR_MIX_MIN_MINORITY) {
@@ -201,18 +201,22 @@ export function parMixSentence(split: ParSplit): string | null {
   const par4Share = split.par4.attempts / known;
   if (par5Share < PAR_MIX_DOMINANT_SHARE && par4Share < PAR_MIX_DOMINANT_SHARE) return null;
 
+  // Coach voice: the same sentence about "the player" (evidence.coach_copy).
+  const coach = voice === 'coach';
   if (par5Share >= PAR_MIX_DOMINANT_SHARE) {
     return (
       ` ${(par5Share * 100).toFixed(0)}% of these (${split.par5.attempts} of ${known}) were second shots on par 5s,` +
       ` where laying up to a wedge number is often the right play and a lay-up records as a missed green.` +
-      ` On par 4s, where you have to go at it, you found the green ${split.par4.greenHitPct?.toFixed(0)}%` +
+      (coach
+        ? ` On par 4s, where the player has to go at it, they found the green ${split.par4.greenHitPct?.toFixed(0)}%`
+        : ` On par 4s, where you have to go at it, you found the green ${split.par4.greenHitPct?.toFixed(0)}%`) +
       ` of the time over ${split.par4.attempts} approaches.`
     );
   }
 
   return (
     ` ${(par4Share * 100).toFixed(0)}% of these (${split.par4.attempts} of ${known}) were par-4 approaches,` +
-    ` where you found the green ${split.par4.greenHitPct?.toFixed(0)}% of the time;` +
+    ` where ${coach ? 'the player' : 'you'} found the green ${split.par4.greenHitPct?.toFixed(0)}% of the time;` +
     ` the ${split.par5.attempts} par-5 second shots converted ${split.par5.greenHitPct?.toFixed(0)}%.`
   );
 }
@@ -387,11 +391,19 @@ export class ApproachMissGenerator extends BaseGenerator<ApproachMissAggregate> 
       prox != null
         ? `${label} approach: ${ghDisp} greens hit · ${prox.toFixed(0)} ft when you do`
         : `${label} approach: ${ghDisp} greens hit`;
+    // Coach voice: the same read in neutral third person (evidence.coach_copy).
+    const coachTitle =
+      prox != null
+        ? `${label} approach: ${ghDisp} greens hit · ${prox.toFixed(0)} ft when they do`
+        : title;
 
     // Reach sentence + (when enough greens) the dial-in sentence — this is what tells the
     // coach whether the leak is finding greens or controlling distance once there.
     const reachSentence =
       `Across your last ${agg.attempts} approaches from ${label} you found the green ` +
+      `${ghDisp} of the time (${anchorClause}).`;
+    const coachReachSentence =
+      `Across the player's last ${agg.attempts} approaches from ${label} they found the green ` +
       `${ghDisp} of the time (${anchorClause}).`;
     // NO TOUR COMPARISON HERE, deliberately. `prox` is averaged over
     // GREEN-FINDING SHOTS ONLY (see aggregate()), while the Tour proximity
@@ -408,6 +420,11 @@ export class ApproachMissGenerator extends BaseGenerator<ApproachMissAggregate> 
           `(over ${agg.green_hit_n} greens) — that's the dial-in once you're on.`
         : ` Too few greens hit from here (${agg.green_hit_n}) to read a reliable proximity yet — the gap is ` +
           `finding the green, not distance control on it.`;
+    const coachDialInSentence =
+      prox != null
+        ? ` When they do reach it they finish ${prox.toFixed(0)} ft from the hole ` +
+          `(over ${agg.green_hit_n} greens) — that's the dial-in once they're on.`
+        : dialInSentence;
     const penaltySentence =
       agg.penalty_rate_pct > 5
         ? ` Note: ${agg.penalty_rate_pct.toFixed(0)}% of these approaches incurred a penalty — worth flagging in practice.`
@@ -469,12 +486,20 @@ export class ApproachMissGenerator extends BaseGenerator<ApproachMissAggregate> 
     // lay-up; the shorter bands are green-hunting either way, so the split is
     // only worth the words where it changes the reading.
     const parMix = agg.bucket === '175_plus_ft' ? (parMixSentence(agg.par_split) ?? '') : '';
+    const coachParMix = agg.bucket === '175_plus_ft' ? (parMixSentence(agg.par_split, 'coach') ?? '') : '';
 
     return {
       title,
       content:
         reachSentence + dialInSentence + parMix + penaltySentence + axisSentence +
         staleDataSuffix(agg.last_round_date),
+      coach: {
+        title: coachTitle,
+        // Penalty and axis sentences carry no second person; shared verbatim.
+        content:
+          coachReachSentence + coachDialInSentence + coachParMix + penaltySentence + axisSentence +
+          staleDataSuffix(agg.last_round_date),
+      },
       // Descriptive diagnostic — severity is read off the StandingBar, not the verdict.
       priority: 'low',
       signature: `approach_miss:${agg.bucket}`,
