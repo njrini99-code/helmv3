@@ -70,7 +70,8 @@ export interface CounterfactualConfig {
    *   strokes_saved = (gap_pp / 100) × player_attempts_per_round × value_per_unit
    * instead of the global `stroke_impact_per_unit`. Names a metric the caller
    * resolves from cache/standing:
-   *   'sand_attempts_per_round'     → greenside-bunker shots / countable rounds in the window
+   *   'sand_attempts_per_round'     → engine: greenside-bunker shots / countable rounds in the
+   *                                    window; Standing panel: cache.sand_attempts / rounds_played
    *   'gir_attempts_per_round'      → greens_total / countable rounds (GIR opportunities:
    *                                    gir_pct's own denominator, so gap_pp/100 × rate
    *                                    = greens gained per round)
