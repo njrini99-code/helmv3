@@ -175,6 +175,15 @@ describe('boot recovery coordinator — eligibility', () => {
     await h.settle();
     expect(h.navigations).toHaveLength(1);
   });
+
+  it('recognizes the 404 body Next 16 hands the client for a stale action id', async () => {
+    // production: the action handler answers `text/plain` "Server action not
+    // found." and the router throws that text verbatim.
+    const h = createHarness();
+    h.rejectionEvent('Server action not found.');
+    await h.settle();
+    expect(h.navigations).toHaveLength(1);
+  });
 });
 
 describe('boot recovery coordinator — one decision owner', () => {
