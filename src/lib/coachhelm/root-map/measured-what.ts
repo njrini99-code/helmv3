@@ -207,8 +207,8 @@ export type MeasuredWhat = Partial<Record<RootArea, MeasuredArea>>;
 /** Smallest sample a sub-area needs to stand on its own (else → Other). */
 export const MEASURED_MIN_EVENTS = 10;
 export const MEASURED_MIN_ROUNDS = 3;
-/** Most sub-area nodes drawn per area, before "Other" (375px legibility). */
-export const MEASURED_MAX_NODES = 3;
+/** A losing spot smaller than this prints as 0.00: it folds into Other. */
+export const MEASURED_MIN_LOSS = 0.005;
 /** `share` mode: the shot-level total must cover this much of the stored
  *  total, and at most its inverse, to be spread over it. */
 export const MEASURED_SHARE_MIN_COVERAGE = 0.5;
@@ -412,8 +412,8 @@ function passes(v: { n: number; rounds: number }): boolean {
 }
 
 /**
- * Gate every key on its sample, fold thin keys (and losing keys past the
- * node cap) into Other, and split into losing nodes and gaining offsets.
+ * Gate every key on its sample, fold thin keys (and, when `maxNodes` is
+ * given, losing keys past it) into Other, and split into losing nodes and gaining offsets.
  * Σ over `losing` + `gaining` equals Σ over the input keys exactly.
  */
 export function groupMeasured(
@@ -421,7 +421,9 @@ export function groupMeasured(
   keys: readonly MeasuredKeyValue[],
   opts: { maxNodes?: number; playersByKey?: Record<string, number> } = {},
 ): MeasuredGroups {
-  const maxNodes = opts.maxNodes ?? MEASURED_MAX_NODES;
+  // No cap by default: only the sample gate (and a spot too small to print)
+  // folds a key into Other. Narrow nodes carry their label under the row.
+  const maxNodes = opts.maxNodes ?? Number.POSITIVE_INFINITY;
   const other = { sg: 0, n: 0, rounds: 0, merged: [] as string[] };
   const fold = (v: MeasuredKeyValue) => {
     other.sg += v.sg;
@@ -431,7 +433,7 @@ export function groupMeasured(
   };
   const standing: MeasuredKeyValue[] = [];
   for (const v of keys) {
-    if (v.key === OTHER_KEY || !passes(v)) fold(v);
+    if (v.key === OTHER_KEY || !passes(v) || (v.sg < 0 && v.sg > -MEASURED_MIN_LOSS)) fold(v);
     else standing.push(v);
   }
   const losingKeys = standing.filter((v) => v.sg < 0).sort((a, b) => a.sg - b.sg);

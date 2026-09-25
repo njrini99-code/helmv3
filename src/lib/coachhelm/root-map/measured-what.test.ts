@@ -12,7 +12,7 @@ import {
   teamMeasuredKeys,
   type MeasuredKeyValue,
 } from './measured-what';
-import { buildRootMap } from './build-player-root-map';
+import { buildRootMap, measuredAreaNote } from './build-player-root-map';
 import { findBranch, whyIdOf, type RootArea } from './build-root-map';
 import { buildTeamRoots } from './build-team-roots';
 import type { RankableEvidenceInsight } from '@/app/golf/actions/insight-delivery-ranking';
@@ -120,6 +120,14 @@ describe('measured What split', () => {
     expect(sumKeys(m.keys)).toBeCloseTo(where.putting, 10);
   });
 
+  it('writes the share note without "your": the coach drill reuses it', () => {
+    const where = { putting: probe.putting!.recomputed * 1.4 };
+    const m = measureWhat({ ...fx, scale: 1, whereSg: where, whereRounds: 4 }).putting!;
+    const note = measuredAreaNote('putting', 'share', m.rounds, m.stored, m.recomputed, groupMeasured('putting', m.keys));
+    expect(note).toMatch(/did not match the stored/);
+    expect(note).not.toMatch(/\byour?\b/i);
+  });
+
   it('falls back when the split covers too little, or reads another window', () => {
     const where = { putting: probe.putting!.recomputed * 3 };
     expect(measureWhat({ ...fx, scale: 1, whereSg: where, whereRounds: 4 }).putting!.mode).toBe('none');
@@ -146,8 +154,14 @@ describe('grouping', () => {
     { key: '25_plus', sg: -0.3, n: 20, rounds: 8 },
   ];
 
-  it('gates thin keys and keys past the node cap into Other, keeping the sum', () => {
+  it('folds only thin keys into Other by default, keeping the sum', () => {
     const g = groupMeasured('putting', keys);
+    expect(g.losing.map((s) => s.key)).toEqual(['5_10', '15_25', '25_plus', '3_5', OTHER_KEY]);
+    expect(g.losing.find((s) => s.key === OTHER_KEY)!.merged).toEqual(['10_15']);
+  });
+
+  it('folds keys past an explicit node cap into Other, keeping the sum', () => {
+    const g = groupMeasured('putting', keys, { maxNodes: 3 });
     expect(g.losing.map((s) => s.key)).toEqual(['5_10', '15_25', '25_plus', OTHER_KEY]);
     const other = g.losing.find((s) => s.key === OTHER_KEY)!;
     expect(other.merged.sort()).toEqual(['10_15', '3_5']);

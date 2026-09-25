@@ -218,6 +218,12 @@ export function TeamPlayerDrill({ drill, hrefFor, navigate }: TeamPlayerDrillPro
             {selectedBranch.sizingNote}.
           </p>
           <MeasuredFacts branch={selectedBranch} />
+          {selectedBranch.contextPath ? (
+            <p className="text-body-sm text-text-primary" data-slot="drill-spot-path">
+              <span className="font-medium">Where it concentrates: </span>
+              {selectedBranch.contextPath}
+            </p>
+          ) : null}
           <p className="text-body-sm text-text-secondary">No stored read on {name}&apos;s map matches this spot yet.</p>
         </section>
       ) : ready && whyId ? (

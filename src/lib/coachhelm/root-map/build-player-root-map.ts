@@ -100,12 +100,11 @@ export function measuredAreaNote(
   stored: number,
   recomputed: number,
   groups: MeasuredGroups,
-  audience: 'player' | 'coach' = 'player',
 ): string {
+  // Voice-neutral: the same model feeds the player map and the coach drill.
   const label = ROOT_AREA_LABEL[area];
-  const whose = audience === 'coach' ? 'the' : 'your';
   if (mode === 'share') {
-    return `${label}: split from ${rounds} rounds of recorded shots. The shot-by-shot total (${formatStrokes(recomputed, { signed: true })}) did not match ${whose} stored ${formatStrokes(stored, { signed: true })} a round, so each spot shows its share of the stored total.`;
+    return `${label}: split from ${rounds} rounds of recorded shots. The shot-by-shot total (${formatStrokes(recomputed, { signed: true })}) did not match the stored ${formatStrokes(stored, { signed: true })} a round, so each spot shows its share of the stored total.`;
   }
   const residual = stored - recomputed;
   const parts = [`${label}: measured from ${rounds} rounds of recorded shots, matching the stored ${formatStrokes(stored, { signed: true })} a round`];
