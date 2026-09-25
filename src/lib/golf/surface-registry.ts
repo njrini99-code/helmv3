@@ -97,6 +97,11 @@ export const GOLF_SURFACES: readonly GolfSurfaceEntry[] = [
   { id: 'players-tab', canonicalName: 'Players', href: '/golf/dashboard/intelligence?view=players', role: 'coach', group: 'coachhelm-tab', legacy: true, hidden: true },
   { id: 'effectiveness', canonicalName: 'Effectiveness', href: '/golf/dashboard/intelligence?view=effectiveness', role: 'coach', group: 'coachhelm-tab', legacy: true, hidden: true },
   { id: 'ask', canonicalName: 'Ask', href: '/golf/dashboard/coachhelm/chat', role: 'coach', group: 'coachhelm-tab' },
+  // Root-map redesign (2026-09-25): the coach Brief's team-trends view, a
+  // `?view=team` drill of the Brief home and its default landing view. Not
+  // a separate strip tab (the Triage Desk's own ViewSwitch shows it), so
+  // hidden from generated nav.
+  { id: 'team-roots', canonicalName: 'Team roots', href: '/golf/dashboard/intelligence?view=team', role: 'coach', group: 'page', hidden: true },
 
   // ---------------------------------------------------------------------
   // Signals segments — the 3 sibling routes the Signals drill covers, now
@@ -141,6 +146,10 @@ export const GOLF_SURFACES: readonly GolfSurfaceEntry[] = [
   { id: 'my-development-tab', canonicalName: 'Development', href: '/golf/dashboard/coachhelm?view=development', role: 'player', group: 'coachhelm-tab', legacy: true, hidden: true },
   { id: 'my-game-profile-tab', canonicalName: 'Game Profile', href: '/golf/dashboard/coachhelm?view=profile', role: 'player', group: 'coachhelm-tab', legacy: true, hidden: true },
   { id: 'my-standing-tab', canonicalName: 'Standing', href: '/golf/dashboard/coachhelm?view=standing', role: 'player', group: 'coachhelm-tab', legacy: true, hidden: true },
+  // Root-map redesign (2026-09-25): the Why drill for one branch of the
+  // player's root map (`?view=root&insight=<id>`), reached only from a
+  // branch on the Overview/Today map, so hidden from generated nav.
+  { id: 'root-why', canonicalName: 'Why', href: '/golf/dashboard/coachhelm?view=root', role: 'player', group: 'page', hidden: true },
 
   // ---------------------------------------------------------------------
   // Stats — the Player Stats cockpit (both roles) + coach-only Team Stats.

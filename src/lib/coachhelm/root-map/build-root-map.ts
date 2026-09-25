@@ -414,3 +414,127 @@ export function buildRootHeadline(model: RootMapModel, selected: CauseBranch | n
   }
   return parts.join(' ');
 }
+
+/* ─────────────────────────────────────────────────────────────────────────
+ * Branch detail (the chain under the map, and the Why view)
+ * ──────────────────────────────────────────────────────────────────────── */
+
+export interface BranchDriver {
+  label: string;
+  value: number;
+  unit: InsightEvidence['unit'];
+  sampleN: number;
+}
+
+export interface BranchDetail {
+  id: string;
+  title: string;
+  content: string;
+  metricLabel: string;
+  unit: InsightEvidence['unit'];
+  yourValue: number;
+  yourDisplay: string | null;
+  comparisonValue: number;
+  comparisonLabel: string;
+  secondaryValue: number | null;
+  secondaryLabel: string | null;
+  sampleN: number;
+  windowStart: string | null;
+  windowEnd: string | null;
+  confidence: number | null;
+  tier: ConfidenceTier | null;
+  style: RootStyle;
+  causality: CausalityLevel | null;
+  symptom: string | null;
+  rootCause: string | null;
+  recommendedAction: string | null;
+  confidenceReason: string | null;
+  /** The first quantified driver behind the diagnosis, when stored. */
+  driver: BranchDriver | null;
+  /** Stored repeated shot path, only when the diagnosis traced one. */
+  sequence: NonNullable<NonNullable<Diagnosis['basis']>['sequence']> | null;
+  strokes: number | null;
+  projection: { now: number; ifClosed: number } | null;
+}
+
+function finiteOrNull(v: unknown): number | null {
+  return typeof v === 'number' && Number.isFinite(v) ? v : null;
+}
+
+/** Everything the chain + Why view print for one insight, read straight
+ *  from its stored evidence. Returns null when the evidence is unusable. */
+export function branchDetailOf(insight: {
+  id: string;
+  title: string;
+  content: string;
+  evidence: InsightEvidence | null | undefined;
+}): BranchDetail | null {
+  const ev = insight.evidence;
+  if (!ev || typeof ev !== 'object') return null;
+  const yourValue = finiteOrNull(ev.your_value);
+  const comparisonValue = finiteOrNull(ev.comparison_value);
+  if (yourValue === null || comparisonValue === null) return null;
+  const diag = diagnosisOf(ev);
+  const d0 = diag?.drivers?.find((d) => finiteOrNull(d?.value) !== null) ?? null;
+  const seq = diag?.basis?.kind === 'shot_sequence' ? diag.basis.sequence ?? null : null;
+  return {
+    id: insight.id,
+    title: insight.title,
+    content: insight.content,
+    metricLabel: typeof ev.metric_label === 'string' && ev.metric_label ? ev.metric_label : insight.title,
+    unit: ev.unit,
+    yourValue,
+    yourDisplay: typeof ev.your_value_display === 'string' && ev.your_value_display.trim() ? ev.your_value_display : null,
+    comparisonValue,
+    comparisonLabel: typeof ev.comparison_label === 'string' && ev.comparison_label ? ev.comparison_label : 'Comparison',
+    secondaryValue: finiteOrNull(ev.secondary_value),
+    secondaryLabel: typeof ev.secondary_label === 'string' && ev.secondary_label ? ev.secondary_label : null,
+    sampleN: finiteOrNull(ev.sample_n) ?? 0,
+    windowStart: isoDay(ev.window_start),
+    windowEnd: isoDay(ev.window_end),
+    confidence: finiteOrNull(ev.confidence),
+    tier: confidenceTier(ev.confidence),
+    style: rootStyleFor(ev),
+    causality: causalityOf(ev),
+    symptom: diag?.symptom?.trim() || null,
+    rootCause: diag?.root_cause?.trim() || null,
+    recommendedAction: diag?.recommended_action?.trim() || null,
+    confidenceReason: diag?.confidence_reason?.trim() || null,
+    driver: d0
+      ? {
+          label: (typeof d0.label === 'string' && d0.label) || d0.metric,
+          value: d0.value,
+          unit: d0.unit,
+          sampleN: finiteOrNull(d0.sample_n) ?? 0,
+        }
+      : null,
+    sequence: seq && finiteOrNull(seq.occurrences) !== null && finiteOrNull(seq.of) !== null ? seq : null,
+    strokes: strokesPerRound(ev),
+    projection: scoringProjection(ev),
+  };
+}
+
+/** Wording for a root per its support. Never states a hypothesis as fact. */
+export function supportPhrase(style: RootStyle): string {
+  switch (style) {
+    case 'observed':
+      return 'seen in your shots';
+    case 'likely':
+      return 'likely';
+    case 'forming':
+      return 'still forming';
+    default:
+      return 'not yet explained';
+  }
+}
+
+/** "Sep 17" from a date-only string, without touching time zones. */
+export function shortDate(day: string | null | undefined): string | null {
+  const d = isoDay(day ?? null);
+  if (!d) return null;
+  const [, m, dd] = d.split('-');
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const mi = Number(m) - 1;
+  const name = months[mi];
+  return name ? `${name} ${Number(dd)}` : null;
+}

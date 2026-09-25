@@ -35,6 +35,15 @@ const SECTIONS = [
 
 const SECTION_KEYS = new Set<string>(SECTIONS.map((section) => section.key));
 
+/** Drop the Why drill's `insight` param before a section swap. */
+function stripInsightParam(): void {
+  if (typeof window === 'undefined') return;
+  const url = new URL(window.location.href);
+  if (!url.searchParams.has('insight')) return;
+  url.searchParams.delete('insight');
+  window.history.replaceState(window.history.state, '', `${url.pathname}${url.search}${url.hash}`);
+}
+
 /**
  * Label of the CoachHelm section the `?view=` param currently selects.
  *
@@ -61,6 +70,9 @@ export function PlayerCoachHelmNav() {
 
   function hrefFor(key: string): string {
     const next = new URLSearchParams(searchParams.toString());
+    // `insight` belongs to the root-map Why drill (`?view=root&insight=`);
+    // it must not ride along to another section.
+    next.delete('insight');
     if (key === 'home') next.delete('view');
     else next.set('view', key);
     const query = next.toString();
@@ -95,6 +107,7 @@ export function PlayerCoachHelmNav() {
                   }
                   event.preventDefault();
                   setActive(section.key);
+                  stripInsightParam();
                   replaceStageUrl('view', section.key, 'home');
                 }}
                 aria-current={selected ? 'page' : undefined}

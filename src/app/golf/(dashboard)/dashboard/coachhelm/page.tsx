@@ -48,6 +48,20 @@ import { computeEvidenceRevisionStatuses } from '@/lib/coachhelm/focus-areas/loa
 import type { EvidenceRevisionComparison } from '@/lib/coachhelm/focus-areas/evidence-revision-status';
 import { loadFocusAreaPracticeLogData } from '@/lib/coachhelm/focus-areas/practice-log-loader';
 
+// ── Root-map Today view (stored SG + stored insight evidence only). ────────
+import { buildRootMap } from '@/lib/coachhelm/root-map/build-player-root-map';
+import {
+  ROOT_AREAS,
+  branchDetailOf,
+  buildRootHeadline,
+  findBranch,
+  isoDay,
+  type BranchDetail,
+} from '@/lib/coachhelm/root-map/build-root-map';
+import { buildAreaSparklines } from '@/lib/coachhelm/root-map/area-trends';
+import { loadPlayersSgCache, loadRecentAreaSgRounds } from '@/lib/coachhelm/root-map/loaders';
+import type { RootTodayProps } from '@/components/golf/coachhelm/root-map/RootToday';
+
 /**
  * A8 slice 3: the focus-area select is routed through `fromUntyped` (see
  * below) so it can conditionally add `evidence_revision`, a column that
@@ -266,8 +280,11 @@ export default async function PlayerCoachHelmPage() {
         getPlayerCoachHelmDashboard(player.id),
         getPlayerShotAnalytics(player.id, 30),
         getTopInsightForPlayer(player.id),
-        // Pull a small buffer — the client dedupes the hero id and displays up to 5.
-        getInsightsForPlayer(player.id, { limit: 6 }),
+        // The root map draws every returned row (map branch, unsized chip, or
+        // an "Other reads" line), so this is the full visible set up to 30,
+        // not a 5-card buffer. Every returned row is recorded as a
+        // `player_feed` exposure by the fetcher, and every one renders.
+        getInsightsForPlayer(player.id, { limit: 30 }),
         // Swallow to null so a themes failure can never reject the page load.
         getThemesForPlayer(player.id).catch(() => null),
       ]);
@@ -342,6 +359,12 @@ export default async function PlayerCoachHelmPage() {
   // unchanged). Best-effort: a failure here degrades to an honest loadError
   // flag inside the drill rather than failing the whole CoachHelm home. ──────
   const supabase = await createClient();
+  // Root-map reads start now and are awaited below, so they overlap the
+  // development/profile reads instead of adding a serial round trip.
+  const rootMapReads = Promise.all([
+    loadPlayersSgCache(supabase, [player.id]),
+    loadRecentAreaSgRounds(supabase, player.id, 10),
+  ]);
   // A8 slice 3 (write side): `isFlagEnabled` is server-only (DevelopmentDrill/
   // FocusAreaCard are client components), so the boolean is computed here
   // and threaded down as a plain prop rather than each client component
@@ -557,6 +580,52 @@ export default async function PlayerCoachHelmPage() {
     playerBaseline = await loadPlayerScoringBaseline(player.id);
   } catch { /* counterfactual line degrades honestly (suppressed) */ }
 
+  // ── Root-map Today view. Two bounded reads of STORED data (the stats-cache
+  // SG row and the last 10 rounds' stored per-round SG), then pure shaping
+  // of those plus the insights already fetched above. No generator, no shot
+  // scan, no narrative generation. A failed read degrades to "no map" /
+  // "no sparklines", never to a made-up number. ─────────────────────────────
+  let rootMap: RootTodayProps | null = null;
+  try {
+    const [sgRows, recentRounds] = await rootMapReads;
+    const sgRow = sgRows?.[0] ?? null;
+    const shownInsights = [...(topInsight ? [topInsight] : []), ...secondaryInsights.filter((i) => !topInsight || i.id !== topInsight.id)];
+    const throughDate = recentRounds?.[0]?.date ?? null;
+    const model = buildRootMap({
+      areas: ROOT_AREAS.map((area) => ({ area, sgPerRound: sgRow?.sg[area] ?? null })),
+      insights: shownInsights,
+      newSinceDate: throughDate,
+    });
+    const details: Record<string, BranchDetail> = {};
+    for (const insight of shownInsights) {
+      const d = branchDetailOf(insight);
+      if (d) details[insight.id] = d;
+    }
+    const newSince = shownInsights
+      .filter((i) => {
+        const day = isoDay(i.created_at);
+        return throughDate !== null && day !== null && day >= throughDate;
+      })
+      .sort((a, b) => (a.created_at < b.created_at ? 1 : -1))
+      .map((i) => ({ id: i.id, title: i.title, category: i.category }));
+    rootMap = {
+      model,
+      details,
+      headline: buildRootHeadline(model, findBranch(model, model.defaultSelectedId)),
+      roundsRead: sgRow?.roundsPlayed ?? null,
+      throughDate,
+      sparklines: recentRounds ? buildAreaSparklines(recentRounds) : [],
+      newSince,
+    };
+  } catch (err) {
+    void logServerError(
+      `[player coachhelm] root map assembly failed for player ${player.id}; the home view falls back to the bento: ${describeError(err)}`,
+      { action: 'playerCoachHelm.rootMap', featureArea: 'coachhelm' },
+      'warning',
+    );
+    rootMap = null;
+  }
+
   return (
     <div className={fairwayScope('min-h-full bg-canvas bg-canvas-gradient font-fw-sans text-text-primary')}>
       <div className="mx-auto w-full max-w-[1440px] px-4 py-5 md:px-6 md:py-6">
@@ -590,6 +659,7 @@ export default async function PlayerCoachHelmPage() {
           fingerprint={fingerprint}
           playerBaseline={playerBaseline}
           practiceLogEnabled={practiceLogEnabled}
+          rootMap={rootMap}
         />
       </div>
     </div>
