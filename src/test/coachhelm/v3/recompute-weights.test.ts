@@ -67,24 +67,49 @@ describe('replayCoachWeights', () => {
     expect(res.used).toBe(2);
   });
 
-  it('skips comparable-method rows, now-ineligible insights and null lifts', () => {
+  it('counts past outcomes whatever the insight became later (archived, dismissed, matured)', () => {
+    const rows = [
+      attr({ insight_id: 'arch', attributed_at: '2026-09-01T00:00:00Z' }),
+      attr({ insight_id: 'dism', attributed_at: '2026-09-02T00:00:00Z', method_version: null }),
+      attr({ insight_id: 'mat', attributed_at: '2026-09-03T00:00:00Z' }),
+    ];
+    const map = new Map([
+      ['arch', ins({ id: 'arch', lifecycle_state: 'archived' })],
+      ['dism', ins({ id: 'dism', lifecycle_state: 'detected', status: 'dismissed' })],
+      ['mat', ins({ id: 'mat', lifecycle_state: 'matured' })],
+    ]);
+    const res = replayCoachWeights(rows, map);
+    const expected = nextWeight(nextWeight(nextWeight({ weight: 1, sample_n: 0 }, 0.5), 0.5), 0.5);
+    expect(res.used).toBe(3);
+    expect(res.weights).toEqual([{ coach_id: 'c1', insight_type: 'putt_bias', intent: 'general', ...expected }]);
+  });
+
+  it('skips comparable-method rows, data-quality gaps and null lifts, each under its own reason', () => {
     const rows = [
       attr({ insight_id: 'a', method_version: 'comparable_opportunities_v1' }),
-      attr({ insight_id: 'b' }),
-      attr({ insight_id: 'c' }),
+      attr({ insight_id: 'gone' }),
       attr({ insight_id: 'd' }),
+      attr({ insight_id: 'np' }),
+      attr({ insight_id: 'v2' }),
       attr({ insight_id: 'e', n_rounds_before: 0 }),
       attr({ insight_id: 'f', method_version: null }),
     ];
     const map = new Map([
-      ['b', ins({ id: 'b', status: 'dismissed' })],
-      ['c', ins({ id: 'c', lifecycle_state: 'archived' })],
       ['d', ins({ id: 'd', coach_id: null })],
+      ['np', ins({ id: 'np', player_id: null })],
+      ['v2', ins({ id: 'v2', engine_version: 'v2', signature: 'putt_bias:left' })],
       ['e', ins({ id: 'e' })],
       ['f', ins({ id: 'f', engine_version: null, signature: 'v3:x' })],
     ]);
     const res = replayCoachWeights(rows, map);
-    expect(res.skipped).toEqual({ method: 1, ineligible: 3, null_lift: 1 });
+    expect(res.skipped).toEqual({
+      method: 1,
+      missing_insight: 1,
+      no_coach: 1,
+      no_player: 1,
+      not_v3: 1,
+      null_lift: 1,
+    });
     expect(res.used).toBe(1);
   });
 });

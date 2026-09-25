@@ -5,15 +5,25 @@
  * The live weights were built incrementally by the causality cron. Part of
  * them came from v1 attribution rows (`method_version` NULL). Their `lift`
  * was `post − ambient`, which never used the baseline window (N10 in
- * `attribute.ts`). They also came from rows whose insight the product has
- * since hidden. This module replays the weights from scratch:
+ * `attribute.ts`). This module replays the weights from scratch:
  *
  * - **Rows used.** Only round-level attribution rows: `method_version`
  *   NULL or `'v2_observed_delta'`. Comparable-opportunity rows never feed
  *   the learning loop (see `comparable-attribute.ts`).
- * - **Insight eligibility.** The insight must be eligible today under the
- *   same rules the cron applies to candidates: a v3 engine row, a visible
- *   lifecycle state, not dismissed, with a player and a coach.
+ * - **Past outcomes count (owner decision 2026-09-25).** An outcome is
+ *   evidence about the coach's insight type whatever happened to the insight
+ *   afterwards, so its CURRENT lifecycle state and status do not matter: an
+ *   insight archived or dismissed after it was attributed still counts. (The
+ *   first version required today's cron eligibility, which dropped 34 of 99
+ *   production rows, every one of them archived or dismissed later.) The
+ *   remaining skips are data-quality or scope checks that do not change
+ *   over an insight's life:
+ *   - `missing_insight`: the insight row no longer exists, so no coach or
+ *     insight type can be read;
+ *   - `no_coach`: the insight has no coach, so there is no weight key;
+ *   - `no_player`: the insight has no player, so the outcome is about no one;
+ *   - `not_v3`: not a v3 engine row; the weights feed only v3 ranking and
+ *     the cron only ever attributes v3 rows.
  * - **Lift.** Recomputed with the current math from the row's stored
  *   `baseline_value` / `post_value`: the observed change, direction
  *   corrected by `improvementSign`, or null unless both windows have at
@@ -29,7 +39,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { MIN_WINDOW_ROUNDS, nextWeight } from './attribute';
 import { improvementSign } from '@/lib/coachhelm/v3/metrics/registry';
-import { VISIBLE_LIFECYCLE_STATES } from '@/lib/coachhelm/v3/insight-visibility';
 
 export const WEIGHT_INTENT = 'general';
 export const ROUND_LEVEL_METHOD_VERSIONS: ReadonlySet<string | null> = new Set([null, 'v2_observed_delta']);
@@ -72,23 +81,36 @@ export function currentLift(row: AttributionFact): number | null {
   return improvementSign(row.target_metric_id) * raw;
 }
 
-/** The cron's candidate eligibility, evaluated against the insight's state today. */
-export function isLearnableInsight(ins: InsightFact | undefined): ins is InsightFact & { coach_id: string } {
-  if (!ins || !ins.coach_id || !ins.player_id) return false;
+export type LearnSkipReason = 'missing_insight' | 'no_coach' | 'no_player' | 'not_v3';
+
+/**
+ * Why a round-level outcome cannot feed a weight, or null when it can. Only
+ * facts that never change over an insight's life are checked; lifecycle
+ * state and status are deliberately ignored (see the file header).
+ */
+export function learnSkipReason(ins: InsightFact | undefined): LearnSkipReason | null {
+  if (!ins) return 'missing_insight';
+  if (!ins.coach_id) return 'no_coach';
+  if (!ins.player_id) return 'no_player';
   const v3 = ins.engine_version === 'v3' || (ins.signature ?? '').startsWith('v3:');
-  if (!v3) return false;
-  if (!(VISIBLE_LIFECYCLE_STATES as readonly string[]).includes(ins.lifecycle_state ?? '')) return false;
-  return ins.status !== 'dismissed';
+  return v3 ? null : 'not_v3';
 }
 
 export interface ReplaySummary {
   weights: WeightRow[];
   used: number;
-  skipped: { method: number; ineligible: number; null_lift: number };
+  skipped: { method: number; null_lift: number } & Record<LearnSkipReason, number>;
 }
 
 export function replayCoachWeights(attributions: AttributionFact[], insights: Map<string, InsightFact>): ReplaySummary {
-  const skipped = { method: 0, ineligible: 0, null_lift: 0 };
+  const skipped: ReplaySummary['skipped'] = {
+    method: 0,
+    missing_insight: 0,
+    no_coach: 0,
+    no_player: 0,
+    not_v3: 0,
+    null_lift: 0,
+  };
   let used = 0;
   const acc = new Map<string, WeightRow>();
   const ordered = [...attributions].sort(
@@ -100,8 +122,9 @@ export function replayCoachWeights(attributions: AttributionFact[], insights: Ma
       continue;
     }
     const ins = insights.get(row.insight_id);
-    if (!isLearnableInsight(ins)) {
-      skipped.ineligible += 1;
+    const reason = learnSkipReason(ins);
+    if (reason !== null || !ins?.coach_id) {
+      skipped[reason ?? 'no_coach'] += 1;
       continue;
     }
     const lift = currentLift(row);
@@ -135,7 +158,7 @@ export interface WeightDiff {
   next: { weight: number; sample_n: number } | null;
 }
 
-/** Old vs new per key. `next: null` = a stored key no eligible evidence supports. */
+/** Old vs new per key. `next: null` = a stored key no usable outcome supports. */
 export function diffWeights(current: WeightRow[], recomputed: WeightRow[]): WeightDiff[] {
   const k = (r: WeightRow) => `${r.coach_id}|${r.insight_type}|${r.intent}`;
   const out = new Map<string, WeightDiff>();

@@ -386,18 +386,28 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
   (logic in `v3/causality/recompute-weights.ts`) replays the weights from
   the stored attributions using the current math:
   - it keeps round-level rows only;
-  - it keeps insights that are cron-eligible today;
+  - it counts every past outcome whatever the insight's lifecycle or status
+    is now (owner decision 2026-09-25: an insight archived or dismissed
+    after attribution is still evidence); it skips only data-quality/scope
+    gaps, each counted by name: `missing_insight`, `no_coach`, `no_player`,
+    `not_v3`, plus `null_lift` (a window under `MIN_WINDOW_ROUNDS`);
   - it takes the direction-corrected observed lift from the stored
     baseline/post values;
   - it applies the same `nextWeight` EMA as the cron.
   The default is a dry run (SELECT only). `--apply` upserts, and `--prune`
   deletes keys with no support; running either is the owner decision above.
-  The 2026-09-24 dry run used 54 attributions (34 ineligible, 11 null
-  lift) and produced 12 keys:
-  - coach `09256463…` course_management and par_scoring reproduce the
-    live values exactly;
-  - coach `0fc49ef3…` falls from n=24/36/11/12 to n=2/3/1/3.
-  Only 2 keys would stay calibrated (n>=10).
+  The 2026-09-25 dry run used 86 of 99 attributions (13 null lift, every
+  other skip reason 0) and produced 12 keys:
+  - coach `09256463…` course_management (1.4849 n=11) and par_scoring
+    (1.0614 n=16) reproduce the live values exactly;
+  - coach `0fc49ef3…` moves from n=24/36/11/12 to n=12/18/3/7
+    (course_management/par_scoring/scrambling/tee_strategy). Its stored n
+    for course_management and par_scoring is exactly twice the number of
+    attributed insights, and scrambling's stored n=11 exceeds its 7
+    attribution rows: `golf_insight_outcome_attribution` is keyed on
+    `insight_id`, so the July (v1-era) weights most likely folded some
+    insights more than once. The replay counts each insight once.
+  4 keys would be calibrated (n>=10).
 - **v2 coach-alert family (bubble_player, pattern_detected, streak,
   surge_player, plateau, tournament_pressure, closing_holes, par_3_issues,
   recurring_weakness, team_trend, scoring_decline) is still live-written,

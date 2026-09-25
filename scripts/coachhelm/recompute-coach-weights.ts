@@ -11,7 +11,7 @@
  * (coach_id, insight_type). It prints ids only, never names or emails.
  *
  * --apply upserts the recomputed weights. --prune (only with --apply) also
- * deletes stored keys that no eligible evidence supports. Both write to the
+ * deletes stored keys that no usable outcome supports. Both write to the
  * shared production database and are an owner decision.
  *
  * Requires NEXT_PUBLIC_SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY.
@@ -19,6 +19,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { MIN_CALIBRATED_SAMPLES } from '../../src/lib/coachhelm/v3/ranking/score';
 import { recomputeCoachWeights, type WeightDiff } from '../../src/lib/coachhelm/v3/causality/recompute-weights';
+import { MIN_WINDOW_ROUNDS } from '../../src/lib/coachhelm/v3/causality/attribute';
 
 function fmt(v: WeightDiff['old']): string {
   if (!v) return '—';
@@ -39,7 +40,9 @@ async function main(): Promise<void> {
   console.log(apply ? `MODE: APPLY${prune ? ' + PRUNE' : ''}` : 'MODE: DRY RUN (no writes)');
   console.log(
     `attributions used=${res.used} skipped: non-round-level=${res.skipped.method} ` +
-      `insight-ineligible=${res.skipped.ineligible} null-lift=${res.skipped.null_lift}`,
+      `missing-insight=${res.skipped.missing_insight} no-coach=${res.skipped.no_coach} ` +
+      `no-player=${res.skipped.no_player} not-v3=${res.skipped.not_v3} ` +
+      `null-lift(<${MIN_WINDOW_ROUNDS} rounds in a window)=${res.skipped.null_lift}`,
   );
   console.log(`MIN_CALIBRATED_SAMPLES=${MIN_CALIBRATED_SAMPLES}`);
   for (const d of res.diff) {
