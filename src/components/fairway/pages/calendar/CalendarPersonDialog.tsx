@@ -207,7 +207,7 @@ function WeekStrip({ date, timeZone, onSelect }: { date: string; timeZone: strin
             className={cn(
               'flex h-auto min-h-[52px] w-full flex-col items-center justify-center gap-0.5 rounded-fw-md px-0 py-1.5',
               isSelected
-                ? 'bg-accent-650 text-text-on-accent shadow-soft hover:bg-accent-750'
+                ? 'bg-accent-fill text-text-on-accent-fill shadow-soft hover:bg-accent-fill-hover'
                 : isToday
                   ? 'bg-surface-sunken ring-2 ring-inset ring-accent-300 hover:bg-surface-tint'
                   : 'hover:bg-surface-tint',
@@ -282,7 +282,7 @@ function DayTimeline({ person, timeZone, dayStart, isToday, onOpenClass, onEvent
         >
           {!verified ? (
             <div className={cn('absolute inset-x-2 z-10 rounded-fw-sm px-3 py-2 font-fw-sans text-caption', surfaces.hatch)} style={{ top: `${TOP_PAD_PX + 4}px` }}>
-              Not verified — missing time is not confirmed availability.
+              Not verified. Missing time is not confirmed availability.
             </div>
           ) : null}
 
@@ -355,8 +355,8 @@ function DayTimeline({ person, timeZone, dayStart, isToday, onOpenClass, onEvent
 
           {showNow ? (
             <div aria-hidden className="pointer-events-none absolute inset-x-0 z-20" style={{ top: `${top(nowMinute!)}px` }}>
-              <span className="absolute -left-[5px] -top-[4px] h-2.5 w-2.5 rounded-full bg-accent-650 ring-2 ring-surface" />
-              <span className="block h-0.5 w-full bg-accent-650" />
+              <span className="absolute -left-[5px] -top-[4px] h-2.5 w-2.5 rounded-full bg-accent-fill ring-2 ring-surface" />
+              <span className="block h-0.5 w-full bg-accent-fill" />
             </div>
           ) : null}
         </div>

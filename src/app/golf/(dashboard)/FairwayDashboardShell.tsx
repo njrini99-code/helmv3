@@ -6,9 +6,10 @@
  * ----------------------------------------------------------------------------
  * The dashboard frame mounted unconditionally by (dashboard)/layout.tsx.
  * Renders the premium Fairway `AppShell` — the warm-black recessive rail on
- * desktop, a 4-tab bottom bar + More sheet on mobile (M1, 2026-07-10 —
- * docs/MOBILE_DOCTRINE.md Rule 6/10; the old hamburger → slide-in drawer is
- * retired), and the one glass top bar. The legacy GolfDashboardShell /
+ * desktop, a 5-tab bottom bar on mobile (OD-14, 2026-09-24 — player Home ·
+ * Rounds · Game · Plan · Team; coach Home · Players · CoachHelm · Schedule ·
+ * Team) with the More sheet opened from the nav bar's "More" button, and the
+ * one opaque top bar (OD-20). The legacy GolfDashboardShell /
  * GolfSidebar fork it used to be gated against was deleted in Wave W1
  * (2026-07-09).
  *
@@ -18,11 +19,13 @@
  * overflow surfaces.
  * ========================================================================== */
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { haptic } from '@/lib/haptics';
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import Image from 'next/image';
-import { usePathname, useRouter } from 'next/navigation';
+import { TopBarRouteActionOutlet, TopBarRouteActionProvider } from '@/components/fairway/app-shell/TopBarRouteAction';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { LazyMotion, MotionConfig } from 'framer-motion';
 import { loadFeatures } from '@/lib/motion/load-features';
 
@@ -56,10 +59,11 @@ import { NotificationBadgeProvider, useNotificationBadges } from '@/contexts/not
 import { NotificationBell } from '@/components/fairway/notifications/NotificationBell';
 import { NotificationPanelProvider } from '@/components/fairway/notifications/NotificationPanelContext';
 import { OfflineProvider } from '@/components/golf/OfflineProvider';
-import { LastSeenUpdater } from '@/components/admin/LastSeenUpdater';
 import { DemoEnterTracker } from '@/components/demo/DemoEnterTracker';
 import { DemoPricingNudge } from '@/components/golf/demo/DemoPricingNudge';
 import { NoTeamBanner } from '@/components/golf/NoTeamBanner';
+import { GolfRouteRefresh } from '@/components/golf/GolfRouteRefresh';
+import { NativeSwipeBackBridge } from '@/components/golf/NativeSwipeBackBridge';
 import { KeyboardShortcutHint } from '@/components/golf/KeyboardShortcutHint';
 import { TeamSwitcher } from '@/components/golf/TeamSwitcher';
 import { normalizeTeamGender, teamAccentVar, type TeamGender } from '@/lib/golf/team-theme';
@@ -69,10 +73,11 @@ import { useGolfSurfacePrewarm } from '@/hooks/golf/use-surface-prewarm';
 import { clearAllCachedResources } from '@/lib/golf/client-resource-cache';
 import { createClient } from '@/lib/supabase/client';
 import { clearActiveTeam } from '@/app/golf/actions/team-switcher';
-import { triggerHaptic } from '@/lib/utils/capacitor';
+
 import { teardownDeviceTokenOnSignOut } from '@/lib/utils/push-registration';
 import { cn } from '@/lib/utils';
 import { IconSettings, IconLogout } from '@/components/icons';
+import { MobileMoreButton } from './MobileMoreButton';
 
 // PERF: lazy-load the same heavy globals GolfDashboardShell mounts.
 const CommandPalette = dynamic(
@@ -161,18 +166,27 @@ const COACHHELM_TAB_LABELS: Record<string, string> = {
   coachhelm: surfaceName('ask'), // /coachhelm/chat, /coachhelm/genome
 };
 
+/** /coachhelm/<sub> pages that are not the Ask chat. Without these the phone
+ *  top bar titled the qualifier Selection workspace (and Genome Compare) "Ask". */
+const COACHHELM_SUBPATH_LABELS: Record<string, string> = {
+  genome: surfaceName('genome-compare'),
+  qualifying: 'Selection',
+};
+
 /** Pathname → breadcrumb trail. Two levels normally (Dashboard / Section); for
  *  the CoachHelm cluster, three (Dashboard / CoachHelm AI / Tab) so the top-bar
  *  breadcrumb agrees with the CoachHelm masthead + sub-nav instead of showing a
  *  competing trail for the same screen (P409). */
-function buildBreadcrumbs(pathname: string): Breadcrumb[] {
+export function buildBreadcrumbs(pathname: string): Breadcrumb[] {
   const rest = pathname.replace(/^\/golf\/dashboard\/?/, '');
   if (!rest) return [{ label: 'Dashboard' }];
   const seg = rest.split('/')[0] ?? '';
 
   // CoachHelm cluster → reconcile with the masthead's "CoachHelm AI / <Tab>".
   if (COACHHELM_CLUSTER_SEGMENTS.has(seg) && isCoachHelmCoachCluster(pathname)) {
-    const tabLabel = COACHHELM_TAB_LABELS[seg] ?? SEGMENT_LABELS[seg] ?? toTitle(seg);
+    const sub = seg === 'coachhelm' ? rest.split('/')[1] : undefined;
+    const tabLabel =
+      (sub ? COACHHELM_SUBPATH_LABELS[sub] : undefined) ?? COACHHELM_TAB_LABELS[seg] ?? SEGMENT_LABELS[seg] ?? toTitle(seg);
     return [
       { label: 'Dashboard', href: '/golf/dashboard' },
       { label: surfaceName('rail-coachhelm-ai-coach'), href: surfaceHref('rail-coachhelm-ai-coach') },
@@ -182,6 +196,30 @@ function buildBreadcrumbs(pathname: string): Breadcrumb[] {
 
   const label = SEGMENT_LABELS[seg] ?? toTitle(seg);
   return [{ label: 'Dashboard', href: '/golf/dashboard' }, { label }];
+}
+
+/** Pushed routes whose own first segment has no page of its own. */
+const BACK_PARENT_OVERRIDES: Record<string, { href: string; label: string } | null> = {
+  players: { href: '/golf/dashboard/roster', label: 'Roster' },
+  analytics: null,
+};
+
+/**
+ * The phone top bar's `‹ Parent` link (NAT-04). Only on pushed routes: a tab
+ * root (anything a hub strip or the bottom nav lands on) gets none, and the
+ * CoachHelm cluster keeps its own in-page breadcrumbs.
+ */
+function buildBackLink(
+  pathname: string,
+  hubTabs: readonly { href: string }[] | undefined,
+): { href: string; label: string } | undefined {
+  const segs = pathname.replace(/^\/golf\/dashboard\/?/, '').split('/').filter(Boolean);
+  if (segs.length < 2) return undefined;
+  if (hubTabs?.some((tab) => tab.href.split('?')[0] === pathname)) return undefined;
+  const seg = segs[0] ?? '';
+  if (COACHHELM_CLUSTER_SEGMENTS.has(seg) && isCoachHelmCoachCluster(pathname)) return undefined;
+  if (seg in BACK_PARENT_OVERRIDES) return BACK_PARENT_OVERRIDES[seg] ?? undefined;
+  return { href: `/golf/dashboard/${seg}`, label: SEGMENT_LABELS[seg] ?? toTitle(seg) };
 }
 
 /** Next <Link> adapter for the shell's link contract (module scope = stable identity). */
@@ -235,7 +273,7 @@ function useGolfSignOut() {
   const handleSignOut = useCallback(async () => {
     if (isSigningOut) return; // guard double-tap (legacy shell guarded this too)
     setIsSigningOut(true);
-    void triggerHaptic('heavy');
+    void haptic('checkpoint');
     // BEFORE signOut (the action authenticates the caller), fire-and-forget
     // (sign-out must never hang on token cleanup): stop this device receiving
     // the signed-out user's pushes (M2-1).
@@ -335,6 +373,17 @@ function GolfMoreSheetFooter() {
       linkComponent={ShellLink}
     />
   );
+}
+
+/** Reports the current `?view=` to the shell (OD-14 Game/Plan tabs). Lives
+ *  under its own <Suspense> so useSearchParams never bails the dashboard
+ *  layout out of server rendering. */
+function SearchViewProbe({ onChange }: { onChange: (view: string | null) => void }) {
+  const view = useSearchParams()?.get('view') ?? null;
+  useEffect(() => {
+    onChange(view);
+  }, [view, onChange]);
+  return null;
 }
 
 function FairwayDashboardContent({
@@ -459,15 +508,6 @@ function FairwayDashboardContent({
   // Same stability contract as `teamSwitcher`/`brand`/etc below — combined
   // once here so `topBarActions` (passed verbatim into AppShell → FairwayTopBar)
   // only changes identity when one of its two children actually changes.
-  const topBarActions = useMemo(
-    () => (
-      <>
-        {notificationBell}
-        {teamSwitcher}
-      </>
-    ),
-    [notificationBell, teamSwitcher],
-  );
 
   // Track presence (deferred internally so it doesn't compete with page load).
   usePresence();
@@ -494,10 +534,14 @@ function FairwayDashboardContent({
     [role, navBadges],
   );
 
-  // P413: mobile bottom-tab destinations (subset of the rail, badge-aware).
+  // OD-14: the five mobile tabs. The player Game and Plan tabs share one
+  // pathname and differ by `?view=`, which the Suspense-wrapped probe below
+  // reports (a bare useSearchParams in this layout-level component would force
+  // a client-side-rendering bailout of the whole dashboard).
+  const [searchView, setSearchView] = useState<string | null>(null);
   const bottomNavItems = useMemo(
-    () => (role === 'coach' ? buildCoachBottomNavItems(navBadges) : buildPlayerBottomNavItems()),
-    [role, navBadges],
+    () => (role === 'coach' ? buildCoachBottomNavItems(navBadges) : buildPlayerBottomNavItems(navBadges, searchView)),
+    [role, navBadges, searchView],
   );
 
   // M1 (more-sheet-nav, docs/MOBILE_DOCTRINE.md Rule 6/10): the More sheet's
@@ -509,6 +553,42 @@ function FairwayDashboardContent({
   const overflow = useMemo(() => selectOverflow(sections, bottomNavHrefs), [sections, bottomNavHrefs]);
   const more = useMemo(() => summarizeMoreTab(overflow, pathname), [overflow, pathname]);
   const openMoreSheet = useCallback(() => setMobileOpen(true), [setMobileOpen]);
+  // The nav-bar More button is "current" when the route is reachable only
+  // through the sheet: an overflow row no tab already claims, or Settings
+  // (the sheet's footer, which `summarizeMoreTab` never sees). W5 NAT-07.
+  const anyTabActive = bottomNavItems.some((item) =>
+    item.activeMatch ? item.activeMatch(pathname) : pathname === item.href,
+  );
+  const moreRouteActive =
+    (more.active && !anyTabActive) ||
+    pathname === '/golf/dashboard/settings' ||
+    pathname.startsWith('/golf/dashboard/settings/');
+
+  const mobileMoreButton = useMemo(
+    () => (
+      <MobileMoreButton
+        onOpen={openMoreSheet}
+        open={mobileOpen}
+        active={moreRouteActive}
+        badge={more.badge}
+        name={userData.name}
+        avatarUrl={userData.avatarUrl}
+      />
+    ),
+    [openMoreSheet, mobileOpen, moreRouteActive, more.badge, userData.name, userData.avatarUrl],
+  );
+
+  const topBarActions = useMemo(
+    () => (
+      <>
+        <TopBarRouteActionOutlet />
+        {notificationBell}
+        {teamSwitcher}
+        {mobileMoreButton}
+      </>
+    ),
+    [notificationBell, teamSwitcher, mobileMoreButton],
+  );
 
   // WAVE W2: the sub-tab strip for whichever multi-tab hub owns the current
   // route (Team / Calendar / Rounds & Stats / Messages / Operations for
@@ -531,13 +611,14 @@ function FairwayDashboardContent({
   );
 
   const openCommandPalette = useCallback(() => {
-    void triggerHaptic('light');
+    void haptic('commit');
     // WKWebView-safe imperative open (synthetic ⌘K keystrokes are unreliable
     // there); CommandPalette listens for this event additively.
     window.dispatchEvent(new Event('helm:open-command-palette'));
   }, []);
 
   const breadcrumbs = useMemo(() => buildBreadcrumbs(pathname), [pathname]);
+  const backLink = useMemo(() => buildBackLink(pathname, activeHub?.tabs), [pathname, activeHub]);
 
   // The name the mobile top bar gives the current view. Inside a multi-tab hub
   // that is the HUB, not the leaf: the strip immediately below the bar already
@@ -570,17 +651,9 @@ function FairwayDashboardContent({
   // cluster-4 finding 4 / React Doctor).
   const bottomNav = useMemo(
     () => (
-      <FairwayBottomNav
-        items={bottomNavItems}
-        pathname={pathname}
-        linkComponent={ShellLink}
-        onMoreOpen={openMoreSheet}
-        moreActive={more.active}
-        moreBadge={more.badge}
-        moreOpen={mobileOpen}
-      />
+      <FairwayBottomNav items={bottomNavItems} pathname={pathname} linkComponent={ShellLink} stackLabel />
     ),
-    [bottomNavItems, pathname, openMoreSheet, more.active, more.badge, mobileOpen],
+    [bottomNavItems, pathname],
   );
 
   // Live shot-entry flows own their full screen (their own sticky control header
@@ -600,7 +673,7 @@ function FairwayDashboardContent({
   const skipLink = (
     <a
       href="#main-content"
-      className="sr-only focus:not-sr-only focus:absolute focus:z-modal focus:top-[max(1rem,env(safe-area-inset-top))] focus:left-4 bg-accent-650 text-text-on-accent px-4 py-2 rounded-fw-md font-fw-sans font-medium shadow-soft focus:outline-none focus:ring-2 focus:ring-accent-600 focus:ring-offset-2 focus:ring-offset-canvas"
+      className="sr-only focus:not-sr-only focus:absolute focus:z-modal focus:top-[max(1rem,env(safe-area-inset-top))] focus:left-4 bg-accent-fill text-text-on-accent-fill px-4 py-2 rounded-fw-md font-fw-sans font-medium shadow-soft focus:outline-none focus:ring-2 focus:ring-accent-600 focus:ring-offset-2 focus:ring-offset-canvas"
     >
       Skip to main content
     </a>
@@ -633,80 +706,87 @@ function FairwayDashboardContent({
     <MotionConfig reducedMotion={showAnimations ? 'user' : 'always'}>
       {skipLink}
 
-      <AppShell
-        sections={sections}
-        user={shellUser}
-        brand={brand}
-        sidebarFooter={sidebarFooter}
-        topBarActions={topBarActions}
-        accentColor={accentColor}
-        pathname={pathname}
-        linkComponent={ShellLink}
-        breadcrumbs={breadcrumbs}
-        collapsible={true}
-        // The dashboard route `template.tsx` already owns the route-reveal fade
-        // (one keyed motion div). Disabling the shell's own RouteTransition here
-        // prevents BOTH from fading on navigation — that compounded the opacity
-        // and read as a heavy, laggy double-fade. One fade, one source of truth.
-        disableRouteTransition
-        // Pages own their gutters (horizontal padding + max-width) and their
-        // page-title blocks, exactly as in the legacy shell whose <main> had no
-        // content padding. The shell keeps only the bottom home-indicator pad.
-        contentPadding={false}
-        constrainContent={false}
-        mobileOpen={mobileOpen}
-        onMobileOpenChange={setMobileOpen}
-        onSearchOpen={openCommandPalette}
-        searchPlaceholder="Search players, rounds, pages…"
-        // The shared sub-tab strip renders as part of AppShell's ONE sticky
-        // chrome unit; `pageTitle` is the name the bar shows on phone (see
-        // `mobilePageTitle` above — hub label inside a hub, crumb leaf
-        // otherwise).
-        subNav={subNav}
-        pageTitle={mobilePageTitle}
-        // M1: the More sheet's identity row links here; its footer is the
-        // light-themed Settings + Sign out row (moreSheetFooter, below).
-        settingsHref="/golf/dashboard/settings"
-        bottomNavHrefs={bottomNavHrefs}
-        moreSheetFooter={moreSheetFooter}
-        // P413: persistent mobile bottom-tab bar for the core destinations
-        // (md:hidden; the 5th "More" column opens the sheet, which keeps the
-        // long tail — see docs/MOBILE_DOCTRINE.md Rule 6/10).
-        bottomNav={bottomNav}
-        className={cn(displayDensity === 'compact' && 'density-compact', !showAnimations && 'reduce-motion')}
-      >
-        <div
-          id="main-content"
-          tabIndex={-1}
-          className={cn(
-            'outline-none',
-            // #948 follow-up — ChatDrawer's coach-only launcher FAB (v3/Chat/
-            // ChatDrawer.tsx) is `fixed bottom-6 right-6` at `md:flex` (desktop
-            // only), mounted once for every coach dashboard route. Nothing in
-            // AppShell's own bottom padding (see AppShell.tsx's home-indicator
-            // + mobile bottom-nav clearance, both md:-scoped away to near-zero)
-            // accounts for it, so the last row of any content that reaches the
-            // page's true bottom edge sat directly under the FAB on desktop —
-            // confirmed on roster/dashboard/round-review at 1440x900. Reserve
-            // real clearance (the FAB's ~80px footprint + a comfortable buffer)
-            // at md+ ONLY, and only for coach routes (players never render the
-            // launcher at all, so their pages keep the tighter default).
-            role === 'coach' && 'md:pb-28',
-            // That FAB clearance is real height this shell consumes, so a
-            // full-viewport surface has to subtract it too. Re-declare
-            // `--fw-shell-offset` (AppShell sets the base) for this subtree at
-            // the same breakpoint and the same 7rem, or `/dashboard/coachhelm/
-            // chat` overshoots by exactly that much on a coach's desktop.
-            role === 'coach' &&
-              'md:[--fw-shell-offset:calc(4rem+env(safe-area-inset-top,0px)+2rem+env(safe-area-inset-bottom,0px)+7rem)]',
-          )}
+      <TopBarRouteActionProvider>
+        <AppShell
+          sections={sections}
+          user={shellUser}
+          brand={brand}
+          sidebarFooter={sidebarFooter}
+          topBarActions={topBarActions}
+          nativeTopBar
+          accentColor={accentColor}
+          pathname={pathname}
+          linkComponent={ShellLink}
+          breadcrumbs={breadcrumbs}
+          backLink={backLink}
+          collapsible={true}
+          // The dashboard route `template.tsx` already owns the route-reveal fade
+          // (one keyed motion div). Disabling the shell's own RouteTransition here
+          // prevents BOTH from fading on navigation — that compounded the opacity
+          // and read as a heavy, laggy double-fade. One fade, one source of truth.
+          disableRouteTransition
+          // Pages own their gutters (horizontal padding + max-width) and their
+          // page-title blocks, exactly as in the legacy shell whose <main> had no
+          // content padding. The shell keeps only the bottom home-indicator pad.
+          contentPadding={false}
+          constrainContent={false}
+          mobileOpen={mobileOpen}
+          onMobileOpenChange={setMobileOpen}
+          onSearchOpen={openCommandPalette}
+          searchPlaceholder="Search players, rounds, pages…"
+          // The shared sub-tab strip renders as part of AppShell's ONE sticky
+          // chrome unit; `pageTitle` is the name the bar shows on phone (see
+          // `mobilePageTitle` above — hub label inside a hub, crumb leaf
+          // otherwise).
+          subNav={subNav}
+          pageTitle={mobilePageTitle}
+          // M1: the More sheet's identity row links here; its footer is the
+          // light-themed Settings + Sign out row (moreSheetFooter, below).
+          settingsHref="/golf/dashboard/settings"
+          bottomNavHrefs={bottomNavHrefs}
+          moreSheetFooter={moreSheetFooter}
+          // OD-14: persistent five-tab mobile bar (md:hidden). The long tail
+          // lives in the More sheet, opened from the nav bar's More button.
+          bottomNav={bottomNav}
+          className={cn(displayDensity === 'compact' && 'density-compact', !showAnimations && 'reduce-motion')}
         >
-          <NoTeamBanner />
-          {children}
-        </div>
-      </AppShell>
+          <div
+            id="main-content"
+            tabIndex={-1}
+            className={cn(
+              'outline-none',
+              // #948 follow-up — ChatDrawer's coach-only launcher FAB (v3/Chat/
+              // ChatDrawer.tsx) is `fixed bottom-6 right-6` at `md:flex` (desktop
+              // only), mounted once for every coach dashboard route. Nothing in
+              // AppShell's own bottom padding (see AppShell.tsx's home-indicator
+              // + mobile bottom-nav clearance, both md:-scoped away to near-zero)
+              // accounts for it, so the last row of any content that reaches the
+              // page's true bottom edge sat directly under the FAB on desktop —
+              // confirmed on roster/dashboard/round-review at 1440x900. Reserve
+              // real clearance (the FAB's ~80px footprint + a comfortable buffer)
+              // at md+ ONLY, and only for coach routes (players never render the
+              // launcher at all, so their pages keep the tighter default).
+              role === 'coach' && 'md:pb-28',
+              // That FAB clearance is real height this shell consumes, so a
+              // full-viewport surface has to subtract it too. Re-declare
+              // `--fw-shell-offset` (AppShell sets the base) for this subtree at
+              // the same breakpoint and the same 7rem, or `/dashboard/coachhelm/
+              // chat` overshoots by exactly that much on a coach's desktop.
+              role === 'coach' &&
+                'md:[--fw-shell-offset:calc(4rem+env(safe-area-inset-top,0px)+2rem+env(safe-area-inset-bottom,0px)+7rem)]',
+            )}
+          >
+            <Suspense fallback={null}>
+              <SearchViewProbe onChange={setSearchView} />
+            </Suspense>
+            <NoTeamBanner />
+            <GolfRouteRefresh pathname={pathname}>{children}</GolfRouteRefresh>
+          </div>
+        </AppShell>
+      </TopBarRouteActionProvider>
 
       {/* Globals — the same set GolfDashboardShell mounts. */}
+      <NativeSwipeBackBridge />
       <CommandPalette isCoach={role === 'coach'} />
       <KeyboardShortcutHint />
       <NewAnnouncementsModalWrapper />
@@ -739,7 +819,10 @@ export function FairwayDashboardShell({
               <NotificationPanelProvider>
                 <LazyMotion features={loadFeatures}>
                   <OfflineProvider showSyncStatus={false} showWarningBanner={false}>
-                    <LastSeenUpdater />
+                    {/* No <LastSeenUpdater /> here: usePresence() (below, in
+                        FairwayDashboardContent) calls public.heartbeat(), which
+                        already writes users.last_seen. The updater only added a
+                        second auth round-trip + RPC at every shell mount. */}
                     {/* Must mount BEFORE DemoEnterTracker — see DemoPricingNudge.tsx
                         header: it reads window.location.search for `demo=1` before
                         DemoEnterTracker's own effect strips that param from the URL. */}

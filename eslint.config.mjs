@@ -13,6 +13,7 @@ import noRawButton from "./eslint-rules/no-raw-button.mjs";
 import noRawInput from "./eslint-rules/no-raw-input.mjs";
 import noArbitraryTextPx from "./eslint-rules/no-arbitrary-text-px.mjs";
 import noBannedColor from "./eslint-rules/no-banned-color.mjs";
+import noLowContrastText from "./eslint-rules/no-low-contrast-text.mjs";
 import noArbitraryRadius from "./eslint-rules/no-arbitrary-radius.mjs";
 import noArbitraryBgWhite from "./eslint-rules/no-arbitrary-bg-white.mjs";
 import noUncheckedSupabaseError from "./eslint-rules/no-unchecked-supabase-error.mjs";
@@ -137,6 +138,7 @@ export default tseslint.config(
           "no-raw-input": noRawInput,
           "no-arbitrary-text-px": noArbitraryTextPx,
           "no-banned-color": noBannedColor,
+          "no-low-contrast-text": noLowContrastText,
           "no-arbitrary-radius": noArbitraryRadius,
           "no-arbitrary-bg-white": noArbitraryBgWhite,
           "no-unchecked-supabase-error": noUncheckedSupabaseError,
@@ -198,6 +200,67 @@ export default tseslint.config(
       // existing debt does not block every unrelated lint run. See
       // .claude/skills/helm-supabase/SKILL.md for the trap this guards.
       "helm/no-unchunked-in-filter": "off",
+    },
+  },
+  {
+    // CON-09 (owner decision 2026-09-23, "more contrast, more green"): the
+    // golf product surfaces were swept clean of the text colours that fail AA
+    // on the cream canvas. This keeps them out. Scoped to golf so BaseballHelm
+    // and Lift Lab, which still use the legacy scales, are not affected.
+    files: [
+      "src/components/fairway/**/*.{ts,tsx}",
+      "src/components/golf/**/*.{ts,tsx}",
+      "src/app/golf/**/*.{ts,tsx}",
+    ],
+    // Rendered by BaseballHelm's PremiumCalendarClient (golf only imports its
+    // types), so it stays on the legacy scales with Baseball (OD-17).
+    ignores: ["src/components/golf/calendar/**"],
+    rules: {
+      "helm/no-low-contrast-text": "error",
+    },
+  },
+  {
+    // MOT-RM / haptics (2026-09 golf audit): golf surfaces go through the
+    // hydration-safe motion guard and the semantic haptic vocabulary. Raw
+    // framer-motion useReducedMotion() returns null before hydration (#418
+    // class), and raw triggerHaptic() bypasses the golf haptic mapping and the
+    // user's haptics preference. src/components/golf/calendar is shared with
+    // BaseballHelm and keeps its legacy calls; the dev haptics lab calls the
+    // raw bridge on purpose.
+    files: [
+      "src/components/fairway/**/*.{ts,tsx}",
+      "src/components/golf/**/*.{ts,tsx}",
+      "src/app/golf/**/*.{ts,tsx}",
+    ],
+    ignores: [
+      "src/components/golf/calendar/**",
+      "src/app/golf/(dashboard)/dashboard/dev/haptics/**",
+      "**/*.test.{ts,tsx}",
+      "**/__tests__/**",
+    ],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          paths: [
+            {
+              name: "framer-motion",
+              importNames: ["useReducedMotion"],
+              message: "Use useReducedMotionGuard() from '@/lib/coachhelm/v3/motion'.",
+            },
+            {
+              name: "motion/react",
+              importNames: ["useReducedMotion"],
+              message: "Use useReducedMotionGuard() from '@/lib/coachhelm/v3/motion'.",
+            },
+            {
+              name: "@/lib/utils/capacitor",
+              importNames: ["triggerHaptic"],
+              message: "Use haptic('select' | 'commit' | ...) from '@/lib/haptics'.",
+            },
+          ],
+        },
+      ],
     },
   },
   {

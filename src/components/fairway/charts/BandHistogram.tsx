@@ -29,9 +29,10 @@
  * ========================================================================== */
 
 import * as React from 'react';
-import { motion, useReducedMotion } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { TABULAR_NUMS } from './theme';
+import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
 
 export interface BandHistogramBand {
   label: string;
@@ -221,7 +222,7 @@ function Column({
   unit?: string;
   benchmarkOffset: number | null;
 }) {
-  const reduced = useReducedMotion() ?? false;
+  const reduced = useReducedMotionGuard() ?? false;
   const ghost = isGhostBand(band);
   const heightFrac = computeBarHeightFraction(band, maxN);
   const rampBand = rampBandForPct(band.pct);

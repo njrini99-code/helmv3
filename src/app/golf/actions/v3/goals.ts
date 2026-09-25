@@ -415,6 +415,7 @@ async function suggestGoalTargetImpl(
       suggested_target: computeTargetValue({
         playerValue: standing.player_value,
         pgaValue: standing.pga_value,
+        metricId,
       }),
     };
   } catch (err) {
@@ -656,7 +657,7 @@ async function acceptGoalSuggestionImpl(
     const endsAt = new Date(Date.now() + sug.suggested_window_days * 86400_000).toISOString();
     const createResult = await createGoal({
       metric_id: sug.metric_id as MetricId,
-      title: `Goal — ${sug.metric_id}`,
+      title: `Goal: ${sug.metric_id}`,
       category: 'engine_suggested',
       ends_at: endsAt,
       target_value: sug.suggested_target_value,

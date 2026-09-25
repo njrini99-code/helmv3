@@ -12,9 +12,12 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 const ROUND_COUNT = 1500; // > 1000 → requires two pages
 
-const roundRows: Array<{ id: string }> = Array.from(
+// Fully scored 18-hole rounds: the loader keeps countable rounds only
+// (src/lib/golf/round-countable.ts), so a fixture without nine totals would
+// be read as a hole-less round and dropped.
+const roundRows: Array<{ id: string; holes_played: number; total_score: number; front_nine: number; back_nine: number; total_putts: number }> = Array.from(
   { length: ROUND_COUNT },
-  (_, i) => ({ id: `round-${i}` }),
+  (_, i) => ({ id: `round-${i}`, holes_played: 18, total_score: 74, front_nine: 37, back_nine: 37, total_putts: 32 }),
 );
 
 let shotRows: Array<Record<string, unknown>> = [];

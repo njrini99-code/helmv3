@@ -146,7 +146,7 @@ function RateBar({
     >
       <div className="flex-1 h-1.5 bg-surface-sunken rounded-full overflow-hidden">
         <div
-          className={cn('h-full rounded-full transition-all duration-300', color)}
+          className={cn('h-full rounded-full transition-[width] duration-300', color)}
           style={{ width: `${widthPct}%` }}
         />
       </div>

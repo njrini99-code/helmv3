@@ -3,8 +3,7 @@
  * ============================================================================
  * #970/#972 — ShotAnalysisCard resilience gauge + Key Weaknesses sample guard
  * ----------------------------------------------------------------------------
- *   1. The rebuilt Resilience Dial always shows a visible track (never a
- *      floating broken arc), replacing the bespoke inline SVG ring.
+ *   1. Resilience is a number with its meaning in words, no gauge (DD-01).
  *   2. A 5-6 shot weakness band must not outrank a robustly-sampled one just
  *      because its small-sample average happens to look worse.
  * ========================================================================== */
@@ -12,11 +11,34 @@ import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { ShotAnalysisCard } from './ShotAnalysisCard';
 
-describe('ShotAnalysisCard — resilience gauge honesty (#970)', () => {
-  it('always renders a visible gauge track for the Resilience dial', () => {
+describe('ShotAnalysisCard — resilience readout (DD-01, NUM-30)', () => {
+  it('prints resilience as a number with its meaning, and no gauge', () => {
     const { container } = render(<ShotAnalysisCard resilience={0.6} />);
-    const trackPath = container.querySelector('path[opacity="0.16"]');
-    expect(trackPath).not.toBeNull();
+    const block = container.querySelector('[data-slot="deep-dive-resilience"]');
+    expect(block?.textContent).toContain('0.6');
+    expect(block?.textContent).toContain('One bad shot tends to lead to another');
+    expect(container.querySelector('svg path[opacity="0.16"]')).toBeNull();
+  });
+});
+
+describe('ShotAnalysisCard — distance ladder (DD-01)', () => {
+  it('renders approach bands as a ladder and names a dead zone in words', () => {
+    const { container } = render(
+      <ShotAnalysisCard
+        yardageCurve={{
+          buckets: [
+            { rangeStart: 100, rangeEnd: 125, avgSG: 0.1, shotCount: 20, greenHitRate: 0.6 },
+            { rangeStart: 150, rangeEnd: 175, avgSG: -0.3, shotCount: 18, greenHitRate: 0.4 },
+          ],
+        }}
+        deadZones={[{ rangeStart: 150, rangeEnd: 175, deficit: 0.3, shotCount: 18 }]}
+      />,
+    );
+    const ladder = container.querySelector('[data-slot="distance-ladder"]');
+    expect(ladder?.querySelectorAll('li')).toHaveLength(2);
+    expect(screen.getByText('Dead zone')).toBeInTheDocument();
+    expect(ladder?.textContent).toMatch(/Tee shots and putts are left out/);
+    expect(container.querySelector('.bg-fw-danger-bg')).toBeNull();
   });
 });
 
@@ -55,7 +77,7 @@ describe('ShotAnalysisCard — Key Weaknesses minimum-sample guard (#972)', () =
 });
 
 describe('ShotAnalysisCard — Key Weaknesses excludes net-positive contexts (Package 11)', () => {
-  it('does not render a positive-avgSG context under "Key Weaknesses"', () => {
+  it('does not render a positive-avgSG context under "Key weaknesses"', () => {
     render(
       <ShotAnalysisCard
         weaknesses={[
@@ -67,7 +89,7 @@ describe('ShotAnalysisCard — Key Weaknesses excludes net-positive contexts (Pa
       />,
     );
 
-    expect(screen.queryByText('Key Weaknesses')).toBeInTheDocument();
+    expect(screen.queryByText('Key weaknesses')).toBeInTheDocument();
     expect(screen.queryByText(/shots$/)).toBeNull();
     expect(screen.getByText(/at or above par/i)).toBeInTheDocument();
   });
@@ -84,7 +106,24 @@ describe('ShotAnalysisCard — Key Weaknesses excludes net-positive contexts (Pa
 
     expect(screen.getByText('50 shots')).toBeInTheDocument();
     expect(screen.getAllByText(/shots$/)).toHaveLength(1);
-    expect(screen.getByText('-0.40')).toBeInTheDocument();
+    // SG through formatMetric: 2 dp with a true minus (display-registry §5.2).
+    expect(screen.getByText('−0.40')).toBeInTheDocument();
+  });
+});
+
+describe('ShotAnalysisCard — scramble window and null safety (NUM-20, FP-06)', () => {
+  it('names the 90-day window next to the deep-dive scramble rate', () => {
+    const { container } = render(<ShotAnalysisCard scrambleRate={0.55} />);
+    const block = container.querySelector('[data-slot="deep-dive-scramble"]');
+    expect(block?.textContent).toContain('Last 90 days');
+  });
+
+  it('prints no scramble rate when the engine reports no attempts (null), never 0%', () => {
+    const { container } = render(
+      <ShotAnalysisCard shotData={{ scrambleRate: { scrambleRate: null, totalScrambleAttempts: 0 }, resilience: 1.2 }} />,
+    );
+    expect(container.querySelector('[data-slot="deep-dive-scramble"]')).toBeNull();
+    expect(container.textContent).not.toContain('0%');
   });
 });
 
@@ -92,8 +131,8 @@ describe('ShotAnalysisCard — teamScrambleRate scale (Package 11 follow-up)', (
   it('scales a 0-1 teamScrambleRate fraction to a percent, same as the player scrambleRate', () => {
     const { container } = render(<ShotAnalysisCard scrambleRate={0.55} teamScrambleRate={0.62} />);
 
-    // Player rate: 55% (rendered twice — the badge circle and the caption).
-    expect(screen.getAllByText('55%').length).toBeGreaterThan(0);
+    // Player rate: 55%, printed once (the duplicate badge was removed, DD-01).
+    expect(screen.getAllByText('55%')).toHaveLength(1);
     // Team avg: 62%, not the unscaled "0.62%".
     expect(container.textContent).toContain('team avg: 62%');
     expect(container.textContent).not.toContain('team avg: 0.62%');

@@ -223,7 +223,7 @@ export function PuttHeatmap({ putts, title = 'Putting heatmap', className }: Put
                 <span className="font-medium text-text-primary">
                   {MISS_SIDE_LABEL[data.miss_bias.dominant].toLowerCase()}
                 </span>
-                {' — '}
+                {', '}
                 {Math.round(data.miss_bias.share * 100)}% of misses.
               </p>
             ) : null}
@@ -232,7 +232,7 @@ export function PuttHeatmap({ putts, title = 'Putting heatmap', className }: Put
                 only distance-from-hole and make/miss are measured. A dot's
                 position AROUND the hole is illustrative except where a real
                 miss direction was logged. */}
-            <p className="px-0.5 text-eyebrow leading-snug text-text-tertiary/80">
+            <p className="px-0.5 text-eyebrow leading-snug text-text-tertiary">
               Position around the hole is illustrative except where a miss direction was logged.
             </p>
           </>

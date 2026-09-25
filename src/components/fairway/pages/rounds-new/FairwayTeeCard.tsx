@@ -38,6 +38,7 @@
 import { cn } from '@/lib/utils';
 import { IconChevronRight } from '@/components/icons';
 import type { GolfCourseTee } from '@/lib/types/golf-course';
+import { TEE_SWATCH, NEEDS_RIM } from '@/lib/golf/tee-colors';
 
 const CATEGORY_LABEL: Record<string, string> = {
   mens: "Men's",
@@ -49,41 +50,8 @@ const CATEGORY_LABEL: Record<string, string> = {
   custom: 'Custom',
 };
 
-/**
- * Physical tee-marker colours.
- *
- * These are DOMAIN values — the paint on a marker post — not theme tokens, so
- * they are literal and live here rather than in the Fairway palette. Applied as
- * inline `background`, which also keeps them clear of the golf-surface ban on
- * raw `red-*`/`amber-*`/`rose-*` Tailwind classes: that rule exists to stop
- * semantic UI colour drifting outside the token system, and a black tee marker
- * is neither semantic nor UI.
- *
- * Values are nudged off pure hues so they sit on a warm cream canvas without
- * screaming — a real marker is painted, not neon.
- */
-const TEE_SWATCH: Record<string, string> = {
-  black: '#26262b',
-  blue: '#2f5fa8',
-  white: '#f7f5ef',
-  gold: '#c8952b',
-  yellow: '#dcb43a',
-  red: '#b3453f',
-  green: '#3f7a4d',
-  silver: '#b9bcc0',
-  grey: '#8d9096',
-  gray: '#8d9096',
-  bronze: '#a2703f',
-  copper: '#a2703f',
-  purple: '#6b4f96',
-  orange: '#c9743a',
-  pink: '#c980a0',
-  championship: '#26262b',
-  tips: '#26262b',
-};
-
-/** The one swatch that needs its own rim to exist on a cream card. */
-const NEEDS_RIM = new Set(['white', 'silver', 'yellow', 'gold']);
+// Physical tee-marker colours live in `@/lib/golf/tee-colors` (DS-HEX): they
+// name real paint on real posts and deliberately do not follow the theme.
 
 /**
  * A golf tee, drawn as the object itself.

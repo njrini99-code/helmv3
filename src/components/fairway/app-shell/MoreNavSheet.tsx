@@ -31,6 +31,7 @@ import { Sheet } from '@/components/fairway/overlays';
 import { Avatar } from '@/components/fairway/controls/avatar';
 import { selectOverflow, matchActive } from './more-nav';
 import type { NavItem, NavSection, ShellLinkComponent, ShellUser } from './types';
+import { fwPress } from '@/components/fairway/controls';
 
 const DefaultLink: ShellLinkComponent = ({ href, children, prefetch: _prefetch, ...rest }) => (
   <a href={href} {...rest}>
@@ -97,7 +98,8 @@ function OverflowRow({ item, active, Link, prefetch }: OverflowRowProps) {
         // than expected before `truncate` can clip it). `min-w-0` lets the
         // flex child below actually shrink instead of pushing the row wide.
         'flex w-full min-h-[56px] min-w-0 items-center gap-3 overflow-hidden rounded-fw-md px-4 py-2',
-        'transition-[background-color,transform] [transition-duration:var(--fw-dur-fast)] motion-safe:active:scale-[0.98] motion-reduce:transition-none',
+        'transition-[background-color,transform] [transition-duration:var(--fw-dur-fast)] motion-reduce:transition-none',
+        fwPress,
         active ? 'bg-accent-100 text-accent-700' : 'text-text-secondary hover:bg-surface-sunken/60',
       )}
     >
@@ -126,7 +128,7 @@ function OverflowRow({ item, active, Link, prefetch }: OverflowRowProps) {
         <span
           className={cn(
             'flex-shrink-0 min-w-[20px] max-w-[48px] truncate rounded-full px-1.5 py-0.5 text-center',
-            'bg-accent-600 font-fw-mono text-eyebrow font-semibold leading-4 tabular-nums text-text-on-accent',
+            'bg-accent-fill font-fw-mono text-eyebrow font-semibold leading-4 tabular-nums text-text-on-accent-fill',
           )}
         >
           {item.badge > 99 ? '99+' : item.badge}

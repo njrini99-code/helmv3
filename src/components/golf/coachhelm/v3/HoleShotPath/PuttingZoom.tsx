@@ -23,8 +23,10 @@
  * radius + miss-direction angle puts it — a made putt is always
  * bit-for-bit co-located with the pin.
  *
- * Small local duplicates (LIE_LINE_COLOR/label maps, the SG formatter)
- * mirror `index.tsx`'s versions rather than importing them —
+ * Colours come from `@/lib/golf/course-illustration-palette` (DS-HEX), a
+ * leaf module both files import, so there is no cycle. Small local
+ * duplicates (label maps, the SG formatter) still mirror `index.tsx`'s
+ * versions rather than importing them —
  * same rationale `turf.tsx`/`hazards.tsx` already state: this file and
  * `index.tsx` stay independently editable without a shared-module
  * coordination point, and importing FROM `index.tsx` here would create a
@@ -100,26 +102,14 @@ import {
 } from './geometry';
 import type { Lie } from './types';
 import { EASE_CINEMATIC, useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
+import { COURSE_LIE_RING, COURSE_SCENE } from '@/lib/golf/course-illustration-palette';
 import {
   bandForPuttFeet,
   puttMakePctBandLabel,
   type PuttMakePctByBand,
 } from '@/components/golf/coachhelm/round-review/round-review-shots';
 
-const LIE_LINE_COLOR: Record<Lie | 'other', string> = {
-  tee: '#f8f2dd',
-  fairway: '#8fe3ae',
-  rough: '#9bc47f',
-  heavy_rough: '#84b06a',
-  light_rough: '#a8d190',
-  sand: '#eecf8f',
-  bunker: '#eecf8f',
-  green: '#9fe0b6',
-  fringe: '#bcdcae',
-  water: '#6cc3e2',
-  penalty: '#f0715c',
-  other: '#f8f2dd',
-};
+const LIE_LINE_COLOR: Record<Lie | 'other', string> = COURSE_LIE_RING;
 
 const PUTT_BREAK_SHORT: Record<string, string> = {
   right_to_left: 'R-to-L',
@@ -144,7 +134,7 @@ const PUTT_SLOPE_LABEL: Record<string, string> = {
 // in this file) rather than `var()`; the HTML tooltip below uses the real
 // token via `var()` since it's a normal DOM element.
 // -----------------------------------------------------------------------------
-const MADE_COLOR = '#16A34A';
+const MADE_COLOR = COURSE_SCENE.helmGreen;
 
 // -----------------------------------------------------------------------------
 // Strokes Gained — same signed-badge convention as `index.tsx`'s corridor
@@ -174,7 +164,7 @@ const SG_TOOLTIP_GAINED_COLOR = 'var(--fw-color-accent-500)'; // helm green — 
 // SVG badge/segment red (`LIE_LINE_COLOR.penalty`, dashed lines, the
 // hexagon "+1" marker) is UNCHANGED — this constant only feeds
 // `sgTooltipColor`, never SVG presentation attributes.
-const SG_TOOLTIP_LOST_COLOR = '#9B2226';
+const SG_TOOLTIP_LOST_COLOR = COURSE_SCENE.sgTooltipLost;
 
 function formatSG(sg: number): string {
   if (Math.abs(sg) < SG_NEAR_ZERO_THRESHOLD) return 'E';
@@ -483,7 +473,7 @@ export function PuttingZoom({ plot, className, puttMakePct }: PuttingZoomProps) 
           className={[
             'absolute inset-0 rounded-2xl overflow-hidden',
             'shadow-[0_18px_40px_-22px_rgba(15,42,30,0.55)] ring-1 ring-white/10',
-            'bg-[#132a20]',
+            'bg-[#132a20]', // literal for Tailwind's JIT; value is COURSE_SCENE.puttingCanvas
           ].join(' ')}
         >
           <svg
@@ -494,16 +484,16 @@ export function PuttingZoom({ plot, className, puttMakePct }: PuttingZoomProps) 
           >
             <defs>
               <radialGradient id="puttingZoomGreen" cx="45%" cy="40%" r="72%">
-                <stop offset="0%" stopColor="#8fcda3" />
-                <stop offset="60%" stopColor="#5fa87e" />
-                <stop offset="100%" stopColor="#3d7d5c" />
+                <stop offset="0%" stopColor={COURSE_SCENE.insetGreenLight} />
+                <stop offset="60%" stopColor={COURSE_SCENE.insetGreenMid} />
+                <stop offset="100%" stopColor={COURSE_SCENE.insetGreenShade} />
               </radialGradient>
             </defs>
 
             {/* Top-down green — fills the whole panel (no lens chrome; this
                 IS the panel, not a floating overlay). */}
             <circle cx="50" cy="50" r="49" fill="url(#puttingZoomGreen)" />
-            <ellipse cx="38" cy="32" rx="20" ry="12" fill="#ffffff" opacity="0.08" />
+            <ellipse cx="38" cy="32" rx="20" ry="12" fill={COURSE_SCENE.white} opacity="0.08" />
 
             {/* Distance rings — the same honest feet-scale ticks the old
                 crammed inset drew, now with room to carry real labels. */}
@@ -516,7 +506,7 @@ export function PuttingZoom({ plot, className, puttMakePct }: PuttingZoomProps) 
                     cy={greenInset.pin.y}
                     r={r}
                     fill="none"
-                    stroke="#0d1f17"
+                    stroke={COURSE_SCENE.pinShadow}
                     strokeOpacity="0.25"
                     strokeWidth="0.5"
                     strokeDasharray="1.6 1.4"
@@ -526,7 +516,7 @@ export function PuttingZoom({ plot, className, puttMakePct }: PuttingZoomProps) 
                     y={greenInset.pin.y - r + 3.4}
                     fontSize="3.4"
                     fontWeight={500}
-                    fill="#f4ecd8"
+                    fill={COURSE_SCENE.cream}
                     fillOpacity="0.4"
                     fontFamily="ui-monospace, 'SF Mono', Menlo, Consolas, monospace"
                     style={{ pointerEvents: 'none', userSelect: 'none' }}
@@ -539,19 +529,19 @@ export function PuttingZoom({ plot, className, puttMakePct }: PuttingZoomProps) 
 
             {/* Pin + flag, centered — matches the main track's pin exactly
                 in concept (cup at the plot's honest zero point). */}
-            <circle cx={greenInset.pin.x} cy={greenInset.pin.y} r="2.3" fill="#0a1a13" />
+            <circle cx={greenInset.pin.x} cy={greenInset.pin.y} r="2.3" fill={COURSE_SCENE.cup} />
             <line
               x1={greenInset.pin.x}
               y1={greenInset.pin.y}
               x2={greenInset.pin.x}
               y2={greenInset.pin.y - 10}
-              stroke="#f4ecd8"
+              stroke={COURSE_SCENE.cream}
               strokeWidth="0.6"
               strokeLinecap="round"
             />
             <m.path
               d={`M ${greenInset.pin.x} ${greenInset.pin.y - 10} L ${greenInset.pin.x + 7} ${greenInset.pin.y - 8.4} L ${greenInset.pin.x} ${greenInset.pin.y - 6.8} Z`}
-              fill="#e3543b"
+              fill={COURSE_SCENE.flag}
               animate={prefersReducedMotion ? undefined : { skewX: [0, -3, 0, 3, 0] }}
               transition={prefersReducedMotion ? { duration: 0 } : { duration: 4, repeat: Infinity, ease: 'easeInOut' }}
               style={{ transformOrigin: `${greenInset.pin.x}px ${greenInset.pin.y - 9}px` }}
@@ -621,7 +611,7 @@ export function PuttingZoom({ plot, className, puttMakePct }: PuttingZoomProps) 
                       y1={s.y}
                       x2={end.x}
                       y2={end.y}
-                      stroke="#f4ecd8"
+                      stroke={COURSE_SCENE.cream}
                       strokeOpacity={0.5}
                       strokeWidth={0.5}
                       strokeDasharray="0.8 0.8"
@@ -655,10 +645,10 @@ export function PuttingZoom({ plot, className, puttMakePct }: PuttingZoomProps) 
                 // distinct from an ordinary intermediate miss.
                 const lieHalo = LIE_LINE_COLOR[s.lie] ?? LIE_LINE_COLOR.other;
                 const ringColor = isMade ? MADE_COLOR : lieHalo;
-                const ballFill = isUnresolved ? 'none' : '#fbf3e0';
-                const dotStroke = isUnresolved ? '#f8f2dd' : '#132a20';
+                const ballFill = isUnresolved ? 'none' : COURSE_SCENE.ballCream;
+                const dotStroke = isUnresolved ? COURSE_SCENE.creamBright : COURSE_SCENE.puttingCanvas;
                 const dotStrokeWidth = isUnresolved ? 0.55 : 0.35;
-                const numberFill = isUnresolved ? '#f8f2dd' : '#132a20';
+                const numberFill = isUnresolved ? COURSE_SCENE.creamBright : COURSE_SCENE.puttingCanvas;
                 const r = isMade ? 3.1 : isUnresolved ? 3 : 2.5;
                 const pulseColor = isMade ? MADE_COLOR : ringColor;
                 const pulseScale = isMade ? 2.8 : 2.4;
@@ -731,7 +721,7 @@ export function PuttingZoom({ plot, className, puttMakePct }: PuttingZoomProps) 
                       {s.display_index}
                     </text>
                     {rich?.is_penalty && (
-                      <circle cx={s.x + r + 1.6} cy={s.y - r - 1.6} r="1.1" fill="#e3543b" stroke="#132a20" strokeWidth="0.3" />
+                      <circle cx={s.x + r + 1.6} cy={s.y - r - 1.6} r="1.1" fill={COURSE_SCENE.flag} stroke={COURSE_SCENE.puttingCanvas} strokeWidth="0.3" />
                     )}
                   </m.g>
                 );
@@ -753,7 +743,7 @@ export function PuttingZoom({ plot, className, puttMakePct }: PuttingZoomProps) 
               {isEntryHovered ? `Shot ${hovered.display_index} · reached green` : `Putt ${hovered.display_index}`}
             </div>
             <div
-              className="text-warm-500 tabular-nums"
+              className="text-text-tertiary tabular-nums"
               style={hoveredMeta.isMade ? { color: 'var(--fw-color-accent-500)' } : undefined}
             >
               {isEntryHovered
@@ -762,21 +752,21 @@ export function PuttingZoom({ plot, className, puttMakePct }: PuttingZoomProps) 
                   ? 'holed'
                   : `${formatFeet(hovered.shot_feet)} putt`}
             </div>
-            {hoveredMeta.isUnresolved && <div className="text-warm-500">Not holed out</div>}
+            {hoveredMeta.isUnresolved && <div className="text-text-tertiary">Not holed out</div>}
             {hoveredRich?.putt_break || hoveredRich?.putt_slope ? (
-              <div className="text-warm-500">
+              <div className="text-text-tertiary">
                 {hoveredRich.putt_break ? PUTT_BREAK_SHORT[hoveredRich.putt_break] ?? hoveredRich.putt_break : ''}
                 {hoveredRich.putt_break && hoveredRich.putt_slope ? ', ' : ''}
                 {hoveredRich.putt_slope ? PUTT_SLOPE_LABEL[hoveredRich.putt_slope] ?? hoveredRich.putt_slope : ''}
               </div>
             ) : null}
             {!isEntryHovered && formatPuttMakePctContext(puttMakePct, hovered.shot_feet) && (
-              <div className="text-warm-500">
+              <div className="text-text-tertiary">
                 {formatPuttMakePctContext(puttMakePct, hovered.shot_feet)}
               </div>
             )}
             {!isEntryHovered && formatMissTags(hoveredRich?.miss_tags) && (
-              <div className="text-warm-500">{formatMissTags(hoveredRich?.miss_tags)}</div>
+              <div className="text-text-tertiary">{formatMissTags(hoveredRich?.miss_tags)}</div>
             )}
             {typeof hoveredRich?.sg === 'number' && Number.isFinite(hoveredRich.sg) && (
               <div className="tabular-nums" style={{ color: sgTooltipColor(hoveredRich.sg) }}>

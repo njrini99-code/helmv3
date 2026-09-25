@@ -47,7 +47,7 @@
 
 import * as React from 'react';
 import { useRouter } from 'next/navigation';
-import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import {
   acceptJoinRequest,
@@ -70,6 +70,7 @@ import {
   IconChevronDown,
   IconChevronUp,
 } from '@/components/icons';
+import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
 
 /* ---------------------------------------------------------------------------
  * Props
@@ -267,7 +268,7 @@ function RequestRow({
   onReject: (id: string) => void;
   layout: 'inline' | 'modal';
 }) {
-  const reduced = useReducedMotion() ?? false;
+  const reduced = useReducedMotionGuard() ?? false;
   const name = playerName(request.player);
   const busy = processingId === request.id;
   const handicap = request.player?.handicap;
@@ -454,7 +455,7 @@ function InlineAccordion({
   defaultExpanded: boolean;
   className?: string;
 }) {
-  const reduced = useReducedMotion() ?? false;
+  const reduced = useReducedMotionGuard() ?? false;
   const [expanded, setExpanded] = React.useState(defaultExpanded);
   const count = requests.length;
   const listId = React.useId();

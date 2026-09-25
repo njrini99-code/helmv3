@@ -118,13 +118,39 @@ export { areHapticsEnabled, setHapticsEnabled } from '@/lib/utils/haptics-pref';
  */
 const MIN_INTERVAL_MS = 32;
 let lastFiredAt = 0;
+let lastFiredPriority = 0;
+
+/**
+ * Weight order inside the throttle window. A later, MORE semantic event in the
+ * same gesture must beat an earlier generic one (audit MOT-02 / RE-F14: a
+ * generic button tick used to swallow the hole-out `medium` that followed it
+ * 1ms later). So a heavier kind always passes the window; an equal or lighter
+ * one inside it is dropped.
+ */
+const PRIORITY: Record<FwHapticKind, number> = {
+  selection: 1,
+  light: 2,
+  medium: 3,
+  heavy: 4,
+  success: 5,
+  warning: 5,
+  error: 5,
+};
 
 function shouldThrottle(kind: FwHapticKind): boolean {
   if (kind === 'success' || kind === 'warning' || kind === 'error') return false;
   const now = Date.now();
-  if (now - lastFiredAt < MIN_INTERVAL_MS) return true;
+  const priority = PRIORITY[kind];
+  if (now - lastFiredAt < MIN_INTERVAL_MS && priority <= lastFiredPriority) return true;
   lastFiredAt = now;
+  lastFiredPriority = priority;
   return false;
+}
+
+/** Test seam: reset the throttle window between cases. */
+export function __resetHapticThrottleForTests(): void {
+  lastFiredAt = 0;
+  lastFiredPriority = 0;
 }
 
 /** Fire a semantic haptic. Safe no-op off native; never throws. */

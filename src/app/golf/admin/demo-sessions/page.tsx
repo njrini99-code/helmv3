@@ -47,9 +47,9 @@ export default async function DemoSessionsPage() {
   const total = result?.total ?? 0;
 
   return (
-    <div className="min-h-screen bg-[#FFFEFA] p-6 md:p-10">
+    <div className="min-h-screen bg-cream-100 p-6 md:p-10">
       {/* ── Breadcrumb ─────────────────────────────────────────────────── */}
-      <nav aria-label="Breadcrumb" className="flex items-center gap-1.5 text-sm text-warm-400 mb-8">
+      <nav aria-label="Breadcrumb" className="flex items-center gap-1.5 text-sm text-text-tertiary mb-8">
         <Link href="/admin" className="hover:text-warm-700 transition-colors">
           Helm Bridge
         </Link>
@@ -61,23 +61,23 @@ export default async function DemoSessionsPage() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-primary-50 flex items-center justify-center shadow-[inset_0_1px_0_rgba(255,255,255,0.6)]">
-            <IconActivity className="w-5 h-5 text-primary-600" />
+            <IconActivity className="w-5 h-5 text-accent-ink" />
           </div>
           <div>
             <h1 className="text-2xl font-bold text-warm-900 tracking-tight">Demo Sessions</h1>
-            <p className="text-sm text-warm-500 mt-0.5">Coaches who explored the shared live demo</p>
+            <p className="text-sm text-text-tertiary mt-0.5">Coaches who explored the shared live demo</p>
           </div>
         </div>
 
         {/* Summary badge */}
         {result && (
           <div className="flex items-center gap-2 glass-standard rounded-2xl px-4 py-2.5 self-start sm:self-auto">
-            <IconUsers className="w-4 h-4 text-primary-600" />
+            <IconUsers className="w-4 h-4 text-accent-ink" />
             <span className="text-sm font-semibold text-warm-900">
               {total.toLocaleString()} {total === 1 ? 'entry' : 'entries'}
             </span>
             {total > 200 && (
-              <span className="text-xs text-warm-400">(showing most recent 200)</span>
+              <span className="text-xs text-text-tertiary">(showing most recent 200)</span>
             )}
           </div>
         )}
@@ -98,7 +98,7 @@ export default async function DemoSessionsPage() {
             <IconUsers className="w-7 h-7 text-warm-300" />
           </div>
           <p className="text-warm-700 font-medium text-lg">No demo sessions yet</p>
-          <p className="text-warm-400 text-sm mt-2 max-w-xs">
+          <p className="text-text-tertiary text-sm mt-2 max-w-xs">
             Sessions appear here once a coach completes the demo gate form and enters the live demo.
           </p>
         </div>
@@ -112,22 +112,22 @@ export default async function DemoSessionsPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-white/30 bg-cream-100">
-                  <th scope="col" className="px-5 py-3.5 text-left text-xs font-semibold text-warm-500 uppercase tracking-wider whitespace-nowrap">
+                  <th scope="col" className="px-5 py-3.5 text-left text-xs font-semibold text-text-tertiary uppercase tracking-wider whitespace-nowrap">
                     Name
                   </th>
-                  <th scope="col" className="px-5 py-3.5 text-left text-xs font-semibold text-warm-500 uppercase tracking-wider whitespace-nowrap">
+                  <th scope="col" className="px-5 py-3.5 text-left text-xs font-semibold text-text-tertiary uppercase tracking-wider whitespace-nowrap">
                     Email
                   </th>
-                  <th scope="col" className="px-5 py-3.5 text-left text-xs font-semibold text-warm-500 uppercase tracking-wider whitespace-nowrap">
+                  <th scope="col" className="px-5 py-3.5 text-left text-xs font-semibold text-text-tertiary uppercase tracking-wider whitespace-nowrap">
                     School / Org
                   </th>
-                  <th scope="col" className="px-5 py-3.5 text-left text-xs font-semibold text-warm-500 uppercase tracking-wider whitespace-nowrap">
+                  <th scope="col" className="px-5 py-3.5 text-left text-xs font-semibold text-text-tertiary uppercase tracking-wider whitespace-nowrap">
                     Entered
                   </th>
-                  <th scope="col" className="px-5 py-3.5 text-left text-xs font-semibold text-warm-500 uppercase tracking-wider whitespace-nowrap">
+                  <th scope="col" className="px-5 py-3.5 text-left text-xs font-semibold text-text-tertiary uppercase tracking-wider whitespace-nowrap">
                     IP
                   </th>
-                  <th scope="col" className="px-5 py-3.5 text-left text-xs font-semibold text-warm-500 uppercase tracking-wider whitespace-nowrap">
+                  <th scope="col" className="px-5 py-3.5 text-left text-xs font-semibold text-text-tertiary uppercase tracking-wider whitespace-nowrap">
                     Browser
                   </th>
                 </tr>
@@ -144,7 +144,7 @@ export default async function DemoSessionsPage() {
                     <td className="px-5 py-3.5 text-warm-700 whitespace-nowrap">
                       <a
                         href={`mailto:${s.email}`}
-                        className="hover:text-primary-600 transition-colors underline underline-offset-2 decoration-warm-300 group-hover:decoration-primary-400"
+                        className="hover:text-accent-ink transition-colors underline underline-offset-2 decoration-warm-300 group-hover:decoration-primary-400"
                       >
                         {s.email}
                       </a>
@@ -155,10 +155,10 @@ export default async function DemoSessionsPage() {
                     <td className="px-5 py-3.5 text-warm-600 whitespace-nowrap tabular-nums">
                       {formatDate(s.entered_at)}
                     </td>
-                    <td className="px-5 py-3.5 text-warm-500 font-mono text-xs whitespace-nowrap">
+                    <td className="px-5 py-3.5 text-text-tertiary font-mono text-xs whitespace-nowrap">
                       {s.ip ?? <span className="text-warm-300">—</span>}
                     </td>
-                    <td className="px-5 py-3.5 text-warm-500 text-xs max-w-[220px] truncate" title={s.user_agent ?? undefined}>
+                    <td className="px-5 py-3.5 text-text-tertiary text-xs max-w-[220px] truncate" title={s.user_agent ?? undefined}>
                       {shortUA(s.user_agent)}
                     </td>
                   </tr>
@@ -169,7 +169,7 @@ export default async function DemoSessionsPage() {
 
           {/* Footer note */}
           {total > 200 && (
-            <div className="border-t border-white/20 px-5 py-3 text-xs text-warm-400 text-center">
+            <div className="border-t border-white/20 px-5 py-3 text-xs text-text-tertiary text-center">
               Showing the 200 most recent entries of {total.toLocaleString()} total.
             </div>
           )}

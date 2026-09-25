@@ -102,7 +102,7 @@ export interface GenomeCompareViewProps {
 }
 
 const PLAYER_A_DOT = 'var(--fw-color-accent-500, #16A34A)'; // helm green
-const PLAYER_B_DOT = '#F59E0B'; // amber 500
+const PLAYER_B_DOT = 'var(--fw-color-warning, #F59E0B)'; // amber (theme-aware token)
 
 /* ---------------------------------------------------------------------------
  * Vector → fingerprint dimensions (shared label set; null when not computed)
@@ -166,8 +166,7 @@ export function GenomeCompareView({
   return (
     <CoachHelmShell
       active="players"
-      // eslint-disable-next-line jsx-a11y/aria-role
-      role="coach"
+      viewerRole="coach"
       signalCount={signalCount}
       title={title}
       description={anySelected ? maturityCaption : 'Overlay two players to see who is stronger where.'}
@@ -490,7 +489,7 @@ function ComparePicker({
                       {p.name}
                     </span>
                     {selected ? (
-                      <IconCheck size={15} className="flex-shrink-0 text-accent-600" />
+                      <IconCheck size={15} className="flex-shrink-0 text-accent-ink" />
                     ) : null}
                   </Link>
                 )}

@@ -93,9 +93,15 @@ interface FocusAreaCardProps {
   onClick?: () => void;
   /** Stagger index for the entrance reveal (list position). */
   index?: number;
+  /**
+   * 1-based position in the list. Shown in the badge instead of the raw
+   * `priority` column, which is not unique (DASH-02: "1, 1, 2").
+   */
+  rank?: number;
 }
 
-export function FocusAreaCard({ focusArea, onClick, index = 0 }: FocusAreaCardProps) {
+export function FocusAreaCard({ focusArea, onClick, index = 0, rank }: FocusAreaCardProps) {
+  const badgeNumber = rank ?? focusArea.priority;
   const reduced = useReducedMotionGuard();
 
   // DB rows use `area_type`; `category` was the client-side name. Accept both
@@ -145,16 +151,27 @@ export function FocusAreaCard({ focusArea, onClick, index = 0 }: FocusAreaCardPr
         <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:gap-3">
           <div className="flex items-center gap-2 sm:contents">
             <Badge
-              tone={PRIORITY_TONE[focusArea.priority] ?? 'neutral'}
+              tone={PRIORITY_TONE[badgeNumber] ?? 'neutral'}
               numeric
               className="h-8 w-8 shrink-0 justify-center rounded-fw-md p-0 text-body-sm"
             >
-              {focusArea.priority}
+              {badgeNumber}
             </Badge>
 
             <span className="grid h-9 w-9 shrink-0 place-items-center rounded-fw-md bg-accent-50 text-accent-700">
               <AreaIcon size={17} />
             </span>
+
+            {/* DASH-02: below `sm` the trailing chevron wrapped onto its own
+                row under the text (an orphan). On phone it sits at the end of
+                this header row instead. */}
+            {onClick ? (
+              <IconChevronRight
+                size={15}
+                aria-hidden
+                className="ml-auto shrink-0 text-text-tertiary sm:hidden"
+              />
+            ) : null}
           </div>
 
           <div className="min-w-0 flex-1">
@@ -213,7 +230,8 @@ export function FocusAreaCard({ focusArea, onClick, index = 0 }: FocusAreaCardPr
           {onClick && (
             <IconChevronRight
               size={15}
-              className="mt-1 shrink-0 text-text-tertiary transition-colors duration-base group-hover:text-accent-600"
+              aria-hidden
+              className="mt-1 hidden shrink-0 text-text-tertiary transition-colors duration-base group-hover:text-accent-ink sm:block"
             />
           )}
         </div>

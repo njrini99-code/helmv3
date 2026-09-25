@@ -10,6 +10,7 @@
  */
 
 import type { EvidenceInsight } from '@/app/golf/actions/insight-delivery';
+import type { FormScore } from '@/lib/golf/form-score';
 
 export type FingerprintSectionKey =
   | 'tee'
@@ -33,18 +34,42 @@ export interface FingerprintMetric {
   label: string;
   value: string;
   comparison?: string;
+  /** `good` = strength; `bad` = weakness; `neutral` = neither. Drives the
+   *  small coloured dot + copy tone per metric pill. */
   tone: 'good' | 'neutral' | 'bad';
 }
 
 /** Shape passed to the per-section chart primitive. Unknown on purpose — each
  *  section knows its own chart and reads the fields it needs. */
 export type FingerprintChartData =
-  | { kind: 'bars'; bars: Array<{ label: string; value: number; max?: number }> }
+  /** `value` null = no data for that bar (drawn as a gap, never as 0). */
+  | { kind: 'bars'; bars: Array<{ label: string; value: number | null; max?: number }> }
   | {
       kind: 'pills';
       pills: Array<{ label: string; value: string; tone: 'good' | 'neutral' | 'bad' }>;
     }
   | null;
+
+/**
+ * Strokes gained per round over one window of COUNTABLE rounds (FP-09): the
+ * last 5, the last 10, or all of them. Same aggregator as the sections' SG
+ * (aggregateCountableRounds over golf_round_stats_cache), so the "all" scope
+ * equals the ledger's SG.
+ */
+export type FingerprintSgScopeKey = 'last5' | 'last10' | 'all';
+
+export interface FingerprintSgScope {
+  key: FingerprintSgScopeKey;
+  /** Countable rounds in the window. */
+  rounds: number;
+  /** Of those, rounds that carried strokes gained. */
+  sgRounds: number;
+  total: number | null;
+  tee: number | null;
+  approach: number | null;
+  short_game: number | null;
+  putting: number | null;
+}
 
 export interface SectionData {
   key: FingerprintSectionKey;
@@ -79,10 +104,35 @@ export interface PlayerFingerprint {
     avatar_url: string | null;
   };
   composite: {
+    /** The Form score (OD-02), 0–99; null with no countable rounds. */
     rating: number | null;
     trend: 'up' | 'flat' | 'down';
     rounds_in_calculation: number;
+    /** Form's quality ("Early read") and formula inputs (src/lib/golf/form-score.ts). */
+    form: FormScore;
   };
+  /**
+   * How many rounds the SECTION METRICS rest on — a different, usually larger
+   * number than `composite.rounds_in_calculation`.
+   *
+   * The composite is derived from the fetched rounds (`.limit(10)`) and never
+   * from the stats cache; that is deliberate and is pinned by its own test. The
+   * section metrics come from `golf_player_stats_cache`, whose window is
+   * whatever the last recompute covered. So one screen carries numbers from two
+   * samples, and until this field existed the UI could only label one of them.
+   *
+   * Measured for Cole Bennett on 2026-08-17: the card read "OVERALL GAME 67 ·
+   * Based on 10 rounds" directly above "71% · GIR", where 71% is the 18-round
+   * figure — his actual last-10 GIR is 76.1%. The sample line was true of the
+   * rating and false of everything beside it.
+   *
+   * Mirrors `buildSections`' own resolution (`rounds_in_calculation ??
+   * rounds.length`) so the printed sample is the one the metrics were built on.
+   */
+  metrics_rounds: number;
+  /** Strokes gained per round by window (FP-09). Absent when the per-round
+   *  read failed; the screen then shows the all-rounds waterfall only. */
+  sg_scopes?: FingerprintSgScope[];
   sections: Record<FingerprintSectionKey, SectionData>;
   trend: {
     rolling: FingerprintTrendPoint[];

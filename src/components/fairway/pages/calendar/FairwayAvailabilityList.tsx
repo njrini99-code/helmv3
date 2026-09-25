@@ -136,7 +136,7 @@ export function FairwayAvailabilityList({
           variant="subtle"
           icon={CalendarCheck}
           title="No scheduled time"
-          description="The selected players have nothing on the books in this window — likely all free."
+          description="The selected players have nothing on the books in this window, likely all free."
         />
       </div>
     );

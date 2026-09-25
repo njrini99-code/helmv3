@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useTransition, useCallback } from 'react';
-import { motion, useReducedMotion } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import {
   IconSearch,
@@ -25,6 +25,7 @@ import {
   formatFullTimestamp,
 } from './shared';
 import { EmptyState as FairwayEmptyState } from '@/components/fairway';
+import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
 
 type StatusFilter = NonNullable<EmailsListFilters['status']>;
 type SourceFilter = NonNullable<EmailsListFilters['source']>;
@@ -56,7 +57,7 @@ export function EmailsTable({
   selectedMessageId,
   since,
 }: EmailsTableProps) {
-  const prefersReducedMotion = useReducedMotion();
+  const prefersReducedMotion = useReducedMotionGuard();
   const [rows, setRows] = useState<EmailRow[]>([]);
   const [count, setCount] = useState(0);
   const [search, setSearch] = useState('');

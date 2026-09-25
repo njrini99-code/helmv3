@@ -57,6 +57,7 @@
  *   this file are in scope here); needs its own PR touching those two files.
  * ========================================================================== */
 
+import { haptic } from '@/lib/haptics';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Folder } from 'lucide-react';
@@ -91,7 +92,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 
 import { cn } from '@/lib/utils';
-import { triggerHaptic } from '@/lib/utils/capacitor';
+
 import {
   uploadGolfDocument,
   createGolfDocument,
@@ -124,6 +125,7 @@ import {
   Skeleton,
   ModalShell,
   fairwayToast,
+  PressTarget,
 } from '@/components/fairway';
 
 /* ───────────────────────────────────────────────────────────────────────────
@@ -228,11 +230,16 @@ function formatFileSize(bytes: number | null): string {
   return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + ' ' + sizes[i];
 }
 
-function timeAgo(dateStr: string | null): string {
+/**
+ * Relative age against `nowTs`, a post-mount clock (0 before mount). Calling
+ * `new Date()` here during render made the server and the hydrating client
+ * print different ages (audit HYD-04), so before mount this returns ''.
+ */
+function timeAgo(dateStr: string | null | undefined, nowTs: number): string {
   if (!dateStr) return '—';
+  if (nowTs <= 0) return '';
   const date = new Date(dateStr);
-  const now = new Date();
-  const diffMins = Math.floor((now.getTime() - date.getTime()) / 60000);
+  const diffMins = Math.floor((nowTs - date.getTime()) / 60000);
   if (diffMins < 1) return 'Just now';
   if (diffMins < 60) return `${diffMins}m ago`;
   const diffHours = Math.floor(diffMins / 60);
@@ -268,6 +275,13 @@ export function FairwayDocuments({
   const newFolderInputRef = useRef<HTMLInputElement>(null);
 
   const [documents, setDocuments] = useState(initialDocuments);
+  // Relative dates render after mount only (HYD-04); refreshed each minute.
+  const [nowTs, setNowTs] = useState(0);
+  useEffect(() => {
+    setNowTs(Date.now());
+    const id = window.setInterval(() => setNowTs(Date.now()), 60_000);
+    return () => window.clearInterval(id);
+  }, []);
   // Keep local state in sync after router.refresh() re-runs the server fetch.
   useEffect(() => {
     setDocuments(initialDocuments);
@@ -770,9 +784,10 @@ export function FairwayDocuments({
 
   // ── ONE coach-only primary action (upload) ───────────────────────────────--
   const uploadCta = isCoach ? (
-    <Button variant="primary" onClick={() => fileInputRef.current?.click()}>
-      <IconUpload size={16} />
-      <span>Upload</span>
+    // leftIcon, not icon + <span> children: the children stacked the icon
+    // above the label in a tall pill on phones.
+    <Button variant="primary" leftIcon={<IconUpload size={16} />} onClick={() => fileInputRef.current?.click()}>
+      Upload
     </Button>
   ) : undefined;
 
@@ -807,7 +822,7 @@ export function FairwayDocuments({
       {isDragOver && isCoach && (
         <div className="pointer-events-none fixed inset-0 z-40 flex items-center justify-center bg-canvas/70">
           <div className="rounded-card border-2 border-dashed border-accent-400 bg-surface px-12 py-10 text-center shadow-soft">
-            <IconUpload size={40} className="mx-auto mb-3 text-accent-600" />
+            <IconUpload size={40} className="mx-auto mb-3 text-accent-ink" />
             <p className="font-fw-display text-h3 font-medium text-text-primary">Drop files to upload</p>
             <p className="mt-1 font-fw-sans text-body-sm text-text-tertiary">Release to add files</p>
           </div>
@@ -820,8 +835,8 @@ export function FairwayDocuments({
         title={inFolder ? (currentFolder as string) : 'Team documents.'}
         description={
           isCoach
-            ? 'Plans, releases, and forms — all in one place. Upload files and organize them into folders for your team.'
-            : 'Plans, releases, and forms your coach shares with the team show up here.'
+            ? 'Plans, releases, and forms for your team.'
+            : 'Plans, releases, and forms from your coach.'
         }
         meta={meta}
         primaryAction={uploadCta}
@@ -982,7 +997,7 @@ export function FairwayDocuments({
               size="sm"
               value={sortBy}
               onValueChange={(v: string | null) => {
-                void triggerHaptic('light');
+                void haptic('commit');
                 if (v) setSortBy(v as SortKey);
               }}
               options={SORT_OPTIONS.map((o) => ({ value: o.value, label: o.label }))}
@@ -1035,11 +1050,11 @@ export function FairwayDocuments({
               <EmptyState
                 variant="subtle"
                 icon={Folder}
-                title={currentFolderIsUnsaved && isCoach ? 'Draft folder — add a file to keep it' : 'This folder is empty'}
+                title={currentFolderIsUnsaved && isCoach ? 'Draft folder. Add a file to keep it.' : 'This folder is empty'}
                 description={
                   isCoach
                     ? currentFolderIsUnsaved
-                      ? `“${currentFolder}” won't be saved until you add a file to it. Upload one now, or drag & drop here — leaving it empty discards the folder.`
+                      ? `“${currentFolder}” won't be saved until you add a file to it. Upload one now, or drag & drop here. Leaving it empty discards the folder.`
                       : 'Upload files to get started, or drag & drop them here.'
                     : 'No files have been added to this folder yet.'
                 }
@@ -1076,6 +1091,7 @@ export function FairwayDocuments({
         <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
           {filteredDocuments.map((doc) => (
             <DocumentCard
+              nowTs={nowTs}
               key={doc.id}
               doc={doc}
               isCoach={isCoach}
@@ -1575,10 +1591,13 @@ interface DocumentCardProps {
   onEdit: () => void;
   onMove: () => void;
   onDelete: () => void;
+  /** Post-mount clock for the relative date (0 until mounted). */
+  nowTs: number;
 }
 
 function DocumentCard({
   doc,
+  nowTs,
   isCoach,
   currentFolder,
   onPreview,
@@ -1602,27 +1621,20 @@ function DocumentCard({
     !!doc.updated_at &&
     !!doc.created_at &&
     new Date(doc.updated_at).getTime() - new Date(doc.created_at).getTime() > 60_000;
-  const dateLabel = wasUpdated ? `Updated ${timeAgo(doc.updated_at!)}` : timeAgo(doc.created_at);
+  const age = timeAgo(wasUpdated ? doc.updated_at : doc.created_at, nowTs);
+  const dateLabel = wasUpdated && age ? `Updated ${age}` : age;
 
   return (
+    // A11Y-R1: the card is NOT a button. It used to be a div[role=button]
+    // wrapping the actions menu and the preview/download buttons (nested
+    // interactive). The title is now the card's primary control, and its
+    // ::after overlay stretches the tap target over the whole card; the other
+    // controls sit above that overlay (relative z-10) as siblings.
     <Surface
       elevation="border"
       padding="none"
       interactive
-      role="button"
-      tabIndex={0}
-      aria-label={`Preview ${doc.title}`}
-      onClick={onPreview}
-      onKeyDown={(e) => {
-        // Card behaves as a button: Enter/Space opens preview. Nested controls
-        // (menu, preview/download IconButtons) stop propagation, so this never
-        // double-fires from those.
-        if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) {
-          e.preventDefault();
-          onPreview();
-        }
-      }}
-      className="group flex flex-col"
+      className="group relative flex flex-col"
     >
       <div className="flex flex-1 flex-col gap-4 p-5">
         {/* Top row: icon + version badge + actions */}
@@ -1631,7 +1643,7 @@ function DocumentCard({
             {fileIcon(doc.file_type, 20)}
           </span>
 
-          <div className="flex items-center gap-1.5">
+          <div className="relative z-10 flex items-center gap-1.5">
             {versionCount > 1 && (
               <Chip size="sm" tone="neutral" leadingIcon={<IconLayers size={11} />}>
                 <span className="tabular-nums">v{versionCount}</span>
@@ -1646,7 +1658,7 @@ function DocumentCard({
                     size="sm"
                     onClick={(e) => {
                       e.stopPropagation();
-                      void triggerHaptic('light');
+                      void haptic('commit');
                     }}
                   >
                     <IconMoreVertical size={16} />
@@ -1655,7 +1667,7 @@ function DocumentCard({
                 <DropdownMenuContent align="end" className="w-56" onClick={(e) => e.stopPropagation()}>
                   <DropdownMenuItem
                     onSelect={() => {
-                      void triggerHaptic('light');
+                      void haptic('commit');
                       onPreview();
                     }}
                     className="gap-3"
@@ -1664,7 +1676,7 @@ function DocumentCard({
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     onSelect={() => {
-                      void triggerHaptic('light');
+                      void haptic('commit');
                       onDownload();
                     }}
                     className="gap-3"
@@ -1673,7 +1685,7 @@ function DocumentCard({
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     onSelect={() => {
-                      void triggerHaptic('light');
+                      void haptic('commit');
                       onVersionHistory();
                     }}
                     className="gap-3"
@@ -1682,7 +1694,7 @@ function DocumentCard({
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     onSelect={() => {
-                      void triggerHaptic('light');
+                      void haptic('commit');
                       onUploadVersion();
                     }}
                     className="gap-3"
@@ -1691,7 +1703,7 @@ function DocumentCard({
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     onSelect={() => {
-                      void triggerHaptic('light');
+                      void haptic('commit');
                       onEdit();
                     }}
                     className="gap-3"
@@ -1700,7 +1712,7 @@ function DocumentCard({
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     onSelect={() => {
-                      void triggerHaptic('light');
+                      void haptic('commit');
                       onMove();
                     }}
                     className="gap-3"
@@ -1710,7 +1722,7 @@ function DocumentCard({
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
                     onSelect={() => {
-                      void triggerHaptic('light');
+                      void haptic('commit');
                       onDelete();
                     }}
                     className="gap-3 text-fw-danger-ink data-[highlighted]:bg-fw-danger-bg data-[highlighted]:text-fw-danger-ink"
@@ -1726,7 +1738,13 @@ function DocumentCard({
         {/* Title */}
         <div className="min-w-0">
           <h3 className="line-clamp-2 font-fw-sans text-body-lg font-medium leading-tight text-text-primary transition-colors [transition-duration:180ms] group-hover:text-accent-700 motion-reduce:transition-none">
-            {doc.title}
+            <PressTarget
+              onClick={onPreview}
+              aria-label={`Preview ${doc.title}`}
+              className="rounded-fw-sm text-left after:absolute after:inset-0 after:rounded-[inherit] after:content-['']"
+            >
+              {doc.title}
+            </PressTarget>
           </h3>
           {doc.description && (
             <p className="mt-1 line-clamp-2 font-fw-sans text-body-sm leading-relaxed text-text-tertiary">
@@ -1762,8 +1780,12 @@ function DocumentCard({
       <div className="flex items-center justify-between border-t border-border-subtle px-5 py-3">
         <div className="flex items-center gap-3 font-fw-sans text-caption text-text-tertiary">
           <span className="tabular-nums">{formatFileSize(doc.file_size)}</span>
-          <span aria-hidden="true">·</span>
-          <span className="tabular-nums">{dateLabel}</span>
+          {dateLabel ? (
+            <>
+              <span aria-hidden="true">·</span>
+              <span className="tabular-nums">{dateLabel}</span>
+            </>
+          ) : null}
         </div>
         {/* Preview/Download affordances. Always visible on touch / coarse
             pointers and small screens (no hover to reveal them); at desktop they
@@ -1771,7 +1793,7 @@ function DocumentCard({
             keyboard- and touch-operable path (WCAG 2.1.1 / 2.4.11). */}
         <div
           className={cn(
-            'flex items-center gap-1 opacity-100',
+            'relative z-10 flex items-center gap-1 opacity-100',
             'sm:opacity-0 sm:transition-opacity sm:group-hover:opacity-100 sm:group-focus-within:opacity-100',
             '[@media(hover:none)]:opacity-100 motion-reduce:opacity-100',
           )}

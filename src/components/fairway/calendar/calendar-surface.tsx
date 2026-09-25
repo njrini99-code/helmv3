@@ -338,7 +338,7 @@ export const CalendarSurface = React.forwardRef<
             today: cn(
               defaults.today,
               // ringed, not filled, so it never competes with selection
-              '[&>button]:font-semibold [&>button]:text-accent-600 [&>button]:ring-1 [&>button]:ring-inset [&>button]:ring-accent-300',
+              '[&>button]:font-semibold [&>button]:text-accent-ink [&>button]:ring-1 [&>button]:ring-inset [&>button]:ring-accent-300',
             ),
             outside: cn(
               defaults.outside,
@@ -353,8 +353,8 @@ export const CalendarSurface = React.forwardRef<
             // ---- selection states ----
             selected: cn(
               defaults.selected,
-              '[&>button]:bg-accent-650 [&>button]:text-text-on-accent [&>button]:shadow-soft',
-              '[&>button]:hover:bg-accent-600 [&>button]:hover:text-text-on-accent',
+              '[&>button]:bg-accent-fill [&>button]:text-text-on-accent-fill [&>button]:shadow-soft',
+              '[&>button]:hover:bg-accent-fill [&>button]:hover:text-text-on-accent-fill',
             ),
             range_start: cn(defaults.range_start, styles.rangeStart),
             range_middle: cn(

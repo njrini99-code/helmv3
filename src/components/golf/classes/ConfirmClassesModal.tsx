@@ -3,14 +3,10 @@
 import { useState, useEffect, useMemo, useId } from 'react';
 import { Button, IconButton } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { IconX, IconCheck, IconPencil, IconTrash, IconClock, IconMapPin, IconCalendar, IconUser, IconSparkles, IconAlertCircle } from '@/components/icons';
+import { IconX, IconCheck, IconPencil, IconTrash, IconClock, IconMapPin, IconCalendar, IconUser, IconScanText, IconAlertCircle } from '@/components/icons';
 import { cn } from '@/lib/utils';
 import { formatTimeDisplay, formatDaysDisplay, generateClassColor, type ParsedClass } from '@/lib/utils/schedule-parser';
-import {
-  Drawer,
-  DrawerContent,
-  DrawerTitle,
-} from '@/components/ui/drawer';
+import { Sheet } from '@/components/fairway/overlays/Sheet';
 
 interface ConfirmClassesModalProps {
   isOpen: boolean;
@@ -49,8 +45,15 @@ export function ConfirmClassesModal({ isOpen, onClose, onConfirm, parsedClasses 
       const today = new Date();
       const nextMonday = new Date(today);
       nextMonday.setDate(today.getDate() + ((1 + 7 - today.getDay()) % 7 || 7));
-      const defaultDate = nextMonday.toISOString().split('T')[0];
-      setSemesterStartDate(defaultDate || '');
+      // The viewer's LOCAL calendar date. `toISOString()` is the UTC date, so
+      // any evening west of UTC defaulted the term start to the day after the
+      // Monday it computed (audit HYD-05).
+      const defaultDate = [
+        nextMonday.getFullYear(),
+        String(nextMonday.getMonth() + 1).padStart(2, '0'),
+        String(nextMonday.getDate()).padStart(2, '0'),
+      ].join('-');
+      setSemesterStartDate(defaultDate);
     }
   }, [parsedClasses]);
 
@@ -111,16 +114,16 @@ export function ConfirmClassesModal({ isOpen, onClose, onConfirm, parsedClasses 
   };
 
   return (
-    <Drawer
+    <Sheet
       open={isOpen}
       onOpenChange={(next) => {
         if (!next) onClose();
       }}
+      title="Review Your Schedule"
+      customTitle
+      hideClose
+      className="overflow-hidden sm:mx-auto sm:max-w-2xl"
     >
-      <DrawerContent
-        className="sm:max-w-2xl sm:mx-auto sm:rounded-3xl p-0 overflow-hidden flex flex-col"
-        aria-labelledby="confirm-classes-title"
-      >
         {/* Top accent bar */}
         <div className="h-1 bg-gradient-to-r from-accent-500 via-accent-400 to-accent-700" />
 
@@ -129,14 +132,14 @@ export function ConfirmClassesModal({ isOpen, onClose, onConfirm, parsedClasses 
           <div className="flex items-start justify-between">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-accent-500/10 flex items-center justify-center">
-                <IconSparkles size={20} className="text-accent-700" />
+                <IconScanText size={20} className="text-accent-700" />
               </div>
               <div>
-                <DrawerTitle id="confirm-classes-title" className="text-body-lg font-medium text-text-primary tracking-[-0.012em]">
+                <Sheet.Title className="font-fw-sans text-body-lg font-medium text-text-primary tracking-[-0.012em]">
                   Review Your Schedule
-                </DrawerTitle>
+                </Sheet.Title>
                 <p className="text-sm text-text-tertiary mt-0.5">
-                  We found {classes.length} class{classes.length !== 1 ? 'es' : ''} — review and confirm
+                  We found {classes.length} class{classes.length !== 1 ? 'es' : ''}, review and confirm
                 </p>
               </div>
             </div>
@@ -167,7 +170,7 @@ export function ConfirmClassesModal({ isOpen, onClose, onConfirm, parsedClasses 
                 <span className="text-text-tertiary">days/week</span>
               </div>
               {stats.withTime < classes.length && (
-                <span className="text-micro font-medium text-fw-warning-ink bg-fw-warning-bg px-1.5 py-0.5 rounded">
+                <span className="text-microlabel font-medium text-fw-warning-ink bg-fw-warning-bg px-1.5 py-0.5 rounded">
                   {classes.length - stats.withTime} missing time
                 </span>
               )}
@@ -179,7 +182,7 @@ export function ConfirmClassesModal({ isOpen, onClose, onConfirm, parsedClasses 
         <div className="h-px bg-border-subtle mx-6" />
 
         {/* Class List */}
-        <div className="flex-1 overflow-y-auto px-6 py-4">
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-6 py-4">
           {classes.length === 0 ? (
             <div className="text-center py-12">
               <div className="w-12 h-12 rounded-2xl bg-surface-sunken flex items-center justify-center mx-auto mb-3">
@@ -194,7 +197,7 @@ export function ConfirmClassesModal({ isOpen, onClose, onConfirm, parsedClasses 
                 <div
                   key={cls.id}
                   className={cn(
-                    'rounded-xl border transition-all duration-200',
+                    'rounded-xl border transition duration-200',
                     editingIndex === index
                       ? 'border-accent-500 ring-2 ring-accent-500/20 bg-surface shadow-md'
                       : 'border-border-subtle bg-surface-sunken hover:bg-surface hover:shadow-sm hover:border-border-strong'
@@ -239,7 +242,7 @@ export function ConfirmClassesModal({ isOpen, onClose, onConfirm, parsedClasses 
                              4 live rows at Guilford, 2026-08-20. */
                           <p className="mb-2 flex items-center gap-1.5 rounded-lg bg-fw-warning-bg px-2.5 py-1.5 text-xs font-medium text-fw-warning-ink">
                             <IconAlertCircle size={14} className="flex-shrink-0" aria-hidden />
-                            We couldn&rsquo;t read this class&rsquo;s days. Tap the days it meets — without them it won&rsquo;t appear on your calendar.
+                            We couldn&rsquo;t read this class&rsquo;s days. Tap the days it meets. Without them it won&rsquo;t appear on your calendar.
                           </p>
                         ) : null}
                         <div className="flex gap-2">
@@ -249,7 +252,7 @@ export function ConfirmClassesModal({ isOpen, onClose, onConfirm, parsedClasses 
                               type="button"
                               onClick={() => handleDayToggle(index, day.abbrev)}
                               className={cn(
-                                'flex-1 h-11 rounded-lg text-xs font-medium transition-all duration-150',
+                                'flex-1 h-11 rounded-lg text-xs font-medium transition duration-150',
                                 cls.days.includes(day.abbrev)
                                   ? 'text-text-on-accent shadow-sm'
                                   : 'bg-surface-sunken text-text-tertiary hover:bg-surface-sunken/80 active:bg-surface-sunken hover:text-text-secondary'
@@ -369,7 +372,7 @@ export function ConfirmClassesModal({ isOpen, onClose, onConfirm, parsedClasses 
                               {cls.instructor}
                             </span>
                           )}
-                          {cls.credits && (
+                          {cls.credits != null && cls.credits > 0 && (
                             <span className="text-xs text-text-tertiary">{cls.credits} cr</span>
                           )}
                         </div>
@@ -378,12 +381,12 @@ export function ConfirmClassesModal({ isOpen, onClose, onConfirm, parsedClasses 
                         {(!cls.start_time || cls.days.length === 0) && (
                           <div className="flex items-center gap-2 mt-1.5">
                             {!cls.start_time && (
-                              <span className="text-micro font-medium text-fw-warning-ink bg-fw-warning-bg px-1.5 py-0.5 rounded">
+                              <span className="text-microlabel font-medium text-fw-warning-ink bg-fw-warning-bg px-1.5 py-0.5 rounded">
                                 Missing time
                               </span>
                             )}
                             {cls.days.length === 0 && (
-                              <span className="text-micro font-medium text-fw-warning-ink bg-fw-warning-bg px-1.5 py-0.5 rounded">
+                              <span className="text-microlabel font-medium text-fw-warning-ink bg-fw-warning-bg px-1.5 py-0.5 rounded">
                                 Missing days
                               </span>
                             )}
@@ -395,14 +398,14 @@ export function ConfirmClassesModal({ isOpen, onClose, onConfirm, parsedClasses 
                       <div className="flex items-center gap-0.5 flex-shrink-0">
                         <IconButton variant="primary" aria-label="Edit"
                           onClick={() => handleEdit(index)}
-                          className="p-2 text-text-tertiary hover:text-accent-700 hover:bg-accent-500/10 active:bg-accent-500/15 rounded-lg transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/70 focus-visible:ring-offset-1 focus-visible:ring-offset-surface"
+                          className="p-2 text-text-tertiary hover:text-accent-700 hover:bg-accent-500/10 active:bg-accent-500/15 rounded-lg transition duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/70 focus-visible:ring-offset-1 focus-visible:ring-offset-surface"
                           title="Edit class"
                         >
                           <IconPencil size={16} />
                         </IconButton>
                         <IconButton variant="default" aria-label="Delete"
                           onClick={() => handleDelete(index)}
-                          className="p-2 text-text-tertiary hover:text-fw-danger-ink hover:bg-fw-danger-bg rounded-lg transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/70 focus-visible:ring-offset-1 focus-visible:ring-offset-surface"
+                          className="p-2 text-text-tertiary hover:text-fw-danger-ink hover:bg-fw-danger-bg rounded-lg transition duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/70 focus-visible:ring-offset-1 focus-visible:ring-offset-surface"
                           title="Remove class"
                         >
                           <IconTrash size={16} />
@@ -467,7 +470,6 @@ export function ConfirmClassesModal({ isOpen, onClose, onConfirm, parsedClasses 
             </div>
           </div>
         </div>
-      </DrawerContent>
-    </Drawer>
+    </Sheet>
   );
 }

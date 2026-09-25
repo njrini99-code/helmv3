@@ -36,12 +36,26 @@
 // on that path and light on a hard load. This makes the two agree. The prefix
 // test is `p.indexOf('/admin/')!==0` plus an exact `/admin`, so a future
 // `/administration`-style route is NOT swept in.
+// `/golf/login` and `/golf/forgot-password` (exact paths) joined in the 2026-09
+// sign-in redesign. Both now paint only on Fairway tokens (AuthCanvas), so they
+// follow the device's GolfHelm/OS theme instead of always painting light
+// before a dark dashboard. `/golf/reset-password` joined once it moved onto
+// the same AuthCanvas (AUTH-02 / OD-07).
+// Before the theme guard, every `/golf` path gets `data-helm-sport="golf"` on
+// <html>. The golf-only touch rules (hover only on a real pointer, no tap
+// highlight, page rubber-band) key off it, so BaseballHelm and Lift Lab keep
+// rendering exactly as before (owner OD-17b).
+// On iOS it also reads the Dynamic Type body size (`font: -apple-system-body`,
+// 17px at the default setting). Above default it stamps `data-fw-dynamic-type`
+// and `--fw-type-scale` (capped at XXL, 23/17), and globals.css scales reading
+// text inside <main> by it (OD-06, TYPE-02). Shell chrome sits outside <main>
+// and stays fixed; other platforms and the default size change nothing.
 // It also stamps `<meta name="theme-color">` so the mobile browser/status bar
 // is already the right colour on the first frame instead of framing a dark page
 // in the UA-default white. Values mirror THEME_COLOR in src/lib/golf/theme.ts
 // (= --fw-color-canvas per theme); `applyTheme` rewrites this same tag — matched
 // on `data-fw-theme-color` — on every runtime theme change.
-const BOOT = `(function(){try{var p=location.pathname;if(p!='/golf/dashboard'&&p.indexOf('/golf/dashboard/')!==0&&p!='/golf/welcome'&&p!='/admin'&&p.indexOf('/admin/')!==0)return;var k='golf_theme',t=localStorage.getItem(k);if(t!=='light'&&t!=='dark'&&t!=='system')t='system';var d=t==='dark'||(t==='system'&&window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches);var r=document.documentElement;if(d){r.classList.add('dark');r.setAttribute('data-fw-theme','dark');}else{r.classList.remove('dark');r.setAttribute('data-fw-theme','light');}var m=document.head.querySelector('meta[data-fw-theme-color]');if(!m){m=document.createElement('meta');m.setAttribute('name','theme-color');m.setAttribute('data-fw-theme-color','');document.head.appendChild(m);}m.setAttribute('content',d?'#0e0e10':'#f7efdf');}catch(e){}})();`;
+const BOOT = `(function(){try{var p=location.pathname,h=document.documentElement;if(p=='/golf'||p.indexOf('/golf/')===0){h.setAttribute('data-helm-sport','golf');try{var q=document.createElement('span');q.style.font='-apple-system-body';if(q.style.font){h.appendChild(q);var z=parseFloat(getComputedStyle(q).fontSize);h.removeChild(q);if(z>17){h.setAttribute('data-fw-dynamic-type','');h.style.setProperty('--fw-type-scale',String(Math.min(23/17,z/17)));}}}catch(e){}}else h.removeAttribute('data-helm-sport');if(p!='/golf/dashboard'&&p.indexOf('/golf/dashboard/')!==0&&p!='/golf/welcome'&&p!='/golf/login'&&p!='/golf/forgot-password'&&p!='/golf/reset-password'&&p!='/admin'&&p.indexOf('/admin/')!==0)return;var k='golf_theme',t=localStorage.getItem(k);if(t!=='light'&&t!=='dark'&&t!=='system')t='system';var d=t==='dark'||(t==='system'&&window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches);var r=document.documentElement;if(d){r.classList.add('dark');r.setAttribute('data-fw-theme','dark');}else{r.classList.remove('dark');r.setAttribute('data-fw-theme','light');}var m=document.head.querySelector('meta[data-fw-theme-color]');if(!m){m=document.createElement('meta');m.setAttribute('name','theme-color');m.setAttribute('data-fw-theme-color','');document.head.appendChild(m);}m.setAttribute('content',d?'#0d0f0d':'#f2e6d2');}catch(e){}})();`;
 
 export function ThemeScript() {
   return <script dangerouslySetInnerHTML={{ __html: BOOT }} suppressHydrationWarning />;

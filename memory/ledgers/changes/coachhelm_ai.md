@@ -593,7 +593,7 @@
   (`coachhelm_comparable_opportunity_attribution`, checked before any
   Supabase call, so an off flag makes zero DB calls) and auth check; a
   failed read or unauthenticated caller both return `null`.
-  New `src/components/golf/coachhelm/insight-card/AttributionReadout.tsx`
+  New `src/components/golf/coachhelm/insight-card/AttributionReadout.tsx` (this file was removed in the 2026-09-24 golf audit dead-code sweep)
   — renders nothing for `null` (flag off / unauthenticated / failed read)
   but DOES render the real `'missing'` state as a quiet "Not attributed
   yet" note — silence there would misread as "proven to do nothing" — and

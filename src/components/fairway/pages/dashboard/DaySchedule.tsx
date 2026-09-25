@@ -210,7 +210,7 @@ export function DaySchedule({
   const headerAction = viewAllHref ? (
     <Link
       href={viewAllHref}
-      className="inline-flex items-center gap-1 py-3 -my-3 font-fw-sans text-body-sm font-medium text-accent-700 hover:text-accent-600"
+      className="inline-flex items-center gap-1 py-3 -my-3 font-fw-sans text-body-sm font-medium text-accent-700 hover:text-accent-ink"
     >
       Calendar
       <ChevronRight aria-hidden className="h-3.5 w-3.5" />
@@ -247,7 +247,7 @@ export function DaySchedule({
               ever-growing card. `overscroll-contain` keeps a mouse-wheel
               scroll here from bleeding into the page behind it. */}
           <ul
-            aria-label={`${title} — day groups`}
+            aria-label={`${title}, day groups`}
             ref={scrollerRef}
             // eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- axe scrollable-region-focusable (serious) REQUIRES a keyboard-reachable scroll container; a labelled region with tabIndex is the WCAG-recommended shape
             tabIndex={0}

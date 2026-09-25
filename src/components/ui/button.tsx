@@ -4,6 +4,7 @@ import { ButtonHTMLAttributes, forwardRef, useCallback } from 'react';
 import { Slot } from '@radix-ui/react-slot';
 import { cn } from '@/lib/utils';
 import { triggerHaptic } from '@/lib/utils/capacitor';
+import { isGolfSurface } from '@/lib/haptics';
 
 export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: 'primary' | 'secondary' | 'ghost' | 'danger' | 'outline' | 'success';
@@ -11,7 +12,7 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   isLoading?: boolean;
   leftIcon?: React.ReactNode;
   rightIcon?: React.ReactNode;
-  /** Haptic intensity on tap (native only). Defaults to 'light'. Pass 'none' to disable. */
+  /** Haptic intensity on tap (native only). Defaults to 'light' ('none' on golf routes). Pass 'none' to disable. */
   haptic?: 'none' | 'light' | 'medium' | 'heavy' | 'success' | 'warning' | 'error';
   /**
    * Render the button's styling onto a single child element instead of emitting a
@@ -43,7 +44,10 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant = 'primary', size = 'md', isLoading = false, disabled, leftIcon, rightIcon, haptic, asChild = false, children, onClick, ...props }, ref) => {
     const handleClick = useCallback((e: React.MouseEvent<HTMLButtonElement>) => {
       // Native haptic feedback — light impact by default, or variant-based default.
+      // Golf routes: a generic tap is silent unless the caller asks (audit
+      // MOT-03); Baseball / Lift Lab keep the historical default (OD-17b).
       const hapticStyle = haptic ?? (
+        isGolfSurface() ? 'none' :
         variant === 'danger' ? 'warning' :
         variant === 'success' ? 'success' :
         'light'

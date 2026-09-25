@@ -75,12 +75,12 @@ function PulseHeader() {
   return (
     <div className="flex items-start justify-between gap-3 flex-wrap">
       <div>
-        <p className="text-micro uppercase tracking-wider font-semibold text-text-tertiary">
+        <p className="text-microlabel uppercase tracking-wider font-semibold text-text-tertiary">
           Last 8 weeks
         </p>
         <h3 className="text-sm font-semibold text-text-primary mt-0.5">Weekly pulse</h3>
       </div>
-      <p className="text-micro text-text-tertiary flex-shrink-0">This week so far</p>
+      <p className="text-microlabel text-text-tertiary flex-shrink-0">This week so far</p>
     </div>
   );
 }
@@ -100,7 +100,7 @@ function MetricTile({
 
   return (
     <div className="min-w-0">
-      <p className="text-micro uppercase tracking-wider font-semibold text-text-tertiary truncate">
+      <p className="text-microlabel uppercase tracking-wider font-semibold text-text-tertiary truncate">
         {label}
       </p>
       <p className="text-2xl font-semibold tabular-nums text-text-primary mt-1">
@@ -108,7 +108,7 @@ function MetricTile({
       </p>
       <p
         className={cn(
-          'text-micro tabular-nums mt-0.5',
+          'text-microlabel tabular-nums mt-0.5',
           delta.direction === 'up' && 'text-accent-700',
           delta.direction === 'down' && 'text-text-tertiary',
           delta.direction === 'flat' && 'text-text-tertiary',

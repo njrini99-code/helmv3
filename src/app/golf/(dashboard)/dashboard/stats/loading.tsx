@@ -1,11 +1,14 @@
 import { Skeleton } from '@/components/fairway';
 import { fairwayScope } from '@/lib/redesign/flag';
+import {
+  StatsScopeRowSkeleton,
+  StatsSpineStageBodySkeleton,
+} from '@/components/golf/stats/spine-stage/StatsSpineStageSkeleton';
 
 /** The player-role CoachHelmSubNav collapsed to its single "Overview" front-door
  *  tab (Spine & Stage folded Development/Game Profile/Standing into `?view=`
  *  stage drills — see CoachHelmSubNav.tsx PLAYER_TABS) — width-approximated so
  *  the strip's footprint matches the real component before hydration. */
-const SUBNAV_TAB_WIDTH = 84;
 
 /**
  * Route Suspense fallback for /golf/dashboard/stats.
@@ -40,25 +43,18 @@ export default function Loading() {
               <Skeleton className="h-4 w-80 max-w-full rounded-fw-sm" />
             </div>
 
-            {/* CoachHelmSubNav strip — single "Overview" front-door tab. */}
-            <nav
-              aria-hidden="true"
-              className="flex w-full items-center gap-1 border-b border-border-subtle"
-            >
-              <div className="px-3.5 pb-3 pt-2.5">
-                <Skeleton className="h-4" style={{ width: SUBNAV_TAB_WIDTH }} />
-              </div>
-            </nav>
+            {/* No sub-nav strip: the player's CoachHelm has one view (DASH-06). */}
           </div>
 
           {/* CoachHelmShell's body container — its own nested
-              mx-auto max-w-[1200px], px-4 py-6 md:px-6. Spine & Stage —
-              300px spine + 1fr stage, stacking below 940px (matches
-              StatsSpineStage's own loading branch exactly). */}
+              mx-auto max-w-[1200px], px-4 py-6 md:px-6. DASH-08: the scope
+              row, spine and bento are drawn in their real geometry by the
+              SAME skeleton StatsSpineStage uses for its own first load, so
+              nothing reflows when data lands. */}
           <div className="mx-auto w-full max-w-[1200px] px-4 py-6 md:px-6">
-            <div className="flex flex-col gap-6 min-[940px]:grid min-[940px]:grid-cols-[300px_1fr] min-[940px]:items-start">
-              <Skeleton className="h-[480px] rounded-fw-lg min-[940px]:sticky min-[940px]:top-20" />
-              <Skeleton className="h-[480px] rounded-fw-lg" />
+            <div className="flex flex-col gap-4">
+              <StatsScopeRowSkeleton />
+              <StatsSpineStageBodySkeleton />
             </div>
           </div>
         </div>

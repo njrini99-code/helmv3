@@ -19,7 +19,7 @@
   shipRow` type import, `surface-lift` CSS class) — proving the AST
   restriction to string/JSX spans is actually doing the work, not just
   coincidentally passing.
-- Extended: `src/test/golf/components/InsightCard.test.tsx` — new
+- Extended: `src/test/golf/components/InsightCard.test.tsx` — new (this file was removed in the 2026-09-24 golf audit dead-code sweep)
   `describe('InsightCard OutcomeBadge (observed-outcome language audit)')`
   block (6 cases, no prior coverage of this badge existed): improved +
   meaningful impact renders "Improved · ~N str/rd at stake" and never
@@ -51,7 +51,7 @@
 - Updated: `src/test/golf/components/DiagnosisPanel.test.tsx`'s
   observed_sequence case now asserts "Preceded by" and explicitly asserts
   "Caused by" is ABSENT (was: only asserted "Caused by" present).
-  `src/test/golf/components/InsightCard.test.tsx`'s OutcomeBadge describe
+  `src/test/golf/components/InsightCard.test.tsx`'s OutcomeBadge describe (this file was removed in the 2026-09-24 golf audit dead-code sweep)
   block's improved/worsened cases now assert "Coach marked improved"/
   "Coach marked worsened" instead of "Improved"/"Outcome regressed".
   `src/test/golf/actions/coachhelm-analytics.test.ts`'s P070 comment

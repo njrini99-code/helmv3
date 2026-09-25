@@ -15,7 +15,7 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import { motion, useReducedMotion } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import {
   Popover,
@@ -25,6 +25,7 @@ import {
 import { useOfflineSyncStore } from '@/stores/offline-sync-store';
 import { useConnectionStatus } from '@/hooks/golf/use-connection-status';
 import { Button, IconButton } from '@/components/ui/button';
+import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
 
 // ============================================================================
 // TYPES
@@ -185,7 +186,7 @@ export function OfflineSyncStatus({
   onRetryFailed,
   onDismissError,
 }: OfflineSyncStatusProps) {
-  const prefersReducedMotion = useReducedMotion();
+  const prefersReducedMotion = useReducedMotionGuard();
   // Store state
   const {
     isOnline,
@@ -301,7 +302,7 @@ export function OfflineSyncStatus({
       return {
         icon: <WifiOffIcon className="w-4 h-4" />,
         label: 'Offline',
-        color: 'text-amber-600',
+        color: 'text-fw-warning-text',
         bgColor: 'bg-amber-50 border-amber-200',
       };
     }
@@ -332,7 +333,7 @@ export function OfflineSyncStatus({
     return {
       icon: <CheckCircleIcon className="w-4 h-4" />,
       label: 'Synced',
-      color: 'text-primary-600',
+      color: 'text-accent-ink',
       bgColor: 'bg-primary-50 border-primary-200',
     };
   };
@@ -363,7 +364,7 @@ export function OfflineSyncStatus({
               <Button variant="ghost"
                 aria-label={`Sync status: ${statusDisplay.label}. ${isExpanded ? 'Collapse' : 'Expand'} details`}
                 className={cn(
-                  'flex items-center gap-2 px-3 py-2 rounded-xl border shadow-lg backdrop-blur-sm transition-all',
+                  'flex items-center gap-2 px-3 py-2 rounded-xl border shadow-lg backdrop-blur-sm transition',
                   statusDisplay.bgColor,
                   'hover:shadow-xl'
                 )}
@@ -393,7 +394,7 @@ export function OfflineSyncStatus({
                 <IconButton variant="default"
                   onClick={handleDismiss}
                   aria-label="Dismiss sync status"
-                  className="inline-flex items-center justify-center min-h-[44px] min-w-[44px] text-warm-500 hover:text-warm-700 rounded transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-cream-50"
+                  className="inline-flex items-center justify-center min-h-[44px] min-w-[44px] text-text-tertiary hover:text-warm-700 rounded transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-cream-50"
                 >
                   <XIcon className="w-4 h-4" />
                 </IconButton>
@@ -401,8 +402,8 @@ export function OfflineSyncStatus({
 
               {/* Connection status */}
               <div className="flex items-center justify-between text-sm">
-                <span className="text-warm-500">Connection</span>
-                <span className={cn('font-medium', isOnline ? 'text-primary-600' : 'text-amber-600')}>
+                <span className="text-text-tertiary">Connection</span>
+                <span className={cn('font-medium', isOnline ? 'text-accent-ink' : 'text-fw-warning-text')}>
                   {isOnline ? (
                     <span className="flex items-center gap-1">
                       <WifiIcon className="w-4 h-4" />
@@ -420,7 +421,7 @@ export function OfflineSyncStatus({
               {/* Pending items */}
               {pendingCount.total > 0 && (
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-warm-500">Pending</span>
+                  <span className="text-text-tertiary">Pending</span>
                   <span className="text-warm-900 font-medium">
                     {pendingCount.rounds > 0 && `${pendingCount.rounds} round${pendingCount.rounds !== 1 ? 's' : ''}`}
                     {pendingCount.rounds > 0 && pendingCount.shots > 0 && ', '}
@@ -432,7 +433,7 @@ export function OfflineSyncStatus({
 
               {/* Last sync */}
               <div className="flex items-center justify-between text-sm">
-                <span className="text-warm-500">Last sync</span>
+                <span className="text-text-tertiary">Last sync</span>
                 <span className="text-warm-700">{lastSyncText}</span>
               </div>
 
@@ -440,7 +441,7 @@ export function OfflineSyncStatus({
               {isSyncing && syncProgress && (
                 <div className="space-y-1">
                   <div className="flex items-center justify-between text-xs">
-                    <span className="text-warm-500 capitalize">{syncProgress.phase}</span>
+                    <span className="text-text-tertiary capitalize">{syncProgress.phase}</span>
                     <span className="text-warm-700">
                       {syncProgress.current}/{syncProgress.total}
                     </span>
@@ -454,7 +455,7 @@ export function OfflineSyncStatus({
                     aria-label={`Sync progress: ${syncProgress.percentComplete}%`}
                   >
                     <div
-                      className="h-full bg-blue-500 rounded-full transition-all duration-300"
+                      className="h-full bg-blue-500 rounded-full transition-[width] duration-300"
                       style={{ width: `${syncProgress.percentComplete}%` }}
                     />
                   </div>
@@ -473,7 +474,7 @@ export function OfflineSyncStatus({
                 {isOnline && pendingCount.total > 0 && !isSyncing && (
                   <Button variant="primary"
                     onClick={handleSyncNow}
-                    className="flex-1 px-3 py-1.5 text-xs font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg transition-colors"
+                    className="flex-1 px-3 py-1.5 text-xs font-medium text-text-on-accent-fill bg-accent-fill hover:bg-accent-fill-hover rounded-lg transition-colors"
                   >
                     Sync Now
                   </Button>
@@ -544,12 +545,12 @@ export function OfflineSyncStatus({
             <span
               className={cn(
                 !isOnline
-                  ? 'text-amber-600'
+                  ? 'text-fw-warning-text'
                   : syncError
                     ? 'text-red-600'
                     : isSyncing
                       ? 'text-blue-600'
-                      : 'text-primary-600'
+                      : 'text-accent-ink'
               )}
             >
               {statusDisplay.icon}
@@ -585,7 +586,7 @@ export function OfflineSyncStatus({
                   ? 'text-amber-700'
                   : syncError
                     ? 'text-red-700'
-                    : 'text-warm-500'
+                    : 'text-text-tertiary'
               )}
             >
               {!isOnline
@@ -610,7 +611,7 @@ export function OfflineSyncStatus({
                 aria-label={`Sync progress: ${syncProgress.percentComplete}%`}
               >
                 <div
-                  className="h-full bg-blue-500 rounded-full transition-all duration-300"
+                  className="h-full bg-blue-500 rounded-full transition-[width] duration-300"
                   style={{ width: `${syncProgress.percentComplete}%` }}
                 />
               </div>
@@ -622,7 +623,7 @@ export function OfflineSyncStatus({
             {isOnline && pendingCount.total > 0 && !isSyncing && (
               <Button variant="primary"
                 onClick={handleSyncNow}
-                className="px-3 py-1.5 text-xs font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg transition-colors"
+                className="px-3 py-1.5 text-xs font-medium text-text-on-accent-fill bg-accent-fill hover:bg-accent-fill-hover rounded-lg transition-colors"
               >
                 Sync
               </Button>
@@ -638,7 +639,7 @@ export function OfflineSyncStatus({
             <IconButton variant="default"
               onClick={handleDismiss}
               aria-label="Dismiss sync status"
-              className="inline-flex items-center justify-center min-h-[44px] min-w-[44px] text-warm-500 hover:text-warm-700 rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-cream-50"
+              className="inline-flex items-center justify-center min-h-[44px] min-w-[44px] text-text-tertiary hover:text-warm-700 rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-cream-50"
             >
               <XIcon className="w-4 h-4" />
             </IconButton>

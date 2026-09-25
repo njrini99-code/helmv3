@@ -35,9 +35,11 @@
 import { useEffect, useMemo, useState, useTransition } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { todayIsoInZone } from '@/lib/golf/timezone';
+import { formatDateOnlyShort } from '@/lib/golf/date-only';
 import {
   CheckCircle2,
-  Sparkles,
+  Lightbulb,
   Activity,
   Target,
   Trophy,
@@ -104,7 +106,7 @@ const TYPE_DESCRIPTORS: Record<WhatsNewType, TypeDescriptor> = {
   },
   insight_detected: {
     label: 'New insight',
-    Icon: Sparkles,
+    Icon: Lightbulb,
     iconClass: 'text-text-secondary',
     bgClass: 'bg-surface-sunken',
   },
@@ -128,15 +130,35 @@ const TYPE_DESCRIPTORS: Record<WhatsNewType, TypeDescriptor> = {
   },
 };
 
-// ── Date helpers (pure presentation; mirror legacy page grouping) ────────────
-function startOfDay(d: Date): Date {
-  const c = new Date(d);
-  c.setHours(0, 0, 0, 0);
-  return c;
+// ── Date helpers (pure presentation) ─────────────────────────────────────────
+/**
+ * Day buckets are calendar days IN THE FEED'S ZONE, keyed `YYYY-MM-DD`.
+ *
+ * They used to be `setHours(0,0,0,0)` on a Date, i.e. midnight in whatever
+ * zone the runtime had: Node's on the server, the browser's on the client.
+ * Near midnight the two disagreed about which day an event (and "today")
+ * belonged to, so the SSR headings did not match hydration, and the headings
+ * could disagree with the zone-pinned times printed under them (audit HYD-02).
+ * Keys now come from `todayIsoInZone(zone, instant)`, the same helper the
+ * tasks and schedule surfaces use, so bucketing follows the `timeZone` prop.
+ */
+function runtimeZone(): string | undefined {
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone || undefined;
+  } catch {
+    return undefined;
+  }
 }
 
-function dayBucketKey(d: Date): string {
-  return startOfDay(d).toISOString();
+function dayKeyInZone(instantMs: number, zone: string | undefined): string {
+  return todayIsoInZone(zone, new Date(instantMs));
+}
+
+/** The `YYYY-MM-DD` key one calendar day before `key` (pure date arithmetic). */
+function previousDayKey(key: string): string {
+  const [y, m, d] = key.split('-').map(Number);
+  if (!y || !m || !d) return key;
+  return new Date(Date.UTC(y, m - 1, d - 1)).toISOString().slice(0, 10);
 }
 
 /**
@@ -157,19 +179,11 @@ function dayBucketKey(d: Date): string {
  */
 const LOCALE = 'en-US';
 
-function dayBucketLabel(
-  bucketIso: string,
-  todayKey: string,
-  yesterdayKey: string,
-  timeZone?: string,
-): string {
-  if (bucketIso === todayKey) return 'Today';
-  if (bucketIso === yesterdayKey) return 'Yesterday';
-  return new Date(bucketIso).toLocaleDateString(LOCALE, {
-    month: 'short',
-    day: 'numeric',
-    timeZone,
-  });
+function dayBucketLabel(bucketKey: string, todayKey: string, yesterdayKey: string): string {
+  if (bucketKey === todayKey) return 'Today';
+  if (bucketKey === yesterdayKey) return 'Yesterday';
+  // The key is already the zone's calendar day; format it as a date-only value.
+  return formatDateOnlyShort(bucketKey, bucketKey);
 }
 
 function timeOfDay(iso: string, timeZone?: string): string {
@@ -235,10 +249,8 @@ export function FairwayWhatsNew({ success, error, items, truncated, timeZone, se
   const tz = timeZone ?? undefined;
   const router = useRouter();
   const [isRefreshing, startRefresh] = useTransition();
-  const todayKey = dayBucketKey(new Date());
-  const yest = new Date();
-  yest.setDate(yest.getDate() - 1);
-  const yesterdayKey = dayBucketKey(yest);
+  // One zone for every bucket: the team's, else the viewer's own.
+  const bucketZone = tz ?? runtimeZone();
 
   // Freshness clock (P392): anchor to when this server snapshot arrived, then
   // tick a coarse "now" every 30s so the "Updated Xm ago" line advances instead
@@ -285,6 +297,11 @@ export function FairwayWhatsNew({ success, error, items, truncated, timeZone, se
     const id = window.setInterval(() => setNowMs(Date.now()), 30_000);
     return () => window.clearInterval(id);
   }, []);
+  // "Today" follows the same agreed clock: the server's stamp for the
+  // hydration render, then the ticking client clock, so the buckets roll over
+  // at the zone's midnight without a reload.
+  const todayKey = dayKeyInZone(nowMs, bucketZone);
+  const yesterdayKey = previousDayKey(todayKey);
 
   // Active type filter for triage (P397). Default 'all'; never persisted.
   const [filter, setFilter] = useState<WhatsNewFilter>('all');
@@ -351,7 +368,7 @@ export function FairwayWhatsNew({ success, error, items, truncated, timeZone, se
 
   const grouped = new Map<string, WhatsNewItem[]>();
   for (const item of visibleItems) {
-    const key = dayBucketKey(new Date(item.occurredAt));
+    const key = dayKeyInZone(Date.parse(item.occurredAt), bucketZone);
     const arr = grouped.get(key);
     if (arr) arr.push(item);
     else grouped.set(key, [item]);
@@ -366,7 +383,7 @@ export function FairwayWhatsNew({ success, error, items, truncated, timeZone, se
   // visible before clicking. Filters with zero items stay reachable but quiet.
   const filterSegments: ViewHeaderSegment[] = [
     { value: 'all', label: 'All', icon: <LayoutGrid aria-hidden />, badge: filterCounts.all },
-    { value: 'insights', label: 'Insights', icon: <Sparkles aria-hidden />, badge: filterCounts.insights },
+    { value: 'insights', label: 'Insights', icon: <Lightbulb aria-hidden />, badge: filterCounts.insights },
     { value: 'patterns', label: 'Patterns', icon: <Activity aria-hidden />, badge: filterCounts.patterns },
     { value: 'focus', label: 'Focus areas', icon: <Target aria-hidden />, badge: filterCounts.focus },
   ];
@@ -399,7 +416,9 @@ export function FairwayWhatsNew({ success, error, items, truncated, timeZone, se
         )}
         {/* Freshness line (P392): the feed is a server snapshot, so disclose how
             stale it is and offer a manual refresh rather than reading as frozen. */}
-        <span className="inline-flex items-center gap-1 text-text-tertiary" aria-live="polite">
+        {/* No aria-live: this line re-renders every 30s as the clock ticks,
+            and a live region would re-announce it forever (audit A11Y-R2). */}
+        <span className="inline-flex items-center gap-1 text-text-tertiary">
           <span aria-hidden>·</span>
           <span>
             Updated{' '}
@@ -418,7 +437,7 @@ export function FairwayWhatsNew({ success, error, items, truncated, timeZone, se
         title="What’s new across your team."
         description={
           totalItems > 0
-            ? 'CoachHelm lifecycle activity from the past 7 days — insights, patterns, and focus areas as your team plays.'
+            ? 'CoachHelm lifecycle activity from the past 7 days: insights, patterns, and focus areas as your team plays.'
             : 'CoachHelm activity will appear here as your team plays more rounds.'
         }
         meta={meta}
@@ -451,7 +470,7 @@ export function FairwayWhatsNew({ success, error, items, truncated, timeZone, se
           // Honest empty state that points back to the unfiltered view (P397).
           <Surface elevation="shadow" padding="lg">
             <EmptyState
-              icon={Sparkles}
+              icon={Lightbulb}
               title="No matching activity"
               description="No updates of this type in the past 7 days. Clear the filter to see everything across your team."
               action={
@@ -464,7 +483,7 @@ export function FairwayWhatsNew({ success, error, items, truncated, timeZone, se
         ) : dayKeys.length === 0 ? (
           <Surface elevation="shadow" padding="lg">
             <EmptyState
-              icon={Sparkles}
+              icon={Lightbulb}
               title="No activity yet"
               description="No CoachHelm activity in the past 7 days. New insights and lifecycle changes will appear here as your team plays more rounds."
               action={
@@ -483,7 +502,7 @@ export function FairwayWhatsNew({ success, error, items, truncated, timeZone, se
           <>
             {dayKeys.map((key) => {
               const dayItems = grouped.get(key) ?? [];
-              const label = dayBucketLabel(key, todayKey, yesterdayKey, tz);
+              const label = dayBucketLabel(key, todayKey, yesterdayKey);
               return (
                 <section
                   key={key}

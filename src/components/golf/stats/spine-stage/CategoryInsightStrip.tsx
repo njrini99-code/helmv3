@@ -127,6 +127,8 @@ export function CategoryInsightStrip({
             {delta ? (
               <TrendChip
                 direction={delta.direction === 'flat' ? 'flat' : delta.good ? 'improving' : 'declining'}
+                // Arrow follows the raw number; colour follows good/bad.
+                goodDirection={(delta.direction === 'up') === delta.good ? 'up' : 'down'}
                 label={delta.text}
                 size="sm"
                 numeric

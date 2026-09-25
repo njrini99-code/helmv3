@@ -21,21 +21,23 @@
  *     active CoachHelm patterns. Used when the gateway is unreachable
  *     (network failure, rate limit, missing OIDC). Same shape, no LLM.
  *
- * The recap is generated lazily — first read of the round detail page
- * after completion fires the generation, persists the result, and
- * subsequent reads return cached text.
+ * The recap is generated lazily — the first real view of the round detail
+ * page after completion asks for it, the result is persisted, and later
+ * reads return the cached text.
  *
- * Render vs. action callers:
- *   - The round detail page (`/golf/dashboard/rounds/[id]`) calls
- *     `generateRoundRecap(roundId)` during Server Component render. Next.js
- *     forbids `revalidatePath` during render (Sentry fingerprint
- *     d0a9265f), and the page doesn't need it anyway — it already has the
- *     freshly generated recap in hand from this same call.
- *   - A real form/action entrypoint (e.g. a future "Regenerate recap"
- *     button, invoked from an event handler rather than render) should pass
- *     `{ revalidate: true }` so the cached route entry is invalidated for
- *     subsequent navigations. `revalidatePath` only runs when explicitly
- *     opted into via that flag — it defaults to off.
+ * Callers:
+ *   - The round detail page (`/golf/dashboard/rounds/[id]`) only READS the
+ *     persisted `ai_recap`. It never calls this during Server Component
+ *     render (audit DATA-04: a render, including an RSC fetch nobody looked
+ *     at, must not spend an LLM call or write). When a completed round has no
+ *     recap, `FairwayRoundDetail` calls this action once after mount via
+ *     `useDeferredRoundRecap` and shows the result when it arrives.
+ *   - That client caller leaves `revalidate` off: it already renders the
+ *     recap it gets back, and the route is dynamic, so the next visit reads
+ *     the persisted value. A future "Regenerate recap" button may pass
+ *     `{ revalidate: true }` to invalidate cached route entries. Never pass
+ *     it from a render path: Next.js forbids `revalidatePath` during render
+ *     (Sentry fingerprint d0a9265f).
  */
 
 import { revalidatePath } from 'next/cache';
@@ -373,9 +375,10 @@ const ROUND_RECAP_LOCK_REVISION = 1;
 const RECAP_LOCK_TTL_SECONDS = 45;
 
 /**
- * generateRoundRecap runs during Server Component render — a waiter polls
- * for a few seconds, not the full TTL, so a slow render never itself
- * becomes the next request's bottleneck. On exhaustion the waiter tries
+ * A waiter polls for a few seconds, not the full TTL, so a slow concurrent
+ * generation never holds the viewer's request open for long (the caller is
+ * a post-mount client request from the round detail page, which shows the
+ * recap whenever it arrives). On exhaustion the waiter tries
  * reclaiming once (covers a holder that crashed mid-wait) before failing
  * closed.
  */

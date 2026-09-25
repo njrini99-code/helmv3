@@ -11,8 +11,8 @@
  * explicit legend. The most important part is called out as a huge Fragment-Mono
  * BIG READOUT (the `instrument` Readout) above the bar.
  *
- * Segments grow in from the left on mount (a staggered width tween) and snap
- * under reduced-motion.
+ * Segments render final on mount (MOT-07) and tween their widths only when
+ * the data changes; they snap under reduced motion.
  *
  * Color vocabulary maps to the locked viz tokens by default: green = the good /
  * primary part, warm amber = the caution part, cream-neutral = the inert middle.
@@ -24,12 +24,13 @@
  * ========================================================================== */
 
 import * as React from 'react';
-import { motion, useReducedMotion } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { InstrumentPanel } from '../instrument/InstrumentPanel';
 import { Readout } from '../instrument/Readout';
 import { InstrumentTable, InstrumentTableToggle } from './InstrumentTable';
 import type { ChartTableData } from './ChartFrame';
 import { TABULAR_NUMS, VIZ_COLOR, VIZ_EASE, VIZ_REVEAL_MS, chartAriaLabel, formatPercent } from './theme';
+import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
 
 /** Semantic tone for a segment — maps to a locked viz token. */
 export type SegmentTone = 'good' | 'caution' | 'neutral';
@@ -82,7 +83,7 @@ export function SegmentBar({
   awaiting = false,
   className,
 }: SegmentBarProps) {
-  const reduced = useReducedMotion() ?? false;
+  const reduced = useReducedMotionGuard() ?? false;
   const [showTable, setShowTable] = React.useState(false);
 
   const total = React.useMemo(
@@ -194,7 +195,7 @@ export function SegmentBar({
                   key={p.label}
                   className="h-full first:rounded-l-fw-sm last:rounded-r-fw-sm"
                   style={{ background: p.color }}
-                  initial={reduced ? false : { width: 0 }}
+                  initial={false}
                   animate={{ width: `${p.pct * 100}%` }}
                   transition={
                     reduced

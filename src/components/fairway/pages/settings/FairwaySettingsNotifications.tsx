@@ -26,7 +26,7 @@
 import { useState } from 'react';
 
 import { Button, Surface, Switch, ViewHeader } from '@/components/fairway';
-import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import { ConfirmAlert } from '@/components/fairway/overlays/ConfirmAlert';
 import { fairwayToast } from '@/components/fairway/feedback/ToastStack';
 import {
   setAllChannels,
@@ -104,6 +104,15 @@ export function FairwaySettingsNotifications({
   const [pendingKeys, setPendingKeys] = useState<Set<string>>(new Set());
   const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
 
+  // DATA-09 — a bulk write replaces the WHOLE prefs object server-side, and a
+  // single-cell write is a read-modify-write of the same JSONB. Letting them
+  // overlap means whichever lands last silently wins. So: every cell is locked
+  // while a bulk write is pending, and the bulk actions are locked while any
+  // cell write is pending.
+  const bulkPending = pendingKeys.has(BULK_KEY);
+  const cellPending = [...pendingKeys].some((k) => k !== BULK_KEY && k !== 'quiet');
+  const bulkBlocked = bulkPending || cellPending;
+
   function setPending(key: string, pending: boolean) {
     setPendingKeys((current) => {
       const next = new Set(current);
@@ -119,16 +128,23 @@ export function FairwaySettingsNotifications({
     enabled: boolean,
   ) {
     const key = `${cat}:${channel}`;
-    const current = prefs[cat] ?? DEFAULT_CHANNELS;
-    const next: ChannelPref = { ...current, [channel]: enabled };
-    const previousPrefs = prefs;
+    // DATA-08 — both the optimistic write and the rollback touch ONLY this
+    // one cell, read from the latest state. Snapshotting `prefs` (the closure
+    // copy) made a failed toggle restore the whole matrix as it was when the
+    // toggle started, wiping any other toggle that succeeded meanwhile —
+    // including a sibling channel in the same category.
+    const setCell = (value: boolean) =>
+      setPrefs((currentPrefs) => ({
+        ...currentPrefs,
+        [cat]: { ...(currentPrefs[cat] ?? DEFAULT_CHANNELS), [channel]: value },
+      }));
 
-    setPrefs((currentPrefs) => ({ ...currentPrefs, [cat]: next }));
+    setCell(enabled);
     setPending(key, true);
 
     const result = await setCategoryChannel(cat, channel, enabled);
     if (!result.ok) {
-      setPrefs(previousPrefs);
+      setCell(!enabled);
       fairwayToast.danger(result.error || 'Failed to save notification preference');
     }
     setPending(key, false);
@@ -158,7 +174,7 @@ export function FairwaySettingsNotifications({
     successMessage: string,
     failureMessage: string,
   ) {
-    if (pendingKeys.has(BULK_KEY)) return;
+    if (bulkBlocked) return;
     const previousPrefs = prefs;
 
     setPrefs(nextPrefs);
@@ -207,7 +223,7 @@ export function FairwaySettingsNotifications({
       <ViewHeader
         eyebrow="Settings"
         title="Notifications"
-        description="Choose how each kind of update reaches you. Quiet mode silences everything except round-review-ready and coach-assigned goals."
+        description="Choose how each kind of update reaches you."
       />
 
       {/* ── Quiet mode — the one master switch ──────────────────────────────── */}
@@ -250,7 +266,7 @@ export function FairwaySettingsNotifications({
               variant="secondary"
               size="sm"
               onClick={() => muteChannel('push')}
-              disabled={pendingKeys.has(BULK_KEY)}
+              disabled={bulkBlocked}
             >
               Mute push
             </Button>
@@ -258,7 +274,7 @@ export function FairwaySettingsNotifications({
               variant="secondary"
               size="sm"
               onClick={() => muteChannel('email')}
-              disabled={pendingKeys.has(BULK_KEY)}
+              disabled={bulkBlocked}
             >
               Mute email
             </Button>
@@ -266,7 +282,7 @@ export function FairwaySettingsNotifications({
               variant="ghost"
               size="sm"
               onClick={() => setResetConfirmOpen(true)}
-              disabled={pendingKeys.has(BULK_KEY)}
+              disabled={bulkBlocked}
             >
               Reset defaults
             </Button>
@@ -336,7 +352,7 @@ export function FairwaySettingsNotifications({
                             <Switch
                               checked={channels[c.key]}
                               onCheckedChange={(enabled) => handleToggle(cat, c.key, enabled)}
-                              disabled={pendingKeys.has(`${cat}:${c.key}`)}
+                              disabled={bulkPending || pendingKeys.has(`${cat}:${c.key}`)}
                               aria-label={`${CATEGORY_LABEL[cat]} · ${c.label}`}
                             />
                           </div>
@@ -353,14 +369,14 @@ export function FairwaySettingsNotifications({
 
       {/* Error prevention: Reset defaults discards every per-update channel
           choice, so gate it behind an explicit confirm. */}
-      <ConfirmDialog
+      <ConfirmAlert
         open={resetConfirmOpen}
         title="Reset notification preferences?"
         message="This replaces every per-update channel choice with the defaults (in-app on, push and email off). This can't be undone."
         confirmLabel="Reset to defaults"
         cancelLabel="Cancel"
         variant="warning"
-        isLoading={pendingKeys.has(BULK_KEY)}
+        isLoading={bulkPending}
         onConfirm={() => {
           setResetConfirmOpen(false);
           void resetDefaults();

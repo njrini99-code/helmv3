@@ -31,7 +31,7 @@ import {
   type ChartTableData,
 } from './ChartFrame';
 import { makeChartTooltip } from './ChartTooltip';
-import { VIZ_CHROME, VIZ_COLOR, VIZ_DEFS, VIZ_FONT, VIZ_REVEAL_MS } from './theme';
+import { VIZ_CHROME, VIZ_COLOR, VIZ_DEFS, VIZ_FONT } from './theme';
 
 export interface TrendPoint {
   /** x label (date string, round number, etc.) */
@@ -277,23 +277,9 @@ export function TrendChart({
               fill={`url(#${VIZ_DEFS.areaGradient})`}
               dot={false}
               activeDot={{ r: 4, strokeWidth: 0, fill: VIZ_COLOR.accent }}
-              // "auto" (recharts' own default — NOT the same as omitting the
-              // prop's hardcoded former value of bare `true`, which forced the
-              // entrance reveal on regardless). `true` disabled Recharts'
-              // built-in `Global.isSsr` / `prefers-reduced-motion` guard, so
-              // the reveal (a clip-path keyed to the on-screen point
-              // positions) always engaged — including for the server-rendered
-              // first paint, where those positions are a ResponsiveContainer
-              // fallback width, not the real one. The client remeasures and
-              // re-renders at the real width immediately after, which resets
-              // that same reveal before it ever finishes: axes/gridlines
-              // aren't part of the clip and still draw, but the line stayed
-              // at its 0%-revealed start. "auto" defers to Recharts to skip
-              // the reveal during SSR and for reduced-motion, so the series
-              // always ends up either fully drawn or animating in once, never
-              // stuck mid-reveal.
-              isAnimationActive="auto"
-              animationDuration={VIZ_REVEAL_MS}
+              // Data renders final on mount (MOT-07): no clip-path draw-on,
+              // which also removes the SSR-width reveal that used to stall.
+              isAnimationActive={false}
             />
           ) : (
             <Line
@@ -304,8 +290,7 @@ export function TrendChart({
               strokeWidth={2}
               dot={false}
               activeDot={{ r: 4, strokeWidth: 0, fill: VIZ_COLOR.accent }}
-              isAnimationActive="auto"
-              animationDuration={VIZ_REVEAL_MS}
+              isAnimationActive={false}
             />
           )}
 
@@ -449,7 +434,7 @@ export function BarCompare({
             cursor={{ fill: 'var(--fw-color-accent-50)', opacity: 0.5 }}
             content={makeChartTooltip({ valueFormatter: (v) => fmt(Number(v)) })}
           />
-          <Bar dataKey="value" name="Value" radius={[0, 6, 6, 0]} isAnimationActive animationDuration={VIZ_REVEAL_MS}>
+          <Bar dataKey="value" name="Value" radius={[0, 6, 6, 0]} isAnimationActive={false}>
             {data.map((d, i) => (
               <Cell key={i} fill={d.highlight ? VIZ_COLOR.accent : 'var(--fw-color-warm-300)'} />
             ))}

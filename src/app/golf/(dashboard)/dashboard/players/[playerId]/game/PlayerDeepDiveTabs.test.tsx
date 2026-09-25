@@ -23,8 +23,8 @@ vi.mock('@/components/fairway/pages/coachhelm/CoachHelmShell', () => ({
   ),
 }));
 
-vi.mock('@/components/fairway/pages/coachhelm/FairwayPlayerInsight', () => ({
-  FairwayPlayerInsight: () => <div data-testid="scouting-view" />,
+vi.mock('@/components/fairway/pages/scouting/ScoutingReport', () => ({
+  ScoutingReport: () => <div data-testid="scouting-view" />,
 }));
 
 const props = {

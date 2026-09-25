@@ -17,7 +17,7 @@ import type { CoachEnrollmentSummary } from '@/app/golf/actions/crm-sequences';
  * label always carries the state, so colour is only reinforcement.
  */
 export function SequenceEnrollmentBadge({ summary }: { summary?: CoachEnrollmentSummary | null }) {
-  const placeholder = <span className="text-micro text-text-tertiary" aria-label="Not in queue">&mdash;</span>;
+  const placeholder = <span className="text-microlabel text-text-tertiary" aria-label="Not in queue">&mdash;</span>;
   if (!summary || summary.status === 'stopped') return placeholder;
 
   const cls = 'gap-1 px-1.5 text-eyebrow';

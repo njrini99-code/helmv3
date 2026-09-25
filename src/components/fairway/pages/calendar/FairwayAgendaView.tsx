@@ -25,10 +25,11 @@
  * ========================================================================== */
 
 import * as React from 'react';
+import Link from 'next/link';
 import { format, isSameDay, addDays, startOfDay, isBefore } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { Surface, EmptyState, Button } from '@/components/fairway';
-import { CalendarDays, History } from 'lucide-react';
+import { CalendarDays, ChevronRight, CircleAlert, History } from 'lucide-react';
 import type { CalendarEvent } from '@/hooks/useCalendarEvents';
 import type { RSVPStatus } from '@/hooks/useRSVP';
 import { eventDaySpan, formatEventTime } from '@/lib/calendar/timezone';
@@ -123,7 +124,57 @@ export interface FairwayAgendaViewProps {
    * what is happening.
    */
   isLoadingRange?: boolean;
+  /**
+   * Incomplete tasks due before today (team zone). Above 0, one compact row
+   * pinned at the top of the agenda links to Tasks; 0 or absent renders
+   * nothing, so the agenda's DOM is unchanged.
+   */
+  overdueTaskCount?: number;
   className?: string;
+}
+
+/** The Tasks hub the overdue row opens. */
+export const OVERDUE_TASKS_HREF = '/golf/dashboard/tasks';
+
+/** One compact row, styled as an agenda row inside a day group's card. */
+function OverdueTasksRow({ count }: { count: number }) {
+  const label = `${count} overdue ${count === 1 ? 'task' : 'tasks'}`;
+  return (
+    <div className={DAY_GROUP_CLASS}>
+      <Link
+        href={OVERDUE_TASKS_HREF}
+        data-slot="agenda-overdue"
+        className={cn(
+          'group flex w-full items-center gap-3 bg-surface px-3 py-2.5 text-left outline-none',
+          '[@media(hover:hover)]:hover:bg-surface-sunken active:bg-surface-sunken',
+          'focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-border-focus',
+          'md:gap-4 md:px-4 md:py-3',
+        )}
+      >
+        <CircleAlert aria-hidden className="h-4 w-4 shrink-0 text-fw-warning-text" />
+        <span className="min-w-0 flex-1 font-fw-sans text-body-sm font-semibold text-text-primary">{label}</span>
+        <ChevronRight
+          aria-hidden
+          className="h-4 w-4 shrink-0 text-text-tertiary transition-transform [@media(hover:hover)]:group-hover:translate-x-0.5 motion-reduce:transition-none"
+        />
+      </Link>
+    </div>
+  );
+}
+
+/**
+ * The agenda, with the overdue-tasks row pinned above whichever body renders
+ * (populated, loading, or honest-empty: a player with no events this month can
+ * still be behind on tasks). The row is not sticky; the day headings are.
+ */
+export function FairwayAgendaView({ overdueTaskCount = 0, ...props }: FairwayAgendaViewProps) {
+  if (overdueTaskCount <= 0) return <AgendaBody {...props} />;
+  return (
+    <div className="flex flex-col gap-4">
+      <OverdueTasksRow count={overdueTaskCount} />
+      <AgendaBody {...props} />
+    </div>
+  );
 }
 
 interface DayBucket {
@@ -235,7 +286,7 @@ function bucketEvents(
   return ordered;
 }
 
-export function FairwayAgendaView({
+function AgendaBody({
   events,
   mode,
   focusDate,
@@ -250,7 +301,7 @@ export function FairwayAgendaView({
   nowRef,
   isLoadingRange = false,
   className,
-}: FairwayAgendaViewProps) {
+}: Omit<FairwayAgendaViewProps, 'overdueTaskCount'>) {
   const buckets = React.useMemo(
     () => bucketEvents(events, mode, focusDate, rangeStart, rangeEnd, nowRef, timezone),
     [events, mode, focusDate, rangeStart, rangeEnd, nowRef, timezone],
@@ -389,7 +440,7 @@ export function FairwayAgendaView({
                 type="button"
                 variant="ghost"
                 onClick={onCreateEvent}
-                className="inline h-auto min-h-0 w-auto border-0 p-0 font-medium text-accent-600 underline-offset-4 outline-none hover:bg-transparent hover:text-accent-700 hover:underline focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas"
+                className="inline h-auto min-h-0 w-auto border-0 p-0 font-medium text-accent-ink underline-offset-4 outline-none hover:bg-transparent hover:text-accent-700 hover:underline focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas"
               >
                 Schedule something
               </Button>
@@ -414,7 +465,9 @@ export function FairwayAgendaView({
         reader never asked for. Collapsing them makes the list agree with its
         own header while keeping every past event one tap away.
       */}
-      {mode === 'range' && pastBuckets.length > 0 ? (
+      {/* Not when everything is past: those days are already listed, and the
+          button offered to "Show 1 earlier event" that was on screen. */}
+      {mode === 'range' && pastBuckets.length > 0 && !allPast ? (
         // History is a secondary action: a quiet ghost control at the list's
         // own gutter, never a raised chip competing with the schedule.
         <div className="-mt-1 flex">
@@ -425,7 +478,7 @@ export function FairwayAgendaView({
             leftIcon={<History className="h-4 w-4" aria-hidden />}
             onClick={() => setShowPast((v) => !v)}
             aria-expanded={showPast}
-            className="-ml-2"
+            className="-ml-2 text-accent-ink"
           >
             {showPast
               ? 'Hide earlier events'
@@ -454,6 +507,8 @@ export function FairwayAgendaView({
           <section
             key={bucket.key}
             aria-label={bucket.label}
+            // Land the day heading below the sticky mobile header, not under it (NAV-S2).
+            className="scroll-mt-[calc(var(--golf-mobile-header-offset,0px)+0.5rem)]"
             ref={(el) => {
               if (el) bucketNodesRef.current.set(bucket.key, el);
               else bucketNodesRef.current.delete(bucket.key);
@@ -501,6 +556,27 @@ export function FairwayAgendaView({
           </section>
         );
       })}
+      {/* DASH-16: a short agenda ends on a sentence, not a void. Says what the
+          list covered so one event reads as "that's all", not "still loading". */}
+      {mode === 'range' ? (
+        <p data-slot="agenda-end" className="border-t border-border-subtle pt-4 font-fw-sans text-body-sm text-text-tertiary">
+          {periodLabel ? `That's everything for ${periodLabel}.` : "That's everything scheduled."}
+          {isCoach && onCreateEvent ? (
+            <>
+              {' '}
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={onCreateEvent}
+                className="inline h-auto min-h-0 w-auto border-0 p-0 font-medium text-accent-ink underline-offset-4 outline-none hover:bg-transparent hover:text-accent-700 hover:underline focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas"
+              >
+                Add an event
+              </Button>
+              .
+            </>
+          ) : null}
+        </p>
+      ) : null}
     </div>
   );
 }

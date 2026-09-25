@@ -641,6 +641,35 @@ and never changes what the caller awaits.
   spending a retry budget or opening a circuit breaker on a failure retrying
   can never clear.
 
+## Round-entry plausibility (added 2026-09-23)
+
+One pure module, `src/lib/golf/round-entry-validation.ts`, holds the rules for
+both sides. Severity `block` = impossible: the live entry panel
+(`FairwayShotEntry`) disables Next with the reason inline, and
+`submitGolfRoundComprehensive` refuses the payload before any write.
+Severity `confirm` = unusual: the panel asks once ("A 420-yard drive onto the
+green? Tap to confirm."), and the server accepts it.
+
+- Hole score between 1 and `max(par + 10, 15)` (block).
+- Putts ≤ score − 1; a hole-out from off the green (0 putts) is fine (block).
+- When a hole's shot chain is complete (it contains a holed shot), score must
+  equal the shots (tracker form: shots + un-recorded penalty results; or
+  non-penalty shots + `penaltyStrokes`) and putts must equal the putting shots
+  (block). Partial chains are not cross-checked.
+- A par-4/5 tee shot to the green or the hole: confirm above 400 yd, block
+  above 500 yd.
+- Remaining distance must go down, unless the shot was a penalty, a recovery
+  (`other`), or a long miss (confirm; the server does not refuse it).
+- Duplicate hole numbers (block). `holes_played` is the count of distinct hole
+  rows, not a client-supplied number.
+- The round total must clear `minPlausibleStrokes` from
+  `src/lib/golf/round-countable.ts`, the same floor the stats layer uses to
+  exclude a stored round (block).
+- A client-supplied `puttDistanceFeet` is clamped to 0–150 ft at write.
+
+Submit failure codes: `hole_invalid` (the issue names a hole) or
+`round_implausible` (round total), with the human message in `error`.
+
 ## Save and submit result contract (updated 2026-09-02)
 
 `savePartialRound` and `submitGolfRoundComprehensive` return

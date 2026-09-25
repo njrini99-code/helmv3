@@ -36,6 +36,19 @@ const YEAR_LABELS: Record<string, string> = {
   red_shirt_senior: 'RS SR',
 };
 
+/**
+ * The same year as words, for a plain metadata line where a pill would be one
+ * badge too many (roster card, DS-N6): 2027 → "Class of 2027",
+ * 'red_shirt_junior' → "Redshirt junior". null / undefined → null.
+ */
+export function yearLabel(year: string | number | null | undefined): string | null {
+  if (year === null || year === undefined) return null;
+  if (typeof year === 'number') return `Class of ${year}`;
+  const words = year.replace(/^red_shirt_/, 'redshirt ').replace(/_/g, ' ').trim();
+  if (!words) return null;
+  return words.charAt(0).toUpperCase() + words.slice(1);
+}
+
 export interface FairwayYearBadgeProps {
   /**
    * Either a class-standing string (e.g. 'freshman', 'red_shirt_junior') or a

@@ -53,9 +53,9 @@ import { Command } from 'cmdk';
 import {
   AnimatePresence,
   motion,
-  useReducedMotion,
   type Variants,
 } from 'framer-motion';
+import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
 import { cn } from '@/lib/utils';
 import { useScrollFade } from '@/lib/fairway/use-scroll-fade';
 import { Skeleton } from '@/components/fairway/feedback';
@@ -222,7 +222,7 @@ function CommandRow({ item, onPick }: RowProps) {
       {/* "go" affordance appears only on the active row */}
       <GoGlyph
         aria-hidden="true"
-        className="ml-1 h-4 w-4 shrink-0 text-accent-600 opacity-0 transition-opacity [transition-duration:180ms] group-data-[selected=true]:opacity-100"
+        className="ml-1 h-4 w-4 shrink-0 text-accent-ink opacity-0 transition-opacity [transition-duration:180ms] group-data-[selected=true]:opacity-100"
       />
     </Command.Item>
   );
@@ -250,7 +250,7 @@ export function CommandMenu({
   label = 'Command menu',
   className,
 }: CommandMenuProps) {
-  const reduceMotion = useReducedMotion();
+  const reduceMotion = useReducedMotionGuard();
   const [query, setQuery] = useState('');
   const [mounted, setMounted] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);

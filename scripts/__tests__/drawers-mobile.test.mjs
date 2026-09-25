@@ -73,10 +73,18 @@ function assertContains(content, needle, file, why) {
   );
 }
 
+// GoalCreationModal moved onto the Fairway Sheet (UI audit 2026-09-23). The
+// dvh cap and the scrolling body now live in the primitive, so assert both
+// halves: the modal renders <Sheet>/<Sheet.Body>, and Sheet keeps the cap +
+// the scroll container.
 test('GoalCreationModal panel is dvh-capped and scrolls', async () => {
   const src = await read(FILES.goalModal);
-  assertContains(src, 'max-h-[90dvh]', FILES.goalModal, 'panel must cap to 90% of the dynamic viewport on short screens');
-  assertContains(src, 'overflow-y-auto', FILES.goalModal, 'panel content must scroll instead of pushing actions off-screen');
+  assertContains(src, '<Sheet', FILES.goalModal, 'panel must render the Fairway Sheet (which caps to the dynamic viewport)');
+  assertContains(src, '<Sheet.Body', FILES.goalModal, 'form must sit in Sheet.Body, the scroll container, so actions never leave the screen');
+  const sheetPath = join(COMPONENTS, 'fairway', 'overlays', 'Sheet.tsx');
+  const sheet = await read(sheetPath);
+  assertContains(sheet, 'max-h-[calc(88dvh', sheetPath, 'bottom sheet must cap to the dynamic viewport on short screens');
+  assertContains(sheet, 'overflow-y-auto', sheetPath, 'Sheet.Body must scroll instead of pushing actions off-screen');
 });
 
 // REMOVED: 'ChatDrawer FAB respects the bottom safe-area inset'.

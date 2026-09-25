@@ -14,6 +14,8 @@
 // ============================================================================
 
 import { createClient } from '@/lib/supabase/server';
+import { isCountableRound } from '@/lib/golf/round-countable';
+import { computeFormScore, type FormRoundInput, type FormScore } from '@/lib/golf/form-score';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { logServerError } from '@/lib/server-error-logger';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
@@ -26,7 +28,6 @@ import {
 // Stats module
 import {
   normalizePlayerMetrics,
-  computeCompositeRating,
   computeCategoryRatings,
   buildPlayerBaseline,
   buildPercentileProfile,
@@ -127,7 +128,13 @@ interface ProfileImprovement {
 }
 
 interface PlayerProfileData {
+  /**
+   * The player's Form score (OD-02, src/lib/golf/form-score.ts), the same
+   * number Fingerprint and Team Stats print. Was the team z-score composite.
+   */
   composite: number | null;
+  /** Form with its read quality and formula inputs. */
+  form: FormScore;
   categories: CategoryRatings;
   percentiles: PercentileProfile;
   baselines: PlayerBaseline;
@@ -416,7 +423,6 @@ async function getPlayerProfileImpl(
     const allZScores = normalizePlayerMetrics(teamPlayerMetrics, metricKeys);
     const playerZScores = allZScores.find((z) => z.playerId === playerId);
 
-    let composite = playerZScores?.composite ?? null;
     let categories = playerZScores?.categories ?? computeCategoryRatings({});
     const zScores = playerZScores?.zScores ?? {};
 
@@ -426,7 +432,7 @@ async function getPlayerProfileImpl(
     // When there are fewer than 3 players, z-score normalization can't produce
     // a meaningful composite (returns null) and categories default to 50.
     // Fall back to benchmark-based rating using the player's own stats.
-    if (composite == null && playerStatsRow) {
+    if (playerZScores?.composite == null && playerStatsRow) {
       const pm = mapStatsCacheToMetrics(playerStatsRow);
       // D2/D3 benchmark values (approximate averages)
       const benchmarks: Record<string, { mean: number; good: number; lowerIsBetter: boolean }> = {
@@ -462,7 +468,6 @@ async function getPlayerProfileImpl(
         benchZScores[key] = (rating - 50) / 10;
       }
       categories = computeCategoryRatings(benchZScores);
-      composite = computeCompositeRating(benchZScores);
     }
     // Override categories + composite with the canonical stats-intelligence
     // calculation so /coachhelm and /stats never disagree. The local z-score
@@ -486,9 +491,8 @@ async function getPlayerProfileImpl(
             overall: canonical.data.categories.overall,
           };
         }
-        if (canonical.data.composite != null) {
-          composite = canonical.data.composite;
-        }
+        // The canonical z-score composite is NOT copied over any more: the
+        // headline number is Form (OD-02), computed below from rounds.
       }
     } catch {
       // Keep the local fallback values if the canonical action throws.
@@ -504,13 +508,12 @@ async function getPlayerProfileImpl(
       teamDistributions[key] = teamPlayerMetrics.map((p) => p.metrics[key] ?? 0);
     }
 
-    // Platform distributions default to team (could be expanded later)
-    const platformDistributions = teamDistributions;
-
+    // No platform-wide distribution exists yet. Pass null so the profile
+    // reports no platform percentile rather than a copy of the team one (NUM-35).
     const percentiles = buildPercentileProfile(
       playerMetricsForPercentile,
       teamDistributions,
-      platformDistributions,
+      null,
       playerId,
     );
 
@@ -561,10 +564,42 @@ async function getPlayerProfileImpl(
       );
     }
 
+    // Form (OD-02): the most recent rounds (newest first, unlike the
+    // ascending baseline read above) through the countable rule, minus the
+    // severe-pattern penalty, exactly as the Fingerprint computes it.
+    const [formRoundsRes, severePatternsRes] = await Promise.all([
+      supabase
+        .from('golf_rounds')
+        .select('status, holes_played, total_score, front_nine, back_nine, total_putts, score_to_par, strokes_gained_total')
+        .eq('player_id', playerId)
+        .eq('status', 'completed')
+        .order('round_date', { ascending: false })
+        .limit(20),
+      supabase
+        .from('golf_patterns_v2')
+        .select('severity')
+        .eq('player_id', playerId)
+        .eq('is_active', true)
+        .in('severity', ['critical', 'high']),
+    ]);
+    if (formRoundsRes.error || severePatternsRes.error) {
+      await logServerError(
+        `getPlayerProfile Form inputs failed: ${(formRoundsRes.error ?? severePatternsRes.error)?.message ?? 'unknown'}`,
+        { action: 'getPlayerProfile.form', extra: { playerId } },
+        'warning',
+      );
+    }
+    const form = computeFormScore(
+      (formRoundsRes.data ?? []) as FormRoundInput[],
+      (severePatternsRes.data ?? []) as { severity: string | null }[],
+    );
+    const composite = form.score;
+
     return {
       success: true,
       data: {
         composite,
+        form,
         categories,
         percentiles,
         baselines: baseline,
@@ -622,9 +657,9 @@ async function getPlayerTrendAnalysisImpl(
     // Same contract and same latent limit as `getPlayerProfileImpl` above —
     // ascending is load-bearing for the EWMA fold, and ascending + limit takes
     // the OLDEST 30 rather than the most recent 30. See the full note there.
-    const { data: roundsData, error: roundsError } = await supabase
+    const { data: rawTrendRounds, error: roundsError } = await supabase
       .from('golf_rounds')
-      .select('id, score_to_par, round_date, total_putts, total_gir, total_gir_possible, total_fairways_hit, total_fairways, holes_played')
+      .select('id, score_to_par, round_date, total_score, front_nine, back_nine, total_putts, total_gir, total_gir_possible, total_fairways_hit, total_fairways, holes_played')
       .eq('player_id', playerId)
       .eq('status', 'completed')
       .not('score_to_par', 'is', null)
@@ -634,6 +669,19 @@ async function getPlayerTrendAnalysisImpl(
     if (roundsError) {
       return { success: false, error: 'Failed to fetch round data' };
     }
+
+    // Countable rounds only (src/lib/golf/round-countable.ts), with a nine-hole
+    // round's to-par and putts scaled to 18 holes the way Stats does. Before
+    // this a 37 stored as 18 holes (−35) and raw nine-hole to-pars bent the
+    // scoring trend and the prediction band.
+    const roundsData = (rawTrendRounds ?? []).filter(isCountableRound).map((r) => {
+      const scale = r.holes_played && r.holes_played > 0 && r.holes_played < 18 ? 18 / r.holes_played : 1;
+      return {
+        ...r,
+        score_to_par: r.score_to_par == null ? null : r.score_to_par * scale,
+        total_putts: r.total_putts == null ? null : r.total_putts * scale,
+      };
+    });
 
     if (!roundsData || roundsData.length < 3) {
       // Same ambiguity as getPlayerProfile: the main query drops completed
@@ -762,10 +810,12 @@ async function getPlayerShotContextImpl(
     sinceDate.setDate(sinceDate.getDate() - periodDays);
     const sinceDateStr = sinceDate.toISOString().split('T')[0];
 
-    // Fetch rounds in the period
-    const { data: roundsData, error: roundsError } = await supabase
+    // Fetch rounds in the period — countable ones only
+    // (src/lib/golf/round-countable.ts), so an implausible round's shots never
+    // feed the yardage curve, weaknesses or scramble rate.
+    const { data: rawRoundsData, error: roundsError } = await supabase
       .from('golf_rounds')
-      .select('id')
+      .select('id, holes_played, total_score, front_nine, back_nine, total_putts')
       .eq('player_id', playerId)
       .eq('status', 'completed')
       .gte('round_date', sinceDateStr);
@@ -773,6 +823,7 @@ async function getPlayerShotContextImpl(
     if (roundsError) {
       return { success: false, error: 'Failed to fetch rounds' };
     }
+    const roundsData = (rawRoundsData ?? []).filter(isCountableRound);
 
     if (!roundsData || roundsData.length === 0) {
       return { success: false, error: 'No completed rounds found in the specified period', code: 'no_rounds_in_period' };
@@ -841,8 +892,16 @@ async function getPlayerShotContextImpl(
     const contextAnalyses = analyzeShotsByContext(shots, sgBaseline);
     const weaknesses = rankWeaknessContexts(contextAnalyses, 5); // Lower min for broader view
 
-    // Build yardage curve + find dead zones
-    const yardageCurve = buildYardageCurve(shots, sgBaseline, 25, playerId);
+    // Build yardage curve + find dead zones. Approach shots only (NUM-28): a
+    // tee shot from 275–300 y is driving, and mixing it in printed a driving
+    // "dead zone" beside a positive SG: Off the tee. (Putts are already
+    // excluded inside buildYardageCurve.)
+    const yardageCurve = buildYardageCurve(
+      shots.filter((s) => s.lieBefore !== 'tee'),
+      sgBaseline,
+      25,
+      playerId,
+    );
 
     // Build a synthetic baseline yardage curve for dead zone comparison.
     // The default SG baseline represents average performance (SG = 0),

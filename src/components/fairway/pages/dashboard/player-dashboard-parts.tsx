@@ -4,67 +4,59 @@
  * ============================================================================
  * Fairway · pages/dashboard · FairwayPlayerDashboard local sub-parts
  * ----------------------------------------------------------------------------
- * Presentation-only building blocks for the redesigned PLAYER dashboard. These
- * are page-local compositions of Fairway primitives (Surface / Inset / MetricCard
- * / Button / etc.) — they hold NO data fetching and NO business logic. All data
- * arrives as props derived from the UNCHANGED dashboard-data.ts payload.
+ * Presentation-only building blocks for the PLAYER Home field sheet. They hold
+ * NO data fetching and NO business logic; every value arrives as a prop from
+ * the dashboard-data.ts payload.
  *
- * Per the redesign plan (dashboard-home.json player entry + _flow-dashboard-home
- * Dashboard-vs-Hub split):
- *   • Dashboard = the analytical overview (trend / standing / genome teasers).
- *   • The "today / action items" job belongs to the HUB — the Dashboard only
- *     shows a quiet "Today" summary card that links INTO the Hub instead of
- *     reproducing its tabs.
- *   • Honest insufficient-data everywhere (29/50 players have zero rounds and
- *     only 19 stats-cache rows) — never authoritative zeros.
+ * W9 field-sheet pass (2026-09-24, DASH-01/02, OD-08):
+ *   • Today and Recent rounds are hairline ledger rows, not cards holding
+ *     insets. Titles and course names wrap; nothing is ellipsized.
+ *   • The strokes-gained radar teaser and the "Where you stack up" card are
+ *     gone (OD-08: the radar was unreadable at phone size). `GameLinks` keeps
+ *     both destinations one tap away as plain rows.
+ *   • Numbers go through the display registry and SF tabular numerals.
  *
- * ADDITIVE + GATED. Renders inside a `.fairway-ds` scope on `bg-canvas`.
+ * Renders inside a `.fairway-ds` scope on `bg-canvas`.
  * ========================================================================== */
 
 import Link from 'next/link';
 import { useMemo } from 'react';
-import {
-  ChevronRight,
-  ClipboardList,
-  CalendarClock,
-  Flag,
-  AlertCircle,
-  Compass,
-} from 'lucide-react';
+import { ChevronRight, ClipboardList, CalendarClock, AlertCircle } from 'lucide-react';
 
-import { Surface, Inset } from '@/components/fairway/surfaces/surface';
-import { Button } from '@/components/fairway/controls/button';
-import { GenomeRadar, type GenomeAxis } from '@/components/fairway/charts/GenomeRadar';
 import { cn } from '@/lib/utils';
-import type {
-  TodayEvent,
-  ActionItem,
-  StrokesGainedSnapshot,
-} from '@/app/golf/actions/dashboard-data';
+import { getValidTimezone } from '@/lib/calendar/timezone';
+import { cleanCourseName } from '@/lib/golf/course-name';
+import { formatMetric } from '@/lib/golf/metrics/display-registry';
+import { formatStripDate } from '@/components/fairway/modules/RoundStrip';
+import type { TodayEvent, ActionItem } from '@/app/golf/actions/dashboard-data';
 
 /* ─────────────────────────────────────────────────────────────────────────
- * Section heading — quiet General Sans h3 with an optional trailing link.
- * One consistent section-title voice across the page (no bespoke per-card
- * headers).
+ * Section heading — one quiet h2 voice with an optional trailing link.
  * ──────────────────────────────────────────────────────────────────────── */
 
 export function SectionTitle({
   children,
   action,
+  id,
 }: {
   children: React.ReactNode;
   action?: { label: string; href: string };
+  id?: string;
 }) {
   return (
     <div className="mb-3 flex items-baseline justify-between gap-4">
-      <h2 className="font-fw-sans text-h3 font-semibold text-text-primary">{children}</h2>
+      <h2 id={id} className="font-fw-sans text-h3 font-semibold text-text-primary">
+        {children}
+      </h2>
       {action ? (
         <Link
           href={action.href}
           className={cn(
-            'group inline-flex shrink-0 items-center gap-1 font-fw-sans text-body-sm font-medium text-accent-700',
-            'rounded-full px-1 py-0.5 transition-colors duration-base',
-            'hover:text-fw-success-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
+            'group inline-flex shrink-0 items-center gap-1 font-fw-sans text-body-sm font-medium text-accent-ink',
+            // 44pt hit area (HIG) without moving the row: the padding grows
+            // the target and the negative margin gives the height back.
+            'rounded-full px-1 -my-2.5 min-h-11 py-2.5 transition-colors duration-base',
+            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
           )}
         >
           {action.label}
@@ -78,35 +70,27 @@ export function SectionTitle({
   );
 }
 
+/** One hairline-divided list, shared by every ledger section on Home. */
+const LEDGER_LIST = 'm-0 flex list-none flex-col divide-y divide-border-subtle border-y border-border-subtle p-0';
+
 /* ─────────────────────────────────────────────────────────────────────────
- * "Today" summary card — DEMOTES the old TodayTimeline + ActionItemsCard.
+ * Today — the player's next event and lead task, as ledger rows.
  * ----------------------------------------------------------------------------
- * The plan: the Dashboard must NOT reproduce the Hub's today/tasks tabs. It
- * shows a single compact summary and links into the Action center, which is
- * the canonical action surface.
- *
- * WAVE 3 (player-home premium pass): this card used to grow a SECOND "what
- * needs you" preview whenever a Hub feed (`hubSummary`) was present — a
- * hero-framed "N thing(s) need(s) you" row restating the same count the
- * Action center section already showed in full a few hundred pixels below.
- * Nick flagged that duplicate framing directly. Fixed by making the body
- * ALWAYS show real "today" content — the player's actual next event + lead
- * task.
- *
- * DaySchedule wave: the Action center section this card's footer used to
- * jump to (`#action-center`) is gone — replaced by the DaySchedule card
- * further down the page. The footer no longer references a count or an
- * in-page anchor; it's a single, always-honest link straight to the full
- * calendar, since that's the one place guaranteed to exist regardless of
- * whether this player has a Hub feed.
+ * The Hub owns the full task list; Home shows the next event and the one task
+ * that matters most (overdue first), then links to the full calendar.
  * ──────────────────────────────────────────────────────────────────────── */
 
-function formatEventTime(start: string, timezone?: string): string {
+/**
+ * HYD-15: `timeZone: undefined` formats in the SERVER's zone during SSR and in
+ * the browser's zone on hydration, so the two disagree (React #418). An absent
+ * or invalid team zone now falls back to the app default on both sides.
+ */
+export function formatEventTime(start: string, timezone?: string | null): string {
   try {
     return new Date(start).toLocaleTimeString('en-US', {
       hour: 'numeric',
       minute: '2-digit',
-      timeZone: timezone,
+      timeZone: getValidTimezone(timezone),
     });
   } catch {
     return '';
@@ -123,314 +107,148 @@ export function TodayCard({
   timezone?: string;
 }) {
   const nextEvent = events[0] ?? null;
-  const overdue = useMemo(
-    () => actionItems.filter((a) => a.overdue),
-    [actionItems],
-  );
-  const openTasks = useMemo(
-    () => actionItems.filter((a) => a.type === 'task'),
-    [actionItems],
-  );
+  const overdue = useMemo(() => actionItems.filter((a) => a.overdue), [actionItems]);
+  const openTasks = useMemo(() => actionItems.filter((a) => a.type === 'task'), [actionItems]);
   const leadTask = overdue[0] ?? openTasks[0] ?? actionItems[0] ?? null;
-
-  // The body always shows the player's REAL today content (next event + lead
-  // task) — never a restated count of a different section's feed.
   const nothingToday = !nextEvent && !leadTask;
 
-  const footerLabel = actionItems.length > 0
-    ? `${actionItems.length} update${actionItems.length === 1 ? '' : 's'} total`
-    : "You're caught up";
-
   return (
-    <Surface padding="md" className="flex h-full flex-col">
-      <Surface.Header
-        title="Today"
-        subtitle={nothingToday ? "You're all caught up" : 'Your next event and task'}
-      />
+    <section aria-labelledby="home-today-title" className="flex flex-col">
+      <SectionTitle id="home-today-title" action={{ label: 'Full calendar', href: '/golf/dashboard/calendar' }}>
+        Today
+      </SectionTitle>
 
-      <div className="flex flex-1 flex-col gap-2.5">
-        {/* Next event row */}
-        {nextEvent ? (
-          <Inset padding="sm" className="flex items-center gap-3">
-            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-fw-md bg-accent-50 text-accent-700">
-              <CalendarClock aria-hidden className="h-4 w-4" />
-            </span>
-            <div className="min-w-0 flex-1">
-              <p className="truncate font-fw-sans text-body-sm font-medium text-text-primary">
-                {nextEvent.title}
-              </p>
-              <p className="font-fw-sans text-caption text-text-tertiary">
-                {formatEventTime(nextEvent.start_time, timezone)}
-                {nextEvent.location ? ` · ${nextEvent.location}` : ''}
-              </p>
-            </div>
-          </Inset>
-        ) : null}
+      {nothingToday ? (
+        // One line, no reserved height: an empty day should not hold a box open.
+        <p className="border-y border-border-subtle py-3 font-fw-sans text-body-sm text-text-secondary">
+          <span className="font-medium text-text-primary">Nothing scheduled</span>
+          {' · '}Check the full calendar for trips and upcoming events.
+        </p>
+      ) : (
+        <ul className={LEDGER_LIST}>
+          {nextEvent ? (
+            <li className="flex items-start gap-3 py-3">
+              <CalendarClock aria-hidden className="mt-0.5 h-4 w-4 shrink-0 text-accent-ink" />
+              <div className="min-w-0 flex-1">
+                <p className="line-clamp-2 font-fw-sans text-body-sm font-medium text-text-primary">
+                  {nextEvent.title}
+                </p>
+                <p className="font-fw-sans text-caption text-text-secondary tabular-nums">
+                  {formatEventTime(nextEvent.start_time, timezone)}
+                  {nextEvent.location ? ` · ${nextEvent.location}` : ''}
+                </p>
+              </div>
+            </li>
+          ) : null}
+          {leadTask ? (
+            <li className="flex items-start gap-3 py-3">
+              {leadTask.overdue ? (
+                <AlertCircle aria-hidden className="mt-0.5 h-4 w-4 shrink-0 text-fw-warning-text" />
+              ) : (
+                <ClipboardList aria-hidden className="mt-0.5 h-4 w-4 shrink-0 text-text-secondary" />
+              )}
+              <div className="min-w-0 flex-1">
+                <p className="line-clamp-2 font-fw-sans text-body-sm font-medium text-text-primary">
+                  {leadTask.title}
+                </p>
+                <p className="font-fw-sans text-caption text-text-secondary">
+                  {leadTask.overdue ? 'Overdue' : 'Open'}
+                  {openTasks.length > 1 ? ` · ${openTasks.length} tasks total` : ''}
+                </p>
+              </div>
+            </li>
+          ) : null}
+        </ul>
+      )}
+    </section>
+  );
+}
 
-        {/* Lead task row (overdue first) */}
-        {leadTask ? (
-          <Inset padding="sm" className="flex items-center gap-3">
-            <span
+/* ─────────────────────────────────────────────────────────────────────────
+ * Recent rounds — a hairline table: date, course (wraps), score, to par.
+ * ──────────────────────────────────────────────────────────────────────── */
+
+export interface RecentRoundRow {
+  id: string;
+  course_name: string;
+  total_score: number;
+  total_to_par: number;
+  round_date: string;
+}
+
+export function RecentRoundsList({ rounds }: { rounds: RecentRoundRow[] }) {
+  return (
+    <ul className={LEDGER_LIST}>
+      {rounds.map((round) => {
+        const toPar = formatMetric('round_to_par', round.total_to_par);
+        return (
+          <li key={round.id}>
+            <Link
+              href={`/golf/dashboard/rounds/${round.id}/review`}
               className={cn(
-                'grid h-9 w-9 shrink-0 place-items-center rounded-fw-md',
-                leadTask.overdue
-                  ? 'bg-fw-warning-bg text-fw-warning-ink'
-                  : 'bg-surface text-text-tertiary',
+                'group flex items-center gap-3 py-3',
+                'transition-colors duration-base',
+                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
               )}
             >
-              {leadTask.overdue ? (
-                <AlertCircle aria-hidden className="h-4 w-4" />
-              ) : (
-                <ClipboardList aria-hidden className="h-4 w-4" />
-              )}
-            </span>
-            <div className="min-w-0 flex-1">
-              <p className="truncate font-fw-sans text-body-sm font-medium text-text-primary">
-                {leadTask.title}
-              </p>
-              <p className="font-fw-sans text-caption text-text-tertiary">
-                {leadTask.overdue ? 'Overdue' : 'Open'}
-                {openTasks.length > 1 ? ` · ${openTasks.length} tasks total` : ''}
-              </p>
-            </div>
-          </Inset>
-        ) : null}
-
-        {nothingToday ? (
-          <Inset
-            padding="md"
-            className="flex flex-1 flex-col items-center justify-center gap-1 text-center"
-          >
-            <p className="font-fw-sans text-body-sm font-medium text-text-secondary">
-              Nothing scheduled
-            </p>
-            <p className="font-fw-sans text-caption text-text-tertiary">
-              Check the full calendar for trips and upcoming events.
-            </p>
-          </Inset>
-        ) : null}
-      </div>
-
-      <Surface.Footer className="mt-3">
-        <span className="font-fw-sans text-caption text-text-tertiary">{footerLabel}</span>
-        <Button asChild variant="ghost" size="sm" rightIcon={<ChevronRight className="h-4 w-4" />}>
-          <Link href="/golf/dashboard/calendar">Full calendar</Link>
-        </Button>
-      </Surface.Footer>
-    </Surface>
-  );
-}
-
-/* ─────────────────────────────────────────────────────────────────────────
- * Genome fingerprint teaser — a compact GenomeRadar that DEEP-LINKS to the
- * flagship My Game Profile surface (fixes the discoverability bug: the radar
- * was previously a dead-end). Degrades to insufficient-data honestly when the
- * SG vector is sparse.
- * ──────────────────────────────────────────────────────────────────────── */
-
-export function GenomeFingerprintTeaser({
-  strokesGained,
-}: {
-  strokesGained: StrokesGainedSnapshot;
-}) {
-  // Map the SG snapshot onto the radar's 0–100 axes. The mapping is purely
-  // presentational (it does not change the source vector): we center 0 SG at 50
-  // and scale ±3 SG to the full range so the shape reads as a fingerprint.
-  const axes: GenomeAxis[] = useMemo(() => {
-    const toPct = (sg: number | null) =>
-      sg == null ? null : Math.max(0, Math.min(100, 50 + (sg / 3) * 50));
-    const raw: Array<{ label: string; v: number | null }> = [
-      { label: 'Off the Tee', v: toPct(strokesGained.sg_off_tee) },
-      { label: 'Approach', v: toPct(strokesGained.sg_approach) },
-      { label: 'Around Green', v: toPct(strokesGained.sg_around_green) },
-      { label: 'Putting', v: toPct(strokesGained.sg_putting) },
-    ];
-    return raw
-      .filter((r): r is { label: string; v: number } => r.v != null)
-      .map((r) => ({ label: r.label, value: r.v }));
-  }, [strokesGained]);
-
-  // Only render a real shape when ≥3 of the four scoring zones carry SG data;
-  // otherwise the radar collapses to a degenerate/near-null vector, so fall
-  // back to GenomeRadar's honest insufficient-data state instead of plotting it.
-  const hasShape = axes.length >= 3;
-  return (
-    <Surface padding="md" className="flex h-full flex-col">
-      <Surface.Header
-        title="Strokes-gained shape"
-        subtitle="Where your strokes come from across the four scoring zones"
-        actions={
-          <Button
-            asChild
-            variant="ghost"
-            size="sm"
-            rightIcon={<ChevronRight className="h-4 w-4" />}
-          >
-            <Link href="/golf/dashboard/my-game-profile">Full profile</Link>
-          </Button>
-        }
-      />
-      {/* `[&_svg]:overflow-visible` (audit #170): recharts' ResponsiveContainer
-          renders a plain `<svg>`, and every non-root `<svg>` gets `overflow:
-          hidden` from the browser's own UA stylesheet — so a polar axis label
-          positioned past the SVG's own width (e.g. "Approach" at the radar's
-          east spoke, on a narrow card) is clipped hard at that box edge
-          ("Approach" → "Approac") with nothing in this component's own CSS
-          asking for that. Nothing else in this single-series radar relies on
-          SVG clipping (no clip-path reveal here), so overriding it to visible
-          only lets the label text render in full — it doesn't affect the
-          Radar/PolarGrid geometry itself. */}
-      <div className="-mt-2 flex-1 [&_svg]:overflow-visible">
-        <GenomeRadar
-          title={null as unknown as React.ReactNode}
-          data={axes}
-          seriesName="Strokes gained"
-          height={220}
-          takeaway={
-            hasShape
-              ? 'Your strokes-gained shape across the four scoring zones.'
-              : undefined
-          }
-          state={hasShape ? 'ready' : 'insufficient-data'}
-        />
-      </div>
-    </Surface>
-  );
-}
-
-/* ─────────────────────────────────────────────────────────────────────────
- * Recent rounds — calm matte list (Inset rows). Replaces the divided Card.
- * ──────────────────────────────────────────────────────────────────────── */
-
-function formatRoundDate(date: string): string {
-  try {
-    // round_date is a DATE column ('YYYY-MM-DD') → new Date() = UTC midnight.
-    // Pin the formatter to UTC so SSR (server TZ) and hydration (client TZ) agree —
-    // without this, west-of-UTC clients render the previous day (React #418 + off-by-one).
-    return new Date(date).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      timeZone: 'UTC',
-    });
-  } catch {
-    return date;
-  }
-}
-
-function toParLabel(toPar: number): { text: string; tone: string } {
-  if (toPar === 0) return { text: 'E', tone: 'text-text-secondary' };
-  if (toPar < 0) return { text: `${toPar}`, tone: 'text-fw-success-ink' };
-  return { text: `+${toPar}`, tone: 'text-text-secondary' };
-}
-
-export function RecentRoundsList({
-  rounds,
-}: {
-  rounds: Array<{
-    id: string;
-    course_name: string;
-    total_score: number;
-    total_to_par: number;
-    round_date: string;
-  }>;
-}) {
-  return (
-    <Surface padding="sm" className="flex flex-col">
-      <ul className="flex flex-col gap-1.5">
-        {rounds.map((round) => {
-          const par = toParLabel(round.total_to_par);
-          return (
-            <li key={round.id}>
-              <Link
-                href={`/golf/dashboard/rounds/${round.id}/review`}
+              <span className="w-12 shrink-0 font-fw-sans text-caption text-text-secondary tabular-nums">
+                {formatStripDate(round.round_date)}
+              </span>
+              <span className="min-w-0 flex-1 font-fw-sans text-body-sm font-medium text-text-primary line-clamp-2">
+                {cleanCourseName(round.course_name) || 'Unknown course'}
+              </span>
+              <span className="w-9 text-right font-fw-sans text-body font-medium text-text-primary tabular-nums">
+                {round.total_score}
+              </span>
+              <span
                 className={cn(
-                  'group flex items-center gap-3 rounded-fw-md px-3 py-3',
-                  'transition-colors duration-base hover:bg-surface-sunken',
-                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
+                  'w-9 text-right font-fw-sans text-caption font-medium tabular-nums',
+                  toPar.tone === 'good' ? 'text-accent-ink' : toPar.tone === 'bad' ? 'text-fw-warning-text' : 'text-text-secondary',
                 )}
               >
-                <span className="grid h-9 w-9 shrink-0 place-items-center rounded-fw-md bg-surface-sunken text-text-tertiary">
-                  <Flag aria-hidden className="h-4 w-4" />
-                </span>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate font-fw-sans text-body-sm font-medium text-text-primary">
-                    {round.course_name}
-                  </p>
-                  <p className="font-fw-sans text-caption text-text-tertiary">
-                    {formatRoundDate(round.round_date)}
-                  </p>
-                </div>
-                <div className="flex items-baseline gap-2 text-right">
-                  <span
-                    className="font-fw-mono text-body font-medium tabular-nums text-text-primary"
-                    style={{ fontFeatureSettings: '"tnum" 1, "lnum" 1' }}
-                  >
-                    {round.total_score}
-                  </span>
-                  <span
-                    className={cn(
-                      'w-9 font-fw-mono text-caption font-medium tabular-nums',
-                      par.tone,
-                    )}
-                    style={{ fontFeatureSettings: '"tnum" 1, "lnum" 1' }}
-                  >
-                    {par.text}
-                  </span>
-                </div>
-                <ChevronRight
-                  aria-hidden
-                  className="h-4 w-4 shrink-0 text-text-tertiary transition-transform duration-base group-hover:translate-x-0.5"
-                />
-              </Link>
-            </li>
-          );
-        })}
-      </ul>
-    </Surface>
+                <span className="sr-only">{toPar.ariaLabel}</span>
+                <span aria-hidden="true">{toPar.text}</span>
+              </span>
+              <ChevronRight
+                aria-hidden
+                className="h-4 w-4 shrink-0 text-text-tertiary transition-transform duration-base group-hover:translate-x-0.5"
+              />
+            </Link>
+          </li>
+        );
+      })}
+    </ul>
   );
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
- * "Where you stack up" card — the inbound link to My Standing (fixes the
- * discoverability bug). Honest: shows a calm prompt rather than a fake number.
+ * Your game — where the strokes-gained radar and the standing card used to
+ * sit (OD-08). Plain rows into the surfaces that hold the full picture.
  * ──────────────────────────────────────────────────────────────────────── */
 
-export function StandingCard({ ready }: { ready: boolean }) {
+export function GameLinks({ links }: { links: Array<{ href: string; title: string; detail: string }> }) {
   return (
-    <Surface
-      as={Link}
-      // Surface spreads unknown props (incl. `href`) onto the `as` element; the
-      // base SurfaceProps type doesn't model element-specific attrs.
-      {...({ href: '/golf/dashboard/my-standing' } as { href: string })}
-      interactive
-      padding="md"
-      className="flex h-full flex-col justify-between"
-    >
-      <div className="flex items-start justify-between gap-3">
-        <span className="font-fw-sans text-eyebrow uppercase text-text-tertiary">
-          Where you stack up
-        </span>
-        <span className="shrink-0 text-text-tertiary">
-          <Compass aria-hidden className="h-5 w-5" />
-        </span>
-      </div>
-      <div className="mt-2">
-        <p className="font-fw-sans text-h3 font-semibold text-text-primary">
-          My Standing
-        </p>
-        <p className="mt-1 font-fw-sans text-body-sm text-text-secondary">
-          {ready
-            ? // conn-golf-player Finding 4: My Standing is read-only today (no
-              // goal-creation CTA is wired there yet — W17/W18) — the copy no
-              // longer promises a capability the page can't perform.
-              'See every metric vs your team and the PGA percentile, category by category.'
-            : 'Log a few rounds to compare your game against your team and the PGA baseline.'}
-        </p>
-      </div>
-      <span className="mt-3 inline-flex items-center gap-1 py-3 -my-3 font-fw-sans text-body-sm font-medium text-accent-700">
-        View standing
-        <ChevronRight aria-hidden className="h-3.5 w-3.5" />
-      </span>
-    </Surface>
+    <ul className={LEDGER_LIST}>
+      {links.map((l) => (
+        <li key={l.href}>
+          <Link
+            href={l.href}
+            className={cn(
+              'group flex items-center gap-3 py-3',
+              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
+            )}
+          >
+            <span className="min-w-0 flex-1">
+              <span className="block font-fw-sans text-body-sm font-medium text-text-primary">{l.title}</span>
+              <span className="block font-fw-sans text-caption text-text-secondary">{l.detail}</span>
+            </span>
+            <ChevronRight
+              aria-hidden
+              className="h-4 w-4 shrink-0 text-text-tertiary transition-transform duration-base group-hover:translate-x-0.5"
+            />
+          </Link>
+        </li>
+      ))}
+    </ul>
   );
 }

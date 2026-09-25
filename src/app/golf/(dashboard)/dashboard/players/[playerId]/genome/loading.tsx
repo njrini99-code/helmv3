@@ -1,104 +1,56 @@
 import { fairwayScope } from '@/lib/redesign/flag';
-import { Skeleton } from '@/components/fairway/feedback';
-import { Surface } from '@/components/fairway/surfaces/surface';
+import { Skeleton } from '@/components/fairway/feedback/Skeleton';
 
 /**
- * P106 — Fairway-native loading state for the Genome detail surface.
- * ----------------------------------------------------------------------------
- * The live page (GenomeDetailView) is a max-w-[1200px] CoachHelmShell (eyebrow →
- * title → breadcrumb → sub-nav) wrapping an asymmetric InstrumentCluster cockpit
- * (radar hero focal + persona rail + 3-up tertiary readout row) and a 4-up
- * Dimensions grid. This reserves the cockpit's real slots with Fairway tokens to
- * remove the shape/token swap on hydrate (CLS / gate B3).
- *
- * Sub-nav strip: GenomeDetailView mounts CoachHelmShell with `role="coach"`
- * (GenomeDetailView.tsx:353-356), whose strip is `COACH_TABS` in
- * CoachHelmSubNav.tsx — two plain text-label route links ("Brief", "Ask"),
- * each `px-3.5 pb-3 pt-2.5` inside a `border-b border-border-subtle` nav, not
- * pill chips. Widths mirror the verified-correct reference for this exact
- * strip, src/app/golf/(dashboard)/dashboard/coachhelm/genome/compare/loading.tsx.
+ * Genome first paint: masthead (name, archetype, verdict, meta row) → the
+ * strand stage (title + Team/Tour switch, the band, the readout) → the first
+ * ledger rows. Mirrors CoachGenomeView's spacing so nothing jumps on hydrate.
  */
-const SUBNAV_TAB_WIDTHS = [44, 28] as const;
-function FairwayGenomeLoading() {
+const LEDGER_ROWS = ['r1', 'r2', 'r3'] as const;
+
+export default function Loading() {
   return (
     <div className={fairwayScope('min-h-full bg-canvas')}>
       <div
         role="status"
         aria-busy="true"
         aria-live="polite"
-        className="mx-auto flex w-full max-w-[1200px] flex-col px-4 pt-2 md:px-6"
+        className="mx-auto flex w-full max-w-[1120px] flex-col px-4 pb-16 pt-4 md:px-8 md:pt-8"
       >
         <span className="sr-only">Loading genome…</span>
-
-        {/* Masthead — eyebrow · title · description + actions */}
-        <div className="flex flex-wrap items-end justify-between gap-4">
-          <div>
-            <Skeleton className="h-3 w-24" />
-            <Skeleton className="mt-2 h-9 w-56 max-w-full" />
-            <Skeleton className="mt-2 h-3.5 w-64 max-w-full" />
-          </div>
-          <Skeleton className="h-9 w-28 rounded-fw-md" />
+        <div className="flex flex-col gap-2">
+          <Skeleton className="h-8 w-48 md:h-10 md:w-72" />
+          <Skeleton className="h-4 w-56" />
+          <Skeleton className="mt-1 h-5 w-full max-w-[60ch]" />
+          <Skeleton className="h-5 w-3/4 max-w-[48ch]" />
+          <Skeleton className="mt-3 h-4 w-64" />
         </div>
-
-        {/* Sub-nav strip — CoachHelmSubNav's coach COACH_TABS: "Brief" + "Ask" */}
-        <nav
-          aria-hidden="true"
-          className="mt-5 flex w-full items-center gap-1 border-b border-border-subtle"
-        >
-          {SUBNAV_TAB_WIDTHS.map((w) => (
-            <div key={w} className="px-3.5 pb-3 pt-2.5">
-              <Skeleton className="h-4" style={{ width: w }} />
+        <div className="mt-8 rounded-card border border-border-subtle bg-surface px-4 pb-4 pt-4 md:mt-10 md:px-6 md:pb-6 md:pt-5">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <Skeleton className="h-5 w-28" />
+              <Skeleton className="mt-1.5 h-3 w-44" />
             </div>
-          ))}
-        </nav>
-
-        {/* Body — radar-hero cockpit + dimensions grid */}
-        <div className="flex flex-col gap-6 py-6">
-          {/* Cockpit: focal radar hero (2fr) + persona rail (1fr) */}
-          <div className="flex flex-col gap-5 sm:gap-6">
-            <div className="grid grid-cols-1 gap-5 sm:gap-6 lg:grid-cols-[2fr_minmax(15rem,1fr)]">
-              <Surface elevation="shadow" padding="lg" className="min-w-0">
-                <Skeleton className="h-3 w-28" />
-                <Skeleton circle className="mx-auto mt-5 h-56 w-56 max-w-full" />
-              </Surface>
-              <div className="flex min-w-0 flex-col gap-5 sm:gap-6">
-                <Surface elevation="border" padding="md" className="min-w-0">
-                  <Skeleton className="h-3 w-20" />
-                  <Skeleton className="mt-3 h-6 w-32" />
-                  <Skeleton className="mt-3 h-3.5 w-full" />
-                  <Skeleton className="mt-2 h-3.5 w-3/4" />
-                </Surface>
-              </div>
-            </div>
-            {/* Tertiary — 3-up readout row */}
-            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 sm:gap-6 lg:grid-cols-3">
-              {Array.from({ length: 3 }).map((_, i) => (
-                <Surface key={i} elevation="border" padding="md">
-                  <Skeleton className="h-3 w-16" />
-                  <Skeleton className="mt-3 h-8 w-20" />
-                </Surface>
-              ))}
-            </div>
+            <Skeleton className="h-11 w-[168px] rounded-full" />
           </div>
-
-          {/* Dimensions panel — 4-up cell grid */}
-          <Surface elevation="border" padding="lg">
-            <Skeleton className="h-4 w-28" />
-            <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-              {Array.from({ length: 8 }).map((_, i) => (
-                <div key={i} className="rounded-fw-md bg-surface-sunken p-4">
-                  <Skeleton className="h-3 w-20" />
-                  <Skeleton className="mt-2.5 h-6 w-12" />
-                </div>
-              ))}
-            </div>
-          </Surface>
+          <Skeleton className="mt-5 h-[152px] w-full rounded-fw-md" />
+          <div className="mt-4 border-t border-border-subtle pt-3">
+            <Skeleton className="h-5 w-40" />
+            <Skeleton className="mt-2 h-4 w-64" />
+          </div>
+        </div>
+        <div className="mt-12 flex flex-col gap-3">
+          <Skeleton className="h-5 w-40" />
+          <div className="border-t border-border-strong">
+            {LEDGER_ROWS.map((k) => (
+              <div key={k} className="flex min-h-14 items-center justify-between border-b border-border-subtle py-2.5">
+                <Skeleton className="h-4 w-40" />
+                <Skeleton className="h-4 w-16" />
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     </div>
   );
-}
-
-export default function Loading() {
-  return <FairwayGenomeLoading />;
 }

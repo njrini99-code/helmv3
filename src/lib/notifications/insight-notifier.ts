@@ -52,21 +52,21 @@ function composeBody(args: NotifyInsightArgs, kind: InsightPushKind): string {
   // matured — category-flavored copy
   switch (args.category) {
     case 'putting':
-      return 'Your putting is making waves — open to see what changed.';
+      return 'Your putting is making waves. Open to see what changed.';
     case 'approach':
-      return 'Your approach game has a new pattern — tap to explore.';
+      return 'Your approach game has a new pattern. Tap to explore.';
     case 'tee':
-      return 'Your tee game has a new signal — tap to see the details.';
+      return 'Your tee game has a new signal. Tap to see the details.';
     case 'short_game':
-      return 'Your short game is showing a new pattern — tap to explore.';
+      return 'Your short game is showing a new pattern. Tap to explore.';
     case 'scoring':
-      return 'Your scoring has a new pattern — tap to see what changed.';
+      return 'Your scoring has a new pattern. Tap to see what changed.';
     case 'pressure':
-      return 'Pressure performance is trending — tap to see the details.';
+      return 'Pressure performance is trending. Tap to see the details.';
     case 'course_management':
-      return 'A course-management pattern just firmed up — tap to see.';
+      return 'A course-management pattern just firmed up. Tap to see.';
     default:
-      return 'A new insight is ready — tap to see what changed.';
+      return 'A new insight is ready. Tap to see what changed.';
   }
 }
 
@@ -112,7 +112,9 @@ export async function notifyInsightLanded(args: NotifyInsightArgs): Promise<void
     await dispatchCoachHelmNotification({
       player_id: args.player_id,
       category,
-      title: `Helm — ${body}`,
+      // The list and the push banner show the title alone, so it is the
+      // sentence's first clause, not a "Helm —" prefix on the whole body.
+      title: body.split('. ')[0] ?? body,
       body,
       action_url: `/golf/dashboard/coachhelm`,
       data: {

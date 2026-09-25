@@ -83,6 +83,17 @@ export const GOLF_SURFACES: readonly GolfSurfaceEntry[] = [
   { id: 'rail-my-stats-player', canonicalName: 'My Stats', href: '/golf/dashboard/stats', role: 'player', group: 'rail' },
 
   // ---------------------------------------------------------------------
+  // Mobile tab bar — OD-14 (owner, 2026-09-24) tab IA, mapped onto existing
+  // routes (nav-registry.ts buildCoach/PlayerBottomNavItems). Player:
+  // Home · Rounds · Game · Plan · Team. Coach: Home · Players · CoachHelm ·
+  // Schedule · Team. Only the names that are new to the product live here.
+  // ---------------------------------------------------------------------
+  { id: 'tab-game-player', canonicalName: 'Game', href: '/golf/dashboard/coachhelm', role: 'player', group: 'rail' },
+  { id: 'tab-plan-player', canonicalName: 'Plan', href: '/golf/dashboard/coachhelm?view=development', role: 'player', group: 'rail' },
+  { id: 'tab-players-coach', canonicalName: 'Players', href: '/golf/dashboard/roster', role: 'coach', group: 'rail' },
+  { id: 'tab-schedule-coach', canonicalName: 'Schedule', href: '/golf/dashboard/calendar', role: 'coach', group: 'rail' },
+
+  // ---------------------------------------------------------------------
   // CoachHelmSubNav — coach's 5-tab strip (Brief · Signals · Players ·
   // Effectiveness · Ask). Also the breadcrumb's cluster leaf segment and
   // (Brief/Effectiveness) the page <title>.

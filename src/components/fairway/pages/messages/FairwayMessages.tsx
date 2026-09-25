@@ -42,6 +42,7 @@ import {
   type GroupMember,
   type GroupAddCandidate,
 } from './GroupDetailsSheet';
+import { TopBarRouteAction } from '@/components/fairway/app-shell/TopBarRouteAction';
 import { MessageComposer } from './MessageComposer';
 import { isTransientNetworkErrorMessage } from '@/lib/transient-network-error';
 
@@ -73,6 +74,11 @@ export function FairwayMessages() {
   };
 
   const [selectedConversationId, setSelectedConversationId] = React.useState<string | null>(null);
+  // DATA-01: the thread desktop opened on its own (the first conversation
+  // beside the rail). It is shown, not read: mark-as-read waits until the
+  // viewer engages with it (a click or focus inside the thread pane, or picking
+  // it in the rail).
+  const [autoOpenedId, setAutoOpenedId] = React.useState<string | null>(null);
   const [showNewMessageModal, setShowNewMessageModal] = React.useState(false);
   const [showTeamBroadcastModal, setShowTeamBroadcastModal] = React.useState(false);
   const [mobileShowChat, setMobileShowChat] = React.useState(false);
@@ -97,7 +103,15 @@ export function FairwayMessages() {
     isOtherTyping,
     sendTypingStatus,
     currentUserId,
-  } = useGolfMessages(selectedConversationId || '', userId);
+    markRead,
+  } = useGolfMessages(selectedConversationId || '', userId, {
+    deferMarkRead: !!selectedConversationId && selectedConversationId === autoOpenedId,
+  });
+  const engageAutoOpenedThread = React.useCallback(() => {
+    if (!autoOpenedId || autoOpenedId !== selectedConversationId) return;
+    setAutoOpenedId(null);
+    void markRead();
+  }, [autoOpenedId, selectedConversationId, markRead]);
   const reactions = useMessageReactions(selectedConversationId ?? '', messages.filter((message) => message.conversation_id === selectedConversationId && !message.sendFailed).map((message) => message.id), currentUserId ?? userId);
 
   // ── UNCHANGED hook: attachment send ─────────────────────────────────────────
@@ -353,6 +367,7 @@ export function FairwayMessages() {
       !conversationIdFromUrl
     ) {
       setSelectedConversationId(firstConversation.id);
+      setAutoOpenedId(firstConversation.id);
     }
   }, [isDesktop, conversations, conversationsLoading, selectedConversationId, playerIdFromUrl, conversationIdFromUrl]);
 
@@ -365,6 +380,13 @@ export function FairwayMessages() {
   const handleSelectConversation = (id: string) => {
     setMobileActionsId(null);
     setShowGroupDetails(false);
+    // Picking a thread is engagement. Re-picking the auto-opened one keeps
+    // the same id (no refetch), so mark it read explicitly.
+    if (id === autoOpenedId && id === selectedConversationId) {
+      engageAutoOpenedThread();
+    } else {
+      setAutoOpenedId(null);
+    }
     setSelectedConversationId(id);
     setMobileShowChat(true);
   };
@@ -431,7 +453,7 @@ export function FairwayMessages() {
       );
       fairwayToast.danger(
         unknownCommit
-          ? 'Couldn’t confirm this send — check the thread before sending again.'
+          ? 'Couldn’t confirm this send. Check the thread before sending again.'
           : error instanceof Error ? error.message : 'Failed to send message',
       );
       logError(
@@ -552,7 +574,7 @@ export function FairwayMessages() {
     return (
       // Mobile subtracts FairwayBottomNav's 56px (md:hidden) too, so this empty
       // state never renders taller than the visible viewport above the tab bar.
-      <div className={fairwayScope('flex h-[calc(100dvh-4rem-env(safe-area-inset-top,0px)-2rem-56px-env(safe-area-inset-bottom,0px))] items-center justify-center bg-canvas bg-canvas-gradient p-6 md:h-[calc(100dvh-4rem-env(safe-area-inset-top,0px)-2rem-env(safe-area-inset-bottom,0px))]')}>
+      <div className={fairwayScope('flex h-[calc(100dvh-var(--golf-mobile-header-offset)-2rem-56px-env(safe-area-inset-bottom,0px))] items-center justify-center bg-canvas bg-canvas-gradient p-6 md:h-[calc(100dvh-4rem-env(safe-area-inset-top,0px)-2rem-env(safe-area-inset-bottom,0px))]')}>
         <EmptyState
           icon={Users}
           title="No team found"
@@ -573,14 +595,36 @@ export function FairwayMessages() {
     );
   }
 
+  const canBroadcast = userRole === 'coach' && Boolean(teamId);
+  const messageTeamButton = canBroadcast ? (
+    <IconButton variant="ghost" aria-label="Message team" title="Message team" onClick={() => setShowTeamBroadcastModal(true)}>
+      <Users size={20} aria-hidden="true" />
+    </IconButton>
+  ) : null;
+  const newMessageButton = (
+    <IconButton variant="primary" aria-label="New message" title="New message" onClick={() => setShowNewMessageModal(true)}>
+      <SquarePen size={20} aria-hidden="true" />
+    </IconButton>
+  );
+  const composeActions = (
+    <>
+      {messageTeamButton}
+      {newMessageButton}
+    </>
+  );
+
   return (
     <div
       data-fw-messages
+      data-fw-thread-open={mobileShowChat ? '' : undefined}
       data-fw-keyboard-aware
       className={fairwayScope(
         mobileShowChat
           ? 'flex h-[calc(100dvh-var(--keyboard-height,0px))] flex-col overflow-hidden bg-canvas bg-canvas-gradient pt-[env(safe-area-inset-top,0px)] md:h-dvh md:pt-0'
-          : 'flex h-[calc(100dvh-var(--fw-mobile-nav-height))] flex-col overflow-hidden bg-canvas bg-canvas-gradient pt-[env(safe-area-inset-top,0px)] md:h-dvh md:pt-0'
+          : // DASH-18: the list sits under the shared top bar on mobile (its height +
+            // the top safe area, which the bar itself pads), so it no longer
+            // pads the safe area or draws its own title row there.
+            'flex h-[calc(100dvh-var(--fw-mobile-nav-height)-var(--golf-mobile-header-offset))] flex-col overflow-hidden bg-canvas bg-canvas-gradient md:h-dvh'
       )}
     >
       <div className="flex w-full min-h-0 flex-1 flex-col overflow-hidden">
@@ -589,18 +633,21 @@ export function FairwayMessages() {
           <aside className={mobileShowChat
             ? 'hidden min-h-0 md:flex md:flex-col md:border-r md:border-border-subtle md:bg-surface'
             : 'flex w-full min-h-0 flex-col md:border-r md:border-border-subtle md:bg-surface'}>
-            <div className="flex min-h-16 shrink-0 items-center justify-between gap-1 px-4 md:border-b md:border-border-subtle">
-              <h1 className="font-fw-sans text-h2 font-semibold tracking-tight text-text-primary md:text-h3">Messages</h1>
-              <div className="flex items-center gap-1">
-                {userRole === 'coach' && teamId ? (
-                  <IconButton variant="ghost" aria-label="Message team" title="Message team" onClick={() => setShowTeamBroadcastModal(true)}>
-                    <Users size={20} aria-hidden="true" />
-                  </IconButton>
-                ) : null}
-                <IconButton variant="primary" aria-label="New message" title="New message" onClick={() => setShowNewMessageModal(true)}>
-                  <SquarePen size={20} aria-hidden="true" />
-                </IconButton>
+            {/* Mobile top bar: New message only. With Message team as well,
+                the bar's action cluster (+ bell + avatar) ran under the
+                centered title ("Te[icon]m") at 390px; Message team moves to
+                a row above the list instead. */}
+            {mobileShowChat ? null : <TopBarRouteAction>{newMessageButton}</TopBarRouteAction>}
+            {canBroadcast && !mobileShowChat ? (
+              <div className="flex shrink-0 justify-end px-3 pt-2 md:hidden">
+                <Button variant="ghost" size="sm" leftIcon={<Users size={16} aria-hidden="true" />} onClick={() => setShowTeamBroadcastModal(true)}>
+                  Message team
+                </Button>
               </div>
+            ) : null}
+            <div className="hidden min-h-16 shrink-0 items-center justify-between gap-1 px-4 md:flex md:border-b md:border-border-subtle">
+              <h1 className="font-fw-sans text-h2 font-semibold tracking-tight text-text-primary md:text-h3">Messages</h1>
+              <div className="flex items-center gap-1">{composeActions}</div>
             </div>
             <PullToRefresh onRefresh={handleConversationsRefresh} className="min-h-0 flex-1 overflow-y-auto overscroll-contain touch-pan-y px-3 py-3">
               <MessageConversationRail
@@ -620,7 +667,13 @@ export function FairwayMessages() {
           <div className={mobileShowChat
             ? 'flex w-full min-h-0 min-w-0 flex-col'
             : 'hidden min-h-0 min-w-0 flex-col md:flex'}>
-            <div className="flex w-full min-h-0 min-w-0 flex-1 flex-col">
+            <div
+              className="flex w-full min-h-0 min-w-0 flex-1 flex-col"
+              // Engagement with an auto-opened thread (DATA-01). Capture phase so
+              // a click on any control inside the pane counts.
+              onPointerDownCapture={autoOpenedId ? engageAutoOpenedThread : undefined}
+              onFocusCapture={autoOpenedId ? engageAutoOpenedThread : undefined}
+            >
               <MessageThreadPane
                 reactions={reactions}
                 conversation={selectedConversation}

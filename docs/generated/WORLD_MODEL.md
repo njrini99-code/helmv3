@@ -6,8 +6,8 @@
 
 A dependency graph over `memory/registry.yml`'s feature ownership, not a second copy of it. Every semantic edge below carries evidence — see `docs/generated/WORLD_MODEL.json` for the full attribution. Use `npm run knowledge:world-model -- --impact <file|feature>` for the blast-radius read model.
 
-**Node counts:** 29 features, 66 routes, 46 components, 30 apis, 92 actions, 103 services, 65 tests, 134 tables, 164 rpcs, 28 jobs, 17 invariants, 86 sentrySignals, 8 journeys.
-**Edges:** 984 (merged; an edge with more than one evidence kind is a stronger claim).
+**Node counts:** 29 features, 66 routes, 45 components, 30 apis, 92 actions, 103 services, 65 tests, 134 tables, 164 rpcs, 28 jobs, 17 invariants, 86 sentrySignals, 8 journeys.
+**Edges:** 983 (merged; an edge with more than one evidence kind is a stronger claim).
 **Unmapped:** Probed files with no registry owner (a real gap this graph surfaces, not fixed here): src/lib/inngest/functions.ts.
 **Table attribution:** A feature’s `tables` list comes only from its own `db:` migration globs, scanned for a literal `CREATE TABLE`. A feature can be real owner of a table with no migration under its glob still containing that statement (e.g. the table was created by a migration matched by a DIFFERENT feature’s `db:` glob, or the CREATE TABLE was later superseded by an ALTER/rename this scanner does not follow) — `admin_incidents` is exactly this case: its current-state doc names `admin_events` and `admin_error_resolutions` as Core Data, but no migration under its own `db:` glob still contains their CREATE TABLE, so this model reports zero tables for it. Read an empty `tables` list as “no migration-glob evidence found,” never as “this feature owns no tables” — check the feature’s own doc for the real answer.
 
@@ -159,7 +159,7 @@ Feature Awareness System · active · criticality high · owner platform
 
 Golf Round Lifecycle · active · criticality high · owner product
 
-- **Relations:** 2 doc/structurally-evidenced, 22 import-graph-only (weak)
+- **Relations:** 2 doc/structurally-evidenced, 23 import-graph-only (weak)
 - **Tables:** `golf_course_edit_history`, `golf_course_tee_edit_history`, `golf_course_tee_holes`, `golf_course_tees`, `golf_demo_sessions`, `golf_round_recap_locks`, `golf_round_recap_provenance`, `golf_team_saved_courses`
 - **RPCs:** `reclassify_golf_round`, `record_round_coachhelm_terminal_state`, `save_partial_round_atomic`, `submit_round_atomic`
 - **Test surfaces:** 3
@@ -169,7 +169,7 @@ Golf Round Lifecycle · active · criticality high · owner product
 
 iOS Native Shell · active · criticality high · owner product
 
-- **Relations:** 0 doc/structurally-evidenced, 0 import-graph-only (weak)
+- **Relations:** 0 doc/structurally-evidenced, 1 import-graph-only (weak)
 - **Tables:** none
 - **RPCs:** none
 - **Test surfaces:** 3
@@ -419,6 +419,7 @@ Team Operations · active · criticality high · owner product
 | `golf_round_lifecycle` | `calendar_events` | import_graph (weak) |
 | `golf_round_lifecycle` | `coach_intelligence_triage` | import_graph (weak) |
 | `golf_round_lifecycle` | `coachhelm_ai` | import_graph (weak) |
+| `golf_round_lifecycle` | `ios_native_shell` | import_graph (weak) |
 | `golf_round_lifecycle` | `observability_sentry` | import_graph (weak) |
 | `golf_round_lifecycle` | `player_coachhelm_development` | import_graph (weak) |
 | `golf_round_lifecycle` | `roster_team` | import_graph (weak) |

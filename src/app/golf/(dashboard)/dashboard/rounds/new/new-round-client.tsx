@@ -1,5 +1,6 @@
 'use client';
 
+import { haptic } from '@/lib/haptics';
 import { startTransition, useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import dynamic from 'next/dynamic';
@@ -32,7 +33,7 @@ import { beaconPartialSave } from '@/lib/offline/partial-save-beacon';
 import { OfflineWarningBanner } from '@/components/golf';
 import { IconWarning } from '@/components/icons';
 import { useToast } from '@/components/ui/sonner';
-import { triggerHaptic } from '@/lib/utils/capacitor';
+
 // DraftIndicator removed - was too noisy
 import type { HoleConfig } from '@/lib/types/golf-course';
 import { useMobileNav } from '@/contexts/mobile-nav-context';
@@ -63,7 +64,7 @@ import { Button as FwButton } from '@/components/fairway/controls/button';
 import { ModalShell } from '@/components/fairway/overlays/ModalShell';
 import { localDayIso } from '@/lib/golf/local-day';
 import { useActiveWork } from '@/lib/recovery/use-active-work';
-import { logError } from '@/lib/error-logging';
+import { logError, isStaleServerActionError, softReloadForStaleServerAction } from '@/lib/error-logging';
 import { clearPendingTeePick, loadPendingTeePick, savePendingTeePick } from '@/lib/golf/new-round-pick-cache';
 
 /**
@@ -962,6 +963,8 @@ export default function NewRoundClient({ playerId }: NewRoundClientProps) {
     normalizedName: string | null;
   } | null>(null);
   const [teePickerOpen, setTeePickerOpen] = useState(false);
+  // RE-F2: a quick-pick start waiting for its setup state to commit.
+  const [pendingQuickStart, setPendingQuickStart] = useState<SavedCourseHoleConfig[] | null>(null);
   const [preloadedHoleConfigs, setPreloadedHoleConfigs] = useState<SavedCourseHoleConfig[] | null>(null);
   const [saveCourseChecked, setSaveCourseChecked] = useState(false);
   const [courseSearchQuery, setCourseSearchQuery] = useState('');
@@ -1021,10 +1024,10 @@ export default function NewRoundClient({ playerId }: NewRoundClientProps) {
         }
       })
       .catch((err: Error) => {
-        if (err.message?.includes('not found on the server') || err.message?.includes('Server Action')) {
-          window.location.reload();
-          return;
-        }
+        // RE-X1: a stale action map goes to the one recovery coordinator
+        // (attempt budget + unsaved-work check), never a raw reload. If it
+        // declines, the inline error below still gives the player a retry.
+        if (isStaleServerActionError(err)) softReloadForStaleServerAction(err.message);
         setLoadingQualifiers(false);
         setQualifierError('Failed to load qualifiers. Please try again.');
       });
@@ -1082,10 +1085,7 @@ export default function NewRoundClient({ playerId }: NewRoundClientProps) {
         })
         .catch((err: Error) => {
           if (cancelled) return;
-          if (err.message?.includes('not found on the server') || err.message?.includes('Server Action')) {
-            window.location.reload();
-            return;
-          }
+          if (isStaleServerActionError(err)) softReloadForStaleServerAction(err.message);
           setQualifierRoundError('We could not verify your next qualifier round. Try again before starting.');
         });
     } else {
@@ -1116,10 +1116,7 @@ export default function NewRoundClient({ playerId }: NewRoundClientProps) {
         }
       })
       .catch((err: Error) => {
-        if (err.message?.includes('not found on the server') || err.message?.includes('Server Action')) {
-          window.location.reload();
-          return;
-        }
+        if (isStaleServerActionError(err)) softReloadForStaleServerAction(err.message);
         setLoadingSavedCourses(false);
       });
   }, []);
@@ -1146,6 +1143,8 @@ export default function NewRoundClient({ playerId }: NewRoundClientProps) {
    *  - Otherwise → 'holes' (hole configuration step)
    */
   const handleQuickPickConfirm = useCallback((course: RecentPlayedCourse) => {
+    // A start already in flight owns the screen; a second tile tap is ignored.
+    if (isStartingRound) return;
     // Mirror handleSavedCourseSelect: populate state + refs from the saved course
     setSelectedCourseId(course.id);
     setCourseMode('saved');
@@ -1169,26 +1168,24 @@ export default function NewRoundClient({ playerId }: NewRoundClientProps) {
     // Update last_played_at on the saved course (fire-and-forget)
     touchSavedCourse(course.id).catch(() => { /* ignore */ });
 
-    // Advance straight into the round flow. We mirror the gating logic
-    // from handleSetupSubmit so behavior stays identical.
+    // Advance into the round through the SAME start path as the setup form
+    // (RE-F2): validateBeforeStart + persistRoundStart via
+    // startWithPreloadedConfigs. Jumping straight to tracking skipped both —
+    // no qualifier check, no future-date check, and no durable server parent
+    // before the first shot. Those callbacks read `setupData` from their
+    // closure, so the start runs from an effect after this state commits
+    // (see pendingQuickStart below) rather than inline against stale values.
     const hasValidYardages = course.holeConfigs?.some(h => h.yardage > 0) ?? false;
     if (course.holeConfigs && course.holeConfigs.length > 0 && hasValidYardages) {
       const targetCount = course.holesPerRound === 9 ? 9 : 18;
-      const configs: SavedCourseHoleConfig[] = course.holeConfigs.slice(0, targetCount);
-      const initialHoles: Hole[] = configs.map((h, idx) => ({
-        number: idx + 1,
-        par: h.par,
-        yardage: h.yardage,
-        score: null,
-      }));
-      setHoles(initialHoles);
-      setCompletedHoleStats([]);
-      setStep('tracking');
+      setError('');
+      setIsStartingRound(true);
+      setPendingQuickStart(course.holeConfigs.slice(0, targetCount));
     } else {
       // No usable hole configs — go to the configuration step with what we have
       setStep('holes');
     }
-  }, []);
+  }, [isStartingRound]);
 
   /**
    * Start from the Cloud Course Library tee picker: populate the setup form +
@@ -1682,6 +1679,21 @@ export default function NewRoundClient({ playerId }: NewRoundClientProps) {
     setIsStartingRound(false);
     setStep('tracking');
   }, [persistRoundStart, selectedCourseId, setupData.courseName, setupData.courseCity, setupData.courseState, setupData.courseRating, setupData.courseSlope, setupData.teesPlayed]);
+
+  // RE-F2: run a quick-pick start once its course state has committed, through
+  // the same gate + durable start as the setup form's submit.
+  useEffect(() => {
+    if (!pendingQuickStart) return;
+    const configs = pendingQuickStart;
+    setPendingQuickStart(null);
+    const validationError = validateBeforeStart();
+    if (validationError) {
+      setError(validationError);
+      setIsStartingRound(false);
+      return;
+    }
+    void startWithPreloadedConfigs(configs);
+  }, [pendingQuickStart, validateBeforeStart, startWithPreloadedConfigs]);
 
   const handleSetupSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -2490,7 +2502,8 @@ export default function NewRoundClient({ playerId }: NewRoundClientProps) {
       }
 
       // Show success celebration — the overlay auto-navigates to round review
-      void triggerHaptic('success');
+      // and owns the one signature success haptic (D-SUBMIT), timed to its
+      // checkmark draw.
       setCompletedRoundId(result.data.roundId);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to submit round';
@@ -2506,7 +2519,7 @@ export default function NewRoundClient({ playerId }: NewRoundClientProps) {
         return;
       }
 
-      void triggerHaptic('error');
+      void haptic('error');
       setError(message);
       isSubmittingRef.current = false;
       // Stay on submitting step so the overlay can show the error state
@@ -2875,7 +2888,7 @@ export default function NewRoundClient({ playerId }: NewRoundClientProps) {
             </h2>
             <p className="mb-6 text-center font-fw-sans text-sm text-text-tertiary">
               You already have an in-progress round for this course and date.
-              Resume it, discard it, or start a genuinely separate round — for
+              Resume it, discard it, or start a genuinely separate round, for
               example, a second round on a 36-hole day.
             </p>
             <div className="flex flex-col gap-3">
@@ -3052,8 +3065,8 @@ export default function NewRoundClient({ playerId }: NewRoundClientProps) {
     <>
       {/* Submit banner — shown when all holes are done but finish confirm was dismissed */}
       {pendingFinalStats && !showFinishConfirm && step === 'tracking' && (
-        <div className={fairwayScope('sticky top-[var(--golf-mobile-header-offset)] z-20 flex items-center justify-between gap-3 bg-accent-600 px-4 py-3 text-text-on-accent lg:top-[49px]')}>
-          <p className="font-fw-sans text-sm font-medium">All holes completed — ready to submit!</p>
+        <div className={fairwayScope('sticky top-[var(--golf-mobile-header-offset)] z-20 flex items-center justify-between gap-3 bg-accent-fill px-4 py-3 text-text-on-accent-fill lg:top-[49px]')}>
+          <p className="font-fw-sans text-sm font-medium">All holes completed. Ready to submit!</p>
           <FwButton
             variant="secondary"
             size="sm"

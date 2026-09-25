@@ -33,6 +33,7 @@
  * ========================================================================== */
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useLargeTitle } from '@/components/fairway/app-shell/LargeTitleContext';
 import Link from 'next/link';
 import nextDynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
@@ -87,6 +88,7 @@ import {
 import { cn } from '@/lib/utils';
 import { FairwayJoinRequestAlert } from '@/components/fairway/pages/roster/FairwayJoinRequestAlert';
 import { NotificationsLatestModule } from '@/components/fairway/notifications';
+import type { UnifiedNotificationItem } from '@/app/golf/actions/unified-notifications-model';
 import type { JoinRequestData } from '@/app/golf/actions/teams';
 import type {
   CoachDashboardPayload,
@@ -96,6 +98,18 @@ import type {
 import type { CoachDashboardData } from '@/app/golf/(dashboard)/dashboard/components/coach-dashboard-types';
 import { DaySchedule, type DayScheduleEvent } from './DaySchedule';
 import { formatToPar } from '@/lib/golf/format-to-par';
+import { formatMetricText } from '@/lib/golf/metrics/display-registry';
+import { competitionRankLabels } from '@/lib/golf/tie-rank';
+
+/** Round to 1 dp as a number (NumberFlow/MetricCard values), no string step. */
+function round1(n: number): number {
+  return Math.round(n * 10) / 10;
+}
+
+/** CHART-R1: integer ticks print as integers ("80", not "80.0"); others at 1 dp. */
+function trendValue(v: number): string {
+  return Number.isInteger(v) ? String(v) : formatMetricText('scoring_average', v);
+}
 
 // Fairway TrendChart, lazy + ssr:false (mirrors FairwayPlayerDashboard's
 // Scoring Trend chart). recharts' ResponsiveContainer has no real size to
@@ -120,6 +134,8 @@ const TrendChart = nextDynamic(
 
 export interface FairwayCoachDashboardProps {
   data: CoachDashboardData;
+  /** PERF-03: the Latest module's items, read on the server. */
+  initialLatestNotifications?: UnifiedNotificationItem[];
   enhancedData?: CoachDashboardPayload | null;
   dateRange?: DashboardDateRange;
   /**
@@ -225,7 +241,10 @@ function shortDate(iso: string): string {
  * `trend` field is a qualitative direction, not a magnitude.
  */
 function seriesDeltaLabel(points: number): string {
-  return `last ${points} round${points === 1 ? '' : 's'}`;
+  // The chip is the movement across each player's own latest rounds, averaged
+  // (buildPerPlayerSparkline), while the value beside it covers the whole
+  // window. Say so, so the two are not read as one.
+  return `players' last ${points} round${points === 1 ? '' : 's'}`;
 }
 
 /* ──────────────────────────────────────────────────────────────────────────
@@ -243,7 +262,7 @@ function seriesDeltaLabel(points: number): string {
 function MetaFact({ icon, children }: { icon: React.ReactNode; children: React.ReactNode }) {
   return (
     <span className="inline-flex items-center gap-1.5 tabular-nums">
-      <span className="text-text-tertiary/70">{icon}</span>
+      <span className="text-text-tertiary">{icon}</span>
       {children}
     </span>
   );
@@ -251,6 +270,7 @@ function MetaFact({ icon, children }: { icon: React.ReactNode; children: React.R
 
 export function FairwayCoachDashboard({
   data,
+  initialLatestNotifications,
   enhancedData,
   dateRange: initialRange = 'all',
   joinRequests,
@@ -315,6 +335,13 @@ export function FairwayCoachDashboard({
   }, [serverGreeting, tzForGreeting]);
 
   const greeting = `${serverGreeting ?? clientGreeting ?? 'Welcome back'}, ${firstName}`;
+  // The greeting is this page's large title (DASH-05): the nav bar shows it
+  // once it scrolls away instead of the generic "Home".
+  const { setRegisteredTitle } = useLargeTitle();
+  useEffect(() => {
+    setRegisteredTitle(greeting);
+    return () => setRegisteredTitle(null);
+  }, [greeting, setRegisteredTitle]);
 
   // PRESERVED LOGIC: range change keeps the force-dynamic ?range re-fetch
   // contract (router.push). Presentation is calm; the contract is unchanged.
@@ -554,7 +581,7 @@ export function FairwayCoachDashboard({
           <span className="font-fw-display text-h3 font-medium leading-none tabular-nums text-text-primary">
             {r.total_score}
           </span>
-          <StatusPill tone={tone} size="sm" dot={false} className="font-fw-mono tabular-nums">
+          <StatusPill tone={tone} size="sm" dot={false} className="tabular-nums">
             {formatToPar(r.total_to_par)}
           </StatusPill>
         </div>
@@ -690,7 +717,7 @@ export function FairwayCoachDashboard({
           module; renders nothing when there's genuinely nothing new (the bell
           in the top bar stays the source of truth either way). "View all"
           opens that same bell panel via NotificationPanelContext. */}
-      <NotificationsLatestModule />
+      <NotificationsLatestModule initialItems={initialLatestNotifications} />
 
       {/* ── 3 · TODAY — schedule timeline (matte, calm) ────────────────────── */}
       <TodayPanel
@@ -706,13 +733,13 @@ export function FairwayCoachDashboard({
             <MetricCard
               labelLines={2}
               label="Scoring Avg"
-              value={Number(scoringAvg.toFixed(1))}
+              value={round1(scoringAvg)}
               decimals={1}
               icon={<IconChartBar size={18} />}
               goodDirection="down"
               delta={
                 scoringDelta != null
-                  ? { value: Number(scoringDelta.value.toFixed(1)), label: seriesDeltaLabel(scoringDelta.points) }
+                  ? { value: round1(scoringDelta.value), label: seriesDeltaLabel(scoringDelta.points) }
                   : undefined
               }
               sparkline={
@@ -731,7 +758,7 @@ export function FairwayCoachDashboard({
                   />
                 ) : undefined
               }
-              footnote={`${roundsLogged} ${roundsLogged === 1 ? 'round' : 'rounds'} in window`}
+              footnote={`${roundsLogged} counted ${roundsLogged === 1 ? 'round' : 'rounds'} in window`}
             />
           ) : (
             // Keep ONE tile silhouette across the KPI row (P010): the null metric
@@ -751,13 +778,13 @@ export function FairwayCoachDashboard({
             <MetricCard
               labelLines={2}
               label="GIR %"
-              value={Number(girValue.toFixed(0))}
+              value={Math.round(girValue)}
               suffix="%"
               icon={<IconTarget size={18} />}
               goodDirection="up"
               delta={
                 girDelta != null
-                  ? { value: Number(girDelta.value.toFixed(0)), suffix: '%', label: seriesDeltaLabel(girDelta.points) }
+                  ? { value: Math.round(girDelta.value), suffix: '%', label: seriesDeltaLabel(girDelta.points) }
                   : undefined
               }
               sparkline={
@@ -794,13 +821,13 @@ export function FairwayCoachDashboard({
             <MetricCard
               labelLines={2}
               label="Putts / Rd"
-              value={Number(puttsValue.toFixed(1))}
+              value={round1(puttsValue)}
               decimals={1}
               icon={<IconGolf size={18} />}
               goodDirection="down"
               delta={
                 puttsDelta != null
-                  ? { value: Number(puttsDelta.value.toFixed(1)), label: seriesDeltaLabel(puttsDelta.points) }
+                  ? { value: round1(puttsDelta.value), label: seriesDeltaLabel(puttsDelta.points) }
                   : undefined
               }
               sparkline={
@@ -863,9 +890,14 @@ export function FairwayCoachDashboard({
             icon={LucideUsers}
             title="Share your invite code"
             action={
-              <Button variant="secondary" size="sm" onClick={handleCopy}>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={handleCopy}
+                aria-label={copied ? 'Invite code copied' : `Copy invite code ${team.join_code}`}
+              >
                 {copied ? <IconCheck size={16} /> : <IconCopy size={16} />}
-                <span className="font-fw-mono tracking-[0.18em]">
+                <span className="tracking-[0.18em] tabular-nums">
                   {copied ? 'Copied' : team.join_code}
                 </span>
               </Button>
@@ -887,7 +919,7 @@ export function FairwayCoachDashboard({
           <h2 className="font-fw-sans text-h3 font-semibold text-text-primary">Recent Rounds</h2>
           <Link
             href="/golf/dashboard/rounds"
-            className="inline-flex items-center gap-1 py-3 -my-3 font-fw-sans text-body-sm font-medium text-accent-700 hover:text-accent-600"
+            className="inline-flex items-center gap-1 py-3 -my-3 font-fw-sans text-body-sm font-medium text-accent-700 hover:text-accent-ink"
           >
             View all
             <IconArrowRight size={14} />
@@ -915,7 +947,7 @@ export function FairwayCoachDashboard({
                 variant="subtle"
                 icon={LucideFlag}
                 title="Couldn’t load rounds"
-                description="Something went wrong reading this team’s rounds. Refresh to try again — nothing has been lost."
+                description="Something went wrong reading this team’s rounds. Refresh to try again. Nothing has been lost."
               />
             ) : (
               <EmptyState
@@ -925,7 +957,7 @@ export function FairwayCoachDashboard({
                 description={
                   range !== 'all'
                     ? 'Try a wider window, or have players log rounds from their dashboard.'
-                    : 'Players can submit rounds from their dashboard — they’ll appear here.'
+                    : 'Players can submit rounds from their dashboard, they’ll appear here.'
                 }
               />
             )}
@@ -980,14 +1012,14 @@ export function FairwayCoachDashboard({
               title="Performance Trend"
               overline="Team scoring average"
               data={trendPoints}
-              valueFormatter={(v) => v.toFixed(1)}
+              valueFormatter={trendValue}
               takeaway={trendTakeaway}
             />
           ) : (
             <Surface elevation="border" padding="md" className="flex flex-col gap-3">
-              <h3 className="font-fw-sans text-h3 font-semibold text-text-primary">
+              <h2 className="font-fw-sans text-h3 font-semibold text-text-primary">
                 Performance Trend
-              </h3>
+              </h2>
               {/* Mirror the Recent Rounds pattern above: a narrow window is not
                   an empty roster. Telling a coach with 7 players and 90 rounds
                   to "invite players" because they filtered to 7 days reads as
@@ -1035,12 +1067,12 @@ export function FairwayCoachDashboard({
 
           <Surface elevation="border" padding="md" className="flex flex-col gap-3">
             <div className="flex items-center justify-between gap-3">
-              <h3 className="font-fw-sans text-h3 font-semibold text-text-primary">
+              <h2 className="font-fw-sans text-h3 font-semibold text-text-primary">
                 Top Performers
-              </h3>
+              </h2>
               <Link
                 href="/golf/dashboard/stats/team"
-                className="inline-flex items-center gap-1 py-3 -my-3 font-fw-sans text-body-sm font-medium text-accent-700 hover:text-accent-600"
+                className="inline-flex items-center gap-1 py-3 -my-3 font-fw-sans text-body-sm font-medium text-accent-700 hover:text-accent-ink"
               >
                 Rankings
                 <IconArrowRight size={14} />
@@ -1048,7 +1080,11 @@ export function FairwayCoachDashboard({
             </div>
             {topPlayers.length > 0 ? (
               <ul className="flex flex-col gap-2">
-                {topPlayers.slice(0, 5).map((p, i) => (
+                {topPlayers.slice(0, 5).map((p, i, shown) => {
+                  // NUMC-05: players equal at the printed precision share a
+                  // position ("T2"), instead of being split by list order.
+                  const position = competitionRankLabels(shown.map((x) => x.avg_score))[i]!;
+                  return (
                   <li key={p.id}>
                     <Link
                       href={`/golf/dashboard/players/${p.id}/game?tab=scouting`}
@@ -1061,22 +1097,23 @@ export function FairwayCoachDashboard({
                       >
                         <span className="flex min-w-0 items-center gap-3">
                           <span
+                            aria-label={position.tied ? `Tied for position ${position.rank}` : `Position ${position.rank}`}
                             className={cn(
-                              'grid h-6 w-6 shrink-0 place-items-center rounded-full font-fw-mono text-caption font-medium tabular-nums',
-                              i === 0
-                                ? 'bg-accent-650 text-text-on-accent'
-                                : 'bg-surface text-text-tertiary',
+                              'grid h-6 min-w-6 shrink-0 place-items-center rounded-full px-1 text-caption font-medium tabular-nums',
+                              position.rank === 1
+                                ? 'bg-accent-fill text-text-on-accent-fill'
+                                : 'bg-surface text-text-secondary',
                             )}
                           >
-                            {i + 1}
+                            {position.label}
                           </span>
                           <span className="truncate font-fw-sans text-body font-medium text-text-primary">
                             {p.name}
                           </span>
                         </span>
                         <span className="flex shrink-0 items-baseline gap-2">
-                          <span className="font-fw-mono text-body font-medium tabular-nums text-text-primary">
-                            {p.avg_score.toFixed(1)}
+                          <span className="text-body font-medium tabular-nums text-text-primary">
+                            {formatMetricText('scoring_average', p.avg_score)}
                           </span>
                           <span className="font-fw-sans text-caption text-text-tertiary">
                             {p.rounds} rd
@@ -1085,7 +1122,8 @@ export function FairwayCoachDashboard({
                       </Inset>
                     </Link>
                   </li>
-                ))}
+                  );
+                })}
               </ul>
             ) : (
               <InsufficientData
@@ -1120,7 +1158,7 @@ function TeamPulsePanel({ pulse }: { pulse?: CoachDashboardPayload['teamPulse'] 
   return (
     <Surface elevation="border" padding="md" className="flex flex-col gap-3">
       <div className="flex items-center justify-between gap-3">
-        <h3 className="font-fw-sans text-h3 font-semibold text-text-primary">Team Pulse</h3>
+        <h2 className="font-fw-sans text-h3 font-semibold text-text-primary">Team Pulse</h2>
         {/* Suppressed when there is nothing to classify: the pill sat directly
             above "No movement to read yet" and the card contradicted itself
             (audit 2026-07-24, H6). The count still shows in the empty-state
@@ -1138,26 +1176,26 @@ function TeamPulsePanel({ pulse }: { pulse?: CoachDashboardPayload['teamPulse'] 
           title="No movement to read yet"
           description={
             roundsThisWeek > 0
-              ? `${roundsThisWeek} round${roundsThisWeek === 1 ? '' : 's'} logged this week — not enough yet to classify movement. Pulse compares recent rounds against each player's baseline.`
+              ? `${roundsThisWeek} round${roundsThisWeek === 1 ? '' : 's'} logged this week, not enough yet to classify movement. Pulse compares recent rounds against each player's baseline.`
               : 'Pulse compares recent rounds. It fills in as players log activity.'
           }
         />
       ) : (
         <div className="grid grid-cols-3 gap-3">
           <Inset padding="sm" className="flex flex-col gap-1">
-            <span className="font-fw-mono text-h3 font-medium tabular-nums text-fw-success-ink">
+            <span className="text-h3 font-medium tabular-nums text-fw-success-ink">
               {improving}
             </span>
             <span className="font-fw-sans text-caption text-text-tertiary">Improving</span>
           </Inset>
           <Inset padding="sm" className="flex flex-col gap-1">
-            <span className="font-fw-mono text-h3 font-medium tabular-nums text-text-secondary">
+            <span className="text-h3 font-medium tabular-nums text-text-secondary">
               {stable}
             </span>
             <span className="font-fw-sans text-caption text-text-tertiary">Stable</span>
           </Inset>
           <Inset padding="sm" className="flex flex-col gap-1">
-            <span className="font-fw-mono text-h3 font-medium tabular-nums text-fw-warning-ink">
+            <span className="text-h3 font-medium tabular-nums text-fw-warning-ink">
               {declining}
             </span>
             <span className="font-fw-sans text-caption text-text-tertiary">Declining</span>
@@ -1172,14 +1210,14 @@ function TeamPulsePanel({ pulse }: { pulse?: CoachDashboardPayload['teamPulse'] 
           </span>
           <span
             className={cn(
-              'font-fw-mono text-body-sm font-medium tabular-nums',
+              'text-body-sm font-medium tabular-nums',
               // delta is a POSITIVE improvement magnitude (olderAvg - recentAvg),
               // so a positive delta means the player improved → success green.
               pulse.topMover.delta > 0 ? 'text-fw-success-ink' : 'text-fw-warning-ink',
             )}
           >
-            {pulse.topMover.delta > 0 ? '−' : '+'}
-            {Math.abs(pulse.topMover.delta).toFixed(1)}
+            {/* A score change: fewer strokes (improved) reads "−". */}
+            {formatMetricText('scoring_average_vs_par', -pulse.topMover.delta)}
           </span>
         </Inset>
       ) : null}
@@ -1243,14 +1281,14 @@ function TodayPanel({
         <div className="flex items-center gap-2.5">
           <h2 className="font-fw-sans text-h3 font-semibold text-text-primary">Today</h2>
           {!scheduleError && events.length > 0 ? (
-            <span className="font-fw-mono text-caption tabular-nums text-text-tertiary">
+            <span className="text-caption tabular-nums text-text-tertiary">
               {events.length}
             </span>
           ) : null}
         </div>
         <Link
           href="/golf/dashboard/calendar"
-          className="inline-flex items-center gap-1 py-3 -my-3 font-fw-sans text-body-sm font-medium text-accent-700 hover:text-accent-600"
+          className="inline-flex items-center gap-1 py-3 -my-3 font-fw-sans text-body-sm font-medium text-accent-700 hover:text-accent-ink"
         >
           Calendar
           <IconArrowRight size={14} />

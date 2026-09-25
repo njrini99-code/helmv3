@@ -168,7 +168,7 @@ function ScoringParTile({ row }: { row: ScoringParRowViewModel }) {
   if (row.kind === 'insufficient') {
     return (
       <InsufficientData
-        description={`${row.row.eligibleCount} holes so far — below the support floor.`}
+        description={`${row.row.eligibleCount} holes so far, below the support floor.`}
         compact
       />
     );
@@ -202,7 +202,7 @@ function ScoringPar5Tile({ row }: { row: ScoringPar5RowViewModel }) {
   if (row.kind === 'insufficient') {
     return (
       <InsufficientData
-        description={`${row.row.eligibleCount} ${sampleUnit} so far — below the support floor.`}
+        description={`${row.row.eligibleCount} ${sampleUnit} so far, below the support floor.`}
         compact
       />
     );
@@ -325,7 +325,7 @@ function Par5HoleGroup({
   const holeLabel = `${hole.label} · ${hole.courseLabel}`;
   return (
     <div>
-      <h4 className="mb-2 font-fw-sans text-label font-medium text-text-secondary">{holeLabel}</h4>
+      <h4 className="mb-2 font-fw-sans text-microlabel font-medium text-text-secondary">{holeLabel}</h4>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         {hole.rows.map((row) => (
           <div
@@ -390,7 +390,7 @@ export function ScoringSection({ viewModel, windowLabel }: ScoringSectionProps) 
         }}
         side="right"
         mobileSide="bottom"
-        title={selected ? `${selected.sectionLabel} — ${selected.label}` : 'Scoring detail'}
+        title={selected ? `${selected.sectionLabel}, ${selected.label}` : 'Scoring detail'}
       >
         {selected ? <ScoringDrillDown row={selected} /> : null}
       </Sheet>

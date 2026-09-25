@@ -80,7 +80,7 @@ is a second thing to keep true.
 **Golf Round Lifecycle** · active · criticality high · owner product
 
 - **Behaviour:** `memory/features/golf-round-lifecycle.md`
-- **Code:** `src/app/golf/(dashboard)/dashboard/rounds/**`, `src/components/fairway/pages/rounds/**`, `src/components/fairway/pages/rounds-new/**`, `src/components/fairway/pages/rounds-recover/**`, `src/components/fairway/pages/rounds-tracking/**`, `src/app/api/golf/rounds/**` … and 34 more in the registry
+- **Code:** `src/app/golf/(dashboard)/dashboard/rounds/**`, `src/components/fairway/pages/rounds/**`, `src/components/fairway/pages/rounds-new/**`, `src/components/fairway/pages/rounds-recover/**`, `src/components/fairway/pages/rounds-tracking/**`, `src/app/api/golf/rounds/**` … and 35 more in the registry
 - **Telemetry:** `round_tracking` (golfhelm, high), `course_library` (golfhelm, med)
 - **Incidents:** `memory/incidents/golf_round_lifecycle/INC-2026-08-19-assistant-coach-cascade-delete-round-history.md`, `memory/incidents/golf_round_lifecycle/INC-2026-08-25-completed-round-sg-capability.md`, `memory/incidents/golf_round_lifecycle/INC-2026-08-25-nondestructive-submit-and-checkpoint-fallback.md`, `memory/incidents/golf_round_lifecycle/INC-2026-08-25-recap-persist-schema-permission.md`, `memory/incidents/golf_round_lifecycle/INC-2026-08-30-account-deletion-still-cascades-golf-history.md`, `memory/incidents/golf_round_lifecycle/INC-2026-09-16-course-state-two-letter-rejection.md`
 - **Repair units:** none in the queue
@@ -124,7 +124,7 @@ is a second thing to keep true.
 **Stats And Analytics** · active · criticality high · owner product
 
 - **Behaviour:** `memory/features/stats-analytics.md`
-- **Code:** `src/app/golf/(dashboard)/dashboard/stats/**`, `src/app/golf/(dashboard)/dashboard/roster/**`, `src/components/golf/stats/**`, `src/app/golf/actions/stats.ts`, `src/app/golf/actions/stats-data.ts`, `src/app/golf/actions/stats-data-types.ts` … and 25 more in the registry
+- **Code:** `src/app/golf/(dashboard)/dashboard/stats/**`, `src/app/golf/(dashboard)/dashboard/roster/**`, `src/components/golf/stats/**`, `src/app/golf/actions/stats.ts`, `src/app/golf/actions/stats-data.ts`, `src/app/golf/actions/stats-data-types.ts` … and 26 more in the registry
 - **Telemetry:** `stats_analytics` (golfhelm, high), `my_game_profile` (golfhelm, low)
 - **Incidents:** none recorded
 - **Repair units:** none in the queue
@@ -179,7 +179,7 @@ is a second thing to keep true.
 **Team Operations** · active · criticality high · owner product
 
 - **Behaviour:** `memory/features/team-operations.md`
-- **Code:** `src/app/golf/(dashboard)/dashboard/tasks/**`, `src/app/golf/(dashboard)/dashboard/documents/**`, `src/app/golf/(dashboard)/dashboard/travel/**`, `src/app/golf/(dashboard)/dashboard/hub/**`, `src/app/golf/(dashboard)/dashboard/team-hub/**`, `src/components/fairway/pages/tasks/**` … and 19 more in the registry
+- **Code:** `src/app/golf/(dashboard)/dashboard/tasks/**`, `src/app/golf/(dashboard)/dashboard/documents/**`, `src/app/golf/(dashboard)/dashboard/travel/**`, `src/app/golf/(dashboard)/dashboard/hub/**`, `src/app/golf/(dashboard)/dashboard/team-hub/**`, `src/components/fairway/pages/tasks/**` … and 18 more in the registry
 - **Telemetry:** `task_management` (golfhelm, med), `documents` (golfhelm, low), `travel` (golfhelm, low), `coach_dashboard` (golfhelm, high)
 - **Incidents:** none recorded
 - **Repair units:** none in the queue
@@ -234,7 +234,7 @@ is a second thing to keep true.
 **Player Hub** · active · criticality high · owner product
 
 - **Behaviour:** `memory/features/player-hub.md`
-- **Code:** `src/app/golf/(dashboard)/dashboard/hub/**`, `src/components/golf/player-hub/**`, `src/components/fairway/pages/hub/**`, `src/app/golf/actions/dashboard-data.ts`, `src/app/golf/actions/travel.ts`, `src/app/golf/actions/tasks.ts` … and 14 more in the registry
+- **Code:** `src/app/golf/(dashboard)/dashboard/hub/**`, `src/components/fairway/pages/hub/**`, `src/app/golf/actions/dashboard-data.ts`, `src/app/golf/actions/travel.ts`, `src/app/golf/actions/tasks.ts`, `src/app/golf/actions/attendance.ts` … and 13 more in the registry
 - **Telemetry:** `player_hub` (golfhelm, high)
 - **Incidents:** none recorded
 - **Repair units:** none in the queue

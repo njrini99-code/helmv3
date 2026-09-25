@@ -23,8 +23,9 @@
  * styling only). Restrained, reduced-motion-safe entrance.
  * ========================================================================== */
 
-import { type Dispatch, type SetStateAction } from 'react';
-import { m, useReducedMotion } from 'framer-motion';
+import { useState, useSyncExternalStore, type Dispatch, type SetStateAction } from 'react';
+import { m, AnimatePresence } from 'framer-motion';
+import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
 import { MapPin, Check, BarChart3, Trophy, Search, ChevronLeft } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
@@ -126,6 +127,7 @@ export interface FairwayNewRoundEntryProps {
   error: string | null;
   isStartingRound: boolean;
   onSubmit: (e: React.FormEvent) => void;
+  /** @deprecated No longer rendered (RE-F6: one exit per screen); kept so callers compile. */
   onCancel: () => void;
   /** Persistent back-to-dashboard nav (rendered in the cockpit header on the
    *  setup step) so a player can always leave without relying on the form Cancel
@@ -186,11 +188,26 @@ function seedInitialHoles(
   }));
 }
 
-function relTime(iso: string | null): string {
-  if (!iso) return '';
+/**
+ * RE-F16: "now" for relative labels, read once on the client and never during
+ * the server render. Calling Date.now() in render made the server's "today"
+ * and the client's "yesterday" disagree across midnight — a hydration
+ * mismatch. The server snapshot is null (no label), the client's is one
+ * stable timestamp per page load.
+ */
+let clientNow: number | null = null;
+const subscribeNow = () => () => {};
+const getClientNow = () => (clientNow ??= Date.now());
+const getServerNow = () => null;
+function useNow(): number | null {
+  return useSyncExternalStore(subscribeNow, getClientNow, getServerNow);
+}
+
+export function relTime(iso: string | null, now: number | null): string {
+  if (!iso || now == null) return '';
   const then = new Date(iso).getTime();
   if (Number.isNaN(then)) return '';
-  const days = Math.floor((Date.now() - then) / 86400000);
+  const days = Math.floor((now - then) / 86400000);
   if (days <= 0) return 'today';
   if (days === 1) return 'yesterday';
   if (days < 7) return `${days}d ago`;
@@ -307,7 +324,15 @@ function CockpitBand({
 
 export function FairwayNewRoundEntry(props: FairwayNewRoundEntryProps) {
   const { step } = props;
-  const prefersReducedMotion = useReducedMotion();
+  const prefersReducedMotion = useReducedMotionGuard();
+  const now = useNow();
+  // Was a course already confirmed when this screen mounted (resume, reload
+  // restore)? If not, the inline scorecard arrives from a pick — the picker
+  // sheet has just left — and it must appear in place, not fade/slide in
+  // behind the departing sheet (the second half of the picker "flicker").
+  const [scorecardEntersOnMount] = useState(
+    () => props.courseMode === 'saved' && (props.cloudPickActive || !!props.selectedCourse),
+  );
   const enter = (i: number) =>
     prefersReducedMotion
       ? {}
@@ -344,7 +369,7 @@ export function FairwayNewRoundEntry(props: FairwayNewRoundEntryProps) {
             title={seededHoles ? 'Review the scorecard.' : 'Configure the holes.'}
             description={
               seededHoles
-                ? 'These pars and yardages come from the course you picked — tweak any hole, then start tracking.'
+                ? 'These pars and yardages come from the course you picked. Tweak any hole, then start tracking.'
                 : 'Set par and yardage for each hole, then start tracking.'
             }
           />
@@ -356,6 +381,11 @@ export function FairwayNewRoundEntry(props: FairwayNewRoundEntryProps) {
           onSave={props.onHolesSave}
           onBack={props.onHolesBack}
           holesPerRound={props.holesPerRound}
+          // P0: without these a failed start on the manual path was silent —
+          // the parent set `error`, nothing rendered it, and Start re-enabled
+          // with no "Starting…", inviting a double start.
+          submitError={props.error || null}
+          submitting={props.isStartingRound}
         />
       </div>
     );
@@ -419,9 +449,11 @@ export function FairwayNewRoundEntry(props: FairwayNewRoundEntryProps) {
     <div className="mx-auto w-full max-w-2xl px-4 pb-6 pt-[max(1.5rem,calc(env(safe-area-inset-top,0px)+0.75rem))] md:py-10">
       <div className="flex flex-col gap-6">
         <m.div {...enter(i++)}>
+          {/* RE-F17: once the scorecard is inline, the spine and eyebrow say so —
+              "Setup" under an editable scorecard misread where the player was. */}
           <CockpitBand
-            step="setup"
-            eyebrow="New round · Setup"
+            step={courseConfirmed && seededHoles ? 'holes' : 'setup'}
+            eyebrow={courseConfirmed && seededHoles ? 'New round · Scorecard' : 'New round · Setup'}
             title={
               courseConfirmed && formattedCourseName
                 ? `Your round at ${formattedCourseName}`
@@ -429,7 +461,7 @@ export function FairwayNewRoundEntry(props: FairwayNewRoundEntryProps) {
             }
             description={
               courseConfirmed
-                ? 'These pars and yardages came with the tee you picked — tweak any hole, then start.'
+                ? 'These pars and yardages came with the tee you picked. Tweak any hole, then start.'
                 : 'Pick a course, set up your scorecard, then start tracking.'
             }
             onBack={props.onExitToDashboard}
@@ -442,9 +474,11 @@ export function FairwayNewRoundEntry(props: FairwayNewRoundEntryProps) {
             card's own "Change" button from that point on. */}
         {!courseConfirmed && (
           <m.div {...enter(i++)}>
+            {/* RE-F6: secondary. The screen's one primary is the Start/Next
+                action in the dock; two green buttons competed for the thumb. */}
             <Button
               type="button"
-              variant="primary"
+              variant="secondary"
               onClick={props.onBrowseCourseLibrary}
               className="w-full justify-center"
             >
@@ -541,8 +575,8 @@ export function FairwayNewRoundEntry(props: FairwayNewRoundEntryProps) {
                               <div className="min-w-0 flex-1">
                                 <div className="flex items-center gap-2">
                                   {isSel && (
-                                    <span className="grid h-5 w-5 flex-shrink-0 place-items-center rounded-full bg-accent-500">
-                                      <Check className="h-3 w-3 text-text-on-accent" />
+                                    <span className="grid h-5 w-5 flex-shrink-0 place-items-center rounded-full bg-accent-fill">
+                                      <Check className="h-3 w-3 text-text-on-accent-fill" />
                                     </span>
                                   )}
                                   <p className="truncate font-fw-sans text-body-sm font-medium text-text-primary">
@@ -572,7 +606,7 @@ export function FairwayNewRoundEntry(props: FairwayNewRoundEntryProps) {
                                 </div>
                               </div>
                               <span className="flex-shrink-0 whitespace-nowrap font-fw-sans text-caption text-text-tertiary">
-                                {relTime(course.lastUsedAt)}
+                                {relTime(course.lastUsedAt, now)}
                               </span>
                             </div>
                           </UIButton>
@@ -989,7 +1023,7 @@ export function FairwayNewRoundEntry(props: FairwayNewRoundEntryProps) {
           <m.div {...enter(i++)} className="flex items-start gap-3 px-1">
             <BarChart3 className="mt-0.5 h-4 w-4 flex-shrink-0 text-accent-700" />
             <p className="font-fw-sans text-caption text-text-tertiary">
-              <span className="font-medium text-text-secondary">50+ stats tracked</span> — driving, approach
+              <span className="font-medium text-text-secondary">50+ stats tracked</span>: driving, approach
               proximity, putting, scrambling and more. Use your rangefinder for accurate distances.
             </p>
           </m.div>
@@ -1017,7 +1051,10 @@ export function FairwayNewRoundEntry(props: FairwayNewRoundEntryProps) {
               so the round-level rules (qualifier picked, rating/slope in range)
               have to be enforced on this path explicitly. */}
           {courseConfirmed && seededHoles && (
-            <m.div {...enter(i++)}>
+            // initial={false} on a pick-driven mount suppresses the entrance
+            // for this block AND the editor's own staggered rows inside it.
+            <AnimatePresence initial={scorecardEntersOnMount}>
+            <m.div key="scorecard" {...enter(i++)}>
               <FairwayHoleConfig
                 courseName={formattedCourseName}
                 initialHoles={seededHoles}
@@ -1029,6 +1066,7 @@ export function FairwayNewRoundEntry(props: FairwayNewRoundEntryProps) {
                 submitting={props.isStartingRound}
               />
             </m.div>
+            </AnimatePresence>
           )}
 
           {/* ── Action dock ──
@@ -1038,15 +1076,23 @@ export function FairwayNewRoundEntry(props: FairwayNewRoundEntryProps) {
               than either. A confirmed course with NO usable holes still needs
               this dock to reach the parent's hole-configuration step. */}
           {!(courseConfirmed && seededHoles) && (
-            <m.div {...enter(i++)} className="flex gap-3 pt-1">
-              <Button variant="secondary" type="button" onClick={props.onCancel} disabled={props.isStartingRound} className="flex-1">
-                Cancel
-              </Button>
+            // Sticky above the home indicator: on a phone this primary sat
+            // ~1,400px down a long form, its bottom edge under the home
+            // indicator at the end of the scroll. The route renders without
+            // shell chrome, so bottom-0 is the viewport edge.
+            <m.div
+              {...enter(i++)}
+              data-slot="setup-action-dock"
+              className="sticky bottom-0 z-10 flex gap-3 bg-canvas pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom,0px))]"
+            >
+              {/* RE-F6: one exit. The cockpit band's "Dashboard" back item is
+                  the way out; a second Cancel here was a duplicate exit
+                  competing with the primary. */}
               <Button
                 variant="primary"
                 type="submit"
                 disabled={props.isStartingRound || Boolean(selectedQualifierId && qualifierRoundError)}
-                className="flex-[2]"
+                className="flex-1"
               >
                 {props.isStartingRound
                   ? 'Starting…'

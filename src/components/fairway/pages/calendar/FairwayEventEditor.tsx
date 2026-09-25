@@ -975,7 +975,7 @@ export function FairwayEventEditor({
             </Button>
             {pendingScopeAction === 'delete' ? (
               <p className="font-fw-sans text-caption text-fw-danger-ink/80">
-                Removing future or all occurrences is permanent — it can&apos;t be undone.
+                Removing future or all occurrences is permanent. It can&apos;t be undone.
               </p>
             ) : null}
           </div>

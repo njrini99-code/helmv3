@@ -360,7 +360,7 @@ export function PipelineView({
                       {columnCoaches.length}
                     </span>
                     {stageMedianDays[stage.id] !== undefined && (
-                      <span className="text-micro text-text-tertiary tabular-nums whitespace-nowrap">
+                      <span className="text-microlabel text-text-tertiary tabular-nums whitespace-nowrap">
                         · {Math.round(stageMedianDays[stage.id]!)}d median
                       </span>
                     )}
@@ -590,7 +590,7 @@ function KanbanCard({
         'rounded-card border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-card)] p-3',
         'hover:-translate-y-0.5 hover:bg-surface-tint',
         'focus:outline-none focus-visible:ring-2 focus-visible:ring-border-focus/40 focus-visible:border-accent-300',
-        'transition-all duration-200',
+        'transition duration-200',
         'cursor-grab active:cursor-grabbing group',
         isDragging && 'opacity-40 scale-95',
         isSelected && 'ring-2 ring-accent-500/50 bg-accent-50/30',
@@ -668,7 +668,7 @@ function KanbanCard({
           {showAgingChip && (
             <span
               className={cn(
-                'text-micro tabular-nums rounded-full px-2 py-0.5 flex-shrink-0',
+                'text-microlabel tabular-nums rounded-full px-2 py-0.5 flex-shrink-0',
                 tier === 'fresh' && 'bg-canvas text-text-tertiary',
                 tier === 'aging' && 'bg-fw-warning-bg text-fw-warning-ink',
                 tier === 'stale' && 'bg-fw-danger-bg text-fw-danger-ink',
@@ -692,7 +692,7 @@ function KanbanCard({
           <IconButton variant="primary"
             type="button"
             onClick={(e) => { e.stopPropagation(); onStatusChange(coach.id, nextStatus); }}
-            className="opacity-0 group-hover:opacity-100 focus:opacity-100 w-6 h-6 rounded-fw-sm flex items-center justify-center hover:bg-accent-50 active:bg-accent-100 text-accent-700 transition-all"
+            className="opacity-0 group-hover:opacity-100 focus:opacity-100 w-6 h-6 rounded-fw-sm flex items-center justify-center hover:bg-accent-50 active:bg-accent-100 text-accent-700 transition"
             title="Advance to next stage"
             aria-label={`Advance ${coach.name} to next stage`}
             tabIndex={-1}

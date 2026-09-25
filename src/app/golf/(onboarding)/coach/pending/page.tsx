@@ -6,7 +6,7 @@ import { logServerError } from '@/lib/server-error-logger';
 import { describeError } from '@/lib/utils/describe-error';
 
 export const metadata = {
-  title: 'Waiting for approval | GolfHelm',
+  title: 'Waiting for approval',
 };
 
 /**
@@ -99,8 +99,8 @@ export default async function CoachPendingPage() {
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-lg flex-col justify-center px-6 py-16">
       <div className="rounded-2xl border border-border-subtle bg-surface p-8">
-        <h1 className="text-2xl font-semibold text-text-primary">
-          You&rsquo;re all set — pending approval
+        <h1 className="font-fw-display text-h1 font-semibold tracking-tight text-text-primary">
+          You&rsquo;re all set, pending approval
         </h1>
         <p className="mt-3 text-text-secondary">
           Your account is created{programName ? <> and your request to join <strong className="font-semibold text-text-primary">{programName}</strong> as an assistant coach has been sent</> : <> and your request has been sent</>}.
@@ -109,13 +109,13 @@ export default async function CoachPendingPage() {
         </p>
         <p className="mt-4 text-sm text-text-secondary">
           Nothing else is needed from you. Team data appears the moment they
-          approve — reload this page to check.
+          approve, reload this page to check.
         </p>
 
         <div className="mt-8 flex flex-wrap gap-3">
           <Link
             href="/golf/coach/pending"
-            className="rounded-xl bg-primary-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-primary-700"
+            className="rounded-xl bg-accent-fill px-4 py-2.5 text-sm font-medium text-text-on-accent-fill transition-colors hover:bg-accent-fill-hover"
           >
             Check again
           </Link>
@@ -130,7 +130,7 @@ export default async function CoachPendingPage() {
 
       <p className="mt-6 text-center text-sm text-text-secondary">
         Expected to be a player instead?{' '}
-        <Link href="/golf/signup" className="font-medium text-primary-600 hover:underline">
+        <Link href="/golf/signup" className="font-medium text-accent-ink hover:underline">
           Sign up with your team code as a player
         </Link>
         .

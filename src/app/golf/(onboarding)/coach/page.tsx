@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
-import { LazyMotion, m, AnimatePresence, useReducedMotion } from 'framer-motion';
+import { LazyMotion, m, AnimatePresence } from 'framer-motion';
+import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
 import { loadFeatures } from '@/lib/motion/load-features';
 import { CoastalScene } from '@/components/golf/scenes/CoastalScene';
 import { CourseScene } from '@/components/golf/scenes/CourseScene';
@@ -59,8 +60,22 @@ type CoachOnboardingDraft = {
 
 // ─── Main Component ─────────────────────────────────────────────────────────
 
+/**
+ * Field-level validation for a wizard step (STATE-O2): the Continue button is
+ * never silently disabled. A press with a required field empty marks each
+ * empty field inline (the Input wires aria-invalid + aria-describedby) and
+ * moves focus to the first one.
+ */
+function firstMissing(fields: ReadonlyArray<{ id: string; value: string; message: string }>): Record<string, string> {
+  const errors: Record<string, string> = {};
+  for (const f of fields) if (!f.value.trim()) errors[f.id] = f.message;
+  const first = fields.find((f) => errors[f.id]);
+  if (first) document.getElementById(first.id)?.focus();
+  return errors;
+}
+
 export default function GolfCoachOnboarding() {
-  const prefersReducedMotion = useReducedMotion();
+  const prefersReducedMotion = useReducedMotionGuard();
   // Matches the signup gate: one scene per viewport, swapped after hydration.
   const isDesktop = useMediaQuery('(min-width: 768px)');
   const router = useRouter();
@@ -74,6 +89,7 @@ export default function GolfCoachOnboarding() {
 
   // Program data
   const [orgName, setOrgName] = useState('');
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [division, setDivision] = useState('');
   const [conference, setConference] = useState('');
   const [city, setCity] = useState('');
@@ -237,12 +253,22 @@ export default function GolfCoachOnboarding() {
 
   // ─── Navigation ─────────────────────────────────────────────────────────
 
+  // STATE-O2: a step change swaps the whole card, so focus would otherwise
+  // stay on a button that no longer exists (it falls to <body>). Only a user
+  // navigation moves focus; the first paint and a restored draft do not.
+  const navigatedRef = useRef(false);
+  const focusStepHeading = useCallback((el: HTMLHeadingElement | null) => {
+    if (el && navigatedRef.current) el.focus();
+  }, []);
+
   function goForward(to: Step) {
+    navigatedRef.current = true;
     setDirection(1);
     setStep(to);
   }
 
   function goBack(to: Step) {
+    navigatedRef.current = true;
     setDirection(-1);
     setStep(to);
   }
@@ -289,9 +315,9 @@ export default function GolfCoachOnboarding() {
     }
   }
 
-  function handleGoToDashboard() {
+  function handleGoTo(href: string) {
     router.refresh();
-    setTimeout(() => router.push('/golf/dashboard'), 150);
+    setTimeout(() => router.push(href), 150);
   }
 
   async function handleCopyCode() {
@@ -343,7 +369,7 @@ export default function GolfCoachOnboarding() {
             className="mb-6 sm:mb-8"
           >
             <div className="relative">
-              <div className="absolute inset-0 bg-primary-500/25 rounded-full blur-xl scale-150" />
+              <div className="absolute inset-0 bg-accent-wash rounded-full blur-xl scale-150" />
               <Image
                 src="/helm-golf-logo-transparent.png"
                 alt="GolfHelm"
@@ -380,7 +406,7 @@ export default function GolfCoachOnboarding() {
                 <m.div variants={staggerContainer} initial="initial" animate="animate" className="space-y-5">
                   {/* Header */}
                   <m.div variants={staggerItem} className="text-center">
-                    <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-text-primary">
+                    <h1 ref={focusStepHeading} tabIndex={-1} className="outline-none font-fw-display text-h1 font-semibold tracking-tight text-text-primary">
                       Set up your program
                     </h1>
                     <p className="text-text-secondary mt-2 text-sm sm:text-base">
@@ -397,9 +423,14 @@ export default function GolfCoachOnboarding() {
                       {/* Program Details */}
                       <div className="space-y-4">
                         <Input
+                          id="onboarding-org-name"
                           label="School / Organization"
                           value={orgName}
-                          onChange={(e) => setOrgName(e.target.value)}
+                          error={fieldErrors['onboarding-org-name']}
+                          onChange={(e) => {
+                            setOrgName(e.target.value);
+                            setFieldErrors((prev) => ({ ...prev, 'onboarding-org-name': '' }));
+                          }}
                           placeholder="Texas A&M University"
                           required
                           // eslint-disable-next-line jsx-a11y/no-autofocus -- intentional: primary input in onboarding wizard step
@@ -428,7 +459,7 @@ export default function GolfCoachOnboarding() {
 
                       {/* Location */}
                       <div>
-                        <p className="text-label font-semibold text-text-tertiary uppercase tracking-wider mb-3">
+                        <p className="text-microlabel font-semibold text-text-tertiary uppercase tracking-wider mb-3">
                           Location
                         </p>
                         <div className="grid grid-cols-3 gap-3">
@@ -452,7 +483,7 @@ export default function GolfCoachOnboarding() {
 
                       {/* Team */}
                       <div>
-                        <p className="text-label font-semibold text-text-tertiary uppercase tracking-wider mb-3">
+                        <p className="text-microlabel font-semibold text-text-tertiary uppercase tracking-wider mb-3">
                           Team
                         </p>
                         <div className="space-y-3">
@@ -488,9 +519,14 @@ export default function GolfCoachOnboarding() {
                     {/* Actions */}
                     <div className="mt-8">
                       <Button
-                        onClick={() => goForward('profile')}
-                        disabled={!orgName.trim()}
-                        className="w-full bg-primary-600 hover:bg-primary-700 shadow-lg shadow-primary-900/10 hover:shadow-xl hover:shadow-primary-900/15 transition-all"
+                        onClick={() => {
+                          const errors = firstMissing([
+                            { id: 'onboarding-org-name', value: orgName, message: 'Enter your school or organization.' },
+                          ]);
+                          setFieldErrors(errors);
+                          if (Object.keys(errors).length === 0) goForward('profile');
+                        }}
+                        className="w-full bg-accent-fill hover:bg-accent-fill-hover shadow-soft transition"
                         size="lg"
                       >
                         Continue
@@ -527,7 +563,7 @@ export default function GolfCoachOnboarding() {
 
                   {/* Header */}
                   <m.div variants={staggerItem} className="text-center">
-                    <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-text-primary">
+                    <h1 ref={focusStepHeading} tabIndex={-1} className="outline-none font-fw-display text-h1 font-semibold tracking-tight text-text-primary">
                       Your profile
                     </h1>
                     <p className="text-text-secondary mt-2 text-sm sm:text-base">
@@ -552,9 +588,14 @@ export default function GolfCoachOnboarding() {
                       </div>
 
                       <Input
+                        id="onboarding-full-name"
                         label="Full Name"
                         value={fullName}
-                        onChange={(e) => setFullName(e.target.value)}
+                        error={fieldErrors['onboarding-full-name']}
+                        onChange={(e) => {
+                          setFullName(e.target.value);
+                          setFieldErrors((prev) => ({ ...prev, 'onboarding-full-name': '' }));
+                        }}
                         placeholder="John Smith"
                         required
                       />
@@ -570,17 +611,25 @@ export default function GolfCoachOnboarding() {
                     {/* Actions */}
                     <div className="mt-8">
                       <Button
-                        onClick={handleSubmitOnboarding}
-                        disabled={!fullName.trim()}
+                        onClick={() => {
+                          const errors = firstMissing([
+                            { id: 'onboarding-full-name', value: fullName, message: 'Enter your full name.' },
+                          ]);
+                          setFieldErrors(errors);
+                          if (Object.keys(errors).length === 0) void handleSubmitOnboarding();
+                        }}
                         isLoading={loading}
-                        className="w-full bg-primary-600 hover:bg-primary-700 shadow-lg shadow-primary-900/10 hover:shadow-xl hover:shadow-primary-900/15 transition-all"
+                        className="w-full bg-accent-fill hover:bg-accent-fill-hover shadow-soft transition"
                         size="lg"
+                        aria-describedby={error ? 'onboarding-submit-error' : undefined}
                       >
                         Complete Setup
                         <IconCheck size={16} className="ml-2" />
                       </Button>
                       {error && (
                         <m.p
+                          id="onboarding-submit-error"
+                          role="alert"
                           initial={{ opacity: 0, y: -8 }}
                           animate={{ opacity: 1, y: 0 }}
                           className="text-sm text-red-600 mt-3 bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-center"
@@ -631,21 +680,21 @@ export default function GolfCoachOnboarding() {
                       ))}
 
                       {/* Glow */}
-                      <div className="absolute inset-0 bg-primary-500/20 blur-2xl rounded-full scale-[2]" />
+                      <div className="absolute inset-0 bg-accent-wash blur-2xl rounded-full scale-[2]" />
 
                       {/* Check Icon */}
                       <m.div
                         initial={{ scale: 0, rotate: -20 }}
                         animate={{ scale: 1, rotate: 0 }}
                         transition={prefersReducedMotion ? { duration: 0 } : ({ type: 'spring', stiffness: 200, damping: 12, delay: 0.15 })}
-                        className="relative w-20 h-20 bg-gradient-to-br from-primary-500 to-primary-600 rounded-2xl flex items-center justify-center shadow-xl shadow-primary-900/20"
+                        className="relative w-20 h-20 bg-accent-fill rounded-fw-lg flex items-center justify-center shadow-soft"
                       >
                         <m.div
                           initial={{ scale: 0, opacity: 0 }}
                           animate={{ scale: 1, opacity: 1 }}
                           transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.4, type: 'spring', stiffness: 300 })}
                         >
-                          <IconCheck size={40} className="text-white" />
+                          <IconCheck size={40} className="text-text-on-accent-fill" />
                         </m.div>
                       </m.div>
                     </div>
@@ -653,8 +702,8 @@ export default function GolfCoachOnboarding() {
 
                   {/* Personalized Heading */}
                   <m.div variants={staggerItem} className="text-center">
-                    <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-text-primary mb-2">
-                      {orgName ? `${orgName} Golf is ready on GolfHelm` : 'Your team is ready!'}
+                    <h1 ref={focusStepHeading} tabIndex={-1} className="outline-none font-fw-display text-h1 font-semibold tracking-tight text-text-primary mb-2">
+                      {orgName ? `${orgName} Golf is ready on GolfHelm` : 'Your team is ready'}
                     </h1>
                     <p className="text-text-secondary text-sm sm:text-base leading-relaxed max-w-sm mx-auto">
                       Share your team code with players to get them on board.
@@ -666,7 +715,7 @@ export default function GolfCoachOnboarding() {
                     <m.div variants={staggerItem}>
                       <Card variant="overlay" glow="green" hover={false} padding="lg" className="rounded-2xl">
                         <div className="text-center">
-                          <p className="text-label font-semibold text-text-tertiary uppercase tracking-wider mb-3">
+                          <p className="text-microlabel font-semibold text-text-tertiary uppercase tracking-wider mb-3">
                             Team Join Code
                           </p>
                           <p className="font-mono text-3xl sm:text-4xl font-bold tracking-[0.25em] text-text-primary mb-4">
@@ -681,7 +730,7 @@ export default function GolfCoachOnboarding() {
                             {copied ? (
                               <>
                                 <IconCheck size={14} />
-                                Copied!
+                                Copied
                               </>
                             ) : (
                               <>
@@ -695,15 +744,26 @@ export default function GolfCoachOnboarding() {
                     </m.div>
                   )}
 
-                  {/* Dashboard CTA */}
-                  <m.div variants={staggerItem} className="text-center">
+                  {/* Next step (STATE-O3): a new team's dashboard is empty until
+                      players join, so the primary action is the roster, where the
+                      invite code and invite flow live. The dashboard stays one tap
+                      away as the secondary action. */}
+                  <m.div variants={staggerItem} className="flex flex-col items-center gap-2">
                     <Button
                       size="lg"
-                      onClick={handleGoToDashboard}
-                      className="w-full sm:w-auto px-10 bg-primary-600 hover:bg-primary-700 shadow-lg shadow-primary-900/10 hover:shadow-xl hover:shadow-primary-900/15 transition-all"
+                      onClick={() => handleGoTo('/golf/dashboard/roster')}
+                      className="w-full sm:w-auto px-10 bg-accent-fill hover:bg-accent-fill-hover shadow-soft transition"
                     >
-                      Go to Dashboard
+                      Invite players
                       <IconArrowRight size={16} className="ml-2" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="lg"
+                      onClick={() => handleGoTo('/golf/dashboard')}
+                      className="w-full sm:w-auto"
+                    >
+                      Go to dashboard
                     </Button>
                   </m.div>
                 </m.div>

@@ -16,6 +16,7 @@ import { fromUntyped } from '@/lib/supabase/untyped';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import { logServerError } from '@/lib/server-error-logger';
 import { GENOME_DIMENSIONS } from './registry';
+import { isCountableRound } from '@/lib/golf/round-countable';
 import { GENOME_WINDOW_DAYS } from './types';
 import type {
   DimensionResult,
@@ -79,7 +80,7 @@ export async function computeGenomeForPlayer(player_id: string): Promise<Compute
   const since = new Date(Date.now() - WINDOW_DAYS * 86400_000).toISOString().slice(0, 10);
   const { data: rounds, error: roundsErr } = await supabase
     .from('golf_rounds')
-    .select('id, round_date, round_type, total_score, score_to_par')
+    .select('id, round_date, round_type, total_score, score_to_par, holes_played, front_nine, back_nine, total_putts')
     .eq('player_id', player_id)
     .eq('status', 'completed')
     .gte('round_date', since);
@@ -96,13 +97,19 @@ export async function computeGenomeForPlayer(player_id: string): Promise<Compute
     return result;
   }
 
-  const roundIds = (rounds ?? []).map((r) => r.id);
-  const roundMetadata: GenomeRound[] = (rounds ?? []).map((r) => ({
+  // Countable rounds only (src/lib/golf/round-countable.ts), like every other
+  // player number. Unfiltered, the 37-stroke Sep 17 round (−35) and two
+  // hole-less QA qualifiers filled scoring_trend's 30-day window and pinned it
+  // at the −2.00 clamp ("Improving") for a player with no real round in 54 days.
+  const countable = (rounds ?? []).filter((r) => isCountableRound(r));
+  const roundIds = countable.map((r) => r.id);
+  const roundMetadata: GenomeRound[] = countable.map((r) => ({
     id: r.id,
     round_date: r.round_date,
     round_type: r.round_type,
     total_score: r.total_score,
     score_to_par: r.score_to_par,
+    holes_played: r.holes_played,
   }));
   result.rounds_basis = roundIds.length;
 

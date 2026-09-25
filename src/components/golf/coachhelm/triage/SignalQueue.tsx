@@ -11,7 +11,7 @@
  * respecting both the active filter and any collapsed groups).
  * ========================================================================== */
 
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -39,6 +39,12 @@ export interface SignalQueueProps {
   selectedSignalId: string | null;
   onSelectSignal: (id: string) => void;
   signalHref: (id: string) => string;
+  /**
+   * The signal the coach just closed (Back from its dossier). Its row is
+   * scrolled back into view and briefly highlighted, so returning to the
+   * queue lands where they left it (MOT-19).
+   */
+  returnSignalId?: string | null;
 }
 
 function groupKey(group: SignalGroup): string {
@@ -55,8 +61,25 @@ export function SignalQueue({
   selectedSignalId,
   onSelectSignal,
   signalHref,
+  returnSignalId = null,
 }: SignalQueueProps) {
   const [collapsed, setCollapsed] = useState<ReadonlySet<string>>(new Set());
+  const queueRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!returnSignalId) return;
+    const row = queueRef.current?.querySelector<HTMLElement>(`[data-signal-id="${CSS.escape(returnSignalId)}"]`);
+    if (!row) return;
+    row.scrollIntoView?.({ block: 'center' });
+    row.dataset.returned = 'true';
+    const timer = window.setTimeout(() => {
+      delete row.dataset.returned;
+    }, 900);
+    return () => {
+      window.clearTimeout(timer);
+      delete row.dataset.returned;
+    };
+  }, [returnSignalId]);
 
   function toggleCollapsed(key: string) {
     setCollapsed((prev) => {
@@ -111,7 +134,7 @@ export function SignalQueue({
   }
 
   return (
-    <div className="flex flex-col gap-3 min-[940px]:h-full min-[940px]:min-h-0">
+    <div ref={queueRef} className="flex flex-col gap-3 min-[940px]:h-full min-[940px]:min-h-0">
       <div className="flex flex-wrap gap-2 min-[940px]:shrink-0">
         {chips.map((chip) => (
           <Link
@@ -170,9 +193,13 @@ export function SignalQueue({
           groups.map((group) => {
             const key = groupKey(group);
             const isCollapsed = collapsed.has(key);
+            const headerId = `signal-group-${key}`;
+            // A listbox's children are options or groups: each player is a
+            // named group of signal options, not a bare button (A11Y-R4).
             return (
-              <div key={key}>
+              <div key={key} role="group" aria-labelledby={headerId}>
                 <PressTarget
+                  id={headerId}
                   onClick={() => toggleCollapsed(key)}
                   aria-expanded={!isCollapsed}
                   className={cn(

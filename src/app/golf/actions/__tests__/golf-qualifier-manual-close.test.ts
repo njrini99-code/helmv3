@@ -103,8 +103,11 @@ function input(): Parameters<typeof submitGolfRoundComprehensive>[0] {
         lieBefore: 'tee',
         distanceToHoleBefore: 400,
         distanceUnitBefore: 'yards',
-        result: 'hole',
-        distanceToHoleAfter: 0,
+        // Not 'hole': a one-shot holed chain contradicts score 4 / putts 2,
+        // which the round-entry plausibility gate now refuses. This test is
+        // about qualifier closure, so the shot is a partial (unholed) chain.
+        result: 'fairway',
+        distanceToHoleAfter: 150,
         distanceUnitAfter: 'yards',
         shotDistance: 400,
         isPenalty: false,

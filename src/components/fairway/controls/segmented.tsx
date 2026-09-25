@@ -58,11 +58,12 @@
 
 import { type ReactNode, useEffect, useId, useRef } from 'react';
 import * as ToggleGroup from '@radix-ui/react-toggle-group';
-import { motion, useReducedMotion } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { fwFocusRing, fwTransition } from './_internal';
 import { fwHaptic } from '@/lib/fairway/haptics';
 import { useScrollFade } from '@/lib/fairway/use-scroll-fade';
+import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
 
 export interface SegmentedOption<T extends string = string> {
   value: T;
@@ -117,7 +118,8 @@ export function segmentedTrackClassName(
   return cn(
     'inline-flex max-w-full items-center overflow-x-auto rounded-fw-sm bg-surface-sunken',
     '[scrollbar-width:none] [&::-webkit-scrollbar]:hidden',
-    'border border-border-subtle',
+    // 3:1 control edge (WCAG 1.4.11): the track is the control's boundary.
+    'border border-border-control',
     sizeTrack[size],
     fullWidth && 'flex w-full',
     className,
@@ -157,12 +159,14 @@ export function segmentedItemClassName(
     // Crisper active/inactive hierarchy: the selected label sits on the
     // elevated pill and reads semibold + primary; everything else stays
     // medium-weight and secondary until hovered.
+    // Selected = GREEN in both themes (owner decision 2026-09-23: green is
+    // the contrasting colour): deep-green ink on the green wash pill in light
+    // (5.9:1), bright-green ink on the deep wash in dark (6.3:1).
     selected
-      ? 'font-semibold text-text-primary dark:text-white'
+      ? 'font-semibold text-accent-ink'
       : // Dark scope: inactive labels lift to primary — mid-gray on the
         // sunken dark track sat near 3:1 (owner: "so dark, no contrast").
-        // Selection is carried by the accent thumb + weight, like the
-        // system dark segmented control. No alpha shorthand (see pill note).
+        // No alpha shorthand (see pill note).
         'font-medium text-text-secondary hover:text-text-primary dark:text-text-primary',
   );
 }
@@ -222,7 +226,7 @@ export function SegmentedPill({ layoutId, reduceMotion, quiet = false }: Segment
         data-slot="fw-segment-pill"
         data-quiet=""
         aria-hidden="true"
-        className="absolute inset-0 -z-10 rounded-md bg-surface shadow-flat dark:bg-accent-600"
+        className="absolute inset-0 -z-10 rounded-md border border-accent-600 bg-accent-wash shadow-flat dark:border-accent-500"
         transition={reduceMotion ? { duration: 0 } : { type: 'spring', stiffness: 450, damping: 30, mass: 0.6 }}
       />
     );
@@ -232,12 +236,11 @@ export function SegmentedPill({ layoutId, reduceMotion, quiet = false }: Segment
       layoutId={layoutId}
       data-slot="fw-segment-pill"
       aria-hidden="true"
-      // Dark scope (owner directive 2026-08-26, live coach QA): the selected
-      // thumb turns accent green — the flipped `bg-surface` pill read as a
-      // stark white light-mode artifact on the dark track, and the 5px dot
-      // alone was too subtle to carry "selected = green". White-on-accent-600
-      // is the app's shipped button contrast pairing. Light mode unchanged.
-      className="absolute inset-0 -z-10 rounded-md border border-border-subtle bg-surface dark:border-accent-500 dark:bg-accent-600"
+      // The selected thumb is GREEN in both themes (owner decisions
+      // 2026-08-26 dark, 2026-09-23 light: "selected = green"; a cream pill on
+      // a cream track read as nothing). A green wash with a green edge, and
+      // the label in accent-ink (see segmentedItemClassName).
+      className="absolute inset-0 -z-10 rounded-md border border-accent-600 bg-accent-wash dark:border-accent-500"
       style={{ boxShadow: PILL_SHADOW }}
       transition={
         reduceMotion
@@ -269,7 +272,7 @@ export function SegmentedPill({ layoutId, reduceMotion, quiet = false }: Segment
        */}
       <span
         aria-hidden="true"
-        className="absolute right-1 top-1 h-[5px] w-[5px] rounded-full bg-accent-600 ring-1 ring-surface dark:bg-text-on-accent dark:ring-accent-600"
+        className="absolute right-1 top-1 h-[5px] w-[5px] rounded-full bg-accent-600 ring-1 ring-accent-wash dark:bg-accent-ink"
       />
     </motion.span>
   );
@@ -285,7 +288,7 @@ export function Segmented<T extends string = string>({
   className,
   ...aria
 }: SegmentedProps<T>) {
-  const reduceMotion = useReducedMotion();
+  const reduceMotion = useReducedMotionGuard();
   // Unique layoutId so multiple Segmented instances on one page don't share a pill.
   const pillId = useId();
   // Graceful narrow-screen behavior: when the segments' intrinsic width

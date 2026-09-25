@@ -134,7 +134,7 @@ export const FairwayShotPills = memo(function FairwayShotPills({
                   className={cn(
                     'h-11 min-h-0 min-w-[2.75rem] rounded-fw-md px-3',
                     'font-fw-mono text-body-sm font-semibold tabular-nums',
-                    'bg-accent-650 text-text-on-accent hover:bg-accent-600',
+                    'bg-accent-fill text-text-on-accent-fill hover:bg-accent-fill-hover',
                   )}
                 >
                   {num}
@@ -157,9 +157,9 @@ export const FairwayShotPills = memo(function FairwayShotPills({
             >
               <span
                 className={cn(
-                  'rounded-full transition-all duration-150',
+                  'rounded-full transition-[width,height,background-color,box-shadow] duration-150',
                   isSelected
-                    ? 'h-3 w-3 bg-accent-650 ring-2 ring-accent-500/30'
+                    ? 'h-3 w-3 bg-accent-fill ring-2 ring-accent-500/30'
                     : 'h-2 w-2 bg-accent-500 group-active:h-2.5 group-active:w-2.5',
                 )}
               />

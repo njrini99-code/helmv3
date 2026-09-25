@@ -128,7 +128,7 @@ export function EmailStatusBadge({
     return (
       <span
         title={title}
-        className="text-micro text-text-tertiary tabular-nums"
+        className="text-microlabel text-text-tertiary tabular-nums"
         aria-label="No email activity"
       >
         &mdash;

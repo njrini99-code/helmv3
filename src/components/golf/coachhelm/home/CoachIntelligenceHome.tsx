@@ -13,6 +13,7 @@
  * that replaces the old Spine + Bento entirely (Triage Desk spec).
  * ========================================================================== */
 
+import { markAskHandoff } from '@/lib/golf/ask-handoff';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import type { ProgramPulse } from '@/lib/coachhelm/v3/chat/program-pulse';
@@ -42,8 +43,11 @@ export interface CoachIntelligenceHomeProps {
   /** `players` view — copied from development/page.tsx, mounted UNCHANGED. */
   playersDrillProps: PlayersGridViewProps;
 
-  /** `effectiveness` view — copied from analytics/coachhelm/page.tsx, mounted UNCHANGED. */
-  effectivenessDrillProps: FairwayEffectivenessProps;
+  /** `effectiveness` view — copied from analytics/coachhelm/page.tsx, mounted UNCHANGED.
+   *  The page streams it as a promise (secondary to the Brief header and the
+   *  signal queue); `TriageDesk` suspends on it only inside the Effectiveness
+   *  tab. Passed straight through — this component never reads it. */
+  effectivenessDrillProps: FairwayEffectivenessProps | Promise<FairwayEffectivenessProps>;
 
   /**
    * The AI-first opening. Null when the chat context could not be resolved —
@@ -89,7 +93,7 @@ export function CoachIntelligenceHome({
       <Surface padding="lg">
         <EmptyState
           title="No active players yet"
-          description="Invite players and log rounds — CoachHelm names what to work on as the stats cache builds."
+          description="Invite players and log rounds. CoachHelm names what to work on as the stats cache builds."
           action={
             <Button asChild variant="primary">
               <Link href="/golf/dashboard/roster">Open Roster</Link>
@@ -102,6 +106,9 @@ export function CoachIntelligenceHome({
 
   return (
     <div className="flex flex-col gap-8">
+      {/* The opening carries the page's h1; without it the page still needs
+          one (A11Y-R7). */}
+      {!command ? <h1 className="sr-only">CoachHelm</h1> : null}
       {/* ── The AI-first opening. Everything below it is the existing Triage
             Desk, unchanged — the intelligence system is recomposed here, not
             replaced by a decorative empty chat. ── */}
@@ -111,9 +118,12 @@ export function CoachIntelligenceHome({
           coachFirstName={command.coachFirstName}
           players={command.players}
           pulse={command.pulse}
-          onAsk={(text) =>
-            router.push(`/golf/dashboard/coachhelm/chat?q=${encodeURIComponent(text)}`)
-          }
+          onAsk={(text) => {
+            // The coach pressed Send here: let the Ask page send it on arrival
+            // (a bare `?q=` link only pre-fills; see ask-handoff.ts, DATA-15).
+            markAskHandoff(text);
+            router.push(`/golf/dashboard/coachhelm/chat?q=${encodeURIComponent(text)}`);
+          }}
         />
       )}
 
@@ -121,7 +131,7 @@ export function CoachIntelligenceHome({
         <Surface padding="md">
           <InlineNotice
             tone="danger"
-            title="Couldn't load team intelligence — retry"
+            title="Couldn't load team intelligence"
             action={
               <Button
                 variant="secondary"

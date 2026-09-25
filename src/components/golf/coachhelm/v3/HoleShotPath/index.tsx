@@ -83,6 +83,7 @@ import {
   type PlottedShot,
 } from './geometry';
 import { normalizeLie, type HoleShotPathProps, type Lie } from './types';
+import { COURSE_LIE_RING, COURSE_LIE_SWATCH, COURSE_SCENE } from '@/lib/golf/course-illustration-palette';
 import {
   EASE_CINEMATIC,
   enterVariants,
@@ -204,20 +205,7 @@ const SIZES = {
 // CREAM MARKERS below.
 // -----------------------------------------------------------------------------
 
-const LIE_COLOR: Record<Lie | 'other', string> = {
-  tee: '#f4ecd8',
-  fairway: '#86c89e',
-  rough: '#3a6b50',
-  heavy_rough: '#2a5040', // unused after normalize but kept for safety
-  light_rough: '#4a7d62',
-  sand: '#d4b97a',
-  bunker: '#d4b97a',
-  green: '#86c89e',
-  fringe: '#a8c89a',
-  water: '#3a8fb8',
-  penalty: '#c14a3a',
-  other: '#a8a39a',
-};
+const LIE_COLOR: Record<Lie | 'other', string> = COURSE_LIE_SWATCH;
 
 // 2026-07-22 "cased lines, cream markers" redesign repurposed this map: it
 // no longer colors the flight LINES (every non-penalty line is one
@@ -227,20 +215,7 @@ const LIE_COLOR: Record<Lie | 'other', string> = {
 // green as the background" complaint), so the lie signal moved there. Same
 // hue family per lie (still "honest" lie coloring per the founder's brief),
 // lifted in lightness/saturation just enough to stay legible on `#1a382e`.
-const LIE_LINE_COLOR: Record<Lie | 'other', string> = {
-  tee: '#f8f2dd',
-  fairway: '#8fe3ae',
-  rough: '#9bc47f',
-  heavy_rough: '#84b06a',
-  light_rough: '#a8d190',
-  sand: '#eecf8f',
-  bunker: '#eecf8f',
-  green: '#9fe0b6',
-  fringe: '#bcdcae',
-  water: '#6cc3e2',
-  penalty: '#f0715c',
-  other: '#f8f2dd',
-};
+const LIE_LINE_COLOR: Record<Lie | 'other', string> = COURSE_LIE_RING;
 
 // BOLD CASED SHOT LINES (2026-07-22 "lines must be more profound and easy
 // to read" fix): every non-penalty flight segment renders in this one
@@ -248,7 +223,7 @@ const LIE_LINE_COLOR: Record<Lie | 'other', string> = {
 // drop-shadow so it separates crisply from the fairway underneath it — a
 // transit-map line, not a lie-colored hairline. A penalty is the ONE lie
 // signal a line still carries, via `LIE_LINE_COLOR.penalty`'s dashed red.
-const SHOT_LINE_COLOR = '#fbf3e0';
+const SHOT_LINE_COLOR = COURSE_SCENE.ballCream;
 
 const LIE_LABEL: Record<Lie | 'other', string> = {
   tee: 'Tee',
@@ -452,7 +427,7 @@ function sgColor(sg: number): string {
  * `sgTooltipColor`, never an SVG presentation attribute. */
 const SG_TOOLTIP_NEUTRAL_COLOR = 'var(--fw-color-text-secondary)';
 const SG_TOOLTIP_GAINED_COLOR = 'var(--fw-color-accent-500)';
-const SG_TOOLTIP_LOST_COLOR = '#9B2226';
+const SG_TOOLTIP_LOST_COLOR = COURSE_SCENE.sgTooltipLost;
 
 function sgTooltipColor(sg: number): string {
   if (Math.abs(sg) < SG_NEAR_ZERO_THRESHOLD) return SG_TOOLTIP_NEUTRAL_COLOR;
@@ -687,11 +662,11 @@ export function HoleShotPath({
   const scoreLabel = scoreToParLabel(score, par);
   const scoreColor =
     scoreLabel === null
-      ? 'text-warm-500'
+      ? 'text-text-tertiary'
       : scoreLabel === 'E'
         ? 'text-warm-700'
         : scoreLabel.startsWith('-') || ['Albatross', 'Eagle', 'Birdie'].includes(scoreLabel)
-          ? 'text-primary-600'
+          ? 'text-accent-ink'
           : 'text-rose-600';
 
   // Touch fallback: pixel-precise dot targeting is impractical at strip/
@@ -730,12 +705,12 @@ export function HoleShotPath({
           <div className="mb-2 grid min-w-0 grid-cols-[minmax(0,1fr)_auto] gap-x-1 gap-y-0.5 overflow-clip px-1">
             <div className="flex min-w-0 items-baseline gap-1 overflow-hidden whitespace-nowrap">
               {hole_number !== undefined && (
-                <span className="shrink-0 text-eyebrow uppercase tracking-[0.12em] text-warm-500">
+                <span className="shrink-0 text-eyebrow uppercase tracking-[0.12em] text-text-tertiary">
                   Hole {hole_number}
                 </span>
               )}
               {par !== undefined && (
-                <span className="shrink-0 text-eyebrow text-warm-400 tabular-nums">
+                <span className="shrink-0 text-eyebrow text-text-tertiary tabular-nums">
                   Par {par}
                 </span>
               )}
@@ -746,7 +721,7 @@ export function HoleShotPath({
               </span>
             )}
             {plot.total_yardage > 0 && (
-              <span className="col-span-2 truncate text-eyebrow text-warm-400 tabular-nums">
+              <span className="col-span-2 truncate text-eyebrow text-text-tertiary tabular-nums">
                 {Math.round(plot.total_yardage)}y
               </span>
             )}
@@ -763,7 +738,7 @@ export function HoleShotPath({
               'absolute inset-0',
               'rounded-2xl overflow-hidden shadow-[0_18px_40px_-22px_rgba(15,42,30,0.55)]',
               ringClassName ?? 'ring-1 ring-white/10',
-              'bg-[#1a382e]',
+              'bg-[#1a382e]', // literal for Tailwind's JIT; value is COURSE_SCENE.sceneCanvas
             ].join(' ')}
           >
             <svg
@@ -932,7 +907,7 @@ export function HoleShotPath({
                         key={`ball-${seg.to_index}`}
                         data-shot-ball="true"
                         r={1}
-                        fill="#fff9ec"
+                        fill={COURSE_SCENE.ballSubtle}
                         style={{ pointerEvents: 'none' }}
                         initial={{ cx: xs[0], cy: ys[0], opacity: 0 }}
                         animate={{ cx: xs, cy: ys, opacity: [0, 1, 1, 0] }}
@@ -987,10 +962,10 @@ export function HoleShotPath({
                   // putts following it): it must always read as the
                   // deliberately SUBTLE "reached the green" marker, not the
                   // hero landing spot.
-                  const ballFill = '#fbf3e0';
+                  const ballFill = COURSE_SCENE.ballCream;
                   const isLast = i === plot.shots.length - 1;
                   const lieHalo = LIE_LINE_COLOR[s.lie] ?? LIE_LINE_COLOR.other;
-                  const ringColor = isEntryShot ? lieHalo : isLast ? '#ffffff' : lieHalo;
+                  const ringColor = isEntryShot ? lieHalo : isLast ? COURSE_SCENE.white : lieHalo;
                   const r = isEntryShot ? 2.4 : isLast ? 3.8 : 3.2;
                   const timing = drawTimings[i] ?? { delaySec: 0, durationSec: DRAW_FALLBACK_SEC };
                   const landDelay = timing.delaySec + timing.durationSec;
@@ -1039,7 +1014,7 @@ export function HoleShotPath({
                         s.symbolic
                           ? `Penalty, shot ${s.display_index}`
                           : isEntryShot
-                            ? `Reached the green, shot ${s.display_index} — see putting detail`
+                            ? `Reached the green, shot ${s.display_index}, see putting detail`
                             : undefined
                       }
                     >
@@ -1055,7 +1030,7 @@ export function HoleShotPath({
                             data-penalty-marker="true"
                             points={hexagonPoints(s.x, s.y, PENALTY_MARKER_RADIUS)}
                             fill={PENALTY_MARKER_FILL}
-                            stroke="#10241c"
+                            stroke={COURSE_SCENE.punch}
                             strokeWidth={0.6}
                           />
                           <text
@@ -1064,7 +1039,7 @@ export function HoleShotPath({
                             textAnchor="middle"
                             fontSize="3.0"
                             fontWeight={700}
-                            fill="#ffffff"
+                            fill={COURSE_SCENE.white}
                             style={{ pointerEvents: 'none', userSelect: 'none' }}
                           >
                             +1
@@ -1138,7 +1113,7 @@ export function HoleShotPath({
                               lie-green (that was the "ball is the same green
                               as the background" complaint), with a dark
                               punch-stroke for contrast against the turf. */}
-                          <circle cx={s.x} cy={s.y} r={r} fill={ballFill} stroke="#10241c" strokeWidth={0.5} />
+                          <circle cx={s.x} cy={s.y} r={r} fill={ballFill} stroke={COURSE_SCENE.punch} strokeWidth={0.5} />
                           {/* HIT vs MISS shape signal — a wedge fused to the
                               halo edge, pointing `miss_direction`, when one
                               was logged; a neutral radiating burst when the
@@ -1151,7 +1126,7 @@ export function HoleShotPath({
                                 data-miss-wedge="true"
                                 d={missWedgePath(s.x, s.y, r + 1.0, missDir)}
                                 fill={lieHalo}
-                                stroke="#10241c"
+                                stroke={COURSE_SCENE.punch}
                                 strokeWidth={0.35}
                               />
                             ) : (
@@ -1180,7 +1155,7 @@ export function HoleShotPath({
                               textAnchor="middle"
                               fontSize="3.4"
                               fontWeight={700}
-                              fill="#10241c"
+                              fill={COURSE_SCENE.punch}
                               style={{ pointerEvents: 'none', userSelect: 'none' }}
                             >
                               {s.display_index}
@@ -1227,7 +1202,7 @@ export function HoleShotPath({
                               textAnchor="middle"
                               fontSize="2.4"
                               fontWeight={600}
-                              fill="#fbf3e0"
+                              fill={COURSE_SCENE.ballCream}
                               style={{
                                 pointerEvents: 'none',
                                 userSelect: 'none',
@@ -1259,14 +1234,14 @@ export function HoleShotPath({
                       key={`inset-seg-${i}`}
                       d={segmentPath(seg)}
                       fill="none"
-                      stroke="#f8f2dd"
+                      stroke={COURSE_SCENE.creamBright}
                       strokeWidth={0.8}
                       strokeLinecap="round"
                       opacity={0.85}
                     />
                   ))}
                   {plot.greenInset.shots.map((s) => {
-                    const fill = LIE_COLOR[s.lie] ?? '#a8a39a';
+                    const fill = LIE_COLOR[s.lie] ?? COURSE_SCENE.stone;
                     const isFinal = s.shot_index === plot.shots.length - 1;
                     return (
                       <circle
@@ -1275,7 +1250,7 @@ export function HoleShotPath({
                         cy={s.y}
                         r={isFinal ? 2.4 : 1.9}
                         fill={fill}
-                        stroke="#122720"
+                        stroke={COURSE_SCENE.panelInk}
                         strokeWidth={0.3}
                       />
                     );
@@ -1303,10 +1278,10 @@ export function HoleShotPath({
                   Shot {hovered.display_index} of {plot.shots.length}
                 </span>
                 {hovered.club_type && (
-                  <span className="text-warm-400">· {CLUB_LABEL[hovered.club_type] ?? hovered.club_type}</span>
+                  <span className="text-text-tertiary">· {CLUB_LABEL[hovered.club_type] ?? hovered.club_type}</span>
                 )}
               </div>
-              <div className="text-warm-500 tabular-nums">
+              <div className="text-text-tertiary tabular-nums">
                 {formatYards(hovered.shot_yards)}
                 {hovered.distance_to_pin === 0 ? (
                   <> · holed</>
@@ -1315,14 +1290,14 @@ export function HoleShotPath({
                 ) : null}
                 {hovered.miss_direction && <> · missed {hovered.miss_direction}</>}
                 {hovered.is_penalty && (
-                  <span className="ml-1.5 font-medium text-danger">
+                  <span className="ml-1.5 font-medium text-fw-danger-ink">
                     {hovered.penalty_type
                       ? `penalty: ${PENALTY_LABEL[hovered.penalty_type] ?? hovered.penalty_type}`
                       : 'penalty'}
                     {/* Symbolic shots never got a real flight to measure —
                         say so explicitly rather than leaving the reader to
                         infer it from the bare "—" above. */}
-                    {hovered.symbolic ? ' — no distance recorded' : ''}
+                    {hovered.symbolic ? ', no distance recorded' : ''}
                   </span>
                 )}
               </div>
@@ -1334,22 +1309,22 @@ export function HoleShotPath({
                   SG {formatSG(hovered.sg)}
                 </div>
               )}
-              <div className="text-warm-500">
+              <div className="text-text-tertiary">
                 {LIE_LABEL[lieBeforeShot(hoveredIndex)]} → {LIE_LABEL[hovered.lie]}
               </div>
               {hovered.lie === 'green' &&
                 (insetFeetByShotIndex.get(hoveredIndex) != null || hovered.putt_break || hovered.putt_slope) && (
-                  <div className="text-warm-500">
+                  <div className="text-text-tertiary">
                     {formatFeet(insetFeetByShotIndex.get(hoveredIndex) ?? null)}
                     {hovered.putt_break ? `, ${PUTT_BREAK_SHORT[hovered.putt_break] ?? hovered.putt_break}` : ''}
                     {hovered.putt_slope ? `, ${PUTT_SLOPE_LABEL[hovered.putt_slope] ?? hovered.putt_slope}` : ''}
                   </div>
                 )}
               {hovered.lie === 'green' && hovered.miss_tags && hovered.miss_tags.length > 0 && (
-                <div className="text-warm-500">Miss: {hovered.miss_tags.join(', ')}</div>
+                <div className="text-text-tertiary">Miss: {hovered.miss_tags.join(', ')}</div>
               )}
               {hovered.notes && (
-                <div className="mt-0.5 max-w-[200px] whitespace-normal text-warm-500 italic">
+                <div className="mt-0.5 max-w-[200px] whitespace-normal text-text-tertiary italic">
                   “{hovered.notes}”
                 </div>
               )}
@@ -1362,7 +1337,7 @@ export function HoleShotPath({
             typed in, not a GPS/laser reading. Skipped at `strip` (no room,
             18 simultaneous copies would just be noise). */}
         {variant.showHeader && (
-          <p className="mt-1.5 px-1 text-eyebrow leading-snug text-warm-400/80">
+          <p className="mt-1.5 px-1 text-eyebrow leading-snug text-text-tertiary">
             Distances are player-logged, not GPS-measured.
           </p>
         )}

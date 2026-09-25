@@ -12,6 +12,7 @@ import {
   buildCategoryTrends,
   type CategorizablePatternWithImpact,
 } from '../buildStatsViewModel';
+import { formatMetricText } from '@/lib/golf/metrics/display-registry';
 
 describe('biggestLeakArea', () => {
   it('picks putting given a fixture where sg_putting is the most negative category', () => {
@@ -163,6 +164,15 @@ describe('buildLedger', () => {
 });
 
 describe('buildPriorities', () => {
+  it('shows the measured strokes-gained figure when the area has one, not the estimate', () => {
+    const items = buildPriorities([
+      { label: 'SG: Putting', strokeImpact: -2.99, measured: -2.93 },
+      { label: 'Three-putts per round', strokeImpact: -1.09 },
+    ]);
+    expect(items[0]).toMatchObject({ title: 'SG: Putting', value: '\u22122.93' });
+    expect(items[1]!.value).toBe('\u22121.09 est.');
+  });
+
   it('ranks weaknesses by absolute stroke impact, numbered by order', () => {
     const items = buildPriorities([
       { label: 'Putting 5-10ft', strokeImpact: -0.3 },
@@ -209,8 +219,19 @@ describe('formatSgSigned', () => {
   it('formats a negative value with a minus sign', () => {
     expect(formatSgSigned(-0.31)).toBe('−0.31');
   });
-  it('formats exactly zero as E', () => {
-    expect(formatSgSigned(0)).toBe('E');
+  // Changed on purpose (W9, §5.2 number rule via the display registry): "E"
+  // means level par, which strokes gained is not. SG zero prints "0.00".
+  it('formats zero as 0.00, never E', () => {
+    expect(formatSgSigned(0)).toBe('0.00');
+  });
+  it('never prints a signed zero for a value that rounds to zero', () => {
+    expect(formatSgSigned(-0.004)).toBe('0.00');
+    expect(formatSgSigned(0.004)).toBe('0.00');
+  });
+  it('matches the display registry for every SG value', () => {
+    for (const v of [-2.345, -0.005, 0.125, 1.978]) {
+      expect(formatSgSigned(v)).toBe(formatMetricText('sg_total', v));
+    }
   });
   it('formats null/undefined as an em dash', () => {
     expect(formatSgSigned(null)).toBe('—');
@@ -531,25 +552,41 @@ describe('buildCategoryTrends', () => {
     expect(buildCategoryTrends(undefined).driving).toBeNull();
   });
 
+  // REQUIREMENT CHANGED ON PURPOSE: the delta used to be newest − oldest
+  // (two points), which turned one outlier round into "↑ −39.0". It is now the
+  // mean of the latest w points vs the w before them, w = min(5, floor(n/2)),
+  // and needs at least 3 points per side.
+  const pts = (...vs: number[]) => vs.map((value) => ({ value }));
+
   it('marks a higher-is-better rise (fairway%) as a GOOD up delta', () => {
-    const trends = buildCategoryTrends({ fairway: [{ value: 55 }, { value: 63 }] });
+    const trends = buildCategoryTrends({ fairway: pts(55, 55, 55, 63, 63, 63) });
     expect(trends.driving?.delta).toEqual({ text: '+8%', direction: 'up', good: true });
+    expect(trends.driving?.deltaWindow).toBe('last 3 vs prior 3 rounds');
   });
 
   it('marks fewer putts per round (lower-is-better) as a GOOD delta even though the raw number fell', () => {
-    const trends = buildCategoryTrends({ putts: [{ value: 30.2 }, { value: 28.6 }] });
+    const trends = buildCategoryTrends({ putts: pts(30.2, 30.2, 30.2, 28.6, 28.6, 28.6) });
     expect(trends.putting?.delta).toEqual({ text: '−1.6', direction: 'down', good: true });
   });
 
   it('marks a rising score (lower-is-better) as a BAD up delta', () => {
-    const trends = buildCategoryTrends({ score: [{ value: 74 }, { value: 78 }] });
+    const trends = buildCategoryTrends({ score: pts(74, 74, 74, 78, 78, 78) });
     expect(trends.scoring?.delta).toEqual({ text: '+4.0', direction: 'up', good: false });
   });
 
-  it('omits the delta (but keeps the series) when fewer than 2 finite points exist', () => {
-    const trends = buildCategoryTrends({ gir: [{ value: 42 }] });
-    expect(trends.approach?.series).toEqual([42]);
+  it('compares last 5 vs prior 5, not newest vs oldest', () => {
+    // Oldest 76 and newest 37 used to read as −39.0.
+    const trends = buildCategoryTrends({ score: pts(76, 80, 74, 72, 75, 71, 73, 70, 74, 37) });
+    // prior 5 = 76,80,74,72,75 → 75.4; last 5 = 71,73,70,74,37 → 65.0
+    expect(trends.scoring?.delta).toEqual({ text: '−10.4', direction: 'down', good: true });
+    expect(trends.scoring?.deltaWindow).toBe('last 5 vs prior 5 rounds');
+  });
+
+  it('omits the delta (but keeps the series) with fewer than 3 points per side', () => {
+    const trends = buildCategoryTrends({ gir: pts(42, 44, 46, 48, 50) });
+    expect(trends.approach?.series).toEqual([42, 44, 46, 48, 50]);
     expect(trends.approach?.delta).toBeUndefined();
+    expect(buildCategoryTrends({ gir: pts(42) }).approach?.delta).toBeUndefined();
   });
 
   it('drops non-finite points from the series before computing anything', () => {

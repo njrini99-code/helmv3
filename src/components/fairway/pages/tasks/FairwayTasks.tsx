@@ -37,6 +37,7 @@
  * tasks/page.tsx. Renders inside a `.fairway-ds` scope on a `bg-canvas` page.
  * ========================================================================== */
 
+import { parseTaskDueDate } from '@/lib/golf/task-overdue';
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ClipboardList, Bell, ChevronDown } from 'lucide-react';
@@ -725,12 +726,8 @@ function reminderTone(
  * only the bare date-only case needs the local-construction fix.
  */
 export function parseDueDate(dueDate: string): Date {
-  const dateOnlyMatch = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dueDate);
-  if (dateOnlyMatch) {
-    const [, y, m, d] = dateOnlyMatch;
-    return new Date(Number(y), Number(m) - 1, Number(d));
-  }
-  return new Date(dueDate);
+  // One implementation, shared with useTaskRealtime's is_overdue (HYD-06).
+  return parseTaskDueDate(dueDate);
 }
 
 function formatDueLabel(dateString: string, now: Date | null): string {

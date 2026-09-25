@@ -458,13 +458,13 @@ export function EventPeopleTimeFields({
                       className="relative grid h-8 w-8 flex-shrink-0 place-items-center overflow-hidden rounded-full font-fw-sans text-caption font-semibold ring-1 ring-border-subtle"
                     >
                       {p.avatar_url ? (
-                        <img src={p.avatar_url} alt="" className="h-full w-full object-cover" />
+                        <img src={p.avatar_url} alt="" loading="lazy" decoding="async" className="h-full w-full object-cover" />
                       ) : (
                         <UserRound className="h-4 w-4 text-text-tertiary" aria-hidden />
                       )}
                       {selected ? (
-                        <span className="absolute -bottom-0.5 -right-0.5 grid h-4 w-4 place-items-center rounded-full bg-accent-500 ring-2 ring-surface">
-                          <Check className="h-2.5 w-2.5 text-text-on-accent" />
+                        <span className="absolute -bottom-0.5 -right-0.5 grid h-4 w-4 place-items-center rounded-full bg-accent-fill ring-2 ring-surface">
+                          <Check className="h-2.5 w-2.5 text-text-on-accent-fill" />
                         </span>
                       ) : null}
                     </span>

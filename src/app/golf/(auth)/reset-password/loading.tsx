@@ -1,48 +1,36 @@
-import { GolfAuthShell } from '@/components/auth/GolfAuthShell';
+import { HelmMark } from '@/components/brand/HelmMark';
 
 /**
  * Route Suspense fallback for /golf/reset-password.
  *
- * ResetPasswordPage (page.tsx:16) is a `'use client'` default export with no
- * Suspense boundary of its own, so its whole tree — including
- * `<GolfAuthShell>` — is what mounts on first paint. Its `recoveryState`
- * starts as `useState<RecoveryState>('verifying')` (page.tsx:22) and only
- * flips to `'ready'`/`'invalid'` inside an async effect that awaits a
- * Supabase session/PKCE round trip (page.tsx:32-74). Until that resolves,
- * the derived `heading`/`subheading` (page.tsx:114-120) are unconditionally
- * "Reset your password" / "Verifying your reset link…", and the shell's
- * children render the three-dot status row (page.tsx:148-155) — not the
- * two-field password form, which only exists once `recoveryState ===
- * 'ready'`.
- *
- * This previously reconstructed a `bg-auth-golf` / `glass-standard` card
- * with skeleton rows for both password inputs — the retired orb/glass
- * chrome GolfAuthShell's own docstring (GolfAuthShell.tsx:3-10) says this
- * flow was moved off of, and the page's *populated* form shape rather than
- * its actual first-paint ("verifying") branch. Importing the real
- * GolfAuthShell here (rather than hand-copying its scene/motion/card
- * markup) makes the chrome correct by construction; the known, accepted
- * trade is that the brand lockup and card replay their mount-in animation
- * once more when the real page tree takes over — still strictly better
- * than the chrome/shape mismatch this replaces.
+ * Mirrors AuthCanvas (src/components/auth/golf-auth-canvas.tsx), which
+ * page.tsx renders since AUTH-02 moved the page off GolfAuthShell: a flat
+ * `bg-canvas`, the app mark in the same position, and the page's first-paint
+ * branch ("verifying", a single status row) rather than the two-field form,
+ * which only exists once the recovery session resolves. It matches
+ * ../forgot-password/loading.tsx. There is no illustrated scene and no card.
  */
 export default function Loading() {
   return (
-    <div role="status" aria-busy="true" aria-live="polite">
+    <div
+      role="status"
+      aria-busy="true"
+      aria-live="polite"
+      className="flex min-h-[100dvh] flex-col bg-canvas"
+      style={{
+        paddingTop: 'env(safe-area-inset-top)',
+        paddingLeft: 'max(16px, env(safe-area-inset-left))',
+        paddingRight: 'max(16px, env(safe-area-inset-right))',
+      }}
+    >
       <span className="sr-only">Loading password reset…</span>
-      <GolfAuthShell
-        idSuffix="golf-reset-loading"
-        heading="Reset your password"
-        subheading="Verifying your reset link…"
-      >
-        <div className="flex justify-center py-6" aria-hidden="true">
-          <span className="flex items-center gap-1.5">
-            <span className="h-2 w-2 rounded-full bg-primary-600 skeleton-shimmer" style={{ animationDelay: '0ms' }} />
-            <span className="h-2 w-2 rounded-full bg-primary-600 skeleton-shimmer" style={{ animationDelay: '150ms' }} />
-            <span className="h-2 w-2 rounded-full bg-primary-600 skeleton-shimmer" style={{ animationDelay: '300ms' }} />
-          </span>
-        </div>
-      </GolfAuthShell>
+      <div className="h-11 shrink-0" />
+      <div className="mx-auto flex w-full max-w-[400px] flex-col items-center pt-[clamp(16px,9vh,88px)]">
+        <HelmMark sport="golf" size={60} className="h-[60px] w-[60px]" priority />
+        <div className="mt-5 h-[34px]" />
+        <div className="mt-1.5 h-5" />
+        <div className="mt-8 h-[72px] w-full" />
+      </div>
     </div>
   );
 }

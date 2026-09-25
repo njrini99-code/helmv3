@@ -1,11 +1,12 @@
 'use client';
 
+import { haptic } from '@/lib/haptics';
 import { useRef, useCallback, useState } from 'react';
 import { useMediaQuery } from '@/hooks/use-media-query';
 import { Sheet } from '@/components/fairway/overlays/Sheet';
 import { Button } from '@/components/fairway/controls/button';
 import { cn } from '@/lib/utils';
-import { triggerHaptic } from '@/lib/utils/capacitor';
+
 import { fairwayToast } from '@/components/fairway';
 import { logError } from '@/lib/error-logging';
 import { IconButton } from '@/components/ui/button';
@@ -55,13 +56,13 @@ export function AttachmentButton({
 
   const handleSimpleClick = () => {
     if (disabled) return;
-    void triggerHaptic('light');
+    void haptic('commit');
     inputRef.current?.click();
   };
 
   const handleSelectType = (type: 'all' | 'image' | 'video' | 'document' | 'audio' | 'camera') => {
     if (disabled) return;
-    void triggerHaptic('light');
+    void haptic('commit');
 
     setSheetOpen(false);
     if (type === 'camera' && cameraInputRef.current) {

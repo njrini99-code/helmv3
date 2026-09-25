@@ -248,11 +248,11 @@ export function DuplicateReview({ onClose, onMerged }: DuplicateReviewProps) {
                                     {coach.name}
                                   </span>
                                   {isKeep && (
-                                    <span className="inline-flex items-center px-1.5 py-0.5 rounded text-micro font-semibold bg-accent-100 text-accent-700">
+                                    <span className="inline-flex items-center px-1.5 py-0.5 rounded text-microlabel font-semibold bg-accent-100 text-accent-700">
                                       Keep
                                     </span>
                                   )}
-                                  <span className="inline-flex items-center px-1.5 py-0.5 rounded text-micro font-medium bg-surface-sunken text-text-secondary capitalize">
+                                  <span className="inline-flex items-center px-1.5 py-0.5 rounded text-microlabel font-medium bg-surface-sunken text-text-secondary capitalize">
                                     {coach.status.replace(/_/g, ' ')}
                                   </span>
                                 </div>

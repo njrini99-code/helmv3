@@ -96,12 +96,12 @@ function AutoSaveChip({
       role="status"
       aria-live="polite"
       aria-label={
-        status === 'saving' ? 'Saving round' : status === 'saved' ? 'Round saved' : 'Save failed'
+        status === 'saving' ? 'Saving round' : status === 'saved' ? 'Round saved' : 'Not synced yet, retrying'
       }
       className={cn(
         'flex items-center gap-1.5 rounded-fw-sm px-2 py-1 font-fw-sans text-caption font-medium transition-colors',
-        status === 'saving' && 'bg-fw-warning-bg text-fw-warning-ink',
-        status === 'saved' && 'bg-accent-50 text-accent-700',
+        status === 'saving' && 'bg-fw-warning-bg text-fw-warning-text',
+        status === 'saved' && 'bg-accent-wash text-accent-ink',
         status === 'error' && 'bg-fw-danger-bg text-fw-danger-ink',
       )}
     >
@@ -125,8 +125,9 @@ function AutoSaveChip({
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
           </svg>
           {/* Always in words: a lone orange triangle told a player nothing
-              (audit 2026-09-02, UI-11). */}
-          Save failed
+              (audit 2026-09-02, UI-11). The round keeps retrying in the
+              background, so say that instead of a dead-end failure (RE-F18). */}
+          Not synced · retrying
         </>
       )}
     </span>
@@ -237,7 +238,7 @@ export const FairwayScorecardHeader = memo(function FairwayScorecardHeader({
     // Score-to-par color ramp → Fairway LIGHT tones. Same thresholds as legacy.
     const scoreColor = (() => {
       if (isCurrent) return 'text-accent-700';
-      if (!hasScore) return 'text-text-tertiary/50';
+      if (!hasScore) return 'text-text-tertiary';
       if (scoreToPar <= -1) return 'text-fw-success-ink';
       if (scoreToPar === 0) return 'text-text-primary';
       if (scoreToPar === 1) return 'text-fw-warning-ink';
@@ -271,8 +272,8 @@ export const FairwayScorecardHeader = memo(function FairwayScorecardHeader({
         <div className={cn('font-fw-sans text-microlabel font-semibold', isCurrent ? 'text-accent-700' : 'text-text-secondary')}>
           {hole.number}
         </div>
-        <div className="truncate font-fw-sans text-microbadge uppercase tracking-wide text-text-tertiary">Par {hole.par}</div>
-        <div className="truncate font-fw-sans text-microbadge text-text-tertiary/80">
+        <div className="truncate font-fw-sans text-microlabel uppercase tracking-wide text-text-tertiary">Par {hole.par}</div>
+        <div className="truncate font-fw-sans text-microlabel text-text-tertiary">
           {isMeters ? yardsToDisplay(hole.yardage, 'meters') : hole.yardage} {isMeters ? 'm' : 'yds'}
         </div>
         <div className={cn('mt-1 font-fw-display text-body-lg font-semibold tabular-nums', scoreColor)}>
@@ -286,7 +287,7 @@ export const FairwayScorecardHeader = memo(function FairwayScorecardHeader({
           </div>
         )}
         {canNavigate && !isCurrent && !hasScore && (
-          <div className="mt-0.5 truncate font-fw-sans text-microbadge text-text-tertiary">Edit</div>
+          <div className="mt-0.5 truncate font-fw-sans text-microlabel text-text-tertiary">Edit</div>
         )}
       </Button>
     );
@@ -308,8 +309,8 @@ export const FairwayScorecardHeader = memo(function FairwayScorecardHeader({
       )}
     >
       <div className="truncate font-fw-sans text-microlabel font-semibold uppercase tracking-wide text-text-secondary">{label}</div>
-      <div className="font-fw-sans text-microbadge uppercase tracking-wide text-text-tertiary">Par {par}</div>
-      <div className="font-fw-sans text-microbadge text-text-tertiary/80">{isMeters ? yardsToDisplay(yards, 'meters') : yards}</div>
+      <div className="font-fw-sans text-microlabel uppercase tracking-wide text-text-tertiary">Par {par}</div>
+      <div className="font-fw-sans text-microlabel text-text-tertiary">{isMeters ? yardsToDisplay(yards, 'meters') : yards}</div>
       <div className="mt-1 font-fw-display text-body-lg font-semibold tabular-nums text-text-primary">{hasScores ? score : '–'}</div>
     </div>
   );
@@ -363,7 +364,7 @@ export const FairwayScorecardHeader = memo(function FairwayScorecardHeader({
         </div>
         <div className="flex items-center gap-2">
           <AutoSaveChip status={autoSaveStatus} compact />
-          <span className="flex-shrink-0 whitespace-nowrap font-fw-sans text-eyebrow font-semibold uppercase tracking-wide text-accent-700">
+          <span className="flex-shrink-0 whitespace-nowrap font-fw-sans text-eyebrow font-semibold uppercase tracking-wide text-accent-ink">
             Hole {currentHoleNumber} / {holes.length}
           </span>
         </div>
@@ -376,7 +377,7 @@ export const FairwayScorecardHeader = memo(function FairwayScorecardHeader({
           }}
           disabled={!canGoNext}
           title={nextBlockedReason}
-          aria-label={nextBlockedReason ? `Next hole — ${nextBlockedReason}` : 'Next hole'}
+          aria-label={nextBlockedReason ? `Next hole, ${nextBlockedReason}` : 'Next hole'}
         >
           Next →
         </Button>

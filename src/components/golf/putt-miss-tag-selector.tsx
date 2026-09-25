@@ -1,8 +1,9 @@
 'use client';
 
-import { motion, useReducedMotion } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { PuttMissTag } from '@/lib/types/golf';
+import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
 
 interface PuttMissTagSelectorProps {
   selectedTags: PuttMissTag[];
@@ -15,7 +16,7 @@ export function PuttMissTagSelector({
   onTagsChange, 
   disabled,
 }: PuttMissTagSelectorProps) {
-  const prefersReducedMotion = useReducedMotion();
+  const prefersReducedMotion = useReducedMotionGuard();
   const tags: PuttMissTag[] = ['short', 'long', 'low', 'high'];
   const tagLabels: Record<PuttMissTag, string> = {
     short: 'Short',
@@ -56,11 +57,11 @@ export function PuttMissTagSelector({
               disabled={disabled}
               whileTap={prefersReducedMotion ? undefined : ({ scale: 0.96 })}
               className={cn(
-                'relative px-4 py-3 rounded-fw-md border transition-all duration-200',
+                'relative px-4 py-3 rounded-fw-md border transition duration-200',
                 'font-fw-sans text-sm font-medium',
                 'outline-none focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
                 isSelected
-                  ? 'bg-accent-650 border-accent-700 text-text-on-accent shadow-flat'
+                  ? 'bg-accent-fill border-accent-700 text-text-on-accent-fill shadow-flat'
                   : 'bg-surface-sunken border-border-subtle text-text-secondary hover:border-accent-300 hover:bg-surface-tint active:bg-surface-tint',
                 disabled && 'opacity-50 cursor-not-allowed'
               )}

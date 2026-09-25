@@ -48,7 +48,7 @@ import {
   type ReactNode,
 } from 'react';
 import NumberFlow, { type Format } from '@number-flow/react';
-import { motion, useReducedMotion } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { ArrowUpRight, ArrowDownRight, Minus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Skeleton } from '@/components/fairway/feedback';
@@ -56,6 +56,8 @@ import { Skeleton } from '@/components/fairway/feedback';
 // above. Direct-file import (not the `charts` barrel) mirrors how Sparkline
 // itself imports these from the same module.
 import { classifyTrend, TREND_TONE_CLASS } from '@/components/fairway/charts/TrendChip';
+import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
+import { fwPressSurface } from '@/components/fairway/controls';
 
 /** Visual weight of the tile. `default` is the everyday KPI; `hero` gets a
  *  touch more air + a slightly larger numeric for the one lead metric. */
@@ -252,7 +254,7 @@ export const MetricCard = forwardRef<HTMLDivElement, MetricCardProps>(
     },
     ref,
   ) {
-    const prefersReduced = useReducedMotion();
+    const prefersReduced = useReducedMotionGuard();
     const { ref: sparklineWrapRef, width: sparklineWidth } = useSparklineWidth();
 
     const numberFormat = useMemo<Format>(
@@ -309,9 +311,8 @@ export const MetricCard = forwardRef<HTMLDivElement, MetricCardProps>(
         // Press is the touch-side affordance: the hover lift above never fires
         // on a phone, so `active:translate-y-0` alone cancelled nothing and a
         // tapped KPI card sat inert. Settle below rest instead of back to it.
-        'active:translate-y-0 active:scale-[0.994] active:shadow-flat active:brightness-[0.985]',
-        'active:[transition-duration:110ms] active:[transition-timing-function:var(--fw-ease-spring)]',
-        'motion-reduce:active:scale-100 motion-reduce:active:brightness-100',
+        'active:translate-y-0',
+        fwPressSurface,
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
       ],
       !interactive && 'duration-base',
@@ -347,8 +348,29 @@ export const MetricCard = forwardRef<HTMLDivElement, MetricCardProps>(
       ? { tabIndex: 0, role: 'button' as const }
       : {};
 
+    // One spoken sentence per KPI (A11Y-01): the figure is split across an
+    // eyebrow, NumberFlow's shadow digits and a delta chip, which a screen
+    // reader otherwise reads as disconnected fragments. Only when the parts
+    // are plain text; a caller-supplied aria-label in `rest` still wins.
+    const spokenLabel = (() => {
+      if (typeof label !== 'string') return undefined;
+      if (empty) return `${label}: ${emptyMessage}`;
+      const figure = `${prefix ?? ''}${new Intl.NumberFormat('en-US', numberFormat).format(value)}${suffix ?? ''}`;
+      const parts = [`${label}: ${figure}`];
+      if (delta) {
+        const d = new Intl.NumberFormat('en-US', { ...deltaFormat, signDisplay: 'never' }).format(delta.value);
+        const change = delta.value === 0 ? 'no change' : `${delta.value > 0 ? 'up' : 'down'} ${delta.prefix ?? ''}${d}${delta.suffix ?? ''}`;
+        parts.push(delta.label ? `${change} ${delta.label}` : change);
+      }
+      if (typeof footnote === 'string') parts.push(footnote);
+      return parts.join(', ');
+    })();
+    const a11yProps = spokenLabel
+      ? { 'aria-label': spokenLabel, ...(interactive ? {} : { role: 'group' as const }) }
+      : {};
+
     return (
-      <div ref={ref} className={base} {...interactiveProps} {...rest}>
+      <div ref={ref} className={base} {...interactiveProps} {...a11yProps} {...rest}>
         {/* header: overline label + optional icon */}
         <div className="flex items-start justify-between gap-3">
           <span
@@ -373,7 +395,7 @@ export const MetricCard = forwardRef<HTMLDivElement, MetricCardProps>(
             // metric icon is the card's green note — four of them across a KPI
             // row tie the grid together without putting colour back on the data.
             // `dark:` rather than a token so the light card is untouched.
-            <span className="shrink-0 text-text-tertiary dark:text-accent-500 [&_svg]:h-5 [&_svg]:w-5">
+            <span className="shrink-0 text-text-tertiary dark:text-accent-ink [&_svg]:h-5 [&_svg]:w-5">
               {icon}
             </span>
           ) : null}
@@ -500,7 +522,10 @@ function DeltaChip({
   const Icon = direction === 'up' ? ArrowUpRight : direction === 'down' ? ArrowDownRight : Minus;
 
   return (
-    <span className="inline-flex items-center gap-1.5">
+    // flex-wrap: in a half-width phone tile the label used to wrap into a
+    // one-word column beside the chip ("trend, / last 5 / team / rounds").
+    // Wrapping drops it under the chip at full width instead.
+    <span className="inline-flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
       <motion.span
         initial={prefersReduced ? false : { opacity: 0, y: 2 }}
         animate={{ opacity: 1, y: 0 }}

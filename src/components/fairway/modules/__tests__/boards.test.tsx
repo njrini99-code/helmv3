@@ -53,7 +53,7 @@ describe('Filmstrip', () => {
 
     expect(boxes[0]!.parentElement!.className).toContain('ring-accent-500'); // birdie
     expect(boxes[1]!.parentElement!.className).toContain('ring-warm-300'); // par
-    expect(boxes[2]!.parentElement!.className).toContain('ring-danger'); // double
+    expect(boxes[2]!.parentElement!.className).toContain('ring-fw-danger'); // double
   });
 
   it('passes each hole its own shots from shotsByHole down to the strip visual', async () => {

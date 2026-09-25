@@ -29,13 +29,19 @@ import {
   type ChartTableData,
 } from './ChartFrame';
 import { makeChartTooltip } from './ChartTooltip';
-import { VIZ_CHROME, VIZ_COLOR, VIZ_REVEAL_MS, VIZ_FONT } from './theme';
+import { VIZ_CHROME, VIZ_COLOR, VIZ_FONT } from './theme';
 
 export interface GenomeAxis {
   /** dimension name, e.g. "Driving", "Approach", "Putting", "Around Green" */
   label: string;
   /** percentile / score on the shared 0–100 scale */
   value: number;
+  /**
+   * The real value in its own unit (e.g. "+1.98" strokes gained). When set,
+   * the table view and tooltip show it instead of the 0–100 plot position,
+   * so a plotted scale is never read as the measured number.
+   */
+  displayValue?: string;
 }
 
 export interface GenomeRadarProps {
@@ -46,6 +52,8 @@ export interface GenomeRadarProps {
   data: GenomeAxis[];
   /** series name shown in the tooltip */
   seriesName?: string;
+  /** Table column header for `displayValue` (defaults to `seriesName`). */
+  valueLabel?: string;
   /** scale max (default 100 — percentile) */
   max?: number;
   height?: number;
@@ -61,6 +69,7 @@ export function GenomeRadar({
   takeaway,
   data,
   seriesName = 'Percentile',
+  valueLabel,
   max = 100,
   height = 280,
   state,
@@ -73,9 +82,9 @@ export function GenomeRadar({
     caption: 'Genome percentile by dimension',
     columns: [
       { key: 'label', label: 'Dimension' },
-      { key: 'value', label: seriesName, numeric: true },
+      { key: 'value', label: valueLabel ?? seriesName, numeric: true },
     ],
-    rows: data.map((d) => ({ label: d.label, value: Math.round(d.value) })),
+    rows: data.map((d) => ({ label: d.label, value: d.displayValue ?? Math.round(d.value) })),
   };
 
   return (
@@ -128,7 +137,12 @@ export function GenomeRadar({
             tickCount={4}
           />
           <Tooltip
-            content={makeChartTooltip({ valueFormatter: (v) => `${Math.round(Number(v))}` })}
+            content={makeChartTooltip({
+              valueFormatter: (v, item) => {
+                const shown = item.payload?.displayValue;
+                return typeof shown === 'string' ? shown : `${Math.round(Number(v))}`;
+              },
+            })}
           />
           <Radar
             name={seriesName}
@@ -137,8 +151,7 @@ export function GenomeRadar({
             strokeWidth={2}
             fill={VIZ_COLOR.accent}
             fillOpacity={0.18}
-            isAnimationActive
-            animationDuration={VIZ_REVEAL_MS}
+            isAnimationActive={false}
             dot={{ r: 2.5, fill: VIZ_COLOR.accent, strokeWidth: 0 }}
           />
         </RadarChart>

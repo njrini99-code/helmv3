@@ -93,7 +93,7 @@ export function FairwayTripCard({ itinerary, selected, now, onSelect }: FairwayT
           aria-hidden
           className={cn(
             'mt-0.5 h-4 w-4 shrink-0',
-            selected ? 'text-accent-600' : 'text-text-tertiary',
+            selected ? 'text-accent-ink' : 'text-text-tertiary',
           )}
         />
       </span>

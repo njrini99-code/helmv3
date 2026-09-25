@@ -319,7 +319,7 @@ export function TodayQueue({
       {/* Header / count */}
       <div className="flex items-center justify-between rounded-card border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-card)] px-4 py-3">
         <div className="flex items-center gap-2">
-          <IconCalendar size={16} className="text-accent-600" />
+          <IconCalendar size={16} className="text-accent-ink" />
           <h3 className="text-sm font-bold text-text-primary">Today&rsquo;s worklist</h3>
           <span className="text-xs text-text-tertiary">
             {queue.length} school{queue.length === 1 ? '' : 's'} · one main contact each · Resend-enrolled hidden

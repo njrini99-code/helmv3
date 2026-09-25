@@ -22,7 +22,7 @@
 import { useEffect, useState } from 'react';
 
 import { cn } from '@/lib/utils';
-import { Drawer, DrawerContent, DrawerTitle } from '@/components/ui/drawer';
+import { Sheet } from '@/components/fairway/overlays/Sheet';
 import { FormField } from '@/components/fairway/forms/FormField';
 import { Button, IconButton } from '@/components/fairway/controls/button';
 import { Segmented } from '@/components/fairway/controls/segmented';
@@ -296,14 +296,20 @@ export function TeeFormDrawer({
   const title = mode === 'create' ? 'Add tee set' : 'Edit tee set';
 
   return (
-    <Drawer open={open} onOpenChange={onOpenChange}>
-      <DrawerContent className="overflow-hidden sm:mx-auto sm:max-w-2xl sm:rounded-fw-lg">
+    <Sheet
+      open={open}
+      onOpenChange={onOpenChange}
+      title={title}
+      customTitle
+      hideClose
+      className="overflow-hidden sm:mx-auto sm:max-w-2xl"
+    >
         {/* Header — pinned above the scrolling body */}
         <div className="flex items-start justify-between gap-3 px-6 pt-4 pb-3">
           <div className="min-w-0">
-            <DrawerTitle className="font-fw-display text-title-2 font-semibold tracking-tight text-text-primary">
+            <Sheet.Title className="font-fw-display text-h2 font-semibold tracking-tight text-text-primary">
               {title}
-            </DrawerTitle>
+            </Sheet.Title>
             <p className="mt-1 flex items-center gap-1.5 text-caption text-text-tertiary">
               <IconFlag size={13} aria-hidden />
               {holesCount}-hole tee · pars and yardages per hole
@@ -436,7 +442,7 @@ export function TeeFormDrawer({
 
           {willBeDraft && (
             <p className="mb-3 text-caption text-text-tertiary">
-              Some holes are missing yardages — this tee will be saved as a draft until every hole
+              Some holes are missing yardages. This tee will be saved as a draft until every hole
               is filled in.
             </p>
           )}
@@ -544,7 +550,6 @@ export function TeeFormDrawer({
             {mode === 'create' ? 'Add tee' : 'Save changes'}
           </Button>
         </div>
-      </DrawerContent>
-    </Drawer>
+    </Sheet>
   );
 }

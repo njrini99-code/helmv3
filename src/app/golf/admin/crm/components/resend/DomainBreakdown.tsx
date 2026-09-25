@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { motion, useReducedMotion } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { IconGlobe } from '@/components/icons';
 import type {
@@ -12,6 +12,7 @@ import { getDomainBreakdown } from '@/app/golf/actions/resend-activity';
 import { formatRate, formatCount } from './shared';
 import { Button } from '@/components/ui/button';
 import { EmptyState, Surface } from '@/components/fairway';
+import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
 
 interface DomainBreakdownProps {
   window: ActivityWindow;
@@ -20,7 +21,7 @@ interface DomainBreakdownProps {
 type SortKey = 'total' | 'delivered' | 'opened' | 'clicked' | 'bounced';
 
 export function DomainBreakdown({ window }: DomainBreakdownProps) {
-  const prefersReducedMotion = useReducedMotion();
+  const prefersReducedMotion = useReducedMotionGuard();
   const [rows, setRows] = useState<DomainStats[]>([]);
   const [loading, setLoading] = useState(true);
   const [sortKey, setSortKey] = useState<SortKey>('total');

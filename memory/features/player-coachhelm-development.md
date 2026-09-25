@@ -85,6 +85,8 @@ Player opens round review
 - V3 narrative and counterfactual content must preserve citation/trust rules from CoachHelm AI.
 - Cohort/benchmark constants (2026-09-23, repair plan N16): `v3/counterfactual/cohort-baselines.ts` anchors carry `provenance: 'measured' | 'derived'` per value — women's anchors are always `'derived'` (LPGA/NCAA discounted to college, never a measured women's-college population stat); a `'derived'` label must read as a target/estimate, never an average/norm. Full contract in `docs/architecture/coachhelm-evidence-contract.md`.
 - Round review acknowledgement must not silently fail; it affects both learning and UI state.
+- Goal targets (NUM-36, 2026-09-24): `computeTargetValue` (v3/goals/suggestion-writer.ts) aims halfway to the Tour value, then caps the move at the focus-area catalog's `improveStep` for metrics that have one (sand scrambling: 5 points), so a 5% player is offered 10%, not 28%. Suggestions, `suggestGoalTarget` and "Make it my plan" share it. Stored pending suggestions keep their old target until they expire or reconciliation replaces them.
+- Team percentiles (NUM-35, 2026-09-24): an "Nth %ile" readout needs at least `PERCENTILE_MIN_TEAM_N` (5) teammates in the distribution (`teamPercentileReadout`, v2/stats/percentiles.ts); the platform percentile is null until a real platform distribution exists.
 - Package 10 anchor choice (owner decision, 2026-09-23): comparable-method attribution's `interventionAt` anchors on an insight's first qualifying `golf_insight_action` (`INTERVENTION_ACTION_TYPES` in `causality/comparable-attribute.ts` — `create_focus`/`acknowledged`/`resolved`, confirmed by the owner including `'acknowledged'` alone) when one exists, else falls back to first exposure (`shown_at`). The action wins even if it is earlier than the exposure — a gap in the exposure ledger is not evidence the action didn't happen. `anchor_kind` ('action' | 'exposure') is derived at READ time (`attribution-read.ts`'s `attachAnchorKind`) via an exact timestamp-string match against `golf_insight_action.created_at`, never "does any action exist for this insight" — the latter would silently reclassify an old exposure-anchored row the moment an unrelated LATER action appears, since attribution rows are written once but actions are append-only. The view model (`attribution-view-model.ts`) renders "(since first shown)" for `anchor_kind: 'exposure'` and "(since you acted on it)" for `anchor_kind: 'action'` (owner-confirmed wording). No migration — not persisted, no column exists for it.
 
 ## UI Contract
@@ -833,8 +835,11 @@ a new maturation confirmation.
 - `memory/context/golfhelm-features.md`
 - `docs/v3-feature-audit.md`
 
-Stats uses CoachHelmShell as its only horizontal container, including the loading fallback. On
-phones, selected development/standing/detail views prioritize their content over the overview spine;
-desktop retains its side-by-side context. The round scope picker and Log round action retain 44px
+Stats uses CoachHelmShell as its only horizontal container, including the loading fallback. The
+Player CoachHelm overview (2026-09-24 rebuild) has no spine at any width: the section tabs sit above one
+full-width stage whose home view is `PlayerHubFeed` (masthead with the next-round window, last round
+and the one primary action, then What's changing, Why, Patterns behind your scores, Your plan). Its
+numbers come from one source each (`buildPlayerHubViewModel.ts`); the 30-day shot-analytics ledger that
+contradicted the stats-cache snapshot (audit NUM-22) and its `getPlayerShotAnalytics` read are gone. The round scope picker and Log round action retain 44px
 touch targets. What-if results reveal with opacity/translation rather than animated layout height,
 and honor reduced motion.

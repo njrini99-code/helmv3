@@ -38,7 +38,7 @@
 
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import { Sparkles, Target, Trophy } from 'lucide-react';
+import { Lightbulb, Target, Trophy } from 'lucide-react';
 
 // Imported from each module's own leaf path, not the top `@/components/fairway`
 // barrel — this file is itself re-exported (via pages/coachhelm/index.ts) from
@@ -172,7 +172,7 @@ function SuggestionRow({ view }: { view: GoalSuggestionView }) {
           busy={isPending}
           disabled={isPending}
           onClick={() =>
-            runTransition(() => acceptGoalSuggestion(suggestion.id), 'Goal started')
+            runTransition(() => acceptGoalSuggestion(suggestion.id), 'Focus area started')
           }
         >
           Accept
@@ -273,7 +273,7 @@ function GoalHero({
                 <>
                   {gap ? <>{gap} to go · </> : null}
                   {days} day{days === 1 ? '' : 's'} left · {provenanceLabel(goal)}
-                  {others > 0 ? <> · +{others} more goal{others === 1 ? '' : 's'}</> : null}
+                  {others > 0 ? <> · +{others} more focus area{others === 1 ? '' : 's'}</> : null}
                 </>
               )}
           </p>
@@ -319,9 +319,12 @@ export function GoalsSection({
 
   // Touch target: md (44px min-height) unconditionally — not sm, which is
   // only 44px behind a `(pointer: coarse)` media query (mustFix #194).
+  // HUB-14: this opens the target (a number on a focus area) sheet, not the
+  // new-focus-area sheet, so it says so, and it is secondary: the drill's
+  // "New focus area" is the screen's one primary action.
   const setGoalButton = (
-    <Button variant="primary" onClick={() => setCreateOpen(true)}>
-      Set a goal
+    <Button variant="secondary" onClick={() => setCreateOpen(true)}>
+      Set a target
     </Button>
   );
 
@@ -347,16 +350,16 @@ export function GoalsSection({
           depth="raised"
           tone="accent"
           padding="lg"
-          eyebrow="Goals"
-          header="Goals in flight"
+          eyebrow="Focus areas"
+          header="Tracked focus areas"
           readout={canCreate ? setGoalButton : undefined}
           as="div"
         >
           <Readout
             value={activeCount}
             format={{ maximumFractionDigits: 0 }}
-            label="Active goals"
-            unit={activeCount === 1 ? 'goal' : 'goals'}
+            label="Active"
+            unit={activeCount === 1 ? 'focus area' : 'focus areas'}
             size="hero"
             state="live"
           />
@@ -379,21 +382,15 @@ export function GoalsSection({
         <Surface padding="lg">
           <EmptyState
             icon={Target}
-            title={
-              role === 'coach'
-                ? 'No goals assigned yet'
-                : focusAreaCount > 0
-                  ? 'No goals set yet'
-                  : 'No active goals yet'
-            }
+            title="No targets yet"
             description={
               role === 'coach'
-                ? 'Assign focus areas to set goals for this player. Shared and assigned goals show up here.'
+                ? 'Give this player a focus area with a number to move. Shared and assigned focus areas show up here.'
                 : focusAreaCount > 0
-                  ? `A goal tracks one stat you want to move. You have ${focusAreaCount} focus ${
+                  ? `Set a target on a focus area to track it here. You have ${focusAreaCount} focus ${
                       focusAreaCount === 1 ? 'area' : 'areas'
-                    } below — set a goal to put a number on one of them.`
-                  : 'Set a goal to track a stat you want to improve — or accept one CoachHelm suggests below.'
+                    } below.`
+                  : 'Add a focus area to track a stat you want to improve, or accept one CoachHelm suggests below.'
             }
             action={canCreate ? setGoalButton : undefined}
           />
@@ -430,7 +427,7 @@ export function GoalsSection({
       {role === 'player' && hasSuggestions ? (
         <Surface padding="md">
           <div className="mb-3 flex items-center gap-2">
-            <Sparkles className="h-4 w-4 text-accent-600" aria-hidden />
+            <Lightbulb className="h-4 w-4 text-accent-ink" aria-hidden />
             <h3 className="font-fw-display text-body-lg font-medium text-text-primary">
               CoachHelm suggests
             </h3>

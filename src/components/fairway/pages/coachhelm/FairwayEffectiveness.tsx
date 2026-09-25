@@ -50,7 +50,7 @@ import * as React from 'react';
 import Link from 'next/link';
 import {
   ArrowRight,
-  Sparkles,
+  Lightbulb,
   TrendingUp,
   TrendingDown,
   Minus,
@@ -312,7 +312,7 @@ function TrustTrendGlyph({ trend }: { trend: TrustSignal['recentTrend'] }) {
   // than a genuine flat trend.
   return (
     <span
-      className="inline-flex items-center gap-1 text-text-tertiary/50"
+      className="inline-flex items-center gap-1 text-text-tertiary"
       title="Not enough outcomes measured yet to show a trend"
     >
       <Minus className="h-3.5 w-3.5" aria-hidden />
@@ -539,8 +539,7 @@ export function FairwayEffectiveness({
   return (
     <CoachHelmShell
       active="effectiveness"
-      // eslint-disable-next-line jsx-a11y/aria-role
-      role="coach"
+      viewerRole="coach"
       signalCount={signalCount}
       embedded={embedded}
       title="Is CoachHelm helping?"
@@ -638,7 +637,7 @@ function CockpitView({
   if (noSignalYet) {
     return (
       <EmptyState
-        icon={Sparkles}
+        icon={Lightbulb}
         title="No effectiveness signal yet"
         description="As CoachHelm surfaces insights and predictions resolve, these instruments power up. Until outcomes are recorded, effectiveness reads as ‘awaiting signal,’ never 0%."
         action={
@@ -753,7 +752,7 @@ export function PrimaryInstrument({ data, days }: { data?: PredictionPerformance
                 each resolved prediction's accuracy is a directly checkable fact,
                 but "proved" overstates what a hit RATE across resolved
                 predictions demonstrates. */}
-            of {resolved} resolved predictions were accurate — well above a 50% coin flip.
+            of {resolved} resolved predictions were accurate, well above a 50% coin flip.
           </span>
         ) : null}
       </div>
@@ -772,7 +771,7 @@ export function PrimaryInstrument({ data, days }: { data?: PredictionPerformance
 
       {lowConfidence ? (
         <p className="font-fw-sans text-caption text-text-tertiary">
-          Based on {resolved} resolved prediction{resolved === 1 ? '' : 's'} — directional
+          Based on {resolved} resolved prediction{resolved === 1 ? '' : 's'}, directional
           while the sample firms up toward {GLOBAL_LOW_CONFIDENCE_RESOLVED}.
         </p>
       ) : null}
@@ -917,7 +916,7 @@ export function CalibrationInstrument({ data }: { data?: PredictionPerformanceDa
       </InstrumentPanel>
       {!anyBucketReady ? (
         <p className="font-fw-sans text-caption text-text-tertiary">
-          Still calibrating — needs {BUCKET_MIN_RESOLVED} resolved predictions in a confidence
+          Still calibrating, needs {BUCKET_MIN_RESOLVED} resolved predictions in a confidence
           band before it can say whether a 70% call lands 70% of the time.
         </p>
       ) : null}
@@ -1136,7 +1135,7 @@ function ErrorMixDeck({ data }: { data?: PredictionPerformanceData }) {
       <InstrumentPanel depth="base" padding="md" className="flex flex-col gap-1">
         <h4 className="font-fw-display text-h3 text-text-primary">Error mix</h4>
         <p className="font-fw-sans text-caption text-text-tertiary">
-          No categorized prediction misses in this window yet — nothing to break down.
+          No categorized prediction misses in this window yet. Nothing to break down.
         </p>
       </InstrumentPanel>
     );
@@ -1182,10 +1181,10 @@ export function PredictionsSection({ data }: { data?: PredictionPerformanceData 
   return (
     <div className="flex flex-col gap-6">
       {lowConfidence ? (
-        <InlineNotice tone="info" title="Low-confidence read" icon={Sparkles}>
+        <InlineNotice tone="info" title="Low-confidence read" icon={Lightbulb}>
           Based on {resolved} resolved prediction{resolved === 1 ? '' : 's'}
           {total > 0 ? ` of ${total} made` : ''}. These figures will firm up as more
-          predictions resolve — treat them as directional, not authoritative.
+          predictions resolve, treat them as directional, not authoritative.
         </InlineNotice>
       ) : null}
 
@@ -1273,7 +1272,7 @@ function PredictionsCalibrationFull({
         title="Confidence calibration"
         subtitle="Does a 70% prediction land 70% of the time?"
         state="insufficient-data"
-        stateMessage={`Every confidence bucket has fewer than ${BUCKET_MIN_RESOLVED} resolved predictions — not enough to calibrate yet.`}
+        stateMessage={`Every confidence bucket has fewer than ${BUCKET_MIN_RESOLVED} resolved predictions, not enough to calibrate yet.`}
         height={220}
       />
     );
@@ -1293,7 +1292,7 @@ function PredictionsCalibrationFull({
       />
       {thin.length > 0 ? (
         <p className="px-1 font-fw-sans text-caption text-text-tertiary">
-          {thin.map((b) => b.range).join(', ')} hidden — fewer than {BUCKET_MIN_RESOLVED}{' '}
+          {thin.map((b) => b.range).join(', ')} hidden, fewer than {BUCKET_MIN_RESOLVED}{' '}
           resolved predictions each. {totalResolved} resolved in total.
         </p>
       ) : null}
@@ -1540,7 +1539,7 @@ function InsightTrustBand({ trust }: { trust: InsightTrustState }) {
       <Surface padding="md">
         <InsufficientData
           title="No tracked insights yet"
-          description="Once CoachHelm surfaces insights, their trust signals — how often each was delivered, acted on, and actually worked — roll up here from the unified ledger."
+          description="Once CoachHelm surfaces insights: their trust signals, how often each was delivered, acted on, and actually worked, roll up here from the unified ledger."
           unit="surfaced insights"
           current={0}
           required={1}
@@ -1565,8 +1564,8 @@ function InsightTrustBand({ trust }: { trust: InsightTrustState }) {
         </span>
         <h3 className="font-fw-display text-h3 text-text-primary">Are these insights earning trust?</h3>
         <p className="font-fw-sans text-caption text-text-tertiary">
-          Counts come only from real exposure, action, and outcome rows — absence reads as a new
-          hypothesis, never as success. "Delivered" counts a render, not a confirmed view — a
+          Counts come only from real exposure, action, and outcome rows, absence reads as a new
+          hypothesis, never as success. "Delivered" counts a render, not a confirmed view, a
           client-observed viewed signal is future work.
         </p>
       </div>
@@ -1628,7 +1627,7 @@ function InsightTrustTable({ trust }: { trust: InsightTrustState }) {
       <div className="border-b border-border-subtle px-5 py-4">
         <h3 className="font-fw-display text-h3 text-text-primary">Insight by insight</h3>
         <p className="font-fw-sans text-caption text-text-tertiary">
-          Each insight’s standing in the trust ledger — what it claimed, and whether it has held up.
+          Each insight’s standing in the trust ledger: what it claimed, and whether it has held up.
         </p>
       </div>
       {/* Phone: card list — every table column carries over (title/type/player,

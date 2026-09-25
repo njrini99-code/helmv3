@@ -1,4 +1,5 @@
 import type { Config } from "tailwindcss";
+import plugin from "tailwindcss/plugin";
 import * as tailwindcssAnimateNS from "tailwindcss-animate";
 
 /**
@@ -36,6 +37,21 @@ const tailwindcssAnimate =
  */
 const tokenColor = (cssVar: string) =>
   `color-mix(in oklab, var(${cssVar}) calc(<alpha-value> * 100%), transparent)`;
+
+// GolfHelm: `hover:` only fires on a real pointer, so a tap on iOS/Android
+// never leaves a card stuck in its hover lift (touch press feedback comes from
+// `active:`, see fwPressSurface in src/components/fairway/controls/_internal.ts).
+// Scoped to <html data-helm-sport="golf"> (stamped by ThemeScript on /golf
+// paths): everywhere else `hover:` is the plain `&:hover` it was before, so
+// BaseballHelm and Lift Lab render exactly as they did (owner OD-17b). This
+// replaces the global `future.hoverOnlyWhenSupported` flag, which could not
+// be scoped. `:where()` adds no specificity. `group-hover:` is left alone.
+const golfHoverVariant = plugin(({ addVariant }) => {
+  addVariant('hover', [
+    '@media (hover: hover) and (pointer: fine) { &:hover }',
+    ":where(html:not([data-helm-sport='golf'])) &:hover",
+  ]);
+});
 
 const config: Config = {
   darkMode: ["class"],
@@ -77,9 +93,17 @@ const config: Config = {
           // `hover:bg-accent-700` — 700 is theme-flipped (light green in dark)
           // and turns the hovered button into a mint slab under cream copy.
           750: tokenColor('--fw-color-accent-750'),
-          // FLIPPED BY THEME — light green on dark. This is green INK
-          // (`text-accent-700`), not a fill. Do not use it as `bg-`/`from-`.
+          // Green INK — an alias of `accent-ink` (deep green on cream, bright
+          // green on dark). Not a fill. Do not use it as `bg-`/`from-`.
           700: tokenColor('--fw-color-accent-700'),
+          // Green roles (owner decision 2026-09-23, green = the contrasting
+          // colour). `text-accent-ink` for green text, `bg-accent-fill` +
+          // `text-text-on-accent-fill` for the one primary action,
+          // `bg-accent-wash` + `text-accent-ink` for a selected segment/tab.
+          ink:          tokenColor('--fw-color-accent-ink'),
+          fill:         tokenColor('--fw-color-accent-fill'),
+          'fill-hover': tokenColor('--fw-color-accent-fill-hover'),
+          wash:         tokenColor('--fw-color-accent-wash'),
           800: tokenColor('--fw-color-accent-800'),
           900: tokenColor('--fw-color-accent-900'),
           DEFAULT: tokenColor('--fw-color-accent-500'),
@@ -88,6 +112,7 @@ const config: Config = {
         'text-secondary': tokenColor('--fw-color-text-secondary'),
         'text-tertiary':  tokenColor('--fw-color-text-tertiary'),
         'text-on-accent': tokenColor('--fw-color-text-on-accent'),
+        'text-on-accent-fill': tokenColor('--fw-color-text-on-accent-fill'),
         // Accent ramp (heatmap / band histogram). Runs light→dark in the light
         // theme and dark→light in the dark one, so ALWAYS reach for these
         // instead of hand-picking accent steps for a scale.
@@ -104,6 +129,8 @@ const config: Config = {
         'border-subtle':  tokenColor('--fw-color-border-subtle'),
         'border-strong':  tokenColor('--fw-color-border-strong'),
         'border-focus':   tokenColor('--fw-color-border-focus'),
+        // 3:1 control edge — inputs, slider tracks, chips, segmented tracks.
+        'border-control': tokenColor('--fw-color-border-control'),
         // Status — namespaced `fw-*` (existing success/warning/danger kept as-is)
         'fw-success':     tokenColor('--fw-color-success'),
         'fw-success-bg':  tokenColor('--fw-color-success-bg'),
@@ -117,6 +144,8 @@ const config: Config = {
         // ad hoc via warm-800/warm-300. Same values, a real semantic token.
         'fw-warning-ink':  tokenColor('--fw-color-warning-ink'),
         'fw-warning-ring': tokenColor('--fw-color-warning-ring'),
+        // Amber INK on a cream surface (keeps the amber hue at 4.5:1+).
+        'fw-warning-text': tokenColor('--fw-color-warning-text'),
         'fw-danger':      tokenColor('--fw-color-danger'),
         'fw-danger-bg':   tokenColor('--fw-color-danger-bg'),
         // Helm Bridge sport inks (W4) — baseball clay, beside the fw-* trio.
@@ -127,6 +156,7 @@ const config: Config = {
         'nav-text':     tokenColor('--fw-color-nav-text'),
         'nav-text-dim': tokenColor('--fw-color-nav-text-dim'),
         'nav-accent':   tokenColor('--fw-color-nav-accent'),
+        'nav-icon':     tokenColor('--fw-color-nav-icon'),   // inactive tab-bar icon
 
         // ═══════════════════════════════════════════════════════════════
         // BASEBALLHELM "LIVING ANNUAL" — baseball-native inks (ADDITIVE)
@@ -296,37 +326,38 @@ const config: Config = {
         },
       },
       fontFamily: {
-        // Geist Sans is Vercel's display-light grotesque — sub-pixel
-        // optical sizing + range from weight 100 to 900 lets the
-        // California-modern × neo-futurism brief breathe at every
-        // scale. Fraunces stays available as the editorial serif
-        // companion for eyebrows and quotes (used sparingly).
-        sans: ['var(--font-geist-sans)', 'DM Sans', '-apple-system', 'BlinkMacSystemFont', 'system-ui', 'sans-serif'],
-        // Wave 6 will use Fraunces for editorial accents (one italicized
-        // hero word, eyebrows, pull quotes). `--font-fraunces` is loaded
-        // by next/font in src/app/layout.tsx; `--font-serif` is the
-        // legacy alias kept for backward-compat.
-        serif: ['var(--font-fraunces)', 'var(--font-serif)', 'Playfair Display', 'Georgia', 'serif'],
-        mono: ['var(--font-geist-mono)', 'ui-monospace', 'SFMono-Regular', 'monospace'],
-        display: ['var(--font-geist-sans)', '-apple-system', 'BlinkMacSystemFont', 'system-ui', 'sans-serif'],
+        // ONE sans face app-wide: the Apple SF system stack (2026-09-23 owner
+        // decision). `sans` and `display` used to lead with Geist / DM Sans
+        // webfonts while Fairway rendered in SF, so a golf screen could mix
+        // three sans faces. No webfont is loaded for any sans role now.
+        sans: ['var(--font-geist-sans, -apple-system)', '-apple-system', 'BlinkMacSystemFont', '"SF Pro Text"', '"Helvetica Neue"', '"Segoe UI"', 'Roboto', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        // Fraunces is loaded only by the BaseballHelm layout
+        // (src/app/baseball/layout.tsx). Every var() below carries an inline
+        // fallback: an undefined var() with no fallback makes the whole
+        // font-family declaration invalid at computed time, and the element
+        // silently inherits instead of using the rest of the stack.
+        serif: ['var(--font-fraunces, Georgia)', 'Georgia', 'serif'],
+        // Geist Mono is loaded only by the BaseballHelm layout; everywhere
+        // else code-like text uses the platform monospace (SF Mono on Apple).
+        mono: ['var(--font-geist-mono, ui-monospace)', 'ui-monospace', 'SFMono-Regular', 'monospace'],
+        display: ['var(--font-geist-sans, -apple-system)', '-apple-system', 'BlinkMacSystemFont', '"SF Pro Display"', '"Helvetica Neue"', '"Segoe UI"', 'Roboto', 'ui-sans-serif', 'system-ui', 'sans-serif'],
         // ── BaseballHelm "Living Annual" display + number face (ADDITIVE) ──
         // Space Grotesk carries player names, hero numerals, section titles AND
-        // stat figures (always `tabular-nums`). Loaded by next/font in layout.tsx
-        // (`--font-space-grotesk`). Founder-locked 2026-07-01; replaces the serif
-        // + Fragment-Mono roles for baseball surfaces only.
-        annual: ['var(--font-space-grotesk)', 'Space Grotesk', 'var(--font-geist-sans)', 'system-ui', 'sans-serif'],
-        // ── Fairway design-system type roles (ADDITIVE) ──
-        // Distinct names (`font-fw-*`) so they never override the active
-        // `font-sans` / `font-display` / `font-mono` utilities above. Mirror
-        // the --fw-font-* vars in src/styles/design-tokens.css. Loaded by
-        // next/font in src/app/layout.tsx (Fraunces variable / General Sans
-        // local / Fragment Mono). Only opted-in Fairway components use these.
-        // Apple system sans (SF Pro on Apple devices) — no serif. The headline
-        // (`fw-display`) + body (`fw-sans`) both ride the system stack so the UI
-        // reads like a native Apple app; numbers stay on Fragment Mono (`fw-mono`).
+        // stat figures (always `tabular-nums`). Loaded by next/font in
+        // src/app/baseball/layout.tsx (`--font-space-grotesk`). Founder-locked
+        // 2026-07-01; baseball surfaces only.
+        annual: ['var(--font-space-grotesk, system-ui)', '"Space Grotesk"', '-apple-system', 'BlinkMacSystemFont', 'system-ui', 'sans-serif'],
+        // ── Fairway design-system type roles ──
+        // Mirror the --fw-font-* vars in src/styles/design-tokens.css. All
+        // three ride the Apple system stack, so Fairway ships zero font bytes.
         'fw-display': ['-apple-system', 'BlinkMacSystemFont', '"SF Pro Display"', '"Helvetica Neue"', '"Segoe UI"', 'Roboto', 'ui-sans-serif', 'system-ui', 'sans-serif'],
         'fw-sans':    ['-apple-system', 'BlinkMacSystemFont', '"SF Pro Text"', '"Helvetica Neue"', '"Segoe UI"', 'Roboto', 'ui-sans-serif', 'system-ui', 'sans-serif'],
-        'fw-mono':    ['var(--font-fairway-mono)', 'ui-monospace', '"SF Mono"', 'monospace'],
+        // `fw-mono` is the NUMERIC role, not a monospace face (2026-09-23 owner
+        // decision: Fragment Mono and its slashed zero are retired). Numbers
+        // render in SF with tabular figures; globals.css gives `.font-fw-mono`
+        // `font-variant-numeric: tabular-nums` so columns still align. The
+        // utility name is kept so ~270 call sites need no edit.
+        'fw-mono':    ['-apple-system', 'BlinkMacSystemFont', '"SF Pro Text"', '"Helvetica Neue"', '"Segoe UI"', 'Roboto', 'ui-sans-serif', 'system-ui', 'sans-serif'],
       },
       fontSize: {
         // ═══════════════════════════════════════════════════════════════
@@ -804,6 +835,6 @@ const config: Config = {
   },
   // Filter falsy entries so a bad interop resolution can never inject an
   // `undefined` plugin into `resolveConfig` (the global CSS crash above).
-  plugins: [tailwindcssAnimate].filter(Boolean) as Config["plugins"],
+  plugins: [tailwindcssAnimate, golfHoverVariant].filter(Boolean) as Config["plugins"],
 };
 export default config;

@@ -390,7 +390,7 @@ export function ScheduleEventModal({
                     key={type.value}
                     onClick={() => setForm(f => ({ ...f, type: type.value }))}
                     className={cn(
-                      'p-3 rounded-fw-md text-center transition-all',
+                      'p-3 rounded-fw-md text-center transition',
                       form.type === type.value
                         ? 'bg-accent-650 text-text-on-accent shadow-flat'
                         : 'bg-surface-sunken text-text-secondary hover:bg-surface-tint'
@@ -471,7 +471,7 @@ export function ScheduleEventModal({
                   key={d.value}
                   onClick={() => setForm(f => ({ ...f, duration: d.value }))}
                   className={cn(
-                    'px-4 py-2 rounded-fw-md text-sm font-medium transition-all',
+                    'px-4 py-2 rounded-fw-md text-sm font-medium transition',
                     form.duration === d.value
                       ? 'bg-accent-650 text-text-on-accent shadow-soft'
                       : 'bg-surface-sunken text-text-secondary hover:bg-surface-sunken'

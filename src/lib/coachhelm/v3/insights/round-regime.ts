@@ -97,7 +97,7 @@ export function regimeGuidanceLine(round: RoundRegimeFacts): string | null {
   if (regime === 'scrambling_driven') {
     const puttClause =
       round.total_putts !== null
-        ? ` The ${round.total_putts} putts are NOT evidence of good putting — with that many greens missed, a low putt count usually means chipping close and 1-putting for bogey.`
+        ? ` The ${round.total_putts} putts are NOT evidence of good putting. With that many greens missed, a low putt count usually means chipping close and 1-putting for bogey.`
         : '';
     return (
       `- Lens for this round: greens hit were low (${greens}).` +
@@ -148,7 +148,7 @@ export function regimeHeadline(round: RoundRegimeFacts): RegimeHeadline | null {
   if (regime === 'scrambling_driven') {
     const puttClause =
       round.total_putts !== null
-        ? ` The ${round.total_putts} putts are not a putting result — with that many greens missed, a low count usually means chipping close and 1-putting for bogey.`
+        ? ` The ${round.total_putts} putts are not a putting result. With that many greens missed, a low count usually means chipping close and 1-putting for bogey.`
         : '';
     return {
       tone: 'warning',

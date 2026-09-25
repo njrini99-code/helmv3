@@ -185,7 +185,7 @@ function AttachmentPreviewItem({ attachment, onRemove }: AttachmentPreviewItemPr
       {status === 'uploading' && (
         <div className="absolute bottom-0 left-0 right-0 h-1 bg-surface-sunken">
           <div
-            className="h-full bg-accent-500 transition-all duration-200"
+            className="h-full bg-accent-500 transition-[width] duration-200"
             style={{ width: `${uploadProgress}%` }}
           />
         </div>
@@ -199,7 +199,7 @@ function AttachmentPreviewItem({ attachment, onRemove }: AttachmentPreviewItemPr
           'absolute -top-1 -right-1 w-5 h-5 rounded-full',
           'bg-text-primary text-text-on-dark shadow-soft',
           'flex items-center justify-center',
-          'opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-200',
+          'opacity-100 md:opacity-0 md:group-hover:opacity-100 md:group-focus-within:opacity-100 [@media(hover:none)]:opacity-100 transition-opacity duration-200',
           'hover:bg-fw-danger',
           'focus:opacity-100 focus:outline-none focus:ring-2 focus:ring-fw-danger'
         )}

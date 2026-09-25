@@ -25,7 +25,7 @@
 
 import Link from 'next/link';
 import { cleanCourseName } from '@/lib/golf/course-name';
-import { ChevronRight } from 'lucide-react';
+import { ChevronRight, Star } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { StatusPill } from '@/components/fairway/controls/status-pill';
 import { Badge, Chip } from '@/components/fairway/controls/badge';
@@ -55,7 +55,10 @@ function dateParts(iso: string): { weekday: string; md: string } {
 /** One round, as a clickable ledger row. */
 export function FairwayRoundRow({ round, isBestOfPeriod, userRole }: FairwayRoundRowProps) {
   const stp = round.score_to_par ?? 0;
-  const hasToPar = round.score_to_par !== null;
+  // Listed but excluded from averages/bests/trends (server isCountableRound):
+  // muted score, no graded to-par pill, and an explicit "Not counted" note.
+  const notCounted = round.countable === false;
+  const hasToPar = round.score_to_par !== null && !notCounted;
   const tone = scoreToParTone(stp);
   const holesPlayed = round.holes_played ?? 18;
   const { weekday, md } = dateParts(round.round_date);
@@ -113,16 +116,28 @@ export function FairwayRoundRow({ round, isBestOfPeriod, userRole }: FairwayRoun
             {cleanCourseName(round.course_name) || 'Unknown course'}
           </span>
           {isBestOfPeriod && (
-            <Badge tone="accent" size="sm" className="flex-shrink-0 uppercase tracking-[0.06em]">
-              Best
-            </Badge>
+            // "Best" alone read as a career best; it is the best of this month's group.
+            // Below sm the full label cut the course name to "Pebble …", so
+            // phones get a star (accent rail already marks the row).
+            <>
+              <Badge tone="accent" size="sm" className="hidden flex-shrink-0 uppercase tracking-[0.06em] sm:inline-flex">
+                Best of month
+              </Badge>
+              <Star
+                role="img"
+                aria-label="Best of month"
+                className="h-3.5 w-3.5 flex-shrink-0 fill-accent-ink text-accent-ink sm:hidden"
+              />
+            </>
           )}
         </div>
         <div className="mt-0.5 flex min-w-0 items-center gap-1.5 font-fw-sans text-caption text-text-tertiary">
           <Chip tone="neutral" size="sm" className="flex-shrink-0 uppercase tracking-[0.06em]">
             {getRoundTypeLabel(round.round_type)}
           </Chip>
-          {city && <span className="truncate">{city}</span>}
+          {/* Phones have ~40px left here, which cut the city to "Pe…" / "A." —
+              show it only where it fits. */}
+          {city && <span className="hidden truncate sm:inline">{city}</span>}
           <span className="flex-shrink-0 tabular-nums">
             · {holesPlayed} {holesPlayed === 1 ? 'hole' : 'holes'}
           </span>
@@ -132,6 +147,14 @@ export function FairwayRoundRow({ round, isBestOfPeriod, userRole }: FairwayRoun
             (the md:flex cluster below), so surface them here as a single caption
             row to keep mobile parity (the snapshot the cards hid). Honest: each
             stat shows only when its real value is present. */}
+        {notCounted && (
+          <div
+            className="mt-1 font-fw-sans text-caption text-fw-warning-text"
+            title="Incomplete or implausible score: left out of averages, bests and trends"
+          >
+            Not counted
+          </div>
+        )}
         {hasAnyMicroStat && (
           <div className="mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 font-fw-mono text-caption tabular-nums text-text-secondary md:hidden">
             {putts !== null && <span>P{putts}</span>}
@@ -172,7 +195,7 @@ export function FairwayRoundRow({ round, isBestOfPeriod, userRole }: FairwayRoun
           <span
             className={cn(
               'font-fw-display text-h3 font-medium leading-none tabular-nums',
-              tone === 'under' ? 'text-accent-700' : 'text-text-primary',
+              notCounted ? 'text-text-tertiary' : tone === 'under' ? 'text-accent-700' : 'text-text-primary',
             )}
           >
             {round.total_score}

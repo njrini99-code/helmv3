@@ -89,7 +89,7 @@ function LeakLoadError({ onRetry, retrying }: { onRetry: () => void; retrying: b
       }
     >
       The strokes-gained leak detail failed to load. Your other stats are
-      up to date — retry to pull the make-rate and proximity bands.
+      up to date. Retry to pull the make-rate and proximity bands.
     </InlineNotice>
   );
 }
@@ -291,7 +291,7 @@ export function ApproachDrill({
   const approachInsights = categoryInsights.approach;
   const approachTrend = categoryTrends.approach;
   const girRibbonPoints: RibbonPoint[] = (trends?.gir ?? []).map((p) => ({ x: p.date, y: p.value }));
-  const girDelta = readoutDeltaFromTrend(approachTrend, `across ${approachTrend?.series.length ?? 0} rounds`);
+  const girDelta = readoutDeltaFromTrend(approachTrend, approachTrend?.deltaWindow ?? `across ${approachTrend?.series.length ?? 0} rounds`);
   // The GIR KPI card's inline sparkline — gated on a REAL >=2-round trend (not
   // just a non-null `approachTrend`, which can still be a single point with
   // no meaningful delta) so the card never claims a "trend" it can't back.
@@ -406,7 +406,7 @@ export function ApproachDrill({
           <Surface elevation="shadow" padding="md" className="space-y-4 overflow-hidden">
             <div>
               <Eyebrow as="h4">Approach efficiency by distance and lie</Eyebrow>
-              <p className="mt-1 text-caption text-text-tertiary">Average strokes to hole out and proximity to the hole. Lower is better — darker cells are stronger.</p>
+              <p className="mt-1 text-caption text-text-tertiary">Average strokes to hole out and proximity to the hole. Lower is better, darker cells are stronger.</p>
             </div>
             <div className="overflow-x-auto">
               <RampMatrix

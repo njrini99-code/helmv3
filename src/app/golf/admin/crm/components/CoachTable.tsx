@@ -86,12 +86,12 @@ function RowContactHeader({ coach }: { coach: Coach }) {
       {(roleLabel || programLabel) && (
         <div className="mt-1 flex items-center flex-wrap gap-1">
           {roleLabel && (
-            <span className="text-micro font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded bg-surface-sunken text-text-secondary">
+            <span className="text-microlabel font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded bg-surface-sunken text-text-secondary">
               {roleLabel}
             </span>
           )}
           {programLabel && (
-            <span className="text-micro font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-surface-sunken text-accent-700">
+            <span className="text-microlabel font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-surface-sunken text-accent-700">
               {programLabel}
             </span>
           )}
@@ -116,7 +116,7 @@ function AssigneeChip({ assignee }: { assignee: string }) {
   return (
     <span
       className={cn(
-        'shrink-0 inline-flex items-center gap-1 text-micro font-bold uppercase tracking-wider px-1.5 py-0.5 rounded',
+        'shrink-0 inline-flex items-center gap-1 text-microlabel font-bold uppercase tracking-wider px-1.5 py-0.5 rounded',
         ASSIGNEE_TINT[assignee] ?? 'bg-surface-sunken text-text-secondary ring-1 ring-border-subtle',
       )}
       title={`Assigned to ${assignee}`}
@@ -179,7 +179,7 @@ function AssigneeSubmenu({
                 coach.assigned_to === label ? 'bg-accent-50 font-semibold text-accent-700' : 'text-text-secondary hover:bg-surface-sunken active:bg-surface-sunken',
               )}
             >
-              <IconUser size={14} className={coach.assigned_to === label ? 'text-accent-600' : 'text-text-tertiary'} />
+              <IconUser size={14} className={coach.assigned_to === label ? 'text-accent-ink' : 'text-text-tertiary'} />
               <span className="flex-1">{label}</span>
               {coach.assigned_to === label && <IconCheck size={13} className="text-accent-700" />}
             </Button>
@@ -393,7 +393,7 @@ const CoachTableRow = React.memo(
         <td className={cn('px-2', edgePad)} onClick={e => e.stopPropagation()}>
           <IconButton variant="default" aria-label="Favorite"
             onClick={handleStar}
-            className={cn('transition-all duration-200 hover:scale-110 active:scale-95', coach.is_starred ? 'opacity-100' : 'opacity-20 group-hover:opacity-50')}
+            className={cn('transition duration-200 hover:scale-110 active:scale-95', coach.is_starred ? 'opacity-100' : 'opacity-20 group-hover:opacity-50')}
           >
             <IconStar size={14} className={cn('transition-colors duration-200', coach.is_starred ? 'fill-fw-warning text-fw-warning' : 'text-text-tertiary hover:text-fw-warning/80')} />
           </IconButton>
@@ -407,17 +407,17 @@ const CoachTableRow = React.memo(
           <div className="flex items-center gap-2 min-w-0">
             <p className="text-sm font-medium text-text-primary leading-tight truncate">{coach.name}</p>
             <span className={cn(
-              'shrink-0 text-micro font-bold uppercase tracking-wider px-1.5 py-0.5 rounded',
+              'shrink-0 text-microlabel font-bold uppercase tracking-wider px-1.5 py-0.5 rounded',
               'bg-surface-tint text-text-secondary ring-1 ring-border-subtle',
             )}>
               {coach.division}
             </span>
             {coach.is_primary_contact && (
-              <span className="shrink-0 text-micro font-bold px-1.5 py-0.5 rounded bg-accent-50 text-accent-700 border border-accent-200/60">★</span>
+              <span className="shrink-0 text-microlabel font-bold px-1.5 py-0.5 rounded bg-accent-50 text-accent-700 border border-accent-200/60">★</span>
             )}
             {coach.assigned_to && <AssigneeChip assignee={coach.assigned_to} />}
           </div>
-          {secondary && <p className="text-label text-text-tertiary truncate">{secondary}</p>}
+          {secondary && <p className="text-microlabel text-text-tertiary truncate">{secondary}</p>}
         </td>
 
         {/* Engagement (Hot / Warm / Cold) — visible at lg+.
@@ -435,7 +435,7 @@ const CoachTableRow = React.memo(
             <Button variant="ghost"
               onClick={e => { e.stopPropagation(); onOpenStatus(isStatusOpen ? null : coach.id); }}
               className={cn(
-                'inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border transition-all',
+                'inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border transition',
                 STATUS_COLORS[coach.status]?.bg, STATUS_COLORS[coach.status]?.text, STATUS_COLORS[coach.status]?.border,
                 'hover:ring-1 hover:ring-border-subtle',
               )}
@@ -484,7 +484,7 @@ const CoachTableRow = React.memo(
               {priorityConfig[coach.priority]?.label}
             </span>
           ) : (
-            <span className="text-micro text-text-tertiary">&mdash;</span>
+            <span className="text-microlabel text-text-tertiary">&mdash;</span>
           )}
         </td>
 
@@ -523,7 +523,7 @@ const CoachTableRow = React.memo(
               )}
             </div>
           ) : (
-            <span className="text-micro text-text-tertiary">&mdash;</span>
+            <span className="text-microlabel text-text-tertiary">&mdash;</span>
           )}
         </td>
 
@@ -534,7 +534,7 @@ const CoachTableRow = React.memo(
               onClick={e => { e.stopPropagation(); onOpenAction(isActionOpen ? null : coach.id); }}
               className={cn(
                 'p-1.5 rounded-fw-sm text-text-tertiary hover:text-text-secondary hover:bg-surface-sunken active:bg-surface-sunken',
-                'opacity-0 group-hover:opacity-100 transition-all duration-200',
+                'opacity-0 group-hover:opacity-100 transition duration-200',
               )}
             >
               <IconMoreHorizontal size={16} />
@@ -567,8 +567,8 @@ const CoachTableRow = React.memo(
                     className="w-full px-3 py-2 text-left text-sm text-text-secondary hover:bg-surface-sunken transition-colors active:bg-surface-sunken flex items-center gap-2"
                   >
                     {gmailDirectSend
-                      ? <><IconMail size={16} className="text-accent-600" /> Send via Gmail</>
-                      : <><IconExternalLink size={16} className="text-accent-600" /> Open in Gmail</>}
+                      ? <><IconMail size={16} className="text-accent-ink" /> Send via Gmail</>
+                      : <><IconExternalLink size={16} className="text-accent-ink" /> Open in Gmail</>}
                   </Button>
                 )}
                 {coach.phone && (
@@ -778,18 +778,18 @@ const CoachTableCard = React.memo(
             <div className="flex items-center gap-2 min-w-0">
               <p className="text-sm font-medium text-text-primary leading-tight truncate">{coach.name}</p>
               <span className={cn(
-                'shrink-0 text-micro font-bold uppercase tracking-wider px-1.5 py-0.5 rounded',
+                'shrink-0 text-microlabel font-bold uppercase tracking-wider px-1.5 py-0.5 rounded',
                 'bg-surface-tint text-text-secondary ring-1 ring-border-subtle',
               )}>
                 {coach.division}
               </span>
               {coach.is_primary_contact && (
-                <span className="shrink-0 text-micro font-bold px-1.5 py-0.5 rounded bg-accent-50 text-accent-700 border border-accent-200/60">★</span>
+                <span className="shrink-0 text-microlabel font-bold px-1.5 py-0.5 rounded bg-accent-50 text-accent-700 border border-accent-200/60">★</span>
               )}
               {coach.assigned_to && <AssigneeChip assignee={coach.assigned_to} />}
             </div>
             {coachSecondaryLine(coach) && (
-              <p className="text-label text-text-tertiary truncate">{coachSecondaryLine(coach)}</p>
+              <p className="text-microlabel text-text-tertiary truncate">{coachSecondaryLine(coach)}</p>
             )}
           </div>
 
@@ -798,7 +798,7 @@ const CoachTableCard = React.memo(
             {/* Star */}
             <IconButton variant="default" aria-label="Favorite"
               onClick={handleStar}
-              className={cn('transition-all duration-200 hover:scale-110 active:scale-95', coach.is_starred ? 'opacity-100' : 'opacity-40')}
+              className={cn('transition duration-200 hover:scale-110 active:scale-95', coach.is_starred ? 'opacity-100' : 'opacity-40')}
             >
               <IconStar size={14} className={cn('transition-colors duration-200', coach.is_starred ? 'fill-fw-warning text-fw-warning' : 'text-text-tertiary hover:text-fw-warning/80')} />
             </IconButton>
@@ -807,7 +807,7 @@ const CoachTableCard = React.memo(
             <div className="relative">
               <IconButton variant="default" aria-label="More options"
                 onClick={e => { e.stopPropagation(); onOpenAction(isActionOpen ? null : coach.id); }}
-                className="p-1.5 rounded-fw-sm text-text-tertiary hover:text-text-secondary hover:bg-surface-sunken active:bg-surface-sunken transition-all duration-200"
+                className="p-1.5 rounded-fw-sm text-text-tertiary hover:text-text-secondary hover:bg-surface-sunken active:bg-surface-sunken transition duration-200"
               >
                 <IconMoreHorizontal size={16} />
               </IconButton>
@@ -837,8 +837,8 @@ const CoachTableCard = React.memo(
                       className="w-full px-3 py-2 text-left text-sm text-text-secondary hover:bg-surface-sunken transition-colors active:bg-surface-sunken flex items-center gap-2"
                     >
                       {gmailDirectSend
-                        ? <><IconMail size={16} className="text-accent-600" /> Send via Gmail</>
-                        : <><IconExternalLink size={16} className="text-accent-600" /> Open in Gmail</>}
+                        ? <><IconMail size={16} className="text-accent-ink" /> Send via Gmail</>
+                        : <><IconExternalLink size={16} className="text-accent-ink" /> Open in Gmail</>}
                     </Button>
                   )}
                   {coach.phone && (
@@ -936,7 +936,7 @@ const CoachTableCard = React.memo(
             <Button variant="ghost"
               onClick={e => { e.stopPropagation(); onOpenStatus(isStatusOpen ? null : coach.id); }}
               className={cn(
-                'inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border transition-all',
+                'inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border transition',
                 STATUS_COLORS[coach.status]?.bg, STATUS_COLORS[coach.status]?.text, STATUS_COLORS[coach.status]?.border,
                 'hover:ring-1 hover:ring-border-subtle',
               )}
@@ -1246,13 +1246,13 @@ function SchoolGroupView({
                 </span>
                 <span className="flex-1 min-w-0 flex items-center gap-2">
                   <h3 className="text-sm font-semibold text-text-primary truncate">{group.school}</h3>
-                  <span className="flex-shrink-0 px-2 py-0.5 rounded-full bg-surface-sunken text-label font-bold text-text-secondary tabular-nums">
+                  <span className="flex-shrink-0 px-2 py-0.5 rounded-full bg-surface-sunken text-microlabel font-bold text-text-secondary tabular-nums">
                     {group.count}
                   </span>
                 </span>
                 <span className="hidden sm:flex items-center gap-1.5 flex-shrink-0">
                   <span className={cn(
-                    'px-2 py-0.5 rounded-fw-sm text-micro font-bold tabular-nums',
+                    'px-2 py-0.5 rounded-fw-sm text-microlabel font-bold tabular-nums',
                     'bg-surface-tint text-text-secondary ring-1 ring-border-subtle'
                   )}>
                     {group.division}
@@ -1312,9 +1312,9 @@ function SchoolGroupView({
                   <thead>
                     <tr className="border-b border-border-subtle">
                       <th className="w-10 px-4 py-2" />
-                      <th className="text-left px-4 py-2 text-micro font-semibold text-text-tertiary uppercase tracking-wider">Coach</th>
-                      <th className="text-left px-4 py-2 text-micro font-semibold text-text-tertiary uppercase tracking-wider w-28">Role</th>
-                      <th className="text-left px-4 py-2 text-micro font-semibold text-text-tertiary uppercase tracking-wider">Status</th>
+                      <th className="text-left px-4 py-2 text-microlabel font-semibold text-text-tertiary uppercase tracking-wider">Coach</th>
+                      <th className="text-left px-4 py-2 text-microlabel font-semibold text-text-tertiary uppercase tracking-wider w-28">Role</th>
+                      <th className="text-left px-4 py-2 text-microlabel font-semibold text-text-tertiary uppercase tracking-wider">Status</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -1326,7 +1326,7 @@ function SchoolGroupView({
                         <tr
                           key={coach.id}
                           className={cn(
-                            'border-b border-border-subtle/50 transition-all duration-150 cursor-pointer group',
+                            'border-b border-border-subtle/50 transition duration-150 cursor-pointer group',
                             isSelected && 'bg-accent-50/50',
                             !isSelected && 'hover:bg-accent-50/20'
                           )}
@@ -1349,26 +1349,26 @@ function SchoolGroupView({
                             <p className="text-sm font-medium text-text-primary truncate">{coach.name}</p>
                             {coach.email && <p className="text-xs text-text-tertiary truncate">{coach.email}</p>}
                             <p className={cn(
-                              'text-micro tabular-nums',
+                              'text-microlabel tabular-nums',
                               !coach.last_contacted_at ? 'text-fw-danger font-medium' : 'text-text-tertiary',
                             )}>
                               Last contacted: {formatRelativeDate(coach.last_contacted_at)}
                             </p>
                             {coach.is_primary_contact && (
-                              <span className="text-micro font-bold px-1 py-0.5 rounded bg-accent-50 text-accent-700 border border-accent-200/60">★ Primary</span>
+                              <span className="text-microlabel font-bold px-1 py-0.5 rounded bg-accent-50 text-accent-700 border border-accent-200/60">★ Primary</span>
                             )}
                           </td>
                           <td className="px-4 py-2.5">
                             <div className="flex items-center gap-1">
-                              <span className="text-micro font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded bg-surface-sunken text-text-secondary">{roleLabel}</span>
+                              <span className="text-microlabel font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded bg-surface-sunken text-text-secondary">{roleLabel}</span>
                               {programLabel && (
-                                <span className="text-micro font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-surface-sunken text-accent-700">{programLabel}</span>
+                                <span className="text-microlabel font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-surface-sunken text-accent-700">{programLabel}</span>
                               )}
                             </div>
                           </td>
                           <td className="px-4 py-2.5">
                             <span className={cn(
-                              'inline-flex items-center gap-1 px-2 py-0.5 rounded-fw-sm text-micro font-medium',
+                              'inline-flex items-center gap-1 px-2 py-0.5 rounded-fw-sm text-microlabel font-medium',
                               statusConfig[coach.status]?.bgColor,
                               statusConfig[coach.status]?.color,
                             )}>
@@ -1601,7 +1601,7 @@ export function CoachTable({
   const clearSelection = () => onSelectionChange(new Set());
 
   const SortArrow = ({ field }: { field: SortField }) => (
-    <span className="ml-0.5 text-micro">{sortField === field ? (sortDir === 'asc' ? '↑' : '↓') : ''}</span>
+    <span className="ml-0.5 text-microlabel">{sortField === field ? (sortDir === 'asc' ? '↑' : '↓') : ''}</span>
   );
 
   // Loading skeleton
@@ -1871,7 +1871,7 @@ export function CoachTable({
               value={String(pageSize)}
               onChange={e => { setPageSize(Number(e.target.value)); setPage(1); }}
               options={PAGE_SIZES.map(s => ({ value: String(s), label: `${s}/page` }))}
-              className="min-h-0 text-sm px-2.5 py-1.5 rounded-fw-sm bg-surface/90 border-border-subtle focus:ring-2 focus:ring-border-focus/30 focus:border-accent-300 transition-all duration-200"
+              className="min-h-0 text-sm px-2.5 py-1.5 rounded-fw-sm bg-surface/90 border-border-subtle focus:ring-2 focus:ring-border-focus/30 focus:border-accent-300 transition duration-200"
             />
             <div className="flex items-center gap-1">
               <PaginationButton onClick={() => setPage(1)} disabled={page === 1}>&laquo;</PaginationButton>

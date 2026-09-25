@@ -19,6 +19,7 @@
  *  • ApproachMissSelector / PuttMissTagSelector reused AS-IS.
  * ========================================================================== */
 
+import { useState } from 'react';
 import { cn } from '@/lib/utils';
 import { fwHaptic } from '@/lib/fairway/haptics';
 import { Button } from '@/components/fairway/controls/button';
@@ -30,6 +31,13 @@ import { PuttMissTagSelector } from '@/components/golf/putt-miss-tag-selector';
 import { calculateShotDistanceWithDirection } from '@/lib/utils/shot-helpers';
 import { useDistanceUnits } from '@/hooks/golf/use-distance-units';
 import { displayToFeet, displayToYards, yardsToDisplay } from '@/lib/golf/distance-units';
+import {
+  validateShot,
+  validateHoleTotals,
+  deriveScoreAndPutts,
+  type RoundEntryIssue,
+  type ValidatableShot,
+} from '@/lib/golf/round-entry-validation';
 import type { ShotRecord, RoundHole, PuttMissTag, ApproachMissDirection } from '@/lib/types/golf';
 import type { ShotAction } from '@/hooks/golf/use-shot-state-machine';
 
@@ -87,7 +95,7 @@ const segBtn = (active: boolean) =>
   cn(
     'min-h-[48px] flex-1 rounded-fw-sm px-2 font-fw-sans text-sm font-medium',
     'focus-visible:ring-2 focus-visible:ring-accent-600 focus-visible:ring-inset focus-visible:ring-offset-0',
-    active ? 'bg-accent-650 text-text-on-accent shadow-flat' : 'text-text-secondary hover:text-text-primary',
+    active ? 'bg-accent-fill text-text-on-accent-fill shadow-flat' : 'text-text-secondary hover:text-text-primary',
   );
 
 /**
@@ -180,6 +188,79 @@ export function FairwayShotEntry({
   const isMeters = distancePref === 'meters';
 
   const ready = isReadyForNextShot();
+
+  // ── Plausibility (shared rules — src/lib/golf/round-entry-validation.ts) ──
+  // Runs only once the parent's own field gates pass, on the shot as it WILL
+  // be recorded. `block` disables the primary action with the reason at the
+  // field; `confirm` asks once ("A 420-yard drive onto the green? Tap to
+  // confirm") and is remembered for exactly this hole/shot/result/distance.
+  // Valid, ordinary shots produce no issue, so their flow is unchanged.
+  const [confirmedIssueKey, setConfirmedIssueKey] = useState<string | null>(null);
+  const plausibilityIssue: RoundEntryIssue | null = (() => {
+    if (!ready || !resultOfShot) return null;
+    let afterValue = 0;
+    let afterUnit: 'yards' | 'feet' = 'feet';
+    if (resultOfShot !== 'hole') {
+      const parsed = parseFloat(distanceAfterShot);
+      if (!Number.isFinite(parsed)) return null;
+      afterUnit = isPutting || resultOfShot === 'green' ? 'feet' : 'yards';
+      afterValue = isMeters
+        ? (afterUnit === 'feet' ? displayToFeet(parsed, 'meters') : displayToYards(parsed, 'meters'))
+        : parsed;
+    }
+    const pending: ValidatableShot = {
+      shotNumber: currentShot,
+      shotType: isTeeShot ? 'tee' : isPutting ? 'putting' : 'approach',
+      distanceToHoleBefore: distanceToHole,
+      distanceUnitBefore: distanceUnit,
+      result: resultOfShot,
+      distanceToHoleAfter: afterValue,
+      distanceUnitAfter: afterUnit,
+      isPenalty: false,
+      missDirection,
+      approachMissDirection,
+      puttMissTags,
+    };
+    const hole = { holeNumber: currentHole.number, par: currentHole.par, yardage: currentHole.yardage };
+    const issues = validateShot(pending, hole);
+    if (resultOfShot === 'hole') {
+      const { score, putts } = deriveScoreAndPutts([...shotHistory, pending]);
+      issues.push(...validateHoleTotals({ holeNumber: currentHole.number, par: currentHole.par, score, putts }));
+    }
+    return issues.find((i) => i.severity === 'block') ?? issues[0] ?? null;
+  })();
+  const plausibilityKey = plausibilityIssue
+    ? `${currentHole.number}:${currentShot}:${plausibilityIssue.rule}:${resultOfShot}:${distanceAfterShot}`
+    : null;
+  const plausibilityBlocks =
+    plausibilityIssue != null
+    && (plausibilityIssue.severity === 'block' || plausibilityKey !== confirmedIssueKey);
+  const canRecord = ready && !plausibilityBlocks;
+  const plausibilityNotice = plausibilityIssue ? (
+    <div className="mt-3">
+      {plausibilityIssue.severity === 'block' ? (
+        <InlineNotice tone="danger">{plausibilityIssue.message}</InlineNotice>
+      ) : plausibilityKey === confirmedIssueKey ? (
+        <p role="status" className="font-fw-sans text-sm text-text-secondary">Confirmed. Tap Next when ready.</p>
+      ) : (
+        <InlineNotice
+          tone="warning"
+          action={
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => setConfirmedIssueKey(plausibilityKey)}
+            >
+              Confirm
+            </Button>
+          }
+        >
+          {plausibilityIssue.message}
+        </InlineNotice>
+      )}
+    </div>
+  ) : null;
+  const noticeAtDistance = plausibilityIssue?.rule === 'distance_not_decreasing';
   const distanceInvalid =
     !!distanceAfterShot && (!Number.isFinite(parseFloat(distanceAfterShot)) || parseFloat(distanceAfterShot) < 0);
 
@@ -188,10 +269,14 @@ export function FairwayShotEntry({
   // the user knows what to do. The order/conditions mirror isReadyForNextShot()
   // VERBATIM so the hint can never disagree with the disabled state.
   const nextShotBlocker: string | null = (() => {
-    if (ready) return null;
+    if (ready) {
+      if (!plausibilityBlocks || !plausibilityIssue) return null;
+      return plausibilityIssue.severity === 'block'
+        ? plausibilityIssue.message
+        : 'Confirm the result above to continue';
+    }
     if (!resultOfShot) return isPutting ? 'Select a putt result' : 'Select a shot result';
     if (isTeeShot && currentHole.par !== 3 && usedDriver === null) return 'Choose driver or non-driver';
-    if (isPutting && !puttBreak) return 'Select a putt break';
     if (isTeeShot && ['rough', 'sand', 'other'].includes(resultOfShot) && !missDirection)
       return 'Choose a miss direction';
     if (isApproachOrAroundGreen && !['green', 'hole'].includes(resultOfShot) && !approachMissDirection)
@@ -272,7 +357,9 @@ export function FairwayShotEntry({
             <Section
               label="Putting details"
               tint
-              hint={<StatusPill tone="accent" dot={false} size="sm">Fill first</StatusPill>}
+              // RE-F13: optional — required on every putt, tap-ins included, it was a
+              // tap nobody's stats needed. Unset stays unset (not "straight").
+              hint={<StatusPill tone="neutral" dot={false} size="sm">Optional</StatusPill>}
             >
               <div className="space-y-4">
                 <div>
@@ -346,7 +433,7 @@ export function FairwayShotEntry({
                         'min-h-[52px] rounded-fw-md px-3 font-fw-sans text-sm font-medium transition-colors',
                         'outline-none focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
                         isSelected
-                          ? 'bg-accent-650 text-text-on-accent shadow-flat ring-1 ring-accent-600'
+                          ? 'bg-accent-fill text-text-on-accent-fill shadow-flat ring-1 ring-accent-600'
                           : isSubtle
                             ? 'bg-surface-sunken text-text-tertiary ring-1 ring-border-subtle hover:bg-surface-tint hover:text-text-secondary hover:ring-border-strong'
                             : 'bg-surface-sunken text-text-primary ring-1 ring-border-subtle hover:bg-surface-tint hover:ring-border-strong',
@@ -367,6 +454,7 @@ export function FairwayShotEntry({
                 });
               })()}
             </div>
+            {!noticeAtDistance && plausibilityNotice}
           </Section>
 
           {/* Miss Direction */}
@@ -431,13 +519,14 @@ export function FairwayShotEntry({
                   onWheel={(e) => (e.target as HTMLInputElement).blur()}
                   placeholder="0"
                   className={cn(
-                    'h-16 w-full min-w-0 rounded-fw-md border-2 bg-surface px-4 text-center font-fw-display text-display font-light tracking-[-0.025em] tabular-nums text-text-primary transition-colors placeholder:text-text-tertiary/50 focus:outline-none focus:ring-4',
+                    'h-16 w-full min-w-0 rounded-fw-md border-2 bg-surface px-4 text-center font-fw-display text-display font-light tracking-[-0.025em] tabular-nums text-text-primary transition-colors placeholder:text-text-tertiary focus:outline-none focus:ring-4',
                     distanceInvalid
                       ? 'border-fw-danger focus:border-fw-danger focus:ring-fw-danger/15'
                       : 'border-accent-300 focus:border-accent-500 focus:ring-accent-500/15',
                   )}
                 />
                 {distanceInvalid && <p className="font-fw-sans text-sm text-fw-danger-ink">Please enter a valid distance</p>}
+                {noticeAtDistance && plausibilityNotice}
 
                 {isPutting && (
                   <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
@@ -456,7 +545,7 @@ export function FairwayShotEntry({
                           'min-h-[44px] rounded-fw-md transition-colors',
                           'outline-none focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
                           distanceAfterShot === String(val) && distanceAfterUnit === 'feet'
-                            ? 'bg-accent-650 text-text-on-accent shadow-flat'
+                            ? 'bg-accent-fill text-text-on-accent-fill shadow-flat'
                             : 'border border-accent-200 bg-surface text-accent-700 hover:bg-accent-50',
                         )}
                       >
@@ -523,7 +612,7 @@ export function FairwayShotEntry({
         <InlineNotice tone="warning">
           {currentShot >= 15
             ? 'Maximum recordable score (15) reached. Please hole out or pick up.'
-            : `Shot ${currentShot} of 15 max — ${15 - currentShot} shot${15 - currentShot !== 1 ? 's' : ''} remaining before the limit.`}
+            : `Shot ${currentShot} of 15 max, ${15 - currentShot} shot${15 - currentShot !== 1 ? 's' : ''} remaining before the limit.`}
         </InlineNotice>
       )}
 
@@ -580,11 +669,13 @@ export function FairwayShotEntry({
           // Round COMPLETION deliberately stays out of here; that is a
           // `success` outcome owned by the round-submit path, and spending it
           // on a per-hole action would leave nothing left for the real one.
-          onClick={() => {
-            fwHaptic(resultOfShot === 'hole' ? 'medium' : 'light');
-            onNextShot();
-          }}
-          disabled={!ready}
+          //
+          // The Button fires this itself (its `haptic` prop REPLACES its
+          // built-in tick), so exactly one haptic lands per tap and the 32ms
+          // throttle can no longer swallow the hole-out weight (RE-F14).
+          haptic={resultOfShot === 'hole' ? 'checkpoint' : 'commit'}
+          onClick={onNextShot}
+          disabled={!canRecord}
           aria-describedby={nextShotBlocker ? 'fw-next-shot-blocker' : undefined}
           aria-label={resultOfShot === 'hole' ? `Complete hole with score ${currentShot}` : 'Record next shot'}
         >

@@ -13,12 +13,12 @@
  * imported UNCHANGED — only the page-chrome wrapper is retired.
  * ========================================================================== */
 
-import { useCallback, useState, useTransition } from 'react';
+import { useCallback, useEffect, useState, useTransition } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Clock, CheckCircle2, Target } from 'lucide-react';
 
-import { DrillPanel, useStage } from '@/components/fairway/modules';
+import { DrillPanel } from '@/components/fairway/modules';
 import { useMediaQuery } from '@/hooks/use-media-query';
 import {
   Button,
@@ -60,7 +60,7 @@ import {
 } from '@/app/golf/actions/development';
 import { logFocusAreaPracticeSession } from '@/app/golf/actions/focus-area-practice-log';
 import { useToast } from '@/components/ui/sonner';
-import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription } from '@/components/ui/drawer';
+import { Sheet } from '@/components/fairway/overlays/Sheet';
 
 export interface DevelopmentDrillProps {
   activeAreas: FocusAreaCardData[];
@@ -174,15 +174,16 @@ function LogProgressDrawer({ state, onClose }: { state: LogProgressState | null;
   }
 
   return (
-    <Drawer open={open} onOpenChange={(next) => { if (!next) handleClose(); }}>
-      <DrawerContent className="sm:max-w-md sm:mx-auto sm:rounded-3xl sm:bottom-1/2 sm:translate-y-1/2">
-        <DrawerHeader>
-          <DrawerTitle>Log progress</DrawerTitle>
-          <DrawerDescription>{fa?.title || 'Focus area'}</DrawerDescription>
-        </DrawerHeader>
+    <Sheet
+      open={open}
+      onOpenChange={(next) => { if (!next) handleClose(); }}
+      title="Log progress"
+      description={fa?.title || 'Focus area'}
+      className="sm:mx-auto sm:max-w-md"
+    >
         <form
           onSubmit={handleSubmit}
-          className="space-y-5 px-6 pb-6 overflow-y-auto overscroll-contain"
+          className="min-h-0 space-y-5 px-6 pb-6 overflow-y-auto overscroll-contain"
           style={{ paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom))' }}
         >
           <div>
@@ -228,8 +229,7 @@ function LogProgressDrawer({ state, onClose }: { state: LogProgressState | null;
             </Button>
           </div>
         </form>
-      </DrawerContent>
-    </Drawer>
+    </Sheet>
   );
 }
 
@@ -357,7 +357,6 @@ export function DevelopmentDrill({
   achievedGoals = [],
   practiceLogEnabled = false,
 }: DevelopmentDrillProps) {
-  const { home } = useStage();
   const router = useRouter();
   const { addToast } = useToast();
   const [, startTransition] = useTransition();
@@ -367,6 +366,16 @@ export function DevelopmentDrill({
   const [reopeningId, setReopeningId] = useState<string | null>(null);
   const [decidingId, setDecidingId] = useState<string | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
+
+  // `?focus=<id>` from a dashboard focus card lands on that card (HUB-15).
+  const focusParam = useSearchParams().get('focus');
+  useEffect(() => {
+    if (!focusParam) return;
+    const node = document.getElementById(`focus-area-${focusParam}`);
+    if (!node) return;
+    node.scrollIntoView({ block: 'start' });
+    node.focus({ preventScroll: true });
+  }, [focusParam]);
 
   const total = activeAreas.length + completedAreas.length;
   const hasAnyArea = total + proposedAreas.length > 0;
@@ -461,7 +470,22 @@ export function DevelopmentDrill({
             setReopeningId(null);
             return;
           }
-          addToast({ type: 'success', title: 'Reopened', description: focusArea.title || 'Focus area' });
+          // Reopen is one tap, so it gets the same Undo that Complete has
+          // rather than a confirm (SHEET-05).
+          addToast({
+            type: 'success',
+            title: 'Reopened',
+            description: focusArea.title || 'Focus area',
+            action: {
+              label: 'Undo',
+              onClick: () => {
+                void completeFocusArea(focusArea.id).then((undo) => {
+                  if (undo.success) router.refresh();
+                  else addToast({ type: 'error', title: undo.error || 'Could not undo' });
+                });
+              },
+            },
+          });
           setReopeningId(null);
           router.refresh();
         } catch {
@@ -530,7 +554,7 @@ export function DevelopmentDrill({
   );
 
   return (
-    <DrillPanel title="Development" backLabel="Home" onBack={home} chip={headerActions}>
+    <DrillPanel title="Development" chip={headerActions}>
       {loadError ? (
         <InlineNotice
           tone="danger"
@@ -559,7 +583,7 @@ export function DevelopmentDrill({
           {proposedAreas.length > 0 ? (
             <section>
               <h2 className="mb-4 flex items-center gap-2 font-fw-display text-h3 font-medium text-text-primary">
-                <Target className="h-5 w-5 text-accent-600" aria-hidden />
+                <Target className="h-5 w-5 text-accent-ink" aria-hidden />
                 Prescribed for you
                 <span className="ml-auto font-fw-sans text-body-sm font-normal text-text-tertiary">
                   {proposedAreas.length} pending
@@ -609,7 +633,7 @@ export function DevelopmentDrill({
               {activeAreas.length > 0 ? (
                 <section>
                   <h2 className="mb-4 flex items-center gap-2 font-fw-display text-h3 font-medium text-text-primary">
-                    <Clock className="h-5 w-5 text-accent-600" aria-hidden />
+                    <Clock className="h-5 w-5 text-accent-ink" aria-hidden />
                     Active focus areas
                     <span className="ml-auto font-fw-sans text-body-sm font-normal text-text-tertiary">
                       {activeAreas.length} {activeAreas.length === 1 ? 'area' : 'areas'}
@@ -620,18 +644,24 @@ export function DevelopmentDrill({
                       const m = fa.target_metric;
                       const st = m && isMetricId(m) ? standingByMetric?.[m] : undefined;
                       return (
-                        <FocusAreaCard
+                        <div
                           key={fa.id}
-                          focusArea={fa}
-                          // eslint-disable-next-line jsx-a11y/aria-role
-                          role="player"
-                          index={i}
-                          onLogProgress={handleLogProgress}
-                          onComplete={handleComplete}
-                          completing={completingId === fa.id}
-                          standing={st}
-                          onLogPracticeSession={practiceLogEnabled ? handleLogPracticeSession : undefined}
-                        />
+                          id={`focus-area-${fa.id}`}
+                          tabIndex={-1}
+                          className="scroll-mt-[calc(var(--golf-mobile-header-offset,0px)+1rem)] rounded-card outline-none"
+                        >
+                          <FocusAreaCard
+                            focusArea={fa}
+                            // eslint-disable-next-line jsx-a11y/aria-role
+                            role="player"
+                            index={i}
+                            onLogProgress={handleLogProgress}
+                            onComplete={handleComplete}
+                            completing={completingId === fa.id}
+                            standing={st}
+                            onLogPracticeSession={practiceLogEnabled ? handleLogPracticeSession : undefined}
+                          />
+                        </div>
                       );
                     })}
                   </div>

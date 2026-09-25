@@ -18,7 +18,8 @@
  *   • fromUntyped                         — '@/lib/supabase/untyped'
  *     (team panels bind to useGolfUser().teamId — the cookie-aware ACTIVE team)
  *   • BENCHMARK_* (sg benchmark)          — '@/lib/golf/sg-benchmarks'
- *   • AvatarUpload / ConfirmDialog        — '@/components/ui/*'
+ *   • AvatarUpload                        — '@/components/ui/*'
+ *   • ConfirmAlert                        — fairway/overlays (golf confirm)
  *   • JoinTeamSection / CoachHelmToggle   — '@/components/golf/*'
  *   • account delete  → DELETE /api/account/delete   (identical to legacy)
  *
@@ -27,6 +28,7 @@
  * warm or primary classes, no glass on content.
  * ========================================================================== */
 
+import { haptic } from '@/lib/haptics';
 import {
   createContext,
   useCallback,
@@ -49,7 +51,7 @@ import { regenerateJoinCode } from '@/app/golf/actions/teams';
 import { fromUntyped } from '@/lib/supabase/untyped';
 import { cn } from '@/lib/utils';
 import { useGolfUser } from '@/contexts/golf-user-context';
-import { triggerHaptic, isNativeApp } from '@/lib/utils/capacitor';
+import { isNativeApp } from '@/lib/utils/capacitor';
 import { areHapticsEnabled, setHapticsEnabled } from '@/lib/utils/haptics-pref';
 import { useAppearancePreferences } from '@/hooks/golf/use-appearance-preferences';
 import { useDistanceUnits } from '@/hooks/golf/use-distance-units';
@@ -65,7 +67,7 @@ import {
   type DeliveryNotificationPreferences,
 } from '@/lib/coachhelm/v3/notifications/types';
 import { AvatarUpload } from '@/components/ui/avatar-upload';
-import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import { ConfirmAlert } from '@/components/fairway/overlays/ConfirmAlert';
 import { JoinTeamSection } from '@/components/golf/settings/JoinTeamSection';
 import { CoachHelmToggle } from '@/components/golf/coachhelm/v2';
 import {
@@ -82,7 +84,7 @@ import {
   IconSun,
   IconMoon,
   IconMonitor,
-  IconSparkles,
+  IconBulb,
 } from '@/components/icons';
 import { useGolfTheme, type GolfTheme } from '@/lib/golf/theme';
 
@@ -94,7 +96,6 @@ import {
   Select,
   Switch,
   Slider,
-  Avatar,
   InlineNotice,
   fairwayToast,
   ReportProblemButton,
@@ -162,7 +163,7 @@ function useReportDirty(id: string, dirty: boolean) {
  * it (1) arms the native `beforeunload` prompt (covers refresh / tab close /
  * external nav) and (2) intercepts same-origin in-app link clicks + the back
  * gesture, showing a "Discard unsaved changes?" confirm before allowing the
- * navigation to proceed. Reduced-motion / token-safe (confirm is ConfirmDialog).
+ * navigation to proceed. Reduced-motion / token-safe (confirm is ConfirmAlert).
  */
 function UnsavedChangesGuard({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -266,7 +267,7 @@ function UnsavedChangesGuard({ children }: { children: React.ReactNode }) {
   return (
     <DirtyRegistryContext.Provider value={registry}>
       {children}
-      <ConfirmDialog
+      <ConfirmAlert
         open={pendingHref !== null}
         title="Discard unsaved changes?"
         message="You have unsaved edits on this screen. If you leave now, those changes will be lost."
@@ -447,7 +448,17 @@ function SaveRow({
 }) {
   return (
     <div className="mt-5 flex justify-end border-t border-border-subtle pt-4">
-      <Button variant="primary" size="sm" busy={busy} disabled={disabled} onClick={onSave}>
+      {/* DASH-20 — a pristine form's Save is disabled, and the primary green
+          at the shared 50% disabled opacity still read as a live CTA. Drop
+          to the neutral secondary style until there is something to save,
+          so the one green button on a card appears only when it will act. */}
+      <Button
+        variant={disabled ? 'secondary' : 'primary'}
+        size="sm"
+        busy={busy}
+        disabled={disabled}
+        onClick={onSave}
+      >
         {label}
       </Button>
     </div>
@@ -570,7 +581,7 @@ export function FairwaySettingsGeneral() {
   }, [loadProfile]);
 
   const handleSignOut = async () => {
-    void triggerHaptic('heavy');
+    void haptic('checkpoint');
     const supabase = createClient();
     await clearActiveTeam();
     // Cached rails/threads are per-viewer and none may outlive the session —
@@ -588,7 +599,7 @@ export function FairwaySettingsGeneral() {
       const response = await fetch('/api/account/delete', { method: 'DELETE' });
       if (!response.ok) {
         const payload = await response.json().catch(() => ({}));
-        void triggerHaptic('error');
+        void haptic('error');
         fairwayToast.error(payload.error || 'Failed to delete account');
         logError(
           new Error(payload.error || `Failed to delete account (status ${response.status})`),
@@ -597,11 +608,11 @@ export function FairwaySettingsGeneral() {
         );
         return;
       }
-      void triggerHaptic('success');
+      void haptic('success');
       fairwayToast.success('Account deleted successfully');
       window.location.href = isNativeApp() ? '/golf/login' : '/';
     } catch (err) {
-      void triggerHaptic('error');
+      void haptic('error');
       fairwayToast.error('Failed to delete account');
       logError(
         err instanceof Error ? err : new Error(String(err)),
@@ -686,20 +697,11 @@ export function FairwaySettingsGeneral() {
       />
 
       <div className="mt-8 flex flex-col gap-7">
-        {/* Identity card */}
-        <Surface elevation="border" padding="md" className="flex items-center gap-4">
-          <Avatar src={profile.avatarUrl ?? undefined} name={profile.name} size="lg" />
-          <div className="min-w-0">
-            <p className="font-fw-sans text-body-lg font-medium text-text-primary">
-              {profile.name || EM_DASH}
-            </p>
-            <p className="font-fw-sans text-body-sm text-text-secondary">
-              {profile.email || EM_DASH}
-            </p>
-          </div>
-        </Surface>
-
-        {/* Account */}
+        {/* Account. NAT-07 — the standalone identity card (avatar + name +
+            email) that used to sit here repeated all three: Personal
+            information directly below already shows the avatar (with its
+            upload control) and the name, and Email address shows the email.
+            The avatar rendered twice within one screen. */}
         <PersonalInfoPanel profile={profile} onUpdate={loadProfile} />
         <EmailPanel currentEmail={profile.email} />
         <PasswordPanel />
@@ -843,7 +845,7 @@ export function FairwaySettingsGeneral() {
               variant="danger"
               busy={deletingAccount}
               onClick={() => {
-                void triggerHaptic('warning');
+                void haptic('warning');
                 setDeleteConfirmOpen(true);
               }}
             >
@@ -867,7 +869,7 @@ export function FairwaySettingsGeneral() {
         </p>
       </div>
 
-      <ConfirmDialog
+      <ConfirmAlert
         open={deleteConfirmOpen}
         title="Delete account?"
         message="This will permanently delete your account and all associated data. This action cannot be undone."
@@ -1052,7 +1054,7 @@ export function EmailPanel({ currentEmail }: { currentEmail: string }) {
               address isn't read as the request having failed. */}
           {pendingEmail ? (
             <InlineNotice tone="info" className="mt-2">
-              Change pending — we sent a confirmation to{' '}
+              Change pending. We sent a confirmation to{' '}
               <span className="font-medium text-text-primary">{pendingEmail}</span>. Click the link
               in that email to switch your address.
             </InlineNotice>
@@ -1251,7 +1253,7 @@ function ThemeTile({
           : 'border-border-subtle text-text-secondary hover:border-border-strong',
       )}
     >
-      <span aria-hidden className={active ? 'text-accent-600' : 'text-text-tertiary'}>
+      <span aria-hidden className={active ? 'text-accent-ink' : 'text-text-tertiary'}>
         {icon}
       </span>
       <span className="font-fw-sans text-body-sm font-medium text-text-primary">{label}</span>
@@ -1277,7 +1279,7 @@ export function AppearancePanel() {
     setSavedAt(Date.now());
   };
   const chooseTheme = (next: GolfTheme) => {
-    void triggerHaptic('light');
+    void haptic('commit');
     setTheme(next);
     setSavedAt(Date.now());
   };
@@ -1289,7 +1291,7 @@ export function AppearancePanel() {
       // P382: be honest about scope — these prefs are saved on THIS device only
       // (localStorage, no per-user DB column), so they don't follow you to
       // another machine or browser.
-      description="Changes apply instantly across the app. Saved on this device only — they won't carry over to another computer or browser."
+      description="Changes apply instantly across the app. Saved on this device only. They won't carry over to another computer or browser."
       headerAction={<AutoSaveBadge savedAt={savedAt} />}
     >
       <div className="space-y-5">
@@ -1428,16 +1430,16 @@ export function HapticsPanel() {
 
   return (
     <SectionCard
-      icon={<IconSparkles size={18} aria-hidden />}
+      icon={<IconBulb size={18} aria-hidden />}
       title="Haptics"
-      description="Subtle taps when you toggle, submit, or pull to refresh. Saved on this device only — your phone's system-wide haptics setting still applies on top."
+      description="Subtle taps when you toggle, submit, or pull to refresh. Saved on this device only. Your phone's system-wide haptics setting still applies on top."
       headerAction={<AutoSaveBadge savedAt={savedAt} />}
     >
       <div className="flex items-center justify-between gap-4">
         <div className="min-w-0">
           <p className="font-fw-sans text-body text-text-primary">Haptic feedback</p>
           <p className="font-fw-sans text-caption text-text-tertiary">
-            {enabled ? 'On for taps, toggles and confirmations.' : 'Off — the app stays silent.'}
+            {enabled ? 'On for taps, toggles and confirmations.' : 'Off. The app stays silent.'}
           </p>
         </div>
         <Switch
@@ -1447,10 +1449,10 @@ export function HapticsPanel() {
             // last thing the user feels is the tap that acknowledged them —
             // writing first would gate this very buzz and the switch would
             // feel dead at exactly the moment it should confirm.
-            if (!next) void triggerHaptic('light');
+            if (!next) void haptic('commit');
             setHapticsEnabled(next);
             setEnabled(next);
-            if (next) void triggerHaptic('success');
+            if (next) void haptic('success');
             setSavedAt(Date.now());
           }}
           aria-label="Haptic feedback"
@@ -1505,7 +1507,7 @@ export function DistanceUnitsPanel() {
       title="Distance units"
       // P382: honest scope — display-only AND device-local (localStorage, no
       // per-user DB column), so it won't follow you to another machine.
-      description="Only affects display — all data is stored in yards and feet. Saved on this device only."
+      description="Only affects display. All data is stored in yards and feet. Saved on this device only."
       headerAction={<AutoSaveBadge savedAt={savedAt} />}
     >
       <div className="grid grid-cols-2 gap-2">
@@ -1514,7 +1516,7 @@ export function DistanceUnitsPanel() {
             key={value}
             active={distancePref === value}
             onClick={() => {
-              void triggerHaptic('light');
+              void haptic('commit');
               setDistancePref(value);
               setSavedAt(Date.now());
             }}
@@ -1557,10 +1559,10 @@ function PushDeviceRow() {
   async function handleChange(next: boolean) {
     const result = next ? await subscribe() : await unsubscribe();
     if (!result.ok) {
-      void triggerHaptic('error');
+      void haptic('error');
       if (result.error) fairwayToast.error(result.error);
     } else if (next) {
-      void triggerHaptic('light');
+      void haptic('commit');
     }
   }
 
@@ -1668,7 +1670,7 @@ export function NotificationsPanel({ coachId }: { coachId?: string } = {}) {
       setSaving(false);
       if (!res.success) {
         setPrefs(previous);
-        void triggerHaptic('error');
+        void haptic('error');
         fairwayToast.error(res.error || 'Failed to save preference');
         logError(
           new Error(res.error || 'Failed to save notification preference'),
@@ -1676,7 +1678,7 @@ export function NotificationsPanel({ coachId }: { coachId?: string } = {}) {
           'high'
         );
       } else {
-        void triggerHaptic('light');
+        void haptic('commit');
         setSavedAt(Date.now()); // P384: flash the auto-save "Saved" signal.
       }
     },
@@ -2040,7 +2042,7 @@ function EventRemindersPanel({ teamId }: { teamId: string }) {
             </div>
             <p className="px-1 pt-3 font-fw-sans text-caption text-text-tertiary">
               {ordering
-                ? `Players are reminded ${formatLead(earlyHours * 60)} before an event, then again ${formatLead(lateMinutes)} before it starts. Reminders are checked hourly, so one can arrive up to 15 minutes early — never late.`
+                ? `Players are reminded ${formatLead(earlyHours * 60)} before an event, then again ${formatLead(lateMinutes)} before it starts. Reminders are checked hourly, so one can arrive up to 15 minutes early, never late.`
                 : 'The first reminder has to come before the final one.'}
             </p>
           </>

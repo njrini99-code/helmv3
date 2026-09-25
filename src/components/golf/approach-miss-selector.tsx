@@ -1,8 +1,9 @@
 'use client';
 
-import { motion, useReducedMotion } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { ApproachMissDirection, APPROACH_MISS_CONFIG } from '@/lib/types/golf';
+import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
 
 interface ApproachMissSelectorProps {
   selectedDirection: ApproachMissDirection | null;
@@ -15,7 +16,7 @@ export function ApproachMissSelector({
   onDirectionChange,
   disabled
 }: ApproachMissSelectorProps) {
-  const prefersReducedMotion = useReducedMotion();
+  const prefersReducedMotion = useReducedMotionGuard();
   // Grid layout mimics a green from player's perspective
   // Player is at bottom, green is the center
   const gridLayout: (ApproachMissDirection | 'green' | null)[][] = [
@@ -64,11 +65,11 @@ export function ApproachMissSelector({
                 aria-pressed={isSelected}
                 whileTap={{ scale: 0.95 }}
                 className={cn(
-                  'relative flex flex-col items-center justify-center rounded-fw-md border transition-all duration-200 aspect-square',
+                  'relative flex flex-col items-center justify-center rounded-fw-md border transition duration-200 aspect-square',
                   'font-fw-sans font-medium',
                   'outline-none focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
                   isSelected
-                    ? 'bg-accent-650 border-accent-700 text-text-on-accent shadow-flat'
+                    ? 'bg-accent-fill border-accent-700 text-text-on-accent-fill shadow-flat'
                     : 'bg-surface-sunken border-border-subtle hover:border-accent-300 hover:bg-surface-tint active:bg-surface-tint',
                   disabled && 'opacity-50 cursor-not-allowed'
                 )}
@@ -80,7 +81,7 @@ export function ApproachMissSelector({
                   {config.icon}
                 </span>
                 <span className={cn(
-                  'text-micro font-medium leading-none mt-1.5',
+                  'text-microlabel font-medium leading-none mt-1.5',
                   isSelected ? 'text-text-on-accent' : config.color
                 )}>
                   {config.shortLabel}

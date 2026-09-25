@@ -54,7 +54,7 @@ export function SegmentBadge({
       title={segment.description ?? segment.name}
       className={cn(
         'group w-full flex items-center justify-between gap-2 px-3 py-2 rounded-fw-sm',
-        'text-sm font-medium transition-all duration-200',
+        'text-sm font-medium transition duration-200',
         isActive
           ? 'bg-nav-surface text-nav-text'
           : 'text-nav-text-dim hover:bg-nav-surface hover:text-nav-text',

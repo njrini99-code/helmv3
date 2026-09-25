@@ -93,7 +93,7 @@ describe('FairwayTrendBrain — rendered honesty', () => {
     expect(screen.getByText(/mixed signals/i)).toBeInTheDocument();
     // The streak line shows a plausible per-round figure (23.5 / 4 = 5.9),
     // never the raw cumulative 23.5.
-    expect(screen.getByText(/5\.9 strokes\/round/i)).toBeInTheDocument();
+    expect(screen.getByText(/5\.9 strokes a round/i)).toBeInTheDocument();
     expect(screen.queryByText(/23\.5 strokes/i)).not.toBeInTheDocument();
   });
 

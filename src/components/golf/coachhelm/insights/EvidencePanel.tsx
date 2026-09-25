@@ -15,6 +15,7 @@
  * docs/superpowers/plans/2026-04-22-insight-quality/00-design-contract.md
  */
 import { cn } from '@/lib/utils';
+import { confidenceLabel } from '@/lib/coachhelm/confidence-label';
 import type {
   InsightEvidence,
   InsightUnit,
@@ -114,9 +115,12 @@ export function confidenceColor(c: number): {
   text: string;
   bg: string;
 } {
-  if (c >= 0.7) return { bar: 'bg-primary-500', text: 'text-primary-700', bg: 'bg-primary-100' };
-  if (c >= 0.4) return { bar: 'bg-amber-500', text: 'text-amber-700', bg: 'bg-amber-100' };
-  return { bar: 'bg-warm-400', text: 'text-warm-600', bg: 'bg-warm-100' };
+  // Contrast pass (owner, 2026-09-23): chip text is green ink on a green
+  // wash, warning ink on the warning wash, or tertiary on the sunken well —
+  // each >= 4.5:1 in light and dark (fairway-token-contrast.test.ts).
+  if (c >= 0.7) return { bar: 'bg-accent-fill', text: 'text-accent-ink', bg: 'bg-accent-wash' };
+  if (c >= 0.4) return { bar: 'bg-fw-warning', text: 'text-fw-warning-text', bg: 'bg-fw-warning-bg' };
+  return { bar: 'bg-border-control', text: 'text-text-tertiary', bg: 'bg-surface-sunken' };
 }
 
 /**
@@ -267,9 +271,10 @@ function BenchmarkScale({ evidence }: { evidence: InsightEvidence }) {
     pct: ((t.value - axisMin) / axisSpan) * 100,
   }));
 
-  const youColor = 'bg-primary-600 text-white ring-2 ring-primary-200';
+  const youColor = 'bg-accent-fill text-text-on-accent-fill ring-2 ring-primary-200';
   const primaryColor = 'bg-warm-700 text-white ring-1 ring-warm-200/45';
-  const secondaryColor = 'bg-violet-600 text-white ring-2 ring-violet-200';
+  // Secondary benchmark: a hollow marker (no violet, off-palette — HUB-09).
+  const secondaryColor = 'bg-surface text-text-primary ring-2 ring-border-control';
 
   return (
     <div className="space-y-2" data-testid="evidence-benchmark-scale">
@@ -303,15 +308,15 @@ function BenchmarkScale({ evidence }: { evidence: InsightEvidence }) {
               aria-hidden="true"
               className={cn(
                 'w-2 h-2 rounded-full',
-                p.role === 'you' && 'bg-primary-600',
+                p.role === 'you' && 'bg-accent-fill',
                 p.role === 'primary' && 'bg-warm-700',
-                p.role === 'secondary' && 'bg-violet-600',
+                p.role === 'secondary' && 'bg-surface ring-1 ring-border-control',
               )}
             />
             <span className="text-warm-700 font-medium">
               {formatValue(p.value, evidence.unit, p.role === 'you' ? evidence.your_value_display : undefined)}
             </span>
-            <span className="text-warm-500">{p.label}</span>
+            <span className="text-text-tertiary">{p.label}</span>
           </span>
         ))}
       </div>
@@ -329,6 +334,9 @@ export function EvidencePanel({
   if (!evidence) return null;
 
   const confPct = Math.round(Math.max(0, Math.min(1, evidence.confidence)) * 100);
+  // Players see a word ("Solid read"), not "100% confidence": the value is a
+  // sample-size ramp (e.g. min(n/30, 1)), not certainty about the claim.
+  const confWord = confidenceLabel(evidence.confidence, evidence.sample_n) ?? '—';
   const colors = confidenceColor(evidence.confidence);
 
   // FID-5: clamp the stroke magnitude at render so an impossible upstream
@@ -347,7 +355,7 @@ export function EvidencePanel({
         className={cn('mt-3 space-y-2.5')}
       >
         {v3Standing ?? <BenchmarkScale evidence={evidence} />}
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-eyebrow text-warm-500 tabular-nums">
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-eyebrow text-text-tertiary tabular-nums">
           <span data-testid="evidence-sample">
             {formatSample(evidence.sample_n, evidence.metric)} · {evidence.window_days} days
           </span>
@@ -364,7 +372,7 @@ export function EvidencePanel({
             className={cn('inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full font-medium', colors.bg, colors.text)}
             data-testid="evidence-confidence"
           >
-            {confPct}% confidence
+            {confWord}
           </span>
         </div>
       </div>
@@ -389,7 +397,7 @@ export function EvidencePanel({
           <span className="font-medium text-warm-900">
             {formatValue(evidence.comparison_value, evidence.unit)}
           </span>{' '}
-          <span className="text-warm-500">
+          <span className="text-text-tertiary">
             ({SOURCE_LABELS[evidence.comparison_source] ?? evidence.comparison_label})
           </span>
         </span>
@@ -413,7 +421,7 @@ export function EvidencePanel({
       value: (
         <span>
           ~{Math.abs(safeImpact).toFixed(1)}{' '}
-          <span className="text-warm-500">strokes/round</span>
+          <span className="text-text-tertiary">strokes/round</span>
         </span>
       ),
       testId: 'evidence-row-impact',
@@ -433,7 +441,7 @@ export function EvidencePanel({
     <div
       data-testid={testId ?? 'evidence-panel-expanded'}
       className={cn(
-        'mt-3 bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl p-4',
+        'mt-3 rounded-card border border-border-subtle bg-surface-sunken p-4',
       )}
     >
       {/* Root-cause reasoning spine (P0-05) — the machine-readable diagnosis the
@@ -451,23 +459,24 @@ export function EvidencePanel({
       ) : null}
       {/* W15: v3 StandingBar above the legacy key/value grid when present. */}
       {v3Standing && <div className="mb-3">{v3Standing}</div>}
-      <div className="mb-2 text-eyebrow font-medium uppercase tracking-wide text-warm-500">
+      <div className="mb-2 text-eyebrow font-medium uppercase tracking-wide text-text-tertiary">
         {evidence.metric_label}
       </div>
       <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-sm text-warm-800">
         {rows.map((r) => (
           <div key={r.testId} className="contents" data-testid={r.testId}>
-            <dt className="text-warm-500">{r.label}</dt>
+            <dt className="text-text-tertiary">{r.label}</dt>
             <dd className="tabular-nums">{r.value}</dd>
           </div>
         ))}
         <div className="contents" data-testid="evidence-row-confidence">
-          <dt className="text-warm-500">Confidence</dt>
+          <dt className="text-text-tertiary">Confidence</dt>
           <dd className="flex items-center gap-2 tabular-nums">
-            <span className={cn('font-medium', colors.text)}>{confPct}%</span>
+            <span className={cn('font-medium', colors.text)}>{confWord}</span>
             <div
               role="progressbar"
               aria-valuenow={confPct}
+              aria-valuetext={confWord}
               aria-valuemin={0}
               aria-valuemax={100}
               className="relative flex-1 h-1.5 rounded-full bg-warm-100 overflow-hidden max-w-[160px]"

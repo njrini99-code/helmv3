@@ -101,6 +101,18 @@ Join code
   `GenericPageSkeleton`/`FormPageSkeleton` family, which carries no
   `role="status"`/`aria-busy` of its own — the call site supplies them.
 
+- `/golf/reset-password` renders on `AuthCanvas` (`src/components/auth/golf-auth-canvas.tsx`),
+  the same flat treatment as login and forgot-password (AUTH-02, 2026-09-23).
+  `GolfAuthShell` no longer has an importer. The recovery-session logic
+  (`exchangeCodeForSession` / `verifyOtp`, with no `updateUser` until it is `ready`)
+  is unchanged.
+- Onboarding (player and coach): the submit-failure banner is `role="alert"`
+  and is referenced by the "Complete Setup" button's `aria-describedby`. A user
+  step change moves focus to the new step's `<h1>` (`tabIndex={-1}`). The
+  first paint and a restored coach draft do not. The coach completion screen's
+  primary action is **Invite players**, which goes to `/golf/dashboard/roster`
+  (join code and invite flow). "Go to dashboard" is the secondary action.
+
 ## Known Risk Areas
 
 - Join flow can create duplicate membership or request records if idempotency is not guarded.

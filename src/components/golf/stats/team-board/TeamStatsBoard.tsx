@@ -7,7 +7,7 @@
  * ----------------------------------------------------------------------------
  * Replaces the per-player InstrumentPanel tile grid with ONE `MatrixBoard`:
  * a sticky KPI band, then a ranked row per player — five `RankCell`s
- * (green-ramp, darker = stronger), a composite `RingGauge`, a scoring-trend
+ * (green-ramp, darker = stronger), a Form `RingGauge`, a scoring-trend
  * `Sparkline`, and a `SignalChip`. A row click expands an inline detail band
  * in place (worst metric / SG putt / last round + triage links) — no
  * navigation for a coach's daily scan.
@@ -40,6 +40,8 @@ import type { TeamLeakMaps, LeakBucket } from '@/app/golf/actions/stats-leak-map
 
 import { buildTeamBoardViewModel, fmtSg, TREND_SIGNAL_MIN_ROUNDS, weightedMean, type TeamBoardPlayerInput, type TeamBoardRowViewModel } from './buildTeamBoardViewModel';
 import { formatTeamStatsFreshness, type TeamStatsFreshness } from './teamStatsFreshness';
+import { FORM_EARLY_READ_LABEL, FORM_LABEL, type FormScore } from '@/lib/golf/form-score';
+import { formatMetricText } from '@/lib/golf/metrics/display-registry';
 
 // ============================================================================
 // PROPS — same shapes the route already resolves (page.tsx reuses its
@@ -60,6 +62,12 @@ export interface TeamStatsBoardProps {
   teamName: string;
   players: TeamPlayerStats[];
   intelligenceByPlayer: Record<string, TeamStatsBoardPlayerIntelligence>;
+  /**
+   * Form (OD-02) per player id, computed by the page from the same countable
+   * rounds as every other figure on the row plus active severe patterns.
+   * Missing id = no Form (em-dash).
+   */
+  formByPlayer?: Record<string, FormScore>;
   intelligenceError?: boolean;
   intelligenceSampleSize?: number;
   leakMaps: TeamLeakMaps | null;
@@ -79,11 +87,14 @@ export interface TeamStatsBoardProps {
   freshness: TeamStatsFreshness;
 }
 
-const SG_CATEGORY_BARS: ReadonlyArray<{ metric: MetricId; label: string }> = [
-  { metric: 'sg_ott', label: 'Off the Tee' },
-  { metric: 'sg_approach', label: 'Approach' },
-  { metric: 'sg_around_green', label: 'Around the Green' },
-  { metric: 'sg_putting', label: 'Putting' },
+// CHART-R2: `label` is the short chart label (the tornado's label gutter
+// truncated "Off the Tee" / "Around the Green" at phone width); `prose` is the
+// full name for the takeaway sentence.
+const SG_CATEGORY_BARS: ReadonlyArray<{ metric: MetricId; label: string; prose: string; key: 'offTee' | 'approach' | 'aroundGreen' | 'putting' }> = [
+  { metric: 'sg_ott', label: 'Tee', prose: 'Off the tee', key: 'offTee' },
+  { metric: 'sg_approach', label: 'Approach', prose: 'Approach', key: 'approach' },
+  { metric: 'sg_around_green', label: 'Short game', prose: 'Around the green', key: 'aroundGreen' },
+  { metric: 'sg_putting', label: 'Putting', prose: 'Putting', key: 'putting' },
 ];
 
 function tourLabel(isWomens: boolean): string {
@@ -124,7 +135,7 @@ function worstLeakTakeaway(buckets: LeakBucket[], direction: 'higher_better' | '
 function statsLoadErrorMessage(roundsError: boolean, intelligenceError: boolean, leakError: boolean): string {
   const failed: string[] = [];
   if (roundsError) failed.push('Round scoring and per-player stats');
-  if (intelligenceError) failed.push('team intelligence (composite ratings)');
+  if (intelligenceError) failed.push('team intelligence (top insights)');
   if (leakError) failed.push('strokes-gained leak maps');
   if (failed.length === 0) return '';
   if (failed.length === 1) return `${failed[0]} failed to load. Reload to try again.`;
@@ -138,11 +149,11 @@ function csvCell(value: string): string {
 }
 
 function buildBoardCsv(rows: TeamBoardRowViewModel[]): string {
-  const header = ['Player', 'Rounds', 'Scoring Avg', 'Tee Rank', 'App Rank', 'Short Rank', 'Putt Rank', 'Scoring Rank', 'Composite', 'Signal'];
+  const header = ['Player', 'Rounds', 'Scoring Avg', 'Tee Rank', 'App Rank', 'Short Rank', 'Putt Rank', 'Scoring Rank', FORM_LABEL, 'Signal'];
   const fmtRank = (r: { rank: number; of: number } | null) => (r ? `${r.rank}/${r.of}` : '');
   const lines = [header.join(',')];
   for (const r of rows) {
-    lines.push([r.name, String(r.roundsPlayed), r.scoringAverage, fmtRank(r.ranks.tee), fmtRank(r.ranks.app), fmtRank(r.ranks.short), fmtRank(r.ranks.putt), fmtRank(r.ranks.scoring), r.composite === null ? '' : String(Math.round(r.composite)), r.signal.label].map(csvCell).join(','));
+    lines.push([r.name, String(r.roundsPlayed), r.scoringAverage, fmtRank(r.ranks.tee), fmtRank(r.ranks.app), fmtRank(r.ranks.short), fmtRank(r.ranks.putt), fmtRank(r.ranks.scoring), r.form.score === null ? '' : `${r.form.score}${r.form.early ? ` (${FORM_EARLY_READ_LABEL})` : ''}`, r.signal.label].map(csvCell).join(','));
   }
   return lines.join('\n');
 }
@@ -154,12 +165,12 @@ const COLUMNS: MatrixColumn[] = [
   { key: 'short', label: 'Shrt', align: 'center' },
   { key: 'putt', label: 'Putt', align: 'center' },
   { key: 'scor', label: 'Scor', align: 'center' },
-  { key: 'composite', label: 'Composite' },
+  { key: 'form', label: FORM_LABEL },
   { key: 'trend', label: 'Trend' },
   { key: 'signal', label: 'Signal' },
 ];
 
-export function TeamStatsBoard({ teamName, players, intelligenceByPlayer, intelligenceError = false, intelligenceSampleSize = 0, leakMaps, leakError = false, roundsError = false, standingByPlayer, teamRounds30d, freshness }: TeamStatsBoardProps) {
+export function TeamStatsBoard({ teamName, players, intelligenceByPlayer, formByPlayer, intelligenceError = false, intelligenceSampleSize = 0, leakMaps, leakError = false, roundsError = false, standingByPlayer, teamRounds30d, freshness }: TeamStatsBoardProps) {
   const boardInput = React.useMemo(() => {
     const boardPlayers: TeamBoardPlayerInput[] = players.map((p) => ({
       id: p.id,
@@ -186,8 +197,10 @@ export function TeamStatsBoard({ teamName, players, intelligenceByPlayer, intell
       holesWithScore: p.holes_with_score,
       scoringTrend: p.scoring_trend,
       lastRoundScore: p.last_round_score ?? null,
+      sgTotalPerRound: p.sg_countable?.total ?? null,
+      sgRounds: p.sg_countable?.rounds ?? 0,
       recentScores: p.recent_scores ?? [],
-      composite: intelligenceByPlayer[p.id]?.composite ?? null,
+      form: formByPlayer?.[p.id] ?? null,
       topInsightTitle: intelligenceByPlayer[p.id]?.topInsightTitle ?? null,
       topInsightPriority: intelligenceByPlayer[p.id]?.topInsightPriority ?? null,
     }));
@@ -197,7 +210,7 @@ export function TeamStatsBoard({ teamName, players, intelligenceByPlayer, intell
       intelligenceSampleSize,
       rounds30d: teamRounds30d,
     };
-  }, [players, intelligenceByPlayer, standingByPlayer, intelligenceSampleSize, teamRounds30d]);
+  }, [players, intelligenceByPlayer, formByPlayer, standingByPlayer, intelligenceSampleSize, teamRounds30d]);
 
   const vm = React.useMemo(() => buildTeamBoardViewModel(boardInput), [boardInput]);
 
@@ -240,14 +253,23 @@ export function TeamStatsBoard({ teamName, players, intelligenceByPlayer, intell
 
   const sgData: SGCategory[] = React.useMemo(
     () =>
-      SG_CATEGORY_BARS.map(({ metric, label }) => ({
+      SG_CATEGORY_BARS.map(({ metric, label, key }) => ({
         label,
-        value: weightedMean(
-          players.map((p) => ({
-            value: standingByPlayer.get(p.id)?.get(metric)?.player_value ?? null,
-            weight: p.rounds_played,
-          })),
-        ),
+        // Countable-round SG when the page supplied it (weighted by the rounds
+        // that carry SG); the standing snapshot (lifetime cache) otherwise.
+        value: players.some((p) => p.sg_countable)
+          ? weightedMean(
+              players.map((p) => ({
+                value: p.sg_countable?.[key] ?? null,
+                weight: p.sg_countable?.rounds ?? 0,
+              })),
+            )
+          : weightedMean(
+              players.map((p) => ({
+                value: standingByPlayer.get(p.id)?.get(metric)?.player_value ?? null,
+                weight: p.rounds_played,
+              })),
+            ),
       })).filter((d): d is { label: string; value: number } => d.value !== null),
     [players, standingByPlayer],
   );
@@ -283,7 +305,8 @@ export function TeamStatsBoard({ teamName, players, intelligenceByPlayer, intell
     let worst = sgData[0]!;
     for (const d of sgData) if (d.value < worst.value) worst = d;
     if (worst.value >= 0) return undefined;
-    return `${worst.label} is the team's biggest leak, ${fmtSg(worst.value)} strokes vs Tour.`;
+    const prose = SG_CATEGORY_BARS.find((c) => c.label === worst.label)?.prose ?? worst.label;
+    return `${prose} is the team's biggest leak, ${fmtSg(worst.value)} strokes vs Tour.`;
   }, [sgData, hasSg]);
 
   const puttBuckets = toLeakMapBuckets(leakMaps?.putting);
@@ -311,10 +334,15 @@ export function TeamStatsBoard({ teamName, players, intelligenceByPlayer, intell
       <RankOrDash key="short" rank={row.ranks.short} />,
       <RankOrDash key="putt" rank={row.ranks.putt} />,
       <RankOrDash key="scor" rank={row.ranks.scoring} />,
-      row.composite !== null ? (
-        <RingGauge key="composite" value={row.composite} />
+      row.form.score !== null ? (
+        // role="img" + label: RingGauge's own label says "Composite", so the
+        // wrapper names the number and its read quality for screen readers.
+        <span key="form" role="img" aria-label={`${FORM_LABEL} ${row.form.score} of 100${row.form.early ? `, ${FORM_EARLY_READ_LABEL.toLowerCase()}` : ''}`} className="inline-flex flex-col items-start">
+          <RingGauge value={row.form.score} />
+          {row.form.early ? <span className="font-fw-sans text-caption text-text-secondary">{FORM_EARLY_READ_LABEL}</span> : null}
+        </span>
       ) : (
-        <span key="composite" className="font-fw-mono text-body-sm text-text-tertiary">
+        <span key="form" className="text-body-sm tabular-nums text-text-tertiary">
           —
         </span>
       ),
@@ -342,8 +370,7 @@ export function TeamStatsBoard({ teamName, players, intelligenceByPlayer, intell
       <ViewHeader
         eyebrow="Team Stats"
         title="Team Stats"
-        description={`Every player on ${teamName}'s roster: ranked, tracked, and measured against Tour.`}
-        meta={<p className="max-w-[90ch] font-fw-sans text-caption leading-relaxed text-text-secondary">{formatTeamStatsFreshness(freshness)}</p>}
+        description={`${teamName} · sorted by last name`}
         secondaryActions={
           <div className="flex w-full min-w-0 flex-wrap items-center gap-2 sm:w-auto sm:flex-nowrap">
             <Button asChild variant="secondary" size="md" className="min-w-0 flex-1 sm:flex-none">
@@ -367,9 +394,6 @@ export function TeamStatsBoard({ teamName, players, intelligenceByPlayer, intell
 
       {/* ── ROSTER BOARD — first, per spec §5.2 (roster before tornado/leak-map) ── */}
       <section className="mt-8">
-        <p className="mb-3 font-fw-sans text-caption text-text-secondary">
-          Trend signals begin after {TREND_SIGNAL_MIN_ROUNDS} completed rounds: five recent rounds compared with at least three prior rounds.
-        </p>
         {vm.rows.length === 0 ? (
           <InstrumentPanel depth="base">
             <p className="font-fw-sans text-body-sm text-text-secondary">No players on your roster yet.</p>
@@ -377,6 +401,10 @@ export function TeamStatsBoard({ teamName, players, intelligenceByPlayer, intell
         ) : (
           <MatrixBoard kpis={kpis} columns={COLUMNS} rows={rows} />
         )}
+        {/* COPY-03: helper text follows the data instead of stacking above it. */}
+        <p className="mt-3 max-w-[90ch] font-fw-sans text-caption leading-relaxed text-text-secondary">
+          Category ranks are within this roster. A trend needs {TREND_SIGNAL_MIN_ROUNDS} full rounds (the last five against at least three before). {formatTeamStatsFreshness(freshness)}
+        </p>
       </section>
 
       {/* ── TEAM FUNDAMENTALS — pooled raw outcomes, visible without opening a player ── */}
@@ -402,8 +430,8 @@ export function TeamStatsBoard({ teamName, players, intelligenceByPlayer, intell
 
       {/* ── TEAM STROKES GAINED — demoted below the board ──────────────────────── */}
       <section className="mt-10 grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
-        <StrokesGainedTornado overline="Strokes Gained" title="Team Strokes Gained" subtitle={`vs ${tourLabel(isWomens)} baseline · season to date`} takeaway={sgTakeaway} data={sgData} state={hasSg ? undefined : 'insufficient-data'} stateMessage={hasSg ? undefined : 'Strokes Gained appears once players log rounds with shot-level tracking. Add players to your roster and have them enter rounds shot by shot.'} />
-        <InstrumentPanel depth="raised" tone="accent" eyebrow="Season to date" header="SG: Total" className="flex flex-col justify-center">
+        <StrokesGainedTornado overline="Strokes Gained" title="Team Strokes Gained" subtitle={`vs ${tourLabel(isWomens)} baseline · full rounds, per round`} takeaway={sgTakeaway} data={sgData} state={hasSg ? undefined : 'insufficient-data'} stateMessage={hasSg ? undefined : 'Strokes Gained appears once players log rounds with shot-level tracking. Add players to your roster and have them enter rounds shot by shot.'} />
+        <InstrumentPanel depth="raised" tone="accent" eyebrow="All full rounds" header="SG: Total" className="flex flex-col justify-center">
           {vm.kpis.teamSgRaw !== null ? <Readout size="hero" label="Team SG · per round" display={fmtSg(vm.kpis.teamSgRaw)} unit="sg" /> : <Readout size="hero" label="Team SG · per round" state="awaiting" awaitingLabel="Awaiting standing" />}
           <p className="mt-4 font-fw-sans text-caption text-text-tertiary">The sum of every category vs the {tourLabel(isWomens)} baseline. Negative means the team is losing strokes to Tour over a round.</p>
         </InstrumentPanel>
@@ -415,7 +443,7 @@ export function TeamStatsBoard({ teamName, players, intelligenceByPlayer, intell
           <h2 className="font-fw-display text-h3 font-medium tracking-[-0.005em] text-text-primary">Where the strokes leak</h2>
           {leakMaps && leakRoundsIncluded > 0 ? (
             <span className="font-fw-sans text-caption text-text-secondary">
-              {leakRoundsIncluded} round{leakRoundsIncluded !== 1 ? 's' : ''} with shot tracking
+              Pooled from {leakRoundsIncluded} counted round{leakRoundsIncluded !== 1 ? 's' : ''}
             </span>
           ) : null}
         </div>
@@ -430,19 +458,19 @@ export function TeamStatsBoard({ teamName, players, intelligenceByPlayer, intell
 
 function RankOrDash({ rank }: { rank: { rank: number; of: number } | null }) {
   if (!rank) {
-    return <span className="mx-auto grid h-[26px] w-[34px] place-items-center font-fw-mono text-caption text-text-tertiary">—</span>;
+    return <span className="mx-auto grid h-[26px] w-[34px] place-items-center text-caption tabular-nums text-text-tertiary">—</span>;
   }
   return <RankCell rank={rank.rank} of={rank.of} />;
 }
 
 function TeamSgKpi({ display }: { display: string }) {
-  return <span className="font-fw-mono text-h2 tracking-[-0.02em] tabular-nums text-text-primary">{display}</span>;
+  return <span className="text-h2 tracking-[-0.02em] tabular-nums text-text-primary">{display}</span>;
 }
 
 function TrajectoryKpi({ trajectory }: { trajectory: { improving: number; steady: number; declining: number } }) {
   return (
-    <span className="inline-flex items-baseline gap-2.5 font-fw-mono text-h3 tabular-nums">
-      <span className="text-accent-600">{trajectory.improving}▲</span>
+    <span className="inline-flex items-baseline gap-2.5 text-h3 tabular-nums">
+      <span className="text-accent-ink">{trajectory.improving}▲</span>
       <span className="text-text-tertiary">{trajectory.steady}→</span>
       <span className="text-fw-warning-ink">{trajectory.declining}▼</span>
     </span>
@@ -460,6 +488,7 @@ function ExpandBand({ row }: { row: TeamBoardRowViewModel }) {
       <ExpandStat label={row.expand.worstMetricLabel ?? 'Worst metric'} value={row.expand.worstMetricValue ?? '—'} />
       <ExpandStat label="SG Putt" value={row.expand.sgPutt} />
       <ExpandStat label="Last round" value={row.expand.lastRound} />
+      <FormFormula row={row} />
       <div className="col-span-full mt-1 flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-border-subtle pt-3 font-fw-sans text-caption text-text-secondary">
         <Link href={row.expand.links.fullStats} className="font-semibold text-accent-700 hover:underline">
           Full stats
@@ -476,18 +505,36 @@ function ExpandBand({ row }: { row: TeamBoardRowViewModel }) {
 }
 
 function fmtPct(value: number | null): string {
-  return value === null || !Number.isFinite(value) ? '—' : `${value.toFixed(1)}%`;
+  return formatMetricText('gir_pct', value);
 }
 
 function fmtOneDecimal(value: number | null): string {
-  return value === null || !Number.isFinite(value) ? '—' : value.toFixed(1);
+  return formatMetricText('putts_per_round', value);
+}
+
+/** OD-02: the Form number with its formula, shown when the row is expanded (the row tap). */
+function FormFormula({ row }: { row: TeamBoardRowViewModel }) {
+  if (row.form.formula.length === 0) return null;
+  return (
+    <div className="col-span-full rounded-lg bg-surface-sunken px-3 py-2">
+      <div className="font-fw-display text-caption font-bold uppercase tracking-[0.09em] text-text-secondary">
+        {FORM_LABEL} {row.form.score ?? '—'}
+        {row.form.early ? ` · ${FORM_EARLY_READ_LABEL}` : ''}
+      </div>
+      <ul className="mt-1 space-y-0.5 font-fw-sans text-caption leading-relaxed text-text-secondary">
+        {row.form.formula.map((line) => (
+          <li key={line}>{line}</li>
+        ))}
+      </ul>
+    </div>
+  );
 }
 
 function FundamentalReadout({ label, value }: { label: string; value: string }) {
   return (
     <div className="min-w-0 px-3 first:pl-0 last:pr-0 sm:px-5 xl:text-right">
       <p className="font-fw-sans text-eyebrow font-semibold uppercase tracking-[0.1em] text-text-tertiary">{label}</p>
-      <strong className="mt-1 block truncate font-fw-mono text-h2 font-normal tracking-[-0.03em] tabular-nums text-text-primary">{value}</strong>
+      <strong className="mt-1 block truncate text-h2 font-normal tracking-[-0.03em] tabular-nums text-text-primary">{value}</strong>
     </div>
   );
 }
@@ -496,7 +543,7 @@ function ExpandStat({ label, value }: { label: string; value: string }) {
   return (
     <div>
       <div className="font-fw-display text-caption font-bold uppercase tracking-[0.09em] text-text-tertiary">{label}</div>
-      <b className="block font-fw-mono text-body font-semibold tabular-nums text-text-primary">{value}</b>
+      <b className="block text-body font-semibold tabular-nums text-text-primary">{value}</b>
     </div>
   );
 }

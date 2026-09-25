@@ -19,7 +19,7 @@ function TeamLoadFailure() {
     <div className={fairwayScope('min-h-full bg-canvas')}>
       <div className="mx-auto w-full max-w-2xl px-5 py-10 md:px-8">
         <InlineNotice tone="danger" title="Couldn't load your team">
-          <p>We couldn&apos;t reach your team just now. Nothing has changed on your roster — try again in a moment.</p>
+          <p>We couldn&apos;t reach your team just now. Nothing has changed on your roster. Try again in a moment.</p>
         </InlineNotice>
       </div>
     </div>
@@ -27,7 +27,7 @@ function TeamLoadFailure() {
 }
 
 export const metadata: Metadata = {
-  title: 'Team | GolfHelm',
+  title: 'Team',
   description: 'View and manage your golf team information, settings, and roster details.',
 };
 

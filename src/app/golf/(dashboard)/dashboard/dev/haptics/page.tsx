@@ -80,7 +80,7 @@ export default function HapticFeelLabPage() {
           <p className="font-fw-sans text-caption text-text-tertiary">
             {native
               ? `Native ${info?.platform ?? '…'} · v${info?.appVersion ?? '…'} (build ${info?.build ?? '…'}) · Core Haptics ${coreHaptics ? 'available' : 'unavailable on this build'}`
-              : 'Browser — no Taptic Engine here; open this URL inside the iOS app.'}
+              : 'Browser. No Taptic Engine here; open this URL inside the iOS app.'}
           </p>
           <p className="font-fw-sans text-caption text-text-tertiary">Last played: {lastPlayed}</p>
         </Surface>
@@ -132,7 +132,7 @@ export default function HapticFeelLabPage() {
 
         <Surface padding="md" className="flex flex-col gap-2">
           <h2 className="font-fw-sans text-body-sm font-semibold text-text-primary">
-            Helm signatures (Core Haptics{coreHaptics ? '' : ' — falls back to stock'})
+            Helm signatures (Core Haptics{coreHaptics ? '' : ', falls back to stock'})
           </h2>
           <div className="grid grid-cols-3 gap-2">
             {SIGNATURES.map((pattern) => (

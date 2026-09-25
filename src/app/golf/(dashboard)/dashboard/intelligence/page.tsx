@@ -11,8 +11,14 @@ import {
   getPatternImpact,
 } from '@/app/golf/actions/coachhelm-analytics';
 import { fairwayScope } from '@/lib/redesign/flag';
-import { FeatureUnavailable, type PlayersGridPlayer, type PlayersGridFocusArea, type PlayersGridStats } from '@/components/fairway';
-import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
+import {
+  FeatureUnavailable,
+  type FairwayEffectivenessProps,
+  type PlayersGridPlayer,
+  type PlayersGridFocusArea,
+  type PlayersGridStats,
+} from '@/components/fairway';
+import { resolveCoachActiveTeamIdForRequest } from '@/lib/golf/dashboard-request-cache';
 import { surfaceName } from '@/lib/golf/surface-registry';
 import { CoachIntelligenceHome } from '@/components/golf/coachhelm/home/CoachIntelligenceHome';
 import { getCoachChatContext, getCoachProgramPulse } from '@/lib/coachhelm/v3/chat/request-cache';
@@ -34,6 +40,11 @@ import { computeEvidenceRevisionStatuses } from '@/lib/coachhelm/focus-areas/loa
 import type { EvidenceRevisionComparison } from '@/lib/coachhelm/focus-areas/evidence-revision-status';
 import { loadFocusAreaPracticeLogData } from '@/lib/coachhelm/focus-areas/practice-log-loader';
 import { loadFollowUpRoundCounts } from '@/lib/coachhelm/focus-areas/follow-up-eligibility-loader';
+import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
+import { withCanonicalRoundTotal } from '@/lib/golf/round-total';
+import { isCountableRound } from '@/lib/golf/round-countable';
+import { aggregateCountableRounds, type CountableRoundRow } from '@/lib/golf/countable-round-stats';
+import { computeScoringTrendFromRounds } from '@/lib/golf/scoring-trend';
 
 /**
  * A8 slice 3: the focus-area select is routed through `fromUntyped` (see
@@ -58,7 +69,7 @@ interface RawFocusAreaRow {
 // ============================================================================
 
 export const metadata = {
-  title: `${surfaceName('brief')} | CoachHelm`,
+  title: surfaceName('brief'),
   description: 'AI-powered insights, patterns, predictions, and coaching intelligence for your team',
 };
 
@@ -121,15 +132,36 @@ export default async function IntelligenceDashboardPage({ searchParams }: Intell
     redirect('/golf/login');
   }
 
+  // Request-cached and team-independent, so it starts now. `loadCommand`
+  // never rejects (it degrades to null), so leaving it in flight past the
+  // redirect below cannot surface as an unhandled rejection.
+  const commandPromise = loadCommand(coach.full_name);
+
   const supabase = await createClient();
 
   // Single org→team lookup shared by every fetch below. Deterministic
-  // resolution: handles orgs with >1 team.
-  const teamId = await resolveCoachTeamIdWithCookie(supabase, coach.organization_id, coach.id);
+  // resolution: handles orgs with >1 team. Request-cached, so the dashboard
+  // layout's identical lookup is reused rather than repeated.
+  const teamId = await resolveCoachActiveTeamIdForRequest(coach.organization_id ?? null, coach.id);
 
   if (!teamId) {
     redirect('/golf/dashboard');
   }
+
+  // Started here and awaited nowhere on the critical path: the four
+  // Effectiveness-view reads stream to the client as one promise (the
+  // Effectiveness tab suspends on it only if opened before it lands), so the
+  // Brief header and the signal queue never wait on them. `.catch` → null so
+  // the promise always RESOLVES — a rejection would throw through `use()`
+  // into error.tsx and take the whole Brief down, where each read already
+  // degrades to "no data" on its own.
+  const effectivenessReads = Promise.all([
+    getCoachHelmOverview(teamId),
+    getInsightEffectiveness(teamId),
+    getPredictionPerformance(teamId),
+    getPatternImpact(teamId),
+  ]).catch(() => null);
+  const rosterPromise = loadPlayersDrillData(supabase, teamId);
 
   // ── Home-gate + Triage Desk data — `getTeamOverview` still drives the
   // overview-failure-vs-empty-roster gate (Triage Desk spec §5); `alertCounts`
@@ -150,22 +182,16 @@ export default async function IntelligenceDashboardPage({ searchParams }: Intell
     signalGroupsResult,
     causalByPlayer,
     coachIntents,
-    coachHelmOverviewResult,
-    effectivenessResult,
-    performanceResult,
-    patternResult,
     categoryInsightsResult,
     teamTimezoneResult,
+    roster,
+    command,
   ] = await Promise.all([
     getTeamOverview(teamId),
     getAlertCounts(coach.id),
     getSignalGroups(teamId),
     getTeamCausalRelationships(teamId).catch(() => ({}) as Record<string, CausalRelationshipRow[]>),
     loadCoachIntents(coach.id).catch(() => new Map<string, CoachPlayerIntent>()),
-    getCoachHelmOverview(teamId),
-    getInsightEffectiveness(teamId),
-    getPredictionPerformance(teamId),
-    getPatternImpact(teamId),
     // Team-wide "where is the team bleeding strokes" band (categories[] +
     // teamHealth) — computed on every request already by
     // getTeamCategoryInsights, previously never fetched by this page at all
@@ -177,6 +203,13 @@ export default async function IntelligenceDashboardPage({ searchParams }: Intell
     // #1998 review — "due for review" needs the TEAM's wall-clock calendar
     // day, not the server's UTC day (dashboard-data.ts's own pattern).
     supabase.from('golf_team_settings').select('timezone').eq('team_id', teamId).maybeSingle(),
+    // The whole Players-drill chain (roster → players → focus areas/stats/
+    // goals/standing → everything keyed off focus areas) runs BESIDE this
+    // batch rather than after it: it needs only teamId. It stays on the
+    // critical path because CoachIntelligenceHome's empty-roster gate reads
+    // the roster.
+    rosterPromise,
+    commandPromise,
   ]);
   const alertCounts = countsRes.success ? (countsRes.counts ?? null) : null;
   const signalGroups = signalGroupsResult.success ? signalGroupsResult.groups : [];
@@ -198,10 +231,196 @@ export default async function IntelligenceDashboardPage({ searchParams }: Intell
   // recomputed client-side (see due-for-review.ts's module doc).
   const todayIso = todayIsoInZone(teamTimezone);
 
+  const {
+    players,
+    playerIds,
+    focusAreas,
+    focusAreasError,
+    playersError,
+    statsRows,
+    countableByPlayer,
+    goalsByPlayerMap,
+    standingByPlayer,
+    outcomeByInsightId,
+    roundIdByReviewId,
+    evidenceRevisionStatusByFocusAreaId,
+    criteriaByFocusArea,
+    practiceSummaryByFocusArea,
+    followUpRoundCounts,
+  } = roster;
+  // `null` means the live-insight read failed — render no badge, same as an
+  // id simply missing from a successful map, but NEVER by silently
+  // defaulting the whole result to `{}` first (that's the exact collapse
+  // that hid a failed read behind "nothing changed").
+  const evidenceRevisionStatusFor = (id: string): EvidenceRevisionComparison | undefined =>
+    evidenceRevisionStatusByFocusAreaId ? evidenceRevisionStatusByFocusAreaId[id] : undefined;
+  // A8 slice 3 (write side): `isFlagEnabled` is server-only — resolved once
+  // here and threaded down opaquely through `playersDrillProps` (see
+  // PlayersGridViewProps.practiceLogEnabled) rather than re-derived from the
+  // flag-gated criteria/practiceSummary data, which can't distinguish
+  // "flag off" from "flag on, no data yet".
+  const practiceLogEnabled = isFlagEnabled('coachhelm_focus_area_practice_log');
+
+  const focusAreasWithPlayers: PlayersGridFocusArea[] = (focusAreas || []).map((fa) => ({
+    ...fa,
+    player: players.find((p) => p.id === fa.player_id) || null,
+    outcome_status: fa.from_insight_id ? (outcomeByInsightId[fa.from_insight_id] ?? null) : null,
+    // Owner decision follow-up (2026-09-23) — the RAW column, unlike
+    // `outcome_status` above which only reflects the SOURCE INSIGHT and
+    // misses areas with no `from_insight_id`. See PlayersGridFocusArea's
+    // doc for why this needs its own field rather than reusing that one.
+    recordedOutcomeStatus: fa.outcome_status ?? null,
+    progressHistory: progressHistoryOf(fa.progress_notes),
+    from_review_round_id: fa.from_review_id ? (roundIdByReviewId[fa.from_review_id] ?? null) : null,
+    evidence_revision_status: evidenceRevisionStatusFor(fa.id),
+    // `null` from the loader means that table's read failed (unknown), not
+    // "no criteria"/"never practiced" -- the explicit `criteriaByFocusArea ?
+    // ... : null` (rather than defaulting the whole map to `?? new Map()`)
+    // keeps that distinction from collapsing here, one call up from the
+    // loader itself. FocusAreaCard renders nothing for a `null` per-item
+    // value either way, so a failed read and a genuine zero look the same
+    // on screen, but never the same as each other in the data.
+    criteria: criteriaByFocusArea ? (criteriaByFocusArea.get(fa.id) ?? null) : null,
+    practiceSummary: practiceSummaryByFocusArea ? (practiceSummaryByFocusArea.get(fa.id) ?? null) : null,
+  })) as unknown as PlayersGridFocusArea[];
+
+  const gridStats: Record<string, PlayersGridStats> = {};
+  for (const row of statsRows || []) {
+    const countable = countableByPlayer?.get(row.player_id);
+    const headline = countableByPlayer ? aggregateCountableRounds(countable ?? []) : null;
+    const trend = countableByPlayer ? computeScoringTrendFromRounds(countable ?? []) : null;
+    gridStats[row.player_id] = {
+      rounds_played: headline ? headline.roundsCounted : (row.rounds_played ?? 0),
+      avg_score: headline ? headline.scoringAverage : (row.scoring_average ?? null),
+      avg_putts: row.putts_per_round ?? null,
+      fairway_pct: row.driving_accuracy_percentage ?? null,
+      gir_pct: row.gir_percentage ?? null,
+      best_score: headline ? headline.bestRound : (row.best_round ?? null),
+      // `golf_player_stats_cache.trend_direction` is written by the same
+      // canonical trend classifier Team Stats/the Players roster read
+      // (CHECK constraint: 'improving' | 'stable' | 'declining') — pass it
+      // straight through rather than the old hard-coded null so the Trend
+      // column actually renders instead of always reading '—'.
+      recent_trend: trend
+        ? (trend.hasSignal ? trend.trend : null)
+        : ((row.trend_direction as 'improving' | 'declining' | 'stable' | null) ?? null),
+      // SHEET-04: the focus-area sheet preselects this player's weakest SG area.
+      rounds_in_calculation: row.rounds_in_calculation ?? null,
+      sg_tee_per_round: row.sg_tee_per_round ?? null,
+      sg_approach_per_round: row.sg_approach_per_round ?? null,
+      sg_around_green_per_round: row.sg_around_green_per_round ?? null,
+      sg_putting_per_round: row.sg_putting_per_round ?? null,
+    };
+  }
+  for (const pid of playerIds) {
+    if (!gridStats[pid]) {
+      gridStats[pid] = {
+        rounds_played: 0,
+        avg_score: null,
+        avg_putts: null,
+        fairway_pct: null,
+        gir_pct: null,
+        best_score: null,
+        recent_trend: null,
+      };
+    }
+  }
+
+  const playersLoadError = playersError || focusAreasError ? 'We couldn’t load your development data. Please try again.' : null;
+
+  // ── Assemble the goals/causal/silent-posture extras (ported verbatim from
+  // development/page.tsx, adapted to this page's variable names). ─────────
+  const goalsByPlayer: Record<string, FairwayGoalCardData[]> = {};
+  for (const pid of playerIds) {
+    const g = goalsByPlayerMap.get(pid) ?? [];
+    const sm = standingByPlayer.get(pid) ?? new Map();
+    goalsByPlayer[pid] = g.map((goal) => ({ goal, standing: sm.get(goal.metric_id) ?? null }));
+  }
+
+  const playerNameById: Record<string, string> = {};
+  for (const p of players) {
+    playerNameById[p.id] = `${p.first_name ?? ''} ${p.last_name ?? ''}`.trim() || 'Player';
+  }
+
+  // #920 — alert_posture='silent' makes the CoachHelm confidence gate
+  // infinite for that player, so the engine keeps running but never surfaces
+  // an insight for them; the roster row flags it instead of reading as
+  // "nothing found." `coachIntents` was fetched in the spine Promise.all above.
+  const silentPostureByPlayer: Record<string, boolean> = {};
+  for (const pid of playerIds) {
+    if (coachIntents.get(pid)?.alert_posture === 'silent') {
+      silentPostureByPlayer[pid] = true;
+    }
+  }
+
+  const signalCount = alertCounts?.critical ?? null;
+  const effectivenessDrillProps: Promise<FairwayEffectivenessProps> = effectivenessReads.then((reads) => {
+    const [coachHelmOverviewResult, effectivenessResult, performanceResult, patternResult] = reads ?? [];
+    return {
+      teamId,
+      coachId: coach.id,
+      initialOverview: coachHelmOverviewResult?.success ? coachHelmOverviewResult.data : undefined,
+      initialEffectiveness: effectivenessResult?.success ? effectivenessResult.data : undefined,
+      initialPerformance: performanceResult?.success ? performanceResult.data : undefined,
+      initialPatternImpact: patternResult?.success ? patternResult.data : undefined,
+      signalCount,
+      initialView: 'cockpit',
+      initialRange: '30d',
+    };
+  });
+
+  return (
+    <div className={fairwayScope('min-h-full bg-canvas bg-canvas-gradient font-fw-sans text-text-primary')}>
+      <div className="mx-auto w-full max-w-[1200px] px-4 py-6 md:px-6">
+        <CoachIntelligenceHome
+          command={command}
+          overview={overviewResult}
+          categoryInsights={categoryInsightsResult}
+          coachId={coach.id}
+          groups={signalGroups}
+          scannedAt={signalGroupsResult.scannedAt}
+          groupsError={signalGroupsError}
+          playersDrillProps={{
+            players,
+            focusAreas: focusAreasWithPlayers,
+            coachId: coach.id,
+            playerStats: gridStats,
+            signalCount: alertCounts?.critical ?? null,
+            loadError: playersLoadError,
+            goalsByPlayer,
+            playerNameById,
+            causalByPlayer,
+            silentPostureByPlayer,
+            // F133 deep-link (?player=, forwarded by the /development shim):
+            // validate against the roster so a stale id degrades to the
+            // unscoped grid instead of a phantom selection.
+            initialSelectedPlayerId:
+              sp.player && players.some((p) => p.id === sp.player) ? sp.player : null,
+            todayIso,
+            practiceLogEnabled,
+            followUpRoundCounts,
+          }}
+          effectivenessDrillProps={effectivenessDrillProps}
+        />
+      </div>
+    </div>
+  );
+}
+
+/**
+ * The Players drill's read chain — a port of development/page.tsx's roster +
+ * focus-area fetch. Four dependent waves (roster → players →
+ * focus/stats/goals/standing → everything keyed off focus areas); it needs
+ * only `teamId`, so the page runs it concurrently with its other reads.
+ */
+async function loadPlayersDrillData(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  teamId: string,
+) {
   // ── `players` drill reads — a port of development/page.tsx's roster +
   // focus-area fetch. The goals/causal/silent-posture extras (goalsByPlayer,
   // playerNameById, causalByPlayer, silentPostureByPlayer) are assembled
-  // further below, once playerIds/coachIntents/goalsAndStandingPromise are
+  // further below, once playerIds/coachIntents/goals/standing are
   // available. ───────────────────────────────────────────────────────────
   const { data: teamMembers, error: teamMembersError } = await supabase
     .from('golf_team_members')
@@ -250,7 +469,7 @@ export default async function IntelligenceDashboardPage({ searchParams }: Intell
              from_review_id, from_insight_id, review_context, progress_notes,
              outcome_status${evidenceRevisionFlagOn ? ', evidence_revision' : ''}`;
 
-  const [focusResult, statsResult, goalsByPlayerMap, standingByPlayer] = await Promise.all([
+  const [focusResult, statsResult, goalsByPlayerMap, standingByPlayer, countableRoundsResult] = await Promise.all([
     playerIds.length > 0
       ? // fromUntyped is `client.from(table) as any` at runtime — identical to
         // the typed call below for every column this select already carried
@@ -264,11 +483,28 @@ export default async function IntelligenceDashboardPage({ searchParams }: Intell
     playerIds.length > 0
       ? supabase
           .from('golf_player_stats_cache')
-          .select('player_id, rounds_played, scoring_average, putts_per_round, driving_accuracy_percentage, gir_percentage, best_round, trend_direction')
+          .select('player_id, rounds_played, scoring_average, putts_per_round, driving_accuracy_percentage, gir_percentage, best_round, trend_direction, rounds_in_calculation, sg_tee_per_round, sg_approach_per_round, sg_around_green_per_round, sg_putting_per_round')
           .in('player_id', playerIds)
       : Promise.resolve({ data: [], error: null }),
     loadActiveGoalsForPlayers(playerIds).catch(() => new Map<string, Goal[]>()),
     loadPlayersStandingMap(playerIds).catch(() => new Map<string, Map<MetricId, PlayerStanding>>()),
+    // Avg / best / rounds / trend from COUNTABLE rounds (the same rule the
+    // roster, Team Stats and dashboards use). The stats cache's
+    // scoring_average and trend_direction include implausible and hole-less
+    // rounds (audit: a 37-stroke round moved one player's average by ~2).
+    // Paginated: PostgREST caps each response at 1000 rows.
+    playerIds.length > 0
+      ? fetchAllRowsResult<CountableRoundRow & { player_id: string; score_to_par: number | null }>((from, to) =>
+          supabase
+            .from('golf_rounds')
+            .select('id, player_id, status, total_score, score_to_par, holes_played, front_nine, back_nine, total_putts, strokes_gained_total, round_date')
+            .in('player_id', playerIds)
+            .eq('status', 'completed')
+            .not('total_score', 'is', null)
+            .order('id', { ascending: true })
+            .range(from, to),
+        )
+      : Promise.resolve({ data: [], error: null }),
   ]);
   // fromUntyped's `any` return means `focusResult`/`focusAreas` are only
   // reliably typed by this cast — the select is a plain string either way
@@ -279,6 +515,29 @@ export default async function IntelligenceDashboardPage({ searchParams }: Intell
     error: unknown;
   };
   const { data: statsRows } = statsResult;
+  // Countable rounds per player, newest first (id as a stable tiebreak).
+  // `null` when the read failed: fall back to the cache rather than show zeros.
+  const countableByPlayer: Map<string, CountableRoundRow[]> | null = countableRoundsResult.error
+    ? null
+    : (() => {
+        const byPlayer = new Map<string, CountableRoundRow[]>();
+        for (const r of (countableRoundsResult.data ?? []).map(withCanonicalRoundTotal).filter(isCountableRound)) {
+          const list = byPlayer.get(r.player_id) ?? [];
+          list.push(r);
+          byPlayer.set(r.player_id, list);
+        }
+        for (const list of byPlayer.values()) {
+          list.sort((a, b) => (b.round_date ?? '').localeCompare(a.round_date ?? '') || a.id.localeCompare(b.id));
+        }
+        return byPlayer;
+      })();
+  if (countableRoundsResult.error) {
+    void logServerError(
+      `[intelligence] countable-rounds read failed for team ${teamId}; Players tab falls back to the stats cache: ${describeError(countableRoundsResult.error)}`,
+      { action: 'intelligence.loadCountableRounds', featureArea: 'coachhelm' },
+    );
+  }
+
 
   const sourceInsightIds = Array.from(
     new Set((focusAreas || []).map((fa) => fa.from_insight_id).filter(Boolean)),
@@ -287,7 +546,24 @@ export default async function IntelligenceDashboardPage({ searchParams }: Intell
   const reviewIds = Array.from(
     new Set((focusAreas || []).map((fa) => fa.from_review_id).filter(Boolean)),
   ) as string[];
-  const [insightOutcomesResult, reviewRowsResult] = await Promise.all([
+  // One wave for everything that needs only `focusAreas`: the outcome and
+  // review back-link reads, the evidence-revision comparison, and the A8
+  // practice-log + follow-up loaders (previously three serial waves).
+  // A8 slice 2 (read side): zero .from() calls against either practice-log
+  // table while coachhelm_focus_area_practice_log is off — the loader checks
+  // the flag first and returns empty maps immediately in that case.
+  // Pkg 9 gap 2 (follow-up eligibility, owner decision 2026-09-23): a batch
+  // golf_rounds read, independent of the practice-log tables. `null` (read
+  // failed) is threaded down as-is — DueForReviewPanel treats it the same
+  // "unknown, not zero" way criteriaByFocusArea/practiceSummaryByFocusArea
+  // already do.
+  const [
+    insightOutcomesResult,
+    reviewRowsResult,
+    evidenceRevisionStatusByFocusAreaId,
+    { criteriaByFocusArea, practiceSummaryByFocusArea },
+    followUpRoundCountsMap,
+  ] = await Promise.all([
     sourceInsightIds.length > 0
       ? supabase
       .from('golf_coach_insights')
@@ -298,6 +574,15 @@ export default async function IntelligenceDashboardPage({ searchParams }: Intell
     reviewIds.length > 0
       ? supabase.from('golf_round_reviews').select('id, round_id').in('id', reviewIds)
       : Promise.resolve({ data: [], error: null }),
+    computeEvidenceRevisionStatuses(supabase, focusAreas || []),
+    loadFocusAreaPracticeLogData(
+      supabase,
+      (focusAreas || []).map((fa) => fa.id),
+    ),
+    loadFollowUpRoundCounts(
+      supabase,
+      (focusAreas || []).map((fa) => ({ id: fa.id, player_id: fa.player_id, started_at: fa.started_at })),
+    ),
   ]);
   // The "did the coaching land" outcome mix and the review back-links. Both
   // read as absence — "no outcomes recorded", "no review attached" — which is a
@@ -324,197 +609,56 @@ export default async function IntelligenceDashboardPage({ searchParams }: Intell
       if (row.round_id) roundIdByReviewId[row.id] = row.round_id;
   }
 
-  const evidenceRevisionStatusByFocusAreaId = await computeEvidenceRevisionStatuses(
-    supabase,
-    focusAreas || [],
-  );
-  // `null` means the live-insight read failed — render no badge, same as an
-  // id simply missing from a successful map, but NEVER by silently
-  // defaulting the whole result to `{}` first (that's the exact collapse
-  // that hid a failed read behind "nothing changed").
-  const evidenceRevisionStatusFor = (id: string): EvidenceRevisionComparison | undefined =>
-    evidenceRevisionStatusByFocusAreaId ? evidenceRevisionStatusByFocusAreaId[id] : undefined;
-
-  // A8 slice 2 (read side): zero .from() calls against either new table
-  // while coachhelm_focus_area_practice_log is off — the loader checks the
-  // flag first and returns empty maps immediately in that case.
-  // Pkg 9 gap 2 (follow-up eligibility, owner decision 2026-09-23): a batch
-  // golf_rounds read, independent of the practice-log tables above, run in
-  // parallel with them. `null` (read failed) is threaded down as-is —
-  // DueForReviewPanel treats it the same "unknown, not zero" way
-  // criteriaByFocusArea/practiceSummaryByFocusArea already do.
-  const [{ criteriaByFocusArea, practiceSummaryByFocusArea }, followUpRoundCountsMap] = await Promise.all([
-    loadFocusAreaPracticeLogData(
-      supabase,
-      (focusAreas || []).map((fa) => fa.id),
-    ),
-    loadFollowUpRoundCounts(
-      supabase,
-      (focusAreas || []).map((fa) => ({ id: fa.id, player_id: fa.player_id, started_at: fa.started_at })),
-    ),
-  ]);
   // Client components can't receive a Map across the server/client boundary
   // — DueForReviewPanel (and everything between it and this page) is
   // 'use client', so this crosses as a plain object.
   const followUpRoundCounts: Record<string, number> | null = followUpRoundCountsMap
     ? Object.fromEntries(followUpRoundCountsMap)
     : null;
-  // A8 slice 3 (write side): `isFlagEnabled` is server-only — resolved once
-  // here and threaded down opaquely through `playersDrillProps` (see
-  // PlayersGridViewProps.practiceLogEnabled) rather than re-derived from the
-  // flag-gated criteria/practiceSummary data, which can't distinguish
-  // "flag off" from "flag on, no data yet".
-  const practiceLogEnabled = isFlagEnabled('coachhelm_focus_area_practice_log');
 
-  const focusAreasWithPlayers: PlayersGridFocusArea[] = (focusAreas || []).map((fa) => ({
-    ...fa,
-    player: players.find((p) => p.id === fa.player_id) || null,
-    outcome_status: fa.from_insight_id ? (outcomeByInsightId[fa.from_insight_id] ?? null) : null,
-    // Owner decision follow-up (2026-09-23) — the RAW column, unlike
-    // `outcome_status` above which only reflects the SOURCE INSIGHT and
-    // misses areas with no `from_insight_id`. See PlayersGridFocusArea's
-    // doc for why this needs its own field rather than reusing that one.
-    recordedOutcomeStatus: fa.outcome_status ?? null,
-    progressHistory: progressHistoryOf(fa.progress_notes),
-    from_review_round_id: fa.from_review_id ? (roundIdByReviewId[fa.from_review_id] ?? null) : null,
-    evidence_revision_status: evidenceRevisionStatusFor(fa.id),
-    // `null` from the loader means that table's read failed (unknown), not
-    // "no criteria"/"never practiced" -- the explicit `criteriaByFocusArea ?
-    // ... : null` (rather than defaulting the whole map to `?? new Map()`)
-    // keeps that distinction from collapsing here, one call up from the
-    // loader itself. FocusAreaCard renders nothing for a `null` per-item
-    // value either way, so a failed read and a genuine zero look the same
-    // on screen, but never the same as each other in the data.
-    criteria: criteriaByFocusArea ? (criteriaByFocusArea.get(fa.id) ?? null) : null,
-    practiceSummary: practiceSummaryByFocusArea ? (practiceSummaryByFocusArea.get(fa.id) ?? null) : null,
-  })) as unknown as PlayersGridFocusArea[];
+  return {
+    players,
+    playerIds,
+    focusAreas,
+    focusAreasError,
+    playersError,
+    statsRows,
+    countableByPlayer,
+    goalsByPlayerMap,
+    standingByPlayer,
+    outcomeByInsightId,
+    roundIdByReviewId,
+    evidenceRevisionStatusByFocusAreaId,
+    criteriaByFocusArea,
+    practiceSummaryByFocusArea,
+    followUpRoundCounts,
+  };
+}
 
-  const gridStats: Record<string, PlayersGridStats> = {};
-  for (const row of statsRows || []) {
-    gridStats[row.player_id] = {
-      rounds_played: row.rounds_played ?? 0,
-      avg_score: row.scoring_average ?? null,
-      avg_putts: row.putts_per_round ?? null,
-      fairway_pct: row.driving_accuracy_percentage ?? null,
-      gir_pct: row.gir_percentage ?? null,
-      best_score: row.best_round ?? null,
-      // `golf_player_stats_cache.trend_direction` is written by the same
-      // canonical trend classifier Team Stats/the Players roster read
-      // (CHECK constraint: 'improving' | 'stable' | 'declining') — pass it
-      // straight through rather than the old hard-coded null so the Trend
-      // column actually renders instead of always reading '—'.
-      recent_trend: (row.trend_direction as 'improving' | 'declining' | 'stable' | null) ?? null,
-    };
-  }
-  for (const pid of playerIds) {
-    if (!gridStats[pid]) {
-      gridStats[pid] = {
-        rounds_played: 0,
-        avg_score: null,
-        avg_putts: null,
-        fairway_pct: null,
-        gir_pct: null,
-        best_score: null,
-        recent_trend: null,
-      };
-    }
-  }
-
-  const playersLoadError = playersError || focusAreasError ? 'We couldn’t load your development data. Please try again.' : null;
-
-  // ── Assemble the goals/causal/silent-posture extras (ported verbatim from
-  // development/page.tsx, adapted to this page's variable names). ─────────
-  const goalsByPlayer: Record<string, FairwayGoalCardData[]> = {};
-  for (const pid of playerIds) {
-    const g = goalsByPlayerMap.get(pid) ?? [];
-    const sm = standingByPlayer.get(pid) ?? new Map();
-    goalsByPlayer[pid] = g.map((goal) => ({ goal, standing: sm.get(goal.metric_id) ?? null }));
-  }
-
-  const playerNameById: Record<string, string> = {};
-  for (const p of players) {
-    playerNameById[p.id] = `${p.first_name ?? ''} ${p.last_name ?? ''}`.trim() || 'Player';
-  }
-
-  // #920 — alert_posture='silent' makes the CoachHelm confidence gate
-  // infinite for that player, so the engine keeps running but never surfaces
-  // an insight for them; the roster row flags it instead of reading as
-  // "nothing found." `coachIntents` was fetched in the spine Promise.all above.
-  const silentPostureByPlayer: Record<string, boolean> = {};
-  for (const pid of playerIds) {
-    if (coachIntents.get(pid)?.alert_posture === 'silent') {
-      silentPostureByPlayer[pid] = true;
-    }
-  }
-
-  // ── The AI-first opening's inputs. Individually degraded: if the chat
+// ── The AI-first opening's inputs. Individually degraded: if the chat
   // context or the pulse cannot be read, the Brief still renders its existing
   // intelligence surfaces and simply omits the composer. ────────────────────
-  let command: React.ComponentProps<typeof CoachIntelligenceHome>['command'] = null;
+async function loadCommand(
+  coachFullName: string | null | undefined,
+): Promise<React.ComponentProps<typeof CoachIntelligenceHome>['command']> {
   try {
     // Request-cached: the dashboard layout resolves this same context and pulse
     // for the CoachHelm drawer on every /golf/dashboard/* render. Going through
     // the cached zero-arg getters means this page reuses that work instead of
     // repeating six serial round trips plus the pulse's query wave.
-    const chatCtx = await getCoachChatContext();
-    const pulse = await getCoachProgramPulse();
+    // Independent getters (the pulse reuses the cached context), so they
+    // resolve together rather than back to back.
+    const [chatCtx, pulse] = await Promise.all([getCoachChatContext(), getCoachProgramPulse()]);
     if (!pulse) throw new Error('program pulse unavailable');
-    command = {
+    return {
       teamName: chatCtx.team_name,
       // `golf_coaches` stores one `full_name`; the greeting wants the first
       // word of it, and nothing at all rather than a guess when it is unset.
-      coachFirstName: coach.full_name?.trim().split(/\s+/)[0] ?? null,
+      coachFirstName: coachFullName?.trim().split(/\s+/)[0] ?? null,
       players: chatCtx.roster.map((p) => ({ id: p.id, name: p.name })),
       pulse,
     };
   } catch {
-    command = null;
+    return null;
   }
-
-  return (
-    <div className={fairwayScope('min-h-full bg-canvas bg-canvas-gradient font-fw-sans text-text-primary')}>
-      <div className="mx-auto w-full max-w-[1200px] px-4 py-6 md:px-6">
-        <CoachIntelligenceHome
-          command={command}
-          overview={overviewResult}
-          categoryInsights={categoryInsightsResult}
-          coachId={coach.id}
-          groups={signalGroups}
-          scannedAt={signalGroupsResult.scannedAt}
-          groupsError={signalGroupsError}
-          playersDrillProps={{
-            players,
-            focusAreas: focusAreasWithPlayers,
-            coachId: coach.id,
-            playerStats: gridStats,
-            signalCount: alertCounts?.critical ?? null,
-            loadError: playersLoadError,
-            goalsByPlayer,
-            playerNameById,
-            causalByPlayer,
-            silentPostureByPlayer,
-            // F133 deep-link (?player=, forwarded by the /development shim):
-            // validate against the roster so a stale id degrades to the
-            // unscoped grid instead of a phantom selection.
-            initialSelectedPlayerId:
-              sp.player && players.some((p) => p.id === sp.player) ? sp.player : null,
-            todayIso,
-            practiceLogEnabled,
-            followUpRoundCounts,
-          }}
-          effectivenessDrillProps={{
-            teamId,
-            coachId: coach.id,
-            initialOverview: coachHelmOverviewResult.success ? coachHelmOverviewResult.data : undefined,
-            initialEffectiveness: effectivenessResult.success ? effectivenessResult.data : undefined,
-            initialPerformance: performanceResult.success ? performanceResult.data : undefined,
-            initialPatternImpact: patternResult.success ? patternResult.data : undefined,
-            signalCount: alertCounts?.critical ?? null,
-            initialView: 'cockpit',
-            initialRange: '30d',
-          }}
-        />
-      </div>
-    </div>
-  );
 }

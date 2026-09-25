@@ -167,6 +167,12 @@ export interface PlayersGridStats {
   par3_avg?: number | null;
   par4_avg?: number | null;
   par5_avg?: number | null;
+  // SG per round + the rounds behind it (SHEET-04 weakest-area preselect).
+  rounds_in_calculation?: number | null;
+  sg_tee_per_round?: number | null;
+  sg_approach_per_round?: number | null;
+  sg_around_green_per_round?: number | null;
+  sg_putting_per_round?: number | null;
 }
 
 export interface PlayersGridViewProps {
@@ -617,7 +623,7 @@ export function PlayersGridView({
                     tone="neutral"
                     variant="outline"
                     size="sm"
-                    title="Alert posture is set to Silent for this player — CoachHelm keeps analyzing but never surfaces an insight. Change it from the Roster page."
+                    title="Alert posture is set to Silent for this player. CoachHelm keeps analyzing but never surfaces an insight. Change it from the Roster page."
                   >
                     Insights muted
                   </Badge>
@@ -857,8 +863,7 @@ export function PlayersGridView({
   return (
     <CoachHelmShell
       active="players"
-      // eslint-disable-next-line jsx-a11y/aria-role
-      role="coach"
+      viewerRole="coach"
       signalCount={signalCount}
       embedded={embedded}
       title="Players"
@@ -1128,7 +1133,7 @@ export function PlayersGridView({
               <TextArea
                 value={logNote}
                 onChange={(e) => setLogNote(e.target.value)}
-                placeholder="e.g. Drilled dispersion on the range — tighter today."
+                placeholder="e.g. Drilled dispersion on the range, tighter today."
                 rows={2}
               />
             </FormField>
@@ -1243,7 +1248,7 @@ export function RosterPlayerCard({
                 tone="neutral"
                 variant="outline"
                 size="sm"
-                title="Alert posture is set to Silent for this player — CoachHelm keeps analyzing but never surfaces an insight. Change it from the Roster page."
+                title="Alert posture is set to Silent for this player. CoachHelm keeps analyzing but never surfaces an insight. Change it from the Roster page."
               >
                 Insights muted
               </Badge>

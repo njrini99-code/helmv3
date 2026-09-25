@@ -362,7 +362,7 @@ export function SequenceBuilder({ sequenceId, onChange }: SequenceBuilderProps) 
                     className={cn(
                       'group w-full text-left flex items-center gap-3 p-4',
                       'bg-surface border border-border-subtle rounded-fw-md',
-                      'hover:bg-surface-tint hover:shadow-flat transition-all',
+                      'hover:bg-surface-tint hover:shadow-flat transition',
                     )}
                   >
                     <span className="flex-shrink-0 w-8 h-8 rounded-full bg-accent-50 text-accent-700 font-bold text-sm flex items-center justify-center">

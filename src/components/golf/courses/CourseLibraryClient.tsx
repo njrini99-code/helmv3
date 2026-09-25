@@ -124,7 +124,7 @@ export function CourseLibraryClient({
           <p className="font-fw-sans text-eyebrow font-semibold uppercase tracking-[0.07em] text-accent-700">
             Courses
           </p>
-          <h1 className="font-fw-display text-title-1 font-semibold tracking-tight text-text-primary">
+          <h1 className="font-fw-display text-h1 font-semibold tracking-tight text-text-primary">
             Course library.
           </h1>
           <p className="mt-1 text-body-sm text-text-secondary">
@@ -249,7 +249,7 @@ export function CourseLibraryClient({
                 <div className="flex items-start gap-3 rounded-fw-lg border border-dashed border-border-subtle bg-surface px-5 py-4">
                   <span
                     aria-hidden
-                    className="mt-0.5 inline-flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-primary-50 text-primary-600"
+                    className="mt-0.5 inline-flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-primary-50 text-accent-ink"
                   >
                     <IconStar size={16} />
                   </span>
@@ -266,16 +266,20 @@ export function CourseLibraryClient({
               the team rail above (deduped so no course renders twice). */}
           {restCourses.length > 0 && (
             <Section title={shownAboveIds.size > 0 ? 'More courses' : 'All courses'}>
-              <Grid>
+              {/* Thumbnail rows, not photo cards: the long tail is looked up,
+                  not browsed, and 65 cards ran ~21,500px on a phone. */}
+              <ul className="grid grid-cols-1 divide-y divide-border-subtle overflow-hidden rounded-fw-card border border-border-subtle bg-surface shadow-flat md:grid-cols-2 md:divide-y-0">
                 {restCourses.map((c) => (
-                  <CourseCard
-                    key={c.id}
-                    course={c}
-                    teeCount={teeCounts[c.id]}
-                    onSelect={setSelectedCourseId}
-                  />
+                  <li key={c.id} className="md:border-b md:border-border-subtle">
+                    <CourseCard
+                      variant="row"
+                      course={c}
+                      teeCount={teeCounts[c.id]}
+                      onSelect={setSelectedCourseId}
+                    />
+                  </li>
                 ))}
-              </Grid>
+              </ul>
             </Section>
           )}
         </div>
@@ -328,10 +332,10 @@ function Grid({ children }: { children: React.ReactNode }) {
 function EmptyState({ onAdd, canManage }: { onAdd: () => void; canManage: boolean }) {
   return (
     <div className="flex flex-col items-center justify-center rounded-fw-lg border border-dashed border-border-subtle bg-surface px-6 py-16 text-center">
-      <span className="mb-4 inline-flex h-14 w-14 items-center justify-center rounded-full bg-primary-50 text-primary-600">
+      <span className="mb-4 inline-flex h-14 w-14 items-center justify-center rounded-full bg-primary-50 text-accent-ink">
         <IconFlag size={24} aria-hidden />
       </span>
-      <h3 className="font-fw-display text-title-3 font-semibold text-text-primary">No courses yet</h3>
+      <h3 className="font-fw-display text-h3 font-semibold text-text-primary">No courses yet</h3>
       <p className="mt-1 max-w-sm text-body-sm text-text-secondary">
         {canManage
           ? 'Add the courses your team plays. Each course can hold multiple tee sets with their own pars and yardages.'

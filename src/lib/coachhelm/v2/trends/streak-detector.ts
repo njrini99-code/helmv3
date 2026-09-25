@@ -258,7 +258,7 @@ function composeExplanation(
   const sustainLabels: Record<string, string> = {
     high: 'This composition suggests the streak is likely sustainable.',
     medium:
-      'This composition suggests moderate sustainability — monitor for regression.',
+      'This composition suggests moderate sustainability: monitor for regression.',
     low: 'This composition is heavily putting-dependent, which tends to be volatile. Expect some regression.',
   };
 

@@ -5,7 +5,6 @@ import { getGolfSessionProfile } from '@/lib/auth/session';
 import { redirect, notFound } from 'next/navigation';
 import { isUuid } from '@/lib/utils/uuid';
 import { Metadata } from 'next';
-import { generateRoundRecap } from '@/app/golf/actions/round-recap';
 import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
 import { formatDateOnlyFull } from '@/lib/golf/date-only';
 import { fairwayScope } from '@/lib/redesign/flag';
@@ -28,7 +27,7 @@ export async function generateMetadata({
 
   if (!round) {
     return {
-      title: 'Round Details | Helm Sports',
+      title: 'Round Details',
       description: 'View golf round details and scorecard',
     };
   }
@@ -37,7 +36,7 @@ export async function generateMetadata({
   const scoreDisplay = scoreToPar === 0 ? 'E' : scoreToPar > 0 ? `+${scoreToPar}` : scoreToPar;
 
   return {
-    title: `${round.course_name} - ${round.total_score || '--'} (${scoreDisplay}) | Helm Sports`,
+    title: `${round.course_name} - ${round.total_score || '--'} (${scoreDisplay})`,
     // `round_date` is a date-only column; `new Date(iso).toLocaleDateString()`
     // reads it back in the ambient zone and prints the previous day anywhere
     // west of UTC. This runs server-side (UTC on Vercel) so it happens to be
@@ -73,6 +72,8 @@ interface RoundWithDetails {
   notes: string | null;
   front_nine: number | null;
   back_nine: number | null;
+  /** Persisted AI recap; generated post-mount by the client, never here. */
+  ai_recap?: string | null;
   player: {
     first_name: string | null;
     last_name: string | null;
@@ -189,30 +190,19 @@ export default async function RoundDetailPage({
     ? `${roundData.player.first_name || ''} ${roundData.player.last_name || ''}`.trim()
     : 'Unknown Player';
 
-  // Generate (or fetch cached) AI round recap. Server action persists the
-  // result on first call so subsequent visits are instant. Failure here
-  // never blocks the page render — recap stays null.
-  //
-  // Skipped for a round still in progress. Those reach this page now (a coach
-  // opening a live round to change its type), and there is nothing to recap
-  // yet: the action would spend an LLM call on a partial scorecard and then
-  // fail to persist it anyway, because the lifecycle guard's `round_recap`
-  // branch only permits the write when the round is already completed.
-  let aiRecap: string | null = null;
-  try {
-    if (round.status === 'completed') {
-      const result = await generateRoundRecap(id);
-      aiRecap = result.recap;
-    }
-  } catch (err) {
-    if (process.env.NODE_ENV === 'development') {
-      console.warn('[round-detail] recap generation failed:', describeError(err));
-    }
-  }
+  // The AI recap is READ here, never generated. This page used to call
+  // `generateRoundRecap` during render, which meant a Server Component render
+  // (including an RSC fetch the viewer never looked at) could spend an LLM
+  // call and write `golf_rounds.ai_recap` plus a provenance row (audit
+  // DATA-04). Generation now runs from `FairwayRoundDetail` after mount, only
+  // for a completed round with no persisted recap, so it fires once for a real
+  // viewer and is never part of render.
+  const aiRecap: string | null =
+    typeof roundData.ai_recap === 'string' && roundData.ai_recap.trim() ? roundData.ai_recap : null;
+  const recapPending = round.status === 'completed' && aiRecap === null;
 
-  // Re-skin the SAME resolved data: the round + aiRecap above, plus a
-  // read-only fetch of the honest golf_holes layer and the persisted
-  // golf_round_reviews.round_stats. No writes.
+  // Read-only fetches below: the honest golf_holes layer and the persisted
+  // golf_round_reviews.round_stats. No writes happen during this render.
   const { data: holesRows, error: holesError } = await supabase
     .from('golf_holes')
     .select('hole_number, par, score, putts, fairway_hit, gir, penalty_strokes, yardage')
@@ -432,6 +422,7 @@ export default async function RoundDetailPage({
         }}
         holes={holesRows ?? []}
         aiRecap={aiRecap}
+        recapPending={recapPending}
         reviewStats={reviewStats}
         playerName={playerName}
         isCoach={isCoach}

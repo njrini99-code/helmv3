@@ -87,16 +87,36 @@
    * resting state was safe only because 650 exists; the hover step had no such
    * partner until this token.
    *
-   * Value is byte-identical to accent-700's :root value, so LIGHT MODE IS
-   * UNCHANGED. In dark it now stays a deep green: hover DARKENS the fill rather
+   * Value was byte-identical to accent-700's old :root value (accent-700 now
+   * aliases the darker accent-ink), so light buttons were unchanged. In dark it now stays a deep green: hover DARKENS the fill rather
    * than lightening it, which on a dark ground reads correctly as "pressed" and
    * raises the cream label's contrast (4.69:1 → 5.9:1) instead of destroying it.
    * There is no room to brighten instead — 650 at 4.69:1 is already the
    * brightest green that carries cream text at AA. */
   --fw-color-accent-750: oklch(0.488 0.124 150);
-  /* GREEN INK, NOT A FILL. Flipped light in the dark block so `text-accent-700`
-   * stays legible on a dark surface. Never `bg-accent-700` — use 650/750. */
-  --fw-color-accent-700: oklch(0.488 0.124 150);
+
+  /* ---- GREEN IS THE CONTRASTING COLOUR (owner decision 2026-09-23) ----
+   * "More contrast, more green … it should be the contrasting colour." Four
+   * roles, each measured in src/test/static/fairway-token-contrast.test.ts:
+   *   accent-ink        green TEXT — headings/verdicts, key numbers, links,
+   *                     selected labels. Deep green on cream (≥6:1 on every
+   *                     cream surface), bright green on dark. accent-500/600
+   *                     are never text.
+   *   accent-fill       the ONE primary action (Button primary, FAB, the
+   *                     active bottom-nav pill) with `text-on-accent-fill`.
+   *                     Cream label on mid-green here; in dark it flips to a
+   *                     BRIGHT green fill with a near-black label.
+   *   accent-wash       the selected segment / tab fill, with accent-ink on it.
+   * `accent-700` (485 `text-accent-700` call sites) now aliases accent-ink so
+   * the whole legacy green-ink layer gets the stronger value in one place. */
+  --fw-color-accent-ink:  oklch(0.424 0.13 150);   /* #006023 — 6.3:1 on the canvas */
+  --fw-color-accent-fill: oklch(0.540 0.132 149.7); /* = accent-650; cream label 4.69:1 */
+  --fw-color-accent-fill-hover: oklch(0.488 0.124 150);
+  --fw-color-text-on-accent-fill: oklch(0.994 0.006 95);
+  --fw-color-accent-wash: oklch(0.90 0.06 150);    /* selected segment; ink on it 5.9:1 */
+  /* GREEN INK, NOT A FILL. Aliases accent-ink (both themes). Never
+   * `bg-accent-700` — use 650/750 or accent-fill. */
+  --fw-color-accent-700: var(--fw-color-accent-ink);
   --fw-color-accent-800: oklch(0.415 0.103 150);
   --fw-color-accent-900: oklch(0.357 0.083 150);
 
@@ -114,11 +134,17 @@
   --fw-color-warm-950: oklch(0.147 0.005 49);   /* sidebar warm-black #0c0a09 (NOT #000) */
 
   /* ---- Semantic surfaces (warm, matte, OPAQUE at rest — not translucent) ---- */
-  --fw-color-canvas:         oklch(0.953 0.022 83);  /* deeper warm champagne page base — cards now clearly LIFT off it (was 0.978, near-identical to the 0.984 card; the ~0.03 gap is the premium card/page separation the flat-cream look lacked) */
-  --fw-color-surface:        oklch(0.984 0.016 86);  /* THE card: warm CREAM, not white. It lifts off the deeper champagne page via its hairline + soft shadow — never by being a cold white sheet (we keep coming back to this: no white cards). */
-  --fw-color-surface-tint:   oklch(0.968 0.026 84);  /* a TOASTED warm band — hero plinths (warmer + a touch deeper than the card so the tier reads, not vanishes) */
-  --fw-color-surface-sunken: oklch(0.963 0.021 84);  /* wells, insets, input tracks */
-  --fw-color-elevated:       oklch(0.993 0.016 88);  /* menus / popovers / modal body — the brightest, warmest cream so floating panels read genuinely lifted */
+  /* 2026-09-24 contrast pass: the page deepens to a DARK CREAM (0.953 → 0.93)
+     and the card brightens (0.984 → 0.99), so the card/page step goes from
+     1.09:1 to 1.20:1 — the depth the owner likes, now visible without relying
+     on a shadow. Canvas copies outside CSS (iOS colour asset, storyboard,
+     capacitor config, theme-color, offline.html) are pinned by
+     src/test/static/canvas-color-sync.test.ts. */
+  --fw-color-canvas:         oklch(0.93 0.03 82);    /* #f2e6d2 dark cream page base */
+  --fw-color-surface:        oklch(0.99 0.012 88);   /* THE card: warm CREAM, not white — 1.20:1 off the canvas */
+  --fw-color-surface-tint:   oklch(0.968 0.028 84);  /* a TOASTED warm band — hero plinths */
+  --fw-color-surface-sunken: oklch(0.94 0.026 83);   /* wells, insets, input tracks — below the card, a hair above the page */
+  --fw-color-elevated:       oklch(0.995 0.012 88);  /* menus / popovers / modal body — the brightest cream so floating panels read lifted */
 
   /* Loading blocks. NOT `surface-sunken`: that well is 1.06:1 against the card
      it sits on — present in the DOM, absent to the eye, so a loading screen
@@ -135,24 +161,31 @@
           (layer it over the `bg-canvas` color so any overscroll stays warm). ---- */
   --fw-gradient-canvas:
     radial-gradient(132% 92% at 50% -15%,
-      oklch(0.982 0.014 86) 0%,
-      oklch(0.970 0.020 84) 44%,
+      oklch(0.958 0.020 85) 0%,
+      oklch(0.946 0.025 83) 44%,
       transparent 78%),
     linear-gradient(180deg,
-      oklch(0.973 0.018 85) 0%,   /* ≈ #F6EEDF — warm cream even at the top (no white) */
-      oklch(0.955 0.026 83) 52%,  /* ≈ #F1E7D6 — champagne linen, the body of the page */
-      oklch(0.934 0.034 81) 100%); /* ≈ #EBDFCD — soft champagne/sand at the foot (golden-undertone cream) */
+      oklch(0.948 0.024 84) 0%,   /* warm cream at the top */
+      oklch(0.930 0.030 82) 52%,  /* = canvas, the body of the page */
+      oklch(0.912 0.036 80) 100%); /* deeper sand at the foot */
 
   /* ---- Semantic text ---- */
   --fw-color-text-primary:   var(--fw-color-warm-900);
-  --fw-color-text-secondary: var(--fw-color-warm-600);
-  --fw-color-text-tertiary:  oklch(0.535 0.015 70);  /* P422: darkened from 0.585 (≈3.7-4.0:1, FAILED 4.5:1) so small descriptive/value text using this token clears WCAG 2.2 AA normal-text 4.5:1 on EVERY warm surface — measured ≥4.51:1 on canvas, ≥4.65:1 on sunken, ≥4.95:1 on the card. Still well-separated from text-secondary (~6.7:1). */
+  /* 2026-09-24 contrast pass (owner: "shits hard to read"): secondary
+     0.444 → 0.404 (≈7:1) and tertiary 0.535 → 0.485 (≥4.8:1 on the deepest
+     gradient stop, ≈5.2:1 on the canvas) so neither sits on the AA floor any
+     more. Floors are enforced by fairway-token-contrast.test.ts. */
+  --fw-color-text-secondary: oklch(0.404 0.014 65);  /* #4e4741 */
+  --fw-color-text-tertiary:  oklch(0.485 0.015 70);  /* #655e56 */
   --fw-color-text-on-accent: oklch(0.994 0.006 95); /* cream text on green */
   --fw-color-text-on-dark:   oklch(0.96 0.005 95);  /* sidebar text */
 
   /* ---- Borders / warm hairlines (NOT cool gray) ---- */
-  --fw-color-border-subtle: oklch(0.862 0.013 82 / 0.95); /* a VISIBLE warm hairline — card edges read against the deeper canvas (was 0.90/0.8, invisible) */
-  --fw-color-border-strong: oklch(0.872 0.009 80);      /* emphasis / table head */
+  --fw-color-border-subtle: oklch(0.811 0.018 80);      /* a VISIBLE warm hairline (1.46:1 on the card) */
+  --fw-color-border-strong: oklch(0.74 0.018 78);       /* emphasis / table head / hover edge — stronger than subtle */
+  /* Control edges: inputs, slider tracks, chips, segmented tracks. WCAG 1.4.11
+     wants 3:1 for the boundary that identifies a control. */
+  --fw-color-border-control: oklch(0.600 0.02 75);
   /* accent-600, NOT accent-500. This token names a FOCUS indicator, and a focus
      indicator has to clear WCAG 2.2's 3:1 non-text minimum. accent-500 on the
      warm canvas measures ~2.67:1 on the OKLCH render path — it fails. That was
@@ -184,6 +217,10 @@
      values are IDENTICAL to warm-800/warm-300 (no visual change). */
   --fw-color-warning-ink:  var(--fw-color-warm-800);
   --fw-color-warning-ring: var(--fw-color-warm-300);
+  /* Amber as INK on a cream surface (not on its own wash): "maybe" RSVPs,
+     sync warnings, soft conflicts. Keeps the amber hue — amber stays the only
+     loss/caution colour — at 4.5:1+ on every cream surface. */
+  --fw-color-warning-text: oklch(0.50 0.12 60);
   --fw-color-danger:     oklch(0.586 0.222 27);  /* #DC2626 */
   --fw-color-danger-bg:  oklch(0.955 0.03 25);
   /* Ink counterparts for the danger/success washes, mirroring warning-ink.
@@ -201,6 +238,9 @@
   --fw-color-nav-text:     var(--fw-color-text-on-dark);
   --fw-color-nav-text-dim: oklch(0.62 0.007 60);   /* recessive warm nav labels */
   --fw-color-nav-accent:   var(--fw-color-accent-400); /* active marker on black */
+  /* Inactive bottom-nav icons on the cream tab bar: 3:1+ non-text on every
+     cream surface (the bar is translucent cream over the canvas). */
+  --fw-color-nav-icon:     oklch(0.518 0.014 65);
 
   /* ── Helm Bridge sport inks ──────────────────────────────────────────
      Baseball wayfinding accent (infield clay). NOTE: the "Living Annual"
@@ -294,7 +334,7 @@
 
   /* ---- Liquid Glass tokens — WARM CHAMPAGNE CREAM, not white. The tint is the
           actual material color you see through the blur, so it must read cream
-          (was #FFFEFA ≈ white, which made every glass panel a cold white sheet).
+          (was a near-white cream, which made every glass panel a cold white sheet).
           Higher opacity + saturation so the warmth dominates; speculars are warm
           cream, not pure white. ---- */
   --fw-glass-tint:        244 232 210;                       /* ≈ #F4E8D2 warm champagne cream (NOT white) */
@@ -362,28 +402,35 @@
   --fw-viz-seq-1: oklch(0.92 0.05 140);
   --fw-viz-seq-2: oklch(0.80 0.10 145);
   --fw-viz-seq-3: oklch(0.648 0.149 149.6); /* = helm green */
-  --fw-viz-seq-4: oklch(0.62 0.16 120);     /* green-gold transition */
-  --fw-viz-seq-5: oklch(0.70 0.17 70);      /* warm amber = hottest */
-  --fw-viz-div-neg: oklch(0.66 0.16 55);    /* diverging: warm amber = "strokes lost" */
+  /* The hot end and the diverging poles are data marks, so they hold the
+     WCAG 1.4.11 3:1 non-text floor on every cream surface (CON-08, measured in
+     fairway-token-contrast.test.ts). Strokes-gained green is the deep emphasis
+     green, amber stays the only loss colour. */
+  --fw-viz-seq-4: oklch(0.60 0.15 125);     /* green-gold transition */
+  --fw-viz-seq-5: oklch(0.60 0.16 58);      /* warm amber = hottest */
+  --fw-viz-div-neg: oklch(0.59 0.16 52);    /* diverging: warm amber = "strokes lost" */
   --fw-viz-div-mid: oklch(0.985 0.01 95);   /* cream baseline */
-  --fw-viz-div-pos: oklch(0.648 0.149 149.6); /* helm green = "strokes gained" */
+  --fw-viz-div-pos: oklch(0.56 0.14 150);   /* deep helm green = "strokes gained" */
   --fw-viz-grid:   color-mix(in oklch, var(--fw-color-text-tertiary) 14%, transparent);
   --fw-viz-axis:   var(--fw-color-text-tertiary);
-  --fw-viz-benchmark: color-mix(in oklch, var(--fw-color-text-secondary) 40%, transparent);
+  --fw-viz-benchmark: color-mix(in oklch, var(--fw-color-text-secondary) 75%, transparent); /* ≥3:1 dashed reference (was 40%, ≈1.9:1) */
 
   /* ---- Type — the three Fairway roles.
           display + sans resolve to the Apple SF Pro SYSTEM stack (no webfont
           download — SF Pro renders natively on Apple devices and falls back
           cleanly elsewhere), so the old Fraunces/General Sans next/font loads
-          were dead weight and have been removed from src/app/layout.tsx. Only
-          mono still pulls a webfont (--font-fairway-mono = Fragment Mono). ---- */
+          were dead weight and have been removed from src/app/layout.tsx. The
+          numeric role (`--fw-font-mono`) rides the same stack: Fragment Mono
+          was retired 2026-09-23 (owner decision: SF with tabular figures for
+          every number, no slashed zero), so Fairway loads no webfont at all. ---- */
   /* Apple system sans — the real "built by Steve Jobs" type. SF Pro renders
      natively on Apple devices via -apple-system / BlinkMacSystemFont; clean
-     system fallbacks elsewhere. NO serif (Fraunces dropped). Numbers stay mono. */
+     system fallbacks elsewhere. NO serif (Fraunces dropped). Numbers are SF
+     with tabular figures (pair --fw-font-mono with --fw-numeric-features). */
   --fw-font-display: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", "Segoe UI", Roboto, ui-sans-serif, system-ui, sans-serif;
   --fw-font-sans:    -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", "Segoe UI", Roboto, ui-sans-serif, system-ui, sans-serif;
-  --fw-font-mono:    var(--font-fairway-mono), ui-monospace, "SF Mono", monospace;
-  --fw-numeric-features: "tnum" 1, "lnum" 1;
+  --fw-font-mono:    -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", "Segoe UI", Roboto, ui-sans-serif, system-ui, sans-serif;
+  --fw-numeric-features: "tnum" 1, "lnum" 1, "zero" 0;
 
   /* ---- Tailwind neutral/brand SCALES as channel triplets (THEME-AWARE) ----
           The tailwind.config `warm` / `cream` / `primary` scales point at these
@@ -461,11 +508,13 @@
      0.104 collapsed the sidebar to #030404, which is pure black in practice —
      it bands on OLED and reads cheap. The base sits in the #0A0A0A–#121212
      band every reference dark UI uses, and nothing goes below the sidebar. */
-  --fw-color-canvas:         oklch(0.175 0.003 150);  /* deep neutral page base */
-  --fw-color-surface:        oklch(0.278 0.004 150);  /* THE card — lifts off canvas */
-  --fw-color-surface-tint:   oklch(0.308 0.005 150);  /* hero plinth — a touch lighter */
-  --fw-color-surface-sunken: oklch(0.140 0.003 150);  /* wells / insets / input tracks — recede below canvas */
-  --fw-color-elevated:       oklch(0.338 0.006 150);  /* menus / popovers / modal body — brightest, most lifted */
+  /* 2026-09-24 contrast pass: canvas 0.175 → 0.165 so the card steps off it
+     at 1.30:1 (was 1.19:1). */
+  --fw-color-canvas:         oklch(0.165 0.004 150);  /* deep neutral page base */
+  --fw-color-surface:        oklch(0.275 0.005 150);  /* THE card — lifts off canvas */
+  --fw-color-surface-tint:   oklch(0.305 0.006 150);  /* hero plinth — a touch lighter */
+  --fw-color-surface-sunken: oklch(0.130 0.003 150);  /* wells / insets / input tracks — recede below canvas */
+  --fw-color-elevated:       oklch(0.335 0.006 150);  /* menus / popovers / modal body — brightest, most lifted */
 
   /* The dark twin. Lifts ABOVE the card (the light one sits below it): on a
      dark ground a recessed well disappears into the page, so the placeholder
@@ -487,21 +536,21 @@
        3. the warm espresso column itself, deepening toward the foot. */
   --fw-gradient-canvas:
     radial-gradient(120% 66% at 50% -14%,
-      oklch(0.225 0.028 152) 0%,
-      oklch(0.186 0.010 165) 40%,
+      oklch(0.215 0.028 152) 0%,
+      oklch(0.176 0.010 165) 40%,
       transparent 74%),
     linear-gradient(180deg,
-      oklch(0.198 0.004 150) 0%,
-      oklch(0.175 0.003 150) 55%,
-      oklch(0.158 0.003 150) 100%);
+      oklch(0.188 0.004 150) 0%,
+      oklch(0.165 0.004 150) 55%,
+      oklch(0.148 0.003 150) 100%);
 
   /* ---- Text — warm creams (never pure white) ---- */
   /* Off-white, neutral — the #F5F5F5–#E4E4E7 band every premium dark UI uses.
      Warm cream ink on a neutral ground reads as a yellow cast, which is the
      same "dirty" tell as the brown surfaces above. */
   --fw-color-text-primary:   oklch(0.962 0.002 150);  /* near-white ink */
-  --fw-color-text-secondary: oklch(0.800 0.003 150);  /* ≈7:1 on card — labels / secondary copy */
-  --fw-color-text-tertiary:  oklch(0.672 0.004 150);  /* ≥4.5:1 on canvas/surface/sunken — meta / hints */
+  --fw-color-text-secondary: oklch(0.831 0.003 150);  /* ≈8.8:1 on card — labels / secondary copy */
+  --fw-color-text-tertiary:  oklch(0.733 0.004 150);  /* ≥5:1 on every dark surface — meta / hints */
   --fw-color-text-on-accent: oklch(0.994 0.006 95);  /* cream text on green (unchanged) */
   --fw-color-text-on-dark:   oklch(0.962 0.002 150); /* sidebar text */
 
@@ -521,6 +570,7 @@
      This — not a big luminance jump — is where the crispness comes from. */
   --fw-color-border-subtle: rgb(255 255 255 / 0.07);      /* lit hairline — card edges read off canvas */
   --fw-color-border-strong: rgb(255 255 255 / 0.14);      /* emphasis / table head */
+  --fw-color-border-control: oklch(0.600 0.004 150);      /* control edges, 3:1+ on every dark surface */
   --fw-color-border-focus:  var(--fw-color-accent-500);
 
   /* ---- Accent WASHES flip to deep-green tints ---- */
@@ -548,7 +598,15 @@
   --fw-color-accent-400: oklch(0.820 0.140 150);  /* active marker on the black rail */
   --fw-color-accent-500: oklch(0.760 0.150 150);  /* THE decorative brand green on dark */
   --fw-color-accent-600: oklch(0.690 0.145 149.6); /* its hover / pressed partner */
-  --fw-color-accent-700: oklch(0.800 0.115 150);  /* light green — TEXT/icon ON the deep-green wash */
+  /* Green roles after dusk: BRIGHT green ink, a bright green primary fill
+     carrying a near-black label (7.7:1), and a deep-green selected wash. */
+  --fw-color-accent-ink:  oklch(0.815 0.15 150);   /* #73dd8d */
+  --fw-color-accent-fill: oklch(0.72 0.16 150);
+  --fw-color-accent-fill-hover: oklch(0.66 0.15 150);
+  --fw-color-text-on-accent-fill: oklch(0.20 0.03 150);
+  --fw-color-accent-wash: oklch(0.36 0.08 150);
+  /* Re-declared so a nested [data-theme='dark'] scope resolves the dark ink. */
+  --fw-color-accent-700: var(--fw-color-accent-ink);
   /* accent-800/900 are intentionally NOT flipped: they stay deep (from :root) so
      decorative dark-green FILLS — the Brief "spotlight" hero band
      (from-accent-900 via-accent-800) and hero plinths — keep their deep-green
@@ -562,6 +620,7 @@
   --fw-color-warning-bg: oklch(0.315 0.055 72);
   --fw-color-warning-ink:  oklch(0.885 0.085 82);  /* light amber ink on the deep-amber bg */
   --fw-color-warning-ring: oklch(0.46 0.055 72);
+  --fw-color-warning-text: var(--fw-color-warning);
   --fw-color-danger:     oklch(0.685 0.185 26);    /* lifted red — reads on espresso */
   --fw-color-danger-bg:  oklch(0.300 0.075 25);
   /* Dark counterparts: the wash is deep here, so the ink lifts light (same
@@ -583,6 +642,7 @@
      the active pill carry selection state instead of contrast doing it. */
   --fw-color-nav-text-dim: oklch(0.70 0.004 150);
   --fw-color-nav-accent:   var(--fw-color-accent-400);
+  --fw-color-nav-icon:     oklch(0.70 0.004 150);
 
   /* ---- Elevation — on dark, depth comes from the surface L-gaps + hairline +
           a faint LIGHT top edge; shadows go near-black with higher alpha. The
@@ -681,6 +741,10 @@
           darkens so it sits on the dark ground instead of glowing. ---- */
   --fw-viz-seq-0: oklch(0.28 0.012 88);
   --fw-viz-div-mid: oklch(0.30 0.012 84);
+  /* Brighter green emphasis after dusk (the light value is tuned for cream). */
+  --fw-viz-div-pos: var(--fw-color-accent-500);
+  --fw-viz-seq-5: oklch(0.74 0.15 62);
+  --fw-viz-div-neg: oklch(0.72 0.15 55);
 
   /* ---- Tailwind SCALE flips (see the :root block for the mechanism) ----
           Neutral ramp inverts: warm-900/800/700/600/500 were dark text → now

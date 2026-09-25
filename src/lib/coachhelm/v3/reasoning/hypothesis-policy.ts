@@ -351,14 +351,14 @@ const SHORT_BIAS_REFUTE_MAX_PERCENT = 40;
 function describeShortBias(state: HypothesisState): string {
   switch (state) {
     case 'no_data':
-      return 'No data available on whether approach shots are biased short of the target — no ' +
+      return 'No data available on whether approach shots are biased short of the target: no ' +
         'metric measures a short/long miss split today.';
     case 'candidate':
       return 'A short/long miss-split metric is measured but does not clearly point either way, ' +
         'so a short-bias pattern is neither supported nor ruled out.';
     case 'supported_association':
       return 'Approach shots are associated with coming up short of the target more often than ' +
-        'missing long, left, or right — a supported metric agrees with this pattern, though this ' +
+        'missing long, left, or right. A supported metric agrees with this pattern, though this ' +
         'is an association, not a causal claim.';
   }
 }
@@ -444,7 +444,7 @@ function describeRecovery(state: HypothesisState): string {
       return 'This approach may be part of a recovery pattern from the rough, not yet corroborated.';
     case 'supported_association':
       return 'This approach is associated with a recovery pattern from the rough that a supported ' +
-        'metric agrees with — an association, not a causal claim.';
+        'metric agrees with. This is an association, not a causal claim.';
   }
 }
 
@@ -478,11 +478,11 @@ function describeRoughGap(state: HypothesisState): string {
       return 'No data available on whether go-for-green approaches from the rough underperform.';
     case 'candidate':
       return 'A deliberate go-for-green approach from the rough may be underperforming the ' +
-        'canonical strokes-gained baseline for that lie and distance — not yet corroborated by a ' +
+        'canonical strokes-gained baseline for that lie and distance, not yet corroborated by a ' +
         'supported metric.';
     case 'supported_association':
       return 'A deliberate go-for-green approach from the rough is associated with underperforming ' +
-        'the canonical strokes-gained baseline for that lie and distance — an association, not a ' +
+        'the canonical strokes-gained baseline for that lie and distance. This is an association, not a ' +
         'causal claim.';
   }
 }
@@ -544,7 +544,7 @@ function buildInsufficientIntentHypothesis(shot: ShotFact): Hypothesis {
     id: `insufficient_rough_lie_intent:${claim}`,
     family: 'insufficient',
     description:
-      'An approach from the rough with no recorded shot intent — cannot distinguish a deliberate ' +
+      'An approach from the rough with no recorded shot intent. Cannot distinguish a deliberate ' +
       "go-for-green attempt ('rough_gap') from an explicit recovery attempt ('recovery') without " +
       'it, so neither is named.',
     // The rough-lie approach itself is real, relevant data (something
@@ -603,14 +603,14 @@ const PAR5_GREEN_IN_TWO_CONTRADICT_MIN_PERCENT = 70;
 function describePar5OpportunityLoss(state: HypothesisState): string {
   switch (state) {
     case 'no_data':
-      return 'No data available on par-5 scoring-opportunity conversion for this round or window — ' +
+      return 'No data available on par-5 scoring-opportunity conversion for this round or window: ' +
         'the underlying metric was not provided.';
     case 'candidate':
       return 'This round may show a below-typical par-5 regulation/green-in-two conversion rate, ' +
         'not yet corroborated by a supported metric.';
     case 'supported_association':
       return 'This round is associated with a below-typical par-5 regulation/green-in-two ' +
-        'conversion rate — a scoring opportunity this player usually reaches was not converted ' +
+        'conversion rate. A scoring opportunity this player usually reaches was not converted ' +
         'this time. An association, not a causal claim.';
   }
 }

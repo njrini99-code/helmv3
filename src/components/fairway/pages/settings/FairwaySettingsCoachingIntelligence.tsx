@@ -154,7 +154,12 @@ export function FairwaySettingsCoachingIntelligence() {
   // coachId-keyed fetch effect from scratch — a clean retry without mutating
   // the (verbatim-reused) hook.
   const [reloadKey, setReloadKey] = useState(0);
-  const supabase = createClient();
+  // PERF-R2 — one browser client for the component's lifetime. A bare
+  // `createClient()` here made a new object every render, and because it is a
+  // dependency of the coach-resolution effect below, every re-render (each
+  // setCoachId / setTeamId / setTeamSettings) re-ran getUser + the coach
+  // lookup + the team-settings server actions. The lazy initializer runs once.
+  const [supabase] = useState(() => createClient());
 
   useEffect(() => {
     async function getCoach() {
@@ -249,6 +254,11 @@ function CoachingIntelligenceBody({
   const { philosophy, loading, saving, error, save } = useCoachPhilosophy(coachId);
 
   const [hasEverSaved, setHasEverSaved] = useState(false);
+  // DATA-10 — PriorityRanker keeps its dragged order locally until the saved
+  // order changes. A failed save leaves the saved order unchanged, so bump this
+  // key to remount the ranker onto the last-good order (matching the
+  // "control has reverted" notice).
+  const [priorityResetKey, setPriorityResetKey] = useState(0);
 
   const debounceTimersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
   useEffect(() => {
@@ -265,6 +275,7 @@ function CoachingIntelligenceBody({
       if (ok) {
         setHasEverSaved(true);
       }
+      return ok;
     },
     [save],
   );
@@ -284,7 +295,9 @@ function CoachingIntelligenceBody({
   );
 
   const handlePriorityChange = (newValues: PriorityValues) => {
-    void flushSave(newValues);
+    void flushSave(newValues).then((ok) => {
+      if (!ok) setPriorityResetKey((k) => k + 1);
+    });
   };
 
   const handleSensitivityChange = (newValue: CoachPhilosophy['alertSensitivity']) => {
@@ -352,7 +365,7 @@ function CoachingIntelligenceBody({
           <EmptyState
             icon={IconWarning as unknown as React.ComponentProps<typeof EmptyState>['icon']}
             title="Couldn’t load your coaching settings"
-            description="Something went wrong while loading your CoachHelm philosophy. Your saved settings are safe — try again."
+            description="Something went wrong while loading your CoachHelm philosophy. Your saved settings are safe. Try again."
             action={
               <Button
                 variant="secondary"
@@ -441,6 +454,7 @@ function CoachingIntelligenceBody({
               cut it. */}
           <div className="[&_.truncate]:overflow-visible [&_.truncate]:whitespace-normal [&_.truncate]:text-clip">
             <PriorityRanker
+              key={priorityResetKey}
               values={{
                 priorityBallStriking: philosophy.priorityBallStriking,
                 priorityShortGame: philosophy.priorityShortGame,
@@ -604,7 +618,7 @@ function CoachingIntelligenceBody({
               <h2 className="font-fw-display text-h2 text-text-primary">Strokes Gained baseline</h2>
             </div>
             <p className="text-body-sm text-text-secondary">
-              Set automatically from your team’s gender — PGA Tour for men’s teams, LPGA for women’s.
+              Set automatically from your team’s gender: PGA Tour for men’s teams, LPGA for women’s.
             </p>
           </Surface>
         ) : null}
@@ -617,7 +631,7 @@ function CoachingIntelligenceBody({
           description="How much evidence CoachHelm needs before it says anything."
           footnote={
             confidenceFloorIsPresetBound
-              ? `Your ${philosophy.alertSensitivity} preset already requires ${Math.round(presetConfidenceFloor * 100)}% — this only matters above that.`
+              ? `Your ${philosophy.alertSensitivity} preset already requires ${Math.round(presetConfidenceFloor * 100)}%. This only matters above that.`
               : `Above your ${philosophy.alertSensitivity} preset's ${Math.round(presetConfidenceFloor * 100)}% floor, so this is the number in effect.`
           }
         >
@@ -754,7 +768,7 @@ function CoachingIntelligenceBody({
                         'transition-colors [transition-duration:var(--fw-dur-fast)] [transition-timing-function:var(--fw-ease-soft)]',
                         'outline-none focus-visible:ring-2 focus-visible:ring-accent-500/70 focus-visible:ring-offset-1 focus-visible:ring-offset-canvas',
                         active
-                          ? 'bg-accent-650 text-text-on-accent'
+                          ? 'bg-accent-fill text-text-on-accent-fill'
                           : 'bg-surface-sunken text-text-secondary hover:bg-inset',
                       ].join(' ')}
                     >

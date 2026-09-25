@@ -1,9 +1,10 @@
 'use client';
 
+import { haptic } from '@/lib/haptics';
 import { cn } from '@/lib/utils';
 import { IconMenu } from '@/components/icons';
 import { useSidebarSafe } from '@/contexts/sidebar-context';
-import { triggerHaptic } from '@/lib/utils/capacitor';
+
 import { IconButton } from '@/components/ui/button';
 
 interface MobileMenuButtonProps {
@@ -35,7 +36,7 @@ export function MobileMenuButton({ className, onClick, label = 'Open navigation 
   const mobileOpen = ctx?.mobileOpen ?? false;
 
   const handleClick = () => {
-    void triggerHaptic('light');
+    void haptic('commit');
     if (onClick) {
       onClick();
     } else if (toggleMobile) {
@@ -49,7 +50,7 @@ export function MobileMenuButton({ className, onClick, label = 'Open navigation 
       onClick={handleClick}
       className={cn(
         'lg:hidden p-2.5 -ml-2 rounded-xl flex-shrink-0',
-        'text-warm-500 hover:text-warm-700 hover:bg-warm-100/80',
+        'text-text-tertiary hover:text-warm-700 hover:bg-warm-100/80',
         'transition-colors duration-150',
         'active:scale-95 active:bg-warm-200/60',
         'touch-manipulation',

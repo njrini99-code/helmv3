@@ -5,6 +5,7 @@ import { Button } from '@/components/fairway';
 import { IconWarning, IconX } from '@/components/icons';
 import { useFocusTrap } from '@/hooks/use-focus-trap';
 import { triggerHaptic, isNativeApp } from '@/lib/utils/capacitor';
+import { isGolfSurface } from '@/lib/haptics';
 
 interface ConfirmDialogProps {
   open: boolean;
@@ -31,8 +32,10 @@ export function ConfirmDialog({
 }: ConfirmDialogProps) {
   const { modalRef } = useFocusTrap(open, onCancel);
 
+  // One haptic per decision (MOT-04): GolfHelm fires on confirm only, not on
+  // open as well. Other sports keep the open tick they had.
   useEffect(() => {
-    if (open) {
+    if (open && !isGolfSurface()) {
       void triggerHaptic(variant === 'danger' ? 'warning' : 'light');
     }
   }, [open, variant]);
@@ -83,7 +86,10 @@ export function ConfirmDialog({
     return (
       <div
         role="presentation"
-        className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 backdrop-blur-sm animate-fade-in"
+        // Cheap dim scrim, no blur (§4.3). Escape is handled once, by
+        // useFocusTrap's document listener — a wrapper onKeyDown here also
+        // fired onCancel, twice per keypress.
+        className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 animate-fade-in"
         onClick={(e) => {
           // Close only on a true backdrop click — clicks inside the sheet
           // bubble here with a different target, so no stopPropagation is
@@ -91,7 +97,6 @@ export function ConfirmDialog({
           // path useFocusTrap's document listener relies on).
           if (e.target === e.currentTarget) onCancel();
         }}
-        onKeyDown={(e) => { if (e.key === 'Escape') onCancel(); }}
       >
         <div
           ref={modalRef}
@@ -110,12 +115,13 @@ export function ConfirmDialog({
             type="button"
             onClick={onCancel}
             disabled={isLoading}
-            className="w-full rounded-2xl bg-surface/95 px-5 py-3.5 font-fw-sans text-body-lg font-semibold text-text-primary shadow-fw-modal backdrop-blur-xl transition-colors active:bg-surface-sunken disabled:opacity-50"
+            className="w-full rounded-2xl bg-surface px-5 py-3.5 font-fw-sans text-body-lg font-semibold text-text-primary shadow-fw-modal transition-colors active:bg-surface-sunken disabled:opacity-50"
           >
             {cancelLabel}
           </button>
-          {/* Sheet body: title + message + destructive action */}
-          <div className="overflow-hidden rounded-2xl bg-surface/95 backdrop-blur-xl shadow-fw-modal">
+          {/* Sheet body: title + message + destructive action. Opaque —
+              reading content never sits on glass. */}
+          <div className="overflow-hidden rounded-2xl bg-surface shadow-fw-modal">
             <div className="px-5 pt-4 pb-3 text-center border-b border-border-subtle">
               <h2 className="font-fw-sans text-body-sm font-semibold text-text-primary">{title}</h2>
               <p className="mt-1 font-fw-sans text-caption leading-snug text-text-secondary">{message}</p>
@@ -137,12 +143,11 @@ export function ConfirmDialog({
   return (
     <div
       role="presentation"
-      className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+      className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4"
       onClick={(e) => {
         // Backdrop-only close — same pattern as the native action sheet above.
         if (e.target === e.currentTarget) onCancel();
       }}
-      onKeyDown={(e) => { if (e.key === 'Escape') onCancel(); }}
     >
       <div
         ref={modalRef}

@@ -159,7 +159,7 @@ export const SearchField = forwardRef<HTMLInputElement, SearchFieldProps>(
           aria-hidden="true"
           className={cn(
             'flex shrink-0 items-center justify-center text-text-tertiary',
-            'transition-colors [transition-duration:180ms] group-focus-within:text-accent-600',
+            'transition-colors [transition-duration:180ms] group-focus-within:text-accent-ink',
             s.icon,
           )}
         >

@@ -18,6 +18,7 @@ import {
   standingSubjectLabel,
   teamRelativeText,
   resolveDisplayScale,
+  unitHardBounds,
   toScalePct,
 } from './utils';
 
@@ -35,7 +36,7 @@ export function Hero(props: StandingBarProps) {
   const effectiveScale = resolveDisplayScale(
     props.scale,
     [props.player_value, showTeam ? props.team_avg : null, props.pga_omitted ? null : props.pga_value],
-    { symmetric: /^sg_/.test(props.metric_id) },
+    { symmetric: /^sg_/.test(props.metric_id), hardBounds: unitHardBounds(props.unit) },
   );
   const youPct = toScalePct(props.player_value, effectiveScale);
   const teamPct = showTeam && props.team_avg !== null ? toScalePct(props.team_avg, effectiveScale) : null;
@@ -54,7 +55,7 @@ export function Hero(props: StandingBarProps) {
   const toneColor =
     delta.tone === 'good' ? 'text-primary-700' :
     delta.tone === 'bad'  ? 'text-red-600' :
-                            'text-warm-500';
+                            'text-text-tertiary';
 
   return (
     <div
@@ -65,7 +66,7 @@ export function Hero(props: StandingBarProps) {
     >
       {/* Eyebrow + label */}
       <div className="flex items-baseline justify-between gap-3 mb-1">
-        <p className="text-eyebrow font-medium uppercase tracking-[0.08em] text-warm-500">
+        <p className="text-eyebrow font-medium uppercase tracking-[0.08em] text-text-tertiary">
           Standing
         </p>
         {showTeam && (
@@ -83,7 +84,7 @@ export function Hero(props: StandingBarProps) {
         <span className="text-3xl md:text-4xl font-medium text-warm-900 tabular-nums tracking-[-0.02em]">
           {formatValue(props.player_value, props.unit)}
         </span>
-        <span className="text-xs text-warm-500">{subjectLabel}</span>
+        <span className="text-xs text-text-tertiary">{subjectLabel}</span>
       </div>
 
       {/* Team / PGA reference values */}
@@ -111,7 +112,7 @@ export function Hero(props: StandingBarProps) {
       />
 
       {/* Scale endpoints */}
-      <div className="flex items-baseline justify-between text-eyebrow text-warm-400 mt-1.5 tabular-nums">
+      <div className="flex items-baseline justify-between text-eyebrow text-text-tertiary mt-1.5 tabular-nums">
         <span>{formatValue(effectiveScale.min, props.unit)}</span>
         <span>{formatValue(effectiveScale.max, props.unit)}</span>
       </div>
@@ -123,11 +124,11 @@ export function Hero(props: StandingBarProps) {
 
       {/* A2: a suppressed reference with a reason says why (not "missing data"). */}
       {omissionNote && (
-        <p className="text-xs text-warm-500 mt-2">{omissionNote}</p>
+        <p className="text-xs text-text-tertiary mt-2">{omissionNote}</p>
       )}
 
       {state === 'cold-start' && (
-        <p className="text-xs text-warm-500 mt-3">
+        <p className="text-xs text-text-tertiary mt-3">
           Team marker appears once 5+ teammates have 5+ rounds each.
         </p>
       )}
@@ -177,13 +178,13 @@ function HeroEmpty({ label }: { label: string }) {
       data-state="empty"
       className="glass-prominent rounded-3xl shadow-glass p-6"
     >
-      <p className="text-eyebrow font-medium uppercase tracking-[0.08em] text-warm-500 mb-1">
+      <p className="text-eyebrow font-medium uppercase tracking-[0.08em] text-text-tertiary mb-1">
         Standing
       </p>
       <h2 className="text-lg md:text-xl font-medium text-warm-900 tracking-[-0.015em]">
         {label}
       </h2>
-      <p className="text-sm text-warm-500 mt-3">
+      <p className="text-sm text-text-tertiary mt-3">
         Log 5 rounds to see how you stack up.
       </p>
     </div>

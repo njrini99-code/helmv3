@@ -5,7 +5,8 @@ import { AuthHomeLink } from '../AuthHomeLink';
 import Image from 'next/image';
 import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { LazyMotion, m, useReducedMotion } from 'framer-motion';
+import { LazyMotion, m } from 'framer-motion';
+import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
 import { loadFeatures } from '@/lib/motion/load-features';
 import { GolfSignUpForm } from '@/components/auth/golf-sign-up-form';
 import { CoastalScene } from '@/components/golf/scenes/CoastalScene';
@@ -25,7 +26,7 @@ function SignInLink() {
   return (
     <Link
       href={loginHref}
-      className="text-primary-600 font-semibold hover:text-primary-500 transition-colors"
+      className="text-accent-ink font-semibold hover:text-accent-ink transition-colors"
     >
       Sign in
     </Link>
@@ -33,7 +34,7 @@ function SignInLink() {
 }
 
 export default function SignupPage() {
-  const prefersReducedMotion = useReducedMotion();
+  const prefersReducedMotion = useReducedMotionGuard();
   const router = useRouter();
   // Defer native detection to useEffect to avoid hydration mismatch.
   const [isNative, setIsNative] = useState(false);
@@ -179,7 +180,7 @@ export default function SignupPage() {
                     placeholder="Team code"
                     // eslint-disable-next-line jsx-a11y/no-autofocus -- intentional: primary input on signup access-code gate
                     autoFocus
-                    className={`w-full h-12 px-4 rounded-xl border bg-surface text-text-primary placeholder:text-text-tertiary text-center text-lg tracking-widest font-medium focus:outline-none focus:ring-2 focus:ring-primary-500/40 focus:border-primary-500 transition-all ${
+                    className={`w-full h-12 px-4 rounded-xl border bg-surface text-text-primary placeholder:text-text-tertiary text-center text-lg tracking-widest font-medium focus:outline-none focus:ring-2 focus:ring-primary-500/40 focus:border-primary-500 transition ${
                       codeError ? 'border-red-300 ring-2 ring-red-500/20' : 'border-border-subtle'
                     }`}
                   />
@@ -210,14 +211,14 @@ export default function SignupPage() {
                   These two lines used to sit as bare text directly on the
                   painterly course illustration. On a phone the card ends
                   higher up the viewport, so they landed right on the trees —
-                  green `text-primary-600` links on green foliage, reported
+                  green `text-accent-ink` links on green foliage, reported
                   2026-08-20 as "the wording at the bottom you can't even
                   read". The panel gives them their own opaque ground instead
                   of relying on whatever pixel happens to be behind them. */}
               <div className="mx-auto mt-5 sm:mt-6 w-fit max-w-full rounded-2xl bg-surface/95 px-4 py-3 shadow-sm ring-1 ring-border-subtle backdrop-blur-sm">
               <p className="text-center text-text-secondary text-sm">
                 Already have an account?{' '}
-                <Suspense fallback={<Link href="/golf/login" className="text-primary-700 font-semibold hover:text-primary-600 transition-colors">Sign in</Link>}>
+                <Suspense fallback={<Link href="/golf/login" className="text-primary-700 font-semibold hover:text-accent-ink transition-colors">Sign in</Link>}>
                   <SignInLink />
                 </Suspense>
               </p>
@@ -236,7 +237,7 @@ export default function SignupPage() {
                 Not joining a team?{' '}
                 <Link
                   href="/golf/demo"
-                  className="text-primary-700 font-semibold hover:text-primary-600 transition-colors"
+                  className="text-primary-700 font-semibold hover:text-accent-ink transition-colors"
                 >
                   See a live demo
                 </Link>
@@ -255,7 +256,7 @@ export default function SignupPage() {
       {/* Skip to main content link for keyboard navigation */}
       <a
         href="#signup-form"
-        className="sr-only focus:not-sr-only focus:absolute focus:z-modal focus:top-[max(1rem,env(safe-area-inset-top))] focus:left-4 bg-primary-600 text-white px-4 py-2 rounded-lg font-medium shadow-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
+        className="sr-only focus:not-sr-only focus:absolute focus:z-modal focus:top-[max(1rem,env(safe-area-inset-top))] focus:left-4 bg-accent-fill text-text-on-accent-fill px-4 py-2 rounded-lg font-medium shadow-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
       >
         Skip to signup form
       </a>
@@ -356,7 +357,7 @@ export default function SignupPage() {
           <div className="mx-auto mt-5 sm:mt-6 w-fit max-w-full rounded-2xl bg-surface/95 px-4 py-3 shadow-sm ring-1 ring-border-subtle backdrop-blur-sm">
             <p className="text-center text-text-secondary text-sm">
               Already have an account?{' '}
-              <Suspense fallback={<Link href="/golf/login" className="text-primary-700 font-semibold hover:text-primary-600 transition-colors">Sign in</Link>}>
+              <Suspense fallback={<Link href="/golf/login" className="text-primary-700 font-semibold hover:text-accent-ink transition-colors">Sign in</Link>}>
                 <SignInLink />
               </Suspense>
             </p>

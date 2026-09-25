@@ -52,6 +52,8 @@ import {
 import { IconCalendar, IconMapPin, IconGolf, IconArrowRight, IconPlus } from '@/components/icons';
 import type { GolfQualifier } from '@/lib/types/golf';
 import { qualifierStatusMeta } from './qualifier-status';
+import { isPlausibleQualifierDate } from '@/lib/golf/qualifier-date';
+
 
 const CREATE_HREF = '/golf/dashboard/qualifiers/new';
 const detailHref = (id: string) => `/golf/dashboard/qualifiers/${id}`;
@@ -135,7 +137,10 @@ export function FairwayQualifiers({ isCoach, qualifiers }: FairwayQualifiersProp
     () => qualifiers.filter((q) => q.status === 'completed'),
     [qualifiers],
   );
-  const activeCount = allActive.length;
+  // NUMC-07: a qualifier with an impossible start date (prod has year 60824)
+  // stays listed so it can be fixed, but never counts as active or becomes
+  // the hero.
+  const activeCount = allActive.filter((q) => isPlausibleQualifierDate(q.start_date)).length;
   const concludedCount = allConcluded.length;
 
   // Name/description search (P328) — applied to BOTH buckets.
@@ -173,11 +178,12 @@ export function FairwayQualifiers({ isCoach, qualifiers }: FairwayQualifiersProp
   // prefer a live (in_progress) qualifier, else the upcoming one with the SOONEST
   // start_date (the next one to play). Ties on start_date keep list order (stable).
   const hero = useMemo(() => {
-    if (active.length === 0) return null;
-    const live = active.find((q) => q.status === 'in_progress');
+    const candidates = active.filter((q) => isPlausibleQualifierDate(q.start_date));
+    if (candidates.length === 0) return null;
+    const live = candidates.find((q) => q.status === 'in_progress');
     if (live) return live;
     // No live qualifier — choose the upcoming with the minimum start_date.
-    return active.reduce((soonest, q) =>
+    return candidates.reduce((soonest, q) =>
       new Date(q.start_date).getTime() < new Date(soonest.start_date).getTime() ? q : soonest,
     );
   }, [active]);
@@ -469,7 +475,7 @@ function QualifierHero({ qualifier }: { qualifier: GolfQualifier }) {
 
         <QualifierMeta qualifier={qualifier} />
 
-        <span className="inline-flex items-center gap-1.5 font-fw-sans text-label font-medium text-accent-700 transition-colors [transition-duration:180ms] group-hover:text-accent-600 motion-reduce:transition-none">
+        <span className="inline-flex items-center gap-1.5 font-fw-sans text-microlabel font-medium text-accent-700 transition-colors [transition-duration:180ms] group-hover:text-accent-ink motion-reduce:transition-none">
           {ctaLabel(status)}
           <IconArrowRight size={16} className="transition-transform [transition-duration:180ms] group-hover:translate-x-0.5 motion-reduce:transition-none" />
         </span>
@@ -515,7 +521,7 @@ function QualifierCard({ qualifier }: { qualifier: GolfQualifier }) {
 
       <QualifierMeta qualifier={qualifier} />
 
-      <span className="mt-auto inline-flex items-center gap-1.5 font-fw-sans text-label font-medium text-text-tertiary transition-colors [transition-duration:180ms] group-hover:text-accent-700 motion-reduce:transition-none">
+      <span className="mt-auto inline-flex items-center gap-1.5 font-fw-sans text-microlabel font-medium text-text-tertiary transition-colors [transition-duration:180ms] group-hover:text-accent-700 motion-reduce:transition-none">
         {ctaLabel(status)}
         <IconArrowRight size={15} className="transition-transform [transition-duration:180ms] group-hover:translate-x-0.5 motion-reduce:transition-none" />
       </span>

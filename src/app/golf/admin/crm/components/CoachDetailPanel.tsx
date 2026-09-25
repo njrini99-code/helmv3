@@ -471,7 +471,7 @@ function CoachDetailPanelInner({
                       placeholder="Email address" className="flex-1 bg-surface border border-border-subtle rounded-fw-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-border-focus/30 min-h-0" />
                   </div>
                   <div className="flex items-center gap-1.5">
-                    <IconPhone size={12} className="text-accent-600 flex-shrink-0" />
+                    <IconPhone size={12} className="text-accent-ink flex-shrink-0" />
                     <Input type="tel" value={contactForm.phone} onChange={e => setContactForm({ ...contactForm, phone: e.target.value })}
                       placeholder="Phone number" className="flex-1 bg-surface border border-border-subtle rounded-fw-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-border-focus/30 min-h-0" />
                   </div>
@@ -497,10 +497,10 @@ function CoachDetailPanelInner({
                       onClick={() => onUpdate({ is_starred: !coach.is_starred })}
                       aria-label={coach.is_starred ? 'Unstar coach' : 'Star coach'}
                       aria-pressed={coach.is_starred}
-                      className="hover:scale-110 active:scale-95 transition-all duration-200 flex-shrink-0"
+                      className="hover:scale-110 active:scale-95 transition duration-200 flex-shrink-0"
                     >
                       <IconStar size={18} className={cn(
-                        'transition-all duration-200',
+                        'transition duration-200',
                         coach.is_starred ? 'fill-fw-warning text-fw-warning drop-shadow-flat' : 'text-text-tertiary hover:text-fw-warning/80'
                       )} />
                     </IconButton>
@@ -512,7 +512,7 @@ function CoachDetailPanelInner({
                     {coach.division && (
                       <>
                         <span className="text-text-tertiary mx-1.5">&middot;</span>
-                        <span className={cn('px-1.5 py-0.5 rounded text-micro font-bold',
+                        <span className={cn('px-1.5 py-0.5 rounded text-microlabel font-bold',
                           coach.division === 'D2' ? 'bg-surface-sunken text-text-secondary' : 'bg-accent-100 text-accent-700')}>
                           {coach.division}
                         </span>
@@ -535,7 +535,7 @@ function CoachDetailPanelInner({
                     <NativeSelect value={coach.priority} onChange={e => onUpdate({ priority: parseInt(e.target.value) })}
                       aria-label="Coach priority"
                       style={{}}
-                      className="w-auto min-h-0 appearance-none cursor-pointer px-2.5 py-1 rounded-full text-xs font-medium border border-border-subtle bg-surface focus:outline-none focus:ring-2 focus:ring-border-focus/30 transition-all duration-200">
+                      className="w-auto min-h-0 appearance-none cursor-pointer px-2.5 py-1 rounded-full text-xs font-medium border border-border-subtle bg-surface focus:outline-none focus:ring-2 focus:ring-border-focus/30 transition duration-200">
                       <option value={0}>Normal</option>
                       <option value={1}>High</option>
                       <option value={2}>Hot</option>
@@ -580,7 +580,7 @@ function CoachDetailPanelInner({
                       No record for this coach (matview miss, no email activity yet) -> render
                       nothing rather than a placeholder. */}
                   {engagement && (
-                    <div className="flex items-center gap-3 mt-2 ml-[26px] text-micro">
+                    <div className="flex items-center gap-3 mt-2 ml-[26px] text-microlabel">
                       <span className={cn('inline-flex items-center gap-1 px-2 py-0.5 rounded-full font-semibold', TEMPERATURE_CHIP[engagement.temperature].className)}>
                         {engagement.temperature === 'hot' && <IconFlame size={10} aria-hidden="true" />}
                         {TEMPERATURE_CHIP[engagement.temperature].label}
@@ -704,7 +704,7 @@ function CoachDetailPanelInner({
                   ))}
                   <div className="flex items-center gap-0.5">
                     <Input id="tag-input" type="text" value={newTag} onChange={e => setNewTag(e.target.value)} onKeyDown={e => e.key === 'Enter' && addTag()}
-                      placeholder="+" className="bg-transparent border-none rounded-none min-h-0 px-0 py-0 text-eyebrow text-text-tertiary w-12 focus:outline-none focus:ring-0 focus:w-20 transition-all placeholder:text-text-tertiary" />
+                      placeholder="+" className="bg-transparent border-none rounded-none min-h-0 px-0 py-0 text-eyebrow text-text-tertiary w-12 focus:outline-none focus:ring-0 focus:w-20 transition-[width,box-shadow] placeholder:text-text-tertiary" />
                     {newTag && <IconButton variant="primary" onClick={addTag} aria-label="Add tag" className={CRM_ICON_ACTION_CLASS}><IconPlus size={12} aria-hidden="true" /></IconButton>}
                   </div>
                 </div>
@@ -740,7 +740,7 @@ function CoachDetailPanelInner({
                   No rows (no transitions tracked yet) -> render nothing. */}
               {stageHistory.length > 0 && (
                 <div className="pt-2 mt-1 border-t border-border-subtle">
-                  <div className="text-micro uppercase text-text-tertiary tracking-wide font-semibold mb-1.5">
+                  <div className="text-microlabel uppercase text-text-tertiary tracking-wide font-semibold mb-1.5">
                     Stage history
                   </div>
                   <div className="space-y-1">
@@ -749,7 +749,7 @@ function CoachDetailPanelInner({
                       return (
                         <div key={`${row.changed_at}-${row.to_status}-${i}`} className="flex items-center justify-between gap-2">
                           <span className="text-xs font-medium text-text-secondary truncate">{formatted.label}</span>
-                          <span className="text-micro text-text-tertiary flex-shrink-0 tabular-nums">{formatted.dateLabel}</span>
+                          <span className="text-microlabel text-text-tertiary flex-shrink-0 tabular-nums">{formatted.dateLabel}</span>
                         </div>
                       );
                     })}
@@ -853,8 +853,8 @@ function CoachDetailPanelInner({
                   : 'Open a pre-filled Gmail compose window for this coach'}
                 className={cn(CRM_SECONDARY_ACTION_CLASS, 'inline-flex items-center justify-center gap-1.5')}>
                 {gmailDirectSend
-                  ? <><IconSend size={14} className="text-accent-600" /> Send</>
-                  : <><IconExternalLink size={14} className="text-accent-600" /> Gmail</>}
+                  ? <><IconSend size={14} className="text-accent-ink" /> Send</>
+                  : <><IconExternalLink size={14} className="text-accent-ink" /> Gmail</>}
               </Button>
             )}
             {coach.phone ? (

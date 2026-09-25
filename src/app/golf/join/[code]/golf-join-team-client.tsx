@@ -3,10 +3,11 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
-import { LazyMotion, m, useReducedMotion } from 'framer-motion';
+import { LazyMotion, m } from 'framer-motion';
 import { loadFeatures } from '@/lib/motion/load-features';
 import { processGolfTeamInvitation } from '@/app/golf/actions/teams';
 import { Button } from '@/components/ui/button';
+import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
 
 interface GolfJoinTeamClientProps {
   inviteCode: string;
@@ -50,7 +51,7 @@ export function GolfJoinTeamClient({
   playerYear,
   team,
 }: GolfJoinTeamClientProps) {
-  const prefersReducedMotion = useReducedMotion();
+  const prefersReducedMotion = useReducedMotionGuard();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -135,7 +136,7 @@ export function GolfJoinTeamClient({
                   />
                 ) : (
                   <div className="w-20 h-20 bg-primary-100 rounded-lg flex items-center justify-center mx-auto mb-4">
-                    <svg className="w-10 h-10 text-primary-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <svg className="w-10 h-10 text-accent-ink" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                     </svg>
                   </div>
@@ -147,12 +148,12 @@ export function GolfJoinTeamClient({
                   <p className="text-warm-600 mt-2 text-sm sm:text-base">
                     {team.organization.name}
                     {team.organization.city && team.organization.state && (
-                      <span className="text-warm-400"> &bull; {team.organization.city}, {team.organization.state}</span>
+                      <span className="text-text-tertiary"> &bull; {team.organization.city}, {team.organization.state}</span>
                     )}
                   </p>
                 )}
                 {team.season && (
-                  <p className="text-sm text-warm-500 mt-1">{team.season}</p>
+                  <p className="text-sm text-text-tertiary mt-1">{team.season}</p>
                 )}
               </div>
 
@@ -161,21 +162,21 @@ export function GolfJoinTeamClient({
                 <div className="mb-6">
                   <div className="flex items-center gap-3 p-4 bg-warm-50/80 rounded-xl border border-warm-200/50">
                     <div className="w-10 h-10 bg-primary-100 rounded-full flex items-center justify-center flex-shrink-0">
-                      <svg className="w-5 h-5 text-primary-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <svg className="w-5 h-5 text-accent-ink" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                       </svg>
                     </div>
                     <div>
-                      <p className="text-sm text-warm-500">Joining as</p>
+                      <p className="text-sm text-text-tertiary">Joining as</p>
                       <p className="font-semibold text-warm-900">{playerName}</p>
-                      <p className="text-xs text-warm-500 first-letter:capitalize">{formatPlayerYear(playerYear)}</p>
+                      <p className="text-xs text-text-tertiary first-letter:capitalize">{formatPlayerYear(playerYear)}</p>
                     </div>
                   </div>
                 </div>
 
                 <div className="mb-6 p-4 bg-primary-50/80 border border-primary-200/50 rounded-xl">
                   <div className="flex items-start gap-2">
-                    <svg className="w-5 h-5 text-primary-600 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <svg className="w-5 h-5 text-accent-ink mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                     <div>
@@ -196,10 +197,10 @@ export function GolfJoinTeamClient({
                 {success && (
                   <div className="mb-6 p-4 bg-primary-50 border border-primary-200 rounded-xl" role="status" aria-live="polite">
                     <div className="flex items-center gap-2">
-                      <svg className="w-5 h-5 text-primary-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <svg className="w-5 h-5 text-accent-ink" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                       </svg>
-                      <p className="text-sm font-medium text-primary-600">Successfully joined {team.name}! Redirecting...</p>
+                      <p className="text-sm font-medium text-accent-ink">Successfully joined {team.name}! Redirecting...</p>
                     </div>
                   </div>
                 )}
@@ -208,7 +209,7 @@ export function GolfJoinTeamClient({
                   <Button variant="primary"
                     onClick={handleJoinTeam}
                     disabled={loading || success}
-                    className="w-full px-6 py-3 bg-primary-600 text-white font-semibold rounded-xl hover:bg-primary-700 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-primary-900/10 hover:shadow-xl hover:shadow-primary-900/15"
+                    className="w-full px-6 py-3 bg-accent-fill text-text-on-accent-fill font-semibold rounded-xl hover:bg-accent-fill-hover active:scale-95 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-primary-900/10 hover:shadow-xl hover:shadow-primary-900/15"
                   >
                     {loading ? (
                       <>
@@ -238,14 +239,14 @@ export function GolfJoinTeamClient({
                   <Button variant="ghost"
                     onClick={() => router.push('/golf/dashboard')}
                     disabled={success}
-                    className="w-full px-6 py-3 bg-cream-100/68 text-warm-700 font-semibold rounded-xl border border-warm-200/50 hover:bg-cream-100/82 active:bg-warm-100 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full px-6 py-3 bg-cream-100/68 text-warm-700 font-semibold rounded-xl border border-warm-200/50 hover:bg-cream-100/82 active:bg-warm-100 transition disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     Cancel
                   </Button>
                 </div>
 
                 <div className="mt-6 pt-6 border-t border-warm-200/50">
-                  <p className="text-xs text-warm-500 text-center">
+                  <p className="text-xs text-text-tertiary text-center">
                     By joining this team, you&apos;ll have access to team schedules, rounds, messages, and other team features.
                   </p>
                 </div>

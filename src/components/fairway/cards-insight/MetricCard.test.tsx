@@ -84,3 +84,25 @@ describe('MetricCard label wrap (labelLines)', () => {
     expect(label.className).toContain('min-h-8');
   });
 });
+
+describe('MetricCard — one spoken sentence per KPI (A11Y-01)', () => {
+  it('names the tile with label, value, delta and footnote', () => {
+    render(
+      <MetricCard
+        label="Scoring average"
+        value={74.2}
+        decimals={1}
+        delta={{ value: -1.3, label: 'vs last 5' }}
+        footnote="of 12 rounds"
+      />,
+    );
+    expect(
+      screen.getByRole('group', { name: 'Scoring average: 74.2, down 1.3 vs last 5, of 12 rounds' }),
+    ).toBeInTheDocument();
+  });
+
+  it('says the empty message instead of a fake zero', () => {
+    render(<MetricCard label="GIR" value={0} empty />);
+    expect(screen.getByRole('group', { name: /^GIR: / })).toBeInTheDocument();
+  });
+});

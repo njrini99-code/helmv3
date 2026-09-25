@@ -407,7 +407,7 @@ export function GolfSignUpForm({
           type="password"
           value={formData.password}
           onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-          placeholder="Create a strong password"
+          placeholder="At least 8 characters"
           required
           minLength={8}
           autoComplete="new-password"

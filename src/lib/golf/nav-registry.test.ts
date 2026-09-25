@@ -113,20 +113,21 @@ describe('golf nav-registry — Target IA (WAVE W2, 2026-07-09)', () => {
   });
 
   describe('rail item counts — exactly 8 per role', () => {
-    it('coach rail has exactly 8 items', () => {
+    // OD-14 (owner, 2026-09-24): the coach rail mirrors the new tab IA —
+    // Players / Schedule / Team replace Team / Calendar / Messages / Operations.
+    it('coach rail has exactly 7 items (OD-14 coach IA)', () => {
       const sections = buildCoachRailSections(ZERO_BADGES);
       const items = sections.flatMap((s) => s.items);
       expect(items.map((i) => i.label)).toEqual([
         'Dashboard',
         'CoachHelm AI',
+        'Players',
+        'Schedule',
         'Team',
-        'Calendar',
         'Rounds & Stats',
-        'Messages',
-        'Operations',
         'Courses',
       ]);
-      expect(items).toHaveLength(8);
+      expect(items).toHaveLength(7);
     });
 
     it('player rail has exactly 8 items', () => {
@@ -145,19 +146,27 @@ describe('golf nav-registry — Target IA (WAVE W2, 2026-07-09)', () => {
       expect(items).toHaveLength(8);
     });
 
-    it('mobile bottom nav keeps 4 items per role (M1, Doctrine Rule 10 — 4 + More)', () => {
+    it('mobile tab bar has the OD-14 five tabs per role', () => {
       expect(buildCoachBottomNavItems(ZERO_BADGES).map((i) => i.label)).toEqual([
         'Home',
+        'Players',
         'CoachHelm',
+        'Schedule',
         'Team',
-        'Calendar',
       ]);
       expect(buildPlayerBottomNavItems().map((i) => i.label)).toEqual([
         'Home',
-        'CoachHelm',
         'Rounds',
-        'Stats',
+        'Game',
+        'Plan',
+        'Team',
       ]);
+    });
+
+    it('every tab-bar href resolves to a real page on disk', () => {
+      for (const item of [...buildCoachBottomNavItems(ZERO_BADGES), ...buildPlayerBottomNavItems()]) {
+        expect(routeExists(item.href), item.href).toBe(true);
+      }
     });
   });
 
@@ -271,18 +280,25 @@ describe('golf nav-registry — Target IA (WAVE W2, 2026-07-09)', () => {
   });
 
   describe('active-state correctness — rail highlights the owning hub for every deep route', () => {
-    it('coach Team rail item activeMatch covers roster/[id] detail routes', () => {
+    it('coach Players rail item activeMatch covers roster/[id] detail routes', () => {
       const items = buildCoachRailSections(ZERO_BADGES).flatMap((s) => s.items);
-      const team = items.find((i) => i.label === 'Team')!;
-      expect(team.activeMatch?.('/golf/dashboard/roster/abc-123')).toBe(true);
+      const players = items.find((i) => i.label === 'Players')!;
+      expect(players.activeMatch?.('/golf/dashboard/roster/abc-123')).toBe(true);
     });
 
-    it('coach Rounds & Stats rail item activeMatch covers rounds/[id], qualifiers/[id], and stats/team', () => {
+    it('coach Schedule rail item covers calendar, qualifiers/[id] and travel', () => {
+      const items = buildCoachRailSections(ZERO_BADGES).flatMap((s) => s.items);
+      const schedule = items.find((i) => i.label === 'Schedule')!;
+      expect(schedule.activeMatch?.('/golf/dashboard/calendar')).toBe(true);
+      expect(schedule.activeMatch?.('/golf/dashboard/qualifiers/q-1')).toBe(true);
+      expect(schedule.activeMatch?.('/golf/dashboard/travel')).toBe(true);
+    });
+
+    it('coach Rounds & Stats rail item activeMatch covers rounds/[id] and stats/team', () => {
       const items = buildCoachRailSections(ZERO_BADGES).flatMap((s) => s.items);
       const roundsStats = items.find((i) => i.label === 'Rounds & Stats')!;
       expect(roundsStats.activeMatch?.('/golf/dashboard/rounds/round-1')).toBe(true);
       expect(roundsStats.activeMatch?.('/golf/dashboard/rounds/new')).toBe(true);
-      expect(roundsStats.activeMatch?.('/golf/dashboard/qualifiers/q-1')).toBe(true);
       expect(roundsStats.activeMatch?.('/golf/dashboard/stats/team')).toBe(true);
     });
 
@@ -327,26 +343,80 @@ describe('golf nav-registry — Target IA (WAVE W2, 2026-07-09)', () => {
     // reachable only via the More sheet (more-nav.test.ts covers that surface)
     // — so only the two multi-tab hubs still ON the bottom nav are asserted
     // here.
-    it('coach bottom-nav Team item covers every Team sub-tab (roster, recruiting)', () => {
-      const items = buildCoachBottomNavItems(ZERO_BADGES);
-      const team = items.find((i) => i.label === 'Team')!;
-      const teamHub = GOLF_COACH_HUBS.find((h) => h.id === 'team')!;
-      for (const tab of teamHub.tabs) {
-        expect(team.activeMatch?.(tab.href), `Team bottom-nav item should stay lit on ${tab.href}`).toBe(true);
+    it.each([
+      ['Players', 'players'],
+      ['Schedule', 'schedule'],
+      ['Team', 'team'],
+    ] as const)('coach tab "%s" covers every sub-tab of hub "%s"', (label, hubId) => {
+      const item = buildCoachBottomNavItems(ZERO_BADGES).find((i) => i.label === label)!;
+      const hub = GOLF_COACH_HUBS.find((h) => h.id === hubId)!;
+      for (const tab of hub.tabs) {
+        expect(item.activeMatch?.(tab.href), `${label} tab should stay lit on ${tab.href}`).toBe(true);
       }
     });
 
-    it('coach bottom-nav Calendar item covers every Calendar sub-tab (calendar, travel)', () => {
-      const items = buildCoachBottomNavItems(ZERO_BADGES);
-      const calendar = items.find((i) => i.label === 'Calendar')!;
-      const calendarHub = GOLF_COACH_HUBS.find((h) => h.id === 'calendar')!;
-      for (const tab of calendarHub.tabs) {
-        expect(calendar.activeMatch?.(tab.href), `Calendar bottom-nav item should stay lit on ${tab.href}`).toBe(true);
+    it('player tab "Team" covers every player Team sub-tab', () => {
+      const item = buildPlayerBottomNavItems().find((i) => i.label === 'Team')!;
+      for (const tab of GOLF_PLAYER_HUBS.find((h) => h.id === 'team')!.tabs) {
+        expect(item.activeMatch?.(tab.href), tab.href).toBe(true);
       }
     });
   });
 
+  describe('tab bar: never two lit tabs (aria-current is unique)', () => {
+    const activeLabels = (items: ReturnType<typeof buildCoachBottomNavItems>, pathname: string) =>
+      items.filter((i) => i.activeMatch?.(pathname)).map((i) => i.label);
+
+    it.each([
+      ['/golf/dashboard', 'Home'],
+      ['/golf/dashboard/roster', 'Players'],
+      ['/golf/dashboard/roster/p-1', 'Players'],
+      ['/golf/dashboard/recruiting', 'Players'],
+      ['/golf/dashboard/players/p-1', 'Players'],
+      ['/golf/dashboard/players/p-1/game', 'Players'],
+      ['/golf/dashboard/intelligence', 'CoachHelm'],
+      ['/golf/dashboard/coachhelm/chat', 'CoachHelm'],
+      ['/golf/dashboard/calendar', 'Schedule'],
+      ['/golf/dashboard/qualifiers/q-1', 'Schedule'],
+      ['/golf/dashboard/travel', 'Schedule'],
+      ['/golf/dashboard/messages', 'Team'],
+      ['/golf/dashboard/announcements', 'Team'],
+      ['/golf/dashboard/tasks', 'Team'],
+      ['/golf/dashboard/documents', 'Team'],
+    ] as const)('coach %s lights only %s', (pathname, label) => {
+      expect(activeLabels(buildCoachBottomNavItems(ZERO_BADGES), pathname)).toEqual([label]);
+    });
+
+    it.each([
+      ['/golf/dashboard', null, 'Home'],
+      ['/golf/dashboard/rounds', null, 'Rounds'],
+      ['/golf/dashboard/rounds/r-1', null, 'Rounds'],
+      ['/golf/dashboard/coachhelm', null, 'Game'],
+      ['/golf/dashboard/coachhelm', 'standing', 'Game'],
+      ['/golf/dashboard/coachhelm', 'profile', 'Game'],
+      ['/golf/dashboard/stats', null, 'Game'],
+      ['/golf/dashboard/coachhelm', 'development', 'Plan'],
+      ['/golf/dashboard/my-development', null, 'Plan'],
+      ['/golf/dashboard/team-hub', null, 'Team'],
+      ['/golf/dashboard/roster/p-1', null, 'Team'],
+      ['/golf/dashboard/my-qualifiers', null, 'Team'],
+    ] as const)('player %s (view=%s) lights only %s', (pathname, view, label) => {
+      expect(activeLabels(buildPlayerBottomNavItems(ZERO_BADGES, view), pathname)).toEqual([label]);
+    });
+
+    it('routes that live in the More sheet light no tab', () => {
+      expect(activeLabels(buildCoachBottomNavItems(ZERO_BADGES), '/golf/dashboard/settings')).toEqual([]);
+      expect(activeLabels(buildCoachBottomNavItems(ZERO_BADGES), '/golf/dashboard/courses')).toEqual([]);
+      expect(activeLabels(buildPlayerBottomNavItems(), '/golf/dashboard/settings')).toEqual([]);
+      expect(activeLabels(buildPlayerBottomNavItems(), '/golf/dashboard/calendar')).toEqual([]);
+    });
+  });
+
   describe('resolveActiveGolfHub — sub-tab strip resolution', () => {
+    it('resolves the coach Schedule hub on a qualifier detail route', () => {
+      expect(resolveActiveGolfHub('/golf/dashboard/qualifiers/q-1', 'coach')?.id).toBe('schedule');
+    });
+
     it('resolves the coach Rounds & Stats hub on a deep round detail route, with Rounds as the tab', () => {
       const hub = resolveActiveGolfHub('/golf/dashboard/rounds/round-1', 'coach');
       expect(hub?.id).toBe('rounds-stats');
@@ -360,9 +430,9 @@ describe('golf nav-registry — Target IA (WAVE W2, 2026-07-09)', () => {
       expect(teamStats).toBeTruthy();
     });
 
-    it('resolves the coach Team hub on a roster player-profile detail route', () => {
+    it('resolves the coach Players hub on a roster player-profile detail route', () => {
       const hub = resolveActiveGolfHub('/golf/dashboard/roster/player-1', 'coach');
-      expect(hub?.id).toBe('team');
+      expect(hub?.id).toBe('players');
     });
 
     it('returns null for single-destination rail items (Dashboard, Courses)', () => {
@@ -426,12 +496,12 @@ describe('golf nav-registry — Target IA (WAVE W2, 2026-07-09)', () => {
   describe('badge wiring', () => {
     it('only renders a badge when the count is > 0 (never a fake zero)', () => {
       const items = buildCoachRailSections({ ...ZERO_BADGES, messages: 3 }).flatMap((s) => s.items);
-      const messages = items.find((i) => i.label === 'Messages')!;
-      expect(messages.badge).toBe(3);
+      const team = items.find((i) => i.label === 'Team')!;
+      expect(team.badge).toBe(3);
 
       const zeroed = buildCoachRailSections(ZERO_BADGES).flatMap((s) => s.items);
-      const messagesZero = zeroed.find((i) => i.label === 'Messages')!;
-      expect(messagesZero.badge).toBeUndefined();
+      const teamZero = zeroed.find((i) => i.label === 'Team')!;
+      expect(teamZero.badge).toBeUndefined();
     });
 
     it("sums the player Team cluster's badge from the hub's three feeds (announcements + tasks + travel)", () => {

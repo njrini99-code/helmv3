@@ -9,7 +9,7 @@
  * loading.tsx cannot know the resolved role — page.tsx branches on
  * `getGolfSessionProfile()` AFTER this frame has already painted — so the
  * coach's FairwayPlayerCard (avatar + actions menu, Avg Score plinth,
- * CoachHelm signal strip, full-width CTA) and the player's read-only
+ * CoachHelm signal strip, "View player" row link) and the player's read-only
  * TeammateCard (smaller avatar, one chip row, a single ghost Message button —
  * no plinth, no signal strip) can't both be matched exactly by one grid.
  *
@@ -74,9 +74,9 @@ export function FairwayCoachCardSkeleton() {
         ))}
       </div>
 
-      {/* Full-width CTA */}
-      <div className="px-5 pb-5 md:px-6 md:pb-6">
-        <Skeleton className="h-10 w-full rounded-fw-md" />
+      {/* "View player" row link */}
+      <div className="flex min-h-[48px] items-center border-t border-border-subtle px-5 md:px-6">
+        <Skeleton className="h-4 w-24 rounded-fw-sm" />
       </div>
     </Surface>
   );

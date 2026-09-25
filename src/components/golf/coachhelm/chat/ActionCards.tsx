@@ -116,7 +116,7 @@ export function ActionProposalCard({
 
       {proposal.missing.length > 0 && !decided && (
         <p className="border-t border-border-subtle px-4 py-2.5 font-fw-sans text-caption text-text-tertiary">
-          {proposal.missing.join(', ')} not set — this will be created without{' '}
+          {proposal.missing.join(', ')} not set. This will be created without{' '}
           {proposal.missing.length === 1 ? 'it' : 'them'}.
         </p>
       )}
@@ -124,7 +124,7 @@ export function ActionProposalCard({
       <footer className="flex items-center gap-2 border-t border-border-subtle px-4 py-3">
         {decided ? (
           <p className="font-fw-sans text-body-sm text-text-secondary">
-            {decision === 'approved' ? 'Confirmed.' : 'Cancelled — nothing was created.'}
+            {decision === 'approved' ? 'Confirmed.' : 'Cancelled. Nothing was created.'}
           </p>
         ) : (
           <>
@@ -134,7 +134,7 @@ export function ActionProposalCard({
               onClick={onApprove}
               disabled={busy}
               className={cn(
-                'inline-flex min-h-[44px] items-center gap-2 rounded-fw-md bg-accent-650 px-4 font-fw-sans text-body-sm font-medium text-text-on-accent',
+                'inline-flex min-h-[44px] items-center gap-2 rounded-fw-md bg-accent-fill px-4 font-fw-sans text-body-sm font-medium text-text-on-accent-fill',
                 'transition-colors hover:bg-accent-800 disabled:opacity-60',
                 'outline-none focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
               )}
@@ -179,7 +179,7 @@ export function ActionReceiptCard({
 
   return (
     <section
-      aria-label={`${receipt.action} — ${receipt.status}`}
+      aria-label={`${receipt.action}, ${receipt.status}`}
       className="rounded-card border border-border-subtle bg-surface"
     >
       <header className="flex items-start gap-3 px-4 py-3">
@@ -192,7 +192,7 @@ export function ActionReceiptCard({
         />
         <div className="min-w-0 flex-1">
           <p className="font-fw-sans text-body-sm font-semibold text-text-primary">
-            {failed ? `${receipt.action} — not completed` : receipt.action}
+            {failed ? `${receipt.action}, not completed` : receipt.action}
           </p>
           <p className="mt-0.5 font-fw-sans text-body-sm text-text-secondary">
             {receipt.error ?? receipt.summary}

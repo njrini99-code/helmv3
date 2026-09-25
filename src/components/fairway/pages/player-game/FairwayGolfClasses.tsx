@@ -604,8 +604,8 @@ export function FairwayGolfClasses({
                 ) : (
                   <span className="font-fw-sans text-body-sm text-text-secondary">
                     {flexClasses.length === count
-                      ? 'All classes are online or arranged — no fixed meetings this week.'
-                      : 'Done for today — no more scheduled classes.'}
+                      ? 'All classes are online or arranged. No fixed meetings this week.'
+                      : 'Done for today. No more scheduled classes.'}
                   </span>
                 )
               }
@@ -718,7 +718,7 @@ export function FairwayGolfClasses({
                               key={`${b.cls.id}-${day}`}
                               type="button"
                               onClick={() => onClassClick(b.cls)}
-                              title={`${code ? `${code} — ` : ''}${name}${
+                              title={`${code ? `${code}, ` : ''}${name}${
                                 b.cls.start_time
                                   ? ` · ${formatTimeDisplay(b.cls.start_time)}${
                                       b.cls.end_time ? ` – ${formatTimeDisplay(b.cls.end_time)}` : ''
@@ -938,12 +938,12 @@ export function FairwayGolfClasses({
                               <span className="ml-auto flex flex-shrink-0 items-center gap-1.5">
                                 {failedSyncIds?.has(cls.id) ? (
                                   <span
-                                    title="Not on your calendar — the last sync failed. Re-save this class to retry."
+                                    title="Not on your calendar. The last sync failed. Re-save this class to retry."
                                     className="flex items-center text-fw-warning-ink"
                                   >
                                     <AlertTriangle className="h-3.5 w-3.5" aria-hidden />
                                     <span className="sr-only">
-                                      Not synced to your calendar — the last sync attempt failed
+                                      Not synced to your calendar. The last sync attempt failed
                                     </span>
                                   </span>
                                 ) : null}
@@ -966,7 +966,7 @@ export function FairwayGolfClasses({
                                  silently never reaches the calendar. Say that. */
                               <span className="flex items-center gap-1 font-medium text-fw-warning-ink">
                                 <AlertTriangle className="h-3 w-3 flex-shrink-0" aria-hidden />
-                                No meeting days — not on your calendar. Tap to fix.
+                                No meeting days, not on your calendar. Tap to fix.
                               </span>
                             ) : (
                               <span className="font-medium text-text-secondary">Online / arranged</span>

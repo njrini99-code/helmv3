@@ -191,20 +191,28 @@ export function StatsBento({
   const puttingRows: RailBarRow[] = [
     { label: '0-3ft', pct: finite(s?.puttMakePct0_3) ?? 0, value: fmtPct(finite(s?.puttMakePct0_3)) },
     {
+      // The 3-5ft band is the headline putting read elsewhere (Insights,
+      // focus areas); the bento skipped straight from 0-3 to 5-10.
+      label: '3-5ft',
+      pct: finite(s?.puttMakePct3_5) ?? 0,
+      value: fmtPct(finite(s?.puttMakePct3_5)),
+      tickPct: pgaTickPct(standingByMetric, 'putts_made_3_5ft_pct'),
+    },
+    {
       label: '5-10ft',
       pct: finite(s?.puttMakePct5_10) ?? 0,
       value: fmtPct(finite(s?.puttMakePct5_10)),
       tickPct: pgaTickPct(standingByMetric, 'putts_made_5_10ft_pct'),
     },
     {
-      // Plots `puttMakePct15_20` — the real 15-20ft bucket. The label matches
-      // the field it renders; the PGA tick is the closest available Tour
-      // benchmark (`putts_made_15_25ft_pct` — no 15-20ft-exact metric exists)
-      // so it stays a reference point rather than an exact-bucket match.
-      label: '15-20ft',
-      pct: finite(s?.puttMakePct15_20) ?? 0,
-      value: fmtPct(finite(s?.puttMakePct15_20)),
-      tickPct: pgaTickPct(standingByMetric, 'putts_made_15_25ft_pct'),
+      // Canonical band edges (PuttBucketKey, putt-distance.ts): 3-5, 5-10,
+      // 10-15, 15-25, 25+. The bento used to plot the legacy 15-20ft column
+      // against the 15-25ft Tour tick, a band no other surface uses. 10-15ft
+      // is a canonical band with an exact-bucket Tour benchmark.
+      label: '10-15ft',
+      pct: finite(s?.puttMakePct10_15) ?? 0,
+      value: fmtPct(finite(s?.puttMakePct10_15)),
+      tickPct: pgaTickPct(standingByMetric, 'putts_made_10_15ft_pct'),
     },
   ];
 
@@ -282,7 +290,7 @@ export function StatsBento({
         onOpen={() => stage.open('putting')}
       >
         {/* 60, matching "Off the tee" below: RailBars' label column is a HARD
-            px track, and "15-20ft" is as wide as the "Fairways" label that
+            px track, and "10-15ft" is as wide as the "Fairways" label that
             already proved 44px too narrow. */}
         <RailBars rows={puttingRows} labelWidth={60} />
       </BentoCell>
@@ -338,7 +346,7 @@ export function StatsBento({
             <Sparkline
               data={scoringTrend?.series ?? []}
               goodDirection="down"
-              label={scoringTrend?.label ?? 'Score to par'}
+              label={scoringTrend?.label ?? 'Score per 18 holes'}
               width={52}
               height={16}
             />
@@ -351,6 +359,9 @@ export function StatsBento({
                       ? 'improving'
                       : 'declining'
                 }
+                // Scoring: lower is better, so the arrow follows the raw number
+                // (↓ for a falling score) while colour follows good/bad.
+                goodDirection="down"
                 label={scoringTrend.delta.text}
                 size="sm"
                 numeric
@@ -368,7 +379,9 @@ export function StatsBento({
         headline={standingFocus.headline}
         sentence={
           bestCategory && worstCategory
-            ? `Strongest in ${bestCategory.label.toLowerCase()}; leaking most in ${worstCategory.label.toLowerCase()}.`
+            ? // NUM-37: canonical labels as-is ("SG: Off the Tee"), never
+              // lowercased into "sg: off the tee".
+              `Strongest: ${bestCategory.label}. Biggest leak: ${worstCategory.label}.`
             : 'Every metric vs PGA Tour and the team.'
         }
         onOpen={() => stage.open('standing')}
@@ -467,7 +480,7 @@ function StandingPinPreview({ standingByMetric }: { standingByMetric: Map<string
           style={{ left: `${youPct}%` }}
         />
       </div>
-      <div className="relative h-[12px] font-fw-mono text-microbadge normal-case tracking-normal text-text-tertiary">
+      <div className="relative h-[12px] font-fw-mono text-microlabel normal-case tracking-normal text-text-tertiary">
         {labelPositions.map((pos) => {
           const isSubject = pos.key === STANDING_TRACK_SUBJECT_KEY;
           return (

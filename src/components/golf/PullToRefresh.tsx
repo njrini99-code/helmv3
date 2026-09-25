@@ -14,6 +14,13 @@ interface PullToRefreshProps {
   disabled?: boolean;
   /** Optional className for the outer wrapper */
   className?: string;
+  /**
+   * What scrolls. 'self' (default): this wrapper is the scroll container, as
+   * in Messages. 'document': the page scrolls the document (the golf
+   * dashboard shell), so the pull arms only at window.scrollY 0 and the
+   * wrapper adds no overflow of its own (NAV-R3).
+   */
+  scroll?: 'self' | 'document';
 }
 
 interface SpinnerProps {
@@ -41,7 +48,7 @@ function Spinner({ progress, isActive, isRefreshing, reducedMotion }: SpinnerPro
       height={SPINNER_SIZE}
       viewBox={`0 0 ${SPINNER_SIZE} ${SPINNER_SIZE}`}
       className={cn(
-        'text-primary-600',
+        'text-accent-ink',
         isRefreshing && !reducedMotion && 'animate-spin',
       )}
       style={{
@@ -81,6 +88,7 @@ export function PullToRefresh({
   threshold = 80,
   disabled = false,
   className,
+  scroll = 'self',
 }: PullToRefreshProps) {
   const [pullDistance, setPullDistance] = useState(0);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -88,6 +96,9 @@ export function PullToRefresh({
   const [reducedMotion, setReducedMotion] = useState(false);
 
   const startY = useRef(0);
+  const startX = useRef(0);
+  /** Set on the first move: a mostly sideways drag (a day swipe) is never a pull. */
+  const axis = useRef<'x' | 'y' | null>(null);
   const isPulling = useRef(false);
   const hasPassedThreshold = useRef(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -109,14 +120,20 @@ export function PullToRefresh({
   }, []);
 
   const effectivelyDisabled = disabled || !isTouchDevice;
+  const scrolledAway = () =>
+    scroll === 'document' ? window.scrollY > 0 : (containerRef.current?.scrollTop ?? 0) > 0;
 
   function handleTouchStart(e: React.TouchEvent<HTMLDivElement>) {
     if (effectivelyDisabled || isRefreshing) return;
-    const el = containerRef.current;
-    if (!el || el.scrollTop > 0) return;
+    if (!containerRef.current || scrolledAway()) return;
+    // React touch events bubble through portals: a drag on a sheet or dialog
+    // rendered into document.body must not arm the page's pull.
+    if (!containerRef.current.contains(e.target as Node)) return;
     const touch = e.touches[0];
     if (!touch) return;
     startY.current = touch.clientY;
+    startX.current = touch.clientX;
+    axis.current = null;
     isPulling.current = true;
     hasPassedThreshold.current = false;
   }
@@ -124,10 +141,9 @@ export function PullToRefresh({
   function handleTouchMove(e: React.TouchEvent<HTMLDivElement>) {
     if (effectivelyDisabled || isRefreshing) return;
     if (!isPulling.current) return;
-    const el = containerRef.current;
-    if (!el) return;
+    if (!containerRef.current) return;
     // If user scrolled away from top mid-gesture, cancel pull
-    if (el.scrollTop > 0) {
+    if (scrolledAway()) {
       isPulling.current = false;
       setPullDistance(0);
       return;
@@ -135,6 +151,17 @@ export function PullToRefresh({
     const touch = e.touches[0];
     if (!touch) return;
     const delta = touch.clientY - startY.current;
+    if (axis.current == null) {
+      const dx = Math.abs(touch.clientX - startX.current);
+      const dy = Math.abs(delta);
+      if (dx < 6 && dy < 6) return;
+      axis.current = dx > dy ? 'x' : 'y';
+    }
+    if (axis.current === 'x') {
+      isPulling.current = false;
+      setPullDistance(0);
+      return;
+    }
     if (delta <= 0) {
       // Upward drag — not a pull-to-refresh gesture
       setPullDistance(0);
@@ -209,13 +236,17 @@ export function PullToRefresh({
   return (
     <div
       ref={containerRef}
-      className={cn('relative h-full w-full overflow-y-auto', className)}
-      style={{
-        // Preserve native iOS momentum scrolling
-        WebkitOverflowScrolling: 'touch',
-        // Disable the browser's own overscroll refresh so ours can take over
-        overscrollBehaviorY: effectivelyDisabled ? undefined : 'contain',
-      }}
+      className={cn(scroll === 'self' ? 'relative h-full w-full overflow-y-auto' : 'relative', className)}
+      style={
+        scroll === 'self'
+          ? {
+              // Preserve native iOS momentum scrolling
+              WebkitOverflowScrolling: 'touch',
+              // Disable the browser's own overscroll refresh so ours can take over
+              overscrollBehaviorY: effectivelyDisabled ? undefined : 'contain',
+            }
+          : undefined
+      }
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
@@ -239,14 +270,10 @@ export function PullToRefresh({
           />
         ) : null}
       </div>
-      <div
-        style={{
-          transform: `translateY(0px)`,
-          transition,
-        }}
-      >
-        {children}
-      </div>
+      {/* No transform in document mode: any transform makes this div the
+          containing block for position:fixed descendants (sheets, the
+          bottom nav's portals), which would pin them to the page. */}
+      <div style={scroll === 'self' ? { transform: 'translateY(0px)', transition } : undefined}>{children}</div>
     </div>
   );
 }

@@ -74,12 +74,12 @@ const rule: CompositeRule = {
       title: 'Closing 6 holes are leaking strokes',
       content:
         `Across your last ${rounds} rounds, holes 1-12 average ${earlyAvg.toFixed(2)} ` +
-        `to par while holes 13-18 average ${lateAvg.toFixed(2)} to par — ` +
+        `to par while holes 13-18 average ${lateAvg.toFixed(2)} to par, ` +
         `that's +${delta.toFixed(2)} strokes/hole on the closing stretch. ` +
-        `This is a pattern worth watching, not a diagnosis — late-round drop-off ` +
+        `This is a pattern worth watching, not a diagnosis. Late-round drop-off ` +
         `can come from energy, focus, or just where the harder holes fall on your ` +
-        `course. Try a routine reset before hole 13 — hydrate, recommit to your ` +
-        `pre-shot — and see if the gap holds over more rounds.`,
+        `course. Try a routine reset before hole 13 (hydrate, recommit to your ` +
+        `pre-shot) and see if the gap holds over more rounds.`,
       signature: 'closing_hole_fatigue',
       evidence: {
         metric: 'closing_hole_delta',

@@ -300,12 +300,12 @@ export function InboundLeadsView({ onOpenCoach }: InboundLeadsViewProps = {}) {
           <IconPlay size={13} className="text-text-tertiary" aria-hidden="true" />
           <h3
             id="demo-tours-heading"
-            className="text-micro font-semibold uppercase tracking-wide text-text-tertiary"
+            className="text-microlabel font-semibold uppercase tracking-wide text-text-tertiary"
           >
             Toured the self-serve demo
           </h3>
           {!gateLoading && gateSessions.length > 0 && (
-            <span className="text-micro text-text-tertiary tabular-nums">
+            <span className="text-microlabel text-text-tertiary tabular-nums">
               ({gateSessions.length})
             </span>
           )}
@@ -410,7 +410,7 @@ export function InboundLeadsView({ onOpenCoach }: InboundLeadsViewProps = {}) {
           <IconMail size={13} className="text-text-tertiary" aria-hidden="true" />
           <h3
             id="demo-requests-heading"
-            className="text-micro font-semibold uppercase tracking-wide text-text-tertiary"
+            className="text-microlabel font-semibold uppercase tracking-wide text-text-tertiary"
           >
             Requested a demo (homepage form)
           </h3>
@@ -757,7 +757,7 @@ function StatCard({
 }) {
   return (
     <div className={cn(
-      'rounded-card border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-card)] p-4 lg:p-5 transition-all',
+      'rounded-card border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-card)] p-4 lg:p-5 transition',
       highlight && 'border-fw-warning-ring ring-1 ring-fw-warning-ring/40',
     )}>
       <div className="flex items-start justify-between gap-3">

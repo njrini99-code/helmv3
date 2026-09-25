@@ -90,10 +90,10 @@ const rule: CompositeRule = {
       title: 'Rough and sand recoveries are leaving long putts',
       content:
         `You attempted ${attempts} short-game shots from rough or bunker (${dominant}); ` +
-        `the average leave was ${avgProximity.toFixed(0)} ft — outside make-able range. ` +
+        `the average leave was ${avgProximity.toFixed(0)} ft, outside make-able range. ` +
         `Whether these were short-sided misses is not recorded: check pin position and ` +
         `miss side on the next few rounds before treating this as a short-side pattern. ` +
-        `Recommended: recovery reps from rough and sand to a 10-ft circle — the ` +
+        `Recommended: recovery reps from rough and sand to a 10-ft circle. The ` +
         `measurable target is leave distance.`,
       signature: 'short_side_scrambling_chain',
       evidence: {

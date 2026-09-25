@@ -37,11 +37,10 @@ import {
   type MouseEventHandler,
   type ReactNode,
 } from 'react';
-import { motion, useReducedMotion, type HTMLMotionProps } from 'framer-motion';
+import { motion, type HTMLMotionProps } from 'framer-motion';
 import {
   AlertTriangle,
   Flame,
-  Sparkles,
   Info,
   Lightbulb,
   TrendingUp,
@@ -57,6 +56,7 @@ import {
   heroGlassClassName,
   heroGlassStyle,
 } from './glass';
+import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
 
 /**
  * Inject the §4.3 reduced-transparency / forced-colors fallback CSS exactly
@@ -181,7 +181,7 @@ export const PRIORITY: Record<InsightPriority, PriorityTone> = {
   medium: {
     bar: 'bg-accent-500',
     iconWrap: 'text-accent-700 bg-accent-50',
-    icon: Sparkles,
+    icon: Lightbulb,
     word: 'Medium priority',
   },
   low: {
@@ -256,7 +256,7 @@ const InsightCardImpl = forwardRef<HTMLDivElement, InsightCardProps>(
     },
     ref,
   ) {
-    const prefersReduced = useReducedMotion();
+    const prefersReduced = useReducedMotionGuard();
     const tone = PRIORITY[priority];
     // Bug #915: an explicit iconTone overrides the icon glyph AND its
     // background/text color independent of priority — see ICON_TONE's
@@ -275,7 +275,10 @@ const InsightCardImpl = forwardRef<HTMLDivElement, InsightCardProps>(
 
     /* -- shell classes -- */
     const shell = cn(
-      'group relative flex rounded-card text-left',
+      // `isolate` (DASH-04): the action row and overlay children are
+      // `relative z-20`. Without a stacking context on the card they competed
+      // with the sticky top bar (z 10) and painted over it on scroll.
+      'group relative isolate flex rounded-card text-left',
       'transition-[box-shadow,transform,border-color] ease-soft',
       // matte default vs hero glass
       isHero

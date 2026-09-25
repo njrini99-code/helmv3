@@ -142,7 +142,7 @@ export function AddNoteDialog({
                       type="button"
                       onClick={() => setKind(opt.value)}
                       className={cn(
-                        'flex flex-col items-start text-left px-3 py-2 rounded-fw-sm border transition-all',
+                        'flex flex-col items-start text-left px-3 py-2 rounded-fw-sm border transition',
                         kind === opt.value
                           ? 'border-accent-400 bg-accent-50/60 text-text-primary'
                           : 'border-border-subtle/80 bg-surface text-text-secondary hover:border-border-strong',

@@ -9,13 +9,13 @@
   immune to that, and resolution-independent besides.
 
   The solid fill matches capacitor.config.ts `android.backgroundColor`
-  (#EDE0C8, Fairway cream) so there is no colour step between the splash, the
+  (#F2E6D2, Fairway cream) so there is no colour step between the splash, the
   window behind the WebView, and the app canvas on cold start.
 -->
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
     <item>
         <shape android:shape="rectangle">
-            <solid android:color="#EDE0C8" />
+            <solid android:color="#F2E6D2" />
         </shape>
     </item>
     <item>

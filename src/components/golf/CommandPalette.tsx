@@ -13,9 +13,9 @@
  * The cmdk styles live in globals.css under the `[cmdk-*]` prefix;
  * we only own the chrome (backdrop, dialog frame, footer hints).
  *
- * Visual surface: warm cream glass over a tinted backdrop, matching
- * the rest of the California-modern recipe. Open animation uses the
- * same cubic-bezier(0.16, 1, 0.3, 1) easing as DropdownMenu/Tooltip.
+ * Overlay: the Fairway ModalShell (audit W3, SHEET-07/08) — opaque
+ * surface over the cheap dim scrim (no backdrop blur), Radix focus trap,
+ * Escape, scroll lock and focus restore to the ⌘K trigger on close.
  */
 
 import { describeError } from '@/lib/utils/describe-error';
@@ -24,12 +24,11 @@ import { useGolfUserOptional } from '@/contexts/golf-user-context';
 import { useRouter } from 'next/navigation';
 import { Command } from 'cmdk';
 import { cn } from '@/lib/utils';
-import { IconButton as LegacyIconButton } from '@/components/ui/button';
 import { IconButton } from '@/components/fairway/controls/button';
-import { useFocusTrap } from '@/hooks/use-focus-trap';
+import { ModalShell } from '@/components/fairway/overlays/ModalShell';
 import {
   IconSearch, IconUsers, IconCalendar, IconChartBar, IconMessage,
-  IconSettings, IconGolf, IconFlag, IconBook, IconAirplane, IconSparkles,
+  IconSettings, IconGolf, IconFlag, IconBook, IconAirplane, IconBulb,
   IconTarget, IconTrophy, IconClipboardList, IconBell, IconAlertCircle,
   IconBrain, IconGauge, IconBot, IconChartRadar, IconCrosshair, IconWrench,
   IconRocket, IconLayoutGrid, IconMapPin, IconX,
@@ -89,9 +88,9 @@ export function CommandPalette({ isCoach = true }: CommandPaletteProps) {
     // Signals) instead of repeating a single tab's member routes. The member
     // routes stay searchable via keywords ("today's calls", "patterns",
     // "insights" all resolve to their tab) so nothing becomes unreachable.
-    { id: 'intelligence', label: surfaceName('rail-coachhelm-ai-coach'), description: "Brief — today's calls & command center", icon: <IconBrain size={18} />, href: '/golf/dashboard/intelligence', keywords: ['intelligence', 'ai', 'hub', 'coachhelm', 'overview', 'brief', 'today', "today's calls", 'calls', 'priority', 'commandcenter', 'command center'] },
+    { id: 'intelligence', label: surfaceName('rail-coachhelm-ai-coach'), description: "Brief, today's calls & command center", icon: <IconBrain size={18} />, href: '/golf/dashboard/intelligence', keywords: ['intelligence', 'ai', 'hub', 'coachhelm', 'overview', 'brief', 'today', "today's calls", 'calls', 'priority', 'commandcenter', 'command center'] },
     { id: 'signals', label: surfaceName('signals'), description: 'Alerts, insights & patterns', icon: <IconBell size={18} />, href: surfaceHref('signals'), keywords: ['signals', 'alerts', 'notifications', 'priority', 'attention', 'insights', 'feed', 'recommendations', 'patterns', 'mining', 'evidence', 'triage', 'coachhelm'] },
-    { id: 'coachhelm-insights', label: surfaceName('insights'), description: 'AI-generated coaching insights', icon: <IconSparkles size={18} />, href: surfaceHref('insights'), keywords: ['insights', 'recommendations', 'ai', 'coachhelm', 'signals'] },
+    { id: 'coachhelm-insights', label: surfaceName('insights'), description: 'AI-generated coaching insights', icon: <IconBulb size={18} />, href: surfaceHref('insights'), keywords: ['insights', 'recommendations', 'ai', 'coachhelm', 'signals'] },
     { id: 'coachhelm-patterns', label: surfaceName('patterns'), description: 'Recurring player and team patterns', icon: <IconTarget size={18} />, href: surfaceHref('patterns'), keywords: ['patterns', 'mining', 'trends', 'evidence', 'coachhelm'] },
     { id: 'coachhelm-analytics', label: surfaceName('effectiveness'), description: 'Insight effectiveness', icon: <IconGauge size={18} />, href: surfaceHref('effectiveness'), keywords: ['analytics', 'effectiveness', 'coachhelm', 'metrics'] },
     { id: 'coachhelm-chat', label: surfaceName('ask'), description: 'Chat history', icon: <IconBot size={18} />, href: '/golf/dashboard/coachhelm/chat', keywords: ['chat', 'conversation', 'coachhelm', 'history', 'ask'] },
@@ -119,7 +118,7 @@ export function CommandPalette({ isCoach = true }: CommandPaletteProps) {
 
   const playerQuickActions: CommandItemSpec[] = [
     { id: 'log-round', label: 'Log a Round', description: 'Start a new round entry', icon: <IconGolf size={18} />, href: '/golf/dashboard/rounds/new', keywords: ['log', 'new', 'submit', 'enter', 'round'] },
-    { id: 'insights', label: surfaceName('rail-coachhelm-ai-player'), description: 'Personalized AI insights', icon: <IconSparkles size={18} />, href: '/golf/dashboard/coachhelm', keywords: ['ai', 'insights', 'coachhelm', 'focus'] },
+    { id: 'insights', label: surfaceName('rail-coachhelm-ai-player'), description: 'Personalized AI insights', icon: <IconBulb size={18} />, href: '/golf/dashboard/coachhelm', keywords: ['ai', 'insights', 'coachhelm', 'focus'] },
     { id: 'rounds', label: 'My Rounds', description: 'View and submit rounds', icon: <IconGolf size={18} />, href: '/golf/dashboard/rounds', keywords: ['scores', 'games'] },
     { id: 'courses', label: 'Course Library', description: 'Browse courses & tee sets', icon: <IconMapPin size={18} />, href: '/golf/dashboard/courses', keywords: ['course', 'courses', 'library', 'tees', 'tee', 'facility'] },
     { id: 'development', label: surfaceName('my-development-tab'), description: 'Assigned focus areas', icon: <IconTarget size={18} />, href: surfaceHref('my-development-tab'), keywords: ['focus', 'improvement', 'plan'] },
@@ -146,7 +145,7 @@ export function CommandPalette({ isCoach = true }: CommandPaletteProps) {
     const teamHubEntry: CommandItemSpec = {
       id: 'team-hub',
       label: 'Team Hub',
-      description: 'Your team at a glance — tasks, announcements, travel, classes & teammates',
+      description: 'Your team at a glance: tasks, announcements, travel, classes & teammates',
       icon: <IconLayoutGrid size={18} />,
       href: '/golf/dashboard/team-hub',
       keywords: ['team', 'hub', 'tasks', 'announcements', 'travel', 'classes', 'updates'],
@@ -156,14 +155,10 @@ export function CommandPalette({ isCoach = true }: CommandPaletteProps) {
 
   const quickActions = isCoach ? coachQuickActions : playerActions;
 
-  // Shared hand-rolled-dialog primitive (already proven in ConfirmDialog /
-  // JoinRequestsModal / EventDetailModal): Tab focus trap + focus restore to
-  // whatever triggered the palette + Escape-to-close, scoped to `modalRef`
-  // below. cmdk itself owns only the fuzzy matcher/keyboard nav, not modal
-  // semantics, so without this Tab could escape to background controls and
-  // focus was never returned to the ⌘K trigger on close (#a11y-sweep P1).
+  // cmdk owns only the fuzzy matcher and keyboard nav, not modal semantics.
+  // ModalShell supplies those: Tab stays inside, Escape and the scrim close,
+  // and focus returns to whatever opened the palette (#a11y-sweep P1).
   const handleClose = useCallback(() => setOpen(false), []);
-  const { modalRef } = useFocusTrap(open, handleClose);
 
   // ⌘K / Ctrl+K toggles the palette globally
   useEffect(() => {
@@ -208,8 +203,6 @@ export function CommandPalette({ isCoach = true }: CommandPaletteProps) {
     }
   }, [open, data, dataLoading]);
 
-  if (!open) return null;
-
   const formatRoundDate = (iso: string | null) => {
     if (!iso) return '';
     const d = new Date(iso);
@@ -218,39 +211,39 @@ export function CommandPalette({ isCoach = true }: CommandPaletteProps) {
 
   const severityIcon = (sev: string | null) => {
     if (sev === 'urgent' || sev === 'high') return <IconAlertCircle size={18} />;
-    return <IconSparkles size={18} />;
+    return <IconBulb size={18} />;
   };
 
   return (
-    <div className="fixed inset-0 z-50 animate-in fade-in-0 duration-200">
-      {/* Backdrop */}
-      <LegacyIconButton
-        type="button"
-        aria-label="Dismiss command palette"
-        onClick={handleClose}
-        className="absolute inset-0 bg-[oklch(0.18_0.01_55_/_0.32)] backdrop-blur-md cursor-default"
-      ><span className="sr-only">Dismiss command palette</span></LegacyIconButton>
-
-      {/* Palette frame */}
-      <div
-        ref={modalRef}
-        role="dialog"
-        aria-modal="true"
-        aria-label="Command palette"
-        className="fixed left-[calc(50%+var(--fw-rail-width,0px)/2)] top-1/2 z-[100] w-[calc(100%-2rem)] max-w-xl -translate-x-1/2 -translate-y-1/2 animate-in zoom-in-95 fade-in-0 slide-in-from-top-2 duration-300 max-md:left-1/2 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)]"
-      >
+    <ModalShell
+      open={open}
+      onOpenChange={setOpen}
+      title="Command palette"
+      hideTitle
+      // The palette carries its own close control beside the search field.
+      hideClose
+      size="xl"
+      data-slot="command-palette"
+      // From md up, centre in the content area beside the rail: pulling the
+      // left inset in by the rail width moves the auto-margin centre by half
+      // of it (the old frame's calc(50% + rail/2)).
+      className="max-w-xl md:left-[var(--fw-rail-width,0px)]"
+    >
         <Command
           label="Command palette"
           loop
-          className={cn(
-            'overflow-hidden rounded-fw-lg bg-surface border border-border-subtle',
-            'shadow-raise',
-          )}
+          className="overflow-hidden"
         >
           {/* Search input */}
           <div className="flex items-center gap-3 px-4 py-3 pr-14 border-b border-border-subtle">
             <IconSearch size={18} className="text-text-tertiary" aria-hidden />
             <Command.Input
+              // A palette opens to type into, on every pointer: ModalShell's
+              // coarse-pointer default would park focus on the panel, and ⌘K
+              // on an iPad keyboard would then type nowhere. Radix's FocusScope
+              // leaves focus alone when it is already inside.
+              // eslint-disable-next-line jsx-a11y/no-autofocus
+              autoFocus
               placeholder="Search commands…"
               className="flex-1 bg-transparent outline-none font-fw-sans text-body text-text-primary placeholder:text-text-tertiary tracking-[-0.005em] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-surface rounded"
             />
@@ -440,7 +433,6 @@ export function CommandPalette({ isCoach = true }: CommandPaletteProps) {
         >
           <IconX size={16} aria-hidden />
         </IconButton>
-      </div>
-    </div>
+    </ModalShell>
   );
 }

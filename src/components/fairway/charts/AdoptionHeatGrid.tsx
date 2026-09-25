@@ -135,7 +135,7 @@ export function AdoptionHeatGrid({ rows, rowHrefTemplate, className }: AdoptionH
   return (
     <div className={cn('relative', className)}>
       <div className="mb-3 flex items-center justify-between gap-3">
-        <p className="text-caption uppercase tracking-widest text-warm-500">
+        <p className="text-caption uppercase tracking-widest text-text-tertiary">
           {windowMode === '30d' ? 'Last 30 days' : 'Last 12 weeks'}
         </p>
         <Segmented
@@ -163,8 +163,8 @@ export function AdoptionHeatGrid({ rows, rowHrefTemplate, className }: AdoptionH
               <React.Fragment key={row.key}>
                 {showBandHeader ? (
                   <div className="sticky left-0 z-20 flex w-fit min-w-full items-center gap-2 border-b border-warm-200 bg-cream-100 px-3 py-1.5">
-                    <span className="text-eyebrow uppercase text-warm-500">{APP_LABEL[row.app]}</span>
-                    <span className="font-fw-mono text-caption tabular-nums text-warm-400">{bandCount} features</span>
+                    <span className="text-eyebrow uppercase text-text-tertiary">{APP_LABEL[row.app]}</span>
+                    <span className="font-fw-mono text-caption tabular-nums text-text-tertiary">{bandCount} features</span>
                   </div>
                 ) : null}
                 <div className="flex items-stretch border-b border-warm-100 last:border-0">
@@ -221,7 +221,7 @@ export function AdoptionHeatGrid({ rows, rowHrefTemplate, className }: AdoptionH
                   <div className="sticky right-0 z-10 ml-auto flex w-28 shrink-0 flex-col items-end justify-center gap-0.5 border-l border-warm-200 bg-cream-50 px-2.5 py-1">
                     <span className="font-fw-mono text-body-sm tabular-nums text-warm-900">{row.uniqueUsers30d}</span>
                     {row.delta7dPct === null ? (
-                      <span className="text-caption text-warm-400">—</span>
+                      <span className="text-caption text-text-tertiary">—</span>
                     ) : (
                       <TrendChip
                         delta={row.delta7dPct}
@@ -246,14 +246,14 @@ export function AdoptionHeatGrid({ rows, rowHrefTemplate, className }: AdoptionH
           style={{ left: active.x, top: active.y + 6 }}
         >
           <p className="text-body-sm font-medium text-warm-900">{active.rowLabel}</p>
-          <p className="text-caption text-warm-500">{active.cell.date}</p>
+          <p className="text-caption text-text-tertiary">{active.cell.date}</p>
           <div className="mt-2 flex items-center gap-3">
             <div>
-              <p className="text-eyebrow uppercase text-warm-500">Users</p>
+              <p className="text-eyebrow uppercase text-text-tertiary">Users</p>
               <p className="font-fw-mono text-body tabular-nums text-warm-900">{active.cell.uniqueUsers}</p>
             </div>
             <div>
-              <p className="text-eyebrow uppercase text-warm-500">Events</p>
+              <p className="text-eyebrow uppercase text-text-tertiary">Events</p>
               <p className="font-fw-mono text-body tabular-nums text-warm-900">{active.cell.eventCount}</p>
             </div>
           </div>

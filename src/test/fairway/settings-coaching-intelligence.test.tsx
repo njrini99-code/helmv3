@@ -66,20 +66,30 @@ vi.mock('next/link', () => ({
   ),
 }));
 
+// PERF-R2 — shared spies so a test can count how many times the page resolves
+// the signed-in coach across renders (it must be once, not once per render).
+const { createClientSpy, getUserSpy } = vi.hoisted(() => ({
+  createClientSpy: vi.fn(),
+  getUserSpy: vi.fn(async () => ({ data: { user: { id: 'user-1' } }, error: null })),
+}));
+
 vi.mock('@/lib/supabase/client', () => ({
-  createClient: () => ({
-    auth: {
-      getUser: vi.fn(async () => ({ data: { user: { id: 'user-1' } }, error: null })),
-    },
-    from: vi.fn(() => ({
-      select: vi.fn().mockReturnThis(),
-      eq: vi.fn().mockReturnThis(),
-      maybeSingle: vi.fn(async () => ({
-        data: { id: 'coach-1', organization_id: 'org-1' },
-        error: null,
+  createClient: () => {
+    createClientSpy();
+    return {
+      auth: {
+        getUser: getUserSpy,
+      },
+      from: vi.fn(() => ({
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        maybeSingle: vi.fn(async () => ({
+          data: { id: 'coach-1', organization_id: 'org-1' },
+          error: null,
+        })),
       })),
-    })),
-  }),
+    };
+  },
 }));
 
 const { useCoachPhilosophyMock } = vi.hoisted(() => ({
@@ -411,6 +421,43 @@ describe('FairwaySettingsCoachingIntelligence', () => {
 
   // ── A save failure AFTER the initial load must surface, not silently
   //    snap the control back with zero explanation ──────────────────────────
+  // ── PERF-R2 — the browser client is created once, so the coach-resolution
+  //    effect (getUser + coach lookup + team settings) does not re-run on
+  //    every re-render ─────────────────────────────────────────────────────
+  it('resolves the coach once across re-renders (PERF-R2)', async () => {
+    createClientSpy.mockClear();
+    getUserSpy.mockClear();
+    getTeamCoachHelmAccessMock.mockClear();
+
+    const view = renderPage();
+    await screen.findByText('Decline threshold');
+    await waitFor(() => expect(getTeamCoachHelmAccessMock).toHaveBeenCalled());
+
+    for (let i = 0; i < 3; i += 1) {
+      view.rerender(
+        <GolfUserProvider
+          userData={{
+            role: 'coach',
+            userId: 'user-1',
+            name: 'Coach',
+            coachId: 'coach-1',
+            teamId: 'team-1',
+            organizationId: 'org-1',
+          }}
+        >
+          <PageComponent />
+        </GolfUserProvider>,
+      );
+    }
+    // Let any (incorrect) effect re-run flush before counting.
+    await waitFor(() => expect(screen.getByText('Decline threshold')).toBeInTheDocument());
+    await Promise.resolve();
+
+    expect(createClientSpy).toHaveBeenCalledTimes(1);
+    expect(getUserSpy).toHaveBeenCalledTimes(1);
+    expect(getTeamCoachHelmAccessMock).toHaveBeenCalledTimes(1);
+  });
+
   it('surfaces a post-load save failure via the meta chip and an InlineNotice', async () => {
     useCoachPhilosophyMock.mockReturnValue({
       philosophy,

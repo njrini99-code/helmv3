@@ -14,6 +14,13 @@ import { loadCoachIntents } from '@/lib/coachhelm/v3/intent/loader';
 import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import { computeScoringTrendFromRounds } from '@/lib/golf/scoring-trend';
+import { withCanonicalRoundTotal } from '@/lib/golf/round-total';
+import { isCountableRound } from '@/lib/golf/round-countable';
+import {
+  aggregateCountableRounds,
+  ROUND_STATS_CACHE_COLUMNS,
+  type RoundStatsCacheRow,
+} from '@/lib/golf/countable-round-stats';
 import { findSuspectedDuplicateMembers } from '@/lib/golf/duplicate-roster-members';
 import { loadActiveGoalsForPlayers } from '@/lib/coachhelm/v3/goals/loader';
 import type { Goal } from '@/lib/coachhelm/v3/goals/types';
@@ -25,7 +32,7 @@ import type { PlayersGridFocusArea } from '@/components/fairway';
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Team Roster | Helm Golf',
+  title: 'Roster',
   description: 'Manage your golf team roster, view player stats, and track team performance',
 };
 
@@ -52,8 +59,9 @@ interface PlayerWithStats {
   /** Canonical scoring trend (`@/lib/golf/scoring-trend`), null when there
    *  isn't enough round history yet for a real signal (honest, not fake). */
   recent_trend?: 'improving' | 'declining' | 'stable' | null;
-  /** golf_player_stats_cache.sg_total_per_round — null before the cache has
-   *  a row for this player. */
+  /** Mean SG: Total per round over countable rounds (golf_round_stats_cache).
+   *  Falls back to golf_player_stats_cache.sg_total_per_round only when the
+   *  per-round read fails. Null when no countable round carries SG. */
   sg_total?: number | null;
   /** Team-percentile cohort text for the sg_total standing row (e.g. "Top
    *  quartile on team"), via the same `teamCohortText` helper StandingBar
@@ -120,7 +128,7 @@ export default async function GolfRosterPage() {
         <div className={fairwayScope('min-h-full bg-canvas')}>
           <div className="mx-auto w-full max-w-2xl px-5 py-10 md:px-8">
             <InlineNotice tone="danger" title="Couldn't load your roster">
-              <p>We couldn&apos;t reach your team just now. This is on us, not your account — try again in a moment.</p>
+              <p>We couldn&apos;t reach your team just now. This is on us, not your account. Try again in a moment.</p>
             </InlineNotice>
           </div>
         </div>
@@ -361,12 +369,18 @@ export default async function GolfRosterPage() {
   const joinRequests = jrRes.success && jrRes.data ? jrRes.data : [];
 
   interface RoundStatRow {
+    id: string;
     player_id: string;
+    status: string | null;
     total_score: number | null;
+    score_to_par: number | null;
     holes_played: number | null;
+    front_nine: number | null;
+    back_nine: number | null;
+    total_putts: number | null;
     /** Only used to sort each player's rounds most-recent-first for the
      *  trend classifier below — not read by the avg-score/rounds-count math. */
-    round_date: string | null;
+    round_date: string;
   }
   interface StatsCacheStatRow {
     player_id: string;
@@ -381,6 +395,8 @@ export default async function GolfRosterPage() {
 
   let allRounds: RoundStatRow[] = [];
   let statsCacheRows: StatsCacheStatRow[] = [];
+  let roundStatsRows: RoundStatsCacheRow[] = [];
+  let roundStatsOk = false;
   let focusAreaRows: FocusAreaStatRow[] = [];
   let goalsByPlayerMap = new Map<string, Goal[]>();
   let standingByPlayer = new Map<string, Map<MetricId, PlayerStanding>>();
@@ -394,7 +410,7 @@ export default async function GolfRosterPage() {
     // block") — reused here so the Roster LIST card and the Players sub-tab
     // agree on what "trend"/"SG:Total"/"standing tier"/"focus areas"/"goals"
     // mean, without a second divergent computation.
-    const [allRoundsResult, statsResult, focusResult, goalsMap, standingMap] = await Promise.all([
+    const [allRoundsResult, statsResult, focusResult, goalsMap, standingMap, roundStatsResult] = await Promise.all([
       // Fetch ALL rounds for ALL players. Paginated: PostgREST caps each
       // response at 1000 rows, and a full roster's accumulated round history
       // exceeds that — the old unpaginated `.in(...)` silently truncated at
@@ -403,8 +419,9 @@ export default async function GolfRosterPage() {
       fetchAllRowsResult<RoundStatRow>((from, to) =>
         supabase
           .from('golf_rounds')
-          .select('player_id, total_score, holes_played, round_date')
+          .select('id, player_id, status, total_score, score_to_par, holes_played, front_nine, back_nine, total_putts, round_date')
           .in('player_id', playerIds)
+          .eq('status', 'completed')
           .not('total_score', 'is', null)
           .order('id', { ascending: true })
           .range(from, to),
@@ -419,6 +436,17 @@ export default async function GolfRosterPage() {
         .in('player_id', playerIds),
       loadActiveGoalsForPlayers(playerIds).catch(() => new Map<string, Goal[]>()),
       loadPlayersStandingMap(playerIds).catch(() => new Map<string, Map<MetricId, PlayerStanding>>()),
+      // Per-round SG so SG:Total can be averaged over COUNTABLE rounds only.
+      // The player cache's sg_total_per_round includes implausible rounds
+      // (a +34.5 round moved one player's value from -3.6 to -1.6).
+      fetchAllRowsResult<RoundStatsCacheRow>((from, to) =>
+        supabase
+          .from('golf_round_stats_cache')
+          .select(ROUND_STATS_CACHE_COLUMNS)
+          .in('player_id', playerIds)
+          .order('round_id', { ascending: true })
+          .range(from, to),
+      ),
     ]);
     // Each `?? []` turns a FAILED read into an empty one, and every roster card
     // is computed from these three. A failed rounds read prints "0 rounds" and
@@ -444,7 +472,11 @@ export default async function GolfRosterPage() {
       );
     }
 
-    allRounds = allRoundsResult.data ?? [];
+    // Countable rounds only (src/lib/golf/round-countable.ts): completed, every
+    // declared hole scored, plausible total. Totals are the canonical hole sums.
+    allRounds = (allRoundsResult.data ?? []).map(withCanonicalRoundTotal).filter(isCountableRound);
+    roundStatsRows = roundStatsResult.error ? [] : (roundStatsResult.data ?? []);
+    roundStatsOk = !roundStatsResult.error;
     statsCacheRows = (statsResult.data as StatsCacheStatRow[] | null) ?? [];
     focusAreaRows = (focusResult.data as FocusAreaStatRow[] | null) ?? [];
     goalsByPlayerMap = goalsMap;
@@ -493,6 +525,7 @@ export default async function GolfRosterPage() {
   for (const row of statsCacheRows) {
     sgTotalByPlayer[row.player_id] = row.sg_total_per_round;
   }
+  const roundStatsById = new Map(roundStatsRows.map((r) => [r.round_id, r] as const));
 
   const standingTierByPlayer: Record<string, string | null> = {};
   for (const pid of playerIds) {
@@ -526,23 +559,17 @@ export default async function GolfRosterPage() {
   const playersWithStats: PlayerWithStats[] = players.map((player) => {
     const rounds = roundsByPlayer[player.id] || [];
     const roundsCount = rounds.length;
-    // Compute per-hole average then express as 18-hole equivalent
-    let totalStrokes = 0;
-    let totalHoles = 0;
-    for (const r of rounds) {
-      if (r.total_score) {
-        const hp = r.holes_played ?? 18;
-        totalStrokes += r.total_score;
-        totalHoles += hp;
-      }
-    }
-    const avgScore = totalHoles > 0 ? (totalStrokes / totalHoles) * 18 : 0;
-
-    // Trend classifier needs most-recent-first order; the avg-score sum above
-    // doesn't care about order, so this sort is scoped to a copy just for it.
+    // Newest first, `id` as a stable tiebreak (the trend classifier and the
+    // aggregate both depend on order).
     const mostRecentFirst = [...rounds].sort((a, b) =>
-      (b.round_date ?? '').localeCompare(a.round_date ?? ''),
+      (b.round_date ?? '').localeCompare(a.round_date ?? '') || a.id.localeCompare(b.id),
     );
+    // ONE scoring-average definition across roster, Team Stats, the coach
+    // dashboard and the player dashboard: the mean of countable 18-hole rounds.
+    // (This card used to be hole-weighted incl. 9-hole rounds, which is why the
+    // same player read 77.2 here and 77.4 on Team Stats.)
+    const headline = aggregateCountableRounds(mostRecentFirst, roundStatsById);
+    const avgScore = headline.scoringAverage ?? 0;
     const trendResult = computeScoringTrendFromRounds(mostRecentFirst);
 
     return {
@@ -551,7 +578,7 @@ export default async function GolfRosterPage() {
       avg_score: avgScore,
       last_seen: player.last_seen,
       recent_trend: trendResult.hasSignal ? trendResult.trend : null,
-      sg_total: sgTotalByPlayer[player.id] ?? null,
+      sg_total: roundStatsOk ? headline.sg.total : (sgTotalByPlayer[player.id] ?? null),
       standing_tier: standingTierByPlayer[player.id] ?? null,
       active_focus_areas: activeFocusAreasByPlayer[player.id] ?? 0,
       active_goals: goalsByPlayerMap.get(player.id)?.length ?? 0,
@@ -579,7 +606,7 @@ export default async function GolfRosterPage() {
                 .map((d) => `${d.name} (${d.emails.filter(Boolean).join(' and ')})`)
                 .join('; ')}{' '}
               {suspectedDuplicates.length === 1 ? 'appears' : 'appear'} on this roster more than
-              once — usually a personal address and a school one. Their rounds and stats attach to
+              once, usually a personal address and a school one. Their rounds and stats attach to
               only one of the entries.
             </p>
           </InlineNotice>

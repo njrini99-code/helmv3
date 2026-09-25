@@ -98,7 +98,7 @@ export function FairwayEventCard({
   return (
     <PressTarget
       onClick={onClick ? () => onClick(event) : undefined}
-      aria-label={`${event.title} — ${timeAria(event, timezone)}${event.location ? `, ${event.location}` : ''}${isCancelled ? ', cancelled' : ''}`}
+      aria-label={`${event.title}, ${timeAria(event, timezone)}${event.location ? `, ${event.location}` : ''}${isCancelled ? ', cancelled' : ''}`}
       className={cn(
         // One row inside the day's Surface (FairwayAgendaView owns the frame
         // and the dividers). Rounded only so the focus ring follows the row.

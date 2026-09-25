@@ -271,7 +271,13 @@ export function FairwayQualifierDetail(props: FairwayQualifierDetailProps) {
       {/* Quiet back link — replaces the legacy MobileNavHeader + Breadcrumb */}
       <Link
         href={backHref}
-        className="mb-6 inline-flex items-center gap-1 font-fw-sans text-caption text-text-tertiary transition-colors hover:text-text-secondary"
+        // Coach phones already get "‹ Qualifiers" in the shell top bar (NAT-04);
+        // a second one here was a duplicate. The player's link targets My
+        // qualifiers, which the top bar does not, so it stays.
+        className={cn(
+          'mb-6 inline-flex items-center gap-1 font-fw-sans text-caption text-text-tertiary transition-colors hover:text-text-secondary',
+          isCoach && 'max-md:hidden',
+        )}
       >
         <span aria-hidden="true">←</span> {backLabel}
       </Link>

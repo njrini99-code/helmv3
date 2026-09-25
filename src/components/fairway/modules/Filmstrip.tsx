@@ -67,7 +67,7 @@ const RING_TONE: Record<HoleTone, string> = {
   par: 'ring-1 ring-warm-300/70',
   birdie: 'ring-2 ring-accent-500',
   bogey: 'ring-2 ring-fw-warning',
-  double: 'ring-2 ring-danger',
+  double: 'ring-2 ring-fw-danger',
 };
 
 // 18 columns at the canonical 70ms sibling stagger would take the reveal

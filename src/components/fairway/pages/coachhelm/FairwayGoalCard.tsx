@@ -305,7 +305,7 @@ export function FairwayGoalCard({ data, role, playerName }: FairwayGoalCardProps
                   Hit {achievedAt} · validated on rounds
                 </span>
               ) : notStarted ? (
-                'Not started — baseline captured'
+                'Not started. Baseline captured'
               ) : (
                 <>
                   {pct}% to target
@@ -352,7 +352,7 @@ export function FairwayGoalCard({ data, role, playerName }: FairwayGoalCardProps
           />
           {windowed ? (
             <p className="mt-1.5 font-fw-sans text-eyebrow text-text-tertiary">
-              Career average vs team &amp; Tour — your progress above tracks rounds since you set this goal.
+              Career average vs team &amp; Tour. Your progress above tracks rounds since you set this goal.
             </p>
           ) : null}
         </div>
@@ -373,7 +373,7 @@ export function FairwayGoalCard({ data, role, playerName }: FairwayGoalCardProps
               size="sm"
               busy={isPending}
               disabled={isPending}
-              onClick={() => runTransition(() => pauseGoal(goal.id), 'Goal paused')}
+              onClick={() => runTransition(() => pauseGoal(goal.id), 'Focus area paused')}
             >
               Pause
             </Button>
@@ -382,7 +382,7 @@ export function FairwayGoalCard({ data, role, playerName }: FairwayGoalCardProps
               size="sm"
               busy={isPending}
               disabled={isPending}
-              onClick={() => runTransition(() => abandonGoal(goal.id), 'Goal abandoned')}
+              onClick={() => runTransition(() => abandonGoal(goal.id), 'Focus area dropped')}
             >
               Abandon
             </Button>

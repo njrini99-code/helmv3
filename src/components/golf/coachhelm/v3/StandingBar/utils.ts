@@ -15,6 +15,31 @@ import type {
 import { TEAM_MARKER_MIN_N, PCT_LANGUAGE_MIN_N } from './types';
 
 /**
+ * Widen a metric's default scale so every value on the bar fits inside it.
+ * A value past the default range used to clamp to the edge, which put a
+ * -2.93 putting player on the same pixel as a -1.6 team. A scale that
+ * straddles zero (strokes gained) stays centred on zero and grows in steps
+ * of 0.5, so the field line keeps its place in the middle.
+ */
+export function fitScale(
+  scale: { min: number; max: number },
+  values: ReadonlyArray<number | null | undefined>,
+): { min: number; max: number } {
+  const finite = values.filter((v): v is number => typeof v === 'number' && Number.isFinite(v));
+  let min = Math.min(scale.min, ...finite);
+  let max = Math.max(scale.max, ...finite);
+  if (min === scale.min && max === scale.max) return scale;
+  if (scale.min < 0 && scale.max > 0) {
+    const half = Math.ceil((Math.max(-min, max) * 1.1) / 0.5) * 0.5;
+    return { min: -half, max: half };
+  }
+  const pad = (max - min) * 0.05;
+  if (min < scale.min) min -= pad;
+  if (max > scale.max) max += pad;
+  return { min, max };
+}
+
+/**
  * Position a value within [scale.min, scale.max] as a 0-100 percentage.
  * Clamped — out-of-range values stick to the edge.
  */
@@ -126,7 +151,8 @@ export function valuesDisplayEqual(a: number, b: number, unit?: Unit): boolean {
 
 /**
  * Derive an arrow + semantic tone for "player vs team" comparison.
- * Used by the size-variant headers (↑ vs team / ↓ vs team).
+ * Used by the size-variant headers (↑ vs team / ↓ vs team). ↑ = better than
+ * the team, ↓ = worse, for every metric direction.
  *
  * Returns 'neutral' when the values render identically (see
  * `valuesDisplayEqual`) or team is null.
@@ -144,11 +170,14 @@ export function deltaVsTeam(
     return { arrow: '·', tone: 'neutral' };
   }
   const diff = player_value - team_avg;
-  // Arrow describes WHERE the player sits relative to team (above/below).
-  // Tone describes whether that's good or bad for this metric's direction.
-  const arrow: '↑' | '↓' = diff > 0 ? '↑' : '↓';
+  // ONE SIGN CONVENTION (audit NUM-13, same rule as the CoachHelm overview):
+  // arrow, tone and the `teamRelativeText` caption all derive from the SAME
+  // better/worse judgement. ↑ means better than the team, ↓ means worse,
+  // whatever the metric's direction. The arrow used to follow the raw value,
+  // so a lower-is-better row the player won read "↓ vs team … Above team
+  // average" (proximity 37 ft vs team 45 ft).
   const better = direction === 'higher_better' ? diff > 0 : diff < 0;
-  return { arrow, tone: better ? 'good' : 'bad' };
+  return better ? { arrow: '↑', tone: 'good' } : { arrow: '↓', tone: 'bad' };
 }
 
 /**
@@ -157,8 +186,12 @@ export function deltaVsTeam(
  *
  *   90+ → "Top X% on your team"
  *   75-89 → "Top quartile on your team"
- *   50-74 → "Above team average"
- *   25-49 → "Below team average"
+ *   50-74 → "Upper half of your team"
+ *   25-49 → "Lower half of your team"
+ *
+ * These are RANKS (team_pct is a PERCENT_RANK), not a comparison with the
+ * team mean, so the wording never says "average": one outlier can drag the
+ * mean past a player without changing their rank.
  *   <25 → "Bottom X% on your team"
  *
  * Returns empty string for cold-start (no team_pct).
@@ -188,8 +221,8 @@ export function teamCohortText(
   const smallRoster = team_n !== undefined && team_n !== null && team_n < PCT_LANGUAGE_MIN_N;
   if (pct >= 90) return smallRoster ? 'Top of your team' : `Top ${Math.max(1, 100 - pct)}% on your team`;
   if (pct >= 75) return 'Top quartile on your team';
-  if (pct >= 50) return 'Above team average';
-  if (pct >= 25) return 'Below team average';
+  if (pct >= 50) return 'Upper half of your team';
+  if (pct >= 25) return 'Lower half of your team';
   return smallRoster ? 'Bottom of your team' : `Bottom ${Math.max(1, pct)}% on your team`;
 }
 
@@ -364,7 +397,13 @@ export function deriveAriaLabel(props: StandingBarProps): string {
 export function resolveDisplayScale(
   scale: { min: number; max: number },
   values: ReadonlyArray<number | null | undefined>,
-  opts?: { symmetric?: boolean; paddingFrac?: number },
+  opts?: {
+    symmetric?: boolean;
+    paddingFrac?: number;
+    /** Natural limits of the unit (0–100 for a percent). The padded domain
+     *  never runs past them, so a percent axis can't read "104%". */
+    hardBounds?: { min: number; max: number };
+  },
 ): { min: number; max: number } {
   let min = scale.min;
   let max = scale.max;
@@ -383,7 +422,16 @@ export function resolveDisplayScale(
   const span = max - min;
   if (span <= 0) return { min, max };
   const pad = span * (opts?.paddingFrac ?? 0.08);
-  return { min: min - pad, max: max + pad };
+  const hb = opts?.hardBounds;
+  return {
+    min: hb ? Math.max(hb.min, min - pad) : min - pad,
+    max: hb ? Math.min(hb.max, max + pad) : max + pad,
+  };
+}
+
+/** `hardBounds` for `resolveDisplayScale` by unit: a percent is 0–100. */
+export function unitHardBounds(unit: string | null | undefined): { min: number; max: number } | undefined {
+  return unit === 'percent' ? { min: 0, max: 100 } : undefined;
 }
 
 export interface MarkerLayoutInput {

@@ -94,11 +94,17 @@ function shouldSendPush(
 /**
  * Generate push notification payload based on notification type
  */
-function generatePushPayload(
+export function generatePushPayload(
   type: NotificationType,
   data: Record<string, unknown>
 ): { title: string; body: string; data: Record<string, unknown> } {
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://helmsportslabs.com';
+  // Deep-link contract (NAV-IA3): open the exact item when the sender supplies
+  // its id, else the list it lives in.
+  const idOf = (key: string): string | null => {
+    const v = data[key];
+    return typeof v === 'string' && /^[\w-]+$/.test(v) ? v : null;
+  };
 
   switch (type) {
     case 'new_message': {
@@ -135,19 +141,27 @@ function generatePushPayload(
       return {
         title: 'RSVP Reminder',
         body: `Please RSVP for ${data.eventName || 'an event'}`,
-        data: { url: `${baseUrl}/golf/dashboard/calendar`, type },
+        data: {
+          url: idOf('eventId')
+            ? `${baseUrl}/golf/dashboard/calendar?event=${idOf('eventId')}`
+            : `${baseUrl}/golf/dashboard/calendar`,
+          type,
+        },
       };
     case 'qualifier_created':
       return {
         title: 'New Qualifier Posted',
         body: String(data.qualifierName || ''),
-        data: { url: `${baseUrl}/golf/dashboard/qualifiers`, type },
+        data: { url: `${baseUrl}/golf/dashboard/qualifiers${idOf('qualifierId') ? `/${idOf('qualifierId')}` : ''}`, type },
       };
     case 'round_submitted':
       return {
         title: 'Round Submitted',
         body: `${data.playerName || 'A player'} shot ${data.totalScore}${data.scoreToPar ? ` (${Number(data.scoreToPar) > 0 ? '+' : ''}${data.scoreToPar})` : ''} at ${data.courseName || 'a course'}`,
-        data: { url: `${baseUrl}/golf/dashboard/stats/team`, type },
+        data: {
+          url: idOf('roundId') ? `${baseUrl}/golf/dashboard/rounds/${idOf('roundId')}` : `${baseUrl}/golf/dashboard/stats/team`,
+          type,
+        },
       };
     case 'coachhelm_insight': {
       // Role-aware deep link. This used to hardcode `/golf/dashboard/coachhelm`
@@ -175,7 +189,7 @@ function generatePushPayload(
       return {
         title: 'Qualifier Updated',
         body: String(data.qualifierName || 'A qualifier has been updated'),
-        data: { url: `${baseUrl}/golf/dashboard/qualifiers`, type },
+        data: { url: `${baseUrl}/golf/dashboard/qualifiers${idOf('qualifierId') ? `/${idOf('qualifierId')}` : ''}`, type },
       };
     case 'task_completed':
       return {
@@ -187,7 +201,8 @@ function generatePushPayload(
       return {
         title: 'New Development Plan',
         body: String(data.planTitle || ''),
-        data: { url: `${baseUrl}/golf/dashboard/my-development`, type },
+        // The player's plan tab directly, not the /my-development redirect shim.
+        data: { url: `${baseUrl}${surfaceHref('tab-plan-player')}`, type },
       };
     default:
       return {

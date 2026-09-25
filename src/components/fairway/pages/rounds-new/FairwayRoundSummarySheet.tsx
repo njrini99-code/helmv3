@@ -22,7 +22,8 @@
  * across the two files.
  * ========================================================================== */
 
-import { LazyMotion, m, useReducedMotion } from 'framer-motion';
+import { LazyMotion, m } from 'framer-motion';
+import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
 import { loadFeatures } from '@/lib/motion/load-features';
 import { Flag } from 'lucide-react';
 
@@ -49,7 +50,7 @@ export function FairwayRoundSummarySheet({
   onGoBack,
   onSubmit,
 }: FairwayRoundSummarySheetProps) {
-  const prefersReducedMotion = useReducedMotion();
+  const prefersReducedMotion = useReducedMotionGuard();
 
   const totalScore = finalStats.reduce((sum, h) => sum + (h?.score ?? 0), 0);
   const totalPar = finalStats.reduce((sum, h) => sum + (h?.par ?? 0), 0);
@@ -65,7 +66,7 @@ export function FairwayRoundSummarySheet({
     const diff = (h?.score ?? 0) - (h?.par ?? 0);
     const cls =
       diff <= -2 ? 'text-accent-700 bg-accent-100 font-medium'
-        : diff === -1 ? 'text-accent-600 bg-accent-50 font-medium'
+        : diff === -1 ? 'text-accent-ink bg-accent-50 font-medium'
           : diff === 0 ? 'text-text-secondary bg-surface font-medium'
             : diff === 1 ? 'text-fw-warning-ink bg-fw-warning-bg font-medium'
               : 'text-fw-danger-ink bg-fw-danger-bg font-medium';

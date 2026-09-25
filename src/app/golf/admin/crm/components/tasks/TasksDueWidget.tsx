@@ -129,7 +129,7 @@ export function TasksDueWidget({
         {!loading && !error && tasks.length === 0 && (
           <div className="py-8 text-center">
             <div className="w-10 h-10 rounded-fw-md bg-surface-sunken flex items-center justify-center mx-auto mb-2">
-              <IconCheck size={18} className="text-accent-600" />
+              <IconCheck size={18} className="text-accent-ink" />
             </div>
             <p className="text-sm font-medium text-text-secondary">All caught up</p>
             <p className="text-xs text-text-tertiary mt-1">

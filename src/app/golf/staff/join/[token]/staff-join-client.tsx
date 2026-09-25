@@ -122,7 +122,7 @@ export function StaffJoinClient({
           <p className="mt-2 text-warm-600">{preview.error}</p>
           <Link
             href="/golf/login"
-            className="mt-6 inline-block text-primary-600 font-semibold hover:text-primary-500"
+            className="mt-6 inline-block text-accent-ink font-semibold hover:text-accent-ink"
           >
             Go to sign in
           </Link>
@@ -137,7 +137,7 @@ export function StaffJoinClient({
   return (
     <main className="min-h-screen flex items-center justify-center bg-cream-100 px-4 py-10">
       <div className="w-full max-w-md rounded-2xl border border-warm-200 bg-cream-50 p-8">
-        <p className="text-sm font-semibold uppercase tracking-wide text-primary-600">
+        <p className="text-sm font-semibold uppercase tracking-wide text-accent-ink">
           Staff invitation
         </p>
         <h1 className="mt-2 text-2xl font-bold text-warm-900">
@@ -159,7 +159,7 @@ export function StaffJoinClient({
         )}
 
         {checkingSession ? (
-          <p className="mt-8 text-warm-500">Checking your session…</p>
+          <p className="mt-8 text-text-tertiary">Checking your session…</p>
         ) : signedIn ? (
           <Button
             variant="primary"
@@ -224,7 +224,7 @@ export function StaffJoinClient({
               Already have an account?{' '}
               <Link
                 href={`/golf/login?returnTo=${encodeURIComponent(`/golf/staff/join/${token}`)}`}
-                className="text-primary-600 font-semibold hover:text-primary-500"
+                className="text-accent-ink font-semibold hover:text-accent-ink"
               >
                 Sign in
               </Link>{' '}

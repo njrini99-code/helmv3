@@ -862,7 +862,7 @@ export function AnnouncementFormSheet({
           <span className="flex min-w-0 items-center gap-1.5 font-fw-sans text-caption text-text-tertiary">
             {!isEdit && (
               <>
-                <IconUsers size={13} className="flex-shrink-0 text-accent-600" />
+                <IconUsers size={13} className="flex-shrink-0 text-accent-ink" />
                 <span className="truncate tabular-nums">
                   {recipientCount} {recipientCount === 1 ? 'player' : 'players'}
                   {selectedDocumentIds.length > 0 &&

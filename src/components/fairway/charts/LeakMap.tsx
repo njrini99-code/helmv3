@@ -212,6 +212,10 @@ function LeakMapInner({
   );
 
   const cx = (label: string) => (xScale(label) ?? 0) + xScale.bandwidth() / 2;
+  const bandLabels = React.useMemo(
+    () => compactBandLabels(data.map((d) => d.label), xScale.step(), VIZ_FONT.tickSize),
+    [data, xScale],
+  );
 
   // PGA curve points (only bands that have a standard).
   const pgaPoints = data
@@ -250,7 +254,7 @@ function LeakMapInner({
         ))}
 
         {/* x band labels */}
-        {data.map((d) => (
+        {data.map((d, i) => (
           <text
             key={d.label}
             x={cx(d.label)}
@@ -260,7 +264,7 @@ function LeakMapInner({
             fontFamily={VIZ_FONT.numeric}
             fill={VIZ_COLOR.textSecondary}
           >
-            {d.label}
+            {bandLabels[i]}
           </text>
         ))}
 
@@ -341,4 +345,16 @@ function LeakMapInner({
       </Group>
     </svg>
   );
+}
+
+/**
+ * Six distance bands on a ~310px phone card leave ~43px per band, and
+ * "10-15 ft" / "15-25 ft" ran together as "10-15 ft15-25 ft25+ ft"
+ * (walk-through 2026-09-24). When any label is wider than its band, keep the
+ * unit only on the last one ("0-3 · 3-5 · … · 25+ ft"). Exported for tests.
+ */
+export function compactBandLabels(labels: readonly string[], step: number, fontSize: number): string[] {
+  const width = (t: string) => t.length * fontSize * 0.62;
+  if (labels.every((l) => width(l) <= step - 4)) return [...labels];
+  return labels.map((l, i) => (i === labels.length - 1 ? l : l.replace(/\s+(ft|yd|m)$/, '')));
 }

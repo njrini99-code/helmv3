@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { haptic } from '@/lib/haptics';
+import { useState } from 'react';
 import {
     DndContext,
     closestCenter,
@@ -20,7 +21,7 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import { cn } from '@/lib/utils';
 import { IconTarget, IconFlag, IconCircleDot, IconMap, IconBrain } from '@/components/icons';
-import { triggerHaptic } from '@/lib/utils/capacitor';
+
 import { PRIORITY_METRICS, PriorityMetric, CoachPhilosophy } from '@/lib/coachhelm/types';
 import { IconButton } from '@/components/ui/button';
 
@@ -57,7 +58,7 @@ function SortableItem({ metric, rank }: { metric: PriorityMetric; rank: number }
             ref={setNodeRef}
             style={style}
             className={cn(
-                'flex items-center gap-4 p-4 rounded-xl border bg-surface transition-all duration-150',
+                'flex items-center gap-4 p-4 rounded-xl border bg-surface transition duration-150',
                 isDragging
                     ? 'shadow-raise border-accent-300 scale-[1.02] z-10 relative'
                     : 'border-border-subtle hover:border-border-strong'
@@ -80,7 +81,7 @@ function SortableItem({ metric, rank }: { metric: PriorityMetric; rank: number }
                 className={cn(
                     'w-7 h-7 rounded-lg flex items-center justify-center text-body-sm font-medium',
                     rank === 1 && 'bg-accent-100 text-accent-700',
-                    rank === 2 && 'bg-accent-50 text-accent-600',
+                    rank === 2 && 'bg-accent-50 text-accent-ink',
                     rank === 3 && 'bg-surface-sunken text-text-secondary',
                     rank === 4 && 'bg-surface-sunken text-text-tertiary',
                     rank === 5 && 'bg-surface-sunken text-text-tertiary'
@@ -101,7 +102,7 @@ function SortableItem({ metric, rank }: { metric: PriorityMetric; rank: number }
             {/* Priority bar */}
             <div className="w-12 h-1.5 bg-surface-sunken rounded-full overflow-hidden">
                 <div
-                    className="h-full bg-accent-500 rounded-full transition-all duration-300"
+                    className="h-full bg-accent-500 rounded-full transition-[width] duration-300"
                     style={{ width: `${(6 - rank) * 20}%` }}
                 />
             </div>
@@ -109,25 +110,28 @@ function SortableItem({ metric, rank }: { metric: PriorityMetric; rank: number }
     );
 }
 
+// Sort metrics by their priority values (1 = highest) to get the display order.
+function getOrderFromValues(vals: PriorityValues): PriorityKeys[] {
+    return [...PRIORITY_METRICS]
+        .sort((a, b) => vals[a.key] - vals[b.key])
+        .map((m) => m.key);
+}
+
 export function PriorityRanker({ values, onChange }: PriorityRankerProps) {
-    // Sort metrics by their current priority values to get initial order
-    const getOrderFromValues = (vals: PriorityValues): PriorityKeys[] => {
-        return [...PRIORITY_METRICS]
-            .sort((a, b) => vals[a.key] - vals[b.key])
-            .map((m) => m.key);
-    };
-
+    // DATA-10 — resync from a PRIMITIVE key, not the `values` object. Callers
+    // pass `values` as an inline literal, so its identity changes on every
+    // parent render; syncing on identity snapped the list back to the saved
+    // order the moment a drag's save flipped the parent's `saving` flag. The
+    // key only changes when the saved order itself changes (initial load, a
+    // successful save, or a remote update). A caller that needs to discard a
+    // local order after a failed save remounts the ranker via `key`.
+    const orderKey = getOrderFromValues(values).join(',');
     const [items, setItems] = useState<PriorityKeys[]>(() => getOrderFromValues(values));
-
-    // Sync if values change externally (e.g. initial load)
-    useEffect(() => {
-        // Only update if the order implies a difference (this prevents loops if not careful, but basic object comparison is tricky here)
-        // A simple way is to check if the current derived order matches 'items'
-        // But since 'items' drives the UI, we should update it when 'values' (source of truth) changes significantly.
-        // For now, we'll rely on the parent only updating 'values' when we trigger onChange.
-        // However, on first load 'values' comes in asynchronously.
-        setItems(getOrderFromValues(values));
-    }, [values]);
+    const [syncedOrderKey, setSyncedOrderKey] = useState(orderKey);
+    if (orderKey !== syncedOrderKey) {
+        setSyncedOrderKey(orderKey);
+        setItems(orderKey.split(',') as PriorityKeys[]);
+    }
 
     const sensors = useSensors(
         useSensor(PointerSensor, {
@@ -141,7 +145,7 @@ export function PriorityRanker({ values, onChange }: PriorityRankerProps) {
     function handleDragEnd(event: DragEndEvent) {
         const { active, over } = event;
         if (!over || active.id === over.id) return;
-        void triggerHaptic('medium');
+        void haptic('checkpoint');
 
         const oldIndex = items.indexOf(active.id as PriorityKeys);
         const newIndex = items.indexOf(over.id as PriorityKeys);

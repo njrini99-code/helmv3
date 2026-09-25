@@ -23,6 +23,12 @@
  * The modal owns its own form lifecycle (state, autofill handlers, unsaved-
  * changes guard, save/saving) and persists through the caller-supplied
  * `onSubmit` so each surface keeps its own action wiring (coach_id, refresh).
+ *
+ * Presentation (audit W3, SHEET-04): a bottom Sheet with a grabber and the
+ * HIG header row — Cancel · title · primary — instead of a floating
+ * near-full-height card whose disabled primary stacked above Cancel. While
+ * the form is dirty, drag and scrim can't dismiss it and Escape asks before
+ * discarding, same as Cancel.
  * ========================================================================== */
 
 import * as React from 'react';
@@ -39,11 +45,13 @@ import {
   type AreaAutoFillStats,
   type MetricCatalogEntry,
 } from './areaTypes';
+import { weakestSgArea } from '@/lib/coachhelm/focus-areas/catalog';
+import { formatMetricText } from '@/lib/golf/metrics/display-registry';
 import { Inset } from '@/components/fairway/surfaces';
 import { Button } from '@/components/fairway/controls/button';
 import { Segmented } from '@/components/fairway/controls/segmented';
 import { Badge } from '@/components/fairway/controls/badge';
-import { ModalShell } from '@/components/fairway/overlays/ModalShell';
+import { Sheet } from '@/components/fairway/overlays/Sheet';
 import {
   FormSection,
   FormField,
@@ -75,7 +83,9 @@ interface FocusAreaForm {
 
 const EMPTY_FORM: FocusAreaForm = {
   player_id: '',
-  area_type: 'driving',
+  // No default category: a fresh sheet preselects the player's weakest SG
+  // area, or asks (SHEET-04). See buildInitialForm.
+  area_type: '',
   title: '',
   description: '',
   target_metric: '',
@@ -182,6 +192,11 @@ function buildInitialForm(
     };
   }
 
+  // SHEET-04 (owner): with 5+ countable rounds, open on the category where the
+  // player loses the most strokes; otherwise no category — the sheet asks.
+  const weakest = weakestSgArea(stats);
+  if (!weakest) return base;
+  base.area_type = weakest;
   const first = metricsForArea(base.area_type)[0];
   if (!first) return base;
   const cur = readMetricValue(first, stats);
@@ -244,7 +259,7 @@ export function FocusAreaModal({
 
   const stats = form.player_id ? playerStats[form.player_id] : undefined;
   const area = getAreaType(form.area_type);
-  const canSave = Boolean(form.player_id && form.title.trim());
+  const canSave = Boolean(form.player_id && form.area_type && form.title.trim());
 
   // Catalog metrics for the chosen area, each resolved to the player's CURRENT
   // value so the picker can show it next to the stat. Empty for areas with no
@@ -311,6 +326,12 @@ export function FocusAreaModal({
     // Re-derive the current value for the selected metric against the new player.
     setForm((prev) => {
       const nextStats = playerStats[nextId];
+      // Coach picking a player on a fresh sheet: preselect that player's
+      // weakest area if no category has been chosen yet (SHEET-04).
+      if (!prev.area_type) {
+        const seeded = buildInitialForm(nextId, undefined, nextStats);
+        return { ...seeded, title: prev.title, description: prev.description };
+      }
       const entry = findMetric(prev.target_metric);
       const cur = entry ? readMetricValue(entry, nextStats) : null;
       const tgt = entry ? suggestTarget(entry, cur) : null;
@@ -435,14 +456,24 @@ export function FocusAreaModal({
       ? 'Prescribe focus area'
       : 'Add focus area';
 
+  // The header has room for a short verb only; the full label stays the
+  // accessible name (it starts with the visible word, WCAG 2.5.3).
+  const ctaShort = editing ? 'Save' : mode === 'coach' ? 'Prescribe' : 'Add';
+
   return (
-    <ModalShell
+    <Sheet
       open={open}
       onOpenChange={(o) => {
         if (o) onOpenChange(true);
         else requestClose();
       }}
-      size="xl"
+      // Dirty: no drag/scrim dismiss (vaul would animate the sheet away before
+      // the discard question could stop it); Escape routes to the question.
+      dismissible={!isDirty && !saving}
+      onEscapeKeyDown={() => {
+        if (isDirty) requestClose();
+      }}
+      className="sm:mx-auto sm:max-w-2xl"
       title={
         editing
           ? 'Edit focus area'
@@ -454,11 +485,28 @@ export function FocusAreaModal({
         editing
           ? 'Update the target and details for this development focus area.'
           : mode === 'coach'
-            ? 'Set a measurable development focus — the player accepts to start tracking.'
+            ? 'Set a measurable development focus. The player accepts to start tracking.'
             : 'Set a measurable focus area to track over your next rounds.'
       }
+      leadingAction={
+        <Button variant="ghost" size="sm" onClick={requestClose} disabled={saving}>
+          Cancel
+        </Button>
+      }
+      trailingAction={
+        <Button
+          variant="primary"
+          size="sm"
+          busy={saving}
+          disabled={!canSave}
+          onClick={handleSave}
+          aria-label={ctaLabel}
+        >
+          {ctaShort}
+        </Button>
+      }
     >
-      <ModalShell.Body>
+      <Sheet.Body>
         <div className="space-y-5">
           <div className="grid grid-cols-1 gap-5 md:grid-cols-2 md:items-start">
           {/* Assignment */}
@@ -478,7 +526,8 @@ export function FocusAreaModal({
             <FormField label="Category" required>
               <Select
                 options={AREA_OPTIONS}
-                value={form.area_type}
+                value={form.area_type || undefined}
+                placeholder="Pick a category"
                 onValueChange={(v) => v && selectArea(v)}
               />
             </FormField>
@@ -498,32 +547,32 @@ export function FocusAreaModal({
                   <div className="flex flex-wrap gap-x-4 gap-y-1 font-fw-sans text-eyebrow text-text-secondary">
                     <span>
                       Avg{' '}
-                      <span className="font-fw-mono tabular-nums text-text-primary">
-                        {stats.avg_score ?? '—'}
+                      <span className="font-fw-sans font-semibold tabular-nums text-text-primary">
+                        {formatMetricText('scoring_average', stats.avg_score)}
                       </span>
                     </span>
                     <span>
                       Putts{' '}
-                      <span className="font-fw-mono tabular-nums text-text-primary">
-                        {stats.avg_putts ?? '—'}
+                      <span className="font-fw-sans font-semibold tabular-nums text-text-primary">
+                        {formatMetricText('putts_per_round', stats.avg_putts)}
                       </span>
                     </span>
                     <span>
                       FW{' '}
-                      <span className="font-fw-mono tabular-nums text-text-primary">
-                        {stats.fairway_pct != null ? `${stats.fairway_pct}%` : '—'}
+                      <span className="font-fw-sans font-semibold tabular-nums text-text-primary">
+                        {formatMetricText('fairway_pct', stats.fairway_pct)}
                       </span>
                     </span>
                     <span>
                       GIR{' '}
-                      <span className="font-fw-mono tabular-nums text-text-primary">
-                        {stats.gir_pct != null ? `${stats.gir_pct}%` : '—'}
+                      <span className="font-fw-sans font-semibold tabular-nums text-text-primary">
+                        {formatMetricText('gir_pct', stats.gir_pct)}
                       </span>
                     </span>
                   </div>
                 ) : (
                   <span className="font-fw-sans text-eyebrow italic text-text-tertiary">
-                    No rounds recorded yet — values won&apos;t auto-fill.
+                    No rounds recorded yet. Values won&apos;t auto-fill.
                   </span>
                 )}
               </Inset>
@@ -567,7 +616,7 @@ export function FocusAreaModal({
           {/* Measurable target — catalog-driven picker with real player values */}
           <FormSection
             title="Measurable target"
-            description="Pick the stat to improve — the player's current value is shown, and a target is suggested (golf metrics like putts/score are lower-is-better)."
+            description="Pick the stat to improve. The player's current value is shown, and a target is suggested (golf metrics like putts/score are lower-is-better)."
           >
             {areaMetrics.length > 0 ? (
               <FormField label="Stat to improve" showOptional>
@@ -586,7 +635,7 @@ export function FocusAreaModal({
                         aria-pressed={active}
                         className={cn(
                           'group flex items-center justify-between gap-3 rounded-fw-md border px-3 py-2.5 text-left',
-                          'transition-all duration-200 ease-[cubic-bezier(0.32,0.72,0,1)]',
+                          'transition duration-200 ease-[cubic-bezier(0.32,0.72,0,1)]',
                           active
                             ? 'border-accent-400 bg-accent-50 ring-1 ring-accent-300'
                             : 'border-border-subtle bg-surface hover:border-border-strong hover:bg-surface-tint',
@@ -622,7 +671,7 @@ export function FocusAreaModal({
                     aria-pressed={showCustom}
                     className={cn(
                       'flex items-center justify-center rounded-fw-md border border-dashed px-3 py-2.5 text-left',
-                      'font-fw-sans text-body-sm transition-all duration-200',
+                      'font-fw-sans text-body-sm transition duration-200',
                       showCustom
                         ? 'border-accent-400 bg-accent-50 text-fw-success-ink'
                         : 'border-border-subtle bg-surface text-text-secondary hover:border-border-strong hover:bg-surface-tint',
@@ -644,7 +693,7 @@ export function FocusAreaModal({
                   placeholder="e.g. Pre-shot routine consistency"
                 />
                 <p className="mt-1 font-fw-sans text-eyebrow text-text-tertiary">
-                  Custom metrics won&apos;t auto-track — update progress manually.
+                  Custom metrics won&apos;t auto-track. Update progress manually.
                 </p>
               </FormField>
             ) : null}
@@ -679,7 +728,7 @@ export function FocusAreaModal({
                     onClick={applySuggested}
                     className="mt-1 font-fw-sans text-eyebrow text-accent-700 underline-offset-2 hover:underline"
                   >
-                    Suggested: {formatMetricValue(form.target_metric, suggested)} — use it
+                    Suggested: {formatMetricValue(form.target_metric, suggested)}, use it
                   </button>
                 ) : null}
               </FormField>
@@ -733,7 +782,7 @@ export function FocusAreaModal({
 
             {previewDelta ? (
               <p className="font-fw-sans text-eyebrow text-text-tertiary">
-                {previewDelta.improving ? 'Asking for a' : 'Heads up — this target moves the wrong way by'}{' '}
+                {previewDelta.improving ? 'Asking for a' : 'Heads up, this target moves the wrong way by'}{' '}
                 <Badge tone={previewDelta.improving ? 'neutral' : 'warning'} size="sm" numeric>
                   {previewDelta.magnitude}
                 </Badge>{' '}
@@ -744,10 +793,10 @@ export function FocusAreaModal({
             ) : null}
           </FormSection>
         </div>
-      </ModalShell.Body>
+      </Sheet.Body>
 
       {confirmingDiscard ? (
-        <ModalShell.Footer>
+        <Sheet.Footer>
           <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <p role="alert" className="font-fw-sans text-body-sm font-medium text-text-primary">
               Discard your unsaved changes?
@@ -761,17 +810,8 @@ export function FocusAreaModal({
               </Button>
             </div>
           </div>
-        </ModalShell.Footer>
-      ) : (
-        <ModalShell.Footer>
-          <Button variant="ghost" onClick={requestClose} disabled={saving}>
-            Cancel
-          </Button>
-          <Button variant="primary" busy={saving} disabled={!canSave} onClick={handleSave}>
-            {ctaLabel}
-          </Button>
-        </ModalShell.Footer>
-      )}
-    </ModalShell>
+        </Sheet.Footer>
+      ) : null}
+    </Sheet>
   );
 }

@@ -110,7 +110,7 @@ export const PIPELINE_STAGES: PipelineStage[] = [
   {
     id: 'active',
     label: 'Active',
-    icon: <IconMessageSquare size={16} className="text-accent-600" />,
+    icon: <IconMessageSquare size={16} className="text-accent-ink" />,
     statuses: ['contacted', 'engaged'],
     color: 'text-accent-700',
     bgColor: 'bg-accent-50',
@@ -170,7 +170,7 @@ export const STATUS_CONFIG: Record<CoachStatus, {
   stage: string;
 }> = {
   new_lead:  { label: 'New Lead',   color: 'text-text-secondary',    bgColor: 'bg-surface-sunken',    ringColor: 'ring-border-strong',    icon: <Inbox size={14} />,         iconLabel: <Inbox size={14} className="text-text-secondary" />, order: 1, gradient: 'bg-text-tertiary',       stage: 'new' },
-  contacted: { label: 'Contacted',  color: 'text-accent-700',  bgColor: 'bg-accent-50',   ringColor: 'ring-accent-200',  icon: <PhoneOutgoing size={14} />, iconLabel: <PhoneOutgoing size={14} className="text-accent-600" />, order: 2, gradient: 'bg-accent-400', stage: 'active' },
+  contacted: { label: 'Contacted',  color: 'text-accent-700',  bgColor: 'bg-accent-50',   ringColor: 'ring-accent-200',  icon: <PhoneOutgoing size={14} />, iconLabel: <PhoneOutgoing size={14} className="text-accent-ink" />, order: 2, gradient: 'bg-accent-400', stage: 'active' },
   engaged:   { label: 'Engaged',    color: 'text-accent-800',  bgColor: 'bg-accent-100',  ringColor: 'ring-accent-300',  icon: <IconSparkles size={14} />,  iconLabel: <IconSparkles size={14} className="text-accent-700" />, order: 3, gradient: 'bg-accent-600', stage: 'active' },
   proposal:  { label: 'Proposal',   color: 'text-fw-warning-ink', bgColor: 'bg-fw-warning-bg', ringColor: 'ring-fw-warning-ring', icon: <FileCheck size={14} />, iconLabel: <FileCheck size={14} className="text-fw-warning-ink" />, order: 4, gradient: 'bg-fw-warning', stage: 'closing' },
   won:       { label: 'Customer',   color: 'text-accent-700', bgColor: 'bg-accent-50',  ringColor: 'ring-accent-400', icon: <Trophy size={14} />,        iconLabel: <Trophy size={14} className="text-accent-700" />, order: 5, gradient: 'bg-accent-500', stage: 'closed' },

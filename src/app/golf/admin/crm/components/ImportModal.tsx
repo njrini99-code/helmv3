@@ -463,7 +463,7 @@ export function ImportModal({ onClose, onSuccess }: ImportModalProps) {
                         <td className="px-3 py-2 capitalize">{coach.program}</td>
                         <td className="px-3 py-2">
                           {coach.isDuplicate && (
-                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-micro font-semibold bg-fw-warning-bg text-fw-warning-ink">
+                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-microlabel font-semibold bg-fw-warning-bg text-fw-warning-ink">
                               Duplicate
                             </span>
                           )}
@@ -514,7 +514,7 @@ export function ImportModal({ onClose, onSuccess }: ImportModalProps) {
               )}
               <div className="w-full bg-surface-sunken rounded-full h-2 mt-4 max-w-md mx-auto">
                 <div
-                  className="bg-accent-500 h-2 rounded-full transition-all"
+                  className="bg-accent-500 h-2 rounded-full transition-[width]"
                   style={{ width: `${importProgress.total > 0 ? (importProgress.current / importProgress.total) * 100 : 0}%` }}
                 />
               </div>

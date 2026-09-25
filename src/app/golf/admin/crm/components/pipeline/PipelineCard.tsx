@@ -60,7 +60,7 @@ export function PipelineCard({ coach, engagement, isOverlay, onClick }: Pipeline
       {...listeners}
       {...attributes}
       className={cn(
-        'transition-all duration-200',
+        'transition duration-200',
         isDragging && !isOverlay && 'opacity-30',
         !isDragging && !isOverlay && 'cursor-grab active:cursor-grabbing',
         isOverlay && 'rotate-2 shadow-raise scale-105 cursor-grabbing',
@@ -69,7 +69,7 @@ export function PipelineCard({ coach, engagement, isOverlay, onClick }: Pipeline
       <div
         className={cn(
           'relative rounded-fw-md border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-card)] overflow-hidden',
-          'hover:shadow-soft hover:-translate-y-0.5 transition-all duration-200',
+          'hover:shadow-soft hover:-translate-y-0.5 transition duration-200',
           isOverlay && 'ring-2 ring-accent-500',
         )}
       >

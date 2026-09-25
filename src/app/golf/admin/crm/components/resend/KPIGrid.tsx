@@ -1,6 +1,6 @@
 'use client';
 
-import { motion, useReducedMotion } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import {
   IconSend,
@@ -13,6 +13,7 @@ import {
 } from '@/components/icons';
 import type { ResendActivityStats } from '@/app/golf/actions/resend-activity';
 import { formatCount, formatRate } from './shared';
+import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
 
 interface KPIGridProps {
   stats: ResendActivityStats | null;
@@ -32,12 +33,12 @@ const ACCENT_CONFIG = {
   neutral: { icon: 'text-text-tertiary',    text: 'text-text-primary' },
   success: { icon: 'text-accent-700', text: 'text-text-primary' },
   info:    { icon: 'text-info',        text: 'text-text-primary' },
-  warning: { icon: 'text-warning',     text: 'text-text-primary' },
+  warning: { icon: 'text-fw-warning-text', text: 'text-text-primary' },
   error:   { icon: 'text-destructive', text: 'text-text-primary' },
 };
 
 export function KPIGrid({ stats, loading }: KPIGridProps) {
-  const prefersReducedMotion = useReducedMotion();
+  const prefersReducedMotion = useReducedMotionGuard();
   if (loading || !stats) {
     return (
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -132,7 +133,7 @@ export function KPIGrid({ stats, loading }: KPIGridProps) {
             transition={prefersReducedMotion ? { duration: 0 } : ({ delay: i * 0.03, duration: 0.25 })}
             className={cn(
               'rounded-card border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-card)] p-6',
-              'hover:bg-surface-tint hover:shadow-raise transition-all duration-200'
+              'hover:bg-surface-tint hover:shadow-raise transition duration-200'
             )}
           >
             <div className="flex items-start justify-between mb-3">
@@ -227,7 +228,7 @@ export function DailyTrendChart({ data }: DailyTrendChartProps) {
               </div>
               <div className="flex flex-col justify-end items-stretch gap-px h-full">
                 <div
-                  className="bg-border-strong rounded-t-fw-sm transition-all"
+                  className="bg-border-strong rounded-t-fw-sm transition-[height]"
                   style={{ height: `${sentH}%` }}
                 />
                 <div

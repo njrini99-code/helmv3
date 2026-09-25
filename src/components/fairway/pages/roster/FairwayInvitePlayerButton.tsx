@@ -195,7 +195,7 @@ export function FairwayInvitePlayerButton({
         onOpenChange={handleOpenChange}
         size="lg"
         title={heading}
-        description="Share this invite to add players to your roster. They join by opening the link or entering the code — no manual add needed."
+        description="Share this invite to add players to your roster. They join by opening the link or entering the code. No manual add needed."
       >
         <ModalShell.Body>
           <div className="space-y-6">
@@ -336,7 +336,7 @@ export function FairwayInvitePlayerButton({
                     <OnboardingStep
                       index={3}
                       title="They land on your roster"
-                      description="Once joined, players appear here automatically — no manual add."
+                      description="Once joined, players appear here automatically. No manual add."
                     />
                   </OnboardingSteps>
                 </div>

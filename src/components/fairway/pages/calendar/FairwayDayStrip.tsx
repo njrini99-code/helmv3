@@ -221,8 +221,8 @@ export function FairwayDayStrip({
             aria-pressed={dayIsSelected}
             aria-label={`${format(day, 'EEEE, MMMM d')}${
               dayEvents.length
-                ? ` — ${dayEvents.length} event${dayEvents.length === 1 ? '' : 's'}`
-                : ' — no events'
+                ? `, ${dayEvents.length} event${dayEvents.length === 1 ? '' : 's'}`
+                : ', no events'
             }`}
             className={cn(
               'group relative block h-auto min-h-[60px] w-full border-0 font-normal md:min-h-[68px]',
@@ -243,7 +243,7 @@ export function FairwayDayStrip({
                     ? 'font-semibold text-accent-700'
                     : dayIsToday
                       ? 'font-semibold text-accent-700'
-                      : // PAST: quieted by ROLE, not by alpha. `text-text-tertiary/60`
+                      : // PAST: quieted by ROLE, not by alpha. `text-text-tertiary`
                         // resolved to #5b5854 on the sunken well — 2.72:1, well under
                         // AA. text-tertiary is already the dimmest AA-safe ink token
                         // (≥4.5:1 on canvas/surface/sunken by construction), so
@@ -262,7 +262,7 @@ export function FairwayDayStrip({
                   // One date-state vocabulary shared with the month grid:
                   // selected = solid accent fill; today = a quiet accent ring.
                   'grid h-9 w-9 place-items-center rounded-full font-fw-sans text-body font-semibold leading-none tabular-nums transition-[background-color,color] motion-reduce:transition-none',
-                  dayIsSelected && 'bg-accent-650 text-text-on-accent [box-shadow:inset_0_1px_0_oklch(1_0_0/0.22),var(--fw-shadow-soft)]',
+                  dayIsSelected && 'bg-accent-fill text-text-on-accent-fill [box-shadow:inset_0_1px_0_oklch(1_0_0/0.22),var(--fw-shadow-soft)]',
                   !dayIsSelected && dayIsToday && 'ring-1 ring-inset ring-accent-650 text-accent-700',
                   dayIsSelected
                     ? 'text-text-on-accent'

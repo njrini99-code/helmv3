@@ -45,7 +45,9 @@
 import { useMemo, useState } from 'react';
 import { cleanCourseName } from '@/lib/golf/course-name';
 import Link from 'next/link';
-import { motion, useReducedMotion } from 'framer-motion';
+import { motion } from 'framer-motion';
+import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
+import { useDeferredRoundRecap } from './use-deferred-round-recap';
 
 import {
   ViewHeader,
@@ -123,6 +125,12 @@ export interface FairwayRoundDetailProps {
   holes: RoundHoleRow[];
   /** Persisted golf_rounds.ai_recap — the editorial lede. Quote verbatim. */
   aiRecap: string | null;
+  /**
+   * True when the round is completed and no recap is persisted yet. The recap
+   * is then generated after mount (never during the server render, audit
+   * DATA-04) and appears when it arrives.
+   */
+  recapPending?: boolean;
   /** Persisted golf_round_reviews.round_stats (subset). Null when no review. */
   reviewStats: RoundReviewStats | null;
   /** Player display name (always shown in the context line). */
@@ -211,7 +219,8 @@ function bucketForHole(score: number, par: number): ScoreBucket {
 export function FairwayRoundDetail({
   round,
   holes,
-  aiRecap,
+  aiRecap: persistedRecap,
+  recapPending = false,
   reviewStats,
   playerName,
   isCoach,
@@ -224,6 +233,11 @@ export function FairwayRoundDetail({
   qualifierReadFailed = false,
 }: FairwayRoundDetailProps) {
   const reviewHref = `/golf/dashboard/rounds/${round.id}/review`;
+  const { recap: aiRecap, generating: recapGenerating } = useDeferredRoundRecap(
+    round.id,
+    persistedRecap,
+    recapPending,
+  );
 
   // ── Masthead copy ──────────────────────────────────────────────────────────
   // round_date is a DATE column ('YYYY-MM-DD'). Parsed + formatted through the
@@ -446,6 +460,14 @@ export function FairwayRoundDetail({
                   <p className="max-w-[58ch] font-fw-display text-body-lg leading-[1.6] text-text-secondary">
                     {aiRecap}
                   </p>
+                </Inset>
+              ) : recapGenerating ? (
+                <Inset padding="md" aria-busy="true">
+                  <span className="sr-only">Writing the round recap</span>
+                  <span aria-hidden className="block space-y-2">
+                    <span className="block h-4 w-full max-w-[52ch] animate-pulse rounded bg-border-subtle motion-reduce:animate-none" />
+                    <span className="block h-4 w-2/3 max-w-[36ch] animate-pulse rounded bg-border-subtle motion-reduce:animate-none" />
+                  </span>
                 </Inset>
               ) : null}
             </InstrumentPanel>
@@ -694,7 +716,7 @@ function ScoringDistribution({
   parts: ReadonlyArray<ScoringDistributionPart>;
   primaryIndex: number;
 }) {
-  const reduced = useReducedMotion() ?? false;
+  const reduced = useReducedMotionGuard();
   const [showTable, setShowTable] = useState(false);
 
   const total = useMemo(
@@ -1300,7 +1322,7 @@ function Td({ children, className = '' }: { children?: React.ReactNode; classNam
 function HitMark({ value }: { value: boolean | null }) {
   if (value == null) {
     return (
-      <span aria-label="not applicable" className="text-text-tertiary/50">
+      <span aria-label="not applicable" className="text-text-tertiary">
         ·
       </span>
     );

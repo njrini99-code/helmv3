@@ -7,7 +7,7 @@
  * "Course name *" manual-entry input must NOT be reformatted — a coach's own
  * typing should never be fought mid-edit.
  */
-import { describe, it, expect, vi } from 'vitest';
+import { beforeAll, describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { LazyMotion, domAnimation } from 'framer-motion';
 import type { FairwaySetupForm, FairwayNewRoundEntryProps } from '@/components/fairway/pages/rounds-new/FairwayNewRoundEntry';
@@ -325,5 +325,104 @@ describe('FairwayNewRoundEntry — confirmed course', () => {
     // so the parent's own hole-configuration step is still the way forward.
     renderConfirmed({ preloadedHoleConfigs: null });
     expect(screen.getByRole('button', { name: /configure holes/i })).toBeInTheDocument();
+  });
+});
+
+/**
+ * P0 (round-entry audit): a start failure on the manual (holes-step) path was
+ * silent. The holes branch rendered FairwayHoleConfig without the error or
+ * pending state, so the parent's `error` never showed and Start re-enabled
+ * with no "Starting…" — the same bug UNCW reported, and a double-start risk.
+ */
+describe('FairwayNewRoundEntry — holes-step start feedback (P0)', () => {
+  // FairwayHoleConfig scrolls the error into view; jsdom has no layout.
+  beforeAll(() => {
+    if (!Element.prototype.scrollIntoView) Element.prototype.scrollIntoView = vi.fn();
+  });
+
+  const holesProps = (overrides: Partial<FairwayNewRoundEntryProps> = {}) =>
+    baseProps({
+      step: 'holes',
+      preloadedHoleConfigs: [{ holeNumber: 1, par: 4, yardage: 400 }],
+      ...overrides,
+    });
+
+  it('shows the start error on the holes step', () => {
+    render(
+      <LazyMotion features={domAnimation}>
+        <FairwayNewRoundEntry {...holesProps({ error: 'Could not save the round. Check your connection.' })} />
+      </LazyMotion>,
+    );
+    expect(screen.getByText('Unable to start round')).toBeInTheDocument();
+    expect(screen.getByText('Could not save the round. Check your connection.')).toBeInTheDocument();
+  });
+
+  it('shows "Starting…" and disables Start while the round is being created', () => {
+    render(
+      <LazyMotion features={domAnimation}>
+        <FairwayNewRoundEntry {...holesProps({ isStartingRound: true })} />
+      </LazyMotion>,
+    );
+    const start = screen.getByRole('button', { name: /Starting…/ });
+    expect(start).toBeDisabled();
+    expect(screen.queryByRole('button', { name: /Start round →/ })).not.toBeInTheDocument();
+  });
+});
+
+describe('FairwayNewRoundEntry — setup action dock', () => {
+  it('pins the primary action above the home indicator', () => {
+    render(
+      <LazyMotion features={domAnimation}>
+        <FairwayNewRoundEntry
+          {...baseProps({ courseMode: 'new', selectedCourseId: null, selectedCourse: null, savedCourses: [], filteredSavedCourses: [] })}
+        />
+      </LazyMotion>,
+    );
+    const dock = document.querySelector('[data-slot="setup-action-dock"]');
+    expect(dock).not.toBeNull();
+    expect(dock!.className).toContain('sticky');
+    expect(dock!.className).toContain('bottom-0');
+    expect(dock!.className).toContain('safe-area-inset-bottom');
+  });
+});
+
+/**
+ * Course-picker flicker, second half: a tee pick used to mount the inline
+ * scorecard with a 450ms fade/slide entrance right as the picker sheet left,
+ * so the player saw the page "fade in" behind the sheet. A scorecard that
+ * arrives from a pick appears in place; one present at mount still enters.
+ */
+describe('FairwayNewRoundEntry — pick-driven scorecard mount', () => {
+  const HOLES = Array.from({ length: 18 }, (_, i) => ({ holeNumber: i + 1, par: 4, yardage: 400 }));
+  const unpicked = { courseMode: 'new' as const, cloudPickActive: false, selectedCourse: null, selectedCourseId: null, preloadedHoleConfigs: null };
+  const picked = { courseMode: 'saved' as const, cloudPickActive: true, selectedCourse: null, selectedCourseId: null, preloadedHoleConfigs: HOLES };
+  const hiddenByEntrance = () =>
+    Array.from(document.querySelectorAll<HTMLElement>('[style]')).filter((el) => el.style.opacity === '0');
+
+  it('does not play the entrance when the scorecard mounts from a pick', () => {
+    const { rerender } = render(
+      <LazyMotion features={domAnimation}>
+        <FairwayNewRoundEntry {...baseProps(unpicked)} />
+      </LazyMotion>,
+    );
+    const before = new Set(hiddenByEntrance());
+    rerender(
+      <LazyMotion features={domAnimation}>
+        <FairwayNewRoundEntry {...baseProps(picked)} />
+      </LazyMotion>,
+    );
+    const start = screen.getByRole('button', { name: /start round/i });
+    const scorecardHidden = hiddenByEntrance().filter((el) => !before.has(el) && el.contains(start));
+    expect(scorecardHidden).toEqual([]);
+  });
+
+  it('still plays the entrance when the course was confirmed at mount', () => {
+    render(
+      <LazyMotion features={domAnimation}>
+        <FairwayNewRoundEntry {...baseProps(picked)} />
+      </LazyMotion>,
+    );
+    const start = screen.getByRole('button', { name: /start round/i });
+    expect(hiddenByEntrance().some((el) => el.contains(start))).toBe(true);
   });
 });

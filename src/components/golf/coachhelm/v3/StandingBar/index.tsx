@@ -49,6 +49,7 @@ export type {
 
 export {
   toScalePct,
+  fitScale,
   formatValue,
   deltaVsTeam,
   teamCohortText,
@@ -63,6 +64,7 @@ export {
   initialsFromName,
   standingSubjectLabel,
   resolveDisplayScale,
+  unitHardBounds,
   layoutMarkerPositions,
   MARKER_MIN_GAP_PCT,
 } from './utils';

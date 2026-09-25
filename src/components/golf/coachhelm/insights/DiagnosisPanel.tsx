@@ -33,6 +33,7 @@
  * ========================================================================== */
 
 import { cn } from '@/lib/utils';
+import { confidenceLabel } from '@/lib/coachhelm/confidence-label';
 import type { Diagnosis, DiagnosisDriver } from '@/lib/coachhelm/v2/insights/types';
 // Leaf import, not './EvidencePanel' — EvidencePanel.tsx itself imports
 // DiagnosisPanel (to render it), so importing formatValue back from
@@ -75,8 +76,8 @@ function CausalityChip({ level }: { level: Diagnosis['causality_level'] }) {
       )}
       title={
         measured
-          ? 'Measured directly in your shot sequence — an observed fact.'
-          : 'Inferred from your aggregate stats — a coaching hypothesis to test, not a measured shot sequence. Confidence is capped accordingly.'
+          ? 'Measured directly in your shot sequence, an observed fact.'
+          : 'Inferred from your aggregate stats, a coaching hypothesis to test, not a measured shot sequence. Confidence is capped accordingly.'
       }
     >
       <span aria-hidden className="leading-none">{measured ? '■' : '◇'}</span>
@@ -155,7 +156,8 @@ export function DiagnosisPanel({
   const drivers =
     typeof maxDrivers === 'number' ? diagnosis.drivers.slice(0, maxDrivers) : diagnosis.drivers;
   const hidden = diagnosis.drivers.length - drivers.length;
-  const confPct = typeof confidence === 'number' ? Math.round(confidence * 100) : null;
+  // A word, not "N% confidence" (the value is a sample-size ramp).
+  const confWord = typeof confidence === 'number' ? confidenceLabel(confidence) : null;
 
   return (
     <div className={cn('space-y-4', className)}>
@@ -206,9 +208,9 @@ export function DiagnosisPanel({
       </InsightCallout>
 
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2 pt-0.5">
-        {confPct !== null ? (
+        {confWord !== null ? (
           <span className="text-caption text-text-tertiary" title={diagnosis.confidence_reason}>
-            {confPct}% confidence
+            {confWord}
           </span>
         ) : null}
         {trust ? (

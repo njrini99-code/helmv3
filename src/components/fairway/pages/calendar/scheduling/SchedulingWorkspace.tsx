@@ -977,7 +977,7 @@ export function SchedulingWorkspace({
                     aria-hidden="true"
                     className={cn(
                       'grid h-8 w-8 shrink-0 place-items-center rounded-full',
-                      current ? 'bg-accent-650 text-text-on-accent' : 'border-2 border-border-strong bg-surface',
+                      current ? 'bg-accent-fill text-text-on-accent-fill' : 'border-2 border-border-strong bg-surface',
                     )}
                   >
                     {current ? <Check className="h-4 w-4" strokeWidth={2.5} /> : null}

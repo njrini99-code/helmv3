@@ -139,7 +139,7 @@ export function FairwayMyQualifiers({ qualifiers, error, loadError }: FairwayMyQ
       <ViewHeader
         eyebrow="My Qualifiers"
         title="Your qualifier scorecard."
-        description="Qualifier entries your coach posts appear here — post the rounds, climb the board."
+        description="Your qualifiers. Post the rounds, climb the board."
         meta={meta}
       />
 
@@ -167,7 +167,7 @@ export function FairwayMyQualifiers({ qualifiers, error, loadError }: FairwayMyQ
             <EmptyState
               icon={AlertTriangle}
               title="Couldn't load your qualifiers"
-              description="Something went wrong loading your qualifier entries. This is usually temporary — try again in a moment."
+              description="Something went wrong loading your qualifier entries. This is usually temporary. Try again in a moment."
               action={
                 <Button variant="primary" size="sm" onClick={() => router.refresh()}>
                   <span>Try again</span>

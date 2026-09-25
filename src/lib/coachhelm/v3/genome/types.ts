@@ -74,6 +74,8 @@ export interface GenomeRound {
   round_type: string | null;
   total_score: number | null;
   score_to_par: number | null;
+  /** 9 or 18; null/absent means 18. The pressure gap scales to 18 holes. */
+  holes_played?: number | null;
 }
 
 export interface GenomeHoleScore {

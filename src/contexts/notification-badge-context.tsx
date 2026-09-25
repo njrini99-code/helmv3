@@ -2,10 +2,8 @@
 
 import { createContext, useContext, useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useGolfUser } from '@/contexts/golf-user-context';
-import { getPlayerNotificationCounts, markAnnouncementsSeen as markSeenAction } from '@/app/golf/actions/player-notifications';
-import { getCoachNotificationCounts } from '@/app/golf/actions/coach-notifications';
-import { getAlertCounts } from '@/app/golf/actions/alerts';
-import { getNotificationsUnreadCount } from '@/app/golf/actions/unified-notifications';
+import { markAnnouncementsSeen as markSeenAction } from '@/app/golf/actions/player-notifications';
+import { getNotificationBadgeBundle } from '@/app/golf/actions/notification-badges';
 import type { GolfAnnouncementMeta } from '@/lib/types/golf';
 import { isNativeApp } from '@/lib/utils/capacitor';
 
@@ -57,6 +55,21 @@ const EMPTY_BADGES: NotificationBadges = {
 };
 
 const POLL_INTERVAL = 45_000; // 45 seconds
+/**
+ * The first badge read waits for the browser to go idle (bounded by this
+ * timeout) instead of firing during hydration. Next.js runs a client's server
+ * actions one at a time, so a badge POST sent at mount sits in front of any
+ * server action the page itself needs to render its content.
+ */
+export const INITIAL_FETCH_IDLE_TIMEOUT = 3_000;
+/** Initial-read delay where `requestIdleCallback` is unavailable (WKWebView). */
+export const INITIAL_FETCH_FALLBACK_DELAY = 1_500;
+/**
+ * WKWebView fires `visibilitychange` on every app foreground (and on the
+ * share sheet, the keyboard accessory, etc.). Refetch on return only when the
+ * last read is at least this old, so quick app switches do not stack POSTs.
+ */
+export const VISIBILITY_REFETCH_MIN_GAP = 15_000;
 
 // ============================================================================
 // CONTEXT
@@ -82,6 +95,8 @@ export function NotificationBadgeProvider({ children }: { children: React.ReactN
   const [unseenAnnouncements, setUnseenAnnouncements] = useState<GolfAnnouncementMeta[]>([]);
   const isVisibleRef = useRef(true);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  /** Wall-clock of the last badge read — gates visibility-return refetches. */
+  const lastFetchAtRef = useRef(0);
   /**
    * Circuit breaker for a session that has gone away mid-tab (logout in
    * another tab, idle-timeout expiry — see project_helmv3_demo_mass_traffic_
@@ -117,21 +132,31 @@ export function NotificationBadgeProvider({ children }: { children: React.ReactN
     if (sessionExpiredRef.current) return;
     if (!isVisibleRef.current) return;
 
-    // Tracks whether THIS poll already learned the session is gone, so the
-    // additive `notifications` unread fetch below can skip a second
-    // round-trip to relearn the same thing (same spirit as the CoachHelm
-    // badge's own skip-on-expired check).
-    let sessionExpiredThisPoll = false;
+    lastFetchAtRef.current = Date.now();
 
     try {
-      if (isPlayer && playerId && userId && teamId) {
-        const result = await getPlayerNotificationCounts(playerId, userId, teamId);
-        if (result.authExpired) {
+      // ONE server action for every badge (see notification-badges.ts). The
+      // three reads used to be three serial POSTs; they now run in parallel
+      // server-side and come back together. A part is `null` when it was not
+      // requested for this role or when that one read threw — handled exactly
+      // as a thrown individual action was before.
+      const bundle = await getNotificationBadgeBundle({
+        role: isPlayer ? 'player' : 'coach',
+        userId: userId ?? '',
+        playerId: playerId ?? null,
+        teamId: teamId ?? null,
+        coachId: coachId ?? null,
+      });
+
+      if (isPlayer) {
+        const result = bundle.player;
+        if (result?.authExpired) {
           // Same circuit breaker the coach branch has had since the 45s poll
           // was added; the player branch kept polling a dead session.
           stopPolling();
-          sessionExpiredThisPoll = true;
-        } else if (result.success && result.data) {
+          return;
+        }
+        if (result?.success && result.data) {
           setAnnouncements(result.data.unreadAnnouncements);
           setTasks(result.data.pendingTasks);
           // null means the count could not be read. HOLD the previous value
@@ -144,12 +169,13 @@ export function NotificationBadgeProvider({ children }: { children: React.ReactN
           setCalendarNotifications(result.data.calendarNotifications ?? 0);
           setUnseenAnnouncements(result.data.unseenAnnouncements);
         }
-      } else if (isCoach && userId) {
-        const result = await getCoachNotificationCounts(userId, teamId);
-        if (result.authExpired) {
+      } else if (isCoach) {
+        const result = bundle.coach;
+        if (result?.authExpired) {
           stopPolling();
-          sessionExpiredThisPoll = true;
-        } else if (result.success && result.data) {
+          return;
+        }
+        if (result?.success && result.data) {
           // null means the count could not be read. HOLD the previous value
           // rather than dropping the badge to 0 — a confident "no unread
           // messages" during a transient fault is how a coach misses a message
@@ -162,42 +188,28 @@ export function NotificationBadgeProvider({ children }: { children: React.ReactN
           setTravel(0);
           setUnseenAnnouncements([]);
         }
-        // CoachHelm unread-signal badge — same poll, additive. Failure/empty
-        // leaves the count at 0 (honest: no badge), never a fabricated value.
-        // Skip when the session already proved expired above — no point
-        // spending a second round-trip to learn the same thing twice.
-        if (coachId && !result.authExpired) {
-          try {
-            const alerts = await getAlertCounts(coachId);
-            setCoachhelm(alerts.success ? (alerts.counts?.critical ?? 0) : 0);
-            if (alerts.authExpired) {
-              stopPolling();
-              sessionExpiredThisPoll = true;
-            }
-          } catch {
-            setCoachhelm(0);
+        // CoachHelm unread-signal badge. Failure/empty leaves the count at 0
+        // (honest: no badge), never a fabricated value.
+        if (coachId) {
+          const alerts = bundle.alerts;
+          if (alerts?.authExpired) {
+            stopPolling();
+            return;
           }
+          setCoachhelm(alerts?.success ? (alerts.counts?.critical ?? 0) : 0);
         }
       }
 
       // Unified notifications bell badge, half 2/2: unread rows in the
       // generic `notifications` table (CoachHelm dispatch.ts lifecycle
-      // receipts + task-reminders.ts reminders). Same 45s poll, additive,
-      // BOTH roles (CoachHelm dispatches to players; task-reminders notifies
-      // assigned players AND the assigning coach) — never a second poll loop
-      // (NotificationBell reads this + `calendarNotifications` above from
-      // this same context instead of fetching its own count).
-      if (userId && !sessionExpiredThisPoll) {
-        try {
-          const unread = await getNotificationsUnreadCount();
-          if (unread.authExpired) {
-            stopPolling();
-          } else {
-            setNotificationsUnread(unread.success ? (unread.data?.unread ?? 0) : 0);
-          }
-        } catch {
-          setNotificationsUnread(0);
-        }
+      // receipts + task-reminders.ts reminders), BOTH roles. NotificationBell
+      // reads this + `calendarNotifications` above from this same context
+      // instead of fetching its own count.
+      const unread = bundle.unread;
+      if (unread?.authExpired) {
+        stopPolling();
+      } else {
+        setNotificationsUnread(unread?.success ? (unread.data?.unread ?? 0) : 0);
       }
     } catch (err) {
       if (process.env.NODE_ENV === 'development') console.error(err);
@@ -221,9 +233,22 @@ export function NotificationBadgeProvider({ children }: { children: React.ReactN
     }
   }, []);
 
-  // Initial fetch
+  // Initial fetch — deferred to idle so the page's own server actions reach
+  // Next's one-at-a-time action queue first (see INITIAL_FETCH_IDLE_TIMEOUT).
   useEffect(() => {
-    if (isActive) fetchCounts();
+    if (!isActive) return;
+    const win = window as Window & {
+      requestIdleCallback?: (cb: () => void, opts?: { timeout: number }) => number;
+      cancelIdleCallback?: (id: number) => void;
+    };
+    if (typeof win.requestIdleCallback === 'function') {
+      const id = win.requestIdleCallback(() => { void fetchCounts(); }, { timeout: INITIAL_FETCH_IDLE_TIMEOUT });
+      return () => win.cancelIdleCallback?.(id);
+    }
+    // No idle API (iOS WKWebView / Safari): a short fixed delay does the same
+    // job — the page's mount-time actions are queued first.
+    const timer = setTimeout(() => { void fetchCounts(); }, INITIAL_FETCH_FALLBACK_DELAY);
+    return () => clearTimeout(timer);
   }, [isActive, fetchCounts]);
 
   // Polling with visibility API
@@ -232,7 +257,11 @@ export function NotificationBadgeProvider({ children }: { children: React.ReactN
 
     function handleVisibilityChange() {
       isVisibleRef.current = !document.hidden;
-      if (!document.hidden) fetchCounts(); // Refetch when tab becomes visible
+      // Refetch when the tab becomes visible — unless the last read is fresh
+      // (see VISIBILITY_REFETCH_MIN_GAP).
+      if (!document.hidden && Date.now() - lastFetchAtRef.current >= VISIBILITY_REFETCH_MIN_GAP) {
+        void fetchCounts();
+      }
     }
 
     document.addEventListener('visibilitychange', handleVisibilityChange);

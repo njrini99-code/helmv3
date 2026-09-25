@@ -129,7 +129,7 @@ describe('TeamSwitcher', () => {
     expect(mens.getAttribute('style') ?? '').toMatch(/background/i);
     // Inactive = transparent warm.
     expect(womens.className).toContain('bg-transparent');
-    expect(womens.className).toContain('text-warm-500');
+    expect(womens.className).toContain('text-text-tertiary');
   });
 
   it('flips optimistically and reports the picked gender via onOptimisticSwitch', async () => {

@@ -165,15 +165,24 @@ describe('PuttingDrill', () => {
         score: [],
         gir: [],
         fairway: [],
-        putts: [fixtureTrendPoint('2026-06-01', 32), fixtureTrendPoint('2026-07-01', 28)],
+        // The delta is now last-3 vs prior-3 (needs >= 3 per side), not
+        // newest vs oldest, so the fixture carries six rounds.
+        putts: [
+          fixtureTrendPoint('2026-06-01', 32),
+          fixtureTrendPoint('2026-06-08', 32),
+          fixtureTrendPoint('2026-06-15', 32),
+          fixtureTrendPoint('2026-06-22', 28),
+          fixtureTrendPoint('2026-06-29', 28),
+          fixtureTrendPoint('2026-07-01', 28),
+        ],
       },
     });
-    // ledgerDelta(28, 32, higherIsBetter=false, fmtNumDelta) => "−4.0", good=true
+    // mean(28,28,28) − mean(32,32,32) => "−4.0", good=true
     // (fewer putts is an improvement) => mapped to the green "up" direction,
     // never the raw-sign "down"/amber a naive delta would render.
     const deltaLines = document.querySelectorAll('[data-slot="readout-delta"]');
     const deltaTexts = Array.from(deltaLines).map((el) => el.textContent ?? '');
-    expect(deltaTexts.some((t) => t.includes('−4.0') && t.includes('vs prior period'))).toBe(true);
+    expect(deltaTexts.some((t) => t.includes('−4.0') && t.includes('last 3 vs prior 3 rounds'))).toBe(true);
     const upDelta = document.querySelector('[data-slot="readout-delta"][data-direction="up"]');
     expect(upDelta).not.toBeNull();
   });

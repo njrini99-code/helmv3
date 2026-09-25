@@ -125,8 +125,7 @@ export function FairwayMyGameProfile({
     <div className="mx-auto w-full max-w-[760px] px-4 py-6 md:px-6">
       <CoachHelmShell
         active="effectiveness"
-        // eslint-disable-next-line jsx-a11y/aria-role
-        role="player"
+        viewerRole="player"
         eyebrow="My Game Profile"
         title={`${firstName}'s genome`}
         description={
@@ -258,7 +257,7 @@ export function FairwayMyGameProfile({
                 />
                 <p className="max-w-[44ch] font-fw-sans text-body-sm leading-relaxed text-text-secondary">
                   Your genome needs {GENOME_ROUND_FLOOR}+ completed rounds before the
-                  radar lights up. Keep logging rounds — we&rsquo;ll surface your
+                  radar lights up. Keep logging rounds. We&rsquo;ll surface your
                   shape automatically.
                 </p>
                 <Button asChild variant="primary">
@@ -272,7 +271,7 @@ export function FairwayMyGameProfile({
           <Surface elevation="border" padding="md">
             <p className="font-fw-sans text-caption leading-5 text-text-tertiary">
               Your coach sees this exact profile. It updates automatically as you
-              log rounds — no extra steps.
+              log rounds. No extra steps.
             </p>
           </Surface>
         </div>

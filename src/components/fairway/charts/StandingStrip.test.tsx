@@ -21,7 +21,8 @@
 import { render, screen, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 
-import { StandingStrip, type StandingStripProps } from './StandingStrip';
+import { StandingStrip, formatStripValue, stripMetricLabel, type StandingStripProps } from './StandingStrip';
+import { formatMetricText } from '@/lib/golf/metrics/display-registry';
 
 const BASE: StandingStripProps = {
   metric_id: 'sg_ott',
@@ -287,5 +288,39 @@ describe('StandingStrip — suppressed Tour reference with a reason (addendum A2
     render(<StandingStrip {...APPROACH} />);
     expect(screen.getByText('30 ft')).toBeInTheDocument();
     expect(screen.queryByText(/hit the green/)).toBeNull();
+  });
+});
+
+// NUM-24: the pressure gap reads with one label, sign and precision on the
+// Standing strip and the Fingerprint (display registry `practice_tournament_delta`).
+describe('StandingStrip pressure gap (NUM-24)', () => {
+  it('formats a signed gap metric through the display registry', () => {
+    expect(formatStripValue('practice_tournament_delta', 15.75, 'strokes')).toBe(formatMetricText('practice_tournament_delta', 15.75));
+    expect(formatStripValue('practice_tournament_delta', 15.75, 'strokes')).toMatch(/^\+15\.8/);
+    // Non-gap metrics keep the strip's unit formatter.
+    expect(formatStripValue('sg_total', -1.61, 'strokes')).toBe('-1.61');
+  });
+
+  it('labels the Standing row "Pressure gap", the same words the Fingerprint uses', () => {
+    expect(stripMetricLabel('practice_tournament_delta', 'Practice vs Tournament Delta')).toBe('Pressure gap');
+    expect(stripMetricLabel('sg_total', 'SG: Total')).toBe('SG: Total');
+  });
+
+  it('renders the signed value on the strip', () => {
+    render(
+      <StandingStrip
+        {...BASE}
+        metric_id="practice_tournament_delta"
+        metric_label="Practice vs Tournament Delta"
+        player_value={15.75}
+        team_avg={3.2}
+        pga_value={0.5}
+        direction="lower_better"
+        unit="strokes"
+        scale={{ min: -1, max: 5 }}
+      />,
+    );
+    expect(screen.getAllByText('+15.8').length).toBeGreaterThan(0);
+    expect(screen.getByRole('heading', { name: 'Pressure gap' })).toBeTruthy();
   });
 });

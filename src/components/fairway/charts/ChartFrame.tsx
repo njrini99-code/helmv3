@@ -116,7 +116,9 @@ export const ChartFrame = React.forwardRef<HTMLDivElement, ChartFrameProps>(func
               {overline}
             </p>
           ) : null}
-          <h3 id={titleId} className="truncate font-fw-sans text-h3 text-text-primary">
+          {/* Two lines, not one: beside the "View as table" toggle a phone
+              card cut "Approach Proximity by Distance" to "Approach Proximity by …". */}
+          <h3 id={titleId} className="line-clamp-2 font-fw-sans text-h3 text-text-primary">
             {title}
           </h3>
           {subtitle ? (
