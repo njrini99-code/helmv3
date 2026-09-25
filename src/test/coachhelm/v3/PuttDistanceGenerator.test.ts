@@ -180,10 +180,10 @@ describe('PuttDistanceGenerator — synthesized priority + action (PLAY: driver+
       };
     }
 
-    it("women's 3-5ft anchor is ~84%, not the men's 90.5%", () => {
+    it("women's 3-5ft anchor is the LPGA 86%, not the men's 90.5%", () => {
       const c = new PuttDistanceGenerator(PLAYER_ID, '3_5ft').composeContent(aggG({ gender: 'womens' }));
-      expect(c.evidence.comparison_value).toBe(84);
-      expect(c.content).toContain('84%');
+      expect(c.evidence.comparison_value).toBe(86);
+      expect(c.content).toContain('86%');
     });
     it("men's 3-5ft anchor stays 90.5% (rounds to 90% in copy, unchanged)", () => {
       const c = new PuttDistanceGenerator(PLAYER_ID, '3_5ft').composeContent(aggG({ gender: 'mens' }));

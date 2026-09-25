@@ -62,10 +62,13 @@ interface GenderAnchor {
   womens: AnchorValue;
 }
 
-/** Every women's anchor in this file is derived the same way — scaled/
- *  discounted from a measured men's or LPGA figure, never itself a measured
+/** Women's putt-make anchors are the measured LPGA rows (LPGA_PUTT_NOTE).
+ *  Every other women's anchor is derived the same way — scaled/discounted
+ *  from a measured men's or LPGA figure, never itself a measured
  *  women's-college population statistic. One shared note avoids repeating
  *  the same sentence on every entry. */
+const LPGA_PUTT_NOTE = 'golf_pga_standards tour=lpga (LPGA ShotLink 2024), verified 2026-09-25.';
+
 const WOMENS_DERIVED_NOTE =
   'LPGA/NCAA figure discounted to college — not a measured women\'s-college population stat.';
 
@@ -75,27 +78,28 @@ const WOMENS_DERIVED_NOTE =
  * Tour constant are listed; everything else falls through to `pga_value`.
  */
 const COHORT_ANCHORS: Partial<Record<MetricId, GenderAnchor>> = {
-  // Putt make % by distance — men's = golf_pga_standards (verified 2026-06-06);
-  // women's = LPGA-derived college targets (between synthetic cohort and men's).
+  // Putt make % by distance — men's = golf_pga_standards tour=pga (verified
+  // 2026-06-06); women's = golf_pga_standards tour=lpga (LPGA ShotLink 2024,
+  // verified 2026-09-25), the same rows lib/golf/benchmarks/putting.ts reads.
   putts_made_3_5ft_pct: {
     mens: { value: 90.5, provenance: 'measured', sourceNote: 'golf_pga_standards, verified 2026-06-06.' },
-    womens: { value: 84.0, provenance: 'derived', sourceNote: WOMENS_DERIVED_NOTE },
+    womens: { value: 86.0, provenance: 'measured', sourceNote: LPGA_PUTT_NOTE },
   },
   putts_made_5_10ft_pct: {
     mens: { value: 62.2, provenance: 'measured', sourceNote: 'golf_pga_standards, verified 2026-06-06.' },
-    womens: { value: 52.0, provenance: 'derived', sourceNote: WOMENS_DERIVED_NOTE },
+    womens: { value: 55.0, provenance: 'measured', sourceNote: LPGA_PUTT_NOTE },
   },
   putts_made_10_15ft_pct: {
     mens: { value: 35.7, provenance: 'measured', sourceNote: 'golf_pga_standards, verified 2026-06-06.' },
-    womens: { value: 28.0, provenance: 'derived', sourceNote: WOMENS_DERIVED_NOTE },
+    womens: { value: 30.0, provenance: 'measured', sourceNote: LPGA_PUTT_NOTE },
   },
   putts_made_15_25ft_pct: {
     mens: { value: 15.4, provenance: 'measured', sourceNote: 'golf_pga_standards, verified 2026-06-06.' },
-    womens: { value: 11.0, provenance: 'derived', sourceNote: WOMENS_DERIVED_NOTE },
+    womens: { value: 12.0, provenance: 'measured', sourceNote: LPGA_PUTT_NOTE },
   },
   putts_made_25_plus_ft_pct: {
     mens: { value: 5.5, provenance: 'measured', sourceNote: 'golf_pga_standards, verified 2026-06-06.' },
-    womens: { value: 4.0, provenance: 'derived', sourceNote: WOMENS_DERIVED_NOTE },
+    womens: { value: 5.0, provenance: 'measured', sourceNote: LPGA_PUTT_NOTE },
   },
 
   // Approach green-hit % anchors live in GREEN_HIT_ANCHORS below, keyed by
