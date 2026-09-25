@@ -121,6 +121,15 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
     that fell short, plus the A5 hypothesis label where one applies.
   `Diagnosis.basis` is additive and optional. The contract is in the
   evidence contract doc under "Root-cause diagnosis".
+- Context narrowing (2026-09-25). For approach, tee and par-scoring leaks,
+  the diagnosis narrows the failing population by length band, then par ×
+  length, then miss shape (`v3/engine/context-narrowing.ts`). Each step has
+  a sample gate and a concentration gate; narrowing stops at the first gate
+  that fails, and every step states its counts. The result is stored as
+  `Diagnosis.basis.narrowing` and phrased "Observed, not a cause". It never
+  changes `causality_level`. Failed 175+ yd par-5 approaches are excluded as
+  likely lay-ups. Gates and wording are in the evidence contract doc under
+  "Context narrowing".
 - Standing Tour basis (2026-09-22, Package 7B / addendum A2): the three
   `approach_proximity_*` standing rows carry a `basis` column
   (`'on_green' | 'all_shot' | null`) written by
@@ -228,6 +237,19 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
   Solid). A change to those evidence fields' shape or meaning must update
   `build-root-map.ts` and its tests. Details: `player-coachhelm-development.md`
   and `coach-intelligence-triage.md`.
+- Approach branches on the root map (2026-09-25):
+  - Sizing: a branch uses its stored counterfactual, else the band's strokes
+    lost from a per-shot SG split. The split is used only when it reconciles
+    with the stored `golf_rounds.strokes_gained_approach` within 0.15 a
+    round (`approach-context.ts`).
+  - Unsized bands are outlined, with a note saying why: no stored SG, the
+    split did not reconcile, or the band is not losing strokes.
+  - Each approach branch carries its "where it concentrates" path.
+  - `RootWhy` shows the miss compass, the par × length grid and the band
+    metrics for that branch. Each shows only when its gate passed, and each
+    is labelled with its own round window (the last 40 countable rounds).
+  - Team roots mark cells, and list "Needs you" rows, only from a stored
+    narrowing that got past the length step.
 - Root map area SG (2026-09-25) is averaged by `loadPlayersAreaSg` over
   COUNTABLE completed rounds (`isCountableRound`), per 18 holes (a 9-hole
   round's SG is doubled), from `golf_rounds.strokes_gained_*`. It does not

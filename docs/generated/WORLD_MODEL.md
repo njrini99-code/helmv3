@@ -7,7 +7,7 @@
 A dependency graph over `memory/registry.yml`'s feature ownership, not a second copy of it. Every semantic edge below carries evidence — see `docs/generated/WORLD_MODEL.json` for the full attribution. Use `npm run knowledge:world-model -- --impact <file|feature>` for the blast-radius read model.
 
 **Node counts:** 29 features, 66 routes, 46 components, 30 apis, 92 actions, 103 services, 65 tests, 134 tables, 164 rpcs, 28 jobs, 17 invariants, 86 sentrySignals, 8 journeys.
-**Edges:** 984 (merged; an edge with more than one evidence kind is a stronger claim).
+**Edges:** 985 (merged; an edge with more than one evidence kind is a stronger claim).
 **Unmapped:** Probed files with no registry owner (a real gap this graph surfaces, not fixed here): src/lib/inngest/functions.ts.
 **Table attribution:** A feature’s `tables` list comes only from its own `db:` migration globs, scanned for a literal `CREATE TABLE`. A feature can be real owner of a table with no migration under its glob still containing that statement (e.g. the table was created by a migration matched by a DIFFERENT feature’s `db:` glob, or the CREATE TABLE was later superseded by an ALTER/rename this scanner does not follow) — `admin_incidents` is exactly this case: its current-state doc names `admin_events` and `admin_error_resolutions` as Core Data, but no migration under its own `db:` glob still contains their CREATE TABLE, so this model reports zero tables for it. Read an empty `tables` list as “no migration-glob evidence found,” never as “this feature owns no tables” — check the feature’s own doc for the real answer.
 
@@ -121,7 +121,7 @@ CoachHelm AI · active · criticality high · owner product
 
 - **Relations:** 5 doc/structurally-evidenced, 12 import-graph-only (weak)
 - **Tables:** `golf_coachhelm_action_runs`, `golf_insight_action`, `golf_insight_exposure`, `golf_insight_outcome`
-- **RPCs:** `claim_round_recap_lock`, `prune_stale_player_standing`, `refresh_player_standing`, `refresh_player_stats_cache`, `release_round_recap_lock`
+- **RPCs:** `claim_round_recap_lock`, `prune_stale_player_standing`, `refresh_player_standing`, `refresh_player_stats_cache`, `release_round_recap_lock`, `sg_scale_for_player`
 - **Test surfaces:** 3
 - **Sentry/admin_events signals:** `coachhelm_ai_engine`, `coachhelm_analytics`, `insights_management`, `round_review_ai`
 

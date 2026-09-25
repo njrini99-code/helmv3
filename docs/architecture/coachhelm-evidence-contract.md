@@ -357,11 +357,80 @@ player + window):
   - `hypothesis_label`
   - `checked[]`: the drivers and paths that were examined
   - `sequence?`
+  - `narrowing?` (see "Context narrowing" below)
   Rows written earlier have no `basis`; `DiagnosisPanel` does not read it.
 - A generator-composed diagnosis can never self-claim `observed_sequence`:
   `mergeDiagnosis` pins it to `inferred_hypothesis` unless the root-cause
   core observed the path.
 - Read-only preview: `scripts/coachhelm/preview-root-cause.ts`.
+
+### Context narrowing (2026-09-25)
+
+For approach, tee and par-scoring leaks, `root-cause.ts#narrowingFor` narrows
+the failing population with `v3/engine/context-narrowing.ts` (pure,
+client-safe). Each step must pass its own gate, and narrowing stops at the
+first step that fails. Every step states its counts.
+
+- **Length** (approach only): the band's attempts. It needs at least 10
+  attempts, 3 rounds and 8 failures (`NARROW_MIN_ATTEMPTS`,
+  `NARROW_MIN_ROUNDS`, `NARROW_MIN_FAILURES`).
+- **Par** (par × length slice from A3 `parLengthBandOf`, else whole par).
+  The slice needs 8 failures and must pass one of two paths:
+  - share: at least 60% of failures and a failure rate at least 10 points
+    above the rest;
+  - lift: at least 8 attempts elsewhere, and a rate at least 1.25× the
+    rest's and at least 10 points above it.
+  A slice with no "elsewhere" never passes. The 10-point edge exists
+  because a share-only rule named "par 4s" at 26% vs 24% on real data.
+- **Shape**: the dominant miss direction on each axis (`classifyMiss`). It
+  needs at least 8 failures with a recorded direction, covering at least
+  70% of failures. Each axis needs at least 6 on that axis, and one pole
+  must hold at least 60%. A combined label ("short-right") needs both axes
+  to pass. Tee reads left/right only; par scoring reads shape for par 3s
+  only.
+- **Exclusions**: failed 175+ yd approaches on par 5s count as likely
+  lay-ups (`excluded.layup`), not misses. This applies to the narrowing and
+  to the A4 approach occurrence count. Holes with no par are dropped.
+- **Stored** as `Diagnosis.basis.narrowing`, with these fields: `subject`,
+  `path[]`, `stopped_at`, `steps[]` (level, passed, label, statement),
+  `sentence` and `excluded`.
+- **Where it shows**:
+  - The sentence ("Observed, not a cause: …; Not narrowed further: …") leads
+    a hypothesis `root_cause`, is appended to an observed one, and is
+    prefixed to a generator-composed one (`mergeDiagnosis`).
+  - It never changes `causality_level`. Only the A4 rule sets
+    `observed_sequence`.
+- **Freshness**: stored rows pick this up only on the next generator run.
+  Readers treat a missing field as "not stated".
+- **Team roots**: `build-team-roots.ts#storedConcentration` accepts a stored
+  narrowing only when it passed more than the length step. Such a row marks
+  its matrix cell, and one row per player is listed in "Needs you" after the
+  severe signals. Nothing is recomputed on read.
+
+### Approach band sizing and Why evidence (player Today, 2026-09-25)
+
+The player CoachHelm page adds one bounded read, `loadApproachContext`. It
+reads the player's last 40 countable rounds that have a stored approach SG,
+with their holes and shots, plus `sg_scale_for_player`. It uses the request
+client, under RLS.
+
+- **Sizing**: `approach-context.ts#shotSgForRound` ports
+  `calculate_round_strokes_gained` per shot, and `sizeApproachBands` gives
+  per-18 means for each band. The split is used only when its total is
+  within 0.15 strokes a round of the stored `golf_rounds` approach SG
+  (`BAND_SG_RECONCILE_TOLERANCE`). Otherwise every band stays unsized, with
+  a note saying the split did not match.
+- A band that is gaining strokes is never drawn as a leak.
+- A stored counterfactual still wins over a band size (`sizedBy`:
+  `counterfactual` vs `band_sg`).
+- **Why view** (`buildApproachWhyView`), computed live over that window and
+  labelled with its own round count:
+  - the length → par → shape path;
+  - the par × length grid, only when the par step's population gate passed;
+  - the miss compass, only when its coverage gate passed, with the coverage
+    stated;
+  - A2 band metrics (greens hit, proximity, severe misses) side by side.
+  Nothing on this page runs a generator.
 
 ## Delivered vs. viewed (N11, 2026-09-23)
 

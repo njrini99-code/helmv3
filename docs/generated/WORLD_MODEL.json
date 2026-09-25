@@ -14143,6 +14143,31 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/lib/coachhelm/root-map/approach-context.test.ts",
+          "anchor": "src/lib/coachhelm/v3/context/types"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/root-map/approach-context.ts",
+          "anchor": "src/lib/coachhelm/v3/context/types"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/root-map/approach-context.ts",
+          "anchor": "src/lib/coachhelm/v3/engine/context-narrowing"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/root-map/approach-root.ts",
+          "anchor": "src/lib/coachhelm/v3/metrics/distance-profile"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/root-map/approach-root.ts",
+          "anchor": "src/lib/coachhelm/v3/engine/context-narrowing"
+        },
+        {
+          "kind": "import_graph",
           "path": "src/lib/coachhelm/root-map/area-trends.ts",
           "anchor": "src/lib/coachhelm/v3/themes/trend"
         },
@@ -14160,6 +14185,16 @@
           "kind": "import_graph",
           "path": "src/lib/coachhelm/root-map/build-team-roots.ts",
           "anchor": "src/lib/coachhelm/v3/insights/team-synthesis"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/root-map/loaders.ts",
+          "anchor": "src/lib/coachhelm/v3/context/normalize-shot"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/root-map/loaders.ts",
+          "anchor": "src/lib/coachhelm/v3/context/types"
         }
       ]
     },
@@ -14261,6 +14296,18 @@
           "kind": "registry_glob",
           "path": "memory/registry.yml",
           "pattern": "src/lib/coachhelm/**"
+        }
+      ]
+    },
+    {
+      "source": "coachhelm_ai",
+      "target": "sg_scale_for_player",
+      "kind": "feature_rpc",
+      "evidence": [
+        {
+          "kind": "rpc_call",
+          "path": "src/lib/coachhelm/root-map/loaders.ts",
+          "anchor": "sg_scale_for_player"
         }
       ]
     },
