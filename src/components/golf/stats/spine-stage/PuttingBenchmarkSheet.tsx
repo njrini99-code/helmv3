@@ -8,8 +8,9 @@
  * averages, one row per band that has a standard. A bottom sheet on phones,
  * a right-hand panel from `md`.
  *
- * Data: the leak map's putting buckets (`getPlayerLeakMaps`, every completed
- * round, NOT the scope picked above) graded by `buildPuttingBenchmarkRows`
+ * Data: the leak map's putting buckets (`getPlayerLeakMaps`, every countable
+ * completed round; career evidence, so it lives on the career stage only)
+ * graded by `buildPuttingBenchmarkRows`
  * (`src/lib/golf/benchmarks/putting.ts`). Every row prints its sample size;
  * the header prints the round count and the date window.
  * ========================================================================== */
@@ -121,8 +122,8 @@ export function PuttingBenchmarkSheet({ buckets, roundsIncluded, tour, window }:
       >
         <Sheet.Body className="space-y-4">
           <p className="text-body-sm text-text-secondary">
-            Make % by distance across every completed round, whatever scope is selected above. A band is graded once it
-            has {PUTTING_BENCHMARK_MIN_SAMPLE} putts.
+            Make % by distance across every completed round. A band is graded once it has{' '}
+            {PUTTING_BENCHMARK_MIN_SAMPLE} putts.
           </p>
           <div>
             <div

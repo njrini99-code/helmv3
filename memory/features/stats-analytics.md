@@ -93,6 +93,12 @@ still use `getPlayerStatsDashboardBundle`.
   reviewing the set. Career-only standing, trends, leak maps, and CoachHelm
   patterns must stay out of this scoped report so two different scopes are
   never presented as one result.
+- Putting benchmarks (DASH-12, 2026-09-25): `src/lib/golf/benchmarks/putting.ts`
+  mirrors the `golf_pga_standards` putt-make rows (PGA and LPGA, Tour and D1,
+  five bands from 3 ft; 0-3 ft has no standard) with each row's source cited.
+  The Putting drill's benchmark sheet grades the career leak-map buckets
+  against it, prefers the live reference on the bucket, and grades a band only
+  at 10+ putts.
 - Strokes-gained and putting tendency gaps should be called out rather than silently treated as complete.
 - Team analytics should not mix players across teams or organizations.
 - CoachHelm can consume stats but should not own stat calculation truth.
