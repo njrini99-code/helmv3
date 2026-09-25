@@ -43,7 +43,7 @@ import {
   type RootMapModel,
 } from '@/lib/coachhelm/root-map/build-root-map';
 import { COACHHELM_HOME } from './RootToday';
-import { SupportChips } from './RootToday';
+import { MeasuredFacts, SupportChips } from './RootToday';
 import { rootStyleCss } from './RootMap';
 import {
   GREEN_CENTER,
@@ -714,7 +714,7 @@ export function RootWhy({
             </li>
           ) : null}
           <li className="font-medium text-text-secondary">
-            {detail.metricLabel}
+            {branch?.measured ? branch.label : detail.metricLabel}
             {branch ? <span className="pl-1 font-fw-mono tabular-nums">{formatStrokes(branch.strokes)}</span> : null}
             {detail.rootCause ? <span aria-hidden className="pl-2 text-text-tertiary">›</span> : null}
           </li>
@@ -731,6 +731,15 @@ export function RootWhy({
         <h2 className="font-fw-display text-title-1 text-text-primary md:text-h1">{detail.title}</h2>
         <SupportChips style={style} tier={detail.tier} audience={audience} />
         {detail.symptom ? <p className="text-body text-text-secondary">{detail.symptom}</p> : null}
+        {branch?.measured ? (
+          <div className="flex flex-col gap-1" data-slot="why-measured">
+            <p className="text-body-sm text-text-primary">
+              <span className="font-fw-mono tabular-nums">{formatStrokes(branch.strokes)}</span> strokes a round lost on{' '}
+              {branch.label.toLowerCase()}, {branch.sizingNote}.
+            </p>
+            <MeasuredFacts branch={branch} />
+          </div>
+        ) : null}
       </header>
 
       <EvidenceCompare detail={detail} voice={voice} />

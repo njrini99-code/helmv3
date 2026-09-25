@@ -37,12 +37,14 @@ import { loadFollowUpRoundCounts } from '@/lib/coachhelm/focus-areas/follow-up-e
 import {
   loadAttributionForInsights,
   loadPlayersAreaSg,
+  loadTeamShotContext,
   loadTeamSgRounds,
 } from '@/lib/coachhelm/root-map/loaders';
 import { buildTeamHeadline, buildTeamRoots, type TeamRosterPlayer } from '@/lib/coachhelm/root-map/build-team-roots';
 import { buildTeamTrend } from '@/lib/coachhelm/root-map/area-trends';
 import { buildFocusSlopes, buildNeedsYou, type MetricMeta } from '@/lib/coachhelm/root-map/build-team-extras';
 import { loadCoachPlayerDrill } from '@/lib/coachhelm/root-map/coach-player-drill';
+import { measureWhat, type MeasuredWhat } from '@/lib/coachhelm/root-map/measured-what';
 import { getMetricRenderConfig } from '@/lib/coachhelm/v3/standing/metric-config';
 import type { TeamRootsData } from '@/components/golf/coachhelm/root-map/TeamRootsView';
 
@@ -268,6 +270,9 @@ export default async function IntelligenceDashboardPage({ searchParams }: Intell
   const teamRootReads = Promise.all([
     loadPlayersAreaSg(supabase, playerIds),
     loadTeamSgRounds(supabase, playerIds, isoDaysBefore(todayIso, TEAM_TREND_LOOKBACK_WEEKS * 7)),
+    // Recorded shots for the team map's measured What row (null on failure:
+    // the map then keeps the stored-cause What row).
+    loadTeamShotContext(supabase, playerIds),
   ]);
 
   // Page loads are read-only. Progress evaluation belongs to round ingestion /
@@ -492,7 +497,7 @@ export default async function IntelligenceDashboardPage({ searchParams }: Intell
   // rather than drawing an empty team as if it were real. ─────────────────
   let teamRoots: TeamRootsData | null = null;
   try {
-    const [[sgCache, teamRounds], attribution] = await Promise.all([teamRootReads, attributionRead]);
+    const [[sgCache, teamRounds, teamShots], attribution] = await Promise.all([teamRootReads, attributionRead]);
     if (sgCache && teamRounds) {
       const sgByPlayer = new Map(sgCache.map((r) => [r.playerId, r]));
       const roster: TeamRosterPlayer[] = players.map((p) => {
@@ -506,7 +511,26 @@ export default async function IntelligenceDashboardPage({ searchParams }: Intell
         };
       });
       const signals = signalGroups.flatMap((g) => g.signals);
-      const model = buildTeamRoots({ players: roster, signals });
+      // Each player's What split, over the same countable rounds as their
+      // Where row (`measureWhat` checks the window and the reconciliation).
+      const measured = new Map<string, MeasuredWhat>();
+      for (const [playerId, load] of teamShots ?? []) {
+        const row = sgByPlayer.get(playerId);
+        if (!row) continue;
+        try {
+          measured.set(
+            playerId,
+            measureWhat({ rounds: load.rounds, shots: load.shots, holes: load.holes, scale: load.scale, whereSg: row.sg, whereRounds: row.roundsPlayed }),
+          );
+        } catch (err) {
+          void logServerError(
+            `[intelligence] measured What row failed for player ${playerId}: ${describeError(err)}`,
+            { action: 'intelligence.teamRoots.measured', featureArea: 'coachhelm' },
+            'warning',
+          );
+        }
+      }
+      const model = buildTeamRoots({ players: roster, signals, measured });
 
       // Metric label/unit/direction: the metric registry first, then the
       // label the insight itself stored, then the raw id.

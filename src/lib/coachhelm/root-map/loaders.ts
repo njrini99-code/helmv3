@@ -302,7 +302,7 @@ export const APPROACH_ROUND_LIMIT = 40;
 const APPROACH_SHOT_COLUMNS =
   'id, round_id, hole_id, hole_number, shot_number, shot_type, club_type, lie_before, lie_after, result, ' +
   'distance_to_hole_before, distance_unit_before, distance_to_hole_after, distance_unit_after, ' +
-  'is_penalty, putt_made, miss_direction, created_at';
+  'is_penalty, putt_made, miss_direction, created_at, putt_distance_feet';
 
 const APPROACH_HOLE_COLUMNS = 'id, round_id, hole_number, par, yardage, score, penalty_strokes, putts, gir';
 
@@ -438,4 +438,110 @@ export function toContextFacts(load: ApproachContextLoad): { facts: ShotFact[]; 
     );
   }
   return { facts, holes };
+}
+
+/**
+ * The team root map's measured What row input: for every roster player, the
+ * same countable rounds `loadApproachContext` reads (newest
+ * {@link APPROACH_ROUND_LIMIT} with a stored SG), their holes and shots, and
+ * the player's SG scale. Batched across the roster (one paged select per
+ * chunk of players or rounds) instead of one approach load per player.
+ * Request client, so RLS applies (`is_golf_team_coach`). Null on a failed
+ * read; players with no countable round are absent from the map.
+ */
+export async function loadTeamShotContext(sb: Sb, playerIds: string[]): Promise<Map<string, ApproachContextLoad> | null> {
+  const out = new Map<string, ApproachContextLoad>();
+  if (playerIds.length === 0) return out;
+  try {
+    type RoundRow = SgRoundRow & { id: string; player_id: string };
+    const byPlayer = new Map<string, RoundRow[]>();
+    for (const ids of chunk(playerIds)) {
+      const { data, error } = await fetchAllRowsResult<RoundRow>(
+        (from, to) =>
+          sb
+            .from('golf_rounds')
+            .select(`id, player_id, ${SG_COLUMNS}`)
+            .in('player_id', ids)
+            .eq('status', 'completed')
+            .not('strokes_gained_total', 'is', null)
+            .order('id', { ascending: true })
+            .range(from, to) as unknown as PromiseLike<{
+            data: RoundRow[] | null;
+            error: { message: string; code?: string | null } | null;
+          }>,
+        undefined,
+        { table: 'golf_rounds', action: 'rootMap.loadTeamShotContext', feature: 'coachhelm_ai_engine', sport: 'golf' },
+      );
+      if (error) throw error;
+      for (const row of data ?? []) {
+        const list = byPlayer.get(row.player_id) ?? [];
+        list.push(row);
+        byPlayer.set(row.player_id, list);
+      }
+    }
+    const roundIds: string[] = [];
+    for (const [playerId, rows] of byPlayer) {
+      rows.sort((a, b) => ((a.round_date ?? '') < (b.round_date ?? '') ? 1 : -1));
+      const rounds: ApproachRoundInput[] = [];
+      for (const row of rows) {
+        const r = toAreaRound(row);
+        if (!r) continue;
+        rounds.push({ id: row.id, date: r.date, holesPlayed: row.holes_played ?? 18, storedApproach: num(row.strokes_gained_approach) });
+        if (rounds.length >= APPROACH_ROUND_LIMIT) break;
+      }
+      if (rounds.length === 0) continue;
+      out.set(playerId, { rounds, holes: [], shots: [], scale: 1 });
+      roundIds.push(...rounds.map((r) => r.id));
+    }
+    const playerOfRound = new Map<string, string>();
+    for (const [playerId, load] of out) for (const r of load.rounds) playerOfRound.set(r.id, playerId);
+
+    for (const idChunk of chunk(roundIds)) {
+      const [h, s] = await Promise.all([
+        fetchAllRowsResult<RawHoleRow>(
+          (from, to) =>
+            sb
+              .from('golf_holes')
+              .select(APPROACH_HOLE_COLUMNS)
+              .in('round_id', idChunk)
+              .order('id', { ascending: true })
+              .range(from, to) as unknown as PromiseLike<{
+              data: RawHoleRow[] | null;
+              error: { message: string; code?: string | null } | null;
+            }>,
+          undefined,
+          { table: 'golf_holes', action: 'rootMap.loadTeamShotContext', feature: 'coachhelm_ai_engine', sport: 'golf' },
+        ),
+        fetchAllRowsResult<RawShotRow>(
+          (from, to) =>
+            sb
+              .from('golf_shots')
+              .select(APPROACH_SHOT_COLUMNS)
+              .in('round_id', idChunk)
+              .order('id', { ascending: true })
+              .range(from, to) as unknown as PromiseLike<{
+              data: RawShotRow[] | null;
+              error: { message: string; code?: string | null } | null;
+            }>,
+          undefined,
+          { table: 'golf_shots', action: 'rootMap.loadTeamShotContext', feature: 'coachhelm_ai_engine', sport: 'golf' },
+        ),
+      ]);
+      if (h.error) throw h.error;
+      if (s.error) throw s.error;
+      for (const row of h.data ?? []) out.get(playerOfRound.get(row.round_id) ?? '')?.holes.push(row);
+      for (const row of s.data ?? []) out.get(playerOfRound.get(row.round_id) ?? '')?.shots.push(row);
+    }
+
+    await Promise.all(
+      [...out.entries()].map(async ([playerId, load]) => {
+        const { data: sc, error } = await sb.rpc('sg_scale_for_player', { p_player_id: playerId });
+        if (!error && num(sc) !== null && (num(sc) as number) > 0) load.scale = num(sc) as number;
+      }),
+    );
+    return out;
+  } catch (err) {
+    warn('[root-map] team shot context read failed', 'rootMap.loadTeamShotContext', err);
+    return null;
+  }
 }

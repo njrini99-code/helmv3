@@ -223,6 +223,12 @@ function TeamRootsOverview({ model, headline, trend, slopes, needsYou, signalsFa
               includeUnsized
               label="Team causes"
             />
+            {model.map.other.length > 0 ? (
+              <p className="text-body-sm text-text-secondary" data-slot="team-other-reads">
+                <span className="font-medium text-text-primary">Other reads under a losing area: </span>
+                {model.map.other.map((o) => o.title).join(' · ')}
+              </p>
+            ) : null}
             {!hasCause && !signalsFailed ? (
               <p className="text-body-sm text-text-secondary">
                 No stored cause sits under a losing area yet. As player reads land, the largest causes show here.
@@ -232,9 +238,14 @@ function TeamRootsOverview({ model, headline, trend, slopes, needsYou, signalsFa
               <p className="text-body-sm text-text-secondary">
                 <span className="font-medium text-text-primary" title={selected.title}>{selected.label}</span> under{' '}
                 {ROOT_AREA_LABEL[selected.area]}: {formatStrokes(selected.strokes)} a round across the team
-                {selected.players !== undefined ? ` · ${playersText(selected.players)}` : ''}
+                {selected.measured ? ', measured from recorded shots' : ''}
+                {selected.players !== undefined
+                  ? ` · ${playersText(selected.players)}${selected.measured ? ' losing strokes here' : ''}`
+                  : ''}
                 {' · '}
-                {rootStyleLabel(selected.style, 'coach')}
+                {selected.measured && (selected.insightIds?.length ?? 0) === 0
+                  ? 'no stored read on this spot yet'
+                  : rootStyleLabel(selected.style, 'coach')}
                 {selected.tier ? ` · ${CONFIDENCE_LABEL[selected.tier]}` : ''}
               </p>
             ) : selectedUnsized ? (

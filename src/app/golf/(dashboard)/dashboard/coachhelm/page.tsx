@@ -67,6 +67,7 @@ import {
   loadShortPuttSlopes,
 } from '@/lib/coachhelm/root-map/loaders';
 import { buildPlayerApproachRoot } from '@/lib/coachhelm/root-map/approach-root';
+import { measureWhat, type MeasuredWhat } from '@/lib/coachhelm/root-map/measured-what';
 import type { ApproachWhyView } from '@/lib/coachhelm/root-map/approach-context';
 import { buildGreenView } from '@/lib/coachhelm/root-map/green-view';
 import type { RootTodayProps } from '@/components/golf/coachhelm/root-map/RootToday';
@@ -616,11 +617,34 @@ export default async function PlayerCoachHelmPage() {
     const sgRow = sgRows?.[0] ?? null;
     const shownInsights = [...(topInsight ? [topInsight] : []), ...secondaryInsights.filter((i) => !topInsight || i.id !== topInsight.id)];
     const throughDate = recentRounds?.[0]?.date ?? null;
+    // The What row measured from recorded shots (same countable rounds as
+    // the Where row; `measureWhat` checks the window and the reconciliation).
+    let measured: MeasuredWhat | null = null;
+    try {
+      measured =
+        approachLoad && sgRow
+          ? measureWhat({
+              rounds: approachLoad.rounds,
+              shots: approachLoad.shots,
+              holes: approachLoad.holes,
+              scale: approachLoad.scale,
+              whereSg: sgRow.sg,
+              whereRounds: sgRow.roundsPlayed,
+            })
+          : null;
+    } catch (err) {
+      void logServerError(
+        `[root map] measured What row failed for player ${player.id}: ${describeError(err)}`,
+        { action: 'rootMap.measuredWhat', featureArea: 'coachhelm' },
+        'warning',
+      );
+    }
     const model = buildRootMap({
       areas: ROOT_AREAS.map((area) => ({ area, sgPerRound: sgRow?.sg[area] ?? null })),
       insights: shownInsights,
       newSinceDate: throughDate,
       approachBands: approachRoot?.bands ?? null,
+      measured,
     });
     const approachWhy: Record<string, ApproachWhyView> = {};
     if (approachRoot) {

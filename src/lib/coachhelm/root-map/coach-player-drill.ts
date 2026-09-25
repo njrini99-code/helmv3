@@ -46,6 +46,7 @@ import {
 } from './build-root-map';
 import { loadApproachContext, loadPlayersAreaSg, loadRecentAreaSgRounds, loadShortPuttSlopes } from './loaders';
 import { buildPlayerApproachRoot } from './approach-root';
+import { measureWhat, type MeasuredWhat } from './measured-what';
 import type { ApproachWhyView } from './approach-context';
 import { buildGreenView, type GreenView } from './green-view';
 
@@ -123,11 +124,34 @@ export async function loadCoachPlayerDrill(
     const shown = insightsRes.data;
     const sgRow = sgRows?.[0] ?? null;
     const throughDate = recentRounds?.[0]?.date ?? null;
+    // The What row measured from recorded shots (same countable rounds as
+    // the Where row; `measureWhat` checks the window and the reconciliation).
+    let measured: MeasuredWhat | null = null;
+    try {
+      measured =
+        approachLoad && sgRow
+          ? measureWhat({
+              rounds: approachLoad.rounds,
+              shots: approachLoad.shots,
+              holes: approachLoad.holes,
+              scale: approachLoad.scale,
+              whereSg: sgRow.sg,
+              whereRounds: sgRow.roundsPlayed,
+            })
+          : null;
+    } catch (err) {
+      void logServerError(
+        `[root map] measured What row failed for player ${playerId}: ${describeError(err)}`,
+        { action: 'rootMap.measuredWhat', featureArea: 'coachhelm' },
+        'warning',
+      );
+    }
     const model = buildRootMap({
       areas: ROOT_AREAS.map((area) => ({ area, sgPerRound: sgRow?.sg[area] ?? null })),
       insights: shown,
       newSinceDate: throughDate,
       approachBands: approachRoot?.bands ?? null,
+      measured,
     });
 
     const details: Record<string, BranchDetail> = {};

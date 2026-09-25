@@ -29,6 +29,7 @@ import {
   shortDate,
   staleRoundLine,
   supportPhrase,
+  whyIdOf,
   type BranchDetail,
   type CauseBranch,
   type RootAudience,
@@ -108,14 +109,43 @@ function areaLabelOf(category: string | null): string | null {
 
 function rootSentence(detail: BranchDetail | null, branch: CauseBranch): string {
   const cause = detail?.whySentence ?? detail?.rootCause ?? branch.rootCause;
+  if (branch.measured && !whyIdOf(branch)) return 'No stored read explains this spot yet; the value above is measured from the shots.';
   if (!cause || branch.style === 'unexplained') return 'The cause behind this one is not explained yet.';
   if (branch.style === 'observed') return `Seen in your shots: ${cause}`;
   if (branch.style === 'likely') return `Likely: ${cause}`;
   return `Still forming: ${cause}`;
 }
 
+/**
+ * A measured spot's facts: the value's source, the lie split inside an
+ * approach band, and what an "Other" node folds together. Shared by the
+ * chain, the Why view and the coach drill.
+ */
+export function MeasuredFacts({ branch }: { branch: CauseBranch }) {
+  const m = branch.measured;
+  if (!m) return null;
+  return (
+    <div className="flex flex-col gap-1 text-body-sm text-text-secondary" data-slot="measured-facts">
+      {m.lies ? (
+        <p>
+          <span className="font-medium text-text-primary">By lie: </span>
+          {m.lies.map((l) => `${formatStrokes(-l.sg)} ${l.label} (${l.n})`).join(' · ')}
+          {m.liesRest !== null ? ` · ${formatStrokes(-m.liesRest)} from thinner lies` : ''}
+        </p>
+      ) : null}
+      {m.merged.length > 0 ? <p>Together: {m.merged.join(', ')}.</p> : null}
+      {m.mode === 'share' ? (
+        <p className="text-caption text-text-tertiary">
+          A share of the stored total: the shot-by-shot split did not match it closely enough to print as measured.
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
 /** What a branch's stroke value is, in words. */
 function strokesText(branch: CauseBranch): string {
+  if (branch.measured && branch.sizingNote) return `strokes a round lost to the Tour line on ${branch.label.toLowerCase()}, ${branch.sizingNote}`;
   if (branch.sizedBy === 'band_sg' && branch.sizingNote) return `strokes a round lost to the Tour line: ${branch.sizingNote}`;
   return `strokes a round on ${branch.label.toLowerCase()}, to the Tour line`;
 }
@@ -124,7 +154,15 @@ function Chain({ model, branch, detail }: { model: RootMapModel; branch: CauseBr
   const area = model.losses.find((a) => a.area === branch.area);
   const rows: { value: string; text: string }[] = [];
   if (area) rows.push({ value: formatStrokes(area.sg, { signed: true }), text: `${area.label}, a round` });
-  if (detail) {
+  if (branch.measured) rows.push({ value: formatStrokes(branch.strokes), text: strokesText(branch) });
+  if (branch.measured) {
+    if (detail) {
+      rows.push({
+        value: formatValue(detail.yourValue, detail.unit, detail.yourDisplay ?? undefined),
+        text: `${detail.metricLabel} · ${detail.comparisonLabel} ${formatValue(detail.comparisonValue, detail.unit)}`,
+      });
+    }
+  } else if (detail) {
     rows.push({
       value: formatValue(detail.yourValue, detail.unit, detail.yourDisplay ?? undefined),
       text: `${detail.metricLabel} · ${detail.comparisonLabel} ${formatValue(detail.comparisonValue, detail.unit)}`,
@@ -156,6 +194,7 @@ function Chain({ model, branch, detail }: { model: RootMapModel; branch: CauseBr
           </div>
         ))}
       </dl>
+      <MeasuredFacts branch={branch} />
       {branch.contextPath ? (
         <p className="text-body-sm text-text-primary">
           <span className="font-medium">Where it concentrates: </span>
@@ -217,7 +256,8 @@ function NewSinceTimeline({ date, items }: { date: string | null; items: NewSinc
 export function RootToday({ model, details, headline, roundsRead, throughDate, daysSinceThrough = null, sparklines, newSince }: RootTodayProps) {
   const [selectedId, setSelectedId] = useState<string | null>(model.defaultSelectedId);
   const branch = findBranch(model, selectedId);
-  const detail = branch ? details[branch.id] ?? null : null;
+  const whyId = branch ? whyIdOf(branch) : null;
+  const detail = whyId ? details[whyId] ?? null : null;
 
   const summary = useMemo(() => {
     const parts: string[] = [];
@@ -298,9 +338,11 @@ export function RootToday({ model, details, headline, roundsRead, throughDate, d
           {branch ? (
             <div className="flex flex-col gap-3">
               <Chain model={model} branch={branch} detail={detail} />
-              <Button asChild variant="primary" size="lg" fullWidth>
-                <Link href={rootWhyHref(branch.id)}>See the evidence</Link>
-              </Button>
+              {whyId ? (
+                <Button asChild variant="primary" size="lg" fullWidth>
+                  <Link href={rootWhyHref(whyId)}>See the evidence</Link>
+                </Button>
+              ) : null}
               <p className="text-center text-caption text-text-tertiary">Tap any branch of the map to trace it.</p>
             </div>
           ) : model.losses.length > 0 ? (

@@ -212,7 +212,7 @@ export interface CauseBranch {
    * band's share of the stored approach strokes gained, split per shot on the
    * same baseline (`approach-context.ts`), only when that split reconciled.
    */
-  sizedBy?: 'counterfactual' | 'band_sg';
+  sizedBy?: 'counterfactual' | 'band_sg' | 'measured' | 'share';
   /** One line naming what the number is, e.g. "approach strokes gained from
    *  175+ yd, last 18 rounds". */
   sizingNote?: string | null;
@@ -221,6 +221,45 @@ export interface CauseBranch {
   contextPath?: string | null;
   /** Team map only: how many players carry this cause. */
   players?: number;
+  /** Measured sub-area nodes: every stored insight attached as its Why
+   *  (best first). The first is the one the Why view opens. */
+  insightIds?: string[];
+  /** The insight the Why view opens for this node; null when no stored read
+   *  matches the spot (the node still shows its measured value). */
+  whyId?: string | null;
+  /** Present on a node built from recorded shots (`measured-what.ts`). */
+  measured?: MeasuredNodeInfo;
+}
+
+/** What a measured What-row node stands on. */
+export interface MeasuredNodeInfo {
+  /** `measured`: printed values are the shot-level split; `share`: each is
+   *  its share of the stored area total (the split did not reconcile). */
+  mode: 'measured' | 'share';
+  /** Shots (holes for putting) the spot was read from. */
+  n: number;
+  unit: 'shots' | 'holes';
+  rounds: number;
+  /** Labels of the thin or smaller spots folded into an "Other" node. */
+  merged: string[];
+  /** Approach bands: the loss by the lie the shot was played from. */
+  lies: Array<{ label: string; sg: number; n: number }> | null;
+  /** Whatever of the band the listed lies do not cover (thin lies). */
+  liesRest: number | null;
+}
+
+/** How a losing area's What row was built from recorded shots. */
+export interface AreaMeasuredMeta {
+  mode: 'measured' | 'share';
+  rounds: number;
+  /** Stored area SG per round (the Where row). */
+  stored: number;
+  /** Shot-level SG per round, before any share scaling. */
+  recomputed: number;
+  /** Spots inside the losing area that GAIN strokes (they offset the rest). */
+  offsets: Array<{ label: string; sg: number }>;
+  /** One plain sentence on how the split was read and whether it matched. */
+  note: string;
 }
 
 export interface AreaBranch {
@@ -238,6 +277,9 @@ export interface AreaBranch {
   /** True when the causes' stored values added to more than the area and
    *  were scaled down to fit. */
   scaledToFit: boolean;
+  /** Set when the What row is built from recorded shots: the remainder is
+   *  then "Not tracked by shot", not unexplained. */
+  measured?: AreaMeasuredMeta | null;
 }
 
 export interface UnsizedCause {
@@ -309,6 +351,8 @@ export interface RootMapLayoutInput {
   unsized: UnsizedCause[];
   other: OtherRead[];
   newCount: number;
+  /** Losing areas whose What row is measured from shots. */
+  areaMeta?: Partial<Record<RootArea, AreaMeasuredMeta>>;
 }
 
 /**
@@ -377,6 +421,7 @@ export function layoutRootMap(input: RootMapLayoutInput): RootMapModel {
       causes,
       remainder: remainderStrokes > 1e-9 ? { x: cx, w: remainderW, strokes: remainderStrokes } : null,
       scaledToFit,
+      measured: input.areaMeta?.[area] ?? null,
     });
     lx += w;
   }
@@ -400,9 +445,19 @@ export function allBranches(model: RootMapModel): CauseBranch[] {
   return model.losses.flatMap((a) => a.causes);
 }
 
+/** The branch with this id, or the measured node a stored insight with this
+ *  id is attached to (so an insight id from a link selects its spot). */
 export function findBranch(model: RootMapModel, id: string | null | undefined): CauseBranch | null {
   if (!id) return null;
-  return allBranches(model).find((b) => b.id === id) ?? null;
+  const all = allBranches(model);
+  return all.find((b) => b.id === id) ?? all.find((b) => b.insightIds?.includes(id)) ?? null;
+}
+
+/** The insight a branch's Why opens: its attached read, or itself for a
+ *  cause built from one insight. Null for a measured spot with no read. */
+export function whyIdOf(branch: CauseBranch): string | null {
+  if (branch.whyId !== undefined) return branch.whyId;
+  return branch.measured ? null : branch.id;
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
@@ -459,7 +514,13 @@ export function buildRootHeadline(
       parts.push(`${base}.`);
     } else {
       const what = lowerFirst(branch.label);
-      if (branch.style === 'observed') parts.push(`${base}, ${what} is where, ${supportPhrase('observed', audience)}.`);
+      if (branch.measured) {
+        const part = `${base}; the biggest part is ${what} (${formatStrokes(branch.strokes)})`;
+        if (branch.style === 'observed') parts.push(`${part}, ${supportPhrase('observed', audience)}.`);
+        else if (branch.style === 'likely') parts.push(`${part}, with a likely cause on the map.`);
+        else if (branch.style === 'forming') parts.push(`${part}; the read on why is still forming.`);
+        else parts.push(`${part}; no stored read explains it yet.`);
+      } else if (branch.style === 'observed') parts.push(`${base}, ${what} is where, ${supportPhrase('observed', audience)}.`);
       else if (branch.style === 'likely') parts.push(`${base}, likely around ${what}.`);
       else if (branch.style === 'forming') parts.push(`${base}; the read on ${what} is still forming.`);
       else parts.push(`${base}; ${what} is part of it, the cause is not explained yet.`);

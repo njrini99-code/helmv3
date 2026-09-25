@@ -13794,6 +13794,11 @@
           "kind": "import_graph",
           "path": "src/lib/coachhelm/root-map/coach-player-drill.ts",
           "anchor": "src/lib/coachhelm/v2/insights/types"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/root-map/plain-copy.test.ts",
+          "anchor": "src/lib/coachhelm/v2/insights/types"
         }
       ]
     },
@@ -14205,6 +14210,11 @@
           "kind": "import_graph",
           "path": "src/lib/coachhelm/root-map/loaders.ts",
           "anchor": "src/lib/coachhelm/v3/context/types"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/root-map/plain-copy.ts",
+          "anchor": "src/lib/coachhelm/v3/standing/metric-config"
         }
       ]
     },

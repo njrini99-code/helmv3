@@ -89,6 +89,9 @@ export interface RawShotRow {
   putt_made: boolean | null;
   miss_direction: string | null;
   created_at: string | null;
+  /** Putts only: the recorded first-putt distance in feet (the measured What
+   *  row's putting bands). Optional so older fixtures stay valid. */
+  putt_distance_feet?: number | null;
 }
 
 /** One `golf_holes` row as the loader reads it. */

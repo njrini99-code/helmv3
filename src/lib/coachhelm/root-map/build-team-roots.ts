@@ -34,14 +34,25 @@ import {
   ROOT_AREAS,
   ROOT_AREA_LABEL,
   strokesPerRound,
+  type AreaMeasuredMeta,
   type CauseSeed,
   type ConfidenceTier,
+  type OtherRead,
   type RootArea,
   type RootMapModel,
   type RootStyle,
   type UnsizedCause,
   humanizeCauseLabel,
 } from './build-root-map';
+import {
+  OTHER_KEY,
+  groupMeasured,
+  measuredLabel,
+  nodeIdForKey,
+  subKeyForMetric,
+  teamMeasuredKeys,
+  type MeasuredWhat,
+} from './measured-what';
 
 export interface TeamRosterPlayer {
   id: string;
@@ -197,6 +208,10 @@ function aggregateStyle(cells: TeamRootCell[], confidences: number[]): { style: 
 export function buildTeamRoots(input: {
   players: TeamRosterPlayer[];
   signals: GroupedSignal[];
+  /** Per player, the measured What split (`measured-what.ts#measureWhat`).
+   *  A losing team area with at least one measured player draws its What row
+   *  from the summed team sub-areas; otherwise it keeps the stored causes. */
+  measured?: ReadonlyMap<string, MeasuredWhat> | null;
 }): TeamRootsModel {
   const rosterSize = input.players.length;
   const rosterIds = new Set(input.players.map((p) => p.id));
@@ -293,8 +308,86 @@ export function buildTeamRoots(input: {
   const losing = new Set(ROOT_AREAS.filter((a) => (teamAreaSg[a] ?? 0) < 0));
   const sized: CauseSeed[] = [];
   const unsized: UnsizedCause[] = [];
+  const other: OtherRead[] = [];
+  const areaMeta: Partial<Record<RootArea, AreaMeasuredMeta>> = {};
   for (const area of losing) {
     const inArea = allColumns.filter(({ column }) => column.area === area);
+    // Measured: the team's sub-areas summed from each player's shot split,
+    // over the same players the team-average area SG is taken over.
+    const withSg = input.players.filter((p) => finite(p.sg[area]));
+    const perPlayer = withSg.map((p) => input.measured?.get(p.id)?.[area]);
+    const team = teamMeasuredKeys(area, perPlayer, withSg.length);
+    if (team.measuredPlayers > 0) {
+      const groups = groupMeasured(area, team.keys, { playersByKey: team.playersByKey });
+      // "Other" folds several keys: count players losing on their sum.
+      const otherNode = groups.losing.find((g) => g.key === OTHER_KEY);
+      if (otherNode) {
+        const folded = new Set([OTHER_KEY, ...otherNode.merged]);
+        otherNode.players = perPlayer.filter(
+          (m) => !!m && m.mode !== 'none' && m.keys.filter((k) => folded.has(k.key)).reduce((t, k) => t + k.sg, 0) < 0,
+        ).length;
+      }
+      if (groups.losing.length > 0) {
+        const share = perPlayer.some((m) => m?.mode === 'share');
+        const recomputed = team.keys.reduce((t, k) => t + k.sg, 0);
+        const stored = teamAreaSg[area] as number;
+        areaMeta[area] = {
+          mode: share ? 'share' : 'measured',
+          rounds: 0,
+          stored,
+          recomputed,
+          offsets: groups.gaining.filter((g) => g.sg >= 0.005).map((g) => ({ label: g.label, sg: g.sg })),
+          note:
+            `${ROOT_AREA_LABEL[area]}: measured from recorded shots for ${team.measuredPlayers} of ${withSg.length} players` +
+            (share ? ' (for some, each spot is a share of their stored total)' : '') +
+            `; the team average is ${formatStrokes(stored, { signed: true })} a round.`,
+        };
+        const byNode = new Map<string, typeof inArea>();
+        for (const col of inArea) {
+          const key = subKeyForMetric(area, col.column.metric);
+          const nodeId = key ? nodeIdForKey(groups, key) : null;
+          if (!nodeId) {
+            other.push({ id: `team:${col.column.metric}`, title: `${col.column.label} (${col.column.players === 1 ? '1 player' : `${col.column.players} players`})`, category: area, tier: null, isNew: false });
+            continue;
+          }
+          const list = byNode.get(nodeId) ?? [];
+          list.push(col);
+          byNode.set(nodeId, list);
+        }
+        for (const sub of groups.losing) {
+          const cols = (byNode.get(sub.id) ?? []).slice().sort((a, b) => b.column.players - a.column.players);
+          const lead = cols[0];
+          const agg = lead ? aggregateStyle([...lead.entry.cells.values()], [...lead.entry.conf.values()]) : null;
+          sized.push({
+            id: `team:${sub.id}`,
+            area,
+            title: sub.title,
+            label: sub.label,
+            strokes: -sub.sg,
+            style: agg?.style ?? 'unexplained',
+            tier: agg?.tier ?? null,
+            causality: null,
+            rootCause: null,
+            isNew: false,
+            players: sub.players ?? 0,
+            sizedBy: share ? 'share' : 'measured',
+            sizingNote: `team average from recorded shots, ${sub.players ?? 0} of ${withSg.length} players losing strokes here`,
+            insightIds: cols.map((c) => `team:${c.column.metric}`),
+            whyId: null,
+            measured: {
+              mode: share ? 'share' : 'measured',
+              n: sub.n,
+              unit: area === 'putting' ? 'holes' : 'shots',
+              rounds: sub.rounds,
+              merged: sub.merged.map((k) => measuredLabel(area, k)),
+              lies: null,
+              liesRest: null,
+            },
+          });
+        }
+        continue;
+      }
+    }
     const sizedCols = inArea
       .filter(({ column }) => column.teamStrokes !== null && column.teamStrokes > 0)
       .sort((a, b) => (b.column.teamStrokes ?? 0) - (a.column.teamStrokes ?? 0) || b.column.players - a.column.players)
@@ -339,8 +432,9 @@ export function buildTeamRoots(input: {
     areas: ROOT_AREAS.map((area) => ({ area, sgPerRound: teamAreaSg[area] })),
     sized,
     unsized,
-    other: [],
+    other,
     newCount: 0,
+    areaMeta,
   });
 
   return {

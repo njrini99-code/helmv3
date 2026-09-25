@@ -129,10 +129,12 @@ export function branchSpokenLabel(
   audience: RootAudience = 'player',
 ): string {
   const parts = [`${areaLabel}: ${b.label}, ${formatStrokes(b.strokes)} strokes a round`];
+  if (b.measured) parts.push(b.sizingNote ?? 'measured from recorded shots');
   if (b.players !== undefined) parts.push(playersText(b.players));
   if (showWhy) {
     if (b.contextPath) parts.push(`where it concentrates: ${b.contextPath}`);
     if (b.rootCause && b.style !== 'unexplained') parts.push(`root: ${b.rootCause}, ${rootStyleLabel(b.style, audience).toLowerCase()}`);
+    else if (b.measured && !b.whyId) parts.push('no stored read on this spot yet');
     else parts.push(rootStyleLabel(b.style, audience).toLowerCase());
   }
   if (b.tier) parts.push(CONFIDENCE_LABEL[b.tier]);
@@ -193,9 +195,10 @@ export function RootMap({
   const slots = layoutWhatRow(model);
   const narrowAreas = model.losses.filter((a) => a.w < WHERE_LABEL_MIN_W);
   const narrowGains = model.gains.filter((g) => g.w < WHERE_LABEL_MIN_W);
-  // The team map (no Why row, no branch detail under it) labels sized causes
-  // drawn too narrow for their own label just under the What row.
-  const narrowCauses = showWhy ? [] : slots.filter((sl) => sl.cause !== null && sl.w < WHAT_LABEL_MIN_W);
+  // Sized causes drawn too narrow for their own label are named just under
+  // the What row (both maps), so no node is an unlabelled sliver at 375px.
+  const narrowCauses = slots.filter((sl) => sl.cause !== null && sl.w < WHAT_LABEL_MIN_W);
+  const measuredNotes = model.losses.filter((a) => a.measured);
   // Unsized causes drawn inside a remainder slot wide enough to hold them.
   const unsizedBySlot = new Map<string, UnsizedCause[]>();
   if (unsizedInRow) {
@@ -338,6 +341,9 @@ export function RootMap({
                   if (!c) {
                     const rest = sl.area.remainder;
                     const inside = unsizedBySlot.get(sl.key) ?? [];
+                    // A measured area's remainder is the part the recorded
+                    // shots do not account for, not an unexplained cause.
+                    const restLabel = sl.area.measured ? 'Not tracked by shot' : 'Unexplained';
                     return (
                       <div
                         key={sl.key}
@@ -347,20 +353,23 @@ export function RootMap({
                       >
                         <div
                           className="flex h-11 min-w-0 items-center justify-between gap-1 overflow-hidden rounded-fw-sm border border-dashed border-border-strong px-1.5 text-caption text-text-secondary"
-                          title={rest ? `Unexplained ${formatStrokes(rest.strokes)} a round` : undefined}
+                          title={rest ? `${restLabel} ${formatStrokes(rest.strokes)} a round` : undefined}
+                          data-kind={sl.area.measured ? 'not-tracked' : 'unexplained'}
                         >
                           {rest && sl.w >= REMAINDER_LABEL_MIN_W ? (
                             <>
-                              <span className="truncate">Unexplained</span>
+                              <span className="truncate">{restLabel}</span>
                               <span className="shrink-0 font-fw-mono tabular-nums">{formatStrokes(rest.strokes)}</span>
                             </>
                           ) : (
                             <span className="sr-only">
-                              {rest ? `Unexplained ${formatStrokes(rest.strokes)} a round` : 'Unexplained'}
+                              {rest ? `${restLabel} ${formatStrokes(rest.strokes)} a round` : restLabel}
                             </span>
                           )}
                         </div>
-                        {showWhy ? <div aria-hidden className="h-8 rounded-fw-sm" style={rootStyleCss('unexplained')} /> : null}
+                        {showWhy && !sl.area.measured ? (
+                          <div aria-hidden className="h-8 rounded-fw-sm" style={rootStyleCss('unexplained')} />
+                        ) : null}
                         {inside.map((u) => {
                           const selected = u.id === selectedId;
                           return (
@@ -459,6 +468,13 @@ export function RootMap({
                       <span className="font-fw-mono tabular-nums text-text-primary">{formatStrokes(sl.cause!.strokes)}</span>
                       {sl.cause!.players !== undefined ? <span>· {playersText(sl.cause!.players)}</span> : null}
                     </li>
+                  ))}
+                </ul>
+              ) : null}
+              {measuredNotes.length > 0 ? (
+                <ul className="flex flex-col gap-0.5 text-caption text-text-tertiary" data-slot="measured-notes">
+                  {measuredNotes.map((a) => (
+                    <li key={a.area}>{a.measured!.note}</li>
                   ))}
                 </ul>
               ) : null}

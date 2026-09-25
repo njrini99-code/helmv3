@@ -22,7 +22,10 @@ import { ChevronLeft } from 'lucide-react';
 import { Button, EmptyState, Eyebrow } from '@/components/fairway';
 import {
   CONFIDENCE_LABEL,
+  ROOT_AREA_LABEL,
+  findBranch,
   formatStrokes,
+  whyIdOf,
   rootStyleLabel,
   shortDate,
   staleRoundLine,
@@ -30,7 +33,7 @@ import {
 import type { CoachPlayerDrill } from '@/lib/coachhelm/root-map/coach-player-drill';
 import { RootBranchList, RootMap } from './RootMap';
 import { RootWhy } from './RootWhy';
-import { StaleRoundNote } from './RootToday';
+import { MeasuredFacts, StaleRoundNote } from './RootToday';
 import type { TeamRootsViewProps } from './TeamRootsView';
 
 export interface TeamPlayerDrillProps {
@@ -64,9 +67,15 @@ export function TeamPlayerDrill({ drill, hrefFor, navigate }: TeamPlayerDrillPro
   const name = drill.playerName;
   const backUpdate = { view: 'team', player: null, cause: null } as const;
 
+  // `selectedId` is a branch id (a measured spot) or an insight id (from a
+  // link); either resolves to the spot on the map and the read its Why opens.
+  const selectedBranch = ready ? findBranch(ready.model, selectedId) : null;
+  const whyId = selectedBranch ? whyIdOf(selectedBranch) : selectedId;
+
   function select(id: string) {
     setSelectedId(id);
-    navigate({ cause: id });
+    const b = ready ? findBranch(ready.model, id) : null;
+    navigate({ cause: (b ? whyIdOf(b) : null) ?? id });
   }
 
   const summary = useMemo(() => {
@@ -140,7 +149,7 @@ export function TeamPlayerDrill({ drill, hrefFor, navigate }: TeamPlayerDrillPro
         <>
           <RootMap
             model={ready.model}
-            selectedId={selectedId}
+            selectedId={selectedBranch?.id ?? selectedId}
             onSelect={select}
             summary={summary}
             audience="coach"
@@ -148,7 +157,7 @@ export function TeamPlayerDrill({ drill, hrefFor, navigate }: TeamPlayerDrillPro
           />
           <RootBranchList
             model={ready.model}
-            selectedId={selectedId}
+            selectedId={selectedBranch?.id ?? selectedId}
             onSelect={select}
             includeUnsized
             label={`Branches of ${name}'s map`}
@@ -178,7 +187,20 @@ export function TeamPlayerDrill({ drill, hrefFor, navigate }: TeamPlayerDrillPro
         </>
       )}
 
-      {ready && selectedId ? (
+      {ready && selectedBranch && !whyId ? (
+        <section aria-labelledby="drill-spot-heading" className="flex flex-col gap-3 border-t border-text-primary pt-6" data-slot="drill-measured-spot">
+          <Eyebrow as="p">{ROOT_AREA_LABEL[selectedBranch.area]}</Eyebrow>
+          <h3 id="drill-spot-heading" className="font-fw-display text-title-2 font-semibold text-text-primary">
+            {selectedBranch.title}
+          </h3>
+          <p className="text-body-sm text-text-primary">
+            <span className="font-fw-mono tabular-nums">{formatStrokes(selectedBranch.strokes)}</span> strokes a round lost,{' '}
+            {selectedBranch.sizingNote}.
+          </p>
+          <MeasuredFacts branch={selectedBranch} />
+          <p className="text-body-sm text-text-secondary">No stored read on {name}&apos;s map matches this spot yet.</p>
+        </section>
+      ) : ready && whyId ? (
         <div className="border-t border-text-primary pt-6">
           <RootWhy
             model={ready.model}
@@ -188,17 +210,17 @@ export function TeamPlayerDrill({ drill, hrefFor, navigate }: TeamPlayerDrillPro
             approachWhy={ready.approachWhy}
             audience="coach"
             playerName={name}
-            insightId={selectedId}
+            insightId={whyId}
             backLink={null}
             secondaryActions={
               <Button asChild variant="secondary" size="lg" fullWidth>
                 <Link
-                  href={hrefFor({ view: 'signals', signal: selectedId })}
+                  href={hrefFor({ view: 'signals', signal: whyId })}
                   scroll={false}
                   onClick={(event) => {
                     if (!plainClick(event)) return;
                     event.preventDefault();
-                    navigate({ view: 'signals', signal: selectedId });
+                    navigate({ view: 'signals', signal: whyId });
                   }}
                 >
                   Open signal

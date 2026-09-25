@@ -128,6 +128,20 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
   `updated_at`. Recent putts/holes load once per player per analysis run
   (2-minute in-process cache shared by the bucket instances). The recheck only
   runs when the generator runs, i.e. when the player's analysis is re-run.
+- Stale-insight refresh (owner decision 2026-09-25,
+  `src/lib/coachhelm/v3/engine/stale-refresh.ts`). The nightly roster sweep
+  skips a player whose latest completed round is already analyzed, so a player
+  who stops logging rounds used to keep their last analysis forever (measured:
+  15 on-roster players / 50 visible rows, 22–88 days old). The sweep now also
+  re-analyzes players whose visible v3 insights (`applyInsightVisibility`)
+  were ALL last refreshed `STALE_REFRESH_DAYS` (14)+ days ago — anchor = the
+  player's newest `max(created_at, last_refreshed_at, redetected_at)` — at
+  most `STALE_REFRESH_CAP` (6) per run, oldest first, batched together at the
+  front of the sweep. A recently analyzed player with individually stale rows
+  is not selected (re-running cannot change rows from gated/standing-lag
+  exits). Same deterministic `triggerPlayerInsightsAfterRound` path: no AI
+  model calls. A lookup failure skips only the extra refreshes. The response
+  reports `staleRefresh {selected, refreshed, cap, staleDays, selectFailed}`.
   Read-only report: `scripts/coachhelm/recheck-dry-run.ts`.
 - Honest-mode confidence (`factors_measured=false`) is `sample_adequacy × freshness` (`honest_v2`); it is a support score, never a probability, and can never rise as evidence ages.
 - Citations, evidence, and baseline comparisons are part of the trust contract. Do not emit fabricated comparisons or uncited claims.
@@ -318,6 +332,46 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
     link to Team roots are secondary.
   - Stored insight prose (title, symptom, root cause) is shown verbatim.
     Some generators write it to the player in the second person.
+- Measured What row (owner decision 2026-09-25, `measured-what.ts`):
+  - Under each losing area the What row is built from recorded shots, on
+    the player map, the coach drill and (summed) Team roots. Sub-areas: tee
+    = driver / other tee clubs / penalties (`club_type` is only
+    driver/non_driver/putter, so no club is named); approach = 50–125 /
+    125–175 / 175+ yd, inside 50 yd, penalties, with a by-lie line
+    (fairway / rough / tee box for par 3s) inside a band; around the green =
+    sand / rough / tight lies, penalties; putting = holes by FIRST-putt
+    distance on the stats writer's half-open bands (0–3, 3–5, 5–10, 10–15,
+    15–25, 25+ ft).
+  - Shot SG is `shotSgForRound` (port of `calculate_round_strokes_gained`).
+    Every kept shot is filed under a key, so the keys sum to the recomputed
+    area SG. It must read exactly the Where row's rounds (`roundsPlayed`),
+    else the area falls back. Reconciliation against the Where-row value:
+    within 0.15 a round → printed as measured; covering 0.5–2× the stored
+    value → each spot is its share of the stored total (note says so);
+    otherwise the stored-insight What row stays (legacy, "Unexplained").
+    Calibrated 2026-09-25 over all 72 players with SG rounds: measured for
+    67–69 per area, share for 2–5, none for 0–2; median |diff| ≤ 0.006.
+  - Gate: 10 events over 3 rounds, else the spot folds into "Other"; at most
+    3 spots per area plus Other (375px). Spots that GAIN inside a losing area
+    are listed in the area note as offsets. The remainder is "Not tracked by
+    shot", never "Unexplained".
+  - Stored insights attach by metric to their spot as the Why (styles as
+    before); the best read opens the Why view (`whyId`), and `findBranch`
+    resolves an insight id to its spot. A read with no matching spot goes
+    to Other reads. A spot with no read still shows its measured value.
+  - Team: Σ of measured players' keys ÷ the team-average denominator;
+    `players` counts players losing strokes on that spot; players with no
+    measured split stay in "Not tracked by shot". `loadTeamShotContext`
+    batches the roster's rounds, holes and shots.
+- Root map copy (2026-09-25, `plain-copy.ts`): raw metric ids never reach
+  the Why view (`plainMetricLabel`); the old "X is off its benchmark — likely
+  cause inferred from the aggregate" diagnosis is rewritten at render and an
+  inferred cause always carries "Likely, not yet seen in shot sequences".
+  When a templated row's stored text names a cause, its causal sentences
+  lead the Why; the coach drill quotes them as the player sees them rather
+  than rewriting "you" (verb agreement cannot be rewritten safely). A last
+  round older than 30 days shows "Last round Jul 10 — 11 weeks ago"
+  (`staleRoundLine`, age computed on the server).
 - Root map area SG (2026-09-25) is averaged by `loadPlayersAreaSg` over
   COUNTABLE completed rounds (`isCountableRound`), per 18 holes (a 9-hole
   round's SG is doubled), from `golf_rounds.strokes_gained_*`. It does not
