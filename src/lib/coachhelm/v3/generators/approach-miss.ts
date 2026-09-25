@@ -58,6 +58,7 @@ import {
   type ApproachAxis,
   type AxisReading,
   type AxisTally,
+  classifyMiss,
 } from '@/lib/coachhelm/v3/engine/diagnosis';
 import type { Diagnosis } from '@/lib/coachhelm/v2/insights/types';
 
@@ -134,15 +135,6 @@ function onGreenFinishFeet(s: ApproachShot): number {
     : Number(s.distance_to_hole_after);
 }
 
-/** Classify a raw miss_direction into its short/long and left/right poles. A
- *  direction may contribute to BOTH axes (e.g. 'short_right' → short + right);
- *  a pure 'short' contributes short + L/R-neutral. Unknown → neutral on both. */
-function classifyMiss(raw: string | null): { sl: keyof AxisTally; lr: keyof AxisTally } {
-  const v = (raw ?? '').toLowerCase();
-  const sl: keyof AxisTally = v.includes('short') ? 'negative' : v.includes('long') ? 'positive' : 'neutral';
-  const lr: keyof AxisTally = v.includes('left') ? 'negative' : v.includes('right') ? 'positive' : 'neutral';
-  return { sl, lr };
-}
 
 /* ───────────────────────────────────────────────────────────────────────────
  * Par split — the 175+ band pools two different shots
