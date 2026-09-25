@@ -219,6 +219,15 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
 
 ## UI Contract
 
+- Root map surfaces (2026-09-25): the player Today view and the coach
+  Team roots view draw v3 insights as one strokes-weighted diagram
+  (`src/lib/coachhelm/root-map/**`, `src/components/golf/coachhelm/root-map/**`).
+  They read stored `evidence.diagnosis` (causality_level, root_cause,
+  basis.sequence), `evidence.counterfactual` and `evidence.confidence`
+  only; confidence bands match `bandFor` (<0.4 Thin, <0.7 Early, else
+  Solid). A change to those evidence fields' shape or meaning must update
+  `build-root-map.ts` and its tests. Details: `player-coachhelm-development.md`
+  and `coach-intelligence-triage.md`.
 - Coach views need fast triage: new, acknowledged, dismissed, resolved, and priority states must be visible.
 - Player views need clear actionability: what changed, why it matters, and what to do next.
 - Loading states should use skeletons that match final layout.

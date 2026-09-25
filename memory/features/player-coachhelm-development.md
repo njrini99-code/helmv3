@@ -23,6 +23,7 @@ This area depends heavily on shot tracking, stats, round reviews, and CoachHelm 
 ### Components
 
 - `src/components/golf/coachhelm/player/**`
+- `src/components/golf/coachhelm/root-map/**` (root map Today, Why drill, sparklines; shared with the coach Team roots view)
 - `src/components/golf/coachhelm/round-review/**`
 - `src/components/golf/coachhelm/insight-card/**`
 - `src/components/golf/coachhelm/v3/StandingBar/**`
@@ -43,6 +44,7 @@ This area depends heavily on shot tracking, stats, round reviews, and CoachHelm 
 - `src/app/golf/actions/v3/**`
 - `src/lib/coachhelm/v2/**`
 - `src/lib/coachhelm/v3/**`
+- `src/lib/coachhelm/root-map/**` (pure layout + bounded stored-data loaders for the root map)
 
 ## Core Data
 
@@ -89,6 +91,42 @@ Player opens round review
 
 ## UI Contract
 
+- **Root map Today (2026-09-25)**: `/golf/dashboard/coachhelm` with no
+  `?view=` renders `RootToday` when the page could build a model (falls
+  back to the older `PlayerHomeBento`, still in the tree, when it could
+  not). Layout: a headline built from data → the strokes-weighted root map
+  (gains above the Tour line from stats-cache SG; losses below in three
+  rows: Where = area SG, What = v3 cause insights sized by the stored
+  `evidence.counterfactual.strokes_saved_per_round`, Why = diagnosis
+  styled solid/observed, hatched/likely, dashed/forming (confidence below
+  Solid read), gray/unexplained) → the selected branch's chain with ONE
+  primary action to the Why drill → "Moving" sparklines (stored
+  `golf_rounds.strokes_gained_*`, deltas from `computeSgTrends`) → "New
+  since" (max 3, rows created on or after the latest round date).
+  Contract points: one scale for gains and losses; cause widths are
+  proportional and scaled to fit their area when their stored sum exceeds
+  it (stored values are still printed); causes with no live
+  counterfactual are "unsized" chips, never drawn with a guessed width;
+  strengths get no root; `dedupeBySubject(collapseParScoring(...))` runs
+  before routing; the default selection is the largest observed branch,
+  then likely, forming, unexplained. Wording follows `causality_level`:
+  observed → "seen in your shots", hypothesis → "likely". Nothing on the
+  read path generates insights or narrative (PR #2068).
+- **Feed exposure**: `getInsightsForPlayer` is called with limit 30 and
+  records a `player_feed` exposure per returned row, so every returned row
+  must render on Today (as a sized branch, an unsized chip, or an "Other
+  reads" line). Do not add a filter between the fetch and the render
+  without trimming the fetch too.
+- **Why drill** (`?view=root&insight=<id>`, registry id `root-why`):
+  breadcrumb, confidence chips, a comparison bar from stored evidence,
+  "How it happens" only when `diagnosis.basis.sequence` is stored, a worth
+  line only when a stored counterfactual projection exists, and one
+  primary action ("Make this my focus", the existing
+  `createFocusAreaFromInsightV2`). The green/slope plot is not built:
+  `putt_details` stores no slope.
+- Production on 2026-09-25 has no `observed_sequence` diagnoses and no
+  approach counterfactuals, so Today shows hatched/forming branches and
+  unsized approach chips; `build-root-map.test.ts` pins that case.
 - Player CoachHelm should explain what changed, why it matters, and what action to take next.
 - My Development should show focus area status, progress, target/current values, and trend in a compact way.
 - Round review surfaces need clear highlights, areas to review, stats comparison, predictions, and feedback actions.

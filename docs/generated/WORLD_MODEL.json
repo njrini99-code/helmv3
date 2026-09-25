@@ -13663,6 +13663,11 @@
           "kind": "import_graph",
           "path": "src/lib/coachhelm/focus-areas/practice-log-loader.ts",
           "anchor": "src/lib/supabase/chunk-ids"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/root-map/loaders.ts",
+          "anchor": "src/lib/supabase/fetch-all-rows"
         }
       ]
     },
@@ -13769,6 +13774,21 @@
           "kind": "import_graph",
           "path": "src/app/golf/actions/player-feedback.ts",
           "anchor": "src/lib/coachhelm/v2/types"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/root-map/build-root-map.test.ts",
+          "anchor": "src/lib/coachhelm/v2/insights/types"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/root-map/build-root-map.ts",
+          "anchor": "src/lib/coachhelm/v2/insights/types"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/root-map/build-team-roots.ts",
+          "anchor": "src/lib/coachhelm/v2/insights/types"
         }
       ]
     },
@@ -14110,6 +14130,26 @@
           "kind": "import_graph",
           "path": "src/lib/coachhelm/focus-areas/target-metric.ts",
           "anchor": "src/lib/coachhelm/v3/metrics/registry"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/root-map/area-trends.ts",
+          "anchor": "src/lib/coachhelm/v3/themes/trend"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/root-map/area-trends.ts",
+          "anchor": "src/lib/coachhelm/v3/themes/types"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/root-map/build-team-extras.ts",
+          "anchor": "src/lib/coachhelm/v3/effectiveness/attribution-view-model"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/root-map/build-team-roots.ts",
+          "anchor": "src/lib/coachhelm/v3/insights/team-synthesis"
         }
       ]
     },
