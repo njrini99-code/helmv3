@@ -126,7 +126,10 @@ function BarRow({ r, domain }: { r: Read; domain: number }) {
               />
             ) : null}
             <span
-              className={cn('absolute top-1/2 -translate-y-1/2 text-body tabular-nums', VALUE_TONE[m.tone])}
+              className={cn(
+                'absolute top-1/2 -translate-y-1/2 text-body tabular-nums',
+                early ? 'text-text-secondary' : VALUE_TONE[m.tone],
+              )}
               style={
                 right
                   ? { left: `calc(50% + ${barLen} + 0.375rem)` }

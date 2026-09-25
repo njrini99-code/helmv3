@@ -41,6 +41,12 @@ describe('SplitStrip', () => {
     expect(gap.querySelector('.tabular-nums')!.className).toContain('text-fw-warning-ink');
   });
 
+  it('prints an early mean in secondary ink and a solid one in primary', () => {
+    const { container } = render(<SplitStrip rows={[{ ...PRESSURE, rounds: [4, 2, 5] }, PRACTICE]} />);
+    expect(container.querySelector('[data-row="tq"] [data-mean-text]')!.className).toContain('text-text-secondary');
+    expect(container.querySelector('[data-row="pr"] [data-mean-text]')!.className).toContain('text-text-primary');
+  });
+
   it('prints no mean or gap for a row under the floor', () => {
     const { container } = render(<SplitStrip rows={[{ ...PRESSURE, rounds: [4] }, PRACTICE]} />);
     expect(container.querySelector('[data-row="tq"] [data-mean]')).toBeNull();

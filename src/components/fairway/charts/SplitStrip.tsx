@@ -71,7 +71,13 @@ export function SplitStrip({ rows, gapMetricId = 'practice_tournament_delta', cl
       <div className="flex items-baseline justify-between gap-3">
         <span className="min-w-0 break-words text-body text-text-primary">{r.row.label}</span>
         <span className="flex-shrink-0 text-footnote text-text-secondary">
-          <span className={cn('tabular-nums', r.m.missing ? 'text-text-secondary' : 'text-text-primary')}>
+          <span
+            data-mean-text
+            className={cn(
+              'tabular-nums',
+              r.m.missing || r.m.readQuality === 'early' ? 'text-text-secondary' : 'text-text-primary',
+            )}
+          >
             {r.m.text}
           </span>{' '}
           avg · {r.m.missing && r.m.qualityNote ? r.m.qualityNote : formatSample(r.rounds.length)}

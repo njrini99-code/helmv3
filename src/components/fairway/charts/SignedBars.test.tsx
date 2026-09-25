@@ -50,6 +50,8 @@ describe('SignedBars', () => {
   it('draws an early read hollow and a row under its floor as a ghost with the reason', () => {
     const { container } = render(<SignedBars rows={ROWS} label="SG" />);
     expect(container.querySelector('[data-row="arg"] [data-bar]')!.className).toContain('border-2');
+    const argValue = [...container.querySelectorAll('[data-row="arg"] .tabular-nums')].find((el) => el.textContent === '+0.10');
+    expect(argValue!.className).toContain('text-text-secondary');
     const putt = container.querySelector('[data-row="putt"]')!;
     expect(putt.querySelector('[data-bar]')).toBeNull();
     expect(putt.getAttribute('data-drawn')).toBeNull();
