@@ -423,6 +423,13 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
   read, the plan, trends, tracking (focus areas + predictions) and the
   trajectory are closed disclosures. "Message player" is the one primary
   action; the stats-cockpit link is secondary.
+- Insight ownership on write (2026-09-25, `v2/insights/upsert.ts`): a team
+  or coach-staff lookup that errors past its retry throws
+  `InsightOwnershipLookupError` (transient code kept, so the analysis run
+  reads it as retryable) instead of writing with null ownership. The null
+  fallback keyed the row on a partial tuple the dedup lookup could not match,
+  so the 2026-09-24 brownout (PGRST002) wrote 19 coachless twins for one
+  player. A genuinely teamless or unstaffed player still lands an orphan.
 - Root map copy (2026-09-25, `plain-copy.ts`): raw metric ids never reach
   the Why view (`plainMetricLabel`); the old "X is off its benchmark — likely
   cause inferred from the aggregate" diagnosis is rewritten at render and an

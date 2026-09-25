@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
-import { upsertInsight } from '@/lib/coachhelm/v2/insights/upsert';
+import { InsightOwnershipLookupError, upsertInsight } from '@/lib/coachhelm/v2/insights/upsert';
+import { classifyThrown } from '@/lib/coachhelm/v3/engine/analysis-outcome';
 import type { InsightInput, InsightEvidence } from '@/lib/coachhelm/v2/insights/types';
 
 vi.mock('@/lib/server-error-logger', () => ({
@@ -210,7 +211,12 @@ describe('resolvePlayerOwnership (via upsertInsight)', () => {
     expect(insertedRows[0]?.coach_id).toBe('coach-3');
   });
 
-  it('falls back to an orphan (not a throw) when the error persists past the retry', async () => {
+  // 2026-09-25: a lookup that errors past its retry no longer writes. The
+  // fallback row carried a partial ownership tuple the dedup lookup could not
+  // match to the owned row, so each failed lookup minted a duplicate (the
+  // 2026-09-24 brownout wrote 19 coachless twins). A genuine no-team player
+  // still lands an orphan (above).
+  it('refuses to write when the team lookup error persists past the retry', async () => {
     const insertedRows: Row[] = [];
     const supabase = makeFakeSupabase({
       teamMembersResponses: [
@@ -221,29 +227,28 @@ describe('resolvePlayerOwnership (via upsertInsight)', () => {
     });
 
     await expect(upsertInsight(supabase as never, makeInput({ player_id: 'player-persistent-error' })))
-      .resolves.toBeTruthy();
+      .rejects.toBeInstanceOf(InsightOwnershipLookupError);
 
     expect(supabase.__teamMembersCalls.length).toBe(2);
-    expect(insertedRows[0]?.team_id ?? null).toBeNull();
-    expect(insertedRows[0]?.coach_id ?? null).toBeNull();
+    expect(insertedRows).toHaveLength(0);
   });
 
-  it('does not attribute a coach when the coach-staff lookup errors on both attempts', async () => {
+  it('refuses to write a coachless twin when the coach-staff lookup errors on both attempts', async () => {
     const insertedRows: Row[] = [];
     const supabase = makeFakeSupabase({
       teamMembersResponses: [{ data: { team_id: 'team-4' }, error: null }],
       coachStaffResponses: [
-        { data: null, error: { message: 'timeout' } },
-        { data: null, error: { message: 'timeout' } },
+        { data: null, error: { message: 'Could not query the database for the schema cache', code: 'PGRST002' } as never },
+        { data: null, error: { message: 'Could not query the database for the schema cache', code: 'PGRST002' } as never },
       ],
       insertedRows,
     });
 
-    await upsertInsight(supabase as never, makeInput({ player_id: 'player-staff-error' }));
+    const err = await upsertInsight(supabase as never, makeInput({ player_id: 'player-staff-error' })).catch((e: unknown) => e);
 
-    // Team ownership still resolved even though coach resolution failed —
-    // a partial-ownership row (team set, coach null), not a full orphan.
-    expect(insertedRows[0]?.team_id).toBe('team-4');
-    expect(insertedRows[0]?.coach_id ?? null).toBeNull();
+    expect(err).toBeInstanceOf(InsightOwnershipLookupError);
+    expect(insertedRows).toHaveLength(0);
+    // The analysis run records it as a transient fault, not a permanent one.
+    expect(classifyThrown(err).kind).toBe('retryable_failure');
   });
 });
