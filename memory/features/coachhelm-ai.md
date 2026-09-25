@@ -329,6 +329,13 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
   SG hero, snapshot and standing; the overview does not repeat them. The
   section tabs are the only navigation, so CoachHelm drills render no "Home"
   back chip (`DrillPanel` renders one only when `onBack` is passed).
+  Its plan section (`HubPlanBoard`, HUB-19, 2026-09-25) edits in place: a row
+  opens to log a new value or mark the focus area complete, through the
+  unchanged `updateFocusAreaProgress` / `completeFocusArea` actions (Undo via
+  `reactivateFocusArea`), applied with `useOptimistic` and rolled back with a
+  danger toast on failure. Only actionable statuses open; create, accept and
+  decline stay on Development. Its controls are secondary or ghost, so "Log a
+  round" stays the overview's one primary action.
 - **A "Rendered more hooks than during the previous render" / React #310
   report on this surface is not automatically the same bug twice.** On
   `/golf/dashboard/stats` it was a Turbopack HMR/Fast-Refresh and stale-chunk

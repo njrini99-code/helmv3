@@ -16,7 +16,8 @@
  *   02 Why               insight units: claim, cause chain, evidence, drill
  *   03 Patterns          causes ranked by strokes to gain back, and the
  *                        situations where scores run higher
- *   04 Your plan         active focus areas with progress
+ *   04 Your plan         active focus areas with progress, editable in place
+ *                        (HubPlanBoard: log a value or mark complete, HUB-19)
  *
  * The six section tabs above the stage are the only navigation (audit
  * HUB-01): no hub cards that duplicate them. In-section links go to a
@@ -45,13 +46,13 @@ import {
   buildLastRound,
   buildLeakMap,
   buildNextRoundWindow,
-  buildPlanRows,
   buildScoringTrend,
   buildSituations,
   fmtShortDate,
   type SituationInput,
 } from './buildPlayerHubViewModel';
 import { HubInsight } from './HubInsight';
+import { HubPlanBoard } from './HubPlanBoard';
 import { DriverSlopes, LeakBars, NextRoundWindowView, ScoringWindows, SenseWord, SituationRows } from './HubInstruments';
 
 /** How many insight units the overview shows before "All insights". */
@@ -123,7 +124,6 @@ export function PlayerHubFeed({
   const situations = useMemo(() => buildSituations(patterns), [patterns]);
   const nextRound = useMemo(() => buildNextRoundWindow(prediction), [prediction]);
   const lastRound = useMemo(() => buildLastRound(recentRounds), [recentRounds]);
-  const plan = useMemo(() => buildPlanRows(planAreas), [planAreas]);
   const lastRoundDate = recentRounds[0]?.date ?? null;
   const units = useMemo(() => {
     const all = [topInsight, ...secondaryInsights].filter((i): i is EvidenceInsight => Boolean(i));
@@ -270,28 +270,10 @@ export function PlayerHubFeed({
       ) : null}
 
       {/* ── 04 Your plan ─────────────────────────────────────────────────── */}
-      {plan.length > 0 ? (
+      {planAreas.length > 0 ? (
         <section aria-labelledby="hub-plan" className={SECTION}>
           <SectionHead index={hasPatterns ? '04' : '03'} id="hub-plan" title="Your plan" />
-          <ul data-slot="plan-rows" className="flex flex-col divide-y divide-border-subtle">
-            {plan.map((row) => (
-              <li key={row.id} className="py-3 first:pt-0">
-                <div className="flex items-baseline justify-between gap-3">
-                  <p className="min-w-0 font-fw-sans text-body-sm font-medium text-text-primary">{row.title}</p>
-                  <p className="shrink-0 font-fw-sans text-caption font-medium text-text-secondary tabular-nums">{row.status}</p>
-                </div>
-                {row.pct !== null ? (
-                  <div className="mt-1.5 h-1.5 w-full rounded-full bg-surface-sunken" aria-hidden="true">
-                    <div className="h-full rounded-full bg-accent-500" style={{ width: `${Math.max(2, row.pct)}%` }} />
-                  </div>
-                ) : null}
-              </li>
-            ))}
-          </ul>
-          <Button variant="ghost" size="sm" className="mt-3 w-fit" onClick={() => stage.open('development')}>
-            Open your plan
-            <ChevronRight size={14} aria-hidden />
-          </Button>
+          <HubPlanBoard areas={planAreas} />
         </section>
       ) : null}
     </div>

@@ -89,7 +89,7 @@ Owner decisions (OD-01 to OD-24) and workstreams (W1 to W15) have their own tabl
 | HUB-16 | [P1] Dashboard insight → /coachhelm?focus=<id> dead deep link | done: Already DONE in the ledger | before ledger stamp | per transcript |
 | HUB-17 | [P2] Top insight filtered out of the insights list | not-a-bug: Lead: keep the top insight out of the library | PlayerCoachHelmHome.tsx | per transcript |
 | HUB-18 | [P2] StandingView: ladder, row sheet, a gap line only when honest; person named in chrome ("Mark Broadie") | done: No person named; plain SG description | StandingDrill.tsx | verified in code |
-| HUB-19 | [P2] PlanView / PlanBoard / CausalLedger reusing the focus-area writes | partial: Overview shows the plan read-only with a link to Development; no in-place PlanBoard | 894cfab86 | this session |
+| HUB-19 | [P2] PlanView / PlanBoard / CausalLedger reusing the focus-area writes | done: Overview plan edits in place (log a value, mark complete with Undo) through the existing focus-area actions, optimistic with rollback and a danger toast | HubPlanBoard.tsx | verified in code (HubPlanBoard.test.tsx) |
 | HUB-20 | [P2] coachhelm/loading.tsx rewritten to the new first paint | done: coachhelm/loading.tsx matches the new first paint (894cfab86) | 894cfab86 | this session |
 | HUB-21 | [P3] Delete orphaned home/* drills, PlayerSpine, PlayerHomeBento after #1933 | done: PlayerSpine, PlayerHomeBento and buildPlayerHomeViewModel deleted; #1933 does not touch them (894cfab86) | 894cfab86 | this session |
 | HUB-22 | [P2] Game Profile and Deep dive leave the tab strip (overflow Menu) | not-a-bug: OD-11: keep Game Profile and Deep dive in the strip | - | per transcript |

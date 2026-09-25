@@ -21,8 +21,16 @@ import type { ThemeNode, CauseNode } from '@/lib/coachhelm/v3/themes/types';
 import { PlayerHubFeed, type PlayerHubFeedProps } from '../PlayerHubFeed';
 
 vi.mock('next/navigation', () => ({
-  useRouter: () => ({ replace: vi.fn(), push: vi.fn() }),
+  useRouter: () => ({ replace: vi.fn(), push: vi.fn(), refresh: vi.fn() }),
   useSearchParams: () => new URLSearchParams(),
+}));
+
+// The plan section edits in place (HubPlanBoard, HUB-19); its writes are
+// covered in HubPlanBoard.test.tsx.
+vi.mock('@/app/golf/actions/development', () => ({
+  updateFocusAreaProgress: vi.fn(),
+  completeFocusArea: vi.fn(),
+  reactivateFocusArea: vi.fn(),
 }));
 
 function insight(id: string, overrides: Partial<EvidenceInsight> = {}): EvidenceInsight {
