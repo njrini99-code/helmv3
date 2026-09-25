@@ -725,10 +725,12 @@ const golfQualifierSchema = z
     courseName: z.string().max(200).optional(),
     courseId: z.string().uuid().optional(),
     spotsAvailable: z.number().int().min(1).optional(),
-    entryDeadline: z.string().optional(),
+    // dateString, not z.string(): a QA run stored start_date '60824-02-02'
+    // (a typed 5-digit year) and the list rendered "Feb 2, 60824".
+    entryDeadline: dateString.optional(),
     rules: z.string().max(5000).optional(),
-    startDate: z.string(),
-    endDate: z.string().optional(),
+    startDate: dateString,
+    endDate: dateString.optional(),
     playerIds: z.array(z.string().uuid()),
     // Travel-squad selection model (omit → DB defaults 5 total / 1 coach-pick).
     selectionSlotsTotal: z.number().int().min(1).max(50).optional(),
@@ -4708,9 +4710,9 @@ const updateGolfQualifierDetailsSchema = z
     description: z.string().max(2000).nullable().optional(),
     courseName: z.string().max(200).nullable().optional(),
     rules: z.string().max(5000).nullable().optional(),
-    entryDeadline: z.string().nullable().optional(),
-    startDate: z.string().optional(),
-    endDate: z.string().nullable().optional(),
+    entryDeadline: dateString.nullable().optional(),
+    startDate: dateString.optional(),
+    endDate: dateString.nullable().optional(),
     spotsAvailable: z.number().int().min(1).nullable().optional(),
   })
   .refine((d) => !d.endDate || !d.startDate || d.endDate >= d.startDate, {
