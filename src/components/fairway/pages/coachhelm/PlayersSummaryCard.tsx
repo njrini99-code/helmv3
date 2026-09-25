@@ -219,3 +219,143 @@ export function RosterDetail({
     </div>
   );
 }
+
+/* ---------------------------------------------------------------------------
+ * FocusAreasSummaryCard — the Focus areas (development) tab's opening card.
+ * Counts use the board's own status split: proposed and declined are not
+ * active work.
+ * ------------------------------------------------------------------------- */
+
+export interface FocusAreaCounts {
+  total: number;
+  active: number;
+  proposed: number;
+  completed: number;
+  declined: number;
+  players: number;
+  improved: number;
+  recorded: number;
+}
+
+export function countFocusAreas(
+  areas: ReadonlyArray<{ status?: string | null; player_id: string; outcome_status?: string | null }>,
+): FocusAreaCounts {
+  let active = 0;
+  let proposed = 0;
+  let completed = 0;
+  let declined = 0;
+  let improved = 0;
+  let recorded = 0;
+  for (const a of areas) {
+    if (a.status === 'proposed') proposed += 1;
+    else if (a.status === 'declined') declined += 1;
+    else if (a.status === 'completed') completed += 1;
+    else active += 1;
+    if (a.outcome_status === 'improved' || a.outcome_status === 'no_change' || a.outcome_status === 'worsened') {
+      recorded += 1;
+      if (a.outcome_status === 'improved') improved += 1;
+    }
+  }
+  return {
+    total: areas.length,
+    active,
+    proposed,
+    completed,
+    declined,
+    players: new Set(areas.map((a) => a.player_id)).size,
+    improved,
+    recorded,
+  };
+}
+
+/** One plain line: what is due, what is waiting on a player, what landed. */
+export function focusAreasTakeaway(
+  c: FocusAreaCounts,
+  due: { due: number; overdue: number },
+  scopeName: string | null,
+): string {
+  if (c.total === 0) {
+    return scopeName ? `No focus areas set for ${scopeName} yet.` : 'No focus areas set on this roster yet.';
+  }
+  const parts: string[] = [];
+  if (due.due > 0) {
+    parts.push(`${due.due} due for review${due.overdue > 0 ? ` (${due.overdue} overdue)` : ''}`);
+  }
+  if (c.proposed > 0) parts.push(`${c.proposed} awaiting the player's acceptance`);
+  if (c.recorded > 0) parts.push(`${c.improved} of ${c.recorded} recorded outcomes improved`);
+  if (parts.length === 0) {
+    return c.active > 0 ? `${c.active} in progress; none due for review this week.` : 'Nothing in progress right now.';
+  }
+  const line = parts.join('; ');
+  return `${line.charAt(0).toUpperCase()}${line.slice(1)}.`;
+}
+
+export function FocusAreasSummaryCard({
+  counts,
+  due,
+  scopeName,
+}: {
+  counts: FocusAreaCounts;
+  due: { due: number; overdue: number };
+  scopeName: string | null;
+}) {
+  const parts = [
+    { key: 'active', label: 'Active', value: counts.active, className: 'bg-accent-500' },
+    { key: 'proposed', label: 'Proposed', value: counts.proposed, className: 'bg-accent-300' },
+    { key: 'completed', label: 'Completed', value: counts.completed, className: 'bg-text-tertiary' },
+    { key: 'declined', label: 'Declined', value: counts.declined, className: 'bg-border-strong' },
+  ];
+  const eyebrow = scopeName
+    ? `${scopeName} · ${plural(counts.total, 'focus area')}`
+    : `Focus areas · ${counts.total} across ${plural(counts.players, 'player')}`;
+
+  return (
+    <section
+      aria-label="Focus areas summary"
+      data-slot="players-areas-summary"
+      className="flex flex-col gap-5 rounded-fw-lg border border-border-subtle bg-surface p-5 md:p-6"
+    >
+      <div className="flex flex-col gap-1">
+        <Eyebrow as="p">{eyebrow}</Eyebrow>
+        <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+          <p className="font-fw-mono text-display tabular-nums text-text-primary" data-slot="players-areas-active">
+            {counts.total > 0 ? counts.active : '—'}
+          </p>
+          <p className="text-body-sm text-text-secondary">active</p>
+        </div>
+        <p className="text-body text-text-secondary" data-slot="players-areas-takeaway">
+          {focusAreasTakeaway(counts, due, scopeName)}
+        </p>
+      </div>
+      {counts.total > 0 ? (
+        <div className="flex flex-col gap-3">
+          <div
+            role="img"
+            aria-label={`${counts.active} active, ${counts.proposed} proposed, ${counts.completed} completed, ${counts.declined} declined, of ${plural(counts.total, 'focus area')}.`}
+            className="flex h-3 w-full gap-0.5 overflow-hidden rounded-full bg-surface-sunken"
+          >
+            {parts
+              .filter((p) => p.value > 0)
+              .map((p) => (
+                <span
+                  key={p.key}
+                  className={cn('h-full', p.className)}
+                  style={{ width: `${(p.value / counts.total) * 100}%` }}
+                />
+              ))}
+          </div>
+          <ul className="flex flex-wrap gap-x-4 gap-y-1 text-caption text-text-secondary">
+            {parts
+              .filter((p) => p.value > 0)
+              .map((p) => (
+                <li key={p.key} className="flex items-center gap-1.5">
+                  <span aria-hidden className={cn('h-2 w-2 rounded-full', p.className)} />
+                  {p.label} <span className="font-fw-mono tabular-nums text-text-primary">{p.value}</span>
+                </li>
+              ))}
+          </ul>
+        </div>
+      ) : null}
+    </section>
+  );
+}

@@ -1,6 +1,12 @@
 import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
-import { RosterSummaryCard, rosterTakeaway } from './PlayersSummaryCard';
+import {
+  RosterSummaryCard,
+  rosterTakeaway,
+  FocusAreasSummaryCard,
+  countFocusAreas,
+  focusAreasTakeaway,
+} from './PlayersSummaryCard';
 import type { NeedRow, RosterHealth } from './RosterHealthHeader';
 import type { RosterRow } from './PlayersGridView';
 
@@ -49,5 +55,39 @@ describe('RosterSummaryCard', () => {
   it('shows a dash, not a zero, when there is nothing to assess', () => {
     render(<RosterSummaryCard health={health({ playersWithRounds: 0 })} needs={[]} />);
     expect(screen.getByText('—')).toBeInTheDocument();
+  });
+});
+
+describe('focus areas summary', () => {
+  const areas = [
+    { player_id: 'a', status: 'active', outcome_status: 'improved' },
+    { player_id: 'a', status: 'in_progress', outcome_status: null },
+    { player_id: 'b', status: 'proposed', outcome_status: null },
+    { player_id: 'b', status: 'completed', outcome_status: 'no_change' },
+    { player_id: 'c', status: 'declined', outcome_status: null },
+  ];
+
+  it('splits status the way the board does and counts players', () => {
+    const c = countFocusAreas(areas);
+    expect(c).toMatchObject({ total: 5, active: 2, proposed: 1, completed: 1, declined: 1, players: 3, improved: 1, recorded: 2 });
+  });
+
+  it('names what is due, what is waiting and what landed', () => {
+    const line = focusAreasTakeaway(countFocusAreas(areas), { due: 2, overdue: 1 }, null);
+    expect(line).toBe("2 due for review (1 overdue); 1 awaiting the player's acceptance; 1 of 2 recorded outcomes improved.");
+  });
+
+  it('shows the active count, the status split and the sample size', () => {
+    render(<FocusAreasSummaryCard counts={countFocusAreas(areas)} due={{ due: 0, overdue: 0 }} scopeName={null} />);
+    expect(screen.getByText('Focus areas · 5 across 3 players')).toBeInTheDocument();
+    expect(
+      screen.getByRole('img', { name: '2 active, 1 proposed, 1 completed, 1 declined, of 5 focus areas.' }),
+    ).toBeInTheDocument();
+  });
+
+  it('shows a dash and a scoped empty line when a player has no areas', () => {
+    render(<FocusAreasSummaryCard counts={countFocusAreas([])} due={{ due: 0, overdue: 0 }} scopeName="Jordan Lee" />);
+    expect(screen.getByText('—')).toBeInTheDocument();
+    expect(screen.getByText('No focus areas set for Jordan Lee yet.')).toBeInTheDocument();
   });
 });
