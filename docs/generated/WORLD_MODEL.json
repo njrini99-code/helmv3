@@ -15860,6 +15860,16 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/lib/golf/round-start-guard-signal.ts",
+          "anchor": "src/lib/observability/structured-log"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/golf/round-start-guard-signal.ts",
+          "anchor": "src/lib/observability/client-breadcrumbs"
+        },
+        {
+          "kind": "import_graph",
           "path": "src/lib/golf/schedule-vision.ts",
           "anchor": "src/lib/observability/metrics"
         },
