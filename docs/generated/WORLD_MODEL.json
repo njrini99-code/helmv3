@@ -3692,6 +3692,10 @@
         "definedIn": "supabase/migrations/20260610040000_stats_population_updown_and_trigger_columns.sql"
       },
       {
+        "id": "update_player_stats_strokes_gained",
+        "definedIn": "supabase/migrations/20260925120000_player_stats_sg_countable_rounds.sql"
+      },
+      {
         "id": "user_has_pending_join_request_to_coach_team",
         "definedIn": "supabase/migrations/20260808170000_join_request_predicate_staff_strict.sql"
       },
@@ -13395,6 +13399,11 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/lib/coachhelm/root-map/team-shot-cache.ts",
+          "anchor": "src/lib/supabase/admin"
+        },
+        {
+          "kind": "import_graph",
           "path": "src/lib/coachhelm/round-single-flight-lock.ts",
           "anchor": "src/lib/supabase/admin"
         }
@@ -20748,6 +20757,18 @@
           "kind": "registry_glob",
           "path": "memory/registry.yml",
           "pattern": "src/test/coachhelm/v2/shot-analysis/**"
+        }
+      ]
+    },
+    {
+      "source": "stats_analytics",
+      "target": "update_player_stats_strokes_gained",
+      "kind": "feature_rpc",
+      "evidence": [
+        {
+          "kind": "rpc_call",
+          "path": "src/lib/cache/golf-stats-calculator.ts",
+          "anchor": "update_player_stats_strokes_gained"
         }
       ]
     },
