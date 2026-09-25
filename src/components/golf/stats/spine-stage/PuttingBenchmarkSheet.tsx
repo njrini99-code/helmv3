@@ -92,14 +92,14 @@ function BenchmarkRow({ row, tourLabel }: { row: PuttingBenchmarkRow; tourLabel:
     >
       <span className="font-fw-sans text-body-sm font-medium text-text-primary">{row.label}</span>
       <span className="flex min-w-0 flex-col">
-        <span className="font-fw-mono text-body tabular-nums text-text-primary">
+        <span className="font-fw-sans text-body tabular-nums text-text-primary">
           {pct(row.makePct)}
           <span className="ml-1.5 font-fw-sans text-caption text-text-tertiary">n={row.sampleN}</span>
         </span>
         <span className={cn('font-fw-sans text-caption', VERDICT_CLASS[row.verdict])}>{verdictText(row.verdict, tourLabel)}</span>
       </span>
-      <span className="text-right font-fw-mono text-body-sm tabular-nums text-text-secondary">{pct(row.tour)}</span>
-      <span className="text-right font-fw-mono text-body-sm tabular-nums text-text-secondary">{pct(row.div1)}</span>
+      <span className="text-right font-fw-sans text-body-sm tabular-nums text-text-secondary">{pct(row.tour)}</span>
+      <span className="text-right font-fw-sans text-body-sm tabular-nums text-text-secondary">{pct(row.div1)}</span>
     </li>
   );
 }

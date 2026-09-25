@@ -355,7 +355,7 @@ function SlotLeaderboard({
                 >
                   <span
                     className={cn(
-                      'w-7 font-fw-mono text-body-sm tabular-nums',
+                      'w-7 font-fw-sans text-body-sm tabular-nums',
                       locked ? 'font-medium text-accent-700' : 'text-text-tertiary',
                     )}
                   >
@@ -371,15 +371,15 @@ function SlotLeaderboard({
                     {/* Phones: the columns below scrolled offscreen (to-par and
                         Locked hidden past a 460px min-width), so they ride
                         under the name instead. */}
-                    <span className="mt-0.5 font-fw-mono text-caption tabular-nums text-text-tertiary sm:hidden">
+                    <span className="mt-0.5 font-fw-sans text-caption tabular-nums text-text-tertiary sm:hidden">
                       {c.rounds_completed} {c.rounds_completed === 1 ? 'rd' : 'rds'} · {formatToPar(c.total_to_par)}
                       {locked ? ' · Locked' : picked ? ' · Coach pick' : ''}
                     </span>
                   </div>
-                  <span className="hidden w-14 text-right font-fw-mono text-body-sm tabular-nums text-text-tertiary sm:inline">
+                  <span className="hidden w-14 text-right font-fw-sans text-body-sm tabular-nums text-text-tertiary sm:inline">
                     {c.rounds_completed} {c.rounds_completed === 1 ? 'rd' : 'rds'}
                   </span>
-                  <span className="hidden w-14 text-right font-fw-mono text-body-sm tabular-nums text-text-primary sm:inline">
+                  <span className="hidden w-14 text-right font-fw-sans text-body-sm tabular-nums text-text-primary sm:inline">
                     {formatToPar(c.total_to_par)}
                   </span>
                   <span className="hidden w-28 text-right sm:inline">
@@ -538,7 +538,7 @@ function CoachPicks({
               return (
                 <li key={c.player_id} className="border-b border-border-subtle py-3.5 last:border-b-0">
                   <div className="flex min-w-0 items-center gap-4">
-                    <span className="w-7 font-fw-mono text-body-sm tabular-nums text-text-tertiary">
+                    <span className="w-7 font-fw-sans text-body-sm tabular-nums text-text-tertiary">
                       {c.leaderboard_rank ?? '—'}
                     </span>
                     <Link
@@ -547,7 +547,7 @@ function CoachPicks({
                     >
                       {c.player_first_name} {c.player_last_name}
                     </Link>
-                    <span className="w-14 text-right font-fw-mono text-body-sm tabular-nums text-text-secondary">
+                    <span className="w-14 text-right font-fw-sans text-body-sm tabular-nums text-text-secondary">
                       {formatToPar(c.total_to_par)}
                     </span>
                     {editable && !isEditing ? (
