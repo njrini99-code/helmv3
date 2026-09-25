@@ -667,7 +667,8 @@ export function RootWhy({
         {isCoach ? (
           <EmptyState
             title={`This read is not on ${voice.possessive} map right now`}
-            description="It may have been resolved, dismissed, or replaced by a newer read. Pick a branch of the map above."
+            description="It may have been resolved, dismissed, or replaced by a newer read, or it has no stored evidence to draw. Pick a branch of the map above, or open the raw signal."
+            action={secondaryActions}
           />
         ) : (
           <EmptyState

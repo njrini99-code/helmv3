@@ -150,6 +150,8 @@ function unsizedSpokenLabel(u: UnsizedCause, areaLabel: string, audience: RootAu
 
 /** Where-row slices narrower than this carry their label outside the bar. */
 const WHERE_LABEL_MIN_W = 0.3;
+/** Sized What-row nodes narrower than this carry no label inside. */
+const WHAT_LABEL_MIN_W = 0.24;
 /** Remainder slots at least this wide carry a label and the unsized nodes. */
 const REMAINDER_LABEL_MIN_W = 0.16;
 
@@ -191,6 +193,9 @@ export function RootMap({
   const slots = layoutWhatRow(model);
   const narrowAreas = model.losses.filter((a) => a.w < WHERE_LABEL_MIN_W);
   const narrowGains = model.gains.filter((g) => g.w < WHERE_LABEL_MIN_W);
+  // The team map (no Why row, no branch detail under it) labels sized causes
+  // drawn too narrow for their own label just under the What row.
+  const narrowCauses = showWhy ? [] : slots.filter((sl) => sl.cause !== null && sl.w < WHAT_LABEL_MIN_W);
   // Unsized causes drawn inside a remainder slot wide enough to hold them.
   const unsizedBySlot = new Map<string, UnsizedCause[]>();
   if (unsizedInRow) {
@@ -406,7 +411,7 @@ export function RootMap({
                         )}
                         style={{ background: mix(NEG, 75) }}
                       >
-                        {sl.w >= 0.24 ? (
+                        {sl.w >= WHAT_LABEL_MIN_W ? (
                           <span className="flex min-w-0 flex-col leading-tight">
                             <span className="truncate">{c.label}</span>
                             {c.players !== undefined ? (
@@ -443,6 +448,20 @@ export function RootMap({
                   );
                 })}
               </div>
+              {narrowCauses.length > 0 ? (
+                // A sized cause drawn narrower than its label keeps its true
+                // width; its name, value and carriers sit just under the row.
+                <ul className="flex flex-wrap gap-x-3 gap-y-0.5 text-caption text-text-secondary" data-slot="what-callouts">
+                  {narrowCauses.map((sl) => (
+                    <li key={sl.key} className="flex items-center gap-1">
+                      <span aria-hidden className="inline-block h-2 w-2 rounded-sm" style={{ background: mix(NEG, 75) }} />
+                      <span className="font-medium text-text-primary">{sl.cause!.label}</span>
+                      <span className="font-fw-mono tabular-nums text-text-primary">{formatStrokes(sl.cause!.strokes)}</span>
+                      {sl.cause!.players !== undefined ? <span>· {playersText(sl.cause!.players)}</span> : null}
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
             </>
           ) : null}
         </div>

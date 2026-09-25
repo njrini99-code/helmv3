@@ -293,25 +293,39 @@ function TeamRootsOverview({ model, headline, trend, slopes, needsYou, signalsFa
           </p>
         ) : (
           <ul className="flex flex-col divide-y divide-border-subtle">
-            {needsYou.map((item) => (
-              <li key={item.key}>
-                <NavLink
-                  update={
-                    item.signalId
-                      ? { view: 'signals', signal: item.signalId }
-                      : { view: 'players', player: item.playerId, playersTab: 'areas' }
-                  }
-                  hrefFor={hrefFor}
-                  navigate={navigate}
-                  className="flex min-h-11 flex-col justify-center gap-0.5 py-2 outline-none hover:bg-surface-tint focus-visible:ring-2 focus-visible:ring-border-focus"
-                >
+            {needsYou.map((item) => {
+              const body = (
+                <>
                   <span className="text-body-sm text-text-primary">
                     <span className="font-medium">{item.playerName}</span> · {item.title}
                   </span>
                   <span className="text-caption text-text-secondary">{item.detail}</span>
-                </NavLink>
-              </li>
-            ))}
+                </>
+              );
+              const rowClass =
+                'flex min-h-11 flex-col justify-center gap-0.5 py-2 outline-none hover:bg-surface-tint focus-visible:ring-2 focus-visible:ring-border-focus';
+              return (
+                <li key={item.key}>
+                  {item.signalId ? (
+                    // A read: open it on the player's own root map.
+                    <DrillLink playerId={item.playerId} cause={item.signalId} hrefFor={hrefFor} className={rowClass}>
+                      {body}
+                    </DrillLink>
+                  ) : (
+                    // A focus area waiting on the coach: its actions live on
+                    // the player's focus areas.
+                    <NavLink
+                      update={{ view: 'players', player: item.playerId, playersTab: 'areas' }}
+                      hrefFor={hrefFor}
+                      navigate={navigate}
+                      className={rowClass}
+                    >
+                      {body}
+                    </NavLink>
+                  )}
+                </li>
+              );
+            })}
           </ul>
         )}
       </section>

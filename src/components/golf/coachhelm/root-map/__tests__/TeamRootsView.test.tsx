@@ -137,6 +137,27 @@ describe('TeamRootsView, a stored miss concentration', () => {
     expect(screen.getByText('Concentrates by par or shape (open the cell)')).toBeInTheDocument();
     expect(screen.getByText(/Observed, not a cause\.$/)).toBeInTheDocument();
   });
+
+  it('opens a Needs-you read on the player drill, not the Signals view', () => {
+    const model = buildTeamRoots({ players, signals: [signal('a', 'appr', 'approach', null)] });
+    render(
+      <TeamRootsView
+        model={model}
+        headline={null}
+        trend={[]}
+        slopes={[]}
+        needsYou={[
+          { key: 'sig:a-appr', kind: 'signal', playerId: 'a', playerName: 'Player A', title: 'appr', detail: 'd', signalId: 'a-appr' },
+        ]}
+        signalsFailed={false}
+        hrefFor={(u) => `/golf/dashboard/intelligence?view=${u.view}${u.player ? `&player=${u.player}` : ''}${u.cause ? `&cause=${u.cause}` : ''}`}
+        navigate={() => {}}
+      />,
+    );
+    const heading = screen.getByRole('heading', { name: 'Needs you' });
+    const section = heading.closest('section') as HTMLElement;
+    expect(within(section).getByRole('link')).toHaveAttribute('href', '/golf/dashboard/intelligence?view=team&player=a&cause=a-appr');
+  });
 });
 
 describe('TeamRootsView, team map What row and matrix labels (2026-09-25)', () => {
@@ -196,6 +217,10 @@ describe('TeamRootsView, team map What row and matrix labels (2026-09-25)', () =
       within(figure).getByRole('button', { name: /Putting: Downhill putts, no stroke value stored\. 3 players/ }),
     ).toBeInTheDocument();
     expect(within(figure).getAllByText('Unexplained').length).toBeGreaterThan(0);
+    // a sized node too narrow for its own label is named just under the row
+    const callouts = figure.querySelector('[data-slot="what-callouts"]') as HTMLElement;
+    expect(within(callouts).getByText('Lag putting')).toBeInTheDocument();
+    expect(within(callouts).getByText('· 1 player')).toBeInTheDocument();
     // legend once, in the coach voice
     expect(screen.getAllByRole('list', { name: 'Legend' })).toHaveLength(1);
     expect(screen.queryByText(/your/i)).not.toBeInTheDocument();
