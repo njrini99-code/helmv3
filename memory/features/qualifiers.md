@@ -136,6 +136,12 @@ Leaderboard reads qualifier
 - Detail views should make ties and round-by-round breakdowns inspectable.
 - Mobile qualifier views need compact cards, clear primary action, and no stacked header utility rows.
 - Empty states should explain whether there are no qualifiers, no entries, or no rounds yet.
+- Selection workspace (`/coachhelm/qualifying/[id]`,
+  `FairwayQualifyingWorkspace`, 2026-09-25) opens on one summary card: spots
+  filled of the total, a one-line next step per `selection_state`
+  (`selectionTakeaway`), the locked / coach pick / open slot bar, and the
+  advance / confirm actions. Coach picks sit in a closed disclosure until
+  `closed`. Leaderboard and pick rows fit a phone without a sideways scroll.
 - A route's `loading.tsx` reserves the page's paint at t=0 — for a
   `'use client'` page holding its own `loading` state that is that
   component's loading branch, not its settled layout. A route whose
