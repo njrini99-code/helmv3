@@ -9,9 +9,10 @@
  * player with the coach's access (`loadCoachPlayerDrill`), in the coach's
  * voice: the player's first name, never "you".
  *
- * Summary first: `RootSummary` (the loss by area, the two biggest leaks, one
- * line of Why, ONE primary action "See why"), then the collapsed per-area
- * ladder, full map and notes (`RootMap`) and other reads. A spot opens its
+ * Summary first: `RootSummary` in the third person (the player's biggest
+ * leak, one line of Why, their strength, ONE primary action "See why"), then
+ * their next two leaks, every area collapsed (`AreaBreakdown`) and other
+ * reads. A spot opens its
  * Why in a sheet (bottom on phones, a right-hand panel from md). A `?cause=`
  * link opens that sheet on load; picking a spot keeps `?cause=` in step and
  * closing the sheet clears it, so back/forward and a shared link reopen the
@@ -19,22 +20,21 @@
  * one primary action; "Open signal" is secondary.
  * ========================================================================== */
 
-import { useEffect, useMemo, useRef, useState, type MouseEvent } from 'react';
+import { useEffect, useRef, useState, type MouseEvent } from 'react';
 import Link from 'next/link';
 import { ChevronLeft } from 'lucide-react';
-import { Button, EmptyState, Eyebrow, Sheet } from '@/components/fairway';
+import { Button, EmptyState, Sheet } from '@/components/fairway';
 import {
   CONFIDENCE_LABEL,
   ROOT_AREA_LABEL,
   findBranch,
   formatStrokes,
   whyIdOf,
-  rootStyleLabel,
   shortDate,
   staleRoundLine,
 } from '@/lib/coachhelm/root-map/build-root-map';
 import type { CoachPlayerDrill } from '@/lib/coachhelm/root-map/coach-player-drill';
-import { RootMap } from './RootMap';
+import { AreaBreakdown, SpotList, breakdownFootnote, rankedSpots } from './LeakList';
 import { RootSummary } from './RootSummary';
 import { Disclosure } from './Disclosure';
 import { RootWhy } from './RootWhy';
@@ -119,24 +119,6 @@ export function TeamPlayerDrill({ drill, hrefFor, navigate }: TeamPlayerDrillPro
     navigate({ cause: null });
   }
 
-  const summary = useMemo(() => {
-    if (!ready) return '';
-    const m = ready.model;
-    const parts: string[] = [];
-    if (m.gains.length > 0) parts.push(`Gaining: ${m.gains.map((g) => `${g.label} ${formatStrokes(g.sg, { signed: true })}`).join(', ')}.`);
-    if (m.losses.length > 0) {
-      parts.push(
-        `Losing: ${m.losses
-          .map((a) => {
-            const causes = a.causes.map((c) => `${c.label} ${formatStrokes(c.strokes)} (${rootStyleLabel(c.style, 'coach').toLowerCase()})`);
-            return `${a.label} ${formatStrokes(a.sg, { signed: true })}${causes.length ? `, from ${causes.join(', ')}` : ''}`;
-          })
-          .join('; ')}.`,
-      );
-    }
-    if (m.netSg !== null) parts.push(`Net ${formatStrokes(m.netSg, { signed: true })} a round against the Tour line.`);
-    return `${name}'s root map. ${parts.join(' ')}`;
-  }, [ready, name]);
 
   const back = (
     <Link
@@ -150,7 +132,7 @@ export function TeamPlayerDrill({ drill, hrefFor, navigate }: TeamPlayerDrillPro
       className="inline-flex min-h-11 items-center gap-1 self-start text-body-sm font-medium text-accent-700 outline-none hover:underline focus-visible:ring-2 focus-visible:ring-border-focus"
     >
       <ChevronLeft aria-hidden className="h-4 w-4" />
-      Team roots
+      Whole team
     </Link>
   );
 
@@ -224,7 +206,7 @@ export function TeamPlayerDrill({ drill, hrefFor, navigate }: TeamPlayerDrillPro
     <div ref={rootRef} className="flex min-w-0 scroll-mt-20 flex-col gap-6" data-slot="team-player-drill">
       {back}
       <header className="flex flex-col gap-2">
-        <Eyebrow as="p">{['Player root map', readLine].filter(Boolean).join(' · ')}</Eyebrow>
+        <p className="text-caption text-text-secondary">{['Player map', readLine].filter(Boolean).join(' · ')}</p>
         {stale ? <StaleRoundNote text={stale} /> : null}
         <h2
           ref={headingRef}
@@ -237,24 +219,22 @@ export function TeamPlayerDrill({ drill, hrefFor, navigate }: TeamPlayerDrillPro
 
       {!ready ? (
         <EmptyState
-          title={`${name}'s root map did not load`}
-          description="The read failed or this player is no longer on your roster. Go back to Team roots and try again."
+          title={`${name}'s map did not load`}
+          description="The read failed or this player is no longer on your roster. Go back to the whole team and try again."
         />
       ) : ready.model.gains.length === 0 && ready.model.losses.length === 0 ? (
         <EmptyState
           title="No strokes-gained rounds yet"
-          description={`${name}'s root map is drawn from strokes gained per round. It fills in once a counted round with shot detail is logged.`}
+          description={`${name}'s map is drawn from strokes gained per round. It fills in once a counted round with shot detail is logged.`}
         />
       ) : (
         <>
           <RootSummary
             model={ready.model}
             headline={ready.headline}
-            summary={summary}
             details={ready.details}
             audience="coach"
-            onSpot={select}
-            selectedId={sheetOpen ? selectedBranch?.id ?? null : null}
+            subjectName={name}
             action={
               lead ? (
                 <Button variant="primary" size="lg" fullWidth type="button" onClick={() => select(lead.id)}>
@@ -263,15 +243,31 @@ export function TeamPlayerDrill({ drill, hrefFor, navigate }: TeamPlayerDrillPro
               ) : null
             }
           />
-          <RootMap
-            model={ready.model}
-            selectedId={sheetOpen ? selectedBranch?.id ?? selectedId : null}
-            onSelect={select}
-            summary={summary}
-            audience="coach"
-            figureLabel={`${name}'s root map`}
-            whatEyebrow="By area"
-          />
+          {rankedSpots(ready.model).length > 1 ? (
+            <section aria-labelledby="drill-next-heading" className="flex flex-col gap-1" data-slot="drill-next">
+              <h3 id="drill-next-heading" className="text-body font-semibold text-text-primary">
+                Also costing {name.split(' ')[0] || name}
+              </h3>
+              <SpotList
+                spots={rankedSpots(ready.model).slice(1, 3)}
+                audience="player"
+                onSelect={select}
+                selectedId={sheetOpen ? selectedBranch?.id ?? selectedId : null}
+              />
+            </section>
+          ) : null}
+          <Disclosure title="Every area" slot="drill-breakdown" bodyClassName="flex flex-col gap-3">
+            <AreaBreakdown
+              model={ready.model}
+              audience="player"
+              onSelect={select}
+              onSelectUnsized={select}
+              selectedId={sheetOpen ? selectedBranch?.id ?? selectedId : null}
+            />
+            <p className="text-caption text-text-tertiary" data-slot="breakdown-footnote">
+              {breakdownFootnote(ready.model, 'coach')}
+            </p>
+          </Disclosure>
           {ready.model.other.length > 0 ? (
             <Disclosure title={`Other reads (${ready.model.other.length})`} slot="drill-other">
               <ul className="flex flex-wrap gap-2">

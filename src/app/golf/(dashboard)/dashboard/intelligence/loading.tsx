@@ -6,8 +6,11 @@ import { Skeleton } from '@/components/fairway/feedback/Skeleton';
  *
  * 2026-09-25: the default view is now Team roots (`?view=team`), so below
  * CommandOpening this draws what that view paints first: the view-switch row
- * with Ask beside it, the Team roots header, the summary card (key number,
- * two lines, the loss bar, one primary button) and the closed disclosures.
+ * with Ask beside it, the team header, the headline card (a two-line
+ * sentence, one line under it, the strength line, one primary button), the
+ * "Biggest leaks" rows, the "Players by area" table and the two closed
+ * disclosures (every area, team trend) — the redesigned layout (no loss bar,
+ * no ribbon map).
  * The Signals desk (BriefBand, queue, dossier) no longer paints first, so
  * its skeleton is gone. The history below describes the earlier layout.
  *
@@ -87,20 +90,44 @@ export default function IntelligenceLoading() {
               <Skeleton className="h-7 w-40" />
             </div>
 
-            <div className="flex flex-col gap-5 rounded-fw-lg border border-border-subtle bg-surface p-5 md:p-6">
+            <div className="flex flex-col gap-4 rounded-fw-lg border border-border-subtle bg-surface p-5 md:p-6">
               <div className="flex flex-col gap-2">
-                <Skeleton className="h-3 w-64 max-w-full" />
-                <Skeleton className="h-12 w-28" />
+                <Skeleton className="h-7 w-full max-w-lg" />
+                <Skeleton className="h-7 w-2/3 max-w-sm" />
                 <Skeleton className="h-4 w-full max-w-md" />
-                <Skeleton className="h-4 w-3/4 max-w-sm" />
               </div>
-              <Skeleton className="h-3 w-full rounded-full" />
+              <Skeleton className="h-4 w-56 max-w-full" />
               <Skeleton className="h-12 w-full rounded-fw-md" />
             </div>
 
-            {/* Closed disclosures: team map, player matrix, trend. */}
+            {/* Biggest leaks: a heading and three spot rows. */}
             <div className="flex flex-col">
+              <Skeleton className="mb-2 h-5 w-36" />
               {[0, 1, 2].map((i) => (
+                <div key={i} className="flex min-h-11 items-center justify-between gap-3 border-t border-border-subtle py-2">
+                  <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+                    <Skeleton className="h-4 w-40 max-w-full" />
+                    <Skeleton className="h-3 w-56 max-w-full" />
+                  </div>
+                  <Skeleton className="h-4 w-10" />
+                </div>
+              ))}
+            </div>
+
+            {/* Players by area: a heading and a short table. */}
+            <div className="flex flex-col">
+              <Skeleton className="mb-2 h-5 w-36" />
+              {[0, 1, 2, 3].map((i) => (
+                <div key={i} className="flex min-h-11 items-center gap-3 border-t border-border-subtle py-2">
+                  <Skeleton className="h-4 w-28" />
+                  <Skeleton className="ml-auto h-4 w-56 max-w-[50%]" />
+                </div>
+              ))}
+            </div>
+
+            {/* Closed disclosures: every area, team trend. */}
+            <div className="flex flex-col">
+              {[0, 1].map((i) => (
                 <div key={i} className="flex min-h-11 items-center justify-between border-t border-border-subtle py-3">
                   <Skeleton className="h-5 w-44" />
                   <Skeleton className="h-4 w-4" />

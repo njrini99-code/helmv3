@@ -39,6 +39,7 @@ import {
   type ConfidenceTier,
   type OtherRead,
   type RootArea,
+  type RootCarrier,
   type RootMapModel,
   type RootStyle,
   type UnsizedCause,
@@ -96,6 +97,8 @@ export interface TeamRootRow {
   name: string;
   roundsPlayed: number | null;
   sgTotal: number | null;
+  /** Stored SG per round by area (the roster table); null when unknown. */
+  sg: Record<RootArea, number | null>;
   cells: Record<string, TeamRootCell>;
 }
 
@@ -205,6 +208,21 @@ function aggregateStyle(cells: TeamRootCell[], confidences: number[]): { style: 
   return { style: 'likely', tier };
 }
 
+/** Largest own loss first; a carrier with no stroke value last, by name. */
+function byOwnLoss(a: RootCarrier, b: RootCarrier): number {
+  if (a.strokes === null && b.strokes === null) return a.name.localeCompare(b.name);
+  if (a.strokes === null) return 1;
+  if (b.strokes === null) return -1;
+  return b.strokes - a.strokes || a.name.localeCompare(b.name);
+}
+
+/** The players holding a cell in a cause column (the column's `players`). */
+function columnCarriers(cells: ReadonlyMap<string, TeamRootCell>, nameOf: ReadonlyMap<string, string>): RootCarrier[] {
+  return [...cells.entries()]
+    .map(([playerId, c]) => ({ playerId, name: nameOf.get(playerId) ?? 'Player', strokes: c.strokes }))
+    .sort(byOwnLoss);
+}
+
 export function buildTeamRoots(input: {
   players: TeamRosterPlayer[];
   signals: GroupedSignal[];
@@ -215,6 +233,7 @@ export function buildTeamRoots(input: {
 }): TeamRootsModel {
   const rosterSize = input.players.length;
   const rosterIds = new Set(input.players.map((p) => p.id));
+  const nameOf = new Map(input.players.map((p) => [p.id, p.name]));
 
   // Team-average area SG over players who have a stored value.
   const teamAreaSg = {} as Record<RootArea, number | null>;
@@ -290,7 +309,7 @@ export function buildTeamRoots(input: {
         const c = entry.cells.get(p.id);
         if (c) cells[column.metric] = c;
       }
-      return { playerId: p.id, name: p.name, roundsPlayed: p.roundsPlayed, sgTotal: p.sgTotal, cells };
+      return { playerId: p.id, name: p.name, roundsPlayed: p.roundsPlayed, sgTotal: p.sgTotal, sg: p.sg, cells };
     })
     // Most strokes lost to the Tour first; players with no stored total last.
     .sort((a, b) => {
@@ -317,6 +336,17 @@ export function buildTeamRoots(input: {
     const withSg = input.players.filter((p) => finite(p.sg[area]));
     const perPlayer = withSg.map((p) => input.measured?.get(p.id)?.[area]);
     const team = teamMeasuredKeys(area, perPlayer, withSg.length);
+    // Players losing strokes on a node: the node's keys summed below zero,
+    // the same test `players` counts (teamMeasuredKeys / the Other refold).
+    const measuredCarriers = (keys: ReadonlySet<string>): RootCarrier[] =>
+      withSg
+        .flatMap((p, i) => {
+          const m = perPlayer[i];
+          if (!m || m.mode === 'none') return [];
+          const sg = m.keys.filter((k) => keys.has(k.key)).reduce((t, k) => t + k.sg, 0);
+          return sg < 0 ? [{ playerId: p.id, name: p.name, strokes: -sg }] : [];
+        })
+        .sort(byOwnLoss);
     if (team.measuredPlayers > 0) {
       const groups = groupMeasured(area, team.keys, { playersByKey: team.playersByKey });
       // "Other" folds several keys: count players losing on their sum.
@@ -358,6 +388,7 @@ export function buildTeamRoots(input: {
           const cols = (byNode.get(sub.id) ?? []).slice().sort((a, b) => b.column.players - a.column.players);
           const lead = cols[0];
           const agg = lead ? aggregateStyle([...lead.entry.cells.values()], [...lead.entry.conf.values()]) : null;
+          const carriers = measuredCarriers(new Set(sub.key === OTHER_KEY ? [OTHER_KEY, ...sub.merged] : [sub.key]));
           sized.push({
             id: `team:${sub.id}`,
             area,
@@ -370,6 +401,7 @@ export function buildTeamRoots(input: {
             rootCause: null,
             isNew: false,
             players: sub.players ?? 0,
+            carriers,
             sizedBy: share ? 'share' : 'measured',
             sizingNote: `team average from recorded shots, ${sub.players ?? 0} of ${withSg.length} players losing strokes here`,
             insightIds: cols.map((c) => `team:${c.column.metric}`),
@@ -406,6 +438,7 @@ export function buildTeamRoots(input: {
         rootCause: null,
         isNew: false,
         players: column.players,
+        carriers: columnCarriers(entry.cells, nameOf),
       });
     }
     const room = TEAM_MAP_CAUSES_PER_AREA - sizedCols.length;
@@ -425,6 +458,7 @@ export function buildTeamRoots(input: {
         tier: agg.tier,
         isNew: false,
         players: column.players,
+        carriers: columnCarriers(entry.cells, nameOf),
       });
     }
   }
@@ -462,7 +496,7 @@ export function buildTeamHeadline(model: TeamRootsModel): string | null {
   const best = areas.reduce((m, x) => (x.v > m.v ? x : m));
   const label = (a: RootArea) => ROOT_AREA_LABEL[a];
   if (worst.v >= 0) {
-    return `On average the team sits at or above the Tour line in every area; ${label(best.a)} leads at ${formatStrokes(best.v, { signed: true })} a round.`;
+    return `On average the team sits at or above the Tour average in every area; ${label(best.a)} leads at ${formatStrokes(best.v, { signed: true })} a round.`;
   }
   const shared = model.columns
     .filter((c) => c.shared && c.area === worst.a)
@@ -473,7 +507,7 @@ export function buildTeamHeadline(model: TeamRootsModel): string | null {
     short_game: 'around the green',
     putting: 'in putting',
   };
-  const lead = `On average the team gives back ${formatStrokes(-worst.v)} a round to the Tour line ${where[worst.a]}`;
+  const lead = `On average the team gives back ${formatStrokes(-worst.v)} a round to the Tour average ${where[worst.a]}`;
   return shared
     ? `${lead}; ${shared.players} players carry “${shared.shortLabel}” there.`
     : `${lead}.`;

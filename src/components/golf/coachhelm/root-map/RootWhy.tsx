@@ -51,7 +51,7 @@ import {
 } from '@/lib/coachhelm/root-map/build-root-map';
 import { COACHHELM_HOME } from './RootToday';
 import { MeasuredFacts, SupportChips } from './RootToday';
-import { rootStyleCss } from './RootMap';
+import { rootStyleCss } from './root-style';
 import { AngleWhy } from './AngleWhy';
 import { Disclosure } from './Disclosure';
 import { PathCrumbs } from './SpotVisuals';

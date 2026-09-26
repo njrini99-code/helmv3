@@ -1,9 +1,10 @@
 // @vitest-environment jsdom
 /**
  * TeamRootsView with production-today data: no observed roots yet, every
- * approach cause unsized. The view must still read: a headline, the map,
- * open rings in the matrix, one primary action, and honest copy for the
- * sections with nothing stored.
+ * approach cause unsized. Redesign 2026-09-25: the view must still read as a
+ * headline card, the biggest leaks, the players-by-area table, every area
+ * (collapsed), one primary action, and honest copy for the sections with
+ * nothing stored.
  */
 import React from 'react';
 import { fireEvent, render, screen, within } from '@testing-library/react';
@@ -54,7 +55,7 @@ function signal(playerId: string, metric: string, category: string, strokes: num
 }
 
 describe('TeamRootsView, no observed roots and unsized approach', () => {
-  it('leads with the summary card and keeps map, matrix and trend collapsed', () => {
+  it('leads with the headline card, then the biggest leaks and players table; every area and trend collapsed', () => {
     const model = buildTeamRoots({
       players,
       signals: ['a', 'b', 'c'].flatMap((p) => [signal(p, 'appr', 'approach', null), signal(p, 'lag', 'putting', 0.3)]),
@@ -72,16 +73,17 @@ describe('TeamRootsView, no observed roots and unsized approach', () => {
       />,
     );
     const summary = screen.getByRole('region', { name: 'Summary' });
-    expect(within(summary).getByRole('img', { name: /Team root map/ })).toBeInTheDocument();
+    expect(within(summary).getByText('Approach is the team’s biggest leak: 1.1 strokes a round vs Tour average.')).toBeInTheDocument();
+    expect(within(summary).getByText(/Biggest single spot: Lag putting \(putting\), 0\.3 a round · Player A, Player B \+1\./)).toBeInTheDocument();
+    expect(within(summary).getByText(/Team strength/)).toBeInTheDocument();
     expect(within(summary).getByRole('heading', { name: 'Needs you' })).toBeInTheDocument();
-    expect(within(summary).getByRole('link', { name: 'Open Putting signals' })).toBeInTheDocument();
-    expect(screen.queryByRole('table')).not.toBeInTheDocument();
-    expect(screen.queryByRole('figure', { name: 'Team root map' })).not.toBeInTheDocument();
-    expect(closedDisclosureTriggers().map((b) => b.textContent)).toEqual(['Team map by area', 'Who carries which root', 'Team trend']);
-    fireEvent.click(screen.getByRole('button', { name: 'Who carries which root' }));
-    expect(screen.getByRole('table')).toBeInTheDocument();
+    expect(within(summary).getByRole('link', { name: 'Open putting signals' })).toBeInTheDocument();
+    const leaks = document.querySelector('[data-slot="team-leaks"]') as HTMLElement;
+    expect(within(leaks).getByRole('button', { name: /Lag putting, Putting: −0\.3 strokes a round vs Tour average, Player A, Player B \+1/ })).toBeInTheDocument();
+    const table = screen.getByRole('table');
+    expect(within(table).getByRole('rowheader', { name: 'Team average' })).toBeInTheDocument();
+    expect(closedDisclosureTriggers().map((b) => b.textContent)).toEqual(['Every area', 'Team trend']);
   });
-
 
   it('renders every section with honest copy and one primary action', () => {
     const model = buildTeamRoots({
@@ -101,19 +103,19 @@ describe('TeamRootsView, no observed roots and unsized approach', () => {
       />,
     );
     openDisclosures();
-    expect(screen.getByRole('heading', { level: 2 }).textContent).toBe('Team roots');
-    // the headline leads the summary card
-    expect(within(screen.getByRole('region', { name: 'Summary' })).getByText(/gives back 1\.10 a round/)).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 2 }).textContent).toBe('Where the team loses strokes');
     expect(screen.getByText(/A trend needs strokes-gained rounds/)).toBeInTheDocument();
-    expect(screen.getByRole('img', { name: /Team root map/ })).toBeInTheDocument();
-    // the forming branch is a real button
-    expect(screen.getAllByRole('button', { name: /Lag putting/ }).length).toBeGreaterThan(0);
-    // unsized approach cells are links that say so
-    const table = screen.getByRole('table');
-    expect(within(table).getAllByRole('link', { name: /Approach 125–150, no stroke value stored/ })).toHaveLength(3);
+    // every area: the unsized approach cause is listed, saying it has no value yet, with who carries it
+    const approach = document.querySelector('[data-slot="area-row"][data-area="approach"]') as HTMLElement;
+    expect(within(approach).getByRole('button', { name: /Approach 125–150: no stroke value yet · Player A, Player B \+1/ })).toBeInTheDocument();
+    expect(within(approach).getByText('Not explained yet')).toBeInTheDocument();
     expect(screen.getByText(/before-and-after reads you can see has three or more measured rounds/)).toBeInTheDocument();
     expect(screen.getByText(/Nothing urgent or changed right now/)).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Open Putting signals' })).toBeInTheDocument();
+    expect(screen.getByText(/^Strokes a round vs Tour average\./)).toBeInTheDocument();
+    // one primary action
+    expect(screen.getAllByRole('link', { name: /signals$/ })).toHaveLength(1);
+    // no jargon left on the page
+    expect(document.body.textContent).not.toMatch(/Tour line|\bnet\b|root map/i);
   });
 
   it('says signals are unavailable instead of empty when their read failed', () => {
@@ -131,17 +133,15 @@ describe('TeamRootsView, no observed roots and unsized approach', () => {
       />,
     );
     openDisclosures();
-    expect(screen.getByText(/Signals did not load, so causes cannot be shown/)).toBeInTheDocument();
+    expect(screen.getByText(/Signals did not load, so spots cannot be shown/)).toBeInTheDocument();
     expect(screen.getByText(/Focus before-and-after reads are not available/)).toBeInTheDocument();
     expect(screen.queryByText(/No cause is carried by three or more/)).not.toBeInTheDocument();
   });
 });
 
 describe('TeamRootsView, a stored miss concentration', () => {
-  it('speaks the path on the cell and adds the legend entry', () => {
+  it('keeps a stored miss concentration readable in Needs you, stated as observed, not a cause', () => {
     const model = buildTeamRoots({ players, signals: [signal('a', 'appr', 'approach', null)] });
-    const row = model.rows.find((r) => r.playerId === 'a')!;
-    row.cells.appr = { ...row.cells.appr!, contextPath: '175+ yd → long par 3s → short-right' };
     render(
       <TeamRootsView
         model={model}
@@ -164,13 +164,7 @@ describe('TeamRootsView, a stored miss concentration', () => {
         navigate={() => {}}
       />,
     );
-    openDisclosures();
-    const table = screen.getByRole('table');
-    expect(
-      within(table).getByRole('link', { name: /Where it concentrates: 175\+ yd → long par 3s → short-right, observed, not a cause/ }),
-    ).toBeInTheDocument();
-    expect(screen.getByText('Concentrates by par or shape (open the cell)')).toBeInTheDocument();
-    expect(screen.getByText(/Observed, not a cause\.$/)).toBeInTheDocument();
+    expect(screen.getByText(/175\+ yd → long par 3s → short-right — 8 of 10 short\. Observed, not a cause\.$/)).toBeInTheDocument();
   });
 
   it('opens a Needs-you read on the player drill, not the Signals view', () => {
@@ -244,41 +238,30 @@ describe('TeamRootsView, team map What row and matrix labels (2026-09-25)', () =
     return model;
   }
 
-  it('draws a single-player sized cause and unsized causes as labelled nodes, with the unexplained remainder named', () => {
+  it('lists a single-player sized cause and unsized causes by name, with the unexplained part named', () => {
     renderView();
-    const figure = screen.getByRole('figure', { name: 'Team root map' });
-    const ribbon = figure.querySelector('[data-slot="ribbon-map"]') as HTMLElement;
-    const ladder = figure.querySelector('[data-slot="leak-ladder"]') as HTMLElement;
-    // sized even though only one player carries it, on both layouts
-    expect(within(ribbon).getByRole('button', { name: /Lag putting, 0\.10 strokes a round\. 1 player/ })).toBeInTheDocument();
-    expect(within(ladder).getByRole('button', { name: /Lag putting, 0\.10 strokes a round\. 1 player/ })).toBeInTheDocument();
-    // unsized cause: outlined node with its short label and carrier count
-    expect(
-      within(ribbon).getByRole('button', { name: /Putting: Downhill putts, no stroke value stored\. 3 players/ }),
-    ).toBeInTheDocument();
-    expect(
-      within(ladder).getByRole('button', { name: /Putting: Downhill putts, no stroke value stored\. 3 players/ }),
-    ).toBeInTheDocument();
-    expect(within(ribbon).getAllByText('Unexplained').length).toBeGreaterThan(0);
-    // a desktop node too narrow for its own label names itself in a
-    // hover / focus tooltip (no duplicate list under the row)
-    expect(figure.querySelector('[data-slot="what-callouts"]')).toBeNull();
-    const tips = [...ribbon.querySelectorAll('[data-slot="what-tooltip"]')].map((el) => el.textContent);
-    expect(tips).toContain('Lag putting 0.10 · 1 player');
-    // legend once, in the coach voice
-    expect(screen.getAllByRole('list', { name: 'Legend' })).toHaveLength(1);
-    expect(screen.queryByText(/your/i)).not.toBeInTheDocument();
+    const putting = document.querySelector('[data-slot="area-row"][data-area="putting"]') as HTMLElement;
+    // sized even though only one player carries it
+    expect(within(putting).getByRole('button', { name: /^Lag putting: −0\.1 strokes a round vs Tour average, Player$/ })).toBeInTheDocument();
+    // unsized cause: its short label, no value, and who carries it
+    expect(within(putting).getByRole('button', { name: /^Downhill putts: no stroke value yet · Player A, Player B \+1/ })).toBeInTheDocument();
+    expect(within(putting).getByText('Not explained yet')).toBeInTheDocument();
+    // coach voice throughout
+    expect(screen.queryByText(/\byour\b/i)).not.toBeInTheDocument();
   });
 
-  it('gives matrix columns a short header with the full label kept, and cells open the player drill', () => {
+  it('a spot opens who carries it, each linking to that player’s map; the table links each player', () => {
     renderView();
     const table = screen.getByRole('table');
-    const header = within(table).getByRole('columnheader', { name: /Downhill vs level putt make % \(distance-controlled\)/ });
-    expect(header).toHaveAttribute('title', 'Downhill vs level putt make % (distance-controlled)');
-    expect(within(header).getByText('Downhill putts')).toBeInTheDocument();
-    const cell = within(table).getAllByRole('link', { name: /Player A: Downhill vs level putt make %/ })[0]!;
-    expect(cell).toHaveAttribute('href', '/golf/dashboard/intelligence?view=team&player=a&cause=a-putt_slope_downhill_penalty_pct');
-    expect(within(table).getByRole('link', { name: "Open Player A's root map" })).toHaveAttribute(
+    expect(within(table).getByRole('link', { name: "Open Player A's map" })).toHaveAttribute(
+      'href',
+      '/golf/dashboard/intelligence?view=team&player=a',
+    );
+    const leaks = document.querySelector('[data-slot="team-leaks"]') as HTMLElement;
+    fireEvent.click(within(leaks).getByRole('button', { name: /^Lag putting/ }));
+    const sheet = document.querySelector('[data-slot="team-spot-sheet"]') as HTMLElement;
+    expect(within(sheet).getByRole('heading', { name: '1 player losing strokes here' })).toBeInTheDocument();
+    expect(within(sheet).getByRole('link', { name: /Open Player A's map, 0\.3 strokes a round here/ })).toHaveAttribute(
       'href',
       '/golf/dashboard/intelligence?view=team&player=a',
     );

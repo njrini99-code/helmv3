@@ -160,7 +160,7 @@ describe('team roots before the new engine is deployed (all hatched/forming, app
     expect(branches[0]!.style).toBe('forming');
     expect(model.map.defaultSelectedId).toBe('team:lag_putting');
     expect(buildTeamHeadline(model)).toBe(
-      'On average the team gives back 1.10 a round to the Tour line on approach; 3 players carry “approach_125_150” there.',
+      'On average the team gives back 1.10 a round to the Tour average on approach; 3 players carry “approach_125_150” there.',
     );
   });
 

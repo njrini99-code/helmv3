@@ -4,10 +4,12 @@
  * ============================================================================
  * RootToday: the player CoachHelm "Today" view as one root map
  * ----------------------------------------------------------------------------
- * Summary first: `RootSummary` (the loss by area, the two biggest leaks, one
- * line of Why, ONE primary action "See why") → the collapsed per-area ladder,
- * full map and notes (`RootMap`) → reads not sized yet (collapsed) → the
- * "Moving" sparklines → a compact "New since" timeline → every other read
+ * Redesigned 2026-09-25 (owner: one focus first, ranked rows, no diagram):
+ * `RootSummary` (your biggest leak, one line of why, its lie bars and path,
+ * your strength, ONE primary action "See why") → the next two leaks → every
+ * area, collapsed (`AreaBreakdown`: every spot, the unexplained part, the
+ * spots that gain, and reads with no stroke value yet) → the "Moving"
+ * sparklines → a compact "New since" timeline → every other read
  * (collapsed), so each insight the page fetched is reachable here. A spot
  * opens its chain in a sheet (bottom on phones, a right-hand panel from md)
  * whose one primary action opens the full Why view.
@@ -16,11 +18,12 @@
  * component formats; it never computes a statistic.
  * ========================================================================== */
 
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { surfaceHref } from '@/lib/golf/surface-registry';
-import { Button, Chip, EmptyState, Eyebrow, Sheet } from '@/components/fairway';
+import { Button, Chip, EmptyState, Sheet } from '@/components/fairway';
 import { formatValue } from '@/components/golf/coachhelm/insights/format-value';
 import {
   CONFIDENCE_LABEL,
@@ -37,16 +40,17 @@ import {
   type CauseBranch,
   type RootAudience,
   type RootMapModel,
+  type RootArea,
   type RootStyle,
 } from '@/lib/coachhelm/root-map/build-root-map';
-import type { AreaSparkline } from '@/lib/coachhelm/root-map/area-trends';
+import { playerAreaTrend, type AreaSparkline, type AreaTrendNote } from '@/lib/coachhelm/root-map/area-trends';
 import type { GreenView } from '@/lib/coachhelm/root-map/green-view';
 import type { ApproachWhyView } from '@/lib/coachhelm/root-map/approach-context';
-import { RootMap, rootStyleCss } from './RootMap';
 import { AreaSparklines } from './AreaSparklines';
 import { RootSummary } from './RootSummary';
 import { Disclosure } from './Disclosure';
-import { LieSplitBars } from './SpotVisuals';
+import { LieSplitBars, PathCrumbs, pathSteps } from './SpotVisuals';
+import { AreaBreakdown, SpotList, breakdownFootnote, rankedSpots } from './LeakList';
 
 export const COACHHELM_HOME = surfaceHref('overview');
 
@@ -155,9 +159,9 @@ export function MeasuredFacts({ branch }: { branch: CauseBranch }) {
 
 /** What a branch's stroke value is, in words. */
 function strokesText(branch: CauseBranch): string {
-  if (branch.measured && branch.sizingNote) return `strokes a round lost to the Tour line: ${branch.title.toLowerCase()}, ${branch.sizingNote}`;
-  if (branch.sizedBy === 'band_sg' && branch.sizingNote) return `strokes a round lost to the Tour line: ${branch.sizingNote}`;
-  return `strokes a round on ${branch.label.toLowerCase()}, to the Tour line`;
+  if (branch.measured && branch.sizingNote) return `strokes a round lost vs the Tour average: ${branch.title.toLowerCase()}, ${branch.sizingNote}`;
+  if (branch.sizedBy === 'band_sg' && branch.sizingNote) return `strokes a round lost vs the Tour average: ${branch.sizingNote}`;
+  return `strokes a round on ${branch.label.toLowerCase()}, vs the Tour average`;
 }
 
 function Chain({ model, branch, detail }: { model: RootMapModel; branch: CauseBranch; detail: BranchDetail | null }) {
@@ -274,23 +278,7 @@ export function RootToday({ model, details, headline, roundsRead, throughDate, d
   const whyId = branch ? whyIdOf(branch) : null;
   const detail = whyId ? details[whyId] ?? null : null;
 
-  const summary = useMemo(() => {
-    const parts: string[] = [];
-    if (model.gains.length > 0) parts.push(`Gaining: ${model.gains.map((g) => `${g.label} ${formatStrokes(g.sg, { signed: true })}`).join(', ')}.`);
-    if (model.losses.length > 0) {
-      parts.push(
-        `Losing: ${model.losses
-          .map((a) => {
-            const causes = a.causes.map((c) => `${c.label} ${formatStrokes(c.strokes)} (${ROOT_STYLE_LABEL[c.style].toLowerCase()})`);
-            return `${a.label} ${formatStrokes(a.sg, { signed: true })}${causes.length ? `, from ${causes.join(', ')}` : ''}`;
-          })
-          .join('; ')}.`,
-      );
-    }
-    if (model.netSg !== null) parts.push(`Net ${formatStrokes(model.netSg, { signed: true })} a round against the Tour line.`);
-    return parts.join(' ');
-  }, [model]);
-
+  const router = useRouter();
   const hasMap = model.gains.length > 0 || model.losses.length > 0;
   const stale = staleRoundLine(throughDate, daysSinceThrough);
   const through = stale ? null : shortDate(throughDate);
@@ -298,15 +286,27 @@ export function RootToday({ model, details, headline, roundsRead, throughDate, d
     .filter(Boolean)
     .join(' · ');
 
-  const lead = model.losses.flatMap((a) => a.causes).sort((x, y) => y.strokes - x.strokes)[0] ?? null;
+  const spots = rankedSpots(model);
+  const lead = spots[0] ?? null;
+  const next = spots.slice(1, 3);
+  const trends = Object.fromEntries(
+    sparklines.map((l) => [l.area, playerAreaTrend(l)]),
+  ) as Partial<Record<RootArea, AreaTrendNote | null>>;
+
+  const leadVisual = lead ? (
+    <div className="flex flex-col gap-3" data-slot="summary-visual">
+      <MeasuredFacts branch={lead} />
+      {lead.contextPath ? <PathCrumbs steps={pathSteps(lead.contextPath)} /> : null}
+    </div>
+  ) : null;
 
   return (
     <div className="flex min-w-0 flex-col gap-6" data-slot="root-today">
       <header className="flex flex-col gap-2">
-        {readLine ? <Eyebrow as="p">{readLine}</Eyebrow> : null}
+        {readLine ? <p className="text-caption text-text-secondary">{readLine}</p> : null}
         {stale ? <StaleRoundNote text={stale} /> : null}
         <h2 className="font-fw-display text-title-1 text-text-primary md:text-h1">
-          {hasMap ? 'Where your strokes go' : headline ?? 'Your root map fills in as your rounds are counted.'}
+          {hasMap ? 'Where your strokes go' : headline ?? 'Your map fills in as your rounds are counted.'}
         </h2>
       </header>
 
@@ -315,10 +315,9 @@ export function RootToday({ model, details, headline, roundsRead, throughDate, d
           <RootSummary
             model={model}
             headline={headline}
-            summary={summary}
             details={details}
-            onSpot={open}
-            selectedId={sheetOpen ? branch?.id ?? null : null}
+            trends={trends}
+            leadVisual={leadVisual}
             action={
               lead ? (
                 <Button variant="primary" size="lg" fullWidth type="button" onClick={() => open(lead.id)}>
@@ -327,53 +326,33 @@ export function RootToday({ model, details, headline, roundsRead, throughDate, d
               ) : null
             }
           />
-          <RootMap
-            model={model}
-            selectedId={sheetOpen ? selectedId : null}
-            onSelect={open}
-            summary={summary}
-            listUnsized={false}
-            whatEyebrow="By area"
-          />
 
-          {model.unsized.length > 0 ? (
-            <Disclosure title={`Not sized yet (${model.unsized.length})`} slot="root-unsized" bodyClassName="flex flex-col gap-2">
-              <p className="text-body-sm text-text-secondary">Also under a losing area, with no stroke value stored.</p>
-              {model.unsized.some((u) => u.note) ? (
-                <ul className="flex flex-col gap-0.5 text-caption text-text-tertiary">
-                  {model.unsized
-                    .filter((u) => u.note)
-                    .map((u) => (
-                      <li key={u.id}>
-                        {u.label}: {u.note}
-                      </li>
-                    ))}
-                </ul>
-              ) : null}
-              <ul className="flex flex-wrap gap-2">
-                {model.unsized.map((u) => (
-                  <li key={u.id} className="max-w-full">
-                    <Link
-                      href={rootWhyHref(u.id)}
-                      className="inline-flex min-h-11 max-w-full items-center gap-2 rounded-full border border-dashed border-border-strong px-3 text-body-sm text-text-secondary outline-none hover:text-text-primary focus-visible:ring-2 focus-visible:ring-border-focus"
-                    >
-                      <span aria-hidden className="inline-block h-3 w-3 shrink-0 rounded-sm" style={rootStyleCss(u.style)} />
-                      <span className="min-w-0 truncate">{u.label}</span>
-                      {u.contextPath ? (
-                        <span className="min-w-0 truncate text-caption text-text-primary">{u.contextPath}</span>
-                      ) : null}
-                      <span className="shrink-0 text-caption text-text-tertiary">{ROOT_AREA_LABEL[u.area]}</span>
-                      {u.isNew ? <span aria-label="new" className="h-2 w-2 shrink-0 rounded-full bg-accent-500" /> : null}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </Disclosure>
+          {next.length > 0 ? (
+            <section aria-labelledby="root-next-heading" className="flex flex-col gap-1" data-slot="root-next">
+              <h3 id="root-next-heading" className="text-body font-semibold text-text-primary">
+                Also costing you
+              </h3>
+              <SpotList spots={next} audience="player" onSelect={open} selectedId={sheetOpen ? selectedId : null} />
+            </section>
           ) : null}
+
+          <Disclosure title="Every area" slot="root-breakdown" bodyClassName="flex flex-col gap-3">
+            <AreaBreakdown
+              model={model}
+              audience="player"
+              trends={trends}
+              onSelect={open}
+              onSelectUnsized={(id) => router.push(rootWhyHref(id))}
+              selectedId={sheetOpen ? selectedId : null}
+            />
+            <p className="text-caption text-text-tertiary" data-slot="breakdown-footnote">
+              {breakdownFootnote(model, 'player')}
+            </p>
+          </Disclosure>
 
           {!lead && model.losses.length > 0 ? (
             <p className="text-body-sm text-text-secondary">
-              None of the reads under a losing area has a stored stroke value yet, so the map shows where strokes go but
+              None of the reads under a losing area has a stored stroke value yet, so this shows where strokes go but
               not what drives them. Open one of the reads below to see its evidence.
             </p>
           ) : null}
@@ -383,7 +362,7 @@ export function RootToday({ model, details, headline, roundsRead, throughDate, d
             onOpenChange={setSheetOpen}
             side="right"
             mobileSide="bottom"
-            title={branch ? `${ROOT_AREA_LABEL[branch.area]} › ${branch.label}` : 'Root map'}
+            title={branch ? `${ROOT_AREA_LABEL[branch.area]} › ${branch.label}` : 'Spot'}
             className="md:w-[min(32rem,calc(100vw-3rem))]"
           >
             <Sheet.Body className="pb-[max(1.5rem,env(safe-area-inset-bottom))]" data-slot="root-chain-sheet">
@@ -403,7 +382,7 @@ export function RootToday({ model, details, headline, roundsRead, throughDate, d
       ) : (
         <EmptyState
           title="No strokes-gained rounds yet"
-          description="The root map is drawn from strokes gained per round. Log a round with shot detail and it fills in."
+          description="This is drawn from strokes gained per round. Log a round with shot detail and it fills in."
           action={
             <Button asChild variant="primary">
               <Link href="/golf/dashboard/rounds/new">Log a round</Link>

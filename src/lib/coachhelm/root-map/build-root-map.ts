@@ -222,6 +222,9 @@ export interface CauseBranch {
   contextPath?: string | null;
   /** Team map only: how many players carry this cause. */
   players?: number;
+  /** Team map only: the players carrying it, largest own loss first. Built
+   *  by the same test that yields `players`, so `carriers.length === players`. */
+  carriers?: RootCarrier[];
   /** Measured sub-area nodes: every stored insight attached as its Why
    *  (best first). The first is the one the Why view opens. */
   insightIds?: string[];
@@ -297,6 +300,17 @@ export interface UnsizedCause {
   note?: string | null;
   /** Team map only: how many players carry this cause. */
   players?: number;
+  /** Team map only: the players carrying it (see CauseBranch.carriers). */
+  carriers?: RootCarrier[];
+}
+
+/** A player carrying a team cause (coach audience only). */
+export interface RootCarrier {
+  playerId: string;
+  name: string;
+  /** The player's own strokes lost a round on this spot; null when the
+   *  stored read has no stroke value. */
+  strokes: number | null;
 }
 
 export interface OtherRead {
@@ -505,9 +519,9 @@ export function buildRootHeadline(
   const parts: string[] = [];
   const topGain = model.gains[0];
   if (topGain) {
-    parts.push(`${topGain.label} is gaining ${formatStrokes(topGain.sg)} a round on the Tour line.`);
+    parts.push(`${topGain.label} is gaining ${formatStrokes(topGain.sg)} a round vs the Tour average.`);
   } else {
-    parts.push('Every area sits below the Tour line right now.');
+    parts.push('Every area sits below the Tour average right now.');
   }
   const topLoss = model.losses[0];
   if (topLoss) {
@@ -529,7 +543,7 @@ export function buildRootHeadline(
       else parts.push(`${base}; ${what} is part of it, the cause is not explained yet.`);
     }
   } else if (topGain) {
-    parts.push('No area is losing strokes to the Tour line.');
+    parts.push('No area is losing strokes to the Tour average.');
   }
   return parts.join(' ');
 }

@@ -156,18 +156,19 @@ describe('Team roots player drill', () => {
     expect(navigate).toHaveBeenCalledWith({ cause: null });
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     expect(screen.getByRole('heading', { level: 2, name: 'Ava' })).toBeInTheDocument();
-    expect(screen.getByRole('figure', { name: "Ava's root map" })).toBeInTheDocument();
-    expect(screen.getByRole('region', { name: 'Summary' })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Team roots' })).toHaveAttribute('href', '/golf/dashboard/intelligence?view=team');
+    const summary = screen.getByRole('region', { name: 'Summary' });
+    expect(within(summary).getByText(/^Ava’s biggest leak: /)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Every area' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Whole team' })).toHaveAttribute('href', '/golf/dashboard/intelligence?view=team');
   });
 
   it('keeps the map collapsed and the sheet shut when no cause is named', () => {
     renderDrill({ ...ready, causeId: null } as CoachPlayerDrill);
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     const summary = screen.getByRole('region', { name: 'Summary' });
-    expect(within(summary).getByRole('img', { name: /Ava's root map/ })).toBeInTheDocument();
-    // the per-area ladders wait behind their rows
-    expect(document.querySelector('[data-slot="ladder-segment"]')).toBeNull();
+    expect(within(summary).getByText(/^Ava’s biggest leak: /)).toBeInTheDocument();
+    // every area waits behind one closed disclosure
+    expect(document.querySelector('[data-slot="area-breakdown"]')).toBeNull();
     // the one primary action on the page opens the biggest leak's Why
     fireEvent.click(within(summary).getByRole('button', { name: 'See why' }));
     expect(screen.getByRole('dialog', { name: 'Putting › 3–5 ft putts' })).toBeInTheDocument();
@@ -175,9 +176,9 @@ describe('Team roots player drill', () => {
 
   it('picking another branch swaps the Why in place and keeps ?cause= in step', () => {
     const navigate = renderDrill({ ...ready, causeId: null } as CoachPlayerDrill);
-    openDisclosures(document.querySelector('[data-slot="leak-ladder"]') as HTMLElement);
-    const ladder = document.querySelector('[data-slot="leak-ladder"]') as HTMLElement;
-    fireEvent.click(within(ladder).getByRole('button', { name: /Greens hit from 175\+ yd/ }));
+    fireEvent.click(screen.getByRole('button', { name: 'Every area' }));
+    const breakdown = document.querySelector('[data-slot="area-breakdown"]') as HTMLElement;
+    fireEvent.click(within(breakdown).getByRole('button', { name: /Greens hit from 175\+ yd/ }));
     expect(navigate).toHaveBeenCalledWith({ cause: 'far' });
     const sheet = screen.getByRole('dialog', { name: 'Approach › Greens hit from 175+ yd' });
     expect(within(sheet).getByRole('heading', { name: 'Greens from 175+' })).toBeInTheDocument();
@@ -231,15 +232,15 @@ describe('Team roots player drill', () => {
     expect(screen.getByText(/through Aug 2/)).toBeInTheDocument();
   });
 
-  it('back to Team roots navigates in place without the player', () => {
+  it('back to the whole team navigates in place without the player', () => {
     const navigate = renderDrill({ ...ready, causeId: null } as CoachPlayerDrill);
-    fireEvent.click(screen.getByRole('link', { name: 'Team roots' }));
+    fireEvent.click(screen.getByRole('link', { name: 'Whole team' }));
     expect(navigate).toHaveBeenCalledWith({ view: 'team', player: null, cause: null });
   });
 
   it('says the read failed instead of drawing an empty map', () => {
     renderDrill({ status: 'failed', playerId: 'p1', playerName: 'Ava', causeId: 'putt' });
-    expect(screen.getByText("Ava's root map did not load")).toBeInTheDocument();
+    expect(screen.getByText("Ava's map did not load")).toBeInTheDocument();
     expect(screen.queryByRole('figure')).not.toBeInTheDocument();
   });
 
@@ -258,7 +259,7 @@ describe('Team roots player drill', () => {
         navigate={() => {}}
       />,
     );
-    expect(screen.getByRole('heading', { level: 2, name: /Team roots/ })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 2, name: 'Where the team loses strokes' })).toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: 'Ava' })).not.toBeInTheDocument();
   });
 });

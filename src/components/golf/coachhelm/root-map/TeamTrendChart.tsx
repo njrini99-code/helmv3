@@ -79,7 +79,7 @@ export function TeamTrendChart({ weeks, bare = false }: { weeks: TeamTrendWeek[]
           {n} {n === 1 ? 'week' : 'weeks'} with rounds
         </p>
       </div>
-      <p className="text-caption text-text-tertiary">Gaining on the Tour line ↑</p>
+      <p className="text-caption text-text-tertiary">Ahead of the Tour average ↑</p>
       <svg role="img" aria-label={spoken} viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" className="h-36 w-full">
         {polygons.map((p) => (
           <path key={p.key} d={p.d} style={{ fill: p.fill, stroke: 'var(--fw-color-surface)' }} strokeWidth={0.5} vectorEffect="non-scaling-stroke" />
@@ -89,13 +89,13 @@ export function TeamTrendChart({ weeks, bare = false }: { weeks: TeamTrendWeek[]
           <path d={netPath} fill="none" style={{ stroke: 'var(--fw-color-text-primary)' }} strokeWidth={1.5} vectorEffect="non-scaling-stroke" />
         ) : null}
       </svg>
-      <p className="text-caption text-text-tertiary">Losing to the Tour line ↓</p>
+      <p className="text-caption text-text-tertiary">Behind the Tour average ↓</p>
       <div className="flex justify-between text-caption text-text-tertiary">
         <span>{from ?? ''}</span>
         <span>{to ?? ''}</span>
       </div>
       <p className="text-caption text-text-tertiary">
-        Team average per round, each player once per week. The dashed line is the Tour line; the chart spans{' '}
+        Team average per round, each player once per week. The dashed line is the Tour average; the chart spans{' '}
         <span className="font-fw-mono tabular-nums">±{formatStrokes(extent)}</span> strokes. Ends at the latest counted
         round with strokes gained.
       </p>

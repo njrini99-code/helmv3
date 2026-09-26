@@ -250,6 +250,62 @@ export function buildTeamTrend(rounds: TeamSgRound[], opts: { maxWeeks?: number 
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
+ * One area's direction, for a list row
+ * ──────────────────────────────────────────────────────────────────────── */
+
+/** A gated direction for one area, in words a row can print. */
+export interface AreaTrendNote {
+  direction: 'improving' | 'declining' | 'steady';
+  /** recent − prior, strokes a round (> 0 = better). */
+  delta: number;
+  /** What was compared, e.g. "the last 4 weeks vs the 4 before". */
+  window: string;
+}
+
+/** Same noise floor as the round trend (themes/trend.ts STEADY_THRESHOLD). */
+export const AREA_TREND_STEADY = 0.15;
+/** Weeks per window, and the fewest weeks with data each window needs. */
+export const TEAM_TREND_WINDOW_WEEKS = 4;
+export const TEAM_TREND_MIN_WEEKS = 2;
+/** A week counts only when at least this many players logged a value. */
+export const TEAM_TREND_MIN_PLAYERS = 2;
+
+/**
+ * The team's direction in one area: the mean of the last
+ * {@link TEAM_TREND_WINDOW_WEEKS} counted weeks against the weeks before
+ * them. Null when either window has fewer than {@link TEAM_TREND_MIN_WEEKS}
+ * weeks with a value from at least {@link TEAM_TREND_MIN_PLAYERS} players;
+ * a row then prints no trend at all rather than "no change".
+ */
+export function teamAreaTrend(weeks: TeamTrendWeek[], area: RootArea): AreaTrendNote | null {
+  const vals = weeks
+    .filter((w) => w.players >= TEAM_TREND_MIN_PLAYERS)
+    .map((w) => w.values[area])
+    .filter(finite);
+  const recent = vals.slice(-TEAM_TREND_WINDOW_WEEKS);
+  const prior = vals.slice(-2 * TEAM_TREND_WINDOW_WEEKS, -TEAM_TREND_WINDOW_WEEKS);
+  if (recent.length < TEAM_TREND_MIN_WEEKS || prior.length < TEAM_TREND_MIN_WEEKS) return null;
+  const mean = (xs: number[]) => xs.reduce((t, v) => t + v, 0) / xs.length;
+  const delta = mean(recent) - mean(prior);
+  return {
+    direction: Math.abs(delta) < AREA_TREND_STEADY ? 'steady' : delta > 0 ? 'improving' : 'declining',
+    delta,
+    window: `the last ${recent.length} weeks vs the ${prior.length} before`,
+  };
+}
+
+/** A player's direction in one area, from the round trend on the sparkline. */
+export function playerAreaTrend(line: AreaSparkline | undefined): AreaTrendNote | null {
+  const t = line?.trend;
+  if (!t) return null;
+  return {
+    direction: t.direction,
+    delta: t.delta,
+    window: `the last ${t.recentN} rounds vs the ${t.priorN} before`,
+  };
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
  * Diverging stack geometry (value space; the chart maps it to pixels)
  * ──────────────────────────────────────────────────────────────────────── */
 

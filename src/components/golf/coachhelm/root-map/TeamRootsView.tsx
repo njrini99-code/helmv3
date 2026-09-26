@@ -23,21 +23,22 @@
 import { useState, type MouseEvent, type ReactNode } from 'react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
-import { Button, EmptyState, Eyebrow } from '@/components/fairway';
+import { Button, EmptyState, Sheet } from '@/components/fairway';
 import {
-  CONFIDENCE_LABEL,
+  ROOT_AREAS,
   ROOT_AREA_LABEL,
   findBranch,
   formatStrokes,
-  rootStyleLabel,
   type CauseBranch,
+  type RootArea,
   type UnsizedCause,
 } from '@/lib/coachhelm/root-map/build-root-map';
 import type { CoachPlayerDrill } from '@/lib/coachhelm/root-map/coach-player-drill';
-import type { TeamTrendWeek } from '@/lib/coachhelm/root-map/area-trends';
-import type { TeamRootCell, TeamRootsModel } from '@/lib/coachhelm/root-map/build-team-roots';
+import { teamAreaTrend, type AreaTrendNote, type TeamTrendWeek } from '@/lib/coachhelm/root-map/area-trends';
+import type { TeamRootsModel } from '@/lib/coachhelm/root-map/build-team-roots';
 import type { FocusSlopeRow, NeedsYouItem } from '@/lib/coachhelm/root-map/build-team-extras';
-import { RootMap, playersText, rootStyleCss } from './RootMap';
+import { playersText } from './root-style';
+import { AreaBreakdown, BENCHMARK_LABEL, SpotList, breakdownFootnote, formatPerRound, sampleText } from './LeakList';
 import { TeamTrendChart } from './TeamTrendChart';
 import { TeamPlayerDrill } from './TeamPlayerDrill';
 import { RootSummary, topSpots } from './RootSummary';
@@ -157,11 +158,6 @@ function SectionHead({ id, title, note }: { id: string; title: string; note?: st
   );
 }
 
-function areaOf(branch: Pick<CauseBranch, 'area'> | null, model: TeamRootsModel): string | null {
-  if (branch) return branch.area;
-  return model.map.losses[0]?.area ?? null;
-}
-
 export function TeamRootsView(props: TeamRootsViewProps) {
   const { drill, drillOpen, hrefFor, navigate } = props;
   if (drillOpen && drill) return <TeamPlayerDrill drill={drill} hrefFor={hrefFor} navigate={navigate} />;
@@ -169,42 +165,21 @@ export function TeamRootsView(props: TeamRootsViewProps) {
 }
 
 function TeamRootsOverview({ model, headline, trend, slopes, needsYou, signalsFailed, hrefFor, navigate }: TeamRootsViewProps) {
-  const [selectedId, setSelectedId] = useState<string | null>(model.map.defaultSelectedId);
-  const selected = selectedId ? findBranch(model.map, selectedId) : null;
-  const selectedUnsized: UnsizedCause | null = selected ? null : model.map.unsized.find((u) => u.id === selectedId) ?? null;
-  // The primary action follows the summary's biggest leak until the coach
-  // picks a spot on the team map.
-  const [picked, setPicked] = useState(false);
-  const lead = topSpots(model.map, 1)[0] ?? null;
-  const primaryArea = picked || !lead ? areaOf(selected ?? selectedUnsized, model) : lead.area;
-  const pick = (id: string) => {
-    setPicked(true);
-    setSelectedId(id);
-  };
+  const [openId, setOpenId] = useState<string | null>(null);
+  const spot: CauseBranch | null = openId ? findBranch(model.map, openId) : null;
+  const unsizedSpot: UnsizedCause | null = spot ? null : model.map.unsized.find((u) => u.id === openId) ?? null;
   const hasSg = model.playersWithSg > 0;
   const hasCause = model.map.losses.some((a) => a.causes.length > 0) || model.map.unsized.length > 0;
-
-  const mapSummary = hasSg
-    ? `Team root map. ${model.map.losses
-        .map((a) => {
-          const causes = [
-            ...a.causes.map((c) => `${c.label} ${formatStrokes(c.strokes)}${c.players !== undefined ? `, ${playersText(c.players)}` : ''}`),
-            ...model.map.unsized
-              .filter((u) => u.area === a.area)
-              .map((u) => `${u.label}, not sized${u.players !== undefined ? `, ${playersText(u.players)}` : ''}`),
-          ];
-          const rest = a.remainder ? `; unexplained ${formatStrokes(a.remainder.strokes)}` : '';
-          return `${a.label} ${formatStrokes(a.sg, { signed: true })} a round${causes.length > 0 ? `, top causes: ${causes.join(', ')}` : ''}${rest}`;
-        })
-        .join('; ')}${model.map.gains.length > 0 ? `. Gaining: ${model.map.gains.map((g) => `${g.label} ${formatStrokes(g.sg, { signed: true })}`).join(', ')}` : ''}.`
-    : 'Team root map: no strokes-gained data yet.';
+  const leaks = topSpots(model.map, 3);
+  const primaryArea = leaks[0]?.area ?? model.map.losses[0]?.area ?? null;
+  const trends = Object.fromEntries(ROOT_AREAS.map((a) => [a, teamAreaTrend(trend, a)])) as Record<RootArea, AreaTrendNote | null>;
 
   const needsSection = (
     <section aria-labelledby="team-needs-heading" className="flex flex-col gap-1 border-t border-border-subtle pt-4">
-      <h3 id="team-needs-heading" className="text-body-sm font-semibold uppercase tracking-wide text-text-secondary">
+      <h3 id="team-needs-heading" className="text-body-sm font-semibold text-text-primary">
         Needs you
       </h3>
-    {needsYou.length === 0 ? (
+      {needsYou.length === 0 ? (
         <p className="text-body-sm text-text-secondary">
           {signalsFailed ? 'Signals did not load, so this list may be incomplete. Open Signals to retry.' : 'Nothing urgent or changed right now.'}
         </p>
@@ -248,124 +223,84 @@ function TeamRootsOverview({ model, headline, trend, slopes, needsYou, signalsFa
     </section>
   );
 
+  const signalsAction = (
+    <Button asChild variant="primary" size="lg" fullWidth>
+      <NavLink
+        update={{ view: 'signals', filter: primaryArea ? `category:${primaryArea}` : null, signal: null }}
+        hrefFor={hrefFor}
+        navigate={navigate}
+      >
+        {primaryArea && primaryArea in ROOT_AREA_LABEL
+          ? `Open ${ROOT_AREA_LABEL[primaryArea as RootArea].toLowerCase()} signals`
+          : 'Open signals'}
+      </NavLink>
+    </Button>
+  );
+
   return (
     <div className="flex flex-col gap-6" data-slot="team-roots">
       <header className="flex flex-col gap-1.5">
-        <Eyebrow as="p">
+        <p className="text-caption text-text-secondary">
           {model.rosterSize} {model.rosterSize === 1 ? 'player' : 'players'}
-          {hasSg ? ` · ${model.playersWithSg} with strokes gained` : ''} · team average per round
-        </Eyebrow>
+          {hasSg ? ` · ${model.playersWithSg} with strokes gained` : ''} · team average a round
+        </p>
         <h2 id="team-roots-heading" className="font-fw-display text-title-2 font-semibold text-text-primary md:text-title-1">
-          <span className="block">Team roots</span>
-          {headline && !hasSg ? (
-            <span className="mt-1 block font-fw-sans text-body font-normal text-text-secondary md:text-body-lg">{headline}</span>
-          ) : null}
+          Where the team loses strokes
         </h2>
       </header>
 
       {hasSg ? (
-        <RootSummary
-          model={model.map}
-          headline={headline}
-          summary={mapSummary}
-          audience="coach"
-          eyebrow="Team average · strokes lost a round to the Tour line"
-          selectedId={selectedId}
-          action={
-            <Button asChild variant="primary" size="lg" fullWidth>
-              <NavLink
-                update={{ view: 'signals', filter: primaryArea ? `category:${primaryArea}` : null, signal: null }}
-                hrefFor={hrefFor}
-                navigate={navigate}
-              >
-                {primaryArea && primaryArea in ROOT_AREA_LABEL
-                  ? `Open ${ROOT_AREA_LABEL[primaryArea as keyof typeof ROOT_AREA_LABEL]} signals`
-                  : 'Open signals'}
-              </NavLink>
-            </Button>
-          }
-        >
+        <RootSummary model={model.map} headline={headline} audience="coach" trends={trends} action={signalsAction}>
           {needsSection}
         </RootSummary>
       ) : (
         <section aria-label="Team summary" className="flex flex-col gap-4">
           <EmptyState
             title="No strokes-gained data yet"
-            description="The team map fills in once players have rounds with shot data in the stats cache."
+            description="This fills in once players have rounds with shot data in the stats cache."
           />
           {needsSection}
-          <div>
-          <Button asChild variant="primary" size="lg" fullWidth>
-            <NavLink
-              update={{ view: 'signals', filter: primaryArea ? `category:${primaryArea}` : null, signal: null }}
-              hrefFor={hrefFor}
-              navigate={navigate}
-            >
-              {primaryArea && primaryArea in ROOT_AREA_LABEL
-                ? `Open ${ROOT_AREA_LABEL[primaryArea as keyof typeof ROOT_AREA_LABEL]} signals`
-                : 'Open signals'}
-            </NavLink>
-          </Button>
-          </div>
+          <div>{signalsAction}</div>
         </section>
       )}
 
+      {hasSg && leaks.length > 0 ? (
+        <section aria-labelledby="team-leaks-heading" className="flex flex-col gap-1" data-slot="team-leaks">
+          <SectionHead id="team-leaks-heading" title="Biggest leaks" note={`a round, ${BENCHMARK_LABEL}`} />
+          <SpotList spots={leaks} audience="coach" onSelect={setOpenId} selectedId={openId} />
+        </section>
+      ) : null}
+      {hasSg && !hasCause ? (
+        <p className="text-body-sm text-text-secondary">
+          {signalsFailed
+            ? 'Signals did not load, so spots cannot be shown. Open Signals to retry.'
+            : 'No spot under a losing area has a value yet. As player reads land, the biggest leaks show here.'}
+        </p>
+      ) : null}
+
+      {hasSg ? <PlayersByArea model={model} hrefFor={hrefFor} /> : null}
+
       {hasSg ? (
-        <Disclosure title="Team map by area" slot="team-map" bodyClassName="flex flex-col gap-3">
-          <RootMap
+        <Disclosure title="Every area" slot="team-map" bodyClassName="flex flex-col gap-3">
+          <AreaBreakdown
             model={model.map}
-            selectedId={selectedId}
-            onSelect={pick}
-            showWhy={false}
-            summary={mapSummary}
-            lossEyebrow="Team losing · where"
-            whatEyebrow="What · top causes"
-            figureLabel="Team root map"
             audience="coach"
-            unsizedInRow
+            trends={trends}
+            onSelect={setOpenId}
+            onSelectUnsized={setOpenId}
+            selectedId={openId}
           />
+          <p className="text-caption text-text-tertiary" data-slot="breakdown-footnote">
+            {breakdownFootnote(model.map, 'coach')}
+          </p>
           {model.map.other.length > 0 ? (
             <p className="text-body-sm text-text-secondary" data-slot="team-other-reads">
               <span className="font-medium text-text-primary">Other reads under a losing area: </span>
               {model.map.other.map((o) => o.title).join(' · ')}
             </p>
           ) : null}
-          {!hasCause && !signalsFailed ? (
-            <p className="text-body-sm text-text-secondary">
-              No stored cause sits under a losing area yet. As player reads land, the largest causes show here.
-            </p>
-          ) : null}
-          {selected ? (
-            <p className="text-body-sm text-text-secondary">
-              <span className="font-medium text-text-primary" title={selected.title}>{selected.label}</span> under{' '}
-              {ROOT_AREA_LABEL[selected.area]}: {formatStrokes(selected.strokes)} a round across the team
-              {selected.measured ? ', measured from recorded shots' : ''}
-              {selected.players !== undefined
-                ? ` · ${playersText(selected.players)}${selected.measured ? ' losing strokes here' : ''}`
-                : ''}
-              {' · '}
-              {selected.measured && (selected.insightIds?.length ?? 0) === 0
-                ? 'no stored read on this spot yet'
-                : rootStyleLabel(selected.style, 'coach')}
-              {selected.tier ? ` · ${CONFIDENCE_LABEL[selected.tier]}` : ''}
-            </p>
-          ) : selectedUnsized ? (
-            <p className="text-body-sm text-text-secondary">
-              <span className="font-medium text-text-primary" title={selectedUnsized.title}>{selectedUnsized.label}</span> under{' '}
-              {ROOT_AREA_LABEL[selectedUnsized.area]}: no stroke value stored
-              {selectedUnsized.players !== undefined ? ` · ${playersText(selectedUnsized.players)}` : ''}
-              {' · '}
-              {rootStyleLabel(selectedUnsized.style, 'coach')}
-              {selectedUnsized.tier ? ` · ${CONFIDENCE_LABEL[selectedUnsized.tier]}` : ''}. Open a player in the matrix below
-              to see why.
-            </p>
-          ) : null}
         </Disclosure>
       ) : null}
-
-      <Disclosure title="Who carries which root" slot="team-matrix">
-        <CarriersMatrix model={model} signalsFailed={signalsFailed} hrefFor={hrefFor} bare />
-      </Disclosure>
 
       <Disclosure title="Team trend" slot="team-trend" bodyClassName="flex flex-col gap-6">
         {trend.length >= 2 ? (
@@ -377,183 +312,193 @@ function TeamRootsOverview({ model, headline, trend, slopes, needsYou, signalsFa
         )}
         <FocusSlopes slopes={slopes} hrefFor={hrefFor} navigate={navigate} />
       </Disclosure>
+
+      <Sheet
+        open={!!(spot || unsizedSpot)}
+        onOpenChange={(o) => {
+          if (!o) setOpenId(null);
+        }}
+        side="right"
+        mobileSide="bottom"
+        title={spot ? `${ROOT_AREA_LABEL[spot.area]} › ${spot.label}` : unsizedSpot ? `${ROOT_AREA_LABEL[unsizedSpot.area]} › ${unsizedSpot.label}` : 'Spot'}
+        className="md:w-[min(32rem,calc(100vw-3rem))]"
+      >
+        <Sheet.Body className="pb-[max(1.5rem,env(safe-area-inset-bottom))]" data-slot="team-spot-sheet">
+          {spot || unsizedSpot ? <SpotCarriers spot={spot} unsized={unsizedSpot} hrefFor={hrefFor} /> : null}
+        </Sheet.Body>
+      </Sheet>
     </div>
   );
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
- * Who carries which root
+ * One spot: who carries it (the sheet a spot row opens)
  * ──────────────────────────────────────────────────────────────────────── */
 
-function cellSpoken(name: string, label: string, cell: TeamRootCell): string {
-  const size = cell.strokes !== null ? `${formatStrokes(cell.strokes)} a round` : 'no stroke value stored';
-  const tier = cell.tier ? `, ${CONFIDENCE_LABEL[cell.tier]}` : '';
-  const where = cell.contextPath ? ` Where it concentrates: ${cell.contextPath}, observed, not a cause.` : '';
-  return `${name}: ${label}, ${size}, ${rootStyleLabel(cell.style, 'coach')}${tier}.${where} Open ${name}'s root map at this cause.`;
-}
-
-function CarriersMatrix({
-  model,
-  signalsFailed,
+function SpotCarriers({
+  spot,
+  unsized,
   hrefFor,
-  bare = false,
 }: {
-  model: TeamRootsModel;
-  signalsFailed: boolean;
+  spot: CauseBranch | null;
+  unsized: UnsizedCause | null;
   hrefFor: TeamRootsViewProps['hrefFor'];
-  /** Inside a titled disclosure: no own heading. */
-  bare?: boolean;
 }) {
-  const { columns, rows } = model;
-  const maxStrokes = Math.max(
-    0,
-    ...rows.flatMap((r) => Object.values(r.cells).map((c) => c.strokes ?? 0)),
-  );
+  const carriers = spot?.carriers ?? unsized?.carriers ?? [];
+  const sample = spot ? sampleText(spot) : null;
   return (
-    <section
-      aria-labelledby={bare ? undefined : 'team-matrix-heading'}
-      aria-label={bare ? 'Who carries which root' : undefined}
-      className="flex flex-col gap-2"
-    >
-      {bare ? (
-        <p className="text-caption text-text-tertiary">Tap a player or a cell.</p>
-      ) : (
-        <SectionHead id="team-matrix-heading" title="Who carries which root" note="tap a player or a cell" />
-      )}
-      {columns.length === 0 ? (
-        <p className="text-body-sm text-text-secondary">
-          {signalsFailed ? 'Signals did not load, so causes cannot be shown. Open Signals to retry.' : 'No open player insights carry a metric yet.'}
+    <div className="flex flex-col gap-4">
+      {spot ? (
+        <p className="text-body text-text-primary">
+          <span className="font-semibold tabular-nums">−{formatPerRound(spot.strokes).replace(/^under/, 'under')}</span> strokes a
+          round {BENCHMARK_LABEL}, team average{sample ? `, from ${sample}` : ''}.
         </p>
       ) : (
-        <>
-          <div className="-mx-4 overflow-x-auto px-4 md:mx-0 md:px-0">
-            <table className="w-max min-w-full border-separate border-spacing-0 text-body-sm">
-              <caption className="sr-only">
-                Players by cause. Circle area is the stored strokes a round; an open ring has no stored stroke value.
-              </caption>
-              <thead>
-                <tr>
-                  <th scope="col" className="sticky left-0 z-10 bg-canvas py-2 pr-3 text-left text-caption font-medium text-text-secondary">
-                    Player
-                  </th>
-                  {columns.map((c) => (
-                    <th
-                      key={c.metric}
-                      scope="col"
-                      abbr={c.label}
-                      title={c.label}
-                      className={cn(
-                        'w-[4.75rem] max-w-[4.75rem] px-1 py-2 align-bottom text-caption font-medium',
-                        c.shared ? 'text-text-primary' : 'text-text-secondary',
-                      )}
-                    >
-                      <span className="line-clamp-2 block text-balance leading-tight">
-                        <span aria-hidden>{c.shortLabel}</span>
-                        <span className="sr-only">{c.label}</span>
-                      </span>
-                      <span className="block font-normal text-text-tertiary">
-                        {c.players}
-                        {c.shared ? ' · shared' : ''}
-                      </span>
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map((r) => (
-                  <tr key={r.playerId}>
-                    <th
-                      scope="row"
-                      className="sticky left-0 z-10 max-w-[9rem] border-t border-border-subtle bg-canvas p-0 pr-3 text-left font-normal text-text-primary"
-                    >
-                      <DrillLink
-                        playerId={r.playerId}
-                        cause={null}
-                        hrefFor={hrefFor}
-                        ariaLabel={`Open ${r.name}'s root map`}
-                        className="flex min-h-11 flex-col justify-center py-1 outline-none hover:underline focus-visible:ring-2 focus-visible:ring-border-focus"
-                      >
-                        <span className="truncate">{r.name}</span>
-                        <span className="block font-fw-mono text-caption tabular-nums text-text-tertiary">
-                          {r.sgTotal !== null ? `${formatStrokes(r.sgTotal, { signed: true })} total` : 'no SG yet'}
-                        </span>
-                      </DrillLink>
-                    </th>
-                    {columns.map((c) => {
-                      const cell = r.cells[c.metric];
-                      return (
-                        <td
-                          key={c.metric}
-                          className={cn('border-t border-border-subtle p-0 text-center', c.shared && 'bg-surface-sunken')}
-                        >
-                          {cell ? (
-                            <DrillLink
-                              playerId={r.playerId}
-                              cause={cell.insightId}
-                              hrefFor={hrefFor}
-                              ariaLabel={cellSpoken(r.name, c.label, cell)}
-                              className="relative mx-auto flex h-11 w-11 items-center justify-center rounded-full outline-none hover:bg-surface-tint focus-visible:ring-2 focus-visible:ring-border-focus"
-                            >
-                              <Bubble cell={cell} max={maxStrokes} />
-                              {cell.contextPath ? (
-                                <span aria-hidden className="absolute right-1 top-1 h-1.5 w-1.5 rounded-full bg-text-primary" />
-                              ) : null}
-                            </DrillLink>
-                          ) : (
-                            <span aria-hidden className="block h-11" />
-                          )}
-                        </td>
-                      );
-                    })}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          {model.hiddenColumns > 0 ? (
-            <p className="text-caption text-text-tertiary">
-              {model.hiddenColumns} more {model.hiddenColumns === 1 ? 'cause is' : 'causes are'} carried by fewer
-              players; see Signals.
-            </p>
-          ) : null}
-          <ul className="flex flex-wrap gap-x-4 gap-y-1 text-caption text-text-secondary" aria-label="Matrix legend">
-            <li className="flex items-center gap-1.5">
-              <span aria-hidden className="inline-block h-3 w-3 rounded-full" style={rootStyleCss('likely')} />
-              Sized: area is strokes a round
-            </li>
-            <li className="flex items-center gap-1.5">
-              <span aria-hidden className="inline-block h-3 w-3 rounded-full border border-dashed border-text-secondary" />
-              No stroke value stored
-            </li>
-            <li className="flex items-center gap-1.5">
-              <span aria-hidden className="inline-block h-3 w-4 rounded-sm bg-surface-sunken" />
-              Shared by 3+ players
-            </li>
-            {rows.some((r) => Object.values(r.cells).some((c) => c.contextPath)) ? (
-              <li className="flex items-center gap-1.5">
-                <span aria-hidden className="inline-block h-1.5 w-1.5 rounded-full bg-text-primary" />
-                Concentrates by par or shape (open the cell)
-              </li>
-            ) : null}
-          </ul>
-        </>
+        <p className="text-body text-text-secondary">No stroke value is stored for this spot yet.</p>
       )}
-    </section>
+      {spot && spot.contextPath ? <p className="text-body-sm text-text-secondary">Where it concentrates: {spot.contextPath}</p> : null}
+      <section aria-labelledby="spot-carriers-heading" className="flex flex-col gap-1">
+        <h3 id="spot-carriers-heading" className="text-body-sm font-semibold text-text-primary">
+          {carriers.length === 0
+            ? 'No player carries it on their own'
+            : `${playersText(carriers.length)} losing strokes here`}
+        </h3>
+        {carriers.length > 0 ? (
+          <ul className="flex flex-col divide-y divide-border-subtle">
+            {carriers.map((c) => (
+              <li key={c.playerId}>
+                <DrillLink
+                  playerId={c.playerId}
+                  cause={null}
+                  hrefFor={hrefFor}
+                  ariaLabel={`Open ${c.name}'s map${c.strokes !== null ? `, ${formatPerRound(c.strokes)} strokes a round here` : ''}`}
+                  className="flex min-h-11 items-center justify-between gap-3 py-2 outline-none hover:bg-surface-tint focus-visible:ring-2 focus-visible:ring-border-focus"
+                >
+                  <span className="min-w-0 truncate text-body text-text-primary">{c.name}</span>
+                  <span className="flex shrink-0 items-center gap-2">
+                    <span className="font-fw-sans text-body tabular-nums text-text-primary">
+                      {c.strokes !== null ? `−${formatPerRound(c.strokes)}`.replace('−under', 'under') : 'no value'}
+                    </span>
+                    <span aria-hidden className="text-text-tertiary">
+                      ›
+                    </span>
+                  </span>
+                </DrillLink>
+              </li>
+            ))}
+          </ul>
+        ) : null}
+      </section>
+      {spot?.measured ? (
+        <p className="text-caption text-text-tertiary">Each player’s number is their own strokes a round on this spot.</p>
+      ) : null}
+    </div>
   );
 }
 
-function Bubble({ cell, max }: { cell: TeamRootCell; max: number }) {
-  if (cell.strokes === null || max <= 0) {
-    return <span aria-hidden className="inline-block h-3.5 w-3.5 rounded-full border border-dashed border-text-secondary" />;
-  }
-  // Area proportional to strokes: diameter ∝ sqrt(strokes / max), 8..32px.
-  const d = 8 + Math.sqrt(Math.max(0, cell.strokes) / max) * 24;
+/* ─────────────────────────────────────────────────────────────────────────
+ * Players by area (strokes a round vs the Tour average)
+ * ──────────────────────────────────────────────────────────────────────── */
+
+type SortKey = RootArea | 'total';
+
+function PlayersByArea({ model, hrefFor }: { model: TeamRootsModel; hrefFor: TeamRootsViewProps['hrefFor'] }) {
+  const [sort, setSort] = useState<SortKey>('total');
+  const valueOf = (r: TeamRootsModel['rows'][number], k: SortKey) => (k === 'total' ? r.sgTotal : r.sg[k]);
+  const rows = model.rows
+    .slice()
+    .sort((a, b) => {
+      const va = valueOf(a, sort);
+      const vb = valueOf(b, sort);
+      if (va === null && vb === null) return a.name.localeCompare(b.name);
+      if (va === null) return 1;
+      if (vb === null) return -1;
+      return va - vb;
+    });
+  const cols: Array<{ key: SortKey; label: string }> = [
+    ...ROOT_AREAS.map((a) => ({ key: a as SortKey, label: ROOT_AREA_LABEL[a] })),
+    { key: 'total', label: 'Total' },
+  ];
+  const teamTotal = ROOT_AREAS.map((a) => model.teamAreaSg[a]).filter((v): v is number => v !== null);
+  const cell = (v: number | null) =>
+    v === null ? (
+      <span className="text-text-tertiary">—</span>
+    ) : (
+      <span
+        className="tabular-nums"
+        style={{ color: v >= 0.05 ? 'var(--fw-color-success-ink)' : 'var(--fw-color-text-primary)' }}
+      >
+        {formatPerRound(v, { signed: true })}
+      </span>
+    );
   return (
-    <span
-      aria-hidden
-      className="inline-block rounded-full"
-      style={{ width: d, height: d, ...rootStyleCss(cell.style) }}
-    />
+    <section aria-labelledby="team-players-heading" className="flex flex-col gap-2" data-slot="players-by-area">
+      <SectionHead id="team-players-heading" title="Players by area" note={`a round, ${BENCHMARK_LABEL}`} />
+      <div className="-mx-4 overflow-x-auto px-4 md:mx-0 md:px-0">
+        <table className="w-full min-w-[34rem] border-separate border-spacing-0 text-body-sm">
+          <caption className="sr-only">
+            Strokes a round {BENCHMARK_LABEL} by area for each player, sorted by the selected column, most strokes lost first.
+          </caption>
+          <thead>
+            <tr>
+              <th scope="col" className="sticky left-0 z-10 bg-canvas py-2 pr-3 text-left text-caption font-medium text-text-secondary">
+                Player
+              </th>
+              {cols.map((c) => (
+                <th key={c.key} scope="col" aria-sort={sort === c.key ? 'ascending' : 'none'} className="p-0 text-right">
+                  <button
+                    type="button"
+                    onClick={() => setSort(c.key)}
+                    className={cn(
+                      'inline-flex min-h-11 items-center justify-end px-2 text-caption font-medium outline-none hover:text-text-primary focus-visible:ring-2 focus-visible:ring-border-focus',
+                      sort === c.key ? 'text-text-primary underline underline-offset-4' : 'text-text-secondary',
+                    )}
+                  >
+                    {c.label}
+                  </button>
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            <tr data-slot="players-team-row">
+              <th scope="row" className="sticky left-0 z-10 border-t border-border-subtle bg-canvas py-2 pr-3 text-left font-semibold text-text-primary">
+                Team average
+              </th>
+              {ROOT_AREAS.map((a) => (
+                <td key={a} className="border-t border-border-subtle px-2 py-2 text-right font-semibold">
+                  {cell(model.teamAreaSg[a])}
+                </td>
+              ))}
+              <td className="border-t border-border-subtle px-2 py-2 text-right font-semibold">
+                {cell(teamTotal.length > 0 ? teamTotal.reduce((t, v) => t + v, 0) : null)}
+              </td>
+            </tr>
+            {rows.map((r) => (
+              <tr key={r.playerId}>
+                <th scope="row" className="sticky left-0 z-10 max-w-[10rem] border-t border-border-subtle bg-canvas p-0 pr-3 text-left font-normal">
+                  <DrillLink
+                    playerId={r.playerId}
+                    cause={null}
+                    hrefFor={hrefFor}
+                    ariaLabel={`Open ${r.name}'s map`}
+                    className="flex min-h-11 items-center truncate text-text-primary outline-none hover:underline focus-visible:ring-2 focus-visible:ring-border-focus"
+                  >
+                    {r.name}
+                  </DrillLink>
+                </th>
+                {ROOT_AREAS.map((a) => (
+                  <td key={a} className="border-t border-border-subtle px-2 py-2 text-right">
+                    {cell(r.sg[a])}
+                  </td>
+                ))}
+                <td className="border-t border-border-subtle px-2 py-2 text-right font-medium">{cell(r.sgTotal)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </section>
   );
 }
 

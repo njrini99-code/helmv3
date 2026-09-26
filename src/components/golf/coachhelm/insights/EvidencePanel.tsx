@@ -319,14 +319,31 @@ function BenchmarkScale({ evidence }: { evidence: InsightEvidence }) {
   );
 }
 
+/**
+ * True when the blob carries the fields every row of this panel reads. A
+ * team roll-up (`synthesizeTeamSignals`) carries only metric, label, impact
+ * and player count, and rendered "undefined You", "undefined putts" and
+ * "NaN% confidence" in the Signals dossier.
+ */
+export function isRenderableEvidence(evidence: InsightEvidence | null | undefined): evidence is InsightEvidence {
+  if (!evidence || typeof evidence !== 'object') return false;
+  return (
+    Number.isFinite(evidence.your_value) &&
+    Number.isFinite(evidence.comparison_value) &&
+    Number.isFinite(evidence.sample_n) &&
+    Number.isFinite(evidence.confidence)
+  );
+}
+
 export function EvidencePanel({
   evidence,
   compact = true,
   'data-testid': testId,
 }: EvidencePanelProps) {
-  // Defensive: an insight minted before this phase will have no evidence
-  // JSON. Render nothing rather than a half-populated panel.
-  if (!evidence) return null;
+  // Defensive: an insight minted before this phase has no evidence JSON, and
+  // a team roll-up has only a partial one. Render nothing rather than a
+  // half-populated panel.
+  if (!isRenderableEvidence(evidence)) return null;
 
   const confPct = Math.round(Math.max(0, Math.min(1, evidence.confidence)) * 100);
   const colors = confidenceColor(evidence.confidence);

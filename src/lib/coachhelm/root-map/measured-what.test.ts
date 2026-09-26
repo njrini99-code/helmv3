@@ -304,5 +304,11 @@ describe('team measured What row', () => {
     ]);
     // player C has no shots: their share of the team loss stays "not tracked"
     expect(putting.remainder?.strokes).toBeGreaterThan(0.4);
+    // who carries each spot: the same players the count says, largest own loss first
+    for (const c of putting.causes) expect(c.carriers?.length).toBe(c.players);
+    const far = putting.causes.find((c) => c.label === '15–25 ft putts')!;
+    expect(far.carriers?.map((x) => x.name)).toEqual(['B', 'A']);
+    expect(far.carriers?.[0]?.strokes).toBeCloseTo(1.2, 10);
+    expect(putting.causes.find((c) => c.label === '5–10 ft putts')!.carriers?.map((x) => x.name)).toEqual(['A']);
   });
 });

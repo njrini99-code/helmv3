@@ -296,7 +296,7 @@ describe('headline wording follows causality', () => {
 
   it('handles a player with no gaining area', () => {
     const model = buildRootMap({ areas: [{ area: 'putting', sgPerRound: -1 }], insights: [] });
-    expect(buildRootHeadline(model, null)).toBe('Every area sits below the Tour line right now. Putting gives back 1.00.');
+    expect(buildRootHeadline(model, null)).toBe('Every area sits below the Tour average right now. Putting gives back 1.00.');
   });
 });
 

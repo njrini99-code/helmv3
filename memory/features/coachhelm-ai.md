@@ -286,32 +286,52 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
   Solid). A change to those evidence fields' shape or meaning must update
   `build-root-map.ts` and its tests. Details: `player-coachhelm-development.md`
   and `coach-intelligence-triage.md`.
-- Summary first (owner direction 2026-09-25): every root-map screen leads
-  with one `RootSummary` card: the strokes lost a round (sum of losing
-  areas, net and gains beside it), the stored headline, ONE stacked bar of
-  the loss by area (the screen's single `role="img"`, one hue stepped by
-  rank), the two biggest spots (`topSpots`) with one line of Why on the
-  first (`leadWhyLine`: an inferred root keeps its label; a measured spot
-  with no read says so), and the screen's one primary action. Everything
-  else sits behind a `Disclosure` (44px trigger, `aria-expanded`, body
-  mounted only while open, height animation or opacity-only under reduced
-  motion), closed by default:
-  - `RootMap`: one row per losing area (label, mini bar, signed SG); tapping
-    it opens its leak ladder (at most 3 spots, then "+N more", then the
-    rest). A row opens itself when the selected spot is inside it. Desktop
-    adds a collapsed "Full root map" (the ribbon, tooltips for narrow
-    nodes). Exceptions to the reconcile line (share-mode areas, areas not
-    split by shot) always show inline; the one reconcile line, the per-area
-    notes and the one legend (only the fills drawn) sit in "About this map".
-  - `RootWhy`: the header, root and chain stay open; "The evidence"
-    (comparison, angle visual, green plot, approach context, worth) is
-    collapsed.
-  - Player Today: a spot opens a sheet with its chain and "See the evidence"
-    (the Why route). Not-sized causes and other reads are collapsed lists.
-  - Team roots: the card adds "Needs you"; its action ("Open <area>
-    signals") follows the biggest leak until the coach picks a spot on the
-    team map. "Team map by area", "Who carries which root" and "Team trend"
-    (with "Did the focus work?") are collapsed.
+- Ranked rows, not diagrams (owner redesign 2026-09-25, replaces the
+  "summary first" card + `RootMap` ribbon / leak ladder; the owner found the
+  diagram unreadable). Researched against Clippd, Arccos, Shot Scope and
+  DECADE: every one ranks what to work on as a short list. Rules for every
+  root-map screen (`LeakList.tsx`, `RootSummary.tsx`):
+  - Benchmark: Tour only (owner decision), labelled "vs Tour average" once
+    per section. No "Tour line", "net" or "root map" on screen.
+  - Numbers: signed, per round, one decimal (`formatPerRound`; under a
+    tenth prints "under 0.1"). `formatStrokes` (two decimals) stays for the
+    Why view and stored prose.
+  - Evidence is the sample ("212 putts · 18 rounds", `sampleText`), not a
+    fill pattern: production has no observed diagnoses (0 of 792 reads,
+    2026-09-25), so style fills separated nothing.
+  - `RootSummary` is a headline card in words: team = worst area and its
+    size, the biggest single spot and who carries it, the area's trend, the
+    team strength; player = "Your biggest leak", its size and sample, one
+    line of Why (`leadWhyLine`), the lie bars and path, "Your strength";
+    coach on one player (`subjectName`) = the player card in the third
+    person. Then the screen's one primary action.
+  - `SpotList`: the biggest spots across areas (`rankedSpots`). Coach rows
+    name the top two carriers ("Mia, Jake +2"; full names when first names
+    collide); player rows never name anyone.
+  - `AreaBreakdown` (collapsed "Every area"): every losing area largest
+    first (bar scaled to the largest area, signed value, trend), then every
+    spot (nothing folds behind "+N more" or a hover), the part no spot
+    explains ("Not tracked by shot" when measured, else "Not explained
+    yet"), spots gaining inside the area, reads with no stroke value yet,
+    and a sentence when spots add to more than the area (`scaledToFit`).
+    Then the gaining areas. One footnote (`breakdownFootnote`) carries the
+    benchmark and the source.
+  - Trends (`area-trends.ts`): player = the round trend on the sparkline
+    (`playerAreaTrend`: last ≤5 rounds vs the ≤5 before, gated by
+    `computeSgTrends`); team = `teamAreaTrend` (last 4 counted weeks vs the
+    4 before, each window ≥2 weeks with ≥2 players). No data → no trend,
+    never "no change"; |delta| < 0.15 → "Steady".
+  - Player Today: header → headline card ("See why") → "Also costing you"
+    (next two spots) → "Every area" (collapsed) → sparklines, New since,
+    Other reads. A spot opens its chain in a sheet; an unsized read opens
+    its Why route.
+  - Team roots: header "Where the team loses strokes" → headline card with
+    "Needs you" and "Open <area> signals" (the lead spot's area; no team
+    focus write exists) → "Biggest leaks" (top 3 with carriers; a row opens
+    a sheet listing each carrier's own loss, each linking to their drill)
+    → "Players by area" (players × areas + total, sortable, team-average
+    row, names link to the drill) → collapsed "Every area" (with other
+    reads) and "Team trend" (with "Did the focus work?").
 - Insight-angle Why visuals (`angle-why.ts`, `AngleWhy.tsx`): a stored read
   whose `evidence.detail.angle` matches its metric (lie-adjusted approach,
   bad-day floor, three-putt autopsy, tee and approach miss compasses) draws
@@ -333,23 +353,21 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
   - Team roots mark cells, and list "Needs you" rows, only from a stored
     narrowing that got past the length step.
 - Team roots (coach, `?view=team`, 2026-09-25):
-  - The map's What row shows the top causes per losing area, ranked by
-    summed team strokes, up to 3 per area (`TEAM_MAP_CAUSES_PER_AREA`), each
-    with how many players carry it. A cause no longer needs 3+ players to
-    appear there; "shared" marks 3+ players in the matrix only.
-  - Causes with no stored stroke value are outlined nodes inside the
-    area's "Unexplained <strokes>" remainder. On the desktop ribbon, slices
-    and nodes too narrow for their own label keep their true width; nodes
-    name themselves in a hover / focus tooltip.
-  - Matrix columns show a short header (`shortCauseLabel`). The full
-    stored label stays in `title` and in the spoken text.
+  - Each losing area lists its top causes, ranked by summed team strokes,
+    up to 3 per area (`TEAM_MAP_CAUSES_PER_AREA`), each with how many
+    players carry it and who (`carriers`, built by the same test as
+    `players`, largest own loss first). A cause no longer needs 3+ players.
+  - Causes with no stored stroke value are listed as "no stroke value yet"
+    with their carriers. Causes use a short label (`shortCauseLabel`); the
+    full stored label stays in `title`. The per-cause bubble matrix is gone
+    (the spot sheet and "Players by area" replace it).
   - The trend reads 52 weeks back and shows the 12 weeks ending at the
     team's latest counted SG round, not at today (`buildTeamTrend` with
     `maxWeeks`). It is labelled with the real first and last round dates.
     Non-countable rounds and rounds without stored SG never anchor it.
   - Coach-facing copy never says "your": `RootAudience` 'coach' gives
     "Seen in shots" and third-person Why copy.
-  - Drill-in: a player name or a matrix cell navigates (a push, so back and
+  - Drill-in: a player name (table or spot sheet) navigates (a push, so back and
     forward work) to `?view=team&player=<id>&cause=<insightId>`. The page
     then builds that player's own root map server-side
     (`loadCoachPlayerDrill`, `coach-player-drill.ts`). It uses the same
@@ -358,8 +376,9 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
     (`verifyPlayerAccess` + `applyInsightVisibility`, no `player_feed`
     exposure). A clicked cause that the ranked list dropped falls back to the
     Brief's visibility-filtered signal.
-  - `TeamPlayerDrill` renders the summary card, the collapsed `RootMap`
-    and `RootWhy` with `audience='coach'`. The Why opens in a `Sheet`
+  - `TeamPlayerDrill` renders the headline card in the third person, the
+    player's next two spots, the collapsed "Every area" and `RootWhy` with
+    `audience='coach'`. Its back link reads "Whole team". The Why opens in a `Sheet`
     (bottom on phones, a right-hand panel from md). A `?cause=` link opens
     that sheet on load; picking a spot keeps `?cause=` in step; closing the
     sheet clears `?cause=`. The drill headline describes the map
@@ -388,10 +407,9 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
     otherwise the stored-insight What row stays (legacy, "Unexplained").
     Calibrated 2026-09-25 over all 72 players with SG rounds: measured for
     67–69 per area, share for 2–5, none for 0–2; median |diff| ≤ 0.006.
-  - Gate: 10 events over 3 rounds, else the spot folds into "Other". The
-    ladder shows at most 3 spots per area, then "+N more" (expands to 44px
-    rows). Spots that GAIN inside a losing area are listed in the area note
-    as offsets. The remainder is "Not tracked by
+  - Gate: 10 events over 3 rounds, else the spot folds into "Other". Every
+    spot is listed. Spots that GAIN inside a losing area are listed under
+    it as "Gaining: <spot>". The remainder is "Not tracked by
     shot", never "Unexplained".
   - Stored insights attach by metric to their spot as the Why (styles as
     before); the best read opens the Why view (`whyId`), and `findBranch`

@@ -59,6 +59,22 @@ describe('EvidencePanel', () => {
     expect(container.firstChild).toBeNull();
   });
 
+  it('renders nothing for a team roll-up blob (no "undefined" or "NaN" on screen)', () => {
+    // The exact shape synthesizeTeamSignals writes.
+    const partial = {
+      metric: 'putts_made_5_10ft_pct',
+      metric_label: 'Putts Made 5-10 ft',
+      strokes_impact: 2.84,
+      players_affected: 3,
+    } as unknown as InsightEvidence;
+    for (const compact of [true, false]) {
+      const { container, unmount } = render(<EvidencePanel evidence={partial} compact={compact} />);
+      expect(container.firstChild).toBeNull();
+      expect(container.textContent ?? '').not.toMatch(/undefined|NaN/);
+      unmount();
+    }
+  });
+
   // W15: when v2 generators inject `evidence.standing` (W14) and the
   // metric_id resolves to a canonical v3 metric, EvidencePanel renders
   // the v3 StandingBar instead of the legacy BenchmarkScale.

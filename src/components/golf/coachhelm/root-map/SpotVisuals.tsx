@@ -35,7 +35,7 @@ export function LieSplitBars({ rows }: { rows: LieSplitRow[] }) {
               <span className="absolute inset-y-0 left-0 rounded-sm" style={{ width: `${w}%`, background: lost ? NEG : POS }} />
             </span>
             <span className="text-right">
-              <span className="font-fw-mono tabular-nums text-text-primary">{formatStrokes(r.sg)}</span>
+              <span className="font-fw-sans tabular-nums text-text-primary">{formatStrokes(r.sg)}</span>
               <span className="pl-1 text-text-tertiary">
                 {lost ? 'lost' : 'gained'}
                 {r.n !== null ? ` · ${r.n} shots` : ''}
