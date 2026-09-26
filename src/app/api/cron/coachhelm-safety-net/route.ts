@@ -684,6 +684,45 @@ async function meetsRoundFloor(supabase: SupabaseClient, playerId: string): Prom
   return typeof count === 'number' && count >= floor;
 }
 
+const COVERAGE_PREFETCH_LIMIT = 1000;
+
+/**
+ * Newest analyzed completed-round `created_at` per player, in one read.
+ * Ordered newest first, so a player's first row is their newest. The map
+ * holds only answers the read can vouch for: a player with a row gets its
+ * timestamp; a player with none gets `null` only when the read was not
+ * capped (a capped read may simply have cut them off). Anyone absent — or
+ * everyone, if the read fails — takes the per-player read, which keeps its
+ * fail-closed handling.
+ */
+async function prefetchNewestAnalyzed(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  client: any,
+  playerIds: string[],
+): Promise<Map<string, string | null>> {
+  const newest = new Map<string, string | null>();
+  if (playerIds.length === 0) return newest;
+  const { data, error } = await client
+    .from('golf_rounds')
+    .select('player_id, created_at')
+    .in('player_id', playerIds)
+    .eq('status', 'completed')
+    .not('coachhelm_analyzed_at', 'is', null)
+    .order('created_at', { ascending: false })
+    .limit(COVERAGE_PREFETCH_LIMIT);
+  if (error) return newest;
+  const rows = (data ?? []) as Array<{ player_id: string; created_at: string }>;
+  for (const row of rows) {
+    if (!newest.has(row.player_id)) newest.set(row.player_id, row.created_at);
+  }
+  if (rows.length < COVERAGE_PREFETCH_LIMIT) {
+    for (const playerId of playerIds) {
+      if (!newest.has(playerId)) newest.set(playerId, null);
+    }
+  }
+  return newest;
+}
+
 /**
  * Wake parked rounds by the event their policy names, never on a timer:
  *   - any parked round OLDER than the player's newest analyzed round is
@@ -746,6 +785,14 @@ async function reconcileParkedRounds(
     byPlayer.set(row.player_id, list);
   }
 
+  // One golf_rounds read for every player this tick can examine, instead of
+  // one per player (Sentry N+1 JAVASCRIPT-NEXTJS-107). Players the batch
+  // could not answer for fall back to their own read below.
+  const newestAnalyzedByPlayer = await prefetchNewestAnalyzed(
+    client,
+    [...byPlayer.keys()].slice(0, RECONCILE_PLAYER_LIMIT),
+  );
+
   const nowIso = new Date().toISOString();
   let playersSeen = 0;
   for (const [playerId, rows] of byPlayer) {
@@ -758,21 +805,26 @@ async function reconcileParkedRounds(
     rows.sort((a, b) => (a.created_at < b.created_at ? -1 : a.created_at > b.created_at ? 1 : 0));
 
     // 1. Coverage by the player's newest analyzed round.
-    const { data: newestAnalyzed, error: newestAnalyzedError } = await client
-      .from('golf_rounds')
-      .select('id, created_at')
-      .eq('player_id', playerId)
-      .eq('status', 'completed')
-      .not('coachhelm_analyzed_at', 'is', null)
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .maybeSingle();
-    if (newestAnalyzedError) {
-      await logWakeReadFailure('golf_rounds', newestAnalyzedError.message, { playerId });
-      summary.stillParked += rows.length;
-      continue;
+    let coveredUntil: string | null;
+    if (newestAnalyzedByPlayer.has(playerId)) {
+      coveredUntil = newestAnalyzedByPlayer.get(playerId) ?? null;
+    } else {
+      const { data: newestAnalyzed, error: newestAnalyzedError } = await client
+        .from('golf_rounds')
+        .select('id, created_at')
+        .eq('player_id', playerId)
+        .eq('status', 'completed')
+        .not('coachhelm_analyzed_at', 'is', null)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (newestAnalyzedError) {
+        await logWakeReadFailure('golf_rounds', newestAnalyzedError.message, { playerId });
+        summary.stillParked += rows.length;
+        continue;
+      }
+      coveredUntil = (newestAnalyzed?.created_at as string | undefined) ?? null;
     }
-    const coveredUntil = (newestAnalyzed?.created_at as string | undefined) ?? null;
     let remaining: ParkedRoundRow[] = [];
     for (const row of rows) {
       if (coveredUntil && row.created_at < coveredUntil) {
