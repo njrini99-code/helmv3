@@ -95,16 +95,28 @@ const rule: CompositeRule = {
     const shortPct = Math.round(Number(match.signals.short_value ?? 0));
     const threePuttRate = Number(match.signals.three_putt_rate ?? 0);
     const threePuttPct = Math.round(threePuttRate * 100);
+    const title = 'Lag putts → 3-putt cascade';
+    const fix =
+      `Fix the leave first: 30-foot ` +
+      `lag drills to a 3-foot circle around the cup — the goal is leave-distance, ` +
+      `not make rate — then drill the 3-5 ft comebackers so the second putt stops ` +
+      `costing`;
     return {
-      title: 'Lag putts → 3-putt cascade',
+      title,
       content:
         `Your lag putts (15+ ft) aren't finishing inside tap-in range, and you're ` +
         `only making ${shortPct}% from 3-5 ft — so an estimated ${threePuttPct}% of your ` +
         `long looks are turning into 3-putts. That's the cascade: a long miss leaves ` +
-        `a comebacker your short stroke isn't closing. Fix the leave first: 30-foot ` +
-        `lag drills to a 3-foot circle around the cup — the goal is leave-distance, ` +
-        `not make rate — then drill the 3-5 ft comebackers so the second putt stops ` +
-        `costing you a stroke.`,
+        `a comebacker your short stroke isn't closing. ${fix} you a stroke.`,
+      // Coach voice: the same read in neutral third person (evidence.coach_copy).
+      coach: {
+        title,
+        content:
+          `The player's lag putts (15+ ft) aren't finishing inside tap-in range, and they're ` +
+          `only making ${shortPct}% from 3-5 ft — so an estimated ${threePuttPct}% of their ` +
+          `long looks are turning into 3-putts. That's the cascade: a long miss leaves ` +
+          `a comebacker their short stroke isn't closing. ${fix} them a stroke.`,
+      },
       signature: 'lag_distance_3putt',
       evidence: {
         metric: 'three_putt_chain',

@@ -6,9 +6,11 @@
  * (Triage Desk spec §4)
  * ----------------------------------------------------------------------------
  * Replaces the 1,800-line `FairwayEffectiveness` instrument cockpit on the
- * Triage Desk's `?view=effectiveness` tab: ONE screen, no tabs inside —
- * adoption `RingGauge`, effectiveness-trend `Ribbon`, "working / not working"
- * top-3 lists, and a calibration line. Reads the SAME SSR-fetched
+ * Triage Desk's `?view=effectiveness` tab: ONE screen, no tabs inside.
+ * Summary first (owner direction 2026-09-25): one card with the adoption
+ * number, a one-line verdict, the acted-on bar and the prediction-accuracy
+ * readout; then the "working / not working" top-3 lists and the calibration
+ * line; the accuracy trend sits in a closed disclosure. Reads the SAME SSR-fetched
  * `CoachHelmOverviewData` / `InsightEffectivenessData` /
  * `PredictionPerformanceData` shapes the retired cockpit consumed — no new
  * server action, no re-derived scoring (`buildEffectivenessScoreboard.ts`
@@ -16,11 +18,13 @@
  * ========================================================================== */
 
 import { cn } from '@/lib/utils';
-import { Badge, EmptyState, Ribbon, Surface, formatPercent } from '@/components/fairway';
+import { Badge, EmptyState, Eyebrow, Ribbon, Surface, formatPercent } from '@/components/fairway';
 import type { FairwayEffectivenessProps } from '@/components/fairway';
-import { RingGauge } from '@/components/fairway/modules';
+import { Disclosure } from '@/components/golf/coachhelm/root-map/Disclosure';
 import { formatCategoryLabel } from './buildTriageViewModel';
 import {
+  accuracyTrendPoints,
+  summarizeAccuracy,
   summarizeAdoption,
   summarizeCalibration,
   topInsightTypes,
@@ -42,19 +46,24 @@ function RankedList({
   items: RankedInsightType[];
 }) {
   return (
-    <div className="flex flex-col gap-3">
-      <p className="font-fw-sans text-eyebrow font-semibold uppercase tracking-wide text-text-tertiary">{title}</p>
+    <div className="flex min-w-0 flex-col gap-3">
+      <Eyebrow as="p">{title}</Eyebrow>
       {items.length === 0 ? (
         <p className="font-fw-sans text-body-sm text-text-tertiary">Not enough recorded outcomes yet.</p>
       ) : (
-        <ol className="flex flex-col gap-2">
+        <ol className="flex flex-col divide-y divide-border-subtle">
           {items.map((item, i) => (
-            <li key={item.insightType} className="flex items-center gap-2.5">
+            <li key={item.insightType} className="flex min-h-11 items-center gap-2.5 py-1.5">
               <span className="font-fw-mono text-caption tabular-nums text-text-tertiary">
                 {String(i + 1).padStart(2, '0')}
               </span>
-              <span className="min-w-0 flex-1 truncate font-fw-sans text-body-sm text-text-primary">
-                {formatCategoryLabel(item.insightType)}
+              <span className="min-w-0 flex-1">
+                <span className="block truncate font-fw-sans text-body-sm text-text-primary">
+                  {formatCategoryLabel(item.insightType)}
+                </span>
+                <span className="block font-fw-mono text-caption tabular-nums text-text-tertiary">
+                  {item.outcomesImproved} of {item.insightsWithOutcome} improved
+                </span>
               </span>
               <Badge tone={tone} size="sm" numeric>
                 {formatPercent(item.effectivenessScore)}
@@ -85,51 +94,67 @@ export function EffectivenessScoreboard({
   }
 
   const adoption = summarizeAdoption(initialEffectiveness);
+  const accuracy = summarizeAccuracy(initialPerformance);
   const working = topInsightTypes(initialEffectiveness?.byType, 'best');
   const notWorking = topInsightTypes(initialEffectiveness?.byType, 'worst');
   const calibration = summarizeCalibration(initialPerformance);
-  const trendPoints = (initialPerformance?.accuracyOverTime ?? []).map((p) => ({ x: p.date, y: p.accuracyRate }));
+  const trendPoints = accuracyTrendPoints(initialPerformance);
 
-  // The Working / Not-working / calibration line each independently render an
-  // honest "no data yet" — fine when only one is starved (its siblings carry
-  // real content), but when ALL THREE are starved at once (a fresh team with
-  // no resolved outcomes) that's 3 boxes repeating the same non-finding.
-  // Collapse to ONE clear state instead of the triple stack.
   const rankingsEmpty = working.length === 0 && notWorking.length === 0;
   const showConsolidatedEmptyState = rankingsEmpty && !calibration.live;
 
-  return (
-    // `items-start` — each card sizes to its OWN content (intrinsic height)
-    // instead of CSS Grid's default row-stretch, which was forcing the
-    // compact Adoption ring+caption to stretch to match its taller Ribbon
-    // row-mate and center-float in the resulting empty middle.
-    <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-2">
-      <Surface padding="md" className="flex flex-col gap-3">
-        <p className="font-fw-sans text-eyebrow font-semibold uppercase tracking-wide text-text-tertiary">Adoption</p>
-        <div className="flex items-center gap-3">
-          <RingGauge value={adoption.pct} size={48} />
-          <p className="font-fw-sans text-body-sm text-text-secondary">
-            {adoption.live
-              ? `${adoption.actedUpon} of ${adoption.generated} insights acted on`
-              : 'No insights generated in this window yet.'}
-          </p>
-        </div>
-      </Surface>
+  const verdict = adoption.live
+    ? `${adoption.actedUpon} of ${adoption.generated} insights acted on in this window.`
+    : 'No insights generated in this window yet.';
 
-      <Surface padding="md">
-        <Ribbon
-          title="Prediction accuracy"
-          overline="Trend"
-          data={trendPoints}
-          valueFormatter={(v) => formatPercent(v)}
-          seriesName="Accuracy"
-          goodDirection="up"
-          height={140}
-        />
+  return (
+    // A single-column grid that never stretches its cards to a row-mate's
+    // height (items-start), so each reads at its intrinsic size.
+    <div className="grid grid-cols-1 items-start gap-6" data-slot="effectiveness-scoreboard">
+      {/* ── Summary: the key number, one verdict, one bar ── */}
+      <Surface padding="lg" className="flex flex-col gap-5">
+        <div className="flex flex-col gap-1">
+          <Eyebrow as="p">Adoption</Eyebrow>
+          <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+            <p className="font-fw-mono text-display tabular-nums text-text-primary">
+              {adoption.live ? `${adoption.pct}%` : '—'}
+            </p>
+            <p className="text-caption text-text-secondary">
+              {accuracy.live ? (
+                <>
+                  prediction accuracy{' '}
+                  <span className="font-fw-mono tabular-nums text-text-primary">{formatPercent(accuracy.rate)}</span>{' '}
+                  of <span className="font-fw-mono tabular-nums">{accuracy.validated}</span> resolved
+                </>
+              ) : (
+                <>
+                  predictions resolved{' '}
+                  <span className="font-fw-mono tabular-nums text-text-primary">
+                    {accuracy.validated} of {accuracy.needed}
+                  </span>{' '}
+                  needed
+                </>
+              )}
+            </p>
+          </div>
+          <p className="text-body text-text-secondary">{verdict}</p>
+        </div>
+        {adoption.live ? (
+          <div
+            role="img"
+            aria-label={`${adoption.actedUpon} of ${adoption.generated} insights acted on.`}
+            className="flex h-3 w-full gap-0.5 overflow-hidden rounded-full bg-surface-sunken"
+          >
+            <span
+              className="h-full rounded-full bg-accent-500 motion-safe:transition-[width] motion-safe:duration-500"
+              style={{ width: `${adoption.pct}%` }}
+            />
+          </div>
+        ) : null}
       </Surface>
 
       {showConsolidatedEmptyState ? (
-        <Surface padding="md" className="lg:col-span-2">
+        <Surface padding="md">
           <EmptyState
             variant="subtle"
             title="Not enough resolved outcomes yet"
@@ -137,28 +162,42 @@ export function EffectivenessScoreboard({
           />
         </Surface>
       ) : (
-        <>
-          <Surface padding="md">
+        <Surface padding="md" className="flex flex-col gap-5">
+          <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-2">
             <RankedList title="Working" tone="success" items={working} />
-          </Surface>
-          <Surface padding="md">
             <RankedList title="Not working" tone="danger" items={notWorking} />
-          </Surface>
-
-          <Surface padding="md" className="lg:col-span-2">
-            <p
-              className={cn(
-                'font-fw-sans text-body-sm',
-                calibration.tone === 'positive' && 'text-fw-success-ink',
-                calibration.tone === 'warning' && 'text-fw-warning-ink',
-                calibration.tone === 'neutral' && 'text-text-tertiary',
-              )}
-            >
-              {calibration.label}
-            </p>
-          </Surface>
-        </>
+          </div>
+          <p
+            className={cn(
+              'border-t border-border-subtle pt-4 font-fw-sans text-body-sm',
+              calibration.tone === 'positive' && 'text-fw-success-ink',
+              calibration.tone === 'warning' && 'text-fw-warning-ink',
+              calibration.tone === 'neutral' && 'text-text-tertiary',
+            )}
+          >
+            {calibration.label}
+          </p>
+        </Surface>
       )}
+
+      <Disclosure title="Prediction accuracy trend" slot="effectiveness-trend">
+        {trendPoints.length >= 2 ? (
+          <Ribbon
+            title="Prediction accuracy"
+            overline="Resolved windows only"
+            data={trendPoints}
+            valueFormatter={(v) => formatPercent(v)}
+            seriesName="Accuracy"
+            goodDirection="up"
+            height={140}
+          />
+        ) : (
+          <p className="text-body-sm text-text-secondary">
+            A trend needs at least two windows with resolved predictions.{' '}
+            <span className="font-fw-mono tabular-nums">{trendPoints.length}</span> so far.
+          </p>
+        )}
+      </Disclosure>
     </div>
   );
 }

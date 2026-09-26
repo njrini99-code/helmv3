@@ -162,3 +162,26 @@ describe('upsertInsight re-persists priority on UPDATE (H6 / TS4)', () => {
     expect(row?.['priority']).toBe('high');
   });
 });
+
+describe('upsertInsight — a benchmark change updates, never duplicates (2026-09-24)', () => {
+  it('same signature with a new comparison_value lands on the existing row', async () => {
+    const supabase = createFakeSupabase({
+      tables: {
+        golf_coach_insights: [existingRow()],
+        golf_team_members: [],
+        golf_team_coach_staff: [],
+      },
+    });
+
+    await upsertInsight(
+      supabase as never,
+      makeInput({ evidence: baseEvidence({ comparison_value: 0.55, comparison_label: 'Division I average' }) }),
+    );
+
+    const { data } = await supabase.from('golf_coach_insights').select('*');
+    expect(data?.length).toBe(1);
+    const stored = (data ?? [])[0]?.['evidence'] as InsightEvidence;
+    expect(stored.comparison_value).toBe(0.55);
+    expect(stored.comparison_label).toBe('Division I average');
+  });
+});

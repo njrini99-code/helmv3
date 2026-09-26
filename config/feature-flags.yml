@@ -205,15 +205,17 @@ flags:
       gap) using their own ack/dismiss history instead of only the
       coach-set CoachPhilosophy values; default off pending real-world
       evidence that this improves alert relevance.
+      ON since 2026-09-25 by owner decision; its migrations are applied in
+      production (checked 2026-09-25).
     type: experiment
     status: active
     created_at: "2026-09-23"
     expires_at: null
-    default: false
+    default: true
     environment:
-      production: false
-      preview: false
-      development: false
+      production: true
+      preview: true
+      development: true
     kill_switch_behavior: null
     cleanup_plan: >-
       Either promote to a permanent `release` flag once shadow-log data
@@ -313,15 +315,17 @@ flags:
       by default in every environment for exactly that reason; this is a
       migration-sequencing gate, not a rollout decision the flag itself
       makes on the feature's merits.
+      ON since 2026-09-25 by owner decision; its migrations are applied in
+      production (checked 2026-09-25).
     type: temporary_migration
     status: active
     created_at: "2026-09-23"
     expires_at: "2026-10-23"
-    default: false
+    default: true
     environment:
-      production: false
-      preview: false
-      development: false
+      production: true
+      preview: true
+      development: true
     kill_switch_behavior: null
     cleanup_plan: >-
       Flip on (development, then preview, then production) only after the
@@ -403,15 +407,17 @@ flags:
       there yet. Off by default in every environment for exactly that
       reason, same as coachhelm_recap_single_flight_lock's own
       migration-ordering rationale.
+      ON since 2026-09-25 by owner decision; its migrations are applied in
+      production (checked 2026-09-25).
     type: experiment
     status: active
     created_at: "2026-09-23"
     expires_at: null
-    default: false
+    default: true
     environment:
-      production: false
-      preview: false
-      development: false
+      production: true
+      preview: true
+      development: true
     kill_switch_behavior: null
     cleanup_plan: >-
       Flip on (development, then preview, then production) only after the
@@ -456,15 +462,17 @@ flags:
       A9 slice 2 (confounding / `multipleInterventions` detection) has
       shipped — this is no longer a separate blocker — but the flag stays
       off pending the migration and real-world shadow evidence.
+      ON since 2026-09-25 by owner decision; its migrations are applied in
+      production (checked 2026-09-25).
     type: experiment
     status: active
     created_at: "2026-09-23"
     expires_at: null
-    default: false
+    default: true
     environment:
-      production: false
-      preview: false
-      development: false
+      production: true
+      preview: true
+      development: true
     kill_switch_behavior: null
     cleanup_plan: >-
       A9 slice 2 extends metric coverage, adds confounding detection (the
@@ -533,15 +541,17 @@ flags:
       reads or writes of either new table anywhere in the app — required
       because the migration that creates them has not been applied in
       every environment yet.
+      ON since 2026-09-25 by owner decision; its migrations are applied in
+      production (checked 2026-09-25).
     type: temporary_migration
     status: active
     created_at: "2026-09-23"
     expires_at: "2026-12-23"
-    default: false
+    default: true
     environment:
-      production: false
-      preview: false
-      development: false
+      production: true
+      preview: true
+      development: true
     kill_switch_behavior: null
     cleanup_plan: >-
       Once 20260923110000_golf_focus_area_practice_log.sql is applied in
@@ -564,15 +574,17 @@ flags:
       loadDistanceProfile + DistanceProfileSection) alongside the existing
       stats-cache-backed KPIs; default off pending a design/product review
       of the new section's placement and copy.
+      ON since 2026-09-25 by owner decision; its migrations are applied in
+      production (checked 2026-09-25).
     type: experiment
     status: active
     created_at: "2026-09-23"
     expires_at: null
-    default: false
+    default: true
     environment:
-      production: false
-      preview: false
-      development: false
+      production: true
+      preview: true
+      development: true
     kill_switch_behavior: null
     cleanup_plan: >-
       Either promote to a permanent `release` flag once the section has
@@ -596,15 +608,17 @@ flags:
       alongside the existing stats-cache-backed KPIs; default off pending
       a design/product review of the new section's placement, copy, and
       the par-5 card volume across a multi-course player history.
+      ON since 2026-09-25 by owner decision; its migrations are applied in
+      production (checked 2026-09-25).
     type: experiment
     status: active
     created_at: "2026-09-23"
     expires_at: null
-    default: false
+    default: true
     environment:
-      production: false
-      preview: false
-      development: false
+      production: true
+      preview: true
+      development: true
     kill_switch_behavior: null
     cleanup_plan: >-
       Either promote to a permanent `release` flag once the section has
@@ -623,10 +637,69 @@ flags:
       existing stat breakdown; default off pending a design/product review
       of the section's placement, copy, and the observed-strokes-gained
       wording against a busy round.
+      ON since 2026-09-25 by owner decision; its migrations are applied in
+      production (checked 2026-09-25).
     type: experiment
     status: active
     created_at: "2026-09-23"
     expires_at: null
+    default: true
+    environment:
+      production: true
+      preview: true
+      development: true
+    kill_switch_behavior: null
+    cleanup_plan: >-
+      Either promote to a permanent `release` flag once the section has
+      been reviewed, or remove the section and its wiring if the review
+      asks for a different surface/placement instead.
+
+  # Root-cause diagnosis (owner decision 2026-09-25, "Own flag, on"). Split
+  # from coachhelm_a4_sequence_attribution_surface so the insight diagnosis
+  # text and the Round Review section can be turned off independently.
+  - feature_id: coachhelm_root_cause_diagnosis
+    owner: golf/coachhelm
+    purpose: >-
+      Gates the shot-based root-cause diagnosis text on v3 CoachHelm
+      insights: when on, BaseGenerator.run() may ship an observed_sequence
+      diagnosis (count/denominator of a repeated recorded shot path from
+      root-cause.ts); when off, the same checks still run but the diagnosis
+      stays an inferred_hypothesis that lists them. Independent of the
+      Round Review sequence-attribution surface flag.
+      ON since 2026-09-25 by owner decision.
+    type: release
+    status: active
+    created_at: "2026-09-25"
+    expires_at: null
+    default: true
+    environment:
+      production: true
+      preview: true
+      development: true
+    kill_switch_behavior: null
+    cleanup_plan: >-
+      Remove the flag and its single check in generator-base.ts once the
+      observed_sequence diagnosis has run in production for a full season
+      without a wording or accuracy complaint; if coaches reject it, turn it
+      off and remove the observed branch from root-cause.ts instead.
+
+  # CoachHelm v3 insight angles (owner-picked 2026-09-25): lie-adjusted
+  # approach, Bad-Day Floor, Three-Putt Autopsy + Second-Putt Exposure,
+  # Miss-Cost Compass + driver vs non-driver chain. Built OFF; enabling is
+  # the owner's decision.
+  - feature_id: coachhelm_insight_angles_v1
+    owner: golf/coachhelm
+    purpose: >-
+      Gates the four v3 insight-angle generators under
+      src/lib/coachhelm/v3/generators/insight-angles/ (LieApproach,
+      BadDayFloor, ThreePuttChain, TeeMissCost). Off: each generator's
+      isEnabled() returns false, so the orchestrator run writes nothing and
+      the stale-scope sweep archives any row they wrote while on. Preview
+      the output read-only with scripts/coachhelm/insight-angles-dry-run.ts.
+    type: release
+    status: active
+    created_at: "2026-09-25"
+    expires_at: "2026-12-31"
     default: false
     environment:
       production: false
@@ -634,6 +707,7 @@ flags:
       development: false
     kill_switch_behavior: null
     cleanup_plan: >-
-      Either promote to a permanent `release` flag once the section has
-      been reviewed, or remove the section and its wiring if the review
-      asks for a different surface/placement instead.
+      If the owner enables it and coaches keep the angles through one full
+      season, remove the flag and the isEnabled() overrides; if they are
+      rejected, delete the insight-angles directory, its orchestrator
+      entries and its metric aliases, then archive this flag.

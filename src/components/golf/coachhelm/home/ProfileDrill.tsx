@@ -11,32 +11,29 @@
  * "Trend" cells open here, since they were always ONE section in the legacy
  * cockpit and neither is its own named drill in spec §5.3's view list.
  *
- * Wave: player Game Fingerprint port. When `fingerprint` is present (the
- * coachhelm page's `?view=profile` load fetches the player's OWN
- * `getPlayerFingerprint` — see player-fingerprint.ts's `access.reason ===
- * 'self'` branch), this drill leads with the SAME rich composition the coach
- * sees at `/dashboard/players/[playerId]/game` — composite hero, six-card
- * category row, per-category sections + evidence insights — behind a
- * "Game Fingerprint" / "Genome" tab pair (mirrors the coach route's own
- * "Game Fingerprint" / "Scouting Report" Segmented pair; the player has no
- * Scouting Report equivalent, so Genome — the prior sole content of this
- * drill — takes that slot instead of being dropped). `fingerprint` absent/null
- * (fetch failed, or not yet backed by enough data) degrades to the prior
- * Genome-only behavior with zero layout change.
+ * Layout (2026-09-25, root-map style: summary first, detail on tap): one
+ * `DrillSummary` (overall rating or dimensions scored, strongest / watch
+ * line, the genome radar, and a basis line naming EACH sample: the composite,
+ * the fingerprint's category stats and the genome rest on different round
+ * counts), then closed `Disclosure`s: the player's own Game Fingerprint (same
+ * composition the coach sees at `/dashboard/players/[playerId]/game`, via the
+ * `access.reason === 'self'` branch of `getPlayerFingerprint`), strengths and
+ * watchouts, genome dimensions, composite and trend. A null fingerprint drops
+ * its disclosure; nothing else changes.
  * ========================================================================== */
 
-import { useState } from 'react';
 import Link from 'next/link';
 import nextDynamic from 'next/dynamic';
 
 import { DrillPanel, useStage } from '@/components/fairway/modules';
-import { InstrumentPanel, Readout, Surface, Chip, Button, Skeleton, InsufficientData } from '@/components/fairway';
-import { Segmented, type SegmentedOption } from '@/components/fairway/controls/segmented';
+import { InstrumentPanel, Readout, Surface, Chip, Button, Skeleton, InsufficientData, Eyebrow } from '@/components/fairway';
 import { FairwayPlayerGameFingerprint } from '@/components/fairway/pages/player-game';
 import { CompositeRatingCard } from '@/components/golf/coachhelm/player/CompositeRatingCard';
 import { FairwayTrendBrain } from '@/components/golf/coachhelm/player/FairwayTrendBrain';
 import { expectedEmptyStateCopy } from '@/lib/view-state/expected-empty-states';
 import type { PlayerFingerprint } from '@/app/golf/actions/player-fingerprint';
+import { Disclosure } from '@/components/golf/coachhelm/root-map/Disclosure';
+import { DrillSummary } from './DrillSummary';
 
 const GenomeRadar = nextDynamic(
   () => import('@/components/fairway').then((m) => ({ default: m.GenomeRadar })),
@@ -83,12 +80,35 @@ export interface ProfileDrillProps {
 
 const GENOME_ROUND_FLOOR = 8;
 
-type ProfileTab = 'fingerprint' | 'genome';
+const TREND_WORD: Record<'up' | 'flat' | 'down', string> = {
+  up: 'trending up',
+  flat: 'holding steady',
+  down: 'trending down',
+};
 
-const PROFILE_TAB_OPTIONS: SegmentedOption<ProfileTab>[] = [
-  { value: 'fingerprint', label: 'Game Fingerprint' },
-  { value: 'genome', label: 'Genome' },
-];
+function plural(n: number, one: string, many: string): string {
+  return `${n} ${n === 1 ? one : many}`;
+}
+
+/**
+ * One quiet line naming every sample on the screen. The composite, the
+ * fingerprint's section stats and the genome rest on DIFFERENT round counts
+ * (player-fingerprint.ts `metrics_rounds`), so each is stated on its own
+ * rather than one "based on N rounds" standing in for all of them.
+ */
+export function profileBasisLine(fingerprint: PlayerFingerprint | null, roundsBasis: number | null): string | null {
+  const parts: string[] = [];
+  if (fingerprint) {
+    if (fingerprint.composite.rating != null && fingerprint.composite.rounds_in_calculation > 0) {
+      parts.push(`Rating from your last ${plural(fingerprint.composite.rounds_in_calculation, 'round', 'rounds')}`);
+    }
+    if (fingerprint.metrics_rounds > 0) parts.push(`category stats from ${plural(fingerprint.metrics_rounds, 'round', 'rounds')}`);
+  }
+  if (roundsBasis != null && roundsBasis > 0) parts.push(`genome from ${plural(roundsBasis, 'round', 'rounds')}`);
+  if (parts.length === 0) return null;
+  const line = parts.join(' · ');
+  return line.charAt(0).toUpperCase() + line.slice(1);
+}
 
 export function ProfileDrill({
   axes,
@@ -106,166 +126,185 @@ export function ProfileDrill({
 }: ProfileDrillProps) {
   const { home } = useStage();
   const hasGenome = axes.length > 0;
-  const hasFingerprint = fingerprint != null;
-  const [tab, setTab] = useState<ProfileTab>(hasFingerprint ? 'fingerprint' : 'genome');
+  const rating = fingerprint?.composite.rating ?? null;
+  const unlocked = dimensions.filter((d) => d.score != null).length;
 
-  const genomeSection = (
-      <div className="flex flex-col gap-8">
-        {hasGenome ? (
-          <>
-            <InstrumentPanel depth="raised" tone="accent" padding="lg" eyebrow="Your shape" header="Genome" as="section">
-              <div className="grid grid-cols-1 gap-6 md:grid-cols-[minmax(0,1fr)_minmax(0,0.9fr)] md:items-center">
-                <div className="w-full min-w-0">
-                  <GenomeRadar title="Score by dimension" seriesName="Score" data={axes} max={100} height={220} />
-                </div>
-                <div className="flex flex-col gap-5">
-                  {courseProfile ? (
-                    <p className="max-w-[44ch] font-fw-display text-body-lg leading-[1.6] text-text-secondary">
-                      {courseProfile}
-                    </p>
-                  ) : null}
-                  {strengths.length > 0 ? (
-                    <div className="flex flex-col gap-2">
-                      <span className="font-fw-sans text-caption font-medium uppercase tracking-[0.12em] text-text-tertiary">
-                        Strengths
-                      </span>
-                      <div className="flex flex-wrap gap-2">
-                        {strengths.map((s) => (
-                          <Chip key={s.id} tone="success" size="md">
-                            {s.qualitative ? `${s.label} · ${s.qualitative}` : s.label}
-                          </Chip>
-                        ))}
-                      </div>
-                    </div>
-                  ) : null}
-                  {watchouts.length > 0 ? (
-                    <div className="flex flex-col gap-2">
-                      <span className="font-fw-sans text-caption font-medium uppercase tracking-[0.12em] text-text-tertiary">
-                        Watchouts
-                      </span>
-                      <div className="flex flex-wrap gap-2">
-                        {watchouts.map((w) => (
-                          <Chip key={w.id} tone="warning" size="md">
-                            {w.qualitative ? `${w.label} · ${w.qualitative}` : w.label}
-                          </Chip>
-                        ))}
-                      </div>
-                    </div>
-                  ) : null}
-                </div>
-              </div>
-            </InstrumentPanel>
+  // ── Summary: key number, one line, one visual, the samples. ─────────────
+  const strengthText = strengths.slice(0, 2).map((s) => s.label).join(' and ');
+  const watchText = watchouts[0]?.label ?? null;
+  const takeaway =
+    strengthText || watchText
+      ? [strengthText ? `Strongest: ${strengthText}.` : null, watchText ? `Watch: ${watchText}.` : null]
+          .filter(Boolean)
+          .join(' ')
+      : courseProfile ??
+        (hasGenome ? null : `Your genome needs ${GENOME_ROUND_FLOOR}+ completed rounds before the radar lights up.`);
+  const summaryValue =
+    rating != null ? String(Math.round(rating)) : hasGenome ? `${unlocked}/${dimensions.length}` : `${roundsBasis ?? 0}/${GENOME_ROUND_FLOOR}`;
+  const summaryUnit =
+    rating != null
+      ? `overall game, ${TREND_WORD[fingerprint!.composite.trend]}`
+      : hasGenome
+        ? 'dimensions scored'
+        : 'rounds toward your genome';
 
-            {dimensions.length > 0 ? (
-              <section className="flex flex-col gap-3">
-                <h2 className="px-1 font-fw-display text-eyebrow font-medium uppercase tracking-[0.14em] text-text-tertiary">
-                  Dimensions
-                </h2>
-                <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-                  {dimensions.map((dim) => {
-                    const locked = dim.score == null;
-                    return (
-                      <InstrumentPanel key={dim.id} depth="base" padding="md" className="h-full">
-                        {locked ? (
-                          <Readout label={dim.label} size="md" state="awaiting" awaitingLabel={dim.qualitative ?? 'Locked'} />
-                        ) : (
-                          <Readout value={dim.score ?? 0} format={{ maximumFractionDigits: 0 }} label={dim.label} size="md" state="live" />
-                        )}
-                      </InstrumentPanel>
-                    );
-                  })}
-                </div>
-              </section>
-            ) : null}
-          </>
-        ) : (
-          <InstrumentPanel depth="raised" padding="lg" eyebrow="Your shape" header="Your genome is warming up" as="section">
-            <div className="flex flex-col items-center gap-6 py-4 text-center">
-              <Readout
-                value={roundsBasis ?? undefined}
-                format={{ maximumFractionDigits: 0 }}
-                label="Rounds logged"
-                size="hero"
-                state="awaiting"
-                samples={{ have: roundsBasis ?? 0, need: GENOME_ROUND_FLOOR }}
-                awaitingLabel="Awaiting"
-              />
-              <p className="max-w-[44ch] font-fw-sans text-body-sm leading-relaxed text-text-secondary">
-                Your genome needs {GENOME_ROUND_FLOOR}+ completed rounds before the radar lights up. Keep logging
-                rounds — we&rsquo;ll surface your shape automatically.
-              </p>
-              <Button asChild variant="primary">
-                <Link href="/golf/dashboard/rounds/new">Log a round</Link>
-              </Button>
-            </div>
-          </InstrumentPanel>
-        )}
-
-        <section className="flex flex-col gap-3">
-          <h2 className="px-1 font-fw-display text-eyebrow font-medium uppercase tracking-[0.14em] text-text-tertiary">
-            Composite + trend
-          </h2>
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-            {profileData != null ? (
-              <CompositeRatingCard profileData={profileData} playerState={playerState} playerName={playerName} />
-            ) : (
-              <Surface padding="md">
-                <InsufficientData
-                  title={expectedEmptyStateCopy(v3EmptyCodes.profile)?.title ?? 'Game profile warming up'}
-                  description={
-                    expectedEmptyStateCopy(v3EmptyCodes.profile)?.description ??
-                    'Your composite rating builds off the rounds you log, a few more and it fills in.'
-                  }
-                  unit="rounds"
-                />
-              </Surface>
-            )}
-
-            {trendData != null ? (
-              <FairwayTrendBrain trendData={trendData} playerState={playerState} />
-            ) : (
-              <Surface padding="md">
-                <InsufficientData
-                  title={expectedEmptyStateCopy(v3EmptyCodes.trend)?.title ?? 'Trends warming up'}
-                  description={
-                    expectedEmptyStateCopy(v3EmptyCodes.trend)?.description ??
-                    'Log a couple more rounds and your performance trend lines fill in.'
-                  }
-                  unit="rounds"
-                  required={expectedEmptyStateCopy(v3EmptyCodes.trend)?.required}
-                />
-              </Surface>
-            )}
-          </div>
-        </section>
-
-        <Surface elevation="border" padding="md">
-          <p className="font-fw-sans text-caption leading-5 text-text-tertiary">
-            Your coach sees this exact profile. It updates automatically as you log rounds — no extra steps.
-          </p>
-        </Surface>
-      </div>
-  );
+  const visual = hasGenome ? (
+    <GenomeRadar
+      title="Score by dimension"
+      subtitle={`0-100 on each dimension's own scale, not a percentile · ${unlocked} of ${dimensions.length} scored`}
+      seriesName="Score"
+      data={axes}
+      max={100}
+      height={220}
+    />
+  ) : rating != null ? (
+    <div
+      role="img"
+      aria-label={`Overall game ${Math.round(rating)} out of 100`}
+      className="h-3 w-full overflow-hidden rounded-full bg-surface-sunken"
+      data-slot="profile-rating-bar"
+    >
+      <div className="h-full rounded-full bg-accent-500" style={{ width: `${Math.max(0, Math.min(100, rating))}%` }} />
+    </div>
+  ) : null;
 
   return (
     <DrillPanel title="Game profile" backLabel="Home" onBack={home}>
-      {hasFingerprint ? (
-        <div className="flex flex-col gap-6">
-          <Segmented<ProfileTab>
-            options={PROFILE_TAB_OPTIONS}
-            value={tab}
-            onValueChange={setTab}
-            aria-label="Game profile view"
-          />
-          {tab === 'fingerprint' ? (
-            <FairwayPlayerGameFingerprint fingerprint={fingerprint} mode="player" />
-          ) : (
-            genomeSection
-          )}
+      <div className="flex flex-col gap-6">
+        <DrillSummary
+          slot="profile-summary"
+          eyebrow={rating != null ? 'Your game' : 'Your shape'}
+          value={summaryValue}
+          unit={summaryUnit}
+          takeaway={takeaway}
+          visual={visual}
+          basis={profileBasisLine(fingerprint, roundsBasis)}
+          action={
+            hasGenome ? undefined : (
+              <Button asChild variant="primary">
+                <Link href="/golf/dashboard/rounds/new">Log a round</Link>
+              </Button>
+            )
+          }
+        />
+
+        <div className="flex flex-col" data-slot="profile-detail">
+          {fingerprint ? (
+            <Disclosure slot="profile-fingerprint" headingLevel={2} title="Game Fingerprint by category">
+              <FairwayPlayerGameFingerprint fingerprint={fingerprint} mode="player" />
+            </Disclosure>
+          ) : null}
+
+          {hasGenome && (strengths.length > 0 || watchouts.length > 0 || courseProfile) ? (
+            <Disclosure slot="profile-persona" headingLevel={2} title="Strengths and watchouts">
+              <div className="flex flex-col gap-4">
+                {courseProfile ? (
+                  <p className="max-w-[60ch] text-body text-text-secondary">{courseProfile}</p>
+                ) : null}
+                {strengths.length > 0 ? (
+                  <PersonaChips label="Strengths" tone="success" entries={strengths} />
+                ) : null}
+                {watchouts.length > 0 ? (
+                  <PersonaChips label="Watchouts" tone="warning" entries={watchouts} />
+                ) : null}
+              </div>
+            </Disclosure>
+          ) : null}
+
+          {hasGenome && dimensions.length > 0 ? (
+            <Disclosure
+              slot="profile-dimensions"
+              headingLevel={2}
+              title="Genome dimensions"
+              meta={
+                <span className="shrink-0 text-caption text-text-tertiary">
+                  <span className="font-fw-mono tabular-nums text-text-secondary">
+                    {unlocked}/{dimensions.length}
+                  </span>{' '}
+                  scored
+                </span>
+              }
+            >
+              <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+                {dimensions.map((dim) => {
+                  const locked = dim.score == null;
+                  return (
+                    <InstrumentPanel key={dim.id} depth="base" padding="md" className="h-full">
+                      {locked ? (
+                        <Readout label={dim.label} size="md" state="awaiting" awaitingLabel={dim.qualitative ?? 'Locked'} />
+                      ) : (
+                        <Readout value={dim.score ?? 0} format={{ maximumFractionDigits: 0 }} label={dim.label} size="md" state="live" />
+                      )}
+                    </InstrumentPanel>
+                  );
+                })}
+              </div>
+            </Disclosure>
+          ) : null}
+
+          <Disclosure slot="profile-composite" headingLevel={2} title="Composite and trend">
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+              {profileData != null ? (
+                <CompositeRatingCard profileData={profileData} playerState={playerState} playerName={playerName} />
+              ) : (
+                <Surface padding="md">
+                  <InsufficientData
+                    title={expectedEmptyStateCopy(v3EmptyCodes.profile)?.title ?? 'Game profile warming up'}
+                    description={
+                      expectedEmptyStateCopy(v3EmptyCodes.profile)?.description ??
+                      'Your composite rating builds off the rounds you log, a few more and it fills in.'
+                    }
+                    unit="rounds"
+                  />
+                </Surface>
+              )}
+
+              {trendData != null ? (
+                <FairwayTrendBrain trendData={trendData} playerState={playerState} />
+              ) : (
+                <Surface padding="md">
+                  <InsufficientData
+                    title={expectedEmptyStateCopy(v3EmptyCodes.trend)?.title ?? 'Trends warming up'}
+                    description={
+                      expectedEmptyStateCopy(v3EmptyCodes.trend)?.description ??
+                      'Log a couple more rounds and your performance trend lines fill in.'
+                    }
+                    unit="rounds"
+                    required={expectedEmptyStateCopy(v3EmptyCodes.trend)?.required}
+                  />
+                </Surface>
+              )}
+            </div>
+          </Disclosure>
         </div>
-      ) : (
-        genomeSection
-      )}
+
+        <p className="px-1 text-caption text-text-tertiary">
+          Your coach sees this exact profile. It updates as you log rounds.
+        </p>
+      </div>
     </DrillPanel>
+  );
+}
+
+function PersonaChips({
+  label,
+  tone,
+  entries,
+}: {
+  label: string;
+  tone: 'success' | 'warning';
+  entries: GameProfilePersonaEntry[];
+}) {
+  return (
+    <div className="flex flex-col gap-2">
+      <Eyebrow as="p">{label}</Eyebrow>
+      <div className="flex flex-wrap gap-2">
+        {entries.map((e) => (
+          <Chip key={e.id} tone={tone} size="md">
+            {e.qualitative ? `${e.label} · ${e.qualitative}` : e.label}
+          </Chip>
+        ))}
+      </div>
+    </div>
   );
 }

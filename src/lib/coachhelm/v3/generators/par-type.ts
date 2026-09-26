@@ -20,6 +20,12 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { BaseGenerator } from '@/lib/coachhelm/v3/engine/generator-base';
 import { loadCompletedHoles, LIFETIME_WINDOW_DAYS } from '@/lib/coachhelm/v3/engine/hole-diagnosis';
 import { lifetimeSpanDays, staleDataSuffix } from '@/lib/coachhelm/v3/engine/window-honesty';
+import {
+  loadRecentHoles,
+  parScoringRecheck,
+  type InsightRecheck,
+} from '@/lib/coachhelm/v3/engine/recent-recheck';
+import type { InsightEvidence } from '@/lib/coachhelm/v2/insights/types';
 import type {
   ComposedContent,
   GeneratorAggregate,
@@ -80,6 +86,28 @@ export class ParTypeGenerator extends BaseGenerator<ParTypeAggregate> {
 
   protected override signatureScope(): string {
     return `par_scoring:par${this.par}`;
+  }
+
+  /**
+   * The aggregate is LIFETIME (cache average + lifetime holes), so recheck
+   * this par type's scoring average over the recent window against the row's
+   * own comparison (par), gated on the same rounds floor as the aggregate.
+   * The hole load is shared across the three par instances.
+   */
+  protected override readonly rechecksRecentWindow = true;
+
+  protected override async recentWindowRecheck(
+    _agg: ParTypeAggregate,
+    evidence: InsightEvidence,
+  ): Promise<InsightRecheck | null> {
+    const holes = await loadRecentHoles(this.playerId);
+    return parScoringRecheck(
+      holes,
+      this.par,
+      evidence.comparison_value,
+      this.minSampleN,
+      new Date().toISOString(),
+    );
   }
 
   async aggregate(): Promise<ParTypeAggregate | null> {
@@ -194,33 +222,52 @@ export class ParTypeGenerator extends BaseGenerator<ParTypeAggregate> {
     const tailCost = agg.bogey_rate / 100 + (2 * agg.double_plus_rate) / 100; // strokes over par per hole from the bad tail
     const birdieShortfall = Math.max(0, expectedBirdie - agg.birdie_rate) / 100; // credit foregone vs healthy baseline
     let driverClause: string;
+    // Coach voice: the same read in neutral third person (evidence.coach_copy).
+    let coachDriverClause: string;
     if (agg.holes_scored < 5) {
       driverClause =
         `Too few par ${agg.par}s logged in the window to break down where the strokes go yet.`;
+      coachDriverClause = driverClause;
     } else if (vsPar > 0 && tailCost >= birdieShortfall) {
       // The over-par average is the bad tail, not a birdie shortfall.
       driverClause =
         `That's driven by ${r1(agg.double_plus_rate)}% doubles + ${r1(agg.bogey_rate)}% bogeys, ` +
         `not a birdie problem (you birdie ${r1(agg.birdie_rate)}% of these). ` +
         `Cutting the doubles is the fastest stroke back.`;
+      coachDriverClause =
+        `That's driven by ${r1(agg.double_plus_rate)}% doubles + ${r1(agg.bogey_rate)}% bogeys, ` +
+        `not a birdie problem (they birdie ${r1(agg.birdie_rate)}% of these). ` +
+        `Cutting the doubles is the fastest stroke back.`;
     } else if (vsPar > 0) {
       driverClause =
         `Your tail is reasonable (${r1(agg.double_plus_rate)}% doubles, ${r1(agg.bogey_rate)}% bogeys) — ` +
+        `the over-par average is mostly a birdie-conversion gap (only ${r1(agg.birdie_rate)}% birdies here).`;
+      coachDriverClause =
+        `Their tail is reasonable (${r1(agg.double_plus_rate)}% doubles, ${r1(agg.bogey_rate)}% bogeys) — ` +
         `the over-par average is mostly a birdie-conversion gap (only ${r1(agg.birdie_rate)}% birdies here).`;
     } else {
       driverClause =
         `You're at or under par here: ${r1(agg.birdie_rate)}% birdies, ${r1(agg.par_rate)}% pars, ` +
         `${r1(agg.double_plus_rate)}% doubles.`;
+      coachDriverClause =
+        `They're at or under par here: ${r1(agg.birdie_rate)}% birdies, ${r1(agg.par_rate)}% pars, ` +
+        `${r1(agg.double_plus_rate)}% doubles.`;
     }
 
+    const span = agg.spanDays && agg.spanDays > 0 ? ` (${agg.spanDays} days)` : '';
+    const averageClause = `${valueDisp} on ${agg.holes_scored} par ${agg.par}s (${vsParDisp} vs par).`;
     const content =
-      `Across your last ${agg.rounds_played} rounds${agg.spanDays && agg.spanDays > 0 ? ` (${agg.spanDays} days)` : ''} ` +
-      `you average ${valueDisp} on ${agg.holes_scored} par ${agg.par}s (${vsParDisp} vs par). ${driverClause}` +
+      `Across your last ${agg.rounds_played} rounds${span} you average ${averageClause} ${driverClause}` +
+      staleDataSuffix(agg.last_round_date);
+    const coachContent =
+      `Across the player's last ${agg.rounds_played} rounds${span} they average ${averageClause} ${coachDriverClause}` +
       staleDataSuffix(agg.last_round_date);
 
     return {
       title,
       content,
+      // The title carries no second person, so the coach title is the same.
+      coach: { title, content: coachContent },
       priority: 'low',
       signature: `par_scoring:par${agg.par}`,
       evidence: {

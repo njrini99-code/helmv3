@@ -13,7 +13,7 @@
  * deficit, putts/round) the naive ratio is not just imprecise, it can point
  * the wrong direction entirely.
  * ========================================================================== */
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
 import { FairwayPlayerInsight } from './FairwayPlayerInsight';
@@ -75,13 +75,20 @@ function renderInsight(focusAreas: Array<Record<string, unknown>>) {
   );
 }
 
+/** Focus areas sit in the closed "What we're tracking" disclosure. */
+function renderTracking(focusAreas: Array<Record<string, unknown>>) {
+  const view = renderInsight(focusAreas);
+  fireEvent.click(screen.getByRole('button', { name: /What we’re tracking/ }));
+  return view;
+}
+
 describe('FairwayPlayerInsight — focus-area progress bar', () => {
   it('renders a lower-is-better focus area correctly instead of the naive current/target ratio', () => {
     // Putts/round: baseline 32, target 28 (lower is better), current 30.
     // Naive ratio: current/target*100 = 30/28*100 = 107% → clamped to 100%
     // (reads as basically done). Correct: travelled=(30-32)=-2, span=(28-32)=-4
     // → 50% — the player is genuinely halfway there, not nearly finished.
-    const { container } = renderInsight([
+    const { container } = renderTracking([
       {
         id: 'fa-1',
         title: 'Cut putts per round',
@@ -102,7 +109,7 @@ describe('FairwayPlayerInsight — focus-area progress bar', () => {
   });
 
   it('hides the progress bar (never a fabricated one) when target_metric direction is unknown', () => {
-    const { container } = renderInsight([
+    const { container } = renderTracking([
       {
         id: 'fa-2',
         title: 'Mystery metric',

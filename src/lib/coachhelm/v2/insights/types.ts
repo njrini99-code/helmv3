@@ -201,6 +201,42 @@ export interface InsightEvidence {
   // filter/compare/audit/learn from the root cause instead of parsing prose
   // out of `content`. Optional + additive — every legacy v2 row is unchanged.
   diagnosis?: Diagnosis;
+
+  // Recent-window recheck (2026-09-25, `v3/engine/recent-recheck.ts`): a
+  // lifetime-window generator's own metric recomputed over the last 90 days,
+  // checked against this row's comparison value. Optional + additive.
+  recheck?: InsightRecheck;
+
+  // Coach voice (2026-09-25, `v3/insights/coach-copy.ts`): the generator's
+  // title/content retold for a coach, in neutral third person ("the player",
+  // "they"). `title`/`content` stay in the player's voice (player feed, push);
+  // coach readers prefer this copy and fall back to them. Optional + additive.
+  coach_copy?: InsightCoachCopy;
+}
+
+export interface InsightCoachCopy {
+  title: string;
+  content: string;
+}
+
+/**
+ * Outcome of the recent-window recheck. `cleared` = the recent window beats
+ * the row's target by more than chance (90% one-sided bound); `holds` = the
+ * point estimate is still on the wrong side; `inconclusive` = better, but
+ * inside the margin; `thin` = too few recent observations to say.
+ */
+export interface InsightRecheck {
+  status: 'holds' | 'cleared' | 'inconclusive' | 'thin';
+  checked_at: string;
+  window_days: number;
+  recent_value: number | null;
+  /** One-sided 90% bound on `recent_value` in the direction that must clear
+   *  the target (Wilson lower bound for a make %, mean upper bound for a
+   *  lower-is-better average). */
+  bound: number | null;
+  sample_n: number;
+  min_sample_n: number;
+  comparison_value: number;
 }
 
 /**
@@ -264,6 +300,77 @@ export interface Diagnosis {
   recommended_action: string;
   /** Plain-language reason for the confidence value (sample/recency/variance). */
   confidence_reason: string;
+  /**
+   * What the root cause rests on (2026-09-24, `v3/engine/root-cause.ts`).
+   * Optional + additive: rows written before it existed (and every non-v3
+   * producer) omit it, and every reader treats absence as "not stated".
+   */
+  basis?: DiagnosisBasis;
+}
+
+/**
+ * A5 controlled-hypothesis label, surfaced on a diagnosis. `corroborated` is
+ * `hypothesis-policy.ts`'s `supported_association` — an association a
+ * supported metric agrees with, never a causal claim.
+ */
+export type DiagnosisHypothesisLabel = 'no_data' | 'candidate' | 'corroborated';
+
+/**
+ * The evidence a {@link Diagnosis} rests on.
+ *
+ * - `shot_sequence`: a repeated recorded shot path (`causality_level:
+ *   'observed_sequence'`), with its count over a named denominator.
+ * - `hypothesis_policy`: not traced to a sequence; an A5 family was
+ *   evaluated and its label is stated.
+ * - `aggregate_only`: not traced, and no A5 family applies — the diagnosis
+ *   says what was checked and why it did not qualify.
+ */
+export interface DiagnosisBasis {
+  kind: 'shot_sequence' | 'hypothesis_policy' | 'aggregate_only';
+  /** Present for the two hypothesis kinds. */
+  hypothesis_label?: DiagnosisHypothesisLabel;
+  /** Plain statements of what was actually checked (coverage, population,
+   *  A5 state) — the drivers the reasoning really looked at. */
+  checked: string[];
+  /** Present iff `kind === 'shot_sequence'`. */
+  sequence?: {
+    /** The shot-by-shot path, e.g. "approach missed short into the rough →
+     *  chip to 10–20 ft → 2 putts". */
+    pattern: string;
+    occurrences: number;
+    /** Size of the failing population the count is quoted against. */
+    of: number;
+    population: string;
+    distinct_rounds: number;
+    window: string;
+    /**
+     * Example holes where the path was recorded, in shot order (2026-09-25).
+     * Required when a GENERATOR (not `root-cause.ts`) claims the sequence —
+     * `mergeDiagnosis` only accepts a generator's `observed_sequence` with
+     * 1–5 of these. Optional + additive otherwise.
+     */
+    examples?: Array<{ round_id: string; hole_number: number; hole_id?: string | null }>;
+  };
+  /**
+   * Context narrowing (2026-09-25, `v3/engine/context-narrowing.ts`): the
+   * failing population narrowed by length → par × length → miss shape, each
+   * step only when its sample/concentration gate passed. An OBSERVED
+   * concentration with counts, never a cause. Optional + additive.
+   */
+  narrowing?: DiagnosisNarrowing;
+}
+
+export interface DiagnosisNarrowing {
+  subject: 'approach' | 'tee' | 'par_scoring';
+  /** Labels of the steps that passed, e.g. ["175+ yd", "long par 4s", "short-right"]. */
+  path: string[];
+  /** First step that failed its gate; null when every step passed. */
+  stopped_at: 'length' | 'par' | 'shape' | null;
+  steps: Array<{ level: 'length' | 'par' | 'shape'; passed: boolean; label: string | null; statement: string }>;
+  /** The plain sentence (counts stated). */
+  sentence: string;
+  /** Items left out and why (e.g. `{ layup: 49 }`). */
+  excluded?: Record<string, number>;
 }
 
 export interface InsightMovement {

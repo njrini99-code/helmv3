@@ -46,6 +46,8 @@ Coaching philosophy saves use one authoritative hook write path with downstream 
 - `src/components/golf/coachhelm/analytics/**`
 - `src/components/golf/coachhelm/settings/**`
 - `src/components/golf/coachhelm/v2/**`
+- `src/components/golf/coachhelm/triage/**`
+- `src/components/golf/coachhelm/root-map/TeamRootsView.tsx`, `TeamTrendChart.tsx`
 
 ### Actions
 
@@ -96,6 +98,29 @@ CoachHelm generates insight/pattern/prediction
 
 ## UI Contract
 
+- **Team roots is the landing view (owner direction, 2026-09-25).** An
+  absent or unknown `?view=` opens `view=team` when the page built the
+  team roots model, unless the URL is a `?signal=`, legacy `?id=` or
+  `?filter=` deep link (those still open Signals, and every in-desk link or
+  navigation writes the current `view` so clearing that param, e.g. Back
+  from a dossier or the All chip, stays on Signals). When the model is
+  missing (its SG reads failed) the desk keeps the Signals default and
+  hides the tab. Signals, Players and Effectiveness remain tabs. The view
+  reads: a diverging stacked team trend (weekly team mean of each
+  player's weekly mean of stored per-round SG, last 12 weeks), a team root
+  map whose What row holds only causes shared by 3+ players with a stored
+  stroke value, a "Who carries which root" matrix grouped by
+  `evidence.metric` (no root-driver clustering; bubble area = stored
+  counterfactual strokes/round, an open ring = none stored), "Did the
+  focus work?" slopes from stored `golf_insight_outcome_attribution`
+  (only with `coachhelm_comparable_opportunity_attribution` on, only 3+
+  rounds on both sides, labelled with `describeMethodVersion`, coloured
+  only when the metric's direction is known, no causal wording), and a
+  "Needs you" list (open focus areas whose evidence changed, then
+  urgent/high signals, max 4). One primary action: open the selected
+  area's Signals. Team matrix sizes differ from the team-leak cards,
+  which sum `strokes_impact`. Focus-start markers are not drawn: there is
+  no team-level focus event.
 - Alerts need severity filtering, acknowledged visibility, and bulk operations.
 - Patterns need lifecycle visibility: detected, confirmed, addressed, resolved, dismissed.
 - Insights need search, player/type/priority/status/date filters, bulk actions, and export affordances.

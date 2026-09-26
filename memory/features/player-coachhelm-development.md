@@ -23,6 +23,7 @@ This area depends heavily on shot tracking, stats, round reviews, and CoachHelm 
 ### Components
 
 - `src/components/golf/coachhelm/player/**`
+- `src/components/golf/coachhelm/root-map/**` (root map Today, Why drill, sparklines; shared with the coach Team roots view)
 - `src/components/golf/coachhelm/round-review/**`
 - `src/components/golf/coachhelm/insight-card/**`
 - `src/components/golf/coachhelm/v3/StandingBar/**`
@@ -43,6 +44,7 @@ This area depends heavily on shot tracking, stats, round reviews, and CoachHelm 
 - `src/app/golf/actions/v3/**`
 - `src/lib/coachhelm/v2/**`
 - `src/lib/coachhelm/v3/**`
+- `src/lib/coachhelm/root-map/**` (pure layout + bounded stored-data loaders for the root map)
 
 ## Core Data
 
@@ -89,6 +91,77 @@ Player opens round review
 
 ## UI Contract
 
+- **Root map Today (2026-09-25)**: `/golf/dashboard/coachhelm` with no
+  `?view=` renders `RootToday` when the page could build a model (falls
+  back to the older `PlayerHomeBento`, still in the tree, when it could
+  not). Layout: a headline built from data → the strokes-weighted root map
+  (gains above the Tour line from area SG averaged over countable rounds,
+  per 18 holes, by `loadPlayersAreaSg`, not the stats-cache average, which
+  still counts broken rounds; losses below in three rows: Where = area SG, What = v3 cause insights sized by the stored
+  `evidence.counterfactual.strokes_saved_per_round`, Why = diagnosis
+  styled solid/observed, hatched/likely, dashed/forming (confidence below
+  Solid read), gray/unexplained) → the selected branch's chain with ONE
+  primary action to the Why drill → "Moving" sparklines (stored
+  `golf_rounds.strokes_gained_*`, deltas from `computeSgTrends`) → "New
+  since" (max 3, rows created on or after the latest round date).
+  Contract points: one scale for gains and losses; cause widths are
+  proportional and scaled to fit their area when their stored sum exceeds
+  it (stored values are still printed); causes with no live
+  counterfactual are "unsized" chips, never drawn with a guessed width;
+  strengths get no root; `dedupeBySubject(collapseParScoring(...))` runs
+  before routing; the default selection is the largest observed branch,
+  then likely, forming, unexplained. Wording follows `causality_level`:
+  observed → "seen in your shots", hypothesis → "likely". Nothing on the
+  read path generates insights or narrative (PR #2068).
+- **Feed exposure**: `getInsightsForPlayer` is called with limit 30 and
+  records a `player_feed` exposure per returned row, so every returned row
+  must render on Today (as a sized branch, an unsized chip, or an "Other
+  reads" line). Do not add a filter between the fetch and the render
+  without trimming the fetch too.
+- **Why drill** (`?view=root&insight=<id>`, registry id `root-why`):
+  breadcrumb, confidence chips, a comparison bar from stored evidence,
+  "How it happens" only when `diagnosis.basis.sequence` is stored, a worth
+  line only when a stored counterfactual projection exists, and one
+  primary action ("Make this my focus", the existing
+  `createFocusAreaFromInsightV2`). Putting branches also show the green
+  (`GreenPlot`, `root-map/green-view.ts`). It plots recorded 4-6 ft putts
+  from the last 40 countable rounds, using `golf_shots.putt_slope` and
+  `putt_distance_feet`: downhill in the wedge above the hole, uphill below,
+  level to the sides. Made putts are filled dots and misses are rings. Each
+  region states "X of N made", and a region with n < 15 says "thin read". No
+  comparison is written. Putts of 3 ft or less are faint and not counted, and
+  `severe` and unrecorded slopes are left out. The green is omitted below
+  10 downhill or 10 level putts. The angle inside a region is seeded from the
+  shot id, because putt direction is not recorded, and the caption says so.
+  `loadShortPuttSlopes` is the bounded read.
+- **Player drills, summary first (2026-09-25)**: `?view=development`,
+  `profile`, `standing` and `insights` each open with one `DrillSummary`
+  card (`home/DrillSummary.tsx`: key number in mono, one takeaway line,
+  one visual, a basis line naming the sample / refresh date, at most one
+  action); every secondary section sits behind the root-map `Disclosure`,
+  closed by default (Insights opens its first category group). One primary
+  per screen: Development's first prescribed "Accept", or the empty
+  state's "New focus area"; the header "New focus area" is secondary, and
+  active areas stay closed because each `FocusAreaCard` carries its own
+  "Mark complete" primary. Profile states the composite rating, the
+  fingerprint's category stats (`metrics_rounds`) and the genome
+  (`rounds_basis`) samples separately, and labels the radar as a 0-100
+  per-dimension scale, not a percentile. The route `loading.tsx` draws the
+  root-map Today shape (no mobile spine). Pinned by
+  `home/__tests__/PlayerDrills.summary-first.test.tsx`.
+- **Standing drill counterfactual (2026-09-25)**: `?view=standing` sizes
+  attempt-rate metrics off the player's own attempts per round
+  (`home/standingAttemptRates.ts`): putt bands = `putt_attempts_*` ÷
+  `rounds_played` and sand = `sand_attempts` ÷ `rounds_played` from the
+  same `golf_player_stats_cache` row the standing values refresh from;
+  par-type = ParTypeGenerator's 4/10/4 hole counts. An attempt-rate metric
+  with no known rate (`gir_pct`, `scrambling_pct_rough`/`_fairway`, or a
+  failed cache read) shows no strokes line: the legacy per-unit constant
+  overstated 3-5 ft putting 2.3 vs 0.9 strokes a round. Pinned by
+  `home/__tests__/StandingDrill.counterfactual.test.tsx`.
+- Production on 2026-09-25 has no `observed_sequence` diagnoses and no
+  approach counterfactuals, so Today shows hatched/forming branches and
+  unsized approach chips; `build-root-map.test.ts` pins that case.
 - Player CoachHelm should explain what changed, why it matters, and what action to take next.
 - My Development should show focus area status, progress, target/current values, and trend in a compact way.
 - Round review surfaces need clear highlights, areas to review, stats comparison, predictions, and feedback actions.

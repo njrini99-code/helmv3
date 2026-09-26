@@ -12,6 +12,7 @@
  * `getSignalGroups` already produced.
  * ========================================================================== */
 
+import { getMetricRenderConfig } from '@/lib/coachhelm/v3/standing/metric-config';
 import {
   SEVERITY_ORDER,
   attentionScore,
@@ -28,13 +29,17 @@ import {
  * landing on the right tab + preset.
  * ────────────────────────────────────────────────────────────────────────── */
 
-export type TriageView = 'signals' | 'players' | 'effectiveness';
+export type TriageView = 'team' | 'signals' | 'players' | 'effectiveness';
 
-/** Unknown/absent `?view=` -> 'signals' — the Triage Desk IS the landing
- *  surface now (there is no separate "home" bento to fall back to). */
-export function resolveTriageView(raw: string | string[] | null | undefined): TriageView {
+/** Unknown/absent `?view=` -> `fallback`. The page passes 'team' when it has
+ *  the team roots model (the coach landing view, owner direction 2026-09-25)
+ *  and 'signals' otherwise; with no fallback given it stays 'signals'. */
+export function resolveTriageView(
+  raw: string | string[] | null | undefined,
+  fallback: TriageView = 'signals',
+): TriageView {
   const v = Array.isArray(raw) ? raw[0] : raw;
-  return v === 'players' || v === 'effectiveness' ? v : 'signals';
+  return v === 'team' || v === 'signals' || v === 'players' || v === 'effectiveness' ? v : fallback;
 }
 
 /**
@@ -240,7 +245,12 @@ export function formatRelativeScanTime(scannedAt: string | null, now: Date = new
  * Display formatting — category labels, severity labels, age.
  * ────────────────────────────────────────────────────────────────────────── */
 
+/** A category is usually a game area (`short_game`), but a roster roll-up is
+ *  keyed by its metric id (`putts_made_5_10ft_pct`). Metric ids read through
+ *  the registry's display label, never as a title-cased raw id. */
 export function formatCategoryLabel(category: string): string {
+  const metric = getMetricRenderConfig(category);
+  if (metric) return metric.display_label;
   return category
     .split('_')
     .filter(Boolean)

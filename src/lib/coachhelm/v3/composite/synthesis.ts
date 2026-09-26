@@ -452,6 +452,8 @@ export async function synthesizeForPlayer(playerId: string): Promise<SynthesisRe
         ...calibrated,
         composite_rule_id: rule.id,
         source_insight_ids: match.source_insight_ids,
+        // Coach voice rides in evidence; title/content stay the player's.
+        ...(composed.coach ? { coach_copy: composed.coach } : {}),
       };
       const sig = `${COMPOSITE_PREFIX}:${rule.id}:${composed.signature}`;
       // Track BEFORE the gate check: a philosophy-gated match still owns its

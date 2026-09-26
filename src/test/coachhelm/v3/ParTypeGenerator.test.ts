@@ -194,3 +194,24 @@ describe('evidence.window_end carries the newest contributing round', () => {
     expect(c.evidence.window_end).toBe('2026-05-25');
   });
 });
+
+describe('ParTypeGenerator — coach voice', () => {
+  const SECOND_PERSON = /\byou(r|'re|'ll|'ve)?\b/i;
+  const cases: Array<[string, ReturnType<typeof makeAgg>]> = [
+    ['too few holes', makeAgg(4, 4.4, 3, { holes_scored: 3 })],
+    ['bad tail', makeAgg(4, 4.4)],
+    ['birdie gap', makeAgg(5, 5.2, 20, { birdie_rate: 5, bogey_rate: 10, double_plus_rate: 0 })],
+    ['at or under par', makeAgg(5, 4.7, 20, { spanDays: null })],
+  ];
+
+  it('ships a coach-voice copy with no second person and the same numbers for every branch', () => {
+    for (const [name, agg] of cases) {
+      const c = new ParTypeGenerator(PLAYER_ID, agg.par).composeContent(agg);
+      expect(c.coach, name).toBeDefined();
+      expect(c.coach!.title, name).not.toMatch(SECOND_PERSON);
+      expect(c.coach!.content, name).not.toMatch(SECOND_PERSON);
+      // Same numbers as the player copy: only the voice changes.
+      for (const n of c.content.match(/\d+(\.\d+)?%?/g) ?? []) expect(c.coach!.content, name).toContain(n);
+    }
+  });
+});

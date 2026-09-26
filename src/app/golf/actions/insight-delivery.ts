@@ -48,11 +48,13 @@ import {
 } from './insight-delivery-ranking';
 import {
   V3_ENGINE_FILTER,
+  excludeHiddenCategories,
   VISIBLE_LIFECYCLE_STATES,
   applyInsightVisibility,
 } from '@/lib/coachhelm/v3/insight-visibility';
 import { recordInsightExposure } from '@/lib/coachhelm/v3/effectiveness/event-ledger';
 import { describeError } from '@/lib/utils/describe-error';
+import { withCoachVoice } from '@/lib/coachhelm/v3/insights/coach-copy';
 
 // ---------------------------------------------------------------------------
 // Shared shape — EvidenceInsight. Downstream components import this type.
@@ -869,9 +871,12 @@ async function getInsightsForCoachWithMetaImpl(
   }
 
   const rows = (data ?? []) as unknown as RawInsightRowWithDrills[];
+  // Coach reader: prefer the stored coach-voice copy (third person) over the
+  // player's second-person title/content. Player readers never do this.
   const mapped = rows
     .map(mapRowToEvidenceInsight)
-    .filter((r): r is EvidenceInsight => r !== null);
+    .filter((r): r is EvidenceInsight => r !== null)
+    .map(withCoachVoice);
 
   // Rank by the shared `scoreInsight` composite (rank floor + damping + urgent
   // short-circuit + exemption) and dedupe across categories. Goals/weights are
@@ -1023,9 +1028,12 @@ async function getTopInsightsForPlayersImpl(
   }
 
   const rows = (data ?? []) as unknown as RawInsightRowWithDrills[];
+  // Coach reader: prefer the stored coach-voice copy (third person) over the
+  // player's second-person title/content. Player readers never do this.
   const mapped = rows
     .map(mapRowToEvidenceInsight)
-    .filter((r): r is EvidenceInsight => r !== null);
+    .filter((r): r is EvidenceInsight => r !== null)
+    .map(withCoachVoice);
 
   // Group per player, then apply the SAME rank → collapse → dedupe → slice
   // pipeline `getInsightsForPlayer` applies — but with NEUTRAL weights/goals
@@ -1427,14 +1435,16 @@ async function assembleForPlayer(
   playerId: string,
 ): Promise<AssembledThemes> {
   const runQuery = () =>
-    supabase
-      .from('golf_coach_insights')
-      .select(INSIGHT_SELECT)
-      .eq('player_id', playerId)
-      .not('evidence', 'is', null)
-      .or(V3_ENGINE_FILTER)
-      .in('lifecycle_state', [...VISIBLE_LIFECYCLE_STATES])
-      .eq('status', 'active')
+    excludeHiddenCategories(
+      supabase
+        .from('golf_coach_insights')
+        .select(INSIGHT_SELECT)
+        .eq('player_id', playerId)
+        .not('evidence', 'is', null)
+        .or(V3_ENGINE_FILTER)
+        .in('lifecycle_state', [...VISIBLE_LIFECYCLE_STATES])
+        .eq('status', 'active'),
+    )
       .order('created_at', { ascending: false })
       .limit(THEMES_FETCH_CAP);
 

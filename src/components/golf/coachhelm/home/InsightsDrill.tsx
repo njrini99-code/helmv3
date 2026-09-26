@@ -19,7 +19,14 @@
 import { useMemo, useState } from 'react';
 
 import { DrillPanel, useStage } from '@/components/fairway/modules';
-import { InsightCard, InsightPanel, Eyebrow, type InsightPanelAction, type InsightPriority } from '@/components/fairway';
+import {
+  InsightCard,
+  InsightPanel,
+  EmptyState,
+  Surface,
+  type InsightPanelAction,
+  type InsightPriority,
+} from '@/components/fairway';
 import { StandingStrip } from '@/components/fairway/charts/StandingStrip';
 import { PracticeRxPanel } from '@/components/fairway/pages/coachhelm/PracticeRxPanel';
 import { CategoryInsightsPanel } from '@/components/golf/coachhelm/insights/CategoryInsightsPanel';
@@ -28,6 +35,8 @@ import { getMetricRenderConfig } from '@/lib/coachhelm/v3/standing/metric-config
 import type { EvidenceInsight, InsightAttachedDrill } from '@/app/golf/actions/insight-delivery';
 import type { PlayerStanding } from '@/lib/coachhelm/v3/standing/types';
 import type { CauseNode, ThemeNode } from '@/lib/coachhelm/v3/themes/types';
+import { Disclosure } from '@/components/golf/coachhelm/root-map/Disclosure';
+import { DrillSummary, shortDay } from './DrillSummary';
 
 function toInsightPriority(p: EvidenceInsight['priority']): InsightPriority {
   switch (p) {
@@ -42,9 +51,14 @@ function toInsightPriority(p: EvidenceInsight['priority']): InsightPriority {
   }
 }
 
-function insightOverline(i: EvidenceInsight): string {
-  const cat = i.category ? i.category.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()) : 'Insight';
-  return `${cat} · Signal`;
+/** Overline: the evidence metric's display label (never a raw metric id),
+ *  else the category's taxonomy label. The old "<Category> · Signal" line
+ *  repeated the group heading above the card. */
+function insightOverline(i: EvidenceInsight): string | undefined {
+  const label = i.evidence?.metric_label;
+  if (typeof label === 'string' && label.trim()) return label;
+  const def = i.category ? getThemeDef(i.category) : null;
+  return def?.displayLabel ?? undefined;
 }
 
 interface InsightCategoryGroup {
@@ -117,87 +131,131 @@ export function InsightsDrill({
   // which path renders — same taxonomy labels the theme scaffold uses.
   const groupedInsights = useMemo(() => groupInsightsByCategory(insights), [insights]);
 
+  const newest = shortDay(
+    insights.reduce<string | null>((max, i) => (max === null || i.created_at > max ? i.created_at : max), null),
+  );
+  // The LARGEST named group (not the first, which is priority order); the
+  // "General" fallback group never leads the sentence.
+  const topGroup =
+    [...groupedInsights]
+      .filter((g) => g.key !== '__general__')
+      .sort((a, b) => b.insights.length - a.insights.length)[0] ?? null;
+  const topIsMajority = topGroup !== null && topGroup.insights.length * 2 > insights.length;
+
   return (
     <DrillPanel title="Insights" backLabel="Home" onBack={home}>
-      {topInsightDrills.length > 0 ? (
-        <div className="mb-6">
-          <Eyebrow>More drills for your top insight</Eyebrow>
-          <div className="mt-3">
-            <PracticeRxPanel drills={topInsightDrills} variant="sheet" />
-          </div>
-        </div>
-      ) : null}
+      <div className="flex flex-col gap-6">
+        {insights.length > 0 ? (
+          <DrillSummary
+            slot="insights-summary"
+            eyebrow="More reads on your game"
+            value={String(insights.length)}
+            unit={insights.length === 1 ? 'insight' : 'insights'}
+            takeaway={
+              topGroup && insights.length > 0
+                ? topGroup.insights.length === insights.length
+                  ? `All about ${topGroup.label.toLowerCase()}. Tap one for the evidence and a drill.`
+                  : topIsMajority
+                    ? `Most are about ${topGroup.label.toLowerCase()}. Tap one for the evidence and a drill.`
+                    : `Led by ${topGroup.label.toLowerCase()}. Tap one for the evidence and a drill.`
+                : 'Grouped by category below. Tap one for the evidence and a drill.'
+            }
+            visual={insights.length > 0 ? <CategorySplit groups={groupedInsights} total={insights.length} /> : null}
+            basis={newest ? `Newest from ${newest} · your top insight is on Overview` : 'Your top insight is on Overview'}
+          />
+        ) : null}
 
-      {showThemes ? (
-        <CategoryInsightsPanel
-          themes={themes}
-          onMakePlan={onMakePlan}
-          makePlanPendingId={makePlanPendingId}
-        />
-      ) : insights.length > 0 ? (
-        <div className="flex flex-col gap-6">
-          {groupedInsights.map((group) => (
-            <section key={group.key} className="flex flex-col gap-3" data-slot="flat-category-section">
-              <h3 className="border-b border-border-subtle pb-2.5 font-fw-display text-body-lg font-medium text-text-primary">
-                {group.label}
-              </h3>
-              <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                {group.insights.map((insight) => {
-                  const m = insight.evidence.metric;
-                  const cfg = getMetricRenderConfig(m);
-                  const st = cfg ? standingByMetric?.[m] : undefined;
-                  return (
-                    <InsightCard
-                      key={insight.id}
-                      variant="compact"
-                      priority={toInsightPriority(insight.priority)}
-                      overline={insightOverline(insight)}
-                      title={insight.title}
-                      interactive
-                      role="button"
-                      tabIndex={0}
-                      onClick={() => setOpenInsight(insight)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' || e.key === ' ') {
-                          e.preventDefault();
-                          setOpenInsight(insight);
-                        }
-                      }}
-                    >
-                      {insight.content}
-                      {st && cfg ? (
-                        <div className="mt-3">
-                          <StandingStrip
-                            size="inline"
-                            metric_id={m}
-                            metric_label={cfg.display_label}
-                            player_value={st.player_value}
-                            team_avg={st.team_avg}
-                            team_n={st.team_n}
-                            team_pct={st.team_pct}
-                            pga_value={st.pga_value}
-                            pga_omitted={st.pga_omitted}
-                            pga_omitted_reason={st.pga_omitted_reason}
-                            is_womens={st.is_womens}
-                            direction={cfg.direction}
-                            unit={cfg.unit}
-                            scale={cfg.default_scale}
-                            show_cohort_text={false}
-                          />
-                        </div>
-                      ) : null}
-                    </InsightCard>
-                  );
-                })}
-              </div>
-            </section>
-          ))}
-        </div>
-      ) : (
-        <p className="font-fw-sans text-body-sm text-text-tertiary">
-          No more insights right now — log a few more rounds and CoachHelm will surface the next pattern.
-        </p>
-      )}
+        {topInsightDrills.length > 0 ? (
+          <Disclosure
+            slot="insights-top-drills"
+            headingLevel={2}
+            title="More drills for your top insight"
+            meta={<CountText n={topInsightDrills.length} one="drill" many="drills" />}
+          >
+            <PracticeRxPanel drills={topInsightDrills} variant="sheet" />
+          </Disclosure>
+        ) : null}
+
+        {showThemes ? (
+          <CategoryInsightsPanel
+            themes={themes}
+            onMakePlan={onMakePlan}
+            makePlanPendingId={makePlanPendingId}
+          />
+        ) : insights.length > 0 ? (
+          <div className="flex flex-col">
+            {groupedInsights.map((group, gi) => (
+              <Disclosure
+                key={group.key}
+                slot="flat-category-section"
+                headingLevel={2}
+                defaultOpen={gi === 0}
+                title={group.label}
+                meta={<CountText n={group.insights.length} one="insight" many="insights" />}
+              >
+                <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                  {group.insights.map((insight) => {
+                    const m = insight.evidence.metric;
+                    const cfg = getMetricRenderConfig(m);
+                    const st = cfg ? standingByMetric?.[m] : undefined;
+                    return (
+                      <InsightCard
+                        key={insight.id}
+                        variant="compact"
+                        priority={toInsightPriority(insight.priority)}
+                        overline={insightOverline(insight)}
+                        title={insight.title}
+                        interactive
+                        role="button"
+                        tabIndex={0}
+                        onClick={() => setOpenInsight(insight)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            setOpenInsight(insight);
+                          }
+                        }}
+                      >
+                        <span className="line-clamp-3" data-slot="insight-content">
+                          {insight.content}
+                        </span>
+                        {st && cfg ? (
+                          <div className="mt-3">
+                            <StandingStrip
+                              size="inline"
+                              metric_id={m}
+                              metric_label={cfg.display_label}
+                              player_value={st.player_value}
+                              team_avg={st.team_avg}
+                              team_n={st.team_n}
+                              team_pct={st.team_pct}
+                              pga_value={st.pga_value}
+                              pga_omitted={st.pga_omitted}
+                              pga_omitted_reason={st.pga_omitted_reason}
+                              is_womens={st.is_womens}
+                              direction={cfg.direction}
+                              unit={cfg.unit}
+                              scale={cfg.default_scale}
+                              show_cohort_text={false}
+                            />
+                          </div>
+                        ) : null}
+                      </InsightCard>
+                    );
+                  })}
+                </div>
+              </Disclosure>
+            ))}
+          </div>
+        ) : (
+          <Surface elevation="border" padding="lg">
+            <EmptyState
+              title="No more insights right now"
+              description="Your top insight is on Overview. Log a few more rounds and CoachHelm will surface the next pattern here."
+            />
+          </Surface>
+        )}
+      </div>
 
       {openInsight ? (
         <InsightPanel
@@ -244,5 +302,52 @@ export function InsightsDrill({
         </InsightPanel>
       ) : null}
     </DrillPanel>
+  );
+}
+
+function CountText({ n, one, many }: { n: number; one: string; many: string }) {
+  return (
+    <span className="shrink-0 text-caption font-normal text-text-tertiary">
+      <span className="font-fw-mono tabular-nums text-text-secondary">{n}</span> {n === 1 ? one : many}
+    </span>
+  );
+}
+
+/** One bar: the feed split by category, in proportion, largest first. */
+function CategorySplit({ groups, total }: { groups: InsightCategoryGroup[]; total: number }) {
+  const sorted = [...groups].sort((a, b) => b.insights.length - a.insights.length);
+  const SHADE = [100, 70, 50, 34, 24];
+  const summary = sorted.map((g) => `${g.label} ${g.insights.length}`).join(', ');
+  return (
+    <div className="flex flex-col gap-2">
+      <div
+        role="img"
+        aria-label={`Insights by category: ${summary}`}
+        className="flex h-3 w-full gap-0.5 overflow-hidden rounded-full"
+        data-slot="insights-split"
+      >
+        {sorted.map((g, i) => (
+          <div
+            key={g.key}
+            className="h-full min-w-1.5"
+            style={{
+              width: `${(g.insights.length / total) * 100}%`,
+              background: `color-mix(in oklch, var(--fw-color-accent-500) ${SHADE[i] ?? 20}%, var(--fw-color-surface))`,
+            }}
+          />
+        ))}
+      </div>
+      <ul aria-hidden className="flex flex-wrap gap-x-4 gap-y-1 text-caption text-text-secondary">
+        {sorted.map((g, i) => (
+          <li key={g.key} className="flex items-center gap-1.5">
+            <span
+              className="inline-block h-2.5 w-2.5 rounded-sm"
+              style={{ background: `color-mix(in oklch, var(--fw-color-accent-500) ${SHADE[i] ?? 20}%, var(--fw-color-surface))` }}
+            />
+            {g.label} <span className="font-fw-mono tabular-nums text-text-primary">{g.insights.length}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }

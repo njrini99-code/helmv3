@@ -116,7 +116,7 @@ export function PlayerDeepDiveTabs({ fingerprint, insight, sectionAddenda }: Pla
           aria-label="Player deep-dive view"
         />
         {tab === 'fingerprint' ? (
-          <FairwayPlayerGameFingerprint fingerprint={fingerprint} sectionAddenda={sectionAddenda} />
+          <FairwayPlayerGameFingerprint fingerprint={fingerprint} sectionAddenda={sectionAddenda} layout="summary" />
         ) : (
           <FairwayPlayerInsight {...insight} embedded />
         )}

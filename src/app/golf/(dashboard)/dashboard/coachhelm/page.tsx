@@ -40,6 +40,7 @@ import { normalizeForRadar } from '@/lib/coachhelm/v3/genome/normalize';
 // ── `standing` drill read — copied from my-standing/page.tsx (the
 // counterfactual baseline; the standing map itself is already fetched below). ─
 import { loadPlayerScoringBaseline } from '@/lib/coachhelm/v3/counterfactual/baseline-loader';
+import { resolveStandingAttemptRates } from '@/components/golf/coachhelm/home/standingAttemptRates';
 import { logServerError } from '@/lib/server-error-logger';
 import { describeError } from '@/lib/utils/describe-error';
 import { isFlagEnabled } from '@/lib/flags';
@@ -47,6 +48,30 @@ import { fromUntyped } from '@/lib/supabase/untyped';
 import { computeEvidenceRevisionStatuses } from '@/lib/coachhelm/focus-areas/load-evidence-revision-status';
 import type { EvidenceRevisionComparison } from '@/lib/coachhelm/focus-areas/evidence-revision-status';
 import { loadFocusAreaPracticeLogData } from '@/lib/coachhelm/focus-areas/practice-log-loader';
+
+// ── Root-map Today view (stored SG + stored insight evidence only). ────────
+import { buildRootMap } from '@/lib/coachhelm/root-map/build-player-root-map';
+import {
+  ROOT_AREAS,
+  branchDetailOf,
+  buildRootHeadline,
+  daysBetween,
+  findBranch,
+  isoDay,
+  type BranchDetail,
+} from '@/lib/coachhelm/root-map/build-root-map';
+import { buildAreaSparklines } from '@/lib/coachhelm/root-map/area-trends';
+import {
+  loadApproachContext,
+  loadPlayersAreaSg,
+  loadRecentAreaSgRounds,
+  loadShortPuttSlopes,
+} from '@/lib/coachhelm/root-map/loaders';
+import { buildPlayerApproachRoot } from '@/lib/coachhelm/root-map/approach-root';
+import { measureWhat, type MeasuredWhat } from '@/lib/coachhelm/root-map/measured-what';
+import type { ApproachWhyView } from '@/lib/coachhelm/root-map/approach-context';
+import { buildGreenView } from '@/lib/coachhelm/root-map/green-view';
+import type { RootTodayProps } from '@/components/golf/coachhelm/root-map/RootToday';
 
 /**
  * A8 slice 3: the focus-area select is routed through `fromUntyped` (see
@@ -266,8 +291,11 @@ export default async function PlayerCoachHelmPage() {
         getPlayerCoachHelmDashboard(player.id),
         getPlayerShotAnalytics(player.id, 30),
         getTopInsightForPlayer(player.id),
-        // Pull a small buffer — the client dedupes the hero id and displays up to 5.
-        getInsightsForPlayer(player.id, { limit: 6 }),
+        // The root map draws every returned row (map branch, unsized chip, or
+        // an "Other reads" line), so this is the full visible set up to 30,
+        // not a 5-card buffer. Every returned row is recorded as a
+        // `player_feed` exposure by the fetcher, and every one renders.
+        getInsightsForPlayer(player.id, { limit: 30 }),
         // Swallow to null so a themes failure can never reject the page load.
         getThemesForPlayer(player.id).catch(() => null),
       ]);
@@ -342,6 +370,14 @@ export default async function PlayerCoachHelmPage() {
   // unchanged). Best-effort: a failure here degrades to an honest loadError
   // flag inside the drill rather than failing the whole CoachHelm home. ──────
   const supabase = await createClient();
+  // Root-map reads start now and are awaited below, so they overlap the
+  // development/profile reads instead of adding a serial round trip.
+  const rootMapReads = Promise.all([
+    loadPlayersAreaSg(supabase, [player.id]),
+    loadRecentAreaSgRounds(supabase, player.id, 10),
+    loadShortPuttSlopes(supabase, player.id),
+    loadApproachContext(supabase, player.id),
+  ]);
   // A8 slice 3 (write side): `isFlagEnabled` is server-only (DevelopmentDrill/
   // FocusAreaCard are client components), so the boolean is computed here
   // and threaded down as a plain prop rather than each client component
@@ -364,6 +400,10 @@ export default async function PlayerCoachHelmPage() {
   let achievedGoals: FairwayGoalCardData[] = [];
   let suggestions: GoalSuggestionView[] = [];
   let causalRelationships: Awaited<ReturnType<typeof getPlayerCausalRelationships>> = [];
+  // Standing counterfactual: the player's own attempts per round (from the
+  // same stats-cache row the standing values refresh from). Null when the
+  // read fails; attempt-rate metrics then show no strokes line.
+  let standingAttemptsPerRound: Record<string, number> | null = null;
   try {
     // A8 slice 3: only extend the select (and only route it through the
     // untyped escape hatch) when the flag is on — with it off, this must be
@@ -460,7 +500,10 @@ export default async function PlayerCoachHelmPage() {
       supabase
         .from('golf_player_stats_cache')
         .select(
-          'rounds_played, scoring_average, putts_per_round, driving_accuracy_percentage, gir_percentage, best_round, driving_distance_average, approach_proximity_average, scrambling_percentage, up_and_down_percentage, sand_save_percentage, one_putt_percentage, three_putt_percentage, par3_average, par4_average, par5_average',
+          // The putt_attempts_* / sand_attempts columns size the Standing
+          // panel's counterfactual line off the player's own attempts per
+          // round (resolveStandingAttemptRates).
+          'rounds_played, scoring_average, putts_per_round, driving_accuracy_percentage, gir_percentage, best_round, driving_distance_average, approach_proximity_average, scrambling_percentage, up_and_down_percentage, sand_save_percentage, one_putt_percentage, three_putt_percentage, par3_average, par4_average, par5_average, putt_attempts_3_5ft, putt_attempts_5_10ft, putt_attempts_10_15ft, putt_attempts_15_25ft, putt_attempts_25_plus_ft, sand_attempts',
         )
         .eq('player_id', player.id)
         .maybeSingle(),
@@ -477,6 +520,7 @@ export default async function PlayerCoachHelmPage() {
     }
 
     const sr = statsRow.data;
+    standingAttemptsPerRound = resolveStandingAttemptRates(sr);
     developmentPlayerStats = {
       rounds_played: sr?.rounds_played ?? 0,
       avg_score: sr?.scoring_average ?? null,
@@ -557,6 +601,102 @@ export default async function PlayerCoachHelmPage() {
     playerBaseline = await loadPlayerScoringBaseline(player.id);
   } catch { /* counterfactual line degrades honestly (suppressed) */ }
 
+  // ── Root-map Today view. Bounded reads of STORED data (per-round SG averaged
+  // over countable rounds, the last 10 rounds' stored per-round SG, and the
+  // short-putt slope sample for the green view), then pure shaping
+  // of those plus the insights already fetched above. No generator, no shot
+  // scan, no narrative generation. A failed read degrades to "no map" /
+  // "no sparklines", never to a made-up number. ─────────────────────────────
+  let rootMap: RootTodayProps | null = null;
+  try {
+    const [sgRows, recentRounds, shortPutts, approachLoad] = await rootMapReads;
+    // Approach bands: sized from the per-shot split of the stored approach SG
+    // (only when it reconciles) and narrowed by length → par → shape. A failed
+    // read or assembly leaves approach rows as they were (unsized).
+    let approachRoot: ReturnType<typeof buildPlayerApproachRoot> = null;
+    try {
+      approachRoot = approachLoad ? buildPlayerApproachRoot(approachLoad, player.id) : null;
+    } catch (err) {
+      void logServerError(
+        `[player coachhelm] approach context assembly failed for player ${player.id}: ${describeError(err)}`,
+        { action: 'playerCoachHelm.rootMap.approach', featureArea: 'coachhelm' },
+        'warning',
+      );
+    }
+    const sgRow = sgRows?.[0] ?? null;
+    const shownInsights = [...(topInsight ? [topInsight] : []), ...secondaryInsights.filter((i) => !topInsight || i.id !== topInsight.id)];
+    const throughDate = recentRounds?.[0]?.date ?? null;
+    // The What row measured from recorded shots (same countable rounds as
+    // the Where row; `measureWhat` checks the window and the reconciliation).
+    let measured: MeasuredWhat | null = null;
+    try {
+      measured =
+        approachLoad && sgRow
+          ? measureWhat({
+              rounds: approachLoad.rounds,
+              shots: approachLoad.shots,
+              holes: approachLoad.holes,
+              scale: approachLoad.scale,
+              whereSg: sgRow.sg,
+              whereRounds: sgRow.roundsPlayed,
+            })
+          : null;
+    } catch (err) {
+      void logServerError(
+        `[root map] measured What row failed for player ${player.id}: ${describeError(err)}`,
+        { action: 'rootMap.measuredWhat', featureArea: 'coachhelm' },
+        'warning',
+      );
+    }
+    const model = buildRootMap({
+      areas: ROOT_AREAS.map((area) => ({ area, sgPerRound: sgRow?.sg[area] ?? null })),
+      insights: shownInsights,
+      newSinceDate: throughDate,
+      approachBands: approachRoot?.bands ?? null,
+      measured,
+    });
+    const approachWhy: Record<string, ApproachWhyView> = {};
+    if (approachRoot) {
+      for (const insight of shownInsights) {
+        const m = typeof insight.evidence?.metric === 'string' ? insight.evidence.metric.match(/^approach_proximity_(50_125ft|125_175ft|175_plus_ft)$/) : null;
+        const view = m?.[1] ? approachRoot.context.why[m[1] as keyof typeof approachRoot.context.why] : undefined;
+        if (view) approachWhy[insight.id] = view;
+      }
+    }
+    const details: Record<string, BranchDetail> = {};
+    for (const insight of shownInsights) {
+      const d = branchDetailOf(insight);
+      if (d) details[insight.id] = d;
+    }
+    const newSince = shownInsights
+      .filter((i) => {
+        const day = isoDay(i.created_at);
+        return throughDate !== null && day !== null && day >= throughDate;
+      })
+      .sort((a, b) => (a.created_at < b.created_at ? 1 : -1))
+      .map((i) => ({ id: i.id, title: i.title, category: i.category }));
+    rootMap = {
+      model,
+      details,
+      headline: buildRootHeadline(model, findBranch(model, model.defaultSelectedId)),
+      roundsRead: sgRow?.roundsPlayed ?? null,
+      throughDate,
+      daysSinceThrough: daysBetween(throughDate, new Date().toISOString()),
+      sparklines: recentRounds ? buildAreaSparklines(recentRounds) : [],
+      newSince,
+      // Putting branches' Why view: null (omitted) below the sample gate.
+      greenView: shortPutts ? buildGreenView(shortPutts.putts, shortPutts.rounds) : null,
+      approachWhy,
+    };
+  } catch (err) {
+    void logServerError(
+      `[player coachhelm] root map assembly failed for player ${player.id}; the home view falls back to the bento: ${describeError(err)}`,
+      { action: 'playerCoachHelm.rootMap', featureArea: 'coachhelm' },
+      'warning',
+    );
+    rootMap = null;
+  }
+
   return (
     <div className={fairwayScope('min-h-full bg-canvas bg-canvas-gradient font-fw-sans text-text-primary')}>
       <div className="mx-auto w-full max-w-[1440px] px-4 py-5 md:px-6 md:py-6">
@@ -589,7 +729,9 @@ export default async function PlayerCoachHelmPage() {
           genomeRoundsBasis={genomeRoundsBasis}
           fingerprint={fingerprint}
           playerBaseline={playerBaseline}
+          standingAttemptsPerRound={standingAttemptsPerRound}
           practiceLogEnabled={practiceLogEnabled}
+          rootMap={rootMap}
         />
       </div>
     </div>

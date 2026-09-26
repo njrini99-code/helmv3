@@ -113,5 +113,44 @@ export function summarizeCalibration(performance: PredictionPerformanceData | un
   if (underconfidenceRate > overconfidenceRate + CALIBRATION_LEAN_GAP) {
     return { live: true, label: `Calibration ${scorePct}% — trends underconfident.`, tone: 'warning' };
   }
-  return { live: true, label: `Calibration ${scorePct}% — well matched to actual outcomes.`, tone: 'positive' };
+  return { live: true, label: `Calibration ${scorePct}% — no consistent lean to over- or underconfidence.`, tone: 'positive' };
+}
+
+/* ───────────────────────────────────────────────────────────────────────────
+ * Prediction accuracy — the trend points and the headline, both honest.
+ * ────────────────────────────────────────────────────────────────────────── */
+
+export interface AccuracyTrendPoint {
+  x: string;
+  y: number;
+}
+
+/** Trend points with at least one validated prediction behind them. A window
+ *  with nothing validated has no accuracy: `coachhelm-analytics.ts` reports
+ *  it as `0`, and plotting that drew a fake crash to 0% (and a "−100%" delta)
+ *  whenever the latest window had not resolved yet. */
+export function accuracyTrendPoints(performance: PredictionPerformanceData | undefined): AccuracyTrendPoint[] {
+  return (performance?.accuracyOverTime ?? [])
+    .filter((p) => p.predictionsValidated > 0)
+    .map((p) => ({ x: p.date, y: p.accuracyRate }));
+}
+
+export interface AccuracySummary {
+  live: boolean;
+  /** 0–1. Meaningful only when `live`. */
+  rate: number;
+  validated: number;
+  needed: number;
+}
+
+/** The latest window's accuracy, live only at the same validated-prediction
+ *  floor calibration uses. */
+export function summarizeAccuracy(performance: PredictionPerformanceData | undefined): AccuracySummary {
+  const validated = performance?.summary.validatedPredictions ?? 0;
+  return {
+    live: Boolean(performance) && validated >= CALIBRATION_MIN_VALIDATED,
+    rate: performance?.summary.overallAccuracy ?? 0,
+    validated,
+    needed: CALIBRATION_MIN_VALIDATED,
+  };
 }

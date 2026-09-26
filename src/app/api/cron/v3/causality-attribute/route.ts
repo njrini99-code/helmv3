@@ -42,6 +42,7 @@ import { recordInsightOutcome } from '@/lib/coachhelm/v3/effectiveness/event-led
 import { isFlagEnabled } from '@/lib/flags';
 import {
   V3_ENGINE_FILTER,
+  excludeHiddenCategories,
   VISIBLE_LIFECYCLE_STATES,
 } from '@/lib/coachhelm/v3/insight-visibility';
 import { recordJobRun } from '@/lib/admin/job-log';
@@ -292,14 +293,16 @@ async function handle(): Promise<NextResponse> {
   for (; page < MAX_FETCH_PAGES && todo.length < LIMIT; page += 1) {
     const from = page * FETCH_PAGE_SIZE;
     const to = from + FETCH_PAGE_SIZE - 1;
-    const { data: candidates, error: fetchErr } = await sb
-      .from('golf_coach_insights')
-      .select('id, player_id, coach_id, insight_type, evidence, created_at')
-      .lte('created_at', cutoffIso)
-      .not('player_id', 'is', null)
-      .or(V3_ENGINE_FILTER)
-      .in('lifecycle_state', [...VISIBLE_LIFECYCLE_STATES])
-      .neq('status', 'dismissed')
+    const { data: candidates, error: fetchErr } = await excludeHiddenCategories(
+      sb
+        .from('golf_coach_insights')
+        .select('id, player_id, coach_id, insight_type, evidence, created_at')
+        .lte('created_at', cutoffIso)
+        .not('player_id', 'is', null)
+        .or(V3_ENGINE_FILTER)
+        .in('lifecycle_state', [...VISIBLE_LIFECYCLE_STATES])
+        .neq('status', 'dismissed'),
+    )
       .order('created_at', { ascending: true })
       .range(from, to);
 

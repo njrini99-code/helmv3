@@ -36,17 +36,30 @@ describe('SandShot shape contract', () => {
 // page) would fail it.
 // ---------------------------------------------------------------------------
 
-// Mock the typed admin client so the `golf_rounds` lookup returns one round id.
+// A complete, plausible 18-hole round — `isCountableRound` keeps it. The loader
+// reads only countable rounds, so the fixture carries the columns that rule
+// reads (without them every row would drop as `holes_missing`).
+const COUNTABLE_ROUND = {
+  id: 'round-1', status: 'completed', holes_played: 18, total_score: 74,
+  front_nine: 37, back_nine: 37, total_putts: 30, strokes_gained_total: -1.2,
+};
+// A half-entered round (declared 18, back nine never scored): not countable.
+const PARTIAL_ROUND = {
+  id: 'round-partial', status: 'completed', holes_played: 18, total_score: 38,
+  front_nine: 38, back_nine: null, total_putts: 15, strokes_gained_total: null,
+};
+
+// Mock the typed admin client so the `golf_rounds` lookup returns both rounds.
 vi.mock('@/lib/supabase/admin', () => ({
   createAdminClient: () => ({
     from: (_table: string) => {
-      // golf_rounds: .select('id').eq().eq().gte() -> awaited thenable.
+      // golf_rounds: .select(cols).eq().eq().gte() -> awaited thenable.
       const chain: Record<string, unknown> = {};
       const ret = () => chain;
       chain.select = ret;
       chain.eq = ret;
       chain.gte = () =>
-        Promise.resolve({ data: [{ id: 'round-1' }], error: null });
+        Promise.resolve({ data: [COUNTABLE_ROUND, PARTIAL_ROUND], error: null });
       return chain;
     },
   }),
@@ -159,7 +172,13 @@ vi.mock('@/lib/supabase/untyped', () => ({
 }));
 
 // Import AFTER the mocks are registered.
-const { loadSandShots } = await import('@/lib/coachhelm/v3/engine/shot-source');
+const { loadSandShots, loadCountableRoundIds } = await import('@/lib/coachhelm/v3/engine/shot-source');
+
+describe('loadCountableRoundIds', () => {
+  it('keeps countable rounds and drops a half-entered one', async () => {
+    expect(await loadCountableRoundIds('player-1')).toEqual(['round-1']);
+  });
+});
 
 describe('loadSandShots pagination', () => {
   beforeEach(() => {

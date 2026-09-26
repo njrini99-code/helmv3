@@ -23,6 +23,12 @@
  * HONESTY: a candidate with no scoring round shows an em-dash rank/to-par and is
  * never auto-locked. Coach-pick controls only unlock at the `closed` state.
  *
+ * SUMMARY FIRST (owner direction 2026-09-25): the page opens on one card —
+ * spots filled of the total, a one-line next step for the current state, and
+ * the slot bar (locked on score / coach pick / open) — with the advance and
+ * confirm actions on it. Coach picks sit in a closed disclosure until they
+ * unlock at `closed`. Leaderboard rows fit a phone without a sideways scroll.
+ *
  * Tokens / primitives ONLY. No glass / warm-* / blur.
  * ========================================================================== */
 
@@ -60,6 +66,7 @@ import type {
   SelectionCandidate,
 } from '@/lib/coachhelm/v3/qualifying/types';
 import { formatToPar } from '@/lib/golf/format-to-par';
+import { Disclosure } from '@/components/golf/coachhelm/root-map/Disclosure';
 
 export interface FairwayQualifyingWorkspaceProps {
   workspace: QualifyingWorkspace;
@@ -120,21 +127,43 @@ export function FairwayQualifyingWorkspace({ workspace }: FairwayQualifyingWorks
       />
 
       <div className="mt-8 flex flex-col gap-6">
-        <StateBar
+        <SelectionSummary
           qualifierId={qualifier_id}
           state={selection_state}
           canConfirm={coach_picks_complete}
+          ranked={ranked}
+          slotsTotal={selection_slots_total}
+          slotsCoachPick={selection_slots_coach_pick}
         />
 
         <SlotLeaderboard ranked={ranked} topScoreSlots={topScoreSlots} />
 
         {selection_slots_coach_pick > 0 ? (
-          <CoachPicks
-            qualifierId={qualifier_id}
-            candidates={ranked}
-            slotsCoachPick={selection_slots_coach_pick}
-            state={selection_state}
-          />
+          selection_state === 'closed' || selection_state === 'selected' ? (
+            <CoachPicks
+              qualifierId={qualifier_id}
+              candidates={ranked}
+              slotsCoachPick={selection_slots_coach_pick}
+              state={selection_state}
+            />
+          ) : (
+            <Disclosure
+              title="Coach picks"
+              slot="qualifying-picks"
+              meta={
+                <span className="font-fw-mono text-caption font-normal tabular-nums text-text-secondary">
+                  unlock at closed
+                </span>
+              }
+            >
+              <CoachPicks
+                qualifierId={qualifier_id}
+                candidates={ranked}
+                slotsCoachPick={selection_slots_coach_pick}
+                state={selection_state}
+              />
+            </Disclosure>
+          )
         ) : null}
 
         {/* Roster committed — the qualifier's play lifecycle (status) is a
@@ -240,20 +269,91 @@ function ConcludeQualifier({ qualifierId, status }: { qualifierId: string; statu
 }
 
 /* ───────────────────────────────────────────────────────────────────────────
- * 1 · Selection state bar — current state + advance / confirm
+ * 1 · Selection summary — spots filled, the next step, the slot bar, and the
+ *     advance / confirm actions
  * ────────────────────────────────────────────────────────────────────────── */
-function StateBar({
+
+function plural(n: number, one: string, many = `${one}s`): string {
+  return `${n} ${n === 1 ? one : many}`;
+}
+
+export interface SelectionCounts {
+  total: number;
+  locked: number;
+  picked: number;
+  open: number;
+  entered: number;
+  withRounds: number;
+}
+
+export function countSelection(
+  ranked: ReadonlyArray<SelectionCandidate>,
+  slotsTotal: number,
+  slotsCoachPick: number,
+): SelectionCounts {
+  const locked = Math.min(ranked.filter((c) => c.is_top_score_slot).length, Math.max(0, slotsTotal - slotsCoachPick));
+  const picked = Math.min(
+    ranked.filter((c) => !c.is_top_score_slot && c.selection?.selection_type === 'coach_pick').length,
+    slotsCoachPick,
+  );
+  return {
+    total: slotsTotal,
+    locked,
+    picked,
+    open: Math.max(0, slotsTotal - locked - picked),
+    entered: ranked.length,
+    withRounds: ranked.filter((c) => c.rounds_completed > 0).length,
+  };
+}
+
+/** One plain line: where selection stands and what the coach does next. */
+export function selectionTakeaway(
+  state: QualifierSelectionState,
+  c: SelectionCounts,
+  slotsCoachPick: number,
+): string {
+  const topScore = Math.max(0, c.total - slotsCoachPick);
+  if (c.entered === 0) return 'No entries yet. Players appear here once they are entered.';
+  if (state === 'open') {
+    return `${plural(c.entered, 'player')} entered. The top ${topScore} lock on score once rounds are posted.`;
+  }
+  if (state === 'scoring') {
+    return `${c.withRounds} of ${plural(c.entered, 'player')} have posted a round. Close scoring to choose coach picks.`;
+  }
+  if (state === 'closed') {
+    const left = slotsCoachPick - c.picked;
+    return left > 0
+      ? `${c.locked} locked on score. Choose ${plural(left, 'more coach pick')}, with reasoning, to confirm.`
+      : 'Every spot is filled. Confirm to commit the roster.';
+  }
+  return `Roster committed: ${plural(c.locked + c.picked, 'player')} going.`;
+}
+
+function SelectionSummary({
   qualifierId,
   state,
   canConfirm,
+  ranked,
+  slotsTotal,
+  slotsCoachPick,
 }: {
   qualifierId: string;
   state: QualifierSelectionState;
   canConfirm: boolean;
+  ranked: SelectionCandidate[];
+  slotsTotal: number;
+  slotsCoachPick: number;
 }) {
   const [pending, startTransition] = useTransition();
   const next = nextState(state);
   const meta = STATE_META[state];
+  const counts = countSelection(ranked, slotsTotal, slotsCoachPick);
+  const filled = counts.locked + counts.picked;
+  const parts = [
+    { key: 'locked', label: 'Locked on score', value: counts.locked, className: 'bg-accent-500' },
+    { key: 'picked', label: 'Coach pick', value: counts.picked, className: 'bg-fw-warning' },
+    { key: 'open', label: 'Open', value: counts.open, className: 'bg-border-strong' },
+  ];
 
   const handleAdvance = () => {
     if (!next) return;
@@ -273,21 +373,57 @@ function StateBar({
   };
 
   return (
-    <Surface elevation="border" padding="md">
-      <div className="flex flex-col gap-3 md:flex-row md:items-center md:gap-4">
+    <section
+      aria-label="Selection summary"
+      data-slot="qualifying-summary"
+      className="flex flex-col gap-5 rounded-fw-lg border border-border-subtle bg-surface p-5 md:p-6"
+    >
+      <div className="flex flex-col gap-2">
         <StatusPill tone={meta.tone} pulse={meta.pulse} size="md" className="self-start">
           {meta.label}
         </StatusPill>
-        <div className="flex flex-wrap gap-2 md:ml-auto">
-          {next && next !== 'selected' ? (
-            <Button variant="secondary" size="sm" onClick={handleAdvance} busy={pending}>
-              Advance to {next}
-            </Button>
-          ) : null}
+        <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+          <p className="font-fw-mono text-display tabular-nums text-text-primary" data-slot="qualifying-filled">
+            {filled}
+            <span className="text-h3 text-text-tertiary"> / {counts.total}</span>
+          </p>
+          <p className="text-body-sm text-text-secondary">spots filled</p>
+        </div>
+        <p className="text-body text-text-secondary" data-slot="qualifying-takeaway">
+          {selectionTakeaway(state, counts, slotsCoachPick)}
+        </p>
+      </div>
+
+      {counts.total > 0 ? (
+        <div className="flex flex-col gap-2">
+          <div
+            role="img"
+            aria-label={`${counts.locked} locked on score, ${counts.picked} coach ${counts.picked === 1 ? 'pick' : 'picks'}, ${counts.open} open, of ${plural(counts.total, 'spot')}.`}
+            className="flex h-3 w-full gap-0.5 overflow-hidden rounded-full bg-surface-sunken"
+          >
+            {parts
+              .filter((p) => p.value > 0)
+              .map((p) => (
+                <span key={p.key} className={cn('h-full', p.className)} style={{ width: `${(p.value / counts.total) * 100}%` }} />
+              ))}
+          </div>
+          <ul className="flex flex-wrap gap-x-4 gap-y-1 text-caption text-text-secondary">
+            {parts.map((p) => (
+              <li key={p.key} className="flex items-center gap-1.5">
+                <span aria-hidden className={cn('h-2 w-2 rounded-full', p.className)} />
+                {p.label} <span className="font-fw-mono tabular-nums text-text-primary">{p.value}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+
+      {(next && next !== 'selected') || state === 'closed' ? (
+        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
           {state === 'closed' ? (
             <Button
               variant="primary"
-              size="sm"
+              size="lg"
               onClick={handleConfirm}
               busy={pending}
               disabled={!canConfirm}
@@ -296,14 +432,14 @@ function StateBar({
               Confirm selection
             </Button>
           ) : null}
+          {next && next !== 'selected' ? (
+            <Button variant="secondary" size="lg" onClick={handleAdvance} busy={pending}>
+              Advance to {next}
+            </Button>
+          ) : null}
         </div>
-      </div>
-      {state === 'closed' && !canConfirm ? (
-        <p className="mt-3 font-fw-sans text-caption text-text-tertiary">
-          Choose every coach&rsquo;s-pick spot (with reasoning) to unlock confirmation.
-        </p>
       ) : null}
-    </Surface>
+    </section>
   );
 }
 
@@ -336,12 +472,9 @@ function SlotLeaderboard({
             description="Candidates appear here as players are entered and post rounds."
           />
         ) : (
-          // The fixed rank/rounds/score/status columns (~244px + gaps) leave too
-          // little room for the player name on a ~320px phone, so the row gets a
-          // min-width and the list scrolls horizontally (matching the detail-page
-          // tables) instead of squeezing/wrapping the name.
-          <div className="-mx-1 overflow-x-auto px-1">
-          <ul className="flex min-w-[460px] flex-col">
+          // Phone rows fit without a sideways scroll: rounds move under the
+          // name and the status column narrows below sm.
+          <ul className="flex flex-col">
             {ranked.map((c) => {
               const locked = c.is_top_score_slot;
               const picked = c.selection?.selection_type === 'coach_pick';
@@ -349,7 +482,7 @@ function SlotLeaderboard({
                 <li
                   key={c.player_id}
                   className={cn(
-                    'flex items-center gap-4 border-b border-border-subtle py-3 last:border-b-0',
+                    'flex items-center gap-3 border-b border-border-subtle py-3 last:border-b-0 sm:gap-4',
                     locked && 'bg-accent-50/50',
                   )}
                 >
@@ -361,19 +494,24 @@ function SlotLeaderboard({
                   >
                     {c.leaderboard_rank ?? '—'}
                   </span>
-                  <Link
-                    href={`/golf/dashboard/stats?player=${c.player_id}`}
-                    className="flex-1 truncate rounded-fw-sm font-fw-sans text-body font-medium text-text-primary underline-offset-2 outline-none hover:text-accent-700 hover:underline focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas"
-                  >
-                    {c.player_first_name} {c.player_last_name}
-                  </Link>
-                  <span className="w-12 text-right font-fw-mono text-body-sm tabular-nums text-text-tertiary">
+                  <span className="flex min-w-0 flex-1 flex-col">
+                    <Link
+                      href={`/golf/dashboard/stats?player=${c.player_id}`}
+                      className="truncate rounded-fw-sm font-fw-sans text-body font-medium text-text-primary underline-offset-2 outline-none hover:text-accent-700 hover:underline focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas"
+                    >
+                      {c.player_first_name} {c.player_last_name}
+                    </Link>
+                    <span className="font-fw-mono text-caption tabular-nums text-text-tertiary sm:hidden">
+                      {plural(c.rounds_completed, 'round')}
+                    </span>
+                  </span>
+                  <span className="hidden w-12 text-right font-fw-mono text-body-sm tabular-nums text-text-tertiary sm:inline">
                     {c.rounds_completed}r
                   </span>
                   <span className="w-14 text-right font-fw-mono text-body-sm tabular-nums text-text-primary">
                     {formatToPar(c.total_to_par)}
                   </span>
-                  <span className="w-28 text-right">
+                  <span className="w-24 shrink-0 text-right sm:w-28">
                     {locked ? (
                       <StatusPill tone="accent" size="sm" dot>
                         Locked
@@ -390,7 +528,6 @@ function SlotLeaderboard({
               );
             })}
           </ul>
-          </div>
         )}
       </Surface.Body>
     </Surface>
@@ -513,14 +650,9 @@ function CoachPicks({
             description="Every entry is auto-locked on merit — no discretionary picks needed."
           />
         ) : (
-          // Same rationale as SlotLeaderboard above: the name column plus the
-          // Edit/Remove (or Pick) button cluster don't fit a ~320px phone, and
-          // this list has no scroll container of its own — so the tail of the
-          // row (including the action buttons) was silently clipped by the
-          // global mobile `overflow-x: clip` on html/body instead of merely
-          // wrapping the page. Give it the same horizontal scroller.
-          <div className="-mx-1 overflow-x-auto px-1">
-          <ul className="flex min-w-[420px] flex-col">
+          // Rows fit a phone: the name truncates and the action cluster
+          // keeps its width, so nothing is clipped and nothing scrolls sideways.
+          <ul className="flex flex-col">
             {eligible.map((c) => {
               const isPicked = c.selection?.selection_type === 'coach_pick';
               const isEditing = drafts[c.player_id] !== undefined;
@@ -528,22 +660,22 @@ function CoachPicks({
               const draftEmpty = (drafts[c.player_id] ?? '').trim().length === 0;
               return (
                 <li key={c.player_id} className="border-b border-border-subtle py-3.5 last:border-b-0">
-                  <div className="flex min-w-0 items-center gap-4">
-                    <span className="w-7 font-fw-mono text-body-sm tabular-nums text-text-tertiary">
+                  <div className="flex min-w-0 items-center gap-3 sm:gap-4">
+                    <span className="w-7 shrink-0 font-fw-mono text-body-sm tabular-nums text-text-tertiary">
                       {c.leaderboard_rank ?? '—'}
                     </span>
                     <Link
                       href={`/golf/dashboard/stats?player=${c.player_id}`}
-                      className="flex-1 truncate rounded-fw-sm font-fw-sans text-body font-medium text-text-primary underline-offset-2 outline-none hover:text-accent-700 hover:underline focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas"
+                      className="min-w-0 flex-1 truncate rounded-fw-sm font-fw-sans text-body font-medium text-text-primary underline-offset-2 outline-none hover:text-accent-700 hover:underline focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas"
                     >
                       {c.player_first_name} {c.player_last_name}
                     </Link>
-                    <span className="w-14 text-right font-fw-mono text-body-sm tabular-nums text-text-secondary">
+                    <span className="w-12 shrink-0 text-right font-fw-mono text-body-sm tabular-nums text-text-secondary">
                       {formatToPar(c.total_to_par)}
                     </span>
                     {editable && !isEditing ? (
                       isPicked ? (
-                        <div className="flex gap-1.5">
+                        <div className="flex shrink-0 gap-1.5">
                           <Button variant="ghost" size="sm" onClick={() => startEdit(c)}>
                             Edit
                           </Button>
@@ -606,7 +738,6 @@ function CoachPicks({
               );
             })}
           </ul>
-          </div>
         )}
       </Surface.Body>
     </Surface>

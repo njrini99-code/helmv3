@@ -22,6 +22,33 @@
 
 import type { MetricId } from '@/lib/coachhelm/v3/metrics/registry';
 import { COUNTERFACTUAL_MAX_STROKES_PER_ROUND } from './types';
+import { getExpectedStrokes } from '@/lib/utils/golf-stats-calculator-shots';
+
+/**
+ * Strokes one extra green in regulation is worth, from the canonical
+ * expected-strokes table (`golf-stats-calculator-shots#getExpectedStrokes`,
+ * kept in lockstep with `public.sg_expected_strokes()`).
+ *
+ * A green gained turns a missed-green finish into an on-green one, so its value
+ * is E(missed green) − E(on green):
+ *   - on green: a 30 ft first putt, 1.98;
+ *   - missed green: 20 yd from a greenside lie. 20 yd is the table's shortest
+ *     off-green anchor (shorter misses clamp to it). The fairway/fringe lie is
+ *     used, 2.40, which is the SMALLEST of the three greenside lies
+ *     (fairway 2.40, sand 2.53, rough 2.59).
+ * → 2.40 − 1.98 = 0.42 strokes per green. This is the conservative end of the
+ * table's range (0.42 fringe, 0.55 sand, 0.61 rough) on purpose: a GIR
+ * projection must not overstate, and the shot record does not say which lie a
+ * given miss finished in.
+ */
+export const GIR_ON_GREEN_LEAVE_FEET = 30;
+export const GIR_MISSED_GREEN_YARDS = 20;
+export const GIR_VALUE_PER_GREEN =
+  Math.round(
+    (getExpectedStrokes('fairway', GIR_MISSED_GREEN_YARDS) -
+      getExpectedStrokes('green', 0, GIR_ON_GREEN_LEAVE_FEET)) *
+      100,
+  ) / 100;
 
 export interface CounterfactualConfig {
   /** Strokes-per-round impact per unit of player_value improvement. */
@@ -43,20 +70,30 @@ export interface CounterfactualConfig {
    *   strokes_saved = (gap_pp / 100) × player_attempts_per_round × value_per_unit
    * instead of the global `stroke_impact_per_unit`. Names a metric the caller
    * resolves from cache/standing:
-   *   'sand_attempts_per_round'     → cache.sand_attempts / rounds_played
-   *   'gir_misses_per_round'        → (greens_total − greens_hit) / rounds_played
+   *   'sand_attempts_per_round'     → engine: greenside-bunker shots / countable rounds in the
+   *                                    window; Standing panel: cache.sand_attempts / rounds_played
+   *   'gir_attempts_per_round'      → greens_total / countable rounds (GIR opportunities:
+   *                                    gir_pct's own denominator, so gap_pp/100 × rate
+   *                                    = greens gained per round)
    *   'approach_attempts_per_round' → shots in the bucket / rounds (generator-supplied)
    *   'putt_attempts_per_round'     → typical putts/round in the distance bucket
    *   'holes_per_round'             → par-type hole count (4 par-3s / 10 par-4s / 4 par-5s)
    */
   attempt_metric?:
     | 'sand_attempts_per_round'
-    | 'gir_misses_per_round'
+    | 'gir_attempts_per_round'
     | 'approach_attempts_per_round'
     | 'putt_attempts_per_round'
     | 'holes_per_round';
   /** Strokes saved per successful attempt at full conversion (paired with attempt_metric). */
   value_per_unit?: number;
+  /**
+   * When true, the metric is sized ONLY on the attempt-rate path: a caller
+   * with no player-own rate gets a suppressed, unsized projection
+   * (`no_attempt_rate`) instead of the `stroke_impact_per_unit` fallback.
+   * Set where that fallback is known to overstate (gir_pct).
+   */
+  requires_attempt_rate?: boolean;
 }
 
 export const COUNTERFACTUAL_LOOKUP: Record<MetricId, CounterfactualConfig> = {
@@ -78,6 +115,19 @@ export const COUNTERFACTUAL_LOOKUP: Record<MetricId, CounterfactualConfig> = {
   // makeable (Tour ~90%), so a missed pp here is the single highest-leverage,
   // fastest-to-fix putting gap. Bumped 0.06→0.10 so a large short-putt gap
   // floors to `high` (the counterfactual ceiling + 0.3 floor still bound it).
+  //
+  // The putt-distance generator supplies the player's OWN band attempts per
+  // round (band attempts ÷ rounds_played), so these rows are sized on the
+  // attempt-rate path: (gap_pp / 100) × attempts_per_round × value_per_unit.
+  // `stroke_impact_per_unit` above is only the fallback when no rate is known.
+  //
+  // value_per_unit = 1.0 for EVERY band, on purpose: the gap is counted in
+  // makes, and each extra make is a putt that was a miss, which costs one
+  // more stroke at minimum (a miss is followed by at least one more putt).
+  // That holds at 25 ft as at 4 ft. "Longer putts cost less than a stroke per
+  // miss" is true of expected-strokes SG (a 25-ft miss is expected), not of a
+  // make-% gap: converting one more 25-ft putt still saves a full stroke.
+  // The long-band discount lives in the tiny gaps (Tour 5.5% from 25+ ft).
   putts_made_3_5ft_pct:      { stroke_impact_per_unit: 0.10,  coachable_timeframe_weeks: 4,  attempt_metric: 'putt_attempts_per_round', value_per_unit: 1.0 },
   putts_made_5_10ft_pct:     { stroke_impact_per_unit: 0.03,  coachable_timeframe_weeks: 6,  attempt_metric: 'putt_attempts_per_round', value_per_unit: 1.0 },
   putts_made_10_15ft_pct:    { stroke_impact_per_unit: 0.02,  coachable_timeframe_weeks: 8,  attempt_metric: 'putt_attempts_per_round', value_per_unit: 1.0 },
@@ -134,8 +184,24 @@ export const COUNTERFACTUAL_LOOKUP: Record<MetricId, CounterfactualConfig> = {
   scoring_par_4: { stroke_impact_per_unit: 10, coachable_timeframe_weeks: 12, max_strokes_saved_per_round: 1.5, attempt_metric: 'holes_per_round', value_per_unit: 1.0 },
   scoring_par_5: { stroke_impact_per_unit: 4,  coachable_timeframe_weeks: 8,  max_strokes_saved_per_round: 1.0, attempt_metric: 'holes_per_round', value_per_unit: 1.0 },
 
-  // GIR — each pp ≈ 0.18 holes/round × 0.5 strokes per GIR = ~0.09 strokes/pp
-  gir_pct: { stroke_impact_per_unit: 0.09, coachable_timeframe_weeks: 12, attempt_metric: 'gir_misses_per_round', value_per_unit: 0.5 },
+  // GIR — attempt-rate only (requires_attempt_rate):
+  //   strokes = (gap_pp / 100) × gir_attempts_per_round × GIR_VALUE_PER_GREEN
+  // i.e. greens gained per round (the gap is a share of the player's own GIR
+  // opportunities) × 0.42 strokes per green from the expected-strokes table.
+  // The old legacy constant (0.09/pp = a fixed 18 holes × 0.5 stroke, an
+  // uncited value) sized every player as if they had 18 opportunities a round
+  // and was the fallback whenever no rate was passed; the old attempt metric
+  // (misses per round) was dimensionally wrong (gap × misses). With no
+  // player-own opportunity rate the projection is now suppressed, unsized.
+  // `stroke_impact_per_unit` is 0 so nothing can fall back to a per-pp
+  // constant; requires_attempt_rate means compute never reads it.
+  gir_pct: {
+    stroke_impact_per_unit: 0,
+    coachable_timeframe_weeks: 12,
+    attempt_metric: 'gir_attempts_per_round',
+    value_per_unit: GIR_VALUE_PER_GREEN,
+    requires_attempt_rate: true,
+  },
 
   // Pressure + warmup
   // Pressure gap is "typical / slow-to-close" (domain doc §9-10) — only a

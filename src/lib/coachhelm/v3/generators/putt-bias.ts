@@ -244,11 +244,19 @@ export class PuttBiasGenerator extends BaseGenerator<PuttBiasAggregate> {
       agg.weak_pct === null ||
       agg.strong_pct === null
     ) {
+      const balancedTitle = 'Putting break check: no directional bias detected';
       return {
-        title: 'Putting break check: no directional bias detected',
+        title: balancedTitle,
         content: `Across your last ${agg.rounds_played} rounds, your make rate on left-break vs right-break putts is statistically even once distance is controlled for — no single break direction stands out. Keep working both ways on the practice green.`,
+        // Coach voice: the same read in neutral third person (evidence.coach_copy).
+        coach: {
+          title: balancedTitle,
+          content: `Across the player's last ${agg.rounds_played} rounds, their make rate on left-break vs right-break putts is statistically even once distance is controlled for — no single break direction stands out. Keep them working both ways on the practice green.`,
+        },
         priority: 'low',
         signature: 'putt_bias:balanced',
+        // No directional bias → nothing to diagnose.
+        framing: 'neutral',
         evidence: {
           metric: 'putt_miss_bias_left_pct',
           metric_label: 'Break-direction make % (distance-controlled)',
@@ -289,12 +297,29 @@ export class PuttBiasGenerator extends BaseGenerator<PuttBiasAggregate> {
     const slopeAction = agg.slope
       ? ` It shows up most on ${agg.slope} ${agg.band} putts, so rehearse that exact look.`
       : '';
+    // Coach voice: the same read in neutral third person (evidence.coach_copy).
+    const coachAction =
+      `have the player start their read higher on the ${agg.weakest_direction} edge and commit to playing more ` +
+      `break — their makes drop on ${breakLabel} putts, the classic under-read.`;
+    const coachSlopeAction = agg.slope
+      ? ` It shows up most on ${agg.slope} ${agg.band} putts, so have them rehearse that exact look.`
+      : '';
+    const gapClause =
+      `${weakDisp} of ${breakLabel} breaks vs ${strongDisp} the other way — a ${gap}-point gap at matched ` +
+      `distance (n=${agg.weak_n}/${agg.strong_n}).`;
+    const title = `Putting break: under-reading ${breakLabel} (${agg.band})`;
 
     return {
-      title: `Putting break: under-reading ${breakLabel} (${agg.band})`,
-      content: `On ${agg.band}${slopeText} putts you're making ${weakDisp} of ${breakLabel} breaks vs ${strongDisp} the other way — a ${gap}-point gap at matched distance (n=${agg.weak_n}/${agg.strong_n}). ${action}${slopeAction}`,
+      title,
+      content: `On ${agg.band}${slopeText} putts you're making ${gapClause} ${action}${slopeAction}`,
+      // The title carries no second person, so the coach title is the same.
+      coach: {
+        title,
+        content: `On ${agg.band}${slopeText} putts the player is making ${gapClause} ${coachAction}${coachSlopeAction}`,
+      },
       priority: 'medium',
       signature: `putt_bias:${agg.weakest_direction}:${agg.band}`,
+      framing: 'leak',
       evidence: {
         metric: computedMetricId,
         metric_label: 'Break-direction make % (distance-controlled)',

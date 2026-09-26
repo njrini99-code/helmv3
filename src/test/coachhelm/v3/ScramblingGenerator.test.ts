@@ -1,10 +1,20 @@
 import { describe, it, expect, vi } from 'vitest';
 import { ScramblingGenerator } from '@/lib/coachhelm/v3/generators/scrambling';
-import { loadSandShots, type SandShot } from '@/lib/coachhelm/v3/engine/shot-source';
+import {
+  loadCountableRoundIds,
+  loadSandShots,
+  type SandShot,
+} from '@/lib/coachhelm/v3/engine/shot-source';
+import { computeCounterfactual } from '@/lib/coachhelm/v3/counterfactual/compute';
 
 vi.mock('@/lib/coachhelm/v3/engine/shot-source', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/lib/coachhelm/v3/engine/shot-source')>();
-  return { ...actual, loadSandShots: vi.fn() };
+  return {
+    ...actual,
+    loadSandShots: vi.fn(),
+    // Default: one countable round, 'r-1', which every sandShot() uses.
+    loadCountableRoundIds: vi.fn().mockResolvedValue(['r-1']),
+  };
 });
 
 vi.mock('@/lib/coachhelm/v3/engine/hole-diagnosis', async (importOriginal) => {
@@ -15,6 +25,7 @@ vi.mock('@/lib/coachhelm/v3/counterfactual/player-cohort-loader', () => ({
   loadPlayerCohort: vi.fn().mockResolvedValue({ gender: 'mens', level: null }),
 }));
 const mockLoadSandShots = vi.mocked(loadSandShots);
+const mockLoadCountableRoundIds = vi.mocked(loadCountableRoundIds);
 
 const PLAYER_ID = 'p-1';
 
@@ -200,5 +211,76 @@ describe('evidence.window_end carries the newest contributing round', () => {
     const g = new ScramblingGenerator(PLAYER_ID, 'sand');
     const c = g.composeContent(makeAgg({ playerValue: 30, attempts: 20, rounds_played: 12 }));
     expect(c.evidence.window_end).toBe('2026-05-25');
+  });
+});
+
+// Regression (2026-09-25): the per-round sand attempt rate divided by the rounds
+// that HAD a bunker shot, not by every countable round in the window. A player
+// with 6 bunker shots spread over 2 of 5 countable rounds read 3.0 attempts a
+// round instead of 1.2, which inflated the counterfactual 2.5x.
+describe('ScramblingGenerator — attempt rate over every countable round', () => {
+  const SIX_SHOTS_IN_TWO_ROUNDS: SandShot[] = [
+    sandShot({ round_id: 'r-1', hole_number: 1 }),
+    sandShot({ round_id: 'r-1', hole_number: 4 }),
+    sandShot({ round_id: 'r-1', hole_number: 9 }),
+    sandShot({ round_id: 'r-2', hole_number: 2 }),
+    sandShot({ round_id: 'r-2', hole_number: 7 }),
+    sandShot({ round_id: 'r-2', hole_number: 12, reached_green: false, leave_distance_feet: null }),
+  ];
+
+  it('divides attempts by all countable rounds, including rounds with no bunker shot', async () => {
+    mockLoadCountableRoundIds.mockResolvedValueOnce(['r-1', 'r-2', 'r-3', 'r-4', 'r-5']);
+    mockLoadSandShots.mockReset();
+    mockLoadSandShots.mockResolvedValue(SIX_SHOTS_IN_TWO_ROUNDS);
+
+    const agg = await new ScramblingGenerator(PLAYER_ID, 'sand').aggregate();
+
+    expect(agg!.attempts).toBe(6);
+    expect(agg!.rounds_played).toBe(5);
+    expect(agg!.attempts_per_round).toBeCloseTo(6 / 5); // was 6 / 2 = 3.0
+    // The shots are loaded from the SAME countable-round set.
+    expect(mockLoadSandShots).toHaveBeenCalledWith(PLAYER_ID, undefined, ['r-1', 'r-2', 'r-3', 'r-4', 'r-5']);
+  });
+
+  it('sizes the counterfactual off the corrected rate (2.5x smaller than the old one)', async () => {
+    mockLoadCountableRoundIds.mockResolvedValueOnce(['r-1', 'r-2', 'r-3', 'r-4', 'r-5']);
+    mockLoadSandShots.mockReset();
+    mockLoadSandShots.mockResolvedValue(SIX_SHOTS_IN_TWO_ROUNDS);
+    const agg = await new ScramblingGenerator(PLAYER_ID, 'sand').aggregate();
+
+    const base = {
+      metric_id: 'scrambling_pct_sand',
+      direction: 'higher_better' as const,
+      player_value: 10,
+      pga_value: 50,
+      cohort_value: null,
+      player_30d_scoring_avg: 76,
+    };
+    const fixed = computeCounterfactual({ ...base, player_attempts_per_round: agg!.attempts_per_round });
+    const old = computeCounterfactual({ ...base, player_attempts_per_round: 6 / 2 });
+    // 40pp × 1.2 attempts × 0.85 = 0.408; the old 3.0 rate gave 1.02.
+    expect(fixed.strokes_saved_per_round).toBeCloseTo(0.4 * 1.2 * 0.85, 5);
+    expect(old.strokes_saved_per_round).toBeCloseTo(0.4 * 3.0 * 0.85, 5);
+    expect(fixed.attempts_used).toBeCloseTo(1.2);
+  });
+
+  it('returns null (no insight) when the window has no countable round', async () => {
+    mockLoadCountableRoundIds.mockResolvedValueOnce([]);
+    mockLoadSandShots.mockReset();
+    mockLoadSandShots.mockResolvedValue(SIX_SHOTS_IN_TWO_ROUNDS);
+    expect(await new ScramblingGenerator(PLAYER_ID, 'sand').aggregate()).toBeNull();
+    expect(mockLoadSandShots).not.toHaveBeenCalled();
+  });
+
+  it('ships a coach-voice copy with no second person for every failure mode', () => {
+    const g = new ScramblingGenerator('p1', 'sand');
+    for (const failure_mode of ['lag', 'escape', 'mixed'] as const) {
+      const c = g.composeContent(makeAgg({ attempts: 20, failure_mode }));
+      expect(c.coach, failure_mode).toBeDefined();
+      expect(c.coach!.content, failure_mode).not.toMatch(/\byou(r|'re)?\b/i);
+      expect(c.coach!.title, failure_mode).not.toMatch(/\byou(r|'re)?\b/i);
+      // Same numbers as the player copy: only the voice changes.
+      for (const n of c.content.match(/\d+(\.\d+)?%?/g) ?? []) expect(c.coach!.content, failure_mode).toContain(n);
+    }
   });
 });

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { PuttSlopeBiasGenerator, selectDownhillPenaltyCut, bandForSlopePenalty } from '../putt-slope-bias';
+import { PuttSlopeBiasGenerator, selectDownhillPenaltyCut, bandForSlopePenalty, UPHILL_SIMILAR_PP } from '../putt-slope-bias';
 import type { PuttSlopeBiasAggregate, PuttSlopeRow } from '../putt-slope-bias';
 
 const gen = new PuttSlopeBiasGenerator('49ffe06d-9b22-4f2f-8c69-f56badbbde6b');
@@ -8,6 +8,7 @@ function agg(overrides: Partial<PuttSlopeBiasAggregate>): PuttSlopeBiasAggregate
   return {
     sampleN: 12, playerValue: 0, rounds_played: 12,
     band: '0-3 ft', downhill_pct: 55, level_pct: 96, gap_pp: 41, downhill_n: 13, level_n: 13,
+    uphill_pct: null, uphill_n: 0, sloped: false,
     ...overrides,
   };
 }
@@ -184,5 +185,90 @@ describe('selectDownhillPenaltyCut — distance-band-controlled downhill vs leve
     const cut = selectDownhillPenaltyCut(rows);
     expect(cut).not.toBeNull();
     expect(cut!.band).toBe('0-3 ft');
+  });
+});
+
+/**
+ * Uphill check (reconciliation 2026-09-25). Player 49ffe06d… inside 4-6 ft:
+ * downhill 11/26, uphill 11/25, level 8/12 — uphill is as weak as downhill,
+ * so the copy must not single out downhill.
+ */
+describe('selectDownhillPenaltyCut — uphill as weak as downhill means "sloped"', () => {
+  const base = [
+    ...Array(12).fill(0).map(() => row('level', 5, true)),
+    ...Array(1).fill(0).map(() => row('level', 5, false)),
+    ...Array(6).fill(0).map(() => row('downhill', 5, true)),
+    ...Array(7).fill(0).map(() => row('downhill', 5, false)),
+  ];
+
+  it('flags sloped when uphill is within UPHILL_SIMILAR_PP of downhill', () => {
+    const rows = [
+      ...base,
+      ...Array(5).fill(0).map(() => row('uphill', 5, true)),
+      ...Array(6).fill(0).map(() => row('uphill', 5, false)),
+    ];
+    const cut = selectDownhillPenaltyCut(rows)!;
+    expect(cut).not.toBeNull();
+    expect(cut.uphill_n).toBe(11);
+    expect(cut.uphill_pct).toBeCloseTo((5 / 11) * 100, 6);
+    expect(cut.uphill_pct! - cut.downhill_pct).toBeLessThanOrEqual(UPHILL_SIMILAR_PP);
+    expect(cut.sloped).toBe(true);
+    // Uphill never enters the downhill-vs-level test itself.
+    expect(cut.level_n).toBe(13);
+    expect(cut.downhill_n).toBe(13);
+  });
+
+  it('keeps the downhill claim when uphill is clearly better', () => {
+    const rows = [
+      ...base,
+      ...Array(10).fill(0).map(() => row('uphill', 5, true)),
+      ...Array(1).fill(0).map(() => row('uphill', 5, false)),
+    ];
+    const cut = selectDownhillPenaltyCut(rows)!;
+    expect(cut.sloped).toBe(false);
+  });
+
+  it('keeps the downhill claim when uphill is too thin to read', () => {
+    const rows = [...base, ...Array(3).fill(0).map(() => row('uphill', 5, false))];
+    const cut = selectDownhillPenaltyCut(rows)!;
+    expect(cut.uphill_pct).toBeNull();
+    expect(cut.uphill_n).toBe(3);
+    expect(cut.sloped).toBe(false);
+  });
+
+  it('sloped copy names sloped putts and does not single out downhill', () => {
+    const c = gen.composeContent(agg({
+      band: '4-6 ft', downhill_pct: 42.3, level_pct: 66.7, gap_pp: 24.4, downhill_n: 26, level_n: 12,
+      uphill_pct: 44, uphill_n: 25, sloped: true,
+    }));
+    expect(c.title).toBe('Sloped putts inside 4-6 ft: a real penalty');
+    expect(c.title.toLowerCase()).not.toContain('downhill');
+    expect(c.content).toContain('44% of uphill putts');
+    expect(c.content).toContain('n=26 downhill / 25 uphill / 12 level');
+    expect(c.content.toLowerCase()).not.toMatch(/downhill-only/);
+    expect(c.evidence.metric_label).toBe('Downhill vs level putt make % (distance-controlled; uphill as weak)');
+    expect(c.signature).toBe('putt_slope_bias:4-6 ft');
+  });
+});
+
+describe('PuttSlopeBiasGenerator — coach voice', () => {
+  const SECOND_PERSON = /\byou(r|'re|'ll|'ve)?\b/i;
+  const cases: Array<[string, PuttSlopeBiasAggregate]> = [
+    ['downhill', agg({ band: '4-6 ft', downhill_pct: 40, level_pct: 65, gap_pp: 25, downhill_n: 20, level_n: 18 })],
+    ['sloped', agg({
+      band: '4-6 ft', downhill_pct: 42.3, level_pct: 66.7, gap_pp: 24.4, downhill_n: 26, level_n: 12,
+      uphill_pct: 44, uphill_n: 25, sloped: true,
+    })],
+  ];
+
+  it('ships a coach-voice copy with no second person and the same numbers for every branch', () => {
+    for (const [name, a] of cases) {
+      const c = gen.composeContent(a);
+      expect(c.coach, name).toBeDefined();
+      expect(c.coach!.title, name).not.toMatch(SECOND_PERSON);
+      expect(c.coach!.content, name).not.toMatch(SECOND_PERSON);
+      // Same numbers as the player copy: only the voice changes.
+      for (const n of c.content.match(/\d+(\.\d+)?%?/g) ?? []) expect(c.coach!.content, name).toContain(n);
+    }
   });
 });

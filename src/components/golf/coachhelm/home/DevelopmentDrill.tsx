@@ -16,7 +16,7 @@
 import { useCallback, useState, useTransition } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Clock, CheckCircle2, Target } from 'lucide-react';
+import { Clock, CheckCircle2, Flag, Sparkles, Target } from 'lucide-react';
 
 import { DrillPanel, useStage } from '@/components/fairway/modules';
 import { useMediaQuery } from '@/hooks/use-media-query';
@@ -25,13 +25,9 @@ import {
   Surface,
   EmptyState,
   InlineNotice,
-  InstrumentPanel,
-  Readout,
-  formatPercent,
   FormField,
   Input,
   TextArea,
-  Eyebrow,
   FocusAreaCard,
   type FocusAreaCardData,
 } from '@/components/fairway';
@@ -60,6 +56,8 @@ import {
 } from '@/app/golf/actions/development';
 import { logFocusAreaPracticeSession } from '@/app/golf/actions/focus-area-practice-log';
 import { useToast } from '@/components/ui/sonner';
+import { Disclosure } from '@/components/golf/coachhelm/root-map/Disclosure';
+import { DrillSummary } from './DrillSummary';
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription } from '@/components/ui/drawer';
 
 export interface DevelopmentDrillProps {
@@ -236,11 +234,14 @@ function LogProgressDrawer({ state, onClose }: { state: LogProgressState | null;
 /* ── ProposedAreaCard — ported verbatim from FairwayMyDevelopment. ───────── */
 function ProposedAreaCard({
   focusArea,
+  primary = true,
   deciding,
   onAccept,
   onDecline,
 }: {
   focusArea: FocusAreaCardData;
+  /** Only the first prescribed card carries the screen's primary action. */
+  primary?: boolean;
   deciding: boolean;
   onAccept: () => void;
   onDecline: () => void;
@@ -283,7 +284,7 @@ function ProposedAreaCard({
         <Button variant="ghost" onClick={onDecline} disabled={deciding}>
           Decline
         </Button>
-        <Button variant="primary" busy={deciding} onClick={onAccept}>
+        <Button variant={primary ? 'primary' : 'secondary'} busy={deciding} onClick={onAccept}>
           Accept
         </Button>
       </div>
@@ -291,53 +292,87 @@ function ProposedAreaCard({
   );
 }
 
-/* ── DevelopmentOverviewInstrument — ported verbatim. ─────────────────────── */
-function DevelopmentOverviewInstrument({ activeCount, completedCount }: { activeCount: number; completedCount: number }) {
+/* ── DevelopmentSummary — the drill's one summary card (root-map style). ── */
+function numberText(n: number | null | undefined): string | null {
+  return typeof n === 'number' && Number.isFinite(n) ? String(n) : null;
+}
+
+function DevelopmentSummary({
+  activeAreas,
+  completedCount,
+  proposedCount,
+  goalCount,
+  action,
+}: {
+  activeAreas: FocusAreaCardData[];
+  completedCount: number;
+  proposedCount: number;
+  goalCount: number;
+  action?: React.ReactNode;
+}) {
+  const activeCount = activeAreas.length;
   const total = activeCount + completedCount;
-  const completionRate = total > 0 ? completedCount / total : 0;
-  const anyCompleted = completedCount > 0;
+  const top = activeAreas[0] ?? null;
+  const topCurrent = numberText(top?.current_value);
+  const topTarget = numberText(top?.target_value);
+
+  const takeaway =
+    proposedCount > 0
+      ? `Your coach prescribed ${proposedCount} focus ${proposedCount === 1 ? 'area' : 'areas'} for you. Accept to start tracking.`
+      : top
+        ? `Top focus: ${top.title || getAreaType(top.area_type).label}${
+            topCurrent && topTarget ? `, at ${topCurrent} with a target of ${topTarget}` : ''
+          }.`
+        : completedCount > 0
+          ? `All ${completedCount} focus ${completedCount === 1 ? 'area is' : 'areas are'} complete. Set the next one when you're ready.`
+          : 'No focus areas yet. Pick one stat to work on, or wait for your coach to prescribe one.';
+
+  const basis = [
+    `${completedCount} completed`,
+    `${goalCount} ${goalCount === 1 ? 'goal' : 'goals'} in flight`,
+    proposedCount > 0 ? `${proposedCount} waiting for you` : null,
+  ]
+    .filter(Boolean)
+    .join(' · ');
 
   return (
-    <InstrumentPanel padding="lg" header="Development progress" as="section">
-      <div className="grid grid-cols-1 gap-6 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
-        <div className="flex flex-col gap-4">
-          <Readout
-            value={activeCount}
-            format={{ maximumFractionDigits: 0 }}
-            label="Active focus areas"
-            unit={activeCount === 1 ? 'area' : 'areas'}
-            size="hero"
-            state={activeCount > 0 ? 'live' : 'awaiting'}
-            samples={activeCount === 0 ? { have: 0, need: 1 } : undefined}
-            awaitingLabel="None active"
-          />
-          <InstrumentPanel depth="inset" padding="sm" className="w-full max-w-[18rem]">
-            <Readout
-              value={completedCount}
-              format={{ maximumFractionDigits: 0 }}
-              label="Completed"
-              unit={completedCount === 1 ? 'area' : 'areas'}
-              size="md"
-              state={anyCompleted ? 'live' : 'awaiting'}
-              samples={anyCompleted ? undefined : { have: 0, need: 1 }}
-              awaitingLabel="None yet"
-            />
-          </InstrumentPanel>
-        </div>
-        <div className="flex justify-center sm:justify-end">
-          <Readout
-            value={anyCompleted ? completionRate : undefined}
-            display={anyCompleted ? formatPercent(completionRate, 0) : undefined}
-            label="Plan complete"
-            size="lg"
-            align="end"
-            state={anyCompleted ? 'live' : 'awaiting'}
-            samples={anyCompleted ? undefined : { have: 0, need: 1 }}
-            awaitingLabel="None yet"
-          />
-        </div>
-      </div>
-    </InstrumentPanel>
+    <DrillSummary
+      slot="development-summary"
+      eyebrow="Active focus areas"
+      value={String(activeCount)}
+      unit={activeCount === 1 ? 'area' : 'areas'}
+      takeaway={takeaway}
+      visual={
+        total > 0 ? (
+          <div className="flex flex-col gap-1.5">
+            <div
+              role="img"
+              aria-label={`${completedCount} of ${total} focus areas complete`}
+              className="h-3 w-full overflow-hidden rounded-full bg-surface-sunken"
+              data-slot="development-progress"
+            >
+              <div className="h-full rounded-full bg-accent-500" style={{ width: `${(completedCount / total) * 100}%` }} />
+            </div>
+            <p aria-hidden className="text-caption text-text-secondary">
+              <span className="font-fw-mono tabular-nums text-text-primary">
+                {completedCount}/{total}
+              </span>{' '}
+              of your plan complete
+            </p>
+          </div>
+        ) : null
+      }
+      basis={basis}
+      action={action}
+    />
+  );
+}
+
+function CountMeta({ n, one, many }: { n: number; one: string; many: string }) {
+  return (
+    <span className="shrink-0 text-caption font-normal text-text-tertiary">
+      <span className="font-fw-mono tabular-nums text-text-secondary">{n}</span> {n === 1 ? one : many}
+    </span>
   );
 }
 
@@ -502,32 +537,30 @@ export function DevelopmentDrill({
     [addToast, completingId, handleReopen, router, startTransition],
   );
 
-  const headerActions = (
-    <div className="flex flex-wrap items-center gap-2">
-      {total > 0 ? (
-        <Button asChild variant="secondary">
-          <Link href="/golf/dashboard/messages">Message coach</Link>
-        </Button>
-      ) : null}
-      {canCreateOwn ? (
-        // flex-nowrap + a real <span> around the label: DrillPanel gives this
-        // chip slot `w-full` on mobile, so the two header buttons share one
-        // narrow row and this one gets squeezed. The bare text node was an
-        // anonymous flex item that broke onto its own line, stacking the "+"
-        // ABOVE "New focus area" (iPhone, 2026-07-25). Button's base
-        // whitespace-nowrap stops the text breaking mid-phrase but cannot stop
-        // two flex items separating.
-        <Button
-          variant="primary"
-          onClick={() => setCreateOpen(true)}
-          className="flex-nowrap"
-        >
-          <IconPlus size={16} className="shrink-0" />
-          <span className="whitespace-nowrap">New focus area</span>
-        </Button>
-      ) : null}
-    </div>
-  );
+  // One primary action per screen: when the coach has prescribed areas, the
+  // first "Accept" is it; with no areas at all, the empty state's "New focus
+  // area" is it. Everywhere else "New focus area" is a secondary header
+  // action (hidden while the empty state carries it). Active areas sit in a
+  // closed disclosure too: each FocusAreaCard carries its own "Mark complete"
+  // primary, so an open list would put N primaries on the first paint.
+  const summaryAction =
+    total > 0 ? (
+      <Button asChild variant="ghost">
+        <Link href="/golf/dashboard/messages">Message coach</Link>
+      </Button>
+    ) : null;
+
+  const headerActions =
+    canCreateOwn && hasAnyArea ? (
+      // flex-nowrap + a real <span> around the label: DrillPanel gives this
+      // chip slot `w-full` on mobile. The bare text node was an anonymous flex
+      // item that broke onto its own line, stacking the "+" ABOVE "New focus
+      // area" (iPhone, 2026-07-25).
+      <Button variant="secondary" onClick={() => setCreateOpen(true)} className="flex-nowrap">
+        <IconPlus size={16} className="shrink-0" />
+        <span className="whitespace-nowrap">New focus area</span>
+      </Button>
+    ) : undefined;
 
   return (
     <DrillPanel title="Development" backLabel="Home" onBack={home} chip={headerActions}>
@@ -544,32 +577,30 @@ export function DevelopmentDrill({
           Something went wrong loading your development plans. Try again in a moment.
         </InlineNotice>
       ) : (
-        <div className="flex flex-col gap-10">
-          <GoalsSection
-            // eslint-disable-next-line jsx-a11y/aria-role
-            role="player"
-            canCreate
-            activeGoals={goals ?? []}
-            suggestions={suggestions ?? []}
-            achievedGoals={achievedGoals ?? []}
+        <div className="flex flex-col gap-6">
+          <DevelopmentSummary
+            activeAreas={activeAreas}
+            completedCount={completedAreas.length}
+            proposedCount={proposedAreas.length}
+            goalCount={goals.length}
+            action={summaryAction}
           />
 
-          <CausalWhyPanel relationships={causalRelationships} />
-
           {proposedAreas.length > 0 ? (
-            <section>
-              <h2 className="mb-4 flex items-center gap-2 font-fw-display text-h3 font-medium text-text-primary">
+            <section className="flex flex-col gap-3" data-slot="development-prescribed">
+              <h2 className="flex items-center gap-2 px-1 font-fw-display text-body-lg font-semibold text-text-primary">
                 <Target className="h-5 w-5 text-accent-600" aria-hidden />
                 Prescribed for you
-                <span className="ml-auto font-fw-sans text-body-sm font-normal text-text-tertiary">
-                  {proposedAreas.length} pending
+                <span className="ml-auto font-fw-sans text-caption font-normal text-text-tertiary">
+                  <span className="font-fw-mono tabular-nums">{proposedAreas.length}</span> pending
                 </span>
               </h2>
               <div className="flex flex-col gap-3">
-                {proposedAreas.map((fa) => (
+                {proposedAreas.map((fa, i) => (
                   <ProposedAreaCard
                     key={fa.id}
                     focusArea={fa}
+                    primary={i === 0}
                     deciding={decidingId === fa.id}
                     onAccept={() => handleAccept(fa)}
                     onDecline={() => handleDecline(fa)}
@@ -600,70 +631,105 @@ export function DevelopmentDrill({
             </Surface>
           ) : null}
 
-          {total > 0 ? (
-            <div className="flex flex-col gap-6 border-t border-border-subtle pt-8">
-              <Eyebrow>Your plan</Eyebrow>
-
-              <DevelopmentOverviewInstrument activeCount={activeAreas.length} completedCount={completedAreas.length} />
-
-              {activeAreas.length > 0 ? (
-                <section>
-                  <h2 className="mb-4 flex items-center gap-2 font-fw-display text-h3 font-medium text-text-primary">
+          <div className="flex flex-col" data-slot="development-detail">
+            {activeAreas.length > 0 ? (
+              <Disclosure
+                slot="development-active"
+                headingLevel={2}
+                title={
+                  <span className="flex items-center gap-2">
                     <Clock className="h-5 w-5 text-accent-600" aria-hidden />
                     Active focus areas
-                    <span className="ml-auto font-fw-sans text-body-sm font-normal text-text-tertiary">
-                      {activeAreas.length} {activeAreas.length === 1 ? 'area' : 'areas'}
-                    </span>
-                  </h2>
-                  <div className="flex flex-col gap-4">
-                    {activeAreas.map((fa, i) => {
-                      const m = fa.target_metric;
-                      const st = m && isMetricId(m) ? standingByMetric?.[m] : undefined;
-                      return (
-                        <FocusAreaCard
-                          key={fa.id}
-                          focusArea={fa}
-                          // eslint-disable-next-line jsx-a11y/aria-role
-                          role="player"
-                          index={i}
-                          onLogProgress={handleLogProgress}
-                          onComplete={handleComplete}
-                          completing={completingId === fa.id}
-                          standing={st}
-                          onLogPracticeSession={practiceLogEnabled ? handleLogPracticeSession : undefined}
-                        />
-                      );
-                    })}
-                  </div>
-                </section>
-              ) : null}
-
-              {completedAreas.length > 0 ? (
-                <section>
-                  <h2 className="mb-4 flex items-center gap-2 font-fw-display text-h3 font-medium text-text-primary">
-                    <CheckCircle2 className="h-5 w-5 text-text-tertiary" aria-hidden />
-                    Completed
-                    <span className="ml-auto font-fw-sans text-body-sm font-normal text-text-tertiary">
-                      {completedAreas.length} {completedAreas.length === 1 ? 'area' : 'areas'}
-                    </span>
-                  </h2>
-                  <div className="flex flex-col gap-3">
-                    {completedAreas.map((fa, i) => (
+                  </span>
+                }
+                meta={<CountMeta n={activeAreas.length} one="area" many="areas" />}
+              >
+                <div className="flex flex-col gap-4">
+                  {activeAreas.map((fa, i) => {
+                    const m = fa.target_metric;
+                    const st = m && isMetricId(m) ? standingByMetric?.[m] : undefined;
+                    return (
                       <FocusAreaCard
                         key={fa.id}
                         focusArea={fa}
                         // eslint-disable-next-line jsx-a11y/aria-role
                         role="player"
                         index={i}
-                        onReopen={handleReopen}
-                        reopening={reopeningId === fa.id}
+                        onLogProgress={handleLogProgress}
+                        onComplete={handleComplete}
+                        completing={completingId === fa.id}
+                        standing={st}
+                        onLogPracticeSession={practiceLogEnabled ? handleLogPracticeSession : undefined}
                       />
-                    ))}
-                  </div>
-                </section>
-              ) : null}
-            </div>
-          ) : null}
+                    );
+                  })}
+                </div>
+              </Disclosure>
+            ) : null}
+
+            <Disclosure
+              slot="development-goals"
+              headingLevel={2}
+              title={
+                <span className="flex items-center gap-2">
+                  <Flag className="h-5 w-5 text-accent-600" aria-hidden />
+                  Goals
+                </span>
+              }
+              meta={<CountMeta n={goals.length} one="active" many="active" />}
+            >
+              <GoalsSection
+                // eslint-disable-next-line jsx-a11y/aria-role
+                role="player"
+                canCreate
+                activeGoals={goals ?? []}
+                suggestions={suggestions ?? []}
+                achievedGoals={achievedGoals ?? []}
+              />
+            </Disclosure>
+
+            <Disclosure
+              slot="development-causal"
+              headingLevel={2}
+              title={
+                <span className="flex items-center gap-2">
+                  <Sparkles className="h-5 w-5 text-accent-600" aria-hidden />
+                  What moves your score
+                </span>
+              }
+              meta={<CountMeta n={causalRelationships.length} one="link" many="links" />}
+            >
+              <CausalWhyPanel relationships={causalRelationships} title="Links found in your rounds" />
+            </Disclosure>
+
+            {completedAreas.length > 0 ? (
+              <Disclosure
+                slot="development-completed"
+                headingLevel={2}
+                title={
+                  <span className="flex items-center gap-2">
+                    <CheckCircle2 className="h-5 w-5 text-text-tertiary" aria-hidden />
+                    Completed
+                  </span>
+                }
+                meta={<CountMeta n={completedAreas.length} one="area" many="areas" />}
+              >
+                <div className="flex flex-col gap-3">
+                  {completedAreas.map((fa, i) => (
+                    <FocusAreaCard
+                      key={fa.id}
+                      focusArea={fa}
+                      // eslint-disable-next-line jsx-a11y/aria-role
+                      role="player"
+                      index={i}
+                      onReopen={handleReopen}
+                      reopening={reopeningId === fa.id}
+                    />
+                  ))}
+                </div>
+              </Disclosure>
+            ) : null}
+          </div>
         </div>
       )}
 

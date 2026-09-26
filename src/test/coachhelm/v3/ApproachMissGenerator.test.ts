@@ -543,3 +543,33 @@ describe('ApproachMissGenerator — par composition of the 175+ band', () => {
     expect(c.content).not.toMatch(/of these/);
   });
 });
+
+describe('ApproachMissGenerator — coach voice', () => {
+  const SECOND_PERSON = /\byou(r|'re|'ll|'ve)?\b/i;
+  const cases: Array<[string, Parameters<typeof makeAgg>[0]]> = [
+    ['reach + proximity', { green_hit_pct: 70, proximity_when_hit_feet: 22, attempts: 30 }],
+    ['reach, no proximity', { bucket: '175_plus_ft', green_hit_pct: 20, proximity_when_hit_feet: null, attempts: 15 }],
+    ['penalty + short axis', { penalty_rate_pct: 8.5, miss_short_long: { negative: 8, positive: 2, neutral: 0 } }],
+    ['left axis, womens', { cohort_gender: 'womens', miss_left_right: { negative: 8, positive: 1, neutral: 0 } }],
+    ['175+ par-5 heavy', {
+      bucket: '175_plus_ft', attempts: 100,
+      par_split: { par4: { attempts: 24, greenHitPct: 28 }, par5: { attempts: 76, greenHitPct: 16 }, unknown: 0 },
+    }],
+    ['175+ par-4 heavy', {
+      bucket: '175_plus_ft', attempts: 100,
+      par_split: { par4: { attempts: 80, greenHitPct: 42 }, par5: { attempts: 20, greenHitPct: 32 }, unknown: 0 },
+    }],
+  ];
+
+  it('ships a coach-voice copy with no second person and the same numbers for every branch', () => {
+    for (const [name, over] of cases) {
+      const agg = makeAgg(over);
+      const c = new ApproachMissGenerator(PLAYER_ID, agg.bucket).composeContent(agg);
+      expect(c.coach, name).toBeDefined();
+      expect(c.coach!.title, name).not.toMatch(SECOND_PERSON);
+      expect(c.coach!.content, name).not.toMatch(SECOND_PERSON);
+      // Same numbers as the player copy: only the voice changes.
+      for (const n of c.content.match(/\d+(\.\d+)?%?/g) ?? []) expect(c.coach!.content, name).toContain(n);
+    }
+  });
+});

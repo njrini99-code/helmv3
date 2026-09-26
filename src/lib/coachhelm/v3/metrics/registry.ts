@@ -183,6 +183,12 @@ const METRIC_DIRECTION_ALIASES: Record<string, MetricDirection> = {
   three_putt_chain: 'lower_better',
   compound_mistake_rate: 'lower_better',
   short_side_proximity: 'lower_better',
+  // CoachHelm v3 insight angles (2026-09-25, `v3/generators/insight-angles/`).
+  approach_rough_lie_penalty: 'lower_better',
+  tee_fairway_rough_exposure: 'higher_better',
+  round_bad_day_floor: 'lower_better',
+  tee_miss_next_shot_cost: 'lower_better',
+  approach_miss_recovery_cost: 'lower_better',
 };
 
 /**

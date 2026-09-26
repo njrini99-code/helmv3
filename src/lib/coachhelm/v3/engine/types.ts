@@ -78,6 +78,14 @@ export interface RunResult {
    */
   retracted?: number;
   /**
+   * What the recent-window recheck did (`recent-recheck.ts`): `retire` = the
+   * recent window cleared the target by more than chance and the row was
+   * archived; `restore` = a recheck-retired row was resurrected because the
+   * leak re-appeared; `kept_retired` = a recheck-retired row stayed archived
+   * (its re-emit was suppressed). Absent when nothing moved.
+   */
+  recheck?: 'retire' | 'restore' | 'kept_retired';
+  /**
    * The raw caught error when `status === 'failed'` — absent on every other
    * status. `run()`'s own catch logs this with `describeError` already, but
    * that text-only log line is all the orchestrator's caller ever saw: the
@@ -105,6 +113,20 @@ export interface ComposedContent {
   /** Optional severity, threaded by BaseGenerator into the upsert. Absent →
    *  the DB default 'medium' stands. A generator sets it from its verdict. */
   priority?: InsightPriority;
+  /**
+   * The generator's own verdict framing (2026-09-24). `strength` / `neutral`
+   * rows get NO root-cause diagnosis (there is no problem to diagnose — e.g.
+   * tee-strategy "Driver is performing"); `leak` rows do. Omitted → the base
+   * derives it from `your_value` vs `comparison_value` when the polarity is
+   * trustworthy (`resolveInsightFraming` in `root-cause.ts`).
+   */
+  framing?: 'leak' | 'strength' | 'neutral';
+  /**
+   * The same title/content for a coach, in neutral third person ("the
+   * player", "they"). Stored as `evidence.coach_copy`; coach readers show it
+   * instead of the second-person copy. Omitted → coaches see `title`/`content`.
+   */
+  coach?: { title: string; content: string };
 }
 
 /** Convenience re-exports for generator authors. */

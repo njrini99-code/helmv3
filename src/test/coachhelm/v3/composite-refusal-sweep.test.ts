@@ -135,4 +135,22 @@ describe('synthesizeForPlayer · refusals vs infra errors', () => {
     expect(result.stale_retracted).toBeUndefined();
     expect(logServerError).toHaveBeenCalled();
   });
+
+  it('writes the rule\'s coach-voice copy into the upserted evidence as coach_copy', async () => {
+    upsertInsightV3.mockResolvedValue({ id: 'new-1' });
+
+    const { synthesizeForPlayer } = await import('@/lib/coachhelm/v3/composite/synthesis');
+    await synthesizeForPlayer('player-1');
+
+    const input = upsertInsightV3.mock.calls[0]?.[1] as {
+      title: string;
+      content: string;
+      evidence: { coach_copy?: { title: string; content: string } };
+    };
+    expect(upsertInsightV3).toHaveBeenCalled();
+    // Player copy stays in title/content; the coach copy rides in evidence.
+    expect(input.content).toMatch(/^Across your last 5 rounds/);
+    expect(input.evidence.coach_copy?.title).toBe(input.title);
+    expect(input.evidence.coach_copy?.content).toMatch(/^Across the player's last 5 rounds/);
+  });
 });

@@ -91,14 +91,25 @@ const rule: CompositeRule = {
     // on the same scale as the other (per-round) composite magnitudes — the
     // raw 90-day count would otherwise systematically out-rank them.
     const strokesPerRound = (compounded * 0.5) / rounds;
+    const title = 'Bogeys turning into doubles too often';
+    const tally =
+      `${opps} bogey-or-worse holes, the next hole was a ` +
+      `double-or-worse ${compounded} times (${ratePct}%). The bogey ` +
+      `isn't the problem — the over-correction is. After a bogey,`;
     return {
-      title: 'Bogeys turning into doubles too often',
+      title,
       content:
-        `Of your last ${opps} bogey-or-worse holes, the next hole was a ` +
-        `double-or-worse ${compounded} times (${ratePct}%). The bogey ` +
-        `isn't the problem — the over-correction is. After a bogey, ` +
+        `Of your last ${tally} ` +
         `force a 30-second reset before the next tee shot and commit to ` +
         `your stock target rather than chasing.`,
+      // Coach voice: the same read in neutral third person (evidence.coach_copy).
+      coach: {
+        title,
+        content:
+          `Of the player's last ${tally} ` +
+          `have them force a 30-second reset before the next tee shot and commit to ` +
+          `their stock target rather than chasing.`,
+      },
       signature: 'doubles_after_bogey',
       evidence: {
         metric: 'compound_mistake_rate',

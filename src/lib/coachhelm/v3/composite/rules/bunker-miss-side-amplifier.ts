@@ -105,20 +105,27 @@ const rule: CompositeRule = {
     const title = proven
       ? `Bunker + ${dir}-bias putt pattern is compounding`
       : `Bunker save and ${dir}-bias putts both need work`;
+    const provenLead =
+      `Two short-game leaks are stacking on the same holes: ${sandPct}% sand save ` +
+      `AND a tendency to miss ${dir} on break putts (overlapping on ` +
+      `${Math.round(share * 100)}% of the holes where either shows up). When the ` +
+      `bunker miss-side matches the putt-bias`;
+    const provenWork = `bunker distance control to a ${dir}-tucked pin, then the ${dir}-break read.`;
     const content = proven
-      ? `Two short-game leaks are stacking on the same holes: ${sandPct}% sand save ` +
-        `AND a tendency to miss ${dir} on break putts (overlapping on ` +
-        `${Math.round(share * 100)}% of the holes where either shows up). When the ` +
-        `bunker miss-side matches the putt-bias you short-side yourself twice. Work ` +
-        `bunker distance control to a ${dir}-tucked pin, then the ${dir}-break read.`
+      ? `${provenLead} you short-side yourself twice. Work ${provenWork}`
       : `Two separate short-game leaks are showing up this window: ${sandPct}% sand ` +
         `save AND a tendency to miss ${dir} on break putts. They're different skills ` +
         `— splash-out distance control vs green-reading — and we can't yet confirm ` +
         `they overlap on the same scoring holes, so treat them as a combined session: ` +
         `bunker distance control plus ${dir}-break read work, not a single compound fault.`;
+    // Coach voice (evidence.coach_copy). The unproven branch has no second person.
+    const coachContent = proven
+      ? `${provenLead} the player short-sides themselves twice. Work ${provenWork}`
+      : content;
     return {
       title,
       content,
+      coach: { title, content: coachContent },
       signature: `bunker_${dir}_bias_amp`,
       evidence: {
         metric: 'scrambling_pct_sand',

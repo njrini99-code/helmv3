@@ -8,6 +8,7 @@
 
 import {
   V3_ENGINE_FILTER,
+  excludeHiddenCategories,
   VISIBLE_LIFECYCLE_STATES,
 } from '@/lib/coachhelm/v3/insight-visibility';
 import { createAdminClient } from '@/lib/supabase/admin';
@@ -27,13 +28,15 @@ export async function loadRecentInsightsForPlayer(
   // composing composites from tentative, retracted (archived), dismissed, or
   // retired-v2 rows would launder invisible claims back into a visible card.
   // Same contract as the delivery read paths (insight-visibility module).
-  const { data, error } = await fromUntyped(supabase, 'golf_coach_insights')
-    .select('id, insight_type, category, signature, player_id, evidence, engine_version, created_at')
-    .eq('player_id', playerId)
-    .gte('created_at', cutoff)
-    .or(V3_ENGINE_FILTER)
-    .in('lifecycle_state', [...VISIBLE_LIFECYCLE_STATES])
-    .neq('status', 'dismissed')
+  const { data, error } = await excludeHiddenCategories(
+    fromUntyped(supabase, 'golf_coach_insights')
+      .select('id, insight_type, category, signature, player_id, evidence, engine_version, created_at')
+      .eq('player_id', playerId)
+      .gte('created_at', cutoff)
+      .or(V3_ENGINE_FILTER)
+      .in('lifecycle_state', [...VISIBLE_LIFECYCLE_STATES])
+      .neq('status', 'dismissed'),
+  )
     .order('created_at', { ascending: false }) as {
       data: EvidenceInsight[] | null;
       error: { message: string } | null;

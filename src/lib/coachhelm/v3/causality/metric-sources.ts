@@ -328,6 +328,29 @@ export const METRIC_SOURCE_ALIASES: Record<string, MetricSourceDef> = {
   // so its evidence.metric stopped claiming it. Same source gap as above.
   recovery_proximity_rough_sand: { kind: 'intentional-null', reason: 'needs-shot-level-join' },
 
+  // CoachHelm v3 insight angles (2026-09-25, flag coachhelm_insight_angles_v1,
+  // `v3/generators/insight-angles/`). `three_putt_chain` above now has a
+  // producer (ThreePuttChainGenerator); its classification is unchanged — the
+  // per-round cache still has no first-putt-length sequencing.
+  //  - approach_rough_lie_penalty / tee_miss_next_shot_cost /
+  //    approach_miss_recovery_cost: per-shot SG and
+  //    tee-outcome costs exist only at shot level (same gap as
+  //    approach_proximity_*).
+  //  - round_bad_day_floor: a between-round percentile gap (P80 − median),
+  //    not a per-round value a window can average.
+  //  - tee_fairway_rough_exposure: its value IS fairways hit %, so it reuses
+  //    that per-round ratio source verbatim (same population, same numbers).
+  approach_rough_lie_penalty: { kind: 'intentional-null', reason: 'needs-shot-level-join' },
+  tee_miss_next_shot_cost: { kind: 'intentional-null', reason: 'needs-shot-level-join' },
+  approach_miss_recovery_cost: { kind: 'intentional-null', reason: 'needs-shot-level-join' },
+  round_bad_day_floor: { kind: 'intentional-null', reason: 'between-round-dispersion-not-per-round' },
+  tee_fairway_rough_exposure: {
+    kind: 'round_stats_cache_ratio',
+    numerator: 'fairways_hit',
+    denominator: 'fairways_total',
+    scale: 100,
+  },
+
   // DEFERRED (no honest per-round source — intentionally NOT aliased):
   //  - `shortside_scrambling_pct`: "short-side" is a positional concept, not a
   //    lie. The cache only stores aggregate sand (sand_saves/sand_attempts) and

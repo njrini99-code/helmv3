@@ -113,6 +113,26 @@ forever). Two coaches at different organizations on the same transferred
 athlete cannot silently overwrite each other's evidence — they each get a
 distinct row.
 
+A benchmark change does not create a new row. The signature carries no
+comparison value, so the same key updates in place and the evidence is
+replaced.
+
+On read, every ranked surface collapses rows through `dedupeBySubject`
+(`insight-delivery-ranking.ts`), keyed on `player:category:canonical metric`:
+
+- **What it ignores.** The key ignores coach, team and signature suffix, so
+  a coach-scoped row, its coach_id-NULL orphan, and two signatures for one
+  metric all show as one card.
+- **Which row survives.** Since 2026-09-24, the member with the newest
+  `updated_at` survives, at its own rank position. Before that, the first
+  member in rank order won, so a stale copy could outrank the current
+  reading.
+- **Why not A6 `groupIssues`.** It groups on shot-id overlap only, and
+  insight rows carry no shot ids.
+- **Known gap.** Visibility filters out dismissed rows before this collapse.
+  If the newest member of a group is dismissed, an older non-dismissed copy
+  can still show. Production had 0 such cases on 2026-09-24.
+
 ## Confidence method (`honest_v2`, 2026-09-12)
 
 `calcConfidence` (`src/lib/coachhelm/v2/insights/types.ts`) is recomputed by
@@ -274,6 +294,177 @@ benchmark: `counterfactualComparable` (false → `counterfactual: null`) and
 `standingTourComparable` (false → injected standing block carries `pga_omitted:
 true`, the same render path the women's gender-anchor omission uses).
 `ApproachMissGenerator` sets both false.
+
+## Counterfactual attempt sizing (`attempts_used`, 2026-09-25)
+
+`evidence.counterfactual.attempts_used` is the player's OWN per-round attempt
+rate the projection was sized on, or null when it fell back to the global
+`stroke_impact_per_unit`. A metric with an `attempt_metric` in
+`v3/counterfactual/lookup-tables.ts` is sized as
+`(gap / 100) × attempts_used × value_per_unit` when the generator's aggregate
+exposes `attempts_per_round` (or `holes_per_round`). `PuttDistanceGenerator`
+now supplies `attempts_per_round = band attempts ÷ rounds_played` from the same
+`golf_player_stats_cache` row as `sample_n` and `detail.rounds_played`, so every
+`putts_made_*` row written after 2026-09-25 carries a non-null `attempts_used`.
+Putt bands use `value_per_unit = 1.0`: one more make is one fewer stroke at any
+distance. Rows written before that still carry `attempts_used: null` and the
+old per-pp sizing until the generator reruns.
+
+**Sand save denominator (2026-09-25).** `ScramblingGenerator`'s
+`attempts_per_round` is greenside-bunker shots ÷ EVERY countable round in the
+90-day window (`shot-source.ts#loadCountableRoundIds`, `isCountableRound`),
+including rounds with no bunker shot. It used to divide by the rounds that had a
+sand shot, which inflated the rate (6 shots in 2 of 5 rounds read 3.0 a round,
+not 1.2) and the strokes sized from it. The shots are loaded from the same
+countable-round set, so a half-entered round adds to neither side; that can move
+`sample_n`, the sand-save % and the "Across N rounds" count slightly.
+
+**GIR is attempt-rate only (2026-09-25).** `gir_pct` sets
+`requires_attempt_rate: true`: it is sized as
+`(gap_pp / 100) × gir_attempts_per_round × GIR_VALUE_PER_GREEN`, where the rate
+is the player's GIR opportunities per round (`greens_total` ÷ countable rounds,
+the metric's own denominator) and the per-green value is
+`getExpectedStrokes('fairway', 20) − getExpectedStrokes('green', 0, 30)` =
+2.40 − 1.98 = 0.42 strokes from the canonical expected-strokes table (the
+smallest of the greenside lies: sand gives 0.55, rough 0.61). With no
+player-own rate the projection is suppressed with
+`suppress_reason: 'no_attempt_rate'` and 0 strokes, so no strokes_impact or
+priority floor comes from it. The old path (0.09 per pp = a fixed 18 holes ×
+0.5, the fallback whenever no rate was passed; and "misses per round" as the
+attempt metric, which multiplied the gap by the wrong count) is gone. No
+generator emits `gir_pct` today (0 rows in production on 2026-09-25), so this
+changes no stored row.
+
+## Putt slope penalty copy (2026-09-25)
+
+`PuttSlopeBiasGenerator` (`putt_slope_downhill_penalty_pct`) still tests
+downhill against level within one distance band. It also counts uphill putts in
+that band: when at least 8 are recorded and uphill make % is within 10 points
+of downhill (`UPHILL_SIMILAR_PP`) or below it, the row reads "Sloped putts
+inside <band>". It names uphill and downhill. Its label is "Downhill vs level
+putt make % (distance-controlled; uphill as weak)", because `your_value`
+stays the downhill rate. It stores all three rates in `evidence.detail`. A row only says "Downhill" when uphill is measurably better.
+
+## Root-cause diagnosis (2026-09-24)
+
+`evidence.diagnosis` on a v3 generator row is no longer the fixed
+"{metric} is off its benchmark — likely cause inferred" template.
+`BaseGenerator.run()` resolves it through `v3/engine/root-cause.ts` (pure)
+and `v3/engine/root-cause-context.ts` (A1 `loadPlayerContext`, memoized per
+player + window):
+
+- **Framing.** `ComposedContent.framing` (`leak` / `strength` / `neutral`)
+  wins when the generator declares it (tee-strategy, putt-bias,
+  pressure-gap, warmup-hole do); otherwise `resolveInsightFraming` compares
+  `your_value` to `comparison_value` using `evidence.polarity`, else the
+  registry direction when the units match. A strength or neutral row ships
+  **no** `diagnosis` key. The v2 upsert replaces `evidence`, so a stale
+  diagnosis clears on the next run.
+- **Observed** (`causality_level: 'observed_sequence'`). This requires the
+  A10 gate `coachhelm_root_cause_diagnosis` (its own flag since
+  2026-09-25, independent of the Round Review section's
+  `coachhelm_a4_sequence_attribution_surface`; off → the same checks run
+  and the row ships the inferred hypothesis below), a metric with a
+  sequence family (`sequenceTargetFor`), and a supported A4 rollup row. It
+  also requires at least 10 failures across at least 3 rounds, and one
+  recorded path that repeats at least 3 times and covers at least 25% of
+  failures. `root_cause` names the path, its count, its denominator, the
+  rounds and the window, plus the SG cost per occurrence.
+  `basis.sequence` carries these as numbers.
+- **Hypothesis** (`inferred_hypothesis`). This is used otherwise.
+  `root_cause` states which floor was not met, or that no shot path
+  measures the metric, or that the shot read failed. Where A5 has a
+  relevant hypothesis (par-5 opportunities, approach short/rough), it adds
+  that as the working hypothesis with its label (`candidate` /
+  `corroborated`; A5 `supported_association` maps to `corroborated`).
+- **`Diagnosis.basis`** (additive, optional). It has these fields:
+  - `kind`: `shot_sequence` / `hypothesis_policy` / `aggregate_only`
+  - `hypothesis_label`
+  - `checked[]`: the drivers and paths that were examined
+  - `sequence?`
+  - `narrowing?` (see "Context narrowing" below)
+  Rows written earlier have no `basis`; `DiagnosisPanel` does not read it.
+- A generator-composed diagnosis can never self-claim `observed_sequence`:
+  `mergeDiagnosis` pins it to `inferred_hypothesis` unless the root-cause
+  core observed the path.
+- Read-only preview: `scripts/coachhelm/preview-root-cause.ts`.
+
+### Context narrowing (2026-09-25)
+
+For approach, tee and par-scoring leaks, `root-cause.ts#narrowingFor` narrows
+the failing population with `v3/engine/context-narrowing.ts` (pure,
+client-safe). Each step must pass its own gate, and narrowing stops at the
+first step that fails. Every step states its counts.
+
+- **Length** (approach only): the band's attempts. It needs at least 10
+  attempts, 3 rounds and 8 failures (`NARROW_MIN_ATTEMPTS`,
+  `NARROW_MIN_ROUNDS`, `NARROW_MIN_FAILURES`).
+- **Par** (par × length slice from A3 `parLengthBandOf`, else whole par).
+  The slice needs 8 failures and must pass one of two paths:
+  - share: at least 60% of failures and a failure rate at least 10 points
+    above the rest;
+  - lift: at least 8 attempts elsewhere, and a rate at least 1.25× the
+    rest's and at least 10 points above it.
+  A slice with no "elsewhere" never passes. The 10-point edge exists
+  because a share-only rule named "par 4s" at 26% vs 24% on real data.
+- **Shape**: the dominant miss direction on each axis (`classifyMiss`). It
+  needs at least 8 failures with a recorded direction, covering at least
+  70% of failures. Each axis needs at least 6 on that axis, and one pole
+  must hold at least 60%. A combined label ("short-right") needs both axes
+  to pass. Tee reads left/right only; par scoring reads shape for par 3s
+  only.
+- **Exclusions**: failed 175+ yd approaches on par 5s count as likely
+  lay-ups (`excluded.layup`), not misses. This applies to the narrowing and
+  to the A4 approach occurrence count. Holes with no par are dropped.
+- **Stored** as `Diagnosis.basis.narrowing`, with these fields: `subject`,
+  `path[]`, `stopped_at`, `steps[]` (level, passed, label, statement),
+  `sentence` and `excluded`.
+- **Where it shows**:
+  - The sentence ("Observed, not a cause: …; Not narrowed further: …") leads
+    a hypothesis `root_cause`, is appended to an observed one, and is
+    prefixed to a generator-composed one (`mergeDiagnosis`).
+  - It never changes `causality_level`. Only the A4 rule sets
+    `observed_sequence`.
+- **Freshness**: stored rows pick this up only on the next generator run.
+  Readers treat a missing field as "not stated".
+- **Team roots**: `build-team-roots.ts#storedConcentration` accepts a stored
+  narrowing only when its par or shape step passed. Such a row:
+  - marks its matrix cell;
+  - lists one row per player in "Needs you". The last of the 4 slots is held
+    for a concentration when one exists, because most teams hold 4+ open
+    high/urgent signals.
+  The wording follows `subject`: misses (approach), missed fairways (tee),
+  over-par holes (par scoring). Nothing is recomputed on read.
+  Matrix approach columns split by band because the approach generators key
+  `evidence.metric` per band (`approach_proximity_{50_125ft,125_175ft,
+  175_plus_ft}`). The few band-agnostic approach rows
+  (`bubble_player_approach`, `scoring_decline_approach`) stay one column
+  each.
+
+### Approach band sizing and Why evidence (player Today, 2026-09-25)
+
+The player CoachHelm page adds one bounded read, `loadApproachContext`. It
+reads the player's last 40 countable rounds that have a stored approach SG,
+with their holes and shots, plus `sg_scale_for_player`. It uses the request
+client, under RLS.
+
+- **Sizing**: `approach-context.ts#shotSgForRound` ports
+  `calculate_round_strokes_gained` per shot, and `sizeApproachBands` gives
+  per-18 means for each band. The split is used only when its total is
+  within 0.15 strokes a round of the stored `golf_rounds` approach SG
+  (`BAND_SG_RECONCILE_TOLERANCE`). Otherwise every band stays unsized, with
+  a note saying the split did not match.
+- A band that is gaining strokes is never drawn as a leak.
+- A stored counterfactual still wins over a band size (`sizedBy`:
+  `counterfactual` vs `band_sg`).
+- **Why view** (`buildApproachWhyView`), computed live over that window and
+  labelled with its own round count:
+  - the length → par → shape path;
+  - the par × length grid, only when the par step's population gate passed;
+  - the miss compass, only when its coverage gate passed, with the coverage
+    stated;
+  - A2 band metrics (greens hit, proximity, severe misses) side by side.
+  Nothing on this page runs a generator.
 
 ## Delivered vs. viewed (N11, 2026-09-23)
 
@@ -1782,6 +1973,13 @@ prerequisite migration.
   and makes ZERO DB calls — createClient is never invoked." Prerequisite
   migration: none.
 
+- **Root-cause diagnosis text** — `coachhelm_root_cause_diagnosis`, ON in
+  all envs since 2026-09-25 (owner decision). Gates only the
+  `observed_sequence` branch of `BaseGenerator.run()`'s diagnosis; off, the
+  row ships an `inferred_hypothesis` listing the same checks. Flag tests:
+  `generator-base-root-cause.test.ts` (both independence directions).
+  Prerequisite migration: none.
+
 - **Controlled hypotheses (A5)** — no surface exists to gate.
   `hypothesis-policy.ts` is pure core, not wired to `diagnosis.ts`,
   `personal-context.ts`, or any route/component in any open PR (#2024
@@ -1981,6 +2179,49 @@ structured `ShadowEvalReport`.
   `grouping.duplicateLeadingPriority === 0` on every real snapshot in the
   matrix, including the established-roster ones where a violation would
   actually have something to happen to.
+
+## Insight angles v1 — receipts and metric aliases (2026-09-25)
+
+The five `src/lib/coachhelm/v3/generators/insight-angles/` generators (flag
+`coachhelm_insight_angles_v1`, default off) write evidence with alias metric
+ids registered in `src/lib/coachhelm/v3/causality/metric-sources.ts` and
+`src/lib/coachhelm/v3/metrics/registry.ts`:
+
+| Metric | Source kind | comparison_source | Category |
+|---|---|---|---|
+| `approach_rough_lie_penalty` | intentional-null (shot-level join) | `pga_baseline` (0 = Tour SG) | `approach` |
+| `tee_fairway_rough_exposure` | `round_stats_cache_ratio` fairways | `team_avg` (estimated) | `tee` |
+| `round_bad_day_floor` | intentional-null (between-round) | `team_avg` | SG area, else `scoring` |
+| `three_putt_chain` | intentional-null (unchanged) | `estimated_target` (measured peer rate) | `approach` / `putting` |
+| `tee_miss_next_shot_cost` | intentional-null (shot-level join) | `your_baseline` | `tee` |
+| `approach_miss_recovery_cost` | intentional-null (shot-level join) | `your_baseline` | `short_game` |
+
+Rules these rows follow on top of the base contract:
+
+- `evidence.detail.receipts` = `{ window, definition, samples, exclusions,
+  examples }`; `examples` holds at most 5 `{ round_id, hole_number, date,
+  note }`. Exclusions and samples are counts, so every rate has its
+  denominator; a missing value is excluded and counted, never read as 0
+  (prose prints `n/a (n=0)`).
+- Counterfactuals are sized on the player's own attempts per round
+  (`attemptCounterfactual` in the angles' `angle-data.ts`), clamped at 2.5 and suppressed
+  below 0.3, like `computeCounterfactual`.
+- `causality_level`: a generator may claim `observed_sequence` only with a
+  `basis.kind: 'shot_sequence'` whose `sequence` quotes the recorded path,
+  `occurrences` over `of` (a named population), `distinct_rounds`, and 1–5
+  `examples` (`round_id`, `hole_number`, optional `hole_id`) from the
+  recorded shot order. `mergeDiagnosis`
+  (`src/lib/coachhelm/v3/engine/generator-base.ts`) keeps the claim only
+  when `hasGeneratorSequenceEvidence` passes — the same floors
+  `root-cause.ts` uses (population ≥ 10 over ≥ 3 rounds, path ≥ 3 times and
+  ≥ 25% of the population) — and the `coachhelm_root_cause_diagnosis`
+  capability flag is on. Without that evidence the claim is pinned to
+  `inferred_hypothesis`, as before. Three-putt and tee rows claim it; lie,
+  floor and compass rows do not (their evidence is an aggregate, not a
+  repeated path).
+- Copy is descriptive: no club names (only driver / non-driver is
+  recorded), no intent, nerves or mechanics. The driver vs non-driver chain
+  carries a selection-bias note and is never sized.
 
 ## How to add a new comparison source
 

@@ -19,6 +19,12 @@
  *   F · GO DEEPER        a semantic bridge to the stats cockpit (not an orphan link)
  *   G · quick actions
  *
+ * SUMMARY FIRST (owner direction 2026-09-25): A carries B's standing bars as
+ * its one visual, so the tab opens on one card (rating, verdict, standing);
+ * C shows the top read; the second read, D, D2, E and E2 sit in closed
+ * disclosures with their counts; F's stats link is secondary, so G's
+ * "Message player" is the page's one primary action.
+ *
  * Trend summary, the standalone Active Patterns card, and Recent Rounds are
  * intentionally REMOVED — the stats cockpit (FairwayStatsCockpit) owns SG, leak
  * maps, scoring trend, recent rounds, and the cause/effect patterns strip. This
@@ -86,6 +92,7 @@ import {
 import { createFocusAreaFromInsight } from '@/app/golf/actions/development';
 import { useGolfUser } from '@/contexts/golf-user-context';
 import { getProgressPercent } from './areaTypes';
+import { Disclosure } from '@/components/golf/coachhelm/root-map/Disclosure';
 
 /* ---------------------------------------------------------------------------
  * Props — mirror the legacy PlayerInsightClient signature verbatim
@@ -794,33 +801,21 @@ export function FairwayPlayerInsight({
               </p>
             </div>
           )}
-        </Surface>
 
-        {/* ════════ B · STANDING ════════ */}
-        {/* Bars are suppressed on zero data — five bars pinned at a synthetic 50
-            would read as a real (mediocre) standing for a player with no rounds
-            (P104). Show an honest awaiting state instead. */}
-        <section>
-          <Eyebrow>Standing</Eyebrow>
+          {/* B · STANDING, folded into the summary card as its one visual.
+              Suppressed on zero data: five bars pinned at a synthetic 50 would
+              read as a real (mediocre) standing (P104). */}
           {hasRounds ? (
-            <div className="mt-3 flex flex-col gap-3 rounded-card bg-surface-sunken p-6">
+            <div className="mt-5 flex flex-col gap-3 rounded-card bg-surface-sunken p-5" data-slot="scouting-standing">
+              <Eyebrow>Standing</Eyebrow>
               <CategoryBar label="Tee Game" value={categoryBreakdown.teeGame} />
               <CategoryBar label="Approach" value={categoryBreakdown.approach} />
               <CategoryBar label="Short Game" value={categoryBreakdown.shortGame} estimated />
               <CategoryBar label="Putting" value={categoryBreakdown.putting} />
               <CategoryBar label="Scoring" value={categoryBreakdown.scoring} />
             </div>
-          ) : (
-            <div className="mt-3 rounded-card bg-surface-sunken p-6">
-              <EmptyState
-                icon={Activity}
-                variant="subtle"
-                title="No standing yet"
-                description="Tee game, approach, short game, putting, and scoring fill in once this player logs their first round."
-              />
-            </div>
-          )}
-        </section>
+          ) : null}
+        </Surface>
 
         {/* ════════ C · WHERE TO FOCUS ════════ */}
         {/* THEME view (v3) replaces the flat feed when enabled + non-empty.
@@ -919,9 +914,11 @@ export function FairwayPlayerInsight({
                     </div>
                   ) : null}
                   {secondInsight ? (
-                    <div id={`insight-${secondInsight.id}`}>
-                      <InsightCard insight={secondInsight} density="default" audience="coach" showActions onAction={handleAction} />
-                    </div>
+                    <Disclosure title="One more read" headingLevel={null} slot="scouting-second-read">
+                      <div id={`insight-${secondInsight.id}`}>
+                        <InsightCard insight={secondInsight} density="default" audience="coach" showActions onAction={handleAction} />
+                      </div>
+                    </Disclosure>
                   ) : null}
                 </div>
               )}
@@ -929,135 +926,141 @@ export function FairwayPlayerInsight({
           </section>
         )}
 
-        {/* ════════ D · THE PLAN ════════ */}
-        <section>
-          <Eyebrow className="mb-3">The plan</Eyebrow>
-          <PrescribedPracticePlanCard
-            playerId={player.id}
-            coachId={coachId}
-            insights={insights}
-            patterns={patterns}
-            categoryBreakdown={categoryBreakdown}
-            focusAreas={focusAreas}
-            isRefreshing={isRefreshing}
-          />
-        </section>
+        {/* ════════ D–E2 · DETAIL, closed until asked for ════════ */}
+        <div className="flex flex-col" data-slot="scouting-detail">
+          <Disclosure title="The plan" slot="scouting-plan">
+            <PrescribedPracticePlanCard
+              playerId={player.id}
+              coachId={coachId}
+              insights={insights}
+              patterns={patterns}
+              categoryBreakdown={categoryBreakdown}
+              focusAreas={focusAreas}
+              isRefreshing={isRefreshing}
+            />
+          </Disclosure>
 
-        {/* ════════ D2 · TRENDS (honest signal-vs-noise) ════════ */}
-        {trendData ? (
-          <section>
-            <Eyebrow className="mb-3">Trends</Eyebrow>
-            <FairwayTrendBrain trendData={trendData} />
-          </section>
-        ) : null}
+          {/* D2 · TRENDS (honest signal-vs-noise) */}
+          {trendData ? (
+            <Disclosure title="Trends" slot="scouting-trends">
+              <FairwayTrendBrain trendData={trendData} />
+            </Disclosure>
+          ) : null}
 
-        {/* ════════ E · WHAT WE'RE TRACKING ════════ */}
-        <section>
-          <div className="flex items-center justify-between gap-3">
-            <Eyebrow>What we&rsquo;re tracking</Eyebrow>
-            <Link
-              href={`/golf/dashboard/intelligence?view=players&player=${player.id}`}
-              className="font-fw-sans text-caption font-medium text-accent-700 hover:text-accent-600"
-            >
-              Manage
-            </Link>
-          </div>
-
-          <div className="mt-3 rounded-card bg-surface-sunken p-6">
-            {/* Focus areas */}
-            {focusAreas.length === 0 ? (
-              <EmptyState
-                icon={Target}
-                variant="subtle"
-                title="No focus areas set"
-                description="Set focus areas to track this player's development priorities."
-              />
-            ) : (
-              <div className="flex flex-col gap-3">
-                {focusAreas.map((fa) => {
-                  // Package 11 (#1933 bug, confirmed present on main): was a
-                  // naive current/target ratio that ignores baseline_value —
-                  // wrong for any lower-is-better metric and for a target
-                  // that isn't zero-anchored. FocusAreaCard.tsx already has
-                  // the correct shared derivation for the identical row;
-                  // this call site was just never wired to it.
-                  const progress = getProgressPercent(
-                    fa.current_value,
-                    fa.target_value,
-                    fa.target_metric,
-                    fa.baseline_value,
-                  );
-                  return (
-                    <div key={fa.id} className="flex flex-col gap-2 rounded-fw-md bg-surface p-4">
-                      <div className="flex items-start justify-between gap-2">
-                        <span className="flex min-w-0 items-center gap-2">
-                          <IconTarget size={14} className="flex-shrink-0 text-text-tertiary" />
-                          <span className="truncate font-fw-sans text-body-sm font-medium text-text-primary">
-                            {fa.title ?? 'Focus area'}
-                          </span>
-                        </span>
-                        <StatusPill tone={focusStatusTone(fa.status)} size="sm">
-                          {fa.status ?? 'active'}
-                        </StatusPill>
-                      </div>
-                      {progress !== null && fa.target_value !== null ? (
-                        <div>
-                          <div className="mb-1 flex items-center justify-between font-fw-mono text-eyebrow tabular-nums text-text-tertiary">
-                            <span>{fa.current_value ?? 0}</span>
-                            <span>{fa.target_value}</span>
+          {/* E · WHAT WE'RE TRACKING */}
+          <Disclosure
+            title="What we’re tracking"
+            slot="scouting-tracking"
+            meta={
+              <span className="font-fw-mono text-caption font-normal tabular-nums text-text-secondary">
+                {focusAreas.length}
+                {predictions.length > 0 ? ` · ${predictions.length} predicted` : ''}
+              </span>
+            }
+          >
+            <div className="flex flex-col gap-3">
+              <Link
+                href={`/golf/dashboard/intelligence?view=players&player=${player.id}`}
+                className="inline-flex min-h-11 items-center self-end font-fw-sans text-caption font-medium text-accent-700 hover:text-accent-600"
+              >
+                Manage focus areas
+              </Link>
+              <div className="rounded-card bg-surface-sunken p-6">
+                {/* Focus areas */}
+                {focusAreas.length === 0 ? (
+                  <EmptyState
+                    icon={Target}
+                    variant="subtle"
+                    title="No focus areas set"
+                    description="Set focus areas to track this player's development priorities."
+                  />
+                ) : (
+                  <div className="flex flex-col gap-3">
+                    {focusAreas.map((fa) => {
+                      // Package 11 (#1933 bug, confirmed present on main): was a
+                      // naive current/target ratio that ignores baseline_value —
+                      // wrong for any lower-is-better metric and for a target
+                      // that isn't zero-anchored. FocusAreaCard.tsx already has
+                      // the correct shared derivation for the identical row;
+                      // this call site was just never wired to it.
+                      const progress = getProgressPercent(
+                        fa.current_value,
+                        fa.target_value,
+                        fa.target_metric,
+                        fa.baseline_value,
+                      );
+                      return (
+                        <div key={fa.id} className="flex flex-col gap-2 rounded-fw-md bg-surface p-4">
+                          <div className="flex items-start justify-between gap-2">
+                            <span className="flex min-w-0 items-center gap-2">
+                              <IconTarget size={14} className="flex-shrink-0 text-text-tertiary" />
+                              <span className="truncate font-fw-sans text-body-sm font-medium text-text-primary">
+                                {fa.title ?? 'Focus area'}
+                              </span>
+                            </span>
+                            <StatusPill tone={focusStatusTone(fa.status)} size="sm">
+                              {fa.status ?? 'active'}
+                            </StatusPill>
                           </div>
-                          <div className="h-1.5 overflow-hidden rounded-full bg-surface-sunken">
-                            <div className="h-full rounded-full bg-accent-500 transition-all duration-500" style={{ width: `${progress}%` }} />
+                          {progress !== null && fa.target_value !== null ? (
+                            <div>
+                              <div className="mb-1 flex items-center justify-between font-fw-mono text-eyebrow tabular-nums text-text-tertiary">
+                                <span>{fa.current_value ?? 0}</span>
+                                <span>{fa.target_value}</span>
+                              </div>
+                              <div className="h-1.5 overflow-hidden rounded-full bg-surface-sunken">
+                                <div className="h-full rounded-full bg-accent-500 transition-all duration-500" style={{ width: `${progress}%` }} />
+                              </div>
+                            </div>
+                          ) : null}
+                          <p className="font-fw-sans text-eyebrow text-text-tertiary">Started {formatRelativeDate(fa.created_at)}</p>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {/* Predictions — only if present */}
+                {predictions.length > 0 ? (
+                  <div className="mt-6 border-t border-border-subtle pt-6">
+                    <Eyebrow className="mb-3">Predictions</Eyebrow>
+                    <div className="flex flex-col gap-3">
+                      {predictions.map((pred) => (
+                        <div key={pred.id} className="flex items-center justify-between gap-3 rounded-fw-md bg-surface p-4">
+                          <div className="min-w-0">
+                            <p className="truncate font-fw-sans text-body-sm font-medium text-text-primary">
+                              {formatMetricLabel(pred.metric)}
+                            </p>
+                            {pred.due_date ? (
+                              <p className="mt-0.5 font-fw-sans text-eyebrow text-text-tertiary">Due {formatRelativeDate(pred.due_date)}</p>
+                            ) : null}
+                          </div>
+                          <div className="flex-shrink-0 text-right">
+                            {pred.predicted_value !== null ? (
+                              <p className="font-fw-mono text-h3 tabular-nums tracking-[-0.02em] text-text-primary">
+                                {pred.predicted_value.toFixed(1)}
+                              </p>
+                            ) : null}
+                            {pred.confidence !== null ? (
+                              <p className="font-fw-mono text-eyebrow tabular-nums text-text-tertiary">
+                                {Math.round(pred.confidence * 100)}% conf
+                              </p>
+                            ) : null}
                           </div>
                         </div>
-                      ) : null}
-                      <p className="font-fw-sans text-eyebrow text-text-tertiary">Started {formatRelativeDate(fa.created_at)}</p>
+                      ))}
                     </div>
-                  );
-                })}
+                  </div>
+                ) : null}
               </div>
-            )}
+            </div>
+          </Disclosure>
 
-            {/* Predictions — only if present */}
-            {predictions.length > 0 ? (
-              <div className="mt-6 border-t border-border-subtle pt-6">
-                <Eyebrow className="mb-3">Predictions</Eyebrow>
-                <div className="flex flex-col gap-3">
-                  {predictions.map((pred) => (
-                    <div key={pred.id} className="flex items-center justify-between gap-3 rounded-fw-md bg-surface p-4">
-                      <div className="min-w-0">
-                        <p className="truncate font-fw-sans text-body-sm font-medium text-text-primary">
-                          {formatMetricLabel(pred.metric)}
-                        </p>
-                        {pred.due_date ? (
-                          <p className="mt-0.5 font-fw-sans text-eyebrow text-text-tertiary">Due {formatRelativeDate(pred.due_date)}</p>
-                        ) : null}
-                      </div>
-                      <div className="flex-shrink-0 text-right">
-                        {pred.predicted_value !== null ? (
-                          <p className="font-fw-mono text-h3 tabular-nums tracking-[-0.02em] text-text-primary">
-                            {pred.predicted_value.toFixed(1)}
-                          </p>
-                        ) : null}
-                        {pred.confidence !== null ? (
-                          <p className="font-fw-mono text-eyebrow tabular-nums text-text-tertiary">
-                            {Math.round(pred.confidence * 100)}% conf
-                          </p>
-                        ) : null}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ) : null}
-          </div>
-        </section>
-
-        {/* ════════ E2 · TRAJECTORY (#1485 — the forecast finally reaches a coach) ════════ */}
-        <section>
-          <Eyebrow className="mb-3">Trajectory</Eyebrow>
-          <TrajectoryCard trajectory={trajectory} />
-        </section>
+          {/* E2 · TRAJECTORY (#1485 — the forecast finally reaches a coach) */}
+          <Disclosure title="Trajectory" slot="scouting-trajectory">
+            <TrajectoryCard trajectory={trajectory} />
+          </Disclosure>
+        </div>
 
         {/* ════════ F · GO DEEPER — stats cockpit bridge ════════ */}
         <Surface elevation="border" padding="lg">
@@ -1076,7 +1079,7 @@ export function FairwayPlayerInsight({
                 ) : null}
               </p>
             </div>
-            <Button asChild variant="primary" leftIcon={<IconChartBar size={16} />} className="flex-shrink-0">
+            <Button asChild variant="secondary" leftIcon={<IconChartBar size={16} />} className="flex-shrink-0">
               <Link href={`/golf/dashboard/stats?player=${player.id}`}>Open CoachHelm stats</Link>
             </Button>
           </div>

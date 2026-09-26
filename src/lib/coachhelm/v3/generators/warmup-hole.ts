@@ -147,31 +147,52 @@ export class WarmupHoleGenerator extends BaseGenerator<WarmupHoleAggregate> {
     const restDisp = formatHoleDelta(agg.rest_avg);
 
     const r0 = (x: number) => Math.round(x).toString();
-    const causes: Array<{ label: string; pct: number; action: string }> = [
-      { label: 'putting (3-putts on the opener)', pct: agg.cause_putt_pct, action: 'a few lag putts in warm-up will settle it' },
-      { label: 'tee/approach execution', pct: agg.cause_tee_pct, action: 'hit balls before you tee off, not just chip-and-putt' },
-      { label: 'opening-hole penalties', pct: agg.cause_penalty_pct, action: 'play the opener conservatively off the tee' },
+    // `coachAction`: the same action in neutral third person (evidence.coach_copy).
+    const causes: Array<{ label: string; pct: number; action: string; coachAction: string }> = [
+      {
+        label: 'putting (3-putts on the opener)', pct: agg.cause_putt_pct,
+        action: 'a few lag putts in warm-up will settle it',
+        coachAction: 'a few lag putts in warm-up will settle it',
+      },
+      {
+        label: 'tee/approach execution', pct: agg.cause_tee_pct,
+        action: 'hit balls before you tee off, not just chip-and-putt',
+        coachAction: 'have them hit balls before they tee off, not just chip-and-putt',
+      },
+      {
+        label: 'opening-hole penalties', pct: agg.cause_penalty_pct,
+        action: 'play the opener conservatively off the tee',
+        coachAction: 'have them play the opener conservatively off the tee',
+      },
     ].sort((a, b) => b.pct - a.pct);
     const lead = causes[0];
-    const causeClause =
-      agg.playerValue > 0 && lead && lead.pct > 0
-        ? ` ${r0(lead.pct)}% of those lost strokes are ${lead.label} — ${lead.action}.`
-        : '';
+    const hasCause = agg.playerValue > 0 && lead && lead.pct > 0;
+    const causeClause = hasCause
+      ? ` ${r0(lead.pct)}% of those lost strokes are ${lead.label} — ${lead.action}.`
+      : '';
+    const coachCauseClause = hasCause
+      ? ` ${r0(lead.pct)}% of those lost strokes are ${lead.label} — ${lead.coachAction}.`
+      : '';
 
     const title = `Opening hole gap: ${deltaDisp} strokes vs round avg`;
-    const content =
-      `Across your last ${agg.rounds_with_hole1} rounds, hole 1 plays ` +
+    const holeClause =
+      `${agg.rounds_with_hole1} rounds, hole 1 plays ` +
       `${absDelta} strokes ${direction} than same-par holes 2-18 ` +
-      `(hole 1 = ${hole1Disp}/hole; matched rest of round = ${restDisp}/hole).` +
-      causeClause +
-      ` Tour avg is ~0.1 strokes (Research doc §9).` +
-      staleDataSuffix(agg.last_round_date);
+      `(hole 1 = ${hole1Disp}/hole; matched rest of round = ${restDisp}/hole).`;
+    const tail = ` Tour avg is ~0.1 strokes.` + staleDataSuffix(agg.last_round_date);
+    const content = `Across your last ${holeClause}` + causeClause + tail;
+    const coachContent = `Across the player's last ${holeClause}` + coachCauseClause + tail;
 
     return {
       title,
       content,
+      // The title carries no second person, so the coach title is the same.
+      coach: { title, content: coachContent },
       // Opening-hole gap vs the ~0.1 PGA tax: at/under is fine; a large opener tax escalates.
       priority: agg.playerValue <= 0.1 ? 'low' : agg.playerValue <= 0.4 ? 'medium' : 'high',
+      // Hole 1 easier than the rest → strength; within the ~0.1-stroke Tour
+      // reference → neutral; only a harder opener is a leak to diagnose.
+      framing: agg.playerValue <= 0 ? 'strength' : agg.playerValue <= 0.1 ? 'neutral' : 'leak',
       signature: `warmup_hole:hole_1`,
       evidence: {
         metric: this.metricId,

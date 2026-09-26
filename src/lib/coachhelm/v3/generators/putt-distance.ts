@@ -43,6 +43,13 @@ import {
 } from '@/lib/coachhelm/v3/counterfactual/cohort-baselines';
 import { loadPlayerCohort } from '@/lib/coachhelm/v3/counterfactual/player-cohort-loader';
 import { attemptGate, lifetimeSpanDays, staleDataSuffix, ATTEMPT_FLOOR } from '@/lib/coachhelm/v3/engine/window-honesty';
+import {
+  loadRecentPutts,
+  puttBandRecheck,
+  type InsightRecheck,
+  type PuttBand,
+} from '@/lib/coachhelm/v3/engine/recent-recheck';
+import type { InsightEvidence } from '@/lib/coachhelm/v2/insights/types';
 
 type PuttBucketKey = '3_5ft' | '5_10ft' | '10_15ft' | '15_25ft' | '25_plus_ft';
 
@@ -73,6 +80,28 @@ const BUCKET_TO_ATTEMPTS_COLUMN: Record<PuttBucketKey, string> = {
   '10_15ft':  'putt_attempts_10_15ft',
   '15_25ft':  'putt_attempts_15_25ft',
   '25_plus_ft':'putt_attempts_25_plus_ft',
+};
+
+/** Feet bands `(lo, hi]` — the exact bands `update_player_putt_make_pct`
+ *  writes into the cache columns above, so the recent recheck measures the
+ *  same quantity the lifetime row does. */
+const BUCKET_BAND_FEET: Record<PuttBucketKey, PuttBand> = {
+  '3_5ft':    { lo: 3, hi: 5 },
+  '5_10ft':   { lo: 5, hi: 10 },
+  '10_15ft':  { lo: 10, hi: 15 },
+  '15_25ft':  { lo: 15, hi: 25 },
+  '25_plus_ft': { lo: 25, hi: null },
+};
+
+/** Minimum recent attempts in the band before the recheck may grade it
+ *  (owner decision 2026-09-25). The 25+ ft band sits near a 5.5% target where
+ *  a single make swings the rate, so it needs 40. */
+const BUCKET_RECHECK_MIN_N: Record<PuttBucketKey, number> = {
+  '3_5ft': 20,
+  '5_10ft': 20,
+  '10_15ft': 20,
+  '15_25ft': 20,
+  '25_plus_ft': 40,
 };
 
 const BUCKET_LABEL: Record<PuttBucketKey, string> = {
@@ -125,6 +154,16 @@ interface PuttDistanceAggregate extends GeneratorAggregate {
   /** True lifetime span in days (first→last round); null when unknown. */
   spanDays: number | null;
   last_round_date: string | null;
+  /**
+   * The player's OWN putts per round in this band: band attempts ÷
+   * rounds_played, both from the same stats-cache row that produces
+   * `sample_n` and `detail.rounds_played`. `BaseGenerator` passes it to
+   * `computeCounterfactual` as `player_attempts_per_round`, so the projection
+   * is sized off the attempt-rate path (gap × attempts × value_per_unit)
+   * instead of the global `stroke_impact_per_unit`, which assumed a Tour-like
+   * ~6 attempts/round from 3-5 ft. Null when rounds_played is 0.
+   */
+  attempts_per_round?: number | null;
 }
 
 export class PuttDistanceGenerator extends BaseGenerator<PuttDistanceAggregate> {
@@ -144,6 +183,28 @@ export class PuttDistanceGenerator extends BaseGenerator<PuttDistanceAggregate> 
 
   protected override signatureScope(): string {
     return `putt_distance:${this.bucket}`;
+  }
+
+  /**
+   * The aggregate is LIFETIME (stats cache), so recheck the band over the
+   * recent window against this row's own anchor (`comparison_value` — the
+   * gender-aware target composeContent chose), gated on the band's recheck
+   * floor. The putt load is shared across the five bucket instances.
+   */
+  protected override readonly rechecksRecentWindow = true;
+
+  protected override async recentWindowRecheck(
+    _agg: PuttDistanceAggregate,
+    evidence: InsightEvidence,
+  ): Promise<InsightRecheck | null> {
+    const putts = await loadRecentPutts(this.playerId);
+    return puttBandRecheck(
+      putts,
+      BUCKET_BAND_FEET[this.bucket],
+      evidence.comparison_value,
+      BUCKET_RECHECK_MIN_N[this.bucket],
+      new Date().toISOString(),
+    );
   }
 
   async aggregate(): Promise<PuttDistanceAggregate | null> {
@@ -189,6 +250,7 @@ export class PuttDistanceGenerator extends BaseGenerator<PuttDistanceAggregate> 
       attempts,
       spanDays,
       last_round_date: (data.last_round_date as string | null) ?? null,
+      attempts_per_round: roundsPlayed > 0 ? attempts / roundsPlayed : null,
     };
   }
 
@@ -208,27 +270,37 @@ export class PuttDistanceGenerator extends BaseGenerator<PuttDistanceAggregate> 
     const bandClass = BUCKET_BAND_CLASS[agg.bucket];
     const gapPp = pgaValue - agg.playerValue; // positive = below anchor
     const gate = attemptGate(agg.attempts);
-    const base =
-      `Across your last ${agg.rounds_played} rounds${agg.spanDays && agg.spanDays > 0 ? ` (${agg.spanDays} days)` : ''} ` +
-      `you're making ${valueDisp} of putts from ${label}${gate.disclosure} ` +
+    const span = agg.spanDays && agg.spanDays > 0 ? ` (${agg.spanDays} days)` : '';
+    const makingClause =
+      `${valueDisp} of putts from ${label}${gate.disclosure} ` +
       `(${agg.cohort_gender === 'womens'
         ? `women's college target ~${pgaValue.toFixed(0)}%, estimated`
         : `PGA Tour ~${pgaValue.toFixed(0)}%`}).`;
+    const base = `Across your last ${agg.rounds_played} rounds${span} you're making ${makingClause}`;
+    // Coach voice: the same read in neutral third person (evidence.coach_copy).
+    const coachBase = `Across the player's last ${agg.rounds_played} rounds${span} they're making ${makingClause}`;
 
     let verdict: string;
+    let coachVerdict: string;
     let composedPriority: InsightPriority;
     if (gapPp <= 0) {
       verdict = ` You're at or above the Tour rate here — a strength, leave it alone.`;
+      coachVerdict = ` They're at or above the Tour rate here — a strength, leave it alone.`;
       composedPriority = 'low';
     } else if (bandClass === 'makeable') {
       // Makeable distance below Tour = the highest-leverage, fastest-to-fix leak.
       const lead = gapPp >= MAKEABLE_BIG_GAP_PP
         ? `This is your highest-leverage putting band:`
         : `Worth tightening:`;
-      verdict =
-        ` ${lead} ${label} is makeable distance and you're ${Math.round(gapPp)} points below Tour. ` +
+      const coachLead = gapPp >= MAKEABLE_BIG_GAP_PP
+        ? `This is their highest-leverage putting band:`
+        : lead;
+      const fix =
         `The fix is a gate drill (two tees a ball-width apart) plus a daily short-putt ladder — ` +
         `pure-strike reps, not green-reading.`;
+      verdict = ` ${lead} ${label} is makeable distance and you're ${Math.round(gapPp)} points below Tour. ${fix}`;
+      coachVerdict =
+        ` ${coachLead} ${label} is makeable distance and they're ${Math.round(gapPp)} points below Tour. ${fix}`;
       composedPriority = gapPp >= MAKEABLE_BIG_GAP_PP ? 'medium' : 'low';
     } else {
       // Lag band: a low make% here is speed + how far the approach/chip left you,
@@ -237,15 +309,22 @@ export class PuttDistanceGenerator extends BaseGenerator<PuttDistanceAggregate> 
         ` From ${label} make% is mostly lag: the driver is speed control and how far your ` +
         `approach/chip leaves you, not your stroke. Work distance-control lags to a 3-ft ` +
         `circle and tighter approach proximity — don't drill the stroke.`;
+      coachVerdict =
+        ` From ${label} make% is mostly lag: the driver is speed control and how far their ` +
+        `approach/chip leaves them, not their stroke. Have them work distance-control lags to a 3-ft ` +
+        `circle and tighter approach proximity — don't drill the stroke.`;
       composedPriority = 'low';
     }
 
     const title = `${label} putting: ${valueDisp}`;
     const content = base + verdict + staleDataSuffix(agg.last_round_date);
+    const coachContent = coachBase + coachVerdict + staleDataSuffix(agg.last_round_date);
 
     return {
       title,
       content,
+      // The title carries no second person, so the coach title is the same.
+      coach: { title, content: coachContent },
       // Composed from the band's anchor-relative gap; Phase A's
       // leveragePriorityFloor can still upgrade from the counterfactual leverage.
       priority: composedPriority,

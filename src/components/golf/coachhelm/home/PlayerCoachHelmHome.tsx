@@ -65,8 +65,10 @@ import { StandingDrill } from './StandingDrill';
 import { InsightsDrill } from './InsightsDrill';
 import { DeepDiveDrill } from './DeepDiveDrill';
 import { PlayerCoachHelmNav, useCoachHelmSectionLabel } from './PlayerCoachHelmNav';
+import { RootToday, type RootTodayProps } from '@/components/golf/coachhelm/root-map/RootToday';
+import { RootWhy } from '@/components/golf/coachhelm/root-map/RootWhy';
 
-const MOBILE_SPINE_HIDDEN_VIEWS = new Set(['development', 'profile', 'standing', 'insights', 'deep-dive']);
+const MOBILE_SPINE_HIDDEN_VIEWS = new Set(['development', 'profile', 'standing', 'insights', 'deep-dive', 'root']);
 
 function finite(n: number | null | undefined): number | null {
   return typeof n === 'number' && Number.isFinite(n) ? n : null;
@@ -127,6 +129,16 @@ export interface PlayerCoachHelmHomeProps {
 
   /** `standing` drill — copied from `my-standing/page.tsx`. */
   playerBaseline: number | null;
+  /** The player's own attempts per round by metric id, for the Standing
+   *  counterfactual line (see `resolveStandingAttemptRates`). */
+  standingAttemptsPerRound?: Record<string, number> | null;
+
+  /**
+   * Root-map Today view + its `?view=root&insight=` Why drill, built
+   * server-side from stored rows (see `src/lib/coachhelm/root-map`). When
+   * absent the home view falls back to `PlayerHomeBento`.
+   */
+  rootMap?: RootTodayProps | null;
 }
 
 export function PlayerCoachHelmHome({
@@ -159,13 +171,19 @@ export function PlayerCoachHelmHome({
   genomeRoundsBasis,
   fingerprint = null,
   playerBaseline,
+  standingAttemptsPerRound = null,
+  rootMap = null,
 }: PlayerCoachHelmHomeProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { addToast } = useToast();
   const [, startMakePlanTransition] = useTransition();
   const [makePlanPendingId, setMakePlanPendingId] = useState<string | null>(null);
-  const showMobileSpine = !MOBILE_SPINE_HIDDEN_VIEWS.has(searchParams.get('view') ?? '');
+  // The root map IS the Today view on phones: the spine's hero/priority
+  // stack above it would put the card stack back, so it is hidden there
+  // (desktop keeps the spine beside the stage).
+  const requestedView = searchParams.get('view') ?? '';
+  const showMobileSpine = !MOBILE_SPINE_HIDDEN_VIEWS.has(requestedView) && !(rootMap && requestedView === '');
 
   const shot = initialShotAnalytics ?? null;
 
@@ -333,7 +351,9 @@ export function PlayerCoachHelmHome({
   const views: StageView[] = [
     {
       key: 'home',
-      node: (
+      node: rootMap ? (
+        <RootToday {...rootMap} />
+      ) : (
         <PlayerHomeBento
           topInsight={topInsight}
           activeFocusAreaCount={developmentActiveAreas.length}
@@ -354,6 +374,26 @@ export function PlayerCoachHelmHome({
         />
       ),
     },
+    ...(rootMap
+      ? [
+          {
+            key: 'root',
+            node: (
+              <RootWhy
+                model={rootMap.model}
+                details={rootMap.details}
+                greenView={rootMap.greenView ?? null}
+                approachWhy={rootMap.approachWhy ?? null}
+                insights={[...(topInsight ? [topInsight] : []), ...secondaryDeduped].map((i) => ({
+                  id: i.id,
+                  playerId: i.player_id,
+                  category: i.category,
+                }))}
+              />
+            ),
+          } satisfies StageView,
+        ]
+      : []),
     {
       key: 'development',
       node: (
@@ -394,7 +434,13 @@ export function PlayerCoachHelmHome({
     },
     {
       key: 'standing',
-      node: <StandingDrill standingByMetric={standingByMetric} playerBaseline={playerBaseline} />,
+      node: (
+        <StandingDrill
+          standingByMetric={standingByMetric}
+          playerBaseline={playerBaseline}
+          attemptsPerRoundByMetric={standingAttemptsPerRound}
+        />
+      ),
     },
     {
       key: 'insights',

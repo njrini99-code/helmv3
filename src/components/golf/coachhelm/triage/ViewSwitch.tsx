@@ -45,15 +45,25 @@ export interface ViewSwitchProps {
   view: TriageView;
   hrefFor: (view: TriageView) => string;
   onSelect: (view: TriageView) => void;
+  /** Tabs to show, in order. Defaults to Signals / Players / Effectiveness;
+   *  the desk prepends "Team roots" when it has the team roots model. */
+  options?: ReadonlyArray<ViewSwitchOption>;
 }
 
-const OPTIONS: ReadonlyArray<{ value: TriageView; label: string }> = [
+export interface ViewSwitchOption {
+  value: TriageView;
+  label: string;
+}
+
+export const TEAM_ROOTS_OPTION: ViewSwitchOption = { value: 'team', label: 'Team roots' };
+
+export const DEFAULT_VIEW_OPTIONS: ReadonlyArray<ViewSwitchOption> = [
   { value: 'signals', label: 'Signals' },
   { value: 'players', label: 'Players' },
   { value: 'effectiveness', label: 'Effectiveness' },
 ];
 
-export function ViewSwitch({ view, hrefFor, onSelect }: ViewSwitchProps) {
+export function ViewSwitch({ view, hrefFor, onSelect, options = DEFAULT_VIEW_OPTIONS }: ViewSwitchProps) {
   // CoachHelm v3 surfaces always resolve reduced-motion through this guard
   // (never the raw framer-motion hook) — it defaults the SSR/first-paint
   // `null` to `false` so the animated path hydrates byte-identical, then
@@ -76,7 +86,7 @@ export function ViewSwitch({ view, hrefFor, onSelect }: ViewSwitchProps) {
       style={{ ...fadeStyle, boxShadow: TRACK_SUNKEN_SHADOW }}
       className={segmentedTrackClassName('md', false)}
     >
-      {OPTIONS.map((option) => {
+      {options.map((option) => {
         const selected = option.value === view;
         return (
           <Link

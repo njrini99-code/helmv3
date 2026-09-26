@@ -21,7 +21,7 @@ vi.mock('@/lib/server-error-logger', () => ({
   logServerError: vi.fn(async () => undefined),
 }));
 
-import { upsertInsightV3, GATED_OUT } from '@/lib/coachhelm/v3/insights/upsert-v3';
+import { upsertInsightV3, GATED_OUT, sanitizeInsightProse } from '@/lib/coachhelm/v3/insights/upsert-v3';
 import type { InsightInput } from '@/lib/coachhelm/v2/insights/types';
 
 function baseV3Input(overrides: Partial<InsightInput> = {}): InsightInput {
@@ -119,5 +119,60 @@ describe('upsertInsightV3 — engine_version stamp', () => {
       'eq:id=insight-1',
       'or:engine_version.is.null,engine_version.neq.v3',
     ]);
+  });
+});
+
+describe('upsertInsightV3 — write-boundary prose sanitization (internal-reference leak)', () => {
+  beforeEach(() => {
+    v2UpsertInsightMock.mockClear();
+  });
+
+  const DIRTY_CONTENT =
+    'Across your last 20 rounds, 7.3% of holes ended in double bogey or worse. PGA Tour is ~2%. ' +
+    'Per Research doc §4 this is the #1 separator between 70s and 80s rounds.';
+
+  it('never persists "Research doc" citations in title, content, or diagnosis prose', async () => {
+    const { client } = createFakeStampClient();
+    const base = baseV3Input();
+    await upsertInsightV3(
+      client as never,
+      baseV3Input({
+        title: 'Pressure gap (Research doc §9)',
+        content: DIRTY_CONTENT,
+        evidence: {
+          ...base.evidence,
+          diagnosis: {
+            symptom: 'Gap is 2 strokes (Research doc §9).',
+            root_cause: 'Preceded by X. Per Research doc §4 big numbers compound.',
+            causality_level: 'inferred_hypothesis',
+            drivers: [],
+            recommended_action: 'Work the routine. The standing card below shows the gap.',
+            confidence_reason: '20 observations',
+          },
+        },
+      }),
+    );
+
+    expect(v2UpsertInsightMock).toHaveBeenCalledTimes(1);
+    const written = (v2UpsertInsightMock.mock.calls[0] as unknown as [unknown, InsightInput])[1];
+    const serialized = JSON.stringify({
+      title: written.title,
+      content: written.content,
+      diagnosis: written.evidence.diagnosis,
+    });
+    expect(serialized).not.toContain('Research doc');
+    expect(serialized).not.toContain('§');
+    expect(serialized.toLowerCase()).not.toContain('standing card below');
+    expect(written.content).toBe(
+      'Across your last 20 rounds, 7.3% of holes ended in double bogey or worse. PGA Tour is ~2%.',
+    );
+    // Numbers and non-prose evidence pass through untouched.
+    expect(written.evidence.your_value).toBe(base.evidence.your_value);
+    expect(written.evidence.diagnosis?.confidence_reason).toBe('20 observations');
+  });
+
+  it('leaves clean input byte-identical', () => {
+    const clean = baseV3Input();
+    expect(sanitizeInsightProse(clean)).toEqual(clean);
   });
 });

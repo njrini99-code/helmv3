@@ -36,8 +36,28 @@ import { isFloorExemptMetric } from '@/lib/coachhelm/v3/ranking/score';
 import { METRIC_RENDER_CONFIG } from '@/lib/coachhelm/v3/standing/metric-config';
 import { calcConfidence, type InsightConfidenceFactors } from '@/lib/coachhelm/v2/insights/types';
 import { logServerError } from '@/lib/server-error-logger';
+import { isFlagEnabled } from '@/lib/flags/is-enabled';
+import {
+  MIN_PATTERN_OCCURRENCES,
+  MIN_PATTERN_SHARE,
+  diagnoseRootCause,
+  narrowingSpeaks,
+  resolveInsightFraming,
+  sequenceTargetFor,
+  type RootCauseContext,
+} from './root-cause';
+import { loadRootCauseContext } from './root-cause-context';
+import { SEQUENCE_MIN_EVENTS, SEQUENCE_MIN_ROUNDS } from '@/lib/coachhelm/v3/metrics/sequence-attribution';
+import {
+  decideRecheckTransition,
+  RECHECK_RESOLVED_BY,
+  RECHECK_RETIRED_REASON,
+  shouldSuppressReemit,
+  type InsightRecheck,
+  type RecheckTransition,
+} from './recent-recheck';
 
-import type { Diagnosis, DiagnosisDriver, InsightEvidence } from '@/lib/coachhelm/v2/insights/types';
+import type { Diagnosis, DiagnosisDriver, InsightEvidence, InsightLifecycleState } from '@/lib/coachhelm/v2/insights/types';
 
 import type {
   ComposedContent,
@@ -266,20 +286,16 @@ export function buildConfidenceReason(
 }
 
 /**
- * P0-05: synthesize the typed {@link Diagnosis} for a single-metric V3 insight
- * from data the base class already has. Nothing is invented: the symptom states
- * the measured value vs its benchmark, the driver cites that same metric/sample,
- * and the confidence reason is derived from the confidence factors.
- *
- * `causality_level` is always `inferred_hypothesis` here — a single-metric
- * generator reasons over an aggregated statistic, it never replays a measured
- * shot sequence (that level is reserved for composites that prove the sequence).
- * So the diagnosis must render as a coach hypothesis, never as observed fact.
- *
- * The root_cause + recommended_action default to honest, non-fabricated text
- * derived from the metric label; a generator that has a sharper, data-grounded
- * driver sentence (e.g. approach-miss's dominant-axis driver) should pass it via
- * `composed.evidence.diagnosis` and the base preserves it (see run()).
+ * P0-05 baseline: the symptom + metric driver + confidence reason for a
+ * single-metric V3 insight, from data the base class already has. Kept as the
+ * shape `mergeDiagnosis` fills in; it is NO LONGER what ships as the root
+ * cause. Since 2026-09-24 the root cause comes from `root-cause.ts`
+ * (`diagnoseRootCause`): no diagnosis for a strength/neutral row, an
+ * `observed_sequence` path with its count/denominator when the player's
+ * recorded shots show one, else an `inferred_hypothesis` that states what was
+ * checked (and the A5 hypothesis label where a family applies). The old
+ * "{metric} is off its benchmark — likely cause inferred from the aggregate"
+ * sentence (877 of 877 production rows) is gone.
  *
  * Pure + exported for direct unit testing.
  */
@@ -313,13 +329,128 @@ export function buildDiagnosis(
     `vs ${evidence.comparison_label} ${evidence.comparison_value}`;
   return {
     symptom,
-    root_cause: `${evidence.metric_label} is off its benchmark — likely cause inferred from the aggregate, not a measured shot sequence`,
+    root_cause: `Not yet traced: ${evidence.metric_label.toLowerCase()} has not been checked against recorded shot sequences`,
     causality_level: 'inferred_hypothesis',
     drivers: [driver],
     recommended_action: `Target ${evidence.metric_label.toLowerCase()} in the next practice block`,
     confidence_reason: buildConfidenceReason(evidence),
   };
 }
+
+/**
+ * Combine the base diagnosis, a generator-composed diagnosis (e.g.
+ * approach-miss's dominant-axis reading) and the root-cause outcome into the
+ * one diagnosis the row ships. Pure + exported for tests.
+ *
+ *  - `rootCause === null` → the row is a strength/neutral reading: no
+ *    diagnosis (returns `undefined`).
+ *  - an `observed_sequence` root cause wins the headline; the generator's
+ *    own drivers are appended (deduped by metric) so nothing it measured is
+ *    lost.
+ *  - otherwise a generator-composed diagnosis keeps its sharper text (it is
+ *    data-grounded), pinned to `inferred_hypothesis`, with the root-cause
+ *    `basis` (what was checked) and drivers attached; without one, the
+ *    root-cause hypothesis ships as-is.
+ *
+ * Only this function may produce `observed_sequence`: from a root-cause
+ * outcome that cleared `root-cause.ts`'s floors, or (2026-09-25) from a
+ * generator-composed diagnosis that carries its own sequence evidence —
+ * see {@link hasGeneratorSequenceEvidence}, which holds it to the same
+ * floors — and only when `opts.generatorObservedEnabled` (the A10
+ * observed-sequence capability flag) is on. A generator claim without that
+ * evidence is still pinned to `inferred_hypothesis`. The confidence reason
+ * always reflects the row's FINAL confidence factors.
+ */
+export function mergeDiagnosis(
+  base: Diagnosis,
+  composed: Diagnosis | undefined,
+  rootCause: Omit<Diagnosis, 'confidence_reason'> | null,
+  opts: { generatorObservedEnabled?: boolean } = {},
+): Diagnosis | undefined {
+  if (!rootCause) return undefined;
+  if (
+    rootCause.causality_level !== 'observed_sequence' &&
+    composed &&
+    opts.generatorObservedEnabled === true &&
+    hasGeneratorSequenceEvidence(composed)
+  ) {
+    const drivers = [...composed.drivers];
+    for (const d of rootCause.drivers) {
+      if (!drivers.some((x) => x.metric === d.metric)) drivers.push(d);
+    }
+    return {
+      ...base,
+      ...composed,
+      drivers,
+      causality_level: 'observed_sequence',
+      confidence_reason: base.confidence_reason,
+    };
+  }
+  if (rootCause.causality_level === 'observed_sequence') {
+    const drivers = [...rootCause.drivers];
+    for (const d of composed?.drivers ?? []) {
+      if (!drivers.some((x) => x.metric === d.metric)) drivers.push(d);
+    }
+    return { ...rootCause, drivers, confidence_reason: base.confidence_reason };
+  }
+  if (composed) {
+    const drivers = [...composed.drivers];
+    for (const d of rootCause.drivers) {
+      if (!drivers.some((x) => x.metric === d.metric)) drivers.push(d);
+    }
+    // The context narrowing (length → par × length → shape) is the most
+    // specific supported reading; it leads the generator's own sharper text
+    // so an approach row says WHERE the misses concentrate, then what the
+    // record cannot say. Only when it got past its population gate.
+    const narrowing = rootCause.basis?.narrowing;
+    const rootCauseText = narrowingSpeaks(narrowing)
+      ? `${narrowing!.sentence} ${composed.root_cause}`
+      : composed.root_cause;
+    return {
+      ...base,
+      ...composed,
+      root_cause: rootCauseText,
+      drivers,
+      causality_level: 'inferred_hypothesis',
+      ...(rootCause.basis ? { basis: rootCause.basis } : {}),
+      confidence_reason: base.confidence_reason,
+    };
+  }
+  return { ...rootCause, causality_level: 'inferred_hypothesis', confidence_reason: base.confidence_reason };
+}
+
+/**
+ * Does a generator-composed diagnosis carry the sequence evidence an
+ * `observed_sequence` claim needs? It must say `observed_sequence`, rest on a
+ * `shot_sequence` basis, and quote a recorded path that clears the same
+ * floors `root-cause.ts` applies: a population of at least
+ * SEQUENCE_MIN_EVENTS over SEQUENCE_MIN_ROUNDS rounds, the path seen at least
+ * MIN_PATTERN_OCCURRENCES times and on at least MIN_PATTERN_SHARE of the
+ * population, with 1–5 example holes (round id + hole number) from the
+ * recorded shot order. Pure + exported for tests.
+ */
+export function hasGeneratorSequenceEvidence(d: Diagnosis): boolean {
+  if (d.causality_level !== 'observed_sequence') return false;
+  const b = d.basis;
+  const seq = b?.kind === 'shot_sequence' ? b.sequence : undefined;
+  if (!seq || !seq.pattern.trim()) return false;
+  const { occurrences, of, distinct_rounds: rounds, examples } = seq;
+  if (![occurrences, of, rounds].every((n) => Number.isInteger(n) && n > 0)) return false;
+  if (occurrences > of || of < SEQUENCE_MIN_EVENTS || rounds < SEQUENCE_MIN_ROUNDS) return false;
+  if (occurrences < MIN_PATTERN_OCCURRENCES || occurrences / of < MIN_PATTERN_SHARE) return false;
+  if (!examples || examples.length === 0 || examples.length > 5) return false;
+  return examples.every((e) => typeof e.round_id === 'string' && e.round_id !== '' && Number.isInteger(e.hole_number) && e.hole_number > 0);
+}
+
+/**
+ * A10 capability gate for the observed-sequence branch: its own flag
+ * (owner decision 2026-09-25), independent of the Round Review
+ * `coachhelm_a4_sequence_attribution_surface` section. Off → the same checks
+ * still run, but the diagnosis stays an honest `inferred_hypothesis` listing
+ * them; it never falls back to the old "off its benchmark" template.
+ */
+export const ROOT_CAUSE_DIAGNOSIS_FLAG = 'coachhelm_root_cause_diagnosis';
+
 
 export abstract class BaseGenerator<A extends GeneratorAggregate = GeneratorAggregate> {
   // Generator identity — concrete classes override
@@ -410,6 +541,153 @@ export abstract class BaseGenerator<A extends GeneratorAggregate = GeneratorAggr
    */
   protected signatureScope(): string | null {
     return null;
+  }
+
+  /**
+   * Recent-window recheck (owner decision 2026-09-25, `recent-recheck.ts`).
+   * A generator whose aggregate is LIFETIME (putt_distance, par_type) cannot
+   * see a recent improvement on its re-run, so it opts in
+   * (`rechecksRecentWindow = true`) and recomputes its own metric over the
+   * recent window in `recentWindowRecheck`, graded against the row's own
+   * comparison value. Default off = the generator's window is already recent
+   * (its re-run is the recheck). Called only for a LEAK row; a throw is
+   * logged and treated as "no recheck" — it never fails the run.
+   */
+  protected readonly rechecksRecentWindow: boolean = false;
+
+  protected async recentWindowRecheck(
+    _agg: A,
+    _evidence: InsightEvidence,
+  ): Promise<InsightRecheck | null> {
+    return null;
+  }
+
+  /** The row this run's signature would upsert onto (newest first), read
+   *  before the write so a recheck-retired row is not resurrected by a
+   *  re-emit that has not shown the leak again. */
+  private async loadExistingForRecheck(
+    signature: string,
+  ): Promise<{ id: string; lifecycle_state: InsightLifecycleState | null; metadata: Record<string, unknown> | null } | null> {
+    const supabase = createAdminClient();
+    const { data, error } = await supabase
+      .from('golf_coach_insights')
+      .select('id, lifecycle_state, metadata')
+      .eq('player_id', this.playerId)
+      .eq('signature', signature)
+      .order('created_at', { ascending: false })
+      .limit(1);
+    if (error) throw new Error(`recheck existing-row lookup failed: ${error.message}`);
+    const row = (data as Array<{ id: string; lifecycle_state: string | null; metadata: unknown }> | null)?.[0];
+    return row
+      ? {
+          id: row.id,
+          lifecycle_state: row.lifecycle_state as InsightLifecycleState | null,
+          metadata: (row.metadata as Record<string, unknown> | null) ?? null,
+        }
+      : null;
+  }
+
+  /**
+   * Apply the recheck's lifecycle edge to the row this run just wrote
+   * (`decideRecheckTransition`). Engine axis only — `status` is never
+   * written.
+   *  - retire: lifecycle → `archived` (the engine-retraction state every
+   *    reader hides) with `resolved_by='engine-recheck'`,
+   *    `retired_reason='recheck_cleared'` and the recheck summary.
+   *  - restore: the upsert just resurrected a recheck-retired row; clear the
+   *    retirement markers (lifecycle is already set by the upsert).
+   * Optimistic guard on the observed lifecycle_state + updated_at so a
+   * concurrent coach action or engine write is never clobbered. Failure is
+   * logged and swallowed.
+   */
+  private async applyRecheckLifecycle(
+    insightId: string,
+    isLeak: boolean,
+    recheck: InsightRecheck | null,
+  ): Promise<RecheckTransition> {
+    try {
+      const supabase = createAdminClient();
+      const { data: row, error: selErr } = await supabase
+        .from('golf_coach_insights')
+        .select('id, lifecycle_state, metadata, updated_at')
+        .eq('id', insightId)
+        .maybeSingle();
+      if (selErr || !row) {
+        if (selErr) {
+          await logServerError(
+            `${this.name} recheck select failed for insight=${insightId}: ${selErr.message}`,
+            { action: `v3.generator.${this.name}.recheck`, metadata: { dbError: toDbErrorMetadata(selErr) } },
+          );
+        }
+        return 'none';
+      }
+      const metadata = { ...((row.metadata as Record<string, unknown> | null) ?? {}) };
+      const lifecycle = row.lifecycle_state as InsightLifecycleState | null;
+      const transition = decideRecheckTransition({ lifecycle, metadata, isLeak, recheck });
+      if (transition === 'none') return 'none';
+
+      const nowIso = new Date().toISOString();
+      let patch: Record<string, unknown>;
+      if (transition === 'retire' && recheck) {
+        patch = {
+          lifecycle_state: 'archived',
+          archived_at: nowIso,
+          updated_at: nowIso,
+          metadata: {
+            ...metadata,
+            resolved_by: RECHECK_RESOLVED_BY,
+            retired_reason: RECHECK_RETIRED_REASON,
+            // Same provenance keys the other engine archivers stamp.
+            archived_by: RECHECK_RESOLVED_BY,
+            archive_reason: RECHECK_RETIRED_REASON,
+            retired_from_state: lifecycle,
+            retired_at: nowIso,
+            retired_recheck: {
+              checked_at: recheck.checked_at,
+              recent_value: recheck.recent_value,
+              bound: recheck.bound,
+              sample_n: recheck.sample_n,
+              comparison_value: recheck.comparison_value,
+              window_days: recheck.window_days,
+            },
+          },
+        };
+      } else {
+        const {
+          resolved_by: _rb,
+          retired_reason: _rr,
+          archived_by: _ab,
+          archive_reason: _ar,
+          ...rest
+        } = metadata;
+        void _rb; void _rr; void _ab; void _ar;
+        patch = {
+          updated_at: nowIso,
+          metadata: { ...rest, restored_at: nowIso, restored_by: RECHECK_RESOLVED_BY },
+        };
+      }
+      let q = supabase
+        .from('golf_coach_insights')
+        .update(patch as never)
+        .eq('id', insightId)
+        .eq('lifecycle_state', lifecycle as string);
+      q = row.updated_at === null ? q.is('updated_at', null) : q.eq('updated_at', row.updated_at as string);
+      const { data: updated, error } = await q.select('id');
+      if (error) {
+        await logServerError(
+          `${this.name} recheck ${transition} failed for insight=${insightId}: ${error.message}`,
+          { action: `v3.generator.${this.name}.recheck`, metadata: { dbError: toDbErrorMetadata(error) } },
+        );
+        return 'none';
+      }
+      return updated && updated.length > 0 ? transition : 'none';
+    } catch (err) {
+      await logServerError(
+        `${this.name} recheck threw for insight=${insightId}: ${describeError(err)}`,
+        { action: `v3.generator.${this.name}.recheck`, metadata: { dbError: toDbErrorMetadata(err) } },
+      );
+      return 'none';
+    }
   }
 
   /**
@@ -518,6 +796,51 @@ export abstract class BaseGenerator<A extends GeneratorAggregate = GeneratorAggr
   }
 
   /**
+   * Compose this row's diagnosis (see `mergeDiagnosis`). Loads shot context
+   * only for a LEAK whose metric a shot sequence (or an A5 family) can speak
+   * to; a load error degrades to the honest "could not be read" hypothesis
+   * and is logged — it never fails the run.
+   */
+  private async diagnose(
+    composed: ComposedContent,
+    evidence: InsightEvidence,
+  ): Promise<Diagnosis | undefined> {
+    const framing = resolveInsightFraming(composed.framing, evidence);
+    const base = buildDiagnosis(this.metricId, evidence);
+    if (framing !== 'leak') return undefined;
+
+    const metric = evidence.metric || this.metricId;
+    let ctx: RootCauseContext | null = null;
+    let loadFailed = false;
+    if (sequenceTargetFor(metric) || metric === 'scoring_par_5') {
+      try {
+        ctx = await loadRootCauseContext(this.playerId, evidence);
+      } catch (err) {
+        loadFailed = true;
+        await logServerError(
+          `${this.name} root-cause shot context load failed for player=${this.playerId}: ${describeError(err)}`,
+          { action: `v3.generator.${this.name}.root_cause`, metadata: { dbError: toDbErrorMetadata(err) } },
+          'warning',
+        );
+      }
+    }
+    const outcome = diagnoseRootCause({
+      metricId: this.metricId,
+      framing,
+      evidence,
+      ctx,
+      loadFailed,
+      observedEnabled: isFlagEnabled(ROOT_CAUSE_DIAGNOSIS_FLAG),
+    });
+    return mergeDiagnosis(
+      base,
+      evidence.diagnosis,
+      outcome.kind === 'diagnosis' ? outcome.diagnosis : null,
+      { generatorObservedEnabled: isFlagEnabled(ROOT_CAUSE_DIAGNOSIS_FLAG) },
+    );
+  }
+
+  /**
    * Full lifecycle entry point. Cron / orchestrator code calls this.
    */
   async run(): Promise<RunResult> {
@@ -588,6 +911,8 @@ export abstract class BaseGenerator<A extends GeneratorAggregate = GeneratorAggr
         ...composed.evidence,
         confidence_factors: confidenceFactors,
         confidence: calcConfidence({ confidence_factors: confidenceFactors }),
+        // Coach voice rides in evidence; title/content stay the player's.
+        ...(composed.coach ? { coach_copy: composed.coach } : {}),
       };
 
       // A generator may pin priority:'low' for a descriptive standing row, but
@@ -678,32 +1003,57 @@ export abstract class BaseGenerator<A extends GeneratorAggregate = GeneratorAggr
         evidence.confidence,
       );
 
-      // P0-05: stamp a typed, machine-readable diagnosis on EVERY v3 row so the
-      // root cause is filterable/auditable instead of buried in prose. The base
-      // synthesizes an honest default from the cited metric; a generator that
-      // already composed a sharper, data-grounded diagnosis (its driver+action
-      // sentence promoted to a structure) is preserved verbatim. The confidence
-      // reason is always recomputed from the FINAL confidence factors so it can
-      // never disagree with the value the row ships. Never an observed sequence
-      // — a single-metric verdict is an inferred hypothesis, framed as such.
-      const baseDiagnosis = buildDiagnosis(this.metricId, evidence);
-      const diagnosis: Diagnosis = {
-        ...baseDiagnosis,
-        ...(evidence.diagnosis ?? {}),
-        // Single-metric generators never replay a measured sequence: pin the
-        // honesty level even if a generator forgot to.
-        causality_level: 'inferred_hypothesis',
-        // Always reflect the row's actual confidence factors.
-        confidence_reason: baseDiagnosis.confidence_reason,
-      };
-      evidence = { ...evidence, diagnosis } as typeof composed.evidence;
+      // Root cause (2026-09-24, see `root-cause.ts`). A strength/neutral
+      // reading ships NO diagnosis; a leak gets an observed shot-sequence path
+      // when the recorded shots show one, else an honest hypothesis stating
+      // what was checked. Never the old "off its benchmark" template.
+      const diagnosis = await this.diagnose(composed, evidence);
+      const { diagnosis: _composedDiagnosis, ...evidenceWithoutDiagnosis } = evidence;
+      void _composedDiagnosis;
+      evidence = (
+        diagnosis ? { ...evidenceWithoutDiagnosis, diagnosis } : evidenceWithoutDiagnosis
+      ) as typeof composed.evidence;
+
+      // Recent-window recheck (lifetime-window generators only). Stamped on
+      // the evidence this write persists, then applied to lifecycle below.
+      const fullSignature = `${V3_SIGNATURE_PREFIX}${composed.signature}`;
+      const isLeak = resolveInsightFraming(composed.framing, evidence) === 'leak';
+      let recheck: InsightRecheck | null = null;
+      if (this.rechecksRecentWindow) {
+        if (isLeak) {
+          try {
+            recheck = await this.recentWindowRecheck(agg, evidence);
+          } catch (err) {
+            await logServerError(
+              `${this.name} recent-window recheck failed for player=${this.playerId}: ${describeError(err)}`,
+              { action: `v3.generator.${this.name}.recheck`, metadata: { dbError: toDbErrorMetadata(err) } },
+              'warning',
+            );
+          }
+          if (recheck) evidence = { ...evidence, recheck } as typeof composed.evidence;
+        }
+        // A re-emit onto an archived row resurrects it. A row this recheck
+        // retired may only come back when the leak has actually re-appeared.
+        const existing = await this.loadExistingForRecheck(fullSignature);
+        if (
+          existing &&
+          shouldSuppressReemit({
+            existingLifecycle: existing.lifecycle_state,
+            existingMetadata: existing.metadata,
+            isLeak,
+            recheck,
+          })
+        ) {
+          return { id: existing.id, gated: true, status: 'gated', recheck: 'kept_retired' };
+        }
+      }
 
       const supabase = createAdminClient();
       const result = await upsertInsightV3(supabase, {
         player_id: this.playerId,
         category: this.category,
         insight_type: this.insightType,
-        signature: `${V3_SIGNATURE_PREFIX}${composed.signature}`,
+        signature: fullSignature,
         title: composed.title,
         content: composed.content,
         priority: honestPriority,
@@ -717,10 +1067,17 @@ export abstract class BaseGenerator<A extends GeneratorAggregate = GeneratorAggr
       }
       // Fresh row written — retract siblings in scope it superseded (e.g.
       // a data-derived signature suffix moved: old band/pattern row goes).
-      const retracted = await this.retractStaleInScope(
-        `${V3_SIGNATURE_PREFIX}${composed.signature}`,
-      );
-      return { id: result, gated: false, status: 'generated', retracted };
+      const retracted = await this.retractStaleInScope(fullSignature);
+      const recheckTransition = this.rechecksRecentWindow
+        ? await this.applyRecheckLifecycle(result, isLeak, recheck)
+        : 'none';
+      return {
+        id: result,
+        gated: false,
+        status: 'generated',
+        retracted,
+        ...(recheckTransition !== 'none' ? { recheck: recheckTransition } : {}),
+      };
     } catch (err) {
       // P0-04: a thrown generator MUST NOT be reported as a clean no-data exit.
       // The legacy `{ id: null, gated: false }` here was indistinguishable from

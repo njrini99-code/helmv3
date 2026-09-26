@@ -94,6 +94,55 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
   `tone-derivation.ts`): a player at least as good as the comparison is always
   healthy regardless of gap size; only the adverse direction is gated by the 20%
   closeness bar.
+- Recent-window recheck (owner decision 2026-09-25,
+  `src/lib/coachhelm/v3/engine/recent-recheck.ts`). The 90-day generators
+  recheck themselves whenever they re-run (a closed leak re-emits framed as a
+  strength or dequalifies and is retracted). The two LIFETIME-window
+  generators, `putt_distance` (stats cache) and `par_type` (cache average +
+  lifetime holes), opt in (`rechecksRecentWindow = true` +
+  `recentWindowRecheck()`): for a leak row they recompute their own metric
+  over the last 90 days with the same definitions (putts:
+  `update_player_putt_make_pct` band `(lo, hi]`, made = `result='hole' OR
+  putt_made`; par: hole-score average) and grade it against the row's own
+  `comparison_value` with a one-sided 90% margin: `cleared` = the Wilson lower
+  bound (make %) or the mean upper bound (lower-is-better par average) beats
+  the target; `holds` = the point estimate is still on the wrong side;
+  `inconclusive` = better, inside the margin; `thin` = below the minimum
+  sample (putts: 20 recent attempts per band, 40 for 25+ ft; par: 5 rounds).
+  The result is stamped on `evidence.recheck` (`status, checked_at,
+  window_days, recent_value, bound, sample_n, min_sample_n,
+  comparison_value`). On `cleared`, a `detected`/`matured` row is RETIRED to
+  lifecycle `archived` (hidden by every reader through
+  `applyInsightVisibility`) with `metadata.resolved_by='engine-recheck'`,
+  `retired_reason='recheck_cleared'`, `archived_by`/`archive_reason` (same
+  keys as the other engine archivers), `retired_from_state` and
+  `retired_recheck`. A retired row's re-emit is SUPPRESSED (run returns
+  `recheck:'kept_retired'`) unless the recheck says `holds`: only then does the
+  upsert resurrect it (`resolveLifecycleOnWrite`), after which the run clears
+  the retirement markers (`restored_at`/`restored_by`). The gap between
+  `cleared` and `holds` is the anti-flap hysteresis. The lifecycle cron only
+  scans `tentative/detected/matured/addressed` (asserted in
+  `coachhelm-insight-lifecycle-bounds.test.ts`), so it never un-archives
+  these. `tentative`, `addressed`, `resolved` and coach-owned `status` are
+  never touched; every write is a CAS on the observed `lifecycle_state` +
+  `updated_at`. Recent putts/holes load once per player per analysis run
+  (2-minute in-process cache shared by the bucket instances). The recheck only
+  runs when the generator runs, i.e. when the player's analysis is re-run.
+- Stale-insight refresh (owner decision 2026-09-25,
+  `src/lib/coachhelm/v3/engine/stale-refresh.ts`). The nightly roster sweep
+  skips a player whose latest completed round is already analyzed, so a player
+  who stops logging rounds used to keep their last analysis forever (measured:
+  15 on-roster players / 50 visible rows, 22–88 days old). The sweep now also
+  re-analyzes players whose visible v3 insights (`applyInsightVisibility`)
+  were ALL last refreshed `STALE_REFRESH_DAYS` (14)+ days ago — anchor = the
+  player's newest `max(created_at, last_refreshed_at, redetected_at)` — at
+  most `STALE_REFRESH_CAP` (6) per run, oldest first, batched together at the
+  front of the sweep. A recently analyzed player with individually stale rows
+  is not selected (re-running cannot change rows from gated/standing-lag
+  exits). Same deterministic `triggerPlayerInsightsAfterRound` path: no AI
+  model calls. A lookup failure skips only the extra refreshes. The response
+  reports `staleRefresh {selected, refreshed, cap, staleDays, selectFailed}`.
+  Read-only report: `scripts/coachhelm/recheck-dry-run.ts`.
 - Honest-mode confidence (`factors_measured=false`) is `sample_adequacy × freshness` (`honest_v2`); it is a support score, never a probability, and can never rise as evidence ages.
 - Citations, evidence, and baseline comparisons are part of the trust contract. Do not emit fabricated comparisons or uncited claims.
 - Claim honesty (2026-09-12, repair plan Package 2): prose states what was
@@ -109,6 +158,27 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
   `hole_number`); derived tee distances carry `distance_method:
   'derived_progress'`. The metric identity table lives in
   `docs/architecture/coachhelm-evidence-contract.md`.
+- Root-cause diagnosis (2026-09-24). `evidence.diagnosis` is resolved by
+  `v3/engine/root-cause.ts` in `BaseGenerator.run()`:
+  - strength and neutral rows ship no diagnosis;
+  - a leak with a repeated recorded shot path (A4 rollup floors, and gate
+    `coachhelm_root_cause_diagnosis`, ON since 2026-09-25 and independent of
+    the Round Review `coachhelm_a4_sequence_attribution_surface` flag) ships
+    `observed_sequence` with its count and denominator; with the gate off
+    the same checks run and the row ships the `inferred_hypothesis` below;
+  - every other leak ships an `inferred_hypothesis` that names the checks
+    that fell short, plus the A5 hypothesis label where one applies.
+  `Diagnosis.basis` is additive and optional. The contract is in the
+  evidence contract doc under "Root-cause diagnosis".
+- Context narrowing (2026-09-25). For approach, tee and par-scoring leaks,
+  the diagnosis narrows the failing population by length band, then par ×
+  length, then miss shape (`v3/engine/context-narrowing.ts`). Each step has
+  a sample gate and a concentration gate; narrowing stops at the first gate
+  that fails, and every step states its counts. The result is stored as
+  `Diagnosis.basis.narrowing` and phrased "Observed, not a cause". It never
+  changes `causality_level`. Failed 175+ yd par-5 approaches are excluded as
+  likely lay-ups. Gates and wording are in the evidence contract doc under
+  "Context narrowing".
 - Standing Tour basis (2026-09-22, Package 7B / addendum A2): the three
   `approach_proximity_*` standing rows carry a `basis` column
   (`'on_green' | 'all_shot' | null`) written by
@@ -224,6 +294,193 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
 
 ## UI Contract
 
+- Root map surfaces (2026-09-25): the player Today view and the coach
+  Team roots view draw v3 insights as one strokes-weighted diagram
+  (`src/lib/coachhelm/root-map/**`, `src/components/golf/coachhelm/root-map/**`).
+  They read stored `evidence.diagnosis` (causality_level, root_cause,
+  basis.sequence), `evidence.counterfactual` and `evidence.confidence`
+  only; confidence bands match `bandFor` (<0.4 Thin, <0.7 Early, else
+  Solid). A change to those evidence fields' shape or meaning must update
+  `build-root-map.ts` and its tests. Details: `player-coachhelm-development.md`
+  and `coach-intelligence-triage.md`.
+- Summary first (owner direction 2026-09-25): every root-map screen leads
+  with one `RootSummary` card: the strokes lost a round (sum of losing
+  areas, net and gains beside it), the stored headline, ONE stacked bar of
+  the loss by area (the screen's single `role="img"`, one hue stepped by
+  rank), the two biggest spots (`topSpots`) with one line of Why on the
+  first (`leadWhyLine`: an inferred root keeps its label; a measured spot
+  with no read says so), and the screen's one primary action. Everything
+  else sits behind a `Disclosure` (44px trigger, `aria-expanded`, body
+  mounted only while open, height animation or opacity-only under reduced
+  motion), closed by default:
+  - `RootMap`: one row per losing area (label, mini bar, signed SG); tapping
+    it opens its leak ladder (at most 3 spots, then "+N more", then the
+    rest). A row opens itself when the selected spot is inside it. Desktop
+    adds a collapsed "Full root map" (the ribbon, tooltips for narrow
+    nodes). Exceptions to the reconcile line (share-mode areas, areas not
+    split by shot) always show inline; the one reconcile line, the per-area
+    notes and the one legend (only the fills drawn) sit in "About this map".
+  - `RootWhy`: the header, root and chain stay open; "The evidence"
+    (comparison, angle visual, green plot, approach context, worth) is
+    collapsed.
+  - Player Today: a spot opens a sheet with its chain and "See the evidence"
+    (the Why route). Not-sized causes and other reads are collapsed lists.
+  - Team roots: the card adds "Needs you"; its action ("Open <area>
+    signals") follows the biggest leak until the coach picks a spot on the
+    team map. "Team map by area", "Who carries which root" and "Team trend"
+    (with "Did the focus work?") are collapsed.
+- Insight-angle Why visuals (`angle-why.ts`, `AngleWhy.tsx`): a stored read
+  whose `evidence.detail.angle` matches its metric (lie-adjusted approach,
+  bad-day floor, three-putt autopsy, tee and approach miss compasses) draws
+  its picture in the Why evidence, with receipts: date window, denominators,
+  exclusions and example holes linking to the round (UUID round ids only).
+  A row without the tag (legacy `three_putt_chain`) or an unknown shape
+  parses to null and the generic Why renders.
+- Approach branches on the root map (2026-09-25):
+  - Sizing: a branch uses its stored counterfactual, else the band's strokes
+    lost from a per-shot SG split. The split is used only when it reconciles
+    with the stored `golf_rounds.strokes_gained_approach` within 0.15 a
+    round (`approach-context.ts`).
+  - Unsized bands are outlined, with a note saying why: no stored SG, the
+    split did not reconcile, or the band is not losing strokes.
+  - Each approach branch carries its "where it concentrates" path.
+  - `RootWhy` shows the miss compass, the par × length grid and the band
+    metrics for that branch. Each shows only when its gate passed, and each
+    is labelled with its own round window (the last 40 countable rounds).
+  - Team roots mark cells, and list "Needs you" rows, only from a stored
+    narrowing that got past the length step.
+- Team roots (coach, `?view=team`, 2026-09-25):
+  - The map's What row shows the top causes per losing area, ranked by
+    summed team strokes, up to 3 per area (`TEAM_MAP_CAUSES_PER_AREA`), each
+    with how many players carry it. A cause no longer needs 3+ players to
+    appear there; "shared" marks 3+ players in the matrix only.
+  - Causes with no stored stroke value are outlined nodes inside the
+    area's "Unexplained <strokes>" remainder. On the desktop ribbon, slices
+    and nodes too narrow for their own label keep their true width; nodes
+    name themselves in a hover / focus tooltip.
+  - Matrix columns show a short header (`shortCauseLabel`). The full
+    stored label stays in `title` and in the spoken text.
+  - The trend reads 52 weeks back and shows the 12 weeks ending at the
+    team's latest counted SG round, not at today (`buildTeamTrend` with
+    `maxWeeks`). It is labelled with the real first and last round dates.
+    Non-countable rounds and rounds without stored SG never anchor it.
+  - Coach-facing copy never says "your": `RootAudience` 'coach' gives
+    "Seen in shots" and third-person Why copy.
+  - Drill-in: a player name or a matrix cell navigates (a push, so back and
+    forward work) to `?view=team&player=<id>&cause=<insightId>`. The page
+    then builds that player's own root map server-side
+    (`loadCoachPlayerDrill`, `coach-player-drill.ts`). It uses the same
+    loaders and builders as the player's Today view, with the coach's
+    request client. Insights come from `getInsightsForCoachWithMeta`
+    (`verifyPlayerAccess` + `applyInsightVisibility`, no `player_feed`
+    exposure). A clicked cause that the ranked list dropped falls back to the
+    Brief's visibility-filtered signal.
+  - `TeamPlayerDrill` renders the summary card, the collapsed `RootMap`
+    and `RootWhy` with `audience='coach'`. The Why opens in a `Sheet`
+    (bottom on phones, a right-hand panel from md). A `?cause=` link opens
+    that sheet on load; picking a spot keeps `?cause=` in step; closing the
+    sheet clears `?cause=`. The drill headline describes the map
+    (`defaultSelectedId`), not the linked cause. In the sheet the one
+    primary action is "Propose as a focus for <first name>" (coach mode,
+    which proposes); "Open signal" is secondary. On the page the one
+    primary action is "See why" (the biggest leak).
+  - Stored insight prose (title, symptom, root cause) is shown verbatim.
+    Some generators write it to the player in the second person.
+- Measured What row (owner decision 2026-09-25, `measured-what.ts`):
+  - Under each losing area the What row is built from recorded shots, on
+    the player map, the coach drill and (summed) Team roots. Sub-areas: tee
+    = driver / other tee clubs / penalties (`club_type` is only
+    driver/non_driver/putter, so no club is named); approach = 50–125 /
+    125–175 / 175+ yd, inside 50 yd, penalties, with a by-lie line
+    (fairway / rough / tee box for par 3s) inside a band; around the green =
+    sand / rough / tight lies, penalties; putting = holes by FIRST-putt
+    distance on the stats writer's half-open bands (0–3, 3–5, 5–10, 10–15,
+    15–25, 25+ ft).
+  - Shot SG is `shotSgForRound` (port of `calculate_round_strokes_gained`).
+    Every kept shot is filed under a key, so the keys sum to the recomputed
+    area SG. It must read exactly the Where row's rounds (`roundsPlayed`),
+    else the area falls back. Reconciliation against the Where-row value:
+    within 0.15 a round → printed as measured; covering 0.5–2× the stored
+    value → each spot is its share of the stored total (note says so);
+    otherwise the stored-insight What row stays (legacy, "Unexplained").
+    Calibrated 2026-09-25 over all 72 players with SG rounds: measured for
+    67–69 per area, share for 2–5, none for 0–2; median |diff| ≤ 0.006.
+  - Gate: 10 events over 3 rounds, else the spot folds into "Other". The
+    ladder shows at most 3 spots per area, then "+N more" (expands to 44px
+    rows). Spots that GAIN inside a losing area are listed in the area note
+    as offsets. The remainder is "Not tracked by
+    shot", never "Unexplained".
+  - Stored insights attach by metric to their spot as the Why (styles as
+    before); the best read opens the Why view (`whyId`), and `findBranch`
+    resolves an insight id to its spot. A read with no matching spot goes
+    to Other reads. A spot with no read still shows its measured value.
+  - Team: Σ of measured players' keys ÷ the team-average denominator;
+    `players` counts players losing strokes on that spot; players with no
+    measured split stay in "Not tracked by shot". `loadTeamShotContext`
+    batches the roster's rounds, holes and shots.
+  - Team shot cache (2026-09-25, `team-shot-cache.ts`,
+    `loadTeamShotContextCached(sb, teamId, playerIds)`): on the request
+    client it first checks `is_golf_team_coach(teamId)`, keeps only players
+    on that team's active roster, and picks rounds under RLS
+    (`selectTeamShotRounds`). Only then, per player, `unstable_cache` reads
+    those rounds' holes, shots and SG scale with the service client
+    (`loadTeamShotChildren`). Key: team id + player id + round ids + newest
+    round `updated_at`; TTL 600 s; tag `coachhelm-team-shots:<teamId>`.
+    Per player because Next skips data-cache entries over 2 MB (a roster is
+    several MB; the largest player is under 1 MB). Null on a failed gate or
+    read, like the loaders.
+  - Spot visuals (2026-09-25, `SpotVisuals.tsx`): a measured approach spot's
+    lie split draws as bars (`LieSplitBars`, loss and gain coloured and
+    labelled separately; a gaining lie used to print as a loss), and the
+    length → par → shape path draws as steps (`PathCrumbs`) in the coach
+    drill's "See why" sheet and RootWhy's "Where it concentrates".
+- Coach Scouting tab (2026-09-25, `FairwayPlayerInsight.tsx`, mounted by
+  `/players/[playerId]/game?tab=scouting`): opens on one card (identity,
+  rating, verdict, the standing bars). The top read stays open; the second
+  read, the plan, trends, tracking (focus areas + predictions) and the
+  trajectory are closed disclosures. "Message player" is the one primary
+  action; the stats-cockpit link is secondary.
+- Coach voice (2026-09-25, `v3/insights/coach-copy.ts`): a generator may
+  return `coach: { title, content }` in neutral third person ("the player",
+  "they"); `BaseGenerator` stores it as `evidence.coach_copy`. Stored
+  `title`/`content` stay in the player's voice (player feed, push). Coach
+  readers swap it in: `getInsightsForCoachWithMeta` (Scouting tab, coach
+  drill), `getTopInsightsForPlayers` (team stats), `getSignalGroups`, and the
+  team dashboard insight read. Player readers never do. Rows without coach
+  copy (older rows, unconverted generators) keep their stored text.
+- Insight ownership on write (2026-09-25, `v2/insights/upsert.ts`): a team
+  or coach-staff lookup that errors past its retry throws
+  `InsightOwnershipLookupError` (transient code kept, so the analysis run
+  reads it as retryable) instead of writing with null ownership. The null
+  fallback keyed the row on a partial tuple the dedup lookup could not match,
+  so the 2026-09-24 brownout (PGRST002) wrote 19 coachless twins for one
+  player. A genuinely teamless or unstaffed player still lands an orphan.
+- Root map copy (2026-09-25, `plain-copy.ts`): raw metric ids never reach
+  the Why view (`plainMetricLabel`); the old "X is off its benchmark — likely
+  cause inferred from the aggregate" diagnosis is rewritten at render and an
+  inferred cause always carries "Likely, not yet seen in shot sequences".
+  When a templated row's stored text names a cause, its causal sentences
+  lead the Why; the coach drill quotes them as the player sees them rather
+  than rewriting "you" (verb agreement cannot be rewritten safely). A last
+  round older than 30 days shows "Last round Jul 10 — 11 weeks ago"
+  (`staleRoundLine`, age computed on the server).
+- Root map area SG (2026-09-25) is averaged by `loadPlayersAreaSg` over
+  COUNTABLE completed rounds (`isCountableRound`), per 18 holes (a 9-hole
+  round's SG is doubled), from `golf_rounds.strokes_gained_*`. It does not
+  read `golf_player_stats_cache.sg_*_per_round`. That cache's writer, the SQL
+  function `update_player_stats_strokes_gained(uuid)` (called from
+  `src/lib/cache/golf-stats-calculator.ts`), still averages every completed
+  round, broken ones included. Fixing it needs a migration (open follow-up).
+- Putting counterfactuals are sized on the player's own band attempts per
+  round (`attempts_used`), and a slope-penalty row says "sloped", not
+  "downhill", when uphill is as weak. Both rules are in the evidence contract
+  doc.
+- Sand save attempts per round divide by every countable round in the 90-day
+  window, not only rounds with a bunker shot. `gir_pct` is sized only on the
+  player's own GIR opportunities per round × 0.42 strokes per green (canonical
+  expected-strokes table); with no rate it is suppressed (`no_attempt_rate`),
+  never the old 0.09-per-pp constant. Details in the evidence contract doc's
+  "Counterfactual attempt sizing" section.
 - Coach views need fast triage: new, acknowledged, dismissed, resolved, and priority states must be visible.
 - Player views need clear actionability: what changed, why it matters, and what to do next.
 - Loading states should use skeletons that match final layout.
@@ -387,6 +644,32 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
   the data keeps accumulating for whenever an owner flips the flag with
   evidence to support it. Resetting the 4 existing rows (built from the v1
   formula) is a separate owner decision, not made here.
+  **Recompute tool (2026-09-24).** `scripts/coachhelm/recompute-coach-weights.ts`
+  (logic in `v3/causality/recompute-weights.ts`) replays the weights from
+  the stored attributions using the current math:
+  - it keeps round-level rows only;
+  - it counts every past outcome whatever the insight's lifecycle or status
+    is now (owner decision 2026-09-25: an insight archived or dismissed
+    after attribution is still evidence); it skips only data-quality/scope
+    gaps, each counted by name: `missing_insight`, `no_coach`, `no_player`,
+    `not_v3`, plus `null_lift` (a window under `MIN_WINDOW_ROUNDS`);
+  - it takes the direction-corrected observed lift from the stored
+    baseline/post values;
+  - it applies the same `nextWeight` EMA as the cron.
+  The default is a dry run (SELECT only). `--apply` upserts, and `--prune`
+  deletes keys with no support; running either is the owner decision above.
+  The 2026-09-25 dry run used 86 of 99 attributions (13 null lift, every
+  other skip reason 0) and produced 12 keys:
+  - coach `09256463…` course_management (1.4849 n=11) and par_scoring
+    (1.0614 n=16) reproduce the live values exactly;
+  - coach `0fc49ef3…` moves from n=24/36/11/12 to n=12/18/3/7
+    (course_management/par_scoring/scrambling/tee_strategy). Its stored n
+    for course_management and par_scoring is exactly twice the number of
+    attributed insights, and scrambling's stored n=11 exceeds its 7
+    attribution rows: `golf_insight_outcome_attribution` is keyed on
+    `insight_id`, so the July (v1-era) weights most likely folded some
+    insights more than once. The replay counts each insight once.
+  4 keys would be calibrated (n>=10).
 - **v2 coach-alert family (bubble_player, pattern_detected, streak,
   surge_player, plateau, tournament_pressure, closing_holes, par_3_issues,
   recurring_weakness, team_trend, scoring_decline) is still live-written,
@@ -1148,3 +1431,80 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
 - `docs/architecture/coachhelm-evidence-contract.md`
 - `docs/v3-research-golf-domain.md`
 - `docs/v3-testing-standards.md`
+
+## Hidden categories
+
+Owner decisions 2026-09-25: `course_management` insights and `tee_strategy` insights (the driver-vs-layback read, category `tee`) are never shown to players or coaches. `HIDDEN_INSIGHT_CATEGORIES` (`course_management`, by `category`) and `HIDDEN_INSIGHT_TYPES` (`tee_strategy`, by `insight_type`, because other tee generators share its category) in `src/lib/coachhelm/v3/insight-visibility.ts` are applied by `applyInsightVisibility` and by `excludeHiddenCategories` (themes, composite loader, causality cron) as one `.neq` per hidden value. `insight_type` is NOT NULL, so the type filter drops no row through NULL semantics (0 of 1,203 rows NULL on 2026-09-25). Rows are still generated and stored; the learning loop does not train on them.
+
+## Insight angles v1 (2026-09-25, flag `coachhelm_insight_angles_v1`, default off)
+
+Five golf-only generators in `src/lib/coachhelm/v3/generators/insight-angles/`,
+run as tier-1 entries in `src/lib/coachhelm/v2/orchestrator.ts` (`v3.lieApproach`,
+`v3.badDayFloor`, `v3.threePuttChain`, `v3.teeMissCost`,
+`v3.approachMissCompass`). Flag off:
+`isEnabled()` is false, nothing is written, and the base's stale-scope sweep
+archives any row a scope wrote while on. Preview read-only with
+`scripts/coachhelm/insight-angles-dry-run.ts [--calibrate]` (never calls
+`run()`; ids truncated to 8 chars).
+
+- **Data**: one read per player (`src/lib/coachhelm/v3/generators/insight-angles/load-angle-data.ts`): newest 40
+  `isCountableRound` rounds, their holes and shots, `sg_scale_for_player`,
+  scoring baseline; team peers read `golf_rounds` only. Not
+  `src/lib/coachhelm/v3/context/load-player-context.ts`: it has no `putt_distance_feet`,
+  `putt_slope`, `fairway_hit` or shot ids (needed by the per-shot SG port
+  `shotSgForRound` in `src/lib/coachhelm/root-map/approach-context.ts`), and no countable filter.
+  Club is only `driver` / `non_driver` / `putter`; no copy names a club.
+- **Lie-adjusted approach** (`lie-approach.ts` in that folder): per band (50–125 / 125–175 /
+  175+ yd) × lie; `rough_execution` (category `approach`, metric
+  `approach_rough_lie_penalty`, benchmark 0 = Tour SG, `pga_baseline`) or
+  `fairway_exposure` (category `tee`, metric `tee_fairway_rough_exposure`,
+  teammates' median, estimated). Par-3 tee shots EXCLUDED and counted.
+- **Bad-Day Floor** (`bad-day-floor.ts`): P80 − median of per-18 score to
+  par (9-hole rounds × 2, stated); bad (≥ P80) vs middle (P30–P70) split
+  into penalties / strokes beyond bogey on double-or-worse holes /
+  everything else (non-overlapping per hole, sum to to-par). Category = SG
+  area bad rounds lose most in, else `scoring`. Teammates' median gap from
+  `golf_rounds.score_to_par`. Gate ≥ 10 rounds, ≥ 3 peers, extra ≥ 1.5;
+  sizing extra × 0.2. Metric `round_bad_day_floor`.
+- **Three-Putt Autopsy + Second-Putt Exposure** (`three-putt-chain.ts`):
+  3-putts per 18 vs a MEASURED GolfHelm peer rate (`PEER_THREE_PUTT`); each
+  3-putt in one pathway (first putt 35+ ft / second putt 6+ ft / second putt
+  < 6 ft); a 3-putt from < 35 ft with no second-putt distance is
+  suppressed and counted. Second-putt distance buckets per first-putt band.
+  Category `approach` when long leaves lead, else `putting`. Metric
+  `three_putt_chain`. `putt_slope` fill is ~100% per player (median), not
+  41%; slope split is descriptive with its own gate.
+- **Miss-Cost Compass + driver chain** (`tee-miss-cost.ts`): cost of a
+  left/right miss = hole to-par vs own fairway holes in the same par ×
+  driver/non-driver stratum; next-shot SG per side (missing counted, not
+  zeroed); driver vs non-driver chain per par in `detail.club_chain` with a
+  selection-bias note (never sized). Metric `tee_miss_next_shot_cost`.
+- **Approach-miss compass** (`approach-miss-compass.ts`): the 8 recorded
+  miss directions collapse onto short/long and left/right (a diagonal
+  counts on both axes; one axis is sized per row). Recovery cost = −Σ
+  per-shot SG after the LAST approach on the hole (strokes to hole out vs
+  the canonical expected strokes from where the ball finished); used only
+  when the rows after it are contiguous and hole out. Par-3 tee shots
+  included; 175+ yd par-5 approaches excluded. Gate ≥ 5 rounds, coverage ≥
+  80%, ≥ 12 costed per side, gap ≥ 0.2, z ≥ 1.645, ≥ 0.3/round. Category
+  `short_game`, metric `approach_miss_recovery_cost`, signature
+  `approach_miss_compass:<axis>:<side>`.
+- **Contract**: every row carries `detail.receipts` (window, definition,
+  samples, exclusions, ≤ 5 example `round_id`/`hole_number`), a
+  counterfactual sized on the player's own attempts. Causality: three-putt
+  and tee rows claim `observed_sequence` with a `shot_sequence` basis (the
+  dominant pathway / the costlier side's recorded path, counts over a named
+  population, distinct rounds, 1–5 example holes in shot order).
+  `mergeDiagnosis` in `src/lib/coachhelm/v3/engine/generator-base.ts` keeps
+  it only when `hasGeneratorSequenceEvidence` passes (root-cause's own
+  floors: population ≥ 10 over ≥ 3 rounds, path ≥ 3 times and ≥ 25%) and the
+  `coachhelm_root_cause_diagnosis` capability flag is on; any other
+  generator claim is pinned to `inferred_hypothesis`. Lie, floor and compass
+  rows stay `inferred_hypothesis` (aggregates, not a repeated path).
+- **Why visuals (for the UI pass)**: lie — per-band fairway vs rough GIR /
+  proximity / SG bars plus the tee → approach link; floor — median vs P80
+  markers with the three-part split bar; 3-putt — pathway bars and a
+  second-putt bucket histogram per first-putt band; tee — a three-spoke
+  compass (left / fairway / right) with cost and next-shot SG, and the
+  driver / non-driver chain table; compass — a short/long × left/right
+  cross with recovery cost and got-down-in-2 % per side, counts on each arm.

@@ -38,7 +38,9 @@ describe('computeCounterfactual — per-projection clamp (CF-1/CF-2)', () => {
   });
 
   it('caps no metric above the global default ceiling', () => {
-    // A huge GIR gap (default ceiling applies): 0.09/pp × 100pp = 9 raw.
+    // A huge GIR gap (default ceiling applies): 100pp × 18 GIR opportunities
+    // a round × 0.42 strokes per green = 7.56 raw. GIR is attempt-rate only
+    // now, so the test supplies the player's opportunity rate.
     const r = computeCounterfactual({
       metric_id: 'gir_pct',
       direction: 'higher_better',
@@ -46,6 +48,7 @@ describe('computeCounterfactual — per-projection clamp (CF-1/CF-2)', () => {
       pga_value: 100,
       cohort_value: null,
       player_30d_scoring_avg: 80,
+      player_attempts_per_round: 18,
     });
     expect(r.strokes_saved_per_round).toBe(COUNTERFACTUAL_MAX_STROKES_PER_ROUND);
     expect(r.clamped).toBe(true);

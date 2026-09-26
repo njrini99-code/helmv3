@@ -74,11 +74,19 @@ import { FocusAreaModal, type FocusAreaModalSubmit } from './FocusAreaModal';
 import { InstrumentPanel, Readout } from '@/components/fairway/instrument';
 import { TrendGlyph } from '@/components/fairway/charts';
 import {
-  RosterHealthHeader,
   computeRosterHealth,
   computeNeedsAttention,
 } from './RosterHealthHeader';
 import { DueForReviewPanel } from './DueForReviewPanel';
+import {
+  RosterSummaryCard,
+  RosterDetail,
+  FocusAreasSummaryCard,
+  countFocusAreas,
+} from './PlayersSummaryCard';
+import { Disclosure } from '@/components/golf/coachhelm/root-map/Disclosure';
+import { computeDueFocusAreas } from '@/lib/coachhelm/focus-areas/due-for-review';
+import { computeFollowUpEligibility } from '@/lib/coachhelm/focus-areas/follow-up-eligibility';
 import {
   DataTable,
   type ColumnDef,
@@ -404,6 +412,25 @@ export function PlayersGridView({
   const selectedPlayer = selectedPlayerId
     ? players.find((p) => p.id === selectedPlayerId) ?? null
     : null;
+
+  /* ---- focus-areas summary: the board's status split + the due queue, on
+         the SAME scoped areas the board shows. No fetch. ---- */
+  const areaCounts = React.useMemo(() => countFocusAreas(visibleAreas), [visibleAreas]);
+  const dueAreas = React.useMemo(
+    () => computeDueFocusAreas(visibleAreas, { todayIso }),
+    [visibleAreas, todayIso],
+  );
+  const followUpCount = React.useMemo(
+    () =>
+      followUpRoundCounts
+        ? computeFollowUpEligibility(visibleAreas, new Map(Object.entries(followUpRoundCounts)), { todayIso }).length
+        : 0,
+    [visibleAreas, followUpRoundCounts, todayIso],
+  );
+  const dueSummary = {
+    due: dueAreas.length,
+    overdue: dueAreas.filter((d) => d.reason === 'overdue').length,
+  };
 
   /* ---- create / edit handlers (the shared modal owns the form) ---- */
 
@@ -813,13 +840,13 @@ export function PlayersGridView({
     <EmptyState
       icon={LucideTarget}
       title="Couldn't load the roster"
-      description="We hit an error loading your players. Try refreshing the page."
+      description="The player list failed to load. Refresh the page to retry."
     />
   ) : (
     <EmptyState
       icon={LucideTarget}
       title="No players on the active roster"
-      description="Add players to your team to assign development focus areas."
+      description="Add players to the team to assign development focus areas."
     />
   );
 
@@ -862,7 +889,7 @@ export function PlayersGridView({
       signalCount={signalCount}
       embedded={embedded}
       title="Players"
-      description="Assign and track measurable development focus areas across your roster."
+      description="Assign and track measurable development focus areas across the roster."
       actions={headerActions}
       className={className}
     >
@@ -873,25 +900,9 @@ export function PlayersGridView({
           </InlineNotice>
         ) : null}
 
-        {/* ── ROSTER-HEALTH HEADER INSTRUMENT — the hero. A ranked cluster on
-              warm glass: coverage gauge focal, outcome-mix rail, micro-readout
-              foot row. Reads from the same props (no new fetch). ── */}
-        <RosterHealthHeader health={rosterHealth} needs={needsAttention} onAdd={openCreate} />
-
-        {/* ── DUE FOR REVIEW (Pkg 9 slice 4) — overdue/due-soon focus areas,
-              derived from the SAME focusAreas prop above (no new fetch).
-              Renders nothing when the queue is empty. ── */}
-        <DueForReviewPanel
-          players={players}
-          focusAreas={focusAreas}
-          todayIso={todayIso}
-          followUpRoundCounts={followUpRoundCounts}
-          onSelectPlayer={(playerId) => {
-            setSelectedPlayerId(playerId);
-            setView('areas');
-            onNavigationChange?.({ view: 'areas', playerId });
-          }}
-        />
+        {/* ── Summary first (owner direction 2026-09-25): the Roster tab opens
+              on the key number, one takeaway and the coverage bar. ── */}
+        {view === 'grid' ? <RosterSummaryCard health={rosterHealth} needs={needsAttention} /> : null}
 
         {/* Player filter chip strip (selecting a player scopes the areas view). */}
         {selectedPlayer ? (
@@ -980,35 +991,17 @@ export function PlayersGridView({
                 emptyState={rosterEmptyState}
               />
             </div>
+            <RosterDetail health={rosterHealth} needs={needsAttention} onAdd={openCreate} />
           </section>
         ) : (
           <div className="flex flex-col gap-6">
-            {/* ---- v3 GOALS (READ-ONLY) — scoped to the selected player, mounted
-                   ABOVE the focus-area board. Coaches view assigned/shared goals
-                   here; they assign via the focus-area flow, so canCreate={false}
-                   and suggestions={[]} (suggestions are player-facing). The empty
-                   state ("No goals assigned yet") is owned by GoalsSection. ---- */}
-            {selectedPlayerId ? (
-              <GoalsSection
-                // eslint-disable-next-line jsx-a11y/aria-role
-                role="coach"
-                canCreate={false}
-                activeGoals={goalsByPlayer[selectedPlayerId] ?? []}
-                suggestions={[]}
-                playerNameById={playerNameById}
-              />
-            ) : null}
-
-            {/* ---- WHY THEIR SCORES MOVE — the causal-engine layer, scoped to the
-                   selected player. Genuine golf_causal_relationships output,
-                   deduped + ranked by the read action. Honest-empty (player with
-                   no rows / absent from the map) handled inside CausalWhyPanel. ---- */}
-            {selectedPlayerId ? (
-              <CausalWhyPanel
-                relationships={causalByPlayer?.[selectedPlayerId] ?? []}
-                title="Why their scores move"
-              />
-            ) : null}
+            {/* Summary first (owner direction 2026-09-25): active count, one
+                takeaway, the status split. Scoped like the board below. */}
+            <FocusAreasSummaryCard
+              counts={areaCounts}
+              due={dueSummary}
+              scopeName={selectedPlayer ? playerName(selectedPlayer) : null}
+            />
 
             {/* ---- FOCUS-AREA BOARD (on warm glass — the focus-areas hero bezel) ---- */}
             <FocusAreaBoard
@@ -1026,6 +1019,75 @@ export function PlayersGridView({
               showPlayerName={!selectedPlayerId}
               onSetCriterionMet={practiceLogEnabled ? handleSetCriterionMet : undefined}
             />
+
+            {/* Detail on request: the due queue, the player's goals and the
+                causal read sit in closed disclosures under the board. */}
+            <div className="flex flex-col">
+              {dueSummary.due + followUpCount > 0 ? (
+                <Disclosure
+                  title="Due for review"
+                  slot="players-areas-due"
+                  meta={
+                    <span className="font-fw-mono text-caption font-normal tabular-nums text-text-secondary">
+                      {dueSummary.due + followUpCount}
+                    </span>
+                  }
+                >
+                  {/* Pkg 9 slice 4: overdue/due-soon areas + follow-up
+                      eligibility, derived from the same scoped areas. */}
+                  <DueForReviewPanel
+                    players={players}
+                    focusAreas={visibleAreas}
+                    todayIso={todayIso}
+                    followUpRoundCounts={followUpRoundCounts}
+                    onSelectPlayer={(playerId) => {
+                      setSelectedPlayerId(playerId);
+                      onNavigationChange?.({ view: 'areas', playerId });
+                    }}
+                  />
+                </Disclosure>
+              ) : null}
+              {/* v3 goals (read-only): coaches assign via the focus-area flow,
+                  so canCreate={false} and suggestions={[]}. */}
+              {selectedPlayerId ? (
+                <Disclosure
+                  title="Goals"
+                  slot="players-areas-goals"
+                  meta={
+                    <span className="font-fw-mono text-caption font-normal tabular-nums text-text-secondary">
+                      {(goalsByPlayer[selectedPlayerId] ?? []).length}
+                    </span>
+                  }
+                >
+                  <GoalsSection
+                    // eslint-disable-next-line jsx-a11y/aria-role
+                    role="coach"
+                    canCreate={false}
+                    activeGoals={goalsByPlayer[selectedPlayerId] ?? []}
+                    suggestions={[]}
+                    playerNameById={playerNameById}
+                  />
+                </Disclosure>
+              ) : null}
+              {/* Why their scores move: golf_causal_relationships output,
+                  honest-empty inside CausalWhyPanel. */}
+              {selectedPlayerId ? (
+                <Disclosure
+                  title="Why their scores move"
+                  slot="players-areas-why"
+                  meta={
+                    <span className="font-fw-mono text-caption font-normal tabular-nums text-text-secondary">
+                      {(causalByPlayer?.[selectedPlayerId] ?? []).length}
+                    </span>
+                  }
+                >
+                  <CausalWhyPanel
+                    relationships={causalByPlayer?.[selectedPlayerId] ?? []}
+                    title="Why their scores move"
+                  />
+                </Disclosure>
+              ) : null}
+            </div>
           </div>
         )}
       </div>

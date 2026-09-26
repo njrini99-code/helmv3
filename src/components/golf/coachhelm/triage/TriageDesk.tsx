@@ -27,7 +27,7 @@
 
 import { useEffect, useMemo, useState, useTransition } from 'react';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
-import { ChevronDown, MessageCircle } from 'lucide-react';
+import { MessageCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
 import { Button, fairwayToast, InlineNotice, PlayersGridView } from '@/components/fairway';
@@ -46,7 +46,9 @@ import {
   formatDistanceRange,
 } from '@/lib/coachhelm/v2/shot-analysis/format';
 import { BriefBand } from './BriefBand';
-import { ViewSwitch } from './ViewSwitch';
+import { ViewSwitch, DEFAULT_VIEW_OPTIONS, TEAM_ROOTS_OPTION } from './ViewSwitch';
+import { TeamRootsView, type TeamRootsData } from '@/components/golf/coachhelm/root-map/TeamRootsView';
+import { Disclosure } from '@/components/golf/coachhelm/root-map/Disclosure';
 import { SignalQueue } from './SignalQueue';
 import { TeamSignalSummary } from './TeamSignalSummary';
 import { SignalDossier } from './SignalDossier';
@@ -61,6 +63,7 @@ import {
   removeSignalFromGroups,
   resolveQueueFilter,
   resolveTriageView,
+  type TriageView,
 } from './buildTriageViewModel';
 
 /**
@@ -155,6 +158,8 @@ type TriageNavigationUpdates = Partial<{
   signal: string | null;
   player: string | null;
   playersTab: 'roster' | 'areas' | null;
+  /** Team roots drill: the cause whose Why is open (`?cause=`). */
+  cause: string | null;
 }>;
 
 export interface TriageDeskProps {
@@ -180,6 +185,28 @@ export interface TriageDeskProps {
   /** Same SSR-fetched shape the retired cockpit consumed — `EffectivenessScoreboard`
    *  only reads its `initialOverview`/`initialEffectiveness`/`initialPerformance` fields. */
   effectivenessDrillProps: FairwayEffectivenessProps;
+  /** Team roots (coach landing view). When present, an absent `?view=`
+   *  lands on 'team' unless the URL is a signal/filter deep link; when
+   *  null/absent the desk keeps its old Signals default and hides the tab. */
+  teamRoots?: TeamRootsData | null;
+}
+
+/** Which view an absent/unknown `?view=` resolves to. Signal/filter deep
+ *  links (`?signal=`, legacy `?id=`, `?filter=`) keep opening Signals. */
+export function landingViewFor(
+  params: { get: (key: string) => string | null },
+  teamAvailable: boolean,
+): TriageView {
+  if (!teamAvailable) return 'signals';
+  return params.get('signal') || params.get('id') || params.get('filter') ? 'signals' : 'team';
+}
+
+function resolveDeskView(
+  params: { get: (key: string) => string | null },
+  teamAvailable: boolean,
+): TriageView {
+  const v = resolveTriageView(params.get('view'), landingViewFor(params, teamAvailable));
+  return v === 'team' && !teamAvailable ? 'signals' : v;
 }
 
 export function TriageDesk({
@@ -191,13 +218,15 @@ export function TriageDesk({
   teamShotAnalysis,
   playersDrillProps,
   effectivenessDrillProps,
+  teamRoots = null,
 }: TriageDeskProps) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const rosterPlayers = playersDrillProps.players ?? [];
 
-  const requestedView = resolveTriageView(searchParams.get('view'));
+  const teamAvailable = teamRoots !== null;
+  const requestedView = resolveDeskView(searchParams, teamAvailable);
   const requestedQueueFilter = resolveQueueFilter(searchParams.get('filter'));
   // `signal` is the canonical param this desk writes; `id` is the legacy
   // insight deep-link CommandPalette.tsx:326 and FocusAreaCard.tsx:315 still
@@ -235,12 +264,6 @@ export function TriageDesk({
     setGroups(initialGroups);
   }, [initialGroups]);
 
-  // Team diagnostics — the team shot weaknesses instrument, supplementary to
-  // the primary Signal Queue below. Expanded by default: a coach shouldn't
-  // need an extra click to see data that was already being fetched and
-  // simply discarded before this.
-  const [showDiagnostics, setShowDiagnostics] = useState(true);
-
   const [pendingIds, setPendingIds] = useState<ReadonlySet<string>>(new Set());
   const [isScanning, startScanTransition] = useTransition();
 
@@ -254,10 +277,26 @@ export function TriageDesk({
     // Each top-level view owns a disjoint set of params. Clearing foreign
     // params prevents an old signal/player scope from resurrecting when the
     // coach moves away and comes back.
+    // With Team roots as the landing view, a URL with no `view` resolves to
+    // team once its signal/filter deep-link param is cleared. Pin the view
+    // the coach is on, so Back from a dossier or the "All" chip stays on
+    // Signals (and so the link hrefs say so too).
+    if (updates.view === undefined && teamAvailable && !params.get('view')) {
+      params.set('view', view);
+    }
     if (updates.view !== undefined) {
       const targetView = resolveTriageView(updates.view);
       params.set('view', targetView);
-      if (targetView === 'signals') {
+      if (targetView === 'team') {
+        params.delete('filter');
+        params.delete('signal');
+        params.delete('id');
+        params.delete('playersTab');
+        // `?view=team&player=` is the drill into one player's root map; it
+        // only survives when the update names it.
+        if (!('player' in updates)) params.delete('player');
+        if (!('cause' in updates)) params.delete('cause');
+      } else if (targetView === 'signals') {
         params.delete('player');
         params.delete('playersTab');
       } else if (targetView === 'players') {
@@ -273,6 +312,11 @@ export function TriageDesk({
         params.delete('player');
         params.delete('playersTab');
       }
+    }
+    if (updates.view !== undefined && resolveTriageView(updates.view) !== 'team') params.delete('cause');
+    if ('cause' in updates) {
+      if (updates.cause) params.set('cause', updates.cause);
+      else params.delete('cause');
     }
     if ('filter' in updates) {
       if (updates.filter) params.set('filter', updates.filter);
@@ -307,7 +351,7 @@ export function TriageDesk({
     );
     const nextPlayerId = next.searchParams.get('player');
 
-    setView(resolveTriageView(next.searchParams.get('view')));
+    setView(resolveDeskView(next.searchParams, teamAvailable));
     setQueueFilter(resolveQueueFilter(next.searchParams.get('filter')));
     setSelectedSignalId(next.searchParams.get('signal') ?? next.searchParams.get('id'));
     setSelectedPlayerId(
@@ -327,6 +371,11 @@ export function TriageDesk({
   }
 
   const counts = useMemo(() => computeBriefCounts(groups), [groups]);
+  const severityMix = useMemo(() => {
+    const mix = { urgent: 0, high: 0, medium: 0, low: 0 };
+    for (const group of groups) for (const signal of group.signals) mix[signal.severity] += 1;
+    return mix;
+  }, [groups]);
   const verdict = useMemo(() => buildBriefVerdict(groups, counts), [groups, counts]);
   const lastScanLabel = useMemo(() => formatRelativeScanTime(scannedAt), [scannedAt]);
   const categories = useMemo(() => distinctCategories(groups), [groups]);
@@ -447,21 +496,6 @@ export function TriageDesk({
 
   return (
     <div className="flex flex-col gap-6">
-      {categoryBandData ? (
-        <TeamCategoryLeakBand
-          categories={categoryBandData.categories}
-          teamHealth={categoryBandData.teamHealth}
-        />
-      ) : null}
-
-      <BriefBand
-        verdict={verdict}
-        counts={counts}
-        lastScanLabel={lastScanLabel}
-        scanning={isScanning}
-        onScan={handleScan}
-      />
-
       {/*
         Ask sits BESIDE the view switcher, not inside it.
 
@@ -483,19 +517,36 @@ export function TriageDesk({
         so this cannot drift from the breadcrumb and page title that already
         read from it.
       */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <ViewSwitch
-          view={view}
-          hrefFor={(next) => hrefFor({ view: next, signal: null })}
-          onSelect={(next) => navigate({ view: next, signal: null })}
-        />
-        <Button asChild variant="secondary" size="sm">
+      <div className="flex items-center justify-between gap-2 sm:gap-3">
+        {/* One row on phones: the switch scrolls inside its own track (with
+            an edge fade) and Ask keeps its place beside it. */}
+        <div className="min-w-0 flex-1 sm:flex-none">
+          <ViewSwitch
+            view={view}
+            hrefFor={(next) => hrefFor({ view: next, signal: null })}
+            onSelect={(next) => navigate({ view: next, signal: null })}
+            options={teamAvailable ? [TEAM_ROOTS_OPTION, ...DEFAULT_VIEW_OPTIONS] : DEFAULT_VIEW_OPTIONS}
+          />
+        </div>
+        <Button asChild variant="secondary" size="sm" className="min-h-11 shrink-0">
           <Link href={surfaceHref('ask')}>
             <MessageCircle aria-hidden className="h-3.5 w-3.5" />
             {surfaceName('ask')}
           </Link>
         </Button>
       </div>
+
+      {view === 'team' && teamRoots ? (
+        <TeamRootsView
+          {...teamRoots}
+          // The drill was built server-side for `?player=`; show it only while
+          // the URL still names that player (a shallow move back to the team
+          // map clears the param without a server render).
+          drillOpen={selectedPlayerId !== null && teamRoots.drill?.playerId === selectedPlayerId}
+          hrefFor={hrefFor}
+          navigate={navigate}
+        />
+      ) : null}
 
       {view === 'signals' ? (
         groupsError ? (
@@ -512,43 +563,17 @@ export function TriageDesk({
           </InlineNotice>
         ) : (
           <>
-            <div className="space-y-3">
-              {/* eslint-disable-next-line helm/no-raw-button -- borderless full-bleed disclosure toggle; the Fairway Button's pill surface can't host this justify-between row + chevron layout (matches FairwayCoachAnnouncementCard's identical disclosure toggle) */}
-              <button
-                type="button"
-                onClick={() => setShowDiagnostics((prev) => !prev)}
-                aria-expanded={showDiagnostics}
-                aria-controls="triage-team-diagnostics"
-                className={cn(
-                  'flex w-full items-center justify-between gap-2 rounded-fw-sm border border-border-subtle bg-surface-sunken px-4 py-2.5 text-left',
-                  'font-fw-sans text-body-sm font-medium text-text-secondary transition-colors hover:bg-surface-tint hover:text-text-primary',
-                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-inset',
-                )}
-              >
-                <span>Team diagnostics</span>
-                <ChevronDown
-                  className={cn('h-4 w-4 shrink-0 transition-transform duration-medium', showDiagnostics && 'rotate-180')}
-                  aria-hidden
-                />
-              </button>
-              {showDiagnostics ? (
-                <div id="triage-team-diagnostics">
-                  <TeamShotWeaknessesPanel data={teamShotAnalysis} />
-                </div>
-              ) : null}
-            </div>
-
-            {/* Per-category signal pressure, above the queue it summarises.
-                Distinct from Team diagnostics above it: that panel reads shot
-                analysis, this one aggregates the SIGNAL GROUPS themselves —
-                count, high-priority share, freshness and impact per category —
-                which nothing else on this surface does. `SignalQueue` shows a
-                severity chip per group and trailing filter counts, but never
-                the shape of the whole queue at a glance. */}
-            <TeamSignalSummary
-              groups={groups}
-              playerHref={(playerId) => hrefFor({ view: 'players', player: playerId, playersTab: 'areas' })}
-              onOpenPlayer={(playerId) => navigate({ view: 'players', player: playerId, playersTab: 'areas' })}
+            {/* Summary first: the count, the verdict, the severity split and
+                Scan team. The queue and its dossier follow; everything that
+                describes the team as a whole sits in closed disclosures
+                below them. */}
+            <BriefBand
+              verdict={verdict}
+              counts={counts}
+              lastScanLabel={lastScanLabel}
+              scanning={isScanning}
+              onScan={handleScan}
+              mix={severityMix}
             />
 
             <div className="grid grid-cols-1 gap-4 min-[940px]:grid-cols-[380px_1fr] min-[940px]:items-stretch">
@@ -580,6 +605,32 @@ export function TriageDesk({
                   playerStats={dossierPlayerStats}
                 />
               </div>
+            </div>
+
+            <div className="flex flex-col">
+              {/* Per-category signal pressure: the shape of the whole queue
+                  (count, high-priority share and impact per category). */}
+              <Disclosure title="Where signals concentrate" slot="signals-concentrate">
+                <TeamSignalSummary
+                  groups={groups}
+                  playerHref={(playerId) => hrefFor({ view: 'players', player: playerId, playersTab: 'areas' })}
+                  onOpenPlayer={(playerId) => navigate({ view: 'players', player: playerId, playersTab: 'areas' })}
+                />
+              </Disclosure>
+              {categoryBandData ? (
+                <Disclosure title="Team by game area" slot="signals-leak-band">
+                  <TeamCategoryLeakBand
+                    categories={categoryBandData.categories}
+                    teamHealth={categoryBandData.teamHealth}
+                  />
+                </Disclosure>
+              ) : null}
+              {/* Team diagnostics: the team shot weaknesses instrument,
+                  supplementary to the queue. Closed by default under the
+                  summary-first layout (owner direction 2026-09-25). */}
+              <Disclosure title="Team diagnostics" slot="triage-team-diagnostics">
+                <TeamShotWeaknessesPanel data={teamShotAnalysis} />
+              </Disclosure>
             </div>
           </>
         )

@@ -283,3 +283,25 @@ describe('PressureGapGenerator.aggregate (pg-1/pg-2 per-bucket floor)', () => {
     expect(withoutDates).toBeNull();
   });
 });
+
+describe('PressureGapGenerator — coach voice', () => {
+  const SECOND_PERSON = /\byou(r|'re|'ll|'ve)?\b/i;
+  const cases: Array<[string, ReturnType<typeof makeAgg>]> = [
+    ['worse, no driver', makeAgg({ playerValue: 1.5 })],
+    ['better', makeAgg({ playerValue: -0.7, practice_avg: 2.3, competitive_avg: 1.6 })],
+    ['doubles lead (pp)', makeAgg({ playerValue: 1.5, double_rate_delta: 6, three_putt_delta: 2 })],
+    ['opening holes lead (per round)', makeAgg({ playerValue: 1.5, opening3_delta: 0.8, penalty_delta: 0.2 })],
+    ['even practice', makeAgg({ playerValue: 0.9, practice_avg: 0, competitive_avg: 0.9, penalty_delta: 0.4 })],
+  ];
+
+  it('ships a coach-voice copy with no second person and the same numbers for every branch', () => {
+    for (const [name, agg] of cases) {
+      const c = new PressureGapGenerator(PLAYER_ID).composeContent(agg);
+      expect(c.coach, name).toBeDefined();
+      expect(c.coach!.title, name).not.toMatch(SECOND_PERSON);
+      expect(c.coach!.content, name).not.toMatch(SECOND_PERSON);
+      // Same numbers as the player copy: only the voice changes.
+      for (const n of c.content.match(/\d+(\.\d+)?%?/g) ?? []) expect(c.coach!.content, name).toContain(n);
+    }
+  });
+});

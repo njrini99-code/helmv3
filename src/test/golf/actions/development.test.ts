@@ -69,6 +69,8 @@ describe('createFocusAreaFromInsight', () => {
           return {
             select: () => ({
               eq: () => ({
+                // Evidence-revision stamp read (flag on): .eq().eq().maybeSingle(), no row.
+                eq: () => ({ maybeSingle: async () => ({ data: null, error: null }) }),
                 single: async () => ({ data: { id: 'coach-1' }, error: null }),
               }),
             }),
@@ -78,6 +80,8 @@ describe('createFocusAreaFromInsight', () => {
           return {
             select: () => ({
               eq: () => ({
+                // Evidence-revision stamp read (flag on): .eq().eq().maybeSingle(), no row.
+                eq: () => ({ maybeSingle: async () => ({ data: null, error: null }) }),
                 single: async () => ({
                   data: { metadata: null, content: 'insight body' },
                   error: null,
@@ -134,6 +138,8 @@ describe('createFocusAreaFromInsight', () => {
           return {
             select: () => ({
               eq: () => ({
+                // Evidence-revision stamp read (flag on): .eq().eq().maybeSingle(), no row.
+                eq: () => ({ maybeSingle: async () => ({ data: null, error: null }) }),
                 single: async () => ({ data: { id: 'coach-1' }, error: null }),
               }),
             }),
@@ -143,6 +149,8 @@ describe('createFocusAreaFromInsight', () => {
           return {
             select: () => ({
               eq: () => ({
+                // Evidence-revision stamp read (flag on): .eq().eq().maybeSingle(), no row.
+                eq: () => ({ maybeSingle: async () => ({ data: null, error: null }) }),
                 single: async () => ({
                   data: { metadata, content: 'insight body' },
                   error: null,
@@ -210,6 +218,14 @@ describe('createFocusAreaFromInsight', () => {
  * their OWN insight needs no consent step and starts 'active' immediately.
  * Pins the access.reason branch that closes that consent-model gap.
  */
+// coachhelm_focus_area_evidence_revision is on: creating from an insight also
+// reads that insight (.eq(id).eq(player_id).maybeSingle()) to stamp its
+// evidence revision. No row here, so no stamp; development.evidence-revision
+// .test.ts covers the stamp itself.
+const evidenceRevisionRead = {
+  select: () => ({ eq: () => ({ eq: () => ({ maybeSingle: async () => ({ data: null, error: null }) }) }) }),
+};
+
 describe('createFocusAreaFromInsightV2 — coach-promote consent model', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -263,12 +279,14 @@ describe('createFocusAreaFromInsightV2 — coach-promote consent model', () => {
         if (table === 'golf_player_focus_areas') {
           return { insert: scopedInsert };
         }
+        if (table === 'golf_coach_insights') return evidenceRevisionRead;
         return {};
       },
     });
     createAdminClientMock.mockReturnValue({
       from: (table: string) =>
-        table === 'golf_player_focus_areas' ? { insert: adminInsert } : {},
+        table === 'golf_player_focus_areas' ? { insert: adminInsert }
+          : table === 'golf_coach_insights' ? evidenceRevisionRead : {},
     });
     return { scopedInsert, adminInsert };
   }
@@ -679,6 +697,8 @@ describe('deleteFocusArea — coach-only, ownership-scoped', () => {
           return {
             select: () => ({
               eq: () => ({
+                // Evidence-revision stamp read (flag on): .eq().eq().maybeSingle(), no row.
+                eq: () => ({ maybeSingle: async () => ({ data: null, error: null }) }),
                 single: async () => ({ data: null, error: { message: 'no row' } }),
               }),
             }),
@@ -714,6 +734,8 @@ describe('deleteFocusArea — coach-only, ownership-scoped', () => {
           return {
             select: () => ({
               eq: () => ({
+                // Evidence-revision stamp read (flag on): .eq().eq().maybeSingle(), no row.
+                eq: () => ({ maybeSingle: async () => ({ data: null, error: null }) }),
                 single: async () => ({ data: { id: 'coach-1' }, error: null }),
               }),
             }),

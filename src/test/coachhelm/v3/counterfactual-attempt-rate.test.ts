@@ -55,4 +55,36 @@ describe('computeCounterfactual — own-attempt-rate sizing (DC-ATTEMPT-1)', () 
     });
     expect(withAnchor.strokes_saved_per_round).toBeLessThan(mensNoAnchor.strokes_saved_per_round);
   });
+
+  // Reconciliation 2026-09-25 (player 49ffe06d…): 3-5 ft 47.7% vs Tour 90.5%,
+  // 44 attempts over 21 rounds. The legacy path stated 42.8 × 0.10 = 2.28
+  // (clamped/rounded to ~2.3) strokes/round; the direct count is
+  // 0.428 × 44/21 ≈ 0.90 makes, i.e. strokes, per round.
+  it('sizes a 3-5 ft putting gap off the player\'s real band attempts per round', () => {
+    const attempts = 44 / 21;
+    const r = computeCounterfactual({
+      metric_id: 'putts_made_3_5ft_pct',
+      direction: 'higher_better',
+      player_value: 47.7,
+      pga_value: 90.5,
+      cohort_value: null,
+      player_attempts_per_round: attempts,
+      player_30d_scoring_avg: 72.8,
+    });
+    expect(r.suppressed).toBe(false);
+    expect(r.attempts_used).toBeCloseTo(attempts, 6);
+    expect(r.strokes_saved_per_round).toBeCloseTo(((90.5 - 47.7) / 100) * attempts * 1.0, 6);
+    expect(r.strokes_saved_per_round).toBeCloseTo(0.897, 3);
+
+    const legacy = computeCounterfactual({
+      metric_id: 'putts_made_3_5ft_pct',
+      direction: 'higher_better',
+      player_value: 47.7,
+      pga_value: 90.5,
+      cohort_value: null,
+      player_30d_scoring_avg: 72.8,
+    });
+    expect(legacy.attempts_used).toBeNull();
+    expect(legacy.strokes_saved_per_round).toBeGreaterThan(2);
+  });
 });

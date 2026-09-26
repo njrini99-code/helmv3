@@ -168,3 +168,29 @@ describe('PuttBiasGenerator.aggregate (F2+F3 L-vs-R distance-controlled)', () =>
     expect(agg!.band).toBe('7-10 ft');
   });
 });
+
+describe('PuttBiasGenerator — coach voice', () => {
+  const SECOND_PERSON = /\byou(r|'re|'ll|'ve)?\b/i;
+  const base = {
+    sampleN: 20, playerValue: 28, rounds_played: 20,
+    significant: true, weakest_direction: 'left' as 'left' | 'right' | null, band: '11-20 ft' as string | null,
+    slope: 'uphill' as string | null, weak_pct: 28 as number | null, strong_pct: 40 as number | null, gap_pp: 12,
+    weak_n: 20, strong_n: 22,
+  };
+  const cases: Array<[string, typeof base]> = [
+    ['balanced', { ...base, significant: false, weakest_direction: null, band: null, weak_pct: null, strong_pct: null }],
+    ['left, with slope', base],
+    ['right, no slope', { ...base, weakest_direction: 'right', slope: null, band: '6-10 ft' }],
+  ];
+
+  it('ships a coach-voice copy with no second person and the same numbers for every branch', () => {
+    for (const [name, agg] of cases) {
+      const c = new PuttBiasGenerator(PLAYER_ID, 'left').composeContent(agg);
+      expect(c.coach, name).toBeDefined();
+      expect(c.coach!.title, name).not.toMatch(SECOND_PERSON);
+      expect(c.coach!.content, name).not.toMatch(SECOND_PERSON);
+      // Same numbers as the player copy: only the voice changes.
+      for (const n of c.content.match(/\d+(\.\d+)?%?/g) ?? []) expect(c.coach!.content, name).toContain(n);
+    }
+  });
+});

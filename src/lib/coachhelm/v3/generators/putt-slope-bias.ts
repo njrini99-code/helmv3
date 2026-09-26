@@ -84,6 +84,18 @@ const WINDOW_DAYS = 90;
  */
 const MIN_PUTTS_PER_SIDE = 8;
 
+/**
+ * Uphill check (reconciliation 2026-09-25). A downhill-vs-level gap only
+ * says "downhill" is the problem if uphill putts at the same distance are
+ * clearly better. Player 49ffe06d… at 3-6 ft: downhill 11/26 (42%), uphill
+ * 11/25 (44%), level 8/12 (67%) — uphill is as weak as downhill, so the gap
+ * is about sloped putts, and a downhill-only drill would miss half of it.
+ * When the band has at least MIN_PUTTS_PER_SIDE uphill putts and uphill
+ * make-% is within this many points of downhill (or worse), the copy names
+ * sloped putts instead of singling out downhill.
+ */
+export const UPHILL_SIMILAR_PP = 10;
+
 /** The only two bands with a measured, material downhill penalty. 7-10 ft+
  *  is deliberately excluded — see file header. */
 export type SlopeBand = '0-3 ft' | '4-6 ft';
@@ -128,6 +140,11 @@ export interface PuttSlopeBiasAggregate extends GeneratorAggregate {
   downhill_n: number;
   level_n: number;
   rounds_played: number;
+  /** Uphill make-% in the same band; null below MIN_PUTTS_PER_SIDE uphill putts. */
+  uphill_pct: number | null;
+  uphill_n: number;
+  /** Uphill is as weak as downhill here: the copy says "sloped", not "downhill". */
+  sloped: boolean;
 }
 
 /** One scored putt with a recorded slope and distance (feet). */
@@ -144,6 +161,9 @@ interface WinningCut {
   gap_pp: number;
   downhill_n: number;
   level_n: number;
+  uphill_pct: number | null;
+  uphill_n: number;
+  sloped: boolean;
 }
 
 /**
@@ -155,21 +175,33 @@ interface WinningCut {
  * exists to avoid; see file header).
  */
 export function selectDownhillPenaltyCut(rows: PuttSlopeRow[]): WinningCut | null {
-  type Tally = { downhillMade: number; downhillN: number; levelMade: number; levelN: number };
+  type Tally = {
+    downhillMade: number;
+    downhillN: number;
+    levelMade: number;
+    levelN: number;
+    uphillMade: number;
+    uphillN: number;
+  };
   const cuts = new Map<SlopeBand, Tally>();
 
   for (const r of rows) {
     const band = bandForSlopePenalty(r.dist_ft);
     if (!band) continue;
-    if (r.putt_slope !== 'downhill' && r.putt_slope !== 'level') continue;
+    if (r.putt_slope !== 'downhill' && r.putt_slope !== 'level' && r.putt_slope !== 'uphill') continue;
     let t = cuts.get(band);
     if (!t) {
-      t = { downhillMade: 0, downhillN: 0, levelMade: 0, levelN: 0 };
+      t = { downhillMade: 0, downhillN: 0, levelMade: 0, levelN: 0, uphillMade: 0, uphillN: 0 };
       cuts.set(band, t);
     }
     if (r.putt_slope === 'downhill') {
       t.downhillN += 1;
       if (r.made) t.downhillMade += 1;
+    } else if (r.putt_slope === 'uphill') {
+      // Uphill never enters the downhill-vs-level test; it only decides
+      // whether the copy may single out downhill (UPHILL_SIMILAR_PP).
+      t.uphillN += 1;
+      if (r.made) t.uphillMade += 1;
     } else {
       t.levelN += 1;
       if (r.made) t.levelMade += 1;
@@ -188,6 +220,7 @@ export function selectDownhillPenaltyCut(rows: PuttSlopeRow[]): WinningCut | nul
     if (test.gapPp <= 0) continue; // downhill was NOT the weaker side — never claim a penalty backwards
     const levelPct = (t.levelMade / t.levelN) * 100;
     const downhillPct = (t.downhillMade / t.downhillN) * 100;
+    const uphillPct = t.uphillN >= MIN_PUTTS_PER_SIDE ? (t.uphillMade / t.uphillN) * 100 : null;
     const cut: WinningCut = {
       band,
       downhill_pct: downhillPct,
@@ -195,6 +228,9 @@ export function selectDownhillPenaltyCut(rows: PuttSlopeRow[]): WinningCut | nul
       gap_pp: test.gapPp,
       downhill_n: t.downhillN,
       level_n: t.levelN,
+      uphill_pct: uphillPct,
+      uphill_n: t.uphillN,
+      sloped: uphillPct !== null && uphillPct <= downhillPct + UPHILL_SIMILAR_PP,
     };
     if (!best || cut.gap_pp > best.gap_pp) best = cut;
   }
@@ -302,6 +338,9 @@ export class PuttSlopeBiasGenerator extends BaseGenerator<PuttSlopeBiasAggregate
       gap_pp: cut.gap_pp,
       downhill_n: cut.downhill_n,
       level_n: cut.level_n,
+      uphill_pct: cut.uphill_pct,
+      uphill_n: cut.uphill_n,
+      sloped: cut.sloped,
     };
     return base;
   }
@@ -310,10 +349,73 @@ export class PuttSlopeBiasGenerator extends BaseGenerator<PuttSlopeBiasAggregate
     const downhillDisp = `${Math.round(agg.downhill_pct)}%`;
     const levelDisp = `${Math.round(agg.level_pct)}%`;
     const gap = Math.round(agg.gap_pp);
+    const leverage = (whose: string) =>
+      `Short putts carry the highest leverage per attempt in ${whose} bag (a miss costs a full stroke), so this gap is worth closing.`;
 
+    // Uphill as weak as downhill at this distance: the finding is sloped
+    // putts, so neither the title, the label nor the drill singles out downhill.
+    if (agg.sloped && agg.uphill_pct !== null) {
+      const uphillDisp = `${Math.round(agg.uphill_pct)}%`;
+      const title = `Sloped putts inside ${agg.band}: a real penalty`;
+      const reading = `${downhillDisp} of downhill putts and ${uphillDisp} of uphill putts vs ${levelDisp} of level putts at the same distance (n=${agg.downhill_n} downhill / ${agg.uphill_n} uphill / ${agg.level_n} level). Uphill is as weak as downhill, so this is about putts on a slope, not downhill speed alone.`;
+      const ladder = `a slope ladder on both sides of the hole: start 3 ft away and add a foot at a time, reading the slope before each putt and committing to one pace.`;
+      return {
+        title,
+        content: `Inside ${agg.band} you're making ${reading} ${leverage('your')} Rehearse ${ladder}`,
+        // Coach voice: the same read in neutral third person (evidence.coach_copy).
+        coach: {
+          title,
+          content: `Inside ${agg.band} the player is making ${reading} ${leverage('their')} Have them rehearse ${ladder}`,
+        },
+        priority: 'medium',
+        signature: `putt_slope_bias:${agg.band}`,
+        evidence: {
+          metric: 'putt_slope_downhill_penalty_pct',
+          metric_label: 'Downhill vs level putt make % (distance-controlled; uphill as weak)',
+          unit: 'percent',
+          your_value: agg.downhill_pct,
+          your_value_display: downhillDisp,
+          comparison_value: agg.level_pct,
+          comparison_label: `Your level-putt make % (same band)`,
+          comparison_source: 'your_baseline',
+          sample_n: agg.downhill_n + agg.level_n,
+          window_days: WINDOW_DAYS,
+          window_start: '',
+          window_end: '',
+          strokes_impact: 0,
+          strokes_impact_method: 'peer_delta',
+          confidence: Math.min(1, (agg.downhill_n + agg.level_n) / 60),
+          confidence_factors: {
+            sample_adequacy: Math.min((agg.downhill_n + agg.level_n) / 60, 1),
+            recency: 1.0,
+            variance: 0.5,
+          },
+          detail: {
+            band: agg.band,
+            downhill_pct: agg.downhill_pct,
+            downhill_n: agg.downhill_n,
+            uphill_pct: agg.uphill_pct,
+            uphill_n: agg.uphill_n,
+            level_pct: agg.level_pct,
+            level_n: agg.level_n,
+            sloped: true,
+          },
+        },
+      };
+    }
+
+    const title = `Downhill putts inside ${agg.band}: a real penalty`;
+    const reading = `${downhillDisp} of downhill putts vs ${levelDisp} of level putts at the same distance — a ${gap}-point gap (n=${agg.downhill_n} downhill / ${agg.level_n} level).`;
+    const pattern = `It's consistent with a pace-control pattern rather than a green-reading one — the gap shows up inside 6 ft and not beyond it, where line matters more than speed.`;
+    const ladder = `a downhill-only ladder drill: start 2 ft below the hole and add a foot at a time, focused on dying the ball into the front of the cup rather than a firm strike.`;
     return {
-      title: `Downhill putts inside ${agg.band}: a real penalty`,
-      content: `Inside ${agg.band} you're making ${downhillDisp} of downhill putts vs ${levelDisp} of level putts at the same distance — a ${gap}-point gap (n=${agg.downhill_n} downhill / ${agg.level_n} level). Short putts carry the highest leverage per attempt in your bag (a miss costs a full stroke), so this gap is worth closing. It's consistent with a pace-control pattern rather than a green-reading one — the gap shows up inside 6 ft and not beyond it, where line matters more than speed. Rehearse a downhill-only ladder drill: start 2 ft below the hole and add a foot at a time, focused on dying the ball into the front of the cup rather than a firm strike.`,
+      title,
+      content: `Inside ${agg.band} you're making ${reading} ${leverage('your')} ${pattern} Rehearse ${ladder}`,
+      // Coach voice: the same read in neutral third person (evidence.coach_copy).
+      coach: {
+        title,
+        content: `Inside ${agg.band} the player is making ${reading} ${leverage('their')} ${pattern} Have them rehearse ${ladder}`,
+      },
       priority: 'medium',
       signature: `putt_slope_bias:${agg.band}`,
       evidence: {

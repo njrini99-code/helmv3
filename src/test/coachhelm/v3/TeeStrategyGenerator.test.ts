@@ -213,3 +213,24 @@ describe('TeeStrategyGenerator — travel vs progress (addendum §5)', () => {
     expect(c.content).toContain('1 of 45 tee distances are estimated progress toward the hole');
   });
 });
+
+describe('TeeStrategyGenerator — coach voice', () => {
+  const SECOND_PERSON = /\byou(r|'re|'ll|'ve)?\b/i;
+  const cases: Array<[string, ReturnType<typeof makeAgg>]> = [
+    ['laggy', makeAgg({ pattern: 'laggy', driverFw: 0.45, ndFw: 0.7, driverDist: 270, ndDist: 245 })],
+    ['laggy, derived distances', makeAgg({ pattern: 'laggy', driverFw: 0.45, ndFw: 0.7, driverDerivedN: 4 })],
+    ['sharp', makeAgg({ pattern: 'sharp', driverFw: 0.65, ndFw: 0.68, driverDist: 285, ndDist: 240 })],
+    ['inconclusive', makeAgg({ pattern: 'inconclusive', driverFw: 0.55, ndFw: 0.62 })],
+  ];
+
+  it('ships a coach-voice copy with no second person and the same numbers for every branch', () => {
+    for (const [name, agg] of cases) {
+      const c = new TeeStrategyGenerator(PLAYER_ID).composeContent(agg);
+      expect(c.coach, name).toBeDefined();
+      expect(c.coach!.title, name).not.toMatch(SECOND_PERSON);
+      expect(c.coach!.content, name).not.toMatch(SECOND_PERSON);
+      // Same numbers as the player copy: only the voice changes.
+      for (const n of c.content.match(/\d+(\.\d+)?%?/g) ?? []) expect(c.coach!.content, name).toContain(n);
+    }
+  });
+});

@@ -45,6 +45,7 @@ function makeAgg(overrides: Partial<{
     attempts: overrides.attempts ?? 40,
     spanDays: overrides.spanDays === undefined ? 54 : overrides.spanDays,
   last_round_date: '2026-05-25',
+    attempts_per_round: null,
   };
 }
 
@@ -288,6 +289,44 @@ describe('PuttDistanceGenerator — E7 aggregate() ATTEMPT_FLOOR suppression (en
     const result = await new PuttDistanceGenerator('p-e7', '25_plus_ft').aggregate();
     expect(result).toBeNull();
   });
+
+  // Reconciliation 2026-09-25: every stored putts_made_* counterfactual had
+  // attempts_used = null because this aggregate never exposed a rate, so the
+  // projection fell back to the global per-pp constant. The rate comes from
+  // the SAME cache row as sample_n and detail.rounds_played.
+  it('exposes the player\'s own band attempts per round (44 over 21 rounds)', async () => {
+    maybeSingleMock.mockResolvedValue({
+      data: {
+        player_id: 'p-rate',
+        rounds_played: 21,
+        first_round_date: '2026-05-18',
+        last_round_date: '2026-09-17',
+        putt_make_pct_3_5ft: 47.7,
+        putt_attempts_3_5ft: 44,
+      },
+      error: null,
+    });
+    const agg = await new PuttDistanceGenerator('p-rate', '3_5ft').aggregate();
+    expect(agg).not.toBeNull();
+    expect(agg!.sampleN).toBe(44);
+    expect(agg!.attempts_per_round).toBeCloseTo(44 / 21, 6);
+  });
+
+  it('leaves the rate null when rounds_played is 0 (legacy sizing, never a divide-by-zero)', async () => {
+    maybeSingleMock.mockResolvedValue({
+      data: {
+        player_id: 'p-rate0',
+        rounds_played: 0,
+        first_round_date: null,
+        last_round_date: null,
+        putt_make_pct_3_5ft: 50,
+        putt_attempts_3_5ft: 20,
+      },
+      error: null,
+    });
+    const agg = await new PuttDistanceGenerator('p-rate0', '3_5ft').aggregate();
+    expect(agg!.attempts_per_round).toBeNull();
+  });
 });
 
 /**
@@ -319,5 +358,27 @@ describe('evidence.window_end carries the newest contributing round', () => {
     const g = new PuttDistanceGenerator(PLAYER_ID, '10_15ft');
     const c = g.composeContent(makeAgg({ bucket: '10_15ft', playerValue: 32, rounds_played: 18 }));
     expect(c.evidence.window_end).toBe('2026-05-25');
+  });
+});
+
+describe('PuttDistanceGenerator — coach voice', () => {
+  const SECOND_PERSON = /\byou(r|'re|'ll|'ve)?\b/i;
+  const cases: Array<[string, ReturnType<typeof makeAgg>]> = [
+    ['strength', makeAgg({ bucket: '5_10ft', playerValue: 70 })],
+    ['makeable, big gap', makeAgg({ bucket: '3_5ft', playerValue: 46.5, rounds_played: 15 })],
+    ['makeable, worth tightening', makeAgg({ bucket: '10_15ft', playerValue: 30, spanDays: null })],
+    ['lag', makeAgg({ bucket: '25_plus_ft', playerValue: 0, rounds_played: 15 })],
+    ['womens', makeAgg({ bucket: '15_25ft', playerValue: 5, cohort_gender: 'womens' })],
+  ];
+
+  it('ships a coach-voice copy with no second person and the same numbers for every branch', () => {
+    for (const [name, agg] of cases) {
+      const c = new PuttDistanceGenerator(PLAYER_ID, agg.bucket).composeContent(agg);
+      expect(c.coach, name).toBeDefined();
+      expect(c.coach!.title, name).not.toMatch(SECOND_PERSON);
+      expect(c.coach!.content, name).not.toMatch(SECOND_PERSON);
+      // Same numbers as the player copy: only the voice changes.
+      for (const n of c.content.match(/\d+(\.\d+)?%?/g) ?? []) expect(c.coach!.content, name).toContain(n);
+    }
   });
 });

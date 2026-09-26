@@ -276,18 +276,18 @@ export class CourseMgmtGenerator extends BaseGenerator<CourseMgmtAggregate> {
         ? ` (${excludedRounds} round${excludedRounds === 1 ? '' : 's'} without a course on file ` +
           `${excludedRounds === 1 ? 'is' : 'are'} not in this ranking)`
         : '';
+    const worstList = agg.worst_holes
+      .map(
+        (w) =>
+          `hole ${w.hole_number} at ${w.course_name ?? 'a course on file'} ` +
+          `(+${w.avg_to_par.toFixed(1)}/play over ${w.n} plays)`,
+      )
+      .join(', ');
     const worstClause =
-      agg.worst_holes.length > 0
-        ? ` Your highest-scoring holes: ` +
-          agg.worst_holes
-            .map(
-              (w) =>
-                `hole ${w.hole_number} at ${w.course_name ?? 'a course on file'} ` +
-                `(+${w.avg_to_par.toFixed(1)}/play over ${w.n} plays)`,
-            )
-            .join(', ') +
-          `${excludedNote}.`
-        : '';
+      agg.worst_holes.length > 0 ? ` Your highest-scoring holes: ${worstList}${excludedNote}.` : '';
+    // Coach voice: the same read in neutral third person (evidence.coach_copy).
+    const coachWorstClause =
+      agg.worst_holes.length > 0 ? ` Their highest-scoring holes: ${worstList}${excludedNote}.` : '';
     // Dominant proximate cause among the double-plus holes.
     const causes: Array<{ key: string; pct: number; rank: number }> = [
       { key: 'three_putt', pct: agg.cause_three_putt_pct, rank: 0 },
@@ -302,6 +302,10 @@ export class CourseMgmtGenerator extends BaseGenerator<CourseMgmtAggregate> {
       penalty: 'penalties',
       missed_gir_no_scramble: 'missed greens you couldn’t get up-and-down',
     };
+    const COACH_CAUSE_LABEL: Record<string, string> = {
+      ...CAUSE_LABEL,
+      missed_gir_no_scramble: 'missed greens they couldn’t get up-and-down',
+    };
     const CAUSE_ACTION: Record<string, string> = {
       three_putt: 'lag-putt drills from 25+ ft are the fastest fix for these',
       penalty: 'pick a conservative line / bail-out target off the tee on these holes',
@@ -310,6 +314,10 @@ export class CourseMgmtGenerator extends BaseGenerator<CourseMgmtAggregate> {
     const causeClause =
       top && top.pct > 0
         ? ` ${r1(top.pct)}% of your double-or-worse holes trace to ${CAUSE_LABEL[top.key]} — ${CAUSE_ACTION[top.key]}.`
+        : '';
+    const coachCauseClause =
+      top && top.pct > 0
+        ? ` ${r1(top.pct)}% of their double-or-worse holes trace to ${COACH_CAUSE_LABEL[top.key]} — ${CAUSE_ACTION[top.key]}.`
         : '';
 
     if (agg.variant === 'penalty') {
@@ -321,14 +329,22 @@ export class CourseMgmtGenerator extends BaseGenerator<CourseMgmtAggregate> {
         : agg.cohort_gender === 'womens'
           ? `Every avoided penalty is a stroke back`
           : `PGA Tour is ~0.3; top college teams stay under 0.5`;
+      const penaltyTitle = `Penalty strokes: ${valueDisp} per round`;
+      const penaltyTail = ` Every penalty avoided is worth ~1.5 strokes per round.` + staleDataSuffix(agg.last_round_date);
       return {
-        title: `Penalty strokes: ${valueDisp} per round`,
+        title: penaltyTitle,
         content:
           `Across your last ${agg.rounds_played} rounds you're averaging ` +
           `${valueDisp} penalty strokes per round. ${anchorClause}.` +
-          causeClause + worstClause +
-          ` Every penalty avoided is worth ~1.5 strokes per round.` +
-          staleDataSuffix(agg.last_round_date),
+          causeClause + worstClause + penaltyTail,
+        // The title carries no second person, so the coach title is the same.
+        coach: {
+          title: penaltyTitle,
+          content:
+            `Across the player's last ${agg.rounds_played} rounds they're averaging ` +
+            `${valueDisp} penalty strokes per round. ${anchorClause}.` +
+            coachCauseClause + coachWorstClause + penaltyTail,
+        },
         // Severity anchored to the cohort the counterfactual uses (cm-1): >0.3 over
         // anchor is high, >0.1 over medium, at/under the anchor low. PGA fallback
         // (0.3) keeps the pre-cm-1 thresholds (0.6 high / 0.3 medium) at cold-start.
@@ -368,13 +384,23 @@ export class CourseMgmtGenerator extends BaseGenerator<CourseMgmtAggregate> {
       : agg.cohort_gender === 'womens'
         ? `This is the #1 controllable scoring leak`
         : `PGA Tour is ~2%`;
+    const bigNumberTitle = `Double bogey-or-worse rate: ${valueDisp}`;
+    const bigNumberLead =
+      `${agg.rounds_played} rounds, ${valueDisp} of holes ` +
+      `ended in double bogey or worse. ${anchorClause}. Big numbers are the ` +
+      `#1 separator between 70s and 80s rounds.`;
     return {
-      title: `Double bogey-or-worse rate: ${valueDisp}`,
+      title: bigNumberTitle,
       content:
-        `Across your last ${agg.rounds_played} rounds, ${valueDisp} of holes ` +
-        `ended in double bogey or worse. ${anchorClause}. Per Research doc §4 ` +
-        `this is the #1 separator between 70s and 80s rounds.` +
+        `Across your last ${bigNumberLead}` +
         causeClause + worstClause + staleDataSuffix(agg.last_round_date),
+      // The title carries no second person, so the coach title is the same.
+      coach: {
+        title: bigNumberTitle,
+        content:
+          `Across the player's last ${bigNumberLead}` +
+          coachCauseClause + coachWorstClause + staleDataSuffix(agg.last_round_date),
+      },
       // Severity anchored to the cohort the counterfactual uses (cm-1): >2pp over
       // anchor is high, >0.5pp over medium, at/under the anchor low. PGA fallback
       // (2%) keeps the pre-cm-1 thresholds (4% high / 2% medium) at cold-start.

@@ -153,7 +153,7 @@ export const POST_WINDOW_DAYS = 21;
  * window at all (see the file header), so the gate moved to the two windows
  * the lift is actually computed from.
  */
-const MIN_WINDOW_ROUNDS = 2;
+export const MIN_WINDOW_ROUNDS = 2;
 
 /** Average a denormalised `golf_rounds` column across completed rounds in a window. */
 async function averageGolfRoundsColumn(
