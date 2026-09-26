@@ -166,3 +166,20 @@ items:
       - src/app/golf/actions/__tests__/player-lookup-maybe-single.test.ts
     queued_for_release: false
     first_seen: '2026-09-07T00:00:00Z'
+  - id: validation-rounds-prefetch-2026-09-26
+    feature_id: coachhelm_ai
+    root_cause: >-
+      resolveActualValue read golf_rounds once per ripe prediction and the
+      hourly coachhelm-validation cron looped over 115 of them (Sentry N+1
+      JAVASCRIPT-NEXTJS-SV); now one read per 100 players with a truncation-safe
+      per-prediction fallback.
+    incident_id: memory/incidents/coachhelm_ai/INC-2026-09-26-validation-cron-rounds-n-plus-one.md
+    status: verified
+    risk: R1
+    sha: f29f86d50
+    pr: null
+    regression_tests:
+      - src/lib/coachhelm/v2/learning/__tests__/outcome-validator.prefetch.test.ts
+      - src/test/api/cron/coachhelm-validation.test.ts
+    queued_for_release: false
+    first_seen: '2026-09-20T00:00:00Z'

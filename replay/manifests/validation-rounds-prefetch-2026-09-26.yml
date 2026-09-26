@@ -1,0 +1,28 @@
+schema_version: 1
+replay_id: validation-rounds-prefetch-2026-09-26
+incident_id: memory/incidents/coachhelm_ai/INC-2026-09-26-validation-cron-rounds-n-plus-one.md
+feature_id: coachhelm_ai
+title: >-
+  coachhelm-validation read golf_rounds once per ripe prediction (Sentry N+1
+  JAVASCRIPT-NEXTJS-SV); the batch prefetch makes it one read per 100 players.
+bad_version: 3d163873bee68534c0a9dbe3123cdbb49f530542
+fixed_version: f29f86d50f2e5f9a62bcdf5880cd43b8c6fb4323
+fixture:
+  - source: outcome-validator.prefetch.test.ts
+    target: src/lib/coachhelm/v2/learning/__tests__/outcome-validator.prefetch.test.ts
+test_command: "./node_modules/.bin/vitest run --project unit src/lib/coachhelm/v2/learning/__tests__/outcome-validator.prefetch.test.ts"
+expected:
+  bad_version: fail
+  fixed_version: pass
+expected_failure_mode: missing-export
+sanitization:
+  reviewed: true
+  contains_production_data: false
+  notes: >-
+    Synthetic prediction and round rows with invented IDs ('p1', 'A', 'r1');
+    no production rows, player IDs, PII, tokens or logs.
+source_incident_status: fixed
+created_at: "2026-09-26"
+notes: >-
+  On bad_version all 4 tests fail with "prefetchCandidateRounds is not a
+  function" (new export).
