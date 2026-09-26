@@ -46,7 +46,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `AUDIT_SNAPSHOT` | 56 | 6 | 30 | 25 |
 | `STATE_SNAPSHOT` | 6 | 2 | 5 | 0 |
 | `HISTORY_LEDGER` | 41 | 0 | 7 | 15 |
-| `INCIDENT` | 33 | 15 | 2 | 2 |
+| `INCIDENT` | 34 | 15 | 2 | 2 |
 | `ADR` | 5 | 0 | 3 | 0 |
 | `INDEX` | 19 | 1 | 7 | 5 |
 | `UNKNOWN` | 93 | 12 | 39 | 74 |
@@ -504,6 +504,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `memory/incidents/feature_awareness_system/INC-2026-09-04-mcp-namespace-policy-contradiction.md` | current | yes | - | - | - |
 | `memory/incidents/feature_awareness_system/INC-2026-09-04-sandboxed-dev-server-false-ready.md` | current | yes | - | - | - |
 | `memory/incidents/feature_awareness_system/INC-2026-09-04-surface-registry-miscategorized-as-generated.md` | current | yes | - | yes | - |
+| `memory/incidents/feature_awareness_system/INC-2026-09-26-ledger-vs-catalog-false-drift.md` | current | - | - | - | - |
 | `memory/incidents/golf_round_lifecycle/INC-2026-08-19-assistant-coach-cascade-delete-round-history.md` | current | - | - | - | - |
 | `memory/incidents/golf_round_lifecycle/INC-2026-08-25-completed-round-sg-capability.md` | current | - | - | - | - |
 | `memory/incidents/golf_round_lifecycle/INC-2026-08-25-nondestructive-submit-and-checkpoint-fallback.md` | current | - | - | - | - |
