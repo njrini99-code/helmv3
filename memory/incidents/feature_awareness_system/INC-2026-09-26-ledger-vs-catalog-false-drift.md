@@ -1,7 +1,7 @@
 # INC-2026-09-26: the nightly ledger-vs-catalog check reported 258 missing objects, and 236 were false
 
 - Feature: `feature_awareness_system` (DB drift tooling, `scripts/db/check-ledger-vs-catalog.mjs`)
-- Status: FIXED on branch agent/health-20260926-1130; not merged yet
+- Status: MERGED to main in #2076 (3d163873b) on 2026-09-26. CI tooling only, so no deploy is needed; proof is the next `Database drift (production)` run reporting the 22 real disagreements instead of 258.
 - Risk: R1. Read-only CI tooling. No schema, RLS or data change.
 - Signal: the `Database drift (production)` workflow was red every day from at
   least 2026-09-22, deduplicated onto issue #1897 (signature 4ad78da89e949006)
