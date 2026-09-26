@@ -41,6 +41,10 @@ ledger/catalog disagreements, and the check still fails on them:
   `baseball_stat_visual_views_touch`.
 
 These are RLS/schema items for the owner (R3), tracked on #1897.
+`memory/context/baseballhelm-database.md` §2a had already recorded
+`baseball_log_staff_change` as not live.
+
+<!-- schema-drift-absent: baseball_log_staff_change, baseball_stat_visual_views_touch -->
 
 Regression tests: `scripts/__tests__/check-ledger-vs-catalog.test.mjs` (4 new
 tests fail on a9a03535e; all 11 pass on the fix). Replay:
