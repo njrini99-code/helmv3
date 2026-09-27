@@ -2,19 +2,19 @@
 
 /**
  * ============================================================================
- * PlayerCoachHelmHome — Player CoachHelm on the Spine & Stage chassis (spec §5.3)
+ * PlayerCoachHelmHome — the Player CoachHelm composition root
  * ----------------------------------------------------------------------------
- * The Task 8 composition root: receives the SAME parallel-fetched props
- * `FairwayPlayerCoachHelm` received PLUS the additional reads `coachhelm/page.tsx`
- * now copies from the three `/my-*` route pages it absorbs (genome, causal
- * relationships, goals, the focus-area select, the counterfactual baseline),
- * runs the raw payloads through `buildPlayerHomeViewModel`'s pure helpers, and
- * renders `PlayerSpine` beside a `StageRouter` whose home view is
- * `PlayerHomeBento` and whose five drill views are `development` / `profile` /
- * `standing` / `insights` / `deep-dive`.
+ * Receives every parallel-fetched read from `coachhelm/page.tsx` (dashboard,
+ * insights, themes, trends, genome, causal relationships, goals, focus areas,
+ * the counterfactual baseline) and renders the section tabs above ONE
+ * full-width `StageRouter`. The home view is `PlayerHubFeed` (CoachHelm's own
+ * read: what is changing, why, what to do); the five drill views are
+ * `development` / `profile` / `standing` / `insights` / `deep-dive`.
  *
- * Layout: `300px 1fr` grid, spine sticky at `top-20` — matches
- * `StatsSpineStage`'s collapse-to-single-column breakpoint (940px).
+ * Layout (2026-09-24 overview rebuild): no spine. The old Spine rail repeated
+ * the Stats page (SG track, priorities, a ledger) and its ledger read a 30-day
+ * shot-analytics window that contradicted the stats-cache snapshot beside it
+ * (audit NUM-22). The tabs are the only navigation (HUB-01).
  *
  * PRESERVED LOGIC (imported / reused, never rewritten): `rateInsightAsPlayer`
  * feedback round-trip, `getPlayerWhatIf` scenario simulation (inside
@@ -22,11 +22,10 @@
  * `ThemesPanel`), every focus-area write action (inside `DevelopmentDrill`).
  * ========================================================================== */
 
-import { useCallback, useMemo, useState, useTransition } from 'react';
+import { useCallback, useMemo, useRef, useState, useTransition } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 
-import { cn } from '@/lib/utils';
 import { Surface, EmptyState, Button } from '@/components/fairway';
 import { StageRouter } from '@/components/fairway/modules';
 import type { StageView } from '@/components/fairway/modules';
@@ -34,8 +33,7 @@ import { isThemesEnabled } from '@/lib/redesign/flag';
 
 import type { EvidenceInsight } from '@/app/golf/actions/insight-delivery';
 import type { PlayerCoachHelmDashboardData } from '@/app/golf/actions/insights';
-import type { PlayerFingerprint } from '@/app/golf/actions/player-fingerprint';
-import type { PlayerShotAnalytics } from '@/app/golf/actions/shot-analytics';
+import type { PlayerFingerprint } from '@/app/golf/actions/player-fingerprint-types';
 import type { PlayerStanding } from '@/lib/coachhelm/v3/standing/types';
 import type { CauseNode, ThemeNode } from '@/lib/coachhelm/v3/themes/types';
 import type { FocusAreaCardData } from '@/components/fairway';
@@ -50,15 +48,7 @@ import { computeTargetValue } from '@/lib/coachhelm/v3/goals/suggestion-writer';
 import { isMetricId } from '@/lib/coachhelm/v3/metrics/registry';
 import { useToast } from '@/components/ui/sonner';
 
-import {
-  buildFocusAreaPriorities,
-  buildPlayerLedger,
-  buildPlayerStandingTrack,
-  buildPredictionVerdict,
-  formatPredictionHero,
-} from './buildPlayerHomeViewModel';
-import { PlayerSpine } from './PlayerSpine';
-import { PlayerHomeBento } from './PlayerHomeBento';
+import { PlayerHubFeed } from './PlayerHubFeed';
 import { DevelopmentDrill } from './DevelopmentDrill';
 import { ProfileDrill, type GameProfileAxis, type GameProfileDimensionCell, type GameProfilePersonaEntry } from './ProfileDrill';
 import { StandingDrill } from './StandingDrill';
@@ -66,26 +56,9 @@ import { InsightsDrill } from './InsightsDrill';
 import { DeepDiveDrill } from './DeepDiveDrill';
 import { PlayerCoachHelmNav, useCoachHelmSectionLabel } from './PlayerCoachHelmNav';
 
-const MOBILE_SPINE_HIDDEN_VIEWS = new Set(['development', 'profile', 'standing', 'insights', 'deep-dive']);
-
-function finite(n: number | null | undefined): number | null {
-  return typeof n === 'number' && Number.isFinite(n) ? n : null;
-}
-
-/** Short trend headline for the bento's "Trend" cell — the same loosely-typed
- *  `trendData.trends.signal` string `FairwayTrendBrain` reads internally. */
-function trendSummaryFrom(trendData: Record<string, unknown> | null | undefined): string | null {
-  const trends = (trendData as { trends?: { signal?: unknown } } | null | undefined)?.trends;
-  const signal = trends?.signal;
-  if (typeof signal !== 'string' || signal.length === 0) return null;
-  const normalized = signal.replace(/[_-]+/g, ' ').trim();
-  return normalized.charAt(0).toUpperCase() + normalized.slice(1);
-}
-
 export interface PlayerCoachHelmHomeProps {
   data: PlayerCoachHelmDashboardData;
   playerId: string;
-  initialShotAnalytics?: PlayerShotAnalytics | null;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   profileData?: Record<string, any> | null;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -132,7 +105,6 @@ export interface PlayerCoachHelmHomeProps {
 export function PlayerCoachHelmHome({
   data,
   playerId,
-  initialShotAnalytics,
   profileData,
   trendData,
   shotData,
@@ -165,13 +137,20 @@ export function PlayerCoachHelmHome({
   const { addToast } = useToast();
   const [, startMakePlanTransition] = useTransition();
   const [makePlanPendingId, setMakePlanPendingId] = useState<string | null>(null);
-  const showMobileSpine = !MOBILE_SPINE_HIDDEN_VIEWS.has(searchParams.get('view') ?? '');
-
-  const shot = initialShotAnalytics ?? null;
 
   const secondaryDeduped = useMemo(
     () => secondaryInsights.filter((i) => !topInsight || i.id !== topInsight.id),
     [secondaryInsights, topInsight],
+  );
+
+  // Deep link from the dashboard's insight card: `?view=insights&insight=<id>`.
+  const focusInsightId = searchParams.get('insight');
+  const focusInsight = useMemo(
+    () =>
+      focusInsightId
+        ? [topInsight, ...secondaryInsights].find((i) => i?.id === focusInsightId) ?? null
+        : null,
+    [focusInsightId, topInsight, secondaryInsights],
   );
 
   const hasAnyInsight = Boolean(topInsight) || secondaryDeduped.length > 0;
@@ -194,13 +173,18 @@ export function PlayerCoachHelmHome({
     achievedGoals.length > 0;
 
   /* FIX 1: overflow of the top insight's prescribed drills (index 1+) —
-   * `PlayerHomeBento` renders only the first attached drill; the rest
+   * the overview (`PlayerHubFeed`) shows only the first attached drill; the rest
    * surface inside `InsightsDrill` so every attached drill stays visible. */
   const topInsightDrills = useMemo(() => (topInsight?.drills ?? []).slice(1), [topInsight]);
 
   /* ── Feedback handler — PRESERVED rateInsightAsPlayer round-trip + toasts. ── */
+  // DATA-14: one rating in flight per insight. A double tap on Helpful used
+  // to send two writes and two toasts.
+  const ratingInFlight = useRef(new Set<string>());
   const handleRate = useCallback(
     async (insightId: string, rating: 'helpful' | 'not_helpful' | 'acknowledged' | 'dismissed') => {
+      if (ratingInFlight.current.has(insightId)) return;
+      ratingInFlight.current.add(insightId);
       try {
         await rateInsightAsPlayer({ insightId, rating });
         addToast({
@@ -214,6 +198,8 @@ export function PlayerCoachHelmHome({
           title: 'Could not save feedback',
           description: err instanceof Error ? err.message : 'Please try again in a moment.',
         });
+      } finally {
+        ratingInFlight.current.delete(insightId);
       }
     },
     [addToast, router],
@@ -234,7 +220,7 @@ export function PlayerCoachHelmHome({
               ? cause.standingPlayerValue
               : null;
           const canTarget = baseline !== null && typeof cause.standingPgaValue === 'number' && Number.isFinite(cause.standingPgaValue);
-          const target = canTarget ? computeTargetValue({ playerValue: baseline, pgaValue: cause.standingPgaValue as number }) : null;
+          const target = canTarget ? computeTargetValue({ playerValue: baseline, pgaValue: cause.standingPgaValue as number, metricId: cause.metric }) : null;
 
           const result = await createGoal({
             metric_id: cause.metric,
@@ -267,51 +253,11 @@ export function PlayerCoachHelmHome({
     [addToast, router],
   );
 
-  const sgTotal = finite(standingByMetric['sg_total']?.player_value ?? null);
-  const sgTeamAvg = finite(standingByMetric['sg_total']?.team_avg ?? null);
-  const track = useMemo(() => buildPlayerStandingTrack(sgTotal, sgTeamAvg), [sgTotal, sgTeamAvg]);
-
-  const priorities = useMemo(
-    () => buildFocusAreaPriorities(data.focusAreas.map((a) => ({ area: a.area, strokesGained: a.strokesGained, value: a.value, unit: a.unit }))),
-    [data.focusAreas],
-  );
-
-  const ledger = useMemo(
-    () =>
-      buildPlayerLedger({
-        roundsAnalyzed: shot?.roundsAnalyzed,
-        fairwayPct: shot?.teeStats.fairwayPct,
-        girPct: shot?.approachStats.girPct,
-        puttsPerRound: shot?.puttingStats.avgPuttsPerRound,
-      }),
-    [shot],
-  );
-
-  const hero = useMemo(
-    () => formatPredictionHero(data.prediction?.predictedValue, data.prediction?.metric),
-    [data.prediction],
-  );
-  const verdict = useMemo(
-    () =>
-      buildPredictionVerdict(
-        data.prediction?.predictedValue,
-        data.prediction?.calibratedConfidence ?? data.prediction?.confidence,
-        priorities[0]?.title ?? null,
-        {
-          low: data.prediction?.predictedRangeLow,
-          high: data.prediction?.predictedRangeHigh,
-        },
-      ),
-    [data.prediction, priorities],
-  );
-
-  const trendSummary = useMemo(() => trendSummaryFrom(trendData), [trendData]);
-
   /* The stage has no visible title, so the surface shipped with no <h1> and
      opened at <h2> (audit P-21). Visually-hidden heading, tracking the
      active section so the document outline is honest on every view. */
   const sectionLabel = useCoachHelmSectionLabel();
-  const pageHeading = <h1 className="sr-only">CoachHelm — {sectionLabel}</h1>;
+  const pageHeading = <h1 className="sr-only">CoachHelm: {sectionLabel}</h1>;
 
   if (!hasData) {
     return (
@@ -334,23 +280,19 @@ export function PlayerCoachHelmHome({
     {
       key: 'home',
       node: (
-        <PlayerHomeBento
+        <PlayerHubFeed
           topInsight={topInsight}
-          activeFocusAreaCount={developmentActiveAreas.length}
-          topFocusAreaLabel={priorities[0]?.title ?? null}
-          genomeAxes={genomeAxes}
-          standingByMetric={standingByMetric}
-          trendSummary={trendSummary}
+          secondaryInsights={secondaryDeduped}
           themes={themes}
-          insightCount={(topInsight ? 1 : 0) + secondaryDeduped.length}
-          performanceSnapshot={{
-            scoringAverage: finite(developmentPlayerStats?.avg_score),
-            fairwayPct: finite(developmentPlayerStats?.fairway_pct),
-            girPct: finite(developmentPlayerStats?.gir_pct),
-            scramblingPct: finite(developmentPlayerStats?.scrambling_pct),
-            puttsPerRound: finite(developmentPlayerStats?.avg_putts),
-          }}
-          onRateTopInsight={(rating) => topInsight && void handleRate(topInsight.id, rating)}
+          themesEnabled={isThemesEnabled()}
+          trendData={trendData}
+          patterns={data.focusAreas}
+          prediction={data.prediction}
+          recentRounds={data.recentRounds}
+          roundsBasis={developmentPlayerStats?.rounds_played ?? null}
+          lastUpdated={data.lastUpdated}
+          planAreas={developmentActiveAreas}
+          onRate={(id, rating) => void handleRate(id, rating)}
         />
       ),
     },
@@ -400,6 +342,8 @@ export function PlayerCoachHelmHome({
       key: 'insights',
       node: (
         <InsightsDrill
+          key={focusInsight?.id ?? 'feed'}
+          initialOpenInsight={focusInsight}
           insights={secondaryDeduped}
           standingByMetric={standingByMetric}
           themesEnabled={isThemesEnabled()}
@@ -418,22 +362,11 @@ export function PlayerCoachHelmHome({
   ];
 
   return (
-    <div className="flex min-w-0 flex-col gap-5">
+    <div className="mx-auto flex w-full min-w-0 max-w-[1120px] flex-col gap-6">
       {pageHeading}
       <PlayerCoachHelmNav />
-      <div className={cn('flex min-w-0 flex-col gap-5 min-[940px]:grid min-[940px]:grid-cols-[280px_minmax(0,1fr)] min-[940px]:items-start min-[1180px]:grid-cols-[300px_minmax(0,1fr)]')}>
-        <PlayerSpine
-          className="min-[940px]:sticky min-[940px]:top-20"
-          mobileClassName={showMobileSpine ? undefined : 'hidden'}
-          hero={hero}
-          verdict={verdict}
-          track={track}
-          priorities={priorities}
-          ledger={ledger}
-        />
-        <div className="min-w-0">
-          <StageRouter param="view" homeKey="home" views={views} />
-        </div>
+      <div className="min-w-0">
+        <StageRouter param="view" homeKey="home" views={views} />
       </div>
     </div>
   );

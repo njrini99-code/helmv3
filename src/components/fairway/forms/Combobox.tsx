@@ -147,9 +147,9 @@ export function Combobox(props: ComboboxProps) {
         data-slot="combobox-control"
         className={cn(
           "flex w-full flex-wrap items-center gap-1.5 rounded-fw-sm",
-          "bg-surface-sunken border border-border-subtle",
+          "bg-surface-sunken border border-border-control",
           "transition-[border-color,box-shadow] [transition-duration:var(--fw-dur-fast)] [transition-timing-function:var(--fw-ease-soft)]",
-          "hover:border-border-strong",
+          "hover:border-text-tertiary",
           "focus-within:border-border-focus focus-within:ring-2 focus-within:ring-accent-500/70 focus-within:ring-offset-1 focus-within:ring-offset-canvas",
           "has-[[data-invalid]]:border-fw-danger/60",
           "has-[:disabled]:opacity-50",
@@ -221,7 +221,7 @@ export function Combobox(props: ComboboxProps) {
                   disabled={item.disabled}
                   className={optionClasses}
                 >
-                  <BaseCombobox.ItemIndicator className="absolute right-2.5 flex items-center text-accent-600">
+                  <BaseCombobox.ItemIndicator className="absolute right-2.5 flex items-center text-accent-ink">
                     <CheckGlyph />
                   </BaseCombobox.ItemIndicator>
                   <span className="truncate">{item.label}</span>

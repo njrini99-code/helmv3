@@ -27,10 +27,11 @@
  * ========================================================================== */
 
 import { forwardRef, isValidElement } from 'react';
-import { motion, useReducedMotion } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { Inbox, SearchX, type LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { revealVariants } from './motion';
+import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
 
 export type EmptyStateVariant = 'default' | 'search' | 'subtle';
 
@@ -76,7 +77,7 @@ export const EmptyState = forwardRef<HTMLDivElement, EmptyStateProps>(function E
   },
   ref,
 ) {
-  const reduced = useReducedMotion() ?? false;
+  const reduced = useReducedMotionGuard() ?? false;
   const iconNode = isValidElement(icon) ? icon : null;
   const Icon = icon === null || iconNode ? null : ((icon as LucideIcon | undefined) ?? DEFAULT_ICON[variant]);
   const isSubtle = variant === 'subtle';

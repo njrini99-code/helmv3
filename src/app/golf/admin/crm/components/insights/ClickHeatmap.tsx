@@ -121,7 +121,7 @@ export function ClickHeatmap({ rows, loading, title }: ClickHeatmapProps) {
               <div className="h-1.5 bg-surface-sunken/80 rounded-full overflow-hidden">
                 <div
                   className={cn(
-                    'h-full rounded-full transition-all duration-300',
+                    'h-full rounded-full transition-[width] duration-300',
                     'bg-accent-500',
                   )}
                   style={{ width: `${widthPct}%` }}

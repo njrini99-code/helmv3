@@ -10,7 +10,7 @@ import { FairwayDocuments } from '@/components/fairway/pages/documents';
 import { EmptyState } from '@/components/fairway';
 
 export const metadata: Metadata = {
-  title: 'Documents | Helm Golf',
+  title: 'Documents',
   description: 'Access and manage your team files, resources, and important documents',
 };
 

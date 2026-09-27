@@ -75,8 +75,12 @@ vi.mock('@/lib/supabase/admin', () => ({
 import { computeGenomeForPlayer } from '@/lib/coachhelm/v3/genome/orchestrator';
 
 // A round row shaped like golf_rounds select output.
+// A fully recorded 18-hole round, so it passes isCountableRound.
 function round(id: string) {
-  return { id, round_date: '2026-05-01', round_type: 'tournament', total_score: 72, score_to_par: 0 };
+  return {
+    id, round_date: '2026-05-01', round_type: 'tournament', total_score: 72, score_to_par: 0,
+    holes_played: 18, front_nine: 36, back_nine: 36, total_putts: 30,
+  };
 }
 
 beforeEach(() => {
@@ -186,5 +190,23 @@ describe('genome orchestrator — persistence guards (P2-21)', () => {
         expect(slot.label!.length).toBeGreaterThan(0);
       }
     }
+  });
+
+  it('computes over countable rounds only — a 37-stroke or hole-less round never enters the genome', async () => {
+    roundsResponse = {
+      data: [
+        round('ok'),
+        // Sep 17-style implausible total (18 holes, 37 strokes).
+        { ...round('implausible'), total_score: 37, score_to_par: -35, front_nine: 18, back_nine: 19, total_putts: 18 },
+        // QA qualifier with no hole scores.
+        { ...round('holeless'), front_nine: null, back_nine: null },
+      ],
+      error: null,
+    };
+    fetchAllRowsResultMock.mockResolvedValue({ data: [], error: null });
+
+    const result = await computeGenomeForPlayer('player-mixed');
+
+    expect(result.rounds_basis).toBe(1);
   });
 });

@@ -37,7 +37,8 @@
 
 import { useEffect, useRef } from 'react';
 import { usePathname } from 'next/navigation';
-import { useReducedMotion, type Transition } from 'framer-motion';
+import type { Transition } from 'framer-motion';
+import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
 
 // --fw-ease-glide = cubic-bezier(0.16, 1, 0.3, 1) — the iOS out-quint used
 // system-wide for DropdownMenu / Tooltip / Popover / Sheet / Tabs / the
@@ -75,6 +76,34 @@ const INSTANT: Pick<RouteRevealMotion, 'initial' | 'animate' | 'transition'> = {
 // where the flag lives.
 let didFirstPaintThisSession = false;
 
+// Back/forward (audit MOT-12 / motion spec §4.1-4.2). A swipe-back or the
+// browser back button has already shown the user its own motion, so a pop
+// must land INSTANTLY instead of fading in a second time. Next's router
+// handles `popstate` by scheduling a render, so this listener (registered at
+// module load, client only) always flips the flag before the next template
+// instance renders. The timestamp bounds it: a popstate that changed only a
+// hash/query (no remount) must not turn a LATER push instant.
+const POP_WINDOW_MS = 1000;
+let lastPopAt = 0;
+if (typeof window !== 'undefined') {
+  window.addEventListener('popstate', () => {
+    lastPopAt = Date.now();
+  });
+}
+
+function consumeRecentPop(): boolean {
+  if (lastPopAt === 0) return false;
+  const recent = Date.now() - lastPopAt < POP_WINDOW_MS;
+  lastPopAt = 0;
+  return recent;
+}
+
+export interface RouteRevealOptions {
+  /** Land back/forward navigations instantly (golf opts in; OD-17 keeps the
+   *  other sports' behaviour unchanged). */
+  instantOnPop?: boolean;
+}
+
 /**
  * Doctrine Rule 9 — classify the CURRENT route and return the motion props
  * for the content column's keyed `m.div`. `isLateralDestination` must be a
@@ -85,13 +114,16 @@ let didFirstPaintThisSession = false;
  *   1. reduced-motion              → INSTANT (no motion anywhere, ever)
  *   2. first paint of the session  → INSTANT (never fight hydration/skeleton)
  *   3. current path is a registered lateral destination → INSTANT
+ *   3b. a back/forward navigation, when `instantOnPop` (golf) → INSTANT
  *   4. otherwise (a detail push)   → opacity 0→1, 0.18s, --fw-ease-glide
  */
 export function useRouteRevealMotion(
   isLateralDestination: (pathname: string) => boolean,
+  options: RouteRevealOptions = {},
 ): RouteRevealMotion {
   const pathname = usePathname() ?? '';
-  const prefersReducedMotion = useReducedMotion();
+  const prefersReducedMotion = useReducedMotionGuard();
+  const { instantOnPop = false } = options;
 
   // Snapshot "is this the first paint of the session" ONCE per mounted
   // instance (a lazy ref initializer, evaluated only on this instance's
@@ -103,12 +135,21 @@ export function useRouteRevealMotion(
     isFirstPaintRef.current = !didFirstPaintThisSession;
   }
 
+  // Same once-per-instance snapshot for "this navigation was a back/forward".
+  const isPopRef = useRef<boolean | undefined>(undefined);
+  if (isPopRef.current === undefined) {
+    isPopRef.current = instantOnPop ? consumeRecentPop() : false;
+  }
+
   useEffect(() => {
     didFirstPaintThisSession = true;
   }, []);
 
   const instant =
-    Boolean(prefersReducedMotion) || isFirstPaintRef.current || isLateralDestination(pathname);
+    prefersReducedMotion ||
+    isFirstPaintRef.current ||
+    isPopRef.current ||
+    isLateralDestination(pathname);
 
   if (instant) {
     return { routeKey: pathname, ...INSTANT };

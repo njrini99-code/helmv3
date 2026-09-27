@@ -136,7 +136,7 @@ describe('Package 10: anchor label ("since first shown" / "since you acted on it
     if (readout.state === 'result') {
       expect(readout.method.label).toBe('observed_change_limited');
       expect(readout.method.description).toBe(
-        "Observed change — another change happened in the same window, so it can't be isolated (since first shown)",
+        "Observed change, but another change happened in the same window, so it can't be isolated (since first shown)",
       );
     }
   });
@@ -169,7 +169,7 @@ describe('Package 10: anchor label ("since first shown" / "since you acted on it
     if (readout.state === 'result') {
       expect(readout.method.label).toBe('observed_change_limited');
       expect(readout.method.description).toBe(
-        "Observed change — another change happened in the same window, so it can't be isolated (since you acted on it)",
+        "Observed change, but another change happened in the same window, so it can't be isolated (since you acted on it)",
       );
     }
   });

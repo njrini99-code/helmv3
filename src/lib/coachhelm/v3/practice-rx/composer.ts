@@ -176,6 +176,6 @@ function buildFallbackDays(
   return drills.slice(0, 7).map((d, i) => ({
     day: i + 1,
     drill_ids: [d.id],
-    prose: 'Template block — AI draft unavailable; edit after saving.',
+    prose: 'Template block: AI draft unavailable; edit after saving.',
   }));
 }

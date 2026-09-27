@@ -102,6 +102,60 @@ describe('useFocusTrap', () => {
     expect(opener).toHaveFocus();
   });
 
+  it('survives a parent re-render with a new onClose while open (no focus jump, restore still works)', async () => {
+    const { rerender } = render(<TestHarness isOpen={false} onClose={() => {}} />);
+    const opener = screen.getByText('Opener');
+    opener.focus();
+
+    rerender(<TestHarness isOpen onClose={() => {}} />);
+    await waitFor(() => {
+      expect(screen.getByText('First')).toHaveFocus();
+    });
+
+    // User moves on inside the dialog, then the parent re-renders with a
+    // fresh inline handler (e.g. a loading flag flips).
+    screen.getByText('Middle').focus();
+    const latestOnClose = vi.fn();
+    rerender(<TestHarness isOpen onClose={latestOnClose} />);
+    await new Promise((r) => setTimeout(r, 10));
+    expect(screen.getByText('Middle')).toHaveFocus();
+
+    // Escape reaches the LATEST handler exactly once.
+    fireEvent.keyDown(document, { key: 'Escape' });
+    expect(latestOnClose).toHaveBeenCalledTimes(1);
+
+    rerender(<TestHarness isOpen={false} onClose={latestOnClose} />);
+    expect(opener).toHaveFocus();
+  });
+
+  it('restores focus when the consumer unmounts while still open', async () => {
+    function Parent({ mounted }: { mounted: boolean }) {
+      return (
+        <div>
+          <Button>Trigger</Button>
+          {mounted ? <TestHarnessNoOpener /> : null}
+        </div>
+      );
+    }
+    function TestHarnessNoOpener() {
+      const { modalRef } = useFocusTrap(true, () => {});
+      return (
+        <div ref={modalRef} role="dialog" aria-modal="true">
+          <Button>Inside</Button>
+        </div>
+      );
+    }
+    const { rerender } = render(<Parent mounted={false} />);
+    const trigger = screen.getByText('Trigger');
+    trigger.focus();
+    rerender(<Parent mounted />);
+    await waitFor(() => {
+      expect(screen.getByText('Inside')).toHaveFocus();
+    });
+    rerender(<Parent mounted={false} />);
+    expect(trigger).toHaveFocus();
+  });
+
   it('locks body scroll while open and releases it on close', () => {
     const { rerender } = render(<TestHarness isOpen={false} onClose={() => {}} />);
     expect(document.body.style.overflow).toBe('');

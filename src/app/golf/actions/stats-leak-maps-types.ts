@@ -56,6 +56,14 @@ export interface PlayerLeakMaps {
   putting: LeakBucket[];
   approach: LeakBucket[];
   roundsIncluded: number;
+  /** Oldest / newest `round_date` of the countable rounds counted in
+   *  `roundsIncluded` (ISO date-only); null when there are none. Optional
+   *  only so older fixtures still type-check; the loader always sets it. */
+  windowFrom?: string | null;
+  windowTo?: string | null;
+  /** The tour whose references `pga_value`/`div1_value` carry: 'lpga' for a
+   *  women's team, else 'pga' (loadPgaRefs routing). */
+  tour?: 'pga' | 'lpga';
 }
 
 /** Plain, serialization-safe standing row for client consumers. */

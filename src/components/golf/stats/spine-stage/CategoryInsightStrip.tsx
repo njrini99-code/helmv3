@@ -106,7 +106,7 @@ export function CategoryInsightStrip({
           the row's width. Wrapping to a second line keeps every character
           on screen and legible instead of clipping or scrolling. */}
       <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-1.5">
-        <span className="font-fw-sans text-eyebrow font-medium uppercase tracking-[0.1em] text-text-tertiary">
+        <span className="font-fw-sans text-caption font-medium text-text-tertiary">
           What CoachHelm sees
         </span>
         {hasSeries ? (
@@ -127,6 +127,8 @@ export function CategoryInsightStrip({
             {delta ? (
               <TrendChip
                 direction={delta.direction === 'flat' ? 'flat' : delta.good ? 'improving' : 'declining'}
+                // Arrow follows the raw number; colour follows good/bad.
+                goodDirection={(delta.direction === 'up') === delta.good ? 'up' : 'down'}
                 label={delta.text}
                 size="sm"
                 numeric
@@ -153,7 +155,7 @@ export function CategoryInsightStrip({
                 <div className="flex items-center gap-2">
                   <span
                     className={cn(
-                      'inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 font-fw-mono text-eyebrow font-semibold tabular-nums',
+                      'inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 font-fw-mono text-caption font-semibold tabular-nums',
                       isLeak ? 'bg-fw-warning-bg text-fw-warning-ink' : 'bg-fw-success-bg text-fw-success-ink',
                     )}
                   >

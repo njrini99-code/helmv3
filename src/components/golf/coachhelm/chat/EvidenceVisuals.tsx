@@ -171,7 +171,7 @@ function InstrumentFigure({
       <figcaption className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           {overline && (
-            <p className="font-fw-sans text-eyebrow uppercase tracking-[0.08em] text-text-tertiary">
+            <p className="font-fw-sans text-caption text-text-tertiary">
               {overline}
             </p>
           )}
@@ -305,7 +305,7 @@ function MetricPanel({
       >
         {shown.map((m) => (
           <div key={`${m.entity.id}-${m.metric_id}`} className="min-w-0">
-            <p className="font-fw-sans text-eyebrow uppercase tracking-[0.08em] text-text-tertiary">
+            <p className="font-fw-sans text-caption text-text-tertiary">
               {m.metric_label}
             </p>
             <p className="mt-1.5 font-fw-mono text-h2 font-semibold tabular-nums leading-none text-text-primary">
@@ -636,7 +636,7 @@ export function ComparisonTable({ measurements }: { measurements: Measurement[] 
         </caption>
         <thead>
           <tr className="border-b border-border-subtle">
-            <th scope="col" className="px-4 py-2.5 text-left font-fw-sans text-eyebrow uppercase tracking-[0.1em] text-text-tertiary">
+            <th scope="col" className="px-4 py-2.5 text-left font-fw-sans text-caption text-text-tertiary">
               Metric
             </th>
             {players.map((p) => (
@@ -711,7 +711,7 @@ function RankingList({ measurements }: { measurements: Measurement[] }) {
 
   return (
     <div className="rounded-card border border-border-subtle bg-surface p-4">
-      <p className="font-fw-sans text-eyebrow uppercase tracking-[0.1em] text-text-tertiary">{label}</p>
+      <p className="font-fw-sans text-caption text-text-tertiary">{label}</p>
       <ol className="mt-3 flex flex-col gap-1.5">
         {withValue.map((m) => (
           <li key={m.entity.id} className="flex items-baseline justify-between gap-3">

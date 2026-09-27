@@ -33,10 +33,13 @@ export type {
 export {
   calculatePercentile,
   buildPercentileProfile,
+  teamPercentileReadout,
+  PERCENTILE_MIN_TEAM_N,
 } from './percentiles';
 
 export type {
   PercentileProfile,
+  PercentileMetric,
 } from './percentiles';
 
 export {

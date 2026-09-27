@@ -1,7 +1,7 @@
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'My Classes | Helm Golf',
+  title: 'My Classes',
   description: 'View and manage your academic class schedule. Import schedules, add classes, and help coaches plan practices around your commitments.',
 };
 

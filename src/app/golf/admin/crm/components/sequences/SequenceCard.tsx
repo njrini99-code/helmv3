@@ -44,7 +44,7 @@ export function SequenceCard({
       className={cn(
         'group relative w-full text-left flex items-center gap-3 px-4 py-3',
         'rounded-fw-md border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-card)]',
-        'transition-all duration-200 cursor-pointer',
+        'transition duration-200 cursor-pointer',
         'hover:bg-surface-tint hover:shadow-raise',
         isSelected && 'ring-2 ring-accent-500 border-accent-300',
       )}
@@ -66,7 +66,7 @@ export function SequenceCard({
           </h3>
           <span
             className={cn(
-              'px-1.5 py-0.5 rounded text-eyebrow font-bold uppercase tracking-wider',
+              'px-1.5 py-0.5 rounded text-caption font-bold',
               sequence.trigger_kind === 'manual'
                 ? 'bg-surface-sunken text-text-secondary'
                 : 'bg-surface-sunken text-text-secondary',
@@ -88,13 +88,13 @@ export function SequenceCard({
           <span className="font-semibold text-text-primary tabular-nums">
             {stepCount ?? 0}
           </span>
-          <span className="text-eyebrow uppercase tracking-wider">steps</span>
+          <span className="text-caption">steps</span>
         </div>
         <div className="flex flex-col items-end">
           <span className="font-semibold text-text-primary tabular-nums">
             {activeEnrollmentCount ?? 0}
           </span>
-          <span className="text-eyebrow uppercase tracking-wider">active</span>
+          <span className="text-caption">active</span>
         </div>
       </div>
 

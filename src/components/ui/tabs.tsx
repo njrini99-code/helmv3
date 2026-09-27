@@ -20,7 +20,7 @@
 import * as React from 'react';
 import * as TabsPrimitive from '@radix-ui/react-tabs';
 import { cn } from '@/lib/utils';
-import { triggerHaptic } from '@/lib/utils/capacitor';
+import { fireControlHaptic, isGolfSurface } from '@/lib/haptics';
 
 /** Legacy alias for `onValueChange` — preserved so old call sites keep working.
  *  If both are provided, both fire. We strip the native HTMLDivElement
@@ -40,7 +40,9 @@ const Tabs = React.forwardRef<
   <TabsPrimitive.Root
     ref={ref}
     onValueChange={(v) => {
-      void triggerHaptic('light');
+      // A tab change is a detent: `select` on golf (audit MOT-04); other
+      // sports keep their historical light impact (owner OD-17b).
+      fireControlHaptic(isGolfSurface() ? 'select' : 'light');
       onValueChange?.(v);
       onChange?.(v);
     }}

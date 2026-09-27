@@ -78,3 +78,17 @@ export function staleDataSuffix(lastRoundDate: string | null | undefined): strin
   if (ageDays <= STALE_DATA_DISCLOSURE_DAYS) return '';
   return ` Data through ${String(lastRoundDate).slice(0, 10)}.`;
 }
+
+/**
+ * NUM-12: the window text of a stored card is frozen when the card is
+ * generated, so "your last 15 rounds (54 days)" drifts from the live numbers
+ * next to it. Cards whose prose names a window stamp the newest round they
+ * read, always (not only once stale), so the reader can see the text is as of
+ * that date. Returns " Data through YYYY-MM-DD." or '' when the date is
+ * missing or unparseable.
+ */
+export function dataThroughSuffix(lastRoundDate: string | null | undefined): string {
+  if (!lastRoundDate) return '';
+  if (!Number.isFinite(Date.parse(lastRoundDate))) return '';
+  return ` Data through ${String(lastRoundDate).slice(0, 10)}.`;
+}

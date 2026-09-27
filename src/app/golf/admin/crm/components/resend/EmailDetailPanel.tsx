@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { Button, IconButton } from '@/components/ui/button';
 import {
@@ -27,6 +27,7 @@ import {
   formatFullTimestamp,
   formatRelative,
 } from './shared';
+import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
 
 export type FollowupRecipient = {
   email: string;
@@ -45,7 +46,7 @@ export function EmailDetailPanel({
   onClose,
   onSendFollowup,
 }: EmailDetailPanelProps) {
-  const prefersReducedMotion = useReducedMotion();
+  const prefersReducedMotion = useReducedMotionGuard();
   const [email, setEmail] = useState<EmailRow | null>(null);
   const [events, setEvents] = useState<EmailEventRow[]>([]);
   const [clicks, setClicks] = useState<EmailClick[]>([]);
@@ -133,7 +134,7 @@ export function EmailDetailPanel({
                     Email details
                   </p>
                   {resendMessageId && (
-                    <p className="text-eyebrow text-text-tertiary font-mono">
+                    <p className="text-caption text-text-tertiary font-mono">
                       {resendMessageId.slice(0, 18)}…
                     </p>
                   )}
@@ -279,7 +280,7 @@ function Metadata({ email }: { email: EmailRow }) {
         <div>
           <span
             className={cn(
-              'inline-block text-eyebrow font-medium px-1.5 py-0.5 rounded uppercase tracking-wide',
+              'inline-block text-caption font-medium px-1.5 py-0.5 rounded',
               email.source === 'crm'
                 ? 'bg-surface-sunken text-text-secondary'
                 : email.source === 'transactional'
@@ -334,7 +335,7 @@ function CopyButton({ text }: { text: string }) {
         setCopied(true);
         setTimeout(() => setCopied(false), 1500);
       }}
-      className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-surface-sunken text-text-tertiary hover:text-text-secondary transition-all"
+      className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-surface-sunken text-text-tertiary hover:text-text-secondary transition"
       title={copied ? 'Copied!' : 'Copy'}
       aria-label="Copy to clipboard"
     >
@@ -451,7 +452,7 @@ function ClicksSection({
         <h4 className="text-xs font-semibold text-text-tertiary uppercase tracking-wide">
           Clicks
         </h4>
-        <span className="text-eyebrow text-text-tertiary tabular-nums">
+        <span className="text-caption text-text-tertiary tabular-nums">
           {clicks.length.toLocaleString()} recorded
         </span>
       </div>
@@ -480,7 +481,7 @@ function ClicksSection({
                     (no URL)
                   </span>
                 )}
-                <span className="text-eyebrow px-1.5 py-0.5 rounded bg-surface-sunken text-text-secondary shrink-0">
+                <span className="text-caption px-1.5 py-0.5 rounded bg-surface-sunken text-text-secondary shrink-0">
                   {device}
                 </span>
                 <span

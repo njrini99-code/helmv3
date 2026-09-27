@@ -43,7 +43,7 @@ const TOAST_CONFIG: Record<ToastType, {
   success: {
     icon: IconCheckCircle2,
     containerClass: 'border-accent-200/50 bg-accent-50/80',
-    iconClass: 'text-accent-600',
+    iconClass: 'text-accent-ink',
   },
   error: {
     icon: IconXCircle,
@@ -133,7 +133,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
               key={item.id}
               className={cn(
                 'pointer-events-auto flex items-center gap-2.5 px-4 py-3 rounded-fw-md border shadow-soft backdrop-blur-xl',
-                'transition-all duration-200 ease-out',
+                'transition duration-200 ease-out',
                 isRemoving
                   ? 'opacity-0 translate-x-4'
                   : 'opacity-100 translate-x-0',

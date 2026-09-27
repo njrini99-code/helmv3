@@ -43,13 +43,13 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `RUNBOOK` | 5 | 2 | 1 | 0 |
 | `DESIGN_SPEC` | 7 | 0 | 6 | 0 |
 | `PLAN` | 37 | 5 | 18 | 74 |
-| `AUDIT_SNAPSHOT` | 56 | 6 | 30 | 25 |
+| `AUDIT_SNAPSHOT` | 57 | 6 | 31 | 25 |
 | `STATE_SNAPSHOT` | 6 | 2 | 5 | 0 |
-| `HISTORY_LEDGER` | 41 | 0 | 7 | 15 |
+| `HISTORY_LEDGER` | 41 | 0 | 7 | 19 |
 | `INCIDENT` | 39 | 15 | 2 | 2 |
 | `ADR` | 5 | 0 | 3 | 0 |
 | `INDEX` | 19 | 1 | 7 | 5 |
-| `UNKNOWN` | 93 | 12 | 39 | 74 |
+| `UNKNOWN` | 93 | 12 | 39 | 76 |
 
 ## Files
 
@@ -410,6 +410,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/observability/SENTRY_PHASE_A_FINDINGS.md` | current | - | - | yes | 3 |
 | `docs/reports/REPO_WIRING_AUDIT_2026-08-30.md` | current | - | - | - | - |
 | `docs/ui-audits/DESIGN_AUDIT_ASK_AND_CALENDAR_2026-08-15.md` | current | - | - | yes | - |
+| `docs/ui-audits/GOLF_UIUX_AUDIT_LEDGER_2026-09-24.md` | current | - | - | yes | - |
 | `docs/ui-audits/MOBILE_NATIVE_REBUILD_AUDIT_2026-09-03.md` | current | - | - | - | 1 |
 | `docs/ui-audits/UI_AUDIT_2026-08-16.md` | current | - | - | - | 1 |
 | `docs/v3-feature-audit.md` | current | yes | - | yes | 2 |
@@ -449,14 +450,14 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `memory/ledgers/changes/auth_onboarding_join.md` | current | - | - | - | - |
 | `memory/ledgers/changes/calendar_events.md` | current | - | - | - | 1 |
 | `memory/ledgers/changes/coach_intelligence_triage.md` | current | - | - | - | - |
-| `memory/ledgers/changes/coachhelm_ai.md` | current | - | - | - | - |
+| `memory/ledgers/changes/coachhelm_ai.md` | current | - | - | - | 1 |
 | `memory/ledgers/changes/crm_outreach.md` | current | - | - | - | - |
 | `memory/ledgers/changes/feature_awareness_system.md` | current | - | - | yes | - |
 | `memory/ledgers/changes/golf_round_lifecycle.md` | current | - | - | - | - |
 | `memory/ledgers/changes/ios_native_shell.md` | current | - | - | - | - |
 | `memory/ledgers/changes/observability_sentry.md` | current | - | - | - | 3 |
 | `memory/ledgers/changes/observability_supabase.md` | current | - | - | - | - |
-| `memory/ledgers/changes/player_coachhelm_development.md` | current | - | - | - | - |
+| `memory/ledgers/changes/player_coachhelm_development.md` | current | - | - | - | 1 |
 | `memory/ledgers/changes/qualifiers.md` | current | - | - | - | - |
 | `memory/ledgers/changes/recruiting.md` | current | - | - | - | - |
 | `memory/ledgers/changes/roster_team.md` | current | - | - | - | - |
@@ -472,10 +473,10 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `memory/ledgers/tests/admin_reliability_collector.md` | current | - | - | - | - |
 | `memory/ledgers/tests/admin_slo.md` | current | - | - | - | - |
 | `memory/ledgers/tests/calendar_events.md` | current | - | - | - | - |
-| `memory/ledgers/tests/coachhelm_ai.md` | current | - | - | - | - |
+| `memory/ledgers/tests/coachhelm_ai.md` | current | - | - | - | 1 |
 | `memory/ledgers/tests/golf_round_lifecycle.md` | current | - | - | - | - |
 | `memory/ledgers/tests/observability_sentry.md` | current | - | - | - | 2 |
-| `memory/ledgers/tests/player_coachhelm_development.md` | current | - | - | - | - |
+| `memory/ledgers/tests/player_coachhelm_development.md` | current | - | - | - | 1 |
 | `memory/ledgers/tests/qualifiers.md` | current | - | - | - | - |
 | `memory/ledgers/tests/shot_tracking.md` | current | - | - | - | - |
 | `memory/ledgers/tests/stats_analytics.md` | current | - | - | - | - |
@@ -649,7 +650,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `ios/appstore/SUBMISSION.md` | current | - | - | - | - |
 | `public/courses/CREDITS.md` | current | - | - | - | - |
 | `scripts/ops/MAC_MINI_HEADLESS_RUNBOOK.md` | current | - | - | - | - |
-| `src/test/SKIPPED.md` | current | - | - | yes | 4 |
+| `src/test/SKIPPED.md` | current | - | - | yes | 6 |
 | `supabase/migrations/HELD.md` | current | - | - | - | - |
 | `tests/golf/qualifier-hell/.momentic-mcp/step-authoring-guide-1787628324409-30568958-fbbd-4cb0-8f55-b90fd56cc3d7.md` | current | - | - | - | - |
 | `tools/INTEGRATION_GUIDE.md` | current | - | - | - | - |

@@ -41,6 +41,7 @@ import {
   getGolfTeamPlayersForBroadcast,
   createGolfTeamBroadcast,
 } from '@/app/golf/actions/messages';
+import { fwPress } from '@/components/fairway/controls';
 
 interface Player {
   id: string;
@@ -301,9 +302,7 @@ export function FairwayTeamBroadcastSheet({
                           // Without them a tap on a recipient was acknowledged by
                           // a colour swap alone, which on a phone in sunlight is
                           // not confirmation.
-                          'active:translate-y-[0.5px] active:scale-[0.98]',
-                          'active:[transition-timing-function:var(--fw-ease-spring)]',
-                          'motion-reduce:active:translate-y-0 motion-reduce:active:scale-100',
+                          fwPress,
                           'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/70 focus-visible:ring-offset-1 focus-visible:ring-offset-canvas',
                           isSelected
                             ? 'bg-accent-50 ring-1 ring-inset ring-accent-200'
@@ -316,7 +315,7 @@ export function FairwayTeamBroadcastSheet({
                             'grid h-5 w-5 shrink-0 place-items-center rounded-fw-sm border-2',
                             'transition-colors [transition-duration:var(--fw-dur-fast)]',
                             isSelected
-                              ? 'border-accent-600 bg-accent-600 text-text-on-accent'
+                              ? 'border-accent-fill bg-accent-fill text-text-on-accent-fill'
                               : 'border-border-strong',
                           )}
                         >

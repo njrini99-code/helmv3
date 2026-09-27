@@ -923,7 +923,7 @@ export function SchedulingWorkspace({
                       onPointerUp={handlePointerUp}
                       onPointerCancel={cancelDrag}
                       className={cn(
-                        'pointer-events-auto absolute inset-y-0 cursor-grab touch-none select-none rounded-sm active:cursor-grabbing',
+                        'pointer-events-auto absolute inset-y-0 cursor-grab touch-none select-none rounded-fw-sm active:cursor-grabbing',
                         surfaces.lens,
                         surfaces.follow,
                         surfaces.settle,
@@ -941,14 +941,14 @@ export function SchedulingWorkspace({
 
             {/* Legend. */}
             <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-border-subtle px-4 py-2.5 font-fw-sans text-caption text-text-secondary">
-              <span className="inline-flex items-center gap-1.5"><span className={cn('h-3.5 w-3.5 rounded-sm', surfaces.busy)} aria-hidden="true" /> Busy</span>
-              <span className="inline-flex items-center gap-1.5"><span className="h-3.5 w-3.5 rounded-sm border border-border-strong bg-surface" aria-hidden="true" /> Available</span>
-              <span className="inline-flex items-center gap-1.5"><span className={cn('h-3.5 w-3.5 rounded-sm', surfaces.lens)} aria-hidden="true" /> Selected</span>
+              <span className="inline-flex items-center gap-1.5"><span className={cn('h-3.5 w-3.5 rounded', surfaces.busy)} aria-hidden="true" /> Busy</span>
+              <span className="inline-flex items-center gap-1.5"><span className="h-3.5 w-3.5 rounded border border-border-strong bg-surface" aria-hidden="true" /> Available</span>
+              <span className="inline-flex items-center gap-1.5"><span className={cn('h-3.5 w-3.5 rounded', surfaces.lens)} aria-hidden="true" /> Selected</span>
               {anyUnverified ? (
-                <span className="inline-flex items-center gap-1.5"><span className={cn('h-3.5 w-3.5 rounded-sm', surfaces.hatch)} aria-hidden="true" /> Not verified</span>
+                <span className="inline-flex items-center gap-1.5"><span className={cn('h-3.5 w-3.5 rounded', surfaces.hatch)} aria-hidden="true" /> Not verified</span>
               ) : null}
               {referenceInterval ? (
-                <span className="inline-flex items-center gap-1.5"><span className={cn('h-3.5 w-3.5 rounded-sm', surfaces.reference)} aria-hidden="true" /> {referenceInterval.label ?? 'Current'}</span>
+                <span className="inline-flex items-center gap-1.5"><span className={cn('h-3.5 w-3.5 rounded', surfaces.reference)} aria-hidden="true" /> {referenceInterval.label ?? 'Current'}</span>
               ) : null}
               <span className="basis-full text-text-tertiary sm:ml-auto sm:basis-auto">{checkedLine}</span>
             </div>
@@ -977,7 +977,7 @@ export function SchedulingWorkspace({
                     aria-hidden="true"
                     className={cn(
                       'grid h-8 w-8 shrink-0 place-items-center rounded-full',
-                      current ? 'bg-accent-650 text-text-on-accent' : 'border-2 border-border-strong bg-surface',
+                      current ? 'bg-accent-fill text-text-on-accent-fill' : 'border-2 border-border-strong bg-surface',
                     )}
                   >
                     {current ? <Check className="h-4 w-4" strokeWidth={2.5} /> : null}

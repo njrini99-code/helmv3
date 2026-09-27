@@ -142,14 +142,14 @@ export function AddNoteDialog({
                       type="button"
                       onClick={() => setKind(opt.value)}
                       className={cn(
-                        'flex flex-col items-start text-left px-3 py-2 rounded-fw-sm border transition-all',
+                        'flex flex-col items-start text-left px-3 py-2 rounded-fw-sm border transition',
                         kind === opt.value
                           ? 'border-accent-400 bg-accent-50/60 text-text-primary'
                           : 'border-border-subtle/80 bg-surface text-text-secondary hover:border-border-strong',
                       )}
                     >
                       <span className="text-xs font-semibold">{opt.label}</span>
-                      <span className="text-eyebrow text-text-tertiary mt-0.5">{opt.hint}</span>
+                      <span className="text-caption text-text-tertiary mt-0.5">{opt.hint}</span>
                     </Button>
                   ))}
                 </div>
@@ -160,7 +160,7 @@ export function AddNoteDialog({
                   <label htmlFor="note-body" className="block text-xs font-medium text-text-secondary">
                     Body <span className="text-fw-danger">*</span>
                   </label>
-                  <span className="text-eyebrow text-text-tertiary tabular-nums">
+                  <span className="text-caption text-text-tertiary tabular-nums">
                     {body.length}/8000
                   </span>
                 </div>

@@ -32,12 +32,12 @@ export default function Loading() {
       <div className="relative z-10 flex flex-col items-center px-5 py-10 sm:py-14">
         {/* Logo lockup */}
         <div className="flex flex-col items-center gap-2 mb-6 sm:mb-8">
-          <div className="skeleton-shimmer bg-warm-900/10 h-10 w-36 rounded-lg" />
+          <div className="skeleton-shimmer bg-warm-900/10 h-10 w-36 rounded-fw-sm" />
         </div>
 
         {/* Headline + subcopy */}
         <div className="text-center mb-6 sm:mb-8 max-w-[380px] w-full space-y-3">
-          <div className="skeleton-shimmer bg-warm-900/10 h-7 w-full rounded-lg" />
+          <div className="skeleton-shimmer bg-warm-900/10 h-7 w-full rounded-fw-sm" />
           <div className="skeleton-shimmer bg-warm-900/10 h-4 w-11/12 mx-auto rounded" />
           <div className="skeleton-shimmer bg-warm-900/10 h-4 w-9/12 mx-auto rounded" />
         </div>
@@ -50,15 +50,15 @@ export default function Loading() {
         </div>
 
         {/* Request-access card: heading, sub, three fields, submit */}
-        <div className="w-full max-w-[420px] rounded-2xl p-6 sm:p-8 space-y-4">
+        <div className="w-full max-w-[420px] rounded-card p-6 sm:p-8 space-y-4">
           <div className="space-y-2 text-center mb-1">
             <div className="skeleton-shimmer bg-warm-900/10 h-5 w-40 mx-auto rounded" />
             <div className="skeleton-shimmer bg-warm-900/10 h-4 w-56 mx-auto rounded" />
           </div>
-          <div className="skeleton-shimmer bg-warm-900/10 h-10 w-full rounded-lg" />
-          <div className="skeleton-shimmer bg-warm-900/10 h-10 w-full rounded-lg" />
-          <div className="skeleton-shimmer bg-warm-900/10 h-10 w-full rounded-lg" />
-          <div className="skeleton-shimmer bg-warm-900/10 h-11 w-full rounded-xl mt-2" />
+          <div className="skeleton-shimmer bg-warm-900/10 h-10 w-full rounded-fw-sm" />
+          <div className="skeleton-shimmer bg-warm-900/10 h-10 w-full rounded-fw-sm" />
+          <div className="skeleton-shimmer bg-warm-900/10 h-10 w-full rounded-fw-sm" />
+          <div className="skeleton-shimmer bg-warm-900/10 h-11 w-full rounded-fw-sm mt-2" />
         </div>
       </div>
       <span className="sr-only">Loading the GolfHelm demo request form…</span>

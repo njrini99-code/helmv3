@@ -155,7 +155,7 @@ export class WarmupHoleGenerator extends BaseGenerator<WarmupHoleAggregate> {
     const lead = causes[0];
     const causeClause =
       agg.playerValue > 0 && lead && lead.pct > 0
-        ? ` ${r0(lead.pct)}% of those lost strokes are ${lead.label} — ${lead.action}.`
+        ? ` ${r0(lead.pct)}% of those lost strokes are ${lead.label}: ${lead.action}.`
         : '';
 
     const title = `Opening hole gap: ${deltaDisp} strokes vs round avg`;

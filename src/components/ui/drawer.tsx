@@ -17,13 +17,27 @@
 import * as React from 'react';
 import { Drawer as VaulDrawer } from 'vaul';
 import { cn } from '@/lib/utils';
-import { ModalPortalContext } from '@/components/fairway/overlays/_shared';
+import {
+  ModalPortalContext,
+  preventEscapeWhilePopupOpen,
+  useDialogFocus,
+} from '@/components/fairway/overlays/_shared';
 
 const Drawer = ({
   shouldScaleBackground = true,
+  // vaul defaults `autoFocus` to false and then cancels Radix's
+  // open-autofocus, so focus stayed on the page behind every drawer (audit
+  // 2026-09-23: Log progress). DrawerContent's useDialogFocus owns the policy
+  // (container focus on touch, so no keyboard pops on open).
+  autoFocus = true,
   ...props
 }: React.ComponentProps<typeof VaulDrawer.Root>) => (
-  <VaulDrawer.Root shouldScaleBackground={shouldScaleBackground} {...props} />
+  <VaulDrawer.Root
+    shouldScaleBackground={shouldScaleBackground}
+    // eslint-disable-next-line jsx-a11y/no-autofocus -- vaul's dialog-focus flag, not the HTML autofocus attribute
+    autoFocus={autoFocus}
+    {...props}
+  />
 );
 Drawer.displayName = 'Drawer';
 
@@ -46,7 +60,10 @@ DrawerOverlay.displayName = VaulDrawer.Overlay.displayName;
 const DrawerContent = React.forwardRef<
   React.ElementRef<typeof VaulDrawer.Content>,
   React.ComponentPropsWithoutRef<typeof VaulDrawer.Content> & { showHandle?: boolean }
->(({ className, children, showHandle = true, ...props }, forwardedRef) => {
+>(({ className, children, showHandle = true, onOpenAutoFocus, onCloseAutoFocus, onEscapeKeyDown, ...props }, forwardedRef) => {
+  // Focus into the drawer on open, back to the opener on close — composed
+  // with any caller handler (a caller's preventDefault still wins).
+  const focus = useDialogFocus({ onOpenAutoFocus, onCloseAutoFocus });
   // vaul's Drawer.Content wraps @radix-ui/react-dialog internally, so it
   // inherits the same trapped FocusScope (real-DOM-containment focus trap)
   // as ModalShell. Capture our own DOM node — via state, not a plain ref,
@@ -72,6 +89,12 @@ const DrawerContent = React.forwardRef<
       <DrawerOverlay />
       <VaulDrawer.Content
         ref={setRefs}
+        onOpenAutoFocus={focus.onOpenAutoFocus}
+        onCloseAutoFocus={focus.onCloseAutoFocus}
+        onEscapeKeyDown={(event) => {
+          onEscapeKeyDown?.(event);
+          if (!event.defaultPrevented) preventEscapeWhilePopupOpen(event, contentNode);
+        }}
         className={cn(
           // Pinned to the bottom edge, which is exactly where the soft keyboard
           // lands. The WebView never resizes for it (`resize: 'ionic'`, no
@@ -94,6 +117,9 @@ const DrawerContent = React.forwardRef<
           'fixed inset-x-0 bottom-[var(--keyboard-height,0px)] z-50 mt-24 flex h-auto flex-col rounded-t-3xl',
           'max-h-[calc(92dvh-var(--keyboard-height,0px))]',
           'transition-[bottom] duration-[250ms] motion-reduce:transition-none',
+          // Page rubber-band is ON; a scroll inside the drawer never chains
+          // to the page behind the scrim.
+          'overscroll-contain',
           // NO safe-area-inset-bottom pad here, deliberately. 11 of this
           // drawer's 23 call sites already apply their own (ExpenseForm,
           // CreateTaskModal, CreateItineraryModal, DrillSheet, …), so adding

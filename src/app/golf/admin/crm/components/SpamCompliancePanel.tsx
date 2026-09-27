@@ -71,13 +71,13 @@ export function SpamCompliancePanel({
   return (
     <div className="rounded-card border border-border-subtle border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-card)] overflow-clip">
       <div className="flex items-center gap-2 px-4 py-2.5 border-b border-border-subtle bg-surface-sunken/60">
-        <IconShieldCheck size={14} className="text-accent-600" aria-hidden />
+        <IconShieldCheck size={14} className="text-accent-ink" aria-hidden />
         <span className="text-xs font-semibold uppercase tracking-wider text-text-secondary">
           Spam compliance
         </span>
         <span
           className={cn(
-            'ml-auto inline-flex items-center gap-1 px-2 py-0.5 rounded-full border text-eyebrow font-semibold',
+            'ml-auto inline-flex items-center gap-1 px-2 py-0.5 rounded-full border text-caption font-semibold',
             verdictMeta.pillClass,
           )}
         >
@@ -113,7 +113,7 @@ export function SpamCompliancePanel({
           type="button"
           variant="ghost"
           onClick={() => setExpanded((v) => !v)}
-          className="h-auto p-0 text-eyebrow text-text-tertiary hover:text-text-secondary flex items-center gap-1"
+          className="h-auto p-0 text-caption text-text-tertiary hover:text-text-secondary flex items-center gap-1"
         >
           <IconChevronDown
             size={12}

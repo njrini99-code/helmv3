@@ -102,3 +102,14 @@ describe('FairwayHoleConfig — the baseline changes after mount', () => {
     expect(savedHoles(onSave)[0]!.yardage).toBe(333);
   });
 });
+
+describe('FairwayHoleConfig action dock', () => {
+  it('pins Back / Start round above the home indicator', () => {
+    renderEditor({ initialHoles: EIGHTEEN, holesPerRound: 18, onSave: vi.fn() });
+    const dock = screen.getByRole('button', { name: /start round/i }).closest('[data-slot="hole-config-dock"]');
+    expect(dock).not.toBeNull();
+    expect(dock!.className).toMatch(/\bsticky\b/);
+    expect(dock!.className).toMatch(/\bbottom-0\b/);
+    expect(dock!.className).toContain('safe-area-inset-bottom');
+  });
+});

@@ -103,10 +103,10 @@ function SelectRoot({
         aria-describedby={ariaDescribedBy}
         className={cn(
           "flex w-full items-center justify-between gap-2 font-fw-sans rounded-fw-sm",
-          "bg-surface-sunken border border-border-subtle text-text-primary text-left",
+          "bg-surface-sunken border border-border-control text-text-primary text-left",
           sizeClasses[size],
           "transition-[border-color,box-shadow] [transition-duration:var(--fw-dur-fast)] [transition-timing-function:var(--fw-ease-soft)]",
-          "hover:border-border-strong",
+          "hover:border-text-tertiary",
           "outline-none focus-visible:border-border-focus focus-visible:ring-2 focus-visible:ring-accent-500/70 focus-visible:ring-offset-1 focus-visible:ring-offset-canvas",
           "data-[popup-open]:border-border-focus",
           "data-[disabled]:cursor-not-allowed data-[disabled]:opacity-50",
@@ -165,7 +165,7 @@ export function SelectItem({
       {...props}
     >
       <BaseSelect.ItemText className="truncate">{children}</BaseSelect.ItemText>
-      <BaseSelect.ItemIndicator className="absolute right-2.5 flex items-center text-accent-600">
+      <BaseSelect.ItemIndicator className="absolute right-2.5 flex items-center text-accent-ink">
         <CheckGlyph />
       </BaseSelect.ItemIndicator>
     </BaseSelect.Item>

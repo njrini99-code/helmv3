@@ -203,20 +203,20 @@ export function RosterHealthHeader({
     <InstrumentPanel
       depth="raised"
       padding="lg"
-      header="Who needs your attention"
+      header={<h2 className="truncate font-fw-display text-h3 font-semibold leading-tight text-text-primary">Who needs your attention</h2>}
       as="section"
       className="flex flex-col gap-4"
     >
       {needs.length > 0 ? (
         <>
           <div className="flex flex-wrap items-end gap-x-3 gap-y-1">
-            <span className="font-fw-mono text-stat-lg font-semibold leading-none tabular-nums text-text-primary">
+            <span className="text-stat-lg font-semibold leading-none tabular-nums text-text-primary">
               {needs.length}
             </span>
             <span className="mb-2 font-fw-sans text-body-sm text-text-secondary">
               {noAreasYet
-                ? `player${needs.length === 1 ? '' : 's'} ready for a focus area — none set on this roster yet.`
-                : `player${needs.length === 1 ? '' : 's'} to look at — trending down or without a focus area.`}
+                ? `player${needs.length === 1 ? '' : 's'} ready for a focus area, none set on this roster yet.`
+                : `player${needs.length === 1 ? '' : 's'} to look at, trending down or without a focus area.`}
             </span>
           </div>
           <ul className="flex flex-col">
@@ -226,36 +226,40 @@ export function RosterHealthHeader({
                 className="border-t border-border-subtle py-2.5 first:border-t-0"
               >
                 {/* Shared identity; the warning reason is this surface's meta and
-                    the avg stat + "Add focus area" are its trailing affordances. */}
-                <PlayerIdentity
-                  name={playerName(row.player)}
-                  avatarUrl={row.player.avatar_url}
-                  size="sm"
-                  meta={
-                    <span className="font-fw-sans text-caption font-medium text-fw-warning-ink">
-                      {reason}
-                    </span>
-                  }
-                  trailing={
-                    <div className="flex items-center gap-1.5">
-                      {row.stats?.avg_score != null ? (
-                        <span className="hidden font-fw-mono text-caption tabular-nums text-text-tertiary sm:inline">
-                          {formatScoringAverage(row.stats.avg_score)} avg
-                        </span>
-                      ) : null}
-                      <Button variant="ghost" size="sm" onClick={() => onAdd(row.player.id)}>
-                        Add focus area
-                      </Button>
-                    </div>
-                  }
-                />
+                    the avg stat + "Add focus area" are its trailing affordances.
+                    LAYOUT-01: below 360px the action stacks under the name, so
+                    the name is not cut to four letters and the reason does not
+                    run into the button. */}
+                <div className="flex flex-col gap-1.5 min-[360px]:flex-row min-[360px]:items-center min-[360px]:gap-3">
+                  <PlayerIdentity
+                    name={playerName(row.player)}
+                    avatarUrl={row.player.avatar_url}
+                    size="sm"
+                    className="min-[360px]:flex-1"
+                    meta={
+                      <span className="font-fw-sans text-caption font-medium text-fw-warning-ink">
+                        {reason}
+                      </span>
+                    }
+                  />
+                  <div className="flex flex-shrink-0 items-center justify-end gap-1.5">
+                    {row.stats?.avg_score != null ? (
+                      <span className="hidden text-caption tabular-nums text-text-tertiary sm:inline">
+                        {formatScoringAverage(row.stats.avg_score)} avg
+                      </span>
+                    ) : null}
+                    <Button variant="ghost" size="sm" onClick={() => onAdd(row.player.id)}>
+                      Add focus area
+                    </Button>
+                  </div>
+                </div>
               </li>
             ))}
           </ul>
           {needs.length > NEEDS_ATTENTION_LIST_CAP ? (
             <span className="font-fw-sans text-caption text-text-tertiary">
               +{needs.length - NEEDS_ATTENTION_LIST_CAP} more player
-              {needs.length - NEEDS_ATTENTION_LIST_CAP === 1 ? '' : 's'} need a look — showing the top{' '}
+              {needs.length - NEEDS_ATTENTION_LIST_CAP === 1 ? '' : 's'} need a look, showing the top{' '}
               {NEEDS_ATTENTION_LIST_CAP} by priority.
             </span>
           ) : null}
@@ -263,14 +267,14 @@ export function RosterHealthHeader({
         </>
       ) : (
         <div className="flex flex-col gap-2">
-          <span className="font-fw-mono text-stat-lg font-semibold leading-none tabular-nums text-text-primary">
+          <span className="text-stat-lg font-semibold leading-none tabular-nums text-text-primary">
             {/* An em-dash, not a "0", when there is nothing to evaluate. Zero
                 reads as a measured result; this is the absence of measurement. */}
             {totalPlayers > 0 && playersWithRounds > 0 ? '0' : '—'}
           </span>
           <span className="font-fw-sans text-body-sm text-text-secondary">
             {totalPlayers === 0
-              ? 'Awaiting roster — add players to start tracking who needs attention.'
+              ? 'Awaiting roster. Add players to start tracking who needs attention.'
               : playersWithRounds === 0
                 ? // A roster with no rounds is not a covered roster. This branch
                   // used to fall through to the all-clear below, which is
@@ -278,8 +282,8 @@ export function RosterHealthHeader({
                   // to a coach as an assurance that their squad has been assessed.
                   // Shenandoah has 9 and 6 players and zero rounds between them,
                   // so the all-clear is the first thing both new coaches saw.
-                  'Nothing to assess yet — attention flags appear once players start logging rounds.'
-                : 'Roster’s covered — everyone with rounds has a focus area and no one’s trending down.'}
+                  'Nothing to assess yet. Attention flags appear once players start logging rounds.'
+                : 'Roster’s covered. Everyone with rounds has a focus area and no one’s trending down.'}
           </span>
           <span className="font-fw-sans text-caption text-text-tertiary">{coveredText}.</span>
         </div>
@@ -305,7 +309,7 @@ export function RosterHealthHeader({
     ) : (
       <InstrumentPanel
         depth="base"
-        header="Did the coaching land?"
+        header={<h2 className="truncate font-fw-display text-h3 font-semibold leading-tight text-text-primary">Did the coaching land?</h2>}
         className="flex h-full flex-col justify-center"
       >
         {/* The denominator was a hardcoded `need: 1`, which rendered

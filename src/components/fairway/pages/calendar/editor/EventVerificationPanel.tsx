@@ -145,7 +145,7 @@ export function EventVerificationPanel({
             aria-hidden
             className={cn(
               'grid h-8 w-8 shrink-0 place-items-center rounded-full',
-              state === 'verified' ? 'bg-accent-650 text-text-on-accent' : 'bg-fw-warning-bg text-fw-warning-ink',
+              state === 'verified' ? 'bg-accent-fill text-text-on-accent-fill' : 'bg-fw-warning-bg text-fw-warning-ink',
             )}
           >
             {state === 'verified' ? <Check className="h-4 w-4" aria-hidden /> : <AlertTriangle className="h-4 w-4" aria-hidden />}

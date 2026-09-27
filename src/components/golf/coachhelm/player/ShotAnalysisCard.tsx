@@ -4,14 +4,10 @@
  * ============================================================================
  * ShotAnalysisCard — the deep-dive shot instrument (Fairway rebuild, #969/#970/#972)
  * ----------------------------------------------------------------------------
- * #969 — the last piece of legacy chrome in the deep-dive tab: `Card
- * variant="overlay"`, raw divs, a bespoke inline SVG resilience ring. Rebuilt
- * in the Fairway kit (InstrumentPanel bezel + the `Dial` gauge primitive) to
- * match the rest of the cockpit.
- *
- * #970 — the old resilience ring drew its track with `stroke-warm-100`
- * (near-invisible on cream), so a partial fill read as a broken arc. `Dial`
- * always renders a visible faint track regardless of value.
+ * DD-01 — one ledger, no gauges: the approach bands are a DistanceLadder,
+ * Resilience is a number with its meaning in words (it used to be a Dial with
+ * no scale), dead zones are named rather than washed in red, and scrambling
+ * prints once.
  *
  * #972 — this card's `shotData` (getPlayerShotContext, coachhelm-data.ts,
  * 90-day default window) is a DIFFERENT loader/window than the cockpit's
@@ -22,15 +18,15 @@
  * its small-sample average happens to look worse.
  * ========================================================================== */
 
-import { cn } from '@/lib/utils';
 import { InstrumentPanel } from '@/components/fairway/instrument/InstrumentPanel';
-import { Dial } from '@/components/fairway/charts/Dial';
+import { DistanceLadder } from './DistanceLadder';
 import { InsufficientData } from '@/components/fairway/feedback/InsufficientData';
 import {
   formatShotContext,
   formatLie,
   formatDistanceRange,
 } from '@/lib/coachhelm/v2/shot-analysis/format';
+import { formatMetric, formatMetricText } from '@/lib/golf/metrics/display-registry';
 
 interface ShotAnalysisCardProps {
   // Typed props (used when data is pre-parsed)
@@ -72,23 +68,37 @@ interface ShotAnalysisCardProps {
 // a dramatic average. Stable-sorted below any band that clears the bar.
 const MIN_WEAKNESS_SAMPLE_SIZE = 8;
 
-function isDeadZone(
-  rangeStart: number,
-  rangeEnd: number,
-  deadZones: ShotAnalysisCardProps['deadZones']
-): boolean {
-  if (!deadZones) return false;
-  return deadZones.some(
-    (dz) => dz.rangeStart === rangeStart && dz.rangeEnd === rangeEnd
-  );
+/** getPlayerShotContext reads the last 90 days (its periodDays default). */
+const SCRAMBLE_WINDOW = 'last_90_days' as const;
+
+const RESILIENCE_FORMAT = new Intl.NumberFormat('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+
+/**
+ * Resilience (sequence-analysis.ts): 1.0 means a bad shot does not change the
+ * next one; below 1.0 the next shot gets worse, above it the player bounces
+ * back. Said in words so the number never stands alone (NUM-30).
+ */
+function resilienceWord(value: number): string {
+  if (value >= 1.05) return 'Bounces back after a bad shot';
+  if (value > 0.95) return 'A bad shot does not carry over';
+  return 'One bad shot tends to lead to another';
 }
 
-function getMaxAbsSG(buckets: ShotAnalysisCardProps['yardageCurve']): number {
-  if (!buckets?.buckets.length) return 1;
-  return Math.max(
-    ...buckets.buckets.map((b) => Math.abs(b.avgSG)),
-    0.1
-  );
+/**
+ * The engine's scramble rate (0–1 fraction, or a ScrambleAnalysis whose
+ * `.scrambleRate` is null with no attempts) as a 0–100 percent. Null stays
+ * null: no attempts is "no data", never 0%.
+ */
+export function resolveScramblePercent(raw: unknown): number | undefined {
+  const value =
+    typeof raw === 'object' && raw !== null
+      ? (raw as Record<string, unknown>).scrambleRate
+      : raw;
+  if (value == null) return undefined;
+  const n = Number(value);
+  if (!Number.isFinite(n)) return undefined;
+  // A value above 1 cannot be a fraction, so it is already a percent.
+  return n > 1 ? n : n * 100;
 }
 
 /**
@@ -129,29 +139,23 @@ export function ShotAnalysisCard({
     : rawResilience != null ? Number(rawResilience) : undefined;
   // Guard against NaN
   const safeResilience = parsedResilience != null && !isNaN(parsedResilience) ? parsedResilience : undefined;
-  // shotData.scrambleRate may be a ScrambleAnalysis object (with .scrambleRate field) or a raw number
-  const rawScramble = scrambleRate ?? shotData?.scrambleRate;
-  const rawScrambleValue = typeof rawScramble === 'object' && rawScramble !== null
-    ? Number((rawScramble as Record<string, unknown>).scrambleRate ?? 0)
-    : rawScramble != null ? Number(rawScramble) : undefined;
-  // scrambleRate from the engine is a 0-1 fraction; convert to 0-100 for display
-  const resolvedScrambleRate = rawScrambleValue != null && !isNaN(rawScrambleValue)
-    ? (rawScrambleValue <= 1 ? rawScrambleValue * 100 : rawScrambleValue)
-    : undefined;
-  // Same 0-1-fraction contract as scrambleRate above — teamScrambleRate is
-  // unwired today (no caller currently supplies it), but it shares the
-  // engine's 0-1 fraction and was missing the same *100 conversion, which
-  // would have rendered e.g. 0.62 as "team avg: 0.62%" the moment a caller
-  // wires it up (Package 11 follow-up).
-  const rawTeamScramble = teamScrambleRate ?? (shotData?.teamScrambleRate != null ? Number(shotData.teamScrambleRate) : undefined);
-  const resolvedTeamScrambleRate = rawTeamScramble != null && !isNaN(rawTeamScramble)
-    ? (rawTeamScramble <= 1 ? rawTeamScramble * 100 : rawTeamScramble)
-    : undefined;
+  // shotData.scrambleRate may be a ScrambleAnalysis object (with a
+  // .scrambleRate field that is NULL when there were no scramble attempts) or
+  // a raw number. Both are the engine's 0–1 fraction (calculateScrambleRate).
+  const resolvedScrambleRate = resolveScramblePercent(scrambleRate ?? shotData?.scrambleRate);
+  // Same 0–1 contract; unwired today (no caller supplies it).
+  const resolvedTeamScrambleRate = resolveScramblePercent(teamScrambleRate ?? shotData?.teamScrambleRate);
+  const scramble =
+    resolvedScrambleRate != null
+      ? formatMetric('scrambling_pct', resolvedScrambleRate, { window: SCRAMBLE_WINDOW })
+      : null;
+  const teamScramble =
+    resolvedTeamScrambleRate != null ? formatMetric('scrambling_pct', resolvedTeamScrambleRate) : null;
   const hasSomething = resolvedYardageCurve?.buckets?.length || resolvedWeaknesses?.length || safeResilience != null || resolvedScrambleRate != null;
 
   if (!hasSomething) {
     return (
-      <InstrumentPanel depth="base" className={className} eyebrow="Deep dive" header="Shot Analysis">
+      <InstrumentPanel depth="base" className={className} header="Shot analysis">
         <InsufficientData
           title="No shot analysis yet"
           description="Log more rounds to unlock shot insights."
@@ -161,7 +165,6 @@ export function ShotAnalysisCard({
     );
   }
 
-  const maxAbsSG = getMaxAbsSG(resolvedYardageCurve);
   // Only a genuinely negative avgSG is a weakness. The server-ranked list is
   // sorted ascending by severity but never filters out a positive average —
   // for a strong player where every context clears the sample-size bar, the
@@ -174,101 +177,14 @@ export function ShotAnalysisCard({
   const hasWeaknessData = !!resolvedWeaknesses?.length;
 
   return (
-    <InstrumentPanel depth="base" className={className} eyebrow="Deep dive" header="Shot Analysis">
+    <InstrumentPanel depth="base" className={className} header="Shot analysis">
       <div className="space-y-6">
-        {/* Yardage curve */}
         {resolvedYardageCurve?.buckets && resolvedYardageCurve.buckets.length > 0 && (
-          <div className="space-y-2">
-            <p className="text-body-sm font-medium text-text-secondary">Yardage Performance</p>
-            <div className="space-y-1.5">
-              {resolvedYardageCurve.buckets.map((bucket) => {
-                const isDead = isDeadZone(bucket.rangeStart, bucket.rangeEnd, resolvedDeadZones);
-                const barWidth = Math.abs(Number(bucket.avgSG ?? 0)) / maxAbsSG * 50;
-                const isPositive = Number(bucket.avgSG ?? 0) >= 0;
-
-                return (
-                  <div
-                    key={`${bucket.rangeStart}-${bucket.rangeEnd}`}
-                    className={cn(
-                      'flex items-center gap-2 rounded-fw-sm px-2 py-1.5',
-                      isDead && 'bg-fw-danger-bg'
-                    )}
-                  >
-                    <span className="w-20 shrink-0 font-fw-mono text-caption tabular-nums text-text-secondary">
-                      {bucket.rangeStart}-{bucket.rangeEnd}y
-                    </span>
-
-                    {/* Bar chart centered */}
-                    <div className="flex h-4 flex-1 items-center">
-                      <div className="flex w-1/2 justify-end">
-                        {!isPositive && (
-                          <div
-                            className="h-3 rounded-l-sm bg-fw-danger"
-                            style={{ width: `${barWidth}%` }}
-                          />
-                        )}
-                      </div>
-                      <div className="h-4 w-px shrink-0 bg-border-subtle" />
-                      <div className="w-1/2">
-                        {isPositive && (
-                          <div
-                            className="h-3 rounded-r-sm bg-accent-500"
-                            style={{ width: `${barWidth}%` }}
-                          />
-                        )}
-                      </div>
-                    </div>
-
-                    <span
-                      className={cn(
-                        'w-12 shrink-0 text-right font-fw-mono text-caption tabular-nums',
-                        isPositive ? 'text-fw-success-ink' : 'text-fw-danger-ink'
-                      )}
-                    >
-                      {isPositive ? '+' : ''}{Number(bucket.avgSG ?? 0).toFixed(2)}
-                    </span>
-
-                    <span className="w-8 shrink-0 text-right font-fw-mono text-caption tabular-nums text-text-tertiary">
-                      {bucket.shotCount}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
-            <div className="flex items-center justify-end gap-4 pt-1 text-caption text-text-tertiary">
-              <span>SG = Strokes Gained</span>
-              <span># = Shots</span>
-            </div>
-          </div>
-        )}
-
-        {/* Dead zones callout — always rendered when we have yardage data, so
-            a strong player sees a positive confirmation rather than the
-            section silently disappearing. */}
-        {resolvedYardageCurve?.buckets && resolvedYardageCurve.buckets.length > 0 && (
-          resolvedDeadZones && resolvedDeadZones.length > 0 ? (
-            <div className="rounded-fw-md border border-border-subtle bg-fw-danger-bg px-3 py-2.5">
-              <p className="mb-1 text-caption font-medium text-fw-danger-ink">Dead Zones</p>
-              <div className="flex flex-wrap gap-x-3 gap-y-1">
-                {resolvedDeadZones.map((dz) => (
-                  <span
-                    key={`${dz.rangeStart}-${dz.rangeEnd}`}
-                    className="inline-flex items-center gap-1 font-fw-mono text-caption tabular-nums text-fw-danger-ink"
-                  >
-                    {dz.rangeStart}-{dz.rangeEnd}y
-                    <span className="opacity-80">({Number(dz.deficit ?? 0).toFixed(2)} deficit)</span>
-                  </span>
-                ))}
-              </div>
-            </div>
-          ) : (
-            <div className="rounded-fw-md border border-border-subtle bg-fw-success-bg px-3 py-2.5">
-              <p className="mb-0.5 text-caption font-medium text-fw-success-ink">No dead zones</p>
-              <p className="text-caption text-text-secondary">
-                Yardage performance is consistent, no distance range is bleeding strokes.
-              </p>
-            </div>
-          )
+          <DistanceLadder
+            bands={resolvedYardageCurve.buckets}
+            deadZones={resolvedDeadZones}
+            windowLabel="last 90 days"
+          />
         )}
 
         {/* Top weaknesses — always rendered when we have weakness data, so a
@@ -276,11 +192,14 @@ export function ShotAnalysisCard({
             confirmation instead of the section silently disappearing. */}
         {hasWeaknessData && (
           <div className="space-y-2">
-            <p className="text-body-sm font-medium text-text-secondary">Key Weaknesses</p>
+            <p className="text-body-sm font-medium text-text-primary">Key weaknesses</p>
+            {/* NUM-27: these counts are shot-tracked shots over the last 90
+                days, not the all-rounds putting attempts Stats shows. */}
+            <p className="text-caption text-text-secondary">Shot-tracked shots, last 90 days.</p>
             {topWeaknesses.length === 0 ? (
-              <div className="rounded-fw-md border border-border-subtle bg-fw-success-bg px-3 py-2.5">
+              <div className="rounded-fw-md border border-border-subtle bg-surface-sunken px-3 py-2.5">
                 <p className="text-caption text-text-secondary">
-                  No net-negative contexts — every tracked situation is at or above par.
+                  No net-negative contexts. Every tracked situation is at or above par.
                 </p>
               </div>
             ) : (
@@ -306,10 +225,10 @@ export function ShotAnalysisCard({
                       </p>
                     </div>
                     <div className="ml-3 shrink-0 text-right">
-                      <p className="font-fw-mono text-body-sm font-medium tabular-nums text-fw-danger-ink">
-                        {Number(weakness.avgSG ?? 0).toFixed(2)}
+                      <p className="text-body-sm font-medium tabular-nums text-fw-danger-ink">
+                        {formatMetricText('sg_total', Number(weakness.avgSG ?? 0))}
                       </p>
-                      <p className="font-fw-mono text-caption tabular-nums text-text-tertiary">
+                      <p className="text-caption tabular-nums text-text-tertiary">
                         {weakness.shotCount} shots
                       </p>
                     </div>
@@ -324,45 +243,45 @@ export function ShotAnalysisCard({
         {/* Bottom row: Resilience + Scramble */}
         {(safeResilience != null || resolvedScrambleRate != null) && (
           <div className="grid grid-cols-1 gap-3 border-t border-border-subtle pt-4 sm:grid-cols-2">
-            {/* Resilience */}
+            {/* Resilience: the number with its meaning, no gauge (DD-01). */}
             {safeResilience != null && (
-              <div className="flex items-center gap-3 rounded-fw-md border border-border-subtle bg-surface-sunken p-3">
-                <Dial
-                  label="Resilience"
-                  value={Math.min(Number(safeResilience ?? 0) / 2, 1)}
-                  benchmark={0.5}
-                  goodDirection="up"
-                  valueFormatter={() => Number(safeResilience ?? 0).toFixed(1)}
-                  size={88}
-                />
-                <p
-                  className={cn(
-                    'text-caption font-medium',
-                    Number(safeResilience ?? 0) >= 1.0 ? 'text-fw-success-ink' : 'text-fw-warning-ink'
-                  )}
-                >
-                  {Number(safeResilience ?? 0) >= 1.0 ? 'Good recovery' : 'Compounds errors'}
+              <div
+                className="rounded-fw-md border border-border-subtle bg-surface-sunken p-3"
+                data-slot="deep-dive-resilience"
+              >
+                <p className="text-body-sm font-medium text-text-primary">Resilience</p>
+                <p className="text-caption text-text-secondary">
+                  <span className="text-body font-semibold tabular-nums text-text-primary">
+                    {RESILIENCE_FORMAT.format(safeResilience)}
+                  </span>{' '}
+                  {resilienceWord(safeResilience)}
                 </p>
+                <p className="mt-0.5 text-caption text-text-tertiary">1.0 means a bad shot does not change the next one.</p>
               </div>
             )}
 
-            {/* Scramble rate */}
-            {resolvedScrambleRate != null && (
-              <div className="flex items-center gap-3 rounded-fw-md border border-border-subtle bg-surface-sunken p-3">
-                <div className="grid h-12 w-12 shrink-0 place-items-center rounded-fw-md bg-accent-50 text-accent-700">
-                  <span className="font-fw-mono text-caption font-semibold tabular-nums">
-                    {Number(resolvedScrambleRate ?? 0).toFixed(0)}%
-                  </span>
-                </div>
+            {/* Scramble rate: ONE readout (the duplicated box + line is gone,
+                DD-01), with its window named. This is the live 90-day read
+                (calculateScrambleRate); Stats and the Fingerprint show the
+                all-rounds cache value, so the chip is what keeps the two
+                numbers from reading as a contradiction (NUM-20). */}
+            {scramble != null && !scramble.missing && (
+              <div
+                className="flex items-center gap-3 rounded-fw-md border border-border-subtle bg-surface-sunken p-3"
+                data-slot="deep-dive-scramble"
+              >
                 <div>
-                  <p className="text-body-sm font-medium text-text-primary">Scramble Rate</p>
+                  <p className="text-body-sm font-medium text-text-primary">
+                    {scramble.label}
+                    {scramble.windowChip ? ` · ${scramble.windowChip}` : ''}
+                  </p>
                   <p className="text-caption text-text-secondary">
-                    <span className="font-fw-mono font-medium tabular-nums text-text-primary">
-                      {Number(resolvedScrambleRate ?? 0).toFixed(0)}%
+                    <span className="text-body font-semibold tabular-nums text-text-primary">
+                      {scramble.text}
                     </span>
-                    {resolvedTeamScrambleRate != null && (
-                      <span className="text-text-tertiary">
-                        {' '}(team avg: {resolvedTeamScrambleRate}%)
+                    {teamScramble != null && !teamScramble.missing && (
+                      <span className="text-text-secondary">
+                        {' '}(team avg: {teamScramble.text})
                       </span>
                     )}
                   </p>

@@ -103,7 +103,7 @@ export function FairwayAvailabilityList({
   const commonSection =
     commonFreeWindows && commonFreeWindows.length > 0 ? (
       <section className="flex flex-col gap-2.5">
-        <h3 className="flex items-center gap-1.5 font-fw-sans text-eyebrow font-semibold uppercase tracking-[0.1em] text-text-tertiary">
+        <h3 className="flex items-center gap-1.5 font-fw-sans text-body-sm font-semibold text-text-primary">
           <Users className="h-3.5 w-3.5" aria-hidden />
           Common free time
         </h3>
@@ -136,7 +136,7 @@ export function FairwayAvailabilityList({
           variant="subtle"
           icon={CalendarCheck}
           title="No scheduled time"
-          description="The selected players have nothing on the books in this window — likely all free."
+          description="The selected players have nothing on the books in this window, likely all free."
         />
       </div>
     );
@@ -147,7 +147,7 @@ export function FairwayAvailabilityList({
       {commonSection}
       {buckets.map(({ date, items }) => (
         <section key={format(date, 'yyyy-MM-dd')} className="flex flex-col gap-2.5">
-          <h3 className="font-fw-sans text-eyebrow font-semibold uppercase tracking-[0.1em] text-text-tertiary">
+          <h3 className="font-fw-sans text-body-sm font-semibold text-text-primary">
             {dayLabel(date, nowRef)}
           </h3>
           <div className="flex flex-col gap-2">

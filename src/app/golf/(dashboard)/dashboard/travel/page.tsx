@@ -13,7 +13,7 @@ import { ViewHeader, Surface, EmptyState, Button } from '@/components/fairway';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 
 export const metadata: Metadata = {
-  title: 'Travel | Helm Golf',
+  title: 'Travel',
   description: 'Track tournament travel, manage logistics, and coordinate team itineraries for your golf program.',
 };
 
@@ -75,7 +75,7 @@ export default async function GolfTravelPage({ searchParams }: GolfTravelPagePro
           <ViewHeader
             eyebrow="Travel"
             title="Trips on the calendar."
-            description="Travel itineraries live with your team — join one to see and manage trips."
+            description="Travel itineraries live with your team. Join one to see and manage trips."
           />
           <div className="mt-8">
             <Surface elevation="shadow" padding="lg">

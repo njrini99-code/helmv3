@@ -74,6 +74,20 @@ describe('StandingDrill — Strokes Gained instrument group', () => {
     expect(pins).toHaveLength(5);
   });
 
+  it('renders the SG instrument on the shared frosted light surface with light tracks and signed ink', () => {
+    const { container } = render(
+      <StandingDrill standingRows={sgStandingRows()} standingViewerContext="self" />,
+    );
+    const instrument = container.querySelector('[data-slot="sg-instrument"]')!;
+    expect(instrument.className).toMatch(/backdrop-blur/);
+    expect(instrument.className).not.toMatch(/from-accent-900/);
+    const tracks = instrument.querySelectorAll('[data-slot="standing-track"]');
+    expect(tracks.length).toBe(5);
+    tracks.forEach((t) => expect(t).toHaveAttribute('data-tone', 'light'));
+    expect(screen.getByText('−0.30').className).toMatch(/text-fw-danger-ink/);
+    expect(screen.getByText('+0.42').className).toMatch(/text-accent-ink/);
+  });
+
   it('never renders the SG metrics a second time in the generic per-category StandingStrip grid', () => {
     render(<StandingDrill standingRows={sgStandingRows()} standingViewerContext="self" />);
     // "SG: Total" appears exactly once (inside the instrument) — the old

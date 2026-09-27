@@ -633,6 +633,7 @@ const inFlightRoundReviews = new Map<string, Promise<GenerateReviewResult>>();
 async function generateAndStoreRoundReviewImpl(
   roundId: string,
   playerId: string,
+  options?: { ifMissing?: boolean },
 ): Promise<GenerateReviewResult> {
   const supabase = await createClient();
 
@@ -667,6 +668,14 @@ async function generateAndStoreRoundReviewImpl(
     .select('id')
     .eq('round_id', roundId)
     .maybeSingle();
+  // DATA-05 (owner, 2026-09-24): the review page auto-generates on open, so
+  // that call is idempotent: when a review already exists it is returned as
+  // stored, never recomputed or overwritten. Only an explicit Refresh
+  // (no `ifMissing`) regenerates.
+  if (options?.ifMissing && existingReviewRow && !existingReviewError) {
+    const stored = await getRoundReviewImpl(roundId);
+    if (stored.success && stored.review) return { success: true, review: stored.review };
+  }
   if (existingReviewError || existingReviewRow) {
     const rateLimit = await gateCoachHelmEngineCall(user.id);
     if (!rateLimit.allowed) {
@@ -715,8 +724,12 @@ const observedGenerateAndStoreRoundReview = withAdminObserved(
   generateAndStoreRoundReviewImpl,
 );
 
-export async function generateAndStoreRoundReview(roundId: string, playerId: string): Promise<GenerateReviewResult> {
-  return observedGenerateAndStoreRoundReview(roundId, playerId);
+export async function generateAndStoreRoundReview(
+  roundId: string,
+  playerId: string,
+  options?: { ifMissing?: boolean },
+): Promise<GenerateReviewResult> {
+  return observedGenerateAndStoreRoundReview(roundId, playerId, options);
 }
 
 /**

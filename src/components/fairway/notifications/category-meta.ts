@@ -11,7 +11,7 @@ import {
   CalendarClock,
   Megaphone,
   ListChecks,
-  Sparkles,
+  Lightbulb,
   UserPlus,
   Eye,
   Bell,
@@ -27,7 +27,7 @@ export const CATEGORY_ICON: Record<NotificationCategoryId, LucideIcon> = {
   events: CalendarClock,
   announcements: Megaphone,
   tasks: ListChecks,
-  coachhelm: Sparkles,
+  coachhelm: Lightbulb,
   pipeline: UserPlus,
   profile_views: Eye,
 };

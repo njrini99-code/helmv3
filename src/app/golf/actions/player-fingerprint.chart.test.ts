@@ -23,7 +23,7 @@ import { describe, it, expect, vi } from 'vitest';
 function createChain(data: unknown, error: unknown = null) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const chain: Record<string, any> = {};
-  const methods = ['select', 'eq', 'not', 'order', 'limit'];
+  const methods = ['select', 'eq', 'not', 'order', 'limit', 'in', 'range'];
   for (const method of methods) {
     chain[method] = vi.fn(() => chain);
   }

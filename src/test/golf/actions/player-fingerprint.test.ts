@@ -28,7 +28,7 @@ vi.mock('@/lib/supabase/server', () => ({
 
 type VerifyReason = 'self' | 'coach' | 'denied';
 const verifyPlayerAccessMock = vi.fn(
-  async (): Promise<{ allowed: boolean; reason?: VerifyReason }> => ({
+  async (): Promise<{ allowed: boolean; reason?: VerifyReason; coachId?: string }> => ({
     allowed: true,
     reason: 'coach',
   }),
@@ -122,6 +122,10 @@ interface SupabaseMockOpts {
   stats?: Queued<Record<string, unknown> | null>;
   rounds?: Queued<Array<Record<string, unknown>>>;
   patterns?: Queued<Array<Record<string, unknown>>>;
+  /** `golf_round_stats_cache` rows for the countable-round SG. When omitted the
+   *  read fails, so the loader falls back to the cached sg_*_per_round (the
+   *  behaviour the older fixtures below assert). */
+  roundStats?: Queued<Array<Record<string, unknown>>>;
   /** `golf_insight_player_feedback` rows with `rating='dismissed'` — only
    *  consulted by the aggregator when `access.reason === 'self'`. */
   dismissedFeedback?: Queued<Array<{ insight_id: string }>>;
@@ -139,9 +143,12 @@ function makeSupabaseMock(opts: SupabaseMockOpts) {
   const statsResponse = opts.stats ?? { data: null, error: null };
   const roundsResponse = opts.rounds ?? { data: [], error: null };
   const patternsResponse = opts.patterns ?? { data: [], error: null };
+  const roundStatsResponse = opts.roundStats ?? { data: null, error: { message: 'not mocked' } };
   const dismissedFeedbackResponse = opts.dismissedFeedback ?? { data: [], error: null };
+  const patternsIn = vi.fn().mockResolvedValue(patternsResponse);
 
   return {
+    _patternsIn: patternsIn,
     auth: {
       getUser: vi.fn(async () => ({
         data: { user: opts.userId ? { id: opts.userId } : null },
@@ -178,14 +185,25 @@ function makeSupabaseMock(opts: SupabaseMockOpts) {
           not: vi.fn().mockReturnThis(),
           order: vi.fn().mockReturnThis(),
           limit: vi.fn().mockResolvedValue(roundsResponse),
+          // Paginated all-rounds read for the countable-round SG.
+          range: vi.fn().mockResolvedValue(roundsResponse),
         };
       }
-      if (table === 'golf_patterns_v2') {
+      if (table === 'golf_round_stats_cache') {
         return {
           select: vi.fn().mockReturnThis(),
           eq: vi.fn().mockReturnThis(),
           order: vi.fn().mockReturnThis(),
-          limit: vi.fn().mockResolvedValue(patternsResponse),
+          range: vi.fn().mockResolvedValue(roundStatsResponse),
+        };
+      }
+      if (table === 'golf_patterns_v2') {
+        // Terminal `.in('severity', ['critical','high'])`: the same severe-
+        // pattern read Team Stats and getPlayerProfile use (OD-02 parity).
+        return {
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockReturnThis(),
+          in: patternsIn,
         };
       }
       if (table === 'golf_insight_player_feedback') {
@@ -342,7 +360,7 @@ describe('getPlayerFingerprint', () => {
       },
       rounds: {
         data: [
-          { id: 'r1', round_date: '2026-04-20', total_score: 77, score_to_par: 5, course_name: null, holes_played: 18, round_type: 'practice' },
+          { id: 'r1', round_date: '2026-04-20', total_score: 77, score_to_par: 5, course_name: null, holes_played: 18, front_nine: 38, back_nine: 39, total_putts: null, round_type: 'practice' },
         ],
         error: null,
       },
@@ -350,8 +368,9 @@ describe('getPlayerFingerprint', () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const result = await getPlayerFingerprint('p-1', sb as any);
     expect(result).not.toBeNull();
-    // 80 - (5 * 3) = 65 — derived from the ROUND, not scoring_average_vs_par.
-    expect(result!.composite.rating).toBe(65);
+    // Form curve at +5 = 67 (OD-02; the old linear line gave 65), derived
+    // from the ROUND, not scoring_average_vs_par.
+    expect(result!.composite.rating).toBe(67);
     expect(result!.composite.rounds_in_calculation).toBe(1);
     // A single round can't establish a windowed trend — honest 'flat', not the
     // stats-cache last_5/last_10 delta the old formula would have used.
@@ -391,8 +410,8 @@ describe('getPlayerFingerprint', () => {
       },
       rounds: {
         data: [
-          { id: 'r1', round_date: '2026-04-20', total_score: 74, score_to_par: 2, course_name: null, holes_played: 18, round_type: 'tournament' },
-          { id: 'r2', round_date: '2026-04-21', total_score: 76, score_to_par: 4, course_name: null, holes_played: 18, round_type: 'tournament' },
+          { id: 'r1', round_date: '2026-04-20', total_score: 74, score_to_par: 2, course_name: null, holes_played: 18, front_nine: 37, back_nine: 37, total_putts: null, round_type: 'tournament' },
+          { id: 'r2', round_date: '2026-04-21', total_score: 76, score_to_par: 4, course_name: null, holes_played: 18, front_nine: 38, back_nine: 38, total_putts: null, round_type: 'tournament' },
         ],
         error: null,
       },
@@ -406,6 +425,60 @@ describe('getPlayerFingerprint', () => {
     expect(result!.metrics_rounds).toBe(18);
   });
 
+  it('leaves a partial / implausible round out of the composite (the 37-stroke "18-hole" round)', async () => {
+    // Prod round 91301a75: declared 18 holes, 37 strokes (−35). It sat in the
+    // last five rounds and clamped the composite to 100.
+    const sb = makeSupabaseMock({
+      userId: 'u-1',
+      stats: { data: null, error: null },
+      rounds: {
+        data: [
+          { id: 'bad', round_date: '2026-04-23', total_score: 37, score_to_par: -35, course_name: null, holes_played: 18, front_nine: 19, back_nine: 18, total_putts: 18, round_type: 'practice' },
+          { id: 'holeless', round_date: '2026-04-22', total_score: 73, score_to_par: 1, course_name: null, holes_played: 18, front_nine: null, back_nine: null, total_putts: null, round_type: 'qualifier' },
+          { id: 'r1', round_date: '2026-04-21', total_score: 76, score_to_par: 4, course_name: null, holes_played: 18, front_nine: 38, back_nine: 38, total_putts: null, round_type: 'tournament' },
+          { id: 'r2', round_date: '2026-04-20', total_score: 74, score_to_par: 2, course_name: null, holes_played: 18, front_nine: 37, back_nine: 37, total_putts: null, round_type: 'tournament' },
+        ],
+        error: null,
+      },
+    });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const result = await getPlayerFingerprint('p-1', sb as any);
+    expect(result!.composite.rounds_in_calculation).toBe(2);
+    // Form curve at mean(4, 2) = +3 → 73 (OD-02; old line 71), not the 100
+    // the −35 round produced.
+    expect(result!.composite.rating).toBe(73);
+  });
+
+  it('takes SG from countable rounds, not the cache that includes the 37-stroke round', async () => {
+    const stat = (round_id: string, tee: number) => ({
+      round_id, birdies: 2, eagles: 0, total_putts: 32, three_putts: 1,
+      fairways_hit: 7, fairways_total: 14, greens_hit: 9, greens_total: 18,
+      scramble_attempts: 9, scrambles_converted: 3,
+      strokes_gained_total: tee, strokes_gained_tee: tee, strokes_gained_approach: 0,
+      strokes_gained_around_green: 0, strokes_gained_putting: 0,
+    });
+    const sb = makeSupabaseMock({
+      userId: 'u-1',
+      // The cache's value is poisoned by the bad round.
+      stats: { data: { rounds_in_calculation: 3, sg_tee_per_round: 5.0 }, error: null },
+      rounds: {
+        data: [
+          { id: 'bad', round_date: '2026-04-23', status: 'completed', total_score: 37, score_to_par: -35, course_name: null, holes_played: 18, front_nine: 19, back_nine: 18, total_putts: 18, round_type: 'practice' },
+          { id: 'r1', round_date: '2026-04-21', status: 'completed', total_score: 76, score_to_par: 4, course_name: null, holes_played: 18, front_nine: 38, back_nine: 38, total_putts: null, round_type: 'tournament' },
+          { id: 'r2', round_date: '2026-04-20', status: 'completed', total_score: 74, score_to_par: 2, course_name: null, holes_played: 18, front_nine: 37, back_nine: 37, total_putts: null, round_type: 'tournament' },
+        ],
+        error: null,
+      },
+      roundStats: { data: [stat('bad', 14), stat('r1', -1.5), stat('r2', -0.5)], error: null },
+    });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const result = await getPlayerFingerprint('p-1', sb as any);
+    const tee = result!.sections.tee.metrics.find((m) => m.label === 'SG: Tee');
+    // mean(-1.5, -0.5) over the two countable rounds; the bad round's +14 and
+    // the cache's +5.0 are both ignored.
+    expect(tee?.value).toBe('-1.0');
+  });
+
   it('falls back to the fetched-round count when the stats cache has no sample', async () => {
     // Mirrors `buildSections`' own `?? rounds.length`: with no cache row the
     // section metrics are derived from the rounds themselves, so that is the
@@ -415,9 +488,9 @@ describe('getPlayerFingerprint', () => {
       stats: { data: null, error: null },
       rounds: {
         data: [
-          { id: 'r1', round_date: '2026-04-20', total_score: 74, score_to_par: 2, course_name: null, holes_played: 18, round_type: 'tournament' },
-          { id: 'r2', round_date: '2026-04-21', total_score: 76, score_to_par: 4, course_name: null, holes_played: 18, round_type: 'tournament' },
-          { id: 'r3', round_date: '2026-04-22', total_score: 75, score_to_par: 3, course_name: null, holes_played: 18, round_type: 'tournament' },
+          { id: 'r1', round_date: '2026-04-20', total_score: 74, score_to_par: 2, course_name: null, holes_played: 18, front_nine: 37, back_nine: 37, total_putts: null, round_type: 'tournament' },
+          { id: 'r2', round_date: '2026-04-21', total_score: 76, score_to_par: 4, course_name: null, holes_played: 18, front_nine: 38, back_nine: 38, total_putts: null, round_type: 'tournament' },
+          { id: 'r3', round_date: '2026-04-22', total_score: 75, score_to_par: 3, course_name: null, holes_played: 18, front_nine: 37, back_nine: 38, total_putts: null, round_type: 'tournament' },
         ],
         error: null,
       },
@@ -429,10 +502,10 @@ describe('getPlayerFingerprint', () => {
 
   it('derives composite rating from recent rounds when stats cache is empty', async () => {
     const rounds = [
-      { id: 'r1', round_date: '2026-04-20', total_score: 76, course_par: 72, score_to_par: 4, course_name: null, holes_played: 18, round_type: 'practice' },
-      { id: 'r2', round_date: '2026-04-15', total_score: 78, course_par: 72, score_to_par: 6, course_name: null, holes_played: 18, round_type: 'practice' },
-      { id: 'r3', round_date: '2026-04-10', total_score: 74, course_par: 72, score_to_par: 2, course_name: null, holes_played: 18, round_type: 'practice' },
-      { id: 'r4', round_date: '2026-04-05', total_score: 80, course_par: 72, score_to_par: 8, course_name: null, holes_played: 18, round_type: 'practice' },
+      { id: 'r1', round_date: '2026-04-20', total_score: 76, course_par: 72, score_to_par: 4, course_name: null, holes_played: 18, front_nine: 38, back_nine: 38, total_putts: null, round_type: 'practice' },
+      { id: 'r2', round_date: '2026-04-15', total_score: 78, course_par: 72, score_to_par: 6, course_name: null, holes_played: 18, front_nine: 39, back_nine: 39, total_putts: null, round_type: 'practice' },
+      { id: 'r3', round_date: '2026-04-10', total_score: 74, course_par: 72, score_to_par: 2, course_name: null, holes_played: 18, front_nine: 37, back_nine: 37, total_putts: null, round_type: 'practice' },
+      { id: 'r4', round_date: '2026-04-05', total_score: 80, course_par: 72, score_to_par: 8, course_name: null, holes_played: 18, front_nine: 40, back_nine: 40, total_putts: null, round_type: 'practice' },
     ];
     const sb = makeSupabaseMock({
       userId: 'u-1',
@@ -441,9 +514,17 @@ describe('getPlayerFingerprint', () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const result = await getPlayerFingerprint('p-1', sb as any);
     expect(result).not.toBeNull();
-    // avg score_to_par = (4+6+2+8)/4 = 5 → 80 - 15 = 65.
-    expect(result!.composite.rating).toBe(65);
+    // avg score_to_par = (4+6+2+8)/4 = 5 → Form curve 67 (OD-02; old line 65).
+    expect(result!.composite.rating).toBe(67);
     expect(result!.composite.rounds_in_calculation).toBe(4);
+  });
+
+  it('reads the coach feed as the matched golf_coaches.id so exposure dedupes with Scouting (DATA-16)', async () => {
+    verifyPlayerAccessMock.mockResolvedValueOnce({ allowed: true, reason: 'coach', coachId: 'coach-row-1' });
+    const sb = makeSupabaseMock({ userId: 'u-1' });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await getPlayerFingerprint('p-1', sb as any);
+    expect(getInsightsForCoachMock).toHaveBeenCalledWith('coach-row-1', { player_id: 'p-1', limit: 40 }, sb);
   });
 
   it('penalizes active severe patterns in the composite (mirrors the Scouting Report tab)', async () => {
@@ -451,7 +532,7 @@ describe('getPlayerFingerprint', () => {
       userId: 'u-1',
       rounds: {
         data: [
-          { id: 'r1', round_date: '2026-04-20', total_score: 72, score_to_par: 0, course_name: null, holes_played: 18, round_type: 'practice' },
+          { id: 'r1', round_date: '2026-04-20', total_score: 72, score_to_par: 0, course_name: null, holes_played: 18, front_nine: 36, back_nine: 36, total_putts: null, round_type: 'practice' },
         ],
         error: null,
       },
@@ -465,6 +546,10 @@ describe('getPlayerFingerprint', () => {
     expect(result).not.toBeNull();
     // 80 (even par) - 10 (two severe patterns) = 70.
     expect(result!.composite.rating).toBe(70);
+    // OD-02 input parity: only critical/high patterns, no limit, same as
+    // Team Stats and getPlayerProfile.
+    expect(sb._patternsIn).toHaveBeenCalledWith('severity', ['critical', 'high']);
+    expect(result!.composite.form.quality).toBe('early');
   });
 
   it('marks sections as sparse when there are no metrics + no rounds', async () => {
@@ -507,8 +592,8 @@ describe('getPlayerFingerprint', () => {
       makeInsight({ id: 'i-1', category: 'putting', updated_at: '2026-04-15T12:00:00.000Z' }),
     ]);
     const rounds = [
-      { id: 'r1', round_date: '2026-04-20', total_score: 76, course_par: 72, score_to_par: 4, course_name: 'A', holes_played: 18, round_type: 'practice' },
-      { id: 'r2', round_date: '2026-04-15', total_score: 78, course_par: 72, score_to_par: 6, course_name: 'B', holes_played: 18, round_type: 'practice' },
+      { id: 'r1', round_date: '2026-04-20', total_score: 76, course_par: 72, score_to_par: 4, course_name: 'A', holes_played: 18, front_nine: 38, back_nine: 38, total_putts: null, round_type: 'practice' },
+      { id: 'r2', round_date: '2026-04-15', total_score: 78, course_par: 72, score_to_par: 6, course_name: 'B', holes_played: 18, front_nine: 39, back_nine: 39, total_putts: null, round_type: 'practice' },
     ];
     const sb = makeSupabaseMock({
       userId: 'u-1',

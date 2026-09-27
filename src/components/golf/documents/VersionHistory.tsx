@@ -3,7 +3,7 @@
 import { useState, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import { ConfirmAlert } from '@/components/fairway/overlays/ConfirmAlert';
 import { cn } from '@/lib/utils';
 import { formatFileSize, type DocumentVersion, type GolfDocument } from '@/lib/types/golf';
 import { revertToVersion } from '@/app/golf/actions/documents';
@@ -174,7 +174,7 @@ export function VersionHistory({
                         </div>
 
                         {/* Actions */}
-                        <div className="flex items-center gap-1 ml-4 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
+                        <div className="flex items-center gap-1 ml-4 opacity-100 md:opacity-0 md:group-hover:opacity-100 md:group-focus-within:opacity-100 [@media(hover:none)]:opacity-100 transition-opacity">
                           {onPreviewVersion && (
                             <Button
                               variant="ghost"
@@ -225,7 +225,7 @@ export function VersionHistory({
       </Card>
 
       {/* Revert Confirmation Dialog */}
-      <ConfirmDialog
+      <ConfirmAlert
         open={showRevertDialog}
         onCancel={() => setShowRevertDialog(false)}
         onConfirm={handleConfirmRevert}

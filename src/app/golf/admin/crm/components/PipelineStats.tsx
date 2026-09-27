@@ -95,7 +95,7 @@ export function PipelineStats({ coaches, statusConfig }: PipelineStatsProps) {
                   {/* Progress bar */}
                   <div className="mt-3 h-1.5 bg-surface-sunken rounded-full overflow-hidden">
                     <div
-                      className={cn('h-full rounded-full transition-all duration-500', config.gradient)}
+                      className={cn('h-full rounded-full transition-[width] duration-500', config.gradient)}
                       style={{ width: `${width}%` }}
                     />
                   </div>

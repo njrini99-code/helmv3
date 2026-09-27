@@ -240,7 +240,7 @@ export class CausalEngine {
         getCauseValue: (r: RoundData) => r.total_gir ?? null,
         getEffectValue: (r: RoundData) => r.total_putts ?? null,
         mechanism:
-          'Putts per round is confounded by greens hit — a player who misses greens chips close and 1-putts for bogey, so a low putt count can mask poor iron play rather than show good putting (research: traditional-stat interaction effects)',
+          'Putts per round is confounded by greens hit: a player who misses greens chips close and 1-putts for bogey, so a low putt count can mask poor iron play rather than show good putting (research: traditional-stat interaction effects)',
       },
     ];
   }

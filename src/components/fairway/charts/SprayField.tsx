@@ -44,7 +44,7 @@
  * ========================================================================== */
 
 import * as React from 'react';
-import { motion, useReducedMotion } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { ChartTooltip } from './ChartTooltip';
 import { TABULAR_NUMS, VIZ_CHROME, VIZ_COLOR } from './theme';
@@ -54,6 +54,7 @@ import type {
   SprayChartShotGroup,
   SprayChartSummaryBand,
 } from '@/app/golf/actions/stats-data-types';
+import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
 
 export interface SprayFieldProps {
   group: SprayChartShotGroup | null;
@@ -309,7 +310,7 @@ export function buildSprayAriaSummary(
  * ------------------------------------------------------------------------- */
 
 export function SprayField({ group, family, heightClass, compact = false }: SprayFieldProps) {
-  const reduced = useReducedMotion() ?? false;
+  const reduced = useReducedMotionGuard() ?? false;
   const [activeId, setActiveId] = React.useState<string | null>(null);
 
   // Memoized so a stable reference feeds the dependent useMemo hooks below —
@@ -550,7 +551,7 @@ export function SprayField({ group, family, heightClass, compact = false }: Spra
                 isDominant && 'bg-accent-50',
               )}
             >
-              <span className="truncate font-fw-sans text-eyebrow uppercase text-text-tertiary">
+              <span className="truncate font-fw-sans text-caption text-text-tertiary">
                 {band.label}
               </span>
               <span
@@ -576,7 +577,7 @@ function StatReadout({ label, value }: { label: string; value: number | null }) 
       <div style={TABULAR_NUMS} className="font-fw-mono text-body-sm font-semibold text-text-primary">
         {value != null ? `${Math.round(value)}y` : '—'}
       </div>
-      <div className="font-fw-sans text-eyebrow uppercase text-text-tertiary">{label}</div>
+      <div className="font-fw-sans text-caption text-text-tertiary">{label}</div>
     </div>
   );
 }

@@ -19,6 +19,6 @@ describe('shouldRollupStuckRounds', () => {
 
 describe('formatStuckRollupLabel', () => {
   it('names the count and points at the Tracer tab', () => {
-    expect(formatStuckRollupLabel(10)).toBe('10 rounds idle — view in Tracer');
+    expect(formatStuckRollupLabel(10)).toBe('10 rounds idle, view in Tracer');
   });
 });

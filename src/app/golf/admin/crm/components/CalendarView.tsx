@@ -231,7 +231,7 @@ export function CalendarView({
         {/* Day Headers */}
         <div className="grid grid-cols-7 border-b border-border-subtle">
           {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((d) => (
-            <div key={d} className="py-2 text-center text-eyebrow font-semibold text-text-tertiary uppercase tracking-wider">
+            <div key={d} className="py-2 text-center text-caption font-semibold text-text-tertiary">
               {d}
             </div>
           ))}
@@ -304,7 +304,7 @@ export function CalendarView({
                             onMouseEnter={() => setHoveredEvent(event.id)}
                             onMouseLeave={() => setHoveredEvent(null)}
                             className={cn(
-                              'pointer-events-auto relative z-10 flex h-auto min-h-0 items-center gap-1 text-eyebrow leading-tight px-1.5 py-[3px] rounded-fw-sm truncate cursor-pointer transition-all font-medium w-full text-left justify-start',
+                              'pointer-events-auto relative z-10 flex h-auto min-h-0 items-center gap-1 text-caption leading-tight px-1.5 py-[3px] rounded-fw-sm truncate cursor-pointer transition font-medium w-full text-left justify-start',
                               config.pillBg,
                               config.pillText,
                               hoveredEvent === event.id && 'ring-1 ring-offset-1 ring-border-strong shadow-flat'
@@ -316,7 +316,7 @@ export function CalendarView({
                         );
                       })}
                       {dayEvents.length > 3 && (
-                        <div className="text-eyebrow text-text-tertiary pl-1 font-medium">
+                        <div className="text-caption text-text-tertiary pl-1 font-medium">
                           +{dayEvents.length - 3} more
                         </div>
                       )}
@@ -365,7 +365,7 @@ export function CalendarView({
                 isToday(date) && 'bg-accent-50/30'
               )}
             >
-              <div className="text-eyebrow font-semibold text-text-tertiary uppercase tracking-wider">{format(date, 'EEE')}</div>
+              <div className="text-caption font-semibold text-text-tertiary">{format(date, 'EEE')}</div>
               <div className={cn(
                 'text-base font-bold mt-0.5 w-8 h-8 mx-auto flex items-center justify-center rounded-full',
                 isToday(date) ? 'bg-accent-650 text-text-on-accent' : 'text-text-primary'
@@ -383,7 +383,7 @@ export function CalendarView({
             <div className="w-16 shrink-0">
               {hours.map((hour) => (
                 <div key={hour} className="h-16 border-b border-border-subtle pr-2 text-right">
-                  <span className="text-eyebrow text-text-tertiary font-medium">
+                  <span className="text-caption text-text-tertiary font-medium">
                     {format(setHours(new Date(), hour), 'h a')}
                   </span>
                 </div>
@@ -431,7 +431,7 @@ export function CalendarView({
                         onMouseEnter={() => setHoveredEvent(event.id)}
                         onMouseLeave={() => setHoveredEvent(null)}
                         className={cn(
-                          'block h-auto min-h-0 absolute left-1 right-1 rounded-fw-sm px-2 py-1 cursor-pointer transition-all overflow-hidden text-left',
+                          'block h-auto min-h-0 absolute left-1 right-1 rounded-fw-sm px-2 py-1 cursor-pointer transition overflow-hidden text-left',
                           config.softBg,
                           hoveredEvent === event.id && 'ring-1 ring-border-strong shadow-soft z-10'
                         )}
@@ -442,12 +442,12 @@ export function CalendarView({
                           <span className="truncate">{event.title}</span>
                         </div>
                         {height > 40 && (
-                          <div className="text-eyebrow text-text-tertiary truncate">
+                          <div className="text-caption text-text-tertiary truncate">
                             {format(startTime, 'h:mm a')}
                           </div>
                         )}
                         {height > 60 && event.coach_name && (
-                          <div className="text-eyebrow text-text-tertiary truncate">
+                          <div className="text-caption text-text-tertiary truncate">
                             {event.coach_name}
                           </div>
                         )}
@@ -533,7 +533,7 @@ export function CalendarView({
                     onMouseEnter={() => setHoveredEvent(event.id)}
                     onMouseLeave={() => setHoveredEvent(null)}
                     className={cn(
-                      'block h-auto min-h-0 absolute left-2 right-4 rounded-fw-md px-4 py-2.5 cursor-pointer transition-all text-left',
+                      'block h-auto min-h-0 absolute left-2 right-4 rounded-fw-md px-4 py-2.5 cursor-pointer transition text-left',
                       config.softBg,
                       'shadow-flat',
                       hoveredEvent === event.id && 'ring-1 ring-border-strong shadow-soft z-10'
@@ -627,7 +627,7 @@ export function CalendarView({
                 key={view}
                 onClick={() => setViewMode(view)}
                 className={cn(
-                  'px-3 py-1.5 rounded-fw-sm text-xs font-semibold transition-all capitalize',
+                  'px-3 py-1.5 rounded-fw-sm text-xs font-semibold transition capitalize',
                   viewMode === view
                     ? 'bg-surface text-text-primary shadow-flat'
                     : 'text-text-tertiary hover:text-text-secondary'
@@ -677,7 +677,7 @@ export function CalendarView({
             {(['demo', 'follow_up', 'call', 'meeting'] as const).map((type) => {
               const config = EVENT_TYPE_CONFIG[type];
               return (
-                <div key={type} className="flex items-center gap-1.5 text-eyebrow">
+                <div key={type} className="flex items-center gap-1.5 text-caption">
                   <span className={cn('w-2 h-2 rounded-full', config.dotColor)} />
                   <span className="text-text-tertiary font-medium">{config.label}</span>
                 </div>

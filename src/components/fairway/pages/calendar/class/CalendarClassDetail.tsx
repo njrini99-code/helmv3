@@ -135,7 +135,7 @@ function DetailSections({ data }: { data: ClassOccurrenceDetail }) {
             <MapPin className="h-4 w-4" aria-hidden />
           </span>
           <div className="min-w-0">
-            <p className="font-fw-sans text-eyebrow font-semibold uppercase tracking-[0.1em] text-text-tertiary">Location</p>
+            <p className="font-fw-sans text-caption font-semibold text-text-tertiary">Location</p>
             <p className="font-fw-sans text-body-sm text-text-primary">{location}</p>
           </div>
         </div>
@@ -146,7 +146,7 @@ function DetailSections({ data }: { data: ClassOccurrenceDetail }) {
             <GraduationCap className="h-4 w-4" aria-hidden />
           </span>
           <div className="min-w-0">
-            <p className="font-fw-sans text-eyebrow font-semibold uppercase tracking-[0.1em] text-text-tertiary">Instructor</p>
+            <p className="font-fw-sans text-caption font-semibold text-text-tertiary">Instructor</p>
             <p className="font-fw-sans text-body-sm text-text-primary">{data.instructor}</p>
           </div>
         </div>
@@ -233,7 +233,7 @@ export function CalendarClassDetail({
                 <BookOpen className="h-5 w-5" aria-hidden />
               </span>
               <div className="min-w-0 flex-1">
-                <p className="font-fw-sans text-eyebrow font-semibold uppercase tracking-[0.12em] text-text-tertiary">
+                <p className="font-fw-sans text-caption font-semibold text-text-tertiary">
                   {code || 'Class'}{data.semester ? ` · ${data.semester}` : ''}
                 </p>
                 <h2 id={headingId} className="mt-0.5 font-fw-display text-title font-semibold tracking-[-0.02em] text-text-primary">

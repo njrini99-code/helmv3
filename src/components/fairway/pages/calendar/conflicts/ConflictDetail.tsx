@@ -193,7 +193,7 @@ export function ConflictDetail({ group, timeZone, checkedAt, isOffline = false, 
           </Button>
         ) : null}
         <div className="min-w-0 flex-1">
-          <p className="font-fw-sans text-eyebrow font-semibold uppercase tracking-[0.12em] text-fw-warning-ink">Resolve conflict</p>
+          <p className="font-fw-sans text-caption font-semibold text-fw-warning-ink">Resolve conflict</p>
           <h2 className="mt-0.5 truncate font-fw-display text-title font-semibold tracking-[-0.02em] text-text-primary">
             {group.event.title || 'Event'}
           </h2>
