@@ -650,7 +650,7 @@ export function FairwayMessages() {
               <h1 className="font-fw-sans text-h2 font-semibold tracking-tight text-text-primary md:text-h3">Messages</h1>
               <div className="flex items-center gap-1">{composeActions}</div>
             </div>
-            <PullToRefresh onRefresh={handleConversationsRefresh} className="min-h-0 flex-1 overflow-y-auto overscroll-contain touch-pan-y px-3 py-3">
+            <PullToRefresh onRefresh={handleConversationsRefresh} className="no-scrollbar min-h-0 flex-1 overflow-y-auto overscroll-contain touch-pan-y px-3 py-3">
               <MessageConversationRail
                 conversations={conversations}
                 selectedId={selectedConversationId}
