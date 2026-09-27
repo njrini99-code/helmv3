@@ -210,8 +210,24 @@ items:
     status: verified
     risk: R1
     sha: 7538f032e
-    pr: null
+    pr: 2079
     regression_tests:
       - src/lib/admin/data/__tests__/incident-feed.sentry-environment.test.ts
     queued_for_release: false
     first_seen: '2026-09-25T00:00:00Z'
+  - id: calibration-load-dedupe-2026-09-27
+    feature_id: coachhelm_ai
+    root_cause: >-
+      The insight feed ranker scores every insight in one Promise.all and each
+      score read golf_confidence_calibration on a cold cache, so one feed load
+      sent one identical query per insight (Sentry N+1 SB); loadBuckets now
+      shares the read in flight.
+    incident_id: memory/incidents/coachhelm_ai/INC-2026-09-27-calibration-load-stampede.md
+    status: verified
+    risk: R1
+    sha: '442522795'
+    pr: null
+    regression_tests:
+      - src/lib/coachhelm/v2/__tests__/calibration-load-dedupe.test.ts
+    queued_for_release: false
+    first_seen: '2026-09-04T00:00:00Z'
