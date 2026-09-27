@@ -212,6 +212,15 @@ function LeakMapInner({
   );
 
   const cx = (label: string) => (xScale(label) ?? 0) + xScale.bandwidth() / 2;
+  const bandLabels = React.useMemo(
+    () =>
+      thinBandLabels(
+        compactBandLabels(data.map((d) => d.label), xScale.step(), VIZ_FONT.tickSize),
+        xScale.step(),
+        VIZ_FONT.tickSize,
+      ),
+    [data, xScale],
+  );
 
   // PGA curve points (only bands that have a standard).
   const pgaPoints = data
@@ -249,20 +258,22 @@ function LeakMapInner({
           </g>
         ))}
 
-        {/* x band labels */}
-        {data.map((d) => (
-          <text
-            key={d.label}
-            x={cx(d.label)}
-            y={innerH + 18}
-            textAnchor="middle"
-            fontSize={VIZ_FONT.tickSize}
-            fontFamily={VIZ_FONT.numeric}
-            fill={VIZ_COLOR.textSecondary}
-          >
-            {d.label}
-          </text>
-        ))}
+        {/* x band labels — a thinned-out band keeps its dot; the table lists every band */}
+        {data.map((d, i) =>
+          bandLabels[i] ? (
+            <text
+              key={d.label}
+              x={cx(d.label)}
+              y={innerH + 18}
+              textAnchor="middle"
+              fontSize={VIZ_FONT.tickSize}
+              fontFamily={VIZ_FONT.numeric}
+              fill={VIZ_COLOR.textSecondary}
+            >
+              {bandLabels[i]}
+            </text>
+          ) : null,
+        )}
 
         {/* per-band gap connector (dual-channel: length encodes the leak) */}
         {data.map((d) => {
@@ -341,4 +352,40 @@ function LeakMapInner({
       </Group>
     </svg>
   );
+}
+
+/**
+ * Six distance bands on a ~310px phone card leave ~43px per band, and
+ * "10-15 ft" / "15-25 ft" ran together as "10-15 ft15-25 ft25+ ft"
+ * (walk-through 2026-09-24). When any label is wider than its band, keep the
+ * unit only on the last one ("0-3 · 3-5 · … · 25+ ft"). Exported for tests.
+ */
+export function compactBandLabels(labels: readonly string[], step: number, fontSize: number): string[] {
+  const width = (t: string) => t.length * fontSize * 0.62;
+  if (labels.every((l) => width(l) <= step - 4)) return [...labels];
+  return labels.map((l, i) => (i === labels.length - 1 ? l : l.replace(/\s+(ft|yd|m)$/, '')));
+}
+
+/**
+ * Second pass after `compactBandLabels`: when even the unit-less labels are
+ * wider than their bands (Team Stats at 390px drew "0-3-5-10-15-25+ ft" as
+ * one run), show every k-th label counted back from the last band (it
+ * carries the unit), with the smallest k whose neighbours clear each other.
+ * Hidden bands return '' and keep their dots; "View as table" lists every band.
+ * The 0.52em/char estimate is calibrated to SF Pro at 11px (these labels
+ * measure 0.46-0.58em/char), so a full-width 390px card (~33px bands) keeps
+ * all six putt labels. Exported for tests.
+ */
+export function thinBandLabels(labels: readonly string[], step: number, fontSize: number): string[] {
+  const n = labels.length;
+  const width = (t: string | undefined) => (t?.length ?? 0) * fontSize * 0.52;
+  const GAP = 1;
+  for (let k = 1; k < n; k++) {
+    let fits = true;
+    for (let i = n - 1 - k; i >= 0 && fits; i -= k) {
+      fits = k * step >= (width(labels[i]) + width(labels[i + k])) / 2 + GAP;
+    }
+    if (fits) return labels.map((l, i) => ((n - 1 - i) % k === 0 ? l : ''));
+  }
+  return labels.map((l, i) => (i === n - 1 ? l : ''));
 }

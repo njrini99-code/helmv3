@@ -142,6 +142,12 @@ describe('PuttingDrill', () => {
     }
   });
 
+  it('captions 3-putts / round with what the calculator counts (holes with 3+ putts, per 18)', () => {
+    renderPutting({ detailedStats: fixtureStats() });
+    expect(screen.getByText('Holes with 3+ putts, per 18')).toBeInTheDocument();
+    expect(screen.queryByText(/Two-plus putts/)).not.toBeInTheDocument();
+  });
+
   it('shows an honest awaiting state per card when there are no stats yet', () => {
     renderPutting({ detailedStats: null });
     expect(screen.getByText('No leave data')).toBeInTheDocument();
@@ -165,15 +171,24 @@ describe('PuttingDrill', () => {
         score: [],
         gir: [],
         fairway: [],
-        putts: [fixtureTrendPoint('2026-06-01', 32), fixtureTrendPoint('2026-07-01', 28)],
+        // The delta is now last-3 vs prior-3 (needs >= 3 per side), not
+        // newest vs oldest, so the fixture carries six rounds.
+        putts: [
+          fixtureTrendPoint('2026-06-01', 32),
+          fixtureTrendPoint('2026-06-08', 32),
+          fixtureTrendPoint('2026-06-15', 32),
+          fixtureTrendPoint('2026-06-22', 28),
+          fixtureTrendPoint('2026-06-29', 28),
+          fixtureTrendPoint('2026-07-01', 28),
+        ],
       },
     });
-    // ledgerDelta(28, 32, higherIsBetter=false, fmtNumDelta) => "−4.0", good=true
+    // mean(28,28,28) − mean(32,32,32) => "−4.0", good=true
     // (fewer putts is an improvement) => mapped to the green "up" direction,
     // never the raw-sign "down"/amber a naive delta would render.
     const deltaLines = document.querySelectorAll('[data-slot="readout-delta"]');
     const deltaTexts = Array.from(deltaLines).map((el) => el.textContent ?? '');
-    expect(deltaTexts.some((t) => t.includes('−4.0') && t.includes('vs prior period'))).toBe(true);
+    expect(deltaTexts.some((t) => t.includes('−4.0') && t.includes('last 3 vs prior 3 rounds'))).toBe(true);
     const upDelta = document.querySelector('[data-slot="readout-delta"][data-direction="up"]');
     expect(upDelta).not.toBeNull();
   });
@@ -218,5 +233,25 @@ describe('PuttingDrill', () => {
     // RampMatrix's own legend renders the same 4 labels.
     const legendLabels = screen.getAllByText('Ahead of Tour');
     expect(legendLabels.length).toBeGreaterThan(0);
+  });
+
+  it('offers the putting benchmark sheet only when the leak map loaded rounds (DASH-12)', () => {
+    const leakMaps = {
+      playerId: 'p1',
+      putting: [],
+      approach: [],
+      roundsIncluded: 3,
+      windowFrom: '2026-01-05',
+      windowTo: '2026-09-20',
+      tour: 'lpga' as const,
+    };
+    const { unmount } = renderPutting({ leakMaps });
+    expect(screen.getByRole('button', { name: 'Compare with LPGA and D1' })).toBeInTheDocument();
+    // The LeakMap names the tour the server routed the references to.
+    expect(screen.getByText('Make rate by distance vs LPGA')).toBeInTheDocument();
+    unmount();
+
+    renderPutting({ leakMaps, leakError: true });
+    expect(screen.queryByRole('button', { name: /Compare with/ })).not.toBeInTheDocument();
   });
 });

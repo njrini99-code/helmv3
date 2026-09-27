@@ -27,8 +27,8 @@ import { surfaceName } from '@/lib/golf/surface-registry';
 import { AskSurface } from '@/components/golf/coachhelm/chat/AskSurface';
 
 export const metadata: Metadata = {
-  title: `${surfaceName('ask')} | CoachHelm`,
-  description: 'Ask CoachHelm about your program — grounded in your recorded rounds and schedule.',
+  title: `${surfaceName('ask')}`,
+  description: 'Ask CoachHelm about your program, grounded in your recorded rounds and schedule.',
 };
 
 // The answers depend on data players change; never serve a cached shell.

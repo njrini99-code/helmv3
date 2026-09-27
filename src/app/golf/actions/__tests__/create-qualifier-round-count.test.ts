@@ -95,4 +95,17 @@ describe('createGolfQualifier', () => {
     expect(result.success).toBe(false);
     expect(mocked.state.qualifierInsert).toBeNull();
   });
+
+  it('rejects a five-digit year (prod QA row stored start_date 60824-02-02)', async () => {
+    const result = await createGolfQualifier({
+      name: 'QA',
+      startDate: '60824-02-02',
+      endDate: '60831-02-02',
+      playerIds: [],
+      numRounds: 1,
+    });
+
+    expect(result.success).toBe(false);
+    expect(mocked.state.qualifierInsert).toBeNull();
+  });
 });

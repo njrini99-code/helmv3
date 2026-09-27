@@ -178,15 +178,15 @@ export class ScramblingGenerator extends BaseGenerator<ScramblingAggregate> {
       // Headline-inversion: escape is fine, the leak is distance control + lag.
       title = `Bunkers: it's the lag, not the escape (${saveDisp} up-and-down)`;
       driver =
-        `You ESCAPE the bunker fine — ${escapePct}% of your ${agg.attempts} sand shots reached ` +
-        `the green — but you finish ${leaveDisp} from the hole and then 2-putt ` +
+        `You ESCAPE the bunker fine (${escapePct}% of your ${agg.attempts} sand shots reached ` +
+        `the green), but you finish ${leaveDisp} from the hole and then 2-putt ` +
         `(${agg.two_putt_after_reach_n} of ${agg.reached_green_n} reached greens). The driver is ` +
         `distance control OUT of the sand and the lag putt that follows, not your splash. ` +
         `Drill: bunker shots to a 6-ft circle (carry-to-rollout control), then 10-20 ft lag putts.`;
     } else if (agg.failure_mode === 'escape') {
       title = `Bunkers: escape is the leak (${saveDisp} up-and-down)`;
       driver =
-        `You're leaving balls in the bunker — only ${escapePct}% of your ${agg.attempts} sand shots ` +
+        `You're leaving balls in the bunker: only ${escapePct}% of your ${agg.attempts} sand shots ` +
         `reached the green. Before distance control, fix the escape: open the face, ` +
         `splash a full cushion of sand under the ball, and accelerate through. ` +
         `Drill: dollar-bill splash drill until 9/10 escape the lip.`;
@@ -195,7 +195,7 @@ export class ScramblingGenerator extends BaseGenerator<ScramblingAggregate> {
       driver =
         `Across ${agg.rounds_played} rounds you got up-and-down ${saveDisp} of the time from sand ` +
         `(${agg.attempts} attempts, ${escapePct}% reached the green). No single failure mode ` +
-        `dominates yet — keep logging bunker shots to sharpen the read.`;
+        `dominates yet. Keep logging bunker shots to sharpen the read.`;
     }
 
     const content =

@@ -43,13 +43,13 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `RUNBOOK` | 5 | 2 | 1 | 0 |
 | `DESIGN_SPEC` | 7 | 0 | 6 | 0 |
 | `PLAN` | 37 | 5 | 18 | 74 |
-| `AUDIT_SNAPSHOT` | 56 | 6 | 30 | 25 |
+| `AUDIT_SNAPSHOT` | 57 | 6 | 31 | 25 |
 | `STATE_SNAPSHOT` | 6 | 2 | 5 | 0 |
-| `HISTORY_LEDGER` | 41 | 0 | 7 | 15 |
-| `INCIDENT` | 31 | 15 | 2 | 2 |
+| `HISTORY_LEDGER` | 41 | 0 | 7 | 19 |
+| `INCIDENT` | 40 | 15 | 2 | 2 |
 | `ADR` | 5 | 0 | 3 | 0 |
 | `INDEX` | 19 | 1 | 7 | 5 |
-| `UNKNOWN` | 93 | 12 | 39 | 74 |
+| `UNKNOWN` | 93 | 12 | 40 | 76 |
 
 ## Files
 
@@ -410,6 +410,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/observability/SENTRY_PHASE_A_FINDINGS.md` | current | - | - | yes | 3 |
 | `docs/reports/REPO_WIRING_AUDIT_2026-08-30.md` | current | - | - | - | - |
 | `docs/ui-audits/DESIGN_AUDIT_ASK_AND_CALENDAR_2026-08-15.md` | current | - | - | yes | - |
+| `docs/ui-audits/GOLF_UIUX_AUDIT_LEDGER_2026-09-24.md` | current | - | - | yes | - |
 | `docs/ui-audits/MOBILE_NATIVE_REBUILD_AUDIT_2026-09-03.md` | current | - | - | - | 1 |
 | `docs/ui-audits/UI_AUDIT_2026-08-16.md` | current | - | - | - | 1 |
 | `docs/v3-feature-audit.md` | current | yes | - | yes | 2 |
@@ -449,14 +450,14 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `memory/ledgers/changes/auth_onboarding_join.md` | current | - | - | - | - |
 | `memory/ledgers/changes/calendar_events.md` | current | - | - | - | 1 |
 | `memory/ledgers/changes/coach_intelligence_triage.md` | current | - | - | - | - |
-| `memory/ledgers/changes/coachhelm_ai.md` | current | - | - | - | - |
+| `memory/ledgers/changes/coachhelm_ai.md` | current | - | - | - | 1 |
 | `memory/ledgers/changes/crm_outreach.md` | current | - | - | - | - |
 | `memory/ledgers/changes/feature_awareness_system.md` | current | - | - | yes | - |
 | `memory/ledgers/changes/golf_round_lifecycle.md` | current | - | - | - | - |
 | `memory/ledgers/changes/ios_native_shell.md` | current | - | - | - | - |
 | `memory/ledgers/changes/observability_sentry.md` | current | - | - | - | 3 |
 | `memory/ledgers/changes/observability_supabase.md` | current | - | - | - | - |
-| `memory/ledgers/changes/player_coachhelm_development.md` | current | - | - | - | - |
+| `memory/ledgers/changes/player_coachhelm_development.md` | current | - | - | - | 1 |
 | `memory/ledgers/changes/qualifiers.md` | current | - | - | - | - |
 | `memory/ledgers/changes/recruiting.md` | current | - | - | - | - |
 | `memory/ledgers/changes/roster_team.md` | current | - | - | - | - |
@@ -472,10 +473,10 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `memory/ledgers/tests/admin_reliability_collector.md` | current | - | - | - | - |
 | `memory/ledgers/tests/admin_slo.md` | current | - | - | - | - |
 | `memory/ledgers/tests/calendar_events.md` | current | - | - | - | - |
-| `memory/ledgers/tests/coachhelm_ai.md` | current | - | - | - | - |
+| `memory/ledgers/tests/coachhelm_ai.md` | current | - | - | - | 1 |
 | `memory/ledgers/tests/golf_round_lifecycle.md` | current | - | - | - | - |
 | `memory/ledgers/tests/observability_sentry.md` | current | - | - | - | 2 |
-| `memory/ledgers/tests/player_coachhelm_development.md` | current | - | - | - | - |
+| `memory/ledgers/tests/player_coachhelm_development.md` | current | - | - | - | 1 |
 | `memory/ledgers/tests/qualifiers.md` | current | - | - | - | - |
 | `memory/ledgers/tests/shot_tracking.md` | current | - | - | - | - |
 | `memory/ledgers/tests/stats_analytics.md` | current | - | - | - | - |
@@ -488,7 +489,13 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `memory/incidents/admin_platform/INC-2026-07-29-postgres-wedge-took-down-every-route.md` | current | - | - | - | - |
 | `memory/incidents/admin_platform/INC-2026-08-26-error-rate-hourly-never-written.md` | current | - | - | - | - |
 | `memory/incidents/admin_platform/INC-2026-08-27-swallowed-cron-failure-invisible-to-bridge.md` | current | - | - | - | - |
+| `memory/incidents/admin_platform/INC-2026-09-27-bridge-merged-dev-sentry-issues.md` | current | - | - | - | - |
+| `memory/incidents/admin_selfheal/INC-2026-09-27-retired-triage-runner-paints-loop-red.md` | current | - | - | - | - |
 | `memory/incidents/calendar_events/INC-2026-09-23-coach-invitees-deny-conflict-check.md` | current | - | - | - | - |
+| `memory/incidents/coachhelm_ai/INC-2026-09-26-safety-net-coverage-n-plus-one.md` | current | - | - | - | - |
+| `memory/incidents/coachhelm_ai/INC-2026-09-26-validation-cron-rounds-n-plus-one.md` | current | - | - | - | - |
+| `memory/incidents/coachhelm_ai/INC-2026-09-27-calibration-load-stampede.md` | current | - | - | - | - |
+| `memory/incidents/coachhelm_ai/INC-2026-09-27-exposure-returned-fetch-failure.md` | current | - | - | - | - |
 | `memory/incidents/feature_awareness_system/INC-2026-08-16-parallel-agents-shared-tree.md` | current | yes | - | yes | 1 |
 | `memory/incidents/feature_awareness_system/INC-2026-08-18-worktrees-inside-repo-duplicate-tree.md` | current | yes | - | - | 1 |
 | `memory/incidents/feature_awareness_system/INC-2026-08-19-codeql-matrix-rename-phantom-checks.md` | current | yes | - | - | - |
@@ -504,12 +511,15 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `memory/incidents/feature_awareness_system/INC-2026-09-04-mcp-namespace-policy-contradiction.md` | current | yes | - | - | - |
 | `memory/incidents/feature_awareness_system/INC-2026-09-04-sandboxed-dev-server-false-ready.md` | current | yes | - | - | - |
 | `memory/incidents/feature_awareness_system/INC-2026-09-04-surface-registry-miscategorized-as-generated.md` | current | yes | - | yes | - |
+| `memory/incidents/feature_awareness_system/INC-2026-09-26-ledger-vs-catalog-false-drift.md` | current | - | - | - | - |
 | `memory/incidents/golf_round_lifecycle/INC-2026-08-19-assistant-coach-cascade-delete-round-history.md` | current | - | - | - | - |
 | `memory/incidents/golf_round_lifecycle/INC-2026-08-25-completed-round-sg-capability.md` | current | - | - | - | - |
 | `memory/incidents/golf_round_lifecycle/INC-2026-08-25-nondestructive-submit-and-checkpoint-fallback.md` | current | - | - | - | - |
 | `memory/incidents/golf_round_lifecycle/INC-2026-08-25-recap-persist-schema-permission.md` | current | - | - | - | - |
 | `memory/incidents/golf_round_lifecycle/INC-2026-08-30-account-deletion-still-cascades-golf-history.md` | current | - | - | - | - |
 | `memory/incidents/golf_round_lifecycle/INC-2026-09-16-course-state-two-letter-rejection.md` | current | - | - | - | - |
+| `memory/incidents/golf_round_lifecycle/INC-2026-09-25-player-lookup-pgrst116.md` | current | - | - | - | - |
+| `memory/incidents/player_coachhelm_development/INC-2026-09-24-page-read-ran-insight-generators.md` | current | - | - | - | - |
 | `memory/incidents/qualifiers/INC-2026-08-22-end-date-closed-qualifier-early.md` | current | - | - | - | - |
 | `memory/incidents/shot_tracking/INC-2026-08-22-confirmed-snapshot-recovery-prompt.md` | current | - | - | - | - |
 | `memory/incidents/shot_tracking/INC-2026-08-22-delete-shot-stale-id.md` | current | - | - | - | - |
@@ -641,8 +651,8 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `ios/appstore/SUBMISSION.md` | current | - | - | - | - |
 | `public/courses/CREDITS.md` | current | - | - | - | - |
 | `scripts/ops/MAC_MINI_HEADLESS_RUNBOOK.md` | current | - | - | - | - |
-| `src/test/SKIPPED.md` | current | - | - | yes | 4 |
-| `supabase/migrations/HELD.md` | current | - | - | - | - |
+| `src/test/SKIPPED.md` | current | - | - | yes | 6 |
+| `supabase/migrations/HELD.md` | current | - | - | yes | - |
 | `tests/golf/qualifier-hell/.momentic-mcp/step-authoring-guide-1787628324409-30568958-fbbd-4cb0-8f55-b90fd56cc3d7.md` | current | - | - | - | - |
 | `tools/INTEGRATION_GUIDE.md` | current | - | - | - | - |
 | `tools/MULTI_PLATFORM_GUIDE.md` | current | - | - | - | 1 |

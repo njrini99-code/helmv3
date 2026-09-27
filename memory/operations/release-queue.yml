@@ -113,3 +113,152 @@ items:
       - src/lib/reliability/__tests__/resolution.test.ts
     queued_for_release: false
     first_seen: '2026-08-27T03:00:00Z'
+  - id: coachhelm-page-read-no-generators-2026-09-24
+    feature_id: player_coachhelm_development
+    root_cause: >-
+      The player CoachHelm page read called analyzePlayer, which ran all 20
+      Tier-1 insight generators plus composite synthesis (raw golf_shots reads
+      and golf_coach_insights upserts) on every view; two automated sessions
+      saturated Postgres for ~35 minutes on 2026-09-24.
+    incident_id: memory/incidents/player_coachhelm_development/INC-2026-09-24-page-read-ran-insight-generators.md
+    status: verified
+    risk: R1
+    sha: dd9d417e9
+    pr: 2068
+    regression_tests:
+      - src/app/golf/actions/__tests__/player-coachhelm-dashboard-readonly.test.ts
+    queued_for_release: false
+    first_seen: '2026-09-24T00:50:00Z'
+  - id: coachhelm-bounded-fanout-and-saturation-throttle-2026-09-25
+    feature_id: player_coachhelm_development
+    root_cause: >-
+      Defence in depth for the 2026-09-24 brownout: analyzePlayer started all
+      ~21 Tier-1 generators at once and generateAlerts analyzed the whole
+      roster in one Promise.all, with no retry on transient pool faults; every
+      failing read also wrote error_logs and admin_events rows into the
+      saturated database, and PGRST002/57014 rows showed on the Bridge as
+      "signature unavailable".
+    incident_id: memory/incidents/player_coachhelm_development/INC-2026-09-24-page-read-ran-insight-generators.md
+    status: verified
+    risk: R1
+    sha: e5adf2e41
+    pr: 2072
+    regression_tests:
+      - src/lib/supabase/__tests__/bounded-query.test.ts
+      - src/lib/coachhelm/v2/__tests__/tier1-runner.test.ts
+      - src/lib/__tests__/server-error-logger-bridge.test.ts
+      - src/lib/admin/incidents/__tests__/present.test.ts
+    queued_for_release: false
+    first_seen: '2026-09-24T00:50:00Z'
+  - id: player-lookup-maybe-single-2026-09-25
+    feature_id: golf_round_lifecycle
+    root_cause: >-
+      golf_players lookups by user_id ended in .single(), so a signed-in user
+      without a player row raised PGRST116, which instrumentation recorded as
+      an exception although every caller handled the null; bdc09c915 had
+      converted only the first 8 golf.ts sites.
+    incident_id: memory/incidents/golf_round_lifecycle/INC-2026-09-25-player-lookup-pgrst116.md
+    status: verified
+    risk: R2
+    sha: d3e954f0135cf5149b15b97335d7e9f02632240b
+    pr: 2074
+    regression_tests:
+      - src/app/golf/actions/__tests__/player-lookup-maybe-single.test.ts
+    queued_for_release: false
+    first_seen: '2026-09-07T00:00:00Z'
+  - id: validation-rounds-prefetch-2026-09-26
+    feature_id: coachhelm_ai
+    root_cause: >-
+      resolveActualValue read golf_rounds once per ripe prediction and the
+      hourly coachhelm-validation cron looped over 115 of them (Sentry N+1
+      JAVASCRIPT-NEXTJS-SV); now one read per 100 players with a truncation-safe
+      per-prediction fallback.
+    incident_id: memory/incidents/coachhelm_ai/INC-2026-09-26-validation-cron-rounds-n-plus-one.md
+    status: verified
+    risk: R1
+    sha: 8abeccd2a17da87c89554c523ddb5676e9ee7045
+    pr: 2077
+    regression_tests:
+      - src/lib/coachhelm/v2/learning/__tests__/outcome-validator.prefetch.test.ts
+      - src/test/api/cron/coachhelm-validation.test.ts
+    queued_for_release: false
+    first_seen: '2026-09-20T00:00:00Z'
+  - id: safety-net-coverage-prefetch-2026-09-26
+    feature_id: coachhelm_ai
+    root_cause: >-
+      reconcileParkedRounds read golf_rounds once per parked player and the
+      30-minute coachhelm-safety-net cron re-examined the same 13 players every
+      tick (Sentry N+1 JAVASCRIPT-NEXTJS-107); now one read per tick with a
+      truncation- and error-safe per-player fallback.
+    incident_id: memory/incidents/coachhelm_ai/INC-2026-09-26-safety-net-coverage-n-plus-one.md
+    status: verified
+    risk: R1
+    sha: 53a2f02fe8c4a38f9e4bf6a89716ad8cc8435606
+    pr: 2078
+    regression_tests:
+      - src/test/api/cron/coachhelm-safety-net-reconcile.test.ts
+    queued_for_release: false
+    first_seen: '2026-09-24T00:00:00Z'
+  - id: bridge-sentry-production-scope-2026-09-27
+    feature_id: admin_platform
+    root_cause: >-
+      fetchIncidentFeed merged Sentry issues from every environment, so local
+      next dev sessions (BAND_INK, RootSummary module-not-found) appeared on
+      the Bridge as production incidents; the merged query is now scoped to
+      environment=production.
+    incident_id: memory/incidents/admin_platform/INC-2026-09-27-bridge-merged-dev-sentry-issues.md
+    status: verified
+    risk: R1
+    sha: b4f95df96cfe29cf7cdcd3847cc3aa1db51fa131
+    pr: 2079
+    regression_tests:
+      - src/lib/admin/data/__tests__/incident-feed.sentry-environment.test.ts
+    queued_for_release: false
+    first_seen: '2026-09-25T00:00:00Z'
+  - id: calibration-load-dedupe-2026-09-27
+    feature_id: coachhelm_ai
+    root_cause: >-
+      The insight feed ranker scores every insight in one Promise.all and each
+      score read golf_confidence_calibration on a cold cache, so one feed load
+      sent one identical query per insight (Sentry N+1 SB); loadBuckets now
+      shares the read in flight.
+    incident_id: memory/incidents/coachhelm_ai/INC-2026-09-27-calibration-load-stampede.md
+    status: verified
+    risk: R1
+    sha: 17343f1a6b8a137e27f3612e816d4f8d528af686
+    pr: 2080
+    regression_tests:
+      - src/lib/coachhelm/v2/__tests__/calibration-load-dedupe.test.ts
+    queued_for_release: false
+    first_seen: '2026-09-04T00:00:00Z'
+  - id: retired-runner-heartbeat-2026-09-27
+    feature_id: admin_selfheal
+    root_cause: >-
+      The self-heal board classified each stage from its newest heartbeat row,
+      so the retired cloud Diagnose task's daily failed row painted Diagnose
+      and the loop red while the Vercel-cron runner was healthy.
+    incident_id: memory/incidents/admin_selfheal/INC-2026-09-27-retired-triage-runner-paints-loop-red.md
+    status: verified
+    risk: R1
+    sha: 1a326692d4da8f07eb6fa1e31f6c382b01788f18
+    pr: 2081
+    regression_tests:
+      - src/lib/admin/__tests__/selfheal-registry.test.ts
+    queued_for_release: false
+    first_seen: '2026-09-25T09:05:00Z'
+  - id: exposure-returned-transient-retry-2026-09-27
+    feature_id: coachhelm_ai
+    root_cause: >-
+      recordInsightExposure retried only a thrown fetch failure; postgrest-js
+      resolves a network blip as a typed 'TypeError: fetch failed' error, which
+      skipped the retry, dropped the exposure rows and logged a Bridge error
+      (f34bc102).
+    incident_id: memory/incidents/coachhelm_ai/INC-2026-09-27-exposure-returned-fetch-failure.md
+    status: verified
+    risk: R1
+    sha: d856ec00bafb88af93bd9bb7c2393a74d69f3b17
+    pr: null
+    regression_tests:
+      - src/lib/coachhelm/v3/effectiveness/exposure-transient-retry.test.ts
+    queued_for_release: false
+    first_seen: '2026-09-14T07:31:01Z'

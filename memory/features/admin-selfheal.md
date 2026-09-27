@@ -178,6 +178,15 @@ owner's machine, for anyone who needs to see exactly what ran before.
   and carries the basis with the verdict. An unrecognised shape degrades to
   `autonomous` with a null basis and renders NO chip: the classifier detects a
   run that ANNOUNCED human involvement and cannot detect one that stayed quiet.
+- **A retired runner cannot speak for a stage.** `SelfHealStage.retiredMethods`
+  lists the `metadata.method` values of runners a stage has retired (Diagnose:
+  `claude-code-cloud-session`), and `selectStageHeartbeat` picks the newest row
+  NOT written by one of them to classify the stage. The retired rows stay in
+  the run history. Operator rows (`manual-…`) still count, and when every row
+  in view is retired the newest is used, never `never-ran`. Measured
+  2026-09-25..27: the retired cloud task wrote a daily `failed` row ~09:05–09:20
+  UTC, painting Diagnose and the whole loop red for ~6h a day while the Vercel
+  cron was healthy.
 - **Late is not overdue.** `classifyCronStatus` only calls a stage overdue at
   `cadenceMinutes * 1.5`, measured from `started_at`. `SelfHealStageDetail`
   carries `overdueAt` so the view stops re-deriving that multiplier, and

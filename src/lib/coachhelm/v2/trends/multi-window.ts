@@ -303,12 +303,12 @@ function composeDescription(
   const decliningDirection = lowerIsBetter ? 'upward (declining)' : 'downward';
 
   const signalDescriptions: Record<MultiWindowAnalysis['signal'], string> = {
-    strong_improving: `${metric} is trending ${improvingDirection} across all time windows — sustained improvement.`,
-    strong_declining: `${metric} is trending ${decliningDirection} across all time windows — sustained decline.`,
+    strong_improving: `${metric} is trending ${improvingDirection} across all time windows: sustained improvement.`,
+    strong_declining: `${metric} is trending ${decliningDirection} across all time windows: sustained decline.`,
     short_term_dip: `${metric} has dipped recently, but the longer-term trend remains positive.`,
-    short_term_spike: `${metric} has spiked recently, but the longer-term trend is different — could be a hot streak.`,
+    short_term_spike: `${metric} has spiked recently, but the longer-term trend is different, could be a hot streak.`,
     trajectory_change: `${metric} shows a recent shift in trajectory compared to the long-term trend.`,
-    mixed: `${metric} shows mixed signals across time windows — no clear overall direction.`,
+    mixed: `${metric} shows mixed signals across time windows: no clear overall direction.`,
     stable: `${metric} has been stable across all time windows.`,
   };
 

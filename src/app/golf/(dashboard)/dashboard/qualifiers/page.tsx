@@ -10,7 +10,7 @@ import { fairwayScope } from '@/lib/redesign/flag';
 import { FairwayQualifiers } from '@/components/fairway/pages/qualifiers/FairwayQualifiers';
 
 export const metadata: Metadata = {
-  title: 'Qualifiers | Helm Sports',
+  title: 'Qualifiers',
   description: 'Track and manage team qualifiers for player selection and performance evaluation',
 };
 
@@ -18,12 +18,14 @@ export const metadata: Metadata = {
 export const revalidate = 300;
 
 export default async function GolfQualifiersPage() {
-  const session = await getGolfSessionProfile();
+  // PERF-R1: the session read and the client setup are independent; run them
+  // together. createClient only reads cookies, so building it before the
+  // login redirect costs nothing.
+  const [session, supabase] = await Promise.all([getGolfSessionProfile(), createClient()]);
   if (!session) redirect('/golf/login');
 
   const { role, coach, player } = session;
   const isCoach = role === 'coach';
-  const supabase = await createClient();
 
   let teamId: string | null = null;
   let qualifiers: GolfQualifier[] = [];
@@ -58,6 +60,7 @@ export default async function GolfQualifiersPage() {
       .from('golf_qualifiers')
       .select('*')
       .eq('team_id', teamId)
+      .eq('is_test', false)
       .order('start_date', { ascending: false })
       // P328: bound the fetch to the PostgREST hard server cap. A team's
       // qualifier history grows unbounded across seasons; an explicit limit

@@ -260,7 +260,7 @@ describe('Card — dynamic domain render (founder screenshot repro)', () => {
     // inside a 12px green circle rendered as a hollow donut (07-24 screenshot).
     // Assert the marker element exists via its brand fill instead of by text.
     expect(screen.queryByText('●')).toBeNull();
-    expect(container.querySelector('.bg-primary-600')).toBeTruthy();
+    expect(container.querySelector('.bg-accent-fill')).toBeTruthy();
   });
 
   it('still shows the real Team value in the comparison cell (not a suppressed "—")', () => {
@@ -330,7 +330,7 @@ describe('Bar — team/you fill band tracks the NUDGED marker positions, not the
         fill={{ fromPct: 52, toPct: 50, tone: 'good' }}
       />,
     );
-    const youMarker = container.querySelector('.bg-primary-600') as HTMLElement;
+    const youMarker = container.querySelector('.bg-accent-fill') as HTMLElement;
     const teamMarker = screen.getByText('T');
     expect(youMarker.style.left).toBe('48.75%');
     expect(teamMarker.style.left).toBe('53.25%');
@@ -339,5 +339,48 @@ describe('Bar — team/you fill band tracks the NUDGED marker positions, not the
     expect(fillDiv).toBeTruthy();
     expect(fillDiv.style.left).toBe('48.75%');
     expect(fillDiv.style.width).toBe('4.5%');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// NUM-38 — a percent axis never reads past 100%, and the Team / You / PGA
+// comparison cells never truncate their label or value.
+// ---------------------------------------------------------------------------
+
+describe('Card — percent axis and untruncated comparison cells (NUM-38)', () => {
+  const HIGH_PCT: StandingBarProps = {
+    metric_id: 'putts_made_3_5ft_pct',
+    metric_label: 'Putts Made 3-5 ft',
+    player_value: 97,
+    team_avg: 88,
+    team_n: 8,
+    team_pct: 70,
+    pga_value: 99,
+    direction: 'higher_better',
+    unit: 'percent',
+    scale: { min: 60, max: 100 },
+    size: 'card',
+  };
+
+  it('clamps a widened percent domain to 0..100', () => {
+    const result = resolveDisplayScale({ min: 60, max: 100 }, [42, 99, 101], { hardBounds: { min: 0, max: 100 } });
+    expect(result.max).toBe(100);
+    expect(result.min).toBeGreaterThanOrEqual(0);
+  });
+
+  it('never prints an axis endpoint above 100%', () => {
+    render(<Card {...HIGH_PCT} player_value={42} pga_value={101} />);
+    expect(screen.queryByText('104%')).toBeNull();
+    expect(screen.getByText('100%')).toBeTruthy();
+  });
+
+  it('renders Team, You and PGA cells without a truncate class', () => {
+    const { container } = render(<Card {...HIGH_PCT} />);
+    const cells = container.querySelector('[data-slot="standing-comparison-cells"]');
+    expect(cells).not.toBeNull();
+    expect(cells!.querySelectorAll('.truncate')).toHaveLength(0);
+    expect(cells!.textContent).toContain('Team');
+    expect(cells!.textContent).toContain('88%');
+    expect(cells!.textContent).toContain('PGA');
   });
 });

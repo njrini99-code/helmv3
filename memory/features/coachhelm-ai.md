@@ -76,6 +76,30 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
 ## Business Rules
 
 - LLM work must never run client-side.
+- Player-facing confidence is shown as a word ("Solid read" / "Early read" /
+  "Thin read, n=8") from `src/lib/coachhelm/confidence-label.ts`, never as a
+  percentage; the numeric confidence still drives ranking.
+- The performance predictor, composite rating, Game Fingerprint (including
+  its SG metrics), team health categories and program pulse read countable
+  rounds only (see "Countable rounds" in `memory/features/stats-analytics.md`).
+- Test rounds (OD-03, 2026-09-27): the CoachHelm display loaders
+  (`coachhelm-data.ts`, `insights.ts`, `player-fingerprint.ts`,
+  `shot-analytics.ts`) skip `golf_rounds.is_test` rounds. The engine, crons
+  and cached stats do not read the flag.
+  Prediction bands wider than `MAX_PREDICTION_BAND_STROKES = 8` are not shown.
+  The scoring trend (`getPlayerTrendAnalysis`) and the per-category SG trend
+  (`fetchSgTrendsByCategory` → `computeSgTrends`) read countable rounds too,
+  with a nine-hole round's to-par, putts and SG scaled to 18 holes as Stats
+  does. `computeSgTrends` also skips any single-category SG beyond
+  `MAX_PLAUSIBLE_ROUND_SG = 10` per 18 as a backstop.
+- The pressure-gap insight (`v3/generators/pressure-gap.ts`) follows the one
+  rule in `src/lib/golf/metrics/pressure-gap.ts`: countable rounds, each
+  round's to-par on an 18-hole basis, and tournament, qualifier and legacy
+  'qualifying' rounds on the pressure side. Standing's SQL
+  (`refresh_player_standing_round_metrics`) follows the same rule from
+  migration `20260924140000_golf_standing_pressure_gap_parity.sql`, which is
+  held and applies after OD-01's `20260924120000`. Both keep a 90-day window
+  and at least 3 rounds per side.
 - Coach-facing insight reads must scope through assigned teams, not broad player access.
 - Player-facing feedback must be tied to the authenticated player and revalidate the affected dashboard surfaces.
 - Coach-to-team ownership is via `golf_team_coach_staff`; do not infer it from `golf_coaches.team_id`.
@@ -204,6 +228,23 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
   failures retry one tick apart up to `RETRY_MAX_ATTEMPTS` and then stay
   failed as `:exhausted`. A failed wake-decision read is logged and leaves
   the round parked.
+- **Database fan-out is bounded (#2061, 2026-09-24 pool exhaustion).**
+  `analyzePlayer` runs its ~21 Tier-1 generators through
+  `runTier1Generators` (`src/lib/coachhelm/v2/tier1-runner.ts`): at most
+  `TIER1_GENERATOR_CONCURRENCY` (4) in flight, not all at once, and each
+  generator retried ONCE after a short backoff (250–500ms) when it fails on
+  a transient database fault — a v2 rejection or a v3 `{ status: 'failed' }`
+  receipt whose error is a statement timeout (57014), pool timeout
+  (PGRST003), unreachable schema cache (PGRST002), deadlock or connection
+  fault. Never a second retry, never a retry of a non-transient failure.
+  The settled array keeps input order, so the caller's summary is unchanged.
+  `generateAlerts` (`src/app/golf/actions/alerts.ts`) analyzes at most 4
+  players at once instead of the whole roster. The transient definition
+  lives in one place, `isTransientDbError`
+  (`src/lib/supabase/bounded-query.ts`), which
+  `classifyDashboardFailure` now uses too — so a PGRST003/PGRST002 on the
+  player dashboard takes the page's one server-side retry and soft state
+  instead of the hard error.
 
 ## UI Contract
 
@@ -214,7 +255,7 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
 - Mobile views must use the shared app shell, Standard or Action headers, and bottom-nav clearance from `AGENTS.md`.
 - The Ask composer autofocuses only on fine-pointer (desktop) clients (2026-08-26). On touch, no CoachHelm surface may focus a text input on open — iOS answers that focus with a keyboard over an unread page.
 - The phone Ask drawer (`CoachHelmDrawer`) lifts by `--keyboard-height` and the composer drops its home-indicator pad while `body.keyboard-open` (2026-09-02) — the WebView never resizes for the keyboard, so a `bottom-0` drawer put the composer under the keys exactly like the messages screen.
-- A question started on the Brief tab (`CoachIntelligenceHome` → `?q=` → the Ask page) auto-submits exactly once through `PromptComposer`'s own `submit()` (2026-09-02) — it previously only pre-filled the composer, so the coach had to press Send a second time on the page it navigated to. `AskSurface` strips `q` from the URL the moment the submit is kicked off, before the server has minted a conversation, so a refresh or back-navigation in that window cannot resend it. `PromptComposer` also now restores the just-submitted text into the field on a failed turn (never on success) instead of the previous unconditional clear-on-submit, so a failure does not force retyping. See `src/components/golf/coachhelm/chat/PromptComposer.tsx`, `CoachHelmChat.tsx` (`autoSubmitInitialInput`), and `AskSurface.tsx`.
+- A question started on the Brief tab (`CoachIntelligenceHome` → `?q=` → the Ask page) auto-submits exactly once through `PromptComposer`'s own `submit()` (2026-09-02). Since 2026-09-24 (audit DATA-15) that auto-submit requires a hand-off token: the Brief tab calls `markAskHandoff(question)` just before navigating, and `AskSurface` auto-sends only when `hasAskHandoff(question)` matches (same question, under 60 s old, one use; `src/lib/golf/ask-handoff.ts`, sessionStorage). A bare, pasted, emailed or crawled `?q=` link only pre-fills the composer, so it can no longer spend an LLM call or create a conversation on its own. `AskSurface` strips `q` from the URL the moment the submit is kicked off, before the server has minted a conversation, so a refresh or back-navigation in that window cannot resend it. `PromptComposer` also now restores the just-submitted text into the field on a failed turn (never on success) instead of the previous unconditional clear-on-submit, so a failure does not force retyping. See `src/components/golf/coachhelm/chat/PromptComposer.tsx`, `CoachHelmChat.tsx` (`autoSubmitInitialInput`), and `AskSurface.tsx`.
 - A route's `loading.tsx` reserves the page's paint at t=0 — for a
   `'use client'` page holding its own `loading` state that is that
   component's loading branch, not its settled layout. A route whose
@@ -300,6 +341,22 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
   (present in this repo) rather than reintroducing a DetailGrid-style text
   table. (STU, source: `spine-stage-redesign.md` dated 2026-07-20; verified
   2026-09-05 that `src/components/fairway/modules/` exists.)
+  **Exception, 2026-09-24:** the Player CoachHelm overview
+  (`/golf/dashboard/coachhelm`, no `?view=`) no longer uses the spine or the
+  bento. It is `PlayerHubFeed` (`components/golf/coachhelm/home/`), a
+  single-column read of trends, root-cause insight units, patterns and the
+  plan, built by `buildPlayerHubViewModel.ts` (one source per number, one sign
+  convention: a signed number is always + better / − worse). Stats owns the
+  SG hero, snapshot and standing; the overview does not repeat them. The
+  section tabs are the only navigation, so CoachHelm drills render no "Home"
+  back chip (`DrillPanel` renders one only when `onBack` is passed).
+  Its plan section (`HubPlanBoard`, HUB-19, 2026-09-25) edits in place: a row
+  opens to log a new value or mark the focus area complete, through the
+  unchanged `updateFocusAreaProgress` / `completeFocusArea` actions (Undo via
+  `reactivateFocusArea`), applied with `useOptimistic` and rolled back with a
+  danger toast on failure. Only actionable statuses open; create, accept and
+  decline stay on Development. Its controls are secondary or ghost, so "Log a
+  round" stays the overview's one primary action.
 - **A "Rendered more hooks than during the previous render" / React #310
   report on this surface is not automatically the same bug twice.** On
   `/golf/dashboard/stats` it was a Turbopack HMR/Fast-Refresh and stale-chunk
@@ -1112,7 +1169,8 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
   entry above already named) — it is read-only, display-only. See
   `attribution-read.test.ts`, `attribution-view-model.test.ts`,
   `src/test/golf/actions/insight-attribution.test.ts`, and
-  `src/test/golf/components/AttributionReadout.test.tsx`.
+  AttributionReadout.test.tsx (removed, with AttributionReadout.tsx and
+  FairwayPlayerInsight.tsx, in the 2026-09-24 golf audit dead-code sweep).
 
 ## Tests To Prefer
 

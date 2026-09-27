@@ -193,6 +193,17 @@ budget — a NEW derived view over `error-budget.ts`, likewise owned by
   degraded reliability arm folds into its existing `'blind'` there, which is
   the conservative direction and consistent with "no all-clear while a
   required source is blind".
+- **The Sentry arm reads `environment:production` only** (2026-09-24).
+  `collectSentry` passes `environment: ['production']` to
+  `fetchSentryIssues`, which sends it as the `environment` URL param (not a
+  query token), so Sentry also scopes each issue's `lastSeen` and 24h stats
+  to production and a local dev hit cannot keep a production issue in the
+  window. `development`, `local-production-build` and `preview` events are
+  tagged by `resolveServerEnvironment` (`src/lib/sentry-environment.ts`) and
+  never reach the snapshot. Before this, local `globals.css` build failures
+  and dev-only TypeErrors became `rel:` groups that Diagnose spent most of a
+  run analysing. Bridge callers of `fetchSentryIssues` omit the option and
+  still see every environment.
 - **A canceled preview deployment is not a build problem.** `collectVercel`
   rates a `CANCELED` Vercel deployment `info` unless its `target` is
   `production`, where a canceled deploy means the intended release never

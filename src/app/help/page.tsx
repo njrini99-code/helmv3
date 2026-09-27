@@ -160,16 +160,19 @@ export default function HelpPage() {
       {/* Header */}
       <header className="bg-cream-50 border-b border-warm-200">
         <div className="max-w-4xl mx-auto px-6 py-4">
+          {/* A public page (signed-out visitors, every product), so it leads
+              back to the Helm Sports Labs home rather than one product's
+              signed-in dashboard. Same destination as /terms and /privacy. */}
           <Link
-            href="/baseball/dashboard"
+            href="/"
             className="inline-flex items-center gap-2 text-warm-600 hover:text-warm-900 transition-colors mb-4"
           >
             <ArrowLeft size={20} />
-            <span>Back to Dashboard</span>
+            <span>Back to home</span>
           </Link>
           <h1 className="text-3xl font-bold text-warm-900">Help Center</h1>
           <p className="text-warm-600 mt-2">
-            Find answers to common questions about using Helm Sports Lab
+            Find answers to common questions about using Helm Sports Labs
           </p>
         </div>
       </header>

@@ -39,7 +39,7 @@ export function SensitivitySlider({ value, onChange }: SensitivitySliderProps) {
             <div className="relative h-11 bg-surface-sunken rounded-full p-1">
                 {/* Sliding background */}
                 <div
-                    className="absolute top-1 bottom-1 bg-surface rounded-full shadow-soft transition-all duration-200 ease-out"
+                    className="absolute top-1 bottom-1 bg-surface rounded-full shadow-soft transition-[left] duration-200 ease-out"
                     style={{
                         width: 'calc(33.333% - 4px)',
                         left: `calc(${safeIndex * 33.333}% + 2px)`,

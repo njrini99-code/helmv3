@@ -62,8 +62,11 @@ export const BOOT_RECOVERY_SOURCE = `
       lower.indexOf('importing a module script failed') !== -1 ||
       (lower.indexOf('cannot read properties of undefined') !== -1 && lower.indexOf("'call'") !== -1) ||
       (lower.indexOf('undefined is not an object') !== -1 && lower.indexOf('.call') !== -1) ||
-      // Next.js's own wording for an action id the new build no longer has.
+      // Next.js's own wording for an action id the new build no longer has:
+      // the server-side error, and the 404 text/plain body ("Server action
+      // not found.") that Next 16 hands the client verbatim.
       lower.indexOf('failed to find server action') !== -1 ||
+      lower.indexOf('server action not found') !== -1 ||
       (lower.indexOf('server action') !== -1 &&
         (lower.indexOf('not found on the server') !== -1 || lower.indexOf('was not found') !== -1))
     );

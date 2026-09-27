@@ -154,10 +154,16 @@ export function CommandOpening({
 }
 
 function StatusLine({ pulse, teamName }: { pulse: ProgramPulse; teamName: string }) {
+  // "Today / 3 days ago" reads the clock, so it is computed after mount; the
+  // server and first client render show the calendar date (HYD-12).
+  const [mounted, setMounted] = React.useState(false);
+  React.useEffect(() => setMounted(true), []);
   const bits: string[] = [teamName];
   bits.push(`${pulse.active_roster} active player${pulse.active_roster === 1 ? '' : 's'}`);
   if (pulse.latest_round_at) {
-    bits.push(`last round ${relativeDays(pulse.latest_round_at)}`);
+    bits.push(
+      `last round ${mounted ? relativeDays(pulse.latest_round_at) : formatDateOnlyShort(pulse.latest_round_at)}`,
+    );
   } else {
     bits.push('no rounds recorded yet');
   }
@@ -181,7 +187,7 @@ function ProgramPulsePanel({
   if (pulse.items.length === 0) {
     return (
       <section aria-label="Program pulse" className="rounded-card border border-border-subtle bg-surface px-4 py-3.5">
-        <h2 className="font-fw-sans text-eyebrow uppercase tracking-[0.1em] text-text-tertiary">
+        <h2 className="font-fw-sans text-body-sm font-semibold text-text-primary">
           Program pulse
         </h2>
         <p className="mt-1.5 font-fw-sans text-body-sm text-text-secondary">
@@ -195,7 +201,7 @@ function ProgramPulsePanel({
 
   return (
     <section aria-label="Program pulse" className="rounded-card border border-border-subtle bg-surface">
-      <h2 className="border-b border-border-subtle px-4 py-2.5 font-fw-sans text-eyebrow uppercase tracking-[0.1em] text-text-tertiary">
+      <h2 className="border-b border-border-subtle px-4 py-2.5 font-fw-sans text-body-sm font-semibold text-text-primary">
         Program pulse
       </h2>
       <ul>

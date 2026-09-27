@@ -4,7 +4,9 @@
  * ============================================================================
  * ProfileDrill — `?view=profile` (spec §5.3, absorbs `/my-game-profile`)
  * ----------------------------------------------------------------------------
- * Genome radar + per-dimension readouts, ported from `FairwayMyGameProfile`
+ * The player's Genome (PlayerGenomeProfile: the shape in words, strengths and
+ * watch-outs, every dimension ranked; the radar and score tiles are retired),
+ * originally ported from `FairwayMyGameProfile`
  * (minus its own `CoachHelmShell` — the stage IS the chrome now). Also hosts
  * the monolith's "Performance overview" pairing (`CompositeRatingCard` +
  * `FairwayTrendBrain`) below the genome — both the bento's "Game profile" AND
@@ -26,22 +28,16 @@
  * ========================================================================== */
 
 import { useState } from 'react';
-import Link from 'next/link';
-import nextDynamic from 'next/dynamic';
 
-import { DrillPanel, useStage } from '@/components/fairway/modules';
-import { InstrumentPanel, Readout, Surface, Chip, Button, Skeleton, InsufficientData } from '@/components/fairway';
+import { DrillPanel } from '@/components/fairway/modules';
+import { Surface, InsufficientData } from '@/components/fairway';
+import { PlayerGenomeProfile } from '@/components/fairway/pages/genome/PlayerGenomeProfile';
 import { Segmented, type SegmentedOption } from '@/components/fairway/controls/segmented';
 import { FairwayPlayerGameFingerprint } from '@/components/fairway/pages/player-game';
 import { CompositeRatingCard } from '@/components/golf/coachhelm/player/CompositeRatingCard';
 import { FairwayTrendBrain } from '@/components/golf/coachhelm/player/FairwayTrendBrain';
 import { expectedEmptyStateCopy } from '@/lib/view-state/expected-empty-states';
-import type { PlayerFingerprint } from '@/app/golf/actions/player-fingerprint';
-
-const GenomeRadar = nextDynamic(
-  () => import('@/components/fairway').then((m) => ({ default: m.GenomeRadar })),
-  { ssr: false, loading: () => <Skeleton className="h-[220px] w-full rounded-card" /> },
-);
+import type { PlayerFingerprint } from '@/app/golf/actions/player-fingerprint-types';
 
 export interface GameProfileAxis {
   label: string;
@@ -60,6 +56,7 @@ export interface GameProfilePersonaEntry {
 }
 
 export interface ProfileDrillProps {
+  /** Kept for callers; the radar that drew it is retired. */
   axes: GameProfileAxis[];
   dimensions: GameProfileDimensionCell[];
   strengths: GameProfilePersonaEntry[];
@@ -91,7 +88,6 @@ const PROFILE_TAB_OPTIONS: SegmentedOption<ProfileTab>[] = [
 ];
 
 export function ProfileDrill({
-  axes,
   dimensions,
   strengths,
   watchouts,
@@ -104,108 +100,25 @@ export function ProfileDrill({
   v3EmptyCodes = {},
   fingerprint = null,
 }: ProfileDrillProps) {
-  const { home } = useStage();
-  const hasGenome = axes.length > 0;
   const hasFingerprint = fingerprint != null;
   const [tab, setTab] = useState<ProfileTab>(hasFingerprint ? 'fingerprint' : 'genome');
 
   const genomeSection = (
       <div className="flex flex-col gap-8">
-        {hasGenome ? (
-          <>
-            <InstrumentPanel depth="raised" tone="accent" padding="lg" eyebrow="Your shape" header="Genome" as="section">
-              <div className="grid grid-cols-1 gap-6 md:grid-cols-[minmax(0,1fr)_minmax(0,0.9fr)] md:items-center">
-                <div className="w-full min-w-0">
-                  <GenomeRadar title="Score by dimension" seriesName="Score" data={axes} max={100} height={220} />
-                </div>
-                <div className="flex flex-col gap-5">
-                  {courseProfile ? (
-                    <p className="max-w-[44ch] font-fw-display text-body-lg leading-[1.6] text-text-secondary">
-                      {courseProfile}
-                    </p>
-                  ) : null}
-                  {strengths.length > 0 ? (
-                    <div className="flex flex-col gap-2">
-                      <span className="font-fw-sans text-caption font-medium uppercase tracking-[0.12em] text-text-tertiary">
-                        Strengths
-                      </span>
-                      <div className="flex flex-wrap gap-2">
-                        {strengths.map((s) => (
-                          <Chip key={s.id} tone="success" size="md">
-                            {s.qualitative ? `${s.label} · ${s.qualitative}` : s.label}
-                          </Chip>
-                        ))}
-                      </div>
-                    </div>
-                  ) : null}
-                  {watchouts.length > 0 ? (
-                    <div className="flex flex-col gap-2">
-                      <span className="font-fw-sans text-caption font-medium uppercase tracking-[0.12em] text-text-tertiary">
-                        Watchouts
-                      </span>
-                      <div className="flex flex-wrap gap-2">
-                        {watchouts.map((w) => (
-                          <Chip key={w.id} tone="warning" size="md">
-                            {w.qualitative ? `${w.label} · ${w.qualitative}` : w.label}
-                          </Chip>
-                        ))}
-                      </div>
-                    </div>
-                  ) : null}
-                </div>
-              </div>
-            </InstrumentPanel>
+        <PlayerGenomeProfile
+          dimensions={dimensions}
+          strengths={strengths}
+          watchouts={watchouts}
+          courseProfile={courseProfile}
+          roundsBasis={roundsBasis}
+          roundFloor={GENOME_ROUND_FLOOR}
+        />
 
-            {dimensions.length > 0 ? (
-              <section className="flex flex-col gap-3">
-                <h2 className="px-1 font-fw-display text-eyebrow font-medium uppercase tracking-[0.14em] text-text-tertiary">
-                  Dimensions
-                </h2>
-                <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-                  {dimensions.map((dim) => {
-                    const locked = dim.score == null;
-                    return (
-                      <InstrumentPanel key={dim.id} depth="base" padding="md" className="h-full">
-                        {locked ? (
-                          <Readout label={dim.label} size="md" state="awaiting" awaitingLabel={dim.qualitative ?? 'Locked'} />
-                        ) : (
-                          <Readout value={dim.score ?? 0} format={{ maximumFractionDigits: 0 }} label={dim.label} size="md" state="live" />
-                        )}
-                      </InstrumentPanel>
-                    );
-                  })}
-                </div>
-              </section>
-            ) : null}
-          </>
-        ) : (
-          <InstrumentPanel depth="raised" padding="lg" eyebrow="Your shape" header="Your genome is warming up" as="section">
-            <div className="flex flex-col items-center gap-6 py-4 text-center">
-              <Readout
-                value={roundsBasis ?? undefined}
-                format={{ maximumFractionDigits: 0 }}
-                label="Rounds logged"
-                size="hero"
-                state="awaiting"
-                samples={{ have: roundsBasis ?? 0, need: GENOME_ROUND_FLOOR }}
-                awaitingLabel="Awaiting"
-              />
-              <p className="max-w-[44ch] font-fw-sans text-body-sm leading-relaxed text-text-secondary">
-                Your genome needs {GENOME_ROUND_FLOOR}+ completed rounds before the radar lights up. Keep logging
-                rounds — we&rsquo;ll surface your shape automatically.
-              </p>
-              <Button asChild variant="primary">
-                <Link href="/golf/dashboard/rounds/new">Log a round</Link>
-              </Button>
-            </div>
-          </InstrumentPanel>
-        )}
-
-        <section className="flex flex-col gap-3">
-          <h2 className="px-1 font-fw-display text-eyebrow font-medium uppercase tracking-[0.14em] text-text-tertiary">
-            Composite + trend
+        <section className="flex flex-col gap-3 [container-type:inline-size]">
+          <h2 className="font-fw-sans text-h3 text-text-primary">
+            Composite and trend
           </h2>
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+          <div className="grid grid-cols-1 gap-6 [@container(min-width:720px)]:grid-cols-2">
             {profileData != null ? (
               <CompositeRatingCard profileData={profileData} playerState={playerState} playerName={playerName} />
             ) : (
@@ -241,14 +154,14 @@ export function ProfileDrill({
 
         <Surface elevation="border" padding="md">
           <p className="font-fw-sans text-caption leading-5 text-text-tertiary">
-            Your coach sees this exact profile. It updates automatically as you log rounds — no extra steps.
+            Your coach sees this exact profile. It updates automatically as you log rounds. No extra steps.
           </p>
         </Surface>
       </div>
   );
 
   return (
-    <DrillPanel title="Game profile" backLabel="Home" onBack={home}>
+    <DrillPanel title="Game profile">
       {hasFingerprint ? (
         <div className="flex flex-col gap-6">
           <Segmented<ProfileTab>

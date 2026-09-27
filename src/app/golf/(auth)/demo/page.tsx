@@ -4,7 +4,8 @@ import { Suspense, useState, useEffect, useMemo } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { LazyMotion, m, useReducedMotion } from 'framer-motion';
+import { LazyMotion, m } from 'framer-motion';
+import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
 import { loadFeatures } from '@/lib/motion/load-features';
 import { AlertCircle, Loader2, ArrowRight, BarChart2, Users, Brain } from 'lucide-react';
 import { Input } from '@/components/ui/input';
@@ -16,6 +17,7 @@ import { createClient } from '@/lib/supabase/client';
 import { DEMO_COACHHELM_LANDING_PATH, DEMO_LANDING_PATH } from '@/lib/demo/config';
 import { enterDemo } from '@/app/golf/actions/demo-access';
 import { probeSignedIn } from '@/lib/demo/gate-probe';
+import { fwPress } from '@/components/fairway/controls';
 
 // ---------------------------------------------------------------------------
 // Value-prop pill items shown below the headline
@@ -55,7 +57,7 @@ function validateSchool(v: string): string | undefined {
 // ---------------------------------------------------------------------------
 
 function DemoGateContent() {
-  const prefersReducedMotion = useReducedMotion();
+  const prefersReducedMotion = useReducedMotionGuard();
   const router = useRouter();
   const searchParams = useSearchParams();
   const sessionExpired = searchParams.get('message') === 'demo_session_expired';
@@ -172,7 +174,7 @@ function DemoGateContent() {
         {/* Skip link for keyboard users */}
         <a
           href="#demo-form"
-          className="sr-only focus:not-sr-only focus:absolute focus:z-[9999] focus:top-4 focus:left-4 bg-primary-600 text-white px-4 py-2 rounded-lg font-medium shadow-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
+          className="sr-only focus:not-sr-only focus:absolute focus:z-[9999] focus:top-4 focus:left-4 bg-accent-fill text-text-on-accent-fill px-4 py-2 rounded-fw-sm font-medium shadow-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
         >
           Skip to demo form
         </a>
@@ -244,7 +246,7 @@ function DemoGateContent() {
               style={{ filter: 'drop-shadow(0 1px 1px rgba(255,255,255,0.5))' }}
             >
               Explore a fully-populated roster, real strokes-gained stats, and
-              CoachHelm AI insights — no setup, no credit card.
+              CoachHelm AI insights. No setup, no credit card.
             </p>
 
             {/* Value prop pills */}
@@ -259,7 +261,7 @@ function DemoGateContent() {
                     backdropFilter: 'blur(4px)',
                   }}
                 >
-                  <Icon className="w-3.5 h-3.5 text-primary-600" aria-hidden />
+                  <Icon className="w-3.5 h-3.5 text-accent-ink" aria-hidden />
                   {text}
                 </span>
               ))}
@@ -296,7 +298,7 @@ function DemoGateContent() {
               >
                 Try the live demo
               </h2>
-              <p className="text-warm-500 text-sm mt-1">
+              <p className="text-text-tertiary text-sm mt-1">
                 Tell us a bit about yourself to get instant access.
               </p>
             </div>
@@ -305,7 +307,7 @@ function DemoGateContent() {
             {sessionExpired && (
               <div
                 role="status"
-                className="bg-primary-400/10 border border-primary-400/30 text-primary-800 px-4 py-3 rounded-xl text-sm text-center mb-4"
+                className="bg-primary-400/10 border border-primary-400/30 text-primary-800 px-4 py-3 rounded-fw-md text-sm text-center mb-4"
               >
                 Your demo session timed out. Enter your info again to jump right back in.
               </div>
@@ -315,20 +317,20 @@ function DemoGateContent() {
             {checkingAuth ? (
               <div className="flex justify-center py-4">
                 <span role="status" aria-label="Checking sign-in status" className="flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-primary-600 skeleton-shimmer" style={{ animationDelay: '0ms' }} />
-                  <span className="w-2 h-2 rounded-full bg-primary-600 skeleton-shimmer" style={{ animationDelay: '150ms' }} />
-                  <span className="w-2 h-2 rounded-full bg-primary-600 skeleton-shimmer" style={{ animationDelay: '300ms' }} />
+                  <span className="w-2 h-2 rounded-full bg-accent-fill skeleton-shimmer" style={{ animationDelay: '0ms' }} />
+                  <span className="w-2 h-2 rounded-full bg-accent-fill skeleton-shimmer" style={{ animationDelay: '150ms' }} />
+                  <span className="w-2 h-2 rounded-full bg-accent-fill skeleton-shimmer" style={{ animationDelay: '300ms' }} />
                 </span>
               </div>
             ) : isDemoUser ? (
               <div className="space-y-3">
-                <div className="bg-primary-400/10 border border-primary-400/30 text-primary-800 px-4 py-3 rounded-xl text-sm text-center">
-                  You&apos;re already in the demo — continue where you left off.
+                <div className="bg-primary-400/10 border border-primary-400/30 text-primary-800 px-4 py-3 rounded-fw-md text-sm text-center">
+                  You&apos;re already in the demo. Continue where you left off.
                 </div>
                 <Button
                   variant="primary"
                   onClick={() => router.push(landingPath)}
-                  className="w-full min-h-[50px] py-3 bg-primary-600 text-white font-semibold tracking-[-0.01em] rounded-xl shadow-lg shadow-primary-600/25 transition-all duration-200 ease-ios hover:bg-primary-700 active:scale-[0.97] active:duration-75"
+                  className={`w-full min-h-[50px] py-3 bg-accent-fill text-text-on-accent-fill font-semibold tracking-[-0.01em] rounded-fw-sm shadow-lg shadow-primary-600/25 transition duration-200 ease-ios hover:bg-accent-fill-hover active:duration-75 ${fwPress}`}
                   rightIcon={<ArrowRight className="w-4 h-4" aria-hidden />}
                 >
                   Continue to dashboard
@@ -341,7 +343,7 @@ function DemoGateContent() {
                   <m.div
                     initial={prefersReducedMotion ? false : { opacity: 0, y: -6 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded-xl flex items-start gap-2.5"
+                    className="bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded-fw-md flex items-start gap-2.5"
                     role="alert"
                   >
                     <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" aria-hidden />
@@ -363,7 +365,6 @@ function DemoGateContent() {
                   autoCapitalize="words"
                   enterKeyHint="next"
                   error={nameError}
-                  aria-describedby={nameError ? 'demo-name-error' : undefined}
                 />
 
                 {/* Email */}
@@ -378,7 +379,6 @@ function DemoGateContent() {
                   required
                   enterKeyHint="next"
                   error={emailError}
-                  aria-describedby={emailError ? 'demo-email-error' : undefined}
                 />
 
                 {/* School / Program */}
@@ -394,7 +394,6 @@ function DemoGateContent() {
                   autoCapitalize="words"
                   enterKeyHint="go"
                   error={schoolError}
-                  aria-describedby={schoolError ? 'demo-school-error' : undefined}
                 />
 
                 {/* Submit */}
@@ -403,19 +402,19 @@ function DemoGateContent() {
                   type="submit"
                   disabled={isLoading}
                   aria-busy={isLoading}
-                  className="
+                  className={`
                     w-full min-h-[50px] py-3
-                    bg-primary-600 text-white
+                    bg-accent-fill text-text-on-accent-fill
                     font-semibold tracking-[-0.01em]
-                    rounded-xl
+                    rounded-fw-sm
                     shadow-lg shadow-primary-600/25
-                    transition-all duration-200 ease-ios
+                    transition duration-200 ease-ios
                     hover:bg-primary-700 hover:shadow-primary-600/30
-                    active:scale-[0.97] active:duration-75
+                    active:duration-75 ${fwPress}
                     disabled:opacity-70 disabled:cursor-not-allowed disabled:active:scale-100
                     flex items-center justify-center gap-2
                     focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2
-                  "
+                  `}
                 >
                   {isLoading ? (
                     <>
@@ -430,7 +429,7 @@ function DemoGateContent() {
                   )}
                 </Button>
 
-                <p className="text-center text-xs text-warm-500 leading-relaxed pt-1">
+                <p className="text-center text-xs text-text-tertiary leading-relaxed pt-1">
                   You&apos;ll be signed into a shared demo account instantly.{' '}
                   No password needed.
                 </p>
@@ -438,37 +437,39 @@ function DemoGateContent() {
             )}
           </m.div>
 
-          {/* Footer */}
+          {/* Footer. On a phone these lines land on the course scene's trees,
+              so they sit on the same opaque readability panel as the footer
+              of signup/page.tsx instead of directly on the illustration. */}
           <m.div
             initial={prefersReducedMotion ? false : { opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={motionStagger(0.25)}
-            className="mt-6 flex flex-col items-center gap-3"
+            className="mx-auto mt-5 sm:mt-6 flex w-fit max-w-full flex-col items-center gap-3 rounded-card bg-surface/95 px-4 py-3 shadow-sm ring-1 ring-border-subtle backdrop-blur-sm"
           >
-            <p className="text-warm-600 text-sm">
+            <p className="text-text-secondary text-sm">
               Already have an account?{' '}
               <Link
                 href="/golf/login"
-                className="text-primary-700 font-semibold hover:text-primary-600 transition-colors"
+                className="text-primary-700 font-semibold hover:text-accent-ink transition-colors"
               >
                 Sign in
               </Link>
             </p>
-            <div className="flex items-center gap-1.5 text-xs text-warm-500">
+            <div className="flex items-center gap-1.5 text-xs text-text-tertiary">
               {/* 44px touch target via `py-3 -my-3` — the padding grows the hit
                   area, the negative margin cancels the layout shift. Same
                   treatment as `login/page.tsx` and `signup/page.tsx`; guarded by
                   `src/test/static/legal-link-touch-targets.test.ts`. */}
               <Link
                 href="/privacy"
-                className="inline-flex items-center rounded-lg px-2 py-3 -my-3 min-h-[44px] hover:text-warm-700 transition-colors"
+                className="inline-flex items-center rounded-fw-sm px-2 py-3 -my-3 min-h-[44px] hover:text-warm-700 transition-colors"
               >
                 Privacy
               </Link>
-              <span className="text-warm-400" aria-hidden>·</span>
+              <span className="text-text-tertiary" aria-hidden>·</span>
               <Link
                 href="/terms"
-                className="inline-flex items-center rounded-lg px-2 py-3 -my-3 min-h-[44px] hover:text-warm-700 transition-colors"
+                className="inline-flex items-center rounded-fw-sm px-2 py-3 -my-3 min-h-[44px] hover:text-warm-700 transition-colors"
               >
                 Terms
               </Link>
@@ -488,11 +489,11 @@ export default function DemoGatePage() {
   return (
     <Suspense
       fallback={
-        <div className="flex items-center justify-center" style={{ height: '100svh', background: '#FFFEFA' }}>
+        <div className="flex items-center justify-center" style={{ height: '100svh', background: 'var(--fw-color-canvas)' }}>
           <span role="status" aria-label="Loading demo" className="flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-primary-600 skeleton-shimmer" style={{ animationDelay: '0ms' }} />
-            <span className="w-2 h-2 rounded-full bg-primary-600 skeleton-shimmer" style={{ animationDelay: '150ms' }} />
-            <span className="w-2 h-2 rounded-full bg-primary-600 skeleton-shimmer" style={{ animationDelay: '300ms' }} />
+            <span className="w-2 h-2 rounded-full bg-accent-fill skeleton-shimmer" style={{ animationDelay: '0ms' }} />
+            <span className="w-2 h-2 rounded-full bg-accent-fill skeleton-shimmer" style={{ animationDelay: '150ms' }} />
+            <span className="w-2 h-2 rounded-full bg-accent-fill skeleton-shimmer" style={{ animationDelay: '300ms' }} />
           </span>
         </div>
       }

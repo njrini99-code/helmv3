@@ -186,7 +186,7 @@ export function DrivingDrill({ detailedStats, sprayData, patterns = [], trends =
                 size="md"
                 state={fwPct != null ? 'live' : 'awaiting'}
                 awaitingLabel="No tee shots"
-                delta={readoutDeltaFromTrend(drivingTrend, 'vs prior period')}
+                delta={readoutDeltaFromTrend(drivingTrend, drivingTrend?.deltaWindow ?? 'vs prior rounds')}
               />
               {fwAttempts > 0 ? (
                 <p className="font-fw-mono text-caption tabular-nums text-text-tertiary">

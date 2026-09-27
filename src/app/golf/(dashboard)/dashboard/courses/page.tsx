@@ -11,8 +11,8 @@ import {
 import { CourseLibraryClient } from '@/components/golf/courses/CourseLibraryClient';
 
 export const metadata: Metadata = {
-  title: 'Courses | Helm Golf',
-  description: 'The cloud course library — browse courses, manage tee sets, and save your team’s home courses.',
+  title: 'Courses',
+  description: 'The cloud course library: browse courses, manage tee sets, and save your team’s home courses.',
 };
 
 // The library must reflect new courses / tees / photos immediately.

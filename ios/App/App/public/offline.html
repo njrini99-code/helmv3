@@ -3,58 +3,100 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-    <title>Helm Sports Labs - Offline</title>
+    <meta name="color-scheme" content="light dark">
+    <meta name="theme-color" content="#F2E6D2" media="(prefers-color-scheme: light)">
+    <meta name="theme-color" content="#0D0F0D" media="(prefers-color-scheme: dark)">
+    <title>You're offline</title>
     <style>
+        /* Fairway tokens, resolved to sRGB because this page must render with
+           no network and no app CSS (src/styles/design-tokens.css):
+             canvas        --fw-color-canvas           light #F2E6D2 / dark #0D0F0D
+             ink           --fw-color-text-primary     light #1C1917 / dark #F1F3F2
+             secondary     --fw-color-text-secondary   light #4E4741 / dark #C6C8C6
+             button fill   --fw-color-accent-650       #248342 (not flipped in dark)
+             button ink    --fw-color-text-on-accent   #FEFDF9
+             CTA radius    --fw-radius-full */
+        :root {
+            --canvas: #F2E6D2;
+            --ink: #1C1917;
+            --secondary: #4E4741;
+            --accent: #248342;
+            --on-accent: #FEFDF9;
+            color-scheme: light dark;
+        }
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --canvas: #0D0F0D;
+                --ink: #F1F3F2;
+                --secondary: #C6C8C6;
+            }
+        }
         * { margin: 0; padding: 0; box-sizing: border-box; }
+        html { background: var(--canvas); }
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
-            background: #FFFEFA;
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", "Segoe UI", Roboto, system-ui, sans-serif;
+            background: var(--canvas);
+            color: var(--ink);
             display: flex;
             align-items: center;
             justify-content: center;
-            min-height: 100vh;
-            padding: env(safe-area-inset-top, 20px) 24px env(safe-area-inset-bottom, 20px);
+            min-height: 100dvh;
+            padding:
+                max(env(safe-area-inset-top), 24px)
+                max(env(safe-area-inset-right), 24px)
+                max(env(safe-area-inset-bottom), 24px)
+                max(env(safe-area-inset-left), 24px);
             -webkit-text-size-adjust: 100%;
+            -webkit-tap-highlight-color: transparent;
         }
-        .container { text-align: center; max-width: 320px; }
-        .icon {
-            width: 80px; height: 80px; border-radius: 20px;
-            background: linear-gradient(135deg, #dcfce7, #bbf7d0);
-            display: flex; align-items: center; justify-content: center;
-            margin: 0 auto 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-        }
-        .icon svg { width: 40px; height: 40px; stroke: #16A34A; fill: none; }
-        h1 { font-size: 24px; font-weight: 600; color: #1c1917; margin-bottom: 8px; }
-        p { font-size: 16px; color: #78716c; line-height: 1.5; margin-bottom: 32px; }
+        main { width: 100%; max-width: 340px; text-align: center; }
+        .glyph { width: 44px; height: 44px; margin: 0 auto 20px; color: var(--secondary); }
+        .glyph svg { width: 100%; height: 100%; fill: none; stroke: currentColor; }
+        h1 { font-size: 22px; line-height: 28px; font-weight: 600; letter-spacing: -0.018em; margin-bottom: 8px; }
+        p { font-size: 15px; line-height: 22px; color: var(--secondary); }
+        .lede { margin-bottom: 28px; }
         button {
-            background: #16A34A; color: white; border: none; border-radius: 12px;
-            padding: 14px 32px; font-size: 16px; font-weight: 600;
-            cursor: pointer; -webkit-tap-highlight-color: transparent;
-            min-height: 48px; width: 100%; transition: background 0.15s;
+            display: block;
+            width: 100%;
+            min-height: 50px;
+            padding: 0 24px;
+            border: 0;
+            border-radius: 9999px;
+            background: var(--accent);
+            color: var(--on-accent);
+            font: inherit;
+            font-size: 17px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 110ms ease-out, filter 110ms ease-out;
         }
-        button:active { background: #15803d; transform: scale(0.98); }
-        .sub { font-size: 13px; color: #a8a29e; margin-top: 16px; }
-        .sub a { color: #16A34A; text-decoration: none; }
+        button:active { transform: scale(0.98); filter: brightness(0.92); }
+        button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+        .help { margin-top: 16px; font-size: 13px; line-height: 18px; }
+        @media (prefers-reduced-motion: reduce) {
+            button { transition: none; }
+            button:active { transform: none; }
+        }
     </style>
 </head>
 <body>
-    <div class="container" role="main">
-        <div class="icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M1 1l22 22"/>
-                <path d="M16.72 11.06A10.94 10.94 0 0119 12.55"/>
-                <path d="M5 12.55a10.94 10.94 0 015.17-2.39"/>
-                <path d="M10.71 5.05A16 16 0 0122.56 9"/>
-                <path d="M1.42 9a15.91 15.91 0 014.7-2.88"/>
-                <path d="M8.53 16.11a6 6 0 016.95 0"/>
-                <line x1="12" y1="20" x2="12.01" y2="20"/>
+    <main>
+        <div class="glyph" aria-hidden="true">
+            <svg viewBox="0 0 24 24" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M2 2l20 20"/>
+                <path d="M8.5 16.4a5 5 0 0 1 7 0"/>
+                <path d="M5 12.9a10 10 0 0 1 5.2-2.6"/>
+                <path d="M19 12.9a10 10 0 0 0-2.2-1.6"/>
+                <path d="M2 8.8a15 15 0 0 1 4.2-2.5"/>
+                <path d="M10.7 5.1A15 15 0 0 1 22 8.8"/>
+                <path d="M12 20h.01"/>
             </svg>
         </div>
-        <h1>No Connection</h1>
-        <p>Helm Sports Labs needs an internet connection. Please check your connection and try again.</p>
-        <button onclick="helmRetry()" aria-label="Retry connection">Try Again</button>
-        <p class="sub"><a href="mailto:admin@helmsportslabs.com">admin@helmsportslabs.com</a></p>
-    </div>
+        <h1>You're offline</h1>
+        <p class="lede">GolfHelm needs an internet connection to load. Check your connection and try again.</p>
+        <button type="button" onclick="helmRetry()">Try again</button>
+        <p class="help">If this keeps happening, check Wi-Fi or Cellular in Settings.</p>
+    </main>
     <script>
         // This page is served two different ways and retry means two different
         // things:
@@ -62,19 +104,20 @@
         //   1. Web PWA — public/sw.js serves it from cache for a failed
         //      navigation. The document URL is still the real app URL, so
         //      reload() correctly retries that page.
-        //   2. Android shell — Capacitor loads it as `server.errorPath` from a
+        //   2. Native shell — Capacitor loads it as `server.errorPath` from a
         //      LOCAL origin when the remote app fails to load. Here reload()
-        //      just re-renders this same local file, so "Try Again" becomes a
+        //      just re-renders this same local file, so "Try again" becomes a
         //      dead end that never returns to the app no matter how many times
         //      it is pressed.
         //
-        // Detect the local case and navigate back to the app explicitly.
+        // Detect the local case and navigate back to the app explicitly. The
+        // apex host matches capacitor.config.ts server.url (www 307s to it).
         function helmRetry() {
             var local = location.protocol === 'file:' ||
                         location.protocol === 'capacitor:' ||
                         location.hostname === 'localhost';
             if (local) {
-                location.replace('https://www.helmsportslabs.com/golf/dashboard');
+                location.replace('https://helmsportslabs.com/golf/dashboard');
             } else {
                 location.reload();
             }

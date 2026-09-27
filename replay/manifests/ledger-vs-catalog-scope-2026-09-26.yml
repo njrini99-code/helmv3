@@ -1,0 +1,29 @@
+schema_version: 1
+replay_id: ledger-vs-catalog-scope-2026-09-26
+incident_id: memory/incidents/feature_awareness_system/INC-2026-09-26-ledger-vs-catalog-false-drift.md
+feature_id: feature_awareness_system
+title: >-
+  check-ledger-vs-catalog read only the public catalog, ignored later drops
+  and parsed format() templates, reporting 258 false "missing" objects (#1897).
+bad_version: a9a03535e98d31d8e86815526da3af394d3b6ef3
+fixed_version: b4a128e0ce96c67a00e2e6cb1123cfc994a9771e
+fixture:
+  - source: check-ledger-vs-catalog.test.mjs
+    target: scripts/__tests__/check-ledger-vs-catalog.test.mjs
+test_command: "./node_modules/.bin/vitest run scripts/__tests__/check-ledger-vs-catalog.test.mjs"
+expected:
+  bad_version: fail
+  fixed_version: pass
+expected_failure_mode: missing-export
+sanitization:
+  reviewed: true
+  contains_production_data: false
+  notes: >-
+    Synthetic SQL snippets and invented object names only; no rows, IDs, PII,
+    tokens or logs.
+source_incident_status: fixed
+created_at: "2026-09-26"
+notes: >-
+  On bad_version, two tests fail with "is not a function" (parseRemovedObjects
+  and isUserSchema are new exports) and two with assertion failures (format()
+  placeholder and later-drop cases).

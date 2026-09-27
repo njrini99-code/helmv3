@@ -17,7 +17,7 @@ function formatScore(c: SelectionCandidate): string {
 export function composeTravelBrief(workspace: QualifyingWorkspace): string {
   const lines: string[] = [];
 
-  lines.push(`## ✈️ Qualifying Selection — ${workspace.name}`);
+  lines.push(`## ✈️ Qualifying Selection: ${workspace.name}`);
   lines.push('');
   lines.push(
     `**Date:** ${workspace.start_date}${workspace.end_date ? ` – ${workspace.end_date}` : ''}`,
@@ -37,7 +37,7 @@ export function composeTravelBrief(workspace: QualifyingWorkspace): string {
     lines.push('');
     for (const c of topScore) {
       lines.push(
-        `- **${c.player_first_name} ${c.player_last_name}** — #${c.leaderboard_rank} — ${formatScore(c)}`,
+        `- **${c.player_first_name} ${c.player_last_name}**, #${c.leaderboard_rank}, ${formatScore(c)}`,
       );
     }
     lines.push('');
@@ -49,7 +49,7 @@ export function composeTravelBrief(workspace: QualifyingWorkspace): string {
     for (const c of coachPicks) {
       const reasoning = c.selection?.coach_reasoning ?? '';
       lines.push(
-        `- **${c.player_first_name} ${c.player_last_name}** — ${formatScore(c)}`,
+        `- **${c.player_first_name} ${c.player_last_name}**: ${formatScore(c)}`,
       );
       if (reasoning) {
         lines.push(`  > ${reasoning}`);

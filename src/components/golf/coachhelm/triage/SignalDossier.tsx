@@ -70,7 +70,7 @@ export interface SignalDossierProps {
 function DossierSection({ title, children }: { title: string; children: ReactNode }) {
   return (
     <div className="flex flex-col gap-2 rounded-fw-md border border-border-subtle bg-surface-sunken p-4">
-      <p className="font-fw-display text-eyebrow uppercase tracking-[0.13em] text-text-tertiary">{title}</p>
+      <h4 className="font-fw-sans text-body-sm font-semibold text-text-primary">{title}</h4>
       {children}
     </div>
   );
@@ -160,7 +160,7 @@ export function SignalDossier({
       <h3 className="font-fw-display text-h3 font-semibold text-text-primary">{signal.title}</h3>
 
       <div className="flex flex-col gap-2 rounded-fw-md border border-border-subtle bg-surface-sunken p-4">
-        <p className="font-fw-display text-eyebrow uppercase tracking-[0.13em] text-text-tertiary">Evidence</p>
+        <h4 className="font-fw-sans text-body-sm font-semibold text-text-primary">Evidence</h4>
         <p className="font-fw-sans text-body-sm text-text-secondary">
           {/* Retold in the third person — the coach is the reader, the
               player is the subject (audit M12). */}

@@ -25,7 +25,7 @@
  * ========================================================================== */
 
 import * as React from 'react';
-import { motion, useReducedMotion } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { InstrumentPanel } from '../instrument/InstrumentPanel';
 import { Readout } from '../instrument/Readout';
@@ -39,6 +39,7 @@ import {
   formatPercent,
 } from './theme';
 import type { GoodDirection } from './TrendChip';
+import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
 
 export type RadialGaugeSize = 'md' | 'lg';
 
@@ -122,7 +123,7 @@ export function RadialGauge({
   unit = 'samples',
   className,
 }: RadialGaugeProps) {
-  const reduced = useReducedMotion() ?? false;
+  const reduced = useReducedMotionGuard() ?? false;
   const [showTable, setShowTable] = React.useState(false);
 
   const safeMax = max > 0 ? max : 1;

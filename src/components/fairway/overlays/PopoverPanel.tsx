@@ -21,7 +21,8 @@
 
 import * as React from 'react';
 import * as Popover from '@radix-ui/react-popover';
-import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
+import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
 import { cn } from '@/lib/utils';
 import {
   FW_Z,
@@ -89,7 +90,7 @@ function PopoverPanelRoot({
   width = 'auto',
   'data-slot': dataSlot = 'popover-panel',
 }: PopoverPanelProps) {
-  const reduced = useReducedMotion() ?? false;
+  const reduced = useReducedMotionGuard();
 
   // Track open so framer-motion can run the exit tween before Radix unmounts.
   const isControlled = open !== undefined;

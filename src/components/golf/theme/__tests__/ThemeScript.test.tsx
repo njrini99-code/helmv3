@@ -68,9 +68,43 @@ describe('ThemeScript (#1044)', () => {
     expect(document.documentElement).toHaveAttribute('data-fw-theme', 'dark');
   });
 
+  // The redesigned sign-in screens paint only on Fairway tokens, so they boot
+  // the same theme as the dashboard they lead to (and follow the OS on 'system').
+  it.each(['/golf/login', '/golf/forgot-password', '/golf/reset-password'])('boots the saved theme on %s', (pathname) => {
+    window.history.replaceState({}, '', pathname);
+    window.localStorage.setItem('golf_theme', 'dark');
+
+    runBoot();
+
+    expect(document.documentElement).toHaveClass('dark');
+    expect(document.documentElement).toHaveAttribute('data-fw-theme', 'dark');
+  });
+
+  it('follows an OS dark preference on /golf/login when no choice is saved', () => {
+    window.history.replaceState({}, '', '/golf/login');
+    Object.defineProperty(window, 'matchMedia', {
+      configurable: true,
+      value: vi.fn(() => ({ matches: true })),
+    });
+
+    runBoot();
+
+    expect(document.documentElement).toHaveClass('dark');
+  });
+
+  it('marks golf paths for the golf-only touch rules and nothing else', () => {
+    window.history.replaceState({}, '', '/golf/join/abc');
+    runBoot();
+    expect(document.documentElement).toHaveAttribute('data-helm-sport', 'golf');
+    window.history.replaceState({}, '', '/baseball/dashboard');
+    runBoot();
+    expect(document.documentElement).not.toHaveAttribute('data-helm-sport');
+  });
+
   // '/administration' guards the /admin prefix test: the boot script matches
   // the exact path or the '/admin/' prefix, never a bare startsWith('/admin').
-  it.each(['/baseball/dashboard', '/golf/dashboard-preview', '/administration'])(
+  // '/golf/login-help' guards that the login match is exact, not a prefix.
+  it.each(['/baseball/dashboard', '/golf/dashboard-preview', '/administration', '/golf/login-help'])(
     'does not apply a GolfHelm preference on %s',
     (pathname) => {
       window.history.replaceState({}, '', pathname);
@@ -82,4 +116,14 @@ describe('ThemeScript (#1044)', () => {
       expect(document.documentElement).not.toHaveAttribute('data-fw-theme');
     },
   );
+});
+
+describe('ThemeScript Dynamic Type (OD-06, TYPE-02)', () => {
+  it('reads the iOS body size and caps the reading-text scale at XXL', () => {
+    const html = renderToStaticMarkup(<ThemeScript />);
+    expect(html).toContain("q.style.font='-apple-system-body'");
+    expect(html).toContain('Math.min(23/17,z/17)');
+    // Only above the default size, so nothing changes at the default or off iOS.
+    expect(html).toContain('if(z>17)');
+  });
 });

@@ -18,6 +18,8 @@ import type {
 } from '../types';
 import { extractAllFeatures } from '../features';
 import { PatternMiner } from '../mining';
+import { isCountableRound } from '@/lib/golf/round-countable';
+import { withCanonicalRoundTotal } from '@/lib/golf/round-total';
 
 const WEIGHTS = {
   recentFormAdjustment: 0.6,
@@ -96,6 +98,16 @@ export function ciMultiplier(n: number): number {
   return 1.28 * Math.sqrt(n / (n - 2));
 }
 
+/**
+ * A signed stroke delta for driver text (NUM-07): always carries its sign
+ * ("+0.4", "−1.2", true minus), one decimal. Positive = more strokes.
+ */
+function signedStrokes(n: number): string {
+  const r = Math.round(n * 10) / 10;
+  if (r === 0) return '0.0';
+  return r > 0 ? `+${r.toFixed(1)}` : `\u2212${Math.abs(r).toFixed(1)}`;
+}
+
 /** Build a data-backed driver description naming the actual numbers. */
 export function describeFactor(
   key: string,
@@ -105,11 +117,12 @@ export function describeFactor(
   const worse = contribution > 0; // positive contribution raises score_to_par = worse
   switch (key) {
     case 'recentForm': {
-      const fs = features.temporal.recentFormScore;
+      // NUM-07 / OD-02: this is not the 0–100 Form score, so it must not be
+      // called "form score". Say what it does to the estimate, in strokes.
       const dir = worse ? 'below your baseline' : 'sharper than your baseline';
       return {
         name: 'Recent Form',
-        explanation: `Your last 5 rounds are scoring ${dir} (form score ${fs.toFixed(2)}).`,
+        explanation: `Your last 5 rounds are scoring ${dir} (${signedStrokes(contribution)} strokes on the estimate).`,
       };
     }
     case 'trendMomentum':
@@ -123,7 +136,7 @@ export function describeFactor(
       const days = features.temporal.daysSinceLastRound;
       return {
         name: 'Rest / Rust',
-        explanation: `It has been ${days} day${days === 1 ? '' : 's'} since your last round — ${worse ? 'a rust penalty applies' : 'optimal rest'}.`,
+        explanation: `It has been ${days} day${days === 1 ? '' : 's'} since your last round. ${worse ? 'A rust penalty applies.' : 'Rest is optimal.'}`,
       };
     }
     case 'pressure':
@@ -146,7 +159,7 @@ export function describeFactor(
           : 'A historical context pattern that helps your scoring applies here.',
       };
     default:
-      return { name: key, explanation: `Adjusts the estimate by ${contribution.toFixed(2)} strokes.` };
+      return { name: key, explanation: `Adjusts the estimate by ${signedStrokes(contribution)} strokes.` };
   }
 }
 
@@ -183,16 +196,31 @@ export class PerformancePredictor {
     this.features = await extractAllFeatures(this.playerId);
     if (!this.features) return null;
 
-    // Get baseline score (average over last 20 rounds)
-    const { data: rounds } = await supabase
+    // Baseline = last 20 COUNTABLE rounds (src/lib/golf/round-countable.ts).
+    // A partial or implausible round (e.g. 37 strokes "over 18") used to sit
+    // in this window and blow the interval out to a 25-stroke band. Over-fetch
+    // so the filter still leaves 20, and put 9-hole rounds on an 18-hole basis.
+    const { data: rawRounds } = await supabase
       .from('golf_rounds')
-      .select('score_to_par, round_date')
+      .select('score_to_par, round_date, holes_played, total_score, front_nine, back_nine, total_putts')
       .eq('player_id', this.playerId)
       .eq('status', 'completed')
       .order('round_date', { ascending: false })
-      .limit(20);
+      .limit(60);
 
-    if (!rounds || rounds.length < 5) return null;
+    const rounds = (rawRounds ?? [])
+      .map(withCanonicalRoundTotal)
+      .filter(isCountableRound)
+      .slice(0, 20)
+      .map((r) => {
+        const holes = r.holes_played ?? 18;
+        return {
+          round_date: r.round_date,
+          score_to_par: r.score_to_par != null && holes > 0 ? (r.score_to_par * 18) / holes : null,
+        };
+      });
+
+    if (rounds.length < 5) return null;
 
     // Staleness gate — refuse to predict off data older than STALENESS_DAYS
     const mostRecent = rounds[0]?.round_date;

@@ -14,6 +14,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import {
+  prefetchCandidateRounds,
   validatePredictionAgainstOutcome,
   type RipePrediction,
 } from '@/lib/coachhelm/v2/learning/outcome-validator';
@@ -76,25 +77,30 @@ export async function GET(req: NextRequest) {
     };
     let failed = 0;
 
-    for (const row of ripe ?? []) {
-      const prediction: RipePrediction = {
-        id: row.id,
-        player_id: row.player_id,
-        metric: row.metric,
-        predicted_value: Number(row.predicted_value),
-        predicted_low: row.predicted_low !== null ? Number(row.predicted_low) : null,
-        predicted_high: row.predicted_high !== null ? Number(row.predicted_high) : null,
-        confidence_interval_low:
-          row.confidence_interval_low !== null ? Number(row.confidence_interval_low) : null,
-        confidence_interval_high:
-          row.confidence_interval_high !== null ? Number(row.confidence_interval_high) : null,
-        due_date: row.due_date,
-        created_at: row.created_at,
-        related_round_id: row.related_round_id,
-      };
+    const predictions: RipePrediction[] = (ripe ?? []).map((row) => ({
+      id: row.id,
+      player_id: row.player_id,
+      metric: row.metric,
+      predicted_value: Number(row.predicted_value),
+      predicted_low: row.predicted_low !== null ? Number(row.predicted_low) : null,
+      predicted_high: row.predicted_high !== null ? Number(row.predicted_high) : null,
+      confidence_interval_low:
+        row.confidence_interval_low !== null ? Number(row.confidence_interval_low) : null,
+      confidence_interval_high:
+        row.confidence_interval_high !== null ? Number(row.confidence_interval_high) : null,
+      due_date: row.due_date,
+      created_at: row.created_at,
+      related_round_id: row.related_round_id,
+    }));
 
+    // One golf_rounds read for the whole batch instead of one per prediction
+    // (Sentry N+1 JAVASCRIPT-NEXTJS-SV). Players it could not prefetch fall
+    // back to the per-prediction read inside the validator.
+    const prefetched = await prefetchCandidateRounds(supabase, predictions);
+
+    for (const prediction of predictions) {
       try {
-        const result = await validatePredictionAgainstOutcome(supabase, prediction);
+        const result = await validatePredictionAgainstOutcome(supabase, prediction, prefetched);
         if (result && 'skipped' in result) {
           skipped++;
           skippedByReason[result.skipped]++;

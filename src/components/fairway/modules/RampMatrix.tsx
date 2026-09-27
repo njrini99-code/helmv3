@@ -47,7 +47,7 @@ export function RampMatrix({ cols, rows, legend }: RampMatrixProps) {
               <th
                 key={col}
                 scope="col"
-                className="px-1.5 py-1 font-fw-sans text-eyebrow uppercase tracking-wide text-text-tertiary"
+                className="px-1.5 py-1 font-fw-sans text-caption text-text-tertiary"
               >
                 {col}
               </th>
@@ -84,7 +84,7 @@ export function RampMatrix({ cols, rows, legend }: RampMatrixProps) {
         </tbody>
       </table>
       {legend && legend.length > 0 ? (
-        <div className="mt-2 flex gap-3 font-fw-sans text-eyebrow normal-case tracking-normal text-text-tertiary">
+        <div className="mt-2 flex gap-3 font-fw-sans text-caption normal-case tracking-normal text-text-tertiary">
           {legend.map((item) => (
             <span key={item.band} className="inline-flex items-center gap-1">
               <i

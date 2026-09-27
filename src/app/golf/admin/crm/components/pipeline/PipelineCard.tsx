@@ -60,7 +60,7 @@ export function PipelineCard({ coach, engagement, isOverlay, onClick }: Pipeline
       {...listeners}
       {...attributes}
       className={cn(
-        'transition-all duration-200',
+        'transition duration-200',
         isDragging && !isOverlay && 'opacity-30',
         !isDragging && !isOverlay && 'cursor-grab active:cursor-grabbing',
         isOverlay && 'rotate-2 shadow-raise scale-105 cursor-grabbing',
@@ -69,7 +69,7 @@ export function PipelineCard({ coach, engagement, isOverlay, onClick }: Pipeline
       <div
         className={cn(
           'relative rounded-fw-md border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-card)] overflow-hidden',
-          'hover:shadow-soft hover:-translate-y-0.5 transition-all duration-200',
+          'hover:shadow-soft hover:-translate-y-0.5 transition duration-200',
           isOverlay && 'ring-2 ring-accent-500',
         )}
       >
@@ -116,14 +116,14 @@ export function PipelineCard({ coach, engagement, isOverlay, onClick }: Pipeline
           <div className="flex items-center justify-between gap-2 mt-2">
             <div className="flex items-center gap-1.5 min-w-0 flex-1">
               {coach.conference && (
-                <span className="text-eyebrow font-medium text-text-tertiary truncate">
+                <span className="text-caption font-medium text-text-tertiary truncate">
                   {coach.conference}
                 </span>
               )}
               {coach.division && (
                 <span
                   className={cn(
-                    'px-1.5 py-0.5 rounded text-eyebrow font-bold flex-shrink-0',
+                    'px-1.5 py-0.5 rounded text-caption font-bold flex-shrink-0',
                     coach.division === 'D2'
                       ? 'bg-surface-sunken text-text-secondary'
                       : 'bg-accent-100 text-accent-700',
@@ -137,11 +137,11 @@ export function PipelineCard({ coach, engagement, isOverlay, onClick }: Pipeline
           </div>
 
           <div className="flex items-center justify-between gap-2 mt-2 pt-2 border-t border-border-subtle/60">
-            <span className="text-eyebrow text-text-tertiary truncate">
+            <span className="text-caption text-text-tertiary truncate">
               {lastContacted ? `Last contact ${lastContacted}` : 'No contact yet'}
             </span>
             {isOverdue && (
-              <span className="inline-flex items-center gap-0.5 text-eyebrow text-fw-danger-ink font-medium flex-shrink-0">
+              <span className="inline-flex items-center gap-0.5 text-caption text-fw-danger-ink font-medium flex-shrink-0">
                 <IconClock size={9} /> Overdue
               </span>
             )}

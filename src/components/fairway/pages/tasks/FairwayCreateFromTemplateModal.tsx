@@ -125,7 +125,7 @@ export function FairwayCreateFromTemplateModal({
         <Form spacing="cozy" onSubmit={handleSubmit}>
         {/* Template summary */}
         <Surface elevation="border" padding="sm" className="bg-surface-sunken">
-          <p className="font-fw-sans text-eyebrow font-semibold uppercase tracking-[0.12em] text-text-tertiary">
+          <p className="font-fw-sans text-caption font-semibold text-text-tertiary">
             Template
           </p>
           <p className="mt-1 font-fw-sans text-body font-medium text-text-primary">{template.title}</p>

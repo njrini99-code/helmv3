@@ -15,6 +15,7 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 import { buildApplyBody, hasConcurrently, isValidMigrationFilename } from '../db/apply.mjs';
+import { linkedQueryArgs, parseQueryRows } from '../db/query-json.mjs';
 
 const REPO_ROOT = resolve(import.meta.dirname, '..', '..');
 
@@ -75,5 +76,58 @@ describe('the two refusals', () => {
     // The migration headers in this repo are long prose blocks; a rollback
     // note mentioning CONCURRENTLY must not block an otherwise fine file.
     expect(hasConcurrently('-- ROLLBACK: rebuild the index CONCURRENTLY by hand.\nselect 1;')).toBe(false);
+  });
+});
+
+// The db-apply workflow reported FAIL after three migrations that had applied
+// (runs 35930285975, 35930955395, 35937766770): the CLI prints `{rows: [...]}`
+// only when it detects an AI agent, and a bare array on the Actions runner, so
+// `parsed.rows ?? []` read every ledger and VERIFY result there as 0 rows.
+describe('reading supabase db query JSON', () => {
+  it('pins --agent no, so the output shape does not depend on who runs it', () => {
+    const args = linkedQueryArgs('select 1;');
+    expect(args.slice(0, 3)).toEqual(['db', 'query', '--linked']);
+    expect(args[args.indexOf('--agent') + 1]).toBe('no');
+    expect(args[args.indexOf('--output-format') + 1]).toBe('json');
+    expect(args.at(-1)).toBe('select 1;');
+  });
+
+  it('reads the bare array a non-agent run prints (the CI shape)', () => {
+    expect(parseQueryRows('[\n  {\n    "version": "20260922120000"\n  }\n]\n')).toEqual([
+      { version: '20260922120000' },
+    ]);
+  });
+
+  it('reads the {rows} envelope an agent-detected run prints', () => {
+    const raw = JSON.stringify({ boundary: 'abc', rows: [{ '?column?': 1 }], warning: 'untrusted' });
+    expect(parseQueryRows(raw)).toEqual([{ '?column?': 1 }]);
+  });
+
+  it('returns [] only for a genuinely empty result', () => {
+    expect(parseQueryRows('[]\n')).toEqual([]);
+    expect(parseQueryRows(JSON.stringify({ boundary: 'abc', rows: [], warning: 'w' }))).toEqual([]);
+  });
+
+  it('throws on an error document instead of reading it as zero rows', () => {
+    // Zero rows is a PASS for the preflight ledger check, so any unrecognised
+    // shape defaulting to [] would let a version already in the ledger through.
+    const err = '{"_tag":"Error","error":{"code":"LegacyDbConnectError","message":"failed to connect"}}';
+    expect(() => parseQueryRows(err)).toThrow(/unexpected response shape/);
+    expect(() => parseQueryRows('{"rows": null}')).toThrow(/unexpected response shape/);
+    expect(() => parseQueryRows('SELECT 1')).toThrow(/did not return JSON/);
+    expect(() => parseQueryRows('')).toThrow(/did not return JSON/);
+  });
+
+  it('is the only way apply.mjs and seed-from-prod.mjs read query output', () => {
+    for (const rel of ['scripts/db/apply.mjs', 'scripts/db/seed-from-prod.mjs']) {
+      const code = readFileSync(resolve(REPO_ROOT, rel), 'utf-8')
+        .split('\n')
+        .filter((line) => !/^\s*(\*|\/\/|\/\*)/.test(line))
+        .join('\n');
+      expect(code, rel).not.toMatch(/\.rows\b/);
+      expect(code, rel).not.toContain("'--output-format'");
+      expect(code, rel).toContain('linkedQueryArgs(');
+      expect(code, rel).toContain('parseQueryRows(');
+    }
   });
 });

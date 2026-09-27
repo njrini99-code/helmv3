@@ -42,14 +42,35 @@ const READINESS_QUERY_TIMEOUT_MS = 2_500;
 const DEGRADED_LOG_THROTTLE_KEY = 'api.health.degraded';
 const DEGRADED_LOG_THROTTLE_WINDOW_MS = 60_000;
 
+function isTimeoutMessage(message: string): boolean {
+  return /\bTimeoutError\b|aborted due to timeout|signal timed out/i.test(message);
+}
+
+function isTimeoutError(err: unknown): boolean {
+  if (err instanceof Error || (typeof DOMException !== 'undefined' && err instanceof DOMException)) {
+    const { name, message } = err as { name: string; message: string };
+    return name === 'TimeoutError' || name === 'AbortError' || isTimeoutMessage(message);
+  }
+  return isTimeoutMessage(String(err));
+}
+
 export async function GET() {
   const startedAt = Date.now();
   let database: 'ok' | 'error' = 'ok';
   let status: 'healthy' | 'degraded' = 'healthy';
   let errorDetail: string | undefined;
+  let failureKind: 'timeout' | 'error' | undefined;
+  // Phase timings for the degraded row. Without them a cold start, a thawed
+  // instance with a dead keep-alive socket and a genuinely slow database all
+  // produce the same "TimeoutError" row (5725d96a sat in NEEDS MORE EVIDENCE
+  // for three consecutive self-heal runs on 2026-09-24 for exactly this).
+  let createClientMs: number | undefined;
+  let queryStartedAt: number | undefined;
 
   try {
     const supabase = await createClient();
+    createClientMs = Date.now() - startedAt;
+    queryStartedAt = Date.now();
     const { error } = await supabase
       .from('users')
       .select('id')
@@ -60,12 +81,15 @@ export async function GET() {
       database = 'error';
       status = 'degraded';
       errorDetail = error.message;
+      failureKind = isTimeoutMessage(error.message) ? 'timeout' : 'error';
     }
   } catch (err) {
     database = 'error';
     status = 'degraded';
     errorDetail = err instanceof Error ? err.message : String(err);
+    failureKind = isTimeoutError(err) ? 'timeout' : 'error';
   }
+  const queryMs = queryStartedAt === undefined ? null : Date.now() - queryStartedAt;
 
   if (status === 'degraded' && shouldEmit(DEGRADED_LOG_THROTTLE_KEY, DEGRADED_LOG_THROTTLE_WINDOW_MS)) {
     // Once per minute at most (shouldEmit's own collapse window) — a health
@@ -82,6 +106,13 @@ export async function GET() {
           source: 'route_handler',
           skipSentry: true,
           errorDetails: errorDetail,
+          metadata: {
+            failureKind,
+            queryTimeoutMs: READINESS_QUERY_TIMEOUT_MS,
+            createClientMs: createClientMs ?? null,
+            queryMs,
+            instanceUptimeMs: Math.round(process.uptime() * 1000),
+          },
         },
         'warning',
       ),

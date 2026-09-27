@@ -8,9 +8,10 @@ import { AddClassModal, type ClassFormData } from '@/components/golf/classes/Add
 import { UploadScheduleModal } from '@/components/golf/classes/UploadScheduleModal';
 import { ConfirmClassesModal } from '@/components/golf/classes/ConfirmClassesModal';
 import { ClassDetailModal } from '@/components/golf/classes/ClassDetailModal';
-import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import { ConfirmAlert } from '@/components/fairway/overlays/ConfirmAlert';
 import { formatTimeDisplay, formatDaysDisplay, generateClassColor, detectSemester, type ParsedClass } from '@/lib/utils/schedule-parser';
 import { syncClassToCalendar, removeClassFromCalendar } from '@/app/golf/actions/calendar-sync';
+import { syncClassSafely } from './sync-class-safely';
 import { fairwayScope } from '@/lib/redesign/flag';
 import { FairwayGolfClasses } from '@/components/fairway/pages/player-game';
 import { fairwayToast } from '@/components/fairway/feedback/ToastStack';
@@ -184,9 +185,14 @@ export default function GolfClassesPage() {
     // was announced to the player as a success. The class row saved, no events
     // were written, and nothing anywhere said so. That is why this read as
     // "sync silently does nothing" rather than as an error.
+    //
+    // Past this point the class row EXISTS, so nothing below may throw back
+    // into AddClassModal: its catch keeps the modal open, and a re-submit then
+    // inserted the same class a second time (audit DATA-02). A thrown sync (a
+    // network drop, a server action error) is reported like a failed one.
     let syncFailure: string | null = null;
     if (newClass) {
-      const syncResult = await syncClassToCalendar(
+      const syncResult = await syncClassSafely(
         { ...formData, timezoneOffset: new Date().getTimezoneOffset(), timezone: Intl.DateTimeFormat().resolvedOptions().timeZone },
         newClass.id, playerId, teamId,
       );
@@ -250,7 +256,9 @@ export default function GolfClassesPage() {
 
     // Re-sync to calendar (diff-upserts the series). Same rule as the add path:
     // the toast reports what actually happened, not what we hoped happened.
-    const syncResult = await syncClassToCalendar(
+    // The update already landed; a thrown sync must not bounce back into the
+    // modal as if the save failed (see handleAddClass, DATA-02).
+    const syncResult = await syncClassSafely(
       { ...formData, timezoneOffset: new Date().getTimezoneOffset(), timezone: Intl.DateTimeFormat().resolvedOptions().timeZone },
       formData.id, playerId, teamId,
     );
@@ -711,7 +719,7 @@ export default function GolfClassesPage() {
         parsedClasses={parsedClasses}
       />
 
-      <ConfirmDialog
+      <ConfirmAlert
         open={showDeleteAllConfirm}
         title="Delete all classes?"
         message={`This will remove all ${classes.length} class${classes.length === 1 ? '' : 'es'} from your schedule and your calendar. This action cannot be undone.`}

@@ -139,7 +139,7 @@ export function TeamSwitcher({ teams, activeTeamId, canSwitch, onOptimisticSwitc
               type="button"
               role="radio"
               aria-checked={isActive}
-              aria-label={`${teamGenderLabel(gender)} team — ${team.name}`}
+              aria-label={`${teamGenderLabel(gender)} team, ${team.name}`}
               disabled={isPending}
               onClick={() => handleSelect(team.id)}
               className={cn(
@@ -151,7 +151,7 @@ export function TeamSwitcher({ teams, activeTeamId, canSwitch, onOptimisticSwitc
                 'disabled:cursor-default',
                 isActive
                   ? 'text-white shadow-soft'
-                  : 'bg-transparent text-warm-500 hover:text-warm-700',
+                  : 'bg-transparent text-text-tertiary hover:text-warm-700',
               )}
               style={
                 isActive
@@ -209,13 +209,13 @@ export function TeamSwitcher({ teams, activeTeamId, canSwitch, onOptimisticSwitc
             className="h-2 w-2 flex-shrink-0 rounded-full transition-colors [transition-duration:var(--fw-dur-base)]"
             style={{ backgroundColor: activeAccent ?? 'var(--fw-color-accent-500)' }}
           />
-          <IconUsers size={14} aria-hidden className="flex-shrink-0 text-primary-600" />
+          <IconUsers size={14} aria-hidden className="flex-shrink-0 text-accent-ink" />
           <span className="min-w-0 max-w-[200px] flex-1 truncate">{teamLabel(activeTeam)}</span>
           <IconChevronDown
             size={12}
             aria-hidden
             className={cn(
-              'flex-shrink-0 text-warm-400 transition-transform duration-150',
+              'flex-shrink-0 text-text-tertiary transition-transform duration-150',
               open && 'rotate-180',
             )}
           />
@@ -227,7 +227,7 @@ export function TeamSwitcher({ teams, activeTeamId, canSwitch, onOptimisticSwitc
         side="bottom"
         sideOffset={4}
         className={cn(
-          'z-[var(--fw-z-nav)] min-w-[220px] overflow-hidden rounded-xl py-1.5',
+          'z-[var(--fw-z-nav)] min-w-[220px] overflow-hidden rounded-fw-md py-1.5',
           'bg-cream-50 border border-warm-200 shadow-lg',
         )}
       >
@@ -243,7 +243,7 @@ export function TeamSwitcher({ teams, activeTeamId, canSwitch, onOptimisticSwitc
                 aria-selected={isActive}
                 onSelect={() => handleSelect(team.id)}
                 className={cn(
-                  'flex min-h-[44px] cursor-pointer items-center gap-2.5 rounded-lg px-3 py-2',
+                  'flex min-h-[44px] cursor-pointer items-center gap-2.5 rounded-fw-sm px-3 py-2',
                   'font-fw-sans text-body-sm font-medium outline-none',
                   'transition-colors duration-100',
                   'focus:outline-none',
@@ -259,14 +259,14 @@ export function TeamSwitcher({ teams, activeTeamId, canSwitch, onOptimisticSwitc
                 />
                 <span className="min-w-0 flex-1">
                   {g && (
-                    <span className="block text-caption font-normal text-warm-500">
+                    <span className="block text-caption font-normal text-text-tertiary">
                       {teamGenderLabel(g)}
                     </span>
                   )}
                   <span className="block truncate">{team.name}</span>
                 </span>
                 {isActive && (
-                  <IconCheck size={14} aria-hidden className="flex-shrink-0 text-primary-600" />
+                  <IconCheck size={14} aria-hidden className="flex-shrink-0 text-accent-ink" />
                 )}
               </DropdownMenuPrimitive.Item>
             );

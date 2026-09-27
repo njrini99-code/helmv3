@@ -23,7 +23,7 @@ export function CoachAttachmentsBlock({ coachId: _coachId }: CoachAttachmentsBlo
           </span>
           <h2 className="text-sm font-semibold text-text-primary">Attachments</h2>
         </div>
-        <span className="text-eyebrow uppercase tracking-wider text-text-tertiary font-semibold">
+        <span className="text-caption text-text-tertiary font-semibold">
           Coming soon
         </span>
       </div>

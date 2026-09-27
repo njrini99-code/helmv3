@@ -87,7 +87,7 @@ export function MatrixBoard({ kpis, columns, rows }: MatrixBoardProps) {
         <div className="grid grid-cols-2 border-b border-border-subtle min-[940px]:grid-cols-4">
           {kpis.map((kpi, i) => (
             <div key={kpi.label} className={cn('px-5 py-3.5', kpiBandCellClass(i))}>
-              <div className="font-fw-display text-eyebrow font-bold uppercase tracking-[0.1em] text-text-tertiary">
+              <div className="font-fw-display text-caption font-bold text-text-tertiary">
                 {kpi.label}
               </div>
               <div className="mt-0.5 font-fw-mono text-h2 tracking-[-0.02em] text-text-primary tabular-nums">
@@ -129,7 +129,7 @@ function MatrixHeader({ columns }: { columns: MatrixColumn[] }) {
           key={col.key}
           role="columnheader"
           className={cn(
-            'font-fw-display text-eyebrow font-bold uppercase tracking-[0.09em] text-text-tertiary',
+            'font-fw-display text-caption font-bold text-text-tertiary',
             col.align === 'center' && 'text-center',
             HIDE_ON_MOBILE.has(col.key) && 'hidden min-[940px]:block',
           )}

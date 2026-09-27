@@ -66,6 +66,7 @@ import { GENOME_DIMENSIONS, getDimension } from '@/lib/coachhelm/v3/genome/regis
 import { formatGenomeRefreshed } from '@/lib/coachhelm/v3/genome/format-refreshed';
 import { normalizeForRadar } from '@/lib/coachhelm/v3/genome/normalize';
 import { GENOME_WINDOW_DAYS } from '@/lib/coachhelm/v3/genome/types';
+import { confidenceLabel } from '@/lib/coachhelm/confidence-label';
 import type { GenomeVector, DimensionResult } from '@/lib/coachhelm/v3/genome/types';
 import type { Persona, PersonaEntry } from '@/lib/coachhelm/v3/genome/persona';
 import {
@@ -74,7 +75,7 @@ import {
   IconLock,
   IconMinus,
   IconArrowRight,
-  IconSparkles,
+  IconFileText,
   IconChartRadar,
 } from '@/components/icons';
 import { GitCompare as LucideGitCompare, Dna as LucideDna } from 'lucide-react';
@@ -259,7 +260,7 @@ export function GenomeDetailView({
         fairwayToast.error('Could not compute genome');
         return;
       }
-      fairwayToast.success('Genome computed — refreshing');
+      fairwayToast.success('Genome computed. Refreshing.');
       router.refresh();
     } catch {
       setComputeError('Compute failed — please try again.');
@@ -300,7 +301,7 @@ export function GenomeDetailView({
         target_value: null,
       });
       if (res.success) {
-        fairwayToast.success(`Focus area created — ${w.label}`);
+        fairwayToast.success(`Focus area created: ${w.label}`);
         router.push(`/golf/dashboard/intelligence?view=players&player=${playerId}`);
       } else {
         fairwayToast.error(res.error ?? 'Could not create focus area');
@@ -317,7 +318,7 @@ export function GenomeDetailView({
     // Player profile, so the genome is never a dead-end reachable only from the
     // grid. Compare stays primary (only meaningful once a genome exists).
     <div className="flex flex-wrap items-center gap-1.5">
-      <Button variant="ghost" size="sm" leftIcon={<IconSparkles size={15} />} asChild>
+      <Button variant="ghost" size="sm" leftIcon={<IconFileText size={15} />} asChild>
         <Link href={`/golf/dashboard/players/${playerId}/game?tab=scouting`}>
           Scouting report
         </Link>
@@ -352,8 +353,7 @@ export function GenomeDetailView({
   return (
     <CoachHelmShell
       active="players"
-      // eslint-disable-next-line jsx-a11y/aria-role
-      role="coach"
+      viewerRole="coach"
       signalCount={signalCount}
       title={playerName}
       description={
@@ -409,7 +409,7 @@ export function GenomeDetailView({
               header="Dimensions"
               as="section"
               readout={
-                <span className="font-fw-sans text-eyebrow text-text-tertiary">
+                <span className="font-fw-sans text-caption text-text-tertiary">
                   {maturityCaption}
                 </span>
               }
@@ -528,7 +528,7 @@ function GenomeHeroInstrument({
       ) : (
         <InsufficientData
           title="Fingerprint still forming"
-          description="A genome needs at least 3 live dimensions to plot a trustworthy radar shape. Locked spokes are excluded — never drawn as a fake 0."
+          description="A genome needs at least 3 live dimensions to plot a trustworthy radar shape. Locked spokes are excluded, never drawn as a fake 0."
           unit="live dimensions"
           current={liveCount}
           required={3}
@@ -586,7 +586,7 @@ function RoundsBasisReadout({ rounds }: { rounds: number }) {
 function RefreshedReadout({ computedAt }: { computedAt: string | null }) {
   return (
     <InstrumentPanel depth="base" padding="md" className="flex h-full flex-col justify-center">
-      <span className="font-fw-display text-eyebrow uppercase tracking-[0.14em] text-text-tertiary">
+      <span className="font-fw-display text-caption text-text-tertiary">
         Last refreshed
       </span>
       <span className="mt-1 font-fw-mono text-h3 font-semibold tabular-nums text-text-primary">
@@ -644,14 +644,14 @@ function PersonaInstrument({
         className="flex h-full flex-col gap-5"
       >
         <p className="font-fw-sans text-body-sm text-text-secondary">
-          No standout strengths or watchouts yet — a few more rounds and this player&rsquo;s
+          No standout strengths or watchouts yet. A few more rounds and this player&rsquo;s
           persona will fill in.
         </p>
         {persona.course_profile ? (
           <InstrumentPanel depth="inset" padding="sm">
-            <p className="font-fw-sans text-eyebrow uppercase tracking-wide text-text-tertiary">
+            <h3 className="font-fw-sans text-body-sm font-semibold text-text-primary">
               Course profile
-            </p>
+            </h3>
             <p className="mt-1 font-fw-sans text-body-sm leading-relaxed text-text-secondary">
               {persona.course_profile}
             </p>
@@ -672,7 +672,7 @@ function PersonaInstrument({
       {/* Strengths */}
       <div>
         <div className="mb-2 flex items-center gap-2">
-          <IconCheckCircle2 size={15} className="text-accent-600" />
+          <IconCheckCircle2 size={15} className="text-accent-ink" />
           <h3 className="font-fw-sans text-body-sm font-semibold uppercase tracking-wide text-text-secondary">
             Strengths
           </h3>
@@ -710,7 +710,7 @@ function PersonaInstrument({
                     {w.label}
                   </p>
                   {w.qualitative ? (
-                    <p className="truncate font-fw-sans text-eyebrow text-text-tertiary">
+                    <p className="truncate font-fw-sans text-caption text-text-tertiary">
                       {w.qualitative}
                     </p>
                   ) : null}
@@ -757,9 +757,9 @@ function PersonaInstrument({
       {/* Course profile — a recessed inset sub-readout on the same instrument. */}
       {persona.course_profile ? (
         <InstrumentPanel depth="inset" padding="sm">
-          <p className="font-fw-sans text-eyebrow uppercase tracking-wide text-text-tertiary">
+          <h3 className="font-fw-sans text-body-sm font-semibold text-text-primary">
             Course profile
-          </p>
+          </h3>
           <p className="mt-1 font-fw-sans text-body-sm leading-relaxed text-text-secondary">
             {persona.course_profile}
           </p>
@@ -778,9 +778,11 @@ function PersonaRow({ entry, tone }: { entry: PersonaEntry; tone: 'accent' }) {
           <span className="ml-1.5 text-text-tertiary">· {entry.qualitative}</span>
         ) : null}
       </span>
-      {entry.confidence != null ? (
-        <Badge tone={tone === 'accent' ? 'accent' : 'neutral'} size="sm" numeric>
-          {Math.round(entry.confidence * 100)}%
+      {/* NUM-08: confidence is a word, never a percentage (a sample ramp read
+          as certainty). */}
+      {confidenceLabel(entry.confidence) ? (
+        <Badge tone={tone === 'accent' ? 'accent' : 'neutral'} size="sm">
+          {confidenceLabel(entry.confidence)}
         </Badge>
       ) : null}
     </li>
@@ -806,7 +808,7 @@ function DimensionCell({ dim }: { dim: DimRow }) {
         aria-label={`${dim.label}: not tracked`}
       >
         <div className="flex items-center justify-between gap-2">
-          <span className="font-fw-sans text-eyebrow uppercase tracking-wide text-text-tertiary">
+          <span className="font-fw-sans text-caption text-text-tertiary">
             {dim.label}
           </span>
           <IconMinus size={12} className="text-text-tertiary" />
@@ -829,7 +831,7 @@ function DimensionCell({ dim }: { dim: DimRow }) {
         aria-label={`${dim.label}: needs more rounds`}
       >
         <div className="flex items-center justify-between gap-2">
-          <span className="font-fw-sans text-eyebrow uppercase tracking-wide text-text-tertiary">
+          <span className="font-fw-sans text-caption text-text-tertiary">
             {dim.label}
           </span>
           <IconLock size={12} className="text-text-tertiary" />
@@ -845,7 +847,7 @@ function DimensionCell({ dim }: { dim: DimRow }) {
 
   return (
     <InstrumentPanel depth="inset" padding="sm" className="flex flex-col gap-2">
-      <span className="font-fw-sans text-eyebrow uppercase tracking-wide text-text-tertiary">
+      <span className="font-fw-sans text-caption text-text-tertiary">
         {dim.label}
       </span>
       <div className="flex items-baseline justify-between gap-2">

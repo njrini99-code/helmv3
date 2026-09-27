@@ -282,11 +282,11 @@ export function ConferenceGroupView({
 
                 <span className="flex-1 min-w-0 flex items-center gap-2">
                   <h3 className="text-sm font-semibold text-text-primary truncate">{group.conference}</h3>
-                  <span className="flex-shrink-0 px-2 py-0.5 rounded-full bg-surface-sunken text-label font-bold text-text-secondary tabular-nums">
+                  <span className="flex-shrink-0 px-2 py-0.5 rounded-full bg-surface-sunken text-microlabel font-bold text-text-secondary tabular-nums">
                     {group.coaches.length}
                   </span>
                   {activeCount > 0 && (
-                    <span className="flex-shrink-0 px-2 py-0.5 rounded-full bg-accent-50 text-label font-bold text-accent-700 tabular-nums">
+                    <span className="flex-shrink-0 px-2 py-0.5 rounded-full bg-accent-50 text-microlabel font-bold text-accent-700 tabular-nums">
                       {activeCount} active
                     </span>
                   )}
@@ -299,7 +299,7 @@ export function ConferenceGroupView({
                     .map(([division, count]) => (
                       <span
                         key={division}
-                        className="px-2 py-0.5 rounded-fw-sm bg-surface-sunken text-micro font-bold text-text-secondary tabular-nums"
+                        className="px-2 py-0.5 rounded-fw-sm bg-surface-sunken text-microlabel font-bold text-text-secondary tabular-nums"
                       >
                         {division}: {count}
                       </span>
@@ -314,7 +314,7 @@ export function ConferenceGroupView({
                       <span
                         key={status}
                         className={cn(
-                          'px-1.5 py-0.5 rounded text-micro font-semibold tabular-nums',
+                          'px-1.5 py-0.5 rounded text-microlabel font-semibold tabular-nums',
                           statusConfig[status as CoachStatus]?.bgColor,
                           statusConfig[status as CoachStatus]?.color
                         )}
@@ -339,11 +339,11 @@ export function ConferenceGroupView({
                     <tr className="border-b border-border-subtle">
                       <th className="w-10 px-4 py-2" />
                       <th className="w-8 px-2 py-2" />
-                      <th className="text-left px-4 py-2 text-micro font-semibold text-text-tertiary uppercase tracking-wider">Coach</th>
-                      <th className="text-left px-4 py-2 text-micro font-semibold text-text-tertiary uppercase tracking-wider">School</th>
-                      <th className="text-left px-4 py-2 text-micro font-semibold text-text-tertiary uppercase tracking-wider w-14 hidden sm:table-cell">Div</th>
-                      <th className="text-left px-4 py-2 text-micro font-semibold text-text-tertiary uppercase tracking-wider">Status</th>
-                      <th className="text-left px-4 py-2 text-micro font-semibold text-text-tertiary uppercase tracking-wider hidden lg:table-cell">Last Contact</th>
+                      <th className="text-left px-4 py-2 text-microlabel font-semibold text-text-tertiary uppercase tracking-wider">Coach</th>
+                      <th className="text-left px-4 py-2 text-microlabel font-semibold text-text-tertiary uppercase tracking-wider">School</th>
+                      <th className="text-left px-4 py-2 text-microlabel font-semibold text-text-tertiary uppercase tracking-wider w-14 hidden sm:table-cell">Div</th>
+                      <th className="text-left px-4 py-2 text-microlabel font-semibold text-text-tertiary uppercase tracking-wider">Status</th>
+                      <th className="text-left px-4 py-2 text-microlabel font-semibold text-text-tertiary uppercase tracking-wider hidden lg:table-cell">Last Contact</th>
                       <th className="w-10 px-4 py-2" />
                     </tr>
                   </thead>
@@ -354,7 +354,7 @@ export function ConferenceGroupView({
                         <tr
                           key={coach.id}
                           className={cn(
-                            'border-b border-border-subtle/50 transition-all duration-150 cursor-pointer group',
+                            'border-b border-border-subtle/50 transition duration-150 cursor-pointer group',
                             isSelected && 'bg-accent-50/50',
                             !isSelected && 'hover:bg-accent-50/20'
                           )}
@@ -409,7 +409,7 @@ export function ConferenceGroupView({
                                 </span>
                               )}
                             </div>
-                            {coach.title && <p className="text-label text-text-tertiary truncate">{coach.title}</p>}
+                            {coach.title && <p className="text-microlabel text-text-tertiary truncate">{coach.title}</p>}
                             <div className="mt-1"><SequenceEnrollmentBadge summary={coachEnrollments?.[coach.id]} /></div>
                           </td>
                           <td className="px-4 py-2.5">
@@ -417,7 +417,7 @@ export function ConferenceGroupView({
                           </td>
                           <td className="hidden sm:table-cell px-4 py-2.5">
                             <span className={cn(
-                              'text-micro font-bold uppercase px-1.5 py-0.5 rounded',
+                              'text-microlabel font-bold uppercase px-1.5 py-0.5 rounded',
                               coach.division === 'D2' ? 'bg-surface-sunken text-text-secondary' : 'bg-accent-100 text-accent-700'
                             )}>
                               {coach.division}
@@ -432,7 +432,7 @@ export function ConferenceGroupView({
                                 aria-expanded={openStatusDropdown === coach.id}
                                 aria-label={`Change status for ${coach.name}`}
                                 className={cn(
-                                  'inline-flex items-center gap-1 px-2 py-0.5 rounded-fw-sm text-micro font-medium transition-all',
+                                  'inline-flex items-center gap-1 px-2 py-0.5 rounded-fw-sm text-microlabel font-medium transition',
                                   statusConfig[coach.status]?.bgColor,
                                   statusConfig[coach.status]?.color,
                                   'hover:ring-1 hover:ring-border-subtle focus:outline-none focus-visible:ring-2 focus-visible:ring-border-focus/30'
@@ -479,7 +479,7 @@ export function ConferenceGroupView({
                                 aria-haspopup="menu"
                                 aria-expanded={openActionMenu === coach.id}
                                 aria-label={`More actions for ${coach.name}`}
-                                className="p-1.5 rounded-fw-sm text-text-tertiary hover:text-text-secondary hover:bg-surface-sunken active:bg-surface-sunken opacity-0 group-hover:opacity-100 focus:opacity-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-border-focus/30 transition-all"
+                                className="p-1.5 rounded-fw-sm text-text-tertiary hover:text-text-secondary hover:bg-surface-sunken active:bg-surface-sunken opacity-0 group-hover:opacity-100 focus:opacity-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-border-focus/30 transition"
                               >
                                 <IconMoreHorizontal size={14} />
                               </IconButton>

@@ -51,6 +51,13 @@ const nextConfig = {
   allowedDevOrigins: ['127.0.0.1'],
   reactStrictMode: true, // Enable to catch potential issues
 
+  // The dev server logs every server action with its arguments by default,
+  // which writes sign-in passwords (loginAction) into the terminal and any
+  // captured dev log. Keep the arguments out.
+  logging: {
+    serverFunctions: false,
+  },
+
   // Type errors block the build. Keep this honest.
   typescript: {
     ignoreBuildErrors: false,

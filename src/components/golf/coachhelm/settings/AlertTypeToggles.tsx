@@ -13,7 +13,7 @@ export function AlertTypeToggles({ values, onChange }: AlertTypeTogglesProps) {
         <div className="space-y-6">
             {ALERT_GROUPS.map((group) => (
                 <div key={group.title}>
-                    <h3 className="text-eyebrow font-medium text-text-tertiary uppercase tracking-[0.12em] opacity-80 mb-3">
+                    <h3 className="font-fw-sans text-body-sm font-semibold text-text-primary mb-3">
                         {group.title}
                     </h3>
                     <div className="grid sm:grid-cols-2 gap-3">
@@ -22,7 +22,7 @@ export function AlertTypeToggles({ values, onChange }: AlertTypeTogglesProps) {
                             return (
                                 <div
                                     key={alert.key}
-                                    className="p-3 rounded-lg border border-border-subtle bg-surface hover:border-border-strong transition-colors"
+                                    className="p-3 rounded-fw-md border border-border-subtle bg-surface hover:border-border-strong transition-colors"
                                 >
                                     <Checkbox
                                         checked={isChecked}

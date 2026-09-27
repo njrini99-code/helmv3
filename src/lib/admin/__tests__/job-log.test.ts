@@ -304,4 +304,40 @@ describe('recordJobRun outcome metadata — captures what the route actually rep
     await recordJobRun('log-retention', async () => jsonResponse({ rows: [1, 2, 3] }));
     expect(mocks.inserted[0]!.metadata ?? null).toBeNull();
   });
+
+  // selfheal-close (log-retention/route.ts runAutoResolve) hands recordJobRun a
+  // PLAIN OBJECT — autoResolveFixedIncidents()'s AutoResolveResult — not a
+  // Response. Only Responses were read, so every selfheal-close row in
+  // production carried metadata = null (checked 2026-09-24: 07:31 on 09-23 and
+  // 09-24): the Close stage could resolve 50 fingerprints or none and the job
+  // board could not tell which.
+  it('records the scalars of a plain-object result too (selfheal-close)', async () => {
+    await recordJobRun('selfheal-close', async () => ({
+      resolvedRelease: 3,
+      resolvedQuiet: 1,
+      resolvedLegacy: 0,
+      resolvedNonActionable: 2,
+      fingerprints: 6,
+      releaseSkippedReason: 'newest production deploy is not 24h old',
+      deploySha: null,
+      ledger: { written: 6 },
+      regressions: { marked: 0 },
+    }));
+    const meta = mocks.inserted[0]!.metadata as Record<string, unknown>;
+    expect(meta).toMatchObject({
+      resolvedRelease: 3,
+      resolvedQuiet: 1,
+      resolvedNonActionable: 2,
+      fingerprints: 6,
+      releaseSkippedReason: 'newest production deploy is not 24h old',
+    });
+    expect(meta.ledger).toBeUndefined();
+  });
+
+  it('leaves metadata null for a primitive or array result', async () => {
+    await recordJobRun('event-reminders', async () => 'done');
+    await recordJobRun('event-reminders', async () => [1, 2]);
+    expect(mocks.inserted[0]!.metadata ?? null).toBeNull();
+    expect(mocks.inserted[1]!.metadata ?? null).toBeNull();
+  });
 });

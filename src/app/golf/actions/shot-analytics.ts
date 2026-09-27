@@ -267,6 +267,7 @@ async function getPlayerShotAnalyticsImpl(
       .from('golf_rounds')
       .select('id, round_date, total_putts, total_fairways_hit, total_fairways, total_gir, total_gir_possible, total_score, holes_played')
       .eq('player_id', playerId)
+      .eq('is_test', false)
       .eq('status', 'completed')
       .gte('round_date', periodStart.toISOString().split('T')[0])
       .order('round_date', { ascending: false });
@@ -290,6 +291,7 @@ async function getPlayerShotAnalyticsImpl(
         .from('golf_rounds')
         .select('id, round_date, total_putts, total_fairways_hit, total_fairways, total_gir, total_gir_possible, total_score, holes_played')
         .eq('player_id', playerId)
+        .eq('is_test', false)
         .eq('status', 'completed')
         .gte('round_date', widenedStart.toISOString().split('T')[0])
         .order('round_date', { ascending: false });
@@ -309,6 +311,7 @@ async function getPlayerShotAnalyticsImpl(
       .from('golf_rounds')
       .select('id, total_putts, total_fairways_hit, total_fairways, total_gir, total_gir_possible, holes_played')
       .eq('player_id', playerId)
+      .eq('is_test', false)
       .eq('status', 'completed')
       .gte('round_date', previousPeriodStart.toISOString().split('T')[0])
       .lt('round_date', periodStart.toISOString().split('T')[0]);

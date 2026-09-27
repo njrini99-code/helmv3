@@ -69,6 +69,13 @@ export interface SelfHealStage {
    *  in git on purpose — see the header of `docs/ai-system/selfheal/README.md`
    *  for what happened when the contract lived only in routine config. */
   contract: string;
+  /**
+   * `metadata.method` values written by RETIRED runners of this stage. A row
+   * carrying one is kept in the run history (it is real evidence that a
+   * retired runner is still firing) but never decides the stage's status:
+   * see `selectStageHeartbeat`.
+   */
+  retiredMethods?: readonly string[];
 }
 
 const DAILY = 24 * 60;
@@ -98,6 +105,10 @@ export const SELFHEAL_STAGES: readonly SelfHealStage[] = [
     // docs/ai-system/selfheal/README.md and triage-contract.md.
     runner: 'vercel-cron',
     cadenceMinutes: 6 * 60,
+    // The retired Anthropic-hosted cloud task still fires daily ~09:05-09:20
+    // UTC (2026-09-25..27) and writes a `failed` row with this method. Until
+    // the owner disables it, it must not paint Diagnose red.
+    retiredMethods: ['claude-code-cloud-session'],
     what: 'Reads every unresolved fingerprint in the last 72h, groups them by root cause, and writes one rca_analysis row per fingerprint.',
     contract: 'docs/ai-system/selfheal/triage-contract.md',
   },
@@ -177,6 +188,32 @@ export function classifySelfHealStage(
   // doesn't need to fabricate a jobType/path this stage's own type doesn't
   // carry under those names.
   return classifyCronStatus({ cadenceMinutes: stage.cadenceMinutes }, lastRun, now);
+}
+
+/**
+ * The heartbeat row that speaks for a stage: the newest row NOT written by one
+ * of the stage's `retiredMethods`. Rows arrive newest first.
+ *
+ * Deliberately narrow. An operator-run row (`method: 'manual-…'`) still counts
+ * — a human standing in for the stage is the stage running. And when every
+ * row in view came from a retired runner, the newest row is returned rather
+ * than null: reporting `never-ran` because we filtered the evidence away would
+ * be the `unknown → healthy`-class move this board exists to refuse.
+ */
+export function selectStageHeartbeat<T extends { metadata?: unknown }>(
+  stage: Pick<SelfHealStage, 'retiredMethods'>,
+  runs: readonly T[],
+): T | null {
+  if (runs.length === 0) return null;
+  const retired = stage.retiredMethods ?? [];
+  if (retired.length === 0) return runs[0] ?? null;
+  const fromLiveRunner = runs.find((r) => {
+    const meta = r.metadata;
+    if (typeof meta !== 'object' || meta === null || Array.isArray(meta)) return true;
+    const method = (meta as Record<string, unknown>).method;
+    return !(typeof method === 'string' && retired.includes(method));
+  });
+  return fromLiveRunner ?? runs[0] ?? null;
 }
 
 export type SelfHealLoopStatus = CronBoardStatus | 'unknown';

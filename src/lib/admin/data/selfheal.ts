@@ -25,6 +25,7 @@ import { ok, type AdminFetchResult } from '@/lib/admin/fetch-result';
 import {
   SELFHEAL_STAGES,
   classifySelfHealStage,
+  selectStageHeartbeat,
   summarizeLoop,
   type SelfHealStage,
   type SelfHealStageRow,
@@ -302,7 +303,10 @@ export async function fetchSelfHealBoard(now: Date = new Date()): Promise<AdminF
     const result = stageRuns[i];
     const isUnreadable = Boolean(result?.error);
     const runs = (isUnreadable ? [] : (result?.data ?? [])) as BackgroundJobLogRow[];
-    const last = runs[0] ?? null;
+    // The newest row from a LIVE runner, not merely the newest row: a retired
+    // runner that still fires must not decide this stage's status. Its rows
+    // stay in `history` below, so the evidence is still on the board.
+    const last = selectStageHeartbeat(stage, runs);
 
     const status: CronBoardStatus = isUnreadable
       ? 'never-ran'

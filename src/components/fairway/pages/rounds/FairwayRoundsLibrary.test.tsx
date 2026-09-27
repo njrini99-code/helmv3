@@ -17,7 +17,7 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 
-import { FairwayRoundsLibrary } from './FairwayRoundsLibrary';
+import { FairwayRoundsLibrary, scoringTrendVerdict } from './FairwayRoundsLibrary';
 import type { RoundLibraryRound } from './FairwayRoundsLibrary';
 
 function makeRound(overrides: Partial<RoundLibraryRound> = {}): RoundLibraryRound {
@@ -173,5 +173,63 @@ describe('FairwayRoundsLibrary — in-progress round discoverability', () => {
 
     expect(screen.getByText('Pebble Beach Golf Links')).toBeInTheDocument();
     expect(screen.getByText('Augusta National')).toBeInTheDocument();
+  });
+});
+
+describe('FairwayRoundsLibrary — server countable verdict (walk-through 2026-09-24)', () => {
+  it('keeps a non-countable round out of the month best/avg and the Best-of-month pick', () => {
+    render(
+      <FairwayRoundsLibrary
+        rounds={[
+          // Plausible to-par, but the server ruled it not countable (e.g. no hole scores).
+          makeRound({ id: 'nc', round_date: '2026-06-20', total_score: 60, score_to_par: -12, countable: false }),
+          makeRound({ id: 'a', round_date: '2026-06-15', total_score: 74, score_to_par: 2, countable: true }),
+          makeRound({ id: 'b', round_date: '2026-06-10', total_score: 76, score_to_par: 4, countable: true }),
+        ]}
+        inProgressRounds={[]}
+        userRole="player"
+        stats={null}
+      />,
+    );
+    expect(screen.getByText('best 74')).toBeInTheDocument();
+    expect(screen.getByText('avg 75.0')).toBeInTheDocument();
+    expect(screen.getByText('2 rounds')).toBeInTheDocument();
+    expect(screen.getByText(/Not counted/)).toBeInTheDocument();
+  });
+});
+
+describe('FairwayRoundsLibrary — one scoring-trend read (Improving tiles vs Declining pill)', () => {
+  // Oldest round is the worst, so first-vs-last reads "Improving", but the
+  // last five average above the five before: the server's pill says
+  // "declining". The tiles must say the same thing as the pill.
+  const scores = [80, 72, 72, 72, 72, 72, 76, 76, 76, 76, 70];
+  const rounds = scores
+    .map((total, i) =>
+      makeRound({
+        id: `r${i}`,
+        round_date: `2026-06-${String(i + 1).padStart(2, '0')}`,
+        total_score: total,
+        score_to_par: total - 72,
+        countable: true,
+      }),
+    )
+    .reverse();
+  const stats = { totalRounds: scores.length, avg: 74, best: 70, avgToPar: 2, underParPct: 9, trend: 'declining' as const };
+
+  it('shows the pill verdict on the Avg score and Avg to par chips, never the first-vs-last read', () => {
+    render(<FairwayRoundsLibrary rounds={rounds} inProgressRounds={[]} userRole="player" stats={stats} />);
+    expect(screen.getByText('Scoring trend')).toBeInTheDocument();
+    // The pill prints the server verdict ("declining", capitalized by CSS)…
+    expect(screen.getByText('declining')).toBeInTheDocument();
+    // …and both scoring tiles' chips agree with it.
+    expect(screen.getAllByText('Declining')).toHaveLength(2);
+    expect(screen.queryByText('Improving')).toBeNull();
+  });
+
+  it('maps the server verdict onto the chip vocabulary', () => {
+    expect(scoringTrendVerdict('improving')).toBe('improving');
+    expect(scoringTrendVerdict('declining')).toBe('declining');
+    expect(scoringTrendVerdict('stable')).toBe('flat');
+    expect(scoringTrendVerdict(null)).toBeUndefined();
   });
 });

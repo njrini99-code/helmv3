@@ -516,7 +516,7 @@ describe('RoundReviewPage — auto-generate when no stored review exists', () =>
     // Nobody clicked anything — this call can only have come from the
     // auto-generate effect.
     await waitFor(() => {
-      expect(generateAndStoreRoundReview).toHaveBeenCalledWith('round-1', 'player-1');
+      expect(generateAndStoreRoundReview).toHaveBeenCalledWith('round-1', 'player-1', { ifMissing: true });
     });
 
     await waitFor(() => {

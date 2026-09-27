@@ -9,7 +9,7 @@
  * pure-adapter testing style for the rest of this surface.
  */
 import { describe, it, expect } from 'vitest';
-import { formatHoleSgNarrative } from '../ReviewHero';
+import { formatHoleSgNarrative, toParInkClass } from '../ReviewHero';
 import type { HoleStrokesGainedByCategory } from '../shot-strokes-gained';
 
 function sg(overrides: Partial<HoleStrokesGainedByCategory> = {}): HoleStrokesGainedByCategory {
@@ -34,13 +34,13 @@ describe('formatHoleSgNarrative', () => {
     expect(formatHoleSgNarrative(sg({ total: null }))).toBeNull();
   });
 
-  it('matches the spec\'s worked example: "Lost 2.1 strokes here — 1.1 off the tee, 1.0 putting"', () => {
+  it('matches the spec\'s worked example: "Lost 2.1 strokes here: 1.1 off the tee, 1.0 putting"', () => {
     const result = formatHoleSgNarrative(
       sg({ total: -2.1, tee: -1.1, putting: -1.0, approach: 0, around_green: null }),
     );
     expect(result).not.toBeNull();
     expect(result!.tone).toBe('loss');
-    expect(result!.text).toBe('Lost 2.1 strokes here — 1.1 off the tee, 1.0 putting.');
+    expect(result!.text).toBe('Lost 2.1 strokes here: 1.1 off the tee, 1.0 putting.');
   });
 
   it('matches the spec\'s short-form example: "Gained 0.4" when only ONE category contributed (no redundant breakdown)', () => {
@@ -64,7 +64,7 @@ describe('formatHoleSgNarrative', () => {
     const result = formatHoleSgNarrative(
       sg({ total: -1.5, tee: -0.9, approach: -0.5, around_green: -0.1, putting: 0 }),
     );
-    expect(result!.text).toBe('Lost 1.5 strokes here — 0.9 off the tee, 0.5 approach.');
+    expect(result!.text).toBe('Lost 1.5 strokes here: 0.9 off the tee, 0.5 approach.');
   });
 
   it('ignores near-zero (|value| < 0.05) categories entirely when choosing the breakdown', () => {
@@ -83,6 +83,15 @@ describe('formatHoleSgNarrative', () => {
     expect(result!.tone).toBe('loss');
     // Ranked by |value|: tee (1.9) > approach (0.8) > putting (0.5) — only
     // the top two make the breakdown clause.
-    expect(result!.text).toBe('Lost 0.6 strokes here — 1.9 off the tee, 0.8 approach.');
+    expect(result!.text).toBe('Lost 0.6 strokes here: 1.9 off the tee, 0.8 approach.');
+  });
+});
+
+describe('toParInkClass (frosted score panel)', () => {
+  it('reads under par as a gain, over par as a loss, even par neutral', () => {
+    expect(toParInkClass(-2)).toBe('text-fw-success-ink');
+    expect(toParInkClass(3)).toBe('text-fw-danger-ink');
+    expect(toParInkClass(0)).toBe('text-text-secondary');
+    expect(toParInkClass(Number.NaN)).toBe('text-text-secondary');
   });
 });

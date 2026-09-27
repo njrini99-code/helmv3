@@ -3,11 +3,11 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
-import { IconSparkles, IconCheck, IconX } from '@/components/icons';
+import { IconBulb, IconCheck, IconX } from '@/components/icons';
 import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
 import { useCoachHelmSettings } from '@/hooks/coachhelm/useCoachHelmSettings';
 import { Surface, Switch } from '@/components/fairway';
-import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import { ConfirmAlert } from '@/components/fairway/overlays/ConfirmAlert';
 
 interface CoachHelmToggleProps {
   coachId: string;
@@ -62,10 +62,10 @@ export function CoachHelmToggle({ coachId, onToggle }: CoachHelmToggleProps) {
           <span
             className={cn(
               'flex h-11 w-11 shrink-0 items-center justify-center rounded-fw-sm transition-colors',
-              enabled ? 'bg-accent-50 text-accent-600' : 'bg-surface-sunken text-text-tertiary',
+              enabled ? 'bg-accent-50 text-accent-ink' : 'bg-surface-sunken text-text-tertiary',
             )}
           >
-            <IconSparkles size={20} aria-hidden />
+            <IconBulb size={20} aria-hidden />
           </span>
 
           <div className="min-w-0 flex-1">
@@ -113,7 +113,7 @@ export function CoachHelmToggle({ coachId, onToggle }: CoachHelmToggleProps) {
         </motion.div>
       ) : null}
 
-      <ConfirmDialog
+      <ConfirmAlert
         open={showConfirm}
         title="Disable CoachHelm AI?"
         message="You'll lose AI-powered insights, pattern detection, and performance predictions on your dashboards. Your data is preserved and you can re-enable any time."
@@ -139,7 +139,7 @@ function FeaturePill({ label, detail, enabled }: { label: string; detail: string
       <span
         className={cn(
           'mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full',
-          enabled ? 'bg-accent-50 text-accent-600' : 'bg-surface-sunken text-text-tertiary',
+          enabled ? 'bg-accent-50 text-accent-ink' : 'bg-surface-sunken text-text-tertiary',
         )}
       >
         {enabled ? <IconCheck size={12} aria-hidden /> : <IconX size={12} aria-hidden />}

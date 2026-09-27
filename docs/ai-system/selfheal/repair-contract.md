@@ -104,9 +104,17 @@ checkout to prove ancestry), which is why this runner owns it.
 select job_type, status, started_at, metadata
 from public.background_job_logs
 where job_type = 'selfheal-triage'
+  and coalesce(metadata->>'method', '') <> 'claude-code-cloud-session'
 order by started_at desc
 limit 1;
 ```
+
+The `method` filter mirrors `SELFHEAL_STAGES.triage.retiredMethods` in
+`src/lib/admin/selfheal-registry.ts`: the retired Anthropic-hosted cloud task
+still fires daily (~09:05–09:20 UTC, observed 2026-09-25..27) and writes a
+`failed` row minutes after the real Vercel-cron run. That row is evidence the
+retired task must be disabled — report it — but it is not Diagnose failing,
+and it must not make this stage refuse to run.
 
 Stop, write a heartbeat saying why, and open nothing if any of these hold:
 

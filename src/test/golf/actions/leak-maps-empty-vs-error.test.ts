@@ -96,7 +96,9 @@ beforeEach(() => {
   outcomes.clear();
   outcomes.set('golf_teams', ok({ gender: 'mens' }));
   outcomes.set('golf_team_members', ok([{ player_id: 'p1' }]));
-  outcomes.set('golf_rounds', ok([{ id: 'r1' }]));
+  // A countable round (src/lib/golf/round-countable.ts): the loaders now drop
+  // partial/implausible rounds, so a bare { id } no longer reaches the shot read.
+  outcomes.set('golf_rounds', ok([{ id: 'r1', status: 'completed', holes_played: 18, total_score: 74, front_nine: 37, back_nine: 37, score_to_par: 2, strokes_gained_total: 0, round_date: '2026-09-01' }]));
   outcomes.set('golf_shots', ok([]));
 });
 

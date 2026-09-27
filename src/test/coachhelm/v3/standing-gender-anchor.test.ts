@@ -48,7 +48,7 @@ describe('applyGenderAnchor — P1 women get the women\'s anchor', () => {
       rawStanding({ metric_id: 'putts_made_5_10ft_pct', player_value: 50, pga_value: 62.2 }),
       'womens',
     );
-    expect(putt.pga_value).toBe(52); // women's 5-10ft make target, not men's 62.2
+    expect(putt.pga_value).toBe(55); // LPGA 5-10ft make % (golf_pga_standards tour=lpga), not men's 62.2
 
     // approach_proximity_* is a FEET metric; the women's green-hit PERCENT
     // anchors no longer live under it, so with no LPGA row the Tour marker is

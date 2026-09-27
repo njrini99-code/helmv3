@@ -12,10 +12,23 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 const ROUND_COUNT = 1500; // > 1000 → requires two pages
 
-const roundRows: Array<{ id: string }> = Array.from(
-  { length: ROUND_COUNT },
-  (_, i) => ({ id: `round-${i}` }),
-);
+// Fully scored 18-hole rounds: the loader keeps countable rounds only
+// (src/lib/golf/round-countable.ts), so a fixture without nine totals would
+// be read as a hole-less round and dropped.
+// Dates run 2025-01-01 upward. One extra hole-less round dated EARLIER is not
+// countable, so it must stay out of both the count and the date window.
+const roundRows: Array<{ id: string; round_date: string; holes_played: number | null; total_score: number | null; front_nine: number | null; back_nine: number | null; total_putts: number | null }> = [
+  ...Array.from({ length: ROUND_COUNT }, (_, i) => ({
+    id: `round-${i}`,
+    round_date: new Date(Date.UTC(2025, 0, 1 + i)).toISOString().slice(0, 10),
+    holes_played: 18,
+    total_score: 74,
+    front_nine: 37,
+    back_nine: 37,
+    total_putts: 32,
+  })),
+  { id: 'round-partial', round_date: '2024-06-01', holes_played: null, total_score: null, front_nine: null, back_nine: null, total_putts: null },
+];
 
 let shotRows: Array<Record<string, unknown>> = [];
 
@@ -82,7 +95,7 @@ vi.mock('../stats-data', () => ({
 // Import after mocks
 // ---------------------------------------------------------------------------
 
-import { getPuttMakeLeakMap, getApproachProximityLeakMap } from '../stats-leak-maps';
+import { getPuttMakeLeakMap, getApproachProximityLeakMap, getPlayerLeakMaps } from '../stats-leak-maps';
 
 // ---------------------------------------------------------------------------
 // Tests
@@ -116,6 +129,32 @@ describe('stats-leak-maps pagination (PostgREST 1000-row cap)', () => {
       expect(band?.team_value).toBe(50);
       // The shots fetch must have requested more than one page.
       expect(shotPageCalls()).toBeGreaterThanOrEqual(2);
+    });
+
+    it('buckets putts on upper-inclusive edges like the cache writer and calculator (3 ft is 0-3, 5 ft is 3-5)', async () => {
+      // Putts are entered in whole feet, so many sit exactly on a band edge.
+      // [min, max) edges put every 3-footer in "3-5 ft" (chart 78% beside a
+      // 47% table on the same putts).
+      shotRows = [
+        ...Array.from({ length: 10 }, (_, i) => ({ round_id: `round-${i}`, putt_distance_feet: 3, putt_made: true })),
+        ...Array.from({ length: 4 }, (_, i) => ({ round_id: `round-${i}`, putt_distance_feet: 4, putt_made: i < 2 })),
+        ...Array.from({ length: 6 }, (_, i) => ({ round_id: `round-${i}`, putt_distance_feet: 5, putt_made: i < 1 })),
+        { round_id: 'round-0', putt_distance_feet: 25, putt_made: false },
+        { round_id: 'round-1', putt_distance_feet: 26, putt_made: false },
+      ];
+
+      const result = await getPuttMakeLeakMap('player-1');
+      const band = (id: string) => result.data?.putting.find((b) => b.bucket_id === id);
+
+      expect(result.success).toBe(true);
+      expect(band('0_3')?.sample_n).toBe(10);
+      expect(band('0_3')?.team_value).toBe(100);
+      // 4 ft (2 of 4 made) + 5 ft (1 of 6 made) = 3 of 10.
+      expect(band('3_5')?.sample_n).toBe(10);
+      expect(band('3_5')?.team_value).toBe(30);
+      expect(band('5_10')?.sample_n).toBe(0);
+      expect(band('15_25')?.sample_n).toBe(1); // 25 ft
+      expect(band('25_plus')?.sample_n).toBe(1); // 26 ft
     });
 
     it('paginates the completed-round-id fetch past 1000 rows', async () => {
@@ -177,6 +216,21 @@ describe('stats-leak-maps pagination (PostgREST 1000-row cap)', () => {
       const band = result.data?.approach.find((b) => b.bucket_id === '125_175');
       expect(band?.sample_n).toBe(1200);
       expect(band?.team_value).toBe(30);
+    });
+  });
+
+  describe('getPlayerLeakMaps', () => {
+    it('returns the countable-round date window and the reference tour (DASH-12)', async () => {
+      const result = await getPlayerLeakMaps('player-1');
+
+      expect(result.success).toBe(true);
+      expect(result.data?.roundsIncluded).toBe(ROUND_COUNT);
+      // Window spans the countable rounds across both pages; the earlier
+      // hole-less round is excluded.
+      expect(result.data?.windowFrom).toBe('2025-01-01');
+      expect(result.data?.windowTo).toBe(roundRows[ROUND_COUNT - 1]!.round_date);
+      // No women's team membership → PGA references.
+      expect(result.data?.tour).toBe('pga');
     });
   });
 });

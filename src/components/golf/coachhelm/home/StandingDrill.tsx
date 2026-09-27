@@ -9,7 +9,7 @@
  * verbatim from `my-standing/page.tsx` (now a redirect shim onto this view).
  * ========================================================================== */
 
-import { DrillPanel, useStage } from '@/components/fairway/modules';
+import { DrillPanel } from '@/components/fairway/modules';
 import { StandingStrip, Surface, EmptyState } from '@/components/fairway';
 import {
   METRIC_RENDER_CONFIG,
@@ -23,13 +23,13 @@ import {
 } from '@/lib/coachhelm/v3/counterfactual/compute';
 
 const CATEGORY_ORDER: ReadonlyArray<{ category: string; label: string; description: string }> = [
-  { category: 'sg', label: 'Strokes Gained', description: 'Per-round vs field — Mark Broadie’s SG framework.' },
+  { category: 'sg', label: 'Strokes Gained', description: 'Strokes gained or lost per round against the field.' },
   { category: 'putting', label: 'Putting', description: 'Make % by distance and miss patterns.' },
   { category: 'approach', label: 'Approach', description: 'Proximity to hole + greens in regulation.' },
   { category: 'short_game', label: 'Short Game', description: 'Scrambling by lie type.' },
   { category: 'scoring', label: 'Scoring', description: 'Per-par scoring vs PGA + cohort.' },
   { category: 'course_mgmt', label: 'Course Mgmt', description: 'Penalty avoidance + big-number rate.' },
-  { category: 'pressure', label: 'Pressure', description: 'Tournament vs practice + opening-hole tax.' },
+  { category: 'pressure', label: 'Pressure', description: 'Pressure gap: tournament and qualifier scoring to par against practice, last 90 days. Plus the opening-hole tax.' },
 ];
 
 function metricCategory(metricId: string): string {
@@ -50,7 +50,6 @@ export interface PlayerStandingDrillProps {
 }
 
 export function StandingDrill({ standingByMetric, playerBaseline }: PlayerStandingDrillProps) {
-  const { home } = useStage();
 
   const byCategory = new Map<string, Array<{ id: MetricId; standing: PlayerStanding; cfg: MetricRenderConfig }>>();
   for (const id of METRIC_IDS) {
@@ -66,7 +65,7 @@ export function StandingDrill({ standingByMetric, playerBaseline }: PlayerStandi
   const totalRows = groups.reduce((a, g) => a + (byCategory.get(g.category)?.length ?? 0), 0);
 
   return (
-    <DrillPanel title="Standing" backLabel="Home" onBack={home}>
+    <DrillPanel title="Standing">
       {totalRows === 0 ? (
         <Surface elevation="border" padding="lg">
           <EmptyState
@@ -81,9 +80,9 @@ export function StandingDrill({ standingByMetric, playerBaseline }: PlayerStandi
             return (
               <section key={group.category} className="flex flex-col gap-3">
                 <div className="px-1">
-                  <p className="font-fw-sans text-eyebrow font-semibold uppercase tracking-[0.16em] text-text-tertiary">
+                  <h3 className="font-fw-sans text-body-sm font-semibold text-text-primary">
                     {group.label}
-                  </p>
+                  </h3>
                   <p className="mt-0.5 font-fw-sans text-caption text-text-tertiary">{group.description}</p>
                 </div>
                 <div className="grid grid-cols-1 gap-3 md:grid-cols-2">

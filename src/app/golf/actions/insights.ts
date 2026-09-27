@@ -2674,12 +2674,22 @@ async function getPlayerCoachHelmDashboardImpl(
     // this whole page load. The crons and the post-round trigger
     // (triggerPlayerInsightsAfterRoundImpl below) are the legitimate writers
     // and are unaffected — they don't pass this option, so it defaults true.
+    //
+    // runInsightGenerators: false — same rule, bigger write. Without it every
+    // page view also ran all 20 Tier-1 generators (raw golf_shots reads +
+    // golf_coach_insights upserts) and the composite synthesis. On 2026-09-24
+    // two sessions reloading this page saturated Postgres for ~35 minutes
+    // (Bridge 57d84dd1, 80142968, 50b1304c, 4263ab45, ac69c80b and ~60
+    // siblings). The insights those generators produce are still shown: the
+    // round-submit trigger and the safety-net/roster-sweep crons write them,
+    // and loadEvidenceBackedInsights below reads them.
     const analysis = await coachHelmIntelligence.analyzePlayer(playerId, {
       includePatterns: true,
       includeCausal: true,
       includePredictions: true,
       includeShotPatterns: true,
       persistPatterns: false,
+      runInsightGenerators: false,
       depth: 'standard',
     });
 
@@ -2688,6 +2698,7 @@ async function getPlayerCoachHelmDashboardImpl(
       .from('golf_rounds')
       .select('id, course_name, round_date, total_score, score_to_par')
       .eq('player_id', playerId)
+      .eq('is_test', false)
       .eq('status', 'completed')
       .not('total_score', 'is', null)
       .order('round_date', { ascending: false })
@@ -3152,6 +3163,7 @@ async function triggerPlayerInsightsAfterRoundImpl(
       .from('golf_rounds')
       .select('id', { count: 'exact', head: true })
       .eq('player_id', playerId)
+      .eq('is_test', false)
       .eq('status', 'completed');
 
     // `count` is null when the client can't report one (and in test doubles

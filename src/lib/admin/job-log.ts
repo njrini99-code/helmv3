@@ -59,7 +59,7 @@ export async function recordJobRun<T>(jobType: string, fn: () => Promise<T>): Pr
       return result;
     }
     const metadata =
-      result instanceof Response ? await extractOutcomeMetadata(result) : null;
+      result instanceof Response ? await extractOutcomeMetadata(result) : scalarOutcome(result);
     await writeRow(jobType, 'completed', startedAt, null, metadata);
     finishCronCheckIn(jobType, checkInId, 'ok', elapsedMs());
     await flushCronCheckIn(checkInId);
@@ -194,6 +194,26 @@ async function extractOutcomeMetadata(
     const clone = response.clone();
     if (!(clone.headers.get('content-type') ?? '').includes('application/json')) return null;
     const body: unknown = await clone.json();
+    return scalarOutcome(body);
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * The bounded top-level-scalar snapshot of a job's outcome, shared by the
+ * Response path above and by jobs that return a PLAIN OBJECT.
+ *
+ * The plain-object case is not hypothetical: log-retention's `runAutoResolve`
+ * hands `recordJobRun('selfheal-close', …)` the `AutoResolveResult` object
+ * itself. Reading only Responses left every `selfheal-close` row with
+ * `metadata = null` (production, 2026-09-23 and 2026-09-24), so the Close
+ * stage's heartbeat could not say whether it resolved fifty fingerprints or
+ * none: the same "completed while doing nothing" blind spot described above,
+ * one call site over. Primitives and arrays still yield null. Never throws.
+ */
+function scalarOutcome(body: unknown): Record<string, string | number | boolean> | null {
+  try {
     if (!body || typeof body !== 'object' || Array.isArray(body)) return null;
     const outcome: Record<string, string | number | boolean> = {};
     for (const [key, value] of Object.entries(body as Record<string, unknown>)) {

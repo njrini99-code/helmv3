@@ -16,8 +16,9 @@ import {
   pgaReferenceLabel,
   shouldShowTeamMarker,
   standingSubjectLabel,
-  teamRelativeText,
+  cohortComparisonText,
   resolveDisplayScale,
+  unitHardBounds,
   toScalePct,
 } from './utils';
 
@@ -35,7 +36,7 @@ export function Hero(props: StandingBarProps) {
   const effectiveScale = resolveDisplayScale(
     props.scale,
     [props.player_value, showTeam ? props.team_avg : null, props.pga_omitted ? null : props.pga_value],
-    { symmetric: /^sg_/.test(props.metric_id) },
+    { symmetric: /^sg_/.test(props.metric_id), hardBounds: unitHardBounds(props.unit) },
   );
   const youPct = toScalePct(props.player_value, effectiveScale);
   const teamPct = showTeam && props.team_avg !== null ? toScalePct(props.team_avg, effectiveScale) : null;
@@ -45,7 +46,7 @@ export function Hero(props: StandingBarProps) {
   // EC-2: suppress the team-relative caption when the team marker is hidden
   // (tiny roster) — same team_n>=5 floor the marker uses.
   const cohortText = showTeam
-    ? teamRelativeText(props.player_value, props.team_avg, props.direction, props.unit)
+    ? cohortComparisonText(props)
     : '';
   const refLabel = pgaReferenceLabel(props.metric_id, props.is_womens).short;
   const omissionNote = pgaOmissionNote(props);
@@ -54,18 +55,18 @@ export function Hero(props: StandingBarProps) {
   const toneColor =
     delta.tone === 'good' ? 'text-primary-700' :
     delta.tone === 'bad'  ? 'text-red-600' :
-                            'text-warm-500';
+                            'text-text-tertiary';
 
   return (
     <div
       role="img"
       aria-label={ariaLabel}
       data-state={state}
-      className="glass-prominent rounded-3xl shadow-glass p-6"
+      className="glass-prominent rounded-fw-lg shadow-glass p-6"
     >
       {/* Eyebrow + label */}
       <div className="flex items-baseline justify-between gap-3 mb-1">
-        <p className="text-eyebrow font-medium uppercase tracking-[0.08em] text-warm-500">
+        <p className="text-caption font-medium text-text-tertiary">
           Standing
         </p>
         {showTeam && (
@@ -83,7 +84,7 @@ export function Hero(props: StandingBarProps) {
         <span className="text-3xl md:text-4xl font-medium text-warm-900 tabular-nums tracking-[-0.02em]">
           {formatValue(props.player_value, props.unit)}
         </span>
-        <span className="text-xs text-warm-500">{subjectLabel}</span>
+        <span className="text-xs text-text-tertiary">{subjectLabel}</span>
       </div>
 
       {/* Team / PGA reference values */}
@@ -111,7 +112,7 @@ export function Hero(props: StandingBarProps) {
       />
 
       {/* Scale endpoints */}
-      <div className="flex items-baseline justify-between text-eyebrow text-warm-400 mt-1.5 tabular-nums">
+      <div className="flex items-baseline justify-between text-caption text-text-tertiary mt-1.5 tabular-nums">
         <span>{formatValue(effectiveScale.min, props.unit)}</span>
         <span>{formatValue(effectiveScale.max, props.unit)}</span>
       </div>
@@ -123,11 +124,11 @@ export function Hero(props: StandingBarProps) {
 
       {/* A2: a suppressed reference with a reason says why (not "missing data"). */}
       {omissionNote && (
-        <p className="text-xs text-warm-500 mt-2">{omissionNote}</p>
+        <p className="text-xs text-text-tertiary mt-2">{omissionNote}</p>
       )}
 
       {state === 'cold-start' && (
-        <p className="text-xs text-warm-500 mt-3">
+        <p className="text-xs text-text-tertiary mt-3">
           Team marker appears once 5+ teammates have 5+ rounds each.
         </p>
       )}
@@ -141,7 +142,7 @@ function HeroSkeleton() {
       role="status"
       aria-label="Loading standing"
       data-state="loading"
-      className="glass-prominent rounded-3xl shadow-glass p-6 animate-pulse"
+      className="glass-prominent rounded-fw-lg shadow-glass p-6 animate-pulse"
     >
       <div className="h-3 w-20 bg-warm-100 rounded mb-2" />
       <div className="h-5 w-48 bg-warm-100 rounded mb-6" />
@@ -157,7 +158,7 @@ function HeroError({ message }: { message?: string }) {
     <div
       role="alert"
       data-state="error"
-      className="glass-prominent border-red-200 rounded-3xl p-6"
+      className="glass-prominent border-red-200 rounded-fw-lg p-6"
     >
       <p className="text-sm font-medium text-red-700">
         Couldn’t load standing.
@@ -175,15 +176,15 @@ function HeroEmpty({ label }: { label: string }) {
   return (
     <div
       data-state="empty"
-      className="glass-prominent rounded-3xl shadow-glass p-6"
+      className="glass-prominent rounded-fw-lg shadow-glass p-6"
     >
-      <p className="text-eyebrow font-medium uppercase tracking-[0.08em] text-warm-500 mb-1">
+      <p className="text-caption font-medium text-text-tertiary mb-1">
         Standing
       </p>
       <h2 className="text-lg md:text-xl font-medium text-warm-900 tracking-[-0.015em]">
         {label}
       </h2>
-      <p className="text-sm text-warm-500 mt-3">
+      <p className="text-sm text-text-tertiary mt-3">
         Log 5 rounds to see how you stack up.
       </p>
     </div>

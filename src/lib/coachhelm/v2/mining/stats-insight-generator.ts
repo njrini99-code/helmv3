@@ -263,7 +263,7 @@ export function composeStrokeSinkBody(args: {
   if (gap >= 1) {
     return (
       `${lead} That is ${gap.toFixed(1)} strokes clear of ${nextWorstName.toLowerCase()}, ` +
-      `the next-largest loss — no other area is close, so ${area} is where the round is decided.`
+      `the next-largest loss. No other area is close, so ${area} is where the round is decided.`
     );
   }
 
@@ -279,14 +279,14 @@ export function composeStrokeSinkBody(args: {
     return (
       `${lead} But ${nextWorstName.toLowerCase()} is right behind at ${nextWorstLoss.toFixed(1)}, ` +
       `and ${spread}. Treating ${area} as a single fix ` +
-      `will not move the score much — the loss is spread across the bag.`
+      `will not move the score much. The loss is spread across the bag.`
     );
   }
 
   // In between: worth leading with, but the runner-up belongs in the sentence.
   return (
-    `${lead} It leads ${nextWorstName.toLowerCase()} by ${gap.toFixed(1)} strokes, and ${spread} — ` +
-    `start here, but the second one is close enough to matter.`
+    `${lead} It leads ${nextWorstName.toLowerCase()} by ${gap.toFixed(1)} strokes, and ${spread}. ` +
+    `Start here, but the second one is close enough to matter.`
   );
 }
 
@@ -1567,7 +1567,7 @@ export class StatsInsightGenerator {
             headline: 'Likely Root Cause: Driving Accuracy Impact',
             body: `Data suggests your scoring issues likely trace back to the tee. ${chainSteps.join('. ')}. Estimated cascade cost: ~${strokeCostFromChain.toFixed(1)} strokes per round. Improving fairway accuracy would likely improve your approach play, reduce scrambling pressure, and cut big numbers.`,
             strokeImpact: strokeCostFromChain,
-            recommendation: `Priority #1 is hitting more fairways. Consider: (1) Hitting 3-wood on tight holes — fairway from 260 yards beats rough from 285. (2) Aim for the wide side of fairways, not the center. (3) Work on consistent tee shot shape rather than chasing distance.`,
+            recommendation: `Priority #1 is hitting more fairways. Consider: (1) Hitting 3-wood on tight holes: fairway from 260 yards beats rough from 285. (2) Aim for the wide side of fairways, not the center. (3) Work on consistent tee shot shape rather than chasing distance.`,
             priority: strokeCostFromChain > 1 ? 'critical' : 'high',
             confidence: 0.88,
             evidenceMetrics: [
@@ -1599,10 +1599,10 @@ export class StatsInsightGenerator {
         const strokesWasted = excessPuttsPerGir * girsPerRound;
 
         const bodyParts: string[] = [];
-        bodyParts.push(`Your approach game is solid — ${stats.girPercentage.toFixed(0)}% GIR gives you plenty of birdie looks.`);
+        bodyParts.push(`Your approach game is solid: ${stats.girPercentage.toFixed(0)}% GIR gives you plenty of birdie looks.`);
         bodyParts.push(`But you're taking ${stats.puttsPerGir.toFixed(2)} putts per GIR (target: 1.75).`);
         if (stats.puttMakePct5_10 < BENCHMARKS.puttMake5_10 - 5) {
-          bodyParts.push(`Key issue: only making ${stats.puttMakePct5_10.toFixed(0)}% from 5-10 feet (benchmark: ${BENCHMARKS.puttMake5_10}%) — these are your birdie putts.`);
+          bodyParts.push(`Key issue: only making ${stats.puttMakePct5_10.toFixed(0)}% from 5-10 feet (benchmark: ${BENCHMARKS.puttMake5_10}%). These are your birdie putts.`);
         }
         bodyParts.push(`Based on your data, you're likely leaving ~${strokesWasted.toFixed(1)} strokes per round on the table by not converting the opportunities your iron play creates.`);
 
@@ -1613,7 +1613,7 @@ export class StatsInsightGenerator {
           headline: 'Likely Root Cause: Putting Conversion Limiting Iron Play',
           body: bodyParts.join(' '),
           strokeImpact: strokesWasted,
-          recommendation: `Your approach game is a strength — don't change it. Focus ALL practice improvement on putting: (1) 5-10 foot make rate is your biggest ROI zone. (2) Work on start line consistency with gate drills. (3) Speed control: practice leaving every putt 6-12 inches past the cup.`,
+          recommendation: `Your approach game is a strength, so don't change it. Focus ALL practice improvement on putting: (1) 5-10 foot make rate is your biggest ROI zone. (2) Work on start line consistency with gate drills. (3) Speed control: practice leaving every putt 6-12 inches past the cup.`,
           priority: strokesWasted > 0.8 ? 'high' : 'medium',
           confidence: 0.85,
           evidenceMetrics: [
@@ -1654,7 +1654,7 @@ export class StatsInsightGenerator {
         }
 
         const body = weakZones.length > 0
-          ? `${totalShortMissPct.toFixed(0)}% of approach misses are short (including short-left/right). Worst distance zones: ${weakZones.join(', ')}. This pattern strongly suggests under-clubbing — you're consistently taking one club too little. From rough, the problem compounds because grass grabs the clubface and reduces distance further.`
+          ? `${totalShortMissPct.toFixed(0)}% of approach misses are short (including short-left/right). Worst distance zones: ${weakZones.join(', ')}. This pattern strongly suggests under-clubbing: you're consistently taking one club too little. From rough, the problem compounds because grass grabs the clubface and reduces distance further.`
           : `${totalShortMissPct.toFixed(0)}% of approach misses are short. This is the #1 sign of under-clubbing. The average amateur/college golfer takes 1 club too few on approach shots. Factor in: (1) shots rarely come out as pure as on the range, (2) rough reduces carry 5-10%, (3) the front of greens is always harder to hold.`;
 
         insights.push({
@@ -1664,7 +1664,7 @@ export class StatsInsightGenerator {
           headline: 'Likely Root Cause: Club Selection Pattern',
           body,
           strokeImpact: totalShortMissPct / 100 * (stats.approachMissTotal / stats.roundsPlayed) * 0.4,
-          recommendation: `Rule of thumb: when between clubs, ALWAYS take more club and swing smooth. Specific drills: (1) On the range, note your AVERAGE carry, not your best carry — that's your real number. (2) From rough, add 1 full club. (3) Front pin = aim middle of green. Back pin = aim at pin. Never short-side yourself.`,
+          recommendation: `Rule of thumb: when between clubs, ALWAYS take more club and swing smooth. Specific drills: (1) On the range, note your AVERAGE carry, not your best carry: that's your real number. (2) From rough, add 1 full club. (3) Front pin = aim middle of green. Back pin = aim at pin. Never short-side yourself.`,
           priority: 'high',
           confidence: 0.82,
           evidenceMetrics: [
@@ -1733,7 +1733,7 @@ export class StatsInsightGenerator {
       } else if (worst.data.missHighPct !== null && worst.data.missHighPct > 55) {
         bodyParts.push(`You're missing high (over-reading the break) ${worst.data.missHighPct.toFixed(0)}% of the time. You're playing too much break on ${worst.name.toLowerCase()} putts.`);
       } else if (worst.data.missShortPct !== null && worst.data.missShortPct > 50) {
-        bodyParts.push(`${worst.data.missShortPct.toFixed(0)}% of these misses are short — you're decelerating on this break type, likely because you're unsure of the read.`);
+        bodyParts.push(`${worst.data.missShortPct.toFixed(0)}% of these misses are short. You're decelerating on this break type, likely because you're unsure of the read.`);
       }
 
       // Estimate stroke impact: ~2-3 putts of this break type per round in scoring range
@@ -1741,9 +1741,9 @@ export class StatsInsightGenerator {
 
       let recommendation: string;
       if (worst.data.missLowPct !== null && worst.data.missLowPct > 55) {
-        recommendation = `On ${worst.name.toLowerCase()} putts, play 20-30% more break than your first read. Drill: place a tee 2 inches outside the high side of the cup — putt to the tee, not the hole. Train your eyes to see more break.`;
+        recommendation = `On ${worst.name.toLowerCase()} putts, play 20-30% more break than your first read. Drill: place a tee 2 inches outside the high side of the cup and putt to the tee, not the hole. Train your eyes to see more break.`;
       } else if (worst.data.missHighPct !== null && worst.data.missHighPct > 55) {
-        recommendation = `On ${worst.name.toLowerCase()} putts, trust your initial read more — you're overcorrecting. Drill: read the putt, commit, and don't add extra break at the last second. Focus on speed control to let the ball die into the hole.`;
+        recommendation = `On ${worst.name.toLowerCase()} putts, trust your initial read more. You're overcorrecting. Drill: read the putt, commit, and don't add extra break at the last second. Focus on speed control to let the ball die into the hole.`;
       } else {
         recommendation = `Practice ${worst.name.toLowerCase()} breaking putts from 5-10 feet specifically. Set up 10 balls at this distance and track your make rate. Goal: match your ${best.name.toLowerCase()} putt performance of ${best.makePct5_10.toFixed(0)}%.`;
       }
@@ -1807,7 +1807,7 @@ export class StatsInsightGenerator {
           headline: 'Par 5s: Turning Birdie Holes into Bogey Holes',
           body: bodyParts.join(' '),
           strokeImpact: strokesLeak,
-          recommendation: `Par 5 strategy: (1) Hit fairway first — 3-wood is fine if driver isn't reliable. (2) If you can't reach in 2, lay up to YOUR best wedge distance, not just "short of the green." (3) Par 5 birdies come from wedge proximity, not heroic second shots. A 100-yard wedge from the fairway > 220-yard wood from the rough.`,
+          recommendation: `Par 5 strategy: (1) Hit fairway first; 3-wood is fine if driver isn't reliable. (2) If you can't reach in 2, lay up to YOUR best wedge distance, not just "short of the green." (3) Par 5 birdies come from wedge proximity, not heroic second shots. A 100-yard wedge from the fairway > 220-yard wood from the rough.`,
           priority: strokesLeak > 0.5 ? 'high' : 'medium',
           confidence: 0.85,
           evidenceMetrics: [
@@ -1829,16 +1829,16 @@ export class StatsInsightGenerator {
 
         const bodyParts: string[] = [];
         bodyParts.push(`Only ${par3Gir.toFixed(0)}% GIR on par 3s (benchmark: ${BENCHMARKS.girPctPar3}%).`);
-        bodyParts.push(`Par 3s are a pure test of iron play — no driving variable. Low GIR here points to distance control or club selection issues with mid/long irons.`);
+        bodyParts.push(`Par 3s are a pure test of iron play, with no driving variable. Low GIR here points to distance control or club selection issues with mid/long irons.`);
 
         // Check if approach miss direction gives a clue
         if (stats.approachMissShortPct !== null && stats.approachMissShortPct > 40) {
-          bodyParts.push(`Your general approach miss tendency is short (${stats.approachMissShortPct.toFixed(0)}%) — on par 3s this likely means under-clubbing.`);
+          bodyParts.push(`Your general approach miss tendency is short (${stats.approachMissShortPct.toFixed(0)}%). On par 3s this likely means under-clubbing.`);
         }
 
         // Cross-reference approach proximity on par 3s
         if (stats.approachProximityPar3 !== null && stats.approachProximityPar3 > 30) {
-          bodyParts.push(`Average proximity on par 3 tee shots is ${stats.approachProximityPar3.toFixed(0)} feet — that's too far to have realistic birdie putts.`);
+          bodyParts.push(`Average proximity on par 3 tee shots is ${stats.approachProximityPar3.toFixed(0)} feet, which is too far to have realistic birdie putts.`);
         }
 
         insights.push({
@@ -1848,7 +1848,7 @@ export class StatsInsightGenerator {
           headline: 'Par 3s: Iron Play Costing Strokes',
           body: bodyParts.join(' '),
           strokeImpact: strokesLeak,
-          recommendation: `Par 3 improvement: (1) Know your EXACT carry distances for every iron. (2) On par 3s, always aim center of green — chasing pins on par 3s creates short-sided misses. (3) Most par 3 GIR misses come from taking too little club — when in doubt, club up.`,
+          recommendation: `Par 3 improvement: (1) Know your EXACT carry distances for every iron. (2) On par 3s, always aim center of green: chasing pins on par 3s creates short-sided misses. (3) Most par 3 GIR misses come from taking too little club. When in doubt, club up.`,
           priority: strokesLeak > 0.4 ? 'high' : 'medium',
           confidence: 0.80,
           evidenceMetrics: [
@@ -1891,9 +1891,9 @@ export class StatsInsightGenerator {
           playerId: this.playerId,
           category: 'approach',
           headline: `Scoring Leak: Rough at ${zone.label}`,
-          body: `From ${zone.label} in the rough, it takes an average of ${zone.eff.rough.toFixed(1)} strokes to hole out vs ${zone.eff.fairway.toFixed(1)} from the fairway — a ${roughPenalty.toFixed(1)} stroke penalty per occurrence. ${zone.girPct !== null ? `GIR from this zone is only ${zone.girPct.toFixed(0)}% (target: ${zone.girBench}%).` : ''} This specific distance+lie combination is one of your biggest stroke sinks.`,
+          body: `From ${zone.label} in the rough, it takes an average of ${zone.eff.rough.toFixed(1)} strokes to hole out vs ${zone.eff.fairway.toFixed(1)} from the fairway, a ${roughPenalty.toFixed(1)} stroke penalty per occurrence. ${zone.girPct !== null ? `GIR from this zone is only ${zone.girPct.toFixed(0)}% (target: ${zone.girBench}%).` : ''} This specific distance+lie combination is one of your biggest stroke sinks.`,
           strokeImpact: roughPenalty * 1.5, // Estimate ~1.5 occurrences per round for a given zone
-          recommendation: `Specific practice: hit approach shots from rough at ${zone.label}. Focus on: (1) Ball position — move it slightly back in stance for cleaner contact. (2) Take one more club — rough reduces carry 5-15 yards. (3) Accept center of green as the target from rough — don't chase pins.`,
+          recommendation: `Specific practice: hit approach shots from rough at ${zone.label}. Focus on: (1) Ball position: move it slightly back in stance for cleaner contact. (2) Take one more club, since rough reduces carry 5-15 yards. (3) Accept center of green as the target from rough; don't chase pins.`,
           priority: roughPenalty > 0.7 ? 'high' : 'medium',
           confidence: 0.78,
           evidenceMetrics: [
@@ -1927,9 +1927,9 @@ export class StatsInsightGenerator {
       let specificCause = '';
       if (hasLieData && worstZone.eff) {
         if (worstZone.eff.fairway !== null && worstZone.eff.fairway > 3.0) {
-          specificCause = ` Even from the fairway at this distance, you take ${worstZone.eff.fairway.toFixed(1)} strokes to hole out — this suggests a club fitting or distance gapping issue at this yardage.`;
+          specificCause = ` Even from the fairway at this distance, you take ${worstZone.eff.fairway.toFixed(1)} strokes to hole out. This suggests a club fitting or distance gapping issue at this yardage.`;
         } else if (worstZone.eff.rough !== null && worstZone.eff.rough > 3.5 && worstZone.eff.fairway !== null && worstZone.eff.fairway < 3.0) {
-          specificCause = ` Your fairway efficiency is acceptable (${worstZone.eff.fairway.toFixed(1)}) but rough efficiency is poor (${worstZone.eff.rough.toFixed(1)}) — the problem is lie-specific, not distance-specific.`;
+          specificCause = ` Your fairway efficiency is acceptable (${worstZone.eff.fairway.toFixed(1)}) but rough efficiency is poor (${worstZone.eff.rough.toFixed(1)}). The problem is lie-specific, not distance-specific.`;
         }
       }
 
@@ -1986,7 +1986,7 @@ export class StatsInsightGenerator {
         unit: 'per round',
         strokesLostPerRound: stats.threePuttsPerRound - BENCHMARKS.threePuttsPerRound,
         fixDescription: `Reduce 3-putts from ${stats.threePuttsPerRound.toFixed(1)} to ${BENCHMARKS.threePuttsPerRound}`,
-        practiceAction: 'Lag putting from 30+ feet — leave everything inside 3 feet',
+        practiceAction: 'Lag putting from 30+ feet: leave everything inside 3 feet',
       });
     }
 
@@ -2005,7 +2005,7 @@ export class StatsInsightGenerator {
         unit: '%',
         strokesLostPerRound: delta / 100 * 3.5,
         fixDescription: `Improve 5-10ft make rate from ${stats.puttMakePct5_10.toFixed(0)}% to ${BENCHMARKS.puttMake5_10}%`,
-        practiceAction: '5-10 foot make drills — 10 balls, track percentage daily',
+        practiceAction: '5-10 foot make drills: 10 balls, track percentage daily',
       });
     }
 
@@ -2020,7 +2020,7 @@ export class StatsInsightGenerator {
         unit: '%',
         strokesLostPerRound: delta / 100 * 10,
         fixDescription: `Improve inside-3ft from ${stats.puttMakePct0_3.toFixed(0)}% to ${BENCHMARKS.puttMake0_3}%`,
-        practiceAction: 'Pre-putt routine consistency — these are mental, not mechanical',
+        practiceAction: 'Pre-putt routine consistency: these are mental, not mechanical',
       });
     }
 
@@ -2035,7 +2035,7 @@ export class StatsInsightGenerator {
         unit: '%',
         strokesLostPerRound: deficit / 100 * this.getHolesPerRound(stats) * 0.5,
         fixDescription: `Improve GIR from ${stats.girPercentage.toFixed(0)}% to ${BENCHMARKS.girPct}%`,
-        practiceAction: 'Approach shot distance control — know your exact carry numbers',
+        practiceAction: 'Approach shot distance control: know your exact carry numbers',
       });
     }
 
@@ -2050,7 +2050,7 @@ export class StatsInsightGenerator {
         unit: '%',
         strokesLostPerRound: deficit / 100 * 14 * 0.4,
         fixDescription: `Improve fairways from ${stats.fairwayPercentage.toFixed(0)}% to ${BENCHMARKS.fairwayPct}%`,
-        practiceAction: 'Tee shot accuracy — consider 3-wood on tight holes',
+        practiceAction: 'Tee shot accuracy: consider 3-wood on tight holes',
       });
     }
 
@@ -2080,7 +2080,7 @@ export class StatsInsightGenerator {
         unit: '%',
         strokesLostPerRound: deficit / 100 * (stats.sandSaveAttempts / stats.roundsPlayed),
         fixDescription: `Improve sand saves from ${stats.sandSavePercentage.toFixed(0)}% to ${BENCHMARKS.sandSavePct}%`,
-        practiceAction: 'Greenside bunker technique — open face, accelerate through',
+        practiceAction: 'Greenside bunker technique: open face, accelerate through',
       });
     }
 
@@ -2094,7 +2094,7 @@ export class StatsInsightGenerator {
         unit: 'per round',
         strokesLostPerRound: stats.penaltiesPerRound - BENCHMARKS.penaltiesPerRound,
         fixDescription: `Reduce penalties from ${stats.penaltiesPerRound.toFixed(1)} to ${BENCHMARKS.penaltiesPerRound}`,
-        practiceAction: 'Course management — safer club/target selection in danger zones',
+        practiceAction: 'Course management: safer club/target selection in danger zones',
       });
     }
 
@@ -2108,7 +2108,7 @@ export class StatsInsightGenerator {
         unit: 'per round',
         strokesLostPerRound: (stats.doublePlusPerRound - 1.0) * 1.0, // each excess double = ~1 stroke
         fixDescription: `Reduce doubles+ from ${stats.doublePlusPerRound.toFixed(1)} to 1.0`,
-        practiceAction: 'Course management — take medicine from trouble, avoid hero shots',
+        practiceAction: 'Course management: take medicine from trouble, avoid hero shots',
       });
     }
 
@@ -2125,7 +2125,7 @@ export class StatsInsightGenerator {
           unit: 'stroke gap',
           strokesLostPerRound: gap - BENCHMARKS.qualifyingVsPractice,
           fixDescription: `Close qualifying gap from +${gap.toFixed(1)} to +${BENCHMARKS.qualifyingVsPractice}`,
-          practiceAction: 'Mental game — pre-shot routine, simulated pressure in practice',
+          practiceAction: 'Mental game: pre-shot routine, simulated pressure in practice',
         });
       }
     }
@@ -2140,7 +2140,7 @@ export class StatsInsightGenerator {
 
       const rankingLines = top3.map((leak, i) => {
         const pctOfTotal = (leak.strokesLostPerRound / totalRecoverable * 100).toFixed(0);
-        return `#${i + 1}: ${leak.area} — save ${leak.strokesLostPerRound.toFixed(1)} strokes/round (${pctOfTotal}% of total leakage). Action: ${leak.practiceAction}`;
+        return `#${i + 1}: ${leak.area}, save ${leak.strokesLostPerRound.toFixed(1)} strokes/round (${pctOfTotal}% of total leakage). Action: ${leak.practiceAction}`;
       });
 
       insights.push({
@@ -2150,7 +2150,7 @@ export class StatsInsightGenerator {
         headline: 'Practice Priorities: Where to Invest Your Time',
         body: `Total recoverable strokes: ${totalRecoverable.toFixed(1)} per round. Here's where your practice time gets the best return:\n\n${rankingLines.join('\n\n')}`,
         strokeImpact: top3[0]!.strokesLostPerRound, // Use #1 priority's impact for sorting
-        recommendation: `Focus 50% of practice on "${top3[0]!.area}" — it's your single biggest scoring opportunity at ${top3[0]!.strokesLostPerRound.toFixed(1)} strokes per round. ${top3[0]!.practiceAction}.`,
+        recommendation: `Focus 50% of practice on "${top3[0]!.area}": it's your single biggest scoring opportunity at ${top3[0]!.strokesLostPerRound.toFixed(1)} strokes per round. ${top3[0]!.practiceAction}.`,
         priority: 'critical',
         confidence: 0.90,
         evidenceMetrics: [

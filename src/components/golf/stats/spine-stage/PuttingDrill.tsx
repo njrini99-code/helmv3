@@ -59,6 +59,7 @@ import { cn } from '@/lib/utils';
 import type { GolfStats } from '@/lib/utils/golf-stats-calculator-shots';
 import type { LeakBucket, PlayerLeakMaps } from '@/app/golf/actions/stats-leak-maps-types';
 import type { PlayerStandingRow } from '@/app/golf/actions/stats-leak-maps-types';
+import { PuttingBenchmarkSheet } from './PuttingBenchmarkSheet';
 import type { StatisticalStrengthWeakness } from '@/lib/golf/strokes-gained';
 import type { TrendAnalysisResponse } from '@/app/golf/actions/stats-data-types';
 import {
@@ -113,7 +114,7 @@ function LeakLoadError({ onRetry, retrying }: { onRetry: () => void; retrying: b
       }
     >
       The strokes-gained leak detail failed to load. Your other stats are
-      up to date — retry to pull the make-rate and proximity bands.
+      up to date. Retry to pull the make-rate and proximity bands.
     </InlineNotice>
   );
 }
@@ -407,13 +408,14 @@ export function PuttingDrill({
       format: { maximumFractionDigits: 1 },
       awaitingLabel: 'No rounds',
       caption: 'All putts, 18 holes',
-      delta: readoutDeltaFromTrend(puttingTrend, 'vs prior period'),
+      delta: readoutDeltaFromTrend(puttingTrend, puttingTrend?.deltaWindow ?? 'vs prior rounds'),
       tone: 'accent',
       depth: 'raised',
     },
     { label: 'Putts / hole', value: puttsPerHole, format: { maximumFractionDigits: 2 }, awaitingLabel: 'No putts', caption: 'Per hole played' },
     { label: 'Putts / GIR', value: puttsPerGir, format: { maximumFractionDigits: 2 }, awaitingLabel: 'No GIR putts', caption: 'Putts after hitting the green' },
-    { label: '3-putts / round', value: threePuttsPerRound, format: { maximumFractionDigits: 2 }, awaitingLabel: 'No rounds', caption: 'Two-plus putts, per round' },
+    // Calculator: holes with putts >= 3, scaled to 18 holes (threePuttsPerRound).
+    { label: '3-putts / round', value: threePuttsPerRound, format: { maximumFractionDigits: 2 }, awaitingLabel: 'No rounds', caption: 'Holes with 3+ putts, per 18' },
     { label: '1-putts (total)', value: onePuttsTotal, awaitingLabel: 'No putts', caption: 'Makes on the first try' },
     { label: 'Approach-putt avg leave', value: approachPuttAvgLeave, unit: 'ft', format: { maximumFractionDigits: 1 }, awaitingLabel: 'No leave data', caption: 'Left after the first putt' },
   ];
@@ -508,7 +510,7 @@ export function PuttingDrill({
             </div>
             <div className="overflow-x-auto">
               <table className="w-full min-w-[650px] border-separate border-spacing-y-2 text-left">
-                <thead className="text-eyebrow uppercase tracking-wide text-text-tertiary"><tr><th className="px-3">Distance</th><th className="px-3">Make</th><th className="px-3">First-putt share</th><th className="px-3">Avg leave</th><th className="px-3">Efficiency</th><th className="px-3">Proximity</th></tr></thead>
+                <thead className="text-caption text-text-tertiary"><tr><th className="px-3">Distance</th><th className="px-3">Make</th><th className="px-3">First-putt share</th><th className="px-3">Avg leave</th><th className="px-3">Efficiency</th><th className="px-3">Proximity</th></tr></thead>
                 <tbody>{PUTTING_DISTANCE_DETAIL.map((band, i) => {
                   const num = (value: unknown, digits = 1) => typeof value === 'number' && Number.isFinite(value) ? value.toFixed(digits) : '—';
                   // Same RampMatrix band language the Breaks tab uses for this
@@ -530,7 +532,7 @@ export function PuttingDrill({
                         <span className={cn('inline-flex min-w-[46px] items-center justify-center rounded-fw-sm px-1.5 py-1 font-fw-mono', RAMP_CLASSES[makeBand])}>
                           {num(s?.[band.make], 0)}%
                         </span>
-                        {makeN > 0 ? <span className="mt-0.5 block font-fw-sans text-microbadge normal-case tracking-normal text-text-tertiary opacity-75">n={makeN}</span> : null}
+                        {makeN > 0 ? <span className="mt-0.5 block font-fw-sans text-microlabel normal-case tracking-normal text-text-tertiary">n={makeN}</span> : null}
                       </td>
                       <td className="px-3">{num(s?.firstPuttDistanceByBand?.[band.key], 0)}%</td>
                       <td className="px-3">{num(s?.approachPuttAvgLeaveByBand?.[band.key], 1)} ft</td>
@@ -541,7 +543,7 @@ export function PuttingDrill({
                 })}</tbody>
               </table>
             </div>
-            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 font-fw-sans text-microbadge normal-case tracking-normal text-text-tertiary">
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 font-fw-sans text-microlabel normal-case tracking-normal text-text-tertiary">
               <span className="font-medium text-text-secondary">Make % ·</span>
               {RAMP_LEGEND.map((item) => (
                 <span key={item.band} className="inline-flex items-center gap-1">
@@ -567,7 +569,7 @@ export function PuttingDrill({
             </Surface>
             <div className="flex flex-col gap-4">
               <RxCard title="Work on next">
-                {worst ? `${worst.distance} putts breaking ${worst.band.toLowerCase()} are converting at ${Math.round(worst.pct)}% (n=${worst.n}) — the weakest reliable practice target.` : `No distance × break cell has ${RX_MIN_N} tracked putts yet, so there is not a reliable practice target.`}
+                {worst ? `${worst.distance} putts breaking ${worst.band.toLowerCase()} are converting at ${Math.round(worst.pct)}% (n=${worst.n}), the weakest reliable practice target.` : `No distance × break cell has ${RX_MIN_N} tracked putts yet, so there is not a reliable practice target.`}
               </RxCard>
               {puttingCost > 0 ? <p className="font-fw-sans text-caption text-text-tertiary">Putting is costing an estimated {puttingCost.toFixed(1)} strokes per round vs the field.</p> : null}
             </div>
@@ -600,7 +602,19 @@ export function PuttingDrill({
             height={200}
           />
           <MakeCurve points={heroPoints} ariaLabel={heroAriaLabel} />
-          {leakError ? <LeakLoadError onRetry={() => onRetryLeak?.()} retrying={retryingLeak} /> : <LeakMap title="Putt make %" overline="Putting" subtitle="Make rate by distance vs PGA Tour" takeaway="Bands below the dashed Tour line are where putts are leaking." direction="higher_better" unit="percent" data={leakMaps ? toBuckets(leakMaps.putting) : []} />}
+          {!leakError && leakMaps && leakMaps.roundsIncluded > 0 ? (
+            <PuttingBenchmarkSheet
+              buckets={leakMaps.putting}
+              roundsIncluded={leakMaps.roundsIncluded}
+              tour={leakMaps.tour ?? null}
+              window={
+                leakMaps.windowFrom && leakMaps.windowTo
+                  ? { from: leakMaps.windowFrom, to: leakMaps.windowTo }
+                  : null
+              }
+            />
+          ) : null}
+          {leakError ? <LeakLoadError onRetry={() => onRetryLeak?.()} retrying={retryingLeak} /> : <LeakMap title="Putt make %" overline="Putting" subtitle={`Make rate by distance vs ${leakMaps?.tour === 'lpga' ? 'LPGA' : 'PGA Tour'}`} takeaway="Bands below the dashed Tour line are where putts are leaking." direction="higher_better" unit="percent" data={leakMaps ? toBuckets(leakMaps.putting) : []} />}
         </div>
       </div>
     </DrillPanel>

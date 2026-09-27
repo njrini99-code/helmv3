@@ -92,8 +92,8 @@ export interface SgBaselineOption {
 }
 
 export const SG_BASELINE_OPTIONS: SgBaselineOption[] = [
-  { key: 'pga_tour', label: 'PGA Tour', scale: 1.0,            description: 'Men’s professional (Broadie / ShotLink) — the reference for men’s teams.' },
-  { key: 'womens',   label: 'LPGA',     scale: WOMENS_SG_SCALE, description: 'Women’s Tour baseline — the reference for women’s teams.' },
+  { key: 'pga_tour', label: 'PGA Tour', scale: 1.0,            description: 'Men’s professional (Broadie / ShotLink), the reference for men’s teams.' },
+  { key: 'womens',   label: 'LPGA',     scale: WOMENS_SG_SCALE, description: 'Women’s Tour baseline, the reference for women’s teams.' },
 ];
 
 const SG_BASELINE_SCALE_BY_KEY: Record<SgBaselineKey, number> = SG_BASELINE_OPTIONS.reduce(

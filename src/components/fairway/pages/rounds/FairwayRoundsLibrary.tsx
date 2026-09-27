@@ -53,11 +53,13 @@ import { Input } from '@/components/fairway/forms/Input';
 import { Select } from '@/components/fairway/forms/Select';
 import { IconSearch, IconX } from '@/components/icons';
 import { StatTile } from '@/components/fairway/charts/StatTile';
+import type { TrendDirection } from '@/components/fairway/charts/TrendChip';
 import { Sparkline } from '@/components/fairway/charts/Sparkline';
 import { EmptyState } from '@/components/fairway/feedback/EmptyState';
 import { FairwayRoundRow } from './FairwayRoundRow';
 import { FairwayUnfinishedBanner } from './FairwayUnfinishedBanner';
 import { parseDateOnly, dateOnlyToUtcDate, type DateOnlyParts } from '@/lib/golf/date-only';
+import { isPlausibleToPar } from '@/lib/golf/round-countable';
 
 // ── Types ────────────────────────────────────────────────────────────────--
 
@@ -93,6 +95,10 @@ export interface RoundLibraryRound {
   // final submit was attempted and never confirmed committed. Never
   // auto-finalized from this signal, only used to change the resume CTA.
   hasPendingSubmission?: boolean;
+  // Server verdict from isCountableRound (src/lib/golf/round-countable.ts).
+  // false = listed but excluded from every average, best and trend; the row
+  // says "Not counted". Undefined (older callers) is treated as countable.
+  countable?: boolean;
   player: {
     first_name: string | null;
     last_name: string | null;
@@ -179,6 +185,21 @@ function playerName(round: RoundLibraryRound): string | null {
   return full.length > 0 ? full : null;
 }
 
+/**
+ * ONE trend read per page: the "Scoring trend" pill's verdict (the server's
+ * last-5-vs-previous-5 scored rounds) also drives the Avg score / Avg to par
+ * chips and sparkline tint. Left to StatTile's default they compared the
+ * season's first and last round, and read "Improving" beside a "Declining"
+ * pill. `undefined` (no server verdict yet) keeps StatTile's own read, shown
+ * only while the pill is absent. Exported for tests.
+ */
+export function scoringTrendVerdict(
+  trend: 'improving' | 'declining' | 'stable' | null | undefined,
+): TrendDirection | undefined {
+  if (!trend) return undefined;
+  return trend === 'stable' ? 'flat' : trend;
+}
+
 /** Normalize a round's score to its 18-hole equivalent (for charts). */
 function normalizedScore(round: RoundLibraryRound): number | null {
   if (round.total_score === null || round.total_score <= 0) return null;
@@ -218,7 +239,15 @@ function honestRange(rounds: RoundLibraryRound[]): string | null {
 /** Compute a month group's honest summary: scored count, 18-equiv avg/best,
  *  and the oldest→newest spark series. */
 function monthSummary(rounds: RoundLibraryRound[]) {
-  const scored = rounds.filter((r) => r.total_score !== null && r.total_score > 0);
+  // An implausible round (37 strokes "over 18") stays in the list but never
+  // sets the month's avg/best (src/lib/golf/round-countable.ts).
+  const scored = rounds.filter(
+    (r) =>
+      r.countable !== false &&
+      r.total_score !== null &&
+      r.total_score > 0 &&
+      isPlausibleToPar(r.score_to_par, r.holes_played),
+  );
   const spark = scored
     .slice()
     .reverse()
@@ -357,7 +386,8 @@ export function FairwayRoundsLibrary({
   const chronoScored = React.useMemo(
     () =>
       rounds
-        .filter((r) => r.total_score !== null && r.total_score > 0)
+        // Same countable set as the server's KPI tiles + trend pill.
+        .filter((r) => r.countable !== false && r.total_score !== null && r.total_score > 0)
         .slice()
         // round_date is a bare 'YYYY-MM-DD' — lexicographic string comparison
         // IS chronological order for that format, and sidesteps any
@@ -376,7 +406,7 @@ export function FairwayRoundsLibrary({
 
   // ── Masthead copy + honest meta ────────────────────────────────────────--
   const eyebrow = isCoach ? 'Team Rounds' : 'Your Rounds';
-  const title = isCoach ? 'The library.' : 'Your rounds.';
+  const title = isCoach ? 'The library' : 'Your rounds';
 
   const meta = (() => {
     const n = rounds.length;
@@ -396,6 +426,7 @@ export function FairwayRoundsLibrary({
 
   // ── KPI hero — StatTile owns the starved swap (never a fabricated 0.0) ────--
   const starved = !stats || stats.totalRounds < 3;
+  const scoringTrend = scoringTrendVerdict(starved ? null : stats!.trend);
 
   return (
     <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-8 px-4 py-6 md:px-6">
@@ -420,7 +451,9 @@ export function FairwayRoundsLibrary({
           correct, so stretch comes back. */}
       <div className="grid grid-cols-2 items-start gap-3 md:grid-cols-5 md:items-stretch">
         <StatTile
-          label="Rounds"
+          // Countable rounds only; the masthead's "N rounds recorded" counts
+          // every completed round, so an unqualified "Rounds" read as a mismatch.
+          label="Counted rounds"
           value={starved ? undefined : stats!.totalRounds}
           format={{ maximumFractionDigits: 0 }}
           starved={starved}
@@ -436,6 +469,7 @@ export function FairwayRoundsLibrary({
           format={{ maximumFractionDigits: 1 }}
           goodDirection="down"
           trendData={!starved && scoreSeries.length >= 2 ? scoreSeries : undefined}
+          trend={scoringTrend}
           starved={starved}
           unit="rounds"
           current={stats?.totalRounds ?? 0}
@@ -462,6 +496,7 @@ export function FairwayRoundsLibrary({
           trendData={
             !starved && stats!.avgToPar !== null && toParSeries.length >= 2 ? toParSeries : undefined
           }
+          trend={scoringTrend}
           starved={starved || (stats?.avgToPar ?? null) === null}
           unit="rounds"
           current={stats?.totalRounds ?? 0}
@@ -493,7 +528,7 @@ export function FairwayRoundsLibrary({
           server could classify a trend (needs 6+ scored rounds). */}
       {!starved && stats!.trend && (
         <div className="-mt-4 flex items-center gap-2 px-1">
-          <span className="font-fw-sans text-eyebrow uppercase tracking-[0.06em] text-text-tertiary">
+          <span className="font-fw-sans text-caption text-text-tertiary">
             Scoring trend
           </span>
           <StatusPill
@@ -646,12 +681,17 @@ export function FairwayRoundsLibrary({
           ) : (
             <div className="flex flex-col gap-5">
               {grouped.map((group, gi) => {
-                // Best (lowest score-to-par) of the month → accent rail + badge.
+                // Best (lowest score-to-par, 18-hole basis) of the MONTH → accent
+                // rail + a "Best of month" badge. Implausible rounds never win it.
                 let bestId: string | null = null;
                 let bestScore = Infinity;
                 for (const r of group.rounds) {
-                  if (r.score_to_par !== null && r.score_to_par < bestScore) {
-                    bestScore = r.score_to_par;
+                  if (r.countable === false) continue;
+                  if (r.score_to_par === null || !isPlausibleToPar(r.score_to_par, r.holes_played)) continue;
+                  const holes = r.holes_played ?? 18;
+                  const toPar18 = holes > 0 ? (r.score_to_par * 18) / holes : r.score_to_par;
+                  if (toPar18 < bestScore) {
+                    bestScore = toPar18;
                     bestId = r.id;
                   }
                 }

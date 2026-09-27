@@ -1,6 +1,6 @@
 'use client';
 
-import { motion, useReducedMotion } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import {
   IconSend,
@@ -13,6 +13,7 @@ import {
 } from '@/components/icons';
 import type { ResendActivityStats } from '@/app/golf/actions/resend-activity';
 import { formatCount, formatRate } from './shared';
+import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
 
 interface KPIGridProps {
   stats: ResendActivityStats | null;
@@ -32,12 +33,12 @@ const ACCENT_CONFIG = {
   neutral: { icon: 'text-text-tertiary',    text: 'text-text-primary' },
   success: { icon: 'text-accent-700', text: 'text-text-primary' },
   info:    { icon: 'text-info',        text: 'text-text-primary' },
-  warning: { icon: 'text-warning',     text: 'text-text-primary' },
+  warning: { icon: 'text-fw-warning-text', text: 'text-text-primary' },
   error:   { icon: 'text-destructive', text: 'text-text-primary' },
 };
 
 export function KPIGrid({ stats, loading }: KPIGridProps) {
-  const prefersReducedMotion = useReducedMotion();
+  const prefersReducedMotion = useReducedMotionGuard();
   if (loading || !stats) {
     return (
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -132,7 +133,7 @@ export function KPIGrid({ stats, loading }: KPIGridProps) {
             transition={prefersReducedMotion ? { duration: 0 } : ({ delay: i * 0.03, duration: 0.25 })}
             className={cn(
               'rounded-card border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-card)] p-6',
-              'hover:bg-surface-tint hover:shadow-raise transition-all duration-200'
+              'hover:bg-surface-tint hover:shadow-raise transition duration-200'
             )}
           >
             <div className="flex items-start justify-between mb-3">
@@ -153,7 +154,7 @@ export function KPIGrid({ stats, loading }: KPIGridProps) {
                 <p className="text-xs text-text-tertiary truncate">{card.secondary}</p>
               )}
               {card.live && (
-                <span className="inline-flex items-center gap-1 text-eyebrow font-semibold text-accent-700 uppercase tracking-wider">
+                <span className="inline-flex items-center gap-1 text-caption font-semibold text-accent-700">
                   <span className="relative flex h-1.5 w-1.5">
                     <span className="absolute inline-flex h-full w-full rounded-full bg-accent-500 opacity-75 animate-ping" />
                     <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-accent-500" />
@@ -214,7 +215,7 @@ export function DailyTrendChart({ data }: DailyTrendChartProps) {
           return (
             <div key={d.day} className="flex-1 flex flex-col justify-end h-full relative group">
               <div className="absolute -top-1 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
-                <div className="whitespace-nowrap bg-nav-bg text-nav-text text-eyebrow font-medium px-2 py-1 rounded shadow-soft">
+                <div className="whitespace-nowrap bg-nav-bg text-nav-text text-caption font-medium px-2 py-1 rounded shadow-soft">
                   <div className="font-semibold mb-0.5">
                     {new Date(d.day).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                   </div>
@@ -227,7 +228,7 @@ export function DailyTrendChart({ data }: DailyTrendChartProps) {
               </div>
               <div className="flex flex-col justify-end items-stretch gap-px h-full">
                 <div
-                  className="bg-border-strong rounded-t-fw-sm transition-all"
+                  className="bg-border-strong rounded-t-fw-sm transition-[height]"
                   style={{ height: `${sentH}%` }}
                 />
                 <div
@@ -248,7 +249,7 @@ export function DailyTrendChart({ data }: DailyTrendChartProps) {
         })}
       </div>
 
-      <div className="mt-3 flex justify-between text-eyebrow text-text-tertiary">
+      <div className="mt-3 flex justify-between text-caption text-text-tertiary">
         <span>
           {new Date(data[0]!.day).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
         </span>

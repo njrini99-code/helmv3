@@ -1,5 +1,5 @@
-// `PerformancePrediction` removed 2026-08-15 — PlayerCoachHelmHome renders the
-// prediction inline via buildPredictionVerdict/formatPredictionHero. NOTE: the
+// `PerformancePrediction` removed 2026-08-15 — the CoachHelm overview renders the
+// prediction inline (PlayerHubFeed's NextRoundWindow). NOTE: the
 // deleted card also showed tail-risk probabilities and itemized key factors,
 // which the inline rendering does NOT reproduce; that detail now exists nowhere
 // in the UI. Recoverable from git history if it's wanted back.

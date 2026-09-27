@@ -81,4 +81,45 @@ describe('ConfirmDialog', () => {
     });
     expect(document.activeElement).not.toBe(confirmButton);
   });
+  it.each([
+    ['desktop dialog', false],
+    ['native action sheet', true],
+  ])('Escape cancels exactly once (%s)', async (_label, native) => {
+    vi.mocked(isNativeApp).mockReturnValue(native);
+    const onCancel = vi.fn();
+    render(
+      <ConfirmDialog
+        open
+        title="Delete task?"
+        message="This can't be undone."
+        variant="danger"
+        onConfirm={vi.fn()}
+        onCancel={onCancel}
+      />,
+    );
+    const dialog = screen.getByRole('dialog', { name: 'Delete task?' });
+    await waitFor(() => {
+      expect(dialog).toContainElement(document.activeElement as HTMLElement);
+    });
+    (document.activeElement as HTMLElement).dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }),
+    );
+    expect(onCancel).toHaveBeenCalledTimes(1);
+  });
+
+  it('native action sheet is opaque — no glass under the title/message', () => {
+    vi.mocked(isNativeApp).mockReturnValue(true);
+    render(
+      <ConfirmDialog
+        open
+        title="Delete task?"
+        message="This can't be undone."
+        variant="danger"
+        onConfirm={vi.fn()}
+        onCancel={vi.fn()}
+      />,
+    );
+    const dialog = screen.getByRole('dialog', { name: 'Delete task?' });
+    expect(dialog.innerHTML).not.toMatch(/backdrop-blur|bg-surface\/95/);
+  });
 });

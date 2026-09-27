@@ -39,9 +39,9 @@ import { forwardRef } from 'react';
 import type { ReactNode } from 'react';
 import {
   motion,
-  useReducedMotion,
   type HTMLMotionProps,
 } from 'framer-motion';
+import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
 import { cn } from '@/lib/utils';
 import styles from './glass-surface.module.css';
 
@@ -105,7 +105,7 @@ export const GlassSurface = forwardRef<HTMLDivElement, GlassSurfaceProps>(
     { surface, animateIn = true, padding = 'md', className, children, style, ...props },
     ref,
   ) {
-    const prefersReducedMotion = useReducedMotion();
+    const prefersReducedMotion = useReducedMotionGuard();
     const recipe = KIND_RECIPE[surface];
     const shouldAnimate = animateIn && !prefersReducedMotion;
 

@@ -11,7 +11,7 @@
  * standing / Last 10 rounds = 2×1) from `Bento` + `BentoCell` alone.
  * ========================================================================== */
 
-import type { ElementType } from 'react';
+import { useId, type ElementType } from 'react';
 import { cn } from '@/lib/utils';
 import { PressTarget } from '../controls';
 import type { BentoCellProps, CellChipTone } from './types';
@@ -42,11 +42,15 @@ export function BentoCell({
   children,
 }: BentoCellProps) {
   const interactive = Boolean(onOpen);
+  const bodyId = useId();
   // PressTarget (fairway/controls) is the sanctioned pressable primitive —
   // it owns type="button", the focus ring, and disabled semantics.
   const Comp = (interactive ? PressTarget : 'div') as ElementType;
+  // A11Y-R9: the short name ("Open Putting") used to REPLACE the cell's
+  // content for assistive tech, so the number on the tile was never read.
+  // The body (headline, preview, sentence) is now the button's description.
   const interactiveProps = interactive
-    ? { onClick: onOpen, 'aria-label': `Open ${label}` }
+    ? { onClick: onOpen, 'aria-label': `Open ${label}`, 'aria-describedby': bodyId }
     : {};
 
   return (
@@ -78,22 +82,28 @@ export function BentoCell({
         ) : null}
       </span>
 
-      {headline ? (
-        <span className="flex items-baseline gap-1.5 font-fw-mono text-h2 tracking-[-0.02em] text-text-primary tabular-nums">
-          {headline.value}
-          {headline.unit ? (
-            <small className="font-fw-sans text-caption font-normal normal-case tracking-normal text-text-tertiary">
-              {headline.unit}
-            </small>
-          ) : null}
-        </span>
-      ) : null}
+      {/* `contents`: a layout-neutral wrapper, so the cell's own flex column
+          still spaces these children; it only exists to be described. */}
+      <span id={bodyId} className="contents">
+        {headline ? (
+          <span className="flex items-baseline gap-1.5 font-fw-sans text-h2 tracking-[-0.02em] text-text-primary tabular-nums">
+            {headline.value}
+            {headline.unit ? (
+              <small className="font-fw-sans text-caption font-normal normal-case tracking-normal text-text-tertiary">
+                {headline.unit}
+              </small>
+            ) : null}
+          </span>
+        ) : null}
 
-      {children}
+        {children}
 
-      {sentence ? (
-        <p className="m-0 line-clamp-3 font-fw-sans text-caption text-text-secondary">{sentence}</p>
-      ) : null}
+        {sentence ? (
+          // A span, not a <p>: this whole cell can be a <button>, which only
+          // takes phrasing content.
+          <span className="m-0 block line-clamp-3 font-fw-sans text-caption text-text-secondary">{sentence}</span>
+        ) : null}
+      </span>
 
       {interactive ? (
         <span

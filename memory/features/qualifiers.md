@@ -74,6 +74,9 @@ Leaderboard reads qualifier
 ## Business Rules
 
 - Only authorized coaches should create or manage team qualifiers.
+- Test qualifiers (OD-03, 2026-09-27): `golf_qualifiers.is_test = true` hides a
+  QA qualifier from the team list, the coach home count, My Qualifiers and the
+  new-round qualifier picker. The qualifier detail page (by id) still opens.
 - Players can see qualifiers they are entered in through My Qualifiers.
 - Qualifier rounds must remain normal rounds too; do not fork scoring logic.
 - Leaderboard aggregation must handle ties and incomplete entries consistently.
@@ -142,6 +145,12 @@ Leaderboard reads qualifier
   `page.tsx` is a pure `permanentRedirect` shim renders `bg-canvas` only:
   no geometry, and no real `<h1>` for a screen that never mounts.
   Reference implementation: `dashboard/alerts/loading.tsx`.
+
+- Edit qualifier (`FairwayEditQualifier`, audit DATA-06/07, 2026-09-23): the
+  save is two writes (details, then round courses). If the second write fails,
+  the error says the details WERE saved and asks for another save to retry
+  the courses. An empty or zero "Rounds" value blocks the save with an inline
+  field error. Test: `__tests__/FairwayEditQualifier.save.test.tsx`.
 
 ## Known Risk Areas
 

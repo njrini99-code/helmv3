@@ -8,13 +8,15 @@ import { fairwayScope } from '@/lib/redesign/flag';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import { logServerException } from '@/lib/server-error-logger';
 import { withCanonicalRoundTotal } from '@/lib/golf/round-total';
+import { isCountableRound } from '@/lib/golf/round-countable';
+import { computeScoringTrendFromRounds } from '@/lib/golf/scoring-trend';
 import {
   FairwayRoundsLibrary,
   type RoundLibraryRound as FairwayRoundLibraryRound,
 } from '@/components/fairway/pages/rounds/FairwayRoundsLibrary';
 
 export const metadata: Metadata = {
-  title: 'Rounds | Helm Golf',
+  title: 'Rounds',
   description: 'View and manage all golf rounds for your team. Track scores, stats, and player performance over time.',
 };
 
@@ -131,6 +133,7 @@ export default async function RoundsPage() {
           .from('golf_rounds')
           .select(playerSelectFields)
           .in('player_id', teamPlayerIds)
+          .eq('is_test', false)
           .eq('status', 'completed')
           .order('round_date', { ascending: false })
           .order('id', { ascending: false })
@@ -158,6 +161,7 @@ export default async function RoundsPage() {
           .from('golf_rounds')
           .select(playerSelectFields)
           .eq('player_id', player.id)
+          .eq('is_test', false)
           .eq('status', 'completed')
           .order('round_date', { ascending: false })
           .order('id', { ascending: false })
@@ -167,6 +171,7 @@ export default async function RoundsPage() {
         .from('golf_rounds')
         .select(inProgressSelectFields)
         .eq('player_id', player.id)
+        .eq('is_test', false)
         .eq('status', 'in_progress')
         .order('updated_at', { ascending: false }),
     ]);
@@ -249,11 +254,44 @@ export default async function RoundsPage() {
   }
 
   // Calculate round statistics summary — normalize 9-hole rounds to 18-hole equivalents
+  // Countable rounds only (src/lib/golf/round-countable.ts): the list still
+  // shows every round, but a partial, hole-less or implausible round (a
+  // 37-stroke "18-hole" round) never sets Best or moves the averages.
+  // One countable verdict per round, shared by the KPI tiles, the trend pill
+  // and the client's sparklines + "Not counted" row marker, so the hero can
+  // never read "Improving" off a round the trend pill ignored.
+  const countableIds = new Set(
+    (rounds as Array<typeof rounds[number] & {
+      holes_played?: number | null;
+      front_nine?: number | null;
+      back_nine?: number | null;
+      total_putts?: number | null;
+    }>)
+      .filter((r) =>
+        isCountableRound({
+          holes_played: r.holes_played ?? null,
+          total_score: r.total_score ?? null,
+          front_nine: r.front_nine ?? null,
+          back_nine: r.back_nine ?? null,
+          total_putts: r.total_putts ?? null,
+        }),
+      )
+      .map((r) => r.id),
+  );
   const roundStats = (() => {
     if (rounds.length === 0) return null;
-    type RoundWithHoles = typeof rounds[number] & { holes_played?: number | null };
-    const scoredRounds = (rounds as RoundWithHoles[]).filter(r => r.total_score !== null && r.total_score > 0);
-    const toParScores = rounds.map(r => r.score_to_par).filter((s): s is number => s !== null);
+    type RoundWithHoles = typeof rounds[number] & {
+      holes_played?: number | null;
+      front_nine?: number | null;
+      back_nine?: number | null;
+      total_putts?: number | null;
+    };
+    const countable = (rounds as RoundWithHoles[]).filter((r) => countableIds.has(r.id));
+    const scoredRounds = countable.filter(r => r.total_score !== null && r.total_score > 0);
+    // 18-hole basis, like avg/best on this same object: a 9-hole +3 is +6/18.
+    const toParScores = countable
+      .filter((r) => r.score_to_par !== null && (r.holes_played ?? 18) > 0)
+      .map((r) => (r.score_to_par! * 18) / (r.holes_played ?? 18));
     if (scoredRounds.length === 0) return null;
 
     // Normalize scoring to 18-hole equivalent
@@ -273,15 +311,12 @@ export default async function RoundsPage() {
     const underParCount = toParScores.filter(s => s < 0).length;
     const underParPct = toParScores.length > 0 ? Math.round((underParCount / toParScores.length) * 100) : 0;
 
-    // Trend: compare last 5 vs previous 5 using normalized scores
-    let trend: 'improving' | 'declining' | 'stable' | null = null;
-    if (normalizedScores.length >= 6) {
-      const recent5 = normalizedScores.slice(0, 5).reduce((a, b) => a + b, 0) / 5;
-      const prev5 = normalizedScores.slice(5, 10).reduce((a, b) => a + b, 0) / Math.min(5, normalizedScores.length - 5);
-      if (recent5 < prev5 - 0.5) trend = 'improving';
-      else if (recent5 > prev5 + 0.5) trend = 'declining';
-      else trend = 'stable';
-    }
+    // Trend: the canonical scoring trend shared with Team Stats and the
+    // CoachHelm Players table (last 5 vs the 5 before, 18-hole normalized,
+    // ±0.3 strokes), so this page can't disagree with them. The tiles and the
+    // "Scoring trend" pill both read this one verdict.
+    const scoringTrend = computeScoringTrendFromRounds(scoredRounds);
+    const trend = scoringTrend.hasSignal ? scoringTrend.trend : null;
 
     return { avg, best, avgToPar, underParPct, totalRounds: scoredRounds.length, trend };
   })();
@@ -292,7 +327,7 @@ export default async function RoundsPage() {
   return (
     <div className={fairwayScope('min-h-full bg-canvas')}>
       <FairwayRoundsLibrary
-        rounds={rounds as unknown as FairwayRoundLibraryRound[]}
+        rounds={rounds.map((r) => ({ ...r, countable: countableIds.has(r.id) })) as unknown as FairwayRoundLibraryRound[]}
         inProgressRounds={inProgressRounds as unknown as FairwayRoundLibraryRound[]}
         userRole={userRole as 'coach' | 'player'}
         playerId={player?.id}
