@@ -46,7 +46,34 @@ const fingerprint: PlayerFingerprint = {
   composite: { rating: form.score, trend: 'flat', rounds_in_calculation: 3, form },
   metrics_rounds: 3,
   sections: {
-    tee: section('tee', { sparse: false, metrics: [{ label: 'SG: Tee', value: '-0.80', tone: 'bad' }] }),
+    tee: section('tee', {
+      sparse: false,
+      metrics: [{ label: 'SG: Tee', value: '-0.80', tone: 'bad' }],
+      // Two insights with no per-round figure worth printing: a zero impact
+      // and a missing one (Number(null) is 0, so both used to print "0.0 a round").
+      insights: [
+        {
+          id: 'i-zero',
+          player_id: 'p-1',
+          category: 'tee',
+          title: 'Driver vs layback',
+          content: null,
+          signature: 's-zero',
+          evidence: { metric_label: 'Tee Strategy', strokes_impact: 0, sample_n: 138, confidence: 0.9 },
+          drills: [],
+        } as unknown as SectionData['insights'][number],
+        {
+          id: 'i-missing',
+          player_id: 'p-1',
+          category: 'tee',
+          title: 'Fairway finder',
+          content: null,
+          signature: 's-missing',
+          evidence: { metric_label: 'Fairways hit', strokes_impact: null, sample_n: 60, confidence: 0.9 },
+          drills: [],
+        } as unknown as SectionData['insights'][number],
+      ],
+    }),
     approach: section('approach'),
     short_game: section('short_game'),
     putting: section('putting', {
@@ -98,5 +125,15 @@ describe('print report (FP-08)', () => {
     expect(table.textContent).toContain('Pinehurst No. 2');
     expect(table.textContent).not.toContain('(test)');
     expect(table.textContent).toContain('−2');
+  });
+
+  it('prints a per-round impact only when there is one, never a "0.0 a round" placeholder', async () => {
+    render(await PlayerGamePrintPage({ params: Promise.resolve({ playerId: 'p-1' }) }));
+    const tee = screen.getByTestId('print-insights-tee');
+    expect(tee.textContent).toContain('Tee Strategy');
+    expect(tee.textContent).toContain('Fairways hit');
+    expect(tee.textContent).not.toMatch(/a round/);
+    // A real impact still prints.
+    expect(screen.getByTestId('print-insights-putting').textContent).toMatch(/0\.6 a round/);
   });
 });

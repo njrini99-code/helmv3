@@ -318,6 +318,16 @@ describe('golf nav-registry — Target IA (WAVE W2, 2026-07-09)', () => {
       expect(isCoachHelmCoachCluster('/golf/dashboard/players/player-1')).toBe(true);
     });
 
+    it('coach CoachHelm AI rail item lights on bare /coachhelm, which stays out of the cluster', () => {
+      // A coach there gets the "this is the player view" pointer to the Brief,
+      // titled "CoachHelm AI"; nothing in the nav was lit (390px baseline).
+      // The cluster itself still excludes the player home (breadcrumbs, back link).
+      const items = buildCoachRailSections(ZERO_BADGES).flatMap((s) => s.items);
+      const coachHelm = items.find((i) => i.label === 'CoachHelm AI')!;
+      expect(coachHelm.activeMatch?.('/golf/dashboard/coachhelm')).toBe(true);
+      expect(isCoachHelmCoachCluster('/golf/dashboard/coachhelm')).toBe(false);
+    });
+
     it('player Team rail item activeMatch covers roster/[id] and every Team sub-tab', () => {
       const items = buildPlayerRailSections(ZERO_BADGES).flatMap((s) => s.items);
       const team = items.find((i) => i.label === 'Team')!;
@@ -376,6 +386,8 @@ describe('golf nav-registry — Target IA (WAVE W2, 2026-07-09)', () => {
       ['/golf/dashboard/players/p-1/game', 'Players'],
       ['/golf/dashboard/intelligence', 'CoachHelm'],
       ['/golf/dashboard/coachhelm/chat', 'CoachHelm'],
+      // The player CoachHelm home, which a coach sees as a pointer to the Brief.
+      ['/golf/dashboard/coachhelm', 'CoachHelm'],
       ['/golf/dashboard/calendar', 'Schedule'],
       ['/golf/dashboard/qualifiers/q-1', 'Schedule'],
       ['/golf/dashboard/travel', 'Schedule'],

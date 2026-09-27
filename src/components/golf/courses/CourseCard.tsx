@@ -18,8 +18,19 @@ import type { GolfCourse } from '@/lib/types/golf-course';
 function locationLabel(course: GolfCourse): string | null {
   // Trimmed: import data carries stray spaces ("Lexington , KY").
   const parts = [course.city?.trim(), course.state?.trim()].filter(Boolean);
-  return parts.length ? parts.join(', ') : null;
+  if (parts.length) return parts.join(', ');
+  // No city or state (a hand-added course, e.g. "PGA National - Champ"): the
+  // country is still a real location when the row has one.
+  return course.country?.trim() || null;
 }
+
+/**
+ * The list row and the grid card keep their location slot when a course has
+ * no location at all, so it reads as missing data in the same place on every
+ * card instead of the tee count sliding into the location's spot. The
+ * featured hero just omits the line.
+ */
+const MISSING_LOCATION = 'Location not set';
 
 export interface CourseCardProps {
   course: GolfCourse;
@@ -171,7 +182,7 @@ export function CourseCard({
             {displayName}
           </h3>
           <div className="mt-0.5 flex min-w-0 items-center gap-x-2.5 text-caption text-text-tertiary">
-            {location && <span className="truncate">{location}</span>}
+            <span className="truncate">{location ?? MISSING_LOCATION}</span>
             {teeLabel && (
               <span className="inline-flex flex-shrink-0 items-center gap-1">
                 <IconFlag size={12} aria-hidden /> {teeLabel}
@@ -221,12 +232,10 @@ export function CourseCard({
             {displayName}
           </h3>
           <div className="mt-0.5 flex flex-wrap items-center gap-x-2.5 gap-y-0 text-caption text-text-tertiary">
-            {location && (
-              <span className="inline-flex min-w-0 items-center gap-1">
-                <IconMapPin size={12} aria-hidden className="flex-shrink-0" />
-                <span className="truncate">{location}</span>
-              </span>
-            )}
+            <span className="inline-flex min-w-0 items-center gap-1">
+              <IconMapPin size={12} aria-hidden className="flex-shrink-0" />
+              <span className="truncate">{location ?? MISSING_LOCATION}</span>
+            </span>
             {teeLabel && (
               <span className="inline-flex items-center gap-1">
                 <IconFlag size={12} aria-hidden /> {teeLabel}

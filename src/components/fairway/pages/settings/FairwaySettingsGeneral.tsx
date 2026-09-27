@@ -1334,31 +1334,23 @@ export function AppearancePanel() {
 
         <div>
           <FieldLabel>Date format</FieldLabel>
+          {/* OptionTile like the rows around it. The hand-rolled row passed the
+              format and its example as two sibling spans, and the Fairway
+              Button wraps children in one bare inline span, so justify-between
+              never applied: they rendered glued, "MM/DD/YYYY01/28/2026". */}
           <div className="grid gap-2">
             {([
               { val: 'MM/DD/YYYY' as const, ex: '01/28/2026' },
               { val: 'DD/MM/YYYY' as const, ex: '28/01/2026' },
               { val: 'YYYY-MM-DD' as const, ex: '2026-01-28' },
             ]).map(({ val, ex }) => (
-              <Button
-                variant="ghost"
+              <OptionTile
                 key={val}
-                type="button"
-                aria-pressed={dateFormat === val}
+                active={dateFormat === val}
                 onClick={() => update({ dateFormat: val })}
-                className={cn(
-                  'flex h-auto min-h-[48px] items-center justify-between rounded-fw-sm border px-3 py-2.5 text-left font-normal',
-                  'outline-none focus-visible:ring-2 focus-visible:ring-accent-500/70 focus-visible:ring-offset-1 focus-visible:ring-offset-canvas',
-                  dateFormat === val
-                    ? 'border-accent-500 bg-accent-50 hover:bg-accent-50'
-                    : 'border-border-subtle hover:border-border-strong',
-                )}
-              >
-                <span className="font-fw-sans text-body-sm font-medium text-text-primary">
-                  {val}
-                </span>
-                <span className="font-fw-sans text-caption text-text-tertiary">{ex}</span>
-              </Button>
+                title={val}
+                hint={ex}
+              />
             ))}
           </div>
         </div>

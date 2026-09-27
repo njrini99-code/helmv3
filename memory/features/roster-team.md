@@ -75,6 +75,9 @@ Team page
 - Roster needs clear search/filter/status affordances and pending-request visibility.
 - Player profile needs identity, role/status badges, recent rounds, and stats sections without blocking the whole page.
 - Team page must visibly distinguish coach-editable settings from player read-only info.
+- Team Info staff rows name the role once, in the pill. A stored
+  `golf_coaches.title` shows only when it says something else, like "Director
+  of Golf" (`src/components/fairway/pages/team/staff-title.ts`, 2026-09-27).
 - Empty states should distinguish no players, no pending requests, and no recent player activity.
 - A route's `loading.tsx` reserves the page's paint at t=0 — for a
   `'use client'` page holding its own `loading` state that is that

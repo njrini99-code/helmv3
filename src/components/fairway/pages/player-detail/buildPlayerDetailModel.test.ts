@@ -98,11 +98,33 @@ describe('buildPlayerDetailModel', () => {
       }),
     );
     expect(m.statusLine).toBe('Last round Aug 2 · 74 (+2)');
-    expect(m.statusNote).toBe('1 later round not counted');
+    // The reason rides inline; it used to wait for the chart caption far below.
+    expect(m.statusNote).toBe('1 later round not counted (implausible)');
     expect(m.allRounds.map((r) => r.id)).not.toContain(b.id);
     expect(m.bestRoundId).toBe(real.id);
     expect(m.excludedRounds).toBe(1);
     for (const s of m.scopes) expect(s.rounds.map((r) => r.id)).not.toContain(b.id);
+  });
+
+  it('names why later rounds were not counted: partial, implausible, or both', () => {
+    const real = round('2026-08-02', 74);
+    const partial = round('2026-08-10', 40, { back_nine: null });
+    const partialOnly = buildPlayerDetailModel(inputs([partial, real]));
+    expect(partialOnly.statusNote).toBe('1 later round not counted (partial)');
+
+    const b = bogus();
+    const mixed = buildPlayerDetailModel(
+      inputs([b, partial, real], {
+        roundStats: { ok: true, value: [stats(b.id, { strokes_gained_total: 34.51 }), stats(real.id)] },
+      }),
+    );
+    expect(mixed.statusNote).toBe('2 later rounds not counted (partial or implausible)');
+  });
+
+  it('names the reason when no round on file is countable yet', () => {
+    const m = buildPlayerDetailModel(inputs([round('2026-08-10', 40, { back_nine: null })]));
+    expect(m.statusLine).toBeNull();
+    expect(m.statusNote).toBe('1 round on file, none countable yet (partial)');
   });
 
   it('excludes an SG-implausible round even when its score looks fine', () => {

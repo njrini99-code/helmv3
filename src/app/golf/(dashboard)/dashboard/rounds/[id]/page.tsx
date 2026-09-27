@@ -324,7 +324,8 @@ export default async function RoundDetailPage({
       const { data: teamRows, error: teamQualError } = await supabase
         .from('golf_qualifiers')
         .select('id, name, num_rounds, status')
-        .eq('team_id', roundTeamId);
+        .eq('team_id', roundTeamId)
+        .eq('is_test', false);
 
       if (teamQualError) {
         qualifierReadFailed = true;

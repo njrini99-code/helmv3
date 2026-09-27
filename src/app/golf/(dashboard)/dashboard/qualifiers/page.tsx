@@ -60,6 +60,7 @@ export default async function GolfQualifiersPage() {
       .from('golf_qualifiers')
       .select('*')
       .eq('team_id', teamId)
+      .eq('is_test', false)
       .order('start_date', { ascending: false })
       // P328: bound the fetch to the PostgREST hard server cap. A team's
       // qualifier history grows unbounded across seasons; an explicit limit

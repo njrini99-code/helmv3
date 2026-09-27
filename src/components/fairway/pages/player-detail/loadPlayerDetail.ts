@@ -68,6 +68,7 @@ export async function loadPlayerDetail(
             .from('golf_rounds')
             .select('id, round_date, course_name, total_score, score_to_par, front_nine, back_nine, holes_played, total_putts, round_type, status')
             .eq('player_id', playerId)
+            .eq('is_test', false)
             .eq('status', 'completed')
             .order('round_date', { ascending: false })
             .order('id', { ascending: true })

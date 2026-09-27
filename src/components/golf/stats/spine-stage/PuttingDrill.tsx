@@ -414,7 +414,8 @@ export function PuttingDrill({
     },
     { label: 'Putts / hole', value: puttsPerHole, format: { maximumFractionDigits: 2 }, awaitingLabel: 'No putts', caption: 'Per hole played' },
     { label: 'Putts / GIR', value: puttsPerGir, format: { maximumFractionDigits: 2 }, awaitingLabel: 'No GIR putts', caption: 'Putts after hitting the green' },
-    { label: '3-putts / round', value: threePuttsPerRound, format: { maximumFractionDigits: 2 }, awaitingLabel: 'No rounds', caption: 'Two-plus putts, per round' },
+    // Calculator: holes with putts >= 3, scaled to 18 holes (threePuttsPerRound).
+    { label: '3-putts / round', value: threePuttsPerRound, format: { maximumFractionDigits: 2 }, awaitingLabel: 'No rounds', caption: 'Holes with 3+ putts, per 18' },
     { label: '1-putts (total)', value: onePuttsTotal, awaitingLabel: 'No putts', caption: 'Makes on the first try' },
     { label: 'Approach-putt avg leave', value: approachPuttAvgLeave, unit: 'ft', format: { maximumFractionDigits: 1 }, awaitingLabel: 'No leave data', caption: 'Left after the first putt' },
   ];

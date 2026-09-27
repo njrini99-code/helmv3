@@ -562,6 +562,7 @@ async function getTeamOverviewImpl(
       .from('golf_rounds')
       .select('id')
       .in('player_id', playerIds)
+      .eq('is_test', false)
       .eq('status', 'completed')
       .gte('round_date', sinceDateStr)
       .order('id', { ascending: true })
@@ -850,6 +851,7 @@ async function getTeamCategoryInsightsImpl(
         .from('golf_rounds')
         .select(ROUND_STAT_COLUMNS.join(', '))
         .in('player_id', playerIds)
+        .eq('is_test', false)
         .eq('status', 'completed')
         // No date floor here: the countable-round putts and scoring values
         // below are lifetime (like the cache they replace). The 365-day

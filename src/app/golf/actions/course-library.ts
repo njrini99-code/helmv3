@@ -370,6 +370,7 @@ async function getRecentlyPlayedCoursesImpl(limit = 12): Promise<GolfCourse[]> {
     .from('golf_rounds')
     .select('course_id, tee_id, round_date')
     .eq('player_id', player.id)
+    .eq('is_test', false)
     .order('round_date', { ascending: false })
     .limit(200);
   if (roundsError) {

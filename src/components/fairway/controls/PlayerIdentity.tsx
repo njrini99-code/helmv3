@@ -46,6 +46,13 @@ export interface PlayerIdentityProps {
    * single-line identity. ReactNode so callers can compose (e.g. "'27 · +2 HCP").
    */
   meta?: ReactNode;
+  /**
+   * Let the meta line wrap instead of truncating to one line with an ellipsis.
+   * Opt-in: the default single line suits a quiet subtitle, but a meta that
+   * carries a reason the reader must see whole (the roster attention status,
+   * "Trending down · no focus area") must never be cut mid-word.
+   */
+  wrapMeta?: boolean;
   /** sm = dense rows (table cells, pickers); md = cards + headline rows. */
   size?: PlayerIdentitySize;
   /** Presence dot on the avatar (online/away/busy/offline). Omit for none. */
@@ -85,12 +92,15 @@ const NAME_CLS: Record<PlayerIdentitySize, string> = {
 
 /** Meta line stays quiet + small at every size (tertiary, caption). */
 const META_CLS = 'mt-0.5 truncate font-fw-sans text-caption text-text-tertiary';
+/** `wrapMeta`: the same quiet line, wrapping onto a second line instead of ellipsizing. */
+const META_WRAP_CLS = 'mt-0.5 break-words font-fw-sans text-caption text-text-tertiary';
 
 export function PlayerIdentity({
   name,
   avatarUrl,
   avatarName,
   meta,
+  wrapMeta = false,
   size = 'md',
   status,
   squareAvatar = false,
@@ -138,7 +148,7 @@ export function PlayerIdentity({
             {name}
           </span>
         )}
-        {meta ? <div className={META_CLS}>{meta}</div> : null}
+        {meta ? <div className={wrapMeta ? META_WRAP_CLS : META_CLS}>{meta}</div> : null}
       </div>
 
       {trailing ? <div className="flex-shrink-0">{trailing}</div> : null}

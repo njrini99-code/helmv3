@@ -40,6 +40,7 @@ import {
   fairwayToast,
 } from '@/components/fairway';
 import type { StaffInviteRole } from '@/lib/golf/staff-invite';
+import { distinctStaffTitle, staffRoleLabel } from './staff-title';
 import {
   IconCopy,
   IconCheck,
@@ -976,33 +977,39 @@ function CoachingStaffSection({ teamId }: { teamId: string | null }) {
           </p>
         </div>
         <ul className="flex flex-col gap-2">
-          {staff.map((member) => (
-            <li
-              key={member.coachId}
-              className="flex items-center justify-between gap-3 rounded-fw-md border border-border-subtle bg-surface px-3 py-2.5"
-            >
-              <div className="min-w-0">
-                <p className="truncate font-fw-sans text-body text-text-primary">
-                  {member.fullName || EM_DASH}
-                </p>
-                {member.title ? (
-                  <p className="truncate font-fw-sans text-caption text-text-tertiary">
-                    {member.title}
-                  </p>
-                ) : null}
-              </div>
-              <span
-                className={cn(
-                  'shrink-0 rounded-full px-2.5 py-1 font-fw-sans text-caption font-medium',
-                  member.role === 'head_coach'
-                    ? 'bg-accent-subtle text-text-primary'
-                    : 'bg-surface-sunken text-text-secondary',
-                )}
+          {staff.map((member) => {
+            // The pill names the role; a stored title that only repeats it
+            // ("Head Coach" beside "Head coach") is dropped (staff-title.ts).
+            const roleLabel = staffRoleLabel(member.role);
+            const title = distinctStaffTitle(member.title, roleLabel);
+            return (
+              <li
+                key={member.coachId}
+                className="flex items-center justify-between gap-3 rounded-fw-md border border-border-subtle bg-surface px-3 py-2.5"
               >
-                {member.role === 'head_coach' ? 'Head coach' : 'Assistant coach'}
-              </span>
-            </li>
-          ))}
+                <div className="min-w-0">
+                  <p className="truncate font-fw-sans text-body text-text-primary">
+                    {member.fullName || EM_DASH}
+                  </p>
+                  {title ? (
+                    <p className="truncate font-fw-sans text-caption text-text-tertiary">
+                      {title}
+                    </p>
+                  ) : null}
+                </div>
+                <span
+                  className={cn(
+                    'shrink-0 rounded-full px-2.5 py-1 font-fw-sans text-caption font-medium',
+                    member.role === 'head_coach'
+                      ? 'bg-accent-subtle text-text-primary'
+                      : 'bg-surface-sunken text-text-secondary',
+                  )}
+                >
+                  {roleLabel}
+                </span>
+              </li>
+            );
+          })}
         </ul>
       </Surface>
     </section>

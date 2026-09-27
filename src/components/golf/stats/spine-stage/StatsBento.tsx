@@ -244,14 +244,44 @@ export function StatsBento({
 
   const bestCategory = strengths[0] ?? null;
   const worstCategory = weaknesses[0] ?? null;
+  // Title, number and colour describe ONE metric. The preview rail is SG:
+  // Total, so once it has computed the headline is SG: Total too, with the
+  // spine's Gaining/Losing read; the strongest area and the biggest leak stay
+  // named in the sentence. (The cell headlined the leak, "SG: Putting", above
+  // SG: Total's −1.61 painted green.) Until SG: Total computes there is no
+  // rail, and the headline is the leak (or best) category.
+  const sgTotal = finite(standingByMetric.get('sg_total')?.player_value ?? null);
+  // Hundredths, as displayed: a "0.00" reads neither gaining nor losing.
+  const sgTotalHundredths = sgTotal === null ? 0 : Math.round(sgTotal * 100);
   const standingFocus: {
     chip?: { tone: CellChipTone; text: string };
-    headline?: { value: string };
-  } = worstCategory
-    ? { chip: { tone: 'leak', text: 'Leak' }, headline: { value: worstCategory.label } }
-    : bestCategory
-      ? { chip: { tone: 'strength', text: 'Best' }, headline: { value: bestCategory.label } }
-      : {};
+    headline?: { value: string; unit?: string };
+  } =
+    sgTotal !== null
+      ? {
+          chip:
+            sgTotalHundredths > 0
+              ? { tone: 'strength', text: 'Gaining' }
+              : sgTotalHundredths < 0
+                ? { tone: 'leak', text: 'Losing' }
+                : undefined,
+          headline: { value: formatSgSigned(sgTotal), unit: 'SG: Total' },
+        }
+      : worstCategory
+        ? { chip: { tone: 'leak', text: 'Leak' }, headline: { value: worstCategory.label } }
+        : bestCategory
+          ? { chip: { tone: 'strength', text: 'Best' }, headline: { value: bestCategory.label } }
+          : {};
+  const standingSentence =
+    bestCategory && worstCategory
+      ? // NUM-37: canonical labels as-is ("SG: Off the Tee"), never
+        // lowercased into "sg: off the tee".
+        `Strongest: ${bestCategory.label}. Biggest leak: ${worstCategory.label}.`
+      : worstCategory
+        ? `Biggest leak: ${worstCategory.label}.`
+        : bestCategory
+          ? `Strongest: ${bestCategory.label}.`
+          : 'Every metric vs PGA Tour and the team.';
 
   return (
     <Bento separated>
@@ -377,13 +407,7 @@ export function StatsBento({
         span={2}
         chip={standingFocus.chip}
         headline={standingFocus.headline}
-        sentence={
-          bestCategory && worstCategory
-            ? // NUM-37: canonical labels as-is ("SG: Off the Tee"), never
-              // lowercased into "sg: off the tee".
-              `Strongest: ${bestCategory.label}. Biggest leak: ${worstCategory.label}.`
-            : 'Every metric vs PGA Tour and the team.'
-        }
+        sentence={standingSentence}
         onOpen={() => stage.open('standing')}
       >
         <StandingPinPreview standingByMetric={standingByMetric} />
@@ -446,16 +470,10 @@ function StandingPinPreview({ standingByMetric }: { standingByMetric: Map<string
     { key: 'Tour', pct: tourPct },
   ]);
 
+  // The figure and its "SG: Total" label are the cell's headline (StatsBento),
+  // so this preview is the rail alone — no second, differently coloured copy.
   return (
     <div data-slot="standing-pin-preview" className="mt-0.5 flex flex-col gap-1.5">
-      <div className="flex items-baseline justify-between gap-2">
-        <span className="font-fw-mono text-caption font-semibold tabular-nums text-accent-700">
-          {formatSgSigned(you)}
-        </span>
-        <span className="font-fw-sans text-caption font-medium text-text-tertiary">
-          SG: Total
-        </span>
-      </div>
       <div className="relative h-[7px] rounded-full bg-surface-sunken">
         {teamPct !== null ? (
           <div
@@ -476,7 +494,10 @@ function StandingPinPreview({ standingByMetric }: { standingByMetric: Map<string
         />
         <div
           aria-hidden="true"
-          className="absolute top-1/2 h-[11px] w-[11px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-accent-500 shadow-soft ring-2 ring-surface"
+          className={cn(
+            'absolute top-1/2 h-[11px] w-[11px] -translate-x-1/2 -translate-y-1/2 rounded-full shadow-soft ring-2 ring-surface',
+            isGain ? 'bg-accent-500' : 'bg-fw-warning',
+          )}
           style={{ left: `${youPct}%` }}
         />
       </div>

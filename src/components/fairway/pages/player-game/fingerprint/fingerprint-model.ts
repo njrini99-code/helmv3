@@ -333,6 +333,18 @@ export function confidenceWord(confidence: number | null | undefined, sampleN: n
   return 'Fair read';
 }
 
+/**
+ * The per-round strokes impact worth showing, or null when it is missing or
+ * would print as 0.0. One gate for screen (`buildClaim`) and paper (the print
+ * report), so the print never shows a "0.0 a round" placeholder next to a real
+ * percentage while the screen hides it.
+ */
+export function shownStrokesImpact(raw: unknown): number | null {
+  if (raw == null) return null;
+  const n = Number(raw);
+  return Number.isFinite(n) && Math.abs(n) >= 0.05 ? n : null;
+}
+
 const UNIT_SUFFIX: Record<string, string> = {
   percent: '%',
   feet: ' ft',
@@ -402,9 +414,9 @@ export function buildClaim(insight: EvidenceInsight): ClaimView {
   }
 
   const n = typeof ev.sample_n === 'number' && Number.isFinite(ev.sample_n) ? ev.sample_n : null;
-  const impactRaw = Number(ev.strokes_impact ?? 0);
+  const impactRaw = shownStrokesImpact(ev.strokes_impact);
   const impact =
-    Number.isFinite(impactRaw) && Math.abs(impactRaw) >= 0.05
+    impactRaw != null
       ? `Worth about ${Math.abs(impactRaw).toFixed(1)} ${Math.abs(impactRaw).toFixed(1) === '1.0' ? 'stroke' : 'strokes'} a round`
       : null;
 

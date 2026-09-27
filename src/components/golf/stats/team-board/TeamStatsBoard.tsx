@@ -367,8 +367,8 @@ export function TeamStatsBoard({ teamName, players, intelligenceByPlayer, formBy
   return (
     <div className="mx-auto w-full max-w-[1536px] px-4 py-6 md:px-6 md:py-8 pb-24">
       {/* ── MASTHEAD ────────────────────────────────────────────────────────── */}
+      {/* No eyebrow: it repeated the title ("Team Stats" twice at 390px). */}
       <ViewHeader
-        eyebrow="Team Stats"
         title="Team Stats"
         description={`${teamName} · sorted by last name`}
         secondaryActions={

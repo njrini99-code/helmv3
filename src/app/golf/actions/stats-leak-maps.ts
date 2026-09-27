@@ -85,7 +85,7 @@ const PUTT_BANDS: ReadonlyArray<{
   label: string;
   metric_id: string | null;
   min: number;
-  /** exclusive upper edge; null = open-ended (25+). */
+  /** upper edge, INCLUSIVE for putts (see `puttBandFor`); null = open-ended (25+). */
   max: number | null;
 }> = [
   { bucket_id: '0_3', label: '0-3 ft', metric_id: null, min: 0, max: 3 },
@@ -165,6 +165,22 @@ function bandFor<T extends { min: number; max: number | null }>(
   for (const band of bands) {
     if (value < band.min) continue;
     if (band.max === null || value < band.max) return band;
+  }
+  return null;
+}
+
+/**
+ * Putt band for a distance in feet, UPPER-inclusive: "3-5 ft" is (3, 5], and
+ * 0-3 ft takes everything up to 3. Same edges as the cache writer
+ * (`putt_make_pct_3_5ft`: feet > 3 AND feet <= 5) and the calculator's
+ * `getPuttDistanceBucket`, which feed the Putting-by-distance table beside
+ * this chart. Putts are entered in whole feet, so `bandFor`'s [min, max)
+ * edges moved every 3-ft putt into "3-5 ft" (chart 78% vs table 47% on the
+ * same 18 rounds).
+ */
+function puttBandFor(feet: number): (typeof PUTT_BANDS)[number] | null {
+  for (const band of PUTT_BANDS) {
+    if (band.max === null || feet <= band.max) return band;
   }
   return null;
 }
@@ -267,6 +283,7 @@ async function completedRoundSet(
       .from('golf_rounds')
       .select('id, round_date, holes_played, total_score, front_nine, back_nine, total_putts')
       .in('player_id', playerIds)
+      .eq('is_test', false)
       .eq('status', 'completed')
       .order('id', { ascending: true })
       .range(from, to),
@@ -344,7 +361,7 @@ async function buildPuttBuckets(
     for (const row of data ?? []) {
       const ft = row.putt_distance_feet;
       if (ft === null || Number.isNaN(ft)) continue;
-      const band = bandFor(PUTT_BANDS, ft);
+      const band = puttBandFor(ft);
       if (!band) continue;
       // Only rows with a known outcome count toward make% (null = ungraded).
       if (row.putt_made === null) continue;

@@ -1,22 +1,26 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import Image from 'next/image';
-import { LazyMotion, m } from 'framer-motion';
-import { loadFeatures } from '@/lib/motion/load-features';
-import { Input } from '@/components/ui/input';
-import { IconUsers } from '@/components/icons';
-import { Button } from '@/components/ui/button';
-import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
+import {
+  AuthCanvas,
+  AuthFieldError,
+  AuthSubmitButton,
+  GroupedFieldRow,
+  GroupedFields,
+} from '@/components/auth/golf-auth-canvas';
 
-const fadeIn = {
-  initial: { opacity: 0, y: 16 },
-  animate: { opacity: 1, y: 0, transition: { duration: 0.5, ease: [0.16, 1, 0.3, 1] as const } },
-};
+const ERROR_ID = 'invite-code-error';
+const HINT_ID = 'invite-code-hint';
 
+/*
+ * The same flat auth canvas as /golf/login, /golf/forgot-password and
+ * /golf/reset-password: the course scene, the app mark, one card, an inset
+ * grouped field and the 50pt accent button. This page used to have its own
+ * orb background, glass card and button styling, and no way back.
+ */
 export default function JoinTeamPage() {
-  const prefersReducedMotion = useReducedMotionGuard();
   const [code, setCode] = useState('');
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
@@ -46,94 +50,73 @@ export default function JoinTeamPage() {
   };
 
   return (
-    <div className="min-h-dvh bg-auth-golf relative">
-      {/* Floating Orbs */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="auth-orb auth-orb-1 w-[400px] h-[400px] sm:w-[500px] sm:h-[500px] -top-24 -right-24 bg-gradient-to-br from-primary-400/40 to-primary-500/25" />
-        <div className="auth-orb auth-orb-2 w-[350px] h-[350px] sm:w-[400px] sm:h-[400px] -bottom-20 -left-20 bg-gradient-to-tr from-primary-400/25 to-primary-400/15" />
-        <div className="auth-orb auth-orb-3 hidden sm:block w-[200px] h-[200px] top-1/3 left-[8%] bg-gradient-to-br from-primary-300/20 to-primary-400/15" />
-      </div>
+    <AuthCanvas
+      contentId="join-team-form"
+      contentLabel="Join a team"
+      title="Join a Team"
+      subtitle="Enter the invite code your coach gave you to join their team."
+      topBar={
+        /*
+         * The way back, styled like the login page's Home link. It points at
+         * `/golf`, not `/`: the in-app links here (NoTeamBanner, player
+         * onboarding, travel, classes) come from signed-in players, and
+         * `/golf` sends them to their dashboard and a signed-out visitor to
+         * sign-in. It is an app route, so unlike `/` (which the proxy bounces
+         * to login in the native shell) it works on iOS too.
+         */
+        <Link
+          href="/golf"
+          aria-label="Back to home"
+          className="-ml-2 inline-flex min-h-[44px] items-center gap-0.5 rounded-fw-sm px-2 text-body-lg text-accent-700 outline-none focus-visible:ring-2 focus-visible:ring-accent-600 active:opacity-60"
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M15 18l-6-6 6-6" />
+          </svg>
+          Home
+        </Link>
+      }
+    >
+      <form onSubmit={handleSubmit} aria-label="Join a team">
+        <GroupedFields>
+          <GroupedFieldRow
+            id="invite-code"
+            label="Invite code"
+            placeholder="Invite code"
+            type="text"
+            inputMode="text"
+            autoComplete="off"
+            autoCapitalize="characters"
+            autoCorrect="off"
+            spellCheck={false}
+            enterKeyHint="go"
+            maxLength={10}
+            aria-invalid={error ? true : undefined}
+            aria-describedby={error ? ERROR_ID : HINT_ID}
+            // eslint-disable-next-line jsx-a11y/no-autofocus -- intentional default focus on the single-field join form
+            autoFocus
+            value={code}
+            onChange={handleChange}
+          />
+        </GroupedFields>
 
-      <div className="relative min-h-dvh flex flex-col items-center justify-center p-4 sm:p-6 pb-[calc(1rem+env(safe-area-inset-bottom))]">
-        <LazyMotion features={loadFeatures}>
-          {/* Logo */}
-          <m.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.5, delay: 0.1 })}
-            className="mb-6 sm:mb-8"
-          >
-            <div className="relative">
-              <div className="absolute inset-0 bg-primary-500/25 rounded-full blur-xl scale-150" />
-              <Image
-                src="/helm-golf-logo-transparent.png"
-                alt="GolfHelm"
-                width={48}
-                height={48}
-                className="relative w-10 h-10 sm:w-12 sm:h-12 object-contain"
-                priority
-                unoptimized
-              />
-            </div>
-          </m.div>
+        {error ? (
+          <AuthFieldError id={ERROR_ID}>{error}</AuthFieldError>
+        ) : (
+          <p id={HINT_ID} className="mt-2.5 px-4 text-body-sm text-text-tertiary">
+            {trimmed.length > 0
+              ? `${trimmed.length} / 10 characters`
+              : '4–10 characters, letters and numbers'}
+          </p>
+        )}
 
-          <m.div
-            variants={fadeIn}
-            initial="initial"
-            animate="animate"
-            className="w-full max-w-md"
-          >
-            <div className="text-center mb-6">
-              <div className="w-16 h-16 bg-primary-50/80 backdrop-blur-sm rounded-full flex items-center justify-center mx-auto mb-4">
-                <IconUsers size={32} className="text-accent-ink" />
-              </div>
-              <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-warm-900">Join a Team</h1>
-              <p className="text-text-tertiary mt-2 text-sm sm:text-base">
-                Enter the invite code your coach gave you to join their team.
-              </p>
-            </div>
+        <AuthSubmitButton className="mt-6" disabled={!trimmed}>
+          Join Team
+        </AuthSubmitButton>
 
-            <div className="auth-glass-card rounded-fw-lg p-6 sm:p-8">
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div>
-                  <Input
-                    label="Invite Code"
-                    type="text"
-                    value={code}
-                    onChange={handleChange}
-                    placeholder="e.g. ABC123"
-                    maxLength={10}
-                    aria-describedby={error ? 'invite-code-error' : 'invite-code-hint'}
-                    aria-invalid={error ? true : undefined}
-                    error={error || undefined}
-                    // eslint-disable-next-line jsx-a11y/no-autofocus -- intentional default focus on the single-field join form
-                    autoFocus
-                    className="text-center text-lg font-mono tracking-widest"
-                  />
-                  {!error && (
-                    <p id="invite-code-hint" className="mt-2 text-xs text-text-tertiary text-center">
-                      {trimmed.length > 0
-                        ? `${trimmed.length} / 10 characters`
-                        : '4\u201310 characters, letters and numbers'}
-                    </p>
-                  )}
-                </div>
-                <Button variant="primary"
-                  type="submit"
-                  disabled={!trimmed}
-                  className="w-full px-4 py-3 bg-accent-fill text-text-on-accent-fill font-semibold rounded-fw-sm hover:bg-accent-fill-hover disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-lg shadow-primary-900/10 hover:shadow-xl hover:shadow-primary-900/15"
-                >
-                  Join Team
-                </Button>
-              </form>
-
-              <p className="text-center text-xs text-text-tertiary mt-4">
-                Don&apos;t have a code? Ask your coach for the team invite code.
-              </p>
-            </div>
-          </m.div>
-        </LazyMotion>
-      </div>
-    </div>
+        <p className="mt-4 text-center text-body-sm text-text-secondary">
+          Don&apos;t have a code? Ask your coach for the team invite code.
+        </p>
+      </form>
+    </AuthCanvas>
   );
 }

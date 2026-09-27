@@ -406,7 +406,10 @@ export function DayScheduleSwipe({
                   <p className="font-fw-sans text-body-sm text-text-secondary">
                     Nothing scheduled
                     <span className="text-text-tertiary">
-                      {clampedOffset === 0 ? ', a clear day.' : ' for this day yet.'}
+                      {/* Not "a clear day": Home's Tasks section can show an
+                          overdue task right under this line. The "Today"
+                          label above already names the day. */}
+                      {clampedOffset === 0 ? '.' : ' for this day yet.'}
                     </span>
                   </p>
                 </div>

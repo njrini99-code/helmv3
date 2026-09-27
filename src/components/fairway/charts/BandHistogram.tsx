@@ -15,9 +15,13 @@
  * A band with neither `n` nor `pct` (truly no data) renders as a hairline
  * "ghost" column — never a fabricated zero-height bar that reads as "0%".
  *
- * An optional dashed benchmark reference line floats OVER the (possibly
- * scrolling) column row so it stays legible regardless of horizontal scroll
- * position, with its caption pinned to the component's own right edge.
+ * An optional dashed benchmark reference line floats OVER the column row,
+ * with its caption pinned to the component's own right edge.
+ *
+ * Every band fits the card's width — no sideways scroll (a 390px phone hid
+ * half the GIR bands off-screen with no scroll cue). Below a 480px container
+ * the columns tighten and the labels switch to a narrow two-line form (see
+ * `narrowBandLabels`); at 480px and up they read in full, one line each.
  *
  * Column HEIGHT is on a volume scale (`n`/`maxN`) in the typical case, so it
  * is NOT comparable to a pct-based benchmark — a high-n/low-pct band would
@@ -109,6 +113,19 @@ export function computeBarHeightFraction(
   return 0;
 }
 
+/**
+ * Labels for a narrow container: when every band ends in the same distance
+ * unit ("50-75 yds" … "225+ yds"), keep it on the last band only — the
+ * LeakMap axis convention ("0-3 · 3-5 · … · 25+ ft"). Mixed or unit-less
+ * labels pass through unchanged.
+ */
+export function narrowBandLabels(labels: readonly string[]): string[] {
+  const UNIT = /\s+(yds?|ft|m)$/;
+  const units = labels.map((l) => UNIT.exec(l)?.[1] ?? null);
+  if (labels.length < 2 || units[0] === null || units.some((u) => u !== units[0])) return [...labels];
+  return labels.map((l, i) => (i === labels.length - 1 ? l : l.replace(UNIT, '')));
+}
+
 /** Clamped 0-100 benchmark position, or null when there is no benchmark to draw. */
 export function computeBenchmarkOffsetPct(benchmarkPct: number | null | undefined): number | null {
   if (benchmarkPct === null || benchmarkPct === undefined || !Number.isFinite(benchmarkPct)) {
@@ -152,6 +169,7 @@ export function computeBenchmarkTop(pctOffset: number): number {
 
 export function BandHistogram({ bands, unit, benchmarkPct, benchmarkLabel, ariaLabel }: BandHistogramProps) {
   const maxN = React.useMemo(() => computeMaxN(bands), [bands]);
+  const narrowLabels = React.useMemo(() => narrowBandLabels(bands.map((b) => b.label)), [bands]);
   const benchmarkOffset = computeBenchmarkOffsetPct(benchmarkPct);
 
   if (bands.length === 0) {
@@ -176,7 +194,7 @@ export function BandHistogram({ bands, unit, benchmarkPct, benchmarkLabel, ariaL
     <div
       role="img"
       aria-label={ariaLabel}
-      className="w-full rounded-card border border-border-subtle bg-surface-sunken p-4 sm:p-5"
+      className="w-full rounded-card border border-border-subtle bg-surface-sunken p-4 [container-type:inline-size] sm:p-5"
     >
       {/* The overlay's containing block starts exactly at the row's content
           top — NOT the padded card — so `computeBenchmarkTop`'s slot math maps
@@ -199,25 +217,46 @@ export function BandHistogram({ bands, unit, benchmarkPct, benchmarkLabel, ariaL
           </>
         ) : null}
 
-        <div className="overflow-x-auto">
-          <div className="flex items-start gap-3" style={{ minWidth: bands.length * 60 }}>
-            {bands.map((band, i) => (
-              <Column key={`${band.label}-${i}`} band={band} maxN={maxN} unit={unit} benchmarkOffset={benchmarkOffset} />
-            ))}
-          </div>
+        <div className="flex items-start gap-1 [@container(min-width:480px)]:gap-3">
+          {bands.map((band, i) => (
+            <Column
+              key={`${band.label}-${i}`}
+              band={band}
+              narrowLabel={narrowLabels[i] ?? band.label}
+              maxN={maxN}
+              unit={unit}
+              benchmarkOffset={benchmarkOffset}
+            />
+          ))}
         </div>
       </div>
     </div>
   );
 }
 
+/** Lets a range label ("100-125") break after its hyphen — a hyphen followed
+ *  by a digit is not a line-break opportunity on its own. */
+function withRangeBreak(label: string): React.ReactNode {
+  const i = label.search(/[-–]/);
+  if (i < 0) return label;
+  return (
+    <>
+      {label.slice(0, i + 1)}
+      <wbr />
+      {label.slice(i + 1)}
+    </>
+  );
+}
+
 function Column({
   band,
+  narrowLabel,
   maxN,
   unit,
   benchmarkOffset,
 }: {
   band: BandHistogramBand;
+  narrowLabel: string;
   maxN: number;
   unit?: string;
   benchmarkOffset: number | null;
@@ -232,12 +271,12 @@ function Column({
   const showRateMarker = benchmarkOffset !== null && ownPctOffset !== null;
 
   return (
-    <div className="flex shrink-0 basis-14 flex-1 flex-col items-center gap-1">
+    <div className="flex min-w-0 flex-1 basis-0 flex-col items-center gap-1">
       {/* Fixed-height slot even when there's no pct to show — a collapsed
           label would shift this column's track top off the benchmark scale. */}
       <span
         style={{ ...TABULAR_NUMS, height: PCT_LABEL_H }}
-        className="flex items-center font-fw-mono text-caption font-semibold text-text-primary"
+        className="flex items-center whitespace-nowrap font-fw-mono text-caption font-semibold text-text-primary"
       >
         {band.pct != null ? `${Math.round(band.pct)}%` : ghost ? '—' : ''}
       </span>
@@ -265,8 +304,15 @@ function Column({
         ) : null}
       </div>
 
-      <span className="max-w-full truncate font-fw-sans text-caption text-text-secondary">
+      {/* ≥480px container: the full label on one line. Narrower (~31px per
+          band on a 390px phone): the shared unit rides on the last band only
+          and a range breaks after its hyphen, inside a fixed two-line slot so
+          every column's n= caption stays level. */}
+      <span className="hidden max-w-full truncate font-fw-sans text-caption text-text-secondary [@container(min-width:480px)]:block">
         {band.label}
+      </span>
+      <span className="block h-9 w-full text-center font-fw-sans text-caption text-text-secondary [@container(min-width:480px)]:hidden">
+        {withRangeBreak(narrowLabel)}
       </span>
       {/* Slot always renders (empty when no n) so mixed n-presence never
           changes a column's height — see computeBenchmarkTop's contract. */}

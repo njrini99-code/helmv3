@@ -256,8 +256,8 @@ items:
     incident_id: memory/incidents/coachhelm_ai/INC-2026-09-27-exposure-returned-fetch-failure.md
     status: verified
     risk: R1
-    sha: d856ec00bafb88af93bd9bb7c2393a74d69f3b17
-    pr: 2082
+    sha: ffd0800ed0973308900ec853df4a3cb66bca64b8
+    pr: 2084
     regression_tests:
       - src/lib/coachhelm/v3/effectiveness/exposure-transient-retry.test.ts
     queued_for_release: false

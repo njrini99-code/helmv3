@@ -16,6 +16,7 @@ import {
   toPlayerVoice,
   buildScopeWaterfall,
   sgScopeOptions,
+  shownStrokesImpact,
 } from '../fingerprint-model';
 import {
   computeFormFromCountableRounds,
@@ -177,6 +178,23 @@ describe('buildClaim', () => {
   it('reads a tentative insight as an early read regardless of confidence', () => {
     const c = buildClaim({ ...base, lifecycle_state: 'tentative', evidence: { sample_n: 100, confidence: 1 } as unknown as EvidenceInsight['evidence'] });
     expect(c.confidence).toBe('Early read');
+  });
+});
+
+describe('shownStrokesImpact', () => {
+  // The one gate the screen claim and the print report share: a figure that is
+  // missing or would print as 0.0 is not shown at all.
+  it('drops missing, non-numeric and 0.0-rounding impacts', () => {
+    expect(shownStrokesImpact(null)).toBeNull();
+    expect(shownStrokesImpact(undefined)).toBeNull();
+    expect(shownStrokesImpact('n/a')).toBeNull();
+    expect(shownStrokesImpact(0)).toBeNull();
+    expect(shownStrokesImpact(-0.04)).toBeNull();
+  });
+  it('keeps a real impact with its sign', () => {
+    expect(shownStrokesImpact(-0.6)).toBe(-0.6);
+    expect(shownStrokesImpact(2.3)).toBe(2.3);
+    expect(shownStrokesImpact('1.5')).toBe(1.5);
   });
 });
 

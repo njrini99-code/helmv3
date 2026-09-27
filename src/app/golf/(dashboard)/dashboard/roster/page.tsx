@@ -421,6 +421,7 @@ export default async function GolfRosterPage() {
           .from('golf_rounds')
           .select('id, player_id, status, total_score, score_to_par, holes_played, front_nine, back_nine, total_putts, round_date')
           .in('player_id', playerIds)
+          .eq('is_test', false)
           .eq('status', 'completed')
           .not('total_score', 'is', null)
           .order('id', { ascending: true })

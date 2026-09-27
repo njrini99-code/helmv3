@@ -623,8 +623,9 @@ export function FairwayMessages() {
           ? 'flex h-[calc(100dvh-var(--keyboard-height,0px))] flex-col overflow-hidden bg-canvas bg-canvas-gradient pt-[env(safe-area-inset-top,0px)] md:h-dvh md:pt-0'
           : // DASH-18: the list sits under the shared top bar on mobile (its height +
             // the top safe area, which the bar itself pads), so it no longer
-            // pads the safe area or draws its own title row there.
-            'flex h-[calc(100dvh-var(--fw-mobile-nav-height)-var(--golf-mobile-header-offset))] flex-col overflow-hidden bg-canvas bg-canvas-gradient md:h-dvh'
+            // pads the safe area or draws its own title row there. A coach also
+            // keeps the Team hub tab row under the bar (0px for players).
+            'flex h-[calc(100dvh-var(--fw-mobile-nav-height)-var(--golf-mobile-header-offset)-var(--fw-hub-subnav-offset,0px))] flex-col overflow-hidden bg-canvas bg-canvas-gradient md:h-dvh'
       )}
     >
       <div className="flex w-full min-h-0 flex-1 flex-col overflow-hidden">

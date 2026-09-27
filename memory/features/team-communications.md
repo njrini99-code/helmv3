@@ -26,6 +26,14 @@ The mobile inbox has one Messages header with working All, Unread and Groups
 filters. Short conversations settle near the composer; longer histories retain
 the existing scroll anchoring.
 
+On a phone the coach's conversation list keeps the Team hub tab row
+(Messages · Announcements · Tasks · Documents) under the shared top bar, as
+the other three tabs do; the list's height subtracts it through
+`--fw-hub-subnav-offset` (0px for players, who have no tab row). An open
+thread drops the row with the rest of the shell chrome (`data-fw-immersive`),
+and from `md` the route-scoped rule keeps hiding it beside the two-pane
+workspace's own header.
+
 On desktop and tablet the inbox fills the app content window beside the left
 navigation, with a compact fixed-width rail and an uncapped thread panel.
 Route-scoped `data-fw-messages` CSS removes the duplicate shell header and its

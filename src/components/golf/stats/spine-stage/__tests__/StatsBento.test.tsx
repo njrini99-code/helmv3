@@ -11,7 +11,7 @@
  * (StageRouter context isn't mounted in this test, same pattern the module
  * kit's own consumers use for a bare unit render).
  * ========================================================================== */
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
 vi.mock('@/components/fairway/modules', async () => {
@@ -168,6 +168,67 @@ describe('StatsBento — Standing cell chip/headline pairing', () => {
 
     const headline = screen.getByText('SG Approach');
     expect(headline.closest('[data-slot="bento-cell"]')).toHaveTextContent('Best');
+  });
+});
+
+describe('StatsBento — Standing cell title, number and colour agree', () => {
+  function category(label: string): StatisticalStrengthWeakness {
+    return {
+      category: label,
+      subcategory: 'putting',
+      label,
+      detail: '',
+      strokeImpact: 0,
+      playerValue: 0,
+      benchmark: 0,
+      unit: 'strokes/round',
+      confidence: 1,
+    };
+  }
+
+  it('headlines SG: Total (the metric its rail shows) with a Losing chip, and names the leak in the sentence', () => {
+    const standing = new Map<string, PlayerStandingRow>([
+      ['sg_total', row({ metric_id: 'sg_total', player_value: -1.61, team_avg: -2.1, team_n: 8, team_pct: 60 })],
+    ]);
+    const { container } = render(
+      <StatsBento
+        detailedStats={null}
+        standingByMetric={standing}
+        trendData={null}
+        strengths={[category('SG: Off the Tee')]}
+        weaknesses={[category('SG: Putting')]}
+        leakArea="putting"
+      />,
+    );
+    const cell = screen.getByText('−1.61').closest('[data-slot="bento-cell"]') as HTMLElement;
+    expect(within(cell).getByText('SG: Total')).toBeInTheDocument();
+    expect(within(cell).getByText('Losing')).toBeInTheDocument();
+    // The leak category is no longer the headline above an SG: Total figure.
+    expect(within(cell).queryByText('SG: Putting')).toBeNull();
+    expect(cell).toHaveTextContent('Strongest: SG: Off the Tee. Biggest leak: SG: Putting.');
+    // One copy of the figure: the rail preview no longer prints its own.
+    const preview = container.querySelector('[data-slot="standing-pin-preview"]') as HTMLElement;
+    expect(preview.textContent).not.toMatch(/1\.61|SG: Total/);
+  });
+
+  it('reads Gaining for a positive SG: Total', () => {
+    const standing = new Map<string, PlayerStandingRow>([
+      ['sg_total', row({ metric_id: 'sg_total', player_value: 0.42 })],
+    ]);
+    render(
+      <StatsBento
+        detailedStats={null}
+        standingByMetric={standing}
+        trendData={null}
+        strengths={[]}
+        weaknesses={[category('SG: Putting')]}
+        leakArea="putting"
+      />,
+    );
+    const cell = screen.getByText('+0.42').closest('[data-slot="bento-cell"]') as HTMLElement;
+    expect(within(cell).getByText('Gaining')).toBeInTheDocument();
+    expect(cell).not.toHaveTextContent('Leak');
+    expect(cell).toHaveTextContent('Biggest leak: SG: Putting.');
   });
 });
 

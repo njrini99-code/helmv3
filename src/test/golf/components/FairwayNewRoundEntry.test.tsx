@@ -369,6 +369,33 @@ describe('FairwayNewRoundEntry — holes-step start feedback (P0)', () => {
   });
 });
 
+/**
+ * The setup screen is chromeless (no top bar, no tab bar), so the cockpit
+ * band's "Dashboard" control is the only way out (RE-F6: one exit per screen).
+ * At 390px it rendered as dim ghost text and read as "no back button". It is
+ * now a filled pill in full-contrast nav text.
+ */
+describe('FairwayNewRoundEntry — exit control', () => {
+  it('shows a visible Dashboard button at the top that leaves the flow', () => {
+    const onExitToDashboard = vi.fn();
+    render(
+      <LazyMotion features={domAnimation}>
+        <FairwayNewRoundEntry {...baseProps({ onExitToDashboard })} />
+      </LazyMotion>,
+    );
+    const exit = screen.getByRole('button', { name: 'Dashboard' });
+    expect(exit.className).toMatch(/(^|\s)text-nav-text(\s|$)/);
+    expect(exit.className).not.toMatch(/text-nav-text-dim/);
+    expect(exit.className).toMatch(/(^|\s)bg-nav-surface(\s|$)/);
+    expect(exit.className).toMatch(/(^|\s)min-h-\[44px\](\s|$)/);
+    // It comes before the title, at the top of the band.
+    const title = screen.getByRole('heading', { level: 1 });
+    expect(exit.compareDocumentPosition(title) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    exit.click();
+    expect(onExitToDashboard).toHaveBeenCalledTimes(1);
+  });
+});
+
 describe('FairwayNewRoundEntry — setup action dock', () => {
   it('pins the primary action above the home indicator', () => {
     render(

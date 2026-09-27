@@ -660,8 +660,12 @@ function FairwayDashboardContent({
   // + immersive scoring UI), so render them WITHOUT the shell chrome — the glass
   // top bar must not compete with the round controls. The page brings its own
   // `.fairway-ds` scope + bg; we only stick its control header below the notch.
+  // Players only: a coach on these routes gets the "Only players submit rounds"
+  // card, not a live flow, and without the shell it was a dead end with one
+  // button and no nav (390px baseline).
   const isImmersive =
-    pathname === '/golf/dashboard/rounds/new' || pathname.startsWith('/golf/dashboard/rounds/continue');
+    role === 'player' &&
+    (pathname === '/golf/dashboard/rounds/new' || pathname.startsWith('/golf/dashboard/rounds/continue'));
 
   // Immersive routes render no More sheet; if the bridged sheet state is
   // somehow open, force it closed so SidebarProvider's body-scroll-lock can't
@@ -696,8 +700,9 @@ function FairwayDashboardContent({
         >
           {children}
         </div>
-        {/* ⌘K stays available; announcement/push interrupts are suppressed mid-round. */}
-        <CommandPalette isCoach={role === 'coach'} />
+        {/* ⌘K stays available; announcement/push interrupts are suppressed mid-round.
+            Immersive is player-only (see isImmersive), so never the coach palette. */}
+        <CommandPalette isCoach={false} />
       </MotionConfig>
     );
   }

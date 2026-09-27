@@ -54,6 +54,8 @@ export {
   deltaVsTeam,
   teamCohortText,
   teamRelativeText,
+  teamComparisonText,
+  cohortComparisonText,
   valuesDisplayEqual,
   deriveState,
   shouldShowTeamMarker,

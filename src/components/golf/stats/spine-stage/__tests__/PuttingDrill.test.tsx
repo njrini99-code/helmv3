@@ -142,6 +142,12 @@ describe('PuttingDrill', () => {
     }
   });
 
+  it('captions 3-putts / round with what the calculator counts (holes with 3+ putts, per 18)', () => {
+    renderPutting({ detailedStats: fixtureStats() });
+    expect(screen.getByText('Holes with 3+ putts, per 18')).toBeInTheDocument();
+    expect(screen.queryByText(/Two-plus putts/)).not.toBeInTheDocument();
+  });
+
   it('shows an honest awaiting state per card when there are no stats yet', () => {
     renderPutting({ detailedStats: null });
     expect(screen.getByText('No leave data')).toBeInTheDocument();

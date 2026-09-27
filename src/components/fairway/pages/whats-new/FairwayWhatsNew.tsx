@@ -37,6 +37,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { todayIsoInZone } from '@/lib/golf/timezone';
 import { formatDateOnlyShort } from '@/lib/golf/date-only';
+import { toCoachVoice } from '@/lib/golf/claim-voice';
 import {
   CheckCircle2,
   Lightbulb,
@@ -435,6 +436,7 @@ export function FairwayWhatsNew({ success, error, items, truncated, timeZone, se
       <ViewHeader
         eyebrow="This Week"
         title="What’s new across your team."
+        fullDescription
         description={
           totalItems > 0
             ? 'CoachHelm lifecycle activity from the past 7 days: insights, patterns, and focus areas as your team plays.'
@@ -555,13 +557,18 @@ function FeedRow({ item, isNew, tz }: { item: WhatsNewItem; isNew: boolean; tz?:
   const descriptor = TYPE_DESCRIPTORS[item.type];
   const { Icon } = descriptor;
   const href = hrefForItem(item);
+  // Insight and focus-area copy is written to the player ("Across your last 21
+  // rounds you're averaging…"). This feed is the coach's, so retell it about
+  // the player named on the row: "Across Cole's last 21 rounds Cole is…".
+  const title = toCoachVoice(item.title, item.playerName);
+  const description = item.description ? toCoachVoice(item.description, item.playerName) : undefined;
 
   return (
     <li>
       <Link
         href={href}
         className="group flex items-start gap-3 px-4 py-3 transition-colors hover:bg-surface-sunken focus-visible:bg-surface-sunken focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-600 focus-visible:ring-offset-0"
-        aria-label={`${descriptor.label} for ${item.playerName}: ${item.title}${isNew ? ' (new)' : ''}`}
+        aria-label={`${descriptor.label} for ${item.playerName}: ${title}${isNew ? ' (new)' : ''}`}
       >
         <span
           className={`grid h-9 w-9 flex-shrink-0 place-items-center rounded-fw-md ${descriptor.bgClass}`}
@@ -599,7 +606,7 @@ function FeedRow({ item, isNew, tz }: { item: WhatsNewItem; isNew: boolean; tz?:
           </div>
           <p className="mt-0.5 flex items-center gap-1 font-fw-sans text-body-sm font-medium text-text-primary">
             <span className="truncate group-hover:text-accent-700 group-focus-visible:text-accent-700">
-              {item.title}
+              {title}
             </span>
             <ChevronRight
               size={14}
@@ -607,9 +614,9 @@ function FeedRow({ item, isNew, tz }: { item: WhatsNewItem; isNew: boolean; tz?:
               aria-hidden
             />
           </p>
-          {item.description && (
+          {description && (
             <p className="mt-0.5 line-clamp-2 font-fw-sans text-body-sm text-text-tertiary">
-              {item.description}
+              {description}
             </p>
           )}
         </div>

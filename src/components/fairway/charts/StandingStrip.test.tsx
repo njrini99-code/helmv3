@@ -324,3 +324,29 @@ describe('StandingStrip pressure gap (NUM-24)', () => {
     expect(screen.getByRole('heading', { name: 'Pressure gap' })).toBeTruthy();
   });
 });
+
+describe('StandingStrip — direction-aware cohort wording (Stats › Standing, lower-is-better)', () => {
+  const PROXIMITY: StandingStripProps = {
+    ...BASE,
+    metric_id: 'approach_proximity_175_plus_ft',
+    metric_label: 'Approach Proximity 175+ yd',
+    player_value: 49,
+    team_avg: 72,
+    pga_value: 45,
+    direction: 'lower_better',
+    unit: 'feet',
+    scale: { min: 35, max: 110 },
+  };
+
+  it('reads "Closer than team average" beside the smaller number when opted in', () => {
+    render(<StandingStrip {...PROXIMITY} cohort_wording="direction_aware" />);
+    expect(screen.getByText(/↑ vs team/)).toBeTruthy();
+    expect(screen.getByText('Closer than team average')).toBeTruthy();
+    expect(screen.queryByText('Above team average')).toBeNull();
+  });
+
+  it('keeps the default "Above team average" wording for callers that do not opt in', () => {
+    render(<StandingStrip {...PROXIMITY} />);
+    expect(screen.getByText('Above team average')).toBeTruthy();
+  });
+});

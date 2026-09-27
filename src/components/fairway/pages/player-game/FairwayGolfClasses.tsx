@@ -23,8 +23,10 @@
  *   4. All classes — the editable roster as FairwayEventCard-shaped rows
  *      (mono time block · title · meta), sorted by first meeting of the week,
  *      two columns on desktop.
- *   On-system idioms throughout: roster rows are Fairway <Button variant="ghost">
- *   in the canonical event-card recipe; per-class color is a leading DOT
+ *   On-system idioms throughout: roster rows are Fairway <PressTarget>s (as
+ *   FairwayEventCard is) in the canonical event-card recipe. Not <Button>: its
+ *   base is a nowrap pill, which rounded the rows into capsules and pushed the
+ *   "cr" labels past the phone gutter. Per-class color is a leading DOT
  *   (never a side rail); the mobile day picker is the shared <Segmented>
  *   primitive; timeline cells use the month-grid chip idiom (soft tinted fill
  *   + dot). The absolutely-positioned timeline cells + mobile list rows stay
@@ -66,6 +68,7 @@ import {
   Segmented,
   Chip,
   Button,
+  PressTarget,
 } from '@/components/fairway';
 
 /* ───────────────────────────────────────────────────────────────────────────
@@ -516,7 +519,7 @@ export function FairwayGolfClasses({
             {/* "All classes" roster — same time-block + 2-line shape as the
                 real card (FairwayEventCard idiom), not the generic
                 avatar-led SkeletonCard. */}
-            <div className="grid gap-2.5 md:grid-cols-2">
+            <div className="grid grid-cols-1 gap-2.5 md:grid-cols-2">
               {Array.from({ length: 4 }).map((_, i) => (
                 <div
                   key={i}
@@ -880,8 +883,11 @@ export function FairwayGolfClasses({
                 All classes
               </h2>
               {/* Rows mirror FairwayEventCard exactly: mono time block · title ·
-                  meta. Per-class color is a leading dot, never a rail. */}
-              <div className="grid gap-2.5 md:grid-cols-2">
+                  meta. Per-class color is a leading dot, never a rail.
+                  grid-cols-1 (minmax(0,1fr)) holds the track to the screen
+                  width; the bare implicit track grew to the rows' content and
+                  ran 11px past the 390px gutter. */}
+              <div className="grid grid-cols-1 gap-2.5 md:grid-cols-2">
                 {sortedClasses.map((cls) => {
                   const { code, name } = parseClassName(cls.class_name);
                   const location = getLocationDisplay(cls);
@@ -892,12 +898,10 @@ export function FairwayGolfClasses({
                     location != null &&
                     !(days.length === 0 && !cls.start_time && /^online$/i.test(location.trim()));
                   return (
-                    <Button
+                    <PressTarget
                       key={cls.id}
-                      type="button"
-                      variant="ghost"
                       onClick={() => onClassClick(cls)}
-                      className="group block h-auto min-h-[68px] w-full rounded-card border border-border-subtle bg-surface p-4 text-left font-normal shadow-flat transition-[box-shadow,transform,border-color] [transition-duration:180ms] [transition-timing-function:cubic-bezier(0.22,0.61,0.36,1)] hover:-translate-y-px hover:border-border-strong hover:bg-surface hover:shadow-soft active:translate-y-[0.5px] active:shadow-flat focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas motion-reduce:transition-none motion-reduce:hover:translate-y-0 motion-reduce:active:translate-y-0"
+                      className="group block min-h-[68px] w-full min-w-0 rounded-card border border-border-subtle bg-surface p-4 text-left shadow-flat hover:-translate-y-px hover:border-border-strong hover:shadow-soft motion-reduce:hover:translate-y-0"
                     >
                       <span className="flex w-full items-stretch gap-4">
                         {/* Time block — fixed width, mono tabular (event-card idiom). */}
@@ -989,7 +993,7 @@ export function FairwayGolfClasses({
                           </span>
                         </span>
                       </span>
-                    </Button>
+                    </PressTarget>
                   );
                 })}
               </div>

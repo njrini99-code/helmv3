@@ -2698,6 +2698,7 @@ async function getPlayerCoachHelmDashboardImpl(
       .from('golf_rounds')
       .select('id, course_name, round_date, total_score, score_to_par')
       .eq('player_id', playerId)
+      .eq('is_test', false)
       .eq('status', 'completed')
       .not('total_score', 'is', null)
       .order('round_date', { ascending: false })
@@ -3162,6 +3163,7 @@ async function triggerPlayerInsightsAfterRoundImpl(
       .from('golf_rounds')
       .select('id', { count: 'exact', head: true })
       .eq('player_id', playerId)
+      .eq('is_test', false)
       .eq('status', 'completed');
 
     // `count` is null when the client can't report one (and in test doubles

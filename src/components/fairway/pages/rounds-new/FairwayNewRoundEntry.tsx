@@ -297,12 +297,16 @@ function CockpitBand({
       <div aria-hidden className="pointer-events-none absolute -right-16 -top-20 h-56 w-56 rounded-full bg-accent-500/15 blur-[70px]" />
       <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-px bg-warm-50/[0.06]" />
       {onBack && (
+        // The flow's one exit (RE-F6), so it has to read as a control: a filled
+        // pill in full-contrast nav text, like the nav rail's own pill controls.
+        // As dim ghost text it went unseen on the black band (390px baseline:
+        // "no back button"), leaving a chromeless screen with no visible way out.
         <UIButton
           type="button"
           variant="ghost"
           onClick={onBack}
           haptic="none"
-          className="relative -ml-1 mb-3 min-h-[44px] gap-1 rounded-fw-sm px-1 py-0 font-fw-sans text-body-sm font-medium text-nav-text-dim hover:bg-transparent hover:text-nav-text focus-visible:ring-accent-400 focus-visible:ring-offset-2 focus-visible:ring-offset-nav-bg"
+          className="relative mb-3 min-h-[44px] gap-1 rounded-full bg-nav-surface py-0 pl-2.5 pr-4 font-fw-sans text-body-sm font-medium text-nav-text ring-1 ring-white/10 hover:bg-nav-surface hover:text-nav-text focus-visible:ring-accent-400 focus-visible:ring-offset-2 focus-visible:ring-offset-nav-bg"
         >
           <ChevronLeft className="h-4 w-4" aria-hidden />
           {backLabel ?? 'Back'}
@@ -481,8 +485,9 @@ export function FairwayNewRoundEntry(props: FairwayNewRoundEntryProps) {
               variant="secondary"
               onClick={props.onBrowseCourseLibrary}
               className="w-full justify-center"
+              leftIcon={<MapPin size={16} aria-hidden />}
             >
-              <MapPin size={16} aria-hidden /> Browse course library
+              Browse course library
             </Button>
           </m.div>
         )}

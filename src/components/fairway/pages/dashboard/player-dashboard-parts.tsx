@@ -9,7 +9,7 @@
  * the dashboard-data.ts payload.
  *
  * W9 field-sheet pass (2026-09-24, DASH-01/02, OD-08):
- *   • Today and Recent rounds are hairline ledger rows, not cards holding
+ *   • Tasks and Recent rounds are hairline ledger rows, not cards holding
  *     insets. Titles and course names wrap; nothing is ellipsized.
  *   • The strokes-gained radar teaser and the "Where you stack up" card are
  *     gone (OD-08: the radar was unreadable at phone size). `GameLinks` keeps
@@ -21,14 +21,13 @@
 
 import Link from 'next/link';
 import { useMemo } from 'react';
-import { ChevronRight, ClipboardList, CalendarClock, AlertCircle } from 'lucide-react';
+import { ChevronRight, ClipboardList, AlertCircle } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
-import { getValidTimezone } from '@/lib/calendar/timezone';
 import { cleanCourseName } from '@/lib/golf/course-name';
 import { formatMetric } from '@/lib/golf/metrics/display-registry';
 import { formatStripDate } from '@/components/fairway/modules/RoundStrip';
-import type { TodayEvent, ActionItem } from '@/app/golf/actions/dashboard-data';
+import type { ActionItem } from '@/app/golf/actions/dashboard-data';
 
 /* ─────────────────────────────────────────────────────────────────────────
  * Section heading — one quiet h2 voice with an optional trailing link.
@@ -74,91 +73,54 @@ export function SectionTitle({
 const LEDGER_LIST = 'm-0 flex list-none flex-col divide-y divide-border-subtle border-y border-border-subtle p-0';
 
 /* ─────────────────────────────────────────────────────────────────────────
- * Today — the player's next event and lead task, as ledger rows.
+ * Tasks — the one open task that matters most, as a ledger row.
  * ----------------------------------------------------------------------------
- * The Hub owns the full task list; Home shows the next event and the one task
- * that matters most (overdue first), then links to the full calendar.
+ * This section used to be a second "Today" (next event + lead task) under the
+ * schedule card's own "Today". With no event it read "Nothing scheduled, a
+ * clear day" up top and an overdue task down here, under the same heading.
+ * The schedule card owns the day's events; this section owns tasks only: the
+ * overdue one first, else the next open one, and a link to the full list.
  * ──────────────────────────────────────────────────────────────────────── */
 
-/**
- * HYD-15: `timeZone: undefined` formats in the SERVER's zone during SSR and in
- * the browser's zone on hydration, so the two disagree (React #418). An absent
- * or invalid team zone now falls back to the app default on both sides.
- */
-export function formatEventTime(start: string, timezone?: string | null): string {
-  try {
-    return new Date(start).toLocaleTimeString('en-US', {
-      hour: 'numeric',
-      minute: '2-digit',
-      timeZone: getValidTimezone(timezone),
-    });
-  } catch {
-    return '';
-  }
-}
-
-export function TodayCard({
-  events,
-  actionItems,
-  timezone,
-}: {
-  events: TodayEvent[];
-  actionItems: ActionItem[];
-  timezone?: string;
-}) {
-  const nextEvent = events[0] ?? null;
-  const overdue = useMemo(() => actionItems.filter((a) => a.overdue), [actionItems]);
-  const openTasks = useMemo(() => actionItems.filter((a) => a.type === 'task'), [actionItems]);
-  const leadTask = overdue[0] ?? openTasks[0] ?? actionItems[0] ?? null;
-  const nothingToday = !nextEvent && !leadTask;
+export function TasksCard({ actionItems }: { actionItems: ActionItem[] }) {
+  // Overdue tasks arrive as type 'deadline'. Announcements are not tasks.
+  const tasks = useMemo(
+    () => actionItems.filter((a) => a.type === 'task' || a.type === 'deadline'),
+    [actionItems],
+  );
+  const leadTask = tasks.find((t) => t.overdue) ?? tasks[0] ?? null;
 
   return (
-    <section aria-labelledby="home-today-title" className="flex flex-col">
-      <SectionTitle id="home-today-title" action={{ label: 'Full calendar', href: '/golf/dashboard/calendar' }}>
-        Today
+    <section aria-labelledby="home-tasks-title" className="flex flex-col">
+      <SectionTitle id="home-tasks-title" action={{ label: 'All tasks', href: '/golf/dashboard/tasks' }}>
+        Tasks
       </SectionTitle>
 
-      {nothingToday ? (
-        // One line, no reserved height: an empty day should not hold a box open.
-        <p className="border-y border-border-subtle py-3 font-fw-sans text-body-sm text-text-secondary">
-          <span className="font-medium text-text-primary">Nothing scheduled</span>
-          {' · '}Check the full calendar for trips and upcoming events.
-        </p>
-      ) : (
+      {leadTask ? (
         <ul className={LEDGER_LIST}>
-          {nextEvent ? (
-            <li className="flex items-start gap-3 py-3">
-              <CalendarClock aria-hidden className="mt-0.5 h-4 w-4 shrink-0 text-accent-ink" />
-              <div className="min-w-0 flex-1">
-                <p className="line-clamp-2 font-fw-sans text-body-sm font-medium text-text-primary">
-                  {nextEvent.title}
-                </p>
-                <p className="font-fw-sans text-caption text-text-secondary tabular-nums">
-                  {formatEventTime(nextEvent.start_time, timezone)}
-                  {nextEvent.location ? ` · ${nextEvent.location}` : ''}
-                </p>
-              </div>
-            </li>
-          ) : null}
-          {leadTask ? (
-            <li className="flex items-start gap-3 py-3">
-              {leadTask.overdue ? (
-                <AlertCircle aria-hidden className="mt-0.5 h-4 w-4 shrink-0 text-fw-warning-text" />
-              ) : (
-                <ClipboardList aria-hidden className="mt-0.5 h-4 w-4 shrink-0 text-text-secondary" />
-              )}
-              <div className="min-w-0 flex-1">
-                <p className="line-clamp-2 font-fw-sans text-body-sm font-medium text-text-primary">
-                  {leadTask.title}
-                </p>
-                <p className="font-fw-sans text-caption text-text-secondary">
-                  {leadTask.overdue ? 'Overdue' : 'Open'}
-                  {openTasks.length > 1 ? ` · ${openTasks.length} tasks total` : ''}
-                </p>
-              </div>
-            </li>
-          ) : null}
+          <li className="flex items-start gap-3 py-3">
+            {leadTask.overdue ? (
+              <AlertCircle aria-hidden className="mt-0.5 h-4 w-4 shrink-0 text-fw-warning-text" />
+            ) : (
+              <ClipboardList aria-hidden className="mt-0.5 h-4 w-4 shrink-0 text-text-secondary" />
+            )}
+            <div className="min-w-0 flex-1">
+              <p className="line-clamp-2 font-fw-sans text-body-sm font-medium text-text-primary">
+                {leadTask.title}
+              </p>
+              <p className="font-fw-sans text-caption text-text-secondary">
+                {leadTask.overdue ? 'Overdue' : 'Open'}
+                {tasks.length > 1 ? ` · ${tasks.length} open tasks` : ''}
+              </p>
+            </div>
+          </li>
         </ul>
+      ) : (
+        // One line, no reserved height: no tasks should not hold a box open.
+        <p className="border-y border-border-subtle py-3 font-fw-sans text-body-sm text-text-secondary">
+          <span className="font-medium text-text-primary">No open tasks</span>
+          {' · '}Tasks from your coach show up here.
+        </p>
       )}
     </section>
   );

@@ -106,6 +106,13 @@ Join code
   `GolfAuthShell` no longer has an importer. The recovery-session logic
   (`exchangeCodeForSession` / `verifyOtp`, with no `updateUser` until it is `ready`)
   is unchanged.
+- `/golf/join` (the invite-code entry page) renders on `AuthCanvas` too
+  (2026-09-27). Its "Home" back link goes to `/golf`, not `/`: the in-app links
+  to it (NoTeamBanner, player onboarding, travel, classes) come from signed-in
+  players, and `/golf` routes by session (dashboard, or sign-in when signed
+  out). It is also an app route, so it works in the native shell, where the
+  proxy bounces `/` to login. `/golf/join/[code]` still uses the older
+  orb/glass styling.
 - Onboarding (player and coach): the submit-failure banner is `role="alert"`
   and is referenced by the "Complete Setup" button's `aria-describedby`. A user
   step change moves focus to the new step's `<h1>` (`tabIndex={-1}`). The

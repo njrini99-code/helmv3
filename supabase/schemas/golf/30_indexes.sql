@@ -428,6 +428,8 @@ CREATE INDEX "idx_golf_player_stats_cache_stale" ON "public"."golf_player_stats_
 
 CREATE INDEX "idx_golf_player_stats_cache_updated" ON "public"."golf_player_stats_cache" USING "btree" ("updated_at" DESC);
 
+CREATE INDEX "idx_golf_players_is_test" ON "public"."golf_players" USING "btree" ("id") WHERE "is_test";
+
 CREATE INDEX "idx_golf_players_state" ON "public"."golf_players" USING "btree" ("state");
 
 CREATE INDEX "idx_golf_players_user_id" ON "public"."golf_players" USING "btree" ("user_id");
@@ -453,6 +455,8 @@ CREATE INDEX "idx_golf_qualifier_round_courses_qualifier_id" ON "public"."golf_q
 CREATE INDEX "idx_golf_qualifiers_course_id" ON "public"."golf_qualifiers" USING "btree" ("course_id");
 
 CREATE INDEX "idx_golf_qualifiers_created_by" ON "public"."golf_qualifiers" USING "btree" ("created_by");
+
+CREATE INDEX "idx_golf_qualifiers_is_test" ON "public"."golf_qualifiers" USING "btree" ("id") WHERE "is_test";
 
 CREATE INDEX "idx_golf_qualifiers_status" ON "public"."golf_qualifiers" USING "btree" ("status");
 
@@ -485,6 +489,8 @@ CREATE INDEX "idx_golf_round_stats_cache_round" ON "public"."golf_round_stats_ca
 CREATE INDEX "idx_golf_rounds_course_id" ON "public"."golf_rounds" USING "btree" ("course_id");
 
 CREATE INDEX "idx_golf_rounds_date" ON "public"."golf_rounds" USING "btree" ("round_date" DESC);
+
+CREATE INDEX "idx_golf_rounds_is_test" ON "public"."golf_rounds" USING "btree" ("id") WHERE "is_test";
 
 CREATE INDEX "idx_golf_rounds_player_completed" ON "public"."golf_rounds" USING "btree" ("player_id", "round_date" DESC) WHERE ("status" = 'completed'::"text");
 
@@ -603,6 +609,8 @@ CREATE INDEX "idx_golf_team_members_team" ON "public"."golf_team_members" USING 
 CREATE INDEX "idx_golf_team_members_team_active" ON "public"."golf_team_members" USING "btree" ("team_id", "player_id") WHERE ("status" = 'active'::"public"."team_member_status");
 
 CREATE INDEX "idx_golf_teams_created_by" ON "public"."golf_teams" USING "btree" ("created_by") WHERE ("created_by" IS NOT NULL);
+
+CREATE INDEX "idx_golf_teams_is_test" ON "public"."golf_teams" USING "btree" ("id") WHERE "is_test";
 
 CREATE INDEX "idx_golf_teams_join_code" ON "public"."golf_teams" USING "btree" ("join_code");
 
