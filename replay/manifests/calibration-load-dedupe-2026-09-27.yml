@@ -1,0 +1,30 @@
+schema_version: 1
+replay_id: calibration-load-dedupe-2026-09-27
+incident_id: memory/incidents/coachhelm_ai/INC-2026-09-27-calibration-load-stampede.md
+feature_id: coachhelm_ai
+title: >-
+  The feed ranker's concurrent insight scores each read golf_confidence_calibration
+  on a cold cache (Sentry N+1 SB on GET /golf/dashboard); loadBuckets now shares
+  the read in flight.
+bad_version: b4f95df96cfe29cf7cdcd3847cc3aa1db51fa131
+fixed_version: 442522795a4f243d514f52c41953aeb4fe4a4a3b
+fixture:
+  - source: calibration-load-dedupe.test.ts
+    target: src/lib/coachhelm/v2/__tests__/calibration-load-dedupe.test.ts
+test_command: "./node_modules/.bin/vitest run src/lib/coachhelm/v2/__tests__/calibration-load-dedupe.test.ts"
+expected:
+  bad_version: fail
+  fixed_version: pass
+expected_failure_mode: assertion
+sanitization:
+  reviewed: true
+  contains_production_data: false
+  notes: >-
+    Hand-written stub Supabase client and one synthetic calibration row; no
+    production rows, player IDs, PII, tokens or logs.
+source_incident_status: fixed
+created_at: "2026-09-27"
+notes: >-
+  On bad_version both tests fail: "expected 8 to be 1" (eight concurrent
+  callers, eight reads) and "expected 2 to be 1" (the failing read is issued
+  twice).
