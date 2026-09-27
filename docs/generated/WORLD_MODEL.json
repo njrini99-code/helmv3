@@ -7284,6 +7284,18 @@
     },
     {
       "source": "admin_replay_lab",
+      "target": "record_round_coachhelm_terminal_state",
+      "kind": "feature_rpc",
+      "evidence": [
+        {
+          "kind": "rpc_call",
+          "path": "replay/fixtures/coachhelm_ai/safety-net-coverage-prefetch-2026-09-26/coachhelm-safety-net-reconcile.test.ts",
+          "anchor": "record_round_coachhelm_terminal_state"
+        }
+      ]
+    },
+    {
+      "source": "admin_replay_lab",
       "target": "services:replay/**",
       "kind": "feature_service",
       "evidence": [

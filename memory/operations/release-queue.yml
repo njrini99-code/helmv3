@@ -183,3 +183,19 @@ items:
       - src/test/api/cron/coachhelm-validation.test.ts
     queued_for_release: false
     first_seen: '2026-09-20T00:00:00Z'
+  - id: safety-net-coverage-prefetch-2026-09-26
+    feature_id: coachhelm_ai
+    root_cause: >-
+      reconcileParkedRounds read golf_rounds once per parked player and the
+      30-minute coachhelm-safety-net cron re-examined the same 13 players every
+      tick (Sentry N+1 JAVASCRIPT-NEXTJS-107); now one read per tick with a
+      truncation- and error-safe per-player fallback.
+    incident_id: memory/incidents/coachhelm_ai/INC-2026-09-26-safety-net-coverage-n-plus-one.md
+    status: verified
+    risk: R1
+    sha: 6ef000d89
+    pr: null
+    regression_tests:
+      - src/test/api/cron/coachhelm-safety-net-reconcile.test.ts
+    queued_for_release: false
+    first_seen: '2026-09-24T00:00:00Z'
