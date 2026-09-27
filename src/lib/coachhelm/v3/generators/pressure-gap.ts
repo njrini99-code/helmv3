@@ -1,8 +1,10 @@
 /**
  * v3 PressureGapGenerator (W24).
  *
- * Aggregates the player's avg score-to-par on tournament+qualifier rounds
- * vs practice rounds over the last 90 days. Positive delta = player
+ * Aggregates the player's avg score-to-par on tournament and qualifier
+ * rounds (plus the legacy 'qualifying' spelling) vs practice rounds over the
+ * last 90 days, countable rounds only, each on an 18-hole basis (the shared
+ * rule in src/lib/golf/metrics/pressure-gap.ts). Positive delta = player
  * scores higher (worse) under competitive pressure.
  *
  * Standing populated by `refresh_player_standing_round_metrics` (W24-prep
@@ -14,6 +16,13 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { fromUntyped } from '@/lib/supabase/untyped';
 import { BaseGenerator } from '@/lib/coachhelm/v3/engine/generator-base';
 import { loadCompletedHoles, classifyHole } from '@/lib/coachhelm/v3/engine/hole-diagnosis';
+import { isCountableRound } from '@/lib/golf/round-countable';
+import {
+  computePressureGap,
+  splitPressureRounds,
+  PRACTICE_ROUND_TYPE,
+  PRESSURE_ROUND_TYPES,
+} from '@/lib/golf/metrics/pressure-gap';
 import type {
   ComposedContent,
   GeneratorAggregate,
@@ -77,7 +86,7 @@ export class PressureGapGenerator extends BaseGenerator<PressureGapAggregate> {
     // Pull last 90 days of completed rounds for this player; bucket in TS.
     const since = new Date(Date.now() - 90 * 86400_000).toISOString().slice(0, 10);
     const { data, error } = await fromUntyped(supabase, 'golf_rounds')
-      .select('id, round_type, score_to_par, round_date')
+      .select('id, round_type, score_to_par, round_date, holes_played, total_score, front_nine, back_nine, total_putts')
       .eq('player_id', this.playerId)
       .eq('status', 'completed')
       .gte('round_date', since) as {
@@ -86,28 +95,22 @@ export class PressureGapGenerator extends BaseGenerator<PressureGapAggregate> {
           round_type: string | null;
           score_to_par: number | null;
           round_date: string | null;
+          holes_played: number | null;
+          total_score: number | null;
+          front_nine: number | null;
+          back_nine: number | null;
+          total_putts: number | null;
         }> | null;
         error: { message: string } | null;
       };
     if (error) throw new Error(`pressure-gap aggregate query failed: ${error.message}`);
     if (!data) return null;
+    // NUM-24: countable rounds only, and the shared pressure-gap rule
+    // (src/lib/golf/metrics/pressure-gap.ts): each round's to par on an
+    // 18-hole basis, and the legacy 'qualifying' spelling counts as pressure.
+    // Standing's SQL (refresh_player_standing_round_metrics) uses the same rule.
+    const rounds = data.filter(isCountableRound);
 
-    let practiceSum = 0;
-    let practiceN = 0;
-    let competitiveSum = 0;
-    let competitiveN = 0;
-    for (const r of data) {
-      if (r.score_to_par === null || r.score_to_par === undefined) continue;
-      const v = Number(r.score_to_par);
-      if (!Number.isFinite(v)) continue;
-      if (r.round_type === 'practice') {
-        practiceSum += v;
-        practiceN += 1;
-      } else if (r.round_type === 'tournament' || r.round_type === 'qualifier') {
-        competitiveSum += v;
-        competitiveN += 1;
-      }
-    }
     // Per-bucket sample gate (P2a) + requalification check (pg-1): BOTH buckets
     // need ≥ MIN_ROUNDS_PER_BUCKET rounds (the canonical floor above). Without
     // this, a single practice or tournament round produces a wild, meaningless
@@ -119,21 +122,24 @@ export class PressureGapGenerator extends BaseGenerator<PressureGapAggregate> {
     // (signatureScope above, to-95 audit P2): a stale stored HIGH pressure row
     // from a player no longer meeting this gate is archived by the base class
     // on this exit — no longer an external lifecycle-cron dependency.
-    if (practiceN < MIN_ROUNDS_PER_BUCKET || competitiveN < MIN_ROUNDS_PER_BUCKET) return null;
-    const practiceAvg = practiceSum / practiceN;
-    const competitiveAvg = competitiveSum / competitiveN;
+    const gap = computePressureGap(rounds, { minPerSide: MIN_ROUNDS_PER_BUCKET });
+    if (!gap) return null;
+    const practiceN = gap.practiceRounds;
+    const competitiveN = gap.pressureRounds;
+    const practiceAvg = gap.practiceAverage;
+    const competitiveAvg = gap.pressureAverage;
     // score_to_par nets out par → the gap is course-difficulty-normalized to the
     // extent the course's par reflects difficulty.
-    const delta = competitiveAvg - practiceAvg;
+    const delta = gap.gap;
 
     // C5: decompose the gap into WHICH sub-area breaks under pressure. Bucket
     // each round by competitive/practice, then compute per-bucket rates from
     // golf_holes. Component deltas are competitive − practice (higher = worse
     // under pressure); the largest positive one is what the prose names.
     const bucketOf = new Map<string, 'p' | 'c'>();
-    for (const r of data) {
-      if (r.round_type === 'practice') bucketOf.set(r.id, 'p');
-      else if (r.round_type === 'tournament' || r.round_type === 'qualifier') bucketOf.set(r.id, 'c');
+    for (const r of rounds) {
+      if (r.round_type === PRACTICE_ROUND_TYPE) bucketOf.set(r.id, 'p');
+      else if (r.round_type != null && PRESSURE_ROUND_TYPES.includes(r.round_type)) bucketOf.set(r.id, 'c');
     }
     const holes = (await loadCompletedHoles(this.playerId)).filter((h) => bucketOf.has(h.round_id));
     const acc = {
@@ -174,9 +180,7 @@ export class PressureGapGenerator extends BaseGenerator<PressureGapAggregate> {
     // `computeMeasuredFactors` returns null (→ factors_measured:false) unless BOTH
     // a finite stddev AND ≥1 parseable round_date are present — so we MUST expose
     // round_dates too, or the real dispersion is never consumed.
-    const compScores = data
-      .filter((r) => bucketOf.get(r.id) === 'c' && r.score_to_par !== null)
-      .map((r) => Number(r.score_to_par));
+    const compScores = splitPressureRounds(rounds).pressure;
     const mean = compScores.reduce((a, v) => a + v, 0) / (compScores.length || 1);
     const variance =
       compScores.length > 1
@@ -185,7 +189,7 @@ export class PressureGapGenerator extends BaseGenerator<PressureGapAggregate> {
     const stddev = Math.sqrt(variance);
     // The competitive bucket's round dates — the same rounds whose score_to_par
     // dispersion the stddev measures. Drop nulls so every entry is parseable.
-    const roundDates = data
+    const roundDates = rounds
       .filter((r) => bucketOf.get(r.id) === 'c' && r.round_date !== null)
       .map((r) => r.round_date as string);
 
@@ -235,7 +239,7 @@ export class PressureGapGenerator extends BaseGenerator<PressureGapAggregate> {
     const content =
       `Across the last 90 days you averaged ${competitiveDisp} in ` +
       `${agg.competitive_count} competitive rounds vs ${practiceDisp} in ` +
-      `${agg.practice_count} practice rounds — a ${absDelta}-stroke gap. ` +
+      `${agg.practice_count} practice rounds, a ${absDelta}-stroke gap. ` +
       `You play ${direction} when it counts.` + driverClause +
       ` PGA Tour gap is ~0.5 strokes; college typical is 2-5 (Research doc §9).`;
 
@@ -254,7 +258,7 @@ export class PressureGapGenerator extends BaseGenerator<PressureGapAggregate> {
       signature: `pressure_gap:practice_vs_tournament`,
       evidence: {
         metric: this.metricId,
-        metric_label: 'Practice vs Tournament Delta',
+        metric_label: 'Pressure gap',
         unit: 'strokes',
         your_value: agg.playerValue,
         your_value_display: deltaDisp,

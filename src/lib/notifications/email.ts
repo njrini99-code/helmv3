@@ -708,7 +708,7 @@ function generateEmailTemplate(
       return {
         subject: `New task assigned: ${taskTitle}`,
         html: emailShell({
-          previewText: `${coachName} assigned you a task — ${taskTitle}`,
+          previewText: `${coachName} assigned you a task: ${taskTitle}`,
           headerLabel: 'Task Assigned',
           headerIconKey: 'flag',
           iconKey: 'flag',
@@ -747,7 +747,7 @@ function generateEmailTemplate(
       return {
         subject: `New development plan: ${planTitle}`,
         html: emailShell({
-          previewText: `${coachName} created a development plan for you — ${planTitle}`,
+          previewText: `${coachName} created a development plan for you: ${planTitle}`,
           headerLabel: 'Development Plan',
           headerIconKey: 'chart',
           iconKey: 'chart',

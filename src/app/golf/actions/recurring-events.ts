@@ -985,6 +985,7 @@ async function createRecurringEventImpl(
           const { sendBulkPushNotification } = await import('@/lib/notifications/push');
           await sendBulkPushNotification('event_rsvp_reminder', userIds, {
             eventName: fanOutTitle,
+            eventId: rootId,
           });
         })();
 

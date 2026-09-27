@@ -17,16 +17,19 @@
  *
  * Coach-side modal (with player picker + mandatory toggle) is a follow-up.
  *
- * Tier 4 polish (v3 feature audit feature #4): the panel uses `surface-lift`
- * (Liquid Glass material) + canonical `drawerVariants` for the entrance,
- * with the backdrop fading via `backdropVariants`. Wrapped in
- * `AnimatePresence` so the exit animation runs cleanly when `open`
- * flips false.
+ * Presentation (UI audit 2026-09-23): a Fairway `Sheet` — an OPAQUE content
+ * sheet with the shared grabber and the HIG header row (Cancel · title ·
+ * Start goal). It replaced a hand-rolled `fixed inset-0` glass panel that:
+ *   • let the page behind read through the form (`surface-lift` glass),
+ *   • ignored Escape and never moved focus into the dialog,
+ *   • rendered in place, not portaled — `position: fixed` inside a
+ *     transformed page ancestor, the likely source of the blank band seen
+ *     above it in the audit pane.
+ * The Sheet primitive (vaul + Radix) now owns Escape, the focus trap, focus
+ * return to the "Set a goal" button, scroll lock and reduced motion.
  */
 
-import { useState, useTransition, useEffect } from 'react';
-import { AnimatePresence, m } from 'framer-motion';
-import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
+import { useState, useTransition, useEffect, useId } from 'react';
 import {
   createGoal,
   suggestGoalTarget,
@@ -39,15 +42,13 @@ import {
 } from '@/lib/coachhelm/v3/metrics/registry';
 import { METRIC_RENDER_CONFIG } from '@/lib/coachhelm/v3/standing/metric-config';
 import { formatValue } from '@/components/golf/coachhelm/v3/StandingBar';
-import { Button } from '@/components/ui/button';
+import { Button } from '@/components/fairway/controls/button';
 import { Input } from '@/components/ui/input';
-import { Select } from '@/components/ui/select';
-import {
-  drawerVariants,
-  drawerTransition,
-  backdropVariants,
-  backdropTransition,
-} from '@/lib/coachhelm/v3/motion';
+// Fairway Select, NOT ui/select: ui/select portals its list to document.body,
+// which inside a Radix-modal sheet is "outside" — tapping an option would
+// dismiss the sheet. The Fairway Select portals into the sheet's own subtree.
+import { Select } from '@/components/fairway/forms/Select';
+import { Sheet } from '@/components/fairway/overlays/Sheet';
 
 export interface GoalCreationModalProps {
   open: boolean;
@@ -99,7 +100,8 @@ export function GoalCreationModal({
   onClose,
   initialMetricId,
 }: GoalCreationModalProps) {
-  const prefersReducedMotion = useReducedMotionGuard();
+  const metricLabelId = useId();
+  const windowLabelId = useId();
   const [metricId, setMetricId] = useState<MetricId>(initialMetricId ?? 'sg_putting');
   const [windowDays, setWindowDays] = useState(30);
   const [targetValue, setTargetValue] = useState<string>('');
@@ -174,7 +176,7 @@ export function GoalCreationModal({
     startTransition(async () => {
       const result = await createGoal({
         metric_id: metricId,
-        title: `${cfg.display_label} — ${windowDays}-day goal`,
+        title: `${cfg.display_label}, ${windowDays}-day goal`,
         category: 'manual',
         ends_at: endsAt,
         target_value: target,
@@ -191,142 +193,124 @@ export function GoalCreationModal({
   }
 
   return (
-    <AnimatePresence>
-      {open && (
-        <m.div
-          key="goal-creation-modal"
-          data-testid="goal-creation-modal"
-          role="dialog"
-          aria-modal="true"
-          aria-label="Create new goal"
-          className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/40 backdrop-blur-sm"
-          variants={backdropVariants}
-          initial="hidden"
-          animate="visible"
-          exit="exit"
-          transition={prefersReducedMotion ? { duration: 0 } : (backdropTransition)}
-          onClick={onClose}
-        >
-          <m.div
-            className="surface-lift w-full max-w-md max-h-[90dvh] overflow-y-auto rounded-t-3xl md:rounded-3xl p-6"
-            variants={drawerVariants}
-            initial="hidden"
-            animate="visible"
-            exit="exit"
-            transition={prefersReducedMotion ? { duration: 0 } : (drawerTransition)}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <h2 className="text-lg font-medium text-warm-900 mb-4">New goal</h2>
+    <Sheet
+      open={open}
+      onOpenChange={(next) => {
+        if (!next) onClose();
+      }}
+      side="bottom"
+      title="Set a target"
+      data-slot="goal-creation-modal"
+      // A save in flight can't be abandoned by a drag, a scrim tap or Escape.
+      dismissible={!pending}
+      className="md:mx-auto md:w-full md:max-w-md"
+      leadingAction={
+        <Button variant="ghost" size="sm" type="button" onClick={onClose} disabled={pending}>
+          Cancel
+        </Button>
+      }
+      trailingAction={
+        <Button variant="primary" size="sm" type="button" onClick={submit} disabled={pending}>
+          {pending ? 'Saving…' : 'Start focus area'}
+        </Button>
+      }
+    >
+      <Sheet.Body className="space-y-4 pt-4">
+        {/* Metric picker */}
+        <div>
+          <span id={metricLabelId} className="text-body-sm font-medium text-text-secondary">
+            What stat?
+          </span>
+          <div className="mt-1">
+            <Select
+              aria-labelledby={metricLabelId}
+              value={metricId}
+              onValueChange={(v) => {
+                if (v) setMetricId(v as MetricId);
+              }}
+              options={METRIC_IDS.map((id) => ({
+                value: id,
+                label: METRIC_RENDER_CONFIG[id].display_label,
+              }))}
+            />
+          </div>
+        </div>
 
-            <div className="space-y-4">
-              {/* Metric picker */}
-              <div>
-                <span className="text-xs font-medium text-warm-700">What stat?</span>
-                <div className="mt-1">
-                  <Select
-                    value={metricId}
-                    onChange={(v) => setMetricId(v as MetricId)}
-                    options={METRIC_IDS.map((id) => ({
-                      value: id,
-                      label: METRIC_RENDER_CONFIG[id].display_label,
-                    }))}
-                  />
-                </div>
-              </div>
+        {/* Window picker */}
+        <div>
+          <span id={windowLabelId} className="text-body-sm font-medium text-text-secondary">
+            How long?
+          </span>
+          <div className="mt-1">
+            <Select
+              aria-labelledby={windowLabelId}
+              value={String(windowDays)}
+              onValueChange={(v) => {
+                if (v) setWindowDays(Number(v));
+              }}
+              options={WINDOW_OPTIONS.map((opt) => ({
+                value: String(opt.days),
+                label: opt.label,
+              }))}
+            />
+          </div>
+        </div>
 
-              {/* Window picker */}
-              <div>
-                <span className="text-xs font-medium text-warm-700">How long?</span>
-                <div className="mt-1">
-                  <Select
-                    value={String(windowDays)}
-                    onChange={(v) => setWindowDays(Number(v))}
-                    options={WINDOW_OPTIONS.map((opt) => ({
-                      value: String(opt.days),
-                      label: opt.label,
-                    }))}
-                  />
-                </div>
-              </div>
+        {/* Target value — auto-filled from the player's live standing */}
+        <label className="block">
+          <span className="text-body-sm font-medium text-text-secondary">
+            Target ({cfg.unit})
+          </span>
+          <Input
+            type="number"
+            inputMode="decimal"
+            step="0.1"
+            value={targetValue}
+            onChange={(e) => {
+              setTargetValue(e.target.value);
+              setUserEdited(true);
+            }}
+            placeholder={loadingSuggestion ? 'Finding your baseline…' : 'Enter a target'}
+            className="mt-1 tabular-nums"
+          />
+          {loadingSuggestion ? (
+            <span className="mt-1 block text-caption text-text-tertiary">Finding your baseline…</span>
+          ) : suggestion?.hasStanding &&
+            suggestion.suggested_target !== null &&
+            suggestion.baseline !== null &&
+            suggestion.pga_value !== null ? (
+            <span className="mt-1 block text-caption text-text-tertiary">
+              {userEdited ? 'Suggested' : 'Auto-filled'}:{' '}
+              {formatValue(suggestion.suggested_target, cfg.unit)}, halfway to Tour
+              ({formatValue(suggestion.pga_value, cfg.unit)}) from your{' '}
+              {formatValue(suggestion.baseline, cfg.unit)}
+            </span>
+          ) : suggestion?.hasStanding && suggestion.baseline !== null ? (
+            <span className="mt-1 block text-caption text-text-tertiary">
+              {noTargetCopy(suggestion, cfg.unit)}
+            </span>
+          ) : suggestion && !suggestion.hasStanding ? (
+            <span className="mt-1 block text-caption text-text-tertiary">
+              No baseline logged yet. Set a target to aim for.
+            </span>
+          ) : null}
+        </label>
 
-              {/* Target value — auto-filled from the player's live standing */}
-              <label className="block">
-                <span className="text-xs font-medium text-warm-700">
-                  Target ({cfg.unit})
-                </span>
-                <Input
-                  type="number"
-                  inputMode="decimal"
-                  step="0.1"
-                  value={targetValue}
-                  onChange={(e) => {
-                    setTargetValue(e.target.value);
-                    setUserEdited(true);
-                  }}
-                  placeholder={loadingSuggestion ? 'Finding your baseline…' : 'Enter a target'}
-                  className="mt-1 tabular-nums"
-                />
-                {loadingSuggestion ? (
-                  <span className="mt-1 block text-xs text-warm-500">Finding your baseline…</span>
-                ) : suggestion?.hasStanding &&
-                  suggestion.suggested_target !== null &&
-                  suggestion.baseline !== null &&
-                  suggestion.pga_value !== null ? (
-                  <span className="mt-1 block text-xs text-warm-500">
-                    {userEdited ? 'Suggested' : 'Auto-filled'}:{' '}
-                    {formatValue(suggestion.suggested_target, cfg.unit)} — halfway to Tour
-                    ({formatValue(suggestion.pga_value, cfg.unit)}) from your{' '}
-                    {formatValue(suggestion.baseline, cfg.unit)}
-                  </span>
-                ) : suggestion?.hasStanding && suggestion.baseline !== null ? (
-                  <span className="mt-1 block text-xs text-warm-500">
-                    {noTargetCopy(suggestion, cfg.unit)}
-                  </span>
-                ) : suggestion && !suggestion.hasStanding ? (
-                  <span className="mt-1 block text-xs text-warm-500">
-                    No baseline logged yet — set a target to aim for.
-                  </span>
-                ) : null}
-              </label>
+        {/* Share toggle */}
+        <label className="flex min-h-11 cursor-pointer items-center justify-between gap-3">
+          <span className="text-body-sm font-medium text-text-secondary">Share with coach?</span>
+          <input
+            type="checkbox"
+            checked={shareWithCoach}
+            onChange={(e) => setShareWithCoach(e.target.checked)}
+            className="h-5 w-5 rounded border-border-strong accent-[var(--fw-color-accent-650)]"
+          />
+        </label>
 
-              {/* Share toggle */}
-              <label className="flex items-center justify-between gap-3 cursor-pointer">
-                <span className="text-xs font-medium text-warm-700">Share with coach?</span>
-                <input
-                  type="checkbox"
-                  checked={shareWithCoach}
-                  onChange={(e) => setShareWithCoach(e.target.checked)}
-                  className="h-4 w-4 rounded border-warm-300 text-primary-600 focus:ring-primary-500"
-                />
-              </label>
-
-              {error && (
-                <p role="alert" className="text-xs text-red-600">{error}</p>
-              )}
-            </div>
-
-            {/* Actions */}
-            <div className="mt-6 flex items-center justify-end gap-2">
-              <Button variant="ghost"
-                type="button"
-                onClick={onClose}
-                disabled={pending}
-                className="text-sm text-warm-700 px-4 py-2 rounded-xl hover:bg-warm-100 transition-colors"
-              >
-                Cancel
-              </Button>
-              <Button variant="primary"
-                type="button"
-                onClick={submit}
-                disabled={pending}
-                className="text-sm bg-accent-650 text-text-on-accent px-4 py-2 rounded-xl hover:bg-primary-700 disabled:opacity-60 transition-colors"
-              >
-                {pending ? 'Saving…' : 'Start goal'}
-              </Button>
-            </div>
-          </m.div>
-        </m.div>
-      )}
-    </AnimatePresence>
+        {error && (
+          <p role="alert" className="text-body-sm text-fw-danger-ink">{error}</p>
+        )}
+      </Sheet.Body>
+    </Sheet>
   );
 }

@@ -225,7 +225,7 @@ export function CalendarAttendanceScreen({
                 <div className="flex flex-col gap-5">
                   {groups.map((group) => (
                     <div key={group.key}>
-                      <p className="mb-2 font-fw-sans text-eyebrow uppercase tracking-[0.07em] text-text-tertiary">
+                      <p className="mb-2 font-fw-sans text-caption text-text-tertiary">
                         {group.label} · {group.rows.length}
                       </p>
                       <div className="flex flex-col gap-2">

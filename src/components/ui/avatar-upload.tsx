@@ -198,9 +198,11 @@ export function AvatarUpload({
           </Button>
 
           {previewUrl && onRemove && (
+            // Quiet secondary action beside the upload, not a filled red pill.
             <Button
-              variant="danger"
+              variant="ghost"
               size="sm"
+              className="text-fw-danger-ink"
               onClick={handleRemove}
               disabled={uploading}
               leftIcon={<IconTrash size={16} aria-hidden />}

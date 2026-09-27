@@ -28,8 +28,13 @@
  *   (e) Dry-run: print the exact SQL body that --apply would send.
  *   (f) With --apply: sends that one body via `supabase db query --linked
  *       --file`, re-reads the ledger, runs the migration's own `-- VERIFY:`
- *       queries (continuation lines joined until `;`, each query must return
- *       >=1 row), and prints a recorded-vs-applied table.
+ *       queries (continuation lines joined until `;` or the next top-level
+ *       `select`/`with`; each query must return >=1 row), and prints a
+ *       recorded-vs-applied table.
+ *
+ * Every read goes through `./query-json.mjs`: the CLI's JSON output is a bare
+ * array outside agent sessions, and reading `.rows` off it is what made every
+ * CI post-apply check report 0 rows.
  *
  * Why not `db push`: `supabase db push` applies EVERY pending migration, and
  * `--include-all=false` does not narrow that to one file — it only excludes
@@ -58,6 +63,8 @@ import { tmpdir } from 'node:os';
 import { resolve, dirname, basename, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { linkedQueryArgs, parseQueryRows } from './query-json.mjs';
+
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = resolve(__dirname, '..', '..');
 const SUPABASE_CLI = resolve(REPO_ROOT, 'node_modules/.bin/supabase');
@@ -66,6 +73,11 @@ const MIGRATIONS_DIR = join(REPO_ROOT, 'supabase/migrations');
 
 function sh(cmd, args, opts = {}) {
   return execFileSync(cmd, args, { cwd: REPO_ROOT, encoding: 'utf-8', ...opts });
+}
+
+/** Rows for one read-only query against the linked project. Throws on failure. */
+function queryRows(sql) {
+  return parseQueryRows(sh(SUPABASE_CLI, linkedQueryArgs(sql)));
 }
 
 function step(label, ok, detail = '') {
@@ -242,16 +254,17 @@ function checkNotHeld(fileBasename, heldOverride, reason) {
   );
 }
 
+/** Interpolated into SQL, so anything but 14 digits is refused here, not escaped. */
+function ledgerQuery(version) {
+  if (!/^\d{14}$/.test(version)) throw new Error(`refusing to query the ledger for version '${version}'`);
+  return `select version from supabase_migrations.schema_migrations where version = '${version}';`;
+}
+
 /** (c) Ledger does not already carry this version. */
 function checkLedger(version) {
-  let rows = [];
+  let rows;
   try {
-    const raw = sh(SUPABASE_CLI, [
-      'db', 'query', '--linked', '--output-format', 'json',
-      `select version from supabase_migrations.schema_migrations where version = '${version}';`,
-    ]);
-    const parsed = JSON.parse(raw);
-    rows = Array.isArray(parsed.rows) ? parsed.rows : [];
+    rows = queryRows(ledgerQuery(version));
   } catch (err) {
     return step('ledger does not already carry this version', false, `could not read ledger: ${String(err?.message ?? err)}`);
   }
@@ -303,13 +316,19 @@ function printPlan(body) {
  * `select 1 from information_schema.columns` as its own query — which returns
  * rows for ANY database and so PASSES while asserting nothing.
  *
- * This mattered only in theory until the origin/main reachability check above
- * was fixed: every apply died at preflight before reaching VERIFY. Now that it
- * can get here, the bug is live, and VERIFY is the only partial-commit
- * detector this path has (it runs even when the apply reports failure).
+ * A line that begins a new top-level statement (`select …`, or `with <name>
+ * as …`) also ends the query before it, `;` or not. Single-line VERIFY rows
+ * written without a terminator (or whose `;` sits after a `-- noqa`) used to
+ * swallow every following line into one invalid query; 20260905090000 sent
+ * three `select 1 from …` statements glued together and errored. "Top level"
+ * means the buffer so far has balanced parentheses, no open `'…'` literal,
+ * and does not end in a set operator — so a subquery on its own line, a
+ * `union`/`except` arm, or `'timestamp` / `with time zone'` split across
+ * lines stays joined.
  *
- * A trailing fragment with no `;` is still returned rather than dropped, so a
- * malformed block fails loudly instead of silently shrinking the check set.
+ * VERIFY is the only partial-commit detector this path has (it runs even when
+ * the apply reports failure), so a malformed block must fail loudly: a
+ * trailing fragment with no `;` is still returned rather than dropped.
  *
  * A trailing sqlfluff directive (`-- noqa: LT05` on a long VERIFY line) is a
  * lint comment, not SQL: it is stripped before the `;` test, or the query
@@ -328,6 +347,10 @@ export function extractVerifyQueries(fileText) {
   const queries = [];
   let buffer = '';
   for (const fragment of fragments) {
+    if (buffer && startsStatement(fragment) && isAtTopLevel(buffer)) {
+      queries.push(buffer);
+      buffer = '';
+    }
     buffer = buffer ? `${buffer} ${fragment}` : fragment;
     if (buffer.endsWith(';')) {
       queries.push(buffer);
@@ -338,13 +361,29 @@ export function extractVerifyQueries(fileText) {
   return queries;
 }
 
+function startsStatement(fragment) {
+  return /^select\b/i.test(fragment) || /^with\s+(recursive\s+)?"?\w+"?\s+as\b/i.test(fragment);
+}
+
+/** Balanced parens, no open string literal, not waiting on a set-operator arm. */
+function isAtTopLevel(sql) {
+  let depth = 0;
+  let inQuote = false;
+  for (const ch of sql) {
+    if (inQuote) {
+      if (ch === "'") inQuote = false; // `''` re-enters on the next char, as it should
+    } else if (ch === "'") inQuote = true;
+    else if (ch === '(') depth += 1;
+    else if (ch === ')') depth -= 1;
+  }
+  return depth === 0 && !inQuote && !/\b(union|intersect|except|all|distinct)$/i.test(sql);
+}
+
 function runVerifyQueries(queries) {
   let allOk = true;
   for (const q of queries) {
     try {
-      const raw = sh(SUPABASE_CLI, ['db', 'query', '--linked', '--output-format', 'json', q]);
-      const parsed = JSON.parse(raw);
-      const rows = Array.isArray(parsed.rows) ? parsed.rows : [];
+      const rows = queryRows(q);
       allOk = step(`VERIFY: ${q}`, rows.length >= 1, `${rows.length} row(s)`) && allOk;
     } catch (err) {
       allOk = step(`VERIFY: ${q}`, false, String(err?.message ?? err)) && allOk;
@@ -434,12 +473,7 @@ async function main() {
 
 function checkLedgerPresent(version) {
   try {
-    const raw = sh(SUPABASE_CLI, [
-      'db', 'query', '--linked', '--output-format', 'json',
-      `select version from supabase_migrations.schema_migrations where version = '${version}';`,
-    ]);
-    const parsed = JSON.parse(raw);
-    const rows = Array.isArray(parsed.rows) ? parsed.rows : [];
+    const rows = queryRows(ledgerQuery(version));
     return step('ledger now carries this version', rows.length === 1, rows.length === 1 ? 'confirmed' : `expected 1 row, got ${rows.length}`);
   } catch (err) {
     return step('ledger now carries this version', false, String(err?.message ?? err));

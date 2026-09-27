@@ -142,7 +142,7 @@ export function CrmCommandPalette({
               placeholder="Search coaches, jump to a tab, run an action…"
               className="flex-1 bg-transparent outline-none text-base text-text-primary placeholder:text-text-tertiary tracking-[-0.005em] focus-visible:outline-none"
             />
-            <kbd className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 text-eyebrow font-medium text-text-tertiary bg-surface-tint rounded-fw-sm border border-border-subtle">
+            <kbd className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 text-caption font-medium text-text-tertiary bg-surface-tint rounded-fw-sm border border-border-subtle">
               ESC
             </kbd>
           </div>
@@ -156,7 +156,7 @@ export function CrmCommandPalette({
             {/* Go to — navigable destinations */}
             <Command.Group
               heading="Go to"
-              className="text-text-tertiary [&_[cmdk-group-heading]]:px-3 [&_[cmdk-group-heading]]:py-1.5 [&_[cmdk-group-heading]]:text-eyebrow [&_[cmdk-group-heading]]:font-semibold [&_[cmdk-group-heading]]:uppercase [&_[cmdk-group-heading]]:tracking-wider"
+              className="text-text-tertiary [&_[cmdk-group-heading]]:px-3 [&_[cmdk-group-heading]]:py-1.5 [&_[cmdk-group-heading]]:text-caption [&_[cmdk-group-heading]]:font-semibold"
             >
               {destinations.map((d) => (
                 <Command.Item
@@ -178,7 +178,7 @@ export function CrmCommandPalette({
             {/* Actions */}
             <Command.Group
               heading="Actions"
-              className="text-text-tertiary [&_[cmdk-group-heading]]:px-3 [&_[cmdk-group-heading]]:py-1.5 [&_[cmdk-group-heading]]:text-eyebrow [&_[cmdk-group-heading]]:font-semibold [&_[cmdk-group-heading]]:uppercase [&_[cmdk-group-heading]]:tracking-wider"
+              className="text-text-tertiary [&_[cmdk-group-heading]]:px-3 [&_[cmdk-group-heading]]:py-1.5 [&_[cmdk-group-heading]]:text-caption [&_[cmdk-group-heading]]:font-semibold"
             >
               <Command.Item
                 value="New Coach add create coach"
@@ -231,7 +231,7 @@ export function CrmCommandPalette({
             {matchedCoaches.length > 0 && (
               <Command.Group
                 heading="Coaches"
-                className="text-text-tertiary [&_[cmdk-group-heading]]:px-3 [&_[cmdk-group-heading]]:py-1.5 [&_[cmdk-group-heading]]:text-eyebrow [&_[cmdk-group-heading]]:font-semibold [&_[cmdk-group-heading]]:uppercase [&_[cmdk-group-heading]]:tracking-wider"
+                className="text-text-tertiary [&_[cmdk-group-heading]]:px-3 [&_[cmdk-group-heading]]:py-1.5 [&_[cmdk-group-heading]]:text-caption [&_[cmdk-group-heading]]:font-semibold"
               >
                 {matchedCoaches.map((c) => (
                   <Command.Item
@@ -262,7 +262,7 @@ export function CrmCommandPalette({
           </Command.List>
 
           {/* Footer hints */}
-          <div className="px-4 py-2 border-t border-border-subtle flex items-center justify-between text-eyebrow text-text-tertiary">
+          <div className="px-4 py-2 border-t border-border-subtle flex items-center justify-between text-caption text-text-tertiary">
             <div className="flex items-center gap-2">
               <kbd className="px-1.5 py-0.5 bg-surface-tint rounded border border-border-subtle">↑</kbd>
               <kbd className="px-1.5 py-0.5 bg-surface-tint rounded border border-border-subtle">↓</kbd>

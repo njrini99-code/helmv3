@@ -195,7 +195,7 @@ export function FairwayInvitePlayerButton({
         onOpenChange={handleOpenChange}
         size="lg"
         title={heading}
-        description="Share this invite to add players to your roster. They join by opening the link or entering the code — no manual add needed."
+        description="Share this invite to add players to your roster. They join by opening the link or entering the code. No manual add needed."
       >
         <ModalShell.Body>
           <div className="space-y-6">
@@ -229,7 +229,7 @@ export function FairwayInvitePlayerButton({
                 <div className="space-y-1.5">
                   <label
                     htmlFor="fw-invite-code"
-                    className="block font-fw-sans text-eyebrow font-medium uppercase tracking-[0.08em] text-text-tertiary"
+                    className="block font-fw-sans text-caption font-medium text-text-tertiary"
                   >
                     Invite code
                   </label>
@@ -265,7 +265,7 @@ export function FairwayInvitePlayerButton({
                 <div className="space-y-1.5">
                   <label
                     htmlFor="fw-invite-link"
-                    className="block font-fw-sans text-eyebrow font-medium uppercase tracking-[0.08em] text-text-tertiary"
+                    className="block font-fw-sans text-caption font-medium text-text-tertiary"
                   >
                     Invite link
                   </label>
@@ -318,10 +318,10 @@ export function FairwayInvitePlayerButton({
 
                 {/* How it works — three-step explainer on the Fairway stepper. */}
                 <div className="space-y-2 rounded-card bg-surface-sunken p-4">
-                  <p className="flex items-center gap-2 font-fw-display text-eyebrow font-medium uppercase tracking-[0.08em] text-text-tertiary">
+                  <h3 className="flex items-center gap-2 font-fw-sans text-body-sm font-semibold text-text-primary">
                     <IconUsers size={14} />
                     How it works
-                  </p>
+                  </h3>
                   <OnboardingSteps label="How the team invite works">
                     <OnboardingStep
                       index={1}
@@ -336,7 +336,7 @@ export function FairwayInvitePlayerButton({
                     <OnboardingStep
                       index={3}
                       title="They land on your roster"
-                      description="Once joined, players appear here automatically — no manual add."
+                      description="Once joined, players appear here automatically. No manual add."
                     />
                   </OnboardingSteps>
                 </div>

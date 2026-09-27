@@ -136,7 +136,7 @@ export function ProgramOpening({
       <div className="flex items-baseline justify-between gap-4">
         <h2
           id="program-opening-heading"
-          className="font-fw-sans text-eyebrow uppercase tracking-[0.12em] text-text-tertiary"
+          className="font-fw-sans text-body-sm font-semibold text-text-primary"
         >
           Where your program stands
         </h2>

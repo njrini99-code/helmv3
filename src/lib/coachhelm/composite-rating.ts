@@ -52,6 +52,8 @@
  * ========================================================================== */
 
 import { computeSeriesTrend } from './trend';
+import { isPlausibleToPar } from '@/lib/golf/round-countable';
+import { computeFormFromCountableRounds, type FormScore } from '@/lib/golf/form-score';
 
 /** Only the round fields the rating reads. */
 export interface CompositeRoundInput {
@@ -75,6 +77,11 @@ export interface CompositeRatingResult {
   /** How many rounds were available — the honest sample size a caller can
    *  render as "N rounds". */
   rounds_in_calculation: number;
+  /**
+   * The Form score behind `rating` (OD-02): quality ("Early read" below 5
+   * countable rounds) and the inputs for the tap-to-explain formula.
+   */
+  form: FormScore;
 }
 
 /** Recent-window size for the score component AND the trend classifier —
@@ -97,31 +104,23 @@ const TREND_THRESHOLD = 1;
  * observed results, minus a penalty for severe observed patterns.
  */
 export function computeCompositeRating(
-  rounds: CompositeRoundInput[],
+  inputRounds: CompositeRoundInput[],
   patterns: CompositePatternInput[] = [],
 ): CompositeRatingResult {
+  // Belt and braces for callers that pass raw rounds: a to-par below the
+  // stroke floor (the 37-stroke "18-hole" round, −35) is not a real round and
+  // pinned the rating at 100. Loaders should also apply the full
+  // `isCountableRound` rule (src/lib/golf/round-countable.ts) before calling.
+  const rounds = inputRounds.filter((r) => isPlausibleToPar(r.score_to_par, r.holes_played));
+  // OD-02 (2026-09-24): the rating IS the Form score, so Fingerprint, Team
+  // Stats and the player card print one number. The curve keeps the old
+  // anchors (par 80, +10 50, +20 20) but never reaches 100; the severe-
+  // pattern penalty is unchanged. See src/lib/golf/form-score.ts.
+  const form = computeFormFromCountableRounds(rounds, patterns);
   if (rounds.length === 0) {
-    return { rating: null, trend: 'flat', rounds_in_calculation: 0 };
+    return { rating: null, trend: 'flat', rounds_in_calculation: 0, form };
   }
-
-  // ---- score component: recent-5 scoring relative to par ------------------
-  const recentRounds = rounds.slice(0, RECENT_WINDOW);
-  let scoreComponent = 50;
-  const scoringDiffs = recentRounds
-    .filter((r) => r.score_to_par != null)
-    .map((r) => (r.score_to_par ?? 0) / (r.holes_played === 9 ? 0.5 : 1));
-
-  if (scoringDiffs.length > 0) {
-    const avgOverPar = scoringDiffs.reduce((a, b) => a + b, 0) / scoringDiffs.length;
-    // +0 → 80, +10 → 50, +20 → 20, −5 → 95
-    scoreComponent = Math.max(0, Math.min(100, 80 - avgOverPar * 3));
-  }
-
-  // ---- penalty for severe observed patterns --------------------------------
-  const severeCount = patterns.filter((p) => p.severity === 'critical' || p.severity === 'high').length;
-  const patternPenalty = Math.min(20, severeCount * 5);
-
-  const rating = Math.round(Math.max(0, Math.min(100, scoreComponent - patternPenalty)));
+  const rating = form.score;
 
   // ---- trend: the canonical windowed classifier over score_to_par ---------
   const series = rounds
@@ -140,5 +139,5 @@ export function computeCompositeRating(
         ? 'down'
         : 'flat';
 
-  return { rating, trend, rounds_in_calculation: rounds.length };
+  return { rating, trend, rounds_in_calculation: rounds.length, form };
 }

@@ -21,6 +21,7 @@
 import * as React from 'react';
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it, vi, beforeEach } from 'vitest';
+import { markAskHandoff } from '@/lib/golf/ask-handoff';
 
 const useChatSpy = vi.fn();
 const sendMessageSpy = vi.fn();
@@ -83,6 +84,9 @@ describe('AskSurface — a pending question from the Brief tab', () => {
     useChatSpy.mockClear();
     sendMessageSpy.mockClear();
     window.history.pushState({}, '', '/golf/dashboard/coachhelm/chat?q=Brief%20me%20on%20the%20team');
+    // What the Brief tab's Send does right before it navigates here (DATA-15:
+    // only this in-app hand-off auto-sends; a bare `?q=` link pre-fills).
+    markAskHandoff('Brief me on the team');
   });
 
   it('submits the question exactly once, through the same send the composer uses for a manual Send', async () => {
@@ -139,5 +143,42 @@ describe('AskSurface — a pending question from the Brief tab', () => {
     render(<AskSurface {...baseProps('Brief me on the team')} />);
 
     expect(screen.getByRole('combobox', { name: 'Ask CoachHelm' })).toHaveValue('');
+  });
+});
+
+describe('AskSurface — a bare `?q=` link (DATA-15)', () => {
+  beforeEach(() => {
+    useChatSpy.mockClear();
+    sendMessageSpy.mockClear();
+    window.sessionStorage.clear();
+    window.history.pushState({}, '', '/golf/dashboard/coachhelm/chat?q=Brief%20me%20on%20the%20team');
+  });
+
+  it('pre-fills the composer and does not send without the Brief tab hand-off', async () => {
+    const AskSurface = await importAskSurface();
+    render(<AskSurface {...baseProps('Brief me on the team')} />);
+
+    expect(sendMessageSpy).not.toHaveBeenCalled();
+    expect(screen.getByRole('combobox', { name: 'Ask CoachHelm' })).toHaveValue('Brief me on the team');
+  });
+
+  it('does not send when the hand-off was for a different question', async () => {
+    markAskHandoff('Something else');
+    const AskSurface = await importAskSurface();
+    render(<AskSurface {...baseProps('Brief me on the team')} />);
+
+    expect(sendMessageSpy).not.toHaveBeenCalled();
+  });
+
+  it('consumes the hand-off so a later visit to the same link only pre-fills', async () => {
+    markAskHandoff('Brief me on the team');
+    const AskSurface = await importAskSurface();
+    const first = render(<AskSurface {...baseProps('Brief me on the team')} />);
+    expect(sendMessageSpy).toHaveBeenCalledTimes(1);
+    first.unmount();
+
+    window.history.pushState({}, '', '/golf/dashboard/coachhelm/chat?q=Brief%20me%20on%20the%20team');
+    render(<AskSurface {...baseProps('Brief me on the team')} />);
+    expect(sendMessageSpy).toHaveBeenCalledTimes(1);
   });
 });

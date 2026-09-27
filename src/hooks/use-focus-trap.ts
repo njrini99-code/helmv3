@@ -24,7 +24,16 @@ const FOCUSABLE_SELECTOR = [
  */
 export function useFocusTrap(isOpen: boolean, onClose: () => void) {
   const modalRef = useRef<HTMLDivElement>(null);
-  const previousActiveElement = useRef<HTMLElement | null>(null);
+  // Latest onClose, read at keypress time. Callers pass inline handlers, so
+  // keying the open effect on `onClose` re-ran it on EVERY parent re-render
+  // while open (e.g. ConfirmDialog's isLoading flip): that re-captured an
+  // element INSIDE the dialog as the "opener" and yanked focus back to the
+  // first field mid-interaction, and on close "restored" to a removed node
+  // (focus fell to <body>). The effect now depends on `isOpen` alone.
+  const onCloseRef = useRef(onClose);
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
 
   const getFocusableElements = useCallback((): HTMLElement[] => {
     if (!modalRef.current) return [];
@@ -35,7 +44,7 @@ export function useFocusTrap(isOpen: boolean, onClose: () => void) {
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        onClose();
+        onCloseRef.current();
         return;
       }
 
@@ -59,22 +68,18 @@ export function useFocusTrap(isOpen: boolean, onClose: () => void) {
         }
       }
     },
-    [onClose, getFocusableElements]
+    [getFocusableElements]
   );
 
-  // Focus management, scroll lock, and keyboard listener
+  // Focus management, scroll lock, and keyboard listener — one open session
+  // per `isOpen === true`; the cleanup restores focus, which also covers a
+  // consumer that unmounts while still open (`{open && <Dialog/>}`).
   useEffect(() => {
-    if (!isOpen) {
-      // Restore focus when modal closes
-      if (previousActiveElement.current) {
-        previousActiveElement.current.focus();
-        previousActiveElement.current = null;
-      }
-      return;
-    }
+    if (!isOpen) return;
 
     // Store currently focused element for restoration
-    previousActiveElement.current = document.activeElement as HTMLElement;
+    const previousActiveElement =
+      document.activeElement instanceof HTMLElement ? document.activeElement : null;
 
     // Add keyboard listener
     document.addEventListener('keydown', handleKeyDown);
@@ -91,8 +96,8 @@ export function useFocusTrap(isOpen: boolean, onClose: () => void) {
     // and their roots don't declare one — so focus stays inside the trap and
     // the keyboard waits for a tap.
     const timer = setTimeout(() => {
+      const root = modalRef.current;
       if (isCoarsePointer()) {
-        const root = modalRef.current;
         if (root) {
           if (!root.hasAttribute('tabindex')) root.setAttribute('tabindex', '-1');
           root.focus({ preventScroll: true });
@@ -102,6 +107,11 @@ export function useFocusTrap(isOpen: boolean, onClose: () => void) {
       const focusableElements = getFocusableElements();
       if (focusableElements.length > 0) {
         focusableElements[0]?.focus();
+      } else if (root) {
+        // Nothing tabbable (a read-only panel): still move focus INTO the
+        // dialog so assistive tech leaves the page behind.
+        if (!root.hasAttribute('tabindex')) root.setAttribute('tabindex', '-1');
+        root.focus({ preventScroll: true });
       }
     }, 0);
 
@@ -109,6 +119,9 @@ export function useFocusTrap(isOpen: boolean, onClose: () => void) {
       document.removeEventListener('keydown', handleKeyDown);
       document.body.style.overflow = prevOverflow;
       clearTimeout(timer);
+      if (previousActiveElement && previousActiveElement.isConnected) {
+        previousActiveElement.focus({ preventScroll: true });
+      }
     };
   }, [isOpen, handleKeyDown, getFocusableElements]);
 

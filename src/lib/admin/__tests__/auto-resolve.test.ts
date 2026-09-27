@@ -764,6 +764,56 @@ describe('autoResolveFixedIncidents — fingerprint resolution ledger', () => {
     expect(regressionCalls()).toHaveLength(0);
   });
 
+  it('does NOT regress a fingerprint whose recurrence is info-severity success telemetry', async () => {
+    // Production 2026-09-24: the hourly event-reminders summary (75cabac7,
+    // "sent=12 failed=0", severity info) was archived as routine telemetry,
+    // fired again on its next tick, and was stamped REGRESSED — as were four
+    // other info-only fingerprints. An info row is the path reporting that it
+    // WORKED; the triage queue already excludes it (severity in
+    // error/critical/warning). A regression is a fault coming back.
+    const recurredAt = new Date(NOW - 3600_000).toISOString();
+    mocks.rows = [{ fingerprint: 'fp-summary', created_at: recurredAt, severity: 'info' }];
+    mocks.storedResolutions = [
+      {
+        fingerprint: 'fp-summary',
+        resolved_at: new Date(NOW - 86400_000).toISOString(),
+        resolution_source: 'auto',
+        last_seen_at_resolution: new Date(NOW - 2 * 86400_000).toISOString(),
+        reopened_at: null,
+      },
+    ];
+
+    const autoResolveFixedIncidents = await loadAutoResolve();
+    const result = await autoResolveFixedIncidents();
+
+    expect(result.regressions.marked).toBe(0);
+    expect(regressionCalls()).toHaveLength(0);
+  });
+
+  it('still regresses when a warning row recurs alongside info rows for the same fingerprint', async () => {
+    // Non-vacuity for the rule above: the exemption is per ROW severity, so a
+    // real fault sharing the fingerprint is never hidden behind its info rows.
+    mocks.rows = [
+      { fingerprint: 'fp-mixed', created_at: new Date(NOW - 7200_000).toISOString(), severity: 'info' },
+      { fingerprint: 'fp-mixed', created_at: new Date(NOW - 3600_000).toISOString(), severity: 'warning' },
+    ];
+    mocks.storedResolutions = [
+      {
+        fingerprint: 'fp-mixed',
+        resolved_at: new Date(NOW - 86400_000).toISOString(),
+        resolution_source: 'auto',
+        last_seen_at_resolution: new Date(NOW - 2 * 86400_000).toISOString(),
+        reopened_at: null,
+      },
+    ];
+
+    const autoResolveFixedIncidents = await loadAutoResolve();
+    const result = await autoResolveFixedIncidents();
+
+    expect(result.regressions.marked).toBe(1);
+    expect(regressionCalls()[0]!.args.p_fingerprint).toBe('fp-mixed');
+  });
+
   it('SKIPS regression detection loudly when the resolutions read fails', async () => {
     // A failed read is not evidence that nothing regressed. Reporting a clean
     // zero here would be the `error -> []` shape the OS forbids, in the one

@@ -26,7 +26,8 @@
  *
  * REAL SOURCE CHIPS (no teases):
  *   - from_review_id  → /golf/dashboard/rounds/<id>/review
- *   - from_insight_id → role-aware: player → /golf/dashboard/coachhelm#insight-<id>
+ *   - from_insight_id → role-aware: player → /golf/dashboard/coachhelm?view=insights&insight=<id>
+ *     (the hub's deep link; a #insight-<id> hash opened nothing)
  *     (player anchor); coach → /golf/dashboard/insights?id=<id> (coaches have no
  *     player profile, so the player front door always 404s them into
  *     NotPlayerState — the Insights workspace's `?id=` deep-link is the coach-
@@ -61,7 +62,8 @@
 
 import { forwardRef, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import Link from 'next/link';
-import { motion, useReducedMotion } from 'framer-motion';
+import { motion } from 'framer-motion';
+import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
 import { cn } from '@/lib/utils';
 import { Surface, Inset } from '@/components/fairway/surfaces';
 import { ProgressTrack } from './ProgressTrack';
@@ -85,7 +87,7 @@ import {
   IconCircleDot,
   IconClock,
   IconFileText,
-  IconSparkles,
+  IconBulb,
   IconChevronRight,
   IconTarget,
   IconTrendingUp,
@@ -436,9 +438,9 @@ export function SourceChip({
     ? `/golf/dashboard/rounds/${reviewRoundId ?? reviewId}/review`
     : role === 'coach'
       ? `/golf/dashboard/intelligence?view=signals&filter=insights&id=${insightId}`
-      : `/golf/dashboard/coachhelm#insight-${insightId}`;
+      : `/golf/dashboard/coachhelm?view=insights&insight=${encodeURIComponent(insightId ?? '')}`;
   const label = reviewId ? 'From a round review' : 'From a CoachHelm insight';
-  const Icon = reviewId ? IconFileText : IconSparkles;
+  const Icon = reviewId ? IconFileText : IconBulb;
 
   return (
     <div className="flex min-w-0 items-center gap-2">
@@ -447,14 +449,16 @@ export function SourceChip({
         className={cn(
           'group/source inline-flex flex-shrink-0 items-center gap-1.5 rounded-full',
           'border border-accent-200 bg-accent-50 px-2.5 py-1',
-          'font-fw-sans text-eyebrow font-medium text-accent-700',
+          // 44pt touch target around the compact chip (HIG).
+          'relative after:absolute after:-inset-y-2 after:inset-x-0 after:content-[""]',
+          'font-fw-sans text-caption font-medium text-accent-700',
           'transition-[color,background-color,border-color] [transition-duration:180ms] [transition-timing-function:cubic-bezier(0.22,0.61,0.36,1)]',
           'hover:bg-accent-100 hover:border-accent-300',
           'outline-none focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
           'motion-reduce:transition-none',
         )}
       >
-        <Icon size={11} className="text-accent-600" />
+        <Icon size={11} className="text-accent-ink" />
         <span>{label}</span>
         <IconChevronRight
           size={11}
@@ -462,7 +466,7 @@ export function SourceChip({
         />
       </Link>
       {context ? (
-        <span className="truncate font-fw-sans text-eyebrow text-text-tertiary">{context}</span>
+        <span className="truncate font-fw-sans text-caption text-text-tertiary">{context}</span>
       ) : null}
     </div>
   );
@@ -539,7 +543,7 @@ function ProgressMeter({
         <span className="min-w-0 font-medium text-text-secondary">
           {metricLabel}
           {lowerBetter ? (
-            <span className="ml-1.5 font-fw-sans text-eyebrow font-normal text-text-tertiary">
+            <span className="ml-1.5 font-fw-sans text-caption font-normal text-text-tertiary">
               lower is better
             </span>
           ) : null}
@@ -551,14 +555,14 @@ function ProgressMeter({
           progress-share from the headline make-rate (audit P-34).
         */}
         <span className="flex shrink-0 items-baseline gap-1.5 font-fw-mono font-medium tabular-nums text-text-primary">
-          <span className="font-fw-sans text-eyebrow font-normal uppercase tracking-[0.08em] text-text-tertiary">
+          <span className="font-fw-sans text-caption font-normal text-text-tertiary">
             Now
           </span>
           {current ?? 0}
           <span className="font-normal text-text-tertiary" aria-hidden="true">
             →
           </span>
-          <span className="font-fw-sans text-eyebrow font-normal uppercase tracking-[0.08em] text-text-tertiary">
+          <span className="font-fw-sans text-caption font-normal text-text-tertiary">
             Target
           </span>
           {target}
@@ -586,10 +590,10 @@ function ProgressMeter({
       ) : (
         // No bar, and say why. Silence here is what let a wrong bar look
         // authoritative; a one-line reason is honest and actionable.
-        <p className="font-fw-sans text-eyebrow text-text-tertiary">
+        <p className="font-fw-sans text-caption text-text-tertiary">
           {!autoTracked
-            ? 'Tracked manually — log progress to move this one.'
-            : 'Progress starts from the next update — no starting value on record.'}
+            ? 'Tracked manually. Log progress to move this one.'
+            : 'Progress starts from the next update. No starting value on record.'}
         </p>
       )}
     </div>
@@ -633,7 +637,7 @@ function OutcomeCapture({
     const RecordedIcon = meta.Icon;
     return (
       <div className="flex items-center gap-2">
-        <span className="font-fw-sans text-eyebrow uppercase tracking-wide text-text-tertiary">
+        <span className="font-fw-sans text-caption text-text-tertiary">
           Outcome
         </span>
         <StatusPill tone={recorded.tone} size="sm">
@@ -670,7 +674,7 @@ function OutcomeCapture({
 
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <span className="font-fw-sans text-eyebrow uppercase tracking-wide text-text-tertiary">
+      <span className="font-fw-sans text-caption text-text-tertiary">
         {prompt}
       </span>
       <div className="flex flex-wrap items-center gap-1.5">
@@ -827,7 +831,7 @@ function LogPracticeSheet({
           <FormField
             label="Reps completed"
             showOptional
-            help="What you actually did — not the target above."
+            help="What you actually did, not the target above."
           >
             <NumberField
               value={reps ?? undefined}
@@ -980,7 +984,7 @@ export const FocusAreaCard = forwardRef<HTMLDivElement, FocusAreaCardProps>(
     },
     ref,
   ) {
-    const reduced = useReducedMotion() ?? false;
+    const reduced = useReducedMotionGuard();
 
     // A8 slice 3: optimistic bump to the practice-session count after a
     // successful log, cleared the instant fresh server data arrives (the
@@ -1084,7 +1088,7 @@ export const FocusAreaCard = forwardRef<HTMLDivElement, FocusAreaCardProps>(
                   {focusArea.title || 'Untitled'}
                 </p>
                 {areaLabel ? (
-                  <p className="font-fw-sans text-eyebrow text-text-tertiary">{areaLabel}</p>
+                  <p className="font-fw-sans text-caption text-text-tertiary">{areaLabel}</p>
                 ) : null}
               </div>
               {recordedOutcome ? (
@@ -1097,11 +1101,8 @@ export const FocusAreaCard = forwardRef<HTMLDivElement, FocusAreaCardProps>(
                 Complete
               </StatusPill>
               {focusArea.completed_at ? (
-                <span className="hidden font-fw-mono text-eyebrow tabular-nums text-text-tertiary sm:inline">
-                  {new Date(focusArea.completed_at).toLocaleDateString('en-US', {
-                    month: 'short',
-                    day: 'numeric',
-                  })}
+                <span className="hidden font-fw-mono text-caption tabular-nums text-text-tertiary sm:inline">
+                  <LocalShortDate iso={focusArea.completed_at} />
                 </span>
               ) : null}
               {/* Reopen — recovers from an accidental / premature completion. Quiet
@@ -1172,7 +1173,7 @@ export const FocusAreaCard = forwardRef<HTMLDivElement, FocusAreaCardProps>(
 
             <div className="min-w-0 flex-1">
               {playerName ? (
-                <p className="font-fw-sans text-eyebrow uppercase tracking-wide text-text-tertiary">
+                <p className="font-fw-sans text-caption text-text-tertiary">
                   {playerName}
                 </p>
               ) : null}
@@ -1248,9 +1249,9 @@ export const FocusAreaCard = forwardRef<HTMLDivElement, FocusAreaCardProps>(
               the same kind of number as the suggested target/current value. */}
           {focusArea.criteria && focusArea.criteria.length > 0 ? (
             <Inset padding="sm" className="space-y-1.5">
-              <span className="font-fw-sans text-eyebrow uppercase tracking-wide text-text-tertiary">
+              <h4 className="font-fw-sans text-body-sm font-semibold text-text-primary">
                 Criteria
-              </span>
+              </h4>
               {role === 'coach' && actionable && typeof onSetCriterionMet === 'function' ? (
                 <CriteriaChecklist
                   focusArea={focusArea}
@@ -1268,7 +1269,7 @@ export const FocusAreaCard = forwardRef<HTMLDivElement, FocusAreaCardProps>(
                       )}
                     >
                       {criterion.met ? (
-                        <IconCheckCircle2 size={14} className="flex-shrink-0 text-accent-600" />
+                        <IconCheckCircle2 size={14} className="flex-shrink-0 text-accent-ink" />
                       ) : (
                         <IconCircleDot size={14} className="flex-shrink-0 text-text-tertiary" />
                       )}
@@ -1283,7 +1284,7 @@ export const FocusAreaCard = forwardRef<HTMLDivElement, FocusAreaCardProps>(
           ) : null}
 
           {(focusArea.practiceSummary && focusArea.practiceSummary.count > 0) || practiceDelta > 0 ? (
-            <p className="flex items-center gap-1.5 font-fw-sans text-eyebrow text-text-tertiary">
+            <p className="flex items-center gap-1.5 font-fw-sans text-caption text-text-tertiary">
               <IconTarget size={12} />
               {(() => {
                 const count = (focusArea.practiceSummary?.count ?? 0) + practiceDelta;
@@ -1295,10 +1296,7 @@ export const FocusAreaCard = forwardRef<HTMLDivElement, FocusAreaCardProps>(
                 return (
                   <>
                     {' · last '}
-                    {new Date(lastPracticedAt).toLocaleDateString('en-US', {
-                      month: 'short',
-                      day: 'numeric',
-                    })}
+                    <LocalShortDate iso={lastPracticedAt} />
                   </>
                 );
               })()}
@@ -1316,7 +1314,7 @@ export const FocusAreaCard = forwardRef<HTMLDivElement, FocusAreaCardProps>(
             <Inset padding="sm" className="space-y-3">
               {/* Per-area Sparkline + TrendChip — honest <2pts em-dash */}
               <div className="flex items-center justify-between gap-3">
-                <span className="font-fw-sans text-eyebrow uppercase tracking-wide text-text-tertiary">
+                <span className="font-fw-sans text-caption text-text-tertiary">
                   Trend
                 </span>
                 <div className="flex items-center gap-2">
@@ -1343,8 +1341,8 @@ export const FocusAreaCard = forwardRef<HTMLDivElement, FocusAreaCardProps>(
                   rounds". Renders only when the coach set a timeframe; absent
                   otherwise (honest, no fabricated deadline). */}
               {timeframe ? (
-                <p className="flex items-center gap-1.5 font-fw-sans text-eyebrow text-text-tertiary">
-                  <IconClock size={12} className="text-accent-600" />
+                <p className="flex items-center gap-1.5 font-fw-sans text-caption text-text-tertiary">
+                  <IconClock size={12} className="text-accent-ink" />
                   <span>
                     Target:{' '}
                     <span className="font-fw-mono tabular-nums text-text-secondary">
@@ -1395,8 +1393,8 @@ export const FocusAreaCard = forwardRef<HTMLDivElement, FocusAreaCardProps>(
               {/* A coach can set a timeframe without a numeric target — surface it
                   on its own so the deadline isn't silently dropped (Feature F). */}
               {timeframe ? (
-                <p className="flex items-center gap-1.5 font-fw-sans text-eyebrow text-text-tertiary">
-                  <IconClock size={12} className="text-accent-600" />
+                <p className="flex items-center gap-1.5 font-fw-sans text-caption text-text-tertiary">
+                  <IconClock size={12} className="text-accent-ink" />
                   <span>Due {timeframe}</span>
                 </p>
               ) : null}
@@ -1423,14 +1421,10 @@ export const FocusAreaCard = forwardRef<HTMLDivElement, FocusAreaCardProps>(
 
           {/* Started date */}
           {focusArea.started_at ? (
-            <p className="flex items-center gap-1.5 font-fw-sans text-eyebrow text-text-tertiary">
+            <p className="flex items-center gap-1.5 font-fw-sans text-caption text-text-tertiary">
               <IconClock size={12} />
               Started{' '}
-              {new Date(focusArea.started_at).toLocaleDateString('en-US', {
-                month: 'short',
-                day: 'numeric',
-                year: 'numeric',
-              })}
+              <LocalShortDate iso={focusArea.started_at} withYear />
             </p>
           ) : null}
 
@@ -1517,3 +1511,22 @@ export const FocusAreaCard = forwardRef<HTMLDivElement, FocusAreaCardProps>(
     );
   },
 );
+
+/**
+ * "Mar 3" in the viewer's own time zone, rendered after mount (HYD-11). The
+ * server has no idea what zone the viewer is in, so formatting during SSR
+ * printed the server's day and could hydrate to a different one near midnight.
+ */
+function LocalShortDate({ iso, withYear = false }: { iso: string; withYear?: boolean }) {
+  const [text, setText] = useState<string | null>(null);
+  useEffect(() => {
+    setText(
+      new Date(iso).toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        ...(withYear ? { year: 'numeric' as const } : {}),
+      }),
+    );
+  }, [iso, withYear]);
+  return <>{text}</>;
+}

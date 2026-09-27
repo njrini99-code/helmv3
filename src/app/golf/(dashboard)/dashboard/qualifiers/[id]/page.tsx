@@ -38,7 +38,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     .maybeSingle();
 
   return {
-    title: qualifier?.name ? `${qualifier.name} | Helm Sports` : 'Qualifier Details | Helm Sports',
+    title: qualifier?.name ? `${qualifier.name}` : 'Qualifier Details',
     description: qualifier?.description || 'View live leaderboard and qualifier details for college golf recruiting',
   };
 }

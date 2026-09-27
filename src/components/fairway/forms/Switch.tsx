@@ -34,7 +34,7 @@ export interface SwitchProps
 
 const trackBase = cn(
   "relative inline-flex h-6 w-11 shrink-0 items-center rounded-full p-0.5",
-  "bg-surface-sunken border border-border-strong",
+  "bg-surface-sunken border border-border-control",
   // 44px tap target (Layer 3 / iOS): the visible track stays 24px tall, but a
   // transparent overlay extends the hit area to 44px×44px without affecting
   // layout. -inset-y-[0.625rem] adds 10px above+below (24+20=44); the width pad

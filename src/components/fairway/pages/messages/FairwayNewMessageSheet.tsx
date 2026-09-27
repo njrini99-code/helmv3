@@ -38,6 +38,7 @@ import { PlayerIdentity } from '@/components/fairway/controls/PlayerIdentity';
 import { EmptyState } from '@/components/fairway/feedback/EmptyState';
 import { InlineNotice } from '@/components/fairway/feedback/InlineNotice';
 import { Skeleton } from '@/components/fairway/feedback/Skeleton';
+import { fwPress } from '@/components/fairway/controls';
 
 interface SearchResult {
   id: string;
@@ -415,9 +416,7 @@ export function FairwayNewMessageSheet({
                           // Without them a tap on a recipient was acknowledged by
                           // a colour swap alone, which on a phone in sunlight is
                           // not confirmation.
-                          'active:translate-y-[0.5px] active:scale-[0.98]',
-                          'active:[transition-timing-function:var(--fw-ease-spring)]',
-                          'motion-reduce:active:translate-y-0 motion-reduce:active:scale-100',
+                          fwPress,
                           'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/70 focus-visible:ring-offset-1 focus-visible:ring-offset-canvas',
                           isSelected
                             ? 'bg-accent-50 ring-1 ring-inset ring-accent-200'
@@ -435,7 +434,7 @@ export function FairwayNewMessageSheet({
                           meta={result.subtitle || undefined}
                           trailing={
                             isSelected ? (
-                              <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-accent-600 text-text-on-accent">
+                              <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-accent-fill text-text-on-accent-fill">
                                 <Check className="h-3.5 w-3.5" aria-hidden />
                               </span>
                             ) : undefined

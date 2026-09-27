@@ -70,7 +70,7 @@ const TableCheckbox = React.forwardRef<
       ref={innerRef}
       type="checkbox"
       className={cn(
-        'size-[18px] cursor-pointer appearance-none rounded-sm border border-border-strong bg-surface',
+        'size-[18px] cursor-pointer appearance-none rounded border border-border-strong bg-surface',
         'transition-colors [transition-duration:180ms] [transition-timing-function:cubic-bezier(0.22,0.61,0.36,1)]',
         'checked:border-accent-500 checked:bg-accent-500',
         'indeterminate:border-accent-500 indeterminate:bg-accent-500',
@@ -105,7 +105,7 @@ function SortGlyph({ dir }: { dir: false | 'asc' | 'desc' }) {
         viewBox="0 0 8 5"
         className={cn(
           'transition-colors [transition-duration:180ms]',
-          dir === 'asc' ? 'text-accent-600' : 'text-text-tertiary/50',
+          dir === 'asc' ? 'text-accent-ink' : 'text-text-tertiary',
         )}
       >
         <path d="M4 0L8 5H0z" fill="currentColor" />
@@ -116,7 +116,7 @@ function SortGlyph({ dir }: { dir: false | 'asc' | 'desc' }) {
         viewBox="0 0 8 5"
         className={cn(
           'transition-colors [transition-duration:180ms]',
-          dir === 'desc' ? 'text-accent-600' : 'text-text-tertiary/50',
+          dir === 'desc' ? 'text-accent-ink' : 'text-text-tertiary',
         )}
       >
         <path d="M4 5L0 0h8z" fill="currentColor" />
@@ -520,7 +520,7 @@ export function DataTable<TData>({
                         m.headerCell,
                         m.cellX,
                         'align-middle',
-                        'text-eyebrow uppercase tracking-[0.06em] text-text-tertiary',
+                        'text-caption text-text-tertiary',
                         meta?.align === 'right' && 'text-right',
                         meta?.align === 'center' && 'text-center',
                         meta?.headerClassName,
@@ -534,7 +534,7 @@ export function DataTable<TData>({
                           onClick={header.column.getToggleSortingHandler()}
                           className={cn(
                             'group/sort -mx-1.5 inline-flex max-w-full min-h-0 items-center rounded-fw-sm px-1.5 py-1',
-                            'font-fw-sans text-eyebrow uppercase tracking-[0.06em]',
+                            'font-fw-sans text-caption',
                             'transition-colors [transition-duration:180ms] [transition-timing-function:cubic-bezier(0.22,0.61,0.36,1)]',
                             'hover:text-text-secondary',
                             'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-500',

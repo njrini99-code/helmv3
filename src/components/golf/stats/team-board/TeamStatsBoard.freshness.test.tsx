@@ -25,7 +25,8 @@ describe('TeamStatsBoard freshness', () => {
     expect(screen.getByText(/round results refresh within 5 min/i)).toBeVisible();
     expect(screen.getByText(/stats cache as of 2026-08-18 16:00 utc/i)).toBeVisible();
     expect(screen.getByText(/rank snapshot as of 2026-08-18 02:20 utc/i)).toBeVisible();
-    expect(screen.getByText(/trend signals begin after 8 completed rounds/i)).toBeVisible();
+    // COPY-03: the trend floor is still stated, now after the board and shorter.
+    expect(screen.getByText(/a trend needs 8 full rounds/i)).toBeVisible();
     expect(screen.getByRole('link', { name: /^ask coachhelm$/i })).toHaveAttribute(
       'href',
       '/golf/dashboard/coachhelm/chat',

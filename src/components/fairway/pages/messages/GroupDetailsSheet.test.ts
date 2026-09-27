@@ -127,11 +127,13 @@ describe('W7 — the values the artboard states already exist as tokens', () => 
     expect(t3).toContain("fontWeight: '600'");
   });
 
-  it('the Admin pill draws accent-100 on accent-700, both byte-identical to tokens', () => {
+  // The artboard's ink is the old accent-700 literal, which accent-750 still
+  // holds (accent-700 now aliases the darker accent-ink, 2026-09-24).
+  it('the Admin pill draws accent-100 on accent-750, both byte-identical to tokens', () => {
     const pill = artboard.match(/border-radius: 9999px; background: ([^;]+); font-size: 11px; font-weight: 600; color: ([^;]+);/);
     expect(pill, 'expected the Admin pill inline style').not.toBeNull();
     expect((pill?.[1] ?? '').trim()).toBe(token('--fw-color-accent-100'));
-    expect((pill?.[2] ?? '').trim()).toBe(token('--fw-color-accent-700'));
+    expect((pill?.[2] ?? '').trim()).toBe(token('--fw-color-accent-750'));
   });
 
   it('truncates the list at four rows and offers the rest — a design fact, not a convenience', () => {

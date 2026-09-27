@@ -27,7 +27,8 @@ KEPT FOR HISTORY -- do not delete this file.
 
 ### Rule 1 — One primitive: `InsightCard`
 
-Path: `src/components/golf/coachhelm/insight-card/InsightCard.tsx` (NEW directory).
+Path: src/components/golf/coachhelm/insight-card/InsightCard.tsx (NEW
+directory; removed in the 2026-09-24 golf audit dead-code sweep).
 
 Props:
 
@@ -209,8 +210,8 @@ No scroll-jacking. No background motion (perf on iOS Capacitor).
 
 | Team | Owns |
 |---|---|
-| **Foundation** | `src/components/golf/coachhelm/insight-card/InsightCard.tsx` (NEW), `HeroInsightCard.tsx` (NEW), `WhyPopover.tsx` (NEW), `MovementPill.tsx` (NEW), `tone-derivation.ts` (NEW), `src/app/golf/actions/insight-delivery.ts` (NEW), `src/lib/fonts.ts` (NEW), root `layout.tsx` (Fraunces font hook only), tests |
-| **Hub** | `src/components/golf/player-hub/HubInsightSignalCard.tsx` (NEW), edits to `PlayerHub.tsx` (slot + dismiss state), no other files |
+| **Foundation** | src/components/golf/coachhelm/insight-card/InsightCard.tsx (NEW; since removed), `HeroInsightCard.tsx` (NEW), `WhyPopover.tsx` (NEW), `MovementPill.tsx` (NEW), `tone-derivation.ts` (NEW), `src/app/golf/actions/insight-delivery.ts` (NEW), `src/lib/fonts.ts` (NEW), root `layout.tsx` (Fraunces font hook only), tests |
+| **Hub** | src/components/golf/player-hub/HubInsightSignalCard.tsx (NEW; since removed), edits to `PlayerHub.tsx` (slot + dismiss state), no other files |
 | **CoachHelm Dashboard** | `src/app/golf/(dashboard)/dashboard/coachhelm/components/PlayerCoachHelmDashboard.tsx` (refactor to use HeroInsightCard + InsightCard list); the existing `AIInsightsPanel.tsx` is replaced (delete after migration confirmed) |
 | **Round Review** | src/components/golf/coachhelm/round-review/RoundTakeaway.tsx (NEW — replaces V2CausalInsights/V2PatternsSection/V2PredictionCard for primary surfacing); `RoundReviewDisplay.tsx` (rewire); leave the old V2* components as a 1-line re-export wrapper for backwards compat or delete |
 

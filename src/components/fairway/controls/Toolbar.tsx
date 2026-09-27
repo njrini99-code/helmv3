@@ -54,7 +54,7 @@ import {
   useRef,
   useState,
 } from 'react';
-import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { useScrollFade } from '@/lib/fairway/use-scroll-fade';
 import { Button, IconButton } from './button';
@@ -62,6 +62,7 @@ import { Segmented, type SegmentedOption } from './segmented';
 import { FilterPill } from './filter-pill';
 import { StatusPill } from './status-pill';
 import { PopoverPanel } from '../overlays/PopoverPanel';
+import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
 
 /* ───────────────────────────────────────────────────────────────────────────
  * Warm cream-glass recipe (self-contained, built from locked --fw-glass-* tokens)
@@ -158,7 +159,7 @@ const ToolbarRoot = forwardRef<HTMLDivElement, ToolbarProps>(function Toolbar(
   },
   ref,
 ) {
-  const reduceMotion = useReducedMotion();
+  const reduceMotion = useReducedMotionGuard();
   const sentinelRef = useRef<HTMLDivElement>(null);
   const [stuck, setStuck] = useState(false);
   const hasSelection = selectedCount > 0;

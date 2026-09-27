@@ -449,6 +449,8 @@ features:
         - supabase/migrations/*golf_round*.sql
         - supabase/migrations/*golf_shot*.sql
         - supabase/migrations/*round_review*.sql
+        # OD-03 QA/demo hide flag (rounds, teams, players, qualifiers); held.
+        - supabase/migrations/*golf_is_test_flag*.sql
         # Reclassified 2026-09-06 off team_access_control's retired blanket
         # glob (Phase 5 registry glob lint) by topic — round lifecycle,
         # course library, and their storage/RLS surface.
@@ -729,6 +731,7 @@ features:
       services:
         - src/lib/cache/golf-stats-calculator.ts
         - src/lib/coachhelm/v2/stats/**
+        - src/lib/golf/benchmarks/**
       db:
         - supabase/migrations/*stats*.sql
         - supabase/migrations/*strokes_gained*.sql
@@ -746,6 +749,7 @@ features:
         - supabase/migrations/*penalty*.sql
         - supabase/migrations/*attribution_metric*.sql
         - supabase/migrations/*pressure_gate*.sql
+        - supabase/migrations/*standing_pressure_gap*.sql
         - supabase/migrations/*_standards.sql
       tests:
         - src/app/golf/actions/__tests__/stats-data.test.ts
@@ -1147,7 +1151,6 @@ features:
         - src/components/fairway/pages/tasks/**
         - src/components/golf/documents/**
         - src/components/fairway/pages/travel/**
-        - src/components/golf/player-hub/**
         - src/components/fairway/pages/team-hub/**
       api:
         - src/components/fairway/pages/documents/**
@@ -1426,8 +1429,7 @@ features:
     code:
       routes:
         - src/app/golf/(dashboard)/dashboard/hub/**
-      components:
-        - src/components/golf/player-hub/**
+      components: []
       api:
         - src/components/fairway/pages/hub/**
       actions:
@@ -1620,8 +1622,10 @@ features:
         # subtree is admin/Bridge-facing infrastructure, not round-tracking
         # specific, even though it shares the parent directory.
         - src/lib/observability/supabase/**
-        # The self-heal loop's Repair stage runs ONLY as the GitHub Actions
-        # workflow (.github/workflows/selfheal-repair.yml) as of 2026-09-05 —
+        # The self-heal loop's Repair stage runs as the Claude desktop health
+        # routine since 2026-09-23 (the GitHub Actions workflow
+        # .github/workflows/selfheal-repair.yml ran it 2026-09-05..09-23 and is
+        # now disabled). On 2026-09-05
         # the launchd agent, its outer bounded-runner script, and its
         # launchd-only support tooling (scripts/run-selfheal-repair.mjs,
         # scripts/lib/selfheal-repair-runner.mjs,
@@ -1893,8 +1897,9 @@ features:
         - src/lib/admin/rca*.ts
         - src/lib/admin/triage-*.ts
         - src/lib/admin/auto-resolve.ts
-        # Repair runs ONLY as .github/workflows/selfheal-repair.yml as of
-        # 2026-09-05 — the launchd agent, its outer runner
+        # Repair runs as the Claude desktop health routine since 2026-09-23
+        # (.github/workflows/selfheal-repair.yml 2026-09-05..09-23, disabled).
+        # On 2026-09-05 the launchd agent, its outer runner
         # (scripts/run-selfheal-repair.mjs, scripts/lib/selfheal-repair-runner.mjs),
         # its install/doctor tooling, and config/launchd/** were retired in
         # the same change (see memory/features/admin-selfheal.md).

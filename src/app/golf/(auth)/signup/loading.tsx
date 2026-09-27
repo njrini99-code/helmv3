@@ -31,25 +31,25 @@ export default function Loading() {
           {/* Logo + "GolfHelm" wordmark */}
           <div className="flex flex-col items-center mb-6 sm:mb-8">
             <div className="skeleton-shimmer h-12 w-12 sm:h-14 sm:w-14 rounded-full mb-3 sm:mb-4" />
-            <div className="skeleton-shimmer h-5 sm:h-6 w-28 rounded-lg" />
+            <div className="skeleton-shimmer h-5 sm:h-6 w-28 rounded-fw-sm" />
           </div>
 
           {/* "Enter your team code" heading + subtitle */}
           <div className="flex flex-col items-center mb-6 space-y-2">
-            <div className="skeleton-shimmer h-6 sm:h-7 w-48 rounded-lg" />
+            <div className="skeleton-shimmer h-6 sm:h-7 w-48 rounded-fw-sm" />
             <div className="skeleton-shimmer h-4 w-full rounded" />
             <div className="skeleton-shimmer h-4 w-5/6 rounded" />
           </div>
 
           {/* Team-code input + Continue button */}
           <div className="space-y-4">
-            <div className="skeleton-shimmer h-12 w-full rounded-xl" />
-            <div className="skeleton-shimmer h-12 w-full rounded-xl" />
+            <div className="skeleton-shimmer h-12 w-full rounded-fw-sm" />
+            <div className="skeleton-shimmer h-12 w-full rounded-fw-sm" />
           </div>
         </div>
 
         {/* Sign-in / demo footer panel */}
-        <div className="mx-auto mt-5 sm:mt-6 w-fit max-w-full flex flex-col items-center gap-2 rounded-2xl bg-surface/95 px-4 py-3 shadow-sm ring-1 ring-border-subtle">
+        <div className="mx-auto mt-5 sm:mt-6 w-fit max-w-full flex flex-col items-center gap-2 rounded-card bg-surface/95 px-4 py-3 shadow-sm ring-1 ring-border-subtle">
           <div className="skeleton-shimmer h-4 w-56 rounded" />
           <div className="skeleton-shimmer h-4 w-44 rounded" />
         </div>

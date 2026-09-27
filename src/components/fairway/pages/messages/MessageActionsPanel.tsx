@@ -2,13 +2,14 @@
 
 import { useMemo, type ReactNode } from 'react';
 import * as Popover from '@radix-ui/react-popover';
-import { AnimatePresence, m, useReducedMotion } from 'framer-motion';
+import { AnimatePresence, m } from 'framer-motion';
 import { X } from 'lucide-react';
 import { useMediaQuery } from '@/hooks/use-media-query';
 import { useSafeAreaInsets } from '@/hooks/use-mobile-detection';
 import { IconButton } from '@/components/fairway/controls/button';
 import { FW_Z } from '@/components/fairway/overlays/_shared';
 import { cn } from '@/lib/utils';
+import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
 
 /** A contextual reaction stack that expands from the message on every device. */
 export function MessageActionsPanel({ open, anchor, own, onClose, children }: {
@@ -19,7 +20,7 @@ export function MessageActionsPanel({ open, anchor, own, onClose, children }: {
   children: ReactNode;
 }) {
   const desktop = useMediaQuery('(min-width: 768px) and (pointer: fine)');
-  const reduced = useReducedMotion();
+  const reduced = useReducedMotionGuard();
   const safeArea = useSafeAreaInsets();
   const collisionPadding = {
     top: Math.max(12, safeArea.top + 8),

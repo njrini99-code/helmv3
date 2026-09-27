@@ -34,6 +34,7 @@ import {
 import { Tooltip } from '@/components/ui/tooltip';
 import { openExternalUrl } from '@/lib/utils/capacitor';
 import { Button, IconButton } from '@/components/ui/button';
+import { fwPress } from '@/components/fairway/controls';
 
 async function loadCalendarFeedActions() {
   return import('@/app/golf/actions/calendar-feeds');
@@ -190,7 +191,8 @@ export function CalendarSyncButton({
           className={cn(
             'inline-flex items-center gap-2 px-4 py-2.5',
             'rounded-lg font-medium text-sm',
-            'bg-primary-600 hover:bg-primary-700 active:scale-95 text-white',
+            'bg-primary-600 hover:bg-primary-700 text-white',
+            fwPress,
             'shadow-sm hover:shadow-md',
             'transition-[background-color,transform,box-shadow] duration-200',
             className

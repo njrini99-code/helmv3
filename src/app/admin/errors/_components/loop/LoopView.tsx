@@ -177,7 +177,7 @@ function LocalRunnerStage({ stage }: { stage: SelfHealStageDetail }) {
           actual failed run would be a claim this page cannot back up. */}
       {stage.status === 'overdue' ? (
         <p className="mt-1.5 text-caption text-fw-warning-ink">
-          Overdue. The machine may have been asleep, or the launchd job did not fire.
+          Overdue. The machine may have been asleep, or the Claude desktop app was closed when the scheduled task was due.
         </p>
       ) : null}
     </div>
@@ -192,8 +192,8 @@ function LocalRunnerBlock({ stages }: { stages: readonly SelfHealStageDetail[] }
     <Surface padding="sm">
       <Eyebrow as="h2">Local runner</Eyebrow>
       <p className="mt-1 text-xs text-warm-500">
-        Runs on the owner&rsquo;s laptop via launchd, outside this deployment — nothing here can watch it fail, only
-        notice that it stopped writing a heartbeat.
+        Runs on the owner&rsquo;s laptop as a Claude desktop scheduled task, outside this deployment — nothing here can
+        watch it fail, only notice that it stopped writing a heartbeat.
       </p>
       <div className="mt-3 space-y-3">
         {local.map((stage) => (

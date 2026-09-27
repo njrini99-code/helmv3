@@ -200,7 +200,10 @@ describe('CourseDetailDrawer — desktop chrome + holes', () => {
     expect(setCourseImageUrl).toHaveBeenCalledWith('course-1', 'https://example.com/course.jpg');
   });
 
-  it('hides the mobile-sheet drag handle and applies cream-glass chrome at sm and up', async () => {
+  // Audit W3 (SHEET-08, 2026-09-24): the desktop panel was cream GLASS; it
+  // carries reading content, which never sits on glass, so it is now the
+  // Fairway Sheet's opaque surface at every width. The grabber still hides.
+  it('hides the mobile-sheet drag handle at sm and up and stays an opaque surface (never glass)', async () => {
     render(
       <CourseDetailDrawer
         courseId="course-1"
@@ -217,10 +220,12 @@ describe('CourseDetailDrawer — desktop chrome + holes', () => {
     const panel = document.querySelector('[data-vaul-drawer]') ?? document.querySelector('[role="dialog"]');
     expect(panel).toBeTruthy();
     const className = panel!.className;
-    // The desktop-only overrides added to retire the mobile-sheet look.
-    expect(className).toContain('sm:[&>div:first-child]:hidden');
-    expect(className).toContain('sm:[background:var(--fw-glass-bg-strong)]');
-    expect(className).toContain('sm:[box-shadow:var(--fw-shadow-modal)]');
+    // The desktop-only override that retires the mobile-sheet grabber.
+    expect(className).toContain('sm:[&>[data-slot=sheet-grabber]]:hidden');
+    // Opaque modal chrome at every width: surface fill + modal shadow, no glass.
+    expect(className).toContain('bg-surface');
+    expect(className).toContain('shadow-fw-modal');
+    expect(className).not.toMatch(/glass|backdrop-filter/);
   });
 
   it('repositions the panel off the bottom edge into a centered floating modal at sm and up', async () => {

@@ -47,6 +47,31 @@ describe('player CoachHelm dashboard read contract', () => {
     // It must NOT opt out: omitting the option defaults it to true, which is
     // what makes the post-round path the one that actually mines and stores.
     expect(body).not.toContain('persistPatterns: false');
+    expect(body).not.toContain('runInsightGenerators: false');
+  });
+
+  /**
+   * 2026-09-24: the same "a read must not write" rule, for the bigger write.
+   * `persistPatterns: false` only stopped the golf_patterns_v2 upsert; every
+   * page view still ran all 20 Tier-1 generators (raw golf_shots reads plus
+   * golf_coach_insights upserts) and the composite synthesis. Two sessions
+   * reloading this page saturated Postgres for ~35 minutes: statement
+   * timeouts across CoachHelm, Intelligence, login and /api/health, and 166
+   * stale-writer CAS backoffs from renders racing the same insights.
+   */
+  it('never runs the Tier-1 insight generators during a page read', () => {
+    const body = functionBody('getPlayerCoachHelmDashboardImpl');
+    expect(body).toContain('runInsightGenerators: false');
+  });
+
+  it('the engine honours the read-only flag for both the generators and the composite synthesis', () => {
+    const orchestrator = readFileSync(
+      join(process.cwd(), 'src/lib/coachhelm/v2/orchestrator.ts'),
+      'utf8',
+    );
+    expect(orchestrator).toContain('runInsightGenerators = true');
+    expect(orchestrator).toContain('}> = !runInsightGenerators ? [] : [');
+    expect(orchestrator).toMatch(/const compositeSummary = !runInsightGenerators\s*\?\s*null/);
   });
 
   it('keeps analysis behind an explicit mutation flow', () => {

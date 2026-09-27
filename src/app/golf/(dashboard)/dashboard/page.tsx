@@ -1,5 +1,4 @@
 import { redirect } from 'next/navigation';
-import { createClient } from '@/lib/supabase/server';
 import { logServerError } from '@/lib/server-error-logger';
 import { describeError } from '@/lib/utils/describe-error';
 import { getGolfSessionProfile } from '@/lib/auth/session';
@@ -17,9 +16,11 @@ import type { CoachDashboardData } from './components/coach-dashboard-types';
 import type { GolfCoach, GolfTeam, GolfPlayer } from '@/lib/types/golf';
 import type { CalendarEvent } from '@/lib/types/calendar';
 import { fairwayScope } from '@/lib/redesign/flag';
+import { getUnifiedNotifications } from '@/app/golf/actions/unified-notifications';
+import type { UnifiedNotificationItem } from '@/app/golf/actions/unified-notifications-model';
 import { FairwayCoachDashboard } from '@/components/fairway/pages/dashboard/FairwayCoachDashboard';
 import { FairwayPlayerDashboard, type PlayerDashboardData } from '@/components/fairway/pages/dashboard/FairwayPlayerDashboard';
-import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
+import { getActivePlayerTeamMembership, resolveCoachActiveTeamIdForRequest } from '@/lib/golf/dashboard-request-cache';
 import { getPlayerHubSummaryData, type PlayerHubSummaryData } from '@/app/golf/actions/player-hub-data';
 import { getTeamJoinRequests, type JoinRequestData } from '@/app/golf/actions/teams';
 import { getCurrentDecimalHourInTz } from '@/lib/utils/timezone';
@@ -93,6 +94,7 @@ function renderCoachDashboard(props: {
     // first paint instead of self-fetching on mount — no post-hydration
     // reflow of everything below the banner.
     joinRequests?: JoinRequestData[];
+    latestNotifications?: UnifiedNotificationItem[];
 }) {
     // Opener text resolved server-side in the team's timezone (see
     // resolveOpener) so the greeting never rewrites itself after hydration.
@@ -104,6 +106,7 @@ function renderCoachDashboard(props: {
                 enhancedData={props.enhancedData ?? undefined}
                 dateRange={props.dateRange}
                 joinRequests={props.joinRequests}
+                initialLatestNotifications={props.latestNotifications}
                 greeting={opener?.greeting}
                 todayLabel={opener?.todayLabel || undefined}
             />
@@ -120,6 +123,7 @@ function renderPlayerDashboard(props: {
     data: PlayerDashboardData;
     enhancedData?: PlayerDashboardPayload | null;
     hubData?: PlayerHubSummaryData | null;
+    latestNotifications?: UnifiedNotificationItem[];
 }) {
     return (
         <div className={fairwayScope('min-h-full')}>
@@ -127,12 +131,26 @@ function renderPlayerDashboard(props: {
                 data={props.data}
                 enhancedData={props.enhancedData ?? undefined}
                 hubData={props.hubData ?? undefined}
+                initialLatestNotifications={props.latestNotifications}
                 greeting={
                     props.enhancedData ? resolveOpener(props.enhancedData.timezone).greeting : undefined
                 }
             />
         </div>
     );
+}
+
+/**
+ * PERF-03: the home "Latest" module's items. A failed read returns undefined,
+ * so the module falls back to reading them itself.
+ */
+async function loadLatestNotifications(): Promise<UnifiedNotificationItem[] | undefined> {
+    try {
+        const result = await getUnifiedNotifications({ limit: 5 });
+        return result.success && result.data ? result.data.items : undefined;
+    } catch {
+        return undefined;
+    }
 }
 
 export default async function GolfDashboardPage({
@@ -153,9 +171,6 @@ export default async function GolfDashboardPage({
 
     const { userId, coach, player } = session;
 
-    // Supabase client only needed for team lookups (not auth)
-    const supabase = await createClient();
-
     // ── Coach dashboard ──
     if (coach) {
         // Get team via organization (deterministic: handles orgs with >1 team).
@@ -166,7 +181,10 @@ export default async function GolfDashboardPage({
         // letting this throw only fires on a true failure.
         let teamId: string | undefined;
         if (coach.organization_id) {
-            teamId = (await resolveCoachTeamIdWithCookie(supabase, coach.organization_id, coach.id)) ?? undefined;
+            // Request-scoped: the dashboard layout already resolved this exact
+            // team for this request (dashboard-request-cache.ts), so this is a
+            // cache hit instead of a second cookie-validation + staff read.
+            teamId = (await resolveCoachActiveTeamIdForRequest(coach.organization_id, coach.id)) ?? undefined;
         }
 
         if (teamId) {
@@ -185,9 +203,12 @@ export default async function GolfDashboardPage({
             // KPI/rounds content below it. A request failure degrades to "no
             // pending requests" (an empty array) rather than surfacing an error
             // here — the banner is a convenience callout, not core dashboard data.
-            const [payload, joinRequestsResult] = await Promise.all([
+            // PERF-03: the Latest notifications ride along too, so the home
+            // module paints with the page instead of queueing a client read.
+            const [payload, joinRequestsResult, latestNotifications] = await Promise.all([
                 getCachedCoachDashboardData(coach.id, userId, teamId, dateRange),
                 getTeamJoinRequests(),
+                loadLatestNotifications(),
             ]).catch(redirectToLoginOnExpiredSession);
             const joinRequests: JoinRequestData[] =
                 joinRequestsResult.success && joinRequestsResult.data ? joinRequestsResult.data : [];
@@ -211,7 +232,7 @@ export default async function GolfDashboardPage({
                 teamScoringTrend: payload.teamScoringTrend.length > 0 ? payload.teamScoringTrend : undefined,
             };
 
-            return renderCoachDashboard({ data, enhancedData: payload, dateRange, joinRequests });
+            return renderCoachDashboard({ data, enhancedData: payload, dateRange, joinRequests, latestNotifications });
         }
 
         // Coach without team — empty state
@@ -249,12 +270,10 @@ export default async function GolfDashboardPage({
         // the failure surfaces to the route error boundary. A genuine new player
         // is unaffected — `.maybeSingle()` reports "no membership row" as
         // { data: null, error: null }, which is a real answer, not a failure.
-        const { data: teamMember, error: teamMemberError } = await supabase
-            .from('golf_team_members')
-            .select('team_id')
-            .eq('player_id', player.id)
-            .eq('status', 'active')
-            .maybeSingle();
+        //
+        // Request-scoped: shared with the dashboard layout's identical read
+        // (dashboard-request-cache.ts) — one query per request, not two.
+        const { data: teamMember, error: teamMemberError } = await getActivePlayerTeamMembership(player.id);
 
         if (teamMemberError) {
             await logServerError(
@@ -275,9 +294,10 @@ export default async function GolfDashboardPage({
         // WAVE W2: fetch the former Hub's triage data (tasks/RSVP/announcements/
         // trips) in parallel — teamless players get `null` (skip), exactly like
         // the standalone Hub page skipped them before.
-        const [payload, hubData] = await Promise.all([
+        const [payload, hubData, latestNotifications] = await Promise.all([
             getCachedPlayerDashboardData(player.id, userId, teamId),
             teamId ? getPlayerHubSummaryData(teamId, player.id) : Promise.resolve(null),
+            loadLatestNotifications(),
         ]).catch(redirectToLoginOnExpiredSession);
         const nameParts = `${player.first_name} ${player.last_name}`.split(' ');
 
@@ -298,7 +318,7 @@ export default async function GolfDashboardPage({
             recentRounds: payload.recentRounds,
         };
 
-        return renderPlayerDashboard({ data, enhancedData: payload, hubData });
+        return renderPlayerDashboard({ data, enhancedData: payload, hubData, latestNotifications });
     }
 
     // No role found — redirect to onboarding

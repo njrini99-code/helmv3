@@ -21,7 +21,7 @@
  * ========================================================================== */
 
 import * as React from 'react';
-import { motion, useInView, useReducedMotion } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import {
   classifyTrend,
@@ -30,6 +30,7 @@ import {
   type TrendDirection,
 } from './TrendChip';
 import { VIZ_EASE, VIZ_REVEAL_MS } from './theme';
+import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
 
 export interface SparklineProps {
   /** The series, oldest → newest. Non-finite entries are dropped. */
@@ -104,10 +105,8 @@ export const Sparkline = React.forwardRef<HTMLSpanElement, SparklineProps>(funct
   },
   ref,
 ) {
-  const reduced = useReducedMotion() ?? false;
+  const reduced = useReducedMotionGuard() ?? false;
   const wrapRef = React.useRef<HTMLSpanElement>(null);
-  // Draw on ONCE the first time it enters the viewport (not every re-render).
-  const inView = useInView(wrapRef, { once: true, amount: 0.6 });
 
   // Honest filtering: only finite numbers count toward "enough points".
   const values = React.useMemo(
@@ -191,15 +190,9 @@ export const Sparkline = React.forwardRef<HTMLSpanElement, SparklineProps>(funct
           strokeWidth={strokeWidth}
           strokeLinecap="round"
           strokeLinejoin="round"
-          // strokeDasharray draw-on reveal, once-in-view; reduced-motion = instant
-          initial={reduced ? false : { pathLength: 0, opacity: 0.4 }}
-          animate={
-            reduced
-              ? { pathLength: 1, opacity: 1 }
-              : inView
-                ? { pathLength: 1, opacity: 1 }
-                : { pathLength: 0, opacity: 0.4 }
-          }
+          // Data renders at its final state on mount: no draw-on sweep (MOT-07/MOT-R4).
+          initial={false}
+          animate={{ pathLength: 1, opacity: 1 }}
           transition={
             reduced
               ? { duration: 0 }
@@ -212,10 +205,8 @@ export const Sparkline = React.forwardRef<HTMLSpanElement, SparklineProps>(funct
             cy={lastY}
             r={strokeWidth + 0.5}
             fill={color}
-            initial={reduced ? false : { opacity: 0, scale: 0.4 }}
-            animate={
-              reduced || inView ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.4 }
-            }
+            initial={false}
+            animate={{ opacity: 1, scale: 1 }}
             transition={
               reduced
                 ? { duration: 0 }

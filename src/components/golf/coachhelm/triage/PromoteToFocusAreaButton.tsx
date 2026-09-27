@@ -45,7 +45,7 @@
  * ========================================================================== */
 
 import { useState } from 'react';
-import { Sparkles } from 'lucide-react';
+import { ClipboardPlus } from 'lucide-react';
 import { Button } from '@/components/fairway';
 import {
   FocusAreaModal,
@@ -143,7 +143,7 @@ export function PromoteToFocusAreaButton({
       <Button
         variant="secondary"
         size="sm"
-        leftIcon={<Sparkles className="h-4 w-4" strokeWidth={2} aria-hidden />}
+        leftIcon={<ClipboardPlus className="h-4 w-4" strokeWidth={2} aria-hidden />}
         onClick={() => setOpen(true)}
       >
         Prescribe

@@ -680,6 +680,21 @@ The tell that this was two bugs and not one: switching conversations always
 worked, because that DOES change the id. Only the auto-selected first open broke.
 A test that renders with `loading: false` from the start cannot see either half.
 
+## Hydration and read receipts (UI/UX audit W4, 2026-09-23)
+
+- **HYD-01.** The warm-cache reads in `useGolfMessages`/`useGolfConversations`
+  are gated on `useSyncExternalStore` (server snapshot `false`), so hydration
+  renders the same empty state the server did (no #418). A client-only
+  navigation still warm-starts on first render, and a hydrated mount repaints
+  from cache in an effect. Test: `use-golf-messages.hydration.test.tsx` (SSR plus
+  `hydrateRoot`).
+- **DATA-01.** A thread that desktop FairwayMessages auto-selects is NOT
+  marked read just by opening. `useGolfMessages(id, viewer, { deferMarkRead })`
+  skips both the load-time mark and the on-arrival mark, and returns `markRead()`.
+  FairwayMessages calls it on the first pointerdown or focus inside the thread
+  pane, or when the user picks that thread in the rail. A thread the user
+  chose marks read as before. Test: `use-golf-messages.defer-mark-read.test.tsx`.
+
 ## Known Risk Areas
 
 - Announcement inline tasks can drift from task completion state if tasks and assignment tables are not read consistently.

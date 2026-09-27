@@ -33,7 +33,7 @@ export function SegmentBadge({
         onClick={onClick}
         title={segment.description ?? segment.name}
         className={cn(
-          'inline-flex items-center gap-1 px-1.5 py-0.5 rounded-fw-sm text-eyebrow font-medium',
+          'inline-flex items-center gap-1 px-1.5 py-0.5 rounded-fw-sm text-caption font-medium',
           'bg-accent-50 text-accent-700 border border-accent-200/60',
           'hover:bg-accent-100 transition-colors',
           'max-w-[120px] truncate',
@@ -54,7 +54,7 @@ export function SegmentBadge({
       title={segment.description ?? segment.name}
       className={cn(
         'group w-full flex items-center justify-between gap-2 px-3 py-2 rounded-fw-sm',
-        'text-sm font-medium transition-all duration-200',
+        'text-sm font-medium transition duration-200',
         isActive
           ? 'bg-nav-surface text-nav-text'
           : 'text-nav-text-dim hover:bg-nav-surface hover:text-nav-text',

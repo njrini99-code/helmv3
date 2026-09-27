@@ -105,6 +105,32 @@ export function scaledGutter(width: number, min: number, max: number): number {
 }
 
 /**
+ * CHART-R2: where a row's signed value sits. Past the bar tip by default; on
+ * the far side of the zero line when the tip leaves too little room before the
+ * plot's left edge (the category labels live there) or the value gutter's
+ * right edge.
+ */
+export function placeValueAnnotation({
+  positive,
+  valX,
+  zeroX,
+  textWidth,
+  rightLimit,
+}: {
+  positive: boolean;
+  valX: number;
+  zeroX: number;
+  textWidth: number;
+  rightLimit: number;
+}): { x: number; anchor: 'start' | 'end' } {
+  const GAP = 6;
+  if (positive) {
+    return valX + GAP + textWidth <= rightLimit ? { x: valX + GAP, anchor: 'start' } : { x: zeroX - GAP, anchor: 'end' };
+  }
+  return valX - GAP - textWidth >= 0 ? { x: valX - GAP, anchor: 'end' } : { x: zeroX + GAP, anchor: 'start' };
+}
+
+/**
  * Rough width (px) of a short SVG number label at the given font size — good
  * enough to reason about tick/annotation collision without real DOM layout
  * (`getBBox` isn't implemented in jsdom, and this must also work in SSR).
@@ -259,7 +285,15 @@ export function TornadoInner({
 }) {
   // Mobile-squeeze fix: gutters scale with the ACTUAL container width instead
   // of staying pinned at their desktop pixel constants (see `scaledGutter`).
-  const labelGutter = scaledGutter(width, LABEL_GUTTER_MIN, LABEL_GUTTER);
+  // Never narrower than the longest label needs (up to 35% of the card): at a
+  // ~310px phone card the interpolated gutter was ~66px and "Approach" /
+  // "Short game" read "Approa…" / "Short …" while the bar track had room.
+  const labelNeed =
+    data.reduce((m, d) => Math.max(m, estimateLabelWidth(d.label, VIZ_FONT.labelSize)), 0) + 12;
+  const labelGutter = Math.min(
+    LABEL_GUTTER,
+    Math.max(scaledGutter(width, LABEL_GUTTER_MIN, LABEL_GUTTER), Math.min(labelNeed, width * 0.35)),
+  );
   const valueGutter = scaledGutter(width, VALUE_GUTTER_MIN, VALUE_GUTTER);
   const margin = { top: 8, right: valueGutter, bottom: 22, left: labelGutter };
 
@@ -322,7 +356,7 @@ export function TornadoInner({
   // desktop constant would truncate a label the desktop margin was
   // explicitly sized to fit — a regression. Truncation only ever engages
   // once the gutter has actually shrunk below the desktop constant.
-  const labelMaxWidth = labelGutter >= LABEL_GUTTER ? Infinity : Math.max(20, labelGutter - 12);
+  const labelMaxWidth = labelGutter >= LABEL_GUTTER || labelGutter >= labelNeed ? Infinity : Math.max(20, labelGutter - 12);
 
   return (
     <svg width={width} height={height} aria-hidden>
@@ -366,6 +400,13 @@ export function TornadoInner({
           const barW = Math.abs(valX - zeroX);
           const fill = positive ? VIZ_DIVERGING.positive : VIZ_DIVERGING.negative;
           const displayLabel = truncateLabel(d.label, labelMaxWidth, VIZ_FONT.labelSize);
+          const annotation = placeValueAnnotation({
+            positive,
+            valX,
+            zeroX,
+            textWidth: estimateLabelWidth(formatSigned(d.value), VIZ_FONT.tickSize),
+            rightLimit: innerW + margin.right,
+          });
           return (
             <g key={`${i}-${d.label}`}>
               {/* category label in the left gutter — truncated with a
@@ -391,12 +432,15 @@ export function TornadoInner({
                 fill={fill}
                 rx={4}
               />
-              {/* signed value annotation just past the bar tip */}
+              {/* signed value annotation just past the bar tip — or, when a
+                  narrow card leaves no room there (CHART-R2: a negative tip
+                  near the left edge ran into the category label), on the
+                  other side of the zero line. */}
               <text
-                x={positive ? valX + 6 : valX - 6}
+                x={annotation.x}
                 y={y + barH / 2}
                 dy="0.32em"
-                textAnchor={positive ? 'start' : 'end'}
+                textAnchor={annotation.anchor}
                 fontSize={VIZ_FONT.tickSize}
                 fontFamily={VIZ_FONT.numeric}
                 fontWeight={600}

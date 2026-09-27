@@ -65,10 +65,10 @@
  * the block does not grow either.
  * ========================================================================== */
 
-import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Suspense, useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import Image from 'next/image';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { LazyMotion, m, useReducedMotion } from 'framer-motion';
+import { LazyMotion, m } from 'framer-motion';
 import { loadFeatures } from '@/lib/motion/load-features';
 import { createClient } from '@/lib/supabase/client';
 import { isSafeInternalPath } from '@/lib/utils/safe-redirect';
@@ -87,6 +87,7 @@ import { fairwayScope } from '@/lib/redesign/flag';
 // a component this page has no business knowing about. `controls/button` costs
 // react + radix Slot + cn + haptics and nothing else.
 import { Button } from '@/components/fairway/controls/button';
+import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
 
 /**
  * Timings, in ms, ALL measured from mount.
@@ -126,6 +127,10 @@ const T_NAVIGATE_REDUCED = 1400;
 /** Hard escape if router.replace never commits. Also armed from mount. */
 const T_FAILSAFE = 4500;
 
+const subscribeNever = () => () => {};
+const readClientGreeting = (): string => getGreeting(getTimeOfDay());
+const readServerGreeting = (): string | null => null;
+
 type NameState =
   | { status: 'pending' }
   | { status: 'named'; display: string }
@@ -136,8 +141,13 @@ function WelcomeContent() {
   const searchParams = useSearchParams();
   const nextParam = searchParams.get('next');
 
-  // Local clock only — no network, so this is correct on the very first frame.
-  const greeting = useMemo(() => getGreeting(getTimeOfDay()), []);
+  // Local clock only — no network. Read through useSyncExternalStore so the
+  // server render and the hydration pass both see `null` (the server's clock
+  // and zone are not the viewer's, and a greeting computed there disagreed
+  // with the client after hydration: audit HYD-08). Client-only renders, and
+  // the pass right after hydration, get the viewer's own greeting. The entrance
+  // fade starts at opacity 0, so the swap lands before the line is visible.
+  const greeting = useSyncExternalStore(subscribeNever, readClientGreeting, readServerGreeting);
 
   const [name, setName] = useState<NameState>({ status: 'pending' });
   const [leaving, setLeaving] = useState(false);
@@ -148,7 +158,7 @@ function WelcomeContent() {
   // `null` would make an `initial` prop truthy-check misbehave. Every consumer
   // below also gates its `initial` prop on this, which is the half of the
   // contract that actually prevents the React #418 hydration mismatch.
-  const prefersReducedMotion = useReducedMotion() ?? false;
+  const prefersReducedMotion = useReducedMotionGuard() ?? false;
 
   // Destination resolved SYNCHRONOUSLY at mount from the query param the
   // sign-in form always supplies. The identity effect may upgrade it (admin
@@ -166,8 +176,12 @@ function WelcomeContent() {
   // that effect, which meant the effect could not reference `cancelSequence` —
   // and so the signed-out exit below never stood the sequence down. See the
   // comment on that branch for what that cost.
+  // STATE-05 (owner, 2026-09-24): the welcome no longer leaves on a timer.
+  // It waits for Continue, so nobody is rushed off a screen they are still
+  // reading. The sequence stays wired (disarmed) so the signed-out exit and
+  // Continue keep the same cancel path.
   const { cancel: cancelSequence } = useSequencedNavigation({
-    armed: true,
+    armed: false,
     destinationRef: destRef,
     fadeAtMs: prefersReducedMotion ? T_FADE_OUT_REDUCED : T_FADE_OUT,
     navigateAtMs: prefersReducedMotion ? T_NAVIGATE_REDUCED : T_NAVIGATE,
@@ -329,9 +343,18 @@ function WelcomeContent() {
   const hasName = name.status === 'named';
   // The comma only appears once a name is on the way. It is appended to the end
   // of a left-anchored line, so nothing reflows when it does.
-  const line1 = hasName ? `${greeting},` : name.status === 'anonymous' ? `${greeting}.` : greeting;
-  const spoken = hasName ? `${greeting}, ${name.display}.` : `${greeting}.`;
-  const holdMs = prefersReducedMotion ? T_NAVIGATE_REDUCED : T_NAVIGATE;
+  // Before the viewer's clock is known (server render + hydration pass) line 1
+  // holds a non-breaking space, which keeps its height reserved.
+  const line1 =
+    greeting === null
+      ? '\u00A0'
+      : hasName
+        ? `${greeting},`
+        : name.status === 'anonymous'
+          ? `${greeting}.`
+          : greeting;
+  const spokenGreeting = greeting ?? 'Welcome';
+  const spoken = hasName ? `${spokenGreeting}, ${name.display}.` : `${spokenGreeting}.`;
 
   return (
     <LazyMotion features={loadFeatures}>
@@ -426,39 +449,14 @@ function WelcomeContent() {
               </span>
             </h1>
 
-            {/* A real deadline, drawn. The wait is short but it is not nothing,
-                and an unexplained pause is what made the old screen feel broken.
-                This is the actual navigate time, not a decorative loop — it
-                reaches the end exactly when the page leaves. */}
-            <div
-              aria-hidden
-              className="mt-10 h-px w-full max-w-[12rem] overflow-hidden bg-border-subtle"
-            >
-              <m.div
-                className="h-full w-full origin-left bg-accent-600"
-                initial={{ scaleX: 0 }}
-                animate={{ scaleX: 1 }}
-                transition={{
-                  duration: prefersReducedMotion ? 0 : holdMs / 1000,
-                  ease: 'linear',
-                }}
-              />
-            </div>
           </div>
         </m.div>
 
-        {/* Skip — rendered from the FIRST frame, not gated on identity. The old
-            one only appeared once `ready` flipped, which meant it was missing
-            in exactly the failure where it was the only way out. */}
-        <div className="flex justify-end px-8 pb-8 sm:px-12 lg:px-20">
-          <Button
-            variant="ghost"
-            size="sm"
-            type="button"
-            onClick={onSkip}
-            aria-label="Skip the welcome screen and continue"
-          >
-            Skip
+        {/* Continue — the one action, rendered from the FIRST frame and never
+            gated on identity, so it is there even when the name lookup fails. */}
+        <div className="px-8 pb-8 sm:px-12 lg:px-20">
+          <Button variant="primary" size="lg" type="button" fullWidth className="sm:w-auto" onClick={onSkip}>
+            Continue
           </Button>
         </div>
       </main>

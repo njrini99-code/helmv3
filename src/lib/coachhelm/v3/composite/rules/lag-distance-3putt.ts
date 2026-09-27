@@ -99,11 +99,11 @@ const rule: CompositeRule = {
       title: 'Lag putts → 3-putt cascade',
       content:
         `Your lag putts (15+ ft) aren't finishing inside tap-in range, and you're ` +
-        `only making ${shortPct}% from 3-5 ft — so an estimated ${threePuttPct}% of your ` +
+        `only making ${shortPct}% from 3-5 ft, so an estimated ${threePuttPct}% of your ` +
         `long looks are turning into 3-putts. That's the cascade: a long miss leaves ` +
         `a comebacker your short stroke isn't closing. Fix the leave first: 30-foot ` +
-        `lag drills to a 3-foot circle around the cup — the goal is leave-distance, ` +
-        `not make rate — then drill the 3-5 ft comebackers so the second putt stops ` +
+        `lag drills to a 3-foot circle around the cup (the goal is leave-distance, ` +
+        `not make rate), then drill the 3-5 ft comebackers so the second putt stops ` +
         `costing you a stroke.`,
       signature: 'lag_distance_3putt',
       evidence: {

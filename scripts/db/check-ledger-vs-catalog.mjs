@@ -18,6 +18,14 @@
  *      `CREATE TABLE` / `CREATE [OR REPLACE] FUNCTION` / `CREATE POLICY`
  *      names out of that version's local file (when one exists) and asserts
  *      each object exists in the catalog. Missing -> FAIL.
+ *      The catalog is read across every user schema (`isUserSchema`), not
+ *      just `public`: migrations create objects in helm_debug, helm_jobs,
+ *      helm_private and on storage.objects, and graveyard migrations MOVE
+ *      retired tables out of public. An object a LATER applied migration
+ *      drops or renames (`parseRemovedObjects`) is not missing either. Until
+ *      2026-09-26 neither was honoured and the nightly job reported 258
+ *      "missing" objects of which two were real (#1897) — a check that is
+ *      always red hides the one finding that matters.
  *   2. For every table in the `public` schema, asserts it traces to SOME
  *      migration file (any file that CREATEs a table by that name) or to a
  *      schema file under `supabase/schemas/**` (D2's declarative-schema
@@ -93,7 +101,9 @@ export function parseCreatedObjects(sqlText) {
     functions.push(m[1].toLowerCase());
   }
   for (const m of clean.matchAll(/create\s+policy\s+"?([^"\s(]+)"?\s+on\s+/gi)) {
-    policies.push(m[1].toLowerCase());
+    // Skip format() templates from DO-block dynamic SQL (`%1$s_coach_select`,
+    // `%I`): those are not object names and can never be in the catalog.
+    if (IDENTIFIER.test(m[1])) policies.push(m[1].toLowerCase());
   }
 
   return {
@@ -101,6 +111,88 @@ export function parseCreatedObjects(sqlText) {
     functions: [...new Set(functions)],
     policies: [...new Set(policies)],
   };
+}
+
+const IDENTIFIER = /^[a-z_][a-z0-9_]*$/i;
+const QUALIFIED_NAME = String.raw`"?(?:[a-z_][a-z0-9_]*"?\."?)?([a-z_][a-z0-9_]*)"?`;
+
+/**
+ * Parse the object names a migration file's SQL text drops or renames away.
+ * Same permissive matching as parseCreatedObjects. Handles schema
+ * qualifiers, IF EXISTS, comma lists (`drop table a, b`, `drop function
+ * f(uuid), g(int)`), `alter table … rename to` and `alter policy … rename to`.
+ * A graveyard `SET SCHEMA` move needs no entry here: the object still exists,
+ * in a schema the catalog read already covers.
+ *
+ * @param {string} sqlText
+ * @returns {{ tables: string[], functions: string[], policies: string[] }}
+ */
+export function parseRemovedObjects(sqlText) {
+  const clean = stripSqlComments(sqlText);
+  const tables = [];
+  const functions = [];
+  const policies = [];
+
+  for (const m of clean.matchAll(/drop\s+table\s+(?:if\s+exists\s+)?([^;]+)/gi)) {
+    for (const part of splitTopLevel(m[1])) {
+      const n = new RegExp(`^\\s*${QUALIFIED_NAME}`, 'i').exec(part);
+      if (n) tables.push(n[1].toLowerCase());
+    }
+  }
+  for (const m of clean.matchAll(new RegExp(`alter\\s+table\\s+(?:if\\s+exists\\s+)?(?:only\\s+)?${QUALIFIED_NAME}\\s+rename\\s+to\\s`, 'gi'))) {
+    tables.push(m[1].toLowerCase());
+  }
+  for (const m of clean.matchAll(/drop\s+function\s+(?:if\s+exists\s+)?([^;]+)/gi)) {
+    // Split on top-level commas only, so `f(uuid, numeric(10,2))` stays one
+    // entry and `numeric` is never mistaken for a dropped function.
+    for (const part of splitTopLevel(m[1])) {
+      const n = new RegExp(`^\\s*${QUALIFIED_NAME}\\s*\\(`, 'i').exec(part);
+      if (n) functions.push(n[1].toLowerCase());
+    }
+  }
+  for (const m of clean.matchAll(new RegExp(`alter\\s+function\\s+${QUALIFIED_NAME}\\s*\\([^)]*\\)\\s+rename\\s+to\\s`, 'gi'))) {
+    functions.push(m[1].toLowerCase());
+  }
+  for (const m of clean.matchAll(/(?:drop\s+policy\s+(?:if\s+exists\s+)?|alter\s+policy\s+)"?([^"\s(]+)"?\s+on\s+[^;]*/gi)) {
+    const isAlter = /^alter/i.test(m[0]);
+    if (isAlter && !/\srename\s+to\s/i.test(m[0])) continue;
+    if (IDENTIFIER.test(m[1])) policies.push(m[1].toLowerCase());
+  }
+
+  return {
+    tables: [...new Set(tables)],
+    functions: [...new Set(functions)],
+    policies: [...new Set(policies)],
+  };
+}
+
+/** Split a comma list, ignoring commas nested inside parentheses. */
+function splitTopLevel(text) {
+  const parts = [];
+  let depth = 0;
+  let start = 0;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (c === '(') depth++;
+    else if (c === ')') depth = Math.max(0, depth - 1);
+    else if (c === ',' && depth === 0) {
+      parts.push(text.slice(start, i));
+      start = i + 1;
+    }
+  }
+  parts.push(text.slice(start));
+  return parts;
+}
+
+/**
+ * Whether a catalog schema holds objects migrations create. Everything but
+ * Postgres's own catalogs counts — including graveyard, where retired tables
+ * are moved rather than dropped.
+ *
+ * @param {string} schema
+ */
+export function isUserSchema(schema) {
+  return schema !== 'information_schema' && !/^pg_/.test(schema);
 }
 
 function stripSqlComments(sqlText) {
@@ -128,6 +220,27 @@ export function reconcileLedgerToCatalog({
   catalogFunctions,
   catalogPolicies,
 }) {
+  // kind:name -> the latest APPLIED version that drops or renames it away.
+  // Only ledger versions count: a drop sitting in an unapplied local file has
+  // not happened in the database.
+  const lastRemoval = new Map();
+  for (const row of ledgerRows) {
+    const file = localFilesByVersion.get(row.version);
+    const sqlText = file === undefined ? undefined : fileContents.get(file);
+    if (sqlText === undefined) continue;
+    const removed = parseRemovedObjects(sqlText);
+    for (const [kind, names] of [['table', removed.tables], ['function', removed.functions], ['policy', removed.policies]]) {
+      for (const name of names) {
+        const key = `${kind}:${name}`;
+        if (!lastRemoval.has(key) || lastRemoval.get(key) < row.version) lastRemoval.set(key, row.version);
+      }
+    }
+  }
+  const removedLater = (kind, name, version) => {
+    const at = lastRemoval.get(`${kind}:${name}`);
+    return at !== undefined && at > version;
+  };
+
   const missing = [];
   for (const row of ledgerRows) {
     const file = localFilesByVersion.get(row.version);
@@ -135,14 +248,15 @@ export function reconcileLedgerToCatalog({
     const sqlText = fileContents.get(file);
     if (sqlText === undefined) continue;
     const created = parseCreatedObjects(sqlText);
-    for (const name of created.tables) {
-      if (!catalogTables.has(name)) missing.push({ version: row.version, file, kind: 'table', name });
-    }
-    for (const name of created.functions) {
-      if (!catalogFunctions.has(name)) missing.push({ version: row.version, file, kind: 'function', name });
-    }
-    for (const name of created.policies) {
-      if (!catalogPolicies.has(name)) missing.push({ version: row.version, file, kind: 'policy', name });
+    for (const [kind, names, catalog] of [
+      ['table', created.tables, catalogTables],
+      ['function', created.functions, catalogFunctions],
+      ['policy', created.policies, catalogPolicies],
+    ]) {
+      for (const name of names) {
+        if (catalog.has(name) || removedLater(kind, name, row.version)) continue;
+        missing.push({ version: row.version, file, kind, name });
+      }
     }
   }
   return missing;
@@ -224,13 +338,17 @@ async function main() {
 
   try {
     const ledgerRows = await sql`select version from supabase_migrations.schema_migrations order by version`;
-    const tableRows = await sql`select tablename as name from pg_tables where schemaname = 'public'`;
-    const funcRows = await sql`select proname as name from pg_proc join pg_namespace n on n.oid = pronamespace where n.nspname = 'public'`;
-    const policyRows = await sql`select policyname as name from pg_policies where schemaname = 'public'`;
+    const tableRows = await sql`select schemaname as schema, tablename as name from pg_tables`;
+    const funcRows = await sql`select n.nspname as schema, proname as name from pg_proc join pg_namespace n on n.oid = pronamespace`;
+    const policyRows = await sql`select schemaname as schema, policyname as name from pg_policies`;
 
-    const catalogTables = new Set(tableRows.map((r) => String(r.name).toLowerCase()));
-    const catalogFunctions = new Set(funcRows.map((r) => String(r.name).toLowerCase()));
-    const catalogPolicies = new Set(policyRows.map((r) => String(r.name).toLowerCase()));
+    const names = (rows) =>
+      new Set(rows.filter((r) => isUserSchema(String(r.schema))).map((r) => String(r.name).toLowerCase()));
+    const catalogTables = names(tableRows);
+    const catalogFunctions = names(funcRows);
+    const catalogPolicies = names(policyRows);
+    // Part 2 (untraceable tables) stays scoped to public, as documented.
+    const publicTables = tableRows.filter((r) => r.schema === 'public').map((r) => String(r.name).toLowerCase());
 
     const { byVersion, contents } = localMigrationFilesByVersion();
 
@@ -244,7 +362,7 @@ async function main() {
     });
 
     const unexplained = reconcileUnexplainedTables({
-      catalogTables: [...catalogTables],
+      catalogTables: publicTables,
       allMigrationFileContents: contents,
       schemaFileTableNames: schemaFileTableNames(),
     });

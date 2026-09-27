@@ -34,7 +34,7 @@ describe('PlayerCoachHelmNav', () => {
     params = new URLSearchParams('view=profile&demo=1');
     render(<PlayerCoachHelmNav />);
 
-    expect(screen.getByRole('link', { name: 'Game Profile' })).toHaveAttribute('aria-current', 'page');
+    expect(screen.getByRole('link', { name: 'Game Profile' })).toHaveAttribute('aria-current', 'true');
     expect(screen.getByRole('link', { name: 'Overview' })).toHaveAttribute('href', '/golf/dashboard/coachhelm?demo=1');
     expect(screen.getByRole('link', { name: 'Insights' })).toHaveAttribute('href', '/golf/dashboard/coachhelm?view=insights&demo=1');
   });
@@ -46,7 +46,7 @@ describe('PlayerCoachHelmNav', () => {
 
     expect(screen.getByRole('link', { name: 'Insights' })).toHaveAttribute(
       'aria-current',
-      'page',
+      'true',
     );
     expect(window.location.search).toBe('?view=insights');
   });

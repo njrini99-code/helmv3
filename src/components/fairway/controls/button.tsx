@@ -30,7 +30,7 @@
 import { type ButtonHTMLAttributes, type MouseEvent, type ReactNode, forwardRef } from 'react';
 import { Slot } from '@radix-ui/react-slot';
 import { cn } from '@/lib/utils';
-import { fwHaptic } from '@/lib/fairway/haptics';
+import { fireControlHaptic, resolveDefaultHaptic, type ControlHaptic } from '@/lib/haptics';
 import { fwDisabled, fwFocusRing, fwPress, fwTransition } from './_internal';
 
 export type FwButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger';
@@ -47,6 +47,13 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   rightIcon?: ReactNode;
   /** Render styling onto the child element (e.g. a Link) instead of a <button>. */
   asChild?: boolean;
+  /**
+   * Haptic on activation. A semantic event (`'commit'` for a shot recorded,
+   * `'checkpoint'` for a hole-out) or a raw Fairway kind; `false` for none.
+   * Omitted: none on golf routes (a generic tap is silent, audit MOT-03);
+   * other sports keep the historical light tick (owner OD-17b).
+   */
+  haptic?: ControlHaptic;
   children: ReactNode;
 }
 
@@ -95,11 +102,17 @@ const variantStyles: Record<FwButtonVariant, string> = {
   // the Segmented switcher's floating thumb; the owner called them out on the
   // calendar and asked for the same depth everywhere. Hover lifts a step
   // (soft), press settles back to flat. Ghost stays chrome-light by contract.
+  //
+  // 2026-09-24 (owner: green is the contrasting colour): the fill moved to the
+  // `accent-fill` role. Light is byte-identical (= accent-650, cream label
+  // 4.69:1); in DARK it is now a bright green with a near-black label (7.7:1)
+  // instead of the deep 650 green, so the primary action is the brightest
+  // thing on a dark page. The hover partner darkens one step in both themes.
   primary: cn(
-    'border-transparent bg-accent-650 text-text-on-accent',
+    'border-transparent bg-accent-fill text-text-on-accent-fill',
     '[box-shadow:inset_0_1px_0_oklch(1_0_0/0.22),var(--fw-shadow-flat)]',
-    'hover:bg-accent-750 hover:[box-shadow:inset_0_1px_0_oklch(1_0_0/0.22),var(--fw-shadow-soft)] hover:-translate-y-px',
-    'active:bg-accent-750 active:[box-shadow:inset_0_1px_0_oklch(1_0_0/0.12),var(--fw-shadow-flat)] active:-translate-y-0',
+    'hover:bg-accent-fill-hover hover:[box-shadow:inset_0_1px_0_oklch(1_0_0/0.22),var(--fw-shadow-soft)] hover:-translate-y-px',
+    'active:bg-accent-fill-hover active:[box-shadow:inset_0_1px_0_oklch(1_0_0/0.12),var(--fw-shadow-flat)] active:-translate-y-0',
   ),
   // Matte surface with a warm hairline AND the card material (lit top edge +
   // resting whisper — the same recipe Surface uses, light-cards-only safe).
@@ -164,6 +177,7 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button(
     children,
     onClick,
     onClickCapture,
+    haptic,
     ...props
   },
   ref,
@@ -173,7 +187,7 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button(
   const unavailable = Boolean(disabled || busy);
   const handleClick = (event: MouseEvent<HTMLButtonElement>) => {
     if (event.defaultPrevented || unavailable) return;
-    fwHaptic('light');
+    fireControlHaptic(resolveDefaultHaptic(haptic, 'light'));
     onClick?.(event);
   };
   // Links have no native disabled attribute. Capture activation before the
@@ -255,7 +269,7 @@ const iconBase = cn(
 );
 
 const iconVariantStyles: Record<FwIconButtonVariant, string> = {
-  // Matches Button primary — accent-650.
+  // Matches Button primary — accent-fill.
   //
   // The icon-only case genuinely DID clear its bar at every step (a glyph is a
   // UI component judged at 3:1 by 1.4.11). It tracks Button primary anyway: a
@@ -266,10 +280,10 @@ const iconVariantStyles: Record<FwIconButtonVariant, string> = {
   // Same resting depth as Button (see the DEPTH note above): lit top edge +
   // resting whisper, a step up on hover, settled on press.
   primary: cn(
-    'border-transparent bg-accent-650 text-text-on-accent',
+    'border-transparent bg-accent-fill text-text-on-accent-fill',
     '[box-shadow:inset_0_1px_0_oklch(1_0_0/0.22),var(--fw-shadow-flat)]',
-    'hover:bg-accent-750 hover:[box-shadow:inset_0_1px_0_oklch(1_0_0/0.22),var(--fw-shadow-soft)]',
-    'active:bg-accent-750 active:[box-shadow:inset_0_1px_0_oklch(1_0_0/0.12),var(--fw-shadow-flat)]',
+    'hover:bg-accent-fill-hover hover:[box-shadow:inset_0_1px_0_oklch(1_0_0/0.22),var(--fw-shadow-soft)]',
+    'active:bg-accent-fill-hover active:[box-shadow:inset_0_1px_0_oklch(1_0_0/0.12),var(--fw-shadow-flat)]',
   ),
   secondary: cn(
     'border-border-subtle bg-surface text-text-primary [box-shadow:var(--fw-shadow-card)]',

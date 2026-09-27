@@ -26,7 +26,7 @@
  * ========================================================================== */
 
 import * as React from 'react';
-import { m, AnimatePresence, useReducedMotion } from 'framer-motion';
+import { m, AnimatePresence } from 'framer-motion';
 import type { ComponentType, SVGAttributes } from 'react';
 import {
   IconEdit,
@@ -51,6 +51,7 @@ import {
 // and that panel's swatches can never independently drift.
 import { CATEGORY_CONFIG } from './expense-category';
 import { parseDateOnly } from '@/lib/utils/date-only';
+import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
 
 export interface FairwayExpenseListProps {
   expenses: TravelExpense[];
@@ -105,7 +106,7 @@ function formatCurrency(amount: number): string {
 }
 
 export function FairwayExpenseList({ expenses, onEdit, onRefresh, isCoach }: FairwayExpenseListProps) {
-  const prefersReducedMotion = useReducedMotion();
+  const prefersReducedMotion = useReducedMotionGuard();
   const [expandedId, setExpandedId] = React.useState<string | null>(null);
   const [pendingDeleteId, setPendingDeleteId] = React.useState<string | null>(null);
   const [deleting, setDeleting] = React.useState(false);

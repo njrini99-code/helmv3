@@ -22,12 +22,13 @@
  * ========================================================================== */
 
 import { createContext, forwardRef, memo, useCallback, useContext, useRef, useState } from 'react';
-import { motion, useReducedMotion } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { NavPendingDot } from './NavPending';
 import { IconChevronLeft, IconChevronRight } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import type { NavItem, NavSection, ShellLinkComponent, ShellUser } from './types';
+import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
 
 /**
  * `item.shortcut` (Bridge's only current producer, `AdminShell.tsx`) has
@@ -211,7 +212,7 @@ function SidebarRow({ item, active, collapsed, Link, onNavigate }: SidebarRowPro
           </span>
         ) : null}
         {typeof item.badge === 'number' && item.badge > 0 && !collapsed && (
-          <span className="ml-auto inline-flex min-w-[18px] items-center justify-center rounded-full bg-accent-650 px-1.5 py-0.5 font-fw-mono text-micro font-medium leading-none text-text-on-accent">
+          <span className="ml-auto inline-flex min-w-[18px] items-center justify-center rounded-full bg-accent-fill px-1.5 py-0.5 font-fw-mono text-micro font-medium leading-none text-text-on-accent-fill">
             {item.badge > 99 ? '99+' : item.badge}
           </span>
         )}
@@ -283,7 +284,7 @@ export const FairwaySidebar = memo(forwardRef<HTMLElement, FairwaySidebarProps>(
   },
   ref,
 ) {
-  const reduceMotion = useReducedMotion();
+  const reduceMotion = useReducedMotionGuard();
   const Link = linkComponent ?? DefaultLink;
   const isCollapsed = isMobile ? false : collapsed;
 

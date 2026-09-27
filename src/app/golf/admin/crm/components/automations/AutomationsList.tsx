@@ -236,7 +236,7 @@ export function AutomationsList() {
                   <h3 className="text-xs font-semibold uppercase tracking-wider text-text-secondary">
                     {trigger.label}
                   </h3>
-                  <span className="text-eyebrow text-text-tertiary">{rows.length}</span>
+                  <span className="text-caption text-text-tertiary">{rows.length}</span>
                 </div>
                 <div className="rounded-card border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-card)] overflow-hidden">
                   <ul className="divide-y divide-border-subtle">
@@ -281,16 +281,16 @@ export function AutomationsList() {
                                 {a.name}
                               </span>
                               {seeded && (
-                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full border border-accent-200 bg-accent-50 text-eyebrow font-medium text-fw-success-ink">
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full border border-accent-200 bg-accent-50 text-caption font-medium text-fw-success-ink">
                                   <IconCheckCircle2 size={10} /> Seeded
                                 </span>
                               )}
                               {!a.is_active && (
-                                <span className="px-2 py-0.5 rounded-full bg-surface-sunken text-eyebrow font-medium text-text-secondary">
+                                <span className="px-2 py-0.5 rounded-full bg-surface-sunken text-caption font-medium text-text-secondary">
                                   Inactive
                                 </span>
                               )}
-                              <span className="px-2 py-0.5 rounded-full bg-surface-sunken border border-border-subtle text-eyebrow text-text-secondary">
+                              <span className="px-2 py-0.5 rounded-full bg-surface-sunken border border-border-subtle text-caption text-text-secondary">
                                 priority {a.priority}
                               </span>
                             </div>
@@ -299,7 +299,7 @@ export function AutomationsList() {
                                 {a.description}
                               </p>
                             )}
-                            <p className="text-eyebrow text-text-tertiary mt-1">
+                            <p className="text-caption text-text-tertiary mt-1">
                               {condCount === 0
                                 ? 'Always runs'
                                 : `${condCount} condition${condCount === 1 ? '' : 's'}`}{' '}

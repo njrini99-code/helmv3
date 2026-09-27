@@ -271,7 +271,7 @@ export function EventDetailModal({
                     onClick={() => handleStatusChange(opt.value)}
                     disabled={submitting}
                     className={cn(
-                      'flex items-center gap-1.5 px-3 py-1.5 rounded-fw-sm text-sm font-medium transition-all',
+                      'flex items-center gap-1.5 px-3 py-1.5 rounded-fw-sm text-sm font-medium transition',
                       status === opt.value
                         ? `${opt.color} ring-2 ring-offset-1 ring-border-strong`
                         : 'bg-surface-sunken text-text-secondary hover:bg-surface-sunken'

@@ -24,6 +24,7 @@ import {
   standingSubjectLabel,
   teamRelativeText,
   resolveDisplayScale,
+  unitHardBounds,
   toScalePct,
 } from './utils';
 
@@ -41,7 +42,7 @@ export function Inline(props: StandingBarProps) {
   const effectiveScale = resolveDisplayScale(
     props.scale,
     [props.player_value, showTeam ? props.team_avg : null, props.pga_omitted ? null : props.pga_value],
-    { symmetric: /^sg_/.test(props.metric_id) },
+    { symmetric: /^sg_/.test(props.metric_id), hardBounds: unitHardBounds(props.unit) },
   );
   const youPct = toScalePct(props.player_value, effectiveScale);
   const teamPct = showTeam && props.team_avg !== null ? toScalePct(props.team_avg, effectiveScale) : null;
@@ -58,16 +59,16 @@ export function Inline(props: StandingBarProps) {
   const subjectLabel = standingSubjectLabel(props.viewer_context, props.player_name);
 
   const toneColor =
-    delta.tone === 'good' ? 'text-primary-700' :
-    delta.tone === 'bad'  ? 'text-red-600' :
-                            'text-warm-500';
+    delta.tone === 'good' ? 'text-accent-ink' :
+    delta.tone === 'bad'  ? 'text-fw-danger-ink' :
+                            'text-text-tertiary';
 
   return (
     <div
       role="img"
       aria-label={ariaLabel}
       data-state={state}
-      className="glass-standard rounded-xl px-3 py-2"
+      className="glass-standard rounded-fw-md px-3 py-2"
     >
       {/* Header: label + vs-team arrow */}
       <div className="flex items-baseline justify-between gap-2 mb-1">
@@ -75,14 +76,15 @@ export function Inline(props: StandingBarProps) {
           {props.metric_label}
         </span>
         {showTeam && (
-          <span className={`text-eyebrow tabular-nums shrink-0 ${toneColor}`}>
+          <span className={`text-caption tabular-nums shrink-0 ${toneColor}`}>
             {delta.arrow} vs team
           </span>
         )}
       </div>
 
       {/* Compact dot-separated values */}
-      <div className="text-eyebrow text-warm-600 tabular-nums mb-1.5 truncate">
+      {/* NUM-38: wraps instead of truncating, so no value is ever cut to "5…". */}
+      <div className="text-caption text-warm-600 tabular-nums mb-1.5 break-words" data-slot="standing-inline-values">
         {showTeam && props.team_avg !== null && (
           <>T {formatValue(props.team_avg, props.unit)} · </>
         )}
@@ -111,12 +113,12 @@ export function Inline(props: StandingBarProps) {
 
       {/* Cohort text — single line, compact */}
       {props.show_cohort_text !== false && cohortText && (
-        <p className={`text-eyebrow mt-1 truncate ${toneColor}`}>{cohortText}</p>
+        <p className={`text-caption mt-1 truncate ${toneColor}`}>{cohortText}</p>
       )}
 
       {/* A2: a suppressed reference with a reason says why (not "missing data"). */}
       {omissionNote && (
-        <p className="text-eyebrow text-warm-500 mt-1 truncate" title={omissionNote}>{omissionNote}</p>
+        <p className="text-caption text-text-tertiary mt-1 truncate" title={omissionNote}>{omissionNote}</p>
       )}
     </div>
   );
@@ -128,7 +130,7 @@ function InlineSkeleton() {
       role="status"
       aria-label="Loading standing"
       data-state="loading"
-      className="glass-standard rounded-xl px-3 py-2 animate-pulse"
+      className="glass-standard rounded-fw-md px-3 py-2 animate-pulse"
     >
       <div className="h-2.5 w-24 bg-warm-100 rounded mb-2" />
       <div className="h-1.5 w-full bg-warm-100 rounded" />
@@ -141,11 +143,11 @@ function InlineError({ message }: { message?: string }) {
     <div
       role="alert"
       data-state="error"
-      className="glass-standard border-red-200 rounded-xl px-3 py-2"
+      className="glass-standard border-red-200 rounded-fw-md px-3 py-2"
     >
-      <p className="text-eyebrow text-red-700">Couldn’t load standing.</p>
+      <p className="text-caption text-red-700">Couldn’t load standing.</p>
       {message && (
-        <p className="text-eyebrow text-red-600 truncate" title={message}>{message}</p>
+        <p className="text-caption text-fw-danger-ink truncate" title={message}>{message}</p>
       )}
     </div>
   );
@@ -155,10 +157,10 @@ function InlineEmpty({ label }: { label: string }) {
   return (
     <div
       data-state="empty"
-      className="glass-standard rounded-xl px-3 py-2"
+      className="glass-standard rounded-fw-md px-3 py-2"
     >
       <p className="text-xs font-medium text-warm-900 truncate">{label}</p>
-      <p className="text-eyebrow text-warm-500 mt-1">Log 5 rounds to unlock standing.</p>
+      <p className="text-caption text-text-tertiary mt-1">Log 5 rounds to unlock standing.</p>
     </div>
   );
 }

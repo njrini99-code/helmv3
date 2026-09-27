@@ -1,5 +1,5 @@
 /* eslint-disable jsx-a11y/anchor-is-valid, helm/no-raw-button -- thin test stand-ins for next/link and the design-system Button, not user-facing UI */
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, within, fireEvent } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import type { WhatsNewItem } from '@/app/golf/actions/whats-new';
@@ -298,5 +298,56 @@ describe('FairwayWhatsNew', () => {
     // And it offers a one-click return to the full feed.
     fireEvent.click(within(empty).getByRole('button', { name: /Show all updates/i }));
     expect(screen.getByText('INS')).toBeInTheDocument();
+  });
+});
+
+/**
+ * Audit HYD-02: day buckets are calendar days in the feed's zone (the
+ * `timeZone` prop), not the runtime's. 23:00Z on Jun 18 with "now" at 05:00Z on
+ * Jun 19 is the same day (Jun 18) in Los Angeles, but a different day in UTC
+ * or New York; a runtime-local bucket would call the event "Yesterday".
+ */
+describe('FairwayWhatsNew — day buckets follow the timeZone prop (HYD-02)', () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('puts an event in "Today" by the team zone, not the runtime zone', () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-06-19T05:00:00.000Z'));
+    render(
+      <FairwayWhatsNew
+        success
+        items={[item({ occurredAt: '2026-06-18T23:00:00.000Z', title: 'Late insight' })]}
+        timeZone="America/Los_Angeles"
+        serverNowIso="2026-06-19T05:00:00.000Z"
+      />,
+    );
+    expect(screen.getByRole('region', { name: /^Today, 1 update$/ })).toBeInTheDocument();
+  });
+
+  it('labels the previous zone day "Yesterday" and older days by date', () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-06-19T05:00:00.000Z'));
+    render(
+      <FairwayWhatsNew
+        success
+        items={[
+          item({ occurredAt: '2026-06-18T02:00:00.000Z', title: 'Yesterday item' }),
+          item({ occurredAt: '2026-06-16T20:00:00.000Z', title: 'Older item' }),
+        ]}
+        timeZone="America/Los_Angeles"
+        serverNowIso="2026-06-19T05:00:00.000Z"
+      />,
+    );
+    // 02:00Z Jun 18 is 19:00 Jun 17 in Los Angeles, one day before "today" (Jun 18).
+    expect(screen.getByRole('region', { name: /^Yesterday, 1 update$/ })).toBeInTheDocument();
+    expect(screen.getByRole('region', { name: /^Jun 16, 1 update$/ })).toBeInTheDocument();
+  });
+
+  it('does not mark the ticking freshness line as a live region (A11Y-R2)', () => {
+    render(<FairwayWhatsNew success items={[item({})]} />);
+    const updated = screen.getByText(/Updated/i);
+    expect(updated.closest('[aria-live]')).toBeNull();
   });
 });

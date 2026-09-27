@@ -281,7 +281,7 @@ function ConversationRow({
               <time
                 dateTime={conv.last_message?.created_at ?? undefined}
                 className={cn(
-                  'flex-shrink-0 font-fw-mono text-eyebrow tabular-nums',
+                  'flex-shrink-0 font-fw-mono text-caption tabular-nums',
                   hasUnread ? 'text-accent-700' : 'text-text-tertiary',
                 )}
               >
@@ -363,11 +363,11 @@ function SearchResultRow({
             <span className="truncate font-fw-sans text-body-sm font-medium text-text-primary">
               {result.senderName || 'Unknown'}
             </span>
-            <span className="flex-shrink-0 truncate font-fw-sans text-eyebrow text-text-tertiary">
+            <span className="flex-shrink-0 truncate font-fw-sans text-caption text-text-tertiary">
               {result.conversationName}
             </span>
           </div>
-          <p className="mt-1 truncate font-fw-sans text-eyebrow leading-relaxed text-text-tertiary">
+          <p className="mt-1 truncate font-fw-sans text-caption leading-relaxed text-text-tertiary">
             {decodeMessageContent(result.content)}
           </p>
         </div>
@@ -644,9 +644,9 @@ export function MessageConversationRail({
       <div className="flex flex-col gap-4">
         {unread.length > 0 ? (
           <div>
-            <p className="px-3 pb-2 font-fw-display text-eyebrow uppercase tracking-[0.14em] text-accent-700">
+            <h2 className="px-3 pb-2 font-fw-sans text-body-sm font-semibold text-accent-700">
               Unread
-            </p>
+            </h2>
             {/* ONE radius token, ONE shadow token — the ramp already decided both.
                 The first attempt composed `--fw-shadow-card` over
                 `--fw-shadow-soft` (five layers) on `rounded-fw-lg`, and both
@@ -687,9 +687,9 @@ export function MessageConversationRail({
           if (group.length === 0) return null;
           return (
             <div key={key}>
-              <p className="px-3 pb-2 font-fw-display text-eyebrow uppercase tracking-[0.14em] text-text-tertiary">
+              <h2 className="px-3 pb-2 font-fw-sans text-body-sm font-semibold text-text-primary">
                 {label}
-              </p>
+              </h2>
               <ul className="divide-y divide-border-subtle overflow-hidden rounded-card bg-surface shadow-raise">
                 {group.map((conv, i) => (
                   <li

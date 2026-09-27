@@ -37,6 +37,23 @@ describe('classifyDashboardFailure', () => {
     expect(classifyDashboardFailure(error)).toBe('TRANSIENT_FAILURE');
   });
 
+  // 2026-09-24 pool-exhaustion brownout (#2061): these classified as UNKNOWN,
+  // so the page dead-ended instead of taking its one server-side retry.
+  it.each([
+    [{ code: 'PGRST003', message: 'Timed out acquiring connection from connection pool.' }],
+    [{ code: 'PGRST002', message: 'Could not query the database for the schema cache. Retrying.' }],
+    [{ code: '53300', message: 'too many connections' }],
+    [new Error('putt-distance aggregate query failed: Could not query the database for the schema cache. Retrying.')],
+    [new Error('Timed out acquiring connection from connection pool.')],
+  ])('classifies a pool/schema-cache saturation fault %o as TRANSIENT_FAILURE', (error) => {
+    expect(classifyDashboardFailure(error)).toBe('TRANSIENT_FAILURE');
+  });
+
+  it('a stale-schema PGRST204 is a real defect, not a transient', () => {
+    const error = { code: 'PGRST204', message: "Could not find the 'x' column of 'golf_players' in the schema cache" };
+    expect(classifyDashboardFailure(error)).toBe('UNKNOWN');
+  });
+
   it('classifies a unique-constraint violation as UNKNOWN (not retryable)', () => {
     const error = { code: '23505', message: 'duplicate key value violates unique constraint' };
     expect(classifyDashboardFailure(error)).toBe('UNKNOWN');

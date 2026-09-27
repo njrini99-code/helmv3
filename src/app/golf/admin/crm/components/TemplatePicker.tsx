@@ -207,7 +207,7 @@ function NewTemplateForm({ onSave, onCancel }: { onSave: () => void; onCancel: (
             );
           })}
         </div>
-        <p className="text-eyebrow text-text-tertiary leading-relaxed">
+        <p className="text-caption text-text-tertiary leading-relaxed">
           {FORMAT_OPTIONS.find(f => f.key === format)?.help}
         </p>
 
@@ -385,7 +385,7 @@ export function TemplatePicker({ onSelect }: TemplatePickerProps) {
                   onClick={() => handleSelect(template)}
                   aria-pressed={isSelected}
                   className={cn(
-                    'w-full text-left rounded-fw-md border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-card)] p-4 cursor-pointer transition-all duration-200 hover:bg-surface-tint hover:shadow-flat',
+                    'w-full text-left rounded-fw-md border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-card)] p-4 cursor-pointer transition duration-200 hover:bg-surface-tint hover:shadow-flat',
                     isSelected && 'border-accent-300 ring-2 ring-accent-500'
                   )}
                 >
@@ -393,11 +393,11 @@ export function TemplatePicker({ onSelect }: TemplatePickerProps) {
                     <span className="font-semibold text-sm text-text-primary truncate">
                       {template.name}
                     </span>
-                    <span className={cn('shrink-0 px-2 py-0.5 rounded-full text-eyebrow font-bold uppercase tracking-wider', colors?.bg, colors?.text)}>
+                    <span className={cn('shrink-0 px-2 py-0.5 rounded-full text-caption font-bold', colors?.bg, colors?.text)}>
                       {CATEGORY_LABELS[template.category] ?? template.category}
                     </span>
                     {template.format === 'html' && (
-                      <span className="shrink-0 px-2 py-0.5 rounded-full text-eyebrow font-bold uppercase tracking-wider bg-nav-bg text-nav-text">
+                      <span className="shrink-0 px-2 py-0.5 rounded-full text-caption font-bold bg-nav-bg text-nav-text">
                         HTML
                       </span>
                     )}
@@ -408,7 +408,7 @@ export function TemplatePicker({ onSelect }: TemplatePickerProps) {
                   <p className="text-xs text-text-tertiary line-clamp-2 mt-1 leading-relaxed">
                     {template.format === 'html' ? 'Full HTML email — replaces the standard greeting + signature shell.' : template.body}
                   </p>
-                  <p className="text-eyebrow text-text-tertiary mt-2">
+                  <p className="text-caption text-text-tertiary mt-2">
                     Used {template.usage_count ?? 0} times
                   </p>
                 </Button>
@@ -427,7 +427,7 @@ export function TemplatePicker({ onSelect }: TemplatePickerProps) {
           ) : (
             <Button variant="ghost"
               onClick={() => setShowNewForm(true)}
-              className="flex flex-col items-center justify-center gap-2 rounded-fw-md border-2 border-dashed border-border-subtle p-4 cursor-pointer transition-all duration-200 hover:border-border-strong hover:bg-surface-sunken/60 min-h-[120px]"
+              className="flex flex-col items-center justify-center gap-2 rounded-fw-md border-2 border-dashed border-border-subtle p-4 cursor-pointer transition duration-200 hover:border-border-strong hover:bg-surface-sunken/60 min-h-[120px]"
             >
               <IconPlus size={20} className="text-text-tertiary" />
               <span className="text-sm font-medium text-text-tertiary">Create Template</span>
@@ -440,7 +440,7 @@ export function TemplatePicker({ onSelect }: TemplatePickerProps) {
           substitutes, sourced from its persisted merge_tags (not a fixed list). */}
       {selectedTemplate && selectedMergeTags.length > 0 && (
         <div className="rounded-fw-md border border-accent-200/60 bg-accent-50/40 p-3">
-          <p className="text-eyebrow uppercase tracking-wider text-text-tertiary mb-2">
+          <p className="text-caption text-text-tertiary mb-2">
             Merge tags in “{selectedTemplate.name}”
           </p>
           <div className="flex flex-wrap gap-1.5">
@@ -453,7 +453,7 @@ export function TemplatePicker({ onSelect }: TemplatePickerProps) {
               </span>
             ))}
           </div>
-          <p className="text-eyebrow text-text-tertiary mt-2">
+          <p className="text-caption text-text-tertiary mt-2">
             Auto-filled per recipient on send.
           </p>
         </div>
@@ -461,7 +461,7 @@ export function TemplatePicker({ onSelect }: TemplatePickerProps) {
 
       {/* Footer */}
       {!loading && filtered.length > 0 && (
-        <p className="text-eyebrow text-text-tertiary text-center">
+        <p className="text-caption text-text-tertiary text-center">
           {filtered.length} template{filtered.length !== 1 ? 's' : ''} &middot; Merge tags auto-filled on select
         </p>
       )}

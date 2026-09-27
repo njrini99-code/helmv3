@@ -10,6 +10,8 @@ import {
   type RoundInfo
 } from '@/lib/utils/golf-stats-calculator-shots';
 import { roundTypeFromDb } from '@/lib/golf/round-type-utils';
+import { isCountableRound } from '@/lib/golf/round-countable';
+import { withCanonicalRoundTotal } from '@/lib/golf/round-total';
 import { resolveStatsDateRange, utcYearsAgo } from '@/lib/golf/stats-date-range';
 import {
   generateStatisticalStrengthsWeaknesses,
@@ -678,7 +680,9 @@ async function getStatsSummaryImpl(
       total_gir,
       total_gir_possible,
       total_putts,
-      holes_played
+      holes_played,
+      front_nine,
+      back_nine
     `)
     .eq('player_id', playerId)
     .eq('status', 'completed')
@@ -700,8 +704,13 @@ async function getStatsSummaryImpl(
 
   const { data: roundsData, error } = await query;
 
-  // Apply preset limits
-  const filteredRounds = applyPresetLimit(roundsData || [], filter);
+  // Countable rounds only (src/lib/golf/round-countable.ts): partial,
+  // hole-less and implausible rounds never reach an average or a best. The
+  // preset limit ("last 5") then applies to rounds that count.
+  const filteredRounds = applyPresetLimit(
+    (roundsData || []).map(withCanonicalRoundTotal).filter(isCountableRound),
+    filter,
+  );
 
   if (error || filteredRounds.length === 0) {
     return {
@@ -925,7 +934,9 @@ async function queryDetailedStatsWithClient(
       total_fairways,
       total_gir,
       total_gir_possible,
-      total_putts
+      total_putts,
+      front_nine,
+      back_nine
     `)
     .eq('player_id', playerId)
     .eq('status', 'completed');
@@ -978,7 +989,14 @@ async function queryDetailedStatsWithClient(
     return calculateStatsFromShots([], [], []);
   }
 
-  const fetchedRoundRows = applyPresetLimit(fetchedRounds || [], filter);
+  // Countable rounds only (src/lib/golf/round-countable.ts). An explicit
+  // round pick is the viewer's own choice and is honoured as-is.
+  const fetchedRoundRows = applyPresetLimit(
+    requestedRoundIds
+      ? fetchedRounds || []
+      : (fetchedRounds || []).filter((r) => isCountableRound(withCanonicalRoundTotal(r))),
+    filter,
+  );
   // The database query above already scopes IDs, but retain this in-process
   // allow-list. It protects the downstream holes/shots reads if a mock,
   // proxy, or future query refactor returns more rows than requested.
@@ -1597,7 +1615,7 @@ async function getTrendAnalysisImpl(playerId: string): Promise<TrendAnalysisResp
   // Coach-configured benchmark width. Resolved alongside the rounds query
   // rather than before it — it's a small config read and there's no reason to
   // make the page wait on it serially. Falls back to 30 on any miss.
-  const [{ data: roundsData, error }, signalSettings] = await Promise.all([
+  const [{ data: rawRoundsData, error }, signalSettings] = await Promise.all([
     // Fetch all completed rounds with stats
     supabase
       .from('golf_rounds')
@@ -1613,18 +1631,29 @@ async function getTrendAnalysisImpl(playerId: string): Promise<TrendAnalysisResp
         total_gir,
         total_gir_possible,
         total_putts,
-        holes_played
+        holes_played,
+        front_nine,
+        back_nine
       `)
       .eq('player_id', playerId)
       .eq('status', 'completed')
       .not('total_score', 'is', null)
-      .order('round_date', { ascending: true }), // Oldest first for trend charts
+      .order('round_date', { ascending: true }) // Oldest first for trend charts
+      .order('id', { ascending: true }), // stable same-date order
     getPlayerSignalSettings(playerId),
   ]);
 
   const benchmarkWindowDays = signalSettings.statsBenchmarkWindowDays;
 
-  if (error || !roundsData || roundsData.length === 0) {
+  // One source per round: the hole-summed total (the Rounds list and round
+  // detail use the same `withCanonicalRoundTotal`), and countable rounds only,
+  // so the sparkline, trend chips and personal bests never read a raw,
+  // drifted `total_score` or a partial/implausible round.
+  const roundsData = (rawRoundsData ?? [])
+    .map(withCanonicalRoundTotal)
+    .filter(isCountableRound);
+
+  if (error || roundsData.length === 0) {
     return {
       rounds: [],
       trends: { score: [], gir: [], fairway: [], putts: [] },

@@ -41,7 +41,7 @@ export function NotificationRow({ item, onClick, density = 'comfortable' }: Noti
       <span
         aria-hidden
         className={cn(
-          'grid flex-shrink-0 place-items-center rounded-xl',
+          'grid flex-shrink-0 place-items-center rounded-fw-md',
           compact ? 'h-8 w-8' : 'h-9 w-9',
           item.category === 'coachhelm' ? 'bg-accent-50 text-accent-700' : 'bg-surface-sunken text-text-secondary',
         )}

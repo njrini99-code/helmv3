@@ -59,7 +59,7 @@
  * operator who has never seen it hold a number has no way to know it exists.
  *
  * MOTION: the moving pill only mounts on the active option and only carries a
- * `layoutId` (the framer-motion shared-layout glide) when `useReducedMotion()`
+ * `layoutId` (the framer-motion shared-layout glide) when `useReducedMotionGuard()`
  * resolves non-true — reduced motion snaps instead of gliding. This mirrors
  * `Segmented`'s own resolution of that hook exactly (this file lives beside
  * it and shares its recipe), not the CoachHelm-specific
@@ -87,7 +87,7 @@
 
 import { useEffect, useId, useRef, type ReactNode } from 'react';
 import Link from 'next/link';
-import { useReducedMotion } from 'framer-motion';
+
 import { cn } from '@/lib/utils';
 import { useScrollFade } from '@/lib/fairway/use-scroll-fade';
 import {
@@ -96,6 +96,7 @@ import {
   segmentedItemClassName,
   TRACK_SUNKEN_SHADOW,
 } from './segmented';
+import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
 
 export interface SegmentedLinksOption<T extends string = string> {
   value: T;
@@ -132,7 +133,7 @@ export function SegmentedLinks<T extends string = string>({
   // Same resolution `Segmented` uses (this file's sibling): `null`/`undefined`
   // pre-hydration resolves to "not reduced" via `Boolean(...)` below, exactly
   // as `Segmented` already does for the identical pill.
-  const reduceMotion = useReducedMotion();
+  const reduceMotion = useReducedMotionGuard();
   // Unique layoutId so this instance's pill never shares a magic-move with
   // any other Segmented/ViewSwitch/SegmentedLinks pill on the same page.
   const pillId = useId();

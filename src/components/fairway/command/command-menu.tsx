@@ -53,9 +53,9 @@ import { Command } from 'cmdk';
 import {
   AnimatePresence,
   motion,
-  useReducedMotion,
   type Variants,
 } from 'framer-motion';
+import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
 import { cn } from '@/lib/utils';
 import { useScrollFade } from '@/lib/fairway/use-scroll-fade';
 import { Skeleton } from '@/components/fairway/feedback';
@@ -213,7 +213,7 @@ function CommandRow({ item, onPick }: RowProps) {
       {item.shortcut ? (
         <kbd
           aria-hidden="true"
-          className="ml-auto hidden shrink-0 select-none rounded-fw-sm border border-border-subtle bg-surface px-1.5 py-0.5 font-fw-mono text-eyebrow font-medium tracking-normal text-text-tertiary sm:inline-block"
+          className="ml-auto hidden shrink-0 select-none rounded-fw-sm border border-border-subtle bg-surface px-1.5 py-0.5 font-fw-mono text-caption font-medium tracking-normal text-text-tertiary sm:inline-block"
         >
           {item.shortcut}
         </kbd>
@@ -222,7 +222,7 @@ function CommandRow({ item, onPick }: RowProps) {
       {/* "go" affordance appears only on the active row */}
       <GoGlyph
         aria-hidden="true"
-        className="ml-1 h-4 w-4 shrink-0 text-accent-600 opacity-0 transition-opacity [transition-duration:180ms] group-data-[selected=true]:opacity-100"
+        className="ml-1 h-4 w-4 shrink-0 text-accent-ink opacity-0 transition-opacity [transition-duration:180ms] group-data-[selected=true]:opacity-100"
       />
     </Command.Item>
   );
@@ -250,7 +250,7 @@ export function CommandMenu({
   label = 'Command menu',
   className,
 }: CommandMenuProps) {
-  const reduceMotion = useReducedMotion();
+  const reduceMotion = useReducedMotionGuard();
   const [query, setQuery] = useState('');
   const [mounted, setMounted] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -438,7 +438,7 @@ export function CommandMenu({
                   />
                   <kbd
                     aria-hidden="true"
-                    className="hidden shrink-0 select-none rounded-fw-sm border border-border-subtle bg-surface px-1.5 py-0.5 font-fw-mono text-eyebrow font-medium tracking-normal text-text-tertiary sm:inline-block"
+                    className="hidden shrink-0 select-none rounded-fw-sm border border-border-subtle bg-surface px-1.5 py-0.5 font-fw-mono text-caption font-medium tracking-normal text-text-tertiary sm:inline-block"
                   >
                     ESC
                   </kbd>
@@ -529,11 +529,11 @@ export function CommandMenu({
 
                 {/* Footer keyboard hints */}
                 <div className="flex items-center justify-between gap-3 border-t border-border-subtle px-4 py-2.5">
-                  <div className="flex items-center gap-1.5 font-fw-sans text-eyebrow font-normal tracking-normal text-text-tertiary">
+                  <div className="flex items-center gap-1.5 font-fw-sans text-caption font-normal tracking-normal text-text-tertiary">
                     <ArrowUpDownGlyph aria-hidden="true" className="h-3.5 w-3.5" />
                     <span>Navigate</span>
                   </div>
-                  <div className="flex items-center gap-1.5 font-fw-sans text-eyebrow font-normal tracking-normal text-text-tertiary">
+                  <div className="flex items-center gap-1.5 font-fw-sans text-caption font-normal tracking-normal text-text-tertiary">
                     <ReturnGlyph aria-hidden="true" className="h-3.5 w-3.5" />
                     <span>Select</span>
                   </div>

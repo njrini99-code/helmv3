@@ -22,7 +22,7 @@ import { describe, expect, it, vi, beforeEach } from 'vitest';
 
 import { FairwayPlayerGameFingerprint } from './FairwayPlayerGameFingerprint';
 import { GolfUserProvider, type GolfUserData } from '@/contexts/golf-user-context';
-import type { PlayerFingerprint, SectionData } from '@/app/golf/actions/player-fingerprint';
+import type { PlayerFingerprint, SectionData } from '@/app/golf/actions/player-fingerprint-types';
 import type { FingerprintSectionKey } from '@/app/golf/actions/player-fingerprint-types';
 
 vi.mock('next/navigation', () => ({ useRouter: () => ({ push: vi.fn() }) }));
@@ -54,7 +54,7 @@ function makeFingerprint(): PlayerFingerprint {
 
   return {
     player: { id: 'p-1', first_name: 'Jake', last_name: 'Doe', team_name: 'Helmetta CC', avatar_url: null },
-    composite: { rating: 71, trend: 'up', rounds_in_calculation: 12 },
+    composite: { rating: 71, trend: 'up', rounds_in_calculation: 12, form: { score: 71, quality: 'established', qualityLabel: null, roundsCounted: 12, roundsInWindow: 5, averageToPar18: 3.3, curveScore: 71.2, severePatterns: 0, patternPenalty: 0 } },
     metrics_rounds: 18,
     sections: {
       ...emptySections,
@@ -77,7 +77,12 @@ function makeFingerprint(): PlayerFingerprint {
         key: 'scoring',
         category: 'Scoring',
         sparse: false,
-        metrics: [],
+        // What buildScoringSection emits (makeParMetric): avg + signed delta.
+        metrics: [
+          { label: 'Par 3', value: '3.80', comparison: '+0.80', tone: 'bad' },
+          { label: 'Par 4', value: '4.90', comparison: '+0.90', tone: 'bad' },
+          { label: 'Par 5', value: '6.10', comparison: '+1.10', tone: 'bad' },
+        ],
         insights: [],
         // Raw strokes on three different maxes — never a percentage.
         chart_data: {
@@ -99,7 +104,7 @@ const coachUser: GolfUserData = { role: 'coach', userId: 'u-coach', name: 'Coach
 
 beforeEach(() => vi.clearAllMocks());
 
-describe('FairwayPlayerGameFingerprint — SectionChart bars scale honesty', () => {
+describe('FairwayPlayerGameFingerprint — bars scale honesty', () => {
   it('renders par-type strokes averages as plain numbers, never as a percentage', () => {
     render(
       <GolfUserProvider userData={coachUser}>
@@ -107,12 +112,12 @@ describe('FairwayPlayerGameFingerprint — SectionChart bars scale honesty', () 
       </GolfUserProvider>,
     );
 
-    expect(screen.getByText('3.8')).toBeInTheDocument();
-    expect(screen.getByText('4.9')).toBeInTheDocument();
-    expect(screen.getByText('6.1')).toBeInTheDocument();
-    expect(screen.queryByText('3.8%')).not.toBeInTheDocument();
-    expect(screen.queryByText('4.9%')).not.toBeInTheDocument();
-    expect(screen.queryByText('6.1%')).not.toBeInTheDocument();
+    const scoring = document.getElementById('fingerprint-scoring') as HTMLElement;
+    // Par-type rows are signed strokes over par, with the raw averages in the note.
+    expect(scoring.textContent).toContain('+0.80');
+    expect(scoring.textContent).toContain('par 3 3.80');
+    expect(scoring.textContent).toContain('par 5 6.10');
+    expect(scoring.textContent).not.toMatch(/\d\.\d+%/);
   });
 
   it('still renders independent make-rate bars as their own percentage', () => {

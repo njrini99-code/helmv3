@@ -550,7 +550,9 @@ describe('selectAttention — stage-stalled', () => {
     expect(rows[0]!.reason).toBe('stage-stalled');
     expect(rows[0]!.state).toBe('STALLED · REPAIR');
     expect(rows[0]!.tone).toBe('warning');
-    expect(rows[0]!.why).toMatch(/Repair has had \d+ daily cycles/);
+    // Repair runs every 6h since 2026-09-23 (the desktop health routine), so
+    // the stall copy counts 6-hourly cycles, same as Diagnose.
+    expect(rows[0]!.why).toMatch(/Repair has had \d+ 6-hourly cycles/);
     expect(rows[0]!.why).toMatch(/without opening a pull request/);
     expect(rows[0]!.ageMs).toBe(NOW - Date.parse(analysis.generatedAt));
     expect(rows[0]!.href).toBe('/admin/errors/skipped');

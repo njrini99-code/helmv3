@@ -4,7 +4,7 @@ import { getGolfSessionProfile } from '@/lib/auth/session';
 import { FeatureUnavailable } from '@/components/fairway';
 
 export const metadata: Metadata = {
-  title: 'Coaching Intelligence | GolfHelm',
+  title: 'Coaching Intelligence',
   description: 'Configure your coaching philosophy, alert thresholds, and AI insight preferences.',
 };
 
