@@ -2,7 +2,7 @@
 
 - Feature: `coachhelm_ai`
 - Surface: `GET /golf/dashboard` (any page that ranks the CoachHelm insight feed)
-- Status: FIXED in 442522795 on `agent/health-20260927-0047`; PR pending merge, then deploy
+- Status: MERGED in #2080 (17343f1a6) on 2026-09-27; awaiting production deploy (production 6ee77e98e as of 2026-09-27 09:48Z)
 - Risk: R1. Read path only. No schema, RLS, grant or data-shape change; ranking and calibration math unchanged.
 - Signal: Sentry N+1 Query JAVASCRIPT-NEXTJS-SB (performance issue, level info, 0 users), 37 events since 2026-09-04, last 2026-09-27 01:37Z on production release 6ee77e98e. Not a Bridge (admin_events) fingerprint.
 
