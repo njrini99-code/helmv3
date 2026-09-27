@@ -49,7 +49,6 @@ import {
   VIZ_COLOR,
   VIZ_DIVERGING,
   VIZ_FONT,
-  VIZ_REVEAL_MS,
   formatSigned,
 } from './theme';
 
@@ -269,8 +268,7 @@ export function GenomeFingerprint({
             dataKey="diverge"
             name={isCompare ? `${rightLabel} − ${leftLabel}` : `vs ${baseline}`}
             radius={[0, 4, 4, 0]}
-            isAnimationActive
-            animationDuration={VIZ_REVEAL_MS}
+            isAnimationActive={false}
           >
             {liveRows.map((r, i) => (
               <Cell

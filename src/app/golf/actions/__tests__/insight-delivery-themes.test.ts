@@ -229,6 +229,8 @@ interface SupabaseMockOpts {
   } | null;
   /** when true, the SG cache fetch rejects (exercises the best-effort catch). */
   sgCacheError?: boolean;
+  /** rows for the `golf_rounds` fetches (shot drivers + SG trend); default empty. */
+  rounds?: unknown[];
 }
 
 type TerminalResult<T> = { data: T; error: { message: string } | null };
@@ -260,7 +262,7 @@ function makeSupabaseMock(opts: SupabaseMockOpts) {
   // golf_rounds: empty completed-rounds set → both best-effort fetchers bail
   // to undefined without ever touching golf_shots.
   const buildRoundsBuilder = () => {
-    const terminal: TerminalResult<unknown[]> = { data: [], error: null };
+    const terminal: TerminalResult<unknown[]> = { data: opts.rounds ?? [], error: null };
     return {
       select: vi.fn().mockReturnThis(),
       eq: vi.fn().mockReturnThis(),
@@ -766,5 +768,39 @@ describe('getThemesForCoach — auth gating + delegation', () => {
     const res = await getThemesForCoach({ player_id: 'p-1' });
     expect(res.success).toBe(false);
     expect(res.error).toBe('Failed to assemble themes');
+  });
+});
+
+describe('getThemesForPlayer — SG trend reads countable rounds only', () => {
+  function round(date: string, putt: number, over: Record<string, unknown> = {}) {
+    return {
+      id: `r-${date}`,
+      round_date: date,
+      holes_played: 18,
+      total_score: 74,
+      front_nine: 37,
+      back_nine: 37,
+      total_putts: 31,
+      strokes_gained_putting: putt,
+      strokes_gained_approach: null,
+      strokes_gained_tee: null,
+      strokes_gained_around_green: null,
+      ...over,
+    };
+  }
+
+  it('a 37 stored as 18 holes is not countable, even when its SG is under the backstop', async () => {
+    const rounds = [
+      // Newest first: the mis-stored round, then six ordinary 18-hole rounds.
+      round('2026-09-17', 5, { total_score: 37, front_nine: 18, back_nine: 19, total_putts: 18 }),
+      ...['09-10', '09-09', '09-08', '08-25', '08-24', '08-23'].map((d) => round(`2026-${d}`, -3)),
+    ];
+    useClient(makeSupabaseMock({ userId: 'u-1', insightRows: [], rounds }));
+
+    const res = await getThemesForPlayer('p-1');
+    expect(res.success).toBe(true);
+    const putting = (res.data as AssembledThemes).themes.find((t) => t.category === 'putting');
+    expect(putting?.trend?.recentAvg).toBeCloseTo(-3);
+    expect(putting?.trend?.direction).toBe('steady');
   });
 });

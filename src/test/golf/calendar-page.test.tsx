@@ -177,3 +177,39 @@ describe('GolfCalendarPage — events fetch contract', () => {
     );
   });
 });
+
+describe('GolfCalendarPage — overdue tasks for the agenda row', () => {
+  beforeEach(() => {
+    queryLog.length = 0;
+    tableResults.clear();
+    tableResults.set('golf_coaches', { data: [], error: null });
+    tableResults.set('golf_team_members', { data: [], error: null });
+    tableResults.set('golf_team_settings', { data: { timezone: 'America/New_York' }, error: null });
+    tableResults.set('golf_events', { data: [], error: null });
+  });
+
+  it("counts the coach's team tasks past due and passes the count to the calendar", async () => {
+    tableResults.set('golf_tasks', {
+      data: [
+        { status: 'pending', due_date: '2020-01-01', assignments: [{ status: 'pending' }] },
+        { status: 'pending', due_date: '2020-01-02', assignments: [{ status: 'completed' }] },
+        { status: 'pending', due_date: '2020-01-03', assignments: [] },
+      ],
+      error: null,
+    });
+
+    const jsx = (await renderEventsSection()) as React.ReactElement<{ overdueTaskCount?: number }>;
+    expect(jsx.props.overdueTaskCount).toBe(2);
+
+    const tasksQuery = queryLog.find((q) => q.table === 'golf_tasks');
+    expect(tasksQuery).toBeDefined();
+    expect(tasksQuery!.calls).toContainEqual({ method: 'eq', args: ['team_id', 'team-1'] });
+    expect(tasksQuery!.calls.some((c) => c.method === 'lte' && c.args[0] === 'due_date')).toBe(true);
+  });
+
+  it('degrades to 0 (row hidden) when the task read fails, without failing the page', async () => {
+    tableResults.set('golf_tasks', { data: null, error: { message: 'permission denied' } });
+    const jsx = (await renderEventsSection()) as React.ReactElement<{ overdueTaskCount?: number }>;
+    expect(jsx.props.overdueTaskCount).toBe(0);
+  });
+});

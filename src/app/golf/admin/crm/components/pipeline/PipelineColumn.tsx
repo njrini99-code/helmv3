@@ -71,7 +71,7 @@ export function PipelineColumn({
       ref={setNodeRef}
       className={cn(
         'flex-shrink-0 w-[280px] rounded-card border border-border-subtle bg-surface-tint overflow-hidden',
-        'flex flex-col transition-all duration-200 min-h-[400px]',
+        'flex flex-col transition duration-200 min-h-[400px]',
         isOver && 'ring-2 ring-accent-500 ring-offset-2 bg-accent-50/40',
       )}
     >
@@ -95,7 +95,7 @@ export function PipelineColumn({
         </div>
         <span
           className={cn(
-            'inline-flex items-center justify-center min-w-[22px] h-5 px-1.5 rounded-full text-eyebrow font-bold tabular-nums',
+            'inline-flex items-center justify-center min-w-[22px] h-5 px-1.5 rounded-full text-caption font-bold tabular-nums',
             countBg,
             countText,
             isOver && 'bg-accent-650 text-text-on-accent',
@@ -106,7 +106,7 @@ export function PipelineColumn({
       </div>
 
       {description && (
-        <p className="px-3 pt-2 text-eyebrow text-text-tertiary">{description}</p>
+        <p className="px-3 pt-2 text-caption text-text-tertiary">{description}</p>
       )}
 
       {/* Card list */}

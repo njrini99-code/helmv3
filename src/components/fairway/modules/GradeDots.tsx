@@ -56,7 +56,7 @@ export function GradeDots({ score, label, onGreen = true }: GradeDotsComponentPr
         })}
         <span
           className={cn(
-            'ml-1.5 font-fw-mono text-eyebrow uppercase tracking-[0.07em]',
+            'ml-1.5 font-fw-mono text-caption',
             onGreen ? 'text-ink-on-deep-soft' : 'text-text-tertiary',
           )}
         >

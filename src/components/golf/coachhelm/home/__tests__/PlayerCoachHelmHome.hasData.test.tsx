@@ -38,11 +38,8 @@ vi.mock('@/components/fairway/modules', () => ({
   ),
 }));
 
-vi.mock('../PlayerSpine', () => ({
-  PlayerSpine: () => <div data-testid="player-spine" />,
-}));
-vi.mock('../PlayerHomeBento', () => ({
-  PlayerHomeBento: () => <div data-testid="player-home-bento" />,
+vi.mock('../PlayerHubFeed', () => ({
+  PlayerHubFeed: () => <div data-testid="player-hub-feed" />,
 }));
 vi.mock('../DevelopmentDrill', () => ({
   DevelopmentDrill: () => <div data-testid="development-drill" />,

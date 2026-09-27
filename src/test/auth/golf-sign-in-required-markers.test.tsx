@@ -1,26 +1,19 @@
 /**
  * The golf sign-in form is the first screen every coach and player sees.
  *
- * Both fields are genuinely required — verified in production 2026-08-17 on
- * helmsportslabs.com/golf/login, where the DOM reports `required: true` and
- * `aria-required: "true"` on BOTH inputs. But the rendered labels read:
+ * History: on 2026-08-17 production rendered "Email*" next to a plain
+ * "Password" because the password label was hand-rolled beside the "Forgot
+ * password?" link, so one required field read as optional. The fix at the time
+ * added the asterisk to both.
  *
- *     Email*        <- shared <Input label="Email" required /> adds the marker
- *     Password      <- hand-rolled <label>, no marker
- *
- * The password field is hand-rolled because it needs the "Forgot password?"
- * link on the same row (golf-sign-in-form.tsx:287-296), which the shared
- * component cannot express — so it silently loses the asterisk the shared
- * component would have supplied.
- *
- * The consequence is small but it is on the highest-traffic screen in the
- * product: a user scanning the form sees exactly one field marked required and
- * can reasonably read the other as optional. The two fields are also visually
- * inconsistent with each other, side by side.
- *
- * Assertion is on the RENDERED label, not the input attribute — the attribute
- * was already correct, and testing it would have passed while the user-visible
- * defect remained.
+ * The 2026-09 redesign (owner request) removes required markers entirely: a
+ * two-field sign-in form doesn't need them, and the fields are now an iOS
+ * inset-grouped pair with placeholder-only visible names. This test still
+ * guards what the original one cared about, which is that the two fields are
+ * treated the same:
+ *   - neither label carries a marker (no asymmetry can come back),
+ *   - both inputs keep a bound <label> and stay genuinely `required`,
+ *   - the password-reset escape hatch is still offered (now below the button).
  */
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, cleanup } from '@testing-library/react';
@@ -33,7 +26,7 @@ vi.mock('next/navigation', () => ({
 vi.mock('@/app/golf/actions/auth', () => ({ loginAction: vi.fn() }));
 vi.mock('@/lib/error-logging', () => ({ logError: vi.fn() }));
 vi.mock('@/lib/utils/capacitor', () => ({ triggerHaptic: vi.fn() }));
-vi.mock('@/lib/fairway/haptics', () => ({ fwHapticSequence: vi.fn() }));
+vi.mock('@/lib/fairway/haptics', () => ({ fwHapticSequence: vi.fn(), fwHaptic: vi.fn() }));
 
 afterEach(() => cleanup());
 
@@ -45,14 +38,15 @@ function labelTextFor(id: string): string {
 }
 
 describe('golf sign-in — required markers', () => {
-  it('marks BOTH required fields, not just the email', () => {
+  it('labels both fields identically, with no required asterisk on either', () => {
     render(<GolfSignInForm />);
 
-    expect(labelTextFor('golf-signin-email')).toContain('*');
-    expect(labelTextFor('golf-signin-password')).toContain('*');
+    expect(labelTextFor('golf-signin-email')).toBe('Email');
+    expect(labelTextFor('golf-signin-password')).toBe('Password');
+    expect(document.body.textContent).not.toContain('*');
   });
 
-  it('keeps both inputs genuinely required (the attribute half was never broken)', () => {
+  it('keeps both inputs genuinely required', () => {
     render(<GolfSignInForm />);
 
     const email = document.querySelector<HTMLInputElement>('#golf-signin-email');
@@ -61,10 +55,9 @@ describe('golf sign-in — required markers', () => {
     expect(password?.required).toBe(true);
   });
 
-  it('still offers the password-reset escape hatch beside the label', () => {
-    // The hand-rolled label exists to fit this link on the same row; a fix that
-    // reverts to the shared <Input label=...> would drop it.
+  it('still offers the password-reset escape hatch', () => {
     render(<GolfSignInForm />);
-    expect(screen.getByRole('link', { name: /forgot password/i })).toBeTruthy();
+    const link = screen.getByRole('link', { name: /forgot password/i });
+    expect(link.getAttribute('href')).toBe('/golf/forgot-password');
   });
 });

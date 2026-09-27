@@ -164,6 +164,17 @@ export function useCoachPhilosophy(coachId: string | null) {
     const [error, setError] = useState<string | null>(null);
 
     const supabaseRef = useRef(createClient());
+    // DATA-11 — every save() takes a ticket, and every field it patches is
+    // stamped with that ticket. A response may only write back the fields it
+    // still owns (no newer save has claimed them). Two quick edits can resolve
+    // out of order, and their UPDATEs can even commit in the opposite order,
+    // so applying a whole returned row would let one save's stale copy of
+    // another save's field overwrite the newer value — visibly reverting the
+    // coach's edit while the database holds it. Per-field ownership merges
+    // each response's own fields only. This orders client state; the
+    // database applies each partial UPDATE in arrival order.
+    const saveSeqRef = useRef(0);
+    const fieldSeqRef = useRef(new Map<keyof CoachPhilosophy, number>());
 
     // Fetch on mount
     useEffect(() => {
@@ -227,6 +238,11 @@ export function useCoachPhilosophy(coachId: string | null) {
         async (updates: Partial<CoachPhilosophy>, options: SaveCoachPhilosophyOptions = {}) => {
             if (!philosophy?.id) return false;
 
+            const seq = ++saveSeqRef.current;
+            const isLatest = () => seq === saveSeqRef.current;
+            const patchedKeys = Object.keys(updates) as Array<keyof CoachPhilosophy>;
+            for (const key of patchedKeys) fieldSeqRef.current.set(key, seq);
+
             setSaving(true);
             setError(null);
 
@@ -237,16 +253,28 @@ export function useCoachPhilosophy(coachId: string | null) {
                 .single();
 
             if (updateError) {
+                // Always surface a failure, even from a superseded save: its
+                // patch may touch different fields than the newer one, and a
+                // failed write must never be silent.
                 setError(updateError.message);
-                setSaving(false);
+                if (isLatest()) setSaving(false);
                 return false;
             }
 
-            setPhilosophy(dbToTs(data as unknown as PhilosophyDbRow));
+            const row = dbToTs(data as unknown as PhilosophyDbRow);
+            const ownedKeys = patchedKeys.filter((key) => fieldSeqRef.current.get(key) === seq);
+            const latest = isLatest();
+            setPhilosophy((prev) => {
+                if (!prev) return row;
+                const next: Record<string, unknown> = { ...prev };
+                for (const key of ownedKeys) next[key] = row[key];
+                if (latest) next.updatedAt = row.updatedAt;
+                return next as unknown as CoachPhilosophy;
+            });
             if (options.revalidate) {
                 await revalidateCoachingPhilosophyPaths();
             }
-            setSaving(false);
+            if (isLatest()) setSaving(false);
             return true;
         },
         [philosophy?.id]

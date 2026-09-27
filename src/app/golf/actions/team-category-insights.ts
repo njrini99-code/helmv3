@@ -18,6 +18,9 @@ import {
   computeTeamHealth,
 } from './team-category-insights-helpers';
 import { describeError } from '@/lib/utils/describe-error';
+import { withCanonicalRoundTotal } from '@/lib/golf/round-total';
+import { isCountableRound, type CountableRoundInput } from '@/lib/golf/round-countable';
+import { aggregateCountableRounds, type CountableRoundRow } from '@/lib/golf/countable-round-stats';
 
 // ============================================================================
 // TYPES
@@ -151,6 +154,8 @@ const ROUND_STAT_COLUMNS = [
   'total_gir',
   'total_gir_possible',
   'holes_played',
+  'front_nine',
+  'back_nine',
 ] as const;
 
 // ============================================================================
@@ -240,7 +245,7 @@ function generateCategoryInsights(
   if (improvingCount > decliningCount) {
     insights.push({
       id: `${category.id}-trend`,
-      message: `Team ${category.label.toLowerCase()} trending up — ${improvingCount} of ${players.length} players improving`,
+      message: `Team ${category.label.toLowerCase()} trending up, ${improvingCount} of ${players.length} players improving`,
       tone: 'positive',
     });
   } else if (decliningCount > improvingCount) {
@@ -257,7 +262,7 @@ function generateCategoryInsights(
     const names = attentionPlayers.map((p) => p.playerName.split(' ')[0]).join(', ');
     insights.push({
       id: `${category.id}-attention`,
-      message: `${attentionPlayers.length} player${attentionPlayers.length > 1 ? 's' : ''} below team average — ${names}`,
+      message: `${attentionPlayers.length} player${attentionPlayers.length > 1 ? 's' : ''} below team average, ${names}`,
       tone: 'negative',
     });
   }
@@ -846,7 +851,9 @@ async function getTeamCategoryInsightsImpl(
         .select(ROUND_STAT_COLUMNS.join(', '))
         .in('player_id', playerIds)
         .eq('status', 'completed')
-        .gte('round_date', trendSinceStr)
+        // No date floor here: the countable-round putts and scoring values
+        // below are lifetime (like the cache they replace). The 365-day
+        // window is applied to the trend sample only.
         .order('round_date', { ascending: false })
         .order('id', { ascending: true })
         // Dynamic string select widens the row type; cast the final builder to
@@ -875,10 +882,44 @@ async function getTeamCategoryInsightsImpl(
 
     // Group rounds by player, ordered most-recent-first, capped per player so
     // every player contributes at most their last `ROUNDS_PER_PLAYER` rounds.
+    // Countable rounds only (src/lib/golf/round-countable.ts), canonical
+    // hole-sum totals. A 37-stroke round or a hole-less QA round no longer
+    // moves a category trend, Putts/Round or Avg vs Par.
+    type CountableRow = Record<string, unknown> & CountableRoundInput & { player_id: unknown; score_to_par: number | null };
+    const countableRounds = ((roundsResult.data ?? []) as unknown as CountableRow[])
+      .map((r) => withCanonicalRoundTotal(r))
+      .filter(isCountableRound);
     const sampledRounds = samplePerPlayerRounds(
-      (roundsResult.data ?? []) as unknown as Array<Record<string, unknown> & { player_id: unknown }>,
+      countableRounds.filter((r) => String(r.round_date ?? '') >= (trendSinceStr ?? '')),
       ROUNDS_PER_PLAYER,
     );
+
+    // Putts/Round and Avg vs Par from countable rounds (the player cache's
+    // putts_per_round divides by hole-less rounds and its
+    // scoring_average_vs_par counts implausible rounds). If the rounds read
+    // failed, the cache value is used instead.
+    const countableByPlayer = new Map<string, CountableRow[]>();
+    for (const r of countableRounds) {
+      const pid = r.player_id as string;
+      const arr = countableByPlayer.get(pid);
+      if (arr) arr.push(r);
+      else countableByPlayer.set(pid, [r]);
+    }
+    const countableOverride = (pid: string, metric: string): number | null | undefined => {
+      if (roundsResult.error) return undefined; // fall back to the cache
+      const rows = countableByPlayer.get(pid) ?? [];
+      if (metric === 'putts_per_round') {
+        return aggregateCountableRounds(rows as unknown as CountableRoundRow[]).puttsPer18;
+      }
+      if (metric === 'scoring_average_vs_par') {
+        const toPar = rows
+          .filter((r) => (r.holes_played ?? 18) === 18)
+          .map((r) => r.score_to_par as number | null)
+          .filter((v): v is number => v != null && Number.isFinite(v));
+        return toPar.length > 0 ? toPar.reduce((a, b) => a + b, 0) / toPar.length : null;
+      }
+      return undefined;
+    };
     const roundsByPlayer = new Map<string, Record<string, unknown>[]>();
     for (const r of sampledRounds) {
       const pid = r.player_id as string;
@@ -899,7 +940,10 @@ async function getTeamCategoryInsightsImpl(
       for (const pid of playerIds) {
         const stats = statsByPlayer.get(pid);
         const info = playerInfoMap.get(pid);
-        const rawVal = stats?.[catDef.primaryMetric] as number | null | undefined;
+        const override = countableOverride(pid, catDef.primaryMetric);
+        const rawVal = override !== undefined
+          ? override
+          : (stats?.[catDef.primaryMetric] as number | null | undefined);
 
         if (rawVal == null || info == null) continue;
 
@@ -979,7 +1023,7 @@ async function getTeamCategoryInsightsImpl(
       if (catDef.id === 'short_game' && categoryTrend === 'stable' && playerStats.every((p) => p.trend === 'stable')) {
         insights.unshift({
           id: `${catDef.id}-trend-unavailable`,
-          message: 'Short game trend based on aggregate scramble stats — per-round trend data unavailable',
+          message: 'Short game trend based on aggregate scramble stats, per-round trend data unavailable',
           tone: 'neutral',
         });
       }

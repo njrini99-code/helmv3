@@ -89,7 +89,7 @@ export interface FairwayTripDetailProps {
 function DetailRow({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div>
-      <p className="font-fw-sans text-eyebrow font-medium uppercase tracking-[0.12em] text-text-tertiary">
+      <p className="font-fw-sans text-caption font-medium text-text-tertiary">
         {label}
       </p>
       <p className="mt-1 font-fw-sans text-body-sm text-text-secondary">{value}</p>
@@ -213,7 +213,7 @@ export function FairwayTripDetail({
             {/* Schedule */}
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <Inset padding="sm">
-                <p className="font-fw-sans text-eyebrow font-medium uppercase tracking-[0.12em] text-text-tertiary">
+                <p className="font-fw-sans text-caption font-medium text-text-tertiary">
                   Departure
                 </p>
                 <p className="mt-1 font-fw-sans text-body-sm font-medium text-text-primary tabular-nums">
@@ -232,7 +232,7 @@ export function FairwayTripDetail({
               </Inset>
               {itinerary.return_date ? (
                 <Inset padding="sm">
-                  <p className="font-fw-sans text-eyebrow font-medium uppercase tracking-[0.12em] text-text-tertiary">
+                  <p className="font-fw-sans text-caption font-medium text-text-tertiary">
                     Return
                   </p>
                   <p className="mt-1 font-fw-sans text-body-sm font-medium text-text-primary tabular-nums">
@@ -270,7 +270,7 @@ export function FairwayTripDetail({
             {/* Lodging */}
             {itinerary.hotel_name ? (
               <Inset padding="sm">
-                <p className="font-fw-sans text-eyebrow font-medium uppercase tracking-[0.12em] text-text-tertiary">
+                <p className="font-fw-sans text-caption font-medium text-text-tertiary">
                   Lodging
                 </p>
                 <p className="mt-1 font-fw-sans text-body-sm font-medium text-text-primary">

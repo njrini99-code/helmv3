@@ -25,7 +25,7 @@
  * Signals surface (no `router.refresh()` after mutations there).
  * ========================================================================== */
 
-import { useEffect, useMemo, useState, useTransition } from 'react';
+import { Suspense, use, useEffect, useLayoutEffect, useMemo, useRef, useState, useTransition } from 'react';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { ChevronDown, MessageCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -35,6 +35,7 @@ import { surfaceHref, surfaceName } from '@/lib/golf/surface-registry';
 import type { PlayersGridViewProps, FairwayEffectivenessProps, PlayersGridStats } from '@/components/fairway';
 import { InstrumentPanel } from '@/components/fairway/instrument/InstrumentPanel';
 import { InsufficientData } from '@/components/fairway/feedback/InsufficientData';
+import { Skeleton } from '@/components/fairway/feedback/Skeleton';
 import { refreshTeamAnalysisAsCoach } from '@/app/golf/actions/insights';
 import { reviewSignal, dismissSignal } from '@/app/golf/actions/signal-groups';
 import type { TeamCategoryInsightsResult, TeamShotAnalysis } from '@/app/golf/actions/team-category-insights';
@@ -59,6 +60,7 @@ import {
   findSignalInGroups,
   formatRelativeScanTime,
   removeSignalFromGroups,
+  restoreSignalToGroups,
   resolveQueueFilter,
   resolveTriageView,
 } from './buildTriageViewModel';
@@ -178,8 +180,74 @@ export interface TriageDeskProps {
   teamShotAnalysis?: TeamShotAnalysis;
   playersDrillProps: PlayersGridViewProps;
   /** Same SSR-fetched shape the retired cockpit consumed — `EffectivenessScoreboard`
-   *  only reads its `initialOverview`/`initialEffectiveness`/`initialPerformance` fields. */
-  effectivenessDrillProps: FairwayEffectivenessProps;
+   *  only reads its `initialOverview`/`initialEffectiveness`/`initialPerformance` fields.
+   *  May arrive as a promise: the page streams these four secondary reads
+   *  instead of holding the Brief header and signal queue behind them, and
+   *  the Effectiveness view suspends on it (behind its own fallback) only if
+   *  the coach opens that tab before it resolves. */
+  effectivenessDrillProps: FairwayEffectivenessProps | Promise<FairwayEffectivenessProps>;
+}
+
+function isPromiseLike<T>(value: T | Promise<T>): value is Promise<T> {
+  return typeof (value as { then?: unknown } | null)?.then === 'function';
+}
+
+/** Resolves the (possibly streamed) effectiveness payload. `use()` on an
+ *  already-settled Flight promise returns synchronously, so a coach who opens
+ *  the tab after the stream landed never sees the fallback. */
+function EffectivenessPanel({
+  source,
+}: {
+  source: FairwayEffectivenessProps | Promise<FairwayEffectivenessProps>;
+}) {
+  const props = isPromiseLike(source) ? use(source) : source;
+  return (
+    <EffectivenessScoreboard
+      initialOverview={props.initialOverview}
+      initialEffectiveness={props.initialEffectiveness}
+      initialPerformance={props.initialPerformance}
+    />
+  );
+}
+
+/** Holds roughly the scoreboard's footprint while the streamed reads land, so
+ *  the fallback → content swap doesn't itself shift the page. */
+function EffectivenessFallback() {
+  return (
+    <div role="status" aria-busy="true" className="flex min-h-[480px] flex-col gap-4">
+      <span className="sr-only">Loading effectiveness…</span>
+      <Skeleton className="h-24 w-full rounded-fw-md" />
+      <Skeleton className="h-40 w-full rounded-fw-md" />
+      <Skeleton className="h-40 w-full rounded-fw-md" />
+    </div>
+  );
+}
+
+/** Parse the desk's URL-owned navigation state from a query string. */
+function readTriageNavState(
+  params: URLSearchParams,
+  rosterPlayers: ReadonlyArray<{ id: string }>,
+) {
+  const playerId = params.get('player');
+  const validPlayerId =
+    playerId && rosterPlayers.some((player) => player.id === playerId) ? playerId : null;
+  return {
+    view: resolveTriageView(params.get('view')),
+    queueFilter: resolveQueueFilter(params.get('filter')),
+    // `signal` is the canonical param this desk writes; `id` is the legacy
+    // insight deep-link CommandPalette.tsx:326 and FocusAreaCard.tsx:315 still
+    // push (`?id=<insightId>`, forwarded here by the /insights redirect shim).
+    // Both key off the same raw `golf_coach_insights`/`golf_patterns_v2` id
+    // (signal-groups.ts's `id: row.id`), so falling back to `id` re-opens the
+    // dossier for that exact insight instead of landing on an empty selection.
+    signalId: params.get('signal') ?? params.get('id'),
+    playerId: validPlayerId,
+    // A stale `player=` (not on the roster) degrades to the unscoped roster
+    // rather than an empty areas board.
+    playersTab: (params.get('playersTab') === 'areas' || Boolean(validPlayerId) ? 'areas' : 'roster') as
+      | 'roster'
+      | 'areas',
+  };
 }
 
 export function TriageDesk({
@@ -197,38 +265,100 @@ export function TriageDesk({
   const searchParams = useSearchParams();
   const rosterPlayers = playersDrillProps.players ?? [];
 
-  const requestedView = resolveTriageView(searchParams.get('view'));
-  const requestedQueueFilter = resolveQueueFilter(searchParams.get('filter'));
-  // `signal` is the canonical param this desk writes; `id` is the legacy
-  // insight deep-link CommandPalette.tsx:326 and FocusAreaCard.tsx:315 still
-  // push (`?id=<insightId>`, forwarded here by the /insights redirect shim).
-  // Both key off the same raw `golf_coach_insights`/`golf_patterns_v2` id
-  // (signal-groups.ts's `id: row.id`), so falling back to `id` re-opens the
-  // dossier for that exact insight instead of landing on an empty selection.
-  const requestedSignalId = searchParams.get('signal') ?? searchParams.get('id');
-  const requestedPlayerId = searchParams.get('player');
-  const validRequestedPlayerId =
-    requestedPlayerId && rosterPlayers.some((player) => player.id === requestedPlayerId)
-      ? requestedPlayerId
-      : null;
-  const requestedPlayersTab =
-    searchParams.get('playersTab') === 'areas' || validRequestedPlayerId ? 'areas' : 'roster';
-
   // These query parameters only choose among data that is already present in
   // this client island. Keep an optimistic local mirror so a tab/filter/row
   // responds in the same frame instead of waiting for the force-dynamic page
-  // (and all of its Supabase reads) to render again.
-  const [view, setView] = useState(requestedView);
-  const [queueFilter, setQueueFilter] = useState(requestedQueueFilter);
-  const [selectedSignalId, setSelectedSignalId] = useState<string | null>(requestedSignalId);
-  const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(validRequestedPlayerId);
-  const [playersTab, setPlayersTab] = useState<'roster' | 'areas'>(requestedPlayersTab);
+  // (and all of its Supabase reads) to render again. First render reads the
+  // server-visible `useSearchParams()` snapshot, so a deep link (`?view=`,
+  // `?signal=`, `?player=`) selects its view on the very first paint.
+  const initialNav = readTriageNavState(new URLSearchParams(searchParams.toString()), rosterPlayers);
+  const [view, setView] = useState(initialNav.view);
+  const [queueFilter, setQueueFilter] = useState(initialNav.queueFilter);
+  const [selectedSignalId, setSelectedSignalId] = useState<string | null>(initialNav.signalId);
+  const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(initialNav.playerId);
+  // MOT-19: the signal the coach just closed, so the queue can scroll back to
+  // its row and highlight it on Back.
+  const [returnSignalId, setReturnSignalId] = useState<string | null>(null);
+  const lastSignalRef = useRef<string | null>(initialNav.signalId);
+  useEffect(() => {
+    if (lastSignalRef.current && !selectedSignalId) setReturnSignalId(lastSignalRef.current);
+    lastSignalRef.current = selectedSignalId;
+  }, [selectedSignalId]);
+  const [playersTab, setPlayersTab] = useState<'roster' | 'areas'>(initialNav.playersTab);
 
-  useEffect(() => setView(requestedView), [requestedView]);
-  useEffect(() => setQueueFilter(requestedQueueFilter), [requestedQueueFilter]);
-  useEffect(() => setSelectedSignalId(requestedSignalId), [requestedSignalId]);
-  useEffect(() => setSelectedPlayerId(validRequestedPlayerId), [validRequestedPlayerId]);
-  useEffect(() => setPlayersTab(requestedPlayersTab), [requestedPlayersTab]);
+  function applyNavState(next: ReturnType<typeof readTriageNavState>) {
+    setView(next.view);
+    setQueueFilter(next.queueFilter);
+    setSelectedSignalId(next.signalId);
+    setSelectedPlayerId(next.playerId);
+    setPlayersTab(next.playersTab);
+  }
+
+  // Re-sync when the router's query changes underneath us (back/forward, a
+  // link from elsewhere into this page, or Next syncing one of our own
+  // `history.replaceState` writes). Read the LIVE address bar rather than the
+  // hook snapshot: Next applies a replaceState sync inside a transition, so
+  // after two quick taps the snapshot can briefly still name the first tab —
+  // adopting it would flicker the desk back a view before settling.
+  const searchKey = searchParams.toString();
+  const hasSyncedRef = useRef(false);
+  useEffect(() => {
+    if (!hasSyncedRef.current) {
+      hasSyncedRef.current = true;
+      return;
+    }
+    const live =
+      typeof window === 'undefined'
+        ? new URLSearchParams(searchKey)
+        : new URLSearchParams(window.location.search);
+    applyNavState(readTriageNavState(live, rosterPlayers));
+    // rosterPlayers is a fresh array per server render; the query string is
+    // the only thing this sync keys on.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchKey]);
+
+  // ── Scroll anchoring for top-level view switches ─────────────────────────
+  // The three views have very different heights (Signals on a phone is
+  // several screens; Players/Effectiveness can be shorter than one). When
+  // the document shrinks under a coach who has scrolled down to the switch,
+  // the browser clamps scrollY and the whole page jumps upward — the
+  // "tapping the toggle flips the screen up" report. Before the swap, give
+  // the view region just enough min-height to keep the current scroll
+  // position valid (it fills at most one viewport below the switch), so
+  // the switch stays exactly where the finger left it. Recomputed on every
+  // switch, never released on scroll (that would reintroduce the clamp).
+  const switchRowRef = useRef<HTMLDivElement | null>(null);
+  const viewRegionRef = useRef<HTMLDivElement | null>(null);
+  const revealSwitchRef = useRef(false);
+
+  function anchorBeforeViewSwitch() {
+    if (typeof window === 'undefined') return;
+    const switchRow = switchRowRef.current;
+    const region = viewRegionRef.current;
+    if (!switchRow || !region) return;
+    const viewportHeight = window.innerHeight;
+    const switchRect = switchRow.getBoundingClientRect();
+    const switchOnScreen = switchRect.bottom > 0 && switchRect.top < viewportHeight;
+    if (switchOnScreen) {
+      const regionTop = region.getBoundingClientRect().top;
+      region.style.minHeight = `${Math.max(0, Math.ceil(viewportHeight - regionTop))}px`;
+      revealSwitchRef.current = false;
+    } else {
+      // A switch triggered from deep in the page (e.g. a TeamSignalSummary
+      // player row) — holding height here would park the coach in blank
+      // space. Let the view settle, then bring the switch (and the new
+      // view's top) into view instead.
+      region.style.minHeight = '';
+      revealSwitchRef.current = true;
+    }
+  }
+
+  useLayoutEffect(() => {
+    if (!revealSwitchRef.current) return;
+    revealSwitchRef.current = false;
+    const switchRow = switchRowRef.current;
+    if (typeof switchRow?.scrollIntoView === 'function') switchRow.scrollIntoView({ block: 'nearest' });
+  }, [view]);
 
   const [groups, setGroups] = useState(initialGroups);
   useEffect(() => {
@@ -305,30 +435,43 @@ export function TriageDesk({
       href,
       typeof window === 'undefined' ? 'https://helmsportslabs.com' : window.location.origin,
     );
-    const nextPlayerId = next.searchParams.get('player');
+    const nextNav = readTriageNavState(next.searchParams, rosterPlayers);
 
-    setView(resolveTriageView(next.searchParams.get('view')));
-    setQueueFilter(resolveQueueFilter(next.searchParams.get('filter')));
-    setSelectedSignalId(next.searchParams.get('signal') ?? next.searchParams.get('id'));
-    setSelectedPlayerId(
-      nextPlayerId && rosterPlayers.some((player) => player.id === nextPlayerId)
-        ? nextPlayerId
-        : null,
-    );
-    setPlayersTab(
-      next.searchParams.get('playersTab') === 'areas' || Boolean(nextPlayerId) ? 'areas' : 'roster',
-    );
+    if (nextNav.view !== view) anchorBeforeViewSwitch();
+    applyNavState(nextNav);
 
-    if (typeof window !== 'undefined') {
-      window.history.replaceState(window.history.state, '', `${next.pathname}${next.search}${next.hash}`);
-    } else {
+    if (typeof window === 'undefined') {
       router.replace(href, { scroll: false });
+      return;
     }
+    // Purely client-side: every view's data is already in this island, so
+    // there is nothing for a server round trip (and the route's loading.tsx
+    // fallback) to buy. `null` state — NOT `window.history.state` — so
+    // Next's patched replaceState syncs its router URL: carrying the
+    // existing `__NA` marker made Next skip that sync, leaving its
+    // canonical URL stale so a later `router.refresh()` re-fetched (and
+    // wrote back into the address bar) the PREVIOUS query.
+    const nextUrl = `${next.pathname}${next.search}${next.hash}`;
+    const currentUrl = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+    // Safari throttles replaceState (100 per 10s); a no-op write only costs.
+    if (nextUrl !== currentUrl) window.history.replaceState(null, '', nextUrl);
   }
 
   const counts = useMemo(() => computeBriefCounts(groups), [groups]);
   const verdict = useMemo(() => buildBriefVerdict(groups, counts), [groups, counts]);
-  const lastScanLabel = useMemo(() => formatRelativeScanTime(scannedAt), [scannedAt]);
+  // HYD-10: the relative scan time reads the clock, which differs between the
+  // server render and hydration. Render a clock-free label first, then fill in
+  // the elapsed time after mount and keep it current once a minute.
+  const [nowTs, setNowTs] = useState<number | null>(null);
+  useEffect(() => {
+    setNowTs(Date.now());
+    const id = window.setInterval(() => setNowTs(Date.now()), 60_000);
+    return () => window.clearInterval(id);
+  }, []);
+  const lastScanLabel = useMemo(
+    () => formatRelativeScanTime(scannedAt, nowTs === null ? null : new Date(nowTs)),
+    [scannedAt, nowTs],
+  );
   const categories = useMemo(() => distinctCategories(groups), [groups]);
   const filteredGroups = useMemo(() => filterGroupSignals(groups, queueFilter), [groups, queueFilter]);
   const selectedEntry = useMemo(() => findSignalInGroups(groups, selectedSignalId), [groups, selectedSignalId]);
@@ -375,7 +518,7 @@ export function TriageDesk({
             `Scan finished with ${res.playersFailed} player${res.playersFailed === 1 ? '' : 's'} needing another pass.`,
           );
         } else {
-          fairwayToast.success('Scan complete — team signals refreshed.');
+          fairwayToast.success('Scan complete, team signals refreshed.');
         }
         router.refresh();
       } catch {
@@ -398,21 +541,25 @@ export function TriageDesk({
     if (signal.kind === 'team_synthesis') return;
     if (pendingIds.has(signal.id)) return;
     setPendingIds((prev) => new Set(prev).add(signal.id));
+    // Snapshot for THIS signal only. On failure it is re-inserted into the
+    // current groups (DATA-12): restoring the whole snapshot would resurrect
+    // any signal another action or a refresh removed in the meantime.
     const prevGroups = groups;
-    setGroups(removeSignalFromGroups(groups, signal.id));
+    const rollback = () => setGroups((current) => restoreSignalToGroups(current, prevGroups, signal.id));
+    setGroups((current) => removeSignalFromGroups(current, signal.id));
     if (selectedSignalId === signal.id) navigate({ signal: null });
 
     try {
       const res = await action(signal.id, signal.kind);
       if (!res.success) {
-        setGroups(prevGroups);
+        rollback();
         fairwayToast.error(res.error ?? 'Could not update the signal. Try again.');
         return;
       }
       fairwayToast.success(successLabel);
       router.refresh();
     } catch {
-      setGroups(prevGroups);
+      rollback();
       fairwayToast.error('Could not update the signal. Try again.');
     } finally {
       setPendingIds((prev) => {
@@ -430,10 +577,9 @@ export function TriageDesk({
     setGroups((prev) => removeSignalFromGroups(prev, signal.id));
     // The newly-created focus area belongs to this player. Keep that context
     // through the drill-in so Prescribe opens the scoped development board
-    // instead of dropping the coach back at the full roster. `router.replace`
-    // re-runs the server page with `?player=` and therefore also reads the
-    // freshly revalidated focus-area data; a separate refresh here races the
-    // navigation and is unnecessary.
+    // instead of dropping the coach back at the full roster. The view switch
+    // itself is client-only; the refresh is the one server trip here, and it
+    // is needed — it re-reads the focus area this mutation just created.
     navigate({ view: 'players', signal: null, player: signal.playerId, playersTab: 'areas' });
     router.refresh();
   }
@@ -483,7 +629,7 @@ export function TriageDesk({
         so this cannot drift from the breadcrumb and page title that already
         read from it.
       */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      <div ref={switchRowRef} className="flex flex-wrap items-center justify-between gap-3">
         <ViewSwitch
           view={view}
           hrefFor={(next) => hrefFor({ view: next, signal: null })}
@@ -497,11 +643,12 @@ export function TriageDesk({
         </Button>
       </div>
 
+      <div ref={viewRegionRef} data-triage-view-region className="flex flex-col gap-6">
       {view === 'signals' ? (
         groupsError ? (
           <InlineNotice
             tone="danger"
-            title="Couldn't load signals — retry"
+            title="Couldn't load signals"
             action={
               <Button variant="secondary" size="sm" onClick={() => router.refresh()}>
                 Try again
@@ -563,6 +710,7 @@ export function TriageDesk({
                   selectedSignalId={selectedSignalId}
                   onSelectSignal={(id) => navigate({ signal: id })}
                   signalHref={(id) => hrefFor({ signal: id })}
+                  returnSignalId={returnSignalId}
                 />
               </div>
               <div className={cn(!isSignalSelected && 'hidden min-[940px]:block')}>
@@ -600,12 +748,11 @@ export function TriageDesk({
         />
       ) : null}
       {view === 'effectiveness' ? (
-        <EffectivenessScoreboard
-          initialOverview={effectivenessDrillProps.initialOverview}
-          initialEffectiveness={effectivenessDrillProps.initialEffectiveness}
-          initialPerformance={effectivenessDrillProps.initialPerformance}
-        />
+        <Suspense fallback={<EffectivenessFallback />}>
+          <EffectivenessPanel source={effectivenessDrillProps} />
+        </Suspense>
       ) : null}
+      </div>
     </div>
   );
 }

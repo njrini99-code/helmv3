@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Round Review | GolfHelm',
+  title: 'Round Review',
   description: 'AI-generated analysis of your completed round with insights and recommendations.',
 };
 

@@ -32,6 +32,7 @@ import {
 import { format } from 'date-fns';
 import '@/styles/calendar-tokens.css';
 import { Button } from '@/components/ui/button';
+import { fwPress } from '@/components/fairway/controls';
 
 interface PlayerRSVPCardProps {
   event: {
@@ -233,7 +234,7 @@ export function PlayerRSVPCard({
                       'relative flex flex-col items-center justify-center gap-2',
                       'min-h-[88px] p-4 rounded-xl border-2',
                       'transition-all duration-200',
-                      'active:scale-95',
+                      fwPress,
                       // Touch-friendly (≥52px tap target exceeded with 88px height)
                       'touch-manipulation',
                       // Default state

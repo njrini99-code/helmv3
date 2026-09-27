@@ -30,6 +30,9 @@
 import { cn, formatMetricLabel } from '@/lib/utils';
 import { InstrumentPanel } from '@/components/fairway/instrument/InstrumentPanel';
 
+/** Strokes to one decimal, e.g. "1.4" (render-bans: no toFixed in render). */
+const STROKES_1DP = new Intl.NumberFormat('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+
 interface TrendWindow {
   name: 'fast' | 'medium' | 'slow';
   direction: 'improving' | 'stable' | 'declining';
@@ -269,7 +272,7 @@ export function FairwayTrendBrain({
                     {s.length}-round {s.type} streak
                   </span>
                   <span className="text-text-tertiary">
-                    {perRound.toFixed(1)} strokes/round{' '}
+                    {STROKES_1DP.format(perRound)} strokes a round{' '}
                     {s.type === 'hot' ? 'below' : 'above'} your average
                   </span>
                   {short ? (
@@ -288,8 +291,10 @@ export function FairwayTrendBrain({
               Your scoring is swinging more than usual.
             </p>
             <p className="text-caption text-text-tertiary">
-              {Number(resolvedVolatility.current ?? 0).toFixed(1)} vs{' '}
-              {Number(resolvedVolatility.historical ?? 0).toFixed(1)} typical
+              {/* NUM-30: the spread is the standard deviation of round
+                  scores, so it carries its unit and says what it measures. */}
+              Round-to-round spread: {STROKES_1DP.format(Number(resolvedVolatility.current ?? 0))} strokes over
+              your last 5 rounds, {STROKES_1DP.format(Number(resolvedVolatility.historical ?? 0))} usually
             </p>
           </div>
         ) : null}

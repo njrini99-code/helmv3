@@ -1,7 +1,7 @@
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Messages | Helm Sports',
+  title: 'Messages',
   description: 'Team communication and messaging for golf programs',
 };
 

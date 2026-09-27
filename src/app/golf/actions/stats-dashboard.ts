@@ -18,7 +18,7 @@ import type { StatsRoundScope } from './stats-data-types';
 
 type SettledValue<T> =
   | { ok: true; value: T }
-  | { ok: false; reason: 'failed' | 'timeout' };
+  | { ok: false; reason: 'failed' | 'timeout' | 'deferred' };
 
 async function settleWithin<T>(promise: Promise<T>, timeoutMs: number): Promise<SettledValue<T>> {
   let timeout: ReturnType<typeof setTimeout> | undefined;
@@ -62,9 +62,15 @@ function failedStatsBundle() {
  * Scoping those to one round would not be a narrower answer, it would be a
  * meaningless one, so they are deliberately left alone rather than threaded.
  */
+type StatsBundlePart = 'all' | 'critical' | 'deferred';
+
+/** A part the server has not read yet: it is coming, not failed (PERF-R10). */
+const DEFERRED = { ok: false, reason: 'deferred' } as const;
+
 async function getPlayerStatsDashboardBundleImpl(
   playerId: string,
   roundId?: StatsRoundScope,
+  part: StatsBundlePart = 'all',
 ) {
   const supabase = await createClient();
   // The dashboard is latency-sensitive and already bounds each downstream
@@ -85,16 +91,22 @@ async function getPlayerStatsDashboardBundleImpl(
       authorization: { ...authorization, allowed: true },
     },
     async () => {
+      // PERF-R10: the critical part (the spine and bento: detailed stats,
+      // trend, standing) and the deferred part (leak maps, spray, strengths,
+      // worst holes, patterns) can be read separately, so the first paint
+      // waits for the slowest of three reads instead of eight.
+      const critical = part !== 'deferred';
+      const deferred = part !== 'critical';
       const [detailed, trend, standing, leak, spray, strengthsWeaknesses, worstHoles, patterns] =
         await Promise.all([
-          settleWithin(getDetailedStats(playerId, roundId ?? 'overall'), 15_000),
-          settleWithin(getTrendAnalysis(playerId), 12_000),
-          settleWithin(getPlayerStandingRows(playerId), 12_000),
-          settleWithin(getPlayerLeakMaps(playerId), 10_000),
-          settleWithin(getSprayChartData(playerId, roundId ?? 'overall'), 10_000),
-          settleWithin(getPlayerStrengthsWeaknesses(playerId), 10_000),
-          settleWithin(getWorstHoleAnalysis(playerId), 10_000),
-          settleWithin(getPlayerPatterns(playerId), 10_000),
+          critical ? settleWithin(getDetailedStats(playerId, roundId ?? 'overall'), 15_000) : DEFERRED,
+          critical ? settleWithin(getTrendAnalysis(playerId), 12_000) : DEFERRED,
+          critical ? settleWithin(getPlayerStandingRows(playerId), 12_000) : DEFERRED,
+          deferred ? settleWithin(getPlayerLeakMaps(playerId), 10_000) : DEFERRED,
+          deferred ? settleWithin(getSprayChartData(playerId, roundId ?? 'overall'), 10_000) : DEFERRED,
+          deferred ? settleWithin(getPlayerStrengthsWeaknesses(playerId), 10_000) : DEFERRED,
+          deferred ? settleWithin(getWorstHoleAnalysis(playerId), 10_000) : DEFERRED,
+          deferred ? settleWithin(getPlayerPatterns(playerId), 10_000) : DEFERRED,
         ]);
 
       return { detailed, trend, standing, leak, spray, strengthsWeaknesses, worstHoles, patterns };
@@ -117,4 +129,29 @@ export async function getPlayerStatsDashboardBundle(
   roundId?: StatsRoundScope,
 ) {
   return observedGetPlayerStatsDashboardBundle(playerId, roundId);
+}
+
+/**
+ * The server-rendered first paint's two halves (PERF-R10). The Stats page
+ * awaits the critical half and streams the deferred half to the client as a
+ * promise; the parts the other half owns come back as `reason: 'deferred'`.
+ */
+const observedGetPlayerStatsDashboardCritical = withAdminObserved(
+  'getPlayerStatsDashboardCritical',
+  { sport: 'golf', feature: 'stats_analytics', contextFrom: ([playerId]) => ({ playerId }) },
+  (playerId: string, roundId?: StatsRoundScope) => getPlayerStatsDashboardBundleImpl(playerId, roundId, 'critical'),
+);
+
+const observedGetPlayerStatsDashboardDeferred = withAdminObserved(
+  'getPlayerStatsDashboardDeferred',
+  { sport: 'golf', feature: 'stats_analytics', contextFrom: ([playerId]) => ({ playerId }) },
+  (playerId: string, roundId?: StatsRoundScope) => getPlayerStatsDashboardBundleImpl(playerId, roundId, 'deferred'),
+);
+
+export async function getPlayerStatsDashboardCritical(playerId: string, roundId?: StatsRoundScope) {
+  return observedGetPlayerStatsDashboardCritical(playerId, roundId);
+}
+
+export async function getPlayerStatsDashboardDeferred(playerId: string, roundId?: StatsRoundScope) {
+  return observedGetPlayerStatsDashboardDeferred(playerId, roundId);
 }

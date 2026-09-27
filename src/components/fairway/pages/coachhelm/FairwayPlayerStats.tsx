@@ -29,13 +29,20 @@ import { Surface, EmptyState } from '@/components/fairway';
 import { useGolfUser } from '@/contexts/golf-user-context';
 import { getPlayerDisplayName } from '@/app/golf/actions/stats-data';
 import { CoachHelmShell } from './CoachHelmShell';
-import { StatsSpineStage } from '@/components/golf/stats/spine-stage/StatsSpineStage';
+import { StatsSpineStage, type StatsSpineStageInitialData } from '@/components/golf/stats/spine-stage/StatsSpineStage';
 
 export interface FairwayPlayerStatsProps {
   initialPlayerId?: string | null;
+  /** Server-read first load for the resolved player (stats/page.tsx). */
+  initialStats?: StatsSpineStageInitialData | null;
+  /**
+   * Coach view: the viewed player's display name, read on the server
+   * alongside the stats. `undefined` = not provided (fetch on the client).
+   */
+  initialPlayerName?: string | null;
 }
 
-export function FairwayPlayerStats({ initialPlayerId = null }: FairwayPlayerStatsProps) {
+export function FairwayPlayerStats({ initialPlayerId = null, initialStats = null, initialPlayerName }: FairwayPlayerStatsProps) {
   const golfUser = useGolfUser();
 
   const resolvedPlayerId = initialPlayerId || golfUser.playerId || null;
@@ -44,10 +51,14 @@ export function FairwayPlayerStats({ initialPlayerId = null }: FairwayPlayerStat
   // A coach drilling into a teammate must see THAT player's name — not the
   // coach's own (golfUser.name) and not the generic "Player stats". The name
   // isn't in any cockpit payload, so resolve it here (authorized server action).
-  const [viewedPlayerName, setViewedPlayerName] = useState<string | null>(null);
+  // Seeded from the server when the page already read it for this player.
+  const nameSeeded = initialPlayerName !== undefined && initialStats?.playerId === resolvedPlayerId;
+  const [viewedPlayerName, setViewedPlayerName] = useState<string | null>(nameSeeded ? (initialPlayerName ?? null) : null);
   useEffect(() => {
     let cancelled = false;
-    if (isCoachView && resolvedPlayerId) {
+    if (nameSeeded) {
+      setViewedPlayerName(initialPlayerName ?? null);
+    } else if (isCoachView && resolvedPlayerId) {
       getPlayerDisplayName(resolvedPlayerId)
         .then((name) => { if (!cancelled) setViewedPlayerName(name); })
         .catch(() => { if (!cancelled) setViewedPlayerName(null); });
@@ -55,7 +66,7 @@ export function FairwayPlayerStats({ initialPlayerId = null }: FairwayPlayerStat
       setViewedPlayerName(null);
     }
     return () => { cancelled = true; };
-  }, [isCoachView, resolvedPlayerId]);
+  }, [isCoachView, resolvedPlayerId, nameSeeded, initialPlayerName]);
 
   const playerName = isCoachView ? viewedPlayerName : golfUser.name;
 
@@ -68,8 +79,10 @@ export function FairwayPlayerStats({ initialPlayerId = null }: FairwayPlayerStat
   // Third-person framing for a coach viewing a teammate; first-person for a
   // player viewing their own page.
   const description = isCoachView
-    ? `Where ${playerName ?? 'this player'} stands vs PGA Tour and the team — and where the strokes are leaking.`
-    : 'Where you stand vs PGA Tour and your team — and where the strokes are leaking.';
+    ? `${playerName ?? 'This player'} vs Tour and team, and where strokes leak.`
+    : // ViewHeader clamps the description to one line on phones (P-22); the
+      // longer copy was cut to "…and where th…" at 390px.
+      'You vs Tour and your team, and where strokes leak.';
 
   // golf-ia-plan.json step 8 — the shell's role/active-tab must track WHO is
   // viewing, not a hardcoded value: a coach drilling into a teammate gets the
@@ -88,7 +101,7 @@ export function FairwayPlayerStats({ initialPlayerId = null }: FairwayPlayerStat
   const backAction = isCoachView ? (
     <Link
       href="/golf/dashboard/stats"
-      className="rounded-fw-sm font-fw-sans text-label font-medium text-text-secondary outline-none transition-colors [transition-duration:180ms] hover:text-text-primary focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas motion-reduce:transition-none"
+      className="rounded-fw-sm font-fw-sans text-microlabel font-medium text-text-secondary outline-none transition-colors [transition-duration:180ms] hover:text-text-primary focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas motion-reduce:transition-none"
     >
       ← Team stats
     </Link>
@@ -99,7 +112,7 @@ export function FairwayPlayerStats({ initialPlayerId = null }: FairwayPlayerStat
       <div className="w-full py-2">
         <CoachHelmShell
           active={activeTab}
-          role={shellRole}
+          viewerRole={shellRole}
           eyebrow="Stats"
           title={title}
           description={description}
@@ -113,7 +126,7 @@ export function FairwayPlayerStats({ initialPlayerId = null }: FairwayPlayerStat
                 action={
                   <Link
                     href="/golf/dashboard/stats"
-                    className="font-fw-sans text-label font-medium text-accent-600 hover:text-accent-700"
+                    className="font-fw-sans text-microlabel font-medium text-accent-ink hover:text-accent-700"
                   >
                     Back to team stats
                   </Link>
@@ -127,6 +140,7 @@ export function FairwayPlayerStats({ initialPlayerId = null }: FairwayPlayerStat
               // Bug #915: label the coach-facing SG cards with the actual
               // teammate name instead of the generic "Player" fallback.
               playerName={isCoachView ? (playerName ?? undefined) : undefined}
+              initialData={initialStats}
             />
           )}
         </CoachHelmShell>

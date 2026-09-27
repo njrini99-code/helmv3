@@ -309,7 +309,7 @@ export class CourseMgmtGenerator extends BaseGenerator<CourseMgmtAggregate> {
     };
     const causeClause =
       top && top.pct > 0
-        ? ` ${r1(top.pct)}% of your double-or-worse holes trace to ${CAUSE_LABEL[top.key]} — ${CAUSE_ACTION[top.key]}.`
+        ? ` ${r1(top.pct)}% of your double-or-worse holes trace to ${CAUSE_LABEL[top.key]}: ${CAUSE_ACTION[top.key]}.`
         : '';
 
     if (agg.variant === 'penalty') {

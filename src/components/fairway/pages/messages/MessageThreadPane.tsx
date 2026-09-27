@@ -5,7 +5,8 @@
 
 import { MESSAGE_REACTIONS, summarizeReactions, type MessageReactionsState } from '@/hooks/golf/use-message-reactions';
 import * as React from 'react';
-import { AnimatePresence, m, useReducedMotion } from 'framer-motion';
+import { AnimatePresence, m } from 'framer-motion';
+import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
 import { ArrowLeft, Pencil, Trash2, Check, X, Copy, Paperclip, MessageSquare, Users, FileText, Download, AlertTriangle, RotateCw, Info, SmilePlus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { fwHaptic } from '@/lib/fairway/haptics';
@@ -372,7 +373,7 @@ function ReadReceipt({ isRead }: { isRead?: boolean }) {
   return (
     <span
       className={cn(
-        'font-fw-sans text-eyebrow',
+        'font-fw-sans text-caption',
         isRead ? 'text-accent-700' : 'text-text-tertiary',
       )}
     >
@@ -492,7 +493,7 @@ function MessageAttachments({
             <span className="min-w-0 flex-1">
               <span
                 className={cn(
-                  'block truncate font-fw-sans text-eyebrow font-medium',
+                  'block truncate font-fw-sans text-caption font-medium',
                   isOwn ? 'text-text-on-accent' : 'text-text-primary',
                 )}
               >
@@ -500,7 +501,7 @@ function MessageAttachments({
               </span>
               <span
                 className={cn(
-                  'block font-fw-mono text-eyebrow tabular-nums',
+                  'block font-fw-mono text-caption tabular-nums',
                   isOwn ? 'text-ink-on-deep-soft' : 'text-text-tertiary',
                 )}
               >
@@ -570,7 +571,7 @@ export function MessageThreadPane({
   children,
   className,
 }: MessageThreadPaneProps & { children?: React.ReactNode }) {
-  const reduceMotion = useReducedMotion() ?? false;
+  const reduceMotion = useReducedMotionGuard();
   const reactions = reactionProps ?? EMPTY_REACTIONS;
   const messagesEndRef = React.useRef<HTMLDivElement>(null);
   const messagesContainerRef = React.useRef<HTMLDivElement>(null);
@@ -1211,7 +1212,7 @@ export function MessageThreadPane({
               product — a member count on a group is genuinely new information.
               (spec §5: do not permanently show "Direct message".) */}
           {headerSubtitle && headerSubtitle !== 'Direct message' ? (
-            <p className="truncate font-fw-sans text-eyebrow text-text-tertiary">{headerSubtitle}</p>
+            <p className="truncate font-fw-sans text-caption text-text-tertiary">{headerSubtitle}</p>
           ) : null}
         </div>
         {/* G-30 — the trailing info control, and with it the LAST of G-57's
@@ -1325,7 +1326,7 @@ export function MessageThreadPane({
             variant="subtle"
             icon={MessageSquare}
             title="No messages yet"
-            description="Start the conversation — say hello below."
+            description="Start the conversation. Say hello below."
           />
         ) : (
           // No `space-y-*` on this container: the rhythm is carried per message
@@ -1410,7 +1411,7 @@ export function MessageThreadPane({
                 {idx === firstUnreadIndex && (
                   <div className="flex items-center gap-3 pb-1.5 pt-3" role="separator" aria-label="New messages">
                     <span className="h-px flex-1 bg-accent-500/45" />
-                    <span className="font-fw-sans text-eyebrow font-semibold uppercase tracking-[0.1em] text-accent-700">
+                    <span className="font-fw-sans text-caption font-semibold text-accent-700">
                       New
                     </span>
                     <span className="h-px flex-1 bg-accent-500/45" />
@@ -1422,7 +1423,7 @@ export function MessageThreadPane({
                     <span
                       className={cn(
                         'flex w-fit items-center rounded-full px-3.5 py-1.5',
-                        'font-fw-sans text-eyebrow font-semibold uppercase tracking-[0.06em] text-text-secondary',
+                        'font-fw-sans text-caption font-semibold tracking-[0.06em] text-text-secondary',
                         '[background:var(--fw-glass-bg)]',
                         '[backdrop-filter:blur(var(--fw-blur-glass))_saturate(var(--fw-glass-saturate))]',
                         '[-webkit-backdrop-filter:blur(var(--fw-blur-glass))_saturate(var(--fw-glass-saturate))]',
@@ -1524,7 +1525,7 @@ export function MessageThreadPane({
                     )}
 
                     {editingMessageId !== msg.id && deleteConfirmId !== msg.id && (
-                      <div className={cn('absolute top-1/2 hidden -translate-y-1/2 items-center opacity-0 transition-opacity duration-150 group-hover:opacity-100 focus-within:opacity-100 motion-reduce:transition-none md:flex', isOwn ? 'right-full mr-2' : 'left-full ml-2')}>
+                      <div className={cn('absolute top-1/2 hidden -translate-y-1/2 items-center opacity-0 transition-opacity duration-150 group-hover:opacity-100 focus-within:opacity-100 [@media(hover:none)]:opacity-100 motion-reduce:transition-none md:flex', isOwn ? 'right-full mr-2' : 'left-full ml-2')}>
                         <IconButton variant="ghost" aria-label="Message actions" title="React or more actions" onClick={() => onSetMobileActions(msg.id)}>
                           <SmilePlus size={18} aria-hidden="true" />
                         </IconButton>
@@ -1534,7 +1535,7 @@ export function MessageThreadPane({
                     {/* Delete confirmation */}
                     {deleteConfirmId === msg.id && (
                       <Inset padding="none" className="mr-2 flex items-center gap-1 bg-fw-danger-bg px-2.5 py-1.5">
-                        <span className="mr-1 font-fw-sans text-eyebrow text-fw-danger-ink">Delete?</span>
+                        <span className="mr-1 font-fw-sans text-caption text-fw-danger-ink">Delete?</span>
                         <IconButton variant="danger" size="sm" aria-label="Confirm delete" onClick={onConfirmDelete}>
                           <Check size={18} aria-hidden="true" />
                         </IconButton>
@@ -1566,7 +1567,7 @@ export function MessageThreadPane({
                             size="sm"
                             onClick={onCancelEdit}
                             disabled={isEditSaving}
-                            className="min-h-0 rounded px-2 py-1 font-fw-sans text-eyebrow text-text-tertiary hover:bg-transparent hover:text-text-secondary"
+                            className="min-h-0 rounded px-2 py-1 font-fw-sans text-caption text-text-tertiary hover:bg-transparent hover:text-text-secondary"
                           >
                             Cancel
                           </Button>
@@ -1577,7 +1578,7 @@ export function MessageThreadPane({
                             onClick={onSaveEdit}
                             disabled={isEditSaving || !editContent.trim()}
                             className={cn(
-                              'min-h-0 rounded px-2 py-1 font-fw-sans text-eyebrow',
+                              'min-h-0 rounded px-2 py-1 font-fw-sans text-caption',
                               isEditSaving || !editContent.trim()
                                 ? 'cursor-not-allowed text-text-tertiary hover:bg-transparent'
                                 : 'text-accent-700 hover:bg-accent-100',
@@ -1651,7 +1652,7 @@ export function MessageThreadPane({
                           // gradient — same G-50b logic, and no new machinery two
                           // rounds after "you're doing too much with the cards".
                           isOwn
-                            ? 'bg-accent-650 text-text-on-accent'
+                            ? 'bg-accent-fill text-text-on-accent-fill'
                             : 'bg-surface text-text-primary',
                           // G-49 (F14) — every bubble in the artboard casts a
                           // shadow; the repo drew them flat. Same systemic gap
@@ -1728,9 +1729,9 @@ export function MessageThreadPane({
                               variant="ghost"
                               size="sm"
                               onClick={retryAttachments}
-                              aria-label="Couldn’t load attachment — tap to retry"
+                              aria-label="Couldn’t load attachment. Tap to retry"
                               className={cn(
-                                'mt-1 min-h-0 rounded-fw-md px-2 py-1 font-fw-sans text-eyebrow',
+                                'mt-1 min-h-0 rounded-fw-md px-2 py-1 font-fw-sans text-caption',
                                 'focus-visible:ring-offset-1',
                                 isOwn
                                   ? 'text-text-on-accent/90 hover:bg-text-on-accent/15 focus-visible:ring-offset-accent-500'
@@ -1738,10 +1739,10 @@ export function MessageThreadPane({
                               )}
                             >
                               <RotateCw size={12} aria-hidden="true" />
-                              Couldn’t load attachment — tap to retry
+                              Couldn’t load attachment. Tap to retry
                             </Button>
                           ) : (
-                            <span className={cn('mt-1 inline-flex items-center gap-1 font-fw-sans text-eyebrow', isOwn ? 'text-ink-on-deep' : 'text-text-tertiary')}>
+                            <span className={cn('mt-1 inline-flex items-center gap-1 font-fw-sans text-caption', isOwn ? 'text-ink-on-deep' : 'text-text-tertiary')}>
                               <Paperclip size={12} aria-hidden="true" />
                               Attachment
                             </span>
@@ -1784,7 +1785,7 @@ export function MessageThreadPane({
                         ) : null}
                         {/* Edited badge — DORMANT unless edited_at. */}
                         {editedAt ? (
-                          <span className={cn('mt-1 block font-fw-sans text-eyebrow', isPhotoMessage && 'px-2.5', isOwn ? 'text-ink-on-deep-soft' : 'text-text-tertiary')}>
+                          <span className={cn('mt-1 block font-fw-sans text-caption', isPhotoMessage && 'px-2.5', isOwn ? 'text-ink-on-deep-soft' : 'text-text-tertiary')}>
                             edited
                           </span>
                         ) : null}
@@ -1827,7 +1828,7 @@ export function MessageThreadPane({
                             red definitive failure that invites duplication."
                             The refused case keeps the definite wording, because
                             there the server answered and we know. */}
-                        <span className="font-fw-sans text-eyebrow text-text-tertiary">
+                        <span className="font-fw-sans text-caption text-text-tertiary">
                           {(msg as MessageWithReadStatus).sendOutcome === 'unknown'
                             ? 'Not confirmed'
                             : 'Not sent'}
@@ -1838,7 +1839,7 @@ export function MessageThreadPane({
                             variant="ghost"
                             size="sm"
                             onClick={() => onRetryMessage(msg.id)}
-                            className="min-h-0 rounded-fw-md px-2 py-1 font-fw-sans text-eyebrow text-text-secondary hover:bg-surface"
+                            className="min-h-0 rounded-fw-md px-2 py-1 font-fw-sans text-caption text-text-secondary hover:bg-surface"
                           >
                             <RotateCw size={12} aria-hidden="true" />
                             Retry
@@ -1850,7 +1851,7 @@ export function MessageThreadPane({
                             variant="ghost"
                             size="sm"
                             onClick={() => onDiscardFailedMessage(msg.id)}
-                            className="min-h-0 rounded-fw-md px-2 py-1 font-fw-sans text-eyebrow text-text-tertiary hover:bg-surface"
+                            className="min-h-0 rounded-fw-md px-2 py-1 font-fw-sans text-caption text-text-tertiary hover:bg-surface"
                           >
                             Discard
                           </Button>
@@ -1872,7 +1873,7 @@ export function MessageThreadPane({
                         longer needs compensating for. */}
                     {showTime && editingMessageId !== msg.id && (
                       <div className={cn('flex items-center gap-1.5', isOwn ? 'flex-row-reverse' : '')}>
-                        <span className="font-fw-mono text-eyebrow tabular-nums text-text-tertiary">
+                        <span className="font-fw-mono text-caption tabular-nums text-text-tertiary">
                           {formatTime(msg.created_at)}
                         </span>
                         {/* P264 no-data-lies: per-message "Read" is only honest in a
@@ -1940,7 +1941,7 @@ export function MessageThreadPane({
             data-fw-selected-message
             className={cn(
               'order-2 mb-3 w-fit max-w-[90%] overflow-clip rounded-fw-md border px-3 py-2.5 [box-shadow:var(--fw-shadow-card)]',
-              isOwnMessage(actionsMessage) ? 'self-end border-accent-700 bg-accent-650 text-text-on-accent' : 'self-start border-border-subtle bg-surface text-text-primary',
+              isOwnMessage(actionsMessage) ? 'self-end border-accent-700 bg-accent-fill text-text-on-accent-fill' : 'self-start border-border-subtle bg-surface text-text-primary',
             )}
             initial={reduceMotion ? false : { opacity: 0, y: 4, scale: 0.98 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}

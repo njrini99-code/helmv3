@@ -37,10 +37,10 @@ export function WeightDistributor(_props: WeightDistributorProps) {
   void _props;
 
   return (
-    <div className="rounded-lg border border-dashed border-warm-200 bg-warm-50/50 p-4">
+    <div className="rounded-fw-md border border-dashed border-warm-200 bg-warm-50/50 p-4">
       <p className="text-sm text-warm-600">
         Comparison weighting is coming soon. We&apos;re finishing the roster-comparison
-        engine that uses these factors — until then this control is hidden so it
+        engine that uses these factors, until then this control is hidden so it
         doesn&apos;t imply changes that aren&apos;t applied yet.
       </p>
     </div>

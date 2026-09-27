@@ -256,3 +256,49 @@ describe('FairwayTravel — create-itinerary success stays on Travel', () => {
     expect(mockRouter.replace).not.toHaveBeenCalled();
   });
 });
+
+describe('FairwayTravel — phone navigation stack (NAT-05) and mark-seen (DATA-03)', () => {
+  it('hides the "Select a trip" pane below lg and swaps the list for the detail on select', () => {
+    render(
+      <FairwayTravel
+        itineraries={[makeItinerary('a'), makeItinerary('b')]}
+        coachId="coach-1"
+        teamId="team-1"
+        isCoach
+        nowISO="2026-07-01"
+      />,
+    );
+
+    // Nothing selected: the empty pane is desktop-only.
+    const detailColumn = screen.getByText('Select a trip').closest('.lg\\:col-span-2');
+    expect(detailColumn).toHaveClass('hidden', 'lg:block');
+
+    fireEvent.click(screen.getByRole('button', { name: /Trip a/ }));
+
+    // Selected: the list column hides below lg, the detail shows with a Back control.
+    const listColumn = screen.getByRole('heading', { name: 'Trips' }).parentElement;
+    expect(listColumn).toHaveClass('hidden', 'lg:flex');
+    const back = screen.getByRole('button', { name: 'All trips' });
+    expect(back.closest('.lg\\:hidden')).not.toBeNull();
+
+    fireEvent.click(back);
+    expect(screen.getByRole('heading', { name: 'Trips' }).parentElement).not.toHaveClass('hidden');
+  });
+
+  it('swallows a failed mark-seen instead of leaving an unhandled rejection', async () => {
+    const { markTravelSeen } = await import('@/app/golf/actions/player-notifications');
+    vi.mocked(markTravelSeen).mockRejectedValueOnce(new Error('offline'));
+    const unhandled = vi.fn();
+    process.on('unhandledRejection', unhandled);
+    try {
+      render(
+        <FairwayTravel itineraries={[makeItinerary('a')]} coachId="coach-1" teamId="team-1" isCoach={false} nowISO="2026-07-01" />,
+      );
+      await waitFor(() => expect(markTravelSeen).toHaveBeenCalled());
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      expect(unhandled).not.toHaveBeenCalled();
+    } finally {
+      process.off('unhandledRejection', unhandled);
+    }
+  });
+});

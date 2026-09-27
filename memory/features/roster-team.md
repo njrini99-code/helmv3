@@ -65,6 +65,10 @@ Team page
 - Pending join requests should not become active membership without the intended approval path.
 - Roster/player profile data must be team-scoped.
 - Player profile stats are derived from rounds and cache/source data, not hand-entered roster fields.
+- Roster card avg score, rounds count, trend and SG: Total use countable
+  rounds only (see "Countable rounds" in `memory/features/stats-analytics.md`);
+  SG: Total is the mean of per-round `golf_round_stats_cache` values, not the
+  lifetime player cache.
 
 ## UI Contract
 

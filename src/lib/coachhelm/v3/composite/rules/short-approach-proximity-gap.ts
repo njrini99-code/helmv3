@@ -80,7 +80,7 @@ const rule: CompositeRule = {
       content:
         `From 50-125 yd, the approaches that hit the green are finishing ` +
         `${proximity} ft from the hole on average (on-green only; dial-in ` +
-        `target ~${DIAL_IN_TARGET_FT} ft, estimated) — and you are saving par ` +
+        `target ~${DIAL_IN_TARGET_FT} ft, estimated), and you are saving par ` +
         `${scramble}% of the time when you miss. The two stack: a long first ` +
         `putt and a weak recovery both feed bogey. Check whether the long leaves ` +
         `share a club or a yardage (full swing vs partial wedge) before naming ` +

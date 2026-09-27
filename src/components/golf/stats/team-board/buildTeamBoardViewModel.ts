@@ -23,6 +23,8 @@ import type { Unit } from '@/components/golf/coachhelm/v3/StandingBar/types';
 import { classifyTrendDelta } from '@/lib/coachhelm/trend';
 import { SCORE_TREND_THRESHOLD } from '@/lib/golf/scoring-trend';
 import type { SignalTone } from '@/components/fairway/modules';
+import { describeFormFormula, type FormScore } from '@/lib/golf/form-score';
+import { formatMetricText } from '@/lib/golf/metrics/display-registry';
 
 // ============================================================================
 // SHARED FORMATTERS
@@ -32,34 +34,30 @@ function finite(n: number | null | undefined): number | null {
   return typeof n === 'number' && Number.isFinite(n) ? n : null;
 }
 
-/** Signed strokes-gained display, e.g. "+1.0" / "−0.3" / "E". Em-dash when null. */
+// Every figure goes through the §5.2 registry (src/lib/golf/metrics/
+// display-registry.ts), so the board prints numbers exactly like Stats and
+// the player page: SG signed at 2 dp with no "E", integer percentages, the
+// true minus sign, "—" for missing.
+
+/** Signed strokes-gained display, e.g. "+1.02" / "−0.30". Em-dash when null. */
 export function fmtSg(value: number | null): string {
-  const n = finite(value);
-  if (n === null) return '—';
-  const rounded = Math.round(n * 10) / 10;
-  if (rounded === 0) return 'E';
-  const sign = rounded > 0 ? '+' : '−';
-  return `${sign}${Math.abs(rounded).toFixed(1)}`;
+  return formatMetricText('sg_total', finite(value));
 }
 
 function fmtScoringAvg(value: number | null): string {
-  const n = finite(value);
-  return n === null ? '—' : n.toFixed(1);
+  return formatMetricText('scoring_average', finite(value));
 }
 
 function fmtScore(value: number | null): string {
-  const n = finite(value);
-  return n === null ? '—' : String(Math.round(n));
+  return formatMetricText('round_score', finite(value));
 }
 
 function fmtPercent(value: number | null): string {
-  const n = finite(value);
-  return n === null ? '—' : `${n.toFixed(1)}%`;
+  return formatMetricText('gir_pct', finite(value));
 }
 
 function fmtPerRound(value: number | null): string {
-  const n = finite(value);
-  return n === null ? '—' : n.toFixed(1);
+  return formatMetricText('putts_per_round', finite(value));
 }
 
 function ratioPercent(made: number, attempts: number): number | null {
@@ -74,16 +72,16 @@ function per18(total: number, holes: number): number | null {
 export function formatMetricValue(value: number, unit: Unit): string {
   switch (unit) {
     case 'percent':
-      return `${Math.round(value)}%`;
+      return formatMetricText('gir_pct', value);
     case 'strokes':
       return fmtSg(value);
     case 'feet':
-      return `${value.toFixed(1)} ft`;
+      return formatMetricText('approach_proximity', value);
     case 'yards':
-      return `${value.toFixed(1)} yd`;
+      return formatMetricText('driving_distance', value);
     case 'count':
     default:
-      return value.toFixed(1);
+      return formatMetricText('penalty_rate_per_round', value);
   }
 }
 
@@ -107,7 +105,14 @@ export function rankByValue(entries: ReadonlyArray<{ id: string; value: number |
   const sorted = [...usable].sort((a, b) => (direction === 'higher_better' ? b.value - a.value : a.value - b.value));
   const of = sorted.length;
   const out = new Map<string, RankInfo>();
-  sorted.forEach((entry, i) => out.set(entry.id, { rank: i + 1, of }));
+  // Competition ranking ("1, 2, 2, 4"): players equal to 2 decimals share a
+  // rank instead of being split by roster order.
+  const key = (v: number) => Math.round(v * 100);
+  sorted.forEach((entry, i) => {
+    const prev = i > 0 ? sorted[i - 1]! : null;
+    const rank = prev && key(prev.value) === key(entry.value) ? out.get(prev.id)!.rank : i + 1;
+    out.set(entry.id, { rank, of });
+  });
   return out;
 }
 
@@ -254,9 +259,21 @@ export interface TeamBoardPlayerInput {
   /** recent-minus-prior normalized-score delta; null = not enough rounds for a signal yet (never a fabricated 0). */
   scoringTrend: number | null;
   lastRoundScore: number | null;
+  /**
+   * Mean SG: Total per round over countable rounds and the number of rounds
+   * that carried it. Undefined/null = not supplied; the Team SG KPI then
+   * falls back to the standing snapshot (lifetime player cache).
+   */
+  sgTotalPerRound?: number | null;
+  sgRounds?: number;
   /** Oldest → newest normalized scores, for the Sparkline. May be empty (honest em-dash). */
   recentScores: number[];
-  composite: number | null;
+  /**
+   * The player's Form score (OD-02, src/lib/golf/form-score.ts) over the same
+   * countable rounds as the rest of the row. Replaces the team z-score
+   * "composite". Null when the page could not compute it.
+   */
+  form: FormScore | null;
   topInsightTitle: string | null;
   topInsightPriority: string | null;
 }
@@ -264,8 +281,12 @@ export interface TeamBoardPlayerInput {
 export interface TeamBoardInput {
   players: TeamBoardPlayerInput[];
   standingByPlayer: Map<string, Map<MetricId, PlayerStanding>>;
-  /** Teammates with a stats-cache row that fed the composite z-score — <3 makes "top performer" statistically unstable. */
-  intelligenceSampleSize: number;
+  /**
+   * Teammates with a stats-cache row that fed the old composite z-score.
+   * No longer gates "Top performer": Form is absolute, not team-relative, so
+   * the gate is "at least 2 players with a settled (non early-read) Form".
+   */
+  intelligenceSampleSize?: number;
   rounds30d: number;
 }
 
@@ -282,7 +303,14 @@ export interface TeamBoardRowViewModel {
     putt: RankInfo | null;
     scoring: RankInfo | null;
   };
-  composite: number | null;
+  form: {
+    /** 0–99, or null with no countable rounds. */
+    score: number | null;
+    /** Fewer than 5 countable rounds: print "Early read" next to the score. */
+    early: boolean;
+    /** The formula with this player's numbers, shown in the expand band. */
+    formula: string[];
+  };
   trendSeries: number[];
   signal: { tone: SignalTone; label: string };
   expand: {
@@ -334,7 +362,7 @@ const RANK_CATEGORY_METRICS: ReadonlyArray<{
  * `Sparkline`/`SignalChip` JSX; nothing here touches React.
  */
 export function buildTeamBoardViewModel(input: TeamBoardInput): TeamBoardViewModel {
-  const { players, standingByPlayer, intelligenceSampleSize, rounds30d } = input;
+  const { players, standingByPlayer, rounds30d } = input;
 
   const categoryRanks: Record<'tee' | 'app' | 'short' | 'putt', Map<string, RankInfo>> = {
     tee: new Map(),
@@ -356,11 +384,13 @@ export function buildTeamBoardViewModel(input: TeamBoardInput): TeamBoardViewMod
     'lower_better',
   );
 
-  // "Top performer" crown — same floor the roster-tile monolith uses: needs a
-  // non-provisional sample size AND at least 2 comparable composites (a solo
-  // carrier isn't "leading" anyone).
-  const composites = players.map((p) => p.composite).filter((v): v is number => v !== null);
-  const topComposite = intelligenceSampleSize >= 3 && composites.length >= 2 ? Math.max(...composites) : null;
+  // "Top performer" crown: the highest SETTLED Form (5+ countable rounds; an
+  // early read never crowns), and only when at least 2 players have one (a
+  // solo carrier isn't "leading" anyone). Ties share the crown.
+  const settledForms = players
+    .map((p) => (p.form && p.form.quality === 'established' ? p.form.score : null))
+    .filter((v): v is number => v !== null);
+  const topForm = settledForms.length >= 2 ? Math.max(...settledForms) : null;
 
   // "Most improved" — the single largest-magnitude improving delta on the roster.
   let mostImprovedId: string | null = null;
@@ -385,7 +415,8 @@ export function buildTeamBoardViewModel(input: TeamBoardInput): TeamBoardViewMod
       scoring: scoringRanks.get(p.id) ?? null,
     };
 
-    const isTopPerformer = p.composite !== null && topComposite !== null && p.composite === topComposite;
+    const isTopPerformer =
+      topForm !== null && p.form?.quality === 'established' && p.form.score === topForm;
     const trend = scoringTrendVerdict(p.scoringTrend);
     const tone = signalToneFor({
       isTopPerformer,
@@ -415,7 +446,11 @@ export function buildTeamBoardViewModel(input: TeamBoardInput): TeamBoardViewMod
       roundsPlayed: p.roundsPlayed,
       scoringAverage: fmtScoringAvg(p.scoringAverage),
       ranks,
-      composite: p.composite,
+      form: {
+        score: p.form?.score ?? null,
+        early: p.form?.quality === 'early',
+        formula: p.form ? describeFormFormula(p.form) : [],
+      },
       trendSeries: p.recentScores,
       signal: { tone, label },
       expand: {
@@ -459,14 +494,26 @@ export function buildTeamBoardViewModel(input: TeamBoardInput): TeamBoardViewMod
       weight: p.roundsPlayed18,
     })),
   );
-  const teamScoring = teamScoringRaw === null ? '—' : teamScoringRaw.toFixed(1);
+  const teamScoring = fmtScoringAvg(teamScoringRaw);
 
-  const teamSgRaw = weightedMean(
-    players.map((p) => ({
-      value: standingByPlayer.get(p.id)?.get('sg_total')?.player_value ?? null,
-      weight: p.roundsPlayed,
-    })),
-  );
+  // Prefer SG averaged over countable rounds (weighted by the rounds that
+  // carry SG); fall back to the standing snapshot only when the page could
+  // not supply it. The snapshot is the lifetime player cache, which counts
+  // implausible rounds and weights by rounds that carry no SG.
+  const hasCountableSg = players.some((p) => p.sgTotalPerRound !== undefined && p.sgTotalPerRound !== null);
+  const teamSgRaw = hasCountableSg
+    ? weightedMean(
+        players.map((p) => ({
+          value: p.sgTotalPerRound ?? null,
+          weight: p.sgRounds ?? 0,
+        })),
+      )
+    : weightedMean(
+        players.map((p) => ({
+          value: standingByPlayer.get(p.id)?.get('sg_total')?.player_value ?? null,
+          weight: p.roundsPlayed,
+        })),
+      );
 
   // Pool raw successes and attempts across the roster. Averaging player
   // percentages would give a one-round player the same influence as a

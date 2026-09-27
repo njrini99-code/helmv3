@@ -579,7 +579,7 @@ export function FairwayRecoverRound({ playerId }: FairwayRecoverRoundProps) {
         // Non-critical
       }
 
-      fairwayToast.success('Round recovered successfully!');
+      fairwayToast.success('Round recovered.');
       router.push(`/golf/dashboard/rounds/${result.data.roundId}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Recovery failed. Please try again.');
@@ -716,7 +716,7 @@ export function FairwayRecoverRound({ playerId }: FairwayRecoverRoundProps) {
 function ScoreCell({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="flex flex-col gap-0.5">
-      <span className="font-fw-sans text-eyebrow font-medium uppercase tracking-wide text-text-tertiary">
+      <span className="font-fw-sans text-caption font-medium text-text-tertiary">
         {label}
       </span>
       {children}

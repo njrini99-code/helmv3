@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { render, screen, within } from '@testing-library/react';
+import { cleanup, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { CommandPalette } from './CommandPalette';
@@ -22,6 +22,9 @@ if (!Element.prototype.scrollIntoView) {
 }
 
 afterEach(() => {
+  // Unmount first: the palette's Radix portal is a body child React still
+  // owns, and wiping the body under a mounted portal throws on unmount.
+  cleanup();
   document.body.innerHTML = '';
 });
 
@@ -38,13 +41,19 @@ describe('CommandPalette', () => {
     const dialog = await openPalette();
     await user.click(within(dialog).getByRole('button', { name: 'Close command palette' }));
 
-    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    // ModalShell (audit W3) plays its exit before unmounting.
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
   });
 
   it('centers within dashboard content using the rail CSS variable', async () => {
     render(<CommandPalette isCoach />);
 
-    expect(await openPalette()).toHaveClass('left-[calc(50%+var(--fw-rail-width,0px)/2)]');
+    // On ModalShell (audit W3) the panel centres with `inset-x-0 m-auto`, so
+    // pulling its left edge in by the rail width from md up moves the centre
+    // by half the rail — the old `calc(50% + rail/2)` frame.
+    const dialog = await openPalette();
+    expect(dialog).toHaveClass('md:left-[var(--fw-rail-width,0px)]');
+    expect(dialog).toHaveClass('m-auto');
   });
 
   it('keeps Escape dismissal available', async () => {
@@ -54,6 +63,6 @@ describe('CommandPalette', () => {
     await openPalette();
     await user.keyboard('{Escape}');
 
-    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
   });
 });

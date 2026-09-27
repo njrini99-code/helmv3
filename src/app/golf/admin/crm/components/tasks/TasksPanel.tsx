@@ -115,7 +115,7 @@ export function TasksPanel({ coachId }: TasksPanelProps) {
           </span>
           <h3 className="text-sm font-semibold text-text-primary">Tasks</h3>
           {!loading && open.length > 0 && (
-            <span className="text-eyebrow text-text-tertiary tabular-nums">
+            <span className="text-caption text-text-tertiary tabular-nums">
               {open.length} open
             </span>
           )}
@@ -159,7 +159,7 @@ export function TasksPanel({ coachId }: TasksPanelProps) {
 
       {!loading && !error && open.length > 0 && (
         <section className="space-y-2">
-          <h4 className="text-eyebrow font-semibold uppercase tracking-wider text-text-tertiary px-1">
+          <h4 className="font-fw-sans text-body-sm font-semibold text-text-primary px-1">
             Open
           </h4>
           <div className="space-y-1.5">
@@ -172,7 +172,7 @@ export function TasksPanel({ coachId }: TasksPanelProps) {
 
       {!loading && !error && completed.length > 0 && (
         <section className="space-y-2">
-          <h4 className="text-eyebrow font-semibold uppercase tracking-wider text-text-tertiary px-1">
+          <h4 className="font-fw-sans text-body-sm font-semibold text-text-primary px-1">
             Recently completed
           </h4>
           <div className="space-y-1.5">

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { motion, useReducedMotion } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { IconGlobe } from '@/components/icons';
 import type {
@@ -12,6 +12,7 @@ import { getDomainBreakdown } from '@/app/golf/actions/resend-activity';
 import { formatRate, formatCount } from './shared';
 import { Button } from '@/components/ui/button';
 import { EmptyState, Surface } from '@/components/fairway';
+import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
 
 interface DomainBreakdownProps {
   window: ActivityWindow;
@@ -20,7 +21,7 @@ interface DomainBreakdownProps {
 type SortKey = 'total' | 'delivered' | 'opened' | 'clicked' | 'bounced';
 
 export function DomainBreakdown({ window }: DomainBreakdownProps) {
-  const prefersReducedMotion = useReducedMotion();
+  const prefersReducedMotion = useReducedMotionGuard();
   const [rows, setRows] = useState<DomainStats[]>([]);
   const [loading, setLoading] = useState(true);
   const [sortKey, setSortKey] = useState<SortKey>('total');
@@ -174,7 +175,7 @@ export function DomainBreakdown({ window }: DomainBreakdownProps) {
                         {row.domain}
                       </span>
                       {bounceAlert && (
-                        <span className="text-eyebrow font-semibold px-1.5 py-0.5 rounded bg-fw-danger-bg text-fw-danger-ink uppercase tracking-wide">
+                        <span className="text-caption font-semibold px-1.5 py-0.5 rounded bg-fw-danger-bg text-fw-danger-ink">
                           High bounce
                         </span>
                       )}
@@ -191,19 +192,19 @@ export function DomainBreakdown({ window }: DomainBreakdownProps) {
                   </td>
                   <td className="px-4 py-3 text-right">
                     <div className="tabular-nums text-text-primary">{deliveryRate}</div>
-                    <div className="text-eyebrow text-text-tertiary tabular-nums">
+                    <div className="text-caption text-text-tertiary tabular-nums">
                       {formatCount(row.delivered)}
                     </div>
                   </td>
                   <td className="px-4 py-3 text-right">
                     <div className="tabular-nums text-text-primary">{openRate}</div>
-                    <div className="text-eyebrow text-text-tertiary tabular-nums">
+                    <div className="text-caption text-text-tertiary tabular-nums">
                       {formatCount(row.opened)}
                     </div>
                   </td>
                   <td className="px-4 py-3 text-right">
                     <div className="tabular-nums text-text-primary">{clickRate}</div>
-                    <div className="text-eyebrow text-text-tertiary tabular-nums">
+                    <div className="text-caption text-text-tertiary tabular-nums">
                       {formatCount(row.clicked)}
                     </div>
                   </td>
@@ -216,7 +217,7 @@ export function DomainBreakdown({ window }: DomainBreakdownProps) {
                     >
                       {bounceRate}
                     </div>
-                    <div className="text-eyebrow text-text-tertiary tabular-nums">
+                    <div className="text-caption text-text-tertiary tabular-nums">
                       {formatCount(row.bounced)}
                     </div>
                   </td>
@@ -266,7 +267,7 @@ function SortableTh({
         {label}
         <span
           className={cn(
-            'text-eyebrow transition-opacity',
+            'text-caption transition-opacity',
             active ? 'opacity-100' : 'opacity-0'
           )}
         >
@@ -299,7 +300,7 @@ function DomainFavicon({ domain }: { domain: string }) {
     return (
       <div
         className={cn(
-          'w-5 h-5 rounded flex items-center justify-center text-eyebrow font-semibold shrink-0',
+          'w-5 h-5 rounded flex items-center justify-center text-caption font-semibold shrink-0',
           bgClasses[bgIndex]
         )}
       >

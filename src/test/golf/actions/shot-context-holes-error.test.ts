@@ -75,7 +75,9 @@ beforeEach(() => {
   logServerError.mockClear();
   outcomes.clear();
   outcomes.set('golf_players:single', ok({ id: PLAYER_ID, user_id: 'u1' }));
-  outcomes.set('golf_rounds', ok([{ id: 'r1' }]));
+  // A countable round (src/lib/golf/round-countable.ts): the loaders now drop
+  // partial/implausible rounds, so a bare { id } no longer reaches the shot read.
+  outcomes.set('golf_rounds', ok([{ id: 'r1', status: 'completed', holes_played: 18, total_score: 74, front_nine: 37, back_nine: 37, score_to_par: 2, strokes_gained_total: 0, round_date: '2026-09-01' }]));
   // Non-empty: the function bails with "No shot data available for analysis"
   // before it ever reaches the holes read, which would make the assertions
   // below pass for the wrong reason.

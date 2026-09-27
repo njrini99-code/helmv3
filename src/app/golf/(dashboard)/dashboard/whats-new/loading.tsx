@@ -43,7 +43,7 @@ export default function Loading() {
                 <ul className="divide-y divide-border-subtle">
                   {Array.from({ length: group.rows }).map((_, ri) => (
                     <li key={ri} className="flex items-start gap-3 px-4 py-3">
-                      <Skeleton className="h-9 w-9 flex-shrink-0 rounded-xl" />
+                      <Skeleton className="h-9 w-9 flex-shrink-0 rounded-fw-md" />
                       <div className="min-w-0 flex-1 space-y-2">
                         <Skeleton className="h-3 w-40" />
                         <Skeleton className="h-4 w-3/4" />

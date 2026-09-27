@@ -35,8 +35,9 @@
  * ========================================================================== */
 
 import { useLinkStatus } from 'next/link';
-import { useReducedMotion } from 'framer-motion';
+
 import { cn } from '@/lib/utils';
+import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
 
 export interface NavPendingDotProps {
   /** Extra classes for positioning within the row. */
@@ -49,7 +50,7 @@ export interface NavPendingDotProps {
  */
 export function NavPendingDot({ className }: NavPendingDotProps) {
   const { pending } = useLinkStatus();
-  const prefersReducedMotion = useReducedMotion();
+  const prefersReducedMotion = useReducedMotionGuard();
 
   if (!pending) return null;
 

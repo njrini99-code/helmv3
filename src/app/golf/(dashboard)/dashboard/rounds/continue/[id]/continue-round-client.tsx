@@ -1620,7 +1620,7 @@ export default function ContinueRoundClient({
             </svg>
           </div>
           <div className="flex-1 min-w-0">
-            <p className="font-fw-sans text-eyebrow font-medium uppercase tracking-wider text-text-tertiary">Continue round</p>
+            <p className="font-fw-sans text-caption font-medium text-text-tertiary">Continue round</p>
             <p className="truncate font-fw-display text-body-lg font-semibold tracking-[-0.012em] text-text-primary">
               {setupData.courseName}
             </p>
@@ -1629,7 +1629,7 @@ export default function ContinueRoundClient({
             <p className="font-fw-mono text-caption font-medium tabular-nums text-text-secondary">
               {completedHoleStats.filter(s => s != null).length}/{holes.length}
             </p>
-            <p className="font-fw-sans text-microbadge uppercase tracking-wide text-text-tertiary">saved</p>
+            <p className="font-fw-sans text-microlabel uppercase tracking-wide text-text-tertiary">saved</p>
           </div>
         </div>
         {roundTypeEditor && (
@@ -1695,7 +1695,7 @@ export default function ContinueRoundClient({
           statusSlot={
             pendingFinalStats && !showFinishConfirm && !submitting && (
               <div className={fairwayScope('on-dark bg-nav-bg px-4 py-3 text-nav-text flex items-center justify-between gap-3')}>
-                <p className="font-fw-sans text-body-sm font-medium text-nav-text">All holes completed — ready to submit!</p>
+                <p className="font-fw-sans text-body-sm font-medium text-nav-text">All holes entered. Ready to submit.</p>
                 <FwButton
                   variant="primary"
                   size="sm"

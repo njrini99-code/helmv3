@@ -16,7 +16,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { Toaster as SonnerToaster, toast as sonnerToast, type ToasterProps } from 'sonner';
-import { triggerHaptic } from '@/lib/utils/capacitor';
+import { fwHaptic } from '@/lib/fairway/haptics';
 
 // ---------------------------------------------------------------------------
 // Toaster — mounted once at app root
@@ -132,8 +132,9 @@ function withErrorDuration(data?: LegacyData) {
 type SonnerData = Parameters<typeof sonnerToast.success>[1];
 
 function fireHaptic(kind: 'success' | 'warning' | 'error') {
-  // Fire-and-forget; no-ops on web.
-  void triggerHaptic(kind);
+  // Fire-and-forget; no-ops on web. Routed through fwHaptic (the one haptic
+  // path, audit MOT-04) — outcomes bypass its throttle, so this is unchanged.
+  fwHaptic(kind);
 }
 
 /**

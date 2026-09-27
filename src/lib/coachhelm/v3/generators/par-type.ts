@@ -205,7 +205,7 @@ export class ParTypeGenerator extends BaseGenerator<ParTypeAggregate> {
         `Cutting the doubles is the fastest stroke back.`;
     } else if (vsPar > 0) {
       driverClause =
-        `Your tail is reasonable (${r1(agg.double_plus_rate)}% doubles, ${r1(agg.bogey_rate)}% bogeys) — ` +
+        `Your tail is reasonable (${r1(agg.double_plus_rate)}% doubles, ${r1(agg.bogey_rate)}% bogeys); ` +
         `the over-par average is mostly a birdie-conversion gap (only ${r1(agg.birdie_rate)}% birdies here).`;
     } else {
       driverClause =

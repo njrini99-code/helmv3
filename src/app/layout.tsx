@@ -1,8 +1,9 @@
 import type { Metadata, Viewport } from 'next';
-import { Playfair_Display, DM_Sans } from 'next/font/google';
-import { GeistSans } from 'geist/font/sans';
-import { GeistMono } from 'geist/font/mono';
-import { fraunces, fragmentMono, spaceGrotesk } from '@/lib/fonts';
+// No web fonts at the root (2026-09-23). The whole app's sans, display and
+// numeral roles ride the Apple SF system stack (tailwind.config.ts fontFamily +
+// the --font-* overrides in globals.css), so GolfHelm ships zero font bytes.
+// BaseballHelm's own faces (Fraunces, Space Grotesk, Geist Mono) load in
+// src/app/baseball/layout.tsx via @/lib/fonts. Don't import @/lib/fonts here.
 import './globals.css';
 // Fairway design-system tokens (ADDITIVE — imported AFTER globals.css so it
 // only introduces new --fw-* custom properties; it overrides nothing). The
@@ -35,18 +36,6 @@ import { PostHogProvider } from '@/components/providers/PostHogProvider';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { ThemeScript } from '@/components/golf/theme/ThemeScript';
 import { MarketingAnimGate } from '@/components/landing/MarketingAnimGate';
-
-const playfair = Playfair_Display({
-  subsets: ['latin'],
-  variable: '--font-serif',
-  display: 'swap',
-});
-
-const dmSans = DM_Sans({
-  subsets: ['latin'],
-  variable: '--font-sans',
-  display: 'swap',
-});
 
 export const metadata: Metadata = {
   title: {
@@ -128,7 +117,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html
       lang="en"
       data-scroll-behavior="smooth"
-      className={`${GeistSans.variable} ${GeistMono.variable} ${playfair.variable} ${dmSans.variable} ${fraunces.variable} ${fragmentMono.variable} ${spaceGrotesk.variable}`}
       suppressHydrationWarning
     >
       <head>

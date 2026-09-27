@@ -4,15 +4,11 @@ import { useState, useRef } from 'react';
 import { Button, IconButton } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { IconX, IconUpload, IconFileText, IconImage, IconSparkles } from '@/components/icons';
+import { IconX, IconUpload, IconFileText, IconImage, IconScanText } from '@/components/icons';
 import { parseScheduleText, type ParsedClass } from '@/lib/utils/schedule-parser';
 import { extractClassesFromScheduleImage } from '@/app/golf/actions/schedule-image';
 import { fairwayToast } from '@/components/fairway/feedback/ToastStack';
-import {
-  Drawer,
-  DrawerContent,
-  DrawerTitle,
-} from '@/components/ui/drawer';
+import { Sheet } from '@/components/fairway/overlays/Sheet';
 
 type PdfJsTextItem = { str: string; transform?: number[] };
 type PdfJsPage = { getTextContent: () => Promise<{ items: PdfJsTextItem[] }> };
@@ -396,47 +392,47 @@ export function UploadScheduleModal({ isOpen, onClose, onParsed }: UploadSchedul
   };
 
   return (
-    <Drawer
+    <Sheet
       open={isOpen}
       onOpenChange={(next) => {
         if (!next) onClose();
       }}
+      title="Import Schedule"
+      customTitle
+      hideClose
+      className="overflow-hidden sm:mx-auto sm:max-w-xl"
     >
-      <DrawerContent
-        className="sm:max-w-xl sm:mx-auto sm:rounded-3xl p-0 overflow-hidden"
-        aria-labelledby="upload-schedule-title"
-      >
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-border-subtle">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-accent-500/10 flex items-center justify-center">
-              <IconSparkles size={20} className="text-accent-700" />
+            <div className="w-10 h-10 rounded-fw-md bg-accent-500/10 flex items-center justify-center">
+              <IconScanText size={20} className="text-accent-700" />
             </div>
             <div>
-              <DrawerTitle id="upload-schedule-title" className="text-body-lg font-medium text-text-primary tracking-[-0.012em]">
+              <Sheet.Title className="font-fw-sans text-body-lg font-medium text-text-primary tracking-[-0.012em]">
                 Import Schedule
-              </DrawerTitle>
+              </Sheet.Title>
               <p className="text-sm text-text-tertiary">Screenshot, upload, or paste your class schedule</p>
             </div>
           </div>
           <IconButton variant="default"
             onClick={onClose}
             aria-label="Close"
-            className="p-2 text-text-tertiary hover:text-text-secondary hover:bg-surface-sunken active:bg-surface-sunken rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/70 focus-visible:ring-offset-1 focus-visible:ring-offset-surface"
+            className="p-2 text-text-tertiary hover:text-text-secondary hover:bg-surface-sunken active:bg-surface-sunken rounded-fw-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/70 focus-visible:ring-offset-1 focus-visible:ring-offset-surface"
           >
             <IconX size={20} />
           </IconButton>
         </div>
 
         {/* Content */}
-        <div className="min-h-0 flex-1 overflow-y-auto p-6">
+        <div className="min-h-0 flex-1 overflow-y-auto p-6 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
           {/* Toggle */}
           <div className="flex gap-2 mb-6">
             <Button variant="primary"
               onClick={() => setPasteMode(false)}
-              className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all ${
+              className={`flex-1 py-2 px-4 rounded-fw-sm text-sm font-medium transition ${
                 !pasteMode
-                  ? 'bg-accent-650 text-text-on-accent'
+                  ? 'bg-accent-fill text-text-on-accent-fill'
                   : 'bg-surface-sunken text-text-secondary hover:bg-surface-sunken/80'
               }`}
             >
@@ -444,9 +440,9 @@ export function UploadScheduleModal({ isOpen, onClose, onParsed }: UploadSchedul
             </Button>
             <Button variant="primary"
               onClick={() => setPasteMode(true)}
-              className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all ${
+              className={`flex-1 py-2 px-4 rounded-fw-sm text-sm font-medium transition ${
                 pasteMode
-                  ? 'bg-accent-650 text-text-on-accent'
+                  ? 'bg-accent-fill text-text-on-accent-fill'
                   : 'bg-surface-sunken text-text-secondary hover:bg-surface-sunken/80'
               }`}
             >
@@ -476,7 +472,7 @@ export function UploadScheduleModal({ isOpen, onClose, onParsed }: UploadSchedul
                 }
               }}
               className={`
-                border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all
+                border-2 border-dashed rounded-fw-md p-8 text-center cursor-pointer transition
                 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/70 focus-visible:ring-offset-2 focus-visible:ring-offset-surface
                 ${dragActive
                   ? 'border-accent-500 bg-accent-500/10'
@@ -492,7 +488,7 @@ export function UploadScheduleModal({ isOpen, onClose, onParsed }: UploadSchedul
                 className="hidden"
               />
 
-              <div className="w-16 h-16 rounded-2xl bg-surface-sunken flex items-center justify-center mx-auto mb-4">
+              <div className="w-16 h-16 rounded-fw-md bg-surface-sunken flex items-center justify-center mx-auto mb-4">
                 {loading ? (
                   <span className="flex items-center gap-1.5">
                     <span className="w-2 h-2 rounded-full bg-accent-500 skeleton-shimmer" style={{ animationDelay: '0ms' }} />
@@ -534,7 +530,7 @@ export function UploadScheduleModal({ isOpen, onClose, onParsed }: UploadSchedul
                 autoCapitalize="none"
                 autoCorrect="off"
                 spellCheck={false}
-                className="w-full px-4 py-3 border border-border-subtle rounded-xl text-base lg:text-sm bg-surface text-text-primary focus:outline-none focus:border-accent-500 focus:ring-2 focus:ring-accent-500/30 resize-none font-mono"
+                className="w-full px-4 py-3 border border-border-subtle rounded-fw-sm text-base lg:text-sm bg-surface text-text-primary focus:outline-none focus:border-accent-500 focus:ring-2 focus:ring-accent-500/30 resize-none font-mono"
               />
               
               <Button
@@ -542,31 +538,30 @@ export function UploadScheduleModal({ isOpen, onClose, onParsed }: UploadSchedul
                 isLoading={loading}
                 className="w-full mt-4 gap-2"
               >
-                <IconSparkles size={18} />
+                <IconScanText size={18} />
                 Parse Schedule
               </Button>
             </div>
           )}
 
           {error && (
-            <div className="mt-4 bg-fw-danger-bg border border-fw-danger/30 text-fw-danger-ink px-4 py-3 rounded-lg text-sm" role="alert">
+            <div className="mt-4 bg-fw-danger-bg border border-fw-danger/30 text-fw-danger-ink px-4 py-3 rounded-fw-md text-sm" role="alert">
               {error}
             </div>
           )}
 
           {/* Tips */}
-          <div className="mt-6 p-4 bg-surface-sunken rounded-xl">
+          <div className="mt-6 p-4 bg-surface-sunken rounded-fw-md">
             <p className="text-sm font-medium text-text-secondary mb-2">Tips for best results:</p>
             <ul className="text-xs text-text-tertiary space-y-1">
-              <li>• Screenshot your schedule right from your student portal — Workday, Banner, PeopleSoft, and weekly calendar views all work</li>
+              <li>• Screenshot your schedule right from your student portal: Workday, Banner, PeopleSoft, and weekly calendar views all work</li>
               <li>• Capture the whole schedule; a scrolling screenshot is fine</li>
-              <li>• Photos of a printed schedule work too — shoot straight-on in good light</li>
+              <li>• Photos of a printed schedule work too. Shoot straight-on in good light</li>
               <li>• PDF, TXT, and Paste Text are also supported</li>
               <li>• You'll review every class before anything is saved</li>
             </ul>
           </div>
         </div>
-      </DrawerContent>
-    </Drawer>
+    </Sheet>
   );
 }

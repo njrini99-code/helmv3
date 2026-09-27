@@ -8,6 +8,14 @@ import { eventRunsOnDay } from '@/lib/calendar/timezone';
 import { withAdminObserved } from '@/lib/admin/observed-action';
 import { computeScoringTrendFromRounds } from '@/lib/golf/scoring-trend';
 import { withCanonicalRoundTotal } from '@/lib/golf/round-total';
+import { isCountableRound } from '@/lib/golf/round-countable';
+import { buildPerPlayerSparkline } from '@/lib/golf/per-player-sparkline';
+import { plausibleQualifierDateBounds } from '@/lib/golf/qualifier-date';
+import {
+    aggregateCountableRounds,
+    ROUND_STATS_CACHE_COLUMNS,
+    type RoundStatsCacheRow,
+} from '@/lib/golf/countable-round-stats';
 import { CLASS_EVENT_TYPE } from '@/lib/calendar/class-events';
 import { logServerError } from '@/lib/server-error-logger';
 import { describeError } from '@/lib/utils/describe-error';
@@ -161,6 +169,11 @@ export interface PlayerDashboardPayload {
         bestRound: number | null;
         handicap: number | null;
         recentTrend?: 'improving' | 'declining' | 'stable';
+        /** 18-hole rounds behind `scoringAverage` (countable rounds only). */
+        scoringAverageRounds?: number;
+        /** Completed rounds left out of every headline number (partial,
+         *  hole-less or implausible — see src/lib/golf/round-countable.ts). */
+        roundsExcluded?: number;
     };
     sparklines: {
         scoringAvg: SparklineStatCard;
@@ -171,6 +184,8 @@ export interface PlayerDashboardPayload {
     secondaryStats: {
         firPct: number | null;
         scramblingPct: number | null;
+        /** Birdies per 18 HOLES (a 9-hole round counts as half a round). The
+         *  field name predates the per-18 normalization. */
         birdiesPerRound: number | null;
         bestRound: number | null;
     };
@@ -312,6 +327,8 @@ async function getCoachDashboardDataImpl(
         }
     }
 
+    const qualifierDateBounds = plausibleQualifierDateBounds();
+
     // ── Parallel batch 1: Team info + roster + events + qualifiers + today's events + tasks + announcements + calendar ──
     const [
         teamResult,
@@ -331,7 +348,9 @@ async function getCoachDashboardDataImpl(
         // with 22 real ones (coach report, 2026-08-05). event_type is NOT NULL,
         // so .neq() can't silently drop untyped rows.
         supabase.from('golf_events').select('id', { count: 'exact', head: true }).eq('team_id', teamId).neq('event_type', CLASS_EVENT_TYPE).gte('start_time', now),
-        supabase.from('golf_qualifiers').select('id', { count: 'exact', head: true }).eq('team_id', teamId).in('status', ['upcoming', 'in_progress']),
+        // NUMC-07: an impossible start date (prod has year 60824) is not "active".
+        supabase.from('golf_qualifiers').select('id', { count: 'exact', head: true }).eq('team_id', teamId).in('status', ['upcoming', 'in_progress'])
+          .gte('start_date', qualifierDateBounds.from).lte('start_date', qualifierDateBounds.to),
         // Today's events + RSVP counts in a single RPC (consolidates the
         // sequential RSVP fetch that previously ran outside this Promise.all).
         // Returns jsonb array of { id, title, event_type, start_time, end_time, location, rsvp_yes, rsvp_total }.
@@ -475,7 +494,7 @@ async function getCoachDashboardDataImpl(
         const recentRoundsPromise = fetchAllRowsResult((from, to) => {
             let q = supabase
                 .from('golf_rounds')
-                .select('id, player_id, course_name, total_score, score_to_par, front_nine, back_nine, round_date, round_type, total_putts, total_fairways_hit, total_fairways, total_gir, total_gir_possible, player:golf_players(first_name, last_name, avatar_url)')
+                .select('id, player_id, course_name, total_score, score_to_par, front_nine, back_nine, holes_played, round_date, round_type, total_putts, total_fairways_hit, total_fairways, total_gir, total_gir_possible, player:golf_players(first_name, last_name, avatar_url)')
                 .in('player_id', playerIds)
                 .eq('status', 'completed')
                 .not('total_score', 'is', null);
@@ -504,13 +523,17 @@ async function getCoachDashboardDataImpl(
         const [recentRoundsResult, allRoundsResult, weekRoundsResult] = await Promise.all([
             recentRoundsPromise,
             allRoundsPromise,
-            // Rounds this week
+            // Rounds this week. Rows, not a head count, so the countable-round
+            // rule (src/lib/golf/round-countable.ts) can drop partial, hole-less
+            // and implausible rounds before counting. One week of one team's
+            // rounds is well under the 1000-row cap.
             supabase
                 .from('golf_rounds')
-                .select('id', { count: 'exact', head: true })
+                .select('id, holes_played, total_score, front_nine, back_nine, total_putts')
                 .in('player_id', playerIds)
                 .eq('status', 'completed')
-                .gte('round_date', weekAgo.split('T')[0]),
+                .gte('round_date', weekAgo.split('T')[0])
+                .limit(1000),
         ]);
 
         // Map recent rounds
@@ -519,13 +542,17 @@ async function getCoachDashboardDataImpl(
             total_score: number | null; score_to_par: number | null;
             front_nine: number | null; back_nine: number | null; round_date: string;
             round_type: string | null; total_putts: number | null;
+            holes_played: number | null;
             total_fairways_hit: number | null; total_fairways: number | null;
             total_gir: number | null; total_gir_possible: number | null;
             player?: { first_name: string | null; last_name: string | null; avatar_url: string | null } | null;
         };
 
         if (recentRoundsResult.data) {
-            recentRounds = (recentRoundsResult.data as RoundWithPlayer[]).map(r => {
+            // Countable rounds only (completed, every declared hole scored,
+            // plausible total): a 37-stroke 18-hole round and hole-less QA
+            // rounds used to fill this table and the "N rounds in window" count.
+            recentRounds = (recentRoundsResult.data as RoundWithPlayer[]).filter(isCountableRound).map(r => {
                 // Finding #1/#4/#5 (AUDIT-0724): prefer Σgolf_holes.score (proxied by
                 // front_nine+back_nine) over the sometimes-stale total_score column —
                 // see src/lib/golf/round-total.ts for the full root-cause. Keeps the
@@ -564,8 +591,14 @@ async function getCoachDashboardDataImpl(
         // the roster itself loaded fine.
         roundsFetchError = recentRoundsResult.error != null || allRoundsResult.error != null;
 
-        const allRounds = (allRoundsResult.data || []).map(withCanonicalRoundTotal);
-        teamPulse.roundsThisWeek = weekRoundsResult.error ? null : (weekRoundsResult.count ?? 0);
+        // Countable rounds only (src/lib/golf/round-countable.ts). Every team KPI,
+        // Top Performers, the monthly trend, sparklines and Team Pulse read this.
+        const allRounds = (allRoundsResult.data || [])
+            .map(withCanonicalRoundTotal)
+            .filter(isCountableRound);
+        teamPulse.roundsThisWeek = weekRoundsResult.error
+            ? null
+            : (weekRoundsResult.data ?? []).filter(isCountableRound).length;
 
         if (allRounds.length > 0) {
             // Group rounds by player once — used by both top-players and team-pulse rollups.
@@ -595,19 +628,18 @@ async function getCoachDashboardDataImpl(
                 previousAverage = olderScores.reduce((a, b) => a + b, 0) / olderScores.length;
             }
 
-            // Top players — single-pass lookup via roundsByPlayer Map
+            // Top players — single-pass lookup via roundsByPlayer Map.
+            // Same scoring-average definition as the team KPI, the player
+            // dashboard, the roster and Team Stats: the mean of countable
+            // 18-hole rounds (canonical hole-sum totals). `rounds` is that count.
             const playerAvgs: TopPlayer[] = [];
             players.forEach(p => {
                 const pRounds = roundsByPlayer.get(p.id) ?? [];
                 if (pRounds.length > 0) {
                     const pNormScores = pRounds
-                        .filter(r => r.total_score != null && r.total_score > 0)
-                        .map(r => {
-                            const holes = (r as { holes_played?: number | null }).holes_played ?? 18;
-                            if (holes <= 0) return null;
-                            return holes < 18 ? (r.total_score! / holes) * 18 : r.total_score!;
-                        })
-                        .filter((s): s is number => s !== null);
+                        .filter(r => r.total_score != null && r.total_score > 0
+                            && ((r as { holes_played?: number | null }).holes_played ?? 18) === 18)
+                        .map(r => r.total_score!);
                     if (pNormScores.length > 0) {
                         const avg = pNormScores.reduce((a, b) => a + b, 0) / pNormScores.length;
                         playerAvgs.push({
@@ -619,7 +651,14 @@ async function getCoachDashboardDataImpl(
                     }
                 }
             });
-            topPlayers = playerAvgs.sort((a, b) => a.avg_score - b.avg_score).slice(0, 5);
+            // Stable order on ties: compare at display precision (1 decimal),
+            // then more rounds first, then name.
+            topPlayers = playerAvgs
+                .sort((a, b) =>
+                    Math.round(a.avg_score * 10) - Math.round(b.avg_score * 10)
+                    || b.rounds - a.rounds
+                    || a.name.localeCompare(b.name))
+                .slice(0, 5);
 
             // Team scoring trend (by month)
             const roundsByYearMonth: Record<string, { label: string; scores: number[] }> = {};
@@ -645,19 +684,27 @@ async function getCoachDashboardDataImpl(
                     value: Number((s.reduce((a, b) => a + b, 0) / s.length).toFixed(1))
                 }));
 
-            // Sparklines — group last 5 rounds for each metric (team-wide)
-            const scoringSparkRounds = allRounds.slice(0, 20).map(r => ({ round_date: r.round_date, value: r.total_score }));
-            const puttsSparkRounds = allRounds.slice(0, 20).map(r => ({ round_date: r.round_date, value: r.total_putts }));
-            const girSparkRounds = allRounds.slice(0, 20).map(r => ({
-                round_date: r.round_date,
+            // Sparklines — per-player: point k is the mean of each player's own
+            // k-th most recent round (src/lib/golf/per-player-sparkline.ts). The
+            // team's latest 5 rounds mixed different players point to point, so
+            // the delta chip swung with whoever posted last (e.g. −9.0).
+            // Scoring and putts per-18 so a 9-hole round does not read as a dip.
+            const holesOf = (r: typeof allRounds[number]) =>
+                (r as { holes_played?: number | null }).holes_played ?? 18;
+            const scoringSparkline = buildPerPlayerSparkline(allRounds.map(r => ({
+                player_id: r.player_id,
+                value: r.total_score != null && holesOf(r) > 0 ? (r.total_score / holesOf(r)) * 18 : null,
+            })));
+            const puttsSparkline = buildPerPlayerSparkline(allRounds.map(r => ({
+                player_id: r.player_id,
+                value: r.total_putts != null && holesOf(r) > 0 ? (r.total_putts / holesOf(r)) * 18 : null,
+            })));
+            const girSparkline = buildPerPlayerSparkline(allRounds.map(r => ({
+                player_id: r.player_id,
                 value: r.total_gir !== null && r.total_gir_possible && r.total_gir_possible > 0
-                    ? Math.round((r.total_gir / r.total_gir_possible) * 100)
-                    : null
-            }));
-
-            const scoringSparkline = buildSparkline(scoringSparkRounds);
-            const puttsSparkline = buildSparkline(puttsSparkRounds);
-            const girSparkline = buildSparkline(girSparkRounds);
+                    ? (r.total_gir / r.total_gir_possible) * 100
+                    : null,
+            })));
 
             // Compute current KPI values over the FULL windowed round set.
             // `allRounds` already respects the selected window (via dateCutoff).
@@ -928,6 +975,7 @@ async function getPlayerDashboardDataImpl(
         roundsResult,
         playerDetailResult,
         statsCacheResult,
+        roundStatsResult,
         todayEventsResult,
         upcomingEventsResult,
         pendingTasksResult,
@@ -936,20 +984,33 @@ async function getPlayerDashboardDataImpl(
         teamId
             ? supabase.from('golf_teams').select('id, name, season, join_code, created_at').eq('id', teamId).single()
             : Promise.resolve({ data: null }),
-        supabase
+        // Every completed round (light columns), not the latest 50: the
+        // headline numbers are now aggregated here over COUNTABLE rounds
+        // (src/lib/golf/round-countable.ts) because golf_player_stats_cache
+        // still counts partial and implausible rounds.
+        fetchAllRowsResult((from, to) => supabase
             .from('golf_rounds')
             .select('id, course_name, total_score, score_to_par, front_nine, back_nine, round_date, holes_played, total_putts, total_gir, total_gir_possible')
             .eq('player_id', playerId)
             .eq('status', 'completed')
             .not('total_score', 'is', null)
             .order('round_date', { ascending: false })
-            .limit(50),
+            .order('id', { ascending: true })
+            .range(from, to), undefined, { table: 'golf_rounds', action: 'getPlayerDashboardData', feature: 'player_hub', sport: 'golf' }),
         supabase.from('golf_players').select('handicap').eq('id', playerId).single(),
         supabase
             .from('golf_player_stats_cache')
             .select('sg_total_per_round, sg_tee_per_round, sg_approach_per_round, sg_around_green_per_round, sg_putting_per_round, scrambling_percentage, birdies, rounds_played, scoring_average, best_round, gir_percentage, driving_accuracy_percentage, putts_per_round')
             .eq('player_id', playerId)
             .maybeSingle(),
+        // Per-round cache rows, so SG / greens / birdies can be averaged over
+        // countable rounds only.
+        fetchAllRowsResult<RoundStatsCacheRow>((from, to) => supabase
+            .from('golf_round_stats_cache')
+            .select(ROUND_STATS_CACHE_COLUMNS)
+            .eq('player_id', playerId)
+            .order('round_id', { ascending: true })
+            .range(from, to), undefined, { table: 'golf_round_stats_cache', action: 'getPlayerDashboardData', feature: 'player_hub', sport: 'golf' }),
         // Today's events. Team events only — a teammate's class meetings are
         // not this player's schedule and must not fill their home dashboard.
         teamId
@@ -1023,7 +1084,24 @@ async function getPlayerDashboardDataImpl(
     // would show for that round. The `statsCache.*` headline aggregates just
     // below (scoringAverage, bestRound) intentionally stay sourced from
     // golf_player_stats_cache — see the comment there.
-    const rounds = (roundsResult.data || []).map(withCanonicalRoundTotal);
+    const allRounds = (roundsResult.data || []).map(withCanonicalRoundTotal);
+    const roundStatsById = new Map(
+        (roundStatsResult.data ?? []).map((row) => [row.round_id, row] as const),
+    );
+    // Only countable rounds feed any number below (partial, hole-less and
+    // implausible rounds such as a 37-stroke "18-hole" round are left out).
+    const countableRounds = allRounds.filter((r) =>
+        isCountableRound({
+            ...r,
+            strokes_gained_total: roundStatsById.get(r.id)?.strokes_gained_total ?? null,
+        }),
+    );
+    // Recent-form widgets keep their original 50-round window.
+    const rounds = countableRounds.slice(0, 50);
+    const headline = aggregateCountableRounds(allRounds, roundStatsById);
+    // If the per-round cache read failed, fall back to the player cache for
+    // the shot-derived numbers rather than blanking them.
+    const perRoundCacheOk = !roundStatsResult.error;
     const playerHandicap = playerDetailResult.data?.handicap ?? null;
     const statsCache = statsCacheResult.data as {
         sg_total_per_round: number | null;
@@ -1112,9 +1190,15 @@ async function getPlayerDashboardDataImpl(
     // change. The per-round values below (sparklines, trend, recentRounds) are
     // already corrected via `withCanonicalRoundTotal` above, independent of
     // that data fix.
-    const roundsPlayed = statsCache?.rounds_played ?? 0;
-    const scoringAverage = statsCache?.scoring_average != null ? Number(statsCache.scoring_average) : null;
-    const bestRound = statsCache?.best_round != null ? Number(statsCache.best_round) : null;
+    //
+    // UPDATE (countable-round rule): the cache above still counts partial,
+    // hole-less and implausible rounds, so rounds / scoring average / best
+    // round now come from `headline`, aggregated over countable rounds only.
+    // The DB trigger needs the same rule (owner migration); until then this
+    // loader is the source of truth for the player's home numbers.
+    const roundsPlayed = headline.roundsCounted;
+    const scoringAverage = headline.scoringAverage;
+    const bestRound = headline.bestRound;
 
     // Recent trend is intentionally recent-form: 18-hole-normalized scores from
     // the latest rounds (matches the cache's normalized best_round convention).
@@ -1129,8 +1213,23 @@ async function getPlayerDashboardDataImpl(
     const recentTrend = computeTrend(normalizedScores);
 
     // Sparklines
-    const scoringSparkline = buildSparkline(rounds.map(r => ({ round_date: r.round_date, value: r.total_score })));
-    const puttsSparkline = buildSparkline(rounds.map(r => ({ round_date: r.round_date, value: r.total_putts })));
+    // Same 18-hole-normalized, hole-summed score the trend and Rounds list use.
+    const scoringSparkline = buildSparkline(rounds.map(r => {
+        const hp = r.holes_played ?? 18;
+        return {
+            round_date: r.round_date,
+            value: r.total_score != null && hp > 0 ? Math.round((r.total_score / hp) * 18) : null,
+        };
+    }));
+    const puttsSparkline = buildSparkline(rounds.map(r => {
+        const hp = r.holes_played ?? 18;
+        return {
+            round_date: r.round_date,
+            value: r.total_putts != null && r.total_putts > 0 && hp > 0
+                ? Math.round(((r.total_putts / hp) * 18) * 10) / 10
+                : null,
+        };
+    }));
     const girSparkline = buildSparkline(rounds.map(r => ({
         round_date: r.round_date,
         value: r.total_gir !== null && r.total_gir_possible && r.total_gir_possible > 0
@@ -1143,8 +1242,15 @@ async function getPlayerDashboardDataImpl(
     // gir_percentage is the weighted aggregate (sum made / sum opportunities)
     // and putts_per_round is hole-weighted ((sum putts ÷ sum holes) × 18),
     // both computed over ALL rounds — not the capped 50-round fetch.
-    const avgGir = statsCache?.gir_percentage != null ? Number(statsCache.gir_percentage) : null;
-    const avgPutts = statsCache?.putts_per_round != null ? Number(statsCache.putts_per_round) : null;
+    //
+    // UPDATE (countable-round rule): computed over countable rounds. Putts per
+    // round divides by the holes of rounds that RECORDED putts; the cache
+    // divided by every round's holes, so hole-less rounds dragged it down
+    // (29.7 shown vs 32.9+ real for the audited player).
+    const avgGir = perRoundCacheOk
+        ? headline.girPct
+        : statsCache?.gir_percentage != null ? Number(statsCache.gir_percentage) : null;
+    const avgPutts = headline.puttsPer18;
 
     // Per-round series (newest first) feeding the sparkline trend arrows. These
     // are intentionally per-round (not the windowed aggregate above) — the trend
@@ -1153,7 +1259,7 @@ async function getPlayerDashboardDataImpl(
         .filter(r => r.total_gir !== null && r.total_gir_possible && r.total_gir_possible > 0)
         .map(r => (r.total_gir! / r.total_gir_possible!) * 100);
     const puttsValues = rounds
-        .filter((r): r is typeof r & { total_putts: number } => r.total_putts !== null)
+        .filter((r): r is typeof r & { total_putts: number } => r.total_putts !== null && r.total_putts > 0)
         .map(r => {
             const hp = (r as { holes_played?: number | null }).holes_played ?? 18;
             return hp > 0 && hp < 18 ? (r.total_putts * 18) / hp : r.total_putts;
@@ -1162,26 +1268,38 @@ async function getPlayerDashboardDataImpl(
     // Secondary stats — FIR% from the cache's driving_accuracy_percentage
     // (weighted aggregate: sum hit / sum recorded fairway opportunities over
     // ALL rounds), mirroring avgGir above and the coach/team/stats pages.
-    const firPct = statsCache?.driving_accuracy_percentage != null
-        ? Number(Number(statsCache.driving_accuracy_percentage).toFixed(1))
-        : null;
+    const firPctRaw = perRoundCacheOk
+        ? headline.fairwayPct
+        : statsCache?.driving_accuracy_percentage != null ? Number(statsCache.driving_accuracy_percentage) : null;
+    const firPct = firPctRaw != null ? Number(firPctRaw.toFixed(1)) : null;
+    const scramblingRaw = perRoundCacheOk
+        ? headline.scramblingPct
+        : statsCache?.scrambling_percentage != null ? Number(statsCache.scrambling_percentage) : null;
 
     // Birdies per round — sourced from the maintained stats cache (golf_player_stats_cache
     // is trigger-refreshed on round submit). `birdies` is the season total over
     // `rounds_played`; divide for the per-round figure. Null when the cache row is
     // absent or has no rounds yet (cold-start → the card shows its empty state).
-    const birdiesPerRound: number | null =
-        statsCache?.birdies != null && (statsCache.rounds_played ?? 0) > 0
+    //
+    // UPDATE: per 18 HOLES over countable rounds. Dividing the season total by
+    // rounds_played counted a 9-hole round as a full round while the card
+    // said "per round".
+    const birdiesPerRound: number | null = perRoundCacheOk
+        ? (headline.birdiesPer18 != null ? Number(headline.birdiesPer18.toFixed(2)) : null)
+        : statsCache?.birdies != null && (statsCache.rounds_played ?? 0) > 0
             ? Number((Number(statsCache.birdies) / statsCache.rounds_played!).toFixed(2))
             : null;
 
     // Scoring trend (per round, newest last)
     const scoringTrend: ScoringTrend[] = [...rounds].reverse()
         .filter(r => r.total_score !== null)
-        .map(r => ({
-            label: new Date(r.round_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-            value: r.total_score!
-        }));
+        .map(r => {
+            const hp = r.holes_played ?? 18;
+            return {
+                label: new Date(r.round_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+                value: hp > 0 && hp < 18 ? Math.round((r.total_score! / hp) * 18) : r.total_score!,
+            };
+        });
 
     // Action items
     const actionItems: ActionItem[] = [];
@@ -1225,14 +1343,25 @@ async function getPlayerDashboardDataImpl(
         }
     }
 
-    // Strokes gained — pull per-round averages from stats cache
-    const strokesGained: StrokesGainedSnapshot = {
-        sg_total: statsCache?.sg_total_per_round != null ? Number(Number(statsCache.sg_total_per_round).toFixed(2)) : null,
-        sg_off_tee: statsCache?.sg_tee_per_round != null ? Number(Number(statsCache.sg_tee_per_round).toFixed(2)) : null,
-        sg_approach: statsCache?.sg_approach_per_round != null ? Number(Number(statsCache.sg_approach_per_round).toFixed(2)) : null,
-        sg_around_green: statsCache?.sg_around_green_per_round != null ? Number(Number(statsCache.sg_around_green_per_round).toFixed(2)) : null,
-        sg_putting: statsCache?.sg_putting_per_round != null ? Number(Number(statsCache.sg_putting_per_round).toFixed(2)) : null,
-    };
+    // Strokes gained per round — averaged from the per-round cache over
+    // countable rounds (the player cache still includes an implausible round's
+    // SG, e.g. +34.51). Falls back to the player cache if that read failed.
+    const sg2 = (n: number | null | undefined) => (n != null && Number.isFinite(Number(n)) ? Number(Number(n).toFixed(2)) : null);
+    const strokesGained: StrokesGainedSnapshot = perRoundCacheOk
+        ? {
+            sg_total: sg2(headline.sg.total),
+            sg_off_tee: sg2(headline.sg.offTee),
+            sg_approach: sg2(headline.sg.approach),
+            sg_around_green: sg2(headline.sg.aroundGreen),
+            sg_putting: sg2(headline.sg.putting),
+        }
+        : {
+            sg_total: sg2(statsCache?.sg_total_per_round),
+            sg_off_tee: sg2(statsCache?.sg_tee_per_round),
+            sg_approach: sg2(statsCache?.sg_approach_per_round),
+            sg_around_green: sg2(statsCache?.sg_around_green_per_round),
+            sg_putting: sg2(statsCache?.sg_putting_per_round),
+        };
 
     return {
         todayEvents,
@@ -1243,6 +1372,8 @@ async function getPlayerDashboardDataImpl(
             bestRound,
             handicap: playerHandicap,
             recentTrend: rounds.length >= 6 ? recentTrend : undefined,
+            scoringAverageRounds: headline.scoringAverageRounds,
+            roundsExcluded: headline.roundsExcluded,
         },
         sparklines: {
             scoringAvg: {
@@ -1272,7 +1403,7 @@ async function getPlayerDashboardDataImpl(
         },
         secondaryStats: {
             firPct,
-            scramblingPct: statsCache?.scrambling_percentage != null ? Number(Number(statsCache.scrambling_percentage).toFixed(1)) : null,
+            scramblingPct: scramblingRaw != null ? Number(scramblingRaw.toFixed(1)) : null,
             birdiesPerRound,
             bestRound,
         },

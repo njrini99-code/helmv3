@@ -319,7 +319,7 @@ export function CreateTaskDialog({
               </div>
 
               {!isEdit && (
-                <p className="text-eyebrow text-text-tertiary">
+                <p className="text-caption text-text-tertiary">
                   Assigned to you — appears in your Inbox &quot;Due today&quot; list.
                 </p>
               )}

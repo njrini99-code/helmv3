@@ -224,7 +224,7 @@ export function ConflictCenter({
             <div className="space-y-5">
               {buckets.map((bucket) => (
                 <section key={bucket.dateKey} aria-labelledby={`conflict-date-${bucket.dateKey}`}>
-                  <h2 id={`conflict-date-${bucket.dateKey}`} className="mb-2 font-fw-sans text-eyebrow font-semibold uppercase tracking-[0.1em] text-text-tertiary">
+                  <h2 id={`conflict-date-${bucket.dateKey}`} className="mb-2 font-fw-sans text-body-sm font-semibold text-text-primary">
                     {/* Every bucket is built with at least one group (groupByDate only ever pushes non-empty arrays) — safe to read [0] directly. */}
                     {dateHeading(bucket.groups[0]!.event.start, timeZone)}
                   </h2>

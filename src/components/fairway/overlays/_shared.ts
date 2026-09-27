@@ -83,7 +83,7 @@ export const panelVariantsReduced: Variants = {
 
 /**
  * Build the enter/exit transition for a glass panel, honoring reduced motion.
- * @param reduced result of useReducedMotion()
+ * @param reduced result of useReducedMotionGuard()
  * @param slow    use the slow cinematic duration (modals/sheets) vs medium (popovers)
  */
 export function panelTransition(reduced: boolean, slow = false): Transition {
@@ -155,7 +155,101 @@ export const CLOSE_BUTTON_CLASS =
  * ─────────────────────────────────────────────────────────────────────────── */
 export const ModalPortalContext = React.createContext<HTMLElement | null>(null);
 
+/* ── Material: content surfaces are OPAQUE ───────────────────────────────────
+ *
+ * Glass (backdrop blur over translucent fill) is for chrome only: the
+ * translucent nav bar, a floating toolbar. A modal or sheet that carries
+ * reading content or form fields is a content surface and must be opaque —
+ * otherwise the page behind reads through the labels and inputs (audit
+ * 2026-09-23, the see-through New-goal sheet). `glass` stays available as an
+ * explicit opt-in for chrome-like overlays only.
+ * ─────────────────────────────────────────────────────────────────────────── */
+export type OverlayMaterial = 'surface' | 'glass';
+
+/** Opaque content surface: --fw-color-surface, hairline, modal shadow. */
+export const SURFACE_CLASS = 'bg-surface border border-border-subtle shadow-fw-modal';
+
+/* ── Dialog focus: move in on open, return to the opener on close ────────────
+ *
+ * Radix Dialog (and vaul, which wraps it) gets both wrong in this app:
+ *   • vaul's Root defaults `autoFocus` to false, and its Content then calls
+ *     `preventDefault()` on Radix's open-autofocus — focus stays on the page
+ *     behind every Sheet / Drawer (More, Log progress, event detail).
+ *   • Radix's modal `onCloseAutoFocus` returns focus to `triggerRef`, which is
+ *     null for every overlay driven by external `open` state (no
+ *     Dialog.Trigger) — focus drops to <body> on close.
+ *
+ * Callers must ALSO pass `autoFocus` to vaul's Root so vaul stops cancelling
+ * the open event. Behavior:
+ *   • open, fine pointer  → Radix default: first tabbable element, or the
+ *     content container (FocusScope renders it with tabIndex=-1).
+ *   • open, coarse pointer → the content container itself: focusing a text
+ *     field on touch summons the iOS keyboard over the sheet just opened
+ *     (owner TestFlight report 2026-08-26, same rule as ModalShell).
+ *   • close → the element focused when the dialog opened, if still attached;
+ *     otherwise Radix's default (correct for a real Dialog.Trigger).
+ *
+ * The opener is captured inside onOpenAutoFocus: FocusScope dispatches that
+ * event BEFORE it moves focus, so `document.activeElement` is still the
+ * opener — this works for controlled and uncontrolled roots alike.
+ * ─────────────────────────────────────────────────────────────────────────── */
+export interface DialogFocusHandlers {
+  onOpenAutoFocus: (event: Event) => void;
+  onCloseAutoFocus: (event: Event) => void;
+}
+
+export function useDialogFocus(
+  user?: Partial<DialogFocusHandlers>,
+): DialogFocusHandlers {
+  const openerRef = React.useRef<HTMLElement | null>(null);
+  const userRef = React.useRef(user);
+  userRef.current = user;
+
+  const onOpenAutoFocus = React.useCallback((event: Event) => {
+    const active = document.activeElement;
+    openerRef.current =
+      active instanceof HTMLElement && active !== document.body ? active : null;
+    userRef.current?.onOpenAutoFocus?.(event);
+    if (event.defaultPrevented) return;
+    if (typeof window !== 'undefined' && window.matchMedia('(pointer: coarse)').matches) {
+      event.preventDefault();
+      (event.target as HTMLElement | null)?.focus({ preventScroll: true });
+    }
+  }, []);
+
+  const onCloseAutoFocus = React.useCallback((event: Event) => {
+    userRef.current?.onCloseAutoFocus?.(event);
+    if (event.defaultPrevented) {
+      openerRef.current = null;
+      return;
+    }
+    const opener = openerRef.current;
+    openerRef.current = null;
+    if (opener && opener.isConnected && typeof opener.focus === 'function') {
+      event.preventDefault();
+      opener.focus({ preventScroll: true });
+    }
+  }, []);
+
+  return { onOpenAutoFocus, onCloseAutoFocus };
+}
+
 /** The nearest ModalShell/Drawer's content DOM node, or `null` outside one. */
 export function useModalPortalContainer(): HTMLElement | null {
   return React.useContext(ModalPortalContext);
+}
+
+/**
+ * Escape = one level per keypress. Radix's dialog listens for Escape on
+ * `document` in the CAPTURE phase, before a nested Base UI popup (Select,
+ * Combobox) sees it, so one press closed the popup AND the sheet. While any
+ * descendant carries Base UI's `data-popup-open`, cancel the dialog-level
+ * dismiss; the popup's own listener still closes it, and the next Escape
+ * reaches the dialog. Same guard as ModalShell's handleContentEscapeKeyDown.
+ */
+export function preventEscapeWhilePopupOpen(
+  event: KeyboardEvent,
+  contentNode: HTMLElement | null,
+): void {
+  if (contentNode?.querySelector('[data-popup-open]')) event.preventDefault();
 }

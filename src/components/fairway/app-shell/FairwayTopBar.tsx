@@ -50,7 +50,8 @@
  * page's own masthead below it — see the gutter note on the row itself.
  * ========================================================================== */
 
-import { forwardRef, memo } from 'react';
+import { forwardRef, memo, useEffect, useState } from 'react';
+import { ChevronLeft } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { IconSearch } from '@/components/icons';
 import { Button } from '@/components/ui/button';
@@ -64,37 +65,39 @@ const DefaultLink: ShellLinkComponent = ({ href, children, ...rest }) => (
 );
 
 /**
- * The warm Liquid-Glass surface classes, expressed inline from the --fw-glass-*
- * tokens (Wave 1 cannot add a global `.glass` class). Includes the
- * reduced-transparency / forced-colors fallback to an opaque matte surface.
+ * The nav bar surface: opaque cream at every width (owner OD-20, "opaque cream
+ * plus a hairline on scroll"). No blur, no translucency. The bottom hairline is
+ * transparent at the top of the page and fades in once content scrolls under
+ * the bar (`data-scrolled`), the way an iOS navigation bar does. The border
+ * width is always there, so the hairline appearing never shifts the layout.
  */
-const glassSurface = cn(
-  'relative isolate [contain:layout_paint_style]',
-  // Mobile (<md): opaque matte, no blur — a `sticky` header over
-  // constantly-scrolling content is the worst compositing case on
-  // phone-class GPUs, so it gets the opaque surface unconditionally here.
-  // md+: full warm glass (blur/saturate) as before. No shadow utilities:
-  // the unconditional inset [box-shadow:...] below must survive at md+.
-  'bg-surface md:bg-[var(--fw-glass-bg)]',
-  'md:supports-[backdrop-filter]:backdrop-blur-[var(--fw-blur-glass)]',
-  'md:supports-[backdrop-filter]:backdrop-saturate-[var(--fw-glass-saturate)]',
-  'border-b border-[var(--fw-glass-border)]',
-  '[box-shadow:inset_0_1px_0_0_var(--fw-glass-highlight),inset_0_-1px_0_0_var(--fw-glass-border-bot)]',
-  // Cheap universal top sheen (works without backdrop-filter support).
-  "before:pointer-events-none before:absolute before:inset-0 before:content-['']",
-  'before:bg-gradient-to-b before:from-white/25 before:via-white/[0.04] before:to-transparent',
-  // Apple a11y fallback: opaque matte when transparency/contrast is reduced.
-  'motion-reduce:transition-none',
-  '[@media(prefers-reduced-transparency:reduce)]:bg-surface',
-  '[@media(prefers-reduced-transparency:reduce)]:supports-[backdrop-filter]:backdrop-blur-none',
-  '[@media(prefers-reduced-transparency:reduce)]:shadow-soft',
-  '[@media(prefers-reduced-transparency:reduce)]:before:hidden',
+const barSurface = cn(
+  'relative isolate [contain:layout_paint_style] bg-surface',
+  'border-b border-transparent data-[scrolled=true]:border-border-subtle',
+  'transition-[border-color] [transition-duration:var(--fw-dur-fast)] motion-reduce:transition-none',
   '[@media(forced-colors:active)]:bg-[Canvas]',
 );
+
+/** True once the document has scrolled past the top. Passive listener, rAF-free. */
+function useScrolledPastTop(): boolean {
+  const [scrolled, setScrolled] = useState(false);
+  useEffect(() => {
+    const read = () => setScrolled(window.scrollY > 0);
+    read();
+    window.addEventListener('scroll', read, { passive: true });
+    return () => window.removeEventListener('scroll', read);
+  }, []);
+  return scrolled;
+}
 
 export interface FairwayTopBarProps {
   /** Breadcrumb trail (last crumb = current page; rendered as plain text). */
   breadcrumbs?: readonly Breadcrumb[];
+  /**
+   * Phones only: a leading `‹ Parent` link on a pushed route, the way an iOS
+   * navigation bar pops back (NAT-04). Omit on tab roots.
+   */
+  backLink?: Breadcrumb & { readonly href: string };
   /**
    * Persistent search / command entry. When `onSearchOpen` is provided, the bar
    * renders the canonical ⌘K command button. Pass `searchSlot` to fully replace it.
@@ -127,6 +130,12 @@ export interface FairwayTopBarProps {
    * surface with a single hairline (the sub-nav's own bottom border).
    */
   flush?: boolean;
+  /**
+   * NAT-04 (opt-in, golf): the phone bar as an iOS navigation bar: 44pt tall
+   * with the title centred at 17pt semibold. Desktop is unchanged. Off by
+   * default so Baseball and Lift Lab keep their 64px bar.
+   */
+  nativeBar?: boolean;
   /** Link element (defaults to a plain `<a>`). */
   linkComponent?: ShellLinkComponent;
   className?: string;
@@ -195,6 +204,7 @@ function BreadcrumbTrail({
 export const FairwayTopBar = memo(forwardRef<HTMLElement, FairwayTopBarProps>(function FairwayTopBar(
   {
     breadcrumbs,
+    backLink,
     onSearchOpen,
     searchPlaceholder = 'Search or jump to…',
     searchSlot,
@@ -202,6 +212,7 @@ export const FairwayTopBar = memo(forwardRef<HTMLElement, FairwayTopBarProps>(fu
     accentColor,
     pageTitle,
     flush,
+    nativeBar,
     linkComponent,
     className,
   },
@@ -215,10 +226,12 @@ export const FairwayTopBar = memo(forwardRef<HTMLElement, FairwayTopBarProps>(fu
   // without AppShell ever touching context itself.
   const { registeredTitle } = useLargeTitle();
   const displayTitle = registeredTitle ?? pageTitle;
+  const scrolled = useScrolledPastTop();
 
   return (
     <header
       data-slot="fw-topbar"
+      data-scrolled={scrolled || undefined}
       ref={ref}
       // a11y: names the banner landmark with the current destination. On
       // routes whose in-content `h1` is a greeting (both dashboards) or absent
@@ -230,16 +243,13 @@ export const FairwayTopBar = memo(forwardRef<HTMLElement, FairwayTopBarProps>(fu
       aria-label={displayTitle || undefined}
       // `pt-[env(safe-area-inset-top)]` keeps the bar's contents clear of the
       // iOS status bar / notch (Capacitor `contentInset: 'never'` → the web owns
-      // the safe area). The glass tints UP into the notch; 0 on non-notched/desktop.
+      // the safe area). The bar's cream fills the notch; 0 on non-notched/desktop.
       className={cn(
-        glassSurface,
+        barSurface,
         'sticky top-0 z-[var(--fw-z-sticky)] w-full pt-[env(safe-area-inset-top)]',
-        // M1: `flush` (a sub-nav strip renders directly below) drops the
-        // bar's OWN bottom hairline at `<md` ONLY — the two glass classes
-        // below are re-declared (not toggled by a shared variable) so this
-        // stays a plain, mergeable Tailwind class list; `max-md:` scopes it
-        // to phone (md:+ keeps its own hairline regardless of `flush`).
-        flush && 'max-md:border-b-0 max-md:[box-shadow:inset_0_1px_0_0_var(--fw-glass-highlight)]',
+        // M1: `flush` (a sub-nav strip renders directly below and owns the
+        // hairline) drops the bar's own bottom border at `<md` only.
+        flush && 'max-md:border-b-0',
         className,
       )}
     >
@@ -250,7 +260,7 @@ export const FairwayTopBar = memo(forwardRef<HTMLElement, FairwayTopBarProps>(fu
           that renders as part of this same sticky chrome unit — sat on 16px.
           Measured at 390px on every golf route: title left 24, content left 16.
           Nothing in the mobile frame shared a left edge. */}
-      <div className="flex h-16 items-center gap-3 px-4 sm:px-6 lg:px-8 xl:grid xl:grid-cols-[minmax(0,1fr)_340px_minmax(0,1fr)] xl:gap-6">
+      <div className={cn(nativeBar ? 'relative h-11 md:h-16' : 'h-16', 'flex items-center gap-3 px-4 sm:px-6 lg:px-8 xl:grid xl:grid-cols-[minmax(0,1fr)_340px_minmax(0,1fr)] xl:gap-6')}>
         {/* Leading slot — PHONE: the standing destination title. Present from
             first paint, never gated on scroll, never animated. `min-w-0
             flex-1` + `truncate` against the `flex-shrink-0` action cluster
@@ -258,12 +268,34 @@ export const FairwayTopBar = memo(forwardRef<HTMLElement, FairwayTopBarProps>(fu
             row's `px-6` left edge with the page masthead below it.
             `aria-hidden` — the accessible name lives on the `<header>`
             landmark above, so this never becomes a second announced heading. */}
+        {backLink ? (
+          <Link
+            href={backLink.href}
+            aria-label={`Back to ${backLink.label}`}
+            className="-ml-2 flex min-h-11 min-w-11 max-w-[40%] flex-shrink-0 items-center gap-0.5 rounded-fw-sm pr-1 font-fw-sans text-body-sm font-medium text-accent-ink outline-none focus-visible:ring-2 focus-visible:ring-border-focus md:hidden"
+          >
+            <ChevronLeft className="h-6 w-6 flex-shrink-0" strokeWidth={2.25} aria-hidden />
+            <span className="truncate">{backLink.label}</span>
+          </Link>
+        ) : null}
         <div
           className="flex min-w-0 flex-1 items-center md:hidden"
           aria-hidden
           data-slot="fw-topbar-title"
         >
-          <span className="pointer-events-none truncate font-fw-sans text-body-sm font-medium text-text-primary">
+          {/* iOS large-title behaviour (DASH-05): when the page registered its
+              own title it is already on screen as the page's large title, so
+              the bar shows it only once that has scrolled away. */}
+          <span
+            className={cn(
+              'pointer-events-none truncate font-fw-sans text-text-primary',
+              nativeBar
+                ? 'absolute left-1/2 top-1/2 max-w-[50%] -translate-x-1/2 -translate-y-1/2 text-center text-headline'
+                : 'text-body-sm font-medium',
+              'transition-opacity [transition-duration:var(--fw-dur-fast)] motion-reduce:transition-none',
+              registeredTitle && !scrolled && 'opacity-0',
+            )}
+          >
             {displayTitle}
           </span>
         </div>

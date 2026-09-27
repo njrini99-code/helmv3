@@ -163,7 +163,7 @@ describe('FairwayPlayerCard — wrap-safe at narrow widths', () => {
         intent={null}
       />,
     );
-    const meta = screen.getByText('Austin, TX');
+    const meta = screen.getByText(/Austin, TX/);
     expect(meta.className).toMatch(/\btruncate\b/);
     expect(meta.className).toMatch(/\bmin-w-0\b/);
   });
