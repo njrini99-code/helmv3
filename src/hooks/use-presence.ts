@@ -57,11 +57,21 @@ function whenIdle(cb: () => void): () => void {
 
 /**
  * Supabase's browser client can surface its internal request deadline as a
- * resolved RPC error (`TimeoutError: signal timed out`). Presence is best
- * effort, so this is neither an auth failure nor a round-save failure.
+ * resolved RPC error. Chrome words it `TimeoutError: signal timed out`;
+ * WebKit (Safari, and the iOS app's WKWebView) words the same aborted fetch
+ * `AbortError: Fetch is aborted` with the hint `Request was aborted (timeout
+ * or manual cancellation)` (Bridge d07955ca / c6a3835e, 2026-09-27). Presence
+ * is best effort, so neither is an auth failure nor a round-save failure.
  */
+const PRESENCE_HEARTBEAT_ABORT_PATTERNS: readonly RegExp[] = [
+  /timeouterror:\s*signal timed out/i,
+  /aborterror:\s*fetch is aborted/i,
+  /request was aborted \(timeout or manual cancellation\)/i,
+];
+
 function isPresenceHeartbeatTimeout(error: unknown): boolean {
-  return /timeouterror:\s*signal timed out/i.test(describeError(error));
+  const text = describeError(error);
+  return PRESENCE_HEARTBEAT_ABORT_PATTERNS.some((pattern) => pattern.test(text));
 }
 
 /**

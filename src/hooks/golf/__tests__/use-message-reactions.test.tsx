@@ -6,7 +6,9 @@ import { summarizeReactions, useMessageReactions, type MessageReaction } from '.
 const state = vi.hoisted(() => ({
   rows: [] as MessageReaction[],
   saveError: null as { code: string; message: string } | null,
-  readError: null as { message: string } | null,
+  readError: null as { message: string; code?: string } | null,
+  /** Runs as a read resolves: models the session vanishing mid-request. */
+  onRead: null as (() => void) | null,
   events: [] as (() => void)[],
   deletes: [] as Record<string, string>[],
   reads: 0,
@@ -15,7 +17,8 @@ const state = vi.hoisted(() => ({
   session: { access_token: 'jwt', user: { id: 'me' } } as { access_token: string; user: { id: string } } | null,
   authListeners: [] as ((event: string) => void)[],
 }));
-vi.mock('@/lib/error-logging', () => ({ logError: vi.fn() }));
+const logErrorMock = vi.hoisted(() => vi.fn());
+vi.mock('@/lib/error-logging', () => ({ logError: logErrorMock }));
 vi.mock('@/lib/supabase/client', () => ({ createClient: () => ({
   from: () => {
     let mode = 'read';
@@ -31,7 +34,7 @@ vi.mock('@/lib/supabase/client', () => ({ createClient: () => ({
       delete: () => { mode = 'delete'; return query; },
       eq: (key: string, value: string) => { filters[key] = value; return query; },
       then: (resolve: (result: unknown) => void) => {
-        if (mode === 'read') { state.reads += 1; return resolve({ data: state.rows.filter((row) => ids.includes(row.message_id)), error: state.readError }); }
+        if (mode === 'read') { state.reads += 1; state.onRead?.(); return resolve({ data: state.rows.filter((row) => ids.includes(row.message_id)), error: state.readError }); }
         if (state.saveError) return resolve({ error: state.saveError });
         if (mode === 'insert') state.rows.push({ id: `r${state.rows.length}`, ...inserted } as MessageReaction);
         if (mode === 'delete') {
@@ -63,11 +66,13 @@ beforeEach(() => {
   state.rows = [];
   state.saveError = null;
   state.readError = null;
+  state.onRead = null;
   state.events = [];
   state.deletes = [];
   state.reads = 0;
   state.session = { access_token: 'jwt', user: { id: 'me' } };
   state.authListeners = [];
+  logErrorMock.mockClear();
 });
 const row = (id: string, user: string, message = 'message-a'): MessageReaction => ({ id, user_id: user, message_id: message, emoji: '👍' });
 
@@ -144,6 +149,30 @@ describe('message reactions', () => {
     await act(async () => { state.authListeners.forEach((l) => l('SIGNED_IN')); });
     await waitFor(() => expect(result.current.rows).toHaveLength(1));
     expect(state.reads).toBeGreaterThan(0);
+  });
+
+  it('does not report a 42501 read when the session was gone by the time it answered (8011d1b9)', async () => {
+    // Production 2026-09-27T16:18Z (deploy dpl_HD8BRLq11yFKjcqTLfQSXZoXYi4C,
+    // which already carries the getSession() gate): a hidden tab restored from
+    // back_forward cache passed the gate, the session was dropped before
+    // PostgREST answered, the read ran as anon and golf_message_reactions
+    // (anon revoked by design) raised 42501. The logger itself saw an
+    // anonymous user. Expected control flow, not a grant to widen: keep what
+    // is on screen and let onAuthStateChange re-run the load.
+    state.readError = { code: '42501', message: 'permission denied for table golf_message_reactions' };
+    state.onRead = () => { state.session = null; };
+    const { result } = renderHook(() => useMessageReactions('dm', ['message-a'], 'me'));
+    await waitFor(() => expect(state.reads).toBeGreaterThan(0));
+    await act(async () => { await Promise.resolve(); });
+    expect(logErrorMock).not.toHaveBeenCalled();
+    expect(result.current.error).toBeNull();
+  });
+
+  it('still reports a 42501 read while the session is live (a real access defect)', async () => {
+    state.readError = { code: '42501', message: 'permission denied for table golf_message_reactions' };
+    const { result } = renderHook(() => useMessageReactions('dm', ['message-a'], 'me'));
+    await waitFor(() => expect(result.current.error).toContain('could not be loaded'));
+    expect(logErrorMock).toHaveBeenCalledTimes(1);
   });
 
   it('refuses to write a reaction without a live session', async () => {

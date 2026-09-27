@@ -266,6 +266,35 @@ describe('usePresence authenticated heartbeat lifecycle (#1016)', () => {
     );
   });
 
+  it('does not report the WebKit wording of the same aborted heartbeat (d07955ca, c6a3835e)', async () => {
+    // Production 2026-09-27, iOS app (WKWebView) on back_forward navigation:
+    // supabase-js resolves the aborted request as a value whose describeError
+    // text is `msg=AbortError: Fetch is aborted hint=Request was aborted
+    // (timeout or manual cancellation)`. Same benign deadline as the Chrome
+    // `TimeoutError: signal timed out` case above, different engine wording,
+    // and each route minted a fresh Bridge fingerprint.
+    getUserMock.mockResolvedValue({ data: { user: { id: 'user-1' } }, error: null });
+    rpcMock.mockResolvedValue({
+      data: undefined,
+      error: {
+        message: 'AbortError: Fetch is aborted',
+        details: '',
+        hint: 'Request was aborted (timeout or manual cancellation)',
+        code: '',
+      },
+    });
+    vi.spyOn(console, 'debug').mockImplementation(() => undefined);
+
+    renderHook(() => usePresence());
+    await act(async () => {
+      await Promise.resolve();
+      await vi.advanceTimersByTimeAsync(5_000);
+    });
+
+    expect(rpcMock).toHaveBeenCalledTimes(1);
+    expect(logErrorMock).not.toHaveBeenCalled();
+  });
+
   it('does not overlap a scheduled heartbeat while the prior refresh is pending', async () => {
     getUserMock.mockResolvedValue({ data: { user: { id: 'user-1' } }, error: null });
     let resolveRpc: ((value: { data: undefined; error: null }) => void) | undefined;

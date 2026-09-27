@@ -38,6 +38,10 @@ export function summarizeReactions(rows: readonly MessageReaction[], messageId: 
   return [...groups.values()].sort((a, b) => a.emoji.localeCompare(b.emoji));
 }
 
+function isPermissionDenied(cause: unknown): boolean {
+  return typeof cause === 'object' && cause !== null && (cause as { code?: unknown }).code === '42501';
+}
+
 /** Session-client reads and writes retain the database's participant RLS. */
 export function useMessageReactions(conversationId: string, messageIds: string[], userId: string) {
   const client = useMemo(() => createClient(), []);
@@ -94,6 +98,15 @@ export function useMessageReactions(conversationId: string, messageIds: string[]
       setRows(loaded);
       setError(null);
     } catch (cause) {
+      if (version !== request.current || scope.current !== conversationId) return;
+      // The gate above is a check, not a lock: a hidden or bfcache-restored
+      // tab can lose its session between getSession() and PostgREST's answer
+      // (Bridge 8011d1b9, 2026-09-27, on the deploy that already had the
+      // gate). The read then runs as anon and the table, by design, answers
+      // 42501. With no live session that is expected control flow: keep what
+      // is on screen, and onAuthStateChange re-runs the load. A 42501 with a
+      // live session is still a real access defect and is still reported.
+      if (isPermissionDenied(cause) && !(await hasLiveSession())) return;
       if (version !== request.current || scope.current !== conversationId) return;
       setError('Reactions could not be loaded. Tap to retry.');
       logError(cause instanceof Error ? cause : new Error(describeError(cause)), { component: 'MessageReactions', action: 'load', sport: 'golf', conversationId });
