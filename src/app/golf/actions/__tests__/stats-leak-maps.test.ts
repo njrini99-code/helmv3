@@ -131,6 +131,32 @@ describe('stats-leak-maps pagination (PostgREST 1000-row cap)', () => {
       expect(shotPageCalls()).toBeGreaterThanOrEqual(2);
     });
 
+    it('buckets putts on upper-inclusive edges like the cache writer and calculator (3 ft is 0-3, 5 ft is 3-5)', async () => {
+      // Putts are entered in whole feet, so many sit exactly on a band edge.
+      // [min, max) edges put every 3-footer in "3-5 ft" (chart 78% beside a
+      // 47% table on the same putts).
+      shotRows = [
+        ...Array.from({ length: 10 }, (_, i) => ({ round_id: `round-${i}`, putt_distance_feet: 3, putt_made: true })),
+        ...Array.from({ length: 4 }, (_, i) => ({ round_id: `round-${i}`, putt_distance_feet: 4, putt_made: i < 2 })),
+        ...Array.from({ length: 6 }, (_, i) => ({ round_id: `round-${i}`, putt_distance_feet: 5, putt_made: i < 1 })),
+        { round_id: 'round-0', putt_distance_feet: 25, putt_made: false },
+        { round_id: 'round-1', putt_distance_feet: 26, putt_made: false },
+      ];
+
+      const result = await getPuttMakeLeakMap('player-1');
+      const band = (id: string) => result.data?.putting.find((b) => b.bucket_id === id);
+
+      expect(result.success).toBe(true);
+      expect(band('0_3')?.sample_n).toBe(10);
+      expect(band('0_3')?.team_value).toBe(100);
+      // 4 ft (2 of 4 made) + 5 ft (1 of 6 made) = 3 of 10.
+      expect(band('3_5')?.sample_n).toBe(10);
+      expect(band('3_5')?.team_value).toBe(30);
+      expect(band('5_10')?.sample_n).toBe(0);
+      expect(band('15_25')?.sample_n).toBe(1); // 25 ft
+      expect(band('25_plus')?.sample_n).toBe(1); // 26 ft
+    });
+
     it('paginates the completed-round-id fetch past 1000 rows', async () => {
       const result = await getPuttMakeLeakMap('player-1');
 

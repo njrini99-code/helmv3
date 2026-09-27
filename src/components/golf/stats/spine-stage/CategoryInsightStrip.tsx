@@ -7,7 +7,7 @@
  * A compact, premium strip meant for the TOP of a single stat drill
  * (Putting/Driving/Approach/Short Game/Scoring — one category per mount):
  * an eyebrow, up to 2 mined-pattern insights for THAT category (title +
- * strokeImpact chip + a one-line recommendation), and an inline mini trend
+ * strokeImpact chip + a wrapping recommendation), and an inline mini trend
  * (Sparkline) with a delta chip when a series exists for the category.
  *
  * Pure presentation — every prop comes straight off `buildStatsViewModel`'s
@@ -139,7 +139,12 @@ export function CategoryInsightStrip({
       </div>
 
       {rows.length > 0 ? (
-        <div className={cn('grid gap-3', hasSeries ? 'mt-3' : 'mt-2', rows.length > 1 && 'sm:grid-cols-2')}>
+        // `grid-cols-1` (= minmax(0, 1fr)), not the implicit `auto` track: an
+        // auto track grows to its widest child's min-content, so one long
+        // advice line pushed every row past the card edge at 390px.
+        <div
+          className={cn('grid grid-cols-1 gap-3', hasSeries ? 'mt-3' : 'mt-2', rows.length > 1 && 'sm:grid-cols-2')}
+        >
           {rows.map((insight, i) => {
             const isLeak = insight.strokeImpact < 0;
             const magnitude = Math.abs(insight.strokeImpact).toFixed(1);
@@ -150,7 +155,7 @@ export function CategoryInsightStrip({
                 initial={prefersReducedMotion ? false : { opacity: 0, y: 6 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ ...enterTransition, delay: stagger(i) }}
-                className="flex flex-col gap-1"
+                className="flex min-w-0 flex-col gap-1"
               >
                 <div className="flex items-center gap-2">
                   <span
@@ -171,10 +176,9 @@ export function CategoryInsightStrip({
                   </p>
                 </div>
                 {insight.recommendation ? (
-                  <p
-                    className="truncate font-fw-sans text-caption leading-snug text-text-tertiary"
-                    title={insight.recommendation}
-                  >
+                  // Wraps (never truncates): the fix is the actionable half of
+                  // the row, so the whole sentence stays readable on a phone.
+                  <p className="break-words font-fw-sans text-caption leading-snug text-text-tertiary">
                     <span className="font-medium text-text-secondary">Fix · </span>
                     {insight.recommendation}
                   </p>

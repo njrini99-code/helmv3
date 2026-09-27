@@ -311,6 +311,7 @@ async function getPlayerProfileImpl(
       .from('golf_rounds')
       .select('id, score_to_par, total_score, round_date, total_putts, total_gir, total_gir_possible, total_fairways_hit, total_fairways, holes_played')
       .eq('player_id', playerId)
+      .eq('is_test', false)
       .eq('status', 'completed')
       .not('total_score', 'is', null)
       .order('round_date', { ascending: true })
@@ -330,6 +331,7 @@ async function getPlayerProfileImpl(
         .from('golf_rounds')
         .select('id', { count: 'exact', head: true })
         .eq('player_id', playerId)
+        .eq('is_test', false)
         .eq('status', 'completed');
       // A failed count must not fall through to the globally-silenced code.
       if (countError) {
@@ -572,6 +574,7 @@ async function getPlayerProfileImpl(
         .from('golf_rounds')
         .select('status, holes_played, total_score, front_nine, back_nine, total_putts, score_to_par, strokes_gained_total')
         .eq('player_id', playerId)
+        .eq('is_test', false)
         .eq('status', 'completed')
         .order('round_date', { ascending: false })
         .limit(20),
@@ -661,6 +664,7 @@ async function getPlayerTrendAnalysisImpl(
       .from('golf_rounds')
       .select('id, score_to_par, round_date, total_score, front_nine, back_nine, total_putts, total_gir, total_gir_possible, total_fairways_hit, total_fairways, holes_played')
       .eq('player_id', playerId)
+      .eq('is_test', false)
       .eq('status', 'completed')
       .not('score_to_par', 'is', null)
       .order('round_date', { ascending: true })
@@ -692,6 +696,7 @@ async function getPlayerTrendAnalysisImpl(
         .from('golf_rounds')
         .select('id', { count: 'exact', head: true })
         .eq('player_id', playerId)
+        .eq('is_test', false)
         .eq('status', 'completed');
       // A failed count must not fall through to the globally-silenced code.
       if (countError) {
@@ -817,6 +822,7 @@ async function getPlayerShotContextImpl(
       .from('golf_rounds')
       .select('id, holes_played, total_score, front_nine, back_nine, total_putts')
       .eq('player_id', playerId)
+      .eq('is_test', false)
       .eq('status', 'completed')
       .gte('round_date', sinceDateStr);
 
@@ -1044,6 +1050,7 @@ async function getTeamSimulationImpl(
         .from('golf_rounds')
         .select('score_to_par')
         .eq('player_id', member.player_id)
+        .eq('is_test', false)
         .eq('status', 'completed')
         .not('score_to_par', 'is', null)
         .order('round_date', { ascending: false })
@@ -1148,6 +1155,7 @@ async function getPlayerWhatIfImpl(
       .from('golf_rounds')
       .select('score_to_par')
       .eq('player_id', playerId)
+      .eq('is_test', false)
       .eq('status', 'completed')
       .not('score_to_par', 'is', null)
       .order('round_date', { ascending: false })
@@ -1167,6 +1175,7 @@ async function getPlayerWhatIfImpl(
         .from('golf_rounds')
         .select('id', { count: 'exact', head: true })
         .eq('player_id', playerId)
+        .eq('is_test', false)
         .eq('status', 'completed');
       // A failed count must not fall through to the globally-silenced code.
       if (countError) {
@@ -1223,6 +1232,7 @@ async function getPlayerWhatIfImpl(
               .from('golf_rounds')
               .select('player_id, score_to_par')
               .in('player_id', otherPlayerIds)
+              .eq('is_test', false)
               .eq('status', 'completed')
               .not('score_to_par', 'is', null)
               .order('round_date', { ascending: false })

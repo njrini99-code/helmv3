@@ -74,6 +74,9 @@ Leaderboard reads qualifier
 ## Business Rules
 
 - Only authorized coaches should create or manage team qualifiers.
+- Test qualifiers (OD-03, 2026-09-27): `golf_qualifiers.is_test = true` hides a
+  QA qualifier from the team list, the coach home count, My Qualifiers and the
+  new-round qualifier picker. The qualifier detail page (by id) still opens.
 - Players can see qualifiers they are entered in through My Qualifiers.
 - Qualifier rounds must remain normal rounds too; do not fork scoring logic.
 - Leaderboard aggregation must handle ties and incomplete entries consistently.

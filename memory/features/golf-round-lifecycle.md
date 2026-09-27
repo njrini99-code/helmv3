@@ -144,6 +144,12 @@ Use `memory/context/golfhelm-database.md` for exact columns.
 
 ## Business Rules
 
+- Test rounds (OD-03, 2026-09-27): `golf_rounds.is_test = true` marks a QA or
+  demo round. List and aggregate reads (the rounds list, home, recent
+  courses) filter `.eq('is_test', false)`; by-id reads (round detail, review,
+  continue), writes and the lifecycle guard ignore the flag. Flagging a
+  completed round is an owner-approved data write, run as postgres with the
+  same transaction-local lifecycle marker the atomic round RPCs set.
 - Do not use DELETE-then-INSERT for save, submit, or sync paths. Use idempotent upserts or a safe stage-and-swap pattern.
 - Child-write failures must preserve the `in_progress` parent round and prior
   durable children so interruption recovery can retry without data loss.

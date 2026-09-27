@@ -153,6 +153,18 @@ export function isCoachHelmCoachCluster(pathname: string): boolean {
   );
 }
 
+/**
+ * Where the COACH rail and tab bar light CoachHelm: the cluster above, plus
+ * bare `/golf/dashboard/coachhelm`. That path is the player CoachHelm home, so
+ * it stays out of the cluster (breadcrumbs, back link). A coach who lands on it
+ * still gets a CoachHelm page (the shell titles it "CoachHelm AI" and it points
+ * them to their Brief), and with no nav item lit they could not tell where they
+ * were (390px baseline).
+ */
+function isCoachHelmCoachNavRoute(pathname: string): boolean {
+  return isCoachHelmCoachCluster(pathname) || pathname === '/golf/dashboard/coachhelm';
+}
+
 export const COACHHELM_PLAYER_CLUSTER_PREFIXES = [
   '/golf/dashboard/coachhelm',
   '/golf/dashboard/my-development',
@@ -353,7 +365,7 @@ export function buildCoachRailSections(badges: GolfNavBadgeCounts): NavSection[]
       href: '/golf/dashboard/intelligence',
       icon: IconSparkles,
       badge: navBadge(badges.coachhelm),
-      activeMatch: isCoachHelmCoachCluster,
+      activeMatch: isCoachHelmCoachNavRoute,
     }),
     hubToNavItem({
       label: players.label,
@@ -511,7 +523,7 @@ export function buildCoachBottomNavItems(badges: GolfNavBadgeCounts): NavItem[] 
       icon: IconSparkles,
       badge: navBadge(badges.coachhelm),
       activeMatch: (pathname) =>
-        isCoachHelmCoachCluster(pathname) && !matchesRoutePrefix(pathname, COACH_PLAYER_DETAIL_PREFIX),
+        isCoachHelmCoachNavRoute(pathname) && !matchesRoutePrefix(pathname, COACH_PLAYER_DETAIL_PREFIX),
     }),
     hubToNavItem({
       label: schedule.label,

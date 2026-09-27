@@ -682,6 +682,7 @@ async function getPlayerStatsDirectActionImpl(
         holes_played
       `)
       .eq('player_id', targetPlayerId)
+      .eq('is_test', false)
       .eq('status', 'completed')
       .not('total_score', 'is', null);
 

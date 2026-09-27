@@ -14,7 +14,7 @@
  */
 
 import { formatToPar as formatToParShared } from '@/lib/golf/format-to-par';
-import { roundExclusionReason } from '@/lib/golf/round-countable';
+import { roundExclusionReason, type RoundExclusionReason } from '@/lib/golf/round-countable';
 import {
   aggregateCountableRounds,
   type CountableRoundRow,
@@ -116,6 +116,18 @@ export function formatRoundToPar(n: number): string {
 
 function plural(n: number, one: string, many = `${one}s`): string {
   return `${n} ${n === 1 ? one : many}`;
+}
+
+/**
+ * Why rounds were left out, in the chart caption's words ("left out as partial
+ * or implausible"), so the masthead's "N later rounds not counted" carries its
+ * reason inline instead of leaving it to a caption far down the page.
+ */
+function exclusionCause(reasons: readonly RoundExclusionReason[]): string {
+  const partial = reasons.some((r) => r === 'holes_missing' || r === 'unsupported_length');
+  const implausible = reasons.some((r) => r === 'implausible_score' || r === 'implausible_sg');
+  if (partial && implausible) return 'partial or implausible';
+  return implausible ? 'implausible' : 'partial';
 }
 
 function formatPlanValue(n: number): string {
@@ -426,11 +438,11 @@ export function buildPlayerDetailModel(inputs: PlayerDetailInputs): PlayerDetail
     strokes_gained_total: r.strokes_gained_total ?? statsById.get(r.id)?.strokes_gained_total ?? null,
   }));
   const counted: RawRound[] = [];
-  const excludedDates: string[] = [];
+  const excluded: Array<{ date: string; reason: RoundExclusionReason }> = [];
   for (const r of merged) {
     const reason = roundExclusionReason(r);
     if (reason === null) counted.push(r);
-    else if (reason !== 'not_completed') excludedDates.push(r.round_date.slice(0, 10));
+    else if (reason !== 'not_completed') excluded.push({ date: r.round_date.slice(0, 10), reason });
   }
 
   const pointById = new Map<string, RoundPoint>();
@@ -452,10 +464,12 @@ export function buildPlayerDetailModel(inputs: PlayerDetailInputs): PlayerDetail
   if (latest) {
     const par = latest.toPar == null ? '' : ` (${formatRoundToPar(latest.toPar)})`;
     statusLine = `Last round ${latest.dateLabel} · ${latest.score}${par}${latest.holes === 9 ? ' · 9 holes' : ''}`;
-    const newerExcluded = excludedDates.filter((d) => d > latest.date).length;
-    if (newerExcluded > 0) statusNote = `${plural(newerExcluded, 'later round')} not counted`;
-  } else if (excludedDates.length > 0) {
-    statusNote = `${plural(excludedDates.length, 'round')} on file, none countable yet`;
+    const newerExcluded = excluded.filter((e) => e.date > latest.date);
+    if (newerExcluded.length > 0) {
+      statusNote = `${plural(newerExcluded.length, 'later round')} not counted (${exclusionCause(newerExcluded.map((e) => e.reason))})`;
+    }
+  } else if (excluded.length > 0) {
+    statusNote = `${plural(excluded.length, 'round')} on file, none countable yet (${exclusionCause(excluded.map((e) => e.reason))})`;
   }
 
   const nineRows = countedRows.filter((r) => (r.holes_played ?? 18) === 9);
@@ -495,7 +509,7 @@ export function buildPlayerDetailModel(inputs: PlayerDetailInputs): PlayerDetail
   return {
     roundsState: all.length === 0 ? 'empty' : 'ready',
     completedRounds: all.length,
-    excludedRounds: excludedDates.length,
+    excludedRounds: excluded.length,
     statusLine,
     statusNote,
     verdict: buildVerdict(inputs.firstName, points18, allPoints.length),

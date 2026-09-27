@@ -260,7 +260,18 @@ export const FairwayTopBar = memo(forwardRef<HTMLElement, FairwayTopBarProps>(fu
           that renders as part of this same sticky chrome unit — sat on 16px.
           Measured at 390px on every golf route: title left 24, content left 16.
           Nothing in the mobile frame shared a left edge. */}
-      <div className={cn(nativeBar ? 'relative h-11 md:h-16' : 'h-16', 'flex items-center gap-3 px-4 sm:px-6 lg:px-8 xl:grid xl:grid-cols-[minmax(0,1fr)_340px_minmax(0,1fr)] xl:gap-6')}>
+      <div
+        className={cn(
+          nativeBar ? 'relative h-11 md:h-16' : 'h-16',
+          'flex items-center gap-3 px-4 sm:px-6 lg:px-8 xl:grid xl:grid-cols-[minmax(0,1fr)_340px_minmax(0,1fr)] xl:gap-6',
+          // Phone native bar: three columns instead of an absolutely centred
+          // title. The title centres while the side columns leave room and
+          // shifts or truncates when the action cluster is wide (Messages:
+          // compose + bell + avatar), so it can never sit under the buttons.
+          // The action column never shrinks; a long back label truncates.
+          nativeBar && 'max-md:grid max-md:grid-cols-[minmax(0,1fr)_minmax(0,auto)_minmax(max-content,1fr)]',
+        )}
+      >
         {/* Leading slot — PHONE: the standing destination title. Present from
             first paint, never gated on scroll, never animated. `min-w-0
             flex-1` + `truncate` against the `flex-shrink-0` action cluster
@@ -272,14 +283,18 @@ export const FairwayTopBar = memo(forwardRef<HTMLElement, FairwayTopBarProps>(fu
           <Link
             href={backLink.href}
             aria-label={`Back to ${backLink.label}`}
-            className="-ml-2 flex min-h-11 min-w-11 max-w-[40%] flex-shrink-0 items-center gap-0.5 rounded-fw-sm pr-1 font-fw-sans text-body-sm font-medium text-accent-ink outline-none focus-visible:ring-2 focus-visible:ring-border-focus md:hidden"
+            className={cn(
+              '-ml-2 flex min-h-11 min-w-11 max-w-[40%] flex-shrink-0 items-center gap-0.5 rounded-fw-sm pr-1 font-fw-sans text-body-sm font-medium text-accent-ink outline-none focus-visible:ring-2 focus-visible:ring-border-focus md:hidden',
+              // In the grid its column bounds it; 40% of a column is too tight.
+              nativeBar && 'max-md:col-start-1 max-md:max-w-full max-md:justify-self-start',
+            )}
           >
             <ChevronLeft className="h-6 w-6 flex-shrink-0" strokeWidth={2.25} aria-hidden />
             <span className="truncate">{backLink.label}</span>
           </Link>
         ) : null}
         <div
-          className="flex min-w-0 flex-1 items-center md:hidden"
+          className={cn('flex min-w-0 flex-1 items-center md:hidden', nativeBar && 'max-md:col-start-2 max-md:justify-center')}
           aria-hidden
           data-slot="fw-topbar-title"
         >
@@ -290,7 +305,7 @@ export const FairwayTopBar = memo(forwardRef<HTMLElement, FairwayTopBarProps>(fu
             className={cn(
               'pointer-events-none truncate font-fw-sans text-text-primary',
               nativeBar
-                ? 'absolute left-1/2 top-1/2 max-w-[50%] -translate-x-1/2 -translate-y-1/2 text-center text-headline'
+                ? 'min-w-0 text-center text-headline'
                 : 'text-body-sm font-medium',
               'transition-opacity [transition-duration:var(--fw-dur-fast)] motion-reduce:transition-none',
               registeredTitle && !scrolled && 'opacity-0',
@@ -345,7 +360,11 @@ export const FairwayTopBar = memo(forwardRef<HTMLElement, FairwayTopBarProps>(fu
         </div>
 
         {/* Action cluster — every breakpoint. */}
-        {actions && <div className="flex flex-shrink-0 items-center gap-2 xl:col-start-3 xl:justify-self-end">{actions}</div>}
+        {actions && (
+          <div className={cn('flex flex-shrink-0 items-center gap-2 xl:col-start-3 xl:justify-self-end', nativeBar && 'max-md:col-start-3 max-md:justify-self-end')}>
+            {actions}
+          </div>
+        )}
       </div>
 
       {/* Active-team accent underline — overlays the glass bottom border, cross-

@@ -8500,7 +8500,8 @@ async function getPlayerQualifiersImpl(): Promise<ActionResult<PlayerQualifierIn
           start_date,
           end_date,
           status,
-          num_rounds
+          num_rounds,
+          is_test
         )
       `)
       .eq('player_id', player.id);
@@ -8516,6 +8517,7 @@ async function getPlayerQualifiersImpl(): Promise<ActionResult<PlayerQualifierIn
       .from('golf_rounds')
       .select('qualifier_id, qualifier_round_number, total_score, score_to_par')
       .eq('player_id', player.id)
+      .eq('is_test', false)
       .in('qualifier_id', qualifierIds)
       .eq('status', 'completed');
 
@@ -8545,10 +8547,12 @@ async function getPlayerQualifiersImpl(): Promise<ActionResult<PlayerQualifierIn
         end_date: string | null;
         status: string;
         num_rounds: number | null;
+        is_test: boolean;
       } | null;
     };
     const qualifiers: PlayerQualifierInfo[] = (entries as unknown as QualifierEntry[])
-      .filter((e) => e.qualifier && typeof e.qualifier === 'object' && !('error' in e.qualifier))
+      // QA qualifiers (is_test, OD-03) are hidden from players.
+      .filter((e) => e.qualifier && typeof e.qualifier === 'object' && !('error' in e.qualifier) && !e.qualifier.is_test)
       .map((entry) => {
         const q = entry.qualifier as {
           id: string;
@@ -9412,7 +9416,8 @@ async function getRecentCoursesForPlayerImpl(
   const { data: rounds } = await supabase
     .from('golf_rounds')
     .select('course_id, course_name, round_date')
-    .eq('player_id', player.id);
+    .eq('player_id', player.id)
+    .eq('is_test', false);
 
   const roundsList = (rounds || []) as Array<{
     course_id: string | null;

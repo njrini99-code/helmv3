@@ -14,7 +14,9 @@
  *               verdict sentence built only from real fields
  *   stage     → RoundStrip: one bar per recent round against the par line,
  *               and a single readout row (Avg · Best · Putts · GIR) under it
- *   ledger    → Today and Focus areas as hairline rows, side by side from md
+ *   ledger    → Tasks and Focus areas as hairline rows, side by side from md
+ *               (the schedule card above owns "Today"; Tasks used to be a
+ *               second "Today" that could contradict it)
  *   table     → Recent rounds, then "Your game" links
  *
  * Removed, and why:
@@ -64,7 +66,7 @@ import type { GolfPlayer, GolfTeam } from '@/lib/types/golf';
 import type { PlayerHubSummaryData } from '@/app/golf/actions/player-hub-data';
 import type { PlayerFocusArea } from '@/lib/coachhelm/insight-types';
 
-import { SectionTitle, TodayCard, RecentRoundsList, GameLinks } from './player-dashboard-parts';
+import { SectionTitle, TasksCard, RecentRoundsList, GameLinks } from './player-dashboard-parts';
 import { type DayScheduleEvent } from './DaySchedule';
 import { DayScheduleSwipe } from './DayScheduleSwipe';
 import { NotificationsLatestModule } from '@/components/fairway/notifications';
@@ -418,14 +420,10 @@ export function FairwayPlayerDashboard({
               </p>
             </section>
 
-            {/* ── Ledger: Today beside Focus areas ─────────────────────────── */}
+            {/* ── Ledger: Tasks beside Focus areas ─────────────────────────── */}
             <div className="grid grid-cols-1 gap-10 md:grid-cols-12 md:gap-8">
               <div className="md:col-span-7">
-                <TodayCard
-                  events={enhancedData?.todayEvents ?? []}
-                  actionItems={enhancedData?.actionItems ?? []}
-                  timezone={enhancedData?.timezone}
-                />
+                <TasksCard actionItems={enhancedData?.actionItems ?? []} />
               </div>
               <div className="md:col-span-5">{focusSection}</div>
             </div>

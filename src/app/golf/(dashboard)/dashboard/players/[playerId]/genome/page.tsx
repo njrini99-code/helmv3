@@ -86,6 +86,7 @@ export default async function PlayerGenomePage({ params }: PageProps) {
       .from('golf_rounds')
       .select('id', { count: 'exact', head: true })
       .eq('player_id', playerId)
+      .eq('is_test', false)
       .eq('status', 'completed')
       .gte('round_date', windowStart(GENOME_WINDOW_DAYS)),
     loadPlayerFormScore(sb, playerId),

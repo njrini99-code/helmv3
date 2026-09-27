@@ -253,6 +253,36 @@ export function teamRelativeText(
   return better ? 'Above team average' : 'Below team average';
 }
 
+/**
+ * Direction-aware variant of `teamRelativeText` (opt-in through
+ * `cohort_wording: 'direction_aware'`). On a lower-is-better metric the
+ * better value is the SMALLER number, so "Above team average" sat beside
+ * You 49 ft vs Team 72 ft (Stats › Standing, approach proximity). Same
+ * better/worse verdict as `deltaVsTeam` (NUM-13); only the words change:
+ * higher-is-better keeps "Above/Below", lower-is-better says "Better/Worse
+ * than", and a proximity in feet says "Closer/Farther than".
+ */
+export function teamComparisonText(
+  player_value: number,
+  team_avg: number | null,
+  direction: Direction,
+  unit?: Unit,
+): string {
+  const relative = teamRelativeText(player_value, team_avg, direction, unit);
+  if (direction === 'higher_better' || relative === '' || relative === 'Matches team average') return relative;
+  const better = relative === 'Above team average';
+  if (unit === 'feet') return better ? 'Closer than team average' : 'Farther than team average';
+  return better ? 'Better than team average' : 'Worse than team average';
+}
+
+/** The "vs team average" caption in the wording the caller opted into. */
+export function cohortComparisonText(
+  props: Pick<StandingBarProps, 'player_value' | 'team_avg' | 'direction' | 'unit' | 'cohort_wording'>,
+): string {
+  const text = props.cohort_wording === 'direction_aware' ? teamComparisonText : teamRelativeText;
+  return text(props.player_value, props.team_avg, props.direction, props.unit);
+}
+
 /* ───────────────────────────────────────────────────────────────────────────
  * Audience voice — bug #915: a coach reading a player's SG card saw
  * player-first-person copy ("YOU −3.34 … Below team average / Bottom of your
@@ -359,7 +389,7 @@ export function deriveAriaLabel(props: StandingBarProps): string {
   if (props.team_avg !== null && (props.team_n ?? 0) >= TEAM_MARKER_MIN_N) {
     parts.push(`Team average: ${formatValue(props.team_avg, props.unit)}.`);
   }
-  const cohort = teamRelativeText(props.player_value, props.team_avg, props.direction, props.unit);
+  const cohort = cohortComparisonText(props);
   if (cohort) parts.push(neutralizeForCoach(cohort, props.viewer_context) + '.');
   return parts.join(' ');
 }

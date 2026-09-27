@@ -178,7 +178,7 @@ export default async function TeamStatsPage() {
     return (
       <div className={fairwayScope('min-h-full bg-canvas bg-canvas-gradient font-fw-sans text-text-primary')}>
         <div className="mx-auto w-full max-w-[1536px] px-4 py-6 md:px-6 md:py-8">
-          <ViewHeader eyebrow="Team Stats" title="Team Stats" description={team?.name || 'Your Team'} />
+          <ViewHeader title="Team Stats" description={team?.name || 'Your Team'} />
           <div className="mt-8">
             <EmptyState
               icon={<Users strokeWidth={1.75} />}
@@ -209,7 +209,7 @@ export default async function TeamStatsPage() {
     // season exceeds that and silently dropped the oldest rounds. Keep
     // round_date DESC first (the trend math below expects newest-first) with
     // id ASC as a unique tiebreak so page boundaries are stable.
-    fetchAllRowsResult((from, to) => supabase.from('golf_rounds').select('id, player_id, total_score, score_to_par, round_date, holes_played, front_nine, back_nine, total_putts').in('player_id', allPlayerIds).eq('status', 'completed').not('total_score', 'is', null).order('round_date', { ascending: false }).order('id', { ascending: true }).range(from, to)),
+    fetchAllRowsResult((from, to) => supabase.from('golf_rounds').select('id, player_id, total_score, score_to_par, round_date, holes_played, front_nine, back_nine, total_putts').in('player_id', allPlayerIds).eq('is_test', false).eq('status', 'completed').not('total_score', 'is', null).order('round_date', { ascending: false }).order('id', { ascending: true }).range(from, to)),
     getTeamStatsIntelligence(teamId),
     // Per-round SG, so Team SG and the SG category bars average COUNTABLE
     // rounds only instead of the lifetime player cache (which counts a

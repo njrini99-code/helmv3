@@ -145,3 +145,23 @@ describe('ViewHeader — guaranteed-visible reveal', () => {
     expect(header?.tagName).toBe('HEADER');
   });
 });
+
+describe('ViewHeader — description clamp', () => {
+  it('clamps the description to one line on a phone by default (P-22)', () => {
+    const { container } = render(<ViewHeader title="Title" description="Orientation copy." />);
+    const description = container.querySelector('[data-slot="view-header-description"]');
+    expect(description?.className).toMatch(/(^|\s)line-clamp-1(\s|$)/);
+  });
+
+  it('fullDescription shows the whole description, so it is never cut mid-word', () => {
+    // 390px baseline: "Progress saved on this device after an interruption or
+    // a fail…" (Recover a round) and "Configure how CoachHelm analyzes your
+    // team. These…" (Coaching Intelligence).
+    const { container } = render(
+      <ViewHeader title="Title" description="Explains the screen." fullDescription />,
+    );
+    const description = container.querySelector('[data-slot="view-header-description"]');
+    expect(description?.className).not.toMatch(/line-clamp-1/);
+    expect(container.querySelector('[data-slot="view-header"]')?.hasAttribute('fulldescription')).toBe(false);
+  });
+});

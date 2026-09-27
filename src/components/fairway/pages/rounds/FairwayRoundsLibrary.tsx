@@ -53,6 +53,7 @@ import { Input } from '@/components/fairway/forms/Input';
 import { Select } from '@/components/fairway/forms/Select';
 import { IconSearch, IconX } from '@/components/icons';
 import { StatTile } from '@/components/fairway/charts/StatTile';
+import type { TrendDirection } from '@/components/fairway/charts/TrendChip';
 import { Sparkline } from '@/components/fairway/charts/Sparkline';
 import { EmptyState } from '@/components/fairway/feedback/EmptyState';
 import { FairwayRoundRow } from './FairwayRoundRow';
@@ -182,6 +183,21 @@ function playerName(round: RoundLibraryRound): string | null {
   const last = round.player?.last_name?.trim() ?? '';
   const full = `${first} ${last}`.trim();
   return full.length > 0 ? full : null;
+}
+
+/**
+ * ONE trend read per page: the "Scoring trend" pill's verdict (the server's
+ * last-5-vs-previous-5 scored rounds) also drives the Avg score / Avg to par
+ * chips and sparkline tint. Left to StatTile's default they compared the
+ * season's first and last round, and read "Improving" beside a "Declining"
+ * pill. `undefined` (no server verdict yet) keeps StatTile's own read, shown
+ * only while the pill is absent. Exported for tests.
+ */
+export function scoringTrendVerdict(
+  trend: 'improving' | 'declining' | 'stable' | null | undefined,
+): TrendDirection | undefined {
+  if (!trend) return undefined;
+  return trend === 'stable' ? 'flat' : trend;
 }
 
 /** Normalize a round's score to its 18-hole equivalent (for charts). */
@@ -410,6 +426,7 @@ export function FairwayRoundsLibrary({
 
   // ── KPI hero — StatTile owns the starved swap (never a fabricated 0.0) ────--
   const starved = !stats || stats.totalRounds < 3;
+  const scoringTrend = scoringTrendVerdict(starved ? null : stats!.trend);
 
   return (
     <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-8 px-4 py-6 md:px-6">
@@ -452,6 +469,7 @@ export function FairwayRoundsLibrary({
           format={{ maximumFractionDigits: 1 }}
           goodDirection="down"
           trendData={!starved && scoreSeries.length >= 2 ? scoreSeries : undefined}
+          trend={scoringTrend}
           starved={starved}
           unit="rounds"
           current={stats?.totalRounds ?? 0}
@@ -478,6 +496,7 @@ export function FairwayRoundsLibrary({
           trendData={
             !starved && stats!.avgToPar !== null && toParSeries.length >= 2 ? toParSeries : undefined
           }
+          trend={scoringTrend}
           starved={starved || (stats?.avgToPar ?? null) === null}
           unit="rounds"
           current={stats?.totalRounds ?? 0}

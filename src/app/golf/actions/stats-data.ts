@@ -685,6 +685,7 @@ async function getStatsSummaryImpl(
       back_nine
     `)
     .eq('player_id', playerId)
+    .eq('is_test', false)
     .eq('status', 'completed')
     .not('total_score', 'is', null);
 
@@ -939,6 +940,7 @@ async function queryDetailedStatsWithClient(
       back_nine
     `)
     .eq('player_id', playerId)
+    .eq('is_test', false)
     .eq('status', 'completed');
 
   if (conditions.startDate) query = query.gte('round_date', conditions.startDate);
@@ -967,6 +969,7 @@ async function queryDetailedStatsWithClient(
       .from('golf_rounds')
       .select('id', { count: 'exact', head: true })
       .eq('player_id', playerId)
+      .eq('is_test', false)
       .eq('status', 'completed');
 
     if (conditions.startDate) countQuery = countQuery.gte('round_date', conditions.startDate);
@@ -1342,6 +1345,7 @@ async function getSprayChartDataImpl(
       .from('golf_rounds')
       .select('id, round_date, course_name, round_type, total_score, score_to_par, holes_played')
       .eq('player_id', playerId)
+      .eq('is_test', false)
       .eq('status', 'completed');
 
     if (conditions.startDate) {
@@ -1636,6 +1640,7 @@ async function getTrendAnalysisImpl(playerId: string): Promise<TrendAnalysisResp
         back_nine
       `)
       .eq('player_id', playerId)
+      .eq('is_test', false)
       .eq('status', 'completed')
       .not('total_score', 'is', null)
       .order('round_date', { ascending: true }) // Oldest first for trend charts
@@ -1996,6 +2001,7 @@ async function getTeamComparisonImpl(
       holes_played
     `)
     .in('player_id', playerIds)
+    .eq('is_test', false)
     .eq('status', 'completed')
     .not('total_score', 'is', null)
     .gte('round_date', seasonStartDate)
@@ -2245,6 +2251,7 @@ async function getFilterOptionsImpl(playerId: string): Promise<FilterOptions> {
     .from('golf_rounds')
     .select('course_name, round_date, round_type')
     .eq('player_id', playerId)
+    .eq('is_test', false)
     .eq('status', 'completed');
 
   if (!roundsData || roundsData.length === 0) {
@@ -2323,6 +2330,7 @@ async function getPlayerRoundOptionsImpl(playerId: string): Promise<RoundOption[
         qualifier:golf_qualifiers(name)
       `)
       .eq('player_id', playerId)
+      .eq('is_test', false)
       .eq('status', 'completed')
       .order('round_date', { ascending: false })
       .limit(200);
@@ -2398,6 +2406,7 @@ async function getCourseBreakdownImpl(playerId: string): Promise<CourseBreakdown
       holes_played
     `)
     .eq('player_id', playerId)
+    .eq('is_test', false)
     .eq('status', 'completed')
     .not('total_score', 'is', null)
     .not('course_name', 'is', null)
@@ -2815,6 +2824,7 @@ async function getCoachRosterStatsImpl(teamId: string): Promise<CoachRosterPlaye
       .from('golf_rounds')
       .select('id, player_id, total_score, round_date, holes_played')
       .in('player_id', playerIds)
+      .eq('is_test', false)
       .eq('status', 'completed')
       .not('total_score', 'is', null)
       .order('round_date', { ascending: false })

@@ -198,6 +198,26 @@ describe('RosterHealthHeader — render', () => {
     expect(onAdd).toHaveBeenCalledWith('p1');
   });
 
+  it('shows the attention reason whole, wrapping instead of ellipsizing', () => {
+    // 390px baseline: the reason sat in PlayerIdentity's one-line truncated
+    // meta, so "Trending down · no focus area" read "Trending down · n…" on the
+    // Roster page and "Trending do…" on the narrower CoachHelm Players view.
+    const players = [player({ id: 'p1', first_name: 'Mason', last_name: 'Rivers' })];
+    const playerStats: Record<string, PlayersGridStats> = { p1: stats({ recent_trend: 'declining' }) };
+    const rows: RosterRow[] = [{ player: players[0]!, stats: playerStats.p1, activeCount: 0, completedCount: 0 }];
+
+    render(
+      <RosterHealthHeader
+        health={computeRosterHealth(players, [], playerStats)}
+        needs={computeNeedsAttention(rows)}
+        onAdd={vi.fn()}
+      />,
+    );
+
+    const reason = screen.getByText('Trending down · no focus area');
+    expect(reason.closest('.truncate')).toBeNull();
+  });
+
   it('prints a scoring average to a tenth, never the raw float', () => {
     // A coach saw "75.58333333333334 avg" on this row: `avg_score` is a raw
     // mean off the stats cache and carries full float precision.

@@ -43,15 +43,22 @@ export default function Loading() {
             <Skeleton className="h-3 w-14" />
             {Array.from({ length: 4 }).map((_, i) => (
               <div key={i} className="rounded-card border border-border-subtle bg-surface p-4">
+                {/* FairwayTripCard: name line, destination, dates, then the
+                    status pill on its own line (each bar sits in its text's
+                    line box so the row height matches). */}
                 <div className="flex items-start gap-3">
                   <Skeleton className="h-9 w-9 flex-shrink-0 rounded-fw-md" />
-                  <div className="min-w-0 flex-1 space-y-1.5">
-                    <div className="flex items-center justify-between gap-2">
-                      <Skeleton className="h-3.5 w-2/5" />
-                      <Skeleton className="h-5 w-14 rounded-full" />
+                  <div className="min-w-0 flex-1">
+                    <div className="flex h-5 items-center">
+                      <Skeleton className="h-3.5 w-3/5" />
                     </div>
-                    <Skeleton className="h-3 w-3/5" />
-                    <Skeleton className="h-3 w-2/5" />
+                    <div className="mt-1 flex h-[18px] items-center">
+                      <Skeleton className="h-3 w-3/5" />
+                    </div>
+                    <div className="mt-0.5 flex h-[18px] items-center">
+                      <Skeleton className="h-3 w-2/5" />
+                    </div>
+                    <Skeleton className="mt-2 h-5 w-16 rounded-full" />
                   </div>
                 </div>
               </div>

@@ -9,6 +9,7 @@ import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import { logServerException } from '@/lib/server-error-logger';
 import { withCanonicalRoundTotal } from '@/lib/golf/round-total';
 import { isCountableRound } from '@/lib/golf/round-countable';
+import { computeScoringTrendFromRounds } from '@/lib/golf/scoring-trend';
 import {
   FairwayRoundsLibrary,
   type RoundLibraryRound as FairwayRoundLibraryRound,
@@ -132,6 +133,7 @@ export default async function RoundsPage() {
           .from('golf_rounds')
           .select(playerSelectFields)
           .in('player_id', teamPlayerIds)
+          .eq('is_test', false)
           .eq('status', 'completed')
           .order('round_date', { ascending: false })
           .order('id', { ascending: false })
@@ -159,6 +161,7 @@ export default async function RoundsPage() {
           .from('golf_rounds')
           .select(playerSelectFields)
           .eq('player_id', player.id)
+          .eq('is_test', false)
           .eq('status', 'completed')
           .order('round_date', { ascending: false })
           .order('id', { ascending: false })
@@ -168,6 +171,7 @@ export default async function RoundsPage() {
         .from('golf_rounds')
         .select(inProgressSelectFields)
         .eq('player_id', player.id)
+        .eq('is_test', false)
         .eq('status', 'in_progress')
         .order('updated_at', { ascending: false }),
     ]);
@@ -307,15 +311,12 @@ export default async function RoundsPage() {
     const underParCount = toParScores.filter(s => s < 0).length;
     const underParPct = toParScores.length > 0 ? Math.round((underParCount / toParScores.length) * 100) : 0;
 
-    // Trend: compare last 5 vs previous 5 using normalized scores
-    let trend: 'improving' | 'declining' | 'stable' | null = null;
-    if (normalizedScores.length >= 6) {
-      const recent5 = normalizedScores.slice(0, 5).reduce((a, b) => a + b, 0) / 5;
-      const prev5 = normalizedScores.slice(5, 10).reduce((a, b) => a + b, 0) / Math.min(5, normalizedScores.length - 5);
-      if (recent5 < prev5 - 0.5) trend = 'improving';
-      else if (recent5 > prev5 + 0.5) trend = 'declining';
-      else trend = 'stable';
-    }
+    // Trend: the canonical scoring trend shared with Team Stats and the
+    // CoachHelm Players table (last 5 vs the 5 before, 18-hole normalized,
+    // ±0.3 strokes), so this page can't disagree with them. The tiles and the
+    // "Scoring trend" pill both read this one verdict.
+    const scoringTrend = computeScoringTrendFromRounds(scoredRounds);
+    const trend = scoringTrend.hasSignal ? scoringTrend.trend : null;
 
     return { avg, best, avgToPar, underParPct, totalRounds: scoredRounds.length, trend };
   })();

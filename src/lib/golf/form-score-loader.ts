@@ -21,6 +21,7 @@ export async function loadPlayerFormScore(
       .from('golf_rounds')
       .select('status, holes_played, total_score, front_nine, back_nine, total_putts, score_to_par, strokes_gained_total')
       .eq('player_id', playerId)
+      .eq('is_test', false)
       .eq('status', 'completed')
       .order('round_date', { ascending: false })
       .limit(20),

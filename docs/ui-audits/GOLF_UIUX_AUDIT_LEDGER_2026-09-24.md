@@ -35,7 +35,9 @@ identified), and standing bars fitting off-range values (`ab1bfd32a`).
 
 ## Summary (364 ledger findings)
 
-Recounted 2026-09-27 (PR #2069) from the rows. DASH-21 moved from blocked to
+Recounted 2026-09-27 (agent/ui-baseline-fixes) from the rows: OD-03 applied,
+so DASH-07 went done and DASH-11 and NUM-40 went partial (all three were
+blocked). Recounted earlier on 2026-09-27 (PR #2069): DASH-21 moved from blocked to
 residual: PR #1933 closed unmerged on 2026-09-27. Since the 09-25 recount,
 TYPE-03 went done (35bf8f9a2), and that table was one off on partial (7; the
 rows had 8) and on blocked (28; the rows had 27). The 09-25 recount covered the
@@ -44,10 +46,10 @@ MOT-21 done; DASH-07, NUM-24 blocked on held migrations; DASH-12 partial).
 
 | Status | Count |
 | --- | --- |
-| done | 308 |
-| partial | 7 |
+| done | 309 |
+| partial | 9 |
 | residual | 8 |
-| blocked | 26 |
+| blocked | 23 |
 | not-a-bug | 15 |
 | unknown | 0 |
 | **total** | **364** |
@@ -64,7 +66,9 @@ sections below and are not in these counts.
     with an empty body) about 4 phone screens ...
   - Where: cd01022e2 / 397587774 (W9)
   - Evidence: per transcript
-- **DASH-02** · done: Numbering by position fixed; truncation not re-checked
+- **DASH-02** · done: Numbering by position fixed; truncation not re-checked.
+  2026-09-27: the lower "Today" card is now "Tasks" (tasks only, overdue
+  first; baseline player-01)
   - Finding: [P2] Home: focus areas numbered 1,1,2; orphaned chevron; cards
     nested in cards; "Today" task and course names ...
   - Where: FairwayPlayerDashboard.tsx
@@ -88,9 +92,9 @@ sections below and are not in these counts.
   - Finding: [P2] Stats: single-tab "Overview" segmented control
   - Where: CoachHelmSubNav.tsx:270
   - Evidence: verified in code
-- **DASH-07** · blocked: One scope control and clean names done; QA qualifier
-  preset hiding waits on OD-03 (is_test absent in prod 2026-09-25, migration
-  HELD)
+- **DASH-07** · done: One scope control and clean names done; the QA
+  qualifier rounds are flagged (OD-03, 2026-09-27) and getPlayerRoundOptions
+  filters them, so their presets no longer appear
   - Finding: [P2] Stats: three filter controls before any data; combobox double
     focus ring, blank first row, "(real)" suffix, a ...
   - Where: StatsSpineStage.tsx:505;
@@ -110,12 +114,15 @@ sections below and are not in these counts.
     rounds." h1); KPI strip + orphan "Scoring trend • ...
   - Where: FairwayUnfinishedBanner.tsx:54
   - Evidence: verified in code
-- **DASH-11** · blocked: OD-03 is_test flag held; read paths do not filter yet
-  (follow-up)
+- **DASH-11** · partial: OD-03 applied 2026-09-27; the QA Test Course rounds
+  are flagged and the rounds list, stats, home and CoachHelm loaders filter
+  them (agent/ui-baseline-fixes). The Pebble Beach seed rounds are not flagged
+  (not approved)
   - Finding: [P2] Rounds: Pebble Beach ×3 same day with GIR 100% and 37-39 putts
     (implausible seed data); QA rounds show "No ...
-  - Where: supabase/migrations/20260924130000_golf_is_test_flag.sql
-  - Evidence: per transcript
+  - Where: supabase/migrations/20260924130000_golf_is_test_flag.sql; the
+    `.eq('is_test', false)` read filters
+  - Evidence: verified in code; prod flags read back 2026-09-27
 - **DASH-12** · partial: putting.ts (golf_pga_standards, cited) and the Putting
   benchmark Sheet built; (B) the page-language field-sheet rebuild stays open:
   the cited spec (spec-dashboard-shell §3.2/§5) is not in the repo
@@ -504,8 +511,11 @@ sections below and are not in these counts.
   - Where:
     supabase/migrations/20260924120000_golf_countable_round_stats_cache.sql
   - Evidence: per transcript
-- **NUM-40** · blocked: OD-03 is_test flag held; read paths do not filter yet
-  (follow-up)
+- **NUM-40** · partial: OD-03 applied 2026-09-27. Flagged and filtered: round
+  91301a75, the five QA Test Course rounds, the QA and two MOMENTIC HELL
+  (year 60824) qualifiers. The QA announcement, task, document and trip wait on
+  20260927120000_golf_is_test_team_content.sql (merge, apply, then a filter
+  change)
   - Finding: [P1] Demo/QA data pollution visible to prospects: round 91301a75, 4
     QA Test Course rounds, QA Hell Enum, Progress ...
   - Where: supabase/migrations/20260924130000_golf_is_test_flag.sql
@@ -524,7 +534,7 @@ sections below and are not in these counts.
 ### NUMC (9)
 
 - **NUMC-01** · done: Junk rounds excluded on the coach dashboard; QA-course
-  hiding waits on OD-03
+  rounds hidden by the OD-03 flag (2026-09-27)
   - Finding: [P0] Coach dashboard: Top Performers, Team Pulse, Top mover,
     Scoring/GIR/Putts KPIs, "98 rounds", Recent Rounds ...
   - Where: dashboard-data.ts (numbers agent a6494e)
@@ -2062,7 +2072,12 @@ sections below and are not in these counts.
     (Genome) with one score?
   - Where: f287a182c; form-score.ts
   - Evidence: per transcript
-- **OD-03** · blocked: Flag migration HELD; read-path filters are a follow-up
+- **OD-03** · partial: Flag applied 2026-09-27 (owner); 6 demo rounds and 3
+  demo qualifiers flagged; player/coach list and stats reads filter them. Team
+  content (announcements, tasks, documents, trips) gets the column in
+  20260927120000 and its filters after that apply. Cached stats
+  (golf_player_stats_cache) still include flagged rounds; OD-01 does not read
+  is_test
   - Decision: Clean demo/QA data visible to prospects (QA courses, the 60824
     qualifiers, duplicate demo team ...
   - Where: supabase/migrations/20260924130000_golf_is_test_flag.sql
@@ -2219,6 +2234,81 @@ sections below and are not in these counts.
   - Workstream: Formatting registry and parity tests
   - Open items: DS-12, DS-13, DS-15 partial
 
+## Baseline triage (2026-09-27)
+
+Main at `25ac7b039` was captured at 390px as coach, player and signed-out
+visitor (101 screens) and each screen was reviewed. 73 were flagged: 4 broken
+and 69 to look at. Fixes are on `agent/ui-baseline-fixes`. Screens are named
+by capture file, e.g. coach-15 is `shots/coach-mobile/15-team-stats.jpg`.
+
+**Fixed (36).**
+
+- Broken (4): coach-08 and player-03, CoachHelm advice lines ran off the card
+  (`CategoryInsightStrip` wraps); coach-15, Team Stats title twice and chart
+  labels overlapping (`TeamStatsBoard`, `thinBandLabels` in `LeakMap`,
+  `narrowBandLabels` in `BandHistogram`; the narrow plot was not reproduced,
+  re-check it on the next capture); player-25, Messages title under the compose
+  button (`FairwayTopBar` phone grid).
+- Stats (7): coach-10 and player-05, GIR chart fits without sideways scroll;
+  coach-11, putt band 3-5 ft read 78% against the table's 47% (bands are now
+  upper-inclusive, `puttBandFor`); player-02, Standing card shows SG: Total with
+  a Gaining/Losing tag; player-06, caption "Holes with 3+ putts, per 18";
+  player-08, "Closer than team average" wording for lower-is-better stats
+  (`cohort_wording: 'direction_aware'`); player-09, one trend verdict on the
+  rounds page (`computeScoringTrendFromRounds`).
+- Players, flows, settings (13): coach-02 and coach-53, status text wraps
+  (`PlayerIdentity` `wrapMeta`); coach-04, no "0.0 a round" (`shownStrokesImpact`);
+  coach-06, why rounds are not counted, inline; coach-23, number picker buttons
+  aligned; coach-43, date format tiles; coach-45 and player-13, full intro line
+  (`ViewHeader` `fullDescription`); coach-46, What's New in coach voice;
+  coach-49, a coach on round entry keeps the app shell; player-12, a filled
+  "Dashboard" exit pill; player-35, Team Membership row wraps; coach-26, the
+  CoachHelm tab is highlighted (nav config only).
+- Team (7): coach-36, course location falls back to country, then "Location
+  not set"; coach-37, trip names wrap to two lines; coach-39, Messages shows the
+  Team tab row on phones; coach-42, head coach role shown once; player-01, the
+  second "Today" is now "Tasks"; player-30, class rows stay on screen;
+  player-31, full class names in the Team hub.
+- Signed out (5): public-04 Help (home link, "Helm Sports Labs"), public-07
+  Terms and Privacy header, public-08 splash (Replay only in development),
+  public-14 Join (shared auth canvas, Home link), public-16 demo sign-up links
+  on a panel.
+
+**Test data hidden by the OD-03 flag (12).** coach-09, coach-17, coach-18,
+coach-19, coach-21; player-04, player-10, player-11, player-14, player-22,
+player-23, player-39. The rounds and qualifiers are flagged and the list and
+stats reads skip them. Round detail and review (coach-18/19, player-10/11)
+still open by direct link; nothing lists them.
+
+**Team test content, after `20260927120000` (9).** coach-38, coach-40,
+coach-41; player-26, player-27, player-28, player-29, player-32, player-41. The
+QA announcement, task, document and trip need the new column applied, the four
+rows flagged, and a filter change.
+
+**Left for #2073, the CoachHelm redesign (15).** coach-03, coach-14, coach-24,
+coach-25, coach-32, coach-33, coach-34, coach-50, coach-52; player-15,
+player-16, player-17, player-18, player-21, player-40.
+
+**Not reproduced (1).** player-37, What's New bell badge and avatar ring: the
+ring marks More-menu pages only, and the badge loads after the capture settled
+(also missing on player Messages).
+
+**Seen during the fixes, not fixed.**
+
+- A "6.4 strokes worse" scoring insight renders as a strength; the
+  `strokeImpact` sign may be flipped for scoring insights.
+- The approach leak map uses lower-edge bands, like putting did; not checked.
+- `/golf/join/[code]` and the join loading skeleton keep the old styling.
+- Help: Live Chat has no handler, and the FAQ is written for Baseball.
+- `NumberField` fades out at its minimum value.
+- Team Membership subtitle says "Request to join your team" for a player
+  already on a team.
+- The rounds tile chip says "Flat" where the pill says "stable".
+- `cn()` (tailwind-merge) drops Fairway radius classes, so a `Button` given a
+  card radius draws as a pill.
+- Cached stats (`golf_player_stats_cache`) still count flagged rounds; OD-01
+  does not read `is_test`.
+
 ## IDs in the transcript that are not findings
 
 - **BYZ-38**: Storyboard view-controller id in LaunchScreen/Main storyboard XML
@@ -2254,6 +2344,7 @@ sections below and are not in these counts.
 - **Native build.** DARK-01, NAT-01, NAT-02 and MOT-13 need a new iOS/Android
   build. The Swift change was only parsed, not built in Xcode.
 - **Held migrations.** OD-01
-  (`20260924120000_golf_countable_round_stats_cache.sql`) and OD-03
-  (`20260924130000_golf_is_test_flag.sql`) are HELD in
-  `supabase/migrations/HELD.md`.
+  (`20260924120000_golf_countable_round_stats_cache.sql`) is HELD in
+  `supabase/migrations/HELD.md`. OD-03 (`20260924130000_golf_is_test_flag.sql`)
+  was applied 2026-09-27; its team-content follow-up
+  (`20260927120000_golf_is_test_team_content.sql`) is applied after merge.

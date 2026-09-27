@@ -192,15 +192,20 @@ export function JoinTeamSection({ playerId, currentTeam }: JoinTeamSectionProps)
       {/* Current Team Status */}
       {currentTeam ? (
         <div className="mb-6">
-          <div className="flex items-center justify-between gap-3 rounded-fw-md border border-accent-500/40 bg-accent-50 p-4">
-            <div className="flex min-w-0 items-center gap-3">
+          {/* On a phone the team and the Leave action shared one line, so the
+              team name and the organization were both cut short ("Demo
+              Univer…" over "Demo Universit…"). The row now wraps: the action
+              drops to its own line when the names need the width, and the
+              names wrap instead of truncating. */}
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-fw-md border border-accent-500/40 bg-accent-50 p-4">
+            <div className="flex min-w-0 flex-1 basis-56 items-center gap-3">
               <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-fw-sm bg-accent-fill text-text-on-accent-fill">
                 <IconCheck size={20} aria-hidden />
               </span>
               <div className="min-w-0">
-                <p className="truncate font-fw-sans text-body font-medium text-text-primary">{currentTeam.name}</p>
+                <p className="break-words font-fw-sans text-body font-medium text-text-primary">{currentTeam.name}</p>
                 {currentTeam.organization?.name && (
-                  <p className="truncate font-fw-sans text-body-sm text-text-secondary">{currentTeam.organization.name}</p>
+                  <p className="break-words font-fw-sans text-body-sm text-text-secondary">{currentTeam.organization.name}</p>
                 )}
               </div>
             </div>
@@ -210,11 +215,12 @@ export function JoinTeamSection({ playerId, currentTeam }: JoinTeamSectionProps)
                 size="sm"
                 onClick={() => setShowLeaveConfirm(true)}
                 leftIcon={<IconLogout size={16} aria-hidden />}
+                className="ml-auto shrink-0"
               >
                 Leave
               </Button>
             ) : (
-              <div className="flex shrink-0 items-center gap-2">
+              <div className="ml-auto flex shrink-0 items-center gap-2">
                 <Button
                   variant="secondary"
                   size="sm"

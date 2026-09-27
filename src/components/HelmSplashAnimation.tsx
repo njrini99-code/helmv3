@@ -161,22 +161,27 @@ export default function HelmSplashAnimation() {
         )}
       </div>
 
-      {/* Replay button */}
-      <motion.button
-        onClick={handleReplay}
-        onKeyDown={(e) => {
-          if (e.key === "Enter" || e.key === " ") {
-            e.preventDefault();
-            handleReplay();
-          }
-        }}
-        className={`mt-16 px-8 py-3 rounded-lg glass-dark hover:bg-warm-900/50 text-white/70 hover:text-white transition-all duration-200 font-medium tracking-wide focus:outline-none focus:ring-2 focus:ring-primary-600 focus:ring-offset-2 ${dmSans.className}`}
-        whileHover={{ scale: 1.05 }}
-        whileTap={{ scale: 0.95 }}
-        aria-label="Replay animation"
-      >
-        Replay Animation
-      </motion.button>
+      {/* Replay button: development only. /splash is a standalone preview of
+          this animation and nothing links to it, so in production the page
+          shows the animation alone (a reload replays it). In development it
+          saves a reload after a Fast Refresh leaves the phase at "complete". */}
+      {process.env.NODE_ENV === "development" && (
+        <motion.button
+          onClick={handleReplay}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              handleReplay();
+            }
+          }}
+          className={`mt-16 px-8 py-3 rounded-lg glass-dark hover:bg-warm-900/50 text-white/70 hover:text-white transition-all duration-200 font-medium tracking-wide focus:outline-none focus:ring-2 focus:ring-primary-600 focus:ring-offset-2 ${dmSans.className}`}
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          aria-label="Replay animation"
+        >
+          Replay Animation
+        </motion.button>
+      )}
     </div>
   );
 }

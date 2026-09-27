@@ -349,7 +349,7 @@ async function getCoachDashboardDataImpl(
         // so .neq() can't silently drop untyped rows.
         supabase.from('golf_events').select('id', { count: 'exact', head: true }).eq('team_id', teamId).neq('event_type', CLASS_EVENT_TYPE).gte('start_time', now),
         // NUMC-07: an impossible start date (prod has year 60824) is not "active".
-        supabase.from('golf_qualifiers').select('id', { count: 'exact', head: true }).eq('team_id', teamId).in('status', ['upcoming', 'in_progress'])
+        supabase.from('golf_qualifiers').select('id', { count: 'exact', head: true }).eq('team_id', teamId).eq('is_test', false).in('status', ['upcoming', 'in_progress'])
           .gte('start_date', qualifierDateBounds.from).lte('start_date', qualifierDateBounds.to),
         // Today's events + RSVP counts in a single RPC (consolidates the
         // sequential RSVP fetch that previously ran outside this Promise.all).
@@ -496,6 +496,7 @@ async function getCoachDashboardDataImpl(
                 .from('golf_rounds')
                 .select('id, player_id, course_name, total_score, score_to_par, front_nine, back_nine, holes_played, round_date, round_type, total_putts, total_fairways_hit, total_fairways, total_gir, total_gir_possible, player:golf_players(first_name, last_name, avatar_url)')
                 .in('player_id', playerIds)
+                .eq('is_test', false)
                 .eq('status', 'completed')
                 .not('total_score', 'is', null);
             if (dateCutoff) q = q.gte('round_date', dateCutoff);
@@ -511,6 +512,7 @@ async function getCoachDashboardDataImpl(
                 .from('golf_rounds')
                 .select('id, player_id, total_score, score_to_par, front_nine, back_nine, round_date, holes_played, total_putts, total_gir, total_gir_possible')
                 .in('player_id', playerIds)
+                .eq('is_test', false)
                 .eq('status', 'completed')
                 .not('total_score', 'is', null);
             if (dateCutoff) q = q.gte('round_date', dateCutoff);
@@ -531,6 +533,7 @@ async function getCoachDashboardDataImpl(
                 .from('golf_rounds')
                 .select('id, holes_played, total_score, front_nine, back_nine, total_putts')
                 .in('player_id', playerIds)
+                .eq('is_test', false)
                 .eq('status', 'completed')
                 .gte('round_date', weekAgo.split('T')[0])
                 .limit(1000),
@@ -992,6 +995,7 @@ async function getPlayerDashboardDataImpl(
             .from('golf_rounds')
             .select('id, course_name, total_score, score_to_par, front_nine, back_nine, round_date, holes_played, total_putts, total_gir, total_gir_possible')
             .eq('player_id', playerId)
+            .eq('is_test', false)
             .eq('status', 'completed')
             .not('total_score', 'is', null)
             .order('round_date', { ascending: false })
