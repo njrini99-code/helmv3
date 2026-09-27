@@ -2,7 +2,7 @@
 
 - Feature: `coachhelm_ai`
 - Surface: `GET /api/cron/coachhelm-safety-net`
-- Status: FIXED in 6ef000d89 on branch agent/health-20260926-1847; not merged yet
+- Status: FIXED in 6ef000d89, merged in #2078 (2026-09-27); awaiting deploy
 - Risk: R1. Read path only. No schema, RLS, grant or data-shape change; coverage and wake rules unchanged.
 - Signal: Sentry N+1 Query JAVASCRIPT-NEXTJS-107 (performance issue, 0 users), 26 events since 2026-09-24. Not a Bridge (admin_events) fingerprint.
 

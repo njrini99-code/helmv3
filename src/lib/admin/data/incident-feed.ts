@@ -101,6 +101,18 @@ const SEVERITY_TO_SENTRY_LEVEL: Record<TriageSeverity, string> = {
 };
 
 /**
+ * The only Sentry environment merged into the incident feed (triage queue,
+ * "Active groups", Overview KPIs). `resolveServerEnvironment` tags `next dev`
+ * as `development`, local optimized builds as `local-production-build` and
+ * Vercel previews as `preview`, so unscoped, a local session mid-edit showed
+ * on the Bridge as a production incident (2026-09-27: `BAND_INK is not
+ * defined`, JAVASCRIPT-NEXTJS-120..123, all from http://localhost:3218). Same
+ * scope the reliability collector uses (src/lib/reliability/sources.ts). The
+ * raw org-wide `sentry` pull stays unscoped on purpose — see below.
+ */
+const MERGED_SENTRY_ENVIRONMENTS = ['production'] as const;
+
+/**
  * Translate the Errors-tab / triage filter set into Sentry's search-query
  * syntax so severity/sport/source/feature narrow Sentry-origin incidents
  * exactly like queryAppErrorEvents already narrows admin_events. Sentry
@@ -428,7 +440,13 @@ export async function fetchIncidentFeed(
   // round trip and reuses the raw pull for both.
   const [sentry, filteredSentry, appEvents, deploy] = await Promise.all([
     prefetched?.sentry ?? fetchSentryIssues({ limit: 50 }),
-    prefetched?.sentry ? null : fetchSentryIssues({ query: buildSentrySearchQuery(filters), limit: 50 }),
+    prefetched?.sentry
+      ? null
+      : fetchSentryIssues({
+          query: buildSentrySearchQuery(filters),
+          limit: 50,
+          environment: MERGED_SENTRY_ENVIRONMENTS,
+        }),
     queryAppErrorEvents(filters),
     getProductionDeployAt(),
   ]);

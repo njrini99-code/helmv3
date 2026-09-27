@@ -177,7 +177,7 @@ items:
     status: verified
     risk: R1
     sha: f29f86d50
-    pr: null
+    pr: 2077
     regression_tests:
       - src/lib/coachhelm/v2/learning/__tests__/outcome-validator.prefetch.test.ts
       - src/test/api/cron/coachhelm-validation.test.ts
@@ -194,8 +194,24 @@ items:
     status: verified
     risk: R1
     sha: 6ef000d89
-    pr: null
+    pr: 2078
     regression_tests:
       - src/test/api/cron/coachhelm-safety-net-reconcile.test.ts
     queued_for_release: false
     first_seen: '2026-09-24T00:00:00Z'
+  - id: bridge-sentry-production-scope-2026-09-27
+    feature_id: admin_platform
+    root_cause: >-
+      fetchIncidentFeed merged Sentry issues from every environment, so local
+      next dev sessions (BAND_INK, RootSummary module-not-found) appeared on
+      the Bridge as production incidents; the merged query is now scoped to
+      environment=production.
+    incident_id: memory/incidents/admin_platform/INC-2026-09-27-bridge-merged-dev-sentry-issues.md
+    status: verified
+    risk: R1
+    sha: 7538f032e
+    pr: null
+    regression_tests:
+      - src/lib/admin/data/__tests__/incident-feed.sentry-environment.test.ts
+    queued_for_release: false
+    first_seen: '2026-09-25T00:00:00Z'

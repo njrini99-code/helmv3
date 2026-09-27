@@ -1,0 +1,28 @@
+schema_version: 1
+replay_id: bridge-sentry-production-scope-2026-09-27
+incident_id: memory/incidents/admin_platform/INC-2026-09-27-bridge-merged-dev-sentry-issues.md
+feature_id: admin_platform
+title: >-
+  The Bridge incident feed merged development Sentry issues (localhost next dev
+  sessions); the merged Sentry query is now scoped to environment=production.
+bad_version: 53a2f02fe8c4a38f9e4bf6a89716ad8cc8435606
+fixed_version: 7538f032e6fa1b82ff4270ac0d5402e8888f700d
+fixture:
+  - source: incident-feed.sentry-environment.test.ts
+    target: src/lib/admin/data/__tests__/incident-feed.sentry-environment.test.ts
+test_command: "./node_modules/.bin/vitest run src/lib/admin/data/__tests__/incident-feed.sentry-environment.test.ts"
+expected:
+  bad_version: fail
+  fixed_version: pass
+expected_failure_mode: assertion
+sanitization:
+  reviewed: true
+  contains_production_data: false
+  notes: >-
+    Fully mocked Supabase, Sentry and deploy modules; no production rows,
+    player IDs, PII, tokens or logs.
+source_incident_status: fixed
+created_at: "2026-09-27"
+notes: >-
+  On bad_version the single test fails with "expected undefined to deeply
+  equal [ 'production' ]".
