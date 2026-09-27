@@ -113,7 +113,7 @@
   --fw-color-accent-fill: oklch(0.540 0.132 149.7); /* = accent-650; cream label 4.69:1 */
   --fw-color-accent-fill-hover: oklch(0.488 0.124 150);
   --fw-color-text-on-accent-fill: oklch(0.994 0.006 95);
-  --fw-color-accent-wash: oklch(0.90 0.06 150);    /* selected segment; ink on it 5.9:1 */
+  --fw-color-accent-wash: oklch(0.86 0.06 138);    /* #bedbb5 selected segment, a deeper sage than the tile track; ink on it 5.1:1 */
   /* GREEN INK, NOT A FILL. Aliases accent-ink (both themes). Never
    * `bg-accent-700` — use 650/750 or accent-fill. */
   --fw-color-accent-700: var(--fw-color-accent-ink);
@@ -141,10 +141,14 @@
      capacitor config, theme-color, offline.html) are pinned by
      src/test/static/canvas-color-sync.test.ts. */
   --fw-color-canvas:         oklch(0.93 0.03 82);    /* #f2e6d2 dark cream page base */
-  --fw-color-surface:        oklch(0.99 0.012 88);   /* THE card: warm CREAM, not white — 1.20:1 off the canvas */
-  --fw-color-surface-tint:   oklch(0.968 0.028 84);  /* a TOASTED warm band — hero plinths */
-  --fw-color-surface-sunken: oklch(0.94 0.026 83);   /* wells, insets, input tracks — below the card, a hair above the page */
-  --fw-color-elevated:       oklch(0.995 0.012 88);  /* menus / popovers / modal body — the brightest cream so floating panels read lifted */
+  /* 2026-09-27 owner pass: the 0.99 card read as WHITE on the dark cream, and
+     cream-on-cream wells plus near-black ink were hard to read. The card is now
+     a VINTAGE cream (it lifts by its green hairline + shadow), wells and tiles
+     are a soft SAGE green. Text stays dark warm ink (owner: no green text). */
+  --fw-color-surface:        oklch(0.972 0.022 84);  /* #fdf5e6 THE card: vintage cream (old lace), not white */
+  --fw-color-surface-tint:   oklch(0.945 0.045 84);  /* #fbebcb a TOASTED vintage band — hero plinths */
+  --fw-color-surface-sunken: oklch(0.915 0.03 128);  /* #dde7d2 soft SAGE wells, tiles, insets, input tracks */
+  --fw-color-elevated:       oklch(0.975 0.030 88);  /* #fff6e1 menus / popovers / modal body — the lightest vintage cream */
 
   /* Loading blocks. NOT `surface-sunken`: that well is 1.06:1 against the card
      it sits on — present in the DOM, absent to the eye, so a loading screen
@@ -181,11 +185,11 @@
   --fw-color-text-on-dark:   oklch(0.96 0.005 95);  /* sidebar text */
 
   /* ---- Borders / warm hairlines (NOT cool gray) ---- */
-  --fw-color-border-subtle: oklch(0.811 0.018 80);      /* a VISIBLE warm hairline (1.46:1 on the card) */
-  --fw-color-border-strong: oklch(0.74 0.018 78);       /* emphasis / table head / hover edge — stronger than subtle */
+  --fw-color-border-subtle: oklch(0.80 0.045 145);      /* a visible GREEN hairline — card edges + dividers */
+  --fw-color-border-strong: oklch(0.70 0.05 146);       /* emphasis / table head / hover edge — stronger than subtle */
   /* Control edges: inputs, slider tracks, chips, segmented tracks. WCAG 1.4.11
      wants 3:1 for the boundary that identifies a control. */
-  --fw-color-border-control: oklch(0.600 0.02 75);
+  --fw-color-border-control: oklch(0.58 0.05 148);
   /* accent-600, NOT accent-500. This token names a FOCUS indicator, and a focus
      indicator has to clear WCAG 2.2's 3:1 non-text minimum. accent-500 on the
      warm canvas measures ~2.67:1 on the OKLCH render path — it fails. That was
