@@ -1,0 +1,402 @@
+import { act, renderHook } from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { HEARTBEAT_INTERVAL, usePresence } from '../use-presence';
+
+type AuthUser = { id: string };
+type AuthCallback = (
+  event: string,
+  session: { user: AuthUser } | null,
+) => void;
+
+const {
+  createClientMock,
+  getUserMock,
+  getSessionMock,
+  onAuthStateChangeMock,
+  rpcMock,
+  unsubscribeMock,
+  logErrorMock,
+} = vi.hoisted(() => ({
+  createClientMock: vi.fn(),
+  getUserMock: vi.fn(),
+  getSessionMock: vi.fn(),
+  onAuthStateChangeMock: vi.fn(),
+  rpcMock: vi.fn(),
+  unsubscribeMock: vi.fn(),
+  logErrorMock: vi.fn(),
+}));
+
+vi.mock('@/lib/error-logging', () => ({ logError: logErrorMock }));
+
+/** A live session for `user-1` — the default in every test that expects a
+ *  heartbeat to actually go out. */
+function liveSession(userId = 'user-1') {
+  return { data: { session: { access_token: 'jwt', user: { id: userId } } }, error: null };
+}
+
+let authCallback: AuthCallback;
+
+vi.mock('@/lib/supabase/client', () => ({
+  createClient: createClientMock,
+}));
+
+describe('usePresence authenticated heartbeat lifecycle (#1016)', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    // The heartbeat throttle persists per user in localStorage (see
+    // HEARTBEAT_MIN_GAP); every test starts from a browser that never sent one.
+    window.localStorage.clear();
+    Object.defineProperty(document, 'visibilityState', { configurable: true, value: 'visible' });
+    rpcMock.mockReset().mockResolvedValue({ data: undefined, error: null });
+    logErrorMock.mockReset();
+    getUserMock.mockReset();
+    getSessionMock.mockReset().mockResolvedValue(liveSession());
+    unsubscribeMock.mockReset();
+    onAuthStateChangeMock.mockReset().mockImplementation((callback: AuthCallback) => {
+      authCallback = callback;
+      return { data: { subscription: { unsubscribe: unsubscribeMock } } };
+    });
+    createClientMock.mockReset().mockReturnValue({
+      auth: {
+        getUser: getUserMock,
+        getSession: getSessionMock,
+        onAuthStateChange: onAuthStateChangeMock,
+      },
+      rpc: rpcMock,
+    });
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.restoreAllMocks();
+  });
+
+  it('never schedules or sends a heartbeat for an anonymous visitor', async () => {
+    getUserMock.mockResolvedValue({ data: { user: null }, error: null });
+
+    renderHook(() => usePresence());
+    await act(async () => {
+      await Promise.resolve();
+      await vi.advanceTimersByTimeAsync(125_000);
+    });
+
+    expect(rpcMock).not.toHaveBeenCalled();
+  });
+
+  it('starts for an authenticated session and stops all timers on sign-out', async () => {
+    getUserMock.mockResolvedValue({
+      data: { user: { id: 'user-1' } },
+      error: null,
+    });
+
+    renderHook(() => usePresence());
+    await act(async () => {
+      await Promise.resolve();
+      await vi.advanceTimersByTimeAsync(5_000);
+    });
+    expect(rpcMock).toHaveBeenCalledTimes(1);
+    expect(rpcMock).toHaveBeenLastCalledWith('heartbeat');
+
+    act(() => {
+      authCallback('SIGNED_OUT', null);
+    });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(180_000);
+    });
+
+    expect(rpcMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('starts when an authenticated session arrives after an anonymous mount', async () => {
+    getUserMock
+      .mockResolvedValueOnce({ data: { user: null }, error: null })
+      .mockResolvedValueOnce({
+        data: { user: { id: 'user-2' } },
+        error: null,
+      });
+    // The pre-RPC session check compares ids, so the session has to belong to
+    // the same user the auth event announced — that comparison is the guard.
+    getSessionMock.mockResolvedValue(liveSession('user-2'));
+
+    renderHook(() => usePresence());
+    await act(async () => {
+      await Promise.resolve();
+    });
+    act(() => {
+      authCallback('SIGNED_IN', { user: { id: 'user-2' } });
+    });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(5_000);
+    });
+
+    expect(rpcMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not trust a cached auth event until getUser confirms it', async () => {
+    getUserMock.mockResolvedValue({ data: { user: null }, error: null });
+
+    renderHook(() => usePresence());
+    act(() => {
+      authCallback('INITIAL_SESSION', { user: { id: 'stale-user' } });
+    });
+    await act(async () => {
+      await Promise.resolve();
+      await vi.advanceTimersByTimeAsync(125_000);
+    });
+
+    expect(rpcMock).not.toHaveBeenCalled();
+  });
+
+  // The 42501 fix. Measured 2026-08-27: 10 `permission denied for function
+  // heartbeat` in 72h across the two round pages, still firing. The hook
+  // confirmed auth when the timers STARTED and then fired every 60s for the
+  // life of the page; on iOS WKWebView a backgrounded tab misses the token
+  // refresh and comes back with a dead JWT, so PostgREST evaluated the call as
+  // `anon` — which `public.heartbeat()` (SECURITY DEFINER, EXECUTE to
+  // `authenticated` only) correctly refuses.
+  it.each([
+    ['there is no session at all', { data: { session: null }, error: null }],
+    ['the session carries no access token', { data: { session: { user: { id: 'user-1' } } }, error: null }],
+    ['getSession itself failed', { data: { session: null }, error: { message: 'network' } }],
+    [
+      'the session belongs to a different user',
+      { data: { session: { access_token: 'jwt', user: { id: 'somebody-else' } } }, error: null },
+    ],
+  ])('never calls the RPC when %s', async (_label, sessionResult) => {
+    getUserMock.mockResolvedValue({ data: { user: { id: 'user-1' } }, error: null });
+    getSessionMock.mockResolvedValue(sessionResult);
+
+    renderHook(() => usePresence());
+    await act(async () => {
+      await Promise.resolve();
+      await vi.advanceTimersByTimeAsync(5_000);
+    });
+
+    expect(rpcMock).not.toHaveBeenCalled();
+  });
+
+  it('stops the timers after a skipped heartbeat rather than retrying every minute', async () => {
+    // Skipping without stopping would turn one dead token into a heartbeat
+    // attempt per minute for as long as the tab stays open.
+    getUserMock.mockResolvedValue({ data: { user: { id: 'user-1' } }, error: null });
+    getSessionMock.mockResolvedValue({ data: { session: null }, error: null });
+
+    renderHook(() => usePresence());
+    await act(async () => {
+      await Promise.resolve();
+      await vi.advanceTimersByTimeAsync(5_000);
+    });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(300_000);
+    });
+
+    expect(rpcMock).not.toHaveBeenCalled();
+  });
+
+  it('handles a resolved RPC error as text and stops after auth is no longer valid', async () => {
+    const permissionError = {
+      code: '42501',
+      message: 'permission denied for function heartbeat',
+      details: null,
+      hint: null,
+    };
+    getUserMock
+      .mockResolvedValueOnce({
+        data: { user: { id: 'user-1' } },
+        error: null,
+      })
+      .mockResolvedValueOnce({ data: { user: null }, error: null });
+    rpcMock.mockResolvedValue({ data: undefined, error: permissionError });
+    const debugSpy = vi.spyOn(console, 'debug').mockImplementation(() => undefined);
+
+    renderHook(() => usePresence());
+    await act(async () => {
+      await Promise.resolve();
+      await vi.advanceTimersByTimeAsync(5_000);
+    });
+
+    expect(debugSpy).toHaveBeenCalledWith(
+      '[Presence] Heartbeat failed:',
+      'code=42501 msg=permission denied for function heartbeat',
+    );
+    expect(getUserMock).toHaveBeenCalledTimes(2);
+
+    // The value-shaped failure now enters the Bridge pipeline. 15 Sentry
+    // events in 7d for this exact message, 0 admin_events rows — because
+    // PostgREST returned it as a value and nothing routed it. Tagged to the
+    // auth feature (a dead JWT evaluated as anon), 'low' because the hook
+    // recovers on its own, and never with the round page's feature.
+    expect(logErrorMock).toHaveBeenCalledTimes(1);
+    const [loggedError, context, severity] = logErrorMock.mock.calls[0] as [Error, Record<string, unknown>, string];
+    expect(loggedError.message).toContain('permission denied for function heartbeat');
+    expect(context).toMatchObject({
+      component: 'usePresence',
+      action: 'presence.heartbeat',
+      feature: 'auth_onboarding',
+      errorCode: '42501',
+    });
+    expect(severity).toBe('low');
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(180_000);
+    });
+    expect(rpcMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not report the Supabase request-deadline timeout as a product error', async () => {
+    getUserMock.mockResolvedValue({ data: { user: { id: 'user-1' } }, error: null });
+    rpcMock.mockResolvedValue({
+      data: undefined,
+      error: { message: 'TimeoutError: signal timed out' },
+    });
+    const debugSpy = vi.spyOn(console, 'debug').mockImplementation(() => undefined);
+
+    renderHook(() => usePresence());
+    await act(async () => {
+      await Promise.resolve();
+      await vi.advanceTimersByTimeAsync(5_000);
+    });
+
+    expect(rpcMock).toHaveBeenCalledTimes(1);
+    expect(logErrorMock).not.toHaveBeenCalled();
+    expect(getUserMock).toHaveBeenCalledTimes(1);
+    expect(debugSpy).toHaveBeenCalledWith(
+      '[Presence] Heartbeat failed:',
+      'msg=TimeoutError: signal timed out',
+    );
+  });
+
+  it('does not report the WebKit wording of the same aborted heartbeat (d07955ca, c6a3835e)', async () => {
+    // Production 2026-09-27, iOS app (WKWebView) on back_forward navigation:
+    // supabase-js resolves the aborted request as a value whose describeError
+    // text is `msg=AbortError: Fetch is aborted hint=Request was aborted
+    // (timeout or manual cancellation)`. Same benign deadline as the Chrome
+    // `TimeoutError: signal timed out` case above, different engine wording,
+    // and each route minted a fresh Bridge fingerprint.
+    getUserMock.mockResolvedValue({ data: { user: { id: 'user-1' } }, error: null });
+    rpcMock.mockResolvedValue({
+      data: undefined,
+      error: {
+        message: 'AbortError: Fetch is aborted',
+        details: '',
+        hint: 'Request was aborted (timeout or manual cancellation)',
+        code: '',
+      },
+    });
+    vi.spyOn(console, 'debug').mockImplementation(() => undefined);
+
+    renderHook(() => usePresence());
+    await act(async () => {
+      await Promise.resolve();
+      await vi.advanceTimersByTimeAsync(5_000);
+    });
+
+    expect(rpcMock).toHaveBeenCalledTimes(1);
+    expect(logErrorMock).not.toHaveBeenCalled();
+  });
+
+  it('does not overlap a scheduled heartbeat while the prior refresh is pending', async () => {
+    getUserMock.mockResolvedValue({ data: { user: { id: 'user-1' } }, error: null });
+    let resolveRpc: ((value: { data: undefined; error: null }) => void) | undefined;
+    rpcMock.mockImplementation(() => new Promise((resolve) => {
+      resolveRpc = resolve;
+    }));
+
+    renderHook(() => usePresence());
+    await act(async () => {
+      await Promise.resolve();
+      await vi.advanceTimersByTimeAsync(5_000);
+    });
+    expect(rpcMock).toHaveBeenCalledTimes(1);
+
+    // The first scheduled tick lands while the first call is still pending.
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(HEARTBEAT_INTERVAL);
+    });
+    expect(rpcMock).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      resolveRpc?.({ data: undefined, error: null });
+      await Promise.resolve();
+      await vi.advanceTimersByTimeAsync(HEARTBEAT_INTERVAL);
+    });
+    expect(rpcMock).toHaveBeenCalledTimes(2);
+  });
+
+  it('does not report a heartbeat that succeeded', async () => {
+    getUserMock.mockResolvedValue({ data: { user: { id: 'user-1' } }, error: null });
+
+    renderHook(() => usePresence());
+    await act(async () => {
+      await Promise.resolve();
+      await vi.advanceTimersByTimeAsync(5_000);
+    });
+
+    expect(rpcMock).toHaveBeenCalledTimes(1);
+    expect(logErrorMock).not.toHaveBeenCalled();
+  });
+
+  it('creates one stable Supabase client across rerenders', async () => {
+    getUserMock.mockResolvedValue({ data: { user: null }, error: null });
+
+    const { rerender } = renderHook(() => usePresence());
+    await act(async () => {
+      await Promise.resolve();
+    });
+    rerender();
+    rerender();
+
+    expect(createClientMock).toHaveBeenCalledTimes(1);
+    expect(onAuthStateChangeMock).toHaveBeenCalledTimes(1);
+  });
+  it('sends at most one heartbeat per window across a remount (route change / full reload)', async () => {
+    getUserMock.mockResolvedValue({ data: { user: { id: 'user-1' } }, error: null });
+
+    const first = renderHook(() => usePresence());
+    await act(async () => {
+      await Promise.resolve();
+      await vi.advanceTimersByTimeAsync(5_000);
+    });
+    expect(rpcMock).toHaveBeenCalledTimes(1);
+    first.unmount();
+
+    // A fresh mount (the shell remounting) must not write again inside the window.
+    renderHook(() => usePresence());
+    await act(async () => {
+      await Promise.resolve();
+      await vi.advanceTimersByTimeAsync(5_000);
+    });
+    expect(rpcMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not write while the tab is hidden, and a quick visibility return inside the window does not write either', async () => {
+    getUserMock.mockResolvedValue({ data: { user: { id: 'user-1' } }, error: null });
+
+    renderHook(() => usePresence());
+    await act(async () => {
+      await Promise.resolve();
+      await vi.advanceTimersByTimeAsync(5_000);
+    });
+    expect(rpcMock).toHaveBeenCalledTimes(1);
+
+    Object.defineProperty(document, 'visibilityState', { configurable: true, value: 'hidden' });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(HEARTBEAT_INTERVAL * 2);
+    });
+    expect(rpcMock).toHaveBeenCalledTimes(1);
+
+    Object.defineProperty(document, 'visibilityState', { configurable: true, value: 'visible' });
+    await act(async () => {
+      document.dispatchEvent(new Event('visibilitychange'));
+      await vi.advanceTimersByTimeAsync(0);
+    });
+    // Hidden for 8 minutes — returning is a real new session of use.
+    expect(rpcMock).toHaveBeenCalledTimes(2);
+
+    await act(async () => {
+      document.dispatchEvent(new Event('visibilitychange'));
+      await vi.advanceTimersByTimeAsync(0);
+    });
+    expect(rpcMock).toHaveBeenCalledTimes(2);
+  });
+});

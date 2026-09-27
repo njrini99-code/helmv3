@@ -2,7 +2,7 @@
 
 - Feature: `coachhelm_ai`
 - Surface: `GET /golf/dashboard/coachhelm` (any surface that records insight exposure)
-- Status: FIX IN PR (routine PR, agent/health-20260927-1147); production 6ee77e98e as of 2026-09-27 15:48Z
+- Status: FIX IN PR #2082 (agent/health-20260927-1147); production 6ee77e98e as of 2026-09-27 15:48Z
 - Risk: R1. Retry path of a fire-and-forget analytics insert. No schema, RLS, grant or data-shape change.
 - Signal: Bridge fingerprint `f34bc102` (`recordInsightExposure insert failed: TypeError: fetch failed`, errorCode empty), 2026-09-27 15:41:58Z, 1 event, 17 rows; the same request raised Sentry JAVASCRIPT-NEXTJS-WX and YW. The fingerprint was previously resolved 2026-09-10 and reopened 2026-09-14; its only analysis ("ALREADY FIXED — migration 20260909230000") described a different failure.
 
