@@ -44,7 +44,7 @@ import { Button } from '@/components/fairway/controls/button';
 import { fairwayToast } from '@/components/fairway/feedback/ToastStack';
 import { Skeleton, EmptyState, InlineNotice } from '@/components/fairway/feedback';
 import { fwHaptic } from '@/lib/fairway/haptics';
-import { logError } from '@/lib/error-logging';
+import { logError, recoverFromStaleServerAction } from '@/lib/error-logging';
 import {
   IconSearch, IconPlus, IconChevronLeft, IconChevronRight, IconFlag, IconX, IconMapPin,
 } from '@/components/icons';
@@ -192,10 +192,11 @@ export function FairwayCoursePicker({
       const [lib, rec, tm] = await Promise.all([
         listCourses({ limit: 200 }).catch((err: unknown) => {
           logError(err instanceof Error ? err : new Error(String(err)), { component: 'FairwayCoursePicker', action: 'load course library', featureArea: 'round_tracking', bypassStaleActionFilter: true }, 'medium');
+          recoverFromStaleServerAction(err);
           return null;
         }),
-        getRecentlyPlayedCourses(12).catch(() => [] as GolfCourse[]),
-        getTeamSavedCourses().then((rows) => rows.map((r) => r.course)).catch(() => [] as GolfCourse[]),
+        getRecentlyPlayedCourses(12).catch((error: unknown) => { recoverFromStaleServerAction(error); return [] as GolfCourse[]; }),
+        getTeamSavedCourses().then((rows) => rows.map((r) => r.course)).catch((error: unknown) => { recoverFromStaleServerAction(error); return [] as GolfCourse[]; }),
       ]);
       setLibraryFailed(lib === null);
       const library = lib ?? [];
@@ -276,6 +277,7 @@ export function FairwayCoursePicker({
       return list;
     } catch (err) {
       logError(err instanceof Error ? err : new Error(String(err)), { component: 'FairwayCoursePicker', action: 'load tees', featureArea: 'round_tracking', courseId: course.id, bypassStaleActionFilter: true }, 'medium');
+      if (recoverFromStaleServerAction(err)) return null;
       if (teeReqRef.current === req) fairwayToast.danger('Could not load tees for that course');
       return null;
     } finally {
@@ -377,6 +379,9 @@ export function FairwayCoursePicker({
       }, reduceMotion ? 0 : PICKER_EXIT_MS);
     } catch (err) {
       logError(err instanceof Error ? err : new Error(String(err)), { component: 'FairwayCoursePicker', action: 'pick tee', featureArea: 'round_tracking', courseId: course?.id ?? null, teeId: tee.id, bypassStaleActionFilter: true }, 'medium');
+      // A tab open across a deploy calls an action id the new build no longer
+      // has; the reload it needs is requested here, not hidden behind a toast.
+      if (recoverFromStaleServerAction(err)) return;
       fairwayToast.danger('Could not load that tee');
     } finally {
       setPicking(false);
