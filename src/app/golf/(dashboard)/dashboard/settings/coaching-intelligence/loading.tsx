@@ -30,7 +30,11 @@ export default function CoachingIntelligenceLoading() {
             eyebrow slot never renders. */}
         <div className="flex flex-col gap-2">
           <Skeleton className="h-9 w-64 max-w-full" />
+          {/* The intro shows in full at every width (ViewHeader
+              `fullDescription`), about three lines on a phone and on desktop. */}
           <Skeleton className="h-4 w-full max-w-lg" />
+          <Skeleton className="h-4 w-full max-w-lg" />
+          <Skeleton className="h-4 w-2/3 max-w-lg" />
         </div>
 
         <div className="mt-8 flex flex-col gap-6">

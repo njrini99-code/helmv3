@@ -198,8 +198,15 @@ describe('FairwayTopBar — nativeBar (NAT-04)', () => {
     const { container } = render(<FairwayTopBar pageTitle="Stats" nativeBar />);
     const title = container.querySelector('[data-slot="fw-topbar-title"] span')!;
     expect(title.className).toMatch(/text-headline/);
-    expect(title.className).toMatch(/left-1\/2/);
-    expect(title.closest('[data-slot="fw-topbar-title"]')!.parentElement!.className).toMatch(/\bh-11\b.*md:h-16|md:h-16.*\bh-11\b/);
+    expect(title.className).toMatch(/text-center/);
+    // Centred by a three-column phone grid (title in the middle column), not by
+    // absolute positioning, so a wide action cluster pushes it aside instead of
+    // covering it (Messages: compose + bell + avatar, 390px baseline).
+    const slot = title.closest('[data-slot="fw-topbar-title"]')!;
+    expect(slot.className).toMatch(/max-md:col-start-2/);
+    expect(slot.className).toMatch(/max-md:justify-center/);
+    expect(slot.parentElement!.className).toMatch(/max-md:grid-cols-\[minmax\(0,1fr\)_minmax\(0,auto\)_minmax\(max-content,1fr\)\]/);
+    expect(slot.parentElement!.className).toMatch(/\bh-11\b.*md:h-16|md:h-16.*\bh-11\b/);
   });
 
   it('keeps the 64px leading-title bar by default (Baseball and Lift Lab)', () => {
@@ -208,5 +215,6 @@ describe('FairwayTopBar — nativeBar (NAT-04)', () => {
     expect(title.className).not.toMatch(/text-headline/);
     expect(title.closest('[data-slot="fw-topbar-title"]')!.parentElement!.className).toMatch(/\bh-16\b/);
     expect(title.closest('[data-slot="fw-topbar-title"]')!.parentElement!.className).not.toMatch(/\bh-11\b/);
+    expect(title.closest('[data-slot="fw-topbar-title"]')!.parentElement!.className).not.toMatch(/max-md:grid/);
   });
 });

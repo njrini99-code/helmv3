@@ -252,6 +252,9 @@ export function StandingDrill({
                       is_womens={row.is_womens}
                       direction={cfg.direction}
                       unit={cfg.unit}
+                      // "Closer than team average" beside You 49 ft vs Team 72 ft,
+                      // not "Above team average" (lower-is-better metrics).
+                      cohort_wording="direction_aware"
                       scale={fitScale(cfg.default_scale, [row.player_value, row.team_avg, row.pga_value])}
                       size="card"
                       viewer_context={standingViewerContext}

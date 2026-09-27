@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import type { Metadata } from 'next';
+import { ArrowLeft } from 'lucide-react';
 import { SmoothScroll } from '@/components/landing/SmoothScroll';
 
 export const metadata: Metadata = {
@@ -12,14 +13,18 @@ export default function TermsPage() {
     <main className="min-h-dvh bg-[#FAF6F1]">
       <SmoothScroll />
       <div className="max-w-4xl mx-auto px-6 py-16">
-        <div className="flex items-center justify-between mb-10">
-          <div>
-            <p className="text-xs uppercase tracking-[0.2em] text-warm-500">Legal</p>
-            <h1 className="text-4xl md:text-5xl font-semibold text-warm-900 mt-2">Terms of Service</h1>
-          </div>
-          <Link href="/" className="text-sm text-warm-600 hover:text-warm-900 transition-colors">
+        {/* The back link gets its own row above the title. Side by side, the
+            title ran into it on a phone. Kept identical to privacy/page.tsx. */}
+        <div className="mb-10">
+          <Link
+            href="/"
+            className="-ml-2 mb-4 inline-flex min-h-[44px] items-center gap-1.5 rounded-md px-2 text-sm text-warm-600 hover:text-warm-900 transition-colors"
+          >
+            <ArrowLeft size={16} aria-hidden="true" />
             Back to home
           </Link>
+          <p className="text-xs uppercase tracking-[0.2em] text-warm-500">Legal</p>
+          <h1 className="text-4xl md:text-5xl font-semibold text-warm-900 mt-2">Terms of Service</h1>
         </div>
 
         <div className="space-y-10 text-warm-700 leading-relaxed">

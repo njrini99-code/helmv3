@@ -133,6 +133,7 @@ async function computeTrendForPlayer(
     .from('golf_rounds')
     .select('score_to_par, round_date')
     .eq('player_id', playerId)
+    .eq('is_test', false)
     .eq('status', 'completed')
     .not('score_to_par', 'is', null)
     .order('round_date', { ascending: false })

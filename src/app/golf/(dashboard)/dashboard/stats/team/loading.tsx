@@ -18,10 +18,9 @@ const SKELETON_ROW_COUNT = 6;
  * column `TeamStatsBoard` renders, so the skeleton→content handoff is a
  * quiet fade, not a layout jump.
  *
- * Eyebrow + h1 are real static text (matching `<ViewHeader eyebrow="Team
- * Stats" title="Team Stats" />`, TeamStatsBoard.tsx:342-344), not
- * `<Skeleton>` blocks; the description needs the fetched roster/team name,
- * so it stays a Skeleton.
+ * The h1 is real static text (matching `<ViewHeader title="Team Stats" />`
+ * in TeamStatsBoard.tsx, which has no eyebrow), not a `<Skeleton>` block;
+ * the description needs the fetched roster/team name, so it stays a Skeleton.
  *
  * Board row shape verified against the module kit: `RankCell` (Tee/App/
  * Shrt/Putt/Scor) is a `rounded-fw-sm` badge, NOT a circle (RankCell.tsx:
@@ -38,10 +37,9 @@ export default function TeamStatsLoading() {
         {/* A11Y-02: the live region is only this line, not the whole skeleton (Skeleton is aria-hidden). */}
         <span role="status" aria-live="polite" className="sr-only">Loading team stats…</span>
 
-        {/* ── MASTHEAD: ViewHeader — eyebrow · title · description · secondary actions ── */}
+        {/* ── MASTHEAD: ViewHeader — title · description · secondary actions ── */}
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0 flex-1 space-y-3">
-            <p className="font-fw-sans text-eyebrow font-semibold uppercase tracking-[0.07em] text-accent-700">Team Stats</p>
             <h1 className="min-w-0 font-fw-display text-h1 font-medium tracking-[-0.008em] text-text-primary [text-wrap:balance]">Team Stats</h1>
             <Skeleton className="h-4 w-64 max-w-full" />
           </div>

@@ -279,6 +279,41 @@ describe('FairwayWhatsNew', () => {
     expect(screen.queryByText('FOC')).not.toBeInTheDocument();
   });
 
+  it("tells the coach about the player instead of saying 'you' and 'your'", () => {
+    // Verbatim from the 390px baseline (coach What's New, Cole Bennett): the
+    // player-voiced insight copy read as if it were about the coach.
+    render(
+      <FairwayWhatsNew
+        success
+        items={[
+          item({
+            type: 'insight_matured',
+            playerName: 'Cole Bennett',
+            title: 'Penalty strokes: 0.5 per round',
+            description: "Across your last 21 rounds you're averaging 0.5 penalty strokes per round.",
+          }),
+          item({
+            type: 'insight_matured',
+            playerName: 'Cole Bennett',
+            title: '125-175 yd approach: 83% greens hit',
+            description: 'Across your last 81 approaches from 125-175 yd you found the green 83% of the time.',
+            occurredAt: new Date(Date.now() - 1000).toISOString(),
+          }),
+        ]}
+      />,
+    );
+
+    expect(
+      screen.getByText("Across Cole's last 21 rounds Cole is averaging 0.5 penalty strokes per round."),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("Across Cole's last 81 approaches from 125-175 yd Cole found the green 83% of the time."),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/\byou('re)?\b|\byour\b/i)).not.toBeInTheDocument();
+    // A title without a pronoun is left exactly as written.
+    expect(screen.getByText('Penalty strokes: 0.5 per round')).toBeInTheDocument();
+  });
+
   it('P397: a filter that matches nothing shows an honest filtered-empty state, not "No activity yet"', () => {
     const now = new Date();
     render(

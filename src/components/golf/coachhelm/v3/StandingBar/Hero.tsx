@@ -16,7 +16,7 @@ import {
   pgaReferenceLabel,
   shouldShowTeamMarker,
   standingSubjectLabel,
-  teamRelativeText,
+  cohortComparisonText,
   resolveDisplayScale,
   unitHardBounds,
   toScalePct,
@@ -46,7 +46,7 @@ export function Hero(props: StandingBarProps) {
   // EC-2: suppress the team-relative caption when the team marker is hidden
   // (tiny roster) — same team_n>=5 floor the marker uses.
   const cohortText = showTeam
-    ? teamRelativeText(props.player_value, props.team_avg, props.direction, props.unit)
+    ? cohortComparisonText(props)
     : '';
   const refLabel = pgaReferenceLabel(props.metric_id, props.is_womens).short;
   const omissionNote = pgaOmissionNote(props);

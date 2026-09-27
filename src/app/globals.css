@@ -169,12 +169,22 @@
   /* DASH-18: on a phone the conversation list keeps the shared top bar (bell,
      avatar, compose as the route action); an open thread and the wide
      two-pane workspace still draw their own header. */
-  body:has([data-fw-messages][data-fw-thread-open]) [data-slot='fw-topbar'],
-  body:has([data-fw-messages]) [data-slot='fairway-hub-subnav'] {
+  body:has([data-fw-messages][data-fw-thread-open]) [data-slot='fw-topbar'] {
     display: none;
   }
   @media (min-width: 768px) {
     body:has([data-fw-messages]) [data-slot='fw-topbar'] {
+      display: none;
+    }
+  }
+  /* The coach Team hub tab row (Messages · Announcements · Tasks · Documents)
+     stays on the phone conversation list, as on the other three tabs; it was
+     hidden at every width, a leftover from when the list drew its own header.
+     An open thread still drops it (the immersive rule above), and the wide
+     two-pane workspace, which draws its own header, still hides it. Players
+     have no Messages tab row, so nothing changes for them. */
+  @media (min-width: 768px) {
+    body:has([data-fw-messages]) [data-slot='fairway-hub-subnav'] {
       display: none;
     }
   }

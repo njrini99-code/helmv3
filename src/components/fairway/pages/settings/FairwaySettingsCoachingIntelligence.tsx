@@ -127,6 +127,9 @@ function CoachingIntelligenceFrame({
       <ViewHeader
         title="Coaching Intelligence"
         description="Configure how CoachHelm analyzes your team. These settings control insight generation, alert sensitivity, and how players are ranked against your coaching priorities."
+        // The intro explains what these controls change; a phone's one-line
+        // clamp cut it to "…your team. These…".
+        fullDescription
         meta={meta}
       />
       {children}

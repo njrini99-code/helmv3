@@ -28,6 +28,7 @@ import {
   buildWaterfall,
   confidenceWord,
   presentForm,
+  shownStrokesImpact,
 } from '@/components/fairway/pages/player-game/fingerprint/fingerprint-model';
 import { MetricPill } from './MetricPill';
 import './print.css';
@@ -167,38 +168,48 @@ export default async function PlayerGamePrintPage({
                       </p>
                     ) : (
                       <ul className="space-y-3" data-testid={`print-insights-${key}`}>
-                        {section.insights.slice(0, 5).map((insight) => (
-                          <li
-                            key={insight.id}
-                            className="rounded-fw-md border border-border-subtle bg-surface-sunken p-3 text-sm leading-relaxed"
-                          >
-                            <p className="font-medium text-text-primary">{insight.title}</p>
-                            {insight.content && (
-                              <p className="text-text-secondary mt-1">{insight.content}</p>
-                            )}
-                            <p className="text-caption text-text-tertiary mt-2 tabular-nums">
-                              {insight.evidence.metric_label}
-                              {' · '}
-                              {formatMetricText('strokes_impact', Number(insight.evidence.strokes_impact))}
-                              {typeof insight.evidence.sample_n === 'number' && (
-                                <>
-                                  {' · '}
-                                  n={insight.evidence.sample_n}
-                                </>
+                        {section.insights.slice(0, 5).map((insight) => {
+                          // Missing, or rounding to 0.0: omit the per-round figure
+                          // (the screen does the same) rather than print a
+                          // placeholder-looking "0.0 a round".
+                          const impact = shownStrokesImpact(insight.evidence.strokes_impact);
+                          return (
+                            <li
+                              key={insight.id}
+                              className="rounded-fw-md border border-border-subtle bg-surface-sunken p-3 text-sm leading-relaxed"
+                            >
+                              <p className="font-medium text-text-primary">{insight.title}</p>
+                              {insight.content && (
+                                <p className="text-text-secondary mt-1">{insight.content}</p>
                               )}
-                              {' · '}
-                              {confidenceWord(insight.evidence.confidence, insight.evidence.sample_n)}
-                            </p>
-                            {insight.drills && insight.drills.length > 0 && (
-                              <p className="text-caption text-text-secondary mt-1.5">
-                                Drills:{' '}
-                                {insight.drills
-                                  .map((d) => `${d.title} (${d.duration_min}m)`)
-                                  .join(', ')}
+                              <p className="text-caption text-text-tertiary mt-2 tabular-nums">
+                                {insight.evidence.metric_label}
+                                {impact != null && (
+                                  <>
+                                    {' · '}
+                                    {formatMetricText('strokes_impact', impact)}
+                                  </>
+                                )}
+                                {typeof insight.evidence.sample_n === 'number' && (
+                                  <>
+                                    {' · '}
+                                    n={insight.evidence.sample_n}
+                                  </>
+                                )}
+                                {' · '}
+                                {confidenceWord(insight.evidence.confidence, insight.evidence.sample_n)}
                               </p>
-                            )}
-                          </li>
-                        ))}
+                              {insight.drills && insight.drills.length > 0 && (
+                                <p className="text-caption text-text-secondary mt-1.5">
+                                  Drills:{' '}
+                                  {insight.drills
+                                    .map((d) => `${d.title} (${d.duration_min}m)`)
+                                    .join(', ')}
+                                </p>
+                              )}
+                            </li>
+                          );
+                        })}
                       </ul>
                     )}
                   </>

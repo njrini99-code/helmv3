@@ -6,7 +6,16 @@
  */
 import { describe, expect, it } from 'vitest';
 
-import { deltaVsTeam, fitScale, formatValue, teamRelativeText, toScalePct } from './utils';
+import {
+  cohortComparisonText,
+  deltaVsTeam,
+  deriveAriaLabel,
+  fitScale,
+  formatValue,
+  teamComparisonText,
+  teamRelativeText,
+  toScalePct,
+} from './utils';
 
 describe('toScalePct — NaN guard', () => {
   it('returns 0 instead of NaN for a NaN value', () => {
@@ -88,5 +97,66 @@ describe('deltaVsTeam — arrow follows better/worse, not raw direction (NUM-13)
       const d = deltaVsTeam(you, team, dir);
       expect(d.arrow).toBe(d.tone === 'good' ? '↑' : '↓');
     }
+  });
+});
+
+// Stats › Standing: "Above team average" sat beside You 49 ft vs Team 72 ft.
+// The opt-in direction-aware wording keeps the NUM-13 verdict (↑ = better)
+// but never says "Above" next to the smaller number.
+describe('teamComparisonText — direction-aware wording (opt-in)', () => {
+  it('says "Closer than team average" for a proximity the player wins (lower is better, feet)', () => {
+    expect(teamComparisonText(49, 72, 'lower_better', 'feet')).toBe('Closer than team average');
+    expect(teamComparisonText(80, 72, 'lower_better', 'feet')).toBe('Farther than team average');
+  });
+
+  it('says "Better/Worse than team average" for other lower-is-better metrics', () => {
+    expect(teamComparisonText(3.9, 4.2, 'lower_better', 'strokes')).toBe('Better than team average');
+    expect(teamComparisonText(0.8, 0.6, 'lower_better', 'count')).toBe('Worse than team average');
+  });
+
+  it('keeps "Above/Below" on higher-is-better metrics, and the tie and no-team cases', () => {
+    expect(teamComparisonText(42, 38, 'higher_better', 'percent')).toBe('Above team average');
+    expect(teamComparisonText(35, 38, 'higher_better', 'percent')).toBe('Below team average');
+    expect(teamComparisonText(64.6, 65.3, 'lower_better', 'percent')).toBe('Matches team average');
+    expect(teamComparisonText(49, null, 'lower_better', 'feet')).toBe('');
+  });
+
+  it('agrees with the deltaVsTeam verdict for every direction and side', () => {
+    const cases: Array<[number, number, 'higher_better' | 'lower_better', 'feet' | 'strokes']> = [
+      [42, 38, 'higher_better', 'strokes'],
+      [35, 38, 'higher_better', 'strokes'],
+      [49, 72, 'lower_better', 'feet'],
+      [80, 72, 'lower_better', 'feet'],
+      [3.9, 4.2, 'lower_better', 'strokes'],
+      [4.6, 4.2, 'lower_better', 'strokes'],
+    ];
+    for (const [you, team, dir, unit] of cases) {
+      const good = deltaVsTeam(you, team, dir, unit).tone === 'good';
+      expect(/^(Above|Better|Closer)/.test(teamComparisonText(you, team, dir, unit))).toBe(good);
+    }
+  });
+
+  it('cohortComparisonText defaults to the NUM-13 "Above/Below" wording and switches only on opt-in', () => {
+    const row = { player_value: 49, team_avg: 72, direction: 'lower_better' as const, unit: 'feet' as const };
+    expect(cohortComparisonText(row)).toBe('Above team average');
+    expect(cohortComparisonText({ ...row, cohort_wording: 'direction_aware' })).toBe('Closer than team average');
+  });
+
+  it('narrates the same wording in the aria label as the visible caption', () => {
+    const label = deriveAriaLabel({
+      metric_id: 'approach_proximity_175_plus_ft',
+      metric_label: 'Approach Proximity 175+ yd',
+      player_value: 49,
+      team_avg: 72,
+      team_n: 8,
+      pga_value: 45,
+      direction: 'lower_better',
+      unit: 'feet',
+      scale: { min: 35, max: 110 },
+      size: 'card',
+      cohort_wording: 'direction_aware',
+    });
+    expect(label).toContain('Closer than team average.');
+    expect(label).not.toContain('Above team average');
   });
 });

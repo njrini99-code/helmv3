@@ -91,6 +91,16 @@ export interface StandingBarProps {
   /** Show "Bottom 18% on your team" cohort text. Default: true. */
   show_cohort_text?: boolean;
 
+  /**
+   * Wording of the mean-relative "vs team average" caption. `'above_below'`
+   * (default) is "Above/Below team average" for every metric (NUM-13).
+   * `'direction_aware'` keeps that on higher-is-better metrics but says
+   * "Better/Worse than team average" on lower-is-better ones ("Closer/Farther
+   * than" for a proximity in feet), so "Above" never sits beside the smaller
+   * number. See `teamComparisonText`.
+   */
+  cohort_wording?: 'above_below' | 'direction_aware';
+
   /** Manual aria-label override. If omitted, derived from props. */
   ariaLabel?: string;
 

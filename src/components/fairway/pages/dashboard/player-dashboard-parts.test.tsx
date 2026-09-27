@@ -1,78 +1,106 @@
-/** player-dashboard-parts — TodayCard. (The SG radar teaser was removed, OD-08.) */
+/** player-dashboard-parts — TasksCard. (The SG radar teaser was removed, OD-08.) */
 import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
 
-import { TodayCard } from './player-dashboard-parts';
-import type {
-  TodayEvent,
-  ActionItem,
-} from '@/app/golf/actions/dashboard-data';
+import { TasksCard } from './player-dashboard-parts';
+import type { ActionItem } from '@/app/golf/actions/dashboard-data';
 
 /* ─────────────────────────────────────────────────────────────────────────
- * TodayCard — Wave 3 player-home premium pass (Nick's flagged element) +
- * the DaySchedule wave (Action center removal)
+ * TasksCard — formerly TodayCard (Wave 3 player-home premium pass, Nick's
+ * flagged element; then the DaySchedule wave removed the Action center).
  * ----------------------------------------------------------------------------
- * The old "What needs you" subtitle + populated "N thing(s) need(s) you"
- * preview row (a hero-style restatement of the SAME count the Action center
- * section used to show in full below it) is gone. The card's body always
- * shows the player's real today content — next event + lead task.
- *
- * The Action center section itself is also gone (replaced by the DaySchedule
- * card further down the page) — TodayCard no longer accepts a `hubSummary`
- * prop or gates a "See details" jump-link on it. The footer is now a single,
- * always-honest link straight to the full calendar.
+ * Deliberate contract change (390px screen baseline, 2026-09-27): Home had
+ * two "Today" sections. The schedule card said "Nothing scheduled, a clear
+ * day" while this card, also headed "Today", showed an overdue task. The
+ * schedule card now owns the day's events; this card is "Tasks" and shows
+ * only tasks, so it no longer renders an event row, no longer shows the
+ * "Nothing scheduled" empty line, and links to the task list instead of the
+ * calendar. The earlier invariants still hold: no restated "N thing(s)
+ * need(s) you" preview row, and no link to the removed #action-center anchor.
  * ──────────────────────────────────────────────────────────────────────── */
 
-const EVENT: TodayEvent = {
-  id: 'e1',
-  title: 'Team practice',
-  event_type: 'practice',
-  start_time: '2026-07-22T14:00:00.000Z',
-  end_time: null,
-  location: 'Range',
-};
-
-const TASK: ActionItem = {
+const OPEN_TASK: ActionItem = {
   id: 't1',
   type: 'task',
   title: 'Submit round',
-  date: '2026-07-22',
+  date: '2026-07-30',
   overdue: false,
 };
 
-describe('TodayCard — no restated "N thing(s) need(s) you" preview row', () => {
-  it('renders the real next event + lead task', () => {
-    render(<TodayCard events={[EVENT]} actionItems={[TASK]} />);
+// dashboard-data.ts sends an overdue task as type 'deadline'.
+const OVERDUE_TASK: ActionItem = {
+  id: 't2',
+  type: 'deadline',
+  title: 'Update yardage book',
+  date: '2026-07-20',
+  overdue: true,
+};
 
-    expect(screen.getByText('Team practice')).toBeInTheDocument();
+const ANNOUNCEMENT: ActionItem = {
+  id: 'a1',
+  type: 'announcement',
+  title: 'Bus leaves at 6am',
+  date: '2026-07-21',
+};
+
+describe('TasksCard — one task section, not a second "Today"', () => {
+  it('is headed "Tasks", never "Today"', () => {
+    render(<TasksCard actionItems={[OPEN_TASK]} />);
+
+    expect(screen.getByRole('heading', { name: 'Tasks' })).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Today' })).not.toBeInTheDocument();
+  });
+
+  it('leads with the overdue task and counts overdue tasks among the open ones', () => {
+    render(<TasksCard actionItems={[OPEN_TASK, OVERDUE_TASK]} />);
+
+    expect(screen.getByText('Update yardage book')).toBeInTheDocument();
+    expect(screen.queryByText('Submit round')).not.toBeInTheDocument();
+    expect(screen.getByText('Overdue · 2 open tasks')).toBeInTheDocument();
+  });
+
+  it('shows the next open task when nothing is overdue', () => {
+    render(<TasksCard actionItems={[OPEN_TASK]} />);
+
     expect(screen.getByText('Submit round')).toBeInTheDocument();
-    // The old preview copy must never render again, in any form.
+    expect(screen.getByText('Open')).toBeInTheDocument();
+  });
+
+  it('does not present an announcement as a task', () => {
+    render(<TasksCard actionItems={[ANNOUNCEMENT]} />);
+
+    expect(screen.queryByText('Bus leaves at 6am')).not.toBeInTheDocument();
+    expect(screen.getByText('No open tasks')).toBeInTheDocument();
+  });
+
+  it('shows one honest line when there are no tasks, never a schedule claim', () => {
+    render(<TasksCard actionItems={[]} />);
+
+    expect(screen.getByText('No open tasks')).toBeInTheDocument();
+    expect(screen.queryByText(/nothing scheduled/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/clear day/i)).not.toBeInTheDocument();
+  });
+
+  it('never renders the old "N thing(s) need(s) you" preview copy', () => {
+    render(<TasksCard actionItems={[OPEN_TASK, OVERDUE_TASK]} />);
+
     expect(screen.queryByText(/things? needs? you/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/what needs you/i)).not.toBeInTheDocument();
   });
-
-  it('shows the honest "Nothing scheduled" empty state when there is no local today content', () => {
-    render(<TodayCard events={[]} actionItems={[]} />);
-
-    expect(screen.getByText('Nothing scheduled')).toBeInTheDocument();
-    expect(screen.queryByText(/things? needs? you/i)).not.toBeInTheDocument();
-  });
 });
 
-describe('TodayCard — footer always links to the full calendar, never a stale in-page anchor', () => {
-  it('renders a "Full calendar" link regardless of today content', () => {
-    render(<TodayCard events={[EVENT]} actionItems={[TASK]} />);
-    const link = screen.getByRole('link', { name: /full calendar/i });
-    expect(link).toHaveAttribute('href', '/golf/dashboard/calendar');
-  });
+describe('TasksCard — links to the task list, never a stale in-page anchor', () => {
+  it('renders an "All tasks" link with or without tasks', () => {
+    const { unmount } = render(<TasksCard actionItems={[OPEN_TASK]} />);
+    expect(screen.getByRole('link', { name: /all tasks/i })).toHaveAttribute('href', '/golf/dashboard/tasks');
+    unmount();
 
-  it('still renders the calendar link in the honest-empty state (never a dead-end card)', () => {
-    render(<TodayCard events={[]} actionItems={[]} />);
-    expect(screen.getByRole('link', { name: /full calendar/i })).toBeInTheDocument();
+    render(<TasksCard actionItems={[]} />);
+    expect(screen.getByRole('link', { name: /all tasks/i })).toHaveAttribute('href', '/golf/dashboard/tasks');
   });
 
   it('never links to the removed #action-center anchor', () => {
-    render(<TodayCard events={[EVENT]} actionItems={[TASK]} />);
+    render(<TasksCard actionItems={[OPEN_TASK]} />);
     expect(screen.queryByRole('link', { name: /see details/i })).not.toBeInTheDocument();
   });
 });

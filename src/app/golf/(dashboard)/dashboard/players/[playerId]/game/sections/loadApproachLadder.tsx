@@ -41,6 +41,7 @@ export async function loadApproachLadder(
       .from('golf_rounds')
       .select('id')
       .eq('player_id', playerId)
+      .eq('is_test', false)
       .eq('status', 'completed')
       .gte('round_date', since);
     if (roundsError) throw roundsError;

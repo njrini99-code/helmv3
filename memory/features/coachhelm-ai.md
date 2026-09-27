@@ -82,6 +82,10 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
 - The performance predictor, composite rating, Game Fingerprint (including
   its SG metrics), team health categories and program pulse read countable
   rounds only (see "Countable rounds" in `memory/features/stats-analytics.md`).
+- Test rounds (OD-03, 2026-09-27): the CoachHelm display loaders
+  (`coachhelm-data.ts`, `insights.ts`, `player-fingerprint.ts`,
+  `shot-analytics.ts`) skip `golf_rounds.is_test` rounds. The engine, crons
+  and cached stats do not read the flag.
   Prediction bands wider than `MAX_PREDICTION_BAND_STROKES = 8` are not shown.
   The scoring trend (`getPlayerTrendAnalysis`) and the per-category SG trend
   (`fetchSgTrendsByCategory` → `computeSgTrends`) read countable rounds too,

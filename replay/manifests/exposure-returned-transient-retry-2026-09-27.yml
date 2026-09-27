@@ -1,0 +1,29 @@
+schema_version: 1
+replay_id: exposure-returned-transient-retry-2026-09-27
+incident_id: memory/incidents/coachhelm_ai/INC-2026-09-27-exposure-returned-fetch-failure.md
+feature_id: coachhelm_ai
+title: >-
+  recordInsightExposure retried only a THROWN fetch failure; postgrest-js
+  usually RESOLVES it as a typed error, so the exposure row was dropped and the
+  Bridge logged an error incident (f34bc102).
+bad_version: 1a326692d4da8f07eb6fa1e31f6c382b01788f18
+fixed_version: d856ec00bafb88af93bd9bb7c2393a74d69f3b17
+fixture:
+  - source: exposure-transient-retry.test.ts
+    target: src/lib/coachhelm/v3/effectiveness/exposure-transient-retry.test.ts
+test_command: "./node_modules/.bin/vitest run src/lib/coachhelm/v3/effectiveness/exposure-transient-retry.test.ts"
+expected:
+  bad_version: fail
+  fixed_version: pass
+expected_failure_mode: assertion
+sanitization:
+  reviewed: true
+  contains_production_data: false
+  notes: >-
+    Hand-written stub admin client and synthetic insight/player ids; the only
+    production-derived value is the error message text 'TypeError: fetch failed'.
+source_incident_status: fixed
+created_at: "2026-09-27"
+notes: >-
+  On bad_version two of three tests fail: the insert is called once, not twice
+  (no retry on the returned shape). The constraint-violation test passes on both.

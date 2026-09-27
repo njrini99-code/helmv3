@@ -543,20 +543,24 @@ function ClassPreviewRow({ klass }: { klass: TeamHubClass }) {
     .filter(Boolean)
     .join(' · ');
 
+  // The name gets the full row width and wraps to two lines; days · time sit
+  // under it. Side by side at 390px, the time squeezed the name down to a
+  // couple of letters ("C…"), so a course code couldn't be read.
   return (
-    <div className="flex items-center gap-3">
-      {/* Course color dot — the player's own per-class color, honestly shown. */}
+    <div className="flex items-start gap-3">
+      {/* Course color dot — the player's own per-class color, honestly shown.
+          mt-[5px] centres the 10px dot on the name's first 20px line. */}
       <span
         aria-hidden
-        className="h-2.5 w-2.5 flex-shrink-0 rounded-full ring-1 ring-inset ring-border-strong"
+        className="mt-[5px] h-2.5 w-2.5 flex-shrink-0 rounded-full ring-1 ring-inset ring-border-strong"
         style={{ backgroundColor: klass.color || 'var(--fw-color-accent-500)' }}
       />
-      <p className="min-w-0 flex-1 truncate font-fw-sans text-body-sm font-medium text-text-primary">
-        {klass.class_name}
-      </p>
-      {when ? (
-        <span className="flex-shrink-0 font-fw-mono text-caption text-text-tertiary">{when}</span>
-      ) : null}
+      <div className="min-w-0 flex-1">
+        <p className="line-clamp-2 break-words font-fw-sans text-body-sm font-medium text-text-primary">
+          {klass.class_name}
+        </p>
+        {when ? <p className="font-fw-mono text-caption text-text-tertiary">{when}</p> : null}
+      </div>
     </div>
   );
 }

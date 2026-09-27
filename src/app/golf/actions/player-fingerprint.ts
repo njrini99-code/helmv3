@@ -245,6 +245,7 @@ async function getPlayerFingerprintImpl(
         'id, round_date, total_score, score_to_par, course_name, holes_played, round_type, status, front_nine, back_nine, total_putts',
       )
       .eq('player_id', playerId)
+      .eq('is_test', false)
       .eq('status', 'completed')
       .not('total_score', 'is', null)
       .order('round_date', { ascending: false })
@@ -281,6 +282,7 @@ async function getPlayerFingerprintImpl(
         .from('golf_rounds')
         .select('id, round_date, status, holes_played, total_score, score_to_par, front_nine, back_nine, total_putts')
         .eq('player_id', playerId)
+        .eq('is_test', false)
         .eq('status', 'completed')
         .order('round_date', { ascending: false })
         .order('id', { ascending: true })

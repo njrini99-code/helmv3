@@ -418,6 +418,7 @@ export default async function PlayerGamePage({
       .from('golf_rounds')
       .select('id, created_at, round_date, total_score, holes_played, course_name, score_to_par, total_fairways_hit, total_gir, total_putts, total_fairways, total_gir_possible')
       .eq('player_id', playerId)
+      .eq('is_test', false)
       .not('total_score', 'is', null)
       .order('round_date', { ascending: false })
       .limit(10),

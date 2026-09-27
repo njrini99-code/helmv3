@@ -48,3 +48,29 @@ describe('CourseCard', () => {
     expect(onSelect).toHaveBeenCalledWith('c1');
   });
 });
+
+// Screen baseline 2026-09-27: "PGA National - Champ" (no city/state) printed
+// only its tee count where every sibling row printed a location.
+describe('CourseCard — missing location', () => {
+  const noCityState = { ...course, name: 'PGA National - Champ', city: null, state: '   ' } as GolfCourse;
+
+  it('falls back to the country when there is no city or state', () => {
+    render(<CourseCard variant="row" course={{ ...noCityState, country: ' USA ' }} teeCount={1} />);
+    expect(screen.getByText('USA')).toBeInTheDocument();
+    expect(screen.queryByText('Location not set')).not.toBeInTheDocument();
+  });
+
+  it.each(['row', 'standard'] as const)(
+    '%s variant: keeps the location slot with a "Location not set" placeholder',
+    (variant) => {
+      render(<CourseCard variant={variant} course={noCityState} teeCount={1} />);
+      expect(screen.getByText('Location not set')).toBeInTheDocument();
+      expect(screen.getByText(/1 tee/)).toBeInTheDocument();
+    },
+  );
+
+  it('featured variant: omits the location line over the photo', () => {
+    render(<CourseCard variant="featured" course={noCityState} />);
+    expect(screen.queryByText('Location not set')).not.toBeInTheDocument();
+  });
+});

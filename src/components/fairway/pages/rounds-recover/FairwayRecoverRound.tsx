@@ -610,6 +610,9 @@ export function FairwayRecoverRound({ playerId }: FairwayRecoverRoundProps) {
         eyebrow="Recover Round"
         title="Restore an unfinished round."
         description="Progress saved on this device after an interruption or a failed submit appears here. Restore it without re-entering shots."
+        // The description says what this screen finds; a phone's one-line
+        // clamp cut it to "…or a fail…".
+        fullDescription
         meta={
           count > 0 ? (
             <span className="tabular-nums">{count} recoverable {count === 1 ? 'round' : 'rounds'}</span>

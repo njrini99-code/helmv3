@@ -229,15 +229,20 @@ export function RosterHealthHeader({
                     the avg stat + "Add focus area" are its trailing affordances.
                     LAYOUT-01: below 360px the action stacks under the name, so
                     the name is not cut to four letters and the reason does not
-                    run into the button. */}
+                    run into the button. The reason WRAPS rather than ellipsizing:
+                    at 390px the row next to "Add focus area" left it
+                    "Trending down · n…" on the Roster page and "Trending do…"
+                    on the narrower CoachHelm Players view. Balanced wrapping
+                    breaks a two-part reason at its separator. */}
                 <div className="flex flex-col gap-1.5 min-[360px]:flex-row min-[360px]:items-center min-[360px]:gap-3">
                   <PlayerIdentity
                     name={playerName(row.player)}
                     avatarUrl={row.player.avatar_url}
                     size="sm"
                     className="min-[360px]:flex-1"
+                    wrapMeta
                     meta={
-                      <span className="font-fw-sans text-caption font-medium text-fw-warning-ink">
+                      <span className="block font-fw-sans text-caption font-medium text-fw-warning-ink [text-wrap:balance]">
                         {reason}
                       </span>
                     }

@@ -437,14 +437,16 @@ function DemoGateContent() {
             )}
           </m.div>
 
-          {/* Footer */}
+          {/* Footer. On a phone these lines land on the course scene's trees,
+              so they sit on the same opaque readability panel as the footer
+              of signup/page.tsx instead of directly on the illustration. */}
           <m.div
             initial={prefersReducedMotion ? false : { opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={motionStagger(0.25)}
-            className="mt-6 flex flex-col items-center gap-3"
+            className="mx-auto mt-5 sm:mt-6 flex w-fit max-w-full flex-col items-center gap-3 rounded-card bg-surface/95 px-4 py-3 shadow-sm ring-1 ring-border-subtle backdrop-blur-sm"
           >
-            <p className="text-warm-600 text-sm">
+            <p className="text-text-secondary text-sm">
               Already have an account?{' '}
               <Link
                 href="/golf/login"

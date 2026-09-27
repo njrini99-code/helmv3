@@ -78,6 +78,24 @@ still use `getPlayerStatsDashboardBundle`.
 ## Business Rules
 
 - Round and shot data remain the source of truth; cached stats are derived.
+- Test data (OD-03, 2026-09-27): rounds with `golf_rounds.is_test = true` are
+  QA/demo rows. Every player- and coach-facing stats read in `stats-data.ts`,
+  `stats-leak-maps.ts`, `shot-analytics.ts`, `stats.ts`,
+  `stats-intelligence.ts`, `player-profile-stats.ts` and the team-stats page
+  filters `.eq('is_test', false)`; shots and holes follow the filtered round
+  ids. `golf_player_stats_cache` does not read the flag yet, so cached
+  aggregates still include flagged rounds.
+- Putt leak-map bands (`stats-leak-maps.ts`) are upper-inclusive: "3-5 ft" is
+  (3, 5], the same edges as the cache writer (`putt_make_pct_3_5ft`) and the
+  calculator's `getPuttDistanceBucket`, so the chart and the Putting-by-distance
+  table agree. Approach bands still use `bandFor`'s [min, max).
+- Standing's vs-team caption can be direction-aware (StandingBar opt-in
+  `cohort_wording: 'direction_aware'`): Closer/Farther for distances in feet,
+  Better/Worse for other lower-is-better stats. The default stays Above/Below
+  (NUM-13). The stats Standing drill opts in.
+- The rounds list's scoring trend uses `computeScoringTrendFromRounds`
+  (`src/lib/golf/scoring-trend.ts`), like Team Stats and the CoachHelm Players
+  table; its KPI tiles and "Scoring trend" pill read that one verdict.
 - `recalculate_round_strokes_gained` is the protected derived-write path for
   completed rounds. It may change only the five stored strokes-gained fields;
   it must never require a general exception to completed-round immutability.

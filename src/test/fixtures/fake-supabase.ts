@@ -50,6 +50,19 @@ interface QueryState {
   rangeTo?: number;
 }
 
+// NOT NULL column defaults the real schema fills in, so fixture rows that omit
+// the column still match a filter on it (e.g. `.eq('is_test', false)`, OD-03).
+const COLUMN_DEFAULTS: Record<string, Row> = {
+  golf_rounds: { is_test: false },
+  golf_teams: { is_test: false },
+  golf_players: { is_test: false },
+  golf_qualifiers: { is_test: false },
+};
+
+function cell(table: string, row: Row, col: string): unknown {
+  return col in row ? row[col] : COLUMN_DEFAULTS[table]?.[col];
+}
+
 function applyState(rows: Row[], state: QueryState): Row[] {
   let result = rows.filter((row) => state.filters.every((f) => f(row)));
   if (state.orderBy) {
@@ -93,11 +106,13 @@ class QueryBuilder<T = Row> implements PromiseLike<{ data: T[]; error: unknown }
     return this;
   }
   eq(col: string, value: unknown): this {
-    this.state.filters.push((row) => row[col] === value);
+    const { table } = this.state;
+    this.state.filters.push((row) => cell(table, row, col) === value);
     return this;
   }
   neq(col: string, value: unknown): this {
-    this.state.filters.push((row) => row[col] !== value);
+    const { table } = this.state;
+    this.state.filters.push((row) => cell(table, row, col) !== value);
     return this;
   }
   in(col: string, values: unknown[]): this {

@@ -160,8 +160,8 @@ items:
     incident_id: memory/incidents/golf_round_lifecycle/INC-2026-09-25-player-lookup-pgrst116.md
     status: verified
     risk: R2
-    sha: 67d2f727f6c9599f8b51b9f5d125d65487dde615
-    pr: null
+    sha: d3e954f0135cf5149b15b97335d7e9f02632240b
+    pr: 2074
     regression_tests:
       - src/app/golf/actions/__tests__/player-lookup-maybe-single.test.ts
     queued_for_release: false
@@ -176,7 +176,7 @@ items:
     incident_id: memory/incidents/coachhelm_ai/INC-2026-09-26-validation-cron-rounds-n-plus-one.md
     status: verified
     risk: R1
-    sha: f29f86d50
+    sha: 8abeccd2a17da87c89554c523ddb5676e9ee7045
     pr: 2077
     regression_tests:
       - src/lib/coachhelm/v2/learning/__tests__/outcome-validator.prefetch.test.ts
@@ -193,7 +193,7 @@ items:
     incident_id: memory/incidents/coachhelm_ai/INC-2026-09-26-safety-net-coverage-n-plus-one.md
     status: verified
     risk: R1
-    sha: 6ef000d89
+    sha: 53a2f02fe8c4a38f9e4bf6a89716ad8cc8435606
     pr: 2078
     regression_tests:
       - src/test/api/cron/coachhelm-safety-net-reconcile.test.ts
@@ -209,7 +209,7 @@ items:
     incident_id: memory/incidents/admin_platform/INC-2026-09-27-bridge-merged-dev-sentry-issues.md
     status: verified
     risk: R1
-    sha: 7538f032e
+    sha: b4f95df96cfe29cf7cdcd3847cc3aa1db51fa131
     pr: 2079
     regression_tests:
       - src/lib/admin/data/__tests__/incident-feed.sentry-environment.test.ts
@@ -240,9 +240,25 @@ items:
     incident_id: memory/incidents/admin_selfheal/INC-2026-09-27-retired-triage-runner-paints-loop-red.md
     status: verified
     risk: R1
-    sha: 2bb8e2202a5e631adf7caf3bc860de3148478abb
-    pr: null
+    sha: 1a326692d4da8f07eb6fa1e31f6c382b01788f18
+    pr: 2081
     regression_tests:
       - src/lib/admin/__tests__/selfheal-registry.test.ts
     queued_for_release: false
     first_seen: '2026-09-25T09:05:00Z'
+  - id: exposure-returned-transient-retry-2026-09-27
+    feature_id: coachhelm_ai
+    root_cause: >-
+      recordInsightExposure retried only a thrown fetch failure; postgrest-js
+      resolves a network blip as a typed 'TypeError: fetch failed' error, which
+      skipped the retry, dropped the exposure rows and logged a Bridge error
+      (f34bc102).
+    incident_id: memory/incidents/coachhelm_ai/INC-2026-09-27-exposure-returned-fetch-failure.md
+    status: verified
+    risk: R1
+    sha: d856ec00bafb88af93bd9bb7c2393a74d69f3b17
+    pr: null
+    regression_tests:
+      - src/lib/coachhelm/v3/effectiveness/exposure-transient-retry.test.ts
+    queued_for_release: false
+    first_seen: '2026-09-14T07:31:01Z'

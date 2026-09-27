@@ -30,8 +30,12 @@ export interface NumberFieldProps
   className?: string;
 }
 
+// No `h-full`: a percentage height against the Group's auto height is not
+// `auto`, so it switched off the Group's `items-stretch` and the buttons shrank
+// to glyph height at the top of the field, with the +/- sitting higher than
+// the number. Stretched, they fill the field and centre their glyph.
 const stepperClasses = cn(
-  "flex h-full w-9 shrink-0 select-none items-center justify-center",
+  "flex w-9 shrink-0 select-none items-center justify-center",
   "text-text-secondary",
   "transition-colors [transition-duration:var(--fw-dur-fast)] [transition-timing-function:var(--fw-ease-soft)]",
   "hover:bg-accent-50 hover:text-accent-700",

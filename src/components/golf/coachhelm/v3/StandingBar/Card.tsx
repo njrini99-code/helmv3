@@ -29,7 +29,7 @@ import {
   unitHardBounds,
   shouldShowTeamMarker,
   standingSubjectLabel,
-  teamRelativeText,
+  cohortComparisonText,
   toScalePct,
 } from './utils';
 import { EASE_CINEMATIC, DURATION, useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
@@ -73,7 +73,7 @@ export function Card(props: CardProps) {
   // renders (team_n>=5 && team_avg!=null). On a tiny roster the comparison is
   // statistical noise, so we suppress the caption alongside the hidden marker.
   const cohortText = showTeam
-    ? teamRelativeText(props.player_value, props.team_avg, props.direction, props.unit)
+    ? cohortComparisonText(props)
     : '';
   const refLabel = pgaReferenceLabel(props.metric_id, props.is_womens).short;
   const omissionNote = pgaOmissionNote(props);

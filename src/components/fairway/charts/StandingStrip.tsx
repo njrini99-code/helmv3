@@ -31,7 +31,7 @@ import {
   toScalePct,
   formatValue,
   deltaVsTeam,
-  teamRelativeText,
+  cohortComparisonText,
   deriveState,
   shouldShowTeamMarker,
   deriveAriaLabel,
@@ -120,13 +120,11 @@ export function StandingStrip(props: StandingStripProps) {
   // `teamRelativeText`, the same mean-relative helper Card/Inline/Hero use,
   // so value + arrow + caption always agree. Gate on the SAME team_n>=5 floor
   // the team marker uses (`showTeam`), so we never narrate a comparison we
-  // won't draw.
+  // won't draw. `cohort_wording: 'direction_aware'` swaps only the words
+  // ("Closer than team average" on a proximity), never the verdict.
   const cohortText =
     props.show_cohort_text !== false && showTeam
-      ? neutralizeForCoach(
-          teamRelativeText(props.player_value, props.team_avg, props.direction, props.unit),
-          props.viewer_context,
-        )
+      ? neutralizeForCoach(cohortComparisonText(props), props.viewer_context)
       : '';
   // Bug #915: the hero marker/readout is labeled "You" for a player's own
   // view, but a coach reading a teammate's card sees the player's initials
