@@ -36,10 +36,10 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | --- | --- | --- | --- | --- |
 | `POLICY` | 19 | 2 | 6 | 0 |
 | `AGENT_SKILL` | 90 | 0 | 7 | 0 |
-| `CURRENT_FEATURE` | 27 | 27 | 13 | 3 |
-| `REFERENCE` | 52 | 15 | 19 | 1 |
+| `CURRENT_FEATURE` | 27 | 27 | 13 | 0 |
+| `REFERENCE` | 52 | 15 | 19 | 0 |
 | `GENERATED_TRUTH` | 20 | 3 | 6 | 4 |
-| `PROCESS_CONTRACT` | 8 | 4 | 7 | 2 |
+| `PROCESS_CONTRACT` | 8 | 4 | 7 | 0 |
 | `RUNBOOK` | 5 | 2 | 1 | 0 |
 | `DESIGN_SPEC` | 7 | 0 | 6 | 0 |
 | `PLAN` | 37 | 5 | 18 | 74 |
@@ -185,7 +185,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `memory/features/auth-onboarding-join.md` | current | yes | - | - | - |
 | `memory/features/calendar-events.md` | current | yes | - | yes | - |
 | `memory/features/coach-intelligence-triage.md` | current | yes | - | yes | - |
-| `memory/features/coachhelm-ai.md` | current | yes | - | yes | 1 |
+| `memory/features/coachhelm-ai.md` | current | yes | - | yes | - |
 | `memory/features/crm_outreach.md` | current | yes | - | - | - |
 | `memory/features/email_outbound.md` | current | yes | - | - | - |
 | `memory/features/golf-round-lifecycle.md` | current | yes | - | yes | - |
@@ -193,7 +193,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `memory/features/observability-sentry.md` | current | yes | - | - | - |
 | `memory/features/observability-supabase.md` | current | yes | - | yes | - |
 | `memory/features/player-coachhelm-development.md` | current | yes | - | yes | - |
-| `memory/features/player-hub.md` | current | yes | - | yes | 2 |
+| `memory/features/player-hub.md` | current | yes | - | yes | - |
 | `memory/features/qualifiers.md` | current | yes | - | yes | - |
 | `memory/features/recruiting.md` | current | yes | - | - | - |
 | `memory/features/roster-team.md` | current | yes | - | - | - |
@@ -252,7 +252,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `memory/context/baseballhelm-database.md` | current | yes | - | yes | - |
 | `memory/context/baseballhelm-features.md` | current | yes | - | yes | - |
 | `memory/context/baseballhelm-workflows.md` | current | - | - | yes | - |
-| `memory/context/coachhelm-ai.md` | current | yes | - | yes | 1 |
+| `memory/context/coachhelm-ai.md` | current | yes | - | yes | - |
 | `memory/context/engineering-methodology.md` | current | yes | - | yes | - |
 | `memory/context/golfhelm-features.md` | historical | - | - | yes | - |
 | `memory/prompts/docs-update.md` | current | - | - | - | - |
@@ -294,7 +294,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/ai-system/selfheal/repair-contract.md` | current | yes | - | yes | - |
 | `docs/ai-system/selfheal/triage-contract.md` | current | yes | - | yes | - |
 | `docs/architecture/coachhelm-evidence-contract.md` | current | yes | - | yes | - |
-| `docs/superpowers/plans/2026-04-22-insight-delivery/00-design-contract.md` | superseded | - | - | yes | 2 |
+| `docs/superpowers/plans/2026-04-22-insight-delivery/00-design-contract.md` | superseded | - | - | yes | - |
 | `docs/superpowers/plans/2026-04-22-insight-quality/00-design-contract.md` | superseded | - | - | yes | - |
 | `memory/system/golfhelm-engineering-os.md` | current | - | - | yes | - |
 | `memory/templates/ui-contract.md` | current | - | - | - | - |
