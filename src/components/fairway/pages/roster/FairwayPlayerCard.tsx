@@ -163,7 +163,7 @@ export function FairwayPlayerCard({ player, intent }: FairwayPlayerCardProps) {
 
       {/* Anchor stat */}
       <div className="px-5 pb-3 md:px-6">
-        <div className="flex items-baseline justify-between gap-3 rounded-fw-md bg-surface-sunken px-5 py-4">
+        <div className="flex items-baseline justify-between gap-3 rounded-fw-md bg-surface-tile px-5 py-4">
           <div className="flex flex-col gap-0.5">
             <div className="flex items-center gap-2">
               <p className="font-fw-sans text-caption font-medium uppercase tracking-wide text-text-tertiary">Avg score</p>
@@ -197,7 +197,7 @@ export function FairwayPlayerCard({ player, intent }: FairwayPlayerCardProps) {
           surfaced at the list level so a coach doesn't have to open every
           player individually to triage the team. */}
       <div className="grid grid-cols-3 gap-2 px-5 pb-4 md:px-6">
-        <div className="min-w-0 rounded-fw-md bg-surface-sunken px-3 py-2.5">
+        <div className="min-w-0 rounded-fw-md bg-surface-tile px-3 py-2.5">
           <p className="font-fw-sans text-caption text-text-tertiary">SG:Total</p>
           <p
             className={cn(
@@ -218,7 +218,7 @@ export function FairwayPlayerCard({ player, intent }: FairwayPlayerCardProps) {
             </p>
           ) : null}
         </div>
-        <div className="flex min-w-0 flex-col justify-center gap-1 rounded-fw-md bg-surface-sunken px-3 py-2.5">
+        <div className="flex min-w-0 flex-col justify-center gap-1 rounded-fw-md bg-surface-tile px-3 py-2.5">
           <p className="font-fw-sans text-caption text-text-tertiary">Focus</p>
           {player.active_focus_areas ? (
             // `whitespace-normal` deliberately overrides Badge's built-in
@@ -237,7 +237,7 @@ export function FairwayPlayerCard({ player, intent }: FairwayPlayerCardProps) {
             <span className="font-fw-sans text-caption text-text-tertiary">None yet</span>
           )}
         </div>
-        <div className="flex min-w-0 flex-col justify-center gap-1 rounded-fw-md bg-surface-sunken px-3 py-2.5">
+        <div className="flex min-w-0 flex-col justify-center gap-1 rounded-fw-md bg-surface-tile px-3 py-2.5">
           <p className="font-fw-sans text-caption text-text-tertiary">Goals</p>
           {player.active_goals ? (
             <Badge tone="accent" size="sm" numeric className="w-fit whitespace-normal">

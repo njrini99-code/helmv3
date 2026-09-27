@@ -147,7 +147,8 @@
      are a soft SAGE green. Text stays dark warm ink (owner: no green text). */
   --fw-color-surface:        oklch(0.972 0.022 84);  /* #fdf5e6 THE card: vintage cream (old lace), not white */
   --fw-color-surface-tint:   oklch(0.945 0.045 84);  /* #fbebcb a TOASTED vintage band — hero plinths */
-  --fw-color-surface-sunken: oklch(0.915 0.03 128);  /* #dde7d2 soft SAGE wells, tiles, insets, input tracks */
+  --fw-color-surface-sunken: oklch(0.935 0.03 83);   /* a deeper vintage cream: wells, insets, input tracks, toggle tracks, row highlights (owner: no green highlights) */
+  --fw-color-surface-tile:   oklch(0.915 0.03 128);  /* #dde7d2 soft SAGE stat tiles (roster card) */
   --fw-color-elevated:       oklch(0.975 0.030 88);  /* #fff6e1 menus / popovers / modal body — the lightest vintage cream */
 
   /* Loading blocks. NOT `surface-sunken`: that well is 1.06:1 against the card
@@ -518,6 +519,7 @@
   --fw-color-surface:        oklch(0.275 0.005 150);  /* THE card — lifts off canvas */
   --fw-color-surface-tint:   oklch(0.305 0.006 150);  /* hero plinth — a touch lighter */
   --fw-color-surface-sunken: oklch(0.130 0.003 150);  /* wells / insets / input tracks — recede below canvas */
+  --fw-color-surface-tile:   var(--fw-color-surface-sunken);
   --fw-color-elevated:       oklch(0.335 0.006 150);  /* menus / popovers / modal body — brightest, most lifted */
 
   /* The dark twin. Lifts ABOVE the card (the light one sits below it): on a
