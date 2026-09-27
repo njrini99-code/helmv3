@@ -15,7 +15,16 @@
 -- query-site list). No RLS change: the column is covered by each table's
 -- existing row policies, and no policy reads it.
 --
--- Rollback: ALTER TABLE ... DROP COLUMN is_test; (no data depends on it).
+-- ROLLBACK: drop the four columns (no data depends on them):
+-- ROLLBACK:   ALTER TABLE public.golf_rounds DROP COLUMN is_test;
+-- ROLLBACK:   ALTER TABLE public.golf_teams DROP COLUMN is_test;
+-- ROLLBACK:   ALTER TABLE public.golf_players DROP COLUMN is_test;
+-- ROLLBACK:   ALTER TABLE public.golf_qualifiers DROP COLUMN is_test;
+-- VERIFY: select 1 from information_schema.columns
+-- VERIFY:  where table_schema = 'public' and column_name = 'is_test'
+-- VERIFY:    and table_name in ('golf_rounds', 'golf_teams',
+-- VERIFY:                       'golf_players', 'golf_qualifiers')
+-- VERIFY: having count(*) = 4;
 
 ALTER TABLE public.golf_rounds
 ADD COLUMN IF NOT EXISTS is_test boolean NOT NULL DEFAULT false;

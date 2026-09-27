@@ -8,6 +8,10 @@
 -- below refuses to run unless each live function body is exactly the one this
 -- file was built from:
 --   refresh_player_standing               md5 69ee2ec456e3847986ba314e7eeb094c (live 2026-09-25)
+--     or c01b5eb05424e4e29f7613e43f88c2d5, the same function as written in
+--     20260609170000_v3_gender_scoped_level_cohort.sql. The two differ only in
+--     comments and whitespace (both normalize to 4bace7f87e7ee205b290632b2de0b001,
+--     checked 2026-09-27), so a database built from the migration history passes.
 --   refresh_player_standing_round_metrics md5 e014336d66939113f5dfcb07954bca28 (NUM-24's body)
 --   refresh_player_standing_shot_metrics  md5 549c46300dc9156d103142ecb4cc6ff5 (live 2026-09-25)
 -- Without the check, applying this before NUM-24 would replace the live
@@ -60,7 +64,9 @@
 DO $guard$
 DECLARE
   v_expected constant text[][] := ARRAY[
-    ['refresh_player_standing',               '69ee2ec456e3847986ba314e7eeb094c'],
+    -- Production body | migration-history body (same logic; see header).
+    ['refresh_player_standing',
+     '69ee2ec456e3847986ba314e7eeb094c|c01b5eb05424e4e29f7613e43f88c2d5'],
     ['refresh_player_standing_round_metrics', 'e014336d66939113f5dfcb07954bca28'],
     ['refresh_player_standing_shot_metrics',  '549c46300dc9156d103142ecb4cc6ff5']
   ];
@@ -71,7 +77,8 @@ BEGIN
     SELECT p.prosrc INTO v_src
       FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
      WHERE n.nspname = 'public' AND p.proname = v_expected[v_i][1];
-    IF v_src IS NULL OR md5(v_src) <> v_expected[v_i][2] THEN
+    IF v_src IS NULL
+       OR NOT (md5(v_src) = ANY (string_to_array(v_expected[v_i][2], '|'))) THEN
       RAISE EXCEPTION 'team pct floor: live % is not the body this file was built from (md5 %). Apply OD-01 and NUM-24 first, or rebase this file on the live body.',
         v_expected[v_i][1], md5(v_src);
     END IF;
