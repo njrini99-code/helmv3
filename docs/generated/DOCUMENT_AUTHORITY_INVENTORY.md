@@ -38,7 +38,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `AGENT_SKILL` | 90 | 0 | 7 | 0 |
 | `CURRENT_FEATURE` | 27 | 27 | 13 | 3 |
 | `REFERENCE` | 52 | 15 | 19 | 1 |
-| `GENERATED_TRUTH` | 20 | 3 | 6 | 4 |
+| `GENERATED_TRUTH` | 22 | 3 | 6 | 4 |
 | `PROCESS_CONTRACT` | 8 | 4 | 7 | 2 |
 | `RUNBOOK` | 5 | 2 | 1 | 0 |
 | `DESIGN_SPEC` | 7 | 0 | 6 | 0 |
@@ -46,7 +46,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `AUDIT_SNAPSHOT` | 57 | 6 | 31 | 25 |
 | `STATE_SNAPSHOT` | 6 | 2 | 5 | 0 |
 | `HISTORY_LEDGER` | 41 | 0 | 7 | 19 |
-| `INCIDENT` | 32 | 15 | 2 | 2 |
+| `INCIDENT` | 37 | 15 | 2 | 2 |
 | `ADR` | 5 | 0 | 3 | 0 |
 | `INDEX` | 19 | 1 | 7 | 5 |
 | `UNKNOWN` | 93 | 12 | 39 | 76 |
@@ -274,6 +274,8 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/generated/HELM_FEATURE_MAP.md` | generated | - | - | - | - |
 | `docs/generated/RETRIEVAL_BENCH.md` | generated | - | - | - | - |
 | `docs/generated/WORLD_MODEL.md` | generated | - | - | - | - |
+| `docs/generated/WORLD_MODEL.md` | generated | - | - | - | - |
+| `docs/generated/WORLD_MODEL.md` | generated | - | - | - | - |
 | `docs/generated/contracts/README.md` | generated | - | - | - | - |
 | `docs/generated/contracts/admin_platform.md` | generated | - | - | yes | 4 |
 | `docs/generated/contracts/coachhelm_ai.md` | generated | - | - | - | - |
@@ -489,7 +491,10 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `memory/incidents/admin_platform/INC-2026-07-29-postgres-wedge-took-down-every-route.md` | current | - | - | - | - |
 | `memory/incidents/admin_platform/INC-2026-08-26-error-rate-hourly-never-written.md` | current | - | - | - | - |
 | `memory/incidents/admin_platform/INC-2026-08-27-swallowed-cron-failure-invisible-to-bridge.md` | current | - | - | - | - |
+| `memory/incidents/admin_platform/INC-2026-09-27-bridge-merged-dev-sentry-issues.md` | current | - | - | - | - |
 | `memory/incidents/calendar_events/INC-2026-09-23-coach-invitees-deny-conflict-check.md` | current | - | - | - | - |
+| `memory/incidents/coachhelm_ai/INC-2026-09-26-safety-net-coverage-n-plus-one.md` | current | - | - | - | - |
+| `memory/incidents/coachhelm_ai/INC-2026-09-26-validation-cron-rounds-n-plus-one.md` | current | - | - | - | - |
 | `memory/incidents/feature_awareness_system/INC-2026-08-16-parallel-agents-shared-tree.md` | current | yes | - | yes | 1 |
 | `memory/incidents/feature_awareness_system/INC-2026-08-18-worktrees-inside-repo-duplicate-tree.md` | current | yes | - | - | 1 |
 | `memory/incidents/feature_awareness_system/INC-2026-08-19-codeql-matrix-rename-phantom-checks.md` | current | yes | - | - | - |
@@ -505,12 +510,14 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `memory/incidents/feature_awareness_system/INC-2026-09-04-mcp-namespace-policy-contradiction.md` | current | yes | - | - | - |
 | `memory/incidents/feature_awareness_system/INC-2026-09-04-sandboxed-dev-server-false-ready.md` | current | yes | - | - | - |
 | `memory/incidents/feature_awareness_system/INC-2026-09-04-surface-registry-miscategorized-as-generated.md` | current | yes | - | yes | - |
+| `memory/incidents/feature_awareness_system/INC-2026-09-26-ledger-vs-catalog-false-drift.md` | current | - | - | - | - |
 | `memory/incidents/golf_round_lifecycle/INC-2026-08-19-assistant-coach-cascade-delete-round-history.md` | current | - | - | - | - |
 | `memory/incidents/golf_round_lifecycle/INC-2026-08-25-completed-round-sg-capability.md` | current | - | - | - | - |
 | `memory/incidents/golf_round_lifecycle/INC-2026-08-25-nondestructive-submit-and-checkpoint-fallback.md` | current | - | - | - | - |
 | `memory/incidents/golf_round_lifecycle/INC-2026-08-25-recap-persist-schema-permission.md` | current | - | - | - | - |
 | `memory/incidents/golf_round_lifecycle/INC-2026-08-30-account-deletion-still-cascades-golf-history.md` | current | - | - | - | - |
 | `memory/incidents/golf_round_lifecycle/INC-2026-09-16-course-state-two-letter-rejection.md` | current | - | - | - | - |
+| `memory/incidents/golf_round_lifecycle/INC-2026-09-25-player-lookup-pgrst116.md` | current | - | - | - | - |
 | `memory/incidents/player_coachhelm_development/INC-2026-09-24-page-read-ran-insight-generators.md` | current | - | - | - | - |
 | `memory/incidents/qualifiers/INC-2026-08-22-end-date-closed-qualifier-early.md` | current | - | - | - | - |
 | `memory/incidents/shot_tracking/INC-2026-08-22-confirmed-snapshot-recovery-prompt.md` | current | - | - | - | - |

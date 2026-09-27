@@ -75,6 +75,7 @@ import type {
   ReasoningResult,
 } from './types';
 import { describeError, toDbErrorMetadata } from '@/lib/utils/describe-error';
+import { runTier1Generators } from './tier1-runner';
 
 interface RoundReviewShotRow {
   hole_number: number;
@@ -454,8 +455,12 @@ class CoachHelmIntelligence {
     // 2026-05-24 Wave 8 — runWithGate now returns metrics. The gated-out
     // count is stashed on `tier1GateMetrics` so it can be returned from
     // analyzePlayer alongside `generatorSummary` for caller-side logging.
-    const runTier1 = () =>
-      Promise.allSettled(tier1Generators.map((g) => g.fn()));
+    //
+    // 2026-09-24 (#2061): at most TIER1_GENERATOR_CONCURRENCY in flight
+    // instead of all ~21 at once, each retried ONCE on a transient database
+    // fault — see tier1-runner.ts. Same settled-array contract as the
+    // Promise.allSettled it replaces.
+    const runTier1 = () => runTier1Generators(tier1Generators);
     let tier1Settled: PromiseSettledResult<unknown>[];
     let tier1GateMetrics: { gatedCount: number } | null = null;
     if (options.philosophyGate) {

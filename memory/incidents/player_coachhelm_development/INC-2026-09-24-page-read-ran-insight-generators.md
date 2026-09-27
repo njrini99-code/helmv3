@@ -3,7 +3,7 @@
 - Feature: `player_coachhelm_development`
 - Also affects: `coachhelm_ai`
 - Surface: `player_coachhelm_dashboard`
-- Status: REPAIRED IN PR (agent/coachhelm-read-no-generators) — awaiting deploy and a quiet proof window
+- Status: REPAIRED — primary fix merged in #2068 (`dd9d417e9`), hardening in the 2026-09-25 health-routine PR; both awaiting deploy and a quiet proof window (production `6ee77e98` does not carry them)
 - Risk: R1 — performance/availability; no schema, RLS, auth or billing change
 - First seen: 2026-09-24T00:50Z; last seen 2026-09-24T01:41Z
 - Bridge fingerprints (one root cause): `57d84dd1` (166 stale-writer CAS backoffs),
@@ -66,3 +66,27 @@ The shot reads are slower than they need to be: `golf_shots_select` evaluates an
 per-row subplan), and there is no `(round_id, shot_type)` index, so a putting
 read BitmapAnds against the 22k-entry `shot_type` index once per round. Both
 are RLS/migration changes and need the owner's review.
+
+## Hardening (2026-09-25, desktop health routine)
+
+The #2068 fix removes the trigger. These changes stop any future unbounded
+reader from saturating the pool the same way, and keep the Bridge legible if
+one does. They were authored by an earlier session on
+`agent/bridge-error-fixes` and left unpushed for 13h; the health routine
+cherry-picked them unchanged and ran the gates.
+
+- `src/lib/supabase/bounded-query.ts`: `isTransientDbError`,
+  `mapWithConcurrency`, `retryTransientOnce` (one retry, never on a
+  non-transient failure).
+- `src/lib/coachhelm/v2/tier1-runner.ts`: `analyzePlayer` runs at most 4
+  generators in flight, each retried once on a transient fault.
+  `generateAlerts` analyzes at most 4 players at once.
+- `src/lib/server-error-logger.ts`: identical saturation-class rows
+  (57014 / PGRST002 / PGRST003 / 53300) write at most once per fingerprint
+  per 60s per process, carrying `collapsed_count`; Sentry still gets every
+  occurrence.
+- `src/lib/admin/incidents/present.ts` + `event-error-code.ts`: PGRST002,
+  statement-timeout and schema-cache rows get a named signature instead of
+  "signature unavailable".
+- "Round setup restored after reload" is the recovery path working and is
+  now an info log, not `logError`.

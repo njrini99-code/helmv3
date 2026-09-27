@@ -306,6 +306,86 @@ export function selectValidationRound<T extends RoundOutcomeRow>(
   return eligible[0]?.r ?? null;
 }
 
+/** Columns `resolveActualValue` grades on. `player_id` lets a batch read be split per player. */
+const ROUND_OUTCOME_COLUMNS =
+  'id, player_id, score_to_par, total_putts, total_fairways_hit, total_fairways, total_gir, total_gir_possible, created_at, round_date';
+
+/** Players per `golf_rounds` read, so the `in.(...)` filter stays a sane URL length. */
+export const PREFETCH_PLAYER_CHUNK = 100;
+/**
+ * Row cap per chunk read. PostgREST truncates at its max-rows setting without
+ * saying so, and a truncated read would make a gradeable prediction look
+ * ungradeable. A chunk that reaches the cap is therefore discarded and its
+ * players fall back to the per-prediction read, which is always correct.
+ */
+export const PREFETCH_ROW_CAP = 1000;
+
+/** Completed rounds per player_id, window-filtered later by selectValidationRound. */
+export type PrefetchedRounds = Map<string, Array<RoundOutcomeRow & { id: string }>>;
+
+/**
+ * One `golf_rounds` read for a whole batch of ripe predictions, instead of one
+ * per prediction.
+ *
+ * The hourly `coachhelm-validation` cron re-checks every prediction whose
+ * window closed empty (a back-dated round can still fill it), which was 115
+ * predictions and 115 identical-shape reads every hour — Sentry's N+1 Query
+ * JAVASCRIPT-NEXTJS-SV on `GET /api/cron/coachhelm-validation`.
+ *
+ * Reads the union window (earliest creation day, latest due day) across the
+ * batch; `selectValidationRound` re-applies each prediction's own window, so
+ * grading is unchanged. A player is present in the returned map only when
+ * their chunk read succeeded untruncated — including with zero rows, which is
+ * a real "no rounds" answer. Absent players fall back to the per-prediction
+ * read. Never throws.
+ */
+export async function prefetchCandidateRounds(
+  supabase: AdminSupabase,
+  predictions: RipePrediction[],
+): Promise<PrefetchedRounds> {
+  const out: PrefetchedRounds = new Map();
+  const players = new Set<string>();
+  let minDay: string | null = null;
+  let maxDay: string | null = null;
+
+  for (const p of predictions) {
+    if (!p.created_at || !p.due_date || !p.player_id) continue;
+    if (!hasValidHorizon(p.created_at, p.due_date)) continue;
+    const createdMs = new Date(p.created_at).getTime();
+    if (!Number.isFinite(createdMs)) continue;
+    const createdDay = new Date(createdMs).toISOString().slice(0, 10);
+    const dueDay = p.due_date.slice(0, 10);
+    players.add(p.player_id);
+    if (minDay === null || createdDay < minDay) minDay = createdDay;
+    if (maxDay === null || dueDay > maxDay) maxDay = dueDay;
+  }
+  if (players.size === 0 || minDay === null || maxDay === null) return out;
+
+  const ids = [...players];
+  for (let i = 0; i < ids.length; i += PREFETCH_PLAYER_CHUNK) {
+    const chunk = ids.slice(i, i + PREFETCH_PLAYER_CHUNK);
+    try {
+      const { data, error } = await supabase
+        .from('golf_rounds')
+        .select(ROUND_OUTCOME_COLUMNS)
+        .in('player_id', chunk)
+        .eq('status', 'completed')
+        .gt('round_date', minDay)
+        .lte('round_date', maxDay)
+        .order('round_date', { ascending: true })
+        .limit(PREFETCH_ROW_CAP);
+      if (error || !data || data.length >= PREFETCH_ROW_CAP) continue;
+      for (const id of chunk) out.set(id, []);
+      for (const row of data as Array<RoundOutcomeRow & { id: string; player_id: string }>) {
+        out.get(row.player_id)?.push(row);
+      }
+    } catch {
+      // Fall back to per-prediction reads for this chunk.
+    }
+  }
+  return out;
+}
+
 /**
  * Sentinel returned by `resolveActualValue` to distinguish "outcome not yet
  * resolvable" from "this prediction can never validate".
@@ -338,6 +418,7 @@ export type ActualOutcome =
 async function resolveActualValue(
   supabase: AdminSupabase,
   prediction: RipePrediction,
+  candidates?: Array<RoundOutcomeRow & { id: string }>,
 ): Promise<ActualOutcome> {
   if (!prediction.created_at || !prediction.due_date) return { kind: 'invalid' };
 
@@ -358,33 +439,42 @@ async function resolveActualValue(
   const createdDay = new Date(prediction.created_at).toISOString().slice(0, 10);
   const dueDay = prediction.due_date.slice(0, 10);
 
-  const { data: rounds, error } = await supabase
-    .from('golf_rounds')
-    .select('id, score_to_par, total_putts, total_fairways_hit, total_fairways, total_gir, total_gir_possible, created_at, round_date')
-    .eq('player_id', prediction.player_id)
-    .eq('status', 'completed')
-    .gt('round_date', createdDay)
-    .lte('round_date', dueDay)
-    .order('round_date', { ascending: true });
+  // Prefetched by the caller (one read for the whole batch — see
+  // prefetchCandidateRounds). The window is re-applied below by
+  // selectValidationRound, so a superset is fine; an absent entry means this
+  // player was not prefetched and we read their rounds ourselves.
+  let rounds: Array<RoundOutcomeRow & { id: string }> | null = candidates ?? null;
 
-  if (error) {
-    await logServerError(
-      `resolveActualValue: rounds fetch failed: ${error.message}`,
-      {
-        action: 'outcomeValidator.resolveActual',
-        featureArea: 'coachhelm',
-        extra: { predictionId: prediction.id, playerId: prediction.player_id },
-      },
-      'warning',
-    );
-    return { kind: 'pending' };
+  if (!candidates) {
+    const { data, error } = await supabase
+      .from('golf_rounds')
+      .select(ROUND_OUTCOME_COLUMNS)
+      .eq('player_id', prediction.player_id)
+      .eq('status', 'completed')
+      .gt('round_date', createdDay)
+      .lte('round_date', dueDay)
+      .order('round_date', { ascending: true });
+
+    if (error) {
+      await logServerError(
+        `resolveActualValue: rounds fetch failed: ${error.message}`,
+        {
+          action: 'outcomeValidator.resolveActual',
+          featureArea: 'coachhelm',
+          extra: { predictionId: prediction.id, playerId: prediction.player_id },
+        },
+        'warning',
+      );
+      return { kind: 'pending' };
+    }
+    rounds = (data ?? []) as Array<RoundOutcomeRow & { id: string }>;
   }
 
   if (!rounds || rounds.length === 0) return { kind: 'pending' };
 
   // Grade against the FIRST completed round after the prediction was created.
   const round = selectValidationRound(
-    rounds as Array<RoundOutcomeRow & { id: string }>,
+    rounds,
     prediction.created_at,
     prediction.due_date,
   );
@@ -416,8 +506,13 @@ async function resolveActualValue(
 export async function validatePredictionAgainstOutcome(
   supabase: AdminSupabase,
   prediction: RipePrediction,
+  prefetched?: PrefetchedRounds,
 ): Promise<ValidationPersistResult | ValidationSkip> {
-  const outcome = await resolveActualValue(supabase, prediction);
+  const outcome = await resolveActualValue(
+    supabase,
+    prediction,
+    prefetched?.get(prediction.player_id),
+  );
 
   // Same-day / inverted horizon: this prediction can never validate honestly.
   // Retire it so it is excluded from accuracy rollups and stops being re-fetched
