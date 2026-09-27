@@ -15380,6 +15380,7 @@ export type Database = {
           high_school_name: string | null
           hometown: string | null
           id: string
+          is_test: boolean
           last_name: string | null
           onboarding_completed: boolean | null
           phone: string | null
@@ -15401,6 +15402,7 @@ export type Database = {
           high_school_name?: string | null
           hometown?: string | null
           id?: string
+          is_test?: boolean
           last_name?: string | null
           onboarding_completed?: boolean | null
           phone?: string | null
@@ -15422,6 +15424,7 @@ export type Database = {
           high_school_name?: string | null
           hometown?: string | null
           id?: string
+          is_test?: boolean
           last_name?: string | null
           onboarding_completed?: boolean | null
           phone?: string | null
@@ -15882,6 +15885,7 @@ export type Database = {
           end_date: string | null
           entry_deadline: string | null
           id: string
+          is_test: boolean
           name: string
           num_rounds: number
           rules: string | null
@@ -15904,6 +15908,7 @@ export type Database = {
           end_date?: string | null
           entry_deadline?: string | null
           id?: string
+          is_test?: boolean
           name: string
           num_rounds?: number
           rules?: string | null
@@ -15926,6 +15931,7 @@ export type Database = {
           end_date?: string | null
           entry_deadline?: string | null
           id?: string
+          is_test?: boolean
           name?: string
           num_rounds?: number
           rules?: string | null
@@ -16535,6 +16541,7 @@ export type Database = {
           front_nine: number | null
           holes_played: number | null
           id: string
+          is_test: boolean
           notes: string | null
           player_id: string
           qualifier_id: string | null
@@ -16580,6 +16587,7 @@ export type Database = {
           front_nine?: number | null
           holes_played?: number | null
           id?: string
+          is_test?: boolean
           notes?: string | null
           player_id: string
           qualifier_id?: string | null
@@ -16625,6 +16633,7 @@ export type Database = {
           front_nine?: number | null
           holes_played?: number | null
           id?: string
+          is_test?: boolean
           notes?: string | null
           player_id?: string
           qualifier_id?: string | null
@@ -17491,6 +17500,7 @@ export type Database = {
           description: string | null
           gender: string
           id: string
+          is_test: boolean
           join_code: string
           logo_url: string | null
           name: string
@@ -17508,6 +17518,7 @@ export type Database = {
           description?: string | null
           gender?: string
           id?: string
+          is_test?: boolean
           join_code: string
           logo_url?: string | null
           name: string
@@ -17525,6 +17536,7 @@ export type Database = {
           description?: string | null
           gender?: string
           id?: string
+          is_test?: boolean
           join_code?: string
           logo_url?: string | null
           name?: string
