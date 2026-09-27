@@ -33,7 +33,8 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { Segmented, type SegmentedOption } from '@/components/fairway/controls/segmented';
+import Link from 'next/link';
+import { Button } from '@/components/fairway';
 import {
   FairwayPlayerGameFingerprint,
   type FairwayPlayerGameFingerprintProps,
@@ -44,13 +45,9 @@ import {
   type FairwayPlayerInsightProps,
 } from '@/components/fairway/pages/coachhelm/FairwayPlayerInsight';
 import type { PlayerFingerprint } from '@/app/golf/actions/player-fingerprint';
+import { PlayerProfileHero } from '@/components/fairway/pages/player-game/PlayerProfileHero';
 
 type DeepDiveTab = 'fingerprint' | 'scouting';
-
-const TAB_OPTIONS: SegmentedOption<DeepDiveTab>[] = [
-  { value: 'fingerprint', label: 'Game Fingerprint' },
-  { value: 'scouting', label: 'Scouting Report' },
-];
 
 export interface PlayerDeepDiveTabsProps {
   fingerprint: PlayerFingerprint;
@@ -61,9 +58,11 @@ export interface PlayerDeepDiveTabsProps {
    *  distance-profile surface under `approach`. Omitted for every existing
    *  call site, so nothing about their output changes. */
   sectionAddenda?: FairwayPlayerGameFingerprintProps['sectionAddenda'];
+  /** Area ratings on the team scale, for the fingerprint radar. */
+  teamShape?: FairwayPlayerGameFingerprintProps['teamShape'];
 }
 
-export function PlayerDeepDiveTabs({ fingerprint, insight, sectionAddenda }: PlayerDeepDiveTabsProps) {
+export function PlayerDeepDiveTabs({ fingerprint, insight, sectionAddenda, teamShape }: PlayerDeepDiveTabsProps) {
   const searchParams = useSearchParams();
   const [tab, setTab] = useState<DeepDiveTab>(
     searchParams.get('tab') === 'scouting' ? 'scouting' : 'fingerprint',
@@ -108,17 +107,43 @@ export function PlayerDeepDiveTabs({ fingerprint, insight, sectionAddenda }: Pla
         { label: playerName },
       ]}
     >
-      <div className="flex flex-col gap-6">
-        <Segmented<DeepDiveTab>
-          options={TAB_OPTIONS}
-          value={tab}
-          onValueChange={onTabChange}
-          aria-label="Player deep-dive view"
+      {/* Layout A (owner pick 2026-09-26): profile, the team bars, then the
+          two destinations. The scouting report replaces the bars in place
+          (?tab=scouting keeps it linkable) with a way back. */}
+      <div className="flex flex-col gap-4">
+        <PlayerProfileHero
+          name={playerName}
+          avatarUrl={insight.player.avatar_url ?? fingerprint.player.avatar_url}
+          teamName={fingerprint.player.team_name}
+          graduationYear={insight.player.graduation_year ?? null}
+          handicap={insight.player.handicap ?? null}
+          rating={fingerprint.composite?.rating ?? null}
         />
         {tab === 'fingerprint' ? (
-          <FairwayPlayerGameFingerprint fingerprint={fingerprint} sectionAddenda={sectionAddenda} layout="summary" />
+          <>
+            <FairwayPlayerGameFingerprint
+              fingerprint={fingerprint}
+              sectionAddenda={sectionAddenda}
+              layout="summary"
+              hideHeader
+              teamShape={teamShape}
+            />
+            <nav aria-label="Player views" className="grid grid-cols-2 gap-2">
+              <Button variant="primary" size="lg" onClick={() => onTabChange('scouting')}>
+                Scouting report
+              </Button>
+              <Button asChild variant="secondary" size="lg">
+                <Link href={`/golf/dashboard/players/${fingerprint.player.id}/genome`}>Genome</Link>
+              </Button>
+            </nav>
+          </>
         ) : (
-          <FairwayPlayerInsight {...insight} embedded />
+          <>
+            <Button variant="ghost" size="sm" className="self-start" onClick={() => onTabChange('fingerprint')}>
+              ‹ Back
+            </Button>
+            <FairwayPlayerInsight {...insight} embedded />
+          </>
         )}
       </div>
     </CoachHelmShell>

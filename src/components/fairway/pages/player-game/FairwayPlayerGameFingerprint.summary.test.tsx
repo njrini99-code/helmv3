@@ -48,7 +48,7 @@ describe('fingerprintTakeaway', () => {
       section({ key: 'putting', category: 'Putting', metrics: [{ label: 'SG: Putting', value: '-2.2', tone: 'bad' }] }),
       section({ key: 'approach', category: 'Approach', metrics: [{ label: 'GIR', value: '62%', tone: 'good' }] }),
     ]);
-    expect(text).toBe('Needs work in putting (SG: Putting -2.2). Strongest approach (GIR 62%).');
+    expect(text).toBe('Biggest gap: putting (SG: Putting -2.2). Strongest: approach (GIR 62%).');
   });
   it('says so plainly when nothing stands out, and when everything is calibrating', () => {
     expect(fingerprintTakeaway([section({ metrics: [{ label: 'a', value: '1', tone: 'neutral' }] })])).toBe(

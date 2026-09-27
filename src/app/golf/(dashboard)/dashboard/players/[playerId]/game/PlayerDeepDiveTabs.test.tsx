@@ -53,7 +53,7 @@ describe('PlayerDeepDiveTabs', () => {
   it('switches to the scouting report immediately with a shallow URL update', () => {
     render(<PlayerDeepDiveTabs {...props} />);
 
-    fireEvent.click(screen.getByRole('radio', { name: 'Scouting Report' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Scouting report' }));
 
     expect(screen.getByTestId('scouting-view')).toBeInTheDocument();
     expect(window.location.search).toBe('?tab=scouting');

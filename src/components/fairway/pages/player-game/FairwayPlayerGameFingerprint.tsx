@@ -35,7 +35,7 @@
  * serif / skeuomorphic gauges).
  * ========================================================================== */
 
-import { useCallback, useMemo, useState, useTransition, type CSSProperties, type ReactNode } from 'react';
+import { useCallback, useMemo, useState, useTransition, type ReactNode } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
@@ -57,8 +57,6 @@ import {
 } from '@/components/fairway';
 import { Disclosure } from '@/components/golf/coachhelm/root-map/Disclosure';
 import { toCoachVoice } from '@/lib/golf/claim-voice';
-import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
-import { cn } from '@/lib/utils';
 
 import { IconLayers } from '@/components/icons';
 
@@ -122,6 +120,20 @@ export interface FairwayPlayerGameFingerprintProps {
    * `ProfileDrill` mount is unchanged.
    */
   layout?: 'full' | 'summary';
+  /**
+   * Summary layout only: skip the name/actions header because the caller
+   * already renders the player's identity (the coach deep-dive's
+   * PlayerProfileHero sits above the tab switch).
+   */
+  hideHeader?: boolean;
+  /**
+   * Summary layout only: area ratings on the canonical 0-100 team scale
+   * (50 = team average) that draw the radar. Null/absent → the rating ring.
+   */
+  teamShape?: {
+    categories: { teeGame: number; approach: number; shortGame: number; putting: number; scoring: number };
+    teamSize: number;
+  } | null;
 }
 
 /* ───────────────────────────────────────────────────────────────────────────
@@ -237,8 +249,8 @@ export function fingerprintTakeaway(sections: readonly SectionData[]): string {
     .sort((a, b) => score(b, 'good') - score(b, 'bad') - (score(a, 'good') - score(a, 'bad')))[0];
   const cite = (m: FingerprintMetric | undefined) => (m ? ` (${m.label} ${m.value})` : '');
   const parts: string[] = [];
-  if (weak) parts.push(`Needs work in ${weak.category.toLowerCase()}${cite(firstToned(weak, 'bad'))}.`);
-  if (strong) parts.push(`Strongest ${strong.category.toLowerCase()}${cite(firstToned(strong, 'good'))}.`);
+  if (weak) parts.push(`Biggest gap: ${weak.category.toLowerCase()}${cite(firstToned(weak, 'bad'))}.`);
+  if (strong) parts.push(`Strongest: ${strong.category.toLowerCase()}${cite(firstToned(strong, 'good'))}.`);
   if (parts.length === 0) {
     return live.length === 0
       ? 'Every area is still calibrating.'
@@ -247,37 +259,38 @@ export function fingerprintTakeaway(sections: readonly SectionData[]): string {
   return parts.join(' ');
 }
 
-const STANDING_LABEL: Record<AreaStanding, string> = {
-  leak: 'Needs work',
-  strength: 'Strength',
-  even: 'Mixed',
-  calibrating: 'Calibrating',
-  unrated: 'No benchmark',
-};
 
-/** Area texture: leaks and strengths wear a tinted fill with a solid edge;
- *  calibrating areas are hatched (thin evidence), never a solid colour. */
-function standingStyle(standing: AreaStanding): CSSProperties {
-  const surface = 'var(--fw-color-surface)';
-  switch (standing) {
-    case 'leak':
-      return {
-        background: `color-mix(in oklch, var(--fw-viz-div-neg) 16%, ${surface})`,
-        borderColor: 'color-mix(in oklch, var(--fw-viz-div-neg) 55%, transparent)',
-      };
-    case 'strength':
-      return {
-        background: `color-mix(in oklch, var(--fw-color-accent-500) 14%, ${surface})`,
-        borderColor: 'color-mix(in oklch, var(--fw-color-accent-500) 55%, transparent)',
-      };
-    case 'calibrating':
-      return {
-        backgroundImage:
-          'repeating-linear-gradient(135deg, var(--fw-color-border-subtle) 0 1px, transparent 1px 7px)',
-      };
-    default:
-      return {};
-  }
+
+
+/** Bar colours against the team average (5-point dead band either side).
+ *  Below and above differ in lightness too, not hue alone. */
+const BAND_FILL = {
+  below: 'var(--fw-viz-div-neg)',
+  even: 'var(--fw-color-border-strong)',
+  above: 'var(--fw-color-accent-500)',
+} as const;
+const BAND_INK = {
+  below: 'color-mix(in oklch, var(--fw-viz-div-neg) 65%, var(--fw-color-text-primary))',
+  even: 'var(--fw-color-text-primary)',
+  above: 'var(--fw-color-accent-700)',
+} as const;
+
+interface TeamArea {
+  key: FingerprintSectionKey;
+  label: string;
+  /** 0-100 team-relative rating; 50 = team average. */
+  value: number;
+}
+
+/** The five rated areas, keyed to the fingerprint sections they open. */
+function radarSpokes(c: NonNullable<FairwayPlayerGameFingerprintProps['teamShape']>['categories']): TeamArea[] {
+  return [
+    { key: 'tee', label: 'Tee', value: c.teeGame },
+    { key: 'approach', label: 'Approach', value: c.approach },
+    { key: 'short_game', label: 'Short game', value: c.shortGame },
+    { key: 'putting', label: 'Putting', value: c.putting },
+    { key: 'scoring', label: 'Scoring', value: c.scoring },
+  ];
 }
 
 function FingerprintSummaryLayout({
@@ -287,7 +300,8 @@ function FingerprintSummaryLayout({
   pendingIds,
   onAction,
   sectionAddenda,
-  trendChip,
+  hideHeader,
+  teamShape,
 }: {
   fingerprint: PlayerFingerprint;
   sections: SectionData[];
@@ -295,21 +309,13 @@ function FingerprintSummaryLayout({
   pendingIds: ReadonlySet<string>;
   onAction: ActionHandler;
   sectionAddenda?: Partial<Record<FingerprintSectionKey, ReactNode>>;
-  trendChip: { tone: 'success' | 'danger' | 'neutral'; label: string };
+  hideHeader: boolean;
+  teamShape: FairwayPlayerGameFingerprintProps['teamShape'];
 }) {
-  const reduceMotion = useReducedMotionGuard();
   const [open, setOpen] = useState<ReadonlySet<FingerprintSectionKey>>(new Set());
-  const { player, composite, trend, generated_at: generatedAt } = fingerprint;
+  const { player } = fingerprint;
   const fullName = `${player.first_name ?? ''} ${player.last_name ?? ''}`.trim() || 'Player';
   const subjectName = isCoachMode ? player.first_name : null;
-  const rating = composite.rating;
-  const sample = composite.rounds_in_calculation;
-  const metricsSample = fingerprint.metrics_rounds;
-  const series = trend.rolling
-    .map((p) => p.score_to_par)
-    .filter((v): v is number => typeof v === 'number' && Number.isFinite(v));
-  const latest = series.length > 0 ? series[series.length - 1] ?? null : null;
-  const takeaway = fingerprintTakeaway(sections);
 
   const setSection = (key: FingerprintSectionKey, next: boolean) =>
     setOpen((prev) => {
@@ -319,20 +325,12 @@ function FingerprintSummaryLayout({
       return out;
     });
 
-  const jumpTo = (key: FingerprintSectionKey) => {
-    setSection(key, true);
-    // After the disclosure mounts its body.
-    window.setTimeout(() => {
-      document
-        .getElementById(`fingerprint-${key}`)
-        ?.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'start' });
-    }, 60);
-  };
+
 
   return (
     <div className="mx-auto w-full max-w-[1160px] overflow-x-clip" data-slot="fingerprint-summary-layout">
       <div className="flex flex-col gap-6">
-        <ViewHeader
+        {hideHeader ? null : <ViewHeader
           title={
             <span className="flex min-w-0 items-center gap-3">
               <Avatar decorative src={player.avatar_url} name={fullName} size="lg" className="shrink-0" />
@@ -359,152 +357,118 @@ function FingerprintSummaryLayout({
               </>
             ) : undefined
           }
-        />
+        />}
 
-        {/* ── Summary: rating, one takeaway, the six-area strip ── */}
-        <section
-          aria-label="Game fingerprint summary"
-          data-slot="fingerprint-summary"
-          className="flex flex-col gap-5 rounded-fw-lg border border-border-subtle bg-surface p-5 md:p-6"
-        >
-          <div className="flex flex-col gap-1">
-            <Eyebrow as="p">
-              Composite rating{sample > 0 ? ` · from ${pluralize(sample, 'round')}` : ''}
-            </Eyebrow>
-            <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-2">
-              <p className="font-fw-mono text-display tabular-nums text-text-primary" data-slot="fingerprint-rating">
-                {rating != null ? Math.round(rating) : '—'}
-              </p>
-              <span className="flex flex-wrap items-center gap-2">
-                <Chip tone={trendChip.tone} size="sm">
-                  {trendChip.label}
-                </Chip>
-                {latest != null ? (
-                  <span className="text-caption text-text-secondary">
-                    last round{' '}
-                    <span className="font-fw-mono tabular-nums text-text-primary">{formatToPar(latest)}</span>
-                  </span>
-                ) : null}
-              </span>
-            </div>
-            {rating == null ? (
-              <p className="text-caption text-text-tertiary">
-                A rating needs {SECTION_SAMPLE_FLOOR} rounds ({sample} so far).
-              </p>
-            ) : null}
-            <p className="text-body text-text-secondary" data-slot="fingerprint-takeaway">
-              {takeaway}
-            </p>
-          </div>
-
-          <nav aria-label="Game areas" className="flex flex-col gap-2">
-            <ol className="grid grid-cols-2 gap-2 min-[420px]:grid-cols-3 lg:grid-cols-6">
-              {sections.map((section, index) => {
-                const standing = areaStanding(section);
-                const lead = section.metrics[0];
+        {/* ── Against the team: one bar per area, detail on tap ── */}
+        {teamShape ? (
+          <section
+            aria-labelledby="fingerprint-team-heading"
+            data-slot="fingerprint-team-bars"
+            className="flex flex-col gap-4 rounded-fw-lg border border-border-subtle bg-surface p-5 shadow-card md:p-6"
+          >
+            <h2 id="fingerprint-team-heading" className="m-0 font-fw-display text-body-lg font-semibold text-text-primary">
+              Against the team
+            </h2>
+            <ul className="m-0 flex list-none flex-col p-0">
+              {radarSpokes(teamShape.categories).map((spoke) => {
+                const section = sections.find((s) => s.key === spoke.key);
+                const isOpen = open.has(spoke.key);
+                const value = Math.max(0, Math.min(100, Math.round(spoke.value)));
+                const band = value < 45 ? 'below' : value > 55 ? 'above' : 'even';
                 return (
-                  <li key={section.key} className="min-w-0">
-                    {/* eslint-disable-next-line helm/no-raw-button -- a textured data tile (area, value, standing), not a pill control; the Fairway Button cannot host this two-row layout */}
+                  <li key={spoke.key} id={`fingerprint-${spoke.key}`} className="scroll-mt-28">
+                    {/* eslint-disable-next-line helm/no-raw-button -- a bar-chart row that discloses its area, not a pill control */}
                     <button
                       type="button"
-                      onClick={() => jumpTo(section.key)}
-                      aria-label={`${section.category}: ${STANDING_LABEL[standing]}${lead ? `, ${lead.label} ${lead.value}` : ''}. Open this area.`}
-                      data-standing={standing}
-                      className={cn(
-                        'flex h-full min-h-[88px] w-full flex-col justify-between gap-2 rounded-fw-md border border-border-subtle bg-surface-sunken p-3 text-left outline-none',
-                        'focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
-                        'motion-safe:transition-[transform,box-shadow] motion-safe:duration-200 hover:shadow-soft motion-safe:hover:-translate-y-0.5',
-                      )}
-                      style={standingStyle(standing)}
+                      aria-expanded={isOpen}
+                      onClick={() => setSection(spoke.key, !isOpen)}
+                      className="flex min-h-11 w-full flex-col gap-1.5 rounded-fw-md py-2 text-left outline-none focus-visible:ring-2 focus-visible:ring-border-focus"
                     >
-                      <span className="flex items-baseline justify-between gap-2">
-                        <span className="truncate font-fw-display text-label font-semibold text-text-primary">
-                          {section.category}
-                        </span>
-                        <span className="font-fw-mono text-eyebrow tabular-nums text-text-tertiary">
-                          {String(index + 1).padStart(2, '0')}
+                      <span className="flex items-baseline justify-between gap-3">
+                        <span className="text-body font-medium text-text-primary">{spoke.label}</span>
+                        <span
+                          className="font-fw-mono text-body font-semibold tabular-nums"
+                          style={{ color: BAND_INK[band] }}
+                        >
+                          {value}
+                          <span className="sr-only">
+                            {band === 'below' ? ', below the team average' : band === 'above' ? ', above the team average' : ', near the team average'}
+                          </span>
                         </span>
                       </span>
-                      <span className="flex flex-col">
-                        <span className="font-fw-mono text-body-lg font-semibold tabular-nums text-text-primary">
-                          {section.sparse ? '—' : (lead?.value ?? '—')}
-                        </span>
-                        <span className="truncate text-caption text-text-secondary">
-                          {section.sparse ? 'Calibrating' : lead ? lead.label : STANDING_LABEL[standing]}
-                        </span>
+                      <span aria-hidden className="relative block h-2 rounded-full bg-surface-sunken">
+                        <span
+                          className="absolute inset-y-0 left-0 rounded-full"
+                          style={{ width: `${value}%`, background: BAND_FILL[band] }}
+                        />
+                        <span className="absolute -top-1 left-1/2 h-4 w-0.5 -translate-x-1/2 rounded-full bg-text-primary opacity-35" />
                       </span>
                     </button>
+                    {isOpen && section ? (
+                      <div className="flex flex-col gap-5 pb-4 pt-3">
+                        <SummarySectionBody
+                          section={section}
+                          pendingIds={pendingIds}
+                          onAction={onAction}
+                          subjectName={subjectName}
+                        />
+                        {sectionAddenda?.[section.key] ?? null}
+                      </div>
+                    ) : null}
                   </li>
                 );
               })}
-            </ol>
-            <p className="flex flex-wrap items-center gap-x-4 gap-y-1 text-caption text-text-tertiary">
-              {metricsSample > 0 ? <span>Area averages from {pluralize(metricsSample, 'round')}</span> : null}
-              <span className="inline-flex items-center gap-1.5">
-                <span aria-hidden className="inline-block h-2.5 w-2.5 rounded-sm border" style={standingStyle('leak')} />
-                Needs work
-              </span>
-              <span className="inline-flex items-center gap-1.5">
-                <span aria-hidden className="inline-block h-2.5 w-2.5 rounded-sm border" style={standingStyle('strength')} />
-                Strength
-              </span>
-              <span className="inline-flex items-center gap-1.5">
-                <span aria-hidden className="inline-block h-2.5 w-2.5 rounded-sm border border-border-subtle" style={standingStyle('calibrating')} />
-                Calibrating
-              </span>
-            </p>
-          </nav>
-        </section>
+            </ul>
+            <p className="text-caption text-text-tertiary">Line = team average</p>
+          </section>
+        ) : null}
 
-        {/* ── Detail on tap: each area, then the scoring trend ── */}
-        <div className="flex flex-col">
-          {sections.map((section, index) => {
-            const insightCount = section.insights.length;
-            return (
-              <div key={section.key} id={`fingerprint-${section.key}`} className="scroll-mt-28">
-                <Disclosure
-                  open={open.has(section.key)}
-                  onOpenChange={(next) => setSection(section.key, next)}
-                  headingLevel={2}
-                  slot={`fingerprint-area-${section.key}`}
-                  title={
-                    <span className="flex items-baseline gap-3">
-                      <span className="font-fw-mono text-eyebrow tabular-nums text-text-tertiary">
-                        {String(index + 1).padStart(2, '0')}
-                      </span>
-                      {section.category}
-                    </span>
-                  }
-                  meta={
-                    <span className="shrink-0 text-caption font-normal text-text-secondary">
-                      {section.sparse
-                        ? 'Calibrating'
-                        : insightCount > 0
-                          ? pluralize(insightCount, 'read')
-                          : STANDING_LABEL[areaStanding(section)]}
-                    </span>
-                  }
-                  bodyClassName="flex flex-col gap-5"
+        {/* ── No team comparison: the six areas as rows, detail on tap ── */}
+        {teamShape ? null : <nav
+          aria-label="Game areas"
+          className="overflow-hidden rounded-fw-lg border border-border-subtle bg-surface shadow-card"
+        >
+          <ol className="flex flex-col">
+            {sections.map((section) => {
+              const standing = areaStanding(section);
+              const lead = section.metrics[0];
+              return (
+                <li
+                  key={section.key}
+                  id={`fingerprint-${section.key}`}
+                  data-standing={standing}
+                  className="scroll-mt-28 border-b border-border-subtle px-4 last:border-b-0 md:px-5"
                 >
-                  <SummarySectionBody
-                    section={section}
-                    pendingIds={pendingIds}
-                    onAction={onAction}
-                    subjectName={subjectName}
-                  />
-                  {sectionAddenda?.[section.key] ?? null}
-                </Disclosure>
-              </div>
-            );
-          })}
-          <Disclosure title="Recent scoring trend" slot="fingerprint-trend" headingLevel={2}>
-            <TrendPulse trend={trend} />
-          </Disclosure>
-        </div>
+                  <Disclosure
+                    open={open.has(section.key)}
+                    onOpenChange={(next) => setSection(section.key, next)}
+                    headingLevel={2}
+                    className="border-b-0"
+                    slot={`fingerprint-area-${section.key}`}
+                    title={
+                      <span className="block truncate py-1.5">{section.category}</span>
+                    }
+                    meta={
+                      <span className="shrink-0 font-fw-mono text-body-lg font-semibold tabular-nums text-text-primary">
+                        {section.sparse ? '—' : (lead?.value ?? '—')}
+                      </span>
+                    }
+                    bodyClassName="flex flex-col gap-5 pb-5"
+                  >
+                    <SummarySectionBody
+                      section={section}
+                      pendingIds={pendingIds}
+                      onAction={onAction}
+                      subjectName={subjectName}
+                    />
+                    {sectionAddenda?.[section.key] ?? null}
+                  </Disclosure>
+                </li>
+              );
+            })}
+          </ol>
+        </nav>}
 
-        <p className="text-center font-fw-sans text-caption text-text-tertiary">
-          Generated {formatGeneratedAt(generatedAt)}
-        </p>
       </div>
     </div>
   );
@@ -597,6 +561,8 @@ export function FairwayPlayerGameFingerprint({
   mode = 'coach',
   sectionAddenda,
   layout = 'full',
+  hideHeader = false,
+  teamShape = null,
 }: FairwayPlayerGameFingerprintProps) {
   const router = useRouter();
   const golfUser = useGolfUser();
@@ -760,7 +726,8 @@ export function FairwayPlayerGameFingerprint({
         pendingIds={pendingIds}
         onAction={handleAction}
         sectionAddenda={sectionAddenda}
-        trendChip={trendChip}
+        hideHeader={hideHeader}
+        teamShape={teamShape}
       />
     );
   }

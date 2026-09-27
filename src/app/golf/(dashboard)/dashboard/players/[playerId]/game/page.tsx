@@ -34,6 +34,7 @@ import { getThemesForCoach } from '@/app/golf/actions/insight-delivery';
 import { getAlertCounts } from '@/app/golf/actions/alerts';
 import { getPlayerTrendAnalysis } from '@/app/golf/actions/coachhelm-data';
 import { getPlayerTrajectory } from '@/app/golf/actions/insights';
+import { getPlayerStatsIntelligence } from '@/app/golf/actions/stats-intelligence';
 import { logServerError } from '@/lib/server-error-logger';
 import { applyInsightVisibility } from '@/lib/coachhelm/v3/insight-visibility';
 import { fairwayScope } from '@/lib/redesign/flag';
@@ -462,6 +463,7 @@ export default async function PlayerGamePage({
     trendRes,
     trajectoryRes,
     a7Addenda,
+    statsIntelRes,
   ] = await Promise.all([
     getPlayerFingerprint(playerId),
 
@@ -568,6 +570,10 @@ export default async function PlayerGamePage({
     // with BOTH flags on, this also shares a single `loadPlayerContext`
     // call instead of one per addendum. See its own doc comment.
     loadDistanceProfileAndScoringAddenda(distanceProfileEnabled, scoringSurfaceEnabled, playerId, supabase),
+
+    // The radar's area ratings: the canonical 0-100 team scale /stats uses
+    // (50 = team average). Best-effort; the card falls back to the rating ring.
+    getPlayerStatsIntelligence(playerId).catch(() => null),
   ]);
 
   const { distanceProfile: distanceProfileAddendum, scoring: scoringAddendum } = a7Addenda;
@@ -790,9 +796,17 @@ export default async function PlayerGamePage({
   // guarantee stays literal, not just behaviorally equivalent.
   const sectionAddenda = Object.keys(rawSectionAddenda).length > 0 ? rawSectionAddenda : undefined;
 
+  // Fewer than 3 teammates with stats makes the z-score scale unstable
+  // (stats-intelligence's own contract), so the radar is withheld then.
+  const intel = statsIntelRes?.success ? statsIntelRes.data : undefined;
+  const teamShape =
+    intel?.categories && intel.sampleSize >= 3
+      ? { categories: intel.categories, teamSize: intel.sampleSize }
+      : null;
+
   return (
     <div className={fairwayScope('min-h-full bg-canvas')}>
-      <PlayerDeepDiveTabs fingerprint={fingerprint} insight={insightProps} sectionAddenda={sectionAddenda} />
+      <PlayerDeepDiveTabs fingerprint={fingerprint} insight={insightProps} sectionAddenda={sectionAddenda} teamShape={teamShape} />
     </div>
   );
 }
