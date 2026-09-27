@@ -256,9 +256,39 @@ items:
     incident_id: memory/incidents/coachhelm_ai/INC-2026-09-27-exposure-returned-fetch-failure.md
     status: verified
     risk: R1
-    sha: d856ec00bafb88af93bd9bb7c2393a74d69f3b17
-    pr: null
+    sha: ffd0800ed0973308900ec853df4a3cb66bca64b8
+    pr: 2084
     regression_tests:
       - src/lib/coachhelm/v3/effectiveness/exposure-transient-retry.test.ts
     queued_for_release: false
     first_seen: '2026-09-14T07:31:01Z'
+  - id: presence-webkit-abort-2026-09-27
+    feature_id: auth_onboarding_join
+    root_cause: >-
+      usePresence suppressed only Chrome's wording of the benign heartbeat
+      deadline; WebKit's 'AbortError: Fetch is aborted' reached logError and
+      opened a Bridge incident per route (d07955ca, c6a3835e).
+    incident_id: memory/incidents/auth_onboarding_join/INC-2026-09-27-presence-webkit-abort-noise.md
+    status: verified
+    risk: R1
+    sha: 0c57f0945d056d13731dcb65dd7a4dee5838aa6a
+    pr: 2082
+    regression_tests:
+      - src/hooks/__tests__/use-presence.test.tsx
+    queued_for_release: false
+    first_seen: '2026-09-27T15:26:22Z'
+  - id: reactions-anon-42501-after-session-drop-2026-09-27
+    feature_id: team_communications
+    root_cause: >-
+      useMessageReactions reported a 42501 read that ran as anon because the
+      session dropped between the getSession() gate and PostgREST's answer
+      (8011d1b9, regressed on the deploy that carried the gate).
+    incident_id: memory/incidents/team_communications/INC-2026-09-27-reactions-anon-42501-after-session-drop.md
+    status: verified
+    risk: R1
+    sha: 0c57f0945d056d13731dcb65dd7a4dee5838aa6a
+    pr: 2082
+    regression_tests:
+      - src/hooks/golf/__tests__/use-message-reactions.test.tsx
+    queued_for_release: false
+    first_seen: '2026-09-24T02:20:47Z'
