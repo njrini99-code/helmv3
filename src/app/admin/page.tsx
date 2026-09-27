@@ -20,6 +20,7 @@ import { cachedIncidentBoard } from '@/lib/admin/incidents/fetch';
 import { DEFAULT_INCIDENT_WINDOW_HOURS } from '@/lib/admin/data/incident-feed';
 import { fetchChangeTimeline } from '@/lib/admin/data/change-timeline';
 import { ChangeTimeline } from './_components/ChangeTimeline';
+import { TabHeader } from './_components/TabHeader';
 import { CommandDeck } from '@/components/admin/command-deck/CommandDeck';
 import Link from 'next/link';
 
@@ -213,12 +214,14 @@ async function FeatureHealthPanel() {
         Feature command map
       </Eyebrow>
       <FeatureHealthRollup summary={summary} />
-      <p className="mt-3 text-xs text-warm-500">
-        Full cross-sport board lives at{' '}
-        <Link href="/admin/health" className="text-accent-700 underline">
-          /admin/health →
-        </Link>
-      </p>
+      {/* A real link, not a route path in 12px prose: the old "/admin/health
+          →" was a ~16px-tall tap target reading as a URL. */}
+      <Link
+        href="/admin/health"
+        className="mt-2 inline-flex items-center text-body-sm text-accent-700 underline [@media(pointer:coarse)]:min-h-11"
+      >
+        Open the full cross-sport board →
+      </Link>
     </Surface>
   );
 }
@@ -252,6 +255,11 @@ export default async function AdminOverviewPage() {
   return (
     <div className="space-y-5">
       <AutoRefresh />
+
+      {/* The one header every Bridge tab carries (TabHeader renders a plain
+          <header>, no aria-label: overview-composition.test.ts pins this
+          file's labelled sections to exactly the three below the Deck). */}
+      <TabHeader title="Overview" />
 
       {/* HELM COMMAND DECK (brief §10; bridge redesign plan §2) — THE
           Overview. Posture sentence + blindness beacon, System Orbit,

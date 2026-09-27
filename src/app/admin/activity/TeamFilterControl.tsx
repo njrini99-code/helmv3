@@ -35,7 +35,7 @@ export function TeamFilterControl({
       }}
       options={options.map((o) => ({ label: o.label, value: o.value }))}
       size="sm"
-      className="w-full min-w-0 sm:w-56"
+      className="w-full min-w-0 sm:w-56 [@media(pointer:coarse)]:min-h-11"
     />
   );
 }

@@ -107,7 +107,7 @@ function FeatureDetailRowCard({
             </Badge>
           ) : null}
         </div>
-        <div className="flex items-center gap-3 font-fw-mono text-xs tabular-nums text-warm-500">
+        <div className="flex flex-wrap items-center gap-x-3 font-fw-mono text-xs tabular-nums text-warm-500">
           {row.trend ? <span aria-hidden>{TREND_ARROW[row.trend]}</span> : null}
           <span title={row.lastEventAt ?? undefined}>
             {countsAvailable ? RECENCY_LABEL[row.recency] : 'recency unavailable'}
@@ -123,7 +123,7 @@ function FeatureDetailRowCard({
             <span>{row.counts.total} total (7d)</span>
           </>
         ) : (
-          <span className="italic text-warm-400">7d counts unavailable this refresh</span>
+          <span className="italic text-warm-500">7d counts unavailable this refresh</span>
         )}
       </div>
 
@@ -133,7 +133,9 @@ function FeatureDetailRowCard({
           {row.topSignatures.length > 0 ? (
             <ul className="mt-2 space-y-1">
               {row.topSignatures.map((sig) => (
-                <li key={sig.fingerprint} className="truncate text-xs text-warm-600">
+                // Wraps: `truncate` on the whole line cut the count and
+                // last-seen off every signature at phone width.
+                <li key={sig.fingerprint} className="break-words text-xs text-warm-600 [overflow-wrap:anywhere]">
                   <StatusPill tone={sig.severity === 'warning' ? 'warning' : 'danger'} size="sm" dot>
                     {sig.severity}
                   </StatusPill>{' '}

@@ -4,6 +4,7 @@ import { fetchDatabaseAnalysis, type AnalysisSampleRow } from '@/lib/admin/datab
 import { StatusPill, InlineNotice } from '@/components/fairway';
 import { PanelNoData, PanelAllClear, PanelStale } from '../_components/PanelStates';
 import { LocalTime } from '../_components/LocalTime';
+import { RailRow, RowHead, FactLine } from '../_components/Row';
 
 /* -------------------------------------------------------------------- *
  * D5 — the Database Tab's five new sections: Slow statements, Index
@@ -64,23 +65,28 @@ function Sparkline({ points }: { points: SparklinePoint[] }) {
 
 function StatementRowView({ row, sparkline }: { row: StatementSampleRow; sparkline: SparklinePoint[] }) {
   return (
-    <div className="flex items-center justify-between gap-3 rounded-lg border border-border-subtle px-3 py-2">
-      <div className="min-w-0">
-        <div className="flex items-center gap-2">
-          <span className="text-xs font-medium text-warm-700">{row.safeQueryClass}</span>
-          <span className="rounded-md bg-surface-sunken px-1.5 py-0.5 font-fw-mono text-caption text-warm-500">
-            {row.sourceClass}
-          </span>
+    // The Bridge row language: class as the title, source + the numbers as
+    // one fact line that wraps. The sparkline stays on the right from `sm`
+    // up and drops under the facts on a phone, where beside them it left the
+    // fact line ~150px and the numbers wrapped one per line.
+    <RailRow severity="info">
+      <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+        <div className="min-w-0">
+          <RowHead>{row.safeQueryClass}</RowHead>
+          <FactLine
+            items={[
+              row.sourceClass,
+              `${row.calls} calls · mean ${row.meanExecMs.toFixed(1)}ms · max ${row.maxExecMs.toFixed(0)}ms · total ${Math.round(
+                row.totalExecMs,
+              ).toLocaleString()}ms`,
+            ]}
+          />
         </div>
-        <p className="mt-0.5 font-fw-mono text-caption text-warm-500">
-          {row.calls} calls · mean {row.meanExecMs.toFixed(1)}ms · max {row.maxExecMs.toFixed(0)}ms · total{' '}
-          {Math.round(row.totalExecMs).toLocaleString()}ms
-        </p>
+        <div className="text-warm-500">
+          <Sparkline points={sparkline} />
+        </div>
       </div>
-      <div className="flex shrink-0 items-center gap-3 text-warm-500">
-        <Sparkline points={sparkline} />
-      </div>
-    </div>
+    </RailRow>
   );
 }
 
@@ -101,17 +107,21 @@ export async function SlowStatementsPanel() {
 
   return (
     <div className="grid gap-4 md:grid-cols-2">
-      <div className="space-y-2">
+      <div className="min-w-0">
         <p className="text-caption font-medium text-warm-600">Top 10 by mean time</p>
-        {topByMean.slice(0, 10).map((row) => (
-          <StatementRowView key={`mean-${row.id}`} row={row} sparkline={sparklines[row.queryid] ?? []} />
-        ))}
+        <ul className="divide-y divide-warm-200/60">
+          {topByMean.slice(0, 10).map((row) => (
+            <StatementRowView key={`mean-${row.id}`} row={row} sparkline={sparklines[row.queryid] ?? []} />
+          ))}
+        </ul>
       </div>
-      <div className="space-y-2">
+      <div className="min-w-0">
         <p className="text-caption font-medium text-warm-600">Top 10 by total time</p>
-        {topByTotal.slice(0, 10).map((row) => (
-          <StatementRowView key={`total-${row.id}`} row={row} sparkline={sparklines[row.queryid] ?? []} />
-        ))}
+        <ul className="divide-y divide-warm-200/60">
+          {topByTotal.slice(0, 10).map((row) => (
+            <StatementRowView key={`total-${row.id}`} row={row} sparkline={sparklines[row.queryid] ?? []} />
+          ))}
+        </ul>
       </div>
     </div>
   );
@@ -119,12 +129,14 @@ export async function SlowStatementsPanel() {
 
 function AnalysisRowView({ row }: { row: AnalysisSampleRow }) {
   return (
-    <div className="rounded-lg border border-border-subtle px-3 py-2">
-      <p className="text-xs font-medium text-warm-700">{row.subject ?? row.category}</p>
-      <pre className="mt-1 overflow-x-auto whitespace-pre-wrap break-words font-fw-mono text-caption text-warm-500">
+    <RailRow severity="info">
+      <RowHead>{row.subject ?? row.category}</RowHead>
+      {/* The finding's own payload — its data, so it stays visible — wrapped,
+          never a sideways scroller inside the card. */}
+      <pre className="mt-1 whitespace-pre-wrap break-all font-fw-mono text-caption text-warm-500">
         {JSON.stringify(row.payload, null, 0)}
       </pre>
-    </div>
+    </RailRow>
   );
 }
 
@@ -141,11 +153,11 @@ export async function IndexSuggestionsPanel() {
     return <PanelAllClear label="No index suggestions" checkedAt={result.data.latestSampledAt ?? new Date().toISOString()} />;
   }
   return (
-    <div className="space-y-2">
+    <ul className="divide-y divide-warm-200/60">
       {rows.map((row) => (
         <AnalysisRowView key={row.id} row={row} />
       ))}
-    </div>
+    </ul>
   );
 }
 
@@ -162,11 +174,11 @@ export async function UnusedIndexesPanel() {
     return <PanelAllClear label="No unused indexes" checkedAt={result.data.latestSampledAt ?? new Date().toISOString()} />;
   }
   return (
-    <div className="space-y-2">
+    <ul className="divide-y divide-warm-200/60">
       {rows.map((row) => (
         <AnalysisRowView key={row.id} row={row} />
       ))}
-    </div>
+    </ul>
   );
 }
 
@@ -183,11 +195,11 @@ export async function BloatPanel() {
     return <PanelNoData label="No bloat samples yet" description="The collector has not written its first hourly window." />;
   }
   return (
-    <div className="space-y-2">
+    <ul className="divide-y divide-warm-200/60">
       {rows.map((row) => (
         <AnalysisRowView key={row.id} row={row} />
       ))}
-    </div>
+    </ul>
   );
 }
 
@@ -209,11 +221,11 @@ export async function CoveragePanel() {
       {rows.length === 0 ? (
         <PanelAllClear label="No RLS/grant coverage gaps" checkedAt={result.data.latestSampledAt ?? new Date().toISOString()} />
       ) : (
-        <div className="space-y-2">
+        <ul className="divide-y divide-warm-200/60">
           {rows.map((row) => (
             <AnalysisRowView key={row.id} row={row} />
           ))}
-        </div>
+        </ul>
       )}
     </div>
   );
@@ -250,7 +262,7 @@ export async function DriftPanel() {
         Migration ledger: {migrationCount === null ? 'unavailable in this environment' : `${migrationCount} migration file(s) in supabase/migrations`}
       </p>
       <p>Last health sample: {lastSampleAt ? <LocalTime iso={lastSampleAt} /> : 'no health sample yet'}</p>
-      <p className="text-warm-500">
+      <p className="break-words text-warm-500 [overflow-wrap:anywhere]">
         A live schema/types/ledger drift verdict is not persisted to a Bridge-readable source yet — see
         docs/observability/DATABASE_TAB.md.
       </p>

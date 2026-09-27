@@ -5,6 +5,8 @@ import { classifyKpiTone, ERRORS_24H_RED_AT } from '@/lib/admin/data/overview';
 import { Button, Surface, SkeletonStat, SkeletonList, InlineNotice } from '@/components/fairway';
 import { PanelBoundary } from '../_components/PanelBoundary';
 import { KpiTile } from '../_components/KpiTile';
+import { SectionLabel } from '../_components/SectionLabel';
+import { TabHeader } from '../_components/TabHeader';
 import { fetchActivityTodayStats, fetchTeamOptions } from './_data';
 import {
   parseActivityFilters,
@@ -124,19 +126,24 @@ export default async function ActivityPage({
 
   return (
     <div className="min-w-0 space-y-4">
+      <TabHeader title="Activity" />
+
       <div className="min-w-0">
-        <h2 className="mb-2 border-b border-accent-600/25 pb-1.5 text-xs font-semibold uppercase tracking-widest text-warm-500">
-          Today
-        </h2>
+        <SectionLabel className="mb-2">Today</SectionLabel>
         <PanelBoundary title="Today's activity" skeleton={STATS_SKELETON}>
           <StatsStrip />
         </PanelBoundary>
       </div>
 
       <Surface as="section" padding="sm" className="min-w-0 space-y-3">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <ActivityKindFilterChips chips={kindChips} />
+        <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          {/* min-w-0: the chip row scrolls inside itself on a phone; without
+              it the flex item sizes to the whole chip strip and widens the
+              page instead. */}
           <div className="min-w-0">
+            <ActivityKindFilterChips chips={kindChips} />
+          </div>
+          <div className="min-w-0 shrink-0">
             <PanelBoundary title="Team filter" skeleton={TEAM_FILTER_SKELETON}>
               <TeamFilterAsync />
             </PanelBoundary>
@@ -145,9 +152,7 @@ export default async function ActivityPage({
       </Surface>
 
       <Surface as="section" padding="sm" className="min-w-0">
-        <h2 className="mb-3 border-b border-accent-600/25 pb-1.5 text-xs font-semibold uppercase tracking-widest text-warm-500">
-          Everything Helm is doing
-        </h2>
+        <SectionLabel className="mb-3">Everything Helm is doing</SectionLabel>
         <PanelBoundary title="Activity feed" skeleton={<SkeletonList rows={8} />}>
           <Feed />
         </PanelBoundary>

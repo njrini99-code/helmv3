@@ -75,7 +75,7 @@ function PrLink({ resolution }: { resolution: ArchivedResolution }) {
         href={resolution.prUrl}
         target="_blank"
         rel="noreferrer"
-        className="text-accent-700 underline"
+        className="inline-flex items-center text-accent-700 underline [@media(pointer:coarse)]:min-h-11"
       >
         {label}
       </a>
@@ -84,7 +84,7 @@ function PrLink({ resolution }: { resolution: ArchivedResolution }) {
   if (resolution.prNumber !== null) {
     return <span className="text-warm-700">{label}</span>;
   }
-  return <span className="text-warm-400">no PR recorded</span>;
+  return <span className="text-warm-500">no PR recorded</span>;
 }
 
 /**
@@ -129,11 +129,15 @@ function ArchiveRow({ resolution }: { resolution: ArchivedResolution }) {
       )}
     >
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="flex min-w-0 items-center gap-2">
+        {/* flex-wrap + break-all, not truncate: the fingerprint IS the row's
+            identity, and on a phone a pill beside a truncated hash left a
+            few characters of it — or none, once the "refixed · regressed Nx
+            before" pill claimed the width. */}
+        <div className="flex min-w-0 flex-wrap items-center gap-2">
           <RegressionPill resolution={resolution} />
           <Link
             href={`/admin/errors/${encodeURIComponent(resolution.fingerprint)}`}
-            className="min-w-0 truncate font-fw-mono text-sm text-accent-700 underline"
+            className="inline-flex min-w-0 items-center break-all font-fw-mono text-sm text-accent-700 underline [@media(pointer:coarse)]:min-h-11"
           >
             {resolution.fingerprint}
           </Link>
@@ -154,7 +158,9 @@ function ArchiveRow({ resolution }: { resolution: ArchivedResolution }) {
         ) : null}
       </div>
 
-      {resolution.note ? <p className="text-xs text-warm-500">{resolution.note}</p> : null}
+      {resolution.note ? (
+        <p className="break-words text-xs text-warm-500 [overflow-wrap:anywhere]">{resolution.note}</p>
+      ) : null}
     </Inset>
   );
 }

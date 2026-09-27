@@ -14,6 +14,7 @@ import { TeamHealthTable, type TeamHealthEntry } from '../_components/TeamHealth
 import { TeamCommandCard } from '../_components/TeamCommandCard';
 import { PlayerWatchlist } from '../_components/PlayerWatchlist';
 import { AutoRefresh } from '../_components/AutoRefresh';
+import { TabHeader } from '../_components/TabHeader';
 import { FeatureHealthRollup } from '../_components/FeatureHealthRollup';
 import { parseView, type AdminViewOf } from '@/lib/admin/views';
 import { ViewRail } from '../_components/ViewRail';
@@ -21,13 +22,6 @@ import { BaseballJourneyView } from './_components/BaseballJourneyView';
 import { SectionLabel } from '../_components/SectionLabel';
 
 export const dynamic = 'force-dynamic';
-
-// Dateline rule — replaces the retired border-l-2 "key panel" left-edge
-// stripe. Chrome, not a status signal: a helm-green h-[2px] w-7 rounded-full
-// rule above the card title.
-function KeyPanelRule() {
-  return <span aria-hidden className="mb-3 block h-[2px] w-7 rounded-full bg-accent-500" />;
-}
 
 async function BaseballBody() {
   const [usersTab, errorsTab, baseballTab, featureHealth] = await Promise.all([
@@ -91,23 +85,10 @@ async function BaseballBody() {
       <section className="grid gap-4 xl:grid-cols-[minmax(0,1.35fr)_minmax(360px,0.65fr)]">
         <Surface padding="sm">
           <div className="flex flex-wrap items-start justify-between gap-3">
-            <div>
-              <KeyPanelRule />
-              <p className="text-xs font-semibold uppercase tracking-widest text-warm-500">Baseball command center</p>
-              {/* Mobile Doctrine rule 2: eyebrow + long title + paragraph is a
-                  desktop cover treatment. Below `md` the headline condenses to
-                  the smaller text-h3 step and the descriptive paragraph is
-                  dropped entirely (mirrors admin/page.tsx CommandHeader) so
-                  the KPI row below is reachable at 390px without scrolling
-                  past decoration first. */}
-              <h2 className="mt-2 text-h3 font-semibold tracking-normal text-warm-900 md:text-2xl">
-                Team-by-team, player-by-player visibility
-              </h2>
-              <p className="mt-2 hidden max-w-3xl text-sm leading-6 text-warm-600 md:block">
-                Baseball is now a real Helm Bridge operating view: roster posture, quiet players, profile gaps, and
-                production errors are pulled from the same sources as Users, Errors, and Overview.
-              </p>
-            </div>
+            {/* A section label, not a second masthead: the tab's one header
+                is the TabHeader above the view rail. The eyebrow + tagline +
+                desktop-only paragraph that sat here was a second title. */}
+            <SectionLabel rule={false}>Command center</SectionLabel>
             <StatusPill tone={recentErrors > 0 || profileGaps > 0 ? 'warning' : 'success'} dot size="sm">
               {recentErrors > 0 ? 'watch errors' : 'launch ready'}
             </StatusPill>
@@ -140,13 +121,13 @@ async function BaseballBody() {
                 <Link
                   key={item.label}
                   href={item.href}
-                  className="flex items-center justify-between gap-3 rounded-fw-md border border-warm-200 bg-surface-sunken px-3 py-2 transition-colors hover:bg-surface"
+                  className="flex min-h-11 items-center justify-between gap-3 rounded-fw-md border border-warm-200 bg-surface-sunken px-3 py-2 transition-colors hover:bg-surface"
                 >
                   <span className="flex min-w-0 items-center gap-2 text-sm font-medium text-warm-800">
-                    <Icon size={15} className="text-accent-600" aria-hidden />
+                    <Icon size={15} className="shrink-0 text-accent-600" aria-hidden />
                     {item.label}
                   </span>
-                  <span className="font-fw-mono text-sm font-semibold tabular-nums text-warm-900">{item.value}</span>
+                  <span className="shrink-0 font-fw-mono text-sm font-semibold tabular-nums text-warm-900">{item.value}</span>
                 </Link>
               );
             })}
@@ -270,14 +251,14 @@ async function BaseballBody() {
             <div className="mt-4 flex flex-wrap gap-2">
               <Link
                 href="/admin/errors?sport=baseball&window=168"
-                className="inline-flex items-center gap-2 rounded-full border border-warm-200 bg-surface-sunken px-3 py-1.5 text-xs font-medium text-warm-800 hover:bg-surface"
+                className="inline-flex min-h-11 items-center gap-2 rounded-full border border-warm-200 bg-surface-sunken px-4 py-2 text-xs font-medium text-warm-800 hover:bg-surface"
               >
                 <RadioTower size={14} aria-hidden />
                 Open baseball errors
               </Link>
               <Link
                 href="/admin/users?sport=baseball&attention=watch"
-                className="inline-flex items-center gap-2 rounded-full border border-warm-200 bg-surface-sunken px-3 py-1.5 text-xs font-medium text-warm-800 hover:bg-surface"
+                className="inline-flex min-h-11 items-center gap-2 rounded-full border border-warm-200 bg-surface-sunken px-4 py-2 text-xs font-medium text-warm-800 hover:bg-surface"
               >
                 <Activity size={14} aria-hidden />
                 Open launch watchlist
@@ -302,6 +283,7 @@ export default async function BaseballTabPage({
   return (
     <div className="space-y-6">
       <AutoRefresh />
+      <TabHeader title="Baseball" />
       <ViewRail
         host="/admin/baseball"
         active={view}

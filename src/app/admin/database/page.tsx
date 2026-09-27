@@ -27,13 +27,15 @@ import { fetchPlatformHealth } from '@/lib/admin/database/platform';
 import { fetchDatabaseAdvisors, type AdvisorFinding } from '@/lib/admin/database/advisors';
 import { fetchAlertPolicy } from '@/lib/admin/database/alerts';
 import type { EvaluatedAlert } from '@/lib/observability/supabase/alert-policy';
-import { Surface, Inset, StatTile, StatusPill, InlineNotice, Eyebrow, type FwStatusTone } from '@/components/fairway';
-import { DatelineRule } from '@/components/ui/card';
+import { Surface, StatTile, StatusPill, InlineNotice, type FwStatusTone } from '@/components/fairway';
 import { PanelBoundary } from '../_components/PanelBoundary';
 import { PanelPageSkeleton } from '../_components/PanelSkeletons';
 import { PanelNoData, PanelAllClear, PanelStale } from '../_components/PanelStates';
 import { AutoRefresh } from '../_components/AutoRefresh';
 import { LocalTime } from '../_components/LocalTime';
+import { SectionLabel } from '../_components/SectionLabel';
+import { DetailsDisclosure, TabHeader } from '../_components/TabHeader';
+import { RailRow, RowHead, FactLine, RowFoot, StateChip, type RowSeverity } from '../_components/Row';
 import { LogEvidenceForm } from './LogEvidenceForm';
 import { ViewRail } from '../_components/ViewRail';
 import { parseView, hrefForView, type AdminViewOf } from '@/lib/admin/views';
@@ -74,6 +76,60 @@ const SEVERITY_TONE: Record<string, FwStatusTone> = {
   critical: 'danger',
 };
 
+/** An error-store severity word as a row rail. Anything unrecognised is
+ *  `info` — never promoted to a louder rail than the data claims. */
+function rowSeverity(severity: string): RowSeverity {
+  return severity === 'critical' || severity === 'error' || severity === 'warning' ? severity : 'info';
+}
+
+/** A StatusPill tone as a row rail, for the status lines below that already
+ *  compute a tone. Colour still means severity: success is `ok`, danger is
+ *  `error`, and everything without a severity (neutral/accent/info) is the
+ *  quiet `info` rail. */
+function toneSeverity(tone: FwStatusTone): RowSeverity {
+  if (tone === 'danger') return 'error';
+  if (tone === 'warning') return 'warning';
+  if (tone === 'success') return 'ok';
+  return 'info';
+}
+
+/**
+ * One section of a Database view. Replaces Surface > Inset (p-6 + p-4: 40px a
+ * side, which left ~255px for rows on a 375px phone) with one `sm` surface,
+ * and moves each section's methodology note — every one of them "how this is
+ * read", none of them data — behind the shared Details disclosure.
+ */
+function DbSection({ title, note, children }: { title: string; note?: React.ReactNode; children: React.ReactNode }) {
+  return (
+    <Surface as="section" padding="sm" className="min-w-0">
+      <SectionLabel>{title}</SectionLabel>
+      {note ? (
+        <DetailsDisclosure className="mt-1">
+          <p>{note}</p>
+        </DetailsDisclosure>
+      ) : null}
+      <div className="mt-3">{children}</div>
+    </Surface>
+  );
+}
+
+/**
+ * A label with one state on the right — collector runs, saturation, telemetry
+ * sources. Wraps rather than squeezing: at 375px a long label beside a
+ * timestamp and a pill pushed the pill past the card edge.
+ */
+function StatusLine({ label, meta, children }: { label: React.ReactNode; meta?: React.ReactNode; children: React.ReactNode }) {
+  return (
+    <div className="flex min-w-0 flex-wrap items-center justify-between gap-x-3 gap-y-1 rounded-lg border border-border-subtle px-3 py-2">
+      <span className="min-w-0 break-words text-xs font-medium text-warm-700 [overflow-wrap:anywhere]">{label}</span>
+      <span className="flex shrink-0 items-center gap-2">
+        {meta ? <span className="whitespace-nowrap font-fw-mono text-caption text-warm-500">{meta}</span> : null}
+        {children}
+      </span>
+    </div>
+  );
+}
+
 const COLLECTOR_LABEL: Record<string, string> = {
   'db-health-sampler': 'Health sampler (5m)',
   'db-stat-delta': 'Query delta (15m)',
@@ -90,23 +146,18 @@ function CollectorChip({ collector }: { collector: CollectorHealth }) {
           ? 'warning'
           : 'neutral'
   return (
-    <div className="flex items-center justify-between rounded-lg border border-border-subtle px-3 py-2">
-      <span className="text-xs font-medium text-warm-700">{COLLECTOR_LABEL[collector.jobType] ?? collector.jobType}</span>
-      <div className="flex items-center gap-2">
-        {collector.lastRunAt ? (
-          <span className="font-fw-mono text-caption text-warm-500">
-            <LocalTime iso={collector.lastRunAt} />
-          </span>
-        ) : null}
-        <StatusPill tone={tone} size="sm" dot>
-          {collector.lastStatus === 'never_run'
-            ? 'never run'
-            : collector.lastStatus === 'unknown'
-              ? 'unknown — job log unreadable'
-              : collector.lastStatus}
-        </StatusPill>
-      </div>
-    </div>
+    <StatusLine
+      label={COLLECTOR_LABEL[collector.jobType] ?? collector.jobType}
+      meta={collector.lastRunAt ? <LocalTime iso={collector.lastRunAt} /> : null}
+    >
+      <StatusPill tone={tone} size="sm" dot>
+        {collector.lastStatus === 'never_run'
+          ? 'never run'
+          : collector.lastStatus === 'unknown'
+            ? 'unknown — job log unreadable'
+            : collector.lastStatus}
+      </StatusPill>
+    </StatusLine>
   );
 }
 
@@ -171,15 +222,13 @@ async function MissionControlPanel() {
 
       {/* Connection-saturation / rollback-rate rules (brief §19, §23, Phase 2 A2) */}
       <div className="grid gap-2 sm:grid-cols-2">
-        <div className="flex items-center justify-between rounded-lg border border-border-subtle px-3 py-2">
-          <span className="text-xs font-medium text-warm-700">Connection saturation</span>
+        <StatusLine label="Connection saturation">
           <StatusPill tone={saturationTone} size="sm" dot>
             {rules.connectionSaturation.level}
             {rules.connectionSaturation.sustainedHigh ? ' · sustained' : ''}
           </StatusPill>
-        </div>
-        <div className="flex items-center justify-between rounded-lg border border-border-subtle px-3 py-2">
-          <span className="text-xs font-medium text-warm-700">Rollback rate</span>
+        </StatusLine>
+        <StatusLine label="Rollback rate">
           {rules.rollbackRate.baselineStatus === 'collecting' ? (
             <StatusPill tone="neutral" size="sm" dot>
               baseline collecting
@@ -189,7 +238,7 @@ async function MissionControlPanel() {
               {rules.rollbackRate.isRegression ? 'regression' : 'normal'}
             </StatusPill>
           )}
-        </div>
+        </StatusLine>
       </div>
 
       {latestSample.collectorStatus !== 'ok' ? (
@@ -213,31 +262,27 @@ async function MissionControlPanel() {
 }
 
 function ErrorGroupRow({ group }: { group: DbErrorFingerprintGroup }) {
+  const occurrences = group.totalOccurrences.toLocaleString();
   return (
-    <Link
-      href={`/admin/database?incident=${encodeURIComponent(group.fingerprint)}`}
-      className="flex items-start justify-between gap-3 rounded-lg border border-border-subtle px-3 py-2.5 transition-colors hover:border-border-strong focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-500"
-    >
-      <div className="min-w-0">
-        <div className="flex items-center gap-2">
-          <StatusPill tone={SEVERITY_TONE[group.severity] ?? 'neutral'} size="sm">
-            {group.severity}
-          </StatusPill>
-          <span className="truncate font-fw-mono text-xs text-warm-800">{group.errorCode ?? 'unknown'}</span>
-        </div>
-        <p className="mt-1 truncate text-sm text-warm-700">
-          {group.feature} · {group.service}
-        </p>
-        <p className="mt-0.5 truncate text-xs text-warm-500">{group.latest.normalizedMessage}</p>
-      </div>
-      <div className="shrink-0 text-right">
-        <p className="font-fw-mono text-sm font-medium text-warm-800">{group.totalOccurrences.toLocaleString()}×</p>
-        <p className="font-fw-mono text-caption text-warm-500">
-          <LocalTime iso={group.lastSeenAt} />
-        </p>
-        <p className="mt-0.5 text-caption text-warm-500">diagnose →</p>
-      </div>
-    </Link>
+    <RailRow severity={rowSeverity(group.severity)}>
+      {/* The whole row is the link to its diagnosis. The message leads (it is
+          the fault); severity (the raw value, so one the rail folds into `info`
+          is still readable), code, feature and service are the fact line; last-seen
+          and the "diagnose" affordance sit at the lowest weight. Nothing is
+          truncated — at 375px a one-line ellipsis kept three words of it. */}
+      <Link
+        href={`/admin/database?incident=${encodeURIComponent(group.fingerprint)}`}
+        className="block rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-500"
+      >
+        <RowHead value={`${occurrences}×`} valueLabel={`${occurrences} occurrences`}>
+          {group.latest.normalizedMessage}
+        </RowHead>
+        <FactLine emphasizeFirst items={[group.severity, group.errorCode ?? 'unknown', group.feature, group.service]} />
+        <RowFoot meta={<LocalTime iso={group.lastSeenAt} />}>
+          <span className="text-caption font-medium text-accent-700">diagnose →</span>
+        </RowFoot>
+      </Link>
+    </RailRow>
   );
 }
 
@@ -260,49 +305,53 @@ async function ErrorsPanel() {
   }
 
   return (
-    <div className="space-y-2">
+    <ul className="divide-y divide-warm-200/60">
       {result.data.groups.slice(0, 25).map((group) => (
         <ErrorGroupRow key={group.fingerprint} group={group} />
       ))}
-    </div>
+    </ul>
   );
 }
 
 function StatDeltaRowView({ row }: { row: StatDeltaRow }) {
   return (
-    <div className="flex items-center justify-between gap-3 rounded-lg border border-border-subtle px-3 py-2">
-      <div className="min-w-0">
-        <div className="flex items-center gap-2">
-          <span className="text-xs font-medium text-warm-700">{row.safeQueryClass}</span>
-          <span className="rounded-md bg-surface-sunken px-1.5 py-0.5 font-fw-mono text-caption text-warm-500">
-            {row.sourceClass}
-          </span>
+    <RailRow severity={row.regressionFlags.length > 0 ? 'warning' : 'info'}>
+      {/* Truthiness collapsed BOTH null and a genuine 0 into "0ms". A delta of
+          exactly zero is a real measurement — the query ran and cost no more
+          than last window — and is not the same fact as "no prior window". */}
+      <RowHead
+        value={
+          row.totalExecMsDelta === null || row.totalExecMsDelta === undefined
+            ? '—'
+            : `${Math.round(row.totalExecMsDelta).toLocaleString()}ms`
+        }
+        valueLabel="total execution time this window"
+      >
+        {row.safeQueryClass}
+      </RowHead>
+      <FactLine
+        items={[
+          row.sourceClass,
+          // `?? 0` here said "0 calls" for a window with NO prior state to diff
+          // against — a first observation rendered as a measured zero. Every
+          // row on this panel is flagged `new query` on a fresh collector, so
+          // the whole list read "0 calls · 0ms" beside a max of 26 seconds.
+          // null means no delta exists; it is not zero activity.
+          `${row.callsDelta === null ? '—' : row.callsDelta} calls · mean ${
+            row.meanExecMsWindow ? row.meanExecMsWindow.toFixed(1) : '—'
+          }ms · max ${row.maxExecMsObserved ? row.maxExecMsObserved.toFixed(0) : '—'}ms`,
+        ]}
+      />
+      {row.regressionFlags.length > 0 ? (
+        <div className="mt-1.5 flex flex-wrap gap-1">
           {row.regressionFlags.map((flag) => (
-            <StatusPill key={flag} tone="warning" size="sm">
+            <StateChip key={flag} tone="warning">
               {flag.replace(/_/g, ' ')}
-            </StatusPill>
+            </StateChip>
           ))}
         </div>
-        <p className="mt-0.5 font-fw-mono text-caption text-warm-500">
-          {/* `?? 0` here said "0 calls" for a window with NO prior state to diff
-              against — a first observation rendered as a measured zero. Every
-              row on this panel is flagged `new query` on a fresh collector, so
-              the whole list read "0 calls · 0ms" beside a max of 26 seconds.
-              null means no delta exists; it is not zero activity. */}
-          {row.callsDelta === null ? '—' : row.callsDelta} calls · mean{' '}
-          {row.meanExecMsWindow ? row.meanExecMsWindow.toFixed(1) : '—'}ms · max{' '}
-          {row.maxExecMsObserved ? row.maxExecMsObserved.toFixed(0) : '—'}ms
-        </p>
-      </div>
-      <p className="shrink-0 font-fw-mono text-sm font-medium text-warm-800">
-        {/* Truthiness collapsed BOTH null and a genuine 0 into "0ms". A delta of
-            exactly zero is a real measurement — the query ran and cost no more
-            than last window — and is not the same fact as "no prior window". */}
-        {row.totalExecMsDelta === null || row.totalExecMsDelta === undefined
-          ? '—'
-          : `${Math.round(row.totalExecMsDelta).toLocaleString()}ms`}
-      </p>
-    </div>
+      ) : null}
+    </RailRow>
   );
 }
 
@@ -337,9 +386,11 @@ async function PerformancePanel() {
           <InlineNotice tone="warning" title="Regressions in the last 24h">
             {result.data.recentRegressions.length} flagged window(s), listed below.
           </InlineNotice>
-          {result.data.recentRegressions.map((row) => (
-            <StatDeltaRowView key={`regression-${row.id}`} row={row} />
-          ))}
+          <ul className="divide-y divide-warm-200/60">
+            {result.data.recentRegressions.map((row) => (
+              <StatDeltaRowView key={`regression-${row.id}`} row={row} />
+            ))}
+          </ul>
         </div>
       ) : null}
 
@@ -351,9 +402,11 @@ async function PerformancePanel() {
             ? ' Older windows are not shown here — regressions among them appear in the list above.'
             : ''}
         </p>
-        {result.data.latest.slice(0, LATEST_SAMPLE_CAP).map((row) => (
-          <StatDeltaRowView key={row.id} row={row} />
-        ))}
+        <ul className="divide-y divide-warm-200/60">
+          {result.data.latest.slice(0, LATEST_SAMPLE_CAP).map((row) => (
+            <StatDeltaRowView key={row.id} row={row} />
+          ))}
+        </ul>
       </div>
     </div>
   );
@@ -369,35 +422,26 @@ async function PerformancePanel() {
 
 function LockIncidentRowView({ incident }: { incident: LockIncidentRow }) {
   return (
-    <div className="flex items-start justify-between gap-3 rounded-lg border border-border-subtle px-3 py-2.5">
-      <div className="min-w-0">
-        <div className="flex items-center gap-2">
-          <StatusPill tone={incident.severity === 'critical' ? 'danger' : 'warning'} size="sm">
-            {incident.kind.replace(/_/g, ' ')}
-          </StatusPill>
-          <span className="rounded-md bg-surface-sunken px-1.5 py-0.5 font-fw-mono text-caption text-warm-500">
-            {incident.roleClass}
-          </span>
-          {incident.resolvedAt ? (
-            <StatusPill tone="success" size="sm">
-              resolved
-            </StatusPill>
-          ) : null}
-        </div>
-        <p className="mt-1 truncate text-sm text-warm-700">{incident.blockedQueryClass ?? '—'}</p>
-        {incident.blockingQueryClass ? (
-          <p className="mt-0.5 truncate text-xs text-warm-500">blocked by {incident.blockingQueryClass}</p>
-        ) : null}
-      </div>
-      <div className="shrink-0 text-right">
-        {incident.waitMs !== null ? (
-          <p className="font-fw-mono text-sm font-medium text-warm-800">{(incident.waitMs / 1000).toFixed(1)}s</p>
-        ) : null}
-        <p className="font-fw-mono text-caption text-warm-500">
-          <LocalTime iso={incident.detectedAt} />
-        </p>
-      </div>
-    </div>
+    <RailRow severity={incident.resolvedAt ? 'ok' : incident.severity === 'critical' ? 'critical' : 'warning'}>
+      <RowHead
+        value={incident.waitMs !== null ? `${(incident.waitMs / 1000).toFixed(1)}s` : undefined}
+        valueLabel="lock wait"
+      >
+        {incident.blockedQueryClass ?? '—'}
+      </RowHead>
+      <FactLine
+        emphasizeFirst
+        items={[
+          incident.kind.replace(/_/g, ' '),
+          incident.severity,
+          incident.roleClass,
+          incident.blockingQueryClass ? `blocked by ${incident.blockingQueryClass}` : null,
+        ]}
+      />
+      <RowFoot meta={<LocalTime iso={incident.detectedAt} />}>
+        {incident.resolvedAt ? <StateChip>resolved</StateChip> : null}
+      </RowFoot>
+    </RailRow>
   );
 }
 
@@ -441,11 +485,11 @@ async function LocksPanel() {
           so an open count that reaches the ceiling stays there.
         </p>
       ) : null}
-      <div className="space-y-2">
+      <ul className="divide-y divide-warm-200/60">
         {result.data.incidents.slice(0, 25).map((incident) => (
           <LockIncidentRowView key={incident.id} incident={incident} />
         ))}
-      </div>
+      </ul>
     </div>
   );
 }
@@ -473,24 +517,14 @@ async function TableHealthPanel() {
       {result.data.warnings.length === 0 ? (
         <PanelAllClear label="No table-health warnings" checkedAt={result.data.latestSampledAt ?? new Date().toISOString()} />
       ) : (
-        <div className="space-y-2">
+        <ul className="divide-y divide-warm-200/60">
           {result.data.warnings.map((warning, idx) => (
-            <div
-              key={`${warning.kind}-${warning.relationName}-${idx}`}
-              className="flex items-center justify-between gap-3 rounded-lg border border-border-subtle px-3 py-2"
-            >
-              <div className="min-w-0">
-                <div className="flex items-center gap-2">
-                  <StatusPill tone="warning" size="sm">
-                    {warning.kind.replace(/_/g, ' ')}
-                  </StatusPill>
-                  <span className="truncate text-xs font-medium text-warm-700">{warning.relationName}</span>
-                </div>
-                <p className="mt-0.5 truncate text-xs text-warm-500">{warning.detail}</p>
-              </div>
-            </div>
+            <RailRow key={`${warning.kind}-${warning.relationName}-${idx}`} severity="warning">
+              <RowHead>{warning.relationName}</RowHead>
+              <FactLine emphasizeFirst items={[warning.kind.replace(/_/g, ' '), warning.detail]} />
+            </RailRow>
           ))}
-        </div>
+        </ul>
       )}
     </div>
   );
@@ -499,30 +533,21 @@ async function TableHealthPanel() {
 function CronJobRowView({ job }: { job: CronJobDisplayRow }) {
   const tone: FwStatusTone = job.findings.length === 0 ? 'success' : job.findings.includes('never_run') ? 'neutral' : 'danger';
   return (
-    <div className="flex items-start justify-between gap-3 rounded-lg border border-border-subtle px-3 py-2.5">
-      <div className="min-w-0">
-        <div className="flex items-center gap-2">
-          <span className="truncate text-sm font-medium text-warm-800">{job.jobName}</span>
-          <span className="rounded-md bg-surface-sunken px-1.5 py-0.5 font-fw-mono text-caption text-warm-500">
-            {job.schedule}
-          </span>
+    <RailRow severity={toneSeverity(tone)}>
+      <RowHead value={job.lastRunStatus ?? 'never run'} valueLabel="last run status">
+        {job.jobName}
+      </RowHead>
+      <FactLine items={[job.schedule, job.findings.length === 0 ? 'healthy' : null]} />
+      {job.findings.length > 0 ? (
+        <div className="mt-1.5 flex flex-wrap gap-1">
+          {job.findings.map((finding) => (
+            <StateChip key={finding} tone="warning">
+              {finding.replace(/_/g, ' ')}
+            </StateChip>
+          ))}
         </div>
-        {job.findings.length > 0 ? (
-          <div className="mt-1 flex flex-wrap gap-1">
-            {job.findings.map((finding) => (
-              <StatusPill key={finding} tone="warning" size="sm">
-                {finding.replace(/_/g, ' ')}
-              </StatusPill>
-            ))}
-          </div>
-        ) : (
-          <p className="mt-1 text-xs text-warm-500">healthy</p>
-        )}
-      </div>
-      <StatusPill tone={tone} size="sm" dot>
-        {job.lastRunStatus ?? 'never run'}
-      </StatusPill>
-    </div>
+      ) : null}
+    </RailRow>
   );
 }
 
@@ -552,22 +577,21 @@ async function JobsPanel() {
       ) : cronJobs.length === 0 ? (
         <PanelNoData label="No pg_cron jobs registered" description="cron.job is empty in this database." />
       ) : (
-        <div className="space-y-2">
+        <ul className="divide-y divide-warm-200/60">
           {cronJobs.map((job) => (
             <CronJobRowView key={job.jobId} job={job} />
           ))}
-        </div>
+        </ul>
       )}
 
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-2">
+      <div className="grid gap-3 sm:grid-cols-2">
         <StatTile
           label="PG_NET QUEUE"
           value={netQueueCapability === 'available' ? (netQueueDepth ?? 0) : undefined}
           tone={netFindings.includes('backlog_anomaly') ? 'accent' : 'neutral'}
           mono
         />
-        <div className="flex items-center justify-between rounded-lg border border-border-subtle px-3 py-2">
-          <span className="text-xs font-medium text-warm-700">pg_net responses (24h)</span>
+        <StatusLine label="pg_net responses (24h)">
           <StatusPill
             tone={netResponsesCapability === 'unavailable' ? 'neutral' : netFindings.includes('elevated_error_rate') ? 'danger' : 'success'}
             size="sm"
@@ -579,7 +603,7 @@ async function JobsPanel() {
                 ? 'elevated errors'
                 : 'normal'}
           </StatusPill>
-        </div>
+        </StatusLine>
       </div>
     </div>
   );
@@ -595,19 +619,11 @@ const FRESHNESS_TONE: Record<TelemetrySourceRow['state'], FwStatusTone> = {
 
 function TelemetrySourceRowView({ source }: { source: TelemetrySourceRow }) {
   return (
-    <div className="flex items-center justify-between rounded-lg border border-border-subtle px-3 py-2">
-      <span className="text-xs font-medium text-warm-700">{source.name}</span>
-      <div className="flex items-center gap-2">
-        {source.lastSampleAt ? (
-          <span className="font-fw-mono text-caption text-warm-500">
-            <LocalTime iso={source.lastSampleAt} />
-          </span>
-        ) : null}
-        <StatusPill tone={FRESHNESS_TONE[source.state]} size="sm" dot>
-          {source.state}
-        </StatusPill>
-      </div>
-    </div>
+    <StatusLine label={source.name} meta={source.lastSampleAt ? <LocalTime iso={source.lastSampleAt} /> : null}>
+      <StatusPill tone={FRESHNESS_TONE[source.state]} size="sm" dot>
+        {source.state}
+      </StatusPill>
+    </StatusLine>
   );
 }
 
@@ -632,12 +648,11 @@ async function TelemetryHealthPanel() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between rounded-lg border border-border-subtle px-3 py-2.5">
-        <span className="text-sm font-medium text-warm-800">Overall telemetry state</span>
+      <StatusLine label="Overall telemetry state">
         <StatusPill tone={overallTone} size="sm" dot>
           {overall}
         </StatusPill>
-      </div>
+      </StatusLine>
 
       <div className="space-y-2">
         {sources.map((source) => (
@@ -652,9 +667,12 @@ async function TelemetryHealthPanel() {
       ) : tableSizes.length > 0 ? (
         <div className="grid gap-2 sm:grid-cols-2">
           {tableSizes.map((size) => (
-            <div key={size.tableName} className="flex items-center justify-between rounded-lg border border-border-subtle px-3 py-2">
-              <span className="truncate font-fw-mono text-xs text-warm-700">{size.tableName}</span>
-              <span className="shrink-0 font-fw-mono text-caption text-warm-500">
+            <div
+              key={size.tableName}
+              className="flex min-w-0 flex-wrap items-center justify-between gap-x-3 gap-y-0.5 rounded-lg border border-border-subtle px-3 py-2"
+            >
+              <span className="min-w-0 break-all font-fw-mono text-xs text-warm-700">{size.tableName}</span>
+              <span className="shrink-0 whitespace-nowrap font-fw-mono text-caption text-warm-500">
                 {Math.round(size.totalBytes / 1024)} KB · {size.rowsLast24h}/24h
               </span>
             </div>
@@ -710,11 +728,13 @@ async function PlatformPanel() {
           mono
         />
       </div>
-      <p className="text-xs text-warm-500">
-        Allow-list is docs-derived, not live-verified — see{' '}
-        <span className="font-fw-mono">src/lib/observability/supabase/metrics-api.ts</span> header. A missing metric
-        renders as a blank tile, never a fabricated 0.
-      </p>
+      <DetailsDisclosure>
+        <p>
+          Allow-list is docs-derived, not live-verified — see{' '}
+          <span className="font-fw-mono">src/lib/observability/supabase/metrics-api.ts</span> header. A missing metric
+          renders as a blank tile, never a fabricated 0.
+        </p>
+      </DetailsDisclosure>
     </div>
   );
 }
@@ -727,22 +747,18 @@ const ADVISOR_LEVEL_TONE: Record<string, FwStatusTone> = {
   UNKNOWN: 'neutral',
 };
 
+/** Advisor levels as rails: ERROR is an error, WARN a warning, the rest info. */
+function advisorSeverity(level: string): RowSeverity {
+  const tone = ADVISOR_LEVEL_TONE[level] ?? 'neutral';
+  return tone === 'danger' ? 'error' : tone === 'warning' ? 'warning' : 'info';
+}
+
 function AdvisorRow({ finding }: { finding: AdvisorFinding }) {
   return (
-    <div className="flex items-start justify-between gap-3 rounded-lg border border-border-subtle px-3 py-2.5">
-      <div className="min-w-0">
-        <div className="flex items-center gap-2">
-          <StatusPill tone={ADVISOR_LEVEL_TONE[finding.level] ?? 'neutral'} size="sm">
-            {finding.level}
-          </StatusPill>
-          <span className="rounded-md bg-surface-sunken px-1.5 py-0.5 font-fw-mono text-caption text-warm-500">
-            {finding.advisorType}
-          </span>
-        </div>
-        <p className="mt-1 truncate text-sm text-warm-700">{finding.name}</p>
-        {finding.object ? <p className="mt-0.5 truncate font-fw-mono text-xs text-warm-500">{finding.object}</p> : null}
-      </div>
-    </div>
+    <RailRow severity={advisorSeverity(finding.level)}>
+      <RowHead>{finding.name}</RowHead>
+      <FactLine emphasizeFirst items={[finding.level, finding.advisorType, finding.object]} />
+    </RailRow>
   );
 }
 
@@ -765,11 +781,11 @@ async function AdvisorsPanel() {
   }
 
   return (
-    <div className="space-y-2">
+    <ul className="divide-y divide-warm-200/60">
       {result.data.findings.slice(0, 25).map((finding, index) => (
         <AdvisorRow key={`${finding.advisorType}-${finding.name}-${finding.object ?? index}`} finding={finding} />
       ))}
-    </div>
+    </ul>
   );
 }
 
@@ -781,22 +797,17 @@ const ALERT_STATE_TONE: Record<EvaluatedAlert['state'], FwStatusTone> = {
 
 function AlertRow({ alert }: { alert: EvaluatedAlert }) {
   return (
-    <div className="flex items-center justify-between gap-3 rounded-lg border border-border-subtle px-3 py-2">
-      <div className="min-w-0">
-        <div className="flex items-center gap-2">
-          <span className="rounded-md bg-surface-sunken px-1.5 py-0.5 font-fw-mono text-caption text-warm-500">
-            {alert.rule.severity}
-          </span>
-          <span className="truncate text-xs font-medium text-warm-700">{alert.rule.description}</span>
-        </div>
-        {alert.state !== 'clear' && (alert.evidence || alert.reason) ? (
-          <p className="mt-0.5 truncate text-xs text-warm-500">{alert.evidence ?? alert.reason}</p>
-        ) : null}
-      </div>
-      <StatusPill tone={ALERT_STATE_TONE[alert.state]} size="sm">
-        {alert.state}
-      </StatusPill>
-    </div>
+    <RailRow severity={toneSeverity(ALERT_STATE_TONE[alert.state])}>
+      <RowHead value={alert.state} valueLabel="alert state">
+        {alert.rule.description}
+      </RowHead>
+      <FactLine
+        items={[
+          alert.rule.severity,
+          alert.state !== 'clear' ? (alert.evidence ?? alert.reason ?? null) : null,
+        ]}
+      />
+    </RailRow>
   );
 }
 
@@ -819,11 +830,11 @@ async function AlertPolicyPanel() {
           {firingCount} firing · {unknownCount} unknown of {alerts.length} rules
         </span>
       </div>
-      <div className="space-y-1.5">
+      <ul className="divide-y divide-warm-200/60">
         {alerts.map((alert) => (
           <AlertRow key={alert.rule.id} alert={alert} />
         ))}
-      </div>
+      </ul>
     </div>
   );
 }
@@ -855,8 +866,8 @@ function DetailSection<T>({
 }) {
   return (
     <div className="rounded-lg border border-border-subtle px-3 py-2.5">
-      <div className="flex items-center justify-between gap-2">
-        <span className="text-xs font-medium text-warm-700">{title}</span>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <span className="min-w-0 text-xs font-medium text-warm-700">{title}</span>
         <StatusPill tone={SECTION_STATE_TONE[section.state] ?? 'neutral'} size="sm" dot>
           {SECTION_STATE_LABEL[section.state]}
         </StatusPill>
@@ -864,7 +875,7 @@ function DetailSection<T>({
       {section.state === 'ok' && section.data !== null ? (
         <div className="mt-2">{children(section.data)}</div>
       ) : (
-        <p className="mt-1.5 text-xs text-warm-600">{section.note ?? 'No detail available.'}</p>
+        <p className="mt-1.5 break-words text-xs text-warm-600 [overflow-wrap:anywhere]">{section.note ?? 'No detail available.'}</p>
       )}
     </div>
   );
@@ -872,9 +883,11 @@ function DetailSection<T>({
 
 function Field({ label, value }: { label: string; value: string | number | null }) {
   return (
-    <div>
+    // min-w-0 + anywhere-wrap: a release SHA, relation or trace id is one
+    // unbroken token, and in a half-width phone cell it ran past the card.
+    <div className="min-w-0">
       <p className="text-caption uppercase tracking-wide text-warm-600">{label}</p>
-      <p className="font-fw-mono text-xs text-warm-800">{value ?? 'unknown'}</p>
+      <p className="break-words font-fw-mono text-xs text-warm-800 [overflow-wrap:anywhere]">{value ?? 'unknown'}</p>
     </div>
   );
 }
@@ -896,19 +909,19 @@ function IncidentDetailBody({ detail }: { detail: DatabaseIncidentDetail }) {
           <StatusPill tone={SEVERITY_TONE[identity.severity] ?? 'neutral'} size="sm">
             {identity.severity}
           </StatusPill>
-          <span className="font-fw-mono text-xs text-warm-800">{identity.primaryClass}</span>
+          <span className="min-w-0 break-all font-fw-mono text-xs text-warm-800">{identity.primaryClass}</span>
         </div>
-        <p className="mt-1 text-sm font-medium text-warm-900">{identity.title}</p>
+        <p className="mt-1 break-words text-sm font-medium text-warm-900 [overflow-wrap:anywhere]">{identity.title}</p>
         <p className="mt-0.5 break-all font-fw-mono text-caption text-warm-600">{identity.fingerprint}</p>
       </div>
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <StatTile label="OCCURRENCES" value={identity.occurrences} tone="neutral" mono />
         <StatTile label="BUCKETS" value={detail.bucketCount} tone="neutral" mono />
-        <div className="rounded-lg border border-border-subtle px-3 py-2.5">
+        <div className="min-w-0 rounded-lg border border-border-subtle px-3 py-2.5">
           <Field label="SQLSTATE / code" value={identity.sqlstate ?? identity.errorCode} />
         </div>
-        <div className="rounded-lg border border-border-subtle px-3 py-2.5">
+        <div className="min-w-0 rounded-lg border border-border-subtle px-3 py-2.5">
           {/* The error store has no HTTP column — an explicit "not captured", never a 0. */}
           <Field label="HTTP status" value={identity.httpStatus ?? 'not captured'} />
         </div>
@@ -944,7 +957,7 @@ function IncidentDetailBody({ detail }: { detail: DatabaseIncidentDetail }) {
       <div className="rounded-lg border border-border-subtle px-3 py-2.5">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <span className="text-xs font-medium text-warm-700">Service layer</span>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <StatusPill tone="neutral" size="sm">
               observed {SERVICE_LAYER_LABEL[detail.serviceLayer.observedLayer]}
             </StatusPill>
@@ -956,7 +969,7 @@ function IncidentDetailBody({ detail }: { detail: DatabaseIncidentDetail }) {
         </div>
         <ul className="mt-1.5 space-y-1">
           {detail.serviceLayer.reasons.map((reason) => (
-            <li key={reason} className="text-xs text-warm-600">
+            <li key={reason} className="break-words text-xs text-warm-600 [overflow-wrap:anywhere]">
               {reason}
             </li>
           ))}
@@ -968,14 +981,18 @@ function IncidentDetailBody({ detail }: { detail: DatabaseIncidentDetail }) {
         <span className="text-xs font-medium text-warm-700">Database workflow</span>
         <div className="mt-2 space-y-1.5">
           {detail.workflowStages.map((stage) => (
-            <div key={stage.stage} className="flex items-start justify-between gap-2">
-              <span className="text-xs text-warm-700">{DB_WORKFLOW_STAGE_LABEL[stage.stage]}</span>
-              <div className="flex min-w-0 items-center gap-2">
-                {stage.detail ? <span className="truncate text-caption text-warm-600">{stage.detail}</span> : null}
+            // Label + state on one line, the detail wrapping beneath: the detail
+            // used to truncate between them, which at 375px left a few letters.
+            <div key={stage.stage}>
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <span className="min-w-0 text-xs text-warm-700">{DB_WORKFLOW_STAGE_LABEL[stage.stage]}</span>
                 <StatusPill tone={STAGE_TONE[stage.status] ?? 'neutral'} size="sm" dot>
                   {stage.status.replace(/-/g, ' ')}
                 </StatusPill>
               </div>
+              {stage.detail ? (
+                <p className="mt-0.5 break-words text-caption text-warm-600 [overflow-wrap:anywhere]">{stage.detail}</p>
+              ) : null}
             </div>
           ))}
         </div>
@@ -1000,7 +1017,7 @@ function IncidentDetailBody({ detail }: { detail: DatabaseIncidentDetail }) {
               {AUTHORIZATION_VERDICT_LABEL[detail.authorization.verdict]}
             </StatusPill>
           </div>
-          <p className="mt-1.5 text-xs text-warm-600">{detail.authorization.explanation}</p>
+          <p className="mt-1.5 break-words text-xs text-warm-600">{detail.authorization.explanation}</p>
           {detail.authorization.runbook.length > 0 ? (
             <ol className="mt-2 space-y-1.5">
               {detail.authorization.runbook.map((step, index) => (
@@ -1021,8 +1038,8 @@ function IncidentDetailBody({ detail }: { detail: DatabaseIncidentDetail }) {
             <StatusPill tone={drift.verdict === 'not-applicable' ? 'neutral' : 'warning'} size="sm" dot>
               {SCHEMA_DRIFT_VERDICT_LABEL[drift.verdict]}
             </StatusPill>
-            <p className="text-xs text-warm-600">{drift.explanation}</p>
-            <div className="grid grid-cols-3 gap-2">
+            <p className="break-words text-xs text-warm-600">{drift.explanation}</p>
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
               <Field label="Migration file" value={drift.migrationFile} />
               <Field label="Ledger row" value={drift.ledgerRow} />
               <Field label="Generated types" value={drift.generatedTypes} />
@@ -1058,11 +1075,11 @@ function IncidentDetailBody({ detail }: { detail: DatabaseIncidentDetail }) {
               >
                 {CAUSAL_CONFIDENCE_LABEL[correlation.confidence]}
               </StatusPill>
-              <span className="font-fw-mono text-caption text-warm-600">
+              <span className="min-w-0 break-all font-fw-mono text-caption text-warm-600">
                 {correlation.releaseSha ?? 'no release'} · via {correlation.releaseIdentitySource}
               </span>
             </div>
-            <p className="text-xs text-warm-600">{correlation.because}</p>
+            <p className="break-words text-xs text-warm-600">{correlation.because}</p>
             {correlation.corroborating.length > 0 ? (
               <div>
                 <p className="text-caption uppercase tracking-wide text-warm-600">Corroborating</p>
@@ -1127,12 +1144,12 @@ function IncidentDetailBody({ detail }: { detail: DatabaseIncidentDetail }) {
           {(locks) => (
             <ul className="space-y-1.5">
               {locks.map((lock) => (
-                <li key={`${lock.detectedAt}-${lock.kind}`} className="flex items-center justify-between gap-2">
-                  <span className="text-xs text-warm-700">
+                <li key={`${lock.detectedAt}-${lock.kind}`} className="flex items-baseline justify-between gap-2">
+                  <span className="min-w-0 break-words text-xs text-warm-700 [overflow-wrap:anywhere]">
                     {lock.kind.replace(/_/g, ' ')}
                     {lock.relationName ? ` · ${lock.relationName}` : ''}
                   </span>
-                  <span className="font-fw-mono text-caption text-warm-600">
+                  <span className="shrink-0 font-fw-mono text-caption text-warm-600">
                     {lock.waitMs === null ? '—' : `${lock.waitMs}ms`}
                   </span>
                 </li>
@@ -1146,9 +1163,12 @@ function IncidentDetailBody({ detail }: { detail: DatabaseIncidentDetail }) {
         {(rows) => (
           <ul className="space-y-1.5">
             {rows.map((row) => (
-              <li key={`${row.sampledAt}-${row.safeQueryClass}`} className="flex items-center justify-between gap-2">
-                <span className="min-w-0 truncate text-xs text-warm-700">{row.safeQueryClass}</span>
-                <div className="flex shrink-0 items-center gap-2">
+              <li
+                key={`${row.sampledAt}-${row.safeQueryClass}`}
+                className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1"
+              >
+                <span className="min-w-0 break-words text-xs text-warm-700 [overflow-wrap:anywhere]">{row.safeQueryClass}</span>
+                <div className="flex flex-wrap items-center gap-2">
                   {row.regressionFlags.map((flag) => (
                     <StatusPill key={flag} tone="warning" size="sm">
                       {flag.replace(/_/g, ' ')}
@@ -1205,12 +1225,12 @@ function IncidentDetailBody({ detail }: { detail: DatabaseIncidentDetail }) {
               {link.kind === 'href' ? (
                 <Link
                   href={link.target}
-                  className="font-fw-mono text-caption text-accent-700 underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-500"
+                  className="inline-flex min-w-0 items-center break-all font-fw-mono text-caption text-accent-700 underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-500 [@media(pointer:coarse)]:min-h-11"
                 >
                   {link.target}
                 </Link>
               ) : (
-                <span className="font-fw-mono text-caption text-warm-600">{link.target}</span>
+                <span className="min-w-0 break-all font-fw-mono text-caption text-warm-600">{link.target}</span>
               )}
             </li>
           ))}
@@ -1255,12 +1275,10 @@ export default async function DatabasePage({
   return (
     <div className="space-y-5">
       <AutoRefresh intervalMs={60_000} />
-      <div>
-        <h1 className="text-lg font-semibold text-warm-900">Database</h1>
-        <p className="mt-0.5 max-w-2xl text-sm text-warm-600">
-          Read from what the collectors already wrote. Zero-cost: no log drain, no new vendor.
-        </p>
-      </div>
+      {/* Title only: the view rail below carries each view's one line, and
+          "zero-cost, no new vendor" is a build note, not something an operator
+          reads on every visit. */}
+      <TabHeader title="Database" />
 
       {/* A deep link carries `?incident=<fingerprint>` — from an alert, a
           Slack paste, another Bridge surface. It is the thing the operator
@@ -1269,30 +1287,30 @@ export default async function DatabasePage({
           where its subject is invisible is a broken link with extra steps. */}
       {incidentFingerprint !== null ? (
         <>
-          <Surface>
-            <Inset>
+          <Surface as="section" padding="sm" className="min-w-0">
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <Eyebrow as="h2">Incident detail</Eyebrow>
+                <SectionLabel rule={false}>Incident detail</SectionLabel>
                 {/* Drops `?incident=` and keeps the view — a hardcoded
                     /admin/database here would silently throw the operator back
                     to Posture from whichever view they were reading. */}
                 <Link
                   href={hrefForView('/admin/database', view, { ...params, incident: undefined })}
-                  className="text-xs text-accent-700 underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-500"
+                  className="inline-flex items-center text-xs text-accent-700 underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-500 [@media(pointer:coarse)]:min-h-11"
                 >
                   ← back to all sections
                 </Link>
               </div>
-              <p className="mt-1 text-xs text-warm-600">
-                One fingerprint, every source that has something to say about it. A section whose source is not shipped
-                or cannot be read says so — it never renders a zero.
-              </p>
+              <DetailsDisclosure className="mt-1">
+                <p>
+                  One fingerprint, every source that has something to say about it. A section whose source is not
+                  shipped or cannot be read says so — it never renders a zero.
+                </p>
+              </DetailsDisclosure>
               <div className="mt-3">
                 <PanelBoundary title="Incident detail" skeleton={<PanelPageSkeleton rows={8} />}>
                   <IncidentDetailPanel fingerprint={incidentFingerprint} />
                 </PanelBoundary>
               </div>
-            </Inset>
           </Surface>
         </>
       ) : null}
@@ -1325,207 +1343,174 @@ export default async function DatabasePage({
     switch (view as AdminViewOf<'/admin/database'>) {
       case 'posture':
         return (
-          <div className="space-y-5">
-            <Surface>
-              <Inset>
-                <Eyebrow as="h2">Changed since yesterday</Eyebrow>
-                <div className="mt-2">
-                  <PanelBoundary title="Changed since yesterday" skeleton={<PanelPageSkeleton rows={1} />}>
-                    <ChangedSinceYesterdayStrip />
-                  </PanelBoundary>
-                </div>
-              </Inset>
-            </Surface>
-            <DatelineRule />
+          <div className="space-y-4">
+            <DbSection title="Changed since yesterday">
+              <PanelBoundary title="Changed since yesterday" skeleton={<PanelPageSkeleton rows={1} />}>
+                <ChangedSinceYesterdayStrip />
+              </PanelBoundary>
+            </DbSection>
 
-            <Surface>
-              <Inset>
-                <Eyebrow as="h2">Mission Control</Eyebrow>
-                <div className="mt-3">
-                  <PanelBoundary title="Mission Control" skeleton={<PanelPageSkeleton />}>
-                    <MissionControlPanel />
-                  </PanelBoundary>
-                </div>
-              </Inset>
-            </Surface>
-            <DatelineRule />
+            <DbSection title="Mission Control">
+              <PanelBoundary title="Mission Control" skeleton={<PanelPageSkeleton />}>
+                <MissionControlPanel />
+              </PanelBoundary>
+            </DbSection>
 
-            <Surface>
-              <Inset>
-                <Eyebrow as="h2">Database Errors</Eyebrow>
-                <p className="mt-1 text-xs text-warm-500">
+            <DbSection
+              title="Database Errors"
+              note={
+                <>
                   Grouped by fingerprint (service, feature, operation, RPC/relation, code) — not by message.
-                </p>
-                <div className="mt-3">
-                  <PanelBoundary title="Database Errors" skeleton={<PanelPageSkeleton rows={5} />}>
-                    <ErrorsPanel />
-                  </PanelBoundary>
-                </div>
-              </Inset>
-            </Surface>
-            <DatelineRule />
+                </>
+              }
+            >
+              <PanelBoundary title="Database Errors" skeleton={<PanelPageSkeleton rows={5} />}>
+                <ErrorsPanel />
+              </PanelBoundary>
+            </DbSection>
 
-            <Surface>
-              <Inset>
-                <Eyebrow as="h2">Telemetry Health</Eyebrow>
-                <p className="mt-1 text-xs text-warm-500">
+            <DbSection
+              title="Telemetry Health"
+              note={
+                <>
                   Is the observability system itself watching? A blind or stale required source caps the overall state below green.
-                </p>
-                <div className="mt-3">
-                  <PanelBoundary title="Telemetry Health" skeleton={<PanelPageSkeleton rows={5} />}>
-                    <TelemetryHealthPanel />
-                  </PanelBoundary>
-                </div>
-              </Inset>
-            </Surface>
-            <DatelineRule />
+                </>
+              }
+            >
+              <PanelBoundary title="Telemetry Health" skeleton={<PanelPageSkeleton rows={5} />}>
+                <TelemetryHealthPanel />
+              </PanelBoundary>
+            </DbSection>
 
-            <Surface>
-              <Inset>
-                <Eyebrow as="h2">Locks &amp; Transactions</Eyebrow>
-                <p className="mt-1 text-xs text-warm-500">
+            <DbSection
+              title="Locks & Transactions"
+              note={
+                <>
                   Threshold-crossing lock waits, long-active queries, idle-in-transaction, and deadlocks. Never full query text.
-                </p>
-                <div className="mt-3">
-                  <PanelBoundary title="Locks & Transactions" skeleton={<PanelPageSkeleton rows={5} />}>
-                    <LocksPanel />
-                  </PanelBoundary>
-                </div>
-              </Inset>
-            </Surface>
-            <DatelineRule />
+                </>
+              }
+            >
+              <PanelBoundary title="Locks & Transactions" skeleton={<PanelPageSkeleton rows={5} />}>
+                <LocksPanel />
+              </PanelBoundary>
+            </DbSection>
 
-            <Surface>
-              <Inset>
-                <Eyebrow as="h2">Platform</Eyebrow>
-                <p className="mt-1 text-xs text-warm-500">
+            <DbSection
+              title="Platform"
+              note={
+                <>
                   Supabase Metrics API — CPU, memory, connection pool, DB size. $0-cost: read-only, 60s cache.
-                </p>
-                <div className="mt-3">
-                  <PanelBoundary title="Platform" skeleton={<PanelPageSkeleton />}>
-                    <PlatformPanel />
-                  </PanelBoundary>
-                </div>
-              </Inset>
-            </Surface>
-            <DatelineRule />
+                </>
+              }
+            >
+              <PanelBoundary title="Platform" skeleton={<PanelPageSkeleton />}>
+                <PlatformPanel />
+              </PanelBoundary>
+            </DbSection>
 
-            <Surface>
-              <Inset>
-                <Eyebrow as="h2">Alert policy</Eyebrow>
-                <p className="mt-1 text-xs text-warm-500">
+            <DbSection
+              title="Alert policy"
+              note={
+                <>
                   Every declared rule, always — a rule with no Bridge-level data source reads &quot;unknown&quot;, never a
                   fabricated &quot;clear&quot;.
-                </p>
-                <div className="mt-3">
-                  <PanelBoundary title="Alert policy" skeleton={<PanelPageSkeleton rows={8} />}>
-                    <AlertPolicyPanel />
-                  </PanelBoundary>
-                </div>
-              </Inset>
-            </Surface>
+                </>
+              }
+            >
+              <PanelBoundary title="Alert policy" skeleton={<PanelPageSkeleton rows={8} />}>
+                <AlertPolicyPanel />
+              </PanelBoundary>
+            </DbSection>
           </div>
         );
       case 'performance':
         return (
-          <div className="space-y-5">
-            <Surface>
-              <Inset>
-                <Eyebrow as="h2">Query Performance</Eyebrow>
-                <p className="mt-1 text-xs text-warm-500">
+          <div className="space-y-4">
+            <DbSection
+              title="Query Performance"
+              note={
+                <>
                   Most recent 15-minute Top-K window by pg_stat_statements delta. No raw query text is ever stored.
-                </p>
-                <div className="mt-3">
-                  <PanelBoundary title="Query Performance" skeleton={<PanelPageSkeleton rows={5} />}>
-                    <PerformancePanel />
-                  </PanelBoundary>
-                </div>
-              </Inset>
-            </Surface>
-            <DatelineRule />
+                </>
+              }
+            >
+              <PanelBoundary title="Query Performance" skeleton={<PanelPageSkeleton rows={5} />}>
+                <PerformancePanel />
+              </PanelBoundary>
+            </DbSection>
 
-            <Surface>
-              <Inset>
-                <Eyebrow as="h2">Slow statements</Eyebrow>
-                <p className="mt-1 text-xs text-warm-500">
+            <DbSection
+              title="Slow statements"
+              note={
+                <>
                   Top 10 by mean time and top 10 by total time (of the stored top 25), with a 7-day mean-time sparkline per
                   fingerprint. A statement over 500ms mean pages Sentry once per day.
-                </p>
-                <div className="mt-3">
-                  <PanelBoundary title="Slow statements" skeleton={<PanelPageSkeleton rows={5} />}>
-                    <SlowStatementsPanel />
-                  </PanelBoundary>
-                </div>
-              </Inset>
-            </Surface>
-            <DatelineRule />
+                </>
+              }
+            >
+              <PanelBoundary title="Slow statements" skeleton={<PanelPageSkeleton rows={5} />}>
+                <SlowStatementsPanel />
+              </PanelBoundary>
+            </DbSection>
 
-            <Surface>
-              <Inset>
-                <Eyebrow as="h2">Index suggestions</Eyebrow>
-                <p className="mt-1 text-xs text-warm-500">
+            <DbSection
+              title="Index suggestions"
+              note={
+                <>
                   index_advisor (via hypopg) run against the latest captured statements. Skipped, never CREATE EXTENSION'd,
                   when the extension is not installed.
-                </p>
-                <div className="mt-3">
-                  <PanelBoundary title="Index suggestions" skeleton={<PanelPageSkeleton rows={5} />}>
-                    <IndexSuggestionsPanel />
-                  </PanelBoundary>
-                </div>
-              </Inset>
-            </Surface>
-            <DatelineRule />
+                </>
+              }
+            >
+              <PanelBoundary title="Index suggestions" skeleton={<PanelPageSkeleton rows={5} />}>
+                <IndexSuggestionsPanel />
+              </PanelBoundary>
+            </DbSection>
 
-            <Surface>
-              <Inset>
-                <Eyebrow as="h2">Unused indexes</Eyebrow>
-                <p className="mt-1 text-xs text-warm-500">
+            <DbSection
+              title="Unused indexes"
+              note={
+                <>
                   Zero scans since stats reset, excluding primary-key and unique-constraint indexes.
-                </p>
-                <div className="mt-3">
-                  <PanelBoundary title="Unused indexes" skeleton={<PanelPageSkeleton rows={5} />}>
-                    <UnusedIndexesPanel />
-                  </PanelBoundary>
-                </div>
-              </Inset>
-            </Surface>
-            <DatelineRule />
+                </>
+              }
+            >
+              <PanelBoundary title="Unused indexes" skeleton={<PanelPageSkeleton rows={5} />}>
+                <UnusedIndexesPanel />
+              </PanelBoundary>
+            </DbSection>
 
-            <Surface>
-              <Inset>
-                <Eyebrow as="h2">Bloat</Eyebrow>
-                <p className="mt-1 text-xs text-warm-500">
+            <DbSection
+              title="Bloat"
+              note={
+                <>
                   pgstattuple_approx over the 20 largest tables. Skipped, never CREATE EXTENSION'd, when pgstattuple is not
                   installed.
-                </p>
-                <div className="mt-3">
-                  <PanelBoundary title="Bloat" skeleton={<PanelPageSkeleton rows={5} />}>
-                    <BloatPanel />
-                  </PanelBoundary>
-                </div>
-              </Inset>
-            </Surface>
-            <DatelineRule />
+                </>
+              }
+            >
+              <PanelBoundary title="Bloat" skeleton={<PanelPageSkeleton rows={5} />}>
+                <BloatPanel />
+              </PanelBoundary>
+            </DbSection>
 
-            <Surface>
-              <Inset>
-                <Eyebrow as="h2">Table Health</Eyebrow>
-                <p className="mt-1 text-xs text-warm-500">
+            <DbSection
+              title="Table Health"
+              note={
+                <>
                   Dead tuples, vacuum/analyze recency, scan patterns, and write concentration for the largest relations.
-                </p>
-                <div className="mt-3">
-                  <PanelBoundary title="Table Health" skeleton={<PanelPageSkeleton rows={5} />}>
-                    <TableHealthPanel />
-                  </PanelBoundary>
-                </div>
-              </Inset>
-            </Surface>
-            <DatelineRule />
+                </>
+              }
+            >
+              <PanelBoundary title="Table Health" skeleton={<PanelPageSkeleton rows={5} />}>
+                <TableHealthPanel />
+              </PanelBoundary>
+            </DbSection>
 
-            <Surface>
-              <Inset>
-                <Eyebrow as="h2">Postgres scheduled jobs</Eyebrow>
-                <p className="mt-1 text-xs text-warm-500">
+            <DbSection
+              title="Postgres scheduled jobs"
+              note={
+                <>
                   pg_cron job history and pg_net queue/response health. Counts only — never raw job SQL or response
                   payloads. This is Postgres-level scheduling only (1 job today: purge-admin-event-telemetry) —
                   application job queues (pgmq, Inngest) live on{' '}
@@ -1533,79 +1518,71 @@ export default async function DatabasePage({
                     Jobs &amp; Integrity →
                   </Link>
                   .
-                </p>
-                <div className="mt-3">
-                  <PanelBoundary title="Postgres scheduled jobs" skeleton={<PanelPageSkeleton rows={5} />}>
-                    <JobsPanel />
-                  </PanelBoundary>
-                </div>
-              </Inset>
-            </Surface>
+                </>
+              }
+            >
+              <PanelBoundary title="Postgres scheduled jobs" skeleton={<PanelPageSkeleton rows={5} />}>
+                <JobsPanel />
+              </PanelBoundary>
+            </DbSection>
           </div>
         );
       case 'schema':
         return (
-          <div className="space-y-5">
-            <Surface>
-              <Inset>
-                <Eyebrow as="h2">Coverage</Eyebrow>
-                <p className="mt-1 text-xs text-warm-500">
+          <div className="space-y-4">
+            <DbSection
+              title="Coverage"
+              note={
+                <>
                   RLS-enabled tables with zero policies, and public SECURITY DEFINER functions still executable by
                   anon/authenticated.
-                </p>
-                <div className="mt-3">
-                  <PanelBoundary title="Coverage" skeleton={<PanelPageSkeleton rows={5} />}>
-                    <CoveragePanel />
-                  </PanelBoundary>
-                </div>
-              </Inset>
-            </Surface>
-            <DatelineRule />
+                </>
+              }
+            >
+              <PanelBoundary title="Coverage" skeleton={<PanelPageSkeleton rows={5} />}>
+                <CoveragePanel />
+              </PanelBoundary>
+            </DbSection>
 
-            <Surface>
-              <Inset>
-                <Eyebrow as="h2">Drift</Eyebrow>
-                <p className="mt-1 text-xs text-warm-500">
+            <DbSection
+              title="Drift"
+              note={
+                <>
                   Migration ledger count and last health-sample time — the fallback view when no live schema/types/ledger
                   drift verdict is reachable from this Bridge deployment.
-                </p>
-                <div className="mt-3">
-                  <PanelBoundary title="Drift" skeleton={<PanelPageSkeleton rows={3} />}>
-                    <DriftPanel />
-                  </PanelBoundary>
-                </div>
-              </Inset>
-            </Surface>
-            <DatelineRule />
+                </>
+              }
+            >
+              <PanelBoundary title="Drift" skeleton={<PanelPageSkeleton rows={3} />}>
+                <DriftPanel />
+              </PanelBoundary>
+            </DbSection>
 
-            <Surface>
-              <Inset>
-                <Eyebrow as="h2">Advisors</Eyebrow>
-                <p className="mt-1 text-xs text-warm-500">
+            <DbSection
+              title="Advisors"
+              note={
+                <>
                   Supabase Security and Performance Advisors, deduped by (advisor type, name, object). No persistence this
                   phase — re-fetched live, 10-minute cache.
-                </p>
-                <div className="mt-3">
-                  <PanelBoundary title="Advisors" skeleton={<PanelPageSkeleton rows={5} />}>
-                    <AdvisorsPanel />
-                  </PanelBoundary>
-                </div>
-              </Inset>
-            </Surface>
-            <DatelineRule />
+                </>
+              }
+            >
+              <PanelBoundary title="Advisors" skeleton={<PanelPageSkeleton rows={5} />}>
+                <AdvisorsPanel />
+              </PanelBoundary>
+            </DbSection>
 
-            <Surface>
-              <Inset>
-                <Eyebrow as="h2">Fetch Supabase evidence</Eyebrow>
-                <p className="mt-1 text-xs text-warm-500">
+            <DbSection
+              title="Fetch Supabase evidence"
+              note={
+                <>
                   On-demand only, never scheduled. Disabled by default (HELM_SUPABASE_LOG_EVIDENCE_ENABLED). One bounded
                   query, sanitized, discarded after a &lt;= 40-line summary.
-                </p>
-                <div className="mt-3">
-                  <LogEvidenceForm />
-                </div>
-              </Inset>
-            </Surface>
+                </>
+              }
+            >
+              <LogEvidenceForm />
+            </DbSection>
           </div>
         );
     }

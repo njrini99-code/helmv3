@@ -106,9 +106,9 @@ export async function BenLeahIssueBoard() {
           href={repoIssuesUrl}
           target="_blank"
           rel="noreferrer"
-          className="inline-flex items-center gap-1 text-xs font-medium text-accent-700 hover:underline"
+          className="inline-flex min-h-11 min-w-0 items-center gap-1 text-xs font-medium text-accent-700 [overflow-wrap:anywhere] hover:underline"
         >
-          <GitPullRequest size={14} aria-hidden />
+          <GitPullRequest size={14} className="shrink-0" aria-hidden />
           All issues on {repoLabel}
         </Link>
       </div>
@@ -144,11 +144,16 @@ export async function BenLeahIssueBoard() {
       </StatStrip>
 
       {productionReadyAt ? (
-        <p className="flex items-center gap-2 text-xs text-warm-500">
-          <Rocket size={14} className="text-accent-600" aria-hidden />
-          Production last ready {formatWhen(new Date(productionReadyAt).toISOString())}
-          {productionCommitSha ? ` · ${productionCommitSha.slice(0, 7)}` : null}
-          . Closed issues after that time show as <span className="font-medium text-warm-700">In production</span>.
+        // Icon + ONE text child. As a flex row, every bare text run and the
+        // inner span became its own flex item, so at 375px the sentence was
+        // squeezed into several narrow side-by-side columns.
+        <p className="flex items-start gap-2 text-xs text-warm-500">
+          <Rocket size={14} className="mt-0.5 shrink-0 text-accent-600" aria-hidden />
+          <span className="min-w-0">
+            Production last ready {formatWhen(new Date(productionReadyAt).toISOString())}
+            {productionCommitSha ? ` · ${productionCommitSha.slice(0, 7)}` : null}
+            . Closed issues after that time show as <span className="font-medium text-warm-700">In production</span>.
+          </span>
         </p>
       ) : (
         <p className="text-xs text-warm-500">

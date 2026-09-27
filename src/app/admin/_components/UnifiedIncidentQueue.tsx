@@ -10,6 +10,7 @@ import type { IncidentGenome } from '@/lib/admin/incidents/genome';
 import type { ReleaseRelationshipVerdict } from '@/lib/admin/incidents/release-context';
 import { EvidenceInspector, type EvidenceInspectorData } from '@/components/admin/premium';
 import { PanelAllClear, PanelNoData } from './PanelStates';
+import { GroupHeading } from './Row';
 import { UnifiedIncidentCard } from './UnifiedIncidentCard';
 
 /**
@@ -224,10 +225,7 @@ export function UnifiedIncidentQueue({
       <div className="divide-y divide-warm-200">
         {buckets.map(({ severity, rows }) => (
           <section key={severity} className="py-1 first:pt-0 last:pb-0">
-            <h3 className="sticky top-0 z-10 flex items-baseline gap-2 bg-warm-50/95 py-1.5 text-eyebrow uppercase tracking-widest text-warm-500 backdrop-blur">
-              {SEVERITY_HEADING[severity]}
-              <span className="font-fw-mono tabular-nums text-warm-400">{rows.length}</span>
-            </h3>
+            <GroupHeading label={SEVERITY_HEADING[severity]} count={rows.length} />
             <ul className="divide-y divide-warm-200/60">{rows.map(card)}</ul>
           </section>
         ))}

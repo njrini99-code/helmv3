@@ -53,7 +53,7 @@ export function ErrorSurfaceReconciliation({ verdict }: { verdict: Reconciliatio
       <dl className="grid gap-1">
         {rows.map((row) => (
           <div key={row.label} className="flex flex-wrap items-baseline gap-x-2 font-fw-mono text-caption">
-            <dt className="w-52 shrink-0 text-warm-500">{row.label}</dt>
+            <dt className="basis-full text-warm-500 sm:w-52 sm:shrink-0 sm:basis-auto">{row.label}</dt>
             <dd className={`font-medium ${ROW_TONE[row.state]}`}>{row.state}</dd>
             <dd className="tabular-nums text-warm-500">
               ({row.source}, {count(row.count)})
@@ -61,7 +61,7 @@ export function ErrorSurfaceReconciliation({ verdict }: { verdict: Reconciliatio
           </div>
         ))}
         <div className="flex flex-wrap items-baseline gap-x-2 border-t border-warm-200 pt-1 font-fw-mono text-caption">
-          <dt className="w-52 shrink-0 text-warm-500">{RECONCILIATION_ROW_LABEL.overall}</dt>
+          <dt className="basis-full text-warm-500 sm:w-52 sm:shrink-0 sm:basis-auto">{RECONCILIATION_ROW_LABEL.overall}</dt>
           <dd className={`font-semibold ${OVERALL_TONE[verdict.overall]}`}>
             {OVERALL_HEALTH_LABEL[verdict.overall]}
           </dd>

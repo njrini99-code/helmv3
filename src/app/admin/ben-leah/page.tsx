@@ -1,7 +1,8 @@
 import { GitPullRequest, ImageUp, Link2, MessageSquarePlus, Tags } from 'lucide-react';
 import { requireSuperAdmin } from '@/lib/admin/require-super-admin';
-import { Eyebrow, Skeleton, SkeletonList, Surface, StatusPill } from '@/components/fairway';
+import { Skeleton, SkeletonList, Surface } from '@/components/fairway';
 import { PanelBoundary } from '../_components/PanelBoundary';
+import { TabHeader } from '../_components/TabHeader';
 import { AutoRefresh } from '../_components/AutoRefresh';
 import { BenLeahForm } from './BenLeahForm';
 import { BenLeahIssueBoard } from './BenLeahIssueBoard';
@@ -35,58 +36,51 @@ export default async function BenLeahPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <Eyebrow as="p" tone="accent">
-          Ben + Leah
-        </Eyebrow>
-        <div className="mt-2 flex flex-wrap items-end justify-between gap-4">
-          <div className="min-w-0">
-            <h1 className="text-2xl font-semibold text-warm-900">Submission desk</h1>
-            {/* Rule 2 (docs/MOBILE_DOCTRINE.md) — an eyebrow + title + full
-                sentence is a desktop cover treatment; below `md` it condenses
-                to one line so the intake form (the actual above-fold action)
-                isn't pushed down by masthead copy. */}
-            <p className="mt-1 line-clamp-1 max-w-3xl text-sm text-warm-600 md:line-clamp-none">
-              Capture changes, bugs, additions, screenshots, and source signals as GitHub issues without losing context.
-            </p>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <StatusPill tone="accent" dot size="sm">
-              GitHub-backed
-            </StatusPill>
-            <StatusPill tone="neutral" size="sm" dot={false}>
-              screenshots
-            </StatusPill>
-            <StatusPill tone="neutral" size="sm" dot={false}>
-              signal URL
-            </StatusPill>
-          </div>
+      {/* One header. The eyebrow + second title + three feature-badge pills
+          ("GitHub-backed", "screenshots", "signal URL") restated what the
+          "What lands in GitHub" card below already lists, in accent colour
+          that on the Bridge means severity. */}
+      <TabHeader
+        title="Ben + Leah"
+        description="Capture changes, bugs, additions, screenshots, and source signals as GitHub issues without losing context."
+      />
+
+      {/* One grid, DOM order form → tracker → help. On a phone the three
+          "how it works" cards used to sit between the intake form and the
+          issue tracker, so the tracker (the thing you come back to check)
+          was three cards further down. Desktop placement is unchanged: the
+          aside is pinned beside the form in row 1, the tracker spans row 2. */}
+      <div className="grid gap-x-4 gap-y-6 lg:grid-cols-[minmax(0,1fr)_320px]">
+        <div className="min-w-0 lg:col-start-1 lg:row-start-1">
+          <PanelBoundary title="Ben + Leah issue intake" skeleton={INTAKE_SKELETON}>
+            <BenLeahForm />
+          </PanelBoundary>
         </div>
-      </div>
 
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
-        <PanelBoundary title="Ben + Leah issue intake" skeleton={INTAKE_SKELETON}>
-          <BenLeahForm />
-        </PanelBoundary>
+        <div className="min-w-0 lg:col-span-2 lg:row-start-2">
+          <PanelBoundary title="Issue tracker" skeleton={TRACKER_SKELETON}>
+            <BenLeahIssueBoard />
+          </PanelBoundary>
+        </div>
 
-        <aside className="space-y-4">
+        <aside className="min-w-0 space-y-4 lg:col-start-2 lg:row-start-1">
           <Surface padding="sm">
             <h2 className="text-xs font-semibold uppercase tracking-widest text-warm-500">What lands in GitHub</h2>
             <ul className="mt-3 space-y-3 text-sm text-warm-700">
               <li className="flex gap-2">
-                <MessageSquarePlus size={16} className="mt-0.5 text-accent-600" aria-hidden />
+                <MessageSquarePlus size={16} className="mt-0.5 shrink-0 text-accent-600" aria-hidden />
                 <span>Type, category, priority, and the full narrative become the issue body.</span>
               </li>
               <li className="flex gap-2">
-                <ImageUp size={16} className="mt-0.5 text-accent-600" aria-hidden />
+                <ImageUp size={16} className="mt-0.5 shrink-0 text-accent-600" aria-hidden />
                 <span>Images are accepted. If storage is configured, signed links are embedded in the issue.</span>
               </li>
               <li className="flex gap-2">
-                <Link2 size={16} className="mt-0.5 text-accent-600" aria-hidden />
+                <Link2 size={16} className="mt-0.5 shrink-0 text-accent-600" aria-hidden />
                 <span>Signal URL is separate from Page URL, so a Sentry event or log link does not get buried.</span>
               </li>
               <li className="flex gap-2">
-                <GitPullRequest size={16} className="mt-0.5 text-accent-600" aria-hidden />
+                <GitPullRequest size={16} className="mt-0.5 shrink-0 text-accent-600" aria-hidden />
                 <span>Submissions go to the configured GitHub repo issues tab.</span>
               </li>
             </ul>
@@ -121,10 +115,6 @@ export default async function BenLeahPage() {
           </Surface>
         </aside>
       </div>
-
-      <PanelBoundary title="Issue tracker" skeleton={TRACKER_SKELETON}>
-        <BenLeahIssueBoard />
-      </PanelBoundary>
 
       <AutoRefresh intervalMs={60_000} />
     </div>

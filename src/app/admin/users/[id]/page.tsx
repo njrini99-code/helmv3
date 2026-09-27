@@ -152,8 +152,9 @@ export default async function UserDetailPage({
             ) : (
               <ul className="space-y-1.5">
                 {detail.memberships.map((m) => (
-                  <li key={`${m.sport}:${m.teamId}`} className="flex items-center gap-2 text-sm text-warm-800">
-                    <SportBadge sport={m.sport} /> {m.teamName}
+                  <li key={`${m.sport}:${m.teamId}`} className="flex min-w-0 items-center gap-2 text-sm text-warm-800">
+                    <SportBadge sport={m.sport} />
+                    <span className="min-w-0 break-words [overflow-wrap:anywhere]">{m.teamName}</span>
                   </li>
                 ))}
               </ul>
@@ -188,7 +189,7 @@ export default async function UserDetailPage({
                       {ACTIVITY_KIND_LABEL[a.kind] ?? a.kind}
                     </span>
                     <span className="min-w-0 flex-1 basis-full break-words text-warm-800 sm:truncate sm:basis-auto">{a.label}</span>
-                    <span className="font-fw-mono text-xs tabular-nums text-warm-500">
+                    <span className="whitespace-nowrap font-fw-mono text-xs tabular-nums text-warm-500">
                       <LocalTime iso={a.at} variant="datetime" />
                     </span>
                   </li>
@@ -210,9 +211,12 @@ export default async function UserDetailPage({
               ) : (
                 <ul className="divide-y divide-warm-200/60">
                   {detail.authEvents.map((e) => (
-                    <li key={e.id} className="py-1.5 text-sm text-warm-800">
+                    // Title, then time on its own line below `sm`: inline
+                    // `ml-2` let the timestamp wrap mid-value into a ragged
+                    // second line on a phone.
+                    <li key={e.id} className="break-words py-1.5 text-sm text-warm-800 [overflow-wrap:anywhere]">
                       {e.title}
-                      <span className="ml-2 font-fw-mono text-xs text-warm-500">
+                      <span className="block font-fw-mono text-xs text-warm-500 sm:ml-2 sm:inline">
                         <LocalTime iso={e.created_at} variant="datetime" />
                       </span>
                     </li>

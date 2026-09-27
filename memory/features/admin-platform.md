@@ -644,6 +644,12 @@ them would have broken those routes, not the dead one.
 ## UI Contract
 
 - Admin surfaces should be dense, scannable, and operational rather than marketing-style.
+- Every tab has one `<h1>`, from `TabHeader` (`src/app/admin/_components/TabHeader.tsx`),
+  with no eyebrow or second masthead. Methodology and "how this is counted"
+  prose sits behind its native Details disclosure, never above the data and
+  never hidden on phones. Tap targets are 44px on coarse pointers
+  (`[@media(pointer:coarse)]:min-h-11`), keyed to input, not width (Bridge
+  mobile rework, 2026-09-24).
 - Health, errors, data freshness, and needs-attention states should be visible without hunting.
 - A count that could not be read is rendered as UNREADABLE, never as zero and
   never as nothing — the Health badge follows this rule, the same as the

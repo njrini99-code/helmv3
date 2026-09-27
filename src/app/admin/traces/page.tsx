@@ -5,6 +5,7 @@ import { PanelBoundary } from '../_components/PanelBoundary';
 import { PanelPageSkeleton } from '../_components/PanelSkeletons';
 import { PanelNoData } from '../_components/PanelStates';
 import { AutoRefresh } from '../_components/AutoRefresh';
+import { TabHeader } from '../_components/TabHeader';
 import { TracesClient } from './TracesClient';
 import { fetchTraceIncidentLinks } from '@/lib/admin/triage/trace-incident-link';
 
@@ -73,13 +74,10 @@ export default async function TracesPage() {
   return (
     <div className="space-y-5">
       <AutoRefresh intervalMs={60_000} />
-      <div>
-        <h1 className="text-lg font-semibold text-warm-900">Flight Recorder</h1>
-        <p className="mt-0.5 max-w-2xl text-sm text-warm-600">
-          One golf round mutation, traced end to end — and the steps that never
-          ran, shown rather than omitted.
-        </p>
-      </div>
+      <TabHeader
+        title="Flight Recorder"
+        description="One golf round mutation, traced end to end — and the steps that never ran, shown rather than omitted."
+      />
       <PanelBoundary title="Flight Recorder" skeleton={<PanelPageSkeleton />}>
         <TracesPanel />
       </PanelBoundary>

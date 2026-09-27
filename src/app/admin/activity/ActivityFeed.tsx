@@ -87,7 +87,7 @@ function ActivityRow({ item }: { item: ActivityItem }) {
           <Link
             href={item.href}
             aria-label="Open demo activity"
-            className="-m-2 ml-1 flex-shrink-0 self-start rounded-full p-2 text-warm-400 transition-colors hover:bg-surface-sunken hover:text-accent-700"
+            className="-my-2 -mr-2 ml-1 flex h-11 w-11 flex-shrink-0 items-center justify-center self-start rounded-full text-warm-500 transition-colors hover:bg-surface-sunken hover:text-accent-700"
           >
             <ChevronRight size={16} aria-hidden />
           </Link>
@@ -103,12 +103,16 @@ function ActivityRow({ item }: { item: ActivityItem }) {
           href={item.href}
           className={cn(
             rowClass,
-            'block transition-colors hover:bg-surface-sunken',
+            // No `block` here: cn() resolves `flex` (rowClass) vs `block` to
+            // the LAST one, so every linked row rendered display:block — the
+            // icon, the text and the chevron stacked into three lines instead
+            // of one icon-text-chevron row.
+            'transition-colors hover:bg-surface-sunken',
             'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-500',
           )}
         >
           {body}
-          <ChevronRight size={16} className="mt-1.5 flex-shrink-0 self-start text-warm-400" aria-hidden />
+          <ChevronRight size={16} className="mt-1.5 flex-shrink-0 self-start text-warm-500" aria-hidden />
         </Link>
       </li>
     );

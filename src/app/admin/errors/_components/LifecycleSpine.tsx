@@ -132,7 +132,7 @@ const STAGE_STATE_WORD: Readonly<Record<ProofState, string>> = {
 const STAGE_STATE_INK: Readonly<Record<ProofState, string>> = {
   proven: 'text-fw-success-ink',
   pending: 'text-fw-warning-ink',
-  'not-reached': 'text-warm-400',
+  'not-reached': 'text-warm-500',
   failed: 'text-fw-danger-ink',
   unknown: 'text-warm-500',
 };

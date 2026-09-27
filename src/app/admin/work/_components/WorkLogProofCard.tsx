@@ -74,9 +74,11 @@ export function WorkLogProofCard({ row }: { row: WorkLogProofRow }) {
             href={row.htmlUrl}
             target="_blank"
             rel="noreferrer"
-            className="inline-flex min-w-0 items-center gap-1.5 text-sm font-medium text-text-primary hover:text-accent-700"
+            className="inline-flex min-h-11 min-w-0 items-center gap-1.5 text-sm font-medium text-text-primary hover:text-accent-700"
           >
-            <span className="truncate">
+            {/* Wraps to two lines instead of truncating: at 375px a one-line
+                truncate kept only the PR number and a few words of title. */}
+            <span className="line-clamp-2 break-words [overflow-wrap:anywhere]">
               #{row.number} {row.title}
             </span>
             <ExternalLink size={12} className="shrink-0 text-text-tertiary" aria-hidden />

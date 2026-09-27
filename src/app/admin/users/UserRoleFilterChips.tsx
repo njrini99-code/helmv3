@@ -21,10 +21,23 @@ export interface RoleChip {
  */
 export function UserRoleFilterChips({ chips }: { chips: readonly RoleChip[] }) {
   return (
-    <nav className="flex flex-wrap items-center gap-2" aria-label="Filter users by role">
-      <span className="text-xs font-medium uppercase tracking-widest text-warm-500">Role</span>
+    // One row that scrolls inside itself on a phone (never the page), wrapping
+    // from `sm` up; `py-1` keeps focus rings inside the scroller's clip box.
+    // Pills reach 44px on touch, matching Fairway Button's coarse bump.
+    <nav
+      className="-mx-1 flex min-w-0 items-center gap-2 overflow-x-auto px-1 py-1 [scrollbar-width:none] sm:flex-wrap sm:overflow-visible [&::-webkit-scrollbar]:hidden"
+      aria-label="Filter users by role"
+    >
+      <span className="shrink-0 text-xs font-medium uppercase tracking-widest text-warm-500">Role</span>
       {chips.map((chip) => (
-        <FilterPillLink key={chip.key} href={chip.href} size="sm" showCheck={false} selected={chip.selected}>
+        <FilterPillLink
+          key={chip.key}
+          href={chip.href}
+          size="sm"
+          showCheck={false}
+          selected={chip.selected}
+          className="shrink-0 [@media(pointer:coarse)]:min-h-11"
+        >
           {chip.label}
         </FilterPillLink>
       ))}

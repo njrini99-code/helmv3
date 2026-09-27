@@ -320,7 +320,7 @@ function LastRunOutcome({ outcome }: { outcome: StageRunOutcome }) {
 function StageNote({ note }: { note: string }) {
   return (
     <details className="mt-1.5 group">
-      <summary className="cursor-pointer list-none text-caption text-warm-500 underline decoration-warm-300 underline-offset-2 hover:text-warm-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-accent-500">
+      <summary className="flex cursor-pointer list-none items-center text-caption text-warm-500 underline decoration-warm-300 underline-offset-2 hover:text-warm-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-accent-500 [@media(pointer:coarse)]:min-h-11">
         Run note ({note.length.toLocaleString()} chars)
       </summary>
       <p className="mt-1 max-h-40 overflow-y-auto whitespace-pre-wrap break-words rounded-fw-md bg-surface-sunken p-2 text-caption text-warm-600 [overflow-wrap:anywhere]">
@@ -407,7 +407,7 @@ export function StageCard({ stage }: { stage: SelfHealStageDetail }) {
         >
           {stage.step}
         </span>
-        <span className="text-sm font-semibold text-warm-900">{stage.title}</span>
+        <span className="min-w-0 break-words text-sm font-semibold text-warm-900">{stage.title}</span>
       </div>
 
       <p className="mt-1.5 break-words text-xs text-warm-500 [overflow-wrap:anywhere]">{stage.what}</p>
@@ -418,7 +418,7 @@ export function StageCard({ stage }: { stage: SelfHealStageDetail }) {
 
       {/* Runtime block — is the process running on schedule. */}
       <div className="mt-3 border-t border-warm-200 pt-2.5">
-        <p className="text-eyebrow font-semibold uppercase tracking-widest text-warm-400">Runtime</p>
+        <p className="text-eyebrow font-semibold uppercase tracking-widest text-warm-500">Runtime</p>
         <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
           <StatusPill
             tone={RUNTIME_TONE[stage.status]}
@@ -481,7 +481,7 @@ export function StageCard({ stage }: { stage: SelfHealStageDetail }) {
 
       {/* Capability block — has it EVER produced its output. */}
       <div className="mt-3 border-t border-warm-200 pt-2.5">
-        <p className="text-eyebrow font-semibold uppercase tracking-widest text-warm-400">Capability</p>
+        <p className="text-eyebrow font-semibold uppercase tracking-widest text-warm-500">Capability</p>
         <div className="mt-1.5">
           <StatusPill tone={CAPABILITY_TONE[stage.capability.state]} dot size="sm">
             {stage.capability.state.toUpperCase()}
@@ -497,7 +497,7 @@ export function StageCard({ stage }: { stage: SelfHealStageDetail }) {
         ) : null}
       </div>
 
-      <p className="mt-3 break-all border-t border-warm-200 pt-2.5 font-fw-mono text-caption text-warm-400">
+      <p className="mt-3 break-all border-t border-warm-200 pt-2.5 font-fw-mono text-caption text-warm-500">
         {stage.contract}
       </p>
     </div>

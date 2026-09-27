@@ -39,6 +39,7 @@ import { AutoRefresh } from '../_components/AutoRefresh';
 import { LocalTime } from '../_components/LocalTime';
 import { CopyReportButton } from '../_components/CopyReportButton';
 import { ViewRail } from '../_components/ViewRail';
+import { TabHeader } from '../_components/TabHeader';
 import { parseView, type AdminViewOf } from '@/lib/admin/views';
 import { SourcesView } from './_components/sources/SourcesView';
 import { LoopView } from './_components/loop/LoopView';
@@ -351,9 +352,12 @@ function StaleUnresolvedSection({ result, windowHours }: { result: StaleUnresolv
             <StatusPill tone={item.severity === 'critical' ? 'danger' : 'warning'} dot size="sm">
               {item.severity}
             </StatusPill>
+            {/* Wraps, never truncates: the title is the only thing on this row
+                that says WHICH fault is still open, and a one-line ellipsis on
+                a phone cut it to three words. min-h-11 is the tap target. */}
             <Link
               href={`/admin/errors/${item.fingerprint}`}
-              className="min-w-0 flex-1 basis-full truncate text-warm-900 hover:underline sm:basis-auto"
+              className="flex min-w-0 flex-1 basis-full items-center break-words text-warm-900 [overflow-wrap:anywhere] hover:underline sm:basis-auto [@media(pointer:coarse)]:min-h-11"
             >
               {item.title}
             </Link>
@@ -454,7 +458,7 @@ function BreakdownChip({
   title?: string;
 }) {
   const className = cn(
-    'inline-flex min-h-8 items-center gap-2 rounded border px-2 font-fw-mono text-caption transition-colors',
+    'inline-flex min-h-8 items-center gap-2 rounded border px-2 font-fw-mono text-caption transition-colors [@media(pointer:coarse)]:min-h-11 [@media(pointer:coarse)]:px-2.5',
     'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-500',
     href === null && 'cursor-default border-dashed',
     selected
@@ -649,15 +653,15 @@ export default async function ErrorsPage({
           <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
             <p className="font-fw-mono text-body-sm tabular-nums text-warm-800">
               <span className="font-semibold text-warm-900">{board.lensCounts.actionable}</span> actionable
-              <span className="px-1.5 text-warm-400">·</span>
+              <span className="px-1.5 text-warm-500">·</span>
               <span className="font-semibold text-warm-900">{board.lensCounts.regressions}</span> regression
               {board.lensCounts.regressions === 1 ? '' : 's'}
-              <span className="px-1.5 text-warm-400">·</span>
+              <span className="px-1.5 text-warm-500">·</span>
               <span className="font-semibold text-warm-900">{board.lensCounts.repairable}</span> repairable
-              <span className="px-1.5 text-warm-400">·</span>
+              <span className="px-1.5 text-warm-500">·</span>
               <span className="font-semibold text-warm-900">{board.lensCounts.stalled}</span> stalled
             </p>
-            <p className="flex flex-wrap items-center gap-x-2 font-fw-mono text-caption text-warm-400">
+            <p className="flex flex-wrap items-center gap-x-2 font-fw-mono text-caption text-warm-500">
               <SourceCoverageSummaryLine coverage={board.coverage} />
               <span aria-hidden>·</span>
               <span>{board.windowHours}h window</span>
@@ -772,7 +776,7 @@ export default async function ErrorsPage({
           <div className="mt-3">
             <h3 className="mb-1 flex items-baseline gap-2 text-eyebrow uppercase tracking-widest text-warm-500">
               {INCIDENT_LENSES.includes(lens) ? lensHeading(lens) : 'Incidents'}
-              <span className="font-fw-mono tabular-nums text-warm-400">{lensed.length}</span>
+              <span className="font-fw-mono tabular-nums text-warm-500">{lensed.length}</span>
             </h3>
             <UnifiedIncidentQueue
               incidents={lensed}
@@ -1006,7 +1010,13 @@ export default async function ErrorsPage({
                       <span className="font-fw-mono text-xs tabular-nums text-warm-600">
                         {issue.userCount} users · {issue.count} events
                       </span>
-                      <a href={issue.permalink} target="_blank" rel="noreferrer" className="text-xs text-accent-700 underline">
+                      <a
+                        href={issue.permalink}
+                        target="_blank"
+                        rel="noreferrer"
+                        aria-label={`Open ${issue.shortId} in Sentry`}
+                        className="ml-auto inline-flex items-center text-xs text-accent-700 underline sm:ml-0 [@media(pointer:coarse)]:px-2 [@media(pointer:coarse)]:min-h-11"
+                      >
                         open
                       </a>
                     </li>
@@ -1034,13 +1044,12 @@ export default async function ErrorsPage({
   return (
     <div className="space-y-5">
       <AutoRefresh />
-      <header className="max-w-3xl">
-        <h1 className="text-h2 font-semibold text-warm-900">Incidents</h1>
-        <p className="mt-1 text-sm leading-6 text-warm-600">
-          One row per production cause. App errors, Sentry issues and reliability signals that describe the same
-          fault are merged into a single incident, so a fault three systems saw is one thing to fix, not three.
-        </p>
-      </header>
+      {/* Title only. The view rail's own line already says "One row per
+          production cause", and the full "why three systems' reports become
+          one row" lives in HowToReadIncidents ("What one row is"), one tap
+          away — on a phone the two-sentence paragraph here pushed the queue a
+          full screen down. */}
+      <TabHeader title="Incidents" />
       <ViewRail
         host="/admin/errors"
         active={view}

@@ -122,9 +122,11 @@ function TeamRosterPanel({ team, activeTeamId }: { team: TeamRosterInsight; acti
                   <div className="flex min-w-0 flex-1 items-start justify-between gap-3">
                     <div className="min-w-0 flex-1">
                       <p className="truncate font-medium text-warm-900">{player.name}</p>
-                      <p className="mt-0.5 break-words text-xs text-warm-500">{player.email ?? 'no email'}</p>
-                      <p className="mt-1.5 font-fw-mono text-xs tabular-nums text-warm-500">{meta}</p>
-                      <p className="mt-0.5 text-xs text-warm-400">
+                      <p className="mt-0.5 break-words text-xs text-warm-500 [overflow-wrap:anywhere]">
+                        {player.email ?? 'no email'}
+                      </p>
+                      <p className="mt-1.5 break-words font-fw-mono text-xs tabular-nums text-warm-500">{meta}</p>
+                      <p className="mt-0.5 text-xs text-warm-500">
                         last signal <LastActivityDate iso={player.lastActivity ?? player.lastSeen} />
                       </p>
                     </div>
@@ -296,7 +298,13 @@ function RosterIntelligence({
 
       <Surface padding="sm">
         <SectionLabel>Roster command map</SectionLabel>
-        <div className="mt-3 flex flex-wrap gap-2">
+        {/* Seven views wrapped into three rows of 44px buttons on a phone —
+            a screenful of chrome before a single team. One row that scrolls
+            inside itself below `sm` (never the page); wraps from `sm` up. */}
+        <nav
+          aria-label="Roster views"
+          className="-mx-1 mt-3 flex min-w-0 gap-2 overflow-x-auto px-1 py-1 [scrollbar-width:none] sm:flex-wrap sm:overflow-visible [&::-webkit-scrollbar]:hidden"
+        >
           {([
             ['/admin/users', 'All rosters'],
             ['/admin/users?sport=baseball', 'Baseball'],
@@ -306,11 +314,11 @@ function RosterIntelligence({
             ['/admin/users?attention=quiet', 'Quiet players'],
             ['/admin/users?attention=demo', 'Demo readiness'],
           ] as const).map(([href, label]) => (
-            <Button key={href} asChild variant="secondary" size="sm">
+            <Button key={href} asChild variant="secondary" size="sm" className="shrink-0">
               <Link href={href}>{label}</Link>
             </Button>
           ))}
-        </div>
+        </nav>
         <div className="mt-3 grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_360px]">
           <div className="min-w-0">
             <div className="mb-3 flex flex-wrap gap-2 text-xs text-warm-600">
@@ -509,22 +517,28 @@ export default async function UsersPage({
             ) : (
               <ul className="divide-y divide-warm-200/60">
                 {tab.users.map((u) => (
-                  <li key={u.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 py-2 text-sm">
+                  // The whole row is the link (the Bridge's EVERYTHING CLICKS
+                  // convention): the email alone was a ~20px-tall target on a
+                  // phone. Nothing else in the row is interactive — SportBadge
+                  // renders a plain span — so there is no nested control.
+                  <li key={u.id}>
                     <Link
                       href={`/admin/users/${u.id}`}
-                      className="min-w-0 flex-1 basis-full truncate font-medium text-warm-900 hover:underline sm:basis-auto"
+                      className="-mx-2 flex min-h-11 flex-wrap items-center gap-x-3 gap-y-1 rounded-fw-md px-2 py-2 text-sm transition-colors hover:bg-surface-sunken focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-500"
                     >
-                      {u.email}
+                      <span className="min-w-0 flex-1 basis-full break-words font-medium text-warm-900 [overflow-wrap:anywhere] sm:basis-auto sm:truncate">
+                        {u.email}
+                      </span>
+                      <span className="text-xs uppercase text-warm-500">{u.role}</span>
+                      <span className="flex gap-1">
+                        {u.sports.map((s) => (
+                          <SportBadge key={s} sport={s} />
+                        ))}
+                      </span>
+                      <span className="font-fw-mono text-xs tabular-nums text-warm-500">
+                        {u.lastSeen ? <>seen <LocalTime iso={u.lastSeen} variant="date" fallback="never" /></> : 'never seen'}
+                      </span>
                     </Link>
-                    <span className="text-xs uppercase text-warm-500">{u.role}</span>
-                    <div className="flex gap-1">
-                      {u.sports.map((s) => (
-                        <SportBadge key={s} sport={s} />
-                      ))}
-                    </div>
-                    <span className="font-fw-mono text-xs tabular-nums text-warm-500">
-                      {u.lastSeen ? <>seen <LocalTime iso={u.lastSeen} variant="date" fallback="never" /></> : 'never seen'}
-                    </span>
                   </li>
                 ))}
               </ul>
@@ -546,11 +560,17 @@ export default async function UsersPage({
                     <StatusPill tone="warning" dot size="sm">
                       {u.lastSeen ? 'at-risk' : 'never seen'}
                     </StatusPill>
-                    <Link href={`/admin/users/${u.id}`} className="min-w-0 flex-1 basis-full truncate text-warm-900 hover:underline sm:basis-auto">
+                    <Link
+                      href={`/admin/users/${u.id}`}
+                      className="flex min-w-0 flex-1 basis-full items-center break-words text-warm-900 [overflow-wrap:anywhere] hover:underline sm:basis-auto [@media(pointer:coarse)]:min-h-11"
+                    >
                       {u.email}
                     </Link>
                     {/* CRM boundary: link OUT only — zero email capability here. */}
-                    <a href="/golf/admin/crm" className="text-xs text-accent-700 underline">
+                    <a
+                      href="/golf/admin/crm"
+                      className="inline-flex items-center text-xs text-accent-700 underline [@media(pointer:coarse)]:min-h-11"
+                    >
                       Open in CRM →
                     </a>
                   </li>

@@ -83,7 +83,7 @@ export function AttributionCoveragePanel({
                 unfiltered feed, not a scoped one, so the label never claims
                 a filter that doesn't exist. */}
             <Link href="/admin/errors" className="underline underline-offset-2">
-              Open Errors →
+              Open Incidents →
             </Link>
           </>
         ) : null}

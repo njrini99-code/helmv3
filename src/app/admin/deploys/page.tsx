@@ -12,6 +12,7 @@ import { PanelBoundary } from '../_components/PanelBoundary';
 import { PanelStatsSkeleton } from '../_components/PanelSkeletons';
 import { PanelNoData, PanelStale } from '../_components/PanelStates';
 import { AutoRefresh } from '../_components/AutoRefresh';
+import { TabHeader } from '../_components/TabHeader';
 import { Surface, Inset, StatTile, StatusPill, SkeletonList, InlineNotice, type FwStatusTone } from '@/components/fairway';
 import { ShowMoreList } from './_components/ShowMoreList';
 import { ReleaseLedger } from './_components/ReleaseLedger';
@@ -105,7 +106,7 @@ function CurrentBuildCard() {
         {sha.slice(0, 7)} · {ref ?? 'unknown ref'} · {env ?? 'unknown env'}
       </p>
       {message ? <p className="mt-1 truncate text-sm text-white/70">{message}</p> : null}
-      {author ? <p className="text-xs text-white/50">by {author}</p> : null}
+      {author ? <p className="text-xs text-white/70">by {author}</p> : null}
     </section>
   );
 }
@@ -260,7 +261,7 @@ async function DeploymentsTable() {
                         issues →
                       </a>
                     ) : (
-                      <span className="text-warm-400">—</span>
+                      <span className="text-warm-500">—</span>
                     )}
                   </td>
                 </tr>
@@ -328,8 +329,8 @@ function DeploymentCard({ d, liveSha }: { d: VercelDeployment; liveSha: string |
           <p className="truncate text-xs text-warm-500">{d.commitMessage ?? d.url}</p>
         )}
 
-        <div className="flex items-center justify-between gap-3 text-xs">
-          <span className="font-fw-mono tabular-nums text-warm-600">
+        <div className="flex flex-wrap items-center justify-between gap-x-3 text-xs">
+          <span className="whitespace-nowrap font-fw-mono tabular-nums text-warm-600">
             {d.target ?? 'preview'} · {formatDeployAge(d.createdAt)}
           </span>
           {sentryHref ? (
@@ -337,7 +338,7 @@ function DeploymentCard({ d, liveSha }: { d: VercelDeployment; liveSha: string |
               href={sentryHref}
               target="_blank"
               rel="noreferrer"
-              className="shrink-0 font-medium text-accent-700 underline"
+              className="-my-2 inline-flex min-h-11 shrink-0 items-center font-medium text-accent-700 underline"
             >
               issues →
             </a>
@@ -394,6 +395,7 @@ export default async function DeploysPage() {
   return (
     <div className="space-y-6">
       <AutoRefresh intervalMs={60_000} />
+      <TabHeader title="Deploys & Infra" />
       <CurrentBuildCard />
       <PanelBoundary title="Deploy freshness" skeleton={<SkeletonList rows={1} />}>
         <DeployFreshnessNote />

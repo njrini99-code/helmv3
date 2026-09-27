@@ -178,9 +178,13 @@ export function RowPath({ children }: { children: ReactNode }) {
  */
 export function RowFoot({ meta, children }: { meta?: ReactNode; children?: ReactNode }) {
   return (
-    <div className="mt-1.5 flex items-center gap-2">
-      {meta ? <span className="font-fw-mono text-caption tabular-nums text-warm-400">{meta}</span> : null}
-      {children ? <span className="ml-auto flex shrink-0 items-center gap-1">{children}</span> : null}
+    // flex-wrap: on a phone the action cluster drops to its own line instead
+    // of squeezing `meta` into a one-word column and pushing the last icon
+    // past the card edge. `meta` never wraps internally ("1 user · 9:24 PM"
+    // is one fact).
+    <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1">
+      {meta ? <span className="whitespace-nowrap font-fw-mono text-caption tabular-nums text-warm-500">{meta}</span> : null}
+      {children ? <span className="ml-auto flex min-w-0 flex-wrap items-center justify-end gap-1">{children}</span> : null}
     </div>
   );
 }
@@ -235,7 +239,10 @@ export function GroupHeading({
   severity?: RowSeverity;
 }) {
   return (
-    <h3 className="sticky top-0 z-10 flex items-baseline gap-2 bg-warm-50/95 py-1.5 text-eyebrow uppercase tracking-widest backdrop-blur">
+    // Sticks BELOW the shell's glass top bar, never under it: `top-0` put this
+    // band at the same y as the top bar, so on a phone "ERRORS 90" sat on top
+    // of the page title. The var is set by AppShell at every breakpoint.
+    <h3 className="sticky top-[var(--golf-mobile-header-offset,0px)] z-10 flex items-baseline gap-2 bg-warm-50/95 py-1.5 text-eyebrow uppercase tracking-widest backdrop-blur">
       <span className={cn('font-bold', severity ? SEVERITY_INK[severity] : 'text-warm-500')}>{label}</span>
       {count !== undefined ? <span className="font-fw-mono tabular-nums text-warm-400">{count}</span> : null}
     </h3>

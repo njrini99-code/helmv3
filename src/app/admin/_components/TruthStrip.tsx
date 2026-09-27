@@ -61,8 +61,8 @@ function CellBody({ cell }: { cell: TruthCell }) {
       <p className={cn('mt-0.5 text-eyebrow uppercase tracking-wide', TONE_INK[cell.tone])}>
         {cell.state}
       </p>
-      <p className="mt-1 font-fw-mono text-caption tabular-nums text-warm-400">{cell.freshness}</p>
-      <p className="truncate font-fw-mono text-caption text-warm-400" title={cell.source}>
+      <p className="mt-1 font-fw-mono text-caption tabular-nums text-warm-500">{cell.freshness}</p>
+      <p className="truncate font-fw-mono text-caption text-warm-500" title={cell.source}>
         {cell.source}
       </p>
     </>
