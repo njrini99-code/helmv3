@@ -247,8 +247,8 @@ is a second thing to keep true.
 - **Behaviour:** `memory/features/admin-platform.md`
 - **Code:** `src/app/admin/engineering/**`, `src/app/admin/database/**`, `src/app/admin/golf/**`, `src/app/admin/traces/**`, `src/app/admin/deploys/**`, `src/app/admin/auth/**` … and 53 more in the registry
 - **Telemetry:** `admin_dashboard` (golfhelm, med)
-- **Incidents:** `memory/incidents/admin_platform/INC-2026-07-29-postgres-wedge-took-down-every-route.md`, `memory/incidents/admin_platform/INC-2026-08-26-error-rate-hourly-never-written.md`, `memory/incidents/admin_platform/INC-2026-08-27-swallowed-cron-failure-invisible-to-bridge.md`
-- **Repair units:** `cron-failure-invisible-to-bridge-2026-08-27` (repairing), `error-resolution-lifecycle-2026-08-27` (verified)
+- **Incidents:** `memory/incidents/admin_platform/INC-2026-07-29-postgres-wedge-took-down-every-route.md`, `memory/incidents/admin_platform/INC-2026-08-26-error-rate-hourly-never-written.md`, `memory/incidents/admin_platform/INC-2026-08-27-swallowed-cron-failure-invisible-to-bridge.md`, `memory/incidents/admin_platform/INC-2026-09-27-bridge-merged-dev-sentry-issues.md`
+- **Repair units:** `cron-failure-invisible-to-bridge-2026-08-27` (repairing), `error-resolution-lifecycle-2026-08-27` (verified), `bridge-sentry-production-scope-2026-09-27` (verified)
 - **History:** `memory/ledgers/changes/admin_platform.md`, `memory/ledgers/tests/admin_platform.md`
 
 ## `admin_incidents`
