@@ -35,7 +35,7 @@ import { PIPELINE_STAGES } from "@/lib/recruiting/stages";
  * rediscover it.
  *
  * KEEP IN SYNC with `tailwind.config.ts` → `theme.extend.fontSize`. A token
- * added there and missed here is silently dropped again; `cn.test.ts` asserts
+ * added there and missed here is silently dropped again; `cn-font-size.test.ts` asserts
  * this list against the config so the drift fails a test rather than a screen.
  */
 const CUSTOM_FONT_SIZE_TOKENS = [
@@ -59,10 +59,104 @@ const CUSTOM_FONT_SIZE_TOKENS = [
  * groups those correctly, and re-declaring them would be a second source of
  * truth for classes it already handles.
  */
+/**
+ * Custom `borderRadius` keys from `tailwind.config.ts` (the Fairway ramp).
+ *
+ * Unregistered, tailwind-merge does not recognise `rounded-card` at all, so it
+ * keeps it NEXT TO a conflicting radius instead of replacing it, and the
+ * stylesheet decides. Tailwind v3 emits same-plugin rules alphabetically, so
+ * `rounded-full` (f-u) lands after `rounded-card` and wins:
+ * `<Button className="rounded-card">` rendered as a pill. Registered in the
+ * `radius` theme scale, the token joins `rounded` AND every side group
+ * (`rounded-t-card`, `rounded-bl-fw-lg`...), and the last class passed wins.
+ *
+ * KEEP IN SYNC with `theme.extend.borderRadius`; `cn-custom-tokens.test.ts` checks it.
+ */
+const CUSTOM_RADIUS_TOKENS = ['card', 'fw-sm', 'fw-md', 'fw-lg'] as const;
+
+/**
+ * Custom `boxShadow` keys from `tailwind.config.ts`.
+ *
+ * Unregistered, tailwind-merge files `shadow-soft` under shadow-COLOUR (any
+ * unknown `shadow-*` value is taken for a colour name), so a real colour such
+ * as `shadow-black/5` silently deleted it, and a later `shadow-none` could not
+ * replace it. Registered in the `shadow` scale they merge as shadows.
+ *
+ * `xs` and the default t-shirt sizes are omitted: tailwind-merge knows them.
+ * KEEP IN SYNC with `theme.extend.boxShadow`; `cn-custom-tokens.test.ts` checks it.
+ */
+const CUSTOM_SHADOW_TOKENS = [
+  'glass', 'glass-hover', 'glass-sm', 'glass-md', 'glass-lg', 'glass-xl',
+  'card', 'card-hover', 'focus', 'focus-ring',
+  'glow-green', 'glow-green-lg', 'glow-green-intense', 'glow-amber', 'glow-emerald',
+  'subtle', 'inner-highlight',
+  'elevation-1', 'elevation-2', 'elevation-3', 'elevation-4',
+  'flat', 'soft', 'raise', 'pop', 'fw-modal', 'fw-glow-accent',
+] as const;
+
+/**
+ * The remaining custom scales from `tailwind.config.ts`, by utility prefix.
+ *
+ * `backgroundImage` has the font-size/shadow failure: an unknown `bg-*` value
+ * is taken for a COLOUR, so `bg-canvas bg-canvas-gradient` lost `bg-canvas`,
+ * and the reverse order would lose the gradient. The others are unknown to
+ * tailwind-merge the way the radius ramp was, so both classes survive and the
+ * alphabetical stylesheet picks the winner (`duration-fast duration-base`
+ * rendered 150ms).
+ *
+ * KEEP IN SYNC with the matching `theme.extend` blocks; `cn-custom-tokens.test.ts`
+ * checks each one. Keys tailwind-merge already knows are omitted.
+ */
+const CUSTOM_SCALE_TOKENS = {
+  /** theme.extend.backgroundImage */
+  'bg-image': [
+    'gradient-radial', 'gradient-conic', 'mesh', 'glass-gradient', 'shimmer', 'aurora',
+    'aurora-gradient', 'gradient-green', 'gradient-dark', 'hero-glow', 'cream-gradient',
+    'linen-gradient', 'canvas-gradient',
+  ],
+  /** theme.extend.zIndex (numeric keys are already known) */
+  z: ['base', 'raised', 'overlay', 'modal', 'toast', 'toolbar', 'tooltip'],
+  /** theme.extend.transitionDuration (numeric keys are already known) */
+  duration: ['fast', 'slow', 'base', 'cinematic'],
+  /** theme.extend.transitionTimingFunction (`out` is already known) */
+  ease: [
+    'bounce', 'ios', 'ios-spring', 'ios-smooth', 'ios-sharp', 'apple', 'cinematic',
+    'smooth', 'out-expo', 'in-out-expo', 'elastic',
+  ],
+  /** theme.extend.animation */
+  animate: [
+    'fade-in', 'fade-in-slow', 'fade-up', 'fade-up-slow', 'scale-in', 'slide-up', 'slide-down',
+    'slide-in-right', 'slide-in-left', 'bounce-in', 'scan', 'shake', 'card-hover',
+    'check-bounce', 'number-tick', 'count-up', 'pulse-subtle', 'shimmer', 'spin-slow', 'glow',
+    'float', 'float-complex', 'float-delayed', 'aurora', 'scroll-bounce', 'gradient-shift',
+    'ripple', 'checkmark', 'progress-fill', 'progress-indeterminate', 'badge-pulse',
+  ],
+  /** theme.extend.backdropBlur (`xs` is already known) */
+  'backdrop-blur': ['glass-subtle', 'glass', 'glass-prominent'],
+  /** theme.extend.letterSpacing (`tighter`/`tight` are already known) */
+  tracking: ['tightest'],
+} as const;
+
+const scaleClasses = (prefix: string, tokens: readonly string[]) =>
+  tokens.map((token) => `${prefix}-${token}`);
+
 const twMerge = extendTailwindMerge({
   extend: {
+    theme: {
+      radius: [...CUSTOM_RADIUS_TOKENS],
+      shadow: [...CUSTOM_SHADOW_TOKENS],
+      ease: [...CUSTOM_SCALE_TOKENS.ease],
+      animate: [...CUSTOM_SCALE_TOKENS.animate],
+      tracking: [...CUSTOM_SCALE_TOKENS.tracking],
+    },
     classGroups: {
       'font-size': CUSTOM_FONT_SIZE_TOKENS.map((token) => `text-${token}`),
+      // Class groups rather than theme keys: tailwind-merge's `blur` theme also
+      // feeds the `blur-*` filter, and z/duration/bg-image have no theme key.
+      'bg-image': scaleClasses('bg', CUSTOM_SCALE_TOKENS['bg-image']),
+      z: scaleClasses('z', CUSTOM_SCALE_TOKENS.z),
+      duration: scaleClasses('duration', CUSTOM_SCALE_TOKENS.duration),
+      'backdrop-blur': scaleClasses('backdrop-blur', CUSTOM_SCALE_TOKENS['backdrop-blur']),
     },
   },
 });
@@ -73,6 +167,10 @@ export function cn(...inputs: ClassValue[]) {
 
 /** Exported for the drift test that pins this list to the Tailwind config. */
 export const __CUSTOM_FONT_SIZE_TOKENS = CUSTOM_FONT_SIZE_TOKENS;
+/** Exported for the drift tests that pin these lists to the Tailwind config. */
+export const __CUSTOM_RADIUS_TOKENS = CUSTOM_RADIUS_TOKENS;
+export const __CUSTOM_SHADOW_TOKENS = CUSTOM_SHADOW_TOKENS;
+export const __CUSTOM_SCALE_TOKENS = CUSTOM_SCALE_TOKENS;
 
 // ===== NUMBER FORMATTING =====
 export function formatNumber(num: number | null | undefined): string {
