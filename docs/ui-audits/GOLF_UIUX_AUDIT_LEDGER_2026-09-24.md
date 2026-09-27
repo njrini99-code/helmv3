@@ -16,7 +16,7 @@ Status meanings:
 - **done**: fixed, or decided and applied.
 - **partial**: some of the finding is fixed and the rest is open.
 - **residual**: not done and actionable now, including approved follow-up PRs that have not started.
-- **blocked**: the remaining work waits on something outside the code: a held migration, PR #1933, a device or live check, or an owner flag.
+- **blocked**: the remaining work waits on something outside the code: a held migration, a device or live check, or an owner flag.
 - **not-a-bug**: closed with no change, by owner or lead decision.
 - **unknown**: no status could be determined.
 
@@ -24,14 +24,14 @@ Work the lead listed that has no ledger ID: the Stats Flight crash fix (`f3ef34d
 
 ## Summary (364 ledger findings)
 
-Recounted 2026-09-25 (PR #2069): the 2026-09-24 afternoon pass plus the 09-25 leftovers (DS-12, DS-13, DS-15, HUB-19, MOT-21 done; DASH-07, NUM-24 blocked on held migrations; DASH-12 partial).
+Recounted 2026-09-27 (PR #2069) from the rows. DASH-21 moved from blocked to residual: PR #1933 closed unmerged on 2026-09-27. Since the 09-25 recount, TYPE-03 went done (35bf8f9a2), and that table was one off on partial (7; the rows had 8) and on blocked (28; the rows had 27). The 09-25 recount covered the 2026-09-24 afternoon pass plus the 09-25 leftovers (DS-12, DS-13, DS-15, HUB-19, MOT-21 done; DASH-07, NUM-24 blocked on held migrations; DASH-12 partial).
 
 | Status | Count |
 |---|---|
-| done | 307 |
+| done | 308 |
 | partial | 7 |
-| residual | 7 |
-| blocked | 28 |
+| residual | 8 |
+| blocked | 26 |
 | not-a-bug | 15 |
 | unknown | 0 |
 | **total** | **364** |
@@ -64,7 +64,7 @@ Owner decisions (OD-01 to OD-24) and workstreams (W1 to W15) have their own tabl
 | DASH-18 | [P2] Messages uses its own header (large title + compose FAB, no bar/bell) | done: Route actions portal into the shared top bar; the bar hides only in an open thread (3c823e8bb) | 3c823e8bb | this session |
 | DASH-19 | [P3] Courses h1 "Course library." period tell (also "The library.", "Your rounds.") | done: No trailing periods | FairwayRoundsLibrary.tsx:384 | verified in code |
 | DASH-20 | [P2] Settings "Save changes" disabled-green reads as enabled | done: W5 results file, with tests | 397587774 (W5) | per transcript |
-| DASH-21 | [P3] Delete the old page bodies after #1933 merges (FairwayPlayerDashboard, FairwayRoundsLibrary, StatsSpineStage) | blocked: PR #1933 still open (OD-16) | FairwayPlayerDashboard / FairwayRoundsLibrary / StatsSpineStage | per transcript |
+| DASH-21 | [P3] Delete the old page bodies after #1933 merges (FairwayPlayerDashboard, FairwayRoundsLibrary, StatsSpineStage) | residual: #1933 closed 2026-09-27 | FairwayPlayerDashboard / FairwayRoundsLibrary / StatsSpineStage | per transcript |
 | DASH-22 | [P3] Unverified list: S1 stacking cause, S6 blank band, S5 provider remount, server-action serialization, 19 vs 21 ... | blocked: Live-only verification list | dev server :3217 | per transcript |
 
 ### HUB (23)
