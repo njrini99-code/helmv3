@@ -266,7 +266,8 @@ function ErrorGroupRow({ group }: { group: DbErrorFingerprintGroup }) {
   return (
     <RailRow severity={rowSeverity(group.severity)}>
       {/* The whole row is the link to its diagnosis. The message leads (it is
-          the fault); code, feature and service are the fact line; last-seen
+          the fault); severity (the raw value, so one the rail folds into `info`
+          is still readable), code, feature and service are the fact line; last-seen
           and the "diagnose" affordance sit at the lowest weight. Nothing is
           truncated — at 375px a one-line ellipsis kept three words of it. */}
       <Link
@@ -276,7 +277,7 @@ function ErrorGroupRow({ group }: { group: DbErrorFingerprintGroup }) {
         <RowHead value={`${occurrences}×`} valueLabel={`${occurrences} occurrences`}>
           {group.latest.normalizedMessage}
         </RowHead>
-        <FactLine emphasizeFirst items={[group.errorCode ?? 'unknown', group.feature, group.service]} />
+        <FactLine emphasizeFirst items={[group.severity, group.errorCode ?? 'unknown', group.feature, group.service]} />
         <RowFoot meta={<LocalTime iso={group.lastSeenAt} />}>
           <span className="text-caption font-medium text-accent-700">diagnose →</span>
         </RowFoot>
