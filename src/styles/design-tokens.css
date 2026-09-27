@@ -146,7 +146,7 @@
      a VINTAGE cream (it lifts by its green hairline + shadow), wells and tiles
      are a soft SAGE green. Text stays dark warm ink (owner: no green text). */
   --fw-color-surface:        oklch(0.972 0.022 84);  /* #fdf5e6 THE card: vintage cream (old lace), not white */
-  --fw-color-surface-tint:   oklch(0.96 0.018 84);   /* hero plinths: a quiet vintage cream, not yellow (owner 2026-09-27) */
+  --fw-color-surface-tint:   var(--fw-color-surface); /* hero plinths = the vintage card cream, so they lift off the page (owner 2026-09-27) */
   --fw-color-surface-sunken: oklch(0.935 0.03 83);   /* a deeper vintage cream: wells, insets, input tracks, toggle tracks, row highlights (owner: no green highlights) */
   --fw-color-surface-tile:   oklch(0.915 0.03 128);  /* #dde7d2 soft SAGE stat tiles (roster card) */
   --fw-color-elevated:       oklch(0.975 0.030 88);  /* #fff6e1 menus / popovers / modal body — the lightest vintage cream */
