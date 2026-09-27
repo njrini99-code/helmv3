@@ -8,6 +8,7 @@ import {
   SELFHEAL_STAGES,
   SELFHEAL_RUNNER_LABEL,
   classifySelfHealStage,
+  selectStageHeartbeat,
   summarizeLoop,
   type SelfHealStageRow,
 } from '@/lib/admin/selfheal-registry';
@@ -146,5 +147,46 @@ describe('ET-3 — the Close stage reads its own job type', () => {
   it('no two stages share a job type', () => {
     const types = SELFHEAL_STAGES.map((s) => s.jobType);
     expect(new Set(types).size).toBe(types.length);
+  });
+});
+
+describe('selectStageHeartbeat — a retired runner cannot speak for the stage', () => {
+  // Measured 2026-09-25..27: a retired Anthropic-hosted cloud task still fires
+  // once a day (~09:05-09:20 UTC) and writes a `failed` `selfheal-triage` row
+  // (`metadata.method = 'claude-code-cloud-session'`, no credentials, no
+  // node_modules) minutes after the real Vercel-cron Diagnose run completed.
+  // The board read the newest row, so Diagnose — and therefore the whole loop —
+  // read FAILED for ~6h a day while the stage itself was healthy.
+  const triage = SELFHEAL_STAGES.find((s) => s.id === 'triage')!;
+  const repair = SELFHEAL_STAGES.find((s) => s.id === 'repair')!;
+  const cloud = {
+    started_at: '2026-09-27T09:20:00.000Z',
+    status: 'failed',
+    metadata: { method: 'claude-code-cloud-session', blocked_reason: 'missing_credentials_and_deps' },
+  };
+  const cron = {
+    started_at: '2026-09-27T09:17:41.220Z',
+    status: 'completed',
+    metadata: { method: 'vercel-cron', analysed: 2 },
+  };
+
+  it('skips a retired-runner row and classifies the stage from its real runner', () => {
+    const picked = selectStageHeartbeat(triage, [cloud, cron]);
+    expect(picked).toBe(cron);
+    expect(classifySelfHealStage(triage, picked, new Date('2026-09-27T10:00:00.000Z'))).toBe('ok');
+  });
+
+  it('still counts an operator-run row (manual method) — only retired runners are skipped', () => {
+    const manual = { started_at: '2026-09-27T09:30:00.000Z', status: 'failed', metadata: { method: 'manual-cli' } };
+    expect(selectStageHeartbeat(triage, [manual, cron])).toBe(manual);
+  });
+
+  it('never hides the evidence: when only retired rows exist, the newest row is returned', () => {
+    expect(selectStageHeartbeat(triage, [cloud])).toBe(cloud);
+  });
+
+  it('is a no-op for a stage with no retired runners, and null for no rows', () => {
+    expect(selectStageHeartbeat(repair, [cloud, cron])).toBe(cloud);
+    expect(selectStageHeartbeat(triage, [])).toBeNull();
   });
 });
