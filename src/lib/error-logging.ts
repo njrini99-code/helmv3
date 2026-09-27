@@ -571,18 +571,24 @@ export function softReloadForStaleServerAction(message?: unknown): void {
 }
 
 /**
- * Mirrors the chunk-load detection in `RouteErrorBoundary` (not exported there,
- * so duplicated here rather than imported) — a stale deployment reference is
- * a distinct, non-actionable failure mode worth tagging separately from a
- * generic runtime error.
+ * Stale-deployment chunk-load detection, shared by the global handlers here and
+ * `RouteErrorBoundary` (which used to keep its own copy; the two drifted) — a
+ * stale deployment reference is a distinct, non-actionable failure mode worth
+ * tagging separately from a generic runtime error.
  */
-function isChunkLoadErrorMessage(message: string): boolean {
+export function isChunkLoadErrorMessage(message: string): boolean {
   const msg = message.toLowerCase();
   return (
     msg.includes('loading chunk') ||
     msg.includes('loading css chunk') ||
     msg.includes('chunkloaderror') ||
     (msg.includes('cannot read properties of undefined') && msg.includes("'call'")) ||
+    // WebKit's wording for the same missing webpack module factory
+    // ("undefined is not an object (evaluating 'n[e].call')"). The boot
+    // recovery script (boot-recovery-source.ts) already matched it; this path
+    // did not, so on the iOS app a stale tab was filed as severity:error and
+    // the route boundary never asked for the reload (3756e441, 2026-09-27).
+    (msg.includes('undefined is not an object') && msg.includes('.call')) ||
     // ESM dynamic-import wording for the same stale-asset failure (Safari/
     // Firefox phrase it this way instead of webpack's "Loading chunk N
     // failed"). `admin-data.ts`'s incident classifier already recognizes

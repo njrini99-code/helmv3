@@ -305,6 +305,10 @@ describe('logError → chunk-load severity ceiling', () => {
     'Loading CSS chunk 8351 failed.',
     'ChunkLoadError: Loading chunk 42 failed.',
     "Cannot read properties of undefined (reading 'call')",
+    // WebKit (Safari / the iOS WKWebView app shell) words the same missing
+    // webpack module factory this way. Exact production message, fingerprint
+    // 3756e441 (2026-09-27, back_forward navigation 21 min after a deploy).
+    "undefined is not an object (evaluating 'n[e].call')",
     // ESM dynamic-import wording (Safari/Firefox) for the same stale-asset
     // failure — admin-data.ts's incident classifier already recognized this
     // phrase; the recovery/severity path needed to as well.
@@ -331,6 +335,24 @@ describe('logError → chunk-load severity ceiling', () => {
     const { logError } = await import('@/lib/error-logging');
     logError(new Error('Cannot read properties of undefined (reading \'id\')'), {}, 'high');
     expect(bodyOf(fetchMock.mock.calls[0]!).severity).toBe('high');
+  });
+
+  it('leaves a genuine WebKit undefined-access error at high', async () => {
+    const { logError } = await import('@/lib/error-logging');
+    logError(new Error("undefined is not an object (evaluating 'a.b')"), {}, 'high');
+    expect(bodyOf(fetchMock.mock.calls[0]!).severity).toBe('high');
+  });
+
+  // RouteErrorBoundary delegates to this predicate to decide whether to ask the
+  // recovery coordinator for a reload. React's boundary swallows the error, so
+  // the boot-recovery script never sees it: 3756e441 logged
+  // chunkErrorReloaded "0" — no recovery ran — because only the Chrome wording
+  // matched here while boot-recovery-source.ts already matched WebKit's.
+  it('isChunkLoadErrorMessage matches both engine wordings of a missing module factory', async () => {
+    const { isChunkLoadErrorMessage } = await import('@/lib/error-logging');
+    expect(isChunkLoadErrorMessage("undefined is not an object (evaluating 'n[e].call')")).toBe(true);
+    expect(isChunkLoadErrorMessage("Cannot read properties of undefined (reading 'call')")).toBe(true);
+    expect(isChunkLoadErrorMessage("undefined is not an object (evaluating 'a.b')")).toBe(false);
   });
 
   it('does not touch critical — the caller knows more than this filter', async () => {
