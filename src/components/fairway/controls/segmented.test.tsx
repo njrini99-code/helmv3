@@ -133,13 +133,13 @@ describe('Segmented', () => {
       );
       const items = screen.getAllByRole('radio');
       const dotsPerItem = items.map(
-        (item) => item.querySelectorAll('.bg-accent-600').length,
+        (item) => item.querySelectorAll('.bg-text-on-accent-fill').length,
       );
       // Exactly one segment (the selected one) carries the dot.
       expect(dotsPerItem).toEqual([0, 1, 0]);
       // Sanity: the dot that does exist is inside the "Week" radio.
       const weekItem = screen.getByRole('radio', { name: 'Week' });
-      const dot = weekItem.querySelector('.bg-accent-600');
+      const dot = weekItem.querySelector('.bg-text-on-accent-fill');
       expect(dot).toBeInTheDocument();
       // And it's decorative, not exposed to the accessibility tree.
       expect(dot).toHaveAttribute('aria-hidden', 'true');
@@ -157,7 +157,7 @@ describe('Segmented', () => {
           aria-label="Calendar view"
         />,
       );
-      const dot = screen.getByRole('radio', { name: 'Day' }).querySelector('.bg-accent-600');
+      const dot = screen.getByRole('radio', { name: 'Day' }).querySelector('.bg-text-on-accent-fill');
       expect(dot).not.toBeNull();
       // A dot is h-[Npx] w-[Npx] and rounded-full; a rail/bar would stretch
       // full-width/height instead of using a fixed small square footprint.
@@ -183,19 +183,19 @@ describe('Segmented', () => {
       };
       render(<Controlled />);
       expect(
-        screen.getByRole('radio', { name: 'Day' }).querySelector('.bg-accent-600'),
+        screen.getByRole('radio', { name: 'Day' }).querySelector('.bg-text-on-accent-fill'),
       ).toBeInTheDocument();
       expect(
-        screen.getByRole('radio', { name: 'Week' }).querySelector('.bg-accent-600'),
+        screen.getByRole('radio', { name: 'Week' }).querySelector('.bg-text-on-accent-fill'),
       ).not.toBeInTheDocument();
 
       await userEvent.click(screen.getByRole('radio', { name: 'Week' }));
 
       expect(
-        screen.getByRole('radio', { name: 'Week' }).querySelector('.bg-accent-600'),
+        screen.getByRole('radio', { name: 'Week' }).querySelector('.bg-text-on-accent-fill'),
       ).toBeInTheDocument();
       expect(
-        screen.getByRole('radio', { name: 'Day' }).querySelector('.bg-accent-600'),
+        screen.getByRole('radio', { name: 'Day' }).querySelector('.bg-text-on-accent-fill'),
       ).not.toBeInTheDocument();
     });
   });
