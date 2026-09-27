@@ -475,7 +475,7 @@ export function InboundLeadsView({ onOpenCoach }: InboundLeadsViewProps = {}) {
                 {FILTER_LABELS[f]}
                 <span
                   className={cn(
-                    'px-1.5 py-0.5 rounded-full text-eyebrow font-semibold tabular-nums',
+                    'px-1.5 py-0.5 rounded-full text-caption font-semibold tabular-nums',
                     f === 'new' && count > 0
                       ? 'bg-fw-warning-bg text-fw-warning-ink'
                       : 'bg-surface-sunken text-text-secondary',
@@ -572,7 +572,7 @@ export function InboundLeadsView({ onOpenCoach }: InboundLeadsViewProps = {}) {
                           {request.email}
                         </p>
                         {rowIsNew && (
-                          <span className="inline-flex items-center px-1.5 py-0.5 rounded-full border border-fw-warning-ring bg-fw-warning-bg text-fw-warning-ink text-eyebrow font-semibold uppercase tracking-wide">
+                          <span className="inline-flex items-center px-1.5 py-0.5 rounded-full border border-fw-warning-ring bg-fw-warning-bg text-fw-warning-ink text-caption font-semibold">
                             New
                           </span>
                         )}
@@ -585,7 +585,7 @@ export function InboundLeadsView({ onOpenCoach }: InboundLeadsViewProps = {}) {
                           />
                         ) : (
                           <span
-                            className="inline-flex items-center px-1.5 py-0.5 rounded-full border border-border-subtle/80 bg-surface-sunken text-text-tertiary text-eyebrow font-medium"
+                            className="inline-flex items-center px-1.5 py-0.5 rounded-full border border-border-subtle/80 bg-surface-sunken text-text-tertiary text-caption font-medium"
                             title="This lead is not yet in the CRM"
                           >
                             Not in CRM

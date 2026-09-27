@@ -214,7 +214,7 @@ function WeekStrip({ date, timeZone, onSelect }: { date: string; timeZone: strin
             )}
           >
             <span className="flex flex-col items-center gap-0.5">
-              <span className={cn('font-fw-sans text-eyebrow uppercase tracking-[0.1em]', isSelected ? 'text-text-on-accent/85' : isToday ? 'text-accent-700' : 'text-text-tertiary')}>
+              <span className={cn('font-fw-sans text-caption', isSelected ? 'text-text-on-accent/85' : isToday ? 'text-accent-700' : 'text-text-tertiary')}>
                 {format(day, 'EEE')}
               </span>
               <span className={cn('font-fw-mono text-body-lg font-semibold leading-none tabular-nums', isSelected ? 'text-text-on-accent' : 'text-text-primary')}>
@@ -507,7 +507,7 @@ export function CalendarPersonDialog({ request, personId, onDateChange, onCompar
 
         {person ? (
           <aside aria-label="Day summary" className={cn('sticky top-0 hidden w-[300px] shrink-0 self-start space-y-4 rounded-card p-4 lg:block', 'border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-card)]')}>
-            <p className="font-fw-sans text-eyebrow font-semibold uppercase tracking-[0.12em] text-text-tertiary">Day summary</p>
+            <h3 className="font-fw-sans text-body-sm font-semibold text-text-primary">Day summary</h3>
             <dl className="space-y-2">
               {([['class', BookOpen, 'Classes'], ['team', CalendarDays, 'Team events'], ['personal', Clock, 'Personal blocks']] as const).map(([key, Icon, label]) => (
                 <div key={key} className="flex items-center gap-3">

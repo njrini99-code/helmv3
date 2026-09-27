@@ -512,7 +512,7 @@ export function FairwayWhatsNew({ success, error, items, truncated, timeZone, se
                   aria-label={`${label}, ${dayItems.length} ${dayItems.length === 1 ? 'update' : 'updates'}`}
                 >
                   <div className="flex items-baseline gap-2 px-1">
-                    <h2 className="font-fw-display text-eyebrow font-medium uppercase tracking-[0.14em] text-text-tertiary">
+                    <h2 className="font-fw-sans text-body-sm font-semibold text-text-primary">
                       {label}
                     </h2>
                     <span
@@ -571,7 +571,7 @@ function FeedRow({ item, isNew, tz }: { item: WhatsNewItem; isNew: boolean; tz?:
         </span>
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-baseline gap-2">
-            <span className="font-fw-sans text-eyebrow font-medium uppercase tracking-wide text-text-tertiary">
+            <span className="font-fw-sans text-caption font-medium text-text-tertiary">
               {descriptor.label}
             </span>
             <span className="font-fw-sans text-caption text-text-tertiary" aria-hidden>

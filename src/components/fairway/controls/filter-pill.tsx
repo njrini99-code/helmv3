@@ -88,7 +88,7 @@ function PillContents({
       {typeof count === 'number' && (
         <span
           className={cn(
-            'ml-0.5 inline-flex min-w-[1.25rem] items-center justify-center rounded-full px-1 tabular-nums font-fw-mono text-eyebrow',
+            'ml-0.5 inline-flex min-w-[1.25rem] items-center justify-center rounded-full px-1 tabular-nums font-fw-mono text-caption',
             selected ? 'bg-accent-500/15 text-accent-700' : 'bg-surface-sunken text-text-tertiary',
           )}
         >

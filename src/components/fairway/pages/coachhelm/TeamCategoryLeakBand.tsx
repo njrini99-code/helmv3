@@ -74,7 +74,7 @@ function CategoryCard({ category, index }: { category: TeamCategory; index: numb
             e.g. APPROACH + Declining) the glyph must wrap under the label —
             with shrink-0 alone it escapes past the card edge (iOS 2026-07-24). */}
         <div className="flex flex-wrap items-start justify-between gap-x-2 gap-y-1">
-          <p className="font-fw-display text-eyebrow font-semibold uppercase tracking-[0.12em] text-text-tertiary">
+          <p className="font-fw-display text-caption font-semibold text-text-tertiary">
             {category.label}
           </p>
           <TrendGlyph direction={category.trend} className="shrink-0 text-caption" />

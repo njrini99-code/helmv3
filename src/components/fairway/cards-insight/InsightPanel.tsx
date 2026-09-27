@@ -259,7 +259,7 @@ function PanelBody({
 
           <div className="flex min-w-0 flex-1 flex-col gap-1.5">
             {overline ? (
-              <span className="font-fw-sans text-eyebrow uppercase text-text-tertiary">
+              <span className="font-fw-sans text-caption text-text-tertiary">
                 {overline}
               </span>
             ) : null}
@@ -302,7 +302,7 @@ function PanelBody({
           {evidence ? (
             <div className="flex flex-col gap-2">
               {evidenceLabel ? (
-                <span className="font-fw-sans text-eyebrow uppercase text-text-tertiary">
+                <span className="font-fw-sans text-caption text-text-tertiary">
                   {evidenceLabel}
                 </span>
               ) : null}

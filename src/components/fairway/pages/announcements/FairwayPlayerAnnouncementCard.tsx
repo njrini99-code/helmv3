@@ -72,9 +72,9 @@ function relativeTime(dateStr: string, now: number): string {
 
 function DetailHeading({ children }: { children: React.ReactNode }) {
   return (
-    <p className="font-fw-display text-eyebrow font-medium uppercase tracking-[0.14em] text-text-tertiary">
+    <h4 className="font-fw-sans text-body-sm font-semibold text-text-primary">
       {children}
-    </p>
+    </h4>
   );
 }
 

@@ -167,7 +167,7 @@ export function SignalQueue({
             )}
           >
             <span>{chip.label}</span>
-            <span className="ml-0.5 inline-flex min-w-5 items-center justify-center rounded-full bg-surface-sunken px-1 font-fw-mono text-eyebrow tabular-nums">
+            <span className="ml-0.5 inline-flex min-w-5 items-center justify-center rounded-full bg-surface-sunken px-1 font-fw-mono text-caption tabular-nums">
               {countForFilter(allGroups, chip.key)}
             </span>
           </Link>

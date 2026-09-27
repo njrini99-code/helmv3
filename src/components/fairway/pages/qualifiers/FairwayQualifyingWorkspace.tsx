@@ -322,7 +322,7 @@ function SlotLeaderboard({
       <Surface.Header
         title="Leaderboard"
         actions={
-          <span className="font-fw-sans text-eyebrow font-semibold uppercase tracking-[0.12em] text-text-tertiary">
+          <span className="font-fw-sans text-caption font-semibold text-text-tertiary">
             Top {topScoreSlots} auto-lock
           </span>
         }
@@ -500,7 +500,7 @@ function CoachPicks({
       <Surface.Header
         title="Coach picks"
         actions={
-          <span className="font-fw-sans text-eyebrow font-semibold uppercase tracking-[0.12em] text-text-tertiary">
+          <span className="font-fw-sans text-caption font-semibold text-text-tertiary">
             {picksMade.length} of {slotsCoachPick} chosen
             {remaining > 0 && editable ? ` · ${remaining} left` : ''}
           </span>

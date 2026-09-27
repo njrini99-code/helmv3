@@ -519,7 +519,7 @@ const CoachTableRow = React.memo(
                 <SegmentBadge key={seg.id} segment={seg} variant="chip" />
               ))}
               {segments.length > 3 && (
-                <span className="text-eyebrow text-text-tertiary self-center">+{segments.length - 3}</span>
+                <span className="text-caption text-text-tertiary self-center">+{segments.length - 3}</span>
               )}
             </div>
           ) : (
@@ -1008,7 +1008,7 @@ const CoachTableCard = React.memo(
                 <SegmentBadge key={seg.id} segment={seg} variant="chip" />
               ))}
               {segments.length > 3 && (
-                <span className="text-eyebrow text-text-tertiary self-center">+{segments.length - 3}</span>
+                <span className="text-caption text-text-tertiary self-center">+{segments.length - 3}</span>
               )}
             </div>
           )}

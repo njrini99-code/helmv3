@@ -123,9 +123,9 @@ export function PracticeRxPanel({
       {/* Header — turns a diagnosis into a prescription. Plain-English. */}
       <div className="flex items-center gap-2">
         <IconTarget size={14} className="text-accent-ink" aria-hidden />
-        <span className="font-fw-sans text-eyebrow uppercase tracking-wide text-text-tertiary">
+        <h3 className="font-fw-sans text-body-sm font-semibold text-text-primary">
           Practice Rx
-        </span>
+        </h3>
       </div>
       <p className="mt-1 font-fw-sans text-caption text-text-secondary">
         {variant === 'hero'

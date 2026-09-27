@@ -93,7 +93,7 @@ export const FairwayShotPills = memo(function FairwayShotPills({
       {/* The label carries the live count now, so the number is readable
           without counting dots — and it replaces the old fixed "SHOT" eyebrow
           that consumed width beside the strip on every hole. */}
-      <p className="mb-1.5 font-fw-sans text-eyebrow font-semibold uppercase tracking-[0.12em] text-text-tertiary">
+      <p className="mb-1.5 font-fw-sans text-caption font-semibold text-text-tertiary">
         Shot <span className="tabular-nums text-text-secondary">{currentShot}</span>
       </p>
 

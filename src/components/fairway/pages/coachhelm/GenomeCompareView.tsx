@@ -366,7 +366,7 @@ function GenomeProvenance({ series }: { series: CompareSeries }) {
       : `${series.roundsBasis} ${series.roundsBasis === 1 ? 'round' : 'rounds'}`;
 
   return (
-    <p className="mt-1.5 font-fw-sans text-eyebrow text-text-tertiary">
+    <p className="mt-1.5 font-fw-sans text-caption text-text-tertiary">
       {[rounds, refreshed ? `last refreshed ${refreshed}` : null].filter(Boolean).join(' · ')}
     </p>
   );
@@ -439,9 +439,9 @@ function ComparePicker({
     <InstrumentPanel depth="base" padding="sm" className="space-y-2" as="section">
       <div className="flex items-center gap-2 px-1">
         <span aria-hidden className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: dotColor }} />
-        <p className="font-fw-sans text-eyebrow uppercase tracking-wide text-text-tertiary">
+        <h2 className="font-fw-sans text-body-sm font-semibold text-text-primary">
           {heading}
-        </p>
+        </h2>
       </div>
 
       {roster.length === 0 ? (
@@ -466,7 +466,7 @@ function ComparePicker({
                     <span className="min-w-0 flex-1 truncate font-fw-sans text-body-sm text-text-tertiary">
                       {p.name}
                     </span>
-                    <span className="font-fw-sans text-eyebrow text-text-tertiary">
+                    <span className="font-fw-sans text-caption text-text-tertiary">
                       in other slot
                     </span>
                   </div>

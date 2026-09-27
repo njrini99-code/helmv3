@@ -77,7 +77,7 @@ export function SpamCompliancePanel({
         </span>
         <span
           className={cn(
-            'ml-auto inline-flex items-center gap-1 px-2 py-0.5 rounded-full border text-eyebrow font-semibold',
+            'ml-auto inline-flex items-center gap-1 px-2 py-0.5 rounded-full border text-caption font-semibold',
             verdictMeta.pillClass,
           )}
         >
@@ -113,7 +113,7 @@ export function SpamCompliancePanel({
           type="button"
           variant="ghost"
           onClick={() => setExpanded((v) => !v)}
-          className="h-auto p-0 text-eyebrow text-text-tertiary hover:text-text-secondary flex items-center gap-1"
+          className="h-auto p-0 text-caption text-text-tertiary hover:text-text-secondary flex items-center gap-1"
         >
           <IconChevronDown
             size={12}

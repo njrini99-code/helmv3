@@ -533,7 +533,7 @@ function FormFormula({ row }: { row: TeamBoardRowViewModel }) {
 function FundamentalReadout({ label, value }: { label: string; value: string }) {
   return (
     <div className="min-w-0 px-3 first:pl-0 last:pr-0 sm:px-5 xl:text-right">
-      <p className="font-fw-sans text-eyebrow font-semibold uppercase tracking-[0.1em] text-text-tertiary">{label}</p>
+      <p className="font-fw-sans text-caption font-semibold text-text-tertiary">{label}</p>
       <strong className="mt-1 block truncate text-h2 font-normal tracking-[-0.03em] tabular-nums text-text-primary">{value}</strong>
     </div>
   );

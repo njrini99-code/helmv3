@@ -192,12 +192,12 @@ function PreviewPane({
         <span className="text-xs font-semibold uppercase tracking-wider text-text-secondary">
           Live preview
         </span>
-        <span className="ml-auto text-eyebrow text-text-tertiary">
+        <span className="ml-auto text-caption text-text-tertiary">
           rendered for {SAMPLE_RECIPIENT.name}
         </span>
       </div>
       <div className="px-4 py-3 border-b border-border-subtle">
-        <p className="text-eyebrow uppercase tracking-wider text-text-tertiary mb-0.5">Subject</p>
+        <p className="text-caption text-text-tertiary mb-0.5">Subject</p>
         <p className="text-sm font-semibold text-text-primary break-words">
           {mergedSubject || <span className="text-text-tertiary italic">No subject</span>}
         </p>
@@ -223,7 +223,7 @@ function PreviewPane({
         )}
       </div>
       {format !== 'html' && (
-        <p className="px-4 py-2 text-eyebrow text-text-tertiary border-t border-border-subtle">
+        <p className="px-4 py-2 text-caption text-text-tertiary border-t border-border-subtle">
           {format === 'plain'
             ? 'On send, this gets wrapped in the branded greeting + signature shell.'
             : 'Sent as true text/plain — exactly as shown above.'}
@@ -431,7 +431,7 @@ function TemplateEditor({
                 );
               })}
             </div>
-            <p className="mt-2 flex items-start gap-1.5 text-eyebrow text-text-tertiary leading-relaxed">
+            <p className="mt-2 flex items-start gap-1.5 text-caption text-text-tertiary leading-relaxed">
               <IconInfo size={13} className="mt-px flex-shrink-0 text-text-tertiary" aria-hidden />
               <span>{FORMAT_META[state.format].help}</span>
             </p>
@@ -576,7 +576,7 @@ function TemplateCard({
         <span className="font-semibold text-sm text-text-primary truncate flex-1">{template.name}</span>
         {template.is_default && (
           <span
-            className="shrink-0 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-eyebrow font-bold uppercase tracking-wider bg-accent-50 text-accent-700"
+            className="shrink-0 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-caption font-bold bg-accent-50 text-accent-700"
             title="Default for this category"
           >
             <IconStarFilled size={10} className="text-accent-ink" aria-hidden />
@@ -586,21 +586,21 @@ function TemplateCard({
       </div>
 
       <div className="flex flex-wrap items-center gap-1.5 mb-2">
-        <span className={cn('px-2 py-0.5 rounded-full text-eyebrow font-bold uppercase tracking-wider', colors.bg, colors.text)}>
+        <span className={cn('px-2 py-0.5 rounded-full text-caption font-bold', colors.bg, colors.text)}>
           {CATEGORY_LABELS[template.category]}
         </span>
-        <span className={cn('px-2 py-0.5 rounded-full text-eyebrow font-bold uppercase tracking-wider', fmt.badge)}>
+        <span className={cn('px-2 py-0.5 rounded-full text-caption font-bold', fmt.badge)}>
           {fmt.label}
         </span>
         {template.usage_count > 0 ? (
-          <span className="text-eyebrow text-text-tertiary">
+          <span className="text-caption text-text-tertiary">
             {template.usage_count} sent
             {template.last_used_at
               ? ` · last ${new Date(template.last_used_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`
               : ''}
           </span>
         ) : (
-          <span className="text-eyebrow text-text-tertiary">Never used</span>
+          <span className="text-caption text-text-tertiary">Never used</span>
         )}
       </div>
 
@@ -866,10 +866,10 @@ export function TemplateManager() {
             return (
               <section key={category} className="space-y-2.5">
                 <div className="flex items-center gap-2">
-                  <span className={cn('px-2 py-0.5 rounded-full text-eyebrow font-bold uppercase tracking-wider', colors.bg, colors.text)}>
+                  <span className={cn('px-2 py-0.5 rounded-full text-caption font-bold', colors.bg, colors.text)}>
                     {CATEGORY_LABELS[category]}
                   </span>
-                  <span className="text-eyebrow text-text-tertiary">
+                  <span className="text-caption text-text-tertiary">
                     {items.length} template{items.length === 1 ? '' : 's'}
                   </span>
                 </div>

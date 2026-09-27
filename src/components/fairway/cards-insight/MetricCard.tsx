@@ -375,7 +375,7 @@ export const MetricCard = forwardRef<HTMLDivElement, MetricCardProps>(
         <div className="flex items-start justify-between gap-3">
           <span
             className={cn(
-              'min-w-0 font-fw-sans text-eyebrow uppercase text-text-tertiary',
+              'min-w-0 font-fw-sans text-caption text-text-tertiary',
               labelLines === 2
                 ? // Wrap up to 2 lines instead of a hard single-line ellipsis —
                   // the fixed `min-h-8` (16px eyebrow line-height × 2) reserves

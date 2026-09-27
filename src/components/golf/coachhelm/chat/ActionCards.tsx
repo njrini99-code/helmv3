@@ -77,7 +77,7 @@ export function ActionProposalCard({
       <dl className="grid grid-cols-1 gap-x-6 gap-y-2.5 px-4 py-3 sm:grid-cols-[auto_minmax(0,1fr)]">
         {proposal.facts.map((f) => (
           <React.Fragment key={f.label}>
-            <dt className="font-fw-sans text-eyebrow uppercase tracking-[0.1em] text-text-tertiary sm:pt-0.5">
+            <dt className="font-fw-sans text-caption text-text-tertiary sm:pt-0.5">
               {f.label}
             </dt>
             <dd
@@ -94,7 +94,7 @@ export function ActionProposalCard({
 
       {proposal.notifications.length > 0 && (
         <div className="border-t border-border-subtle px-4 py-3">
-          <p className="font-fw-sans text-eyebrow uppercase tracking-[0.1em] text-text-tertiary">
+          <p className="font-fw-sans text-caption text-text-tertiary">
             Will send
           </p>
           <ul className="mt-1.5 flex flex-col gap-1">

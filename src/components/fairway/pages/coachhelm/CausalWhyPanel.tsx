@@ -314,7 +314,7 @@ function CausalReadout({
 }) {
   return (
     <div className="flex flex-col gap-0.5">
-      <span className="font-fw-sans text-eyebrow uppercase tracking-wide text-text-tertiary">
+      <span className="font-fw-sans text-caption text-text-tertiary">
         {label}
       </span>
       <span className="font-fw-mono text-body-lg font-semibold tabular-nums text-text-primary">

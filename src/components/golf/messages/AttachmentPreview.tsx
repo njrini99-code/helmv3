@@ -226,13 +226,13 @@ function FileTypeIcon({ mimeType }: { mimeType: string }) {
     return <IconVideo size={20} className="text-text-tertiary" />;
   }
   if (mimeType.includes('pdf')) {
-    return <span className="text-eyebrow font-medium text-text-secondary">PDF</span>;
+    return <span className="text-caption font-medium text-text-secondary">PDF</span>;
   }
   if (mimeType.includes('word')) {
-    return <span className="text-eyebrow font-medium text-text-secondary">DOC</span>;
+    return <span className="text-caption font-medium text-text-secondary">DOC</span>;
   }
   if (mimeType.includes('excel') || mimeType.includes('spreadsheet')) {
-    return <span className="text-eyebrow font-medium text-text-secondary">XLS</span>;
+    return <span className="text-caption font-medium text-text-secondary">XLS</span>;
   }
   return <IconFile size={20} className="text-text-tertiary" />;
 }

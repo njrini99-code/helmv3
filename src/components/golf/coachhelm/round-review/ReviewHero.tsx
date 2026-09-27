@@ -497,7 +497,7 @@ export function ReviewHero({
                     puttMakePct={puttMakePct}
                     className="aspect-square w-[172px] shrink-0"
                   />
-                  <span className="font-fw-mono text-eyebrow uppercase tracking-[0.1em] text-text-tertiary">
+                  <span className="font-fw-mono text-caption text-text-tertiary">
                     On the green
                   </span>
                 </div>
@@ -532,7 +532,7 @@ export function ReviewHero({
                         {row.distance}
                       </span>
                       {row.isPenalty ? (
-                        <span className="shrink-0 rounded-full bg-fw-danger-bg px-1.5 py-0.5 text-eyebrow font-semibold uppercase tracking-[0.06em] text-fw-danger-ink">
+                        <span className="shrink-0 rounded-full bg-fw-danger-bg px-1.5 py-0.5 text-caption font-semibold text-fw-danger-ink">
                           Penalty
                         </span>
                       ) : null}

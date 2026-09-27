@@ -160,7 +160,7 @@ function SuggestionRow({ view }: { view: GoalSuggestionView }) {
         <p className="truncate font-fw-sans text-body-sm font-medium text-text-primary">
           {display_label}
         </p>
-        <p className="font-fw-mono text-eyebrow tabular-nums text-text-tertiary">
+        <p className="font-fw-mono text-caption tabular-nums text-text-tertiary">
           Target {targetText} · {suggestion.suggested_window_days}-day window
         </p>
       </div>

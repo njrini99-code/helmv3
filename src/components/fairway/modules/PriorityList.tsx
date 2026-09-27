@@ -34,7 +34,7 @@ export function PriorityList({ items, className }: PriorityListProps) {
         <li key={item.rank} className="grid grid-cols-[1.5rem_1fr_auto] items-center gap-3">
           <span
             style={TABULAR_NUMS}
-            className="flex h-6 w-6 items-center justify-center rounded-full bg-surface-sunken font-fw-sans text-eyebrow font-semibold tabular-nums text-text-secondary"
+            className="flex h-6 w-6 items-center justify-center rounded-full bg-surface-sunken font-fw-sans text-caption font-semibold tabular-nums text-text-secondary"
           >
             {String(item.rank).padStart(2, '0')}
           </span>

@@ -163,7 +163,7 @@ export function AdoptionHeatGrid({ rows, rowHrefTemplate, className }: AdoptionH
               <React.Fragment key={row.key}>
                 {showBandHeader ? (
                   <div className="sticky left-0 z-20 flex w-fit min-w-full items-center gap-2 border-b border-warm-200 bg-cream-100 px-3 py-1.5">
-                    <span className="text-eyebrow uppercase text-text-tertiary">{APP_LABEL[row.app]}</span>
+                    <span className="text-caption text-text-tertiary">{APP_LABEL[row.app]}</span>
                     <span className="font-fw-mono text-caption tabular-nums text-text-tertiary">{bandCount} features</span>
                   </div>
                 ) : null}
@@ -249,11 +249,11 @@ export function AdoptionHeatGrid({ rows, rowHrefTemplate, className }: AdoptionH
           <p className="text-caption text-text-tertiary">{active.cell.date}</p>
           <div className="mt-2 flex items-center gap-3">
             <div>
-              <p className="text-eyebrow uppercase text-text-tertiary">Users</p>
+              <p className="text-caption text-text-tertiary">Users</p>
               <p className="font-fw-mono text-body tabular-nums text-warm-900">{active.cell.uniqueUsers}</p>
             </div>
             <div>
-              <p className="text-eyebrow uppercase text-text-tertiary">Events</p>
+              <p className="text-caption text-text-tertiary">Events</p>
               <p className="font-fw-mono text-body tabular-nums text-warm-900">{active.cell.eventCount}</p>
             </div>
           </div>

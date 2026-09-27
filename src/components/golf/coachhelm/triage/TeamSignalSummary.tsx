@@ -197,7 +197,7 @@ export function TeamSignalSummary({ groups, playerHref, onOpenPlayer }: TeamSign
 
           <div className="mt-5">
             <div className="mb-2 flex items-center justify-end gap-3">
-              <span className="font-fw-mono text-eyebrow tabular-nums text-text-tertiary">{signals.length} total</span>
+              <span className="font-fw-mono text-caption tabular-nums text-text-tertiary">{signals.length} total</span>
             </div>
             <div className="flex h-2.5 overflow-clip rounded-full bg-surface-sunken" aria-label="Severity distribution">
               {SEVERITY_ORDER.map((severity) => severityCounts[severity] > 0 ? (
@@ -355,7 +355,7 @@ function SummaryMetric({ icon: Icon, label, value }: { icon: LucideIcon; label: 
     <div className="min-w-0 px-4 py-4">
       <Icon className="mb-2 h-3.5 w-3.5 text-accent-700" aria-hidden />
       <p className="font-fw-mono text-h3 font-semibold tabular-nums text-text-primary">{value}</p>
-      <p className="mt-1 truncate text-eyebrow uppercase tracking-wide text-text-tertiary">{label}</p>
+      <p className="mt-1 truncate text-caption text-text-tertiary">{label}</p>
     </div>
   );
 }

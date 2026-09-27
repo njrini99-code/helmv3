@@ -123,7 +123,7 @@ export const SearchField = forwardRef<HTMLInputElement, SearchFieldProps>(
           aria-hidden="true"
           className={cn(
             'pointer-events-none hidden select-none items-center gap-0.5 rounded-fw-sm border border-border-subtle',
-            'bg-surface px-1.5 py-0.5 font-fw-mono text-eyebrow font-medium leading-none tracking-normal text-text-tertiary sm:inline-flex',
+            'bg-surface px-1.5 py-0.5 font-fw-mono text-caption font-medium leading-none tracking-normal text-text-tertiary sm:inline-flex',
           )}
         >
           <span aria-hidden="true">⌘</span>K

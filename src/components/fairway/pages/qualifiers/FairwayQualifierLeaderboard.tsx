@@ -572,7 +572,7 @@ function StandingsTable({
 function StatCell({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="flex min-w-0 flex-col gap-0.5">
-      <span className="font-fw-sans text-eyebrow font-medium uppercase tracking-wide text-text-tertiary">
+      <span className="font-fw-sans text-caption font-medium text-text-tertiary">
         {label}
       </span>
       <span className="font-fw-mono text-body-sm font-medium tabular-nums text-text-primary">
@@ -591,7 +591,7 @@ function CutLineCard({ tone, label }: { tone: 'accent' | 'muted'; label: string 
       <span className={cn('h-px flex-1', ruleClass)} />
       <span
         className={cn(
-          'whitespace-nowrap font-fw-sans text-eyebrow font-semibold uppercase tracking-[0.1em]',
+          'whitespace-nowrap font-fw-sans text-caption font-semibold',
           textClass,
         )}
       >
@@ -613,7 +613,7 @@ function CutLineRow({ tone, label }: { tone: 'accent' | 'muted'; label: string }
           <span className={cn('h-px flex-1', ruleClass)} />
           <span
             className={cn(
-              'whitespace-nowrap font-fw-sans text-eyebrow font-semibold uppercase tracking-[0.1em]',
+              'whitespace-nowrap font-fw-sans text-caption font-semibold',
               textClass,
             )}
           >
@@ -638,7 +638,7 @@ function Th({
   return (
     <th
       className={cn(
-        'pb-2 font-fw-sans text-eyebrow font-semibold uppercase tracking-[0.07em] text-text-tertiary',
+        'pb-2 font-fw-sans text-caption font-semibold text-text-tertiary',
         align === 'right' ? 'pl-3 text-right' : 'pr-3 text-left',
         className,
       )}

@@ -352,7 +352,7 @@ export function FairwayEditQualifier({
                           <Flag className="h-4 w-4" strokeWidth={1.75} />
                         </span>
                         <div className="min-w-0 flex-1">
-                          <p className="font-fw-sans text-eyebrow font-semibold uppercase tracking-[0.1em] text-text-tertiary">
+                          <p className="font-fw-sans text-caption font-semibold text-text-tertiary">
                             Round {roundNumber}
                           </p>
                           {assigned?.courseName ? (

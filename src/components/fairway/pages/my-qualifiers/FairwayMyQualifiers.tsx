@@ -231,9 +231,9 @@ export function FairwayMyQualifiers({ qualifiers, error, loadError }: FairwayMyQ
 
           {/* ── How qualifiers work — quiet footer note ─────────────────────── */}
           <Surface elevation="border" padding="md">
-            <p className="font-fw-sans text-eyebrow font-semibold uppercase tracking-[0.14em] text-text-tertiary">
+            <h2 className="font-fw-sans text-body-sm font-semibold text-text-primary">
               How qualifiers work
-            </p>
+            </h2>
             <p className="mt-1.5 max-w-[70ch] font-fw-sans text-body-sm text-text-secondary">
               Your coach posts a qualifier; you post rounds against it with{' '}
               <span className="font-medium text-text-primary">Start qualifying round</span>. Every round
@@ -253,7 +253,7 @@ function SectionHeading({ children }: { children: React.ReactNode }) {
   // outline so assistive-tech rotor navigation can tell a section apart from
   // the items inside it. Visual size is governed by the classes, not the tag.
   return (
-    <h2 className="px-1 font-fw-display text-eyebrow font-medium uppercase tracking-[0.14em] text-text-tertiary">
+    <h2 className="px-1 font-fw-sans text-body-sm font-semibold text-text-primary">
       {children}
     </h2>
   );
@@ -358,7 +358,7 @@ function ScoreCell({ label, children }: { label: string; children: React.ReactNo
   // label truncates instead of pushing the other two cells out of the 3-up row.
   return (
     <div className="flex min-w-0 flex-col gap-0.5">
-      <span className="font-fw-sans text-eyebrow font-medium uppercase tracking-wide text-text-tertiary">
+      <span className="font-fw-sans text-caption font-medium text-text-tertiary">
         {label}
       </span>
       {children}

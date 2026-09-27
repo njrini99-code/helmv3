@@ -144,7 +144,7 @@ export function PushPermissionSoftAsk() {
           </Button>
         </div>
 
-        <p className="text-eyebrow text-text-tertiary mt-2 max-w-xs leading-relaxed">
+        <p className="text-caption text-text-tertiary mt-2 max-w-xs leading-relaxed">
           You can change this anytime in Settings.
         </p>
       </div>

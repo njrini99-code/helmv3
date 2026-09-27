@@ -551,7 +551,7 @@ export function SprayField({ group, family, heightClass, compact = false }: Spra
                 isDominant && 'bg-accent-50',
               )}
             >
-              <span className="truncate font-fw-sans text-eyebrow uppercase text-text-tertiary">
+              <span className="truncate font-fw-sans text-caption text-text-tertiary">
                 {band.label}
               </span>
               <span
@@ -577,7 +577,7 @@ function StatReadout({ label, value }: { label: string; value: number | null }) 
       <div style={TABULAR_NUMS} className="font-fw-mono text-body-sm font-semibold text-text-primary">
         {value != null ? `${Math.round(value)}y` : '—'}
       </div>
-      <div className="font-fw-sans text-eyebrow uppercase text-text-tertiary">{label}</div>
+      <div className="font-fw-sans text-caption text-text-tertiary">{label}</div>
     </div>
   );
 }

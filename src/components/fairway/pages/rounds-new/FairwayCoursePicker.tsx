@@ -760,7 +760,7 @@ function CourseSection({ label, count, children }: { label: string; count: numbe
   return (
     <section className="flex flex-col">
       <div className="mb-2 flex items-baseline justify-between px-1">
-        <h2 className="font-fw-sans text-eyebrow font-semibold uppercase tracking-[0.16em] text-text-secondary">
+        <h2 className="font-fw-sans text-body-sm font-semibold text-text-primary">
           {label}
         </h2>
         <span className="font-fw-sans text-caption tabular-nums text-text-secondary">
@@ -923,7 +923,7 @@ function IndexedCourseList({
                   type="button"
                   onClick={() => jumpTo(letter)}
                   aria-label={`Jump to ${letter === '#' ? 'other' : letter}`}
-                  className="flex h-5 w-6 items-center justify-center rounded font-fw-sans text-eyebrow text-accent-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-600"
+                  className="flex h-5 w-6 items-center justify-center rounded font-fw-sans text-caption text-accent-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-600"
                 >
                   {letter}
                 </button>

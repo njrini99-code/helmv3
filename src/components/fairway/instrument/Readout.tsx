@@ -147,7 +147,7 @@ export const Readout = React.forwardRef<HTMLDivElement, ReadoutProps>(function R
         <span
           data-slot="readout-label"
           className={cn(
-            'font-fw-display text-eyebrow uppercase tracking-[0.14em] text-text-tertiary',
+            'font-fw-display text-caption text-text-tertiary',
             // NOTE: `text-text-tertiary` here would compile to NOTHING before
             // the tokenColor() fix in tailwind.config.ts — a slash-opacity
             // modifier on a bare `var(--fw-color-*)` value emits no rule at

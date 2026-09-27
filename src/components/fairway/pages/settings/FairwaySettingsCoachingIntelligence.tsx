@@ -540,9 +540,9 @@ function CoachingIntelligenceBody({
               than as settings. */}
           {ALERT_GROUPS.map((group) => (
             <div key={group.title}>
-              <p className="bg-surface-sunken px-4 py-1.5 font-fw-sans text-eyebrow font-semibold uppercase tracking-[0.12em] text-text-tertiary">
+              <h3 className="bg-surface-sunken px-4 py-1.5 font-fw-sans text-body-sm font-semibold text-text-primary">
                 {group.title}
-              </p>
+              </h3>
               <div className="divide-y divide-border-subtle">
                 {group.alerts.map((alert) => (
                   <SettingsRow

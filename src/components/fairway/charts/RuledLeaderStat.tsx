@@ -9,7 +9,7 @@
  * leader tick) into Fairway's OWN `--fw-*` token system + helm-green accent.
  * This does NOT import the baseball kit — every color/type class here
  * resolves against Fairway tokens (`accent-*`, `fw-success`, `font-fw-*`,
- * `text-eyebrow`, `text-h1`/`text-h3`/`text-body-*`) so it renders correctly
+ * `text-caption`, `text-h1`/`text-h3`/`text-body-*`) so it renders correctly
  * anywhere inside the `.fairway-ds` scope.
  *
  * Owner ask (2026-07-01): stats wanted "loud graphite numerals, green rules,
@@ -83,7 +83,7 @@ function LeaderTick({ spelled }: { spelled: boolean }) {
     <span
       className={cn(
         'inline-flex shrink-0 items-center gap-1 font-fw-display font-semibold uppercase tracking-[0.1em] text-fw-success-ink',
-        spelled ? 'text-eyebrow' : '',
+        spelled ? 'text-caption' : '',
       )}
     >
       <span aria-hidden className="h-1.5 w-1.5 shrink-0 rounded-full bg-fw-success" />
@@ -120,7 +120,7 @@ export function RuledLeaderStat({
   // a `compact`/`lg` cell reads identically to its untouched non-leader
   // siblings in the same grid.
   const labelNode = (
-    <span className="font-fw-display text-eyebrow font-medium uppercase tracking-[0.1em] text-text-secondary">
+    <span className="font-fw-display text-caption font-medium text-text-secondary">
       {label}
     </span>
   );

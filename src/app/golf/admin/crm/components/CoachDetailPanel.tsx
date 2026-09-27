@@ -610,7 +610,7 @@ function CoachDetailPanelInner({
               {isOverdue && (
                 <div className="mt-2 ml-[26px] px-2.5 py-1.5 rounded-fw-sm bg-fw-danger-bg/80 border border-fw-danger/25/40 flex items-center gap-1.5">
                   <IconClock size={12} className="text-fw-danger" />
-                  <span className="text-eyebrow font-medium text-fw-danger-ink">Overdue: {coach.next_follow_up_at ? formatShort(coach.next_follow_up_at) : ''}</span>
+                  <span className="text-caption font-medium text-fw-danger-ink">Overdue: {coach.next_follow_up_at ? formatShort(coach.next_follow_up_at) : ''}</span>
                 </div>
               )}
             </>
@@ -697,14 +697,14 @@ function CoachDetailPanelInner({
                 </span>
                 <div className="flex-1 flex flex-wrap items-center gap-1">
                   {(coach.tags || []).map((tag, i) => (
-                    <span key={i} className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-accent-50 text-accent-700 rounded-fw-sm text-eyebrow font-medium">
+                    <span key={i} className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-accent-50 text-accent-700 rounded-fw-sm text-caption font-medium">
                       {tag}
                       <IconButton variant="default" onClick={() => removeTag(tag)} aria-label={`Remove tag ${tag}`} className={CRM_ICON_ACTION_CLASS}><IconX size={8} aria-hidden="true" /></IconButton>
                     </span>
                   ))}
                   <div className="flex items-center gap-0.5">
                     <Input id="tag-input" type="text" value={newTag} onChange={e => setNewTag(e.target.value)} onKeyDown={e => e.key === 'Enter' && addTag()}
-                      placeholder="+" className="bg-transparent border-none rounded-none min-h-0 px-0 py-0 text-eyebrow text-text-tertiary w-12 focus:outline-none focus:ring-0 focus:w-20 transition-[width,box-shadow] placeholder:text-text-tertiary" />
+                      placeholder="+" className="bg-transparent border-none rounded-none min-h-0 px-0 py-0 text-caption text-text-tertiary w-12 focus:outline-none focus:ring-0 focus:w-20 transition-[width,box-shadow] placeholder:text-text-tertiary" />
                     {newTag && <IconButton variant="primary" onClick={addTag} aria-label="Add tag" className={CRM_ICON_ACTION_CLASS}><IconPlus size={12} aria-hidden="true" /></IconButton>}
                   </div>
                 </div>

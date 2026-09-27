@@ -198,7 +198,7 @@ export function FairwayPlayerCard({ player, intent }: FairwayPlayerCardProps) {
           player individually to triage the team. */}
       <div className="grid grid-cols-3 gap-2 px-5 pb-4 md:px-6">
         <div className="min-w-0 rounded-fw-md bg-surface-sunken px-3 py-2.5">
-          <p className="font-fw-sans text-eyebrow uppercase tracking-wide text-text-tertiary">SG:Total</p>
+          <p className="font-fw-sans text-caption text-text-tertiary">SG:Total</p>
           <p
             className={cn(
               'font-fw-mono text-body-lg font-semibold tabular-nums',
@@ -219,7 +219,7 @@ export function FairwayPlayerCard({ player, intent }: FairwayPlayerCardProps) {
           ) : null}
         </div>
         <div className="flex min-w-0 flex-col justify-center gap-1 rounded-fw-md bg-surface-sunken px-3 py-2.5">
-          <p className="font-fw-sans text-eyebrow uppercase tracking-wide text-text-tertiary">Focus</p>
+          <p className="font-fw-sans text-caption text-text-tertiary">Focus</p>
           {player.active_focus_areas ? (
             // `whitespace-normal` deliberately overrides Badge's built-in
             // whitespace-nowrap (twMerge lets className win) — same fix as
@@ -238,7 +238,7 @@ export function FairwayPlayerCard({ player, intent }: FairwayPlayerCardProps) {
           )}
         </div>
         <div className="flex min-w-0 flex-col justify-center gap-1 rounded-fw-md bg-surface-sunken px-3 py-2.5">
-          <p className="font-fw-sans text-eyebrow uppercase tracking-wide text-text-tertiary">Goals</p>
+          <p className="font-fw-sans text-caption text-text-tertiary">Goals</p>
           {player.active_goals ? (
             <Badge tone="accent" size="sm" numeric className="w-fit whitespace-normal">
               {player.active_goals}

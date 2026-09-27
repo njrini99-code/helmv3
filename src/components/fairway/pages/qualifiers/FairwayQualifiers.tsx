@@ -395,7 +395,7 @@ export function FairwayQualifiers({ isCoach, qualifiers }: FairwayQualifiersProp
  * ────────────────────────────────────────────────────────────────────────── */
 function SectionHeading({ children }: { children: React.ReactNode }) {
   return (
-    <h3 className="px-1 font-fw-display text-eyebrow font-medium uppercase tracking-[0.14em] text-text-tertiary">
+    <h3 className="px-1 font-fw-sans text-body-sm font-semibold text-text-primary">
       {children}
     </h3>
   );

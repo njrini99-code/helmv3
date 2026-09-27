@@ -136,7 +136,7 @@ function Section({
   children: React.ReactNode;
 }) {
   const headingClass =
-    'font-fw-sans text-eyebrow font-medium uppercase tracking-wider text-text-tertiary';
+    'font-fw-sans text-caption font-medium text-text-tertiary';
   return (
     <div className={cn('px-5 py-5', tint && 'bg-accent-50/40')}>
       <div className="mb-3 flex items-center justify-between gap-3">

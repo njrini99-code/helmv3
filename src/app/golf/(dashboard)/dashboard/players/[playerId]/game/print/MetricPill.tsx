@@ -20,7 +20,7 @@ export function MetricPill({ metric }: { metric: FingerprintMetric }) {
       )}
       data-tone={metric.tone}
     >
-      <span className="text-eyebrow font-medium uppercase tracking-wide text-text-secondary">
+      <span className="text-caption font-medium text-text-secondary">
         {metric.label}
       </span>
       <div className="flex items-baseline gap-1.5">
@@ -37,7 +37,7 @@ export function MetricPill({ metric }: { metric: FingerprintMetric }) {
           {metric.value}
         </span>
         {metric.comparison ? (
-          <span className="text-eyebrow text-text-secondary">{metric.comparison}</span>
+          <span className="text-caption text-text-secondary">{metric.comparison}</span>
         ) : null}
       </div>
     </div>

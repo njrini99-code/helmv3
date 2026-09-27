@@ -640,7 +640,7 @@ function KanbanCard({
           lost/nurture), so the card must still show which one this coach is. */}
       {statusCfg && (
         <span className={cn(
-          'inline-flex items-center gap-1 text-eyebrow font-semibold px-1.5 py-0.5 rounded-full mb-1.5',
+          'inline-flex items-center gap-1 text-caption font-semibold px-1.5 py-0.5 rounded-full mb-1.5',
           statusColors?.bg, statusColors?.text,
         )}>
           <span aria-hidden="true">{statusCfg.icon}</span>
@@ -653,7 +653,7 @@ function KanbanCard({
         <div className="flex items-center gap-1.5">
           {/* Division badge */}
           <span className={cn(
-            'text-eyebrow font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full',
+            'text-caption font-bold px-1.5 py-0.5 rounded-full',
             'bg-surface-tint text-text-secondary ring-1 ring-border-subtle'
           )}>
             {coach.division}

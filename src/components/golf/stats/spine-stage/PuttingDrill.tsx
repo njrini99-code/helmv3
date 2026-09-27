@@ -509,7 +509,7 @@ export function PuttingDrill({
             </div>
             <div className="overflow-x-auto">
               <table className="w-full min-w-[650px] border-separate border-spacing-y-2 text-left">
-                <thead className="text-eyebrow uppercase tracking-wide text-text-tertiary"><tr><th className="px-3">Distance</th><th className="px-3">Make</th><th className="px-3">First-putt share</th><th className="px-3">Avg leave</th><th className="px-3">Efficiency</th><th className="px-3">Proximity</th></tr></thead>
+                <thead className="text-caption text-text-tertiary"><tr><th className="px-3">Distance</th><th className="px-3">Make</th><th className="px-3">First-putt share</th><th className="px-3">Avg leave</th><th className="px-3">Efficiency</th><th className="px-3">Proximity</th></tr></thead>
                 <tbody>{PUTTING_DISTANCE_DETAIL.map((band, i) => {
                   const num = (value: unknown, digits = 1) => typeof value === 'number' && Number.isFinite(value) ? value.toFixed(digits) : '—';
                   // Same RampMatrix band language the Breaks tab uses for this

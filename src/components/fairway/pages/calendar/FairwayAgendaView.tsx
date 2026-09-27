@@ -428,7 +428,7 @@ function AgendaBody({
   if (mode === 'day' && totalEvents === 0) {
     return (
       <div className={cn('rounded-xl border border-dashed border-border-strong px-5 py-6 text-center', className)}>
-        <p className="mb-2 font-fw-display text-eyebrow uppercase tracking-[0.12em] text-text-tertiary">
+        <p className="mb-2 font-fw-display text-caption text-text-tertiary">
           {formatDayLabel(focusDate, nowRef)}
         </p>
         <p className="font-fw-sans text-body-sm leading-[1.5] text-text-tertiary">

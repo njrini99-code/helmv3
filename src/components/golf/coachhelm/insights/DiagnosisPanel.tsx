@@ -162,7 +162,7 @@ export function DiagnosisPanel({
   return (
     <div className={cn('space-y-4', className)}>
       <div className="flex items-center justify-between gap-3">
-        <p className="font-fw-display text-eyebrow uppercase tracking-[0.14em] text-text-tertiary">
+        <p className="font-fw-sans text-caption text-text-tertiary">
           Root cause{category ? <> · {category}</> : null}
         </p>
         <CausalityChip level={diagnosis.causality_level} />

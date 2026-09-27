@@ -181,7 +181,7 @@ export function NewAnnouncementsModal({ announcements, onDismiss }: NewAnnouncem
                     {ann.title}
                   </h3>
                   <span className={cn(
-                    'inline-flex items-center gap-1 px-2 py-[3px] rounded-full text-eyebrow font-medium uppercase tracking-wider flex-shrink-0 mt-0.5',
+                    'inline-flex items-center gap-1 px-2 py-[3px] rounded-full text-caption font-medium flex-shrink-0 mt-0.5',
                     urg.badgeBg, urg.badgeText,
                   )}>
                     <span className={cn('w-1.5 h-1.5 rounded-full', urg.badgeDot)} />

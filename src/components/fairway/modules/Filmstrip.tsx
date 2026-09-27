@@ -151,7 +151,7 @@ export function Filmstrip({ holes, activeHole, onScrub, shotsByHole }: Filmstrip
                     active={isActive}
                   />
                 </m.div>
-                <span className="font-fw-mono text-eyebrow font-normal text-text-tertiary tabular-nums">
+                <span className="font-fw-mono text-caption font-normal text-text-tertiary tabular-nums">
                   {hole.n}
                 </span>
               </PressTarget>

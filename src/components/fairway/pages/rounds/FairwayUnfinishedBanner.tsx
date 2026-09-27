@@ -91,10 +91,10 @@ export function FairwayUnfinishedBanner({ rounds, playerId }: FairwayUnfinishedB
   return (
     <section aria-label="Rounds in progress" className="flex flex-col gap-3">
       <div className="flex items-center gap-2 px-1">
-        <h2 className="font-fw-sans text-eyebrow font-semibold uppercase tracking-[0.07em] text-text-tertiary">
+        <h2 className="font-fw-sans text-body-sm font-semibold text-text-primary">
           In progress
         </h2>
-        <span className="font-fw-mono text-eyebrow tabular-nums text-text-tertiary">
+        <span className="font-fw-mono text-caption tabular-nums text-text-tertiary">
           {localRounds.length}
         </span>
       </div>
@@ -197,7 +197,7 @@ function UnfinishedRow({
                 <span className="font-fw-mono text-h3 font-medium leading-none tabular-nums text-fw-warning-ink">
                   {currentHole}
                 </span>
-                <span className="font-fw-mono text-eyebrow tabular-nums text-text-tertiary">
+                <span className="font-fw-mono text-caption tabular-nums text-text-tertiary">
                   / {holesTarget}
                 </span>
               </>
@@ -216,7 +216,7 @@ function UnfinishedRow({
                 </StatusPill>
               )}
               {timeAgo && (
-                <span className="font-fw-sans text-eyebrow text-text-tertiary">{timeAgo}</span>
+                <span className="font-fw-sans text-caption text-text-tertiary">{timeAgo}</span>
               )}
             </div>
             <p className="mt-1 truncate font-fw-sans text-body-sm font-medium text-text-primary">

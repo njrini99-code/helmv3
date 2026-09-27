@@ -280,7 +280,7 @@ export const FairwayScorecardHeader = memo(function FairwayScorecardHeader({
           {hasScore ? hole.score : '–'}
         </div>
         {hasScore && !isCurrent && (
-          <div className="mt-0.5 text-eyebrow text-fw-success-ink">
+          <div className="mt-0.5 text-caption text-fw-success-ink">
             <svg className="mx-auto h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
             </svg>
@@ -364,7 +364,7 @@ export const FairwayScorecardHeader = memo(function FairwayScorecardHeader({
         </div>
         <div className="flex items-center gap-2">
           <AutoSaveChip status={autoSaveStatus} compact />
-          <span className="flex-shrink-0 whitespace-nowrap font-fw-sans text-eyebrow font-semibold uppercase tracking-wide text-accent-ink">
+          <span className="flex-shrink-0 whitespace-nowrap font-fw-sans text-caption font-semibold text-accent-ink">
             Hole {currentHoleNumber} / {holes.length}
           </span>
         </div>

@@ -1458,7 +1458,7 @@ export default function CRMPage() {
             return (
               <div key={sectionDef.id} className={cn(sectionIdx > 0 && 'mt-4')}>
                 {!sidebarCollapsed ? (
-                  <div className="px-3 mb-1.5 text-eyebrow font-semibold uppercase tracking-[0.07em] text-nav-text-dim">
+                  <div className="px-3 mb-1.5 text-caption font-semibold text-nav-text-dim">
                     {sectionDef.label}
                   </div>
                 ) : (
@@ -1977,7 +1977,7 @@ export default function CRMPage() {
               })}
             </div>
             <div className="mx-3 border-t border-border-subtle px-1 py-3">
-              <p className="mb-2 px-2 text-eyebrow font-semibold uppercase tracking-[0.14em] text-text-tertiary">
+              <p className="mb-2 px-2 text-caption font-semibold text-text-tertiary">
                 Data tools
               </p>
               <div className="grid grid-cols-2 gap-2">

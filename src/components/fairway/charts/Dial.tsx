@@ -207,7 +207,7 @@ export function Dial({
 
       <span
         className={cn(
-          'mt-1.5 font-fw-sans text-eyebrow uppercase',
+          'mt-1.5 font-fw-sans text-caption',
           isCalibrating ? 'text-text-tertiary' : 'text-text-secondary',
         )}
       >

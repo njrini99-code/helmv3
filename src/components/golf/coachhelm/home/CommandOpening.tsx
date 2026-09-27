@@ -187,7 +187,7 @@ function ProgramPulsePanel({
   if (pulse.items.length === 0) {
     return (
       <section aria-label="Program pulse" className="rounded-card border border-border-subtle bg-surface px-4 py-3.5">
-        <h2 className="font-fw-sans text-eyebrow uppercase tracking-[0.1em] text-text-tertiary">
+        <h2 className="font-fw-sans text-body-sm font-semibold text-text-primary">
           Program pulse
         </h2>
         <p className="mt-1.5 font-fw-sans text-body-sm text-text-secondary">
@@ -201,7 +201,7 @@ function ProgramPulsePanel({
 
   return (
     <section aria-label="Program pulse" className="rounded-card border border-border-subtle bg-surface">
-      <h2 className="border-b border-border-subtle px-4 py-2.5 font-fw-sans text-eyebrow uppercase tracking-[0.1em] text-text-tertiary">
+      <h2 className="border-b border-border-subtle px-4 py-2.5 font-fw-sans text-body-sm font-semibold text-text-primary">
         Program pulse
       </h2>
       <ul>

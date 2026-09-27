@@ -254,7 +254,7 @@ export function FairwaySettingsNotifications({
           <div className="flex flex-col gap-1">
             {/* Eyebrow, not a display h2 — matches the settings vocabulary the
                 rest of the surfaces moved to (2026-07-25). */}
-            <h2 className="font-fw-sans text-eyebrow font-semibold uppercase tracking-[0.12em] text-text-tertiary">
+            <h2 className="font-fw-sans text-body-sm font-semibold text-text-primary">
               Per-update preferences
             </h2>
             <p className="font-fw-sans text-caption text-text-secondary">
@@ -298,13 +298,13 @@ export function FairwaySettingsNotifications({
 
           {/* Column header */}
           <div className="grid grid-cols-12 items-center gap-2 border-b border-border-subtle px-4 py-3 sm:px-5">
-            <span className="col-span-6 font-fw-sans text-eyebrow font-medium uppercase tracking-[0.08em] text-text-tertiary">
+            <span className="col-span-6 font-fw-sans text-caption font-medium text-text-tertiary">
               Update
             </span>
             {CHANNELS.map((c) => (
               <span
                 key={c.key}
-                className="col-span-2 text-center font-fw-sans text-eyebrow font-medium uppercase tracking-[0.08em] text-text-tertiary"
+                className="col-span-2 text-center font-fw-sans text-caption font-medium text-text-tertiary"
               >
                 {c.label}
               </span>
@@ -316,7 +316,7 @@ export function FairwaySettingsNotifications({
               <section key={group.label} aria-labelledby={`notification-group-${group.label}`}>
                 <h3
                   id={`notification-group-${group.label}`}
-                  className="border-b border-border-subtle bg-surface-sunken/30 px-4 py-2 font-fw-sans text-eyebrow font-medium uppercase tracking-[0.08em] text-text-tertiary sm:px-5"
+                  className="border-b border-border-subtle bg-surface-sunken/30 px-4 py-2 sm:px-5 font-fw-sans text-body-sm font-semibold text-text-primary"
                 >
                   {group.label}
                 </h3>

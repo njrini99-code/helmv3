@@ -101,7 +101,7 @@ export function FairwayRoundRow({ round, isBestOfPeriod, userRole }: FairwayRoun
 
       {/* Date */}
       <div className="w-12 flex-shrink-0 leading-tight">
-        <div className="font-fw-sans text-eyebrow uppercase tracking-[0.06em] text-text-tertiary">
+        <div className="font-fw-sans text-caption text-text-tertiary">
           {weekday}
         </div>
         <div className="font-fw-display text-body-sm font-medium tabular-nums text-text-primary">
@@ -185,7 +185,7 @@ export function FairwayRoundRow({ round, isBestOfPeriod, userRole }: FairwayRoun
             <RowStat label="GIR" value={gir !== null ? `${gir}%` : '—'} />
           </>
         ) : (
-          <span className="font-fw-sans text-eyebrow italic text-text-tertiary">No stats logged</span>
+          <span className="font-fw-sans text-caption italic text-text-tertiary">No stats logged</span>
         )}
       </div>
 
@@ -258,7 +258,7 @@ function RowStat({ label, value }: { label: string; value: string }) {
       <span className="font-fw-mono text-body-sm font-medium tabular-nums text-text-primary">
         {value}
       </span>
-      <span className="font-fw-sans text-eyebrow uppercase tracking-[0.06em] text-text-tertiary">
+      <span className="font-fw-sans text-caption text-text-tertiary">
         {label}
       </span>
     </span>

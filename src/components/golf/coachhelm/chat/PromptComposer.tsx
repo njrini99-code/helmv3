@@ -450,7 +450,7 @@ function PlayerMenu({
         'overflow-hidden rounded-fw-lg border border-border-subtle bg-surface shadow-soft',
       )}
     >
-      <p className="flex items-center gap-2 border-b border-border-subtle px-3 py-2 font-fw-sans text-eyebrow uppercase tracking-[0.1em] text-text-tertiary">
+      <p className="flex items-center gap-2 border-b border-border-subtle px-3 py-2 font-fw-sans text-caption text-text-tertiary">
         <Search aria-hidden className="h-3.5 w-3.5" />
         Roster
       </p>

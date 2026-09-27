@@ -98,13 +98,13 @@ export function TasksDueWidget({
           </span>
           <h3 className="text-sm font-semibold text-text-primary">Tasks due today</h3>
           {!loading && tasks.length > 0 && (
-            <span className="text-eyebrow text-text-tertiary tabular-nums">
+            <span className="text-caption text-text-tertiary tabular-nums">
               {tasks.length}
             </span>
           )}
         </div>
         {buckets.overdue.length > 0 && (
-          <span className="inline-flex items-center gap-1 text-eyebrow font-semibold px-1.5 py-0.5 rounded-full bg-fw-danger-bg text-fw-danger-ink border border-fw-danger/25">
+          <span className="inline-flex items-center gap-1 text-caption font-semibold px-1.5 py-0.5 rounded-full bg-fw-danger-bg text-fw-danger-ink border border-fw-danger/25">
             <IconWarning size={9} />
             {buckets.overdue.length} overdue
           </span>
@@ -219,7 +219,7 @@ function DueRow({ task, onComplete, onClick }: DueRowProps) {
         {dueLabel && (
           <p
             className={cn(
-              'text-eyebrow inline-flex items-center gap-1 mt-0.5',
+              'text-caption inline-flex items-center gap-1 mt-0.5',
               overdue ? 'text-fw-danger-ink' : 'text-text-tertiary',
             )}
           >

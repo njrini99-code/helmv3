@@ -368,7 +368,7 @@ export function FairwayNewQualifier({ players }: FairwayNewQualifierProps) {
                           <Flag className="h-4 w-4" strokeWidth={1.75} />
                         </span>
                         <div className="min-w-0 flex-1">
-                          <p className="font-fw-sans text-eyebrow font-semibold uppercase tracking-[0.1em] text-text-tertiary">
+                          <p className="font-fw-sans text-caption font-semibold text-text-tertiary">
                             Round {roundNumber}
                           </p>
                           {assigned?.courseName ? (
@@ -452,9 +452,9 @@ export function FairwayNewQualifier({ players }: FairwayNewQualifierProps) {
             </div>
             {/* Live read-out — same vocabulary as the leaderboard cut lines. */}
             <Surface elevation="border" padding="md" className="bg-surface-sunken">
-              <p className="font-fw-sans text-eyebrow font-semibold uppercase tracking-[0.12em] text-text-tertiary">
+              <h3 className="font-fw-sans text-body-sm font-semibold text-text-primary">
                 How the squad is set
-              </p>
+              </h3>
               <p className="mt-1.5 font-fw-sans text-body text-text-secondary">
                 <span className="font-medium text-accent-700 tabular-nums">Top {autoQualify}</span>{' '}
                 auto-qualify on score

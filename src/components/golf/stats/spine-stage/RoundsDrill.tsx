@@ -289,7 +289,7 @@ export function RoundsDrill({
                           {round.courseName || 'Unknown course'}
                         </span>
                         {round.roundType ? (
-                          <span className="rounded-full bg-inset px-1.5 py-0.5 font-fw-sans text-eyebrow font-medium capitalize text-text-tertiary">
+                          <span className="rounded-full bg-inset px-1.5 py-0.5 font-fw-sans text-caption font-medium capitalize text-text-tertiary">
                             {round.roundType.replace(/_/g, ' ')}
                           </span>
                         ) : null}

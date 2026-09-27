@@ -66,7 +66,7 @@ export function MobileMoreButton({ onOpen, open, active, badge, name, avatarUrl 
       {badge ? (
         <span
           aria-hidden
-          className="absolute right-0 top-0 min-w-[16px] rounded-full bg-accent-fill px-1 text-center text-eyebrow font-semibold leading-4 tabular-nums text-text-on-accent-fill ring-2 ring-surface"
+          className="absolute right-0 top-0 min-w-[16px] rounded-full bg-accent-fill px-1 text-center text-caption font-semibold leading-4 tabular-nums text-text-on-accent-fill ring-2 ring-surface"
         >
           {badge > 9 ? '9+' : badge}
         </span>

@@ -298,7 +298,7 @@ function BenchmarkScale({ evidence }: { evidence: InsightEvidence }) {
           />
         ))}
       </div>
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-eyebrow tabular-nums">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-caption tabular-nums">
         {positions.map((p, i) => (
           <span
             key={`legend-${p.role}-${i}`}
@@ -355,7 +355,7 @@ export function EvidencePanel({
         className={cn('mt-3 space-y-2.5')}
       >
         {v3Standing ?? <BenchmarkScale evidence={evidence} />}
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-eyebrow text-text-tertiary tabular-nums">
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-caption text-text-tertiary tabular-nums">
           <span data-testid="evidence-sample">
             {formatSample(evidence.sample_n, evidence.metric)} · {evidence.window_days} days
           </span>
@@ -459,7 +459,7 @@ export function EvidencePanel({
       ) : null}
       {/* W15: v3 StandingBar above the legacy key/value grid when present. */}
       {v3Standing && <div className="mb-3">{v3Standing}</div>}
-      <div className="mb-2 text-eyebrow font-medium uppercase tracking-wide text-text-tertiary">
+      <div className="mb-2 text-caption font-medium text-text-tertiary">
         {evidence.metric_label}
       </div>
       <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-sm text-warm-800">

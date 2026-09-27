@@ -215,7 +215,7 @@ export function FairwayHoleHero({
             <h2 className="font-fw-display text-h3 font-semibold tracking-[-0.018em] text-text-primary sm:text-h2">
               Hole {currentHole.number}
             </h2>
-            <span className="flex-shrink-0 whitespace-nowrap rounded-fw-sm bg-surface-sunken px-2 py-0.5 font-fw-sans text-eyebrow font-semibold uppercase tracking-wider text-text-secondary">
+            <span className="flex-shrink-0 whitespace-nowrap rounded-fw-sm bg-surface-sunken px-2 py-0.5 font-fw-sans text-caption font-semibold text-text-secondary">
               Par {currentHole.par}
             </span>
           </div>
@@ -227,12 +227,12 @@ export function FairwayHoleHero({
             <span className="font-fw-display text-display font-semibold leading-none tabular-nums text-text-primary sm:text-stat-lg">
               {isHoleComplete ? holeScore : displayDistance}
             </span>
-            <span className="font-fw-sans text-eyebrow font-semibold uppercase tracking-wider text-text-tertiary">
+            <span className="font-fw-sans text-caption font-semibold text-text-tertiary">
               {isHoleComplete ? 'score' : displayUnit === 'yards' ? 'yds' : 'ft'}
             </span>
           </div>
           {!isHoleComplete && (
-            <p className="mt-0.5 font-fw-sans text-eyebrow uppercase tracking-wider text-text-tertiary">to pin</p>
+            <p className="mt-0.5 font-fw-sans text-caption text-text-tertiary">to pin</p>
           )}
         </div>
       </div>

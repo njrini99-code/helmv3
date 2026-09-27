@@ -247,7 +247,7 @@ export function CommandPalette({ isCoach = true }: CommandPaletteProps) {
               placeholder="Search commands…"
               className="flex-1 bg-transparent outline-none font-fw-sans text-body text-text-primary placeholder:text-text-tertiary tracking-[-0.005em] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-surface rounded"
             />
-            <kbd className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 text-eyebrow font-fw-mono font-medium text-text-tertiary bg-surface rounded-fw-sm border border-border-subtle">
+            <kbd className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 text-caption font-fw-mono font-medium text-text-tertiary bg-surface rounded-fw-sm border border-border-subtle">
               ESC
             </kbd>
           </div>
@@ -312,7 +312,7 @@ export function CommandPalette({ isCoach = true }: CommandPaletteProps) {
                       'text-text-secondary data-[selected=true]:bg-accent-50 data-[selected=true]:text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-surface',
                     )}
                   >
-                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-inset text-text-secondary text-eyebrow font-medium overflow-hidden">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-inset text-text-secondary text-caption font-medium overflow-hidden">
                       {p.avatar_url ? (
                         <img src={p.avatar_url} alt="" className="h-full w-full object-cover" />
                       ) : (
@@ -412,7 +412,7 @@ export function CommandPalette({ isCoach = true }: CommandPaletteProps) {
           </Command.List>
 
           {/* Footer hints */}
-          <div className="px-4 py-2 border-t border-border-subtle flex items-center justify-between text-eyebrow text-text-tertiary">
+          <div className="px-4 py-2 border-t border-border-subtle flex items-center justify-between text-caption text-text-tertiary">
             <div className="flex items-center gap-2">
               <kbd className="px-1.5 py-0.5 font-fw-mono bg-surface rounded-fw-sm border border-border-subtle">↑</kbd>
               <kbd className="px-1.5 py-0.5 font-fw-mono bg-surface rounded-fw-sm border border-border-subtle">↓</kbd>

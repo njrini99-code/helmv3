@@ -691,7 +691,7 @@ export function FairwayCoachDashboard({
           `h-px` sibling, which removes one of the four stacked horizontal bands
           the opener used to spend before any content. */}
       <div className="flex flex-wrap items-center justify-between gap-3 border-t border-accent-300 pt-5">
-        <span className="font-fw-sans text-eyebrow uppercase tracking-[0.07em] text-text-tertiary">
+        <span className="font-fw-sans text-caption text-text-tertiary">
           Window
         </span>
         <Segmented

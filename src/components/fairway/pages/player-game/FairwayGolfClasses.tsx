@@ -630,7 +630,7 @@ export function FairwayGolfClasses({
             {/* ════════════ 3 · WEEK TIMELINE (the signature) ═══════════════ */}
             <section className="flex flex-col gap-3">
               <div className="flex items-baseline justify-between px-1">
-                <h2 className="font-fw-display text-eyebrow font-medium uppercase tracking-[0.14em] text-text-tertiary">
+                <h2 className="font-fw-sans text-body-sm font-semibold text-text-primary">
                   This week
                 </h2>
                 <p className="hidden font-fw-sans text-caption text-text-tertiary md:block">
@@ -876,7 +876,7 @@ export function FairwayGolfClasses({
 
             {/* ════════════ 4 · ALL CLASSES (editable roster) ═══════════════ */}
             <section className="flex flex-col gap-3">
-              <h2 className="px-1 font-fw-display text-eyebrow font-medium uppercase tracking-[0.14em] text-text-tertiary">
+              <h2 className="px-1 font-fw-sans text-body-sm font-semibold text-text-primary">
                 All classes
               </h2>
               {/* Rows mirror FairwayEventCard exactly: mono time block · title ·

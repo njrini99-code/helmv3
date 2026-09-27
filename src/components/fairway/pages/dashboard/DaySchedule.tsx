@@ -255,7 +255,7 @@ export function DaySchedule({
           >
             {groups.map((group) => (
               <li key={group.key} className="flex min-w-0 flex-col gap-1.5">
-                <span className="font-fw-sans text-eyebrow uppercase tracking-[0.07em] text-text-tertiary">
+                <span className="font-fw-sans text-caption text-text-tertiary">
                   {group.label}
                 </span>
                 <ul className="flex flex-col gap-1">

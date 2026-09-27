@@ -212,7 +212,7 @@ export function FairwayIntentControl({
               'inline-flex items-center gap-1.5 rounded-full border border-dashed border-border-strong',
               'bg-surface-sunken font-fw-sans font-medium text-text-tertiary whitespace-nowrap',
               'transition-colors group-hover:border-accent-300 group-hover:text-text-secondary',
-              size === 'md' ? 'h-6 px-2.5 text-caption' : 'h-5 px-2 text-eyebrow',
+              size === 'md' ? 'h-6 px-2.5 text-caption' : 'h-5 px-2 text-caption',
             )}
           >
             <span aria-hidden="true" className="text-[1.1em] leading-none">

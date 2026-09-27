@@ -229,7 +229,7 @@ export function FairwayInvitePlayerButton({
                 <div className="space-y-1.5">
                   <label
                     htmlFor="fw-invite-code"
-                    className="block font-fw-sans text-eyebrow font-medium uppercase tracking-[0.08em] text-text-tertiary"
+                    className="block font-fw-sans text-caption font-medium text-text-tertiary"
                   >
                     Invite code
                   </label>
@@ -265,7 +265,7 @@ export function FairwayInvitePlayerButton({
                 <div className="space-y-1.5">
                   <label
                     htmlFor="fw-invite-link"
-                    className="block font-fw-sans text-eyebrow font-medium uppercase tracking-[0.08em] text-text-tertiary"
+                    className="block font-fw-sans text-caption font-medium text-text-tertiary"
                   >
                     Invite link
                   </label>
@@ -318,10 +318,10 @@ export function FairwayInvitePlayerButton({
 
                 {/* How it works — three-step explainer on the Fairway stepper. */}
                 <div className="space-y-2 rounded-card bg-surface-sunken p-4">
-                  <p className="flex items-center gap-2 font-fw-display text-eyebrow font-medium uppercase tracking-[0.08em] text-text-tertiary">
+                  <h3 className="flex items-center gap-2 font-fw-sans text-body-sm font-semibold text-text-primary">
                     <IconUsers size={14} />
                     How it works
-                  </p>
+                  </h3>
                   <OnboardingSteps label="How the team invite works">
                     <OnboardingStep
                       index={1}

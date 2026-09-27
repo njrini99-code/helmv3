@@ -341,7 +341,7 @@ export function SectionCard({
           {icon}
         </span>
         <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-          <h2 className="font-fw-sans text-eyebrow font-semibold uppercase tracking-[0.12em] text-text-tertiary">
+          <h2 className="font-fw-sans text-body-sm font-semibold text-text-primary">
             {title}
           </h2>
           {description ? (
@@ -2619,9 +2619,9 @@ export function TeamSettingsPanel({ onUpdate }: { onUpdate: () => void }) {
 
         {organizationId ? (
           <div className="space-y-4 border-t border-border-subtle pt-4">
-            <p className="font-fw-sans text-eyebrow font-medium uppercase tracking-[0.08em] text-text-tertiary">
+            <h3 className="font-fw-sans text-body-sm font-semibold text-text-primary">
               Organization
-            </p>
+            </h3>
             <LabeledField label="School name">
               <Input value={orgName} onChange={(e) => setOrgName(e.target.value)} placeholder="University" />
             </LabeledField>

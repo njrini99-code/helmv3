@@ -736,7 +736,7 @@ export function PuttingZoom({ plot, className, puttMakePct }: PuttingZoomProps) 
             animate={{ opacity: 1 }}
             transition={prefersReducedMotion ? { duration: 0 } : { duration: 0.15, ease: EASE_CINEMATIC }}
             style={tooltipPlacement(hovered.x, hovered.y)}
-            className="absolute z-10 pointer-events-none surface-lift rounded-xl px-3 py-2 text-eyebrow text-warm-800 whitespace-nowrap shadow-lg"
+            className="absolute z-10 pointer-events-none surface-lift rounded-xl px-3 py-2 text-caption text-warm-800 whitespace-nowrap shadow-lg"
             role="tooltip"
           >
             <div className="font-medium text-warm-900">

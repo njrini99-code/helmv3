@@ -768,13 +768,13 @@ export function MessageComposer({
       {(showKeyboardHint || charsLeft) && (
         <div className="mt-1.5 flex items-center justify-between gap-2 px-2">
           {showKeyboardHint && (
-            <p className="font-fw-sans text-eyebrow text-text-tertiary">
+            <p className="font-fw-sans text-caption text-text-tertiary">
               Press Enter to send, Shift+Enter for a new line.
             </p>
           )}
           {charsLeft && (
             <span
-              className="ml-auto flex-shrink-0 font-fw-sans text-eyebrow tabular-nums text-text-tertiary"
+              className="ml-auto flex-shrink-0 font-fw-sans text-caption tabular-nums text-text-tertiary"
               aria-live="polite"
             >
               {charsLeft}

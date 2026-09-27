@@ -149,7 +149,7 @@ export function AddNoteDialog({
                       )}
                     >
                       <span className="text-xs font-semibold">{opt.label}</span>
-                      <span className="text-eyebrow text-text-tertiary mt-0.5">{opt.hint}</span>
+                      <span className="text-caption text-text-tertiary mt-0.5">{opt.hint}</span>
                     </Button>
                   ))}
                 </div>
@@ -160,7 +160,7 @@ export function AddNoteDialog({
                   <label htmlFor="note-body" className="block text-xs font-medium text-text-secondary">
                     Body <span className="text-fw-danger">*</span>
                   </label>
-                  <span className="text-eyebrow text-text-tertiary tabular-nums">
+                  <span className="text-caption text-text-tertiary tabular-nums">
                     {body.length}/8000
                   </span>
                 </div>

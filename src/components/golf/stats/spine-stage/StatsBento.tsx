@@ -427,7 +427,7 @@ function StandingPinPreview({ standingByMetric }: { standingByMetric: Map<string
     return (
       <div data-slot="standing-pin-preview" data-state="empty" className="mt-0.5 flex flex-col gap-1.5">
         <div aria-hidden="true" className="h-[7px] rounded-full bg-surface-sunken" />
-        <p className="font-fw-sans text-eyebrow text-text-tertiary">Fills in after 5+ rounds</p>
+        <p className="font-fw-sans text-caption text-text-tertiary">Fills in after 5+ rounds</p>
       </div>
     );
   }
@@ -452,7 +452,7 @@ function StandingPinPreview({ standingByMetric }: { standingByMetric: Map<string
         <span className="font-fw-mono text-caption font-semibold tabular-nums text-accent-700">
           {formatSgSigned(you)}
         </span>
-        <span className="font-fw-sans text-eyebrow font-medium uppercase tracking-[0.08em] text-text-tertiary">
+        <span className="font-fw-sans text-caption font-medium text-text-tertiary">
           SG: Total
         </span>
       </div>

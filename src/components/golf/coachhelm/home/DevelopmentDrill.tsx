@@ -192,7 +192,7 @@ function LogProgressDrawer({ state, onClose }: { state: LogProgressState | null;
               {currentValue ?? '—'}
               {targetValue != null && <span className="font-normal text-text-tertiary"> / {targetValue}</span>}
               {metricLabel && metricLabel !== 'Progress' && (
-                <span className="ml-2 font-fw-sans text-eyebrow text-text-tertiary">{metricLabel}</span>
+                <span className="ml-2 font-fw-sans text-caption text-text-tertiary">{metricLabel}</span>
               )}
             </div>
           </div>
@@ -272,7 +272,7 @@ function ProposedAreaCard({
             </div>
           ) : null}
           {hasTarget ? (
-            <p className="mt-1.5 font-fw-sans text-eyebrow text-text-tertiary">
+            <p className="mt-1.5 font-fw-sans text-caption text-text-tertiary">
               Target: <span className="font-fw-mono tabular-nums text-text-secondary">{targetMetricLabel}</span> →{' '}
               <span className="font-fw-mono tabular-nums text-text-primary">{focusArea.target_value}</span>
             </p>

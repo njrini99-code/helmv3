@@ -217,7 +217,7 @@ export function AskSurface({
               )}
             >
               <div className="mb-2 flex items-center justify-between md:hidden">
-                <span className="font-fw-sans text-eyebrow uppercase tracking-[0.1em] text-text-tertiary">
+                <span className="font-fw-sans text-caption text-text-tertiary">
                   History
                 </span>
                 {/* eslint-disable-next-line helm/no-raw-button -- icon-only close in an overlay header */}

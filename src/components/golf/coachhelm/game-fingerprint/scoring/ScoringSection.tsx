@@ -258,7 +258,7 @@ function ScoringDrillDown({ row }: { row: ScoringTileRow }) {
 
       {exclusionEntries.length > 0 ? (
         <div>
-          <p className="mb-1.5 text-eyebrow uppercase tracking-wide text-text-tertiary">Excluded</p>
+          <p className="mb-1.5 text-caption text-text-tertiary">Excluded</p>
           <ul className="space-y-1 text-body-sm text-text-secondary">
             {exclusionEntries.map(([reason, count]) => (
               <li key={reason}>

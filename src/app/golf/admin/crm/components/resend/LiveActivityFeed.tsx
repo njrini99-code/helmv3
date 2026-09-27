@@ -242,7 +242,7 @@ function FeedRow({
             </span>
           )}
           {event.contact_log_id && (
-            <span className="text-eyebrow font-medium px-1.5 py-0.5 rounded bg-surface-sunken text-text-secondary uppercase tracking-wide">
+            <span className="text-caption font-medium px-1.5 py-0.5 rounded bg-surface-sunken text-text-secondary">
               CRM
             </span>
           )}
@@ -256,7 +256,7 @@ function FeedRow({
         )}
 
         <p
-          className="text-eyebrow text-text-tertiary mt-0.5 tabular-nums"
+          className="text-caption text-text-tertiary mt-0.5 tabular-nums"
           title={formatFullTimestamp(event.occurred_at)}
         >
           {formatRelative(event.occurred_at)} · {event.resend_message_id.slice(0, 8)}

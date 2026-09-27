@@ -235,7 +235,7 @@ export function EmailsTable({
                           {primaryTo}
                         </div>
                         {moreTo > 0 && (
-                          <div className="text-eyebrow text-text-tertiary">
+                          <div className="text-caption text-text-tertiary">
                             +{moreTo} more
                           </div>
                         )}
@@ -249,7 +249,7 @@ export function EmailsTable({
                           )}
                         </div>
                         {row.open_count + row.click_count > 0 && (
-                          <div className="text-eyebrow text-text-tertiary mt-0.5 flex items-center gap-2">
+                          <div className="text-caption text-text-tertiary mt-0.5 flex items-center gap-2">
                             {row.open_count > 0 && (
                               <span>{row.open_count} open{row.open_count === 1 ? '' : 's'}</span>
                             )}
@@ -262,7 +262,7 @@ export function EmailsTable({
                       <td className="px-4 py-3">
                         <span
                           className={cn(
-                            'text-eyebrow font-medium px-1.5 py-0.5 rounded uppercase tracking-wide',
+                            'text-caption font-medium px-1.5 py-0.5 rounded',
                             row.source === 'crm'
                               ? 'bg-surface-sunken text-text-secondary'
                               : row.source === 'transactional'

@@ -264,7 +264,7 @@ export function TripRow({
 function DetailField({ label, value }: { label: string; value: ReactNode }) {
   return (
     <div>
-      <p className="font-fw-sans text-eyebrow uppercase tracking-[0.08em] text-text-tertiary">
+      <p className="font-fw-sans text-caption text-text-tertiary">
         {label}
       </p>
       <p className="mt-1 font-fw-sans text-body-sm text-text-secondary">{value}</p>
@@ -295,7 +295,7 @@ export function TripDetailSheet({
         {/* Schedule */}
         <div className="grid grid-cols-2 gap-3">
           <Inset padding="sm">
-            <p className="font-fw-sans text-eyebrow uppercase tracking-[0.08em] text-text-tertiary">
+            <p className="font-fw-sans text-caption text-text-tertiary">
               Depart
             </p>
             <p className="mt-1 font-fw-sans text-body-sm font-medium text-text-primary tabular-nums">
@@ -314,7 +314,7 @@ export function TripDetailSheet({
           </Inset>
           {trip.return_date ? (
             <Inset padding="sm">
-              <p className="font-fw-sans text-eyebrow uppercase tracking-[0.08em] text-text-tertiary">
+              <p className="font-fw-sans text-caption text-text-tertiary">
                 Return
               </p>
               <p className="mt-1 font-fw-sans text-body-sm font-medium text-text-primary tabular-nums">
@@ -331,7 +331,7 @@ export function TripDetailSheet({
 
         {trip.hotel_name ? (
           <Inset padding="sm">
-            <p className="font-fw-sans text-eyebrow uppercase tracking-[0.08em] text-text-tertiary">
+            <p className="font-fw-sans text-caption text-text-tertiary">
               Lodging
             </p>
             <p className="mt-1 font-fw-sans text-body-sm font-medium text-text-primary">

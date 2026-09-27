@@ -160,7 +160,7 @@ function BreakMatrixTable({ matrix }: { matrix: RoundBreakMatrix }) {
 
       <div className="mt-4 overflow-x-auto">
         <table className="w-full min-w-[420px] border-separate border-spacing-y-1.5 text-left">
-          <thead className="font-fw-sans text-eyebrow uppercase tracking-wide text-text-tertiary">
+          <thead className="font-fw-sans text-caption text-text-tertiary">
             <tr>
               <th scope="col" className="px-3">
                 Distance

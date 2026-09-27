@@ -43,7 +43,7 @@ function RankedList({
 }) {
   return (
     <div className="flex flex-col gap-3">
-      <p className="font-fw-sans text-eyebrow font-semibold uppercase tracking-wide text-text-tertiary">{title}</p>
+      <h3 className="font-fw-sans text-body-sm font-semibold text-text-primary">{title}</h3>
       {items.length === 0 ? (
         <p className="font-fw-sans text-body-sm text-text-tertiary">Not enough recorded outcomes yet.</p>
       ) : (
@@ -111,7 +111,7 @@ export function EffectivenessScoreboard({
     // row-mate and center-float in the resulting empty middle.
     <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-2">
       <Surface padding="md" className="flex flex-col gap-3">
-        <p className="font-fw-sans text-eyebrow font-semibold uppercase tracking-wide text-text-tertiary">Adoption</p>
+        <h3 className="font-fw-sans text-body-sm font-semibold text-text-primary">Adoption</h3>
         <div className="flex items-center gap-3">
           <RingGauge value={adoption.pct} size={48} />
           <p className="font-fw-sans text-body-sm text-text-secondary">

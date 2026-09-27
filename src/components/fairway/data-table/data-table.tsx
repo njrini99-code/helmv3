@@ -520,7 +520,7 @@ export function DataTable<TData>({
                         m.headerCell,
                         m.cellX,
                         'align-middle',
-                        'text-eyebrow uppercase tracking-[0.06em] text-text-tertiary',
+                        'text-caption text-text-tertiary',
                         meta?.align === 'right' && 'text-right',
                         meta?.align === 'center' && 'text-center',
                         meta?.headerClassName,
@@ -534,7 +534,7 @@ export function DataTable<TData>({
                           onClick={header.column.getToggleSortingHandler()}
                           className={cn(
                             'group/sort -mx-1.5 inline-flex max-w-full min-h-0 items-center rounded-fw-sm px-1.5 py-1',
-                            'font-fw-sans text-eyebrow uppercase tracking-[0.06em]',
+                            'font-fw-sans text-caption',
                             'transition-colors [transition-duration:180ms] [transition-timing-function:cubic-bezier(0.22,0.61,0.36,1)]',
                             'hover:text-text-secondary',
                             'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-500',

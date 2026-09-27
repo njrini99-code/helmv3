@@ -609,7 +609,7 @@ export function EmailTrackingView() {
                           </div>
                           <div className="flex items-center gap-2 flex-shrink-0 ml-3">
                             <span className={cn(
-                              'px-2 py-0.5 rounded-full text-eyebrow font-bold uppercase',
+                              'px-2 py-0.5 rounded-full text-caption font-bold',
                               entry.resend_message_id ? 'bg-accent-50 text-accent-700' : 'bg-surface-sunken text-text-secondary'
                             )}>
                               {entry.resend_message_id ? 'Helm' : 'Gmail'}
@@ -685,7 +685,7 @@ export function EmailTrackingView() {
                         <span className="text-xs text-text-tertiary truncate max-w-[200px] hidden lg:block">“{coach.subject}”</span>
                       )}
                       <span className={cn(
-                        'px-2 py-0.5 rounded-full text-eyebrow font-bold uppercase tracking-wider',
+                        'px-2 py-0.5 rounded-full text-caption font-bold',
                         coach.method === 'Helm' ? 'bg-accent-50 text-accent-700' : 'bg-surface-sunken text-text-secondary'
                       )}>
                         {coach.method}
@@ -984,7 +984,7 @@ function StatCard({
         <div className="flex-1 min-w-0">
           <p className="text-xs text-text-tertiary uppercase tracking-wider">{label}</p>
           <p className="text-xl sm:text-2xl font-bold text-text-primary tabular-nums tracking-tight mt-1">{value}</p>
-          {subtitle && <p className="hidden sm:block text-eyebrow text-text-tertiary mt-0.5">{subtitle}</p>}
+          {subtitle && <p className="hidden sm:block text-caption text-text-tertiary mt-0.5">{subtitle}</p>}
         </div>
         <div className={cn(
           'w-9 h-9 rounded-fw-sm flex items-center justify-center flex-shrink-0',

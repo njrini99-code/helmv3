@@ -20,7 +20,7 @@ export function SequenceEnrollmentBadge({ summary }: { summary?: CoachEnrollment
   const placeholder = <span className="text-microlabel text-text-tertiary" aria-label="Not in queue">&mdash;</span>;
   if (!summary || summary.status === 'stopped') return placeholder;
 
-  const cls = 'gap-1 px-1.5 text-eyebrow';
+  const cls = 'gap-1 px-1.5 text-caption';
   if (summary.status === 'paused') {
     return (
       <StatusPill tone="warning" size="sm" dot={false} title="Paused in sequence" className={cls}>

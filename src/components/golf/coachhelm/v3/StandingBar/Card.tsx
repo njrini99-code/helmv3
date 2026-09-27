@@ -141,7 +141,7 @@ export function Card(props: CardProps) {
       {/* Scale endpoints — reflect the WIDENED domain (`effectiveScale`), not
           the raw caller-supplied `props.scale`, so the printed range always
           agrees with where the markers above actually sit. */}
-      <div className="mt-1 flex items-baseline justify-between font-fw-mono text-eyebrow text-text-tertiary tabular-nums">
+      <div className="mt-1 flex items-baseline justify-between font-fw-mono text-caption text-text-tertiary tabular-nums">
         <span>{formatValue(effectiveScale.min, props.unit)}</span>
         <span>{formatValue(effectiveScale.max, props.unit)}</span>
       </div>
@@ -183,7 +183,7 @@ function ComparisonCell({
       }
     >
       <span className="sr-only">{label} {value}</span>
-      <span className="block break-words font-fw-display text-eyebrow font-semibold uppercase tracking-[0.08em] text-text-tertiary">
+      <span className="block break-words font-fw-sans text-caption font-semibold text-text-tertiary">
         {label}
       </span>
       <strong
@@ -421,7 +421,7 @@ function Marker({ kind, leftPct, markerSize, label, toneClass, delay }: MarkerPr
       initial={reduce ? false : { opacity: 0, scale: initialScale }}
       animate={reduce ? false : { opacity: 1, scale: 1 }}
       transition={reduce ? undefined : transition}
-      className={`absolute top-1/2 -translate-y-1/2 -translate-x-1/2 ${markerSize} rounded-full flex items-center justify-center text-eyebrow font-semibold ${toneClass}`}
+      className={`absolute top-1/2 -translate-y-1/2 -translate-x-1/2 ${markerSize} rounded-full flex items-center justify-center text-caption font-semibold ${toneClass}`}
       style={{ left: `${leftPct}%`, transformOrigin: 'center' }}
       aria-hidden="true"
     >

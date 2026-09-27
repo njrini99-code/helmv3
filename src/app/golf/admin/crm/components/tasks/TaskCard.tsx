@@ -188,7 +188,7 @@ export function TaskCard({
               {assigneeInitials && (
                 <span
                   title={`Assigned to ${task.assignee_id}`}
-                  className="w-5 h-5 rounded-full bg-surface-sunken text-eyebrow font-semibold text-text-secondary flex items-center justify-center"
+                  className="w-5 h-5 rounded-full bg-surface-sunken text-caption font-semibold text-text-secondary flex items-center justify-center"
                 >
                   {assigneeInitials}
                 </span>
@@ -223,7 +223,7 @@ export function TaskCard({
           <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
             <span
               className={cn(
-                'inline-flex items-center text-eyebrow font-medium px-1.5 py-0.5 rounded-full border',
+                'inline-flex items-center text-caption font-medium px-1.5 py-0.5 rounded-full border',
                 KIND_TONE[task.kind],
               )}
             >
@@ -233,7 +233,7 @@ export function TaskCard({
             {due && (
               <span
                 className={cn(
-                  'inline-flex items-center gap-1 text-eyebrow font-medium px-1.5 py-0.5 rounded-full border',
+                  'inline-flex items-center gap-1 text-caption font-medium px-1.5 py-0.5 rounded-full border',
                   due.overdue
                     ? 'bg-fw-danger-bg text-fw-danger-ink border-fw-danger/25'
                     : 'bg-surface-sunken text-text-secondary border-border-subtle',
@@ -246,14 +246,14 @@ export function TaskCard({
             )}
 
             {completed && (
-              <span className="inline-flex items-center gap-1 text-eyebrow font-medium px-1.5 py-0.5 rounded-full border bg-accent-50 text-accent-700 border-accent-200">
+              <span className="inline-flex items-center gap-1 text-caption font-medium px-1.5 py-0.5 rounded-full border bg-accent-50 text-accent-700 border-accent-200">
                 <IconCheckCheck size={9} /> Completed
               </span>
             )}
           </div>
 
           {error && (
-            <p className="mt-1.5 text-eyebrow text-fw-danger-ink">
+            <p className="mt-1.5 text-caption text-fw-danger-ink">
               {error}
             </p>
           )}

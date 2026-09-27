@@ -531,7 +531,7 @@ function EnrollmentStatusBadge({ status }: { status: SequenceEnrollmentStatus })
   return (
     <span
       className={cn(
-        'px-1.5 py-0.5 rounded text-eyebrow font-bold uppercase tracking-wider border flex-shrink-0',
+        'px-1.5 py-0.5 rounded text-caption font-bold border flex-shrink-0',
         ENROLLMENT_STATUS_STYLES[status],
       )}
     >

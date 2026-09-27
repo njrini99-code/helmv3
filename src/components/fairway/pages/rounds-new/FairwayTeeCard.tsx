@@ -281,7 +281,7 @@ export function FairwayTeeCard({
 function TeeFact({ label, value }: { label: string; value: string }) {
   return (
     <span className="flex items-baseline gap-1.5">
-      <span className="font-fw-sans text-eyebrow uppercase tracking-[0.1em] text-text-tertiary">
+      <span className="font-fw-sans text-caption text-text-tertiary">
         {label}
       </span>
       <span className="font-fw-mono text-body-sm font-medium tabular-nums text-text-secondary">

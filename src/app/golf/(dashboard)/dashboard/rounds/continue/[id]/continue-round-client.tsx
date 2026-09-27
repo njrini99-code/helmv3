@@ -1620,7 +1620,7 @@ export default function ContinueRoundClient({
             </svg>
           </div>
           <div className="flex-1 min-w-0">
-            <p className="font-fw-sans text-eyebrow font-medium uppercase tracking-wider text-text-tertiary">Continue round</p>
+            <p className="font-fw-sans text-caption font-medium text-text-tertiary">Continue round</p>
             <p className="truncate font-fw-display text-body-lg font-semibold tracking-[-0.012em] text-text-primary">
               {setupData.courseName}
             </p>

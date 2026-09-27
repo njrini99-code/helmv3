@@ -744,7 +744,7 @@ export function BulkEmailModal({ coaches, onClose, onSuccess, prefilledRecipient
                       className="inline-flex items-center gap-1 px-2 py-0.5 bg-accent-50 text-accent-700 rounded-full text-xs font-medium border border-accent-100"
                     >
                       {c.name}
-                      <span className="text-accent-ink ml-0.5 text-eyebrow">{c.email}</span>
+                      <span className="text-accent-ink ml-0.5 text-caption">{c.email}</span>
                     </span>
                   ))}
                   {coachesWithEmail.length > 20 && (
@@ -1053,7 +1053,7 @@ export function BulkEmailModal({ coaches, onClose, onSuccess, prefilledRecipient
                 <IconEye size={16} className="text-text-tertiary shrink-0" />
                 <span className="text-xs font-medium text-text-secondary uppercase tracking-wider">Preview</span>
                 {firstCoach && (
-                  <span className="text-eyebrow text-text-tertiary truncate">· {firstCoach.name}</span>
+                  <span className="text-caption text-text-tertiary truncate">· {firstCoach.name}</span>
                 )}
                 <IconChevronDown
                   size={16}
@@ -1067,7 +1067,7 @@ export function BulkEmailModal({ coaches, onClose, onSuccess, prefilledRecipient
                   <IconEye size={16} className="text-text-tertiary" />
                   <span className="text-xs font-medium text-text-secondary uppercase tracking-wider">Preview</span>
                   {firstCoach && (
-                    <span className="text-eyebrow text-text-tertiary ml-auto">
+                    <span className="text-caption text-text-tertiary ml-auto">
                       Showing data for {firstCoach.name}
                     </span>
                   )}
@@ -1079,10 +1079,10 @@ export function BulkEmailModal({ coaches, onClose, onSuccess, prefilledRecipient
                      No greeting + signature wrapper — the template IS the email. */
                   <div className="bg-surface-sunken rounded-fw-md border border-border-subtle overflow-hidden p-3">
                     <div className="flex items-center justify-between px-1 pb-2">
-                      <span className="text-eyebrow uppercase tracking-wider font-semibold text-text-tertiary">
+                      <span className="text-caption font-semibold text-text-tertiary">
                         HTML Mockup
                       </span>
-                      <span className="text-eyebrow text-text-tertiary">
+                      <span className="text-caption text-text-tertiary">
                         Full HTML — sent as-is
                       </span>
                     </div>
@@ -1171,7 +1171,7 @@ export function BulkEmailModal({ coaches, onClose, onSuccess, prefilledRecipient
                 )}
 
                 {mode === 'gmail' && firstCoach && (
-                  <p className="mt-3 text-eyebrow text-text-tertiary text-center">
+                  <p className="mt-3 text-caption text-text-tertiary text-center">
                     This preview shows what will be pre-filled in Gmail.
                     {'\n'}You can edit everything before sending.
                   </p>

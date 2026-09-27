@@ -205,7 +205,7 @@ export function FairwayMyGameProfile({
               {/* ════════ 3 · DIMENSIONS — the real per-axis readouts ══════════ */}
               {dimensions.length > 0 ? (
                 <section className="flex flex-col gap-3">
-                  <h2 className="px-1 font-fw-display text-eyebrow font-medium uppercase tracking-[0.14em] text-text-tertiary">
+                  <h2 className="px-1 font-fw-sans text-body-sm font-semibold text-text-primary">
                     Dimensions
                   </h2>
                   <div className="grid grid-cols-2 gap-3 md:grid-cols-4">

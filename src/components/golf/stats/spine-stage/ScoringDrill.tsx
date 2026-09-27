@@ -346,7 +346,7 @@ export function ScoringDrill({
 
         {worstItems.length > 0 ? (
           <div className="flex flex-col gap-2">
-            <h4 className="font-fw-display text-eyebrow font-medium uppercase tracking-[0.14em] text-text-tertiary">
+            <h4 className="font-fw-sans text-body-sm font-semibold text-text-primary">
               Toughest holes
             </h4>
             <ol className="grid gap-2.5 rounded-card border border-border-subtle bg-surface p-4">

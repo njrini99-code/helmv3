@@ -331,7 +331,7 @@ export function ConfirmClassesModal({ isOpen, onClose, onConfirm, parsedClasses 
                         <div className="flex items-center gap-2 mb-1.5">
                           {cls.course_code && (
                             <span
-                              className="font-mono text-eyebrow font-medium px-1.5 py-0.5 rounded"
+                              className="font-mono text-caption font-medium px-1.5 py-0.5 rounded"
                               style={{
                                 // ~8% tint of the class color (was a `${color}15` hex-alpha
                                 // hack; color-mix keeps it valid when the color is a token var).

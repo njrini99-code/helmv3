@@ -42,7 +42,7 @@ export function ApproachMissSelector({
                 >
                   <div className="text-center">
                     <div className="w-4 h-4 mx-auto rounded-full bg-accent-500/60 mb-1" />
-                    <span className="font-fw-sans text-eyebrow font-semibold text-accent-700">GREEN</span>
+                    <span className="font-fw-sans text-caption font-semibold text-accent-700">GREEN</span>
                   </div>
                 </div>
               );

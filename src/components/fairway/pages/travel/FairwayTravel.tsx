@@ -413,7 +413,7 @@ export function FairwayTravel({
               list's place, with a Back control. The "Select a trip" pane is a
               desktop-only affordance (it read as an empty screen on a phone). */}
           <div className={cn('flex flex-col gap-3 lg:col-span-1', selected && 'hidden lg:flex')}>
-            <h3 className="px-1 font-fw-display text-eyebrow font-medium uppercase tracking-[0.14em] text-text-tertiary">
+            <h3 className="px-1 font-fw-sans text-body-sm font-semibold text-text-primary">
               Trips
             </h3>
             {itineraries.map((itinerary) => (

@@ -261,7 +261,7 @@ function StepSpine({ step }: { step: Step }) {
             </span>
             <span
               className={cn(
-                'font-fw-sans text-eyebrow font-medium uppercase tracking-[0.08em]',
+                'font-fw-sans text-caption font-medium',
                 active ? 'text-nav-text' : 'text-nav-text-dim',
               )}
             >

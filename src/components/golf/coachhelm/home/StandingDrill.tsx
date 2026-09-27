@@ -80,9 +80,9 @@ export function StandingDrill({ standingByMetric, playerBaseline }: PlayerStandi
             return (
               <section key={group.category} className="flex flex-col gap-3">
                 <div className="px-1">
-                  <p className="font-fw-sans text-eyebrow font-semibold uppercase tracking-[0.16em] text-text-tertiary">
+                  <h3 className="font-fw-sans text-body-sm font-semibold text-text-primary">
                     {group.label}
-                  </p>
+                  </h3>
                   <p className="mt-0.5 font-fw-sans text-caption text-text-tertiary">{group.description}</p>
                 </div>
                 <div className="grid grid-cols-1 gap-3 md:grid-cols-2">

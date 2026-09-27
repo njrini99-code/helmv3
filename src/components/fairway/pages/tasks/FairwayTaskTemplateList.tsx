@@ -300,9 +300,9 @@ export function FairwayTaskTemplateList({ teamId, onSelectTemplate }: FairwayTas
         <div className="flex flex-col gap-4">
           {Object.entries(grouped).map(([category, items]) => (
             <div key={category} className="flex flex-col gap-2">
-              <p className="font-fw-sans text-eyebrow font-semibold uppercase tracking-[0.12em] text-text-tertiary">
+              <h2 className="font-fw-sans text-body-sm font-semibold text-text-primary">
                 {category}
-              </p>
+              </h2>
               <div className="flex flex-col gap-2">
                 {items.map((t) => (
                   // The row is a plain container with two SIBLING controls: the

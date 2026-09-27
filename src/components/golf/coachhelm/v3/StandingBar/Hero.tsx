@@ -66,7 +66,7 @@ export function Hero(props: StandingBarProps) {
     >
       {/* Eyebrow + label */}
       <div className="flex items-baseline justify-between gap-3 mb-1">
-        <p className="text-eyebrow font-medium uppercase tracking-[0.08em] text-text-tertiary">
+        <p className="text-caption font-medium text-text-tertiary">
           Standing
         </p>
         {showTeam && (
@@ -112,7 +112,7 @@ export function Hero(props: StandingBarProps) {
       />
 
       {/* Scale endpoints */}
-      <div className="flex items-baseline justify-between text-eyebrow text-text-tertiary mt-1.5 tabular-nums">
+      <div className="flex items-baseline justify-between text-caption text-text-tertiary mt-1.5 tabular-nums">
         <span>{formatValue(effectiveScale.min, props.unit)}</span>
         <span>{formatValue(effectiveScale.max, props.unit)}</span>
       </div>
@@ -178,7 +178,7 @@ function HeroEmpty({ label }: { label: string }) {
       data-state="empty"
       className="glass-prominent rounded-3xl shadow-glass p-6"
     >
-      <p className="text-eyebrow font-medium uppercase tracking-[0.08em] text-text-tertiary mb-1">
+      <p className="text-caption font-medium text-text-tertiary mb-1">
         Standing
       </p>
       <h2 className="text-lg md:text-xl font-medium text-warm-900 tracking-[-0.015em]">

@@ -118,7 +118,7 @@ interface FairwayEditShotModalProps {
   shotHistory?: readonly ShotRecord[];
 }
 
-const sectionLabel = 'mb-3 font-fw-sans text-eyebrow font-medium uppercase tracking-wider text-text-secondary';
+const sectionLabel = 'mb-3 font-fw-sans text-caption font-medium text-text-secondary';
 
 const PENALTY_OPTIONS = [
   { v: 'ob', l: 'Out of Bounds' },
@@ -237,7 +237,7 @@ export function FairwayEditShotModal({
           <>
             {/* Shot Type Info */}
             <Inset padding="sm" className="flex items-center gap-3">
-              <span className="font-fw-sans text-eyebrow font-medium uppercase tracking-wide text-text-tertiary">Type:</span>
+              <span className="font-fw-sans text-caption font-medium text-text-tertiary">Type:</span>
               <span className="font-fw-sans text-sm font-medium capitalize text-text-secondary">
                 {editingShot.isPenalty ? 'Penalty' : editingShot.shotType.replace('_', ' ')}
               </span>
@@ -394,7 +394,7 @@ export function FairwayEditShotModal({
                             type="button"
                             onClick={() => updateEditForm({ distanceToHoleAfter: String(ft), distanceUnitAfter: 'feet' })}
                             className={cn(
-                              'min-h-[44px] rounded-fw-md py-2 font-fw-sans text-eyebrow font-medium transition-colors',
+                              'min-h-[44px] rounded-fw-md py-2 font-fw-sans text-caption font-medium transition-colors',
                               'outline-none focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
                               editFormData.distanceToHoleAfter === String(ft) && editFormData.distanceUnitAfter === 'feet'
                                 ? 'bg-accent-fill text-text-on-accent-fill shadow-flat'
@@ -413,7 +413,7 @@ export function FairwayEditShotModal({
                             type="button"
                             onClick={() => updateEditForm({ distanceToHoleAfter: String(yds), distanceUnitAfter: 'yards' })}
                             className={cn(
-                              'rounded-fw-md py-2 font-fw-sans text-eyebrow font-medium transition-colors',
+                              'rounded-fw-md py-2 font-fw-sans text-caption font-medium transition-colors',
                               'outline-none focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
                               editFormData.distanceToHoleAfter === String(yds) && editFormData.distanceUnitAfter === 'yards'
                                 ? 'bg-accent-fill text-text-on-accent-fill shadow-flat'

@@ -121,7 +121,7 @@ export function FairwayEventCard({
         >
           {startParts.clock}
           {startParts.meridiem ? (
-            <span className="ml-0.5 font-fw-sans text-eyebrow font-medium tabular-nums text-text-tertiary">
+            <span className="ml-0.5 font-fw-sans text-caption font-medium tabular-nums text-text-tertiary">
               {startParts.meridiem}
             </span>
           ) : null}

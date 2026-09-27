@@ -112,7 +112,7 @@ export const ChartFrame = React.forwardRef<HTMLDivElement, ChartFrameProps>(func
       <header className="flex items-start justify-between gap-4">
         <div className="min-w-0">
           {overline ? (
-            <p className="mb-1 font-fw-sans text-eyebrow uppercase text-text-tertiary">
+            <p className="mb-1 font-fw-sans text-caption text-text-tertiary">
               {overline}
             </p>
           ) : null}

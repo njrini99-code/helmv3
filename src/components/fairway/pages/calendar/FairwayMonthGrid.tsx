@@ -186,7 +186,7 @@ export function FairwayMonthGrid({
         {WEEKDAYS.map((d) => (
           <div
             key={d}
-            className="px-2 py-2.5 text-center font-fw-sans text-eyebrow font-semibold uppercase tracking-[0.08em] text-text-tertiary"
+            className="px-2 py-2.5 text-center font-fw-sans text-caption font-semibold text-text-tertiary"
           >
             <span className="hidden sm:inline">{d}</span>
             <span className="sm:hidden">{d.charAt(0)}</span>
