@@ -46,7 +46,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `AUDIT_SNAPSHOT` | 56 | 6 | 30 | 25 |
 | `STATE_SNAPSHOT` | 6 | 2 | 5 | 0 |
 | `HISTORY_LEDGER` | 41 | 0 | 7 | 15 |
-| `INCIDENT` | 38 | 15 | 2 | 2 |
+| `INCIDENT` | 39 | 15 | 2 | 2 |
 | `ADR` | 5 | 0 | 3 | 0 |
 | `INDEX` | 19 | 1 | 7 | 5 |
 | `UNKNOWN` | 93 | 12 | 39 | 74 |
@@ -489,6 +489,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `memory/incidents/admin_platform/INC-2026-08-26-error-rate-hourly-never-written.md` | current | - | - | - | - |
 | `memory/incidents/admin_platform/INC-2026-08-27-swallowed-cron-failure-invisible-to-bridge.md` | current | - | - | - | - |
 | `memory/incidents/admin_platform/INC-2026-09-27-bridge-merged-dev-sentry-issues.md` | current | - | - | - | - |
+| `memory/incidents/admin_selfheal/INC-2026-09-27-retired-triage-runner-paints-loop-red.md` | current | - | - | - | - |
 | `memory/incidents/calendar_events/INC-2026-09-23-coach-invitees-deny-conflict-check.md` | current | - | - | - | - |
 | `memory/incidents/coachhelm_ai/INC-2026-09-26-safety-net-coverage-n-plus-one.md` | current | - | - | - | - |
 | `memory/incidents/coachhelm_ai/INC-2026-09-26-validation-cron-rounds-n-plus-one.md` | current | - | - | - | - |
