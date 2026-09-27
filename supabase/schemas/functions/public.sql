@@ -7788,7 +7788,7 @@ ALTER FUNCTION "public"."refresh_crm_coach_engagement"() OWNER TO "postgres";
 
 CREATE OR REPLACE FUNCTION "public"."refresh_player_standing"("p_team_ids" "uuid"[]) RETURNS TABLE("metric_id" "text", "rows_upserted" bigint)
     LANGUAGE "plpgsql" SECURITY DEFINER
-    SET "search_path" TO 'public'
+    SET "search_path" TO 'pg_catalog', 'public'
     AS $_$
 DECLARE
   v_bindings text[][] := ARRAY[
@@ -7889,7 +7889,7 @@ COMMENT ON FUNCTION "public"."refresh_player_standing"("p_team_ids" "uuid"[]) IS
 
 CREATE OR REPLACE FUNCTION "public"."refresh_player_standing_round_metrics"("p_team_ids" "uuid"[]) RETURNS TABLE("out_metric_id" "text", "out_rows_upserted" bigint)
     LANGUAGE "plpgsql" SECURITY DEFINER
-    SET "search_path" TO 'public'
+    SET "search_path" TO 'pg_catalog', 'public'
     AS $$
 DECLARE
   v_window_days int := 90;
@@ -8307,7 +8307,7 @@ COMMENT ON FUNCTION "public"."refresh_player_standing_shot_metrics"("p_team_ids"
 
 CREATE OR REPLACE FUNCTION "public"."refresh_player_stats_cache"("p_player_id" "uuid") RETURNS "void"
     LANGUAGE "plpgsql" SECURITY DEFINER
-    SET "search_path" TO 'public'
+    SET "search_path" TO 'pg_catalog', 'public'
     AS $$
 BEGIN
   DELETE FROM golf_round_stats_cache WHERE player_id = p_player_id;
@@ -10543,7 +10543,7 @@ ALTER FUNCTION "public"."update_player_putt_make_pct"("p_player_id" "uuid") OWNE
 
 CREATE OR REPLACE FUNCTION "public"."update_player_stats_complete"() RETURNS "trigger"
     LANGUAGE "plpgsql" SECURITY DEFINER
-    SET "search_path" TO 'public'
+    SET "search_path" TO 'pg_catalog', 'public'
     AS $$
 DECLARE
   v_player_id UUID;

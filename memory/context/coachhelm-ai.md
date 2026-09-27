@@ -227,7 +227,7 @@ Located in `src/components/golf/coachhelm/`:
 > - ~~**`FairwayMyDevelopment.tsx`**~~ — REMOVED 2026-09-22 (`agent/coachhelm-learning-cleanup`), confirmed zero non-test importers. `/dashboard/my-development` is a `permanentRedirect` to `/dashboard/coachhelm?view=development`, served by `DevelopmentDrill` (`components/golf/coachhelm/home/DevelopmentDrill.tsx`).
 > - ~~**`SectionBand`**~~ inside `FingerprintHero.tsx` (the coach per-player game page) — REMOVED 2026-09-22 (`agent/coachhelm-learning-cleanup`), confirmed zero importers anywhere. `MetricPill` moved to `game/print/MetricPill.tsx` and `FingerprintHero.tsx` was deleted (UI/UX audit DS-04, 2026-09-24).
 >
-> **The actual live coach card render site** is `src/components/fairway/pages/coachhelm/FairwayPlayerInsight.tsx:866,871` (reached via `players/[playerId]/game/page.tsx` → `PlayerDeepDiveTabs.tsx:113`), rendering `src/components/golf/coachhelm/insight-card/InsightCard.tsx`. There are **two different, both-live** components named `InsightCard` — that one, and an unrelated second one at `src/components/fairway/cards-insight/InsightCard.tsx` used by the player Hub (`HubInsightSignalCard.tsx:41`). Don't conflate reachability between them when searching "is InsightCard used?" (this file was removed in the 2026-09-24 golf audit dead-code sweep)
+> **The coach card render site** was FairwayPlayerInsight.tsx (reached via `players/[playerId]/game/page.tsx` → `PlayerDeepDiveTabs.tsx`), rendering the legacy golf InsightCard (src/components/golf/coachhelm/insight-card/InsightCard.tsx). Both were removed in the 2026-09-24 golf audit dead-code sweep, with the player Hub's HubInsightSignalCard.tsx; the deep-dive's Scouting Report tab now renders `src/components/fairway/pages/scouting/ScoutingReport.tsx`, which fetches its own insights. The one golf component named `InsightCard` left is `src/components/fairway/cards-insight/InsightCard.tsx`.
 >
 > Also DARK: `getPlayerCoachHelmDashboard`'s returned `data.insights` field (merged evidence-backed insights, correctly gated by `applyInsightVisibility`, computed at `insights.ts:3030-3047`) is fetched and passed as a prop at `coachhelm/page.tsx:208-210,452` but `PlayerCoachHelmHome.tsx` never reads `data.insights` — only `data.focusAreas/prediction/recentRounds/playerState/playerName`. The cards a player actually sees come from a separate, correctly-wired `topInsight`/`secondaryInsights` prop pair (`coachhelm/page.tsx:212-214,459-460`, via `insight-delivery.ts`). Same disease, one more instance: a correctly-computed, fully-served insight list nothing reads.
 
@@ -260,8 +260,8 @@ Added by a top-down live-path trace, cross-checked against a live prod `golf_coa
 
 | Item | Status | Evidence |
 |---|---|---|
-| Coach insight cards (Scouting Report / Deep Dive) | LIVE | `players/[playerId]/game/page.tsx` → `PlayerDeepDiveTabs.tsx:113` → `FairwayPlayerInsight.tsx:866,871` → `InsightCard` (`coachhelm/insight-card/InsightCard.tsx`) |
-| Player Hub signal card | LIVE | `HubInsightSignalCard.tsx:41` → separate `InsightCard` at `fairway/cards-insight/InsightCard.tsx` |
+| Coach insight cards (Scouting Report / Deep Dive) | LIVE | `players/[playerId]/game/page.tsx` → `PlayerDeepDiveTabs.tsx` → `ScoutingReport.tsx` (`fairway/pages/scouting/`), which fetches its own insights (the FairwayPlayerInsight.tsx → legacy InsightCard path was removed 2026-09-24) |
+| Player Hub signal card | REMOVED 2026-09-24 | HubInsightSignalCard.tsx (rendered by `FairwayPlayerDashboard.tsx`) was removed in the golf audit dead-code sweep |
 | Player CoachHelm feed (topInsight/secondaryInsights) | LIVE | `coachhelm/page.tsx:212-214,459-460` via `insight-delivery.ts` |
 | Coach Triage Desk / Brief | LIVE | `signal-groups.ts:130-139` (`getSignalGroups`) |
 | `getPlayerCoachHelmDashboard`'s `data.insights` field | DARK | Computed `insights.ts:3030-3047`, passed `coachhelm/page.tsx:452`, never read by `PlayerCoachHelmHome.tsx` |

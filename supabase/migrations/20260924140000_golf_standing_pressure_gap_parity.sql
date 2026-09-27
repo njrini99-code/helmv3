@@ -39,17 +39,26 @@
 -- by 0.30 strokes on average (0.33 at most).
 --
 -- SAFETY: a CREATE OR REPLACE of an existing SECURITY DEFINER function with the
--- same signature; owner, search_path and grants are unchanged; no table locks.
+-- same signature; owner, search_path lookup order and grants are unchanged; no
+-- table locks. search_path is now spelled pg_catalog, public (it was 'public';
+-- pg_catalog is searched first either way).
 -- supabase/schemas/functions/public.sql carries the same body.
 --
 -- AFTER APPLY (owner, service role): one standing refresh covers both OD-01
 -- and this file:
---   SELECT public.refresh_player_standing_round_metrics(ARRAY(SELECT id FROM public.golf_teams));
+--   SELECT public.refresh_player_standing_round_metrics(
+--     ARRAY(SELECT id FROM public.golf_teams));
 --
 -- ROLLBACK: CREATE OR REPLACE the function with its body from
 -- 20260924120000_golf_countable_round_stats_cache.sql (the OD-01 body).
 --
--- VERIFY: select 1 from pg_proc p join pg_namespace n on n.oid = p.pronamespace where n.nspname = 'public' and p.proname = 'refresh_player_standing_round_metrics' and p.prosrc like '%''qualifying''%' and p.prosrc like '%* 18 / NULLIF(COALESCE(r.holes_played, 18), 0)%' and p.prosrc like '%golf_round_is_countable%';
+-- VERIFY: select 1 from pg_proc p
+-- VERIFY: join pg_namespace n on n.oid = p.pronamespace
+-- VERIFY: where n.nspname = 'public'
+-- VERIFY: and p.proname = 'refresh_player_standing_round_metrics'
+-- VERIFY: and p.prosrc like '%''qualifying''%'
+-- VERIFY: and p.prosrc like '%* 18 / NULLIF(COALESCE(r.holes_played, 18), 0)%'
+-- VERIFY: and p.prosrc like '%golf_round_is_countable%';
 
 DO $guard$
 DECLARE
@@ -68,8 +77,9 @@ END
 $guard$;
 
 CREATE OR REPLACE FUNCTION "public"."refresh_player_standing_round_metrics"("p_team_ids" "uuid"[]) RETURNS TABLE("out_metric_id" "text", "out_rows_upserted" bigint)
-    LANGUAGE "plpgsql" SECURITY DEFINER
-    SET "search_path" TO 'public'
+    LANGUAGE "plpgsql"
+SECURITY DEFINER
+SET search_path = pg_catalog, public
     AS $$
 DECLARE
   v_window_days int := 90;

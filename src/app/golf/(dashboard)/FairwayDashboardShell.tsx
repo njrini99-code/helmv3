@@ -177,7 +177,7 @@ const COACHHELM_SUBPATH_LABELS: Record<string, string> = {
  *  the CoachHelm cluster, three (Dashboard / CoachHelm AI / Tab) so the top-bar
  *  breadcrumb agrees with the CoachHelm masthead + sub-nav instead of showing a
  *  competing trail for the same screen (P409). */
-export function buildBreadcrumbs(pathname: string): Breadcrumb[] {
+export function buildGolfBreadcrumbs(pathname: string): Breadcrumb[] {
   const rest = pathname.replace(/^\/golf\/dashboard\/?/, '');
   if (!rest) return [{ label: 'Dashboard' }];
   const seg = rest.split('/')[0] ?? '';
@@ -617,7 +617,7 @@ function FairwayDashboardContent({
     window.dispatchEvent(new Event('helm:open-command-palette'));
   }, []);
 
-  const breadcrumbs = useMemo(() => buildBreadcrumbs(pathname), [pathname]);
+  const breadcrumbs = useMemo(() => buildGolfBreadcrumbs(pathname), [pathname]);
   const backLink = useMemo(() => buildBackLink(pathname, activeHub?.tabs), [pathname, activeHub]);
 
   // The name the mobile top bar gives the current view. Inside a multi-tab hub

@@ -31,7 +31,9 @@
 -- filter. Function signatures, owners, SECURITY DEFINER and grants are
 -- unchanged (CREATE OR REPLACE keeps ACLs). Bodies are the production
 -- bodies (md5 of prosrc matched supabase/schemas/functions/public.sql on
--- 2026-09-24) with only the filters above changed.
+-- 2026-09-24) with only the filters above changed. Each SECURITY DEFINER
+-- function pins search_path = pg_catalog, public (it was 'public'; the
+-- lookup order is the same, since pg_catalog is searched first either way).
 --
 -- Reviewer notes:
 --   * trg_update_round_stats_cache fires on UPDATE OF status, total_score,
@@ -125,8 +127,9 @@ ALTER FUNCTION "public"."golf_round_is_countable"("p_status" "text", "p_holes_pl
 COMMENT ON FUNCTION "public"."golf_round_is_countable"("p_status" "text", "p_holes_played" integer, "p_total_score" integer, "p_front_nine" integer, "p_back_nine" integer, "p_total_putts" integer, "p_strokes_gained_total" numeric) IS 'W13 / OD-01 (2026-09-24). The DB copy of isCountableRound (src/lib/golf/round-countable.ts). Keep the two in step; supabase/tests/rls/golf_round_is_countable.sql pins the shared cases.';
 
 CREATE OR REPLACE FUNCTION "public"."update_player_stats_complete"() RETURNS "trigger"
-    LANGUAGE "plpgsql" SECURITY DEFINER
-    SET "search_path" TO 'public'
+    LANGUAGE "plpgsql"
+SECURITY DEFINER
+SET search_path = pg_catalog, public
     AS $$
 DECLARE
   v_player_id UUID;
@@ -368,8 +371,9 @@ END;
 $$;
 
 CREATE OR REPLACE FUNCTION "public"."refresh_player_stats_cache"("p_player_id" "uuid") RETURNS "void"
-    LANGUAGE "plpgsql" SECURITY DEFINER
-    SET "search_path" TO 'public'
+    LANGUAGE "plpgsql"
+SECURITY DEFINER
+SET search_path = pg_catalog, public
     AS $$
 BEGIN
   DELETE FROM golf_round_stats_cache WHERE player_id = p_player_id;
@@ -459,8 +463,9 @@ END;
 $$;
 
 CREATE OR REPLACE FUNCTION "public"."refresh_player_standing_round_metrics"("p_team_ids" "uuid"[]) RETURNS TABLE("out_metric_id" "text", "out_rows_upserted" bigint)
-    LANGUAGE "plpgsql" SECURITY DEFINER
-    SET "search_path" TO 'public'
+    LANGUAGE "plpgsql"
+SECURITY DEFINER
+SET search_path = pg_catalog, public
     AS $$
 DECLARE
   v_window_days int := 90;

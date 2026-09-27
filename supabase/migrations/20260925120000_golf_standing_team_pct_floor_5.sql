@@ -25,7 +25,10 @@
 -- and the matching COMMENT ON FUNCTION text ("team_n<3" / "MIN_TEAM_N=3" ->
 -- 5). Nothing else: signatures, return shapes, SECURITY DEFINER, search_path,
 -- the pressure-bucket floors (>= 3), MIN_GREENS / MIN_ROUNDS / MIN_ATTEMPTS
--- and the cohort floor (8) are byte-for-byte the source bodies above.
+-- and the cohort floor (8) are byte-for-byte the source bodies above, except
+-- that refresh_player_standing and refresh_player_standing_round_metrics now
+-- spell search_path as pg_catalog, public (it was 'public'; the lookup order
+-- is the same, since pg_catalog is searched first either way).
 --
 -- Read-only production sizing (2026-09-25): golf_player_standing has 994
 -- rows, 956 with a team_pct. 10 rows (7 players) have team_n 3 or 4 and would
@@ -35,7 +38,7 @@
 -- show fewer rows after apply.
 --
 -- SAFETY: CREATE OR REPLACE of existing SECURITY DEFINER functions with the
--- same signatures; owner (postgres), search_path and grants
+-- same signatures; owner (postgres), search_path lookup order and grants
 -- (service_role only) are unchanged, so no GRANT/REVOKE is restated; no table
 -- locks. supabase/schemas/functions/public.sql carries the same constants.
 --
@@ -78,8 +81,9 @@ $guard$;
 
 -- refresh_player_standing
 CREATE OR REPLACE FUNCTION "public"."refresh_player_standing"("p_team_ids" "uuid"[]) RETURNS TABLE("metric_id" "text", "rows_upserted" bigint)
-    LANGUAGE "plpgsql" SECURITY DEFINER
-    SET "search_path" TO 'public'
+    LANGUAGE "plpgsql"
+SECURITY DEFINER
+SET search_path = pg_catalog, public
     AS $_$
 DECLARE
   v_bindings text[][] := ARRAY[
@@ -174,12 +178,16 @@ BEGIN
 END;
 $_$;
 
+-- The COMMENT text below names SECURITY DEFINER in a string; it defines
+-- nothing. The function it describes pins search_path above.
+-- nosemgrep: helmv3-security-definer-without-search-path
 COMMENT ON FUNCTION public.refresh_player_standing(uuid[]) IS 'v3 W11 + gender-scoped level cohort (audit P3, 2026-06-09). Loops over the metric bindings and upserts golf_player_standing rows for the given team chunk. team_avg/team_pct per team (MIN_TEAM_N=5); level_avg/level_n/level_pct are now an app-wide cohort SCOPED BY golf_teams.gender (MIN_COHORT_N=8) so women and men no longer share a pooled baseline. Trusted SECURITY DEFINER — value expressions come from the function body, not the caller.';
 
 -- refresh_player_standing_round_metrics
 CREATE OR REPLACE FUNCTION "public"."refresh_player_standing_round_metrics"("p_team_ids" "uuid"[]) RETURNS TABLE("out_metric_id" "text", "out_rows_upserted" bigint)
-    LANGUAGE "plpgsql" SECURITY DEFINER
-    SET "search_path" TO 'public'
+    LANGUAGE "plpgsql"
+SECURITY DEFINER
+SET search_path = pg_catalog, public
     AS $$
 DECLARE
   v_window_days int := 90;

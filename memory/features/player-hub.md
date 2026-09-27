@@ -33,8 +33,7 @@ It depends on Team Operations, Calendar, and Team Communications. Because it agg
 
 ### Components
 
-- `src/components/fairway/pages/hub/hub-parts.tsx` — the whole `src/components/golf/player-hub/` tree was removed with the legacy dual-tree (`ffd0fd8ab`)
-- `src/components/golf/player-hub/HubInsightSignalCard.tsx` (this file was removed in the 2026-09-24 golf audit dead-code sweep)
+- `src/components/fairway/pages/hub/hub-parts.tsx` — the legacy src/components/golf/player-hub/ tree is gone: most of it with the legacy dual-tree (`ffd0fd8ab`), and its last file, HubInsightSignalCard.tsx, in the 2026-09-24 golf audit dead-code sweep
 
 ### Actions
 

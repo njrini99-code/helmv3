@@ -17,17 +17,44 @@
 --
 -- Rollback: ALTER TABLE ... DROP COLUMN is_test; (no data depends on it).
 
-ALTER TABLE public.golf_rounds     ADD COLUMN IF NOT EXISTS is_test boolean NOT NULL DEFAULT false;
-ALTER TABLE public.golf_teams      ADD COLUMN IF NOT EXISTS is_test boolean NOT NULL DEFAULT false;
-ALTER TABLE public.golf_players    ADD COLUMN IF NOT EXISTS is_test boolean NOT NULL DEFAULT false;
-ALTER TABLE public.golf_qualifiers ADD COLUMN IF NOT EXISTS is_test boolean NOT NULL DEFAULT false;
+ALTER TABLE public.golf_rounds
+ADD COLUMN IF NOT EXISTS is_test boolean NOT NULL DEFAULT false;
+ALTER TABLE public.golf_teams
+ADD COLUMN IF NOT EXISTS is_test boolean NOT NULL DEFAULT false;
+ALTER TABLE public.golf_players
+ADD COLUMN IF NOT EXISTS is_test boolean NOT NULL DEFAULT false;
+ALTER TABLE public.golf_qualifiers
+ADD COLUMN IF NOT EXISTS is_test boolean NOT NULL DEFAULT false;
 
-COMMENT ON COLUMN public.golf_rounds.is_test     IS 'QA/demo row: hidden from player, team and CoachHelm reads (OD-03).';
-COMMENT ON COLUMN public.golf_teams.is_test      IS 'QA/demo row: hidden from player, team and CoachHelm reads (OD-03).';
-COMMENT ON COLUMN public.golf_players.is_test    IS 'QA/demo row: hidden from player, team and CoachHelm reads (OD-03).';
-COMMENT ON COLUMN public.golf_qualifiers.is_test IS 'QA/demo row: hidden from player, team and CoachHelm reads (OD-03).';
+COMMENT ON COLUMN public.golf_rounds.is_test IS
+'QA/demo row: hidden from player, team and CoachHelm reads (OD-03).';
+COMMENT ON COLUMN public.golf_teams.is_test IS
+'QA/demo row: hidden from player, team and CoachHelm reads (OD-03).';
+COMMENT ON COLUMN public.golf_players.is_test IS
+'QA/demo row: hidden from player, team and CoachHelm reads (OD-03).';
+COMMENT ON COLUMN public.golf_qualifiers.is_test IS
+'QA/demo row: hidden from player, team and CoachHelm reads (OD-03).';
 
-CREATE INDEX IF NOT EXISTS idx_golf_rounds_is_test     ON public.golf_rounds (id)     WHERE is_test;
-CREATE INDEX IF NOT EXISTS idx_golf_teams_is_test      ON public.golf_teams (id)      WHERE is_test;
-CREATE INDEX IF NOT EXISTS idx_golf_players_is_test    ON public.golf_players (id)    WHERE is_test;
-CREATE INDEX IF NOT EXISTS idx_golf_qualifiers_is_test ON public.golf_qualifiers (id) WHERE is_test;
+-- The indexes are plain, not CONCURRENTLY: the apply path runs this file in
+-- one transaction, where CONCURRENTLY is refused, and each ADD COLUMN above
+-- already holds ACCESS EXCLUSIVE on its table until commit.
+
+-- In-transaction build; ADD COLUMN above already locks golf_rounds.
+-- squawk-ignore require-concurrent-index-creation
+CREATE INDEX IF NOT EXISTS idx_golf_rounds_is_test
+ON public.golf_rounds (id) WHERE is_test;
+
+-- In-transaction build; ADD COLUMN above already locks golf_teams.
+-- squawk-ignore require-concurrent-index-creation
+CREATE INDEX IF NOT EXISTS idx_golf_teams_is_test
+ON public.golf_teams (id) WHERE is_test;
+
+-- In-transaction build; ADD COLUMN above already locks golf_players.
+-- squawk-ignore require-concurrent-index-creation
+CREATE INDEX IF NOT EXISTS idx_golf_players_is_test
+ON public.golf_players (id) WHERE is_test;
+
+-- In-transaction build; ADD COLUMN above already locks golf_qualifiers.
+-- squawk-ignore require-concurrent-index-creation
+CREATE INDEX IF NOT EXISTS idx_golf_qualifiers_is_test
+ON public.golf_qualifiers (id) WHERE is_test;

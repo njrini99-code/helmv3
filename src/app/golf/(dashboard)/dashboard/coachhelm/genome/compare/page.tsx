@@ -88,6 +88,15 @@ export default async function GenomeComparePage({ searchParams }: PageProps) {
       sb.from('golf_player_stats_cache').select('player_id, rounds_in_calculation, rounds_played').in('player_id', ids),
       loadGenomes(sb, ids),
     ]);
+    // Like loadGenomes above, a failed read throws: rendering it would show
+    // "No rounds on file" for players who have rounds.
+    if (cacheRes.error) {
+      await logServerError(`[genome.compare] stats-cache read failed: ${describeError(cacheRes.error)}`, {
+        action: 'genome.compare.statsCache',
+        featureArea: 'coachhelm',
+      });
+      throw new Error("Couldn't load these players. Please try again.");
+    }
     const cacheById = new Map((cacheRes.data ?? []).map((c) => [c.player_id, c]));
     const genomeById = new Map(genomes.map((g) => [g.player_id, g]));
     const build = (p: { id: string; name: string } | null): CompareSide | null => {

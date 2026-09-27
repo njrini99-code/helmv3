@@ -127,6 +127,7 @@ describe('submitGolfRoundComprehensive — round-entry plausibility gate', () =>
       expect(result.error).toMatch(/540-yard drive onto the green isn't possible/);
     }
     const rounds = await fake.from('golf_rounds').select('*');
+    expect(rounds.error).toBeNull();
     expect(rounds.data).toHaveLength(0);
   });
 

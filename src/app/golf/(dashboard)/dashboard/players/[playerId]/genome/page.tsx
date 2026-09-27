@@ -110,6 +110,15 @@ export default async function PlayerGenomePage({ params }: PageProps) {
   }
   const player = playerRes.data;
   if (!player) notFound();
+  // A failed stats-cache read would render as "No rounds on file" (or the
+  // empty Genome state): unreadable is not the same as none.
+  if (cacheRes.error) {
+    await logServerError(
+      `[genome] stats-cache read failed — would have shown no rounds on file: ${describeError(cacheRes.error)}`,
+      { action: 'genome.statsCache', featureArea: 'coachhelm', playerId },
+    );
+    throw new Error("Couldn't load this player. Please try again.");
+  }
 
   // Admin-client read: only after membership in the coach's active team is proven.
   let standingRows: StrandStandingInput[] = [];
