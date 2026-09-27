@@ -38,7 +38,7 @@ import { FairwayEventCard } from './FairwayEventCard';
 /** The raised day group: THE card material — hairline, lit top edge, and the
  *  raised whisper — so each day's schedule sits up off the canvas. */
 const DAY_GROUP_CLASS =
-  'overflow-hidden rounded-xl border border-border-subtle bg-surface [box-shadow:inset_0_1px_0_oklch(1_0_0/0.55),var(--fw-shadow-soft)]';
+  'overflow-hidden rounded-card border border-border-subtle bg-surface [box-shadow:inset_0_1px_0_oklch(1_0_0/0.55),var(--fw-shadow-soft)]';
 
 /** Hairline dividers between rows: 1px, and a true half-pixel on 2x+ screens. */
 const ROW_DIVIDERS_CLASS =
@@ -400,7 +400,7 @@ function AgendaBody({
     return (
       // Compact on purpose: a phone never gets a full-screen monolith card
       // for "nothing here" (design-system quality bar).
-      <Surface elevation="border" padding="md" className={cn('rounded-xl [box-shadow:inset_0_1px_0_oklch(1_0_0/0.55),var(--fw-shadow-soft)]', className)}>
+      <Surface elevation="border" padding="md" className={cn('rounded-card [box-shadow:inset_0_1px_0_oklch(1_0_0/0.55),var(--fw-shadow-soft)]', className)}>
         <EmptyState
           variant="subtle"
           icon={CalendarDays}
@@ -427,7 +427,7 @@ function AgendaBody({
   // ── HONEST-EMPTY: single day, zero events ──────────────────────────────────
   if (mode === 'day' && totalEvents === 0) {
     return (
-      <div className={cn('rounded-xl border border-dashed border-border-strong px-5 py-6 text-center', className)}>
+      <div className={cn('rounded-card border border-dashed border-border-strong px-5 py-6 text-center', className)}>
         <p className="mb-2 font-fw-display text-caption text-text-tertiary">
           {formatDayLabel(focusDate, nowRef)}
         </p>

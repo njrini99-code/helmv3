@@ -392,7 +392,7 @@ export function TeeFormDrawer({
                       onClick={() => changeHolesCount(n)}
                       aria-pressed={active}
                       className={cn(
-                        'min-h-[40px] flex-1 rounded-md text-body font-medium transition-colors',
+                        'min-h-[40px] flex-1 rounded-fw-sm text-body font-medium transition-colors',
                         active
                           ? 'bg-surface text-text-primary shadow-soft'
                           : 'text-text-tertiary hover:text-text-primary',

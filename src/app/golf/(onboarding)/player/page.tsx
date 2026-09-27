@@ -433,7 +433,7 @@ function GolfPlayerOnboardingContent() {
                   <m.div variants={staggerItem}>
                     <Button variant="ghost"
                       onClick={() => goBack('about')}
-                      className="flex items-center gap-1.5 text-sm font-medium text-text-secondary hover:text-text-primary transition-colors min-h-[44px] px-2 -ml-2 rounded-lg active:bg-surface-sunken"
+                      className="flex items-center gap-1.5 text-sm font-medium text-text-secondary hover:text-text-primary transition-colors min-h-[44px] px-2 -ml-2 rounded-fw-sm active:bg-surface-sunken"
                     >
                       <IconArrowLeft size={16} />
                       Back
@@ -497,7 +497,7 @@ function GolfPlayerOnboardingContent() {
                           role="alert"
                           initial={{ opacity: 0, y: -8 }}
                           animate={{ opacity: 1, y: 0 }}
-                          className="text-sm text-red-600 mt-3 bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-center"
+                          className="text-sm text-red-600 mt-3 bg-red-50 border border-red-200 rounded-fw-md px-4 py-3 text-center"
                         >
                           {error}
                         </m.p>

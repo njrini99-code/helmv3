@@ -652,7 +652,7 @@ function CoursesStage({
             <div className="overflow-hidden rounded-card border border-border-subtle bg-surface">
               {[0, 1, 2, 3].map((i) => (
                 <div key={i} className="flex h-16 items-center gap-3 px-3">
-                  <Skeleton className="h-11 w-11 flex-shrink-0 rounded-md" />
+                  <Skeleton className="h-11 w-11 flex-shrink-0 rounded-fw-md" />
                   <div className="flex min-w-0 flex-1 flex-col gap-1.5">
                     <Skeleton className="h-3.5 w-2/3 rounded-full" />
                     <Skeleton className="h-3 w-1/3 rounded-full" />
@@ -811,7 +811,7 @@ function CourseRow({
       aria-label={location ? `${name}, ${location}` : name}
       className="group flex min-h-16 w-full items-center gap-3 px-3 py-2.5 text-left transition-colors [transition-duration:var(--fw-dur-fast)] hover:bg-surface-sunken active:bg-surface-sunken focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent-600"
     >
-      <span className="relative h-11 w-11 flex-shrink-0 overflow-hidden rounded-md" aria-hidden>
+      <span className="relative h-11 w-11 flex-shrink-0 overflow-hidden rounded-fw-md" aria-hidden>
         <CourseImage
           name={course.name}
           imageUrl={course.image_url}

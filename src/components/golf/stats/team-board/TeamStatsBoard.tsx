@@ -516,7 +516,7 @@ function fmtOneDecimal(value: number | null): string {
 function FormFormula({ row }: { row: TeamBoardRowViewModel }) {
   if (row.form.formula.length === 0) return null;
   return (
-    <div className="col-span-full rounded-lg bg-surface-sunken px-3 py-2">
+    <div className="col-span-full rounded-fw-md bg-surface-sunken px-3 py-2">
       <div className="font-fw-display text-caption font-bold uppercase tracking-[0.09em] text-text-secondary">
         {FORM_LABEL} {row.form.score ?? '—'}
         {row.form.early ? ` · ${FORM_EARLY_READ_LABEL}` : ''}

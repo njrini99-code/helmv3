@@ -174,7 +174,7 @@ function DemoGateContent() {
         {/* Skip link for keyboard users */}
         <a
           href="#demo-form"
-          className="sr-only focus:not-sr-only focus:absolute focus:z-[9999] focus:top-4 focus:left-4 bg-accent-fill text-text-on-accent-fill px-4 py-2 rounded-lg font-medium shadow-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
+          className="sr-only focus:not-sr-only focus:absolute focus:z-[9999] focus:top-4 focus:left-4 bg-accent-fill text-text-on-accent-fill px-4 py-2 rounded-fw-sm font-medium shadow-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
         >
           Skip to demo form
         </a>
@@ -307,7 +307,7 @@ function DemoGateContent() {
             {sessionExpired && (
               <div
                 role="status"
-                className="bg-primary-400/10 border border-primary-400/30 text-primary-800 px-4 py-3 rounded-xl text-sm text-center mb-4"
+                className="bg-primary-400/10 border border-primary-400/30 text-primary-800 px-4 py-3 rounded-fw-md text-sm text-center mb-4"
               >
                 Your demo session timed out. Enter your info again to jump right back in.
               </div>
@@ -324,13 +324,13 @@ function DemoGateContent() {
               </div>
             ) : isDemoUser ? (
               <div className="space-y-3">
-                <div className="bg-primary-400/10 border border-primary-400/30 text-primary-800 px-4 py-3 rounded-xl text-sm text-center">
+                <div className="bg-primary-400/10 border border-primary-400/30 text-primary-800 px-4 py-3 rounded-fw-md text-sm text-center">
                   You&apos;re already in the demo. Continue where you left off.
                 </div>
                 <Button
                   variant="primary"
                   onClick={() => router.push(landingPath)}
-                  className={`w-full min-h-[50px] py-3 bg-accent-fill text-text-on-accent-fill font-semibold tracking-[-0.01em] rounded-xl shadow-lg shadow-primary-600/25 transition duration-200 ease-ios hover:bg-accent-fill-hover active:duration-75 ${fwPress}`}
+                  className={`w-full min-h-[50px] py-3 bg-accent-fill text-text-on-accent-fill font-semibold tracking-[-0.01em] rounded-fw-sm shadow-lg shadow-primary-600/25 transition duration-200 ease-ios hover:bg-accent-fill-hover active:duration-75 ${fwPress}`}
                   rightIcon={<ArrowRight className="w-4 h-4" aria-hidden />}
                 >
                   Continue to dashboard
@@ -343,7 +343,7 @@ function DemoGateContent() {
                   <m.div
                     initial={prefersReducedMotion ? false : { opacity: 0, y: -6 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded-xl flex items-start gap-2.5"
+                    className="bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded-fw-md flex items-start gap-2.5"
                     role="alert"
                   >
                     <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" aria-hidden />
@@ -406,7 +406,7 @@ function DemoGateContent() {
                     w-full min-h-[50px] py-3
                     bg-accent-fill text-text-on-accent-fill
                     font-semibold tracking-[-0.01em]
-                    rounded-xl
+                    rounded-fw-sm
                     shadow-lg shadow-primary-600/25
                     transition duration-200 ease-ios
                     hover:bg-primary-700 hover:shadow-primary-600/30
@@ -460,14 +460,14 @@ function DemoGateContent() {
                   `src/test/static/legal-link-touch-targets.test.ts`. */}
               <Link
                 href="/privacy"
-                className="inline-flex items-center rounded-lg px-2 py-3 -my-3 min-h-[44px] hover:text-warm-700 transition-colors"
+                className="inline-flex items-center rounded-fw-sm px-2 py-3 -my-3 min-h-[44px] hover:text-warm-700 transition-colors"
               >
                 Privacy
               </Link>
               <span className="text-text-tertiary" aria-hidden>·</span>
               <Link
                 href="/terms"
-                className="inline-flex items-center rounded-lg px-2 py-3 -my-3 min-h-[44px] hover:text-warm-700 transition-colors"
+                className="inline-flex items-center rounded-fw-sm px-2 py-3 -my-3 min-h-[44px] hover:text-warm-700 transition-colors"
               >
                 Terms
               </Link>

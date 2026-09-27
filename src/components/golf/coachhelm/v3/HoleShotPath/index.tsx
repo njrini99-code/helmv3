@@ -736,7 +736,7 @@ export function HoleShotPath({
           <div
             className={[
               'absolute inset-0',
-              'rounded-2xl overflow-hidden shadow-[0_18px_40px_-22px_rgba(15,42,30,0.55)]',
+              'rounded-card overflow-hidden shadow-[0_18px_40px_-22px_rgba(15,42,30,0.55)]',
               ringClassName ?? 'ring-1 ring-white/10',
               'bg-[#1a382e]', // literal for Tailwind's JIT; value is COURSE_SCENE.sceneCanvas
             ].join(' ')}
@@ -1270,7 +1270,7 @@ export function HoleShotPath({
               animate={{ opacity: 1 }}
               transition={prefersReducedMotion ? { duration: 0 } : { duration: 0.15, ease: EASE_CINEMATIC }}
               style={tooltipPlacement(hovered.x, hovered.y)}
-              className="absolute z-10 pointer-events-none surface-lift rounded-xl px-3 py-2 text-caption text-warm-800 whitespace-nowrap shadow-lg"
+              className="absolute z-10 pointer-events-none surface-lift rounded-fw-sm px-3 py-2 text-caption text-warm-800 whitespace-nowrap shadow-lg"
               role="tooltip"
             >
               <div className="flex items-baseline gap-2">

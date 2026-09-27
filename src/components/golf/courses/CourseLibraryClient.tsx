@@ -268,7 +268,7 @@ export function CourseLibraryClient({
             <Section title={shownAboveIds.size > 0 ? 'More courses' : 'All courses'}>
               {/* Thumbnail rows, not photo cards: the long tail is looked up,
                   not browsed, and 65 cards ran ~21,500px on a phone. */}
-              <ul className="grid grid-cols-1 divide-y divide-border-subtle overflow-hidden rounded-fw-card border border-border-subtle bg-surface shadow-flat md:grid-cols-2 md:divide-y-0">
+              <ul className="grid grid-cols-1 divide-y divide-border-subtle overflow-hidden rounded-card border border-border-subtle bg-surface shadow-flat md:grid-cols-2 md:divide-y-0">
                 {restCourses.map((c) => (
                   <li key={c.id} className="md:border-b md:border-border-subtle">
                     <CourseCard

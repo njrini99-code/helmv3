@@ -94,7 +94,7 @@ export function SectionHeader({
                 </h2>
             </div>
             {action && (
-                <Button asChild variant="ghost" className="group flex-shrink-0 inline-flex items-center gap-1 min-h-[44px] px-2 -mx-2 rounded-lg text-body-sm font-medium text-text-tertiary hover:text-primary-700 transition-colors duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-cream-50">
+                <Button asChild variant="ghost" className="group flex-shrink-0 inline-flex items-center gap-1 min-h-[44px] px-2 -mx-2 rounded-fw-sm text-body-sm font-medium text-text-tertiary hover:text-primary-700 transition-colors duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-cream-50">
                     <Link href={action.href} prefetch={true}>
                         {action.label}
                         <IconArrowRight

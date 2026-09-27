@@ -114,7 +114,7 @@ export function StrokesWaterfall({ waterfall, onSelect }: StrokesWaterfallProps)
                   {step.value != null ? (
                     <span
                       aria-hidden="true"
-                      className={cn('absolute top-[14px] h-5 rounded-sm', BAR_CLASS[t])}
+                      className={cn('absolute top-[14px] h-5 rounded', BAR_CLASS[t])}
                       style={span(step.start, step.end)}
                     />
                   ) : (
@@ -139,7 +139,7 @@ export function StrokesWaterfall({ waterfall, onSelect }: StrokesWaterfallProps)
           {net != null ? (
             <span
               aria-hidden="true"
-              className={cn('absolute top-[16px] h-6 rounded-sm', BAR_CLASS[tone(net)])}
+              className={cn('absolute top-[16px] h-6 rounded', BAR_CLASS[tone(net)])}
               style={span(0, net)}
             />
           ) : null}

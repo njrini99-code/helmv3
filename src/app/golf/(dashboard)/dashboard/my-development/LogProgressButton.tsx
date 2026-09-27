@@ -103,7 +103,7 @@ export function LogProgressButton({
       <Button variant="primary"
         type="button"
         onClick={() => setOpen(true)}
-        className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-primary-700 bg-primary-50 hover:bg-primary-100 border border-primary-200 rounded-lg transition-colors"
+        className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-primary-700 bg-primary-50 hover:bg-primary-100 border border-primary-200 rounded-fw-sm transition-colors"
       >
         Log progress
       </Button>
@@ -127,7 +127,7 @@ export function LogProgressButton({
             <p className="block text-sm font-medium text-warm-700 mb-1.5">
               Current value
             </p>
-            <div className="px-3 py-2.5 rounded-lg bg-warm-50 border border-warm-200 text-warm-700">
+            <div className="px-3 py-2.5 rounded-fw-sm bg-warm-50 border border-warm-200 text-warm-700">
               {currentValue ?? '—'}
               {targetValue != null && (
                 <span className="text-text-tertiary font-normal">
@@ -249,8 +249,8 @@ export function MarkCompleteButton({
       aria-label={confirming ? 'Confirm mark complete' : 'Mark complete'}
       className={
         confirming
-          ? 'inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-text-on-accent-fill bg-accent-fill hover:bg-accent-fill-hover border border-primary-600 rounded-lg transition-colors disabled:opacity-60'
-          : 'inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-warm-700 bg-cream-100/75 hover:bg-cream-100 border border-warm-200 rounded-lg transition-colors disabled:opacity-60'
+          ? 'inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-text-on-accent-fill bg-accent-fill hover:bg-accent-fill-hover border border-primary-600 rounded-fw-sm transition-colors disabled:opacity-60'
+          : 'inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-warm-700 bg-cream-100/75 hover:bg-cream-100 border border-warm-200 rounded-fw-sm transition-colors disabled:opacity-60'
       }
     >
       {pending ? 'Saving…' : confirming ? 'Confirm complete' : 'Mark complete'}

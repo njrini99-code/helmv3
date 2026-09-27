@@ -50,7 +50,7 @@ export function MobileMenuButton({ className, onClick, label = 'Open navigation 
       type="button"
       onClick={handleClick}
       className={cn(
-        'lg:hidden p-2.5 -ml-2 rounded-xl flex-shrink-0',
+        'lg:hidden p-2.5 -ml-2 rounded-fw-sm flex-shrink-0',
         'text-text-tertiary hover:text-warm-700 hover:bg-warm-100/80',
         'transition-colors duration-150',
         fwPress,

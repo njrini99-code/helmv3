@@ -68,7 +68,7 @@ export function Inline(props: StandingBarProps) {
       role="img"
       aria-label={ariaLabel}
       data-state={state}
-      className="glass-standard rounded-xl px-3 py-2"
+      className="glass-standard rounded-fw-md px-3 py-2"
     >
       {/* Header: label + vs-team arrow */}
       <div className="flex items-baseline justify-between gap-2 mb-1">
@@ -130,7 +130,7 @@ function InlineSkeleton() {
       role="status"
       aria-label="Loading standing"
       data-state="loading"
-      className="glass-standard rounded-xl px-3 py-2 animate-pulse"
+      className="glass-standard rounded-fw-md px-3 py-2 animate-pulse"
     >
       <div className="h-2.5 w-24 bg-warm-100 rounded mb-2" />
       <div className="h-1.5 w-full bg-warm-100 rounded" />
@@ -143,7 +143,7 @@ function InlineError({ message }: { message?: string }) {
     <div
       role="alert"
       data-state="error"
-      className="glass-standard border-red-200 rounded-xl px-3 py-2"
+      className="glass-standard border-red-200 rounded-fw-md px-3 py-2"
     >
       <p className="text-caption text-red-700">Couldn’t load standing.</p>
       {message && (
@@ -157,7 +157,7 @@ function InlineEmpty({ label }: { label: string }) {
   return (
     <div
       data-state="empty"
-      className="glass-standard rounded-xl px-3 py-2"
+      className="glass-standard rounded-fw-md px-3 py-2"
     >
       <p className="text-xs font-medium text-warm-900 truncate">{label}</p>
       <p className="text-caption text-text-tertiary mt-1">Log 5 rounds to unlock standing.</p>

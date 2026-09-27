@@ -213,7 +213,7 @@ export function SegmentBar({
               <li key={p.label} className="flex items-center gap-2">
                 <span
                   aria-hidden
-                  className="h-2.5 w-2.5 shrink-0 rounded-sm"
+                  className="h-2.5 w-2.5 shrink-0 rounded"
                   style={{ background: p.color }}
                 />
                 <span className="font-fw-sans text-caption font-medium text-text-secondary">

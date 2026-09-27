@@ -117,7 +117,7 @@ export function OfflineIndicator({
         <PopoverTrigger asChild>
           <Button variant="danger"
             className={cn(
-              'flex items-center gap-2 px-2 py-1 rounded-md text-xs font-medium transition duration-200',
+              'flex items-center gap-2 px-2 py-1 rounded-fw-sm text-xs font-medium transition duration-200',
               !isOnline
                 ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
                 : isSyncing
@@ -193,7 +193,7 @@ export function OfflineIndicator({
 
           {/* Error Message */}
           {syncError && (
-            <div className="p-2 bg-red-500/10 border border-red-500/20 rounded-md">
+            <div className="p-2 bg-red-500/10 border border-red-500/20 rounded-fw-md">
               <p className="text-xs text-red-400">{syncError}</p>
               {onRetrySync && (
                 <Button variant="danger"
@@ -245,7 +245,7 @@ export function OfflineIndicator({
       >
         <div
           className={`
-            ${position === 'floating' ? 'rounded-xl' : 'rounded-none'}
+            ${position === 'floating' ? 'rounded-card' : 'rounded-none'}
             ${!isOnline
               ? 'bg-amber-500/95'
               : syncError
@@ -287,7 +287,7 @@ export function OfflineIndicator({
               {isOnline && pendingCount.total > 0 && onSyncNow && !isSyncing && (
                 <Button variant="ghost"
                   onClick={onSyncNow}
-                  className="px-3 py-1.5 text-xs font-medium text-white bg-text-on-accent/20 hover:bg-text-on-accent/30 rounded-lg transition-colors"
+                  className="px-3 py-1.5 text-xs font-medium text-white bg-text-on-accent/20 hover:bg-text-on-accent/30 rounded-fw-sm transition-colors"
                 >
                   Sync
                 </Button>

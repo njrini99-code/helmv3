@@ -227,7 +227,7 @@ export function TeamSwitcher({ teams, activeTeamId, canSwitch, onOptimisticSwitc
         side="bottom"
         sideOffset={4}
         className={cn(
-          'z-[var(--fw-z-nav)] min-w-[220px] overflow-hidden rounded-xl py-1.5',
+          'z-[var(--fw-z-nav)] min-w-[220px] overflow-hidden rounded-fw-md py-1.5',
           'bg-cream-50 border border-warm-200 shadow-lg',
         )}
       >
@@ -243,7 +243,7 @@ export function TeamSwitcher({ teams, activeTeamId, canSwitch, onOptimisticSwitc
                 aria-selected={isActive}
                 onSelect={() => handleSelect(team.id)}
                 className={cn(
-                  'flex min-h-[44px] cursor-pointer items-center gap-2.5 rounded-lg px-3 py-2',
+                  'flex min-h-[44px] cursor-pointer items-center gap-2.5 rounded-fw-sm px-3 py-2',
                   'font-fw-sans text-body-sm font-medium outline-none',
                   'transition-colors duration-100',
                   'focus:outline-none',

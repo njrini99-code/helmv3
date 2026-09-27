@@ -93,7 +93,7 @@ export default function JoinTeamPage() {
               </p>
             </div>
 
-            <div className="auth-glass-card rounded-3xl p-6 sm:p-8">
+            <div className="auth-glass-card rounded-fw-lg p-6 sm:p-8">
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
                   <Input
@@ -121,7 +121,7 @@ export default function JoinTeamPage() {
                 <Button variant="primary"
                   type="submit"
                   disabled={!trimmed}
-                  className="w-full px-4 py-3 bg-accent-fill text-text-on-accent-fill font-semibold rounded-xl hover:bg-accent-fill-hover disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-lg shadow-primary-900/10 hover:shadow-xl hover:shadow-primary-900/15"
+                  className="w-full px-4 py-3 bg-accent-fill text-text-on-accent-fill font-semibold rounded-fw-sm hover:bg-accent-fill-hover disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-lg shadow-primary-900/10 hover:shadow-xl hover:shadow-primary-900/15"
                 >
                   Join Team
                 </Button>

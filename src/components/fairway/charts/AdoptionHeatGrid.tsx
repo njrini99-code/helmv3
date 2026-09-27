@@ -197,7 +197,7 @@ export function AdoptionHeatGrid({ rows, rowHrefTemplate, className }: AdoptionH
                           key={cell.date}
                           type="button"
                           className={cn(
-                            'h-4 w-4 shrink-0 rounded-sm transition-transform hover:scale-125 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-accent-500',
+                            'h-4 w-4 shrink-0 rounded transition-transform hover:scale-125 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-accent-500',
                             isDropoutCell && cell.uniqueUsers === 0 ? 'ring-1 ring-inset ring-fw-warning' : null,
                           )}
                           style={{ backgroundColor: VIZ_SEQUENTIAL[idx] }}

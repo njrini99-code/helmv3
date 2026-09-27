@@ -82,7 +82,7 @@ export default function ForgotPasswordPage() {
     <Link
       href="/"
       aria-label="Back to home"
-      className="-ml-2 inline-flex min-h-[44px] items-center gap-0.5 rounded-lg px-2 text-body-lg text-accent-700 outline-none focus-visible:ring-2 focus-visible:ring-accent-600 active:opacity-60"
+      className="-ml-2 inline-flex min-h-[44px] items-center gap-0.5 rounded-fw-sm px-2 text-body-lg text-accent-700 outline-none focus-visible:ring-2 focus-visible:ring-accent-600 active:opacity-60"
     >
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
         <path d="M15 18l-6-6 6-6" />

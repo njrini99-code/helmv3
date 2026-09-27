@@ -95,7 +95,7 @@ export function ClassDetailModal({ isOpen, onClose, onEdit, onDelete, classData 
             <IconButton variant="default"
               onClick={onClose}
               aria-label="Close"
-              className="p-2 text-text-tertiary hover:text-text-secondary hover:bg-surface-sunken active:bg-surface-sunken rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/70 focus-visible:ring-offset-1 focus-visible:ring-offset-surface"
+              className="p-2 text-text-tertiary hover:text-text-secondary hover:bg-surface-sunken active:bg-surface-sunken rounded-fw-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/70 focus-visible:ring-offset-1 focus-visible:ring-offset-surface"
             >
               <IconX size={20} />
             </IconButton>
@@ -106,7 +106,7 @@ export function ClassDetailModal({ isOpen, onClose, onEdit, onDelete, classData 
         <div className="min-h-0 flex-1 overflow-y-auto px-6 pb-6 space-y-4">
           {/* Schedule */}
           <div className="flex items-start gap-3">
-            <div className="w-10 h-10 rounded-xl bg-surface-sunken flex items-center justify-center flex-shrink-0">
+            <div className="w-10 h-10 rounded-fw-md bg-surface-sunken flex items-center justify-center flex-shrink-0">
               <IconClock size={20} className="text-text-tertiary" />
             </div>
             <div>
@@ -124,7 +124,7 @@ export function ClassDetailModal({ isOpen, onClose, onEdit, onDelete, classData 
           {/* Location */}
           {(classData.location || classData.building || classData.room) && (
             <div className="flex items-start gap-3">
-              <div className="w-10 h-10 rounded-xl bg-surface-sunken flex items-center justify-center flex-shrink-0">
+              <div className="w-10 h-10 rounded-fw-md bg-surface-sunken flex items-center justify-center flex-shrink-0">
                 <IconMapPin size={20} className="text-text-tertiary" />
               </div>
               <div>
@@ -139,7 +139,7 @@ export function ClassDetailModal({ isOpen, onClose, onEdit, onDelete, classData 
           {/* Instructor */}
           {classData.instructor && (
             <div className="flex items-start gap-3">
-              <div className="w-10 h-10 rounded-xl bg-surface-sunken flex items-center justify-center flex-shrink-0">
+              <div className="w-10 h-10 rounded-fw-md bg-surface-sunken flex items-center justify-center flex-shrink-0">
                 <IconUser size={20} className="text-text-tertiary" />
               </div>
               <div>
@@ -152,7 +152,7 @@ export function ClassDetailModal({ isOpen, onClose, onEdit, onDelete, classData 
           {/* Credits */}
           {classData.credits != null && classData.credits > 0 && (
             <div className="flex items-center gap-2 text-sm">
-              <span className="px-2 py-1 bg-surface-sunken rounded-md text-text-secondary font-medium">
+              <span className="px-2 py-1 bg-surface-sunken rounded-fw-sm text-text-secondary font-medium">
                 {classData.credits} credits
               </span>
             </div>
@@ -160,7 +160,7 @@ export function ClassDetailModal({ isOpen, onClose, onEdit, onDelete, classData 
 
           {/* Notes */}
           {classData.notes && (
-            <div className="p-3 bg-surface-sunken rounded-xl">
+            <div className="p-3 bg-surface-sunken rounded-fw-md">
               <p className="text-xs font-medium text-text-tertiary mb-1">Notes</p>
               <p className="text-sm text-text-secondary">{classData.notes}</p>
             </div>

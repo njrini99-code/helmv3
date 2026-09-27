@@ -405,7 +405,7 @@ export function UploadScheduleModal({ isOpen, onClose, onParsed }: UploadSchedul
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-border-subtle">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-accent-500/10 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-fw-md bg-accent-500/10 flex items-center justify-center">
               <IconScanText size={20} className="text-accent-700" />
             </div>
             <div>
@@ -418,7 +418,7 @@ export function UploadScheduleModal({ isOpen, onClose, onParsed }: UploadSchedul
           <IconButton variant="default"
             onClick={onClose}
             aria-label="Close"
-            className="p-2 text-text-tertiary hover:text-text-secondary hover:bg-surface-sunken active:bg-surface-sunken rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/70 focus-visible:ring-offset-1 focus-visible:ring-offset-surface"
+            className="p-2 text-text-tertiary hover:text-text-secondary hover:bg-surface-sunken active:bg-surface-sunken rounded-fw-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/70 focus-visible:ring-offset-1 focus-visible:ring-offset-surface"
           >
             <IconX size={20} />
           </IconButton>
@@ -430,7 +430,7 @@ export function UploadScheduleModal({ isOpen, onClose, onParsed }: UploadSchedul
           <div className="flex gap-2 mb-6">
             <Button variant="primary"
               onClick={() => setPasteMode(false)}
-              className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition ${
+              className={`flex-1 py-2 px-4 rounded-fw-sm text-sm font-medium transition ${
                 !pasteMode
                   ? 'bg-accent-fill text-text-on-accent-fill'
                   : 'bg-surface-sunken text-text-secondary hover:bg-surface-sunken/80'
@@ -440,7 +440,7 @@ export function UploadScheduleModal({ isOpen, onClose, onParsed }: UploadSchedul
             </Button>
             <Button variant="primary"
               onClick={() => setPasteMode(true)}
-              className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition ${
+              className={`flex-1 py-2 px-4 rounded-fw-sm text-sm font-medium transition ${
                 pasteMode
                   ? 'bg-accent-fill text-text-on-accent-fill'
                   : 'bg-surface-sunken text-text-secondary hover:bg-surface-sunken/80'
@@ -472,7 +472,7 @@ export function UploadScheduleModal({ isOpen, onClose, onParsed }: UploadSchedul
                 }
               }}
               className={`
-                border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition
+                border-2 border-dashed rounded-fw-md p-8 text-center cursor-pointer transition
                 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/70 focus-visible:ring-offset-2 focus-visible:ring-offset-surface
                 ${dragActive
                   ? 'border-accent-500 bg-accent-500/10'
@@ -488,7 +488,7 @@ export function UploadScheduleModal({ isOpen, onClose, onParsed }: UploadSchedul
                 className="hidden"
               />
 
-              <div className="w-16 h-16 rounded-2xl bg-surface-sunken flex items-center justify-center mx-auto mb-4">
+              <div className="w-16 h-16 rounded-fw-md bg-surface-sunken flex items-center justify-center mx-auto mb-4">
                 {loading ? (
                   <span className="flex items-center gap-1.5">
                     <span className="w-2 h-2 rounded-full bg-accent-500 skeleton-shimmer" style={{ animationDelay: '0ms' }} />
@@ -530,7 +530,7 @@ export function UploadScheduleModal({ isOpen, onClose, onParsed }: UploadSchedul
                 autoCapitalize="none"
                 autoCorrect="off"
                 spellCheck={false}
-                className="w-full px-4 py-3 border border-border-subtle rounded-xl text-base lg:text-sm bg-surface text-text-primary focus:outline-none focus:border-accent-500 focus:ring-2 focus:ring-accent-500/30 resize-none font-mono"
+                className="w-full px-4 py-3 border border-border-subtle rounded-fw-sm text-base lg:text-sm bg-surface text-text-primary focus:outline-none focus:border-accent-500 focus:ring-2 focus:ring-accent-500/30 resize-none font-mono"
               />
               
               <Button
@@ -545,13 +545,13 @@ export function UploadScheduleModal({ isOpen, onClose, onParsed }: UploadSchedul
           )}
 
           {error && (
-            <div className="mt-4 bg-fw-danger-bg border border-fw-danger/30 text-fw-danger-ink px-4 py-3 rounded-lg text-sm" role="alert">
+            <div className="mt-4 bg-fw-danger-bg border border-fw-danger/30 text-fw-danger-ink px-4 py-3 rounded-fw-md text-sm" role="alert">
               {error}
             </div>
           )}
 
           {/* Tips */}
-          <div className="mt-6 p-4 bg-surface-sunken rounded-xl">
+          <div className="mt-6 p-4 bg-surface-sunken rounded-fw-md">
             <p className="text-sm font-medium text-text-secondary mb-2">Tips for best results:</p>
             <ul className="text-xs text-text-tertiary space-y-1">
               <li>• Screenshot your schedule right from your student portal: Workday, Banner, PeopleSoft, and weekly calendar views all work</li>

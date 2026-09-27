@@ -129,7 +129,7 @@ export function NewAnnouncementsModal({ announcements, onDismiss }: NewAnnouncem
       >
       {/* Header */}
       <div className="flex items-center gap-3 pb-4">
-        <div className="w-11 h-11 rounded-2xl bg-primary-50 border border-primary-200/60 flex items-center justify-center flex-shrink-0">
+        <div className="w-11 h-11 rounded-fw-md bg-primary-50 border border-primary-200/60 flex items-center justify-center flex-shrink-0">
           <IconBell size={20} className="text-accent-ink" />
         </div>
         <div className="flex-1 min-w-0">
@@ -157,7 +157,7 @@ export function NewAnnouncementsModal({ announcements, onDismiss }: NewAnnouncem
               animate={{ opacity: 1, y: 0 }}
               transition={prefersReducedMotion ? { duration: 0 } : ({ delay: i * 0.04, type: 'spring', stiffness: 400, damping: 30 })}
               className={cn(
-                'relative rounded-2xl overflow-hidden border transition duration-200',
+                'relative rounded-card overflow-hidden border transition duration-200',
                 needsAck
                   ? 'border-primary-200/70 bg-gradient-to-br from-primary-50/40 via-white to-white shadow-[0_1px_2px_rgba(16,24,40,0.04),0_1px_3px_rgba(16,24,40,0.06)]'
                   : isAcked

@@ -60,7 +60,7 @@ export default async function DemoSessionsPage() {
       {/* ── Header ─────────────────────────────────────────────────────── */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-primary-50 flex items-center justify-center shadow-[inset_0_1px_0_rgba(255,255,255,0.6)]">
+          <div className="w-10 h-10 rounded-fw-md bg-primary-50 flex items-center justify-center shadow-[inset_0_1px_0_rgba(255,255,255,0.6)]">
             <IconActivity className="w-5 h-5 text-accent-ink" />
           </div>
           <div>
@@ -71,7 +71,7 @@ export default async function DemoSessionsPage() {
 
         {/* Summary badge */}
         {result && (
-          <div className="flex items-center gap-2 glass-standard rounded-2xl px-4 py-2.5 self-start sm:self-auto">
+          <div className="flex items-center gap-2 glass-standard rounded-fw-sm px-4 py-2.5 self-start sm:self-auto">
             <IconUsers className="w-4 h-4 text-accent-ink" />
             <span className="text-sm font-semibold text-warm-900">
               {total.toLocaleString()} {total === 1 ? 'entry' : 'entries'}
@@ -85,7 +85,7 @@ export default async function DemoSessionsPage() {
 
       {/* ── Error state ────────────────────────────────────────────────── */}
       {fetchError && (
-        <div className="bg-red-50 border border-red-200 rounded-2xl p-6 text-red-700 text-sm">
+        <div className="bg-red-50 border border-red-200 rounded-card p-6 text-red-700 text-sm">
           <strong className="font-semibold">Could not load sessions.</strong>
           <p className="mt-1 text-red-600">{fetchError}</p>
         </div>
@@ -93,8 +93,8 @@ export default async function DemoSessionsPage() {
 
       {/* ── Empty state ────────────────────────────────────────────────── */}
       {!fetchError && sessions.length === 0 && (
-        <div className="glass-standard rounded-2xl flex flex-col items-center justify-center py-20 px-6 text-center">
-          <div className="w-14 h-14 rounded-2xl bg-warm-50 flex items-center justify-center mb-4">
+        <div className="glass-standard rounded-card flex flex-col items-center justify-center py-20 px-6 text-center">
+          <div className="w-14 h-14 rounded-fw-md bg-warm-50 flex items-center justify-center mb-4">
             <IconUsers className="w-7 h-7 text-warm-300" />
           </div>
           <p className="text-warm-700 font-medium text-lg">No demo sessions yet</p>
@@ -106,7 +106,7 @@ export default async function DemoSessionsPage() {
 
       {/* ── Table ──────────────────────────────────────────────────────── */}
       {!fetchError && sessions.length > 0 && (
-        <div className="glass-standard rounded-2xl overflow-hidden">
+        <div className="glass-standard rounded-card overflow-hidden">
           {/* Scrollable wrapper for narrow viewports */}
           <div className="overflow-x-auto">
             <table className="w-full text-sm">

@@ -364,7 +364,7 @@ export function OfflineSyncStatus({
               <Button variant="ghost"
                 aria-label={`Sync status: ${statusDisplay.label}. ${isExpanded ? 'Collapse' : 'Expand'} details`}
                 className={cn(
-                  'flex items-center gap-2 px-3 py-2 rounded-xl border shadow-lg backdrop-blur-sm transition',
+                  'flex items-center gap-2 px-3 py-2 rounded-fw-sm border shadow-lg backdrop-blur-sm transition',
                   statusDisplay.bgColor,
                   'hover:shadow-xl'
                 )}
@@ -464,7 +464,7 @@ export function OfflineSyncStatus({
 
               {/* Error message */}
               {syncError && (
-                <div className="p-2 bg-red-50 border border-red-200 rounded-lg">
+                <div className="p-2 bg-red-50 border border-red-200 rounded-fw-md">
                   <p className="text-xs text-red-600">{syncError}</p>
                 </div>
               )}
@@ -474,7 +474,7 @@ export function OfflineSyncStatus({
                 {isOnline && pendingCount.total > 0 && !isSyncing && (
                   <Button variant="primary"
                     onClick={handleSyncNow}
-                    className="flex-1 px-3 py-1.5 text-xs font-medium text-text-on-accent-fill bg-accent-fill hover:bg-accent-fill-hover rounded-lg transition-colors"
+                    className="flex-1 px-3 py-1.5 text-xs font-medium text-text-on-accent-fill bg-accent-fill hover:bg-accent-fill-hover rounded-fw-sm transition-colors"
                   >
                     Sync Now
                   </Button>
@@ -482,7 +482,7 @@ export function OfflineSyncStatus({
                 {syncError && (
                   <Button variant="danger"
                     onClick={handleRetry}
-                    className="flex-1 px-3 py-1.5 text-xs font-medium text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-colors"
+                    className="flex-1 px-3 py-1.5 text-xs font-medium text-red-600 bg-red-50 hover:bg-red-100 rounded-fw-sm transition-colors"
                   >
                     Retry
                   </Button>
@@ -520,7 +520,7 @@ export function OfflineSyncStatus({
     >
       <div
         className={cn(
-          'rounded-xl border shadow-lg backdrop-blur-sm p-4',
+          'rounded-card border shadow-lg backdrop-blur-sm p-4',
           !isOnline
             ? 'bg-amber-50/95 border-amber-200'
             : syncError
@@ -623,7 +623,7 @@ export function OfflineSyncStatus({
             {isOnline && pendingCount.total > 0 && !isSyncing && (
               <Button variant="primary"
                 onClick={handleSyncNow}
-                className="px-3 py-1.5 text-xs font-medium text-text-on-accent-fill bg-accent-fill hover:bg-accent-fill-hover rounded-lg transition-colors"
+                className="px-3 py-1.5 text-xs font-medium text-text-on-accent-fill bg-accent-fill hover:bg-accent-fill-hover rounded-fw-sm transition-colors"
               >
                 Sync
               </Button>
@@ -631,7 +631,7 @@ export function OfflineSyncStatus({
             {syncError && (
               <Button variant="danger"
                 onClick={handleRetry}
-                className="inline-flex items-center justify-center min-h-[44px] px-3 py-2 text-xs font-medium text-red-600 bg-red-100 hover:bg-red-200 rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-cream-50"
+                className="inline-flex items-center justify-center min-h-[44px] px-3 py-2 text-xs font-medium text-red-600 bg-red-100 hover:bg-red-200 rounded-fw-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-cream-50"
               >
                 Retry
               </Button>
@@ -639,7 +639,7 @@ export function OfflineSyncStatus({
             <IconButton variant="default"
               onClick={handleDismiss}
               aria-label="Dismiss sync status"
-              className="inline-flex items-center justify-center min-h-[44px] min-w-[44px] text-text-tertiary hover:text-warm-700 rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-cream-50"
+              className="inline-flex items-center justify-center min-h-[44px] min-w-[44px] text-text-tertiary hover:text-warm-700 rounded-fw-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-cream-50"
             >
               <XIcon className="w-4 h-4" />
             </IconButton>

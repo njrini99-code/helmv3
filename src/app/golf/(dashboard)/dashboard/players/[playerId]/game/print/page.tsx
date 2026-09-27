@@ -136,7 +136,7 @@ export default async function PlayerGamePrintPage({
               <section
                 key={key}
                 data-testid={`print-section-${key}`}
-                className="rounded-lg border border-border-subtle p-5"
+                className="rounded-card border border-border-subtle p-5"
               >
                 <div className="mb-3">
                   <p className="text-caption text-text-tertiary font-medium">
@@ -170,7 +170,7 @@ export default async function PlayerGamePrintPage({
                         {section.insights.slice(0, 5).map((insight) => (
                           <li
                             key={insight.id}
-                            className="rounded-md border border-border-subtle bg-surface-sunken p-3 text-sm leading-relaxed"
+                            className="rounded-fw-md border border-border-subtle bg-surface-sunken p-3 text-sm leading-relaxed"
                           >
                             <p className="font-medium text-text-primary">{insight.title}</p>
                             {insight.content && (
@@ -211,7 +211,7 @@ export default async function PlayerGamePrintPage({
               always render reliably in print-to-PDF pipelines. */}
           <section
             data-testid="print-section-trend"
-            className="rounded-lg border border-border-subtle p-5"
+            className="rounded-card border border-border-subtle p-5"
           >
             <div className="mb-3">
               <p className="text-caption text-text-tertiary font-medium">

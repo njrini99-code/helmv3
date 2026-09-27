@@ -22,7 +22,7 @@ export function AlertTypeToggles({ values, onChange }: AlertTypeTogglesProps) {
                             return (
                                 <div
                                     key={alert.key}
-                                    className="p-3 rounded-lg border border-border-subtle bg-surface hover:border-border-strong transition-colors"
+                                    className="p-3 rounded-fw-md border border-border-subtle bg-surface hover:border-border-strong transition-colors"
                                 >
                                     <Checkbox
                                         checked={isChecked}

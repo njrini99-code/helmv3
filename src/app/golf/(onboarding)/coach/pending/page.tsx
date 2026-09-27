@@ -98,7 +98,7 @@ export default async function CoachPendingPage() {
 
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-lg flex-col justify-center px-6 py-16">
-      <div className="rounded-2xl border border-border-subtle bg-surface p-8">
+      <div className="rounded-card border border-border-subtle bg-surface p-8">
         <h1 className="font-fw-display text-h1 font-semibold tracking-tight text-text-primary">
           You&rsquo;re all set, pending approval
         </h1>
@@ -115,13 +115,13 @@ export default async function CoachPendingPage() {
         <div className="mt-8 flex flex-wrap gap-3">
           <Link
             href="/golf/coach/pending"
-            className="rounded-xl bg-accent-fill px-4 py-2.5 text-sm font-medium text-text-on-accent-fill transition-colors hover:bg-accent-fill-hover"
+            className="rounded-fw-sm bg-accent-fill px-4 py-2.5 text-sm font-medium text-text-on-accent-fill transition-colors hover:bg-accent-fill-hover"
           >
             Check again
           </Link>
           <Link
             href="/golf/login"
-            className="rounded-xl border border-border-strong px-4 py-2.5 text-sm font-medium text-text-secondary transition-colors hover:bg-surface-sunken"
+            className="rounded-fw-sm border border-border-strong px-4 py-2.5 text-sm font-medium text-text-secondary transition-colors hover:bg-surface-sunken"
           >
             Sign out
           </Link>

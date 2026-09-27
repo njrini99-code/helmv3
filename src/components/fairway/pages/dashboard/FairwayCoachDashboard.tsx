@@ -1089,7 +1089,7 @@ export function FairwayCoachDashboard({
                     <Link
                       href={`/golf/dashboard/players/${p.id}/game?tab=scouting`}
                       prefetch={false}
-                      className="block rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500"
+                      className="block rounded-fw-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500"
                     >
                       <Inset
                         padding="sm"

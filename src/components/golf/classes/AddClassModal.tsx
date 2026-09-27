@@ -396,7 +396,7 @@ export function AddClassModal({ isOpen, onClose, onSave, editingClass, existingC
           <IconButton variant="default"
             onClick={onClose}
             aria-label="Close"
-            className="p-2.5 min-w-[44px] min-h-[44px] flex items-center justify-center text-text-tertiary hover:text-text-secondary hover:bg-surface-sunken active:bg-surface-sunken rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/70 focus-visible:ring-offset-1 focus-visible:ring-offset-surface"
+            className="p-2.5 min-w-[44px] min-h-[44px] flex items-center justify-center text-text-tertiary hover:text-text-secondary hover:bg-surface-sunken active:bg-surface-sunken rounded-fw-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/70 focus-visible:ring-offset-1 focus-visible:ring-offset-surface"
           >
             <IconX size={20} />
           </IconButton>
@@ -446,7 +446,7 @@ export function AddClassModal({ isOpen, onClose, onSave, editingClass, existingC
                   type="button"
                   onClick={() => handleDayToggle(day.abbrev)}
                   className={cn(
-                    'w-11 h-11 rounded-lg text-sm font-medium transition',
+                    'w-11 h-11 rounded-fw-sm text-sm font-medium transition',
                     formData.days.includes(day.abbrev)
                       ? 'bg-accent-fill text-text-on-accent-fill'
                       : 'bg-surface-sunken text-text-secondary hover:bg-surface-sunken/80'
@@ -598,7 +598,7 @@ export function AddClassModal({ isOpen, onClose, onSave, editingClass, existingC
                   type="color"
                   value={formData.color}
                   onChange={(e) => setFormData(prev => ({ ...prev, color: e.target.value }))}
-                  className="w-11 h-11 rounded-lg border border-border-subtle cursor-pointer"
+                  className="w-11 h-11 rounded-fw-sm border border-border-subtle cursor-pointer"
                 />
                 <span className="text-sm text-text-tertiary">Calendar color</span>
               </div>
@@ -631,7 +631,7 @@ export function AddClassModal({ isOpen, onClose, onSave, editingClass, existingC
             role="alert"
             aria-live="assertive"
             tabIndex={-1}
-            className="mx-6 mb-4 p-4 rounded-xl border border-fw-warning-ring bg-fw-warning-bg focus:outline-none focus-visible:ring-2 focus-visible:ring-fw-warning focus-visible:ring-offset-2"
+            className="mx-6 mb-4 p-4 rounded-fw-md border border-fw-warning-ring bg-fw-warning-bg focus:outline-none focus-visible:ring-2 focus-visible:ring-fw-warning focus-visible:ring-offset-2"
           >
             <div className="flex items-start gap-3">
               <div className="flex-shrink-0 w-8 h-8 rounded-full bg-fw-warning-bg flex items-center justify-center">
@@ -650,7 +650,7 @@ export function AddClassModal({ isOpen, onClose, onSave, editingClass, existingC
                   {conflicts.map((conflict) => (
                     <li
                       key={`${conflict.existingClass.id ?? conflict.existingClass.class_name}-${conflict.existingClass.start_time ?? ''}-${conflict.conflictingDays.join('')}`}
-                      className="text-sm text-fw-warning-ink bg-fw-warning-bg/60 rounded-lg px-3 py-2"
+                      className="text-sm text-fw-warning-ink bg-fw-warning-bg/60 rounded-fw-sm px-3 py-2"
                     >
                       <span className="font-medium">{conflict.existingClass.class_name}</span>
                       <span className="text-fw-warning-ink ml-2">

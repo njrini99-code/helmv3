@@ -62,7 +62,7 @@ export function Hero(props: StandingBarProps) {
       role="img"
       aria-label={ariaLabel}
       data-state={state}
-      className="glass-prominent rounded-3xl shadow-glass p-6"
+      className="glass-prominent rounded-fw-lg shadow-glass p-6"
     >
       {/* Eyebrow + label */}
       <div className="flex items-baseline justify-between gap-3 mb-1">
@@ -142,7 +142,7 @@ function HeroSkeleton() {
       role="status"
       aria-label="Loading standing"
       data-state="loading"
-      className="glass-prominent rounded-3xl shadow-glass p-6 animate-pulse"
+      className="glass-prominent rounded-fw-lg shadow-glass p-6 animate-pulse"
     >
       <div className="h-3 w-20 bg-warm-100 rounded mb-2" />
       <div className="h-5 w-48 bg-warm-100 rounded mb-6" />
@@ -158,7 +158,7 @@ function HeroError({ message }: { message?: string }) {
     <div
       role="alert"
       data-state="error"
-      className="glass-prominent border-red-200 rounded-3xl p-6"
+      className="glass-prominent border-red-200 rounded-fw-lg p-6"
     >
       <p className="text-sm font-medium text-red-700">
         Couldn’t load standing.
@@ -176,7 +176,7 @@ function HeroEmpty({ label }: { label: string }) {
   return (
     <div
       data-state="empty"
-      className="glass-prominent rounded-3xl shadow-glass p-6"
+      className="glass-prominent rounded-fw-lg shadow-glass p-6"
     >
       <p className="text-caption font-medium text-text-tertiary mb-1">
         Standing

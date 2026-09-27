@@ -94,7 +94,7 @@ export function PushPermissionSoftAsk() {
           initial={{ scale: 0.6, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           transition={prefersReducedMotion ? { duration: 0 } : ({ type: 'spring', stiffness: 320, damping: 22 })}
-          className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center shadow-lg shadow-primary-500/30 mb-5"
+          className="w-16 h-16 rounded-fw-md bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center shadow-lg shadow-primary-500/30 mb-5"
         >
           <IconBell size={28} className="text-white" />
         </m.div>
@@ -163,7 +163,7 @@ function SoftAskBullet({
 }) {
   return (
     <li className="flex gap-3">
-      <div className="flex-shrink-0 w-8 h-8 rounded-xl bg-primary-50 border border-primary-100 flex items-center justify-center">
+      <div className="flex-shrink-0 w-8 h-8 rounded-fw-sm bg-primary-50 border border-primary-100 flex items-center justify-center">
         {icon}
       </div>
       <div className="flex-1 min-w-0">

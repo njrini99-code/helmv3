@@ -131,7 +131,7 @@ export function ConfirmClassesModal({ isOpen, onClose, onConfirm, parsedClasses 
         <div className="px-6 pt-3 pb-4">
           <div className="flex items-start justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-accent-500/10 flex items-center justify-center">
+              <div className="w-10 h-10 rounded-fw-md bg-accent-500/10 flex items-center justify-center">
                 <IconScanText size={20} className="text-accent-700" />
               </div>
               <div>
@@ -146,7 +146,7 @@ export function ConfirmClassesModal({ isOpen, onClose, onConfirm, parsedClasses 
             <IconButton variant="default"
               onClick={onClose}
               aria-label="Close"
-              className="p-2 text-text-tertiary hover:text-text-secondary hover:bg-surface-sunken active:bg-surface-sunken rounded-lg transition-colors -mt-1 -mr-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/70 focus-visible:ring-offset-1 focus-visible:ring-offset-surface"
+              className="p-2 text-text-tertiary hover:text-text-secondary hover:bg-surface-sunken active:bg-surface-sunken rounded-fw-sm transition-colors -mt-1 -mr-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/70 focus-visible:ring-offset-1 focus-visible:ring-offset-surface"
             >
               <IconX size={18} />
             </IconButton>
@@ -155,17 +155,17 @@ export function ConfirmClassesModal({ isOpen, onClose, onConfirm, parsedClasses 
           {/* Quick Stats */}
           {classes.length > 0 && (
             <div className="flex items-center gap-3 mt-4">
-              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-surface-sunken text-sm">
+              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-fw-sm bg-surface-sunken text-sm">
                 <span className="text-text-secondary font-medium">{classes.length}</span>
                 <span className="text-text-tertiary">classes</span>
               </div>
               {stats.totalCredits > 0 && (
-                <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-surface-sunken text-sm">
+                <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-fw-sm bg-surface-sunken text-sm">
                   <span className="text-text-secondary font-medium">{stats.totalCredits}</span>
                   <span className="text-text-tertiary">credits</span>
                 </div>
               )}
-              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-surface-sunken text-sm">
+              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-fw-sm bg-surface-sunken text-sm">
                 <span className="text-text-secondary font-medium">{stats.daysPerWeek}</span>
                 <span className="text-text-tertiary">days/week</span>
               </div>
@@ -185,7 +185,7 @@ export function ConfirmClassesModal({ isOpen, onClose, onConfirm, parsedClasses 
         <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-6 py-4">
           {classes.length === 0 ? (
             <div className="text-center py-12">
-              <div className="w-12 h-12 rounded-2xl bg-surface-sunken flex items-center justify-center mx-auto mb-3">
+              <div className="w-12 h-12 rounded-fw-md bg-surface-sunken flex items-center justify-center mx-auto mb-3">
                 <IconCalendar size={24} className="text-text-tertiary" />
               </div>
               <p className="text-text-secondary font-medium">No classes found</p>
@@ -197,7 +197,7 @@ export function ConfirmClassesModal({ isOpen, onClose, onConfirm, parsedClasses 
                 <div
                   key={cls.id}
                   className={cn(
-                    'rounded-xl border transition duration-200',
+                    'rounded-fw-md border transition duration-200',
                     editingIndex === index
                       ? 'border-accent-500 ring-2 ring-accent-500/20 bg-surface shadow-md'
                       : 'border-border-subtle bg-surface-sunken hover:bg-surface hover:shadow-sm hover:border-border-strong'
@@ -240,7 +240,7 @@ export function ConfirmClassesModal({ isOpen, onClose, onConfirm, parsedClasses 
                              act on the blank: players confirmed straight through
                              and the class silently never reached the calendar —
                              4 live rows at Guilford, 2026-08-20. */
-                          <p className="mb-2 flex items-center gap-1.5 rounded-lg bg-fw-warning-bg px-2.5 py-1.5 text-xs font-medium text-fw-warning-ink">
+                          <p className="mb-2 flex items-center gap-1.5 rounded-fw-sm bg-fw-warning-bg px-2.5 py-1.5 text-xs font-medium text-fw-warning-ink">
                             <IconAlertCircle size={14} className="flex-shrink-0" aria-hidden />
                             We couldn&rsquo;t read this class&rsquo;s days. Tap the days it meets. Without them it won&rsquo;t appear on your calendar.
                           </p>
@@ -252,7 +252,7 @@ export function ConfirmClassesModal({ isOpen, onClose, onConfirm, parsedClasses 
                               type="button"
                               onClick={() => handleDayToggle(index, day.abbrev)}
                               className={cn(
-                                'flex-1 h-11 rounded-lg text-xs font-medium transition duration-150',
+                                'flex-1 h-11 rounded-fw-sm text-xs font-medium transition duration-150',
                                 cls.days.includes(day.abbrev)
                                   ? 'text-text-on-accent shadow-sm'
                                   : 'bg-surface-sunken text-text-tertiary hover:bg-surface-sunken/80 active:bg-surface-sunken hover:text-text-secondary'
@@ -311,7 +311,7 @@ export function ConfirmClassesModal({ isOpen, onClose, onConfirm, parsedClasses 
 
                       {/* Save */}
                       <div className="flex justify-end pt-1">
-                        <Button size="sm" onClick={handleSaveEdit} className="gap-1.5 rounded-lg">
+                        <Button size="sm" onClick={handleSaveEdit} className="gap-1.5 rounded-fw-sm">
                           <IconCheck size={14} />
                           Done
                         </Button>
@@ -398,14 +398,14 @@ export function ConfirmClassesModal({ isOpen, onClose, onConfirm, parsedClasses 
                       <div className="flex items-center gap-0.5 flex-shrink-0">
                         <IconButton variant="primary" aria-label="Edit"
                           onClick={() => handleEdit(index)}
-                          className="p-2 text-text-tertiary hover:text-accent-700 hover:bg-accent-500/10 active:bg-accent-500/15 rounded-lg transition duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/70 focus-visible:ring-offset-1 focus-visible:ring-offset-surface"
+                          className="p-2 text-text-tertiary hover:text-accent-700 hover:bg-accent-500/10 active:bg-accent-500/15 rounded-fw-sm transition duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/70 focus-visible:ring-offset-1 focus-visible:ring-offset-surface"
                           title="Edit class"
                         >
                           <IconPencil size={16} />
                         </IconButton>
                         <IconButton variant="default" aria-label="Delete"
                           onClick={() => handleDelete(index)}
-                          className="p-2 text-text-tertiary hover:text-fw-danger-ink hover:bg-fw-danger-bg rounded-lg transition duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/70 focus-visible:ring-offset-1 focus-visible:ring-offset-surface"
+                          className="p-2 text-text-tertiary hover:text-fw-danger-ink hover:bg-fw-danger-bg rounded-fw-sm transition duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/70 focus-visible:ring-offset-1 focus-visible:ring-offset-surface"
                           title="Remove class"
                         >
                           <IconTrash size={16} />
@@ -453,7 +453,7 @@ export function ConfirmClassesModal({ isOpen, onClose, onConfirm, parsedClasses 
                 variant="secondary"
                 size="sm"
                 onClick={onClose}
-                className="rounded-lg"
+                className="rounded-fw-sm"
               >
                 Cancel
               </Button>
@@ -462,7 +462,7 @@ export function ConfirmClassesModal({ isOpen, onClose, onConfirm, parsedClasses 
                 onClick={handleConfirm}
                 isLoading={loading}
                 disabled={classes.length === 0 || !semesterStartDate || loading}
-                className="gap-1.5 rounded-lg px-5"
+                className="gap-1.5 rounded-fw-sm px-5"
               >
                 <IconCheck size={14} />
                 Confirm {classes.length} Class{classes.length !== 1 ? 'es' : ''}

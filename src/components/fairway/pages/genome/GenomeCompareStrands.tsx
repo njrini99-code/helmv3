@@ -338,7 +338,7 @@ function MarginStrip({
             return (
               <span
                 key={t.id}
-                className={cn('relative h-full min-w-0 flex-1', selectedId === t.id && 'rounded-sm bg-surface-sunken')}
+                className={cn('relative h-full min-w-0 flex-1', selectedId === t.id && 'rounded-fw-sm bg-surface-sunken')}
               >
                 {h ? (
                   <span

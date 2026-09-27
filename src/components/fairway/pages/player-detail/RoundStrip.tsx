@@ -121,7 +121,7 @@ export function RoundStrip({ rounds, onSelect, className }: RoundStripProps) {
                         aria-hidden="true"
                         className={cn(
                           'absolute left-1/2 w-[min(14px,70%)] -translate-x-1/2',
-                          overPar ? 'rounded-t-[3px] bg-fw-warning' : 'rounded-b-[3px] bg-accent-500',
+                          overPar ? 'rounded-t bg-fw-warning' : 'rounded-b bg-accent-500',
                           isLatest ? 'opacity-100' : isBest ? 'opacity-75' : 'opacity-40',
                         )}
                         style={{ top: barTop, height: barH }}

@@ -117,7 +117,7 @@ export function StaffJoinClient({
   if (!preview.valid) {
     return (
       <main className="min-h-screen flex items-center justify-center bg-cream-100 px-4">
-        <div className="w-full max-w-md rounded-2xl border border-warm-200 bg-cream-50 p-8 text-center">
+        <div className="w-full max-w-md rounded-card border border-warm-200 bg-cream-50 p-8 text-center">
           <h1 className="text-xl font-bold text-warm-900">This invitation isn’t valid</h1>
           <p className="mt-2 text-warm-600">{preview.error}</p>
           <Link
@@ -136,7 +136,7 @@ export function StaffJoinClient({
 
   return (
     <main className="min-h-screen flex items-center justify-center bg-cream-100 px-4 py-10">
-      <div className="w-full max-w-md rounded-2xl border border-warm-200 bg-cream-50 p-8">
+      <div className="w-full max-w-md rounded-card border border-warm-200 bg-cream-50 p-8">
         <p className="text-sm font-semibold uppercase tracking-wide text-accent-ink">
           Staff invitation
         </p>
@@ -150,7 +150,7 @@ export function StaffJoinClient({
 
         {error && (
           <div
-            className="mt-6 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700"
+            className="mt-6 rounded-fw-md border border-red-200 bg-red-50 p-4 text-sm text-red-700"
             role="alert"
             aria-live="polite"
           >
@@ -165,7 +165,7 @@ export function StaffJoinClient({
             variant="primary"
             onClick={handleAccept}
             disabled={submitting}
-            className="mt-8 w-full h-12 rounded-xl bg-primary-700 text-white font-semibold hover:bg-primary-800"
+            className="mt-8 w-full h-12 rounded-fw-sm bg-primary-700 text-white font-semibold hover:bg-primary-800"
           >
             {submitting ? 'Joining…' : 'Accept invitation'}
           </Button>
@@ -216,7 +216,7 @@ export function StaffJoinClient({
               variant="primary"
               type="submit"
               disabled={submitting}
-              className="w-full h-12 rounded-xl bg-primary-700 text-white font-semibold hover:bg-primary-800"
+              className="w-full h-12 rounded-fw-sm bg-primary-700 text-white font-semibold hover:bg-primary-800"
             >
               {submitting ? 'Creating your account…' : 'Create account & join'}
             </Button>

@@ -185,7 +185,7 @@ function CompositeRatingCardImpl({
           <p className="-mt-3 font-fw-sans text-body-sm font-semibold text-text-secondary">{FORM_EARLY_READ_LABEL}</p>
         ) : null}
         {formula.length > 0 ? (
-          <details className="w-full rounded-lg bg-surface-sunken">
+          <details className="w-full rounded-fw-md bg-surface-sunken">
             <summary className="flex min-h-11 cursor-pointer items-center px-3 font-fw-sans text-body-sm font-semibold text-accent-700">
               How Form works
             </summary>

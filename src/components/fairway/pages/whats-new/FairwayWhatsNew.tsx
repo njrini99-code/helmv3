@@ -564,7 +564,7 @@ function FeedRow({ item, isNew, tz }: { item: WhatsNewItem; isNew: boolean; tz?:
         aria-label={`${descriptor.label} for ${item.playerName}: ${item.title}${isNew ? ' (new)' : ''}`}
       >
         <span
-          className={`grid h-9 w-9 flex-shrink-0 place-items-center rounded-xl ${descriptor.bgClass}`}
+          className={`grid h-9 w-9 flex-shrink-0 place-items-center rounded-fw-md ${descriptor.bgClass}`}
           aria-hidden
         >
           <Icon size={18} className={descriptor.iconClass} />

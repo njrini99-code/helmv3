@@ -282,7 +282,7 @@ export function FairwayRoundSubmitOverlay({
                         ? { duration: 0 }
                         : { duration: 0.3, type: 'spring', stiffness: 260, damping: 20 }
                     }
-                    className="relative mx-auto mb-4 grid h-16 w-16 place-items-center rounded-2xl bg-text-on-accent/20 backdrop-blur-sm"
+                    className="relative mx-auto mb-4 grid h-16 w-16 place-items-center rounded-fw-md bg-text-on-accent/20 backdrop-blur-sm"
                   >
                     <svg
                       viewBox="0 0 24 24"
@@ -402,7 +402,7 @@ export function FairwayRoundSubmitOverlay({
               tabIndex={-1}
               className="relative w-full max-w-sm rounded-card bg-surface p-6 text-center shadow-fw-modal outline-none"
             >
-              <div className="mx-auto mb-4 grid h-14 w-14 place-items-center rounded-2xl border border-fw-danger/20 bg-fw-danger-bg text-fw-danger-ink">
+              <div className="mx-auto mb-4 grid h-14 w-14 place-items-center rounded-fw-md border border-fw-danger/20 bg-fw-danger-bg text-fw-danger-ink">
                 <TriangleAlert className="h-7 w-7" aria-hidden />
               </div>
               <h3 id="fw-round-submit-error-title" className="mb-2 font-fw-display text-h3 font-semibold text-text-primary">Submission failed</h3>

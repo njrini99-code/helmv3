@@ -55,11 +55,11 @@ export function DistanceLadder({ bands, deadZones, windowLabel }: DistanceLadder
               </span>
               <div className="flex h-4 flex-1 items-center" aria-hidden="true">
                 <div className="flex w-1/2 justify-end">
-                  {!gain ? <div className="h-2.5 rounded-l-sm bg-fw-danger" style={{ width: `${width}%` }} /> : null}
+                  {!gain ? <div className="h-2.5 rounded-l-full bg-fw-danger" style={{ width: `${width}%` }} /> : null}
                 </div>
                 <div className="h-4 w-px shrink-0 bg-border-strong" />
                 <div className="w-1/2">
-                  {gain ? <div className="h-2.5 rounded-r-sm bg-accent-fill" style={{ width: `${width}%` }} /> : null}
+                  {gain ? <div className="h-2.5 rounded-r-full bg-accent-fill" style={{ width: `${width}%` }} /> : null}
                 </div>
               </div>
               <span

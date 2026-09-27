@@ -58,7 +58,7 @@ function SortableItem({ metric, rank }: { metric: PriorityMetric; rank: number }
             ref={setNodeRef}
             style={style}
             className={cn(
-                'flex items-center gap-4 p-4 rounded-xl border bg-surface transition duration-150',
+                'flex items-center gap-4 p-4 rounded-fw-md border bg-surface transition duration-150',
                 isDragging
                     ? 'shadow-raise border-accent-300 scale-[1.02] z-10 relative'
                     : 'border-border-subtle hover:border-border-strong'
@@ -79,7 +79,7 @@ function SortableItem({ metric, rank }: { metric: PriorityMetric; rank: number }
             {/* Rank badge */}
             <div
                 className={cn(
-                    'w-7 h-7 rounded-lg flex items-center justify-center text-body-sm font-medium',
+                    'w-7 h-7 rounded-fw-sm flex items-center justify-center text-body-sm font-medium',
                     rank === 1 && 'bg-accent-100 text-accent-700',
                     rank === 2 && 'bg-accent-50 text-accent-ink',
                     rank === 3 && 'bg-surface-sunken text-text-secondary',

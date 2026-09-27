@@ -132,7 +132,7 @@ function TodayGlyph({ day }: { day: number }) {
   return (
     <span
       aria-hidden
-      className="grid h-[18px] w-[18px] place-items-center rounded-sm border-[1.5px] border-t-[4px] border-current pt-px text-caption-2 font-bold leading-none tracking-normal tabular-nums"
+      className="grid h-[18px] w-[18px] place-items-center rounded border-[1.5px] border-t-[4px] border-current pt-px text-caption-2 font-bold leading-none tracking-normal tabular-nums"
     >
       {day}
     </span>

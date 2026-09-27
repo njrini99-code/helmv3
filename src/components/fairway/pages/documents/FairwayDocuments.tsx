@@ -1741,7 +1741,7 @@ function DocumentCard({
             <PressTarget
               onClick={onPreview}
               aria-label={`Preview ${doc.title}`}
-              className="rounded-fw-sm text-left after:absolute after:inset-0 after:rounded-[inherit] after:content-['']"
+              className="rounded-fw-sm text-left after:absolute after:inset-0 after:[border-radius:inherit] after:content-['']"
             >
               {doc.title}
             </PressTarget>

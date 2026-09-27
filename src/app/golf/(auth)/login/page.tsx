@@ -77,7 +77,7 @@ function LoginContent() {
     <>
       <a
         href="#login-form"
-        className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-modal focus:rounded-lg focus:bg-surface focus:px-4 focus:py-2 focus:text-text-primary focus:outline-none focus:ring-2 focus:ring-accent-600"
+        className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-modal focus:rounded-fw-sm focus:bg-surface focus:px-4 focus:py-2 focus:text-text-primary focus:outline-none focus:ring-2 focus:ring-accent-600"
       >
         Skip to login form
       </a>
@@ -100,7 +100,7 @@ function LoginContent() {
             <Link
               href="/"
               aria-label="Back to home"
-              className="-ml-2 inline-flex min-h-[44px] items-center gap-0.5 rounded-lg px-2 text-body-lg text-accent-700 outline-none focus-visible:ring-2 focus-visible:ring-accent-600 active:opacity-60"
+              className="-ml-2 inline-flex min-h-[44px] items-center gap-0.5 rounded-fw-sm px-2 text-body-lg text-accent-700 outline-none focus-visible:ring-2 focus-visible:ring-accent-600 active:opacity-60"
             >
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <path d="M15 18l-6-6 6-6" />
@@ -126,14 +126,14 @@ function LoginContent() {
                   with signup/page.tsx by `src/test/static/legal-link-touch-targets.test.ts`. */}
               <Link
                 href="/privacy"
-                className="inline-flex items-center rounded-lg px-2 py-3 -my-3 min-h-[44px] outline-none focus-visible:ring-2 focus-visible:ring-accent-600 active:opacity-60"
+                className="inline-flex items-center rounded-fw-sm px-2 py-3 -my-3 min-h-[44px] outline-none focus-visible:ring-2 focus-visible:ring-accent-600 active:opacity-60"
               >
                 Privacy
               </Link>
               <span aria-hidden="true">·</span>
               <Link
                 href="/terms"
-                className="inline-flex items-center rounded-lg px-2 py-3 -my-3 min-h-[44px] outline-none focus-visible:ring-2 focus-visible:ring-accent-600 active:opacity-60"
+                className="inline-flex items-center rounded-fw-sm px-2 py-3 -my-3 min-h-[44px] outline-none focus-visible:ring-2 focus-visible:ring-accent-600 active:opacity-60"
               >
                 Terms
               </Link>
@@ -144,7 +144,7 @@ function LoginContent() {
         {successMessage && (
           <p
             role="status"
-            className="mb-4 rounded-xl bg-fw-success-bg px-4 py-3 text-body text-fw-success-ink"
+            className="mb-4 rounded-fw-md bg-fw-success-bg px-4 py-3 text-body text-fw-success-ink"
           >
             {successMessage}
           </p>

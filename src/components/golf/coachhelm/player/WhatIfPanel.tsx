@@ -97,7 +97,7 @@ export function WhatIfPanel({
         {/* Header */}
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-primary-100 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-fw-md bg-primary-100 flex items-center justify-center">
               <IconBulb size={20} className="text-accent-ink" />
             </div>
             <h3 className="text-body-lg font-medium text-warm-900 tracking-[-0.012em]">Improvement Opportunities</h3>
@@ -106,7 +106,7 @@ export function WhatIfPanel({
 
         {/* Current prediction */}
         <m.div
-          className="flex items-center justify-center gap-2 py-3 rounded-xl bg-surface-sunken border border-border-subtle"
+          className="flex items-center justify-center gap-2 py-3 rounded-fw-md bg-surface-sunken border border-border-subtle"
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.1 })}
@@ -124,7 +124,7 @@ export function WhatIfPanel({
         <AnimatePresence>
           {simResult && (
             <m.div
-              className="flex items-center justify-between px-4 py-3 rounded-xl bg-primary-50 border border-primary-200"
+              className="flex items-center justify-between px-4 py-3 rounded-fw-md bg-primary-50 border border-primary-200"
               initial={prefersReducedMotion ? false : { opacity: 0.72, y: 4 }}
               animate={{ opacity: 1, y: 0 }}
               exit={prefersReducedMotion ? undefined : { opacity: 0, y: -2 }}
@@ -158,7 +158,7 @@ export function WhatIfPanel({
             return (
               <m.div
                 key={item.metric}
-                className="p-3 rounded-xl bg-surface-sunken border border-border-subtle"
+                className="p-3 rounded-fw-md bg-surface-sunken border border-border-subtle"
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.2 + i * 0.08 })}
@@ -195,7 +195,7 @@ export function WhatIfPanel({
                       onClick={() => handleSimulate(item.metric, item.projectedScoringImpact)}
                       disabled={simulating === item.metric}
                       className={cn(
-                        'shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium',
+                        'shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-fw-sm text-xs font-medium',
                         'bg-primary-100 text-primary-700 hover:bg-primary-200',
                         'transition-colors duration-200',
                         'disabled:opacity-50 disabled:cursor-not-allowed'

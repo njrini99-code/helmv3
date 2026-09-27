@@ -153,7 +153,7 @@ export interface FairwayNewRoundEntryProps {
  * mouse-click ring so only `focus-visible:` shows the accent ring, matching
  * the accessibility intent documented above. */
 const fwInputCls =
-  'rounded-[var(--fw-radius-md)] border-border-subtle bg-surface-sunken px-3.5 py-2.5 min-h-0 font-fw-sans text-body text-text-primary placeholder:text-text-tertiary hover:border-border-subtle focus:border-border-subtle focus:ring-0 focus:bg-surface-sunken focus-visible:border-border-focus focus-visible:bg-surface focus-visible:ring-2 focus-visible:ring-accent-600 focus-visible:ring-offset-1 focus-visible:ring-offset-canvas';
+  'rounded-fw-md border-border-subtle bg-surface-sunken px-3.5 py-2.5 min-h-0 font-fw-sans text-body text-text-primary placeholder:text-text-tertiary hover:border-border-subtle focus:border-border-subtle focus:ring-0 focus:bg-surface-sunken focus-visible:border-border-focus focus-visible:bg-surface focus-visible:ring-2 focus-visible:ring-accent-600 focus-visible:ring-offset-1 focus-visible:ring-offset-canvas';
 const labelCls = 'mb-1.5 block font-fw-sans text-caption font-medium text-text-secondary';
 /** Section heading with a green structural spine. */
 const headingCls = 'mb-4 flex items-center gap-2.5 font-fw-display text-body-lg font-semibold text-text-primary';
@@ -302,7 +302,7 @@ function CockpitBand({
           variant="ghost"
           onClick={onBack}
           haptic="none"
-          className="relative -ml-1 mb-3 min-h-[44px] gap-1 rounded-[var(--fw-radius-sm)] px-1 py-0 font-fw-sans text-body-sm font-medium text-nav-text-dim hover:bg-transparent hover:text-nav-text focus-visible:ring-accent-400 focus-visible:ring-offset-2 focus-visible:ring-offset-nav-bg"
+          className="relative -ml-1 mb-3 min-h-[44px] gap-1 rounded-fw-sm px-1 py-0 font-fw-sans text-body-sm font-medium text-nav-text-dim hover:bg-transparent hover:text-nav-text focus-visible:ring-accent-400 focus-visible:ring-offset-2 focus-visible:ring-offset-nav-bg"
         >
           <ChevronLeft className="h-4 w-4" aria-hidden />
           {backLabel ?? 'Back'}
@@ -563,7 +563,7 @@ export function FairwayNewRoundEntry(props: FairwayNewRoundEntryProps) {
                             haptic="none"
                             onClick={() => props.onSavedCourseSelect(isSel ? null : course.id)}
                             className={cn(
-                              'block h-auto w-full min-h-0 relative overflow-hidden rounded-[var(--fw-radius-md)] border p-3.5 text-left shadow-flat transition-colors hover:-translate-y-0',
+                              'block h-auto w-full min-h-0 relative overflow-hidden rounded-fw-md border p-3.5 text-left shadow-flat transition-colors hover:-translate-y-0',
                               isSel
                                 ? 'border-accent-500 bg-accent-50 hover:bg-accent-50'
                                 : 'border-border-subtle bg-surface hover:border-border-strong hover:bg-surface-tint',
@@ -790,7 +790,7 @@ export function FairwayNewRoundEntry(props: FairwayNewRoundEntryProps) {
                       haptic="none"
                       onClick={props.onToggleSaveCourse}
                       className={cn(
-                        'h-auto w-full min-h-0 flex items-center justify-start gap-3 rounded-[var(--fw-radius-md)] border p-3.5 text-left transition-colors',
+                        'h-auto w-full min-h-0 flex items-center justify-start gap-3 rounded-fw-md border p-3.5 text-left transition-colors',
                         props.saveCourseChecked
                           ? 'border-accent-500 bg-accent-50 hover:bg-accent-50'
                           : 'border-border-subtle bg-surface-sunken hover:bg-surface-tint',
@@ -798,7 +798,7 @@ export function FairwayNewRoundEntry(props: FairwayNewRoundEntryProps) {
                     >
                       <span
                         className={cn(
-                          'grid h-5 w-5 flex-shrink-0 place-items-center rounded-md border-2 transition-colors',
+                          'grid h-5 w-5 flex-shrink-0 place-items-center rounded-fw-sm border-2 transition-colors',
                           props.saveCourseChecked ? 'border-accent-500 bg-accent-500' : 'border-border-strong',
                         )}
                       >
@@ -837,7 +837,7 @@ export function FairwayNewRoundEntry(props: FairwayNewRoundEntryProps) {
                       variant="ghost"
                       haptic="none"
                       onClick={() => props.onPickActiveQualifier(q)}
-                      className="h-auto min-h-0 w-full flex items-center justify-between gap-3 rounded-[var(--fw-radius-md)] border border-border-subtle bg-surface p-3.5 text-left shadow-flat transition-colors hover:border-border-strong hover:bg-surface-tint"
+                      className="h-auto min-h-0 w-full flex items-center justify-between gap-3 rounded-fw-md border border-border-subtle bg-surface p-3.5 text-left shadow-flat transition-colors hover:border-border-strong hover:bg-surface-tint"
                     >
                       <div className="min-w-0 flex-1">
                         <p className="truncate font-fw-sans text-body-sm font-medium text-text-primary">{q.name}</p>

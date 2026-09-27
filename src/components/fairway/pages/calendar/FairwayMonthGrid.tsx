@@ -316,7 +316,7 @@ export function FairwayMonthGrid({
                       <span
                         key={o.id}
                         title={`${o.playerName} · ${o.title}`}
-                        className="flex min-w-0 items-center gap-1 rounded-sm px-1.5 py-1 text-left font-fw-sans text-microlabel font-medium leading-tight text-text-primary"
+                        className="flex min-w-0 items-center gap-1 rounded-fw-sm px-1.5 py-1 text-left font-fw-sans text-microlabel font-medium leading-tight text-text-primary"
                         style={{ backgroundColor: o.color.light }}
                       >
                         <span
@@ -369,7 +369,7 @@ export function FairwayMonthGrid({
                         // overflow:hidden kicked in (finding #86). Giving the
                         // row an explicit flex layout and letting ONLY the
                         // title span shrink/truncate fixes it.
-                        'flex h-auto min-h-0 w-full min-w-0 items-center gap-1 rounded-sm px-1.5 py-1 text-left font-fw-sans text-microlabel font-medium leading-tight transition-colors',
+                        'flex h-auto min-h-0 w-full min-w-0 items-center gap-1 rounded-fw-sm px-1.5 py-1 text-left font-fw-sans text-microlabel font-medium leading-tight transition-colors',
                         isCancelled ? TONE_CHIP.danger : ownerTint ? undefined : TONE_CHIP[tone],
                         isCancelled && 'line-through decoration-2',
                       )}

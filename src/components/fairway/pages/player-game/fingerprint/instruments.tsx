@@ -180,7 +180,7 @@ export function ApproachLadder({ data }: { data: ApproachLadderData }) {
                   <span className="absolute inset-y-[-4px] left-1/2 w-px bg-border-strong" />
                   <span
                     className={cn(
-                      'absolute top-0 h-3 rounded-sm',
+                      'absolute top-0 h-3 rounded',
                       thin
                         ? cn('border bg-transparent', gain ? 'border-fw-success' : 'border-fw-warning')
                         : gain
@@ -381,7 +381,7 @@ export function ParDeltas({ section }: { section: SectionData }) {
               <span aria-hidden="true" className="relative block h-3">
                 <span className="absolute inset-y-[-3px] left-1/2 w-px bg-border-strong" />
                 <span
-                  className={cn('absolute top-0 h-3 rounded-sm', over ? 'bg-fw-warning' : 'bg-fw-success')}
+                  className={cn('absolute top-0 h-3 rounded', over ? 'bg-fw-warning' : 'bg-fw-success')}
                   style={over ? { left: '50%', width: `${Math.max(w, 1)}%` } : { right: '50%', width: `${Math.max(w, 1)}%` }}
                 />
               </span>

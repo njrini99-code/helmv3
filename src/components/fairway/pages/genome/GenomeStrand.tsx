@@ -229,7 +229,7 @@ function Rung({
       tabIndex={selected ? 0 : -1}
       onClick={onTap}
       className={cn(
-        'group relative h-full min-w-0 flex-1 rounded-sm outline-none transition-colors duration-150',
+        'group relative h-full min-w-0 flex-1 rounded-fw-sm outline-none transition-colors duration-150',
         'focus-visible:ring-2 focus-visible:ring-border-focus',
         selected ? 'bg-surface-sunken' : 'active:bg-surface-sunken',
       )}

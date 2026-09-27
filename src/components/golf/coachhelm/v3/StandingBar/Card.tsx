@@ -209,7 +209,7 @@ function CardSkeleton() {
       role="status"
       aria-label="Loading standing"
       data-state="loading"
-      className="glass-standard rounded-2xl shadow-glass p-5 animate-pulse"
+      className="glass-standard rounded-card shadow-glass p-5 animate-pulse"
     >
       <div className="h-3 w-32 bg-warm-100 rounded mb-3" />
       <div className="h-3 w-full bg-warm-100 rounded mb-2" />
@@ -223,7 +223,7 @@ function CardError({ message }: { message?: string }) {
     <div
       role="alert"
       data-state="error"
-      className="glass-standard border-red-200 rounded-2xl p-5"
+      className="glass-standard border-red-200 rounded-card p-5"
     >
       <p className="text-sm text-red-700">
         Couldn’t load standing.
@@ -241,7 +241,7 @@ function CardEmpty({ label }: { label: string }) {
   return (
     <div
       data-state="empty"
-      className="glass-standard rounded-2xl shadow-glass p-5"
+      className="glass-standard rounded-card shadow-glass p-5"
     >
       <h3 className="text-sm font-medium text-warm-900 tracking-[-0.01em]">{label}</h3>
       <p className="text-xs text-text-tertiary mt-2">

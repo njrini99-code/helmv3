@@ -70,7 +70,7 @@ const TableCheckbox = React.forwardRef<
       ref={innerRef}
       type="checkbox"
       className={cn(
-        'size-[18px] cursor-pointer appearance-none rounded-sm border border-border-strong bg-surface',
+        'size-[18px] cursor-pointer appearance-none rounded border border-border-strong bg-surface',
         'transition-colors [transition-duration:180ms] [transition-timing-function:cubic-bezier(0.22,0.61,0.36,1)]',
         'checked:border-accent-500 checked:bg-accent-500',
         'indeterminate:border-accent-500 indeterminate:bg-accent-500',

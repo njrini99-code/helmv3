@@ -96,7 +96,7 @@ function CategoryCard({ category, index }: { category: TeamCategory; index: numb
                 <span
                   key={i}
                   className={cn(
-                    'h-1.5 min-w-[3px] flex-1 rounded-sm',
+                    'h-1.5 min-w-[3px] flex-1 rounded-full',
                     // The non-attention ticks now read GREEN rather than the
                     // beige surface-sunken they used to. Those players ARE on
                     // track, so the rail states both halves instead of only
