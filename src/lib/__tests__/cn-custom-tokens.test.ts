@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { cn, __CUSTOM_RADIUS_TOKENS, __CUSTOM_SHADOW_TOKENS } from '../utils';
+import { cn, __CUSTOM_RADIUS_TOKENS, __CUSTOM_SHADOW_TOKENS, __CUSTOM_SCALE_TOKENS } from '../utils';
 
 /**
  * `cn()` and the custom radius / shadow tokens.
@@ -75,7 +75,34 @@ describe('cn — custom shadow tokens merge as shadows, not colours', () => {
   });
 });
 
-describe('cn — the radius/shadow lists must not drift from tailwind.config.ts', () => {
+describe('cn — the other custom scales', () => {
+  it('a background gradient survives a background colour, in either order', () => {
+    expect(cn('bg-canvas', 'bg-canvas-gradient')).toBe('bg-canvas bg-canvas-gradient');
+    expect(cn('bg-canvas-gradient', 'bg-canvas')).toBe('bg-canvas-gradient bg-canvas');
+    expect(cn('bg-shimmer', 'bg-none')).toBe('bg-none');
+  });
+
+  it.each([
+    ['z-modal', 'z-50', 'z-50'],
+    ['z-10', 'z-toast', 'z-toast'],
+    ['duration-fast', 'duration-base', 'duration-base'],
+    ['duration-300', 'duration-cinematic', 'duration-cinematic'],
+    ['ease-ios', 'ease-out', 'ease-out'],
+    ['ease-in-out', 'ease-ios-spring', 'ease-ios-spring'],
+    ['animate-spin', 'animate-fade-up', 'animate-fade-up'],
+    ['animate-shimmer', 'animate-none', 'animate-none'],
+    ['backdrop-blur-sm', 'backdrop-blur-glass', 'backdrop-blur-glass'],
+    ['tracking-tight', 'tracking-tightest', 'tracking-tightest'],
+  ])('%s then %s keeps only %s', (a, b, winner) => {
+    expect(cn(a, b)).toBe(winner);
+  });
+
+  it('backdrop-blur tokens do not leak into the blur filter', () => {
+    expect(cn('blur-sm', 'backdrop-blur-glass')).toBe('blur-sm backdrop-blur-glass');
+  });
+});
+
+describe('cn — the registered lists must not drift from tailwind.config.ts', () => {
   /** Top-level keys of `theme.extend.<block>`, read from the real config. */
   function configKeys(block: string): string[] {
     const source = readFileSync(resolve(__dirname, '../../../tailwind.config.ts'), 'utf8');
@@ -100,13 +127,24 @@ describe('cn — the radius/shadow lists must not drift from tailwind.config.ts'
   }
 
   // Keys tailwind-merge already recognises (t-shirt sizes, `full`, DEFAULT).
-  const KNOWN = new Set(['DEFAULT', 'none', 'full', 'xs', 'sm', 'md', 'lg', 'xl', '2xl', '3xl']);
+  const KNOWN = new Set([
+    'DEFAULT', 'none', 'full', 'xs', 'sm', 'md', 'lg', 'xl', '2xl', '3xl',
+    'out', 'tighter', 'tight',
+  ]);
+  const isKnown = (key: string) => KNOWN.has(key) || /^\d+$/.test(key);
 
   it.each([
     ['borderRadius', __CUSTOM_RADIUS_TOKENS],
     ['boxShadow', __CUSTOM_SHADOW_TOKENS],
+    ['backgroundImage', __CUSTOM_SCALE_TOKENS['bg-image']],
+    ['zIndex', __CUSTOM_SCALE_TOKENS.z],
+    ['transitionDuration', __CUSTOM_SCALE_TOKENS.duration],
+    ['transitionTimingFunction', __CUSTOM_SCALE_TOKENS.ease],
+    ['animation', __CUSTOM_SCALE_TOKENS.animate],
+    ['backdropBlur', __CUSTOM_SCALE_TOKENS['backdrop-blur']],
+    ['letterSpacing', __CUSTOM_SCALE_TOKENS.tracking],
   ] as const)('%s: every custom key is registered, and nothing stale', (block, registered) => {
-    const custom = configKeys(block).filter((key) => !KNOWN.has(key));
+    const custom = configKeys(block).filter((key) => !isKnown(key));
     expect([...registered].sort()).toEqual([...custom].sort());
   });
 });
