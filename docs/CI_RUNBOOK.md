@@ -278,6 +278,10 @@ pending check has hung — then rerun (see below) rather than waiting longer.
 
 ### GitHub Actions
 
+- Automatic: `ci-retry-failed.yml` re-runs a PR's failed CI jobs **once**
+  (first attempt only, and only while that commit is still the PR head). If
+  the retry is red too, it is a real failure — read the log; nothing retries
+  again.
 - UI: PR → **Checks** tab → **Re-run failed jobs** (or **Re-run all jobs**).
 - CLI: `gh run rerun <run-id>`, or `gh run rerun --failed <run-id>` to only
   retry the failed jobs. List current statuses with `gh pr checks <pr>`.
