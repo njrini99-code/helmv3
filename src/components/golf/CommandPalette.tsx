@@ -98,8 +98,9 @@ export function CommandPalette({ isCoach = true }: CommandPaletteProps) {
     { id: 'qualifying-selection', label: 'Selection Workspace', description: 'Qualifier selection', icon: <IconCrosshair size={18} />, href: '/golf/dashboard/qualifiers', keywords: ['qualifying', 'selection', 'workspace', 'lineup', 'tournament', 'pick'] },
     { id: 'courses', label: 'Course Library', description: 'Browse courses, tees & saved home courses', icon: <IconMapPin size={18} />, href: '/golf/dashboard/courses', keywords: ['course', 'courses', 'library', 'tees', 'tee', 'facility', 'saved'] },
     { id: 'roster', label: 'Go to Roster', description: 'Manage your team players', icon: <IconUsers size={18} />, href: '/golf/dashboard/roster', keywords: ['players', 'team', 'members'] },
-    { id: 'stats', label: surfaceName('stats'), description: 'Player performance analytics', icon: <IconChartBar size={18} />, href: '/golf/dashboard/stats', keywords: ['analytics', 'performance', 'scores'] },
-    { id: 'stats-team', label: 'Team Stats Board', description: 'Roster-wide stat comparison', icon: <IconChartBar size={18} />, href: '/golf/dashboard/stats/team', keywords: ['team', 'stats', 'leaderboard', 'comparison', 'roster'] },
+    // Coaches have no personal stats: /stats is a player surface, so the coach
+    // palette's only stats entry is the team board.
+    { id: 'stats-team', label: 'Team Stats Board', description: 'Roster-wide stat comparison', icon: <IconChartBar size={18} />, href: '/golf/dashboard/stats/team', keywords: ['team', 'stats', 'leaderboard', 'comparison', 'roster', 'analytics', 'performance', 'scores'] },
     { id: 'calendar', label: 'Open Calendar', description: 'Events and schedule', icon: <IconCalendar size={18} />, href: '/golf/dashboard/calendar', keywords: ['schedule', 'events', 'dates'] },
     { id: 'qualifiers', label: 'Manage Qualifiers', description: 'Team qualifier rounds', icon: <IconFlag size={18} />, href: '/golf/dashboard/qualifiers', keywords: ['qualifying', 'tryouts'] },
     { id: 'messages', label: 'Messages', description: 'Team communication', icon: <IconMessage size={18} />, href: '/golf/dashboard/messages', keywords: ['chat', 'communication'] },
