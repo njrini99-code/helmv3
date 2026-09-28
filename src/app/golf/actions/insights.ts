@@ -2674,6 +2674,8 @@ async function getPlayerCoachHelmDashboardImpl(
     // this whole page load. The crons and the post-round trigger
     // (triggerPlayerInsightsAfterRoundImpl below) are the legitimate writers
     // and are unaffected — they don't pass this option, so it defaults true.
+    // The same flag keeps the causal engine off golf_causal_relationships
+    // (ca4409c2 / ed64f3b6, 2026-09-28: its failed UPDATE failed this page).
     //
     // runInsightGenerators: false — same rule, bigger write. Without it every
     // page view also ran all 20 Tier-1 generators (raw golf_shots reads +
