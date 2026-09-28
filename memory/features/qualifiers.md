@@ -30,6 +30,7 @@ There are three user surfaces:
 - `src/components/golf/coachhelm/v3/QualifyingBoard/**`
 - `src/components/fairway/pages/qualifiers/FairwayQualifierDetail.tsx`
 - `src/components/fairway/pages/qualifiers/FairwayQualifierLeaderboard.tsx`
+- `src/components/fairway/pages/qualifiers/qualifier-season.ts`
 - `src/components/fairway/pages/my-qualifiers/FairwayMyQualifiers.tsx`
 
 ### Actions And Engine Code
@@ -148,14 +149,18 @@ Leaderboard reads qualifier
   to-par (`toParTone`: accent ink; E secondary; over par plain ink, never
   amber). Both the board and the coach round-by-round use them.
 - Detail layout (owner 2026-09-27/28, no green bands): the masthead shows the
-  start date only. From `lg` a main column (board, coach round-by-round,
-  selections) beside a right rail: "Where it stands" (the round up next or in
+  start date only. From `xl` a main column (board, coach round-by-round,
+  selections) beside a right rail (below 1280px the expanded sidebar leaves
+  too little room for the board's table beside a rail): "Where it stands" (the round up next or in
   play from `num_rounds` and the feed, never from calendar events; per-round
   bars; scorecards in; the leader and margin) over the Details card (start
   date, deadline and course only when set, rounds, spots, the on-score /
   coach's-pick split, course by round, rules only when non-blank, and each
-  player's rounds played as filled/hollow dots). A phone stacks status,
-  board, details, then the coach's modules.
+  player's rounds played as filled/hollow dots). The DOM is the reading
+  order (status card, main column, details card) and the rail is placed by
+  grid lines with a `1fr` second row, never CSS `order`, so a phone stacks
+  status, board, the coach's modules, then details, and focus order matches
+  the screen.
 - The board reports its standings up once its feed has loaded
   (`onStandingsChange`; never while loading or after a failed read), so the
   rail reads the same rows with one realtime subscription. Until then the
@@ -164,6 +169,25 @@ Leaderboard reads qualifier
   e.g. 487f30a2) says it has no per-round breakdown instead of "no rounds were
   recorded". Tests: `__tests__/qualifier-display.test.ts`,
   `__tests__/FairwayQualifierDetail.layout.test.tsx`.
+- The board (slice 2, no green wash): a sunken column-header row over a
+  strong rule; the leader carries an ink bar; each row shows the identity
+  avatar, the lineup chip (In lineup / Selected: info tone; Bubble: warning;
+  Not selected: neutral), rounds as "played/of", the average through the
+  metric registry, the total, and the to-par as the big figure. The
+  top-score line and the stronger travel cut are labelled rules. A chevron
+  (44px on a phone) opens the player's panel: each round (a coach's chip opens
+  the round card; unplayed rounds read "To play", or "Not played" once the
+  qualifier is completed), a static trend line with the last round against
+  round 1, the gap to the lead and to each drawn line ("N shots clear/back",
+  "On the line"), and, for a coach only, the season average. An entry with no
+  linked round cards says it has its total only.
+- Season average (coach only, `qualifier-season.ts`): each entrant's other
+  countable 18-hole rounds in the qualifier's calendar year
+  (`aggregateCountableRounds`; status completed, not test, this qualifier's
+  rounds excluded; the round count is `scoringAverageRounds`). The route page
+  reads it only for a coach and sends round ids only to a coach; a failed read
+  hides the line. Tests: `__tests__/FairwayQualifierLeaderboard.board.test.tsx`,
+  `__tests__/qualifier-season.test.ts`.
 - Mobile qualifier views need compact cards, clear primary action, and no stacked header utility rows.
 - Empty states should explain whether there are no qualifiers, no entries, or no rounds yet.
 - A route's `loading.tsx` reserves the page's paint at t=0 — for a

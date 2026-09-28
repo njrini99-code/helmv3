@@ -12,7 +12,7 @@
  * round-progress dots read the same rows the board shows. One subscription.
  *
  * Layout (owner 2026-09-27/28): one masthead (the display title without its
- * " — suffix", the start date only), then from `lg` a main column (the live
+ * " — suffix", the start date only), then from `xl` a main column (the live
  * Leaderboard, the coach's round-by-round, selections) beside a right rail (a
  * small "where it stands" card on top, the Details card below: dates, course,
  * spots, rules, and every player's rounds played as dots). A phone stacks
@@ -31,7 +31,7 @@
  *   • Blank rules, a missing deadline or course are left out, not dashed.
  * ========================================================================== */
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { ChartNoAxesColumn, ListChecks } from 'lucide-react';
 
@@ -50,7 +50,11 @@ import { cn } from '@/lib/utils';
 import type { QualifierRoundCourse } from '@/app/golf/actions/golf';
 import { formatToPar } from '@/lib/golf/format-to-par';
 
-import { FairwayQualifierLeaderboard } from './FairwayQualifierLeaderboard';
+import {
+  FairwayQualifierLeaderboard,
+  type LeaderboardRound,
+  type LeaderboardSeason,
+} from './FairwayQualifierLeaderboard';
 import { qualifierStatusMeta } from './qualifier-status';
 import {
   deriveStandings,
@@ -70,6 +74,8 @@ interface RoundScore {
   toPar: number | null;
   date: string;
   courseName: string;
+  /** The round card; the route page sends it to a coach only. */
+  roundId?: string | null;
 }
 
 /** Per-player breakdown entry (shape from the route page). */
@@ -116,6 +122,9 @@ export interface FairwayQualifierDetailProps {
   selectionSlotsTotal: number;
   selectionSlotsCoachPick: number;
   selectionsCount: number;
+
+  // ── Coach only: season scoring averages for the board's player panels ──────
+  season?: LeaderboardSeason | null;
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
@@ -174,6 +183,7 @@ export function FairwayQualifierDetail(props: FairwayQualifierDetailProps) {
     selectionSlotsTotal,
     selectionSlotsCoachPick,
     selectionsCount,
+    season = null,
   } = props;
 
   const sm = qualifierStatusMeta(status);
@@ -184,6 +194,19 @@ export function FairwayQualifierDetail(props: FairwayQualifierDetailProps) {
   // The Leaderboard's live feed, reported up once it has loaded (null before).
   const [standings, setStandings] = useState<Standing[] | null>(null);
   const feedHasScores = standings?.some((s) => s.hasScore) ?? false;
+
+  // Each player's linked round cards for the board's detail panels; absent
+  // when no round is linked (scores keyed straight onto the entries).
+  const roundsByPlayer = useMemo(() => {
+    const linked = breakdown.filter(([, data]) => data.rounds.length > 0);
+    if (linked.length === 0) return undefined;
+    return new Map<string, LeaderboardRound[]>(
+      linked.map(([playerId, data]) => [
+        playerId,
+        data.rounds.map((r) => ({ roundNumber: r.roundNumber, score: r.score, toPar: r.toPar, roundId: r.roundId ?? null })),
+      ]),
+    );
+  }, [breakdown]);
 
   // ONE primary action, role-forked — never two.
   // Player (entered + active) → green "Play qualifier round".
@@ -277,15 +300,16 @@ export function FairwayQualifierDetail(props: FairwayQualifierDetailProps) {
 
       {/* The DOM is the reading order, so a phone stacks it as written: the
           status card, the main column (board, then the coach's modules), the
-          details. From lg the grid places the status and details cards in a
-          right rail; no CSS `order`, so focus and screen-reader order match
-          what is on screen. The rail's second row is 1fr: the main column
+          details. From xl the grid places the status and details cards in a
+          right rail (below 1280px the expanded sidebar leaves too little room
+          for the board's table beside a rail); no CSS `order`, so focus and
+          screen-reader order match what is on screen. The rail's second row is 1fr: the main column
           spans both rows, and an item spanning a flexible row only sizes that
           row, so row 1 stays the status card's height and Details sits right
           under it however tall the board grows. */}
-      <div className="mt-6 flex flex-col gap-6 lg:mt-8 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(300px,22rem)] lg:grid-rows-[auto_1fr] lg:items-start lg:gap-x-8 lg:gap-y-6">
+      <div className="mt-6 flex flex-col gap-6 lg:mt-8 xl:grid xl:grid-cols-[minmax(0,1fr)_minmax(300px,22rem)] xl:grid-rows-[auto_1fr] xl:items-start xl:gap-x-8 xl:gap-y-6">
         <StatusCard
-          className="lg:col-start-2 lg:row-start-1"
+          className="xl:col-start-2 xl:row-start-1"
           status={status}
           numRounds={numRounds}
           entrantCount={entrantCount}
@@ -293,12 +317,16 @@ export function FairwayQualifierDetail(props: FairwayQualifierDetailProps) {
           standings={standings}
         />
 
-        <div className="flex min-w-0 flex-col gap-6 lg:col-start-1 lg:row-span-2 lg:row-start-1 lg:gap-8">
+        <div className="flex min-w-0 flex-col gap-6 xl:col-start-1 xl:row-span-2 xl:row-start-1 xl:gap-8">
           <FairwayQualifierLeaderboard
             qualifierId={qualifierId}
             entrantCount={entrantCount}
             selectionSlotsTotal={selectionSlotsTotal}
             selectionSlotsCoachPick={selectionSlotsCoachPick}
+            numRounds={numRounds}
+            roundsByPlayer={roundsByPlayer}
+            season={isCoach ? season : null}
+            canOpenRounds={isCoach}
             onStandingsChange={setStandings}
           />
 
@@ -323,7 +351,7 @@ export function FairwayQualifierDetail(props: FairwayQualifierDetailProps) {
         </div>
 
         <DetailsCard
-          className="lg:col-start-2 lg:row-start-2"
+          className="xl:col-start-2 xl:row-start-2"
           status={status}
           startDate={startDate}
           entryDeadline={entryDeadline}

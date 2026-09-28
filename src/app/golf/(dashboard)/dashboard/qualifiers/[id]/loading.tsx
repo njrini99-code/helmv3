@@ -6,7 +6,7 @@ import { fairwayScope } from '@/lib/redesign/flag';
  *
  * Shape-matches FairwayQualifierDetail's first paint: the back link, the
  * ViewHeader silhouette (title, status/date/entrant meta, primary action),
- * then from `lg` the main column beside the right rail. The same DOM order as
+ * then from `xl` the main column beside the right rail. The same DOM order as
  * the page (status card, board, details card) and the same grid placement.
  *
  * The board stops at FairwayQualifierLeaderboard's OWN loading branch (a plain
@@ -44,10 +44,10 @@ export default function Loading() {
         </div>
 
         {/* Same DOM order and grid placement as the page: status, the main
-            column, details; the rail from lg by placement, never `order`. */}
-        <div className="mt-6 flex flex-col gap-6 lg:mt-8 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(300px,22rem)] lg:grid-rows-[auto_1fr] lg:items-start lg:gap-x-8 lg:gap-y-6">
+            column, details; the rail from xl by placement, never `order`. */}
+        <div className="mt-6 flex flex-col gap-6 lg:mt-8 xl:grid xl:grid-cols-[minmax(0,1fr)_minmax(300px,22rem)] xl:grid-rows-[auto_1fr] xl:items-start xl:gap-x-8 xl:gap-y-6">
           {/* Status card */}
-          <Surface aria-hidden="true" padding="none" className="px-5 pb-5 pt-4 lg:col-start-2 lg:row-start-1">
+          <Surface aria-hidden="true" padding="none" className="px-5 pb-5 pt-4 xl:col-start-2 xl:row-start-1">
             <Skeleton className="h-3 w-16" />
             <Skeleton className="mt-2 h-5 w-40" />
             <div className="mt-3 flex gap-1.5">
@@ -58,24 +58,23 @@ export default function Loading() {
             <Skeleton className="mt-5 h-6 w-36" />
           </Surface>
 
-          <div className="flex min-w-0 flex-col gap-6 lg:col-start-1 lg:row-span-2 lg:row-start-1 lg:gap-8">
-            {/* The board — its own loading branch */}
-            <Surface aria-hidden="true">
-              <Surface.Header>
-                <Skeleton className="h-5 w-28" />
-              </Surface.Header>
-              <Surface.Body>
-                <div className="space-y-3">
-                  <Skeleton className="h-3 w-full" />
-                  <Skeleton className="h-3 w-5/6" />
-                  <Skeleton className="h-3 w-4/6" />
-                </div>
-              </Surface.Body>
+          <div className="flex min-w-0 flex-col gap-6 xl:col-start-1 xl:row-span-2 xl:row-start-1 xl:gap-8">
+            {/* The board — its own loading branch: the title row, then the
+                3-line stack (FairwayQualifierLeaderboard's padding) */}
+            <Surface aria-hidden="true" padding="none">
+              <div className="px-4 pb-3 pt-4 md:px-6">
+                <Skeleton className="h-6 w-32" />
+              </div>
+              <div className="space-y-3 px-4 pb-5 md:px-6">
+                <Skeleton className="h-3 w-full" />
+                <Skeleton className="h-3 w-5/6" />
+                <Skeleton className="h-3 w-4/6" />
+              </div>
             </Surface>
           </div>
 
           {/* Details card */}
-          <Surface aria-hidden="true" padding="none" className="overflow-hidden lg:col-start-2 lg:row-start-2">
+          <Surface aria-hidden="true" padding="none" className="overflow-hidden xl:col-start-2 xl:row-start-2">
             <div className="border-b border-border-strong bg-surface-sunken px-5 py-3">
               <Skeleton className="h-4 w-16" />
             </div>
