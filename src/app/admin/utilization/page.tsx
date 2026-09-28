@@ -1,8 +1,7 @@
 import { requireSuperAdmin } from '@/lib/admin/require-super-admin';
 import { fetchFeatureAdoption } from '@/lib/admin/data/feature-adoption';
-import { AdoptionHeatGrid, Surface, SkeletonStat, SkeletonList } from '@/components/fairway';
+import { AdoptionHeatGrid, Eyebrow, Surface, SkeletonStat, SkeletonList } from '@/components/fairway';
 import { PanelBoundary } from '../_components/PanelBoundary';
-import { DetailsDisclosure, TabHeader } from '../_components/TabHeader';
 import { PanelStale } from '../_components/PanelStates';
 import { LocalTime } from '../_components/LocalTime';
 import { AutoRefresh } from '../_components/AutoRefresh';
@@ -65,18 +64,10 @@ export default async function UtilizationPage() {
         <Surface as="section" padding="sm" className="min-w-0">
           <SectionLabel>Adoption terrain</SectionLabel>
           <p className="mt-2 text-caption text-warm-500">
-            One row per feature, one cell per day. Click a feature label for its error trace; click a cell for
-            that day&apos;s detail.
+            Rows grouped GolfHelm → CoachHelm → BaseballHelm, tier-sorted within each band. Fill is a per-row log
+            scale of that row&apos;s own 30-day max — a quiet low-tier feature still shows real texture. Click a
+            feature label to view its error trace; click a cell for that day&apos;s detail.
           </p>
-          {/* How the grid is built — methodology, read once. Behind a
-              disclosure so a phone reaches the grid without three lines of
-              scale notes first; nothing here is deleted. */}
-          <DetailsDisclosure className="mt-1">
-            <p>
-              Rows grouped GolfHelm → CoachHelm → BaseballHelm, tier-sorted within each band. Fill is a per-row log
-              scale of that row&apos;s own 30-day max — a quiet low-tier feature still shows real texture.
-            </p>
-          </DetailsDisclosure>
           <div className="mt-3">
             <AdoptionHeatGrid rows={rows} rowHrefTemplate="/admin/errors?feature={key}" />
           </div>
@@ -89,7 +80,7 @@ export default async function UtilizationPage() {
             everything else dims.
           </p>
           {readouts.internalActiveUsers > 0 ? (
-            <p className="mt-1 text-caption text-warm-500">
+            <p className="mt-1 text-caption text-warm-400">
               {readouts.internalActiveUsers} of {readouts.activeUsers30d} 30d-active accounts are test, demo, or
               internal — kept in every count above, not excluded.
             </p>
@@ -99,7 +90,7 @@ export default async function UtilizationPage() {
           </div>
         </Surface>
 
-        <p className="text-caption text-warm-500">
+        <p className="text-caption text-warm-400">
           generated <LocalTime iso={generatedAt} variant="datetime" /> · window: trailing 12 weeks, one shared read
         </p>
       </div>
@@ -109,9 +100,12 @@ export default async function UtilizationPage() {
   return (
     <div className="space-y-4">
       <AutoRefresh intervalMs={60_000} />
-      {/* One header: an accent eyebrow over a second, longer title was two
-          names for the same tab. */}
-      <TabHeader title="Utilization" />
+      <div>
+        <Eyebrow as="p" tone="accent">
+          Utilization
+        </Eyebrow>
+        <h1 className="mt-2 text-2xl font-semibold text-warm-900">Feature adoption &amp; utilization</h1>
+      </div>
       <PanelBoundary title="Utilization" skeleton={SKELETON}>
         <Body />
       </PanelBoundary>

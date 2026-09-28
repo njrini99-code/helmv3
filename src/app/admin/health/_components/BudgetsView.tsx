@@ -11,7 +11,6 @@ import { PanelNoData } from '../../_components/PanelStates';
 import { AutoRefresh } from '../../_components/AutoRefresh';
 import { LocalTime } from '../../_components/LocalTime';
 import { SectionLabel } from '../../_components/SectionLabel';
-import { DetailsDisclosure } from '../../_components/TabHeader';
 
 /**
  * Helm Bridge — SLO / Error Budget Center (Bridge Control Plane Phase D).
@@ -55,13 +54,10 @@ const SILENCE_TONE: Record<FeatureSilence['state'], FwStatusTone> = {
 
 function ErrorBudgetRow({ row }: { row: FeatureErrorBudget }) {
   return (
-    // Wraps, never truncates: at 375px `truncate` cut "12 observed / 5
-    // allowed over 8 windows (critical tier)" before the allowed count —
-    // the one number that makes the observed count mean anything.
-    <div className="flex items-start justify-between gap-3 py-2">
+    <div className="flex items-center justify-between gap-3 py-1.5">
       <div className="min-w-0">
-        <p className="break-words text-sm text-warm-800 [overflow-wrap:anywhere]">{row.featureId}</p>
-        <p className="break-words text-caption text-warm-500">
+        <p className="truncate text-sm text-warm-800">{row.featureId}</p>
+        <p className="truncate text-caption text-warm-500">
           {row.state === 'unknown'
             ? `no readable collector window in the last ${row.windowsConsidered}`
             : `${row.observedCount.toLocaleString()}${row.observedIsFloor ? '+' : ''} observed / ${row.allowedCount?.toLocaleString()} allowed over ${row.windowsReadable} window${row.windowsReadable === 1 ? '' : 's'} (${row.tier} tier)`}
@@ -94,7 +90,7 @@ async function ErrorBudgetBody() {
         {errorBudget.windowsReadable} readable). Not a request-success SLO — the collector carries no traffic
         denominator.
       </p>
-      <p className="mt-1 font-fw-mono text-xs tabular-nums text-warm-500">
+      <p className="mt-1 font-fw-mono text-xs tabular-nums text-warm-400">
         generated <LocalTime iso={errorBudget.generatedAt} variant="datetime" />
       </p>
       <div className="mt-3">
@@ -127,8 +123,8 @@ function JourneyRow({ journey }: { journey: JourneyHealth }) {
     <details className="rounded-lg border-b border-warm-100 py-1.5">
       <summary className="flex min-h-[44px] cursor-pointer list-none items-center justify-between gap-3">
         <div className="min-w-0">
-          <p className="break-words text-sm text-warm-800">{journey.name}</p>
-          <p className="break-words text-caption text-warm-500">
+          <p className="truncate text-sm text-warm-800">{journey.name}</p>
+          <p className="truncate text-caption text-warm-500">
             {journey.role} · {journey.criticality} criticality
             {journey.status === 'collecting' ? ' · registry status: collecting' : ''}
           </p>
@@ -139,7 +135,7 @@ function JourneyRow({ journey }: { journey: JourneyHealth }) {
       </summary>
       <ul className="mt-2 space-y-1 pl-2">
         {journey.stages.map((s) => (
-          <li key={s.stageId} className="break-words text-xs text-warm-600 [overflow-wrap:anywhere]">
+          <li key={s.stageId} className="text-xs text-warm-600">
             <span className="font-fw-mono">{s.stageId}</span> ({s.featureId}
             {s.resolvedFeatureKey ? ` → ${s.resolvedFeatureKey}` : ''}) — <StatusPill tone={STATE_TONE[s.state]} size="sm">{s.state}</StatusPill>{' '}
             {s.reason}
@@ -170,10 +166,10 @@ async function GoldenPathBody() {
 
 function SilenceRow({ row }: { row: FeatureSilence }) {
   return (
-    <div className="flex items-start justify-between gap-3 py-2">
+    <div className="flex items-center justify-between gap-3 py-1.5">
       <div className="min-w-0">
-        <p className="break-words text-sm text-warm-800">{row.label}</p>
-        <p className="break-words text-caption text-warm-500">{row.reason}</p>
+        <p className="truncate text-sm text-warm-800">{row.label}</p>
+        <p className="truncate text-caption text-warm-500">{row.reason}</p>
       </div>
       <StatusPill tone={SILENCE_TONE[row.state]} dot size="sm" className="shrink-0">
         {row.state.replace(/_/g, ' ')}
@@ -218,7 +214,7 @@ async function SilenceBody() {
       )}
       {other.length > 0 ? (
         <details className="mt-3">
-          <summary className="flex cursor-pointer items-center text-xs text-warm-600 underline decoration-dotted [@media(pointer:coarse)]:min-h-11">
+          <summary className="cursor-pointer text-xs text-warm-500 underline decoration-dotted">
             {other.length} feature{other.length === 1 ? '' : 's'} unknown / no heartbeat signal
           </summary>
           <div className="mt-1 divide-y divide-warm-100">
@@ -236,8 +232,8 @@ function FunnelCard({ funnel }: { funnel: WorkflowFunnel }) {
   const total = Object.values(funnel.statusCounts).reduce((a, b) => a + b, 0);
   return (
     <Surface padding="sm">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="min-w-0 break-all font-fw-mono text-xs text-warm-800">{funnel.workflow}</p>
+      <div className="flex items-center justify-between gap-2">
+        <p className="truncate font-fw-mono text-xs text-warm-800">{funnel.workflow}</p>
         {funnel.status === 'error' ? (
           <StatusPill tone="warning" dot size="sm">
             unreadable
@@ -250,7 +246,7 @@ function FunnelCard({ funnel }: { funnel: WorkflowFunnel }) {
         )}
       </div>
       {funnel.status === 'error' ? (
-        <p className="mt-2 break-words text-xs text-warm-500 [overflow-wrap:anywhere]">{funnel.error}</p>
+        <p className="mt-2 text-xs text-warm-500">{funnel.error}</p>
       ) : total === 0 ? (
         <p className="mt-2 text-xs text-warm-500">No traces recorded for this workflow yet.</p>
       ) : (
@@ -271,9 +267,9 @@ function FunnelCard({ funnel }: { funnel: WorkflowFunnel }) {
           {funnel.dropoffs.length > 0 ? (
             <ul className="mt-2 space-y-0.5">
               {funnel.dropoffs.map((d) => (
-                <li key={d.step} className="flex items-baseline justify-between gap-3 text-xs text-warm-600">
-                  <span className="min-w-0 break-all font-fw-mono">{d.step}</span>
-                  <span className="shrink-0 tabular-nums">{d.failedCount}</span>
+                <li key={d.step} className="flex items-center justify-between text-xs text-warm-600">
+                  <span className="font-fw-mono">{d.step}</span>
+                  <span className="tabular-nums">{d.failedCount}</span>
                 </li>
               ))}
             </ul>
@@ -319,20 +315,18 @@ export async function BudgetsView() {
   return (
     <div className="space-y-6">
       <AutoRefresh intervalMs={60_000} />
-      <DetailsDisclosure>
-        <p>
-          Four independent read models over the reliability collector, feature health, and the flight recorder — the
-          Invariant Lattice and Heartbeat Matrix are one view over at{' '}
-          <Link href="/admin/health?view=heartbeats" className="underline decoration-dotted">
-            Heartbeats
-          </Link>
-          , and the correlated signal feed underneath all of it is{' '}
-          <Link href="/admin/errors?view=sources" className="underline decoration-dotted">
-            Incidents · Sources
-          </Link>
-          .
-        </p>
-      </DetailsDisclosure>
+      <p className="hidden max-w-2xl text-sm text-warm-500 md:block">
+        Four independent read models over the reliability collector, feature health, and the flight recorder — the
+        Invariant Lattice and Heartbeat Matrix are one view over at{' '}
+        <Link href="/admin/health?view=heartbeats" className="underline decoration-dotted">
+          Heartbeats
+        </Link>
+        , and the correlated signal feed underneath all of it is{' '}
+        <Link href="/admin/errors?view=sources" className="underline decoration-dotted">
+          Incidents · Sources
+        </Link>
+        .
+      </p>
 
       <Surface padding="sm">
         <SectionLabel>Error budget</SectionLabel>

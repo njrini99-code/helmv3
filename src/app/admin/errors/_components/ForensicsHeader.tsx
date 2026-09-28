@@ -121,10 +121,7 @@ export function ForensicsHeader({ forensics }: { forensics: FingerprintForensics
           eight times in eight boxes buries the two or three fields that DO
           carry a value, which is the opposite of what the panel is for. */}
       {present.length > 0 ? (
-        // One column below `sm`, as the header comment above always said: at
-        // 375px two columns left ~90px beside each copy button, so a request
-        // id or source path wrapped one character per line.
-        <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="mt-3 grid grid-cols-2 gap-2 lg:grid-cols-3">
           {present.map((f) => (
             <Field key={f.label} label={f.label} value={f.value} mono={f.mono} />
           ))}

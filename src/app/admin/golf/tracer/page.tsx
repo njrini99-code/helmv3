@@ -6,13 +6,12 @@ import {
   bridgeListFlightTraces,
   type FlightTraceRun,
 } from '@/app/admin/actions/golf-tracer';
-import { Surface, Sparkline, StatStrip } from '@/components/fairway';
+import { Surface, InlineNotice, Sparkline, StatStrip } from '@/components/fairway';
 import { PanelBoundary } from '../../_components/PanelBoundary';
 import { PanelPageSkeleton } from '../../_components/PanelSkeletons';
 import { PanelAllClear } from '../../_components/PanelStates';
 import { KpiTile } from '../../_components/KpiTile';
 import { AutoRefresh } from '../../_components/AutoRefresh';
-import { DetailsDisclosure, TabHeader } from '../../_components/TabHeader';
 import { StuckRoundsPanel } from './StuckRoundsPanel';
 import { TracerPlayerList } from './TracerPlayerList';
 import { TracerIncidentRow } from './TracerIncidentRow';
@@ -122,7 +121,7 @@ async function TracerBody({ initialTraceId }: { initialTraceId: string | null })
         <h2 className="border-b border-accent-600/25 pb-2 text-xs font-semibold uppercase tracking-widest text-warm-500">Daily activity (30d)</h2>
         <div className="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div className="flex items-center justify-between gap-3">
-            <div className="min-w-0">
+            <div>
               <p className="text-xs font-medium text-warm-600">Rounds started / day</p>
               <p className="font-fw-mono text-lg font-semibold tabular-nums text-warm-900">
                 {dailyRounds.at(-1) ?? 0}
@@ -131,7 +130,7 @@ async function TracerBody({ initialTraceId }: { initialTraceId: string | null })
             <Sparkline data={dailyRounds} goodDirection="up" label="Rounds started per day" width={100} height={28} />
           </div>
           <div className="flex items-center justify-between gap-3">
-            <div className="min-w-0">
+            <div>
               <p className="text-xs font-medium text-warm-600">Tracer errors / day</p>
               <p className="font-fw-mono text-lg font-semibold tabular-nums text-warm-900">
                 {dailyErrors.at(-1) ?? 0}
@@ -195,28 +194,17 @@ export default async function TracerPage({
   return (
     <div className="space-y-6">
       <AutoRefresh intervalMs={60_000} />
-      {/* One-line purpose, then the how-to behind a disclosure. This used to
-          be a five-line info notice ABOVE the KPIs, so on a phone the first
-          screen was instructions and the stuck-round count sat below the
-          fold. Nothing was cut: the full text is one tap away. */}
-      <TabHeader
-        title="Tracer"
-        description="Round data quality, stuck rounds and data-quality incidents — with the fixes attached."
-      >
-        <DetailsDisclosure>
-          <p>
-            Click any player below to see their rounds; expand a round to inspect
-            its data-quality checks and run a fix (recalculate totals, GIR,
-            strokes gained, refresh the stats cache, or remove a stuck round).
-            These incidents are <span className="font-fw-mono">admin_events</span>{' '}
-            rows, so marking one resolved happens in{' '}
-            <Link href="/admin/errors" className="underline">
-              Errors
-            </Link>
-            . The hole-by-hole shot browser has no Bridge equivalent yet.
-          </p>
-        </DetailsDisclosure>
-      </TabHeader>
+      <InlineNotice tone="info" title="Round diagnostics and fixes live here">
+        Click any player below to see their rounds; expand a round to inspect
+        its data-quality checks and run a fix (recalculate totals, GIR,
+        strokes gained, refresh the stats cache, or remove a stuck round).
+        These incidents are <span className="font-fw-mono">admin_events</span>{' '}
+        rows, so marking one resolved happens in{' '}
+        <Link href="/admin/errors" className="underline">
+          Errors
+        </Link>
+        . The hole-by-hole shot browser has no Bridge equivalent yet.
+      </InlineNotice>
       <PanelBoundary title="Tracer" skeleton={<PanelPageSkeleton rows={8} />}>
         <TracerBody initialTraceId={initialTraceId} />
       </PanelBoundary>

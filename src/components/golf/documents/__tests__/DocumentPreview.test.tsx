@@ -47,7 +47,6 @@ const baseDoc: GolfDocument = {
   file_size: 1024,
   category: 'schedule',
   is_public: true,
-  is_test: false,
   created_at: null,
   updated_at: null,
   uploaded_by: null,

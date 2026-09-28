@@ -5,7 +5,6 @@ import { cn } from '@/lib/utils';
 import { KpiTile } from '../../_components/KpiTile';
 import { LocalTime } from '../../_components/LocalTime';
 import { SectionLabel } from '../../_components/SectionLabel';
-import { DetailsDisclosure } from '../../_components/TabHeader';
 
 /**
  * Helm Bridge — Qualifier Logic, the rules view of the Golf tab.
@@ -63,8 +62,8 @@ function InvariantRow({ result, partialRead }: { result: QualifierInvariantResul
     <Inset padding="sm" className={cn(!holding && (result.severity === 'critical' ? 'ring-1 ring-fw-danger/30' : 'ring-1 ring-fw-warning/30'))}>
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="break-words text-sm font-medium text-warm-900">{result.label}</p>
-          <p className="mt-1 break-words text-xs italic leading-relaxed text-warm-600">&ldquo;{result.rule}&rdquo;</p>
+          <p className="text-sm font-medium text-warm-900">{result.label}</p>
+          <p className="mt-1 text-xs italic leading-relaxed text-warm-600">&ldquo;{result.rule}&rdquo;</p>
         </div>
         <StatusPill tone={holding ? (partialRead ? 'neutral' : 'success') : SEVERITY_TONE[result.severity]} dot size="sm" className="shrink-0">
           {holding
@@ -77,7 +76,7 @@ function InvariantRow({ result, partialRead }: { result: QualifierInvariantResul
       <p className="mt-2 text-xs text-warm-500">{result.consequence}</p>
       {!holding && shown > 0 ? (
         <details className="mt-2">
-          <summary className="flex min-h-[44px] cursor-pointer items-center text-xs text-warm-700 underline decoration-dotted decoration-warm-400 marker:text-warm-500">
+          <summary className="flex min-h-[44px] cursor-pointer items-center text-xs text-warm-700 underline decoration-dotted decoration-warm-400 marker:text-warm-400">
             sample round id{shown === 1 ? '' : 's'} ({shown}
             {result.violations > shown ? ` of ${result.violations}` : ''})
           </summary>
@@ -162,14 +161,10 @@ export async function QualifiersView() {
         <SectionLabel>Lifecycle — by status</SectionLabel>
         <p className="mt-1 text-xs text-warm-500">
           {lifecycle.total} qualifier{lifecycle.total === 1 ? '' : 's'} total, {lifecycle.linkedRounds} linked round
-          {lifecycle.linkedRounds === 1 ? '' : 's'}.
+          {lifecycle.linkedRounds === 1 ? '' : 's'}. &ldquo;Missing cap&rdquo; is not a violation on its own — legacy
+          rows predate the cap — it is the population for which an entry refusal from the configured round count can
+          never fire.
         </p>
-        <DetailsDisclosure className="mt-1">
-          <p>
-            &ldquo;Missing cap&rdquo; is not a violation on its own — legacy rows predate the cap — it is the
-            population for which an entry refusal from the configured round count can never fire.
-          </p>
-        </DetailsDisclosure>
         <div className="mt-3 flex flex-wrap gap-2">
           {lifecycle.byStatus.length === 0 ? (
             <span className="text-xs text-warm-500">no qualifiers on record</span>
@@ -200,18 +195,15 @@ export async function QualifiersView() {
                 : `all ${invariants.length} checked, holding`}
           </StatusPill>
         </div>
-        <p className="mt-2 font-fw-mono text-xs tabular-nums text-warm-500">
-          {qualifiers.evaluated.toLocaleString()} qualifiers · {linkedRounds.evaluated.toLocaleString()} linked rounds ·
+        <p className="mt-2 text-xs text-warm-500">
+          Every business rule below is evaluated fresh against {qualifiers.evaluated.toLocaleString()} qualifiers and{' '}
+          {linkedRounds.evaluated.toLocaleString()} linked rounds read this load — not a static claim about what
+          &ldquo;should&rdquo; hold. Every rule is listed whether it is currently violated or not: the value here is
+          knowing which rules are checked, not only seeing the ones that break.
+        </p>
+        <p className="mt-1 font-fw-mono text-xs tabular-nums text-warm-400">
           checked <LocalTime iso={fetchedAt} variant="datetime" />
         </p>
-        <DetailsDisclosure>
-          <p>
-            Every business rule below is evaluated fresh against {qualifiers.evaluated.toLocaleString()} qualifiers and{' '}
-            {linkedRounds.evaluated.toLocaleString()} linked rounds read this load — not a static claim about what
-            &ldquo;should&rdquo; hold. Every rule is listed whether it is currently violated or not: the value here is
-            knowing which rules are checked, not only seeing the ones that break.
-          </p>
-        </DetailsDisclosure>
         <div className="mt-3 space-y-2">
           {invariants.map((inv) => (
             <InvariantRow key={inv.id} result={inv} partialRead={partialRead} />

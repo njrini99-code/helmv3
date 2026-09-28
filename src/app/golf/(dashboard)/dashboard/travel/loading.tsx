@@ -16,6 +16,31 @@ import { Surface } from '@/components/fairway/surfaces/surface';
  * cards) that only renders once a trip is selected — see
  * FairwayTravel.tsx:419-454.
  */
+function PassSkeleton() {
+  return (
+    <div className="overflow-hidden rounded-card border border-border-subtle bg-surface">
+      <div className="h-10 bg-accent-wash" />
+      <div className="flex flex-col sm:flex-row">
+        <div className="flex-1 p-5">
+          <Skeleton className="h-3.5 w-32" />
+          <div className="mt-4 flex justify-between">
+            <Skeleton className="h-6 w-28" />
+            <Skeleton className="h-6 w-28" />
+          </div>
+          <div className="mt-5 grid grid-cols-2 gap-4 border-t border-border-subtle pt-4">
+            <Skeleton className="h-6 w-24" />
+            <Skeleton className="h-6 w-20" />
+          </div>
+        </div>
+        <div className="flex items-center justify-between border-t border-dashed border-border-strong bg-surface-sunken px-5 py-4 sm:w-44 sm:flex-col sm:items-start sm:border-l sm:border-t-0">
+          <Skeleton className="h-14 w-16" />
+          <Skeleton className="h-9 w-28 rounded-full" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function Loading() {
   return (
     <div className={fairwayScope('min-h-full bg-canvas')}>
@@ -37,30 +62,28 @@ export default function Loading() {
           <Skeleton className="h-10 w-40 rounded-fw-md" />
         </div>
 
-        <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-3">
+        {/* Travel season strip */}
+        <div className="mt-6 rounded-card border border-border-subtle bg-surface px-5 pb-3 pt-4">
+          <Skeleton className="h-3 w-24" />
+          <Skeleton className="mt-6 h-px w-full" />
+          <div className="mt-6 flex justify-between">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <Skeleton key={i} className="h-3 w-8" />
+            ))}
+          </div>
+        </div>
+
+        {/* Desktop: the boarding pass spans the page */}
+        <div className="mt-6 hidden lg:block">
+          <PassSkeleton />
+        </div>
+
+        <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-3">
           <div className="flex flex-col gap-6 lg:col-span-1">
-            {/* Phone: the next-trip hero (FairwayNextTrip): eyebrow + pill,
-                title, sub line, date, big time, one button. */}
+            {/* Phone: the boarding pass (FairwayNextTrip): carrier band, FROM → TO,
+                two field rows, then the countdown stub. */}
             <div className="lg:hidden">
-              <Surface elevation="border" padding="none">
-                <div className="flex flex-col gap-4 p-5">
-                  <Skeleton className="h-5 w-40 rounded-full" />
-                  <div>
-                    <Skeleton className="h-5 w-48" />
-                    <Skeleton className="mt-2 h-3.5 w-36" />
-                  </div>
-                  <div>
-                    <Skeleton className="h-3.5 w-24" />
-                    <Skeleton className="mt-2 h-7 w-32" />
-                  </div>
-                  {/* Wear / Stay rows */}
-                  <div className="flex flex-col gap-2 border-t border-border-subtle pt-4">
-                    <Skeleton className="h-3.5 w-3/4" />
-                    <Skeleton className="h-3.5 w-1/2" />
-                  </div>
-                  <Skeleton className="h-11 w-40 rounded-full" />
-                </div>
-              </Surface>
+              <PassSkeleton />
             </div>
 
             {/* "Coming up" dated rows (FairwayTripCard): date block + name,

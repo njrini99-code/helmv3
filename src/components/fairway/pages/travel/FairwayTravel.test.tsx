@@ -15,7 +15,7 @@
  * detail column opts out of it and sticks (`lg:self-start lg:sticky lg:top-6`).
  * ========================================================================== */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 
 import { FairwayTravel } from './FairwayTravel';
 import type { TravelItinerary } from './travel-helpers';
@@ -77,6 +77,10 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
+// Trips appear twice (the season strip and the list); act on the list row.
+const listButton = (name: RegExp) =>
+  within(screen.getByRole('heading', { name: 'Coming up' }).closest('section') as HTMLElement).getByRole('button', { name });
+
 function makeItinerary(id: string, overrides: Partial<TravelItinerary> = {}): TravelItinerary {
   return {
     id,
@@ -129,7 +133,7 @@ describe('FairwayTravel — #173 orphaned detail pane', () => {
         />,
       );
 
-      fireEvent.click(screen.getByRole('button', { name: /Trip b/ }));
+      fireEvent.click(listButton(/Trip b/));
 
       await waitFor(() => expect(scrollIntoView).toHaveBeenCalledWith({ behavior: 'smooth', block: 'start' }));
     } finally {
@@ -180,7 +184,7 @@ describe('FairwayTravel — #173 orphaned detail pane', () => {
       />,
     );
 
-    fireEvent.click(screen.getByRole('button', { name: /Trip a/ }));
+    fireEvent.click(listButton(/Trip a/));
 
     // The detail panel now renders the selected trip's own heading — the LAST
     // "Trip a" match (the first is the still-mounted list-card button label).
@@ -290,7 +294,7 @@ describe('FairwayTravel — phone navigation stack (NAT-05) and mark-seen (DATA-
     const detailColumn = headings[headings.length - 1]!.closest('.lg\\:col-span-2');
     expect(detailColumn).toHaveClass('hidden', 'lg:block');
 
-    fireEvent.click(screen.getByRole('button', { name: /Trip b/ }));
+    fireEvent.click(listButton(/Trip b/));
     // The pick is shareable / survives refresh: it is written to ?trip=.
     expect(new URL(window.location.href).searchParams.get('trip')).toBe('b');
 

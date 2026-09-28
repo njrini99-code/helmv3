@@ -66,6 +66,7 @@ import {
 } from '@/app/golf/actions/travel';
 import { type TravelItinerary, groupTrips } from './travel-helpers';
 import { FairwayNextTrip } from './FairwayNextTrip';
+import { FairwayTravelSeason } from './FairwayTravelSeason';
 import { FairwayTripCard } from './FairwayTripCard';
 import { FairwayTripDetail } from './FairwayTripDetail';
 import { FairwayItineraryModal, type ItineraryFormData } from './FairwayItineraryModal';
@@ -481,7 +482,25 @@ export function FairwayTravel({
           </Surface>
         </div>
       ) : (
-        <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-3 lg:items-start">
+        <>
+        {/* The season at a glance: every trip on a real date axis. */}
+        <div className={cn('mt-6', selected && 'hidden lg:block')}>
+          <FairwayTravelSeason
+            itineraries={itineraries}
+            now={now}
+            selectedId={shown?.id ?? null}
+            nextId={nextTrip?.id ?? null}
+            onSelect={handleSelect}
+          />
+        </div>
+        {/* Desktop: the boarding pass spans the page (phones get it at the top
+            of the list column instead). */}
+        {nextTrip ? (
+          <div className="mt-6 hidden lg:block">
+            <FairwayNextTrip itinerary={nextTrip} now={now} onOpen={() => handleSelect(nextTrip)} />
+          </div>
+        ) : null}
+        <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-3 lg:items-start">
           {/* ── Itinerary list ─────────────────────────────────────────── */}
           {/* NAT-05: below lg this is a navigation stack, not a split view.
               The list is the root; picking a trip pushes its detail in the
@@ -628,6 +647,7 @@ export function FairwayTravel({
             ) : null}
           </div>
         </div>
+        </>
       )}
 
       {/* ── Coach create / edit modal ──────────────────────────────────── */}

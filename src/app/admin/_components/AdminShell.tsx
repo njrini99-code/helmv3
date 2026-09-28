@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState, useTransition } from 'react'
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
-  House,
+  LayoutDashboard,
   Activity,
   AlertTriangle,
   KeyRound,
@@ -130,10 +130,7 @@ function computeBreadcrumbs(pathname: string): readonly Breadcrumb[] {
 const NAV_SECTION_ORDER = [...new Set(ADMIN_NAV.map((entry) => entry.section))];
 
 const NAV_ICON_BY_HREF = {
-  // House, not LayoutDashboard: the bottom bar's 5th column (More) is a
-  // 2×2 grid glyph, and LayoutDashboard is a grid too — on a phone the first
-  // and last tabs read as the same button.
-  '/admin': House,
+  '/admin': LayoutDashboard,
   '/admin/activity': Activity,
   '/admin/errors': AlertTriangle,
   '/admin/traces': GitBranch,

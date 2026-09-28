@@ -47,7 +47,7 @@ export function ReleaseCard({ card }: { card: ReleaseCardData }) {
               </StatusPill>
             ) : null}
           </div>
-          <p className="mt-0.5 line-clamp-2 break-words text-xs text-warm-600 [overflow-wrap:anywhere]">
+          <p className="mt-0.5 truncate text-xs text-warm-600">
             {card.commitMessage ?? card.commitRef ?? 'no commit message'}
           </p>
           {card.commitAuthor ? <p className="text-xs text-warm-500">by {card.commitAuthor}</p> : null}
@@ -114,24 +114,19 @@ export function ReleaseCard({ card }: { card: ReleaseCardData }) {
         ) : (
           <ul className="mt-1.5 divide-y divide-warm-200/60">
             {card.newFingerprintSamples.map((f) => (
-              // Title on its own line, severity + first-seen beneath it. Pill,
-              // title and datetime in ONE row left the title ~140px at 375px —
-              // a truncated fragment you had to tap to identify.
-              <li key={f.fingerprint} className="py-1.5 text-xs">
+              <li key={f.fingerprint} className="flex items-center gap-2 py-1.5 text-xs">
+                <StatusPill tone={f.severity === 'critical' ? 'danger' : 'warning'} dot size="sm" className="shrink-0">
+                  {f.severity}
+                </StatusPill>
                 <a
                   href={`/admin/errors/${encodeURIComponent(f.fingerprint)}`}
-                  className="line-clamp-2 break-words text-accent-700 underline [overflow-wrap:anywhere]"
+                  className="min-w-0 flex-1 truncate text-accent-700 underline"
                 >
                   {f.title}
                 </a>
-                <div className="mt-1 flex flex-wrap items-center gap-2">
-                  <StatusPill tone={f.severity === 'critical' ? 'danger' : 'warning'} dot size="sm" className="shrink-0">
-                    {f.severity}
-                  </StatusPill>
-                  <span className="whitespace-nowrap font-fw-mono text-warm-500">
-                    <LocalTime iso={f.firstSeen} variant="datetime" />
-                  </span>
-                </div>
+                <span className="shrink-0 font-fw-mono text-warm-500">
+                  <LocalTime iso={f.firstSeen} variant="datetime" />
+                </span>
               </li>
             ))}
           </ul>

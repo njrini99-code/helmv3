@@ -46,7 +46,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `AUDIT_SNAPSHOT` | 57 | 6 | 31 | 25 |
 | `STATE_SNAPSHOT` | 6 | 2 | 5 | 0 |
 | `HISTORY_LEDGER` | 41 | 0 | 7 | 19 |
-| `INCIDENT` | 44 | 15 | 2 | 2 |
+| `INCIDENT` | 40 | 15 | 2 | 2 |
 | `ADR` | 5 | 0 | 3 | 0 |
 | `INDEX` | 19 | 1 | 7 | 5 |
 | `UNKNOWN` | 93 | 12 | 40 | 76 |
@@ -491,13 +491,11 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `memory/incidents/admin_platform/INC-2026-08-27-swallowed-cron-failure-invisible-to-bridge.md` | current | - | - | - | - |
 | `memory/incidents/admin_platform/INC-2026-09-27-bridge-merged-dev-sentry-issues.md` | current | - | - | - | - |
 | `memory/incidents/admin_selfheal/INC-2026-09-27-retired-triage-runner-paints-loop-red.md` | current | - | - | - | - |
-| `memory/incidents/auth_onboarding_join/INC-2026-09-27-presence-webkit-abort-noise.md` | current | - | - | - | - |
 | `memory/incidents/calendar_events/INC-2026-09-23-coach-invitees-deny-conflict-check.md` | current | - | - | - | - |
 | `memory/incidents/coachhelm_ai/INC-2026-09-26-safety-net-coverage-n-plus-one.md` | current | - | - | - | - |
 | `memory/incidents/coachhelm_ai/INC-2026-09-26-validation-cron-rounds-n-plus-one.md` | current | - | - | - | - |
 | `memory/incidents/coachhelm_ai/INC-2026-09-27-calibration-load-stampede.md` | current | - | - | - | - |
 | `memory/incidents/coachhelm_ai/INC-2026-09-27-exposure-returned-fetch-failure.md` | current | - | - | - | - |
-| `memory/incidents/coachhelm_ai/INC-2026-09-28-coachhelm-read-writes-causal.md` | current | - | - | - | - |
 | `memory/incidents/feature_awareness_system/INC-2026-08-16-parallel-agents-shared-tree.md` | current | yes | - | yes | 1 |
 | `memory/incidents/feature_awareness_system/INC-2026-08-18-worktrees-inside-repo-duplicate-tree.md` | current | yes | - | - | 1 |
 | `memory/incidents/feature_awareness_system/INC-2026-08-19-codeql-matrix-rename-phantom-checks.md` | current | yes | - | - | - |
@@ -521,7 +519,6 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `memory/incidents/golf_round_lifecycle/INC-2026-08-30-account-deletion-still-cascades-golf-history.md` | current | - | - | - | - |
 | `memory/incidents/golf_round_lifecycle/INC-2026-09-16-course-state-two-letter-rejection.md` | current | - | - | - | - |
 | `memory/incidents/golf_round_lifecycle/INC-2026-09-25-player-lookup-pgrst116.md` | current | - | - | - | - |
-| `memory/incidents/observability_sentry/INC-2026-09-27-webkit-stale-chunk-route-boundary.md` | current | - | - | - | - |
 | `memory/incidents/player_coachhelm_development/INC-2026-09-24-page-read-ran-insight-generators.md` | current | - | - | - | - |
 | `memory/incidents/qualifiers/INC-2026-08-22-end-date-closed-qualifier-early.md` | current | - | - | - | - |
 | `memory/incidents/shot_tracking/INC-2026-08-22-confirmed-snapshot-recovery-prompt.md` | current | - | - | - | - |
@@ -529,7 +526,6 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `memory/incidents/shot_tracking/INC-2026-08-22-partial-save-round-deletion.md` | current | - | - | - | - |
 | `memory/incidents/shot_tracking/INC-2026-08-25-atomic-snapshot-hole-mismatch.md` | current | - | - | - | - |
 | `memory/incidents/shot_tracking/INC-2026-09-15-single-phone-false-conflict-block.md` | current | - | - | - | - |
-| `memory/incidents/team_communications/INC-2026-09-27-reactions-anon-42501-after-session-drop.md` | current | - | - | - | - |
 
 ### `ADR`
 

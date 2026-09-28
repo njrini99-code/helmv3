@@ -98,10 +98,7 @@ function SportRunwayPanel({ label, runway }: { label: string; runway: SportRunwa
         />
       </div>
 
-      {/* flex-wrap: the tracked caption (~170px) + a 160px sparkline + gap is
-          wider than a 375px phone's card interior, so the row pushed the
-          sparkline past the card edge. It now drops below the caption. */}
-      <div className="mt-4 flex flex-wrap items-center gap-2">
+      <div className="mt-4 flex items-center gap-2">
         <span className="text-caption uppercase tracking-widest text-warm-500">Daily signups · 30d</span>
         <Sparkline
           data={runway.dailySignups30d.map((d) => d.y)}

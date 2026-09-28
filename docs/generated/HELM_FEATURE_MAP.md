@@ -38,7 +38,7 @@ is a second thing to keep true.
 - **Behaviour:** `memory/features/observability-sentry.md`
 - **Code:** `src/instrumentation*.ts`, `src/lib/observability/**`, `src/lib/observability/__tests__/**`, `src/test/observability/**`
 - **Telemetry:** none. This module IS the observability layer (metric/span/log vocabulary and the beforeSend*/scrubPii hooks) — instrumenting itself would be circular. No admin_events.feature key exists for it by design; see classification: observability_only in observability_keys_unowned below for the same reasoning applied to a runtime key.
-- **Incidents:** `memory/incidents/observability_sentry/INC-2026-09-27-webkit-stale-chunk-route-boundary.md`
+- **Incidents:** none recorded
 - **Repair units:** none in the queue
 - **History:** `memory/ledgers/changes/observability_sentry.md`, `memory/ledgers/tests/observability_sentry.md`
 
@@ -60,7 +60,7 @@ is a second thing to keep true.
 - **Behaviour:** `memory/features/coachhelm-ai.md`
 - **Code:** `src/app/golf/(dashboard)/dashboard/coachhelm/**`, `src/app/golf/(dashboard)/dashboard/analytics/coachhelm/**`, `src/components/golf/coachhelm/**`, `src/app/api/coachhelm/**`, `src/app/api/cron/coachhelm-calibration/**`, `src/app/api/cron/coachhelm-insight-lifecycle/**` … and 21 more in the registry
 - **Telemetry:** `coachhelm_ai_engine` (coachhelm, high), `insights_management` (coachhelm, med), `coachhelm_analytics` (coachhelm, low), `round_review_ai` (coachhelm, med)
-- **Incidents:** `memory/incidents/coachhelm_ai/INC-2026-09-26-safety-net-coverage-n-plus-one.md`, `memory/incidents/coachhelm_ai/INC-2026-09-26-validation-cron-rounds-n-plus-one.md`, `memory/incidents/coachhelm_ai/INC-2026-09-27-calibration-load-stampede.md`, `memory/incidents/coachhelm_ai/INC-2026-09-27-exposure-returned-fetch-failure.md`, `memory/incidents/coachhelm_ai/INC-2026-09-28-coachhelm-read-writes-causal.md`
+- **Incidents:** `memory/incidents/coachhelm_ai/INC-2026-09-26-safety-net-coverage-n-plus-one.md`, `memory/incidents/coachhelm_ai/INC-2026-09-26-validation-cron-rounds-n-plus-one.md`, `memory/incidents/coachhelm_ai/INC-2026-09-27-calibration-load-stampede.md`, `memory/incidents/coachhelm_ai/INC-2026-09-27-exposure-returned-fetch-failure.md`
 - **Repair units:** `coachhelm-safety-net-anon-client-2026-08-27` (triaging), `validation-rounds-prefetch-2026-09-26` (verified), `safety-net-coverage-prefetch-2026-09-26` (verified), `calibration-load-dedupe-2026-09-27` (verified), `exposure-returned-transient-retry-2026-09-27` (verified)
 - **History:** `memory/ledgers/changes/coachhelm_ai.md`, `memory/ledgers/tests/coachhelm_ai.md`
 
@@ -170,8 +170,8 @@ is a second thing to keep true.
 - **Behaviour:** `memory/features/team-communications.md`
 - **Code:** `src/app/golf/(dashboard)/dashboard/messages/**`, `src/app/golf/(dashboard)/dashboard/announcements/**`, `src/components/golf/messages/**`, `src/components/golf/announcements/**`, `src/components/fairway/pages/messages/**`, `src/components/fairway/pages/announcements/**` … and 30 more in the registry
 - **Telemetry:** `messaging` (golfhelm, high), `announcements` (golfhelm, med), `notifications` (golfhelm, med)
-- **Incidents:** `memory/incidents/team_communications/INC-2026-09-27-reactions-anon-42501-after-session-drop.md`
-- **Repair units:** `reactions-anon-42501-after-session-drop-2026-09-27` (verified)
+- **Incidents:** none recorded
+- **Repair units:** none in the queue
 - **History:** `memory/ledgers/changes/team_communications.md`, `memory/ledgers/tests/team_communications.md`
 
 ## `team_operations`
@@ -214,8 +214,8 @@ is a second thing to keep true.
 - **Behaviour:** `memory/features/auth-onboarding-join.md`
 - **Code:** `src/app/golf/(auth)/**`, `src/app/golf/(onboarding)/**`, `src/app/golf/join/**`, `src/components/golf/onboarding/**`, `src/components/golf/settings/JoinTeamSection.tsx`, `src/app/api/golf/auth/**` … and 15 more in the registry
 - **Telemetry:** `auth_onboarding` (golfhelm, med), `join_team_flow` (golfhelm, med)
-- **Incidents:** `memory/incidents/auth_onboarding_join/INC-2026-09-27-presence-webkit-abort-noise.md`
-- **Repair units:** `presence-webkit-abort-2026-09-27` (verified)
+- **Incidents:** none recorded
+- **Repair units:** none in the queue
 - **History:** `memory/ledgers/changes/auth_onboarding_join.md`
 
 ## `settings_preferences`

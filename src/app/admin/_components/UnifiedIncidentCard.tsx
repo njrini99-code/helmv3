@@ -20,7 +20,6 @@ import { INCIDENT_CLASS_LABEL } from '@/lib/admin/incident-classification';
 import { RCA_CATEGORY_LABEL } from '@/lib/admin/rca-category';
 import { describeErrorCode } from '@/lib/admin/error-code-hint';
 import { deriveIncidentFlow, FLOW_STAGE_TITLE } from '@/lib/admin/selfheal-flow';
-import { needsAttention } from '@/lib/admin/incidents/lifecycle';
 import type { IncidentPresentation } from '@/lib/admin/incidents/present';
 import type { IncidentGenome } from '@/lib/admin/incidents/genome';
 import type { ReleaseRelationshipVerdict } from '@/lib/admin/incidents/release-context';
@@ -99,12 +98,6 @@ import { RailRow, RowHead, FactLine, RowPath, RowFoot, StateChip } from './Row';
  *      explain the chip ("Seen recently — Diagnose has not had a chance to
  *      analyse it yet."). It rendered only on the detail page; a chip an
  *      operator cannot interrogate is a chip they stop believing.
- *      Since 2026-09-23 (owner, mobile readability pass) the sentence stays on
- *      the row only when it changes what an operator does next — a
- *      `needsAttention` state or a stalled flow. For the routine states it
- *      repeated on every card ("Seen recently — Diagnose has not had a
- *      chance…" ninety times down a phone screen); there it leads the
- *      Details disclosure and is the lifecycle chip's tooltip instead.
  *   G. A DETAILS DISCLOSURE, closed by default, with what the row already
  *      knows and did not show: first and last seen, every source and its
  *      health, the error code with a plain-language hint, the analysis, the
@@ -117,31 +110,17 @@ import { RailRow, RowHead, FactLine, RowPath, RowFoot, StateChip } from './Row';
  * `resolved` needs one — every other `LIFECYCLE_TONE` value is a tone
  * `StateChip` already renders, so those are handed straight through.
  */
-function LifecycleChip({ state, title }: { state: IncidentLifecycleState; title?: string }) {
+function LifecycleChip({ state }: { state: IncidentLifecycleState }) {
   const tone = LIFECYCLE_TONE[state];
   if (tone === 'success') {
     return (
-      <span
-        title={title}
-        className="inline-flex items-center gap-1 rounded bg-fw-success-bg px-1.5 py-0.5 text-eyebrow uppercase leading-4 text-fw-success-ink"
-      >
+      <span className="inline-flex items-center gap-1 rounded bg-fw-success-bg px-1.5 py-0.5 text-eyebrow uppercase leading-4 text-fw-success-ink">
         {LIFECYCLE_LABEL[state]}
       </span>
     );
   }
-  return (
-    <StateChip tone={tone} title={title}>
-      {LIFECYCLE_LABEL[state]}
-    </StateChip>
-  );
+  return <StateChip tone={tone}>{LIFECYCLE_LABEL[state]}</StateChip>;
 }
-
-/**
- * `present.ts`'s placeholder when it has neither an error code nor a
- * fingerprint rule. A line that says "there is nothing to show" is noise on a
- * phone-width card; the incident still carries every fact in Details.
- */
-const NO_SIGNATURE = 'signature unavailable';
 
 /**
  * The one source this row names inline. `app` leads when present because it
@@ -279,7 +258,7 @@ function IncidentDetails({ incident }: { incident: UnifiedIncident }) {
 
   return (
     <details className="group mt-1.5">
-      <summary className="inline-flex cursor-pointer list-none items-center gap-1 text-caption text-accent-700 hover:underline [&::-webkit-details-marker]:hidden [@media(pointer:coarse)]:min-h-11 [@media(pointer:coarse)]:pr-3">
+      <summary className="inline-flex cursor-pointer list-none items-center gap-1 text-caption text-accent-700 hover:underline [&::-webkit-details-marker]:hidden">
         <ChevronRight size={12} aria-hidden className="transition-transform group-open:rotate-90 motion-reduce:transition-none" />
         Details
       </summary>
@@ -373,9 +352,6 @@ function IncidentDetails({ incident }: { incident: UnifiedIncident }) {
           <p className="text-eyebrow uppercase tracking-wide text-warm-500">
             Why &ldquo;{LIFECYCLE_LABEL[incident.lifecycle.state]}&rdquo;
           </p>
-          <p className="mt-0.5 break-words text-caption leading-5 text-warm-800 [overflow-wrap:anywhere]">
-            {incident.lifecycle.headline}
-          </p>
           <ul className="mt-1 space-y-1">
             {incident.lifecycle.because.map((line, i) => (
               <li key={i} className="flex items-start gap-2 text-caption leading-5 text-warm-700">
@@ -457,10 +433,7 @@ export function UnifiedIncidentCard({
   // capped rather than open-ended.
   const chips: Array<{ key: string; node: ReactNode }> = [];
 
-  chips.push({
-    key: 'lifecycle',
-    node: <LifecycleChip state={incident.lifecycle.state} title={incident.lifecycle.headline} />,
-  });
+  chips.push({ key: 'lifecycle', node: <LifecycleChip state={incident.lifecycle.state} /> });
 
   // Second, ahead of everything below: a seeded QA fixture round changes how
   // every other fact on this card should be read — occurrences, affected
@@ -564,18 +537,6 @@ export function UnifiedIncidentCard({
 
   const visibleChips = chips.slice(0, 5);
   const firstGap = incident.proofGaps[0] ?? null;
-  // Header point F: the headline rides on the row only when it changes what
-  // an operator does next; otherwise it leads the Details disclosure.
-  const headlineOnRow = needsAttention(incident.lifecycle.state) || flow.stalled;
-  const signature =
-    presentation && presentation.technicalSignature !== NO_SIGNATURE ? presentation.technicalSignature : null;
-  // "Platform > coachhelm_ai" followed by a "Feature coachhelm_ai" tag says the
-  // same thing twice. The tag stays whenever it adds something: an untagged
-  // or unregistered key (both are warnings), or a label the context line
-  // does not already name.
-  const featureTagRedundant =
-    featureLabel !== null &&
-    Boolean(presentation?.operationContext?.toLowerCase().includes(featureLabel.toLowerCase()));
 
   return (
     <RailRow severity={incident.severity}>
@@ -607,9 +568,9 @@ export function UnifiedIncidentCard({
           the title. Only rendered once a presentation was actually
           resolved, so a card with no presentation prop looks identical to
           the pre-Phase-1 card rather than showing a redundant line. */}
-      {signature ? (
+      {presentation ? (
         <p className="mt-0.5 break-words font-fw-mono text-caption leading-4 text-warm-500 [overflow-wrap:anywhere]">
-          {signature}
+          {presentation.technicalSignature}
         </p>
       ) : null}
 
@@ -641,16 +602,9 @@ export function UnifiedIncidentCard({
         </div>
       ) : null}
 
-      {/* State chips, then the feature/sport tags, in ONE wrapping row — two
-          rows of pills per card was the tallest part of the card on a phone.
-          The chips keep their own testid so the 5-cap stays assertable. */}
+      {/* The feature tag — a product area in words, or "untagged" out loud. */}
       <div className="mt-1.5 flex flex-wrap items-center gap-1.5" data-testid="unified-incident-tags">
-        {visibleChips.map((c) => (
-          <span key={c.key} data-testid="unified-incident-chip">
-            {c.node}
-          </span>
-        ))}
-        {featureTagRedundant ? null : incident.featureId ? (
+        {incident.featureId ? (
           <Tag
             label="Feature"
             value={featureLabel ?? incident.featureId}
@@ -672,17 +626,21 @@ export function UnifiedIncidentCard({
         {incident.sport ? <Tag label="Sport" value={SPORT_LABEL[incident.sport]} /> : null}
       </div>
 
-      {/* What the lifecycle chip MEANS, in the one sentence lifecycle.ts
-          wrote for it — on the row only when it needs an operator (header
-          point F); otherwise first thing in Details. */}
-      {headlineOnRow ? (
-        <p
-          data-testid="unified-incident-headline"
-          className="mt-1.5 break-words text-caption leading-5 text-warm-700 [overflow-wrap:anywhere]"
-        >
-          {incident.lifecycle.headline}
-        </p>
+      {visibleChips.length > 0 ? (
+        <div className="mt-1.5 flex flex-wrap items-center gap-1">
+          {visibleChips.map((c) => (
+            <span key={c.key} data-testid="unified-incident-chip">
+              {c.node}
+            </span>
+          ))}
+        </div>
       ) : null}
+
+      {/* What the lifecycle chip MEANS, in the one sentence lifecycle.ts
+          wrote for it. Header point F. */}
+      <p className="mt-1.5 break-words text-caption leading-5 text-warm-700 [overflow-wrap:anywhere]">
+        {incident.lifecycle.headline}
+      </p>
 
       {/* Why it is stalled, in the flow model's own words — which stage,
           how many of its cycles have passed, what it did not do. */}

@@ -37,6 +37,7 @@ import {
   Surface,
   Button,
   StatusPill,
+  Checkbox,
   Tabs,
   TabsList,
   TabsTrigger,
@@ -97,22 +98,82 @@ export interface FairwayTripDetailProps {
 function SheetStep({
   time,
   label,
+  node = 'stop',
   children,
 }: {
   time?: string | null;
   label: string;
+  /** `end` = a solid node (leave / return), `stop` = a hollow one. */
+  node?: 'end' | 'stop';
   children: React.ReactNode;
 }) {
   return (
-    <li className="grid grid-cols-[4.75rem_1fr] gap-x-3 border-b border-border-subtle py-3.5 last:border-b-0">
-      <span className="pt-px font-fw-sans text-body-sm font-medium text-text-primary tabular-nums">
+    <li className="group/step grid grid-cols-[4.25rem_1.25rem_1fr] gap-x-2">
+      <span className="pt-4 text-right font-fw-sans text-body-sm font-semibold text-accent-ink tabular-nums">
         {time ?? ''}
       </span>
-      <div className="min-w-0">
+      {/* The journey rail: a dashed line through every stop, a node per step. */}
+      <span aria-hidden className="relative flex justify-center">
+        <span className="absolute inset-y-0 border-l-2 border-dotted border-border-strong group-first/step:top-5 group-last/step:bottom-auto group-last/step:h-5" />
+        <span
+          className={cn(
+            'relative mt-[1.1rem] h-3 w-3 rounded-full ring-4 ring-surface',
+            node === 'end' ? 'bg-accent-fill' : 'border-2 border-accent-fill bg-surface',
+          )}
+        />
+      </span>
+      <div className="min-w-0 pb-5 pt-3.5">
         <p className="font-fw-sans text-eyebrow uppercase text-text-tertiary">{label}</p>
         <div className="mt-0.5 font-fw-sans text-body text-text-primary">{children}</div>
       </div>
     </li>
+  );
+}
+
+/**
+ * The packing list as something to tick off. Checks are personal and live on
+ * this device only (localStorage per trip); the list itself is the coach's.
+ */
+function PackingList({ tripId, items }: { tripId: string; items: string[] }) {
+  const storageKey = `helm:travel:packed:${tripId}`;
+  const [packed, setPacked] = React.useState<string[]>([]);
+  React.useEffect(() => {
+    try {
+      const raw = window.localStorage.getItem(storageKey);
+      setPacked(raw ? (JSON.parse(raw) as string[]) : []);
+    } catch {
+      setPacked([]);
+    }
+  }, [storageKey]);
+  const toggle = (item: string, on: boolean) => {
+    setPacked((prev) => {
+      const next = on ? [...new Set([...prev, item])] : prev.filter((p) => p !== item);
+      try {
+        window.localStorage.setItem(storageKey, JSON.stringify(next));
+      } catch {
+        /* private mode: keep it in memory */
+      }
+      return next;
+    });
+  };
+  const done = items.filter((i) => packed.includes(i)).length;
+  return (
+    <>
+      <p className="-mt-0.5 mb-1 font-fw-sans text-body-sm text-text-secondary tabular-nums">
+        {done} of {items.length} packed <span className="text-text-tertiary">· saved on this device</span>
+      </p>
+      <ul className="grid grid-cols-1 gap-x-6 sm:grid-cols-2">
+        {items.map((item) => (
+          <li key={item} className="flex min-h-11 items-center">
+            <Checkbox
+              label={<span className={cn(packed.includes(item) && 'text-text-tertiary line-through')}>{item}</span>}
+              checked={packed.includes(item)}
+              onCheckedChange={(v) => toggle(item, !!v)}
+            />
+          </li>
+        ))}
+      </ul>
+    </>
   );
 }
 
@@ -258,11 +319,12 @@ export function FairwayTripDetail({
         </div>
 
         {/* ═══════════ TRIP SHEET ═══════════ */}
-        <TabsContent value="details" className="px-5 pb-5 pt-2 sm:px-6 sm:pb-6">
+        <TabsContent value="details" className="px-3 pb-5 pt-3 sm:px-5 sm:pb-6">
           <ol aria-label="Itinerary">
             <SheetStep
               time={itinerary.departure_time ? formatTravelTime(itinerary.departure_time) : null}
               label={`Depart · ${formatWeekdayDate(itinerary.departure_date)}`}
+              node="end"
             >
               {itinerary.departure_location ? (
                 <>
@@ -285,14 +347,7 @@ export function FairwayTripDetail({
             ) : null}
             {gear.length > 0 ? (
               <SheetStep label="Bring">
-                <ul className="grid grid-cols-1 gap-x-6 sm:grid-cols-2">
-                  {gear.map((item) => (
-                    <li key={item} className="flex items-center gap-2 py-1">
-                      <span aria-hidden className="h-1.5 w-1.5 shrink-0 rounded-full bg-accent-fill" />
-                      {item}
-                    </li>
-                  ))}
-                </ul>
+                <PackingList tripId={itinerary.id} items={gear} />
               </SheetStep>
             ) : null}
 
@@ -329,6 +384,7 @@ export function FairwayTripDetail({
               <SheetStep
                 time={itinerary.return_time ? formatTravelTime(itinerary.return_time) : null}
                 label="Return"
+                node="end"
               >
                 <p className="tabular-nums">{formatWeekdayDate(itinerary.return_date)}</p>
               </SheetStep>

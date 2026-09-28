@@ -44,20 +44,7 @@ export class CausalEngine {
   /**
    * Discovers causal relationships for a player
    */
-  /**
-   * @param options.persist Whether to write the result to
-   *   `golf_causal_relationships` (default `true`, so the post-round trigger,
-   *   crons and explicit analyze actions keep persisting). READ-ONLY callers
-   *   (the player CoachHelm page load, via analyzePlayer's `persistPatterns:
-   *   false`) pass `false`: a page read must not write, and a failed write
-   *   here throws, which rejected analyzePlayer and failed the whole page
-   *   (Bridge ca4409c2 / ed64f3b6, 2026-09-28: "Failed to update CoachHelm
-   *   causal relationship: TypeError: fetch failed").
-   */
-  async discoverCausalRelationships(
-    options: { persist?: boolean } = {}
-  ): Promise<CausalRelationship[]> {
-    const { persist = true } = options;
+  async discoverCausalRelationships(): Promise<CausalRelationship[]> {
     const supabase = createAdminClient();
 
     // Load rounds
@@ -123,10 +110,8 @@ export class CausalEngine {
       }
     }
 
-    // Save to database (writers only; see `options.persist`).
-    if (persist) {
-      await this.saveRelationships(relationships);
-    }
+    // Save to database
+    await this.saveRelationships(relationships);
 
     return relationships;
   }

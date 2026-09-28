@@ -610,7 +610,7 @@ class CoachHelmIntelligence {
         : Promise.resolve(null),
       new ShotStateIntelligence(playerId).analyze(),
       includeCausal
-        ? new CausalEngine(playerId).discoverCausalRelationships({ persist: persistPatterns })
+        ? new CausalEngine(playerId).discoverCausalRelationships()
         : Promise.resolve<CausalRelationship[]>([]),
       includePredictions
         ? new PerformancePredictor(playerId).predictPerformance()
