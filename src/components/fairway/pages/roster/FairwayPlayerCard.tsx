@@ -118,6 +118,7 @@ export function FairwayPlayerCard({ player, intent }: FairwayPlayerCardProps) {
     ...(online ? ['Online'] : []),
     ...(year ? [year] : []),
     ...(player.hometown && player.state ? [`${player.hometown}, ${player.state}`] : []),
+    ...(player.handicap != null ? [`HCP ${player.handicap}`] : []),
   ];
 
   return (
@@ -133,12 +134,12 @@ export function FairwayPlayerCard({ player, intent }: FairwayPlayerCardProps) {
       // name/details stay masked even if that default is ever narrowed later.
       data-sentry-mask=""
     >
-      <div className="p-5 md:p-6">
-        <div className="flex items-start gap-4">
+      <div className="px-5 pb-5 pt-6 md:px-6 md:pt-7">
+        <div className="flex items-center gap-5">
           {/* Avatar + online dot */}
           <div className="relative flex-shrink-0">
             <span
-              className="grid h-[68px] w-[68px] place-items-center overflow-hidden rounded-fw-md font-fw-display text-h3 font-semibold ring-1 ring-border-subtle md:h-[76px] md:w-[76px]"
+              className="grid h-[88px] w-[88px] place-items-center overflow-hidden rounded-fw-lg font-fw-display text-h2 font-semibold ring-4 ring-surface [box-shadow:0_0_0_5px_var(--fw-color-border-subtle),0_10px_22px_-10px_oklch(0.25_0.03_70/0.45)] md:h-[104px] md:w-[104px]"
               style={player.avatar_url ? undefined : { backgroundColor: tint.bg, color: tint.text }}
             >
               {player.avatar_url ? (
@@ -152,7 +153,7 @@ export function FairwayPlayerCard({ player, intent }: FairwayPlayerCardProps) {
             {online ? (
               <span
                 aria-hidden
-                className="absolute -bottom-1 -right-1 h-5 w-5 rounded-full border-[3px] border-surface bg-accent-fill"
+                className="absolute -bottom-1.5 -right-1.5 h-6 w-6 rounded-full border-4 border-surface bg-accent-fill"
               />
             ) : null}
           </div>
@@ -169,21 +170,21 @@ export function FairwayPlayerCard({ player, intent }: FairwayPlayerCardProps) {
               without touching the shared primitive's other callers. Hometown
               keeps single-line truncate (min-w-0 so it clips at the string's
               end, not to two letters). */}
-          <div className="min-w-0 flex-1 pt-0.5">
+          <div className="min-w-0 flex-1">
             <Link
               href={playerHref}
-              className="min-w-0 line-clamp-2 break-words rounded-fw-sm font-fw-display text-body-lg font-semibold leading-snug tracking-[-0.01em] text-text-primary outline-none [overflow-wrap:anywhere] focus-visible:ring-2 focus-visible:ring-border-focus"
+              className="min-w-0 line-clamp-2 break-words rounded-fw-sm font-fw-display text-h3 font-semibold leading-tight tracking-[-0.015em] text-text-primary outline-none [overflow-wrap:anywhere] focus-visible:ring-2 focus-visible:ring-border-focus"
             >
               {name}
             </Link>
             {meta.length > 0 ? (
-              <p className="mt-0.5 min-w-0 truncate font-fw-sans text-caption text-text-secondary">
+              <p className="mt-1 min-w-0 truncate font-fw-sans text-body-sm text-text-secondary">
                 {online ? <span className="font-medium text-accent-ink">Online</span> : null}
                 {online && meta.length > 1 ? ' · ' : ''}
                 {meta.filter((part) => part !== 'Online').join(' · ')}
               </p>
             ) : null}
-            <div className="mt-2 flex flex-wrap items-center gap-2">
+            <div className="mt-3 flex flex-wrap items-center gap-2">
               <FairwayPlayerStatusBadge playerId={player.id} currentStatus={player.status} size="sm" />
               <FairwayIntentControl
                 playerId={player.id}
