@@ -33,6 +33,8 @@ import type { FairwayGoalCardData } from '@/components/fairway/pages/coachhelm/F
 import { logServerError } from '@/lib/server-error-logger';
 import { describeError } from '@/lib/utils/describe-error';
 import { todayIsoInZone } from '@/lib/golf/timezone';
+import { loadTeamIntelligence } from '@/lib/golf/team-intelligence/loader';
+import type { TeamIntelligenceResult } from '@/lib/golf/team-intelligence/types';
 import { isFlagEnabled } from '@/lib/flags';
 import { fromUntyped } from '@/lib/supabase/untyped';
 import { computeEvidenceRevisionStatuses } from '@/lib/coachhelm/focus-areas/load-evidence-revision-status';
@@ -150,6 +152,33 @@ export default async function IntelligenceDashboardPage({ searchParams }: Intell
   }
 
   const rosterPromise = loadPlayersDrillData(supabase, teamId);
+  // Read once (Promise.resolve runs the builder a single time) and shared by
+  // the due-for-review day and Home's Team intelligence season window.
+  const teamTimezonePromise = Promise.resolve(
+    supabase.from('golf_team_settings').select('timezone').eq('team_id', teamId).maybeSingle(),
+  );
+  // Home's Team intelligence: season rounds + tracked shots. Chained on the
+  // timezone so "today" is the team's day; never rejects (a failed read
+  // becomes an honest notice on Home, not a blank page).
+  const teamIntelligencePromise: Promise<TeamIntelligenceResult> = teamTimezonePromise
+    .then((res) =>
+      loadTeamIntelligence(
+        supabase,
+        teamId,
+        todayIsoInZone((res.data as { timezone?: string } | null)?.timezone || 'America/New_York'),
+      ),
+    )
+    .then(
+      (data): TeamIntelligenceResult => ({ success: true, data }),
+      (error: unknown): TeamIntelligenceResult => {
+        void logServerError(
+          `[intelligence] team intelligence read failed for team ${teamId}: ${describeError(error)}`,
+          { action: 'intelligence.loadTeamIntelligence', featureArea: 'coachhelm' },
+          'error',
+        );
+        return { success: false, error: 'Team intelligence did not load. The rest of the page is unaffected.' };
+      },
+    );
   // The Chat tab's thread, history rail and openers. Resolved on every load,
   // not only on `?view=chat`: switching tabs is client-side, so the tab must
   // already have its data when the coach opens it. Never rejects (degrades to
@@ -180,6 +209,7 @@ export default async function IntelligenceDashboardPage({ searchParams }: Intell
     roster,
     command,
     chat,
+    teamIntelligenceResult,
   ] = await Promise.all([
     getTeamOverview(teamId),
     getAlertCounts(coach.id),
@@ -196,7 +226,7 @@ export default async function IntelligenceDashboardPage({ searchParams }: Intell
     getTeamCategoryInsights(teamId),
     // #1998 review — "due for review" needs the TEAM's wall-clock calendar
     // day, not the server's UTC day (dashboard-data.ts's own pattern).
-    supabase.from('golf_team_settings').select('timezone').eq('team_id', teamId).maybeSingle(),
+    teamTimezonePromise,
     // The whole Players-drill chain (roster → players → focus areas/stats/
     // goals/standing → everything keyed off focus areas) runs BESIDE this
     // batch rather than after it: it needs only teamId. It stays on the
@@ -205,6 +235,7 @@ export default async function IntelligenceDashboardPage({ searchParams }: Intell
     rosterPromise,
     commandPromise,
     chatPromise,
+    teamIntelligencePromise,
   ]);
   const alertCounts = countsRes.success ? (countsRes.counts ?? null) : null;
   const signalGroups = signalGroupsResult.success ? signalGroupsResult.groups : [];
@@ -355,6 +386,7 @@ export default async function IntelligenceDashboardPage({ searchParams }: Intell
           command={command}
           overview={overviewResult}
           categoryInsights={categoryInsightsResult}
+          teamIntelligence={teamIntelligenceResult}
           coachId={coach.id}
           groups={signalGroups}
           scannedAt={signalGroupsResult.scannedAt}

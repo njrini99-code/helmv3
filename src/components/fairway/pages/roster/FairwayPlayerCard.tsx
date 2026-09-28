@@ -102,7 +102,7 @@ function StatCell({
   // the figure on a narrow card rather than being clipped.
   return (
     <div className="flex min-w-0 flex-col overflow-hidden rounded-fw-sm border border-[oklch(0.36_0.08_152/0.35)] bg-surface [box-shadow:0_1px_2px_oklch(0.18_0.01_60/0.06),0_6px_14px_-8px_oklch(0.25_0.05_120/0.35)]">
-      <dt className="truncate bg-gradient-to-b text-center from-[oklch(0.44_0.092_152)] to-[oklch(0.37_0.084_152)] px-2 py-1.5 font-fw-sans text-eyebrow font-semibold leading-none text-[oklch(0.975_0.015_90)] [box-shadow:inset_0_1px_0_oklch(1_0_0/0.16)]">
+      <dt className="truncate bg-gradient-to-b text-center from-[oklch(0.44_0.092_152)] to-[oklch(0.37_0.084_152)] px-2 py-1.5 font-fw-sans text-caption font-semibold leading-none text-[oklch(0.975_0.015_90)] [box-shadow:inset_0_1px_0_oklch(1_0_0/0.16)]">
         {label}
       </dt>
       <dd className="flex min-w-0 flex-1 flex-wrap items-baseline justify-center gap-x-1.5 gap-y-1 px-2 py-2">

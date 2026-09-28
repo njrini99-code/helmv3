@@ -41,11 +41,7 @@ vi.mock('@/app/golf/actions/signal-groups', () => ({
 }));
 
 // Home's sections have their own suites; here they only mark which view is up.
-vi.mock('../TeamBleedBoard', () => ({ TeamBleedBoard: () => <div data-testid="team-bleed-board" /> }));
-vi.mock('../TeamShotWeaknesses', () => ({
-  TeamShotWeaknesses: () => <div data-testid="team-shot-weaknesses" />,
-}));
-vi.mock('../TeamSignalSummary', () => ({ TeamSignalSummary: () => <div data-testid="team-signal-summary" /> }));
+vi.mock('../../intel/TeamIntelligence', () => ({ TeamIntelligence: () => <div data-testid="team-intelligence" /> }));
 vi.mock('../SignalQueue', () => ({
   SignalQueue: ({ onSelectFilter }: { onSelectFilter: (filter: QueueFilterKey) => void }) => (
     <div data-testid="signal-queue">
@@ -130,6 +126,7 @@ function desk() {
       scannedAt={null}
       groupsError={null}
       categoryInsights={{ success: false, error: 'not fetched in this test' }}
+      teamIntelligence={{ success: false, error: 'not fetched in this test' }}
       playersDrillProps={playersDrillProps}
       homeLead={<h1>Morning, Coach.</h1>}
       chatPanel={<div data-testid="chat-panel" />}
@@ -150,14 +147,14 @@ function loadAt(search: string) {
 }
 
 function expectHome() {
-  expect(screen.getByTestId('team-shot-weaknesses')).toBeInTheDocument();
+  expect(screen.getByTestId('team-intelligence')).toBeInTheDocument();
   expect(screen.queryByTestId('signal-queue')).not.toBeInTheDocument();
 }
 
 function expectLab() {
   expect(screen.getByRole('heading', { name: 'The Lab' })).toBeInTheDocument();
   expect(screen.getByTestId('signal-queue')).toBeInTheDocument();
-  expect(screen.queryByTestId('team-shot-weaknesses')).not.toBeInTheDocument();
+  expect(screen.queryByTestId('team-intelligence')).not.toBeInTheDocument();
 }
 
 describe('TriageDesk: Home · The Lab · Chat', () => {
@@ -234,7 +231,7 @@ describe('TriageDesk: Home · The Lab · Chat', () => {
   it('falls back to Home for an absent or unknown view, rather than blanking', () => {
     for (const search of ['', 'view=', 'view=not-a-view', 'view=brief']) {
       const view = loadAt(search);
-      expect(screen.getByTestId('team-shot-weaknesses'), JSON.stringify(search)).toBeInTheDocument();
+      expect(screen.getByTestId('team-intelligence'), JSON.stringify(search)).toBeInTheDocument();
       view.unmount();
     }
   });
@@ -308,6 +305,7 @@ describe('TriageDesk: Home · The Lab · Chat', () => {
         scannedAt={null}
         groupsError={null}
         categoryInsights={{ success: false, error: 'not fetched in this test' }}
+        teamIntelligence={{ success: false, error: 'not fetched in this test' }}
         playersDrillProps={playersDrillProps}
       />,
     );
