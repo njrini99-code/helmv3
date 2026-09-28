@@ -211,6 +211,15 @@ const COACH_SCHEDULE_TABS: readonly GolfSubTab[] = [
   { id: 'travel', label: 'Travel', href: '/golf/dashboard/travel', icon: IconAirplane },
 ];
 
+/**
+ * Hubs whose strip renders as the large depth segmented control (sunken
+ * track, green pill) instead of the underline tabs — the Schedule hub, by
+ * owner request (2026-09-27). Keyed by the hub's own tabs array, which is
+ * exactly what the shell hands `FairwayHubSubNav`; add a hub's tabs here to
+ * give its strip the same treatment.
+ */
+export const SEGMENTED_HUB_TABS: ReadonlySet<readonly GolfSubTab[]> = new Set([COACH_SCHEDULE_TABS]);
+
 // golf-ia-plan.json step 9: Team Stats is now the DEFAULT landing tab (tabs[0]
 // — hubToNavItem always uses a hub's first tab as its rail href), and the
 // redundant "Stats" tab is pruned — it always dead-ended right back into Team
