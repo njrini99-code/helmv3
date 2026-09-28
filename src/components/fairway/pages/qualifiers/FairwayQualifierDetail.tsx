@@ -13,11 +13,12 @@
  *
  * Layout (owner 2026-09-27/28): one masthead (the display title without its
  * " — suffix", the start date only), then from `xl` a main column (the live
- * Leaderboard, the coach's round-by-round, selections) beside a right rail (a
- * small "where it stands" card on top, the Details card below: dates, course,
- * spots, rules, and every player's rounds played as dots). A phone stacks
- * them in DOM order: status → leaderboard → coach modules → details (grid
- * placement, never CSS `order`, so focus order matches). No green bands:
+ * Leaderboard, "The field" stats, the coach's round-by-round, selections)
+ * beside a right rail (a small "where it stands" card on top, the Details
+ * card below: dates, course, spots, rules, and every player's rounds played
+ * as dots). A phone stacks them in DOM order: status → leaderboard → field
+ * stats → coach modules → details (grid placement, never CSS `order`, so
+ * focus order matches). No green bands:
  * contrast comes from surface steps (sunken header rows, a strong rule under
  * them), the type scale and hairlines; green is the primary action, under-par
  * figures and the live pill only.
@@ -55,7 +56,9 @@ import {
   type LeaderboardRound,
   type LeaderboardSeason,
 } from './FairwayQualifierLeaderboard';
+import { FairwayQualifierFieldStats } from './FairwayQualifierFieldStats';
 import { qualifierStatusMeta } from './qualifier-status';
+import type { LinkedRound } from './qualifier-stats';
 import {
   deriveStandings,
   fieldProgress,
@@ -208,6 +211,19 @@ export function FairwayQualifierDetail(props: FairwayQualifierDetailProps) {
     );
   }, [breakdown]);
 
+  // The same linked round cards, flattened with names, for the field stats.
+  const linkedRounds = useMemo<LinkedRound[]>(
+    () =>
+      breakdown.flatMap(([playerId, data]) =>
+        data.rounds.flatMap((r) =>
+          typeof r.score === 'number'
+            ? [{ playerId, playerName: data.playerName, roundNumber: r.roundNumber, score: r.score, toPar: r.toPar }]
+            : [],
+        ),
+      ),
+    [breakdown],
+  );
+
   // ONE primary action, role-forked — never two.
   // Player (entered + active) → green "Play qualifier round".
   // Coach → quieter "Manage selections" (→ a DIFFERENT route, the W29 workspace).
@@ -328,6 +344,14 @@ export function FairwayQualifierDetail(props: FairwayQualifierDetailProps) {
             season={isCoach ? season : null}
             canOpenRounds={isCoach}
             onStandingsChange={setStandings}
+          />
+
+          <FairwayQualifierFieldStats
+            standings={standings}
+            linkedRounds={linkedRounds}
+            numRounds={numRounds}
+            selectionSlotsTotal={selectionSlotsTotal}
+            completed={status === 'completed'}
           />
 
           {isCoach ? (

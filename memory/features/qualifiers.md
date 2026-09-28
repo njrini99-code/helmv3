@@ -31,6 +31,8 @@ There are three user surfaces:
 - `src/components/fairway/pages/qualifiers/FairwayQualifierDetail.tsx`
 - `src/components/fairway/pages/qualifiers/FairwayQualifierLeaderboard.tsx`
 - `src/components/fairway/pages/qualifiers/qualifier-season.ts`
+- `src/components/fairway/pages/qualifiers/FairwayQualifierFieldStats.tsx`
+- `src/components/fairway/pages/qualifiers/qualifier-stats.ts`
 - `src/components/fairway/pages/my-qualifiers/FairwayMyQualifiers.tsx`
 
 ### Actions And Engine Code
@@ -188,6 +190,19 @@ Leaderboard reads qualifier
   reads it only for a coach and sends round ids only to a coach; a failed read
   hides the line. Tests: `__tests__/FairwayQualifierLeaderboard.board.test.tsx`,
   `__tests__/qualifier-season.test.ts`.
+- "The field" (`FairwayQualifierFieldStats`, `qualifier-stats.ts`), under the
+  board once it has scores, for every role: tiles on sunken wells for the
+  field average (with to par a round), the low round and who shot it, the
+  spread first to last, and the shots across the travel cut; then each
+  round's cards as dots on one to-par scale with the average marked (and the
+  latest round against round 1 over the players who played both), rounds by
+  to-par bucket, and who changed places after the latest round (golf
+  positions, biggest moves first). The field average, spread and cut read the
+  live standings; the low round and charts read the linked round cards, and
+  the card says how many scorecards they leave out. A qualifier scored as
+  totals gets the totals tiles and one line saying there are no round cards
+  to chart. Tests: `__tests__/qualifier-stats.test.ts`,
+  `__tests__/FairwayQualifierFieldStats.test.tsx`.
 - Mobile qualifier views need compact cards, clear primary action, and no stacked header utility rows.
 - Empty states should explain whether there are no qualifiers, no entries, or no rounds yet.
 - A route's `loading.tsx` reserves the page's paint at t=0 — for a
