@@ -282,6 +282,15 @@
      `.on-dark` cockpit panels, where a light top-edge highlight belongs at the
      dark convention's ~0.05 alpha, not a card-grade one. The lit top edge for
      the light matte cards is applied per-recipe in surface.tsx / MetricCard.tsx. */
+  /* Identity avatars (photo-less people, golf). Shaded jewel tones, never
+     green. Same values in both themes: the chip carries its own cream ink. */
+  --fw-avatar-1-top: oklch(0.50 0.10 255); --fw-avatar-1-bottom: oklch(0.34 0.09 260); /* navy */
+  --fw-avatar-2-top: oklch(0.52 0.13 25);  --fw-avatar-2-bottom: oklch(0.36 0.11 22);  /* oxblood */
+  --fw-avatar-3-top: oklch(0.50 0.10 330); --fw-avatar-3-bottom: oklch(0.34 0.08 330); /* plum */
+  --fw-avatar-4-top: oklch(0.52 0.08 205); --fw-avatar-4-bottom: oklch(0.36 0.07 210); /* deep teal */
+  --fw-avatar-5-top: oklch(0.52 0.09 285); --fw-avatar-5-bottom: oklch(0.36 0.08 285); /* slate violet */
+  --fw-avatar-6-top: oklch(0.58 0.12 55);  --fw-avatar-6-bottom: oklch(0.42 0.10 48);  /* burnt amber */
+
   --fw-shadow-flat:  0 1px 2px oklch(0.18 0.01 60 / 0.05),
                      0 4px 10px oklch(0.18 0.01 60 / 0.06);   /* resting card whisper — deeper */
   --fw-shadow-soft:  0 1px 2px   oklch(0.18 0.01 60 / 0.06),

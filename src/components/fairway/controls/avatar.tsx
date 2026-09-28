@@ -17,12 +17,36 @@
  * the control self-contained and SSR-safe).
  * ========================================================================== */
 
-import { type HTMLAttributes, type ReactNode, forwardRef, useEffect, useState } from 'react';
+import { type HTMLAttributes, type ReactNode, createContext, forwardRef, useContext, useEffect, useState } from 'react';
 import { cn } from '@/lib/utils';
 import { fwTransition } from './_internal';
 
 export type AvatarSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl';
 export type AvatarStatus = 'online' | 'away' | 'busy' | 'offline';
+/**
+ * `identity` (owner 2026-09-27, golf): a photo-less person gets a shaded,
+ * saturated colour picked from their name, so faces are told apart at a
+ * glance. Six tokens (`--fw-avatar-{1..6}-{top,bottom}`), never green, so a
+ * person never reads as the brand accent.
+ */
+export type AvatarTone = 'neutral' | 'accent' | 'identity';
+
+const AvatarToneContext = createContext<AvatarTone>('neutral');
+
+/** Sets the default fallback tone for every Avatar below it (golf uses `identity`). */
+export function AvatarToneProvider({ tone, children }: { tone: AvatarTone; children: ReactNode }) {
+  return <AvatarToneContext.Provider value={tone}>{children}</AvatarToneContext.Provider>;
+}
+
+const IDENTITY_SLOTS = 6;
+
+/** Stable 1..6 slot for a name (same person, same colour, everywhere). */
+export function identitySlot(name?: string | null): number {
+  const key = (name ?? '').trim().toLowerCase();
+  let h = 0;
+  for (let i = 0; i < key.length; i++) h = (h * 31 + key.charCodeAt(i)) >>> 0;
+  return (h % IDENTITY_SLOTS) + 1;
+}
 
 export interface AvatarProps extends Omit<HTMLAttributes<HTMLSpanElement>, 'children'> {
   src?: string | null;
@@ -43,7 +67,7 @@ export interface AvatarProps extends Omit<HTMLAttributes<HTMLSpanElement>, 'chil
    * Opt-in, so the default stays exactly what every existing caller renders;
    * whether it should BECOME the default is the owner's call, not this PR's.
    */
-  tone?: 'neutral' | 'accent';
+  tone?: AvatarTone;
   /** Override the auto-generated initials. */
   fallback?: ReactNode;
   /**
@@ -99,21 +123,26 @@ export function initialsFromName(name?: string | null): string {
 }
 
 export const Avatar = forwardRef<HTMLSpanElement, AvatarProps>(function Avatar(
-  { className, src, name, alt, size = 'md', status, square = false, fallback, decorative = false, tone = 'neutral', ...props },
+  { className, src, name, alt, size = 'md', status, square = false, fallback, decorative = false, tone: toneProp, style, ...props },
   ref,
 ) {
   const [errored, setErrored] = useState(false);
   // Reset the error flag if the src changes (e.g. avatar updated).
   useEffect(() => setErrored(false), [src]);
 
+  const contextTone = useContext(AvatarToneContext);
+  const tone = toneProp ?? contextTone;
   const showImage = !!src && !errored;
   const initials = initialsFromName(name);
+  const identity = tone === 'identity' && !showImage && !!name;
+  const slot = identity ? identitySlot(name) : 0;
 
   return (
     <span
       ref={ref}
       data-slot="fw-avatar"
       className={cn('relative inline-flex flex-shrink-0', sizePx[size])}
+      style={style}
       {...props}
     >
       <span
@@ -125,13 +154,24 @@ export const Avatar = forwardRef<HTMLSpanElement, AvatarProps>(function Avatar(
           // and inside an AvatarGroup the stack already draws its own
           // `ring-2 ring-<surface>` cutout rim — a second inset ring under it
           // reads as a muddy double edge rather than as depth.
-          tone === 'accent'
-            ? 'bg-accent-100 text-accent-700'
-            : 'bg-surface-sunken text-text-secondary ring-1 ring-inset ring-border-subtle',
+          identity
+            ? // Shaded jewel tone: light-to-dark fill, a top sheen and a soft
+              // bottom inner shadow so the chip reads as a lit, rounded object.
+              'text-[oklch(0.97_0.02_85)] [text-shadow:0_1px_1px_oklch(0_0_0/0.25)] [box-shadow:inset_0_1px_0_oklch(1_0_0/0.28),inset_0_-2px_4px_oklch(0_0_0/0.22),0_1px_2px_oklch(0.18_0.01_60/0.18)]'
+            : tone === 'accent'
+              ? 'bg-accent-100 text-accent-700'
+              : 'bg-surface-sunken text-text-secondary ring-1 ring-inset ring-border-subtle',
           square ? 'rounded-fw-md' : 'rounded-full',
           fwTransition,
           className,
         )}
+        style={
+          identity
+            ? {
+                backgroundImage: `linear-gradient(160deg, var(--fw-avatar-${slot}-top), var(--fw-avatar-${slot}-bottom))`,
+              }
+            : undefined
+        }
       >
         {showImage ? (
           <img
