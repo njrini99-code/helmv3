@@ -39,7 +39,7 @@ vi.mock('@/contexts/notification-badge-context', () => ({
 }));
 
 function renderCalendar(isCoach = false) {
-  return render(
+  const result = render(
     <FairwayCalendar
       events={[]}
       teamMembers={[]}
@@ -50,6 +50,10 @@ function renderCalendar(isCoach = false) {
       classOwnersResolved
     />,
   );
+  // The calendar opens on Day; these cases turn a MONTH page, so they
+  // switch to the month-scoped Agenda first.
+  fireEvent.click(screen.getByRole('radio', { name: 'Agenda' }));
+  return result;
 }
 
 function swipe(body: HTMLElement, dx: number, dy: number, pointerType: 'touch' | 'mouse' = 'touch') {

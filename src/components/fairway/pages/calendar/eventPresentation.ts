@@ -63,6 +63,36 @@ export function typeIcon(eventType: string | null | undefined): React.ComponentT
   return TYPE_ICON[(eventType || 'other').toLowerCase()] ?? CalendarDays;
 }
 
+/**
+ * Event type → its colour on the time grid and the month grid: one of the
+ * eight pastel identity tints (`--fw-tint-N-bg` / `-ink`, light and dark
+ * aware), so a coach can tell practice from a qualifier at a glance. The ink
+ * is AA on its own tint. Unknown types stay neutral rather than borrowing a
+ * colour that means something else.
+ */
+export interface EventTone {
+  bg: string;
+  ink: string;
+}
+
+const TYPE_TINT: Record<string, number> = {
+  practice: 1, // sage: the everyday green
+  workout: 7, // clay
+  tournament: 3, // gold
+  qualifier: 5, // violet
+  qualifying: 5,
+  travel: 2, // blue
+  team_meeting: 6, // teal
+  meeting: 6,
+  class: 8, // cyan
+};
+
+export function typeTone(eventType: string | null | undefined): EventTone {
+  const slot = TYPE_TINT[(eventType || 'other').toLowerCase()];
+  if (!slot) return { bg: 'var(--fw-color-surface-sunken)', ink: 'var(--fw-color-text-secondary)' };
+  return { bg: `var(--fw-tint-${slot}-bg)`, ink: `var(--fw-tint-${slot}-ink)` };
+}
+
 /** RSVP status → pill copy + tone (a player's own response). */
 export const RSVP_PILL: Record<RSVPStatus, EventTypeMeta> = {
   accepted: { label: 'Going', tone: 'accent' },

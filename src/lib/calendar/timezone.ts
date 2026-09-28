@@ -260,8 +260,10 @@ export function eventDaySpan(
 const OFFSET_INSTANT_RE =
   /^\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?(?:Z|[+-]\d{2}(?::?\d{2})?)$/i;
 
-/** Minutes past local midnight of `date` as seen in `timezone` (00:00 → 0). */
-function zonedMinuteOfDay(date: Date, timezone: string | null | undefined): number {
+/** Minutes past local midnight of `date` as seen in `timezone` (00:00 → 0).
+ * The day time grid positions blocks and the now-line with it, so a block's
+ * top is the TEAM's clock, never the device's. */
+export function zonedMinuteOfDay(date: Date, timezone: string | null | undefined): number {
   const parts = new Intl.DateTimeFormat('en-US', {
     timeZone: getValidTimezone(timezone),
     hour: '2-digit',

@@ -10,7 +10,7 @@
  * the others are neither in the DOM nor counted in "Nothing in <month>".
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import type { CalendarEvent } from '@/hooks/useCalendarEvents';
 import { FairwayCalendar } from '../FairwayCalendar';
 
@@ -84,8 +84,13 @@ const events: CalendarEvent[] = [
   makeEvent('may', '2026-05-15T18:00:00Z', 'May Practice'),
 ];
 
+/** The calendar opens on Day; every case here is about the Agenda list. */
+function openAgenda() {
+  fireEvent.click(screen.getByRole('radio', { name: 'Agenda' }));
+}
+
 function renderCalendar() {
-  return render(
+  const result = render(
     <FairwayCalendar
       events={events}
       teamMembers={[]}
@@ -96,6 +101,8 @@ function renderCalendar() {
       classOwnersResolved
     />,
   );
+  openAgenda();
+  return result;
 }
 
 describe('FairwayCalendar — Agenda view window', () => {
@@ -161,6 +168,7 @@ describe('FairwayCalendar — Agenda view window', () => {
         classOwnersResolved
       />,
     );
+    openAgenda();
 
     expect(screen.getByText('Nothing in March 2026')).toBeInTheDocument();
     expect(screen.queryByText('February Practice')).not.toBeInTheDocument();
@@ -192,6 +200,7 @@ describe('FairwayCalendar — Agenda view window', () => {
         classOwnersResolved
       />,
     );
+    openAgenda();
 
     expect(screen.getByRole('button', { name: 'Show 1 earlier event' })).toBeInTheDocument();
     expect(screen.getByText('Late March Practice')).toBeInTheDocument();

@@ -367,6 +367,23 @@ keeps its date separate from the return-to-today action.
   the row (`hidden md:inline-flex`), never inside it. Three distinct actions
   — team schedule, open a person, include in a comparison — never one avatar
   meaning all three.
+- Default view is DAY (owner 2026-09-27): `FairwayDayTimeGrid`, a 24-hour
+  time grid (64px per hour) inside its own scroller fitted to the viewport.
+  Timed events are blocks positioned by the TEAM clock (`zonedMinuteOfDay`,
+  `formatEventTime` with the team zone) and sized by duration; overlapping
+  events split into side-by-side lanes (`layoutDayBlocks`); a block is never
+  shorter than a 44px tap target and the layout reserves that height.
+  All-day events sit in a band above the hours with "Day N of M" for
+  multi-day spans (membership from `eventDaySpan`, so the Fall Invitational
+  shows on Oct 2 and Oct 3 only). A deep-green plinth header names the day
+  ("Today", "Tomorrow", weekday), the event count and scheduled hours, and on
+  today "Now · …", "Up next · …, 6:00 PM" or "All done for today". The
+  now-line (`role="separator"`, "Now, 10:58 PM") and its gutter pill appear
+  only on the team's today, from the mount clock (never SSR), ticking on the
+  minute. The grid opens scrolled to now on today, else to the first event,
+  else 7 AM, once per day shown. Event types carry pastel identity tints
+  (`typeTone` in `eventPresentation.ts`). Agenda, Week and Month are one tap
+  away; the Agenda tests select Agenda explicitly.
 - Agenda: month-scoped — its visible window is the title's calendar month
   and prev/next step by month (`Previous month` / `Next month`); the empty
   state names the period ("Nothing in September 2026") in a compact
