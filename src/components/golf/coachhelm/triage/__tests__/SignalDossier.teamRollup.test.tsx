@@ -83,6 +83,27 @@ describe('SignalDossier — team roll-up', () => {
     expect(screen.getAllByText(/9\.95 strokes/).length).toBeGreaterThan(0);
   });
 
+  it('never prints "undefined" for the fields a roll-up does not carry', () => {
+    // A roll-up's evidence is `{ metric, metric_label, strokes_impact,
+    // players_affected }`: no value, comparison, sample, window or
+    // confidence. The Lab once read those absent keys straight into
+    // "undefined putts · days" and "undefined You · undefined".
+    const { container } = renderDossier(signal({
+      evidence: {
+        metric: 'putts_made_3_5ft_pct',
+        metric_label: 'Putts Made 3-5 ft',
+        strokes_impact: 9.95,
+        players_affected: 6,
+      },
+    }));
+    expect(container.textContent ?? '').not.toMatch(/undefined|NaN/);
+  });
+
+  it('stays honest when a roll-up blob is missing every optional field', () => {
+    const { container } = renderDossier(signal());
+    expect(container.textContent ?? '').not.toMatch(/undefined|NaN/);
+  });
+
   it('keeps both actions on a real per-player insight', () => {
     renderDossier(signal({
       id: 'real-row',

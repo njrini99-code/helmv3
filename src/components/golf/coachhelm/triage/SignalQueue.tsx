@@ -2,23 +2,29 @@
 
 /**
  * ============================================================================
- * SignalQueue — the triage master pane (Triage Desk spec §3)
+ * SignalQueue — The Lab's master pane
  * ----------------------------------------------------------------------------
- * Filter chips (All / Urgent / New / Patterns / per-category) above a queue
- * grouped by player — collapsible groups, a pinned "Team" group first when
- * team-level signals exist, ordered by attention score. Rows are keyboard
- * navigable (Up/Down moves focus + selection across every VISIBLE row, i.e.
+ * Filter chips (All / Urgent / Patterns / per-category) above a queue grouped
+ * by player: collapsible groups, the Team group pinned first when roster
+ * roll-ups exist, then players by attention score. Rows are keyboard
+ * navigable (Up/Down moves focus + selection across every VISIBLE row,
  * respecting both the active filter and any collapsed groups).
+ *
+ * Chrome: the deep-green card plinth every CoachHelm card uses. The active
+ * chip is the solid green pill with a cream label (the same "selected"
+ * language as the Segmented toggle), never a green wash with green text.
+ * On a phone the chips scroll sideways in one row rather than stacking into
+ * a wall above the list.
  * ========================================================================== */
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown, Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Badge, EmptyState, PressTarget } from '@/components/fairway';
+import { Avatar, EmptyState, PressTarget } from '@/components/fairway';
+import { useScrollFade } from '@/lib/fairway/use-scroll-fade';
 import type { SignalGroup } from '@/lib/coachhelm/signal-grouping';
-import { SeverityChip } from './SignalRow';
-import { SignalRow } from './SignalRow';
+import { SeverityChip, SignalRow } from './SignalRow';
 import {
   BASE_QUEUE_FILTERS,
   countForFilter,
@@ -45,6 +51,9 @@ export interface SignalQueueProps {
    * queue lands where they left it (MOT-19).
    */
   returnSignalId?: string | null;
+  /** Player portraits for the group headers; a missing id falls back to
+   *  initials. */
+  avatarByPlayerId?: Readonly<Record<string, string | null>>;
 }
 
 function groupKey(group: SignalGroup): string {
@@ -62,9 +71,11 @@ export function SignalQueue({
   onSelectSignal,
   signalHref,
   returnSignalId = null,
+  avatarByPlayerId,
 }: SignalQueueProps) {
   const [collapsed, setCollapsed] = useState<ReadonlySet<string>>(new Set());
-  const queueRef = useRef<HTMLDivElement>(null);
+  const queueRef = useRef<HTMLElement>(null);
+  const { ref: chipsRef, fadeStyle: chipsFade } = useScrollFade<HTMLElement>('x');
 
   useEffect(() => {
     if (!returnSignalId) return;
@@ -106,9 +117,8 @@ export function SignalQueue({
   const rowRefs = useRef<HTMLAnchorElement[]>([]);
   rowRefs.current = [];
 
-  // The roving tab stop when nothing is selected yet (first load, before a
-  // URL `signal`/mouse pick) — the first row that will actually render,
-  // respecting collapsed groups, so Tab always reaches exactly one row.
+  // The roving tab stop when nothing is selected yet: the first row that will
+  // actually render, respecting collapsed groups.
   const firstVisibleRowId = useMemo(() => {
     for (const group of groups) {
       if (collapsed.has(groupKey(group))) continue;
@@ -134,52 +144,73 @@ export function SignalQueue({
   }
 
   return (
-    <div ref={queueRef} className="flex flex-col gap-3 min-[940px]:h-full min-[940px]:min-h-0">
-      <div className="flex flex-wrap gap-2 min-[940px]:shrink-0">
-        {chips.map((chip) => (
-          <Link
-            key={chip.key}
-            href={filterHref(chip.key)}
-            replace
-            scroll={false}
-            onClick={(event) => {
-              if (
-                event.defaultPrevented ||
-                event.button !== 0 ||
-                event.metaKey ||
-                event.ctrlKey ||
-                event.shiftKey ||
-                event.altKey
-              ) {
-                return;
-              }
-              event.preventDefault();
-              onSelectFilter(chip.key);
-            }}
-            aria-current={filter === chip.key ? 'page' : undefined}
-            className={cn(
-              'inline-flex min-h-[30px] items-center justify-center gap-1.5 whitespace-nowrap rounded-full border px-3 [@media(pointer:coarse)]:min-h-[44px]',
-              'font-fw-sans text-caption font-medium outline-none transition-colors',
-              'focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2',
-              filter === chip.key
-                ? 'border-accent-500 bg-accent-50 text-accent-700'
-                : 'border-border-subtle bg-surface text-text-secondary hover:bg-surface-tint hover:text-text-primary',
-            )}
-          >
-            <span>{chip.label}</span>
-            <span className="ml-0.5 inline-flex min-w-5 items-center justify-center rounded-full bg-surface-sunken px-1 font-fw-mono text-caption tabular-nums">
-              {countForFilter(allGroups, chip.key)}
-            </span>
-          </Link>
-        ))}
+    <section
+      ref={queueRef}
+      aria-label="Signal queue"
+      className="flex flex-col overflow-hidden rounded-fw-lg border border-border-subtle bg-surface shadow-soft min-[940px]:h-full min-[940px]:min-h-0"
+    >
+      <div className="fw-plinth-green flex items-center justify-between gap-3 px-4 py-3 min-[940px]:shrink-0">
+        <h2 className="font-fw-sans text-h3 font-semibold text-text-primary">Signals</h2>
+        <span className="font-fw-sans text-body-sm text-text-secondary">Worst first</span>
       </div>
+
+      <nav
+        ref={chipsRef}
+        aria-label="Filter signals"
+        style={chipsFade}
+        className={cn(
+          'flex gap-2 overflow-x-auto border-b border-border-subtle px-3 py-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden',
+          'min-[940px]:shrink-0 min-[940px]:flex-wrap min-[940px]:overflow-visible',
+        )}
+      >
+        {chips.map((chip) => {
+          const active = filter === chip.key;
+          return (
+            <Link
+              key={chip.key}
+              href={filterHref(chip.key)}
+              replace
+              scroll={false}
+              onClick={(event) => {
+                if (
+                  event.defaultPrevented ||
+                  event.button !== 0 ||
+                  event.metaKey ||
+                  event.ctrlKey ||
+                  event.shiftKey ||
+                  event.altKey
+                ) {
+                  return;
+                }
+                event.preventDefault();
+                onSelectFilter(chip.key);
+              }}
+              aria-current={active ? 'page' : undefined}
+              className={cn(
+                'inline-flex min-h-[36px] shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-full border px-3.5 [@media(pointer:coarse)]:min-h-[44px]',
+                'font-fw-sans text-caption font-medium outline-none',
+                'transition-[background-color,border-color,color] [transition-duration:var(--fw-dur-fast)]',
+                'focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-surface',
+                active
+                  ? 'border-accent-fill bg-accent-fill text-text-on-accent-fill'
+                  : 'border-border-subtle bg-surface text-text-secondary hover:border-border-strong hover:text-text-primary',
+              )}
+            >
+              <span>{chip.label}</span>
+              <span className={cn('tabular-nums', active ? 'text-text-on-accent-fill' : 'text-text-tertiary')}>
+                {countForFilter(allGroups, chip.key)}
+              </span>
+            </Link>
+          );
+        })}
+      </nav>
 
       <div
         role="listbox"
         aria-label="Signals queue"
         tabIndex={-1}
         onKeyDown={handleKeyDown}
-        className="flex max-h-[70vh] flex-col gap-1 overflow-y-auto rounded-fw-lg border border-border-subtle bg-surface p-2 min-[940px]:min-h-0 min-[940px]:flex-1 min-[940px]:max-h-none"
+        className="flex flex-col gap-1 p-2 outline-none min-[940px]:min-h-0 min-[940px]:flex-1 min-[940px]:overflow-y-auto"
       >
         {groups.length === 0 ? (
           <div className="p-4">
@@ -197,30 +228,47 @@ export function SignalQueue({
             // A listbox's children are options or groups: each player is a
             // named group of signal options, not a bare button (A11Y-R4).
             return (
-              <div key={key} role="group" aria-labelledby={headerId}>
+              <div key={key} role="group" aria-labelledby={headerId} className="pb-1">
                 <PressTarget
                   id={headerId}
                   onClick={() => toggleCollapsed(key)}
                   aria-expanded={!isCollapsed}
-                  className={cn(
-                    'flex w-full items-center justify-between gap-2 rounded-fw-sm px-2 py-2',
-                    'font-fw-sans text-body-sm font-semibold text-text-primary hover:bg-surface-sunken',
-                  )}
+                  className="flex min-h-[48px] w-full items-center gap-2.5 rounded-fw-md px-2 py-1.5 text-left hover:bg-surface-sunken"
                 >
-                  <span className="truncate">{group.playerName}</span>
-                  <span className="flex flex-shrink-0 items-center gap-2">
-                    <Badge tone="neutral" size="sm" numeric>
+                  {group.playerId ? (
+                    <Avatar
+                      src={avatarByPlayerId?.[group.playerId] ?? null}
+                      name={group.playerName}
+                      size="sm"
+                      decorative
+                    />
+                  ) : (
+                    <span
+                      aria-hidden="true"
+                      className="grid h-8 w-8 shrink-0 place-items-center rounded-full border border-border-subtle bg-surface-sunken text-text-secondary"
+                    >
+                      <Users className="h-4 w-4" />
+                    </span>
+                  )}
+                  <span className="min-w-0 flex-1 truncate font-fw-sans text-body-sm font-semibold text-text-primary">
+                    {group.playerName}
+                  </span>
+                  <span className="flex shrink-0 items-center gap-2">
+                    <span className="font-fw-sans text-caption tabular-nums text-text-tertiary">
                       {group.signals.length}
-                    </Badge>
+                    </span>
                     <SeverityChip severity={group.worstSeverity} />
                     <ChevronDown
-                      className={cn('h-4 w-4 text-text-tertiary transition-transform', isCollapsed && '-rotate-90')}
+                      className={cn(
+                        'h-4 w-4 text-text-tertiary transition-transform [transition-duration:var(--fw-dur-fast)]',
+                        isCollapsed && '-rotate-90',
+                      )}
                       aria-hidden="true"
                     />
                   </span>
                 </PressTarget>
                 {!isCollapsed ? (
-                  <div className="flex flex-col gap-0.5 pb-1">
+                  <div className="flex flex-col gap-0.5 pl-2">
                     {group.signals.map((signal) => (
                       <SignalRow
                         key={signal.id}
@@ -242,6 +290,6 @@ export function SignalQueue({
           })
         )}
       </div>
-    </div>
+    </section>
   );
 }

@@ -61,7 +61,7 @@ describe('TeamSignalSummary — synthesized team rows are a roll-up, not a findi
       p1: 'A', p2: 'B', p3: 'C',
     });
 
-    render(<TeamSignalSummary groups={groups} playerHref={(id) => `/golf/dashboard/players/${id}`} onOpenPlayer={vi.fn()} />);
+    render(<TeamSignalSummary groups={groups} categoryHref={(c) => `/golf/dashboard/intelligence?view=lab&filter=category:${c}`} onOpenCategory={vi.fn()} />);
 
     // The honest total is the three real leaks: 4.5. Counting the roll-up too
     // would read 9.0.
@@ -80,7 +80,7 @@ describe('TeamSignalSummary — synthesized team rows are a roll-up, not a findi
       { p1: 'A', p2: 'B', p3: 'C' },
     );
 
-    render(<TeamSignalSummary groups={groups} playerHref={(id) => `/golf/dashboard/players/${id}`} onOpenPlayer={vi.fn()} />);
+    render(<TeamSignalSummary groups={groups} categoryHref={(c) => `/golf/dashboard/intelligence?view=lab&filter=category:${c}`} onOpenCategory={vi.fn()} />);
 
     expect(screen.getByText('3 live')).toBeInTheDocument();
     expect(screen.queryByText('4 live')).toBeNull();

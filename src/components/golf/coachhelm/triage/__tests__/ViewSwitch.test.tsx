@@ -1,24 +1,27 @@
 // @vitest-environment jsdom
 /**
  * ============================================================================
- * ViewSwitch — Segmented visual-treatment adoption (owner request, 2026-07-25)
+ * ViewSwitch — the CoachHelm top toggle (Home · The Lab · Chat)
  * ----------------------------------------------------------------------------
- * Pins three things this rewrite must never regress:
- *   1. It is still real navigation — `next/link` anchors with the correct
- *      `?view=` href and `aria-current="page"` on the active tab, and the
+ * Pins four things this control must never regress:
+ *   1. It is real navigation: `next/link` anchors with the correct `?view=`
+ *      href and `aria-current="page"` on the active view, plus the
  *      cmd/ctrl/shift/middle-click passthrough that lets a modified click
- *      open a new tab WITHOUT mutating this tab's `onSelect` state (the
- *      exact hazard documented in `segmented.tsx`'s docblock for why this
- *      control can't become a `Segmented`/Radix `ToggleGroup` instance).
- *   2. The shared `SegmentedPill` (track/pill depth + green "on" dot) is
- *      wired in and renders on the active segment only.
- *   3. Reduced motion is resolved through `useReducedMotionGuard` (never the
- *      raw hook) and actually disables the pill's `layoutId` glide.
+ *      open a new tab WITHOUT mutating this tab's view (the hazard
+ *      `segmented.tsx`'s docblock gives for why this control can't become a
+ *      Radix `ToggleGroup` instance).
+ *   2. The shared `SegmentedPill` renders on the active segment only. (It is
+ *      found by its `data-slot`, not a colour class: the pill's dot moved
+ *      from `bg-accent-600` to `bg-text-on-accent-fill` with the solid green
+ *      thumb, which silently broke the old colour-based assertions.)
+ *   3. The deep-link-only `players` view marks no segment current.
+ *   4. Reduced motion is resolved through `useReducedMotionGuard` and
+ *      actually disables the pill's `layoutId` glide.
  * ========================================================================== */
 import { describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { ViewSwitch } from '../ViewSwitch';
-import type { TriageView } from '../buildTriageViewModel';
+import type { ToggleView } from '../buildTriageViewModel';
 
 // Same pattern as TeamCategoryLeakBand.test.tsx: replace framer-motion with a
 // deterministic passthrough so `useReducedMotionGuard` resolves predictably
@@ -54,58 +57,70 @@ vi.mock('framer-motion', async () => {
 const haptics = vi.hoisted(() => ({ fwHaptic: vi.fn() }));
 vi.mock('@/lib/fairway/haptics', () => ({ fwHaptic: haptics.fwHaptic }));
 
-function hrefFor(view: TriageView) {
+function hrefFor(view: ToggleView) {
   return `/golf/dashboard/intelligence?view=${view}`;
 }
 
+const PILL = '[data-slot="fw-segment-pill"]';
+
 describe('ViewSwitch', () => {
-  it('renders every option as a link with the URL-driven href, and marks only the active one aria-current', () => {
-    const onSelect = vi.fn();
-    render(<ViewSwitch view="players" hrefFor={hrefFor} onSelect={onSelect} />);
+  it('renders Home, The Lab and Chat as links with URL-driven hrefs, and marks only the active one aria-current', () => {
+    render(<ViewSwitch view="lab" hrefFor={hrefFor} onSelect={vi.fn()} />);
 
-    const signals = screen.getByRole('link', { name: 'Signals' });
-    const players = screen.getByRole('link', { name: 'Players' });
-    const effectiveness = screen.getByRole('link', { name: 'Effectiveness' });
+    const home = screen.getByRole('link', { name: 'Home' });
+    const lab = screen.getByRole('link', { name: 'The Lab' });
+    const chat = screen.getByRole('link', { name: 'Chat' });
 
-    expect(signals).toHaveAttribute('href', '/golf/dashboard/intelligence?view=signals');
-    expect(players).toHaveAttribute('href', '/golf/dashboard/intelligence?view=players');
-    expect(effectiveness).toHaveAttribute('href', '/golf/dashboard/intelligence?view=effectiveness');
+    expect(home).toHaveAttribute('href', '/golf/dashboard/intelligence?view=home');
+    expect(lab).toHaveAttribute('href', '/golf/dashboard/intelligence?view=lab');
+    expect(chat).toHaveAttribute('href', '/golf/dashboard/intelligence?view=chat');
 
-    expect(players).toHaveAttribute('aria-current', 'page');
-    expect(signals).not.toHaveAttribute('aria-current');
-    expect(effectiveness).not.toHaveAttribute('aria-current');
+    expect(lab).toHaveAttribute('aria-current', 'page');
+    expect(home).not.toHaveAttribute('aria-current');
+    expect(chat).not.toHaveAttribute('aria-current');
+  });
+
+  it('offers no Players or Effectiveness segment any more', () => {
+    render(<ViewSwitch view="home" hrefFor={hrefFor} onSelect={vi.fn()} />);
+    expect(screen.queryByRole('link', { name: 'Players' })).toBeNull();
+    expect(screen.queryByRole('link', { name: 'Effectiveness' })).toBeNull();
+    expect(screen.queryByRole('link', { name: 'Signals' })).toBeNull();
+  });
+
+  it('marks nothing current while the deep-link-only players view is showing', () => {
+    const { container } = render(<ViewSwitch view="players" hrefFor={hrefFor} onSelect={vi.fn()} />);
+    expect(container.querySelector('[aria-current]')).toBeNull();
+    expect(container.querySelector(PILL)).toBeNull();
   });
 
   it('fires onSelect and prevents default navigation on a plain primary click', () => {
     const onSelect = vi.fn();
-    render(<ViewSwitch view="signals" hrefFor={hrefFor} onSelect={onSelect} />);
+    render(<ViewSwitch view="home" hrefFor={hrefFor} onSelect={onSelect} />);
 
-    const players = screen.getByRole('link', { name: 'Players' });
-    const event = fireEvent.click(players, { button: 0 });
+    const event = fireEvent.click(screen.getByRole('link', { name: 'The Lab' }), { button: 0 });
 
     expect(onSelect).toHaveBeenCalledTimes(1);
-    expect(onSelect).toHaveBeenCalledWith('players');
+    expect(onSelect).toHaveBeenCalledWith('lab');
     // jsdom's fireEvent.click return value is `false` when preventDefault() was called.
     expect(event).toBe(false);
   });
 
   it('fires one selection haptic on a real view change, none when re-tapping the active view', () => {
     haptics.fwHaptic.mockReset();
-    const onSelect = vi.fn();
-    render(<ViewSwitch view="signals" hrefFor={hrefFor} onSelect={onSelect} />);
+    render(<ViewSwitch view="home" hrefFor={hrefFor} onSelect={vi.fn()} />);
 
-    fireEvent.click(screen.getByRole('link', { name: 'Signals' }), { button: 0 });
+    fireEvent.click(screen.getByRole('link', { name: 'Home' }), { button: 0 });
     expect(haptics.fwHaptic).not.toHaveBeenCalled();
 
-    fireEvent.click(screen.getByRole('link', { name: 'Players' }), { button: 0 });
+    fireEvent.click(screen.getByRole('link', { name: 'Chat' }), { button: 0 });
     expect(haptics.fwHaptic).toHaveBeenCalledTimes(1);
     expect(haptics.fwHaptic).toHaveBeenCalledWith('selection');
   });
 
   it('fires no haptic on a modified (new-tab) click', () => {
     haptics.fwHaptic.mockReset();
-    render(<ViewSwitch view="signals" hrefFor={hrefFor} onSelect={vi.fn()} />);
-    fireEvent.click(screen.getByRole('link', { name: 'Players' }), { button: 0, metaKey: true });
+    render(<ViewSwitch view="home" hrefFor={hrefFor} onSelect={vi.fn()} />);
+    fireEvent.click(screen.getByRole('link', { name: 'The Lab' }), { button: 0, metaKey: true });
     expect(haptics.fwHaptic).not.toHaveBeenCalled();
   });
 
@@ -119,71 +134,54 @@ describe('ViewSwitch', () => {
     ['non-primary button', { button: 1 }],
   ])('does not call onSelect (and does not preventDefault) on a %s click', (_label, eventInit) => {
     const onSelect = vi.fn();
-    render(<ViewSwitch view="signals" hrefFor={hrefFor} onSelect={onSelect} />);
+    render(<ViewSwitch view="home" hrefFor={hrefFor} onSelect={onSelect} />);
 
-    const players = screen.getByRole('link', { name: 'Players' });
-    const notPrevented = fireEvent.click(players, { button: 0, ...eventInit });
+    const notPrevented = fireEvent.click(screen.getByRole('link', { name: 'The Lab' }), { button: 0, ...eventInit });
 
     expect(onSelect).not.toHaveBeenCalled();
-    // `true` return means preventDefault() was NOT called — native anchor
-    // behavior (e.g. opening a new tab) is left intact.
+    // `true` means preventDefault() was NOT called: native anchor behaviour
+    // (opening a new tab) is left intact.
     expect(notPrevented).toBe(true);
   });
 
-  describe('the green active-segment indicator', () => {
-    it('renders the shared SegmentedPill dot on the active link only', () => {
-      render(<ViewSwitch view="effectiveness" hrefFor={hrefFor} onSelect={() => {}} />);
+  describe('the active-segment pill', () => {
+    it('renders the shared SegmentedPill on the active link only', () => {
+      render(<ViewSwitch view="chat" hrefFor={hrefFor} onSelect={() => {}} />);
 
-      const signals = screen.getByRole('link', { name: 'Signals' });
-      const players = screen.getByRole('link', { name: 'Players' });
-      const effectiveness = screen.getByRole('link', { name: 'Effectiveness' });
-
-      expect(signals.querySelector('.bg-accent-600')).not.toBeInTheDocument();
-      expect(players.querySelector('.bg-accent-600')).not.toBeInTheDocument();
-      const dot = effectiveness.querySelector('.bg-accent-600');
-      expect(dot).toBeInTheDocument();
-      expect(dot).toHaveAttribute('aria-hidden', 'true');
+      expect(screen.getByRole('link', { name: 'Home' }).querySelector(PILL)).toBeNull();
+      expect(screen.getByRole('link', { name: 'The Lab' }).querySelector(PILL)).toBeNull();
+      const pill = screen.getByRole('link', { name: 'Chat' }).querySelector(PILL);
+      expect(pill).toBeInTheDocument();
+      expect(pill).toHaveAttribute('aria-hidden', 'true');
     });
 
-    it('moves the dot when the active view prop changes', () => {
-      const { rerender } = render(
-        <ViewSwitch view="signals" hrefFor={hrefFor} onSelect={() => {}} />,
-      );
-      expect(
-        screen.getByRole('link', { name: 'Signals' }).querySelector('.bg-accent-600'),
-      ).toBeInTheDocument();
-      expect(
-        screen.getByRole('link', { name: 'Players' }).querySelector('.bg-accent-600'),
-      ).not.toBeInTheDocument();
+    it('moves the pill when the active view prop changes', () => {
+      const { rerender } = render(<ViewSwitch view="home" hrefFor={hrefFor} onSelect={() => {}} />);
+      expect(screen.getByRole('link', { name: 'Home' }).querySelector(PILL)).toBeInTheDocument();
+      expect(screen.getByRole('link', { name: 'The Lab' }).querySelector(PILL)).toBeNull();
 
-      rerender(<ViewSwitch view="players" hrefFor={hrefFor} onSelect={() => {}} />);
+      rerender(<ViewSwitch view="lab" hrefFor={hrefFor} onSelect={() => {}} />);
 
-      expect(
-        screen.getByRole('link', { name: 'Signals' }).querySelector('.bg-accent-600'),
-      ).not.toBeInTheDocument();
-      expect(
-        screen.getByRole('link', { name: 'Players' }).querySelector('.bg-accent-600'),
-      ).toBeInTheDocument();
+      expect(screen.getByRole('link', { name: 'Home' }).querySelector(PILL)).toBeNull();
+      expect(screen.getByRole('link', { name: 'The Lab' }).querySelector(PILL)).toBeInTheDocument();
     });
   });
 
   describe('reduced motion', () => {
     it('gives the active pill a layoutId when motion is not reduced', () => {
       motionState.reducedMotion = false;
-      render(<ViewSwitch view="signals" hrefFor={hrefFor} onSelect={() => {}} />);
-      const pill = screen.getByRole('link', { name: 'Signals' }).querySelector('[data-layout-id]');
+      render(<ViewSwitch view="home" hrefFor={hrefFor} onSelect={() => {}} />);
+      const pill = screen.getByRole('link', { name: 'Home' }).querySelector('[data-layout-id]');
       expect(pill).not.toBeNull();
       expect(pill?.getAttribute('data-layout-id')).not.toBe('');
     });
 
     it('disables the layoutId glide (empty data-layout-id) when useReducedMotionGuard reports reduced motion', () => {
       motionState.reducedMotion = true;
-      render(<ViewSwitch view="signals" hrefFor={hrefFor} onSelect={() => {}} />);
-      const pill = screen.getByRole('link', { name: 'Signals' }).querySelector('[data-layout-id]');
+      render(<ViewSwitch view="home" hrefFor={hrefFor} onSelect={() => {}} />);
+      const pill = screen.getByRole('link', { name: 'Home' }).querySelector('[data-layout-id]');
       expect(pill).not.toBeNull();
       expect(pill?.getAttribute('data-layout-id')).toBe('');
-      // The dot still renders under reduced motion — only the travel animation is disabled.
-      expect(pill?.querySelector('.bg-accent-600')).toBeInTheDocument();
       motionState.reducedMotion = false; // reset for subsequent tests
     });
   });
