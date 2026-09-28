@@ -144,6 +144,9 @@ const pct = (part: number, whole: number): number | null => (whole > 0 ? (part /
 
 // Tee ------------------------------------------------------------------------
 
+/** Longest believable drive, yards. */
+export const DRIVE_CEILING_YD = 420;
+
 export interface TeeSummary {
   n: number;
   zones: Record<TeeZone, number>;
@@ -156,7 +159,13 @@ export interface TeeSummary {
 export function teeSummary(shots: readonly TeeShot[]): TeeSummary {
   const zones: Record<TeeZone, number> = { fairway: 0, left: 0, right: 0, miss: 0, penalty: 0 };
   for (const s of shots) zones[s.zone] += 1;
-  const yards = shots.map((s) => s.yards).filter((y): y is number => y != null && y > 0);
+  // Drive length: drives that stayed in play, with a plausible length. A
+  // penalty's "length" is where the drop was, and past the ceiling is a
+  // mis-keyed hole length, not a drive.
+  const yards = shots
+    .filter((s) => s.zone !== 'penalty')
+    .map((s) => s.yards)
+    .filter((y): y is number => y != null && y > 0 && y <= DRIVE_CEILING_YD);
   return {
     n: shots.length,
     zones,
