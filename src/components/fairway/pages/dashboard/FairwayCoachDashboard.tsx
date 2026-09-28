@@ -93,7 +93,6 @@ import type {
   TodayEvent,
 } from '@/app/golf/actions/dashboard-data';
 import type { CoachDashboardData } from '@/app/golf/(dashboard)/dashboard/components/coach-dashboard-types';
-import { DaySchedule, type DayScheduleEvent } from './DaySchedule';
 import { formatToPar } from '@/lib/golf/format-to-par';
 import { formatMetricText } from '@/lib/golf/metrics/display-registry';
 import { competitionRankLabels } from '@/lib/golf/tie-rank';
@@ -345,30 +344,6 @@ export function FairwayCoachDashboard({
     () => (hasTrend ? teamScoringTrend!.map((p) => ({ x: p.label, y: p.value })) : []),
     [hasTrend, teamScoringTrend],
   );
-
-  // DaySchedule feed (replaces ActionItemsPanel below): merge the RPC-sourced
-  // `todayEvents` (full day, incl. RSVP tallies dropped here — this card is a
-  // read-only agenda, not an RSVP surface) with `calendarEvents` (future,
-  // start_time >= now) from the SAME `golf_events` table, deduped by id. Both
-  // are already fetched by dashboard-data.ts — no new fetch here. (Hook lives
-  // above the coach-without-team early return below — it must run on every
-  // render, team or not.)
-  const scheduleEvents: DayScheduleEvent[] = useMemo(() => {
-    const toScheduleEvent = (e: { id: string; title: string; event_type: string; start_time: string; end_time?: string | null; location: string | null }): DayScheduleEvent => ({
-      id: e.id,
-      title: e.title,
-      event_type: e.event_type,
-      start_time: e.start_time,
-      end_time: e.end_time,
-      location: e.location,
-    });
-    const merged = new Map<string, DayScheduleEvent>();
-    for (const e of enhancedData?.todayEvents ?? []) merged.set(e.id, toScheduleEvent(e));
-    for (const e of enhancedData?.calendarEvents ?? []) {
-      if (!merged.has(e.id)) merged.set(e.id, toScheduleEvent(e));
-    }
-    return Array.from(merged.values());
-  }, [enhancedData?.todayEvents, enhancedData?.calendarEvents]);
 
   // ── COACH-WITHOUT-TEAM → onboarding funnel (not a zeroed dashboard) ──────
   if (!team) {
@@ -947,24 +922,6 @@ export function FairwayCoachDashboard({
           />
         )}
       </section>
-
-      {/* ── 5.5 · SCHEDULE — scrollable today + upcoming agenda ─────────────────
-          Replaces the former Action Items card (tasks/deadlines/announcements
-          — that backlog still lives at Tasks/Announcements). "Today" above
-          already covers RSVP tallies for the current day; this is the
-          broader forward-looking agenda, grouped by day, capped-height and
-          scrollable once it outgrows a calm at-a-glance size. */}
-      <DaySchedule
-        title="Schedule"
-        // "Upcoming", not "Today & upcoming": TodayPanel directly above owns
-        // the current day (with its RSVP tallies). This card used to render a
-        // second "Today" group from the same events (audit M3).
-        subtitle="Upcoming"
-        skipToday
-        events={scheduleEvents}
-        timezone={enhancedData?.timezone}
-        viewAllHref="/golf/dashboard/calendar"
-      />
 
       {/* ── 6 · TEAM region — Trend + Pulse + Top Performers (matte) ────────── */}
       {/* items-stretch (the grid default) + h-full on both columns: at 1440 the
