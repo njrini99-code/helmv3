@@ -82,7 +82,7 @@ describe('FairwayPlayerCard — CoachHelm signal strip', () => {
         intent={null}
       />,
     );
-    expect(screen.getByText('Top quartile on team')).toBeInTheDocument();
+    expect(screen.getByText('top 25%')).toBeInTheDocument();
   });
 
   it('still renders the Avg score anchor stat and View player CTA unchanged', () => {
