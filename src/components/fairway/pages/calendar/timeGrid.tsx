@@ -208,23 +208,39 @@ export function layoutDayBlocks(items: ReadonlyArray<DayMinutes>): PlacedBlock[]
   return placed;
 }
 
+/** How much of the next block must show below now for the grid to open on now. */
+const NEXT_IN_VIEW_MIN = 60;
+
 /**
  * The minute a time grid opens on, with an hour of lead above it:
- *   · today, with something still to come: now (or the start of what is on);
+ *   · today, something on now: the start of what is on;
+ *   · today, before dawn: the next event (at 12:30 AM a 7 AM lift opens the
+ *     grid at 6 AM, not on six empty night hours);
+ *   · today, something still to come: now, when the next event also fits in
+ *     the `visibleMin` window from there, else the next event itself;
  *   · today, all done: the first event, so the day that happened is on
  *     screen rather than an empty evening;
- *   · any other day: its first event; an empty day: 7 AM.
+ *   · any other day: its first event; an empty day: 7 AM (an empty today
+ *     opens on now, or on 7 AM before dawn).
  */
 export function scrollAnchorMinute(
   spans: ReadonlyArray<{ startMin: number; endMin: number }>,
   nowMin: number | null,
+  visibleMin: number = Number.POSITIVE_INFINITY,
 ): number {
   if (nowMin !== null && (spans.length === 0 || spans.some((s) => s.endMin > nowMin))) {
-    const onNow = spans.reduce(
-      (min, s) => (s.startMin <= nowMin && nowMin < s.endMin ? Math.min(min, s.startMin) : min),
-      nowMin,
-    );
-    return Math.max(0, onNow - ANCHOR_LEAD_MIN);
+    let onNow = Number.POSITIVE_INFINITY;
+    let next = Number.POSITIVE_INFINITY;
+    for (const s of spans) {
+      if (s.startMin <= nowMin && nowMin < s.endMin) onNow = Math.min(onNow, s.startMin);
+      else if (s.startMin > nowMin) next = Math.min(next, s.startMin);
+    }
+    if (Number.isFinite(onNow)) return Math.max(0, onNow - ANCHOR_LEAD_MIN);
+    const beforeDawn = nowMin < DAYLIGHT.from;
+    const fromNow = Math.max(0, nowMin - ANCHOR_LEAD_MIN);
+    if (!Number.isFinite(next)) return beforeDawn ? EMPTY_DAY_ANCHOR_MIN : fromNow;
+    const nextFits = next + NEXT_IN_VIEW_MIN <= fromNow + visibleMin;
+    return beforeDawn || !nextFits ? Math.max(0, next - ANCHOR_LEAD_MIN) : fromNow;
   }
   const first = spans.reduce((min, s) => Math.min(min, s.startMin), Number.POSITIVE_INFINITY);
   return Number.isFinite(first) ? Math.max(0, first - ANCHOR_LEAD_MIN) : EMPTY_DAY_ANCHOR_MIN;
@@ -245,9 +261,16 @@ function bottomReserve(el: HTMLElement, clearFloatingAction: boolean): number {
 
 /**
  * The grid's own scroller, fitted to the viewport (the hours scroll, the page
- * doesn't), opened once per `anchorKey` at the minute `anchorMin()` returns.
+ * doesn't), opened once per `anchorKey` at the minute `anchorMin(visibleMin)`
+ * returns. The scroll waits for the fitted height: set against the fallback
+ * CSS height it could clamp short, and the anchor needs the real window to
+ * judge whether the next event fits under now.
  */
-export function useFittedTimeScroller(anchorKey: string, anchorMin: () => number, clearFloatingAction = false) {
+export function useFittedTimeScroller(
+  anchorKey: string,
+  anchorMin: (visibleMin: number) => number,
+  clearFloatingAction = false,
+) {
   const scrollRef = React.useRef<HTMLDivElement>(null);
   const [fitHeight, setFitHeight] = React.useState<number | null>(null);
   useIsoLayoutEffect(() => {
@@ -268,10 +291,11 @@ export function useFittedTimeScroller(anchorKey: string, anchorMin: () => number
   const scrolledForRef = React.useRef<string | null>(null);
   useIsoLayoutEffect(() => {
     const el = scrollRef.current;
-    if (!el || scrolledForRef.current === anchorKey) return;
+    if (!el || fitHeight === null || scrolledForRef.current === anchorKey) return;
     scrolledForRef.current = anchorKey;
-    el.scrollTop = Math.max(0, anchorRef.current() * PX_PER_MIN);
-  }, [anchorKey]);
+    const visibleMin = (el.clientHeight || fitHeight) / PX_PER_MIN;
+    el.scrollTop = Math.max(0, anchorRef.current(visibleMin) * PX_PER_MIN);
+  }, [anchorKey, fitHeight]);
 
   return { scrollRef, fitHeight };
 }

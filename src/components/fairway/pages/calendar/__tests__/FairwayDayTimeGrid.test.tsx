@@ -183,6 +183,34 @@ describe('FairwayDayTimeGrid', () => {
     expect(scrollAnchorMinute([{ startMin: 20, endMin: 80 }], null)).toBe(0);
   });
 
+  it('opens on the next event before dawn, or when it would not fit under now', () => {
+    // Monday of the seeded week: lift 7 – 8 AM, practice 2 – 5 PM.
+    const monday = [
+      { startMin: 7 * 60, endMin: 8 * 60 },
+      { startMin: 14 * 60, endMin: 17 * 60 },
+    ];
+    // 12:30 AM: an hour ahead of the lift, not six empty night hours.
+    expect(scrollAnchorMinute(monday, 30, 10 * 60)).toBe(6 * 60);
+    // An empty today before dawn: the morning.
+    expect(scrollAnchorMinute([], 30)).toBe(7 * 60);
+    // 9 AM with a 10-hour window: now, with practice in view below it.
+    expect(scrollAnchorMinute(monday, 9 * 60, 10 * 60)).toBe(8 * 60);
+    // 9 AM with a 6-hour window: practice would sit below the fold, so open on it.
+    expect(scrollAnchorMinute(monday, 9 * 60, 6 * 60)).toBe(13 * 60);
+  });
+
+  it('first paints an hour ahead of the next event when the day is loaded after midnight', () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    // Monday Sep 28, 12:30 AM ET.
+    vi.setSystemTime(new Date('2026-09-28T04:30:00Z'));
+    const lift = ev({ id: 'l', title: 'Morning lift', event_type: 'workout', start_time: '2026-09-28T11:00:00Z', end_time: '2026-09-28T12:00:00Z' });
+    const driving = ev({ id: 'd', title: 'Team practice — driving', start_time: '2026-09-28T18:00:00Z', end_time: '2026-09-28T21:00:00Z' });
+    render(
+      <FairwayDayTimeGrid events={[lift, driving]} focusDate={new Date(2026, 8, 28)} nowRef={new Date(2026, 8, 28)} isCoach timezone={TZ} />,
+    );
+    expect(screen.getByTestId('day-grid-scroller').scrollTop).toBe(6 * DAY_GRID_HOUR_PX);
+  });
+
   it('labels a range with one meridiem when both ends share it', () => {
     expect(dayGridRangeLabel(practice, TZ)).toMatch(/^2:00 – 4:30\sPM$/);
     const crossing = ev({ id: 'x', title: 'X', start_time: '2026-09-29T15:00:00Z', end_time: '2026-09-29T17:00:00Z' });

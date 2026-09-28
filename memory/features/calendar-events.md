@@ -366,7 +366,8 @@ keeps its date separate from the return-to-today action.
   the People menu; from md a labelled secondary Compare button stands BESIDE
   the row (`hidden md:inline-flex`), never inside it. Three distinct actions
   — team schedule, open a person, include in a comparison — never one avatar
-  meaning all three.
+  meaning all three. The People menu is matte cream under a sunken header
+  closed by a strong rule (no green band; owner 2026-09-28).
 - Default view is DAY (owner 2026-09-27): `FairwayDayTimeGrid`, a 24-hour
   time grid (64px per hour) inside its own scroller fitted to the viewport.
   Timed events are blocks positioned by the TEAM clock (`zonedMinuteOfDay`,
@@ -391,13 +392,18 @@ keeps its date separate from the return-to-today action.
   at 6:00 PM" or "All done for today". The now-line (`role="separator"`,
   "Now, 10:58 PM") and its gutter pill appear only on the team's today, from
   the mount clock (never SSR), ticking on the minute. The grid opens with an
-  hour of lead (`scrollAnchorMinute`): on today at now or the start of the
-  event that is on, on a today that is all done at the first event, on any
-  other day at its first event, on an empty day at 7 AM; once per day shown,
-  and once more when a still-loading empty day gets its events. The fitted
+  hour of lead (`scrollAnchorMinute`): on today at the start of the event
+  that is on, else at now when the next event also fits in the window under
+  it, else (and always before 6 AM) at the next event, so a 12:30 AM load
+  opens on the 7 AM lift, not on the night; on a today that is all done at
+  the first event, on any other day at its first event, on an empty day at
+  7 AM; once per day shown, after the scroller has its fitted height, and
+  once more when a still-loading empty day gets its events. The fitted
   scroller ends above the coach's floating actions (Ask CoachHelm from md,
-  the new-event button on a phone), so neither covers an hour. Agenda, Week
-  and Month are one tap away; the Agenda tests select Agenda explicitly.
+  the new-event button on a phone), so neither covers an hour. The Day
+  view's week strip picks the day (`FairwayCalendar.dayStrip.test.tsx`).
+  Agenda, Week and Month are one tap away; the Agenda tests select Agenda
+  explicitly.
 - Week (md and up) is `FairwayWeekTimeGrid`: seven day columns on the Day
   grid's time axis (`timeGrid.tsx` and its block are shared), a sunken
   header row closed by a strong hairline, of day buttons (big date figures,

@@ -125,8 +125,9 @@ export function FairwayCalendarMemberRail({
           width="lg"
           surface="matte"
           ariaLabel="People"
-          // Matte cream body under a deep-green header (owner 2026-09-27: the
-          // glass read yellow and the rows ran together).
+          // Matte cream body under a sunken header (owner 2026-09-27: the glass
+          // read yellow and the rows ran together; 2026-09-28: no green bands,
+          // contrast comes from the surface step and the rule under it).
           className="overflow-hidden bg-surface p-0"
           trigger={
             <PressTarget
@@ -153,12 +154,11 @@ export function FairwayCalendarMemberRail({
             </PressTarget>
           }
         >
-          {/* Header plinth: whose calendar this is, at a glance. */}
-          <div className="fw-plinth-green flex items-center gap-3 px-4 py-3">
+          {/* Header: whose calendar this is, at a glance, one surface step down
+              with a strong rule closing it. */}
+          <div className="flex items-center gap-3 border-b border-border-strong bg-surface-sunken px-4 py-3">
             <span className="min-w-0 flex-1">
-              <span className="block font-fw-sans text-microlabel font-semibold uppercase tracking-[0.08em] text-text-secondary">
-                People
-              </span>
+              <span className="block font-fw-sans text-caption font-semibold text-text-tertiary">People</span>
               <span className="block truncate font-fw-sans text-body font-semibold text-text-primary">{statusTitle}</span>
               <span className="block truncate font-fw-sans text-caption text-text-secondary">{statusDetail}</span>
             </span>
@@ -170,7 +170,7 @@ export function FairwayCalendarMemberRail({
           </div>
 
           <div className="p-2">
-            <PopoverPanel.Header className="px-2 pb-1.5 pt-1.5 font-semibold text-accent-700">Availability</PopoverPanel.Header>
+            <PopoverPanel.Header className="px-2 pb-1.5 pt-1.5 font-semibold text-text-secondary">Availability</PopoverPanel.Header>
             {/* Everyone: overlays every roster member (bypassing the palette
                 cap); pressing it again returns to the plain team schedule. */}
             <PopoverPanel.Item
@@ -206,7 +206,7 @@ export function FairwayCalendarMemberRail({
             <>
               <PopoverPanel.Separator className="my-0" />
               <div className="p-2">
-                <PopoverPanel.Header className="px-2 pb-1.5 pt-1.5 font-semibold text-accent-700">Open a schedule</PopoverPanel.Header>
+                <PopoverPanel.Header className="px-2 pb-1.5 pt-1.5 font-semibold text-text-secondary">Open a schedule</PopoverPanel.Header>
                 {/* Hairlines between people so a long roster never runs together. */}
                 <div className="max-h-72 overflow-y-auto [&>*+*]:border-t [&>*+*]:border-border-subtle">
                   {teamMembers.map((m) => (

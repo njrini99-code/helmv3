@@ -16,8 +16,9 @@
  * now-line) and the primary action.
  *
  * It opens with an hour of lead above what matters: now (or the event that is
- * on) today, the first event on any other day, 7 AM on an empty one; and on a
- * today that is all done, the day that happened (`scrollAnchorMinute`).
+ * on) today, or the next event when it would not fit under now or it is still
+ * before dawn; the first event on any other day, 7 AM on an empty one; and on
+ * a today that is all done, the day that happened (`scrollAnchorMinute`).
  *
  * Correctness rules this file lives by:
  *   · Every position and label comes from the TEAM's clock
@@ -166,14 +167,16 @@ export function FairwayDayTimeGrid({
   const current = nowMin !== null ? blocks.find((b) => b.startMin <= nowMin && nowMin < b.endMin) : undefined;
   const next = nowMin !== null ? blocks.find((b) => b.startMin > nowMin) : undefined;
 
-  // Open where the day is happening. While the range is still loading an empty
-  // day anchors provisionally, and anchors again once its events arrive.
+  // Open where the day is happening (the next event, before dawn). While the
+  // range is still loading an empty day anchors provisionally, and anchors
+  // again once its events arrive.
   const anchorKey = eventCount === 0 && isLoadingRange ? `${focusKey}:pending` : focusKey;
   const { scrollRef, fitHeight } = useFittedTimeScroller(
     anchorKey,
-    () => {
+    (visibleMin) => {
       const live = new Date();
-      return scrollAnchorMinute(blocks, dayKeyInZone(live, timezone) === focusKey ? zonedMinuteOfDay(live, timezone) : null);
+      const liveMin = dayKeyInZone(live, timezone) === focusKey ? zonedMinuteOfDay(live, timezone) : null;
+      return scrollAnchorMinute(blocks, liveMin, visibleMin);
     },
     isCoach,
   );

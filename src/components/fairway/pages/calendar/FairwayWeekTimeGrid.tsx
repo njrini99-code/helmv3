@@ -170,17 +170,18 @@ export function FairwayWeekTimeGrid({
   const refTime = nowRef ? nowRef.getTime() : null;
 
   // Open with an hour of lead: on a week holding today with more to come
-  // today, at now; otherwise at the week's earliest event (7 AM when empty).
-  // An empty week still loading anchors again once its events arrive.
+  // today, where today is happening (the next event before dawn); otherwise
+  // at the week's earliest event (7 AM when empty). An empty week still
+  // loading anchors again once its events arrive.
   const anchorKey = eventCount === 0 && isLoadingRange ? `${weekKey}:pending` : weekKey;
   const { scrollRef, fitHeight } = useFittedTimeScroller(
     anchorKey,
-    () => {
+    (visibleMin) => {
       const live = new Date();
       const liveCol = days.findIndex((d) => localDayKey(d) === dayKeyInZone(live, timezone));
       const liveMin = zonedMinuteOfDay(live, timezone);
       const today = liveCol === -1 ? [] : columns[liveCol] ?? [];
-      if (today.some((b) => b.endMin > liveMin)) return scrollAnchorMinute(today, liveMin);
+      if (today.some((b) => b.endMin > liveMin)) return scrollAnchorMinute(today, liveMin, visibleMin);
       return scrollAnchorMinute(columns.flat(), null);
     },
     isCoach,
