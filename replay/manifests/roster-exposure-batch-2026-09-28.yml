@@ -1,0 +1,28 @@
+schema_version: 1
+replay_id: roster-exposure-batch-2026-09-28
+incident_id: memory/incidents/coachhelm_ai/INC-2026-09-28-roster-exposure-n-plus-one.md
+feature_id: coachhelm_ai
+title: >-
+  getTopInsightsForPlayers recorded insight exposure once per roster player
+  (a golf_insight_exposure dedup read + insert each), Sentry N+1
+  JAVASCRIPT-NEXTJS-R2 on GET /golf/dashboard/stats/team.
+bad_version: c5d8fc789e06c043b0b8d4a4065694102d7dc317
+fixed_version: 0a10e906948aaaa900f06fba22ee9208cd14086b
+fixture:
+  - source: insight-delivery-roster-exposure-batch.test.ts
+    target: src/app/golf/actions/__tests__/insight-delivery-roster-exposure-batch.test.ts
+test_command: "./node_modules/.bin/vitest run --project unit src/app/golf/actions/__tests__/insight-delivery-roster-exposure-batch.test.ts"
+expected:
+  bad_version: fail
+  fixed_version: pass
+expected_failure_mode: assertion
+sanitization:
+  reviewed: true
+  contains_production_data: false
+  notes: >-
+    Synthetic player and insight ids; no production data.
+source_incident_status: fixed
+created_at: "2026-09-28"
+notes: >-
+  On bad_version the first test fails with "expected vi.fn() to be called 1
+  times, but got 3 times": one ledger call per player.

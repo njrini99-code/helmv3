@@ -1050,16 +1050,23 @@ async function getTopInsightsForPlayersImpl(
     arr.push(ins);
     byPlayer.set(ins.player_id, arr);
   }
+  // Exposure rows for the WHOLE sweep, written in one ledger call below.
+  // Recording inside this loop fired one `recordInsightExposure` per player —
+  // a dedup read on `golf_insight_exposure` plus an insert each — which is the
+  // N+1 Sentry flagged as JAVASCRIPT-NEXTJS-R2 on /golf/dashboard/stats/team.
+  const exposureRows: ReturnType<typeof buildExposureRows> = [];
   for (const [pid, list] of byPlayer) {
     const rankedInsights = await rankEvidenceInsights(list, {}, [], supabase);
     const ranked = dedupeBySubject(collapseParScoring(rankedInsights));
     const sliced = ranked.slice(0, limit);
     out.set(pid, sliced);
-    // Record exposure for each player's surfaced head insight(s) on the roster
-    // card — rank_position is per-player. coach_id is unknown here (RLS-scoped
-    // sweep, not a resolved coach row) so it's left null.
-    recordExposureForReturned(sliced, 'roster_card');
+    // Each player's surfaced head insight(s) on the roster card — rank_position
+    // is per-player, so rows are built per player. coach_id is unknown here
+    // (RLS-scoped sweep, not a resolved coach row) so it's left null.
+    exposureRows.push(...buildExposureRows(sliced, 'roster_card'));
   }
+  // Fire-and-forget, failure-silent — same contract as recordExposureForReturned.
+  if (exposureRows.length > 0) void recordInsightExposure(exposureRows);
 
   return out;
 }

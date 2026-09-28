@@ -19,6 +19,68 @@ export interface PlayerCohort {
 
 const DEFAULT_COHORT: PlayerCohort = { gender: 'mens', level: null };
 
+function cohortFromRows(rows: Array<{ golf_teams: { gender: string | null } | null }>): PlayerCohort {
+  if (rows.length === 0) return DEFAULT_COHORT;
+  const gender: CohortGender = rows.some((r) => r.golf_teams?.gender === 'womens')
+    ? 'womens'
+    : 'mens';
+  return { gender, level: null };
+}
+
+// Chunk ids per `.in(...)` so a full roster's UUID list stays well under the
+// PostgREST / proxy request-URL limit, and one chunk's active memberships
+// (about one per player) stay far below the 1,000-row response cap.
+const COHORT_PLAYER_BATCH = 150;
+
+/**
+ * Batched {@link loadPlayerCohort} for multi-player surfaces (the coach roster
+ * via loadPlayersStandingMap). One golf_team_members read per chunk instead of
+ * one per player: the per-player fan-out was Sentry JAVASCRIPT-NEXTJS-QK
+ * (N+1 on GET /golf/dashboard/roster).
+ *
+ * Same classification and the same fail-safe as the single-player loader:
+ * every requested id gets an entry, and a failed chunk leaves its players on
+ * the men's default rather than throwing into a page render.
+ */
+export async function loadPlayerCohorts(
+  playerIds: readonly string[],
+): Promise<Map<string, PlayerCohort>> {
+  const result = new Map<string, PlayerCohort>();
+  const ids = [...new Set(playerIds)];
+  for (const id of ids) result.set(id, DEFAULT_COHORT);
+  if (ids.length === 0) return result;
+
+  try {
+    const admin = createAdminClient();
+    for (let i = 0; i < ids.length; i += COHORT_PLAYER_BATCH) {
+      const batch = ids.slice(i, i + COHORT_PLAYER_BATCH);
+      const { data, error } = await admin
+        .from('golf_team_members')
+        .select('player_id, golf_teams(gender)')
+        .in('player_id', batch)
+        .eq('status', 'active');
+      if (error || !data) continue;
+
+      const rowsByPlayer = new Map<string, Array<{ golf_teams: { gender: string | null } | null }>>();
+      for (const row of data as Array<{
+        player_id: string;
+        golf_teams: { gender: string | null } | null;
+      }>) {
+        const list = rowsByPlayer.get(row.player_id) ?? [];
+        list.push(row);
+        rowsByPlayer.set(row.player_id, list);
+      }
+      for (const [id, rows] of rowsByPlayer) result.set(id, cohortFromRows(rows));
+    }
+  } catch (err) {
+    await logServerError(
+      `loadPlayerCohorts failed for ${ids.length} players: ${describeError(err)}`,
+      { action: 'v3.counterfactual.loadPlayerCohorts' },
+    );
+  }
+  return result;
+}
+
 export async function loadPlayerCohort(playerId: string): Promise<PlayerCohort> {
   try {
     const admin = createAdminClient();
@@ -31,13 +93,8 @@ export async function loadPlayerCohort(playerId: string): Promise<PlayerCohort> 
       .select('golf_teams(gender)')
       .eq('player_id', playerId)
       .eq('status', 'active');
-    if (error || !data || data.length === 0) return DEFAULT_COHORT;
-
-    const rows = data as Array<{ golf_teams: { gender: string | null } | null }>;
-    const gender: CohortGender = rows.some((r) => r.golf_teams?.gender === 'womens')
-      ? 'womens'
-      : 'mens';
-    return { gender, level: null };
+    if (error || !data) return DEFAULT_COHORT;
+    return cohortFromRows(data as Array<{ golf_teams: { gender: string | null } | null }>);
   } catch (err) {
     await logServerError(
       `loadPlayerCohort failed for player=${playerId}: ${describeError(err)}`,

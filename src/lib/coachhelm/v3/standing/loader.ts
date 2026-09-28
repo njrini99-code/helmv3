@@ -14,7 +14,10 @@ import { fromUntyped } from '@/lib/supabase/untyped';
 import { fetchAllRows } from '@/lib/supabase/fetch-all-rows';
 
 import { isMetricId, type MetricId } from '@/lib/coachhelm/v3/metrics/registry';
-import { loadPlayerCohort } from '@/lib/coachhelm/v3/counterfactual/player-cohort-loader';
+import {
+  loadPlayerCohort,
+  loadPlayerCohorts,
+} from '@/lib/coachhelm/v3/counterfactual/player-cohort-loader';
 
 import { applyGenderAnchor, type LpgaStandards } from './gender-anchor';
 import { loadStandardsForTour } from './pga-standards';
@@ -266,14 +269,10 @@ export async function loadPlayersStandingMap(
     }
   }
 
-  // Resolve each distinct player's cohort once.
-  const cohortByPlayer = new Map<string, Awaited<ReturnType<typeof loadPlayerCohort>>>();
-  const distinctIds = [...new Set(rows.map((r) => r.player_id))];
-  await Promise.all(
-    distinctIds.map(async (id) => {
-      cohortByPlayer.set(id, await loadPlayerCohort(id));
-    }),
-  );
+  // Resolve every distinct player's cohort in ONE chunked golf_team_members
+  // read. A per-player loadPlayerCohort fan-out here was Sentry
+  // JAVASCRIPT-NEXTJS-QK (N+1 on GET /golf/dashboard/roster).
+  const cohortByPlayer = await loadPlayerCohorts([...new Set(rows.map((r) => r.player_id))]);
 
   // One LPGA read for the whole roster, and only when it can be used — a
   // men's-only team never touches golf_pga_standards here.
