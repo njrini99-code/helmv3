@@ -5,9 +5,9 @@
  * Fairway · Calendar · timeGrid — the parts the Day and Week grids share
  * ----------------------------------------------------------------------------
  * The clock, the geometry and the pieces a time grid is drawn with: the hour
- * gutter, the column ground (night shade + hour rules), the now-line, and the
- * event block. `FairwayDayTimeGrid` draws one column with them,
- * `FairwayWeekTimeGrid` seven.
+ * gutter, the column ground (quiet hour rules; night hours and weekend days a
+ * step sunken), the now-line, and the event block. `FairwayDayTimeGrid` draws
+ * one column with them, `FairwayWeekTimeGrid` seven.
  *
  * Every position and time label comes from the TEAM clock
  * (`zonedMinuteOfDay`, `formatEventTime` with the team zone), never the
@@ -17,13 +17,12 @@
 
 import * as React from 'react';
 import { differenceInCalendarDays, isSameDay } from 'date-fns';
-import { MapPin } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { PressTarget } from '@/components/fairway';
 import type { CalendarEvent } from '@/hooks/useCalendarEvents';
 import type { RSVPStatus } from '@/hooks/useRSVP';
 import { eventCalendarDay, formatEventTime, getValidTimezone, zonedMinuteOfDay } from '@/lib/calendar/timezone';
-import { RSVP_PILL, typeIcon, typeMeta, typeTone } from './eventPresentation';
+import { EVENT_BAR, EVENT_SURFACE, RSVP_PILL, eventToneVars, typeIcon, typeMeta } from './eventPresentation';
 import surfaces from './CalendarSurfaces.module.css';
 
 /** One hour of the grid, in px. Every vertical position derives from it. */
@@ -32,12 +31,22 @@ export const PX_PER_MIN = DAY_GRID_HOUR_PX / 60;
 export const DAY_MIN = 24 * 60;
 /** A block is never shorter than a 44px tap target. */
 export const MIN_BLOCK_PX = 44;
-const MIN_BLOCK_MIN = MIN_BLOCK_PX / PX_PER_MIN;
-/** Air above 12 AM and below midnight so the edge labels are not clipped. */
+/** The air between two blocks that meet, stacked or side by side. */
+export const BLOCK_GAP_PX = 2;
+/** The layout reserves a tap target plus the gap, so two short events never touch. */
+const MIN_BLOCK_MIN = (MIN_BLOCK_PX + BLOCK_GAP_PX) / PX_PER_MIN;
+/** Air above 12 AM so the top hour label is not clipped. */
 export const GRID_PAD_PX = 10;
+/** Room under midnight, so the last hour scrolls clear of the scroller's edge. */
+export const GRID_PAD_BOTTOM_PX = 32;
 /** The hours a team day is lit for; the rest sits on a faintly sunken ground. */
 const DAYLIGHT = { from: 6 * 60, to: 21 * 60 };
 export const GRID_HEIGHT_PX = DAY_MIN * PX_PER_MIN;
+/** The scroller's content: the day, plus the air above and below it. */
+export const GRID_CONTENT_PX = GRID_HEIGHT_PX + GRID_PAD_PX + GRID_PAD_BOTTOM_PX;
+/** How much of the day shows above the first thing the grid opens on. */
+export const ANCHOR_LEAD_MIN = 60;
+const EMPTY_DAY_ANCHOR_MIN = 7 * 60;
 
 export const MERIDIEM_RE = /\s?([AP]M)$/i;
 
@@ -200,10 +209,45 @@ export function layoutDayBlocks(items: ReadonlyArray<DayMinutes>): PlacedBlock[]
 }
 
 /**
+ * The minute a time grid opens on, with an hour of lead above it:
+ *   · today, with something still to come: now (or the start of what is on);
+ *   · today, all done: the first event, so the day that happened is on
+ *     screen rather than an empty evening;
+ *   · any other day: its first event; an empty day: 7 AM.
+ */
+export function scrollAnchorMinute(
+  spans: ReadonlyArray<{ startMin: number; endMin: number }>,
+  nowMin: number | null,
+): number {
+  if (nowMin !== null && (spans.length === 0 || spans.some((s) => s.endMin > nowMin))) {
+    const onNow = spans.reduce(
+      (min, s) => (s.startMin <= nowMin && nowMin < s.endMin ? Math.min(min, s.startMin) : min),
+      nowMin,
+    );
+    return Math.max(0, onNow - ANCHOR_LEAD_MIN);
+  }
+  const first = spans.reduce((min, s) => Math.min(min, s.startMin), Number.POSITIVE_INFINITY);
+  return Number.isFinite(first) ? Math.max(0, first - ANCHOR_LEAD_MIN) : EMPTY_DAY_ANCHOR_MIN;
+}
+
+/**
+ * What the fitted scroller leaves free under itself. From md up: the page's
+ * breathing room plus, for a coach, the fixed Ask CoachHelm launcher
+ * (`bottom-6`, `h-14`: the bottom 80px of the window), so it never sits on the
+ * hours. On a phone: the tab bar plus, for a coach, the floating new-event
+ * button above it (`nav + 1rem`, `h-14`).
+ */
+function bottomReserve(el: HTMLElement, clearFloatingAction: boolean): number {
+  if (window.matchMedia('(min-width: 768px)').matches) return clearFloatingAction ? 96 : 24;
+  const nav = parseFloat(getComputedStyle(el).getPropertyValue('--fw-mobile-nav-height')) || 64;
+  return nav + (clearFloatingAction ? 84 : 20);
+}
+
+/**
  * The grid's own scroller, fitted to the viewport (the hours scroll, the page
  * doesn't), opened once per `anchorKey` at the minute `anchorMin()` returns.
  */
-export function useFittedTimeScroller(anchorKey: string, anchorMin: () => number) {
+export function useFittedTimeScroller(anchorKey: string, anchorMin: () => number, clearFloatingAction = false) {
   const scrollRef = React.useRef<HTMLDivElement>(null);
   const [fitHeight, setFitHeight] = React.useState<number | null>(null);
   useIsoLayoutEffect(() => {
@@ -211,14 +255,13 @@ export function useFittedTimeScroller(anchorKey: string, anchorMin: () => number
     if (!el) return;
     const measure = () => {
       const top = el.getBoundingClientRect().top + window.scrollY;
-      const nav = parseFloat(getComputedStyle(el).getPropertyValue('--fw-mobile-nav-height')) || 64;
-      const reserve = window.matchMedia('(min-width: 768px)').matches ? 24 : nav + 20;
+      const reserve = bottomReserve(el, clearFloatingAction);
       setFitHeight(Math.round(Math.min(960, Math.max(340, window.innerHeight - top - reserve))));
     };
     measure();
     window.addEventListener('resize', measure);
     return () => window.removeEventListener('resize', measure);
-  }, []);
+  }, [clearFloatingAction]);
 
   const anchorRef = React.useRef(anchorMin);
   anchorRef.current = anchorMin;
@@ -254,7 +297,7 @@ export function HourGutter({
           <span
             key={h}
             className={cn(
-              'absolute right-2 -translate-y-1/2 whitespace-nowrap font-fw-sans text-caption-2 font-medium tabular-nums text-text-tertiary',
+              'absolute right-2 -translate-y-1/2 whitespace-nowrap font-fw-sans text-caption tabular-nums text-text-tertiary',
               hidden && 'invisible',
             )}
             style={{ top: GRID_PAD_PX + h * DAY_GRID_HOUR_PX }}
@@ -265,7 +308,7 @@ export function HourGutter({
       })}
       {nowMin !== null && clock ? (
         <span
-          className="absolute right-1 z-[16] -translate-y-1/2 rounded-full bg-accent-fill px-1.5 py-px font-fw-sans text-caption-2 font-semibold tabular-nums text-text-on-accent-fill [box-shadow:0_1px_3px_oklch(0.25_0.05_150/0.35)]"
+          className="absolute right-1 z-[16] -translate-y-1/2 rounded-full bg-accent-fill px-1.5 py-px font-fw-sans text-caption font-semibold tabular-nums text-text-on-accent-fill ring-2 ring-surface"
           style={{ top: GRID_PAD_PX + nowMin * PX_PER_MIN }}
         >
           {formatEventTime(clock.toISOString(), timezone).replace(MERIDIEM_RE, '')}
@@ -275,18 +318,31 @@ export function HourGutter({
   );
 }
 
-/** A column's ground: night hours faintly sunken, firm hour rules, half-hour whispers. */
-export function ColumnGround({ tint }: { tint?: 'today' | 'past' | null }) {
-  const shade = 'color-mix(in oklch, var(--fw-color-surface-sunken) 55%, transparent)';
+/**
+ * A column's ground: quiet hour rules with a whisper on the half hour, the
+ * night hours a half step sunken, and a weekend day sunken whole (no night
+ * shade on top of it, so the two never stack into a muddy band).
+ */
+export function ColumnGround({ weekend = false }: { weekend?: boolean }) {
+  const night = 'color-mix(in oklch, var(--fw-color-surface-sunken) 45%, transparent)';
   return (
     <>
-      {tint === 'today' ? (
-        <div aria-hidden className="pointer-events-none absolute inset-0" style={{ background: 'color-mix(in oklch, var(--fw-color-accent-50) 70%, transparent)' }} />
-      ) : tint === 'past' ? (
-        <div aria-hidden className="pointer-events-none absolute inset-0" style={{ background: 'color-mix(in oklch, var(--fw-color-surface-sunken) 35%, transparent)' }} />
-      ) : null}
-      <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0" style={{ height: DAYLIGHT.from * PX_PER_MIN, background: shade }} />
-      <div aria-hidden className="pointer-events-none absolute inset-x-0 bottom-0" style={{ height: (DAY_MIN - DAYLIGHT.to) * PX_PER_MIN, background: shade }} />
+      {weekend ? (
+        <div aria-hidden className="pointer-events-none absolute inset-0 bg-surface-sunken" />
+      ) : (
+        <>
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-x-0 top-0"
+            style={{ height: DAYLIGHT.from * PX_PER_MIN, background: night }}
+          />
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-x-0 bottom-0"
+            style={{ height: (DAY_MIN - DAYLIGHT.to) * PX_PER_MIN, background: night }}
+          />
+        </>
+      )}
       <div
         aria-hidden
         className={cn('pointer-events-none absolute inset-0', surfaces.hourRules)}
@@ -296,7 +352,7 @@ export function ColumnGround({ tint }: { tint?: 'today' | 'past' | null }) {
   );
 }
 
-/** The green now-line across a column. */
+/** The now-line across a column: today's marker, in the one green. */
 export function NowLine({ nowMin, clock, timezone }: { nowMin: number; clock: Date; timezone?: string | null }) {
   return (
     <div
@@ -315,30 +371,49 @@ export function NowLine({ nowMin, clock, timezone }: { nowMin: number; clock: Da
 export interface TimeBlockProps {
   block: PlacedBlock;
   timezone?: string | null;
-  isPast: boolean;
+  /** On now: the now-line crosses it and screen readers hear "happening now". */
   isNow: boolean;
   rsvp: RSVPStatus | null;
   onClick?: (event: CalendarEvent) => void;
-  /** Narrow week columns: tighter padding, no location line. */
+  /** Narrow week columns: tighter padding, no icon, the time only. */
   dense?: boolean;
 }
 
-/** One timed event: tinted by type, as tall as it lasts, receded once it's over. */
-export function TimeBlock({ block, timezone, isPast, isNow, rsvp, onClick, dense = false }: TimeBlockProps) {
+/** Below this a block has room for one line: title and time side by side. */
+const ONE_LINE_BELOW_PX = 60;
+/** From this height a player's block also carries their reply. */
+const RSVP_LINE_FROM_PX = 96;
+
+/**
+ * One timed event: a solid block in its type's colour with the type's ink as a
+ * 3px bar down the left edge, as tall as it lasts. A past event keeps its
+ * colour (the now-line and the header say what is over); a cancelled one
+ * drops to the sunken ground, struck through. The label is sticky, so a tall
+ * block scrolled half out of view still names itself at the top of the grid.
+ * `overflow-clip`, not `overflow-hidden`: hidden would make the block its own
+ * scroll container, and the label would never stick.
+ */
+export function TimeBlock({ block, timezone, isNow, rsvp, onClick, dense = false }: TimeBlockProps) {
   const { event } = block;
-  const tone = typeTone(event.event_type);
   const Icon = typeIcon(event.event_type);
   const { label: typeLabel } = typeMeta(event.event_type);
   const cancelled = event.status === 'cancelled';
-  const receded = isPast || cancelled;
   const range = dayGridRangeLabel(event, timezone);
-  const top = block.startMin * PX_PER_MIN;
-  const height = Math.max(MIN_BLOCK_PX, (block.endMin - block.startMin) * PX_PER_MIN) - 3;
+  const height = Math.max(MIN_BLOCK_PX, (block.endMin - block.startMin) * PX_PER_MIN - BLOCK_GAP_PX);
   const width = 100 / block.lanes;
-  const compact = height < 56;
-  const roomy = !dense && height >= 76;
-  const rsvpMeta = rsvp ? RSVP_PILL[rsvp] : null;
-  const gap = dense ? 2 : 4;
+  // Air at the column's edges; half the gap on each side where lanes meet.
+  const edge = dense ? 2 : 4;
+  const left = block.lane === 0 ? edge : BLOCK_GAP_PX / 2;
+  const right = block.lane === block.lanes - 1 ? edge : BLOCK_GAP_PX / 2;
+  const oneLine = !dense && height < ONE_LINE_BELOW_PX;
+  const rsvpLabel = rsvp ? RSVP_PILL[rsvp].label : null;
+  const when = cancelled ? `Cancelled · ${range}` : range;
+  const meta = !dense && event.location ? `${when} · ${event.location}` : when;
+  const title = cn(
+    'min-w-0 truncate font-fw-sans font-semibold',
+    dense ? 'text-body-sm leading-4' : 'text-sm leading-5',
+    cancelled ? 'text-text-secondary line-through' : 'text-text-primary',
+  );
 
   return (
     <PressTarget
@@ -346,61 +421,45 @@ export function TimeBlock({ block, timezone, isPast, isNow, rsvp, onClick, dense
       data-testid="day-grid-block"
       aria-label={`${event.title}, ${typeLabel}, ${range}${event.location ? `, ${event.location}` : ''}${cancelled ? ', cancelled' : ''}${isNow ? ', happening now' : ''}`}
       className={cn(
-        'group absolute flex flex-col overflow-hidden rounded-fw-sm text-left focus-visible:z-20 focus-visible:ring-offset-0',
-        dense ? 'px-1.5' : 'px-2.5',
-        compact ? 'justify-center py-1' : 'py-1.5',
-        '[@media(hover:hover)]:hover:z-10 [@media(hover:hover)]:hover:-translate-y-px',
+        'absolute block overflow-clip rounded-fw-sm text-left',
+        EVENT_SURFACE,
+        'hover:z-10 focus-visible:z-20 focus-visible:ring-offset-0',
         isNow && 'z-[5]',
       )}
       style={{
-        top: top + 1.5,
+        ...eventToneVars(event.event_type, { cancelled }),
+        top: block.startMin * PX_PER_MIN + BLOCK_GAP_PX / 2,
         height,
-        left: `calc(${block.lane * width}% + ${gap}px)`,
-        width: `calc(${width}% - ${gap * 2}px)`,
-        backgroundColor: receded ? 'var(--fw-color-surface-sunken)' : tone.bg,
-        color: receded ? 'var(--fw-color-text-secondary)' : tone.ink,
-        boxShadow: receded
-          ? 'inset 0 0 0 1px var(--fw-color-border-subtle)'
-          : `inset 0 0 0 1px color-mix(in oklch, ${tone.ink} 24%, transparent), inset 0 1px 0 oklch(1 0 0 / 0.45), 0 1px 2px oklch(0.3 0.03 70 / 0.12), 0 6px 14px -8px color-mix(in oklch, ${tone.ink} 55%, transparent)`,
+        left: `calc(${block.lane * width}% + ${left}px)`,
+        width: `calc(${width}% - ${left + right}px)`,
       }}
     >
-      <span className="flex min-w-0 items-center gap-1.5">
-        {dense ? null : <Icon className="h-3.5 w-3.5 shrink-0" aria-hidden />}
-        <span
-          className={cn(
-            'min-w-0 truncate font-fw-sans font-semibold',
-            dense ? 'text-caption leading-4' : 'text-body-sm leading-5',
-            receded ? 'text-text-secondary' : undefined,
-            cancelled && 'line-through decoration-2',
-          )}
-        >
-          {event.title}
+      <span aria-hidden className={EVENT_BAR} />
+      {oneLine ? (
+        <span className="flex h-full min-w-0 items-center gap-2 pl-3 pr-2.5">
+          <Icon className="h-3.5 w-3.5 shrink-0 text-[color:var(--ev-ink)]" aria-hidden />
+          <span className={title}>{event.title}</span>
+          <span className="ml-auto shrink-0 font-fw-sans text-body-sm tabular-nums text-text-secondary">{when}</span>
         </span>
-        {compact && !dense ? (
-          <span className="ml-auto shrink-0 font-fw-sans text-caption tabular-nums opacity-85">{range}</span>
-        ) : null}
-        {isNow && !dense ? (
-          <span className="ml-auto inline-flex shrink-0 items-center gap-1 rounded-full bg-accent-fill px-1.5 py-px font-fw-sans text-caption-2 font-semibold text-text-on-accent-fill">
-            <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-text-on-accent-fill motion-safe:animate-pulse" />
-            Now
+      ) : (
+        <span data-slot="block-label" className={cn('sticky top-0 block', dense ? 'py-1 pl-2 pr-1.5' : 'py-2 pl-3 pr-2.5')}>
+          <span className="flex min-w-0 items-center gap-1.5">
+            {dense ? null : <Icon className="h-3.5 w-3.5 shrink-0 text-[color:var(--ev-ink)]" aria-hidden />}
+            <span className={title}>{event.title}</span>
           </span>
-        ) : null}
-      </span>
-      {!compact || dense ? (
-        <span className={cn('mt-px truncate font-fw-sans tabular-nums leading-4 opacity-90', dense ? 'text-caption-2' : 'text-caption')}>
-          {range}
-          {!roomy && !dense && event.location ? ` · ${event.location}` : ''}
+          <span
+            className={cn(
+              'block truncate font-fw-sans tabular-nums text-text-secondary',
+              dense ? 'text-caption leading-4' : 'mt-0.5 text-body-sm',
+            )}
+          >
+            {dense ? when : meta}
+          </span>
+          {!dense && rsvpLabel && height >= RSVP_LINE_FROM_PX ? (
+            <span className="mt-1 block font-fw-sans text-caption font-semibold text-text-primary">{rsvpLabel}</span>
+          ) : null}
         </span>
-      ) : null}
-      {roomy && event.location ? (
-        <span className="mt-1 flex min-w-0 items-center gap-1 font-fw-sans text-caption leading-4 opacity-85">
-          <MapPin className="h-3 w-3 shrink-0" aria-hidden />
-          <span className="truncate">{event.location}</span>
-        </span>
-      ) : null}
-      {roomy && (rsvpMeta || cancelled) ? (
-        <span className="mt-auto pt-1 font-fw-sans text-caption font-semibold">{cancelled ? 'Cancelled' : rsvpMeta?.label}</span>
-      ) : null}
+      )}
     </PressTarget>
   );
 }

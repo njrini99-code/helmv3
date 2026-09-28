@@ -1424,6 +1424,7 @@ export function FairwayCalendar({
                 setFocusDate(d);
                 setView('day');
               }}
+              isLoadingRange={isLoadingRange}
             />
           </div>
         </>

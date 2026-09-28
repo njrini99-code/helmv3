@@ -15,6 +15,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import type { CalendarEvent } from '@/hooks/useCalendarEvents';
 import { FairwayMonthGrid, layoutMonthWeek, monthLaneCapacity } from '../FairwayMonthGrid';
+import { tintFor } from '../FairwayCalendarMemberRail';
 
 function makeEvent(overrides: Partial<CalendarEvent> = {}): CalendarEvent {
   return {
@@ -84,7 +85,9 @@ describe('FairwayMonthGrid — event chip layout', () => {
     expect(chip.textContent).toContain('BG');
     // Tinted from the player's id, NOT the generic event-type tone — that tint
     // is the same one their avatar wears in the member rail and on the roster.
-    expect(chip.getAttribute('style')).toMatch(/background-color/);
+    const owner = tintFor('p-braeden');
+    expect(chip.style.getPropertyValue('--ev-fill')).toContain(owner.bg);
+    expect(chip.style.getPropertyValue('--ev-ink')).toBe(owner.text);
   });
 
   it('leaves a team event on its event-type tone, with no owner marks', () => {
@@ -99,6 +102,9 @@ describe('FairwayMonthGrid — event chip layout', () => {
 
     const chip = screen.getByTitle('Team Practice');
     expect(chip.getAttribute('style')).toBeNull();
+    // The practice fill and ink, as classes: the same values the Day block paints.
+    expect(chip.className).toContain('[--ev-ink:var(--fw-tint-1-ink)]');
+    expect(chip.textContent).not.toContain('BG');
   });
 });
 

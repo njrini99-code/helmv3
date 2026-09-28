@@ -1,15 +1,24 @@
 /**
  * FairwayDayTimeGrid — the Day view's time grid.
  *
- * Blocks sit at their TEAM-clock start and are as tall as they last; overlaps
- * share the column; an all-day tournament shows on each of its days in the
- * band above the hours (and nowhere else); the now-line only appears on the
- * team's today, once mounted.
+ * Blocks sit at their TEAM-clock start and are as tall as they last, 2px apart
+ * where they meet; overlaps share the column; an all-day tournament shows on
+ * each of its days in the band above the hours (and nowhere else); the
+ * now-line only appears on the team's today, once mounted; the grid opens an
+ * hour ahead of what matters.
  */
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, within } from '@testing-library/react';
 import type { CalendarEvent } from '@/hooks/useCalendarEvents';
-import { FairwayDayTimeGrid, layoutDayBlocks, DAY_GRID_HOUR_PX, dayGridRangeLabel } from '../FairwayDayTimeGrid';
+import {
+  BLOCK_GAP_PX,
+  DAY_GRID_HOUR_PX,
+  FairwayDayTimeGrid,
+  MIN_BLOCK_PX,
+  dayGridRangeLabel,
+  layoutDayBlocks,
+  scrollAnchorMinute,
+} from '../FairwayDayTimeGrid';
 
 const TZ = 'America/New_York';
 
@@ -54,13 +63,48 @@ describe('FairwayDayTimeGrid', () => {
     const blocks = screen.getAllByTestId('day-grid-block');
     expect(blocks).toHaveLength(2);
     const [first, second] = blocks as [HTMLElement, HTMLElement];
-    // 2:00 PM ET → 14h; 2.5h tall.
-    expect(parseFloat(first.style.top)).toBeCloseTo(14 * DAY_GRID_HOUR_PX + 1.5);
-    expect(parseFloat(first.style.height)).toBeCloseTo(2.5 * DAY_GRID_HOUR_PX - 3);
-    expect(first).toHaveAccessibleName(/2:00 – 4:30\sPM/);
-    expect(parseFloat(second.style.top)).toBeCloseTo(18 * DAY_GRID_HOUR_PX + 1.5);
-    expect(screen.getByText('2 events')).toBeInTheDocument();
-    expect(screen.getByText('3h 30m scheduled')).toBeInTheDocument();
+    // 2:00 PM ET → 14h; 2.5h tall, less the 2px gap it shares with a neighbour.
+    expect(parseFloat(first.style.top)).toBeCloseTo(14 * DAY_GRID_HOUR_PX + BLOCK_GAP_PX / 2);
+    expect(parseFloat(first.style.height)).toBeCloseTo(2.5 * DAY_GRID_HOUR_PX - BLOCK_GAP_PX);
+    expect(first).toHaveAccessibleName(/^Team practice — short game, Practice, 2:00 – 4:30\sPM, Home course range$/);
+    expect(parseFloat(second.style.top)).toBeCloseTo(18 * DAY_GRID_HOUR_PX + BLOCK_GAP_PX / 2);
+    expect(screen.getByTestId('day-grid-count')).toHaveTextContent(/^2 events$/);
+    expect(screen.getByTestId('day-grid-booked')).toHaveTextContent(/^3h 30m scheduled$/);
+  });
+
+  it('paints each block in its type colour with a sticky label, never a receded placeholder', () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    // 10:58 PM ET: both of Sunday's events are over, and still keep their colour.
+    vi.setSystemTime(new Date('2026-09-28T02:58:00Z'));
+    render(
+      <FairwayDayTimeGrid events={[practice, film]} focusDate={new Date(2026, 8, 27)} nowRef={new Date(2026, 8, 27)} isCoach timezone={TZ} />,
+    );
+    const [block, meeting] = screen.getAllByTestId('day-grid-block') as [HTMLElement, HTMLElement];
+    expect(block.style.getPropertyValue('--ev-fill')).toContain('var(--fw-tint-1-bg)');
+    expect(block.style.getPropertyValue('--ev-ink')).toBe('var(--fw-tint-1-ink)');
+    expect(meeting.style.getPropertyValue('--ev-ink')).toBe('var(--fw-tint-6-ink)');
+    // Clip, not hidden: `overflow: hidden` would make the block its own scroll
+    // container and the label could never stick.
+    expect(block.className).toContain('overflow-clip');
+    expect(block.className).not.toContain('overflow-hidden');
+    const label = block.querySelector('[data-slot="block-label"]');
+    expect(label?.className).toContain('sticky');
+    expect(label?.className).toContain('top-0');
+    expect(label).toHaveTextContent('Team practice — short game');
+    expect(label).toHaveTextContent(/2:00 – 4:30\sPM · Home course range/);
+    // The title is text-primary, semibold, 14px: not the receded secondary.
+    const title = label?.querySelector('.font-semibold');
+    expect(title?.className).toContain('text-text-primary');
+    expect(title?.className).toContain('text-sm');
+  });
+
+  it('keeps a short event a full tap target, on one line', () => {
+    const lift = ev({ id: 'l', title: 'Morning lift', start_time: '2026-09-28T11:00:00Z', end_time: '2026-09-28T11:30:00Z' });
+    render(<FairwayDayTimeGrid events={[lift]} focusDate={new Date(2026, 8, 28)} isCoach timezone={TZ} />);
+    const block = screen.getByTestId('day-grid-block');
+    expect(parseFloat(block.style.height)).toBe(MIN_BLOCK_PX);
+    expect(block.querySelector('[data-slot="block-label"]')).toBeNull();
+    expect(block).toHaveTextContent(/Morning lift7:00 – 7:30\sAM/);
   });
 
   it('shows the two-day tournament in the all-day band on Oct 2 and Oct 3 only', () => {
@@ -81,6 +125,9 @@ describe('FairwayDayTimeGrid', () => {
     expect(within(oct4.container).queryByText('Fall Invitational')).not.toBeInTheDocument();
     expect(within(oct4.container).queryByText('Travel home')).not.toBeInTheDocument();
     expect(within(oct4.container).getByText('Nothing on the books')).toBeInTheDocument();
+    // The grid still renders on an empty day: the hours stay, empty.
+    expect(within(oct4.container).getByTestId('day-grid-scroller')).toBeInTheDocument();
+    expect(within(oct4.container).queryAllByTestId('day-grid-block')).toHaveLength(0);
   });
 
   it('draws the now-line on the team’s today only', () => {
@@ -114,6 +161,26 @@ describe('FairwayDayTimeGrid', () => {
     // C reserves a 44px tap target, so D (starting 10 min later) sits beside it.
     expect([byId.c!.lane, byId.c!.lanes]).toEqual([0, 2]);
     expect([byId.d!.lane, byId.d!.lanes]).toEqual([1, 2]);
+  });
+
+  it('opens an hour ahead of what matters', () => {
+    const day = [
+      { startMin: 14 * 60, endMin: 16 * 60 + 30 },
+      { startMin: 18 * 60, endMin: 19 * 60 },
+    ];
+    // Any other day: the first event.
+    expect(scrollAnchorMinute(day, null)).toBe(13 * 60);
+    // Today, before anything starts: now.
+    expect(scrollAnchorMinute(day, 9 * 60)).toBe(8 * 60);
+    // Today, during practice: the start of practice, not the middle of it.
+    expect(scrollAnchorMinute(day, 15 * 60 + 20)).toBe(13 * 60);
+    // Today, all done (10:58 PM): the day that happened, not an empty evening.
+    expect(scrollAnchorMinute(day, 22 * 60 + 58)).toBe(13 * 60);
+    // Today with nothing on: now. Any other empty day: 7 AM.
+    expect(scrollAnchorMinute([], 10 * 60)).toBe(9 * 60);
+    expect(scrollAnchorMinute([], null)).toBe(7 * 60);
+    // Never above midnight.
+    expect(scrollAnchorMinute([{ startMin: 20, endMin: 80 }], null)).toBe(0);
   });
 
   it('labels a range with one meridiem when both ends share it', () => {

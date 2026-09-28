@@ -4,16 +4,18 @@
  * ============================================================================
  * Fairway · Calendar · FairwayMonthGrid — the Month view
  * ----------------------------------------------------------------------------
- * A month you can read at a glance. A deep-green header says what the month
- * holds (how many events, and a legend of the types on the books with their
- * counts) above the weekday row. Each week is one row: an all-day or
- * multi-day event is ONE bar across the days it covers (the two-day Fall
- * Invitational spans Friday and Saturday), and timed events are chips tinted
- * by type with their start time, in the same tints as the Day and Week grids.
- * Every row shares one height, fitted to the window so the whole month (and
- * this week's row) is on screen; a day holding more than fits says "+N more"
- * and opens that day. Today's cell is washed green with its date in a solid
- * disc; days outside the month are muted, their events are not.
+ * A month you can read at a glance. A sunken header says what the month
+ * holds (a big count, and a legend of the types on the books with their
+ * counts) above the weekday row, which a strong hairline closes. Each week is
+ * one row: an all-day or multi-day event is ONE bar across the days it covers
+ * (the two-day Fall Invitational spans Friday and Saturday), and timed events
+ * are chips with their start time, painted exactly like the Day and Week
+ * blocks (the type's fill, its ink as a bar down the left edge). Every row
+ * shares one height, fitted to the window so the whole month (and this
+ * week's row) is on screen; a day holding more than fits says "+N more" and
+ * opens that day. Weekends and days outside the month sit a step sunken;
+ * today is marked by its date in the green disc (green is spent on nothing
+ * else here); days outside the month are muted, their events are not.
  *
  * Presentation only: it opens the same detail drawer as every other view.
  * Day membership is `eventDaySpan` (the team clock), as in Day and Week, so
@@ -47,7 +49,7 @@ import { cn } from '@/lib/utils';
 import { PressTarget } from '@/components/fairway';
 import type { CalendarEvent } from '@/hooks/useCalendarEvents';
 import { eventDaySpan, formatEventTimeCompact, zonedMidnight } from '@/lib/calendar/timezone';
-import { typeIcon, typeMeta, typeToneClasses } from './eventPresentation';
+import { CANCELLED_TONE_VARS, EVENT_BAR, EVENT_SURFACE, eventToneVars, typeIcon, typeMeta, typeToneClasses } from './eventPresentation';
 import { tintFor } from './FairwayCalendarMemberRail';
 import { dayGridRangeLabel, localDayKey, useIsoLayoutEffect } from './timeGrid';
 
@@ -110,7 +112,6 @@ const COL_START = ['col-start-1', 'col-start-2', 'col-start-3', 'col-start-4', '
 const COL_END = ['col-end-2', 'col-end-3', 'col-end-4', 'col-end-5', 'col-end-6', 'col-end-7', 'col-end-8'] as const;
 const ROW_START = ['row-start-1', 'row-start-2', 'row-start-3', 'row-start-4', 'row-start-5', 'row-start-6', 'row-start-7', 'row-start-8'] as const;
 
-const CANCELLED_CHIP = 'bg-fw-danger-bg text-fw-danger-ink';
 /** Phone density dots: at most three, one per distinct type. */
 const MAX_DOTS = 3;
 
@@ -265,7 +266,7 @@ export function summarizeMonth(items: readonly MonthItem[], focusDate: Date): Mo
     } else if (item.kind === 'overlay') {
       legend.set(key, { key, label: key, count: 1, swatchStyle: { backgroundColor: item.overlay.color.bg } });
     } else {
-      legend.set(key, { key, label: key, count: 1, swatchClass: typeToneClasses(item.event.event_type).swatch });
+      legend.set(key, { key, label: key, count: 1, swatchClass: typeToneClasses(item.event.event_type).dot });
     }
   }
   return {
@@ -275,8 +276,9 @@ export function summarizeMonth(items: readonly MonthItem[], focusDate: Date): Mo
 }
 
 /**
- * The green header's top line: the month's count, then the legend. Render it
- * inside a `.fw-plinth-green` ground (the tokens it reads are rescoped there).
+ * The month header's top line: a big count, then the legend (a type's ink
+ * dot, its name, how many). Plain text, no pills: the header's sunken ground
+ * and the type colours carry it.
  */
 export function MonthSummaryHeader({
   summary,
@@ -296,27 +298,20 @@ export function MonthSummaryHeader({
     <div className={cn('flex flex-wrap items-center justify-between gap-x-6 gap-y-2 px-4 py-3 sm:px-5', className)}>
       <p className="flex min-w-0 items-baseline gap-2 font-fw-sans" data-testid="month-grid-count">
         <span className="text-h2 tabular-nums leading-none text-text-primary">{summary.count}</span>{' '}
-        <span className="text-body-sm text-text-secondary">
+        <span className="text-body-sm text-text-tertiary">
           {noun} in {monthName}
         </span>
       </p>
       {summary.legend.length > 0 ? (
         <ul
           aria-label={overlayMode ? 'Schedules shown' : `Event types in ${monthName}`}
-          className="flex flex-wrap items-center gap-1.5"
+          className="flex flex-wrap items-center gap-x-4 gap-y-1.5"
         >
           {summary.legend.map((entry) => (
-            <li
-              key={entry.key}
-              className="inline-flex items-center gap-1.5 rounded-full bg-surface-sunken py-1 pl-2 pr-2.5 font-fw-sans text-caption font-semibold text-text-primary"
-            >
-              <span
-                aria-hidden
-                className={cn('h-2.5 w-2.5 rounded-full [box-shadow:0_0_0_1.5px_oklch(1_0_0/0.35)]', entry.swatchClass)}
-                style={entry.swatchStyle}
-              />
+            <li key={entry.key} className="inline-flex items-center gap-1.5 font-fw-sans text-caption font-semibold text-text-primary">
+              <span aria-hidden className={cn('h-2.5 w-2.5 rounded-full', entry.swatchClass)} style={entry.swatchStyle} />
               {entry.label}
-              <span className="tabular-nums text-text-secondary">{entry.count}</span>
+              <span className="tabular-nums text-text-tertiary">{entry.count}</span>
             </li>
           ))}
         </ul>
@@ -385,15 +380,12 @@ export function FairwayMonthGrid({
         className,
       )}
     >
-      {/* ── What the month holds, on the deep green plinth ─────────────── */}
-      <div className="fw-plinth-green">
+      {/* ── What the month holds: a sunken header, a strong rule under it ── */}
+      <div className="bg-surface-sunken">
         <MonthSummaryHeader summary={summary} monthName={monthName} overlayMode={overlayMode} />
-        <div className="grid grid-cols-7 border-t border-border-subtle">
+        <div className="grid grid-cols-7 border-y border-b-border-strong border-t-border-subtle">
           {WEEKDAYS.map((d) => (
-            <div
-              key={d}
-              className="px-1 py-2 text-center font-fw-sans text-microlabel font-semibold uppercase tracking-[0.08em] text-text-secondary sm:px-2.5 sm:text-left"
-            >
+            <div key={d} className="px-1 py-2 text-center font-fw-sans text-caption font-semibold text-text-secondary sm:px-2.5 sm:text-left">
               <span className="hidden sm:inline">{d}</span>
               <span className="sm:hidden">{d.charAt(0)}</span>
             </div>
@@ -454,8 +446,8 @@ export function FairwayMonthGrid({
                       onClick={() => onSelectDate(day)}
                       aria-label={`${hidden} more on ${longDay(day)}`}
                       className={cn(
-                        'pointer-events-auto mx-1 flex h-[22px] min-h-0 items-center rounded-fw-sm px-1.5 text-left font-fw-sans text-caption font-semibold text-accent-700',
-                        'transition-colors [@media(hover:hover)]:hover:bg-accent-50',
+                        'pointer-events-auto mx-1 flex h-[22px] min-h-0 items-center rounded-fw-sm px-1.5 text-left font-fw-sans text-caption font-semibold text-text-secondary',
+                        'underline-offset-2 hover:text-text-primary hover:underline',
                         COL_START[c],
                         ROW_START[shown],
                       )}
@@ -500,6 +492,8 @@ function DayCell({
   onSelectDate?: (date: Date) => void;
 }) {
   const inMonth = isSameMonth(day, focusDate);
+  const weekend = day.getDay() === 0 || day.getDay() === 6;
+  const sunken = weekend || !inMonth;
   const isToday = nowRef ? isSameDay(day, nowRef) : false;
   const isPast = nowRef ? day.getTime() < nowRef.getTime() && !isToday : false;
   const isSelected = !isToday && selectedDate ? isSameDay(day, selectedDate) : false;
@@ -522,9 +516,9 @@ function DayCell({
   const disc = cn(
     'inline-flex h-6 min-w-6 items-center justify-center rounded-full px-1 font-fw-sans text-caption font-semibold tabular-nums',
     isToday
-      ? 'bg-accent-fill text-text-on-accent-fill [box-shadow:0_2px_6px_oklch(0.3_0.08_152/0.35)]'
+      ? 'bg-accent-fill text-text-on-accent-fill'
       : isSelected
-        ? 'bg-accent-100 text-accent-700'
+        ? 'bg-accent-wash text-accent-ink'
         : !inMonth
           ? 'text-text-tertiary'
           : isPast
@@ -537,7 +531,7 @@ function DayCell({
       data-day={localDayKey(day)}
       className={cn(
         'relative min-w-0 border-l border-border-subtle first:border-l-0',
-        isToday ? 'bg-accent-50' : inMonth ? 'bg-surface' : 'bg-surface-sunken',
+        sunken ? 'bg-surface-sunken' : 'bg-surface',
       )}
     >
       {/* Phone: ONE target per day, the whole cell, named with what's on it. */}
@@ -571,12 +565,14 @@ function DayCell({
           className={cn(
             'group/date relative z-10 flex w-full items-center justify-start gap-1.5 rounded-none px-1.5 max-sm:hidden',
             'transition-colors focus-visible:ring-inset focus-visible:ring-offset-0',
-            isToday ? '[@media(hover:hover)]:hover:bg-accent-100' : '[@media(hover:hover)]:hover:bg-surface-sunken',
+            sunken
+              ? 'hover:bg-[color:color-mix(in_oklch,var(--fw-color-surface-sunken)_72%,var(--fw-color-border-subtle))]'
+              : 'hover:bg-surface-sunken',
           )}
           style={{ height: DATE_STRIP_PX }}
         >
           <span className={disc}>{dateText}</span>
-          {isToday ? <span className="font-fw-sans text-caption font-semibold text-accent-700">Today</span> : null}
+          {isToday ? <span className="font-fw-sans text-caption font-semibold text-accent-ink">Today</span> : null}
           <ChevronRight
             aria-hidden
             className="ml-auto h-3.5 w-3.5 text-text-tertiary opacity-0 transition-opacity group-hover/date:opacity-100 group-focus-visible/date:opacity-100"
@@ -585,7 +581,7 @@ function DayCell({
       ) : (
         <span className="flex items-center gap-1.5 px-1.5 max-sm:hidden" style={{ height: DATE_STRIP_PX }}>
           <span className={disc}>{dateText}</span>
-          {isToday ? <span className="font-fw-sans text-caption font-semibold text-accent-700">Today</span> : null}
+          {isToday ? <span className="font-fw-sans text-caption font-semibold text-accent-ink">Today</span> : null}
         </span>
       )}
     </div>
@@ -608,7 +604,7 @@ function MonthChip({
   const days = week.slice(startCol, endCol + 1).map(localDayKey).join(' ');
   const place = cn(COL_START[startCol], COL_END[endCol], ROW_START[lane]);
   const base =
-    'pointer-events-auto flex h-[22px] min-h-0 min-w-0 items-center gap-1 px-1.5 text-left font-fw-sans text-caption leading-4 transition-[transform,box-shadow] duration-150 [@media(hover:hover)]:hover:-translate-y-px [@media(hover:hover)]:hover:[box-shadow:0_3px_8px_-3px_oklch(0.3_0.03_70/0.35)]';
+    'pointer-events-auto flex h-[22px] min-h-0 min-w-0 items-center gap-1 px-1.5 text-left font-fw-sans text-caption leading-4';
 
   if (item.kind === 'overlay') {
     const o = item.overlay;
@@ -648,21 +644,25 @@ function MonthChip({
         aria-label={`${e.title}, ${typeLabel}, ${when}, ${range}${e.location ? `, ${e.location}` : ''}${cancelled ? ', cancelled' : ''}`}
         className={cn(
           base,
-          'font-semibold [box-shadow:inset_0_0_0_1px_color-mix(in_oklch,currentColor_22%,transparent)]',
-          continuesBefore ? 'ml-0 rounded-l-none' : 'ml-1 rounded-l-fw-sm',
+          'relative overflow-clip font-semibold',
+          EVENT_SURFACE,
+          cancelled ? CANCELLED_TONE_VARS : tone.vars,
+          cancelled ? 'text-text-secondary line-through' : 'text-text-primary',
+          continuesBefore ? 'ml-0 rounded-l-none' : 'ml-1 rounded-l-fw-sm pl-2.5',
           continuesAfter ? 'mr-0 rounded-r-none' : 'mr-1 rounded-r-fw-sm',
-          cancelled ? CANCELLED_CHIP : tone.chip,
-          cancelled && 'line-through decoration-2',
           place,
         )}
       >
         {continuesBefore ? (
-          <ChevronLeft aria-hidden className="h-3.5 w-3.5 flex-shrink-0" />
+          <ChevronLeft aria-hidden className="h-3.5 w-3.5 flex-shrink-0 text-text-secondary" />
         ) : (
-          <Icon aria-hidden className="h-3.5 w-3.5 flex-shrink-0" />
+          <>
+            <span aria-hidden className={EVENT_BAR} />
+            <Icon aria-hidden className="h-3.5 w-3.5 flex-shrink-0 text-[color:var(--ev-ink)]" />
+          </>
         )}
         <span className="min-w-0 flex-1 truncate">{e.title}</span>
-        {continuesAfter ? <ChevronRight aria-hidden className="h-3.5 w-3.5 flex-shrink-0" /> : null}
+        {continuesAfter ? <ChevronRight aria-hidden className="h-3.5 w-3.5 flex-shrink-0 text-text-secondary" /> : null}
       </PressTarget>
     );
   }
@@ -678,20 +678,22 @@ function MonthChip({
       title={itemTitle(item)}
       data-days={days}
       aria-label={`${e.title}, ${typeLabel}, ${dayGridRangeLabel(e, timezone)}${e.owner_label ? `, ${e.owner_label}` : ''}${cancelled ? ', cancelled' : ''}`}
-      style={!cancelled && ownerTint ? { backgroundColor: ownerTint.bg, color: ownerTint.text } : undefined}
+      style={!cancelled && ownerTint ? eventToneVars(e.event_type, { tint: ownerTint }) : undefined}
       className={cn(
         // A real flex row with `min-w-0`, and ONLY the title span shrinks:
         // a bare `truncate` on a two-child row squeezed the title to one
         // glyph before (finding #86).
         base,
-        'mx-1 rounded-fw-sm font-medium',
-        cancelled ? CANCELLED_CHIP : ownerTint ? undefined : tone.chip,
-        cancelled && 'line-through decoration-2',
+        'relative mx-1 overflow-clip rounded-fw-sm pl-2.5 font-medium',
+        EVENT_SURFACE,
+        cancelled ? CANCELLED_TONE_VARS : ownerTint ? undefined : tone.vars,
+        cancelled ? 'text-text-secondary line-through' : 'text-text-primary',
         place,
       )}
     >
+      <span aria-hidden className={EVENT_BAR} />
       {!cancelled && e.owner_initials ? (
-        <span aria-hidden className="flex-shrink-0 font-fw-sans text-microbadge font-bold tracking-[0.04em] opacity-80">
+        <span aria-hidden className="flex-shrink-0 font-fw-sans text-microbadge font-bold tracking-[0.04em] text-[color:var(--ev-ink)]">
           {e.owner_initials}
         </span>
       ) : null}

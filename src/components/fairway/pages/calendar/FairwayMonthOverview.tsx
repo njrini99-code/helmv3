@@ -5,9 +5,8 @@
  * Fairway · Calendar · FairwayMonthOverview — the phone's compact month
  * ----------------------------------------------------------------------------
  * A thin adapter over the shared `CalendarSurface` (React DayPicker) for the
- * phone Month view, in one card under the same deep-green header as the
- * desktop month: how many events the month holds, and a legend of their
- * types. Each day carries up to three dots in its events' type colors (the
+ * phone Month view, in one card under the same sunken header as the desktop
+ * month: how many events the month holds, and a legend of their types. Each day carries up to three dots in its events' type colors (the
  * Day, Week and Month tints), derived from the SAME timezone-aware projection
  * the agenda uses (`eventDaySpan`), so a day that shows a dot here shows rows
  * below. Three distinct states: today (ring), selected (fill), has events
@@ -122,7 +121,7 @@ export function FairwayMonthOverview({
         className,
       )}
     >
-      <div className="fw-plinth-green">
+      <div className="border-b border-border-strong bg-surface-sunken">
         <MonthSummaryHeader summary={summary} monthName={format(selectedDate, 'MMMM')} />
       </div>
       <DayDotsContext.Provider value={dayDots}>
