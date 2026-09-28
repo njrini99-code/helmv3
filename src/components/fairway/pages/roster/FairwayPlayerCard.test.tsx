@@ -71,7 +71,7 @@ describe('FairwayPlayerCard — CoachHelm signal strip', () => {
   it('shows an honest em-dash for SG:Total when the stats cache has no row yet', () => {
     render(<FairwayPlayerCard player={makePlayer({ sg_total: null })} intent={null} />);
     // Assert the label renders and no signed number does.
-    expect(screen.getByText('SG / rd')).toBeInTheDocument();
+    expect(screen.getByText('SG / round')).toBeInTheDocument();
     expect(screen.queryByText(/^[+-]\d/)).toBeNull();
   });
 

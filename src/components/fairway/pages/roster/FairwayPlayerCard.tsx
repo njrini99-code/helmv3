@@ -2,13 +2,13 @@
 
 /** Fairway · Roster · FairwayPlayerCard (C9) — coach roster player card. */
 
+import type { ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ChevronRight } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 import { Surface } from '@/components/fairway/surfaces/surface';
-import { TrendGlyph } from '@/components/fairway';
 import type { CoachPlayerIntent } from '@/lib/coachhelm/v3/intent/types';
 import type { TrendVerdict } from '@/lib/coachhelm/trend';
 import { yearLabel } from './FairwayYearBadge';
@@ -48,20 +48,56 @@ export interface RosterPlayer {
   active_goals?: number;
 }
 
-/** SG:Total deadzone — |value| at or below this reads as neutral (matches
- *  the "roughly even" honesty band the rest of the SG rendering uses). */
-const SG_TONE_DEADZONE = 0.15;
-
 function formatSgTotal(value: number): string {
   return `${value >= 0 ? '+' : ''}${value.toFixed(2)}`;
 }
 
-function sgTone(value: number): string {
-  // Read on the deep green stat band (.fw-plinth-green): accent-ink is its
-  // light mint there, and the amber is a light warm tone that holds contrast.
-  if (value > SG_TONE_DEADZONE) return 'text-accent-ink';
-  if (value < -SG_TONE_DEADZONE) return 'text-[oklch(0.86_0.11_75)]';
-  return 'text-text-primary';
+const TREND_COPY: Record<TrendVerdict, { arrow: string; text: string; className: string }> = {
+  improving: { arrow: '↗', text: 'Improving', className: 'text-[oklch(0.88_0.12_150)]' },
+  stable: { arrow: '→', text: 'Steady', className: 'text-[oklch(0.975_0.015_90/0.72)]' },
+  declining: { arrow: '↘', text: 'Declining', className: 'text-[oklch(0.86_0.11_70)]' },
+};
+
+/** Trend under the average, in a light ink that holds on the deep green. */
+function TrendCaption({ trend }: { trend: TrendVerdict }) {
+  const copy = TREND_COPY[trend];
+  return (
+    <span className={cn('inline-flex items-center gap-1 font-medium', copy.className)}>
+      <span aria-hidden>{copy.arrow}</span>
+      {copy.text}
+    </span>
+  );
+}
+
+function StatCell({
+  label,
+  value,
+  muted,
+  caption,
+}: {
+  label: string;
+  value: string;
+  muted: boolean;
+  caption: ReactNode;
+}) {
+  return (
+    <div className="flex min-w-0 flex-col px-4 py-4 md:px-5">
+      <dt className="font-fw-sans text-eyebrow font-semibold uppercase leading-none tracking-[0.09em] text-[oklch(0.975_0.015_90/0.66)]">
+        {label}
+      </dt>
+      <dd
+        className={cn(
+          'mt-2.5 font-fw-sans text-h2 font-semibold leading-none tracking-[-0.02em] tabular-nums',
+          muted ? 'text-[oklch(0.975_0.015_90/0.5)]' : 'text-[oklch(0.985_0.012_90)]',
+        )}
+      >
+        {value}
+      </dd>
+      {caption ? (
+        <dd className="mt-2 font-fw-sans text-caption leading-snug text-[oklch(0.975_0.015_90/0.72)]">{caption}</dd>
+      ) : null}
+    </div>
+  );
 }
 
 export interface FairwayPlayerCardProps {
@@ -86,9 +122,12 @@ export function FairwayPlayerCard({ player, intent }: FairwayPlayerCardProps) {
 
   return (
     // In-flow roster card: the resting hairline, not a drop shadow (DS-E4).
+    // Raised card (owner: "more depth"): a soft two-layer lift plus the lit
+    // top edge, instead of the flat resting hairline.
     <Surface
       padding="none"
-      className="overflow-hidden"
+      elevation="shadow"
+      className="overflow-hidden border border-border-subtle [box-shadow:inset_0_1px_0_oklch(1_0_0/0.6),0_1px_2px_oklch(0.18_0.01_60/0.06),0_10px_24px_-8px_oklch(0.25_0.03_70/0.22)]"
       // Session Replay masks all text by default (instrumentation-client.ts,
       // maskAllText: true) — this attribute is defense in depth so a player's
       // name/details stay masked even if that default is ever narrowed later.
@@ -162,49 +201,30 @@ export function FairwayPlayerCard({ player, intent }: FairwayPlayerCardProps) {
         </div>
       </div>
 
-      {/* Stat band: the three numbers a coach triages on, SG: Total, scoring
-          average and rounds played, on the deep green plinth so they read at
-          full contrast. Focus areas and goals are not shown on the card. */}
+      {/* Stat band: the three numbers a coach triages on, SG per round,
+          scoring average and rounds played, on the deep green plinth so they
+          read at full contrast. One type system for all three columns: a small
+          tracked label, a large tabular figure, one caption line. */}
       <div className="px-5 pb-5 md:px-6">
-        <dl className="fw-plinth-green grid grid-cols-3 overflow-hidden rounded-fw-md shadow-soft">
-          <div className="flex min-w-0 flex-col gap-1 px-4 py-4">
-            <dt className="font-fw-sans text-eyebrow font-semibold uppercase tracking-[0.08em] text-text-tertiary">
-              SG / rd
-            </dt>
-            <dd
-              className={cn(
-                'font-fw-display text-h2 font-semibold leading-none tracking-[-0.02em] tabular-nums',
-                player.sg_total == null ? 'text-text-tertiary' : sgTone(player.sg_total),
-              )}
-            >
-              {player.sg_total != null ? formatSgTotal(player.sg_total) : '—'}
-            </dd>
-            {player.standing_tier ? (
-              <dd className="font-fw-sans text-caption leading-tight text-text-secondary">{player.standing_tier}</dd>
-            ) : null}
-          </div>
-          <div className="flex min-w-0 flex-col gap-1 border-l border-border-subtle px-4 py-4">
-            <dt className="font-fw-sans text-eyebrow font-semibold uppercase tracking-[0.08em] text-text-tertiary">
-              Avg score
-            </dt>
-            <dd className="font-fw-display text-h2 font-semibold leading-none tracking-[-0.02em] tabular-nums text-text-primary">
-              {hasScore ? (player.avg_score ?? 0).toFixed(1) : '—'}
-            </dd>
-            {player.recent_trend ? (
-              <dd className="text-text-secondary">
-                <TrendGlyph direction={player.recent_trend} className="text-caption font-medium" />
-              </dd>
-            ) : null}
-          </div>
-          <div className="flex min-w-0 flex-col gap-1 border-l border-border-subtle px-4 py-4">
-            <dt className="font-fw-sans text-eyebrow font-semibold uppercase tracking-[0.08em] text-text-tertiary">
-              Rounds
-            </dt>
-            <dd className="font-fw-display text-h2 font-semibold leading-none tracking-[-0.02em] tabular-nums text-text-primary">
-              {player.rounds_count ?? 0}
-            </dd>
-            <dd className="font-fw-sans text-caption leading-tight text-text-secondary">played</dd>
-          </div>
+        <dl className="fw-plinth-green grid grid-cols-3 divide-x divide-[oklch(0.975_0.015_90/0.16)] overflow-hidden rounded-fw-md bg-gradient-to-b from-[oklch(0.42_0.09_152)] to-[oklch(0.35_0.08_152)] [box-shadow:inset_0_1px_0_oklch(1_0_0/0.14),0_8px_18px_-8px_oklch(0.25_0.07_152/0.55)]">
+          <StatCell
+            label="SG / round"
+            value={player.sg_total != null ? formatSgTotal(player.sg_total) : '—'}
+            muted={player.sg_total == null}
+            caption={player.standing_tier ?? null}
+          />
+          <StatCell
+            label="Avg score"
+            value={hasScore ? (player.avg_score ?? 0).toFixed(1) : '—'}
+            muted={!hasScore}
+            caption={player.recent_trend ? <TrendCaption trend={player.recent_trend} /> : null}
+          />
+          <StatCell
+            label="Rounds"
+            value={String(player.rounds_count ?? 0)}
+            muted={!player.rounds_count}
+            caption="played"
+          />
         </dl>
       </div>
 
