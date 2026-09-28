@@ -1,0 +1,30 @@
+schema_version: 1
+replay_id: webkit-stale-chunk-route-boundary-2026-09-27
+incident_id: memory/incidents/observability_sentry/INC-2026-09-27-webkit-stale-chunk-route-boundary.md
+feature_id: observability_sentry
+title: >-
+  The route error boundary and logError did not recognize WebKit's wording
+  of a missing webpack module factory ("undefined is not an object
+  (evaluating 'n[e].call')"), so a stale iOS tab got no reload and was filed
+  at severity:error (3756e441).
+bad_version: a21ccf2ba8c2fad4df3276cf714c9367b719b4da
+fixed_version: 495267588a2f1a1c2ea378fb690a8d813fecd020
+fixture:
+  - source: error-logging.test.ts
+    target: src/test/lib/error-logging.test.ts
+test_command: "./node_modules/.bin/vitest run --project unit src/test/lib/error-logging.test.ts"
+expected:
+  bad_version: fail
+  fixed_version: pass
+expected_failure_mode: assertion
+sanitization:
+  reviewed: true
+  contains_production_data: false
+  notes: >-
+    Synthetic messages; the only production-derived value is the browser's error text "undefined is not an object (evaluating 'n[e].call')".
+source_incident_status: fixed
+created_at: "2026-09-27"
+notes: >-
+  On bad_version two tests fail: the WebKit message stays at severity 'high'
+  (expected 'medium'), and isChunkLoadErrorMessage is not exported
+  (TypeError calling undefined). Every other test passes on both.

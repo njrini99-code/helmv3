@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   logError,
+  isChunkLoadErrorMessage,
   isStaleServerActionError,
   softReloadForStaleServerAction,
   STALE_ACTION_RELOAD_KEY,
@@ -34,16 +35,9 @@ interface RouteErrorBoundaryProps {
  * These require a full page reload (not just reset) to fetch new deployment manifest.
  */
 function isChunkLoadError(error: Error): boolean {
-  const msg = error.message?.toLowerCase() || '';
-  return (
-    msg.includes('loading chunk') ||
-    msg.includes('loading css chunk') ||
-    msg.includes('chunkloaderror') ||
-    (msg.includes("cannot read properties of undefined") && msg.includes("'call'")) ||
-    // ESM dynamic-import wording for the same stale-asset failure — see the
-    // matching note in `isChunkLoadErrorMessage` (src/lib/error-logging.ts).
-    msg.includes('failed to fetch dynamically imported module')
-  );
+  // One predicate for the boundary and the global handlers, so an engine's
+  // wording cannot be recognized by one and missed by the other again.
+  return isChunkLoadErrorMessage(error.message || '');
 }
 
 /**
