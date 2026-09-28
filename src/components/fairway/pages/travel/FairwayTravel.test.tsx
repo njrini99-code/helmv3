@@ -14,8 +14,8 @@
  * that produces the fix: the grid disables stretch (`lg:items-start`) and the
  * detail column opts out of it and sticks (`lg:self-start lg:sticky lg:top-6`).
  * ========================================================================== */
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 
 import { FairwayTravel } from './FairwayTravel';
 import type { TravelItinerary } from './travel-helpers';
@@ -63,6 +63,23 @@ vi.mock('@/lib/supabase/client', () => ({
     }),
   }),
 }));
+
+// The component upgrades `nowISO` to the real clock after mount, and trips are
+// grouped by status (upcoming vs completed). Pin the clock to the fixtures'
+// "today" so the August trips below stay upcoming whatever day the suite runs.
+beforeEach(() => {
+  vi.useFakeTimers({ toFake: ['Date'] });
+  vi.setSystemTime(new Date(2026, 6, 1, 9, 0, 0));
+  // Selection writes ?trip= into (shared, per-file) jsdom history; start clean.
+  window.history.replaceState(null, '', '/golf/dashboard/travel');
+});
+afterEach(() => {
+  vi.useRealTimers();
+});
+
+// Trips appear twice (the season strip and the list); act on the list row.
+const listButton = (name: RegExp) =>
+  within(screen.getByRole('heading', { name: 'Coming up' }).closest('section') as HTMLElement).getByRole('button', { name });
 
 function makeItinerary(id: string, overrides: Partial<TravelItinerary> = {}): TravelItinerary {
   return {
@@ -116,7 +133,7 @@ describe('FairwayTravel — #173 orphaned detail pane', () => {
         />,
       );
 
-      fireEvent.click(screen.getByRole('button', { name: /Trip b/ }));
+      fireEvent.click(listButton(/Trip b/));
 
       await waitFor(() => expect(scrollIntoView).toHaveBeenCalledWith({ behavior: 'smooth', block: 'start' }));
     } finally {
@@ -127,6 +144,8 @@ describe('FairwayTravel — #173 orphaned detail pane', () => {
 
   it('never stretches the detail column to the (possibly long) list column height on desktop', () => {
     const itineraries = Array.from({ length: 8 }, (_, i) => makeItinerary(String(i)));
+    // Redesign 2026-09-28: with nothing picked, the desktop panel shows the
+    // NEXT trip's sheet (no "Select a trip" pane) — same sticky column.
 
     render(
       <FairwayTravel
@@ -138,10 +157,10 @@ describe('FairwayTravel — #173 orphaned detail pane', () => {
       />,
     );
 
-    const emptyTitle = screen.getByText('Select a trip');
-    // The column wrapper is the `ref`ed `lg:col-span-2` ancestor a few levels
-    // up from the empty-state text.
-    const detailColumn = emptyTitle.closest('.lg\\:col-span-2');
+    // The next trip ("Trip 0") is both the phone hero and the desktop sheet;
+    // the sheet's h2 is the last one.
+    const headings = screen.getAllByRole('heading', { level: 2, name: 'Trip 0' });
+    const detailColumn = headings[headings.length - 1]!.closest('.lg\\:col-span-2');
     expect(detailColumn).not.toBeNull();
     expect(detailColumn).toHaveClass('lg:col-span-2');
     expect(detailColumn).toHaveClass('lg:sticky');
@@ -165,7 +184,7 @@ describe('FairwayTravel — #173 orphaned detail pane', () => {
       />,
     );
 
-    fireEvent.click(screen.getByRole('button', { name: /Trip a/ }));
+    fireEvent.click(listButton(/Trip a/));
 
     // The detail panel now renders the selected trip's own heading — the LAST
     // "Trip a" match (the first is the still-mounted list-card button label).
@@ -258,7 +277,7 @@ describe('FairwayTravel — create-itinerary success stays on Travel', () => {
 });
 
 describe('FairwayTravel — phone navigation stack (NAT-05) and mark-seen (DATA-03)', () => {
-  it('hides the "Select a trip" pane below lg and swaps the list for the detail on select', () => {
+  it('keeps the default detail desktop-only below lg and swaps the list for the detail on select', async () => {
     render(
       <FairwayTravel
         itineraries={[makeItinerary('a'), makeItinerary('b')]}
@@ -269,20 +288,26 @@ describe('FairwayTravel — phone navigation stack (NAT-05) and mark-seen (DATA-
       />,
     );
 
-    // Nothing selected: the empty pane is desktop-only.
-    const detailColumn = screen.getByText('Select a trip').closest('.lg\\:col-span-2');
+    // Nothing selected: the default (next-trip) detail is desktop-only; the
+    // phone root is the hero + lists.
+    const headings = screen.getAllByRole('heading', { level: 2, name: 'Trip a' });
+    const detailColumn = headings[headings.length - 1]!.closest('.lg\\:col-span-2');
     expect(detailColumn).toHaveClass('hidden', 'lg:block');
 
-    fireEvent.click(screen.getByRole('button', { name: /Trip a/ }));
+    fireEvent.click(listButton(/Trip b/));
+    // The pick is shareable / survives refresh: it is written to ?trip=.
+    expect(new URL(window.location.href).searchParams.get('trip')).toBe('b');
 
     // Selected: the list column hides below lg, the detail shows with a Back control.
-    const listColumn = screen.getByRole('heading', { name: 'Trips' }).parentElement;
-    expect(listColumn).toHaveClass('hidden', 'lg:flex');
+    const listColumn = () => screen.getByRole('heading', { name: 'Coming up' }).closest('.lg\\:col-span-1');
+    expect(listColumn()).toHaveClass('hidden', 'lg:flex');
     const back = screen.getByRole('button', { name: 'All trips' });
     expect(back.closest('.lg\\:hidden')).not.toBeNull();
 
+    // Back pops the pushed history entry (so the iOS back swipe does the same).
     fireEvent.click(back);
-    expect(screen.getByRole('heading', { name: 'Trips' }).parentElement).not.toHaveClass('hidden');
+    await waitFor(() => expect(listColumn()).not.toHaveClass('hidden'));
+    expect(new URL(window.location.href).searchParams.get('trip')).toBeNull();
   });
 
   it('swallows a failed mark-seen instead of leaving an unhandled rejection', async () => {

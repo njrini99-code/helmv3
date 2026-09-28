@@ -31,12 +31,13 @@
 
 import * as React from 'react';
 import Link from 'next/link';
-import { MapPin, Pencil, Trash2, Download, Plus, Receipt, CalendarDays, ArrowRight } from 'lucide-react';
+import { Pencil, Trash2, Download, Plus, Receipt, ArrowRight } from 'lucide-react';
 
 import {
   Surface,
-  Inset,
   Button,
+  StatusPill,
+  Checkbox,
   Tabs,
   TabsList,
   TabsTrigger,
@@ -55,13 +56,16 @@ import type {
 } from '@/app/golf/actions/travel';
 import {
   type TravelItinerary,
-  TRANSPORT_ICON,
-  TRANSPORT_LABEL,
+  getTripStatus,
   formatTravelDate,
   formatTravelTime,
+  formatWeekdayDate,
+  transportLabel,
+  mapsHref,
+  telHref,
+  splitGear,
 } from './travel-helpers';
 
-const EM_DASH = '—';
 
 export interface FairwayTripDetailProps {
   itinerary: TravelItinerary;
@@ -80,19 +84,116 @@ export interface FairwayTripDetailProps {
   onEditExpense: (expense: TravelExpense) => void;
   onRefreshExpenses: () => void;
   onExportCSV: () => void;
+  /** Countdown / live status in the header (desktop has no separate hero). */
+  now?: Date | null;
 }
 
 /* ───────────────────────────────────────────────────────────────────────────
- * A labeled detail row. `value` is rendered honestly — callers only pass rows
- * for fields that exist, so we never show a fabricated value.
+ * Trip sheet rows (redesign 2026-09-28, docs/redesign/travel). The details tab
+ * reads like the paper trip sheet a coach hands out: a time column, then what
+ * happens, with the practical detail (map, call, confirmation) beside it.
+ * Rows and hairlines, no tiles: every row is optional and only rendered for
+ * fields that exist, so nothing is fabricated.
  * ────────────────────────────────────────────────────────────────────────── */
-function DetailRow({ label, value }: { label: string; value: React.ReactNode }) {
+function SheetStep({
+  time,
+  label,
+  node = 'stop',
+  children,
+}: {
+  time?: string | null;
+  label: string;
+  /** `end` = a solid node (leave / return), `stop` = a hollow one. */
+  node?: 'end' | 'stop';
+  children: React.ReactNode;
+}) {
   return (
-    <div>
-      <p className="font-fw-sans text-caption font-medium text-text-tertiary">
-        {label}
+    <li className="group/step grid grid-cols-[4.25rem_1.25rem_1fr] gap-x-2">
+      <span className="pt-4 text-right font-fw-sans text-body-sm font-semibold text-accent-ink tabular-nums">
+        {time ?? ''}
+      </span>
+      {/* The journey rail: a dashed line through every stop, a node per step. */}
+      <span aria-hidden className="relative flex justify-center">
+        <span className="absolute inset-y-0 border-l-2 border-dotted border-border-strong group-first/step:top-5 group-last/step:bottom-auto group-last/step:h-5" />
+        <span
+          className={cn(
+            'relative mt-[1.1rem] h-3 w-3 rounded-full ring-4 ring-surface',
+            node === 'end' ? 'bg-accent-fill' : 'border-2 border-accent-fill bg-surface',
+          )}
+        />
+      </span>
+      <div className="min-w-0 pb-5 pt-3.5">
+        <p className="font-fw-sans text-eyebrow uppercase text-text-tertiary">{label}</p>
+        <div className="mt-0.5 font-fw-sans text-body text-text-primary">{children}</div>
+      </div>
+    </li>
+  );
+}
+
+/**
+ * The packing list as something to tick off. Checks are personal and live on
+ * this device only (localStorage per trip); the list itself is the coach's.
+ */
+function PackingList({ tripId, items }: { tripId: string; items: string[] }) {
+  const storageKey = `helm:travel:packed:${tripId}`;
+  const [packed, setPacked] = React.useState<string[]>([]);
+  React.useEffect(() => {
+    try {
+      const raw = window.localStorage.getItem(storageKey);
+      setPacked(raw ? (JSON.parse(raw) as string[]) : []);
+    } catch {
+      setPacked([]);
+    }
+  }, [storageKey]);
+  const toggle = (item: string, on: boolean) => {
+    setPacked((prev) => {
+      const next = on ? [...new Set([...prev, item])] : prev.filter((p) => p !== item);
+      try {
+        window.localStorage.setItem(storageKey, JSON.stringify(next));
+      } catch {
+        /* private mode: keep it in memory */
+      }
+      return next;
+    });
+  };
+  const done = items.filter((i) => packed.includes(i)).length;
+  return (
+    <>
+      <p className="-mt-0.5 mb-1 font-fw-sans text-body-sm text-text-secondary tabular-nums">
+        {done} of {items.length} packed <span className="text-text-tertiary">· saved on this device</span>
       </p>
-      <p className="mt-1 font-fw-sans text-body-sm text-text-secondary">{value}</p>
+      <ul className="grid grid-cols-1 gap-x-6 sm:grid-cols-2">
+        {items.map((item) => (
+          <li key={item} className="flex min-h-11 items-center">
+            <Checkbox
+              label={<span className={cn(packed.includes(item) && 'text-text-tertiary line-through')}>{item}</span>}
+              checked={packed.includes(item)}
+              onCheckedChange={(v) => toggle(item, !!v)}
+            />
+          </li>
+        ))}
+      </ul>
+    </>
+  );
+}
+
+function SheetLink({ href, children, external }: { href: string; children: React.ReactNode; external?: boolean }) {
+  return (
+    <a
+      href={href}
+      {...(external ? { target: '_blank', rel: 'noreferrer' } : {})}
+      className="inline-flex min-h-11 items-center font-fw-sans text-body-sm text-accent-ink underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus"
+    >
+      {children}
+    </a>
+  );
+}
+
+function SheetBlock({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="border-t border-border-subtle pt-4">
+      <p className="font-fw-sans text-eyebrow uppercase text-text-tertiary">{label}</p>
+      <div className="mt-1 font-fw-sans text-body text-text-primary">{children}</div>
     </div>
   );
 }
@@ -113,9 +214,13 @@ export function FairwayTripDetail({
   onEditExpense,
   onRefreshExpenses,
   onExportCSV,
+  now = null,
 }: FairwayTripDetailProps) {
   const [confirmOpen, setConfirmOpen] = React.useState(false);
-  const Icon = TRANSPORT_ICON[itinerary.transportation_type];
+  const status = getTripStatus(itinerary, now);
+  const showStatus = status.label !== 'Upcoming' && status.label !== 'Completed';
+  const gear = splitGear(itinerary.gear_list);
+  const multiDay = !!itinerary.return_date && itinerary.return_date !== itinerary.departure_date;
 
   // The destructive cascade size — the trip plus every logged expense. Surfaced
   // in the confirm copy so the coach is told exactly what gets removed.
@@ -131,6 +236,17 @@ export function FairwayTripDetail({
     onDelete();
   };
 
+  const hasLogistics =
+    !!itinerary.hotel_name ||
+    !!itinerary.hotel_address ||
+    !!itinerary.flight_info ||
+    !!itinerary.room_assignments ||
+    !!itinerary.uniform_requirements ||
+    gear.length > 0 ||
+    !!itinerary.notes ||
+    !!itinerary.departure_time ||
+    !!itinerary.departure_location;
+
   return (
     <>
     <Surface elevation="border" padding="none" className="overflow-hidden">
@@ -143,42 +259,37 @@ export function FairwayTripDetail({
         onValueChange={(v) => onTabChange(v as 'details' | 'expenses')}
         className="gap-0"
       >
-        {/* ── Header ────────────────────────────────────────────────────── */}
-        <div className="flex flex-col gap-4 border-b border-border-subtle p-6">
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex min-w-0 items-start gap-3">
-              <span className="grid h-11 w-11 shrink-0 place-items-center rounded-fw-md bg-accent-50 text-accent-700">
-                <Icon className="h-5 w-5" aria-hidden />
-              </span>
-              <div className="min-w-0">
-                {/* #87 — this header is already full-width (Surface spans the
-                    whole detail column), so a long trip name/destination has
-                    room to breathe; `truncate` was clipping it mid-word for
-                    no layout reason. Wrap instead: the h2 wraps as a block
-                    naturally, and the destination line switches from a rigid
-                    single-row flex to `flex-wrap` so a long destination drops
-                    the separator + transport label to their own line rather
-                    than clipping. */}
-                <h2 className="break-words font-fw-display text-h3 font-medium tracking-[-0.01em] text-text-primary">
-                  {itinerary.event_name}
-                </h2>
-                <p className="mt-0.5 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 font-fw-sans text-body-sm text-text-secondary">
-                  <MapPin className="h-3.5 w-3.5 shrink-0 text-text-tertiary" aria-hidden />
-                  <span className="break-words">{itinerary.destination}</span>
-                  <span aria-hidden className="text-text-tertiary">·</span>
-                  <span className="text-text-tertiary">
-                    {TRANSPORT_LABEL[itinerary.transportation_type]}
+        {/* ── Header: the name owns the full width; coach actions sit under it
+            on phones (beside it from sm) so a long name never wraps into a
+            narrow column. ───────────────────────────────────────────────── */}
+        <div className="flex flex-col gap-4 border-b border-border-subtle p-5 sm:p-6">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+            <div className="min-w-0">
+              {showStatus ? (
+                <StatusPill tone={status.tone} size="sm" dot={false} className="mb-1.5 w-fit">
+                  {status.label}
+                </StatusPill>
+              ) : null}
+              {/* tabIndex -1: focus lands here when a trip is opened (phone stack). */}
+              <h2 tabIndex={-1} className="break-words font-fw-display text-h3 text-text-primary focus:outline-none">
+                {itinerary.event_name}
+              </h2>
+              <p className="mt-0.5 break-words font-fw-sans text-body-sm text-text-secondary">
+                {transportLabel(itinerary.transportation_type)} to{' '}
+                <span className="break-words">{itinerary.destination}</span>
+                {multiDay ? (
+                  <span className="tabular-nums">
+                    {' '}&middot; {formatTravelDate(itinerary.departure_date)} &ndash;{' '}
+                    {formatTravelDate(itinerary.return_date as string)}
                   </span>
-                </p>
-              </div>
+                ) : null}
+              </p>
             </div>
 
             {isCoach ? (
-              <div className="flex flex-shrink-0 items-center gap-1.5">
-                {/* aria-labels: below the sm breakpoint the text is hidden and
-                    the icons are aria-hidden, so the buttons rely on aria-label
-                    for assistive tech. size="sm" floors the tap target at 44px
-                    on coarse pointers (button primitive), meeting WCAG 2.2. */}
+              <div className="-ml-2 flex flex-shrink-0 items-center gap-4 sm:ml-0">
+                {/* size="sm" floors the tap target at 44px on coarse pointers
+                    (button primitive), meeting WCAG 2.2. */}
                 <Button
                   variant="ghost"
                   size="sm"
@@ -186,7 +297,7 @@ export function FairwayTripDetail({
                   aria-label="Edit itinerary"
                   leftIcon={<Pencil className="h-4 w-4" />}
                 >
-                  <span className="hidden sm:inline">Edit</span>
+                  Edit
                 </Button>
                 <Button
                   variant="ghost"
@@ -195,149 +306,123 @@ export function FairwayTripDetail({
                   aria-label="Delete itinerary"
                   leftIcon={<Trash2 className="h-4 w-4" />}
                 >
-                  <span className="hidden sm:inline">Delete</span>
+                  Delete
                 </Button>
               </div>
             ) : null}
           </div>
 
           <TabsList aria-label="Trip sections">
-            <TabsTrigger value="details">Details</TabsTrigger>
+            <TabsTrigger value="details">Trip sheet</TabsTrigger>
             <TabsTrigger value="expenses">Expenses</TabsTrigger>
           </TabsList>
         </div>
 
-        {/* ═══════════ DETAILS ═══════════ */}
-        <TabsContent value="details" className="p-6">
-          <div className="flex flex-col gap-5">
-            {/* Schedule */}
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <Inset padding="sm">
-                <p className="font-fw-sans text-caption font-medium text-text-tertiary">
-                  Departure
-                </p>
-                <p className="mt-1 font-fw-sans text-body-sm font-medium text-text-primary tabular-nums">
-                  {formatTravelDate(itinerary.departure_date)}
-                </p>
-                {itinerary.departure_time ? (
-                  <p className="font-fw-sans text-caption text-text-tertiary tabular-nums">
-                    {formatTravelTime(itinerary.departure_time)}
-                  </p>
-                ) : null}
-                {itinerary.departure_location ? (
-                  <p className="mt-0.5 font-fw-sans text-caption text-text-tertiary">
-                    {itinerary.departure_location}
-                  </p>
-                ) : null}
-              </Inset>
-              {itinerary.return_date ? (
-                <Inset padding="sm">
-                  <p className="font-fw-sans text-caption font-medium text-text-tertiary">
-                    Return
-                  </p>
-                  <p className="mt-1 font-fw-sans text-body-sm font-medium text-text-primary tabular-nums">
-                    {formatTravelDate(itinerary.return_date)}
-                  </p>
-                  {itinerary.return_time ? (
-                    <p className="font-fw-sans text-caption text-text-tertiary tabular-nums">
-                      {formatTravelTime(itinerary.return_time)}
-                    </p>
-                  ) : null}
-                </Inset>
-              ) : null}
-            </div>
+        {/* ═══════════ TRIP SHEET ═══════════ */}
+        <TabsContent value="details" className="px-3 pb-5 pt-3 sm:px-5 sm:pb-6">
+          <ol aria-label="Itinerary">
+            <SheetStep
+              time={itinerary.departure_time ? formatTravelTime(itinerary.departure_time) : null}
+              label={`Depart · ${formatWeekdayDate(itinerary.departure_date)}`}
+              node="end"
+            >
+              {itinerary.departure_location ? (
+                <>
+                  <p>{itinerary.departure_location}</p>
+                  <SheetLink href={mapsHref(itinerary.departure_location)} external>
+                    Directions<span className="sr-only"> to {itinerary.departure_location} (opens Maps)</span>
+                  </SheetLink>
+                </>
+              ) : (
+                <p className="text-text-secondary">Meeting point not posted yet</p>
+              )}
+            </SheetStep>
 
-            {/* Linked calendar event — only when this trip is linked to a
-                golf_events row. Deep-links to the SPECIFIC event (?event=<id>)
-                so the calendar auto-opens its detail drawer, rather than just
-                landing on the general hub. Honest: hidden when unlinked. */}
-            {itinerary.event_id ? (
-              <Link
-                href={`/golf/dashboard/calendar?event=${itinerary.event_id}`}
-                className="group flex items-center gap-2.5 rounded-fw-md border border-border-subtle bg-surface-sunken px-3.5 py-2.5 font-fw-sans text-body-sm text-text-secondary transition-colors hover:border-accent-500 hover:bg-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500/40"
-              >
-                <CalendarDays className="h-4 w-4 shrink-0 text-accent-700" aria-hidden />
-                <span className="min-w-0 flex-1 truncate">
-                  Linked to:{' '}
-                  <span className="font-medium text-text-primary">
-                    {itinerary.event_title || 'calendar event'}
-                  </span>
-                </span>
-                <ArrowRight className="h-4 w-4 shrink-0 text-text-tertiary transition-transform group-hover:translate-x-0.5 group-hover:text-accent-700" aria-hidden />
-              </Link>
+            {/* What to wear and bring sits with the departure: it's what you
+                need before you leave. */}
+            {itinerary.uniform_requirements ? (
+              <SheetStep label="Wear">
+                <p>{itinerary.uniform_requirements}</p>
+              </SheetStep>
+            ) : null}
+            {gear.length > 0 ? (
+              <SheetStep label="Bring">
+                <PackingList tripId={itinerary.id} items={gear} />
+              </SheetStep>
             ) : null}
 
-            {/* Lodging */}
-            {itinerary.hotel_name ? (
-              <Inset padding="sm">
-                <p className="font-fw-sans text-caption font-medium text-text-tertiary">
-                  Lodging
-                </p>
-                <p className="mt-1 font-fw-sans text-body-sm font-medium text-text-primary">
-                  {itinerary.hotel_name}
-                </p>
+            {itinerary.hotel_name || itinerary.hotel_address ? (
+              <SheetStep label="Stay">
+                {itinerary.hotel_name ? <p>{itinerary.hotel_name}</p> : null}
                 {itinerary.hotel_address ? (
-                  <p className="font-fw-sans text-caption text-text-secondary">
-                    {itinerary.hotel_address}
+                  <p className="text-body-sm text-text-secondary">{itinerary.hotel_address}</p>
+                ) : null}
+                {itinerary.hotel_confirmation ? (
+                  <p className="text-body-sm text-text-secondary">
+                    Confirmation <span className="text-text-primary tabular-nums">{itinerary.hotel_confirmation}</span>
                   </p>
                 ) : null}
-                <div className="mt-1.5 flex flex-wrap gap-x-4 gap-y-1 font-fw-sans text-caption text-text-tertiary">
+                <div className="flex flex-wrap gap-x-5">
                   {itinerary.hotel_phone ? (
-                    <span>
-                      Phone:{' '}
-                      <span className="text-text-secondary tabular-nums">{itinerary.hotel_phone}</span>
-                    </span>
+                    <SheetLink href={telHref(itinerary.hotel_phone)}>
+                      Call <span className="ml-1 tabular-nums">{itinerary.hotel_phone}</span>
+                    </SheetLink>
                   ) : null}
-                  {itinerary.hotel_confirmation ? (
-                    <span>
-                      Confirmation:{' '}
-                      <span className="text-text-secondary">{itinerary.hotel_confirmation}</span>
-                    </span>
+                  {itinerary.hotel_address || itinerary.hotel_name ? (
+                    <SheetLink
+                      href={mapsHref([itinerary.hotel_name, itinerary.hotel_address].filter(Boolean).join(', '))}
+                      external
+                    >
+                      Directions<span className="sr-only"> to the hotel (opens Maps)</span>
+                    </SheetLink>
                   ) : null}
                 </div>
-              </Inset>
+              </SheetStep>
             ) : null}
 
-            {/* Remaining detail fields — only render the ones that exist. */}
-            {itinerary.flight_info ||
-            itinerary.room_assignments ||
-            itinerary.uniform_requirements ||
-            itinerary.gear_list ||
-            itinerary.notes ? (
-              <div className="flex flex-col gap-4">
-                {itinerary.flight_info ? (
-                  <DetailRow label="Flight info" value={itinerary.flight_info} />
-                ) : null}
-                {itinerary.room_assignments ? (
-                  <DetailRow label="Room assignments" value={itinerary.room_assignments} />
-                ) : null}
-                {itinerary.uniform_requirements ? (
-                  <DetailRow label="Uniform" value={itinerary.uniform_requirements} />
-                ) : null}
-                {itinerary.gear_list ? (
-                  <DetailRow label="Gear list" value={itinerary.gear_list} />
-                ) : null}
-                {itinerary.notes ? <DetailRow label="Notes" value={itinerary.notes} /> : null}
+            {itinerary.return_date ? (
+              <SheetStep
+                time={itinerary.return_time ? formatTravelTime(itinerary.return_time) : null}
+                label="Return"
+                node="end"
+              >
+                <p className="tabular-nums">{formatWeekdayDate(itinerary.return_date)}</p>
+              </SheetStep>
+            ) : null}
+          </ol>
+
+          <div className="mt-2 flex flex-col gap-4">
+            {itinerary.flight_info ? <SheetBlock label="Flight">{itinerary.flight_info}</SheetBlock> : null}
+            {itinerary.room_assignments ? (
+              <SheetBlock label="Rooms">{itinerary.room_assignments}</SheetBlock>
+            ) : null}
+            {itinerary.notes ? <SheetBlock label="Notes">{itinerary.notes}</SheetBlock> : null}
+
+            {/* The linked calendar event isn't a step of the trip; it's a
+                way out to the event itself. Deep-links to ?event=<id>. */}
+            {itinerary.event_id ? (
+              <div className="border-t border-border-subtle pt-2">
+                <Link
+                  href={`/golf/dashboard/calendar?event=${itinerary.event_id}`}
+                  className="inline-flex min-h-11 items-center gap-1.5 font-fw-sans text-body-sm text-accent-ink underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus"
+                >
+                  Event: {itinerary.event_title || 'calendar event'}
+                  <ArrowRight className="h-4 w-4 shrink-0" aria-hidden />
+                </Link>
               </div>
             ) : null}
 
-            {/* Honest "nothing else added" — when only the required schedule
-                fields exist and the coach added no lodging/logistics. */}
-            {!itinerary.hotel_name &&
-            !itinerary.flight_info &&
-            !itinerary.room_assignments &&
-            !itinerary.uniform_requirements &&
-            !itinerary.gear_list &&
-            !itinerary.notes ? (
-              <p className="font-fw-sans text-body-sm text-text-tertiary">
-                No lodging or logistics added yet {EM_DASH} the schedule above is all that&rsquo;s posted.
+            {!hasLogistics ? (
+              <p className="border-t border-border-subtle pt-4 font-fw-sans text-body-sm text-text-secondary">
+                Only the date and destination are posted so far.
+                {isCoach ? ' Edit the trip to add the leave time, meeting point and hotel.' : ''}
               </p>
             ) : null}
           </div>
         </TabsContent>
 
         {/* ═══════════ EXPENSES ═══════════ */}
-        <TabsContent value="expenses" className="p-6">
+        <TabsContent value="expenses" className="p-5 sm:p-6">
           <div className="mb-5 flex items-center justify-between gap-2">
             <h3 className="font-fw-sans text-body-lg font-semibold text-text-primary">
               Trip expenses
@@ -355,9 +440,9 @@ export function FairwayTripDetail({
                   Export CSV
                 </Button>
               ) : null}
-              {isCoach ? (
+              {isCoach && expenses.length > 0 ? (
                 <Button
-                  variant="primary"
+                  variant="secondary"
                   size="sm"
                   onClick={onAddExpense}
                   leftIcon={<Plus className="h-4 w-4" />}
@@ -370,13 +455,12 @@ export function FairwayTripDetail({
 
           {loadingExpenses ? (
             <div className="flex flex-col gap-3" role="status" aria-busy="true" aria-live="polite">
-              <span className="sr-only">Loading trip…</span>
+              <span className="sr-only">Loading expenses…</span>
               <Skeleton className="h-24 w-full" />
               <Skeleton className="h-12 w-full" />
               <Skeleton className="h-12 w-2/3" />
             </div>
           ) : expenses.length === 0 ? (
-            <Surface elevation="border" padding="none">
               <EmptyState
                 variant="subtle"
                 icon={Receipt}
@@ -388,8 +472,9 @@ export function FairwayTripDetail({
                 }
                 action={
                   isCoach ? (
+                    // Secondary: the page's one primary action is "Add itinerary".
                     <Button
-                      variant="primary"
+                      variant="secondary"
                       size="sm"
                       onClick={onAddExpense}
                       leftIcon={<Plus className="h-4 w-4" />}
@@ -399,7 +484,6 @@ export function FairwayTripDetail({
                   ) : undefined
                 }
               />
-            </Surface>
           ) : (
             <div className="flex flex-col gap-6">
               {expenseSummary && expenseSummary.count > 0 ? (
@@ -455,8 +539,7 @@ export function FairwayTripDetail({
             </>
           ) : (
             <>
-              This removes the entire itinerary. No expenses are logged on this
-              trip yet.
+              This removes the itinerary and any expenses logged on it.
             </>
           )}
         </p>
