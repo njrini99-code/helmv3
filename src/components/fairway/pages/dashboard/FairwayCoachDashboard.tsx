@@ -21,8 +21,9 @@
  *     — no `.pill-soft`-on-Button, no bespoke Links.
  *   • Date range is a quiet Segmented control in a calm toolbar band (preserves
  *     the ?range router.push contract — logic unchanged).
- *   • Team KPIs are matte MetricCards that show honest insufficient-data when
- *     round coverage is low (never authoritative zeros, data-gap:medium).
+ *   • Team KPIs are one "Team performance" card of four hairline-divided
+ *     cells (TeamKpiCell) that show honest insufficient-data when round
+ *     coverage is low (never authoritative zeros, data-gap:medium).
  *   • Recent Rounds becomes a clean DataTable; Performance Trend + Team Pulse +
  *     Top Performers collapse into one calm "Team" region on matte Surfaces.
  *   • Coach-without-team becomes an OnboardingStep funnel, not a zeroed page.
@@ -42,27 +43,27 @@ import {
   ViewHeader,
   Surface,
   Inset,
-  MetricCard,
   DataTable,
   Segmented,
   Button,
   StatusPill,
   Avatar,
+  AvatarGroup,
   InlineNotice,
   EmptyState,
   InsufficientData,
   OnboardingStep,
   OnboardingSteps,
   Skeleton,
-  Sparkline,
   type ColumnDef,
   type TrendPoint,
 } from '@/components/fairway';
+import { TeamKpiCell, windowLabel } from './TeamKpiCell';
 // The ONE series→delta→verdict reducer (AUDIT-0724 findings #2/#6/#7) — feeds
-// BOTH a KPI card's delta chip AND its Sparkline's `direction` prop from a
+// BOTH a KPI cell's delta chip AND its Sparkline's `direction` prop from a
 // single call, so the two can never classify the same series two different
 // ways again. Direct-file import (not the barrel) mirrors how MetricCard
-// itself imports its trend classifier.
+// imports its trend classifier.
 import { computeSeriesTrend } from '@/components/fairway/charts/seriesTrend';
 import {
   IconUsers,
@@ -97,7 +98,7 @@ import { formatToPar } from '@/lib/golf/format-to-par';
 import { formatMetricText } from '@/lib/golf/metrics/display-registry';
 import { competitionRankLabels } from '@/lib/golf/tie-rank';
 
-/** Round to 1 dp as a number (NumberFlow/MetricCard values), no string step. */
+/** Round to 1 dp as a number (NumberFlow values), no string step. */
 function round1(n: number): number {
   return Math.round(n * 10) / 10;
 }
@@ -213,7 +214,11 @@ function shortDate(iso: string): string {
 }
 
 /**
- * Honest windowed delta + verdict over a sparkline series (oldest → newest).
+ * The Team performance card's footer caption: how many counted rounds the
+ * figures cover, and what the delta chips measure. Said once for the card.
+ *
+ * The chips are an honest windowed delta + verdict over each metric's
+ * sparkline series (oldest → newest).
  * `computeSeriesTrend()` (charts/seriesTrend.ts) is the SAME split-half-
  * average comparison `computeTrend()`/`computeTrendHigherIsBetter()` already
  * use server-side (dashboard-data.ts) to classify the qualitative trend
@@ -235,12 +240,16 @@ function shortDate(iso: string): string {
  * showing an unreliable 2-point comparison. This is the only numeric
  * movement the dashboard payload supports client-side — the payload's
  * `trend` field is a qualitative direction, not a magnitude.
+ *
+ * The chip is the movement across each player's own latest rounds, averaged
+ * (buildPerPlayerSparkline), while the figure beside it covers the whole
+ * window. This caption says so ONCE, instead of repeating "players' last 5
+ * rounds" under every cell.
  */
-function seriesDeltaLabel(points: number): string {
-  // The chip is the movement across each player's own latest rounds, averaged
-  // (buildPerPlayerSparkline), while the value beside it covers the whole
-  // window. Say so, so the two are not read as one.
-  return `players' last ${points} round${points === 1 ? '' : 's'}`;
+function deltaWindowCaption(roundsLogged: number, points: number | null): string {
+  const rounds = `${roundsLogged} counted ${roundsLogged === 1 ? 'round' : 'rounds'} in this window`;
+  if (points == null) return rounds;
+  return `${rounds} · Change across each player’s last ${points} ${points === 1 ? 'round' : 'rounds'}`;
 }
 
 /* ──────────────────────────────────────────────────────────────────────────
@@ -403,7 +412,7 @@ export function FairwayCoachDashboard({
 
   // KPI micro-trends (F045/F046): the payload already holds a per-metric series
   // (oldest → newest) + a qualitative direction. Render the series as a quiet
-  // Sparkline and the honest first→last movement as the MetricCard delta chip.
+  // Sparkline and the honest split-half movement as the cell's delta chip.
   const scoringSeries = enhancedData?.sparklines.scoringAvg.sparkline ?? [];
   const girSeries = enhancedData?.sparklines.girPct.sparkline ?? [];
   const puttsSeries = enhancedData?.sparklines.puttsPerRound.sparkline ?? [];
@@ -414,6 +423,44 @@ export function FairwayCoachDashboard({
   const scoringDelta = computeSeriesTrend(scoringSeries, { goodDirection: 'down' });
   const girDelta = computeSeriesTrend(girSeries, { goodDirection: 'up' });
   const puttsDelta = computeSeriesTrend(puttsSeries, { goodDirection: 'down' });
+
+  // Null-metric copy for the Team performance cells. A failed read is not
+  // "not enough rounds": say which one it is (P009 honesty rule).
+  const kpiEmpty = teamStatsUnavailable
+    ? { message: 'Couldn’t load', footnote: 'Refresh to try again' }
+    : { message: 'Need 3+ rounds', footnote: `${roundsLogged} of 3 rounds` };
+
+  // The footer caption, said once for the whole card. The round count is only
+  // meaningful when rounds exist and the read succeeded; the "change" half
+  // names a round count only when every chip on the card used the same one.
+  const deltaPoints = Array.from(
+    new Set([scoringDelta, girDelta, puttsDelta].flatMap((d) => (d ? [d.points] : []))),
+  );
+  const kpiCaption =
+    !teamStatsUnavailable && roundsLogged > 0
+      ? deltaWindowCaption(roundsLogged, deltaPoints.length === 1 ? deltaPoints[0]! : null)
+      : null;
+
+  // Faces for the Roster cell: the players with counted rounds in this window,
+  // most recently active first. `recentRounds` is every counted round in the
+  // window (paginated server-side, not just the 8 the table shows), so this is
+  // exactly "who has played", never presented as the whole roster.
+  const playersWithRounds: Array<{ id: string; name: string; avatarUrl: string | null }> = [];
+  const seenPlayers = new Set<string>();
+  for (const r of recentRounds) {
+    if (seenPlayers.has(r.player_id)) continue;
+    seenPlayers.add(r.player_id);
+    playersWithRounds.push({ id: r.player_id, name: r.player_name, avatarUrl: r.player_avatar_url });
+  }
+  const rosterFootnote =
+    [
+      playersWithRounds.length > 0 ? `${playersWithRounds.length} with rounds` : null,
+      stats.activeQualifiers != null && stats.activeQualifiers > 0
+        ? `${stats.activeQualifiers} active ${stats.activeQualifiers === 1 ? 'qualifier' : 'qualifiers'}`
+        : null,
+    ]
+      .filter(Boolean)
+      .join(' · ') || undefined;
 
   const trendFirst = trendPoints[0];
   const trendLast = trendPoints[trendPoints.length - 1];
@@ -686,162 +733,108 @@ export function FairwayCoachDashboard({
         />
       </div>
 
-      {/* ── 4 · TEAM KPIs — matte MetricCards, honest insufficient-data ────── */}
-      <section aria-label="Team performance" className="flex flex-col gap-4">
-        <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-          {scoringAvg != null ? (
-            <MetricCard
-              labelLines={2}
-              label="Scoring Avg"
-              value={round1(scoringAvg)}
-              decimals={1}
-              icon={<IconChartBar size={18} />}
-              goodDirection="down"
-              delta={
-                scoringDelta != null
-                  ? { value: round1(scoringDelta.value), label: seriesDeltaLabel(scoringDelta.points) }
-                  : undefined
-              }
-              sparkline={
-                scoringSeries.length >= 2 ? (
-                  <Sparkline
-                    data={scoringSeries}
-                    goodDirection="down"
-                    label="Scoring average"
-                    // AUDIT-0724 #2/#6: force the SAME verdict the delta chip
-                    // above renders (computeSeriesTrend's split-half average)
-                    // instead of letting Sparkline classify its own endpoint
-                    // diff — undefined (n<3, no computed trend) falls back to
-                    // Sparkline's own internal classification, which is fine
-                    // since no delta chip renders alongside it to disagree.
-                    direction={scoringDelta?.direction}
-                  />
-                ) : undefined
-              }
-              footnote={`${roundsLogged} counted ${roundsLogged === 1 ? 'round' : 'rounds'} in window`}
-            />
-          ) : (
-            // Keep ONE tile silhouette across the KPI row (P010): the null metric
-            // recedes inside a MetricCard `empty` shell, not a different Surface shape.
-            <MetricCard
-              labelLines={2}
-              label="Scoring Avg"
-              value={0}
-              icon={<IconChartBar size={18} />}
-              empty
-              emptyMessage="Need 3+ rounds"
-              footnote={`${roundsLogged} of 3 rounds`}
-            />
-          )}
+      {/* ── 4 · TEAM PERFORMANCE — one contained card, four hairline cells ────
+          Owner 2026-09-27: the four separate KPI tiles read as a template row.
+          They are now ONE card with the deep green header (same plinth as
+          Latest / Today / Recent Rounds): 2x2 on a phone, four across from lg,
+          divided by 1px hairlines (the grid's gap shows the border colour
+          through, so the dividers are right in both layouts). Every cell pins
+          its sparkline to one shared baseline (TeamKpiCell), the delta chip
+          sits inline beside its figure, and the "what does the change mean"
+          caption is said ONCE in the footer instead of under every figure.
+          Honesty is unchanged: a null metric reads "Need 3+ rounds" (or
+          "Couldn't load" when the read behind it failed), never a zero. */}
+      <div className="flex flex-col gap-4">
+        <section
+          aria-label="Team performance"
+          className="flex flex-col overflow-hidden rounded-fw-lg border border-border-subtle bg-surface shadow-soft"
+        >
+          <div className="fw-plinth-green flex items-center justify-between gap-3 px-4 py-3">
+            <h2 className="font-fw-sans text-h3 font-semibold text-text-primary">Team performance</h2>
+            <span className="shrink-0 font-fw-sans text-body-sm text-text-secondary">{windowLabel(range)}</span>
+          </div>
 
-          {girValue != null ? (
-            <MetricCard
-              labelLines={2}
-              label="GIR %"
-              value={Math.round(girValue)}
+          <div className="grid grid-cols-2 gap-px bg-border-subtle lg:grid-cols-4">
+            <TeamKpiCell
+              className="bg-surface"
+              label="Scoring avg"
+              icon={<IconChartBar size={16} />}
+              value={scoringAvg != null ? round1(scoringAvg) : null}
+              decimals={1}
+              goodDirection="down"
+              delta={scoringDelta != null ? { value: round1(scoringDelta.value) } : null}
+              series={scoringSeries}
+              seriesLabel="Scoring average"
+              // AUDIT-0724 #2/#6: force the SAME verdict the delta chip renders
+              // (computeSeriesTrend's split-half average) instead of letting
+              // Sparkline classify its own endpoint diff. Undefined (n<3) falls
+              // back to Sparkline's own read, with no chip beside it to disagree.
+              direction={scoringDelta?.direction}
+              emptyMessage={kpiEmpty.message}
+              footnote={scoringAvg != null ? undefined : kpiEmpty.footnote}
+            />
+            <TeamKpiCell
+              className="bg-surface"
+              label="GIR"
+              icon={<IconTarget size={16} />}
+              value={girValue != null ? Math.round(girValue) : null}
               suffix="%"
-              icon={<IconTarget size={18} />}
               goodDirection="up"
-              delta={
-                girDelta != null
-                  ? { value: Math.round(girDelta.value), suffix: '%', label: seriesDeltaLabel(girDelta.points) }
-                  : undefined
-              }
-              sparkline={
-                girSeries.length >= 2 ? (
-                  <Sparkline
-                    data={girSeries}
-                    goodDirection="up"
-                    label="Greens in regulation"
-                    // AUDIT-0724 #2 — the exact reported case: series
-                    // [61,78,72,50,61] used to draw "flat" here (endpoint
-                    // diff 61-61=0) beside a red "declining" chip. Forcing
-                    // the chip's own computeSeriesTrend() verdict here makes
-                    // them agree.
-                    direction={girDelta?.direction}
-                  />
-                ) : undefined
-              }
+              delta={girDelta != null ? { value: Math.round(girDelta.value), suffix: '%' } : null}
+              series={girSeries}
+              seriesLabel="Greens in regulation"
+              // AUDIT-0724 #2, the reported case: [61,78,72,50,61] drew "flat"
+              // (endpoint 61-61=0) beside a "declining" chip. Same verdict now.
+              direction={girDelta?.direction}
+              emptyMessage={kpiEmpty.message}
+              footnote={girValue != null ? undefined : kpiEmpty.footnote}
             />
-          ) : (
-            // Same MetricCard `empty` silhouette as the other null KPIs (P010) —
-            // one tile vocabulary across the row, never a different Surface shape.
-            <MetricCard
-              labelLines={2}
-              label="GIR %"
-              value={0}
-              icon={<IconTarget size={18} />}
-              empty
-              emptyMessage="Need 3+ rounds"
-              footnote={`${roundsLogged} of 3 rounds`}
-            />
-          )}
-
-          {puttsValue != null ? (
-            <MetricCard
-              labelLines={2}
-              label="Putts / Rd"
-              value={round1(puttsValue)}
+            <TeamKpiCell
+              className="bg-surface"
+              label="Putts per round"
+              icon={<IconGolf size={16} />}
+              value={puttsValue != null ? round1(puttsValue) : null}
               decimals={1}
-              icon={<IconGolf size={18} />}
               goodDirection="down"
-              delta={
-                puttsDelta != null
-                  ? { value: round1(puttsDelta.value), label: seriesDeltaLabel(puttsDelta.points) }
-                  : undefined
-              }
-              sparkline={
-                puttsSeries.length >= 2 ? (
-                  <Sparkline
-                    data={puttsSeries}
-                    goodDirection="down"
-                    label="Putts per round"
-                    direction={puttsDelta?.direction}
-                  />
-                ) : undefined
-              }
+              delta={puttsDelta != null ? { value: round1(puttsDelta.value) } : null}
+              series={puttsSeries}
+              seriesLabel="Putts per round"
+              direction={puttsDelta?.direction}
+              emptyMessage={kpiEmpty.message}
+              footnote={puttsValue != null ? undefined : kpiEmpty.footnote}
             />
-          ) : (
-            // Same MetricCard `empty` silhouette as the other null KPIs (P010).
-            <MetricCard
-              labelLines={2}
-              label="Putts / Rd"
-              value={0}
-              icon={<IconGolf size={18} />}
-              empty
-              emptyMessage="Need 3+ rounds"
-              footnote={`${roundsLogged} of 3 rounds`}
-            />
-          )}
-
-          {/* Roster is a real count (not a derived aggregate) — always honest.
-              null means the count query FAILED, which is not zero: rendering a
-              confident "0" here told a coach with a full squad their program
-              was empty. Uses the same `empty` silhouette as the null KPIs above. */}
-          {stats.rosterSize != null ? (
-            <MetricCard
-              labelLines={2}
+            {/* Roster is a real count, not a derived aggregate. null means the
+                count query FAILED, which is not zero: a confident "0" told a
+                coach with a full squad their program was empty. The faces are
+                the players with counted rounds in this window (the only
+                players this payload knows), and the footnote says exactly that. */}
+            <TeamKpiCell
+              className="bg-surface"
               label="Roster"
+              icon={<IconUsers size={16} />}
               value={stats.rosterSize}
-              icon={<IconUsers size={18} />}
-              footnote={
-                stats.activeQualifiers != null && stats.activeQualifiers > 0
-                  ? `${stats.activeQualifiers} active ${stats.activeQualifiers === 1 ? 'qualifier' : 'qualifiers'}`
-                  : undefined
-              }
-            />
-          ) : (
-            <MetricCard
-              labelLines={2}
-              label="Roster"
-              value={0}
-              icon={<IconUsers size={18} />}
-              empty
-              emptyMessage="Couldn't load"
-              footnote="Refresh to try again"
-            />
-          )}
-        </div>
+              emptyMessage="Couldn’t load"
+              footnote={stats.rosterSize == null ? 'Refresh to try again' : rosterFootnote}
+            >
+              {stats.rosterSize != null && playersWithRounds.length > 0 ? (
+                <AvatarGroup size="xs" max={5} ring="ring-surface" aria-hidden="true">
+                  {playersWithRounds.map((p) => (
+                    <Avatar key={p.id} decorative size="xs" name={p.name} src={p.avatarUrl} />
+                  ))}
+                </AvatarGroup>
+              ) : null}
+            </TeamKpiCell>
+          </div>
+
+          {kpiCaption ? (
+            <p
+              data-slot="team-performance-caption"
+              className="border-t border-border-subtle bg-surface-sunken px-4 py-2 font-fw-sans text-caption text-text-tertiary"
+            >
+              {kpiCaption}
+            </p>
+          ) : null}
+        </section>
 
         {/* Roster-cap notice as quiet matte status, not a heavy card */}
         {rosterFull ? (
@@ -849,7 +842,7 @@ export function FairwayCoachDashboard({
             Your invite code is hidden because the roster has reached the 20-player limit.
           </InlineNotice>
         ) : null}
-      </section>
+      </div>
 
       {/* ── 5 · RECENT ROUNDS — clean DataTable ────────────────────────────── */}
       {/* Owner 2026-09-27: one contained card with the deep green header,
