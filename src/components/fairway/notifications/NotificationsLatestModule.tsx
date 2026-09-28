@@ -14,7 +14,6 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Surface } from '@/components/fairway/surfaces/surface';
 import { Button } from '@/components/fairway/controls/button';
 import { NotificationRow } from './NotificationRow';
 import { useNotificationPanel } from './NotificationPanelContext';
@@ -132,15 +131,18 @@ export function NotificationsLatestModule({ initialItems }: NotificationsLatestM
       {/* Section hairline — the same "more-green ruling" every other home
           section band uses (Recent Rounds, etc.). */}
       <div aria-hidden="true" className="h-px w-full bg-accent-300" />
-      <Surface elevation="border" padding="none">
-        <ul className="divide-y divide-border-subtle">
-          {items.map((item) => (
-            <li key={`${item.source}:${item.id}`}>
-              <NotificationRow item={item} onClick={handleItemClick} density="compact" />
-            </li>
-          ))}
-        </ul>
-      </Surface>
+      {/* Owner 2026-09-27: each notification is its own raised tile (the
+          Inset recipe), not a row in one divided card. */}
+      <ul className="flex flex-col gap-2">
+        {items.map((item) => (
+          <li
+            key={`${item.source}:${item.id}`}
+            className="rounded-fw-md border border-border-subtle bg-elevated shadow-soft"
+          >
+            <NotificationRow item={item} onClick={handleItemClick} density="compact" />
+          </li>
+        ))}
+      </ul>
     </section>
   );
 }
