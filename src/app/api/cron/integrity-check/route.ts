@@ -85,9 +85,16 @@ export async function GET(req: NextRequest) {
       );
     }
 
+    const failed = checks.filter((c) => c.status === 'fail').map((c) => c.check);
+    // `failed_count` / `failed_checks` are scalar copies of `failed` for the
+    // heartbeat: recordJobRun stores only top-level scalars of this body, so
+    // the array alone left every background_job_logs row reading `{ok:true}`
+    // on a failing night (2026-09-28, completed_round_zero_scored_holes ×14).
     return NextResponse.json({
       ok: true,
-      failed: checks.filter((c) => c.status === 'fail').map((c) => c.check),
+      failed,
+      failed_count: failed.length,
+      failed_checks: failed.join(','),
     });
   });
 }
