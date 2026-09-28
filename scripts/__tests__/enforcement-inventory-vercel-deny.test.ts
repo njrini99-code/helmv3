@@ -154,9 +154,9 @@ describe('vercelMutatingDenyHits — the Supabase exclusion is derived from the 
 
 describe('the live configuration', () => {
   it('Vercel CLI and MCP are fully permitted: nothing asks or denies (owner grant)', () => {
-    // The owner granted full Vercel access. Releases still go through
-    // scripts/deploy-prod.sh by policy (AGENTS.md "Production"), not by a
-    // permission rule.
+    // The owner granted full Vercel access. Releases happen only when the
+    // owner says to deploy main, by policy (AGENTS.md "Production"), not by
+    // a permission rule.
     const settings = JSON.parse(readFileSync(resolve(REPO, '.claude/settings.json'), 'utf-8'));
     const connectors: Connector[] = JSON.parse(
       readFileSync(resolve(REPO, 'config/mcp-connector-ids.json'), 'utf-8'),
