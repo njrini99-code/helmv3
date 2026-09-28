@@ -18,15 +18,16 @@ steps:
   - type:
       text: "Automated QA qualifier torture run {{ env.QA_RUN_ID }}. Synthetic data. Do not use for selection."
       into: Description
-  - type:
-      text: "{{ env.QA_START_DATE }}"
-      into: Start date
-  - type:
-      text: "{{ env.QA_END_DATE }}"
-      into: End date
-  - type:
-      text: "{{ env.QA_START_DATE }}"
-      into: Entry deadline
+  # The three dates are calendar pickers, not typed fields: open each picker,
+  # then click the day. Start date opens on the current month; End date and
+  # Entry deadline open on the start's month. A QA_END_DATE in a later month
+  # needs a click on the calendar's next-month arrow before its day.
+  - click: the Start date picker button
+  - click: "the {{ env.QA_START_DATE }} day in the open calendar"
+  - click: the End date picker button
+  - click: "the {{ env.QA_END_DATE }} day in the open calendar"
+  - click: the Entry deadline picker button
+  - click: "the {{ env.QA_START_DATE }} day in the open calendar"
   - click: the plus button in the Rounds control
   - click: the plus button in the Rounds control
   - click: the plus button in the Rounds control
