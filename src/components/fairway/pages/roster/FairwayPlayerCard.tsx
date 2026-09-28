@@ -6,9 +6,8 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ChevronRight } from 'lucide-react';
 
-import { cn, pluralize } from '@/lib/utils';
+import { cn } from '@/lib/utils';
 import { Surface } from '@/components/fairway/surfaces/surface';
-import { Badge } from '@/components/fairway/controls/badge';
 import { TrendGlyph } from '@/components/fairway';
 import type { CoachPlayerIntent } from '@/lib/coachhelm/v3/intent/types';
 import type { TrendVerdict } from '@/lib/coachhelm/trend';
@@ -58,8 +57,10 @@ function formatSgTotal(value: number): string {
 }
 
 function sgTone(value: number): string {
-  if (value > SG_TONE_DEADZONE) return 'text-fw-success-ink';
-  if (value < -SG_TONE_DEADZONE) return 'text-fw-warning-ink';
+  // Read on the deep green stat band (.fw-plinth-green): accent-ink is its
+  // light mint there, and the amber is a light warm tone that holds contrast.
+  if (value > SG_TONE_DEADZONE) return 'text-accent-ink';
+  if (value < -SG_TONE_DEADZONE) return 'text-[oklch(0.86_0.11_75)]';
   return 'text-text-primary';
 }
 
@@ -161,92 +162,50 @@ export function FairwayPlayerCard({ player, intent }: FairwayPlayerCardProps) {
         </div>
       </div>
 
-      {/* Anchor stat */}
-      <div className="px-5 pb-3 md:px-6">
-        <div className="flex items-baseline justify-between gap-3 rounded-fw-md border border-border-subtle bg-surface-sunken/50 px-5 py-4">
-          <div className="flex flex-col gap-0.5">
-            <div className="flex items-center gap-2">
-              <p className="font-fw-sans text-caption font-medium uppercase tracking-wide text-text-tertiary">Avg score</p>
-              {player.recent_trend ? (
-                <TrendGlyph direction={player.recent_trend} className="text-caption font-medium" />
-              ) : null}
-            </div>
-            {/* The denominator. Without it a coach compares an average built on
-                one round against one built on sixteen — measured on Guilford
-                2026-08-18, the same list held players at 1, 2 and 16 rounds.
-                Every neighbouring surface states this ("'30 · 1 rds · 88.0" on
-                the team board, "14/15" per putting bucket in round review). */}
-            <p className="font-fw-sans text-caption tabular-nums text-text-tertiary">
-              {pluralize(player.rounds_count ?? 0, 'round')}
-            </p>
+      {/* Stat band: the three numbers a coach triages on, SG: Total, scoring
+          average and rounds played, on the deep green plinth so they read at
+          full contrast. Focus areas and goals are not shown on the card. */}
+      <div className="px-5 pb-5 md:px-6">
+        <dl className="fw-plinth-green grid grid-cols-3 overflow-hidden rounded-fw-md shadow-soft">
+          <div className="flex min-w-0 flex-col gap-1 px-4 py-4">
+            <dt className="font-fw-sans text-eyebrow font-semibold uppercase tracking-[0.08em] text-text-tertiary">
+              SG / rd
+            </dt>
+            <dd
+              className={cn(
+                'font-fw-display text-h2 font-semibold leading-none tracking-[-0.02em] tabular-nums',
+                player.sg_total == null ? 'text-text-tertiary' : sgTone(player.sg_total),
+              )}
+            >
+              {player.sg_total != null ? formatSgTotal(player.sg_total) : '—'}
+            </dd>
+            {player.standing_tier ? (
+              <dd className="font-fw-sans text-caption leading-tight text-text-secondary">{player.standing_tier}</dd>
+            ) : null}
           </div>
-          <p
-            className={cn(
-              'font-fw-mono text-h1 leading-none tracking-[-0.025em] tabular-nums',
-              hasScore ? 'text-text-primary' : 'text-text-tertiary',
-            )}
-          >
-            {hasScore ? (player.avg_score ?? 0).toFixed(1) : '—'}
-          </p>
-        </div>
-      </div>
-
-      {/* CoachHelm signal strip — SG:Total (+ standing tier), Focus areas,
-          Goals. The rest of what already gets computed server-side for this
-          player (player-fingerprint.ts, standing/loader.ts, goals/loader.ts)
-          surfaced at the list level so a coach doesn't have to open every
-          player individually to triage the team. */}
-      <div className="grid grid-cols-3 gap-2 px-5 pb-4 md:px-6">
-        <div className="min-w-0 rounded-fw-md border border-border-subtle bg-surface-sunken/50 px-3 py-2.5">
-          <p className="font-fw-sans text-caption text-text-tertiary">SG:Total</p>
-          <p
-            className={cn(
-              'font-fw-mono text-body-lg font-semibold tabular-nums',
-              player.sg_total != null ? sgTone(player.sg_total) : 'text-text-tertiary',
-            )}
-          >
-            {player.sg_total != null ? formatSgTotal(player.sg_total) : '—'}
-          </p>
-          {player.standing_tier ? (
-            // Wraps rather than truncating: at 390pt this cell is ~77px of text
-            // width while the tier phrases run 19-25 characters ("Top quartile
-            // on your team"), so `truncate` cut inside the phrase and left
-            // "Top quartile…" — and the `title` tooltip that was the fallback
-            // does nothing on a touch device (owner device report, 2026-08-26).
-            <p className="mt-0.5 font-fw-sans text-caption leading-tight text-text-tertiary">
-              {player.standing_tier}
-            </p>
-          ) : null}
-        </div>
-        <div className="flex min-w-0 flex-col justify-center gap-1 rounded-fw-md border border-border-subtle bg-surface-sunken/50 px-3 py-2.5">
-          <p className="font-fw-sans text-caption text-text-tertiary">Focus</p>
-          {player.active_focus_areas ? (
-            // `whitespace-normal` deliberately overrides Badge's built-in
-            // whitespace-nowrap (twMerge lets className win) — same fix as
-            // TeamCategoryLeakBand's "N of M need work" pill. In this card's
-            // 3-up mini-stat row at tablet/mobile-landscape widths, "3 active"
-            // was wider than its ~1/3 grid cell and got clipped mid-word to
-            // "3 activ" by the card's own overflow-hidden Surface
-            // (GAPS_AUDIT_TABLET_LANDSCAPE_2026-09-02.md #1). Badge's `min-h`
-            // (not a fixed height) lets the pill grow to a second line
-            // instead of spilling past the card edge.
-            <Badge tone="accent" size="sm" numeric className="w-fit whitespace-normal">
-              {player.active_focus_areas} active
-            </Badge>
-          ) : (
-            <span className="font-fw-sans text-caption text-text-tertiary">None yet</span>
-          )}
-        </div>
-        <div className="flex min-w-0 flex-col justify-center gap-1 rounded-fw-md border border-border-subtle bg-surface-sunken/50 px-3 py-2.5">
-          <p className="font-fw-sans text-caption text-text-tertiary">Goals</p>
-          {player.active_goals ? (
-            <Badge tone="accent" size="sm" numeric className="w-fit whitespace-normal">
-              {player.active_goals}
-            </Badge>
-          ) : (
-            <span className="font-fw-sans text-caption text-text-tertiary">None yet</span>
-          )}
-        </div>
+          <div className="flex min-w-0 flex-col gap-1 border-l border-border-subtle px-4 py-4">
+            <dt className="font-fw-sans text-eyebrow font-semibold uppercase tracking-[0.08em] text-text-tertiary">
+              Avg score
+            </dt>
+            <dd className="font-fw-display text-h2 font-semibold leading-none tracking-[-0.02em] tabular-nums text-text-primary">
+              {hasScore ? (player.avg_score ?? 0).toFixed(1) : '—'}
+            </dd>
+            {player.recent_trend ? (
+              <dd className="text-text-secondary">
+                <TrendGlyph direction={player.recent_trend} className="text-caption font-medium" />
+              </dd>
+            ) : null}
+          </div>
+          <div className="flex min-w-0 flex-col gap-1 border-l border-border-subtle px-4 py-4">
+            <dt className="font-fw-sans text-eyebrow font-semibold uppercase tracking-[0.08em] text-text-tertiary">
+              Rounds
+            </dt>
+            <dd className="font-fw-display text-h2 font-semibold leading-none tracking-[-0.02em] tabular-nums text-text-primary">
+              {player.rounds_count ?? 0}
+            </dd>
+            <dd className="font-fw-sans text-caption leading-tight text-text-secondary">played</dd>
+          </div>
+        </dl>
       </div>
 
       {/* A list of cards is not a list of primary actions: one quiet row link
