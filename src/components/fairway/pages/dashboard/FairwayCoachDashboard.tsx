@@ -59,6 +59,7 @@ import {
   type TrendPoint,
 } from '@/components/fairway';
 import { TeamKpiCell, windowLabel } from './TeamKpiCell';
+import { TodayCalendarPanel } from './TodayCalendarPanel';
 // The ONE series→delta→verdict reducer (AUDIT-0724 findings #2/#6/#7) — feeds
 // BOTH a KPI cell's delta chip AND its Sparkline's `direction` prop from a
 // single call, so the two can never classify the same series two different
@@ -74,15 +75,10 @@ import {
   IconGolf,
   IconTarget,
   IconArrowRight,
-  IconClock,
-  IconMapPin,
 } from '@/components/icons';
-import { formatTimeInTz, getCurrentDecimalHourInTz } from '@/lib/utils/timezone';
+import { getCurrentDecimalHourInTz } from '@/lib/utils/timezone';
 import { getGreeting, timeOfDayForHour } from '@/lib/utils/time-of-day';
-import {
-  Flag as LucideFlag,
-  Calendar as LucideCalendar,
-} from 'lucide-react';
+import { Flag as LucideFlag } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { FairwayJoinRequestAlert } from '@/components/fairway/pages/roster/FairwayJoinRequestAlert';
 import { NotificationsLatestModule } from '@/components/fairway/notifications';
@@ -91,7 +87,6 @@ import type { JoinRequestData } from '@/app/golf/actions/teams';
 import type {
   CoachDashboardPayload,
   DashboardDateRange,
-  TodayEvent,
 } from '@/app/golf/actions/dashboard-data';
 import type { CoachDashboardData } from '@/app/golf/(dashboard)/dashboard/components/coach-dashboard-types';
 import { formatToPar } from '@/lib/golf/format-to-par';
@@ -725,9 +720,10 @@ export function FairwayCoachDashboard({
       <div className="grid gap-8 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)] lg:items-start">
         <NotificationsLatestModule initialItems={initialLatestNotifications} people={peopleAvatars} />
 
-        {/* ── 3 · TODAY — schedule timeline (matte, calm) ────────────────────── */}
-        <TodayPanel
-          events={enhancedData?.todayEvents ?? []}
+        {/* ── 3 · TODAY — a mini calendar: 7-day strip + today's agenda ──────── */}
+        <TodayCalendarPanel
+          todayEvents={enhancedData?.todayEvents ?? []}
+          upcomingEvents={enhancedData?.calendarEvents ?? []}
           scheduleError={enhancedData?.todayScheduleError ?? false}
           timezone={enhancedData?.timezone}
         />
@@ -1141,147 +1137,3 @@ function TeamPulsePanel({ pulse }: { pulse?: CoachDashboardPayload['teamPulse'] 
     </Surface>
   );
 }
-
-/* ──────────────────────────────────────────────────────────────────────────
- * Today — schedule region (F104). A calm matte list of the day's events,
- * ported from the legacy TodayTimeline presentation in Fairway style. Reads
- * ONLY the already-computed `enhancedData.todayEvents`; no refetch. Time labels
- * are deferred to the client (resolved timezone) to avoid a hydration mismatch
- * between server and browser timezones (the legacy timeline does the same).
- * ────────────────────────────────────────────────────────────────────────── */
-
-const EVENT_TONE: Record<string, 'accent' | 'warning' | 'neutral' | 'info'> = {
-  practice: 'info',
-  tournament: 'warning',
-  qualifier: 'accent',
-  meeting: 'neutral',
-  travel: 'info',
-  workout: 'warning',
-  game: 'accent',
-  scrimmage: 'accent',
-  class: 'info',
-  other: 'neutral',
-};
-
-const EVENT_LABEL: Record<string, string> = {
-  practice: 'Practice',
-  tournament: 'Tournament',
-  qualifier: 'Qualifier',
-  meeting: 'Meeting',
-  travel: 'Travel',
-  workout: 'Workout',
-  game: 'Match',
-  scrimmage: 'Scrimmage',
-  class: 'Class',
-  other: 'Event',
-};
-
-function TodayPanel({
-  events,
-  scheduleError = false,
-  timezone,
-}: {
-  events: TodayEvent[];
-  scheduleError?: boolean;
-  timezone?: string;
-}) {
-  // Resolve the display timezone on the client (Intl may differ between server
-  // and browser); render time labels only after mount to avoid React #418.
-  const [tz, setTz] = useState<string | null>(null);
-  useEffect(() => {
-    setTz(timezone || Intl.DateTimeFormat().resolvedOptions().timeZone);
-  }, [timezone]);
-
-  return (
-    <section aria-label="Today's schedule" className="flex flex-col gap-3">
-      <div className="flex items-center justify-between gap-3">
-        <div className="flex items-center gap-2.5">
-          <h2 className="font-fw-sans text-h3 font-semibold text-text-primary">Today</h2>
-          {!scheduleError && events.length > 0 ? (
-            <span className="text-caption tabular-nums text-text-tertiary">
-              {events.length}
-            </span>
-          ) : null}
-        </div>
-        <Link
-          href="/golf/dashboard/calendar"
-          className="inline-flex items-center gap-1 py-3 -my-3 font-fw-sans text-body-sm font-medium text-accent-700 hover:text-accent-ink"
-        >
-          Calendar
-          <IconArrowRight size={14} />
-        </Link>
-      </div>
-      {/* Section hairline — more-green ruling: a green rule under the section
-          title, not a plain gray one. */}
-      <div aria-hidden="true" className="h-px w-full bg-accent-300" />
-
-      {scheduleError ? (
-        // Degraded state — the schedule RPC failed. Surface a distinct, quiet
-        // "couldn't load" notice so a failed fetch is never mistaken for a
-        // genuinely empty day (P009 honesty rule).
-        <InlineNotice
-          tone="warning"
-          title="Couldn’t load today’s schedule"
-        >
-          We hit a snag fetching today’s events. Refresh to try again, or open the
-          calendar to see the full schedule.
-        </InlineNotice>
-      ) : events.length === 0 ? (
-        // Right-sized for the COMMON case (audit #64): most days have nothing
-        // on the books, so a clear schedule is the everyday state, not an
-        // edge case — it no longer spends a full monolithic EmptyState card
-        // (icon + title + description) on that. A single quiet InlineNotice
-        // row says the same thing at the size the message actually needs.
-        <InlineNotice tone="info" icon={LucideCalendar} title="Clear schedule today">
-          A good window for practice or recovery.
-        </InlineNotice>
-      ) : (
-        <Surface elevation="border" padding="sm">
-          <ul className="flex flex-col gap-2">
-            {events.map((event) => {
-              const tone = EVENT_TONE[event.event_type] ?? 'neutral';
-              const typeLabel = EVENT_LABEL[event.event_type] ?? 'Event';
-              return (
-                <li key={event.id}>
-                  <Inset padding="sm" className="flex flex-col gap-2">
-                    <div className="flex items-start justify-between gap-3">
-                      <span className="min-w-0 truncate font-fw-sans text-body font-medium text-text-primary">
-                        {event.title}
-                      </span>
-                      <StatusPill tone={tone} dot={false} size="sm">
-                        {typeLabel}
-                      </StatusPill>
-                    </div>
-                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 font-fw-sans text-caption text-text-tertiary">
-                      <span className="inline-flex items-center gap-1 tabular-nums" suppressHydrationWarning>
-                        <IconClock size={12} />
-                        {tz ? (
-                          <>
-                            {formatTimeInTz(event.start_time, tz)}
-                            {event.end_time ? ` – ${formatTimeInTz(event.end_time, tz)}` : ''}
-                          </>
-                        ) : null}
-                      </span>
-                      {event.location ? (
-                        <span className="inline-flex min-w-0 items-center gap-1">
-                          <IconMapPin size={12} />
-                          <span className="truncate">{event.location}</span>
-                        </span>
-                      ) : null}
-                      {event.rsvp_total !== undefined ? (
-                        <span className="tabular-nums">
-                          {event.rsvp_yes ?? 0}/{event.rsvp_total} confirmed
-                        </span>
-                      ) : null}
-                    </div>
-                  </Inset>
-                </li>
-              );
-            })}
-          </ul>
-        </Surface>
-      )}
-    </section>
-  );
-}
-
