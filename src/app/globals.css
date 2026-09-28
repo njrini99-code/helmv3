@@ -3314,7 +3314,10 @@ html[data-baseball-branded='true'] .baseball-shell .nav-item-active-icon {
    label ink: cream on mid-green in light, near-black on bright green in dark.
    It used accent-700, which is green INK — in dark it flipped to a light mint
    under a cream label (≈1.7:1). */
-.fw-nav-selection,
+.fw-nav-selection {
+  background-color: var(--fw-color-accent-fill);
+  border-color: var(--fw-color-accent-fill-hover);
+}
 .fw-message-filters [data-slot='fw-segment-pill'] > span {
   display: none;
 }
