@@ -35,7 +35,7 @@ export interface FairwayCoachRosterProps {
    * Minimal PlayersGridFocusArea-shaped rows (status + outcome_status) for
    * the ported "Who needs your attention" roster-health header — id/
    * area_type/title are honest placeholders unused by that instrument's
-   * coverage/outcome math. See roster/page.tsx.
+   * coverage math. See roster/page.tsx.
    */
   focusAreas: PlayersGridFocusArea[];
 }
@@ -194,18 +194,24 @@ export function FairwayCoachRoster({ players, teamName, inviteCode, intents, joi
 
           {/* Toolbar */}
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-            {/* P249 — the Segmented pill is a fixed inline-flex strip that can
-                exceed a ~360px viewport with four labels. Wrap it in a
-                horizontally scrollable rail (negative-margin gutter so the scroll
-                area reaches the page edge) so all four sort options stay
-                reachable without forcing horizontal scroll on the whole page. */}
-            <div className="-mx-4 max-w-full overflow-x-auto px-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            {/* P249 — four sort labels must never force horizontal scroll on
+                the page. The Segmented bounds itself to this wrapper and
+                scrolls its own track (edge fade, selected segment kept in
+                view) if the options still outgrow it, e.g. on a 320px phone.
+                The old `-mx-4 … px-4` bleed rail was capped by max-w-full, so
+                it lost 32px on the right and clipped "Rounds" at 375px. */}
+            <div className="min-w-0 max-w-full">
+              {/* Default `md` size (no `size="sm"`): the same track depth and
+                  36px segments as the dashboard "Window" range toggle, so the
+                  two read as one control family (owner 2026-09-27: "look
+                  like the other toggles, more depth"). Below sm each segment
+                  drops to px-3 so all four fit a 360–375px phone. */}
               <Segmented<SortField>
-                size="sm"
                 aria-label="Sort players"
                 value={sort}
                 onValueChange={setSort}
                 options={SORT_OPTIONS as unknown as { value: SortField; label: string }[]}
+                className="max-sm:[&_[data-slot=fw-segment]]:px-3"
               />
             </div>
             <Button
