@@ -15,9 +15,9 @@
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { CheckCheck, X } from "lucide-react";
-import { Button } from "@/components/fairway/controls/button";
+import { Button, IconButton } from "@/components/fairway/controls/button";
 import { cn } from "@/lib/utils";
-import { NotificationRow } from "./NotificationRow";
+import { NotificationRow, notificationPersonFor } from "./NotificationRow";
 import { useNotificationPanel } from "./NotificationPanelContext";
 import { useNotificationBadges } from "@/contexts/notification-badge-context";
 import {
@@ -36,6 +36,44 @@ const DISMISS_KEY = "golf:latest-notifications-dismissed";
 
 function itemKey(item: UnifiedNotificationItem): string {
   return `${item.source}:${item.id}`;
+}
+
+/** A run of consecutive items about the same person in the same category. */
+export interface NotificationGroup {
+  /**
+   * React key: the newest member's `source:id`, so it is unique even when the
+   * same person appears in two separate runs (keying on the person made two
+   * "Cole Bennett" runs collide).
+   */
+  key: string;
+  /** `category:person` for person rows (what consecutive items must share to
+   *  merge); null for rows not about a person, which never merge. */
+  matchKey: string | null;
+  /** Newest first (the feed is sorted newest first). */
+  items: UnifiedNotificationItem[];
+}
+
+/**
+ * Owner 2026-09-27: two "Message from Cole Bennett" in a row read as clutter.
+ * Consecutive items from the same person and category collapse into one row
+ * that shows the newest preview and a count; rows not about a person never
+ * group. Unread totals are still counted per item, not per group.
+ */
+export function groupConsecutive(
+  items: readonly UnifiedNotificationItem[],
+): NotificationGroup[] {
+  const groups: NotificationGroup[] = [];
+  for (const item of items) {
+    const person = notificationPersonFor(item);
+    const matchKey = person ? `${item.category}:${person.toLowerCase()}` : null;
+    const last = groups[groups.length - 1];
+    if (matchKey && last && last.matchKey === matchKey) {
+      last.items.push(item);
+    } else {
+      groups.push({ key: itemKey(item), matchKey, items: [item] });
+    }
+  }
+  return groups;
 }
 
 export interface NotificationsLatestModuleProps {
@@ -113,22 +151,24 @@ export function NotificationsLatestModule({
     };
   }, [seeded]);
 
-  const handleItemClick = useCallback(
-    (item: UnifiedNotificationItem) => {
-      const wasUnread = item.read_at == null;
+  /** Opens the newest item and marks every item in the group read. */
+  const handleGroupClick = useCallback(
+    (group: NotificationGroup) => {
+      const newest = group.items[0];
+      if (!newest) return;
+      const unreadMembers = group.items.filter((i) => i.read_at == null);
       const readAt = new Date().toISOString();
+      const keys = new Set(group.items.map(itemKey));
       setItems((prev) =>
         prev.map((i) =>
-          i.id === item.id && i.source === item.source
-            ? { ...i, read_at: i.read_at ?? readAt }
-            : i,
+          keys.has(itemKey(i)) ? { ...i, read_at: i.read_at ?? readAt } : i,
         ),
       );
-      if (item.action_url) router.push(item.action_url);
-      if (wasUnread) {
-        void markNotificationRead(item.id, item.source).then(() =>
-          badges.refetch(),
-        );
+      if (newest.action_url) router.push(newest.action_url);
+      if (unreadMembers.length > 0) {
+        void Promise.all(
+          unreadMembers.map((i) => markNotificationRead(i.id, i.source)),
+        ).then(() => badges.refetch());
       }
     },
     [badges, router],
@@ -189,6 +229,7 @@ export function NotificationsLatestModule({
         unreadCount,
       );
   const showCaughtUp = caughtUp || items.length === 0;
+  const groups = groupConsecutive(items);
 
   // Mobile-only dismissal: hidden until something newer than the dismissed
   // item arrives. Desktop always shows it (md:flex overrides the hide).
@@ -214,9 +255,11 @@ export function NotificationsLatestModule({
               data-slot="latest-unread-key"
               className="flex items-center gap-1.5 font-fw-sans text-caption text-text-secondary"
             >
+              {/* accent-ink is the plinth's light green: the same hue as the
+                  rows' dot, bright enough to read on the deep green header. */}
               <span
                 aria-hidden
-                className="h-2 w-2 rounded-full bg-accent-500"
+                className="h-2 w-2 rounded-full bg-accent-ink"
               />
               {unreadCount} new
             </span>
@@ -227,15 +270,15 @@ export function NotificationsLatestModule({
             View all
           </Button>
           {showCaughtUp ? null : (
-            <Button
+            <IconButton
               variant="ghost"
               size="sm"
               className="md:hidden"
               onClick={handleDismiss}
               aria-label="Dismiss latest notifications"
             >
-              <X size={16} aria-hidden />
-            </Button>
+              <X aria-hidden />
+            </IconButton>
           )}
         </div>
       </div>
@@ -261,13 +304,27 @@ export function NotificationsLatestModule({
         </div>
       ) : (
         <>
-          {/* Owner 2026-09-27: one contained card, rows divided inside it. */}
-          <ul className="flex flex-col divide-y divide-border-subtle">
-            {items.map((item) => (
-              <li key={itemKey(item)}>
+          {/*
+            Owner 2026-09-27: one continuous list on the card surface — no
+            per-row tiles, borders or gaps. The hairline between rows is
+            inset to the text column (px-4 16 + avatar 40 + gap-3 12 = 68px),
+            iOS / Linear style, so the avatars read as one column.
+          */}
+          <ul data-slot="latest-list" className="flex flex-col">
+            {groups.map((group) => (
+              <li
+                key={group.key}
+                className={cn(
+                  "relative",
+                  "before:pointer-events-none before:absolute before:left-[68px] before:right-0 before:top-0 before:h-px before:bg-border-subtle",
+                  "first:before:hidden",
+                )}
+              >
                 <NotificationRow
-                  item={item}
-                  onClick={handleItemClick}
+                  item={group.items[0]}
+                  count={group.items.length}
+                  unread={countUnread(group.items) > 0}
+                  onClick={() => handleGroupClick(group)}
                   density="compact"
                   people={people}
                 />

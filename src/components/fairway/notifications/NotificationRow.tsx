@@ -8,6 +8,18 @@
  * A `PressTarget` (the unstyled pressable primitive, not a raw <button> —
  * `helm/no-raw-button` only allowlists raw elements inside fairway/controls
  * itself) with the row's own layout as className.
+ *
+ * Anatomy (owner 2026-09-27: "personal, premium, not vibe-coded"):
+ *
+ *   [avatar + category badge]  EYEBROW                         time
+ *                              Headline (who / what)              ●
+ *                              one-line preview
+ *
+ * The time lives at the right, top-aligned, with the unread dot beneath it —
+ * iOS Mail / Linear style — so the eyebrow carries only the category and the
+ * left column reads eyebrow → name → preview without a date interrupting it.
+ * `density="compact"` is edge to edge (the Latest module draws the inset
+ * hairline between rows itself); `comfortable` keeps its own rounded hover.
  */
 
 import { PressTarget } from '@/components/fairway/controls/press-target';
@@ -26,6 +38,14 @@ export interface NotificationRowProps {
   /** Known people (lower-cased full name → avatar URL). A row about a person
    *  shows their avatar; unknown people fall back to initials. */
   people?: Readonly<Record<string, string | null>>;
+  /**
+   * How many notifications this row stands for. The caller groups
+   * consecutive items from the same person and category and passes the
+   * newest as `item`; a count above 1 turns the eyebrow into "2 messages".
+   */
+  count?: number;
+  /** Override the unread state (a group is unread when ANY member is). */
+  unread?: boolean;
 }
 
 /** "Message from Cole Bennett" → "Cole Bennett": the eyebrow already says
@@ -49,6 +69,14 @@ function personFor(item: UnifiedNotificationItem, headline: string): string | nu
   return null;
 }
 
+/**
+ * The person a notification is about, for callers that group rows. `null`
+ * when the row is not about a person (those never group).
+ */
+export function notificationPersonFor(item: UnifiedNotificationItem): string | null {
+  return personFor(item, headlineFor(item));
+}
+
 const CATEGORY_EYEBROW: Record<string, string> = {
   messages: 'Message',
   events: 'Event',
@@ -59,38 +87,73 @@ const CATEGORY_EYEBROW: Record<string, string> = {
   profile_views: 'Profile',
 };
 
-/**
- * Owner 2026-09-27: "make them more recognizable, a true notifications hub,
- * premium". Each row reads eyebrow (type · time) → headline (who / what) →
- * one-line preview, next to a category tile, with the unread dot at the right.
- */
-export function NotificationRow({ item, onClick, density = 'comfortable', people }: NotificationRowProps) {
+/** Eyebrow when a row stands for several notifications ("2 messages"). */
+const CATEGORY_EYEBROW_PLURAL: Record<string, string> = {
+  messages: 'messages',
+  events: 'events',
+  announcements: 'announcements',
+  tasks: 'tasks',
+  coachhelm: 'CoachHelm updates',
+  pipeline: 'roster updates',
+  profile_views: 'profile views',
+};
+
+export function NotificationRow({
+  item,
+  onClick,
+  density = 'comfortable',
+  people,
+  count = 1,
+  unread: unreadOverride,
+}: NotificationRowProps) {
   const Icon = categoryIcon(item.category);
-  const unread = isUnread(item);
+  const unread = unreadOverride ?? isUnread(item);
   const compact = density === 'compact';
+  const grouped = count > 1;
   const headline = headlineFor(item);
-  const eyebrow = CATEGORY_EYEBROW[item.category] ?? 'Update';
+  const eyebrow = grouped
+    ? `${count} ${CATEGORY_EYEBROW_PLURAL[item.category] ?? 'updates'}`
+    : (CATEGORY_EYEBROW[item.category] ?? 'Update');
   // Owner 2026-09-27: "use the avatar when referring to a user — personal".
   const person = personFor(item, headline);
 
   return (
     <PressTarget
       onClick={() => onClick(item)}
+      data-unread={unread ? '' : undefined}
       className={cn(
-        'group flex w-full items-center gap-3 rounded-fw-md text-left',
-        'transition-colors duration-fast hover:bg-surface-sunken active:translate-y-[0.5px]',
-        compact ? 'px-3 py-2.5' : 'px-4 py-3.5',
+        'group relative flex w-full items-start gap-3 text-left',
+        // Unread is carried by the semibold headline and the dot alone; the row
+        // itself stays on the card surface (owner: no highlight washes). Only
+        // pointer feedback tints it.
+        'transition-colors duration-fast hover:bg-surface-sunken/60 active:bg-surface-sunken',
+        compact
+          ? // Edge to edge inside the Latest card: no radius, inset focus ring so
+            // the card's overflow-hidden cannot clip it.
+            'min-h-[64px] px-4 py-3 focus-visible:z-10 focus-visible:ring-inset focus-visible:ring-offset-0'
+          : 'min-h-[72px] rounded-fw-md px-4 py-3.5',
       )}
     >
       {person ? (
-        <span className="relative flex-shrink-0" aria-hidden>
+        <span className="relative mt-0.5 flex-shrink-0" aria-hidden>
           <Avatar
             decorative
             name={person}
             src={people?.[person.toLowerCase()] ?? null}
             size={compact ? 'md' : 'lg'}
           />
-          <span className="absolute -bottom-0.5 -right-0.5 grid h-[18px] w-[18px] place-items-center rounded-full bg-accent-fill text-text-on-accent-fill ring-2 ring-elevated">
+          {/*
+            The badge's ring cuts it out of the avatar in the colour of the
+            panel behind the row: the Latest card (compact) and the bell's
+            phone Sheet are bg-surface; the bell's md+ popover is bg-elevated
+            (NotificationBell switches at 768px, the same as `md:`).
+          */}
+          <span
+            className={cn(
+              'absolute -bottom-0.5 -right-0.5 grid h-[18px] w-[18px] place-items-center rounded-full bg-accent-fill text-text-on-accent-fill ring-2',
+              compact ? 'ring-surface' : 'ring-surface md:ring-elevated',
+            )}
+          >
             <Icon size={10} strokeWidth={2.25} />
           </span>
         </span>
@@ -98,8 +161,8 @@ export function NotificationRow({ item, onClick, density = 'comfortable', people
         <span
           aria-hidden
           className={cn(
-            'grid flex-shrink-0 place-items-center rounded-full',
-            compact ? 'h-10 w-10' : 'h-11 w-11',
+            'mt-0.5 grid flex-shrink-0 place-items-center rounded-full',
+            compact ? 'h-10 w-10' : 'h-12 w-12',
             unread ? 'bg-accent-fill text-text-on-accent-fill' : 'bg-accent-50 text-accent-700',
           )}
         >
@@ -108,12 +171,8 @@ export function NotificationRow({ item, onClick, density = 'comfortable', people
       )}
 
       <div className="min-w-0 flex-1">
-        <p className="flex items-center gap-1.5 font-fw-sans text-caption text-text-tertiary">
-          <span className="font-semibold uppercase tracking-[0.06em] text-accent-700">{eyebrow}</span>
-          <span aria-hidden>·</span>
-          <time dateTime={item.created_at} title={fullDateTime(item.created_at)} className="tabular-nums">
-            {relativeTimeFrom(item.created_at)}
-          </time>
+        <p className="font-fw-sans text-caption font-semibold uppercase tracking-[0.06em] text-accent-700">
+          {eyebrow}
         </p>
         <p
           className={cn(
@@ -121,13 +180,17 @@ export function NotificationRow({ item, onClick, density = 'comfortable', people
             unread ? 'font-semibold' : 'font-medium',
           )}
         >
-          <span className="sr-only">{unread ? 'Unread: ' : ''}</span>
+          <span className="sr-only">
+            {unread ? 'Unread: ' : ''}
+            {grouped ? `${count} notifications from ` : ''}
+          </span>
           {headline}
         </p>
         {item.body ? (
           <p
             className={cn(
-              'mt-0.5 font-fw-sans text-body-sm text-text-secondary',
+              'mt-0.5 font-fw-sans text-body-sm',
+              unread ? 'text-text-secondary' : 'text-text-tertiary',
               compact ? 'truncate' : 'line-clamp-2',
             )}
           >
@@ -136,11 +199,20 @@ export function NotificationRow({ item, onClick, density = 'comfortable', people
         ) : null}
       </div>
 
-      {unread ? (
-        <span aria-hidden className="h-2.5 w-2.5 flex-shrink-0 rounded-full bg-accent-500" />
-      ) : (
-        <span className="h-2.5 w-2.5 flex-shrink-0" aria-hidden />
-      )}
+      <div className="flex flex-shrink-0 flex-col items-end gap-2 pt-px">
+        <time
+          dateTime={item.created_at}
+          title={fullDateTime(item.created_at)}
+          className="whitespace-nowrap font-fw-sans text-caption tabular-nums text-text-tertiary"
+        >
+          {relativeTimeFrom(item.created_at)}
+        </time>
+        {unread ? (
+          <span aria-hidden className="mr-0.5 h-2 w-2 rounded-full bg-accent-500" />
+        ) : (
+          <span aria-hidden className="mr-0.5 h-2 w-2" />
+        )}
+      </div>
     </PressTarget>
   );
 }
