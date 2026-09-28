@@ -49,8 +49,8 @@ export interface NotificationGroup {
   /** `category:person` for person rows (what consecutive items must share to
    *  merge); null for rows not about a person, which never merge. */
   matchKey: string | null;
-  /** Newest first (the feed is sorted newest first). */
-  items: UnifiedNotificationItem[];
+  /** Newest first (the feed is sorted newest first); never empty. */
+  items: [UnifiedNotificationItem, ...UnifiedNotificationItem[]];
 }
 
 /**
@@ -233,8 +233,8 @@ export function NotificationsLatestModule({
 
   // Mobile-only dismissal: hidden until something newer than the dismissed
   // item arrives. Desktop always shows it (md:flex overrides the hide).
-  const dismissedOnMobile =
-    items.length > 0 && dismissedKey === itemKey(items[0]);
+  const newest = items[0];
+  const dismissedOnMobile = newest != null && dismissedKey === itemKey(newest);
 
   return (
     <section

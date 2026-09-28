@@ -48,7 +48,7 @@ describe('groupConsecutive', () => {
       item('e1', 'events', 'Practice moved to 4pm'),
     ]);
     expect(groups.map((g) => g.items.map((i) => i.id))).toEqual([['m2', 'm1'], ['e1']]);
-    expect(groups[0].key).toBe('notifications:m2');
+    expect(groups[0]?.key).toBe('notifications:m2');
   });
 
   it('gives two separate runs of the same person distinct keys', () => {
@@ -94,17 +94,18 @@ describe('NotificationsLatestModule grouped row', () => {
 
     const rows = screen.getAllByRole('button', { name: /Cole Bennett/ });
     expect(rows).toHaveLength(1);
-    expect(rows[0].textContent).toContain('2 messages');
-    expect(rows[0].textContent).toContain('See you at 3');
+    const row = rows[0]!;
+    expect(row.textContent).toContain('2 messages');
+    expect(row.textContent).toContain('See you at 3');
 
-    fireEvent.click(rows[0]);
+    fireEvent.click(row);
 
     expect(push).toHaveBeenCalledWith('/golf/messages/2');
     expect(markNotificationRead).toHaveBeenCalledTimes(2);
     expect(markNotificationRead).toHaveBeenCalledWith('m2', 'notifications');
     expect(markNotificationRead).toHaveBeenCalledWith('m1', 'notifications');
     await waitFor(() => expect(refetch).toHaveBeenCalledTimes(1));
-    expect(rows[0].hasAttribute('data-unread')).toBe(false);
+    expect(row.hasAttribute('data-unread')).toBe(false);
   });
 
   it('marks only the members that were still unread', () => {
