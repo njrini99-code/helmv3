@@ -3368,3 +3368,26 @@ html[data-helm-sport='golf'] .uppercase {
   text-transform: none;
   letter-spacing: 0.005em;
 }
+
+/* ── Deep green page-header plinth (owner 2026-09-27: "more contrast between
+   the words and the background"). The ViewHeader plinth re-scopes the ink,
+   border and button tokens so everything inside reads cream on deep green:
+   title ≈11:1, meta ≥6:1. The primary action becomes a cream pill with a
+   deep-green label; secondary actions are a lighter green with cream ink. */
+.fw-plinth-green {
+  background-color: oklch(0.38 0.085 152);
+  --fw-color-text-primary: oklch(0.975 0.015 90);
+  --fw-color-text-secondary: oklch(0.91 0.025 100);
+  --fw-color-text-tertiary: oklch(0.85 0.03 115);
+  --fw-color-accent-700: oklch(0.86 0.09 150);
+  --fw-color-accent-ink: oklch(0.86 0.09 150);
+  --fw-color-accent-fill: oklch(0.972 0.022 84);
+  --fw-color-accent-fill-hover: oklch(0.93 0.03 84);
+  --fw-color-text-on-accent-fill: oklch(0.36 0.09 152);
+  --fw-color-surface: oklch(0.45 0.085 152);
+  --fw-color-elevated: oklch(0.45 0.085 152);
+  --fw-color-surface-sunken: oklch(0.34 0.08 152);
+  --fw-color-border-subtle: oklch(0.975 0.015 90 / 0.3);
+  --fw-color-border-strong: oklch(0.975 0.015 90 / 0.45);
+  --fw-color-border-control: oklch(0.975 0.015 90 / 0.55);
+}
