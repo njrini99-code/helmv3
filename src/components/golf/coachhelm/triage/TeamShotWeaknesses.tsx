@@ -23,8 +23,10 @@
  *     "Penalty lie" with an asterisk, and the footnote says why.
  *   · A tee shot is not labelled "off the tee": a par-3 tee shot is an
  *     approach, and the payload carries no par. The lie is the honest label.
- *   · Per-shot numbers carry a true minus and "per shot"; the total is the
- *     per-shot average times the shot count, labelled as a total.
+ *   · Every figure is strokes gained and says so on the number itself
+ *     ("−0.45 SG/shot", "−10.8 SG total"), not only in a footnote: a coach
+ *     reported strokes gained "missing" when it was only unlabelled. The
+ *     total is the per-shot average times the shot count.
  *   · A situation where the team GAINS strokes is not a weakness and is not
  *     listed, even if the ranking handed it over.
  * ========================================================================== */
@@ -178,7 +180,7 @@ export function TeamShotWeaknesses({ data, unavailable = false, className }: Tea
       >
         <div className="flex min-w-0 flex-col gap-3 p-4 sm:p-5">
           <p className="font-fw-sans text-body-sm text-text-secondary">
-            Where the team loses the most per shot against the PGA Tour baseline, worst first.
+            Strokes gained (SG) per shot against the PGA Tour baseline, worst situation first.
           </p>
           {rows.length > 0 ? (
             <ol className="flex flex-col divide-y divide-border-subtle">
@@ -213,12 +215,12 @@ export function TeamShotWeaknesses({ data, unavailable = false, className }: Tea
                       <div className="shrink-0 text-right">
                         <p className="font-fw-sans text-body font-semibold tabular-nums text-fw-danger-ink">
                           {lost(row.perShot)}
-                          <span className="ml-1 font-fw-sans text-caption font-normal text-text-tertiary">
-                            per shot
+                          <span className="ml-1 font-fw-sans text-caption font-medium text-text-tertiary">
+                            SG/shot
                           </span>
                         </p>
                         <p className="font-fw-sans text-caption tabular-nums text-text-tertiary">
-                          {lost(row.total, 'one')} in total
+                          {lost(row.total, 'one')} SG total
                         </p>
                       </div>
                     </div>
@@ -246,7 +248,7 @@ export function TeamShotWeaknesses({ data, unavailable = false, className }: Tea
             <div>
               <h3 className="font-fw-sans text-body font-semibold text-text-primary">Dead zones</h3>
               <p className="mt-0.5 font-fw-sans text-body-sm text-text-secondary">
-                Distance bands where the team loses more than 0.2 strokes per shot, from any lie.
+                Distance bands where the team loses more than 0.2 strokes gained per shot, from any lie.
               </p>
             </div>
             <ul className="flex flex-col gap-2.5">
@@ -258,7 +260,7 @@ export function TeamShotWeaknesses({ data, unavailable = false, className }: Tea
                     </span>
                     <span className="font-fw-sans text-body-sm font-semibold tabular-nums text-fw-danger-ink">
                       {lost(dz.deficit)}
-                      <span className="ml-1 font-fw-sans text-caption font-normal text-text-tertiary">per shot</span>
+                      <span className="ml-1 font-fw-sans text-caption font-medium text-text-tertiary">SG/shot</span>
                     </span>
                   </div>
                   <div aria-hidden="true" className="h-1.5 overflow-hidden rounded-full bg-surface-sunken">
@@ -278,8 +280,9 @@ export function TeamShotWeaknesses({ data, unavailable = false, className }: Tea
 
       <div className="flex flex-col gap-1 border-t border-border-subtle px-4 py-3 font-fw-sans text-caption text-text-tertiary sm:px-5">
         <p>
-          Strokes gained per shot against the PGA Tour baseline. Situations need 15 or more team shots to be ranked;
-          putts are measured in feet, everything else in yards. Putts are left out of the dead zones.
+          SG is strokes gained against the PGA Tour baseline; below zero means strokes lost. Situations need 15 or
+          more team shots in the last 90 days to be ranked. Putts are measured in feet, everything else in yards, and
+          putts are left out of the dead zones.
         </p>
         {hasNoBaseline ? (
           <p>

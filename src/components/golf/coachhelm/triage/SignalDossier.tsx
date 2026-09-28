@@ -40,7 +40,7 @@ import { Avatar, Button, EmptyState, PressTarget, StatusPill, TrendGlyph } from 
 import type { PlayersGridFocusArea, PlayersGridStats } from '@/components/fairway';
 import type { FairwayGoalCardData } from '@/components/fairway/pages/coachhelm/FairwayGoalCard';
 import type { GroupedSignal, SignalGroup } from '@/lib/coachhelm/signal-grouping';
-import { EvidencePanel, evidenceHasFacts } from '@/components/golf/coachhelm/insights/EvidencePanel';
+import { EvidencePanel, evidenceHasFacts, sanitizeStrokesImpact } from '@/components/golf/coachhelm/insights/EvidencePanel';
 import type { InsightEvidence } from '@/lib/coachhelm/v2/insights/types';
 import { cn } from '@/lib/utils';
 import { formatCategoryLabel } from './buildTriageViewModel';
@@ -154,7 +154,14 @@ export function SignalDossier({
   );
   const evidence = isRollup ? null : ((signal.evidence ?? null) as InsightEvidence | null);
   const showEvidence = evidenceHasFacts(evidence, { omitImpact: true });
-  const impact = signal.strokeImpact === null ? null : Math.abs(signal.strokeImpact);
+  // One player's leak is clamped the way EvidencePanel clamps it (the panel's
+  // copy is omitted below, so this is the only strokes figure on screen): a
+  // stale row must never read "42.50 est. strokes". A roll-up is a SUM across
+  // players and can legitimately pass the single-leak ceiling.
+  const impact =
+    signal.strokeImpact === null
+      ? null
+      : Math.abs(isRollup ? signal.strokeImpact : sanitizeStrokesImpact(signal.strokeImpact));
   const rollupMetricLabel = isRollup ? readMetricLabel(signal) : null;
   // The synthesis always writes `players_affected`; a count read off a
   // contributor list we could not resolve would be a fabricated zero.

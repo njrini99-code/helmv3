@@ -22,6 +22,11 @@
  *     and draws no per-player trend at all.
  *   · Numbers are formatted here from the raw values (true minus, no
  *     toFixed), so the header figure and the player figures always agree.
+ *   · The strokes figure stays. When the area's top CoachHelm signal carries
+ *     a live counterfactual (`strokesSavedPerRound`, engine-backed rows only,
+ *     set by `assembleBriefEngineInsights`), the area shows "+0.7
+ *     strokes/round available", exactly as the old band did. No live
+ *     counterfactual, no figure: it is never estimated here.
  *
  * Layout follows the CARD's width (container queries), not the viewport,
  * because the dashboard rail eats a different amount at each breakpoint:
@@ -34,7 +39,7 @@
  * ========================================================================== */
 
 import { cn } from '@/lib/utils';
-import { Avatar, EmptyState, TrendGlyph } from '@/components/fairway';
+import { Avatar, Badge, EmptyState, TrendGlyph } from '@/components/fairway';
 import type { PlayerCategoryStat, TeamCategory } from '@/app/golf/actions/team-category-insights';
 
 export interface TeamBleedBoardProps {
@@ -49,6 +54,10 @@ const WHOLE = new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 });
 const ONE_DECIMAL = new Intl.NumberFormat('en-US', {
   minimumFractionDigits: 1,
   maximumFractionDigits: 1,
+});
+const TWO_DECIMALS = new Intl.NumberFormat('en-US', {
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
 });
 const SIGNED_ONE_DECIMAL = new Intl.NumberFormat('en-US', {
   minimumFractionDigits: 1,
@@ -95,6 +104,28 @@ export function formatAreaValue(categoryId: string, value: number): string {
     default:
       return withTrueMinus(ONE_DECIMAL.format(value));
   }
+}
+
+/**
+ * The strokes a round the area's top CoachHelm signal puts on the table:
+ * the first engine-backed insight with a live counterfactual (finite, above
+ * zero). Template insights never carry one. Null when there is none.
+ */
+export function strokesAvailable(category: TeamCategory): { perRound: number; message: string } | null {
+  for (const insight of category.insights) {
+    const perRound = insight.strokesSavedPerRound;
+    if (insight.engineBacked === true && typeof perRound === 'number' && Number.isFinite(perRound) && perRound > 0) {
+      return { perRound, message: insight.message };
+    }
+  }
+  return null;
+}
+
+/** One decimal, or two below 0.1 so a small real figure never reads "0.0"
+ *  (the rule `assembleBriefEngineInsights` writes its sentence with). */
+export function formatStrokesPerRound(perRound: number): string {
+  const abs = Math.abs(perRound);
+  return abs < 0.1 ? TWO_DECIMALS.format(abs) : ONE_DECIMAL.format(abs);
 }
 
 /**
@@ -169,6 +200,7 @@ function AreaSection({ category }: { category: TeamCategory }) {
   const trendKnown = !NO_TREND_DATA.has(category.id);
   const metricName = METRIC_NAME[category.id] ?? category.primaryMetric;
   const { shown, more } = areaContributors(category);
+  const available = strokesAvailable(category);
   const headingId = `bleed-area-${category.id}`;
 
   return (
@@ -213,6 +245,18 @@ function AreaSection({ category }: { category: TeamCategory }) {
                   : `${scored} of ${scored} in range`}
               </span>
             </div>
+            {available ? (
+              <Badge
+                tone="accent"
+                size="sm"
+                numeric
+                title={available.message}
+                className="h-auto max-w-full self-start whitespace-normal break-words py-1 text-left leading-snug"
+              >
+                +{formatStrokesPerRound(available.perRound)} strokes/round available
+                <span className="sr-only"> in the top {category.label.toLowerCase()} signal</span>
+              </Badge>
+            ) : null}
           </>
         ) : (
           <p className="font-fw-sans text-body-sm text-text-tertiary">Awaiting rounds</p>
