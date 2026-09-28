@@ -593,6 +593,23 @@
   .aurora-bg a:focus-visible {
     @apply ring-primary-400/50 ring-offset-warm-900;
   }
+
+  /* Golf: focus is the focus TOKEN (warm dark neutral on cream, cream on the
+     green plinth, light warm neutral on dark), not the primary-green glow
+     above. Owner 2026-09-27: "remove the green outlines". Scoped to golf so
+     BaseballHelm and Lift Lab keep the two rules above (OD-17).
+     Light (0,2,0): beats `button:focus-visible` (0,1,1) but not a
+     component's own `focus-visible:ring-*` utility (0,2,0, later in the
+     sheet). Dark (0,3,2): replaces the `.dark` rule above, which already
+     outranks the utilities, so nothing that was green on dark stays green. */
+  :where(html[data-helm-sport='golf']) :is(button, a, [role='button'], input, select, textarea):focus-visible {
+    --tw-ring-color: var(--fw-color-border-focus);
+    --tw-ring-offset-color: var(--fw-color-canvas);
+  }
+  html[data-helm-sport='golf'].dark :is(button, a):focus-visible {
+    --tw-ring-color: var(--fw-color-border-focus);
+    --tw-ring-offset-color: var(--fw-color-canvas);
+  }
 }
 
 @layer components {
@@ -3393,6 +3410,9 @@ html[data-helm-sport='golf'] .uppercase {
   --fw-color-border-subtle: oklch(0.975 0.015 90 / 0.3);
   --fw-color-border-strong: oklch(0.975 0.015 90 / 0.45);
   --fw-color-border-control: oklch(0.975 0.015 90 / 0.55);
+  /* Focus reads cream on the deep green (the page's warm dark focus colour
+     would all but vanish here, ~1.1:1). */
+  --fw-color-border-focus: oklch(0.975 0.015 90);
 }
 /* Header actions on the green plinth are all CREAM pills with deep-green ink
    (owner 2026-09-27: "make the buttons cream"). */

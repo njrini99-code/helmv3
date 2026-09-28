@@ -687,13 +687,13 @@ export function FairwayCoachDashboard({
         }
       />
 
-      {/* ── 2 · Scope band — the green rule AND the window control, one row ──
-          The owner's "more green" ruling is preserved exactly: the masthead
-          still sits on a real green rule, not a neutral divider. It is now the
-          `border-t` of the row it was introducing rather than a free-floating
-          `h-px` sibling, which removes one of the four stacked horizontal bands
-          the opener used to spend before any content. */}
-      <div className="flex flex-wrap items-center justify-between gap-3 border-t border-accent-300 pt-5">
+      {/* ── 2 · Scope band — the rule AND the window control, one row ──
+          The rule is the `border-t` of the row it introduces rather than a
+          free-floating `h-px` sibling, which removes one of the stacked
+          horizontal bands the opener used to spend before any content. It is
+          the warm hairline, not green (owner 2026-09-27: "remove the green
+          outlines"); the green header plinths carry the brand now. */}
+      <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border-subtle pt-5">
         <span className="font-fw-sans text-caption text-text-tertiary">
           Window
         </span>

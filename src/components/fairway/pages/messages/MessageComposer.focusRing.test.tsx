@@ -14,6 +14,11 @@
 // The owner's frozen call (audit/DECISIONS.md D-05): keep the tokens, take the
 // artboard's geometry.
 //
+// 2026-09-27 (owner: "remove the green outlines"): the focus token is now a
+// warm neutral in both themes (dark ink on cream, light ink on dark), so the
+// composer's glow is neutral too. The premise below still holds: the artboard
+// literal is accent-500, the token is not, and the token is theme-dependent.
+//
 // BOTH SIDES MEASURED. The artboard's glow is parsed out of
 // `Composer.dc.html` and the accent scale out of `design-tokens.css`, so the
 // suite proves the CONFLICT is real — the artboard literal is accent-500 and
@@ -79,16 +84,21 @@ describe('G-45 — the conflict this fix resolves is real', () => {
 
   it('but the light-theme focus token deliberately is NOT accent-500', () => {
     const [light] = tokenValues('--fw-color-border-focus');
-    expect(light).toBe('var(--fw-color-accent-600)');
     expect(light).not.toBe('var(--fw-color-accent-500)');
+    // Owner 2026-09-27: no green outlines — a warm neutral, not any accent step.
+    expect(light).not.toMatch(/accent/);
+    expect(light).toMatch(/^oklch\(/);
   });
 
   it('and it is theme-dependent, which is why a literal cannot work', () => {
     const values = tokenValues('--fw-color-border-focus');
     expect(values.length).toBeGreaterThan(1);
-    // Dark keeps accent-500 on purpose: there it is the LIGHTER green and the
-    // one that earns contrast. Any single literal is wrong in one theme.
-    expect(values[values.length - 1]).toBe('var(--fw-color-accent-500)');
+    // Dark ink on cream, light ink on the dark ground: any single literal is
+    // wrong in one theme.
+    const light = values[0]!;
+    const dark = values[values.length - 1]!;
+    expect(dark).not.toBe(light);
+    expect(dark).not.toMatch(/accent/);
   });
 
   it('rests on the decision the owner froze, not on a preference', () => {

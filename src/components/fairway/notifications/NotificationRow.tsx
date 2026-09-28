@@ -129,8 +129,11 @@ export function NotificationRow({
         'transition-colors duration-fast hover:bg-surface-sunken/60 active:bg-surface-sunken',
         compact
           ? // Edge to edge inside the Latest card: no radius, inset focus ring so
-            // the card's overflow-hidden cannot clip it.
-            'min-h-[64px] px-4 py-3 focus-visible:z-10 focus-visible:ring-inset focus-visible:ring-offset-0'
+            // the card's overflow-hidden cannot clip it. Inset via the variable,
+            // not `ring-inset`: Fairway's `inset` colour alias makes that class
+            // ALSO a ring colour (surface-sunken) that outranks
+            // `ring-border-focus`, which left this ring at ~1.1:1, invisible.
+            'min-h-[64px] px-4 py-3 focus-visible:z-10 focus-visible:[--tw-ring-inset:inset] focus-visible:ring-offset-0'
           : 'min-h-[72px] rounded-fw-md px-4 py-3.5',
       )}
     >

@@ -143,7 +143,7 @@
   --fw-color-canvas:         oklch(0.93 0.03 82);    /* #f2e6d2 dark cream page base */
   /* 2026-09-27 owner pass: the 0.99 card read as WHITE on the dark cream, and
      cream-on-cream wells plus near-black ink were hard to read. The card is now
-     a VINTAGE cream (it lifts by its green hairline + shadow), wells and tiles
+     a VINTAGE cream (it lifts by its warm hairline + shadow), wells and tiles
      are a soft SAGE green. Text stays dark warm ink (owner: no green text). */
   --fw-color-surface:        oklch(0.972 0.022 84);  /* #fdf5e6 THE card: vintage cream (old lace), not white */
   --fw-color-surface-tint:   var(--fw-color-surface); /* hero plinths = the vintage card cream, so they lift off the page (owner 2026-09-27) */
@@ -185,29 +185,26 @@
   --fw-color-text-on-accent: oklch(0.994 0.006 95); /* cream text on green */
   --fw-color-text-on-dark:   oklch(0.96 0.005 95);  /* sidebar text */
 
-  /* ---- Borders / warm hairlines (NOT cool gray) ---- */
-  --fw-color-border-subtle: oklch(0.80 0.045 145);      /* a visible GREEN hairline — card edges + dividers */
-  --fw-color-border-strong: oklch(0.70 0.05 146);       /* emphasis / table head / hover edge — stronger than subtle */
+  /* ---- Borders / warm hairlines (NOT cool gray, NOT green) ----
+     Owner 2026-09-27: "remove the green outlines". The three edge tokens are a
+     warm taupe (hue 75, low chroma) at the lightness the green ones had, so
+     cards, dividers and controls keep their weight while green is left to the
+     fills, marks and selected states that mean something. */
+  --fw-color-border-subtle: oklch(0.80 0.025 75);       /* visible warm hairline — card edges + dividers (1.73:1 on the card) */
+  --fw-color-border-strong: oklch(0.70 0.03 75);        /* emphasis / table head / hover edge — stronger than subtle */
   /* Control edges: inputs, slider tracks, chips, segmented tracks. WCAG 1.4.11
-     wants 3:1 for the boundary that identifies a control. */
-  --fw-color-border-control: oklch(0.58 0.05 148);
-  /* accent-600, NOT accent-500. This token names a FOCUS indicator, and a focus
-     indicator has to clear WCAG 2.2's 3:1 non-text minimum. accent-500 on the
-     warm canvas measures ~2.67:1 on the OKLCH render path — it fails. That was
-     already known: the shared control helper (`fwFocusRing`, controls/_internal)
-     hard-codes accent-600 and documents this exact reason.
-     The trouble was that only controls built on that helper benefited. 175
-     places in golf/Fairway reach for `ring-border-focus` directly — the
-     conversation rows, settings rows, sliders, popovers, chart frames, toasts,
-     the search field — and every one of them was drawing a ring nobody with
-     low vision could reliably find. Fixing the token fixes all of them at once,
-     and stops the two definitions disagreeing.
-     accent-600 is the same Helm green one step darker, so the brand reads
-     unchanged; only the indicator gains the contrast it always needed.
-     DARK theme keeps accent-500 deliberately — see the dark block below, where
-     accent-500 is the LIGHTER green and is what earns contrast against a dark
-     ground. Darkening it there would make the ring harder to see, not easier. */
-  --fw-color-border-focus:  var(--fw-color-accent-600);
+     wants 3:1 for the boundary that identifies a control (≥3.31:1 here on every
+     cream surface and gradient stop). */
+  --fw-color-border-control: oklch(0.58 0.03 75);
+  /* The focus indicator: a warm dark neutral (owner 2026-09-27: no green
+     outlines), 6.5:1+ on every cream surface, so it clears WCAG 2.2's 3:1
+     non-text minimum with room to spare. It is the ONE focus colour: the
+     shared `fwFocusRing` helper (controls/_internal.ts) and the ~175 direct
+     `ring-border-focus` call sites all read it, so the two can't disagree.
+     The deep green header plinth (.fw-plinth-green, globals.css) rescopes it
+     to cream. BaseballHelm and Lift Lab pin the old green values
+     (src/lib/legacy-sport-tokens.ts). Dark theme: a light warm neutral. */
+  --fw-color-border-focus:  oklch(0.42 0.02 68);
 
   /* ---- Status (green-forward; amber + red are the only off-green hues) ---- */
   --fw-color-success:    var(--fw-color-accent-500);
@@ -577,7 +574,7 @@
   --fw-color-border-subtle: rgb(255 255 255 / 0.07);      /* lit hairline — card edges read off canvas */
   --fw-color-border-strong: rgb(255 255 255 / 0.14);      /* emphasis / table head */
   --fw-color-border-control: oklch(0.600 0.004 150);      /* control edges, 3:1+ on every dark surface */
-  --fw-color-border-focus:  var(--fw-color-accent-500);
+  --fw-color-border-focus:  oklch(0.82 0.02 78);         /* light warm neutral focus ring, 6.8:1+ on every dark surface */
 
   /* ---- Accent WASHES flip to deep-green tints ---- */
   --fw-color-accent-50:  oklch(0.305 0.052 150);  /* selection / success wash on dark */
