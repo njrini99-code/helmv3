@@ -491,6 +491,7 @@ export function FairwayCoachDashboard({
           <span className="flex min-w-0 items-center gap-2.5">
             <Avatar decorative
               name={row.player_name}
+              identityKey={row.player_id}
               src={row.player_avatar_url}
               size="md"
               className="shrink-0"
@@ -564,7 +565,7 @@ export function FairwayCoachDashboard({
     const tone = r.total_to_par < 0 ? 'accent' : r.total_to_par > 0 ? 'warning' : 'neutral';
     return (
       <div className="flex items-center gap-3 px-4 py-3">
-        <Avatar decorative name={r.player_name} src={r.player_avatar_url} size="md" className="shrink-0" />
+        <Avatar decorative name={r.player_name} identityKey={r.player_id} src={r.player_avatar_url} size="md" className="shrink-0" />
         <div className="min-w-0 flex-1">
           <p className="line-clamp-2 font-fw-sans text-body font-medium text-text-primary">
             {r.player_name}
@@ -819,7 +820,7 @@ export function FairwayCoachDashboard({
               {stats.rosterSize != null && playersWithRounds.length > 0 ? (
                 <AvatarGroup size="xs" max={5} ring="ring-surface" aria-hidden="true">
                   {playersWithRounds.map((p) => (
-                    <Avatar key={p.id} decorative size="xs" name={p.name} src={p.avatarUrl} />
+                    <Avatar key={p.id} decorative size="xs" name={p.name} identityKey={p.id} src={p.avatarUrl} />
                   ))}
                 </AvatarGroup>
               ) : null}

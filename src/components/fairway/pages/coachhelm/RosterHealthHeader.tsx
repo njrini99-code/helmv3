@@ -210,6 +210,7 @@ export function RosterHealthHeader({
                 <div className="flex flex-col gap-1.5 min-[360px]:flex-row min-[360px]:items-center min-[360px]:gap-3">
                   <PlayerIdentity
                     name={playerName(row.player)}
+                    identityKey={row.player.id}
                     avatarUrl={row.player.avatar_url}
                     size="sm"
                     className="min-[360px]:flex-1"

@@ -24,7 +24,7 @@
  * It renders no portrait carousel: the schedule is the content of the
  * calendar home, not the roster. Selection state is parent-owned.
  *
- * `tintFor` — a person's deterministic identity tint — still lives here
+ * `tintFor` — a person's deterministic identity tint — is re-exported here
  * because the roster, month grid and agenda row all share it.
  * ========================================================================== */
 
@@ -32,6 +32,7 @@ import * as React from 'react';
 import { ChevronDown, Users, UserSearch } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Avatar, AvatarGroup, Button, PopoverPanel, PressTarget } from '@/components/fairway';
+import { tintFor } from '@/components/fairway/controls/identity-tint';
 import type { TeamMember } from '@/components/golf/calendar/CalendarAvatarSidebar';
 import { PLAYER_COLORS } from '@/lib/calendar/player-colors';
 import { CalendarPeoplePicker, type PeoplePickerPerson } from './people/CalendarPeoplePicker';
@@ -49,20 +50,10 @@ function fullName(m: TeamMember): string {
   return `${m.first_name ?? ''} ${m.last_name ?? ''}`.trim() || 'Team member';
 }
 
-// Soft, warm-friendly tints for the initials fallback so unselected avatars
-// read like real profile avatars (not flat gray) when a member has no photo.
-// Deterministic per member id, so a person keeps the same color every render.
-//
-// THEME-AWARE BY INDIRECTION: consumers apply these as INLINE styles, which no
-// `.dark` rule can reach — returning `var()` references lets design-tokens.css
-// flip the palette. Keep them as var() references.
-const AVATAR_TINT_COUNT = 8;
-export function tintFor(seed: string): { bg: string; text: string } {
-  let h = 0;
-  for (let i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) >>> 0;
-  const i = (h % AVATAR_TINT_COUNT) + 1;
-  return { bg: `var(--fw-tint-${i}-bg)`, text: `var(--fw-tint-${i}-ink)` };
-}
+// The person -> `--fw-tint-N` hash lives in controls/identity-tint.ts so the
+// Avatar `identity` tone shares it; re-exported here because the roster, month
+// grid and agenda row all import it from this module.
+export { tintFor };
 
 export function FairwayCalendarMemberRail({
   teamMembers,
@@ -130,7 +121,7 @@ export function FairwayCalendarMemberRail({
             >
               <AvatarGroup size="sm" max={2} ring="ring-surface" className="shrink-0">
                 {previewMembers.map((m) => (
-                  <Avatar key={m.id} src={m.avatar_url ?? undefined} name={fullName(m)} size="sm" decorative />
+                  <Avatar key={m.id} src={m.avatar_url ?? undefined} name={fullName(m)} identityKey={m.id} size="sm" decorative />
                 ))}
               </AvatarGroup>
               <span className="min-w-0 flex-1">
@@ -187,7 +178,7 @@ export function FairwayCalendarMemberRail({
                     }}
                   >
                     <span className="flex min-w-0 items-center gap-2.5">
-                      <Avatar src={m.avatar_url ?? undefined} name={fullName(m)} size="xs" decorative />
+                      <Avatar src={m.avatar_url ?? undefined} name={fullName(m)} identityKey={m.id} size="xs" decorative />
                       <span className="min-w-0 truncate">{fullName(m)}</span>
                     </span>
                   </PopoverPanel.Item>

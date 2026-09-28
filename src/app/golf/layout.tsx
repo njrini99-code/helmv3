@@ -20,6 +20,7 @@ export const metadata: Metadata = {
 };
 
 export default function GolfLayout({ children }: { children: React.ReactNode }) {
-  // Photo-less golf avatars get a shaded identity colour (owner 2026-09-27).
+  // Photo-less golf avatars get the roster card's pastel identity tint
+  // (--fw-tint-N, seeded by the person's id via Avatar `identityKey`).
   return <AvatarToneProvider tone="identity">{children}</AvatarToneProvider>;
 }

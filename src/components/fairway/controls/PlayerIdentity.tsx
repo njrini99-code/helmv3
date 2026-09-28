@@ -42,6 +42,11 @@ export interface PlayerIdentityProps {
   /** Override the name used for avatar initials/alt (defaults to `name`). */
   avatarName?: string | null;
   /**
+   * The person's id, passed to Avatar as the `identity` tint seed so a
+   * photo-less player keeps the colour their roster card uses.
+   */
+  identityKey?: string | null;
+  /**
    * Quiet meta line under the name — class year, hometown, subtitle. Omit for a
    * single-line identity. ReactNode so callers can compose (e.g. "'27 · +2 HCP").
    */
@@ -99,6 +104,7 @@ export function PlayerIdentity({
   name,
   avatarUrl,
   avatarName,
+  identityKey,
   meta,
   wrapMeta = false,
   size = 'md',
@@ -116,6 +122,7 @@ export function PlayerIdentity({
         <Avatar
           src={avatarUrl}
           name={avatarName ?? name}
+          identityKey={identityKey}
           size={AVATAR_SIZE[size]}
           status={status}
           square={squareAvatar}
