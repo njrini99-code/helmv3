@@ -2,57 +2,77 @@
 
 /**
  * ============================================================================
- * CoachIntelligenceHome — coach `/dashboard/intelligence`, on the Triage Desk
- * chassis
+ * CoachIntelligenceHome — coach `/dashboard/intelligence`
  * ----------------------------------------------------------------------------
- * The composition root the page mounts. Runs the SAME empty-roster /
- * overview-failure gate the earlier Spine & Stage build established (an
- * overview FAILURE renders an honest retry notice; a genuinely empty roster
- * keeps the onboarding gate — the two must never be conflated), then hands
- * everything else straight to `TriageDesk`, the ONE new command-desk surface
- * that replaces the old Spine + Bento entirely (Triage Desk spec).
+ * The composition root the page mounts. Runs the empty-roster /
+ * overview-failure gate (an overview FAILURE renders an honest retry notice;
+ * a genuinely empty roster keeps the onboarding gate, and the two must never
+ * be conflated), then hands everything else to `TriageDesk`, which owns the
+ * Home · The Lab · Chat toggle.
+ *
+ * This file builds the two pieces `TriageDesk` shows but does not own: the
+ * Home greeting (with the overview-failure notice under it) and the Chat
+ * tab's embedded Ask surface.
  * ========================================================================== */
 
-import { markAskHandoff } from '@/lib/golf/ask-handoff';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import type { ProgramPulse } from '@/lib/coachhelm/v3/chat/program-pulse';
-import { CommandOpening } from './CommandOpening';
 import { RotateCw } from 'lucide-react';
+import type { UIMessage } from 'ai';
+import type { PulseItem, ProgramPulse } from '@/lib/coachhelm/v3/chat/program-pulse';
+import type { ChatConversation } from '@/lib/coachhelm/v3/chat/types';
 import { Surface, EmptyState, Button, InlineNotice } from '@/components/fairway';
-import type { PlayersGridViewProps, FairwayEffectivenessProps } from '@/components/fairway';
+import type { PlayersGridViewProps } from '@/components/fairway';
 import type { TeamOverviewResult, TeamCategoryInsightsResult } from '@/app/golf/actions/team-category-insights';
 import type { SignalGroup } from '@/lib/coachhelm/signal-grouping';
 import { TriageDesk } from '@/components/golf/coachhelm/triage/TriageDesk';
+import { AskSurface } from '@/components/golf/coachhelm/chat/AskSurface';
+import type { ComposerPlayer } from '@/components/golf/coachhelm/chat/PromptComposer';
+import { CommandOpening } from './CommandOpening';
+
+/** Everything the Chat tab's Ask surface renders, resolved server-side. */
+export interface CoachChatTabData {
+  teamName: string;
+  players: ComposerPlayer[];
+  suggestions: string[];
+  pulseItems: PulseItem[];
+  coverage: string | null;
+  /** Preformatted server-side: a client-formatted time mismatches on hydration. */
+  asOfLabel: string | null;
+  conversations: ChatConversation[];
+  conversationId: string | null;
+  initialMessages: UIMessage[];
+}
+
+/**
+ * What the page puts above and below the Chat tab's surface, beyond the
+ * shell's own `--fw-shell-offset`: the page's top padding (1.5rem), the
+ * toggle row (44px thumbs + 4px track padding each side + 1px border each
+ * side = 54px), the gap under it (1.5rem), the page's bottom padding
+ * (1.5rem), and the chat card's 1px border top and bottom.
+ */
+const CHAT_EMBED_OFFSET = 'calc(4.5rem + 54px + 2px)';
+
+const CHAT_TAB_HREF = '/golf/dashboard/intelligence?view=chat';
 
 export interface CoachIntelligenceHomeProps {
   overview: TeamOverviewResult;
-  /** "Where the team is bleeding strokes" band data (categories[] +
-   *  teamHealth) — a DISTINCT, richer fetch from `overview` above. Threaded
-   *  straight through to `TriageDesk`; this component doesn't read it (the
-   *  empty-roster gate still keys off `overview`/`playersDrillProps`, same
-   *  as before). */
+  /** "Where the team is bleeding strokes" data (categories[] + teamHealth). */
   categoryInsights: TeamCategoryInsightsResult;
   coachId: string;
 
-  /** Triage Desk — the frozen `getSignalGroups` contract's full payload. */
+  /** The frozen `getSignalGroups` contract's full payload. */
   groups: SignalGroup[];
   scannedAt: string | null;
   groupsError: string | null;
 
-  /** `players` view — copied from development/page.tsx, mounted UNCHANGED. */
+  /** The deep-link-only `players` view, mounted unchanged. */
   playersDrillProps: PlayersGridViewProps;
 
-  /** `effectiveness` view — copied from analytics/coachhelm/page.tsx, mounted UNCHANGED.
-   *  The page streams it as a promise (secondary to the Brief header and the
-   *  signal queue); `TriageDesk` suspends on it only inside the Effectiveness
-   *  tab. Passed straight through — this component never reads it. */
-  effectivenessDrillProps: FairwayEffectivenessProps | Promise<FairwayEffectivenessProps>;
-
   /**
-   * The AI-first opening. Null when the chat context could not be resolved —
-   * the Triage Desk below still renders, because Signals/Players/Effectiveness
-   * are not allowed to depend on CoachHelm being reachable.
+   * The Home greeting. Null when the chat context could not be resolved: the
+   * rest of the page still renders, because none of it depends on CoachHelm
+   * chat being reachable.
    */
   command: {
     teamName: string;
@@ -60,6 +80,10 @@ export interface CoachIntelligenceHomeProps {
     players: { id: string; name: string }[];
     pulse: ProgramPulse;
   } | null;
+
+  /** The Chat tab. Null when the chat context could not be resolved; the tab
+   *  then says so instead of offering a composer that cannot answer. */
+  chat?: CoachChatTabData | null;
 }
 
 export function CoachIntelligenceHome({
@@ -70,18 +94,16 @@ export function CoachIntelligenceHome({
   scannedAt,
   groupsError,
   playersDrillProps,
-  effectivenessDrillProps,
   command,
+  chat = null,
 }: CoachIntelligenceHomeProps) {
   const router = useRouter();
 
-  // getTeamOverview can fail transiently (P017, team-category-insights.ts) —
+  // getTeamOverview can fail transiently (P017, team-category-insights.ts):
   // that is a DISTINCT state from a genuinely empty roster (which the action
   // reports as success:true, playerCount:0). Falling back to `playerCount:0`
   // here would misreport an established team as "no active players yet" on a
-  // Supabase hiccup. Use the separately-fetched roster (playersDrillProps,
-  // unaffected by the overview call) so an overview failure never fabricates
-  // an empty-team onboarding screen for a real team.
+  // Supabase hiccup, so an overview failure uses the separately fetched roster.
   const overviewFailed = !overview.success;
   const overviewError = overview.success ? null : overview.error;
   const rosterPlayerCount = playersDrillProps.players.length;
@@ -104,59 +126,69 @@ export function CoachIntelligenceHome({
     );
   }
 
-  return (
-    <div className="flex flex-col gap-8">
-      {/* The opening carries the page's h1; without it the page still needs
-          one (A11Y-R7). */}
-      {!command ? <h1 className="sr-only">CoachHelm</h1> : null}
-      {/* ── The AI-first opening. Everything below it is the existing Triage
-            Desk, unchanged — the intelligence system is recomposed here, not
-            replaced by a decorative empty chat. ── */}
-      {command && (
-        <CommandOpening
-          teamName={command.teamName}
-          coachFirstName={command.coachFirstName}
-          players={command.players}
-          pulse={command.pulse}
-          onAsk={(text) => {
-            // The coach pressed Send here: let the Ask page send it on arrival
-            // (a bare `?q=` link only pre-fills; see ask-handoff.ts, DATA-15).
-            markAskHandoff(text);
-            router.push(`/golf/dashboard/coachhelm/chat?q=${encodeURIComponent(text)}`);
-          }}
-        />
+  const homeLead = (
+    <>
+      {/* The greeting carries Home's h1; without it Home still needs one. */}
+      {command ? (
+        <CommandOpening teamName={command.teamName} coachFirstName={command.coachFirstName} pulse={command.pulse} />
+      ) : (
+        <h1 className="sr-only">CoachHelm</h1>
       )}
+      {overviewFailed ? (
+        <InlineNotice
+          tone="danger"
+          title="Couldn't load team intelligence"
+          action={
+            <Button
+              variant="secondary"
+              size="sm"
+              leftIcon={<RotateCw className="h-4 w-4" aria-hidden />}
+              onClick={() => router.refresh()}
+            >
+              Try again
+            </Button>
+          }
+        >
+          {overviewError ??
+            'The team overview did not load, so the shot analysis below is missing. Everything else on this page is unaffected.'}
+        </InlineNotice>
+      ) : null}
+    </>
+  );
 
-      {overviewFailed && (
-        <Surface padding="md">
-          <InlineNotice
-            tone="danger"
-            title="Couldn't load team intelligence"
-            action={
-              <Button
-                variant="secondary"
-                size="sm"
-                leftIcon={<RotateCw className="h-4 w-4" aria-hidden />}
-                onClick={() => router.refresh()}
-              >
-                Try again
-              </Button>
-            }
-          >
-            {overviewError ?? 'We hit a snag loading the team overview. Signals, Players, and Effectiveness below are unaffected.'}
-          </InlineNotice>
-        </Surface>
-      )}
-      <TriageDesk
-        coachId={coachId}
-        groups={groups}
-        scannedAt={scannedAt}
-        groupsError={groupsError}
-        categoryInsights={categoryInsights}
-        teamShotAnalysis={ov?.teamShotAnalysis}
-        playersDrillProps={playersDrillProps}
-        effectivenessDrillProps={effectivenessDrillProps}
+  const chatPanel = chat ? (
+    <div className="overflow-hidden rounded-fw-lg border border-border-subtle bg-surface shadow-soft">
+      <AskSurface
+        teamName={chat.teamName}
+        players={chat.players}
+        suggestions={chat.suggestions}
+        pulseItems={chat.pulseItems}
+        coverage={chat.coverage}
+        asOfLabel={chat.asOfLabel}
+        conversations={chat.conversations}
+        conversationId={chat.conversationId}
+        initialMessages={chat.initialMessages}
+        embed={{
+          offset: CHAT_EMBED_OFFSET,
+          newHref: CHAT_TAB_HREF,
+          conversationHref: (id) => `${CHAT_TAB_HREF}&c=${encodeURIComponent(id)}`,
+        }}
       />
     </div>
+  ) : null;
+
+  return (
+    <TriageDesk
+      coachId={coachId}
+      groups={groups}
+      scannedAt={scannedAt}
+      groupsError={groupsError}
+      categoryInsights={categoryInsights}
+      teamShotAnalysis={ov?.teamShotAnalysis}
+      overviewFailed={overviewFailed}
+      playersDrillProps={playersDrillProps}
+      homeLead={homeLead}
+      chatPanel={chatPanel}
+    />
   );
 }

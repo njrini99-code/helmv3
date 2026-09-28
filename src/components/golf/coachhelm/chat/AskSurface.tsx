@@ -27,6 +27,9 @@ import { CoachHelmChat } from './CoachHelmChat';
 import { ProgramOpening } from './ProgramOpening';
 import type { ComposerPlayer } from './PromptComposer';
 
+/** A fresh thread's history: one stable empty array, not a new one per render. */
+const NO_MESSAGES: UIMessage[] = [];
+
 export interface AskSurfaceProps {
   teamName: string;
   players: ComposerPlayer[];
@@ -51,6 +54,25 @@ export interface AskSurfaceProps {
    * fires it again on refresh.
    */
   pendingQuestion?: string | null;
+  /**
+   * Hosted inside another page rather than owning the route: the CoachHelm
+   * page's Chat tab (`/golf/dashboard/intelligence?view=chat`). Omitted on
+   * the standalone Ask page, which keeps its behaviour exactly.
+   */
+  embed?: AskSurfaceEmbed;
+}
+
+export interface AskSurfaceEmbed {
+  /**
+   * The host's own chrome above and below this surface (its padding, its
+   * toggle row), as a CSS length. Subtracted from the viewport height on top
+   * of `--fw-shell-offset` so the composer still lands on screen.
+   */
+  offset: string;
+  /** "New" conversation link. */
+  newHref: string;
+  /** A past conversation's link, for the history rail. */
+  conversationHref: (id: string) => string;
 }
 
 export function AskSurface({
@@ -64,8 +86,46 @@ export function AskSurface({
   asOfLabel,
   coverage,
   pendingQuestion,
+  embed,
 }: AskSurfaceProps) {
   const [historyOpen, setHistoryOpen] = React.useState(false);
+  const newHref = embed?.newHref ?? '/golf/dashboard/coachhelm/chat';
+  const conversationHref = embed?.conversationHref ?? ((id: string) => `/golf/dashboard/coachhelm/chat?c=${id}`);
+  const embedded = Boolean(embed);
+
+  /**
+   * Which thread is mounted. A history link mounts that conversation and
+   * "New" mounts an empty one. The conversation this surface minted itself
+   * (`adoptConversationInUrl`, below) does NOT remount: the thread on screen
+   * already is that conversation. Embedded, the host page re-renders with its
+   * id after any `router.refresh()` (a Lab action, a scan), and remounting
+   * then would throw away a reply that is still arriving.
+   *
+   * "New" resets on click as well as on arrival: once a fresh thread has
+   * minted its id, the host may never have seen that id as a prop, so the
+   * navigation back to an id-less URL is not a prop change at all.
+   */
+  const [thread, setThread] = React.useState<{ key: number; conversationId: string | null; fresh: boolean }>({
+    key: 0,
+    conversationId,
+    fresh: false,
+  });
+  const [seenConversationId, setSeenConversationId] = React.useState(conversationId);
+  const [adoptedId, setAdoptedId] = React.useState<string | null>(null);
+  if (conversationId !== seenConversationId) {
+    setSeenConversationId(conversationId);
+    if (conversationId === null || conversationId !== adoptedId) {
+      setAdoptedId(null);
+      setThread((t) => ({ key: t.key + 1, conversationId, fresh: false }));
+    }
+  }
+  const startNewThread = (event: React.MouseEvent<HTMLAnchorElement>) => {
+    // A modified click opens "New" in another tab; this thread stays put.
+    if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0) return;
+    setHistoryOpen(false);
+    setAdoptedId(null);
+    setThread((t) => ({ key: t.key + 1, conversationId: null, fresh: true }));
+  };
 
   /**
    * Put the freshly-minted conversation in the address bar.
@@ -78,14 +138,20 @@ export function AskSurface({
    * instead of opening an empty one.
    */
   const adoptConversationInUrl = React.useCallback((id: string) => {
+    setAdoptedId(id);
     const url = new URL(window.location.href);
     if (url.searchParams.get('c') === id) return;
     url.searchParams.set('c', id);
     // `q` seeded the first question; leaving it would re-seed the composer on
     // every subsequent visit to this now-permanent link.
     url.searchParams.delete('q');
-    window.history.replaceState(window.history.state, '', url.toString());
-  }, []);
+    // Embedded, the host page reads its own state from the URL (the Chat tab
+    // keeps `c` when the coach switches views, and a later `router.refresh()`
+    // re-fetches whatever Next believes the URL is). `null` state makes
+    // Next's patched replaceState sync its router URL; carrying the existing
+    // `__NA` marker would skip that sync and a refresh would drop `c`.
+    window.history.replaceState(embedded ? null : window.history.state, '', url.toString());
+  }, [embedded]);
 
   /**
    * `pendingQuestion` auto-submits below (via `autoSubmitInitialInput` on
@@ -141,6 +207,9 @@ export function AskSurface({
       // header off the top for nothing.
       data-fw-keyboard-aware
       style={{
+        // Embedded: never shorter than a usable thread plus composer, even on
+        // a landscape phone (the host page scrolls instead).
+        minHeight: embedded ? '26rem' : undefined,
         // The keyboard term was missing entirely. The iOS WebView does not
         // resize for the keyboard (`resize: 'ionic'`, no <ion-app>) and Safari
         // does not resize its layout viewport, so this column kept its full
@@ -155,8 +224,7 @@ export function AskSurface({
         // nav is underneath it, so that height is not owed twice. Taking the
         // full keyboard here would shrink the thread by roughly a nav bar for
         // nothing. Resolves to 0 on desktop and whenever the keyboard is down.
-        height:
-          'calc(100dvh - var(--fw-shell-offset, 7rem) - max(0px, calc(var(--keyboard-height, 0px) - 56px - env(safe-area-inset-bottom, 0px))))',
+        height: `calc(100dvh - var(--fw-shell-offset, 7rem)${embed ? ` - ${embed.offset}` : ''} - max(0px, calc(var(--keyboard-height, 0px) - 56px - env(safe-area-inset-bottom, 0px))))`,
       }}
     >
       {/* ── Slim bar. Deliberately not a page header: the conversation is the
@@ -169,7 +237,7 @@ export function AskSurface({
           aria-expanded={historyOpen}
           aria-label={historyOpen ? 'Hide conversation history' : 'Show conversation history'}
           className={cn(
-            'inline-flex min-h-[40px] items-center gap-2 rounded-fw-md px-2.5',
+            'inline-flex min-h-[40px] items-center gap-2 rounded-fw-md px-2.5 [@media(pointer:coarse)]:min-h-[44px]',
             'font-fw-sans text-caption text-text-tertiary transition-colors',
             'hover:bg-surface-sunken hover:text-text-primary',
             'outline-none focus-visible:ring-2 focus-visible:ring-border-focus',
@@ -182,9 +250,10 @@ export function AskSurface({
         <span className="flex-1" />
 
         <Link
-          href="/golf/dashboard/coachhelm/chat"
+          href={newHref}
+          onClick={startNewThread}
           className={cn(
-            'inline-flex min-h-[40px] items-center gap-1.5 rounded-fw-md px-2.5',
+            'inline-flex min-h-[40px] items-center gap-1.5 rounded-fw-md px-2.5 [@media(pointer:coarse)]:min-h-[44px]',
             'font-fw-sans text-caption text-text-tertiary transition-colors',
             'hover:bg-surface-sunken hover:text-text-primary',
             'outline-none focus-visible:ring-2 focus-visible:ring-border-focus',
@@ -240,7 +309,7 @@ export function AskSurface({
                   {conversations.map((c) => (
                     <li key={c.id}>
                       <Link
-                        href={`/golf/dashboard/coachhelm/chat?c=${c.id}`}
+                        href={conversationHref(c.id)}
                         onClick={() => setHistoryOpen(false)}
                         className={cn(
                           'block min-h-[44px] rounded-fw-md px-2.5 py-2.5',
@@ -263,16 +332,18 @@ export function AskSurface({
 
         <div className="flex min-h-0 min-w-0 flex-1 flex-col">
           <CoachHelmChat
-            key={conversationId ?? 'new'}
+            key={thread.key}
             players={players}
             suggestions={suggestions}
-            conversationId={conversationId}
-            initialMessages={initialMessages}
+            conversationId={thread.conversationId}
+            initialMessages={thread.fresh ? NO_MESSAGES : initialMessages}
             onConversationId={adoptConversationInUrl}
             variant="page"
-            initialInput={pendingQuestion ?? undefined}
-            autoSubmitInitialInput={autoSubmitPendingQuestion}
-            greeting={<Greeting teamName={teamName} />}
+            // The page's pending question belongs to the thread it arrived
+            // with. A later "New" must not seed, or re-send, it.
+            initialInput={thread.key === 0 ? (pendingQuestion ?? undefined) : undefined}
+            autoSubmitInitialInput={thread.key === 0 && autoSubmitPendingQuestion}
+            greeting={<Greeting teamName={teamName} as={embedded ? 'h2' : 'h1'} />}
             opening={(ask) => (
               <ProgramOpening
                 items={pulseItems}
@@ -288,12 +359,12 @@ export function AskSurface({
   );
 }
 
-function Greeting({ teamName }: { teamName: string }) {
+function Greeting({ teamName, as: Heading = 'h1' }: { teamName: string; as?: 'h1' | 'h2' }) {
   return (
     <div className="mb-1">
-      <h1 className="font-fw-display text-h2 font-semibold tracking-[-0.02em] text-text-primary">
+      <Heading className="font-fw-display text-h2 font-semibold tracking-[-0.02em] text-text-primary">
         What do you want to know about {teamName}?
-      </h1>
+      </Heading>
       <p className="mt-1.5 font-fw-sans text-body-sm text-text-tertiary">
         Answers come from your recorded rounds, signals and schedule.
       </p>

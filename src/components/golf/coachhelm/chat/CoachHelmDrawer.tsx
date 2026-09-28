@@ -44,12 +44,19 @@ export interface CoachHelmDrawerProps {
 }
 
 /**
- * The team-stats matrix owns its final Signal column all the way to the
- * viewport edge. A fixed launcher in that corner obscures the very labels a
- * coach is comparing, so that route exposes a normal page action instead.
+ * Routes that do without the floating launcher:
+ *
+ * - The team-stats matrix owns its final Signal column all the way to the
+ *   viewport edge. A fixed launcher in that corner obscures the very labels a
+ *   coach is comparing, so that route exposes a normal page action instead.
+ * - The CoachHelm page carries the conversation as its own Chat tab, one tap
+ *   away in the page's toggle. A drawer there would open a second, separate
+ *   thread over the first.
  */
+const LAUNCHER_FREE_ROUTES = new Set(['/golf/dashboard/stats/team', '/golf/dashboard/intelligence']);
+
 export function shouldRenderCoachHelmLauncher(pathname: string): boolean {
-  return pathname !== '/golf/dashboard/stats/team';
+  return !LAUNCHER_FREE_ROUTES.has(pathname);
 }
 
 export function CoachHelmDrawer({ players, suggestions, teamName }: CoachHelmDrawerProps) {

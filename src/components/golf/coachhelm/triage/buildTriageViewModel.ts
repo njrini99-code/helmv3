@@ -28,13 +28,55 @@ import {
  * landing on the right tab + preset.
  * ────────────────────────────────────────────────────────────────────────── */
 
-export type TriageView = 'signals' | 'players' | 'effectiveness';
+/**
+ * The page's views. The top toggle offers `home`, `lab` and `chat`
+ * (`TOGGLE_VIEWS`). `players` is the focus-area board: no toggle segment
+ * points at it any more, but roughly fifteen links across the app deep-link
+ * to `?view=players` (the roster band, the genome pages, scouting, the
+ * fingerprint, the program pulse), so it stays a reachable view.
+ */
+export type TriageView = 'home' | 'lab' | 'chat' | 'players';
 
-/** Unknown/absent `?view=` -> 'signals' — the Triage Desk IS the landing
- *  surface now (there is no separate "home" bento to fall back to). */
-export function resolveTriageView(raw: string | string[] | null | undefined): TriageView {
+export const TOGGLE_VIEWS = ['home', 'lab', 'chat'] as const;
+export type ToggleView = (typeof TOGGLE_VIEWS)[number];
+
+export function isToggleView(view: TriageView): view is ToggleView {
+  return (TOGGLE_VIEWS as readonly string[]).includes(view);
+}
+
+/**
+ * `?view=` → the view to show.
+ *
+ * Legacy values keep working: `signals` (the old queue tab, and every
+ * Alerts/Insights/Patterns redirect shim) opens The Lab; `effectiveness` (the
+ * retired scoreboard tab and its `/analytics/coachhelm` shim) opens Home.
+ * With no `view` at all, a link that names a signal or a queue filter
+ * (`?signal=`, the legacy `?id=` insight link, `?filter=`) still means the
+ * queue, so it opens The Lab; anything else lands on Home.
+ */
+export function resolveTriageView(
+  raw: string | string[] | null | undefined,
+  opts: { hasSignalContext?: boolean } = {},
+): TriageView {
   const v = Array.isArray(raw) ? raw[0] : raw;
-  return v === 'players' || v === 'effectiveness' ? v : 'signals';
+  switch (v) {
+    case 'home':
+    case 'lab':
+    case 'chat':
+    case 'players':
+      return v;
+    case 'signals':
+      return 'lab';
+    case 'effectiveness':
+      return 'home';
+    default:
+      return opts.hasSignalContext ? 'lab' : 'home';
+  }
+}
+
+/** Whether a query string carries a queue deep link (see `resolveTriageView`). */
+export function hasSignalContext(params: URLSearchParams): boolean {
+  return params.has('signal') || params.has('id') || params.has('filter');
 }
 
 /**
@@ -230,6 +272,44 @@ export function findSignalInGroups(
     if (signal) return { signal, group };
   }
   return null;
+}
+
+/**
+ * The per-player signals a roster roll-up (`team:<metric>`) was summed from,
+ * largest impact first — the same selection `synthesizeTeamSignals` makes:
+ * player-scoped signals on that `evidence.metric` with a non-zero measured
+ * impact, one reading per player (the larger, if a player carries the metric
+ * twice). Returns `[]` for anything that is not a roll-up.
+ */
+export function rollupContributorsFor(
+  groups: readonly SignalGroup[],
+  rollup: GroupedSignal | null | undefined,
+): Array<{ signalId: string; playerId: string; playerName: string; strokeImpact: number }> {
+  if (!rollup || rollup.kind !== 'team_synthesis') return [];
+  const metric = (rollup.evidence as Record<string, unknown> | null | undefined)?.metric;
+  const metricId = typeof metric === 'string' && metric.length > 0 ? metric : rollup.id.replace(/^team:/, '');
+  const byPlayer = new Map<string, { signalId: string; playerId: string; playerName: string; strokeImpact: number }>();
+  for (const group of groups) {
+    if (!group.playerId) continue;
+    for (const signal of group.signals) {
+      if (signal.kind === 'team_synthesis') continue;
+      const ev = signal.evidence as Record<string, unknown> | null | undefined;
+      if (!ev || ev.metric !== metricId) continue;
+      if (signal.strokeImpact === null || !Number.isFinite(signal.strokeImpact)) continue;
+      const impact = Math.abs(signal.strokeImpact);
+      if (impact <= 0) continue;
+      const held = byPlayer.get(group.playerId);
+      if (!held || impact > held.strokeImpact) {
+        byPlayer.set(group.playerId, {
+          signalId: signal.id,
+          playerId: group.playerId,
+          playerName: group.playerName,
+          strokeImpact: impact,
+        });
+      }
+    }
+  }
+  return [...byPlayer.values()].sort((a, b) => b.strokeImpact - a.strokeImpact);
 }
 
 /* ───────────────────────────────────────────────────────────────────────────

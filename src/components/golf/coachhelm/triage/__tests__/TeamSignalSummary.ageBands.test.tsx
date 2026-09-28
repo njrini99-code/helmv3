@@ -46,23 +46,40 @@ describe('TeamSignalSummary — no age-bucketed recency UI', () => {
     ];
     const groups = groupSignals(signals, { p1: 'A', p2: 'B' });
 
-    render(<TeamSignalSummary groups={groups} playerHref={(id) => `/golf/dashboard/players/${id}`} onOpenPlayer={vi.fn()} />);
+    render(<TeamSignalSummary groups={groups} categoryHref={(c) => `/golf/dashboard/intelligence?view=lab&filter=category:${c}`} onOpenCategory={vi.fn()} />);
 
     expect(screen.queryByText('New this week')).toBeNull();
     expect(screen.queryByText('Signal velocity')).toBeNull();
     expect(screen.queryByText(/^\d+ fresh$/)).toBeNull();
   });
 
-  it('still renders the severity mix using real severity counts', () => {
+  it('still renders the roster counts from real severities, not ages', () => {
     const signals = [
       sig('p1', 'putts_made_3_5ft_pct', 3),
       sig('p2', 'driving_accuracy_pct', 3),
     ];
     const groups = groupSignals(signals, { p1: 'A', p2: 'B' });
 
-    render(<TeamSignalSummary groups={groups} playerHref={(id) => `/golf/dashboard/players/${id}`} onOpenPlayer={vi.fn()} />);
+    render(<TeamSignalSummary groups={groups} categoryHref={(c) => `/golf/dashboard/intelligence?view=lab&filter=category:${c}`} onOpenCategory={vi.fn()} />);
 
-    expect(screen.getByText('Severity mix')).toBeInTheDocument();
-    expect(screen.getByText('2 total')).toBeInTheDocument();
+    // Both signals are high severity, from two players, in two areas.
+    const high = screen.getByText('High priority').closest('div');
+    expect(high).toHaveTextContent('2');
+    expect(screen.getByText('Players flagged').closest('div')).toHaveTextContent('2');
+    expect(screen.getByText('Game categories').closest('div')).toHaveTextContent('2');
+    expect(screen.getByText('2 live')).toBeInTheDocument();
+  });
+
+  it('links every ranked area into The Lab, filtered to that area', () => {
+    const signals = [sig('p1', 'putts_made_3_5ft_pct', 3)];
+    const groups = groupSignals(signals, { p1: 'A' });
+    const onOpenCategory = vi.fn();
+
+    render(<TeamSignalSummary groups={groups} categoryHref={(c) => `/golf/dashboard/intelligence?view=lab&filter=category:${c}`} onOpenCategory={onOpenCategory} />);
+
+    const link = screen.getByRole('link', { name: /1 signal/ });
+    expect(link).toHaveAttribute('href', '/golf/dashboard/intelligence?view=lab&filter=category:putts_made_3_5ft_pct');
+    link.click();
+    expect(onOpenCategory).toHaveBeenCalledWith('putts_made_3_5ft_pct');
   });
 });
