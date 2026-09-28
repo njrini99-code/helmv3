@@ -569,7 +569,7 @@ function DayBlock({ block, timezone, isPast, isNow, rsvp, onClick }: DayBlockPro
       data-testid="day-grid-block"
       aria-label={`${event.title}, ${typeLabel}, ${range}${event.location ? `, ${event.location}` : ''}${cancelled ? ', cancelled' : ''}${isNow ? ', happening now' : ''}`}
       className={cn(
-        'group absolute flex flex-col overflow-hidden rounded-md px-2.5 text-left focus-visible:z-20 focus-visible:ring-offset-0',
+        'group absolute flex flex-col overflow-hidden rounded-fw-sm px-2.5 text-left focus-visible:z-20 focus-visible:ring-offset-0',
         compact ? 'justify-center py-1' : 'py-1.5',
         '[@media(hover:hover)]:hover:z-10 [@media(hover:hover)]:hover:-translate-y-px',
         isNow && 'z-[5]',
