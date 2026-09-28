@@ -645,8 +645,12 @@ export function FairwayCoachDashboard({
                 { value: stats.upcomingEvents, label: stats.upcomingEvents === 1 ? 'Upcoming event' : 'Upcoming events' },
                 { value: stats.activeQualifiers, label: stats.activeQualifiers === 1 ? 'Active qualifier' : 'Active qualifiers' },
               ].map((stat) => (
-                <div key={stat.label} className="flex flex-col-reverse gap-0.5 px-4 first:pl-0">
-                  <dt className="whitespace-nowrap font-fw-sans text-body-sm text-text-secondary">{stat.label}</dt>
+                <div key={stat.label} className="flex min-w-0 flex-col-reverse justify-end gap-0.5 px-3 first:pl-0 sm:px-4">
+                  {/* Labels wrap on a phone: at 375px "Upcoming events" ran
+                      into "Active qualifiers" in the next column. justify-end
+                      (the top, in column-reverse) keeps the three figures
+                      level when one label is a line shorter. */}
+                  <dt className="font-fw-sans text-body-sm leading-snug text-text-secondary sm:whitespace-nowrap">{stat.label}</dt>
                   <dd className="font-fw-display text-h2 font-semibold tabular-nums text-text-primary">{stat.value}</dd>
                 </div>
               ))}
