@@ -4,35 +4,35 @@
  * ============================================================================
  * Fairway · Qualifiers · FairwayQualifierDetail — the role-forked Qualifier page
  * ----------------------------------------------------------------------------
- * The redesigned Qualifier Detail surface (DESIGN-SYSTEM §4/§5/§6 + §0 #8). A
- * PRESENTATION + LAYOUT + IA rebuild ONLY: the route page (`[id]/page.tsx`) owns
- * the Supabase select, the per-player round breakdown derivation, the entrant /
- * rounds-submitted counts, and the role + can-play computation — and passes the
- * PRE-COMPUTED data into this component. This component re-skins it onto Fairway
- * tokens; it does NOT fetch, mutate, or reshape any business logic.
+ * A PRESENTATION + LAYOUT surface: the route page (`[id]/page.tsx`) owns the
+ * Supabase reads, the per-player round breakdown, the entrant / rounds counts
+ * and the role + can-play computation, and passes the pre-computed data in.
+ * The live standings come from the Leaderboard's own realtime feed, reported
+ * up once it has loaded (`onStandingsChange`), so the status card and the
+ * round-progress dots read the same rows the board shows. One subscription.
  *
- * ONE masthead (ViewHeader) replaces the legacy MobileNavHeader + PageHeader +
- * `surface-stone` triple-title plinth. ONE hero (the live Leaderboard). ONE
- * primary action, role-forked (player → "Play qualifier round"; coach → the
- * quieter "Manage selections"). Mental-model section order: triage (masthead) →
- * detail → is-it-working (leaderboard) → coach pulse (round-by-round) → what's
- * next (selections).
+ * Layout (owner 2026-09-27/28): one masthead (the display title without its
+ * " — suffix", the start date only), then from `lg` a main column (the live
+ * Leaderboard, the coach's round-by-round, selections) beside a right rail (a
+ * small "where it stands" card on top, the Details card below: dates, course,
+ * spots, rules, and every player's rounds played as dots). A phone stacks
+ * them as status → leaderboard → details → coach modules. No green bands:
+ * contrast comes from surface steps (sunken header rows, a strong rule under
+ * them), the type scale and hairlines; green is the primary action, under-par
+ * figures and the live pill only.
  *
- * HONEST states (FIX the legacy bugs):
- *   • Round-by-round renders an EmptyState ("No rounds submitted yet") when zero
- *     completed rounds exist — instead of the legacy all-dash 7-row table (the
- *     all-dash bug), and the live Leaderboard (child) shows an "awaiting first
- *     round" EmptyState instead of a bracket printing 'E' for 0-round players.
- *   • No `x/1` rounds fraction (there is no `num_rounds` column) — entrants +
- *     rounds-submitted are shown as plain honest counts.
- *
- * ADDITIVE + GATED — imported only behind the isRedesignEnabled() fork in the
- * route page. Renders inside the `.fairway-ds` scope on a bg-canvas page.
+ * HONEST states:
+ *   • The status card shows the server's scorecard count until the feed has
+ *     answered: never a "0" flash, never a "0" after a failed read.
+ *   • Round-by-round names why it is empty: nothing posted yet, a closed
+ *     qualifier with nothing posted, or scores entered without linked rounds
+ *     (the board has totals, there are no round cards to split).
+ *   • Blank rules, a missing deadline or course are left out, not dashed.
  * ========================================================================== */
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { ChartNoAxesColumn, ListChecks, Flag } from 'lucide-react';
+import { ChartNoAxesColumn, ListChecks } from 'lucide-react';
 
 import {
   Surface,
@@ -42,13 +42,25 @@ import {
   EmptyState,
   InlineNotice,
   ViewHeader,
+  Avatar,
+  Skeleton,
 } from '@/components/fairway';
 import { cn } from '@/lib/utils';
 import type { QualifierRoundCourse } from '@/app/golf/actions/golf';
+import { formatToPar } from '@/lib/golf/format-to-par';
 
 import { FairwayQualifierLeaderboard } from './FairwayQualifierLeaderboard';
 import { qualifierStatusMeta } from './qualifier-status';
-import { formatToPar } from '@/lib/golf/format-to-par';
+import {
+  deriveStandings,
+  fieldProgress,
+  leaderSummary,
+  positionLabel,
+  progressHeadline,
+  qualifierDisplayName,
+  toParTone,
+  type Standing,
+} from './qualifier-display';
 
 /** One round's score within a player's breakdown (shape from the route page). */
 interface RoundScore {
@@ -73,7 +85,7 @@ export interface FairwayQualifierDetailProps {
   isCoach: boolean;
   isPlayer: boolean;
 
-  // ── Qualifier plinth (real golf_qualifiers columns) ─────────────────────────
+  // ── Qualifier (real golf_qualifiers columns) ────────────────────────────────
   name: string;
   status: string;
   startDate: string;
@@ -106,7 +118,7 @@ export interface FairwayQualifierDetailProps {
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
- * Date / status formatting (presentation only)
+ * Date formatting (presentation only)
  * ──────────────────────────────────────────────────────────────────────── */
 
 /**
@@ -130,27 +142,9 @@ export function formatDate(dateStr: string | null): string {
   });
 }
 
-function dateRange(start: string, end: string | null): string {
-  const startLabel = formatDate(start);
-  if (end && end !== start) return `${startLabel} – ${formatDate(end)}`;
-  return startLabel;
-}
-
-/** Over/under par, rendered with the Unicode minus (U+2212) — a plain ASCII
- *  hyphen sits too high and reads inconsistently next to the `+` glyph. */
-// formatToPar consolidated onto @/lib/golf/format-to-par (see
-// src/test/schema/format-to-par-single-source.test.ts). Ten copies existed;
-// four rendered the ASCII hyphen where the rest render U+2212, so the same
-// score changed glyph between adjacent screens and broke tabular alignment.
-
-/** Under par = green (accent). Over par = amber warning, never the SF-red
- *  danger token — a bad hole isn't an error state. */
-function toParToneClass(toPar: number | null): string {
-  if (toPar === null) return 'text-text-tertiary';
-  if (toPar < 0) return 'text-accent-700';
-  if (toPar > 0) return 'text-fw-warning-ink';
-  return 'text-text-secondary';
-}
+// formatToPar is consolidated onto @/lib/golf/format-to-par (U+2212 minus; see
+// src/test/schema/format-to-par-single-source.test.ts), and its colour onto
+// `toParTone` in ./qualifier-display.
 
 /* ─────────────────────────────────────────────────────────────────────────
  * The page
@@ -164,7 +158,6 @@ export function FairwayQualifierDetail(props: FairwayQualifierDetailProps) {
     name,
     status,
     startDate,
-    endDate,
     entryDeadline,
     courseName,
     spotsAvailable,
@@ -182,19 +175,14 @@ export function FairwayQualifierDetail(props: FairwayQualifierDetailProps) {
     selectionsCount,
   } = props;
 
-  // Feature G — only surface the per-round course list when the qualifier is
-  // actually split across multiple rounds AND at least one course is assigned.
-  const isMultiRound = numRounds > 1;
-  const hasRoundCourses = roundCourses.some(
-    (rc) => rc.courseName || rc.courseId,
-  );
-  const showRoundCourses = isMultiRound && hasRoundCourses;
-
   const sm = qualifierStatusMeta(status);
-  const backHref = isCoach
-    ? '/golf/dashboard/qualifiers'
-    : '/golf/dashboard/my-qualifiers';
+  const title = qualifierDisplayName(name);
+  const backHref = isCoach ? '/golf/dashboard/qualifiers' : '/golf/dashboard/my-qualifiers';
   const backLabel = isCoach ? 'Qualifiers' : 'My qualifiers';
+
+  // The Leaderboard's live feed, reported up once it has loaded (null before).
+  const [standings, setStandings] = useState<Standing[] | null>(null);
+  const feedHasScores = standings?.some((s) => s.hasScore) ?? false;
 
   // ONE primary action, role-forked — never two.
   // Player (entered + active) → green "Play qualifier round".
@@ -203,41 +191,28 @@ export function FairwayQualifierDetail(props: FairwayQualifierDetailProps) {
   if (isPlayer && canPlayRound) {
     primaryAction = (
       <Button asChild variant="primary" size="md">
-        <Link href={`/golf/dashboard/rounds/new?qualifier=${qualifierId}`}>
-          Play qualifier round
-        </Link>
+        <Link href={`/golf/dashboard/rounds/new?qualifier=${qualifierId}`}>Play qualifier round</Link>
       </Button>
     );
   } else if (isCoach) {
     primaryAction = (
       <Button asChild variant="secondary" size="md">
-        <Link href={`/golf/dashboard/coachhelm/qualifying/${qualifierId}`}>
-          Manage selections
-        </Link>
+        <Link href={`/golf/dashboard/coachhelm/qualifying/${qualifierId}`}>Manage selections</Link>
       </Button>
     );
   }
 
-  // Coach-only "Edit qualifier" — wires the previously-dead updateGolfQualifierDetails
-  // / setQualifierRoundCourses actions to a real surface (name/dates/rules/spots/
-  // round-courses were uneditable after creation until now).
+  // Coach-only "Edit qualifier" (name/dates/rules/spots/round-courses).
   const secondaryActions = isCoach ? (
     <Button asChild variant="ghost" size="md">
       <Link href={`/golf/dashboard/qualifiers/${qualifierId}/edit`}>Edit qualifier</Link>
     </Button>
   ) : undefined;
 
-  // P326 — no more player dead-end. A player who can't play (not entered, or the
-  // qualifier is completed / entries closed) saw a masthead with NO action and NO
-  // status telling them why. Give that state an explicit notice + a next step.
-  // There is no player self-entry flow (coaches add entrants on create) and no
-  // "add entrant to an existing qualifier" action anywhere in the app, so the
-  // copy below stops short of promising a fix a coach has no button for —
-  // it names the constraint and points to a human ("talk to your coach"),
-  // not an in-app action that doesn't exist.
-  let playerNotice:
-    | { tone: 'info' | 'warning'; title: string; body: string }
-    | null = null;
+  // P326 — no player dead-end. A player who can't play (not entered, or the
+  // qualifier is over) gets the reason and a next step. There is no player
+  // self-entry flow and no "add entrant" action, so the copy points to a person.
+  let playerNotice: { tone: 'info' | 'warning'; title: string; body: string } | null = null;
   if (isPlayer && !canPlayRound) {
     if (status === 'completed') {
       playerNotice = {
@@ -254,38 +229,23 @@ export function FairwayQualifierDetail(props: FairwayQualifierDetailProps) {
     }
   }
 
-  // FIX the all-dash bug: only treat the breakdown as "has rounds" when a real
-  // completed round exists (maxRoundNumber > 0 AND a player actually has rounds).
-  const hasAnyCompletedRound =
-    maxRoundNumber > 0 && breakdown.some(([, data]) => data.rounds.length > 0);
-
-  // P31 — "Rounds submitted" starts from the route page's server snapshot,
-  // then re-syncs to the Leaderboard's own live feed the moment it reports in
-  // (same data the leaderboard below renders from), so the two never visibly
-  // disagree even when a round posts between the page load and now.
-  const [liveRoundsSubmitted, setLiveRoundsSubmitted] = useState<number | null>(null);
-  const displayedRoundsSubmitted = liveRoundsSubmitted ?? roundsSubmitted;
-
   return (
-    <div className="mx-auto w-full max-w-[1100px] px-5 py-8 md:px-8 md:py-10">
-      {/* Quiet back link — replaces the legacy MobileNavHeader + Breadcrumb */}
+    <div className="mx-auto w-full max-w-[1200px] px-4 py-6 md:px-8 md:py-10">
+      {/* Coach phones already get "‹ Qualifiers" in the shell top bar (NAT-04);
+          the player's link targets My qualifiers, which the top bar does not. */}
       <Link
         href={backHref}
-        // Coach phones already get "‹ Qualifiers" in the shell top bar (NAT-04);
-        // a second one here was a duplicate. The player's link targets My
-        // qualifiers, which the top bar does not, so it stays.
         className={cn(
-          'mb-6 inline-flex items-center gap-1 font-fw-sans text-caption text-text-tertiary transition-colors hover:text-text-secondary',
+          'mb-5 inline-flex min-h-11 items-center gap-1 font-fw-sans text-caption text-text-tertiary transition-colors hover:text-text-secondary md:min-h-0',
           isCoach && 'max-md:hidden',
         )}
       >
         <span aria-hidden="true">←</span> {backLabel}
       </Link>
 
-      {/* 1 · ONE masthead — name, status, dates, entrants, course_name */}
+      {/* ONE masthead — the display title, status, start date, field, course */}
       <ViewHeader
-        eyebrow="Qualifier"
-        title={name}
+        title={title}
         primaryAction={primaryAction}
         secondaryActions={secondaryActions}
         meta={
@@ -293,7 +253,7 @@ export function FairwayQualifierDetail(props: FairwayQualifierDetailProps) {
             <StatusPill tone={sm.tone} pulse={sm.pulse}>
               {sm.label}
             </StatusPill>
-            <span className="tabular-nums">{dateRange(startDate, endDate)}</span>
+            <span className="tabular-nums">{formatDate(startDate)}</span>
             <span aria-hidden="true">·</span>
             <span className="tabular-nums">
               {entrantCount} {entrantCount === 1 ? 'entrant' : 'entrants'}
@@ -308,131 +268,327 @@ export function FairwayQualifierDetail(props: FairwayQualifierDetailProps) {
         }
       />
 
-      <div className="mt-8 space-y-8">
-        {/* P326 · Player state notice — never a dead-end. Tells a non-entered /
-            closed / completed player WHY there's no "Play" action + the next step. */}
-        {playerNotice ? (
-          <InlineNotice tone={playerNotice.tone} title={playerNotice.title}>
-            {playerNotice.body}
-          </InlineNotice>
-        ) : null}
+      {playerNotice ? (
+        <InlineNotice tone={playerNotice.tone} title={playerNotice.title} className="mt-6">
+          {playerNotice.body}
+        </InlineNotice>
+      ) : null}
 
-        {/* 2 · Detail surface — real columns only (dates, deadline, course, spots, rules) */}
-        <Surface aria-label="Qualifier details">
-          <Surface.Body>
-            <dl className="grid grid-cols-2 gap-x-6 gap-y-5 sm:grid-cols-3 lg:grid-cols-4">
-              <DetailItem label="Dates" value={dateRange(startDate, endDate)} numeric />
-              <DetailItem label="Entry deadline" value={formatDate(entryDeadline)} numeric />
-              <DetailItem label="Entrants" value={String(entrantCount)} numeric />
-              <DetailItem label="Rounds submitted" value={String(displayedRoundsSubmitted)} numeric />
-              {courseName ? <DetailItem label="Course" value={courseName} /> : null}
-              {spotsAvailable !== null ? (
-                <DetailItem label="Spots" value={String(spotsAvailable)} numeric />
-              ) : null}
-            </dl>
-
-            {rules ? (
-              <div className="space-y-2">
-                <h2 className="font-fw-sans text-body-sm font-semibold text-text-primary">
-                  Rules
-                </h2>
-                <Inset padding="md">
-                  <p className="whitespace-pre-wrap font-fw-sans text-body text-text-secondary">
-                    {rules}
-                  </p>
-                </Inset>
-              </div>
-            ) : null}
-          </Surface.Body>
-        </Surface>
-
-        {/* 2b · Feature G — the course assigned to each round (multi-round only) */}
-        {showRoundCourses ? (
-          <RoundCoursesSection numRounds={numRounds} roundCourses={roundCourses} />
-        ) : null}
-
-        {/* 3 · HERO — the live Leaderboard (honest "awaiting first round" when 0 scored) */}
-        <FairwayQualifierLeaderboard
-          qualifierId={qualifierId}
-          entrantCount={entrantCount}
-          selectionSlotsTotal={selectionSlotsTotal}
-          selectionSlotsCoachPick={selectionSlotsCoachPick}
-          onRoundsSubmittedChange={setLiveRoundsSubmitted}
-        />
-
-        {/* 4 · COACH-only round-by-round breakdown */}
-        {isCoach ? (
-          <Surface aria-label="Round-by-round scores">
-            <Surface.Header
-              title={
-                <span className="inline-flex items-center gap-2">
-                  <ChartNoAxesColumn className="h-4 w-4 text-text-tertiary" aria-hidden="true" />
-                  Round-by-round
-                </span>
-              }
+      {/* Main column + right rail from lg. On a phone the two wrappers are
+          `contents`, so their cards interleave by `order`: status, board,
+          details, then the coach's modules. */}
+      <div className="mt-6 flex flex-col gap-6 lg:mt-8 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(300px,22rem)] lg:items-start lg:gap-8">
+        <div className="contents lg:flex lg:min-w-0 lg:flex-col lg:gap-8">
+          <div className="order-2 min-w-0 lg:order-none">
+            <FairwayQualifierLeaderboard
+              qualifierId={qualifierId}
+              entrantCount={entrantCount}
+              selectionSlotsTotal={selectionSlotsTotal}
+              selectionSlotsCoachPick={selectionSlotsCoachPick}
+              onStandingsChange={setStandings}
             />
-            <Surface.Body>
-              {hasAnyCompletedRound ? (
-                <RoundBreakdownTable breakdown={breakdown} maxRoundNumber={maxRoundNumber} />
-              ) : status === 'completed' ? (
-                // #91 — a completed qualifier with zero rounds is CLOSED, not
-                // "yet to happen". The forward-looking "yet" copy reads as a
-                // bug once the event has already ended.
-                <EmptyState
-                  variant="subtle"
-                  icon={ChartNoAxesColumn}
-                  title="Completed: no rounds were recorded"
-                  description="This qualifier closed before any per-round scores were posted."
-                />
-              ) : (
-                // FIX the all-dash bug: an honest empty state, NOT 7 all-dash rows.
-                <EmptyState
-                  variant="subtle"
-                  icon={ChartNoAxesColumn}
-                  title="No rounds submitted yet"
-                  description="Per-round scores appear here once players post their qualifier rounds."
-                />
-              )}
-            </Surface.Body>
-          </Surface>
-        ) : null}
+          </div>
 
-        {/* 5 · COACH-only selections strip — surfaces the W29 selection_state datum */}
-        {isCoach ? (
-          <SelectionsStrip
-            qualifierId={qualifierId}
+          {isCoach ? (
+            <RoundByRoundCard
+              className="order-4 lg:order-none"
+              status={status}
+              breakdown={breakdown}
+              maxRoundNumber={maxRoundNumber}
+              feedHasScores={feedHasScores}
+            />
+          ) : null}
+
+          {isCoach ? (
+            <SelectionsStrip
+              className="order-5 lg:order-none"
+              qualifierId={qualifierId}
+              status={status}
+              selectionState={selectionState}
+              selectionSlotsTotal={selectionSlotsTotal}
+              selectionsCount={selectionsCount}
+            />
+          ) : null}
+        </div>
+
+        <div className="contents lg:flex lg:flex-col lg:gap-6">
+          <StatusCard
+            className="order-1 lg:order-none"
             status={status}
-            selectionState={selectionState}
-            selectionSlotsTotal={selectionSlotsTotal}
-            selectionsCount={selectionsCount}
+            numRounds={numRounds}
+            entrantCount={entrantCount}
+            serverCardsIn={roundsSubmitted}
+            standings={standings}
           />
-        ) : null}
+          <DetailsCard
+            className="order-3 lg:order-none"
+            status={status}
+            startDate={startDate}
+            entryDeadline={entryDeadline}
+            courseName={courseName}
+            spotsAvailable={spotsAvailable}
+            selectionSlotsTotal={selectionSlotsTotal}
+            selectionSlotsCoachPick={selectionSlotsCoachPick}
+            numRounds={numRounds}
+            roundCourses={roundCourses}
+            rules={rules}
+            standings={standings}
+          />
+        </div>
       </div>
     </div>
   );
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
- * Detail item (a single labelled datum in the detail grid)
+ * Status card — where the qualifier stands, top of the rail
  * ──────────────────────────────────────────────────────────────────────── */
 
-function DetailItem({
-  label,
-  value,
-  numeric = false,
+function StatusCard({
+  status,
+  numRounds,
+  entrantCount,
+  serverCardsIn,
+  standings,
+  className,
 }: {
-  label: string;
-  value: string;
-  numeric?: boolean;
+  status: string;
+  numRounds: number;
+  entrantCount: number;
+  /** The route page's completed-round count, shown until the feed answers. */
+  serverCardsIn: number;
+  standings: Standing[] | null;
+  className?: string;
 }) {
+  const rounds = Math.max(1, numRounds);
+  const progress = standings ? fieldProgress(standings, rounds) : null;
+  const cardsIn = progress ? progress.cardsIn : serverCardsIn;
+  const cardsTotal = progress && progress.entrants > 0 ? progress.cardsTotal : entrantCount * rounds;
+  const leader = standings ? leaderSummary(standings) : null;
+  const completed = status === 'completed';
+
   return (
-    <div className="space-y-1">
-      <dt className="font-fw-sans text-caption font-semibold text-text-tertiary">
-        {label}
-      </dt>
+    <Surface padding="none" aria-label="Where it stands" className={cn('overflow-hidden', className)}>
+      <div className="px-5 pb-5 pt-4">
+        <p className="font-fw-sans text-caption text-text-tertiary">{completed ? 'Result' : 'Progress'}</p>
+        {progress ? (
+          <p className="mt-0.5 font-fw-sans text-h3 text-text-primary">{progressHeadline(progress, status)}</p>
+        ) : (
+          <Skeleton className="mt-1.5 h-5 w-40 rounded-fw-sm" />
+        )}
+
+        <RoundSegments perRound={progress?.perRound ?? null} numRounds={rounds} entrants={progress?.entrants ?? 0} />
+
+        <p className="mt-4 flex items-baseline gap-1.5 font-fw-sans" data-testid="qualifier-cards-in">
+          <span className="text-h2 tabular-nums text-text-primary">{cardsIn}</span>
+          <span className="text-body-sm tabular-nums text-text-secondary">of {cardsTotal} scorecards in</span>
+        </p>
+      </div>
+
+      {leader && leader.leaders[0] ? (
+        <div className="flex items-center gap-3 border-t border-border-subtle bg-surface-sunken px-5 py-3.5">
+          {leader.leaders.length === 1 ? (
+            <Avatar
+              name={leader.leaders[0].playerName}
+              identityKey={leader.leaders[0].playerId}
+              tone="identity"
+              size="sm"
+              decorative
+            />
+          ) : null}
+          <p className="min-w-0 flex-1 font-fw-sans text-body-sm leading-5 text-text-secondary">
+            <LeaderLine leader={leader} completed={completed} />
+          </p>
+          <span
+            className={cn(
+              'shrink-0 font-fw-sans text-h3 tabular-nums',
+              toParTone(leader.leaders[0].totalToPar),
+            )}
+          >
+            {formatToPar(leader.leaders[0].totalToPar)}
+          </span>
+        </div>
+      ) : null}
+    </Surface>
+  );
+}
+
+/** "Cole Bennett leads by 3", "… finished first, 2 clear", "… are tied for first". */
+function LeaderLine({ leader, completed }: { leader: NonNullable<ReturnType<typeof leaderSummary>>; completed: boolean }) {
+  const [first, second] = leader.leaders;
+  if (!first) return null;
+  const name = (s: Standing) => <span className="font-semibold text-text-primary">{s.playerName}</span>;
+  if (leader.leaders.length > 2) {
+    return (
+      <>
+        <span className="font-semibold text-text-primary">{leader.leaders.length} players</span>{' '}
+        {completed ? 'finished tied for first' : 'are tied for first'}
+      </>
+    );
+  }
+  if (second) {
+    return (
+      <>
+        {name(first)} and {name(second)} {completed ? 'finished tied for first' : 'are tied for first'}
+      </>
+    );
+  }
+  const margin = leader.margin;
+  const clear = margin && margin > 0 ? `${margin} ${margin === 1 ? 'shot' : 'shots'}` : null;
+  if (completed) {
+    return (
+      <>
+        {name(first)} finished first{clear ? `, ${clear} clear` : ''}
+      </>
+    );
+  }
+  return (
+    <>
+      {name(first)} {clear ? `leads by ${clear}` : 'leads'}
+    </>
+  );
+}
+
+/** One bar per round, filled by the share of the field through it. */
+function RoundSegments({
+  perRound,
+  numRounds,
+  entrants,
+}: {
+  perRound: number[] | null;
+  numRounds: number;
+  entrants: number;
+}) {
+  const shares = perRound ?? Array.from({ length: numRounds }, () => 0);
+  return (
+    <div className="mt-3">
+      <div aria-hidden className="flex gap-1.5">
+        {shares.map((share, i) => (
+          <div key={i} className="min-w-0 flex-1">
+            <div className="h-2 overflow-hidden rounded-full bg-surface-sunken [box-shadow:inset_0_0_0_1px_var(--fw-color-border-subtle)]">
+              <div
+                className="h-full rounded-full bg-text-primary transition-[width] duration-500 ease-out motion-reduce:transition-none"
+                style={{ width: `${Math.round(share * 100)}%` }}
+              />
+            </div>
+            <p
+              className={cn(
+                'mt-1.5 font-fw-sans text-caption tabular-nums',
+                share > 0 ? 'text-text-secondary' : 'text-text-tertiary',
+              )}
+            >
+              R{i + 1}
+            </p>
+          </div>
+        ))}
+      </div>
+      {perRound && entrants > 0 ? (
+        <p className="sr-only">
+          {perRound
+            .map((share, i) => `Round ${i + 1}: ${Math.round(share * entrants)} of ${entrants} players through`)
+            .join('. ')}
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+ * Details card — dates, course, spots, rules, and rounds played per player
+ * ──────────────────────────────────────────────────────────────────────── */
+
+function DetailsCard({
+  status,
+  startDate,
+  entryDeadline,
+  courseName,
+  spotsAvailable,
+  selectionSlotsTotal,
+  selectionSlotsCoachPick,
+  numRounds,
+  roundCourses,
+  rules,
+  standings,
+  className,
+}: {
+  status: string;
+  startDate: string;
+  entryDeadline: string | null;
+  courseName: string | null;
+  spotsAvailable: number | null;
+  selectionSlotsTotal: number;
+  selectionSlotsCoachPick: number;
+  numRounds: number;
+  roundCourses: QualifierRoundCourse[];
+  rules: string | null;
+  standings: Standing[] | null;
+  className?: string;
+}) {
+  const rounds = Math.max(1, numRounds);
+  const ruleText = rules?.trim() ?? '';
+  const coachPicks = Math.min(Math.max(selectionSlotsCoachPick, 0), selectionSlotsTotal);
+  const onScore = selectionSlotsTotal - coachPicks;
+  // Feature G — the course per round, only when split across rounds and set.
+  const byRound = new Map(roundCourses.map((rc) => [rc.roundNumber, rc]));
+  const showRoundCourses = rounds > 1 && roundCourses.some((rc) => rc.courseName || rc.courseId);
+
+  return (
+    <Surface padding="none" aria-label="Qualifier details" className={cn('overflow-hidden', className)}>
+      <div className="border-b border-border-strong bg-surface-sunken px-5 py-3">
+        <h2 className="font-fw-sans text-body font-semibold text-text-primary">Details</h2>
+      </div>
+
+      <dl className="divide-y divide-border-subtle px-5">
+        <DetailRow label="Start date" value={formatDate(startDate)} numeric />
+        {entryDeadline ? <DetailRow label="Entry deadline" value={formatDate(entryDeadline)} numeric /> : null}
+        {courseName ? <DetailRow label="Course" value={courseName} /> : null}
+        <DetailRow label="Rounds" value={String(rounds)} numeric />
+        {spotsAvailable !== null ? <DetailRow label="Spots" value={String(spotsAvailable)} numeric /> : null}
+        {selectionSlotsTotal > 0 && coachPicks > 0 ? (
+          <DetailRow label="Selection" value={`${onScore} on score · ${coachPicks} coach's pick`} numeric />
+        ) : null}
+      </dl>
+
+      {showRoundCourses ? (
+        <div className="border-t border-border-subtle px-5 py-4">
+          <h3 className="font-fw-sans text-caption font-semibold text-text-secondary">Course by round</h3>
+          <ul className="mt-2 space-y-1.5">
+            {Array.from({ length: rounds }, (_, i) => i + 1).map((n) => {
+              const assigned = byRound.get(n)?.courseName;
+              return (
+                <li key={n} className="flex items-baseline gap-3 font-fw-sans text-body-sm">
+                  <span className="w-7 shrink-0 tabular-nums text-text-tertiary">R{n}</span>
+                  <span className={cn('min-w-0 flex-1', assigned ? 'text-text-primary' : 'text-text-tertiary')}>
+                    {assigned ?? 'Course not set yet'}
+                  </span>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      ) : null}
+
+      {ruleText ? (
+        <div className="border-t border-border-subtle px-5 py-4">
+          <h3 className="font-fw-sans text-caption font-semibold text-text-secondary">Rules</h3>
+          <Inset padding="sm" className="mt-2">
+            <p className="whitespace-pre-wrap font-fw-sans text-body-sm text-text-primary">{ruleText}</p>
+          </Inset>
+        </div>
+      ) : null}
+
+      <RoundsPlayed standings={standings} numRounds={rounds} status={status} />
+    </Surface>
+  );
+}
+
+function DetailRow({ label, value, numeric = false }: { label: string; value: string; numeric?: boolean }) {
+  return (
+    <div className="flex items-baseline justify-between gap-4 py-3">
+      <dt className="shrink-0 font-fw-sans text-caption text-text-tertiary">{label}</dt>
       <dd
         className={cn(
-          'font-fw-sans text-body font-medium text-text-primary',
+          'min-w-0 text-right font-fw-sans text-body-sm font-semibold text-text-primary',
           numeric && 'tabular-nums',
         )}
       >
@@ -442,11 +598,143 @@ function DetailItem({
   );
 }
 
+/** Every player's rounds played out of the qualifier's rounds, as dots. */
+function RoundsPlayed({
+  standings,
+  numRounds,
+  status,
+}: {
+  standings: Standing[] | null;
+  numRounds: number;
+  status: string;
+}) {
+  const anyPlayed = standings?.some((s) => s.roundsCompleted > 0) ?? false;
+
+  return (
+    <section aria-label="Rounds played" className="border-t border-border-subtle px-5 pb-4 pt-4">
+      <div className="flex items-baseline justify-between gap-3">
+        <h3 className="font-fw-sans text-caption font-semibold text-text-secondary">Rounds played</h3>
+        <span className="font-fw-sans text-caption tabular-nums text-text-tertiary">
+          {numRounds} {numRounds === 1 ? 'round' : 'rounds'} each
+        </span>
+      </div>
+
+      {standings === null ? (
+        <div role="status" aria-label="Loading rounds played" className="mt-3 space-y-3">
+          <Skeleton className="h-4 w-full rounded-fw-sm" />
+          <Skeleton className="h-4 w-5/6 rounded-fw-sm" />
+          <Skeleton className="h-4 w-4/6 rounded-fw-sm" />
+        </div>
+      ) : !anyPlayed ? (
+        <p className="mt-2 font-fw-sans text-body-sm text-text-secondary">
+          {status === 'completed'
+            ? 'No rounds were posted before this qualifier closed.'
+            : standings.length > 0
+              ? `No rounds posted yet. ${standings.length} ${standings.length === 1 ? 'player is' : 'players are'} entered.`
+              : 'No rounds posted yet.'}
+        </p>
+      ) : (
+        <ul className="mt-1.5 divide-y divide-border-subtle">
+          {standings.map((s) => {
+            const played = Math.min(s.roundsCompleted, numRounds);
+            return (
+              <li key={s.playerId} className="flex min-h-11 items-center gap-3 py-1.5">
+                <Avatar name={s.playerName} identityKey={s.playerId} tone="identity" size="xs" decorative />
+                <span className="min-w-0 flex-1 truncate font-fw-sans text-body-sm font-medium text-text-primary">
+                  {s.playerName}
+                </span>
+                <span aria-hidden className="flex shrink-0 items-center gap-1">
+                  {Array.from({ length: numRounds }, (_, i) => (
+                    <span
+                      key={i}
+                      className={cn(
+                        'h-2.5 w-2.5 rounded-full',
+                        i < played ? 'bg-text-primary' : '[box-shadow:inset_0_0_0_1.5px_var(--fw-color-border-strong)]',
+                      )}
+                    />
+                  ))}
+                </span>
+                <span aria-hidden className="w-7 shrink-0 text-right font-fw-sans text-caption tabular-nums text-text-secondary">
+                  {played}/{numRounds}
+                </span>
+                <span className="sr-only">
+                  {played} of {numRounds} {numRounds === 1 ? 'round' : 'rounds'} played
+                </span>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </section>
+  );
+}
+
 /* ─────────────────────────────────────────────────────────────────────────
- * Round-by-round breakdown — coach-only. Below `md` this is card rows
- * (player + per-round scores as compact inline chips + total/to-par), not a
- * squeezed table (Rule 8). The `md+` table is byte-identical to before.
+ * Round-by-round — coach-only. Below `md` card rows (player + per-round
+ * chips + total/to-par), from `md` a table. Positions are the same golf
+ * standings as the board (shared to-par shares the position).
  * ──────────────────────────────────────────────────────────────────────── */
+
+function RoundByRoundCard({
+  status,
+  breakdown,
+  maxRoundNumber,
+  feedHasScores,
+  className,
+}: {
+  status: string;
+  breakdown: [string, PlayerBreakdown][];
+  maxRoundNumber: number;
+  /** The board shows scores (live feed), whatever the round cards say. */
+  feedHasScores: boolean;
+  className?: string;
+}) {
+  // FIX the all-dash bug: only "has rounds" when a real completed round exists.
+  const hasAnyCompletedRound = maxRoundNumber > 0 && breakdown.some(([, data]) => data.rounds.length > 0);
+
+  return (
+    <Surface aria-label="Round-by-round scores" className={className}>
+      <Surface.Header
+        title={
+          <h2 className="inline-flex items-center gap-2 font-fw-sans text-h3 text-text-primary">
+            <ChartNoAxesColumn className="h-4 w-4 text-text-tertiary" aria-hidden="true" />
+            Round-by-round
+          </h2>
+        }
+      />
+      <Surface.Body>
+        {hasAnyCompletedRound ? (
+          <RoundBreakdownTable breakdown={breakdown} maxRoundNumber={maxRoundNumber} />
+        ) : feedHasScores ? (
+          // The board has totals but no round cards are linked (scores were
+          // keyed straight onto the entries): say so, rather than claim no
+          // rounds exist under a scored leaderboard.
+          <EmptyState
+            variant="subtle"
+            icon={ChartNoAxesColumn}
+            title="No per-round breakdown"
+            description="Scores were entered without linked rounds, so there are no round cards to split by round."
+          />
+        ) : status === 'completed' ? (
+          // #91 — a completed qualifier with zero rounds is CLOSED, not "yet to happen".
+          <EmptyState
+            variant="subtle"
+            icon={ChartNoAxesColumn}
+            title="Completed: no rounds were recorded"
+            description="This qualifier closed before any per-round scores were posted."
+          />
+        ) : (
+          <EmptyState
+            variant="subtle"
+            icon={ChartNoAxesColumn}
+            title="No rounds submitted yet"
+            description="Per-round scores appear here once players post their qualifier rounds."
+          />
+        )}
+      </Surface.Body>
+    </Surface>
+  );
+}
 
 function RoundBreakdownTable({
   breakdown,
@@ -457,39 +745,40 @@ function RoundBreakdownTable({
 }) {
   const roundColumns = Array.from({ length: maxRoundNumber }, (_, i) => i + 1);
 
-  // Only rank players who actually posted a round (honest position).
-  // Computed once, up front, so both the phone card list and the md+ table
-  // read identical ranks off the same map — two independent render passes
-  // must never share a mutable counter.
-  let scoredSeen = 0;
-  const positions = new Map<string, number | null>();
-  for (const [playerId, data] of breakdown) {
-    positions.set(playerId, data.rounds.length > 0 ? ++scoredSeen : null);
-  }
+  // Golf standings over the breakdown, computed once so the phone list and
+  // the table read identical positions.
+  const standings = deriveStandings(
+    breakdown.map(([playerId, data]) => ({
+      player_id: playerId,
+      player_name: data.playerName,
+      rounds_completed: data.rounds.length,
+      total_score: data.totalScore,
+      total_to_par: data.totalToPar,
+    })),
+  );
+  const byId = new Map(breakdown);
+  const rows = standings.flatMap((s) => {
+    const data = byId.get(s.playerId);
+    return data ? [{ playerId: s.playerId, standing: s, data }] : [];
+  });
 
   return (
     <>
       {/* Phone — card rows: player + per-round chips + total (Rule 8) */}
       <ul className="divide-y divide-border-subtle md:hidden">
-        {breakdown.map(([playerId, data]) => {
+        {rows.map(({ playerId, standing, data }) => {
           const hasRounds = data.rounds.length > 0;
-          const position = positions.get(playerId) ?? null;
-          const leader = position === 1;
-
           return (
-            <li
-              key={playerId}
-              className={cn('flex flex-col gap-2.5 py-3 first:pt-0 last:pb-0', leader && 'bg-accent-50/60')}
-            >
+            <li key={playerId} className="flex flex-col gap-2.5 py-3 first:pt-0 last:pb-0">
               <div className="flex items-center justify-between gap-3">
                 <div className="flex min-w-0 items-center gap-2.5">
                   <span
                     className={cn(
-                      'w-5 shrink-0 text-right font-fw-mono text-body-sm tabular-nums',
-                      leader ? 'font-medium text-accent-700' : 'text-text-tertiary',
+                      'w-7 shrink-0 text-right font-fw-sans text-body-sm tabular-nums',
+                      standing.position === 1 ? 'font-semibold text-text-primary' : 'text-text-tertiary',
                     )}
                   >
-                    {position ?? '—'}
+                    {positionLabel(standing)}
                   </span>
                   <Link
                     href={`/golf/dashboard/stats?player=${playerId}`}
@@ -499,15 +788,10 @@ function RoundBreakdownTable({
                   </Link>
                 </div>
                 <div className="shrink-0 text-right">
-                  <p className="font-fw-mono text-body font-semibold tabular-nums text-text-primary">
+                  <p className="font-fw-sans text-body font-semibold tabular-nums text-text-primary">
                     {hasRounds ? data.totalScore : '—'}
                   </p>
-                  <p
-                    className={cn(
-                      'font-fw-mono text-caption tabular-nums',
-                      hasRounds ? toParToneClass(data.totalToPar) : 'text-text-tertiary',
-                    )}
-                  >
+                  <p className={cn('font-fw-sans text-caption tabular-nums', hasRounds ? toParTone(data.totalToPar) : 'text-text-tertiary')}>
                     {hasRounds ? formatToPar(data.totalToPar) : '—'}
                   </p>
                 </div>
@@ -521,11 +805,11 @@ function RoundBreakdownTable({
                     return (
                       <span
                         key={n}
-                        className="inline-flex items-center gap-1 rounded-fw-sm bg-surface-sunken px-2 py-1 font-fw-mono text-caption tabular-nums"
+                        className="inline-flex items-center gap-1 rounded-fw-sm bg-surface-sunken px-2 py-1 font-fw-sans text-caption tabular-nums"
                       >
                         <span className="text-text-tertiary">R{n}</span>
                         <span className="font-medium text-text-primary">{round.score ?? '—'}</span>
-                        <span className={toParToneClass(round.toPar)}>{formatToPar(round.toPar)}</span>
+                        <span className={toParTone(round.toPar)}>{formatToPar(round.toPar)}</span>
                       </span>
                     );
                   })}
@@ -536,50 +820,30 @@ function RoundBreakdownTable({
         })}
       </ul>
 
-      {/* md+ — the original matte table, unchanged */}
+      {/* md+ — the table */}
       <div className="hidden overflow-x-auto overscroll-x-contain md:block">
         <table className="w-full min-w-[480px] border-collapse font-fw-sans text-body">
           <thead>
             <tr className="border-b border-border-strong text-left">
-              <th className="w-8 pb-2 pr-3 font-fw-sans text-caption font-semibold text-text-tertiary">
-                #
-              </th>
-              <th className="pb-2 pr-3 font-fw-sans text-caption font-semibold text-text-tertiary">
-                Player
-              </th>
+              <th className="w-10 pb-2 pr-3 font-fw-sans text-caption font-semibold text-text-tertiary">Pos</th>
+              <th className="pb-2 pr-3 font-fw-sans text-caption font-semibold text-text-tertiary">Player</th>
               {roundColumns.map((n) => (
-                <th
-                  key={n}
-                  className="px-2 pb-2 text-center font-fw-sans text-caption font-semibold text-text-tertiary"
-                >
+                <th key={n} className="px-2 pb-2 text-center font-fw-sans text-caption font-semibold text-text-tertiary">
                   R{n}
                 </th>
               ))}
-              <th className="pb-2 pl-3 text-right font-fw-sans text-caption font-semibold text-text-tertiary">
-                Total
-              </th>
-              <th className="pb-2 pl-3 text-right font-fw-sans text-caption font-semibold text-text-tertiary">
-                To par
-              </th>
+              <th className="pb-2 pl-3 text-right font-fw-sans text-caption font-semibold text-text-tertiary">Total</th>
+              <th className="pb-2 pl-3 text-right font-fw-sans text-caption font-semibold text-text-tertiary">To par</th>
             </tr>
           </thead>
           <tbody>
-            {breakdown.map(([playerId, data]) => {
+            {rows.map(({ playerId, standing, data }) => {
               const hasRounds = data.rounds.length > 0;
-              const position = positions.get(playerId) ?? null;
-              const leader = position === 1;
-
               return (
-                <tr
-                  key={playerId}
-                  className={cn(
-                    'border-b border-border-subtle last:border-b-0',
-                    leader && 'bg-accent-50/60',
-                  )}
-                >
+                <tr key={playerId} className="border-b border-border-subtle last:border-b-0">
                   <td className="py-2.5 pr-3 tabular-nums">
-                    <span className={cn(leader ? 'font-medium text-accent-700' : 'text-text-tertiary')}>
-                      {position ?? '—'}
+                    <span className={cn(standing.position === 1 ? 'font-semibold text-text-primary' : 'text-text-tertiary')}>
+                      {positionLabel(standing)}
                     </span>
                   </td>
                   <td className="whitespace-nowrap py-2.5 pr-3 font-medium text-text-primary">
@@ -596,12 +860,8 @@ function RoundBreakdownTable({
                       <td key={n} className="px-2 py-2.5 text-center">
                         {round ? (
                           <div className="flex flex-col items-center">
-                            <span className="font-fw-mono text-body-sm font-medium text-text-primary tabular-nums">
-                              {round.score ?? '—'}
-                            </span>
-                            <span className={cn('font-fw-mono text-caption tabular-nums', toParToneClass(round.toPar))}>
-                              {formatToPar(round.toPar)}
-                            </span>
+                            <span className="text-body-sm font-medium tabular-nums text-text-primary">{round.score ?? '—'}</span>
+                            <span className={cn('text-caption tabular-nums', toParTone(round.toPar))}>{formatToPar(round.toPar)}</span>
                           </div>
                         ) : (
                           <span className="text-caption text-text-tertiary">—</span>
@@ -609,15 +869,10 @@ function RoundBreakdownTable({
                       </td>
                     );
                   })}
-                  <td className="py-2.5 pl-3 text-right font-fw-mono font-medium text-text-primary tabular-nums">
+                  <td className="py-2.5 pl-3 text-right font-semibold tabular-nums text-text-primary">
                     {hasRounds ? data.totalScore : '—'}
                   </td>
-                  <td
-                    className={cn(
-                      'py-2.5 pl-3 text-right font-fw-mono font-medium tabular-nums',
-                      hasRounds ? toParToneClass(data.totalToPar) : 'text-text-tertiary',
-                    )}
-                  >
+                  <td className={cn('py-2.5 pl-3 text-right font-semibold tabular-nums', hasRounds ? toParTone(data.totalToPar) : 'text-text-tertiary')}>
                     {hasRounds ? formatToPar(data.totalToPar) : '—'}
                   </td>
                 </tr>
@@ -631,72 +886,6 @@ function RoundBreakdownTable({
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
- * Feature G — per-round course assignment (the venue the coach set for each
- * round). Read-only for both roles; players see WHERE each round is played.
- * ──────────────────────────────────────────────────────────────────────── */
-
-function RoundCoursesSection({
-  numRounds,
-  roundCourses,
-}: {
-  numRounds: number;
-  roundCourses: QualifierRoundCourse[];
-}) {
-  // Index assignments by round so we can render a row per declared round
-  // (an unassigned round shows an honest "Course not set yet").
-  const byRound = new Map<number, QualifierRoundCourse>();
-  for (const rc of roundCourses) byRound.set(rc.roundNumber, rc);
-  const rows = Array.from({ length: numRounds }, (_, i) => i + 1);
-
-  return (
-    <Surface aria-label="Course per round">
-      <Surface.Header
-        title={
-          <span className="inline-flex items-center gap-2">
-            <Flag className="h-4 w-4 text-text-tertiary" aria-hidden="true" />
-            Course per round
-          </span>
-        }
-      />
-      <Surface.Body>
-        <ul className="divide-y divide-border-subtle">
-          {rows.map((roundNumber) => {
-            const assigned = byRound.get(roundNumber);
-            return (
-              <li
-                key={roundNumber}
-                className="flex items-center gap-3 py-3 first:pt-0 last:pb-0"
-              >
-                <span
-                  aria-hidden="true"
-                  className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-surface-sunken font-fw-mono text-body-sm font-medium tabular-nums text-text-secondary"
-                >
-                  {roundNumber}
-                </span>
-                <div className="min-w-0 flex-1">
-                  <p className="font-fw-sans text-caption font-semibold text-text-tertiary">
-                    Round {roundNumber}
-                  </p>
-                  {assigned?.courseName ? (
-                    <p className="line-clamp-2 font-fw-sans text-body font-medium text-text-primary">
-                      {assigned.courseName}
-                    </p>
-                  ) : (
-                    <p className="font-fw-sans text-body text-text-tertiary">
-                      Course not set yet
-                    </p>
-                  )}
-                </div>
-              </li>
-            );
-          })}
-        </ul>
-      </Surface.Body>
-    </Surface>
-  );
-}
-
-/* ─────────────────────────────────────────────────────────────────────────
  * Selections strip — surfaces the W29 selection_state datum the legacy hides
  * ──────────────────────────────────────────────────────────────────────── */
 
@@ -706,30 +895,25 @@ function SelectionsStrip({
   selectionState,
   selectionSlotsTotal,
   selectionsCount,
+  className,
 }: {
   qualifierId: string;
   status: string;
   selectionState: string;
   selectionSlotsTotal: number;
   selectionsCount: number;
+  className?: string;
 }) {
   const notStarted = selectionState === 'open' && selectionsCount === 0;
   const href = `/golf/dashboard/coachhelm/qualifying/${qualifierId}`;
 
-  // #89 — `status` (the play lifecycle: upcoming/in_progress/completed) and
-  // `selectionState` (the roster workflow: open/scoring/closed/selected) are
-  // two independent state machines (see qualifier-status.ts header comment
-  // and FairwayQualifyingWorkspace.tsx's own "SEPARATE state machine" note).
-  // A coach who reads "Completed" in the masthead above, then opens the
-  // Selection Workspace and lands on "Open · accepting entries" for the SAME
-  // qualifier, sees nothing here warning them the two track separately. This
-  // can't fully reconcile the two surfaces (the Workspace's own state-bar
-  // label lives outside this component), but it stops the mismatch from
-  // reading as a silent bug by naming it before the coach clicks through.
+  // #89 — `status` (the play lifecycle) and `selectionState` (the roster
+  // workflow) are two independent state machines. Name the mismatch before
+  // the coach clicks through, so it never reads as a silent bug.
   const playCompletedSelectionPending = status === 'completed' && selectionState !== 'selected';
 
   return (
-    <div className="flex flex-col gap-3">
+    <div className={cn('flex flex-col gap-3', className)}>
       <Surface aria-label="Selections" elevation="border" className={cn(notStarted && 'bg-surface-sunken')}>
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex min-w-0 items-start gap-3">
@@ -741,9 +925,7 @@ function SelectionsStrip({
             </span>
             <div className="min-w-0 space-y-1">
               <p className="font-fw-sans text-body font-medium text-text-primary">
-                {notStarted
-                  ? 'Selections not started'
-                  : `${selectionsCount} of ${selectionSlotsTotal} selected`}
+                {notStarted ? 'Selections not started' : `${selectionsCount} of ${selectionSlotsTotal} selected`}
               </p>
               <p className="font-fw-sans text-caption text-text-tertiary">
                 {notStarted
@@ -759,10 +941,9 @@ function SelectionsStrip({
       </Surface>
       {playCompletedSelectionPending ? (
         <InlineNotice tone="warning" title="Selection workflow hasn't caught up">
-          This qualifier's play status is <strong>Completed</strong>, but the roster
-          selection state is still <strong>{selectionState.replace(/_/g, ' ')}</strong>: these
-          track separately. Open the selection workspace to confirm or finalize the travel
-          squad.
+          This qualifier's play status is <strong>Completed</strong>, but the roster selection state is still{' '}
+          <strong>{selectionState.replace(/_/g, ' ')}</strong>: these track separately. Open the selection workspace
+          to confirm or finalize the travel squad.
         </InlineNotice>
       ) : null}
     </div>

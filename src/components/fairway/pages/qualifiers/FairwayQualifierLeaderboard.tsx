@@ -44,6 +44,8 @@ import { formatToPar } from '@/lib/golf/format-to-par';
 import { cn } from '@/lib/utils';
 import { createClient } from '@/lib/supabase/client';
 
+import { deriveStandings, positionLabel, toParTone, type Standing } from './qualifier-display';
+
 interface FairwayQualifierLeaderboardProps {
   qualifierId: string;
   /** Entrant count from the server fetch — used in the honest "awaiting" copy. */
@@ -72,6 +74,13 @@ interface FairwayQualifierLeaderboardProps {
    * already showing, instead of trusting a snapshot that can go stale.
    */
   onRoundsSubmittedChange?: (roundsSubmitted: number) => void;
+  /**
+   * The derived standings, reported once the feed has loaded (never while it
+   * is loading, never after a failed read), so the page's status card and
+   * round-progress dots read the same rows this board shows. Pass a stable
+   * function (a state setter): it is an effect dependency.
+   */
+  onStandingsChange?: (standings: Standing[]) => void;
 }
 
 /** Where a scored player sits relative to the travel squad. */
@@ -98,27 +107,13 @@ export function deriveCommittedSelections(
   return new Set((sels.data ?? []).map((s) => s.player_id));
 }
 
-/** A presentation row derived from the realtime leaderboard entries. */
-interface StandingRow {
-  playerId: string;
-  playerName: string;
-  roundsCompleted: number;
-  totalScore: number | null;
-  totalToPar: number | null;
-  /** Scoring average (total ÷ rounds) — the headline college stat; null until scored. */
-  averageScore: number | null;
-  hasScore: boolean;
-  /** Display position (1-based among scored players); null until a score posts. */
-  position: number | null;
-  isTied: boolean;
-}
-
 export function FairwayQualifierLeaderboard({
   qualifierId,
   entrantCount,
   selectionSlotsTotal = 0,
   selectionSlotsCoachPick = 0,
   onRoundsSubmittedChange,
+  onStandingsChange,
 }: FairwayQualifierLeaderboardProps) {
   // VERBATIM: same hook, same realtime subscription as the legacy leaderboard.
   const { leaderboard: entries, qualifier, loading, error } = useQualifierRealtime(qualifierId);
@@ -182,66 +177,20 @@ export function FairwayQualifierLeaderboard({
     };
   }, [qualifierId]);
 
-  // Mirror the legacy QualifierViewTabs sort/tie data path, but track an honest
-  // `hasScore` flag so 0-round players never render a position or even-par.
-  const rows = useMemo<StandingRow[]>(() => {
-    if (!entries || entries.length === 0) return [];
+  // Golf standings: a shared to-par shares the position ("T2") and the next
+  // one skips; a player with no completed round never gets a position or "E".
+  const rows = useMemo<Standing[]>(() => deriveStandings(entries ?? []), [entries]);
 
-    const sorted = [...entries].sort((a, b) => {
-      const aScored = a.rounds_completed > 0;
-      const bScored = b.rounds_completed > 0;
-      // Players with rounds sort above those without (legacy behavior).
-      if (aScored && !bScored) return -1;
-      if (!aScored && bScored) return 1;
-      if (!aScored && !bScored) return 0;
-      const aToPar = a.total_to_par ?? Infinity;
-      const bToPar = b.total_to_par ?? Infinity;
-      if (aToPar !== bToPar) return aToPar - bToPar;
-      const aScore = a.total_score ?? Infinity;
-      const bScore = b.total_score ?? Infinity;
-      return aScore - bScore;
-    });
-
-    let scoredSeen = 0;
-    return sorted.map((entry, index) => {
-      const hasScore = entry.rounds_completed > 0;
-      const position = hasScore ? ++scoredSeen : null;
-      const prev = index > 0 ? sorted[index - 1] : undefined;
-      const isTied =
-        hasScore &&
-        prev !== undefined &&
-        prev.rounds_completed > 0 &&
-        (prev.total_to_par ?? null) === (entry.total_to_par ?? null);
-
-      const totalScore = hasScore ? entry.total_score ?? null : null;
-      const averageScore =
-        hasScore && totalScore !== null && entry.rounds_completed > 0
-          ? totalScore / entry.rounds_completed
-          : null;
-
-      return {
-        playerId: entry.player_id,
-        playerName: entry.player_name,
-        roundsCompleted: entry.rounds_completed,
-        totalScore,
-        totalToPar: hasScore ? entry.total_to_par ?? null : null,
-        averageScore,
-        hasScore,
-        position,
-        isTied,
-      };
-    });
-  }, [entries]);
-
-  // P31 — report OUR live rounds-submitted total (sum of each player's
-  // completed-round count) up to the parent so its summary tile can re-sync
-  // to the SAME feed this leaderboard renders from, instead of the separate
-  // server snapshot it was built from at request time.
+  // P31 — report OUR live totals up to the page so its status card and the
+  // round-progress dots re-sync to the SAME feed this board renders from. Only
+  // once the feed has answered: the hook starts with an empty list, and a
+  // report then would flash "0" over the server's snapshot; a failed read
+  // must not report "0" either.
   useEffect(() => {
-    if (!onRoundsSubmittedChange || !entries) return;
-    const liveTotal = entries.reduce((sum, e) => sum + e.rounds_completed, 0);
-    onRoundsSubmittedChange(liveTotal);
-  }, [entries, onRoundsSubmittedChange]);
+    if (loading || error) return;
+    onRoundsSubmittedChange?.((entries ?? []).reduce((sum, e) => sum + e.rounds_completed, 0));
+    onStandingsChange?.(rows);
+  }, [loading, error, entries, rows, onRoundsSubmittedChange, onStandingsChange]);
 
   const anyScored = rows.some((r) => r.hasScore);
   const isLive = qualifier?.status === 'in_progress';
@@ -323,7 +272,7 @@ function StandingsTable({
   selectionSlotsCoachPick,
   committedSelections,
 }: {
-  rows: StandingRow[];
+  rows: Standing[];
   selectionSlotsTotal: number;
   selectionSlotsCoachPick: number;
   /** Authoritative golf_qualifier_selections player_ids once the coach has
@@ -344,14 +293,10 @@ function StandingsTable({
   const drawTopScoreLine = topScoreLine > 0 && coachPicks > 0 && scoredCount > topScoreLine;
   const drawTravelLine = travelLine > 0 && scoredCount > travelLine;
 
-  // Tier + cut lines key on the PHYSICAL scored rank (count of scored players
-  // above + self), NOT the golf position — a tie (positions 3,3,5) would skip
-  // the exact line number and the rule would never render.
-  let scoredRank = 0;
-  const decorated = rows.map((row) => ({
-    row,
-    scoredRank: row.hasScore ? ++scoredRank : null,
-  }));
+  // Tier + cut lines key on the PHYSICAL scored rank (`rank`), NOT the golf
+  // position — a tie (positions 3, T3, 5) would skip the exact line number and
+  // the rule would never render.
+  const decorated = rows.map((row) => ({ row, scoredRank: row.rank }));
 
   const tierFor = (rank: number | null): LineupTier => {
     if (rank === null || travelLine <= 0) return null;
@@ -388,7 +333,7 @@ function StandingsTable({
                         leader ? 'font-medium text-accent-700' : 'text-text-tertiary',
                       )}
                     >
-                      {row.position === null ? '—' : `${row.isTied ? 'T' : ''}${row.position}`}
+                      {positionLabel(row)}
                     </span>
                     <span className="min-w-0 flex-1">
                       <Link
@@ -419,14 +364,7 @@ function StandingsTable({
                     {row.hasScore && row.totalScore !== null ? row.totalScore : '—'}
                   </StatCell>
                 </div>
-                <p
-                  className={cn(
-                    'text-right font-fw-mono text-body-sm tabular-nums',
-                    row.hasScore && row.totalToPar !== null && row.totalToPar < 0
-                      ? 'text-accent-700'
-                      : 'text-text-secondary',
-                  )}
-                >
+                <p className={cn('text-right font-fw-mono text-body-sm tabular-nums', toParTone(row.totalToPar))}>
                   {formatToPar(row.totalToPar)} <span className="text-text-tertiary">to par</span>
                 </p>
               </li>
@@ -482,8 +420,7 @@ function StandingsTable({
                       <span className="text-text-tertiary">—</span>
                     ) : (
                       <span className={cn(leader && 'font-medium text-accent-700')}>
-                        {row.isTied ? 'T' : ''}
-                        {row.position}
+                        {positionLabel(row)}
                       </span>
                     )}
                   </td>
@@ -514,14 +451,7 @@ function StandingsTable({
                   <td className="py-2.5 pr-3 text-right font-fw-mono text-text-primary tabular-nums">
                     {row.hasScore && row.totalScore !== null ? row.totalScore : '—'}
                   </td>
-                  <td
-                    className={cn(
-                      'py-2.5 text-right font-fw-mono tabular-nums',
-                      row.hasScore && row.totalToPar !== null && row.totalToPar < 0
-                        ? 'text-accent-700'
-                        : 'text-text-secondary',
-                    )}
-                  >
+                  <td className={cn('py-2.5 text-right font-fw-mono tabular-nums', toParTone(row.totalToPar))}>
                     {/* `row.totalToPar` is already null for unscored players
                         (see the `rows` derivation above), so the shared
                         formatter's null → '—' path covers the honest-empty

@@ -137,6 +137,33 @@ Leaderboard reads qualifier
 - Coach qualifier list should distinguish upcoming, in-progress, completed, and ended qualifiers.
 - Player My Qualifiers should show progress, score/to-par, status, enter-round action, and leaderboard link.
 - Detail views should make ties and round-by-round breakdowns inspectable.
+- Display title (`qualifierDisplayName`, `qualifier-display.ts`): the part
+  before a spaced em or en dash ("Fall Qualifier — Travel Team Selection"
+  shows as "Fall Qualifier") on the detail masthead, the page metadata, the
+  coach list and My qualifiers. Display only: the DB name, list search and
+  the edit form's value and payload keep the full name.
+- Standings (`deriveStandings`): golf ties, so a shared to-par shares the
+  position, every tied row reads "T", and the next position skips (1, T2, T2,
+  4); cut lines count the physical order. Under par is the only coloured
+  to-par (`toParTone`: accent ink; E secondary; over par plain ink, never
+  amber). Both the board and the coach round-by-round use them.
+- Detail layout (owner 2026-09-27/28, no green bands): the masthead shows the
+  start date only. From `lg` a main column (board, coach round-by-round,
+  selections) beside a right rail: "Where it stands" (the round up next or in
+  play from `num_rounds` and the feed, never from calendar events; per-round
+  bars; scorecards in; the leader and margin) over the Details card (start
+  date, deadline and course only when set, rounds, spots, the on-score /
+  coach's-pick split, course by round, rules only when non-blank, and each
+  player's rounds played as filled/hollow dots). A phone stacks status,
+  board, details, then the coach's modules.
+- The board reports its standings up once its feed has loaded
+  (`onStandingsChange`; never while loading or after a failed read), so the
+  rail reads the same rows with one realtime subscription. Until then the
+  status card shows the server's completed-round count and the dots show a
+  skeleton. A qualifier scored straight onto its entries (no linked rounds,
+  e.g. 487f30a2) says it has no per-round breakdown instead of "no rounds were
+  recorded". Tests: `__tests__/qualifier-display.test.ts`,
+  `__tests__/FairwayQualifierDetail.layout.test.tsx`.
 - Mobile qualifier views need compact cards, clear primary action, and no stacked header utility rows.
 - Empty states should explain whether there are no qualifiers, no entries, or no rounds yet.
 - A route's `loading.tsx` reserves the page's paint at t=0 — for a

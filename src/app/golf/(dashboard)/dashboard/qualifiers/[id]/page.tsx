@@ -8,6 +8,7 @@ import type { GolfQualifier, GolfQualifierEntry } from '@/lib/types/golf';
 import type { Metadata } from 'next';
 import { fairwayScope } from '@/lib/redesign/flag';
 import { FairwayQualifierDetail } from '@/components/fairway/pages/qualifiers/FairwayQualifierDetail';
+import { qualifierDisplayName } from '@/components/fairway/pages/qualifiers/qualifier-display';
 import { getQualifierRoundCourses } from '@/app/golf/actions/golf';
 
 interface QualifierEntryWithPlayer extends GolfQualifierEntry {
@@ -38,7 +39,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     .maybeSingle();
 
   return {
-    title: qualifier?.name ? `${qualifier.name}` : 'Qualifier Details',
+    title: qualifier?.name ? qualifierDisplayName(qualifier.name) : 'Qualifier Details',
     description: qualifier?.description || 'View live leaderboard and qualifier details for college golf recruiting',
   };
 }

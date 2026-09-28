@@ -170,7 +170,6 @@
     "src/components/fairway/pages/messages/MessageThreadPane.tsx": 2,
     "src/components/fairway/pages/my-qualifiers/FairwayMyQualifiers.tsx": 2,
     "src/components/fairway/pages/player-game/FairwayGolfClasses.tsx": 15,
-    "src/components/fairway/pages/qualifiers/FairwayQualifierDetail.tsx": 9,
     "src/components/fairway/pages/qualifiers/FairwayQualifierLeaderboard.tsx": 6,
     "src/components/fairway/pages/recruiting/FairwayRecruitDocuments.tsx": 2,
     "src/components/fairway/pages/recruiting/FairwayRecruitFormSheet.tsx": 1,

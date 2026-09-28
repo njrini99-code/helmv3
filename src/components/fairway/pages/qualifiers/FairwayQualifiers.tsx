@@ -52,6 +52,7 @@ import {
 import { IconCalendar, IconMapPin, IconGolf, IconArrowRight, IconPlus } from '@/components/icons';
 import type { GolfQualifier } from '@/lib/types/golf';
 import { qualifierStatusMeta } from './qualifier-status';
+import { qualifierDisplayName } from './qualifier-display';
 import { isPlausibleQualifierDate } from '@/lib/golf/qualifier-date';
 
 
@@ -463,7 +464,7 @@ function QualifierHero({ qualifier }: { qualifier: GolfQualifier }) {
               {cfg.label}
             </StatusPill>
             <h2 className="font-fw-display text-h2 font-medium tracking-[-0.01em] text-text-primary">
-              {qualifier.name}
+              {qualifierDisplayName(qualifier.name)}
             </h2>
             {qualifier.description && (
               <p className="max-w-[60ch] font-fw-sans text-body text-text-secondary">
@@ -506,7 +507,7 @@ function QualifierCard({ qualifier }: { qualifier: GolfQualifier }) {
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 space-y-1">
           <h3 className="line-clamp-2 font-fw-sans text-body-lg font-medium text-text-primary transition-colors [transition-duration:180ms] group-hover:text-accent-700 motion-reduce:transition-none">
-            {qualifier.name}
+            {qualifierDisplayName(qualifier.name)}
           </h3>
           {qualifier.description && (
             <p className="line-clamp-2 font-fw-sans text-body-sm text-text-tertiary">
