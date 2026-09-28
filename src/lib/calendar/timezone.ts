@@ -207,6 +207,20 @@ export function zonedMidnight(iso: string, timezone: string | null | undefined):
  * pre-existing behaviour and the right floor — a corrupt row costs its own
  * span, never an unbounded loop in the caller.
  *
+ * TEAM-LOCAL DAY EDGES (2026-09-27). Not every all-day row follows the UTC-
+ * midnight convention above. A row written as the team's own local day bounds
+ * (start `2026-10-02T04:00:00Z` = midnight ET, end `2026-10-04T03:59:00Z` =
+ * 11:59 PM ET on Oct 3) read as literal UTC dates spilled onto Oct 4, so a
+ * two-day tournament drew three day cells. `localDayEdge` recognises that
+ * shape (an offset instant that is NOT UTC midnight but IS a local day edge)
+ * and buckets it by the team's day instead. An end that lands exactly on local
+ * midnight is the exclusive form of the same idea, so it closes the day before.
+ * The app's own UTC-midnight rows never take this path, so their inclusive
+ * `end_time` reads exactly as before. The raw `start_time` is preferred for an
+ * all-day start because the pages' zone-less `start_date` normalisation keeps
+ * only the UTC date prefix, which is a different day for a local-edge row east
+ * of UTC.
+ *
  * Structural param rather than `CalendarEvent` so this stays free of any
  * component/hook import; every caller's row shape satisfies it.
  */
@@ -220,16 +234,64 @@ export function eventDaySpan(
   },
   timezone: string | null | undefined,
 ): { first: Date; last: Date } | null {
-  const startStr = ev.start_date || ev.start_time;
+  const startStr = ev.all_day ? ev.start_time || ev.start_date : ev.start_date || ev.start_time;
   if (!startStr) return null;
   const first = eventCalendarDay(startStr, ev.all_day, timezone);
   if (Number.isNaN(first.getTime())) return null;
 
   const endStr = ev.end_time || ev.end_date;
   if (!endStr) return { first, last: first };
-  const last = eventCalendarDay(endStr, ev.all_day, timezone);
+  let last: Date;
+  const edge = ev.all_day ? localDayEdge(endStr, timezone) : null;
+  if (edge) {
+    // Local midnight is an EXCLUSIVE end: the event ran through the day before.
+    last =
+      edge.edge === 'midnight'
+        ? new Date(edge.day.getFullYear(), edge.day.getMonth(), edge.day.getDate() - 1)
+        : edge.day;
+  } else {
+    last = eventCalendarDay(endStr, ev.all_day, timezone);
+  }
   if (Number.isNaN(last.getTime()) || last < first) return { first, last: first };
   return { first, last };
+}
+
+/** An ISO instant with an explicit zone (`Z` or `±hh[:mm]`) and a time of day. */
+const OFFSET_INSTANT_RE =
+  /^\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?(?:Z|[+-]\d{2}(?::?\d{2})?)$/i;
+
+/** Minutes past local midnight of `date` as seen in `timezone` (00:00 → 0). */
+function zonedMinuteOfDay(date: Date, timezone: string | null | undefined): number {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: getValidTimezone(timezone),
+    hour: '2-digit',
+    minute: '2-digit',
+    hourCycle: 'h23',
+  }).formatToParts(date);
+  const get = (type: string) => Number(parts.find((p) => p.type === type)?.value ?? NaN);
+  return get('hour') * 60 + get('minute');
+}
+
+/**
+ * When an all-day bound was written as a TEAM-LOCAL day edge, the local day it
+ * marks (and which edge it is). `null` means "read the literal date prefix":
+ * zone-less and date-only strings, the app's own UTC-midnight convention, and
+ * any instant that is not a local day edge all keep the literal reading.
+ */
+function localDayEdge(
+  iso: string,
+  timezone: string | null | undefined,
+): { day: Date; edge: 'midnight' | 'last-minute' } | null {
+  if (!OFFSET_INSTANT_RE.test(iso)) return null;
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return null;
+  if (date.getUTCHours() === 0 && date.getUTCMinutes() === 0 && date.getUTCSeconds() === 0) {
+    return null;
+  }
+  const minute = zonedMinuteOfDay(date, timezone);
+  if (minute === 0) return { day: zonedMidnight(iso, timezone), edge: 'midnight' };
+  if (minute === 23 * 60 + 59) return { day: zonedMidnight(iso, timezone), edge: 'last-minute' };
+  return null;
 }
 
 export function eventCalendarDay(
@@ -250,6 +312,11 @@ export function eventCalendarDay(
     // other (UTC-reading is right for `start_time` but wrong for `start_date`
     // east of UTC). The literal date prefix is the one thing both agree on,
     // and it is what an all-day event actually means.
+    //
+    // The one exception is a bound written as the team's own local day edge
+    // (see `eventDaySpan`): that string names the team's day, not a UTC date.
+    const edge = localDayEdge(iso, timezone);
+    if (edge) return edge.day;
     const parts = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso);
     if (parts) {
       return new Date(Number(parts[1]), Number(parts[2]) - 1, Number(parts[3]));
