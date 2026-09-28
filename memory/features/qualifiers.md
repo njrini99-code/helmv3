@@ -28,6 +28,8 @@ There are three user surfaces:
 
 - `src/components/golf/qualifiers/**`
 - `src/components/golf/coachhelm/v3/QualifyingBoard/**`
+- `src/components/fairway/pages/qualifiers/FairwayQualifiers.tsx`
+- `src/components/fairway/pages/qualifiers/QualifierRoundSegments.tsx`
 - `src/components/fairway/pages/qualifiers/FairwayQualifierDetail.tsx`
 - `src/components/fairway/pages/qualifiers/FairwayQualifierLeaderboard.tsx`
 - `src/components/fairway/pages/qualifiers/qualifier-season.ts`
@@ -145,6 +147,26 @@ Leaderboard reads qualifier
   shows as "Fall Qualifier") on the detail masthead, the page metadata, the
   coach list and My qualifiers. Display only: the DB name, list search and
   the edit form's value and payload keep the full name.
+- List page (`FairwayQualifiers`, owner 2026-09-28, no green bands): the
+  hero is the live qualifier, else the next to start (never one with an
+  implausible start date). One shadow card: status, display title,
+  description, and label-over-value facts (dates as a compact range, rounds,
+  spots, course) beside a sunken well from `xl` (above it below). The well
+  reads the same feed as the detail board (`useQualifierRealtime` →
+  `deriveStandings` / `fieldProgress`, rounds from the row's `num_rounds`):
+  the round up next or in play (`progressHeadline`; rounds carry no dates, so
+  none are shown), per-round bars (`QualifierRoundSegments`, shared with the
+  detail status card), scorecards in, and the top three with golf positions
+  and to-par, then "+N more". Before anyone scores it names the entered field
+  ("No players entered yet" at zero); a failed read says the leaderboard has
+  the latest. The hero is keyed by qualifier id, so a search that changes it
+  remounts the feed. Active and concluded cards: title and status pill,
+  description, facts over a hairline, and a sunken footer carrying the
+  action. A card's title is its only link, stretched over the card; the
+  action is decorative and follows the card's hover. A coach's hero action is
+  secondary (Create qualifier is the page's one primary); a player's is the
+  primary. `loading.tsx` follows the page order: header, toolbar, the hero
+  with its well, the card grid. Test: `__tests__/FairwayQualifiers.list.test.tsx`.
 - Standings (`deriveStandings`): golf ties, so a shared to-par shares the
   position, every tied row reads "T", and the next position skips (1, T2, T2,
   4); cut lines count the physical order. Under par is the only coloured

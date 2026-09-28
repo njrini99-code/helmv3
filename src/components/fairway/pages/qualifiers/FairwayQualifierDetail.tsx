@@ -57,6 +57,7 @@ import {
   type LeaderboardSeason,
 } from './FairwayQualifierLeaderboard';
 import { FairwayQualifierFieldStats } from './FairwayQualifierFieldStats';
+import { QualifierRoundSegments } from './QualifierRoundSegments';
 import { qualifierStatusMeta } from './qualifier-status';
 import type { LinkedRound } from './qualifier-stats';
 import {
@@ -430,10 +431,10 @@ function StatusCard({
           <Skeleton className="mt-1.5 h-5 w-40 rounded-fw-sm" />
         )}
 
-        <RoundSegments perRound={progress?.perRound ?? null} numRounds={rounds} entrants={progress?.entrants ?? 0} />
+        <QualifierRoundSegments perRound={progress?.perRound ?? null} numRounds={rounds} entrants={progress?.entrants ?? 0} />
 
         <p className="mt-4 flex items-baseline gap-1.5 font-fw-sans" data-testid="qualifier-cards-in">
-          <span className="text-h2 tabular-nums text-text-primary">{cardsIn}</span>
+          <span className="text-h2 tabular-nums text-text-primary">{cardsIn}</span>{' '}
           <span className="text-body-sm tabular-nums text-text-secondary">of {cardsTotal} scorecards in</span>
         </p>
       </div>
@@ -499,50 +500,6 @@ function LeaderLine({ leader, completed }: { leader: NonNullable<ReturnType<type
     <>
       {name(first)} {clear ? `leads by ${clear}` : 'leads'}
     </>
-  );
-}
-
-/** One bar per round, filled by the share of the field through it. */
-function RoundSegments({
-  perRound,
-  numRounds,
-  entrants,
-}: {
-  perRound: number[] | null;
-  numRounds: number;
-  entrants: number;
-}) {
-  const shares = perRound ?? Array.from({ length: numRounds }, () => 0);
-  return (
-    <div className="mt-3">
-      <div aria-hidden className="flex gap-1.5">
-        {shares.map((share, i) => (
-          <div key={i} className="min-w-0 flex-1">
-            <div className="h-2 overflow-hidden rounded-full bg-surface-sunken [box-shadow:inset_0_0_0_1px_var(--fw-color-border-subtle)]">
-              <div
-                className="h-full rounded-full bg-text-primary transition-[width] duration-500 ease-out motion-reduce:transition-none"
-                style={{ width: `${Math.round(share * 100)}%` }}
-              />
-            </div>
-            <p
-              className={cn(
-                'mt-1.5 font-fw-sans text-caption tabular-nums',
-                share > 0 ? 'text-text-secondary' : 'text-text-tertiary',
-              )}
-            >
-              R{i + 1}
-            </p>
-          </div>
-        ))}
-      </div>
-      {perRound && entrants > 0 ? (
-        <p className="sr-only">
-          {perRound
-            .map((share, i) => `Round ${i + 1}: ${Math.round(share * entrants)} of ${entrants} players through`)
-            .join('. ')}
-        </p>
-      ) : null}
-    </div>
   );
 }
 
