@@ -145,9 +145,13 @@ describe('categorizeNotificationRow', () => {
 });
 
 describe('categorizeCalendarNotificationRow', () => {
-  it('always categorizes as events', () => {
+  it('categorizes event lifecycle rows as events', () => {
     expect(categorizeCalendarNotificationRow(calRow({ notification_type: 'rsvp_response' }))).toBe('events');
     expect(categorizeCalendarNotificationRow(calRow({ notification_type: 'event_cancelled' }))).toBe('events');
+  });
+
+  it('categorizes message rows as messages', () => {
+    expect(categorizeCalendarNotificationRow(calRow({ notification_type: 'message' }))).toBe('messages');
   });
 });
 

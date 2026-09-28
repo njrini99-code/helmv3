@@ -134,11 +134,13 @@ export function categorizeNotificationRow(row: Pick<RawNotificationRow, 'type' |
   }
 }
 
-/** `golf_calendar_notifications` rows are always event/RSVP lifecycle items. */
+/** `golf_calendar_notifications` rows are event/RSVP lifecycle items, except
+ *  `message` rows ("Message from …"), which the messaging path also writes to
+ *  this table — those are messages, not events. */
 export function categorizeCalendarNotificationRow(
-  _row: Pick<RawCalendarNotificationRow, 'notification_type'>,
+  row: Pick<RawCalendarNotificationRow, 'notification_type'>,
 ): NotificationCategoryId {
-  return 'events';
+  return row.notification_type === 'message' ? 'messages' : 'events';
 }
 
 export function normalizeNotificationRow(row: RawNotificationRow): UnifiedNotificationItem {
