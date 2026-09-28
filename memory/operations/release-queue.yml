@@ -322,3 +322,18 @@ items:
       - src/app/golf/actions/__tests__/insight-delivery-roster-exposure-batch.test.ts
     queued_for_release: false
     first_seen: '2026-09-02T22:19:25Z'
+  - id: reactions-client-deadline-abort-2026-09-28
+    feature_id: team_communications
+    root_cause: >-
+      useMessageReactions sent the browser client's own request-deadline abort
+      (WebKit 'AbortError: Fetch is aborted') to logError, opening 9b8ad988 and
+      re-opening it as REGRESSED on every slow messages load.
+    incident_id: memory/incidents/team_communications/INC-2026-09-28-reactions-client-deadline-abort.md
+    status: verified
+    risk: R1
+    sha: c768e152f22c92a698ca21c00db5987dd14a1522
+    pr: 2095
+    regression_tests:
+      - src/hooks/golf/__tests__/use-message-reactions.test.tsx
+    queued_for_release: false
+    first_seen: '2026-09-11T03:17:49Z'
