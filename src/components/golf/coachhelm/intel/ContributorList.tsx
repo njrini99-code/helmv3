@@ -30,7 +30,7 @@ export interface ContributorListProps {
   className?: string;
 }
 
-/** Ring colour: deeper amber the more strokes lost, green when gaining. */
+/** SG colour for a player's trend line: deeper amber the more strokes lost, green when gaining. */
 export function sgRing(v: number | null): string {
   if (v == null) return 'var(--fw-color-border-strong)';
   if (v <= -0.8) return 'var(--fw-viz-div-neg)';
@@ -42,13 +42,11 @@ export function sgRing(v: number | null): string {
 
 export function PlayerAvatar({
   player,
-  ring,
   badge,
   size = 'md',
   dark = false,
 }: {
   player: IntelPlayer;
-  ring: string;
   badge?: string;
   size?: 'md' | 'lg';
   dark?: boolean;
@@ -61,7 +59,6 @@ export function PlayerAvatar({
         dark ? 'bg-nav-surface text-nav-text' : 'bg-surface-sunken text-text-secondary',
         box,
       )}
-      style={{ boxShadow: `0 0 0 2px var(--fw-color-surface), 0 0 0 4px ${ring}` }}
     >
       {player.avatarUrl ? (
         <img src={player.avatarUrl} alt="" className="size-full rounded-full object-cover" />
@@ -70,8 +67,7 @@ export function PlayerAvatar({
       )}
       {badge ? (
         <span
-          className="absolute -bottom-1 -right-2 rounded-full border bg-surface px-1.5 font-fw-sans text-caption font-semibold leading-[18px] text-text-primary"
-          style={{ borderColor: ring }}
+          className="absolute -bottom-1 -right-2 rounded-full border border-border-subtle bg-surface px-1.5 font-fw-sans text-caption font-semibold leading-[18px] text-text-primary"
         >
           {badge}
         </span>
@@ -191,7 +187,7 @@ export function ContributorList({ team, rows, selectedId, onSelect, statLabel, c
                   {String(i + 1).padStart(2, '0')}
                 </span>
                 <span className="row-span-3">
-                  <PlayerAvatar player={row.player} ring={ring} badge={row.sg == null ? undefined : formatSg(row.sg)} />
+                  <PlayerAvatar player={row.player} badge={row.sg == null ? undefined : formatSg(row.sg)} />
                 </span>
                 <span className="col-start-3 truncate font-fw-sans text-body-sm font-semibold text-text-primary">
                   {row.player.name}

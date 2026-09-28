@@ -379,4 +379,3 @@ export function TeamIntelligence({ result, strokes, playerHref, retry, className
     </section>
   );
 }
-
