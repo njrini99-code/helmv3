@@ -15696,6 +15696,16 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/lib/golf/team-intelligence/loader.ts",
+          "anchor": "src/lib/supabase/server"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/golf/team-intelligence/loader.ts",
+          "anchor": "src/lib/supabase/fetch-all-rows"
+        },
+        {
+          "kind": "import_graph",
           "path": "src/lib/golf/upload-course-image.ts",
           "anchor": "src/lib/supabase/client"
         }
