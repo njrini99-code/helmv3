@@ -3,25 +3,19 @@
 
 /**
  * ============================================================================
- * TriageDesk — "Team diagnostics" (Team shot weaknesses) coverage
+ * TriageDesk: Home threads the team shot analysis through to its card
  * ----------------------------------------------------------------------------
  * Data-completeness audit 2026-07-23: `getTeamOverview`'s `teamShotAnalysis`
  * (topWeaknesses/deadZones) was computed on every `/intelligence` load and
- * discarded down to `playerCount`. This locks:
- *   - the Team shot weaknesses panel renders `teamShotAnalysis` when present
- *     and an honest empty state when it's undefined (overview failed/thin).
- *   - the disclosure toggle actually hides/shows the section.
- *
- * (LeakBoard was mounted alongside this panel in an earlier revision but was
- * pulled — on real prod data, most `golf_coach_insights` rows carry no
- * `strokes_impact`, so 7 of 8 LeakBoard categories read a hollow "−0.0 total"
- * despite real leak/player counts. That's a generation-pipeline gap, not a
- * mapping bug; LeakBoard stays available at `/vizlab` pending that fix and a
- * future re-mount. See `LeakBoard.tsx` / `signal-groups.ts:189-201`.)
+ * then discarded. This locks the payload reaching the REAL
+ * `TeamShotWeaknesses` card on Home (deliberately unmocked), and the two
+ * honest non-data states: no ranked situations yet, and an overview read
+ * that failed. The card's own formatting is covered in
+ * `TeamShotWeaknesses.test.tsx`.
  * ========================================================================== */
 
 import React from 'react';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { GroupedSignal, SignalGroup } from '@/lib/coachhelm/signal-grouping';
 import type { TeamShotAnalysis } from '@/app/golf/actions/team-category-insights';
@@ -43,7 +37,18 @@ vi.mock('@/components/fairway', () => ({
   Button: ({ children, onClick }: React.ButtonHTMLAttributes<HTMLButtonElement>) => (
     <button onClick={onClick}>{children}</button>
   ),
-  InlineNotice: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  EmptyState: ({ title, description }: { title: React.ReactNode; description?: React.ReactNode }) => (
+    <div>
+      <p>{title}</p>
+      {description ? <p>{description}</p> : null}
+    </div>
+  ),
+  InlineNotice: ({ title, children }: { title?: React.ReactNode; children: React.ReactNode }) => (
+    <div>
+      {title ? <p>{title}</p> : null}
+      {children}
+    </div>
+  ),
   PlayersGridView: () => <div data-testid="players-view" />,
   fairwayToast: { error: vi.fn(), warning: vi.fn(), success: vi.fn() },
 }));
@@ -57,27 +62,10 @@ vi.mock('@/app/golf/actions/signal-groups', () => ({
   dismissSignal: vi.fn(),
 }));
 
-vi.mock('../BriefBand', () => ({ BriefBand: () => <div data-testid="brief-band" /> }));
+vi.mock('../TeamBleedBoard', () => ({ TeamBleedBoard: () => <div data-testid="team-bleed-board" /> }));
+vi.mock('../TeamSignalSummary', () => ({ TeamSignalSummary: () => <div data-testid="team-signal-summary" /> }));
 vi.mock('../SignalQueue', () => ({ SignalQueue: () => <div data-testid="signal-queue" /> }));
-vi.mock('../EffectivenessScoreboard', () => ({
-  EffectivenessScoreboard: () => <div data-testid="effectiveness-view" />,
-}));
-vi.mock('@/components/fairway/pages/coachhelm/TeamCategoryLeakBand', () => ({
-  TeamCategoryLeakBand: () => <div data-testid="team-category-leak-band" />,
-}));
-vi.mock('../SignalDossier', () => ({
-  SignalDossier: () => <div data-testid="signal-dossier" />,
-}));
-// Stubbed like every other sibling: this file's subject is Team diagnostics,
-// and TeamSignalSummary pulls Surface/Badge/Eyebrow from the Fairway barrel,
-// which the narrow mock above deliberately does not carry.
-vi.mock('../TeamSignalSummary', () => ({
-  TeamSignalSummary: () => <div data-testid="team-signal-summary" />,
-}));
-
-// The internal TeamShotWeaknessesPanel is intentionally left UNMOCKED — the
-// point of this suite is to verify it renders real, visible content from the
-// threaded payload, not just that a stub was mounted.
+vi.mock('../SignalDossier', () => ({ SignalDossier: () => <div data-testid="signal-dossier" /> }));
 
 function playerGroup(): SignalGroup {
   const signal: GroupedSignal = {
@@ -121,7 +109,7 @@ const basePlayersDrillProps = {
   todayIso: '2026-09-23',
 };
 
-function renderDesk(overrides: { teamShotAnalysis?: TeamShotAnalysis } = {}) {
+function renderHome(overrides: { teamShotAnalysis?: TeamShotAnalysis; overviewFailed?: boolean } = {}) {
   return render(
     <TriageDesk
       coachId="coach-1"
@@ -130,22 +118,20 @@ function renderDesk(overrides: { teamShotAnalysis?: TeamShotAnalysis } = {}) {
       groupsError={null}
       categoryInsights={{ success: false, error: 'not fetched in this test' }}
       teamShotAnalysis={overrides.teamShotAnalysis}
+      overviewFailed={overrides.overviewFailed}
       playersDrillProps={basePlayersDrillProps}
-      effectivenessDrillProps={{} as never}
     />,
   );
 }
 
-describe('TriageDesk — Team diagnostics section', () => {
+describe('TriageDesk Home: team shot weaknesses', () => {
   beforeEach(() => {
     navigation.params = new URLSearchParams();
-    navigation.replace.mockReset();
-    navigation.refresh.mockReset();
     window.history.replaceState({}, '', '/golf/dashboard/intelligence');
   });
 
-  it('renders team shot weaknesses when teamShotAnalysis is present', () => {
-    renderDesk({
+  it('renders the threaded teamShotAnalysis payload, situations and dead zones both', () => {
+    const { container } = renderHome({
       teamShotAnalysis: {
         yardageCurve: [],
         deadZones: [{ rangeStart: 150, rangeEnd: 175, deficit: 0.42 }],
@@ -154,28 +140,21 @@ describe('TriageDesk — Team diagnostics section', () => {
         ],
       },
     });
-    expect(screen.getByText('Team shot weaknesses')).toBeInTheDocument();
-    expect(screen.getByText('150-175 yd approach from fairway')).toBeInTheDocument();
-    expect(screen.getByText('Dead zones')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Team shot weaknesses' })).toBeInTheDocument();
+    expect(screen.getByText('150–175 yd', { selector: 'p' })).toBeInTheDocument();
+    expect(screen.getByText('From the fairway')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Dead zones' })).toBeInTheDocument();
+    expect(container.textContent).not.toMatch(/undefined|NaN/);
   });
 
-  it('shows an honest empty state (never a fabricated instrument) when teamShotAnalysis is absent', () => {
-    renderDesk({ teamShotAnalysis: undefined });
-    expect(screen.getByText('No team shot analysis yet')).toBeInTheDocument();
+  it('shows an honest empty state (never a fabricated instrument) when there is nothing to rank', () => {
+    renderHome({ teamShotAnalysis: undefined });
+    expect(screen.getByText('No shot-level weaknesses yet')).toBeInTheDocument();
   });
 
-  it('the disclosure toggle hides and re-shows the diagnostics section', () => {
-    renderDesk({ teamShotAnalysis: undefined });
-    const toggle = screen.getByRole('button', { name: /Team diagnostics/i });
-    expect(toggle).toHaveAttribute('aria-expanded', 'true');
-    expect(screen.getByText('No team shot analysis yet')).toBeInTheDocument();
-
-    fireEvent.click(toggle);
-    expect(toggle).toHaveAttribute('aria-expanded', 'false');
-    expect(screen.queryByText('No team shot analysis yet')).not.toBeInTheDocument();
-
-    fireEvent.click(toggle);
-    expect(toggle).toHaveAttribute('aria-expanded', 'true');
-    expect(screen.getByText('No team shot analysis yet')).toBeInTheDocument();
+  it('says the analysis did not load, rather than "nothing yet", when the overview read failed', () => {
+    renderHome({ teamShotAnalysis: undefined, overviewFailed: true });
+    expect(screen.getByText("Shot analysis didn't load")).toBeInTheDocument();
+    expect(screen.queryByText('No shot-level weaknesses yet')).not.toBeInTheDocument();
   });
 });
