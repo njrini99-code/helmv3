@@ -256,6 +256,13 @@ export function TriageDesk({
     // useSearchParams snapshot can legitimately trail a prior shallow update.
     const params = new URLSearchParams(typeof window === 'undefined' ? searchParams.toString() : window.location.search);
 
+    // Pin the current view when an update does not name one. A deep link can
+    // IMPLY The Lab without writing `view` (`?signal=`, the legacy `?id=`,
+    // `?filter=`): clearing that context below would leave a view-less URL
+    // that resolves to Home, so Back, Prescribe, a review or "All" would
+    // throw the coach out of The Lab mid-triage.
+    if (updates.view === undefined && !params.has('view')) params.set('view', view);
+
     // Each view owns a disjoint set of params. Clearing foreign ones stops an
     // old signal or player scope resurrecting when the coach comes back. `c`
     // (the open chat thread) is never cleared: leaving Chat and coming back,

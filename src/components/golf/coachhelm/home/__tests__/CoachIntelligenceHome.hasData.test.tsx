@@ -12,18 +12,27 @@
  * out — this file only exercises the gate, not the desk's own behavior
  * (covered by `buildTriageViewModel.test.ts` + manual QA).
  * ========================================================================== */
+import type React from 'react';
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { CoachIntelligenceHome } from '../CoachIntelligenceHome';
 import type { TeamOverviewResult, TeamCategoryInsightsResult } from '@/app/golf/actions/team-category-insights';
-import type { PlayersGridViewProps, FairwayEffectivenessProps } from '@/components/fairway';
+import type { PlayersGridViewProps } from '@/components/fairway';
 
 vi.mock('next/navigation', () => ({
   useRouter: () => ({ push: vi.fn(), refresh: vi.fn(), replace: vi.fn() }),
 }));
 
+// The desk is mocked, but it must still render what it is handed for Home:
+// the overview-failure notice travels in `homeLead` (or `homeNotice`), not
+// as a sibling of the desk.
 vi.mock('@/components/golf/coachhelm/triage/TriageDesk', () => ({
-  TriageDesk: () => <div data-testid="triage-desk" />,
+  TriageDesk: ({ homeLead, homeNotice }: { homeLead?: React.ReactNode; homeNotice?: React.ReactNode }) => (
+    <div data-testid="triage-desk">
+      {homeLead}
+      {homeNotice}
+    </div>
+  ),
 }));
 
 function overview(playerCount: number): TeamOverviewResult {
@@ -69,13 +78,6 @@ function playersDrillProps(players: PlayersGridViewProps['players']): PlayersGri
   };
 }
 
-const effectivenessDrillProps: FairwayEffectivenessProps = {
-  teamId: 'team-1',
-  coachId: 'coach-1',
-  initialView: 'cockpit',
-  initialRange: '30d',
-};
-
 describe('CoachIntelligenceHome — overview-failure vs empty-roster gate', () => {
   it('shows onboarding when the overview loaded fine and the roster is genuinely empty', () => {
     render(
@@ -88,7 +90,6 @@ describe('CoachIntelligenceHome — overview-failure vs empty-roster gate', () =
         scannedAt={null}
         groupsError={null}
         playersDrillProps={playersDrillProps([])}
-        effectivenessDrillProps={effectivenessDrillProps}
       />,
     );
 
@@ -107,7 +108,6 @@ describe('CoachIntelligenceHome — overview-failure vs empty-roster gate', () =
         scannedAt={null}
         groupsError={null}
         playersDrillProps={playersDrillProps([{ id: 'p-1' } as never])}
-        effectivenessDrillProps={effectivenessDrillProps}
       />,
     );
 
@@ -126,7 +126,6 @@ describe('CoachIntelligenceHome — overview-failure vs empty-roster gate', () =
         scannedAt={null}
         groupsError={null}
         playersDrillProps={playersDrillProps([])}
-        effectivenessDrillProps={effectivenessDrillProps}
       />,
     );
 
@@ -147,7 +146,6 @@ describe('CoachIntelligenceHome — overview-failure vs empty-roster gate', () =
         scannedAt={null}
         groupsError={null}
         playersDrillProps={playersDrillProps([{ id: 'p-1' } as never, { id: 'p-2' } as never])}
-        effectivenessDrillProps={effectivenessDrillProps}
       />,
     );
 
