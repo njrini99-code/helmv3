@@ -70,8 +70,6 @@ import {
   IconFlag,
   IconChartBar,
   IconPlus,
-  IconCopy,
-  IconCheck,
   IconGolf,
   IconTarget,
   IconArrowRight,
@@ -81,7 +79,6 @@ import {
 import { formatTimeInTz, getCurrentDecimalHourInTz } from '@/lib/utils/timezone';
 import { getGreeting, timeOfDayForHour } from '@/lib/utils/time-of-day';
 import {
-  Users as LucideUsers,
   Flag as LucideFlag,
   Calendar as LucideCalendar,
 } from 'lucide-react';
@@ -271,7 +268,6 @@ export function FairwayCoachDashboard({
   const router = useRouter();
 
   const [range, setRange] = useState<DashboardDateRange>(initialRange);
-  const [copied, setCopied] = useState(false);
 
   // P012: keep the Segmented's selected segment in lock-step with the URL/data.
   // `?range` is a search param, so the route template (keyed by pathname) does
@@ -336,27 +332,6 @@ export function FairwayCoachDashboard({
     },
     [router],
   );
-
-  // PRESERVED LOGIC: invite-code copy-to-clipboard handler (same behavior as
-  // the legacy InviteCodeCard).
-  const handleCopy = useCallback(async () => {
-    const code = team?.join_code;
-    if (!code) return;
-    try {
-      await navigator.clipboard.writeText(code);
-    } catch {
-      const textarea = document.createElement('textarea');
-      textarea.value = code;
-      textarea.style.position = 'fixed';
-      textarea.style.opacity = '0';
-      document.body.appendChild(textarea);
-      textarea.select();
-      document.execCommand('copy');
-      document.body.removeChild(textarea);
-    }
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  }, [team?.join_code]);
 
   const hasTrend = !!teamScoringTrend && teamScoringTrend.length >= 2;
   // Memoized: TrendChart's Area/Line animate in on mount (isAnimationActive).
@@ -441,6 +416,12 @@ export function FairwayCoachDashboard({
   // the real value when present; otherwise show insufficient-data, NEVER a
   // zero presented as a real team number.
   const roundsLogged = recentRounds.length;
+  // Name → avatar for the Latest feed, from the players this page already has.
+  const peopleAvatars: Record<string, string | null> = {};
+  for (const r of recentRounds) {
+    const key = r.player_name?.toLowerCase();
+    if (key && !peopleAvatars[key]) peopleAvatars[key] = r.player_avatar_url ?? null;
+  }
   const scoringAvg = enhancedData?.sparklines.scoringAvg.value ?? stats.teamScoringAverage;
   const girValue = enhancedData?.sparklines.girPct.value ?? null;
   const puttsValue = enhancedData?.sparklines.puttsPerRound.value ?? null;
@@ -473,8 +454,6 @@ export function FairwayCoachDashboard({
   // An unknown roster size (the count query failed) must not be treated as a
   // small roster — that would tell a coach with a full squad to go invite
   // players. Both notices stay hidden until we actually know the number.
-  const showInviteNotice =
-    !!team.join_code && team.join_code !== 'DEMO01' && stats.rosterSize != null && stats.rosterSize < 20;
   const rosterFull =
     !!team.join_code && team.join_code !== 'DEMO01' && stats.rosterSize != null && stats.rosterSize >= 20;
 
@@ -702,14 +681,18 @@ export function FairwayCoachDashboard({
           module; renders nothing when there's genuinely nothing new (the bell
           in the top bar stays the source of truth either way). "View all"
           opens that same bell panel via NotificationPanelContext. */}
-      <NotificationsLatestModule initialItems={initialLatestNotifications} />
+      {/* Owner 2026-09-27: Latest is a tighter left column with Today beside
+          it on wide screens, instead of two full-width bands. */}
+      <div className="grid gap-8 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)] lg:items-start">
+        <NotificationsLatestModule initialItems={initialLatestNotifications} people={peopleAvatars} />
 
-      {/* ── 3 · TODAY — schedule timeline (matte, calm) ────────────────────── */}
-      <TodayPanel
-        events={enhancedData?.todayEvents ?? []}
-        scheduleError={enhancedData?.todayScheduleError ?? false}
-        timezone={enhancedData?.timezone}
-      />
+        {/* ── 3 · TODAY — schedule timeline (matte, calm) ────────────────────── */}
+        <TodayPanel
+          events={enhancedData?.todayEvents ?? []}
+          scheduleError={enhancedData?.todayScheduleError ?? false}
+          timezone={enhancedData?.timezone}
+        />
+      </div>
 
       {/* ── 4 · TEAM KPIs — matte MetricCards, honest insufficient-data ────── */}
       <section aria-label="Team performance" className="flex flex-col gap-4">
@@ -868,29 +851,7 @@ export function FairwayCoachDashboard({
           )}
         </div>
 
-        {/* Invite + roster-cap notices as quiet matte status, not heavy cards */}
-        {showInviteNotice ? (
-          <InlineNotice
-            tone="info"
-            icon={LucideUsers}
-            title="Share your invite code"
-            action={
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={handleCopy}
-                aria-label={copied ? 'Invite code copied' : `Copy invite code ${team.join_code}`}
-              >
-                {copied ? <IconCheck size={16} /> : <IconCopy size={16} />}
-                <span className="tracking-[0.18em] tabular-nums">
-                  {copied ? 'Copied' : team.join_code}
-                </span>
-              </Button>
-            }
-          >
-            Players join from the welcome screen with this code.
-          </InlineNotice>
-        ) : null}
+        {/* Roster-cap notice as quiet matte status, not a heavy card */}
         {rosterFull ? (
           <InlineNotice tone="warning" title="Roster full">
             Your invite code is hidden because the roster has reached the 20-player limit.
