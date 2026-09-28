@@ -177,7 +177,9 @@ Player opens round review
   direction, no causal wording) both already use honest, hedged language.
   `FocusAreaCard.tsx`/`RosterHealthHeader.tsx`'s plain "Improved"/"Worsened"
   tally labels are a human's own self-report echoed back, not a system-
-  asserted claim, so left as-is. `DiagnosisPanel.tsx`'s "Caused by" is a
+  asserted claim, so left as-is. (2026-09-27: the `RosterHealthHeader`
+  "Did the coaching land?" outcome-mix panel was removed from the roster
+  cluster at the owner's request; `FocusAreaCard.tsx` is unchanged.) `DiagnosisPanel.tsx`'s "Caused by" is a
   DIFFERENT axis (root-cause diagnosis of a symptom, with its own honest
   measured-fact-vs-hypothesis chip) and was deliberately NOT touched here —
   named as a candidate for a future, separate review rather than expanded

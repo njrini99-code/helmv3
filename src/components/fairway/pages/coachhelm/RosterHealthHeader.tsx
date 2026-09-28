@@ -6,7 +6,7 @@
  * roster-health instrument.
  * ----------------------------------------------------------------------------
  * Extracted from `PlayersGridView.tsx` (Wave 2) so the SAME triage instrument
- * — coverage, outcome mix, micro-readouts, ranked "who needs a look" list —
+ * — coverage, micro-readouts, ranked "who needs a look" list —
  * can lead BOTH the Players sub-tab (`/dashboard/intelligence?view=players`)
  * AND the canonical Roster page (`/dashboard/roster`), instead of the richer
  * instrument sitting orphaned on a hidden route while the visible Roster page
@@ -15,8 +15,9 @@
  *
  *   PRIMARY (focal) — a ranked "who needs a look" list (declining, or with
  *     rounds but no active focus area), never just an abstract percentage.
- *   SECONDARY rail — the OUTCOME MIX SegmentBar (improved / no change /
- *     worsened from recorded focus-area outcomes — the closed-loop payoff).
+ *     (The former SECONDARY "Did the coaching land?" outcome-mix rail was
+ *     removed from this cluster at the owner's request, 2026-09-27; the
+ *     closed-loop outcome view lives in FairwayEffectiveness.)
  *   TERTIARY foot row — micro Readouts: players on roster, active focus
  *     areas, completed focus areas, players with recent rounds.
  *
@@ -26,7 +27,6 @@
 import { InstrumentPanel } from '@/components/fairway/instrument/InstrumentPanel';
 import { InstrumentCluster } from '@/components/fairway/instrument/InstrumentCluster';
 import { Readout } from '@/components/fairway/instrument/Readout';
-import { SegmentBar, type SegmentBarPart } from '@/components/fairway/charts/SegmentBar';
 import { PlayerIdentity } from '@/components/fairway/controls/PlayerIdentity';
 import { Button } from '@/components/fairway/controls/button';
 import { formatScoringAverage } from '@/lib/golf/format-scoring-average';
@@ -52,8 +52,6 @@ export interface RosterHealth {
   activeAreas: number;
   completedAreas: number;
   playersWithRounds: number;
-  outcomeTally: { improved: number; noChange: number; worsened: number };
-  totalOutcomes: number;
 }
 
 /** A roster row flagged for coach triage, with a ranked priority + plain reason. */
@@ -65,7 +63,7 @@ export interface NeedRow {
 
 /**
  * Derive the roster-health metrics (coverage, active/completed focus-area
- * counts, outcome mix) from props a caller already has — players, their
+ * counts, players with rounds) from props a caller already has — players, their
  * focus areas, and a rounds_played-bearing stats record. No new fetch.
  */
 export function computeRosterHealth(
@@ -92,27 +90,6 @@ export function computeRosterHealth(
     (p) => (playerStats[p.id]?.rounds_played ?? 0) > 0,
   ).length;
 
-  // Recorded focus-area outcomes → the closed-loop payoff (verbatim verdicts).
-  const outcomeTally = focusAreas.reduce(
-    (acc, fa) => {
-      switch (fa.outcome_status) {
-        case 'improved':
-          acc.improved += 1;
-          break;
-        case 'no_change':
-          acc.noChange += 1;
-          break;
-        case 'worsened':
-          acc.worsened += 1;
-          break;
-        default:
-          break;
-      }
-      return acc;
-    },
-    { improved: 0, noChange: 0, worsened: 0 },
-  );
-
   return {
     totalPlayers,
     playersWithActive,
@@ -120,8 +97,6 @@ export function computeRosterHealth(
     activeAreas,
     completedAreas,
     playersWithRounds,
-    outcomeTally,
-    totalOutcomes: outcomeTally.improved + outcomeTally.noChange + outcomeTally.worsened,
   };
 }
 
@@ -151,7 +126,7 @@ export function computeNeedsAttention(rosterRows: RosterRow[]): NeedRow[] {
 }
 
 /* ---------------------------------------------------------------------------
- * RosterHealthHeader — the hero instrument cluster (ranked focal → secondary →
+ * RosterHealthHeader — the hero instrument cluster (ranked focal →
  * tertiary). Reads from precomputed props ONLY (no fetch). Honest: a starved
  * figure dims to "awaiting", never a fabricated 0.
  * ------------------------------------------------------------------------- */
@@ -175,8 +150,6 @@ export function RosterHealthHeader({
     activeAreas,
     completedAreas,
     playersWithRounds,
-    outcomeTally,
-    totalOutcomes,
   } = health;
 
   /** A roster with zero focus areas — active OR completed — is a program that
@@ -296,55 +269,14 @@ export function RosterHealthHeader({
     </InstrumentPanel>
   );
 
-  // SECONDARY — the closed-loop outcome mix + a recorded-outcomes readout.
-  const outcomeParts: SegmentBarPart[] = [
-    { label: 'Improved', value: outcomeTally.improved, tone: 'good' },
-    { label: 'No change', value: outcomeTally.noChange, tone: 'neutral' },
-    { label: 'Worsened', value: outcomeTally.worsened, tone: 'caution' },
-  ];
-
-  const outcomeInstrument =
-    totalOutcomes > 0 ? (
-      <SegmentBar
-        title="Did the coaching land?"
-        takeaway={`${totalOutcomes} focus-area outcome${totalOutcomes === 1 ? '' : 's'} recorded across the roster.`}
-        parts={outcomeParts}
-        primary="good"
-      />
-    ) : (
-      <InstrumentPanel
-        depth="base"
-        header={<h2 className="truncate font-fw-display text-h3 font-semibold leading-tight text-text-primary">Did the coaching land?</h2>}
-        className="flex h-full flex-col justify-center"
-      >
-        {/* The denominator was a hardcoded `need: 1`, which rendered
-            "AWAITING OUTCOMES — 0 OF 1" on a roster with nothing prescribed —
-            reading as one verdict already overdue. With no focus areas there is
-            nothing to grade, so the readout carries no denominator at all; once
-            areas DO exist, every one of them is genuinely awaiting a verdict, so
-            the denominator is their count. */}
-        <Readout
-          label="Outcomes recorded"
-          size="md"
-          state="awaiting"
-          samples={noAreasYet ? undefined : { have: 0, need: areasPrescribed }}
-          awaitingLabel={noAreasYet ? 'No focus areas yet' : 'Awaiting outcomes'}
-        />
-        <p className="mt-3 font-fw-sans text-caption text-text-tertiary">
-          {noAreasYet
-            ? 'Set a focus area for a player, then mark it improved / no change / worsened to start the effectiveness loop.'
-            : 'Mark a focus area improved / no change / worsened to start the effectiveness loop.'}
-        </p>
-      </InstrumentPanel>
-    );
-
   return (
     <InstrumentCluster
       ariaLabel="Roster development health"
-      balance="focal"
       tertiaryColumns={4}
+      /* No secondary rail: the cluster's deck is a single column, so the
+         focal "Who needs your attention" panel spans the full width above
+         the four-up foot row. */
       primary={primary}
-      secondary={[outcomeInstrument]}
       /* These four are plain counts, not sampled measurements, so none of them
          carries a `samples` denominator. Each used to pass `{ have: 0, need: 1 }`
          when empty, rendering "NONE ACTIVE — 0 OF 1" / "NONE YET — 0 OF 1" — a
