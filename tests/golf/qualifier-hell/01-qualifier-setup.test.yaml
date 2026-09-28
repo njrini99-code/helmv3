@@ -38,5 +38,7 @@ steps:
   - checkPageContains: "{{ env.QA_QUALIFIER_NAME }}"
   - click: "{{ env.QA_QUALIFIER_NAME }}"
   - waitForUrl: /golf/dashboard/qualifiers/
-  - checkPageContains: Cole Bennett
-  - checkPageContains: 0/4
+  # A new qualifier's board has no rounds yet: it names the entrant count and
+  # the empty scorecard tally, not players or an x/y count.
+  - checkPageContains: 0 of 4 scorecards in
+  - checkPageContains: No rounds posted yet. 1 player is entered.
