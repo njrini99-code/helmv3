@@ -22,6 +22,7 @@ import type { UIMessage } from 'ai';
 import type { PulseItem, ProgramPulse } from '@/lib/coachhelm/v3/chat/program-pulse';
 import type { ChatConversation } from '@/lib/coachhelm/v3/chat/types';
 import { Surface, EmptyState, Button, InlineNotice } from '@/components/fairway';
+import type { TeamIntelligenceResult } from '@/lib/golf/team-intelligence/types';
 import type { PlayersGridViewProps } from '@/components/fairway';
 import type { TeamOverviewResult, TeamCategoryInsightsResult } from '@/app/golf/actions/team-category-insights';
 import type { SignalGroup } from '@/lib/coachhelm/signal-grouping';
@@ -57,8 +58,10 @@ const CHAT_TAB_HREF = '/golf/dashboard/intelligence?view=chat';
 
 export interface CoachIntelligenceHomeProps {
   overview: TeamOverviewResult;
-  /** "Where the team is bleeding strokes" data (categories[] + teamHealth). */
+  /** Category insights: Home reads the engine's strokes-available figures. */
   categoryInsights: TeamCategoryInsightsResult;
+  /** Home's Team intelligence payload. */
+  teamIntelligence: TeamIntelligenceResult;
   coachId: string;
 
   /** The frozen `getSignalGroups` contract's full payload. */
@@ -89,6 +92,7 @@ export interface CoachIntelligenceHomeProps {
 export function CoachIntelligenceHome({
   overview,
   categoryInsights,
+  teamIntelligence,
   coachId,
   groups,
   scannedAt,
@@ -181,8 +185,7 @@ export function CoachIntelligenceHome({
       scannedAt={scannedAt}
       groupsError={groupsError}
       categoryInsights={categoryInsights}
-      teamShotAnalysis={ov?.teamShotAnalysis}
-      overviewFailed={overviewFailed}
+      teamIntelligence={teamIntelligence}
       playersDrillProps={playersDrillProps}
       homeLead={homeLead}
       homeNotice={homeNotice}

@@ -9,11 +9,10 @@
  * `?view=home|lab|chat`) picks one of three views:
  *
  *   Home     the greeting (handed in as `homeLead`) with the last-scan time
- *            and Scan team beside it, then "Where the team is bleeding
- *            strokes" (`TeamBleedBoard`), "Team shot weaknesses"
- *            (`TeamShotWeaknesses`) and the full-width "Game pressure map"
- *            (`TeamSignalSummary`). Nothing else: the brief band, program
- *            pulse, roster and follow-up panels are gone from this page.
+ *            and Scan team beside it, then Team intelligence
+ *            (`intel/TeamIntelligence`): four theme cards, the selected
+ *            theme's cause visual and player spotlight, and who is
+ *            contributing. Nothing else.
  *   The Lab  the signal queue (`SignalQueue`) beside the dossier
  *            (`SignalDossier`), built on the frozen `getSignalGroups` /
  *            `reviewSignal` / `dismissSignal` contract. Scan team lives in its
@@ -51,14 +50,14 @@ import { Button, EmptyState, fairwayToast, InlineNotice, PlayersGridView } from 
 import type { PlayersGridViewProps, PlayersGridStats } from '@/components/fairway';
 import { refreshTeamAnalysisAsCoach } from '@/app/golf/actions/insights';
 import { reviewSignal, dismissSignal } from '@/app/golf/actions/signal-groups';
-import type { TeamCategoryInsightsResult, TeamShotAnalysis } from '@/app/golf/actions/team-category-insights';
+import type { TeamCategoryInsightsResult } from '@/app/golf/actions/team-category-insights';
+import type { TeamIntelligenceResult } from '@/lib/golf/team-intelligence/types';
 import type { GroupedSignal, SignalGroup } from '@/lib/coachhelm/signal-grouping';
 import { ViewSwitch } from './ViewSwitch';
 import { SignalQueue } from './SignalQueue';
-import { TeamSignalSummary } from './TeamSignalSummary';
 import { SignalDossier, type RollupContributor } from './SignalDossier';
-import { TeamBleedBoard } from './TeamBleedBoard';
-import { TeamShotWeaknesses } from './TeamShotWeaknesses';
+import { TeamIntelligence } from '../intel/TeamIntelligence';
+import { strokesByTheme } from '../intel/strokes';
 import {
   computeBriefCounts,
   buildBriefVerdict,
@@ -90,15 +89,11 @@ export interface TriageDeskProps {
   /** Non-null when `getSignalGroups` itself failed: a distinct state from a
    *  genuinely empty (all-clear) queue, rendered as an honest retry notice. */
   groupsError: string | null;
-  /** "Where the team is bleeding strokes": categories[] + teamHealth from
-   *  `getTeamCategoryInsights`. A failed read renders a retry notice. */
+  /** `getTeamCategoryInsights`: read only for the engine's live "strokes per
+   *  round available" figure on each Home theme card. */
   categoryInsights: TeamCategoryInsightsResult;
-  /** `getTeamOverview`'s shot-analysis payload (topWeaknesses + deadZones);
-   *  `undefined` when the overview read failed or carried none. */
-  teamShotAnalysis?: TeamShotAnalysis;
-  /** The overview read failed, so the shot-weakness card says "didn't load"
-   *  rather than "no data yet". */
-  overviewFailed?: boolean;
+  /** Home's Team intelligence payload (`loadTeamIntelligence`). */
+  teamIntelligence: TeamIntelligenceResult;
   playersDrillProps: PlayersGridViewProps;
   /** The top of Home: the greeting. Scan team sits beside it. */
   homeLead?: ReactNode;
@@ -142,8 +137,7 @@ export function TriageDesk({
   scannedAt,
   groupsError,
   categoryInsights,
-  teamShotAnalysis,
-  overviewFailed = false,
+  teamIntelligence,
   playersDrillProps,
   homeLead,
   homeNotice,
@@ -399,11 +393,6 @@ export function TriageDesk({
     [groups, dossierEntry, avatarByPlayerId],
   );
 
-  const liveSignalCount = useMemo(
-    () => groups.reduce((n, g) => n + g.signals.filter((s) => s.kind !== 'team_synthesis').length, 0),
-    [groups],
-  );
-
   function handleScan() {
     startScanTransition(async () => {
       try {
@@ -546,48 +535,12 @@ export function TriageDesk({
             </div>
             {homeNotice}
 
-            {categoryInsights.success && categoryInsights.data ? (
-              <TeamBleedBoard
-                categories={categoryInsights.data.categories}
-                teamHealth={categoryInsights.data.teamHealth}
-              />
-            ) : (
-              <InlineNotice tone="danger" title="Couldn't load where the team is bleeding strokes" action={retry}>
-                {categoryInsights.error ?? 'The area breakdown did not load. The rest of the page is unaffected.'}
-              </InlineNotice>
-            )}
-
-            <TeamShotWeaknesses data={teamShotAnalysis} unavailable={overviewFailed} />
-
-            {groupsError ? (
-              <InlineNotice tone="danger" title="Couldn't load the game pressure map" action={retry}>
-                {groupsError}
-              </InlineNotice>
-            ) : liveSignalCount > 0 ? (
-              <TeamSignalSummary
-                groups={groups}
-                categoryHref={(category) => hrefFor({ view: 'lab', filter: `category:${category}`, signal: null })}
-                onOpenCategory={(category) => navigate({ view: 'lab', filter: `category:${category}`, signal: null })}
-              />
-            ) : (
-              <section
-                aria-labelledby="pressure-map-empty-heading"
-                className="flex flex-col overflow-hidden rounded-fw-lg border border-border-subtle bg-surface shadow-soft"
-              >
-                <div className="fw-plinth-green flex items-center justify-between gap-3 px-4 py-3 sm:px-5">
-                  <h2 id="pressure-map-empty-heading" className="font-fw-sans text-h3 font-semibold text-text-primary">
-                    Game pressure map
-                  </h2>
-                </div>
-                <div className="p-4 sm:p-5">
-                  <EmptyState
-                    variant="subtle"
-                    title="No open signals"
-                    description="Nothing is open across the team right now. Scan the team after new rounds come in."
-                  />
-                </div>
-              </section>
-            )}
+            <TeamIntelligence
+              result={teamIntelligence}
+              strokes={strokesByTheme(categoryInsights.success ? categoryInsights.data?.categories : null)}
+              playerHref={(id) => `/golf/dashboard/roster/${id}`}
+              retry={retry}
+            />
           </div>
         ) : null}
 
