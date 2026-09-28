@@ -202,8 +202,8 @@ function ConversationRow({
         // DECISIONS.md G-50b is the governing precedent: take the rule, not
         // the specimens. The rule the artboard states is "unread reads
         // stronger than read". The repo already ships that rule in a dense
-        // list without touching the box — `FairwayQualifierLeaderboard.tsx`
-        // marks its leader row `bg-accent-50/60` inside a `divide-y` list.
+        // list without touching the box — the CRM replies `InboxView.tsx`
+        // marks its active row `bg-accent-50/60` inside a `divide-y` list.
         // Tint + weight + badge carry the state; the geometry never moves.
         // The rail's own docstring independently forbids the alternative:
         // rows stay a dense, scannable list, never a card-in-card.

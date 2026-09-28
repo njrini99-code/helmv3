@@ -189,13 +189,14 @@ describe('G-32 — the unread row lift is an existing token, measured', () => {
   });
 
   it('is the same treatment the repo already ships for a marked row', () => {
-    // Not invented here. If the leaderboard's idiom changes, this surface's
+    // Not invented here. If the precedent's idiom changes, this surface's
     // justification changes with it and someone should look at both.
-    const leaderboard = read(
-      'src/components/fairway/pages/qualifiers/FairwayQualifierLeaderboard.tsx',
-    );
-    expect(leaderboard).toContain('divide-y divide-border-subtle');
-    expect(leaderboard).toContain("'bg-accent-50/60'");
+    // The precedent was FairwayQualifierLeaderboard until its 2026-09-28
+    // redesign dropped the green row wash (owner: no green bands); the CRM
+    // replies inbox ships the same marked-row fill in a dense divided list.
+    const inbox = read('src/app/golf/admin/crm/components/replies/InboxView.tsx');
+    expect(inbox).toContain('divide-y divide-border-subtle');
+    expect(inbox).toContain("'bg-accent-50/60'");
   });
 
   it('does NOT use `shadow-card`, which is a different value entirely', () => {
