@@ -39,8 +39,15 @@ export interface IntelRound {
 }
 
 /** Where a tee shot finished. Penalty wins over the lie it came to rest in;
- *  `miss` is off the fairway with no side tagged. */
+ *  `left` / `right` are a missed fairway on that tagged side (rough, sand or
+ *  anything else; `lie` says which); `miss` is off the fairway with no side. */
 export type TeeZone = 'fairway' | 'left' | 'right' | 'miss' | 'penalty';
+
+/** The lie a missed drive came to rest in. */
+export type TeeMissLie = 'rough' | 'sand' | 'other';
+
+/** `golf_shots.penalty_type` of the penalty that followed a drive. */
+export type PenaltyType = 'water' | 'ob' | 'lost' | 'unplayable' | 'other';
 
 export interface TeeShot {
   /** Index into `TeamIntelligenceData.rounds` (the round, and so the player). */
@@ -48,6 +55,12 @@ export interface TeeShot {
   zone: TeeZone;
   /** Carry + roll in yards, when measurable. */
   yards: number | null;
+  /** `club_type`: driver, or any other club off the tee. */
+  club: 'driver' | 'other';
+  /** Off the fairway (not a penalty): the lie it finished in. */
+  lie: TeeMissLie | null;
+  /** A penalty drive: what kind, when the penalty row says. */
+  penaltyType: PenaltyType | null;
 }
 
 /** The approach entry control's eight directions (ApproachMissSelector). */
@@ -61,11 +74,20 @@ export type ApproachMiss =
   | 'long_left'
   | 'long_right';
 
+/** Where an approach was played from (`lie_before`; `tee` is a par 3). */
+export type ApproachLie = 'tee' | 'fairway' | 'rough' | 'sand' | 'other';
+
+/** Where a missed green finished (`lie_after`, else the older `result`). */
+export type ApproachFinish = 'fairway' | 'rough' | 'sand' | 'other';
+
 export interface ApproachShot {
   /** Index into `TeamIntelligenceData.rounds` (the round, and so the player). */
   ri: number;
   /** Distance to the hole before the shot, yards. */
   fromYards: number;
+  lie: ApproachLie;
+  /** Missed the green: the lie it finished in; null on the green. */
+  finish: ApproachFinish | null;
   onGreen: boolean;
   /** Distance to the hole after the shot, feet (proximity). */
   leaveFeet: number | null;
@@ -118,10 +140,28 @@ export interface IntelStrokesAvailable {
   message: string;
 }
 
+/**
+ * Tour averages for the cause visuals, read live from `golf_pga_standards`
+ * for the team's tour (LPGA for a women's baseline, else PGA; a missing LPGA
+ * row falls back to PGA like the leak maps). Null when the table has no row.
+ */
+export interface IntelTourRefs {
+  /** Make % per `putts_made_*_pct` band id: '3_5' | '5_10' | '10_15' | '15_25' | '25_plus'. */
+  puttMake: Record<string, number | null>;
+  /** Proximity, ft, per `approach_proximity_*ft` id: '50_125' | '125_175' | '175_plus'. */
+  proximity: Record<string, number | null>;
+  /** Scrambling % per lie: 'fairway' | 'rough' | 'sand'. */
+  scrambling: Record<string, number | null>;
+  girPct: number | null;
+}
+
 export interface TeamIntelligenceData {
   teamId: string;
   /** "PGA Tour" / "LPGA": the baseline the stored SG is read against. */
   baselineLabel: string;
+  /** Short name of the tour the refs come from ("Tour" copy uses it). */
+  tourLabel: 'PGA Tour' | 'LPGA';
+  refs: IntelTourRefs;
   /** ISO date the page was built for (the team's today). */
   today: string;
   players: IntelPlayer[];

@@ -17,6 +17,8 @@ import type { IntelRound } from '../types';
 function shot(p: Partial<RawShotRow> & Pick<RawShotRow, 'hole_number' | 'shot_number' | 'shot_type'>): RawShotRow {
   return {
     round_id: 'r1',
+    club_type: null,
+    penalty_type: null,
     lie_before: null,
     lie_after: null,
     result: null,
@@ -50,6 +52,35 @@ describe('normalizeShots', () => {
     );
     expect(tee.map((t) => t.zone)).toEqual(['fairway', 'right', 'miss', 'penalty']);
     expect(tee[0]!.yards).toBe(270);
+  });
+
+  it('keeps the club, a fairway bunker, the penalty kind, and drops a par 3 keyed as a drive', () => {
+    const { tee } = normalizeShots(
+      [
+        shot({ hole_number: 1, shot_number: 1, shot_type: 'tee', club_type: 'driver', lie_after: 'sand', miss_direction: 'left' }),
+        shot({ hole_number: 2, shot_number: 1, shot_type: 'tee', club_type: 'non_driver', lie_after: 'rough', miss_direction: 'right' }),
+        shot({ hole_number: 3, shot_number: 1, shot_type: 'tee', club_type: 'driver', lie_after: 'other' }),
+        shot({ hole_number: 3, shot_number: 2, shot_type: 'penalty', penalty_type: 'water' }),
+        shot({ hole_number: 4, shot_number: 1, shot_type: 'tee', club_type: 'non_driver', lie_after: 'green' }),
+      ],
+      index,
+    );
+    expect(tee).toHaveLength(3);
+    expect(tee[0]).toMatchObject({ zone: 'left', lie: 'sand', club: 'driver', penaltyType: null });
+    expect(tee[1]).toMatchObject({ zone: 'right', lie: 'rough', club: 'other' });
+    expect(tee[2]).toMatchObject({ zone: 'penalty', lie: null, penaltyType: 'water' });
+  });
+
+  it('keeps where an approach was played from and where a missed green finished', () => {
+    const { approach } = normalizeShots(
+      [
+        shot({ hole_number: 1, shot_number: 2, shot_type: 'approach', lie_before: 'rough', distance_to_hole_before: 150, lie_after: 'sand', distance_to_hole_after: 20, miss_direction: 'short' }),
+        shot({ hole_number: 2, shot_number: 1, shot_type: 'approach', lie_before: 'tee', distance_to_hole_before: 160, lie_after: 'green', distance_to_hole_after: 30, distance_unit_after: 'feet' }),
+      ],
+      index,
+    );
+    expect(approach[0]).toMatchObject({ lie: 'rough', finish: 'sand', onGreen: false });
+    expect(approach[1]).toMatchObject({ lie: 'tee', finish: null, onGreen: true });
   });
 
   it('keeps an approach proximity in feet and all eight miss directions', () => {
@@ -142,24 +173,28 @@ describe('rounds and strokes gained', () => {
 
 describe('shot summaries', () => {
   it('reads fairways, miss side and drive length', () => {
+    const d = { club: 'driver' as const, lie: 'rough' as const, penaltyType: null };
     const s = teeSummary([
-      { ri: 0, zone: 'fairway', yards: 280 },
-      { ri: 0, zone: 'right', yards: 300 },
-      { ri: 0, zone: 'right', yards: null },
-      { ri: 0, zone: 'left', yards: 260 },
+      { ...d, ri: 0, zone: 'fairway', yards: 280, lie: null },
+      { ...d, ri: 0, zone: 'right', yards: 300 },
+      { ...d, ri: 0, zone: 'right', yards: null },
+      { ...d, ri: 0, zone: 'left', yards: 260 },
     ]);
     expect(s).toMatchObject({ n: 4, fairwayPct: 25, avgYards: 280, missSide: 'right' });
   });
 
   it('bands approaches and reads proximity, greens hit and the main miss', () => {
+    const base = { ri: 0, lie: 'fairway' as const, finish: 'rough' as const };
     const shots = [
-      { ri: 0, fromYards: 130, onGreen: true, leaveFeet: 20, miss: null },
-      { ri: 0, fromYards: 140, onGreen: false, leaveFeet: 40, miss: 'short_left' as const },
-      { ri: 0, fromYards: 145, onGreen: false, leaveFeet: 30, miss: 'short_left' as const },
-      { ri: 0, fromYards: 210, onGreen: false, leaveFeet: null, miss: 'long' as const },
+      { ...base, fromYards: 130, onGreen: true, finish: null, leaveFeet: 20, miss: null },
+      { ...base, fromYards: 140, onGreen: false, leaveFeet: 40, miss: 'short_left' as const },
+      { ...base, fromYards: 145, onGreen: false, leaveFeet: 30, miss: 'short_left' as const },
+      { ...base, fromYards: 210, onGreen: false, leaveFeet: null, miss: 'long' as const },
+      { ...base, fromYards: 260, onGreen: false, leaveFeet: null, miss: 'long' as const },
     ];
     expect(approachInBand(shots, '125')).toHaveLength(3);
-    expect(approachInBand(shots, 'all')).toHaveLength(3);
+    // All is 50 to 250 yd: the 260 yd lay-up is outside it.
+    expect(approachInBand(shots, 'all')).toHaveLength(4);
     const s = approachSummary(approachInBand(shots, '125'));
     expect(s).toMatchObject({ n: 3, proximity: 30, missed: 2, mainMiss: 'short_left' });
     // A short-left miss counts toward both short and left.

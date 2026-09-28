@@ -16,13 +16,17 @@
  * Anything outside it is dropped from that one read, never guessed.
  */
 import type {
+  ApproachFinish,
+  ApproachLie,
   ApproachMiss,
   ApproachShot,
   ChipLie,
   ChipShot,
   PuttBreak,
   PuttShot,
+  PenaltyType,
   PuttSlope,
+  TeeMissLie,
   TeeShot,
   TeeZone,
 } from './types';
@@ -30,6 +34,10 @@ import type {
 export interface RawShotRow {
   round_id: string;
   hole_number: number;
+  /** 'driver' | 'non_driver' | 'putter'. */
+  club_type: string | null;
+  /** On a penalty row: water | ob | lost | unplayable. */
+  penalty_type: string | null;
   shot_number: number;
   shot_type: string | null;
   lie_before: string | null;
@@ -102,6 +110,26 @@ function approachMiss(miss: string | null): ApproachMiss | null {
   return depth ?? side;
 }
 
+function teeMissLie(shot: RawShotRow): TeeMissLie {
+  const end = landed(shot);
+  return end === 'sand' ? 'sand' : end === 'rough' ? 'rough' : 'other';
+}
+
+const PENALTY_TYPES = new Set<PenaltyType>(['water', 'ob', 'lost', 'unplayable']);
+function penaltyType(row: RawShotRow | undefined): PenaltyType | null {
+  if (!row) return null;
+  const t = (row.penalty_type ?? '').toLowerCase() as PenaltyType;
+  return PENALTY_TYPES.has(t) ? t : 'other';
+}
+
+const APPROACH_LIES = new Set<ApproachLie>(['tee', 'fairway', 'rough', 'sand']);
+function approachLie(lie: string | null): ApproachLie {
+  return APPROACH_LIES.has(lie as ApproachLie) ? (lie as ApproachLie) : 'other';
+}
+function approachFinish(end: string | null): ApproachFinish {
+  return end === 'fairway' || end === 'rough' || end === 'sand' ? end : 'other';
+}
+
 const BREAK: Record<string, PuttBreak> = { right_to_left: 'rl', straight: 'st', left_to_right: 'lr' };
 const SLOPE: Record<string, PuttSlope> = { uphill: 'up', level: 'level', downhill: 'down' };
 const CHIP_LIES = new Set<ChipLie>(['fairway', 'rough', 'sand']);
@@ -130,20 +158,34 @@ export function normalizeShots(rows: readonly RawShotRow[], roundIndex: Readonly
       const next = shots[i + 1];
       switch (shot.shot_type) {
         case 'tee': {
+          // A tee shot that finished on the green is a par 3 keyed as a drive:
+          // not a fairway chance, so it is left out of the tee read.
+          if (landed(shot) === 'green' || landed(shot) === 'hole') break;
           const before = toYards(shot.distance_to_hole_before, shot.distance_unit_before);
           const after = toYards(shot.distance_to_hole_after, shot.distance_unit_after);
           const yards = before != null && after != null && before > after ? Math.round(before - after) : null;
-          out.tee.push({ ri, zone: teeZone(shot, next?.shot_type === 'penalty'), yards });
+          const zone = teeZone(shot, next?.shot_type === 'penalty');
+          out.tee.push({
+            ri,
+            zone,
+            yards,
+            club: shot.club_type === 'driver' ? 'driver' : 'other',
+            lie: zone === 'fairway' || zone === 'penalty' ? null : teeMissLie(shot),
+            penaltyType: zone !== 'penalty' ? null : next?.shot_type === 'penalty' ? penaltyType(next) : shot.penalty_type ? penaltyType(shot) : null,
+          });
           break;
         }
         case 'approach': {
           const fromYards = toYards(shot.distance_to_hole_before, shot.distance_unit_before);
           if (fromYards == null) break;
-          const onGreen = landed(shot) === 'green';
+          const end = landed(shot);
+          const onGreen = end === 'green' || end === 'hole';
           const leave = toFeet(shot.distance_to_hole_after, shot.distance_unit_after);
           out.approach.push({
             ri,
             fromYards,
+            lie: approachLie(shot.lie_before),
+            finish: onGreen ? null : approachFinish(end),
             onGreen,
             leaveFeet: leave != null && leave <= PROXIMITY_CEILING_FT ? leave : null,
             miss: onGreen ? null : approachMiss(shot.miss_direction),
