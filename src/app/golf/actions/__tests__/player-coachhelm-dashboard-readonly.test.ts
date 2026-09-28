@@ -74,6 +74,23 @@ describe('player CoachHelm dashboard read contract', () => {
     expect(orchestrator).toMatch(/const compositeSummary = !runInsightGenerators\s*\?\s*null/);
   });
 
+  /**
+   * 2026-09-28 (Bridge ca4409c2 / ed64f3b6): `persistPatterns: false` did not
+   * reach the causal engine, so every page view still wrote
+   * golf_causal_relationships, and that write failing (`fetch failed`)
+   * rejected analyzePlayer and failed the whole page. The behaviour is pinned
+   * in causal-engine.read-only.test.ts; this pins the wiring.
+   */
+  it('the read-only flag also stops the causal-relationship write', () => {
+    const orchestrator = readFileSync(
+      join(process.cwd(), 'src/lib/coachhelm/v2/orchestrator.ts'),
+      'utf8',
+    );
+    expect(orchestrator).toContain(
+      'new CausalEngine(playerId).discoverCausalRelationships({ persist: persistPatterns })',
+    );
+  });
+
   it('keeps analysis behind an explicit mutation flow', () => {
     const body = functionBody('analyzePlayerImpl');
     expect(body).toContain('coachHelmIntelligence.analyzePlayer');
