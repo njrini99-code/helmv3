@@ -89,7 +89,7 @@ describe('getTopInsightsForPlayers — exposure ledger is written once per sweep
 
     expect([...out.keys()].sort()).toEqual(['p-1', 'p-2', 'p-3']);
     expect(recordInsightExposure).toHaveBeenCalledTimes(1);
-    const written = recordInsightExposure.mock.calls[0][0] as Array<{
+    const written = recordInsightExposure.mock.calls[0]?.[0] as Array<{
       insight_id: string;
       player_id: string;
       surface: string;
