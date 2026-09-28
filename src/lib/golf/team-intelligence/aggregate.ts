@@ -168,12 +168,15 @@ export function teeSummary(shots: readonly TeeShot[]): TeeSummary {
 
 // Approach -------------------------------------------------------------------
 
+/** `ref` is the `approach_proximity_*ft` standard the band sits inside. */
 export const APPROACH_BANDS = [
-  { id: '75', label: '75–100', min: 75, max: 100 },
-  { id: '100', label: '100–125', min: 100, max: 125 },
-  { id: '125', label: '125–150', min: 125, max: 150 },
-  { id: '150', label: '150–175', min: 150, max: 175 },
-  { id: '175', label: '175–200', min: 175, max: 200 },
+  { id: '50', label: '50–75', min: 50, max: 75, ref: '50_125' },
+  { id: '75', label: '75–100', min: 75, max: 100, ref: '50_125' },
+  { id: '100', label: '100–125', min: 100, max: 125, ref: '50_125' },
+  { id: '125', label: '125–150', min: 125, max: 150, ref: '125_175' },
+  { id: '150', label: '150–175', min: 150, max: 175, ref: '125_175' },
+  { id: '175', label: '175–200', min: 175, max: 200, ref: '175_plus' },
+  { id: '200', label: '200–250', min: 200, max: 250, ref: '175_plus' },
 ] as const;
 export type ApproachBandId = (typeof APPROACH_BANDS)[number]['id'];
 
@@ -292,13 +295,14 @@ export function chipSummary(shots: readonly ChipShot[]): ChipSummary {
 
 // Putting --------------------------------------------------------------------
 
+/** Cut on the `putts_made_*_pct` standards so every band has a tour make %
+ *  (`ref`); inside 3 ft has no standard and no band. */
 export const PUTT_BANDS = [
-  { id: '3', label: '3–5', min: 3, max: 5 },
-  { id: '5', label: '5–10', min: 5, max: 10 },
-  { id: '10', label: '10–15', min: 10, max: 15 },
-  { id: '15', label: '15–20', min: 15, max: 20 },
-  { id: '20', label: '20–30', min: 20, max: 30 },
-  { id: '30', label: '30+', min: 30, max: Number.POSITIVE_INFINITY },
+  { id: '3', label: '3–5', min: 3, max: 5, ref: '3_5' },
+  { id: '5', label: '5–10', min: 5, max: 10, ref: '5_10' },
+  { id: '10', label: '10–15', min: 10, max: 15, ref: '10_15' },
+  { id: '15', label: '15–25', min: 15, max: 25, ref: '15_25' },
+  { id: '25', label: '25+', min: 25, max: Number.POSITIVE_INFINITY, ref: '25_plus' },
 ] as const;
 export type PuttBandId = (typeof PUTT_BANDS)[number]['id'];
 export const PUTT_BREAKS: readonly { id: PuttBreak; label: string }[] = [

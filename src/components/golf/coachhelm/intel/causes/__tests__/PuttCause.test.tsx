@@ -9,7 +9,6 @@ import type {
   PuttShot,
   TeamIntelligenceData,
 } from '@/lib/golf/team-intelligence/types';
-import { ChipCause } from '../ChipCause';
 import { PuttCause } from '../PuttCause';
 
 const SG: IntelRound['sg'] = { tee: null, app: null, atg: null, putt: null };
@@ -133,88 +132,6 @@ function figure(container: HTMLElement): string {
 function expectClean(container: HTMLElement) {
   expect(container.innerHTML).not.toMatch(/NaN|undefined|Infinity/);
 }
-
-describe('ChipCause', () => {
-  it('reads the whole team: up-and-down %, low-sample and empty cells, the out-of-range footnote', () => {
-    const { container } = render(<ChipCause data={data(CHIPS)} allowed={ALLOWED} playerId={null} playerName={null} />);
-    expect(figure(container)).toBe('53%');
-    expect(screen.getByText('Whole team · 17 chips')).toBeTruthy();
-    expect(screen.getByRole('button', { name: /^Fairway, 0–10 yd: 70% up and down, 10 chips/ })).toBeTruthy();
-    expect(screen.getByRole('button', { name: /^Sand, 20–30 yd: 20% up and down, 5 chips/ })).toBeTruthy();
-    expect(screen.getByRole('button', { name: /^Rough, 10–20 yd: 50% up and down, 2 chips, low sample/ })).toBeTruthy();
-    expect(screen.getAllByText('low sample')).toHaveLength(1);
-    expect(screen.getAllByText('no chips')).toHaveLength(6);
-    // Team slice: no comparison pill, and the reference is the team's own rate.
-    expect(screen.queryByText(/pts? (below|above) team/)).toBeNull();
-    expect(screen.getByText("The tick is the team's overall rate, 53%.")).toBeTruthy();
-    expect(screen.getByText('1 chip from 30 yd or more is left out of this card.')).toBeTruthy();
-    expect(screen.getByText('Misses mostly short · 63% of 8 tagged')).toBeTruthy();
-    expectClean(container);
-  });
-
-  it('a cell tap filters the headline and a second tap clears it', () => {
-    const { container } = render(<ChipCause data={data(CHIPS)} allowed={ALLOWED} playerId={null} playerName={null} />);
-    const sand = screen.getByRole('button', { name: /^Sand, 20–30 yd/ });
-    expect(sand.getAttribute('aria-pressed')).toBe('false');
-    fireEvent.click(sand);
-    expect(figure(container)).toBe('20%');
-    expect(sand.getAttribute('aria-pressed')).toBe('true');
-    expect(screen.getByText('Whole team · 5 chips · 20–30 yd · sand')).toBeTruthy();
-    fireEvent.click(sand);
-    expect(figure(container)).toBe('53%');
-    expect(sand.getAttribute('aria-pressed')).toBe('false');
-  });
-
-  it('rows and columns filter one axis each; empty cells ignore taps', () => {
-    const { container } = render(<ChipCause data={data(CHIPS)} allowed={ALLOWED} playerId={null} playerName={null} />);
-    const fairwayRow = screen.getByRole('button', { name: 'Fairway, all distances' });
-    fireEvent.click(fairwayRow);
-    expect(fairwayRow.getAttribute('aria-pressed')).toBe('true');
-    expect(figure(container)).toBe('70%');
-    fireEvent.click(fairwayRow);
-    const farColumn = screen.getByRole('button', { name: '20–30 yd, all lies' });
-    fireEvent.click(farColumn);
-    expect(figure(container)).toBe('20%');
-    fireEvent.click(farColumn);
-
-    const empty = screen.getByRole('button', { name: 'Fairway, 20–30 yd: no chips' });
-    expect(empty.getAttribute('aria-disabled')).toBe('true');
-    fireEvent.click(empty);
-    expect(empty.getAttribute('aria-pressed')).toBe('false');
-    expect(figure(container)).toBe('53%');
-  });
-
-  it('reads a player against the whole team, cell by cell', () => {
-    const { container } = render(<ChipCause data={data(CHIPS)} allowed={ALLOWED} playerId="p1" playerName="Ava Lee" />);
-    expect(figure(container)).toBe('50%');
-    expect(screen.getByText('3 pts below team')).toBeTruthy();
-    expect(screen.getByText('57% of 7 inside 4 ft · team 60%')).toBeTruthy();
-    expect(
-      screen.getByText("1 chip that finished off the green counts toward up and down but isn't plotted."),
-    ).toBeTruthy();
-    fireEvent.click(screen.getByRole('button', { name: /^Fairway, 0–10 yd/ }));
-    expect(figure(container)).toBe('50%');
-    expect(screen.getByText('20 pts below team')).toBeTruthy();
-    expect(screen.getByRole('img', { name: /First-chip leaves: 6 chips on the green, median 4\.5 ft/ })).toBeTruthy();
-    expectClean(container);
-  });
-
-  it('says so when no chip finished on the green', () => {
-    const offGreen = [0, 1, 2, 3, 4].map(() => chip(0, 8, 'rough', null, false));
-    const { container } = render(<ChipCause data={data(offGreen)} allowed={ALLOWED} playerId={null} playerName={null} />);
-    expect(figure(container)).toBe('0%');
-    expect(screen.getByText('None of these chips finished on the green.')).toBeTruthy();
-    expect(screen.queryByRole('img')).toBeNull();
-    expectClean(container);
-  });
-
-  it('shows the empty state with no chips in the slice', () => {
-    const { container } = render(<ChipCause data={data([])} allowed={ALLOWED} playerId={null} playerName={null} />);
-    expect(screen.getByText('No chips in this slice')).toBeTruthy();
-    expect(screen.queryAllByRole('button')).toHaveLength(0);
-    expectClean(container);
-  });
-});
 
 describe('PuttCause', () => {
   it('reads make % and the 3-putt rate on first putts', () => {

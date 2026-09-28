@@ -128,8 +128,8 @@ export function spotlightTiles(
       return [
         { label: 'Avg drive', player: ps.avgYards, team: ts.avgYards, format: yards, lowerBetter: false, n: ps.n },
         { label: 'Fairways hit', player: ps.fairwayPct, team: ts.fairwayPct, format: pct, lowerBetter: false, n: ps.n },
-        { label: 'Right rough', player: share(ps.zones.right, ps.n), team: share(ts.zones.right, ts.n), format: pct, lowerBetter: true, n: ps.n },
-        { label: 'Left rough', player: share(ps.zones.left, ps.n), team: share(ts.zones.left, ts.n), format: pct, lowerBetter: true, n: ps.n },
+        { label: 'Missed right', player: share(ps.zones.right, ps.n), team: share(ts.zones.right, ts.n), format: pct, lowerBetter: true, n: ps.n },
+        { label: 'Missed left', player: share(ps.zones.left, ps.n), team: share(ts.zones.left, ts.n), format: pct, lowerBetter: true, n: ps.n },
         { label: 'Penalty rate', player: share(ps.zones.penalty, ps.n), team: share(ts.zones.penalty, ts.n), format: pct, lowerBetter: true, n: ps.n },
         {
           label: 'Penalties / round',

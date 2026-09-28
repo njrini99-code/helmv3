@@ -12,6 +12,7 @@ import type { CategoryInsight, TeamCategory } from '@/app/golf/actions/team-cate
 import type { IntelRound, TeamIntelligenceData } from '@/lib/golf/team-intelligence/types';
 import { TeamIntelligence } from '../TeamIntelligence';
 import { strokesAvailable, strokesByTheme } from '../strokes';
+import { NO_REFS } from '@/lib/golf/team-intelligence/__tests__/fixtures';
 
 vi.mock('../causes/TeeCause', () => ({ TeeCause: ({ playerName }: { playerName: string | null }) => <div data-testid="cause">tee {playerName ?? 'team'}</div> }));
 vi.mock('../causes/ApproachCause', () => ({ ApproachCause: ({ playerName }: { playerName: string | null }) => <div data-testid="cause">app {playerName ?? 'team'}</div> }));
@@ -37,6 +38,8 @@ function round(id: string, playerId: string, date: string, sg: Partial<IntelRoun
 const data: TeamIntelligenceData = {
   teamId: 't1',
   baselineLabel: 'PGA Tour',
+  tourLabel: 'PGA Tour',
+  refs: NO_REFS,
   today: '2026-09-28',
   players: [
     { id: 'p1', name: 'Alex Moore', avatarUrl: null },
