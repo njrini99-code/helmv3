@@ -16,7 +16,8 @@
  * Leaderboard, the coach's round-by-round, selections) beside a right rail (a
  * small "where it stands" card on top, the Details card below: dates, course,
  * spots, rules, and every player's rounds played as dots). A phone stacks
- * them as status → leaderboard → details → coach modules. No green bands:
+ * them in DOM order: status → leaderboard → coach modules → details (grid
+ * placement, never CSS `order`, so focus order matches). No green bands:
  * contrast comes from surface steps (sunken header rows, a strong rule under
  * them), the type scale and hairlines; green is the primary action, under-par
  * figures and the live pill only.
@@ -274,24 +275,35 @@ export function FairwayQualifierDetail(props: FairwayQualifierDetailProps) {
         </InlineNotice>
       ) : null}
 
-      {/* Main column + right rail from lg. On a phone the two wrappers are
-          `contents`, so their cards interleave by `order`: status, board,
-          details, then the coach's modules. */}
-      <div className="mt-6 flex flex-col gap-6 lg:mt-8 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(300px,22rem)] lg:items-start lg:gap-8">
-        <div className="contents lg:flex lg:min-w-0 lg:flex-col lg:gap-8">
-          <div className="order-2 min-w-0 lg:order-none">
-            <FairwayQualifierLeaderboard
-              qualifierId={qualifierId}
-              entrantCount={entrantCount}
-              selectionSlotsTotal={selectionSlotsTotal}
-              selectionSlotsCoachPick={selectionSlotsCoachPick}
-              onStandingsChange={setStandings}
-            />
-          </div>
+      {/* The DOM is the reading order, so a phone stacks it as written: the
+          status card, the main column (board, then the coach's modules), the
+          details. From lg the grid places the status and details cards in a
+          right rail; no CSS `order`, so focus and screen-reader order match
+          what is on screen. The rail's second row is 1fr: the main column
+          spans both rows, and an item spanning a flexible row only sizes that
+          row, so row 1 stays the status card's height and Details sits right
+          under it however tall the board grows. */}
+      <div className="mt-6 flex flex-col gap-6 lg:mt-8 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(300px,22rem)] lg:grid-rows-[auto_1fr] lg:items-start lg:gap-x-8 lg:gap-y-6">
+        <StatusCard
+          className="lg:col-start-2 lg:row-start-1"
+          status={status}
+          numRounds={numRounds}
+          entrantCount={entrantCount}
+          serverCardsIn={roundsSubmitted}
+          standings={standings}
+        />
+
+        <div className="flex min-w-0 flex-col gap-6 lg:col-start-1 lg:row-span-2 lg:row-start-1 lg:gap-8">
+          <FairwayQualifierLeaderboard
+            qualifierId={qualifierId}
+            entrantCount={entrantCount}
+            selectionSlotsTotal={selectionSlotsTotal}
+            selectionSlotsCoachPick={selectionSlotsCoachPick}
+            onStandingsChange={setStandings}
+          />
 
           {isCoach ? (
             <RoundByRoundCard
-              className="order-4 lg:order-none"
               status={status}
               breakdown={breakdown}
               maxRoundNumber={maxRoundNumber}
@@ -301,7 +313,6 @@ export function FairwayQualifierDetail(props: FairwayQualifierDetailProps) {
 
           {isCoach ? (
             <SelectionsStrip
-              className="order-5 lg:order-none"
               qualifierId={qualifierId}
               status={status}
               selectionState={selectionState}
@@ -311,30 +322,20 @@ export function FairwayQualifierDetail(props: FairwayQualifierDetailProps) {
           ) : null}
         </div>
 
-        <div className="contents lg:flex lg:flex-col lg:gap-6">
-          <StatusCard
-            className="order-1 lg:order-none"
-            status={status}
-            numRounds={numRounds}
-            entrantCount={entrantCount}
-            serverCardsIn={roundsSubmitted}
-            standings={standings}
-          />
-          <DetailsCard
-            className="order-3 lg:order-none"
-            status={status}
-            startDate={startDate}
-            entryDeadline={entryDeadline}
-            courseName={courseName}
-            spotsAvailable={spotsAvailable}
-            selectionSlotsTotal={selectionSlotsTotal}
-            selectionSlotsCoachPick={selectionSlotsCoachPick}
-            numRounds={numRounds}
-            roundCourses={roundCourses}
-            rules={rules}
-            standings={standings}
-          />
-        </div>
+        <DetailsCard
+          className="lg:col-start-2 lg:row-start-2"
+          status={status}
+          startDate={startDate}
+          entryDeadline={entryDeadline}
+          courseName={courseName}
+          spotsAvailable={spotsAvailable}
+          selectionSlotsTotal={selectionSlotsTotal}
+          selectionSlotsCoachPick={selectionSlotsCoachPick}
+          numRounds={numRounds}
+          roundCourses={roundCourses}
+          rules={rules}
+          standings={standings}
+        />
       </div>
     </div>
   );

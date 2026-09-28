@@ -6,8 +6,8 @@ import { fairwayScope } from '@/lib/redesign/flag';
  *
  * Shape-matches FairwayQualifierDetail's first paint: the back link, the
  * ViewHeader silhouette (title, status/date/entrant meta, primary action),
- * then from `lg` the main column beside the right rail. On a phone the same
- * order as the page: the status card, the board, the details card.
+ * then from `lg` the main column beside the right rail. The same DOM order as
+ * the page (status card, board, details card) and the same grid placement.
  *
  * The board stops at FairwayQualifierLeaderboard's OWN loading branch (a plain
  * 3-line stack), not its settled standings table: `useQualifierRealtime`
@@ -43,10 +43,24 @@ export default function Loading() {
           <Skeleton className="h-9 w-40 rounded-full" />
         </div>
 
-        <div className="mt-6 flex flex-col gap-6 lg:mt-8 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(300px,22rem)] lg:items-start lg:gap-8">
-          <div className="contents lg:flex lg:min-w-0 lg:flex-col lg:gap-8">
+        {/* Same DOM order and grid placement as the page: status, the main
+            column, details; the rail from lg by placement, never `order`. */}
+        <div className="mt-6 flex flex-col gap-6 lg:mt-8 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(300px,22rem)] lg:grid-rows-[auto_1fr] lg:items-start lg:gap-x-8 lg:gap-y-6">
+          {/* Status card */}
+          <Surface aria-hidden="true" padding="none" className="px-5 pb-5 pt-4 lg:col-start-2 lg:row-start-1">
+            <Skeleton className="h-3 w-16" />
+            <Skeleton className="mt-2 h-5 w-40" />
+            <div className="mt-3 flex gap-1.5">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <Skeleton key={i} className="h-2 flex-1 rounded-full" />
+              ))}
+            </div>
+            <Skeleton className="mt-5 h-6 w-36" />
+          </Surface>
+
+          <div className="flex min-w-0 flex-col gap-6 lg:col-start-1 lg:row-span-2 lg:row-start-1 lg:gap-8">
             {/* The board — its own loading branch */}
-            <Surface aria-hidden="true" className="order-2 lg:order-none">
+            <Surface aria-hidden="true">
               <Surface.Header>
                 <Skeleton className="h-5 w-28" />
               </Surface.Header>
@@ -60,39 +74,25 @@ export default function Loading() {
             </Surface>
           </div>
 
-          <div className="contents lg:flex lg:flex-col lg:gap-6">
-            {/* Status card */}
-            <Surface aria-hidden="true" padding="none" className="order-1 px-5 pb-5 pt-4 lg:order-none">
-              <Skeleton className="h-3 w-16" />
-              <Skeleton className="mt-2 h-5 w-40" />
-              <div className="mt-3 flex gap-1.5">
-                {Array.from({ length: 3 }).map((_, i) => (
-                  <Skeleton key={i} className="h-2 flex-1 rounded-full" />
-                ))}
-              </div>
-              <Skeleton className="mt-5 h-6 w-36" />
-            </Surface>
-
-            {/* Details card */}
-            <Surface aria-hidden="true" padding="none" className="order-3 overflow-hidden lg:order-none">
-              <div className="border-b border-border-strong bg-surface-sunken px-5 py-3">
-                <Skeleton className="h-4 w-16" />
-              </div>
-              <div className="divide-y divide-border-subtle px-5">
-                {Array.from({ length: 4 }).map((_, i) => (
-                  <div key={i} className="flex items-center justify-between py-3">
-                    <Skeleton className="h-3 w-20" />
-                    <Skeleton className="h-4 w-24" />
-                  </div>
-                ))}
-              </div>
-              <div className="space-y-3 border-t border-border-subtle px-5 py-4">
-                <Skeleton className="h-3 w-24" />
-                <Skeleton className="h-4 w-full" />
-                <Skeleton className="h-4 w-5/6" />
-              </div>
-            </Surface>
-          </div>
+          {/* Details card */}
+          <Surface aria-hidden="true" padding="none" className="overflow-hidden lg:col-start-2 lg:row-start-2">
+            <div className="border-b border-border-strong bg-surface-sunken px-5 py-3">
+              <Skeleton className="h-4 w-16" />
+            </div>
+            <div className="divide-y divide-border-subtle px-5">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="flex items-center justify-between py-3">
+                  <Skeleton className="h-3 w-20" />
+                  <Skeleton className="h-4 w-24" />
+                </div>
+              ))}
+            </div>
+            <div className="space-y-3 border-t border-border-subtle px-5 py-4">
+              <Skeleton className="h-3 w-24" />
+              <Skeleton className="h-4 w-full" />
+              <Skeleton className="h-4 w-5/6" />
+            </div>
+          </Surface>
         </div>
       </div>
     </div>

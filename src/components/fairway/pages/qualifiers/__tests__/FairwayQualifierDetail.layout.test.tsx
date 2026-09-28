@@ -175,6 +175,26 @@ describe('FairwayQualifierDetail — layout and data', () => {
     expect(screen.getByLabelText('Qualifier details')).toHaveTextContent('Ties broken by scorecard playoff');
   });
 
+  it('reads in the order it paints: status, then the board, then details, with no CSS reordering', () => {
+    mockUseQualifierRealtime.mockReturnValue({ leaderboard: FALL_INVITATIONAL, qualifier: { status: 'in_progress' }, loading: false, error: null });
+    render(<FairwayQualifierDetail {...props()} />);
+
+    const status = screen.getByLabelText('Where it stands');
+    const board = screen.getByLabelText('Qualifier leaderboard');
+    const details = screen.getByLabelText('Qualifier details');
+    expect(status.compareDocumentPosition(board) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(board.compareDocumentPosition(details) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+
+    // A phone shows the DOM as written: no `order-*` utility at any breakpoint
+    // on the page grid or inside it (desktop places the rail by grid lines).
+    const grid = status.parentElement as HTMLElement;
+    expect(grid.contains(board) && grid.contains(details)).toBe(true);
+    const reordered = [grid, ...Array.from(grid.querySelectorAll('[class]'))].filter((el) =>
+      Array.from(el.classList).some((c) => /^(?:[a-z0-9-]+:)*order-/.test(c)),
+    );
+    expect(reordered).toHaveLength(0);
+  });
+
   it('gives a closed qualifier with nothing posted one honest line, not hollow rows', () => {
     mockUseQualifierRealtime.mockReturnValue({
       leaderboard: ['Owen Carter', 'Tyler Hayes'].map((n) => feedEntry(n, 0, 0, 0)),
