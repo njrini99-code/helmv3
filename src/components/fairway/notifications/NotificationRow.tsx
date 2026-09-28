@@ -143,18 +143,21 @@ export function NotificationRow({
             size={compact ? 'md' : 'lg'}
           />
           {/*
-            The badge's ring cuts it out of the avatar in the colour of the
-            panel behind the row: the Latest card (compact) and the bell's
-            phone Sheet are bg-surface; the bell's md+ popover is bg-elevated
+            The badge sits on the avatar's rim, clear of the initials: tucked
+            further in (the old -0.5 offset) its ring cut the leg off the
+            second letter, so "MR" read as "MP" for a person without a photo.
+            The ring cuts it out in the colour of the panel behind the row:
+            the Latest card (compact) and the bell's phone Sheet are
+            bg-surface; the bell's md+ popover is bg-elevated
             (NotificationBell switches at 768px, the same as `md:`).
           */}
           <span
             className={cn(
-              'absolute -bottom-0.5 -right-0.5 grid h-[18px] w-[18px] place-items-center rounded-full bg-accent-fill text-text-on-accent-fill ring-2',
-              compact ? 'ring-surface' : 'ring-surface md:ring-elevated',
+              'absolute -bottom-1 -right-1 grid place-items-center rounded-full bg-accent-fill text-text-on-accent-fill ring-2',
+              compact ? 'h-4 w-4 ring-surface' : 'h-[18px] w-[18px] ring-surface md:ring-elevated',
             )}
           >
-            <Icon size={10} strokeWidth={2.25} />
+            <Icon size={compact ? 9 : 10} strokeWidth={2.25} />
           </span>
         </span>
       ) : (
