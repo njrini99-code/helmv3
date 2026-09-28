@@ -312,7 +312,9 @@ function BenchmarkScale({ evidence }: { evidence: InsightEvidence }) {
     pct: ((t.value - axisMin) / axisSpan) * 100,
   }));
 
-  const youColor = 'bg-accent-fill text-text-on-accent-fill ring-2 ring-primary-200';
+  // A surface-coloured halo separates the marker from the axis; a green halo
+  // read as one of the outline rings the Golf theme no longer draws.
+  const youColor = 'bg-accent-fill text-text-on-accent-fill ring-2 ring-surface';
   const primaryColor = 'bg-warm-700 text-white ring-1 ring-warm-200/45';
   // Secondary benchmark: a hollow marker (no violet, off-palette — HUB-09).
   const secondaryColor = 'bg-surface text-text-primary ring-2 ring-border-control';
