@@ -93,6 +93,39 @@ export function typeTone(eventType: string | null | undefined): EventTone {
   return { bg: `var(--fw-tint-${slot}-bg)`, ink: `var(--fw-tint-${slot}-ink)` };
 }
 
+/**
+ * The same tint as classes, for surfaces that paint it without inline style
+ * (month chips, legend and phone dots). Literal strings so Tailwind sees each.
+ * `chip` = tint ground + ink; `dot` = the ink; `swatch` = the tint ground.
+ */
+export interface EventToneClasses {
+  chip: string;
+  dot: string;
+  swatch: string;
+}
+
+const TINT_CLASSES: Record<number, EventToneClasses> = {
+  1: { chip: 'bg-[color:var(--fw-tint-1-bg)] text-[color:var(--fw-tint-1-ink)]', dot: 'bg-[color:var(--fw-tint-1-ink)]', swatch: 'bg-[color:var(--fw-tint-1-bg)]' },
+  2: { chip: 'bg-[color:var(--fw-tint-2-bg)] text-[color:var(--fw-tint-2-ink)]', dot: 'bg-[color:var(--fw-tint-2-ink)]', swatch: 'bg-[color:var(--fw-tint-2-bg)]' },
+  3: { chip: 'bg-[color:var(--fw-tint-3-bg)] text-[color:var(--fw-tint-3-ink)]', dot: 'bg-[color:var(--fw-tint-3-ink)]', swatch: 'bg-[color:var(--fw-tint-3-bg)]' },
+  4: { chip: 'bg-[color:var(--fw-tint-4-bg)] text-[color:var(--fw-tint-4-ink)]', dot: 'bg-[color:var(--fw-tint-4-ink)]', swatch: 'bg-[color:var(--fw-tint-4-bg)]' },
+  5: { chip: 'bg-[color:var(--fw-tint-5-bg)] text-[color:var(--fw-tint-5-ink)]', dot: 'bg-[color:var(--fw-tint-5-ink)]', swatch: 'bg-[color:var(--fw-tint-5-bg)]' },
+  6: { chip: 'bg-[color:var(--fw-tint-6-bg)] text-[color:var(--fw-tint-6-ink)]', dot: 'bg-[color:var(--fw-tint-6-ink)]', swatch: 'bg-[color:var(--fw-tint-6-bg)]' },
+  7: { chip: 'bg-[color:var(--fw-tint-7-bg)] text-[color:var(--fw-tint-7-ink)]', dot: 'bg-[color:var(--fw-tint-7-ink)]', swatch: 'bg-[color:var(--fw-tint-7-bg)]' },
+  8: { chip: 'bg-[color:var(--fw-tint-8-bg)] text-[color:var(--fw-tint-8-ink)]', dot: 'bg-[color:var(--fw-tint-8-ink)]', swatch: 'bg-[color:var(--fw-tint-8-bg)]' },
+};
+
+const NEUTRAL_CLASSES: EventToneClasses = {
+  chip: 'bg-surface-sunken text-text-secondary',
+  dot: 'bg-text-tertiary',
+  swatch: 'bg-surface-sunken',
+};
+
+export function typeToneClasses(eventType: string | null | undefined): EventToneClasses {
+  const slot = TYPE_TINT[(eventType || 'other').toLowerCase()];
+  return (slot ? TINT_CLASSES[slot] : undefined) ?? NEUTRAL_CLASSES;
+}
+
 /** RSVP status → pill copy + tone (a player's own response). */
 export const RSVP_PILL: Record<RSVPStatus, EventTypeMeta> = {
   accepted: { label: 'Going', tone: 'accent' },

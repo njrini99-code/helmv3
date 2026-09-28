@@ -384,6 +384,25 @@ keeps its date separate from the return-to-today action.
   else 7 AM, once per day shown. Event types carry pastel identity tints
   (`typeTone` in `eventPresentation.ts`). Agenda, Week and Month are one tap
   away; the Agenda tests select Agenda explicitly.
+- Week (md and up) is `FairwayWeekTimeGrid`: seven day columns on the Day
+  grid's time axis (`timeGrid.tsx` is shared), a deep-green header row of
+  day buttons (today's date in a cream disc, `aria-current="date"`; a press
+  opens that day in Day), all-day events as ONE bar across the days they
+  cover (`layoutAllDaySegments`; the Fall Invitational spans Fri–Sat), and
+  the now-line in today's column. A phone keeps the week-scoped list.
+- Month (sm and up) is `FairwayMonthGrid`: a deep-green header counts the
+  focused month's events ("7 events in September"; days outside the month
+  don't count) with a legend of types and counts (`summarizeMonth`), then one
+  row per week. All-day and multi-day events are ONE bar per week row across
+  their days (`layoutMonthWeek`: bars first, then timed chips by start time,
+  fewest lanes); timed events are chips tinted by type (`typeToneClasses`,
+  the Day/Week tints) with their start time; class chips keep the owner's
+  identity tint and initials. Rows share one height fitted to the window
+  (96–164px), so the month and this week's row are on screen; a day holding
+  more than fits says "+N more" and opens that day. Today's cell is washed
+  green with its date in a solid disc; out-of-month days are muted, their
+  events are not. Each day's date strip is the one target that opens it.
+  Availability overlays replace team events and the legend names the people.
 - Agenda: month-scoped — its visible window is the title's calendar month
   and prev/next step by month (`Previous month` / `Next month`); the empty
   state names the period ("Nothing in September 2026") in a compact
@@ -405,10 +424,12 @@ keeps its date separate from the return-to-today action.
   (full name from `sm` and in the accessible label), 120px from md. A day heading and
   ONE grouped Surface of rows divided by hairlines; "Show N earlier events"
   is a ghost action with the real count.
-  Phone Month view is `CalendarSurface` (DayPicker, event-day dots from
-  `eventDaySpan`) as one raised card with sans tabular day numbers (never the
-  mono face), the selected day's events beneath; a day tap never switches
-  view. Desktop month keeps a single day target per cell. The week
+  Phone Month view is `CalendarSurface` (DayPicker) under the same green
+  month header, as one raised card with sans tabular day numbers (never the
+  mono face): each day shows up to three dots, one per event type in its tint
+  (from `eventDaySpan`, so Travel home dots Saturday Oct 3, not Sunday), and
+  the selected day's events sit beneath; a day tap never switches view.
+  Desktop month keeps a single day target per cell (its date strip). The week
   strip marks every day a multi-day event runs (same `eventDaySpan`).
 - Player: "Needs your reply → Respond" is a contextual row next to the
   schedule, not a header CTA.
