@@ -3391,3 +3391,15 @@ html[data-helm-sport='golf'] .uppercase {
   --fw-color-border-strong: oklch(0.975 0.015 90 / 0.45);
   --fw-color-border-control: oklch(0.975 0.015 90 / 0.55);
 }
+/* Header actions on the green plinth are all CREAM pills with deep-green ink
+   (owner 2026-09-27: "make the buttons cream"). */
+.fw-plinth-green [data-slot='view-header-actions'] {
+  --fw-color-surface: oklch(0.972 0.022 84);
+  --fw-color-elevated: oklch(0.972 0.022 84);
+  --fw-color-surface-sunken: oklch(0.93 0.03 84);
+  --fw-color-text-primary: oklch(0.36 0.09 152);
+  --fw-color-text-secondary: oklch(0.36 0.09 152);
+  --fw-color-border-subtle: oklch(0.972 0.022 84);
+  --fw-color-border-strong: oklch(0.972 0.022 84);
+  --fw-color-border-control: oklch(0.972 0.022 84);
+}

@@ -251,23 +251,6 @@ function seriesDeltaLabel(points: number): string {
  * Component
  * ────────────────────────────────────────────────────────────────────────── */
 
-/**
- * One fact in the opener's `meta` row — a leading icon and a count.
- *
- * The ViewHeader `meta` slot already sets the row's voice (caption size,
- * `text-text-tertiary`, wrap + gap), so this adds only the icon pairing and
- * `tabular-nums`. The figures sit next to each other and change between loads;
- * proportional digits would make them shuffle sideways as the numbers move.
- */
-function MetaFact({ icon, children }: { icon: React.ReactNode; children: React.ReactNode }) {
-  return (
-    <span className="inline-flex items-center gap-1.5 tabular-nums">
-      <span className="text-text-tertiary">{icon}</span>
-      {children}
-    </span>
-  );
-}
-
 export function FairwayCoachDashboard({
   data,
   initialLatestNotifications,
@@ -640,19 +623,21 @@ export function FairwayCoachDashboard({
         }
         meta={
           stats.rosterSize === 0 ? undefined : (
-            <>
-              <MetaFact icon={<IconUsers size={14} aria-hidden />}>
-                {stats.rosterSize} {stats.rosterSize === 1 ? 'player' : 'players'}
-              </MetaFact>
-              <MetaFact icon={<IconCalendar size={14} aria-hidden />}>
-                {stats.upcomingEvents} upcoming{' '}
-                {stats.upcomingEvents === 1 ? 'event' : 'events'}
-              </MetaFact>
-              <MetaFact icon={<IconFlag size={14} aria-hidden />}>
-                {stats.activeQualifiers} active{' '}
-                {stats.activeQualifiers === 1 ? 'qualifier' : 'qualifiers'}
-              </MetaFact>
-            </>
+            // Owner 2026-09-27: "rework the layout so it's not so hard to
+            // read". The three counts are a stat row on the green band — big
+            // tabular figures over plain labels — not caption-size chips.
+            <dl className="mt-3 grid w-full max-w-xl grid-cols-3 divide-x divide-border-subtle">
+              {[
+                { value: stats.rosterSize, label: stats.rosterSize === 1 ? 'Player' : 'Players' },
+                { value: stats.upcomingEvents, label: stats.upcomingEvents === 1 ? 'Upcoming event' : 'Upcoming events' },
+                { value: stats.activeQualifiers, label: stats.activeQualifiers === 1 ? 'Active qualifier' : 'Active qualifiers' },
+              ].map((stat) => (
+                <div key={stat.label} className="flex flex-col-reverse gap-0.5 px-4 first:pl-0">
+                  <dt className="whitespace-nowrap font-fw-sans text-body-sm text-text-secondary">{stat.label}</dt>
+                  <dd className="font-fw-display text-h2 font-semibold tabular-nums text-text-primary">{stat.value}</dd>
+                </div>
+              ))}
+            </dl>
           )
         }
         secondaryActions={
