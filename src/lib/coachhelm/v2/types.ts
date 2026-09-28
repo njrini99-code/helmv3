@@ -643,9 +643,9 @@ export interface AnalysisOptions {
   includeShotPatterns?: boolean;
   includeLieAnalysis?: boolean;
   /**
-   * Whether ShotPatternMiner.analyzeShotPatterns() should persist its
-   * findings to `golf_patterns_v2` (a write) as a side effect of this
-   * analysis run. Defaults to `true` so existing writers (crons,
+   * Whether this analysis run persists its mined output as a side effect:
+   * ShotPatternMiner's findings to `golf_patterns_v2` and CausalEngine's
+   * relationships to `golf_causal_relationships` (both writes). Defaults to `true` so existing writers (crons,
    * post-round triggers) keep persisting exactly as before.
    *
    * Set to `false` for READ-ONLY callers (e.g. a dashboard page load) —
@@ -654,7 +654,9 @@ export interface AnalysisOptions {
    * the same table and surfaced as a live Postgres deadlock (40P01) that
    * failed the whole player CoachHelm page. A dashboard read should never
    * have a side-effecting write on its critical path — see
-   * shot-pattern-miner.ts's `persistPatterns` option.
+   * shot-pattern-miner.ts's `persistPatterns` option. The causal write had
+   * the same flaw until 2026-09-28: its UPDATE failing with `fetch failed`
+   * rejected analyzePlayer and failed the page (Bridge ca4409c2 / ed64f3b6).
    */
   persistPatterns?: boolean;
   /**
