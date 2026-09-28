@@ -128,7 +128,7 @@ export default function NewQualifierLoading() {
 
           {/* Summary: the tray on a phone, the rail from md */}
           <div className="sticky bottom-[var(--golf-mobile-bottom-nav-offset,0px)] z-[var(--fw-z-sticky)] -mx-1 mt-5 md:bottom-auto md:top-[calc(var(--golf-mobile-header-offset,0px)+var(--fw-hub-subnav-offset,0px)+1.5rem)] md:col-start-2 md:row-start-1 md:mx-0 md:mt-0 md:self-start">
-            <div className="overflow-hidden rounded-card border border-border-subtle bg-surface shadow-raise md:shadow-soft">
+            <div className="overflow-hidden rounded-card border border-border-subtle bg-surface shadow-raise md:max-h-[calc(100dvh-var(--golf-mobile-header-offset,0px)-var(--fw-hub-subnav-offset,0px)-7.5rem)] md:shadow-soft">
               <div className="hidden border-b border-border-strong bg-surface-sunken px-4 py-3 md:block">
                 <Skeleton className="h-4 w-20" />
               </div>
@@ -141,7 +141,7 @@ export default function NewQualifierLoading() {
                   <Skeleton className="h-3.5 w-full" />
                 </div>
               </div>
-              <div className="flex items-center gap-3 p-2 pl-4 md:flex-col md:items-stretch md:gap-2 md:p-4">
+              <div className="flex items-center gap-3 p-2 pl-4 md:mt-4 md:flex-col md:items-stretch md:gap-2 md:border-t md:border-border-subtle md:p-4">
                 <div className="flex min-w-0 flex-1 flex-col gap-1.5 md:hidden">
                   <Skeleton className="h-3.5 w-32" />
                   <Skeleton className="h-3 w-40" />

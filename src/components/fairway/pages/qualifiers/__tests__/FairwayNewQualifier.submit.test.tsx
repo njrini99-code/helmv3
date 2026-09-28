@@ -233,9 +233,16 @@ describe('FairwayNewQualifier — submit reaches the server action (#1270)', () 
     await waitFor(() => {
       expect(screen.getByText(/confirm that this qualifier intentionally allows one round/i)).toBeTruthy();
     });
-    expect(document.activeElement).toBe(
-      screen.getByRole('checkbox', { name: /intentionally allows one 18-hole round/i }),
-    );
+    const cap = screen.getByRole('checkbox', { name: /intentionally allows one 18-hole round/i });
+    expect(document.activeElement).toBe(cap);
+    // The message is the checkbox's description (Base UI merges its own ids
+    // into the attribute, so read every id it lists).
+    const described = (cap.getAttribute('aria-describedby') ?? '')
+      .split(/\s+/)
+      .filter(Boolean)
+      .map((id) => document.getElementById(id)?.textContent ?? '')
+      .join(' ');
+    expect(described).toMatch(/Confirm that this qualifier intentionally allows one round/);
     expect(createGolfQualifier).not.toHaveBeenCalled();
   });
 
@@ -284,6 +291,47 @@ describe('FairwayNewQualifier — submit reaches the server action (#1270)', () 
       selectionSlotsTotal: 4,
       selectionSlotsCoachPick: 4,
     });
+  });
+
+  it('keeps the find box out of the submit: Enter never creates, and "Select N shown" enters exactly those', async () => {
+    // Past 12 players the roster gets a find box (Hampden-Sydney has 21 active
+    // players, Shenandoah 13). It is a registered Base UI field inside the
+    // Form, the #1270 shape, so it gets its own outcome test.
+    const roster = [
+      ['Ada', 'Lovelace'],
+      ['Grace', 'Hopper'],
+      ['Katherine', 'Johnson'],
+      ['Dorothy', 'Vaughan'],
+      ['Mary', 'Jackson'],
+      ['Margaret', 'Hamilton'],
+      ['Hedy', 'Lamarr'],
+      ['Annie', 'Easley'],
+      ['Radia', 'Perlman'],
+      ['Frances', 'Allen'],
+      ['Barbara', 'Liskov'],
+      ['Jean', 'Bartik'],
+      ['Karen', 'Jones'],
+    ].map(([first_name, last_name], i) => ({ id: `r${i + 1}`, first_name: first_name!, last_name: last_name! }));
+    const user = userEvent.setup();
+    render(<FairwayNewQualifier players={roster} />);
+
+    // A complete form, so an Enter that submitted WOULD reach the action.
+    typeName('Big roster qualifier');
+    await pickDate(user, 'Start date', 25);
+    confirmSingleRoundCap();
+
+    const find = screen.getByRole('searchbox', { name: 'Find a player' });
+    await user.type(find, 'jo{Enter}');
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(createGolfQualifier).not.toHaveBeenCalled();
+
+    // "jo" leaves Katherine Johnson and Karen Jones.
+    expect(screen.getAllByRole('checkbox', { name: /Johnson|Jones/ })).toHaveLength(2);
+    fireEvent.click(screen.getByRole('button', { name: 'Select 2 shown' }));
+    fireEvent.click(createButton());
+
+    await waitFor(() => expect(createGolfQualifier).toHaveBeenCalledTimes(1));
+    expect(createGolfQualifier.mock.calls[0]?.[0].playerIds).toEqual(['r3', 'r13']);
   });
 
   it('shows a server refusal beside the Create button', async () => {

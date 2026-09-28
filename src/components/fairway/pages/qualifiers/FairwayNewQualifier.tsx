@@ -198,11 +198,16 @@ function focusControl(el: HTMLElement | null) {
 /** Text fields: the one warm focus colour instead of the green ring. */
 const textFocusCls = 'focus-visible:ring-border-focus';
 
-/** Steppers: 44px square buttons, an ink hover, the warm focus colour. */
+/**
+ * Steppers: 44px square buttons, an ink hover, the warm focus colour.
+ * Tailwind 3 applies stacked variants right to left, so the state variant goes
+ * FIRST: `hover:[&>button]:x` is `.x>button:hover`, while `[&>button]:hover:x`
+ * would be `.x:hover>button` and light both buttons whenever the field is.
+ */
 const stepperCls = cn(
   'min-h-11 focus-within:ring-border-focus',
-  '[&>button]:w-11 [&>button]:hover:bg-surface [&>button]:hover:text-text-primary',
-  '[&>button]:focus-visible:ring-border-focus',
+  '[&>button]:w-11 hover:[&>button]:bg-surface hover:[&>button]:text-text-primary',
+  'focus-visible:[&>button]:ring-border-focus',
 );
 
 /** Checkbox box: ink when checked, with a cream tick. */
@@ -1202,7 +1207,11 @@ function SummaryPanel({
       <div
         className={cn(
           'overflow-y-auto rounded-card border border-border-subtle bg-surface shadow-raise',
-          'md:max-h-[calc(100dvh-var(--golf-mobile-header-offset,0px)-var(--fw-hub-subnav-offset,0px)-3rem)] md:shadow-soft',
+          // The rail ends 6rem above the viewport's bottom edge, clear of the
+          // CoachHelm launcher (`fixed bottom-6 h-14`, CoachHelmDrawer.tsx)
+          // on the right: 1.5rem of top offset + 6rem = 7.5rem. A rail taller
+          // than that scrolls, and its action row stays pinned (below).
+          'md:max-h-[calc(100dvh-var(--golf-mobile-header-offset,0px)-var(--fw-hub-subnav-offset,0px)-7.5rem)] md:shadow-soft',
         )}
       >
         {/* The rail: its band, the qualifier as it will read, the checklist. */}
@@ -1286,7 +1295,14 @@ function SummaryPanel({
           </p>
         ) : null}
 
-        <div className="flex items-center gap-3 p-2 pl-4 md:flex-col md:items-stretch md:gap-2 md:p-4">
+        <div
+          className={cn(
+            'flex items-center gap-3 p-2 pl-4',
+            // In the rail the actions pin to its bottom edge, so Create stays
+            // in view when a short window makes the rail scroll.
+            'md:sticky md:bottom-0 md:mt-4 md:flex-col md:items-stretch md:gap-2 md:border-t md:border-border-subtle md:bg-surface md:p-4',
+          )}
+        >
           {/* The tray: what this is and what's next. */}
           <div className="min-w-0 flex-1 md:hidden">
             <p
