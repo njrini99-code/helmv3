@@ -113,7 +113,7 @@
   --fw-color-accent-fill: oklch(0.540 0.132 149.7); /* = accent-650; cream label 4.69:1 */
   --fw-color-accent-fill-hover: oklch(0.488 0.124 150);
   --fw-color-text-on-accent-fill: oklch(0.994 0.006 95);
-  --fw-color-accent-wash: oklch(0.90 0.06 150);    /* selected segment; ink on it 5.9:1 */
+  --fw-color-accent-wash: oklch(0.86 0.06 138);    /* #bedbb5 selected segment, a deeper sage than the tile track; ink on it 5.1:1 */
   /* GREEN INK, NOT A FILL. Aliases accent-ink (both themes). Never
    * `bg-accent-700` — use 650/750 or accent-fill. */
   --fw-color-accent-700: var(--fw-color-accent-ink);
@@ -141,10 +141,15 @@
      capacitor config, theme-color, offline.html) are pinned by
      src/test/static/canvas-color-sync.test.ts. */
   --fw-color-canvas:         oklch(0.93 0.03 82);    /* #f2e6d2 dark cream page base */
-  --fw-color-surface:        oklch(0.99 0.012 88);   /* THE card: warm CREAM, not white — 1.20:1 off the canvas */
-  --fw-color-surface-tint:   oklch(0.968 0.028 84);  /* a TOASTED warm band — hero plinths */
-  --fw-color-surface-sunken: oklch(0.94 0.026 83);   /* wells, insets, input tracks — below the card, a hair above the page */
-  --fw-color-elevated:       oklch(0.995 0.012 88);  /* menus / popovers / modal body — the brightest cream so floating panels read lifted */
+  /* 2026-09-27 owner pass: the 0.99 card read as WHITE on the dark cream, and
+     cream-on-cream wells plus near-black ink were hard to read. The card is now
+     a VINTAGE cream (it lifts by its warm hairline + shadow), wells and tiles
+     are a soft SAGE green. Text stays dark warm ink (owner: no green text). */
+  --fw-color-surface:        oklch(0.972 0.022 84);  /* #fdf5e6 THE card: vintage cream (old lace), not white */
+  --fw-color-surface-tint:   var(--fw-color-surface); /* hero plinths = the vintage card cream, so they lift off the page (owner 2026-09-27) */
+  --fw-color-surface-sunken: oklch(0.935 0.03 83);   /* a deeper vintage cream: wells, insets, input tracks, toggle tracks, row highlights (owner: no green highlights) */
+  --fw-color-surface-tile:   oklch(0.915 0.03 128);  /* #dde7d2 soft SAGE stat tiles (roster card) */
+  --fw-color-elevated:       oklch(0.975 0.030 88);  /* #fff6e1 menus / popovers / modal body — the lightest vintage cream */
 
   /* Loading blocks. NOT `surface-sunken`: that well is 1.06:1 against the card
      it sits on — present in the DOM, absent to the eye, so a loading screen
@@ -180,29 +185,26 @@
   --fw-color-text-on-accent: oklch(0.994 0.006 95); /* cream text on green */
   --fw-color-text-on-dark:   oklch(0.96 0.005 95);  /* sidebar text */
 
-  /* ---- Borders / warm hairlines (NOT cool gray) ---- */
-  --fw-color-border-subtle: oklch(0.811 0.018 80);      /* a VISIBLE warm hairline (1.46:1 on the card) */
-  --fw-color-border-strong: oklch(0.74 0.018 78);       /* emphasis / table head / hover edge — stronger than subtle */
+  /* ---- Borders / warm hairlines (NOT cool gray, NOT green) ----
+     Owner 2026-09-27: "remove the green outlines". The three edge tokens are a
+     warm taupe (hue 75, low chroma) at the lightness the green ones had, so
+     cards, dividers and controls keep their weight while green is left to the
+     fills, marks and selected states that mean something. */
+  --fw-color-border-subtle: oklch(0.80 0.025 75);       /* visible warm hairline — card edges + dividers (1.73:1 on the card) */
+  --fw-color-border-strong: oklch(0.70 0.03 75);        /* emphasis / table head / hover edge — stronger than subtle */
   /* Control edges: inputs, slider tracks, chips, segmented tracks. WCAG 1.4.11
-     wants 3:1 for the boundary that identifies a control. */
-  --fw-color-border-control: oklch(0.600 0.02 75);
-  /* accent-600, NOT accent-500. This token names a FOCUS indicator, and a focus
-     indicator has to clear WCAG 2.2's 3:1 non-text minimum. accent-500 on the
-     warm canvas measures ~2.67:1 on the OKLCH render path — it fails. That was
-     already known: the shared control helper (`fwFocusRing`, controls/_internal)
-     hard-codes accent-600 and documents this exact reason.
-     The trouble was that only controls built on that helper benefited. 175
-     places in golf/Fairway reach for `ring-border-focus` directly — the
-     conversation rows, settings rows, sliders, popovers, chart frames, toasts,
-     the search field — and every one of them was drawing a ring nobody with
-     low vision could reliably find. Fixing the token fixes all of them at once,
-     and stops the two definitions disagreeing.
-     accent-600 is the same Helm green one step darker, so the brand reads
-     unchanged; only the indicator gains the contrast it always needed.
-     DARK theme keeps accent-500 deliberately — see the dark block below, where
-     accent-500 is the LIGHTER green and is what earns contrast against a dark
-     ground. Darkening it there would make the ring harder to see, not easier. */
-  --fw-color-border-focus:  var(--fw-color-accent-600);
+     wants 3:1 for the boundary that identifies a control (≥3.31:1 here on every
+     cream surface and gradient stop). */
+  --fw-color-border-control: oklch(0.58 0.03 75);
+  /* The focus indicator: a warm dark neutral (owner 2026-09-27: no green
+     outlines), 6.5:1+ on every cream surface, so it clears WCAG 2.2's 3:1
+     non-text minimum with room to spare. It is the ONE focus colour: the
+     shared `fwFocusRing` helper (controls/_internal.ts) and the ~175 direct
+     `ring-border-focus` call sites all read it, so the two can't disagree.
+     The deep green header plinth (.fw-plinth-green, globals.css) rescopes it
+     to cream. BaseballHelm and Lift Lab pin the old green values
+     (src/lib/legacy-sport-tokens.ts). Dark theme: a light warm neutral. */
+  --fw-color-border-focus:  oklch(0.42 0.02 68);
 
   /* ---- Status (green-forward; amber + red are the only off-green hues) ---- */
   --fw-color-success:    var(--fw-color-accent-500);
@@ -514,6 +516,7 @@
   --fw-color-surface:        oklch(0.275 0.005 150);  /* THE card — lifts off canvas */
   --fw-color-surface-tint:   oklch(0.305 0.006 150);  /* hero plinth — a touch lighter */
   --fw-color-surface-sunken: oklch(0.130 0.003 150);  /* wells / insets / input tracks — recede below canvas */
+  --fw-color-surface-tile:   var(--fw-color-surface-sunken);
   --fw-color-elevated:       oklch(0.335 0.006 150);  /* menus / popovers / modal body — brightest, most lifted */
 
   /* The dark twin. Lifts ABOVE the card (the light one sits below it): on a
@@ -571,7 +574,7 @@
   --fw-color-border-subtle: rgb(255 255 255 / 0.07);      /* lit hairline — card edges read off canvas */
   --fw-color-border-strong: rgb(255 255 255 / 0.14);      /* emphasis / table head */
   --fw-color-border-control: oklch(0.600 0.004 150);      /* control edges, 3:1+ on every dark surface */
-  --fw-color-border-focus:  var(--fw-color-accent-500);
+  --fw-color-border-focus:  oklch(0.82 0.02 78);         /* light warm neutral focus ring, 6.8:1+ on every dark surface */
 
   /* ---- Accent WASHES flip to deep-green tints ---- */
   --fw-color-accent-50:  oklch(0.305 0.052 150);  /* selection / success wash on dark */

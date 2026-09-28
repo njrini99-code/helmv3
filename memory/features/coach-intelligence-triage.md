@@ -21,7 +21,13 @@
 
 ## Current State
 
-Coach Intelligence Triage is the coach-facing operational layer on top of CoachHelm AI. Its canonical `/golf/dashboard/intelligence` surface is a Triage Desk: a horizontal daily brief, a player-grouped open-signal queue, an evidence/action dossier, a roster-development view, and a compact effectiveness scoreboard.
+Coach Intelligence Triage is the coach-facing operational layer on top of CoachHelm AI. Its canonical `/golf/dashboard/intelligence` surface is a Triage Desk (`TriageDesk.tsx`) with a Home · The Lab · Chat toggle (`?view=home|lab|chat`, 2026-09-27):
+
+- Home: the greeting with the last-scan time and Scan team beside it, then Team intelligence (`intel/TeamIntelligence.tsx`, 2026-09-28). It replaced the bleed board, team shot weaknesses and the game pressure map. It has filters (round type; Season or Last 30 days; vs the team's configured Tour baseline or vs team average), four theme cards (Off the tee, Approach, Around the green, Putting) with SG per round, change and sparkline, and a cause visual for the selected theme (tee zones, an 8-way approach miss plot at the measured leave, chip leaves, putt leaves in the tagged direction). Beside it sit a player spotlight and "Who's contributing", a worst-to-best list where tapping a player filters the cause and spotlight.
+- The Lab: the player-grouped open-signal queue beside the evidence/action dossier, with Scan team in its header too.
+- Chat: the Ask CoachHelm conversation, embedded and kept mounted once opened.
+
+The roster-development view (`PlayersGridView`) has no toggle segment but stays reachable by deep link (`?view=players`, which many links use). The effectiveness scoreboard is no longer on this page: the legacy `?view=effectiveness` opens Home and `?view=signals` opens The Lab.
 
 This feature is distinct from the engine itself: `memory/features/coachhelm-ai.md` describes generation/trust behavior, while this document describes coach workflows after intelligence exists.
 
@@ -40,12 +46,18 @@ Coaching philosophy saves use one authoritative hook write path with downstream 
 
 ### Components
 
+- `src/components/golf/coachhelm/triage/**` (the desk, its views and cards)
+- `src/components/golf/coachhelm/home/CoachIntelligenceHome.tsx` (empty-roster gate, greeting, Chat tab)
 - `src/components/golf/coachhelm/alerts/**`
 - `src/components/golf/coachhelm/patterns/**`
 - `src/components/golf/coachhelm/insights/**`
 - `src/components/golf/coachhelm/analytics/**`
 - `src/components/golf/coachhelm/settings/**`
 - `src/components/golf/coachhelm/v2/**`
+
+### Data
+
+- `src/lib/golf/team-intelligence/**` (`loadTeamIntelligence`: the team's completed, non-test rounds and their tracked shots, normalized once; `aggregate.ts` slices and summarizes them in the client)
 
 ### Actions
 
@@ -102,6 +114,10 @@ CoachHelm generates insight/pattern/prediction
 - Intelligence dashboard should communicate team-wide patterns without hiding per-player drilldowns.
 - Coaching settings should make sensitivity, thresholds, weights, and alert toggles clear enough that coaches understand downstream impact.
 - Mobile views must stay dense and scannable; avoid stacked header controls.
+- Strokes figures stay visible wherever this page shows them (owner rule, 2026-09-27, after a coach reported strokes gained missing): each Home theme card's "Up to N strokes / round available" (engine-backed live counterfactual from `getTeamCategoryInsights` only, never estimated, and absent when the engine has no figure), SG on every theme card and player row, and the dossier's est. strokes (clamped at 8 per round for one signal, as `EvidencePanel` clamps; a roster roll-up is a sum and is not clamped).
+- A deep link that implies The Lab without naming a view (`?signal=`, the legacy `?id=`, `?filter=`) stays in The Lab when that context is cleared (Back, Prescribe, a review, "All"): `hrefFor` pins the current view whenever an update does not name one.
+- Team intelligence reads only tracked data: approach misses use the 8 recorded directions and the measured leave (no lateral coordinates exist, so the plot places a miss by its tagged direction at its leave distance), a putt's leave is the next putt's length, and a tile below 5 shots says "low sample" instead of judging. The default theme is the team's worst SG; Season is the default window.
+- The route's `loading.tsx` paints Home's shape (toggle, greeting row, Team intelligence's filters, four theme cards, cause and spotlight cards, and the contributor list); `loading.tsx` gets no search params, so a Lab or Chat deep link paints that frame first.
 - A retired route that is now a `permanentRedirect` shim (`alerts`, `analytics/coachhelm`) keeps a `loading.tsx` that renders only `bg-canvas` — no skeleton geometry and no `<h1>`. Its real first paint is nothing, so a reconstructed workspace fallback there announces and reserves a screen that no longer mounts. The file is kept, not deleted, so the ancestor `dashboard/loading.tsx` cannot claim the segment with a full `FairwayDashboardSkeleton`. `insights` is the third shim on this pattern. For a live route, the fallback reserves the paint at t=0 — for a `'use client'` page holding its own `loading` state that is that component's loading branch, not its settled layout.
 
 ## Known Risk Areas
@@ -113,6 +129,9 @@ CoachHelm generates insight/pattern/prediction
 
 ## Tests To Prefer
 
+- `src/components/golf/coachhelm/triage/__tests__/**` (desk navigation)
+- `src/components/golf/coachhelm/intel/**/__tests__/**` and `src/lib/golf/team-intelligence/__tests__/**` (Home's Team intelligence)
+- `src/components/golf/coachhelm/home/__tests__/CoachIntelligenceHome.hasData.test.tsx`
 - `src/test/golf/actions/coachhelm-analytics.test.ts`
 - `src/test/coachhelm/v2/**`
 - `src/test/api/cron/coachhelm*.test.ts`

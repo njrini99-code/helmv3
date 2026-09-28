@@ -35,8 +35,14 @@ import { usePathname } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { fwFocusRing, fwTransition } from '@/components/fairway/controls/_internal';
+import {
+  SegmentedPill,
+  TRACK_SUNKEN_SHADOW,
+  segmentedItemClassName,
+  segmentedTrackClassName,
+} from '@/components/fairway/controls/segmented';
 import { useScrollFade } from '@/lib/fairway/use-scroll-fade';
-import type { GolfSubTab } from '@/lib/golf/nav-registry';
+import { SEGMENTED_HUB_TABS, type GolfSubTab } from '@/lib/golf/nav-registry';
 import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
 
 export interface FairwayHubSubNavProps {
@@ -44,7 +50,54 @@ export interface FairwayHubSubNavProps {
   tabs: readonly GolfSubTab[];
   /** Accessible label for the nav landmark (e.g. "Team sections"). */
   ariaLabel: string;
+  /**
+   * `underline` (default) is the compact tab strip. `segmented` is the large
+   * depth toggle — sunken track, green pill — the same recipe as the
+   * calendar's Day/Week/Month control. Omitted, the hub decides: tabs listed
+   * in `SEGMENTED_HUB_TABS` (the Schedule hub) get `segmented`.
+   */
+  variant?: 'underline' | 'segmented';
   className?: string;
+}
+
+/** The shell offset a page's own sticky chrome reads to sit under this strip. */
+const SUBNAV_OFFSET_VAR = '--fw-hub-subnav-offset';
+
+const useIsoLayoutEffect = typeof window === 'undefined' ? React.useEffect : React.useLayoutEffect;
+
+/** Roving focus across the strip's links: arrows, Home and End. */
+function useRovingKeyDown(
+  activeIndex: number,
+  count: number,
+  itemRefs: React.MutableRefObject<Array<HTMLAnchorElement | null>>,
+) {
+  return React.useCallback(
+    (e: React.KeyboardEvent) => {
+      if (count === 0) return;
+      let next: number | null = null;
+      switch (e.key) {
+        case 'ArrowRight':
+        case 'ArrowDown':
+          next = (activeIndex + 1) % count;
+          break;
+        case 'ArrowLeft':
+        case 'ArrowUp':
+          next = (activeIndex - 1 + count) % count;
+          break;
+        case 'Home':
+          next = 0;
+          break;
+        case 'End':
+          next = count - 1;
+          break;
+        default:
+          return;
+      }
+      e.preventDefault();
+      itemRefs.current[next]?.focus();
+    },
+    [activeIndex, count, itemRefs],
+  );
 }
 
 /**
@@ -86,7 +139,12 @@ function resolveActiveTabId(pathname: string | null, tabs: readonly GolfSubTab[]
   return best?.id ?? null;
 }
 
-export function FairwayHubSubNav({ tabs, ariaLabel, className }: FairwayHubSubNavProps) {
+export function FairwayHubSubNav({ variant, ...props }: FairwayHubSubNavProps) {
+  const segmented = variant ? variant === 'segmented' : SEGMENTED_HUB_TABS.has(props.tabs);
+  return segmented ? <SegmentedHubSubNav {...props} /> : <UnderlineHubSubNav {...props} />;
+}
+
+function UnderlineHubSubNav({ tabs, ariaLabel, className }: Omit<FairwayHubSubNavProps, 'variant'>) {
   const reduceMotion = useReducedMotionGuard();
   const pathname = usePathname();
   const reactId = React.useId();
@@ -124,34 +182,7 @@ export function FairwayHubSubNav({ tabs, ariaLabel, className }: FairwayHubSubNa
     }
   }, [activeIndex, pathname]);
 
-  const onKeyDown = React.useCallback(
-    (e: React.KeyboardEvent) => {
-      const count = tabs.length;
-      if (count === 0) return;
-      let next: number | null = null;
-      switch (e.key) {
-        case 'ArrowRight':
-        case 'ArrowDown':
-          next = (activeIndex + 1) % count;
-          break;
-        case 'ArrowLeft':
-        case 'ArrowUp':
-          next = (activeIndex - 1 + count) % count;
-          break;
-        case 'Home':
-          next = 0;
-          break;
-        case 'End':
-          next = count - 1;
-          break;
-        default:
-          return;
-      }
-      e.preventDefault();
-      itemRefs.current[next]?.focus();
-    },
-    [activeIndex, tabs.length],
-  );
+  const onKeyDown = useRovingKeyDown(activeIndex, tabs.length, itemRefs);
 
   if (tabs.length === 0) return null;
 
@@ -234,6 +265,98 @@ export function FairwayHubSubNav({ tabs, ariaLabel, className }: FairwayHubSubNa
           );
         })}
       </ul>
+    </nav>
+  );
+}
+
+/**
+ * The Schedule hub's strip: the large depth toggle. Same links, same
+ * aria-current and roving focus as the underline strip; the look is the
+ * shared Segmented recipe (sunken track, green pill with a cream label that
+ * glides between tabs as the route changes).
+ *
+ * It is taller than the 2.5rem the shell assumes for a strip, so it
+ * publishes its real height on the shell column (`--fw-hub-subnav-offset`),
+ * where the calendar masthead and every other sticky header read it, and
+ * restores the shell's value when it unmounts.
+ */
+function SegmentedHubSubNav({ tabs, ariaLabel, className }: Omit<FairwayHubSubNavProps, 'variant'>) {
+  const reduceMotion = useReducedMotionGuard();
+  const pathname = usePathname();
+  const reactId = React.useId();
+  const { ref: fadeRef, fadeStyle } = useScrollFade<HTMLUListElement>('x');
+  const resolved = resolveActiveTabId(pathname, tabs) ?? tabs[0]?.id ?? null;
+  const itemRefs = React.useRef<Array<HTMLAnchorElement | null>>([]);
+  const activeIndex = Math.max(0, tabs.findIndex((t) => t.id === resolved));
+  const onKeyDown = useRovingKeyDown(activeIndex, tabs.length, itemRefs);
+
+  const navRef = React.useRef<HTMLElement>(null);
+  useIsoLayoutEffect(() => {
+    const nav = navRef.current;
+    const host = nav?.parentElement;
+    if (!nav || !host) return;
+    const previous = host.style.getPropertyValue(SUBNAV_OFFSET_VAR);
+    const publish = () => host.style.setProperty(SUBNAV_OFFSET_VAR, `${nav.offsetHeight}px`);
+    publish();
+    const observer = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(publish);
+    observer?.observe(nav);
+    return () => {
+      observer?.disconnect();
+      if (previous) host.style.setProperty(SUBNAV_OFFSET_VAR, previous);
+      else host.style.removeProperty(SUBNAV_OFFSET_VAR);
+    };
+  }, []);
+
+  if (tabs.length === 0) return null;
+
+  return (
+    <nav
+      ref={navRef}
+      aria-label={ariaLabel}
+      data-slot="fairway-hub-subnav"
+      data-variant="segmented"
+      className={cn('sticky top-[var(--golf-mobile-header-offset)] z-raised w-full fw-glass-chrome border-b', className)}
+    >
+      <div className="px-4 py-2 sm:px-6 lg:px-8">
+        {/* A real navigation list of route links — NOT a tablist (WCAG 2.2 4.1.2). */}
+        <ul
+          ref={fadeRef}
+          style={{ ...fadeStyle, boxShadow: TRACK_SUNKEN_SHADOW }}
+          className={segmentedTrackClassName('md', true, 'md:inline-flex md:w-auto')}
+        >
+          {tabs.map((t, i) => {
+            const isActive = t.id === resolved;
+            const Icon = t.icon;
+            return (
+              <li key={t.id} className="flex min-w-0 flex-1 md:flex-none">
+                <Link
+                  href={t.href}
+                  ref={(node) => {
+                    itemRefs.current[i] = node;
+                  }}
+                  aria-current={isCurrentPage(pathname, t) ? 'page' : undefined}
+                  tabIndex={isActive ? 0 : -1}
+                  onKeyDown={onKeyDown}
+                  data-active={isActive ? '' : undefined}
+                  className={cn(
+                    segmentedItemClassName(isActive, 'md', true),
+                    'w-full min-h-[40px] select-none px-2.5 sm:px-5',
+                  )}
+                >
+                  {isActive ? (
+                    <SegmentedPill
+                      layoutId={reduceMotion ? undefined : `fw-hub-subnav-pill-${reactId}`}
+                      reduceMotion={Boolean(reduceMotion)}
+                    />
+                  ) : null}
+                  {Icon ? <Icon size={16} aria-hidden="true" className="flex-shrink-0" /> : null}
+                  <span className="whitespace-nowrap">{t.label}</span>
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
+      </div>
     </nav>
   );
 }

@@ -12,21 +12,22 @@
  * ========================================================================== */
 
 /**
- * The Fairway focus-visible ring. A green 2px ring with 2px offset — visible on
- * cream surfaces; the design system's base layer brightens it to `accent-400` +
- * a cream halo inside the `.on-dark` (sidebar) scope, which handles dark.
+ * The Fairway focus-visible ring: a 2px ring with a 2px offset, in the ONE
+ * focus colour, `--fw-color-border-focus`.
  *
- * P421: the ring color is `accent-600` (darker green), NOT the `border-focus`
- * token (= accent-500). Solid accent-500 vs the warm canvas is only ~3.1:1 and
- * the OKLCH-rendered green measures ~2.67:1 (FAILS WCAG 2.2 non-text 3:1).
- * accent-600 (≈4:1+ vs canvas) clears 3:1 with margin across canvas/surface/
- * sunken/elevated and the OKLCH render path. The brand green stays accent-500
- * for fills/markers; only the focus indicator is darkened here.
+ * P421 hard-coded `accent-600` here because the token was then accent-500,
+ * which failed WCAG 2.2's 3:1 non-text minimum on the warm canvas. The token
+ * has since been fixed at the source, and on golf it is now a warm dark
+ * neutral (owner 2026-09-27: no green outlines; 6.5:1+ on every cream
+ * surface), so the helper reads it instead of keeping a second definition.
+ * The deep green header plinth rescopes it to cream; BaseballHelm and Lift Lab
+ * pin the old green (src/lib/legacy-sport-tokens.ts). The `.on-dark` sidebar
+ * keeps its own outline + halo (globals.css).
  *
  * Uses `ring-offset-canvas` so the offset gap matches the warm page beneath.
  */
 export const fwFocusRing =
-  'outline-none focus-visible:ring-2 focus-visible:ring-accent-600 ' +
+  'outline-none focus-visible:ring-2 focus-visible:ring-border-focus ' +
   'focus-visible:ring-offset-2 focus-visible:ring-offset-canvas';
 
 /**

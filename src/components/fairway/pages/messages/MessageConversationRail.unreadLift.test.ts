@@ -104,98 +104,49 @@ describe('G-32 — the unread row lift is an existing token, measured', () => {
     return railCode.slice(start, end);
   }
 
-  it('the rail no longer lifts the unread row off the list', () => {
-    // The reversal, pinned, and scoped to the ROW. A per-row shadow or radius
-    // reintroduces the two box sizes and the 6px-vs-30px perceived cadence
-    // this surface was rebuilt to remove. The LIST is allowed a shadow — that
-    // is where the owner's depth request landed; see the depth test below.
+  // RE-ANCHORED 2026-09-27 (owner): "get rid of this card style, we just want
+  // highlight, and new message is a green dot to the right". The triage lists
+  // are no longer raised cards, the selected row is a plain rounded highlight
+  // with no leading accent rule, and unread is a green dot, not a fill or badge.
+  it('the row is a plain highlight: no shadow, no leading rule', () => {
     const row = rowClassList();
     expect(row).not.toContain('var(--fw-shadow-card)');
-    expect(row).not.toMatch(/rounded-fw-md/);
+    expect(row).not.toContain('inset_3px_0_0_0');
+    expect(row).toContain("'rounded-fw-md'");
   });
 
-  it('expresses unread as a fill inside a divided list instead', () => {
-    expect(railCode).toContain("!isSelected && hasUnread && 'bg-elevated'");
-    // Deliberately NOT the leaderboard's accent tint. This row already spends
-    // accent three times (unread Badge, group glyph, timestamp), and tinting
-    // it accent as well made the badge and glyph disappear into their own
-    // background. The structure is borrowed; the colour is not.
+  it('marks unread with a green dot on the right, not a fill or a badge', () => {
+    expect(railCode).toContain('h-2.5 w-2.5 flex-shrink-0 rounded-full bg-accent-fill');
+    expect(railCode).not.toContain("hasUnread && 'bg-elevated'");
     expect(railCode).not.toContain("hasUnread && 'bg-accent");
-    // Every conversation list on this surface is divided, not gapped: the
-    // hairline is what separates rows now, and it costs no vertical space, so
-    // one cadence survives regardless of which rows are unread.
-    expect(railCode).not.toContain('flex flex-col gap-1.5');
-    const lists = railCode.match(/divide-y divide-border-subtle/g) ?? [];
-    expect(lists.length).toBe(3);
+    expect(railCode).not.toContain('<Badge');
   });
 
-  it('puts the depth on the list, never back on the row', () => {
-    // The owner asked for depth after the flattening, and this is where it
-    // is allowed to live. The two triage lists are raised cards; the rows
-    // inside them stay identical boxes, so the cadence the flattening bought
-    // survives. A shadow on the ROW is what this whole suite forbids.
-    const cards = railCode.match(
-      /divide-y divide-border-subtle overflow-hidden rounded-card bg-surface shadow-raise/g,
-    ) ?? [];
-    expect(cards.length).toBe(2);
-    // RE-ANCHORED onto ONE radius token and ONE shadow token. The first
-    // attempt composed `--fw-shadow-card` over `--fw-shadow-soft` on
-    // `rounded-fw-lg`, and the owner rejected it as "doing too much" — so the
-    // count assertion above is what still does the work here, and these two
-    // pins are what keep the composite from creeping back:
-    //
-    //   • `rounded-fw-lg` is 28px and its token comment reserves it for
-    //     "modals, sheets, hero plinths, glass bars"; `--fw-radius-card`'s
-    //     says "THE card radius". A list card taking the sheet radius was a
-    //     token misuse, not a taste call.
-    //   • `card` and `soft` each carry a `0 1px 2px` CONTACT layer. Stacked
-    //     they read ~0.11 at 2px blur — a hard dark edge at the card's foot,
-    //     which is the "resting on" tell and the opposite of floating.
-    //     `--fw-shadow-raise`'s own comment names the state the owner asked
-    //     for: "popovers / floating glass".
+  it('the triage lists are plain lists, not cards', () => {
+    expect(railCode).not.toContain('rounded-card bg-surface shadow-raise');
     expect(railCode).not.toContain('rounded-fw-lg');
     expect(railCode).not.toContain('var(--fw-shadow-soft)');
-    expect(tokens).toContain('--fw-radius-card: 1.25rem;');
-    expect(tokens).toMatch(/--fw-shadow-raise:[\s\S]*?floating glass/);
-    // A mapped utility, not a bracket — `shadow-raise` resolves to the fw
-    // token in tailwind.config.ts. The prohibition below stands regardless:
-    // no hand-typed colour may enter a box-shadow on this surface.
-    expect(config).toContain("'raise':         'var(--fw-shadow-raise)'");
     expect(railCode).not.toMatch(/box-shadow:[^'"`\]]*(oklch|rgba?)\(/);
-    // …and the unread row is a step ABOVE that card, not a box on the canvas.
-    const rowStart = railCode.indexOf("!isSelected && hasUnread &&");
-    const rowDecl = railCode.slice(rowStart, railCode.indexOf(',', rowStart));
-    expect(rowDecl).not.toContain('shadow');
-    expect(rowDecl).not.toContain('rounded');
+    const lists = railCode.match(/<ul className="flex flex-col gap-0\.5">/g) ?? [];
+    expect(lists.length).toBe(2);
   });
 
   it('gives every row the same box, whatever its state', () => {
-    // The three things that made rows differ, each pinned with its measured
-    // reason. Any one of them coming back reintroduces two row heights or two
-    // perceived cadences.
-    //
-    // 1. Radius. Button's base is `rounded-full`; without an explicit
-    //    override the unread tint paints as a pill and the divider run gets
-    //    rounded ends.
-    expect(railCode).toContain('rounded-none border-0 p-3');
-    // 2. Row height. The avatar is 48px and the row is pinned to it, so the
-    //    text block can never decide the height.
+    // The avatar is 48px and the row is pinned to it, so neither the text
+    // block nor the unread dot can change the row height.
     expect(railCode).toContain('<div className="flex h-12 items-center gap-3">');
-    // 3. The badge's line box. `text-[11px]` sets only a font-size, so the
-    //    badge inherited the row's 24px line-height and rendered 28px against
-    //    its own 20px `min-h-5` — 8px straight into the row height, which is
-    //    exactly the 80-vs-72 that was measured.
-    expect(railCode).toContain("className=\"flex-shrink-0 leading-none\"");
+    expect(railCode).toContain('justify-start border-0 p-3');
   });
 
   it('is the same treatment the repo already ships for a marked row', () => {
-    // Not invented here. If the leaderboard's idiom changes, this surface's
+    // Not invented here. If the precedent's idiom changes, this surface's
     // justification changes with it and someone should look at both.
-    const leaderboard = read(
-      'src/components/fairway/pages/qualifiers/FairwayQualifierLeaderboard.tsx',
-    );
-    expect(leaderboard).toContain('divide-y divide-border-subtle');
-    expect(leaderboard).toContain("'bg-accent-50/60'");
+    // The precedent was FairwayQualifierLeaderboard until its 2026-09-28
+    // redesign dropped the green row wash (owner: no green bands); the CRM
+    // replies inbox ships the same marked-row fill in a dense divided list.
+    const inbox = read('src/app/golf/admin/crm/components/replies/InboxView.tsx');
+    expect(inbox).toContain('divide-y divide-border-subtle');
+    expect(inbox).toContain("'bg-accent-50/60'");
   });
 
   it('does NOT use `shadow-card`, which is a different value entirely', () => {
@@ -210,18 +161,10 @@ describe('G-32 — the unread row lift is an existing token, measured', () => {
     expect(config).not.toContain("'fw-card':");
   });
 
-  it('selection still wins over the unread face', () => {
-    // Both paint a background. If the unread branch were unconditional, an
-    // open unread thread would render tinted instead of selected and the two
-    // states would be indistinguishable.
-    const idx = railCode.indexOf('!isSelected && hasUnread');
-    expect(idx).toBeGreaterThan(-1);
-    const after = railCode.slice(idx, idx + 320);
-    expect(after).toContain('isSelected');
-    expect(after).toContain('bg-surface-sunken');
-    // The selected marker is a leading accent rule painted as an inset
-    // shadow, so it adds no width and shifts no text in a flush list.
-    expect(after).toContain('inset_3px_0_0_0_var(--fw-color-accent-500)');
+  it('the selected row is a cream highlight, not green', () => {
+    // Owner 2026-09-27: no green highlighting. surface-sunken is a cream well.
+    expect(railCode).toContain("isSelected ? 'bg-surface-sunken' : 'hover:bg-surface-sunken/60'");
+    expect(tokens).toMatch(/--fw-color-surface-sunken: oklch\(0\.935 0\.03 83\)/);
   });
 });
 

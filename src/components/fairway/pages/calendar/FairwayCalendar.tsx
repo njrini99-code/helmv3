@@ -34,10 +34,10 @@
  *            RSVP control; read-only events, no FAB.
  *
  * ── HONEST-EMPTY (the all-past demo) ─────────────────────────────────────────
- *   21 events ALL PAST → upcomingCount === 0. We DEFAULT TO AGENDA so the real
- *   Feb–Apr events are visible immediately (the current week is empty); the hero
- *   shows the dim "No upcoming events" line (no fabricated count); 0 declined /
- *   tentative render as 0 in the coach Readouts.
+ *   The calendar DEFAULTS TO DAY (owner 2026-09-27): today's time grid,
+ *   scrolled to now. An empty day says so in its header ("Nothing on the
+ *   books") and never fabricates a count; Agenda is one tap away for the
+ *   month's list. 0 declined / tentative render as 0 in the coach Readouts.
  *
  * ── HYDRATION (serverNow → nowRef) ───────────────────────────────────────────
  *   We seed BOTH the server and first-client render from `serverNow` so the
@@ -80,6 +80,8 @@ import type { GolfEventFormData, RecurringEditScope } from '@/components/golf/ca
 import { FairwayCalendarHero } from './FairwayCalendarHero';
 import surfaces from './CalendarSurfaces.module.css';
 import { FairwayAgendaView } from './FairwayAgendaView';
+import { FairwayDayTimeGrid } from './FairwayDayTimeGrid';
+import { FairwayWeekTimeGrid } from './FairwayWeekTimeGrid';
 import { FairwayMonthGrid, type ScheduleOverlay } from './FairwayMonthGrid';
 import { FairwayMonthOverview } from './FairwayMonthOverview';
 import { FairwayCalendarMemberRail } from './FairwayCalendarMemberRail';
@@ -244,9 +246,9 @@ export function FairwayCalendar({
     });
   }, [initialFocus, teamTimezone]);
 
-  // DEFAULT AGENDA — on the all-past demo the current week is empty; Agenda
-  // surfaces the real Feb–Apr events immediately. Week stays one tap away.
-  const [view, setView] = React.useState<ViewId>('agenda');
+  // DEFAULT DAY (owner 2026-09-27): the calendar opens on today's time grid,
+  // scrolled to now. Agenda, Week and Month stay one tap away.
+  const [view, setView] = React.useState<ViewId>('day');
 
   // ── Visible window — varies with the active lens. ───────────────────────────
   const visibleWindow = React.useMemo(() => {
@@ -1319,16 +1321,17 @@ export function FairwayCalendar({
           overdueTaskCount={overdueTaskCount}
         />
       ) : isDay ? (
-        <FairwayAgendaView
+        // Day → the full 24-hour time grid: blocks sized by duration, the
+        // all-day band above, the now-line on today (FairwayDayTimeGrid).
+        <FairwayDayTimeGrid
           events={events}
-          mode="day"
           focusDate={focusDate}
+          nowRef={nowRef}
           isCoach={isCoach}
           userRsvpStatuses={userRsvpStatuses}
           timezone={teamTimezone}
           onEventClick={openDrawerForEvent}
           onCreateEvent={isCoach ? handlePrimaryAction : undefined}
-          nowRef={nowRef}
           isLoadingRange={isLoadingRange}
         />
       ) : view === 'month' ? (
@@ -1386,24 +1389,45 @@ export function FairwayCalendar({
           </div>
         </>
       ) : (
-        // ── Week → a week-scoped agenda for BOTH roles (sparse golf calendars
-        //    read better as a list than a time-grid). Opens the same Fairway
-        //    drawer; coaches get the "New event" CTA on the empty state. ────────
-        <FairwayAgendaView
-          events={events}
-          mode="range"
-          focusDate={focusDate}
-          rangeStart={visibleWindow.start}
-          rangeEnd={visibleWindow.end}
-          periodLabel={`the week of ${format(visibleWindow.start, 'MMMM d')}`}
-          isCoach={isCoach}
-          userRsvpStatuses={userRsvpStatuses}
-          timezone={teamTimezone}
-          onEventClick={openDrawerForEvent}
-          onCreateEvent={isCoach ? handlePrimaryAction : undefined}
-          nowRef={nowRef}
-          isLoadingRange={isLoadingRange}
-        />
+        // ── Week → from md up, seven day columns on one time axis (all-day
+        //    bars across the days they cover, the now-line on today); a day
+        //    header opens that day. A phone keeps the week-scoped list, where
+        //    seven narrow columns would not read. Both open the same drawer.
+        <>
+          <div className="md:hidden">
+            <FairwayAgendaView
+              events={events}
+              mode="range"
+              focusDate={focusDate}
+              rangeStart={visibleWindow.start}
+              rangeEnd={visibleWindow.end}
+              periodLabel={`the week of ${format(visibleWindow.start, 'MMMM d')}`}
+              isCoach={isCoach}
+              userRsvpStatuses={userRsvpStatuses}
+              timezone={teamTimezone}
+              onEventClick={openDrawerForEvent}
+              onCreateEvent={isCoach ? handlePrimaryAction : undefined}
+              nowRef={nowRef}
+              isLoadingRange={isLoadingRange}
+            />
+          </div>
+          <div className="hidden md:block">
+            <FairwayWeekTimeGrid
+              events={events}
+              focusDate={focusDate}
+              nowRef={nowRef}
+              isCoach={isCoach}
+              userRsvpStatuses={userRsvpStatuses}
+              timezone={teamTimezone}
+              onEventClick={openDrawerForEvent}
+              onSelectDay={(d) => {
+                setFocusDate(d);
+                setView('day');
+              }}
+              isLoadingRange={isLoadingRange}
+            />
+          </div>
+        </>
       )}
       </motion.div>
 

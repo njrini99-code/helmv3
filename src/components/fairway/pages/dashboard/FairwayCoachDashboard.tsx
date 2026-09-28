@@ -21,8 +21,9 @@
  *     — no `.pill-soft`-on-Button, no bespoke Links.
  *   • Date range is a quiet Segmented control in a calm toolbar band (preserves
  *     the ?range router.push contract — logic unchanged).
- *   • Team KPIs are matte MetricCards that show honest insufficient-data when
- *     round coverage is low (never authoritative zeros, data-gap:medium).
+ *   • Team KPIs are one "Team performance" card of four hairline-divided
+ *     cells (TeamKpiCell) that show honest insufficient-data when round
+ *     coverage is low (never authoritative zeros, data-gap:medium).
  *   • Recent Rounds becomes a clean DataTable; Performance Trend + Team Pulse +
  *     Top Performers collapse into one calm "Team" region on matte Surfaces.
  *   • Coach-without-team becomes an OnboardingStep funnel, not a zeroed page.
@@ -42,27 +43,28 @@ import {
   ViewHeader,
   Surface,
   Inset,
-  MetricCard,
   DataTable,
   Segmented,
   Button,
   StatusPill,
   Avatar,
+  AvatarGroup,
   InlineNotice,
   EmptyState,
   InsufficientData,
   OnboardingStep,
   OnboardingSteps,
   Skeleton,
-  Sparkline,
   type ColumnDef,
   type TrendPoint,
 } from '@/components/fairway';
+import { TeamKpiCell, windowLabel } from './TeamKpiCell';
+import { TodayCalendarPanel } from './TodayCalendarPanel';
 // The ONE series→delta→verdict reducer (AUDIT-0724 findings #2/#6/#7) — feeds
-// BOTH a KPI card's delta chip AND its Sparkline's `direction` prop from a
+// BOTH a KPI cell's delta chip AND its Sparkline's `direction` prop from a
 // single call, so the two can never classify the same series two different
 // ways again. Direct-file import (not the barrel) mirrors how MetricCard
-// itself imports its trend classifier.
+// imports its trend classifier.
 import { computeSeriesTrend } from '@/components/fairway/charts/seriesTrend';
 import {
   IconUsers,
@@ -70,21 +72,13 @@ import {
   IconFlag,
   IconChartBar,
   IconPlus,
-  IconCopy,
-  IconCheck,
   IconGolf,
   IconTarget,
   IconArrowRight,
-  IconClock,
-  IconMapPin,
 } from '@/components/icons';
-import { formatTimeInTz, getCurrentDecimalHourInTz } from '@/lib/utils/timezone';
+import { getCurrentDecimalHourInTz } from '@/lib/utils/timezone';
 import { getGreeting, timeOfDayForHour } from '@/lib/utils/time-of-day';
-import {
-  Users as LucideUsers,
-  Flag as LucideFlag,
-  Calendar as LucideCalendar,
-} from 'lucide-react';
+import { Flag as LucideFlag } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { FairwayJoinRequestAlert } from '@/components/fairway/pages/roster/FairwayJoinRequestAlert';
 import { NotificationsLatestModule } from '@/components/fairway/notifications';
@@ -93,15 +87,13 @@ import type { JoinRequestData } from '@/app/golf/actions/teams';
 import type {
   CoachDashboardPayload,
   DashboardDateRange,
-  TodayEvent,
 } from '@/app/golf/actions/dashboard-data';
 import type { CoachDashboardData } from '@/app/golf/(dashboard)/dashboard/components/coach-dashboard-types';
-import { DaySchedule, type DayScheduleEvent } from './DaySchedule';
 import { formatToPar } from '@/lib/golf/format-to-par';
 import { formatMetricText } from '@/lib/golf/metrics/display-registry';
 import { competitionRankLabels } from '@/lib/golf/tie-rank';
 
-/** Round to 1 dp as a number (NumberFlow/MetricCard values), no string step. */
+/** Round to 1 dp as a number (NumberFlow values), no string step. */
 function round1(n: number): number {
   return Math.round(n * 10) / 10;
 }
@@ -217,7 +209,11 @@ function shortDate(iso: string): string {
 }
 
 /**
- * Honest windowed delta + verdict over a sparkline series (oldest → newest).
+ * The Team performance card's footer caption: how many counted rounds the
+ * figures cover, and what the delta chips measure. Said once for the card.
+ *
+ * The chips are an honest windowed delta + verdict over each metric's
+ * sparkline series (oldest → newest).
  * `computeSeriesTrend()` (charts/seriesTrend.ts) is the SAME split-half-
  * average comparison `computeTrend()`/`computeTrendHigherIsBetter()` already
  * use server-side (dashboard-data.ts) to classify the qualitative trend
@@ -239,34 +235,21 @@ function shortDate(iso: string): string {
  * showing an unreliable 2-point comparison. This is the only numeric
  * movement the dashboard payload supports client-side — the payload's
  * `trend` field is a qualitative direction, not a magnitude.
+ *
+ * The chip is the movement across each player's own latest rounds, averaged
+ * (buildPerPlayerSparkline), while the figure beside it covers the whole
+ * window. This caption says so ONCE, instead of repeating "players' last 5
+ * rounds" under every cell.
  */
-function seriesDeltaLabel(points: number): string {
-  // The chip is the movement across each player's own latest rounds, averaged
-  // (buildPerPlayerSparkline), while the value beside it covers the whole
-  // window. Say so, so the two are not read as one.
-  return `players' last ${points} round${points === 1 ? '' : 's'}`;
+function deltaWindowCaption(roundsLogged: number, points: number | null): string {
+  const rounds = `${roundsLogged} counted ${roundsLogged === 1 ? 'round' : 'rounds'} in this window`;
+  if (points == null) return rounds;
+  return `${rounds} · Change across each player’s last ${points} ${points === 1 ? 'round' : 'rounds'}`;
 }
 
 /* ──────────────────────────────────────────────────────────────────────────
  * Component
  * ────────────────────────────────────────────────────────────────────────── */
-
-/**
- * One fact in the opener's `meta` row — a leading icon and a count.
- *
- * The ViewHeader `meta` slot already sets the row's voice (caption size,
- * `text-text-tertiary`, wrap + gap), so this adds only the icon pairing and
- * `tabular-nums`. The figures sit next to each other and change between loads;
- * proportional digits would make them shuffle sideways as the numbers move.
- */
-function MetaFact({ icon, children }: { icon: React.ReactNode; children: React.ReactNode }) {
-  return (
-    <span className="inline-flex items-center gap-1.5 tabular-nums">
-      <span className="text-text-tertiary">{icon}</span>
-      {children}
-    </span>
-  );
-}
 
 export function FairwayCoachDashboard({
   data,
@@ -288,7 +271,6 @@ export function FairwayCoachDashboard({
   const router = useRouter();
 
   const [range, setRange] = useState<DashboardDateRange>(initialRange);
-  const [copied, setCopied] = useState(false);
 
   // P012: keep the Segmented's selected segment in lock-step with the URL/data.
   // `?range` is a search param, so the route template (keyed by pathname) does
@@ -354,27 +336,6 @@ export function FairwayCoachDashboard({
     [router],
   );
 
-  // PRESERVED LOGIC: invite-code copy-to-clipboard handler (same behavior as
-  // the legacy InviteCodeCard).
-  const handleCopy = useCallback(async () => {
-    const code = team?.join_code;
-    if (!code) return;
-    try {
-      await navigator.clipboard.writeText(code);
-    } catch {
-      const textarea = document.createElement('textarea');
-      textarea.value = code;
-      textarea.style.position = 'fixed';
-      textarea.style.opacity = '0';
-      document.body.appendChild(textarea);
-      textarea.select();
-      document.execCommand('copy');
-      document.body.removeChild(textarea);
-    }
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  }, [team?.join_code]);
-
   const hasTrend = !!teamScoringTrend && teamScoringTrend.length >= 2;
   // Memoized: TrendChart's Area/Line animate in on mount (isAnimationActive).
   // Recomputing a brand-new array/object graph on every render (this
@@ -387,30 +348,6 @@ export function FairwayCoachDashboard({
     () => (hasTrend ? teamScoringTrend!.map((p) => ({ x: p.label, y: p.value })) : []),
     [hasTrend, teamScoringTrend],
   );
-
-  // DaySchedule feed (replaces ActionItemsPanel below): merge the RPC-sourced
-  // `todayEvents` (full day, incl. RSVP tallies dropped here — this card is a
-  // read-only agenda, not an RSVP surface) with `calendarEvents` (future,
-  // start_time >= now) from the SAME `golf_events` table, deduped by id. Both
-  // are already fetched by dashboard-data.ts — no new fetch here. (Hook lives
-  // above the coach-without-team early return below — it must run on every
-  // render, team or not.)
-  const scheduleEvents: DayScheduleEvent[] = useMemo(() => {
-    const toScheduleEvent = (e: { id: string; title: string; event_type: string; start_time: string; end_time?: string | null; location: string | null }): DayScheduleEvent => ({
-      id: e.id,
-      title: e.title,
-      event_type: e.event_type,
-      start_time: e.start_time,
-      end_time: e.end_time,
-      location: e.location,
-    });
-    const merged = new Map<string, DayScheduleEvent>();
-    for (const e of enhancedData?.todayEvents ?? []) merged.set(e.id, toScheduleEvent(e));
-    for (const e of enhancedData?.calendarEvents ?? []) {
-      if (!merged.has(e.id)) merged.set(e.id, toScheduleEvent(e));
-    }
-    return Array.from(merged.values());
-  }, [enhancedData?.todayEvents, enhancedData?.calendarEvents]);
 
   // ── COACH-WITHOUT-TEAM → onboarding funnel (not a zeroed dashboard) ──────
   if (!team) {
@@ -458,13 +395,19 @@ export function FairwayCoachDashboard({
   // the real value when present; otherwise show insufficient-data, NEVER a
   // zero presented as a real team number.
   const roundsLogged = recentRounds.length;
+  // Name → avatar for the Latest feed, from the players this page already has.
+  const peopleAvatars: Record<string, string | null> = {};
+  for (const r of recentRounds) {
+    const key = r.player_name?.toLowerCase();
+    if (key && !peopleAvatars[key]) peopleAvatars[key] = r.player_avatar_url ?? null;
+  }
   const scoringAvg = enhancedData?.sparklines.scoringAvg.value ?? stats.teamScoringAverage;
   const girValue = enhancedData?.sparklines.girPct.value ?? null;
   const puttsValue = enhancedData?.sparklines.puttsPerRound.value ?? null;
 
   // KPI micro-trends (F045/F046): the payload already holds a per-metric series
   // (oldest → newest) + a qualitative direction. Render the series as a quiet
-  // Sparkline and the honest first→last movement as the MetricCard delta chip.
+  // Sparkline and the honest split-half movement as the cell's delta chip.
   const scoringSeries = enhancedData?.sparklines.scoringAvg.sparkline ?? [];
   const girSeries = enhancedData?.sparklines.girPct.sparkline ?? [];
   const puttsSeries = enhancedData?.sparklines.puttsPerRound.sparkline ?? [];
@@ -475,6 +418,44 @@ export function FairwayCoachDashboard({
   const scoringDelta = computeSeriesTrend(scoringSeries, { goodDirection: 'down' });
   const girDelta = computeSeriesTrend(girSeries, { goodDirection: 'up' });
   const puttsDelta = computeSeriesTrend(puttsSeries, { goodDirection: 'down' });
+
+  // Null-metric copy for the Team performance cells. A failed read is not
+  // "not enough rounds": say which one it is (P009 honesty rule).
+  const kpiEmpty = teamStatsUnavailable
+    ? { message: 'Couldn’t load', footnote: 'Refresh to try again' }
+    : { message: 'Need 3+ rounds', footnote: `${roundsLogged} of 3 rounds` };
+
+  // The footer caption, said once for the whole card. The round count is only
+  // meaningful when rounds exist and the read succeeded; the "change" half
+  // names a round count only when every chip on the card used the same one.
+  const deltaPoints = Array.from(
+    new Set([scoringDelta, girDelta, puttsDelta].flatMap((d) => (d ? [d.points] : []))),
+  );
+  const kpiCaption =
+    !teamStatsUnavailable && roundsLogged > 0
+      ? deltaWindowCaption(roundsLogged, deltaPoints.length === 1 ? deltaPoints[0]! : null)
+      : null;
+
+  // Faces for the Roster cell: the players with counted rounds in this window,
+  // most recently active first. `recentRounds` is every counted round in the
+  // window (paginated server-side, not just the 8 the table shows), so this is
+  // exactly "who has played", never presented as the whole roster.
+  const playersWithRounds: Array<{ id: string; name: string; avatarUrl: string | null }> = [];
+  const seenPlayers = new Set<string>();
+  for (const r of recentRounds) {
+    if (seenPlayers.has(r.player_id)) continue;
+    seenPlayers.add(r.player_id);
+    playersWithRounds.push({ id: r.player_id, name: r.player_name, avatarUrl: r.player_avatar_url });
+  }
+  const rosterFootnote =
+    [
+      playersWithRounds.length > 0 ? `${playersWithRounds.length} with rounds` : null,
+      stats.activeQualifiers != null && stats.activeQualifiers > 0
+        ? `${stats.activeQualifiers} active ${stats.activeQualifiers === 1 ? 'qualifier' : 'qualifiers'}`
+        : null,
+    ]
+      .filter(Boolean)
+      .join(' · ') || undefined;
 
   const trendFirst = trendPoints[0];
   const trendLast = trendPoints[trendPoints.length - 1];
@@ -490,8 +471,6 @@ export function FairwayCoachDashboard({
   // An unknown roster size (the count query failed) must not be treated as a
   // small roster — that would tell a coach with a full squad to go invite
   // players. Both notices stay hidden until we actually know the number.
-  const showInviteNotice =
-    !!team.join_code && team.join_code !== 'DEMO01' && stats.rosterSize != null && stats.rosterSize < 20;
   const rosterFull =
     !!team.join_code && team.join_code !== 'DEMO01' && stats.rosterSize != null && stats.rosterSize >= 20;
 
@@ -512,11 +491,12 @@ export function FairwayCoachDashboard({
           <span className="flex min-w-0 items-center gap-2.5">
             <Avatar decorative
               name={row.player_name}
+              identityKey={row.player_id}
               src={row.player_avatar_url}
-              size="sm"
+              size="md"
               className="shrink-0"
             />
-            <span className="min-w-0 flex-1 truncate font-medium text-text-primary">
+            <span className="min-w-0 flex-1 truncate font-semibold text-text-primary">
               {row.player_name}
             </span>
           </span>
@@ -537,19 +517,36 @@ export function FairwayCoachDashboard({
       accessorKey: 'total_score',
       header: 'Score',
       meta: { align: 'right', numeric: true },
+      cell: (ctx) => (
+        <span className="font-fw-display text-h3 font-medium leading-none tabular-nums text-text-primary">
+          {ctx.getValue() as number}
+        </span>
+      ),
     },
     {
       accessorKey: 'total_to_par',
       header: 'To Par',
       meta: { align: 'right', numeric: true },
-      cell: (ctx) => formatToPar(ctx.getValue() as number),
+      cell: (ctx) => {
+        const toPar = ctx.getValue() as number;
+        return (
+          <StatusPill
+            tone={toPar < 0 ? 'accent' : toPar > 0 ? 'warning' : 'neutral'}
+            size="sm"
+            dot={false}
+            className="tabular-nums"
+          >
+            {formatToPar(toPar)}
+          </StatusPill>
+        );
+      },
     },
     {
       accessorKey: 'round_date',
       header: 'Date',
       meta: { align: 'right', noWrap: true },
       cell: (ctx) => (
-        <span className="text-text-tertiary">{shortDate(ctx.getValue() as string)}</span>
+        <span className="text-text-secondary">{shortDate(ctx.getValue() as string)}</span>
       ),
     },
   ];
@@ -568,7 +565,7 @@ export function FairwayCoachDashboard({
     const tone = r.total_to_par < 0 ? 'accent' : r.total_to_par > 0 ? 'warning' : 'neutral';
     return (
       <div className="flex items-center gap-3 px-4 py-3">
-        <Avatar decorative name={r.player_name} src={r.player_avatar_url} size="md" className="shrink-0" />
+        <Avatar decorative name={r.player_name} identityKey={r.player_id} src={r.player_avatar_url} size="md" className="shrink-0" />
         <div className="min-w-0 flex-1">
           <p className="line-clamp-2 font-fw-sans text-body font-medium text-text-primary">
             {r.player_name}
@@ -640,19 +637,25 @@ export function FairwayCoachDashboard({
         }
         meta={
           stats.rosterSize === 0 ? undefined : (
-            <>
-              <MetaFact icon={<IconUsers size={14} aria-hidden />}>
-                {stats.rosterSize} {stats.rosterSize === 1 ? 'player' : 'players'}
-              </MetaFact>
-              <MetaFact icon={<IconCalendar size={14} aria-hidden />}>
-                {stats.upcomingEvents} upcoming{' '}
-                {stats.upcomingEvents === 1 ? 'event' : 'events'}
-              </MetaFact>
-              <MetaFact icon={<IconFlag size={14} aria-hidden />}>
-                {stats.activeQualifiers} active{' '}
-                {stats.activeQualifiers === 1 ? 'qualifier' : 'qualifiers'}
-              </MetaFact>
-            </>
+            // Owner 2026-09-27: "rework the layout so it's not so hard to
+            // read". The three counts are a stat row on the green band — big
+            // tabular figures over plain labels — not caption-size chips.
+            <dl className="mt-3 grid w-full max-w-xl grid-cols-3 divide-x divide-border-subtle">
+              {[
+                { value: stats.rosterSize, label: stats.rosterSize === 1 ? 'Player' : 'Players' },
+                { value: stats.upcomingEvents, label: stats.upcomingEvents === 1 ? 'Upcoming event' : 'Upcoming events' },
+                { value: stats.activeQualifiers, label: stats.activeQualifiers === 1 ? 'Active qualifier' : 'Active qualifiers' },
+              ].map((stat) => (
+                <div key={stat.label} className="flex min-w-0 flex-col-reverse justify-end gap-0.5 px-3 first:pl-0 sm:px-4">
+                  {/* Labels wrap on a phone: at 375px "Upcoming events" ran
+                      into "Active qualifiers" in the next column. justify-end
+                      (the top, in column-reverse) keeps the three figures
+                      level when one label is a line shorter. */}
+                  <dt className="font-fw-sans text-body-sm leading-snug text-text-secondary sm:whitespace-nowrap">{stat.label}</dt>
+                  <dd className="font-fw-display text-h2 font-semibold tabular-nums text-text-primary">{stat.value}</dd>
+                </div>
+              ))}
+            </dl>
           )
         }
         secondaryActions={
@@ -684,13 +687,13 @@ export function FairwayCoachDashboard({
         }
       />
 
-      {/* ── 2 · Scope band — the green rule AND the window control, one row ──
-          The owner's "more green" ruling is preserved exactly: the masthead
-          still sits on a real green rule, not a neutral divider. It is now the
-          `border-t` of the row it was introducing rather than a free-floating
-          `h-px` sibling, which removes one of the four stacked horizontal bands
-          the opener used to spend before any content. */}
-      <div className="flex flex-wrap items-center justify-between gap-3 border-t border-accent-300 pt-5">
+      {/* ── 2 · Scope band — the rule AND the window control, one row ──
+          The rule is the `border-t` of the row it introduces rather than a
+          free-floating `h-px` sibling, which removes one of the stacked
+          horizontal bands the opener used to spend before any content. It is
+          the warm hairline, not green (owner 2026-09-27: "remove the green
+          outlines"); the green header plinths carry the brand now. */}
+      <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border-subtle pt-5">
         <span className="font-fw-sans text-caption text-text-tertiary">
           Window
         </span>
@@ -717,216 +720,148 @@ export function FairwayCoachDashboard({
           module; renders nothing when there's genuinely nothing new (the bell
           in the top bar stays the source of truth either way). "View all"
           opens that same bell panel via NotificationPanelContext. */}
-      <NotificationsLatestModule initialItems={initialLatestNotifications} />
+      {/* Owner 2026-09-27: Latest is a tighter left column with Today beside
+          it on wide screens, instead of two full-width bands. */}
+      <div className="grid gap-8 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)] lg:items-start">
+        <NotificationsLatestModule initialItems={initialLatestNotifications} people={peopleAvatars} />
 
-      {/* ── 3 · TODAY — schedule timeline (matte, calm) ────────────────────── */}
-      <TodayPanel
-        events={enhancedData?.todayEvents ?? []}
-        scheduleError={enhancedData?.todayScheduleError ?? false}
-        timezone={enhancedData?.timezone}
-      />
+        {/* ── 3 · TODAY — a mini calendar: 7-day strip + today's agenda ──────── */}
+        <TodayCalendarPanel
+          todayEvents={enhancedData?.todayEvents ?? []}
+          upcomingEvents={enhancedData?.calendarEvents ?? []}
+          scheduleError={enhancedData?.todayScheduleError ?? false}
+          timezone={enhancedData?.timezone}
+        />
+      </div>
 
-      {/* ── 4 · TEAM KPIs — matte MetricCards, honest insufficient-data ────── */}
-      <section aria-label="Team performance" className="flex flex-col gap-4">
-        <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-          {scoringAvg != null ? (
-            <MetricCard
-              labelLines={2}
-              label="Scoring Avg"
-              value={round1(scoringAvg)}
+      {/* ── 4 · TEAM PERFORMANCE — one contained card, four hairline cells ────
+          Owner 2026-09-27: the four separate KPI tiles read as a template row.
+          They are now ONE card with the deep green header (same plinth as
+          Latest / Today / Recent Rounds): 2x2 on a phone, four across from lg,
+          divided by 1px hairlines (the grid's gap shows the border colour
+          through, so the dividers are right in both layouts). Every cell pins
+          its sparkline to one shared baseline (TeamKpiCell), the delta chip
+          sits inline beside its figure, and the "what does the change mean"
+          caption is said ONCE in the footer instead of under every figure.
+          Honesty is unchanged: a null metric reads "Need 3+ rounds" (or
+          "Couldn't load" when the read behind it failed), never a zero. */}
+      <div className="flex flex-col gap-4">
+        <section
+          aria-label="Team performance"
+          className="flex flex-col overflow-hidden rounded-fw-lg border border-border-subtle bg-surface shadow-soft"
+        >
+          <div className="fw-plinth-green flex items-center justify-between gap-3 px-4 py-3">
+            <h2 className="font-fw-sans text-h3 font-semibold text-text-primary">Team performance</h2>
+            <span className="shrink-0 font-fw-sans text-body-sm text-text-secondary">{windowLabel(range)}</span>
+          </div>
+
+          <div className="grid grid-cols-2 gap-px bg-border-subtle lg:grid-cols-4">
+            <TeamKpiCell
+              className="bg-surface"
+              label="Scoring avg"
+              icon={<IconChartBar size={16} />}
+              value={scoringAvg != null ? round1(scoringAvg) : null}
               decimals={1}
-              icon={<IconChartBar size={18} />}
               goodDirection="down"
-              delta={
-                scoringDelta != null
-                  ? { value: round1(scoringDelta.value), label: seriesDeltaLabel(scoringDelta.points) }
-                  : undefined
-              }
-              sparkline={
-                scoringSeries.length >= 2 ? (
-                  <Sparkline
-                    data={scoringSeries}
-                    goodDirection="down"
-                    label="Scoring average"
-                    // AUDIT-0724 #2/#6: force the SAME verdict the delta chip
-                    // above renders (computeSeriesTrend's split-half average)
-                    // instead of letting Sparkline classify its own endpoint
-                    // diff — undefined (n<3, no computed trend) falls back to
-                    // Sparkline's own internal classification, which is fine
-                    // since no delta chip renders alongside it to disagree.
-                    direction={scoringDelta?.direction}
-                  />
-                ) : undefined
-              }
-              footnote={`${roundsLogged} counted ${roundsLogged === 1 ? 'round' : 'rounds'} in window`}
+              delta={scoringDelta != null ? { value: round1(scoringDelta.value) } : null}
+              series={scoringSeries}
+              seriesLabel="Scoring average"
+              // AUDIT-0724 #2/#6: force the SAME verdict the delta chip renders
+              // (computeSeriesTrend's split-half average) instead of letting
+              // Sparkline classify its own endpoint diff. Undefined (n<3) falls
+              // back to Sparkline's own read, with no chip beside it to disagree.
+              direction={scoringDelta?.direction}
+              emptyMessage={kpiEmpty.message}
+              footnote={scoringAvg != null ? undefined : kpiEmpty.footnote}
             />
-          ) : (
-            // Keep ONE tile silhouette across the KPI row (P010): the null metric
-            // recedes inside a MetricCard `empty` shell, not a different Surface shape.
-            <MetricCard
-              labelLines={2}
-              label="Scoring Avg"
-              value={0}
-              icon={<IconChartBar size={18} />}
-              empty
-              emptyMessage="Need 3+ rounds"
-              footnote={`${roundsLogged} of 3 rounds`}
-            />
-          )}
-
-          {girValue != null ? (
-            <MetricCard
-              labelLines={2}
-              label="GIR %"
-              value={Math.round(girValue)}
+            <TeamKpiCell
+              className="bg-surface"
+              label="GIR"
+              icon={<IconTarget size={16} />}
+              value={girValue != null ? Math.round(girValue) : null}
               suffix="%"
-              icon={<IconTarget size={18} />}
               goodDirection="up"
-              delta={
-                girDelta != null
-                  ? { value: Math.round(girDelta.value), suffix: '%', label: seriesDeltaLabel(girDelta.points) }
-                  : undefined
-              }
-              sparkline={
-                girSeries.length >= 2 ? (
-                  <Sparkline
-                    data={girSeries}
-                    goodDirection="up"
-                    label="Greens in regulation"
-                    // AUDIT-0724 #2 — the exact reported case: series
-                    // [61,78,72,50,61] used to draw "flat" here (endpoint
-                    // diff 61-61=0) beside a red "declining" chip. Forcing
-                    // the chip's own computeSeriesTrend() verdict here makes
-                    // them agree.
-                    direction={girDelta?.direction}
-                  />
-                ) : undefined
-              }
+              delta={girDelta != null ? { value: Math.round(girDelta.value), suffix: '%' } : null}
+              series={girSeries}
+              seriesLabel="Greens in regulation"
+              // AUDIT-0724 #2, the reported case: [61,78,72,50,61] drew "flat"
+              // (endpoint 61-61=0) beside a "declining" chip. Same verdict now.
+              direction={girDelta?.direction}
+              emptyMessage={kpiEmpty.message}
+              footnote={girValue != null ? undefined : kpiEmpty.footnote}
             />
-          ) : (
-            // Same MetricCard `empty` silhouette as the other null KPIs (P010) —
-            // one tile vocabulary across the row, never a different Surface shape.
-            <MetricCard
-              labelLines={2}
-              label="GIR %"
-              value={0}
-              icon={<IconTarget size={18} />}
-              empty
-              emptyMessage="Need 3+ rounds"
-              footnote={`${roundsLogged} of 3 rounds`}
-            />
-          )}
-
-          {puttsValue != null ? (
-            <MetricCard
-              labelLines={2}
-              label="Putts / Rd"
-              value={round1(puttsValue)}
+            <TeamKpiCell
+              className="bg-surface"
+              label="Putts per round"
+              icon={<IconGolf size={16} />}
+              value={puttsValue != null ? round1(puttsValue) : null}
               decimals={1}
-              icon={<IconGolf size={18} />}
               goodDirection="down"
-              delta={
-                puttsDelta != null
-                  ? { value: round1(puttsDelta.value), label: seriesDeltaLabel(puttsDelta.points) }
-                  : undefined
-              }
-              sparkline={
-                puttsSeries.length >= 2 ? (
-                  <Sparkline
-                    data={puttsSeries}
-                    goodDirection="down"
-                    label="Putts per round"
-                    direction={puttsDelta?.direction}
-                  />
-                ) : undefined
-              }
+              delta={puttsDelta != null ? { value: round1(puttsDelta.value) } : null}
+              series={puttsSeries}
+              seriesLabel="Putts per round"
+              direction={puttsDelta?.direction}
+              emptyMessage={kpiEmpty.message}
+              footnote={puttsValue != null ? undefined : kpiEmpty.footnote}
             />
-          ) : (
-            // Same MetricCard `empty` silhouette as the other null KPIs (P010).
-            <MetricCard
-              labelLines={2}
-              label="Putts / Rd"
-              value={0}
-              icon={<IconGolf size={18} />}
-              empty
-              emptyMessage="Need 3+ rounds"
-              footnote={`${roundsLogged} of 3 rounds`}
-            />
-          )}
-
-          {/* Roster is a real count (not a derived aggregate) — always honest.
-              null means the count query FAILED, which is not zero: rendering a
-              confident "0" here told a coach with a full squad their program
-              was empty. Uses the same `empty` silhouette as the null KPIs above. */}
-          {stats.rosterSize != null ? (
-            <MetricCard
-              labelLines={2}
+            {/* Roster is a real count, not a derived aggregate. null means the
+                count query FAILED, which is not zero: a confident "0" told a
+                coach with a full squad their program was empty. The faces are
+                the players with counted rounds in this window (the only
+                players this payload knows), and the footnote says exactly that. */}
+            <TeamKpiCell
+              className="bg-surface"
               label="Roster"
+              icon={<IconUsers size={16} />}
               value={stats.rosterSize}
-              icon={<IconUsers size={18} />}
-              footnote={
-                stats.activeQualifiers != null && stats.activeQualifiers > 0
-                  ? `${stats.activeQualifiers} active ${stats.activeQualifiers === 1 ? 'qualifier' : 'qualifiers'}`
-                  : undefined
-              }
-            />
-          ) : (
-            <MetricCard
-              labelLines={2}
-              label="Roster"
-              value={0}
-              icon={<IconUsers size={18} />}
-              empty
-              emptyMessage="Couldn't load"
-              footnote="Refresh to try again"
-            />
-          )}
-        </div>
+              emptyMessage="Couldn’t load"
+              footnote={stats.rosterSize == null ? 'Refresh to try again' : rosterFootnote}
+            >
+              {stats.rosterSize != null && playersWithRounds.length > 0 ? (
+                <AvatarGroup size="xs" max={5} ring="ring-surface" aria-hidden="true">
+                  {playersWithRounds.map((p) => (
+                    <Avatar key={p.id} decorative size="xs" name={p.name} identityKey={p.id} src={p.avatarUrl} />
+                  ))}
+                </AvatarGroup>
+              ) : null}
+            </TeamKpiCell>
+          </div>
 
-        {/* Invite + roster-cap notices as quiet matte status, not heavy cards */}
-        {showInviteNotice ? (
-          <InlineNotice
-            tone="info"
-            icon={LucideUsers}
-            title="Share your invite code"
-            action={
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={handleCopy}
-                aria-label={copied ? 'Invite code copied' : `Copy invite code ${team.join_code}`}
-              >
-                {copied ? <IconCheck size={16} /> : <IconCopy size={16} />}
-                <span className="tracking-[0.18em] tabular-nums">
-                  {copied ? 'Copied' : team.join_code}
-                </span>
-              </Button>
-            }
-          >
-            Players join from the welcome screen with this code.
-          </InlineNotice>
-        ) : null}
+          {kpiCaption ? (
+            <p
+              data-slot="team-performance-caption"
+              className="border-t border-border-subtle bg-surface-sunken px-4 py-2 font-fw-sans text-caption text-text-tertiary"
+            >
+              {kpiCaption}
+            </p>
+          ) : null}
+        </section>
+
+        {/* Roster-cap notice as quiet matte status, not a heavy card */}
         {rosterFull ? (
           <InlineNotice tone="warning" title="Roster full">
             Your invite code is hidden because the roster has reached the 20-player limit.
           </InlineNotice>
         ) : null}
-      </section>
+      </div>
 
       {/* ── 5 · RECENT ROUNDS — clean DataTable ────────────────────────────── */}
-      <section aria-label="Recent rounds" className="flex flex-col gap-3">
-        <div className="flex items-center justify-between gap-3">
+      {/* Owner 2026-09-27: one contained card with the deep green header,
+          matching Latest. */}
+      <section
+        aria-label="Recent rounds"
+        className="flex flex-col overflow-hidden rounded-fw-lg border border-border-subtle bg-surface shadow-soft"
+      >
+        <div className="fw-plinth-green flex items-center justify-between gap-3 px-4 py-3">
           <h2 className="font-fw-sans text-h3 font-semibold text-text-primary">Recent Rounds</h2>
           <Link
             href="/golf/dashboard/rounds"
-            className="inline-flex items-center gap-1 py-3 -my-3 font-fw-sans text-body-sm font-medium text-accent-700 hover:text-accent-ink"
+            className="inline-flex items-center gap-1 py-3 -my-3 font-fw-sans text-body-sm font-medium text-text-primary hover:text-accent-ink"
           >
             View all
             <IconArrowRight size={14} />
           </Link>
         </div>
-        {/* Section hairline — more-green ruling. */}
-        <div aria-hidden="true" className="h-px w-full bg-accent-300" />
         {recentRounds.length === 0 ? (
           // padding="sm" (not the Surface default "md"): EmptyState's own
           // "subtle" variant already brings ample internal padding
@@ -936,7 +871,7 @@ export function FairwayCoachDashboard({
           // Performers wrap InsufficientData `compact` in the same "md"
           // Surface). "sm" removes the doubled padding without touching the
           // shared EmptyState primitive.
-          <Surface elevation="border" padding="sm">
+          <div className="p-3">
             {/* `teamStatsUnavailable` says a read behind the round data FAILED.
                 Without it, a lock wait or timeout rendered "No rounds logged
                 yet" to a team with a full season on file — the empty state and
@@ -961,13 +896,14 @@ export function FairwayCoachDashboard({
                 }
               />
             )}
-          </Surface>
+          </div>
         ) : (
           <DataTable<RoundRow>
             data={recentRounds.slice(0, 8)}
             columns={roundColumns}
             mobileCard={renderRoundMobileCard}
             ariaLabel="Recent team rounds"
+            className="rounded-none border-0 [&_tbody_tr:hover]:bg-surface-sunken/70 [&_th]:font-semibold [&_th]:uppercase [&_th]:tracking-[0.06em] [&_th]:text-text-secondary [&_thead]:bg-surface-sunken"
             getRowId={(r) => r.id}
             density="comfortable"
             // This is a "latest 8" digest with a "View all" link — sorting only
@@ -980,24 +916,6 @@ export function FairwayCoachDashboard({
           />
         )}
       </section>
-
-      {/* ── 5.5 · SCHEDULE — scrollable today + upcoming agenda ─────────────────
-          Replaces the former Action Items card (tasks/deadlines/announcements
-          — that backlog still lives at Tasks/Announcements). "Today" above
-          already covers RSVP tallies for the current day; this is the
-          broader forward-looking agenda, grouped by day, capped-height and
-          scrollable once it outgrows a calm at-a-glance size. */}
-      <DaySchedule
-        title="Schedule"
-        // "Upcoming", not "Today & upcoming": TodayPanel directly above owns
-        // the current day (with its RSVP tallies). This card used to render a
-        // second "Today" group from the same events (audit M3).
-        subtitle="Upcoming"
-        skipToday
-        events={scheduleEvents}
-        timezone={enhancedData?.timezone}
-        viewAllHref="/golf/dashboard/calendar"
-      />
 
       {/* ── 6 · TEAM region — Trend + Pulse + Top Performers (matte) ────────── */}
       {/* items-stretch (the grid default) + h-full on both columns: at 1440 the
@@ -1224,147 +1142,3 @@ function TeamPulsePanel({ pulse }: { pulse?: CoachDashboardPayload['teamPulse'] 
     </Surface>
   );
 }
-
-/* ──────────────────────────────────────────────────────────────────────────
- * Today — schedule region (F104). A calm matte list of the day's events,
- * ported from the legacy TodayTimeline presentation in Fairway style. Reads
- * ONLY the already-computed `enhancedData.todayEvents`; no refetch. Time labels
- * are deferred to the client (resolved timezone) to avoid a hydration mismatch
- * between server and browser timezones (the legacy timeline does the same).
- * ────────────────────────────────────────────────────────────────────────── */
-
-const EVENT_TONE: Record<string, 'accent' | 'warning' | 'neutral' | 'info'> = {
-  practice: 'info',
-  tournament: 'warning',
-  qualifier: 'accent',
-  meeting: 'neutral',
-  travel: 'info',
-  workout: 'warning',
-  game: 'accent',
-  scrimmage: 'accent',
-  class: 'info',
-  other: 'neutral',
-};
-
-const EVENT_LABEL: Record<string, string> = {
-  practice: 'Practice',
-  tournament: 'Tournament',
-  qualifier: 'Qualifier',
-  meeting: 'Meeting',
-  travel: 'Travel',
-  workout: 'Workout',
-  game: 'Match',
-  scrimmage: 'Scrimmage',
-  class: 'Class',
-  other: 'Event',
-};
-
-function TodayPanel({
-  events,
-  scheduleError = false,
-  timezone,
-}: {
-  events: TodayEvent[];
-  scheduleError?: boolean;
-  timezone?: string;
-}) {
-  // Resolve the display timezone on the client (Intl may differ between server
-  // and browser); render time labels only after mount to avoid React #418.
-  const [tz, setTz] = useState<string | null>(null);
-  useEffect(() => {
-    setTz(timezone || Intl.DateTimeFormat().resolvedOptions().timeZone);
-  }, [timezone]);
-
-  return (
-    <section aria-label="Today's schedule" className="flex flex-col gap-3">
-      <div className="flex items-center justify-between gap-3">
-        <div className="flex items-center gap-2.5">
-          <h2 className="font-fw-sans text-h3 font-semibold text-text-primary">Today</h2>
-          {!scheduleError && events.length > 0 ? (
-            <span className="text-caption tabular-nums text-text-tertiary">
-              {events.length}
-            </span>
-          ) : null}
-        </div>
-        <Link
-          href="/golf/dashboard/calendar"
-          className="inline-flex items-center gap-1 py-3 -my-3 font-fw-sans text-body-sm font-medium text-accent-700 hover:text-accent-ink"
-        >
-          Calendar
-          <IconArrowRight size={14} />
-        </Link>
-      </div>
-      {/* Section hairline — more-green ruling: a green rule under the section
-          title, not a plain gray one. */}
-      <div aria-hidden="true" className="h-px w-full bg-accent-300" />
-
-      {scheduleError ? (
-        // Degraded state — the schedule RPC failed. Surface a distinct, quiet
-        // "couldn't load" notice so a failed fetch is never mistaken for a
-        // genuinely empty day (P009 honesty rule).
-        <InlineNotice
-          tone="warning"
-          title="Couldn’t load today’s schedule"
-        >
-          We hit a snag fetching today’s events. Refresh to try again, or open the
-          calendar to see the full schedule.
-        </InlineNotice>
-      ) : events.length === 0 ? (
-        // Right-sized for the COMMON case (audit #64): most days have nothing
-        // on the books, so a clear schedule is the everyday state, not an
-        // edge case — it no longer spends a full monolithic EmptyState card
-        // (icon + title + description) on that. A single quiet InlineNotice
-        // row says the same thing at the size the message actually needs.
-        <InlineNotice tone="info" icon={LucideCalendar} title="Clear schedule today">
-          A good window for practice or recovery.
-        </InlineNotice>
-      ) : (
-        <Surface elevation="border" padding="sm">
-          <ul className="flex flex-col gap-2">
-            {events.map((event) => {
-              const tone = EVENT_TONE[event.event_type] ?? 'neutral';
-              const typeLabel = EVENT_LABEL[event.event_type] ?? 'Event';
-              return (
-                <li key={event.id}>
-                  <Inset padding="sm" className="flex flex-col gap-2">
-                    <div className="flex items-start justify-between gap-3">
-                      <span className="min-w-0 truncate font-fw-sans text-body font-medium text-text-primary">
-                        {event.title}
-                      </span>
-                      <StatusPill tone={tone} dot={false} size="sm">
-                        {typeLabel}
-                      </StatusPill>
-                    </div>
-                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 font-fw-sans text-caption text-text-tertiary">
-                      <span className="inline-flex items-center gap-1 tabular-nums" suppressHydrationWarning>
-                        <IconClock size={12} />
-                        {tz ? (
-                          <>
-                            {formatTimeInTz(event.start_time, tz)}
-                            {event.end_time ? ` – ${formatTimeInTz(event.end_time, tz)}` : ''}
-                          </>
-                        ) : null}
-                      </span>
-                      {event.location ? (
-                        <span className="inline-flex min-w-0 items-center gap-1">
-                          <IconMapPin size={12} />
-                          <span className="truncate">{event.location}</span>
-                        </span>
-                      ) : null}
-                      {event.rsvp_total !== undefined ? (
-                        <span className="tabular-nums">
-                          {event.rsvp_yes ?? 0}/{event.rsvp_total} confirmed
-                        </span>
-                      ) : null}
-                    </div>
-                  </Inset>
-                </li>
-              );
-            })}
-          </ul>
-        </Surface>
-      )}
-    </section>
-  );
-}
-

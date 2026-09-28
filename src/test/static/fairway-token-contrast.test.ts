@@ -163,9 +163,14 @@ describe.each(['light', 'dark'] as const)('Fairway token contrast (%s)', (theme)
     expect(r, `${fg} on ${bg} = ${r.toFixed(2)}:1`).toBeGreaterThanOrEqual(floor);
   });
 
+  // Owner decision 2026-09-27: the card is a VINTAGE cream, not a near-white
+  // sheet, so its fill step off the page is smaller (floor 1.10:1, was 1.15:1)
+  // and the green hairline carries the edge (floor 1.5:1 on the card).
   it('the card lifts off the page (surface vs canvas separation)', () => {
     const r = ratio(resolve('--fw-color-surface', theme).rgb, resolve('--fw-color-canvas', theme).rgb);
-    expect(r, `surface vs canvas = ${r.toFixed(2)}:1`).toBeGreaterThanOrEqual(1.15);
+    expect(r, `surface vs canvas = ${r.toFixed(2)}:1`).toBeGreaterThanOrEqual(1.1);
+    const edge = ratio(resolve('--fw-color-border-subtle', theme).rgb, resolve('--fw-color-surface', theme).rgb);
+    expect(edge, `card hairline = ${edge.toFixed(2)}:1`).toBeGreaterThanOrEqual(1.5);
   });
 
   it('the selected-segment wash reads as a distinct green state on the track', () => {

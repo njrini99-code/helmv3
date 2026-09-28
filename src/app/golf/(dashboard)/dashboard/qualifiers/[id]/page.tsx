@@ -8,7 +8,15 @@ import type { GolfQualifier, GolfQualifierEntry } from '@/lib/types/golf';
 import type { Metadata } from 'next';
 import { fairwayScope } from '@/lib/redesign/flag';
 import { FairwayQualifierDetail } from '@/components/fairway/pages/qualifiers/FairwayQualifierDetail';
+import type { LeaderboardSeason } from '@/components/fairway/pages/qualifiers/FairwayQualifierLeaderboard';
+import { qualifierDisplayName } from '@/components/fairway/pages/qualifiers/qualifier-display';
+import {
+  seasonAveragesFromRounds,
+  type SeasonRoundRow,
+} from '@/components/fairway/pages/qualifiers/qualifier-season';
 import { getQualifierRoundCourses } from '@/app/golf/actions/golf';
+import { chunkIds } from '@/lib/supabase/chunk-ids';
+import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 
 interface QualifierEntryWithPlayer extends GolfQualifierEntry {
   player: {
@@ -26,6 +34,47 @@ interface PageProps {
   params: Promise<{ id: string }>;
 }
 
+/**
+ * Coach only: each entrant's scoring average over their OTHER countable
+ * 18-hole rounds in the qualifier's calendar year (`seasonAveragesFromRounds`:
+ * the same countable rule as every headline average), for the leaderboard's
+ * "season avg" line. Test rounds and this qualifier's own rounds are left
+ * out. A failed read hides the line (null) rather than showing a wrong one.
+ */
+async function loadSeasonAverages(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  qualifierId: string,
+  playerIds: string[],
+  year: number,
+): Promise<LeaderboardSeason | null> {
+  const rows: SeasonRoundRow[] = [];
+  for (const idChunk of chunkIds(playerIds)) {
+    const { data, error } = await fetchAllRowsResult((from, to) =>
+      supabase
+        .from('golf_rounds')
+        .select(
+          'id, player_id, qualifier_id, status, total_score, holes_played, front_nine, back_nine, total_putts, strokes_gained_total, round_date',
+        )
+        .in('player_id', idChunk)
+        .eq('status', 'completed')
+        .eq('is_test', false)
+        .gte('round_date', `${year}-01-01`)
+        .lte('round_date', `${year}-12-31`)
+        .order('id', { ascending: true })
+        .range(from, to),
+    );
+    if (error) {
+      await logServerError(`[qualifier detail] season averages read failed: ${describeError(error)}`, {
+        action: 'qualifierDetail.seasonAverages',
+        featureArea: 'qualifiers',
+      });
+      return null;
+    }
+    rows.push(...(data ?? []));
+  }
+  return { year, byPlayer: seasonAveragesFromRounds(rows, qualifierId) };
+}
+
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { id } = await params;
   if (!isUuid(id)) notFound();
@@ -38,7 +87,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     .maybeSingle();
 
   return {
-    title: qualifier?.name ? `${qualifier.name}` : 'Qualifier Details',
+    title: qualifier?.name ? qualifierDisplayName(qualifier.name) : 'Qualifier Details',
     description: qualifier?.description || 'View live leaderboard and qualifier details for college golf recruiting',
   };
 }
@@ -124,10 +173,18 @@ export default async function QualifierDetailPage({ params }: PageProps) {
     throw new Error("Couldn't load scores for this qualifier. Please try again.");
   }
 
-  // Build per-player round breakdown for the coach view
+  // Build per-player round breakdown for the coach view (and the board's
+  // per-player rounds). The round id opens a round card, so only a coach gets it.
   const roundBreakdownByPlayer: Record<string, {
     playerName: string;
-    rounds: { roundNumber: number; score: number | null; toPar: number | null; date: string; courseName: string }[];
+    rounds: {
+      roundNumber: number;
+      score: number | null;
+      toPar: number | null;
+      date: string;
+      courseName: string;
+      roundId: string | null;
+    }[];
     totalScore: number;
     totalToPar: number;
   }> = {};
@@ -142,6 +199,7 @@ export default async function QualifierDetailPage({ params }: PageProps) {
         toPar: r.score_to_par ?? null,
         date: r.round_date,
         courseName: r.course_name || '',
+        roundId: isCoach ? r.id : null,
       })),
       totalScore: playerRounds.reduce((sum, r) => sum + (r.total_score || 0), 0),
       totalToPar: playerRounds.reduce((sum, r) => sum + (r.score_to_par || 0), 0),
@@ -170,14 +228,29 @@ export default async function QualifierDetailPage({ params }: PageProps) {
   const qualifierIsActive = qualifierData.status === 'in_progress' || qualifierData.status === 'upcoming';
   const canPlayRound = !!playerEntry && qualifierIsActive;
 
-  // Honest W29 datum the legacy hides: how many selections are actually made.
-  const { count: selectionsCount } = await supabase
-    .from('golf_qualifier_selections')
-    .select('*', { count: 'exact', head: true })
-    .eq('qualifier_id', id);
+  // The season the board compares against: the qualifier's calendar year.
+  const startYear = Number.parseInt((qualifierData.start_date ?? '').slice(0, 4), 10);
+  const seasonYear = Number.isFinite(startYear) ? startYear : new Date().getFullYear();
 
-  // Feature G — the course the coach assigned to each round (if any).
-  const roundCourses = await getQualifierRoundCourses(id);
+  // Independent reads, in parallel:
+  //   • Honest W29 datum the legacy hides: how many selections are made.
+  //   • Feature G — the course the coach assigned to each round (if any).
+  //   • Coach only — season averages (never computed or sent for a player).
+  const [{ count: selectionsCount }, roundCourses, season] = await Promise.all([
+    supabase
+      .from('golf_qualifier_selections')
+      .select('*', { count: 'exact', head: true })
+      .eq('qualifier_id', id),
+    getQualifierRoundCourses(id),
+    isCoach
+      ? loadSeasonAverages(
+          supabase,
+          id,
+          qualifierData.entries.map((e) => e.player_id),
+          seasonYear,
+        )
+      : Promise.resolve(null),
+  ]);
 
   return (
     <div className={fairwayScope('min-h-full bg-canvas')}>
@@ -210,6 +283,7 @@ export default async function QualifierDetailPage({ params }: PageProps) {
         selectionSlotsTotal={qualifierData.selection_slots_total ?? 0}
         selectionSlotsCoachPick={qualifierData.selection_slots_coach_pick ?? 0}
         selectionsCount={selectionsCount ?? 0}
+        season={isCoach ? season : null}
       />
     </div>
   );

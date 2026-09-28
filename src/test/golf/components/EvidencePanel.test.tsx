@@ -318,6 +318,70 @@ describe('EvidencePanel', () => {
     });
   });
 
+  // The Lab dossier printed "undefined putts · undefined days" and
+  // "undefined You · undefined" off a roster roll-up, whose evidence is only
+  // { metric, metric_label, strokes_impact, players_affected }. The JSONB is
+  // not guaranteed to match the type, so every fact is gated on its field.
+  describe('partial evidence (Lab dossier "undefined" bug)', () => {
+    function partial(fields: Record<string, unknown>): InsightEvidence {
+      return fields as unknown as InsightEvidence;
+    }
+
+    it('renders nothing for a blob that carries no measurable fact', () => {
+      const { container } = render(
+        <EvidencePanel evidence={partial({ metric: 'putts_made_3_5ft_pct', metric_label: 'Putts Made 3-5 ft' })} compact />,
+      );
+      expect(container.firstChild).toBeNull();
+    });
+
+    it('never prints "undefined" for a roll-up-shaped blob', () => {
+      const { container } = render(
+        <EvidencePanel
+          evidence={partial({
+            metric: 'putts_made_3_5ft_pct',
+            metric_label: 'Putts Made 3-5 ft',
+            strokes_impact: 2.4,
+            players_affected: 6,
+          })}
+          compact
+        />,
+      );
+      expect(container.textContent).not.toMatch(/undefined|NaN/);
+      // No anchors, so no scale; no sample or window either.
+      expect(screen.queryByTestId('evidence-benchmark-scale')).toBeNull();
+      expect(screen.queryByTestId('evidence-sample')).toBeNull();
+      expect(screen.queryByTestId('evidence-confidence')).toBeNull();
+      // The one fact it does carry still reaches the coach.
+      expect(screen.getByTestId('evidence-impact')).toHaveTextContent('~2.4 strokes/round');
+    });
+
+    it('shows the sample without a window, and skips the scale without a comparison', () => {
+      render(
+        <EvidencePanel
+          evidence={partial({ metric: 'putts_made_3_5ft_pct', your_value: 47, unit: 'percent', sample_n: 43 })}
+          compact
+        />,
+      );
+      expect(screen.getByTestId('evidence-sample')).toHaveTextContent(/^43 putts$/);
+      expect(screen.queryByTestId('evidence-benchmark-scale')).toBeNull();
+    });
+
+    it('expanded mode lists only the rows the blob can support', () => {
+      const { container } = render(
+        <EvidencePanel
+          evidence={partial({ metric: 'putts_made_3_5ft_pct', metric_label: 'Putts Made 3-5 ft', strokes_impact: 1.2 })}
+          compact={false}
+        />,
+      );
+      expect(container.textContent).not.toMatch(/undefined|NaN/);
+      expect(screen.getByTestId('evidence-row-impact')).toHaveTextContent('1.2');
+      expect(screen.queryByTestId('evidence-row-your')).toBeNull();
+      expect(screen.queryByTestId('evidence-row-sample')).toBeNull();
+      expect(screen.queryByTestId('evidence-row-window')).toBeNull();
+      expect(screen.queryByTestId('evidence-row-confidence')).toBeNull();
+    });
+  });
+
   describe('formatWindow', () => {
     it('renders days + date range when both ends parse', () => {
       const out = formatWindow('2026-03-23T00:00:00Z', '2026-04-22T00:00:00Z', 30);

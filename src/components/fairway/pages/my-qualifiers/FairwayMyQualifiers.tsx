@@ -46,6 +46,7 @@ import {
 import { IconCalendar, IconMapPin, IconArrowRight, IconGolf } from '@/components/icons';
 import type { PlayerQualifierInfo } from '@/app/golf/actions/golf';
 import { formatToPar } from '@/lib/golf/format-to-par';
+import { qualifierDisplayName } from '../qualifiers/qualifier-display';
 
 const detailHref = (id: string) => `/golf/dashboard/qualifiers/${id}`;
 const startRoundHref = (id: string) => `/golf/dashboard/rounds/new?qualifier=${id}`;
@@ -275,7 +276,7 @@ function MyQualifierCard({ qualifier: q }: { qualifier: PlayerQualifierInfo }) {
       {/* Header */}
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 space-y-1">
-          <h3 className="line-clamp-2 font-fw-sans text-body-lg font-medium text-text-primary">{q.name}</h3>
+          <h3 className="line-clamp-2 font-fw-sans text-body-lg font-medium text-text-primary">{qualifierDisplayName(q.name)}</h3>
           {q.description && (
             <p className="line-clamp-2 font-fw-sans text-body-sm text-text-tertiary">{q.description}</p>
           )}

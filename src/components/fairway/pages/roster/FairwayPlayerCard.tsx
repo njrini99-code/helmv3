@@ -2,14 +2,13 @@
 
 /** Fairway · Roster · FairwayPlayerCard (C9) — coach roster player card. */
 
+import type { ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ChevronRight } from 'lucide-react';
 
-import { cn, pluralize } from '@/lib/utils';
+import { cn } from '@/lib/utils';
 import { Surface } from '@/components/fairway/surfaces/surface';
-import { Badge } from '@/components/fairway/controls/badge';
-import { TrendGlyph } from '@/components/fairway';
 import type { CoachPlayerIntent } from '@/lib/coachhelm/v3/intent/types';
 import type { TrendVerdict } from '@/lib/coachhelm/trend';
 import { yearLabel } from './FairwayYearBadge';
@@ -17,7 +16,7 @@ import { FairwayPlayerStatusBadge } from './FairwayPlayerStatusBadge';
 import { FairwayIntentControl } from './FairwayIntentControl';
 import { FairwayPlayerActionsMenu } from './FairwayPlayerActionsMenu';
 import { isUserOnline } from './roster-helpers';
-import { tintFor } from '@/components/fairway/pages/calendar/FairwayCalendarMemberRail';
+import { tintFor } from '@/components/fairway/controls/identity-tint';
 
 export interface RosterPlayer {
   id: string;
@@ -49,18 +48,80 @@ export interface RosterPlayer {
   active_goals?: number;
 }
 
-/** SG:Total deadzone — |value| at or below this reads as neutral (matches
- *  the "roughly even" honesty band the rest of the SG rendering uses). */
-const SG_TONE_DEADZONE = 0.15;
-
 function formatSgTotal(value: number): string {
   return `${value >= 0 ? '+' : ''}${value.toFixed(2)}`;
 }
 
-function sgTone(value: number): string {
-  if (value > SG_TONE_DEADZONE) return 'text-fw-success-ink';
-  if (value < -SG_TONE_DEADZONE) return 'text-fw-warning-ink';
-  return 'text-text-primary';
+const TREND_COPY: Record<TrendVerdict, { arrow: string; text: string; className: string }> = {
+  improving: { arrow: '↗', text: 'Improving', className: 'text-accent-ink' },
+  stable: { arrow: '→', text: 'Steady', className: 'text-text-tertiary' },
+  declining: { arrow: '↘', text: 'Declining', className: 'text-fw-warning-text' },
+};
+
+/** Trend beside the average, coloured by direction. */
+function TrendCaption({ trend }: { trend: TrendVerdict }) {
+  const copy = TREND_COPY[trend];
+  return (
+    <span className={cn('inline-flex items-center gap-1 font-medium', copy.className)}>
+      <span aria-hidden>{copy.arrow}</span>
+      {copy.text}
+    </span>
+  );
+}
+
+/**
+ * The StandingBar cohort sentence, cut to a few words so it sits beside the
+ * figure: "Top quartile on your team" → "top 25%", "Upper half of your
+ * team" → "top half", "Top of your team" → "top of team". "Bottom of your
+ * team" is the small-roster wording for a percentile under 25, so it reads
+ * "bottom 25%" (it would otherwise wrap in the narrow cell).
+ */
+function shortTier(tier: string): string {
+  const t = tier.replace(/\byour\s+/i, '').trim();
+  if (/^top quartile\b/i.test(t)) return 'top 25%';
+  if (/^upper half\b/i.test(t)) return 'top half';
+  if (/^lower half\b/i.test(t)) return 'bottom half';
+  if (/^top of team$/i.test(t)) return 'top of team';
+  if (/^bottom of team$/i.test(t)) return 'bottom 25%';
+  return t.replace(/\s+(on|of|in)\s+team$/i, '').toLowerCase() || tier;
+}
+
+function StatCell({
+  label,
+  value,
+  muted,
+  caption,
+}: {
+  label: string;
+  value: string;
+  muted: boolean;
+  caption: ReactNode;
+}) {
+  // A small scorecard: the label on a shaded green header strip, the dark
+  // figure and its note centred on the light body below. The note wraps under
+  // the figure on a narrow card rather than being clipped.
+  return (
+    <div className="flex min-w-0 flex-col overflow-hidden rounded-fw-sm border border-[oklch(0.36_0.08_152/0.35)] bg-surface [box-shadow:0_1px_2px_oklch(0.18_0.01_60/0.06),0_6px_14px_-8px_oklch(0.25_0.05_120/0.35)]">
+      <dt className="truncate bg-gradient-to-b text-center from-[oklch(0.44_0.092_152)] to-[oklch(0.37_0.084_152)] px-2 py-1.5 font-fw-sans text-caption font-semibold leading-none text-[oklch(0.975_0.015_90)] [box-shadow:inset_0_1px_0_oklch(1_0_0/0.16)]">
+        {label}
+      </dt>
+      <dd className="flex min-w-0 flex-1 flex-wrap items-baseline justify-center gap-x-1.5 gap-y-1 px-2 py-2">
+        <span
+          className={cn(
+            'font-fw-sans text-body-lg font-semibold leading-none tracking-[-0.01em] tabular-nums',
+            muted ? 'text-text-tertiary' : 'text-text-primary',
+          )}
+        >
+          {value}
+        </span>
+        {caption ? (
+          <span className="whitespace-nowrap font-fw-sans text-caption leading-none text-text-secondary">
+            {caption}
+          </span>
+        ) : null}
+      </dd>
+    </div>
+  );
 }
 
 export interface FairwayPlayerCardProps {
@@ -81,24 +142,28 @@ export function FairwayPlayerCard({ player, intent }: FairwayPlayerCardProps) {
     ...(online ? ['Online'] : []),
     ...(year ? [year] : []),
     ...(player.hometown && player.state ? [`${player.hometown}, ${player.state}`] : []),
+    ...(player.handicap != null ? [`HCP ${player.handicap}`] : []),
   ];
 
   return (
     // In-flow roster card: the resting hairline, not a drop shadow (DS-E4).
+    // Raised card (owner: "more depth"): a soft two-layer lift plus the lit
+    // top edge, instead of the flat resting hairline.
     <Surface
       padding="none"
-      className="overflow-hidden"
+      elevation="shadow"
+      className="flex flex-col overflow-hidden border border-border-subtle [box-shadow:inset_0_1px_0_oklch(1_0_0/0.6),0_1px_2px_oklch(0.18_0.01_60/0.06),0_10px_24px_-8px_oklch(0.25_0.03_70/0.22)]"
       // Session Replay masks all text by default (instrumentation-client.ts,
       // maskAllText: true) — this attribute is defense in depth so a player's
       // name/details stay masked even if that default is ever narrowed later.
       data-sentry-mask=""
     >
-      <div className="p-5 md:p-6">
-        <div className="flex items-start gap-4">
+      <div className="px-5 pb-5 pt-6 md:px-6 md:pt-7">
+        <div className="flex items-center gap-5">
           {/* Avatar + online dot */}
           <div className="relative flex-shrink-0">
             <span
-              className="grid h-[68px] w-[68px] place-items-center overflow-hidden rounded-fw-md font-fw-display text-h3 font-semibold ring-1 ring-border-subtle md:h-[76px] md:w-[76px]"
+              className="grid h-[88px] w-[88px] place-items-center overflow-hidden rounded-fw-lg font-fw-display text-h2 font-semibold ring-4 ring-surface [box-shadow:0_0_0_5px_var(--fw-color-border-subtle),0_10px_22px_-10px_oklch(0.25_0.03_70/0.45)] md:h-[104px] md:w-[104px]"
               style={player.avatar_url ? undefined : { backgroundColor: tint.bg, color: tint.text }}
             >
               {player.avatar_url ? (
@@ -112,7 +177,7 @@ export function FairwayPlayerCard({ player, intent }: FairwayPlayerCardProps) {
             {online ? (
               <span
                 aria-hidden
-                className="absolute -bottom-1 -right-1 h-5 w-5 rounded-full border-[3px] border-surface bg-accent-fill"
+                className="absolute -bottom-1.5 -right-1.5 h-6 w-6 rounded-full border-4 border-surface bg-accent-fill"
               />
             ) : null}
           </div>
@@ -129,21 +194,21 @@ export function FairwayPlayerCard({ player, intent }: FairwayPlayerCardProps) {
               without touching the shared primitive's other callers. Hometown
               keeps single-line truncate (min-w-0 so it clips at the string's
               end, not to two letters). */}
-          <div className="min-w-0 flex-1 pt-0.5">
+          <div className="min-w-0 flex-1">
             <Link
               href={playerHref}
-              className="min-w-0 line-clamp-2 break-words rounded-fw-sm font-fw-display text-body-lg font-semibold leading-snug tracking-[-0.01em] text-text-primary outline-none [overflow-wrap:anywhere] focus-visible:ring-2 focus-visible:ring-border-focus"
+              className="min-w-0 line-clamp-2 break-words rounded-fw-sm font-fw-display text-h3 font-semibold leading-tight tracking-[-0.015em] text-text-primary outline-none [overflow-wrap:anywhere] focus-visible:ring-2 focus-visible:ring-border-focus"
             >
               {name}
             </Link>
             {meta.length > 0 ? (
-              <p className="mt-0.5 min-w-0 truncate font-fw-sans text-caption text-text-secondary">
+              <p className="mt-1 min-w-0 truncate font-fw-sans text-body-sm text-text-secondary">
                 {online ? <span className="font-medium text-accent-ink">Online</span> : null}
                 {online && meta.length > 1 ? ' · ' : ''}
                 {meta.filter((part) => part !== 'Online').join(' · ')}
               </p>
             ) : null}
-            <div className="mt-2 flex flex-wrap items-center gap-2">
+            <div className="mt-3 flex flex-wrap items-center gap-2">
               <FairwayPlayerStatusBadge playerId={player.id} currentStatus={player.status} size="sm" />
               <FairwayIntentControl
                 playerId={player.id}
@@ -161,99 +226,39 @@ export function FairwayPlayerCard({ player, intent }: FairwayPlayerCardProps) {
         </div>
       </div>
 
-      {/* Anchor stat */}
-      <div className="px-5 pb-3 md:px-6">
-        <div className="flex items-baseline justify-between gap-3 rounded-fw-md bg-surface-sunken px-5 py-4">
-          <div className="flex flex-col gap-0.5">
-            <div className="flex items-center gap-2">
-              <p className="font-fw-sans text-caption font-medium uppercase tracking-wide text-text-tertiary">Avg score</p>
-              {player.recent_trend ? (
-                <TrendGlyph direction={player.recent_trend} className="text-caption font-medium" />
-              ) : null}
-            </div>
-            {/* The denominator. Without it a coach compares an average built on
-                one round against one built on sixteen — measured on Guilford
-                2026-08-18, the same list held players at 1, 2 and 16 rounds.
-                Every neighbouring surface states this ("'30 · 1 rds · 88.0" on
-                the team board, "14/15" per putting bucket in round review). */}
-            <p className="font-fw-sans text-caption tabular-nums text-text-tertiary">
-              {pluralize(player.rounds_count ?? 0, 'round')}
-            </p>
-          </div>
-          <p
-            className={cn(
-              'font-fw-mono text-h1 leading-none tracking-[-0.025em] tabular-nums',
-              hasScore ? 'text-text-primary' : 'text-text-tertiary',
-            )}
-          >
-            {hasScore ? (player.avg_score ?? 0).toFixed(1) : '—'}
-          </p>
-        </div>
-      </div>
-
-      {/* CoachHelm signal strip — SG:Total (+ standing tier), Focus areas,
-          Goals. The rest of what already gets computed server-side for this
-          player (player-fingerprint.ts, standing/loader.ts, goals/loader.ts)
-          surfaced at the list level so a coach doesn't have to open every
-          player individually to triage the team. */}
-      <div className="grid grid-cols-3 gap-2 px-5 pb-4 md:px-6">
-        <div className="min-w-0 rounded-fw-md bg-surface-sunken px-3 py-2.5">
-          <p className="font-fw-sans text-caption text-text-tertiary">SG:Total</p>
-          <p
-            className={cn(
-              'font-fw-mono text-body-lg font-semibold tabular-nums',
-              player.sg_total != null ? sgTone(player.sg_total) : 'text-text-tertiary',
-            )}
-          >
-            {player.sg_total != null ? formatSgTotal(player.sg_total) : '—'}
-          </p>
-          {player.standing_tier ? (
-            // Wraps rather than truncating: at 390pt this cell is ~77px of text
-            // width while the tier phrases run 19-25 characters ("Top quartile
-            // on your team"), so `truncate` cut inside the phrase and left
-            // "Top quartile…" — and the `title` tooltip that was the fallback
-            // does nothing on a touch device (owner device report, 2026-08-26).
-            <p className="mt-0.5 font-fw-sans text-caption leading-tight text-text-tertiary">
-              {player.standing_tier}
-            </p>
-          ) : null}
-        </div>
-        <div className="flex min-w-0 flex-col justify-center gap-1 rounded-fw-md bg-surface-sunken px-3 py-2.5">
-          <p className="font-fw-sans text-caption text-text-tertiary">Focus</p>
-          {player.active_focus_areas ? (
-            // `whitespace-normal` deliberately overrides Badge's built-in
-            // whitespace-nowrap (twMerge lets className win) — same fix as
-            // TeamCategoryLeakBand's "N of M need work" pill. In this card's
-            // 3-up mini-stat row at tablet/mobile-landscape widths, "3 active"
-            // was wider than its ~1/3 grid cell and got clipped mid-word to
-            // "3 activ" by the card's own overflow-hidden Surface
-            // (GAPS_AUDIT_TABLET_LANDSCAPE_2026-09-02.md #1). Badge's `min-h`
-            // (not a fixed height) lets the pill grow to a second line
-            // instead of spilling past the card edge.
-            <Badge tone="accent" size="sm" numeric className="w-fit whitespace-normal">
-              {player.active_focus_areas} active
-            </Badge>
-          ) : (
-            <span className="font-fw-sans text-caption text-text-tertiary">None yet</span>
-          )}
-        </div>
-        <div className="flex min-w-0 flex-col justify-center gap-1 rounded-fw-md bg-surface-sunken px-3 py-2.5">
-          <p className="font-fw-sans text-caption text-text-tertiary">Goals</p>
-          {player.active_goals ? (
-            <Badge tone="accent" size="sm" numeric className="w-fit whitespace-normal">
-              {player.active_goals}
-            </Badge>
-          ) : (
-            <span className="font-fw-sans text-caption text-text-tertiary">None yet</span>
-          )}
-        </div>
+      {/* Stat row: the three numbers a coach triages on, SG per round,
+          scoring average and rounds played, each a small scorecard with a green
+          header and a dark figure. */}
+      <div className="px-5 pb-5 md:px-6">
+        {/* Rounds never carries a note, so it takes the narrow column wherever
+            the card is wide; the two-up cards at lg are too narrow for that. */}
+        <dl className="grid grid-cols-3 gap-2 sm:grid-cols-[1.15fr_1.15fr_0.7fr] lg:grid-cols-3 xl:grid-cols-[1.15fr_1.15fr_0.7fr]">
+          <StatCell
+            label="SG / round"
+            value={player.sg_total != null ? formatSgTotal(player.sg_total) : '—'}
+            muted={player.sg_total == null}
+            caption={player.standing_tier ? shortTier(player.standing_tier) : null}
+          />
+          <StatCell
+            label="Avg score"
+            value={hasScore ? (player.avg_score ?? 0).toFixed(1) : '—'}
+            muted={!hasScore}
+            caption={player.recent_trend ? <TrendCaption trend={player.recent_trend} /> : null}
+          />
+          <StatCell
+            label="Rounds"
+            value={String(player.rounds_count ?? 0)}
+            muted={!player.rounds_count}
+            caption={null}
+          />
+        </dl>
       </div>
 
       {/* A list of cards is not a list of primary actions: one quiet row link
           per card, the way an iOS grouped list drills in (NAT-06). */}
       <Link
         href={playerHref}
-        className="flex min-h-[48px] items-center justify-between border-t border-border-subtle px-5 font-fw-sans text-body-sm font-semibold text-accent-ink outline-none transition-colors hover:bg-surface-sunken focus-visible:bg-surface-sunken active:bg-surface-sunken md:px-6"
+        className="mt-auto flex min-h-[48px] items-center justify-between border-t border-border-subtle px-5 font-fw-sans text-body-sm font-semibold text-accent-ink outline-none transition-colors hover:bg-surface-sunken focus-visible:bg-surface-sunken active:bg-surface-sunken md:px-6"
       >
         View player
         <ChevronRight className="h-4 w-4 text-text-tertiary" aria-hidden />

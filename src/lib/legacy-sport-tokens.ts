@@ -35,6 +35,9 @@ const LIGHT = {
   '--fw-color-text-on-accent-fill': 'oklch(0.994 0.006 95)', // text-on-accent
   '--fw-color-accent-wash': 'oklch(0.939 0.045 150)', // accent-100
   '--fw-color-border-control': 'oklch(0.872 0.009 80)', // border-strong
+  // Golf's focus colour went warm neutral (2026-09-27); these sports keep the
+  // green ring the token and the shared fwFocusRing helper both drew before.
+  '--fw-color-border-focus': 'var(--fw-color-accent-600)',
   '--fw-color-warning-text': 'var(--fw-color-warm-800)', // warning-ink
   '--fw-color-nav-icon': 'oklch(0.62 0.007 60)', // nav-text-dim
   '--fw-font-mono': 'var(--font-fairway-mono), ui-monospace, "SF Mono", monospace',
@@ -63,6 +66,7 @@ const DARK = {
   '--fw-color-text-on-accent-fill': 'oklch(0.994 0.006 95)',
   '--fw-color-accent-wash': 'oklch(0.352 0.070 150)',
   '--fw-color-border-control': 'rgb(255 255 255 / 0.14)',
+  '--fw-color-border-focus': 'var(--fw-color-accent-500)',
   '--fw-color-warning-text': 'oklch(0.885 0.085 82)',
   '--fw-color-nav-icon': 'oklch(0.70 0.004 150)',
   '--fw-gradient-canvas':

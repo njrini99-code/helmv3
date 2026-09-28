@@ -1246,7 +1246,7 @@ export function MessageThreadPane({
           reads cleanly against the raised glass bezel. */}
       <div
         ref={messagesContainerRef}
-        className="flex-1 overflow-y-auto overscroll-contain touch-pan-y bg-canvas px-4 py-5 sm:px-5"
+        className="no-scrollbar flex-1 overflow-y-auto overscroll-contain touch-pan-y bg-canvas px-4 py-5 sm:px-5"
         data-scroll-container
       >
         {loading ? (

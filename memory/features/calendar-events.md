@@ -366,7 +366,69 @@ keeps its date separate from the return-to-today action.
   the People menu; from md a labelled secondary Compare button stands BESIDE
   the row (`hidden md:inline-flex`), never inside it. Three distinct actions
   — team schedule, open a person, include in a comparison — never one avatar
-  meaning all three.
+  meaning all three. The People menu is matte cream under a sunken header
+  closed by a strong rule (no green band; owner 2026-09-28).
+- Default view is DAY (owner 2026-09-27): `FairwayDayTimeGrid`, a 24-hour
+  time grid (64px per hour) inside its own scroller fitted to the viewport.
+  Timed events are blocks positioned by the TEAM clock (`zonedMinuteOfDay`,
+  `formatEventTime` with the team zone) and sized by duration; overlapping
+  events split into side-by-side lanes (`layoutDayBlocks`); a block is never
+  shorter than a 44px tap target and the layout reserves that height plus a
+  2px gap (blocks that meet, stacked or side by side, sit 2px apart). Each
+  block is a solid fill in its type's colour (`typeTone().fill`: the pastel
+  tint deepened with 18% of its own ink) with the ink as a 3px bar down the
+  left edge; title in text-primary semibold 14px, "time · location" in
+  text-secondary 13px. Past events keep their colour (owner 2026-09-28: the
+  old receded beige read as empty placeholders); cancelled ones drop to the
+  sunken ground, struck through. A block's label is `sticky top-0` inside the
+  block (the block is `overflow-clip`, never `overflow-hidden`, which would
+  stop the stick), so a tall block scrolled half out of view still names
+  itself. All-day events sit in a sunken band above the hours with "Day N of
+  M" for multi-day spans (membership from `eventDaySpan`, so the Fall
+  Invitational shows on Oct 2 and Oct 3 only). The header is a sunken band
+  (no green; owner 2026-09-28): the date in a disc (green only on today),
+  "Today" / "Tomorrow" / weekday with the date, the event count and scheduled
+  hours as big figures with small labels, and on today "Now …", "Up next …
+  at 6:00 PM" or "All done for today". The now-line (`role="separator"`,
+  "Now, 10:58 PM") and its gutter pill appear only on the team's today, from
+  the mount clock (never SSR), ticking on the minute. The grid opens with an
+  hour of lead (`scrollAnchorMinute`): on today at the start of the event
+  that is on, else at now when the next event also fits in the window under
+  it, else (and always before 6 AM) at the next event, so a 12:30 AM load
+  opens on the 7 AM lift, not on the night; on a today that is all done at
+  the first event, on any other day at its first event, on an empty day at
+  7 AM; once per day shown, after the scroller has its fitted height, and
+  once more when a still-loading empty day gets its events. The fitted
+  scroller ends above the coach's floating actions (Ask CoachHelm from md,
+  the new-event button on a phone), so neither covers an hour. The Day
+  view's week strip picks the day (`FairwayCalendar.dayStrip.test.tsx`).
+  Agenda, Week and Month are one tap away; the Agenda tests select Agenda
+  explicitly.
+- Week (md and up) is `FairwayWeekTimeGrid`: seven day columns on the Day
+  grid's time axis (`timeGrid.tsx` and its block are shared), a sunken
+  header row closed by a strong hairline, of day buttons (big date figures,
+  today's in the green disc, `aria-current="date"`, a dot per event type; a
+  press opens that day in Day), all-day events as ONE bar across the days
+  they cover (`layoutAllDaySegments`; the Fall Invitational spans Fri–Sat),
+  weekend columns a step sunken, and the now-line in today's column. A phone
+  keeps the week-scoped list.
+- Month (sm and up) is `FairwayMonthGrid`: a sunken header counts the
+  focused month's events ("7 events in September"; days outside the month
+  don't count) with a plain legend of types and counts (`summarizeMonth`),
+  over a sunken weekday row closed by a strong hairline, then one row per
+  week. All-day and multi-day events are ONE bar per week row across their
+  days (`layoutMonthWeek`: bars first, then timed chips by start time, fewest
+  lanes); bars and timed chips are painted exactly like the Day and Week
+  blocks (`typeToneClasses().vars`, the same fill and ink as `typeTone`,
+  pinned by `eventPresentation.test.ts`, with the ink bar); class chips keep
+  the owner's identity tint and initials. Rows share one height fitted to
+  the window (96–164px), so the month and this week's row are on screen; a
+  day holding more than fits says "+N more" and opens that day. Today is
+  marked only by its date in the green disc; weekends and out-of-month days
+  sit on the sunken ground, out-of-month dates muted, their events not. The
+  phone month (`FairwayMonthOverview`) wears the same sunken header. Each
+  day's date strip is the one target that opens it.
+  Availability overlays replace team events and the legend names the people.
 - Agenda: month-scoped — its visible window is the title's calendar month
   and prev/next step by month (`Previous month` / `Next month`); the empty
   state names the period ("Nothing in September 2026") in a compact
@@ -388,10 +450,12 @@ keeps its date separate from the return-to-today action.
   (full name from `sm` and in the accessible label), 120px from md. A day heading and
   ONE grouped Surface of rows divided by hairlines; "Show N earlier events"
   is a ghost action with the real count.
-  Phone Month view is `CalendarSurface` (DayPicker, event-day dots from
-  `eventDaySpan`) as one raised card with sans tabular day numbers (never the
-  mono face), the selected day's events beneath; a day tap never switches
-  view. Desktop month keeps a single day target per cell. The week
+  Phone Month view is `CalendarSurface` (DayPicker) under the same sunken
+  month header, as one raised card with sans tabular day numbers (never the
+  mono face): each day shows up to three dots, one per event type in its tint
+  (from `eventDaySpan`, so Travel home dots Saturday Oct 3, not Sunday), and
+  the selected day's events sit beneath; a day tap never switches view.
+  Desktop month keeps a single day target per cell (its date strip). The week
   strip marks every day a multi-day event runs (same `eventDaySpan`).
 - Player: "Needs your reply → Respond" is a contextual row next to the
   schedule, not a header CTA.

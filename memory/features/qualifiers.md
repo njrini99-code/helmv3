@@ -28,8 +28,13 @@ There are three user surfaces:
 
 - `src/components/golf/qualifiers/**`
 - `src/components/golf/coachhelm/v3/QualifyingBoard/**`
+- `src/components/fairway/pages/qualifiers/FairwayQualifiers.tsx`
+- `src/components/fairway/pages/qualifiers/QualifierRoundSegments.tsx`
 - `src/components/fairway/pages/qualifiers/FairwayQualifierDetail.tsx`
 - `src/components/fairway/pages/qualifiers/FairwayQualifierLeaderboard.tsx`
+- `src/components/fairway/pages/qualifiers/qualifier-season.ts`
+- `src/components/fairway/pages/qualifiers/FairwayQualifierFieldStats.tsx`
+- `src/components/fairway/pages/qualifiers/qualifier-stats.ts`
 - `src/components/fairway/pages/my-qualifiers/FairwayMyQualifiers.tsx`
 
 ### Actions And Engine Code
@@ -137,6 +142,89 @@ Leaderboard reads qualifier
 - Coach qualifier list should distinguish upcoming, in-progress, completed, and ended qualifiers.
 - Player My Qualifiers should show progress, score/to-par, status, enter-round action, and leaderboard link.
 - Detail views should make ties and round-by-round breakdowns inspectable.
+- Display title (`qualifierDisplayName`, `qualifier-display.ts`): the part
+  before a spaced em or en dash ("Fall Qualifier — Travel Team Selection"
+  shows as "Fall Qualifier") on the detail masthead, the page metadata, the
+  coach list and My qualifiers. Display only: the DB name, list search and
+  the edit form's value and payload keep the full name.
+- List page (`FairwayQualifiers`, owner 2026-09-28, no green bands): the
+  hero is the live qualifier, else the next to start (never one with an
+  implausible start date). One shadow card: status, display title,
+  description, and label-over-value facts (dates as a compact range, rounds,
+  spots, course) beside a sunken well from `xl` (above it below). The well
+  reads the same feed as the detail board (`useQualifierRealtime` →
+  `deriveStandings` / `fieldProgress`, rounds from the row's `num_rounds`):
+  the round up next or in play (`progressHeadline`; rounds carry no dates, so
+  none are shown), per-round bars (`QualifierRoundSegments`, shared with the
+  detail status card), scorecards in, and the top three with golf positions
+  and to-par, then "+N more". Before anyone scores it names the entered field
+  ("No players entered yet" at zero); a failed read says the leaderboard has
+  the latest. The hero is keyed by qualifier id, so a search that changes it
+  remounts the feed. Active and concluded cards: title and status pill,
+  description, facts over a hairline, and a sunken footer carrying the
+  action. A card's title is its only link, stretched over the card; the
+  action is decorative and follows the card's hover. A coach's hero action is
+  secondary (Create qualifier is the page's one primary); a player's is the
+  primary. `loading.tsx` follows the page order: header, toolbar, the hero
+  with its well, the card grid. Test: `__tests__/FairwayQualifiers.list.test.tsx`.
+- Standings (`deriveStandings`): golf ties, so a shared to-par shares the
+  position, every tied row reads "T", and the next position skips (1, T2, T2,
+  4); cut lines count the physical order. Under par is the only coloured
+  to-par (`toParTone`: accent ink; E secondary; over par plain ink, never
+  amber). Both the board and the coach round-by-round use them.
+- Detail layout (owner 2026-09-27/28, no green bands): the masthead shows the
+  start date only. From `xl` a main column (board, coach round-by-round,
+  selections) beside a right rail (below 1280px the expanded sidebar leaves
+  too little room for the board's table beside a rail): "Where it stands" (the round up next or in
+  play from `num_rounds` and the feed, never from calendar events; per-round
+  bars; scorecards in; the leader and margin) over the Details card (start
+  date, deadline and course only when set, rounds, spots, the on-score /
+  coach's-pick split, course by round, rules only when non-blank, and each
+  player's rounds played as filled/hollow dots). The DOM is the reading
+  order (status card, main column, details card) and the rail is placed by
+  grid lines with a `1fr` second row, never CSS `order`, so a phone stacks
+  status, board, the coach's modules, then details, and focus order matches
+  the screen.
+- The board reports its standings up once its feed has loaded
+  (`onStandingsChange`; never while loading or after a failed read), so the
+  rail reads the same rows with one realtime subscription. Until then the
+  status card shows the server's completed-round count and the dots show a
+  skeleton. A qualifier scored straight onto its entries (no linked rounds,
+  e.g. 487f30a2) says it has no per-round breakdown instead of "no rounds were
+  recorded". Tests: `__tests__/qualifier-display.test.ts`,
+  `__tests__/FairwayQualifierDetail.layout.test.tsx`.
+- The board (slice 2, no green wash): a sunken column-header row over a
+  strong rule; the leader carries an ink bar; each row shows the identity
+  avatar, the lineup chip (In lineup / Selected: info tone; Bubble: warning;
+  Not selected: neutral), rounds as "played/of", the average through the
+  metric registry, the total, and the to-par as the big figure. The
+  top-score line and the stronger travel cut are labelled rules. A chevron
+  (44px on a phone) opens the player's panel: each round (a coach's chip opens
+  the round card; unplayed rounds read "To play", or "Not played" once the
+  qualifier is completed), a static trend line with the last round against
+  round 1, the gap to the lead and to each drawn line ("N shots clear/back",
+  "On the line"), and, for a coach only, the season average. An entry with no
+  linked round cards says it has its total only.
+- Season average (coach only, `qualifier-season.ts`): each entrant's other
+  countable 18-hole rounds in the qualifier's calendar year
+  (`aggregateCountableRounds`; status completed, not test, this qualifier's
+  rounds excluded; the round count is `scoringAverageRounds`). The route page
+  reads it only for a coach and sends round ids only to a coach; a failed read
+  hides the line. Tests: `__tests__/FairwayQualifierLeaderboard.board.test.tsx`,
+  `__tests__/qualifier-season.test.ts`.
+- "The field" (`FairwayQualifierFieldStats`, `qualifier-stats.ts`), under the
+  board once it has scores, for every role: tiles on sunken wells for the
+  field average (with to par a round), the low round and who shot it, the
+  spread first to last, and the shots across the travel cut; then each
+  round's cards as dots on one to-par scale with the average marked (and the
+  latest round against round 1 over the players who played both), rounds by
+  to-par bucket, and who changed places after the latest round (golf
+  positions, biggest moves first). The field average, spread and cut read the
+  live standings; the low round and charts read the linked round cards, and
+  the card says how many scorecards they leave out. A qualifier scored as
+  totals gets the totals tiles and one line saying there are no round cards
+  to chart. Tests: `__tests__/qualifier-stats.test.ts`,
+  `__tests__/FairwayQualifierFieldStats.test.tsx`.
 - Mobile qualifier views need compact cards, clear primary action, and no stacked header utility rows.
 - Empty states should explain whether there are no qualifiers, no entries, or no rounds yet.
 - A route's `loading.tsx` reserves the page's paint at t=0 — for a
@@ -146,6 +234,30 @@ Leaderboard reads qualifier
   no geometry, and no real `<h1>` for a screen that never mounts.
   Reference implementation: `dashboard/alerts/loading.tsx`.
 
+- Create qualifier (`FairwayNewQualifier`, owner 2026-09-28, no green bands):
+  five section cards (The basics, When it runs, Format, Travel squad,
+  Players), each a sunken band over a strong rule whose heading names the
+  fieldset, beside one summary panel holding the only Create button: a tray
+  pinned above the tab bar on a phone, a rail pinned under the top bar from
+  `md` (the coach's CoachHelm launcher owns the bottom-right corner there).
+  Dates are Fairway `DatePicker` triggers, not OS date inputs (a typed
+  five-digit year once reached the database): the start is required and never
+  before the viewer's today (read after mount, HYD-07); the end cannot precede
+  the start; the entry deadline falls between today and the start. Days
+  outside are disabled, and moving the start past a set date shows that
+  field's error and blocks the create. No copy says a date closes entry. The
+  one-round cap stays an explicit checkbox, and raising Rounds replaces it.
+  The Course field shows at every round count and still sends `courseName`;
+  courses per round stay optional. The squad reads out as seats and in the
+  board's words ("Top 4 on score · 1 coach's pick", never "Top 0"), and a
+  smaller squad lowers the picks with it. The roster uses `PlayerIdentity`
+  (with `avatar_url`) and a find box past 12 players; a failed roster read
+  throws to the route error instead of showing an empty roster. A blocked
+  create focuses the first problem in page order, with its message at the
+  field; a server error shows beside the Create button. The payload is
+  unchanged. `loading.tsx` reserves the cards, the rail and the tray. Tests:
+  `__tests__/FairwayNewQualifier.submit.test.tsx`,
+  `__tests__/FairwayNewQualifier.a11y.test.tsx`.
 - Edit qualifier (`FairwayEditQualifier`, audit DATA-06/07, 2026-09-23): the
   save is two writes (details, then round courses). If the second write fails,
   the error says the details WERE saved and asks for another save to retry
@@ -175,6 +287,13 @@ Leaderboard reads qualifier
 - Calendar integration means deleting or rescheduling qualifiers can affect event views.
 - A date-based entry gate is a release-blocking regression: it strands an
   eligible player and contradicts the coach-controlled qualifier lifecycle.
+- `createGolfQualifier` writes the qualifier, then its round courses, then its
+  entries, in separate calls. If the entries insert fails, the action returns
+  "Failed to add players to qualifier. Please try again." although the
+  qualifier row already exists, so the coach's retry creates a duplicate.
+  The same action's created-qualifier email reads "Rounds: 1 round" whatever
+  the cap, because it passes `numRounds: 1` to `notifyQualifierCreated`. Both
+  found 2026-09-28 during the create-form rebuild and not yet fixed.
 - **A bare (ungrouped) Base UI `Checkbox` inside a Fairway `<Form>` silently
   blocks every submit** — no POST, no console output, no visible error —
   because it registers as a permanently-invalid field outside any

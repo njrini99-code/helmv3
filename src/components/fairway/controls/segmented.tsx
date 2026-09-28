@@ -162,8 +162,10 @@ export function segmentedItemClassName(
     // Selected = GREEN in both themes (owner decision 2026-09-23: green is
     // the contrasting colour): deep-green ink on the green wash pill in light
     // (5.9:1), bright-green ink on the deep wash in dark (6.3:1).
+    // Owner 2026-09-27: the selected toggle is a solid green pill with a
+    // cream label (dark keeps its green wash + bright ink).
     selected
-      ? 'font-semibold text-accent-ink'
+      ? 'font-semibold text-text-on-accent-fill dark:text-accent-ink'
       : // Dark scope: inactive labels lift to primary — mid-gray on the
         // sunken dark track sat near 3:1 (owner: "so dark, no contrast").
         // No alpha shorthand (see pill note).
@@ -226,7 +228,7 @@ export function SegmentedPill({ layoutId, reduceMotion, quiet = false }: Segment
         data-slot="fw-segment-pill"
         data-quiet=""
         aria-hidden="true"
-        className="absolute inset-0 -z-10 rounded-fw-sm border border-accent-600 bg-accent-wash shadow-flat dark:border-accent-500"
+        className="absolute inset-0 -z-10 rounded-fw-sm border border-accent-fill-hover bg-accent-fill shadow-flat dark:border-accent-500 dark:bg-accent-wash"
         transition={reduceMotion ? { duration: 0 } : { type: 'spring', stiffness: 450, damping: 30, mass: 0.6 }}
       />
     );
@@ -240,7 +242,7 @@ export function SegmentedPill({ layoutId, reduceMotion, quiet = false }: Segment
       // 2026-08-26 dark, 2026-09-23 light: "selected = green"; a cream pill on
       // a cream track read as nothing). A green wash with a green edge, and
       // the label in accent-ink (see segmentedItemClassName).
-      className="absolute inset-0 -z-10 rounded-fw-sm border border-accent-600 bg-accent-wash dark:border-accent-500"
+      className="absolute inset-0 -z-10 rounded-fw-sm border border-accent-fill-hover bg-accent-fill dark:border-accent-500 dark:bg-accent-wash"
       style={{ boxShadow: PILL_SHADOW }}
       transition={
         reduceMotion
@@ -272,7 +274,7 @@ export function SegmentedPill({ layoutId, reduceMotion, quiet = false }: Segment
        */}
       <span
         aria-hidden="true"
-        className="absolute right-1 top-1 h-[5px] w-[5px] rounded-full bg-accent-600 ring-1 ring-accent-wash dark:bg-accent-ink"
+        className="absolute right-1 top-1 h-[5px] w-[5px] rounded-full bg-text-on-accent-fill ring-1 ring-accent-fill dark:bg-accent-ink dark:ring-accent-wash"
       />
     </motion.span>
   );

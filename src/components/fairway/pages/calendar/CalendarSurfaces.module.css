@@ -39,6 +39,10 @@
   --cal-overlap-edge: var(--fw-color-warning);
   /* Hairline grid inside timelines. */
   --cal-grid-line: oklch(0.86 0.014 82 / 0.7);
+  /* The Day and Week grid's rules: a quiet hour line and a whisper on the
+   * half hour, so the event blocks, not the ruling, carry the page. */
+  --cal-hour-line: oklch(0.85 0.018 80 / 0.7);
+  --cal-half-line: oklch(0.89 0.012 82 / 0.4);
   --cal-blur: var(--fw-blur-glass);
   /* Page ground under the glass: a fairway breath top-left, warm sun top-right,
    * a shaded band further down — so chrome has real light to refract. */
@@ -64,6 +68,8 @@
   --cal-lens-edge: var(--fw-color-accent-500);
   --cal-lens-glow: oklch(0.72 0.14 152 / 0.30);
   --cal-grid-line: oklch(0.32 0.01 80 / 0.9);
+  --cal-hour-line: oklch(0.36 0.008 80 / 0.7);
+  --cal-half-line: oklch(0.30 0.006 80 / 0.5);
   --cal-ground-fairway: oklch(0.32 0.06 150 / 0.5);
   --cal-ground-sun: oklch(0.34 0.025 80 / 0.55);
   --cal-ground-shade: oklch(0.16 0.008 80 / 0.8);
@@ -96,6 +102,22 @@
  * hour height in px, set inline by the component. */
 .dayGrid {
   background-image: linear-gradient(to bottom, var(--cal-grid-line) 1px, transparent 1px);
+  background-size: 100% var(--cal-hour, 64px);
+}
+
+/* The Day and Week time grids: a quiet rule on every hour and a fainter one
+ * on the half hour, so a block's start reads against the grid without the
+ * ruling competing with the blocks. */
+.hourRules {
+  background-image:
+    linear-gradient(to bottom, var(--cal-hour-line) 1px, transparent 1px),
+    linear-gradient(
+      to bottom,
+      transparent calc(var(--cal-hour, 64px) / 2),
+      var(--cal-half-line) calc(var(--cal-hour, 64px) / 2),
+      var(--cal-half-line) calc(var(--cal-hour, 64px) / 2 + 1px),
+      transparent calc(var(--cal-hour, 64px) / 2 + 1px)
+    );
   background-size: 100% var(--cal-hour, 64px);
 }
 

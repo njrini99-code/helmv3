@@ -3,7 +3,6 @@
 /** Fairway · Roster · FairwayCoachRoster (C2/C3/C4/C5/C9/C10) — coach roster shell. */
 
 import * as React from 'react';
-import { useRouter } from 'next/navigation';
 import { Download } from 'lucide-react';
 
 import { Segmented } from '@/components/fairway/controls/segmented';
@@ -15,12 +14,7 @@ import { ViewHeader } from '@/components/fairway/view-header/view-header';
 import type { CoachPlayerIntent } from '@/lib/coachhelm/v3/intent/types';
 import type { JoinRequestData } from '@/app/golf/actions/teams';
 import { exportRosterCSV } from '@/components/golf/roster/RosterToolbar';
-import type { PlayersGridFocusArea, PlayersGridStats, RosterRow } from '@/components/fairway/pages/coachhelm/PlayersGridView';
-import {
-  RosterHealthHeader,
-  computeRosterHealth,
-  computeNeedsAttention,
-} from '@/components/fairway/pages/coachhelm/RosterHealthHeader';
+import type { PlayersGridFocusArea } from '@/components/fairway/pages/coachhelm/PlayersGridView';
 import { FairwayPlayerCard, type RosterPlayer } from './FairwayPlayerCard';
 import { FairwayInvitePlayerButton } from './FairwayInvitePlayerButton';
 import { FairwayJoinRequests } from './FairwayJoinRequests';
@@ -35,7 +29,7 @@ export interface FairwayCoachRosterProps {
    * Minimal PlayersGridFocusArea-shaped rows (status + outcome_status) for
    * the ported "Who needs your attention" roster-health header — id/
    * area_type/title are honest placeholders unused by that instrument's
-   * coverage/outcome math. See roster/page.tsx.
+   * coverage math. See roster/page.tsx.
    */
   focusAreas: PlayersGridFocusArea[];
 }
@@ -48,8 +42,7 @@ const SORT_OPTIONS = [
   { value: 'rounds', label: 'Rounds' },
 ] as const;
 
-export function FairwayCoachRoster({ players, teamName, inviteCode, intents, joinRequests, focusAreas }: FairwayCoachRosterProps) {
-  const router = useRouter();
+export function FairwayCoachRoster({ players, teamName, inviteCode, intents, joinRequests }: FairwayCoachRosterProps) {
   const [sort, setSort] = React.useState<SortField>('name');
   const [query, setQuery] = React.useState('');
 
@@ -83,49 +76,6 @@ export function FairwayCoachRoster({ players, teamName, inviteCode, intents, joi
 
   const activeCount = players.filter((p) => p.status === 'active' || p.status === null).length;
   const empty = players.length === 0;
-
-  // ── "Who needs your attention" roster-health header (Wave 2 port from
-  // PlayersGridView) — built from the SAME `players`/`focusAreas` props
-  // already on the page, via the extracted pure computations so the Roster
-  // list and the Players sub-tab can never disagree on what "needs a look"
-  // means. `PlayersGridStats`/`RosterRow` are the same shapes
-  // RosterHealthHeader already expects — RosterPlayer already carries every
-  // field PlayersGridPlayer requires, so no remapping is needed there. ─────
-  const playerStatsForHealth = React.useMemo(() => {
-    const rec: Record<string, PlayersGridStats> = {};
-    for (const p of players) {
-      rec[p.id] = {
-        rounds_played: p.rounds_count ?? 0,
-        avg_score: p.avg_score ?? null,
-        avg_putts: null,
-        fairway_pct: null,
-        gir_pct: null,
-        best_score: null,
-        recent_trend: p.recent_trend ?? null,
-      };
-    }
-    return rec;
-  }, [players]);
-
-  const rosterRowsForHealth: RosterRow[] = React.useMemo(
-    () =>
-      players.map((p) => ({
-        player: p,
-        stats: playerStatsForHealth[p.id],
-        activeCount: p.active_focus_areas ?? 0,
-        completedCount: 0,
-      })),
-    [players, playerStatsForHealth],
-  );
-
-  const rosterHealth = React.useMemo(
-    () => computeRosterHealth(players, focusAreas, playerStatsForHealth),
-    [players, focusAreas, playerStatsForHealth],
-  );
-  const needsAttention = React.useMemo(
-    () => computeNeedsAttention(rosterRowsForHealth),
-    [rosterRowsForHealth],
-  );
 
   return (
     <div className="mx-auto w-full max-w-[1200px] px-4 py-6 md:px-6 md:py-8">
@@ -163,23 +113,6 @@ export function FairwayCoachRoster({ players, teamName, inviteCode, intents, joi
         />
       ) : (
         <>
-          {/* "Who needs your attention" roster-health header band (Wave 2 —
-              ported from PlayersGridView, formerly orphaned behind the
-              hidden ?view=players route). "Add focus area" from a needs-
-              attention row has no in-page modal here, so it hands off to the
-              canonical prescribe flow scoped to that player. */}
-          <div className="mb-6">
-            <RosterHealthHeader
-              health={rosterHealth}
-              needs={needsAttention}
-              onAdd={(playerId) =>
-                router.push(
-                  `/golf/dashboard/intelligence?view=players${playerId ? `&player=${playerId}` : ''}&playersTab=areas`,
-                )
-              }
-            />
-          </div>
-
           {/* Search (P253) — find a player by name without scrolling. */}
           <div className="mb-3 mt-2 max-w-md">
             <SearchField
@@ -194,18 +127,24 @@ export function FairwayCoachRoster({ players, teamName, inviteCode, intents, joi
 
           {/* Toolbar */}
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-            {/* P249 — the Segmented pill is a fixed inline-flex strip that can
-                exceed a ~360px viewport with four labels. Wrap it in a
-                horizontally scrollable rail (negative-margin gutter so the scroll
-                area reaches the page edge) so all four sort options stay
-                reachable without forcing horizontal scroll on the whole page. */}
-            <div className="-mx-4 max-w-full overflow-x-auto px-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            {/* P249 — four sort labels must never force horizontal scroll on
+                the page. The Segmented bounds itself to this wrapper and
+                scrolls its own track (edge fade, selected segment kept in
+                view) if the options still outgrow it, e.g. on a 320px phone.
+                The old `-mx-4 … px-4` bleed rail was capped by max-w-full, so
+                it lost 32px on the right and clipped "Rounds" at 375px. */}
+            <div className="min-w-0 max-w-full">
+              {/* Default `md` size (no `size="sm"`): the same track depth and
+                  36px segments as the dashboard "Window" range toggle, so the
+                  two read as one control family (owner 2026-09-27: "look
+                  like the other toggles, more depth"). Below sm each segment
+                  drops to px-3 so all four fit a 360–375px phone. */}
               <Segmented<SortField>
-                size="sm"
                 aria-label="Sort players"
                 value={sort}
                 onValueChange={setSort}
                 options={SORT_OPTIONS as unknown as { value: SortField; label: string }[]}
+                className="max-sm:[&_[data-slot=fw-segment]]:px-3"
               />
             </div>
             <Button

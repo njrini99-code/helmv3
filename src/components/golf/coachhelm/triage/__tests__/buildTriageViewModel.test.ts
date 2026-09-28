@@ -3,6 +3,8 @@ import type { GroupedSignal, SignalGroup } from '@/lib/coachhelm/signal-grouping
 import {
   BASE_QUEUE_FILTERS,
   resolveTriageView,
+  hasSignalContext,
+  isToggleView,
   resolveQueueFilter,
   filterGroupSignals,
   countForFilter,
@@ -46,18 +48,55 @@ function group(overrides: Partial<SignalGroup> = {}): SignalGroup {
 }
 
 describe('resolveTriageView', () => {
-  it('defaults to signals when absent or unknown', () => {
-    expect(resolveTriageView(undefined)).toBe('signals');
-    expect(resolveTriageView('bogus')).toBe('signals');
+  it('defaults to home when absent or unknown', () => {
+    expect(resolveTriageView(undefined)).toBe('home');
+    expect(resolveTriageView(null)).toBe('home');
+    expect(resolveTriageView('bogus')).toBe('home');
   });
 
-  it('recognizes players and effectiveness', () => {
+  it('recognizes the three toggle views and the deep-link-only players view', () => {
+    expect(resolveTriageView('home')).toBe('home');
+    expect(resolveTriageView('lab')).toBe('lab');
+    expect(resolveTriageView('chat')).toBe('chat');
     expect(resolveTriageView('players')).toBe('players');
-    expect(resolveTriageView('effectiveness')).toBe('effectiveness');
+  });
+
+  it('keeps legacy bookmarks working: signals opens The Lab, effectiveness opens Home', () => {
+    expect(resolveTriageView('signals')).toBe('lab');
+    expect(resolveTriageView('effectiveness')).toBe('home');
+  });
+
+  it('opens The Lab for a view-less link that names a signal or a queue filter', () => {
+    expect(resolveTriageView(null, { hasSignalContext: true })).toBe('lab');
+    expect(resolveTriageView('bogus', { hasSignalContext: true })).toBe('lab');
+    // An explicit view always wins over the hint.
+    expect(resolveTriageView('chat', { hasSignalContext: true })).toBe('chat');
+    expect(resolveTriageView('effectiveness', { hasSignalContext: true })).toBe('home');
   });
 
   it('takes the first value of an array param', () => {
-    expect(resolveTriageView(['players', 'effectiveness'])).toBe('players');
+    expect(resolveTriageView(['players', 'lab'])).toBe('players');
+  });
+});
+
+describe('hasSignalContext', () => {
+  it('is true for signal, the legacy id link, and filter', () => {
+    expect(hasSignalContext(new URLSearchParams('signal=s1'))).toBe(true);
+    expect(hasSignalContext(new URLSearchParams('id=s1'))).toBe(true);
+    expect(hasSignalContext(new URLSearchParams('filter=urgent'))).toBe(true);
+  });
+
+  it('is false for chat and player params', () => {
+    expect(hasSignalContext(new URLSearchParams('c=abc&player=p1'))).toBe(false);
+  });
+});
+
+describe('isToggleView', () => {
+  it('is true for home, lab and chat only', () => {
+    expect(isToggleView('home')).toBe(true);
+    expect(isToggleView('lab')).toBe(true);
+    expect(isToggleView('chat')).toBe(true);
+    expect(isToggleView('players')).toBe(false);
   });
 });
 

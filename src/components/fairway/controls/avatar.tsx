@@ -17,12 +17,29 @@
  * the control self-contained and SSR-safe).
  * ========================================================================== */
 
-import { type HTMLAttributes, type ReactNode, forwardRef, useEffect, useState } from 'react';
+import { type HTMLAttributes, type ReactNode, createContext, forwardRef, useContext, useEffect, useState } from 'react';
 import { cn } from '@/lib/utils';
 import { fwTransition } from './_internal';
+import { identityTintSlot } from './identity-tint';
 
 export type AvatarSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl';
 export type AvatarStatus = 'online' | 'away' | 'busy' | 'offline';
+/**
+ * `identity` (owner 2026-09-27, golf): a photo-less person gets the same flat
+ * pastel tile the roster player card draws — `--fw-tint-N-bg` fill with
+ * `--fw-tint-N-ink` initials, hairline ring, display-font initials. N comes
+ * from `identityTintSlot(identityKey ?? name)` (controls/identity-tint.ts),
+ * the hash FairwayPlayerCard seeds with the player id, so pass `identityKey`
+ * (the person's id) wherever you have one and the colour matches the roster.
+ */
+export type AvatarTone = 'neutral' | 'accent' | 'identity';
+
+const AvatarToneContext = createContext<AvatarTone>('neutral');
+
+/** Sets the default fallback tone for every Avatar below it (golf uses `identity`). */
+export function AvatarToneProvider({ tone, children }: { tone: AvatarTone; children: ReactNode }) {
+  return <AvatarToneContext.Provider value={tone}>{children}</AvatarToneContext.Provider>;
+}
 
 export interface AvatarProps extends Omit<HTMLAttributes<HTMLSpanElement>, 'children'> {
   src?: string | null;
@@ -43,7 +60,13 @@ export interface AvatarProps extends Omit<HTMLAttributes<HTMLSpanElement>, 'chil
    * Opt-in, so the default stays exactly what every existing caller renders;
    * whether it should BECOME the default is the owner's call, not this PR's.
    */
-  tone?: 'neutral' | 'accent';
+  tone?: AvatarTone;
+  /**
+   * Seed for the `identity` tint — the person's id when you have it, so the
+   * colour matches the roster card (which hashes `player.id`). Falls back to
+   * `name`.
+   */
+  identityKey?: string | null;
   /** Override the auto-generated initials. */
   fallback?: ReactNode;
   /**
@@ -99,39 +122,54 @@ export function initialsFromName(name?: string | null): string {
 }
 
 export const Avatar = forwardRef<HTMLSpanElement, AvatarProps>(function Avatar(
-  { className, src, name, alt, size = 'md', status, square = false, fallback, decorative = false, tone = 'neutral', ...props },
+  { className, src, name, alt, size = 'md', status, square = false, fallback, decorative = false, tone: toneProp, identityKey, style, ...props },
   ref,
 ) {
   const [errored, setErrored] = useState(false);
   // Reset the error flag if the src changes (e.g. avatar updated).
   useEffect(() => setErrored(false), [src]);
 
+  const contextTone = useContext(AvatarToneContext);
+  const tone = toneProp ?? contextTone;
   const showImage = !!src && !errored;
   const initials = initialsFromName(name);
+  const identitySeed = identityKey ?? name;
+  const identity = tone === 'identity' && !showImage && !!identitySeed;
+  const slot = identity ? identityTintSlot(identitySeed) : 0;
 
   return (
     <span
       ref={ref}
       data-slot="fw-avatar"
       className={cn('relative inline-flex flex-shrink-0', sizePx[size])}
+      style={style}
       {...props}
     >
       <span
         className={cn(
           'flex h-full w-full select-none items-center justify-center overflow-hidden',
-          'font-fw-sans font-semibold uppercase',
+          identity ? 'font-fw-display font-semibold uppercase' : 'font-fw-sans font-semibold uppercase',
           // Accent carries NO ring. All three artboard specimens
           // (`Group.dc.html:28,49`, `Thread.dc.html:35`) are fill-and-ink only,
           // and inside an AvatarGroup the stack already draws its own
           // `ring-2 ring-<surface>` cutout rim — a second inset ring under it
           // reads as a muddy double edge rather than as depth.
-          tone === 'accent'
-            ? 'bg-accent-100 text-accent-700'
-            : 'bg-surface-sunken text-text-secondary ring-1 ring-inset ring-border-subtle',
+          identity
+            ? // Flat pastel tile, same recipe as FairwayPlayerCard's initials
+              // tile: fill + ink come from --fw-tint-N (inline, below).
+              'ring-1 ring-inset ring-border-subtle'
+            : tone === 'accent'
+              ? 'bg-accent-100 text-accent-700'
+              : 'bg-surface-sunken text-text-secondary ring-1 ring-inset ring-border-subtle',
           square ? 'rounded-fw-md' : 'rounded-full',
           fwTransition,
           className,
         )}
+        style={
+          identity
+            ? { backgroundColor: `var(--fw-tint-${slot}-bg)`, color: `var(--fw-tint-${slot}-ink)` }
+            : undefined
+        }
       >
         {showImage ? (
           <img

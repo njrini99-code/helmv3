@@ -60,7 +60,6 @@ describe('computeRosterHealth', () => {
     const health = computeRosterHealth([], [], {});
     expect(health.totalPlayers).toBe(0);
     expect(health.coverage).toBe(0);
-    expect(health.totalOutcomes).toBe(0);
   });
 
   it('counts coverage from active/in_progress focus areas only', () => {
@@ -75,19 +74,6 @@ describe('computeRosterHealth', () => {
     expect(health.playersWithActive).toBe(1);
     expect(health.coverage).toBeCloseTo(1 / 3);
     expect(health.activeAreas).toBe(1);
-  });
-
-  it('tallies recorded outcomes (improved/no_change/worsened) verbatim', () => {
-    const focusAreas = [
-      focusArea({ id: 'a', outcome_status: 'improved' }),
-      focusArea({ id: 'b', outcome_status: 'improved' }),
-      focusArea({ id: 'c', outcome_status: 'no_change' }),
-      focusArea({ id: 'd', outcome_status: 'worsened' }),
-      focusArea({ id: 'e', outcome_status: null }), // not yet recorded — excluded
-    ];
-    const health = computeRosterHealth([player()], focusAreas, {});
-    expect(health.outcomeTally).toEqual({ improved: 2, noChange: 1, worsened: 1 });
-    expect(health.totalOutcomes).toBe(4);
   });
 
   it('counts players with at least one recorded round from the props-fed stats record (no recompute)', () => {
@@ -287,9 +273,7 @@ describe('RosterHealthHeader — render', () => {
  *
  *     12  players to look at — trending down or without a focus area.
  *
- * which reads as twelve problems the coach has let pile up. Underneath it, the
- * outcome panel showed "AWAITING OUTCOMES — 0 OF 1", whose `need: 1` implies
- * one outcome is pending a verdict when nothing has been prescribed at all.
+ * which reads as twelve problems the coach has let pile up.
  *
  * The triage framing is only meaningful once focus areas exist to be missing.
  * ------------------------------------------------------------------------- */
@@ -335,38 +319,5 @@ describe('RosterHealthHeader — a roster with no focus areas yet', () => {
     expect(screen.getAllByRole('button', { name: 'Add focus area' })).toHaveLength(
       NEEDS_ATTENTION_LIST_CAP,
     );
-  });
-
-  it('does not claim an outcome is pending when nothing was ever prescribed', () => {
-    const { players, focusAreas, playerStats, rows } = bareRoster();
-    render(
-      <RosterHealthHeader
-        health={computeRosterHealth(players, focusAreas, playerStats)}
-        needs={computeNeedsAttention(rows)}
-        onAdd={vi.fn()}
-      />,
-    );
-    expect(screen.queryByText('0 of 1')).not.toBeInTheDocument();
-    expect(screen.queryByText(/Awaiting outcomes/)).not.toBeInTheDocument();
-  });
-
-  it('counts every prescribed area as awaiting a verdict once areas DO exist', () => {
-    const { players, playerStats, rows } = bareRoster();
-    // Three areas prescribed, none carrying an outcome yet: the honest reading
-    // is "0 of 3 recorded", not "0 of 1".
-    const focusAreas = [
-      focusArea({ id: 'fa1', player_id: 'p0', status: 'active' }),
-      focusArea({ id: 'fa2', player_id: 'p1', status: 'active' }),
-      focusArea({ id: 'fa3', player_id: 'p2', status: 'completed' }),
-    ];
-    render(
-      <RosterHealthHeader
-        health={computeRosterHealth(players, focusAreas, playerStats)}
-        needs={computeNeedsAttention(rows)}
-        onAdd={vi.fn()}
-      />,
-    );
-    expect(screen.getByText(/Awaiting outcomes/)).toBeInTheDocument();
-    expect(screen.getByText('0 of 3')).toBeInTheDocument();
   });
 });

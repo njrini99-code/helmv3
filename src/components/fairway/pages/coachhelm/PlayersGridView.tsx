@@ -14,9 +14,8 @@
  *   PRIMARY (focal) — a FLAT big-number readout of DEVELOPMENT COVERAGE (share
  *     of the roster carrying an active focus area). Dims to "awaiting roster"
  *     with no players. No gauge, no needle, no arc.
- *   SECONDARY rail — the OUTCOME MIX SegmentBar (improved / no change / worsened
- *     from recorded focus-area outcomes — the closed-loop payoff) over a recorded-
- *     outcomes Readout. Honest "awaiting outcomes" until a verdict is captured.
+ *   (The former SECONDARY outcome-mix rail, "Did the coaching land?", was
+ *     removed from the cluster 2026-09-27; outcomes live in FairwayEffectiveness.)
  *   TERTIARY foot row — micro Readouts: players on roster, active focus areas,
  *     completed focus areas, players with recent rounds.
  *
@@ -879,8 +878,8 @@ export function PlayersGridView({
         ) : null}
 
         {/* ── ROSTER-HEALTH HEADER INSTRUMENT — the hero. A ranked cluster on
-              warm glass: coverage gauge focal, outcome-mix rail, micro-readout
-              foot row. Reads from the same props (no new fetch). ── */}
+              warm glass: "who needs attention" focal panel over the
+              micro-readout foot row. Reads from the same props (no new fetch). ── */}
         <RosterHealthHeader health={rosterHealth} needs={needsAttention} onAdd={openCreate} />
 
         {/* ── DUE FOR REVIEW (Pkg 9 slice 4) — overdue/due-soon focus areas,
