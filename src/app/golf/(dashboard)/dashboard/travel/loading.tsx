@@ -27,59 +27,94 @@ export default function Loading() {
       >
         <span className="sr-only">Loading travel…</span>
 
-        {/* Masthead — ViewHeader (eyebrow · title · description · meta) + CTA */}
+        {/* Masthead: ViewHeader (eyebrow · title · meta) + CTA. The redesign
+            dropped the description line, so no third bar. */}
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
-            <Skeleton className="h-3 w-14" />
-            <Skeleton className="mt-2 h-9 w-64 max-w-full" />
-            <Skeleton className="mt-2 h-3.5 w-72 max-w-full" />
+            <Skeleton className="h-9 w-32 max-w-full" />
+            <Skeleton className="mt-2 h-3.5 w-40 max-w-full" />
           </div>
           <Skeleton className="h-10 w-40 rounded-fw-md" />
         </div>
 
         <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-3">
-          {/* Itinerary list */}
-          <div className="flex flex-col gap-3 lg:col-span-1">
-            <Skeleton className="h-3 w-14" />
-            {Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="rounded-card border border-border-subtle bg-surface p-4">
-                {/* FairwayTripCard: name line, destination, dates, then the
-                    status pill on its own line (each bar sits in its text's
-                    line box so the row height matches). */}
-                <div className="flex items-start gap-3">
-                  <Skeleton className="h-9 w-9 flex-shrink-0 rounded-fw-md" />
-                  <div className="min-w-0 flex-1">
-                    <div className="flex h-5 items-center">
-                      <Skeleton className="h-3.5 w-3/5" />
+          <div className="flex flex-col gap-6 lg:col-span-1">
+            {/* Phone: the next-trip hero (FairwayNextTrip): eyebrow + pill,
+                title, sub line, date, big time, one button. */}
+            <div className="lg:hidden">
+              <Surface elevation="border" padding="none">
+                <div className="flex flex-col gap-4 p-5">
+                  <Skeleton className="h-5 w-40 rounded-full" />
+                  <div>
+                    <Skeleton className="h-5 w-48" />
+                    <Skeleton className="mt-2 h-3.5 w-36" />
+                  </div>
+                  <div>
+                    <Skeleton className="h-3.5 w-24" />
+                    <Skeleton className="mt-2 h-7 w-32" />
+                  </div>
+                  {/* Wear / Stay rows */}
+                  <div className="flex flex-col gap-2 border-t border-border-subtle pt-4">
+                    <Skeleton className="h-3.5 w-3/4" />
+                    <Skeleton className="h-3.5 w-1/2" />
+                  </div>
+                  <Skeleton className="h-11 w-40 rounded-full" />
+                </div>
+              </Surface>
+            </div>
+
+            {/* "Coming up" dated rows (FairwayTripCard): date block + name,
+                time · destination, status pill. */}
+            <div className="flex flex-col gap-2">
+              <Skeleton className="h-3 w-20" />
+              {Array.from({ length: 2 }).map((_, i) => (
+                <div key={i} className="rounded-card border border-border-subtle bg-surface p-4">
+                  <div className="flex items-start gap-4">
+                    <div className="flex w-10 flex-shrink-0 flex-col items-center gap-1.5">
+                      <Skeleton className="h-3 w-7" />
+                      <Skeleton className="h-5 w-6" />
                     </div>
-                    <div className="mt-1 flex h-[18px] items-center">
-                      <Skeleton className="h-3 w-3/5" />
+                    <div className="min-w-0 flex-1">
+                      <Skeleton className="h-4 w-3/5" />
+                      <Skeleton className="mt-2 h-3.5 w-2/5" />
+                      <Skeleton className="mt-3 h-5 w-16 rounded-full" />
                     </div>
-                    <div className="mt-0.5 flex h-[18px] items-center">
-                      <Skeleton className="h-3 w-2/5" />
-                    </div>
-                    <Skeleton className="mt-2 h-5 w-16 rounded-full" />
                   </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
+
+            {/* Past trips disclosure row (collapsed). */}
+            <Skeleton className="h-3 w-24" />
           </div>
 
-          {/* Detail panel — default first paint (no trip selected) is the
-              compact "Select a trip" EmptyState, not the populated
-              tabs+schedule-cards detail view. Mirrors EmptyState's own
-              `variant="subtle"` shape (h-12 icon chip, one title line, one
-              wrapped description line) inside the same `padding="lg"`
-              Surface the real empty state renders in. */}
-          <div className="lg:col-span-2">
-            <Surface elevation="border" padding="lg">
-              <div className="flex flex-col items-center gap-3 px-6 py-10 text-center">
-                <Skeleton className="h-12 w-12 rounded-full" />
-                <div className="space-y-1">
-                  <Skeleton className="mx-auto h-5 w-28" />
-                  <Skeleton className="mx-auto h-3.5 w-64 max-w-full" />
-                  <Skeleton className="mx-auto h-3.5 w-40 max-w-full" />
+          {/* Desktop: the next trip's sheet is shown by default (header, tabs,
+              timeline rows); there is no "Select a trip" empty pane any more. */}
+          <div className="hidden lg:col-span-2 lg:block">
+            <Surface elevation="border" padding="none">
+              <div className="border-b border-border-subtle p-6">
+                <Skeleton className="h-5 w-56" />
+                <Skeleton className="mt-2 h-3.5 w-40" />
+                <div className="mt-4 flex gap-4">
+                  <Skeleton className="h-8 w-20" />
+                  <Skeleton className="h-8 w-20" />
                 </div>
+                {/* Tabs strip: Trip sheet | Expenses */}
+                <div className="mt-4 flex gap-6">
+                  <Skeleton className="h-4 w-20" />
+                  <Skeleton className="h-4 w-16" />
+                </div>
+              </div>
+              <div className="flex flex-col px-6 pb-6">
+                {Array.from({ length: 3 }).map((_, i) => (
+                  <div key={i} className="grid grid-cols-[4.75rem_1fr] gap-x-3 border-b border-border-subtle py-4 last:border-b-0">
+                    <Skeleton className="h-3.5 w-14" />
+                    <div>
+                      <Skeleton className="h-3 w-24" />
+                      <Skeleton className="mt-2 h-4 w-2/3" />
+                    </div>
+                  </div>
+                ))}
               </div>
             </Surface>
           </div>

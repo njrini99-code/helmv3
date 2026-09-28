@@ -95,11 +95,13 @@ describe('FairwayTripDetail — #87 header truncation', () => {
     expect(destination).not.toHaveClass('truncate');
     expect(destination).toHaveClass('break-words');
 
-    // The row (icon + destination + separator + transport label) must be
-    // allowed to wrap onto multiple lines rather than forcing everything
-    // onto one line that then has to clip.
+    // The line ("Bus to <destination> · dates") is flowing text that must be
+    // allowed to wrap onto multiple lines rather than forced onto one line
+    // that then has to clip.
     const row = destination.parentElement;
-    expect(row).toHaveClass('flex-wrap');
+    expect(row).toHaveClass('break-words');
+    expect(row).not.toHaveClass('truncate');
+    expect(row).not.toHaveClass('whitespace-nowrap');
   });
 
   it('still renders the short-name/short-destination case unchanged (no regression)', () => {
@@ -108,5 +110,60 @@ describe('FairwayTripDetail — #87 header truncation', () => {
 
     expect(screen.getByRole('heading', { level: 2, name: 'Trip' })).toBeInTheDocument();
     expect(screen.getByText('Pinehurst, NC')).toBeInTheDocument();
+  });
+});
+
+describe('FairwayTripDetail — trip sheet (redesign 2026-09-28)', () => {
+  it('turns the hotel phone into a call link and places into Maps links', () => {
+    renderDetail(
+      makeItinerary({
+        departure_time: '06:00:00',
+        departure_location: 'Athletic Complex Parking Lot',
+        hotel_name: 'Marriott Greenville Downtown',
+        hotel_address: '1 Parkway E, Greenville, SC 29601',
+        hotel_phone: '(864) 242-7525',
+      }),
+    );
+
+    expect(screen.getByRole('link', { name: /Call/ })).toHaveAttribute('href', 'tel:8642427525');
+    const directions = screen.getAllByRole('link', { name: /Directions/ });
+    expect(directions[0]).toHaveAttribute('href', expect.stringContaining('maps.apple.com/?q=Athletic%20Complex'));
+    expect(directions[1]).toHaveAttribute('href', expect.stringContaining('Marriott%20Greenville%20Downtown'));
+    expect(screen.getByText('6:00 AM')).toBeInTheDocument();
+  });
+
+  it('lists gear as items, and says honestly when only the date and destination exist', () => {
+    const { unmount } = renderDetail(makeItinerary({ gear_list: 'Full bag, Rain suit, Yardage book' }));
+    expect(screen.getAllByRole('listitem').map((li) => li.textContent)).toEqual(
+      expect.arrayContaining(['Full bag', 'Rain suit', 'Yardage book']),
+    );
+    unmount();
+
+    renderDetail(makeItinerary());
+    expect(screen.getByText(/Only the date and destination are posted so far/)).toBeInTheDocument();
+    expect(screen.queryByText(/schedule above/)).not.toBeInTheDocument();
+  });
+
+  it('shows one primary "Add expense" on an empty Expenses tab (the empty state carries it)', () => {
+    render(
+      <FairwayTripDetail
+        itinerary={makeItinerary()}
+        isCoach
+        activeTab="expenses"
+        onTabChange={noop}
+        onEdit={noop}
+        onDelete={noop}
+        expenses={[]}
+        expenseSummary={null}
+        budgets={[]}
+        loadingExpenses={false}
+        exporting={false}
+        onAddExpense={noop}
+        onEditExpense={noop}
+        onRefreshExpenses={noop}
+        onExportCSV={noop}
+      />,
+    );
+    expect(screen.getAllByRole('button', { name: 'Add expense' })).toHaveLength(1);
   });
 });

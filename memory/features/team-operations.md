@@ -42,7 +42,7 @@ Tasks let coaches assign work to players. Documents provide a team file library 
 
 - `src/components/golf/tasks/**`
 - `src/components/golf/documents/**`
-- `src/components/golf/travel/**`
+- `src/components/fairway/pages/travel/**` (FairwayTravel, FairwayNextTrip, FairwayTripCard, FairwayTripDetail; `travel-helpers.tsx` owns trip status + grouping)
 - `src/components/golf/player-hub/**`
 - `src/components/fairway/pages/team-hub/**`
 
@@ -87,9 +87,20 @@ Document upload/version
   -> may link to announcements or events
 
 Travel create
-  -> createTravelItinerary()
+  -> createGolfTravelItinerary()
   -> WRITE golf_travel_itineraries
   -> optional event_id link to calendar
+
+Travel read (/golf/dashboard/travel, redesign 2026-09-28)
+  -> trips grouped by getTripStatus on calendar days: past = Completed
+     (after the return day; a trip with no return date ends the day after
+     departure), current = In transit / Departed, else upcoming
+  -> the next (or current) trip leads: a hero on phones, the default
+     selected trip sheet on desktop; past trips collapse
+  -> trip sheet: Depart, Wear, Bring, Stay (tel: + Maps links), Return, Notes,
+     then the linked calendar event
+  -> selecting a trip pushes ?trip=<id> (back gesture returns to the list);
+     inbound ?trip= from Calendar / Team Hub still auto-selects
 
 Player hub
   -> reads travel, tasks, and events
