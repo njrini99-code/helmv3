@@ -211,3 +211,88 @@ describe('TeamBleedBoard', () => {
     expect(screen.queryByText('Team health')).not.toBeInTheDocument();
   });
 });
+
+/**
+ * Demo University Golf, from read-only SQL on 2026-09-27: 8 active members, 7
+ * with a stats-cache row. Team averages and every below-average player's value
+ * are transcribed (driving, approach and short game straight from
+ * golf_player_stats_cache; the flag is the action's own one-standard-deviation
+ * rule). Players above the average are not shown by the card, so their
+ * values are only placed to keep the best-to-worst order the action returns.
+ */
+describe('TeamBleedBoard on the demo team', () => {
+  const p = (name: string, value: number, needsAttention = false) =>
+    player(name.toLowerCase().replace(/\s+/g, '-'), value, { playerName: name, needsAttention });
+
+  const demo: TeamCategory[] = [
+    category({
+      id: 'driving',
+      label: 'Driving',
+      teamAvg: 63.15,
+      attentionCount: 1,
+      players: [
+        p('Tyler Hayes', 70.1),
+        p('Owen Carter', 67.4),
+        p('Mason Rivers', 66.9),
+        p('Dylan Brooks', 64.6),
+        p('Cole Bennett', 62.0),
+        p('Jackson Hale', 60.8),
+        p('Ethan Park', 50.3, true),
+      ],
+    }),
+    category({
+      id: 'approach',
+      label: 'Approach',
+      teamAvg: 66.25,
+      attentionCount: 2,
+      players: [
+        p('Tyler Hayes', 71.2),
+        p('Mason Rivers', 69.9),
+        p('Dylan Brooks', 69.0),
+        p('Cole Bennett', 66.9),
+        p('Jackson Hale', 64.8),
+        p('Owen Carter', 61.6, true),
+        p('Ethan Park', 60.4, true),
+      ],
+    }),
+    category({
+      id: 'short_game',
+      label: 'Short Game',
+      teamAvg: 35.25,
+      attentionCount: 1,
+      players: [
+        p('Tyler Hayes', 39.9),
+        p('Mason Rivers', 38.8),
+        p('Dylan Brooks', 38.3),
+        p('Owen Carter', 34.9),
+        p('Cole Bennett', 33.7),
+        p('Jackson Hale', 33.7),
+        p('Ethan Park', 30.3, true),
+      ],
+    }),
+  ];
+
+  function names(area: string): string[] {
+    const li = screen.getByRole('heading', { name: area }).closest('li')!;
+    return Array.from(li.querySelectorAll('ul li')).map((row) => row.getAttribute('title')?.split(':')[0] ?? '');
+  }
+
+  it('prints the team averages the cache holds, as whole percentages', () => {
+    render(<TeamBleedBoard categories={demo} teamHealth={71} />);
+    // The area's own figure comes first; each player's figure follows it.
+    const figure = (area: string) =>
+      within(screen.getByRole('heading', { name: area }).closest('li')!).getAllByText(/^\d+%$/)[0]!.textContent;
+    expect(figure('Driving')).toBe('63%');
+    expect(figure('Approach')).toBe('66%');
+    expect(figure('Short Game')).toBe('35%');
+  });
+
+  it('names the flagged players first, then the rest below the average, worst first', () => {
+    render(<TeamBleedBoard categories={demo} teamHealth={71} />);
+    expect(names('Driving')).toEqual(['Ethan Park', 'Jackson Hale', 'Cole Bennett']);
+    expect(names('Approach')).toEqual(['Ethan Park', 'Owen Carter', 'Jackson Hale']);
+    expect(names('Short Game')).toEqual(['Ethan Park', 'Jackson Hale', 'Cole Bennett']);
+    expect(screen.getByText('+1 more below the average')).toBeInTheDocument();
+    expect(screen.getByText('2 of 7 flagged')).toBeInTheDocument();
+  });
+});

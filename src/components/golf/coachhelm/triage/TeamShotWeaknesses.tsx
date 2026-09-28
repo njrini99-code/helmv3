@@ -29,6 +29,10 @@
  *     total is the per-shot average times the shot count.
  *   · A situation where the team GAINS strokes is not a weakness and is not
  *     listed, even if the ranking handed it over.
+ *   · The yardage curve behind the dead zones stops at 300 yards and files
+ *     every longer shot in its last band, so that band is open-ended and
+ *     reads "275+ yd", not "275–300 yd" (on the demo team it is mostly
+ *     drives from well past 300).
  * ========================================================================== */
 
 import { cn } from '@/lib/utils';
@@ -72,6 +76,14 @@ const NO_BASELINE = new Set(['other', 'penalty']);
 /** "0-25" → "0–25"; "250+" stays. En dash for a numeric range. */
 function formatRange(range: string): string {
   return range.replace('-', '–');
+}
+
+/** `buildYardageCurve`'s `maxDistance`: shots past it land in the last band. */
+const CURVE_MAX_YARDS = 300;
+
+/** A dead-zone band, open-ended when it is the curve's catch-all last band. */
+export function formatZoneRange(rangeStart: number, rangeEnd: number): string {
+  return rangeEnd >= CURVE_MAX_YARDS ? `${rangeStart}+ yd` : `${rangeStart}–${rangeEnd} yd`;
 }
 
 /** Strokes LOST, as a positive magnitude, printed with a true minus. */
@@ -256,7 +268,7 @@ export function TeamShotWeaknesses({ data, unavailable = false, className }: Tea
                 <li key={`${dz.rangeStart}-${dz.rangeEnd}`} className="flex flex-col gap-1.5">
                   <div className="flex items-baseline justify-between gap-3">
                     <span className="font-fw-sans text-body-sm font-medium tabular-nums text-text-primary">
-                      {dz.rangeStart}&ndash;{dz.rangeEnd} yd
+                      {formatZoneRange(dz.rangeStart, dz.rangeEnd)}
                     </span>
                     <span className="font-fw-sans text-body-sm font-semibold tabular-nums text-fw-danger-ink">
                       {lost(dz.deficit)}
