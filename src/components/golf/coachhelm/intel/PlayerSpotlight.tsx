@@ -125,7 +125,7 @@ export function PlayerSpotlight({
       )}
     >
       <div className="flex items-center gap-4">
-        <PlayerAvatar player={player} ring={ring} size="lg" />
+        <PlayerAvatar player={player} size="lg" />
         <div className="flex min-w-0 flex-1 flex-col gap-1">
           <span className="font-fw-sans text-caption font-medium text-text-tertiary">
             {selected ? 'Selected player' : 'Losing the most here'}
