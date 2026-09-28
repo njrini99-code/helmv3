@@ -1,247 +1,255 @@
+import type { ReactNode } from 'react';
 import { fairwayScope } from '@/lib/redesign/flag';
 import { Skeleton } from '@/components/fairway/feedback/Skeleton';
-import { FROSTED_CARD_CLASS } from '@/components/fairway/modules/frosted';
-import { cn } from '@/lib/utils';
 
 /**
- * Route Suspense fallback for the CoachHelm Brief (/dashboard/intelligence).
+ * Route Suspense fallback for CoachHelm (/dashboard/intelligence).
  *
- * The live page is `CoachIntelligenceHome`: the AI-first `CommandOpening`
- * (greeting h1 + status line, quick-action chip row, the prompt composer,
- * then the "Program pulse" panel) ABOVE the existing `TriageDesk`, which
- * itself now opens with `TeamCategoryLeakBand` ("Where the team is bleeding
- * strokes" — a 5-category grid with a team-health ring) BEFORE its own
- * `BriefBand` masthead, `ViewSwitch` segmented control, and (on the default
- * Signals view) the team-diagnostics disclosure + `TeamSignalSummary`
- * pressure map + `SignalQueue`/`SignalDossier` two-pane grid.
+ * The page opens on Home (`TriageDesk`, `?view=home`), so this is Home's
+ * shape, top to bottom in the live DOM order, so nothing above the fold moves
+ * when the data lands:
  *
- * This fallback used to open directly on a `BriefBand`-shaped banner —
- * the shape of an EARLIER Triage Desk revision that no longer exists as the
- * page's first paint now that CommandOpening + TeamCategoryLeakBand sit
- * above it. That mismatch caused a visible re-layout jump the moment data
- * landed (live evidence, 2026-08). Ordering below matches the real DOM order
- * top to bottom so nothing above the fold moves once data resolves.
+ *   1. the Home · The Lab · Chat toggle (`ViewSwitch`: a 54px sunken track,
+ *      full width on a phone),
+ *   2. the greeting (h1 + status line) with the last-scan time and Scan team
+ *      on its right,
+ *   3. "Where the team is bleeding strokes" (`TeamBleedBoard`),
+ *   4. "Team shot weaknesses" (`TeamShotWeaknesses`),
+ *   5. the "Game pressure map" (`TeamSignalSummary`).
+ *
+ * Each card keeps its deep-green header with the real, static title: only
+ * the data shimmers. The cards are container-query sized like the live ones
+ * (`[container-type:inline-size]` and the same breakpoints), so the frame is
+ * right at every width the dashboard rail leaves them.
+ *
+ * `loading.tsx` receives no search params, so a `?view=lab` or `?view=chat`
+ * load also paints this frame first; Home is the default and the common case.
  */
+
+/** segmented.tsx's TRACK_SUNKEN_SHADOW, copied: that module is a client
+ *  module, and a plain value imported from one into this server file arrives
+ *  as a client reference, not the string. */
+const TRACK_SUNKEN_SHADOW =
+  'inset 0 1px 3px oklch(0.18 0.01 60 / 0.10), inset 0 1px 0 oklch(0.18 0.01 60 / 0.04)';
+
+function PlinthCard({ title, readout, children }: { title: string; readout?: ReactNode; children: ReactNode }) {
+  return (
+    <div className="flex flex-col overflow-hidden rounded-fw-lg border border-border-subtle bg-surface shadow-soft [container-type:inline-size]">
+      <div className="fw-plinth-green flex items-center justify-between gap-3 px-4 py-3 sm:px-5">
+        <p className="min-w-0 font-fw-sans text-h3 font-semibold text-text-primary">{title}</p>
+        {readout}
+      </div>
+      {children}
+    </div>
+  );
+}
+
+function BleedBoardSkeleton() {
+  return (
+    <PlinthCard
+      title="Where the team is bleeding strokes"
+      readout={
+        <div className="flex shrink-0 items-center gap-2.5" aria-hidden="true">
+          {/* The health ring's track, drawn the way HealthRing draws it. */}
+          <span className="h-10 w-10 rounded-full border-4 border-text-primary/20" />
+          <span className="flex flex-col gap-1">
+            <span className="h-5 w-7 rounded-fw-sm bg-text-primary/15" />
+            <span className="h-3 w-16 rounded-fw-sm bg-text-primary/10" />
+          </span>
+        </div>
+      }
+    >
+      <div className="grid grid-cols-1 divide-y divide-border-subtle [@container(min-width:1100px)]:grid-cols-5 [@container(min-width:1100px)]:divide-x [@container(min-width:1100px)]:divide-y-0">
+        {[0, 1, 2, 3, 4].map((area) => (
+          <div
+            key={area}
+            className="grid min-w-0 grid-cols-1 gap-4 p-4 sm:p-5 [@container(min-width:600px)]:grid-cols-[minmax(0,15rem)_minmax(0,1fr)] [@container(min-width:600px)]:gap-8 [@container(min-width:1100px)]:flex [@container(min-width:1100px)]:flex-col [@container(min-width:1100px)]:gap-4"
+          >
+            <div className="flex min-w-0 flex-col gap-2.5">
+              <div className="space-y-1.5">
+                <Skeleton className="h-4 w-20" />
+                <Skeleton className="h-3 w-36 max-w-full" />
+              </div>
+              <Skeleton className="h-8 w-16" />
+              <div className="flex items-center gap-2.5">
+                <Skeleton className="h-1.5 flex-1 rounded-full" />
+                <Skeleton className="h-3 w-20" />
+              </div>
+            </div>
+            <div className="flex min-w-0 flex-col gap-2 border-t border-border-subtle pt-3 [@container(min-width:600px)]:border-t-0 [@container(min-width:600px)]:pt-0 [@container(min-width:1100px)]:border-t [@container(min-width:1100px)]:pt-3">
+              <Skeleton className="h-3 w-36" />
+              <div className="grid grid-cols-1 gap-1 [@container(min-width:820px)]:grid-cols-3 [@container(min-width:820px)]:gap-x-5 [@container(min-width:1100px)]:grid-cols-1">
+                {[0, 1, 2].map((row) => (
+                  <div key={row} className="flex min-h-[36px] items-center gap-2.5">
+                    <Skeleton circle className="h-6 w-6 shrink-0" />
+                    <Skeleton className="h-3.5 flex-1" />
+                    <Skeleton className="h-3.5 w-10 shrink-0" />
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+      <div className="border-t border-border-subtle px-4 py-3 sm:px-5">
+        <Skeleton className="h-3 w-full max-w-xl" />
+      </div>
+    </PlinthCard>
+  );
+}
+
+function ShotWeaknessesSkeleton() {
+  return (
+    <PlinthCard
+      title="Team shot weaknesses"
+      readout={<span className="shrink-0 font-fw-sans text-caption text-text-secondary">Last 90 days</span>}
+    >
+      <div className="grid grid-cols-1 [@container(min-width:880px)]:grid-cols-[minmax(0,1.55fr)_minmax(0,1fr)] [@container(min-width:880px)]:divide-x [@container(min-width:880px)]:divide-border-subtle">
+        <div className="flex min-w-0 flex-col gap-3 p-4 sm:p-5">
+          <Skeleton className="h-4 w-3/4" />
+          <div className="flex flex-col divide-y divide-border-subtle">
+            {[0, 1, 2, 3, 4].map((row) => (
+              <div key={row} className="flex items-start gap-3 py-3 first:pt-1 last:pb-0">
+                <Skeleton circle className="mt-0.5 h-6 w-6 shrink-0" />
+                <div className="flex min-w-0 flex-1 flex-col gap-2">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="space-y-1.5">
+                      <Skeleton className="h-4 w-24" />
+                      <Skeleton className="h-3 w-32" />
+                    </div>
+                    <div className="flex flex-col items-end gap-1.5">
+                      <Skeleton className="h-4 w-24" />
+                      <Skeleton className="h-3 w-20" />
+                    </div>
+                  </div>
+                  <Skeleton className="h-1.5 w-full rounded-full" />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="flex min-w-0 flex-col gap-3 border-t border-border-subtle p-4 sm:p-5 [@container(min-width:880px)]:border-t-0">
+          <div className="space-y-1.5">
+            <Skeleton className="h-4 w-24" />
+            <Skeleton className="h-3 w-full max-w-xs" />
+          </div>
+          <div className="flex flex-col gap-2.5">
+            {[0, 1, 2, 3].map((zone) => (
+              <div key={zone} className="flex flex-col gap-1.5">
+                <div className="flex items-center justify-between gap-3">
+                  <Skeleton className="h-3.5 w-20" />
+                  <Skeleton className="h-3.5 w-24" />
+                </div>
+                <Skeleton className="h-1.5 w-full rounded-full" />
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+      <div className="border-t border-border-subtle px-4 py-3 sm:px-5">
+        <Skeleton className="h-3 w-full max-w-2xl" />
+      </div>
+    </PlinthCard>
+  );
+}
+
+function PressureMapSkeleton() {
+  return (
+    <PlinthCard
+      title="Game pressure map"
+      readout={
+        <div className="flex items-center gap-2" aria-hidden="true">
+          <span className="h-[26px] w-16 rounded-full border border-border-subtle" />
+          <span className="h-[26px] w-28 rounded-full border border-border-subtle" />
+        </div>
+      }
+    >
+      <div className="grid grid-cols-1 [@container(min-width:760px)]:grid-cols-[minmax(0,22rem)_minmax(0,1fr)] [@container(min-width:760px)]:divide-x [@container(min-width:760px)]:divide-border-subtle">
+        <div className="flex flex-col gap-2 border-b border-border-subtle p-4 sm:p-5 [@container(min-width:760px)]:border-b-0">
+          <Skeleton className="h-4 w-3/4" />
+          <div className="mx-auto grid aspect-[280/250] w-full max-w-[22rem] place-items-center">
+            <Skeleton circle className="aspect-square h-[72%]" />
+          </div>
+        </div>
+        <div className="flex min-w-0 flex-col gap-2 p-4 sm:p-5">
+          <Skeleton className="h-4 w-2/3" />
+          <div className="grid grid-cols-1 gap-x-6 [@container(min-width:1080px)]:grid-cols-2">
+            {[0, 1, 2, 3, 4, 5].map((row) => (
+              <div key={row} className="flex min-h-[56px] items-center gap-3 border-b border-border-subtle py-3 last:border-b-0">
+                <Skeleton circle className="h-6 w-6 shrink-0" />
+                <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+                  <div className="flex items-center justify-between gap-3">
+                    <Skeleton className="h-3.5 w-24" />
+                    <Skeleton className="h-3.5 w-16" />
+                  </div>
+                  <Skeleton className="h-1.5 w-full rounded-full" />
+                  <Skeleton className="h-3 w-28" />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+      <div className="grid grid-cols-3 divide-x divide-border-subtle border-t border-border-subtle">
+        {[0, 1, 2].map((metric) => (
+          <div key={metric} className="flex min-w-0 flex-col gap-1.5 px-3 py-4 sm:px-5">
+            <Skeleton className="h-3 w-20 max-w-full" />
+            <Skeleton className="h-8 w-10" />
+          </div>
+        ))}
+      </div>
+    </PlinthCard>
+  );
+}
 
 export default function IntelligenceLoading() {
   return (
     <div className={fairwayScope('min-h-full bg-canvas bg-canvas-gradient font-fw-sans')}>
       <div className="mx-auto w-full max-w-[1200px] px-4 py-6 md:px-6">
-        <div aria-busy="true" className="flex flex-col gap-8">
+        <div aria-busy="true" className="flex flex-col gap-6">
           {/* A11Y-02: the live region is only this line, not the whole skeleton (Skeleton is aria-hidden). */}
-          <span role="status" aria-live="polite" className="sr-only">Loading the CoachHelm brief…</span>
+          <span role="status" aria-live="polite" className="sr-only">
+            Loading CoachHelm…
+          </span>
 
-          {/* ── CommandOpening: greeting h1 + status line, quick-action chip
-              row, the composer frame, then the Program pulse panel. ── */}
-          <div className="flex flex-col gap-5">
-            <div>
-              <Skeleton className="h-9 w-72 max-w-full rounded-fw-sm" />
-              <Skeleton className="mt-2 h-4 w-64 max-w-full rounded-fw-sm" />
-            </div>
-
-            <div>
-              <div className="-mx-4 mb-2.5 flex gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0">
-                {[88, 148, 132, 176, 168].map((w, i) => (
-                  <Skeleton key={i} className="h-10 shrink-0 rounded-full" style={{ width: w }} />
-                ))}
-              </div>
-              <div className="flex items-end gap-2 rounded-fw-lg border border-border-subtle bg-surface p-2">
-                <Skeleton className="h-11 w-11 shrink-0 rounded-fw-md" />
-                <Skeleton className="h-11 flex-1 rounded-fw-sm" />
-                <Skeleton className="h-11 w-11 shrink-0 rounded-fw-md" />
-              </div>
-            </div>
-
-            <div className="rounded-card border border-border-subtle bg-surface">
-              <div className="border-b border-border-subtle px-4 py-2.5">
-                <Skeleton className="h-2.5 w-28" />
-              </div>
-              {[0, 1, 2].map((i) => (
-                <div key={i} className="flex items-start gap-3 border-b border-border-subtle px-4 py-3 last:border-0">
-                  <Skeleton circle className="mt-1.5 h-1.5 w-1.5 shrink-0" />
-                  <div className="min-w-0 flex-1 space-y-1.5">
-                    <Skeleton className="h-3.5 w-3/4" />
-                    <Skeleton className="h-3 w-full max-w-sm" />
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* ── TeamCategoryLeakBand: "Where the team is bleeding strokes" —
-              eyebrow + header + team-health ring readout, 5-category grid. ── */}
-          <div className="rounded-card border border-border-subtle bg-surface p-6">
-            <div className="mb-5 flex flex-col items-start gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
-              <div className="space-y-1">
-                <Skeleton className="h-2.5 w-28" />
-                <Skeleton className="h-5 w-64 max-w-full" />
-              </div>
-              <div className="flex items-center gap-2.5">
-                <Skeleton circle className="h-11 w-11" />
-                <Skeleton className="h-2.5 w-16" />
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-              {[0, 1, 2, 3, 4].map((i) => (
-                <div key={i} className="flex h-full flex-col gap-3 rounded-card border border-border-subtle bg-surface p-4">
-                  <div className="flex items-start justify-between gap-2">
-                    <Skeleton className="h-2.5 w-16" />
-                    <Skeleton className="h-3 w-3" />
-                  </div>
-                  <Skeleton className="h-6 w-16" />
-                  <Skeleton className="h-1.5 w-full rounded-full" />
-                  <Skeleton className="h-4 w-20 rounded-full" />
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* ── BriefBand — the shared frosted light masthead (FROSTED_CARD_CLASS). ── */}
-          <div
-            aria-hidden="true"
-            className={cn(
-              FROSTED_CARD_CLASS,
-              'flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6',
-            )}
-          >
-            <div className="flex flex-col gap-2.5">
-              <Skeleton className="h-4 w-24 rounded-fw-sm" />
-              <Skeleton className="h-5 w-full max-w-md rounded-fw-sm" />
-              <div className="flex flex-wrap items-center gap-5 pt-0.5">
-                {/* Exactly two count chips (Urgent, Players flagged) — the
-                    third ("New this week") was removed as an unreliable
-                    counter, BriefBand.tsx. Value + label side by side. */}
-                {[0, 1].map((i) => (
-                  <div key={i} className="flex items-baseline gap-1.5">
-                    <Skeleton className="h-6 w-8 rounded-fw-sm" />
-                    <Skeleton className="h-3 w-16 rounded-fw-sm" />
-                  </div>
-                ))}
-              </div>
-            </div>
-            <div className="flex flex-col items-start gap-2 sm:items-end">
-              <Skeleton className="h-10 w-32 rounded-full" />
-              <Skeleton className="h-3 w-24 rounded-fw-sm" />
-            </div>
-          </div>
-
-          {/* ── ViewSwitch — Signals / Players / Effectiveness segmented pill —
-              sits beside the "Ask" Button in the same row (TriageDesk.tsx:486-498),
-              not alone. ── */}
-          <div className="flex flex-wrap items-center justify-between gap-3">
+          {/* The toggle is static chrome, so it paints as it will look, Home
+              selected: the same sunken track, solid green pill and cream
+              label as ViewSwitch (segmented.tsx), inert until the page lands. */}
+          <div className="flex items-center" aria-hidden="true">
             <div
-              aria-hidden="true"
-              className="inline-flex w-fit items-center gap-1 rounded-full border border-border-subtle bg-surface-sunken p-1"
+              className="flex h-[54px] w-full items-stretch gap-1 rounded-fw-sm border border-border-control bg-surface-sunken p-1 sm:w-auto"
+              style={{ boxShadow: TRACK_SUNKEN_SHADOW }}
             >
-              {[72, 72, 118].map((w, i) => (
-                <Skeleton key={i} className="h-9 rounded-full" style={{ width: w }} />
-              ))}
-            </div>
-            <Skeleton className="h-9 w-20 rounded-full" />
-          </div>
-
-          {/* ── Team diagnostics disclosure + TeamShotWeaknessesPanel body
-              (open by default on first paint). ── */}
-          <div className="flex flex-col gap-3">
-            <Skeleton className="h-11 w-full rounded-fw-sm" />
-            <div className="space-y-2">
-              {[0, 1, 2].map((i) => (
-                <div key={i} className="flex items-center justify-between rounded-fw-md border border-border-subtle bg-surface-sunken p-3">
-                  <div className="min-w-0 space-y-1.5">
-                    <Skeleton className="h-3.5 w-40" />
-                    <Skeleton className="h-3 w-28" />
-                  </div>
-                  <div className="ml-3 shrink-0 space-y-1.5 text-right">
-                    <Skeleton className="ml-auto h-3.5 w-10" />
-                    <Skeleton className="ml-auto h-3 w-14" />
-                  </div>
-                </div>
+              {['Home', 'The Lab', 'Chat'].map((label, index) => (
+                <span
+                  key={label}
+                  className={
+                    index === 0
+                      ? 'flex flex-1 items-center justify-center rounded-fw-sm border border-accent-fill-hover bg-accent-fill px-5 font-fw-sans text-body-sm font-semibold text-text-on-accent-fill shadow-flat dark:border-accent-500 dark:bg-accent-wash dark:text-accent-ink sm:flex-none'
+                      : 'flex flex-1 items-center justify-center px-5 font-fw-sans text-body-sm font-medium text-text-secondary dark:text-text-primary sm:flex-none'
+                  }
+                >
+                  {label}
+                </span>
               ))}
             </div>
           </div>
 
-          {/* ── TeamSignalSummary — "Game pressure map" + Priority roster /
-              Signal velocity panels. ── */}
-          <div className="grid items-stretch gap-4 xl:grid-cols-[minmax(0,1.35fr)_minmax(320px,0.65fr)]">
-            <div className="overflow-hidden rounded-fw-lg border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-card)]">
-              <div className="flex items-start justify-between gap-4 border-b border-border-subtle px-5 py-4">
-                <div className="space-y-2">
-                  <Skeleton className="h-2.5 w-32" />
-                  <Skeleton className="h-4 w-full max-w-md" />
-                </div>
-                <Skeleton className="h-6 w-20 rounded-full" />
-              </div>
-              <div className="grid min-h-[300px] lg:grid-cols-[minmax(270px,0.9fr)_minmax(300px,1.1fr)]">
-                <div className="grid place-items-center border-b border-border-subtle bg-surface-sunken/45 p-5 lg:border-b-0 lg:border-r">
-                  <Skeleton className="h-52 w-52 rounded-full" />
-                </div>
-                <div className="grid content-center gap-3 p-4 sm:p-5">
-                  {[0, 1, 2, 3].map((i) => (
-                    <div key={i} className="rounded-fw-md border border-border-subtle bg-surface-raised p-3">
-                      <div className="flex items-center justify-between gap-3">
-                        <Skeleton className="h-3.5 w-32" />
-                        <Skeleton className="h-6 w-8" />
-                      </div>
-                      <Skeleton className="mt-3 h-1.5 w-full rounded-full" />
-                    </div>
-                  ))}
-                </div>
-              </div>
-              <div className="grid grid-cols-2 divide-x divide-y divide-border-subtle border-t border-border-subtle sm:grid-cols-4 sm:divide-y-0">
-                {[0, 1, 2, 3].map((i) => <Skeleton key={i} className="m-4 h-10 rounded-fw-sm" />)}
-              </div>
+          {/* The greeting, with the last-scan time and Scan team beside it. */}
+          <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
+            <div className="min-w-0 flex-1">
+              <Skeleton className="h-9 w-64 max-w-full" />
+              <Skeleton className="mt-2 h-4 w-80 max-w-full" />
             </div>
-
-            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-1">
-              {[0, 1].map((panel) => (
-                <div key={panel} className="rounded-fw-lg border border-border-subtle bg-surface p-4 [box-shadow:var(--fw-shadow-card)]">
-                  <Skeleton className="h-3 w-28" />
-                  <Skeleton className="mt-2 h-3 w-48 max-w-full" />
-                  <div className="mt-4 grid gap-2.5">
-                    {[0, 1, 2, 3].map((i) => <Skeleton key={i} className="h-12 w-full rounded-fw-md" />)}
-                  </div>
-                </div>
-              ))}
+            <div className="flex shrink-0 items-center gap-3">
+              <Skeleton className="h-3 w-24" />
+              <Skeleton className="h-9 w-32 rounded-full" />
             </div>
           </div>
 
-          {/* ── SignalQueue / SignalDossier two-pane — same bounded
-              equal-height frame as the live desk. ── */}
-          <div className="grid grid-cols-1 gap-4 min-[940px]:h-[min(760px,calc(100vh-180px))] min-[940px]:grid-cols-[380px_1fr] min-[940px]:items-stretch">
-            <div className="flex min-h-0 flex-col gap-3">
-              <div className="flex flex-wrap gap-2">
-                {[0, 1, 2, 3].map((i) => (
-                  <Skeleton key={i} className="h-7 w-16 rounded-full" />
-                ))}
-              </div>
-              <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-hidden rounded-fw-lg border border-border-subtle bg-surface p-3">
-                {[0, 1, 2].map((i) => (
-                  <div key={i} className="flex flex-col gap-1.5">
-                    <div className="flex items-center justify-between gap-2">
-                      <Skeleton className="h-3.5 w-24" />
-                      <Skeleton className="h-4 w-12 rounded-full" />
-                    </div>
-                    <Skeleton className="h-9 w-full rounded-fw-sm" />
-                    <Skeleton className="h-9 w-full rounded-fw-sm" />
-                  </div>
-                ))}
-              </div>
-            </div>
-            <div className="flex min-h-[360px] flex-col gap-4 overflow-hidden rounded-fw-lg border border-border-subtle bg-surface p-5 sm:p-6 min-[940px]:min-h-0">
-              <div className="flex gap-2">
-                <Skeleton className="h-5 w-16 rounded-full" />
-                <Skeleton className="h-5 w-20 rounded-full" />
-              </div>
-              <Skeleton className="h-6 w-2/3" />
-              <Skeleton className="h-24 w-full rounded-fw-md" />
-              <Skeleton className="h-6 w-32" />
-              <div className="flex gap-2 pt-1">
-                <Skeleton className="h-9 w-28 rounded-full" />
-                <Skeleton className="h-9 w-20 rounded-full" />
-                <Skeleton className="h-9 w-24 rounded-full" />
-              </div>
-            </div>
-          </div>
+          <BleedBoardSkeleton />
+          <ShotWeaknessesSkeleton />
+          <PressureMapSkeleton />
         </div>
       </div>
     </div>
