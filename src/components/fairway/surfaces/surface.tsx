@@ -263,7 +263,10 @@ export const Inset = forwardRef<HTMLDivElement, InsetProps>(function Inset(
       ref={ref}
       data-slot="inset"
       className={cn(
-        'bg-surface-sunken rounded-fw-md text-text-secondary',
+        // Owner 2026-09-27: "more depth in the cards inside". An inset is a
+        // RAISED tile on its card — brightest cream, hairline edge, soft
+        // shadow — not a flat well that disappears into the card.
+        'rounded-fw-md border border-border-subtle bg-elevated text-text-secondary shadow-soft',
         PADDING[padding],
         className,
       )}
