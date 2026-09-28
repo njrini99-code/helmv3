@@ -124,6 +124,22 @@ Player Team Hub
 - Tasks need pending, overdue, completed, reminder, template, upload-required, and empty states.
 - Documents need preview, version history, upload new version, category/visibility, and unsupported-file states.
 - Travel needs itinerary cards, transport/hotel/packing/room assignment details, budget/expense affordances where wired, and player-friendly status.
+- Travel page (`FairwayTravel`, owner 2026-09-28, no green bands): "today"
+  is the team's wall-clock date (`golf_teams.timezone`, computed on the
+  server like the Team Hub), and one calendar-day rule in
+  `travel-helpers.tripPhase` drives the list groups (On the road / Upcoming
+  / Past trips), the countdown, the status pill, the masthead counts and the
+  default trip: upcoming before the departure date, on the road from
+  departure through the return date (the departure day alone without one),
+  past after. The desktop detail panel always shows a trip (on the road,
+  else the next to leave, else the latest past trip), never an empty
+  "Select a trip", and every panel action (edit, delete, expenses, export,
+  the expense form) acts on the trip it shows. Phones keep list → pushed
+  detail with "All trips". Expense reads are per trip with a request token
+  (a late answer for another trip is dropped); a failed read shows a retry,
+  and the delete confirm names an expense count only after that trip's
+  read answered. `is_test` itineraries stay out of the page read. There is
+  no travel roster table; room assignments render when set.
 - Player Hub should not lie about task completion state; it must read the same operational truth as task completion writes.
 - Player Team Hub is player-only and starts on an operations Overview; its
   ordered detail tabs are Tasks, Announcements, Travel, and Class schedule.
