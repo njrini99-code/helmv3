@@ -67,6 +67,12 @@ export interface NormalizedShots {
  *  map's own ceiling, stats-leak-maps.ts). */
 const PROXIMITY_CEILING_FT = 150;
 
+/** Longest believable putt, feet. */
+const PUTT_CEILING_FT = 150;
+
+/** Longest tee shot still read as a par 3 when it finds the green. */
+const PAR3_MAX_YD = 250;
+
 function finite(n: number | null | undefined): n is number {
   return typeof n === 'number' && Number.isFinite(n);
 }
@@ -158,9 +164,11 @@ export function normalizeShots(rows: readonly RawShotRow[], roundIndex: Readonly
       const next = shots[i + 1];
       switch (shot.shot_type) {
         case 'tee': {
-          // A tee shot that finished on the green is a par 3 keyed as a drive:
-          // not a fairway chance, so it is left out of the tee read.
-          if (landed(shot) === 'green' || landed(shot) === 'hole') break;
+          // A tee shot that finished on the green from under 250 yd is a par 3
+          // keyed as a drive: not a fairway chance, so it leaves the tee read.
+          // From further out it is a driven par 4 and reads as a fairway hit.
+          const teeFrom = toYards(shot.distance_to_hole_before, shot.distance_unit_before);
+          if ((landed(shot) === 'green' || landed(shot) === 'hole') && (teeFrom == null || teeFrom < PAR3_MAX_YD)) break;
           const before = toYards(shot.distance_to_hole_before, shot.distance_unit_before);
           const after = toYards(shot.distance_to_hole_after, shot.distance_unit_after);
           const yards = before != null && after != null && before > after ? Math.round(before - after) : null;
@@ -206,7 +214,13 @@ export function normalizeShots(rows: readonly RawShotRow[], roundIndex: Readonly
             ri,
             fromYards,
             lie,
-            leaveFeet: landed(shot) === 'green' ? toFeet(shot.distance_to_hole_after, shot.distance_unit_after) : null,
+            // A chip-in finished at the hole: a leave of 0, not an unplotted chip.
+            leaveFeet:
+              landed(shot) === 'hole' || shot.result === 'hole'
+                ? 0
+                : landed(shot) === 'green'
+                  ? toFeet(shot.distance_to_hole_after, shot.distance_unit_after)
+                  : null,
             saved: !penalised && rest.length <= 1,
             miss: approachMiss(shot.miss_direction),
           });
@@ -216,7 +230,9 @@ export function normalizeShots(rows: readonly RawShotRow[], roundIndex: Readonly
           const feet = finite(shot.putt_distance_feet)
             ? shot.putt_distance_feet
             : toFeet(shot.distance_to_hole_before, shot.distance_unit_before);
-          if (feet == null) break;
+          // Past the ceiling is a mis-keyed length (e.g. a hole yardage typed
+          // as feet), not a putt.
+          if (feet == null || feet > PUTT_CEILING_FT) break;
           const first = putts[0] === shot;
           const made = shot.putt_made ?? putts[putts.length - 1] === shot;
           const t = made ? [] : tokens(shot.miss_direction);

@@ -61,11 +61,14 @@ describe('normalizeShots', () => {
         shot({ hole_number: 2, shot_number: 1, shot_type: 'tee', club_type: 'non_driver', lie_after: 'rough', miss_direction: 'right' }),
         shot({ hole_number: 3, shot_number: 1, shot_type: 'tee', club_type: 'driver', lie_after: 'other' }),
         shot({ hole_number: 3, shot_number: 2, shot_type: 'penalty', penalty_type: 'water' }),
-        shot({ hole_number: 4, shot_number: 1, shot_type: 'tee', club_type: 'non_driver', lie_after: 'green' }),
+        shot({ hole_number: 4, shot_number: 1, shot_type: 'tee', club_type: 'non_driver', lie_after: 'green', distance_to_hole_before: 165 }),
+        shot({ hole_number: 5, shot_number: 1, shot_type: 'tee', club_type: 'driver', lie_after: 'green', distance_to_hole_before: 310, distance_to_hole_after: 20 }),
       ],
       index,
     );
-    expect(tee).toHaveLength(3);
+    // The 165 yd par 3 leaves; the driven 310 yd par 4 stays as a fairway hit.
+    expect(tee).toHaveLength(4);
+    expect(tee[3]).toMatchObject({ zone: 'fairway', club: 'driver' });
     expect(tee[0]).toMatchObject({ zone: 'left', lie: 'sand', club: 'driver', penaltyType: null });
     expect(tee[1]).toMatchObject({ zone: 'right', lie: 'rough', club: 'other' });
     expect(tee[2]).toMatchObject({ zone: 'penalty', lie: null, penaltyType: 'water' });
@@ -117,6 +120,14 @@ describe('normalizeShots', () => {
     expect(chips).toHaveLength(2);
     expect(chips[0]).toMatchObject({ lie: 'rough', leaveFeet: 3, saved: true });
     expect(chips[1]).toMatchObject({ lie: 'sand', leaveFeet: 20, saved: false });
+  });
+
+  it('reads a chip-in as a leave of 0', () => {
+    const { chips } = normalizeShots(
+      [shot({ hole_number: 1, shot_number: 3, shot_type: 'around_green', lie_before: 'rough', distance_to_hole_before: 12, lie_after: 'green', result: 'hole' })],
+      index,
+    );
+    expect(chips[0]).toMatchObject({ leaveFeet: 0, saved: true });
   });
 
   it('marks the first putt of a three-putt hole, break, slope and miss sides', () => {
@@ -181,6 +192,13 @@ describe('shot summaries', () => {
       { ...d, ri: 0, zone: 'left', yards: 260 },
     ]);
     expect(s).toMatchObject({ n: 4, fairwayPct: 25, avgYards: 280, missSide: 'right' });
+    // A penalty's length and a mis-keyed 620 never move the average.
+    const t = teeSummary([
+      { ...d, ri: 0, zone: 'fairway', yards: 280, lie: null },
+      { ...d, ri: 0, zone: 'fairway', yards: 620, lie: null },
+      { ...d, ri: 0, zone: 'penalty', yards: 150, lie: null, penaltyType: 'water' },
+    ]);
+    expect(t.avgYards).toBe(280);
   });
 
   it('bands approaches and reads proximity, greens hit and the main miss', () => {
