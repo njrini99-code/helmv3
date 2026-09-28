@@ -81,6 +81,7 @@ import { FairwayCalendarHero } from './FairwayCalendarHero';
 import surfaces from './CalendarSurfaces.module.css';
 import { FairwayAgendaView } from './FairwayAgendaView';
 import { FairwayDayTimeGrid } from './FairwayDayTimeGrid';
+import { FairwayWeekTimeGrid } from './FairwayWeekTimeGrid';
 import { FairwayMonthGrid, type ScheduleOverlay } from './FairwayMonthGrid';
 import { FairwayMonthOverview } from './FairwayMonthOverview';
 import { FairwayCalendarMemberRail } from './FairwayCalendarMemberRail';
@@ -1388,24 +1389,44 @@ export function FairwayCalendar({
           </div>
         </>
       ) : (
-        // ── Week → a week-scoped agenda for BOTH roles (sparse golf calendars
-        //    read better as a list than a time-grid). Opens the same Fairway
-        //    drawer; coaches get the "New event" CTA on the empty state. ────────
-        <FairwayAgendaView
-          events={events}
-          mode="range"
-          focusDate={focusDate}
-          rangeStart={visibleWindow.start}
-          rangeEnd={visibleWindow.end}
-          periodLabel={`the week of ${format(visibleWindow.start, 'MMMM d')}`}
-          isCoach={isCoach}
-          userRsvpStatuses={userRsvpStatuses}
-          timezone={teamTimezone}
-          onEventClick={openDrawerForEvent}
-          onCreateEvent={isCoach ? handlePrimaryAction : undefined}
-          nowRef={nowRef}
-          isLoadingRange={isLoadingRange}
-        />
+        // ── Week → from md up, seven day columns on one time axis (all-day
+        //    bars across the days they cover, the now-line on today); a day
+        //    header opens that day. A phone keeps the week-scoped list, where
+        //    seven narrow columns would not read. Both open the same drawer.
+        <>
+          <div className="md:hidden">
+            <FairwayAgendaView
+              events={events}
+              mode="range"
+              focusDate={focusDate}
+              rangeStart={visibleWindow.start}
+              rangeEnd={visibleWindow.end}
+              periodLabel={`the week of ${format(visibleWindow.start, 'MMMM d')}`}
+              isCoach={isCoach}
+              userRsvpStatuses={userRsvpStatuses}
+              timezone={teamTimezone}
+              onEventClick={openDrawerForEvent}
+              onCreateEvent={isCoach ? handlePrimaryAction : undefined}
+              nowRef={nowRef}
+              isLoadingRange={isLoadingRange}
+            />
+          </div>
+          <div className="hidden md:block">
+            <FairwayWeekTimeGrid
+              events={events}
+              focusDate={focusDate}
+              nowRef={nowRef}
+              isCoach={isCoach}
+              userRsvpStatuses={userRsvpStatuses}
+              timezone={teamTimezone}
+              onEventClick={openDrawerForEvent}
+              onSelectDay={(d) => {
+                setFocusDate(d);
+                setView('day');
+              }}
+            />
+          </div>
+        </>
       )}
       </motion.div>
 
