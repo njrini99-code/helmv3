@@ -234,6 +234,30 @@ Leaderboard reads qualifier
   no geometry, and no real `<h1>` for a screen that never mounts.
   Reference implementation: `dashboard/alerts/loading.tsx`.
 
+- Create qualifier (`FairwayNewQualifier`, owner 2026-09-28, no green bands):
+  five section cards (The basics, When it runs, Format, Travel squad,
+  Players), each a sunken band over a strong rule whose heading names the
+  fieldset, beside one summary panel holding the only Create button: a tray
+  pinned above the tab bar on a phone, a rail pinned under the top bar from
+  `md` (the coach's CoachHelm launcher owns the bottom-right corner there).
+  Dates are Fairway `DatePicker` triggers, not OS date inputs (a typed
+  five-digit year once reached the database): the start is required and never
+  before the viewer's today (read after mount, HYD-07); the end cannot precede
+  the start; the entry deadline falls between today and the start. Days
+  outside are disabled, and moving the start past a set date shows that
+  field's error and blocks the create. No copy says a date closes entry. The
+  one-round cap stays an explicit checkbox, and raising Rounds replaces it.
+  The Course field shows at every round count and still sends `courseName`;
+  courses per round stay optional. The squad reads out as seats and in the
+  board's words ("Top 4 on score · 1 coach's pick", never "Top 0"), and a
+  smaller squad lowers the picks with it. The roster uses `PlayerIdentity`
+  (with `avatar_url`) and a find box past 12 players; a failed roster read
+  throws to the route error instead of showing an empty roster. A blocked
+  create focuses the first problem in page order, with its message at the
+  field; a server error shows beside the Create button. The payload is
+  unchanged. `loading.tsx` reserves the cards, the rail and the tray. Tests:
+  `__tests__/FairwayNewQualifier.submit.test.tsx`,
+  `__tests__/FairwayNewQualifier.a11y.test.tsx`.
 - Edit qualifier (`FairwayEditQualifier`, audit DATA-06/07, 2026-09-23): the
   save is two writes (details, then round courses). If the second write fails,
   the error says the details WERE saved and asks for another save to retry
@@ -263,6 +287,13 @@ Leaderboard reads qualifier
 - Calendar integration means deleting or rescheduling qualifiers can affect event views.
 - A date-based entry gate is a release-blocking regression: it strands an
   eligible player and contradicts the coach-controlled qualifier lifecycle.
+- `createGolfQualifier` writes the qualifier, then its round courses, then its
+  entries, in separate calls. If the entries insert fails, the action returns
+  "Failed to add players to qualifier. Please try again." although the
+  qualifier row already exists, so the coach's retry creates a duplicate.
+  The same action's created-qualifier email reads "Rounds: 1 round" whatever
+  the cap, because it passes `numRounds: 1` to `notifyQualifierCreated`. Both
+  found 2026-09-28 during the create-form rebuild and not yet fixed.
 - **A bare (ungrouped) Base UI `Checkbox` inside a Fairway `<Form>` silently
   blocks every submit** — no POST, no console output, no visible error —
   because it registers as a permanently-invalid field outside any

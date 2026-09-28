@@ -1,4 +1,6 @@
 import { createClient } from '@/lib/supabase/server';
+import { logServerError } from '@/lib/server-error-logger';
+import { describeError } from '@/lib/utils/describe-error';
 import { getGolfSessionProfile } from '@/lib/auth/session';
 import { redirect } from 'next/navigation';
 import { Metadata } from 'next';
@@ -33,30 +35,41 @@ export default async function NewQualifierPage() {
 
   const supabase = await createClient();
 
-  let players: Array<{ id: string; first_name: string; last_name: string }> = [];
+  type RosterPlayer = { id: string; first_name: string; last_name: string; avatar_url: string | null };
+  let players: RosterPlayer[] = [];
 
   if (coach?.organization_id) {
     const teamId = await resolveCoachTeamIdWithCookie(supabase, coach.organization_id, coach.id);
 
     if (teamId) {
-      const { data: teamMembersData } = await supabase
+      const { data: teamMembersData, error: teamMembersError } = await supabase
         .from('golf_team_members')
         .select(`
           player:golf_players!inner (
             id,
             first_name,
-            last_name
+            last_name,
+            avatar_url
           )
         `)
         .eq('team_id', teamId)
         .eq('status', 'active');
 
+      // The error is READ. Discarded, a failed read produced the same `[]` an
+      // empty roster produces: the picker said "No active players on your
+      // roster" and the coach created a qualifier with nobody entered.
+      if (teamMembersError) {
+        await logServerError(
+          `[new qualifier] roster read failed for team ${teamId}; the picker would claim the roster is empty: ${describeError(teamMembersError)}`,
+          { action: 'golf.newQualifierPage.roster', featureArea: 'qualifiers' },
+        );
+        throw new Error('Failed to load the roster');
+      }
+
       players = (teamMembersData || [])
         .map(tm => tm.player)
-        .filter((p): p is { id: string; first_name: string; last_name: string } =>
-          p !== null && !!p.first_name && !!p.last_name
-        )
-        .sort((a, b) => a.last_name.localeCompare(b.last_name));
+        .filter((p): p is RosterPlayer => p !== null && !!p.first_name && !!p.last_name)
+        .sort((a, b) => a.last_name.localeCompare(b.last_name) || a.first_name.localeCompare(b.first_name));
     }
   }
 
