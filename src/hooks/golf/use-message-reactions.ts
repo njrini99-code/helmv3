@@ -42,6 +42,28 @@ function isPermissionDenied(cause: unknown): boolean {
   return typeof cause === 'object' && cause !== null && (cause as { code?: unknown }).code === '42501';
 }
 
+/**
+ * The browser client's own request deadline (src/lib/supabase/client.ts)
+ * firing on a slow connection. supabase-js RESOLVES it as a plain error
+ * object; Chrome words it `TimeoutError: signal timed out`, WebKit
+ * `AbortError: Fetch is aborted` with the hint `Request was aborted (timeout
+ * or manual cancellation)` (Bridge 9b8ad988, re-opened as REGRESSED on every
+ * slow /golf/dashboard/messages load). That is the connection, not this
+ * table, and the load retries on focus, realtime and the retry control — so
+ * it keeps the retry copy but is not reported. Same patterns as use-presence.
+ */
+const CLIENT_DEADLINE_ABORT_PATTERNS: readonly RegExp[] = [
+  /timeouterror:\s*signal timed out/i,
+  /aborterror:\s*fetch is aborted/i,
+  /request was aborted \(timeout or manual cancellation\)/i,
+];
+
+function isClientDeadlineAbort(cause: unknown): boolean {
+  const e = typeof cause === 'object' && cause !== null ? (cause as { message?: unknown; hint?: unknown }) : null;
+  const text = [describeError(cause), typeof e?.message === 'string' ? e.message : '', typeof e?.hint === 'string' ? e.hint : ''].join(' ');
+  return CLIENT_DEADLINE_ABORT_PATTERNS.some((pattern) => pattern.test(text));
+}
+
 /** Session-client reads and writes retain the database's participant RLS. */
 export function useMessageReactions(conversationId: string, messageIds: string[], userId: string) {
   const client = useMemo(() => createClient(), []);
@@ -109,6 +131,7 @@ export function useMessageReactions(conversationId: string, messageIds: string[]
       if (isPermissionDenied(cause) && !(await hasLiveSession())) return;
       if (version !== request.current || scope.current !== conversationId) return;
       setError('Reactions could not be loaded. Tap to retry.');
+      if (isClientDeadlineAbort(cause)) return;
       logError(cause instanceof Error ? cause : new Error(describeError(cause)), { component: 'MessageReactions', action: 'load', sport: 'golf', conversationId });
     }
   }, [client, conversationId, hasLiveSession, ids]);

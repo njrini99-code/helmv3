@@ -6,7 +6,7 @@ import { summarizeReactions, useMessageReactions, type MessageReaction } from '.
 const state = vi.hoisted(() => ({
   rows: [] as MessageReaction[],
   saveError: null as { code: string; message: string } | null,
-  readError: null as { message: string; code?: string } | null,
+  readError: null as { message: string; code?: string; details?: string; hint?: string } | null,
   /** Runs as a read resolves: models the session vanishing mid-request. */
   onRead: null as (() => void) | null,
   events: [] as (() => void)[],
@@ -173,6 +173,24 @@ describe('message reactions', () => {
     const { result } = renderHook(() => useMessageReactions('dm', ['message-a'], 'me'));
     await waitFor(() => expect(result.current.error).toContain('could not be loaded'));
     expect(logErrorMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not report the browser client aborting a slow read (9b8ad988), but still offers retry', async () => {
+    // Production 2026-09-21..28 on /golf/dashboard/messages: WebKit rejects the
+    // browser client's request deadline as `AbortError: Fetch is aborted` and
+    // supabase-js RESOLVES it as a plain error object with this hint. That is
+    // the connection, not the reactions table; it opened (and re-opened as
+    // REGRESSED) a Bridge incident on every slow load. Keep the retry copy on
+    // screen; focus/realtime/retry re-run the load.
+    state.readError = {
+      message: 'AbortError: Fetch is aborted',
+      details: '',
+      hint: 'Request was aborted (timeout or manual cancellation)',
+      code: '',
+    };
+    const { result } = renderHook(() => useMessageReactions('dm', ['message-a'], 'me'));
+    await waitFor(() => expect(result.current.error).toContain('could not be loaded'));
+    expect(logErrorMock).not.toHaveBeenCalled();
   });
 
   it('refuses to write a reaction without a live session', async () => {
