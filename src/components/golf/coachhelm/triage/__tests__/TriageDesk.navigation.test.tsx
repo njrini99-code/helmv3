@@ -2,9 +2,10 @@
 /* eslint-disable helm/no-raw-button -- deliberately minimal test doubles */
 
 import React from 'react';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { GroupedSignal, SignalGroup } from '@/lib/coachhelm/signal-grouping';
+import { refreshTeamAnalysisAsCoach } from '@/app/golf/actions/insights';
 import type { QueueFilterKey } from '../buildTriageViewModel';
 import { TriageDesk } from '../TriageDesk';
 
@@ -179,6 +180,27 @@ describe('TriageDesk: Home · The Lab · Chat', () => {
     expectHome();
     expect(screen.getByRole('heading', { name: 'Morning, Coach.' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Home' })).toHaveAttribute('aria-current', 'page');
+  });
+
+  it('offers Scan team on Home, beside the greeting, with the last-scan time', async () => {
+    vi.mocked(refreshTeamAnalysisAsCoach).mockResolvedValue({ success: true } as never);
+    renderDesk();
+    expect(screen.getByText('No scans yet')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Scan team' }));
+
+    await waitFor(() => expect(navigation.refresh).toHaveBeenCalledTimes(1));
+    expect(refreshTeamAnalysisAsCoach).toHaveBeenCalledTimes(1);
+  });
+
+  it('fades a view in only after a switch, never on the first paint', () => {
+    const { container } = renderDesk();
+    expect(container.innerHTML).not.toContain('animate-');
+
+    fireEvent.click(screen.getByRole('link', { name: 'The Lab' }));
+
+    const lab = screen.getByRole('heading', { name: 'The Lab' }).closest('section')!;
+    expect(lab.className).toContain('motion-safe:animate-');
   });
 
   it('opens the view named in the URL on FIRST RENDER, not just on click', () => {

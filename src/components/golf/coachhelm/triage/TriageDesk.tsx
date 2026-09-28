@@ -8,8 +8,9 @@
  * empty-roster gate in `CoachIntelligenceHome`. A top toggle (`ViewSwitch`,
  * `?view=home|lab|chat`) picks one of three views:
  *
- *   Home     the greeting (handed in as `homeLead`), then "Where the team is
- *            bleeding strokes" (`TeamBleedBoard`), "Team shot weaknesses"
+ *   Home     the greeting (handed in as `homeLead`) with the last-scan time
+ *            and Scan team beside it, then "Where the team is bleeding
+ *            strokes" (`TeamBleedBoard`), "Team shot weaknesses"
  *            (`TeamShotWeaknesses`) and the full-width "Game pressure map"
  *            (`TeamSignalSummary`). Nothing else: the brief band, program
  *            pulse, roster and follow-up panels are gone from this page.
@@ -99,8 +100,10 @@ export interface TriageDeskProps {
    *  rather than "no data yet". */
   overviewFailed?: boolean;
   playersDrillProps: PlayersGridViewProps;
-  /** The top of Home: the greeting and any page-level notice. */
+  /** The top of Home: the greeting. Scan team sits beside it. */
   homeLead?: ReactNode;
+  /** A page-level notice under the greeting (the overview failed). */
+  homeNotice?: ReactNode;
   /** The Chat tab: the embedded Ask surface, or an honest notice. */
   chatPanel?: ReactNode;
 }
@@ -143,6 +146,7 @@ export function TriageDesk({
   overviewFailed = false,
   playersDrillProps,
   homeLead,
+  homeNotice,
   chatPanel,
 }: TriageDeskProps) {
   const router = useRouter();
@@ -167,6 +171,12 @@ export function TriageDesk({
   useEffect(() => {
     if (view === 'chat') setChatOpened(true);
   }, [view]);
+
+  // A view fades in when the coach switches to it, never on the first paint:
+  // the server-rendered view must show at full opacity before hydration.
+  // `motion-safe:` drops it for reduced-motion users.
+  const [hasSwitchedView, setHasSwitchedView] = useState(false);
+  const viewEnter = hasSwitchedView ? 'motion-safe:animate-[fade-in_200ms_ease-out]' : undefined;
 
   // MOT-19: the signal the coach just closed, so the queue can scroll back
   // to its row and highlight it on Back.
@@ -316,7 +326,10 @@ export function TriageDesk({
     const next = new URL(href, typeof window === 'undefined' ? 'https://helmsportslabs.com' : window.location.origin);
     const nextNav = readTriageNavState(next.searchParams, rosterPlayers);
 
-    if (nextNav.view !== view) anchorBeforeViewSwitch();
+    if (nextNav.view !== view) {
+      anchorBeforeViewSwitch();
+      setHasSwitchedView(true);
+    }
     applyNavState(nextNav);
 
     if (typeof window === 'undefined') {
@@ -523,8 +536,15 @@ export function TriageDesk({
 
       <div ref={viewRegionRef} data-triage-view-region className="flex flex-col gap-6">
         {view === 'home' ? (
-          <>
-            {homeLead}
+          <div className={cn('flex flex-col gap-6', viewEnter)}>
+            <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
+              <div className="min-w-0 flex-1">{homeLead}</div>
+              <div className="flex shrink-0 items-center gap-3">
+                <span className="font-fw-sans text-caption tabular-nums text-text-tertiary">{lastScanLabel}</span>
+                {scanButton}
+              </div>
+            </div>
+            {homeNotice}
 
             {categoryInsights.success && categoryInsights.data ? (
               <TeamBleedBoard
@@ -564,19 +584,21 @@ export function TriageDesk({
                     variant="subtle"
                     title="No open signals"
                     description="Nothing is open across the team right now. Scan the team after new rounds come in."
-                    action={scanButton}
                   />
                 </div>
               </section>
             )}
-          </>
+          </div>
         ) : null}
 
         {view === 'lab' ? (
           <section
             ref={labTopRef}
             aria-labelledby="the-lab-heading"
-            className="flex scroll-mt-[calc(var(--golf-mobile-header-offset,4rem)+0.75rem)] flex-col gap-4"
+            className={cn(
+              'flex scroll-mt-[calc(var(--golf-mobile-header-offset,4rem)+0.75rem)] flex-col gap-4',
+              viewEnter,
+            )}
           >
             <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-3">
               <div className="min-w-0">
@@ -654,7 +676,11 @@ export function TriageDesk({
         ) : null}
 
         {chatOpened ? (
-          <section aria-labelledby="chat-heading" className={cn(view !== 'chat' && 'hidden')} data-triage-chat>
+          <section
+            aria-labelledby="chat-heading"
+            className={cn(viewEnter, view !== 'chat' && 'hidden')}
+            data-triage-chat
+          >
             <h1 id="chat-heading" className="sr-only">
               Chat with CoachHelm
             </h1>
@@ -667,7 +693,7 @@ export function TriageDesk({
         ) : null}
 
         {view === 'players' ? (
-          <section aria-labelledby="players-heading" className="flex flex-col gap-4">
+          <section aria-labelledby="players-heading" className={cn('flex flex-col gap-4', viewEnter)}>
             <div>
               <h1
                 id="players-heading"

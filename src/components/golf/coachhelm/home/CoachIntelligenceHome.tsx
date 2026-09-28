@@ -10,9 +10,9 @@
  * be conflated), then hands everything else to `TriageDesk`, which owns the
  * Home · The Lab · Chat toggle.
  *
- * This file builds the two pieces `TriageDesk` shows but does not own: the
- * Home greeting (with the overview-failure notice under it) and the Chat
- * tab's embedded Ask surface.
+ * This file builds the pieces `TriageDesk` shows but does not own: the Home
+ * greeting, the overview-failure notice under it, and the Chat tab's
+ * embedded Ask surface.
  * ========================================================================== */
 
 import Link from 'next/link';
@@ -126,35 +126,32 @@ export function CoachIntelligenceHome({
     );
   }
 
-  const homeLead = (
-    <>
-      {/* The greeting carries Home's h1; without it Home still needs one. */}
-      {command ? (
-        <CommandOpening teamName={command.teamName} coachFirstName={command.coachFirstName} pulse={command.pulse} />
-      ) : (
-        <h1 className="sr-only">CoachHelm</h1>
-      )}
-      {overviewFailed ? (
-        <InlineNotice
-          tone="danger"
-          title="Couldn't load team intelligence"
-          action={
-            <Button
-              variant="secondary"
-              size="sm"
-              leftIcon={<RotateCw className="h-4 w-4" aria-hidden />}
-              onClick={() => router.refresh()}
-            >
-              Try again
-            </Button>
-          }
-        >
-          {overviewError ??
-            'The team overview did not load, so the shot analysis below is missing. Everything else on this page is unaffected.'}
-        </InlineNotice>
-      ) : null}
-    </>
+  // The greeting carries Home's h1; without it Home still needs one.
+  const homeLead = command ? (
+    <CommandOpening teamName={command.teamName} coachFirstName={command.coachFirstName} pulse={command.pulse} />
+  ) : (
+    <h1 className="sr-only">CoachHelm</h1>
   );
+
+  const homeNotice = overviewFailed ? (
+    <InlineNotice
+      tone="danger"
+      title="Couldn't load team intelligence"
+      action={
+        <Button
+          variant="secondary"
+          size="sm"
+          leftIcon={<RotateCw className="h-4 w-4" aria-hidden />}
+          onClick={() => router.refresh()}
+        >
+          Try again
+        </Button>
+      }
+    >
+      {overviewError ??
+        'The team overview did not load, so the shot analysis below is missing. Everything else on this page is unaffected.'}
+    </InlineNotice>
+  ) : null;
 
   const chatPanel = chat ? (
     <div className="overflow-hidden rounded-fw-lg border border-border-subtle bg-surface shadow-soft">
@@ -188,6 +185,7 @@ export function CoachIntelligenceHome({
       overviewFailed={overviewFailed}
       playersDrillProps={playersDrillProps}
       homeLead={homeLead}
+      homeNotice={homeNotice}
       chatPanel={chatPanel}
     />
   );
