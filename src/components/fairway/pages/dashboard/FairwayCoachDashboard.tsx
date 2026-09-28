@@ -475,10 +475,10 @@ export function FairwayCoachDashboard({
             <Avatar decorative
               name={row.player_name}
               src={row.player_avatar_url}
-              size="sm"
+              size="md"
               className="shrink-0"
             />
-            <span className="min-w-0 flex-1 truncate font-medium text-text-primary">
+            <span className="min-w-0 flex-1 truncate font-semibold text-text-primary">
               {row.player_name}
             </span>
           </span>
@@ -499,19 +499,36 @@ export function FairwayCoachDashboard({
       accessorKey: 'total_score',
       header: 'Score',
       meta: { align: 'right', numeric: true },
+      cell: (ctx) => (
+        <span className="font-fw-display text-h3 font-medium leading-none tabular-nums text-text-primary">
+          {ctx.getValue() as number}
+        </span>
+      ),
     },
     {
       accessorKey: 'total_to_par',
       header: 'To Par',
       meta: { align: 'right', numeric: true },
-      cell: (ctx) => formatToPar(ctx.getValue() as number),
+      cell: (ctx) => {
+        const toPar = ctx.getValue() as number;
+        return (
+          <StatusPill
+            tone={toPar < 0 ? 'accent' : toPar > 0 ? 'warning' : 'neutral'}
+            size="sm"
+            dot={false}
+            className="tabular-nums"
+          >
+            {formatToPar(toPar)}
+          </StatusPill>
+        );
+      },
     },
     {
       accessorKey: 'round_date',
       header: 'Date',
       meta: { align: 'right', noWrap: true },
       cell: (ctx) => (
-        <span className="text-text-tertiary">{shortDate(ctx.getValue() as string)}</span>
+        <span className="text-text-secondary">{shortDate(ctx.getValue() as string)}</span>
       ),
     },
   ];
@@ -860,19 +877,22 @@ export function FairwayCoachDashboard({
       </section>
 
       {/* ── 5 · RECENT ROUNDS — clean DataTable ────────────────────────────── */}
-      <section aria-label="Recent rounds" className="flex flex-col gap-3">
-        <div className="flex items-center justify-between gap-3">
+      {/* Owner 2026-09-27: one contained card with the deep green header,
+          matching Latest. */}
+      <section
+        aria-label="Recent rounds"
+        className="flex flex-col overflow-hidden rounded-fw-lg border border-border-subtle bg-surface shadow-soft"
+      >
+        <div className="fw-plinth-green flex items-center justify-between gap-3 px-4 py-3">
           <h2 className="font-fw-sans text-h3 font-semibold text-text-primary">Recent Rounds</h2>
           <Link
             href="/golf/dashboard/rounds"
-            className="inline-flex items-center gap-1 py-3 -my-3 font-fw-sans text-body-sm font-medium text-accent-700 hover:text-accent-ink"
+            className="inline-flex items-center gap-1 py-3 -my-3 font-fw-sans text-body-sm font-medium text-text-primary hover:text-accent-ink"
           >
             View all
             <IconArrowRight size={14} />
           </Link>
         </div>
-        {/* Section hairline — more-green ruling. */}
-        <div aria-hidden="true" className="h-px w-full bg-accent-300" />
         {recentRounds.length === 0 ? (
           // padding="sm" (not the Surface default "md"): EmptyState's own
           // "subtle" variant already brings ample internal padding
@@ -882,7 +902,7 @@ export function FairwayCoachDashboard({
           // Performers wrap InsufficientData `compact` in the same "md"
           // Surface). "sm" removes the doubled padding without touching the
           // shared EmptyState primitive.
-          <Surface elevation="border" padding="sm">
+          <div className="p-3">
             {/* `teamStatsUnavailable` says a read behind the round data FAILED.
                 Without it, a lock wait or timeout rendered "No rounds logged
                 yet" to a team with a full season on file — the empty state and
@@ -907,13 +927,14 @@ export function FairwayCoachDashboard({
                 }
               />
             )}
-          </Surface>
+          </div>
         ) : (
           <DataTable<RoundRow>
             data={recentRounds.slice(0, 8)}
             columns={roundColumns}
             mobileCard={renderRoundMobileCard}
             ariaLabel="Recent team rounds"
+            className="rounded-none border-0 [&_tbody_tr:hover]:bg-surface-sunken/70 [&_th]:font-semibold [&_th]:uppercase [&_th]:tracking-[0.06em] [&_th]:text-text-secondary [&_thead]:bg-surface-sunken"
             getRowId={(r) => r.id}
             density="comfortable"
             // This is a "latest 8" digest with a "View all" link — sorting only
