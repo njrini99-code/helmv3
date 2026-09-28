@@ -4,6 +4,7 @@
 - Surface: `GET /golf/dashboard/roster` (coach roster cards, via `loadPlayersStandingMap`)
 - Status: fix in PR (agent/health-20260928-1247); awaiting merge and production deploy (production 6ee77e98 as of 2026-09-28 16:47Z)
 - Risk: R1. Read path only. No schema, RLS, grant or data-shape change; cohort classification unchanged.
+- Also covers: Sentry JAVASCRIPT-NEXTJS-R3 (`from(golf_team_members)` N+1 on `GET /golf/dashboard/stats/team`, 65 events, last 2026-09-28 20:50Z), which reaches the same `loadPlayersStandingMap`.
 - Signal: Sentry N+1 Query JAVASCRIPT-NEXTJS-QK (performance issue, level info, 0 users), 164 events since 2026-09-02, last 2026-09-28 15:54Z on production release 6ee77e98. The trace shows five parallel ~700ms `golf_team_members` reads on one roster render. Not a Bridge (admin_events) fingerprint.
 
 ## What was wrong

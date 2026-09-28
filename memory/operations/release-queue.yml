@@ -292,3 +292,33 @@ items:
       - src/hooks/golf/__tests__/use-message-reactions.test.tsx
     queued_for_release: false
     first_seen: '2026-09-24T02:20:47Z'
+  - id: roster-cohort-batch-2026-09-28
+    feature_id: coachhelm_ai
+    root_cause: >-
+      loadPlayersStandingMap resolved each roster player's cohort with its own
+      golf_team_members read (Sentry N+1 QK on /golf/dashboard/roster, and R3
+      on /golf/dashboard/stats/team, which calls the same loader).
+    incident_id: memory/incidents/coachhelm_ai/INC-2026-09-28-roster-cohort-n-plus-one.md
+    status: verified
+    risk: R1
+    sha: 43d33e9c40c18584da2149e7325ac281f3b7488a
+    pr: 2095
+    regression_tests:
+      - src/test/coachhelm/v3/standing-loader-roster-cohort-batch.test.ts
+    queued_for_release: false
+    first_seen: '2026-09-02T22:19:25Z'
+  - id: roster-exposure-batch-2026-09-28
+    feature_id: coachhelm_ai
+    root_cause: >-
+      getTopInsightsForPlayers recorded insight exposure inside its per-player
+      loop, one golf_insight_exposure dedup read + insert per player (Sentry
+      N+1 R2 on /golf/dashboard/stats/team).
+    incident_id: memory/incidents/coachhelm_ai/INC-2026-09-28-roster-exposure-n-plus-one.md
+    status: verified
+    risk: R1
+    sha: 0a10e906948aaaa900f06fba22ee9208cd14086b
+    pr: 2095
+    regression_tests:
+      - src/app/golf/actions/__tests__/insight-delivery-roster-exposure-batch.test.ts
+    queued_for_release: false
+    first_seen: '2026-09-02T22:19:25Z'
