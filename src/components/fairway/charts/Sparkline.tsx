@@ -90,6 +90,32 @@ function toPoints(
  * and draws on once-in-view. Honest em-dash when the series can't sustain a
  * trend (<2 finite points).
  */
+/**
+ * Smooth line through the points (Catmull-Rom → cubic Bézier, tension 0.5,
+ * control points clamped to the plot so the curve never overshoots the band).
+ * Owner 2026-09-27: "make these trend lines look better" — the straight
+ * polyline read as jagged at card width.
+ */
+function smoothPath(points: string, top: number, bottom: number): string {
+  const pts = points.split(' ').map((p) => p.split(',').map(Number) as [number, number]);
+  if (pts.length < 2) return '';
+  const clampY = (y: number) => Math.min(bottom, Math.max(top, y));
+  let d = `M${pts[0]![0]},${pts[0]![1]}`;
+  for (let i = 0; i < pts.length - 1; i++) {
+    const p0 = pts[i - 1] ?? pts[i]!;
+    const p1 = pts[i]!;
+    const p2 = pts[i + 1]!;
+    const p3 = pts[i + 2] ?? p2;
+    const c1x = p1[0] + (p2[0] - p0[0]) / 6;
+    const c1y = clampY(p1[1] + (p2[1] - p0[1]) / 6);
+    const c2x = p2[0] - (p3[0] - p1[0]) / 6;
+    const c2y = clampY(p2[1] - (p3[1] - p1[1]) / 6);
+    const r2 = (n: number) => Math.round(n * 100) / 100;
+    d += ` C${r2(c1x)},${r2(c1y)} ${r2(c2x)},${r2(c2y)} ${p2[0]},${p2[1]}`;
+  }
+  return d;
+}
+
 export const Sparkline = React.forwardRef<HTMLSpanElement, SparklineProps>(function Sparkline(
   {
     data,
@@ -97,7 +123,7 @@ export const Sparkline = React.forwardRef<HTMLSpanElement, SparklineProps>(funct
     flatThreshold = 0,
     width = 64,
     height = 20,
-    strokeWidth = 1.5,
+    strokeWidth = 2,
     direction,
     label,
     showEndDot = true,
@@ -106,6 +132,7 @@ export const Sparkline = React.forwardRef<HTMLSpanElement, SparklineProps>(funct
   ref,
 ) {
   const reduced = useReducedMotionGuard() ?? false;
+  const gradientId = `spark-fill-${React.useId().replace(/:/g, '')}`;
   const wrapRef = React.useRef<HTMLSpanElement>(null);
 
   // Honest filtering: only finite numbers count toward "enough points".
@@ -146,6 +173,8 @@ export const Sparkline = React.forwardRef<HTMLSpanElement, SparklineProps>(funct
 
   const lastPoint = points.split(' ').slice(-1)[0] ?? '0,0';
   const [lastX = 0, lastY = 0] = lastPoint.split(',').map(Number);
+  const firstX = Number((points.split(' ')[0] ?? '0,0').split(',')[0]);
+  const linePath = smoothPath(points, pad, height - pad);
 
   // Finding #2/#6 (AUDIT-0724): when a caller hands in a pre-computed
   // `direction` (e.g. from the shared `computeSeriesTrend()`, which classifies
@@ -184,13 +213,25 @@ export const Sparkline = React.forwardRef<HTMLSpanElement, SparklineProps>(funct
         aria-hidden="true"
         className="overflow-visible"
       >
-        <motion.polyline
-          points={points}
+        <defs>
+          <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={color} stopOpacity={0.22} />
+            <stop offset="100%" stopColor={color} stopOpacity={0} />
+          </linearGradient>
+        </defs>
+        {/* Soft fill under the line, fading to nothing at the baseline. */}
+        <path
+          d={`${linePath} L${lastX},${height} L${firstX},${height} Z`}
+          fill={`url(#${gradientId})`}
+          stroke="none"
+        />
+        <motion.path
+          d={linePath}
           stroke={color}
           strokeWidth={strokeWidth}
           strokeLinecap="round"
           strokeLinejoin="round"
-          // Data renders at its final state on mount: no draw-on sweep (MOT-07/MOT-R4).
+          fill="none"
           initial={false}
           animate={{ pathLength: 1, opacity: 1 }}
           transition={
@@ -203,8 +244,10 @@ export const Sparkline = React.forwardRef<HTMLSpanElement, SparklineProps>(funct
           <motion.circle
             cx={lastX}
             cy={lastY}
-            r={strokeWidth + 0.5}
+            r={strokeWidth + 1}
             fill={color}
+            stroke="var(--fw-color-surface)"
+            strokeWidth={1.5}
             initial={false}
             animate={{ opacity: 1, scale: 1 }}
             transition={
