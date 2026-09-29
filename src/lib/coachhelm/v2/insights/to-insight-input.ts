@@ -6,6 +6,22 @@ import type {
 } from './types';
 
 const MIN_SAMPLE_N = 5;
+
+/**
+ * v2 insight types this adapter no longer persists.
+ *
+ * `bubble_player` ("primary stroke sink", audit row 11, 2026-09-28) was not a
+ * stroke-sink calculation: any urgent-tone v2 alert fell through to it
+ * (insights.ts determineInsightType), the category word came from keywords in
+ * the headline, and strokes_impact was |composed impact|. Measured: the named
+ * category was the player's worst 90-day SG category on 15 of 31 rows, 16 of
+ * 33 rows described a context where the player scores BETTER, and the stored
+ * impact averaged 2.2× its source pattern. No feed showed the rows (the v3
+ * visibility filter excludes engine v2), so nothing downstream loses them. The
+ * category ranking it pretended to be is what v3 already carries: the
+ * per-category sg_* standings and the strokes-ranked feed.
+ */
+export const RETIRED_V2_INSIGHT_TYPES: ReadonlySet<string> = new Set(['bubble_player']);
 const DEFAULT_WINDOW_DAYS = 90;
 
 export interface InsightRecordForUpsert {
@@ -171,6 +187,7 @@ function buildEvidence(record: InsightRecordForUpsert, category: InsightCategory
  * function now refuses to emit when data is insufficient.
  */
 export function toInsightInput(record: InsightRecordForUpsert): InsightInput | null {
+  if (RETIRED_V2_INSIGHT_TYPES.has(record.insight_type)) return null;
   const category = categoryFor(record);
   const evidence = buildEvidence(record, category);
   if (evidence === null) return null;

@@ -2,6 +2,19 @@ import { describe, expect, it } from 'vitest';
 import { toInsightInput } from '@/lib/coachhelm/v2/insights/to-insight-input';
 
 describe('toInsightInput', () => {
+  it('no longer persists the retired bubble_player ("primary stroke sink") mint (audit row 11)', () => {
+    const input = toInsightInput({
+      coach_id: 'coach-1',
+      team_id: 'team-1',
+      player_id: 'player-1',
+      insight_type: 'bubble_player',
+      title: 'Putting is your primary stroke sink',
+      content: 'You score worse after a layoff.',
+      metadata: { v2_engine: true, confidence: 0.9, support: 7, stroke_impact: -1.2, pattern_id: 'p-1' },
+    });
+    expect(input).toBeNull();
+  });
+
   it('builds evidence and a stable signature for V2 player insights', () => {
     const input = toInsightInput({
       coach_id: 'coach-1',
