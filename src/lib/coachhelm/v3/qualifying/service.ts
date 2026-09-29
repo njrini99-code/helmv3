@@ -192,6 +192,15 @@ export async function confirmSelection(
       selected_at: new Date().toISOString(),
     }));
 
+  // A confirmation with nobody on it flips the qualifier to 'selected' while
+  // selecting no one (2 of 4 live 'selected' qualifiers had zero rows).
+  if (topScoreRows.length + coachPickSelections.length === 0) {
+    return {
+      ok: false,
+      error: 'cannot confirm: no entrant has a qualifying score and no coach pick was made',
+    };
+  }
+
   if (topScoreRows.length > 0) {
     const { error: insErr } = await supabase
       .from('golf_qualifier_selections')
@@ -205,9 +214,15 @@ export async function confirmSelection(
     .eq('id', args.qualifier_id);
   if (stateErr) return { ok: false, error: stateErr.message };
 
+  // Re-read after the writes: `workspace` is the pre-confirm snapshot and
+  // carries no top_score rows yet, so a brief composed from it listed no
+  // auto-qualified players on every first confirmation. Falls back to the
+  // snapshot if the re-read fails (the brief is best-effort either way).
+  const committed = (await loadQualifyingWorkspace(supabase, args.qualifier_id).catch(() => null)) ?? workspace;
+
   // W32: push travel brief to coach chat (best-effort — never blocks selection).
   try {
-    const brief = composeTravelBrief(workspace);
+    const brief = composeTravelBrief(committed);
     const { data: staff } = await supabase
       .from('golf_team_coach_staff')
       .select('coach_id')
@@ -229,7 +244,7 @@ export async function confirmSelection(
   // chat got the travel brief. Best-effort, same reasoning as above: never
   // let a notify failure undo a selection that already committed.
   try {
-    await notifyPlayersOfSelectionOutcome(supabase, workspace);
+    await notifyPlayersOfSelectionOutcome(supabase, committed);
   } catch (err) {
     await logServerError(
       `player selection-outcome notify failed for qualifier ${args.qualifier_id}: ${describeError(err)}`,
