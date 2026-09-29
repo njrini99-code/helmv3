@@ -1692,6 +1692,14 @@
      decision: numbers use SF with tabular figures, never Fragment Mono and its
      slashed zero). Tabular + lining figures keep columns aligned the way the
      old monospace did; "zero" 0 guarantees a plain zero. */
+  /* Every sport: tabular figures, so a column of numbers stays aligned whatever
+     face the role resolves to. Fragment Mono (BaseballHelm, Lift Lab) is
+     already fixed-width, so this is a no-op there; /admin renders the role in
+     the SF stack and had lost its alignment. Declared before the golf rule so
+     that one still wins. */
+  .font-fw-mono {
+    font-variant-numeric: tabular-nums;
+  }
   /* Golf only: BaseballHelm/Lift Lab keep Fragment Mono's own figures (OD-17). */
   :where(html[data-helm-sport='golf']) .font-fw-mono {
     font-variant-numeric: lining-nums tabular-nums;
@@ -3356,23 +3364,10 @@ html[data-helm-sport='golf'][data-fw-dynamic-type] main .text-caption {
   font-size: calc(12px * var(--fw-type-scale, 1));
   line-height: calc(18px * var(--fw-type-scale, 1));
 }
-
-/* TYPE-03: eyebrows in sentence case on golf. The tracked all-caps label
-   above nearly every block read as shouting; iOS section headers are
-   sentence case. Scoped to golf, so BaseballHelm and Lift Lab keep theirs
-   (OD-17). Beats a paired `uppercase`/`tracking-*` utility on specificity. */
-html[data-helm-sport='golf'] .text-eyebrow {
-  text-transform: none;
-  letter-spacing: 0.005em;
-  font-size: 12px;
-  line-height: 16px;
-}
-
-/* TYPE-03: every other tracked all-caps label on golf (bento cell labels,
-   ledger units, table heads) reads in the case it is written in. Labels
-   are authored in sentence case; `uppercase` stays a no-op on golf so a new
-   one cannot bring the shouting back. Golf-scoped, so Baseball keeps it. */
-html[data-helm-sport='golf'] .uppercase {
-  text-transform: none;
-  letter-spacing: 0.005em;
+/* The small tracked label recipe (`text-label font-semibold uppercase
+   tracking-[0.06em]`, the shared table heads / KPI labels / group titles)
+   scales with Dynamic Type too, as its `text-caption` stand-in did. */
+html[data-helm-sport='golf'][data-fw-dynamic-type] main .text-label {
+  font-size: calc(11px * var(--fw-type-scale, 1));
+  line-height: calc(16px * var(--fw-type-scale, 1));
 }

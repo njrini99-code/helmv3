@@ -352,12 +352,16 @@ const config: Config = {
         // three ride the Apple system stack, so Fairway ships zero font bytes.
         'fw-display': ['-apple-system', 'BlinkMacSystemFont', '"SF Pro Display"', '"Helvetica Neue"', '"Segoe UI"', 'Roboto', 'ui-sans-serif', 'system-ui', 'sans-serif'],
         'fw-sans':    ['-apple-system', 'BlinkMacSystemFont', '"SF Pro Text"', '"Helvetica Neue"', '"Segoe UI"', 'Roboto', 'ui-sans-serif', 'system-ui', 'sans-serif'],
-        // `fw-mono` is the NUMERIC role, not a monospace face (2026-09-23 owner
-        // decision: Fragment Mono and its slashed zero are retired). Numbers
-        // render in SF with tabular figures; globals.css gives `.font-fw-mono`
-        // `font-variant-numeric: tabular-nums` so columns still align. The
-        // utility name is kept so ~270 call sites need no edit.
-        'fw-mono':    ['-apple-system', 'BlinkMacSystemFont', '"SF Pro Text"', '"Helvetica Neue"', '"Segoe UI"', 'Roboto', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        // `fw-mono` is the NUMERIC role. GolfHelm renders it in SF with tabular
+        // figures (2026-09-23 owner decision: Fragment Mono and its slashed zero
+        // are retired there; globals.css gives `.font-fw-mono` tabular-nums so
+        // columns still align). BaseballHelm and Lift Lab still render Fairway
+        // primitives exactly as before (OD-17), so their layouts declare
+        // `--font-fairway-mono` (Fragment Mono) and this utility leads with it;
+        // where the variable is undefined the inline fallback is the SF stack.
+        // An undefined var() with NO fallback would invalidate the whole
+        // declaration, so the fallback is not optional.
+        'fw-mono':    ['var(--font-fairway-mono, -apple-system)', '-apple-system', 'BlinkMacSystemFont', '"SF Pro Text"', '"Helvetica Neue"', '"Segoe UI"', 'Roboto', 'ui-sans-serif', 'system-ui', 'sans-serif'],
       },
       fontSize: {
         // ═══════════════════════════════════════════════════════════════
