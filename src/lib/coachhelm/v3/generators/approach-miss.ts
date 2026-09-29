@@ -29,7 +29,9 @@
  * metrics is a follow-up RPC; the PGA green-hit anchors below are APPROXIMATE.
  */
 
-import { staleDataSuffix } from '@/lib/coachhelm/v3/engine/window-honesty';
+import { staleDataSuffix, ATTEMPT_FLOOR } from '@/lib/coachhelm/v3/engine/window-honesty';
+import { wilsonInterval, rateIntervalText, type RateInterval } from '@/lib/coachhelm/v3/stats/interval';
+import { missedGreenCost, rateGapStrokes } from '@/lib/coachhelm/v3/counterfactual/measured-impact';
 import { loadLastRoundDate } from '@/lib/coachhelm/v3/engine/hole-diagnosis';
 import { BaseGenerator } from '@/lib/coachhelm/v3/engine/generator-base';
 import { round } from '@/lib/golf/stat-formulas';
@@ -245,13 +247,96 @@ interface ApproachMissAggregate extends GeneratorAggregate {
   attempts_per_round: number;
   /** Par-4 vs par-5 composition of the band. See parSplit(). */
   par_split: ParSplit;
+  /** 95% Wilson interval on green_hit_pct (percent points). */
+  green_hit_ci: RateInterval;
+  /** Measured strokes/round lost to the green-hit gap (see impactFor()). */
+  strokes_impact: number;
+  /** Inputs behind strokes_impact, published in evidence.detail. */
+  impact: ApproachImpact;
+}
+
+/** How an approach band's strokes impact was sized — every input is published. */
+export interface ApproachImpact {
+  /** Rounds in the window with any recorded approach (the per-round denominator). */
+  rounds_in_window: number;
+  /** Band attempts counted toward the impact (par-5 second shots excluded on 175+). */
+  attempts_counted: number;
+  attempts_per_round: number;
+  green_hit_pct_counted: number;
+  target_green_hit_pct: number;
+  /** Strokes a missed green costs vs a hit from this band. */
+  strokes_per_missed_green: number;
+  strokes_per_missed_green_source: 'player_finishes' | 'reference';
+}
+
+/**
+ * Measured per-round strokes impact of a band's green-hit gap (audit defect 1:
+ * approach_miss wrote 0 on 215 of 215 rows):
+ *
+ *   attempts per round × (target − player green-hit %) / 100 × strokes per missed green
+ *
+ * - attempts per round: band attempts over EVERY round in the window with a
+ *   recorded approach, not only the rounds that happened to include this band.
+ * - strokes per missed green: the player's own finishes, priced by the
+ *   canonical expected-strokes table (`missedGreenCost`).
+ * - 175+ yd: par-5 second shots are left out of the impact. Laying up is
+ *   often the right play there and records as a missed green (see parSplit),
+ *   so counting them would price good decisions as lost strokes.
+ * - target: the green-hit anchor the card prints (no team/level green-hit
+ *   cohort exists yet; the anchor is the approximate Tour band for men and a
+ *   derived women's-college target).
+ */
+export function impactFor(
+  bucket: ApproachBucket,
+  inBucket: readonly ApproachShot[],
+  roundsInWindow: number,
+  targetPct: number,
+  metricId: MetricId,
+): ApproachImpact & { strokes_impact: number } {
+  const counted = bucket === '175_plus_ft' ? inBucket.filter((s) => s.par !== 5) : [...inBucket];
+  const greens = counted.filter(reachedGreen).length;
+  const pct = counted.length > 0 ? (100 * greens) / counted.length : 0;
+  const perRound = roundsInWindow > 0 ? counted.length / roundsInWindow : 0;
+  const cost = missedGreenCost(
+    counted.map((s) => ({
+      lie_after: s.lie_after,
+      distance_to_hole_after: Number(s.distance_to_hole_after),
+      distance_unit_after: s.distance_unit_after,
+      is_penalty: !!s.is_penalty,
+      on_green: reachedGreen(s),
+    })),
+  );
+  const strokes = counted.length >= ATTEMPT_FLOOR
+    ? rateGapStrokes({
+        metricId,
+        attemptsPerRound: perRound,
+        playerPct: pct,
+        targetPct,
+        strokesPerEvent: cost.strokes,
+      })
+    : 0;
+  return {
+    strokes_impact: round(strokes, 3),
+    rounds_in_window: roundsInWindow,
+    attempts_counted: counted.length,
+    attempts_per_round: round(perRound, 2),
+    green_hit_pct_counted: round(pct, 1),
+    target_green_hit_pct: targetPct,
+    strokes_per_missed_green: round(cost.strokes, 3),
+    strokes_per_missed_green_source: cost.source,
+  };
 }
 
 export class ApproachMissGenerator extends BaseGenerator<ApproachMissAggregate> {
   readonly name = 'ApproachMissGenerator';
   readonly insightType = 'approach_miss';
   readonly category: InsightCategory = 'approach';
-  readonly minSampleN = 5; // attempts in the bucket
+  /**
+   * Attempts in the bucket. Same floor as the putt bands (ATTEMPT_FLOOR = 8):
+   * a green-hit % over 5-7 approaches moves 12-20 points on one shot, so it is
+   * not printed (audit row 25). Below the floor the run retracts the row.
+   */
+  readonly minSampleN = ATTEMPT_FLOOR;
   protected override readonly requiresStanding = false;
   /**
    * ...but DO attach standing when the table has it.
@@ -346,6 +431,13 @@ export class ApproachMissGenerator extends BaseGenerator<ApproachMissAggregate> 
     }
 
     const lastRoundDate = await loadLastRoundDate(this.playerId);
+    const impact = impactFor(
+      this.bucket,
+      inBucket,
+      new Set(shots.map((s) => s.round_id)).size,
+      greenHitAnchor(this.bucket, cohort.gender),
+      this.metricId,
+    );
 
     return {
       sampleN: inBucket.length,
@@ -374,6 +466,17 @@ export class ApproachMissGenerator extends BaseGenerator<ApproachMissAggregate> 
       cohort_gender: cohort.gender,
       attempts_per_round: inBucket.length / Math.max(1, distinctRounds),
       par_split: parSplit(inBucket),
+      green_hit_ci: wilsonInterval(greenHitN, inBucket.length),
+      strokes_impact: impact.strokes_impact,
+      impact: {
+        rounds_in_window: impact.rounds_in_window,
+        attempts_counted: impact.attempts_counted,
+        attempts_per_round: impact.attempts_per_round,
+        green_hit_pct_counted: impact.green_hit_pct_counted,
+        target_green_hit_pct: impact.target_green_hit_pct,
+        strokes_per_missed_green: impact.strokes_per_missed_green,
+        strokes_per_missed_green_source: impact.strokes_per_missed_green_source,
+      },
     };
   }
 
@@ -400,7 +503,7 @@ export class ApproachMissGenerator extends BaseGenerator<ApproachMissAggregate> 
     // coach whether the leak is finding greens or controlling distance once there.
     const reachSentence =
       `Across your last ${agg.attempts} approaches from ${label} you found the green ` +
-      `${ghDisp} of the time (${anchorClause}).`;
+      `${ghDisp} of the time${rateIntervalText(agg.green_hit_ci)} (${anchorClause}).`;
     // NO TOUR COMPARISON HERE, deliberately. `prox` is averaged over
     // GREEN-FINDING SHOTS ONLY (see aggregate()), while the Tour proximity
     // figure (research doc §2, "200+ yds: ~45+ ft") is Proximity to Hole over
@@ -504,8 +607,11 @@ export class ApproachMissGenerator extends BaseGenerator<ApproachMissAggregate> 
         window_days: 90,
         window_start: '',
         window_end: '',
-        strokes_impact: 0,
-        strokes_impact_method: 'peer_delta',
+        // Measured, not a counterfactual projection (counterfactualComparable
+        // stays false, so the base keeps this value): green-hit gap × the
+        // player's own attempts per round × expected-strokes cost of a miss.
+        strokes_impact: agg.strokes_impact,
+        strokes_impact_method: 'sg_baseline',
         confidence: 0,
         confidence_factors: {
           sample_adequacy: Math.min(agg.attempts / 25, 1),
@@ -519,6 +625,11 @@ export class ApproachMissGenerator extends BaseGenerator<ApproachMissAggregate> 
         detail: {
           proximity_when_hit_feet: agg.proximity_when_hit_feet,
           green_hit_pct: agg.green_hit_pct,
+          green_hit_n: agg.green_hit_n,
+          attempts: agg.attempts,
+          green_hit_ci_low: round(agg.green_hit_ci.low, 1),
+          green_hit_ci_high: round(agg.green_hit_ci.high, 1),
+          strokes_impact_inputs: agg.impact,
         },
         ...(diagnosis ? { diagnosis } : {}),
       },

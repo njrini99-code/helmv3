@@ -1,8 +1,9 @@
 /**
  * v3 W19 follow-up — engine-driven goal-suggestion writer.
  *
- * Walks players with standing data, identifies their top-2 weakest metrics
- * (per direction-aware delta), filters to metrics that:
+ * Walks players with standing data, identifies the ONE metric where they sit
+ * furthest down their college/division cohort (see rowSeverity), filters to
+ * metrics that:
  *   - have drill coverage (≥1 `golf_drills.impacts_metric_id = metric_id`)
  *   - the player doesn't already have an active goal targeting
  *   - the player doesn't already have a pending (non-expired) suggestion for
@@ -24,6 +25,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { isMetricId, type MetricId } from '@/lib/coachhelm/v3/metrics/registry';
 import { isStandingTourComparable } from '@/lib/coachhelm/v3/standing/tour-basis';
 import { findMetric } from '@/lib/coachhelm/focus-areas/catalog';
+import { isWindowedMetric } from './window-metric-ids';
 
 /**
  * One row from `golf_player_standing` plus the metric direction we need
@@ -39,6 +41,12 @@ export interface StandingRowWithDirection {
   direction: 'higher_better' | 'lower_better';
   /** Package 7B (addendum A2) — see standing/tour-basis.ts. */
   basis?: 'on_green' | 'all_shot' | null;
+  /** College/division cohort average — the target anchor (owner, 2026-09-28). */
+  level_avg?: number | null;
+  /** Players behind level_avg. Below MIN_COHORT_N it is not a cohort. */
+  level_n?: number | null;
+  /** Player's percentile in the cohort, direction-adjusted (higher = better). */
+  level_pct?: number | null;
 }
 
 /** Compact view of an existing active goal — we only need the metric_id. */
@@ -63,7 +71,7 @@ export interface SelectionInput {
   activeGoalMetrics: ReadonlySet<string>;
   /** This player's pending/snoozed suggestion metric_ids. */
   pendingSuggestionMetrics: ReadonlySet<string>;
-  /** Max suggestions per player (default 2). */
+  /** Max suggestions per player (default MAX_ACTIVE_PENDING_PER_PLAYER). */
   maxSuggestions?: number;
 }
 
@@ -76,10 +84,8 @@ export interface SuggestionDraft {
 }
 
 /**
- * Default % closure toward the PGA baseline used when synthesising
- * `suggested_target_value`. 50% is the midpoint heuristic Part VI.5
- * documents ("midpoint(team_avg, pga_value)") — we use midpoint of
- * (player_value, pga_value) when no team value is available on the row.
+ * Default % closure toward the anchor used when synthesising
+ * `suggested_target_value`: the midpoint of (player_value, level_avg).
  */
 const DEFAULT_TARGET_CLOSURE_PCT = 0.5;
 
@@ -105,27 +111,31 @@ export function isWorseThanAnchor(
   return (direction === 'higher_better' ? -rawDelta : rawDelta) > 0;
 }
 
+/** Cohort size below which level_avg is a handful of players, not a benchmark. */
+export const MIN_COHORT_N = 5;
+
 /**
- * Direction-aware severity for one standing row: how far BELOW the PGA
- * baseline the player is, signed so "worse" is always positive. Returns the
- * positive severity, or `null` when the row is ineligible (not worse than
- * baseline, no finite PGA baseline to aim at, or a metric whose player value
- * and Tour value are measured on different bases).
+ * Severity for one standing row: how far down the player's own college /
+ * division cohort they sit, as `100 - level_pct` (so worse is larger, and
+ * feet, percentages and strokes rank on one scale). `null` = ineligible.
  *
- * Basis rule (addendum A2): an approach-proximity row carrying on-green-only
- * player values against the Tour's all-shot figure has a "gap" that is not a
- * gap, and its sign is not evidence either way. Those rows are ineligible
- * here BY DECISION — not silently "better than Tour". Package 7B moved the
- * standing refresh to an all-shot basis, so a row IS eligible once its own
- * `basis` says `'all_shot'`; a row not yet refreshed onto that basis stays
- * ineligible. `runSuggestionWriter` reports how many rows this rule skipped.
+ * Audit row 21 (2026-09-28), owner decision: goals anchor to the COHORT, with
+ * the Tour as secondary context. Anchored to the Tour, 68% of targets sat past
+ * what the cohort averages and 22% asked an above-cohort player for more;
+ * 2 of 768 suggestions were ever accepted. A row is eligible only when:
+ *   - its progress can be measured over a goal window (createGoal refuses the
+ *     rest, so a suggestion on them could never be accepted);
+ *   - a real cohort exists (level_n >= MIN_COHORT_N, level_avg and level_pct);
+ *   - the player is behind that cohort average.
+ * Ranking by the raw gap used to mix units, so proximity (feet) always won.
  */
 function rowSeverity(row: StandingRowWithDirection): number | null {
-  if (!isStandingTourComparable(row.metric_id, row.basis)) return null;
-  if (!Number.isFinite(row.pga_value)) return null;
-  const rawDelta = row.pga_delta ?? row.player_value - row.pga_value;
-  const severity = row.direction === 'higher_better' ? -rawDelta : rawDelta;
-  return severity > 0 ? severity : null;
+  if (!isMetricId(row.metric_id) || !isWindowedMetric(row.metric_id)) return null;
+  if (row.level_avg == null || !Number.isFinite(row.level_avg)) return null;
+  if (row.level_pct == null || !Number.isFinite(row.level_pct)) return null;
+  if ((row.level_n ?? 0) < MIN_COHORT_N) return null;
+  if (!isWorseThanAnchor(row.player_value, row.level_avg, row.direction)) return null;
+  return 100 - row.level_pct;
 }
 
 /**
@@ -153,7 +163,7 @@ export function severityForMetric(
  * worst-first.
  */
 export function selectSuggestionsForPlayer(input: SelectionInput): SuggestionDraft[] {
-  const cap = input.maxSuggestions ?? 2;
+  const cap = input.maxSuggestions ?? MAX_ACTIVE_PENDING_PER_PLAYER;
   if (cap <= 0) return [];
 
   const drafts: SuggestionDraft[] = [];
@@ -172,9 +182,10 @@ export function selectSuggestionsForPlayer(input: SelectionInput): SuggestionDra
     drafts.push({
       player_id: row.player_id,
       metric_id: row.metric_id as MetricId,
+      // rowSeverity guarantees level_avg is present and ahead of the player.
       suggested_target_value: computeTargetValue({
         playerValue: row.player_value,
-        pgaValue: row.pga_value,
+        anchorValue: row.level_avg as number,
         metricId: row.metric_id,
       }),
       severity,
@@ -219,18 +230,17 @@ export function improveStepForMetric(metricId: string | null | undefined): numbe
 }
 
 /**
- * Midpoint heuristic: aim halfway between current player value and
- * PGA baseline, then cap the move at the metric's catalog `improveStep`
- * when one exists (NUM-36: a 5% sand scrambler was told to aim for 28%
- * because the Tour midpoint is 23 points away). Pure. Rounded to 4dp to
- * keep numeric storage tidy.
+ * Midpoint heuristic: aim halfway between the player's current value and the
+ * anchor (the cohort average for suggestions — see rowSeverity), then cap the
+ * move at the metric's catalog `improveStep` when one exists (NUM-36: a 5%
+ * sand scrambler was told to aim for 28%). Pure. Rounded to 4dp.
  */
 export function computeTargetValue(args: {
   playerValue: number;
-  pgaValue: number;
+  anchorValue: number;
   metricId?: string | null;
 }): number {
-  const gap = (args.pgaValue - args.playerValue) * DEFAULT_TARGET_CLOSURE_PCT;
+  const gap = (args.anchorValue - args.playerValue) * DEFAULT_TARGET_CLOSURE_PCT;
   const step = improveStepForMetric(args.metricId);
   const move = step == null ? gap : Math.sign(gap) * Math.min(Math.abs(gap), step);
   const t = args.playerValue + move;
@@ -242,8 +252,12 @@ export function computeTargetValue(args: {
 // player, replacing stale lower-value ones with higher-value candidates.
 // ---------------------------------------------------------------------------
 
-/** Hard ceiling on simultaneously-active pending suggestions per player. */
-export const MAX_ACTIVE_PENDING_PER_PLAYER = 2;
+/**
+ * Hard ceiling on simultaneously-active pending suggestions per player. One:
+ * the single metric where the player sits furthest down their cohort. Two per
+ * player produced 768 suggestions and 2 acceptances (audit row 21).
+ */
+export const MAX_ACTIVE_PENDING_PER_PLAYER = 1;
 
 /** An existing pending suggestion as the writer needs to reconcile it. */
 export interface ExistingPendingSuggestion {
@@ -436,7 +450,7 @@ export async function runSuggestionWriter(
   // 3. Pull all standing rows, grouped by player.
   const { data: standingRows, error: standingErr } = await supabase
     .from('golf_player_standing')
-    .select('player_id, metric_id, player_value, pga_value, pga_delta, basis');
+    .select('player_id, metric_id, player_value, pga_value, pga_delta, basis, level_avg, level_n, level_pct');
   if (standingErr) {
     result.error = `standing: ${standingErr.message}`;
     result.duration_ms = Date.now() - startedAt;
@@ -447,8 +461,8 @@ export async function runSuggestionWriter(
   for (const s of standingRows ?? []) {
     const dir = directionByMetric.get(s.metric_id);
     if (!dir) continue; // Inactive or unknown metric — skip.
-    // Counted here for the run report; `rowSeverity` is what actually refuses
-    // the row, so the pure selector and the P1-08 expiry path agree.
+    // Informational: these metrics are also not windowed, so rowSeverity
+    // refuses them on that ground before basis matters.
     if (!isStandingTourComparable(s.metric_id, s.basis)) result.rows_skipped_basis_mismatch += 1;
     const list = standingsByPlayer.get(s.player_id) ?? [];
     list.push({
@@ -459,6 +473,9 @@ export async function runSuggestionWriter(
       pga_delta: s.pga_delta == null ? null : Number(s.pga_delta),
       direction: dir,
       basis: s.basis ?? null,
+      level_avg: s.level_avg == null ? null : Number(s.level_avg),
+      level_n: s.level_n == null ? null : Number(s.level_n),
+      level_pct: s.level_pct == null ? null : Number(s.level_pct),
     });
     standingsByPlayer.set(s.player_id, list);
   }

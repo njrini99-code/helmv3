@@ -65,7 +65,8 @@ export function buildWeeklyRecapHtml(recap: WeeklyRecap): { subject: string; htm
               <tr>
                 ${statCell('Rounds', String(recap.totals.rounds_played))}
                 ${statCell('Avg to par', formatAvgToPar(recap.totals.avg_score_to_par))}
-                ${statCell('Insights', String(recap.totals.insights_surfaced))}
+                ${statCell('New insights', String(recap.totals.insights_new))}
+                ${statCell('Updated insights', String(recap.totals.insights_updated))}
                 ${statCell('Active goals', String(recap.totals.goals_active))}
               </tr>
             </table>
@@ -99,7 +100,8 @@ export function buildWeeklyRecapHtml(recap: WeeklyRecap): { subject: string; htm
     ``,
     `Rounds: ${recap.totals.rounds_played}`,
     `Avg to par: ${formatAvgToPar(recap.totals.avg_score_to_par)}`,
-    `Insights: ${recap.totals.insights_surfaced}`,
+    `New insights: ${recap.totals.insights_new}`,
+    `Updated insights: ${recap.totals.insights_updated}`,
     `Active goals: ${recap.totals.goals_active}`,
     ``,
     `Most active:`,

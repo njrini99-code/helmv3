@@ -267,6 +267,33 @@ export interface UnsupportedClaim {
   text: string;
   /** Parsed numeric value. */
   value: number;
+  /**
+   * Set when the value DOES appear in the turn's evidence, but only under a
+   * different player or a different metric than the text attributes it to
+   * ("Bob hits 58%" when 58 was Alice's). Absent for a plain fabrication.
+   */
+  misattributed?: true;
+}
+
+/**
+ * A number a tool returned inside `detail`, with the player and field it sat
+ * under — see {@link collectScopedNumbers}. A bare `number` passed to
+ * {@link auditNumericClaims}' `extraSupported` is the same thing with neither.
+ */
+export interface ScopedNumber {
+  value: number;
+  /** The nearest enclosing `player_id` in the payload, or null (unscoped). */
+  player_id: string | null;
+  /** The field name the number was stored under, or null (parsed from prose). */
+  metric_key: string | null;
+}
+
+/** A roster member the audit can recognise by name in the model's text. */
+export interface AuditPlayer {
+  id: string;
+  name: string;
+  first_name?: string | null;
+  last_name?: string | null;
 }
 
 /**
@@ -592,6 +619,300 @@ function metricGroup(metricId: string): string {
   return metricId.replace(/_(?:mean|avg|average)$/, '');
 }
 
+// ---------------------------------------------------------------------------
+// Attribution — which player and which metric a number in the text is about
+// ---------------------------------------------------------------------------
+//
+// Audit row 47b. The binding rules are deliberately one-sided: a number is
+// only rejected on POSITIVE misattribution — every evidence value it matches
+// is tagged to a different player, or a different metric, than the text
+// names. Anything the text does not name (no player, no metric cue) stays a
+// wildcard, and so does any evidence that carries no player or metric of its
+// own (untagged `detail` numbers, sample sizes, pairwise differences). Half of
+// chat turns were already being flagged; a binding that fires on honest prose
+// would make that worse, not better.
+
+/** A metric family the prose can name. SG areas carry `sg` as their parent. */
+type MetricFamily =
+  | 'putting'
+  | 'three_putt'
+  | 'one_putt'
+  | 'sg'
+  | 'approach'
+  | 'tee'
+  | 'around_green'
+  | 'gir'
+  | 'fairways'
+  | 'scrambling'
+  | 'sand'
+  | 'penalties'
+  | 'distance'
+  | 'scoring';
+
+/** The strokes-gained areas; naming one of them narrows a generic "SG" cue. */
+const SG_AREAS: ReadonlySet<MetricFamily> = new Set<MetricFamily>(['putting', 'approach', 'tee', 'around_green']);
+
+/**
+ * metric_id / detail key → family. First match wins, so the SG areas are
+ * tested before the generic `sg_` and before the generic `putt`.
+ */
+const FAMILY_BY_KEY: ReadonlyArray<readonly [RegExp, MetricFamily, MetricFamily | null]> = [
+  [/(?:^sg_putting)|(?:strokes_gained_putting)/, 'putting', 'sg'],
+  [/(?:^sg_approach)|(?:strokes_gained_approach)/, 'approach', 'sg'],
+  [/(?:^sg_(?:tee|off_tee|ott))|(?:strokes_gained_(?:tee|off_tee))/, 'tee', 'sg'],
+  [/(?:^sg_around)|(?:strokes_gained_around)|(?:around_green)/, 'around_green', 'sg'],
+  [/^sg_|^sg$|strokes_gained/, 'sg', null],
+  [/three_putt|3_putt/, 'three_putt', null],
+  [/one_putt|1_putt/, 'one_putt', null],
+  [/putt/, 'putting', null],
+  [/(?:^|_)gir(?:_|$)|green.*reg/, 'gir', null],
+  [/fairway|driving_accuracy/, 'fairways', null],
+  [/scrambl/, 'scrambling', null],
+  [/sand/, 'sand', null],
+  [/penalt/, 'penalties', null],
+  [/driving_distance/, 'distance', null],
+  [/scor|to_par|total_score|best_round/, 'scoring', null],
+];
+
+function familyOf(key: string | null | undefined): { family: MetricFamily | null; parent: MetricFamily | null } {
+  if (!key) return { family: null, parent: null };
+  const k = key.toLowerCase();
+  for (const [re, family, parent] of FAMILY_BY_KEY) if (re.test(k)) return { family, parent };
+  return { family: null, parent: null };
+}
+
+/**
+ * Words in the model's prose that name a metric. Never bare "strokes" or "%":
+ * both appear next to almost every golf number and would bind everything.
+ */
+const METRIC_CUES: ReadonlyArray<readonly [RegExp, MetricFamily]> = [
+  [/\b(?:three|3)[- ]?putt\w*/gi, 'three_putt'],
+  [/\b(?:one|1)[- ]?putt\w*/gi, 'one_putt'],
+  [/\bputt(?:s|ing|ed|er)?\b/gi, 'putting'],
+  [/\bstrokes?[- ]gained\b/gi, 'sg'],
+  [/\bSG\b/g, 'sg'],
+  [/\bapproach\b|\biron play\b/gi, 'approach'],
+  [/\boff the tee\b|\btee shots?\b/gi, 'tee'],
+  [/\baround the greens?\b|\bshort game\b|\bchipping\b/gi, 'around_green'],
+  [/\bGIR\b|\bgreens? in regulation\b|\bgreens? hit\b/gi, 'gir'],
+  [/\bfairways?\b|\bdriving accuracy\b|\bFIR\b/gi, 'fairways'],
+  [/\bscrambl\w*|\bup[- ]and[- ]downs?\b/gi, 'scrambling'],
+  [/\bsand saves?\b|\bbunkers?\b/gi, 'sand'],
+  [/\bpenalt(?:y|ies)\b/gi, 'penalties'],
+  [/\bdriving distance\b/gi, 'distance'],
+  [/\bscor(?:e|es|ed|ing)\b|\bstroke average\b|\b(?:to|over|under) par\b|\bbest round\b/gi, 'scoring'],
+  [/\b(?:shot|shoots|shooting|carded|posted|fired)\b(?=\s+(?:an?\s+)?[-+]?\d)/gi, 'scoring'],
+];
+
+/** A sentence that talks about the group, so a team figure may sit next to a name. */
+const TEAM_CUE = /\b(?:team|squad|roster|program|everyone|teammates)\b/i;
+
+/** Clause breaks for METRIC cues: punctuation plus joining words. */
+const METRIC_CLAUSE_BREAK = /[,;()\n]|[.!?](?=\s|$)|\b(?:and|but|while|with|whereas|versus|vs|than)\b/gi;
+/** Clause breaks for PLAYER names: punctuation only — "Alice and Bob sit at 58% and 42%" is one clause. */
+const PLAYER_CLAUSE_BREAK = /[,;()\n]|[.!?](?=\s|$)/g;
+const SENTENCE_BREAK = /[.!?](?=\s|$)|\n/g;
+const PARAGRAPH_BREAK = /\n\s*\n/g;
+
+interface AnchorScope {
+  /** The measured player's id, or null when the evidence names no player. */
+  player: string | null;
+  /** True for a team-level figure — valid beside a name only in a team sentence. */
+  team: boolean;
+  family: MetricFamily | null;
+  parent: MetricFamily | null;
+}
+interface Anchor extends AnchorScope {
+  value: number;
+}
+const UNSCOPED: AnchorScope = { player: null, team: false, family: null, parent: null };
+
+function entityScope(entity: MeasuredEntity | undefined): { player: string | null; team: boolean } {
+  if (!entity) return { player: null, team: false };
+  if (entity.kind === 'player') return { player: entity.id, team: false };
+  return { player: null, team: entity.kind === 'team' };
+}
+
+/** What the text says a given number is about. `null` means "not stated". */
+interface Binding {
+  players: ReadonlySet<string> | null;
+  teamCue: boolean;
+  families: ReadonlySet<MetricFamily> | null;
+}
+
+function playerCompatible(a: Anchor, b: Binding): boolean {
+  if (b.players === null) return true;
+  if (a.team) return b.teamCue;
+  return a.player === null || b.players.has(a.player);
+}
+
+function metricCompatible(a: Anchor, b: Binding): boolean {
+  if (!b.families || b.families.size === 0 || a.family === null) return true;
+  if (b.families.has(a.family)) return true;
+  // A generic "strokes gained" cue covers every SG area — unless the text
+  // also names a DIFFERENT area ("SG approach" is not SG putting).
+  if (a.parent && b.families.has(a.parent)) {
+    return ![...b.families].some((f) => f !== a.family && SG_AREAS.has(f));
+  }
+  return false;
+}
+
+type Span = readonly [number, number];
+
+function splitSpans(text: string, re: RegExp): Span[] {
+  const spans: Span[] = [];
+  let start = 0;
+  for (const m of text.matchAll(new RegExp(re.source, re.flags.includes('g') ? re.flags : `${re.flags}g`))) {
+    const idx = m.index ?? 0;
+    spans.push([start, idx]);
+    start = idx + m[0].length;
+  }
+  spans.push([start, text.length]);
+  return spans;
+}
+
+function spanIndexAt(spans: readonly Span[], pos: number): number {
+  for (let i = 0; i < spans.length; i += 1) {
+    const [s, e] = spans[i] as Span;
+    if (pos >= s && pos < e) return i;
+  }
+  return spans.length - 1;
+}
+
+function escapeRegExp(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+interface Occurrence {
+  start: number;
+  end: number;
+}
+
+/**
+ * Pre-computes every number, name and metric cue in the scrubbed text once,
+ * and answers "what does the text say token N is about?".
+ */
+function buildBinder(text: string, people: readonly AuditPlayer[]) {
+  const tokens: Array<Occurrence & { raw: string }> = [];
+  for (const m of text.matchAll(NUMERIC_TOKEN_RE)) {
+    const start = m.index ?? 0;
+    tokens.push({ raw: m[0], start, end: start + m[0].length });
+  }
+
+  // Name tokens → the ids they could mean (a shared first name means both).
+  const idsByName = new Map<string, Set<string>>();
+  const register = (token: string | null | undefined, id: string) => {
+    const t = token?.trim();
+    // Case-sensitive and capitalised only: "Will" the name, never "will" the verb.
+    if (!t || t.length < 2 || !/^\p{Lu}/u.test(t)) return;
+    const set = idsByName.get(t) ?? new Set<string>();
+    set.add(id);
+    idsByName.set(t, set);
+  };
+  for (const p of people) {
+    if (!p?.id || typeof p.name !== 'string') continue;
+    register(p.name, p.id);
+    const parts = p.name.trim().split(/\s+/);
+    register(p.first_name ?? parts[0], p.id);
+    if (parts.length > 1) register(p.last_name ?? parts[parts.length - 1], p.id);
+  }
+  const names: Array<Occurrence & { ids: ReadonlySet<string> }> = [];
+  for (const [name, ids] of idsByName) {
+    const re = new RegExp(`(?<![\\p{L}\\p{N}])${escapeRegExp(name)}(?![\\p{L}\\p{N}])`, 'gu');
+    for (const m of text.matchAll(re)) {
+      const start = m.index ?? 0;
+      names.push({ start, end: start + m[0].length, ids });
+    }
+  }
+  names.sort((a, b) => a.start - b.start);
+
+  const metricClauses = splitSpans(text, METRIC_CLAUSE_BREAK);
+  const playerClauses = splitSpans(text, PLAYER_CLAUSE_BREAK);
+  const sentences = splitSpans(text, SENTENCE_BREAK);
+  const paragraphs = splitSpans(text, PARAGRAPH_BREAK);
+
+  // Each metric cue belongs to the NEAREST number in its clause ("GIR 58% /
+  // putts 31.5" binds GIR→58 and putts→31.5); a tie goes to the number
+  // written before the cue ("31 putts").
+  const familiesByToken = new Map<number, Set<MetricFamily>>();
+  for (const [re, family] of METRIC_CUES) {
+    for (const m of text.matchAll(re)) {
+      const cs = m.index ?? 0;
+      const ce = cs + m[0].length;
+      const clause = spanIndexAt(metricClauses, cs);
+      let best = -1;
+      let bestDistance = Infinity;
+      for (const [i, t] of tokens.entries()) {
+        if (spanIndexAt(metricClauses, t.start) !== clause) continue;
+        const before = t.end <= cs;
+        const distance = before ? cs - t.end : t.start >= ce ? t.start - ce : 0;
+        if (distance < bestDistance || (distance === bestDistance && before)) {
+          best = i;
+          bestDistance = distance;
+        }
+      }
+      if (best === -1) continue;
+      const set = familiesByToken.get(best) ?? new Set<MetricFamily>();
+      set.add(family);
+      familiesByToken.set(best, set);
+    }
+  }
+
+  const within = (span: Span, o: Occurrence) => o.start >= span[0] && o.start < span[1];
+  const union = (list: ReadonlyArray<{ ids: ReadonlySet<string> }>) => {
+    const out = new Set<string>();
+    for (const n of list) for (const id of n.ids) out.add(id);
+    return out;
+  };
+
+  /** The players a sentence names, walking back through its paragraph for a pronoun sentence. */
+  const sentencePlayers = (sentenceIndex: number): Set<string> | null => {
+    const paragraph = spanIndexAt(paragraphs, (sentences[sentenceIndex] as Span)[0]);
+    for (let i = sentenceIndex; i >= 0; i -= 1) {
+      const span = sentences[i] as Span;
+      if (spanIndexAt(paragraphs, span[0]) !== paragraph) break;
+      const here = names.filter((n) => within(span, n));
+      if (here.length > 0) return union(here);
+      // A sentence about the group, with no name, ends the pronoun chain.
+      if (TEAM_CUE.test(text.slice(span[0], span[1]))) return null;
+    }
+    return null;
+  };
+
+  const bindingFor = (index: number): Binding => {
+    const t = tokens[index] as Occurrence;
+    const sentenceIndex = spanIndexAt(sentences, t.start);
+    const sentence = sentences[sentenceIndex] as Span;
+    const clause = playerClauses[spanIndexAt(playerClauses, t.start)] as Span;
+
+    let players: Set<string> | null = null;
+    const inClause = names.filter((n) => within(clause, n));
+    if (inClause.length > 0) {
+      players = union(inClause);
+    } else {
+      const inSentence = names.filter((n) => within(sentence, n));
+      const before = inSentence.filter((n) => n.end <= t.start);
+      const after = inSentence.filter((n) => n.start >= t.end);
+      const nearest = before[before.length - 1] ?? after[0];
+      players = nearest ? new Set(nearest.ids) : sentenceIndex > 0 ? sentencePlayers(sentenceIndex - 1) : null;
+      // The chain only carries within a paragraph and stops at a team sentence.
+      if (!nearest && TEAM_CUE.test(text.slice(sentence[0], sentence[1]))) players = null;
+      if (!nearest && players && sentenceIndex > 0) {
+        const prevParagraph = spanIndexAt(paragraphs, (sentences[sentenceIndex - 1] as Span)[0]);
+        if (prevParagraph !== spanIndexAt(paragraphs, sentence[0])) players = null;
+      }
+    }
+
+    return {
+      players,
+      teamCue: TEAM_CUE.test(text.slice(sentence[0], sentence[1])),
+      families: familiesByToken.get(index) ?? null,
+    };
+  };
+
+  return { tokens, bindingFor };
+}
+
 /**
  * Read the model's finished text and flag numbers no measurement supports.
  *
@@ -621,7 +942,7 @@ export function auditNumericClaims(
    * cries wolf is a check people switch off, which is exactly what happened to
    * the grounding gate this replaced.
    */
-  extraSupported: readonly number[] = [],
+  extraSupported: readonly (number | ScopedNumber)[] = [],
   /**
    * Every ISO date reachable inside an envelope's `detail` — typically
    * {@link collectDates}'s output for the same `detail` payload
@@ -639,22 +960,33 @@ export function auditNumericClaims(
    * previous UTC-only day rather than throwing. See {@link isoDaysOf}.
    */
   timezone?: string,
+  /**
+   * Audit row 47b — attribution. `players` is the coach's roster (`ctx.roster`)
+   * so a name in the text can be recognised even when that player has no
+   * evidence this turn ("Bob averages 74" when only Alice was read must fail).
+   * Omitted, only the evidence's own player entity labels are recognised.
+   */
+  options?: { players?: readonly AuditPlayer[] },
 ): UnsupportedClaim[] {
   if (!text) return [];
 
-  // Every value a tool actually produced, at any precision the prose might use.
-  const supported = new Set<number>();
+  /**
+   * Every value a tool actually produced, at any precision the prose might
+   * use — each one still carrying WHO it measured and WHAT it measured
+   * (audit row 47b). The flat, attribution-free pool this replaced accepted
+   * "Bob hits 58%" whenever 58 was Alice's figure, and "GIR 31.5%" whenever
+   * 31.5 was a putts-per-round value.
+   */
+  const anchors: Anchor[] = [];
   /** Anchors grouped by metric, so a delta only spans figures of one kind. */
   const byMetric = new Map<string, Set<number>>();
 
-  const add = (n: number | null | undefined, metricId?: string) => {
+  const add = (n: number | null | undefined, scope: AnchorScope, metricId?: string) => {
     if (typeof n !== 'number' || !Number.isFinite(n)) return;
     for (const v of [n, Math.abs(n)]) {
       // "lost 7.61 strokes" and "-7.61 strokes" are the same statement, so a
       // magnitude counts as sourced wherever its signed value does.
-      supported.add(v);
-      supported.add(Math.round(v));
-      supported.add(Math.round(v * 10) / 10);
+      for (const w of [v, Math.round(v), Math.round(v * 10) / 10]) anchors.push({ value: w, ...scope });
     }
     if (metricId) {
       const key = metricGroup(metricId);
@@ -678,9 +1010,9 @@ export function auditNumericClaims(
     }
   };
 
-  // Evidence dates, kept separate from `supported` — see
+  // Evidence dates, kept separate from `anchors` — see
   // `auditDateExpressions`'s doc comment for why a date is matched against
-  // its own evidence set rather than this flat number pool.
+  // its own evidence set rather than this number pool.
   const evidenceDates = new Set<string>(extraSupportedDates);
   const evidenceWindows: Array<[string, string]> = [];
   const addWindow = (start: string | null, end: string | null) => {
@@ -698,20 +1030,37 @@ export function auditNumericClaims(
     if (start && end) evidenceWindows.push([start.slice(0, 10), end.slice(0, 10)]);
   };
 
+  /** Names the audit can recognise: the caller's roster plus every player entity seen. */
+  const nameSources: AuditPlayer[] = [...(options?.players ?? [])];
+
   for (const m of measurements) {
-    add(m.value, m.metric_id);
-    add(m.sample_size);
-    add(m.denominator);
-    add(m.benchmark?.value, m.metric_id);
+    const who = entityScope(m.entity);
+    const fam = familyOf(m.metric_id);
+    if (m.entity?.kind === 'player') nameSources.push({ id: m.entity.id, name: m.entity.label });
+    add(m.value, { ...who, ...fam }, m.metric_id);
+    // A sample size or denominator is a count of attempts/rounds, not a
+    // reading of the metric — it binds to the player, never to a metric.
+    add(m.sample_size, { ...who, family: null, parent: null });
+    add(m.denominator, { ...who, family: null, parent: null });
+    // A benchmark is an external baseline, not anyone on this roster.
+    add(m.benchmark?.value, { player: null, team: false, ...fam }, m.metric_id);
     // A stated delta between a value and its benchmark is itself supported.
     if (typeof m.value === 'number' && typeof m.benchmark?.value === 'number') {
-      add(m.value - m.benchmark.value);
+      add(m.value - m.benchmark.value, { ...who, ...fam });
     }
     addWindow(m.window_start, m.window_end);
   }
-  for (const n of extraSupported) add(n);
+  for (const n of extraSupported) {
+    if (typeof n === 'number') add(n, UNSCOPED);
+    else if (n && typeof n.value === 'number') {
+      add(n.value, { player: n.player_id ?? null, team: false, ...familyOf(n.metric_key) });
+    }
+  }
   for (const s of series) {
     addWindow(s.window_start, s.window_end);
+    const who = entityScope(s.entity);
+    const fam = familyOf(s.metric_id);
+    if (s.entity?.kind === 'player') nameSources.push({ id: s.entity.id, name: s.entity.label });
     // `series` is typed as `MeasurementSeries[]`, but a caller can hand this
     // function evidence that was round-tripped through the database first
     // (route.ts's `priorTurnEvidence`, reading a stored `ui_parts` blob) —
@@ -720,8 +1069,8 @@ export function auditNumericClaims(
     // single legacy/forged envelope crashes the whole turn's audit.
     const points = Array.isArray(s.points) ? s.points : [];
     for (const p of points) {
-      add(p.value, s.metric_id);
-      add(p.sample_size);
+      add(p.value, { ...who, ...fam }, s.metric_id);
+      add(p.sample_size, { ...who, family: null, parent: null });
       if (p.at) for (const d of isoDaysOf(p.at, timezone)) evidenceDates.add(d);
       // A distance-band label ("15-25 ft", "10-15 ft") is the tool's own
       // vocabulary for the bucket, not a claim — but its digits are not
@@ -730,12 +1079,12 @@ export function auditNumericClaims(
       // prose numbers are (numbersInText) closes that gap without a
       // separate distance/unit exemption regex, which risked also exempting
       // a real proximity claim like "18 ft away".
-      if (p.bucket) for (const n of numbersInText(p.bucket)) add(n);
+      if (p.bucket) for (const n of numbersInText(p.bucket)) add(n, { ...who, family: null, parent: null });
     }
     // First-to-last movement is the whole point of a trend, so allow the delta.
     const first = points[0]?.value;
     const last = points[points.length - 1]?.value;
-    if (typeof first === 'number' && typeof last === 'number') add(last - first);
+    if (typeof first === 'number' && typeof last === 'number') add(last - first, { ...who, ...fam });
   }
 
   /**
@@ -746,16 +1095,18 @@ export function auditNumericClaims(
    * coach might ask about. The number is still checkable against the evidence
    * on screen — it is arithmetic on two published values, not an assertion —
    * so it is supported. Held to one metric so a strokes figure can never be
-   * justified by subtracting two putt counts.
+   * justified by subtracting two putt counts; deliberately player-free,
+   * because a comparison spans players by definition.
    */
-  for (const group of byMetric.values()) {
+  for (const [key, group] of byMetric.entries()) {
     // `add()` above never lets a group exceed PAIRWISE_ANCHOR_CAP; the upper
     // check is kept as a direct guarantee against this loop's own O(n²) cost
     // rather than trusting that invariant silently.
     if (group.size < 2 || group.size > PAIRWISE_ANCHOR_CAP) continue;
+    const fam = familyOf(key);
     const values = [...group];
     for (const [i, left] of values.entries()) {
-      for (const right of values.slice(i + 1)) add(left - right);
+      for (const right of values.slice(i + 1)) add(left - right, { player: null, team: false, ...fam });
     }
   }
 
@@ -767,25 +1118,27 @@ export function auditNumericClaims(
   const { scrubbed, claims: dateClaims } = auditDateExpressions(exempt, evidenceDates, evidenceWindows);
   const found: UnsupportedClaim[] = [...dateClaims];
   const seen = new Set<string>();
-  const anchors = [...supported];
+  const bind = buildBinder(scrubbed, nameSources);
 
-  for (const match of scrubbed.matchAll(NUMERIC_TOKEN_RE)) {
-    const raw = match[0];
+  for (const [index, match] of bind.tokens.entries()) {
+    const raw = match.raw;
     const value = Number(raw);
     if (!Number.isFinite(value)) continue;
     // Ordinals, counts of rounds/weeks/players — not statistical assertions.
     if (Number.isInteger(value) && Math.abs(value) <= 12) continue;
     if (seen.has(raw)) continue;
 
-    const at = match.index ?? 0;
+    const at = match.start;
     const hedged = HEDGE_BEFORE.test(scrubbed.slice(Math.max(0, at - 24), at));
     const tolerance = hedged
       ? Math.max(MATCH_EPSILON, Math.abs(value) * HEDGED_RELATIVE_TOLERANCE)
       : MATCH_EPSILON;
 
-    if (!anchors.some((s) => Math.abs(s - value) <= tolerance)) {
+    const near = (a: Anchor) => Math.abs(a.value - value) <= tolerance;
+    const binding = bind.bindingFor(index);
+    if (!anchors.some((a) => near(a) && playerCompatible(a, binding) && metricCompatible(a, binding))) {
       seen.add(raw);
-      found.push({ text: raw, value });
+      found.push(anchors.some(near) ? { text: raw, value, misattributed: true } : { text: raw, value });
     }
   }
 
@@ -811,6 +1164,40 @@ export function collectNumbers(value: unknown, depth = 0): number[] {
     return Object.values(value as Record<string, unknown>).flatMap((v) =>
       collectNumbers(v, depth + 1),
     );
+  }
+  return [];
+}
+
+/**
+ * {@link collectNumbers}, but each number keeps the player and the field it
+ * was stored under (audit row 47b). An object carrying a `player_id` string —
+ * or a `player: { player_id }` child, the shape `get_recent_rounds` and
+ * `get_player_insights` use — scopes every number beneath it to that player;
+ * `metric_key` is the leaf field name (`total_putts`, `last_round_to_par`),
+ * or null for a number parsed out of a tool's own prose. Unrecognised keys
+ * simply bind to no metric, so this can only ever narrow what a detail number
+ * supports, never widen it.
+ */
+export function collectScopedNumbers(
+  value: unknown,
+  playerId: string | null = null,
+  key: string | null = null,
+  depth = 0,
+): ScopedNumber[] {
+  if (depth > 6 || value === null || value === undefined) return [];
+  if (typeof value === 'number') {
+    return Number.isFinite(value) ? [{ value, player_id: playerId, metric_key: key }] : [];
+  }
+  if (typeof value === 'string') {
+    return numbersInText(value).map((n) => ({ value: n, player_id: playerId, metric_key: null }));
+  }
+  if (Array.isArray(value)) return value.flatMap((v) => collectScopedNumbers(v, playerId, key, depth + 1));
+  if (typeof value === 'object') {
+    const obj = value as Record<string, unknown>;
+    const nested = obj.player && typeof obj.player === 'object' ? (obj.player as Record<string, unknown>).player_id : undefined;
+    const own = typeof obj.player_id === 'string' ? obj.player_id : typeof nested === 'string' ? nested : null;
+    const scope = own ?? playerId;
+    return Object.entries(obj).flatMap(([k, v]) => collectScopedNumbers(v, scope, k, depth + 1));
   }
   return [];
 }

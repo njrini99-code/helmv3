@@ -1140,7 +1140,10 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
   every row reads back `method_version: null` until migration
   20260922230000 is applied, exactly like the write side's pre-N10 shape.
   `src/lib/coachhelm/v3/effectiveness/attribution-view-model.ts`: pure
-  labeling — `null`/`'v2_observed_delta'` (the round-level path, which
+  labeling — `'v3_did_prewindow'` (round-level, 2026-09-28: lift against a
+  matched pre-window control with an interval) is `'controlled_change'`,
+  never clean; `null` rows are no longer returned by the primary read
+  (legacy v1 math, deep audit row 35); `null`/`'v2_observed_delta'` (the round-level path, which
   predates the A9 slice 2 confounding check entirely) both collapse to
   `'earlier_method'`, never `isClean`; `'comparable_opportunities_v1'` is
   `'observed_change'`, the ONLY `isClean: true` value (it's the only

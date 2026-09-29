@@ -22,15 +22,26 @@ export function composeTravelBrief(workspace: QualifyingWorkspace): string {
   lines.push(
     `**Date:** ${workspace.start_date}${workspace.end_date ? ` – ${workspace.end_date}` : ''}`,
   );
-  lines.push(`**Slots:** ${workspace.selection_slots_total} total`);
-  lines.push('');
-
   const topScore = workspace.candidates.filter(
     (c) => c.selection?.selection_type === 'top_score',
   );
   const coachPicks = workspace.candidates.filter(
     (c) => c.selection?.selection_type === 'coach_pick',
   );
+  const filled = topScore.length + coachPicks.length;
+  const unscored = workspace.candidates.filter(
+    (c) => c.total_score === null || c.rounds_completed === 0,
+  ).length;
+
+  lines.push(`**Slots:** ${filled} of ${workspace.selection_slots_total} filled`);
+  if (unscored > 0) {
+    // Unscored entrants have no rank and silently fall out of the top-N;
+    // say so rather than let an unfilled slot look like a choice.
+    lines.push(
+      `**Unscored:** ${unscored} of ${workspace.candidates.length} entrants posted no score and were not ranked`,
+    );
+  }
+  lines.push('');
 
   if (topScore.length > 0) {
     lines.push('### Auto-Qualified (Top Score)');

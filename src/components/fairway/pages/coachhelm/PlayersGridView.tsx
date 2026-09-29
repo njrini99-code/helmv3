@@ -1011,7 +1011,7 @@ export function PlayersGridView({
             {selectedPlayerId ? (
               <CausalWhyPanel
                 relationships={causalByPlayer?.[selectedPlayerId] ?? []}
-                title="Why their scores move"
+                title="What moves together in their rounds"
               />
             ) : null}
 

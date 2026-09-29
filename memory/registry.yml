@@ -443,7 +443,6 @@ features:
       services:
         - src/lib/golf/**
         - src/lib/coachhelm/v2/post-round-trigger.ts
-        - src/lib/coachhelm/v3/llm/round-review.ts
         - scripts/coachhelm-prewarm-round-reviews.ts
       db:
         - supabase/migrations/*golf_round*.sql
@@ -907,7 +906,6 @@ features:
         - src/app/golf/actions/alerts.ts
         - src/app/golf/actions/pattern-management.ts
         - src/app/golf/actions/insight-management.ts
-        - src/app/golf/actions/insight-evidence.ts
         - src/app/golf/actions/intelligence-dashboard.ts
         - src/app/golf/actions/coachhelm-analytics.ts
         - src/app/golf/actions/coaching-philosophy.ts

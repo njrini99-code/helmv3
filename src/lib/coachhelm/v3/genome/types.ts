@@ -30,7 +30,6 @@ export const GENOME_CATEGORIES = [
   'pressure_response',
   'recovery_patterns',
   'course_type_affinity',
-  'weather_sensitivity',
   'stamina',
   'learning_velocity',
   'strategic_profile',
@@ -112,22 +111,25 @@ export interface GenomeShot {
  * The pure-function contract every dimension implements.
  *
  * compute() decides for itself whether the supplied context has enough
- * data to produce a value (most dims require ≥8 rounds; some need
- * more specific data like a shot-source bucket). On insufficient data
- * the dimension returns `{ value: null, confidence: null }`.
+ * data to produce a value — each dimension owns its floor (16 par-3 holes,
+ * 5 rounds, 15 scramble attempts, 30 approaches, 4 rounds a side, ...).
+ * There is no blanket round gate (audit row 18: a blanket 8-round gate blanked
+ * 35 of 57 active players whose dimensions' own floors were met). On
+ * insufficient data the dimension returns `{ value: null, confidence: null }`.
  */
 export interface GenomeDimension {
   id: string;
   category: GenomeCategory;
   /** Short human label for the dim, used by the UI radar + tooltips. */
   label: string;
-  /** Min rounds this specific dim requires. Defaults to MIN_ROUNDS_PER_DIMENSION. */
+  /** Optional extra round floor for this dim, checked before compute().
+   *  Absent = the dimension's own data floor inside compute() decides. */
   min_rounds?: number;
   /**
    * True for a dimension whose `compute()` is a permanent stub — no data
    * source exists yet, so it can NEVER resolve regardless of how many
-   * rounds a player logs (e.g. `weather_sensitivity_stub` — no
-   * weather/temperature tracking in shot data at all). Distinct from the
+   * rounds a player logs (the retired `weather_sensitivity_stub` was the
+   * only one; none is registered today). Distinct from the
    * ordinary "needs more rounds" locked state, which resolves once the
    * player has enough sample size. Drives a separate "Not tracked" UI
    * treatment so coaches don't read it as "will unlock eventually."

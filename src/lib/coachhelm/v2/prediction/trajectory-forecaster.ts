@@ -109,6 +109,7 @@ export class TrajectoryForecaster {
       .from('golf_rounds')
       .select('id, score_to_par, round_date')
       .eq('player_id', this.playerId)
+      .eq('is_test', false)
       .eq('status', 'completed')
       .order('round_date', { ascending: true })
       .limit(100);

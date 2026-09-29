@@ -43,6 +43,9 @@ import {
 } from '@/lib/coachhelm/v3/counterfactual/cohort-baselines';
 import { loadPlayerCohort } from '@/lib/coachhelm/v3/counterfactual/player-cohort-loader';
 import { attemptGate, lifetimeSpanDays, dataThroughSuffix, ATTEMPT_FLOOR } from '@/lib/coachhelm/v3/engine/window-honesty';
+import { loadStandingForMetric } from '@/lib/coachhelm/v3/standing/loader';
+import { measuredStrokesImpact } from '@/lib/coachhelm/v3/counterfactual/measured-impact';
+import { wilsonInterval, rateIntervalText } from '@/lib/coachhelm/v3/stats/interval';
 
 type PuttBucketKey = '3_5ft' | '5_10ft' | '10_15ft' | '15_25ft' | '25_plus_ft';
 
@@ -125,6 +128,17 @@ interface PuttDistanceAggregate extends GeneratorAggregate {
   /** True lifetime span in days (first→last round); null when unknown. */
   spanDays: number | null;
   last_round_date: string | null;
+  /**
+   * The player's OWN putts per round in this band: band attempts over the
+   * cache's rounds_played (the same completed, scored rounds the band
+   * attempts are counted from). The base reads this name to size the
+   * counterfactual (DC-ATTEMPT-1); without it every putt projection fell back
+   * to a fixed "typical attempts" constant that overstated 3-5 ft about 2×
+   * (audit defect 7). Optional only for hand-built aggregates in tests.
+   */
+  attempts_per_round?: number;
+  /** Measured strokes/round to the counterfactual target (see aggregate()). */
+  strokes_impact?: number;
 }
 
 export class PuttDistanceGenerator extends BaseGenerator<PuttDistanceAggregate> {
@@ -178,6 +192,26 @@ export class PuttDistanceGenerator extends BaseGenerator<PuttDistanceAggregate> 
     if (attempts < ATTEMPT_FLOOR) return null;
 
     const cohort = await loadPlayerCohort(this.playerId);
+    const attemptsPerRound = roundsPlayed > 0 ? attempts / roundsPlayed : 0;
+
+    // Measured impact on the SAME target the counterfactual gaps to (plausible
+    // cohort level_avg → gender anchor → Tour) and the SAME attempt rate, so
+    // the ranked strokes_impact and the card's projection agree. It is written
+    // even when the projection is below the 0.3-stroke display floor: the
+    // "Closing this gap" line stays suppressed, but the row ranks on strokes
+    // instead of on the priority floor (audit defect 1).
+    const standing = await loadStandingForMetric(this.playerId, this.metricId).catch(() => null);
+    const cfgDirection = METRIC_RENDER_CONFIG[this.metricId]?.direction ?? 'higher_better';
+    const strokesImpact = measuredStrokesImpact({
+      metric_id: this.metricId,
+      direction: cfgDirection,
+      player_value: normalized,
+      pga_value: standing?.pga_value ?? PGA_MAKE_PCT_BY_BUCKET[this.bucket],
+      cohort_value: standing?.level_avg ?? null,
+      cohort_gender: cohort.gender,
+      player_30d_scoring_avg: null,
+      player_attempts_per_round: attemptsPerRound,
+    });
 
     return {
       sampleN: attempts,
@@ -189,6 +223,8 @@ export class PuttDistanceGenerator extends BaseGenerator<PuttDistanceAggregate> 
       attempts,
       spanDays,
       last_round_date: (data.last_round_date as string | null) ?? null,
+      attempts_per_round: attemptsPerRound,
+      strokes_impact: strokesImpact,
     };
   }
 
@@ -208,9 +244,12 @@ export class PuttDistanceGenerator extends BaseGenerator<PuttDistanceAggregate> 
     const bandClass = BUCKET_BAND_CLASS[agg.bucket];
     const gapPp = pgaValue - agg.playerValue; // positive = below anchor
     const gate = attemptGate(agg.attempts);
+    // 95% interval on the band rate (audit row 24): an 8-12 putt band moves
+    // 8-12 points on a single putt, so the number never ships bare.
+    const makeCi = wilsonInterval(Math.round((agg.playerValue / 100) * agg.attempts), agg.attempts);
     const base =
       `Across your last ${agg.rounds_played} rounds${agg.spanDays && agg.spanDays > 0 ? ` (${agg.spanDays} days)` : ''} ` +
-      `you're making ${valueDisp} of putts from ${label}${gate.disclosure} ` +
+      `you're making ${valueDisp} of putts from ${label}${gate.disclosure}${gate.report ? rateIntervalText(makeCi) : ''} ` +
       `(${agg.cohort_gender === 'womens'
         ? `women's college target ~${pgaValue.toFixed(0)}%, estimated`
         : `PGA Tour ~${pgaValue.toFixed(0)}%`}).`;
@@ -278,7 +317,10 @@ export class PuttDistanceGenerator extends BaseGenerator<PuttDistanceAggregate> 
         // blank. `window_days` above is already the true span via
         // lifetimeSpanDays().
         window_end: agg.last_round_date ?? '',
-        strokes_impact: 0,
+        // Measured per-round impact (aggregate()); the base overwrites it with
+        // the identical counterfactual value when that projection renders.
+        // `?? 0`: hand-built aggregates in older callers carry no impact.
+        strokes_impact: agg.strokes_impact ?? 0,
         strokes_impact_method: 'peer_delta',
         confidence: 0,
         confidence_factors: {
@@ -289,6 +331,9 @@ export class PuttDistanceGenerator extends BaseGenerator<PuttDistanceAggregate> 
         detail: {
           band_attempts: agg.attempts,
           rounds_played: agg.rounds_played,
+          attempts_per_round: agg.attempts_per_round != null ? Math.round(agg.attempts_per_round * 100) / 100 : null,
+          make_ci_low: Math.round(makeCi.low * 10) / 10,
+          make_ci_high: Math.round(makeCi.high * 10) / 10,
           lifetime_span_days: agg.spanDays,
         },
       },

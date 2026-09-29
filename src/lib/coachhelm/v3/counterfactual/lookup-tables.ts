@@ -46,7 +46,7 @@ export interface CounterfactualConfig {
    *   'sand_attempts_per_round'     → cache.sand_attempts / rounds_played
    *   'gir_misses_per_round'        → (greens_total − greens_hit) / rounds_played
    *   'approach_attempts_per_round' → shots in the bucket / rounds (generator-supplied)
-   *   'putt_attempts_per_round'     → typical putts/round in the distance bucket
+   *   'putt_attempts_per_round'     → the player's putts/round in the distance band (cache attempts / rounds_played)
    *   'holes_per_round'             → par-type hole count (4 par-3s / 10 par-4s / 4 par-5s)
    */
   attempt_metric?:
@@ -78,6 +78,14 @@ export const COUNTERFACTUAL_LOOKUP: Record<MetricId, CounterfactualConfig> = {
   // makeable (Tour ~90%), so a missed pp here is the single highest-leverage,
   // fastest-to-fix putting gap. Bumped 0.06→0.10 so a large short-putt gap
   // floors to `high` (the counterfactual ceiling + 0.3 floor still bound it).
+  //
+  // FALLBACK ONLY (audit defect 7, 2026-09-28): these per-pp constants are
+  // tuning choices, not measurements — 0.10 implies ~10 short putts/round and
+  // overstated 3-5 ft impact ~2× against players' real attempt counts. The
+  // putt-distance generator now always supplies the player's OWN
+  // `attempts_per_round` (band attempts / rounds played), so the attempt path
+  // (gap_pp/100 × attempts × value_per_unit) sizes every putt projection, and
+  // `measuredStrokesImpact` never falls back to these.
   putts_made_3_5ft_pct:      { stroke_impact_per_unit: 0.10,  coachable_timeframe_weeks: 4,  attempt_metric: 'putt_attempts_per_round', value_per_unit: 1.0 },
   putts_made_5_10ft_pct:     { stroke_impact_per_unit: 0.03,  coachable_timeframe_weeks: 6,  attempt_metric: 'putt_attempts_per_round', value_per_unit: 1.0 },
   putts_made_10_15ft_pct:    { stroke_impact_per_unit: 0.02,  coachable_timeframe_weeks: 8,  attempt_metric: 'putt_attempts_per_round', value_per_unit: 1.0 },

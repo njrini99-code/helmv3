@@ -56,3 +56,34 @@ export function computeTeamHealth(
     (healthScores.reduce((a, b) => a + b, 0) / healthScores.length) * 100,
   );
 }
+
+/**
+ * Fairway % or GIR % over a player's countable rounds: summed hits over
+ * summed opportunities (not a mean of per-round percentages), from the
+ * `golf_rounds` totals the action already reads. Returns `undefined` for any
+ * other metric (the caller keeps its own source) and `null` when no round
+ * carries the totals. Replaces the stats cache for these two, which counted
+ * non-countable rounds and ran a median 11 days stale (2026-09 audit row 2).
+ */
+export function countableRatioPct(
+  rows: readonly Record<string, unknown>[],
+  metric: string,
+): number | null | undefined {
+  const cols =
+    metric === 'driving_accuracy_percentage'
+      ? (['total_fairways_hit', 'total_fairways'] as const)
+      : metric === 'gir_percentage'
+        ? (['total_gir', 'total_gir_possible'] as const)
+        : null;
+  if (!cols) return undefined;
+  let made = 0;
+  let total = 0;
+  for (const r of rows) {
+    const m = r[cols[0]];
+    const t = r[cols[1]];
+    if (typeof t !== 'number' || !Number.isFinite(t) || t <= 0) continue;
+    made += typeof m === 'number' && Number.isFinite(m) ? m : 0;
+    total += t;
+  }
+  return total > 0 ? (made / total) * 100 : null;
+}

@@ -56,6 +56,7 @@ import { detectStreaks } from './trends/streak-detector';
 import { scoreInsight, shouldShowInsight } from './feedback/insight-scorer';
 import { logServerError, logServerEvent } from '@/lib/server-error-logger';
 import { isFlagEnabled } from '@/lib/flags/is-enabled';
+import { isCountableRound } from '@/lib/golf/round-countable';
 import type { GolfStats } from '@/lib/utils/golf-stats-calculator-shots';
 
 import type {
@@ -563,15 +564,18 @@ class CoachHelmIntelligence {
     ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
     const { data: recentRounds } = await supabaseClient
       .from('golf_rounds')
-      .select('id, score_to_par, total_putts, total_fairways, total_fairways_hit, total_gir, total_gir_possible')
+      .select('id, score_to_par, total_putts, total_fairways, total_fairways_hit, total_gir, total_gir_possible, holes_played, total_score, front_nine, back_nine')
       .eq('player_id', playerId)
+      .eq('is_test', false)
       .eq('status', 'completed')
       .gte('round_date', ninetyDaysAgo.toISOString())
       .order('round_date', { ascending: true });
 
     // === NEW: Statistical foundation ===
+    // Countable rounds only (round-countable.ts): an implausible or
+    // half-entered card must not move the baseline insights are judged against.
     const playerBaseline = buildPlayerBaseline(
-      (recentRounds ?? []).map(r => ({
+      (recentRounds ?? []).filter(isCountableRound).map(r => ({
         metrics: {
           scoreToPar: r.score_to_par ?? 0,
           putts: r.total_putts ?? 0,
@@ -1986,7 +1990,7 @@ class CoachHelmIntelligence {
       .sort((a, b) => b.strength - a.strength)[0];
 
     if (topCausal) {
-      return `Focus on improving ${topCausal.cause} to enhance ${topCausal.effect}.`;
+      return `${topCausal.cause} tends to move with ${topCausal.effect}; worth checking first.`;
     }
 
     return 'Continue current practice routine.';
@@ -2310,7 +2314,7 @@ class CoachHelmIntelligence {
         alternatives: [],
         sensitivities: [
           {
-            assumption: 'Correlation reflects causal relationship',
+            assumption: 'The correlation may not be causal',
             ifChanged: 'If confounding variables exist',
             impactOnConclusion: 'Relationship strength may vary',
           },

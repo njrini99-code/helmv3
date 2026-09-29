@@ -265,6 +265,34 @@ export class CourseMgmtGenerator extends BaseGenerator<CourseMgmtAggregate> {
     return 'low';
   }
 
+  /**
+   * Evidence comparison fields (audit row 12, owner decision 2026-09-28): the
+   * primary tick is the SAME anchor the priority used. With a cohort
+   * (level_avg) that is the cohort, and the Tour rides along as the secondary
+   * tick — except on a women's card, which never carries the men's Tour value.
+   * Cold-start (no cohort) keeps the Tour as the primary tick.
+   */
+  private comparisonFields(
+    agg: CourseMgmtAggregate,
+    tourValue: number,
+    cohortLabel: string,
+  ): Pick<
+    ComposedContent['evidence'],
+    'comparison_value' | 'comparison_label' | 'comparison_source' | 'secondary_value' | 'secondary_label' | 'secondary_source'
+  > {
+    if (agg.anchor_is_cohort && agg.anchor_value !== null) {
+      return {
+        comparison_value: agg.anchor_value,
+        comparison_label: cohortLabel,
+        comparison_source: 'cohort_avg',
+        ...(agg.cohort_gender === 'womens'
+          ? {}
+          : { secondary_value: tourValue, secondary_label: 'PGA Tour avg', secondary_source: 'pga_baseline' as const }),
+      };
+    }
+    return { comparison_value: tourValue, comparison_label: 'PGA Tour avg', comparison_source: 'pga_baseline' };
+  }
+
   composeContent(agg: CourseMgmtAggregate): ComposedContent {
     const r1 = (x: number) => (Math.round(x * 10) / 10).toString();
     // Specific holes are named with their course; hole number alone is an
@@ -324,7 +352,7 @@ export class CourseMgmtGenerator extends BaseGenerator<CourseMgmtAggregate> {
       return {
         title: `Penalty strokes: ${valueDisp} per round`,
         content:
-          `Across your last ${agg.rounds_played} rounds you're averaging ` +
+          `Across all ${agg.rounds_played} rounds on file you're averaging ` +
           `${valueDisp} penalty strokes per round. ${anchorClause}.` +
           causeClause + worstClause +
           ` Every penalty avoided is worth ~1.5 strokes per round.` +
@@ -340,12 +368,13 @@ export class CourseMgmtGenerator extends BaseGenerator<CourseMgmtAggregate> {
           unit: 'count',
           your_value: agg.metric_value,
           your_value_display: valueDisp,
-          comparison_value: 0.3,
-          comparison_label: 'PGA Tour avg',
-          comparison_source: 'pga_baseline',
+          ...this.comparisonFields(agg, 0.3, 'College cohort avg'),
           sample_n: agg.rounds_played,
           // Honest lifetime span — this generator reads LIFETIME cache columns
           // (regrade VAL-P2: rows older than 90d sat inside the claimed window).
+          // window_basis tells renderers the value is all-time: window_days is
+          // only the first-to-last-round span, never the value's window.
+          window_basis: 'lifetime',
           window_days: agg.spanDays ?? 0,
           window_start: agg.first_round_date ?? '',
           window_end: agg.last_round_date ?? '',
@@ -371,7 +400,7 @@ export class CourseMgmtGenerator extends BaseGenerator<CourseMgmtAggregate> {
     return {
       title: `Double bogey-or-worse rate: ${valueDisp}`,
       content:
-        `Across your last ${agg.rounds_played} rounds, ${valueDisp} of holes ` +
+        `Across all ${agg.rounds_played} rounds on file, ${valueDisp} of holes ` +
         `ended in double bogey or worse. ${anchorClause}. Per Research doc §4 ` +
         `this is the #1 separator between 70s and 80s rounds.` +
         causeClause + worstClause + staleDataSuffix(agg.last_round_date),
@@ -386,10 +415,9 @@ export class CourseMgmtGenerator extends BaseGenerator<CourseMgmtAggregate> {
         unit: 'percent',
         your_value: agg.metric_value,
         your_value_display: valueDisp,
-        comparison_value: 2,
-        comparison_label: 'PGA Tour avg',
-        comparison_source: 'pga_baseline',
+        ...this.comparisonFields(agg, 2, 'College cohort avg'),
         sample_n: agg.rounds_played,
+        window_basis: 'lifetime',
         window_days: agg.spanDays ?? 0,
         window_start: agg.first_round_date ?? '',
         window_end: agg.last_round_date ?? '',

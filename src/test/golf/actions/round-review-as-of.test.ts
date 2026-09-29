@@ -132,18 +132,19 @@ function baseStore(): Record<string, Row[]> {
         round_date: REVIEWED_ROUND_DATE, total_score: 72, score_to_par: 0,
         total_putts: 30, total_fairways_hit: 8, total_fairways: 14,
         total_gir: 10, total_gir_possible: 18, holes_played: 18, status: 'completed',
+        is_test: false, front_nine: 36, back_nine: 36,
         created_at: '2026-06-15T18:00:00Z',
       },
       // Past — must be INCLUDED in the as-played baseline.
-      { id: 'round-past-1', player_id: PLAYER_ID, round_date: '2026-06-01', total_score: 70, score_to_par: -2, total_putts: 28, total_fairways_hit: 9, total_fairways: 14, total_gir: 11, total_gir_possible: 18, holes_played: 18, status: 'completed', created_at: '2026-06-01T18:00:00Z' },
-      { id: 'round-past-2', player_id: PLAYER_ID, round_date: '2026-05-20', total_score: 75, score_to_par: 3, total_putts: 31, total_fairways_hit: 7, total_fairways: 14, total_gir: 9, total_gir_possible: 18, holes_played: 18, status: 'completed', created_at: '2026-05-20T18:00:00Z' },
-      { id: 'round-past-3', player_id: PLAYER_ID, round_date: '2026-05-10', total_score: 80, score_to_par: 8, total_putts: 33, total_fairways_hit: 6, total_fairways: 14, total_gir: 8, total_gir_possible: 18, holes_played: 18, status: 'completed', created_at: '2026-05-10T18:00:00Z' },
+      { id: 'round-past-1', player_id: PLAYER_ID, round_date: '2026-06-01', total_score: 70, score_to_par: -2, total_putts: 28, total_fairways_hit: 9, total_fairways: 14, total_gir: 11, total_gir_possible: 18, holes_played: 18, status: 'completed', is_test: false, front_nine: 35, back_nine: 35, created_at: '2026-06-01T18:00:00Z' },
+      { id: 'round-past-2', player_id: PLAYER_ID, round_date: '2026-05-20', total_score: 75, score_to_par: 3, total_putts: 31, total_fairways_hit: 7, total_fairways: 14, total_gir: 9, total_gir_possible: 18, holes_played: 18, status: 'completed', is_test: false, front_nine: 37, back_nine: 38, created_at: '2026-05-20T18:00:00Z' },
+      { id: 'round-past-3', player_id: PLAYER_ID, round_date: '2026-05-10', total_score: 80, score_to_par: 8, total_putts: 33, total_fairways_hit: 6, total_fairways: 14, total_gir: 8, total_gir_possible: 18, holes_played: 18, status: 'completed', is_test: false, front_nine: 40, back_nine: 40, created_at: '2026-05-10T18:00:00Z' },
       // Future — must be EXCLUDED from the as-played baseline (event-time leak).
-      { id: 'round-future-1', player_id: PLAYER_ID, round_date: '2026-07-01', total_score: 200, score_to_par: 128, total_putts: 50, total_fairways_hit: 1, total_fairways: 14, total_gir: 1, total_gir_possible: 18, holes_played: 18, status: 'completed', created_at: '2026-07-01T18:00:00Z' },
-      { id: 'round-future-2', player_id: PLAYER_ID, round_date: '2026-08-01', total_score: 210, score_to_par: 138, total_putts: 52, total_fairways_hit: 1, total_fairways: 14, total_gir: 1, total_gir_possible: 18, holes_played: 18, status: 'completed', created_at: '2026-08-01T18:00:00Z' },
+      { id: 'round-future-1', player_id: PLAYER_ID, round_date: '2026-07-01', total_score: 200, score_to_par: 128, total_putts: 50, total_fairways_hit: 1, total_fairways: 14, total_gir: 1, total_gir_possible: 18, holes_played: 18, status: 'completed', is_test: false, front_nine: 100, back_nine: 100, created_at: '2026-07-01T18:00:00Z' },
+      { id: 'round-future-2', player_id: PLAYER_ID, round_date: '2026-08-01', total_score: 210, score_to_par: 138, total_putts: 52, total_fairways_hit: 1, total_fairways: 14, total_gir: 1, total_gir_possible: 18, holes_played: 18, status: 'completed', is_test: false, front_nine: 105, back_nine: 105, created_at: '2026-08-01T18:00:00Z' },
       // Same day as the reviewed round — no trustworthy intra-day sequencing,
       // must also be EXCLUDED.
-      { id: 'round-sameday', player_id: PLAYER_ID, round_date: REVIEWED_ROUND_DATE, total_score: 999, score_to_par: 900, total_putts: 90, total_fairways_hit: 0, total_fairways: 14, total_gir: 0, total_gir_possible: 18, holes_played: 18, status: 'completed', created_at: '2026-06-15T20:00:00Z' },
+      { id: 'round-sameday', player_id: PLAYER_ID, round_date: REVIEWED_ROUND_DATE, total_score: 999, score_to_par: 900, total_putts: 90, total_fairways_hit: 0, total_fairways: 14, total_gir: 0, total_gir_possible: 18, holes_played: 18, status: 'completed', is_test: false, front_nine: 499, back_nine: 500, created_at: '2026-06-15T20:00:00Z' },
     ],
     golf_shots: [],
     golf_holes: [],
@@ -185,5 +186,28 @@ describe('computeAndStoreRoundReview — as-played historical baseline (N4)', ()
     const playerAvgs = generateReviewContent.mock.calls[0]?.[2] as { avgScore: number | null } | null;
     // A leaked future/same-day row (200/210/999) would push this well above 100.
     expect(playerAvgs?.avgScore).toBeLessThan(100);
+  });
+
+  // Audit row 39: the baseline also drops is_test rounds and rounds the
+  // countable-round rule rejects (here: an 18-hole round with no back nine
+  // recorded, and a 37-stroke implausible one).
+  it('drops test and non-countable prior rounds from the baseline', async () => {
+    vi.resetModules();
+    const store = baseStore();
+    store.golf_rounds!.push(
+      { id: 'round-test', player_id: PLAYER_ID, round_date: '2026-06-02', total_score: 150, score_to_par: 78, total_putts: 40, total_fairways_hit: 1, total_fairways: 14, total_gir: 1, total_gir_possible: 18, holes_played: 18, status: 'completed', is_test: true, front_nine: 75, back_nine: 75, created_at: '2026-06-02T18:00:00Z' },
+      { id: 'round-partial', player_id: PLAYER_ID, round_date: '2026-06-03', total_score: 140, score_to_par: 68, total_putts: 40, total_fairways_hit: 1, total_fairways: 14, total_gir: 1, total_gir_possible: 18, holes_played: 18, status: 'completed', is_test: false, front_nine: 140, back_nine: null, created_at: '2026-06-03T18:00:00Z' },
+      { id: 'round-implausible', player_id: PLAYER_ID, round_date: '2026-06-04', total_score: 37, score_to_par: -35, total_putts: 18, total_fairways_hit: 14, total_fairways: 14, total_gir: 18, total_gir_possible: 18, holes_played: 18, status: 'completed', is_test: false, front_nine: 18, back_nine: 19, created_at: '2026-06-04T18:00:00Z' },
+    );
+    const supabase = makeSupabase(store);
+    vi.doMock('@/lib/supabase/server', () => ({ createClient: async () => supabase }));
+
+    const { generateAndStoreRoundReview } = await import('@/app/golf/actions/round-review-system');
+    const result = await generateAndStoreRoundReview(REVIEWED_ROUND_ID, PLAYER_ID);
+
+    expect(result.success).toBe(true);
+    const playerAvgs = generateReviewContent.mock.calls[0]?.[2] as { avgScore: number | null } | null;
+    // Only 70/75/80 count.
+    expect(playerAvgs?.avgScore).toBe(75);
   });
 });

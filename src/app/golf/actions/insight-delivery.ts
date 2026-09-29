@@ -44,7 +44,6 @@ import { loadActiveGoals } from '@/lib/coachhelm/v3/goals/loader';
 import {
   collapseParScoring,
   dedupeBySubject,
-  rankEvidenceInsights,
   rankEvidenceInsightsScored,
 } from './insight-delivery-ranking';
 import {
@@ -317,17 +316,34 @@ function recordExposureForReturned(
   scoreById?: ReadonlyMap<string, number>,
 ): void {
   if (!Array.isArray(insights) || insights.length === 0) return;
+  // One exposure per insight per render (audit row 52): a list that carries
+  // the same insight twice (a collapsed card and its source row, an urgent
+  // row re-picked by the fallback pass) records it once, at its first
+  // position.
+  const seen = new Set<string>();
+  const unique = insights.filter((ins) => {
+    if (!ins?.id || seen.has(ins.id)) return false;
+    seen.add(ins.id);
+    return true;
+  });
   // Row construction lives in a plain module so it can be unit-tested — this
   // file is 'use server', where every export must be an async action.
   // `scoreById` is what finally populates `golf_insight_exposure.rank_score`,
   // NULL on all 127,295 rows before this: the score was computed by
-  // rankEvidenceInsights, used to sort, then dropped. Surfaces that pick a
-  // single insight without ranking pass nothing rather than a fabricated 0.
-  const rows = buildExposureRows(insights, surface, coachId, scoreById);
+  // rankEvidenceInsights, used to sort, then dropped. Every ranked surface
+  // (feeds, hub signal, roster card, round takeaway) passes it; a surface that
+  // truly did not rank passes nothing rather than a fabricated 0.
+  const rows = buildExposureRows(unique, surface, coachId, scoreById);
   // Fire-and-forget — the writer is failure-silent, so we don't await it into
   // the render path (and a rejected promise can't surface because it never
   // rejects). `void` documents the deliberate non-await.
   void recordInsightExposure(rows);
+}
+
+/** insight id → rank score, for `recordExposureForReturned`. Not exported:
+ *  this file is 'use server', where every export must be an async action. */
+function scoreMap(scored: ReadonlyArray<{ insight: { id: string }; score: number }>): Map<string, number> {
+  return new Map(scored.map((r) => [r.insight.id, r.score]));
 }
 
 // ---------------------------------------------------------------------------
@@ -433,17 +449,16 @@ async function getTopInsightForPlayerImpl(
     // reduces to ordering by the real composite among urgent rows), then
     // apply the SAME dedupe/collapse pass so a multi-row par-scoring urgent
     // group collapses the same way it would in the feed.
+    const urgentScored = await rankEvidenceInsightsScored(urgentInsights, weights, activeGoals, supabase);
     const rankedUrgent = dedupeBySubject(
-      collapseParScoring(
-        await rankEvidenceInsights(urgentInsights, weights, activeGoals, supabase),
-      ),
+      collapseParScoring(urgentScored.map((r) => r.insight)),
     );
     // P1-09: only return an urgent row the player hasn't dismissed; if every
     // urgent candidate is dismissed, fall through to the ranked pass below
     // (which also filters, over the full non-urgent-and-urgent set).
     const overlaid = applyPlayerFeedbackOverlay(rankedUrgent, await getFeedback());
     if (overlaid.length > 0 && overlaid[0]) {
-      recordExposureForReturned([overlaid[0]], 'hub_signal');
+      recordExposureForReturned([overlaid[0]], 'hub_signal', null, scoreMap(urgentScored));
       return overlaid[0];
     }
   }
@@ -487,12 +502,13 @@ async function getTopInsightForPlayerImpl(
   // Rank with the shared `scoreInsight` composite, then collapse par-scoring
   // + dedupe by subject — EXACTLY the feed pipeline — so the single-pick
   // agrees with the list feed.
-  const ranked = await rankEvidenceInsights(
+  const rankedScored = await rankEvidenceInsightsScored(
     rows.map(mapRowToEvidenceInsight).filter((r): r is EvidenceInsight => r !== null),
     weights,
     activeGoals,
     supabase,
   );
+  const ranked = rankedScored.map((r) => r.insight);
 
   // P1-09: apply the feedback overlay (hide dismissed, attach state) so the
   // single-pick agrees with the feed, which also overlays.
@@ -502,7 +518,7 @@ async function getTopInsightForPlayerImpl(
   );
   const top = overlaid[0] ?? null;
   // Only the single insight the Hub signal card actually shows is recorded.
-  if (top) recordExposureForReturned([top], 'hub_signal');
+  if (top) recordExposureForReturned([top], 'hub_signal', null, scoreMap(rankedScored));
   return top;
 }
 
@@ -673,7 +689,7 @@ async function getInsightsForPlayerImpl(
   const weights = await loadCoachWeightsForPlayer(supabase, playerId).catch(() => ({}));
   const activeGoals = await loadActiveGoals(playerId).catch(() => []);
   const rankedScored = await rankEvidenceInsightsScored(filtered, weights, activeGoals, supabase);
-  const scoreById = new Map(rankedScored.map((r) => [r.insight.id, r.score]));
+  const scoreById = scoreMap(rankedScored);
   const ranked = rankedScored.map((r) => r.insight);
 
   // Finding 29: apply the SAME (player:category:metric-subject) dedupe the
@@ -890,7 +906,7 @@ async function getInsightsForCoachWithMetaImpl(
   const rankedScored = await rankEvidenceInsightsScored(mapped, weights, goals, supabase);
   // Keyed by id so it survives collapse + dedupe + slice below, which all
   // preserve ids while reordering and dropping rows.
-  const scoreById = new Map(rankedScored.map((r) => [r.insight.id, r.score]));
+  const scoreById = scoreMap(rankedScored);
   const ranked = dedupeBySubject(collapseParScoring(rankedScored.map((r) => r.insight)));
 
   // P058: `total` is the FULL eligible count (post rank + dedupe, pre-slice),
@@ -1056,14 +1072,15 @@ async function getTopInsightsForPlayersImpl(
   // N+1 Sentry flagged as JAVASCRIPT-NEXTJS-R2 on /golf/dashboard/stats/team.
   const exposureRows: ReturnType<typeof buildExposureRows> = [];
   for (const [pid, list] of byPlayer) {
-    const rankedInsights = await rankEvidenceInsights(list, {}, [], supabase);
-    const ranked = dedupeBySubject(collapseParScoring(rankedInsights));
+    const rankedScored = await rankEvidenceInsightsScored(list, {}, [], supabase);
+    const ranked = dedupeBySubject(collapseParScoring(rankedScored.map((r) => r.insight)));
     const sliced = ranked.slice(0, limit);
     out.set(pid, sliced);
     // Each player's surfaced head insight(s) on the roster card — rank_position
     // is per-player, so rows are built per player. coach_id is unknown here
-    // (RLS-scoped sweep, not a resolved coach row) so it's left null.
-    exposureRows.push(...buildExposureRows(sliced, 'roster_card'));
+    // (RLS-scoped sweep, not a resolved coach row) so it's left null. The
+    // score is the neutral-weights score this sweep actually ranked on.
+    exposureRows.push(...buildExposureRows(sliced, 'roster_card', null, scoreMap(rankedScored)));
   }
   // Fire-and-forget, failure-silent — same contract as recordExposureForReturned.
   if (exposureRows.length > 0) void recordInsightExposure(exposureRows);
@@ -1178,12 +1195,13 @@ async function getRoundTakeawayInsightImpl(
   const rows = (data ?? []) as unknown as RawInsightRowWithDrills[];
   const weights = await loadCoachWeightsForPlayer(supabase, playerId).catch(() => ({}));
   const activeGoals = await loadActiveGoals(playerId).catch(() => []);
-  const ranked = await rankEvidenceInsights(
+  const rankedScored = await rankEvidenceInsightsScored(
     rows.map(mapRowToEvidenceInsight).filter((r): r is EvidenceInsight => r !== null),
     weights,
     activeGoals,
     supabase,
   );
+  const ranked = rankedScored.map((r) => r.insight);
   // Same collapse + dedupe pass every other surface applies, so a 3-row
   // par-scoring group collapses to the same one card here too.
   const deduped = dedupeBySubject(collapseParScoring(ranked));
@@ -1199,7 +1217,7 @@ async function getRoundTakeawayInsightImpl(
 
   const takeaway = overlaid[0] ?? null;
   // Only the single takeaway insight the round-review card shows is recorded.
-  if (takeaway) recordExposureForReturned([takeaway], 'round_review');
+  if (takeaway) recordExposureForReturned([takeaway], 'round_review', null, scoreMap(rankedScored));
   return takeaway;
 }
 

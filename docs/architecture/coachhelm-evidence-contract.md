@@ -1438,7 +1438,17 @@ description for the full item-by-item map. Two items are named here as
 genuine, currently-open gaps rather than built, because both need
 product/owner decisions or a migration this slice does not make:
 
-- **Uncertainty (variance/SE/CI on the observed lift)**: neither
+- **Uncertainty (variance/SE/CI on the observed lift)**: CLOSED for the
+  round-level path on 2026-09-28 (deep audit row 35): `causality/
+  attribute.ts` now writes `method_version: 'v3_did_prewindow'`, a
+  difference-in-differences lift against a matched pre-window control
+  with a t-based 95% interval (`lift_ci_low`/`lift_ci_high`), the
+  standardized `lift_z` the coach-weight EMA consumes, and a
+  `MIN_RATIO_OPPORTUNITIES` floor for ratio metrics (migration
+  20260928230000). Legacy NULL `method_version` rows are excluded from
+  `attribution-read.ts`. Still open for the comparable-opportunities
+  module: it does not compute or store an interval alongside
+  `observedChange`. The original gap as written: neither
   `causality/attribute.ts`'s round-level path nor this doc's
   comparable-opportunities module above computes or stores a confidence
   interval or standard error alongside `observedChange`/`improvement_lift`
@@ -1982,6 +1992,84 @@ structured `ShadowEvalReport`.
   matrix, including the established-roster ones where a violation would
   actually have something to happen to.
 
+## Measured `strokes_impact` and ranking (2026-09-28, deep audit defect 1)
+
+`evidence.strokes_impact` is what the feed ranks on (`scoreInsightFactors`,
+`ranking/score.ts`). It is a **measured per-round figure from the player's own
+data**, not a display projection:
+
+```text
+strokes/round = attempts per round × rate gap to target × strokes per event
+```
+
+`measuredStrokesImpact` / `rateGapStrokes` (`counterfactual/measured-impact.ts`)
+implement it. It is written even when the counterfactual line is suppressed
+under the 0.3-stroke display floor: the "Closing this gap" copy stays hidden,
+the row simply ranks on strokes instead of on the priority floor. A metric
+that declares an `attempt_metric` never falls back to the per-unit lookup
+constant here (those constants are tuning choices, not measurements).
+
+Per generator (attempts per round; gap; strokes per event; notes):
+
+- `putt_distance`
+  - Attempts: band attempts / cache `rounds_played`.
+  - Gap: counterfactual target (plausible cohort → gender anchor → Tour)
+    minus make %.
+  - Strokes per event: 1.
+  - `attempts_per_round` also feeds the base counterfactual (defect 7).
+- `approach_miss`
+  - Attempts: band attempts / every round in the 90-day window with an
+    approach.
+  - Gap: green-hit anchor minus green-hit %.
+  - Strokes per event: the player's own mean expected strokes after a miss
+    minus after a hit (`getExpectedStrokes`); reference 0.61 when fewer than
+    3 of either.
+  - 175+ yd excludes par-5 second shots. The target is the green-hit anchor
+    (no team/level green-hit cohort exists yet). Inputs are in
+    `detail.strokes_impact_inputs`.
+- `par_scoring`
+  - Attempts: the player's own holes of that par per round.
+  - Gap: per-par average minus plausible cohort `level_avg` (else Tour).
+  - Strokes per event: 1. Capped at the per-par ceiling; 0 without a
+    standing row.
+- `putt_bias`
+  - Attempts: weak-side putts in the winning cut / rounds.
+  - Gap: strong-side minus weak-side make % (player vs self).
+  - Strokes per event: 1. Directional rows only; balanced rows are 0.
+- `warmup_hole`
+  - Attempts: 1 opener per round.
+  - Gap: opener delta minus Tour 0.1.
+  - The row exists only when the 95% interval on the delta excludes 0.
+
+`par_scoring` and `warmup_hole` stay floor-exempt: the base keeps their
+composed value, so the generator's measured figure is what ranks them.
+
+Other contract changes in the same pass:
+
+- **`par_scoring.sample_n` is ROUNDS** (was the hole count, read as rounds by
+  every "n rounds" reader). Holes are in `detail.holes_scored`;
+  `detail.sample_unit = 'rounds'`, `detail.window_kind = 'lifetime'`,
+  `window_start` = first contributing round. A row's
+  `evidenceRevisionKey` (`sample_n|window_end`) changes once on the next run.
+- **Intervals.** `putt_distance` publishes `detail.make_ci_low/high` and
+  `approach_miss` `detail.green_hit_ci_low/high` (95% Wilson), both also in the
+  prose. `approach_miss` no longer emits below 8 attempts (was 5).
+- **`putt_bias`.** No row when no distance-and-slope cut has 15 putts per
+  side (the test never ran; a stale row retracts). Cut p-values are
+  Holm-adjusted over the cuts tested. A balanced row carries the pooled make %
+  and n per side (`your_value` = left-to-right, `comparison_value` =
+  right-to-left), never 0 vs 0.
+- **Confidence calibration is a documented no-op.** The calibration table holds
+  prediction types only, so the ranker uses the generator's raw support score
+  and never reads `golf_confidence_calibration`.
+- **Exposure.** Every ranked surface (coach feed, player feed, hub signal,
+  roster card, round takeaway) writes `rank_score`; one exposure per insight
+  per render. `rank_factors` (migration `20260928130000`, HOLD) is not written
+  until that column exists.
+- **`bubble_player` retired.** The v2 adapter (`toInsightInput`) no longer
+  persists it: the label came from headline keywords, not from the worst SG
+  category. Per-category SG lives in the `sg_*` standings.
+
 ## How to add a new comparison source
 
 1. Append to `InsightComparisonSource` and `COMPARISON_SOURCES` in `types.ts`.
@@ -2010,3 +2098,27 @@ structured `ShadowEvalReport`.
 | `src/lib/coachhelm/v2/orchestrator.ts` | Tier-1 generator dispatch + `generatorSummary` |
 | `src/lib/coachhelm/v3/engine/analysis-outcome.ts` | Post-round outcome |
 | `src/test/coachhelm/v2/insights/baseline-registry.test.ts` | Static guard catching hard-coded `comparison_source` strings |
+
+## Relationship ("moves with") evidence (2026-09-28)
+
+Owner decision "honest correlation" (CoachHelm deep audit rows 33/34 and
+defect 3). `golf_causal_relationships` holds correlations, not causes; no
+surface may call them causal, root causes or mechanisms.
+
+- Storage gate (`src/lib/coachhelm/v3/causality/correlation-gate.ts`,
+  applied by `v2/mining/causal-engine.ts`): >= 15 paired rounds, two-sided
+  t-test p-value on Pearson r, Benjamini-Hochberg q < 0.05 across the
+  player's hypotheses in the run, |r| >= 0.3, and no score-arithmetic pair
+  (a score component -> score_to_par). On seeded pure-noise data the per-
+  player false-positive rate is under 7% (test), against roughly 28% for
+  the old |r| >= 0.3 gate.
+- Evidence contract (`evidence` jsonb): `method: 'correlation_v1'`,
+  signed `correlation`, `sampleN`, `pValue`, `qValue`,
+  `hypothesesTested`, `lagCorrelation`, plus descriptive
+  `temporalPrecedence`, `doseResponseConfirmed`, `naturalExperiments`.
+  `strength` = |r|; `confidence` = 1 - q (a significance measure).
+- Read contract (`src/app/golf/actions/causal-relationships.ts`): a row is
+  shown only if its evidence passes the gate, it was re-confirmed within 60
+  days, and its player has a completed non-test round within 60 days.
+- Linked patterns (`chains.ts`): every hop gated, no arithmetic hop, signs
+  consistent with any direct edge between chain nodes; sign carried.

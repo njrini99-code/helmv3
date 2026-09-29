@@ -35,6 +35,7 @@ describe('Phase E cross-engine — shot-source engines genuinely window 90d (hon
       reached_green_n: 15, failed_escape_n: 5, avg_leave_feet: 14,
       two_putt_after_reach_n: 10, failure_mode: 'mixed',
       cohort_gender: 'mens', attempts_per_round: 1,
+      save_n: 20, saves_made: 9, save_source: 'hole_flag',
     });
     expect(c.evidence.window_days).toBe(90);
   });
