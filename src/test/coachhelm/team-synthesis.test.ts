@@ -58,6 +58,34 @@ function sig(
 }
 
 describe('synthesizeTeamSignals', () => {
+  it('grades severity on the per-player leak, calibrated to the 2026-09 distribution', () => {
+    // 2026-09-28 prod: 16 cards over active players, per-player mean |impact|
+    // p25 0.52, p75 0.90, p90 1.43, max 2.00. The old 12/6/3 combined bands
+    // came from one 18-stroke cluster; the current max combined is 8.00.
+    const card = (per: number) =>
+      synthesizeTeamSignals(['p1', 'p2', 'p3'].map((p) => sig(p, 'm', per)))[0]!.severity;
+    expect(card(1.6)).toBe('urgent');
+    expect(card(1.0)).toBe('high');
+    expect(card(0.6)).toBe('medium');
+    expect(card(0.3)).toBe('low');
+    // A big roster no longer reads urgent from size alone: 10 x 0.4 = 4.0 combined.
+    const big = synthesizeTeamSignals(
+      Array.from({ length: 10 }, (_, k) => sig(`p${k}`, 'm', 0.4)),
+    )[0]!;
+    expect(big.strokeImpact).toBeCloseTo(4, 5);
+    expect(big.severity).toBe('low');
+  });
+
+  it('leaves out players with no recent round when an active set is given', () => {
+    const rows = ['p1', 'p2', 'p3', 'p4'].map((p) => sig(p, 'm', 1.0));
+    const active = new Set(['p1', 'p2', 'p3']);
+    const [card] = synthesizeTeamSignals(rows, { activePlayerIds: active });
+    expect(card!.strokeImpact).toBeCloseTo(3, 5);
+    expect(card!.claim).toMatch(/^3 players/);
+    // Below the floor once the inactive players drop out.
+    expect(synthesizeTeamSignals(rows, { activePlayerIds: new Set(['p1', 'p2']) })).toEqual([]);
+  });
+
   it('emits one team signal for a leak shared across the roster', () => {
     const team = synthesizeTeamSignals([
       sig('p1', 'putts_made_3_5ft_pct', 2.0),

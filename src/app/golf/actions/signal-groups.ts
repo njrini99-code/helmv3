@@ -30,6 +30,12 @@ import {
   type SignalGroup,
 } from '@/lib/coachhelm/signal-grouping';
 import { synthesizeTeamSignals } from '@/lib/coachhelm/v3/insights/team-synthesis';
+import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
+import {
+  recentWindowStart,
+  recentlyActivePlayerIds,
+  type RecentRoundInput,
+} from '@/lib/coachhelm/recent-players';
 import { acknowledgeInsight, dismissInsight } from './intelligence-dashboard';
 import { markPatternAddressed, dismissPattern } from './pattern-management';
 import { describeError } from '@/lib/utils/describe-error';
@@ -242,9 +248,37 @@ async function getSignalGroupsImpl(
     // written (0 of 615 insights are team-scoped in production). Synthesize it
     // here from the per-player signals we already hold, so a team card can
     // only ever cite leaks the coach can open individually below it.
+    //
+    // A team card totals only players with a countable round in the recent
+    // window (recent-players.ts): the 2026-09 audit found a card summing five
+    // players who had not played in 60 days. A failed rounds read degrades to
+    // the unfiltered roster (logged) rather than blanking the Team bucket.
+    const since = recentWindowStart(new Date().toISOString().slice(0, 10));
+    const recentRounds =
+      teamPlayerIds.length > 0
+        ? await fetchAllRowsResult<RecentRoundInput>((from, to) =>
+            supabase
+              .from('golf_rounds')
+              .select('player_id, round_date, holes_played, total_score, front_nine, back_nine, total_putts')
+              .in('player_id', teamPlayerIds)
+              .eq('status', 'completed')
+              .eq('is_test', false)
+              .gte('round_date', since)
+              .order('id', { ascending: true })
+              .range(from, to),
+          )
+        : { data: [] as RecentRoundInput[], error: null };
+    if (recentRounds.error) {
+      await logServerError(
+        `getSignalGroups recent-rounds read failed; team cards use the whole roster: ${describeError(recentRounds.error)}`,
+        { action: 'signal_groups.getSignalGroups.recentRounds', metadata: { teamId } },
+        'warning',
+      );
+    }
+    const activePlayerIds = recentRounds.error ? undefined : recentlyActivePlayerIds(recentRounds.data ?? [], since);
     const perPlayerSignals = [...insightSignals, ...patternSignals];
     const groups = groupSignals(
-      [...perPlayerSignals, ...synthesizeTeamSignals(perPlayerSignals)],
+      [...perPlayerSignals, ...synthesizeTeamSignals(perPlayerSignals, { activePlayerIds })],
       playerNames,
     );
 
