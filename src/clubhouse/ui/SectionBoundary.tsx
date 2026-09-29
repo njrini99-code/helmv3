@@ -13,17 +13,17 @@ export class SectionBoundary extends Component<
   { surface: string; label: string; children: ReactNode },
   { failed: boolean }
 > {
-  state = { failed: false };
+  override state = { failed: false };
 
   static getDerivedStateFromError() {
     return { failed: true };
   }
 
-  componentDidCatch(error: Error, info: ErrorInfo) {
+  override componentDidCatch(error: Error, info: ErrorInfo) {
     chReport(error, { surface: this.props.surface, severity: 'high', extra: { componentStack: info.componentStack ?? undefined } });
   }
 
-  render() {
+  override render() {
     if (!this.state.failed) return this.props.children;
     return (
       <InlineNotice
