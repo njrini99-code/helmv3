@@ -56,8 +56,10 @@ Starting the next session:
 3. Waiting on designs: CoachHelm, Rounds, Practice, Lineups, Events,
    Scouting, the player app, the phone foundation (push prompt, pull to
    refresh), and each page's mobile design.
-4. Open for the owner: Q-1's migration (written, not applied), marking #2102
-   ready for review, and the live pass on a Vercel preview (Q-4).
+4. Nothing gets applied: no migrations, no deploys, the flag stays off
+   (owner, 2026-09-29). Work that needs a schema change is written as a
+   migration and left unapplied. Open for the owner: marking #2102 ready for
+   review, and the live pass on a Vercel preview (Q-4).
 
 ## Screens
 
@@ -104,7 +106,7 @@ Starting the next session:
 
 ## Open owner questions
 
-- Q-1 Roster status: decided 2026-09-29, add a separate availability field. The migration `supabase/migrations/20260929120000_golf_team_members_availability.sql` is written and not applied (review, then `npm run db:apply`, then `npm run db:types`). The Roster pill stays read-only until the column exists.
+- Q-1 Roster status: decided 2026-09-29, add a separate availability field. The migration `supabase/migrations/20260929120000_golf_team_members_availability.sql` is written and stays unapplied: the owner is not applying migrations (2026-09-29). The Roster pill stays read-only.
 - Q-2 Navigation: decided 2026-09-29, Practice and Events stay hidden until each has its own design.
 - Q-3 Phone specs: decided 2026-09-29 (D-22). The owner's mobile designs in `design/handoff/mobile/` are the phone specs; the drafts in `docs/clubhouse/phone/` only matter for pages without one, and still need approval.
 - Q-4 Rollout: decided 2026-09-29, the flag stays off in production; the owner does a live pass on a Vercel preview with real coach and player accounts first.
