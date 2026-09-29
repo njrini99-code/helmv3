@@ -657,10 +657,10 @@ const SG_AREAS: ReadonlySet<MetricFamily> = new Set<MetricFamily>(['putting', 'a
  * tested before the generic `sg_` and before the generic `putt`.
  */
 const FAMILY_BY_KEY: ReadonlyArray<readonly [RegExp, MetricFamily, MetricFamily | null]> = [
-  [/^sg_putting|strokes_gained_putting/, 'putting', 'sg'],
-  [/^sg_approach|strokes_gained_approach/, 'approach', 'sg'],
-  [/^sg_(?:tee|off_tee|ott)|strokes_gained_(?:tee|off_tee)/, 'tee', 'sg'],
-  [/^sg_around|strokes_gained_around|around_green/, 'around_green', 'sg'],
+  [/(?:^sg_putting)|(?:strokes_gained_putting)/, 'putting', 'sg'],
+  [/(?:^sg_approach)|(?:strokes_gained_approach)/, 'approach', 'sg'],
+  [/(?:^sg_(?:tee|off_tee|ott))|(?:strokes_gained_(?:tee|off_tee))/, 'tee', 'sg'],
+  [/(?:^sg_around)|(?:strokes_gained_around)|(?:around_green)/, 'around_green', 'sg'],
   [/^sg_|^sg$|strokes_gained/, 'sg', null],
   [/three_putt|3_putt/, 'three_putt', null],
   [/one_putt|1_putt/, 'one_putt', null],
