@@ -75,8 +75,10 @@ screen.
 
 ## Open owner questions
 
-- Q-1 Roster status: the design's Inactive means "injured, still on the team", but in the database an inactive member loses RLS access to team data (`is_team_player`). The status pill is read-only until you choose: add a separate `availability` field (recommended, via a migration), or accept that Inactive locks the player out.
-- Q-2 Navigation: Practice and Events have no route. Should they point at existing screens, or wait for their own designs?
+- Q-1 Roster status: decided 2026-09-29, add a separate availability field. The migration `supabase/migrations/20260929120000_golf_team_members_availability.sql` is written and not applied (review, then `npm run db:apply`, then `npm run db:types`). The Roster pill stays read-only until the column exists.
+- Q-2 Navigation: decided 2026-09-29, Practice and Events stay hidden until each has its own design.
+- Q-3 Phone specs (`docs/clubhouse/phone/*.md`): the owner is reviewing them. Nothing phone-specific is built until each file says `Status: approved`.
+- Q-4 Rollout: decided 2026-09-29, the flag stays off in production; the owner does a live pass on a Vercel preview with real coach and player accounts first.
 
 ## Data gaps (shown honestly, never invented)
 
