@@ -126,6 +126,7 @@ export async function loadCoachHome(input: { teamId: string; coachName: string }
     .select('timezone')
     .eq('team_id', input.teamId)
     .maybeSingle();
+  // CH-2210: without the team's timezone, Home reads the week in Eastern time (the product default).
   if (settingsError) log('timezone', settingsError);
   const tz = settings?.timezone || 'America/New_York';
 
@@ -163,6 +164,7 @@ export async function loadCoachHome(input: { teamId: string; coachName: string }
       .eq('status', 'active'),
     supabase.from('golf_conversations').select('id').eq('team_id', input.teamId).eq('is_team_chat', true).order('created_at', { ascending: true }).limit(1),
   ]);
+  // CH-2208: without the team chat, Message team opens Messages instead.
   if (chatRes.error) log('team chat', chatRes.error);
 
   // ── Week ──
@@ -206,6 +208,7 @@ export async function loadCoachHome(input: { teamId: string; coachName: string }
       supabase.from('golf_event_attendance').select('id, event_id, player_id, status').in('event_id', ids).order('id', { ascending: true }).range(from, to),
     );
     if (error) {
+      // CH-2209: without replies, agenda rows drop who is invited and the confirmed count, never "0 players".
       log('attendance', error);
       attendanceError = true;
       break;

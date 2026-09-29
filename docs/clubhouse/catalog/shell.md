@@ -55,6 +55,7 @@ sheet open.
 | CH-1606 | Pressing any button, row or tab | It presses in to 98.5% | `--ch-press-scale` | preview |
 | CH-1607 | The first Tab on a page | Skip to content slides into view (150ms) | `.ch-skip` | preview |
 | CH-1608 | Animations off in Settings, or the OS asks for reduced motion | Every Clubhouse transition is instant | `data-motion="off"`, `useChReducedMotion` | settings.test › CH-8608 |
+| CH-1609 | A page or section is loading | Skeletons shimmer left to right (1.4s loop); they hold still when Animations is off or motion is reduced | `.ch-skel` | preview |
 
 ## 17xx Haptics (iOS app only; off when Haptics is off in Settings)
 
@@ -87,6 +88,7 @@ sheet open.
 | CH-1902 | A save takes longer than 5 seconds (forms, switches and CoachHelm settings) | "Still saving…" + "This is taking longer than usual. Keep this page open." (once per save) | `useAction`, `useInstantSave`, the CoachHelm queue; `CH_SLOW_SAVE_AFTER` | shell.test › CH-1902 |
 | CH-1903 | Someone saves while offline | "Couldn't save your profile: you're offline" (the action named) + "Reconnect, then try again. Nothing was changed." Nothing is sent and switches don't flip | `useAction`, `useInstantSave`, CoachHelm queue | shell.test › CH-1903 |
 | CH-1904 | Moving to another page | The new page opens at the top, never halfway down | `RouteFrame` resets the canvas scroll | preview |
+| CH-1905 | Someone presses Try again on a notice while offline | The notice adds "You're offline. Reconnect, then try again." (warning haptic) and nothing is retried; the line leaves when the connection returns | `InlineNotice` | shell.test › CH-1905 |
 | CH-1951 | Someone clicks the same thing over and over (rage click) | Nothing on screen | Sentry Replay in production. Partial: only 10% of sessions are recorded, plus every session that has an error, so most rage clicks are not seen. No Clubhouse-side detector yet | existing |
 | CH-1952 | A click that does nothing (dead click) | Nothing on screen | Sentry Replay, same 10% plus error sessions | existing |
 | CH-1953 | A slow response to a click (slow click) | Nothing on screen | Sentry Replay, same 10% plus error sessions | existing |

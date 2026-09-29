@@ -406,6 +406,10 @@
   background-size: 200% 100%;
   animation: ch-shimmer 1.4s linear infinite;
 }
+/* Animations off in Settings: skeletons hold still. */
+.ch-root[data-motion='off'] .ch-skel {
+  animation: none;
+}
 @keyframes ch-shimmer {
   from {
     background-position: 100% 0;

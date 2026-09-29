@@ -49,7 +49,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `INCIDENT` | 47 | 15 | 2 | 2 |
 | `ADR` | 5 | 0 | 3 | 0 |
 | `INDEX` | 21 | 1 | 7 | 5 |
-| `UNKNOWN` | 167 | 12 | 40 | 78 |
+| `UNKNOWN` | 167 | 12 | 40 | 79 |
 
 ## Files
 
@@ -665,7 +665,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/clubhouse/phone/stats-team.md` | current | - | - | - | - |
 | `docs/clubhouse/screens/calendar.md` | current | - | - | - | - |
 | `docs/clubhouse/screens/foundation.md` | current | - | - | - | - |
-| `docs/clubhouse/screens/home.md` | current | - | - | - | - |
+| `docs/clubhouse/screens/home.md` | current | - | - | - | 1 |
 | `docs/clubhouse/screens/messages.md` | current | - | - | - | - |
 | `docs/clubhouse/screens/roster.md` | current | - | - | - | - |
 | `docs/clubhouse/screens/settings.md` | current | - | - | - | - |

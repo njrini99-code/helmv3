@@ -5,6 +5,12 @@ import { Icon } from '../../ui/Icon';
 import { EmptyState } from '../../ui/States';
 import { RefreshNotice } from './RefreshNotice';
 
+/** What the dots under a day say to a screen reader. */
+export function dayLabel(count: number, competition: boolean): string {
+  const events = count === 0 ? 'no events' : count === 1 ? '1 event' : `${count} events`;
+  return competition ? `competition, ${events}` : events;
+}
+
 export function Week({ week }: { week: ChCoachHome['week'] }) {
   const todayRows = week.agenda.filter((r) => r.when === 'today');
   const laterRows = week.agenda.filter((r) => r.when === 'later');
@@ -16,6 +22,7 @@ export function Week({ week }: { week: ChCoachHome['week'] }) {
 
       {week.error ? (
         <RefreshNotice
+          code="CH-2201"
           title="This week's schedule didn't load."
           body="Your events are safe. This is a display problem, and trying again usually clears it."
         />
@@ -30,13 +37,14 @@ export function Week({ week }: { week: ChCoachHome['week'] }) {
               >
                 <span className="ch-h-day__d">{d.weekday}</span>
                 <span className="ch-h-day__n ch-num">{d.dayOfMonth}</span>
-                <span className="ch-h-day__m" aria-label={d.hasCompetition ? 'Competition' : `${d.eventCount} events`}>
+                <span className="ch-h-day__m" aria-hidden="true">
                   {d.hasCompetition ? (
                     <Icon icon={Flag} size={11} />
                   ) : (
                     Array.from({ length: Math.min(d.eventCount, 4) }, (_, i) => <i key={i} />)
                   )}
                 </span>
+                <span className="ch-sr-only">{dayLabel(d.eventCount, d.hasCompetition)}</span>
               </li>
             ))}
           </ol>
@@ -44,7 +52,7 @@ export function Week({ week }: { week: ChCoachHome['week'] }) {
           <div className="ch-h-agenda">
             <div className="ch-h-agenda__label">Today</div>
             {todayRows.length === 0 && (
-              <EmptyState compact icon={CalendarDays} title="Nothing on the calendar today." />
+              <EmptyState code="CH-2301" compact icon={CalendarDays} title="Nothing on the calendar today." />
             )}
             {todayRows.map((r) => (
               <AgendaRow key={r.id} r={r} />

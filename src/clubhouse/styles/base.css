@@ -89,5 +89,7 @@
   .ch-root *::after {
     transition-duration: 1ms !important;
     animation-duration: 1ms !important;
+    /* A looping animation at 1ms would strobe: run it once and stop. */
+    animation-iteration-count: 1 !important;
   }
 }

@@ -31,7 +31,7 @@ vi.mock('@/app/golf/actions/unified-notifications', () => ({ getUnifiedNotificat
 
 import type { UnifiedNotificationItem } from '@/app/golf/actions/unified-notifications-model';
 import { ToastProvider } from '../ui/Toast';
-import { RouteErrorView, type RouteErrorKind } from '../ui/Notices';
+import { InlineNotice, RouteErrorView, type RouteErrorKind } from '../ui/Notices';
 import { Bell, BellSourceProvider, type ChBellApi } from '../shell/Bell';
 import { NotRebuilt } from '../shell/NotRebuilt';
 import { OfflineBanner } from '../shell/OfflineBanner';
@@ -205,6 +205,22 @@ describe('Shell · network', () => {
     await act(async () => void vi.advanceTimersByTime(CH_SLOW_SAVE_AFTER + 10));
     await expectCode('CH-1902', /Still saving/);
     await act(async () => resolve({ success: true }));
+  });
+
+  it('CH-1905 Try again while offline says so instead of failing again', async () => {
+    const user = userEvent.setup();
+    const retry = vi.fn();
+    wrap(<InlineNotice code="CH-2201" title="This week's schedule didn't load." onRetry={retry} />);
+    setOnline(false);
+    await user.click(screen.getByRole('button', { name: 'Try again' }));
+    await expectCode('CH-1905', /You're offline/);
+    expect(retry).not.toHaveBeenCalled();
+    expect(hapticSpy).toHaveBeenCalledWith('warning');
+    setOnline(true);
+    act(() => void window.dispatchEvent(new Event('online')));
+    await waitFor(() => expect(code('CH-1905')).toBeNull());
+    await user.click(screen.getByRole('button', { name: 'Try again' }));
+    expect(retry).toHaveBeenCalled();
   });
 
   it('CH-1903 a save while offline is refused and nothing is sent', async () => {

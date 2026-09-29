@@ -80,11 +80,12 @@ export function LatestRound({ data }: { data: ChCoachHome['latestRounds'] }) {
 
       {data.error ? (
         <RefreshNotice
+          code="CH-2202"
           title="Recent rounds didn't load."
           body="Posted rounds are safe. Try again, and if it keeps happening the error has already been reported."
         />
       ) : !r ? (
-        <EmptyState icon={Flag} title="No rounds posted yet this season." body="The newest 18-hole round appears here as soon as a player posts it." />
+        <EmptyState code="CH-2302" icon={Flag} title="No rounds posted yet this season." body="The newest 18-hole round appears here as soon as a player posts it." />
       ) : (
         <div className="ch-h-round-frame">
           <AnimatePresence mode="popLayout" initial={false} custom={dir}>
@@ -111,12 +112,13 @@ export function LatestRound({ data }: { data: ChCoachHome['latestRounds'] }) {
               </div>
 
               {r.holes ? (
-                <div className="ch-h-card ch-well-soft">
+                // On a phone the card scrolls sideways, so it takes focus for arrow-key scrolling (CH-2806).
+                <div className="ch-h-card ch-well-soft" role="region" aria-label={`${r.playerName}'s scorecard`} tabIndex={0}>
                   <Nine label="Out" holes={r.holes.slice(0, 9)} />
                   <Nine label="In" holes={r.holes.slice(9)} />
                 </div>
               ) : (
-                <div className="ch-h-card ch-h-card--none ch-well-soft">
+                <div className="ch-h-card ch-h-card--none ch-well-soft" data-ch-code={data.holesError ? 'CH-2203' : 'CH-2303'}>
                   {data.holesError
                     ? 'Hole-by-hole scores didn’t load for this round. The total above is correct.'
                     : 'Posted as a total. Hole-by-hole scores weren’t recorded for this round.'}

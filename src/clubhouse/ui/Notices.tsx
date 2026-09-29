@@ -1,9 +1,11 @@
 'use client';
 
 import { CircleAlert, RotateCw } from 'lucide-react';
-import type { ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { Icon } from './Icon';
 import { Button } from './Button';
+import { haptic } from '../lib/haptics';
+import { isOffline } from '../lib/use-action';
 
 export function InlineNotice({
   title,
@@ -17,15 +19,36 @@ export function InlineNotice({
   /** Catalog number (docs/clubhouse/catalog). */
   code?: string;
 }) {
+  // Try again while offline would fail the same way: say so instead (CH-1905).
+  const [offline, setOffline] = useState(false);
+  useEffect(() => {
+    if (!offline) return;
+    const back = () => setOffline(false);
+    window.addEventListener('online', back);
+    return () => window.removeEventListener('online', back);
+  }, [offline]);
+  const retry = () => {
+    if (isOffline()) {
+      haptic('warning');
+      setOffline(true);
+      return;
+    }
+    onRetry?.();
+  };
   return (
     <div className="ch-notice ch-notice--danger" role="alert" data-ch-code={code}>
       <Icon icon={CircleAlert} size={16} className="ch-notice__icon" />
       <div className="ch-notice__txt">
         <p className="ch-notice__title">{title}</p>
         {body && <p className="ch-notice__body">{body}</p>}
+        {offline && (
+          <p className="ch-notice__body" data-ch-code="CH-1905">
+            You&apos;re offline. Reconnect, then try again.
+          </p>
+        )}
       </div>
       {onRetry && (
-        <Button size="sm" variant="secondary" leftIcon={RotateCw} onClick={onRetry}>
+        <Button size="sm" variant="secondary" leftIcon={RotateCw} onClick={retry}>
           Try again
         </Button>
       )}

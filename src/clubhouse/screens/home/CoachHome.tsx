@@ -23,14 +23,14 @@ export function CoachHome({ data }: { data: ChCoachHome }) {
         <HomeActions teamChatId={data.teamChatId} />
       </header>
       <div className="ch-h-sheet ch-sheet">
-        <SectionBoundary surface="home.week" label="This week">
+        <SectionBoundary surface="home.week" label="This week" code="CH-2205">
           <Week week={data.week} />
         </SectionBoundary>
-        <SectionBoundary surface="home.latestRound" label="The latest round">
+        <SectionBoundary surface="home.latestRound" label="The latest round" code="CH-2206">
           <LatestRound data={data.latestRounds} />
         </SectionBoundary>
       </div>
-      <SectionBoundary surface="home.leaderboard" label="The leaderboard">
+      <SectionBoundary surface="home.leaderboard" label="The leaderboard" code="CH-2207">
         <Leaderboard data={data.leaderboard} />
       </SectionBoundary>
     </main>
@@ -43,6 +43,7 @@ export function CoachHomeNoTeam() {
     <main className="ch-h-main">
       <div className="ch-h-lb ch-sheet">
         <EmptyState
+          code="CH-2307"
           icon={Users}
           title="You aren't on a team yet."
           body="Once your head coach adds you to the program, or you finish setting up your team, Home shows your week, rounds and leaderboard."

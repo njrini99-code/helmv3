@@ -4,7 +4,7 @@ import '../../styles/home.css';
 /** Route loading for Home: the same frame as the page, so nothing shifts when data lands. */
 export function HomeSkeleton() {
   return (
-    <main className="ch-h-main" aria-busy="true" aria-label="Loading Home">
+    <main className="ch-h-main" aria-busy="true" aria-label="Loading Home" data-ch-code="CH-2401">
       <header className="ch-h-head">
         <Skeleton width={140} height={13} />
         <Skeleton width={360} height={44} radius={10} />
