@@ -139,6 +139,7 @@ export function PreviewSettings({ state, section }: { state?: string; section?: 
       savePhilosophy: (id) => wait(state === 'failwrites' ? { success: false } : { success: true, data: { id: id ?? 'ph1' } }),
       deleteAccount: r,
       signOut: async () => {},
+      cleanupAfterDelete: async () => {},
       refresh: () => {},
     };
   }, [state]);

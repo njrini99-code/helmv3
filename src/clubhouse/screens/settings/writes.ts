@@ -12,6 +12,7 @@ import { PHILOSOPHY_DEFAULTS } from '@/lib/coachhelm/constants';
 import { tsToDb } from '@/lib/coachhelm/philosophy-map';
 import { isNativeApp } from '@/lib/utils/capacitor';
 import { fromUntyped } from '@/lib/supabase/untyped';
+import { chReport } from '../../lib/track';
 import type { ChResult, ChSettingsWrites } from './model';
 
 /**
@@ -47,7 +48,9 @@ export function createLiveWrites(ctx: {
 
     async uploadAvatar(file) {
       if (!file.type.startsWith('image/')) return { success: false, error: 'Choose an image file.' };
-      if (file.size > 5 * 1024 * 1024) return { success: false, error: 'Photos must be under 5 MB.' };
+      // The avatars bucket caps uploads at 2 MB (JPEG, PNG, GIF, WebP).
+      if (!/^image\/(jpeg|png|gif|webp)$/.test(file.type)) return { success: false, error: 'Use a JPEG, PNG, GIF or WebP photo.' };
+      if (file.size > 2 * 1024 * 1024) return { success: false, error: 'Photos must be under 2 MB.' };
       const ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
       // Same bucket and folder rule as the current avatar upload (storage RLS keys on the user folder).
       const path = `${ctx.userId}/avatar-${Date.now()}.${ext}`;
@@ -106,6 +109,7 @@ export function createLiveWrites(ctx: {
 
     async saveTeam(t) {
       const at = new Date().toISOString();
+      if (t.org && !t.org.name.trim()) return { success: false, error: 'The school needs a name.' };
       if (t.org) {
         // Blank clears the field (the current page couldn't clear one once set).
         const blank = (v: string) => (v.trim() === '' ? null : v.trim());
@@ -198,8 +202,16 @@ export function createLiveWrites(ctx: {
       return r.ok && body.success ? { success: true } : { success: false, error: body.error || `Delete failed (${r.status})` };
     },
 
+    async cleanupAfterDelete() {
+      // The account is gone server-side; clear this device too before leaving.
+      clearAllCachedResources();
+      await clearActiveTeam().catch((err: unknown) => chReport(err, { surface: 'settings.session', action: 'clearActiveTeam', severity: 'low' }));
+      await sb.auth.signOut().catch((err: unknown) => chReport(err, { surface: 'settings.session', action: 'signOutAfterDelete', severity: 'low' }));
+      window.location.assign(afterDeleteHref());
+    },
+
     async signOut() {
-      await clearActiveTeam().catch(() => undefined);
+      await clearActiveTeam().catch((err: unknown) => chReport(err, { surface: 'settings.session', action: 'clearActiveTeam', severity: 'low' }));
       clearAllCachedResources();
       await sb.auth.signOut();
       window.location.href = '/golf/login';

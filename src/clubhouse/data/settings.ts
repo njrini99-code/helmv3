@@ -15,8 +15,9 @@ import type { ChCoachHelmSettings, ChScoring, ChSettingsData } from '../screens/
 /**
  * Settings (Clubhouse). Every read the page needs, in one server pass, each
  * with its own error flag. Reads the same tables the current Settings page
- * reads; nothing here writes (the old client created default rows on read;
- * Clubhouse creates them on the first save instead).
+ * reads. The only write is the existing team CoachHelm row create, and only
+ * for the head coach (the one role RLS lets create it); every other default
+ * row is created on the first save instead.
  */
 
 type Supabase = Awaited<ReturnType<typeof createClient>>;
@@ -202,11 +203,20 @@ async function loadCoachHelm(
 
   let team: ChCoachHelmSettings['team'] = null;
   if (teamId) {
-    // The existing action creates the team row on first read, exactly as the current page does.
-    const [settings, access] = await Promise.all([getOrCreateTeamCoachHelmSettings(teamId), getTeamCoachHelmAccess(teamId)]);
-    if (!settings.success || !settings.settings) log('teamCoachhelm', settings.error ?? 'no settings', 'coachhelm_ai');
-    else team = { enabled: settings.settings.enabled, disabledAt: settings.settings.disabled_at, isHeadCoach: access.success ? access.isHeadCoach : false };
+    const access = await getTeamCoachHelmAccess(teamId);
     if (!access.success) log('teamCoachhelmAccess', access.error ?? 'unknown', 'coachhelm_ai');
+    const head = access.success && access.isHeadCoach;
+    if (head) {
+      // The head coach may create the team row on first read, as the current page does.
+      const settings = await getOrCreateTeamCoachHelmSettings(teamId);
+      if (!settings.success || !settings.settings) log('teamCoachhelm', settings.error ?? 'no settings', 'coachhelm_ai');
+      else team = { enabled: settings.settings.enabled, disabledAt: settings.settings.disabled_at, isHeadCoach: true };
+    } else {
+      // Assistants only read; with no row yet, CoachHelm is on for the team (the default).
+      const { data, error } = await _supabase.from('golf_team_coachhelm_settings').select('enabled, disabled_at').eq('team_id', teamId).maybeSingle();
+      if (error) log('teamCoachhelm', error, 'coachhelm_ai');
+      else team = { enabled: data?.enabled ?? true, disabledAt: data?.disabled_at ?? null, isHeadCoach: false };
+    }
   }
 
   const c = chCoachRes.data;

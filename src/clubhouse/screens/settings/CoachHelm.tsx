@@ -343,17 +343,17 @@ function PowerCard({ initial, writes }: { initial: ChCoachHelmSettings; writes: 
         />
       </Row>
       {coach.enabled && (
-        <div className="ch-set-nested">
-          <Row label="Insights">
+        <>
+          <Row label="Insights" help="Coaching notes on what changed and why.">
             <Switch label="Insights" hideLabel checked={coach.showInsights} busy={save.pending.has('showInsights')} onChange={(v) => void setC({ showInsights: v }, "Couldn't change insights")} />
           </Row>
-          <Row label="Predictions">
+          <Row label="Predictions" help="Where each player's scoring is heading.">
             <Switch label="Predictions" hideLabel checked={coach.showPredictions} busy={save.pending.has('showPredictions')} onChange={(v) => void setC({ showPredictions: v }, "Couldn't change predictions")} />
           </Row>
-          <Row label="Patterns">
+          <Row label="Patterns" help="Leaks and habits that repeat across rounds.">
             <Switch label="Patterns" hideLabel checked={coach.showPatterns} busy={save.pending.has('showPatterns')} onChange={(v) => void setC({ showPatterns: v }, "Couldn't change patterns")} />
           </Row>
-        </div>
+        </>
       )}
       <Modal
         open={confirmOff}

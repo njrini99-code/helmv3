@@ -253,6 +253,8 @@ export interface ChSettingsWrites {
   savePhilosophy: (id: string | null, patch: Partial<CoachPhilosophy>) => Promise<ChResult<{ id: string }>>;
   deleteAccount: () => Promise<ChResult>;
   signOut: () => Promise<void>;
+  /** After a successful delete: clear this device's session and caches, then leave. */
+  cleanupAfterDelete: () => Promise<void>;
   /** After a save that changes what the server renders (names, team). */
   refresh: () => void;
 }

@@ -83,7 +83,7 @@ function TeamCard({ team, writes }: { team: ChTeamInfo; writes: ChSettingsWrites
         <>
           <div className="ch-set-sub">School</div>
           <div className="ch-set-grid">
-            <Field id="set-org-name" label="School name" span={2} value={org.name} onChange={(e) => setOrg('name', e.target.value)} />
+            <Field id="set-org-name" label="Name" span={2} value={org.name} onChange={(e) => setOrg('name', e.target.value)} />
             <Field id="set-org-city" label="City" value={org.city} onChange={(e) => setOrg('city', e.target.value)} />
             <Field id="set-org-state" label="State" maxLength={2} placeholder="NC" value={org.state} onChange={(e) => setOrg('state', e.target.value.toUpperCase())} />
             <Field id="set-org-div" label="Division" placeholder="NCAA D1" value={org.division} onChange={(e) => setOrg('division', e.target.value)} />
@@ -130,26 +130,23 @@ function InviteCard({ code: initial, writes }: { code: string; writes: ChSetting
   };
   return (
     <Card id="set-invite" title="Invite players" description="Players join with this code, then you approve them from Roster.">
-      <div className="ch-set-code">
-        <div className="ch-set-code__v ch-inset">
-          <span className="ch-set-code__k">Invite code</span>
-          <b className="ch-num" aria-live="polite">
-            {code}
-          </b>
-        </div>
-        <div className="ch-set-code__acts">
-          <Button size="sm" leftIcon={Copy} onClick={() => void copy('code')}>
-            Copy code
+      <Row label="Invite code" help="Share it, or send the join link.">
+        <b className="ch-set-code ch-num" aria-live="polite">
+          {code}
+        </b>
+      </Row>
+      <div className="ch-set-acts">
+        <Button size="sm" leftIcon={Copy} onClick={() => void copy('code')}>
+          Copy code
+        </Button>
+        <Button size="sm" leftIcon={Link2} onClick={() => void copy('link')}>
+          Copy link
+        </Button>
+        {canShare && (
+          <Button size="sm" leftIcon={Share2} onClick={() => void share()}>
+            Share
           </Button>
-          <Button size="sm" leftIcon={Link2} onClick={() => void copy('link')}>
-            Copy link
-          </Button>
-          {canShare && (
-            <Button size="sm" leftIcon={Share2} onClick={() => void share()}>
-              Share
-            </Button>
-          )}
-        </div>
+        )}
       </div>
       <Row label="New code" help="Stops the current code from working right away. Anyone mid-join will need the new one.">
         <Button size="sm" variant="secondary" leftIcon={RefreshCw} disabled={regen.pending} onClick={() => setConfirm(true)}>

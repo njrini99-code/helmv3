@@ -1,13 +1,13 @@
 'use client';
 
-import { Clock, LogOut, Users } from 'lucide-react';
+import { Clock, LogOut } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '../../ui/Button';
 import { Icon } from '../../ui/Icon';
 import { Modal } from '../../ui/Modal';
 import { useAction } from '../../lib/use-action';
 import { golfDetailsProblem, type ChGolfDetails, type ChSettingsData, type ChSettingsWrites } from './model';
-import { Card, Field, ReadFailed, SaveBar, useDraft, useReportDirty } from './parts';
+import { Card, Field, ReadFailed, Row, SaveBar, useDraft, useReportDirty } from './parts';
 
 export function GolfSection({ data, writes }: { data: ChSettingsData; writes: ChSettingsWrites }) {
   return (
@@ -69,18 +69,11 @@ function MembershipCard({ m, writes }: { m: Membership; writes: ChSettingsWrites
   if (m.team) {
     return (
       <Card id="set-membership" title="Team" description="The team you play for on GolfHelm.">
-        <div className="ch-set-team">
-          <span className="ch-set-team__ic">
-            <Icon icon={Users} size={18} />
-          </span>
-          <span>
-            <b>{m.team.name}</b>
-            {m.team.orgName && <span>{m.team.orgName}</span>}
-          </span>
+        <Row label={m.team.name} help={m.team.orgName ?? undefined}>
           <Button size="sm" variant="ghost" leftIcon={LogOut} onClick={() => setLeaving(true)}>
             Leave team
           </Button>
-        </div>
+        </Row>
         <Modal
           open={leaving}
           onClose={() => !leave.pending && setLeaving(false)}

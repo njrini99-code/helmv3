@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { createContext, useCallback, useContext, useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { useNotificationBadges } from '@/contexts/notification-badge-context';
+import { isSafeInternalPath } from '@/lib/utils/safe-redirect';
 import { getUnifiedNotifications, markAllNotificationsRead, markNotificationRead } from '@/app/golf/actions/unified-notifications';
 import {
   DAY_BUCKET_LABEL,
@@ -179,7 +180,8 @@ export function Bell() {
       void api.markRead(item).catch((err: unknown) => chReport(err, { surface: 'shell.bell', action: 'markRead', severity: 'low' }));
     }
     close(false);
-    if (item.action_url) router.push(item.action_url);
+    // Stored links are only followed inside GolfHelm: a notification can never send someone off-site.
+    if (isSafeInternalPath(item.action_url)) router.push(item.action_url);
   };
 
   const unread = api.unread;

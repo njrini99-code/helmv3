@@ -1,7 +1,7 @@
 'use client';
 
 import * as Sentry from '@sentry/nextjs';
-import { Camera, ExternalLink, KeyRound, LifeBuoy, LogOut, Mail, Trash2, UserRound } from 'lucide-react';
+import { Camera, ExternalLink, KeyRound, LifeBuoy, LogOut, Trash2, UserRound } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { Avatar } from '../../ui/Avatar';
 import { Button } from '../../ui/Button';
@@ -13,7 +13,7 @@ import { haptic } from '../../lib/haptics';
 import { chReport, chTrail } from '../../lib/track';
 import { useAction } from '../../lib/use-action';
 import { emailProblem, passwordProblem, type ChProfileInput, type ChSettingsData, type ChSettingsWrites } from './model';
-import { Card, Field, ReadFailed, SaveBar, useDraft, useReportDirty } from './parts';
+import { Card, Field, ReadFailed, Row, SaveBar, useDraft, useReportDirty } from './parts';
 
 export function AccountSection({ data, writes, onDeleted }: { data: ChSettingsData; writes: ChSettingsWrites; onDeleted: () => void }) {
   return (
@@ -91,7 +91,7 @@ function ProfileCard({ data, profile, writes }: { data: ChSettingsData; profile:
         </span>
         <div className="ch-set-photo__txt">
           <b>Photo</b>
-          <span>A square photo works best. Up to 5 MB.</span>
+          <span>A square photo works best. JPEG, PNG or WebP, up to 2 MB.</span>
           <div className="ch-set-photo__acts">
             <Button size="sm" leftIcon={Camera} disabled={uploading} onClick={() => file.current?.click()}>
               {uploading ? 'Uploading…' : f.draft.avatarUrl ? 'Replace photo' : 'Add photo'}
@@ -105,7 +105,7 @@ function ProfileCard({ data, profile, writes }: { data: ChSettingsData; profile:
           <input
             ref={file}
             type="file"
-            accept="image/*"
+            accept="image/jpeg,image/png,image/gif,image/webp"
             hidden
             onChange={(e) => {
               const picked = e.target.files?.[0];
@@ -138,13 +138,9 @@ function EmailCard({ email, writes }: { email: string | null; writes: ChSettings
   const problem = next.trim() ? emailProblem(next, email) : null;
   return (
     <Card id="set-email" title="Email" description="Where GolfHelm sends sign-in links and email notifications.">
-      <div className="ch-inset ch-set-kv">
-        <span>
-          <Icon icon={Mail} size={15} />
-          Current
-        </span>
-        <b>{email ?? 'No email on file'}</b>
-      </div>
+      <Row label="Current email">
+        <span className="ch-set-value">{email ?? 'No email on file'}</span>
+      </Row>
       {sentTo && (
         <InlineNotice title={`Check ${sentTo}.`} body="Open the link in that inbox to finish the change. Your current email works until then." />
       )}

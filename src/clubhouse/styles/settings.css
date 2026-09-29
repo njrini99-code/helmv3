@@ -196,18 +196,6 @@
 .ch-set-row.is-dim .ch-set-row__l {
   color: var(--ch-text-secondary);
 }
-.ch-set-nested {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  margin-left: 12px;
-  padding-left: 16px;
-  border-left: 2px solid var(--ch-border-hairline);
-}
-.ch-set-nested > .ch-set-row:first-child {
-  padding-top: 0;
-  border-top: 0;
-}
 .ch-set-group {
   display: flex;
   flex-direction: column;
@@ -247,26 +235,25 @@
 .ch-set-inline > .ch-btn {
   margin-top: 25px;
 }
-.ch-set-kv {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  font: 400 13.5px/1.3 var(--ch-font-sans);
-}
-.ch-set-kv span {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  color: var(--ch-text-tertiary);
-}
-.ch-set-kv b {
-  min-width: 0;
+/* A read-only value on a row, and a row of actions under it. */
+.ch-set-value {
+  max-width: 320px;
   overflow: hidden;
-  font-weight: 500;
-  color: var(--ch-text-primary);
+  font: 400 14px/1.3 var(--ch-font-sans);
+  color: var(--ch-text-secondary);
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+.ch-set-code {
+  font: 600 18px/1 var(--ch-font-mono);
+  letter-spacing: 0.1em;
+  color: var(--ch-green-800);
+}
+.ch-set-acts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: -4px;
 }
 
 /* Profile photo */
@@ -430,33 +417,6 @@
   gap: 2px;
 }
 
-/* Invite code */
-.ch-set-code {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 14px;
-}
-.ch-set-code__v {
-  display: grid;
-  gap: 6px;
-}
-.ch-set-code__k {
-  font: 500 12px/1 var(--ch-font-sans);
-  color: var(--ch-text-tertiary);
-}
-.ch-set-code__v b {
-  font: 600 22px/1 var(--ch-font-mono);
-  letter-spacing: 0.12em;
-  color: var(--ch-green-800);
-}
-.ch-set-code__acts {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-
 /* Sliders stack */
 .ch-set-sliders {
   display: flex;
@@ -528,38 +488,24 @@
   gap: 2px;
 }
 
-/* Team membership */
-.ch-set-team,
+/* Join requests */
 .ch-set-request {
   display: flex;
   align-items: center;
   gap: 12px;
 }
-.ch-set-team > span:nth-child(2),
 .ch-set-request > span {
   display: grid;
   flex: 1;
   gap: 2px;
   min-width: 0;
 }
-.ch-set-team b,
 .ch-set-request b {
-  font: 500 14.5px/1.3 var(--ch-font-sans);
+  font: 500 14px/1.3 var(--ch-font-sans);
 }
-.ch-set-team span span,
 .ch-set-request span span {
-  font: 400 13px/1.3 var(--ch-font-sans);
+  font: var(--ch-type-caption);
   color: var(--ch-text-tertiary);
-}
-.ch-set-team__ic {
-  display: grid;
-  flex: none;
-  place-items: center;
-  width: 40px;
-  height: 40px;
-  border-radius: 12px;
-  background: var(--ch-green-50);
-  color: var(--ch-green-700);
 }
 .ch-set-request > svg {
   color: var(--ch-warning-600);

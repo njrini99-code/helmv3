@@ -6,7 +6,7 @@ import { usePushSubscription } from '@/hooks/golf/use-push-subscription';
 import { isNativeApp } from '@/lib/utils/capacitor';
 import type { ChDevice, ChSettingsData, ChSettingsSection } from './model';
 import { SettingsView } from './SettingsView';
-import { afterDeleteHref, createLiveWrites } from './writes';
+import { createLiveWrites } from './writes';
 
 /** The live Settings: server data from the route, the real writes, this device's push and haptics. */
 export function Settings({ data, section }: { data: ChSettingsData; section: ChSettingsSection }) {
@@ -28,5 +28,5 @@ export function Settings({ data, section }: { data: ChSettingsData; section: ChS
     [data.role, data.userId, data.email, data.coachId, data.playerId, data.teamId, router],
   );
   const device: ChDevice = { native, push };
-  return <SettingsView data={data} writes={writes} device={device} initialSection={section} onDeleted={() => window.location.assign(afterDeleteHref())} />;
+  return <SettingsView data={data} writes={writes} device={device} initialSection={section} onDeleted={() => void writes.cleanupAfterDelete()} />;
 }
