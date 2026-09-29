@@ -10,6 +10,7 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { withAdminObserved } from '@/lib/admin/observed-action';
+import { calendarUnreadCutoffIso } from './unified-notifications-model';
 
 interface ActionResult<T = void> {
   success: boolean;
@@ -71,7 +72,10 @@ async function getCoachNotificationCountsImpl(
         .from('golf_calendar_notifications')
         .select('id', { count: 'exact', head: true })
         .eq('user_id', viewerId)
-        .is('read_at', null) as Promise<{ count: number | null; error: unknown }>,
+        .is('read_at', null)
+        // Older calendar rows no longer count as unread (audit row 56); the
+        // feed collapses them into one summary item. Same cutoff as the feed.
+        .gte('created_at', calendarUnreadCutoffIso()) as Promise<{ count: number | null; error: unknown }>,
 
       // 2. Conversations the coach participates in
       supabase

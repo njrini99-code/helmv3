@@ -24,6 +24,7 @@ import {
   getPenaltyCategory,
   type RawShot,
 } from '@/lib/utils/golf-stats-calculator-shots';
+import { WOMENS_SG_SCALE } from '@/lib/golf/sg-benchmarks';
 
 /**
  * Per-shot Strokes Gained, scaled to the player's team baseline (women's
@@ -38,6 +39,18 @@ import {
  */
 export function computeShotStrokesGained(shot: RawShot, scale = 1): number | null {
   return calculateStrokesGainedForShot(shot, scale);
+}
+
+/**
+ * The curve a resolved `sg_scale_for_player` value selects, for labelling
+ * per-shot SG (audit row 46: the filmstrip showed shot SG with no word on
+ * what it was measured against). The DB knows exactly two baselines
+ * (`sg_baseline_scale`: pga_tour 1.0, womens 1.083), so the scale identifies
+ * the curve; anything else resolves the way the DB's ELSE branch does.
+ * "LPGA Tour" matches RoundSGSummary's caption for the same scale.
+ */
+export function sgBaselineLabelForScale(scale: number): 'PGA Tour' | 'LPGA Tour' {
+  return Math.abs(scale - WOMENS_SG_SCALE) < 0.001 ? 'LPGA Tour' : 'PGA Tour';
 }
 
 /**

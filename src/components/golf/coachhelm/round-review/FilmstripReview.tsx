@@ -29,6 +29,7 @@ import {
   type RawGolfShotRow,
   type ReviewShotInput,
 } from './round-review-shots';
+import { sgBaselineLabelForScale } from './shot-strokes-gained';
 import { StandingBar } from '@/components/golf/coachhelm/v3/StandingBar';
 import { getMetricRenderConfig } from '@/lib/coachhelm/v3/standing/metric-config';
 import type { PlayerStanding } from '@/lib/coachhelm/v3/standing/types';
@@ -132,6 +133,7 @@ export function FilmstripReview({
 }: FilmstripReviewProps) {
   const [shotsByHole, setShotsByHole] = useState<Map<number, ReviewShotInput[]> | null>(null);
   const [shotsError, setShotsError] = useState<string | null>(null);
+  const [sgBaselineLabel, setSgBaselineLabel] = useState<string | null>(null);
   const supabase = useMemo(() => createClient(), []);
 
   // Focus-area prescription — the same FocusAreaModal PlayersGridView and
@@ -179,6 +181,7 @@ export function FilmstripReview({
         // Keep the unscaled (1.0) default — see comment above.
       }
       if (cancelled) return;
+      setSgBaselineLabel(sgBaselineLabelForScale(sgScale));
 
       const { data, error } = await supabase
         .from('golf_shots')
@@ -332,6 +335,7 @@ export function FilmstripReview({
         holeMeta={holeMeta}
         shotsByHole={shotsByHole}
         playerId={playerId}
+        sgBaselineLabel={sgBaselineLabel}
       />
       {shotsError ? (
         <p className="font-fw-sans text-caption italic text-text-tertiary">

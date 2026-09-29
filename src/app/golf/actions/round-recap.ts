@@ -6,8 +6,11 @@
  *
  * Voice and tone:
  *   - Magazine beat-reporter: declarative, concrete, no hype.
- *   - Lead with the one fact that defines the round (best score, putt
- *     trouble, fairways saved the day, finishing kick, etc.).
+ *   - Lead with the one round-level fact that defines the round (best
+ *     score in a stretch, putt trouble, fairways or greens). No hole-level
+ *     ledes: the prompt carries round totals only.
+ *   - Two sentences, <= 36 words, no em-dash — enforced before persisting
+ *     (recap-style.ts); a reply that breaks them falls back to the template.
  *   - Second sentence is forward-looking: what to take into the next
  *     round, framed as a takeaway not a verdict.
  *
@@ -44,14 +47,15 @@ import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { compose } from '@/lib/coachhelm/v3/llm/compose';
-import { buildRecapEvidence, buildRecapEvidencePacket } from '@/lib/coachhelm/v3/llm/recap-evidence';
+import { buildRecapEvidencePacket, buildRecapFieldEvidence } from '@/lib/coachhelm/v3/llm/recap-evidence';
+import { buildDeterministicRecap, checkRecapStyle } from '@/lib/coachhelm/v3/llm/recap-style';
 import { isFlagEnabled } from '@/lib/flags';
 import { pct } from '@/lib/golf/stat-formulas';
 import { loadRecapSeasonContext } from '@/lib/golf/recap-season-context';
 import { withAdminObserved } from '@/lib/admin/observed-action';
 import { verifyPlayerAccess } from '@/lib/auth/verify-player-access';
 import { gateUserAction, LLM_COMPOSE_RATE_LIMIT } from '@/lib/auth/action-rate-limit';
-import { logServerError } from '@/lib/server-error-logger';
+import { logServerError, logServerEvent } from '@/lib/server-error-logger';
 import { describeError } from '@/lib/utils/describe-error';
 import { acquireRoundLockOrWait, type RoundLockOutcome } from '@/lib/coachhelm/round-single-flight-lock';
 
@@ -567,12 +571,13 @@ async function generateLLMRecap(
 
   const prompt = `You are a golf magazine beat reporter writing a two-sentence post-round recap. Voice: editorial, declarative, concrete, no hype, no clichés (avoid "showed up", "performance", "solid round"). Match the calm authority of The New York Times sports desk.
 
-Lead with the one fact that defines this round — best score in a stretch, putt trouble, fairways saving the day, finishing kick, blowup hole, etc. Use the data provided to pick which thread is the lede. The second sentence is forward-looking: a takeaway for the next round, framed as observation not verdict.
+Lead with the one fact from the round data below that defines this round: a best score in a stretch, putting, fairways or greens. Use only the round totals given; you have no hole-by-hole data, so never describe individual holes. The second sentence is forward-looking: a takeaway for the next round, framed as observation not verdict.
 
 Strict rules:
 - Exactly two sentences.
-- ≤ 36 words total.
-- No exclamation points. No emojis. No em-dashes — use periods or commas.
+- 36 words or fewer in total.
+- No exclamation points. No emojis. No dashes between clauses; use commas or periods.
+- Put each number right next to the stat it belongs to (for example "31 putts", "50% of greens").
 - Refer to the player as "${playerName}" in the third person, or as "you" in the second person. Never the first person, and never any other name.
 - Don't restate the score number more than once.
 - Reference at least one specific stat by number.
@@ -604,7 +609,15 @@ Output only the two sentences. Nothing else.`;
       // Register what the `facts` block already shows the model — not a
       // loosening of the verifier, which still rejects any figure we did not
       // hand over. See `recap-evidence.ts` for the production measurements.
-      evidence: buildRecapEvidence(facts),
+      // Field-aware (audit row 40a): each figure is registered under the
+      // stat it belongs to, so a true number in the wrong slot ("31
+      // fairways" when 31 is the putt count) fails verification. Figures
+      // inside the course/city names pass only as bare numbers.
+      evidence: buildRecapFieldEvidence(round, stats, fir, gir, [
+        round.course_name ?? '',
+        round.course_city ?? '',
+        round.course_state ?? '',
+      ]),
       evidence_packet: evidencePacket,
       max_completion_tokens: 120, // ~36 words × ~3 tokens/word + buffer
     },
@@ -618,6 +631,20 @@ Output only the two sentences. Nothing else.`;
   const claim_packet_engaged = evidencePacket !== undefined;
   if (!trimmed || trimmed.length < 30 || trimmed.length > 400) {
     return { text: null, used_llm: false, call_log_id: result.call_log_id, claim_packet_engaged };
+  }
+  // The prompt's style limits, enforced before anything is persisted (audit
+  // row 40b). A model reply that breaks them is replaced by the template,
+  // which meets them by construction (recap-style.test.ts).
+  if (result.used_llm) {
+    const violations = checkRecapStyle(trimmed, [round.course_name ?? '', playerName]);
+    if (violations.length > 0) {
+      await logServerEvent(`round recap: model reply broke style limits (${violations.join(', ')}); using template`, {
+        action: 'generateRoundRecap.style',
+        featureArea: 'coachhelm',
+        extra: { roundId: round.id, violations, callLogId: result.call_log_id },
+      });
+      return { text: fallbackText, used_llm: false, call_log_id: result.call_log_id, claim_packet_engaged };
+    }
   }
   return { text: trimmed, used_llm: result.used_llm, call_log_id: result.call_log_id, claim_packet_engaged };
 }
@@ -648,65 +675,4 @@ async function resolveBillingCoachId(
     .limit(1)
     .maybeSingle();
   return staff?.coach_id ?? null;
-}
-
-// --- Deterministic fallback ----------------------------------------------
-
-function buildDeterministicRecap(
-  round: RoundContext,
-  stats: PlayerStatContext | null,
-): string {
-  const stp = round.score_to_par ?? 0;
-  const score = round.total_score ?? 0;
-  const fir =
-    round.total_fairways_hit !== null && round.total_fairways !== null
-      ? pct(round.total_fairways_hit, round.total_fairways)
-      : null;
-  const gir =
-    round.total_gir !== null && round.total_gir_possible !== null
-      ? pct(round.total_gir, round.total_gir_possible)
-      : null;
-
-  // The stats-cache scoring_average and best_round are 18-hole figures, so
-  // comparing a 9-hole total against them produces nonsense ("37 strokes
-  // below the season average") — and the recap is persisted to
-  // golf_rounds.ai_recap. Skip those comparison ledes entirely for short
-  // rounds; the score-to-par / putts / fairways / GIR threads stay honest at
-  // any hole count.
-  const is18HoleRound = (round.holes_played ?? 18) === 18;
-
-  // Pick the lede thread by what's most defining
-  let lede: string;
-  if (is18HoleRound && stats?.scoring_average && score < stats.scoring_average - 1) {
-    const delta = (stats.scoring_average - score).toFixed(1);
-    lede = `${score} on the card, ${delta} strokes below the season average.`;
-  } else if (is18HoleRound && stats?.best_round && score < stats.best_round) {
-    lede = `${score} sets a new low for the season.`;
-  } else if (stp < 0) {
-    lede = `${score} dipped under par — the kind of round the rest of the season measures itself against.`;
-  } else if (round.total_putts !== null && round.holes_played && round.total_putts / round.holes_played > 2) {
-    lede = `${score} on the card, but the putter cost ${round.total_putts} strokes on ${round.holes_played} holes.`;
-  } else if (fir !== null && fir > 75) {
-    lede = `${score} built off the tee — ${fir}% of fairways found.`;
-  } else if (gir !== null && gir < 40) {
-    lede = `${score}, with the approach game leaking — only ${gir}% of greens.`;
-  } else {
-    lede = `${score} on the card at ${round.course_name ?? 'the course'}.`;
-  }
-
-  // Forward-looking takeaway
-  let takeaway: string;
-  if (round.total_putts !== null && round.holes_played && round.total_putts / round.holes_played > 2) {
-    takeaway = 'Short-game reps before the next outing should pay back what the lag putts gave away.';
-  } else if (gir !== null && gir < 50) {
-    takeaway = 'Tighter approach proximity is the next thread — the scoring window opens with green-hit rate.';
-  } else if (fir !== null && fir < 50) {
-    takeaway = 'A more reliable tee shot would compound the gains everywhere else.';
-  } else if (stp < 0) {
-    takeaway = 'Hold this advantage — the drills supporting it are the ones to keep on the practice plan.';
-  } else {
-    takeaway = 'The next round is where this baseline gets tested.';
-  }
-
-  return `${lede} ${takeaway}`;
 }

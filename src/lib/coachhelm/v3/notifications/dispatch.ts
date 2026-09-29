@@ -42,30 +42,64 @@ import { describeError } from '@/lib/utils/describe-error';
 type DbNotificationType = Database['public']['Enums']['notification_type'];
 
 /**
- * Map a CoachHelm category → the foundation push/email `NotificationType` (so
- * the delivery clients' own per-user gate aligns) AND the closest `notifications`
- * enum value for the in-app receipt. The true semantic category is always
- * preserved in the receipt's `data.category`, so no enum widening is needed.
+ * Map a CoachHelm category to the foundation push/email `NotificationType`, so
+ * the delivery clients' own per-user gate lines up. `coach_assigned_goal` goes
+ * through `coachhelm_insight` like every other category: the settings panel
+ * describes the CoachHelm group as "AI insights, goals and coaching signals",
+ * and `dev_plan_assigned` rendered the push as "New Development Plan" with an
+ * empty body.
  */
-interface CategoryDelivery {
-  /** push/email channel type the delivery clients switch on. */
-  deliveryType: NotificationType;
-  /** in-app receipt enum value (closest existing `notification_type`). */
-  inAppType: DbNotificationType;
+const CATEGORY_DELIVERY_TYPE: Record<NotificationCategory, NotificationType> = {
+  round_review_ready: 'coachhelm_insight',
+  coach_assigned_goal: 'coachhelm_insight',
+  goal_achieved: 'coachhelm_insight',
+  goal_missed: 'coachhelm_insight',
+  new_insight: 'coachhelm_insight',
+  composite_insight: 'coachhelm_insight',
+  weekly_digest: 'coachhelm_insight',
+  coach_commented: 'coachhelm_insight',
+  engine_suggested_goal: 'coachhelm_insight',
+  standing_percentile_changed: 'coachhelm_insight',
+};
+
+/**
+ * Per-category in-app receipt type (`coachhelm_<category>`).
+ *
+ * `notifications.type` is the Postgres enum `notification_type`. The
+ * `coachhelm_*` values are added by
+ * supabase/migrations/20260928120000_notification_type_coachhelm_categories.sql.
+ * Until that migration is applied in production and `npm run db:types` is
+ * rerun, inserting one would fail, so this switch stays false and every
+ * receipt keeps the legacy `dev_plan_assigned` value. Readers classify
+ * CoachHelm rows by `data.coachhelm_category` first
+ * (unified-notifications-model.ts), so both the legacy and the new values read
+ * correctly. Flip this to true in the follow-up that lands after the
+ * migration.
+ */
+export const COACHHELM_PER_CATEGORY_IN_APP_TYPES = false;
+
+/** The legacy value every CoachHelm receipt was stamped with. */
+export const LEGACY_COACHHELM_IN_APP_TYPE = 'dev_plan_assigned' as const;
+
+/** The per-category enum value, once the migration is applied. */
+export function coachHelmInAppTypeName(category: NotificationCategory): `coachhelm_${NotificationCategory}` {
+  return `coachhelm_${category}`;
 }
 
-const CATEGORY_DELIVERY: Record<NotificationCategory, CategoryDelivery> = {
-  round_review_ready: { deliveryType: 'coachhelm_insight', inAppType: 'dev_plan_assigned' },
-  coach_assigned_goal: { deliveryType: 'dev_plan_assigned', inAppType: 'dev_plan_assigned' },
-  goal_achieved: { deliveryType: 'coachhelm_insight', inAppType: 'dev_plan_assigned' },
-  goal_missed: { deliveryType: 'coachhelm_insight', inAppType: 'dev_plan_assigned' },
-  new_insight: { deliveryType: 'coachhelm_insight', inAppType: 'dev_plan_assigned' },
-  composite_insight: { deliveryType: 'coachhelm_insight', inAppType: 'dev_plan_assigned' },
-  weekly_digest: { deliveryType: 'coachhelm_insight', inAppType: 'dev_plan_assigned' },
-  coach_commented: { deliveryType: 'coachhelm_insight', inAppType: 'dev_plan_assigned' },
-  engine_suggested_goal: { deliveryType: 'coachhelm_insight', inAppType: 'dev_plan_assigned' },
-  standing_percentile_changed: { deliveryType: 'coachhelm_insight', inAppType: 'dev_plan_assigned' },
-};
+/**
+ * The `notifications.type` value a receipt for `category` is written with.
+ * `perCategory` defaults to the module switch; it's a parameter so the test
+ * can pin both branches.
+ */
+export function inAppTypeFor(
+  category: NotificationCategory,
+  perCategory: boolean = COACHHELM_PER_CATEGORY_IN_APP_TYPES,
+): DbNotificationType {
+  if (!perCategory) return LEGACY_COACHHELM_IN_APP_TYPE;
+  // The generated enum only gains these values after `npm run db:types`
+  // runs against the migrated schema.
+  return coachHelmInAppTypeName(category) as unknown as DbNotificationType;
+}
 
 export interface DispatchArgs {
   /** golf_players.id of the recipient player. */
@@ -199,7 +233,7 @@ async function createInAppReceipt(args: {
     const admin = createAdminClient();
     const { error } = await admin.from('notifications').insert({
       user_id: args.userId,
-      type: CATEGORY_DELIVERY[args.category].inAppType,
+      type: inAppTypeFor(args.category),
       title: args.title,
       body: args.body,
       action_url: args.action_url ?? null,
@@ -274,10 +308,14 @@ export async function dispatchCoachHelmNotification(args: DispatchArgs): Promise
       });
     }
 
-    const deliveryType = CATEGORY_DELIVERY[args.category].deliveryType;
+    const deliveryType = CATEGORY_DELIVERY_TYPE[args.category];
     const payload: Record<string, unknown> = {
       ...(args.data ?? {}),
       coachhelm_category: args.category,
+      // Every dispatch goes to a PLAYER. push.ts picks the coach or player
+      // destination from `audience` and defaults to coach, which sent a
+      // player's tap to the coach Signals surface.
+      audience: 'player',
       title: args.title,
       body: args.body,
       ...(args.action_url ? { url: args.action_url } : {}),

@@ -169,6 +169,11 @@ vi.mock('@/lib/coachhelm/v3/chat/provenance', async (importOriginal) => {
     ...actual,
     auditNumericClaims: mocks.auditNumericClaims,
     collectNumbers: mocks.collectNumbers,
+    // route.ts reads detail numbers through `collectScopedNumbers` since
+    // audit row 47b. The mock keeps returning bare numbers — a bare number is
+    // still a valid (unscoped) `extraSupported` entry — so every existing
+    // assertion about what reaches the audit is unchanged.
+    collectScopedNumbers: (...args: unknown[]) => mocks.collectNumbers(...args),
   };
 });
 vi.mock('@/lib/coachhelm/v3/chat/persistence', () => ({

@@ -176,19 +176,33 @@ export function generatePushPayload(
       // FocusAreaCard sends a coach to); a player recipient keeps the player
       // front door. Hrefs come from the surface registry, never hand-written.
       const audience = data.audience === 'player' ? 'player' : 'coach';
+      // The CoachHelm dispatcher (v3/notifications/dispatch.ts) sends its own
+      // title, body and in-app path for each category. Without these the push
+      // read "New CoachHelm Insight / New coaching insight available" for a
+      // missed goal or a round review. Only same-site paths are taken.
+      const ownTitle = typeof data.title === 'string' && data.title.trim() ? data.title : null;
+      const ownBody = typeof data.body === 'string' && data.body.trim() ? data.body : null;
+      const ownPath =
+        typeof data.url === 'string' && /^\/golf\/[^/]/.test(data.url) ? data.url : null;
       return {
-        title: 'New CoachHelm Insight',
-        body: String(data.insightTitle || 'New coaching insight available'),
+        title: ownTitle ?? 'New CoachHelm Insight',
+        body: ownBody ?? String(data.insightTitle || 'New coaching insight available'),
         data: {
-          url: `${baseUrl}${audience === 'coach' ? surfaceHref('insights') : surfaceHref('overview')}`,
+          url: `${baseUrl}${ownPath ?? (audience === 'coach' ? surfaceHref('insights') : surfaceHref('overview'))}`,
           type,
         },
       };
     }
     case 'qualifier_updated':
+      // A selection-outcome notice (qualifying/player-notify.ts) composes its
+      // own title/body per outcome; without this every player saw the same
+      // "Qualifier Updated" whether selected, not selected or unscored.
       return {
-        title: 'Qualifier Updated',
-        body: String(data.qualifierName || 'A qualifier has been updated'),
+        title: typeof data.title === 'string' && data.title.trim() ? data.title : 'Qualifier Updated',
+        body:
+          typeof data.body === 'string' && data.body.trim()
+            ? data.body
+            : String(data.qualifierName || 'A qualifier has been updated'),
         data: { url: `${baseUrl}/golf/dashboard/qualifiers${idOf('qualifierId') ? `/${idOf('qualifierId')}` : ''}`, type },
       };
     case 'task_completed':
