@@ -3685,7 +3685,7 @@
       },
       {
         "id": "update_player_putt_make_pct",
-        "definedIn": "supabase/migrations/20260609090000_cache_putt_band_attempts_and_lifetime_span.sql"
+        "definedIn": "supabase/migrations/20260928120000_golf_putt_make_pct_countable_non_test.sql"
       },
       {
         "id": "update_player_stats_complete",
@@ -13028,6 +13028,11 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/lib/coachhelm/v2/mining/pattern-miner.ts",
+          "anchor": "src/lib/coachhelm/v3/stats/intervals"
+        },
+        {
+          "kind": "import_graph",
           "path": "src/lib/coachhelm/v2/orchestrator.ts",
           "anchor": "src/lib/coachhelm/v3/generators/putt-distance"
         },
@@ -14016,11 +14021,6 @@
         },
         {
           "kind": "import_graph",
-          "path": "src/app/golf/actions/v3/llm.ts",
-          "anchor": "src/lib/coachhelm/v3/llm/round-review"
-        },
-        {
-          "kind": "import_graph",
           "path": "src/app/golf/actions/v3/team-practice-rx.ts",
           "anchor": "src/lib/golf/resolve-team"
         },
@@ -14200,6 +14200,16 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/app/golf/actions/v3/goals.ts",
+          "anchor": "src/lib/coachhelm/v3/goals/goal-rules"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/v3/goals.ts",
+          "anchor": "src/lib/coachhelm/v3/goals/window-metric"
+        },
+        {
+          "kind": "import_graph",
           "path": "src/app/golf/actions/v3/intent.ts",
           "anchor": "src/lib/coachhelm/v3/intent/types"
         },
@@ -14212,16 +14222,6 @@
           "kind": "import_graph",
           "path": "src/app/golf/actions/v3/llm.ts",
           "anchor": "src/lib/coachhelm/v3/intent/loader"
-        },
-        {
-          "kind": "import_graph",
-          "path": "src/app/golf/actions/v3/llm.ts",
-          "anchor": "src/lib/coachhelm/v3/genome/loader"
-        },
-        {
-          "kind": "import_graph",
-          "path": "src/app/golf/actions/v3/llm.ts",
-          "anchor": "src/lib/coachhelm/v3/genome/persona"
         },
         {
           "kind": "import_graph",
@@ -16041,6 +16041,11 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/app/golf/actions/round-recap.ts",
+          "anchor": "src/lib/coachhelm/v3/llm/recap-style"
+        },
+        {
+          "kind": "import_graph",
           "path": "src/app/golf/actions/round-review-narrative.ts",
           "anchor": "src/lib/coachhelm/v3/llm/round-review-narrative"
         },
@@ -16076,8 +16081,13 @@
         },
         {
           "kind": "import_graph",
-          "path": "src/lib/coachhelm/v3/llm/round-review.ts",
-          "anchor": "src/lib/coachhelm/v3/insights/round-regime"
+          "path": "src/lib/golf/leak-map-buckets.ts",
+          "anchor": "src/lib/coachhelm/v3/metrics/layup-intent"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/golf/leak-map-buckets.ts",
+          "anchor": "src/lib/coachhelm/v3/stats/intervals"
         },
         {
           "kind": "import_graph",
@@ -16275,6 +16285,11 @@
           "kind": "import_graph",
           "path": "src/lib/golf/detailed-stats-admin-bridge.ts",
           "anchor": "src/app/golf/actions/stats-data-types"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/golf/leak-map-buckets.ts",
+          "anchor": "src/app/golf/actions/stats-leak-maps-types"
         },
         {
           "kind": "import_graph",
@@ -17948,11 +17963,6 @@
         },
         {
           "kind": "import_graph",
-          "path": "src/lib/coachhelm/v3/ranking/score.ts",
-          "anchor": "src/lib/coachhelm/v2/reasoning/confidence-calibrator"
-        },
-        {
-          "kind": "import_graph",
           "path": "src/lib/coachhelm/v3/themes/assemble.test.ts",
           "anchor": "src/lib/coachhelm/v2/insights/types"
         },
@@ -18276,6 +18286,11 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/counterfactual/measured-impact.ts",
+          "anchor": "src/lib/golf/strokes-gained"
+        },
+        {
+          "kind": "import_graph",
           "path": "src/lib/coachhelm/v3/generators/approach-miss.ts",
           "anchor": "src/lib/golf/stat-formulas"
         },
@@ -18306,6 +18321,16 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/goals/window-metric.ts",
+          "anchor": "src/lib/golf/round-countable"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/llm/recap-style.ts",
+          "anchor": "src/lib/golf/stat-formulas"
+        },
+        {
+          "kind": "import_graph",
           "path": "src/lib/coachhelm/v3/llm/round-review-narrative.ts",
           "anchor": "src/lib/golf/stat-formulas"
         },
@@ -18323,6 +18348,16 @@
           "kind": "import_graph",
           "path": "src/lib/coachhelm/v3/metrics/sequence-attribution-window.ts",
           "anchor": "src/lib/golf/date-only"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/notifications/notify.ts",
+          "anchor": "src/lib/golf/surface-registry"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/recap/builder.ts",
+          "anchor": "src/lib/golf/round-countable"
         }
       ]
     },
@@ -20534,7 +20569,7 @@
         {
           "kind": "import_graph",
           "path": "src/app/golf/actions/stats-leak-maps.ts",
-          "anchor": "src/lib/golf/stat-formulas"
+          "anchor": "src/lib/golf/leak-map-buckets"
         },
         {
           "kind": "import_graph",
@@ -21450,6 +21485,11 @@
           "kind": "import_graph",
           "path": "src/app/golf/actions/unified-notifications-model.ts",
           "anchor": "src/lib/coachhelm/v3/notifications/types"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/unified-notifications.ts",
+          "anchor": "src/lib/coachhelm/v3/insight-visibility"
         }
       ]
     },

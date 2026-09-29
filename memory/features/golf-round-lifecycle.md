@@ -113,7 +113,6 @@ separate `recordWorkflow` calls directly in `golf.ts`.
 
 - `src/lib/coachhelm/v2/post-round-trigger.ts`
 - `src/lib/coachhelm/v2/shot-analysis/**`
-- `src/lib/coachhelm/v3/llm/round-review.ts`
 - `src/lib/golf/round-review/deterministic-review.ts` — worker-safe
   (non-cookie, no `revalidatePath`) deterministic review generation for
   `scripts/coachhelm-prewarm-round-reviews.ts` (CoachHelm repair plan
