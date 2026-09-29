@@ -48,7 +48,7 @@ screen.
 | Roster | /golf/dashboard/roster | done | done | done | doing | doing | todo | todo | doing | doing | doing | todo |
 | Stats (team) | /golf/dashboard/stats | done | done | done | doing | doing | todo | todo | doing | doing | doing | todo |
 | Stats (player) | /golf/dashboard/stats?player= (coach), /golf/dashboard/stats (player) | done | done | done | doing | doing | todo | todo | doing | doing | doing | todo |
-| Calendar | /golf/dashboard/calendar | todo | todo | todo | todo | todo | todo | todo | todo | todo | todo | todo |
+| Calendar | /golf/dashboard/calendar (coach and player) | done | done | done | doing | doing | todo | todo | doing | doing | doing | todo |
 | Messages | /golf/dashboard/messages | todo | todo | todo | todo | todo | todo | todo | todo | todo | todo | todo |
 | CoachHelm | /golf/dashboard/coachhelm | blocked (still in design) | todo | todo | todo | todo | todo | todo | todo | todo | todo | todo |
 | Rounds, Practice, Lineups, Events, Scouting | various | blocked (no design yet) | todo | todo | todo | todo | todo | todo | todo | todo | todo | todo |
@@ -57,12 +57,17 @@ screen.
 
 ## Decisions
 
-- D-1 (2026-09-29): Parallel and flag-gated. The coach role only; players keep the Fairway shell until their screens are designed.
+- D-1 (2026-09-29): Parallel and flag-gated. Coaches and players both get Clubhouse where a screen is rebuilt for their role (Stats, Calendar and Messages have player versions with the permissions players already have); every other route shows the not-rebuilt notice with a link back.
 - D-2 (2026-09-29): Light theme only. The handoff's chart colours are tuned for light paper, and dark mode is not designed.
 - D-3 (2026-09-29): Phone navigation is a bottom tab bar in the ivory-pass style, with a selection haptic on tab change.
 - D-4 (2026-09-29): Home's "New session" button is not built. The README says it was removed, although the screenshot still shows it.
 - D-5 (2026-09-29): Each screen gets a written phone design that the owner approves before it is built.
 - D-6 (2026-09-29): Schema changes are written as migrations and never applied by an agent.
+- D-8 (2026-09-29): Calendar state lives in the URL (`view`, `date`, `event`), not localStorage, so every view is linkable and the server renders the right window on first paint. Moving inside the loaded window is instant; moving past it loads the next window.
+- D-9 (2026-09-29): Calendar overlaps are computed from the loaded events and classes (the same data the grid shows), not from the 14-day conflict inbox, so the panel, the grid badges and the editor always agree.
+- D-10 (2026-09-29): Players never see a teammate's classes, not even as Busy. The handoff showed "Busy" blocks; the live privacy rule (`attributeClassEvents`) is stricter and wins.
+- D-11 (2026-09-29): Calendar types are the database's (practice, qualifier, tournament, meeting, travel, other). The handoff's Workout type has no column value; workouts are practices until a migration adds one.
+- D-12 (2026-09-29): Two calendar feeds (team and personal) instead of the handoff's three; the database has no competition-only feed. "Keep as is" on an overlap changes nothing and sends nothing, and says so.
 - D-7 (2026-09-29): Errors reuse the existing pipeline (`logError`, `logServerError`, chunk and stale-action recovery) with a Clubhouse view and voice. The messages coaches see say what failed and what to do next, and never show raw server text.
 
 ## Open owner questions
@@ -81,6 +86,11 @@ screen.
 - Roster: "Schedule 1:1" and "View insights" wait for Calendar and CoachHelm. They are hidden until then.
 - Shell: the sidebar's next-event readiness bar ("5 of 6 ready") has no source. It is omitted.
 
+- Stats: the prototype's PredictionCard, "vs tour" figures and D1 benchmarks for fairways and putts per round have no source. They are omitted, and D1 shows only where `golf_pga_standards` has the metric.
+- Calendar: event files (`getEventDocuments`), the coach's own busy time, "Print week" and "Duplicate" are not in this pass. The handoff's "Checked 2:38 PM" source timestamp has no source.
+
 ## Verification log
 
 <!-- Append: date, screen, gate, what ran, result. -->
+- 2026-09-29 · Stats (team, player) · desktop, wired: typecheck 0, eslint 0 errors, clubhouse:check clean, vitest 16/16. Preview at 924, 1280 and 1400px against stats-team-01..05 and stats-player-01..14; states empty, loading, early, self. No console errors.
+- 2026-09-29 · Calendar · desktop, wired: typecheck 0, eslint 0 errors, clubhouse:check clean, vitest 21/21. Preview at 924, 1280 and 1400px against calendar-01..12 (week, day, month, agenda, event, overlap, attendance, editor); player view; states failed, partial, loading. No console errors.

@@ -70,6 +70,8 @@ describe('nav', () => {
     expect(isRebuilt('/golf/dashboard', 'player')).toBe(false);
     expect(isRebuilt('/golf/dashboard/roster', 'player')).toBe(false);
     expect(isRebuilt('/golf/dashboard/stats', 'player')).toBe(true);
+    expect(isRebuilt('/golf/dashboard/calendar', 'player')).toBe(true);
+    expect(isRebuilt('/golf/dashboard/messages', 'player')).toBe(false);
     expect(activeNavItem('/golf/dashboard/stats', 'player')?.label).toBe('My stats');
   });
 });
@@ -146,5 +148,59 @@ describe('stats windows', async () => {
     expect(tourForGender(null)).toBe('pga');
     expect(weekOf('2026-09-27')).toBe('2026-09-21');
     expect(weekOf('2026-09-21')).toBe('2026-09-21');
+  });
+});
+
+describe('calendar model', async () => {
+  const M = await import('../screens/calendar/model');
+  const ev = (id: string, start: number, end: number, extra: Partial<import('../screens/calendar/model').ChCalEvent> = {}) =>
+    ({ id, type: 'practice', title: id, date: '2026-10-14', start, end, allDay: false, location: null, notes: null, recurring: null, people: [], rsvp: {}, owner: null, busyOnly: false, instructor: null, pattern: null, canEdit: true, cancelled: false, seriesId: null, startIso: '2026-10-14T12:00:00Z', span: null, ...extra }) as import('../screens/calendar/model').ChCalEvent;
+
+  it('builds weeks from Sunday and whole-week month grids', () => {
+    expect(M.weekDates('2026-10-14')[0]).toBe('2026-10-11');
+    const cells = M.monthCells('2026-10-14');
+    expect(cells.length % 7).toBe(0);
+    expect(cells[0]).toEqual({ date: '2026-09-27', out: true });
+    expect(cells.filter((c) => !c.out)).toHaveLength(31);
+    expect(M.addDays('2026-10-31', 1)).toBe('2026-11-01');
+  });
+
+  it('writes times the way a coach says them', () => {
+    expect(M.fmtHour(14.5)).toBe('2:30 PM');
+    expect(M.rangeLabel({ allDay: false, start: 15.5, end: 17 })).toBe('3:30 – 5:00 PM');
+    expect(M.rangeLabel({ allDay: false, start: 11, end: 13 })).toBe('11:00 AM – 1:00 PM');
+    expect(M.viewTitle('week', '2026-10-14')).toEqual({ main: 'Oct 11 – 17', year: '2026' });
+    expect(M.viewTitle('week', '2026-09-30').main).toBe('Sep 27 – Oct 3');
+  });
+
+  it('splits overlapping events into lanes per cluster', () => {
+    const out = M.layoutLanes([ev('a', 15.5, 17), ev('b', 16.75, 17.5), ev('c', 17.5, 18)]);
+    const by = Object.fromEntries(out.map((l) => [l.e.id, l]));
+    expect(by.a).toMatchObject({ lane: 0, lanes: 2 });
+    expect(by.b).toMatchObject({ lane: 1, lanes: 2 });
+    expect(by.c).toMatchObject({ lane: 0, lanes: 1 });
+  });
+
+  it('finds a class overlap once, on the team event, and skips declined players', () => {
+    const events = [
+      ev('lab', 15, 16.25, { type: 'class', owner: 'eli' }),
+      ev('prep', 15.5, 17.5, { people: ['eli', 'ava'] }),
+      ev('late', 16, 17, { people: ['ava'], rsvp: { ava: 'declined' } }),
+    ];
+    const found = M.findOverlaps(events);
+    expect(found).toHaveLength(1);
+    expect(found[0]).toMatchObject({ eventId: 'prep', withId: 'lab', who: 'eli', from: 15.5, to: 16.25 });
+  });
+
+  it('offers open times that avoid everyone’s busy blocks', () => {
+    const events = [ev('lab', 7, 16.25, { type: 'class', owner: 'eli' })];
+    const open = M.openTimes(events, ['eli'], '2026-10-14', 1, undefined, 15.5);
+    expect(open[0]).toEqual([16.25, 17.25]);
+    expect(open.every(([s]) => s >= 16.25)).toBe(true);
+    // Closest to the current start first, then shown in time order.
+    const later = M.openTimes([ev('mid', 12, 13, { type: 'class', owner: 'eli' })], ['eli'], '2026-10-14', 1, undefined, 12);
+    expect(later).toHaveLength(3);
+    expect(later.every(([s, e]) => e <= 12 || s >= 13)).toBe(true);
+    expect(later.some(([s]) => s === 13)).toBe(true);
   });
 });

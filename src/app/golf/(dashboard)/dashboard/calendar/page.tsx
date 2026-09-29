@@ -4,6 +4,8 @@ import { createClient } from '@/lib/supabase/server';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import { getGolfSessionProfile } from '@/lib/auth/session';
 import { redirect } from 'next/navigation';
+import { isClubhouseFor } from '@/clubhouse/gate';
+import { ClubhouseCalendarRoute } from '@/clubhouse/routes/calendar';
 import { FairwayCalendarSkeleton } from '@/components/fairway/pages/calendar/FairwayCalendarSkeleton';
 import type { CalendarEvent } from '@/hooks/useCalendarEvents';
 import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
@@ -47,14 +49,20 @@ interface GolfCalendarPageProps {
    * calendar event" chip) deep-links here so the specific event's detail
    * drawer auto-opens instead of landing on the general calendar hub.
    */
-  searchParams: Promise<{ event?: string }>;
+  searchParams: Promise<{ event?: string; view?: string; date?: string }>;
 }
 
 export default async function GolfCalendarPage({ searchParams }: GolfCalendarPageProps) {
-  const { event: initialEventId } = await searchParams;
+  const { event: initialEventId, view, date } = await searchParams;
   // React.cache() dedupes getUser() + profile queries — free after layout runs them
   const session = await getGolfSessionProfile();
   if (!session) redirect('/golf/login');
+
+  // Clubhouse Calendar (golf_clubhouse_ui): coaches and players, each with the
+  // permissions they already have.
+  if (isClubhouseFor(session.coach ? 'coach' : session.player ? 'player' : null)) {
+    return <ClubhouseCalendarRoute view={view} date={date} event={initialEventId} />;
+  }
 
   const { role, coach, player } = session;
   const isCoach = role === 'coach';
