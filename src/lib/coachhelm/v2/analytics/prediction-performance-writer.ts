@@ -31,12 +31,54 @@ interface PredictionRow {
   metric: string | null;
   model_version: string | null;
   predicted_value: number | null;
+  predicted_low: number | null;
+  predicted_high: number | null;
   actual_value: number | null;
   was_accurate: boolean | null;
   validated_at: string | null;
   created_at: string | null;
   confidence: number | null;
   error_category: string | null;
+  confidence_factors: unknown;
+}
+
+/**
+ * The one rule every reader of prediction outcomes uses: a prediction is
+ * graded only when it has a finite actual and is not a retired
+ * invalid-horizon row. `validated_at` alone is not enough — 415 legacy rows
+ * carry a validated_at with no actual (all invalid_horizon), and counting them
+ * as validated misses halved the reported accuracy (38% vs 77%).
+ */
+export function isGradedPrediction(p: {
+  validated_at?: string | null;
+  actual_value?: number | string | null;
+  error_category?: string | null;
+}): boolean {
+  if (!p.validated_at) return false;
+  if (p.error_category === INVALID_HORIZON_CATEGORY) return false;
+  if (p.actual_value == null) return false;
+  return Number.isFinite(Number(p.actual_value));
+}
+
+/** Whether the actual landed inside the stored band; null when no band was stored. */
+export function landedInInterval(p: {
+  actual_value?: number | string | null;
+  predicted_low?: number | string | null;
+  predicted_high?: number | string | null;
+}): boolean | null {
+  if (p.actual_value == null || p.predicted_low == null || p.predicted_high == null) return null;
+  const a = Number(p.actual_value);
+  const lo = Number(p.predicted_low);
+  const hi = Number(p.predicted_high);
+  if (![a, lo, hi].every(Number.isFinite)) return null;
+  return a >= lo && a <= hi;
+}
+
+function naiveLast5Of(p: PredictionRow): number | null {
+  const f = p.confidence_factors;
+  if (!f || typeof f !== 'object') return null;
+  const v = (f as { naive_last5?: unknown }).naive_last5;
+  return typeof v === 'number' && Number.isFinite(v) ? v : null;
 }
 
 interface TeamMemberRow {
@@ -52,6 +94,10 @@ interface BucketAccum {
   squared_error_sum: number;
   signed_error_sum: number;
   error_sample_count: number;
+  naive_abs_error_sum: number;
+  naive_sample_count: number;
+  interval_within: number;
+  interval_graded: number;
   overconfident: number;
   underconfident: number;
   confidence_buckets: Record<string, { count: number; accurate: number }>;
@@ -67,6 +113,10 @@ function emptyBucket(): BucketAccum {
     squared_error_sum: 0,
     signed_error_sum: 0,
     error_sample_count: 0,
+    naive_abs_error_sum: 0,
+    naive_sample_count: 0,
+    interval_within: 0,
+    interval_graded: 0,
     overconfident: 0,
     underconfident: 0,
     confidence_buckets: {},
@@ -113,7 +163,7 @@ export async function rollupPredictionPerformanceRolling30d(
   const { data: predData, error: predErr } = await supabase
     .from('golf_predictions')
     .select(
-      'player_id, metric, model_version, predicted_value, actual_value, was_accurate, validated_at, created_at, confidence, error_category',
+      'player_id, metric, model_version, predicted_value, predicted_low, predicted_high, actual_value, was_accurate, validated_at, created_at, confidence, error_category, confidence_factors',
     )
     .gte('created_at', startIso)
     .lt('created_at', endIso);
@@ -202,20 +252,33 @@ export async function rollupPredictionPerformanceRolling30d(
 
       b.predictions_made++;
 
-      if (p.validated_at) {
+      if (isGradedPrediction(p)) {
         b.predictions_validated++;
-        if (p.was_accurate) b.accurate_count++;
+        const actual = Number(p.actual_value);
+        // Accuracy = the actual landed inside the stored band. Falls back to
+        // was_accurate only for a row that stored no band.
+        const inBand = landedInInterval(p);
+        const accurate = inBand ?? p.was_accurate === true;
+        if (accurate) b.accurate_count++;
+        if (inBand !== null) {
+          b.interval_graded++;
+          if (inBand) b.interval_within++;
+        }
 
         // MAE / RMSE / signed bias
-        if (
-          typeof p.predicted_value === 'number' &&
-          typeof p.actual_value === 'number'
-        ) {
-          const err = p.predicted_value - p.actual_value;
+        if (typeof p.predicted_value === 'number') {
+          const err = p.predicted_value - actual;
           b.abs_error_sum += Math.abs(err);
           b.squared_error_sum += err * err;
           b.signed_error_sum += err;
           b.error_sample_count++;
+        }
+
+        // The naive comparator: mean of the last 5 rounds at prediction time.
+        const naive = naiveLast5Of(p);
+        if (naive !== null) {
+          b.naive_abs_error_sum += Math.abs(naive - actual);
+          b.naive_sample_count++;
         }
 
         // Confidence calibration buckets
@@ -223,7 +286,7 @@ export async function rollupPredictionPerformanceRolling30d(
           const label = confidenceBucketLabel(p.confidence);
           const cb = b.confidence_buckets[label] ?? { count: 0, accurate: 0 };
           cb.count++;
-          if (p.was_accurate) cb.accurate++;
+          if (accurate) cb.accurate++;
           b.confidence_buckets[label] = cb;
         }
 
@@ -294,6 +357,13 @@ export async function rollupPredictionPerformanceRolling30d(
       overconfidence_rate,
       underconfidence_rate,
       updated_at: new Date().toISOString(),
+      // Extended columns (additive migration; the upsert below falls back
+      // without them until it is applied). MAE means little without
+      // the naive comparator beside it, and coverage is what the band claims.
+      naive_mean_absolute_error:
+        b.naive_sample_count > 0 ? b.naive_abs_error_sum / b.naive_sample_count : null,
+      naive_sample_count: b.naive_sample_count,
+      interval_coverage: b.interval_graded > 0 ? b.interval_within / b.interval_graded : null,
     };
   });
 
@@ -301,11 +371,15 @@ export async function rollupPredictionPerformanceRolling30d(
   // `golf_prediction_model_performance_natural_key` on
   // (team_id, model_type, period_start, period_end). Replaces the prior
   // delete-then-insert, which was racy and a wasted round-trip.
-  const { error: upsertErr } = await supabase
-    .from('golf_prediction_model_performance')
-    .upsert(inserts as unknown as Record<string, never>[], {
-      onConflict: 'team_id,model_type,period_start,period_end',
-    });
+  let { error: upsertErr } = await upsertSnapshots(supabase, inserts);
+  // Code can ship before the additive migration: retry without the extended
+  // columns when PostgREST says one of them does not exist.
+  if (upsertErr && isMissingColumnError(upsertErr)) {
+    const base = inserts.map(
+      ({ naive_mean_absolute_error: _n, naive_sample_count: _c, interval_coverage: _i, ...rest }) => rest,
+    );
+    ({ error: upsertErr } = await upsertSnapshots(supabase, base));
+  }
 
   if (upsertErr) {
     await logServerError(
@@ -321,4 +395,25 @@ export async function rollupPredictionPerformanceRolling30d(
   }
 
   return { written: inserts.length, failed: 0 };
+}
+
+const EXTENDED_COLUMNS = ['naive_mean_absolute_error', 'naive_sample_count', 'interval_coverage'];
+
+function isMissingColumnError(err: { code?: string; message?: string }): boolean {
+  if (err.code === 'PGRST204' || err.code === '42703') return true;
+  return EXTENDED_COLUMNS.some((c) => (err.message ?? '').includes(c));
+}
+
+function upsertSnapshots(
+  supabase: SupabaseClient,
+  rows: Record<string, unknown>[],
+): PromiseLike<{ error: { code?: string; message: string } | null }> {
+  // Idempotent rewrite via upsert against the natural-key unique index
+  // `golf_prediction_model_performance_natural_key` on
+  // (team_id, model_type, period_start, period_end).
+  return supabase
+    .from('golf_prediction_model_performance')
+    .upsert(rows as unknown as Record<string, never>[], {
+      onConflict: 'team_id,model_type,period_start,period_end',
+    });
 }
