@@ -77,7 +77,7 @@ export function activeNavItem(pathname: string, role: ChRole = 'coach'): ChNavIt
 const SETTINGS_ROUTES = ['/golf/dashboard/settings', '/golf/dashboard/settings/notifications', '/golf/dashboard/settings/coaching-intelligence'];
 
 export const CH_REBUILT_ROUTES: Record<ChRole, readonly string[]> = {
-  coach: ['/golf/dashboard', '/golf/dashboard/calendar', '/golf/dashboard/messages', '/golf/dashboard/roster', '/golf/dashboard/stats', ...SETTINGS_ROUTES],
+  coach: ['/golf/dashboard', '/golf/dashboard/calendar', '/golf/dashboard/messages', '/golf/dashboard/roster', '/golf/dashboard/stats', '/golf/dashboard/stats/team', ...SETTINGS_ROUTES],
   player: ['/golf/dashboard/calendar', '/golf/dashboard/messages', '/golf/dashboard/stats', ...SETTINGS_ROUTES],
 };
 

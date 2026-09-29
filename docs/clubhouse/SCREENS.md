@@ -19,7 +19,7 @@ Mobile designs are tracked per screen in `PROGRESS.md` (the `phone-spec` and
 - [x] **Roster** `/roster` — The team: player cards and list, join requests, invites, coach notes
 - [ ] **Roster detail** `/roster/[id]` — One player's roster record
 - [x] **Team stats** `/stats` — Team figures, strokes gained by leg per player, trends, putting, season bests, export (also the player drill-down, `?player=`)
-- [ ] **Team stats, old link** `/stats/team` — The old nav's Team stats address; should open the rebuilt Team stats
+- [x] **Team stats, old link** `/stats/team` — The old nav's Team stats address; opens the rebuilt Team stats in place (players are sent to their own stats)
 - [x] **Calendar** `/calendar` — Practices, qualifiers, tournaments, travel and meetings; week, month and agenda; attendance, overlaps, files
 - [x] **Messages** `/messages` — Direct and group chat with players and coaches, plus team announcements
 - [x] **Settings** `/settings` — Account, notifications, team and invite code, CoachHelm settings, preferences

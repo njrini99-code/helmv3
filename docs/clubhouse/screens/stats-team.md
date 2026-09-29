@@ -37,6 +37,7 @@ Window: `?window=last10|season|qualifiers` (last 10 per player by default)
 - [x] Not found and no access: a coach without a team gets the no-team state; players get their own profile instead
 - [ ] Offline or slow network: the window switch says so instead of spinning forever
 - [x] User errors: export failure gives a specific toast, an error haptic and a Sentry event
+- [x] The old address `/stats/team` renders this page in place for coaches, with this page's skeleton, and sends players to their own stats (D-23)
 - [x] N/A: no forms on this screen
 - [x] N/A: no destructive actions on this screen
 - [x] N/A: no optimistic updates on this screen
