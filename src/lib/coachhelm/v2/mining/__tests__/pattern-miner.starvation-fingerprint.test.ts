@@ -50,9 +50,15 @@ vi.mock('@/lib/supabase/admin', () => ({
   }),
 }));
 
+// A zero-pattern mine now retires the player's stale mined patterns (audit
+// row 16), which reaches golf_patterns_v2 through fromUntyped. Resolve that
+// chain as a successful no-op; the starvation telemetry is what's under test.
 vi.mock('@/lib/supabase/untyped', () => ({
   fromUntyped: () => {
-    throw new Error('fromUntyped should not be reached — savePatterns short-circuits on 0 patterns');
+    const chain: Record<string, unknown> = {};
+    for (const m of ['update', 'in', 'eq', 'not']) chain[m] = () => chain;
+    chain.or = async () => ({ error: null });
+    return chain;
   },
 }));
 

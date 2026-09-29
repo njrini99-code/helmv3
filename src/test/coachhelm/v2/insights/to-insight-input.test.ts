@@ -118,3 +118,37 @@ describe('toInsightInput', () => {
     expect(input.evidence.comparison_value).toBe(input.evidence.your_value);
   });
 });
+
+describe('audit row 16 — pattern_detected keeps its sign', () => {
+  const pattern = (stroke_impact: number) =>
+    toInsightInput({
+      coach_id: 'coach-1',
+      team_id: 'team-1',
+      player_id: 'player-1',
+      insight_type: 'pattern_detected',
+      title: 'In tournament rounds',
+      content: 'You score better in tournament rounds.',
+      metadata: { confidence: 0.7, sample_n: 6, stroke_impact, pattern_id: 'p-1' },
+    })!;
+
+  it('a favourable pattern (negative impact) is not a stroke LOSS', () => {
+    const input = pattern(-1.4);
+    expect(input.evidence.strokes_impact).toBe(0);
+    expect(input.evidence.your_value).toBeCloseTo(-1.4);
+    expect(input.evidence.detail).toMatchObject({ direction: 'favourable', signed_stroke_impact: -1.4 });
+  });
+
+  it('an unfavourable pattern keeps its loss magnitude', () => {
+    const input = pattern(1.4);
+    expect(input.evidence.strokes_impact).toBeCloseTo(1.4);
+    expect(input.evidence.detail).toMatchObject({ direction: 'unfavourable' });
+  });
+
+  it('other insight types are unchanged (strokes_impact stays a magnitude)', () => {
+    const input = toInsightInput({
+      coach_id: 'c', team_id: 't', player_id: 'p', insight_type: 'recurring_weakness',
+      title: 'x', content: 'y', metadata: { confidence: 0.7, sample_n: 6, stroke_impact: -1.4 },
+    })!;
+    expect(input.evidence.strokes_impact).toBeCloseTo(1.4);
+  });
+});

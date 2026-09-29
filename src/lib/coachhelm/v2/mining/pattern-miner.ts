@@ -21,6 +21,37 @@ import type {
   PatternType,
 } from '../types';
 import { extractAllFeatures } from '../features';
+import { tCritical95, welchStandardError } from '@/lib/coachhelm/v3/stats/intervals';
+
+/**
+ * Compare the rounds that match a condition with the REST of the rounds (the
+ * rounds that do not match), and test the difference at its sample size.
+ *
+ * Audit row 16: the old baseline was the mean of ALL rounds, matching ones
+ * included, which shrank every impact toward zero by the matching share; and
+ * `|impact| >= 0.6` alone admitted a pattern at any n (33 of 73 active
+ * patterns rested on fewer than 5 rounds). Welch's t at the Welch df, 95%
+ * two-sided; both sides need two rounds for a variance.
+ *
+ * `impact` is signed: positive = the player scores WORSE under the condition.
+ */
+export function compareConditionToRest(
+  matching: readonly { score_to_par: number }[],
+  rest: readonly { score_to_par: number }[],
+): { impact: number; restAvg: number; se: number; significant: boolean } | null {
+  if (matching.length < 2 || rest.length < 2) return null;
+  const mean = (xs: readonly { score_to_par: number }[]) =>
+    xs.reduce((a, r) => a + r.score_to_par, 0) / xs.length;
+  const restAvg = mean(rest);
+  const impact = mean(matching) - restAvg;
+  const welch = welchStandardError(
+    matching.map((r) => r.score_to_par),
+    rest.map((r) => r.score_to_par),
+  );
+  if (!welch) return null;
+  const significant = welch.se === 0 ? impact !== 0 : Math.abs(impact) > tCritical95(welch.df) * welch.se;
+  return { impact, restAvg, se: welch.se, significant };
+}
 
 /**
  * The pattern types this miner OWNS in the shared `golf_patterns_v2` table.
@@ -282,7 +313,7 @@ export const COMPOUND_CONDITION_SPECS: CompoundConditionSpec[] = [
       },
     ],
     test: (r) =>
-      (r.days_since_last ?? 0) >= 5 && r.round_type === 'tournament',
+      r.days_since_last !== undefined && r.days_since_last >= 5 && r.round_type === 'tournament',
   },
 ];
 
@@ -383,6 +414,12 @@ export class PatternMiner {
       // alongside the query-error case, and both must answer the same way
       // (no fabricated pattern from insufficient/failed data). Background
       // mining, fails closed. The error case is now logged.
+      //
+      // A successful read with too few rounds is real data saying nothing
+      // mineable remains, so any patterns from an older window are retired
+      // (audit row 16). A failed read retires nothing — absence of data
+      // from an error is not evidence.
+      if (!error) await this.supersedeStale([this.playerId], []);
       return [];
     }
 
@@ -416,8 +453,12 @@ export class PatternMiner {
 
     const deduplicatedPatterns = this.deduplicatePatterns(allPatterns);
 
-    // Save patterns to database
+    // Save patterns to database. An empty batch writes nothing, so the stale
+    // patterns from earlier windows are retired explicitly (audit row 16).
     await this.savePatterns(deduplicatedPatterns);
+    if (deduplicatedPatterns.length === 0) {
+      await this.supersedeStale([this.playerId], []);
+    }
 
     // Surface silent threshold starvation: when we have enough rounds to
     // theoretically produce patterns but the rule-based miner returns 0.
@@ -498,12 +539,11 @@ export class PatternMiner {
     );
 
     return sorted.map((round, index) => {
-      if (index === 0) {
-        return { ...round, days_since_last: 0 };
-      }
-      const prevRound = sorted[index - 1];
+      // No previous round in the window: the gap is unknown, not zero. A 0
+      // here made the window's first round match "back-to-back" every run.
+      const prevRound = index > 0 ? sorted[index - 1] : undefined;
       if (!prevRound) {
-        return { ...round, days_since_last: 0 };
+        return { ...round, days_since_last: undefined };
       }
       const prevDate = new Date(prevRound.round_date);
       const currDate = new Date(round.round_date);
@@ -519,7 +559,6 @@ export class PatternMiner {
    */
   private async mineConditionalPatterns(): Promise<MinedPattern[]> {
     const patterns: MinedPattern[] = [];
-    const baselineAvg = this.calculateBaseline();
     const scaledMinSample = effectiveMinSampleSize(this.rounds.length);
 
     // Test various conditions.
@@ -545,7 +584,7 @@ export class PatternMiner {
           value: 7,
           label: 'After 7+ days off',
         },
-        test: (r) => (r.days_since_last ?? 0) >= 7,
+        test: (r) => r.days_since_last !== undefined && r.days_since_last >= 7,
       },
       {
         condition: {
@@ -554,7 +593,9 @@ export class PatternMiner {
           value: 1,
           label: 'Back-to-back rounds',
         },
-        test: (r) => (r.days_since_last ?? 0) <= 1,
+        // The first round of the window has no previous round (undefined), so
+        // it is never "back-to-back" (audit row 16: it used to get 0).
+        test: (r) => r.days_since_last !== undefined && r.days_since_last <= 1,
       },
       // Round type patterns
       {
@@ -605,12 +646,15 @@ export class PatternMiner {
 
       if (matchingRounds.length < scaledMinSample) continue;
 
-      const matchingAvg =
-        matchingRounds.reduce((a, r) => a + r.score_to_par, 0) /
-        matchingRounds.length;
-      const strokeImpact = matchingAvg - baselineAvg;
+      // Matching rounds vs the rest, tested at this sample size.
+      const cmp = compareConditionToRest(
+        matchingRounds,
+        this.rounds.filter((r) => !test(r)),
+      );
+      if (!cmp || !cmp.significant) continue;
+      const strokeImpact = cmp.impact;
 
-      // Only include if significant impact
+      // Only include if the effect is also large enough to matter
       if (Math.abs(strokeImpact) < THRESHOLDS.minStrokeImpact) continue;
 
       // Calculate statistical measures
@@ -681,7 +725,6 @@ export class PatternMiner {
    */
   private async mineCompoundPatterns(): Promise<MinedPattern[]> {
     const patterns: MinedPattern[] = [];
-    const baselineAvg = this.calculateBaseline();
     const scaledMinSample = effectiveMinSampleSize(this.rounds.length);
 
     // Test combinations
@@ -696,10 +739,12 @@ export class PatternMiner {
       if (matchingRounds.length < Math.max(3, Math.ceil(scaledMinSample / 2)))
         continue;
 
-      const matchingAvg =
-        matchingRounds.reduce((a, r) => a + r.score_to_par, 0) /
-        matchingRounds.length;
-      const strokeImpact = matchingAvg - baselineAvg;
+      const cmp = compareConditionToRest(
+        matchingRounds,
+        this.rounds.filter((r) => !test(r)),
+      );
+      if (!cmp || !cmp.significant) continue;
+      const strokeImpact = cmp.impact;
 
       if (Math.abs(strokeImpact) < THRESHOLDS.minStrokeImpact) continue;
 
@@ -1183,8 +1228,21 @@ export class PatternMiner {
     //    is a non-destructive supersede (NO delete), safe in this sync path, and
     //    idempotent: re-mining the same window converges (deterministic ids).
     const playerIds = [...new Set(patterns.map((p) => p.playerId).filter(Boolean))].sort();
-    if (ids.length > 0 && playerIds.length > 0) {
-      const idList = `(${ids.map((id) => `"${id}"`).join(',')})`;
+    await this.supersedeStale(playerIds, ids);
+  }
+
+  /**
+   * Retire this miner's active patterns for `playerIds` that are not in
+   * `keepIds` (the fresh batch). An empty `keepIds` retires every active
+   * mined pattern for the players — the case where a mine ran on real data
+   * and nothing reproduced (audit row 16: `savePatterns` used to return
+   * before the supersede on an empty batch, so a player whose patterns all
+   * stopped reproducing kept them active forever).
+   */
+  private async supersedeStale(playerIds: string[], keepIds: string[]): Promise<void> {
+    const supabase = createAdminClient();
+    if (playerIds.length > 0) {
+      const idList = `(${keepIds.map((id) => `"${id}"`).join(',')})`;
       // Multi-row UPDATE racing a concurrent mine's upserts/supersede over the
       // same players can deadlock (observed live: 40P01 during the roster-sweep
       // cron, round-submit trigger and cron batch mining the same team
@@ -1202,11 +1260,14 @@ export class PatternMiner {
           const backoff = 200 * attempt + Math.floor(Math.random() * 150);
           await new Promise((resolve) => setTimeout(resolve, backoff));
         }
-        const { error } = await fromUntyped(supabase, 'golf_patterns_v2')
+        let query = fromUntyped(supabase, 'golf_patterns_v2')
           .update({ is_active: false, updated_at: new Date().toISOString() })
           .in('player_id', playerIds)
-          .eq('is_active', true)
-          .not('id', 'in', idList)
+          .eq('is_active', true);
+        // `not in ()` is a PostgREST syntax error; with nothing fresh to keep
+        // the filter is simply omitted.
+        if (keepIds.length > 0) query = query.not('id', 'in', idList);
+        const { error } = await query
           // Scope the supersede to the pattern types THIS miner owns.
           // golf_patterns_v2 is shared: ShotPatternMiner writes
           // pattern_type='contextual' rows (shot-pattern-miner.ts) that this

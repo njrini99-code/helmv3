@@ -103,15 +103,23 @@ function buildEvidence(record: InsightRecordForUpsert, category: InsightCategory
   const sampleN = supportRounded;
 
   const unit = evidenceUnit(metadata);
-  const strokeImpact = Math.abs(
+  const rawImpact =
     numberValue(metadata.stroke_impact)
       ?? numberValue(metadata.stroke_impact_score)
       ?? numberValue(metadata.prediction_value)
-      ?? confidence,
-  );
+      ?? confidence;
+  // pattern_detected keeps its sign (audit row 16): a mined pattern's
+  // stroke_impact is signed (positive = worse under the condition), and 24 of
+  // 73 active conditional patterns were FAVOURABLE, yet Math.abs turned them
+  // into stroke losses. A favourable pattern costs nothing (strokes_impact 0)
+  // and its signed value stays in your_value and detail. Every other legacy
+  // type keeps the magnitude contract.
+  const signedPattern =
+    record.insight_type === 'pattern_detected' && numberValue(metadata.stroke_impact) !== null;
+  const strokeImpact = signedPattern ? Math.max(0, rawImpact) : Math.abs(rawImpact);
   const yourValue = unit === 'percent'
     ? confidence
-    : strokeImpact;
+    : signedPattern ? rawImpact : strokeImpact;
 
   // 2026-05-17: closes audit Q-NEW-1. Comparison values must come from a real
   // baseline (BaselineRegistry or a team-aggregate query), not be fabricated
@@ -156,6 +164,12 @@ function buildEvidence(record: InsightRecordForUpsert, category: InsightCategory
     detail: {
       source: 'v2_legacy_adapter',
       insight_type: record.insight_type,
+      ...(signedPattern
+        ? {
+            direction: rawImpact < 0 ? 'favourable' : 'unfavourable',
+            signed_stroke_impact: rawImpact,
+          }
+        : {}),
     },
   };
 }
