@@ -49,7 +49,7 @@ describe('genome registry', () => {
     const ids = new Set<string>();
     const validCategories = new Set([
       'miss_tendencies', 'pressure_response', 'recovery_patterns',
-      'course_type_affinity', 'weather_sensitivity', 'stamina',
+      'course_type_affinity', 'stamina',
       'learning_velocity', 'strategic_profile',
     ]);
     for (const d of GENOME_DIMENSIONS) {

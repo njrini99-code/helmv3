@@ -21,7 +21,6 @@ describe('buildTendencies', () => {
       'miss_side_bias',
       'back_nine_delta',
       'scoring_trend',
-      'weather_sensitivity_stub',
     ]);
   });
 
@@ -31,9 +30,8 @@ describe('buildTendencies', () => {
     expect(t[2]).toMatchObject({ detail: '−0.12 strokes a hole vs the front', read: 'Thin read' });
   });
 
-  it('marks uncomputed dimensions locked and weather not tracked', () => {
+  it('marks uncomputed dimensions locked', () => {
     expect(t[3]!.status).toBe('locked');
-    expect(t[4]!.status).toBe('not_tracked');
   });
 
   it('locks everything when there is no genome', () => {
