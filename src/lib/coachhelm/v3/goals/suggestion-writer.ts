@@ -26,7 +26,6 @@ import { isMetricId, type MetricId } from '@/lib/coachhelm/v3/metrics/registry';
 import { isStandingTourComparable } from '@/lib/coachhelm/v3/standing/tour-basis';
 import { findMetric } from '@/lib/coachhelm/focus-areas/catalog';
 import { isWindowedMetric } from './window-metric-ids';
-import { notifyEngineSuggestedGoals } from '@/lib/coachhelm/v3/notifications/notify';
 
 /**
  * One row from `golf_player_standing` plus the metric direction we need
@@ -623,11 +622,6 @@ export async function runSuggestionWriter(
     return result;
   }
   result.suggestions_inserted = count ?? inserts.length;
-  // Audit row 53: players with new suggestions hear about them (throttled
-  // per player per day; never throws).
-  for (const p of result.per_player) {
-    if (p.inserted > 0) await notifyEngineSuggestedGoals({ player_id: p.player_id, count: p.inserted });
-  }
   result.duration_ms = Date.now() - startedAt;
   return result;
 }
