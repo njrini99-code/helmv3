@@ -323,6 +323,7 @@ export function FilmstripReview({
         strokesGainedAroundGreen={strokesGainedAroundGreen}
         strokesGainedPutting={strokesGainedPutting}
         isWomens={isWomens}
+        teamStanding={standing}
       />
 
       <ReviewHero

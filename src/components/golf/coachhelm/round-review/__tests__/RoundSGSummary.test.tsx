@@ -192,3 +192,41 @@ describe('RoundSGSummary — live state', () => {
     expect(screen.getByRole('group', { name: 'Round Strokes Gained summary' })).toBeInTheDocument();
   });
 });
+
+describe('team comparison line (audit row 46, owner: "team and tour")', () => {
+  it('states each category vs the team season average when the team is large enough', async () => {
+    const { buildTeamSgComparison } = await import('../RoundSGSummary');
+    const line = buildTeamSgComparison(
+      { strokesGainedTee: 0.5, strokesGainedApproach: -1.2, strokesGainedAroundGreen: 0.1, strokesGainedPutting: null },
+      { sg_ott: { team_avg: 0.1, team_n: 8 }, sg_approach: { team_avg: -0.4, team_n: 8 }, sg_putting: { team_avg: 0.2, team_n: 8 } },
+    );
+    expect(line).toEqual({
+      teamN: 8,
+      items: [
+        { label: 'Off the Tee', delta: expect.closeTo(0.4, 5) },
+        { label: 'Approach', delta: expect.closeTo(-0.8, 5) },
+      ],
+    });
+  });
+
+  it('is null below the cold-start team size or without team averages', async () => {
+    const { buildTeamSgComparison } = await import('../RoundSGSummary');
+    const round = { strokesGainedTee: 0.5, strokesGainedApproach: -1.2, strokesGainedAroundGreen: null, strokesGainedPutting: 0.3 };
+    expect(buildTeamSgComparison(round, { sg_ott: { team_avg: 0.1, team_n: 4 } })).toBeNull();
+    expect(buildTeamSgComparison(round, {})).toBeNull();
+  });
+
+  it('renders the team line next to the Tour caption', () => {
+    render(
+      <RoundSGSummary
+        strokesGainedTotal={1.42}
+        strokesGainedTee={0.5}
+        strokesGainedApproach={-1.2}
+        strokesGainedAroundGreen={0.1}
+        strokesGainedPutting={0.3}
+        teamStanding={{ sg_putting: { team_avg: 0.1, team_n: 6 } }}
+      />,
+    );
+    expect(screen.getByText(/vs your team's season average/i)).toBeTruthy();
+  });
+});

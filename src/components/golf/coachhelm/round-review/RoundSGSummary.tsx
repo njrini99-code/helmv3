@@ -75,7 +75,58 @@ export interface RoundSGSummaryProps extends RoundSGCategoryInputs {
    *  (men's / unknown — matches every other PGA/LPGA label call site's
    *  default, e.g. `pgaReferenceLabel`/`tourLabel`). */
   isWomens?: boolean;
+  /** Season standing rows for the SG metrics (`team_avg`, `team_n`), for the
+   *  team comparison line. Optional; omitted, only the Tour baseline shows. */
+  teamStanding?: TeamSgStanding;
   className?: string;
+}
+
+/** The standing fields the team line reads, keyed by standing metric id. */
+export type TeamSgStanding = Partial<
+  Record<'sg_ott' | 'sg_approach' | 'sg_putting', { team_avg: number | null; team_n: number }>
+>;
+
+/**
+ * Standing's own cold-start floor (standing/types.ts: the team marker is
+ * "null or low when team_n < 5"). Below it a team average is too thin to
+ * compare against.
+ */
+export const TEAM_SG_MIN_N = 5;
+
+const TEAM_METRIC_BY_CATEGORY: ReadonlyArray<{
+  key: keyof RoundSGCategoryInputs;
+  metric: keyof TeamSgStanding;
+  label: string;
+}> = [
+  { key: 'strokesGainedTee', metric: 'sg_ott', label: 'Off the Tee' },
+  { key: 'strokesGainedApproach', metric: 'sg_approach', label: 'Approach' },
+  { key: 'strokesGainedPutting', metric: 'sg_putting', label: 'Putting' },
+];
+
+/**
+ * Audit row 46, owner decision "team and tour": the Tour number stays the
+ * headline; this adds the same round measured against the player's own
+ * team, as round SG minus the team's season per-round average on the same
+ * Tour curve (so the curve cancels). Only categories with both numbers and
+ * a team of at least {@link TEAM_SG_MIN_N}; `null` when none qualify.
+ * Around-the-green has no standing metric and is never compared.
+ */
+export function buildTeamSgComparison(
+  round: RoundSGCategoryInputs,
+  standing: TeamSgStanding | undefined,
+): { teamN: number; items: Array<{ label: string; delta: number }> } | null {
+  if (!standing) return null;
+  const items: Array<{ label: string; delta: number }> = [];
+  let teamN = 0;
+  for (const { key, metric, label } of TEAM_METRIC_BY_CATEGORY) {
+    const value = round[key];
+    const row = standing[metric];
+    if (typeof value !== 'number' || !Number.isFinite(value)) continue;
+    if (!row || row.team_avg === null || !Number.isFinite(row.team_avg) || row.team_n < TEAM_SG_MIN_N) continue;
+    items.push({ label, delta: value - row.team_avg });
+    teamN = Math.max(teamN, row.team_n);
+  }
+  return items.length > 0 ? { teamN, items } : null;
 }
 
 const CATEGORY_ORDER: ReadonlyArray<{ key: keyof RoundSGCategoryInputs; label: string }> = [
@@ -166,6 +217,7 @@ export function RoundSGSummary({
   strokesGainedAroundGreen,
   strokesGainedPutting,
   isWomens = false,
+  teamStanding,
   className,
 }: RoundSGSummaryProps) {
   const categories = buildSGCategoryData({
@@ -175,6 +227,10 @@ export function RoundSGSummary({
     strokesGainedPutting,
   });
   const takeaway = buildSGTakeaway(categories);
+  const teamLine = buildTeamSgComparison(
+    { strokesGainedTee, strokesGainedApproach, strokesGainedAroundGreen, strokesGainedPutting },
+    teamStanding,
+  );
   const tour = sgTourLabel(isWomens);
   const hasBaseline = strokesGainedTotal !== null || categories.length > 0;
   const { sign: heroSign, tone: heroTone } =
@@ -222,6 +278,15 @@ export function RoundSGSummary({
       {hasBaseline ? (
         <p className="font-fw-sans text-caption text-text-tertiary">
           vs the {tour} baseline used for this round
+        </p>
+      ) : null}
+
+      {teamLine ? (
+        <p className="font-fw-sans text-caption text-text-tertiary">
+          vs your team&apos;s season average ({teamLine.teamN} players):{' '}
+          <span className="font-fw-mono tabular-nums">
+            {teamLine.items.map((i) => `${i.label} ${formatSigned(i.delta)}`).join(' · ')}
+          </span>
         </p>
       ) : null}
 
