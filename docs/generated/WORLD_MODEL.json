@@ -1780,11 +1780,6 @@
         "category": "services"
       },
       {
-        "id": "services:src/lib/coachhelm/v3/llm/round-review.ts",
-        "pattern": "src/lib/coachhelm/v3/llm/round-review.ts",
-        "category": "services"
-      },
-      {
         "id": "services:src/lib/coachhelm/v3/qualifying/**",
         "pattern": "src/lib/coachhelm/v3/qualifying/**",
         "category": "services"
@@ -16244,18 +16239,6 @@
           "kind": "registry_glob",
           "path": "memory/registry.yml",
           "pattern": "src/lib/coachhelm/v2/post-round-trigger.ts"
-        }
-      ]
-    },
-    {
-      "source": "golf_round_lifecycle",
-      "target": "services:src/lib/coachhelm/v3/llm/round-review.ts",
-      "kind": "feature_service",
-      "evidence": [
-        {
-          "kind": "registry_glob",
-          "path": "memory/registry.yml",
-          "pattern": "src/lib/coachhelm/v3/llm/round-review.ts"
         }
       ]
     },

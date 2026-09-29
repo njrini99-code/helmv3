@@ -67,7 +67,7 @@ const CATEGORY_DELIVERY_TYPE: Record<NotificationCategory, NotificationType> = {
  *
  * `notifications.type` is the Postgres enum `notification_type`. The
  * `coachhelm_*` values are added by
- * supabase/migrations/20260928140000_notification_type_coachhelm_categories.sql.
+ * supabase/migrations/20260928140000_coachhelm_alert_type_enum_values.sql.
  * Until that migration is applied in production and `npm run db:types` is
  * rerun, inserting one would fail, so this switch stays false and every
  * receipt keeps the legacy `dev_plan_assigned` value. Readers classify
