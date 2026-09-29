@@ -54,7 +54,7 @@ export function activeNavItem(pathname: string): ChNavItem | undefined {
  * placeholder inside the Clubhouse shell, never a Fairway page in a Clubhouse
  * frame. Add a route here only when its screen reaches the `desktop` gate.
  */
-export const CH_REBUILT_ROUTES: readonly string[] = ['/golf/dashboard'];
+export const CH_REBUILT_ROUTES: readonly string[] = ['/golf/dashboard', '/golf/dashboard/roster'];
 
 export function isRebuilt(pathname: string): boolean {
   return CH_REBUILT_ROUTES.includes(pathname.replace(/\/$/, '') || '/');

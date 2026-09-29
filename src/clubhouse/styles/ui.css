@@ -305,3 +305,63 @@
 .ch-toast__action:hover {
   background: rgb(255 255 255 / 0.14);
 }
+
+/* Form line */
+.ch-form {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.ch-form__mean {
+  stroke: var(--ch-ivory-300);
+  stroke-width: 1;
+  stroke-dasharray: 2 3;
+}
+.ch-form__line {
+  fill: none;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.ch-form__fill {
+  opacity: 0.06;
+}
+.ch-form__end {
+  fill: var(--ch-bg-page);
+  stroke-width: 1.5;
+}
+.ch-form--gain .ch-form__line,
+.ch-form--gain .ch-form__end {
+  stroke: var(--ch-chart-gain);
+}
+.ch-form--gain .ch-form__fill {
+  fill: var(--ch-chart-gain);
+}
+.ch-form--loss .ch-form__line,
+.ch-form--loss .ch-form__end {
+  stroke: var(--ch-chart-loss);
+}
+.ch-form--loss .ch-form__fill {
+  fill: var(--ch-chart-loss);
+}
+.ch-form--flat .ch-form__line,
+.ch-form--flat .ch-form__end {
+  stroke: var(--ch-ink-400);
+}
+.ch-form--flat .ch-form__fill {
+  fill: var(--ch-ink-400);
+}
+.ch-form-empty {
+  font: var(--ch-type-caption);
+  color: var(--ch-text-tertiary);
+}
+
+.ch-form-early {
+  padding: 4px 8px;
+  border-radius: 999px;
+  font: 500 12px/1 var(--ch-font-sans);
+  color: var(--ch-text-tertiary);
+  box-shadow: inset 0 0 0 1px var(--ch-border-subtle);
+  white-space: nowrap;
+}
+

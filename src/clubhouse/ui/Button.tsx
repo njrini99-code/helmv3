@@ -6,7 +6,7 @@ import type { ReactNode, MouseEvent } from 'react';
 import { Icon } from './Icon';
 import { haptic, type ChHaptic } from '../lib/haptics';
 
-type Variant = 'primary' | 'secondary' | 'ghost' | 'ink';
+type Variant = 'primary' | 'secondary' | 'ghost' | 'ink' | 'danger';
 type Size = 'sm' | 'md' | 'lg';
 
 interface CommonProps {

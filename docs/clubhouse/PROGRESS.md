@@ -45,7 +45,7 @@ screen.
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | Foundation | (shell, tokens, primitives) | done | doing | doing | doing | doing | doing | todo | doing | doing | doing | todo |
 | Home | /golf/dashboard | done | doing | doing | doing | doing | doing | todo | todo | doing | doing | todo |
-| Roster | /golf/dashboard/roster | todo | todo | todo | todo | todo | todo | todo | todo | todo | todo | todo |
+| Roster | /golf/dashboard/roster | done | done | done | doing | doing | todo | todo | doing | doing | doing | todo |
 | Stats (team) | /golf/dashboard/stats | todo | todo | todo | todo | todo | todo | todo | todo | todo | todo | todo |
 | Stats (player) | /golf/dashboard/stats?player= | todo | todo | todo | todo | todo | todo | todo | todo | todo | todo | todo |
 | Calendar | /golf/dashboard/calendar | todo | todo | todo | todo | todo | todo | todo | todo | todo | todo | todo |
@@ -65,12 +65,20 @@ screen.
 - D-6 (2026-09-29): Schema changes are written as migrations and never applied by an agent.
 - D-7 (2026-09-29): Errors reuse the existing pipeline (`logError`, `logServerError`, chunk and stale-action recovery) with a Clubhouse view and voice. The messages coaches see say what failed and what to do next, and never show raw server text.
 
+## Open owner questions
+
+- Q-1 Roster status: the design's Inactive means "injured, still on the team", but in the database an inactive member loses RLS access to team data (`is_team_player`). The status pill is read-only until you choose: add a separate `availability` field (recommended, via a migration), or accept that Inactive locks the player out.
+- Q-2 Navigation: Practice and Events have no route. Should they point at existing screens, or wait for their own designs?
+
 ## Data gaps (shown honestly, never invented)
 
 - Home: the prototype's weather, "Week 7 of 12" and "5 of 6 players ready" have no source. They are omitted until one exists.
 - Home: the prototype's greeting subline ("Two players need a conversation") needs a real attention source. It is omitted in this pass.
 - Shell: the top-bar search and the notifications bell arrive with their own screens. Until then they are not rendered, so there are no dead controls.
 - Shell: Practice and Events are in the design's navigation but have no route. They are hidden until the owner decides what they point to.
+- Roster: the design's Captain role, major, birthday, home course and "about" line have no columns. Real fields are shown instead: hometown, high school, class and jersey. A migration for captain, major and bio can be written once you decide which you want (birthdays are minors' PII).
+- Roster: invite-by-email has no server action. The invite sheet offers the join code, a copy button and the native share sheet for the join link.
+- Roster: "Schedule 1:1" and "View insights" wait for Calendar and CoachHelm. They are hidden until then.
 - Shell: the sidebar's next-event readiness bar ("5 of 6 ready") has no source. It is omitted.
 
 ## Verification log

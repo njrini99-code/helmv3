@@ -67,3 +67,37 @@ describe('nav', () => {
     expect(rebuiltHref('/golf/dashboard/stats?player=1')).toBeNull();
   });
 });
+
+import { attentionFor } from '../data/roster';
+import { summarizePlayer, type ChRound } from '../data/season';
+
+const round = (id: string, date: string, score: number, extra: Partial<ChRound> = {}): ChRound => ({
+  id, player_id: 'p', course_name: 'Finley GC', tees_played: null, round_date: date, round_type: null,
+  total_score: score, score_to_par: score - 72, front_nine: null, back_nine: null, holes_played: 18,
+  total_putts: 30, total_gir: 10, total_gir_possible: 18, total_fairways_hit: 7, total_fairways: 14,
+  strokes_gained_total: null, strokes_gained_tee: null, strokes_gained_approach: null,
+  strokes_gained_around_green: null, strokes_gained_putting: null, ...extra,
+});
+
+describe('roster attention', () => {
+  const now = new Date('2026-10-14T12:00:00Z');
+  it('flags a quiet player only while the team is posting', () => {
+    const s = summarizePlayer([round('a', '2026-10-01', 74), round('b', '2026-09-28', 75)]);
+    expect(attentionFor(s, now, true)).toEqual({ tone: 'warning', text: 'No rounds in 13 days' });
+    expect(attentionFor(s, now, false)).toBeNull();
+  });
+  it('flags scoring up by 1.5 or more', () => {
+    const s = summarizePlayer(['76', '76', '75', '73', '72', '72'].map((x, i) => round(`r${i}`, `2026-10-1${3 - Math.min(i, 3)}`, Number(x))));
+    expect(attentionFor(s, now, false)?.text).toMatch(/^Scoring up/);
+  });
+  it('praises four straight rounds under a player’s average', () => {
+    const scores = [70, 71, 70, 71, 76, 77, 76, 77];
+    const s = summarizePlayer(scores.map((x, i) => round(`r${i}`, `2026-10-${String(13 - i).padStart(2, '0')}`, x)));
+    expect(attentionFor(s, now, false)).toEqual({ tone: 'positive', text: '4 rounds under average' });
+  });
+  it('keeps strokes gained null below three rounds with SG', () => {
+    const s = summarizePlayer([round('a', '2026-10-01', 72, { strokes_gained_total: 1 }), round('b', '2026-09-30', 72, { strokes_gained_total: 2 })]);
+    expect(s.sgPerRound).toBeNull();
+    expect(s.sgRounds).toBe(2);
+  });
+});

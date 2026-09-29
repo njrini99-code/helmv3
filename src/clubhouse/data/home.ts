@@ -1,12 +1,13 @@
 import 'server-only';
 import { createClient } from '@/lib/supabase/server';
-import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import { chunkIds } from '@/lib/supabase/chunk-ids';
-import { isCountableRound } from '@/lib/golf/round-countable';
 import { CLASS_EVENT_TYPE } from '@/lib/calendar/class-events';
 import { getCurrentDecimalHourInTz } from '@/lib/utils/timezone';
 import { getGreeting, timeOfDayForHour } from '@/lib/utils/time-of-day';
 import { chLogServer } from '../lib/track-server';
+import { classYearLabel, fullName, groupByPlayer, isFull18, loadSeasonRounds, summarizePlayer, type ChForm } from './season';
+
+export { classYearLabel, formStatus } from './season';
 
 /**
  * Coach Home (Clubhouse). One server read, final data on first paint.
@@ -71,7 +72,7 @@ export interface ChLeaderRow {
   trend: number[];
   /** Null when there are fewer than three rounds with strokes gained. */
   sgPerRound: number | null;
-  status: 'improving' | 'steady' | 'slipping' | 'early';
+  status: ChForm;
 }
 
 export interface ChCoachHome {
@@ -84,8 +85,6 @@ export interface ChCoachHome {
 }
 
 const COMPETITION_TYPES = new Set(['tournament', 'qualifier']);
-const TREND_LENGTH = 7;
-const MIN_SG_ROUNDS = 3;
 
 function log(read: string, error: unknown) {
   chLogServer('home', read, error);
@@ -108,31 +107,6 @@ function weekdayIndexMonFirst(date: string): number {
 }
 
 const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-
-/** "Senior", "Junior"... from a graduation year and the academic year in progress. */
-export function classYearLabel(graduationYear: number | null, now = new Date()): string | null {
-  if (!graduationYear) return null;
-  const academicEnd = now.getMonth() >= 7 ? now.getFullYear() + 1 : now.getFullYear();
-  const labels = ['Senior', 'Junior', 'Sophomore', 'Freshman'];
-  return labels[graduationYear - academicEnd] ?? `Class of ${graduationYear}`;
-}
-
-/** Recent form: the newer half of the trend against the older half, in strokes. */
-export function formStatus(trend: number[]): ChLeaderRow['status'] {
-  if (trend.length < 3) return 'early';
-  const half = Math.floor(trend.length / 2);
-  const older = trend.slice(0, half);
-  const newer = trend.slice(trend.length - half);
-  const mean = (xs: number[]) => xs.reduce((a, b) => a + b, 0) / xs.length;
-  const change = mean(newer) - mean(older);
-  if (change <= -0.5) return 'improving';
-  if (change >= 0.5) return 'slipping';
-  return 'steady';
-}
-
-function mean(xs: number[]): number | null {
-  return xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : null;
-}
 
 export async function loadCoachHome(input: { teamId: string; coachName: string }): Promise<ChCoachHome> {
   const supabase = await createClient();
@@ -161,9 +135,6 @@ export async function loadCoachHome(input: { teamId: string; coachName: string }
   // A day of slack either side covers every UTC offset; rows are bucketed by team-local date below.
   const windowStart = `${addDays(weekStart, -1)}T00:00:00Z`;
   const windowEnd = `${addDays(weekEnd, 2)}T00:00:00Z`;
-
-  const seasonStartYear = now.getMonth() >= 7 ? now.getFullYear() : now.getFullYear() - 1;
-  const seasonStart = `${seasonStartYear}-08-01`;
 
   const [eventsRes, rosterRes] = await Promise.all([
     supabase
@@ -231,60 +202,18 @@ export async function loadCoachHome(input: { teamId: string; coachName: string }
   const roster = ((rosterRes.data ?? []) as Array<{ player: RosterPlayer | null }>)
     .map((m) => m.player)
     .filter((p): p is RosterPlayer => p !== null);
-  const nameOf = (p: RosterPlayer) => [p.first_name, p.last_name].filter(Boolean).join(' ') || 'Unnamed player';
+  const nameOf = fullName;
   const playerById = new Map(roster.map((p) => [p.id, p]));
 
   // ── Season rounds ──
-  type RoundRow = {
-    id: string;
-    player_id: string;
-    course_name: string | null;
-    tees_played: string | null;
-    round_date: string;
-    total_score: number | null;
-    score_to_par: number | null;
-    front_nine: number | null;
-    back_nine: number | null;
-    holes_played: number | null;
-    total_putts: number | null;
-    total_gir: number | null;
-    total_gir_possible: number | null;
-    strokes_gained_total: number | null;
-  };
-  let rounds: RoundRow[] = [];
   let roundsError = !!rosterRes.error;
+  let rounds: Awaited<ReturnType<typeof loadSeasonRounds>>['rounds'] = [];
   if (!rosterRes.error && roster.length > 0) {
-    for (const ids of chunkIds(roster.map((p) => p.id))) {
-      const res = await fetchAllRowsResult<RoundRow>(
-        (from, to) =>
-          supabase
-            .from('golf_rounds')
-            .select(
-              'id, player_id, course_name, tees_played, round_date, total_score, score_to_par, front_nine, back_nine, holes_played, total_putts, total_gir, total_gir_possible, strokes_gained_total',
-            )
-            .in('player_id', ids)
-            .eq('is_test', false)
-            .eq('status', 'completed')
-            .not('total_score', 'is', null)
-            .gte('round_date', seasonStart)
-            .order('round_date', { ascending: false })
-            .order('id', { ascending: true })
-            .range(from, to),
-        undefined,
-        { table: 'golf_rounds', action: 'loadCoachHome', feature: 'coach_dashboard', sport: 'golf' },
-      );
-      if (res.error) {
-        log('rounds', res.error);
-        roundsError = true;
-        break;
-      }
-      rounds.push(...(res.data ?? []));
-    }
-    rounds = rounds
-      .filter((r) => isCountableRound(r))
-      .sort((a, b) => (a.round_date < b.round_date ? 1 : a.round_date > b.round_date ? -1 : a.id.localeCompare(b.id)));
+    const res = await loadSeasonRounds(supabase, roster.map((p) => p.id), { surface: 'home' });
+    rounds = res.rounds;
+    roundsError = res.error;
   }
-  const full = rounds.filter((r) => (r.holes_played ?? 18) === 18 && r.total_score != null);
+  const full = rounds.filter(isFull18);
 
   // ── Latest rounds with hole-by-hole ──
   const latest = full.slice(0, 3);
@@ -330,30 +259,22 @@ export async function loadCoachHome(input: { teamId: string; coachName: string }
   });
 
   // ── Leaderboard ──
-  const byPlayer = new Map<string, RoundRow[]>();
-  for (const r of full) {
-    const list = byPlayer.get(r.player_id) ?? [];
-    list.push(r);
-    byPlayer.set(r.player_id, list);
-  }
+  const byPlayer = groupByPlayer(full);
   const rows: ChLeaderRow[] = [];
   for (const p of roster) {
     const list = byPlayer.get(p.id);
     if (!list?.length) continue;
-    const scores = list.map((r) => r.total_score as number);
-    const sgs = list.map((r) => r.strokes_gained_total).filter((v): v is number => v != null);
-    const toPars = list.map((r) => r.score_to_par).filter((v): v is number => v != null);
-    const trend = scores.slice(0, TREND_LENGTH).reverse();
+    const season = summarizePlayer(list);
     rows.push({
       playerId: p.id,
       name: nameOf(p),
       classYear: classYearLabel(p.graduation_year, now),
-      rounds: list.length,
-      avg: mean(scores) ?? 0,
-      toPar: mean(toPars),
-      trend,
-      sgPerRound: sgs.length >= MIN_SG_ROUNDS ? mean(sgs) : null,
-      status: formStatus(trend),
+      rounds: season.rounds,
+      avg: season.avg ?? 0,
+      toPar: season.toPar,
+      trend: season.trend,
+      sgPerRound: season.sgPerRound,
+      status: season.status,
     });
   }
   rows.sort((a, b) => a.avg - b.avg || b.rounds - a.rounds);

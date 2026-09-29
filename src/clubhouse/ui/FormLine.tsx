@@ -29,11 +29,24 @@ function monotonePath(pts: Array<[number, number]>): string {
  * falls, amber when it rises, ink when flat), drawn against a dashed mean.
  * Lower scores sit lower, like a scoreboard reads.
  */
-export function FormLine({ data, width = 148, height = 34, label }: { data: number[]; width?: number; height?: number; label: string }) {
-  if (data.length < 2) {
+export function FormLine({
+  data,
+  width = 148,
+  height = 34,
+  label,
+  earlyBelow = 2,
+}: {
+  data: number[];
+  width?: number;
+  height?: number;
+  label: string;
+  /** Below this many points the line isn't drawn, and an "Early read" pill says why. */
+  earlyBelow?: number;
+}) {
+  if (data.length < earlyBelow) {
     return (
-      <span className="ch-form-empty" role="img" aria-label={label}>
-        {data.length === 1 ? 'One round' : '—'}
+      <span className={data.length ? 'ch-form-early' : 'ch-form-empty'} role="img" aria-label={label}>
+        {data.length ? 'Early read' : '—'}
       </span>
     );
   }
@@ -49,7 +62,7 @@ export function FormLine({ data, width = 148, height = 34, label }: { data: numb
   const line = monotonePath(pts);
   const [ex, ey] = pts[pts.length - 1]!;
   return (
-    <svg viewBox={`0 0 ${width} ${height}`} className={`ch-form ch-form--${tone}`} role="img" aria-label={label}>
+    <svg style={{ maxWidth: width }} viewBox={`0 0 ${width} ${height}`} className={`ch-form ch-form--${tone}`} role="img" aria-label={label}>
       <line x1={pad} x2={width - pad} y1={y(avg)} y2={y(avg)} className="ch-form__mean" />
       <path d={`${line} L${ex},${height} L${pad},${height} Z`} className="ch-form__fill" />
       <path d={line} className="ch-form__line" />

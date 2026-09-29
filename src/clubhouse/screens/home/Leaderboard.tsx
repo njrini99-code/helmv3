@@ -5,7 +5,7 @@ import { Avatar } from '../../ui/Avatar';
 import { EmptyState } from '../../ui/States';
 import { formatFixed, formatSigned, formatToPar } from '../../lib/format';
 import { rebuiltHref } from '../../shell/nav';
-import { FormLine } from './FormLine';
+import { FormLine } from '../../ui/FormLine';
 import { RefreshNotice } from './RefreshNotice';
 
 const STATUS: Record<ChLeaderRow['status'], string> = {

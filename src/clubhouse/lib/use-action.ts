@@ -5,8 +5,14 @@ import { chReport, chTrail } from './track';
 import { useToast } from '../ui/Toast';
 import { haptic } from './haptics';
 
-/** The shape Helm server actions already return. */
+/** Helm server actions return either shape; useAction normalises both. */
+export type ServerResult<T = unknown> = { success?: boolean; ok?: boolean; data?: T; error?: string };
 export type ActionResult<T = unknown> = { success: true; data?: T } | { success: false; error?: string };
+
+function normalise<T>(r: ServerResult<T> | null | undefined): ActionResult<T> {
+  if (r && (r.success === true || r.ok === true)) return { success: true, data: r.data };
+  return { success: false, error: r?.error };
+}
 
 export interface ActionCopy {
   /** Shown on success, for example "Reminder sent to Eli". */
@@ -26,7 +32,7 @@ export interface ActionCopy {
  */
 export function useAction<A extends unknown[], T>(
   name: string,
-  action: (...args: A) => Promise<ActionResult<T>>,
+  action: (...args: A) => Promise<ServerResult<T>>,
   copy: ActionCopy | ((...args: A) => ActionCopy),
 ) {
   const toast = useToast();
@@ -40,7 +46,7 @@ export function useAction<A extends unknown[], T>(
       chTrail(`action ${name}`);
       let result: ActionResult<T>;
       try {
-        result = await action(...args);
+        result = normalise(await action(...args));
       } catch (err) {
         chReport(err, { surface: name.split('.')[0] ?? name, action: name });
         result = { success: false, error: undefined };

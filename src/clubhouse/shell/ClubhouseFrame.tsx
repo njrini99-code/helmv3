@@ -18,6 +18,7 @@ import '../styles/tokens.css';
 import '../styles/base.css';
 import '../styles/ui.css';
 import '../styles/shell.css';
+import '../styles/controls.css';
 
 /**
  * The Clubhouse frame, UI only: a green frame with an inset ivory canvas

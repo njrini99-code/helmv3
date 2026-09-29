@@ -3,6 +3,9 @@ import { ClubhouseFrame } from '@/clubhouse/shell/ClubhouseFrame';
 import { CoachHome } from '@/clubhouse/screens/home/CoachHome';
 import { HomeSkeleton } from '@/clubhouse/screens/home/HomeSkeleton';
 import { PreviewError } from '@/clubhouse/preview/PreviewError';
+import { Roster } from '@/clubhouse/screens/roster/Roster';
+import { RosterSkeleton } from '@/clubhouse/screens/roster/RosterSkeleton';
+import { PREVIEW_ROSTER, PREVIEW_ROSTER_EMPTY, PREVIEW_ROSTER_FAILED } from '@/clubhouse/preview/fixtures-roster';
 import {
   PREVIEW_COACH,
   PREVIEW_HOME,
@@ -39,6 +42,15 @@ export default async function ClubhousePreview({
           <PreviewError kind="unknown" />
         ) : (
           <CoachHome data={state === 'empty' ? PREVIEW_HOME_EMPTY : state === 'failed' ? PREVIEW_HOME_FAILED : PREVIEW_HOME} />
+        ),
+    },
+    roster: {
+      path: '/golf/dashboard/roster',
+      node:
+        state === 'loading' ? (
+          <RosterSkeleton />
+        ) : (
+          <Roster data={state === 'empty' ? PREVIEW_ROSTER_EMPTY : state === 'failed' ? PREVIEW_ROSTER_FAILED : PREVIEW_ROSTER} />
         ),
     },
   };
