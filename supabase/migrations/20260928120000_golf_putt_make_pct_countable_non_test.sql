@@ -26,14 +26,19 @@
 --
 -- After apply (owner, service role) refresh every cache row so existing
 -- values pick up the filter:
---   SELECT public.update_player_putt_make_pct(player_id) FROM public.golf_player_stats_cache;
+--   SELECT public.update_player_putt_make_pct(player_id)
+--   FROM public.golf_player_stats_cache;
 -- then let the next generator run (post-round or roster sweep) re-emit the
 -- putt_distance insights.
 --
 -- ROLLBACK: CREATE OR REPLACE public.update_player_putt_make_pct with the body
 -- in 20260609090000_cache_putt_band_attempts_and_lifetime_span.sql, then rerun
 -- the refresh above.
--- VERIFY: select 1 from pg_proc p join pg_namespace n on n.oid = p.pronamespace where n.nspname = 'public' and p.proname = 'update_player_putt_make_pct' and p.prosrc like '%is_test = false%' and p.prosrc like '%golf_round_is_countable%';
+-- VERIFY: select 1 from pg_proc p
+--   join pg_namespace n on n.oid = p.pronamespace
+--   where n.nspname = 'public' and p.proname = 'update_player_putt_make_pct'
+--     and p.prosrc like '%is_test = false%'
+--     and p.prosrc like '%golf_round_is_countable%';
 
 DO $$
 BEGIN
@@ -43,10 +48,10 @@ BEGIN
 END $$;
 
 CREATE OR REPLACE FUNCTION public.update_player_putt_make_pct(p_player_id uuid)
- RETURNS void
- LANGUAGE plpgsql
- SECURITY DEFINER
- SET search_path TO 'public', 'pg_temp'
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path TO 'public', 'pg_temp'
 AS $function$
 BEGIN
   WITH putts AS (
@@ -101,5 +106,9 @@ BEGIN
 END;
 $function$;
 
-REVOKE EXECUTE ON FUNCTION public.update_player_putt_make_pct(uuid) FROM anon, authenticated, PUBLIC;
-GRANT  EXECUTE ON FUNCTION public.update_player_putt_make_pct(uuid) TO service_role;
+REVOKE EXECUTE ON FUNCTION public.update_player_putt_make_pct(uuid) FROM anon,
+authenticated,
+public;
+GRANT EXECUTE ON FUNCTION public.update_player_putt_make_pct(
+    uuid
+) TO service_role;

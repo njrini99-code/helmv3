@@ -17,13 +17,23 @@
 -- reader classifies CoachHelm rows by data.coachhelm_category first, so legacy
 -- rows stay readable.
 
-ALTER TYPE public.notification_type ADD VALUE IF NOT EXISTS 'coachhelm_round_review_ready';
-ALTER TYPE public.notification_type ADD VALUE IF NOT EXISTS 'coachhelm_coach_assigned_goal';
-ALTER TYPE public.notification_type ADD VALUE IF NOT EXISTS 'coachhelm_goal_achieved';
-ALTER TYPE public.notification_type ADD VALUE IF NOT EXISTS 'coachhelm_goal_missed';
-ALTER TYPE public.notification_type ADD VALUE IF NOT EXISTS 'coachhelm_new_insight';
-ALTER TYPE public.notification_type ADD VALUE IF NOT EXISTS 'coachhelm_composite_insight';
-ALTER TYPE public.notification_type ADD VALUE IF NOT EXISTS 'coachhelm_weekly_digest';
-ALTER TYPE public.notification_type ADD VALUE IF NOT EXISTS 'coachhelm_coach_commented';
-ALTER TYPE public.notification_type ADD VALUE IF NOT EXISTS 'coachhelm_engine_suggested_goal';
-ALTER TYPE public.notification_type ADD VALUE IF NOT EXISTS 'coachhelm_standing_percentile_changed';
+ALTER TYPE public.notification_type
+ADD VALUE IF NOT EXISTS 'coachhelm_round_review_ready';
+ALTER TYPE public.notification_type
+ADD VALUE IF NOT EXISTS 'coachhelm_coach_assigned_goal';
+ALTER TYPE public.notification_type
+ADD VALUE IF NOT EXISTS 'coachhelm_goal_achieved';
+ALTER TYPE public.notification_type
+ADD VALUE IF NOT EXISTS 'coachhelm_goal_missed';
+ALTER TYPE public.notification_type
+ADD VALUE IF NOT EXISTS 'coachhelm_new_insight';
+ALTER TYPE public.notification_type
+ADD VALUE IF NOT EXISTS 'coachhelm_composite_insight';
+ALTER TYPE public.notification_type
+ADD VALUE IF NOT EXISTS 'coachhelm_weekly_digest';
+ALTER TYPE public.notification_type
+ADD VALUE IF NOT EXISTS 'coachhelm_coach_commented';
+ALTER TYPE public.notification_type
+ADD VALUE IF NOT EXISTS 'coachhelm_engine_suggested_goal';
+ALTER TYPE public.notification_type
+ADD VALUE IF NOT EXISTS 'coachhelm_standing_percentile_changed';

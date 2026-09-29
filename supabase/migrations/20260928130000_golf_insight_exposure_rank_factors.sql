@@ -19,10 +19,15 @@
 -- rankEvidenceInsightsScored into buildExposureRows / recordInsightExposure.
 --
 -- ROLLBACK: ALTER TABLE public.golf_insight_exposure DROP COLUMN rank_factors;
--- VERIFY: select 1 from information_schema.columns where table_schema = 'public' and table_name = 'golf_insight_exposure' and column_name = 'rank_factors' and data_type = 'jsonb';
+-- VERIFY: select 1 from information_schema.columns
+--   where table_schema = 'public' and table_name = 'golf_insight_exposure'
+--     and column_name = 'rank_factors' and data_type = 'jsonb';
 
 ALTER TABLE public.golf_insight_exposure
-  ADD COLUMN IF NOT EXISTS rank_factors jsonb;
+ADD COLUMN IF NOT EXISTS rank_factors jsonb;
 
 COMMENT ON COLUMN public.golf_insight_exposure.rank_factors IS
-  'Factors behind rank_score (scoreInsightFactors): magnitude, magnitude_basis (strokes | priority_floor | exempt_zero), confidence, coach_weight, goal_boost, coachability, sample_damping, urgent. NULL = not recorded.';
+'Factors behind rank_score (scoreInsightFactors): magnitude, '
+'magnitude_basis (strokes | priority_floor | exempt_zero), confidence, '
+'coach_weight, goal_boost, coachability, sample_damping, urgent. '
+'NULL = not recorded.';

@@ -22,17 +22,20 @@
 -- (categories, the hole-estimate fallback, scale, writes) is unchanged.
 --
 -- After apply (service role), recompute stored SG for every completed round:
---   SELECT public.recalculate_round_strokes_gained(id) FROM public.golf_rounds WHERE status = 'completed';
+--   SELECT public.recalculate_round_strokes_gained(id)
+--   FROM public.golf_rounds WHERE status = 'completed';
 -- then refresh caches/standings (the nightly standing cron picks them up).
 --
 -- ROLLBACK: re-apply the previous body (pg_get_functiondef captured
 -- 2026-09-28; identical to the body below except the two CASE expressions
 -- and the LATERAL join).
 
-CREATE OR REPLACE FUNCTION public.recalculate_round_strokes_gained(p_round_id uuid)
- RETURNS void
- LANGUAGE plpgsql
- SET search_path TO 'public', 'pg_temp'
+CREATE OR REPLACE FUNCTION public.recalculate_round_strokes_gained(
+    p_round_id uuid
+)
+RETURNS void
+LANGUAGE plpgsql
+SET search_path TO 'public', 'pg_temp'
 AS $function$
 DECLARE
   v_player_id UUID; v_shot_count INTEGER;

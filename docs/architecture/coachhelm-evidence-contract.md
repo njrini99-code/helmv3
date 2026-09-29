@@ -1998,7 +1998,9 @@ structured `ShadowEvalReport`.
 `ranking/score.ts`). It is a **measured per-round figure from the player's own
 data**, not a display projection:
 
-    strokes/round = attempts per round × rate gap to target × strokes per event
+```text
+strokes/round = attempts per round × rate gap to target × strokes per event
+```
 
 `measuredStrokesImpact` / `rateGapStrokes` (`counterfactual/measured-impact.ts`)
 implement it. It is written even when the counterfactual line is suppressed
@@ -2007,13 +2009,37 @@ the row simply ranks on strokes instead of on the priority floor. A metric
 that declares an `attempt_metric` never falls back to the per-unit lookup
 constant here (those constants are tuning choices, not measurements).
 
-| Generator | attempts per round | gap | strokes per event | notes |
-| --- | --- | --- | --- | --- |
-| `putt_distance` | band attempts / cache `rounds_played` | counterfactual target (plausible cohort → gender anchor → Tour) − make % | 1 | `attempts_per_round` also feeds the base counterfactual (defect 7) |
-| `approach_miss` | band attempts / every round in the 90-day window with an approach | green-hit anchor − green-hit % | player's own mean expected strokes after a miss − after a hit (`getExpectedStrokes`), reference 0.61 when < 3 of either | 175+ yd excludes par-5 second shots; target is the green-hit anchor (no team/level green-hit cohort exists yet); inputs in `detail.strokes_impact_inputs` |
-| `par_scoring` | player's own holes of that par per round | per-par average − plausible cohort `level_avg` (else Tour) | 1 | capped at the per-par ceiling; 0 without a standing row |
-| `putt_bias` | weak-side putts in the winning cut / rounds | strong-side − weak-side make % (player vs self) | 1 | directional rows only; balanced rows are 0 |
-| `warmup_hole` | 1 opener per round | opener delta − Tour 0.1 | — | row exists only when the 95% interval on the delta excludes 0 |
+Per generator (attempts per round; gap; strokes per event; notes):
+
+- `putt_distance`
+  - Attempts: band attempts / cache `rounds_played`.
+  - Gap: counterfactual target (plausible cohort → gender anchor → Tour)
+    minus make %.
+  - Strokes per event: 1.
+  - `attempts_per_round` also feeds the base counterfactual (defect 7).
+- `approach_miss`
+  - Attempts: band attempts / every round in the 90-day window with an
+    approach.
+  - Gap: green-hit anchor minus green-hit %.
+  - Strokes per event: the player's own mean expected strokes after a miss
+    minus after a hit (`getExpectedStrokes`); reference 0.61 when fewer than
+    3 of either.
+  - 175+ yd excludes par-5 second shots. The target is the green-hit anchor
+    (no team/level green-hit cohort exists yet). Inputs are in
+    `detail.strokes_impact_inputs`.
+- `par_scoring`
+  - Attempts: the player's own holes of that par per round.
+  - Gap: per-par average minus plausible cohort `level_avg` (else Tour).
+  - Strokes per event: 1. Capped at the per-par ceiling; 0 without a
+    standing row.
+- `putt_bias`
+  - Attempts: weak-side putts in the winning cut / rounds.
+  - Gap: strong-side minus weak-side make % (player vs self).
+  - Strokes per event: 1. Directional rows only; balanced rows are 0.
+- `warmup_hole`
+  - Attempts: 1 opener per round.
+  - Gap: opener delta minus Tour 0.1.
+  - The row exists only when the 95% interval on the delta excludes 0.
 
 `par_scoring` and `warmup_hole` stay floor-exempt: the base keeps their
 composed value, so the generator's measured figure is what ranks them.
