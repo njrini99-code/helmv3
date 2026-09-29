@@ -19,7 +19,7 @@
  * and 1-putts for bogey, so his putt total flatters him precisely when he
  * played worst.
  *
- * That matters because `buildPrompt` in v3/llm/round-review.ts hands the model
+ * That mattered because `buildPrompt` in v3/llm/round-review.ts (since deleted) handed the model
  * a bare "29 putts" with no context. On one of those 36 rounds the natural
  * sentence to write is "your putting held up well" — which is false, and the
  * citation verifier cannot catch it because 29 IS the putt count. The number is
@@ -110,70 +110,12 @@ describe('regimeGuidanceLine — what the round-review prompt is told', () => {
 });
 
 /**
- * The wiring: the round-review prompt must carry the lens, not just the numbers.
- *
- * `buildPrompt` hands the model "29 putts, 4/14 fairways, 6/18 greens" and then
- * says "Mention the score and at least one of the stats". On a 6-green round
- * the most quotable stat is the flattering putt count, and praising it is the
- * single most likely wrong sentence the surface can produce. The citation
- * verifier cannot save it — 29 IS the putt count, so the claim verifies while
- * the inference is false.
- */
-describe('round-review prompt carries the round lens', () => {
-  const BASE = {
-    player_id: 'p1',
-    coach_id: 'c1',
-    player_first_name: 'Cole',
-    total_score: 82,
-    score_to_par: 10,
-    course_name: 'Lakewood Country Club',
-    total_putts: 29,
-    fairways_hit: 4,
-    fairways_total: 14,
-    gir: 6,
-    gir_total: 18,
-    fallback_summary: 'You shot 82.',
-  };
-
-  it('tells the model not to praise a low putt count on a scrambling round', async () => {
-    const { __testables } = await import('@/lib/coachhelm/v3/llm/round-review');
-    const prompt = __testables.buildPrompt(BASE);
-
-    expect(prompt).toMatch(/NOT evidence of good putting/);
-    expect(prompt).toMatch(/6\/18/);
-    expect(prompt).toMatch(/do not praise the putt total/i);
-  });
-
-  it('names putting as the lever when greens were hit', async () => {
-    const { __testables } = await import('@/lib/coachhelm/v3/llm/round-review');
-    const prompt = __testables.buildPrompt({ ...BASE, gir: 14, total_putts: 33 });
-
-    expect(prompt).toMatch(/Lens for this round/);
-    expect(prompt).toMatch(/putting is the lever/i);
-  });
-
-  it('adds no lens line on a transitional round', async () => {
-    const { __testables } = await import('@/lib/coachhelm/v3/llm/round-review');
-    const prompt = __testables.buildPrompt({ ...BASE, gir: 10, total_putts: 31 });
-
-    expect(prompt).not.toMatch(/Lens for this round/);
-  });
-
-  it('adds no lens line when greens were not recorded', async () => {
-    const { __testables } = await import('@/lib/coachhelm/v3/llm/round-review');
-    const prompt = __testables.buildPrompt({ ...BASE, gir: null, gir_total: null });
-
-    expect(prompt).not.toMatch(/Lens for this round/);
-  });
-});
-
-/**
  * The prompt line is not UI copy, and the prompt path is not reachable.
  *
  * `regimeGuidanceLine` is written FOR the model — it opens with "- Lens for
- * this round:" and instructs ("do not praise the putt total"). It reaches
- * `buildPrompt` -> `composeRoundReview` -> `generateLlmRoundReview`, and that
- * action has ZERO callers: all 7 references to it live inside its own file.
+ * this round:" and instructs ("do not praise the putt total"). The only
+ * prompt that used it (`composeRoundReview` / `generateLlmRoundReview`) had
+ * zero callers and was deleted (CoachHelm deep audit row 45).
  * Measured in production, the coach-facing review is written by the v2 path
  * (`generation_method: 'v1'`, `ai_model_version: NULL`, no rows in
  * `golf_coachhelm_llm_calls`), so nothing a coach reads today passes through
