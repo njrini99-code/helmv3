@@ -15,7 +15,7 @@ function normalise<T>(r: ServerResult<T> | null | undefined): ActionResult<T> {
 }
 
 export interface ActionCopy {
-  /** Shown on success, for example "Reminder sent to Eli". */
+  /** Shown on success, for example "Reminder sent to Eli". Empty for a switch, whose new position is the confirmation. */
   done: string;
   /** What failed, in the coach's words: "Couldn't send the reminder to Eli". */
   failed: string;
@@ -55,7 +55,7 @@ export function useAction<A extends unknown[], T>(
       }
       if (result.success) {
         haptic('commit');
-        toast({ title: c.done });
+        if (c.done) toast({ title: c.done });
       } else {
         // A handled failure (the action returned success: false) is still tracked, at low severity.
         if (result.error !== 'busy') chReport(new Error(result.error || 'action failed'), { surface: name.split('.')[0] ?? name, action: name, severity: 'low' });

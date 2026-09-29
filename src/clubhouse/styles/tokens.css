@@ -151,3 +151,13 @@
   --ch-z-overlay: 80;
   --ch-z-toast: 100;
 }
+
+/* Settings > Preferences > Animations off: every Clubhouse transition becomes
+   instant (portaled menus and dialogs carry their own data-ui, so both forms). */
+[data-ui='clubhouse'][data-motion='off'],
+[data-motion='off'] [data-ui='clubhouse'] {
+  --ch-dur-instant: 0ms;
+  --ch-dur-quick: 0ms;
+  --ch-dur-base: 0ms;
+  --ch-dur-slow: 0ms;
+}

@@ -1,0 +1,166 @@
+'use client';
+
+import { Clock, LogOut, Users } from 'lucide-react';
+import { useState } from 'react';
+import { Button } from '../../ui/Button';
+import { Icon } from '../../ui/Icon';
+import { Modal } from '../../ui/Modal';
+import { useAction } from '../../lib/use-action';
+import { golfDetailsProblem, type ChGolfDetails, type ChSettingsData, type ChSettingsWrites } from './model';
+import { Card, Field, ReadFailed, SaveBar, useDraft, useReportDirty } from './parts';
+
+export function GolfSection({ data, writes }: { data: ChSettingsData; writes: ChSettingsWrites }) {
+  return (
+    <>
+      {data.golf?.error ? <ReadFailed what="Your golf details" onRetry={writes.refresh} /> : data.golf && <DetailsCard details={data.golf.value} writes={writes} />}
+      {data.membership?.error ? <ReadFailed what="Your team membership" onRetry={writes.refresh} /> : data.membership && <MembershipCard m={data.membership.value} writes={writes} />}
+    </>
+  );
+}
+
+function DetailsCard({ details, writes }: { details: ChGolfDetails; writes: ChSettingsWrites }) {
+  const f = useDraft(details);
+  useReportDirty('golf', f.dirty);
+  const save = useAction('settings.saveGolf', writes.saveGolf, { done: 'Golf details saved', failed: "Couldn't save your golf details" });
+  const set = (k: keyof ChGolfDetails) => (e: React.ChangeEvent<HTMLInputElement>) => f.setDraft((d) => ({ ...d, [k]: e.target.value }));
+  return (
+    <Card
+      id="set-golf"
+      title="Golf details"
+      description="Your coaches see these on the roster."
+      foot={
+        <SaveBar
+          dirty={f.dirty}
+          pending={save.pending}
+          invalid={golfDetailsProblem(f.draft)}
+          savedAt={f.savedAt}
+          onReset={f.reset}
+          onSave={async () => {
+            const r = await save.run(f.draft);
+            if (r.success) f.commit();
+          }}
+        />
+      }
+    >
+      <div className="ch-set-grid">
+        <Field id="set-hcp-v" label="Handicap" inputMode="decimal" placeholder="5.2" value={f.draft.handicap} onChange={set('handicap')} />
+        <Field id="set-hcp-i" label="Handicap index" inputMode="decimal" placeholder="4.8" value={f.draft.handicapIndex} onChange={set('handicapIndex')} />
+        <Field id="set-grad" label="Graduation year" inputMode="numeric" placeholder="2028" value={f.draft.graduationYear} onChange={set('graduationYear')} />
+        <Field id="set-phone" label="Phone" type="tel" autoComplete="tel" value={f.draft.phone} onChange={set('phone')} />
+        <Field id="set-home" label="Hometown" autoComplete="address-level2" value={f.draft.hometown} onChange={set('hometown')} />
+        <Field id="set-state" label="State" maxLength={2} placeholder="NC" value={f.draft.state} onChange={(e) => f.setDraft((d) => ({ ...d, state: e.target.value.toUpperCase() }))} />
+      </div>
+    </Card>
+  );
+}
+
+type Membership = NonNullable<ChSettingsData['membership']> extends infer S ? (S extends { value: infer V } ? NonNullable<V> : never) : never;
+
+function MembershipCard({ m, writes }: { m: Membership; writes: ChSettingsWrites }) {
+  const [requests, setRequests] = useState(m.requests);
+  const [code, setCode] = useState('');
+  const [note, setNote] = useState('');
+  const [leaving, setLeaving] = useState(false);
+  useReportDirty('join', code.trim() !== '');
+  const leave = useAction('settings.leaveTeam', writes.leaveTeam, { done: 'You left the team', failed: "Couldn't leave the team" });
+  const join = useAction('settings.requestJoin', writes.requestJoin, { done: 'Request sent to the coaches', failed: "Couldn't send your request", hint: 'Check the code with your coach.' });
+  const cancel = useAction('settings.cancelRequest', writes.cancelRequest, { done: 'Request cancelled', failed: "Couldn't cancel the request" });
+
+  if (m.team) {
+    return (
+      <Card id="set-membership" title="Team" description="The team you play for on GolfHelm.">
+        <div className="ch-set-team">
+          <span className="ch-set-team__ic">
+            <Icon icon={Users} size={18} />
+          </span>
+          <span>
+            <b>{m.team.name}</b>
+            {m.team.orgName && <span>{m.team.orgName}</span>}
+          </span>
+          <Button size="sm" variant="ghost" leftIcon={LogOut} onClick={() => setLeaving(true)}>
+            Leave team
+          </Button>
+        </div>
+        <Modal
+          open={leaving}
+          onClose={() => !leave.pending && setLeaving(false)}
+          icon={LogOut}
+          title={`Leave ${m.team.name}?`}
+          description="You come off the roster right away. To come back, you'll need the invite code and your coach's approval."
+          footer={
+            <>
+              <Button variant="secondary" disabled={leave.pending} onClick={() => setLeaving(false)}>
+                Stay on the team
+              </Button>
+              <Button
+                variant="danger"
+                disabled={leave.pending}
+                onClick={async () => {
+                  const r = await leave.run();
+                  if (r.success) {
+                    setLeaving(false);
+                    writes.refresh();
+                  }
+                }}
+              >
+                {leave.pending ? 'Leaving…' : 'Leave team'}
+              </Button>
+            </>
+          }
+        />
+      </Card>
+    );
+  }
+
+  return (
+    <Card id="set-membership" title="Join a team" description="Ask your coach for the team's invite code. They approve your request from their roster.">
+      {requests.length > 0 && (
+        <div className="ch-set-requests">
+          {requests.map((r) => (
+            <div key={r.id} className="ch-set-request">
+              <Icon icon={Clock} size={15} />
+              <span>
+                <b>Waiting on {r.teamName}</b>
+                <span>Sent {new Date(r.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
+              </span>
+              <Button
+                size="sm"
+                variant="ghost"
+                disabled={cancel.pending}
+                onClick={async () => {
+                  const res = await cancel.run(r.id);
+                  if (res.success) setRequests((x) => x.filter((y) => y.id !== r.id));
+                }}
+              >
+                Cancel
+              </Button>
+            </div>
+          ))}
+        </div>
+      )}
+      {requests.length === 0 && (
+        <form
+          className="ch-set-grid"
+          onSubmit={async (e) => {
+            e.preventDefault();
+            if (!code.trim()) return;
+            const r = await join.run(code, note);
+            if (r.success) {
+              setCode('');
+              setNote('');
+              writes.refresh();
+            }
+          }}
+        >
+          <Field id="set-join-code" label="Invite code" autoComplete="off" maxLength={12} placeholder="K7M2Q9XA" value={code} onChange={(e) => setCode(e.target.value.toUpperCase())} />
+          <Field id="set-join-note" label="Note to the coaches" help="Optional." maxLength={200} value={note} onChange={(e) => setNote(e.target.value)} />
+          <div className="ch-set-span2">
+            <Button type="submit" variant="primary" disabled={!code.trim() || join.pending}>
+              {join.pending ? 'Sending…' : 'Ask to join'}
+            </Button>
+          </div>
+        </form>
+      )}
+    </Card>
+  );
+}

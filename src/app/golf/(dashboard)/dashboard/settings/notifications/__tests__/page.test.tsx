@@ -32,6 +32,9 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock('next/navigation', () => ({ redirect: mocks.redirect }));
+// These cases cover the current (Fairway) page; the Clubhouse branch is behind its own flag.
+vi.mock('@/clubhouse/gate', () => ({ isClubhouseFor: () => false }));
+vi.mock('@/clubhouse/routes/settings', () => ({ ClubhouseSettingsRoute: () => null }));
 
 vi.mock('@/lib/auth/session', () => ({
   getGolfSessionProfile: mocks.getGolfSessionProfile,

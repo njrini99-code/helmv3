@@ -61,7 +61,8 @@ export const CH_NAV = CH_NAV_COACH;
 export function activeNavItem(pathname: string, role: ChRole = 'coach'): ChNavItem | undefined {
   let best: ChNavItem | undefined;
   for (const item of navFor(role)) {
-    const hit = pathname === item.href || pathname.startsWith(item.href + '/');
+    // Home owns only itself: /golf/dashboard/settings isn't "in" Home.
+    const hit = pathname === item.href || (item.id !== 'home' && pathname.startsWith(item.href + '/'));
     if (hit && (!best || item.href.length > best.href.length)) best = item;
   }
   return best;
@@ -72,9 +73,12 @@ export function activeNavItem(pathname: string, role: ChRole = 'coach'): ChNavIt
  * placeholder inside the Clubhouse shell, never a Fairway page in a Clubhouse
  * frame. Add a route here only when its screen reaches the `desktop` gate.
  */
+/** Settings and its two legacy deep links, which open a section of the one Settings page. */
+const SETTINGS_ROUTES = ['/golf/dashboard/settings', '/golf/dashboard/settings/notifications', '/golf/dashboard/settings/coaching-intelligence'];
+
 export const CH_REBUILT_ROUTES: Record<ChRole, readonly string[]> = {
-  coach: ['/golf/dashboard', '/golf/dashboard/calendar', '/golf/dashboard/messages', '/golf/dashboard/roster', '/golf/dashboard/stats'],
-  player: ['/golf/dashboard/calendar', '/golf/dashboard/messages', '/golf/dashboard/stats'],
+  coach: ['/golf/dashboard', '/golf/dashboard/calendar', '/golf/dashboard/messages', '/golf/dashboard/roster', '/golf/dashboard/stats', ...SETTINGS_ROUTES],
+  player: ['/golf/dashboard/calendar', '/golf/dashboard/messages', '/golf/dashboard/stats', ...SETTINGS_ROUTES],
 };
 
 export function isRebuilt(pathname: string, role: ChRole = 'coach'): boolean {

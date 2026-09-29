@@ -83,3 +83,12 @@ Some preferences are saved locally and not yet consumed globally, so agents shou
 - `memory/context/golfhelm-features.md`
 - `memory/features/coach-intelligence-triage.md`
 - `docs/PUSH_NOTIFICATION_AUDIT.md`
+
+## Clubhouse view (the Clubhouse UI flag in `config/feature-flags.yml`, 2026-09-29)
+
+Behind the flag, `/golf/dashboard/settings` renders the Clubhouse Settings (`src/clubhouse/routes/settings.tsx`) for coaches and players: one page with a section rail (`?section=`), and `/settings/notifications` and `/settings/coaching-intelligence` open their section of it.
+- Loader: `src/clubhouse/data/settings.ts` reads everything server-side with a per-section error flag; a failed section never renders a blank, saveable form. It reads no-row defaults instead of creating rows on read; the CoachHelm philosophy row is created on the first save (`src/clubhouse/screens/settings/writes.ts`).
+- Writes keep the current tables and actions. Changes: deleting an account needs "delete" typed; a new invite code asks first; blank organization fields can be cleared.
+- `push_announcements` is now accepted and defaulted on by `updateNotificationPreferences` / `getNotificationPreferences` (it was stripped by the schema, so the switch saved nothing).
+- The philosophy row mapping moved to `src/lib/coachhelm/philosophy-map.ts` (shared by the hook and the loader).
+- Shown preferences are only those Clubhouse honours: animations (every Clubhouse transition) and haptics. Checklist: `docs/clubhouse/screens/settings.md`; decisions D-18, D-19 in `docs/clubhouse/PROGRESS.md`.

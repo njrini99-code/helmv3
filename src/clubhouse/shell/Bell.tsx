@@ -46,7 +46,7 @@ export interface ChBellApi {
 }
 
 const FEED_LIMIT = 30;
-const W = 384;
+const W = 380;
 
 const BellSource = createContext<ChBellApi | null>(null);
 
@@ -221,7 +221,7 @@ export function Bell() {
                 role="dialog"
                 aria-label="Notifications"
                 tabIndex={-1}
-                className="ch-bellp"
+                className="ch-bellp ch-popover"
                 data-ui="clubhouse"
                 style={{ left: pos?.left ?? -9999, top: pos?.top ?? 0, width: W }}
                 {...(reduced ? {} : CH_POP)}
@@ -297,7 +297,7 @@ export function Bell() {
                           const unreadRow = isUnread(item);
                           return (
                             <button key={`${item.source}:${item.id}`} type="button" className={'ch-bellp__row' + (unreadRow ? ' is-unread' : '')} onClick={() => openItem(item)}>
-                              <span className={'ch-bellp__ic' + (item.category === 'coachhelm' ? ' is-ai' : '')}>
+                              <span className="ch-bellp__ic">
                                 <Icon icon={cat.icon} size={15} />
                               </span>
                               <span className="ch-bellp__main">

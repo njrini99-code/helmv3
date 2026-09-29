@@ -12,8 +12,12 @@ import { Bell } from './Bell';
  * its own spec; it is not rendered as a dead control in the meantime
  * (tracker: data gaps).
  */
-export function TopBar({ item }: { item: ChNavItem | undefined }) {
-  const crumbs = !item || item.id === 'home' ? ['Home'] : [item.section, item.label].filter(Boolean) as string[];
+export function TopBar({ item, pathname }: { item: ChNavItem | undefined; pathname: string }) {
+  const crumbs = pathname.startsWith('/golf/dashboard/settings')
+    ? ['Settings']
+    : !item || item.id === 'home'
+      ? ['Home']
+      : ([item.section, item.label].filter(Boolean) as string[]);
   return (
     <header className="ch-topbar">
       <nav className="ch-topbar__crumbs" aria-label="Breadcrumb">
@@ -26,7 +30,13 @@ export function TopBar({ item }: { item: ChNavItem | undefined }) {
       </nav>
       <div className="ch-topbar__actions">
         <Bell />
-        <Link href="/golf/dashboard/settings" className="ch-btn ch-btn--ghost ch-iconbtn" aria-label="Settings" title="Settings">
+        <Link
+          href="/golf/dashboard/settings"
+          className={'ch-btn ch-btn--ghost ch-iconbtn' + (pathname.startsWith('/golf/dashboard/settings') ? ' is-on' : '')}
+          aria-label="Settings"
+          aria-current={pathname.startsWith('/golf/dashboard/settings') ? 'page' : undefined}
+          title="Settings"
+        >
           <Icon icon={Settings} size={16} />
         </Link>
       </div>

@@ -364,3 +364,103 @@
   box-shadow: inset 0 0 0 1px var(--ch-border-subtle);
   white-space: nowrap;
 }
+
+/* Surface (design system: surfaces/Surface) */
+.ch-surface {
+  position: relative;
+  min-width: 0;
+  border-radius: 16px;
+  background: var(--ch-bg-surface);
+  box-shadow: 0 0 0 1px rgb(28 25 18 / 0.07), 0 1px 2px rgb(28 25 18 / 0.04), 0 8px 20px -10px rgb(28 25 18 / 0.1);
+}
+.ch-surface--flat {
+  box-shadow: 0 0 0 1px var(--ch-border-subtle);
+}
+.ch-surface__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px 20px 0;
+}
+.ch-surface__title {
+  margin: 0;
+  font: var(--ch-type-title);
+  letter-spacing: -0.012em;
+  color: var(--ch-text-primary);
+}
+.ch-surface__sub {
+  margin-top: 2px;
+  font: var(--ch-type-caption);
+  color: var(--ch-text-tertiary);
+}
+.ch-surface__actions {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 8px;
+}
+.ch-surface__rule {
+  height: 1px;
+  margin: 14px 0 0;
+  background: var(--ch-border-hairline);
+}
+.ch-surface__body {
+  padding: 16px 20px 20px;
+}
+.ch-surface__foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 20px;
+  border-top: 1px solid var(--ch-border-hairline);
+  border-radius: 0 0 16px 16px;
+  background: #f4f2ea;
+  font: var(--ch-type-caption);
+  color: var(--ch-text-tertiary);
+}
+.ch-surface__note {
+  min-width: 0;
+}
+.ch-surface__foot-acts {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Inset (design system: surfaces/Inset) */
+.ch-inset {
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: #efece3;
+  box-shadow: inset 0 1px 3px rgb(28 25 18 / 0.09), inset 0 0 0 1px rgb(28 25 18 / 0.05), 0 1px 0 rgb(255 255 255 / 0.7);
+}
+
+/* Popover panel (design system: overlays/PopoverPanel, strong glass) */
+.ch-popover {
+  padding: 5px;
+  border-radius: 14px;
+  background: rgb(250 248 242 / 0.82);
+  -webkit-backdrop-filter: blur(var(--ch-glass-blur)) saturate(170%);
+  backdrop-filter: blur(var(--ch-glass-blur)) saturate(170%);
+  box-shadow: 0 0 0 1px rgb(28 25 18 / 0.08), 0 8px 16px -6px rgb(28 25 18 / 0.12), 0 24px 48px -16px rgb(28 25 18 / 0.28);
+}
+@media (prefers-reduced-transparency: reduce) {
+  .ch-popover {
+    background: #faf8f2;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+.ch-popover__label {
+  padding: 8px 10px 6px;
+  font: 500 12px/1 var(--ch-font-sans);
+  color: var(--ch-text-tertiary);
+}
+.ch-popover__sep {
+  height: 1px;
+  margin: 5px 6px;
+  background: rgb(28 25 18 / 0.08);
+}

@@ -5,6 +5,7 @@ import { useEffect, type ReactNode } from 'react';
 import type { GolfUserData } from '@/contexts/golf-user-context';
 import { clubhouseFontVariables } from '../lib/fonts';
 import { chTagSession } from '../lib/track';
+import { useAppearancePreferences } from '@/hooks/golf/use-appearance-preferences';
 import { ToastProvider } from '../ui/Toast';
 import type { ChShellData } from '../data/shell';
 import { activeNavItem, isRebuilt } from './nav';
@@ -43,17 +44,18 @@ export function ClubhouseFrame({
   const role = userData.role;
   const item = activeNavItem(pathname, role);
   const rebuilt = forceRebuilt || isRebuilt(pathname, role);
+  const { showAnimations } = useAppearancePreferences();
   useEffect(() => chTagSession(), []);
 
   return (
     <ClubhouseMarker>
       <LazyMotion features={domAnimation} strict>
         <ToastProvider>
-          <div className={`ch-root ${clubhouseFontVariables}`} data-ui="clubhouse">
+          <div className={`ch-root ${clubhouseFontVariables}`} data-ui="clubhouse" data-motion={showAnimations ? undefined : 'off'}>
             <div className="ch-app">
               <Sidebar userData={userData} shell={shell} pathname={pathname} />
               <div className="ch-canvas" id="ch-canvas">
-                <TopBar item={item} />
+                <TopBar item={item} pathname={pathname} />
                 <RouteFrame routeKey={pathname}>
                   {rebuilt ? children : <NotRebuilt label={item?.label ?? 'This page'} />}
                 </RouteFrame>

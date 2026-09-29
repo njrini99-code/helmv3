@@ -116,7 +116,7 @@ export function Menu({
                 id={id}
                 role="menu"
                 aria-label={label}
-                className="ch-menu"
+                className="ch-menu ch-popover"
                 data-ui="clubhouse"
                 style={{ left: pos?.left ?? -9999, top: pos?.top, bottom: pos?.bottom, width: W }}
                 initial={reduced ? { opacity: 0 } : CH_POP.initial}

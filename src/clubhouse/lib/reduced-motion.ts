@@ -1,6 +1,7 @@
 'use client';
 
 import { useSyncExternalStore } from 'react';
+import { useAppearancePreferences } from '@/hooks/golf/use-appearance-preferences';
 
 const QUERY = '(prefers-reduced-motion: reduce)';
 
@@ -17,9 +18,13 @@ function subscribe(onChange: () => void) {
  * null before hydration, which is the #418 class).
  */
 export function useChReducedMotion(): boolean {
-  return useSyncExternalStore(
+  const os = useSyncExternalStore(
     subscribe,
     () => window.matchMedia(QUERY).matches,
     () => false,
   );
+  // Settings > Preferences > Animations (stored on this device). Its server
+  // snapshot is the default (on), so hydration never flips.
+  const { showAnimations } = useAppearancePreferences();
+  return os || !showAnimations;
 }

@@ -47,6 +47,8 @@ import type { PrefsByCategory } from '@/lib/coachhelm/v3/notifications/router';
 import { fairwayScope } from '@/lib/redesign/flag';
 import { FeatureUnavailable } from '@/components/fairway';
 import { FairwaySettingsNotifications } from '@/components/fairway/pages/settings';
+import { isClubhouseFor } from '@/clubhouse/gate';
+import { ClubhouseSettingsRoute } from '@/clubhouse/routes/settings';
 
 export const metadata: Metadata = {
   title: 'Notification preferences',
@@ -55,6 +57,10 @@ export const metadata: Metadata = {
 export default async function NotificationPrefsPage() {
   const session = await getGolfSessionProfile();
   if (!session) redirect('/golf/login');
+  // Clubhouse: one Settings page; this link opens its Notifications section (both roles have one).
+  if (isClubhouseFor(session.coach ? 'coach' : session.player ? 'player' : null)) {
+    return <ClubhouseSettingsRoute section="notifications" />;
+  }
   if (!session.player) {
     // Two different visitors land here with no player profile, and they need
     // two different next steps — see the file header (#1318) for why the

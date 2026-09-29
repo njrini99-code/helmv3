@@ -312,3 +312,49 @@ describe('bell', () => {
     expect(ago('not a date', now)).toBe('');
   });
 });
+
+import * as SM from '../screens/settings/model';
+
+describe('settings model', () => {
+  it('opens a valid section per role and falls back to Account', () => {
+    expect(SM.parseSection('coachhelm', 'coach')).toBe('coachhelm');
+    expect(SM.parseSection('coachhelm', 'player')).toBe('account');
+    expect(SM.parseSection('golf', 'player')).toBe('golf');
+    expect(SM.parseSection(undefined, 'coach')).toBe('account');
+  });
+  it('validates passwords and email before anything is sent', () => {
+    expect(SM.passwordProblem('', 'abcdefgh', 'abcdefgh')).toMatch(/current/);
+    expect(SM.passwordProblem('old', 'short', 'short')).toMatch(/8 characters/);
+    expect(SM.passwordProblem('old', 'abcdefgh', 'abcdefgx')).toMatch(/match/);
+    expect(SM.passwordProblem('old', 'abcdefgh', 'abcdefgh')).toBeNull();
+    expect(SM.emailProblem('nope', 'a@b.co')).toMatch(/valid/);
+    expect(SM.emailProblem('A@B.co', 'a@b.co')).toMatch(/already/);
+    expect(SM.emailProblem('new@b.co', 'a@b.co')).toBeNull();
+  });
+  it('checks golf details and keeps blank as blank', () => {
+    const d = { handicap: '', handicapIndex: '', graduationYear: '', hometown: '', state: '', phone: '' };
+    expect(SM.golfDetailsProblem(d)).toBeNull();
+    expect(SM.golfDetailsProblem({ ...d, handicap: '60' })).toMatch(/Handicap/);
+    expect(SM.golfDetailsProblem({ ...d, graduationYear: '27' })).toMatch(/year/);
+    expect(SM.golfDetailsProblem({ ...d, state: 'North' })).toMatch(/two-letter/);
+  });
+  it('requires the first reminder before the final one', () => {
+    expect(SM.remindersValid({ enabled: true, earlyHours: 1, lateMinutes: 60 })).toBe(false);
+    expect(SM.remindersValid({ enabled: true, earlyHours: 24, lateMinutes: 60 })).toBe(true);
+    expect(SM.remindersValid({ enabled: false, earlyHours: 1, lateMinutes: 600 })).toBe(true);
+    expect(SM.hoursLabel(48)).toBe('2 days before');
+    expect(SM.minutesLabel(90)).toBe('1 h 30 min before');
+  });
+  it('re-ranks priorities as a 1..5 permutation', () => {
+    const p = { priorityBallStriking: 1, priorityShortGame: 3, priorityPutting: 2, priorityCourseManagement: 4, priorityMentalGame: 5 };
+    const order = SM.priorityOrder(p);
+    expect(order).toEqual(['priorityBallStriking', 'priorityPutting', 'priorityShortGame', 'priorityCourseManagement', 'priorityMentalGame']);
+    const moved = SM.moveOrder(order, 'priorityShortGame', -1);
+    expect(SM.orderToPriorities(moved)).toEqual({ priorityBallStriking: 1, priorityShortGame: 2, priorityPutting: 3, priorityCourseManagement: 4, priorityMentalGame: 5 });
+    expect(SM.moveOrder(order, 'priorityBallStriking', -1)).toBe(order);
+  });
+  it('fills CoachHelm update defaults per channel', () => {
+    expect(SM.channelsFor({}, 'new_insight')).toEqual({ push: false, email: false, in_app: true });
+    expect(SM.channelsFor({ new_insight: { push: true, email: false, in_app: false } }, 'new_insight').push).toBe(true);
+  });
+});

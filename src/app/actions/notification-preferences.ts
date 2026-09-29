@@ -22,6 +22,9 @@ const notificationPreferencesSchema = z.object({
   push_events: z.boolean().optional(),
   push_task_reminders: z.boolean().optional(),
   push_coachhelm: z.boolean().optional(),
+  // Read by the push gate (lib/notifications/push.ts). Missing here, zod
+  // stripped it and the Settings switch saved nothing.
+  push_announcements: z.boolean().optional(),
   // Quiet mode — when on, only quiet-exempt categories deliver. Honoured by the
   // delivery gate (gatedDelivery in @/lib/coachhelm/v3/notifications/types).
   quiet_mode: z.boolean().optional(),
@@ -114,6 +117,8 @@ export async function getNotificationPreferences(): Promise<{
       push_events: false,
       push_task_reminders: true,
       push_coachhelm: true,
+      // Delivery defaults this on (lib/notifications/types.ts); the switch must agree.
+      push_announcements: true,
       quiet_mode: false,
     };
 

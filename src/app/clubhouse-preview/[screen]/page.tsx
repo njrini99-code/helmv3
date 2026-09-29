@@ -15,6 +15,8 @@ import '@/clubhouse/styles/calendar.css';
 import '@/clubhouse/styles/messages.css';
 import { PreviewMessages } from '@/clubhouse/preview/PreviewMessages';
 import { PreviewBell } from '@/clubhouse/preview/PreviewBell';
+import { PreviewSettings } from '@/clubhouse/preview/PreviewSettings';
+import { SettingsSkeleton } from '@/clubhouse/screens/settings/SettingsSkeleton';
 import { MessagesSkeleton } from '@/clubhouse/screens/messages/MessagesSkeleton';
 import { Calendar } from '@/clubhouse/screens/calendar/Calendar';
 import { CalendarSkeleton } from '@/clubhouse/screens/calendar/CalendarSkeleton';
@@ -43,6 +45,7 @@ import {
  *   /clubhouse-preview/calendar ?state=empty | failed | partial | loading, &view=, &date=, &event=
  *   /clubhouse-preview/calendar-player
  *   /clubhouse-preview/messages ?state=empty | rail | failed | thread-failed | loading | loading-route
+ *   /clubhouse-preview/settings ?state=player | noteam | failed | partial | assistant | failwrites | loading, &section=
  *   any screen &bell=empty | failed | slow   (the top-bar notifications feed)
  */
 export default async function ClubhousePreview({
@@ -50,11 +53,11 @@ export default async function ClubhousePreview({
   searchParams,
 }: {
   params: Promise<{ screen: string }>;
-  searchParams: Promise<{ state?: string; view?: string; date?: string; event?: string; bell?: string; new?: string }>;
+  searchParams: Promise<{ state?: string; view?: string; date?: string; event?: string; bell?: string; new?: string; section?: string }>;
 }) {
   if (process.env.NODE_ENV === 'production') notFound();
   const { screen } = await params;
-  const { state, view, date, event, bell, new: isNew } = await searchParams;
+  const { state, view, date, event, bell, new: isNew, section } = await searchParams;
   const calView = view === 'day' || view === 'month' || view === 'agenda' ? view : 'week';
 
   const screens: Record<string, { path: string; node: React.ReactNode }> = {
@@ -119,6 +122,10 @@ export default async function ClubhousePreview({
       path: '/golf/dashboard/messages',
       node: state === 'loading-route' ? <MessagesSkeleton /> : <PreviewMessages state={state} />,
     },
+    settings: {
+      path: '/golf/dashboard/settings',
+      node: state === 'loading' ? <SettingsSkeleton /> : <PreviewSettings state={state} section={section} />,
+    },
     'messages-player': {
       path: '/golf/dashboard/messages',
       node: <PreviewMessages state={state} role="player" />,
@@ -126,7 +133,7 @@ export default async function ClubhousePreview({
   };
   const entry = screens[screen];
   if (!entry) notFound();
-  const user = screen === 'calendar-player' || screen === 'messages-player' ? { ...PREVIEW_PLAYER_USER, name: 'Jonah Okafor' } : PREVIEW_COACH;
+  const user = screen === 'calendar-player' || screen === 'messages-player' || (screen === 'settings' && (state === 'player' || state === 'noteam')) ? { ...PREVIEW_PLAYER_USER, name: 'Jonah Okafor' } : PREVIEW_COACH;
 
   return (
     <PreviewBell state={bell}>
