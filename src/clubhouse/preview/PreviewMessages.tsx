@@ -181,9 +181,11 @@ export function PreviewMessages({ state, role = 'coach' }: { state?: string; rol
     attachments: previewAttachments,
     members: members.filter((m) => m.userId === 'me' || all.includes(m.userId)),
     membersError: false,
+    retryMembers: () => {},
     leave: async () => true,
     directory: people,
     directoryError: false,
+    retryDirectory: () => {},
     startDirect: async (userId) => {
       const existing = convs.find((c) => !c.group && c.memberIds[0] === userId);
       if (existing) {
@@ -210,6 +212,7 @@ export function PreviewMessages({ state, role = 'coach' }: { state?: string; rol
     },
     mute,
     muteError: false,
+    retryMute: () => {},
     setMute: async (muted, hours) => {
       setMute({ muted, until: muted && hours ? new Date(Date.parse(NOW) + hours * 3600000).toISOString() : null });
       toast({ title: muted ? 'Conversation muted' : 'Notifications back on' });

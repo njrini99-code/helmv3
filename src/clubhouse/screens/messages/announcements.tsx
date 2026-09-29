@@ -21,7 +21,7 @@ export function AnnouncementsSection({ api, q }: { api: ChMessagesApi; q: string
     return (
       <section className="ch-ms-sec" aria-label="Announcements">
         <div className="ch-ms-sec__l">Announcements</div>
-        <InlineNotice title="Announcements didn't load." body="Try again; the error has been reported." onRetry={api.refetchAnns} />
+        <InlineNotice code="CH-7206" title="Announcements didn't load." body="Try again; the error has been reported." onRetry={api.refetchAnns} />
       </section>
     );
   }
@@ -151,10 +151,10 @@ export function AnnouncementPane({ api, a, onBack }: { api: ChMessagesApi; a: Ch
           )}
 
           {failed ? (
-            <InlineNotice title="The details didn't load." body="The announcement above is complete. Try again for replies, tasks and files." onRetry={() => setAttempt((x) => x + 1)} />
+            <InlineNotice code="CH-7207" title="The details didn't load." body="The announcement above is complete. Try again for replies, tasks and files." onRetry={() => setAttempt((x) => x + 1)} />
           ) : !detail ? (
             (a.requiresAck || a.taskCount > 0 || a.docCount > 0) && (
-              <div style={{ display: 'grid', gap: 10 }} aria-busy="true">
+              <div style={{ display: 'grid', gap: 10 }} aria-busy="true" data-ch-code="CH-7406">
                 <Skeleton height={16} width={180} />
                 <Skeleton height={44} />
               </div>

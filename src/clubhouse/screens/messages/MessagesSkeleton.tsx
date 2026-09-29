@@ -4,7 +4,7 @@ import '../../styles/messages.css';
 /** Route loading for Messages: the rail's head and rows, and an empty thread column, in place. */
 export function MessagesSkeleton() {
   return (
-    <main className="ch-ms" aria-busy="true" aria-label="Loading messages">
+    <main className="ch-ms" aria-busy="true" aria-label="Loading messages" data-ch-code="CH-7401">
       <aside className="ch-ms-rail">
         <div className="ch-ms-rail__head">
           <Skeleton width={150} height={30} radius={8} />

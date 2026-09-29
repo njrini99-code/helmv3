@@ -22,7 +22,7 @@ import type { ChMessagesData } from '../../data/messages';
 import { useToast } from '../../ui/Toast';
 import { useNow } from '../../lib/use-now';
 import { chReport, chTrail } from '../../lib/track';
-import { friendlyReason } from '../../lib/use-action';
+import { CH_SLOW_SAVE_AFTER, friendlyReason, isOffline } from '../../lib/use-action';
 import { haptic } from '../../lib/haptics';
 import { MessagesView, type ChMessagesApi } from './MessagesView';
 import type { ChAnnouncement, ChAnnouncementDetail, ChConv, ChMember, ChMsg, ChMute, ChReaction, ChReactionKey } from './model';
@@ -104,7 +104,7 @@ export function Messages({ data }: { data: ChMessagesData }) {
       const person = data.directory.find((p) => p.playerId === player);
       router.replace('/golf/dashboard/messages', { scroll: false });
       if (!person) {
-        toast({ tone: 'error', title: "Couldn't open that conversation", body: 'That player isn’t on your team, or hasn’t set up their account yet.' });
+        toast({ tone: 'error', title: "Couldn't open that conversation", body: 'That player isn’t on your team, or hasn’t set up their account yet.', code: 'CH-7001' });
         return;
       }
       void startDirect(person.userId);
@@ -125,13 +125,38 @@ export function Messages({ data }: { data: ChMessagesData }) {
   );
 
   const fail = useCallback(
-    (surface: string, err: unknown, title: string, hint: string) => {
+    (surface: string, err: unknown, title: string, hint: string, code: string) => {
       chReport(err, { surface: `messages.${surface}`, action: `messages.${surface}` });
       haptic('error');
       const reason = err instanceof Error ? friendlyReason(err.message) : null;
-      toast({ tone: 'error', title, body: reason ?? hint });
+      toast({ tone: 'error', title, body: reason ?? hint, code });
     },
     [toast],
+  );
+
+  /**
+   * Every Messages change runs through here, with the same rules as useAction:
+   * offline, nothing is sent (CH-1903); slow, it says so once (CH-1902); a
+   * failure is reported and toasted with its catalog number.
+   */
+  const attempt = useCallback(
+    async (surface: string, copy: { failed: string; hint: string; code: string }, fn: () => Promise<boolean | void>): Promise<boolean> => {
+      if (isOffline()) {
+        haptic('error');
+        toast({ tone: 'error', title: `${copy.failed}: you're offline`, body: 'Reconnect, then try again. Nothing was changed.', code: 'CH-1903' });
+        return false;
+      }
+      const slow = window.setTimeout(() => toast({ title: 'Still saving…', body: 'This is taking longer than usual. Keep this page open.', code: 'CH-1902' }), CH_SLOW_SAVE_AFTER);
+      try {
+        return (await fn()) !== false;
+      } catch (err) {
+        fail(surface, err, copy.failed, copy.hint, copy.code);
+        return false;
+      } finally {
+        window.clearTimeout(slow);
+      }
+    },
+    [toast, fail],
   );
 
   const startDirect = useCallback(
@@ -141,50 +166,39 @@ export function Messages({ data }: { data: ChMessagesData }) {
         setSelectedId(existing.id);
         return true;
       }
-      try {
+      return attempt('startDirect', { failed: "Couldn't start the conversation", hint: 'Try again in a moment.', code: 'CH-7002' }, async () => {
         chTrail('messages start direct');
         const res = await createGolfConversation([userId], data.teamId);
-        if ('conversationId' in res && res.conversationId) {
-          await refetch();
-          setSelectedId(res.conversationId);
-          haptic('commit');
-          return true;
-        }
-        throw new Error('error' in res ? String(res.error) : 'Could not start the conversation');
-      } catch (err) {
-        fail('startDirect', err, "Couldn't start the conversation", 'Try again in a moment.');
-        return false;
-      }
+        if (!('conversationId' in res) || !res.conversationId) throw new Error('error' in res ? String(res.error) : 'Could not start the conversation');
+        await refetch();
+        setSelectedId(res.conversationId);
+        haptic('commit');
+      });
     },
-    [convs, data.teamId, refetch, fail],
+    [convs, data.teamId, refetch, attempt],
   );
 
   const createGroup = useCallback(
     async (userIds: string[], title: string): Promise<boolean> => {
-      try {
+      return attempt('createGroup', { failed: "Couldn't create the group", hint: 'Try again in a moment.', code: 'CH-7003' }, async () => {
         chTrail('messages create group');
         const res =
           data.role === 'coach'
             ? await createGolfTeamBroadcast({ teamId: data.teamId, title, selectedPlayerIds: userIds.map((u) => people.get(u)?.playerId).filter((x): x is string => !!x) })
             : await createGolfConversation(userIds, data.teamId);
-        if ('conversationId' in res && res.conversationId) {
-          await refetch();
-          setSelectedId(res.conversationId);
-          haptic('commit');
-          toast({ title: data.role === 'coach' ? `Group created · ${title}` : 'Group created' });
-          return true;
-        }
-        throw new Error('error' in res ? String(res.error) : 'Could not create the group');
-      } catch (err) {
-        fail('createGroup', err, "Couldn't create the group", 'Try again in a moment.');
-        return false;
-      }
+        if (!('conversationId' in res) || !res.conversationId) throw new Error('error' in res ? String(res.error) : 'Could not create the group');
+        await refetch();
+        setSelectedId(res.conversationId);
+        haptic('commit');
+        toast({ title: data.role === 'coach' ? `Group created · ${title}` : 'Group created' });
+      });
     },
-    [data.role, data.teamId, people, refetch, toast, fail],
+    [data.role, data.teamId, people, refetch, toast, attempt],
   );
 
   const [members, setMembers] = useState<ChMember[] | null>(null);
   const [membersError, setMembersError] = useState(false);
+  const [membersAttempt, setMembersAttempt] = useState(0);
   const selected = convs.find((c) => c.id === selectedId) ?? null;
   useEffect(() => {
     setMembers(null);
@@ -212,7 +226,7 @@ export function Messages({ data }: { data: ChMessagesData }) {
     return () => {
       live = false;
     };
-  }, [selected?.id, selected?.group, people]);
+  }, [selected?.id, selected?.group, people, membersAttempt]);
 
   const chMsgs: ChMsg[] = useMemo(
     () =>
@@ -336,6 +350,7 @@ export function Messages({ data }: { data: ChMessagesData }) {
   // Mute state for the open conversation.
   const [mute, setMuteState] = useState<ChMute | null>(null);
   const [muteError, setMuteError] = useState(false);
+  const [muteAttempt, setMuteAttempt] = useState(0);
   useEffect(() => {
     setMuteState(null);
     setMuteError(false);
@@ -357,7 +372,7 @@ export function Messages({ data }: { data: ChMessagesData }) {
     return () => {
       live = false;
     };
-  }, [selectedId]);
+  }, [selectedId, muteAttempt]);
 
   // Stable across renders: the attachment tiles key their fetch on it, and signed URLs cost a round trip.
   const loadAttachments = useCallback(async (messageId: string) => {
@@ -393,7 +408,7 @@ export function Messages({ data }: { data: ChMessagesData }) {
         return true;
       } catch (err) {
         const unknown = /network|fetch|timeout|aborted/i.test(err instanceof Error ? err.message : '');
-        fail('send', err, unknown ? "Couldn't confirm this message sent" : "Couldn't send the message", unknown ? 'Check the thread before sending again.' : 'Your message is still in the box. Try again.');
+        fail('send', err, unknown ? "Couldn't confirm this message sent" : "Couldn't send the message", unknown ? 'Check the thread before sending again.' : 'Your message is still in the box. Try again.', unknown ? 'CH-7005' : 'CH-7004');
         return false;
       }
     },
@@ -402,7 +417,7 @@ export function Messages({ data }: { data: ChMessagesData }) {
       const bad = files.map((f) => ({ f, v: validateFile(f) })).find((x) => !x.v.valid);
       if (bad) {
         haptic('warning');
-        toast({ tone: 'error', title: `Can't attach ${bad.f.name}`, body: bad.v.error ?? 'That file type or size isn’t supported.' });
+        toast({ tone: 'error', title: `Can't attach ${bad.f.name}`, body: bad.v.error ?? 'That file type or size isn’t supported.', code: 'CH-7101' });
         return false;
       }
       const pending: PendingAttachment[] = files.map((file, i) => ({
@@ -418,67 +433,56 @@ export function Messages({ data }: { data: ChMessagesData }) {
         status: 'pending',
         uploadProgress: 0,
       }));
-      try {
+      return attempt('sendFiles', { failed: "Couldn't send the attachment", hint: 'Your message and files are still in the box. Try again.', code: 'CH-7006' }, async () => {
         const res = await sendMessageWithAttachments({ conversationId: selectedId, content: text, attachments: pending });
         if (res.cancelled) return false;
         if (!res.success) throw new Error(res.error || 'Attachment send failed');
         return true;
-      } catch (err) {
-        fail('sendFiles', err, "Couldn't send the attachment", 'Your message and files are still in the box. Try again.');
-        return false;
-      }
+      });
     },
     retry: (id) => void msgs.retryMessage(id),
     discard: (id) => msgs.discardFailedMessage(id),
-    edit: async (id, text) => {
-      try {
+    edit: (id, text) =>
+      attempt('edit', { failed: "Couldn't edit the message", hint: 'Your edit is still in the box. Try again.', code: 'CH-7007' }, async () => {
         await msgs.editMessage(id, text);
         haptic('commit');
         toast({ title: 'Message edited' });
-        return true;
-      } catch (err) {
-        fail('edit', err, "Couldn't edit the message", 'Your edit is still in the box. Try again.');
-        return false;
-      }
-    },
+      }),
     remove: async (id) => {
-      try {
+      const ok = await attempt('remove', { failed: "Couldn't delete the message", hint: 'It’s back in the thread. Try again in a moment.', code: 'CH-7008' }, async () => {
         await msgs.removeMessage(id);
         haptic('commit');
         toast({ title: 'Message deleted' });
-        return true;
-      } catch (err) {
-        fail('remove', err, "Couldn't delete the message", 'It’s back in the thread. Try again in a moment.');
-        void msgs.refetch();
-        return false;
-      }
+      });
+      if (!ok) void msgs.refetch();
+      return ok;
     },
     reactions: reactionMap,
     react: (messageId, key, active) => {
       const emoji = EMOJI_BY_KEY[key];
       if (!emoji) return;
-      void Promise.resolve(reactions.setReaction(messageId, emoji, active)).catch((err) => fail('react', err, "Couldn't save the reaction", 'Try again in a moment.'));
+      void attempt('react', { failed: "Couldn't save the reaction", hint: 'Try again in a moment.', code: 'CH-7009' }, async () => {
+        await reactions.setReaction(messageId, emoji, active);
+      });
     },
     attachments: loadAttachments,
     members,
     membersError,
+    retryMembers: () => setMembersAttempt((n) => n + 1),
     leave: async () => {
       if (!selectedId) return false;
-      try {
+      return attempt('leave', { failed: "Couldn't leave the group", hint: 'Try again in a moment.', code: 'CH-7010' }, async () => {
         const res = await leaveGolfGroup(selectedId);
         if ('error' in res) throw new Error(res.error);
         haptic('commit');
         toast({ title: 'You left the group' });
         setSelectedId(null);
         await refetch();
-        return true;
-      } catch (err) {
-        fail('leave', err, "Couldn't leave the group", 'Try again in a moment.');
-        return false;
-      }
+      });
     },
     directory: data.directory,
     directoryError: data.directoryError,
+    retryDirectory: () => router.refresh(),
     startDirect,
     createGroup,
 
@@ -487,19 +491,16 @@ export function Messages({ data }: { data: ChMessagesData }) {
 
     mute,
     muteError,
+    retryMute: () => setMuteAttempt((n) => n + 1),
     setMute: async (muted, hours) => {
       if (!selectedId) return false;
-      try {
+      return attempt('mute', { failed: muted ? "Couldn't mute the conversation" : "Couldn't turn notifications back on", hint: 'Try again in a moment.', code: 'CH-7011' }, async () => {
         const r = await setGolfConversationMute(selectedId, muted, hours);
         if (!r.success) throw new Error(r.error);
         setMuteState(r.data);
         haptic('commit');
         toast({ title: muted ? 'Conversation muted' : 'Notifications back on' });
-        return true;
-      } catch (err) {
-        fail('mute', err, muted ? "Couldn't mute the conversation" : "Couldn't turn notifications back on", 'Try again in a moment.');
-        return false;
-      }
+      });
     },
 
     announcements: anns,
@@ -514,34 +515,24 @@ export function Messages({ data }: { data: ChMessagesData }) {
       }
     },
     announcementDetail,
-    acknowledge: async (id) => {
-      try {
+    acknowledge: (id) =>
+      attempt('acknowledge', { failed: "Couldn't send your acknowledgement", hint: 'Try again in a moment.', code: 'CH-7012' }, async () => {
         const r = await acknowledgeAnnouncement(id);
         if (!r.success) throw new Error(r.error || 'acknowledge failed');
         haptic('success');
         toast({ title: 'Acknowledged · coach can see you read it' });
         await loadAnns();
-        return true;
-      } catch (err) {
-        fail('acknowledge', err, "Couldn't send your acknowledgement", 'Try again in a moment.');
-        return false;
-      }
-    },
-    completeTask: async (_announcementId, taskId) => {
-      try {
+      }),
+    completeTask: (_announcementId, taskId) =>
+      attempt('completeTask', { failed: "Couldn't mark the task done", hint: 'Try again in a moment.', code: 'CH-7013' }, async () => {
         const r = await completeAnnouncementTask(taskId);
         if (!r.success) throw new Error(r.error || 'task update failed');
         haptic('commit');
         toast({ title: 'Task marked done' });
         await loadAnns();
-        return true;
-      } catch (err) {
-        fail('completeTask', err, "Couldn't mark the task done", 'Try again in a moment.');
-        return false;
-      }
-    },
-    createAnnouncement: async ({ title, body, urgent, ack }) => {
-      try {
+      }),
+    createAnnouncement: ({ title, body, urgent, ack }) =>
+      attempt('createAnnouncement', { failed: "Couldn't post the announcement", hint: 'Your text is still here. Try again.', code: 'CH-7014' }, async () => {
         chTrail('messages post announcement');
         const r = await createEnrichedAnnouncement({ title, body, urgency: urgent ? 'urgent' : 'normal', requiresAcknowledgement: ack, recipientPlayerIds: null, documentIds: [], inlineTasks: [] });
         if (!r.success || !r.data) throw new Error(r.error || 'announcement failed');
@@ -550,12 +541,7 @@ export function Messages({ data }: { data: ChMessagesData }) {
         await loadAnns();
         setSelectedId(null);
         setSelectedAnnId(r.data.announcementId);
-        return true;
-      } catch (err) {
-        fail('createAnnouncement', err, "Couldn't post the announcement", 'Your text is still here. Try again.');
-        return false;
-      }
-    },
+      }),
   };
 
   return <MessagesView api={api} />;

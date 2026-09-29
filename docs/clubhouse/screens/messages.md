@@ -44,7 +44,7 @@ they return.
 - [x] Crash containment: the rail, thread and details are each wrapped in a `SectionBoundary` with a surface tag
 - [x] Route error: the Clubhouse error view
 - [x] Not found and no access: a conversation link the viewer can't open says so and clears; no team has its own state
-- [ ] Offline or slow network: the action says so instead of spinning forever
+- [x] Offline or slow network: the action says so instead of spinning forever
 - [x] User errors: every send, edit, delete, reaction, group and leave failure says what failed and what to do, with an error haptic and a Sentry event
 - [x] Forms: a failed send keeps the draft and files; new-group validation names the missing field
 - [x] Destructive actions: delete message and leave group each ask first
@@ -78,10 +78,10 @@ they return.
 
 ## accessibility
 - [ ] Full keyboard path, with visible focus and no traps; Esc closes overlays
-- [ ] Landmarks, headings in order, table roles, and labels on icon buttons
-- [ ] Charts have a text equivalent (aria-label or a view-as-table path)
-- [ ] Status changes are announced (aria-live) and errors use role=alert
-- [ ] Text contrast meets WCAG AA on every surface
+- [x] Landmarks, headings in order, table roles, and labels on icon buttons
+- [x] Charts have a text equivalent (aria-label or a view-as-table path) (Messages has no charts)
+- [x] Status changes are announced (aria-live) and errors use role=alert
+- [x] Text contrast meets WCAG AA on every surface
 
 ## performance
 - [ ] No request waterfall on the server, with independent reads in parallel

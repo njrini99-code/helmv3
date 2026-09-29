@@ -121,10 +121,12 @@ export interface ChMessagesApi {
 
   members: ChMember[] | null;
   membersError: boolean;
+  retryMembers: () => void;
   leave: () => Promise<boolean>;
 
   directory: ChPerson[];
   directoryError: boolean;
+  retryDirectory: () => void;
   startDirect: (userId: string) => Promise<boolean>;
   createGroup: (userIds: string[], title: string) => Promise<boolean>;
 
@@ -133,6 +135,7 @@ export interface ChMessagesApi {
 
   mute: ChMute | null;
   muteError: boolean;
+  retryMute: () => void;
   setMute: (muted: boolean, hours: number | null) => Promise<boolean>;
 
   announcements: ChAnnouncement[];
@@ -159,6 +162,7 @@ const personOf = (api: ChMessagesApi, userId: string) =>
 function MessageHits({ api, q }: { api: ChMessagesApi; q: string }) {
   const [hits, setHits] = useState<ChSearchHit[] | null>(null);
   const [failed, setFailed] = useState(false);
+  const [attempt, setAttempt] = useState(0);
   const search = api.searchMessages;
   const term = q.trim();
   useEffect(() => {
@@ -177,7 +181,7 @@ function MessageHits({ api, q }: { api: ChMessagesApi; q: string }) {
       live = false;
       window.clearTimeout(t);
     };
-  }, [search, term]);
+  }, [search, term, attempt]);
   if (term.length < 2) return null;
   return (
     <section
@@ -187,18 +191,23 @@ function MessageHits({ api, q }: { api: ChMessagesApi; q: string }) {
     >
       <div className="ch-ms-sec__l">In messages</div>
       {failed ? (
-        <div className="ch-ms-empty">
-          Message search didn&apos;t load. Try again in a moment.
-        </div>
+        <InlineNotice
+          code="CH-7203"
+          title="Message search didn't load."
+          body="Conversations above still match by name."
+          onRetry={() => setAttempt((a) => a + 1)}
+        />
       ) : !hits ? (
-        <div className="ch-ms-sec__card" aria-busy="true">
+        <div className="ch-ms-sec__card" aria-busy="true" data-ch-code="CH-7404">
           <div className="ch-ms-row" style={{ cursor: "default" }}>
             <span />
             <Skeleton width="80%" height={13} />
           </div>
         </div>
       ) : !hits.length ? (
-        <div className="ch-ms-empty">No messages mention “{term}”.</div>
+        <div className="ch-ms-empty" data-ch-code="CH-7303">
+          No messages mention “{term}”.
+        </div>
       ) : (
         <div className="ch-ms-sec__card">
           {hits.slice(0, 20).map((h) => (
@@ -283,12 +292,13 @@ function Rail({ api, onNew }: { api: ChMessagesApi; onNew: () => void }) {
       <div className="ch-ms-rail__body">
         {api.convsError ? (
           <InlineNotice
+            code="CH-7201"
             title="Conversations didn't load."
             body="Your messages are safe. Try again; the error has been reported."
             onRetry={api.refetchConvs}
           />
         ) : api.convsLoading && !api.convs.length ? (
-          <div className="ch-ms-sec__card" aria-busy="true">
+          <div className="ch-ms-sec__card" aria-busy="true" data-ch-code="CH-7402">
             {Array.from({ length: 5 }, (_, i) => (
               <div key={i} className="ch-ms-row" style={{ cursor: "default" }}>
                 <Skeleton width={36} height={36} radius={18} />
@@ -301,6 +311,7 @@ function Rail({ api, onNew }: { api: ChMessagesApi; onNew: () => void }) {
           </div>
         ) : !api.convs.length ? (
           <EmptyState
+            code="CH-7301"
             compact
             icon={MessageSquare}
             title="No conversations yet."
@@ -399,7 +410,7 @@ function Rail({ api, onNew }: { api: ChMessagesApi; onNew: () => void }) {
               );
             })}
             {!list.length && (
-              <div className="ch-ms-empty">
+              <div className="ch-ms-empty" data-ch-code="CH-7302">
                 {q.trim()
                   ? `No conversation matches “${q.trim()}”.`
                   : "Nothing unread. You’re caught up."}
@@ -445,6 +456,7 @@ function Attachments({
       <button
         type="button"
         className="ch-ms-bub ch-ms-bub--file"
+        data-ch-code="CH-7209"
         onClick={() => setAttempt((a) => a + 1)}
       >
         <span className="ch-ms-file__ic">
@@ -457,7 +469,12 @@ function Attachments({
       </button>
     );
   }
-  if (!files) return <Skeleton width={240} height={54} radius={14} />;
+  if (!files)
+    return (
+      <span aria-busy="true" data-ch-code="CH-7408">
+        <Skeleton width={240} height={54} radius={14} />
+      </span>
+    );
   return (
     <>
       {files.map((f) => (
@@ -643,7 +660,11 @@ function Bubble({
           </div>
         )}
         {m.failed ? (
-          <span className="ch-ms-msg__fail" role="alert">
+          <span
+            className="ch-ms-msg__fail"
+            role="alert"
+            data-ch-code={m.failed === "unknown" ? "CH-7017" : "CH-7016"}
+          >
             {m.failed === "unknown"
               ? "Couldn’t confirm this sent. Check before sending again."
               : "Not sent."}
@@ -909,6 +930,7 @@ function Thread({
         <div className="ch-ms-msgs">
           {api.msgsError ? (
             <InlineNotice
+              code="CH-7202"
               title="This conversation didn't load."
               body="Nothing was lost. Try again; the error has been reported."
               onRetry={api.refetchMsgs}
@@ -917,6 +939,7 @@ function Thread({
             <div
               style={{ display: "grid", gap: 12, paddingTop: 24 }}
               aria-busy="true"
+              data-ch-code="CH-7403"
             >
               <Skeleton width="46%" height={40} radius={18} />
               <div style={{ justifySelf: "end", width: "52%" }}>
@@ -925,7 +948,7 @@ function Thread({
               <Skeleton width="38%" height={40} radius={18} />
             </div>
           ) : !api.msgs.length ? (
-            <div className="ch-ms-empty">
+            <div className="ch-ms-empty" data-ch-code="CH-7304">
               No messages yet. Say hello to{" "}
               {conv.group ? "the group" : firstName(conv.title)}.
             </div>
@@ -1011,6 +1034,7 @@ function Thread({
         />
       </Modal>
       <Modal
+        code="CH-7501"
         open={deleting != null}
         onClose={() => setDeleting(null)}
         icon={Trash2}
@@ -1108,11 +1132,17 @@ function Details({
           </div>
           {api.membersError ? (
             <InlineNotice
+              code="CH-7204"
               title="Members didn't load."
-              body="Try again in a moment."
+              body="Try again; the error has been reported."
+              onRetry={api.retryMembers}
             />
           ) : !api.members ? (
-            <div style={{ display: "grid", gap: 10 }} aria-busy="true">
+            <div
+              style={{ display: "grid", gap: 10 }}
+              aria-busy="true"
+              data-ch-code="CH-7405"
+            >
               <Skeleton height={30} />
               <Skeleton height={30} />
               <Skeleton height={30} />
@@ -1150,6 +1180,7 @@ function Details({
         </div>
       )}
       <Modal
+        code="CH-7502"
         open={leaving}
         onClose={() => setLeaving(false)}
         icon={LogOut}
@@ -1197,11 +1228,16 @@ function MuteControl({ api }: { api: ChMessagesApi }) {
         <span>Notifications</span>
       </div>
       {api.muteError ? (
-        <p className="ch-ms-quiet">
-          The mute setting didn&apos;t load. Close details and open them again.
-        </p>
+        <InlineNotice
+          code="CH-7208"
+          title="The mute setting didn't load."
+          body="Try again; the error has been reported."
+          onRetry={api.retryMute}
+        />
       ) : !m ? (
-        <Skeleton height={30} />
+        <div aria-busy="true" data-ch-code="CH-7407">
+          <Skeleton height={30} />
+        </div>
       ) : m.muted ? (
         <div className="ch-ms-mute">
           <span>
@@ -1386,7 +1422,7 @@ function NewMessage({
                 aria-invalid={touched && needsTitle}
               />
               {touched && needsTitle && (
-                <span className="ch-field__help is-error">
+                <span className="ch-field__help is-error" data-ch-code="CH-7102">
                   Give the announcement a title.
                 </span>
               )}
@@ -1403,7 +1439,7 @@ function NewMessage({
                 aria-invalid={touched && needsBody}
               />
               {touched && needsBody && (
-                <span className="ch-field__help is-error">
+                <span className="ch-field__help is-error" data-ch-code="CH-7103">
                   Write what the team needs to know.
                 </span>
               )}
@@ -1446,7 +1482,7 @@ function NewMessage({
                   aria-invalid={touched && needsTitle}
                 />
                 {touched && needsTitle && (
-                  <span className="ch-field__help is-error">
+                  <span className="ch-field__help is-error" data-ch-code="CH-7104">
                     Name the group so players know what it&apos;s for.
                   </span>
                 )}
@@ -1482,8 +1518,10 @@ function NewMessage({
             )}
             {api.directoryError ? (
               <InlineNotice
+                code="CH-7205"
                 title="Your team list didn't load."
-                body="Close this and try again; the error has been reported."
+                body="Try again; the error has been reported."
+                onRetry={api.retryDirectory}
               />
             ) : (
               <div
@@ -1530,7 +1568,7 @@ function NewMessage({
               </div>
             )}
             {touched && !canGo && !needsTitle && (
-              <span className="ch-field__help is-error">
+              <span className="ch-field__help is-error" data-ch-code="CH-7105">
                 {mode === "direct"
                   ? "Choose who to message."
                   : "Choose at least one person."}
@@ -1558,6 +1596,7 @@ export function MessagesView({ api }: { api: ChMessagesApi }) {
         tone: "error",
         title: "That conversation isn't available",
         body: "You may have left it, or it belongs to another team.",
+        code: "CH-7015",
       });
       api.select(null);
     }
@@ -1571,13 +1610,18 @@ export function MessagesView({ api }: { api: ChMessagesApi }) {
         (details && conv ? " has-details" : "")
       }
     >
-      <SectionBoundary surface="messages.rail" label="Your conversations">
+      <SectionBoundary
+        surface="messages.rail"
+        label="Your conversations"
+        code="CH-7210"
+      >
         <Rail api={api} onNew={() => setCompose(true)} />
       </SectionBoundary>
       {ann ? (
         <SectionBoundary
           surface="messages.announcement"
           label="This announcement"
+          code="CH-7211"
         >
           <AnnouncementPane
             api={api}
@@ -1586,7 +1630,11 @@ export function MessagesView({ api }: { api: ChMessagesApi }) {
           />
         </SectionBoundary>
       ) : conv ? (
-        <SectionBoundary surface="messages.thread" label="This conversation">
+        <SectionBoundary
+          surface="messages.thread"
+          label="This conversation"
+          code="CH-7212"
+        >
           <Thread
             api={api}
             conv={conv}
@@ -1598,6 +1646,7 @@ export function MessagesView({ api }: { api: ChMessagesApi }) {
       ) : (
         <section className="ch-ms-thread is-empty">
           <EmptyState
+            code="CH-7305"
             icon={MessageSquare}
             title={
               api.convs.length
@@ -1622,7 +1671,11 @@ export function MessagesView({ api }: { api: ChMessagesApi }) {
         </section>
       )}
       {conv && details && (
-        <SectionBoundary surface="messages.details" label="Details">
+        <SectionBoundary
+          surface="messages.details"
+          label="Details"
+          code="CH-7213"
+        >
           <Details api={api} conv={conv} onClose={() => setDetails(false)} />
         </SectionBoundary>
       )}
