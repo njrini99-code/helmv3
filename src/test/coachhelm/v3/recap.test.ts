@@ -19,7 +19,7 @@ function makeRecap(over: Partial<WeeklyRecap> = {}): WeeklyRecap {
     week_end_iso: '2026-05-26T00:00:00.000Z',
     totals: {
       rounds_played: 18,
-      insights_surfaced: 12,
+      insights_new: 12, insights_updated: 30,
       goals_active: 5,
       avg_score_to_par: 2.4,
     },
@@ -49,19 +49,19 @@ describe('buildWeeklyRecapHtml', () => {
   });
 
   it('renders avg score-to-par with sign', () => {
-    expect(buildWeeklyRecapHtml(makeRecap({ totals: { rounds_played: 1, insights_surfaced: 0, goals_active: 0, avg_score_to_par: 3.2 } })).html)
+    expect(buildWeeklyRecapHtml(makeRecap({ totals: { rounds_played: 1, insights_new: 0, insights_updated: 0, goals_active: 0, avg_score_to_par: 3.2 } })).html)
       .toContain('+3.2');
-    expect(buildWeeklyRecapHtml(makeRecap({ totals: { rounds_played: 1, insights_surfaced: 0, goals_active: 0, avg_score_to_par: -1.5 } })).html)
+    expect(buildWeeklyRecapHtml(makeRecap({ totals: { rounds_played: 1, insights_new: 0, insights_updated: 0, goals_active: 0, avg_score_to_par: -1.5 } })).html)
       .toContain('-1.5');
   });
 
   it('renders zero score-to-par as "E"', () => {
-    const r = buildWeeklyRecapHtml(makeRecap({ totals: { rounds_played: 1, insights_surfaced: 0, goals_active: 0, avg_score_to_par: 0 } }));
+    const r = buildWeeklyRecapHtml(makeRecap({ totals: { rounds_played: 1, insights_new: 0, insights_updated: 0, goals_active: 0, avg_score_to_par: 0 } }));
     expect(r.html).toContain('>E<');
   });
 
   it('renders em-dash for null avg', () => {
-    const r = buildWeeklyRecapHtml(makeRecap({ totals: { rounds_played: 0, insights_surfaced: 0, goals_active: 0, avg_score_to_par: null } }));
+    const r = buildWeeklyRecapHtml(makeRecap({ totals: { rounds_played: 0, insights_new: 0, insights_updated: 0, goals_active: 0, avg_score_to_par: null } }));
     expect(r.html).toContain('—');
   });
 
