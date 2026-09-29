@@ -47,16 +47,16 @@ export const sizeClasses: Record<FieldSize, string> = {
  */
 export const fieldControlBase = [
   "block w-full font-fw-sans text-text-primary rounded-fw-sm",
-  "bg-surface-sunken border border-border-control",
+  "bg-surface-sunken border border-border-subtle dark:border-border-control",
   "placeholder:text-text-tertiary",
   "transition-[border-color,box-shadow,background-color] [transition-duration:var(--fw-dur-fast)] [transition-timing-function:var(--fw-ease-soft)]",
-  "hover:border-text-tertiary",
+  "hover:border-border-strong dark:hover:border-text-tertiary",
   "outline-none focus-visible:border-border-focus",
   // Solid accent-600 ring — clears the WCAG 2.2 1.4.11/2.4.7 3:1 focus-indicator
   // floor on every Fairway surface (>=3.7:1 vs canvas/sunken/surface/elevated).
   // The old accent-500/70 composited to ~2:1 over cream and failed AA.
   "focus-visible:ring-2 focus-visible:ring-accent-600 focus-visible:ring-offset-1 focus-visible:ring-offset-canvas",
-  "disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:border-border-control",
+  "disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:border-border-subtle dark:disabled:hover:border-border-control",
   // validity (driven by Field) — error wins
   "data-[invalid]:border-fw-danger/60 data-[invalid]:focus-visible:ring-fw-danger/40 data-[invalid]:focus-visible:border-fw-danger",
 ].join(" ");

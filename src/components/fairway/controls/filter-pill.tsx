@@ -51,7 +51,7 @@ function pillClassName(selected: boolean, size: 'sm' | 'md', className?: string)
     sizeStyles[size],
     selected
       ? 'border-accent-500 bg-accent-50 text-accent-700 hover:bg-accent-100'
-      : 'border-border-control bg-surface text-text-secondary hover:border-text-tertiary hover:bg-surface-tint hover:text-text-primary',
+      : 'border-border-subtle bg-surface text-text-secondary hover:border-border-strong hover:bg-surface-tint hover:text-text-primary dark:border-border-control dark:hover:border-text-tertiary',
     className,
   );
 }

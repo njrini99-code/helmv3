@@ -136,7 +136,7 @@ export function GroupedFields({ children, className }: { children: ReactNode; cl
   return (
     <div
       className={cn(
-        'overflow-hidden rounded-xl bg-surface ring-1 ring-inset ring-border-control',
+        'overflow-hidden rounded-xl bg-surface ring-1 ring-inset ring-border-subtle dark:ring-border-control',
         // Hairline separators between rows, inset from the leading edge the
         // way UITableView insets them.
         '[&>*+*]:relative [&>*+*]:before:absolute [&>*+*]:before:left-4 [&>*+*]:before:right-0 [&>*+*]:before:top-0',

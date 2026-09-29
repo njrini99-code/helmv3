@@ -33,7 +33,7 @@ export interface CheckboxProps
 
 const boxBase = cn(
   "flex h-[1.125rem] w-[1.125rem] shrink-0 items-center justify-center rounded",
-  "border border-border-control bg-surface text-text-on-accent",
+  "border border-border-strong dark:border-border-control bg-surface text-text-on-accent",
   "transition-[background-color,border-color,box-shadow] [transition-duration:var(--fw-dur-fast)] [transition-timing-function:var(--fw-ease-soft)]",
   // checked / indeterminate → green fill
   "data-[checked]:border-accent-500 data-[checked]:bg-accent-500",
