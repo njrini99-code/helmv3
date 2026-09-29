@@ -58,8 +58,9 @@ behind the `golf_clubhouse_ui` flag. The rules that hold throughout are in
 
 ## 5. Phone (gates `phone-spec`, `phone`)
 
-Write `phone/<slug>.md` as a native phone design, not a shrunken desktop. It
-is built only after the owner marks it `Status: approved`.
+iPhone only. The owner's mobile design in `design/handoff/mobile/` is the
+phone spec; a page without one waits, or has a draft the owner approves
+first. Every step, including running it in the iOS app, is in `MOBILE.md`.
 
 ## 6. Verify (gates `performance`, `verified`)
 

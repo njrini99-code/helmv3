@@ -1,5 +1,19 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
+/**
+ * Local device testing only (docs/clubhouse/MOBILE.md). `npm run ios:dev`
+ * sets CAP_SERVER_URL to this Mac's dev server for a single `cap run ios`,
+ * then syncs again without it. Only plain-http addresses on this machine or
+ * the local network are accepted. The tracked ios/App/App/capacitor.config.json
+ * must always carry the production URL: src/test/lib/capacitor-config.test.ts
+ * fails CI when it doesn't.
+ */
+const PRODUCTION_URL = 'https://helmsportslabs.com/golf/dashboard';
+const devServer = process.env.CAP_SERVER_URL?.trim() || null;
+if (devServer && !/^http:\/\/(localhost|127\.0\.0\.1|10\.\d+\.\d+\.\d+|192\.168\.\d+\.\d+|172\.(1[6-9]|2\d|3[01])\.\d+\.\d+|[\w-]+\.local)(:\d+)?\//.test(devServer)) {
+  throw new Error(`CAP_SERVER_URL must be an http address on this Mac or the local network, got ${devServer}`);
+}
+
 const config: CapacitorConfig = {
   appId: 'com.helmsportslabs.golfhelm',
   appName: 'Helm Sports Labs',
@@ -14,8 +28,8 @@ const config: CapacitorConfig = {
     // PWA manifest's start_url. Apex host, not www: www answers every request
     // with a non-cacheable 307 to the apex, which cost a redirect round trip
     // before the first byte of every cold start.
-    url: 'https://helmsportslabs.com/golf/dashboard',
-    cleartext: false,
+    url: devServer ?? PRODUCTION_URL,
+    cleartext: devServer != null,
     // Shown when the remote app fails to load — no connectivity, DNS failure,
     // origin down. Without it the WebView renders Chromium's raw "can't reach
     // this page" interstitial, which does not read as part of the app and is a
@@ -26,7 +40,7 @@ const config: CapacitorConfig = {
     errorPath: 'offline.html',
     // Apex first (the app's origin); `*.helmsportslabs.com` keeps old www links
     // and any subdomain inside the app.
-    allowNavigation: ['helmsportslabs.com', '*.helmsportslabs.com', 'www.helmsportslabs.com'],
+    allowNavigation: ['helmsportslabs.com', '*.helmsportslabs.com', 'www.helmsportslabs.com', ...(devServer ? [new URL(devServer).host] : [])],
   },
   ios: {
     allowsLinkPreview: false,

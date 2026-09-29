@@ -11,6 +11,7 @@ import { clearAllCachedResources } from '@/lib/golf/client-resource-cache';
 import { PHILOSOPHY_DEFAULTS } from '@/lib/coachhelm/constants';
 import { tsToDb } from '@/lib/coachhelm/philosophy-map';
 import { isNativeApp } from '@/lib/utils/capacitor';
+import { teardownDeviceTokenOnSignOut } from '@/lib/utils/push-registration';
 import { fromUntyped } from '@/lib/supabase/untyped';
 import { chReport } from '../../lib/track';
 import type { ChResult, ChSettingsWrites } from './model';
@@ -211,6 +212,9 @@ export function createLiveWrites(ctx: {
     },
 
     async signOut() {
+      // First, while still signed in (the action checks the caller), and never awaited:
+      // this phone stops getting the signed-out person's push notifications.
+      teardownDeviceTokenOnSignOut();
       await clearActiveTeam().catch((err: unknown) => chReport(err, { surface: 'settings.session', action: 'clearActiveTeam', severity: 'low' }));
       clearAllCachedResources();
       await sb.auth.signOut();

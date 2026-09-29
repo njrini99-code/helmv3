@@ -23,8 +23,8 @@ desktop.
 | `wired` | Every figure comes from a real loader, and null, zero and early-read states render distinctly |
 | `states` | Empty, loading and failed-read states are designed and built, and they are distinct from each other. Every action goes through `useAction`, so a failure tells the coach what failed and what to do next, fires an error haptic and is reported to Sentry. Route errors render the Clubhouse error view |
 | `error-tracking` | Server reads log through `chLogServer`, client crashes through `chReport` (tagged `ui=clubhouse` and `surface`), intents leave breadcrumbs, nothing is swallowed, and every failure path was forced once |
-| `phone-spec` | A written native phone design (`docs/clubhouse/phone/<screen>.md`) is approved by the owner |
-| `phone` | The phone design is built at 390px, with safe areas and the bottom tab bar |
+| `phone-spec` | `docs/clubhouse/phone/<screen>.md` is approved: it maps the owner's mobile design in `design/handoff/mobile/`, or is a draft the owner approved (`MOBILE.md`) |
+| `phone` | The phone design is built at 390px, with safe areas and the bottom tab bar, and checked on a real iPhone through `npm run ios:dev` |
 | `motion` | Transitions, press and haptics are wired within the doctrine (90/150/220/360ms, 0.985 press, no count-ups or staggers) |
 | `accessibility` | Keyboard path, landmarks and roles, chart text equivalents, announced status changes, AA contrast |
 | `performance` | No server waterfall, client JS only on interactive islands, no layout shift after first paint |
@@ -78,6 +78,7 @@ screen.
 - D-19 (2026-09-29): The bell and every menu use the design system's PopoverPanel (strong glass, 14px radius, 34px items).
 - D-20 (2026-09-29): Every error, empty, loading, confirm, motion, haptic and accessibility state has a catalog number (`docs/clubhouse/catalog/`, CH- plus four digits: page, then kind). The number is on the element as `data-ch-code`, each enforced row is forced in a test named by it, and `clubhouse:check` fails when code, catalog and tests disagree. Not sent to Sentry or the Bridge yet (owner). Pages are catalogued one at a time, each reviewed before the next (owner: go slow).
 - D-21 (2026-09-29): Pages after the first eight get two-digit catalog page numbers (`CH-09001`), in the order their catalogs are started, so existing numbers never change (owner). A catalog file without a page number fails `clubhouse:check`.
+- D-22 (2026-09-29): Phone is iPhone only (portrait, light). The owner supplies mobile designs in `design/handoff/mobile/`; a page's design there is its approved phone spec and replaces the draft in `docs/clubhouse/phone/`. Pages without one keep their draft, which still needs approval. Device testing goes through `npm run ios:dev` (a dev-only `CAP_SERVER_URL`; the committed native config stays production, pinned by a test) (owner). Built before any design: the swipe-back guard in the Clubhouse shell, and push-token teardown on Clubhouse sign-out. The push soft ask and pull to refresh wait for the foundation design.
 - D-7 (2026-09-29): Errors reuse the existing pipeline (`logError`, `logServerError`, chunk and stale-action recovery) with a Clubhouse view and voice. The messages coaches see say what failed and what to do next, and never show raw server text.
 
 ## Open owner questions

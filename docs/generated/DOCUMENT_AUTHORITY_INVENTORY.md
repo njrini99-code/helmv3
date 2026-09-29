@@ -36,7 +36,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | --- | --- | --- | --- | --- |
 | `POLICY` | 20 | 2 | 6 | 1 |
 | `AGENT_SKILL` | 90 | 0 | 7 | 0 |
-| `CURRENT_FEATURE` | 27 | 27 | 13 | 0 |
+| `CURRENT_FEATURE` | 27 | 27 | 13 | 3 |
 | `REFERENCE` | 52 | 15 | 19 | 0 |
 | `GENERATED_TRUTH` | 20 | 3 | 6 | 4 |
 | `PROCESS_CONTRACT` | 8 | 4 | 7 | 0 |
@@ -48,8 +48,8 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `HISTORY_LEDGER` | 41 | 0 | 7 | 19 |
 | `INCIDENT` | 47 | 15 | 2 | 2 |
 | `ADR` | 5 | 0 | 3 | 0 |
-| `INDEX` | 21 | 1 | 7 | 5 |
-| `UNKNOWN` | 173 | 12 | 40 | 78 |
+| `INDEX` | 22 | 1 | 7 | 5 |
+| `UNKNOWN` | 174 | 12 | 40 | 78 |
 
 ## Files
 
@@ -190,7 +190,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `memory/features/crm_outreach.md` | current | yes | - | - | - |
 | `memory/features/email_outbound.md` | current | yes | - | - | - |
 | `memory/features/golf-round-lifecycle.md` | current | yes | - | yes | - |
-| `memory/features/ios-native-shell.md` | current | yes | - | - | - |
+| `memory/features/ios-native-shell.md` | current | yes | - | - | 3 |
 | `memory/features/observability-sentry.md` | current | yes | - | - | - |
 | `memory/features/observability-supabase.md` | current | yes | - | yes | - |
 | `memory/features/player-coachhelm-development.md` | current | yes | - | yes | - |
@@ -553,6 +553,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `.claude/workflows/README.md` | current | - | - | - | - |
 | `design/handoff/README.md` | current | - | - | - | - |
 | `docs/README.md` | current | - | - | yes | 1 |
+| `docs/clubhouse/README.md` | current | - | - | - | - |
 | `docs/clubhouse/catalog/README.md` | current | - | - | - | - |
 | `docs/db/drafts/README.md` | current | - | - | - | - |
 | `e2e/README.md` | current | - | - | yes | 2 |
@@ -651,6 +652,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/baseball/legacy-backfill-runbook.md` | current | - | - | yes | - |
 | `docs/baseball/stats-architecture.md` | current | - | - | yes | - |
 | `docs/baseball/ui-migration-map.md` | current | - | - | - | 2 |
+| `docs/clubhouse/CATALOG_TEMPLATE.md` | current | - | - | - | - |
 | `docs/clubhouse/CHECKLIST_TEMPLATE.md` | current | - | - | - | - |
 | `docs/clubhouse/PROGRESS.md` | current | - | - | - | - |
 | `docs/clubhouse/catalog/calendar.md` | current | - | - | - | - |

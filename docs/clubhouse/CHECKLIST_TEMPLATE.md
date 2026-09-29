@@ -56,15 +56,15 @@ Route: <route>   Surface tag: `<screen>` (Sentry `surface=<screen>.<section>`)
 - [ ] Every failure path was forced once locally and seen in the console or Sentry
 
 ## phone-spec
-- [ ] `docs/clubhouse/phone/<slug>.md` is written as an intentional native design, not a shrunk desktop
-- [ ] The owner approved it (the file says `Status: approved`)
+- [ ] `docs/clubhouse/phone/<slug>.md` names the owner's mobile design in `design/handoff/mobile/` (or is a draft the owner approved), and maps each screen to components
+- [ ] It says `Status: approved`
 
 ## phone
 - [ ] Built at 390px and 430px, respecting the safe areas
 - [ ] Touch targets are at least 44px, and hover-only affordances have a tap equivalent
 - [ ] Sheets are used instead of popovers, and they drag to dismiss
 - [ ] The bottom tab bar and toasts don't overlap content
-- [ ] Checked in the iOS app shell (Capacitor), with native haptics felt on a device
+- [ ] Checked on a real iPhone through `npm run ios:dev` (docs/clubhouse/MOBILE.md): keyboard, swipe-back with a sheet open, haptics felt
 
 ## motion
 - [ ] Transitions use only 90, 150, 220 and 360ms with the Clubhouse ease

@@ -119,6 +119,8 @@ export function TabBar({ pathname, shell, role }: { pathname: string; shell: ChS
               id="ch-more"
               data-ch-code="CH-1802"
               role="dialog"
+              // Read by the iOS swipe-back guard (NativeSwipeBackBridge): no edge swipe while the sheet is up.
+              data-state="open"
               aria-modal="true"
               aria-label="More"
               className="ch-more"
