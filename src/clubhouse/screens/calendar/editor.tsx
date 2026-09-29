@@ -353,7 +353,7 @@ export function EventEditor({
             <Button variant="primary" disabled={save.pending} onClick={() => void submit()}>
               {save.pending ? (base ? 'Saving…' : 'Publishing…') : primary}
             </Button>
-    
+
     </>
       }
     >
