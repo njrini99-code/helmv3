@@ -17,6 +17,8 @@ import { fromUntyped } from '@/lib/supabase/untyped';
 import { BaseGenerator } from '@/lib/coachhelm/v3/engine/generator-base';
 import { loadCompletedHoles, classifyHole } from '@/lib/coachhelm/v3/engine/hole-diagnosis';
 import { isCountableRound } from '@/lib/golf/round-countable';
+import { loadStandingForMetric } from '@/lib/coachhelm/v3/standing/loader';
+import { tCritical95, welchStandardError } from '@/lib/coachhelm/v3/stats/intervals';
 import {
   computePressureGap,
   splitPressureRounds,
@@ -35,14 +37,30 @@ interface PressureGapAggregate extends GeneratorAggregate {
   competitive_avg: number;
   practice_count: number;
   competitive_count: number;
-  /** competitive − practice, in pp of holes, for double-or-worse holes. */
-  double_rate_delta: number;
-  /** competitive − practice, in pp of holes that were 3-putt-or-worse. */
-  three_putt_delta: number;
-  /** competitive − practice, penalty strokes per round. */
-  penalty_delta: number;
-  /** competitive − practice, avg score-to-par across holes 1-3. */
-  opening3_delta: number;
+  /**
+   * Decomposition, every component on ONE scale: competitive − practice, per
+   * 18 holes played. The old mix (pp of holes for doubles/3-putts, per round
+   * for penalties/opening holes) sorted a "+11 pp" against a "+2.0 per round",
+   * so penalties could never be named the driver (audit row 14). The
+   * components overlap (a penalty hole can also be a double) and do not sum
+   * to the gap.
+   */
+  /** Extra double-or-worse holes per 18. */
+  doubles_per18_delta: number;
+  /** Extra 3-putt-or-worse holes per 18. */
+  three_putts_per18_delta: number;
+  /** Extra penalty strokes per 18. */
+  penalty_per18_delta: number;
+  /** Extra strokes over par on holes 1-3 (one round's opening three holes). */
+  opening3_strokes_delta: number;
+  /** Welch standard error of the gap (18-hole to-par, both sides). */
+  gap_se: number;
+  /** Half-width of the 95% band around zero: t(df) × SE. */
+  noise_band: number;
+  /** Cohort average pressure gap (standing.level_avg), null at cold-start. */
+  cohort_avg: number | null;
+  window_start: string | null;
+  window_end: string | null;
   /** SV-1 duck-typed dispersion (DispersionSignals): per-round score-to-par stddev. */
   stddev?: number;
   /** SV-1 scale for the stddev → variance-confidence map. */
@@ -68,6 +86,11 @@ interface PressureGapAggregate extends GeneratorAggregate {
  * exists once the pressure gap is itself meaningful.
  */
 export const MIN_ROUNDS_PER_BUCKET = 3;
+
+/** Tour reference gap (Research doc §9, Hickman & Metz). Secondary tick only. */
+const TOUR_PRESSURE_GAP = 0.5;
+/** Strokes over the cohort average at which a gap becomes HIGH priority. */
+const HIGH_OVER_COHORT = 2;
 
 export class PressureGapGenerator extends BaseGenerator<PressureGapAggregate> {
   readonly name = 'PressureGapGenerator';
@@ -133,6 +156,17 @@ export class PressureGapGenerator extends BaseGenerator<PressureGapAggregate> {
     // extent the course's par reflects difficulty.
     const delta = gap.gap;
 
+    // Top defect 9 / audit row 14: a gap inside its own 95% noise band is not
+    // a finding. 7 of 9 live gaps sat inside it (SE ≈ 2.25 strokes on 4-5
+    // practice rounds). Welch SE of the difference of means, t critical at the
+    // Welch df (the normal 1.96 would understate the band ~30% at n=4). The
+    // null return routes through the base class's stale-scope retraction.
+    const split = splitPressureRounds(rounds);
+    const welch = welchStandardError(split.pressure, split.practice);
+    if (!welch) return null;
+    const noiseBand = tCritical95(welch.df) * welch.se;
+    if (Math.abs(delta) <= noiseBand) return null;
+
     // C5: decompose the gap into WHICH sub-area breaks under pressure. Bucket
     // each round by competitive/practice, then compute per-bucket rates from
     // golf_holes. Component deltas are competitive − practice (higher = worse
@@ -159,29 +193,24 @@ export class PressureGapGenerator extends BaseGenerator<PressureGapAggregate> {
         b.op3n += 1;
       }
     }
-    const rate = (k: number, n: number) => (n > 0 ? (100 * k) / n : 0);
-    const perRound = (k: number, rounds: number) => (rounds > 0 ? k / rounds : 0);
-    const doubleRateDelta = rate(acc.c.dbl, acc.c.holes) - rate(acc.p.dbl, acc.p.holes);
-    const threePuttDelta = rate(acc.c.tp, acc.c.holes) - rate(acc.p.tp, acc.p.holes);
-    // NOTE (latent denominator divergence): penaltyDelta is per-round over the
-    // HOLE-SET round count (acc.*.rounds.size) — the rounds loadCompletedHoles
-    // actually returned (total_score IS NOT NULL filtered, inherited from C0's
-    // loader). The prose competitive_count comes from the unfiltered round query.
-    // These can diverge when a 'completed' round has a null total_score; zero such
-    // rounds in current data. Using the hole-set count here is the CORRECT
-    // denominator for these penalties (they were summed over exactly those rounds).
-    const penaltyDelta =
-      perRound(acc.c.pen, acc.c.rounds.size) - perRound(acc.p.pen, acc.p.rounds.size);
+    // Every component per 18 holes PLAYED (hole-weighted), so a 9-hole round
+    // counts as half a round and all four components share one unit.
+    const per18 = (k: number, holesN: number) => (holesN > 0 ? (18 * k) / holesN : 0);
+    const doublesDelta = per18(acc.c.dbl, acc.c.holes) - per18(acc.p.dbl, acc.p.holes);
+    const threePuttsDelta = per18(acc.c.tp, acc.c.holes) - per18(acc.p.tp, acc.p.holes);
+    const penaltyDelta = per18(acc.c.pen, acc.c.holes) - per18(acc.p.pen, acc.p.holes);
+    // Opening three holes: mean to-par per opening hole × 3 = strokes over par
+    // across one round's holes 1-3.
     const opening3Delta =
-      (acc.c.op3n > 0 ? acc.c.op3sum / acc.c.op3n : 0) -
-      (acc.p.op3n > 0 ? acc.p.op3sum / acc.p.op3n : 0);
+      3 * ((acc.c.op3n > 0 ? acc.c.op3sum / acc.c.op3n : 0) -
+        (acc.p.op3n > 0 ? acc.p.op3sum / acc.p.op3n : 0));
 
     // SV-1: per-round score-to-par dispersion + dates so the base computes a real
     // variance/recency instead of the placeholder 0.5/1.0 (no fabrication).
     // `computeMeasuredFactors` returns null (→ factors_measured:false) unless BOTH
     // a finite stddev AND ≥1 parseable round_date are present — so we MUST expose
     // round_dates too, or the real dispersion is never consumed.
-    const compScores = splitPressureRounds(rounds).pressure;
+    const compScores = split.pressure;
     const mean = compScores.reduce((a, v) => a + v, 0) / (compScores.length || 1);
     const variance =
       compScores.length > 1
@@ -193,6 +222,19 @@ export class PressureGapGenerator extends BaseGenerator<PressureGapAggregate> {
     const roundDates = rounds
       .filter((r) => bucketOf.get(r.id) === 'c' && r.round_date !== null)
       .map((r) => r.round_date as string);
+    const allDates = rounds
+      .filter((r) => bucketOf.has(r.id) && r.round_date !== null)
+      .map((r) => r.round_date as string)
+      .sort();
+
+    // Priority anchor (owner decision 2026-09-28): the college cohort's own
+    // average pressure gap, not the Tour's 0.5 — college typical is 2-5, so
+    // the Tour anchor flagged 6 of 10 players HIGH.
+    const standing = await loadStandingForMetric(this.playerId, this.metricId);
+    const cohortAvg =
+      standing && typeof standing.level_avg === 'number' && Number.isFinite(standing.level_avg)
+        ? standing.level_avg
+        : null;
 
     return {
       sampleN: practiceN + competitiveN,
@@ -201,10 +243,15 @@ export class PressureGapGenerator extends BaseGenerator<PressureGapAggregate> {
       competitive_avg: competitiveAvg,
       practice_count: practiceN,
       competitive_count: competitiveN,
-      double_rate_delta: doubleRateDelta,
-      three_putt_delta: threePuttDelta,
-      penalty_delta: penaltyDelta,
-      opening3_delta: opening3Delta,
+      doubles_per18_delta: doublesDelta,
+      three_putts_per18_delta: threePuttsDelta,
+      penalty_per18_delta: penaltyDelta,
+      opening3_strokes_delta: opening3Delta,
+      gap_se: welch.se,
+      noise_band: noiseBand,
+      cohort_avg: cohortAvg,
+      window_start: allDates[0] ?? null,
+      window_end: allDates[allDates.length - 1] ?? null,
       // SV-1 duck-typed dispersion (DispersionSignals): stddev + scale + the
       // contributing round dates. All three are required for the base's
       // computeMeasuredFactors to return factors_measured:true.
@@ -222,27 +269,36 @@ export class PressureGapGenerator extends BaseGenerator<PressureGapAggregate> {
     const practiceDisp = formatVsPar(agg.practice_avg);
     const competitiveDisp = formatVsPar(agg.competitive_avg);
 
-    const components: Array<{ label: string; val: number; unit: 'pp' | 'pr' }> = [
-      { label: 'double bogeys', val: agg.double_rate_delta, unit: 'pp' as const },
-      { label: '3-putts', val: agg.three_putt_delta, unit: 'pp' as const },
-      { label: 'penalties', val: agg.penalty_delta, unit: 'pr' as const },
-      { label: 'your opening 3 holes', val: agg.opening3_delta, unit: 'pr' as const },
-    ].sort((a, b) => b.val - a.val);
+    // One scale (per 18 holes), so the sort compares like with like. Stable
+    // rank breaks ties deterministically.
+    const components: Array<{ label: string; val: number; rank: number }> = [
+      { label: 'double bogeys', val: agg.doubles_per18_delta, rank: 0 },
+      { label: '3-putts', val: agg.three_putts_per18_delta, rank: 1 },
+      { label: 'penalties', val: agg.penalty_per18_delta, rank: 2 },
+      { label: 'your opening 3 holes', val: agg.opening3_strokes_delta, rank: 3 },
+    ].sort((a, b) => b.val - a.val || a.rank - b.rank);
     const lead = components[0];
     const driverClause =
       agg.playerValue > 0 && lead && lead.val > 0
-        ? lead.unit === 'pp'
-          ? ` Most of that gap is ${lead.label}: +${lead.val.toFixed(0)}% of holes vs your practice rate.`
-          : ` Most of that gap is ${lead.label}: +${lead.val.toFixed(1)} per round vs practice.`
+        ? lead.label === 'your opening 3 holes'
+          ? ` Most of that gap is ${lead.label}: +${lead.val.toFixed(1)} strokes per round vs practice.`
+          : ` Most of that gap is ${lead.label}: +${lead.val.toFixed(1)} per 18 holes vs practice.`
         : '';
+    const cohort = agg.cohort_avg ?? null;
+    const anchorSentence =
+      cohort !== null
+        ? ` College players in our data average a ${cohort.toFixed(1)}-stroke gap; the PGA Tour gap is ~${TOUR_PRESSURE_GAP}.`
+        : ` PGA Tour gap is ~${TOUR_PRESSURE_GAP} strokes; college typical is 2-5 (Research doc §9).`;
+    const noise = typeof agg.noise_band === 'number' && agg.noise_band > 0
+      ? ` (95% noise band ±${agg.noise_band.toFixed(1)})`
+      : '';
 
     const title = `Pressure gap: ${deltaDisp} strokes (tournament vs practice)`;
     const content =
       `Across the last 90 days you averaged ${competitiveDisp} in ` +
       `${agg.competitive_count} competitive rounds vs ${practiceDisp} in ` +
-      `${agg.practice_count} practice rounds, a ${absDelta}-stroke gap. ` +
-      `You play ${direction} when it counts.` + driverClause +
-      ` PGA Tour gap is ~0.5 strokes; college typical is 2-5 (Research doc §9).`;
+      `${agg.practice_count} practice rounds, a ${absDelta}-stroke gap${noise}. ` +
+      `You play ${direction} when it counts.` + driverClause + anchorSentence;
 
     return {
       title,
@@ -255,7 +311,19 @@ export class PressureGapGenerator extends BaseGenerator<PressureGapAggregate> {
       // college-population level_avg → once deployed, the base prefers the cohort
       // target, so this Tour anchor becomes the ceiling fallback only). College
       // typical is 2-5 strokes (Research doc §9) — far above Tour 0.5.
-      priority: agg.playerValue > 0.5 ? 'high' : agg.playerValue <= 0 ? 'low' : 'medium',
+      //
+      // Anchored to the cohort when standing has one (owner decision
+      // 2026-09-28): at/below the cohort average is low, above it medium, more
+      // than HIGH_OVER_COHORT above it high. Cold-start (no cohort) keeps the
+      // old Tour rule.
+      priority:
+        cohort !== null
+          ? agg.playerValue > cohort + HIGH_OVER_COHORT
+            ? 'high'
+            : agg.playerValue > cohort
+              ? 'medium'
+              : 'low'
+          : agg.playerValue > TOUR_PRESSURE_GAP ? 'high' : agg.playerValue <= 0 ? 'low' : 'medium',
       signature: `pressure_gap:practice_vs_tournament`,
       evidence: {
         metric: this.metricId,
@@ -263,13 +331,35 @@ export class PressureGapGenerator extends BaseGenerator<PressureGapAggregate> {
         unit: 'strokes',
         your_value: agg.playerValue,
         your_value_display: deltaDisp,
-        comparison_value: 0.5,
-        comparison_label: 'PGA Tour pressure gap',
-        comparison_source: 'pga_baseline',
+        ...(cohort !== null
+          ? {
+              comparison_value: cohort,
+              comparison_label: 'College cohort pressure gap',
+              comparison_source: 'cohort_avg' as const,
+              secondary_value: TOUR_PRESSURE_GAP,
+              secondary_label: 'PGA Tour pressure gap',
+              secondary_source: 'pga_baseline' as const,
+            }
+          : {
+              comparison_value: TOUR_PRESSURE_GAP,
+              comparison_label: 'PGA Tour pressure gap',
+              comparison_source: 'pga_baseline' as const,
+            }),
         sample_n: agg.sampleN,
+        window_basis: 'rolling',
         window_days: 90,
-        window_start: '',
-        window_end: '',
+        window_start: agg.window_start ?? '',
+        window_end: agg.window_end ?? '',
+        detail: {
+          practice_rounds: agg.practice_count,
+          competitive_rounds: agg.competitive_count,
+          gap_se: agg.gap_se,
+          noise_band_95: agg.noise_band,
+          doubles_per18_delta: agg.doubles_per18_delta,
+          three_putts_per18_delta: agg.three_putts_per18_delta,
+          penalty_per18_delta: agg.penalty_per18_delta,
+          opening3_strokes_delta: agg.opening3_strokes_delta,
+        },
         strokes_impact: 0,
         strokes_impact_method: 'peer_delta',
         confidence: 0,

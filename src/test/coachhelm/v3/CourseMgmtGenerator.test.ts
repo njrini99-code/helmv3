@@ -193,3 +193,36 @@ describe('CourseMgmtGenerator', () => {
     });
   });
 });
+
+describe('audit row 12 — print what the priority used, and label the window', () => {
+  const g = (v: 'penalty' | 'big_number') => new CourseMgmtGenerator(PLAYER_ID, v);
+
+  it('the primary comparison is the cohort the priority used; the Tour is the secondary tick', () => {
+    const pen = g('penalty').composeContent(makeAgg('penalty', 0.7, 20, { anchor_value: 0.86, anchor_is_cohort: true }));
+    expect(pen.priority).toBe('low'); // better than cohort
+    expect(pen.evidence.comparison_value).toBe(0.86);
+    expect(pen.evidence.comparison_source).toBe('cohort_avg');
+    expect(pen.evidence.secondary_value).toBe(0.3);
+    expect(pen.evidence.secondary_source).toBe('pga_baseline');
+
+    const big = g('big_number').composeContent(makeAgg('big_number', 9, 20, { anchor_value: 5.49, anchor_is_cohort: true }));
+    expect(big.evidence.comparison_value).toBe(5.49);
+    expect(big.evidence.comparison_source).toBe('cohort_avg');
+    expect(big.evidence.secondary_value).toBe(2);
+  });
+
+  it("a women's cohort card never carries the men's Tour tick", () => {
+    const c = g('penalty').composeContent(
+      makeAgg('penalty', 0.7, 20, { anchor_value: 0.9, anchor_is_cohort: true }, {}, 'womens'),
+    );
+    expect(c.evidence.comparison_source).toBe('cohort_avg');
+    expect(c.evidence.secondary_value).toBeUndefined();
+  });
+
+  it('labels the window lifetime: the value is the all-time cache scalar', () => {
+    const c = g('big_number').composeContent(makeAgg('big_number', 9, 20));
+    expect(c.evidence.window_basis).toBe('lifetime');
+    expect(c.content).not.toMatch(/last 20 rounds/);
+    expect(c.content).toMatch(/all 20 rounds on file/);
+  });
+});

@@ -72,6 +72,13 @@ export interface ProportionTestResult {
 export interface ProportionTestOptions {
   minPerSide?: number;
   minEffectPp?: number;
+  /**
+   * Two-sided significance level for THIS call. Defaults to {@link ALPHA}.
+   * A caller that searches several cuts and keeps the best one passes a
+   * corrected level (e.g. Bonferroni 0.05 / 2 for a two-band search) so the
+   * search itself does not inflate the false-positive rate.
+   */
+  alpha?: number;
 }
 
 /**
@@ -106,7 +113,7 @@ export function twoProportionZTest(
   }
   const z = (pA - pB) / se;
   const pValue = 2 * (1 - normalCdf(Math.abs(z)));
-  const significant = pValue < ALPHA;
+  const significant = pValue < (opts?.alpha ?? ALPHA);
   return {
     gapPp,
     pValue,

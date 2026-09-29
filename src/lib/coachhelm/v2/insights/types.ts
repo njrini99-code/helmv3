@@ -50,6 +50,14 @@ export type InsightUnit = 'percent' | 'strokes' | 'count' | 'yards' | 'feet';
  *                     NCAA figures discounted to college. Rendered as
  *                     "Estimated target" so a coach never reads it as a
  *                     measured norm (repair plan N16).
+ * - cohort_avg:       the MEASURED average of the player's college cohort in
+ *                     our data (`golf_player_standing.level_avg`: every active
+ *                     player on a same-gender team, computed by the standing
+ *                     refresh). The owner decision (2026-09-28): benchmarks
+ *                     show the cohort AND the Tour, with priority and targets
+ *                     anchored to the cohort — so a generator that sets
+ *                     priority from level_avg prints it as the primary tick
+ *                     and the Tour as `secondary_*`.
  *
  * `peer_percentile` was removed in 2026-05-17 (audit finding Q-NEW-12) —
  * it was being used against fixed reference points (uniform 4-way
@@ -66,7 +74,8 @@ export type InsightComparisonSource =
   | 'team_avg'
   | 'pga_baseline'
   | 'absolute_target'
-  | 'estimated_target';
+  | 'estimated_target'
+  | 'cohort_avg';
 
 /** Runtime tuple matching {@link InsightComparisonSource} for validation. */
 export const COMPARISON_SOURCES = [
@@ -80,6 +89,7 @@ export const COMPARISON_SOURCES = [
   'pga_baseline',
   'absolute_target',
   'estimated_target',
+  'cohort_avg',
 ] as const satisfies readonly InsightComparisonSource[];
 
 /** Stable lookup key in the BaselineRegistry: `${source}.${bucket}`. */
@@ -164,6 +174,15 @@ export interface InsightEvidence {
 
   // Sample / window
   sample_n: number;
+  /**
+   * What `window_days` measures. `'lifetime'`: the value is an all-time
+   * aggregate (e.g. the stats cache) and `window_days` is only the span
+   * between the first and last contributing round — renderers must say
+   * "lifetime", never "N days", because the value is not windowed.
+   * `'rolling'` or absent: the value is computed over the last `window_days`.
+   * Additive (audit row 12, 2026-09-28).
+   */
+  window_basis?: 'lifetime' | 'rolling';
   window_days: number;
   window_start: string; // ISO
   window_end: string;   // ISO

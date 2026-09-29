@@ -109,6 +109,21 @@ export function formatWindow(
   return `${days} days (${fmt(startDate)} – ${fmt(endDate)})`;
 }
 
+/**
+ * Window label for an all-time value (`window_basis: 'lifetime'`). The span
+ * dates are the first and last contributing rounds, not a window the value
+ * was computed over, so the label never says "N days" (audit row 12).
+ */
+export function formatLifetimeWindow(start: string, end: string): string {
+  const startDate = new Date(start);
+  const endDate = new Date(end);
+  if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) {
+    return 'Lifetime';
+  }
+  const fmt = (d: Date) => `${SHORT_MONTHS[d.getUTCMonth()]} ${d.getUTCDate()}`;
+  return `Lifetime (rounds ${fmt(startDate)} – ${fmt(endDate)})`;
+}
+
 /** green ≥ 0.7, amber 0.4..0.7, gray < 0.4 */
 export function confidenceColor(c: number): {
   bar: string;
@@ -193,6 +208,7 @@ const SOURCE_LABELS: Record<InsightEvidence['comparison_source'], string> = {
   pga_baseline: 'PGA baseline',
   absolute_target: 'Target',
   estimated_target: 'Estimated target',
+  cohort_avg: 'College cohort avg',
 };
 
 /**
@@ -357,7 +373,7 @@ export function EvidencePanel({
         {v3Standing ?? <BenchmarkScale evidence={evidence} />}
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-caption text-text-tertiary tabular-nums">
           <span data-testid="evidence-sample">
-            {formatSample(evidence.sample_n, evidence.metric)} · {evidence.window_days} days
+            {formatSample(evidence.sample_n, evidence.metric)} · {evidence.window_basis === 'lifetime' ? 'lifetime' : `${evidence.window_days} days`}
           </span>
           {Math.round(Math.abs(safeImpact) * 10) > 0 && (
             <>
@@ -412,7 +428,11 @@ export function EvidencePanel({
     {
       label: 'Window',
       value: (
-        <span>{formatWindow(evidence.window_start, evidence.window_end, evidence.window_days)}</span>
+        <span>
+          {evidence.window_basis === 'lifetime'
+            ? formatLifetimeWindow(evidence.window_start, evidence.window_end)
+            : formatWindow(evidence.window_start, evidence.window_end, evidence.window_days)}
+        </span>
       ),
       testId: 'evidence-row-window',
     },
