@@ -216,4 +216,3 @@ export function withVerdictPart(parts: readonly unknown[], verdict: TurnVerdict)
   }
   return out;
 }
-

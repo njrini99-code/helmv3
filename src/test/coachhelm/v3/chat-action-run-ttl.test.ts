@@ -199,4 +199,3 @@ describe('proposalKeysFromParts', () => {
     ).toEqual(['k1', 'k2']);
   });
 });
-
