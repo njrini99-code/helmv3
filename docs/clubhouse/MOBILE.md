@@ -48,7 +48,7 @@ rows. Add to it when a row lands.
    - every gesture and its haptic
    - any gap between the design and the data, logged as a decision in
      `PROGRESS.md`
-   
+
    A page with no mobile design keeps its draft, which still needs the
    owner's approval before it is built. `clubhouse:check` refuses a done
    `phone` gate without an approved spec.
