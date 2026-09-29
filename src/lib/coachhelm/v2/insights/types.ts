@@ -186,6 +186,12 @@ export interface InsightEvidence {
   window_days: number;
   window_start: string; // ISO
   window_end: string;   // ISO
+  /**
+   * The completed, non-test rounds inside [window_start, window_end] that the
+   * row was computed from (audit row 22), newest first, capped at 200. Lets
+   * the evidence drill-down show exactly which rounds back the claim.
+   */
+  source_round_ids?: string[];
 
   // Impact
   strokes_impact: number;

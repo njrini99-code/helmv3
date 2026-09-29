@@ -715,7 +715,6 @@ export const FEATURE_REGISTRY: readonly FeatureDef[] = [
     app: 'coachhelm',
     actions: {
       'src/app/golf/actions/insight-management.ts': 'ALL',
-      'src/app/golf/actions/insight-evidence.ts': 'ALL',
       'src/app/golf/actions/insights.ts': [
         'acknowledgeInsight',
         'dismissInsight',
