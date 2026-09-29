@@ -274,125 +274,19 @@ export function Roster({ data }: { data: ChRoster }) {
 
           <div className={'ch-rs-body' + (cur ? ' has-peek' : '')}>
             <SectionBoundary surface="roster.list" label="The roster" code="CH-3205">
-              {rows.length === 0 ? (
-                <div className="ch-rs-empty ch-sheet">
-                  <EmptyState
-                    compact
-                    code={q.trim() ? 'CH-3302' : 'CH-3303'}
-                    title={q.trim() ? `No players match “${q.trim()}”` : show === 'inactive' ? 'No inactive players.' : 'No active players.'}
-                    action={
-                      <Button
-                        size="sm"
-                        onClick={() => {
-                          setQ('');
-                          setShow('all');
-                        }}
-                      >
-                        Show everyone
-                      </Button>
-                    }
-                  />
-                </div>
-              ) : view === 'faces' ? (
-                <div className="ch-rs-faces">
-                  {rows.map((p) => (
-                    <button
-                      key={p.id}
-                      type="button"
-                      className={'ch-rs-face' + (sel === p.id ? ' is-sel' : '') + (p.status === 'inactive' ? ' is-off' : '')}
-                      aria-pressed={sel === p.id}
-                      onClick={() => select(p.id)}
-                    >
-                      <span className="ch-rs-face__top">
-                        <span />
-                        <span className={`ch-rs-face__dot is-${p.status}`} aria-hidden="true" />
-                        <span className="ch-sr-only">{p.status === 'active' ? 'Active' : 'Inactive'}</span>
-                      </span>
-                      <span className="ch-rs-face__av">
-                        <Avatar name={p.name} size={76} />
-                      </span>
-                      <span className="ch-rs-face__name">{p.name}</span>
-                      <span className="ch-rs-face__meta">{[p.classYear, p.hometown].filter(Boolean).join(' · ') || ' '}</span>
-                      <span className="ch-rs-face__form">
-                        <FormLine data={p.trend} width={150} height={30} earlyBelow={3} label={`${p.name} form`} />
-                      </span>
-                      <span className="ch-rs-face__figs">
-                        <span>
-                          <b className="ch-num">{formatFixed(p.avg)}</b>Avg
-                        </span>
-                        <span>
-                          <b className={'ch-num' + (p.sgPerRound == null ? '' : p.sgPerRound >= 0 ? ' is-gain' : ' is-loss')}>
-                            {p.sgPerRound == null ? NO_DATA : formatSigned(p.sgPerRound)}
-                          </b>
-                          SG
-                        </span>
-                        <span>
-                          <b className="ch-num">{formatHcp(p.handicap)}</b>HCP
-                        </span>
-                      </span>
-                      {p.attention && <span className={`ch-rs-face__note is-${p.attention.tone}`}>{p.attention.text}</span>}
-                    </button>
-                  ))}
-                </div>
-              ) : (
-                <div className="ch-rs-list ch-sheet" role="table" aria-label="Roster">
-                  <div className="ch-rs-row ch-rs-row--head ch-well-soft" role="row">
-                    <span role="columnheader">Player</span>
-                    <span role="columnheader">Status</span>
-                    <span role="columnheader">Last 7 rounds</span>
-                    <span role="columnheader" className="r">Avg</span>
-                    <span role="columnheader" className="r">HCP</span>
-                    <span role="columnheader" className="r">SG / rd</span>
-                    <span role="columnheader" className="r">Rounds</span>
-                    <span role="columnheader">
-                      <span className="ch-sr-only">Actions</span>
-                    </span>
-                  </div>
-                  {rows.map((p) => (
-                    <div
-                      key={p.id}
-                      role="row"
-                      className={'ch-rs-row' + (sel === p.id ? ' is-sel' : '') + (p.status === 'inactive' ? ' is-off' : '')}
-                    >
-                      <span role="cell" className="ch-rs-who__cell">
-                        <button type="button" className="ch-rs-who" onClick={() => select(p.id)} aria-pressed={sel === p.id}>
-                          <Avatar name={p.name} size={40} />
-                          <span>
-                            <b>{p.name}</b>
-                            <span className="ch-rs-who__m">{[p.classYear, p.hometown].filter(Boolean).join(' · ')}</span>
-                          </span>
-                        </button>
-                      </span>
-                      <span role="cell">
-                        <span className={`ch-rs-status is-${p.status}`}>
-                          <i aria-hidden="true" />
-                          {p.status === 'active' ? 'Active' : 'Inactive'}
-                        </span>
-                      </span>
-                      <span role="cell">
-                        <FormLine data={p.trend} width={120} height={30} earlyBelow={3} label={`${p.name} form`} />
-                      </span>
-                      <span role="cell" className="r ch-num ch-rs-num">{formatFixed(p.avg)}</span>
-                      <span role="cell" className="r ch-num ch-rs-num2">{formatHcp(p.handicap)}</span>
-                      <span role="cell" className={'r ch-num ch-rs-sg' + (p.sgPerRound == null ? '' : p.sgPerRound >= 0 ? ' is-gain' : ' is-loss')}>
-                        {p.sgPerRound == null ? NO_DATA : formatSigned(p.sgPerRound)}
-                      </span>
-                      <span role="cell" className="r ch-num ch-rs-num2">{p.rounds}</span>
-                      <span role="cell" className="r">
-                        <Menu
-                          label={`Actions for ${p.name}`}
-                          items={menuFor(p)}
-                          trigger={(t) => (
-                            <button type="button" className="ch-btn ch-btn--ghost ch-iconbtn ch-btn--sm" aria-label={`Actions for ${p.name}`} {...t}>
-                              <Icon icon={Ellipsis} size={15} />
-                            </button>
-                          )}
-                        />
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              )}
+              <RosterList
+                rows={rows}
+                view={view}
+                sel={sel}
+                q={q}
+                show={show}
+                select={select}
+                menuFor={menuFor}
+                onShowEveryone={() => {
+                  setQ('');
+                  setShow('all');
+                }}
+              />
             </SectionBoundary>
             <SectionBoundary surface="roster.peek" label="The player panel" code="CH-3206">
               <RosterPeek p={cur} notesLocked={data.notesError} onClose={() => setSel(null)} />
@@ -445,6 +339,151 @@ export function Roster({ data }: { data: ChRoster }) {
         <p className="ch-rs-remove">Their account and stats are not deleted. This only removes them from your active roster.</p>
       </Modal>
     </main>
+  );
+}
+
+/**
+ * The roster itself, as cards or a table. Its own component so the
+ * roster.list boundary contains everything it computes.
+ */
+function RosterList({
+  rows,
+  view,
+  sel,
+  q,
+  show,
+  select,
+  menuFor,
+  onShowEveryone,
+}: {
+  rows: ChRosterPlayer[];
+  view: View;
+  sel: string | null;
+  q: string;
+  show: Show;
+  select: (id: string | null) => void;
+  menuFor: (p: ChRosterPlayer) => MenuItem[];
+  onShowEveryone: () => void;
+}) {
+  return (
+    <>
+      {rows.length === 0 ? (
+        <div className="ch-rs-empty ch-sheet">
+          <EmptyState
+            compact
+            code={q.trim() ? 'CH-3302' : 'CH-3303'}
+            title={q.trim() ? `No players match “${q.trim()}”` : show === 'inactive' ? 'No inactive players.' : 'No active players.'}
+            action={
+              <Button
+                size="sm"
+                onClick={onShowEveryone}
+              >
+                Show everyone
+              </Button>
+            }
+          />
+        </div>
+      ) : view === 'faces' ? (
+        <div className="ch-rs-faces">
+          {rows.map((p) => (
+            <button
+              key={p.id}
+              type="button"
+              className={'ch-rs-face' + (sel === p.id ? ' is-sel' : '') + (p.status === 'inactive' ? ' is-off' : '')}
+              aria-pressed={sel === p.id}
+              onClick={() => select(p.id)}
+            >
+              <span className="ch-rs-face__top">
+                <span />
+                <span className={`ch-rs-face__dot is-${p.status}`} aria-hidden="true" />
+                <span className="ch-sr-only">{p.status === 'active' ? 'Active' : 'Inactive'}</span>
+              </span>
+              <span className="ch-rs-face__av">
+                <Avatar name={p.name} size={76} />
+              </span>
+              <span className="ch-rs-face__name">{p.name}</span>
+              <span className="ch-rs-face__meta">{[p.classYear, p.hometown].filter(Boolean).join(' · ') || ' '}</span>
+              <span className="ch-rs-face__form">
+                <FormLine data={p.trend} width={150} height={30} earlyBelow={3} label={`${p.name} form`} />
+              </span>
+              <span className="ch-rs-face__figs">
+                <span>
+                  <b className="ch-num">{formatFixed(p.avg)}</b>Avg
+                </span>
+                <span>
+                  <b className={'ch-num' + (p.sgPerRound == null ? '' : p.sgPerRound >= 0 ? ' is-gain' : ' is-loss')}>
+                    {p.sgPerRound == null ? NO_DATA : formatSigned(p.sgPerRound)}
+                  </b>
+                  SG
+                </span>
+                <span>
+                  <b className="ch-num">{formatHcp(p.handicap)}</b>HCP
+                </span>
+              </span>
+              {p.attention && <span className={`ch-rs-face__note is-${p.attention.tone}`}>{p.attention.text}</span>}
+            </button>
+          ))}
+        </div>
+      ) : (
+        <div className="ch-rs-list ch-sheet" role="table" aria-label="Roster">
+          <div className="ch-rs-row ch-rs-row--head ch-well-soft" role="row">
+            <span role="columnheader">Player</span>
+            <span role="columnheader">Status</span>
+            <span role="columnheader">Last 7 rounds</span>
+            <span role="columnheader" className="r">Avg</span>
+            <span role="columnheader" className="r">HCP</span>
+            <span role="columnheader" className="r">SG / rd</span>
+            <span role="columnheader" className="r">Rounds</span>
+            <span role="columnheader">
+              <span className="ch-sr-only">Actions</span>
+            </span>
+          </div>
+          {rows.map((p) => (
+            <div
+              key={p.id}
+              role="row"
+              className={'ch-rs-row' + (sel === p.id ? ' is-sel' : '') + (p.status === 'inactive' ? ' is-off' : '')}
+            >
+              <span role="cell" className="ch-rs-who__cell">
+                <button type="button" className="ch-rs-who" onClick={() => select(p.id)} aria-pressed={sel === p.id}>
+                  <Avatar name={p.name} size={40} />
+                  <span>
+                    <b>{p.name}</b>
+                    <span className="ch-rs-who__m">{[p.classYear, p.hometown].filter(Boolean).join(' · ')}</span>
+                  </span>
+                </button>
+              </span>
+              <span role="cell">
+                <span className={`ch-rs-status is-${p.status}`}>
+                  <i aria-hidden="true" />
+                  {p.status === 'active' ? 'Active' : 'Inactive'}
+                </span>
+              </span>
+              <span role="cell">
+                <FormLine data={p.trend} width={120} height={30} earlyBelow={3} label={`${p.name} form`} />
+              </span>
+              <span role="cell" className="r ch-num ch-rs-num">{formatFixed(p.avg)}</span>
+              <span role="cell" className="r ch-num ch-rs-num2">{formatHcp(p.handicap)}</span>
+              <span role="cell" className={'r ch-num ch-rs-sg' + (p.sgPerRound == null ? '' : p.sgPerRound >= 0 ? ' is-gain' : ' is-loss')}>
+                {p.sgPerRound == null ? NO_DATA : formatSigned(p.sgPerRound)}
+              </span>
+              <span role="cell" className="r ch-num ch-rs-num2">{p.rounds}</span>
+              <span role="cell" className="r">
+                <Menu
+                  label={`Actions for ${p.name}`}
+                  items={menuFor(p)}
+                  trigger={(t) => (
+                    <button type="button" className="ch-btn ch-btn--ghost ch-iconbtn ch-btn--sm" aria-label={`Actions for ${p.name}`} {...t}>
+                      <Icon icon={Ellipsis} size={15} />
+                    </button>
+                  )}
+                />
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+    </>
   );
 }
 
