@@ -6,6 +6,11 @@ import { PreviewError } from '@/clubhouse/preview/PreviewError';
 import { Roster } from '@/clubhouse/screens/roster/Roster';
 import { RosterSkeleton } from '@/clubhouse/screens/roster/RosterSkeleton';
 import { PREVIEW_ROSTER, PREVIEW_ROSTER_EMPTY, PREVIEW_ROSTER_FAILED } from '@/clubhouse/preview/fixtures-roster';
+import { StatsTeam } from '@/clubhouse/screens/stats/StatsTeam';
+import { StatsPlayer } from '@/clubhouse/screens/stats/StatsPlayer';
+import { StatsSkeleton } from '@/clubhouse/screens/stats/StatsSkeleton';
+import { PREVIEW_PLAYER, PREVIEW_PLAYER_EARLY, PREVIEW_TEAM_STATS } from '@/clubhouse/preview/fixtures-stats';
+import '@/clubhouse/styles/stats.css';
 import {
   PREVIEW_COACH,
   PREVIEW_HOME,
@@ -52,6 +57,21 @@ export default async function ClubhousePreview({
         ) : (
           <Roster data={state === 'empty' ? PREVIEW_ROSTER_EMPTY : state === 'failed' ? PREVIEW_ROSTER_FAILED : PREVIEW_ROSTER} />
         ),
+    },
+    stats: {
+      path: '/golf/dashboard/stats',
+      node:
+        state === 'loading' ? (
+          <StatsSkeleton />
+        ) : state === 'empty' ? (
+          <StatsTeam data={{ ...PREVIEW_TEAM_STATS, roundCount: 0, grid: [], players: [], putting: null, bests: [] }} />
+        ) : (
+          <StatsTeam data={PREVIEW_TEAM_STATS} />
+        ),
+    },
+    player: {
+      path: '/golf/dashboard/stats',
+      node: <StatsPlayer data={state === 'early' ? PREVIEW_PLAYER_EARLY : state === 'self' ? { ...PREVIEW_PLAYER, viewer: 'player', nav: null } : PREVIEW_PLAYER} coachId={state === 'self' ? null : 'preview-coach'} />,
     },
   };
   const entry = screens[screen];

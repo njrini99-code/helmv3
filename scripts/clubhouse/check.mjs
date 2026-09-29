@@ -89,7 +89,7 @@ export function checkSource(file, raw) {
     }
   } else {
     // TS/TSX: exclamation marks in user-facing strings or JSX text.
-    scan(/[A-Za-z.)]!(?=['"`<]|\s+[A-Z<'"`])/g, 'exclamation mark in copy');
+    scan(/[A-Za-z.)]!(?=['"`<]|\s+[A-Z'"`])/g, 'exclamation mark in copy');
     if (!file.endsWith('lib/motion.ts')) {
       for (const m of src.matchAll(/duration:\s*([\d.]+)/g)) {
         if (!ALLOWED_DURATIONS_S.has(m[1])) add(m.index, `duration ${m[1]} is off the scale (use CH_DUR)`);

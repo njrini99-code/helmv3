@@ -1,29 +1,4 @@
-/** Monotone cubic through the points: smooth, and never overshoots a real score. */
-function monotonePath(pts: Array<[number, number]>): string {
-  const n = pts.length;
-  if (n < 2) return '';
-  const dx: number[] = [];
-  const m: number[] = [];
-  const t: number[] = [];
-  for (let i = 0; i < n - 1; i++) {
-    dx[i] = pts[i + 1]![0] - pts[i]![0];
-    m[i] = (pts[i + 1]![1] - pts[i]![1]) / dx[i]!;
-  }
-  t[0] = m[0]!;
-  t[n - 1] = m[n - 2]!;
-  for (let i = 1; i < n - 1; i++) {
-    const a = m[i - 1]!;
-    const b = m[i]!;
-    t[i] = a * b <= 0 ? 0 : (3 * (dx[i - 1]! + dx[i]!)) / ((2 * dx[i]! + dx[i - 1]!) / a + (dx[i]! + 2 * dx[i - 1]!) / b);
-  }
-  let d = `M${pts[0]![0]},${pts[0]![1]}`;
-  for (let i = 0; i < n - 1; i++) {
-    const h = dx[i]! / 3;
-    d += ` C${pts[i]![0] + h},${pts[i]![1] + t[i]! * h} ${pts[i + 1]![0] - h},${pts[i + 1]![1] - t[i + 1]! * h} ${pts[i + 1]![0]},${pts[i + 1]![1]}`;
-  }
-  return d;
-}
-
+import { monotonePath } from '../lib/chart';
 /**
  * Last-rounds form line: smooth, coloured by outcome (green when scoring
  * falls, amber when it rises, ink when flat), drawn against a dashed mean.

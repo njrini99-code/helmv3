@@ -1,6 +1,8 @@
 import { permanentRedirect } from 'next/navigation';
 import { FairwayPlayerStats } from '@/components/fairway/pages/coachhelm/FairwayPlayerStats';
 import { getGolfSessionProfile } from '@/lib/auth/session';
+import { isClubhouseFor } from '@/clubhouse/gate';
+import { ClubhouseStatsRoute } from '@/clubhouse/routes/stats';
 import { mapLegacyStatsTab } from '@/components/fairway/modules';
 import { FeatureUnavailable } from '@/components/fairway';
 import { surfaceHref, surfaceName } from '@/lib/golf/surface-registry';
@@ -33,12 +35,19 @@ export const dynamic = 'force-dynamic';
  */
 
 interface GolfStatsPageProps {
-  searchParams: Promise<{ player?: string; tab?: string }>;
+  searchParams: Promise<{ player?: string; tab?: string; window?: string }>;
 }
 
 export default async function GolfStatsPage({ searchParams }: GolfStatsPageProps) {
   const params = await searchParams;
   const playerId = params.player ?? null;
+
+  // Clubhouse Stats (golf_clubhouse_ui): team stats and player profiles,
+  // coaches and players, each with the permissions they already have.
+  const chSession = await getGolfSessionProfile();
+  if (isClubhouseFor(chSession?.coach ? 'coach' : chSession?.player ? 'player' : null)) {
+    return <ClubhouseStatsRoute player={params.player} window={params.window} />;
+  }
 
   // Legacy `?tab=` (the old FairwayStatsCockpit tab strip) → the Spine &
   // Stage `?area=` param, permanently redirected so old bookmarks/links keep

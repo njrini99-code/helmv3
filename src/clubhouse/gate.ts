@@ -2,9 +2,10 @@ import 'server-only';
 import { isFlagEnabled } from '@/lib/flags/is-enabled';
 
 /**
- * The one switch between Fairway and Clubhouse. Coaches only: the player app
- * has no Clubhouse design yet (docs/clubhouse/PROGRESS.md).
+ * The one switch between Fairway and Clubhouse, for coaches and players.
+ * Players get the shared screens (Stats, Calendar, Messages) with their own
+ * permissions; their other screens show "not rebuilt yet" until designed.
  */
 export function isClubhouseFor(role: 'coach' | 'player' | null | undefined): boolean {
-  return role === 'coach' && isFlagEnabled('golf_clubhouse_ui');
+  return (role === 'coach' || role === 'player') && isFlagEnabled('golf_clubhouse_ui');
 }

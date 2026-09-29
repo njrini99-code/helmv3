@@ -10,7 +10,7 @@ import { haptic } from '../lib/haptics';
 import { chTween } from '../lib/motion';
 import { useChReducedMotion } from '../lib/reduced-motion';
 import type { ChShellData } from '../data/shell';
-import { CH_NAV, activeNavItem } from './nav';
+import { activeNavItem, navFor, type ChRole } from './nav';
 import { badgeCount } from './Sidebar';
 
 /**
@@ -18,13 +18,14 @@ import { badgeCount } from './Sidebar';
  * active pill, four destinations plus More. A selection tick on every tab
  * change; More opens a sheet with the rest of the app.
  */
-export function TabBar({ pathname, shell }: { pathname: string; shell: ChShellData }) {
+export function TabBar({ pathname, shell, role }: { pathname: string; shell: ChShellData; role: ChRole }) {
   const badges = useNotificationBadges();
   const reduced = useChReducedMotion();
   const [moreOpen, setMoreOpen] = useState(false);
-  const current = activeNavItem(pathname);
-  const tabs = CH_NAV.filter((i) => i.tab);
-  const rest = CH_NAV.filter((i) => !i.tab);
+  const nav = navFor(role);
+  const current = activeNavItem(pathname, role);
+  const tabs = nav.filter((i) => i.tab);
+  const rest = nav.filter((i) => !i.tab);
   const moreActive = !!current && !current.tab;
 
   useEffect(() => setMoreOpen(false), [pathname]);

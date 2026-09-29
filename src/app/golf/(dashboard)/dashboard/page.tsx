@@ -267,6 +267,9 @@ export default async function GolfDashboardPage({
     }
 
     // ── Player dashboard ──
+    // Clubhouse has no player Home yet: the shell shows "not rebuilt yet", so
+    // skip the Fairway player payload entirely.
+    if (player && isClubhouseFor('player')) return null;
     if (player) {
         // Get team via membership
         // This read used to be swallowed TWICE: a `try { } catch { }` that

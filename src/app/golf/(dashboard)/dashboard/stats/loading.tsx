@@ -1,3 +1,5 @@
+import { ClubhouseSwitch } from '@/clubhouse/shell/ClubhouseSwitch';
+import { StatsSkeleton } from '@/clubhouse/screens/stats/StatsSkeleton';
 import { Skeleton } from '@/components/fairway';
 import { fairwayScope } from '@/lib/redesign/flag';
 import {
@@ -25,7 +27,9 @@ import {
  */
 export default function Loading() {
   return (
-    <div className={fairwayScope('min-h-full bg-canvas')}>
+    <ClubhouseSwitch
+      clubhouse={<StatsSkeleton />}
+      fallback={<div className={fairwayScope('min-h-full bg-canvas')}>
       <div className="w-full py-2">
         <div
           className="flex w-full flex-col"
@@ -59,6 +63,7 @@ export default function Loading() {
           </div>
         </div>
       </div>
-    </div>
+    </div>}
+    />
   );
 }

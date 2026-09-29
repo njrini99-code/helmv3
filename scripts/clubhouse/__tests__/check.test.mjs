@@ -27,7 +27,7 @@ test('flags emoji, exclamation copy, staggers and uppercase', () => {
 });
 
 test('ignores comments and non-null assertions', () => {
-  const src = '// Wow! uppercase stagger\nconst x = foo!.bar;\nif (a !== b) run();';
+  const src = '// Wow! uppercase stagger\nconst x = foo!.bar;\nif (a !== b) run();\nconst y = v! < w!;';
   assert.deepEqual(checkSource('src/clubhouse/c.ts', src), []);
 });
 

@@ -40,8 +40,9 @@ export function ClubhouseFrame({
   forceRebuilt?: boolean;
   children: ReactNode;
 }) {
-  const item = activeNavItem(pathname);
-  const rebuilt = forceRebuilt || isRebuilt(pathname);
+  const role = userData.role;
+  const item = activeNavItem(pathname, role);
+  const rebuilt = forceRebuilt || isRebuilt(pathname, role);
   useEffect(() => chTagSession(), []);
 
   return (
@@ -58,7 +59,7 @@ export function ClubhouseFrame({
                 </RouteFrame>
               </div>
             </div>
-            <TabBar pathname={pathname} shell={shell} />
+            <TabBar pathname={pathname} shell={shell} role={role} />
           </div>
         </ToastProvider>
       </LazyMotion>

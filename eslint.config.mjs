@@ -229,8 +229,9 @@ export default tseslint.config(
     files: ["src/clubhouse/**/*.{ts,tsx}"],
     ignores: ["src/clubhouse/lib/haptics.ts", "src/clubhouse/lib/reduced-motion.ts"],
     rules: {
-      // Points at the pre-Clubhouse Button; Clubhouse ships its own in src/clubhouse/ui.
+      // Point at the pre-Clubhouse Button and Input; Clubhouse ships its own form styles.
       "helm/no-raw-button": "off",
+      "helm/no-raw-input": "off",
       "no-restricted-imports": [
         "error",
         {

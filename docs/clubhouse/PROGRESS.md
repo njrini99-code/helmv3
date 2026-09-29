@@ -46,8 +46,8 @@ screen.
 | Foundation | (shell, tokens, primitives) | done | doing | doing | doing | doing | doing | todo | doing | doing | doing | todo |
 | Home | /golf/dashboard | done | doing | doing | doing | doing | doing | todo | todo | doing | doing | todo |
 | Roster | /golf/dashboard/roster | done | done | done | doing | doing | todo | todo | doing | doing | doing | todo |
-| Stats (team) | /golf/dashboard/stats | todo | todo | todo | todo | todo | todo | todo | todo | todo | todo | todo |
-| Stats (player) | /golf/dashboard/stats?player= | todo | todo | todo | todo | todo | todo | todo | todo | todo | todo | todo |
+| Stats (team) | /golf/dashboard/stats | done | done | done | doing | doing | todo | todo | doing | doing | doing | todo |
+| Stats (player) | /golf/dashboard/stats?player= (coach), /golf/dashboard/stats (player) | done | done | done | doing | doing | todo | todo | doing | doing | doing | todo |
 | Calendar | /golf/dashboard/calendar | todo | todo | todo | todo | todo | todo | todo | todo | todo | todo | todo |
 | Messages | /golf/dashboard/messages | todo | todo | todo | todo | todo | todo | todo | todo | todo | todo | todo |
 | CoachHelm | /golf/dashboard/coachhelm | blocked (still in design) | todo | todo | todo | todo | todo | todo | todo | todo | todo | todo |

@@ -64,7 +64,13 @@ describe('nav', () => {
     expect(activeNavItem('/golf/dashboard')?.id).toBe('home');
     expect(activeNavItem('/golf/dashboard/roster/abc')?.id).toBe('roster');
     expect(isRebuilt('/golf/dashboard/')).toBe(true);
-    expect(rebuiltHref('/golf/dashboard/stats?player=1')).toBeNull();
+    expect(rebuiltHref('/golf/dashboard/stats?player=1')).toBe('/golf/dashboard/stats?player=1');
+    expect(rebuiltHref('/golf/dashboard/rounds')).toBeNull();
+    // Players share Stats but not the coach Home or Roster.
+    expect(isRebuilt('/golf/dashboard', 'player')).toBe(false);
+    expect(isRebuilt('/golf/dashboard/roster', 'player')).toBe(false);
+    expect(isRebuilt('/golf/dashboard/stats', 'player')).toBe(true);
+    expect(activeNavItem('/golf/dashboard/stats', 'player')?.label).toBe('My stats');
   });
 });
 
@@ -99,5 +105,46 @@ describe('roster attention', () => {
     const s = summarizePlayer([round('a', '2026-10-01', 72, { strokes_gained_total: 1 }), round('b', '2026-09-30', 72, { strokes_gained_total: 2 })]);
     expect(s.sgPerRound).toBeNull();
     expect(s.sgRounds).toBe(2);
+  });
+});
+
+describe('stats windows', async () => {
+  const { parseWindow, roundsInWindow, previousWindow, rate, tourForGender, weekOf } = await import('../data/stats-common');
+  const round = (i: number, type = 'practice', holes = 18) =>
+    ({ id: `r${i}`, player_id: 'p', round_date: '2026-09-01', round_type: type, holes_played: holes, total_score: 73, score_to_par: 1 }) as never;
+
+  it('defaults an unknown window to the last 10', () => {
+    expect(parseWindow(undefined)).toBe('last10');
+    expect(parseWindow('nonsense')).toBe('last10');
+    expect(parseWindow('qualifiers')).toBe('qualifiers');
+  });
+
+  it('keeps 18-hole rounds and reads both qualifier spellings', () => {
+    const rounds = [round(1, 'Qualifier'), round(2, 'qualifying'), round(3), round(4, 'qualifier', 9)];
+    expect(roundsInWindow(rounds, 'qualifiers').map((r: { id: string }) => r.id)).toEqual(['r1', 'r2']);
+    expect(roundsInWindow(Array.from({ length: 14 }, (_, i) => round(i)), 'last10')).toHaveLength(10);
+  });
+
+  it('has a previous window only for the last 10, and only with 3 or more rounds', () => {
+    expect(previousWindow(Array.from({ length: 12 }, (_, i) => round(i)), 'last10')).toBeNull();
+    expect(previousWindow(Array.from({ length: 13 }, (_, i) => round(i)), 'last10')).toHaveLength(3);
+    expect(previousWindow(Array.from({ length: 30 }, (_, i) => round(i)), 'season')).toBeNull();
+  });
+
+  it('weights rates by attempts, never by averaging percentages', () => {
+    const rows = [
+      { greens_hit: 1, greens_total: 2 },
+      { greens_hit: 9, greens_total: 18 },
+      { greens_hit: null, greens_total: 18 },
+    ] as never[];
+    expect(rate(rows, 'greens_hit' as never, 'greens_total' as never)).toBe(50);
+    expect(rate([], 'greens_hit' as never, 'greens_total' as never)).toBeNull();
+  });
+
+  it('benchmarks a women’s team against the LPGA and weeks start Monday', () => {
+    expect(tourForGender('womens')).toBe('lpga');
+    expect(tourForGender(null)).toBe('pga');
+    expect(weekOf('2026-09-27')).toBe('2026-09-21');
+    expect(weekOf('2026-09-21')).toBe('2026-09-21');
   });
 });

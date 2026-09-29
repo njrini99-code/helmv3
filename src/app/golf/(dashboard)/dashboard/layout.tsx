@@ -63,7 +63,7 @@ export default async function DashboardLayout({
 
   // Clubhouse renders its own frame: no Lenis sweep, no Fairway CoachHelm
   // launcher, no launcher clearance.
-  if (isClubhouseFor(isCoach ? 'coach' : null)) return <>{children}</>;
+  if (isClubhouseFor(isCoach ? 'coach' : session?.player ? 'player' : null)) return <>{children}</>;
 
   return (
     <>

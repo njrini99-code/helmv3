@@ -6,7 +6,7 @@ import { useNotificationBadges } from '@/contexts/notification-badge-context';
 import { Avatar } from '../ui/Avatar';
 import { Icon } from '../ui/Icon';
 import type { ChShellData } from '../data/shell';
-import { CH_NAV, activeNavItem, type ChNavItem } from './nav';
+import { activeNavItem, navFor, type ChNavItem } from './nav';
 import { NextEventCard } from './NextEventCard';
 
 export function badgeCount(item: ChNavItem, badges: { messages: number }, shell: ChShellData): number | null {
@@ -17,7 +17,8 @@ export function badgeCount(item: ChNavItem, badges: { messages: number }, shell:
 
 export function Sidebar({ userData, shell, pathname }: { userData: GolfUserData; shell: ChShellData; pathname: string }) {
   const badges = useNotificationBadges();
-  const current = activeNavItem(pathname)?.id;
+  const nav = navFor(userData.role);
+  const current = activeNavItem(pathname, userData.role)?.id;
   const sections: Array<ChNavItem['section']> = [undefined, 'Team', 'Program'];
 
   return (
@@ -34,7 +35,7 @@ export function Sidebar({ userData, shell, pathname }: { userData: GolfUserData;
         {sections.map((section) => (
           <div key={section ?? 'main'} className="ch-nav__group">
             {section && <div className="ch-nav__section">{section}</div>}
-            {CH_NAV.filter((i) => i.section === section).map((i) => {
+            {nav.filter((i) => i.section === section).map((i) => {
               const count = badgeCount(i, badges, shell);
               return (
                 <Link
@@ -59,7 +60,10 @@ export function Sidebar({ userData, shell, pathname }: { userData: GolfUserData;
           <Avatar name={userData.name} size={30} />
           <div className="ch-identity__txt">
             <span className="ch-identity__name">{userData.name}</span>
-            <span className="ch-identity__meta">Coach{userData.teamName ? ` · ${userData.teamName}` : ''}</span>
+            <span className="ch-identity__meta">
+              {userData.role === 'coach' ? 'Coach' : 'Player'}
+              {userData.teamName ? ` · ${userData.teamName}` : ''}
+            </span>
           </div>
         </div>
       </div>
