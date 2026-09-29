@@ -165,32 +165,54 @@ export function minutesLabel(m: number): string {
   return `${Math.floor(m / 60)} h ${m % 60} min before`;
 }
 
-// ── Validation ──
+// ── Validation (each message has its catalog number: docs/clubhouse/catalog/settings.md) ──
 
-export function passwordProblem(current: string, next: string, confirm: string): string | null {
-  if (!current) return 'Enter your current password.';
-  if (next.length < 8) return 'Use at least 8 characters.';
-  if (next !== confirm) return "The new passwords don't match.";
+export interface ChProblem {
+  code: string;
+  text: string;
+}
+const problem = (code: string, text: string): ChProblem => ({ code, text });
+
+export function profileProblem(role: 'coach' | 'player', p: { fullName: string; firstName: string; lastName: string }): ChProblem | null {
+  if (role === 'coach') return p.fullName.trim() ? null : problem('CH-8101', 'Add your name.');
+  return p.firstName.trim() && p.lastName.trim() ? null : problem('CH-8102', 'Add your first and last name.');
+}
+
+export function passwordProblem(current: string, next: string, confirm: string): ChProblem | null {
+  if (!current) return problem('CH-8105', 'Enter your current password.');
+  if (next.length < 8) return problem('CH-8106', 'Use at least 8 characters.');
+  if (next !== confirm) return problem('CH-8107', "The new passwords don't match.");
   return null;
 }
 
-export function emailProblem(next: string, current: string | null): string | null {
+export function emailProblem(next: string, current: string | null): ChProblem | null {
   const v = next.trim();
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)) return 'Enter a valid email address.';
-  if (current && v.toLowerCase() === current.toLowerCase()) return 'That is already your email.';
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)) return problem('CH-8103', 'Enter a valid email address.');
+  if (current && v.toLowerCase() === current.toLowerCase()) return problem('CH-8104', 'That is already your email.');
   return null;
+}
+
+export function teamProblem(t: ChTeamInfo): ChProblem | null {
+  if (!t.name.trim()) return problem('CH-8108', 'The team needs a name.');
+  if (t.org && !t.org.name.trim()) return problem('CH-8109', 'The school needs a name.');
+  if (t.org && t.org.state.trim() && !/^[A-Za-z]{2}$/.test(t.org.state.trim())) return problem('CH-8110', 'Use the two-letter state code.');
+  return null;
+}
+
+export function remindersProblem(r: ChReminders): ChProblem | null {
+  return remindersValid(r) ? null : problem('CH-8111', 'The first reminder has to come before the final one.');
 }
 
 /** Numeric golf fields: blank is null, anything else must parse and sit in range. */
-export function golfDetailsProblem(d: ChGolfDetails): string | null {
+export function golfDetailsProblem(d: ChGolfDetails): ChProblem | null {
   const num = (s: string) => (s.trim() === '' ? null : Number(s));
   const h = num(d.handicap);
   const hi = num(d.handicapIndex);
   const y = num(d.graduationYear);
-  if (h != null && (!Number.isFinite(h) || h < -10 || h > 54)) return 'Handicap must be between -10 and 54.';
-  if (hi != null && (!Number.isFinite(hi) || hi < -10 || hi > 54)) return 'Handicap index must be between -10 and 54.';
-  if (y != null && (!Number.isInteger(y) || y < 2000 || y > 2100)) return 'Graduation year looks wrong.';
-  if (d.state.trim() && !/^[A-Za-z]{2}$/.test(d.state.trim())) return 'Use the two-letter state code.';
+  if (h != null && (!Number.isFinite(h) || h < -10 || h > 54)) return problem('CH-8112', 'Handicap must be between -10 and 54.');
+  if (hi != null && (!Number.isFinite(hi) || hi < -10 || hi > 54)) return problem('CH-8113', 'Handicap index must be between -10 and 54.');
+  if (y != null && (!Number.isInteger(y) || y < 2000 || y > 2100)) return problem('CH-8114', 'Graduation year looks wrong.');
+  if (d.state.trim() && !/^[A-Za-z]{2}$/.test(d.state.trim())) return problem('CH-8115', 'Use the two-letter state code.');
   return null;
 }
 

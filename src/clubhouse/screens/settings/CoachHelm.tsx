@@ -9,18 +9,18 @@ import { Icon } from '../../ui/Icon';
 import { Modal } from '../../ui/Modal';
 import { Segmented } from '../../ui/Segmented';
 import { Slider } from '../../ui/Slider';
-import { Switch } from '../../ui/Switch';
 import { useToast } from '../../ui/Toast';
 import { haptic } from '../../lib/haptics';
 import { chReport, chTrail } from '../../lib/track';
+import { isOffline } from '../../lib/use-action';
 import { moveOrder, orderToPriorities, PRIORITY_LABEL, priorityOrder, type ChCoachHelmSettings, type ChSettingsData, type ChSettingsWrites, type PriorityKey } from './model';
-import { Card, ReadFailed, Row, useInstantSave } from './parts';
+import { Card, ReadFailed, Row, SettingSwitch, useInstantSave } from './parts';
 
 type Phil = CoachPhilosophy & { id: string | null };
 
 export function CoachHelmSection({ data, writes }: { data: ChSettingsData; writes: ChSettingsWrites }) {
   if (!data.coachhelm) return null;
-  if (data.coachhelm.error) return <ReadFailed what="Your CoachHelm settings" onRetry={writes.refresh} />;
+  if (data.coachhelm.error) return <ReadFailed what="Your CoachHelm settings" code="CH-8211" onRetry={writes.refresh} />;
   return <CoachHelmBody initial={data.coachhelm.value} writes={writes} />;
 }
 
@@ -51,6 +51,13 @@ function usePhilosophy(initial: Phil, writes: ChSettingsWrites) {
   }, []);
 
   const send = (patch: Partial<CoachPhilosophy>, before: Partial<CoachPhilosophy>) => {
+    if (isOffline()) {
+      // CH-1903: nothing is sent while offline; put the control back and say so.
+      setP((x) => ({ ...x, ...before }));
+      haptic('error');
+      toast({ tone: 'error', title: "Couldn't save that CoachHelm setting: you're offline", body: 'Reconnect, then try again. Nothing was changed.', code: 'CH-1903' });
+      return;
+    }
     inflight.current += 1;
     setStatus('saving');
     chTrail(`settings coachhelm ${Object.keys(patch).join(',')}`);
@@ -75,7 +82,7 @@ function usePhilosophy(initial: Phil, writes: ChSettingsWrites) {
       setStatus('failed');
       haptic('error');
       if (error) chReport(new Error(error), { surface: 'settings.coachhelm', action: 'savePhilosophy', severity: 'low' });
-      toast({ tone: 'error', title: "Couldn't save that CoachHelm setting", body: "It's back where it was. Check your connection and try again." });
+      toast({ tone: 'error', title: "Couldn't save that CoachHelm setting", body: "It's back where it was. Check your connection and try again.", code: 'CH-8022' });
     });
   };
 
@@ -109,7 +116,7 @@ function CoachHelmBody({ initial, writes }: { initial: ChCoachHelmSettings; writ
 
   return (
     <>
-      <p className={'ch-set-autosave' + (status === 'failed' ? ' is-failed' : '')} aria-live="polite">
+      <p className={'ch-set-autosave' + (status === 'failed' ? ' is-failed' : '')} aria-live="polite" data-ch-code="CH-8405">
         {statusText}
       </p>
       <PowerCard initial={initial} writes={writes} />
@@ -169,7 +176,7 @@ function CoachHelmBody({ initial, writes }: { initial: ChCoachHelmSettings; writ
               const label = a.label.replace('Hot/cold', 'Hot and cold');
               return (
                 <Row key={a.key} label={label}>
-                  <Switch label={label} hideLabel checked={!!p[k]} onChange={(v) => change({ [k]: v } as Partial<CoachPhilosophy>)} />
+                  <SettingSwitch label={label} hideLabel checked={!!p[k]} onChange={(v) => change({ [k]: v } as Partial<CoachPhilosophy>)} />
                 </Row>
               );
             })}
@@ -247,10 +254,10 @@ function CoachHelmBody({ initial, writes }: { initial: ChCoachHelmSettings; writ
 
       <Card id="set-display" title="Display" description="What CoachHelm shows on your dashboards. The strokes-gained baseline follows your team: the Tour for men's teams, the women's tour for women's.">
         <Row label="Strokes gained">
-          <Switch label="Show strokes gained" hideLabel checked={p.showStrokesGained} onChange={(v) => change({ showStrokesGained: v })} />
+          <SettingSwitch label="Show strokes gained" hideLabel checked={p.showStrokesGained} onChange={(v) => change({ showStrokesGained: v })} />
         </Row>
         <Row label="Advanced statistics">
-          <Switch label="Show advanced statistics" hideLabel checked={p.showAdvancedStats} onChange={(v) => change({ showAdvancedStats: v })} />
+          <SettingSwitch label="Show advanced statistics" hideLabel checked={p.showAdvancedStats} onChange={(v) => change({ showAdvancedStats: v })} />
         </Row>
         <Row label="Insight detail">
           <Segmented
@@ -305,7 +312,7 @@ function PowerCard({ initial, writes }: { initial: ChCoachHelmSettings; writes: 
   const save = useInstantSave('coachhelm');
   const setC = (patch: Partial<ChCoachHelmSettings['coach']>, failed: string) => {
     const before = coach;
-    return save.run({ key: Object.keys(patch).join(','), apply: () => setCoach((c) => ({ ...c, ...patch })), rollback: () => setCoach(before), write: () => writes.setCoachHelmCoach(patch), failed });
+    return save.run({ key: Object.keys(patch).join(','), apply: () => setCoach((c) => ({ ...c, ...patch })), rollback: () => setCoach(before), write: () => writes.setCoachHelmCoach(patch), failed, code: 'CH-8020' });
   };
   return (
     <Card id="set-power" title="CoachHelm" description="The AI coaching assistant on your dashboards." aside={<Icon icon={Sparkles} size={17} />}>
@@ -315,7 +322,7 @@ function PowerCard({ initial, writes }: { initial: ChCoachHelmSettings; writes: 
           help={team.isHeadCoach ? (team.enabled ? 'On for every coach on this team.' : 'Paused for everyone on this team.') : 'Only the head coach can change this.'}
           dim={!team.isHeadCoach}
         >
-          <Switch
+          <SettingSwitch
             label="CoachHelm for the whole team"
             hideLabel
             checked={team.enabled}
@@ -328,13 +335,14 @@ function PowerCard({ initial, writes }: { initial: ChCoachHelmSettings; writes: 
                 rollback: () => setTeam((t) => (t ? { ...t, enabled: !v } : t)),
                 write: () => writes.setCoachHelmTeam(v),
                 failed: "Couldn't change CoachHelm for the team",
+                code: 'CH-8021',
               })
             }
           />
         </Row>
       )}
       <Row label="On your dashboards" help={coach.enabled ? 'Insights, predictions and patterns appear on your pages.' : 'Hidden on your pages. Your settings below are kept.'}>
-        <Switch
+        <SettingSwitch
           label="CoachHelm on your dashboards"
           hideLabel
           checked={coach.enabled}
@@ -345,18 +353,19 @@ function PowerCard({ initial, writes }: { initial: ChCoachHelmSettings; writes: 
       {coach.enabled && (
         <>
           <Row label="Insights" help="Coaching notes on what changed and why.">
-            <Switch label="Insights" hideLabel checked={coach.showInsights} busy={save.pending.has('showInsights')} onChange={(v) => void setC({ showInsights: v }, "Couldn't change insights")} />
+            <SettingSwitch label="Insights" hideLabel checked={coach.showInsights} busy={save.pending.has('showInsights')} onChange={(v) => void setC({ showInsights: v }, "Couldn't change insights")} />
           </Row>
           <Row label="Predictions" help="Where each player's scoring is heading.">
-            <Switch label="Predictions" hideLabel checked={coach.showPredictions} busy={save.pending.has('showPredictions')} onChange={(v) => void setC({ showPredictions: v }, "Couldn't change predictions")} />
+            <SettingSwitch label="Predictions" hideLabel checked={coach.showPredictions} busy={save.pending.has('showPredictions')} onChange={(v) => void setC({ showPredictions: v }, "Couldn't change predictions")} />
           </Row>
           <Row label="Patterns" help="Leaks and habits that repeat across rounds.">
-            <Switch label="Patterns" hideLabel checked={coach.showPatterns} busy={save.pending.has('showPatterns')} onChange={(v) => void setC({ showPatterns: v }, "Couldn't change patterns")} />
+            <SettingSwitch label="Patterns" hideLabel checked={coach.showPatterns} busy={save.pending.has('showPatterns')} onChange={(v) => void setC({ showPatterns: v }, "Couldn't change patterns")} />
           </Row>
         </>
       )}
       <Modal
         open={confirmOff}
+        code="CH-8505"
         onClose={() => setConfirmOff(false)}
         icon={Sparkles}
         title="Turn off CoachHelm on your dashboards?"

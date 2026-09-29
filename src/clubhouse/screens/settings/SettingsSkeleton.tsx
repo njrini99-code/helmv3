@@ -4,7 +4,7 @@ import '../../styles/settings.css';
 /** Route skeleton: the header, the rail and two cards, in the page's own geometry. */
 export function SettingsSkeleton() {
   return (
-    <main className="ch-set" aria-busy="true" aria-label="Loading settings">
+    <main className="ch-set" aria-busy="true" aria-label="Loading settings" data-ch-code="CH-8401">
       <header className="ch-set-head">
         <Skeleton width={170} height={40} radius={10} />
         <Skeleton width={260} height={13} />

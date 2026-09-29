@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { checkSource, checkProgress } from '../check.mjs';
+import { checkSource, checkProgress, checkCatalog } from '../check.mjs';
 
 test('flags Fairway imports and tokens', () => {
   const v = checkSource('src/clubhouse/x.tsx', "import { Button } from '@/components/fairway/controls';\nconst s = { color: 'var(--fw-ink)' };");
@@ -66,4 +66,27 @@ test('tracker: a started screen needs a checklist file', () => {
   const row = '| Roster | /x | done | doing | todo | todo | todo | todo | todo | todo | todo | todo | todo |';
   const v = checkProgress(table(row), (p) => !p.includes('screens/'), '.', () => '');
   assert.ok(v.some((x) => x.includes('roster.md is missing')));
+});
+
+test('catalog: every number is catalogued once, in its block, used and tested', () => {
+  const catalogs = {
+    'docs/clubhouse/catalog/settings.md': [
+      '| CH-8001 | a | b | c | settings.test |',
+      '| CH-8002 | a | b | c | settings.test |',
+      '| CH-8401 | a | b | c | preview |',
+      '| CH-8601 | a | b | c | preview |',
+      '| CH-2001 | wrong block | b | c | t |',
+      '| CH-8001 | twice | b | c | t |',
+    ].join('\n'),
+  };
+  const sources = { 'src/clubhouse/a.tsx': "code: 'CH-8001'; code: 'CH-8999'" };
+  const tests = { 'settings.test.tsx': "it('CH-8001 …')" };
+  const v = checkCatalog({ catalogs, sources, tests }).join('\n');
+  assert.match(v, /CH-8999 is not in docs\/clubhouse\/catalog/);
+  assert.match(v, /CH-2001 is outside the settings block/);
+  assert.match(v, /CH-8001 is catalogued twice/);
+  assert.match(v, /CH-8002 is catalogued but not used/);
+  assert.match(v, /CH-8002 has no test/);
+  assert.doesNotMatch(v, /CH-8401/);
+  assert.doesNotMatch(v, /CH-8601/);
 });

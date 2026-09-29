@@ -5,11 +5,10 @@ import { useEffect, useState } from 'react';
 import { useAppearancePreferences } from '@/hooks/golf/use-appearance-preferences';
 import { areHapticsEnabled, setHapticsEnabled } from '@/lib/utils/haptics-pref';
 import { Icon } from '../../ui/Icon';
-import { Switch } from '../../ui/Switch';
 import { haptic } from '../../lib/haptics';
 import { chTrail } from '../../lib/track';
 import type { ChDevice } from './model';
-import { Card, Row } from './parts';
+import { Card, Row, SettingSwitch } from './parts';
 
 /**
  * Preferences saved on this device. Only the ones Clubhouse honours are
@@ -24,7 +23,7 @@ export function PreferencesSection({ device }: { device: ChDevice }) {
   return (
     <Card id="set-prefs" title="This device" description="Saved on this device only. Changes apply right away.">
       <Row label={<><Icon icon={Sparkle} size={15} /> Animations</>} help="Transitions when pages, panels and sheets open. Off makes every change instant.">
-        <Switch
+        <SettingSwitch
           label="Animations"
           hideLabel
           checked={showAnimations}
@@ -36,7 +35,7 @@ export function PreferencesSection({ device }: { device: ChDevice }) {
       </Row>
       {device.native && (
         <Row label={<><Icon icon={Vibrate} size={15} /> Haptics</>} help="Taps you feel on buttons, switches and saves.">
-          <Switch
+          <SettingSwitch
             label="Haptics"
             hideLabel
             checked={haptics}

@@ -19,7 +19,10 @@ export function Modal({
   width = 520,
   footer,
   children,
+  code,
 }: {
+  /** Catalog number (docs/clubhouse/catalog). */
+  code?: string;
   open: boolean;
   onClose: () => void;
   title: string;
@@ -50,6 +53,7 @@ export function Modal({
     <dialog
       ref={ref}
       className="ch-modal"
+      data-ch-code={code}
       style={{ ['--ch-modal-w' as string]: `${width}px` }}
       aria-labelledby="ch-modal-title"
       onCancel={(e) => {

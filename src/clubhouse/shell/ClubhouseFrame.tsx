@@ -11,6 +11,7 @@ import type { ChShellData } from '../data/shell';
 import { activeNavItem, isRebuilt } from './nav';
 import { Sidebar } from './Sidebar';
 import { TopBar } from './TopBar';
+import { OfflineBanner } from './OfflineBanner';
 import { TabBar } from './TabBar';
 import { RouteFrame } from './RouteFrame';
 import { NotRebuilt } from './NotRebuilt';
@@ -50,20 +51,22 @@ export function ClubhouseFrame({
   return (
     <ClubhouseMarker>
       <LazyMotion features={domAnimation} strict>
-        <ToastProvider>
-          <div className={`ch-root ${clubhouseFontVariables}`} data-ui="clubhouse" data-motion={showAnimations ? undefined : 'off'}>
+        {/* The toast region renders inside .ch-root so it gets the Clubhouse tokens and fonts. */}
+        <div className={`ch-root ${clubhouseFontVariables}`} data-ui="clubhouse" data-motion={showAnimations ? undefined : 'off'}>
+          <ToastProvider>
             <div className="ch-app">
               <Sidebar userData={userData} shell={shell} pathname={pathname} />
               <div className="ch-canvas" id="ch-canvas">
                 <TopBar item={item} pathname={pathname} />
+                <OfflineBanner />
                 <RouteFrame routeKey={pathname}>
                   {rebuilt ? children : <NotRebuilt label={item?.label ?? 'This page'} />}
                 </RouteFrame>
               </div>
             </div>
             <TabBar pathname={pathname} shell={shell} role={role} />
-          </div>
-        </ToastProvider>
+          </ToastProvider>
+        </div>
       </LazyMotion>
     </ClubhouseMarker>
   );

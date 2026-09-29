@@ -173,6 +173,53 @@ export function checkProgress(md, exists = existsSync, root = '.', read = (p) =>
   return v;
 }
 
+// ── State catalog (docs/clubhouse/catalog) ──
+
+const CATALOG_PAGE = { shell: '1', home: '2', roster: '3', 'stats-team': '4', 'stats-player': '5', calendar: '6', messages: '7', settings: '8' };
+/** Kinds whose rows must exist in code and in a test: toasts, validation, didn't load, empty, loading, confirm. */
+const ENFORCED_KINDS = new Set(['0', '1', '2', '3', '4', '5']);
+const CODE_RE = /CH-(\d{4})/g;
+
+/**
+ * Every number used in src/clubhouse is catalogued exactly once, in its
+ * page's block; every enforced row (kinds 0-5) is used in code and named by a
+ * test unless the row says `preview`; rows marked retired may not be used.
+ */
+export function checkCatalog({ catalogs, sources, tests }) {
+  const v = [];
+  const rows = new Map();
+  for (const [file, md] of Object.entries(catalogs)) {
+    const page = file.replace(/^.*\//, '').replace(/\.md$/, '');
+    const digit = CATALOG_PAGE[page];
+    if (!digit) continue;
+    for (const line of md.split('\n')) {
+      const m = /^\|\s*CH-(\d{4})\s*\|/.exec(line);
+      if (!m) continue;
+      const num = m[1];
+      if (rows.has(num)) v.push(`${file}: CH-${num} is catalogued twice`);
+      if (num[0] !== digit) v.push(`${file}: CH-${num} is outside the ${page} block (${digit}xxx)`);
+      rows.set(num, { file, retired: /retired/i.test(line), previewOnly: /\|\s*preview\s*\|\s*$/.test(line.trim()) || /\|\s*existing\s*\|\s*$/.test(line.trim()) });
+    }
+  }
+  const used = new Map();
+  for (const [file, src] of Object.entries(sources)) {
+    for (const m of src.matchAll(CODE_RE)) if (!used.has(m[1])) used.set(m[1], file);
+  }
+  const tested = new Set();
+  for (const src of Object.values(tests)) for (const m of src.matchAll(CODE_RE)) tested.add(m[1]);
+  for (const [num, file] of used) {
+    const row = rows.get(num);
+    if (!row) v.push(`${file}: CH-${num} is not in docs/clubhouse/catalog`);
+    else if (row.retired) v.push(`${file}: CH-${num} is retired and may not be used`);
+  }
+  for (const [num, row] of rows) {
+    if (row.retired || row.previewOnly || !ENFORCED_KINDS.has(num[1])) continue;
+    if (!used.has(num)) v.push(`${row.file}: CH-${num} is catalogued but not used in src/clubhouse`);
+    if (!tested.has(num)) v.push(`${row.file}: CH-${num} has no test that names it`);
+  }
+  return v;
+}
+
 function main() {
   const argRoot = process.argv.indexOf('--root');
   const root = argRoot > -1 ? process.argv[argRoot + 1] : join(fileURLToPath(new URL('.', import.meta.url)), '../..');
@@ -182,6 +229,21 @@ function main() {
   const progress = join(root, 'docs/clubhouse/PROGRESS.md');
   if (!existsSync(progress)) violations.push('docs/clubhouse/PROGRESS.md is missing');
   else violations.push(...checkProgress(readFileSync(progress, 'utf8'), existsSync, root));
+
+  const catalogDir = join(root, 'docs/clubhouse/catalog');
+  if (existsSync(catalogDir)) {
+    const catalogs = Object.fromEntries(
+      readdirSync(catalogDir)
+        .filter((n) => n.endsWith('.md') && n !== 'README.md')
+        .map((n) => [relative(root, join(catalogDir, n)), readFileSync(join(catalogDir, n), 'utf8')]),
+    );
+    const sources = Object.fromEntries(files.filter((f) => /\.tsx?$/.test(f)).map((f) => [relative(root, f), readFileSync(f, 'utf8')]));
+    const testDir = join(root, 'src/clubhouse/__tests__');
+    const tests = existsSync(testDir)
+      ? Object.fromEntries(readdirSync(testDir).map((n) => [n, readFileSync(join(testDir, n), 'utf8')]))
+      : {};
+    violations.push(...checkCatalog({ catalogs, sources, tests }));
+  }
 
   if (violations.length) {
     console.error(`clubhouse:check found ${violations.length} violation(s):`);

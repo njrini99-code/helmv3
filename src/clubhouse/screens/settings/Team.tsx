@@ -7,7 +7,6 @@ import { Modal } from '../../ui/Modal';
 import { Segmented } from '../../ui/Segmented';
 import { Select } from '../../ui/Select';
 import { Slider } from '../../ui/Slider';
-import { Switch } from '../../ui/Switch';
 import { useToast } from '../../ui/Toast';
 import { EmptyState } from '../../ui/States';
 import { haptic } from '../../lib/haptics';
@@ -18,7 +17,8 @@ import {
   hoursLabel,
   minutesLabel,
   REMINDER_RANGES,
-  remindersValid,
+  remindersProblem,
+  teamProblem,
   TIMEZONE_OPTIONS,
   type ChReminders,
   type ChScoring,
@@ -26,22 +26,22 @@ import {
   type ChSettingsWrites,
   type ChTeamInfo,
 } from './model';
-import { Card, Field, ReadFailed, Row, SaveBar, useDraft, useReportDirty } from './parts';
+import { Card, Field, ReadFailed, Row, SaveBar, SettingSwitch, useDraft, useReportDirty } from './parts';
 
 export function TeamSection({ data, writes }: { data: ChSettingsData; writes: ChSettingsWrites }) {
   if (!data.teamId) {
     return (
       <div className="ch-surface ch-set-failed">
-        <EmptyState title="You aren't on a team yet." body="Team settings appear once your program is set up and you're on its staff." />
+        <EmptyState code="CH-8301" title="You aren't on a team yet." body="Team settings appear once your program is set up and you're on its staff." />
       </div>
     );
   }
   return (
     <>
-      {data.team?.error ? <ReadFailed what="Team details" onRetry={writes.refresh} /> : data.team && <TeamCard team={data.team.value} writes={writes} />}
-      {data.joinCode?.error ? <ReadFailed what="Your invite code" onRetry={writes.refresh} /> : data.joinCode && <InviteCard code={data.joinCode.value} writes={writes} />}
-      {data.scoring?.error ? <ReadFailed what="Scoring settings" onRetry={writes.refresh} /> : data.scoring && <ScoringCard scoring={data.scoring.value} writes={writes} />}
-      {data.reminders?.error ? <ReadFailed what="Event reminders" onRetry={writes.refresh} /> : data.reminders && <RemindersCard reminders={data.reminders.value} writes={writes} />}
+      {data.team?.error ? <ReadFailed what="Team details" code="CH-8205" onRetry={writes.refresh} /> : data.team && <TeamCard team={data.team.value} writes={writes} />}
+      {data.joinCode?.error ? <ReadFailed what="Your invite code" code="CH-8206" onRetry={writes.refresh} /> : data.joinCode && <InviteCard code={data.joinCode.value} writes={writes} />}
+      {data.scoring?.error ? <ReadFailed what="Scoring settings" code="CH-8207" onRetry={writes.refresh} /> : data.scoring && <ScoringCard scoring={data.scoring.value} writes={writes} />}
+      {data.reminders?.error ? <ReadFailed what="Event reminders" code="CH-8208" onRetry={writes.refresh} /> : data.reminders && <RemindersCard reminders={data.reminders.value} writes={writes} />}
     </>
   );
 }
@@ -49,10 +49,10 @@ export function TeamSection({ data, writes }: { data: ChSettingsData; writes: Ch
 function TeamCard({ team, writes }: { team: ChTeamInfo; writes: ChSettingsWrites }) {
   const f = useDraft(team);
   useReportDirty('team', f.dirty);
-  const save = useAction('settings.saveTeam', writes.saveTeam, { done: 'Team details saved', failed: "Couldn't save team details" });
+  const save = useAction('settings.saveTeam', writes.saveTeam, { done: 'Team details saved', failed: "Couldn't save team details", code: 'CH-8011' });
   const org = f.draft.org;
   const setOrg = (k: keyof NonNullable<ChTeamInfo['org']>, v: string) => f.setDraft((d) => (d.org ? { ...d, org: { ...d.org, [k]: v } } : d));
-  const invalid = !f.draft.name.trim() ? 'The team needs a name.' : org && !org.name.trim() ? 'The school needs a name.' : org && org.state.trim() && !/^[A-Za-z]{2}$/.test(org.state.trim()) ? 'Use the two-letter state code.' : null;
+  const invalid = teamProblem(f.draft);
   return (
     <Card
       id="set-team"
@@ -102,7 +102,7 @@ function InviteCard({ code: initial, writes }: { code: string; writes: ChSetting
   const [canShare, setCanShare] = useState(false);
   useEffect(() => setCanShare(typeof navigator.share === 'function'), []);
   const toast = useToast();
-  const regen = useAction('settings.regenerateCode', writes.regenerateCode, { done: 'New invite code ready', failed: "Couldn't make a new invite code" });
+  const regen = useAction('settings.regenerateCode', writes.regenerateCode, { done: 'New invite code ready', failed: "Couldn't make a new invite code", code: 'CH-8012' });
   const link = typeof window === 'undefined' ? `/golf/join/${code}` : `${window.location.origin}/golf/join/${code}`;
   const copy = async (what: 'code' | 'link') => {
     chTrail(`settings copy invite ${what}`);
@@ -113,7 +113,7 @@ function InviteCard({ code: initial, writes }: { code: string; writes: ChSetting
     } catch (err) {
       haptic('error');
       chReport(err, { surface: 'settings.invite', action: 'copy', severity: 'low' });
-      toast({ tone: 'error', title: "Couldn't copy", body: 'Select the text and copy it yourself.' });
+      toast({ tone: 'error', title: "Couldn't copy", body: 'Select the text and copy it yourself.', code: 'CH-8013' });
     }
   };
   const share = async () => {
@@ -155,6 +155,7 @@ function InviteCard({ code: initial, writes }: { code: string; writes: ChSetting
       </Row>
       <Modal
         open={confirm}
+        code="CH-8503"
         onClose={() => setConfirm(false)}
         icon={RefreshCw}
         title="Replace your invite code?"
@@ -191,7 +192,7 @@ const TEES = [
 function ScoringCard({ scoring, writes }: { scoring: ChScoring; writes: ChSettingsWrites }) {
   const f = useDraft(scoring);
   useReportDirty('scoring', f.dirty);
-  const save = useAction('settings.saveScoring', writes.saveScoring, { done: 'Scoring settings saved', failed: "Couldn't save scoring settings" });
+  const save = useAction('settings.saveScoring', writes.saveScoring, { done: 'Scoring settings saved', failed: "Couldn't save scoring settings", code: 'CH-8014' });
   return (
     <Card
       id="set-scoring"
@@ -238,8 +239,8 @@ function ScoringCard({ scoring, writes }: { scoring: ChScoring; writes: ChSettin
 function RemindersCard({ reminders, writes }: { reminders: ChReminders; writes: ChSettingsWrites }) {
   const f = useDraft(reminders);
   useReportDirty('reminders', f.dirty);
-  const save = useAction('settings.saveReminders', writes.saveReminders, { done: 'Reminder schedule saved', failed: "Couldn't save the reminder schedule" });
-  const invalid = remindersValid(f.draft) ? null : 'The first reminder has to come before the final one.';
+  const save = useAction('settings.saveReminders', writes.saveReminders, { done: 'Reminder schedule saved', failed: "Couldn't save the reminder schedule", code: 'CH-8015' });
+  const invalid = remindersProblem(f.draft);
   return (
     <Card
       id="set-reminders"
@@ -260,7 +261,7 @@ function RemindersCard({ reminders, writes }: { reminders: ChReminders; writes: 
       }
     >
       <Row label="Send reminders">
-        <Switch label="Send reminders" hideLabel checked={f.draft.enabled} onChange={(v) => f.setDraft((d) => ({ ...d, enabled: v }))} />
+        <SettingSwitch label="Send reminders" hideLabel checked={f.draft.enabled} onChange={(v) => f.setDraft((d) => ({ ...d, enabled: v }))} />
       </Row>
       {f.draft.enabled && (
         <div className="ch-set-sliders">

@@ -116,7 +116,7 @@ export function SettingsView({
                 exit={reduced ? { opacity: 0 } : CH_ROUTE.exit}
                 transition={CH_ROUTE.transition}
               >
-                <SectionBoundary surface={`settings.${section}`} label={current.label}>
+                <SectionBoundary surface={`settings.${section}`} label={current.label} code="CH-8212">
                   {section === 'account' && <AccountSection data={data} writes={writes} onDeleted={onDeleted} />}
                   {section === 'notifications' && <NotificationsSection data={data} writes={writes} device={device} />}
                   {section === 'team' && <TeamSection data={data} writes={writes} />}
@@ -132,6 +132,7 @@ export function SettingsView({
       {guard}
       <Modal
         open={ask != null}
+        code="CH-8507"
         onClose={() => setAsk(null)}
         title="Leave without saving?"
         description="Your changes in this section haven't been saved."

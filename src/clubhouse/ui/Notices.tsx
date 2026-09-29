@@ -9,13 +9,16 @@ export function InlineNotice({
   title,
   body,
   onRetry,
+  code,
 }: {
   title: string;
   body?: ReactNode;
   onRetry?: () => void;
+  /** Catalog number (docs/clubhouse/catalog). */
+  code?: string;
 }) {
   return (
-    <div className="ch-notice ch-notice--danger" role="alert">
+    <div className="ch-notice ch-notice--danger" role="alert" data-ch-code={code}>
       <Icon icon={CircleAlert} size={16} className="ch-notice__icon" />
       <div className="ch-notice__txt">
         <p className="ch-notice__title">{title}</p>
@@ -55,6 +58,15 @@ const COPY: Record<RouteErrorKind, { title: string; body: string }> = {
   },
 };
 
+/** Catalog numbers of the full-page error views (docs/clubhouse/catalog/shell.md). */
+const ROUTE_ERROR_CODE: Record<RouteErrorKind, string> = {
+  chunk: 'CH-1202',
+  'stale-action': 'CH-1203',
+  transient: 'CH-1204',
+  load: 'CH-1205',
+  unknown: 'CH-1206',
+};
+
 /** Full-page route error inside the Clubhouse canvas. Logic lives in RouteErrorBoundary. */
 export function RouteErrorView({
   kind,
@@ -75,7 +87,7 @@ export function RouteErrorView({
 }) {
   const copy = COPY[kind];
   return (
-    <main className="ch-notyet" role="alert">
+    <main className="ch-notyet" role="alert" data-ch-code={ROUTE_ERROR_CODE[kind]}>
       <div className="ch-notyet__card ch-sheet">
         <span className="ch-empty__icon ch-well-soft">
           <Icon icon={CircleAlert} size={18} />

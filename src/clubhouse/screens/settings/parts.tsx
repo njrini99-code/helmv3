@@ -7,12 +7,14 @@ import { Button } from '../../ui/Button';
 import { Icon } from '../../ui/Icon';
 import { InlineNotice } from '../../ui/Notices';
 import { Modal } from '../../ui/Modal';
+import { Switch } from '../../ui/Switch';
 import { chTween } from '../../lib/motion';
 import { useChReducedMotion } from '../../lib/reduced-motion';
 import { chReport, chTrail } from '../../lib/track';
+import { isOffline } from '../../lib/use-action';
 import { haptic } from '../../lib/haptics';
 import { useToast } from '../../ui/Toast';
-import type { ChResult } from './model';
+import type { ChProblem, ChResult } from './model';
 
 /**
  * A settings card is the design system's Surface: 15px title, caption
@@ -26,8 +28,11 @@ export function Card({
   aside,
   foot,
   children,
+  code,
 }: {
   id?: string;
+  /** Catalog number when the card itself is a state (for example an empty state). */
+  code?: string;
   title: string;
   description?: ReactNode;
   aside?: ReactNode;
@@ -36,7 +41,7 @@ export function Card({
   children?: ReactNode;
 }) {
   return (
-    <section className="ch-surface" aria-labelledby={id ? `${id}-t` : undefined}>
+    <section className="ch-surface" aria-labelledby={id ? `${id}-t` : undefined} data-ch-code={code}>
       <div className="ch-surface__head">
         <div style={{ minWidth: 0 }}>
           <h3 id={id ? `${id}-t` : undefined} className="ch-surface__title">
@@ -83,7 +88,7 @@ export function Field({
   id: string;
   label: string;
   help?: string;
-  error?: string | null;
+  error?: ChProblem | null;
   span?: 1 | 2;
 } & React.InputHTMLAttributes<HTMLInputElement>) {
   return (
@@ -93,8 +98,8 @@ export function Field({
       </label>
       <input id={id} className="ch-input" aria-invalid={error ? true : undefined} aria-describedby={help || error ? `${id}-h` : undefined} {...input} />
       {(error || help) && (
-        <span id={`${id}-h`} className={'ch-field__help' + (error ? ' is-error' : '')} role={error ? 'alert' : undefined}>
-          {error || help}
+        <span id={`${id}-h`} className={'ch-field__help' + (error ? ' is-error' : '')} role={error ? 'alert' : undefined} data-ch-code={error?.code}>
+          {error?.text || help}
         </span>
       )}
     </div>
@@ -117,7 +122,7 @@ export function SaveBar({
 }: {
   dirty: boolean;
   pending: boolean;
-  invalid?: string | null;
+  invalid?: ChProblem | null;
   onSave: () => void;
   onReset?: () => void;
   label?: string;
@@ -133,11 +138,11 @@ export function SaveBar({
   }, [savedAt]);
   return (
     <>
-      <span className="ch-set-status" aria-live="polite">
+      <span className="ch-set-status" aria-live="polite" data-ch-code={pending ? 'CH-8402' : undefined}>
         <AnimatePresence mode="wait" initial={false}>
           {invalid && dirty ? (
-            <m.span key="inv" className="is-invalid" initial={reduced ? false : { opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={chTween('quick')}>
-              {invalid}
+            <m.span key="inv" className="is-invalid" data-ch-code={invalid.code} initial={reduced ? false : { opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={chTween('quick')}>
+              {invalid.text}
             </m.span>
           ) : dirty ? (
             <m.span key="dirty" initial={reduced ? false : { opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={chTween('quick')}>
@@ -165,10 +170,10 @@ export function SaveBar({
 }
 
 /** A section whose read failed: says so, keeps the form away, offers a reload. */
-export function ReadFailed({ what, onRetry }: { what: string; onRetry: () => void }) {
+export function ReadFailed({ what, onRetry, code }: { what: string; onRetry: () => void; code: string }) {
   return (
     <div className="ch-surface ch-set-failed">
-      <InlineNotice title={`${what} didn't load.`} body="Nothing was changed. Reload to try again; the error has been reported." onRetry={onRetry} />
+      <InlineNotice code={code} title={`${what} didn't load.`} body="Nothing was changed. Reload to try again; the error has been reported." onRetry={onRetry} />
     </div>
   );
 }
@@ -185,6 +190,8 @@ export function useUnsavedGuard(dirty: boolean) {
 
   useEffect(() => {
     if (!dirty) return;
+    // CH-8508: while anything is unsaved, closing or reloading the tab asks first.
+    document.documentElement.dataset.chGuard = 'CH-8508';
     const onUnload = (e: BeforeUnloadEvent) => {
       e.preventDefault();
     };
@@ -202,6 +209,7 @@ export function useUnsavedGuard(dirty: boolean) {
     window.addEventListener('beforeunload', onUnload);
     document.addEventListener('click', onClick, true);
     return () => {
+      delete document.documentElement.dataset.chGuard;
       window.removeEventListener('beforeunload', onUnload);
       document.removeEventListener('click', onClick, true);
     };
@@ -210,6 +218,7 @@ export function useUnsavedGuard(dirty: boolean) {
   const modal = (
     <Modal
       open={pendingHref != null}
+      code="CH-8506"
       onClose={() => setPendingHref(null)}
       title="Leave without saving?"
       description="Your changes on this page haven't been saved."
@@ -281,12 +290,20 @@ export interface InstantSave {
   rollback: () => void;
   write: () => Promise<ChResult>;
   failed: string;
+  /** Catalog number of the failure toast. */
+  code: string;
 }
 
 export function useInstantSave(surface: string) {
   const toast = useToast();
   const [pending, setPending] = useState<ReadonlySet<string>>(new Set());
   const run = async (op: InstantSave): Promise<boolean> => {
+    if (isOffline()) {
+      // CH-1903: refuse at once while offline, instead of flipping and flipping back.
+      haptic('error');
+      toast({ tone: 'error', title: `${op.failed}: you're offline`, body: 'Reconnect, then try again. Nothing was changed.', code: 'CH-1903' });
+      return false;
+    }
     op.apply();
     setPending((s) => new Set(s).add(op.key));
     chTrail(`settings ${surface} ${op.key}`);
@@ -314,8 +331,14 @@ export function useInstantSave(surface: string) {
       title: op.failed,
       body: 'It is back where it was. Check your connection and try again.',
       action: { label: 'Retry', run: () => void run(op) },
+      code: op.code,
     });
     return false;
   };
   return { run, pending };
+}
+
+/** A settings switch: while its save is in flight it carries CH-8403 (holds its position, can't flip again). */
+export function SettingSwitch(props: React.ComponentProps<typeof Switch>) {
+  return <Switch {...props} busyCode="CH-8403" />;
 }

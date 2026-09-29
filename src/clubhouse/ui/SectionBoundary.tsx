@@ -10,7 +10,7 @@ import { InlineNotice } from './Notices';
  * error goes to Sentry tagged with its surface (home.leaderboard, ...).
  */
 export class SectionBoundary extends Component<
-  { surface: string; label: string; children: ReactNode },
+  { surface: string; label: string; children: ReactNode; /** Catalog number of the crash notice. */ code?: string },
   { failed: boolean }
 > {
   override state = { failed: false };
@@ -27,6 +27,7 @@ export class SectionBoundary extends Component<
     if (!this.state.failed) return this.props.children;
     return (
       <InlineNotice
+        code={this.props.code}
         title={`${this.props.label} couldn’t be shown.`}
         body="The rest of the page is fine. This has been reported automatically."
         onRetry={() => this.setState({ failed: false })}

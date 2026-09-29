@@ -12,8 +12,8 @@ import { Card, Field, ReadFailed, Row, SaveBar, useDraft, useReportDirty } from 
 export function GolfSection({ data, writes }: { data: ChSettingsData; writes: ChSettingsWrites }) {
   return (
     <>
-      {data.golf?.error ? <ReadFailed what="Your golf details" onRetry={writes.refresh} /> : data.golf && <DetailsCard details={data.golf.value} writes={writes} />}
-      {data.membership?.error ? <ReadFailed what="Your team membership" onRetry={writes.refresh} /> : data.membership && <MembershipCard m={data.membership.value} writes={writes} />}
+      {data.golf?.error ? <ReadFailed what="Your golf details" code="CH-8209" onRetry={writes.refresh} /> : data.golf && <DetailsCard details={data.golf.value} writes={writes} />}
+      {data.membership?.error ? <ReadFailed what="Your team membership" code="CH-8210" onRetry={writes.refresh} /> : data.membership && <MembershipCard m={data.membership.value} writes={writes} />}
     </>
   );
 }
@@ -21,7 +21,7 @@ export function GolfSection({ data, writes }: { data: ChSettingsData; writes: Ch
 function DetailsCard({ details, writes }: { details: ChGolfDetails; writes: ChSettingsWrites }) {
   const f = useDraft(details);
   useReportDirty('golf', f.dirty);
-  const save = useAction('settings.saveGolf', writes.saveGolf, { done: 'Golf details saved', failed: "Couldn't save your golf details" });
+  const save = useAction('settings.saveGolf', writes.saveGolf, { done: 'Golf details saved', failed: "Couldn't save your golf details", code: 'CH-8016' });
   const set = (k: keyof ChGolfDetails) => (e: React.ChangeEvent<HTMLInputElement>) => f.setDraft((d) => ({ ...d, [k]: e.target.value }));
   return (
     <Card
@@ -62,9 +62,9 @@ function MembershipCard({ m, writes }: { m: Membership; writes: ChSettingsWrites
   const [note, setNote] = useState('');
   const [leaving, setLeaving] = useState(false);
   useReportDirty('join', code.trim() !== '');
-  const leave = useAction('settings.leaveTeam', writes.leaveTeam, { done: 'You left the team', failed: "Couldn't leave the team" });
-  const join = useAction('settings.requestJoin', writes.requestJoin, { done: 'Request sent to the coaches', failed: "Couldn't send your request", hint: 'Check the code with your coach.' });
-  const cancel = useAction('settings.cancelRequest', writes.cancelRequest, { done: 'Request cancelled', failed: "Couldn't cancel the request" });
+  const leave = useAction('settings.leaveTeam', writes.leaveTeam, { done: 'You left the team', failed: "Couldn't leave the team", code: 'CH-8017' });
+  const join = useAction('settings.requestJoin', writes.requestJoin, { done: 'Request sent to the coaches', failed: "Couldn't send your request", hint: 'Check the code with your coach.', code: 'CH-8018' });
+  const cancel = useAction('settings.cancelRequest', writes.cancelRequest, { done: 'Request cancelled', failed: "Couldn't cancel the request", code: 'CH-8019' });
 
   if (m.team) {
     return (
@@ -76,6 +76,7 @@ function MembershipCard({ m, writes }: { m: Membership; writes: ChSettingsWrites
         </Row>
         <Modal
           open={leaving}
+          code="CH-8502"
           onClose={() => !leave.pending && setLeaving(false)}
           icon={LogOut}
           title={`Leave ${m.team.name}?`}
@@ -106,11 +107,11 @@ function MembershipCard({ m, writes }: { m: Membership; writes: ChSettingsWrites
   }
 
   return (
-    <Card id="set-membership" title="Join a team" description="Ask your coach for the team's invite code. They approve your request from their roster.">
+    <Card id="set-membership" code="CH-8302" title="Join a team" description="Ask your coach for the team's invite code. They approve your request from their roster.">
       {requests.length > 0 && (
         <div className="ch-set-requests">
           {requests.map((r) => (
-            <div key={r.id} className="ch-set-request">
+            <div key={r.id} className="ch-set-request" data-ch-code="CH-8303">
               <Icon icon={Clock} size={15} />
               <span>
                 <b>Waiting on {r.teamName}</b>
@@ -134,6 +135,7 @@ function MembershipCard({ m, writes }: { m: Membership; writes: ChSettingsWrites
       {requests.length === 0 && (
         <form
           className="ch-set-grid"
+          noValidate
           onSubmit={async (e) => {
             e.preventDefault();
             if (!code.trim()) return;

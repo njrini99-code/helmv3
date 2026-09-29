@@ -21,6 +21,16 @@ export interface ActionCopy {
   failed: string;
   /** What to do next when retrying won't help, for example "Check that Eli is still on the roster". */
   hint?: string;
+  /** Catalog number of the failure toast (docs/clubhouse/catalog). */
+  code?: string;
+}
+
+/** After this long, a save that hasn't answered says so once (CH-1902). */
+export const CH_SLOW_SAVE_AFTER = 5000;
+
+/** True when the browser says it has no network. */
+export function isOffline(): boolean {
+  return typeof navigator !== 'undefined' && navigator.onLine === false;
 }
 
 /**
@@ -42,8 +52,15 @@ export function useAction<A extends unknown[], T>(
     async (...args: A): Promise<ActionResult<T>> => {
       if (pending) return { success: false, error: 'busy' };
       const c = typeof copy === 'function' ? copy(...args) : copy;
-      setPending(true);
       chTrail(`action ${name}`);
+      if (isOffline()) {
+        // CH-1903: nothing is sent while offline; say so instead of spinning.
+        haptic('error');
+        toast({ tone: 'error', title: `${c.failed}: you're offline`, body: 'Reconnect, then try again. Nothing was changed.', code: 'CH-1903', action: { label: 'Retry', run: () => void run(...args) } });
+        return { success: false, error: 'offline' };
+      }
+      setPending(true);
+      const slow = window.setTimeout(() => toast({ title: 'Still saving…', body: 'This is taking longer than usual. Keep this page open.', code: 'CH-1902' }), CH_SLOW_SAVE_AFTER);
       let result: ActionResult<T>;
       try {
         result = normalise(await action(...args));
@@ -51,6 +68,7 @@ export function useAction<A extends unknown[], T>(
         chReport(err, { surface: name.split('.')[0] ?? name, action: name });
         result = { success: false, error: undefined };
       } finally {
+        window.clearTimeout(slow);
         setPending(false);
       }
       if (result.success) {
@@ -65,6 +83,7 @@ export function useAction<A extends unknown[], T>(
           title: c.failed,
           body: friendlyReason(result.error) ?? c.hint ?? 'Check your connection and try again.',
           action: { label: 'Retry', run: () => void run(...args) },
+          code: c.code,
         });
       }
       return result;

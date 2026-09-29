@@ -3,7 +3,7 @@ import Link from 'next/link';
 /** Shown for any route the Clubhouse rebuild hasn't reached yet. */
 export function NotRebuilt({ label }: { label: string }) {
   return (
-    <main className="ch-notyet">
+    <main className="ch-notyet" data-ch-code="CH-1301">
       <div className="ch-notyet__card ch-sheet">
         <h1 className="ch-notyet__title ch-display">{label} hasn&rsquo;t been rebuilt yet.</h1>
         <p className="ch-notyet__body">

@@ -12,13 +12,13 @@ import { useToast } from '../../ui/Toast';
 import { haptic } from '../../lib/haptics';
 import { chReport, chTrail } from '../../lib/track';
 import { useAction } from '../../lib/use-action';
-import { emailProblem, passwordProblem, type ChProfileInput, type ChSettingsData, type ChSettingsWrites } from './model';
+import { emailProblem, passwordProblem, profileProblem, type ChProfileInput, type ChSettingsData, type ChSettingsWrites } from './model';
 import { Card, Field, ReadFailed, Row, SaveBar, useDraft, useReportDirty } from './parts';
 
 export function AccountSection({ data, writes, onDeleted }: { data: ChSettingsData; writes: ChSettingsWrites; onDeleted: () => void }) {
   return (
     <>
-      {data.profile.error ? <ReadFailed what="Your profile" onRetry={writes.refresh} /> : <ProfileCard data={data} profile={data.profile.value} writes={writes} />}
+      {data.profile.error ? <ReadFailed what="Your profile" code="CH-8201" onRetry={writes.refresh} /> : <ProfileCard data={data} profile={data.profile.value} writes={writes} />}
       <EmailCard email={data.email} writes={writes} />
       <PasswordCard writes={writes} hasEmail={!!data.email} />
       <HelpCard />
@@ -34,9 +34,10 @@ function ProfileCard({ data, profile, writes }: { data: ChSettingsData; profile:
   const file = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const toast = useToast();
-  const save = useAction('settings.saveProfile', writes.saveProfile, { done: 'Profile saved', failed: "Couldn't save your profile" });
-  const name = coach ? f.draft.fullName : `${f.draft.firstName} ${f.draft.lastName}`.trim();
-  const invalid = coach ? (!f.draft.fullName.trim() ? 'Add your name.' : null) : !f.draft.firstName.trim() || !f.draft.lastName.trim() ? 'Add your first and last name.' : null;
+  const save = useAction('settings.saveProfile', writes.saveProfile, { done: 'Profile saved', failed: "Couldn't save your profile", code: 'CH-8001' });
+  // The coin keeps the saved initials while the name field is being edited or is empty.
+  const name = (coach ? f.draft.fullName : `${f.draft.firstName} ${f.draft.lastName}`).trim() || profile.fullName;
+  const invalid = profileProblem(data.role, f.draft);
 
   const upload = async (picked: File) => {
     setUploading(true);
@@ -47,12 +48,12 @@ function ProfileCard({ data, profile, writes }: { data: ChSettingsData; profile:
       else {
         haptic('error');
         chReport(new Error(r.error || 'avatar upload failed'), { surface: 'settings.profile', action: 'uploadAvatar', severity: 'low' });
-        toast({ tone: 'error', title: "Couldn't upload that photo", body: r.error && r.error.length < 80 ? r.error : 'Check your connection and try again.' });
+        toast({ tone: 'error', title: "Couldn't upload that photo", body: r.error && r.error.length < 80 ? r.error : 'Check your connection and try again.', code: 'CH-8002' });
       }
     } catch (err) {
       haptic('error');
       chReport(err, { surface: 'settings.profile', action: 'uploadAvatar' });
-      toast({ tone: 'error', title: "Couldn't upload that photo", body: 'Check your connection and try again.' });
+      toast({ tone: 'error', title: "Couldn't upload that photo", body: 'Check your connection and try again.', code: 'CH-8002' });
     } finally {
       setUploading(false);
     }
@@ -81,7 +82,7 @@ function ProfileCard({ data, profile, writes }: { data: ChSettingsData; profile:
       }
     >
       <div className="ch-set-photo">
-        <span className={'ch-set-photo__img' + (uploading ? ' is-busy' : '')}>
+        <span className={'ch-set-photo__img' + (uploading ? ' is-busy' : '')} data-ch-code={f.draft.avatarUrl ? undefined : 'CH-8304'}>
           {f.draft.avatarUrl ? (
             // A user-uploaded storage URL, shown as a plain image.
             <img src={f.draft.avatarUrl} alt="" width={64} height={64} />
@@ -134,7 +135,7 @@ function EmailCard({ email, writes }: { email: string | null; writes: ChSettings
   const [sentTo, setSentTo] = useState<string | null>(null);
   const [touched, setTouched] = useState(false);
   useReportDirty('email', next.trim() !== '');
-  const send = useAction('settings.changeEmail', writes.changeEmail, (v: string) => ({ done: `Confirmation sent to ${v}`, failed: "Couldn't start the email change" }));
+  const send = useAction('settings.changeEmail', writes.changeEmail, (v: string) => ({ done: `Confirmation sent to ${v}`, failed: "Couldn't start the email change", code: 'CH-8003' }));
   const problem = next.trim() ? emailProblem(next, email) : null;
   return (
     <Card id="set-email" title="Email" description="Where GolfHelm sends sign-in links and email notifications.">
@@ -146,6 +147,7 @@ function EmailCard({ email, writes }: { email: string | null; writes: ChSettings
       )}
       <form
         className="ch-set-inline"
+        noValidate
         onSubmit={async (e) => {
           e.preventDefault();
           setTouched(true);
@@ -184,7 +186,7 @@ function PasswordCard({ writes, hasEmail }: { writes: ChSettingsWrites; hasEmail
   const [confirm, setConfirm] = useState('');
   const [tried, setTried] = useState(false);
   useReportDirty('password', !!(cur || next || confirm));
-  const change = useAction('settings.changePassword', writes.changePassword, { done: 'Password updated', failed: "Couldn't update your password" });
+  const change = useAction('settings.changePassword', writes.changePassword, { done: 'Password updated', failed: "Couldn't update your password", code: 'CH-8004' });
   const problem = passwordProblem(cur, next, confirm);
   return (
     <Card
@@ -195,7 +197,11 @@ function PasswordCard({ writes, hasEmail }: { writes: ChSettingsWrites; hasEmail
       foot={
         <>
           <span className="ch-set-status" aria-live="polite">
-            {tried && problem ? <span className="is-invalid">{problem}</span> : null}
+            {tried && problem ? (
+              <span className="is-invalid" role="alert" data-ch-code={problem.code}>
+                {problem.text}
+              </span>
+            ) : null}
           </span>
           <Button
             variant="primary"
@@ -238,7 +244,7 @@ function HelpCard() {
     setOpening(true);
     chTrail('settings report a problem');
     const mail = () => {
-      toast({ title: 'Opening email', body: "The in-app report form isn't available right now." });
+      toast({ title: 'Opening email', body: "The in-app report form isn't available right now.", code: 'CH-8025' });
       window.location.href = 'mailto:admin@helmsportslabs.com?subject=Problem%20report';
     };
     try {
@@ -287,7 +293,7 @@ function SessionCard({ writes, onDeleted }: { writes: ChSettingsWrites; onDelete
   const [confirming, setConfirming] = useState(false);
   const [typed, setTyped] = useState('');
   const toast = useToast();
-  const del = useAction('settings.deleteAccount', writes.deleteAccount, { done: 'Your account was deleted', failed: "Couldn't delete your account" });
+  const del = useAction('settings.deleteAccount', writes.deleteAccount, { done: 'Your account was deleted', failed: "Couldn't delete your account", code: 'CH-8023' });
   return (
     <>
       <Card id="set-session" title="Session and account" tone="danger">
@@ -308,7 +314,7 @@ function SessionCard({ writes, onDeleted }: { writes: ChSettingsWrites; onDelete
               } catch (err) {
                 chReport(err, { surface: 'settings.session', action: 'signOut' });
                 haptic('error');
-                toast({ tone: 'error', title: "Couldn't sign you out", body: 'Check your connection and try again.' });
+                toast({ tone: 'error', title: "Couldn't sign you out", body: 'Check your connection and try again.', code: 'CH-8024' });
                 setSigningOut(false);
               }
             }}
@@ -338,6 +344,7 @@ function SessionCard({ writes, onDeleted }: { writes: ChSettingsWrites; onDelete
       </Card>
       <Modal
         open={confirming}
+        code="CH-8501"
         onClose={() => !del.pending && setConfirming(false)}
         icon={UserRound}
         title="Delete your account?"

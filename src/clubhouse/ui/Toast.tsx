@@ -14,6 +14,8 @@ interface ToastItem {
   tone: 'done' | 'error';
   body?: string;
   action?: { label: string; run: () => void };
+  /** Catalog number (docs/clubhouse/catalog), rendered as data-ch-code. */
+  code?: string;
 }
 
 export interface ToastInput {
@@ -21,6 +23,7 @@ export interface ToastInput {
   tone?: ToastItem['tone'];
   body?: string;
   action?: ToastItem['action'];
+  code?: string;
 }
 
 type ShowToast = (toast: ToastInput) => void;
@@ -41,9 +44,9 @@ export function ToastProvider({ children }: { children: ReactNode }) {
 
   const dismiss = useCallback((id: number) => setToasts((t) => t.filter((x) => x.id !== id)), []);
   const show = useCallback<ShowToast>(
-    ({ title, tone = 'done', body, action }) => {
+    ({ title, tone = 'done', body, action, code }) => {
       const id = nextId.current++;
-      setToasts((t) => [...t.slice(-2), { id, title, tone, body, action }]);
+      setToasts((t) => [...t.slice(-2), { id, title, tone, body, action, code }]);
       window.setTimeout(() => dismiss(id), DISMISS_MS[tone]);
     },
     [dismiss],
@@ -53,7 +56,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   return (
     <ToastContext.Provider value={value}>
       {children}
-      <div className="ch-toasts" aria-live="polite">
+      <div className="ch-toasts" aria-live="polite" data-ui="clubhouse">
         <AnimatePresence initial={false}>
           {toasts.map((t) => (
             <m.div
@@ -61,6 +64,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
               layout={!reduced}
               className={'ch-toast' + (t.tone === 'error' ? ' ch-toast--error' : '')}
               role={t.tone === 'error' ? 'alert' : 'status'}
+              data-ch-code={t.code}
               initial={reduced ? false : { opacity: 0, y: 10, scale: 0.98 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={reduced ? { opacity: 0 } : { opacity: 0, y: 6, scale: 0.98 }}

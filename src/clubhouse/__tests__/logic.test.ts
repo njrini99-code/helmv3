@@ -323,20 +323,20 @@ describe('settings model', () => {
     expect(SM.parseSection(undefined, 'coach')).toBe('account');
   });
   it('validates passwords and email before anything is sent', () => {
-    expect(SM.passwordProblem('', 'abcdefgh', 'abcdefgh')).toMatch(/current/);
-    expect(SM.passwordProblem('old', 'short', 'short')).toMatch(/8 characters/);
-    expect(SM.passwordProblem('old', 'abcdefgh', 'abcdefgx')).toMatch(/match/);
+    expect(SM.passwordProblem('', 'abcdefgh', 'abcdefgh')?.text).toMatch(/current/);
+    expect(SM.passwordProblem('old', 'short', 'short')?.text).toMatch(/8 characters/);
+    expect(SM.passwordProblem('old', 'abcdefgh', 'abcdefgx')?.text).toMatch(/match/);
     expect(SM.passwordProblem('old', 'abcdefgh', 'abcdefgh')).toBeNull();
-    expect(SM.emailProblem('nope', 'a@b.co')).toMatch(/valid/);
-    expect(SM.emailProblem('A@B.co', 'a@b.co')).toMatch(/already/);
+    expect(SM.emailProblem('nope', 'a@b.co')?.text).toMatch(/valid/);
+    expect(SM.emailProblem('A@B.co', 'a@b.co')?.text).toMatch(/already/);
     expect(SM.emailProblem('new@b.co', 'a@b.co')).toBeNull();
   });
   it('checks golf details and keeps blank as blank', () => {
     const d = { handicap: '', handicapIndex: '', graduationYear: '', hometown: '', state: '', phone: '' };
     expect(SM.golfDetailsProblem(d)).toBeNull();
-    expect(SM.golfDetailsProblem({ ...d, handicap: '60' })).toMatch(/Handicap/);
-    expect(SM.golfDetailsProblem({ ...d, graduationYear: '27' })).toMatch(/year/);
-    expect(SM.golfDetailsProblem({ ...d, state: 'North' })).toMatch(/two-letter/);
+    expect(SM.golfDetailsProblem({ ...d, handicap: '60' })?.text).toMatch(/Handicap/);
+    expect(SM.golfDetailsProblem({ ...d, graduationYear: '27' })?.text).toMatch(/year/);
+    expect(SM.golfDetailsProblem({ ...d, state: 'North' })?.text).toMatch(/two-letter/);
   });
   it('requires the first reminder before the final one', () => {
     expect(SM.remindersValid({ enabled: true, earlyHours: 1, lateMinutes: 60 })).toBe(false);

@@ -16,15 +16,18 @@ export function EmptyState({
   body,
   action,
   compact = false,
+  code,
 }: {
   icon?: LucideIcon;
   title: string;
   body?: ReactNode;
   action?: ReactNode;
   compact?: boolean;
+  /** Catalog number (docs/clubhouse/catalog). */
+  code?: string;
 }) {
   return (
-    <div className={'ch-empty' + (compact ? ' ch-empty--compact' : '')}>
+    <div className={'ch-empty' + (compact ? ' ch-empty--compact' : '')} data-ch-code={code}>
       {icon && (
         <span className="ch-empty__icon ch-well-soft">
           <Icon icon={icon} size={compact ? 16 : 18} />

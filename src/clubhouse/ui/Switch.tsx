@@ -15,6 +15,7 @@ export function Switch({
   hideLabel = false,
   disabled,
   busy,
+  busyCode,
 }: {
   checked: boolean;
   onChange: (next: boolean) => void;
@@ -23,10 +24,12 @@ export function Switch({
   disabled?: boolean;
   /** A save is in flight: the switch holds its new position but can't be flipped again. */
   busy?: boolean;
+  /** Catalog number shown while busy (docs/clubhouse/catalog). */
+  busyCode?: string;
 }) {
   const id = useId();
   return (
-    <label className={'ch-switch' + (disabled ? ' is-disabled' : '') + (busy ? ' is-busy' : '')} htmlFor={id}>
+    <label className={'ch-switch' + (disabled ? ' is-disabled' : '') + (busy ? ' is-busy' : '')} htmlFor={id} data-ch-code={busy ? busyCode : undefined}>
       <input
         id={id}
         type="checkbox"

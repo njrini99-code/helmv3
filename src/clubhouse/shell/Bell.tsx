@@ -169,7 +169,7 @@ export function Bell() {
     };
   }, [open, close]);
 
-  const markAll = useAction('shell.markAllRead', api.markAll, { done: 'All notifications marked read', failed: "Couldn't mark your notifications read" });
+  const markAll = useAction('shell.markAllRead', api.markAll, { done: 'All notifications marked read', failed: "Couldn't mark your notifications read", code: 'CH-1001' });
 
   const openItem = (item: UnifiedNotificationItem) => {
     haptic('select');
@@ -266,9 +266,9 @@ export function Bell() {
                 </div>
                 <div className="ch-bellp__body">
                   {failed && !items?.length ? (
-                    <InlineNotice title="Notifications didn't load." body="Try again; the error has been reported." onRetry={() => setAttempt((x) => x + 1)} />
+                    <InlineNotice code="CH-1201" title="Notifications didn't load." body="Try again; the error has been reported." onRetry={() => setAttempt((x) => x + 1)} />
                   ) : items === null ? (
-                    <div className="ch-bellp__skel" aria-busy="true" aria-label="Loading notifications">
+                    <div className="ch-bellp__skel" aria-busy="true" aria-label="Loading notifications" data-ch-code="CH-1401">
                       {[0, 1, 2, 3].map((k) => (
                         <div key={k} className="ch-bellp__skelrow">
                           <Skeleton width={32} height={32} radius={9} />
@@ -280,7 +280,7 @@ export function Bell() {
                       ))}
                     </div>
                   ) : groups.length === 0 ? (
-                    <div className="ch-bellp__empty">
+                    <div className="ch-bellp__empty" data-ch-code={filter === 'all' ? 'CH-1302' : 'CH-1303'}>
                       <Icon icon={BellOff} size={18} />
                       <b>{filter === 'all' ? "You're all caught up." : 'Nothing of this kind.'}</b>
                       <span>{filter === 'all' ? 'Messages, events, reminders and CoachHelm updates show up here.' : 'Clear the filter to see everything.'}</span>
