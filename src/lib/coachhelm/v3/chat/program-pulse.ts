@@ -282,8 +282,9 @@ export async function getProgramPulse(sb: Sb, ctx: CoachChatContext): Promise<Pr
   const withRounds = new Set(completedRounds.map((r) => r.player_id));
   const withoutRounds = ctx.roster.filter((p) => !withRounds.has(p.id));
   // Recent coverage (2026-09 audit row 49): countable rounds in the window.
-  // The read above is the newest 400 completed rounds, so a recent round is
-  // never cut by the limit. It carries no is_test filter (Program Pulse row).
+  // The read above is the newest 400 completed rounds, so it holds the
+  // window unless a roster posts more than 400 rounds in it; it carries no
+  // is_test filter (both are the Program Pulse read's, audit row 48).
   const recentlyCovered = recentlyActivePlayerIds(
     rounds,
     recentWindowStart(new Date(now).toISOString().slice(0, 10)),

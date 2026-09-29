@@ -893,7 +893,9 @@ async function getTeamCategoryInsightsImpl(
 
     // Visible engine rows for THIS roster, read directly (not the coach-wide
     // ranked feed, which spans every team the coach staffs and is capped at
-    // 20): the input to each category's team strokes-available figure.
+    // 20): the input to each category's team strokes-available figure. Same
+    // visibility as that feed (`applyInsightVisibility`, which drops dismissed
+    // rows): marking a signal reviewed does not make its leak go away.
     const engineCategories = [...new Set(Object.values(BRIEF_CATEGORY_TO_ENGINE_CATEGORY))];
     const engineRowsResult = await fetchAllRowsResult<EngineLeakRow>((from, to) =>
       applyInsightVisibility(
@@ -901,9 +903,7 @@ async function getTeamCategoryInsightsImpl(
           .from('golf_coach_insights')
           .select('id, player_id, category, evidence')
           .in('player_id', playerIds)
-          .in('category', engineCategories)
-          .eq('status', 'active')
-          .eq('dismissed', false),
+          .in('category', engineCategories),
       )
         .order('id', { ascending: true })
         .range(from, to),
