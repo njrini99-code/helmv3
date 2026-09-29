@@ -280,7 +280,7 @@ function Metadata({ email }: { email: EmailRow }) {
         <div>
           <span
             className={cn(
-              'inline-block text-caption font-medium px-1.5 py-0.5 rounded',
+              'inline-block text-label font-medium px-1.5 py-0.5 rounded uppercase tracking-wide',
               email.source === 'crm'
                 ? 'bg-surface-sunken text-text-secondary'
                 : email.source === 'transactional'

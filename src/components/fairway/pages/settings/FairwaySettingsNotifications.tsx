@@ -298,13 +298,13 @@ export function FairwaySettingsNotifications({
 
           {/* Column header */}
           <div className="grid grid-cols-12 items-center gap-2 border-b border-border-subtle px-4 py-3 sm:px-5">
-            <span className="col-span-6 font-fw-sans text-caption font-medium text-text-tertiary">
+            <span className="col-span-6 font-fw-sans text-label font-medium uppercase tracking-[0.08em] text-text-tertiary">
               Update
             </span>
             {CHANNELS.map((c) => (
               <span
                 key={c.key}
-                className="col-span-2 text-center font-fw-sans text-caption font-medium text-text-tertiary"
+                className="col-span-2 text-center font-fw-sans text-label font-medium uppercase tracking-[0.08em] text-text-tertiary"
               >
                 {c.label}
               </span>

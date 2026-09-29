@@ -358,7 +358,7 @@ function ScoreCell({ label, children }: { label: string; children: React.ReactNo
   // label truncates instead of pushing the other two cells out of the 3-up row.
   return (
     <div className="flex min-w-0 flex-col gap-0.5">
-      <span className="font-fw-sans text-caption font-medium text-text-tertiary">
+      <span className="font-fw-sans text-label font-medium uppercase tracking-wide text-text-tertiary">
         {label}
       </span>
       {children}

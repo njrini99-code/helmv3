@@ -95,7 +95,7 @@ function StepPreviewPane({
       <div className="flex items-center gap-2 px-3 py-2 border-b border-border-subtle bg-surface-sunken/60">
         <span
           className={cn(
-            'px-2 py-0.5 rounded-full text-caption font-bold',
+            'px-2 py-0.5 rounded-full text-label font-bold uppercase tracking-wider',
             fmt.badge,
           )}
         >
@@ -106,7 +106,7 @@ function StepPreviewPane({
         </span>
       </div>
       <div className="px-3 py-2.5 border-b border-border-subtle">
-        <p className="text-caption text-text-tertiary mb-0.5">Subject</p>
+        <p className="text-label font-semibold uppercase tracking-wider text-text-tertiary mb-0.5">Subject</p>
         <p className="text-sm font-semibold text-text-primary break-words">
           {mergedSubject || <span className="text-text-tertiary italic">No subject</span>}
         </p>

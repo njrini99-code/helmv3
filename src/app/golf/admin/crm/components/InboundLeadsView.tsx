@@ -572,7 +572,7 @@ export function InboundLeadsView({ onOpenCoach }: InboundLeadsViewProps = {}) {
                           {request.email}
                         </p>
                         {rowIsNew && (
-                          <span className="inline-flex items-center px-1.5 py-0.5 rounded-full border border-fw-warning-ring bg-fw-warning-bg text-fw-warning-ink text-caption font-semibold">
+                          <span className="inline-flex items-center px-1.5 py-0.5 rounded-full border border-fw-warning-ring bg-fw-warning-bg text-fw-warning-ink text-label font-semibold uppercase tracking-wide">
                             New
                           </span>
                         )}

@@ -355,7 +355,7 @@ function SummaryMetric({ icon: Icon, label, value }: { icon: LucideIcon; label: 
     <div className="min-w-0 px-4 py-4">
       <Icon className="mb-2 h-3.5 w-3.5 text-accent-700" aria-hidden />
       <p className="font-fw-mono text-h3 font-semibold tabular-nums text-text-primary">{value}</p>
-      <p className="mt-1 truncate text-caption text-text-tertiary">{label}</p>
+      <p className="mt-1 truncate text-label font-semibold uppercase tracking-wide text-text-tertiary">{label}</p>
     </div>
   );
 }

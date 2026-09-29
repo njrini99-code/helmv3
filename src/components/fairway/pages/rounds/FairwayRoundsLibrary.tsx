@@ -528,7 +528,7 @@ export function FairwayRoundsLibrary({
           server could classify a trend (needs 6+ scored rounds). */}
       {!starved && stats!.trend && (
         <div className="-mt-4 flex items-center gap-2 px-1">
-          <span className="font-fw-sans text-caption text-text-tertiary">
+          <span className="font-fw-sans text-label font-semibold uppercase tracking-[0.06em] text-text-tertiary">
             Scoring trend
           </span>
           <StatusPill

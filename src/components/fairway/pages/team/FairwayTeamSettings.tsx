@@ -543,7 +543,7 @@ export function FairwayTeamSettings({ team, programTeams }: FairwayTeamSettingsP
                    now, each with its own copy button, so what you copy is never
                    ambiguous. */
                 <div className="flex flex-col gap-3">
-                  <span className="block font-fw-sans text-caption font-medium text-text-tertiary">
+                  <span className="block font-fw-sans text-label font-medium uppercase tracking-[0.08em] text-text-tertiary">
                     Team codes
                   </span>
                   {programTeams!.map((pt) => {
@@ -621,7 +621,7 @@ export function FairwayTeamSettings({ team, programTeams }: FairwayTeamSettingsP
                     this team automatically. The copyable link below is for
                     anyone who can paste instead. */
                 <div className="flex flex-col gap-1.5">
-                  <span className="block font-fw-sans text-caption font-medium text-text-tertiary">
+                  <span className="block font-fw-sans text-label font-medium uppercase tracking-[0.08em] text-text-tertiary">
                     Team code
                   </span>
                   <div className="flex items-center gap-3">
@@ -650,7 +650,7 @@ export function FairwayTeamSettings({ team, programTeams }: FairwayTeamSettingsP
               <div className="flex flex-col gap-1.5">
                 <label
                   htmlFor="fw-team-invite-link"
-                  className="block font-fw-sans text-caption font-medium text-text-tertiary"
+                  className="block font-fw-sans text-label font-medium uppercase tracking-[0.08em] text-text-tertiary"
                 >
                   Invite link
                 </label>

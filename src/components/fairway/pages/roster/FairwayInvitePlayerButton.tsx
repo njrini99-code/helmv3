@@ -229,7 +229,7 @@ export function FairwayInvitePlayerButton({
                 <div className="space-y-1.5">
                   <label
                     htmlFor="fw-invite-code"
-                    className="block font-fw-sans text-caption font-medium text-text-tertiary"
+                    className="block font-fw-sans text-label font-medium uppercase tracking-[0.08em] text-text-tertiary"
                   >
                     Invite code
                   </label>
@@ -265,7 +265,7 @@ export function FairwayInvitePlayerButton({
                 <div className="space-y-1.5">
                   <label
                     htmlFor="fw-invite-link"
-                    className="block font-fw-sans text-caption font-medium text-text-tertiary"
+                    className="block font-fw-sans text-label font-medium uppercase tracking-[0.08em] text-text-tertiary"
                   >
                     Invite link
                   </label>

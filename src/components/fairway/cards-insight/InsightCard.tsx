@@ -450,7 +450,7 @@ const InsightCardImpl = forwardRef<HTMLDivElement, InsightCardProps>(
           <div className="flex items-start justify-between gap-3">
             <div className="flex min-w-0 flex-col gap-1">
               {overline ? (
-                <span className="font-fw-sans text-caption text-text-tertiary">
+                <span className="font-fw-sans text-label font-semibold tracking-[0.06em] uppercase text-text-tertiary">
                   {overline}
                 </span>
               ) : null}

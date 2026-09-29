@@ -244,7 +244,7 @@ export function PuttHeatmap({ putts, title = 'Putting heatmap', className }: Put
 
 function LegendSwatch({ color, label }: { color: string; label: string }) {
   return (
-    <span className="inline-flex items-center gap-1.5 font-fw-sans text-caption text-text-tertiary">
+    <span className="inline-flex items-center gap-1.5 font-fw-sans text-label font-semibold uppercase tracking-wide text-text-tertiary">
       <i aria-hidden="true" className="inline-block h-2 w-2 rounded-full" style={{ backgroundColor: color }} />
       {label}
     </span>

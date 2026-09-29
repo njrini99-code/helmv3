@@ -555,14 +555,14 @@ function ProgressMeter({
           progress-share from the headline make-rate (audit P-34).
         */}
         <span className="flex shrink-0 items-baseline gap-1.5 font-fw-mono font-medium tabular-nums text-text-primary">
-          <span className="font-fw-sans text-caption font-normal text-text-tertiary">
+          <span className="font-fw-sans text-label font-normal uppercase tracking-[0.08em] text-text-tertiary">
             Now
           </span>
           {current ?? 0}
           <span className="font-normal text-text-tertiary" aria-hidden="true">
             →
           </span>
-          <span className="font-fw-sans text-caption font-normal text-text-tertiary">
+          <span className="font-fw-sans text-label font-normal uppercase tracking-[0.08em] text-text-tertiary">
             Target
           </span>
           {target}
@@ -637,7 +637,7 @@ function OutcomeCapture({
     const RecordedIcon = meta.Icon;
     return (
       <div className="flex items-center gap-2">
-        <span className="font-fw-sans text-caption text-text-tertiary">
+        <span className="font-fw-sans text-label font-semibold uppercase tracking-wide text-text-tertiary">
           Outcome
         </span>
         <StatusPill tone={recorded.tone} size="sm">
@@ -674,7 +674,7 @@ function OutcomeCapture({
 
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <span className="font-fw-sans text-caption text-text-tertiary">
+      <span className="font-fw-sans text-label font-semibold uppercase tracking-wide text-text-tertiary">
         {prompt}
       </span>
       <div className="flex flex-wrap items-center gap-1.5">
@@ -1173,7 +1173,7 @@ export const FocusAreaCard = forwardRef<HTMLDivElement, FocusAreaCardProps>(
 
             <div className="min-w-0 flex-1">
               {playerName ? (
-                <p className="font-fw-sans text-caption text-text-tertiary">
+                <p className="font-fw-sans text-label font-semibold uppercase tracking-wide text-text-tertiary">
                   {playerName}
                 </p>
               ) : null}
@@ -1314,7 +1314,7 @@ export const FocusAreaCard = forwardRef<HTMLDivElement, FocusAreaCardProps>(
             <Inset padding="sm" className="space-y-3">
               {/* Per-area Sparkline + TrendChip — honest <2pts em-dash */}
               <div className="flex items-center justify-between gap-3">
-                <span className="font-fw-sans text-caption text-text-tertiary">
+                <span className="font-fw-sans text-label font-semibold uppercase tracking-wide text-text-tertiary">
                   Trend
                 </span>
                 <div className="flex items-center gap-2">

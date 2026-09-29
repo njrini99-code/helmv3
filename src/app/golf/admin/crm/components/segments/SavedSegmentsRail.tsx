@@ -204,7 +204,7 @@ export function SavedSegmentsRail({
   return (
     <div className="px-3 py-2 border-t border-nav-text/10">
       <div className="flex items-center justify-between px-3 mb-2">
-        <span className="text-caption font-semibold text-nav-text-dim">
+        <span className="text-label font-semibold uppercase tracking-wider text-nav-text-dim">
           Segments
         </span>
         <IconButton variant="default"

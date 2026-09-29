@@ -172,19 +172,19 @@ export function FairwayRecentCourses({ courses, onConfirmCourse }: FairwayRecent
               <Inset padding="md">
                 <dl className="grid grid-cols-3 gap-3 text-center">
                   <div>
-                    <dt className="font-fw-sans text-caption text-text-tertiary">Tees</dt>
+                    <dt className="font-fw-sans text-label font-semibold uppercase tracking-[0.12em] text-text-tertiary">Tees</dt>
                     <dd className="mt-1 font-fw-sans text-body-sm font-medium text-text-primary">
                       {shown.teesPlayed ?? '—'}
                     </dd>
                   </div>
                   <div className="border-x border-border-subtle">
-                    <dt className="font-fw-sans text-caption text-text-tertiary">Holes</dt>
+                    <dt className="font-fw-sans text-label font-semibold uppercase tracking-[0.12em] text-text-tertiary">Holes</dt>
                     <dd className="mt-1 font-fw-sans text-body-sm font-medium text-text-primary">
                       {shown.holesPerRound}
                     </dd>
                   </div>
                   <div>
-                    <dt className="font-fw-sans text-caption text-text-tertiary">Played</dt>
+                    <dt className="font-fw-sans text-label font-semibold uppercase tracking-[0.12em] text-text-tertiary">Played</dt>
                     <dd className="mt-1 font-fw-sans text-body-sm font-medium tabular-nums text-text-primary">
                       {shown.roundCount > 0 ? `${shown.roundCount}×` : 'New'}
                     </dd>

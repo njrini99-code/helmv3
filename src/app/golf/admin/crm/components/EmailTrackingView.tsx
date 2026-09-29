@@ -609,7 +609,7 @@ export function EmailTrackingView() {
                           </div>
                           <div className="flex items-center gap-2 flex-shrink-0 ml-3">
                             <span className={cn(
-                              'px-2 py-0.5 rounded-full text-caption font-bold',
+                              'px-2 py-0.5 rounded-full text-label tracking-[0.06em] font-bold uppercase',
                               entry.resend_message_id ? 'bg-accent-50 text-accent-700' : 'bg-surface-sunken text-text-secondary'
                             )}>
                               {entry.resend_message_id ? 'Helm' : 'Gmail'}
@@ -685,7 +685,7 @@ export function EmailTrackingView() {
                         <span className="text-xs text-text-tertiary truncate max-w-[200px] hidden lg:block">“{coach.subject}”</span>
                       )}
                       <span className={cn(
-                        'px-2 py-0.5 rounded-full text-caption font-bold',
+                        'px-2 py-0.5 rounded-full text-label font-bold uppercase tracking-wider',
                         coach.method === 'Helm' ? 'bg-accent-50 text-accent-700' : 'bg-surface-sunken text-text-secondary'
                       )}>
                         {coach.method}

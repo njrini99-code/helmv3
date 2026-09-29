@@ -120,7 +120,7 @@ export function RuledLeaderStat({
   // a `compact`/`lg` cell reads identically to its untouched non-leader
   // siblings in the same grid.
   const labelNode = (
-    <span className="font-fw-display text-caption font-medium text-text-secondary">
+    <span className="font-fw-display text-label font-medium uppercase tracking-[0.1em] text-text-secondary">
       {label}
     </span>
   );

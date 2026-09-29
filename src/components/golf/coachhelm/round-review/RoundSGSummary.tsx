@@ -190,7 +190,7 @@ export function RoundSGSummary({
     >
       {strokesGainedTotal !== null ? (
         <div className="flex flex-col gap-1">
-          <span className="font-fw-sans text-caption text-text-tertiary">
+          <span className="text-label font-semibold uppercase tracking-[0.14em] font-fw-sans text-text-tertiary">
             Total
           </span>
           <div className="flex items-baseline gap-2">

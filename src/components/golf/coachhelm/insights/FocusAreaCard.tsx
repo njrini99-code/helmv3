@@ -213,7 +213,7 @@ export function FocusAreaCard({ focusArea, onClick, index = 0, rank }: FocusArea
                 No sparkline at all otherwise, never a fabricated flat line. */}
             {hasTrend ? (
               <div className="mt-2.5 flex items-center gap-2">
-                <span className="font-fw-sans text-caption text-text-tertiary">
+                <span className="font-fw-sans text-label font-semibold uppercase tracking-wide text-text-tertiary">
                   Progress
                 </span>
                 <Sparkline data={series} label={`Progress trend for ${focusArea.title || 'this focus area'}`} />

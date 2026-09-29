@@ -586,7 +586,7 @@ function RoundsBasisReadout({ rounds }: { rounds: number }) {
 function RefreshedReadout({ computedAt }: { computedAt: string | null }) {
   return (
     <InstrumentPanel depth="base" padding="md" className="flex h-full flex-col justify-center">
-      <span className="font-fw-display text-caption text-text-tertiary">
+      <span className="font-fw-display text-label font-semibold uppercase tracking-[0.14em] text-text-tertiary">
         Last refreshed
       </span>
       <span className="mt-1 font-fw-mono text-h3 font-semibold tabular-nums text-text-primary">
@@ -808,7 +808,7 @@ function DimensionCell({ dim }: { dim: DimRow }) {
         aria-label={`${dim.label}: not tracked`}
       >
         <div className="flex items-center justify-between gap-2">
-          <span className="font-fw-sans text-caption text-text-tertiary">
+          <span className="font-fw-sans text-label font-semibold uppercase tracking-wide text-text-tertiary">
             {dim.label}
           </span>
           <IconMinus size={12} className="text-text-tertiary" />
@@ -831,7 +831,7 @@ function DimensionCell({ dim }: { dim: DimRow }) {
         aria-label={`${dim.label}: needs more rounds`}
       >
         <div className="flex items-center justify-between gap-2">
-          <span className="font-fw-sans text-caption text-text-tertiary">
+          <span className="font-fw-sans text-label font-semibold uppercase tracking-wide text-text-tertiary">
             {dim.label}
           </span>
           <IconLock size={12} className="text-text-tertiary" />
@@ -847,7 +847,7 @@ function DimensionCell({ dim }: { dim: DimRow }) {
 
   return (
     <InstrumentPanel depth="inset" padding="sm" className="flex flex-col gap-2">
-      <span className="font-fw-sans text-caption text-text-tertiary">
+      <span className="font-fw-sans text-label font-semibold uppercase tracking-wide text-text-tertiary">
         {dim.label}
       </span>
       <div className="flex items-baseline justify-between gap-2">

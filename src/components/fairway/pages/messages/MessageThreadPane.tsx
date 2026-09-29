@@ -1411,7 +1411,7 @@ export function MessageThreadPane({
                 {idx === firstUnreadIndex && (
                   <div className="flex items-center gap-3 pb-1.5 pt-3" role="separator" aria-label="New messages">
                     <span className="h-px flex-1 bg-accent-500/45" />
-                    <span className="font-fw-sans text-caption font-semibold text-accent-700">
+                    <span className="font-fw-sans text-label font-semibold uppercase tracking-[0.1em] text-accent-700">
                       New
                     </span>
                     <span className="h-px flex-1 bg-accent-500/45" />
@@ -1423,7 +1423,7 @@ export function MessageThreadPane({
                     <span
                       className={cn(
                         'flex w-fit items-center rounded-full px-3.5 py-1.5',
-                        'font-fw-sans text-caption font-semibold tracking-[0.06em] text-text-secondary',
+                        'font-fw-sans text-label font-semibold uppercase tracking-[0.06em] text-text-secondary',
                         '[background:var(--fw-glass-bg)]',
                         '[backdrop-filter:blur(var(--fw-blur-glass))_saturate(var(--fw-glass-saturate))]',
                         '[-webkit-backdrop-filter:blur(var(--fw-blur-glass))_saturate(var(--fw-glass-saturate))]',

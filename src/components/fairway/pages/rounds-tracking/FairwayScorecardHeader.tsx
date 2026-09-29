@@ -364,7 +364,7 @@ export const FairwayScorecardHeader = memo(function FairwayScorecardHeader({
         </div>
         <div className="flex items-center gap-2">
           <AutoSaveChip status={autoSaveStatus} compact />
-          <span className="flex-shrink-0 whitespace-nowrap font-fw-sans text-caption font-semibold text-accent-ink">
+          <span className="flex-shrink-0 whitespace-nowrap font-fw-sans text-label font-semibold uppercase tracking-wide text-accent-ink">
             Hole {currentHoleNumber} / {holes.length}
           </span>
         </div>

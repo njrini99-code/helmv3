@@ -705,7 +705,7 @@ export function HoleShotPath({
           <div className="mb-2 grid min-w-0 grid-cols-[minmax(0,1fr)_auto] gap-x-1 gap-y-0.5 overflow-clip px-1">
             <div className="flex min-w-0 items-baseline gap-1 overflow-hidden whitespace-nowrap">
               {hole_number !== undefined && (
-                <span className="shrink-0 text-caption text-text-tertiary">
+                <span className="shrink-0 text-label font-semibold uppercase tracking-[0.12em] text-text-tertiary">
                   Hole {hole_number}
                 </span>
               )}
@@ -1351,7 +1351,7 @@ export function HoleShotPath({
             transition={prefersReducedMotion ? { duration: 0 } : (enterTransition)}
             className="absolute inset-0 flex items-center justify-center pointer-events-none"
           >
-            <span className="text-caption text-warm-100/70">
+            <span className="text-label font-semibold uppercase tracking-[0.14em] text-warm-100/70">
               No shots logged
             </span>
           </m.div>

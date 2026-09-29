@@ -118,7 +118,7 @@ interface FairwayEditShotModalProps {
   shotHistory?: readonly ShotRecord[];
 }
 
-const sectionLabel = 'mb-3 font-fw-sans text-caption font-medium text-text-secondary';
+const sectionLabel = 'mb-3 font-fw-sans text-label font-medium uppercase tracking-wider text-text-secondary';
 
 const PENALTY_OPTIONS = [
   { v: 'ob', l: 'Out of Bounds' },
@@ -237,7 +237,7 @@ export function FairwayEditShotModal({
           <>
             {/* Shot Type Info */}
             <Inset padding="sm" className="flex items-center gap-3">
-              <span className="font-fw-sans text-caption font-medium text-text-tertiary">Type:</span>
+              <span className="font-fw-sans text-label font-medium uppercase tracking-wide text-text-tertiary">Type:</span>
               <span className="font-fw-sans text-sm font-medium capitalize text-text-secondary">
                 {editingShot.isPenalty ? 'Penalty' : editingShot.shotType.replace('_', ' ')}
               </span>

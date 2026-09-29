@@ -140,7 +140,7 @@ export default async function PlayerGamePrintPage({
                 className="rounded-card border border-border-subtle p-5"
               >
                 <div className="mb-3">
-                  <p className="text-caption text-text-tertiary font-medium">
+                  <p className="text-label uppercase tracking-[0.14em] text-text-tertiary font-medium">
                     {String(idx + 1).padStart(2, '0')}
                   </p>
                   <h2 className="text-body-lg font-medium text-text-primary tracking-[-0.012em]">
@@ -225,7 +225,7 @@ export default async function PlayerGamePrintPage({
             className="rounded-card border border-border-subtle p-5"
           >
             <div className="mb-3">
-              <p className="text-caption text-text-tertiary font-medium">
+              <p className="text-label uppercase tracking-[0.14em] text-text-tertiary font-medium">
                 07
               </p>
               <h2 className="text-body-lg font-medium text-text-primary tracking-[-0.012em]">
@@ -241,7 +241,7 @@ export default async function PlayerGamePrintPage({
                 data-testid="print-trend-table"
               >
                 <thead>
-                  <tr className="text-left text-caption text-text-tertiary">
+                  <tr className="text-left text-label font-semibold uppercase tracking-wide text-text-tertiary">
                     <th className="py-1 pr-2">Date</th>
                     <th className="py-1 pr-2">Course</th>
                     <th className="py-1 pr-2 text-right">Score</th>

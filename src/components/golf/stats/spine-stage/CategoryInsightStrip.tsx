@@ -106,7 +106,7 @@ export function CategoryInsightStrip({
           the row's width. Wrapping to a second line keeps every character
           on screen and legible instead of clipping or scrolling. */}
       <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-1.5">
-        <span className="font-fw-sans text-caption font-medium text-text-tertiary">
+        <span className="font-fw-sans text-label font-medium uppercase tracking-[0.1em] text-text-tertiary">
           What CoachHelm sees
         </span>
         {hasSeries ? (

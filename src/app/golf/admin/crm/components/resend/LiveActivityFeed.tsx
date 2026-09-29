@@ -242,7 +242,7 @@ function FeedRow({
             </span>
           )}
           {event.contact_log_id && (
-            <span className="text-caption font-medium px-1.5 py-0.5 rounded bg-surface-sunken text-text-secondary">
+            <span className="text-label font-medium px-1.5 py-0.5 rounded bg-surface-sunken text-text-secondary uppercase tracking-wide">
               CRM
             </span>
           )}

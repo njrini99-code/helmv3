@@ -578,7 +578,7 @@ function FeedRow({ item, isNew, tz }: { item: WhatsNewItem; isNew: boolean; tz?:
         </span>
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-baseline gap-2">
-            <span className="font-fw-sans text-caption font-medium text-text-tertiary">
+            <span className="font-fw-sans text-label font-medium uppercase tracking-wide text-text-tertiary">
               {descriptor.label}
             </span>
             <span className="font-fw-sans text-caption text-text-tertiary" aria-hidden>

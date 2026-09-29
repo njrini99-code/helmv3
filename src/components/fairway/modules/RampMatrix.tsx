@@ -47,7 +47,7 @@ export function RampMatrix({ cols, rows, legend }: RampMatrixProps) {
               <th
                 key={col}
                 scope="col"
-                className="px-1.5 py-1 font-fw-sans text-caption text-text-tertiary"
+                className="px-1.5 py-1 font-fw-sans text-label font-semibold uppercase tracking-wide text-text-tertiary"
               >
                 {col}
               </th>

@@ -86,7 +86,7 @@ export const Numeric = React.forwardRef<HTMLDivElement, NumericProps>(function N
         {delta ? <DeltaChip {...delta} /> : null}
       </div>
       {label ? (
-        <span className="font-fw-sans text-caption text-text-tertiary">{label}</span>
+        <span className="font-fw-sans text-label font-semibold tracking-[0.06em] uppercase text-text-tertiary">{label}</span>
       ) : null}
     </div>
   );

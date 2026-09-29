@@ -231,7 +231,7 @@ export function CalendarView({
         {/* Day Headers */}
         <div className="grid grid-cols-7 border-b border-border-subtle">
           {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((d) => (
-            <div key={d} className="py-2 text-center text-caption font-semibold text-text-tertiary">
+            <div key={d} className="py-2 text-center text-label font-semibold text-text-tertiary uppercase tracking-wider">
               {d}
             </div>
           ))}
@@ -365,7 +365,7 @@ export function CalendarView({
                 isToday(date) && 'bg-accent-50/30'
               )}
             >
-              <div className="text-caption font-semibold text-text-tertiary">{format(date, 'EEE')}</div>
+              <div className="text-label font-semibold text-text-tertiary uppercase tracking-wider">{format(date, 'EEE')}</div>
               <div className={cn(
                 'text-base font-bold mt-0.5 w-8 h-8 mx-auto flex items-center justify-center rounded-full',
                 isToday(date) ? 'bg-accent-650 text-text-on-accent' : 'text-text-primary'

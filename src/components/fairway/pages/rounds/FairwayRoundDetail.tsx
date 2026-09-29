@@ -1088,7 +1088,7 @@ function ScorecardNine({
       {/* Phone — per-hole row strips (Rule 8: never a squeezed table) */}
       <div className="flex flex-col gap-2 px-3 py-3 md:hidden">
         <div className="flex items-center justify-between px-1">
-          <span className="font-fw-display text-caption font-medium text-text-tertiary">
+          <span className="font-fw-display text-label font-medium uppercase tracking-[0.14em] text-text-tertiary">
             {label} nine
           </span>
           {parTotal ? (
@@ -1239,7 +1239,7 @@ function ScorecardHoleRow({ hole }: { hole: RoundHoleRow }) {
         {hole.hole_number}
       </span>
       <div className="w-8 shrink-0 leading-tight">
-        <p className="font-fw-display text-caption font-medium text-text-tertiary">
+        <p className="font-fw-display text-label font-medium uppercase tracking-[0.06em] text-text-tertiary">
           Par
         </p>
         <p className="font-fw-mono text-body-sm font-medium tabular-nums text-text-secondary">
@@ -1262,7 +1262,7 @@ function ScorecardHoleRow({ hole }: { hole: RoundHoleRow }) {
       {/* Label-over-value, mirroring the Par block — one micro-pattern
           across the row's small data blocks. */}
       <div className="w-10 shrink-0 text-right leading-tight">
-        <p className="font-fw-display text-caption font-medium text-text-tertiary">
+        <p className="font-fw-display text-label font-medium uppercase tracking-[0.06em] text-text-tertiary">
           Putts
         </p>
         <p className="font-fw-mono text-body-sm tabular-nums text-text-secondary">
@@ -1271,13 +1271,13 @@ function ScorecardHoleRow({ hole }: { hole: RoundHoleRow }) {
       </div>
       <div className="flex shrink-0 flex-col items-end gap-1 pl-1">
         <span className="inline-flex items-center gap-1.5">
-          <span className="font-fw-display text-caption font-medium text-text-tertiary">
+          <span className="font-fw-display text-label font-medium uppercase tracking-[0.06em] text-text-tertiary">
             FW
           </span>
           <HitMark value={hole.fairway_hit} />
         </span>
         <span className="inline-flex items-center gap-1.5">
-          <span className="font-fw-display text-caption font-medium text-text-tertiary">
+          <span className="font-fw-display text-label font-medium uppercase tracking-[0.06em] text-text-tertiary">
             GIR
           </span>
           <HitMark value={hole.gir} />
@@ -1291,7 +1291,7 @@ function Th({ children, className = '' }: { children?: React.ReactNode; classNam
   return (
     <th
       scope="col"
-      className={`px-1.5 py-1.5 font-fw-display text-caption font-medium text-text-tertiary ${className}`}
+      className={`px-1.5 py-1.5 font-fw-display text-label font-medium uppercase tracking-[0.1em] text-text-tertiary ${className}`}
     >
       {children}
     </th>

@@ -1079,7 +1079,7 @@ export function BulkEmailModal({ coaches, onClose, onSuccess, prefilledRecipient
                      No greeting + signature wrapper — the template IS the email. */
                   <div className="bg-surface-sunken rounded-fw-md border border-border-subtle overflow-hidden p-3">
                     <div className="flex items-center justify-between px-1 pb-2">
-                      <span className="text-caption font-semibold text-text-tertiary">
+                      <span className="text-label uppercase tracking-wider font-semibold text-text-tertiary">
                         HTML Mockup
                       </span>
                       <span className="text-caption text-text-tertiary">

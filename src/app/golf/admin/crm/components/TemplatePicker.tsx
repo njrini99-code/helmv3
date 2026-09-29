@@ -393,11 +393,11 @@ export function TemplatePicker({ onSelect }: TemplatePickerProps) {
                     <span className="font-semibold text-sm text-text-primary truncate">
                       {template.name}
                     </span>
-                    <span className={cn('shrink-0 px-2 py-0.5 rounded-full text-caption font-bold', colors?.bg, colors?.text)}>
+                    <span className={cn('shrink-0 px-2 py-0.5 rounded-full text-label font-bold uppercase tracking-wider', colors?.bg, colors?.text)}>
                       {CATEGORY_LABELS[template.category] ?? template.category}
                     </span>
                     {template.format === 'html' && (
-                      <span className="shrink-0 px-2 py-0.5 rounded-full text-caption font-bold bg-nav-bg text-nav-text">
+                      <span className="shrink-0 px-2 py-0.5 rounded-full text-label font-bold uppercase tracking-wider bg-nav-bg text-nav-text">
                         HTML
                       </span>
                     )}
@@ -440,7 +440,7 @@ export function TemplatePicker({ onSelect }: TemplatePickerProps) {
           substitutes, sourced from its persisted merge_tags (not a fixed list). */}
       {selectedTemplate && selectedMergeTags.length > 0 && (
         <div className="rounded-fw-md border border-accent-200/60 bg-accent-50/40 p-3">
-          <p className="text-caption text-text-tertiary mb-2">
+          <p className="text-label font-semibold uppercase tracking-wider text-text-tertiary mb-2">
             Merge tags in “{selectedTemplate.name}”
           </p>
           <div className="flex flex-wrap gap-1.5">

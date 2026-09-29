@@ -66,7 +66,7 @@ export function SequenceCard({
           </h3>
           <span
             className={cn(
-              'px-1.5 py-0.5 rounded text-caption font-bold',
+              'px-1.5 py-0.5 rounded text-label font-bold uppercase tracking-wider',
               sequence.trigger_kind === 'manual'
                 ? 'bg-surface-sunken text-text-secondary'
                 : 'bg-surface-sunken text-text-secondary',
@@ -88,13 +88,13 @@ export function SequenceCard({
           <span className="font-semibold text-text-primary tabular-nums">
             {stepCount ?? 0}
           </span>
-          <span className="text-caption">steps</span>
+          <span className="text-label font-semibold uppercase tracking-wider">steps</span>
         </div>
         <div className="flex flex-col items-end">
           <span className="font-semibold text-text-primary tabular-nums">
             {activeEnrollmentCount ?? 0}
           </span>
-          <span className="text-caption">active</span>
+          <span className="text-label font-semibold uppercase tracking-wider">active</span>
         </div>
       </div>
 

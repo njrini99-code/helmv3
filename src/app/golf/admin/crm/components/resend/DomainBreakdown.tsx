@@ -175,7 +175,7 @@ export function DomainBreakdown({ window }: DomainBreakdownProps) {
                         {row.domain}
                       </span>
                       {bounceAlert && (
-                        <span className="text-caption font-semibold px-1.5 py-0.5 rounded bg-fw-danger-bg text-fw-danger-ink">
+                        <span className="text-label font-semibold px-1.5 py-0.5 rounded bg-fw-danger-bg text-fw-danger-ink uppercase tracking-wide">
                           High bounce
                         </span>
                       )}

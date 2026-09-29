@@ -214,7 +214,7 @@ function WeekStrip({ date, timeZone, onSelect }: { date: string; timeZone: strin
             )}
           >
             <span className="flex flex-col items-center gap-0.5">
-              <span className={cn('font-fw-sans text-caption', isSelected ? 'text-text-on-accent/85' : isToday ? 'text-accent-700' : 'text-text-tertiary')}>
+              <span className={cn('font-fw-sans text-label font-semibold uppercase tracking-[0.1em]', isSelected ? 'text-text-on-accent/85' : isToday ? 'text-accent-700' : 'text-text-tertiary')}>
                 {format(day, 'EEE')}
               </span>
               <span className={cn('font-fw-mono text-body-lg font-semibold leading-none tabular-nums', isSelected ? 'text-text-on-accent' : 'text-text-primary')}>

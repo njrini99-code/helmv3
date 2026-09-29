@@ -154,7 +154,7 @@ export function KPIGrid({ stats, loading }: KPIGridProps) {
                 <p className="text-xs text-text-tertiary truncate">{card.secondary}</p>
               )}
               {card.live && (
-                <span className="inline-flex items-center gap-1 text-caption font-semibold text-accent-700">
+                <span className="inline-flex items-center gap-1 text-label font-semibold text-accent-700 uppercase tracking-wider">
                   <span className="relative flex h-1.5 w-1.5">
                     <span className="absolute inline-flex h-full w-full rounded-full bg-accent-500 opacity-75 animate-ping" />
                     <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-accent-500" />

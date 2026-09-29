@@ -197,7 +197,7 @@ function PreviewPane({
         </span>
       </div>
       <div className="px-4 py-3 border-b border-border-subtle">
-        <p className="text-caption text-text-tertiary mb-0.5">Subject</p>
+        <p className="text-label font-semibold uppercase tracking-wider text-text-tertiary mb-0.5">Subject</p>
         <p className="text-sm font-semibold text-text-primary break-words">
           {mergedSubject || <span className="text-text-tertiary italic">No subject</span>}
         </p>
@@ -576,7 +576,7 @@ function TemplateCard({
         <span className="font-semibold text-sm text-text-primary truncate flex-1">{template.name}</span>
         {template.is_default && (
           <span
-            className="shrink-0 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-caption font-bold bg-accent-50 text-accent-700"
+            className="shrink-0 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-label font-bold uppercase tracking-wider bg-accent-50 text-accent-700"
             title="Default for this category"
           >
             <IconStarFilled size={10} className="text-accent-ink" aria-hidden />
@@ -586,10 +586,10 @@ function TemplateCard({
       </div>
 
       <div className="flex flex-wrap items-center gap-1.5 mb-2">
-        <span className={cn('px-2 py-0.5 rounded-full text-caption font-bold', colors.bg, colors.text)}>
+        <span className={cn('px-2 py-0.5 rounded-full text-label font-bold uppercase tracking-wider', colors.bg, colors.text)}>
           {CATEGORY_LABELS[template.category]}
         </span>
-        <span className={cn('px-2 py-0.5 rounded-full text-caption font-bold', fmt.badge)}>
+        <span className={cn('px-2 py-0.5 rounded-full text-label font-bold uppercase tracking-wider', fmt.badge)}>
           {fmt.label}
         </span>
         {template.usage_count > 0 ? (
@@ -866,7 +866,7 @@ export function TemplateManager() {
             return (
               <section key={category} className="space-y-2.5">
                 <div className="flex items-center gap-2">
-                  <span className={cn('px-2 py-0.5 rounded-full text-caption font-bold', colors.bg, colors.text)}>
+                  <span className={cn('px-2 py-0.5 rounded-full text-label font-bold uppercase tracking-wider', colors.bg, colors.text)}>
                     {CATEGORY_LABELS[category]}
                   </span>
                   <span className="text-caption text-text-tertiary">

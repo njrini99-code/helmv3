@@ -262,7 +262,7 @@ export function EmailsTable({
                       <td className="px-4 py-3">
                         <span
                           className={cn(
-                            'text-caption font-medium px-1.5 py-0.5 rounded',
+                            'text-label font-medium px-1.5 py-0.5 rounded uppercase tracking-wide',
                             row.source === 'crm'
                               ? 'bg-surface-sunken text-text-secondary'
                               : row.source === 'transactional'

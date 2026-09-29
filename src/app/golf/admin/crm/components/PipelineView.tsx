@@ -653,7 +653,7 @@ function KanbanCard({
         <div className="flex items-center gap-1.5">
           {/* Division badge */}
           <span className={cn(
-            'text-caption font-bold px-1.5 py-0.5 rounded-full',
+            'text-label font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full',
             'bg-surface-tint text-text-secondary ring-1 ring-border-subtle'
           )}>
             {coach.division}

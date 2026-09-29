@@ -267,7 +267,7 @@ export function EngagementDetailDrawer({
 
                 <dl className="mt-4 grid grid-cols-3 gap-3 text-center">
                   <div className="rounded-fw-sm bg-surface-sunken/70 px-2 py-2">
-                    <dt className="text-caption text-text-tertiary">
+                    <dt className="text-label font-semibold uppercase tracking-wider text-text-tertiary">
                       Opens
                     </dt>
                     <dd className="text-lg font-semibold text-text-primary tabular-nums">
@@ -276,7 +276,7 @@ export function EngagementDetailDrawer({
                     <dd className="text-caption text-text-tertiary">last 90d</dd>
                   </div>
                   <div className="rounded-fw-sm bg-surface-sunken/70 px-2 py-2">
-                    <dt className="text-caption text-text-tertiary">
+                    <dt className="text-label font-semibold uppercase tracking-wider text-text-tertiary">
                       Clicks
                     </dt>
                     <dd className="text-lg font-semibold text-text-primary tabular-nums">
@@ -285,7 +285,7 @@ export function EngagementDetailDrawer({
                     <dd className="text-caption text-text-tertiary">last 90d</dd>
                   </div>
                   <div className="rounded-fw-sm bg-surface-sunken/70 px-2 py-2">
-                    <dt className="text-caption text-text-tertiary">
+                    <dt className="text-label font-semibold uppercase tracking-wider text-text-tertiary">
                       Last event
                     </dt>
                     <dd className="text-sm font-semibold text-text-primary">

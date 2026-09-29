@@ -459,7 +459,7 @@ export function EvidencePanel({
       ) : null}
       {/* W15: v3 StandingBar above the legacy key/value grid when present. */}
       {v3Standing && <div className="mb-3">{v3Standing}</div>}
-      <div className="mb-2 text-caption font-medium text-text-tertiary">
+      <div className="mb-2 text-label font-medium uppercase tracking-wide text-text-tertiary">
         {evidence.metric_label}
       </div>
       <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-sm text-warm-800">
