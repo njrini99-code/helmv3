@@ -1990,7 +1990,7 @@ class CoachHelmIntelligence {
       .sort((a, b) => b.strength - a.strength)[0];
 
     if (topCausal) {
-      return `Focus on improving ${topCausal.cause} to enhance ${topCausal.effect}.`;
+      return `${topCausal.cause} tends to move with ${topCausal.effect}; worth checking first.`;
     }
 
     return 'Continue current practice routine.';
@@ -2314,7 +2314,7 @@ class CoachHelmIntelligence {
         alternatives: [],
         sensitivities: [
           {
-            assumption: 'Correlation reflects causal relationship',
+            assumption: 'The correlation may not be causal',
             ifChanged: 'If confounding variables exist',
             impactOnConclusion: 'Relationship strength may vary',
           },

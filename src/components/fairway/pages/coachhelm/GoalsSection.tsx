@@ -174,10 +174,8 @@ function SuggestionRow({ view }: { view: GoalSuggestionView }) {
         </p>
         <p className="font-fw-mono text-caption tabular-nums text-text-tertiary">
           Target {targetText} · {suggestion.suggested_window_days}-day window
+          {contextText ? <span className="block">{contextText}</span> : null}
         </p>
-        {contextText ? (
-          <p className="font-fw-mono text-caption tabular-nums text-text-tertiary">{contextText}</p>
-        ) : null}
       </div>
       {/* Touch target: md (44px min-height) unconditionally — not sm, which is
           only 44px behind a `(pointer: coarse)` media query (mustFix #194). */}

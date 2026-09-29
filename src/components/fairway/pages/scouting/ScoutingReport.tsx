@@ -271,7 +271,7 @@ export function ScoutingReport({ player, rounds, focusAreas, themes, evidenceIns
             : null;
       const target =
         Number.isFinite(e.your_value) && pga !== null && Number.isFinite(pga)
-          ? computeTargetValue({ playerValue: e.your_value, pgaValue: pga })
+          ? computeTargetValue({ playerValue: e.your_value, anchorValue: pga, metricId: e.metric })
           : null;
       setAssigningId(claim.id);
       startAssign(async () => {
