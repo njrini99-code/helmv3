@@ -135,9 +135,15 @@ export interface PuttShot {
 
 /** The engine's live counterfactual for one theme, when it has one (read
  *  client-side from the category insights the page already loads). */
+/** Team strokes per round available in one theme (`strokes-available.ts`):
+ *  the mean over `playersCounted` current players of each player's largest
+ *  live counterfactual. */
 export interface IntelStrokesAvailable {
   perRound: number;
-  message: string;
+  /** Players carrying a live counterfactual in the theme. */
+  playersWithLeak: number;
+  /** Players with a countable round in the recent window (the divisor). */
+  playersCounted: number;
 }
 
 /**

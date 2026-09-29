@@ -4,7 +4,8 @@
  * CoachHelm Home: Team intelligence.
  *
  * Filters (round type · window · comparison) → four theme cards (team SG per
- * round, its trend, and the engine's strokes available) → for the selected
+ * round, its trend, the last 30 days beside the season, rounds without SG,
+ * and the team's strokes available) → for the selected
  * theme, the cause visual and the player spotlight on the left, and who is
  * contributing on the right. Selecting a player filters the cause visual and
  * the spotlight to them.
@@ -106,6 +107,8 @@ function ThemeCard({
   series,
   change,
   rounds,
+  missing,
+  recent,
   strokes,
   onSelect,
 }: {
@@ -115,9 +118,14 @@ function ThemeCard({
   series: number[];
   change: number | null;
   rounds: number;
+  /** Rounds in the slice with no stored SG for this theme. */
+  missing: number;
+  /** The last 30 days, shown beside the season; null when the slice is already 30 days. */
+  recent: { sg: number | null; rounds: number } | null;
   strokes: IntelStrokesAvailable | undefined;
   onSelect: () => void;
 }) {
+  const quiet = on ? 'text-nav-text-dim' : 'text-text-tertiary';
   const dir = change == null ? null : change > 0.15 ? 'up' : change < -0.15 ? 'down' : 'flat';
   const line =
     dir === 'up'
@@ -185,17 +193,28 @@ function ThemeCard({
           />
         ) : null}
       </span>
-      <span className={cn('font-fw-sans text-caption', on ? 'text-nav-text-dim' : 'text-text-tertiary')}>
-        {rounds === 0 ? 'No rounds in this slice' : `SG / round · ${rounds} round${rounds === 1 ? '' : 's'}`}
+      <span className={cn('font-fw-sans text-caption', quiet)}>
+        {rounds === 0 ? 'No rounds with SG in this slice' : `SG / round · ${rounds} round${rounds === 1 ? '' : 's'}`}
+        {missing > 0 ? ` · ${missing} without SG` : ''}
       </span>
+      {recent ? (
+        <span className={cn('font-fw-sans text-caption tabular-nums', quiet)}>
+          {recent.rounds === 0
+            ? 'Last 30 days: no rounds with SG'
+            : `Last 30 days ${formatSg(recent.sg)} · ${recent.rounds} round${recent.rounds === 1 ? '' : 's'}`}
+        </span>
+      ) : null}
       {strokes ? (
         <span
           className={cn(
-            'rounded-fw-sm px-2 py-1 font-fw-sans text-caption font-medium',
+            'flex flex-col gap-0.5 rounded-fw-sm px-2 py-1 font-fw-sans text-caption',
             on ? 'bg-nav-surface text-nav-text' : 'bg-accent-wash text-accent-ink',
           )}
         >
-          Up to {formatStrokesPerRound(strokes.perRound)} strokes / round available
+          <span className="font-medium">~{formatStrokesPerRound(strokes.perRound)} strokes / round per player available</span>
+          <span className={on ? 'text-nav-text-dim' : 'text-text-secondary'}>
+            {strokes.playersWithLeak} of {strokes.playersCounted} current players carry a measured leak
+          </span>
         </span>
       ) : null}
     </button>
@@ -218,6 +237,15 @@ function Body({ data, strokes, playerHref }: { data: TeamIntelligenceData; strok
     for (const t of INTEL_THEMES) out[t] = themeSummary(rounds, t);
     return out;
   }, [rounds]);
+
+  // Recent form beside the season: the season mean can hide the last month.
+  const recentSummaries = useMemo(() => {
+    if (win === '30d') return null;
+    const recentRounds = filterRounds(data.rounds, { window: '30d', type, today: data.today });
+    const out = {} as Record<IntelTheme, ReturnType<typeof themeSummary>>;
+    for (const t of INTEL_THEMES) out[t] = themeSummary(recentRounds, t);
+    return out;
+  }, [data, win, type]);
 
   // Smart default: the theme losing the most strokes per round.
   const theme: IntelTheme =
@@ -319,6 +347,8 @@ function Body({ data, strokes, playerHref }: { data: TeamIntelligenceData; strok
             series={summaries[t].series}
             change={summaries[t].change}
             rounds={summaries[t].rounds}
+            missing={summaries[t].missing}
+            recent={recentSummaries ? { sg: recentSummaries[t].sg, rounds: recentSummaries[t].rounds } : null}
             strokes={strokes[t]}
             onSelect={() => setPicked(t)}
           />
@@ -326,6 +356,8 @@ function Body({ data, strokes, playerHref }: { data: TeamIntelligenceData; strok
       </div>
       <p className="-mt-2 font-fw-sans text-caption text-text-tertiary">
         Team strokes gained per round vs {data.baselineLabel}. Trend runs oldest to newest across the slice.
+        Strokes available is the average over current players (a round in the last 60 days) of each
+        player&apos;s largest measured leak in the theme.
       </p>
 
       <div className="grid grid-cols-1 items-start gap-4 [@container(min-width:1000px)]:grid-cols-[minmax(0,1.08fr)_minmax(0,0.92fr)]">

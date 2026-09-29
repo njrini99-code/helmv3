@@ -65,7 +65,12 @@ export interface ThemeSummary {
   theme: IntelTheme;
   /** Team SG per round (mean over every round in the slice). */
   sg: number | null;
+  /** Rounds in the slice that carry a stored SG value for the theme. */
   rounds: number;
+  /** Rounds in the slice with NO stored SG for the theme: left out of `sg`
+   *  and counted here so the card can say so (2026-09 audit: 14 rounds on one
+   *  team dropped out silently). */
+  missing: number;
   /** Chronological bucket means, oldest first; at most `buckets` points. */
   series: number[];
   /** Last point minus first point; null with fewer than two points. */
@@ -93,6 +98,7 @@ export function themeSummary(rounds: readonly IntelRound[], theme: IntelTheme, b
     theme,
     sg: mean(values),
     rounds: values.length,
+    missing: rounds.length - values.length,
     series,
     change: series.length >= 2 ? series[series.length - 1]! - series[0]! : null,
   };

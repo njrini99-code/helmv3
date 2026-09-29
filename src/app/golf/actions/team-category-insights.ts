@@ -16,7 +16,13 @@ import {
 import {
   samplePerPlayerRounds,
   computeTeamHealth,
+  countableRatioPct,
 } from './team-category-insights-helpers';
+import { applyInsightVisibility } from '@/lib/coachhelm/v3/insight-visibility';
+import { BRIEF_CATEGORY_TO_ENGINE_CATEGORY } from '@/lib/coachhelm/v3/brief/assemble';
+import { RECENT_PLAYER_WINDOW_DAYS, recentWindowStart, recentlyActivePlayerIds } from '@/lib/coachhelm/recent-players';
+import { teamStrokesAvailable, type EngineLeakRow } from '@/lib/golf/team-intelligence/strokes-available';
+import type { IntelStrokesAvailable } from '@/lib/golf/team-intelligence/types';
 import { describeError } from '@/lib/utils/describe-error';
 import { withCanonicalRoundTotal } from '@/lib/golf/round-total';
 import { isCountableRound, type CountableRoundInput } from '@/lib/golf/round-countable';
@@ -65,6 +71,15 @@ export interface TeamCategory {
   players: PlayerCategoryStat[];
   primaryMetric: string;
   attentionCount: number;
+  /** Players whose value entered `teamAvg` and the 1-SD flag: roster members
+   *  with a countable round in the last `RECENT_PLAYER_WINDOW_DAYS` days. */
+  playersCounted: number;
+  /** Active roster members left out for having no round in that window. */
+  playersWithoutRecentRound: number;
+  /** Team strokes per round available (roster mean of each current player's
+   *  largest live counterfactual), or null when no current player carries
+   *  one. See `strokes-available.ts`. */
+  strokesAvailable: IntelStrokesAvailable | null;
 }
 
 export interface TeamCategoryInsightsResult {
@@ -810,6 +825,9 @@ async function getTeamCategoryInsightsImpl(
             players: [],
             primaryMetric: c.primaryLabel,
             attentionCount: 0,
+            playersCounted: 0,
+            playersWithoutRecentRound: 0,
+            strokesAvailable: null,
           })),
           teamHealth: 0,
           // No active players → no data analyzed. Empty (consumers guard on
@@ -907,9 +925,14 @@ async function getTeamCategoryInsightsImpl(
       if (arr) arr.push(r);
       else countableByPlayer.set(pid, [r]);
     }
+    // Fairway % and GIR % come from the same countable rounds (summed hits
+    // over summed opportunities). Scramble % stays on the stats cache: rounds
+    // carry no per-round up-and-down counts.
     const countableOverride = (pid: string, metric: string): number | null | undefined => {
       if (roundsResult.error) return undefined; // fall back to the cache
       const rows = countableByPlayer.get(pid) ?? [];
+      const ratio = countableRatioPct(rows, metric);
+      if (ratio !== undefined) return ratio;
       if (metric === 'putts_per_round') {
         return aggregateCountableRounds(rows as unknown as CountableRoundRow[]).puttsPer18;
       }
@@ -931,6 +954,46 @@ async function getTeamCategoryInsightsImpl(
       roundsByPlayer.get(pid)!.push(r);
     }
 
+    // Team mean, SD and the attention flag use CURRENT players only: a
+    // countable round in the last RECENT_PLAYER_WINDOW_DAYS days. The 2026-09
+    // audit found 29 of 86 active members with no round in 60 days moving
+    // every team mean (on one team only 3 of 8 were current). If the rounds
+    // read failed nobody is filtered (cache fallback, as above).
+    const recentSince = recentWindowStart(new Date().toISOString().slice(0, 10), RECENT_PLAYER_WINDOW_DAYS);
+    const currentPlayerIds = roundsResult.error
+      ? new Set(playerIds)
+      : recentlyActivePlayerIds(
+          countableRounds.map((r) => ({ ...r, player_id: r.player_id as string, round_date: (r.round_date as string | null) ?? null })),
+          recentSince,
+        );
+    const playersWithoutRecentRound = playerIds.filter((pid) => !currentPlayerIds.has(pid)).length;
+
+    // Visible engine rows for THIS roster, read directly (not the coach-wide
+    // ranked feed, which spans every team the coach staffs and is capped at
+    // 20): the input to each category's team strokes-available figure.
+    const engineCategories = [...new Set(Object.values(BRIEF_CATEGORY_TO_ENGINE_CATEGORY))];
+    const engineRowsResult = await fetchAllRowsResult<EngineLeakRow>((from, to) =>
+      applyInsightVisibility(
+        supabase
+          .from('golf_coach_insights')
+          .select('id, player_id, category, evidence')
+          .in('player_id', playerIds)
+          .in('category', engineCategories)
+          .eq('status', 'active')
+          .eq('dismissed', false),
+      )
+        .order('id', { ascending: true })
+        .range(from, to),
+    );
+    if (engineRowsResult.error) {
+      await logServerError(
+        `getTeamCategoryInsights engine-row read failed; no strokes-available figures: ${describeError(engineRowsResult.error)}`,
+        { action: 'getTeamCategoryInsights', featureArea: 'insights' },
+        'warning',
+      );
+    }
+    const engineRows = engineRowsResult.error ? [] : (engineRowsResult.data ?? []);
+
     // 5. Build each category
     const categories: TeamCategory[] = [];
 
@@ -940,6 +1003,7 @@ async function getTeamCategoryInsightsImpl(
       const values: number[] = [];
 
       for (const pid of playerIds) {
+        if (!currentPlayerIds.has(pid)) continue;
         const stats = statsByPlayer.get(pid);
         const info = playerInfoMap.get(pid);
         const override = countableOverride(pid, catDef.primaryMetric);
@@ -1049,6 +1113,13 @@ async function getTeamCategoryInsightsImpl(
         players: playerStats,
         primaryMetric: catDef.primaryLabel,
         attentionCount,
+        playersCounted: values.length,
+        playersWithoutRecentRound,
+        strokesAvailable: teamStrokesAvailable(
+          engineRows,
+          BRIEF_CATEGORY_TO_ENGINE_CATEGORY[catDef.id] ?? catDef.id,
+          currentPlayerIds,
+        ),
       });
     }
 
@@ -1078,8 +1149,10 @@ async function getTeamCategoryInsightsImpl(
         for (const [pid, info] of playerInfoMap) {
           playerNamesForVoice[pid] = info.name;
         }
+        // The sweep spans every team this coach staffs; keep this roster's rows.
+        const rosterIds = new Set(playerIds);
         const engineByCategory = assembleBriefEngineInsights(
-          engineResult.data,
+          engineResult.data.filter((row) => rosterIds.has(row.player_id)),
           CATEGORIES.map((c) => ({ id: c.id, label: c.label })),
           playerNamesForVoice,
         );

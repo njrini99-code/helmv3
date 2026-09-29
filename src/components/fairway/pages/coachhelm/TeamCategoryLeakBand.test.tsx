@@ -47,6 +47,9 @@ function makeCategory(overrides: Partial<TeamCategory> = {}): TeamCategory {
     teamAvg: 31.2,
     teamAvgLabel: '31.2 PPR',
     trend: 'declining',
+    playersCounted: 1,
+    playersWithoutRecentRound: 0,
+    strokesAvailable: null,
     insights: [],
     players: [
       {
