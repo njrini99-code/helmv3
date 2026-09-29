@@ -99,6 +99,124 @@ export function ciMultiplier(n: number): number {
 }
 
 /**
+ * The point-and-interval core of the score forecast. Pure.
+ *
+ * `scores` are 18-hole-basis score_to_par values, newest first, already
+ * restricted to countable rounds. The centre is the MEDIAN of the last
+ * {@link FORECAST_WINDOW} rounds, not the mean: a player's rounds are
+ * right-skewed (one blow-up drags a mean up for twenty rounds). Graded against
+ * the next countable round (prod backtest 2026-09-28, 367 predictions), the
+ * median-of-20 had MAE 3.16 / bias +0.14 against 3.15 / +0.54 for the mean and
+ * 3.32 for the last-5 mean. The interval half-width is the SAMPLE standard
+ * deviation times {@link ciMultiplier}; centred on the median it covered 77.9%
+ * of those outcomes against a nominal 80%.
+ */
+export const FORECAST_WINDOW = 20;
+export const FORECAST_MIN_ROUNDS = 5;
+
+export interface ScoreForecast {
+  center: number;
+  low: number;
+  high: number;
+  sd: number;
+  n: number;
+}
+
+export function forecastScoreToPar(scores: readonly number[]): ScoreForecast | null {
+  const window = scores.filter((s) => Number.isFinite(s)).slice(0, FORECAST_WINDOW);
+  const n = window.length;
+  if (n < FORECAST_MIN_ROUNDS) return null;
+  const sorted = [...window].sort((a, b) => a - b);
+  const mid = Math.floor(n / 2);
+  const center = n % 2 === 1 ? sorted[mid]! : (sorted[mid - 1]! + sorted[mid]!) / 2;
+  const mean = window.reduce((a, b) => a + b, 0) / n;
+  const sd = Math.sqrt(window.reduce((a, s) => a + (s - mean) ** 2, 0) / (n - 1));
+  const margin = sd * ciMultiplier(n);
+  return { center, low: center - margin, high: center + margin, sd, n };
+}
+
+/** The naive comparator every forecast is reported against: mean of the last 5. */
+export function naiveLast5(scores: readonly number[]): number | null {
+  const last = scores.filter((s) => Number.isFinite(s)).slice(0, 5);
+  if (last.length < FORECAST_MIN_ROUNDS) return null;
+  return last.reduce((a, b) => a + b, 0) / last.length;
+}
+
+/** Nominal two-sided coverage of the stored interval. */
+export const INTERVAL_NOMINAL_COVERAGE = 0.8;
+/** Measured coverage must sit within this many points of nominal to show a band. */
+export const INTERVAL_CALIBRATION_TOLERANCE = 0.05;
+/** Graded predictions needed before the measured coverage is trusted. */
+export const INTERVAL_CALIBRATION_MIN_N = 30;
+
+/**
+ * Whether the band is calibrated enough to show. The interval is only worth
+ * drawing when graded outcomes land inside it about as often as it claims; an
+ * unmeasured or off-nominal band is hidden (the point estimate still shows).
+ */
+export function isIntervalCalibrated(
+  coverage: { within: number; total: number } | null,
+  nominal = INTERVAL_NOMINAL_COVERAGE,
+): boolean {
+  if (!coverage || coverage.total < INTERVAL_CALIBRATION_MIN_N) return false;
+  const rate = coverage.within / coverage.total;
+  return Math.abs(rate - nominal) <= INTERVAL_CALIBRATION_TOLERANCE + 1e-9;
+}
+
+/**
+ * Round-level pattern fields the predictor can evaluate for the upcoming
+ * round. Every other field (lie, distance_range, ...) describes a SHOT, so it
+ * can never hold "for the next round" and the pattern does not apply.
+ */
+const ROUND_LEVEL_PATTERN_FIELDS = new Set(['days_since_last', 'round_type']);
+
+/**
+ * Strict pattern applicability: every condition must be a round-level field
+ * whose value is known for the upcoming round, and must hold. Pure.
+ *
+ * Root cause of the forecast's positive bias (prod, 2026-09-28): the old check
+ * skipped any condition it could not evaluate, so shot-level patterns (lie /
+ * distance_range, 971 active conditions) and `round_type` patterns (no event
+ * type is ever passed) applied to EVERY prediction. The summed "Active
+ * Patterns" term averaged +0.94 strokes where present; without it MAE fell
+ * from 3.24 to 3.11 on 378 graded predictions.
+ */
+export function isPatternApplicableTo(
+  conditions: ReadonlyArray<{ field: string; operator: string; value: unknown }>,
+  known: { daysSinceLast?: number | null; roundType?: string | null },
+): boolean {
+  if (conditions.length === 0) return false;
+  for (const c of conditions) {
+    if (!ROUND_LEVEL_PATTERN_FIELDS.has(c.field)) return false;
+    const actual = c.field === 'days_since_last' ? known.daysSinceLast : known.roundType;
+    if (actual == null) return false;
+    if (!evaluatePatternCondition(c, actual)) return false;
+  }
+  return true;
+}
+
+function evaluatePatternCondition(
+  condition: { operator: string; value: unknown },
+  actualValue: unknown,
+): boolean {
+  switch (condition.operator) {
+    case 'eq':
+      return actualValue === condition.value;
+    case 'gte':
+      return (actualValue as number) >= (condition.value as number);
+    case 'lte':
+      return (actualValue as number) <= (condition.value as number);
+    case 'gt':
+      return (actualValue as number) > (condition.value as number);
+    case 'lt':
+      return (actualValue as number) < (condition.value as number);
+    default:
+      // An operator we cannot evaluate is not evidence the pattern holds.
+      return false;
+  }
+}
+
+/**
  * A signed stroke delta for driver text (NUM-07): always carries its sign
  * ("+0.4", "−1.2", true minus), one decimal. Positive = more strokes.
  */
@@ -164,6 +282,39 @@ export function describeFactor(
 }
 
 /**
+ * Graded-inside-interval over graded, summed across the calibration cron's
+ * buckets for this metric. Null when the read fails or nothing is graded.
+ */
+async function loadIntervalCoverage(
+  supabase: ReturnType<typeof createAdminClient>,
+  metric: string,
+): Promise<{ within: number; total: number } | null> {
+  try {
+    const { data, error } = await supabase
+      .from('golf_confidence_calibration')
+      .select('predictions_count, correct_count')
+      .eq('prediction_type', metric);
+    if (error || !data) return null;
+    let within = 0;
+    let total = 0;
+    for (const row of data) {
+      within += row.correct_count ?? 0;
+      total += row.predictions_count ?? 0;
+    }
+    return total > 0 ? { within, total } : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Stated confidence falls as the player's round-to-round spread widens. */
+function confidenceForSpread(sd: number): number {
+  if (sd > 5) return 0.6;
+  if (sd > 3) return 0.7;
+  return 0.8;
+}
+
+/**
  * Performance Predictor class for forecasting round scores
  */
 export class PerformancePredictor {
@@ -171,6 +322,7 @@ export class PerformancePredictor {
   private features: ExtractedFeatures | null = null;
   private patterns: MinedPattern[] = [];
   private baselineScore: number = 0;
+  private naiveBaseline: number | null = null;
 
   constructor(playerId: string) {
     this.playerId = playerId;
@@ -232,13 +384,15 @@ export class PerformancePredictor {
       if (isStale(daysSince)) return null;
     }
 
-    this.baselineScore =
-      rounds.reduce((a, r) => a + (r.score_to_par ?? 0), 0) / rounds.length;
-
-    // Compute the CI FIRST so the model can clamp the pattern term to it and
-    // the final estimate can be bracketed inside it.
-    const roundsForInterval = rounds.map(r => ({ score_to_par: r.score_to_par ?? 0 }));
-    const { low, high, confidence } = this.calculateConfidenceInterval(roundsForInterval);
+    const scores18 = rounds
+      .map((r) => r.score_to_par)
+      .filter((v): v is number => v != null && Number.isFinite(v));
+    const forecast = forecastScoreToPar(scores18);
+    if (!forecast) return null;
+    this.baselineScore = forecast.center;
+    this.naiveBaseline = naiveLast5(scores18);
+    const { low, high } = forecast;
+    const confidence = confidenceForSpread(forecast.sd);
     const ciHalfWidth = (high - low) / 2;
 
     // Get active patterns
@@ -374,81 +528,17 @@ export class PerformancePredictor {
   }
 
   /**
-   * Checks if a pattern is applicable to current context
+   * Checks if a pattern is applicable to the upcoming round (strict; see
+   * {@link isPatternApplicableTo}).
    */
   private isPatternApplicable(
     pattern: MinedPattern,
     context?: Partial<PredictionContext>
   ): boolean {
-    // Check each condition
-    for (const condition of pattern.conditions) {
-      if (condition.field === 'days_since_last' && this.features) {
-        const value = this.features.temporal.daysSinceLastRound;
-        if (!this.evaluateCondition(condition, value)) {
-          return false;
-        }
-      }
-      if (condition.field === 'round_type' && context?.eventType) {
-        const value = context.eventType;
-        if (!this.evaluateCondition(condition, value)) {
-          return false;
-        }
-      }
-    }
-    return true;
-  }
-
-  /**
-   * Evaluates a condition
-   */
-  private evaluateCondition(
-    condition: { operator: string; value: unknown },
-    actualValue: unknown
-  ): boolean {
-    switch (condition.operator) {
-      case 'eq':
-        return actualValue === condition.value;
-      case 'gte':
-        return (actualValue as number) >= (condition.value as number);
-      case 'lte':
-        return (actualValue as number) <= (condition.value as number);
-      case 'gt':
-        return (actualValue as number) > (condition.value as number);
-      case 'lt':
-        return (actualValue as number) < (condition.value as number);
-      default:
-        return true;
-    }
-  }
-
-  /**
-   * Calculates confidence interval
-   */
-  private calculateConfidenceInterval(
-    rounds: Array<{ score_to_par: number }>
-  ): { low: number; high: number; confidence: number } {
-    const scores = rounds.map((r) => r.score_to_par);
-    const mean = scores.reduce((a, b) => a + b, 0) / scores.length;
-
-    // Calculate standard deviation
-    const squaredDiffs = scores.map((s) => Math.pow(s - mean, 2));
-    const variance =
-      squaredDiffs.reduce((a, b) => a + b, 0) / scores.length;
-    const stdDev = Math.sqrt(variance);
-
-    // 80% confidence interval (t-style inflation for small samples)
-    const margin = stdDev * ciMultiplier(scores.length);
-
-    // Confidence decreases with volatility
-    let confidence = 0.8;
-    if (stdDev > 5) confidence = 0.6;
-    else if (stdDev > 3) confidence = 0.7;
-
-    return {
-      low: mean - margin,
-      high: mean + margin,
-      confidence,
-    };
+    return isPatternApplicableTo(pattern.conditions, {
+      daysSinceLast: this.features?.temporal.daysSinceLastRound ?? null,
+      roundType: context?.eventType ?? null,
+    });
   }
 
   /**
@@ -518,6 +608,11 @@ export class PerformancePredictor {
           ? 'declining'
           : 'stable';
 
+    // Measured coverage of the stored band over recently graded predictions
+    // (the calibration cron's score_to_par buckets, 90-day lookback). The band
+    // is shown only when that coverage is near nominal; see isIntervalCalibrated.
+    const coverage = await loadIntervalCoverage(supabase, prediction.metric);
+
     // Type assertion for new table not in generated types
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const table = supabase.from('golf_predictions' as any) as any;
@@ -551,6 +646,13 @@ export class PerformancePredictor {
           raw_confidence: prediction.confidence,
           calibrated_confidence: prediction.calibratedConfidence,
           sensitivities: prediction.sensitivities,
+          // The naive comparator (mean of the last 5 countable rounds, 18-hole
+          // basis). prediction-performance-writer reports MAE against it.
+          naive_last5: this.naiveBaseline,
+          interval_nominal: INTERVAL_NOMINAL_COVERAGE,
+          interval_coverage: coverage ? coverage.within / coverage.total : null,
+          interval_coverage_n: coverage?.total ?? 0,
+          interval_calibrated: isIntervalCalibrated(coverage),
         },
         updated_at: new Date().toISOString(),
       },

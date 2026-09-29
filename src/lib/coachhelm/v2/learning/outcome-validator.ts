@@ -229,8 +229,14 @@ export function extractMetricValue(
 ): number | null {
   switch (metric) {
     case 'scoreToPar':
-    case 'score_to_par':
-      return r.score_to_par ?? null;
+    case 'score_to_par': {
+      // Forecasts are made on an 18-hole basis (performance-predictor.ts puts
+      // 9-hole history on it), so a 9-hole outcome is graded on it too. Raw, a
+      // +2 nine graded against a +5 forecast read as a 3-stroke miss.
+      if (r.score_to_par == null) return null;
+      const holes = r.holes_played ?? 18;
+      return holes > 0 && holes !== 18 ? (r.score_to_par * 18) / holes : r.score_to_par;
+    }
     case 'putts':
     case 'total_putts':
       return r.total_putts ?? null;
