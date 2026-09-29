@@ -12278,11 +12278,6 @@
         },
         {
           "kind": "import_graph",
-          "path": "src/app/golf/actions/insight-evidence.ts",
-          "anchor": "src/lib/admin/observed-action"
-        },
-        {
-          "kind": "import_graph",
           "path": "src/app/golf/actions/insight-management.ts",
           "anchor": "src/lib/admin/observed-action"
         },
@@ -12529,16 +12524,6 @@
           "kind": "import_graph",
           "path": "src/app/golf/actions/coaching-philosophy.ts",
           "anchor": "src/lib/supabase/server"
-        },
-        {
-          "kind": "import_graph",
-          "path": "src/app/golf/actions/insight-evidence.ts",
-          "anchor": "src/lib/supabase/server"
-        },
-        {
-          "kind": "import_graph",
-          "path": "src/app/golf/actions/insight-evidence.ts",
-          "anchor": "src/lib/auth/verify-player-access"
         },
         {
           "kind": "import_graph",
@@ -14202,6 +14187,11 @@
           "kind": "import_graph",
           "path": "src/app/golf/actions/v3/goals.ts",
           "anchor": "src/lib/coachhelm/v3/goals/window-metric"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/v3/goals.ts",
+          "anchor": "src/lib/coachhelm/v3/notifications/notify"
         },
         {
           "kind": "import_graph",
@@ -16062,6 +16052,11 @@
         {
           "kind": "import_graph",
           "path": "src/app/golf/actions/round-review-system.ts",
+          "anchor": "src/lib/coachhelm/v3/notifications/notify"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/round-review-system.ts",
           "anchor": "src/lib/coachhelm/v3/standing/loader"
         },
         {
@@ -16093,6 +16088,11 @@
           "kind": "import_graph",
           "path": "src/lib/golf/metrics/display-registry.ts",
           "anchor": "src/lib/coachhelm/v3/metrics/registry"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/golf/progress-drivers.ts",
+          "anchor": "src/lib/coachhelm/v3/notifications/notify"
         },
         {
           "kind": "import_graph",
