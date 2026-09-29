@@ -33,6 +33,7 @@ export async function ClubhouseCalendarRoute({ view, date, event }: { view?: str
     role: team.role,
     teamId: team.teamId,
     viewerPlayerId: team.role === 'player' ? team.playerId : null,
+    coachId: team.role === 'coach' ? team.coachId : null,
     view: parseView(view),
     date,
   });

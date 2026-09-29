@@ -53,6 +53,7 @@ import {
   type ChRsvp,
 } from './model';
 import type { ChNow } from './views';
+import { BusyDetail, EventFiles } from './extras';
 
 export type ChInsp =
   | { kind: 'event'; id: string; date: string }
@@ -71,6 +72,7 @@ export interface InspCtx {
   rsvpError: boolean;
   /** Dev preview: no session, so attendance starts unmarked instead of calling the server. */
   preview?: boolean;
+  teamId: string;
   go: (next: ChInsp) => void;
   onEdit: (e: ChCalEvent, proposal?: [number, number]) => void;
   onCancel: (e: ChCalEvent) => void;
@@ -114,12 +116,12 @@ const find = (events: ChCalEvent[], id: string, date?: string) => events.find((e
 /* Nothing selected: today, what needs attention, where the data comes from. */
 export function Summary({ ctx }: { ctx: InspCtx }) {
   const { now, events, overlaps, people, role } = ctx;
-  const today = events.filter((e) => e.date === now.date && e.type !== 'class' && !e.cancelled).sort((a, b) => (a.start ?? -1) - (b.start ?? -1));
+  const today = events.filter((e) => e.date === now.date && e.type !== 'class' && e.type !== 'busy' && !e.cancelled).sort((a, b) => (a.start ?? -1) - (b.start ?? -1));
   const next = today.find((e) => !e.allDay && (e.start ?? 0) > now.hour);
   const mins = next ? Math.round(((next.start ?? 0) - now.hour) * 60) : 0;
   const until = mins < 60 ? `in ${mins} min` : `in ${Math.floor(mins / 60)} h ${mins % 60 ? `${mins % 60} min` : ''}`.trim();
   const weekEnd = dayAfter(now.date, 7);
-  const upcoming = events.filter((e) => e.type !== 'class' && !e.cancelled && e.date >= now.date && e.date < weekEnd);
+  const upcoming = events.filter((e) => e.type !== 'class' && e.type !== 'busy' && !e.cancelled && e.date >= now.date && e.date < weekEnd);
   const seen = new Set<string>();
   const pendingRows = upcoming
     .filter((e) => (seen.has(e.id) ? false : (seen.add(e.id), true)))
@@ -222,9 +224,12 @@ export function Summary({ ctx }: { ctx: InspCtx }) {
         <div className="ch-in__facts">
           <Fact icon={CalendarCheck}>Team events from Helm</Fact>
           {role === 'coach' ? (
-            <Fact icon={BookOpen}>
-              Class schedules for {classOwners.size} {classOwners.size === 1 ? 'player' : 'players'}
-            </Fact>
+            <>
+              <Fact icon={BookOpen}>
+                Class schedules for {classOwners.size} {classOwners.size === 1 ? 'player' : 'players'}
+              </Fact>
+              <Fact icon={Lock}>Your busy time · only you see it</Fact>
+            </>
           ) : (
             <Fact icon={Lock}>Your classes · only you and your coaches see them</Fact>
           )}
@@ -336,6 +341,7 @@ export function EventDetail({ ctx, id, date }: { ctx: InspCtx; id: string; date:
     );
   }
   if (e.type === 'class') return <ClassDetail ctx={ctx} e={e} />;
+  if (e.type === 'busy') return <BusyDetail e={e} now={ctx.now} zoneLabel={ctx.zoneLabel} onBack={() => ctx.go(null)} onDeleted={() => (ctx.go(null), ctx.refresh())} />;
   const overlap = ctx.overlaps.find((o) => o.eventId === e.id);
   const coach = ctx.role === 'coach';
   const copyLink = async () => {
@@ -435,6 +441,7 @@ export function EventDetail({ ctx, id, date }: { ctx: InspCtx; id: string; date:
           <p className="ch-in__quiet">No players invited. Invite players to collect replies and take attendance.</p>
         </div>
       )}
+      <EventFiles eventId={e.id} teamId={ctx.teamId} canEdit={coach && e.canEdit && !e.cancelled} preview={ctx.preview} />
       {coach && e.canEdit && !e.cancelled && (
         <div className="ch-in__sec ch-in__foot">
           <Button variant="primary" leftIcon={Pencil} onClick={() => ctx.onEdit(e)}>

@@ -4,7 +4,7 @@
  * (YYYY-MM-DD) and decimal hours: no Date math in the browser's zone.
  */
 
-export type ChCalType = 'practice' | 'qualifier' | 'tournament' | 'meeting' | 'travel' | 'class' | 'other';
+export type ChCalType = 'practice' | 'qualifier' | 'tournament' | 'meeting' | 'travel' | 'class' | 'other' | 'busy';
 export type ChCalView = 'day' | 'week' | 'month' | 'agenda';
 export type ChRsvp = 'accepted' | 'maybe' | 'declined' | 'pending';
 
@@ -70,6 +70,7 @@ export const TYPE_LABEL: Record<ChCalType, string> = {
   travel: 'Travel',
   class: 'Class',
   other: 'Event',
+  busy: 'Busy time',
 };
 
 export const isMajor = (t: ChCalType) => t === 'qualifier' || t === 'tournament';
@@ -251,3 +252,44 @@ export function openTimes(events: ChCalEvent[], people: string[], date: string, 
   }
   return out.sort((a, b) => a[0] - b[0]);
 }
+
+/**
+ * Dates a blocked-time row covers inside [from, to]: one-off spans day by day,
+ * and daily or weekly (by weekday) rules expanded, bounded by UNTIL, COUNT and
+ * a hard cap. Monthly rules fall back to the first occurrence.
+ */
+export function expandBusyDates(
+  row: { start_date: string; end_date: string },
+  rule: { frequency: 'daily' | 'weekly' | 'biweekly' | 'monthly'; weekdays?: number[]; until?: string; count?: number; interval?: number } | null,
+  from: string,
+  to: string,
+): string[] {
+  const out: string[] = [];
+  if (!rule) {
+    for (let d = row.start_date, n = 0; d <= row.end_date && n < 62; d = addDays(d, 1), n++) if (d >= from && d <= to) out.push(d);
+    return out;
+  }
+  // parseRecurrenceRule already returns UNTIL as an inclusive YYYY-MM-DD.
+  const last = rule.until ?? null;
+  const startDow = new Date(`${row.start_date}T12:00:00Z`).getUTCDay();
+  const days = rule.frequency === 'daily' ? [0, 1, 2, 3, 4, 5, 6] : rule.weekdays?.length ? rule.weekdays : [startDow];
+  const step = rule.frequency === 'biweekly' ? 2 : rule.frequency === 'weekly' ? (rule.interval ?? 1) : 1;
+  if (rule.frequency === 'monthly') return row.start_date >= from && row.start_date <= to ? [row.start_date] : [];
+  let seen = 0;
+  for (let d = row.start_date, n = 0; n < 740; d = addDays(d, 1), n++) {
+    if (last && d > last) break;
+    if (d > to) break;
+    const weeks = Math.floor((Date.parse(`${d}T12:00:00Z`) - Date.parse(`${weekStart(row.start_date)}T12:00:00Z`)) / (7 * 86400000));
+    if (!days.includes(new Date(`${d}T12:00:00Z`).getUTCDay()) || weeks % step !== 0) continue;
+    seen++;
+    if (rule.count && seen > rule.count) break;
+    if (d >= from) out.push(d);
+  }
+  return out;
+}
+
+export const hhmmToHour = (t: string | null): number | null => {
+  if (!t) return null;
+  const [h, m] = t.split(':').map(Number);
+  return Number.isFinite(h) ? (h ?? 0) + (m ?? 0) / 60 : null;
+};

@@ -1,6 +1,6 @@
 'use client';
 
-import { CalendarCheck, Check, ChevronDown, ChevronLeft, ChevronRight, ChevronsUpDown, Ellipsis, Plus, Rss, TriangleAlert, Users } from 'lucide-react';
+import { CalendarCheck, Check, Lock, ChevronDown, ChevronLeft, ChevronRight, ChevronsUpDown, Ellipsis, Plus, Rss, TriangleAlert, Users } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from 'react';
 import type { ChCalendarData } from '../../data/calendar';
@@ -19,6 +19,7 @@ import { addDays, addMonths, dayNum, findOverlaps, monthCells, monthKey, monthNa
 import { AgendaView, MonthView, TimeGrid, type ChNow } from './views';
 import { Attendance, EventDetail, Overlap, Summary, type ChInsp, type InspCtx } from './inspector';
 import { CancelEvent, EventEditor, SubscribeSheet, type EditorSeed } from './editor';
+import { BusySheet } from './extras';
 
 function zonedNow(timeZone: string, d: Date): ChNow {
   const p: Record<string, string> = {};
@@ -189,6 +190,7 @@ export function Calendar({ data, initialEvent, frozen = false }: { data: ChCalen
   const [editor, setEditor] = useState<EditorSeed | null>(null);
   const [cancelling, setCancelling] = useState<ChCalEvent | null>(null);
   const [subs, setSubs] = useState(false);
+  const [busyOpen, setBusyOpen] = useState(false);
   const [jump, setJump] = useState(false);
   const clock = useNow();
   const now = useMemo<ChNow>(() => (clock && !frozen ? zonedNow(data.timezone, clock) : { date: data.today, hour: data.nowHour }), [clock, frozen, data.timezone, data.today, data.nowHour]);
@@ -241,7 +243,7 @@ export function Calendar({ data, initialEvent, frozen = false }: { data: ChCalen
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const t = e.target as HTMLElement | null;
-      if (t?.closest('input, textarea, select, [contenteditable="true"], dialog[open]') || e.metaKey || e.ctrlKey || e.altKey || editor || cancelling || subs) return;
+      if (t?.closest('input, textarea, select, [contenteditable="true"], dialog[open]') || e.metaKey || e.ctrlKey || e.altKey || editor || cancelling || subs || busyOpen) return;
       if (e.key === 'n' && coach) {
         e.preventDefault();
         setEditor({ event: null, date: view === 'day' ? anchor : undefined });
@@ -252,13 +254,13 @@ export function Calendar({ data, initialEvent, frozen = false }: { data: ChCalen
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [coach, editor, cancelling, subs, view, anchor, insp, goToday, step]);
+  }, [coach, editor, cancelling, subs, busyOpen, view, anchor, insp, goToday, step]);
 
   const dates = view === 'day' ? [anchor] : weekDates(anchor);
   const title = viewTitle(view === 'agenda' ? 'month' : view, anchor);
   const away = view === 'day' ? anchor !== now.date : view === 'week' ? !weekDates(anchor).includes(now.date) : monthKey(anchor) !== monthKey(now.date);
   const inView = (d: string) => (view === 'day' || view === 'week' ? dates.includes(d) : monthKey(d) === monthKey(anchor));
-  const count = new Set(events.filter((e) => e.type !== 'class' && !e.cancelled && inView(e.date)).map((e) => e.id)).size;
+  const count = new Set(events.filter((e) => e.type !== 'class' && e.type !== 'busy' && !e.cancelled && inView(e.date)).map((e) => e.id)).size;
   const selId = insp && (insp.kind === 'event' || insp.kind === 'attendance') ? insp.id : insp?.kind === 'overlap' ? (overlaps.find((o) => o.id === insp.id)?.eventId ?? null) : null;
   const open = (id: string, date?: string) => {
     const e = data.events.find((x) => x.id === id && (!date || x.date === date)) ?? data.events.find((x) => x.id === id);
@@ -275,6 +277,7 @@ export function Calendar({ data, initialEvent, frozen = false }: { data: ChCalen
     overlaps,
     rsvpError: data.rsvpError,
     preview,
+    teamId: data.teamId,
     go: (n) => {
       haptic('select');
       setInsp(n);
@@ -286,6 +289,7 @@ export function Calendar({ data, initialEvent, frozen = false }: { data: ChCalen
 
   const moreItems = [
     { label: 'Add to calendar app', icon: Rss, onSelect: () => setSubs(true) },
+    ...(coach ? [{ label: 'Add busy time', icon: Lock, onSelect: () => setBusyOpen(true) }] : []),
     ...(coach && overlaps.length ? [{ label: `Overlaps · ${overlaps.length}`, icon: TriangleAlert, onSelect: () => setInsp({ kind: 'overlap' as const, id: overlaps[0]!.id }) }] : []),
   ];
 
@@ -380,6 +384,9 @@ export function Calendar({ data, initialEvent, frozen = false }: { data: ChCalen
         </div>
       </div>
 
+      {data.busyError && (
+        <InlineNotice title="Your busy time didn't load." body="Team events are complete, but your own blocks aren't shown. Try again; the error has been reported." onRetry={refresh} />
+      )}
       {data.classesError && (
         <InlineNotice
           title={coach ? "Class schedules didn't load." : "Your classes didn't load."}
@@ -468,6 +475,18 @@ export function Calendar({ data, initialEvent, frozen = false }: { data: ChCalen
         />
       )}
       <SubscribeSheet open={subs} onClose={() => setSubs(false)} role={data.role} />
+      {coach && (
+        <BusySheet
+          open={busyOpen}
+          today={now.date}
+          onClose={() => setBusyOpen(false)}
+          onSaved={(d) => {
+            setBusyOpen(false);
+            if (d < data.range.from || d > data.range.to) go(view, d);
+            else refresh();
+          }}
+        />
+      )}
     </main>
   );
 }

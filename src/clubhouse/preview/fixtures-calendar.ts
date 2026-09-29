@@ -100,8 +100,15 @@ const events: ChCalEvent[] = RAW.map((r) => {
   };
 });
 
+const busy: ChCalEvent[] = [
+  { id: 'b1', type: 'busy', title: 'Recruiting call', date: '2026-10-15', start: 9, end: 10, allDay: false, location: null, notes: 'Two juniors from Charlotte', recurring: null, people: [], rsvp: {}, owner: null, busyOnly: false, instructor: null, pattern: null, canEdit: true, cancelled: false, seriesId: null, startIso: '2026-10-15T12:00:00Z', span: null },
+  ...['2026-10-12', '2026-10-19', '2026-10-26'].map((d) => ({ id: 'b2', type: 'busy' as const, title: 'Staff meeting', date: d, start: 12, end: 13, allDay: false, location: null, notes: null, recurring: 'Weekly on Mon', people: [], rsvp: {}, owner: null, busyOnly: false, instructor: null, pattern: null, canEdit: true, cancelled: false, seriesId: null, startIso: '2026-10-12T12:00:00Z', span: null })),
+];
+
 export const PREVIEW_CALENDAR: ChCalendarData = {
   role: 'coach',
+  teamId: 'preview-team',
+  busyError: false,
   viewerPlayerId: null,
   teamName: 'Varsity',
   timezone: 'America/New_York',
@@ -111,7 +118,7 @@ export const PREVIEW_CALENDAR: ChCalendarData = {
   view: 'week',
   anchor: '2026-10-14',
   range: { from: '2026-09-27', to: '2026-11-25' },
-  events,
+  events: [...events, ...busy],
   people,
   eventsError: false,
   rsvpError: false,
@@ -125,7 +132,7 @@ export const PREVIEW_CALENDAR_PLAYER: ChCalendarData = {
   role: 'player',
   viewerPlayerId: 'jonah',
   events: events
-    .filter((e) => (e.type === 'class' ? e.owner === 'jonah' : true))
+    .filter((e) => (e.type === 'class' ? e.owner === 'jonah' : e.type !== 'busy'))
     .map((e) => ({ ...e, canEdit: false, rsvp: e.id === 'e13' ? { ...e.rsvp, jonah: 'pending' } : e.rsvp })),
   people: people.filter((p) => p.id === 'jonah'),
 };

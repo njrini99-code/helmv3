@@ -1,6 +1,6 @@
 'use client';
 
-import { BookOpen, Bus, ChevronDown, ChevronUp, Flag, Target, TriangleAlert, Trophy, Users, CalendarDays, type LucideIcon } from 'lucide-react';
+import { BookOpen, Bus, ChevronDown, ChevronUp, Flag, Lock, Target, TriangleAlert, Trophy, Users, CalendarDays, type LucideIcon } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '../../ui/Button';
 import { Badge } from '../../ui/Badge';
@@ -33,6 +33,7 @@ export const TYPE_ICON: Record<ChCalType, LucideIcon> = {
   travel: Bus,
   class: BookOpen,
   other: CalendarDays,
+  busy: Lock,
 };
 
 export interface ChNow {
@@ -42,6 +43,7 @@ export interface ChNow {
 
 /** What a block says. A class shown as Busy never leaks its title or room. */
 export function eventTitle(e: ChCalEvent, people: Map<string, ChCalPerson>): string {
+  if (e.type === 'busy') return `Busy · ${e.title}`;
   if (e.type !== 'class') return e.title;
   const first = e.owner ? people.get(e.owner)?.name.split(' ')[0] : null;
   if (e.busyOnly) return first ? `${first} · Busy` : 'Busy';
@@ -221,7 +223,7 @@ export function MonthView({
       </div>
       <div className="ch-mo__grid">
         {cells.map(({ date, out }) => {
-          const evs = events.filter((e) => e.date === date && e.type !== 'class').sort(byStart);
+          const evs = events.filter((e) => e.date === date && e.type !== 'class' && e.type !== 'busy').sort(byStart);
           const shown = evs.slice(0, 3);
           return (
             <button
@@ -299,7 +301,7 @@ export function AgendaView({
             <button
               key={e.id}
               type="button"
-              className={'ch-ag__row' + (selId === e.id ? ' is-sel' : '') + (e.type === 'class' ? ' is-class' : '')}
+              className={'ch-ag__row' + (selId === e.id ? ' is-sel' : '') + (e.type === 'class' || e.type === 'busy' ? ' is-class' : '')}
               aria-pressed={selId === e.id}
               onClick={() => {
                 haptic('select');
@@ -312,9 +314,9 @@ export function AgendaView({
               </span>
               <span className={`ch-ag__dot ch-dot-${e.type}`} aria-hidden="true" />
               <span style={{ minWidth: 0 }}>
-                <span className="ch-ag__a">{e.type === 'class' && e.owner && people.get(e.owner) ? `${people.get(e.owner)!.name} · ${e.title}` : eventTitle(e, people)}</span>
+                <span className="ch-ag__a">{e.type === 'class' && e.owner && people.get(e.owner) ? `${people.get(e.owner)!.name} · ${e.title}` : e.type === 'busy' ? e.title : eventTitle(e, people)}</span>
                 <span className="ch-ag__b">
-                  {TYPE_LABEL[e.type]}
+                  {e.type === 'busy' ? 'Your busy time · only you see it' : TYPE_LABEL[e.type]}
                   {e.location && !e.busyOnly ? ` · ${e.location}` : ''}
                 </span>
               </span>

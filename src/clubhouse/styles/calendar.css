@@ -1502,3 +1502,75 @@
   font: var(--ch-type-body-s);
   color: var(--ch-text-secondary);
 }
+
+/* The coach's own busy time: a quiet champagne hatch, visibly theirs */
+.ch-ev--busy {
+  background: #f6f1e4;
+  color: #6b5a2e;
+  box-shadow: inset 0 0 0 1px rgb(165 135 70 / 0.28);
+}
+.ch-ev--busy::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: repeating-linear-gradient(135deg, transparent 0 5px, rgb(165 135 70 / 0.08) 5px 6px);
+  pointer-events: none;
+}
+.ch-ev-bar.ch-ev--busy {
+  background: #f6f1e4;
+  color: #6b5a2e;
+}
+.ch-dot-busy {
+  background: var(--ch-champagne-500);
+}
+
+/* Event files */
+.ch-in__file {
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  padding: 7px 0;
+}
+.ch-in__file a {
+  color: inherit;
+  text-decoration: none;
+}
+.ch-in__file b {
+  display: block;
+  overflow: hidden;
+  font: 500 13.5px/1.25 var(--ch-font-sans);
+  color: var(--ch-text-primary);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.ch-in__file a:hover b {
+  color: var(--ch-green-700);
+}
+.ch-in__file span span,
+.ch-in__file a span {
+  font: var(--ch-type-caption);
+  color: var(--ch-text-tertiary);
+}
+.ch-in__file-ic {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  background: var(--ch-bg-subtle);
+  box-shadow: inset 0 0 0 1px var(--ch-border-hairline);
+  color: var(--ch-green-700);
+}
+.ch-cal-pick {
+  display: flex;
+  flex-direction: column;
+  max-height: 320px;
+  margin: 0 -6px;
+  overflow: auto;
+}
+.ch-cal-pick .ch-pp__row:disabled {
+  opacity: 0.55;
+  cursor: default;
+}

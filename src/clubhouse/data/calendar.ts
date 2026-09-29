@@ -9,6 +9,8 @@ import { chLogServer } from '../lib/track-server';
 import { classYearLabel, fullName } from './season';
 import {
   addDays,
+  expandBusyDates,
+  hhmmToHour,
   monthCells,
   type ChCalEvent,
   type ChCalPerson,
@@ -19,6 +21,7 @@ import {
 
 export interface ChCalendarData {
   role: 'coach' | 'player';
+  teamId: string;
   viewerPlayerId: string | null;
   teamName: string | null;
   timezone: string;
@@ -35,6 +38,8 @@ export interface ChCalendarData {
   rsvpError: boolean;
   classesError: boolean;
   settingsError: boolean;
+  /** Coach only: their own blocked time failed to load (shown as a notice, never as "free"). */
+  busyError: boolean;
 }
 
 type ClassRow = { id: string; player_id: string; instructor: string | null; days: string[] | null; semester: string | null; building: string | null; room: string | null };
@@ -110,6 +115,8 @@ export async function loadCalendar(input: {
   role: 'coach' | 'player';
   teamId: string;
   viewerPlayerId: string | null;
+  /** The coach's own id, for their blocked time. */
+  coachId?: string | null;
   view: ChCalView;
   date?: string;
 }): Promise<ChCalendarData> {
@@ -247,8 +254,62 @@ export async function loadCalendar(input: {
     events.push({ ...base, date: a.date, start: a.hour, end, allDay: false, span: null });
   }
 
+  // The coach's own blocked time. Only the coach sees it; it's labelled as theirs.
+  let busyError = false;
+  if (input.role === 'coach' && input.coachId) {
+    const { data: blocks, error } = await supabase
+      .from('golf_coach_blocked_time')
+      .select('id, title, reason, description, start_date, end_date, start_time, end_time, all_day, recurrence_rule')
+      .eq('coach_id', input.coachId)
+      .lte('start_date', range.to)
+      .limit(500);
+    if (error) {
+      chLogServer('calendar', 'blockedTime', error, 'calendar');
+      busyError = true;
+    }
+    for (const b of blocks ?? []) {
+      let rule = null;
+      try {
+        rule = parseRecurrenceRule(b.recurrence_rule);
+      } catch {
+        rule = null;
+      }
+      if (!rule && b.end_date < range.from) continue;
+      const start = hhmmToHour(b.start_time);
+      const end = hhmmToHour(b.end_time);
+      const allDay = !!b.all_day || start == null || end == null || end <= start;
+      for (const d of expandBusyDates(b, rule, range.from, range.to)) {
+        events.push({
+          id: b.id,
+          type: 'busy',
+          title: b.title?.trim() || b.reason?.trim() || 'Busy',
+          date: d,
+          start: allDay ? null : start,
+          end: allDay ? null : end,
+          allDay,
+          location: null,
+          notes: b.description,
+          recurring: rule ? describeRecurrenceRule(rule) : null,
+          people: [],
+          rsvp: {},
+          owner: null,
+          busyOnly: false,
+          instructor: null,
+          pattern: null,
+          canEdit: true,
+          cancelled: false,
+          seriesId: null,
+          startIso: `${b.start_date}T12:00:00Z`,
+          span: null,
+        });
+      }
+    }
+  }
+
   return {
     role: input.role,
+    teamId: input.teamId,
+    busyError,
     viewerPlayerId: input.viewerPlayerId,
     teamName: teamRes.data?.name ?? null,
     timezone,

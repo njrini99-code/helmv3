@@ -245,3 +245,16 @@ describe('messages model', async () => {
     expect(M.filterConvs(list, 'all', 'push').map((x) => x.id)).toEqual(['Jonah Okafor']);
   });
 });
+
+describe('busy time expansion', async () => {
+  const M = await import('../screens/calendar/model');
+  it('spans one-off blocks day by day inside the window', () => {
+    expect(M.expandBusyDates({ start_date: '2026-10-13', end_date: '2026-10-15' }, null, '2026-10-14', '2026-10-31')).toEqual(['2026-10-14', '2026-10-15']);
+  });
+  it('repeats weekly on the start weekday until UNTIL', () => {
+    expect(M.expandBusyDates({ start_date: '2026-10-12', end_date: '2026-10-12' }, { frequency: 'weekly', until: '2026-10-26' }, '2026-10-01', '2026-11-30')).toEqual(['2026-10-12', '2026-10-19', '2026-10-26']);
+  });
+  it('honours BYDAY and COUNT', () => {
+    expect(M.expandBusyDates({ start_date: '2026-10-12', end_date: '2026-10-12' }, { frequency: 'weekly', weekdays: [1, 3], count: 3 }, '2026-10-01', '2026-11-30')).toEqual(['2026-10-12', '2026-10-14', '2026-10-19']);
+  });
+});
