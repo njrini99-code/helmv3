@@ -8,6 +8,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/types/database';
 import { logServerError } from '@/lib/server-error-logger';
+import { isCountableRound } from '@/lib/golf/round-countable';
 
 export interface ValidationResult {
   predictionId: string;
@@ -181,6 +182,40 @@ export interface RoundOutcomeRow {
    * have not added it to their select keep working via the fallback below.
    */
   round_date?: string | null;
+  /**
+   * Countable-round inputs (see `@/lib/golf/round-countable`) and the OD-03
+   * QA flag. `gradeableRounds` drops a round that is `is_test` or not
+   * countable, so a QA card or a half-entered one can never grade a prediction.
+   */
+  holes_played?: number | null;
+  total_score?: number | null;
+  front_nine?: number | null;
+  back_nine?: number | null;
+  is_test?: boolean | null;
+}
+
+/**
+ * The rounds a prediction may be graded against: not flagged `is_test`, and
+ * countable (full length, fully recorded, plausible score).
+ *
+ * Why (2026-09-28 audit): for one demo player, seven predictions (due
+ * 2026-09-18..25) were graded against round 91301a75 (is_test, 37 strokes over
+ * 18, −35) and four (due 2026-08-31..09-03) against QA Test Course rounds. The
+ * query also filters `is_test = false`; this re-applies both rules to
+ * prefetched rows and to any caller-supplied candidates.
+ */
+export function gradeableRounds<T extends RoundOutcomeRow>(rounds: readonly T[]): T[] {
+  return rounds.filter(
+    (r) =>
+      r.is_test !== true &&
+      isCountableRound({
+        holes_played: r.holes_played ?? null,
+        total_score: r.total_score ?? null,
+        front_nine: r.front_nine ?? null,
+        back_nine: r.back_nine ?? null,
+        total_putts: r.total_putts,
+      }),
+  );
 }
 
 /**
@@ -308,7 +343,7 @@ export function selectValidationRound<T extends RoundOutcomeRow>(
 
 /** Columns `resolveActualValue` grades on. `player_id` lets a batch read be split per player. */
 const ROUND_OUTCOME_COLUMNS =
-  'id, player_id, score_to_par, total_putts, total_fairways_hit, total_fairways, total_gir, total_gir_possible, created_at, round_date';
+  'id, player_id, score_to_par, total_putts, total_fairways_hit, total_fairways, total_gir, total_gir_possible, created_at, round_date, holes_played, total_score, front_nine, back_nine, is_test';
 
 /** Players per `golf_rounds` read, so the `in.(...)` filter stays a sane URL length. */
 export const PREFETCH_PLAYER_CHUNK = 100;
@@ -370,6 +405,7 @@ export async function prefetchCandidateRounds(
         .select(ROUND_OUTCOME_COLUMNS)
         .in('player_id', chunk)
         .eq('status', 'completed')
+        .eq('is_test', false)
         .gt('round_date', minDay)
         .lte('round_date', maxDay)
         .order('round_date', { ascending: true })
@@ -451,6 +487,7 @@ async function resolveActualValue(
       .select(ROUND_OUTCOME_COLUMNS)
       .eq('player_id', prediction.player_id)
       .eq('status', 'completed')
+      .eq('is_test', false)
       .gt('round_date', createdDay)
       .lte('round_date', dueDay)
       .order('round_date', { ascending: true });
@@ -472,9 +509,9 @@ async function resolveActualValue(
 
   if (!rounds || rounds.length === 0) return { kind: 'pending' };
 
-  // Grade against the FIRST completed round after the prediction was created.
+  // Grade against the FIRST gradeable round after the prediction was created.
   const round = selectValidationRound(
-    rounds,
+    gradeableRounds(rounds),
     prediction.created_at,
     prediction.due_date,
   );

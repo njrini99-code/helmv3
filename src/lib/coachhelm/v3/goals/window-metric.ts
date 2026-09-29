@@ -91,6 +91,7 @@ export async function loadPlayerWindowRounds(
   const { data: rounds, error: rErr } = (await fromUntyped(supabase, 'golf_rounds')
     .select('id, round_date')
     .eq('player_id', playerId)
+    .eq('is_test', false)
     .eq('status', 'completed')
     .gte('round_date', sinceDate)) as { data: RoundRow[] | null; error: unknown };
   if (rErr || !rounds || rounds.length === 0) return [];

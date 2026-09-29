@@ -65,6 +65,7 @@ export class CausalEngine {
       .from('golf_rounds')
       .select('id, score_to_par, round_date, total_putts, total_fairways_hit, total_gir')
       .eq('player_id', this.playerId)
+      .eq('is_test', false)
       .eq('status', 'completed')
       // DESCENDING + limit(100) = the player's most RECENT 100 rounds.
       //

@@ -228,6 +228,7 @@ export class PuttSlopeBiasGenerator extends BaseGenerator<PuttSlopeBiasAggregate
     const { data: rounds, error: rErr } = await fromUntyped(supabase, 'golf_rounds')
       .select('id')
       .eq('player_id', this.playerId)
+      .eq('is_test', false)
       .eq('status', 'completed')
       .gte('round_date', since) as {
         data: Array<{ id: string }> | null;

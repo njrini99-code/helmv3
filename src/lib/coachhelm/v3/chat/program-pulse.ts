@@ -202,6 +202,7 @@ export async function getProgramPulse(sb: Sb, ctx: CoachChatContext): Promise<Pr
         .from('golf_rounds')
         .select('player_id, round_date, score_to_par, holes_played, total_score, front_nine, back_nine, total_putts')
         .in('player_id', playerIds)
+        .eq('is_test', false)
         .eq('status', 'completed')
         .order('round_date', { ascending: false })
         .limit(400),

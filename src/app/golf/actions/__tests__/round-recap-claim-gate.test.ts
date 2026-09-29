@@ -252,6 +252,13 @@ vi.mock('next/cache', () => ({
   revalidatePath: vi.fn(),
 }));
 
+
+// Season context now comes from the player's countable, non-test rounds
+// (recap-season-context.ts), not golf_player_stats_cache.
+vi.mock('@/lib/golf/recap-season-context', () => ({
+  loadRecapSeasonContext: vi.fn(async () => mockStats),
+}));
+
 import { generateRoundRecap } from '../round-recap';
 import { logServerError } from '@/lib/server-error-logger';
 import { buildRecapEvidencePacket } from '@/lib/coachhelm/v3/llm/recap-evidence';

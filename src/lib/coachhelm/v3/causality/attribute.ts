@@ -167,6 +167,7 @@ async function averageGolfRoundsColumn(
     .from('golf_rounds')
     .select(`${column}`)
     .eq('player_id', player_id)
+    .eq('is_test', false)
     .eq('status', 'completed')
     .gte('round_date', startIso.slice(0, 10))
     .lte('round_date', endIso.slice(0, 10));

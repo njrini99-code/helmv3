@@ -21,14 +21,17 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 const { logServerEventMock, roundsData } = vi.hoisted(() => ({
   logServerEventMock: vi.fn(async () => {}),
-  roundsData: { rows: [] as unknown[] },
+  roundsData: { rows: [] as unknown[], eqs: [] as Array<[string, unknown]> },
 }));
 
 function makeRoundsBuilder() {
   const builder: Record<string, unknown> = {};
   const ret = () => builder;
   builder.select = ret;
-  builder.eq = ret;
+  builder.eq = (col: string, val: unknown) => {
+    roundsData.eqs.push([col, val]);
+    return builder;
+  };
   builder.gte = ret;
   builder.order = ret;
   builder.limit = async () => ({ data: roundsData.rows, error: null });
@@ -84,6 +87,11 @@ function flatRounds(n: number) {
     total_fairways_hit: null,
     total_gir: null,
     total_gir_possible: null,
+    // Countable (round-countable.ts): the miner drops half-entered cards.
+    holes_played: 18,
+    total_score: 72,
+    front_nine: 36,
+    back_nine: 36,
   }));
 }
 
@@ -132,5 +140,28 @@ describe('pattern-miner starvation telemetry — per-player fingerprint', () => 
 
     const [ctx] = loggedFingerprints();
     expect(ctx?.fingerprint).toEqual(['pattern-miner-starvation', 'player-dddd']);
+  });
+});
+
+// OD-03 leak (2026-09-28 audit): mined patterns and the insights built on them
+// read QA and implausible rounds (91301a75: is_test, 37 over 18).
+describe('pattern-miner — countable, non-test rounds only', () => {
+  beforeEach(() => {
+    logServerEventMock.mockClear();
+    roundsData.rows = [];
+    roundsData.eqs = [];
+  });
+
+  it('filters is_test = false in the rounds query', async () => {
+    roundsData.rows = flatRounds(12);
+    await new PatternMiner('player-eeee').minePatterns();
+    expect(roundsData.eqs).toContainEqual(['is_test', false]);
+  });
+
+  it('drops non-countable rounds before mining: 12 hole-less cards are not enough rounds', async () => {
+    roundsData.rows = flatRounds(12).map((r) => ({ ...r, front_nine: null, back_nine: null }));
+    await expect(new PatternMiner('player-ffff').minePatterns()).resolves.toEqual([]);
+    // It stopped at "not enough rounds", before the starvation branch.
+    expect(loggedFingerprints()).toEqual([]);
   });
 });

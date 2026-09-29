@@ -11,6 +11,7 @@
 import { createHash } from 'crypto';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { fromUntyped } from '@/lib/supabase/untyped';
+import { isCountableRound } from '@/lib/golf/round-countable';
 import { logServerError, logServerEvent } from '@/lib/server-error-logger';
 import { describeError, describeWriteFailure } from '@/lib/utils/describe-error';
 import type {
@@ -355,14 +356,20 @@ export class PatternMiner {
     const since = new Date(Date.now() - this.lookbackDays * 86400_000)
       .toISOString()
       .slice(0, 10);
-    const { data: rounds, error } = await supabase
+    const { data: fetchedRounds, error } = await supabase
       .from('golf_rounds')
-      .select('id, score_to_par, round_date, round_type, total_putts, total_fairways, total_fairways_hit, total_gir, total_gir_possible')
+      .select('id, score_to_par, round_date, round_type, total_putts, total_fairways, total_fairways_hit, total_gir, total_gir_possible, holes_played, total_score, front_nine, back_nine')
       .eq('player_id', this.playerId)
+      .eq('is_test', false)
       .eq('status', 'completed')
       .gte('round_date', since)
       .order('round_date', { ascending: false })
       .limit(100);
+
+    // OD-03: QA rounds are filtered in the query; implausible and half-entered
+    // cards (e.g. 91301a75, 37 over 18) are dropped here, so neither can seed
+    // a pattern. Same rule as every player-facing number (round-countable.ts).
+    const rounds = fetchedRounds?.filter(isCountableRound);
 
     if (error || !rounds || rounds.length < this.minRounds) {
       if (error) {

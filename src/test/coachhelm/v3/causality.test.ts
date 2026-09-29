@@ -362,15 +362,17 @@ describe('averageInWindow (W35 follow-up dispatch)', () => {
       '2026-05-01T00:00:00.000Z',
     );
     expect(result).toEqual({ ok: true, avg: 3, n: 3 });
-    // Same call-chain shape the old code used: select, eq player, eq status,
-    // gte round_date, lte round_date.
+    // Same call-chain shape the old code used, plus the OD-03 is_test filter:
+    // select, eq player, eq is_test, eq status, gte round_date, lte round_date.
     expect(calls.map((c) => c.method)).toEqual([
       'select',
+      'eq',
       'eq',
       'eq',
       'gte',
       'lte',
     ]);
+    expect(calls.find((c) => c.method === 'eq' && c.args?.[0] === 'is_test')?.args).toEqual(['is_test', false]);
   });
 
   it('routes sg_total to the strokes_gained_total column on golf_rounds', async () => {

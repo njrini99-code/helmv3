@@ -103,6 +103,7 @@ export async function getTeamOverview(sb: Sb, ctx: CoachChatContext): Promise<To
     .from('golf_rounds')
     .select('player_id, score_to_par, total_score, round_date')
     .in('player_id', ids)
+    .eq('is_test', false)
     .eq('status', 'completed')
     .order('round_date', { ascending: false });
 
@@ -422,6 +423,7 @@ export async function getPlayerTrend(
     .from('golf_rounds')
     .select(`id, round_date, course_name, round_type, ${spec.column}`)
     .eq('player_id', player.id)
+    .eq('is_test', false)
     .eq('status', 'completed')
     .order('round_date', { ascending: false })
     .limit(limit);
@@ -822,6 +824,7 @@ export async function getRecentRounds(
     .from('golf_rounds')
     .select('id, round_date, course_name, round_type, total_score, score_to_par, total_putts, strokes_gained_total')
     .eq('player_id', player.id)
+    .eq('is_test', false)
     .eq('status', 'completed')
     .order('round_date', { ascending: false })
     .limit(limit);

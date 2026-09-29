@@ -171,6 +171,7 @@ export async function loadApproachShots(
     .from('golf_rounds')
     .select('id')
     .eq('player_id', playerId)
+    .eq('is_test', false)
     .eq('status', 'completed')
     .gte('round_date', since);
   if (rErr) throw new Error(`shot-source rounds query failed: ${rErr.message}`);
@@ -235,6 +236,7 @@ export async function loadSandShots(
     .from('golf_rounds')
     .select('id')
     .eq('player_id', playerId)
+    .eq('is_test', false)
     .eq('status', 'completed')
     .gte('round_date', since);
   if (rErr) throw new Error(`shot-source rounds query failed: ${rErr.message}`);
@@ -380,6 +382,7 @@ export async function loadTeeShots(
     .from('golf_rounds')
     .select('id')
     .eq('player_id', playerId)
+    .eq('is_test', false)
     .eq('status', 'completed')
     .gte('round_date', since);
   if (rErr) throw new Error(`shot-source rounds query failed: ${rErr.message}`);

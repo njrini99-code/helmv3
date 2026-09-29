@@ -417,6 +417,7 @@ export class CrossLearner {
       .from('golf_rounds')
       .select('score_to_par')
       .eq('player_id', playerId)
+      .eq('is_test', false)
       .eq('status', 'completed')
       .order('round_date', { ascending: false })
       .limit(20);
@@ -540,6 +541,7 @@ export class CrossLearner {
         .from('golf_rounds')
         .select('score_to_par')
         .eq('player_id', pattern.playerId)
+        .eq('is_test', false)
         .eq('status', 'completed')
         .limit(10);
 

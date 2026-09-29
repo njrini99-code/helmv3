@@ -82,6 +82,7 @@ export async function computeGenomeForPlayer(player_id: string): Promise<Compute
     .from('golf_rounds')
     .select('id, round_date, round_type, total_score, score_to_par, holes_played, front_nine, back_nine, total_putts')
     .eq('player_id', player_id)
+    .eq('is_test', false)
     .eq('status', 'completed')
     .gte('round_date', since);
 

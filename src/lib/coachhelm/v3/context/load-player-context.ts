@@ -191,6 +191,7 @@ export async function loadPlayerContext(
   let roundsQuery = fromUntyped(supabase, 'golf_rounds')
     .select('id, course_id')
     .eq('player_id', scope.player_id)
+    .eq('is_test', false)
     .eq('status', 'completed');
   if (scope.window_start) roundsQuery = roundsQuery.gte('round_date', scope.window_start);
   if (scope.window_end) roundsQuery = roundsQuery.lte('round_date', scope.window_end);

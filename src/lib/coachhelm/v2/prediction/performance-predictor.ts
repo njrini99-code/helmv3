@@ -204,6 +204,7 @@ export class PerformancePredictor {
       .from('golf_rounds')
       .select('score_to_par, round_date, holes_played, total_score, front_nine, back_nine, total_putts')
       .eq('player_id', this.playerId)
+      .eq('is_test', false)
       .eq('status', 'completed')
       .order('round_date', { ascending: false })
       .limit(60);

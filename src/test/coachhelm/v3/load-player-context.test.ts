@@ -32,7 +32,8 @@ function makeFakeSupabase(tables: FakeTables, opts: { errorTable?: string } = {}
         return builder;
       },
       eq(col: string, val: unknown) {
-        filters.push((r) => r[col] === val);
+        // A fixture row without is_test is a real round (the column defaults false).
+        filters.push((r) => (col === 'is_test' ? (r[col] ?? false) : r[col]) === val);
         return builder;
       },
       gte(col: string, val: unknown) {

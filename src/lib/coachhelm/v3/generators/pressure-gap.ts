@@ -88,6 +88,7 @@ export class PressureGapGenerator extends BaseGenerator<PressureGapAggregate> {
     const { data, error } = await fromUntyped(supabase, 'golf_rounds')
       .select('id, round_type, score_to_par, round_date, holes_played, total_score, front_nine, back_nine, total_putts')
       .eq('player_id', this.playerId)
+      .eq('is_test', false)
       .eq('status', 'completed')
       .gte('round_date', since) as {
         data: Array<{

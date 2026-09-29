@@ -86,6 +86,7 @@ export async function buildWeeklyRecap(
       .from('golf_rounds')
       .select('player_id, score_to_par')
       .in('player_id', playerIds)
+      .eq('is_test', false)
       .eq('status', 'completed')
       // DATE column — filter on calendar days, not instants.
       .gte('round_date', window.startDate)

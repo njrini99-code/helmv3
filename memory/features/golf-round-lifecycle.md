@@ -640,6 +640,16 @@ reload (`lieFromShotResult`) restore position from.
   back to "the player") both as a fact and in the third-person rule. Until
   2026-09-02 the prompt named nobody and offered "Nick" as an example, and the
   model copied the example into a Shenandoah player's stored recap.
+- (2026-09-28, OD-03) `generateRoundRecap` returns no recap for an `is_test`
+  round (no LLM call, no write), and does not serve a recap already stored on
+  one. The recap's season comparison ("N strokes below the season average",
+  "sets a new low") no longer reads `golf_player_stats_cache`, whose trigger
+  counts `is_test` and implausible rounds (it held best_round 37 for a player
+  whose real best is 69). `src/lib/golf/recap-season-context.ts` builds it from
+  the player's OTHER countable, non-test rounds (the recapped round is left out
+  of its own baseline), and makes no comparison at all when the recapped round
+  is itself not countable. The page still renders a stored `ai_recap` directly;
+  clearing the three recaps already written on test rounds is an owner-run SQL.
 - (2026-09-23, UI/UX audit DATA-04) The round detail page no longer calls
   `generateRoundRecap` during Server Component render. It reads the persisted
   `golf_rounds.ai_recap` and passes `recapPending` (completed round, no recap)

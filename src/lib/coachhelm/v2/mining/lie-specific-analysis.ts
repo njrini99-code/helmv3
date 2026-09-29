@@ -620,6 +620,7 @@ class LieSpecificAnalyzer {
       .from('golf_rounds')
       .select('id')
       .eq('player_id', this.playerId)
+      .eq('is_test', false)
       .eq('status', 'completed');
 
     if (!rounds || rounds.length === 0) {

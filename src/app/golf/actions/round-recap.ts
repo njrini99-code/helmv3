@@ -47,6 +47,7 @@ import { compose } from '@/lib/coachhelm/v3/llm/compose';
 import { buildRecapEvidence, buildRecapEvidencePacket } from '@/lib/coachhelm/v3/llm/recap-evidence';
 import { isFlagEnabled } from '@/lib/flags';
 import { pct } from '@/lib/golf/stat-formulas';
+import { loadRecapSeasonContext } from '@/lib/golf/recap-season-context';
 import { withAdminObserved } from '@/lib/admin/observed-action';
 import { verifyPlayerAccess } from '@/lib/auth/verify-player-access';
 import { gateUserAction, LLM_COMPOSE_RATE_LIMIT } from '@/lib/auth/action-rate-limit';
@@ -76,6 +77,8 @@ interface RoundContext {
 
 type RoundRow = RoundContext & {
   status: string | null;
+  /** OD-03 QA/demo flag. A test round never gets a recap. */
+  is_test: boolean | null;
   ai_recap: string | null;
   ai_recap_generated_at: string | null;
 };
@@ -123,7 +126,7 @@ async function generateRoundRecapImpl(
   const { data: round } = await supabase
     .from('golf_rounds')
     .select(
-      'id, player_id, course_name, course_city, course_state, round_date, round_type, total_score, score_to_par, total_putts, total_fairways, total_fairways_hit, total_gir, total_gir_possible, holes_played, front_nine, back_nine, status, ai_recap, ai_recap_generated_at',
+      'id, player_id, course_name, course_city, course_state, round_date, round_type, total_score, score_to_par, total_putts, total_fairways, total_fairways_hit, total_gir, total_gir_possible, holes_played, front_nine, back_nine, status, is_test, ai_recap, ai_recap_generated_at',
     )
     .eq('id', roundId)
     .maybeSingle<RoundRow>();
@@ -139,6 +142,10 @@ async function generateRoundRecapImpl(
   if (!access.allowed) return { recap: null, cached: false };
 
   if (round.status !== 'completed') return { recap: null, cached: false };
+  // OD-03: a QA/demo round gets no recap, and a recap already stored on one
+  // (three were, before this gate) is not served back. Checked before the
+  // cache hit on purpose.
+  if (round.is_test) return { recap: null, cached: false };
   if (round.ai_recap) return { recap: round.ai_recap, cached: true };
 
   // DS: LLM generation is expensive and compose()'s per-team budget gate is
@@ -196,12 +203,11 @@ async function runRecapGeneration(
   supabase: Awaited<ReturnType<typeof createClient>>,
   options: GenerateRoundRecapOptions,
 ): Promise<{ recap: string | null; cached: boolean }> {
-  // 2. Pull peer context — player's recent stats cache for comparison
-  const { data: stats } = await supabase
-    .from('golf_player_stats_cache')
-    .select('scoring_average, best_round, rounds_played')
-    .eq('player_id', round.player_id)
-    .maybeSingle<PlayerStatContext>();
+  // 2. Season context for comparison: the player's OTHER countable, non-test
+  // rounds. Not golf_player_stats_cache — its trigger counts is_test and
+  // implausible rounds (see recap-season-context.ts). Null when this round is
+  // itself not countable, so an impossible card is never compared.
+  const stats: PlayerStatContext | null = await loadRecapSeasonContext(supabase, round);
 
   // 2b. The player's own first name, for the prompt. Until 2026-09-02 the
   // prompt named nobody and offered "Nick" as an EXAMPLE of third person, and
