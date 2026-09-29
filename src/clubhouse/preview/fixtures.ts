@@ -6,6 +6,7 @@
 import type { GolfUserData } from '@/contexts/golf-user-context';
 import type { ChCoachHome, ChHoleScore } from '../data/home';
 import type { ChShellData } from '../data/shell';
+import { homeSubline } from '../screens/home/model';
 
 export const PREVIEW_COACH: GolfUserData = {
   role: 'coach',
@@ -26,7 +27,7 @@ export const PREVIEW_PLAYER: GolfUserData = {
 };
 
 export const PREVIEW_SHELL: ChShellData = {
-  nextEvent: { id: 'e-pinehurst', title: 'Pinehurst qualifier', whenLabel: 'In 2 days', metaLabel: 'Thu, Oct 16 · 8:42 AM · Pinehurst No. 2' },
+  nextEvent: { id: 'e-pinehurst', title: 'Pinehurst qualifier', whenLabel: 'In 2 days', metaLabel: 'Thu, Oct 16 · 8:42 AM · Pinehurst No. 2', ready: { accepted: 5, invited: 6 } },
   pendingJoinRequests: 6,
 };
 
@@ -38,8 +39,19 @@ const r1 = holes([0, 1, 0, 1, 0, -1, 0, 0, 0, -1, 0, 0, -1, 0, 1, 0, 0, -1]);
 const r2 = holes([0, 0, 0, -1, 1, 0, 0, 0, 0, 0, 1, 0, -1, 0, 0, 0, 0, -1]);
 const r3 = holes([1, 0, 0, 1, 0, 0, 2, 0, 1, 0, 0, 1, 0, 1, 0, 0, 1, -1]);
 
+const LEADERS: ChCoachHome['leaderboard']['rows'] = [
+  { playerId: 'theo', name: 'Theo Marchetti', classYear: 'Senior', rounds: 11, avg: 70.9, toPar: -1.1, trend: [72, 71, 71, 70, 70, 71, 70], sgPerRound: 1.8, status: 'improving', quietDays: 2 },
+  { playerId: 'sofia', name: 'Sofia Alvarez', classYear: 'Senior', rounds: 10, avg: 71.6, toPar: -0.4, trend: [72, 72, 71, 72, 71, 71, 71], sgPerRound: 1.1, status: 'steady', quietDays: 2 },
+  { playerId: 'ava', name: 'Ava Lindqvist', classYear: 'Junior', rounds: 10, avg: 72.4, toPar: 0.4, trend: [73, 74, 72, 72, 72, 73, 72], sgPerRound: 0.6, status: 'steady', quietDays: 2 },
+  { playerId: 'jonah', name: 'Jonah Okafor', classYear: 'Sophomore', rounds: 9, avg: 74.1, toPar: 2.1, trend: [72, 72, 73, 74, 75, 74, 75], sgPerRound: -0.9, status: 'slipping', quietDays: 3 },
+  { playerId: 'eli', name: 'Eli Brandt', classYear: 'Junior', rounds: 8, avg: 74.8, toPar: 2.8, trend: [74, 75, 74, 75, 75, 74, 75], sgPerRound: -0.4, status: 'steady', quietDays: 9 },
+  { playerId: 'priya', name: 'Priya Natarajan', classYear: 'Freshman', rounds: 2, avg: 75.2, toPar: 3.2, trend: [76, 75], sgPerRound: null, status: 'early', quietDays: 4 },
+];
+
 export const PREVIEW_HOME: ChCoachHome = {
   greeting: 'Good morning, Maya.',
+  teamChatId: 'c-team',
+  subline: homeSubline(LEADERS, { roundsError: false, nextCompetition: { title: 'Qualifier · Pinehurst No. 2', when: 'Thursday' } }),
   todayLabel: 'Tuesday, 14 October',
   week: {
     error: false,
@@ -60,11 +72,11 @@ export const PREVIEW_HOME: ChCoachHome = {
       hasCompetition: hasCompetition as boolean,
     })),
     agenda: [
-      { id: 'a1', timeLabel: '3:30', title: 'Short-game block', detail: 'Practice green', isNext: true, isCompetition: false, when: 'today' },
+      { id: 'a1', timeLabel: '3:30', title: 'Short-game block', detail: 'Practice green · 6 players', isNext: true, isCompetition: false, when: 'today' },
       { id: 'a2', timeLabel: '4:45', title: '1:1 with Jonah', detail: 'Range bay 4', isNext: false, isCompetition: false, when: 'today' },
-      { id: 'a3', timeLabel: '5:30', title: 'Putting ladder', detail: 'Green 2', isNext: false, isCompetition: false, when: 'today' },
+      { id: 'a3', timeLabel: '5:30', title: 'Putting ladder', detail: 'Green 2 · Priya, Ava', isNext: false, isCompetition: false, when: 'today' },
       { id: 'a4', timeLabel: '6:00', title: 'Parent call', detail: 'Natarajan family', isNext: false, isCompetition: false, when: 'today' },
-      { id: 'a5', timeLabel: 'Thu', title: 'Qualifier · Pinehurst No. 2', detail: 'Starts 8:42', isNext: false, isCompetition: true, when: 'later' },
+      { id: 'a5', timeLabel: 'Thu', title: 'Qualifier · Pinehurst No. 2', detail: 'First tee 8:42 · 5 of 6 confirmed', isNext: false, isCompetition: true, when: 'later' },
     ],
   },
   latestRounds: {
@@ -80,20 +92,14 @@ export const PREVIEW_HOME: ChCoachHome = {
     error: false,
     scorecards: 58,
     rosterSize: 6,
-    rows: [
-      { playerId: 'theo', name: 'Theo Marchetti', classYear: 'Senior', rounds: 11, avg: 70.9, toPar: -1.1, trend: [72, 71, 71, 70, 70, 71, 70], sgPerRound: 1.8, status: 'improving' },
-      { playerId: 'sofia', name: 'Sofia Alvarez', classYear: 'Senior', rounds: 10, avg: 71.6, toPar: -0.4, trend: [72, 72, 71, 72, 71, 71, 71], sgPerRound: 1.1, status: 'steady' },
-      { playerId: 'ava', name: 'Ava Lindqvist', classYear: 'Junior', rounds: 10, avg: 72.4, toPar: 0.4, trend: [73, 74, 72, 72, 72, 73, 72], sgPerRound: 0.6, status: 'steady' },
-      { playerId: 'jonah', name: 'Jonah Okafor', classYear: 'Sophomore', rounds: 9, avg: 74.1, toPar: 2.1, trend: [72, 72, 73, 74, 75, 74, 75], sgPerRound: -0.9, status: 'slipping' },
-      { playerId: 'eli', name: 'Eli Brandt', classYear: 'Junior', rounds: 8, avg: 74.8, toPar: 2.8, trend: [74, 75, 74, 75, 75, 74, 75], sgPerRound: -0.4, status: 'steady' },
-      { playerId: 'priya', name: 'Priya Natarajan', classYear: 'Freshman', rounds: 2, avg: 75.2, toPar: 3.2, trend: [76, 75], sgPerRound: null, status: 'early' },
-    ],
+    rows: LEADERS,
   },
 };
 
 /** Failure and empty variants, so every state can be seen without breaking anything. */
 export const PREVIEW_HOME_FAILED: ChCoachHome = {
   ...PREVIEW_HOME,
+  subline: null,
   week: { ...PREVIEW_HOME.week, error: true },
   latestRounds: { rounds: [], error: true, holesError: false },
   leaderboard: { ...PREVIEW_HOME.leaderboard, error: true },
@@ -101,6 +107,7 @@ export const PREVIEW_HOME_FAILED: ChCoachHome = {
 
 export const PREVIEW_HOME_EMPTY: ChCoachHome = {
   ...PREVIEW_HOME,
+  subline: null,
   week: { ...PREVIEW_HOME.week, agenda: [], days: PREVIEW_HOME.week.days.map((d) => ({ ...d, eventCount: 0, hasCompetition: false })) },
   latestRounds: { rounds: [], error: false, holesError: false },
   leaderboard: { rows: [], scorecards: 0, rosterSize: 0, error: false },

@@ -5,6 +5,7 @@ import { SectionBoundary } from '../../ui/SectionBoundary';
 import { Week } from './Week';
 import { LatestRound } from './LatestRound';
 import { Leaderboard } from './Leaderboard';
+import { HomeActions } from './HomeActions';
 import '../../styles/home.css';
 
 /**
@@ -18,6 +19,8 @@ export function CoachHome({ data }: { data: ChCoachHome }) {
       <header className="ch-h-head">
         <span className="ch-h-head__date">{data.todayLabel}</span>
         <h1 className="ch-display">{data.greeting}</h1>
+        {data.subline && <p className="ch-h-head__sub">{data.subline}</p>}
+        <HomeActions teamChatId={data.teamChatId} />
       </header>
       <div className="ch-h-sheet ch-sheet">
         <SectionBoundary surface="home.week" label="This week">

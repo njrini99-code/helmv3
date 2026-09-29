@@ -258,3 +258,57 @@ describe('busy time expansion', async () => {
     expect(M.expandBusyDates({ start_date: '2026-10-12', end_date: '2026-10-12' }, { frequency: 'weekly', weekdays: [1, 3], count: 3 }, '2026-10-01', '2026-11-30')).toEqual(['2026-10-12', '2026-10-14', '2026-10-19']);
   });
 });
+
+import * as H from '../screens/home/model';
+import { ago } from '../shell/Bell';
+
+describe('home model', () => {
+  const names = new Map([
+    ['p', 'Priya Natarajan'],
+    ['a', 'Ava Lindqvist'],
+    ['j', 'Jonah Okafor'],
+  ]);
+  it('counts days across month ends', () => {
+    expect(H.daysBetween('2026-09-28', '2026-10-07')).toBe(9);
+    expect(H.daysBetween('2026-10-07', '2026-10-07')).toBe(0);
+  });
+  it('names up to three invitees, counts more, and never claims zero', () => {
+    expect(H.inviteDetail({ location: 'Green 2', title: 'Putting ladder', invitees: ['p', 'a'], names })).toBe('Green 2 · Priya, Ava');
+    expect(H.inviteDetail({ location: 'Range bay 4', title: '1:1 with Jonah', invitees: ['j'], names })).toBe('Range bay 4');
+    expect(H.inviteDetail({ location: 'Practice green', title: 'Short game', invitees: ['1', '2', '3', '4'], names })).toBe('Practice green · 4 players');
+    expect(H.inviteDetail({ location: 'Team room', title: 'Film', invitees: [], names })).toBe('Team room');
+    // A failed attendance read passes null: location only.
+    expect(H.inviteDetail({ location: null, title: 'Film', invitees: null, names })).toBeNull();
+    expect(H.confirmedLine(null, 0)).toBeNull();
+    expect(H.confirmedLine(['a', 'b'], 1)).toBe('1 of 2 confirmed');
+  });
+  it('writes the subline from real status, and nothing when rounds failed', () => {
+    const rows: H.ChSublineRow[] = [
+      { name: 'Theo Marchetti', status: 'improving', quietDays: 2 },
+      { name: 'Jonah Okafor', status: 'slipping', quietDays: 3 },
+      { name: 'Eli Brandt', status: 'steady', quietDays: 9 },
+      { name: 'Priya Natarajan', status: 'early', quietDays: 1 },
+    ];
+    const comp = { title: 'Qualifier · Pinehurst No. 2', when: 'Thursday' };
+    expect(H.homeSubline(rows, { roundsError: false, nextCompetition: comp })).toBe(
+      "Jonah is slipping and Eli hasn't posted a round in 9 days. Qualifier · Pinehurst No. 2 is Thursday. The others with enough rounds are on track.",
+    );
+    expect(H.homeSubline(rows, { roundsError: true, nextCompetition: comp })).toBeNull();
+    expect(H.homeSubline([rows[0]!], { roundsError: false, nextCompetition: null })).toBe('The team is on track.');
+    // An early read alone is never called on track.
+    expect(H.homeSubline([rows[3]!], { roundsError: false, nextCompetition: null })).toBeNull();
+    const many = rows.map((r) => ({ ...r, status: 'slipping' as const }));
+    expect(H.homeSubline(many, { roundsError: false, nextCompetition: null })).toBe('4 players need a look: Theo, Jonah, Eli and Priya.');
+  });
+});
+
+describe('bell', () => {
+  it('writes compact relative times', () => {
+    const now = Date.parse('2026-10-14T18:40:00Z');
+    expect(ago('2026-10-14T18:39:40Z', now)).toBe('Now');
+    expect(ago('2026-10-14T18:31:00Z', now)).toBe('9m');
+    expect(ago('2026-10-14T15:40:00Z', now)).toBe('3h');
+    expect(ago('2026-10-12T18:40:00Z', now)).toBe('2d');
+    expect(ago('not a date', now)).toBe('');
+  });
+});

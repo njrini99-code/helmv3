@@ -6,7 +6,7 @@ Route: /golf/dashboard (coach)   Surface tag: `home.<week|latestRound|leaderboar
 ## spec
 - [x] Desktop reference files and screenshots are named above
 - [x] Every figure on the screen is mapped to a table and column, or logged as a data gap in PROGRESS.md
-- [x] N/A: Home has no mutations in this pass (the "New session" button was removed, D-4)
+- [x] N/A: Home has no mutations; "Message team" and "New event" are links (D-4, revised)
 - [x] Differences between the README and the screenshots are resolved as decisions in PROGRESS.md
 
 ## desktop
@@ -24,7 +24,7 @@ Route: /golf/dashboard (coach)   Surface tag: `home.<week|latestRound|leaderboar
 - [x] Every Supabase call reads `error`; lists over 1,000 rows paginate, and `.in()` is chunked
 - [x] Null, zero and "early read" render differently, and windows and samples are stated
 - [ ] Dates and times are resolved in the team's timezone on the server, with no hydration mismatch
-- [ ] Unit tests cover the loader's derivations
+- [x] Unit tests cover the loader's derivations (subline, invitee details, quiet days: `src/clubhouse/__tests__/logic.test.ts`)
 
 ## states
 - [x] Loading: a route skeleton shaped like the page, so nothing shifts when data lands

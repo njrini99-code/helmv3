@@ -1,11 +1,14 @@
 import 'server-only';
 import { createClient } from '@/lib/supabase/server';
 import { chunkIds } from '@/lib/supabase/chunk-ids';
+import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import { CLASS_EVENT_TYPE } from '@/lib/calendar/class-events';
 import { getCurrentDecimalHourInTz } from '@/lib/utils/timezone';
 import { getGreeting, timeOfDayForHour } from '@/lib/utils/time-of-day';
 import { chLogServer } from '../lib/track-server';
 import { classYearLabel, fullName, groupByPlayer, isFull18, loadSeasonRounds, summarizePlayer, type ChForm } from './season';
+import { rsvpOf } from './calendar';
+import { confirmedLine, daysBetween, homeSubline, inviteDetail } from '../screens/home/model';
 
 export { classYearLabel, formStatus } from './season';
 
@@ -73,10 +76,16 @@ export interface ChLeaderRow {
   /** Null when there are fewer than three rounds with strokes gained. */
   sgPerRound: number | null;
   status: ChForm;
+  /** Days since the player's last countable round of any length, in the team's timezone. */
+  quietDays: number | null;
 }
 
 export interface ChCoachHome {
   greeting: string;
+  /** The team chat to open from "Message team"; null opens Messages. */
+  teamChatId: string | null;
+  /** Who needs a look and what's next, from the leaderboard and the week. Null when that read failed. */
+  subline: string | null;
   todayLabel: string;
   week: { days: ChHomeDay[]; agenda: ChAgendaRow[]; error: boolean };
   /** holesError: the rounds loaded but their hole-by-hole detail didn't. */
@@ -136,7 +145,7 @@ export async function loadCoachHome(input: { teamId: string; coachName: string }
   const windowStart = `${addDays(weekStart, -1)}T00:00:00Z`;
   const windowEnd = `${addDays(weekEnd, 2)}T00:00:00Z`;
 
-  const [eventsRes, rosterRes] = await Promise.all([
+  const [eventsRes, rosterRes, chatRes] = await Promise.all([
     supabase
       .from('golf_events')
       .select('id, title, event_type, start_time, end_time, all_day, location')
@@ -152,7 +161,9 @@ export async function loadCoachHome(input: { teamId: string; coachName: string }
       .select('player:golf_players(id, first_name, last_name, graduation_year)')
       .eq('team_id', input.teamId)
       .eq('status', 'active'),
+    supabase.from('golf_conversations').select('id').eq('team_id', input.teamId).eq('is_team_chat', true).order('created_at', { ascending: true }).limit(1),
   ]);
+  if (chatRes.error) log('team chat', chatRes.error);
 
   // ── Week ──
   if (eventsRes.error) log('events', eventsRes.error);
@@ -169,33 +180,6 @@ export async function loadCoachHome(input: { teamId: string; coachName: string }
       hasCompetition: dayEvents.some((e) => COMPETITION_TYPES.has(e.event_type)),
     };
   });
-  const timeFmt = new Intl.DateTimeFormat('en-US', { timeZone: tz, hour: 'numeric', minute: '2-digit', hour12: true });
-  const clock = (iso: string) => timeFmt.format(new Date(iso)).replace(/\s?[AP]M$/, '');
-  const todays = events.filter((e) => e.localDate === today);
-  const nextId = todays.find((e) => new Date(e.end_time ?? e.start_time) > now)?.id;
-  const agenda: ChAgendaRow[] = [
-    ...todays.map((e) => ({
-      id: e.id,
-      timeLabel: e.all_day ? 'All day' : clock(e.start_time),
-      title: e.title,
-      detail: e.location,
-      isNext: e.id === nextId,
-      isCompetition: COMPETITION_TYPES.has(e.event_type),
-      when: 'today' as const,
-    })),
-    ...events
-      .filter((e) => e.localDate > today && e.localDate <= weekEnd && COMPETITION_TYPES.has(e.event_type))
-      .map((e) => ({
-        id: e.id,
-        timeLabel: WEEKDAYS[weekdayIndexMonFirst(e.localDate)] ?? '',
-        title: e.title,
-        detail: [e.all_day ? null : `Starts ${clock(e.start_time)}`, e.location].filter(Boolean).join(' · ') || null,
-        isNext: false,
-        isCompetition: true,
-        when: 'later' as const,
-      })),
-  ];
-
   // ── Roster ──
   if (rosterRes.error) log('roster', rosterRes.error);
   type RosterPlayer = { id: string; first_name: string | null; last_name: string | null; graduation_year: number | null };
@@ -204,6 +188,59 @@ export async function loadCoachHome(input: { teamId: string; coachName: string }
     .filter((p): p is RosterPlayer => p !== null);
   const nameOf = fullName;
   const playerById = new Map(roster.map((p) => [p.id, p]));
+  const names = new Map(roster.map((p) => [p.id, nameOf(p)]));
+
+  const timeFmt = new Intl.DateTimeFormat('en-US', { timeZone: tz, hour: 'numeric', minute: '2-digit', hour12: true });
+  const clock = (iso: string) => timeFmt.format(new Date(iso)).replace(/\s?[AP]M$/, '');
+  const todays = events.filter((e) => e.localDate === today);
+  const later = events.filter((e) => e.localDate > today && e.localDate <= weekEnd && COMPETITION_TYPES.has(e.event_type));
+  const nextId = todays.find((e) => new Date(e.end_time ?? e.start_time) > now)?.id;
+
+  // Who is invited, and who has said yes, for the rows shown. A failed read
+  // drops the counts and names, never shows "0 players".
+  const invited = new Map<string, string[]>();
+  const accepted = new Map<string, number>();
+  let attendanceError = false;
+  for (const ids of chunkIds([...todays, ...later].map((e) => e.id))) {
+    const { data, error } = await fetchAllRowsResult((from, to) =>
+      supabase.from('golf_event_attendance').select('id, event_id, player_id, status').in('event_id', ids).order('id', { ascending: true }).range(from, to),
+    );
+    if (error) {
+      log('attendance', error);
+      attendanceError = true;
+      break;
+    }
+    for (const a of data ?? []) {
+      invited.set(a.event_id, [...(invited.get(a.event_id) ?? []), a.player_id]);
+      if (rsvpOf(a.status) === 'accepted') accepted.set(a.event_id, (accepted.get(a.event_id) ?? 0) + 1);
+    }
+  }
+  const inviteesOf = (id: string) => (attendanceError ? null : (invited.get(id) ?? []));
+
+  const agenda: ChAgendaRow[] = [
+    ...todays.map((e) => ({
+      id: e.id,
+      timeLabel: e.all_day ? 'All day' : clock(e.start_time),
+      title: e.title,
+      detail: inviteDetail({ location: e.location, title: e.title, invitees: inviteesOf(e.id), names }),
+      isNext: e.id === nextId,
+      isCompetition: COMPETITION_TYPES.has(e.event_type),
+      when: 'today' as const,
+    })),
+    ...later.map((e) => ({
+      id: e.id,
+      timeLabel: WEEKDAYS[weekdayIndexMonFirst(e.localDate)] ?? '',
+      title: e.title,
+      detail:
+        [e.all_day ? null : `First tee ${clock(e.start_time)}`, confirmedLine(inviteesOf(e.id), accepted.get(e.id) ?? 0) ?? e.location].filter(Boolean).join(' · ') ||
+        null,
+      isNext: false,
+      isCompetition: true,
+      when: 'later' as const,
+    })),
+  ];
+  const nextComp = [...todays, ...later].find((e) => COMPETITION_TYPES.has(e.event_type) && new Date(e.end_time ?? e.start_time) > now);
+  const longDay = new Intl.DateTimeFormat('en-US', { timeZone: tz, weekday: 'long' });
 
   // ── Season rounds ──
   let roundsError = !!rosterRes.error;
@@ -260,6 +297,9 @@ export async function loadCoachHome(input: { teamId: string; coachName: string }
 
   // ── Leaderboard ──
   const byPlayer = groupByPlayer(full);
+  // Recency counts any countable round, nine holes included.
+  const lastPlayed = new Map<string, string>();
+  for (const r of rounds) if (!lastPlayed.has(r.player_id)) lastPlayed.set(r.player_id, r.round_date.slice(0, 10));
   const rows: ChLeaderRow[] = [];
   for (const p of roster) {
     const list = byPlayer.get(p.id);
@@ -275,12 +315,18 @@ export async function loadCoachHome(input: { teamId: string; coachName: string }
       trend: season.trend,
       sgPerRound: season.sgPerRound,
       status: season.status,
+      quietDays: lastPlayed.has(p.id) ? Math.max(0, daysBetween(lastPlayed.get(p.id)!, today)) : null,
     });
   }
   rows.sort((a, b) => a.avg - b.avg || b.rounds - a.rounds);
 
   return {
     greeting: `${greeting}, ${firstName}.`,
+    teamChatId: chatRes.error ? null : (chatRes.data?.[0]?.id ?? null),
+    subline: homeSubline(rows, {
+      roundsError,
+      nextCompetition: nextComp ? { title: nextComp.title, when: nextComp.localDate === today ? 'today' : longDay.format(new Date(nextComp.start_time)) } : null,
+    }),
     todayLabel,
     week: { days, agenda, error: !!eventsRes.error },
     latestRounds: { rounds: latestRounds, error: roundsError, holesError },

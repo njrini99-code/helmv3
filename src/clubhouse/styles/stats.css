@@ -574,10 +574,10 @@ a.ch-lg__r:hover,
   border-radius: 8px;
   background: rgb(21 90 57 / 0.07);
 }
-.ch-pg {
+/* Beats `.ch-yb svg`: the rings are a fixed-size figure, left-aligned like the handoff. */
+.ch-yb .ch-pg {
   width: 100%;
-  max-width: 440px;
-  margin: 0 auto;
+  max-width: 372px;
 }
 .ch-pg-ring {
   stroke: var(--ch-chart-paper);
@@ -591,11 +591,11 @@ a.ch-lg__r:hover,
   stroke-width: 1;
 }
 .ch-pg-lbl {
-  font: italic 500 12px var(--ch-font-sans);
+  font: italic 500 11px var(--ch-font-sans);
   fill: var(--ch-ink-600);
 }
 .ch-pg-pct {
-  font: 700 12px var(--ch-font-sans);
+  font: normal 700 11px var(--ch-font-sans);
   fill: var(--ch-chart-gain);
 }
 .ch-pg-pct.is-below {

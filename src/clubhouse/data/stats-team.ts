@@ -109,7 +109,8 @@ export async function loadTeamStats(input: { teamId: string; window: ChWindow })
   const [cache, seasonCache, putts, d1] = await Promise.all([
     loadRoundCache(supabase, allIds, 'stats'),
     loadRoundCache(supabase, seasonFull.map((r) => r.id), 'stats'),
-    loadPutts(supabase, windowRounds.map((r) => r.id)),
+    // The whole season's putts: the window's bands, and the season's longest made putt.
+    loadPutts(supabase, season.rounds.map((r) => r.id)),
     d1Promise,
   ]);
   const rowsFor = (rs: ChRound[]) => rs.map((r) => cache.byRound.get(r.id)).filter((x): x is ChRoundCache => !!x);
@@ -179,15 +180,17 @@ export async function loadTeamStats(input: { teamId: string; window: ChWindow })
 
   // Putting make rate by distance.
   let putting: ChTeamStats['putting'] = null;
-  if (!putts.error && putts.rows.length) {
+  const windowIds = new Set(windowRounds.map((r) => r.id));
+  const windowPutts = putts.rows.filter((r) => windowIds.has(r.roundId));
+  if (!putts.error && windowPutts.length) {
     const bands = PUTT_BANDS.map((b) => {
-      const inBand = putts.rows.filter((r) => r.feet >= b.lo && r.feet < b.hi);
+      const inBand = windowPutts.filter((r) => r.feet >= b.lo && r.feet < b.hi);
       return { label: b.label, attempts: inBand.length, made: inBand.filter((r) => r.made).length, d1: b.metric ? (d1.get(b.metric) ?? null) : null };
     });
-    putting = { bands, putts: putts.rows.length };
+    putting = { bands, putts: windowPutts.length };
   }
 
-  const bests = seasonBests(seasonFull, players, seasonCache.byRound);
+  const bests = seasonBests(seasonFull, players, seasonCache.byRound, putts.error ? null : { rows: putts.rows, rounds: season.rounds });
 
   return {
     teamName: teamRes.data?.name ?? 'Your team',
@@ -215,14 +218,14 @@ export async function loadTeamStats(input: { teamId: string; window: ChWindow })
 async function loadPutts(
   supabase: Awaited<ReturnType<typeof createClient>>,
   roundIds: string[],
-): Promise<{ rows: Array<{ feet: number; made: boolean }>; error: boolean }> {
-  const rows: Array<{ feet: number; made: boolean }> = [];
+): Promise<{ rows: Array<{ roundId: string; feet: number; made: boolean }>; error: boolean }> {
+  const rows: Array<{ roundId: string; feet: number; made: boolean }> = [];
   for (const ids of chunkIds(roundIds)) {
-    const res = await fetchAllRowsResult<{ putt_distance_feet: number | null; putt_made: boolean | null }>(
+    const res = await fetchAllRowsResult<{ round_id: string; putt_distance_feet: number | null; putt_made: boolean | null }>(
       (from, to) =>
         supabase
           .from('golf_shots')
-          .select('putt_distance_feet, putt_made')
+          .select('round_id, putt_distance_feet, putt_made')
           .in('round_id', ids)
           .not('putt_distance_feet', 'is', null)
           .not('putt_made', 'is', null)
@@ -237,7 +240,7 @@ async function loadPutts(
     }
     for (const r of res.data ?? []) {
       const feet = Number(r.putt_distance_feet);
-      if (Number.isFinite(feet) && feet >= 0 && feet <= 120) rows.push({ feet, made: !!r.putt_made });
+      if (Number.isFinite(feet) && feet >= 0 && feet <= 120) rows.push({ roundId: r.round_id, feet, made: !!r.putt_made });
     }
   }
   return { rows, error: false };
@@ -247,6 +250,7 @@ function seasonBests(
   rounds: ChRound[],
   players: Array<{ id: string; first_name: string | null; last_name: string | null }>,
   cache: Map<string, ChRoundCache>,
+  putts: { rows: Array<{ roundId: string; feet: number; made: boolean }>; rounds: ChRound[] } | null,
 ): ChTeamStats['bests'] {
   const name = new Map(players.map((p) => [p.id, fullName(p)]));
   const out: ChTeamStats['bests'] = [];
@@ -276,6 +280,13 @@ function seasonBests(
   if (sg) {
     const v = sg.strokes_gained_total!;
     out.push({ label: 'Best SG round', playerId: sg.player_id, name: name.get(sg.player_id)!, value: `${v >= 0 ? '+' : '−'}${Math.abs(v).toFixed(1)}`, meta: meta(sg) });
+  }
+  // Longest putt made, from shot-level putting data (any countable round this season).
+  if (putts) {
+    const roundById = new Map(putts.rounds.filter((r) => name.has(r.player_id)).map((r) => [r.id, r]));
+    const top = putts.rows.filter((p) => p.made && roundById.has(p.roundId)).sort((a, b) => b.feet - a.feet)[0];
+    const r = top ? roundById.get(top.roundId) : undefined;
+    if (top && r) out.push({ label: 'Longest putt made', playerId: r.player_id, name: name.get(r.player_id)!, value: `${Math.round(top.feet)} ft`, meta: meta(r) });
   }
   // Most improved: first five rounds of the season against the latest five, at least ten rounds.
   let best: { id: string; change: number } | null = null;

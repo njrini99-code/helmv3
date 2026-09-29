@@ -14,6 +14,7 @@ import '@/clubhouse/styles/stats.css';
 import '@/clubhouse/styles/calendar.css';
 import '@/clubhouse/styles/messages.css';
 import { PreviewMessages } from '@/clubhouse/preview/PreviewMessages';
+import { PreviewBell } from '@/clubhouse/preview/PreviewBell';
 import { MessagesSkeleton } from '@/clubhouse/screens/messages/MessagesSkeleton';
 import { Calendar } from '@/clubhouse/screens/calendar/Calendar';
 import { CalendarSkeleton } from '@/clubhouse/screens/calendar/CalendarSkeleton';
@@ -42,17 +43,18 @@ import {
  *   /clubhouse-preview/calendar ?state=empty | failed | partial | loading, &view=, &date=, &event=
  *   /clubhouse-preview/calendar-player
  *   /clubhouse-preview/messages ?state=empty | rail | failed | thread-failed | loading | loading-route
+ *   any screen &bell=empty | failed | slow   (the top-bar notifications feed)
  */
 export default async function ClubhousePreview({
   params,
   searchParams,
 }: {
   params: Promise<{ screen: string }>;
-  searchParams: Promise<{ state?: string; view?: string; date?: string; event?: string }>;
+  searchParams: Promise<{ state?: string; view?: string; date?: string; event?: string; bell?: string; new?: string }>;
 }) {
   if (process.env.NODE_ENV === 'production') notFound();
   const { screen } = await params;
-  const { state, view, date, event } = await searchParams;
+  const { state, view, date, event, bell, new: isNew } = await searchParams;
   const calView = view === 'day' || view === 'month' || view === 'agenda' ? view : 'week';
 
   const screens: Record<string, { path: string; node: React.ReactNode }> = {
@@ -100,6 +102,7 @@ export default async function ClubhousePreview({
           <Calendar
             frozen
             initialEvent={event}
+            initialNew={isNew === '1'}
             data={{
               ...(state === 'empty' ? PREVIEW_CALENDAR_EMPTY : state === 'failed' ? PREVIEW_CALENDAR_FAILED : state === 'partial' ? PREVIEW_CALENDAR_PARTIAL : PREVIEW_CALENDAR),
               view: calView,
@@ -126,8 +129,10 @@ export default async function ClubhousePreview({
   const user = screen === 'calendar-player' || screen === 'messages-player' ? { ...PREVIEW_PLAYER_USER, name: 'Jonah Okafor' } : PREVIEW_COACH;
 
   return (
-    <ClubhouseFrame userData={user} shell={PREVIEW_SHELL} pathname={entry.path} forceRebuilt>
-      {entry.node}
-    </ClubhouseFrame>
+    <PreviewBell state={bell}>
+      <ClubhouseFrame userData={user} shell={PREVIEW_SHELL} pathname={entry.path} forceRebuilt>
+        {entry.node}
+      </ClubhouseFrame>
+    </PreviewBell>
   );
 }

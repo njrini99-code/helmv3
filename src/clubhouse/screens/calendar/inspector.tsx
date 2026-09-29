@@ -66,6 +66,8 @@ export interface InspCtx {
   viewerPlayerId: string | null;
   zoneLabel: string;
   now: ChNow;
+  /** The team-zone hour the server read this data: "Checked 2:40 PM". */
+  loadedHour: number;
   people: Map<string, ChCalPerson>;
   events: ChCalEvent[];
   overlaps: ChCalOverlap[];
@@ -220,6 +222,7 @@ export function Summary({ ctx }: { ctx: InspCtx }) {
       <div className="ch-in__sec">
         <div className="ch-in__sechead">
           <b>Sources</b>
+          <span className="ch-num">Checked {fmtHour(ctx.loadedHour)}</span>
         </div>
         <div className="ch-in__facts">
           <Fact icon={CalendarCheck}>Team events from Helm</Fact>

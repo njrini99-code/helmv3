@@ -1,11 +1,13 @@
 'use client';
 
 import { AnimatePresence, m } from 'framer-motion';
-import { ChevronLeft, ChevronRight, Flag } from 'lucide-react';
+import { ArrowRight, ChevronLeft, ChevronRight, Flag } from 'lucide-react';
 import { useState } from 'react';
 import type { ChCoachHome, ChHoleScore } from '../../data/home';
 import { Avatar } from '../../ui/Avatar';
-import { IconButton } from '../../ui/Button';
+import { Button, IconButton } from '../../ui/Button';
+import { rebuiltHref } from '../../shell/nav';
+import { firstName } from './model';
 import { ScoreMark } from '../../ui/ScoreMark';
 import { EmptyState } from '../../ui/States';
 import { chSwap } from '../../lib/motion';
@@ -46,6 +48,8 @@ function Nine({ label, holes }: { label: string; holes: ChHoleScore[] }) {
     </div>
   );
 }
+
+const statsHref = (id: string) => rebuiltHref(`/golf/dashboard/stats?player=${id}`);
 
 export function LatestRound({ data }: { data: ChCoachHome['latestRounds'] }) {
   const [i, setI] = useState(0);
@@ -134,6 +138,12 @@ export function LatestRound({ data }: { data: ChCoachHome['latestRounds'] }) {
                     <b className={r.sg == null ? undefined : r.sg >= 0 ? 'is-gain' : 'is-loss'}>{formatSigned(r.sg)}</b>
                   </span>
                 </div>
+                {statsHref(r.playerId) && (
+                  // No single-round recap is rebuilt yet; this opens the player's stats, and says so.
+                  <Button href={statsHref(r.playerId)!} variant="ghost" size="sm" rightIcon={ArrowRight} className="ch-h-round__more">
+                    {firstName(r.playerName)}&apos;s stats
+                  </Button>
+                )}
               </div>
             </m.div>
           </AnimatePresence>

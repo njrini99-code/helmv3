@@ -64,6 +64,7 @@ export const PREVIEW_TEAM_STATS: ChTeamStats = {
     { label: 'Low round', playerId: 'theo', name: 'Theo Marchetti', value: '69 (−3)', meta: 'Pine Needles · Oct 11', under: true },
     { label: 'Most birdies', playerId: 'sofia', name: 'Sofia Alvarez', value: '6', meta: 'Finley GC · Sep 27' },
     { label: 'Best SG round', playerId: 'theo', name: 'Theo Marchetti', value: '+4.1', meta: 'Oakmont CC · Oct 12' },
+    { label: 'Longest putt made', playerId: 'ava', name: 'Ava Lindqvist', value: '42 ft', meta: 'Finley GC · Oct 8' },
     { label: 'Most improved', playerId: 'priya', name: 'Priya Natarajan', value: '−4.0', meta: 'Scoring avg, first five rounds to latest five' },
   ],
   sgBaselineNote: 'the Tour baseline',

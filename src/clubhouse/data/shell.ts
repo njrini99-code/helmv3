@@ -1,6 +1,7 @@
 import 'server-only';
 import { createClient } from '@/lib/supabase/server';
 import { chLogServer } from '../lib/track-server';
+import { rsvpOf } from './calendar';
 
 export interface ChNextEvent {
   id: string;
@@ -9,6 +10,8 @@ export interface ChNextEvent {
   whenLabel: string;
   /** "Thu, Oct 16 · 8:42 AM · Pinehurst No. 2" */
   metaLabel: string;
+  /** Accepted RSVPs of those invited; null with no invitees or when the read failed. */
+  ready: { accepted: number; invited: number } | null;
 }
 
 export interface ChShellData {
@@ -52,8 +55,15 @@ export async function loadClubhouseShell(teamId: string | undefined): Promise<Ch
   }
 
   const e = eventRes.error ? null : eventRes.data;
+  let ready: ChNextEvent['ready'] = null;
+  if (e) {
+    // One event's invitees: at most a roster, well under the row cap.
+    const { data, error } = await supabase.from('golf_event_attendance').select('status').eq('event_id', e.id).limit(1000);
+    if (error) chLogServer('shell', 'nextEventAttendance', error, 'calendar');
+    else if (data.length > 0) ready = { accepted: data.filter((a) => rsvpOf(a.status) === 'accepted').length, invited: data.length };
+  }
   return {
-    nextEvent: e ? describeEvent(e, timezone) : null,
+    nextEvent: e ? { ...describeEvent(e, timezone), ready } : null,
     pendingJoinRequests: joinRes.error ? null : (joinRes.count ?? 0),
   };
 }
@@ -69,7 +79,7 @@ function dayNumber(d: Date, timezone: string): number {
 function describeEvent(
   e: { id: string; title: string; start_time: string; all_day: boolean | null; location: string | null },
   timezone: string,
-): ChNextEvent {
+): Omit<ChNextEvent, 'ready'> {
   const start = new Date(e.start_time);
   const days = dayNumber(start, timezone) - dayNumber(new Date(), timezone);
   const whenLabel = days <= 0 ? 'Today' : days === 1 ? 'Tomorrow' : `In ${days} days`;

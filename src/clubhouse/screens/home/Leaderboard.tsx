@@ -1,5 +1,7 @@
 import Link from 'next/link';
-import { Users } from 'lucide-react';
+import { ArrowRight, Users } from 'lucide-react';
+import { Icon } from '../../ui/Icon';
+import { QUIET_DAYS } from './model';
 import type { ChCoachHome, ChLeaderRow } from '../../data/home';
 import { Avatar } from '../../ui/Avatar';
 import { EmptyState } from '../../ui/States';
@@ -15,6 +17,12 @@ const STATUS: Record<ChLeaderRow['status'], string> = {
   early: 'Early read',
 };
 
+/** "No rounds 9 days" outranks the form word when a player has gone quiet. */
+function statusText(p: ChLeaderRow): string {
+  if (p.quietDays != null && p.quietDays >= QUIET_DAYS) return `No rounds ${p.quietDays} days`;
+  return STATUS[p.status];
+}
+
 function Row({ p, pos }: { p: ChLeaderRow; pos: number }) {
   const href = rebuiltHref(`/golf/dashboard/stats?player=${p.playerId}`);
   const cells = (
@@ -24,7 +32,7 @@ function Row({ p, pos }: { p: ChLeaderRow; pos: number }) {
         <Avatar name={p.name} size={28} />
         <span>
           <span className="ch-h-lb__name">{p.name}</span>
-          <span className="ch-h-lb__meta">{[p.classYear, STATUS[p.status]].filter(Boolean).join(' · ')}</span>
+          <span className="ch-h-lb__meta">{[p.classYear, statusText(p)].filter(Boolean).join(' · ')}</span>
         </span>
       </span>
       <span className="ch-h-lb__trend">
@@ -69,7 +77,8 @@ export function Leaderboard({ data }: { data: ChCoachHome['leaderboard'] }) {
         </div>
         {rosterHref && (
           <Link href={rosterHref} className="ch-btn ch-btn--ghost ch-btn--sm">
-            Full roster
+            <span>Full roster</span>
+            <Icon icon={ArrowRight} size={14} />
           </Link>
         )}
       </div>

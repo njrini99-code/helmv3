@@ -956,7 +956,8 @@ function Thread({
           )}
           {api.typing && (
             <div className="ch-ms-msg is-first">
-              <span className="ch-ms-msg__av" />
+              {/* The realtime hook says someone is typing, not who: a direct thread knows, a group doesn't. */}
+              <span className="ch-ms-msg__av">{!conv.group && <Avatar name={conv.title} size={30} />}</span>
               <div className="ch-ms-msg__col">
                 <div
                   className="ch-ms-typing"

@@ -10,9 +10,10 @@ import '../styles/calendar.css';
 /**
  * /golf/dashboard/calendar in Clubhouse. Coaches plan the team schedule;
  * players see team events they can reply to and only their own classes.
- * `view`, `date` and `event` come from the URL so every state is linkable.
+ * `view`, `date` and `event` come from the URL so every state is linkable;
+ * `new=1` opens the event editor (Home's New event).
  */
-export async function ClubhouseCalendarRoute({ view, date, event }: { view?: string; date?: string; event?: string }) {
+export async function ClubhouseCalendarRoute({ view, date, event, isNew }: { view?: string; date?: string; event?: string; isNew?: boolean }) {
   const session = await getGolfSessionProfile();
   if (!session) return null;
   const team = await resolveClubhouseTeam(session);
@@ -37,5 +38,5 @@ export async function ClubhouseCalendarRoute({ view, date, event }: { view?: str
     view: parseView(view),
     date,
   });
-  return <Calendar data={data} initialEvent={event} />;
+  return <Calendar data={data} initialEvent={event} initialNew={isNew} />;
 }

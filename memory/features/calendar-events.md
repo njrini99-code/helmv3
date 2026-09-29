@@ -407,4 +407,5 @@ for coaches and players instead of `FairwayCalendar`. Contract differences:
 - State is URL-driven: `?view=day|week|month|agenda&date=YYYY-MM-DD&event=<id>`.
 - Writes reuse the existing actions unchanged (`createGolfEvent`, `updateGolfEvent`, `deleteGolfEvent`, `createRecurringEvent`, `editRecurringEvent`, `deleteRecurringEvent`, `respondToEvent`, `markAttendance`, `getAttendanceReport`, `getCalendarFeeds`, `createCalendarFeed`), passing the team zone's offset for the event date as `timezoneOffset`.
 - Players never see a teammate's class, matching `attributeClassEvents`. Overlaps shown to coaches are computed from the loaded events and classes, not the conflict inbox.
+- `?new=1` opens the event editor once (Home's "New event"); the param is dropped from the URL after it opens.
 - Checklist and decisions: `docs/clubhouse/screens/calendar.md`, `docs/clubhouse/PROGRESS.md` (D-8 to D-12).

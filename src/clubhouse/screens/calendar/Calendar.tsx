@@ -175,7 +175,7 @@ const buildUrl = (view: ChCalView, date: string, today: string, event?: string) 
 };
 
 /** `frozen` pins the clock to the loaded "now" (the dev preview renders a fixed day). */
-export function Calendar({ data, initialEvent, frozen = false }: { data: ChCalendarData; initialEvent?: string; frozen?: boolean }) {
+export function Calendar({ data, initialEvent, initialNew = false, frozen = false }: { data: ChCalendarData; initialEvent?: string; initialNew?: boolean; frozen?: boolean }) {
   const preview = frozen;
   const router = useRouter();
   const [pending, start] = useTransition();
@@ -187,7 +187,14 @@ export function Calendar({ data, initialEvent, frozen = false }: { data: ChCalen
     const e = initialEvent ? data.events.find((x) => x.id === initialEvent) : undefined;
     return e ? { kind: 'event', id: e.id, date: e.date } : null;
   });
-  const [editor, setEditor] = useState<EditorSeed | null>(null);
+  // `?new=1` (Home's New event) opens the editor once; the param is dropped so a reload doesn't reopen it.
+  const [editor, setEditor] = useState<EditorSeed | null>(() => (initialNew && coach ? { event: null } : null));
+  useEffect(() => {
+    if (!initialNew || frozen) return;
+    const url = new URL(window.location.href);
+    url.searchParams.delete('new');
+    window.history.replaceState(null, '', url.pathname + url.search);
+  }, [initialNew, frozen]);
   const [cancelling, setCancelling] = useState<ChCalEvent | null>(null);
   const [subs, setSubs] = useState(false);
   const [busyOpen, setBusyOpen] = useState(false);
@@ -272,6 +279,7 @@ export function Calendar({ data, initialEvent, frozen = false }: { data: ChCalen
     viewerPlayerId: data.viewerPlayerId,
     zoneLabel: data.zoneLabel,
     now,
+    loadedHour: data.nowHour,
     people,
     events: data.events,
     overlaps,
