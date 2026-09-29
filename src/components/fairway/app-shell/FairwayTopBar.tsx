@@ -65,16 +65,37 @@ const DefaultLink: ShellLinkComponent = ({ href, children, ...rest }) => (
 );
 
 /**
- * The nav bar surface: opaque cream at every width (owner OD-20, "opaque cream
- * plus a hairline on scroll"). No blur, no translucency. The bottom hairline is
- * transparent at the top of the page and fades in once content scrolls under
- * the bar (`data-scrolled`), the way an iOS navigation bar does. The border
- * width is always there, so the hairline appearing never shifts the layout.
+ * The warm Liquid-Glass surface classes, expressed inline from the --fw-glass-*
+ * tokens (Wave 1 cannot add a global `.glass` class). Includes the
+ * reduced-transparency / forced-colors fallback to an opaque matte surface.
+ *
+ * This is the DEFAULT for every caller (GolfHelm, BaseballHelm, Lift Lab,
+ * admin). The 2026-09 audit swapped it for an opaque bar with a hairline that
+ * appeared on scroll; the owner's read of the deployed result (2026-09-28) was
+ * that the chrome went flat, so glass is back. `nativeBar` and `backLink` keep
+ * the iOS bar's geometry and back affordance and do NOT change the surface.
  */
-const barSurface = cn(
-  'relative isolate [contain:layout_paint_style] bg-surface',
-  'border-b border-transparent data-[scrolled=true]:border-border-subtle',
-  'transition-[border-color] [transition-duration:var(--fw-dur-fast)] motion-reduce:transition-none',
+const glassSurface = cn(
+  'relative isolate [contain:layout_paint_style]',
+  // Mobile (<md): opaque matte, no blur — a `sticky` header over
+  // constantly-scrolling content is the worst compositing case on
+  // phone-class GPUs, so it gets the opaque surface unconditionally here.
+  // md+: full warm glass (blur/saturate) as before. No shadow utilities:
+  // the unconditional inset [box-shadow:...] below must survive at md+.
+  'bg-surface md:bg-[var(--fw-glass-bg)]',
+  'md:supports-[backdrop-filter]:backdrop-blur-[var(--fw-blur-glass)]',
+  'md:supports-[backdrop-filter]:backdrop-saturate-[var(--fw-glass-saturate)]',
+  'border-b border-[var(--fw-glass-border)]',
+  '[box-shadow:inset_0_1px_0_0_var(--fw-glass-highlight),inset_0_-1px_0_0_var(--fw-glass-border-bot)]',
+  // Cheap universal top sheen (works without backdrop-filter support).
+  "before:pointer-events-none before:absolute before:inset-0 before:content-['']",
+  'before:bg-gradient-to-b before:from-white/25 before:via-white/[0.04] before:to-transparent',
+  // Apple a11y fallback: opaque matte when transparency/contrast is reduced.
+  'motion-reduce:transition-none',
+  '[@media(prefers-reduced-transparency:reduce)]:bg-surface',
+  '[@media(prefers-reduced-transparency:reduce)]:supports-[backdrop-filter]:backdrop-blur-none',
+  '[@media(prefers-reduced-transparency:reduce)]:shadow-soft',
+  '[@media(prefers-reduced-transparency:reduce)]:before:hidden',
   '[@media(forced-colors:active)]:bg-[Canvas]',
 );
 
@@ -231,7 +252,6 @@ export const FairwayTopBar = memo(forwardRef<HTMLElement, FairwayTopBarProps>(fu
   return (
     <header
       data-slot="fw-topbar"
-      data-scrolled={scrolled || undefined}
       ref={ref}
       // a11y: names the banner landmark with the current destination. On
       // routes whose in-content `h1` is a greeting (both dashboards) or absent
@@ -243,13 +263,16 @@ export const FairwayTopBar = memo(forwardRef<HTMLElement, FairwayTopBarProps>(fu
       aria-label={displayTitle || undefined}
       // `pt-[env(safe-area-inset-top)]` keeps the bar's contents clear of the
       // iOS status bar / notch (Capacitor `contentInset: 'never'` → the web owns
-      // the safe area). The bar's cream fills the notch; 0 on non-notched/desktop.
+      // the safe area). The glass tints UP into the notch; 0 on non-notched/desktop.
       className={cn(
-        barSurface,
+        glassSurface,
         'sticky top-0 z-[var(--fw-z-sticky)] w-full pt-[env(safe-area-inset-top)]',
-        // M1: `flush` (a sub-nav strip renders directly below and owns the
-        // hairline) drops the bar's own bottom border at `<md` only.
-        flush && 'max-md:border-b-0',
+        // M1: `flush` (a sub-nav strip renders directly below) drops the
+        // bar's OWN bottom hairline at `<md` ONLY — the two glass classes
+        // below are re-declared (not toggled by a shared variable) so this
+        // stays a plain, mergeable Tailwind class list; `max-md:` scopes it
+        // to phone (md:+ keeps its own hairline regardless of `flush`).
+        flush && 'max-md:border-b-0 max-md:[box-shadow:inset_0_1px_0_0_var(--fw-glass-highlight)]',
         className,
       )}
     >
