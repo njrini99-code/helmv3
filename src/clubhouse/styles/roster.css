@@ -355,6 +355,11 @@
   justify-self: end;
   text-align: right;
 }
+/* The name cell holds the row's open button; it passes the grid track through. */
+.ch-rs-who__cell {
+  display: flex;
+  min-width: 0;
+}
 .ch-rs-who {
   display: flex;
   align-items: center;

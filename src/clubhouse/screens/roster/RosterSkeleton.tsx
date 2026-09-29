@@ -4,7 +4,7 @@ import '../../styles/roster.css';
 /** Route loading for Roster: header, toolbar and six face cards in their final slots. */
 export function RosterSkeleton() {
   return (
-    <main className="ch-rs" aria-busy="true" aria-label="Loading roster">
+    <main className="ch-rs" aria-busy="true" aria-label="Loading roster" data-ch-code="CH-3401">
       <header className="ch-rs-head">
         <div>
           <Skeleton width={180} height={30} radius={15} />

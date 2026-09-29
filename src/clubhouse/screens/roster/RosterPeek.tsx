@@ -24,7 +24,7 @@ const FORM_NOTE: Record<ChRosterPlayer['form'], string> = {
 };
 
 /** The player drawer. Esc closes it; the coach's note saves when the field loses focus. */
-export function RosterPeek({ p, onClose }: { p: ChRosterPlayer | undefined; onClose: () => void }) {
+export function RosterPeek({ p, notesLocked, onClose }: { p: ChRosterPlayer | undefined; notesLocked: boolean; onClose: () => void }) {
   const reduced = useChReducedMotion();
   const panel = useRef<HTMLElement>(null);
 
@@ -50,14 +50,14 @@ export function RosterPeek({ p, onClose }: { p: ChRosterPlayer | undefined; onCl
           exit={reduced ? { opacity: 0 } : { opacity: 0, x: 12 }}
           transition={chTween('base')}
         >
-          <PeekBody p={p} onClose={onClose} />
+          <PeekBody p={p} notesLocked={notesLocked} onClose={onClose} />
         </m.aside>
       )}
     </AnimatePresence>
   );
 }
 
-function PeekBody({ p, onClose }: { p: ChRosterPlayer; onClose: () => void }) {
+function PeekBody({ p, notesLocked, onClose }: { p: ChRosterPlayer; notesLocked: boolean; onClose: () => void }) {
   const figs: Array<[string, string]> = [
     ['Scoring avg', formatFixed(p.avg)],
     ['Handicap', formatHcp(p.handicap)],
@@ -130,7 +130,9 @@ function PeekBody({ p, onClose }: { p: ChRosterPlayer; onClose: () => void }) {
           </span>
         </div>
         <FormLine data={p.trend} width={292} height={64} earlyBelow={3} label={`${p.name}, last rounds: ${p.trend.join(', ') || 'none'}`} />
-        <p className="ch-rs-peek__note">{p.trend.length ? FORM_NOTE[p.form] : 'Form appears once rounds are posted.'}</p>
+        <p className="ch-rs-peek__note" data-ch-code={p.trend.length ? undefined : 'CH-3305'}>
+          {p.trend.length ? FORM_NOTE[p.form] : 'Form appears once rounds are posted.'}
+        </p>
       </div>
 
       {p.recent.length > 0 && (
@@ -156,7 +158,8 @@ function PeekBody({ p, onClose }: { p: ChRosterPlayer; onClose: () => void }) {
         <div className="ch-rs-peek__l">
           <b>Development</b>
         </div>
-        <div className="ch-rs-peek__dev">
+        {/* A count that didn't load shows as a dash, never 0 (CH-3208). */}
+        <div className="ch-rs-peek__dev" data-ch-code={p.focusAreas == null || p.goals == null ? 'CH-3208' : undefined}>
           <span>
             <b className="ch-num">{p.focusAreas ?? NO_DATA}</b> focus {p.focusAreas === 1 ? 'area' : 'areas'}
           </span>
@@ -166,7 +169,7 @@ function PeekBody({ p, onClose }: { p: ChRosterPlayer; onClose: () => void }) {
         </div>
       </div>
 
-      <CoachNote key={p.id} p={p} />
+      <CoachNote key={p.id} p={p} locked={notesLocked} />
 
       {profileHref && (
         <div className="ch-rs-peek__foot">
@@ -180,14 +183,21 @@ function PeekBody({ p, onClose }: { p: ChRosterPlayer; onClose: () => void }) {
   );
 }
 
-function CoachNote({ p }: { p: ChRosterPlayer }) {
+export const NOTE_MAX = 2000;
+/** The counter appears when this many characters are left. */
+const NOTE_WARN = 200;
+
+function CoachNote({ p, locked }: { p: ChRosterPlayer; locked: boolean }) {
   const [saved, setSaved] = useState(p.coachNote ?? '');
   const [draft, setDraft] = useState(p.coachNote ?? '');
   const save = useAction('roster.coachNote', (notes: string) => setIntent({ player_id: p.id, notes: notes || null }), {
     done: `Note saved for ${p.firstName}`,
     failed: `Couldn't save your note about ${p.firstName}`,
     hint: 'Your text is still in the field. Try again in a moment.',
+    code: 'CH-3004',
   });
+  const left = NOTE_MAX - draft.length;
+  const helpId = `note-help-${p.id}`;
   return (
     <div className="ch-rs-peek__sec">
       <label className="ch-rs-peek__l" htmlFor={`note-${p.id}`}>
@@ -199,10 +209,14 @@ function CoachNote({ p }: { p: ChRosterPlayer }) {
         className="ch-textarea ch-rs-peek__memo"
         rows={2}
         value={draft}
-        maxLength={2000}
-        placeholder={`Something to remember about ${p.firstName}`}
+        maxLength={NOTE_MAX}
+        // Notes that didn't load can't be edited: a blank field would save over the real note.
+        readOnly={locked}
+        placeholder={locked ? undefined : `Something to remember about ${p.firstName}`}
+        aria-describedby={locked || left <= NOTE_WARN ? helpId : undefined}
         onChange={(e) => setDraft(e.target.value)}
         onBlur={async () => {
+          if (locked) return;
           const next = draft.trim();
           if (next === saved.trim()) return;
           const res = await save.run(next);
@@ -210,6 +224,17 @@ function CoachNote({ p }: { p: ChRosterPlayer }) {
         }}
         aria-busy={save.pending}
       />
+      {locked ? (
+        <span id={helpId} className="ch-field__help" data-ch-code="CH-3209">
+          Your notes didn&rsquo;t load, so this one can&rsquo;t be edited right now. Refresh the page to try again.
+        </span>
+      ) : (
+        left <= NOTE_WARN && (
+          <span id={helpId} className="ch-field__help ch-num" data-ch-code="CH-3101" aria-live="polite">
+            {left === 0 ? 'That’s the limit: 2,000 characters.' : `${left} ${left === 1 ? 'character' : 'characters'} left`}
+          </span>
+        )
+      )}
     </div>
   );
 }

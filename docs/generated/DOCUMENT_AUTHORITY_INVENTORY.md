@@ -49,7 +49,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `INCIDENT` | 47 | 15 | 2 | 2 |
 | `ADR` | 5 | 0 | 3 | 0 |
 | `INDEX` | 21 | 1 | 7 | 5 |
-| `UNKNOWN` | 167 | 12 | 40 | 79 |
+| `UNKNOWN` | 168 | 12 | 40 | 79 |
 
 ## Files
 
@@ -653,6 +653,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/baseball/ui-migration-map.md` | current | - | - | - | 2 |
 | `docs/clubhouse/CHECKLIST_TEMPLATE.md` | current | - | - | - | - |
 | `docs/clubhouse/PROGRESS.md` | current | - | - | - | - |
+| `docs/clubhouse/catalog/home.md` | current | - | - | - | - |
 | `docs/clubhouse/catalog/settings.md` | current | - | - | - | - |
 | `docs/clubhouse/catalog/shell.md` | current | - | - | - | - |
 | `docs/clubhouse/phone/calendar.md` | current | - | - | - | - |
@@ -665,9 +666,9 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/clubhouse/phone/stats-team.md` | current | - | - | - | - |
 | `docs/clubhouse/screens/calendar.md` | current | - | - | - | - |
 | `docs/clubhouse/screens/foundation.md` | current | - | - | - | - |
-| `docs/clubhouse/screens/home.md` | current | - | - | - | 1 |
+| `docs/clubhouse/screens/home.md` | current | - | - | - | - |
 | `docs/clubhouse/screens/messages.md` | current | - | - | - | - |
-| `docs/clubhouse/screens/roster.md` | current | - | - | - | - |
+| `docs/clubhouse/screens/roster.md` | current | - | - | - | 1 |
 | `docs/clubhouse/screens/settings.md` | current | - | - | - | - |
 | `docs/clubhouse/screens/stats-player.md` | current | - | - | - | - |
 | `docs/clubhouse/screens/stats-team.md` | current | - | - | - | - |

@@ -1,7 +1,7 @@
 import { LazyMotion, domAnimation } from 'framer-motion';
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 /**
  * Settings: every numbered state in docs/clubhouse/catalog/settings.md is
@@ -19,16 +19,7 @@ import { SettingsView } from '../screens/settings/SettingsView';
 import { SettingsSkeleton } from '../screens/settings/SettingsSkeleton';
 import type { ChDevice, ChResult, ChSettingsData, ChSettingsSection, ChSettingsWrites } from '../screens/settings/model';
 import { coachData, failedRead, playerData } from '../preview/fixtures-settings';
-
-beforeAll(() => {
-  // jsdom has no <dialog> modal API.
-  HTMLDialogElement.prototype.showModal ??= function (this: HTMLDialogElement) {
-    this.setAttribute('open', '');
-  };
-  HTMLDialogElement.prototype.close ??= function (this: HTMLDialogElement) {
-    this.removeAttribute('open');
-  };
-});
+import './dialog-polyfill';
 
 beforeEach(() => {
   hapticSpy.mockClear();

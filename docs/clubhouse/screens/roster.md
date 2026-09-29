@@ -34,7 +34,7 @@ Route: /golf/dashboard/roster (coach)   Surface tag: `roster.<requests|list|peek
 - [x] Crash containment: every section is wrapped in a `SectionBoundary` with a surface tag
 - [x] Route error: the Clubhouse error view (it inherits the `logError`, chunk and stale-action recovery)
 - [x] Not found and no access: a coach without a team gets the no-team state; players never reach the coach roster
-- [ ] Offline or slow network: the action says so instead of spinning forever
+- [x] Offline or slow network: the action says so instead of spinning forever
 - [x] User errors: every mutation goes through `useAction`, with a specific failure message, Retry, an error haptic and a Sentry event
 - [x] Forms: the coach's note saves on blur, keeps the text on failure, and the Remove button disables while pending
 - [x] Destructive actions: a confirm step or Undo
@@ -67,11 +67,12 @@ Route: /golf/dashboard/roster (coach)   Surface tag: `roster.<requests|list|peek
 - [x] Haptics: select for tabs, pagers and chips; press for primary buttons; commit, success and error for outcomes
 
 ## accessibility
+Verified by `roster.test.tsx` (CH-38xx) and `npm run clubhouse:a11y`; states catalogued in `docs/clubhouse/catalog/roster.md`.
 - [ ] Full keyboard path, with visible focus and no traps; Esc closes overlays
-- [ ] Landmarks, headings in order, table roles, and labels on icon buttons
-- [ ] Charts have a text equivalent (aria-label or a view-as-table path)
-- [ ] Status changes are announced (aria-live) and errors use role=alert
-- [ ] Text contrast meets WCAG AA on every surface
+- [x] Landmarks, headings in order, table roles, and labels on icon buttons
+- [x] Charts have a text equivalent (aria-label or a view-as-table path)
+- [x] Status changes are announced (aria-live) and errors use role=alert
+- [x] Text contrast meets WCAG AA on every surface
 
 ## performance
 - [ ] No request waterfall on the server, with independent reads in parallel

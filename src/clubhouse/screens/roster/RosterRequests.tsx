@@ -15,24 +15,38 @@ import { formatHcp } from './format';
  * Join requests. Approve and Decline update the list optimistically; a
  * failure puts the request back and says so (useAction).
  */
-export function RosterRequests({ teamName, initial, error }: { teamName: string; initial: ChJoinRequest[]; error: boolean }) {
+export function RosterRequests({
+  teamName,
+  initial,
+  error,
+  onRetry,
+}: {
+  teamName: string;
+  initial: ChJoinRequest[];
+  error: boolean;
+  onRetry: () => void;
+}) {
   const [reqs, setReqs] = useState(initial);
   const [busy, setBusy] = useState<string | null>(null);
   const approve = useAction('roster.approveRequest', (r: ChJoinRequest) => acceptJoinRequest(r.id), (r) => ({
     done: `${r.name} added to ${teamName}`,
     failed: `Couldn't approve ${r.name}`,
     hint: 'The request may have been withdrawn. Refresh to see the latest.',
+    code: 'CH-3002',
   }));
   const decline = useAction('roster.declineRequest', (r: ChJoinRequest) => rejectJoinRequest(r.id), (r) => ({
     done: `Request from ${r.name} declined`,
     failed: `Couldn't decline ${r.name}'s request`,
+    code: 'CH-3003',
   }));
 
   if (error) {
     return (
       <InlineNotice
+        code="CH-3203"
         title="Join requests didn't load."
-        body="Pending requests are safe. Refresh to try again; the error has been reported."
+        body="Pending requests are safe. Try again, and if it keeps happening the error has already been reported."
+        onRetry={onRetry}
       />
     );
   }

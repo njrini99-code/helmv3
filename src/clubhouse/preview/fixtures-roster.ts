@@ -18,6 +18,8 @@ export const PREVIEW_ROSTER: ChRoster = {
   teamName: 'Varsity',
   season: 'Fall 2026',
   joinCode: 'FINLEY-26',
+  teamError: false,
+  notesError: false,
   playersError: false,
   statsError: false,
   requestsError: false,
@@ -52,3 +54,15 @@ export const PREVIEW_ROSTER: ChRoster = {
 
 export const PREVIEW_ROSTER_EMPTY: ChRoster = { ...PREVIEW_ROSTER, players: [], requests: [] };
 export const PREVIEW_ROSTER_FAILED: ChRoster = { ...PREVIEW_ROSTER, playersError: true, requestsError: true, players: [], requests: [] };
+/** Reads that fail while the roster itself loads: stats, the team row and this coach's notes. */
+export const PREVIEW_ROSTER_PARTIAL: ChRoster = {
+  ...PREVIEW_ROSTER,
+  statsError: true,
+  teamError: true,
+  notesError: true,
+  joinCode: null,
+  teamName: 'Your team',
+  season: null,
+  // What loadRoster returns when rounds fail: no season figures, no attention chips, counts unknown.
+  players: PREVIEW_ROSTER.players.map((p) => ({ ...p, rounds: 0, avg: null, sgPerRound: null, trend: [], form: 'early' as const, recent: [], attention: null, focusAreas: null, goals: null })),
+};

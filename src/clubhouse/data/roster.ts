@@ -54,8 +54,12 @@ export interface ChRoster {
   teamName: string;
   season: string | null;
   joinCode: string | null;
+  /** The team row didn't load: the name falls back and the join code is unknown, not missing. */
+  teamError: boolean;
   players: ChRosterPlayer[];
   playersError: boolean;
+  /** This coach's notes didn't load: note fields are locked so a blank field can't overwrite one. */
+  notesError: boolean;
   statsError: boolean;
   requests: ChJoinRequest[];
   requestsError: boolean;
@@ -176,7 +180,7 @@ export async function loadRoster(input: { teamId: string; coachId: string }): Pr
       })),
       focusAreas: focus.error ? null : (focus.counts.get(p.id) ?? 0),
       goals: goals.error ? null : (goals.counts.get(p.id) ?? 0),
-      coachNote: notes.get(p.id) ?? null,
+      coachNote: notes.notes.get(p.id) ?? null,
       attention: status === 'active' && !season.error ? attentionFor(s, now, teamPosting) : null,
     };
   });
@@ -200,8 +204,10 @@ export async function loadRoster(input: { teamId: string; coachId: string }): Pr
     teamName: teamRes.data?.name ?? 'Your team',
     season: teamRes.data?.season ?? null,
     joinCode: teamRes.data?.join_code ?? null,
+    teamError: !!teamRes.error,
     players,
     playersError: !!membersRes.error,
+    notesError: notes.error,
     statsError: season.error,
     requests,
     requestsError: !requestsRes.success,
@@ -227,7 +233,7 @@ async function countBy(
   return { counts, error: false };
 }
 
-async function loadNotes(supabase: Supabase, coachId: string, ids: string[]): Promise<Map<string, string>> {
+async function loadNotes(supabase: Supabase, coachId: string, ids: string[]): Promise<{ notes: Map<string, string>; error: boolean }> {
   const out = new Map<string, string>();
   for (const chunk of chunkIds(ids)) {
     const { data, error } = await supabase
@@ -237,9 +243,9 @@ async function loadNotes(supabase: Supabase, coachId: string, ids: string[]): Pr
       .in('player_id', chunk);
     if (error) {
       chLogServer('roster', 'coachNotes', error);
-      return out;
+      return { notes: out, error: true };
     }
     for (const r of data ?? []) if (r.notes) out.set(r.player_id, r.notes);
   }
-  return out;
+  return { notes: out, error: false };
 }

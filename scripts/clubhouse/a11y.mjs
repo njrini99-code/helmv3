@@ -32,6 +32,8 @@ export const CH_A11Y_PAGES = [
   ['roster', '/clubhouse-preview/roster?state=empty'],
   ['roster', '/clubhouse-preview/roster?state=failed'],
   ['roster', '/clubhouse-preview/roster?state=loading'],
+  ['roster', '/clubhouse-preview/roster?state=partial', { wide: '.ch-rs-face', phone: '.ch-rs-face' }],
+  ['roster', '/clubhouse-preview/roster', { wide: '[aria-label="List view"]', phone: '[aria-label="List view"]' }],
   ['stats-team', '/clubhouse-preview/stats'],
   ['stats-team', '/clubhouse-preview/stats?state=empty'],
   ['stats-team', '/clubhouse-preview/stats?state=loading'],

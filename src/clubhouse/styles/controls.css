@@ -197,6 +197,14 @@
 .ch-textarea[aria-invalid='true'] {
   box-shadow: 0 0 0 1px var(--ch-danger-600), 0 0 0 4px rgb(176 58 46 / 0.1);
 }
+/* Read-only fields sit in the inset well: visibly not for typing. */
+.ch-input[readonly]:not(:focus),
+.ch-textarea[readonly] {
+  background: var(--ch-bg-subtle);
+  color: var(--ch-text-secondary);
+  box-shadow: 0 0 0 1px var(--ch-border-hairline);
+  cursor: default;
+}
 .ch-input::placeholder,
 .ch-textarea::placeholder {
   color: var(--ch-ink-400);

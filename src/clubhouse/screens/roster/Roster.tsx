@@ -97,6 +97,7 @@ export function Roster({ data }: { data: ChRoster }) {
     done: `${p.name} removed from ${data.teamName}`,
     failed: `Couldn't remove ${p.name}`,
     hint: 'Nothing changed on the roster. Try again, or refresh if it keeps failing.',
+    code: 'CH-3001',
   }));
 
   const exportCsv = () => {
@@ -117,7 +118,7 @@ export function Roster({ data }: { data: ChRoster }) {
       toast({ title: `Roster exported · ${rows.length} ${rows.length === 1 ? 'player' : 'players'}` });
     } catch {
       haptic('error');
-      toast({ tone: 'error', title: "Couldn't export the roster", body: 'Your browser blocked the download. Try again, or use a desktop browser.' });
+      toast({ tone: 'error', title: "Couldn't export the roster", body: 'Your browser blocked the download. Try again, or use a desktop browser.', code: 'CH-3005' });
     }
   };
 
@@ -171,12 +172,13 @@ export function Roster({ data }: { data: ChRoster }) {
         </div>
       </header>
 
-      <SectionBoundary surface="roster.requests" label="Join requests">
-        <RosterRequests teamName={data.teamName} initial={data.requests} error={data.requestsError} />
+      <SectionBoundary surface="roster.requests" label="Join requests" code="CH-3204">
+        <RosterRequests teamName={data.teamName} initial={data.requests} error={data.requestsError} onRetry={() => router.refresh()} />
       </SectionBoundary>
 
       {data.statsError && (
         <InlineNotice
+          code="CH-3202"
           title="Season stats didn't load."
           body="The roster is complete, but averages, form and strokes gained are missing until the rounds load. The error has been reported."
           onRetry={() => router.refresh()}
@@ -198,6 +200,7 @@ export function Roster({ data }: { data: ChRoster }) {
 
       {data.playersError ? (
         <InlineNotice
+          code="CH-3201"
           title="The roster didn't load."
           body="Your players are safe. Try again, and if it keeps happening the error has already been reported."
           onRetry={() => router.refresh()}
@@ -205,6 +208,7 @@ export function Roster({ data }: { data: ChRoster }) {
       ) : players.length === 0 ? (
         <div className="ch-rs-empty ch-sheet">
           <EmptyState
+            code="CH-3301"
             icon={Users}
             title="No players on the roster yet."
             body="Share your join code and approve requests as they arrive. Players appear here once approved."
@@ -256,12 +260,13 @@ export function Roster({ data }: { data: ChRoster }) {
           </div>
 
           <div className={'ch-rs-body' + (cur ? ' has-peek' : '')}>
-            <SectionBoundary surface="roster.list" label="The roster">
+            <SectionBoundary surface="roster.list" label="The roster" code="CH-3205">
               {rows.length === 0 ? (
                 <div className="ch-rs-empty ch-sheet">
                   <EmptyState
                     compact
-                    title={q.trim() ? `No players match “${q.trim()}”` : show === 'inactive' ? 'No inactive players.' : 'No players to show.'}
+                    code={q.trim() ? 'CH-3302' : 'CH-3303'}
+                    title={q.trim() ? `No players match “${q.trim()}”` : show === 'inactive' ? 'No inactive players.' : 'No active players.'}
                     action={
                       <Button
                         size="sm"
@@ -287,7 +292,8 @@ export function Roster({ data }: { data: ChRoster }) {
                     >
                       <span className="ch-rs-face__top">
                         {p.jersey ? <span className="ch-rs-face__jersey ch-num">#{p.jersey}</span> : <span />}
-                        <span className={`ch-rs-face__dot is-${p.status}`} aria-label={p.status === 'active' ? 'Active' : 'Inactive'} />
+                        <span className={`ch-rs-face__dot is-${p.status}`} aria-hidden="true" />
+                        <span className="ch-sr-only">{p.status === 'active' ? 'Active' : 'Inactive'}</span>
                       </span>
                       <span className="ch-rs-face__av">
                         <Avatar name={p.name} size={76} />
@@ -335,13 +341,15 @@ export function Roster({ data }: { data: ChRoster }) {
                       role="row"
                       className={'ch-rs-row' + (sel === p.id ? ' is-sel' : '') + (p.status === 'inactive' ? ' is-off' : '')}
                     >
-                      <button type="button" className="ch-rs-who" onClick={() => select(p.id)} aria-pressed={sel === p.id}>
-                        <Avatar name={p.name} size={40} />
-                        <span>
-                          <b>{p.name}</b>
-                          <span className="ch-rs-who__m">{[p.classYear, p.hometown].filter(Boolean).join(' · ')}</span>
-                        </span>
-                      </button>
+                      <span role="cell" className="ch-rs-who__cell">
+                        <button type="button" className="ch-rs-who" onClick={() => select(p.id)} aria-pressed={sel === p.id}>
+                          <Avatar name={p.name} size={40} />
+                          <span>
+                            <b>{p.name}</b>
+                            <span className="ch-rs-who__m">{[p.classYear, p.hometown].filter(Boolean).join(' · ')}</span>
+                          </span>
+                        </button>
+                      </span>
                       <span role="cell">
                         <span className={`ch-rs-status is-${p.status}`}>
                           <i aria-hidden="true" />
@@ -373,15 +381,23 @@ export function Roster({ data }: { data: ChRoster }) {
                 </div>
               )}
             </SectionBoundary>
-            <SectionBoundary surface="roster.peek" label="The player panel">
-              <RosterPeek p={cur} onClose={() => setSel(null)} />
+            <SectionBoundary surface="roster.peek" label="The player panel" code="CH-3206">
+              <RosterPeek p={cur} notesLocked={data.notesError} onClose={() => setSel(null)} />
             </SectionBoundary>
           </div>
         </>
       )}
 
-      <InviteModal open={invite} onClose={() => setInvite(false)} teamName={data.teamName} code={data.joinCode} />
+      <InviteModal
+        open={invite}
+        onClose={() => setInvite(false)}
+        teamName={data.teamName}
+        code={data.joinCode}
+        codeFailed={data.teamError}
+        onRetry={() => router.refresh()}
+      />
       <Modal
+        code="CH-3501"
         open={!!removing}
         onClose={() => setRemoving(null)}
         width={460}
@@ -408,7 +424,7 @@ export function Roster({ data }: { data: ChRoster }) {
                 }
               }}
             >
-              {remove.pending ? 'Removing' : 'Remove player'}
+              {remove.pending ? <span data-ch-code="CH-3402">Removing</span> : 'Remove player'}
             </Button>
           </>
         }
@@ -419,7 +435,21 @@ export function Roster({ data }: { data: ChRoster }) {
   );
 }
 
-function InviteModal({ open, onClose, teamName, code }: { open: boolean; onClose: () => void; teamName: string; code: string | null }) {
+function InviteModal({
+  open,
+  onClose,
+  teamName,
+  code,
+  codeFailed,
+  onRetry,
+}: {
+  open: boolean;
+  onClose: () => void;
+  teamName: string;
+  code: string | null;
+  codeFailed: boolean;
+  onRetry: () => void;
+}) {
   const toast = useToast();
   const link = code && typeof window !== 'undefined' ? `${window.location.origin}/golf/join/${encodeURIComponent(code)}` : null;
   const copy = async (text: string, what: string) => {
@@ -429,7 +459,7 @@ function InviteModal({ open, onClose, teamName, code }: { open: boolean; onClose
       toast({ title: `${what} copied` });
     } catch {
       haptic('error');
-      toast({ tone: 'error', title: `Couldn't copy the ${what.toLowerCase()}`, body: 'Select it and copy it by hand.' });
+      toast({ tone: 'error', title: `Couldn't copy the ${what.toLowerCase()}`, body: 'Select it and copy it by hand.', code: 'CH-3006' });
     }
   };
   const share = async () => {
@@ -478,8 +508,25 @@ function InviteModal({ open, onClose, teamName, code }: { open: boolean; onClose
             </div>
           )}
         </div>
+      ) : codeFailed ? (
+        <InlineNotice
+          code="CH-3207"
+          title="The join code didn't load."
+          body="Your code still works for players who have it. Try again to show it here."
+          onRetry={onRetry}
+        />
       ) : (
-        <EmptyState compact title="Your team has no join code yet." body="Create one from team settings, then invite players here." />
+        <EmptyState
+          code="CH-3304"
+          compact
+          title="Your team has no join code yet."
+          body="Make one in Settings, then invite players here."
+          action={
+            <Button size="sm" href="/golf/dashboard/settings?section=team">
+              Open team settings
+            </Button>
+          }
+        />
       )}
     </Modal>
   );
