@@ -41,7 +41,7 @@ function overview(playerCount: number): TeamOverviewResult {
     data: {
       teamComposite: 62,
       teamCategories: { teeGame: 60, approach: 58, shortGame: 65, putting: 63, scoring: 61 },
-      teamShotAnalysis: { yardageCurve: [], deadZones: [], topWeaknesses: [] },
+      teamShotAnalysis: { yardageCurve: [], deadZones: [], topWeaknesses: [], teamAvgSG: null, penaltyStrokes: 0 },
       playerCount,
       statsRowCount: playerCount,
     },
