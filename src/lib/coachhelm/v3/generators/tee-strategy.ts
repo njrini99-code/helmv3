@@ -47,6 +47,7 @@ import { loadLastRoundDate } from '@/lib/coachhelm/v3/engine/hole-diagnosis';
 import { BaseGenerator } from '@/lib/coachhelm/v3/engine/generator-base';
 import { loadTeeShotsForStrategy, type TeeStrategyShot } from '@/lib/coachhelm/v3/engine/shot-source';
 import { isGeneratorEnabledForPlayer } from '@/lib/coachhelm/v3/foundation/generator-toggles';
+import { proportionDiffInterval, type Interval } from '@/lib/coachhelm/v3/stats/intervals';
 import type {
   ComposedContent,
   GeneratorAggregate,
@@ -119,6 +120,45 @@ interface TeeStrategyAggregate extends GeneratorAggregate {
   fairwayGap: number;
   distanceGap: number;
   roundsCovered: number;
+  /** 95% interval of the fairway gap (driver − non-driver), percentage points. */
+  gapCi: Interval | null;
+}
+
+/**
+ * Pure pattern rule (audit row 29). The point gap alone fired "laggy" at a
+ * raw 15-point gap with as few as 8 non-driver shots, where one proportion's
+ * standard error is ~17 points. Each label now needs its interval (Newcombe,
+ * 95%) to support it:
+ *   - laggy: point gap at or below −15pp, the WHOLE interval below zero
+ *     (driver is really less accurate), and the distance gain under 35 yd;
+ *   - sharp: the whole interval above −15pp (driver is really not a big
+ *     accuracy cost) and the point gap within 5pp;
+ *   - otherwise inconclusive.
+ */
+export function classifyTeeStrategy(
+  driver: GroupStats,
+  nonDriver: GroupStats,
+): { pattern: TeeStrategyPattern; fairwayGap: number; distanceGap: number; gapCi: Interval | null } {
+  const fairwayGap = driver.fairwayPct - nonDriver.fairwayPct; // negative if driver is worse
+  const distanceGap = driver.avgDistance - nonDriver.avgDistance;
+  const gapCi = proportionDiffInterval(
+    driver.fairwayHits,
+    driver.attempts,
+    nonDriver.fairwayHits,
+    nonDriver.attempts,
+  );
+  let pattern: TeeStrategyPattern = 'inconclusive';
+  if (
+    gapCi &&
+    fairwayGap <= -LAGGY_FW_GAP &&
+    gapCi.high < 0 &&
+    distanceGap < LAGGY_DISTANCE_GAP
+  ) {
+    pattern = 'laggy';
+  } else if (gapCi && fairwayGap >= SHARP_FW_GAP && gapCi.low > -LAGGY_FW_GAP * 100) {
+    pattern = 'sharp';
+  }
+  return { pattern, fairwayGap, distanceGap, gapCi };
 }
 
 function summarize(rows: TeeStrategyShot[], club: 'driver' | 'non_driver'): GroupStats {
@@ -186,15 +226,7 @@ export class TeeStrategyGenerator extends BaseGenerator<TeeStrategyAggregate> {
       return null;
     }
 
-    const fairwayGap = driver.fairwayPct - nonDriver.fairwayPct; // negative if driver is worse
-    const distanceGap = driver.avgDistance - nonDriver.avgDistance;
-
-    let pattern: TeeStrategyPattern = 'inconclusive';
-    if (fairwayGap <= -LAGGY_FW_GAP && distanceGap < LAGGY_DISTANCE_GAP) {
-      pattern = 'laggy';
-    } else if (fairwayGap >= SHARP_FW_GAP) {
-      pattern = 'sharp';
-    }
+    const { pattern, fairwayGap, distanceGap, gapCi } = classifyTeeStrategy(driver, nonDriver);
 
     const roundIds = new Set(rows.map((r) => r.round_id));
 
@@ -210,6 +242,7 @@ export class TeeStrategyGenerator extends BaseGenerator<TeeStrategyAggregate> {
       fairwayGap,
       distanceGap,
       roundsCovered: roundIds.size,
+      gapCi,
     };
   }
 
@@ -290,9 +323,12 @@ export class TeeStrategyGenerator extends BaseGenerator<TeeStrategyAggregate> {
         your_value: agg.driver.fairwayPct * 100,
         your_value_display: `${driverFw}%`,
         comparison_value: agg.nonDriver.fairwayPct * 100,
-        comparison_label: 'Non-driver fairway%',
+        comparison_label: `Non-driver fairway% (n=${agg.nonDriver.attempts})`,
         comparison_source: 'your_baseline',
-        sample_n: agg.driver.attempts + agg.nonDriver.attempts,
+        // The headline value is driver fairway %, so n is the driver count.
+        // It used to be driver + non-driver (e.g. 154 = 133 + 21), which read
+        // as if both sides had 150+ shots (audit row 29). Both n are in detail.
+        sample_n: agg.driver.attempts,
         window_days: WINDOW_DAYS,
         window_start: '',
         // The newest contributing round. This was hardcoded '' while the same
@@ -313,6 +349,14 @@ export class TeeStrategyGenerator extends BaseGenerator<TeeStrategyAggregate> {
         // for tee strategy so this is rough_estimate, not a real counterfactual.
         strokes_impact: diagnosticStrokes,
         strokes_impact_method: 'rough_estimate',
+        detail: {
+          driver_n: agg.driver.attempts,
+          non_driver_n: agg.nonDriver.attempts,
+          driver_fairway_hits: agg.driver.fairwayHits,
+          non_driver_fairway_hits: agg.nonDriver.fairwayHits,
+          fairway_gap_pp: agg.fairwayGap * 100,
+          gap_ci_95: agg.gapCi ? { low: agg.gapCi.low, high: agg.gapCi.high } : null,
+        },
         confidence: 0,
         confidence_factors: {
           sample_adequacy: Math.min(agg.driver.attempts / 25, 1),

@@ -22,6 +22,7 @@ import {
 import { applyGenderAnchor, type LpgaStandards } from './gender-anchor';
 import { loadStandardsForTour } from './pga-standards';
 import { applyTourBasis } from './tour-basis';
+import { applyTeamFloor } from './team-floor';
 import type { PlayerStanding } from './types';
 
 /**
@@ -102,18 +103,19 @@ function toStanding(row: RawRow): PlayerStanding | null {
 }
 
 /**
- * The two read-level overrides every loader applies, in order: the cohort
+ * The read-level overrides every loader applies, in order: the cohort
  * anchor first (women's rows get the LPGA / estimate / omission resolution),
  * then the Tour-basis rule (addendum A2 — `applyTourBasis`), so an
  * approach-proximity row is never returned with a comparable-looking Tour
- * marker no matter which loader served it. Both are pure.
+ * marker no matter which loader served it, then the team floor
+ * (`applyTeamFloor`: no team marker below 3 measured players). All pure.
  */
 function finalizeStanding(
   standing: PlayerStanding,
   gender: Awaited<ReturnType<typeof loadPlayerCohort>>['gender'],
   lpga: LpgaStandards | null,
 ): PlayerStanding {
-  return applyTourBasis(applyGenderAnchor(standing, gender, lpga));
+  return applyTeamFloor(applyTourBasis(applyGenderAnchor(standing, gender, lpga)));
 }
 
 /**

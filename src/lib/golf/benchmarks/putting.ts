@@ -134,9 +134,11 @@ export function buildPuttingBenchmarkRows(
 
     let verdict: PuttingBandVerdict;
     let gapToDiv1: number | null = null;
-    if (makePct === null) {
+    if (sampleN === 0) {
       verdict = 'no_putts';
-    } else if (sampleN < PUTTING_BENCHMARK_MIN_SAMPLE) {
+    } else if (makePct === null || sampleN < PUTTING_BENCHMARK_MIN_SAMPLE) {
+      // The leak map withholds a band's make % below its floor (audit rows
+      // 9/32): putts exist, there are just too few to rate.
       verdict = 'small_sample';
     } else {
       gapToDiv1 = Math.round((makePct - div1Value) * 10) / 10;

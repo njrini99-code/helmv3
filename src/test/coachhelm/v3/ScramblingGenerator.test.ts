@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { ScramblingGenerator } from '@/lib/coachhelm/v3/generators/scrambling';
-import { loadSandShots, type SandShot } from '@/lib/coachhelm/v3/engine/shot-source';
+import { loadSandShots, resolveSandShots, type SandShot } from '@/lib/coachhelm/v3/engine/shot-source';
+import { classifyBunkerFailureMode, summarizeSandSaves } from '@/lib/coachhelm/v3/generators/scrambling';
 
 vi.mock('@/lib/coachhelm/v3/engine/shot-source', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/lib/coachhelm/v3/engine/shot-source')>();
@@ -49,6 +50,9 @@ function makeAgg(over: Partial<{
     failure_mode: over.failure_mode ?? 'lag',
     cohort_gender: over.gender ?? 'mens',
     attempts_per_round: attempts / rounds_played,
+    save_n: attempts,
+    saves_made: Math.round(((over.playerValue ?? 8) / 100) * attempts),
+    save_source: 'hole_flag' as const,
   };
 }
 
@@ -139,11 +143,11 @@ describe('ScramblingGenerator', () => {
     // 5 greenside-bunker visits with flags: exactly 1 saved → 20% (matches the
     // DB cache + stat-formulas), NOT the looser "reached-and-1-putted" heuristic.
     mockLoadSandShots.mockResolvedValue([
-      sandShot({ reached_green: true, leave_distance_feet: 10, putts_after: 1, sand_save_flag: true }),
-      sandShot({ reached_green: true, leave_distance_feet: 14, putts_after: 1, sand_save_flag: false }),
-      sandShot({ reached_green: true, leave_distance_feet: 16, putts_after: 2, sand_save_flag: false }),
-      sandShot({ reached_green: true, leave_distance_feet: 13, putts_after: 2, sand_save_flag: false }),
-      sandShot({ reached_green: false, leave_distance_feet: null, putts_after: 2, sand_save_flag: false }),
+      sandShot({ hole_number: 1, reached_green: true, leave_distance_feet: 10, putts_after: 1, sand_save_flag: true }),
+      sandShot({ hole_number: 2, reached_green: true, leave_distance_feet: 14, putts_after: 1, sand_save_flag: false }),
+      sandShot({ hole_number: 3, reached_green: true, leave_distance_feet: 16, putts_after: 2, sand_save_flag: false }),
+      sandShot({ hole_number: 4, reached_green: true, leave_distance_feet: 13, putts_after: 2, sand_save_flag: false }),
+      sandShot({ hole_number: 5, reached_green: false, leave_distance_feet: null, putts_after: 2, sand_save_flag: false }),
     ]);
     const agg = await new ScramblingGenerator(PLAYER_ID, 'sand').aggregate();
     // 1 of 5 flagged saved → 20.0, reconciles with the displayed sand_save_percentage.
@@ -200,5 +204,93 @@ describe('evidence.window_end carries the newest contributing round', () => {
     const g = new ScramblingGenerator(PLAYER_ID, 'sand');
     const c = g.composeContent(makeAgg({ playerValue: 30, attempts: 20, rounds_played: 12 }));
     expect(c.evidence.window_end).toBe('2026-05-25');
+  });
+});
+
+describe('audit row 28 — bunker play recomputed from raw shots', () => {
+  // Raw golf_shots rows for three greenside bunker holes:
+  //   hole 1: splash out to 12 ft, 2 putts (reached, lagged)
+  //   hole 2: splash out to 15 ft, 2 putts (reached, lagged)
+  //   hole 3: splash out to 4 ft, 1 putt (reached, saved)
+  //   hole 4: stays in (2nd sand shot), then out to 20 ft, 2 putts
+  // plus a fairway-bunker APPROACH on hole 5 that must not count.
+  const raw = [
+    { round_id: 'r', hole_number: 1, shot_number: 3, shot_type: 'around_green', lie_before: 'sand', lie_after: 'green', result: 'green', is_penalty: false, distance_to_hole_before: 15, distance_unit_before: 'yards', distance_to_hole_after: 12, distance_unit_after: 'feet' },
+    { round_id: 'r', hole_number: 1, shot_number: 4, shot_type: 'putting', lie_before: 'green', lie_after: 'green', result: null, is_penalty: false, distance_to_hole_before: 12, distance_unit_before: 'feet', distance_to_hole_after: 1, distance_unit_after: 'feet' },
+    { round_id: 'r', hole_number: 1, shot_number: 5, shot_type: 'putting', lie_before: 'green', lie_after: null, result: 'hole', is_penalty: false, distance_to_hole_before: 1, distance_unit_before: 'feet', distance_to_hole_after: 0, distance_unit_after: 'feet' },
+    { round_id: 'r', hole_number: 2, shot_number: 3, shot_type: 'around_green', lie_before: 'sand', lie_after: 'green', result: 'green', is_penalty: false, distance_to_hole_before: 12, distance_unit_before: 'yards', distance_to_hole_after: 15, distance_unit_after: 'feet' },
+    { round_id: 'r', hole_number: 2, shot_number: 4, shot_type: 'putting', lie_before: 'green', lie_after: 'green', result: null, is_penalty: false, distance_to_hole_before: 15, distance_unit_before: 'feet', distance_to_hole_after: 2, distance_unit_after: 'feet' },
+    { round_id: 'r', hole_number: 2, shot_number: 5, shot_type: 'putting', lie_before: 'green', lie_after: null, result: 'hole', is_penalty: false, distance_to_hole_before: 2, distance_unit_before: 'feet', distance_to_hole_after: 0, distance_unit_after: 'feet' },
+    { round_id: 'r', hole_number: 3, shot_number: 3, shot_type: 'around_green', lie_before: 'sand', lie_after: 'green', result: 'green', is_penalty: false, distance_to_hole_before: 10, distance_unit_before: 'yards', distance_to_hole_after: 4, distance_unit_after: 'feet' },
+    { round_id: 'r', hole_number: 3, shot_number: 4, shot_type: 'putting', lie_before: 'green', lie_after: null, result: 'hole', is_penalty: false, distance_to_hole_before: 4, distance_unit_before: 'feet', distance_to_hole_after: 0, distance_unit_after: 'feet' },
+    { round_id: 'r', hole_number: 4, shot_number: 3, shot_type: 'around_green', lie_before: 'sand', lie_after: 'sand', result: 'bunker', is_penalty: false, distance_to_hole_before: 14, distance_unit_before: 'yards', distance_to_hole_after: 13, distance_unit_after: 'yards' },
+    { round_id: 'r', hole_number: 4, shot_number: 4, shot_type: 'around_green', lie_before: 'sand', lie_after: 'green', result: 'green', is_penalty: false, distance_to_hole_before: 13, distance_unit_before: 'yards', distance_to_hole_after: 20, distance_unit_after: 'feet' },
+    { round_id: 'r', hole_number: 4, shot_number: 5, shot_type: 'putting', lie_before: 'green', lie_after: 'green', result: null, is_penalty: false, distance_to_hole_before: 20, distance_unit_before: 'feet', distance_to_hole_after: 2, distance_unit_after: 'feet' },
+    { round_id: 'r', hole_number: 4, shot_number: 6, shot_type: 'putting', lie_before: 'green', lie_after: null, result: 'hole', is_penalty: false, distance_to_hole_before: 2, distance_unit_before: 'feet', distance_to_hole_after: 0, distance_unit_after: 'feet' },
+    { round_id: 'r', hole_number: 5, shot_number: 2, shot_type: 'approach', lie_before: 'sand', lie_after: 'green', result: 'green', is_penalty: false, distance_to_hole_before: 150, distance_unit_before: 'yards', distance_to_hole_after: 30, distance_unit_after: 'feet' },
+  ];
+  const flags = new Map<string, boolean | null>([
+    ['r:1', false], ['r:2', false], ['r:3', true], ['r:4', false], ['r:5', null],
+  ]);
+
+  it('resolves escape, leave and putts-after from raw shots (fairway bunker excluded)', () => {
+    const shots = resolveSandShots(raw, flags);
+    expect(shots).toHaveLength(5); // 4 greenside holes, hole 4 has two sand shots
+    expect(shots.filter((s) => s.reached_green)).toHaveLength(4);
+    const h1 = shots.find((s) => s.hole_number === 1)!;
+    expect(h1.leave_distance_feet).toBe(12);
+    expect(h1.putts_after).toBe(2);
+    const h4 = shots.filter((s) => s.hole_number === 4);
+    expect(h4.map((s) => s.reached_green)).toEqual([false, true]);
+  });
+
+  it('classifies escape vs lag from those shots', () => {
+    const shots = resolveSandShots(raw, flags);
+    const reached = shots.filter((s) => s.reached_green);
+    const mode = classifyBunkerFailureMode({
+      attempts: shots.length,
+      reachedN: reached.length,
+      twoPuttAfterReachN: reached.filter((s) => s.putts_after >= 2).length,
+    });
+    // 4 of 5 escaped (80%); 3 of 4 reached greens were 2-putts → lag.
+    expect(mode).toBe('lag');
+    expect(classifyBunkerFailureMode({ attempts: 10, reachedN: 5, twoPuttAfterReachN: 5 })).toBe('escape');
+    expect(classifyBunkerFailureMode({ attempts: 10, reachedN: 9, twoPuttAfterReachN: 2 })).toBe('mixed');
+  });
+
+  it('sand-save % counts each bunker HOLE once, so n is the rate\'s real denominator', () => {
+    const shots = resolveSandShots(raw, flags);
+    const s = summarizeSandSaves(shots);
+    // Hole 4 has two sand shots but is one save opportunity: 1 of 4 holes saved.
+    expect(s.n).toBe(4);
+    expect(s.made).toBe(1);
+    expect(s.source).toBe('hole_flag');
+  });
+
+  it('sample_n is the save denominator, and the card prints a 95% interval', async () => {
+    mockLoadSandShots.mockReset();
+    mockLoadSandShots.mockResolvedValue(
+      Array.from({ length: 6 }, (_, i) => [
+        sandShot({ hole_number: i + 1, reached_green: false, sand_save_flag: i === 0 }),
+        sandShot({ hole_number: i + 1, reached_green: true, sand_save_flag: i === 0 }),
+      ]).flat(),
+    );
+    const g = new ScramblingGenerator(PLAYER_ID, 'sand');
+    const agg = await g.aggregate();
+    expect(agg!.attempts).toBe(12);
+    expect(agg!.sampleN).toBe(6);
+    const c = g.composeContent(agg!);
+    expect(c.evidence.sample_n).toBe(6);
+    expect(c.evidence.detail).toMatchObject({ save_n: 6, saves_made: 1 });
+    expect((c.evidence.detail as { save_ci_95: { low: number; high: number } }).save_ci_95.low).toBeLessThan(17);
+    expect(c.content).toMatch(/95% range \d+-\d+%/);
+  });
+
+  it('is descriptive without a standing row (no standing dependency)', () => {
+    const g = new ScramblingGenerator(PLAYER_ID, 'sand') as unknown as {
+      requiresStanding: boolean; attachStandingWhenAvailable: boolean;
+    };
+    expect(g.requiresStanding).toBe(false);
+    expect(g.attachStandingWhenAvailable).toBe(true);
   });
 });

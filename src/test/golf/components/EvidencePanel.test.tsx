@@ -331,3 +331,29 @@ describe('EvidencePanel', () => {
     });
   });
 });
+
+describe('audit row 12 — lifetime values and the cohort source', () => {
+  it('compact mode says "lifetime", not "N days", for an all-time value', () => {
+    render(<EvidencePanel evidence={makeEvidence({ window_basis: 'lifetime', window_days: 213, sample_n: 20, metric: 'big_number_rate' })} />);
+    const sample = screen.getByTestId('evidence-sample');
+    expect(sample.textContent).toContain('lifetime');
+    expect(sample.textContent).not.toContain('213 days');
+  });
+
+  it('expanded mode labels the window Lifetime with the round span', () => {
+    render(
+      <EvidencePanel
+        compact={false}
+        evidence={makeEvidence({ window_basis: 'lifetime', window_days: 213, window_start: '2026-02-01', window_end: '2026-08-31' })}
+      />,
+    );
+    const row = screen.getByTestId('evidence-row-window');
+    expect(row.textContent).toContain('Lifetime');
+    expect(row.textContent).not.toContain('213 days');
+  });
+
+  it('labels a cohort_avg comparison as the college cohort', () => {
+    render(<EvidencePanel compact={false} evidence={makeEvidence({ comparison_source: 'cohort_avg', comparison_label: 'College cohort avg' })} />);
+    expect(screen.getByTestId('evidence-row-comparison').textContent).toContain('College cohort avg');
+  });
+});

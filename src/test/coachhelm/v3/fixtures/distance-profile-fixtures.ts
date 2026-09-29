@@ -139,7 +139,10 @@ export const SCENARIO_C_HOLES: HoleContext[] = [
 // missingParExcludedN=3 — every shot is excluded, none silently kept.
 // ---------------------------------------------------------------------------
 export const SCENARIO_D_LAYUP_175_PLUS: ShotFact[] = [
-  approachFact({ round_id: 'd1-round', hole_number: 5, distance_to_hole_before_feet: yardsToFeet(200), result: 'fairway', lie_after: 'fairway' }),
+  // A lay-up: a par-5 miss left 100 yd out (audit row 30 reads intent from
+  // the leave distance, so the fixture states it; the default 15 ft leave
+  // would be a greenside miss, i.e. a go at the green).
+  approachFact({ round_id: 'd1-round', hole_number: 5, distance_to_hole_before_feet: yardsToFeet(200), distance_to_hole_after_feet: yardsToFeet(100), result: 'fairway', lie_after: 'fairway' }),
   approachFact({ round_id: 'd2-round', hole_number: 6, distance_to_hole_before_feet: yardsToFeet(210), result: 'rough', lie_after: 'rough' }),
   approachFact({ round_id: 'd3-round', hole_number: 7, distance_to_hole_before_feet: yardsToFeet(190), distance_to_hole_after_feet: 25, result: 'green', lie_after: 'green' }),
 ];

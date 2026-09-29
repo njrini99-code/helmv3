@@ -82,3 +82,15 @@ describe('putting benchmarks', () => {
     });
   });
 });
+
+describe('audit rows 9/32 — a withheld leak-map band reads small sample, not no putts', () => {
+  it('sample_n > 0 with a withheld (null) make % is small_sample', () => {
+    const rows = buildPuttingBenchmarkRows([
+      { bucket_id: '10_15', label: '10-15 ft', team_value: null, pga_value: null, div1_value: null, sample_n: 4 },
+    ]);
+    const row = rows.find((r) => r.band === '10_15')!;
+    expect(row.verdict).toBe('small_sample');
+    expect(row.sampleN).toBe(4);
+    expect(row.makePct).toBeNull();
+  });
+});

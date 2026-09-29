@@ -282,6 +282,8 @@ export function comparisonName(source: InsightComparisonSource | undefined, labe
       return 'team';
     case 'pga_baseline':
       return 'Tour';
+    case 'cohort_avg':
+      return 'college cohort';
     case 'your_baseline':
       return 'own baseline';
     case 'd1_avg':

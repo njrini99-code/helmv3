@@ -8,8 +8,9 @@
  * window disagrees with the stats-cache scrambling figure under the same name.
  *
  * Values are the stored vector values, re-expressed in plain units. Nothing is
- * recomputed. A retired or uncomputed dimension reads "Needs more rounds"; the
- * weather stub reads "Not tracked" because no amount of golf resolves it.
+ * recomputed. A retired or uncomputed dimension reads "Needs more rounds". A
+ * def marked `notTracked` reads "Not tracked" (none today: the weather stub
+ * was retired, audit row 18).
  */
 
 import type { GenomeVector } from '@/lib/coachhelm/v3/genome/types';
@@ -68,12 +69,6 @@ const DEFS: readonly TendencyDef[] = [
     id: 'scoring_trend',
     label: 'Scoring trend',
     detail: (v) => `${signed(v, 2)} strokes a round, last 30 days vs before`,
-  },
-  {
-    id: 'weather_sensitivity_stub',
-    label: 'Weather',
-    notTracked: true,
-    detail: () => '',
   },
 ];
 
