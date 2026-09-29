@@ -16,8 +16,9 @@
  * WHERE THAT GATE ACTUALLY LIVES (corrected 2026-08-18). This header used to say
  * "ACTION tools carry `needsApproval`". They do not — no tool below sets that
  * property, and `needsApproval` exists in this repo only in the AI SDK type shim
- * and in prose. The gate is the `toolApproval` callback in
- * src/app/api/coachhelm/v3/chat/stream/route.ts:361:
+ * and in prose. The gate is the `toolApproval` callback passed to `streamText`
+ * in src/app/api/coachhelm/v3/chat/stream/route.ts (search `toolApproval`; a
+ * line number was cited here once and went stale):
  *
  *     toolApproval: ({ toolCall }) =>
  *       isConfirmRequired(toolCall.toolName) ? 'user-approval' : 'not-applicable'
@@ -386,6 +387,10 @@ export function buildCoachTools({ sb, ctx, conversationId, writer, collect }: Bu
     if (claim.kind === 'in_flight') {
       return { status: 'in_flight', message: 'That action is already running.' };
     }
+    if (claim.kind === 'stale_failed') {
+      // A prior attempt died mid-write; never re-run it silently (action-runs.ts APPROVED_RUN_TTL_MS).
+      return { status: 'failed', message: claim.message };
+    }
     if (claim.kind === 'error') {
       return { status: 'failed', message: 'Could not start the action safely.' };
     }
@@ -724,6 +729,10 @@ export function buildCoachTools({ sb, ctx, conversationId, writer, collect }: Bu
         }
         if (claim.kind === 'in_flight') {
           return { status: 'in_flight', message: 'That practice series is already being created.' };
+        }
+        if (claim.kind === 'stale_failed') {
+          // A prior attempt died mid-write; never re-run it silently (action-runs.ts APPROVED_RUN_TTL_MS).
+          return { status: 'failed', message: claim.message };
         }
         if (claim.kind === 'error') {
           return { status: 'failed', message: 'Could not start the action safely.' };

@@ -89,7 +89,11 @@ causal number you cited about a SPECIFIC PLAYER, in exactly this format:
 
 Copy metric_id, player_id, window_start, window_end, unit and denominator
 EXACTLY from the tool result the number came from — never invent or
-paraphrase them. Set "claim_type":"causal" only when asserting a CAUSE
+paraphrase them. Write "value" exactly as the number appears in your answer
+(rounding the tool's value is fine, e.g. 58.3 for 58.333; a different number
+is not). One entry per number: when you compare players or time windows, each
+player's and each window's number gets its own entry with its own player_id
+and window. Set "claim_type":"causal" only when asserting a CAUSE
 ("his tempo gets quicker under pressure"), not a plain fact. If you cited no
 specific player's own number, append an empty array: <<<CLAIMS>>>[]<<<END_CLAIMS>>>.
 The block must be valid JSON and is removed before the coach sees your
