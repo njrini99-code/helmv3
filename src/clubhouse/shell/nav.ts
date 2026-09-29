@@ -73,8 +73,8 @@ export function activeNavItem(pathname: string, role: ChRole = 'coach'): ChNavIt
  * frame. Add a route here only when its screen reaches the `desktop` gate.
  */
 export const CH_REBUILT_ROUTES: Record<ChRole, readonly string[]> = {
-  coach: ['/golf/dashboard', '/golf/dashboard/calendar', '/golf/dashboard/roster', '/golf/dashboard/stats'],
-  player: ['/golf/dashboard/calendar', '/golf/dashboard/stats'],
+  coach: ['/golf/dashboard', '/golf/dashboard/calendar', '/golf/dashboard/messages', '/golf/dashboard/roster', '/golf/dashboard/stats'],
+  player: ['/golf/dashboard/calendar', '/golf/dashboard/messages', '/golf/dashboard/stats'],
 };
 
 export function isRebuilt(pathname: string, role: ChRole = 'coach'): boolean {

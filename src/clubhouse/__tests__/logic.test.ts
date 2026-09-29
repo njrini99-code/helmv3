@@ -71,7 +71,8 @@ describe('nav', () => {
     expect(isRebuilt('/golf/dashboard/roster', 'player')).toBe(false);
     expect(isRebuilt('/golf/dashboard/stats', 'player')).toBe(true);
     expect(isRebuilt('/golf/dashboard/calendar', 'player')).toBe(true);
-    expect(isRebuilt('/golf/dashboard/messages', 'player')).toBe(false);
+    expect(isRebuilt('/golf/dashboard/messages', 'player')).toBe(true);
+    expect(isRebuilt('/golf/dashboard/lineups', 'player')).toBe(false);
     expect(activeNavItem('/golf/dashboard/stats', 'player')?.label).toBe('My stats');
   });
 });

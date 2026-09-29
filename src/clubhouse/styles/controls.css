@@ -371,3 +371,80 @@
     height: 44px;
   }
 }
+
+/* Person picker rows (Calendar people filter, Messages new message) */
+.ch-pp__row {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  min-height: 44px;
+  padding: 6px 10px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  transition: background var(--ch-dur-quick) var(--ch-ease);
+}
+.ch-pp__row:hover {
+  background: rgb(28 25 18 / 0.045);
+}
+.ch-pp__row:focus-visible {
+  outline: 2px solid var(--ch-border-focus);
+  outline-offset: -2px;
+}
+.ch-pp__row[aria-pressed='true'],
+.ch-pp__row[aria-selected='true'] {
+  background: var(--ch-green-50);
+}
+.ch-pp__row > svg {
+  color: var(--ch-green-700);
+}
+.ch-pp__all {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--ch-green-600);
+  color: var(--ch-text-on-accent);
+}
+.ch-pp__name {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.ch-pp__name b {
+  font: 500 13.5px/1.2 var(--ch-font-sans);
+  color: var(--ch-text-primary);
+}
+.ch-pp__row[aria-pressed='true'] .ch-pp__name b,
+.ch-pp__row[aria-selected='true'] .ch-pp__name b {
+  font-weight: 600;
+  color: var(--ch-green-800);
+}
+.ch-pp__name span {
+  font: var(--ch-type-caption);
+  color: var(--ch-text-tertiary);
+}
+.ch-pp__box {
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 5px;
+  box-shadow: inset 0 0 0 1.5px var(--ch-border-strong);
+  color: var(--ch-text-on-accent);
+  transition: background var(--ch-dur-quick) var(--ch-ease);
+}
+.ch-pp__box.is-on {
+  background: var(--ch-green-600);
+  box-shadow: none;
+}
+.ch-pp__empty {
+  padding: 14px 10px;
+  font: var(--ch-type-body-s);
+  color: var(--ch-text-tertiary);
+}

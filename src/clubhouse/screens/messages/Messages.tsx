@@ -1,0 +1,364 @@
+'use client';
+
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useGolfConversations, useGolfMessages, type GolfConversationWithMeta } from '@/hooks/golf/use-golf-messages';
+import { MESSAGE_REACTIONS, summarizeReactions, useMessageReactions } from '@/hooks/golf/use-message-reactions';
+import { useMessageAttachments } from '@/hooks/golf/use-message-attachments';
+import {
+  createGolfConversation,
+  createGolfTeamBroadcast,
+  getGolfConversationParticipantIdentities,
+  getGolfMessageAttachments,
+  leaveGolfGroup,
+} from '@/app/golf/actions/messages';
+import { validateFile, type PendingAttachment } from '@/lib/storage/attachments';
+import { decodeMessageContent } from '@/lib/utils/decode-message-content';
+import type { ChMessagesData } from '../../data/messages';
+import { useToast } from '../../ui/Toast';
+import { useNow } from '../../lib/use-now';
+import { chReport, chTrail } from '../../lib/track';
+import { friendlyReason } from '../../lib/use-action';
+import { haptic } from '../../lib/haptics';
+import { MessagesView, type ChMessagesApi } from './MessagesView';
+import type { ChConv, ChMember, ChMsg, ChReaction, ChReactionKey } from './model';
+
+const isGroup = (c: GolfConversationWithMeta) => {
+  const n = c.participant_count ?? c.participant_ids?.length ?? 0;
+  return n > 0 ? n > 2 : !!c.is_group;
+};
+const EMOJI_BY_KEY = Object.fromEntries(MESSAGE_REACTIONS.map((r) => [r.label, r.emoji])) as Record<ChReactionKey, string>;
+const KEY_BY_EMOJI = Object.fromEntries(MESSAGE_REACTIONS.map((r) => [r.emoji, r.label])) as Record<string, ChReactionKey>;
+
+/**
+ * Live Messages: the existing realtime hooks and server actions, mapped onto
+ * the Clubhouse view. Nothing about who can message whom changes here; the
+ * actions and RLS decide, and this screen reports what they say.
+ */
+export function Messages({ data }: { data: ChMessagesData }) {
+  const router = useRouter();
+  const params = useSearchParams();
+  const toast = useToast();
+  const clock = useNow();
+  const now = clock ? clock.toISOString() : data.now;
+  const { conversations, loading, error, refetch } = useGolfConversations(data.viewerUserId, data.teamId);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [autoOpened, setAutoOpened] = useState<string | null>(null);
+  const handledParams = useRef(false);
+  const [paramsDone, setParamsDone] = useState(false);
+
+  const people = useMemo(() => new Map(data.directory.map((p) => [p.userId, p])), [data.directory]);
+
+  const convs: ChConv[] = useMemo(
+    () =>
+      conversations.map((c) => {
+        const group = isGroup(c);
+        const other = c.other_participant;
+        const dir = other ? people.get(other.id) : undefined;
+        return {
+          id: c.id,
+          group,
+          title: group ? c.title?.trim() || 'Group' : dir?.name ?? other?.name ?? 'Conversation',
+          subtitle: group ? '' : dir?.subtitle ?? other?.subtitle ?? '',
+          memberIds: group ? (c.participant_ids ?? []).filter((id) => id !== data.viewerUserId) : other ? [other.id] : [],
+          memberCount: c.participant_count ?? c.participant_ids?.length ?? 2,
+          unread: c.unread_count ?? 0,
+          lastAt: c.last_message?.created_at ?? c.updated_at ?? null,
+          lastSenderId: c.last_message?.sender_id ?? null,
+          lastText: decodeMessageContent(c.last_message?.content ?? ''),
+          creatorId: c.creator_id ?? null,
+        };
+      }),
+    [conversations, people, data.viewerUserId],
+  );
+
+  const msgs = useGolfMessages(selectedId ?? '', data.viewerUserId, { deferMarkRead: !!selectedId && selectedId === autoOpened });
+  const liveIds = useMemo(() => msgs.messages.filter((m) => m.conversation_id === selectedId && !m.sendFailed).map((m) => m.id), [msgs.messages, selectedId]);
+  const reactions = useMessageReactions(selectedId ?? '', liveIds, data.viewerUserId);
+  const { sendMessageWithAttachments } = useMessageAttachments();
+
+  // Desktop opens the newest thread beside the rail without marking it read (the coach hasn't read it yet).
+  useEffect(() => {
+    if (loading || selectedId || !convs.length || !paramsDone) return;
+    if (typeof window !== 'undefined' && window.matchMedia('(min-width: 821px)').matches) {
+      setSelectedId(convs[0]!.id);
+      setAutoOpened(convs[0]!.id);
+    }
+  }, [loading, selectedId, convs, paramsDone]);
+
+  // Deep links: ?conversation=<id>, or ?player=<golf_players.id> to open (or start) a direct thread.
+  useEffect(() => {
+    if (loading || handledParams.current) return;
+    const conv = params.get('conversation');
+    const player = params.get('player');
+    handledParams.current = true;
+    setParamsDone(!conv && !player);
+    if (conv) {
+      setSelectedId(conv);
+      router.replace('/golf/dashboard/messages', { scroll: false });
+    } else if (player) {
+      const person = data.directory.find((p) => p.playerId === player);
+      router.replace('/golf/dashboard/messages', { scroll: false });
+      if (!person) {
+        toast({ tone: 'error', title: "Couldn't open that conversation", body: 'That player isn’t on your team, or hasn’t set up their account yet.' });
+        return;
+      }
+      void startDirect(person.userId);
+    }
+    // startDirect is stable enough for a one-shot deep link.
+  }, [loading]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const select = useCallback(
+    (id: string | null) => {
+      if (id && id === autoOpened && id === selectedId) {
+        setAutoOpened(null);
+        void msgs.markRead();
+      } else setAutoOpened(null);
+      setSelectedId(id);
+    },
+    [autoOpened, selectedId, msgs],
+  );
+
+  const fail = useCallback(
+    (surface: string, err: unknown, title: string, hint: string) => {
+      chReport(err, { surface: `messages.${surface}`, action: `messages.${surface}` });
+      haptic('error');
+      const reason = err instanceof Error ? friendlyReason(err.message) : null;
+      toast({ tone: 'error', title, body: reason ?? hint });
+    },
+    [toast],
+  );
+
+  const startDirect = useCallback(
+    async (userId: string): Promise<boolean> => {
+      const existing = convs.find((c) => !c.group && c.memberIds[0] === userId);
+      if (existing) {
+        setSelectedId(existing.id);
+        return true;
+      }
+      try {
+        chTrail('messages start direct');
+        const res = await createGolfConversation([userId], data.teamId);
+        if ('conversationId' in res && res.conversationId) {
+          await refetch();
+          setSelectedId(res.conversationId);
+          haptic('commit');
+          return true;
+        }
+        throw new Error('error' in res ? String(res.error) : 'Could not start the conversation');
+      } catch (err) {
+        fail('startDirect', err, "Couldn't start the conversation", 'Try again in a moment.');
+        return false;
+      }
+    },
+    [convs, data.teamId, refetch, fail],
+  );
+
+  const createGroup = useCallback(
+    async (userIds: string[], title: string): Promise<boolean> => {
+      try {
+        chTrail('messages create group');
+        const res =
+          data.role === 'coach'
+            ? await createGolfTeamBroadcast({ teamId: data.teamId, title, selectedPlayerIds: userIds.map((u) => people.get(u)?.playerId).filter((x): x is string => !!x) })
+            : await createGolfConversation(userIds, data.teamId);
+        if ('conversationId' in res && res.conversationId) {
+          await refetch();
+          setSelectedId(res.conversationId);
+          haptic('commit');
+          toast({ title: data.role === 'coach' ? `Group created · ${title}` : 'Group created' });
+          return true;
+        }
+        throw new Error('error' in res ? String(res.error) : 'Could not create the group');
+      } catch (err) {
+        fail('createGroup', err, "Couldn't create the group", 'Try again in a moment.');
+        return false;
+      }
+    },
+    [data.role, data.teamId, people, refetch, toast, fail],
+  );
+
+  const [members, setMembers] = useState<ChMember[] | null>(null);
+  const [membersError, setMembersError] = useState(false);
+  const selected = convs.find((c) => c.id === selectedId) ?? null;
+  useEffect(() => {
+    setMembers(null);
+    setMembersError(false);
+    if (!selected?.group) return;
+    let live = true;
+    getGolfConversationParticipantIdentities([selected.id])
+      .then((res) => {
+        if (!live) return;
+        if (res.error) {
+          chReport(new Error(res.error), { surface: 'messages.members', severity: 'low' });
+          setMembersError(true);
+          return;
+        }
+        setMembers(
+          res.participants
+            .map((p) => ({ userId: p.userId, name: people.get(p.userId)?.name ?? p.name, subtitle: people.get(p.userId)?.subtitle ?? p.subtitle, role: p.type }))
+            .sort((a, b) => (a.role === b.role ? a.name.localeCompare(b.name) : a.role === 'coach' ? -1 : 1)),
+        );
+      })
+      .catch((err) => {
+        chReport(err, { surface: 'messages.members' });
+        if (live) setMembersError(true);
+      });
+    return () => {
+      live = false;
+    };
+  }, [selected?.id, selected?.group, people]);
+
+  const chMsgs: ChMsg[] = useMemo(
+    () =>
+      msgs.messages
+        .filter((m) => m.conversation_id === selectedId)
+        .map((m) => ({
+          id: m.id,
+          senderId: m.sender_id,
+          text: decodeMessageContent(m.content),
+          at: m.created_at ?? new Date(0).toISOString(),
+          mine: m.sender_id === (msgs.currentUserId ?? data.viewerUserId),
+          seen: !!m.isRead,
+          failed: m.sendFailed ? (m.sendOutcome ?? 'refused') : null,
+          edited: !!m.edited_at,
+          deleted: !!m.is_deleted,
+          hasAttachments: !!m.has_attachments,
+        })),
+    [msgs.messages, msgs.currentUserId, selectedId, data.viewerUserId],
+  );
+
+  const reactionMap = useMemo(() => {
+    const out = new Map<string, ChReaction[]>();
+    for (const id of liveIds) {
+      const groups = summarizeReactions(reactions.rows, id, data.viewerUserId)
+        .map((g) => ({ key: KEY_BY_EMOJI[g.emoji], count: g.count, mine: g.active }))
+        .filter((g): g is ChReaction => !!g.key);
+      if (groups.length) out.set(id, groups);
+    }
+    return out;
+  }, [liveIds, reactions.rows, data.viewerUserId]);
+
+  const api: ChMessagesApi = {
+    viewer: { userId: data.viewerUserId, role: data.role, name: data.viewerName },
+    timeZone: data.timeZone,
+    now,
+    teamName: data.teamName,
+    convs,
+    convsLoading: loading,
+    convsError: !!error && !conversations.length,
+    refetchConvs: () => void refetch(),
+    selectedId,
+    select,
+    msgs: chMsgs,
+    msgsLoading: msgs.loading,
+    msgsError: !!msgs.error && !chMsgs.length,
+    refetchMsgs: () => void msgs.refetch(),
+    typing: msgs.isOtherTyping,
+    onTyping: (on) => msgs.sendTypingStatus(on),
+    send: async (text) => {
+      try {
+        if (selectedId === autoOpened) select(selectedId);
+        await msgs.sendMessage(text);
+        return true;
+      } catch (err) {
+        const unknown = /network|fetch|timeout|aborted/i.test(err instanceof Error ? err.message : '');
+        fail('send', err, unknown ? "Couldn't confirm this message sent" : "Couldn't send the message", unknown ? 'Check the thread before sending again.' : 'Your message is still in the box. Try again.');
+        return false;
+      }
+    },
+    sendFiles: async (text, files) => {
+      if (!selectedId) return false;
+      const bad = files.map((f) => ({ f, v: validateFile(f) })).find((x) => !x.v.valid);
+      if (bad) {
+        haptic('warning');
+        toast({ tone: 'error', title: `Can't attach ${bad.f.name}`, body: bad.v.error ?? 'That file type or size isn’t supported.' });
+        return false;
+      }
+      const pending: PendingAttachment[] = files.map((file, i) => ({
+        id: `ch-${Date.now()}-${i}`,
+        file,
+        previewUrl: '',
+        metadata: {
+          fileName: file.name,
+          fileType: file.type.startsWith('image/') ? 'image' : file.type.startsWith('video/') ? 'video' : file.type.startsWith('audio/') ? 'audio' : 'document',
+          mimeType: file.type,
+          fileSize: file.size,
+        },
+        status: 'pending',
+        uploadProgress: 0,
+      }));
+      try {
+        const res = await sendMessageWithAttachments({ conversationId: selectedId, content: text, attachments: pending });
+        if (res.cancelled) return false;
+        if (!res.success) throw new Error(res.error || 'Attachment send failed');
+        return true;
+      } catch (err) {
+        fail('sendFiles', err, "Couldn't send the attachment", 'Your message and files are still in the box. Try again.');
+        return false;
+      }
+    },
+    retry: (id) => void msgs.retryMessage(id),
+    discard: (id) => msgs.discardFailedMessage(id),
+    edit: async (id, text) => {
+      try {
+        await msgs.editMessage(id, text);
+        haptic('commit');
+        toast({ title: 'Message edited' });
+        return true;
+      } catch (err) {
+        fail('edit', err, "Couldn't edit the message", 'Your edit is still in the box. Try again.');
+        return false;
+      }
+    },
+    remove: async (id) => {
+      try {
+        await msgs.removeMessage(id);
+        haptic('commit');
+        toast({ title: 'Message deleted' });
+        return true;
+      } catch (err) {
+        fail('remove', err, "Couldn't delete the message", 'It’s back in the thread. Try again in a moment.');
+        void msgs.refetch();
+        return false;
+      }
+    },
+    reactions: reactionMap,
+    react: (messageId, key, active) => {
+      const emoji = EMOJI_BY_KEY[key];
+      if (!emoji) return;
+      void Promise.resolve(reactions.setReaction(messageId, emoji, active)).catch((err) => fail('react', err, "Couldn't save the reaction", 'Try again in a moment.'));
+    },
+    attachments: async (messageId) => {
+      const res = await getGolfMessageAttachments(messageId);
+      if (res.error || !res.attachments) {
+        chReport(new Error(res.error || 'attachments read failed'), { surface: 'messages.attachments', severity: 'low' });
+        return null;
+      }
+      return res.attachments.map((a) => ({ id: a.id, name: a.fileName, size: a.fileSize, mime: a.mimeType, url: a.url ?? null }));
+    },
+    members,
+    membersError,
+    leave: async () => {
+      if (!selectedId) return false;
+      try {
+        const res = await leaveGolfGroup(selectedId);
+        if ('error' in res) throw new Error(res.error);
+        haptic('commit');
+        toast({ title: 'You left the group' });
+        setSelectedId(null);
+        await refetch();
+        return true;
+      } catch (err) {
+        fail('leave', err, "Couldn't leave the group", 'Try again in a moment.');
+        return false;
+      }
+    },
+    directory: data.directory,
+    directoryError: data.directoryError,
+    startDirect,
+    createGroup,
+  };
+
+  return <MessagesView api={api} />;
+}

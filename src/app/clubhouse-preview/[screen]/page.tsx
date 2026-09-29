@@ -12,6 +12,9 @@ import { StatsSkeleton } from '@/clubhouse/screens/stats/StatsSkeleton';
 import { PREVIEW_PLAYER, PREVIEW_PLAYER_EARLY, PREVIEW_TEAM_STATS } from '@/clubhouse/preview/fixtures-stats';
 import '@/clubhouse/styles/stats.css';
 import '@/clubhouse/styles/calendar.css';
+import '@/clubhouse/styles/messages.css';
+import { PreviewMessages } from '@/clubhouse/preview/PreviewMessages';
+import { MessagesSkeleton } from '@/clubhouse/screens/messages/MessagesSkeleton';
 import { Calendar } from '@/clubhouse/screens/calendar/Calendar';
 import { CalendarSkeleton } from '@/clubhouse/screens/calendar/CalendarSkeleton';
 import {
@@ -38,6 +41,7 @@ import {
  *   /clubhouse-preview/home   ?state=empty | failed | loading | error
  *   /clubhouse-preview/calendar ?state=empty | failed | partial | loading, &view=, &date=, &event=
  *   /clubhouse-preview/calendar-player
+ *   /clubhouse-preview/messages ?state=empty | rail | failed | thread-failed | loading | loading-route
  */
 export default async function ClubhousePreview({
   params,
@@ -107,6 +111,10 @@ export default async function ClubhousePreview({
     'calendar-player': {
       path: '/golf/dashboard/calendar',
       node: <Calendar frozen initialEvent={event} data={{ ...PREVIEW_CALENDAR_PLAYER, view: calView, anchor: date ?? PREVIEW_CALENDAR.anchor }} />,
+    },
+    messages: {
+      path: '/golf/dashboard/messages',
+      node: state === 'loading-route' ? <MessagesSkeleton /> : <PreviewMessages state={state} />,
     },
   };
   const entry = screens[screen];

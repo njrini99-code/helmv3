@@ -1,4 +1,6 @@
 import { fairwayScope } from '@/lib/redesign/flag';
+import { ClubhouseSwitch } from '@/clubhouse/shell/ClubhouseSwitch';
+import { MessagesSkeleton } from '@/clubhouse/screens/messages/MessagesSkeleton';
 import { Skeleton } from '@/components/fairway/feedback';
 import { Surface } from '@/components/fairway/surfaces/surface';
 
@@ -25,6 +27,10 @@ import { Surface } from '@/components/fairway/surfaces/surface';
  * the layout jump it exists to prevent.
  */
 export default function Loading() {
+  return <ClubhouseSwitch clubhouse={<MessagesSkeleton />} fallback={<FairwayMessagesLoading />} />;
+}
+
+function FairwayMessagesLoading() {
   return (
     <div
       className={fairwayScope(
