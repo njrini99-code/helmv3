@@ -26,6 +26,6 @@ export async function ClubhouseMessagesRoute() {
     );
   }
   const viewerName = session.coach?.full_name ?? ([session.player?.first_name, session.player?.last_name].filter(Boolean).join(' ') || 'You');
-  const data = await loadMessagesDirectory({ role: team.role, teamId: team.teamId, viewerUserId: session.userId, viewerName });
+  const data = await loadMessagesDirectory({ role: team.role, teamId: team.teamId, viewerUserId: session.userId, viewerName, viewerPlayerId: team.role === 'player' ? team.playerId : null });
   return <Messages data={data} />;
 }

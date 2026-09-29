@@ -131,3 +131,44 @@ export function filterConvs(convs: ChConv[], filter: ChConvFilter, q: string): C
 }
 
 export const firstName = (name: string) => name.split(/\s+/)[0] ?? name;
+
+export interface ChSearchHit {
+  messageId: string;
+  conversationId: string;
+  conversationName: string;
+  senderName: string;
+  text: string;
+  at: string | null;
+}
+
+export interface ChAnnouncement {
+  id: string;
+  title: string;
+  body: string;
+  urgent: boolean;
+  publishedAt: string | null;
+  requiresAck: boolean;
+  ackCount: number;
+  total: number;
+  /** Player view: whether this player has acknowledged. */
+  acknowledgedByMe: boolean;
+  taskCount: number;
+  completedTaskCount: number;
+  docCount: number;
+}
+
+export interface ChAnnouncementDetail {
+  id: string;
+  acknowledged: Array<{ playerId: string; name: string; at: string }>;
+  waiting: Array<{ playerId: string; name: string }>;
+  tasks: Array<{ taskId: string; title: string; due: string | null; doneByMe: boolean; done: number; total: number }>;
+  documents: Array<{ id: string; title: string; url: string; size: number }>;
+}
+
+export interface ChMute {
+  muted: boolean;
+  until: string | null;
+}
+
+/** An announcement still needs this player when it asks for acknowledgement and they haven't given it. */
+export const needsMyAck = (a: ChAnnouncement, role: 'coach' | 'player') => role === 'player' && a.requiresAck && !a.acknowledgedByMe;

@@ -40,13 +40,20 @@ export async function notifyGolfMessageRecipients(
     // Get other participants' user IDs
     const { data: otherParticipants } = await supabase
       .from('golf_conversation_participants')
-      .select('user_id')
+      .select('user_id, notification_level, muted_until')
       .eq('conversation_id', conversationId)
       .neq('user_id', senderId);
 
     if (!otherParticipants || otherParticipants.length === 0) return;
 
-    const recipientUserIds = otherParticipants.map(p => p.user_id);
+    // A participant who muted this conversation gets no email, push or bell
+    // for it. Unread counts still come from the messages themselves, so the
+    // thread stays bold in their inbox.
+    const now = Date.now();
+    const recipientUserIds = otherParticipants
+      .filter((p) => !isConversationMuted(p, now))
+      .map((p) => p.user_id);
+    if (recipientUserIds.length === 0) return;
 
     // The recipient lookup MUST use the service-role client.
     //
@@ -183,4 +190,20 @@ export async function notifyGolfMessageRecipients(
     // Never block message delivery on notification failure
     await logServerError(`[notifyGolfMessageRecipients] Notification error (non-fatal): ${describeError(notifErr)}`, { action: 'notifications.notifyGolfMessageRecipients' });
   }
+}
+
+/**
+ * `notification_level = 'muted'` silences the conversation for that participant.
+ * With `muted_until` set, the mute lapses once that time passes (evaluated on
+ * read, so a stalled job can never leave someone permanently silent); with it
+ * null, the mute holds until they turn it off.
+ */
+export function isConversationMuted(
+  p: { notification_level?: string | null; muted_until?: string | null },
+  now: number = Date.now(),
+): boolean {
+  if (p.notification_level !== 'muted') return false;
+  if (!p.muted_until) return true;
+  const until = Date.parse(p.muted_until);
+  return Number.isFinite(until) && until > now;
 }

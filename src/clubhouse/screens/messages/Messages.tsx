@@ -11,7 +11,11 @@ import {
   getGolfConversationParticipantIdentities,
   getGolfMessageAttachments,
   leaveGolfGroup,
+  searchGolfMessages,
 } from '@/app/golf/actions/messages';
+import { getGolfConversationMute, setGolfConversationMute } from '@/app/golf/actions/message-mute';
+import { completeAnnouncementTask, createEnrichedAnnouncement, getAnnouncementDetail, getAnnouncementsWithMeta } from '@/app/golf/actions/announcements';
+import { acknowledgeAnnouncement } from '@/app/golf/actions/communication';
 import { validateFile, type PendingAttachment } from '@/lib/storage/attachments';
 import { decodeMessageContent } from '@/lib/utils/decode-message-content';
 import type { ChMessagesData } from '../../data/messages';
@@ -21,7 +25,7 @@ import { chReport, chTrail } from '../../lib/track';
 import { friendlyReason } from '../../lib/use-action';
 import { haptic } from '../../lib/haptics';
 import { MessagesView, type ChMessagesApi } from './MessagesView';
-import type { ChConv, ChMember, ChMsg, ChReaction, ChReactionKey } from './model';
+import type { ChAnnouncement, ChAnnouncementDetail, ChConv, ChMember, ChMsg, ChMute, ChReaction, ChReactionKey } from './model';
 
 const isGroup = (c: GolfConversationWithMeta) => {
   const n = c.participant_count ?? c.participant_ids?.length ?? 0;
@@ -114,6 +118,7 @@ export function Messages({ data }: { data: ChMessagesData }) {
         setAutoOpened(null);
         void msgs.markRead();
       } else setAutoOpened(null);
+      if (id) setSelectedAnnId(null);
       setSelectedId(id);
     },
     [autoOpened, selectedId, msgs],
@@ -239,6 +244,121 @@ export function Messages({ data }: { data: ChMessagesData }) {
     return out;
   }, [liveIds, reactions.rows, data.viewerUserId]);
 
+  // Announcements: the team feed, pinned above conversations.
+  const [anns, setAnns] = useState<ChAnnouncement[]>([]);
+  const [annError, setAnnError] = useState(false);
+  const [selectedAnnId, setSelectedAnnId] = useState<string | null>(null);
+  const loadAnns = useCallback(async () => {
+    try {
+      const res = await getAnnouncementsWithMeta(data.teamId, data.viewerUserId, data.role === 'coach', data.viewerPlayerId);
+      if (!res.success || !res.data) throw new Error(res.error || 'announcements read failed');
+      setAnnError(false);
+      setAnns(
+        res.data.map((a) => ({
+          id: a.id,
+          title: a.title,
+          body: a.body ?? '',
+          urgent: a.urgency === 'urgent' || a.urgency === 'high',
+          publishedAt: a.published_at ?? a.publish_at ?? a.created_at,
+          requiresAck: !!a.requires_acknowledgement,
+          ackCount: a.acknowledged_count ?? 0,
+          total: a.total_recipients ?? a.recipient_count ?? 0,
+          acknowledgedByMe: !!a.has_player_acknowledged,
+          taskCount: a.task_count ?? 0,
+          completedTaskCount: a.completed_task_count ?? 0,
+          docCount: a.document_count ?? 0,
+        })),
+      );
+    } catch (err) {
+      chReport(err, { surface: 'messages.announcements', severity: 'low' });
+      setAnnError(true);
+    }
+  }, [data.teamId, data.viewerUserId, data.role, data.viewerPlayerId]);
+  useEffect(() => {
+    void loadAnns();
+  }, [loadAnns]);
+
+  const announcementDetail = useCallback(
+    async (id: string): Promise<ChAnnouncementDetail | null> => {
+      const res = await getAnnouncementDetail(id);
+      if (!res.success || !res.data) {
+        chReport(new Error(res.error || 'announcement detail failed'), { surface: 'messages.announcement', severity: 'low' });
+        return null;
+      }
+      const d = res.data;
+      const nameOf = (p: { first_name: string | null; last_name: string | null } | null | undefined, id: string) =>
+        [p?.first_name, p?.last_name].filter(Boolean).join(' ') || data.directory.find((x) => x.playerId === id)?.name || 'Player';
+      const acked = d.acknowledgements.map((a) => ({ playerId: a.player_id, name: nameOf(a.player, a.player_id), at: a.acknowledged_at }));
+      const ackedIds = new Set(acked.map((a) => a.playerId));
+      // No explicit recipients means the whole team.
+      const recipients = d.recipients.length
+        ? d.recipients.map((r) => ({ playerId: r.player_id, name: nameOf(r.player, r.player_id) }))
+        : data.directory.filter((p) => p.role === 'player' && p.playerId).map((p) => ({ playerId: p.playerId!, name: p.name }));
+      return {
+        id: d.id,
+        acknowledged: acked.sort((a, b) => a.name.localeCompare(b.name)),
+        waiting: recipients.filter((r) => !ackedIds.has(r.playerId)).sort((a, b) => a.name.localeCompare(b.name)),
+        tasks: d.tasks
+          .filter((t) => t.task)
+          .map((t) => ({
+            taskId: t.task_id,
+            title: t.task!.title,
+            due: t.task!.due_date,
+            doneByMe: t.assignments.some((x) => x.player_id === data.viewerPlayerId && x.status === 'completed'),
+            done: t.assignments.filter((x) => x.status === 'completed').length,
+            total: t.assignments.length,
+          })),
+        documents: d.documents.filter((x) => x.document).map((x) => ({ id: x.document!.id, title: x.document!.title, url: x.document!.file_url, size: x.document!.file_size })),
+      };
+    },
+    [data.directory, data.viewerPlayerId],
+  );
+
+  const searchMessages = useCallback(
+    async (q: string) => {
+      const res = await searchGolfMessages(q, data.teamId);
+      if ('error' in res) {
+        chReport(new Error(res.error), { surface: 'messages.search', severity: 'low' });
+        return null;
+      }
+      return res.results.map((r) => ({
+        messageId: r.messageId,
+        conversationId: r.conversationId,
+        conversationName: r.conversationName,
+        senderName: r.senderName,
+        text: decodeMessageContent(r.content),
+        at: r.createdAt,
+      }));
+    },
+    [data.teamId],
+  );
+
+  // Mute state for the open conversation.
+  const [mute, setMuteState] = useState<ChMute | null>(null);
+  const [muteError, setMuteError] = useState(false);
+  useEffect(() => {
+    setMuteState(null);
+    setMuteError(false);
+    if (!selectedId) return;
+    let live = true;
+    getGolfConversationMute(selectedId)
+      .then((r) => {
+        if (!live) return;
+        if (r.success) setMuteState(r.data);
+        else {
+          chReport(new Error(r.error), { surface: 'messages.mute', severity: 'low' });
+          setMuteError(true);
+        }
+      })
+      .catch((err) => {
+        chReport(err, { surface: 'messages.mute' });
+        if (live) setMuteError(true);
+      });
+    return () => {
+      live = false;
+    };
+  }, [selectedId]);
+
   // Stable across renders: the attachment tiles key their fetch on it, and signed URLs cost a round trip.
   const loadAttachments = useCallback(async (messageId: string) => {
     const res = await getGolfMessageAttachments(messageId);
@@ -361,6 +481,81 @@ export function Messages({ data }: { data: ChMessagesData }) {
     directoryError: data.directoryError,
     startDirect,
     createGroup,
+
+    searchMessages,
+    openHit: (h) => select(h.conversationId),
+
+    mute,
+    muteError,
+    setMute: async (muted, hours) => {
+      if (!selectedId) return false;
+      try {
+        const r = await setGolfConversationMute(selectedId, muted, hours);
+        if (!r.success) throw new Error(r.error);
+        setMuteState(r.data);
+        haptic('commit');
+        toast({ title: muted ? 'Conversation muted' : 'Notifications back on' });
+        return true;
+      } catch (err) {
+        fail('mute', err, muted ? "Couldn't mute the conversation" : "Couldn't turn notifications back on", 'Try again in a moment.');
+        return false;
+      }
+    },
+
+    announcements: anns,
+    annError,
+    refetchAnns: () => void loadAnns(),
+    selectedAnnId,
+    selectAnn: (id) => {
+      setSelectedAnnId(id);
+      if (id) {
+        setSelectedId(null);
+        setAutoOpened(null);
+      }
+    },
+    announcementDetail,
+    acknowledge: async (id) => {
+      try {
+        const r = await acknowledgeAnnouncement(id);
+        if (!r.success) throw new Error(r.error || 'acknowledge failed');
+        haptic('success');
+        toast({ title: 'Acknowledged · coach can see you read it' });
+        await loadAnns();
+        return true;
+      } catch (err) {
+        fail('acknowledge', err, "Couldn't send your acknowledgement", 'Try again in a moment.');
+        return false;
+      }
+    },
+    completeTask: async (_announcementId, taskId) => {
+      try {
+        const r = await completeAnnouncementTask(taskId);
+        if (!r.success) throw new Error(r.error || 'task update failed');
+        haptic('commit');
+        toast({ title: 'Task marked done' });
+        await loadAnns();
+        return true;
+      } catch (err) {
+        fail('completeTask', err, "Couldn't mark the task done", 'Try again in a moment.');
+        return false;
+      }
+    },
+    createAnnouncement: async ({ title, body, urgent, ack }) => {
+      try {
+        chTrail('messages post announcement');
+        const r = await createEnrichedAnnouncement({ title, body, urgency: urgent ? 'urgent' : 'normal', requiresAcknowledgement: ack, recipientPlayerIds: null, documentIds: [], inlineTasks: [] });
+        if (!r.success || !r.data) throw new Error(r.error || 'announcement failed');
+        haptic('commit');
+        toast({ title: `Posted to ${data.teamName ?? 'the team'} · ${title}` });
+        await loadAnns();
+        setSelectedId(null);
+        setSelectedAnnId(r.data.announcementId);
+        return true;
+      } catch (err) {
+        fail('createAnnouncement', err, "Couldn't post the announcement", 'Your text is still here. Try again.');
+        return false;
+      }
+    },
   };
 
   return <MessagesView api={api} />;

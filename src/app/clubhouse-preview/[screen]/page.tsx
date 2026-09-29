@@ -116,10 +116,14 @@ export default async function ClubhousePreview({
       path: '/golf/dashboard/messages',
       node: state === 'loading-route' ? <MessagesSkeleton /> : <PreviewMessages state={state} />,
     },
+    'messages-player': {
+      path: '/golf/dashboard/messages',
+      node: <PreviewMessages state={state} role="player" />,
+    },
   };
   const entry = screens[screen];
   if (!entry) notFound();
-  const user = screen === 'calendar-player' ? { ...PREVIEW_PLAYER_USER, name: 'Jonah Okafor' } : PREVIEW_COACH;
+  const user = screen === 'calendar-player' || screen === 'messages-player' ? { ...PREVIEW_PLAYER_USER, name: 'Jonah Okafor' } : PREVIEW_COACH;
 
   return (
     <ClubhouseFrame userData={user} shell={PREVIEW_SHELL} pathname={entry.path} forceRebuilt>

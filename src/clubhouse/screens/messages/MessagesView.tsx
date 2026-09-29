@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import {
   ArrowUp,
@@ -25,26 +25,37 @@ import {
   X,
   Check,
   MessageSquare,
+  Search,
+  BellOff,
+  Megaphone,
   type LucideIcon,
-} from 'lucide-react';
-import { useEffect, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react';
-import { Avatar } from '../../ui/Avatar';
-import { Badge } from '../../ui/Badge';
-import { Button, IconButton } from '../../ui/Button';
-import { Icon } from '../../ui/Icon';
-import { Menu } from '../../ui/Menu';
-import { Modal } from '../../ui/Modal';
-import { InlineNotice } from '../../ui/Notices';
-import { SearchField } from '../../ui/SearchField';
-import { SectionBoundary } from '../../ui/SectionBoundary';
-import { Segmented } from '../../ui/Segmented';
-import { EmptyState, Skeleton } from '../../ui/States';
-import { useToast } from '../../ui/Toast';
-import { haptic } from '../../lib/haptics';
-import { chReport, chTrail } from '../../lib/track';
-import { rebuiltHref } from '../../shell/nav';
+} from "lucide-react";
+import {
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type KeyboardEvent,
+} from "react";
+import { Avatar } from "../../ui/Avatar";
+import { Badge } from "../../ui/Badge";
+import { Button, IconButton } from "../../ui/Button";
+import { Icon } from "../../ui/Icon";
+import { Menu } from "../../ui/Menu";
+import { Modal } from "../../ui/Modal";
+import { InlineNotice } from "../../ui/Notices";
+import { SearchField } from "../../ui/SearchField";
+import { SectionBoundary } from "../../ui/SectionBoundary";
+import { Segmented } from "../../ui/Segmented";
+import { EmptyState, Skeleton } from "../../ui/States";
+import { useToast } from "../../ui/Toast";
+import { haptic } from "../../lib/haptics";
+import { chReport, chTrail } from "../../lib/track";
+import { rebuiltHref } from "../../shell/nav";
 import {
   clock,
+  dayLabel,
   filterConvs,
   firstName,
   railTime,
@@ -58,20 +69,27 @@ import {
   type ChPerson,
   type ChReaction,
   type ChReactionKey,
-} from './model';
+  type ChSearchHit,
+  type ChMute,
+  type ChAnnouncement,
+  type ChAnnouncementDetail,
+} from "./model";
+import { AnnouncementPane, AnnouncementsSection } from "./announcements";
 
 export const REACTIONS: Array<{ key: ChReactionKey; icon: LucideIcon }> = [
-  { key: 'Like', icon: ThumbsUp },
-  { key: 'Love', icon: Heart },
-  { key: 'Laugh', icon: Laugh },
-  { key: 'Celebrate', icon: PartyPopper },
-  { key: 'Surprised', icon: Frown },
-  { key: 'Thanks', icon: HandHeart },
+  { key: "Like", icon: ThumbsUp },
+  { key: "Love", icon: Heart },
+  { key: "Laugh", icon: Laugh },
+  { key: "Celebrate", icon: PartyPopper },
+  { key: "Surprised", icon: Frown },
+  { key: "Thanks", icon: HandHeart },
 ];
-const REACTION_ICON = Object.fromEntries(REACTIONS.map((r) => [r.key, r.icon])) as Record<ChReactionKey, LucideIcon>;
+const REACTION_ICON = Object.fromEntries(
+  REACTIONS.map((r) => [r.key, r.icon]),
+) as Record<ChReactionKey, LucideIcon>;
 
 export interface ChMessagesApi {
-  viewer: { userId: string; role: 'coach' | 'player'; name: string };
+  viewer: { userId: string; role: "coach" | "player"; name: string };
   timeZone: string;
   now: string;
   teamName: string | null;
@@ -109,53 +127,172 @@ export interface ChMessagesApi {
   directoryError: boolean;
   startDirect: (userId: string) => Promise<boolean>;
   createGroup: (userIds: string[], title: string) => Promise<boolean>;
+
+  searchMessages: (q: string) => Promise<ChSearchHit[] | null>;
+  openHit: (hit: ChSearchHit) => void;
+
+  mute: ChMute | null;
+  muteError: boolean;
+  setMute: (muted: boolean, hours: number | null) => Promise<boolean>;
+
+  announcements: ChAnnouncement[];
+  annError: boolean;
+  refetchAnns: () => void;
+  selectedAnnId: string | null;
+  selectAnn: (id: string | null) => void;
+  announcementDetail: (id: string) => Promise<ChAnnouncementDetail | null>;
+  acknowledge: (id: string) => Promise<boolean>;
+  completeTask: (announcementId: string, taskId: string) => Promise<boolean>;
+  createAnnouncement: (a: {
+    title: string;
+    body: string;
+    urgent: boolean;
+    ack: boolean;
+  }) => Promise<boolean>;
 }
 
-const personOf = (api: ChMessagesApi, userId: string) => api.directory.find((p) => p.userId === userId);
+const personOf = (api: ChMessagesApi, userId: string) =>
+  api.directory.find((p) => p.userId === userId);
 
 /* Rail */
 
+function MessageHits({ api, q }: { api: ChMessagesApi; q: string }) {
+  const [hits, setHits] = useState<ChSearchHit[] | null>(null);
+  const [failed, setFailed] = useState(false);
+  const search = api.searchMessages;
+  const term = q.trim();
+  useEffect(() => {
+    if (term.length < 2) {
+      setHits(null);
+      return;
+    }
+    let live = true;
+    setFailed(false);
+    const t = window.setTimeout(() => {
+      search(term)
+        .then((r) => live && (r ? setHits(r) : setFailed(true)))
+        .catch(() => live && setFailed(true));
+    }, 250);
+    return () => {
+      live = false;
+      window.clearTimeout(t);
+    };
+  }, [search, term]);
+  if (term.length < 2) return null;
+  return (
+    <section
+      className="ch-ms-sec"
+      aria-label="Messages matching your search"
+      aria-live="polite"
+    >
+      <div className="ch-ms-sec__l">In messages</div>
+      {failed ? (
+        <div className="ch-ms-empty">
+          Message search didn&apos;t load. Try again in a moment.
+        </div>
+      ) : !hits ? (
+        <div className="ch-ms-sec__card" aria-busy="true">
+          <div className="ch-ms-row" style={{ cursor: "default" }}>
+            <span />
+            <Skeleton width="80%" height={13} />
+          </div>
+        </div>
+      ) : !hits.length ? (
+        <div className="ch-ms-empty">No messages mention “{term}”.</div>
+      ) : (
+        <div className="ch-ms-sec__card">
+          {hits.slice(0, 20).map((h) => (
+            <button
+              key={h.messageId}
+              type="button"
+              className="ch-ms-row is-hit"
+              onClick={() => {
+                haptic("select");
+                chTrail("messages open search hit");
+                api.openHit(h);
+              }}
+            >
+              <span className="ch-ms-grp">
+                <Icon icon={Search} size={14} />
+              </span>
+              <span className="ch-ms-row__main">
+                <span className="ch-ms-row__top">
+                  <b>{h.conversationName}</b>
+                  <span className="ch-num">
+                    {railTime(h.at, api.now, api.timeZone)}
+                  </span>
+                </span>
+                <span className="ch-ms-row__bot">
+                  <span>
+                    <em>{h.senderName}: </em>
+                    {h.text}
+                  </span>
+                </span>
+              </span>
+            </button>
+          ))}
+        </div>
+      )}
+    </section>
+  );
+}
+
 function Rail({ api, onNew }: { api: ChMessagesApi; onNew: () => void }) {
-  const [filter, setFilter] = useState<ChConvFilter>('all');
-  const [q, setQ] = useState('');
+  const [filter, setFilter] = useState<ChConvFilter>("all");
+  const [q, setQ] = useState("");
   const unread = api.convs.filter((c) => c.unread > 0).length;
   const list = filterConvs(api.convs, filter, q);
   const sections: Array<[ReturnType<typeof sectionOf>, string]> = [
-    ['today', 'Today'],
-    ['week', 'This week'],
-    ['earlier', 'Earlier'],
+    ["today", "Today"],
+    ["week", "This week"],
+    ["earlier", "Earlier"],
   ];
   return (
     <aside className="ch-ms-rail" aria-label="Conversations">
       <div className="ch-ms-rail__head">
         <div className="ch-ms-rail__title">
           <h1>Messages</h1>
-          <button type="button" className="ch-btn ch-btn--secondary ch-iconbtn" aria-label="New message" title="New message" onClick={onNew}>
+          <button
+            type="button"
+            className="ch-btn ch-btn--secondary ch-iconbtn"
+            aria-label="New message"
+            title="New message"
+            onClick={onNew}
+          >
             <Icon icon={SquarePen} size={16} />
           </button>
         </div>
-        <SearchField value={q} onChange={setQ} placeholder="Search people and messages" label="Search conversations" />
+        <SearchField
+          value={q}
+          onChange={setQ}
+          placeholder="Search people and messages"
+          label="Search conversations and messages"
+        />
         <Segmented<ChConvFilter>
           size="sm"
           label="Filter conversations"
           value={filter}
           onChange={setFilter}
           options={[
-            { value: 'all', label: 'All' },
-            { value: 'unread', label: `Unread · ${unread}` },
-            { value: 'groups', label: 'Groups' },
+            { value: "all", label: "All" },
+            { value: "unread", label: `Unread · ${unread}` },
+            { value: "groups", label: "Groups" },
           ]}
         />
       </div>
       <div className="ch-ms-rail__body">
         {api.convsError ? (
-          <InlineNotice title="Conversations didn't load." body="Your messages are safe. Try again; the error has been reported." onRetry={api.refetchConvs} />
+          <InlineNotice
+            title="Conversations didn't load."
+            body="Your messages are safe. Try again; the error has been reported."
+            onRetry={api.refetchConvs}
+          />
         ) : api.convsLoading && !api.convs.length ? (
           <div className="ch-ms-sec__card" aria-busy="true">
             {Array.from({ length: 5 }, (_, i) => (
-              <div key={i} className="ch-ms-row" style={{ cursor: 'default' }}>
+              <div key={i} className="ch-ms-row" style={{ cursor: "default" }}>
                 <Skeleton width={36} height={36} radius={18} />
-                <span style={{ display: 'grid', gap: 7 }}>
+                <span style={{ display: "grid", gap: 7 }}>
                   <Skeleton width="60%" height={13} />
                   <Skeleton width="85%" height={12} />
                 </span>
@@ -167,7 +304,11 @@ function Rail({ api, onNew }: { api: ChMessagesApi; onNew: () => void }) {
             compact
             icon={MessageSquare}
             title="No conversations yet."
-            body={api.viewer.role === 'coach' ? 'Start one with a player, or create a team group.' : 'Message a coach or a teammate to start.'}
+            body={
+              api.viewer.role === "coach"
+                ? "Start one with a player, or create a team group."
+                : "Message a coach or a teammate to start."
+            }
             action={
               <Button size="sm" leftIcon={SquarePen} onClick={onNew}>
                 New message
@@ -176,8 +317,11 @@ function Rail({ api, onNew }: { api: ChMessagesApi; onNew: () => void }) {
           />
         ) : (
           <>
+            {filter !== "groups" && <AnnouncementsSection api={api} q={q} />}
             {sections.map(([k, l]) => {
-              const rows = list.filter((c) => sectionOf(c.lastAt, api.now, api.timeZone) === k);
+              const rows = list.filter(
+                (c) => sectionOf(c.lastAt, api.now, api.timeZone) === k,
+              );
               if (!rows.length) return null;
               return (
                 <section key={k} className="ch-ms-sec" aria-label={l}>
@@ -187,11 +331,17 @@ function Rail({ api, onNew }: { api: ChMessagesApi; onNew: () => void }) {
                       <button
                         key={c.id}
                         type="button"
-                        className={'ch-ms-row' + (c.unread ? ' is-unread' : '') + (api.selectedId === c.id ? ' is-sel' : '')}
-                        aria-current={api.selectedId === c.id ? 'true' : undefined}
+                        className={
+                          "ch-ms-row" +
+                          (c.unread ? " is-unread" : "") +
+                          (api.selectedId === c.id ? " is-sel" : "")
+                        }
+                        aria-current={
+                          api.selectedId === c.id ? "true" : undefined
+                        }
                         onClick={() => {
-                          haptic('select');
-                          chTrail('messages open conversation');
+                          haptic("select");
+                          chTrail("messages open conversation");
                           api.select(c.id);
                         }}
                       >
@@ -205,23 +355,38 @@ function Rail({ api, onNew }: { api: ChMessagesApi; onNew: () => void }) {
                         <span className="ch-ms-row__main">
                           <span className="ch-ms-row__top">
                             <b>{c.title}</b>
-                            <span className="ch-num">{railTime(c.lastAt, api.now, api.timeZone)}</span>
+                            <span className="ch-num">
+                              {railTime(c.lastAt, api.now, api.timeZone)}
+                            </span>
                           </span>
                           <span className="ch-ms-row__bot">
                             <span>
                               {c.lastText ? (
                                 <>
-                                  {c.lastSenderId && (c.group || c.lastSenderId === api.viewer.userId) && (
-                                    <em>{c.lastSenderId === api.viewer.userId ? 'You' : firstName(personOf(api, c.lastSenderId)?.name ?? 'Member')}: </em>
-                                  )}
+                                  {c.lastSenderId &&
+                                    (c.group ||
+                                      c.lastSenderId === api.viewer.userId) && (
+                                      <em>
+                                        {c.lastSenderId === api.viewer.userId
+                                          ? "You"
+                                          : firstName(
+                                              personOf(api, c.lastSenderId)
+                                                ?.name ?? "Member",
+                                            )}
+                                        :{" "}
+                                      </em>
+                                    )}
                                   {c.lastText}
                                 </>
                               ) : (
-                                'No messages yet'
+                                "No messages yet"
                               )}
                             </span>
                             {c.unread > 0 && (
-                              <span className="ch-ms-count ch-num" aria-label={`${c.unread} unread`}>
+                              <span
+                                className="ch-ms-count ch-num"
+                                aria-label={`${c.unread} unread`}
+                              >
                                 {c.unread}
                               </span>
                             )}
@@ -233,7 +398,14 @@ function Rail({ api, onNew }: { api: ChMessagesApi; onNew: () => void }) {
                 </section>
               );
             })}
-            {!list.length && <div className="ch-ms-empty">{q.trim() ? `No conversation matches “${q.trim()}”.` : 'Nothing unread. You’re caught up.'}</div>}
+            {!list.length && (
+              <div className="ch-ms-empty">
+                {q.trim()
+                  ? `No conversation matches “${q.trim()}”.`
+                  : "Nothing unread. You’re caught up."}
+              </div>
+            )}
+            <MessageHits api={api} q={q} />
           </>
         )}
       </div>
@@ -243,7 +415,15 @@ function Rail({ api, onNew }: { api: ChMessagesApi; onNew: () => void }) {
 
 /* Thread */
 
-function Attachments({ load, id, mine }: { load: ChMessagesApi['attachments']; id: string; mine: boolean }) {
+function Attachments({
+  load,
+  id,
+  mine,
+}: {
+  load: ChMessagesApi["attachments"];
+  id: string;
+  mine: boolean;
+}) {
   const [files, setFiles] = useState<ChAttachment[] | null>(null);
   const [failed, setFailed] = useState(false);
   const [attempt, setAttempt] = useState(0);
@@ -253,7 +433,7 @@ function Attachments({ load, id, mine }: { load: ChMessagesApi['attachments']; i
     load(id)
       .then((a) => live && (a ? setFiles(a) : setFailed(true)))
       .catch((err) => {
-        chReport(err, { surface: 'messages.attachments', severity: 'low' });
+        chReport(err, { surface: "messages.attachments", severity: "low" });
         if (live) setFailed(true);
       });
     return () => {
@@ -262,7 +442,11 @@ function Attachments({ load, id, mine }: { load: ChMessagesApi['attachments']; i
   }, [load, id, attempt]);
   if (failed) {
     return (
-      <button type="button" className="ch-ms-bub ch-ms-bub--file" onClick={() => setAttempt((a) => a + 1)}>
+      <button
+        type="button"
+        className="ch-ms-bub ch-ms-bub--file"
+        onClick={() => setAttempt((a) => a + 1)}
+      >
         <span className="ch-ms-file__ic">
           <Icon icon={RotateCw} size={15} />
         </span>
@@ -277,7 +461,14 @@ function Attachments({ load, id, mine }: { load: ChMessagesApi['attachments']; i
   return (
     <>
       {files.map((f) => (
-        <a key={f.id} className="ch-ms-bub ch-ms-bub--file" href={f.url ?? undefined} target="_blank" rel="noreferrer" aria-disabled={!f.url}>
+        <a
+          key={f.id}
+          className="ch-ms-bub ch-ms-bub--file"
+          href={f.url ?? undefined}
+          target="_blank"
+          rel="noreferrer"
+          aria-disabled={!f.url}
+        >
           <span className="ch-ms-file__ic">
             <Icon icon={FileText} size={16} />
           </span>
@@ -294,11 +485,11 @@ function Attachments({ load, id, mine }: { load: ChMessagesApi['attachments']; i
 }
 
 function fileSize(b: number) {
-  if (!b) return '';
+  if (!b) return "";
   const k = 1024;
-  const units = ['B', 'KB', 'MB', 'GB'];
+  const units = ["B", "KB", "MB", "GB"];
   const i = Math.min(3, Math.floor(Math.log(b) / Math.log(k)));
-  return `${(b / k ** i).toFixed(i ? 1 : 0).replace(/\.0$/, '')} ${units[i]}`;
+  return `${(b / k ** i).toFixed(i ? 1 : 0).replace(/\.0$/, "")} ${units[i]}`;
 }
 
 function Bubble({
@@ -326,7 +517,14 @@ function Bubble({
   const reacts = api.reactions.get(m.id) ?? [];
   if (m.deleted) {
     return (
-      <div className={'ch-ms-msg' + (m.mine ? ' is-mine' : '') + (first ? ' is-first' : '') + (last ? ' is-last' : '')}>
+      <div
+        className={
+          "ch-ms-msg" +
+          (m.mine ? " is-mine" : "") +
+          (first ? " is-first" : "") +
+          (last ? " is-last" : "")
+        }
+      >
         {!m.mine && <span className="ch-ms-msg__av" />}
         <div className="ch-ms-msg__col">
           <div className="ch-ms-bub is-deleted">Message deleted</div>
@@ -335,30 +533,64 @@ function Bubble({
     );
   }
   return (
-    <div className={'ch-ms-msg' + (m.mine ? ' is-mine' : '') + (first ? ' is-first' : '') + (last ? ' is-last' : '') + (m.failed ? ' is-failed' : '')}>
-      {!m.mine && <span className="ch-ms-msg__av">{last && <Avatar name={who?.name ?? 'Member'} size={30} />}</span>}
+    <div
+      className={
+        "ch-ms-msg" +
+        (m.mine ? " is-mine" : "") +
+        (first ? " is-first" : "") +
+        (last ? " is-last" : "") +
+        (m.failed ? " is-failed" : "")
+      }
+    >
+      {!m.mine && (
+        <span className="ch-ms-msg__av">
+          {last && <Avatar name={who?.name ?? "Member"} size={30} />}
+        </span>
+      )}
       <div className="ch-ms-msg__col">
-        {!m.mine && first && group && <span className="ch-ms-msg__who">{firstName(who?.name ?? 'Member')}</span>}
+        {!m.mine && first && group && (
+          <span className="ch-ms-msg__who">
+            {firstName(who?.name ?? "Member")}
+          </span>
+        )}
         <div className="ch-ms-msg__line">
           <div className="ch-ms-msg__stack">
             {m.text && <div className="ch-ms-bub">{m.text}</div>}
-            {m.hasAttachments && <Attachments load={api.attachments} id={m.id} mine={m.mine} />}
+            {m.hasAttachments && (
+              <Attachments load={api.attachments} id={m.id} mine={m.mine} />
+            )}
           </div>
           {!m.failed && (
             <div className="ch-ms-msg__tools">
-              <button type="button" className="ch-ms-tool" aria-label="React" aria-expanded={picking} onClick={() => setPicking(!picking)}>
+              <button
+                type="button"
+                className="ch-ms-tool"
+                aria-label="React"
+                aria-expanded={picking}
+                onClick={() => setPicking(!picking)}
+              >
                 <Icon icon={SmilePlus} size={15} />
               </button>
               {m.mine && (
                 <Menu
                   label="Message actions"
-                  align={m.mine ? 'end' : 'start'}
+                  align={m.mine ? "end" : "start"}
                   items={[
-                    { label: 'Edit', icon: Pencil, onSelect: onEdit },
-                    { label: 'Delete', icon: Trash2, danger: true, onSelect: onDelete },
+                    { label: "Edit", icon: Pencil, onSelect: onEdit },
+                    {
+                      label: "Delete",
+                      icon: Trash2,
+                      danger: true,
+                      onSelect: onDelete,
+                    },
                   ]}
                   trigger={(p) => (
-                    <button type="button" className="ch-ms-tool" aria-label="More message actions" {...p}>
+                    <button
+                      type="button"
+                      className="ch-ms-tool"
+                      aria-label="More message actions"
+                      {...p}
+                    >
                       <Icon icon={Ellipsis} size={15} />
                     </button>
                   )}
@@ -375,10 +607,10 @@ function Bubble({
                     key={r.key}
                     type="button"
                     role="menuitem"
-                    className={'ch-ms-reactbar__b' + (on ? ' is-on' : '')}
-                    aria-label={`${on ? 'Remove' : 'React'} ${r.key.toLowerCase()}`}
+                    className={"ch-ms-reactbar__b" + (on ? " is-on" : "")}
+                    aria-label={`${on ? "Remove" : "React"} ${r.key.toLowerCase()}`}
                     onClick={() => {
-                      haptic('select');
+                      haptic("select");
                       api.react(m.id, r.key, !on);
                       setPicking(false);
                     }}
@@ -396,11 +628,11 @@ function Bubble({
               <button
                 key={r.key}
                 type="button"
-                className={'ch-ms-react ch-num' + (r.mine ? ' is-mine' : '')}
-                aria-label={`${r.key}, ${r.count}${r.mine ? ', including you' : ''}`}
+                className={"ch-ms-react ch-num" + (r.mine ? " is-mine" : "")}
+                aria-label={`${r.key}, ${r.count}${r.mine ? ", including you" : ""}`}
                 aria-pressed={r.mine}
                 onClick={() => {
-                  haptic('select');
+                  haptic("select");
                   api.react(m.id, r.key, !r.mine);
                 }}
               >
@@ -412,8 +644,13 @@ function Bubble({
         )}
         {m.failed ? (
           <span className="ch-ms-msg__fail" role="alert">
-            {m.failed === 'unknown' ? 'Couldn’t confirm this sent. Check before sending again.' : 'Not sent.'}
-            <button type="button" onClick={() => (haptic('press'), api.retry(m.id))}>
+            {m.failed === "unknown"
+              ? "Couldn’t confirm this sent. Check before sending again."
+              : "Not sent."}
+            <button
+              type="button"
+              onClick={() => (haptic("press"), api.retry(m.id))}
+            >
               Retry
             </button>
             <button type="button" onClick={() => api.discard(m.id)}>
@@ -424,8 +661,8 @@ function Bubble({
           last && (
             <span className="ch-ms-msg__t ch-num">
               {clock(m.at, api.timeZone)}
-              {m.edited ? ' · Edited' : ''}
-              {m.mine && !group && m.seen ? ' · Seen' : ''}
+              {m.edited ? " · Edited" : ""}
+              {m.mine && !group && m.seen ? " · Seen" : ""}
             </span>
           )
         )}
@@ -435,7 +672,7 @@ function Bubble({
 }
 
 function Composer({ api, conv }: { api: ChMessagesApi; conv: ChConv }) {
-  const [draft, setDraft] = useState('');
+  const [draft, setDraft] = useState("");
   const [files, setFiles] = useState<File[]>([]);
   const [sending, setSending] = useState(false);
   const ta = useRef<HTMLTextAreaElement | null>(null);
@@ -446,7 +683,7 @@ function Composer({ api, conv }: { api: ChMessagesApi; conv: ChConv }) {
   useLayoutEffect(() => {
     const t = ta.current;
     if (!t) return;
-    t.style.height = 'auto';
+    t.style.height = "auto";
     t.style.height = `${Math.min(t.scrollHeight, 132)}px`;
   }, [draft]);
 
@@ -455,15 +692,17 @@ function Composer({ api, conv }: { api: ChMessagesApi; conv: ChConv }) {
     const text = draft.trim();
     const pending = files;
     setSending(true);
-    setDraft('');
+    setDraft("");
     setFiles([]);
     api.onTyping(false);
-    chTrail('messages send');
-    const ok = pending.length ? await api.sendFiles(text, pending) : await api.send(text);
+    chTrail("messages send");
+    const ok = pending.length
+      ? await api.sendFiles(text, pending)
+      : await api.send(text);
     setSending(false);
-    if (ok) haptic('commit');
+    if (ok) haptic("commit");
     else {
-      haptic('error');
+      haptic("error");
       // Keep what they wrote: a failed send never eats the draft.
       setDraft(text);
       setFiles(pending);
@@ -471,7 +710,7 @@ function Composer({ api, conv }: { api: ChMessagesApi; conv: ChConv }) {
     ta.current?.focus();
   };
   const onKey = (e: KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
+    if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
       e.preventDefault();
       void send();
     }
@@ -485,7 +724,11 @@ function Composer({ api, conv }: { api: ChMessagesApi; conv: ChConv }) {
             <span key={`${f.name}${i}`} className="ch-ms-to__c">
               <Icon icon={FileText} size={13} />
               {f.name}
-              <button type="button" aria-label={`Remove ${f.name}`} onClick={() => setFiles((s) => s.filter((_, j) => j !== i))}>
+              <button
+                type="button"
+                aria-label={`Remove ${f.name}`}
+                onClick={() => setFiles((s) => s.filter((_, j) => j !== i))}
+              >
                 <Icon icon={X} size={12} />
               </button>
             </span>
@@ -493,7 +736,12 @@ function Composer({ api, conv }: { api: ChMessagesApi; conv: ChConv }) {
         </div>
       )}
       <div className="ch-ms-comp__field">
-        <IconButton icon={Paperclip} label="Attach a file" size="sm" onClick={() => fileInput.current?.click()} />
+        <IconButton
+          icon={Paperclip}
+          label="Attach a file"
+          size="sm"
+          onClick={() => fileInput.current?.click()}
+        />
         <input
           ref={fileInput}
           type="file"
@@ -502,7 +750,7 @@ function Composer({ api, conv }: { api: ChMessagesApi; conv: ChConv }) {
           onChange={(e) => {
             const picked = Array.from(e.target.files ?? []);
             if (picked.length) setFiles((s) => [...s, ...picked].slice(0, 10));
-            e.target.value = '';
+            e.target.value = "";
           }}
         />
         <textarea
@@ -515,29 +763,55 @@ function Composer({ api, conv }: { api: ChMessagesApi; conv: ChConv }) {
             setDraft(e.target.value);
             api.onTyping(true);
             if (typingTimer.current) window.clearTimeout(typingTimer.current);
-            typingTimer.current = window.setTimeout(() => api.onTyping(false), 2500);
+            typingTimer.current = window.setTimeout(
+              () => api.onTyping(false),
+              2500,
+            );
           }}
           onKeyDown={onKey}
           enterKeyHint="send"
         />
-        <button type="button" className={'ch-ms-send' + (ready ? ' is-ready' : '')} onClick={() => void send()} disabled={!ready} aria-label="Send">
+        <button
+          type="button"
+          className={"ch-ms-send" + (ready ? " is-ready" : "")}
+          onClick={() => void send()}
+          disabled={!ready}
+          aria-label="Send"
+        >
           <Icon icon={ArrowUp} size={17} />
         </button>
       </div>
-      <span className="ch-ms-comp__hint">Enter to send · Shift + Enter for a new line</span>
+      <span className="ch-ms-comp__hint">
+        Enter to send · Shift + Enter for a new line
+      </span>
     </footer>
   );
 }
 
-function Thread({ api, conv, detailsOpen, setDetails, onBack }: { api: ChMessagesApi; conv: ChConv; detailsOpen: boolean; setDetails: (v: boolean) => void; onBack: () => void }) {
+function Thread({
+  api,
+  conv,
+  detailsOpen,
+  setDetails,
+  onBack,
+}: {
+  api: ChMessagesApi;
+  conv: ChConv;
+  detailsOpen: boolean;
+  setDetails: (v: boolean) => void;
+  onBack: () => void;
+}) {
   const [picking, setPicking] = useState<string | null>(null);
   const [editing, setEditing] = useState<ChMsg | null>(null);
-  const [editText, setEditText] = useState('');
+  const [editText, setEditText] = useState("");
   const [deleting, setDeleting] = useState<ChMsg | null>(null);
   const [busy, setBusy] = useState(false);
   const scroller = useRef<HTMLDivElement | null>(null);
-  const items = useMemo(() => threadItems(api.msgs, api.now, api.timeZone), [api.msgs, api.now, api.timeZone]);
-  const calendarHref = rebuiltHref('/golf/dashboard/calendar', api.viewer.role);
+  const items = useMemo(
+    () => threadItems(api.msgs, api.now, api.timeZone),
+    [api.msgs, api.now, api.timeZone],
+  );
+  const calendarHref = rebuiltHref("/golf/dashboard/calendar", api.viewer.role);
 
   useLayoutEffect(() => {
     const s = scroller.current;
@@ -546,26 +820,44 @@ function Thread({ api, conv, detailsOpen, setDetails, onBack }: { api: ChMessage
   useEffect(() => setPicking(null), [conv.id]);
   useEffect(() => {
     if (!picking) return;
-    const close = (e: Event) => !(e.target as HTMLElement | null)?.closest?.('.ch-ms-reactbar, .ch-ms-tool') && setPicking(null);
-    const esc = (e: globalThis.KeyboardEvent) => e.key === 'Escape' && setPicking(null);
-    document.addEventListener('pointerdown', close);
-    document.addEventListener('keydown', esc);
+    const close = (e: Event) =>
+      !(e.target as HTMLElement | null)?.closest?.(
+        ".ch-ms-reactbar, .ch-ms-tool",
+      ) && setPicking(null);
+    const esc = (e: globalThis.KeyboardEvent) =>
+      e.key === "Escape" && setPicking(null);
+    document.addEventListener("pointerdown", close);
+    document.addEventListener("keydown", esc);
     return () => {
-      document.removeEventListener('pointerdown', close);
-      document.removeEventListener('keydown', esc);
+      document.removeEventListener("pointerdown", close);
+      document.removeEventListener("keydown", esc);
     };
   }, [picking]);
 
   const sub = conv.group
-    ? `${conv.memberCount} members${conv.memberIds.length ? ` · ${conv.memberIds.slice(0, 3).map((id) => firstName(personOf(api, id)?.name ?? 'Member')).join(', ')}${conv.memberIds.length > 3 ? ' and more' : ''}` : ''}`
+    ? `${conv.memberCount} members${
+        conv.memberIds.length
+          ? ` · ${conv.memberIds
+              .slice(0, 3)
+              .map((id) => firstName(personOf(api, id)?.name ?? "Member"))
+              .join(", ")}${conv.memberIds.length > 3 ? " and more" : ""}`
+          : ""
+      }`
     : conv.subtitle;
 
   return (
-    <section className="ch-ms-thread" aria-label={`Conversation with ${conv.title}`}>
+    <section
+      className="ch-ms-thread"
+      aria-label={`Conversation with ${conv.title}`}
+    >
       <header className="ch-ms-th">
         <div className="ch-ms-th__who">
           <span className="ch-ms-back">
-            <IconButton icon={ChevronLeft} label="All conversations" onClick={onBack} />
+            <IconButton
+              icon={ChevronLeft}
+              label="All conversations"
+              onClick={onBack}
+            />
           </span>
           {conv.group ? (
             <span className="ch-ms-grp is-lg">
@@ -580,19 +872,27 @@ function Thread({ api, conv, detailsOpen, setDetails, onBack }: { api: ChMessage
           </div>
         </div>
         <div className="ch-ms-th__act">
-          {calendarHref && api.viewer.role === 'coach' && (
-            <a className="ch-btn ch-btn--ghost ch-iconbtn" href={calendarHref} aria-label="Open the calendar" title="Open the calendar">
+          {calendarHref && api.viewer.role === "coach" && (
+            <a
+              className="ch-btn ch-btn--ghost ch-iconbtn"
+              href={calendarHref}
+              aria-label="Open the calendar"
+              title="Open the calendar"
+            >
               <Icon icon={CalendarPlus} size={16} />
             </a>
           )}
           <button
             type="button"
-            className={'ch-btn ch-iconbtn ' + (detailsOpen ? 'ch-btn--secondary' : 'ch-btn--ghost')}
+            className={
+              "ch-btn ch-iconbtn " +
+              (detailsOpen ? "ch-btn--secondary" : "ch-btn--ghost")
+            }
             aria-label="Details"
             aria-pressed={detailsOpen}
             title="Details"
             onClick={() => {
-              haptic('select');
+              haptic("select");
               setDetails(!detailsOpen);
             }}
           >
@@ -608,20 +908,30 @@ function Thread({ api, conv, detailsOpen, setDetails, onBack }: { api: ChMessage
       >
         <div className="ch-ms-msgs">
           {api.msgsError ? (
-            <InlineNotice title="This conversation didn't load." body="Nothing was lost. Try again; the error has been reported." onRetry={api.refetchMsgs} />
+            <InlineNotice
+              title="This conversation didn't load."
+              body="Nothing was lost. Try again; the error has been reported."
+              onRetry={api.refetchMsgs}
+            />
           ) : api.msgsLoading && !api.msgs.length ? (
-            <div style={{ display: 'grid', gap: 12, paddingTop: 24 }} aria-busy="true">
+            <div
+              style={{ display: "grid", gap: 12, paddingTop: 24 }}
+              aria-busy="true"
+            >
               <Skeleton width="46%" height={40} radius={18} />
-              <div style={{ justifySelf: 'end', width: '52%' }}>
+              <div style={{ justifySelf: "end", width: "52%" }}>
                 <Skeleton width="100%" height={40} radius={18} />
               </div>
               <Skeleton width="38%" height={40} radius={18} />
             </div>
           ) : !api.msgs.length ? (
-            <div className="ch-ms-empty">No messages yet. Say hello to {conv.group ? 'the group' : firstName(conv.title)}.</div>
+            <div className="ch-ms-empty">
+              No messages yet. Say hello to{" "}
+              {conv.group ? "the group" : firstName(conv.title)}.
+            </div>
           ) : (
             items.map((it) =>
-              it.kind === 'day' ? (
+              it.kind === "day" ? (
                 <div key={it.key} className="ch-ms-day">
                   <span>{it.label}</span>
                 </div>
@@ -648,7 +958,11 @@ function Thread({ api, conv, detailsOpen, setDetails, onBack }: { api: ChMessage
             <div className="ch-ms-msg is-first">
               <span className="ch-ms-msg__av" />
               <div className="ch-ms-msg__col">
-                <div className="ch-ms-typing" role="status" aria-label={`${conv.group ? 'Someone' : firstName(conv.title)} is typing`}>
+                <div
+                  className="ch-ms-typing"
+                  role="status"
+                  aria-label={`${conv.group ? "Someone" : firstName(conv.title)} is typing`}
+                >
                   <i />
                   <i />
                   <i />
@@ -682,12 +996,18 @@ function Thread({ api, conv, detailsOpen, setDetails, onBack }: { api: ChMessage
                 if (ok) setEditing(null);
               }}
             >
-              {busy ? 'Saving…' : 'Save'}
+              {busy ? "Saving…" : "Save"}
             </Button>
           </>
         }
       >
-        <textarea className="ch-textarea" rows={4} aria-label="Message" value={editText} onChange={(e) => setEditText(e.target.value)} />
+        <textarea
+          className="ch-textarea"
+          rows={4}
+          aria-label="Message"
+          value={editText}
+          onChange={(e) => setEditText(e.target.value)}
+        />
       </Modal>
       <Modal
         open={deleting != null}
@@ -712,7 +1032,7 @@ function Thread({ api, conv, detailsOpen, setDetails, onBack }: { api: ChMessage
                 if (ok) setDeleting(null);
               }}
             >
-              {busy ? 'Deleting…' : 'Delete message'}
+              {busy ? "Deleting…" : "Delete message"}
             </Button>
           </>
         }
@@ -723,16 +1043,34 @@ function Thread({ api, conv, detailsOpen, setDetails, onBack }: { api: ChMessage
 
 /* Details */
 
-function Details({ api, conv, onClose }: { api: ChMessagesApi; conv: ChConv; onClose: () => void }) {
+function Details({
+  api,
+  conv,
+  onClose,
+}: {
+  api: ChMessagesApi;
+  conv: ChConv;
+  onClose: () => void;
+}) {
   const [leaving, setLeaving] = useState(false);
   const [busy, setBusy] = useState(false);
-  const other = !conv.group ? personOf(api, conv.memberIds[0] ?? '') : undefined;
-  const statsHref = rebuiltHref('/golf/dashboard/stats', api.viewer.role);
+  const other = !conv.group
+    ? personOf(api, conv.memberIds[0] ?? "")
+    : undefined;
+  const statsHref = rebuiltHref("/golf/dashboard/stats", api.viewer.role);
   return (
-    <aside className="ch-ms-det" aria-label={conv.group ? 'Group details' : 'Details'}>
+    <aside
+      className="ch-ms-det"
+      aria-label={conv.group ? "Group details" : "Details"}
+    >
       <div className="ch-ms-det__head">
-        <b>{conv.group ? 'Group details' : 'Details'}</b>
-        <IconButton icon={X} label="Close details" size="sm" onClick={onClose} />
+        <b>{conv.group ? "Group details" : "Details"}</b>
+        <IconButton
+          icon={X}
+          label="Close details"
+          size="sm"
+          onClick={onClose}
+        />
       </div>
       <div className="ch-ms-det__hero">
         {conv.group ? (
@@ -743,24 +1081,37 @@ function Details({ api, conv, onClose }: { api: ChMessagesApi; conv: ChConv; onC
           <Avatar name={conv.title} size={64} ring />
         )}
         <b>{conv.title}</b>
-        <span>{conv.group ? `Group · ${conv.memberCount} members` : conv.subtitle}</span>
+        <span>
+          {conv.group ? `Group · ${conv.memberCount} members` : conv.subtitle}
+        </span>
       </div>
-      {!conv.group && other?.role === 'player' && other.playerId && api.viewer.role === 'coach' && statsHref && (
-        <div className="ch-ms-det__sec">
-          <Button size="sm" href={`${statsHref}?player=${encodeURIComponent(other.playerId)}`}>
-            View stats
-          </Button>
-        </div>
-      )}
+      <MuteControl api={api} />
+      {!conv.group &&
+        other?.role === "player" &&
+        other.playerId &&
+        api.viewer.role === "coach" &&
+        statsHref && (
+          <div className="ch-ms-det__sec">
+            <Button
+              size="sm"
+              href={`${statsHref}?player=${encodeURIComponent(other.playerId)}`}
+            >
+              View stats
+            </Button>
+          </div>
+        )}
       {conv.group && (
         <div className="ch-ms-det__sec">
           <div className="ch-ms-det__l">
             <span>{conv.memberCount} members</span>
           </div>
           {api.membersError ? (
-            <InlineNotice title="Members didn't load." body="Try again in a moment." />
+            <InlineNotice
+              title="Members didn't load."
+              body="Try again in a moment."
+            />
           ) : !api.members ? (
-            <div style={{ display: 'grid', gap: 10 }} aria-busy="true">
+            <div style={{ display: "grid", gap: 10 }} aria-busy="true">
               <Skeleton height={30} />
               <Skeleton height={30} />
               <Skeleton height={30} />
@@ -772,11 +1123,15 @@ function Details({ api, conv, onClose }: { api: ChMessagesApi; conv: ChConv; onC
                 <span style={{ minWidth: 0 }}>
                   <b>
                     {mb.name}
-                    {mb.userId === api.viewer.userId ? ' (you)' : ''}
+                    {mb.userId === api.viewer.userId ? " (you)" : ""}
                   </b>
                   <span>{mb.subtitle}</span>
                 </span>
-                {mb.userId === conv.creatorId ? <Badge tone="neutral">Admin</Badge> : <span />}
+                {mb.userId === conv.creatorId ? (
+                  <Badge tone="neutral">Admin</Badge>
+                ) : (
+                  <span />
+                )}
               </div>
             ))
           )}
@@ -784,7 +1139,11 @@ function Details({ api, conv, onClose }: { api: ChMessagesApi; conv: ChConv; onC
       )}
       {conv.group && conv.creatorId !== api.viewer.userId && (
         <div className="ch-ms-det__sec">
-          <Button variant="danger" leftIcon={LogOut} onClick={() => setLeaving(true)}>
+          <Button
+            variant="danger"
+            leftIcon={LogOut}
+            onClick={() => setLeaving(true)}
+          >
             Leave group
           </Button>
         </div>
@@ -814,7 +1173,7 @@ function Details({ api, conv, onClose }: { api: ChMessagesApi; conv: ChConv; onC
                 }
               }}
             >
-              {busy ? 'Leaving…' : 'Leave group'}
+              {busy ? "Leaving…" : "Leave group"}
             </Button>
           </>
         }
@@ -823,39 +1182,145 @@ function Details({ api, conv, onClose }: { api: ChMessagesApi; conv: ChConv; onC
   );
 }
 
+function MuteControl({ api }: { api: ChMessagesApi }) {
+  const [busy, setBusy] = useState(false);
+  const m = api.mute;
+  const set = async (muted: boolean, hours: number | null) => {
+    setBusy(true);
+    await api.setMute(muted, hours);
+    setBusy(false);
+  };
+  return (
+    <div className="ch-ms-det__sec">
+      <div className="ch-ms-det__l">
+        <span>Notifications</span>
+      </div>
+      {api.muteError ? (
+        <p className="ch-ms-quiet">
+          The mute setting didn&apos;t load. Close details and open them again.
+        </p>
+      ) : !m ? (
+        <Skeleton height={30} />
+      ) : m.muted ? (
+        <div className="ch-ms-mute">
+          <span>
+            <Icon icon={BellOff} size={15} />
+            {m.until
+              ? `Muted until ${dayLabel(m.until, api.now, api.timeZone).replace("Today", "today")} · ${clock(m.until, api.timeZone)}`
+              : "Muted until you turn it back on"}
+          </span>
+          <Button
+            size="sm"
+            disabled={busy}
+            onClick={() => void set(false, null)}
+          >
+            Unmute
+          </Button>
+        </div>
+      ) : (
+        <>
+          <p className="ch-ms-quiet">
+            No email, push or bell for this conversation. Unread messages still
+            show here.
+          </p>
+          <div className="ch-ms-mute__opts">
+            <Button size="sm" disabled={busy} onClick={() => void set(true, 8)}>
+              Mute 8 hours
+            </Button>
+            <Button
+              size="sm"
+              disabled={busy}
+              onClick={() => void set(true, 24 * 7)}
+            >
+              Mute a week
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              disabled={busy}
+              onClick={() => void set(true, null)}
+            >
+              Until I turn it on
+            </Button>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 /* New message */
 
-function NewMessage({ api, open, onClose }: { api: ChMessagesApi; open: boolean; onClose: () => void }) {
-  const [mode, setMode] = useState<'direct' | 'group'>('direct');
+function NewMessage({
+  api,
+  open,
+  onClose,
+}: {
+  api: ChMessagesApi;
+  open: boolean;
+  onClose: () => void;
+}) {
+  const [mode, setMode] = useState<"direct" | "group" | "announce">("direct");
+  const [body, setBody] = useState("");
+  const [urgent, setUrgent] = useState(false);
+  const [ack, setAck] = useState(true);
   const [to, setTo] = useState<string[]>([]);
-  const [q, setQ] = useState('');
-  const [title, setTitle] = useState('');
+  const [q, setQ] = useState("");
+  const [title, setTitle] = useState("");
   const [busy, setBusy] = useState(false);
   const [touched, setTouched] = useState(false);
   useEffect(() => {
     if (!open) return;
-    setMode('direct');
+    setMode("direct");
     setTo([]);
-    setQ('');
-    setTitle('');
+    setQ("");
+    setTitle("");
+    setBody("");
+    setUrgent(false);
+    setAck(true);
     setTouched(false);
   }, [open]);
-  const coachGroup = mode === 'group' && api.viewer.role === 'coach';
-  const people = api.directory.filter((p) => p.name.toLowerCase().includes(q.trim().toLowerCase()) && (!coachGroup || p.role === 'player'));
+  const coachGroup = mode === "group" && api.viewer.role === "coach";
+  const people = api.directory.filter(
+    (p) =>
+      p.name.toLowerCase().includes(q.trim().toLowerCase()) &&
+      (!coachGroup || p.role === "player"),
+  );
   const toggle = (id: string) => {
-    haptic('select');
-    setTo(mode === 'direct' ? [id] : to.includes(id) ? to.filter((x) => x !== id) : [...to, id]);
+    haptic("select");
+    setTo(
+      mode === "direct"
+        ? [id]
+        : to.includes(id)
+          ? to.filter((x) => x !== id)
+          : [...to, id],
+    );
   };
-  const needsTitle = coachGroup && !title.trim();
-  const canGo = mode === 'direct' ? to.length === 1 : to.length >= 1 && !needsTitle;
+  const announce = mode === "announce";
+  const needsTitle = (coachGroup || announce) && !title.trim();
+  const needsBody = announce && !body.trim();
+  const canGo = announce
+    ? !needsTitle && !needsBody
+    : mode === "direct"
+      ? to.length === 1
+      : to.length >= 1 && !needsTitle;
   const go = async () => {
     setTouched(true);
     if (!canGo) {
-      haptic('warning');
+      haptic("warning");
       return;
     }
     setBusy(true);
-    const ok = mode === 'direct' ? await api.startDirect(to[0]!) : await api.createGroup(to, title.trim());
+    const ok = announce
+      ? await api.createAnnouncement({
+          title: title.trim(),
+          body: body.trim(),
+          urgent,
+          ack,
+        })
+      : mode === "direct"
+        ? await api.startDirect(to[0]!)
+        : await api.createGroup(to, title.trim());
     setBusy(false);
     if (ok) onClose();
   };
@@ -864,80 +1329,214 @@ function NewMessage({ api, open, onClose }: { api: ChMessagesApi; open: boolean;
       open={open}
       onClose={onClose}
       width={560}
-      icon={SquarePen}
-      title="New message"
-      description={`Only players and coaches${api.teamName ? ` on ${api.teamName}` : ' on your team'} can be messaged.`}
+      icon={announce ? Megaphone : SquarePen}
+      title={announce ? "New announcement" : "New message"}
+      description={
+        announce
+          ? `Goes to everyone on ${api.teamName ?? "the team"}. Players can acknowledge it.`
+          : `Only players and coaches${api.teamName ? ` on ${api.teamName}` : " on your team"} can be messaged.`
+      }
       footer={
         <>
           <Button variant="ghost" onClick={onClose}>
             Cancel
           </Button>
           <Button variant="primary" disabled={busy} onClick={() => void go()}>
-            {busy ? 'Starting…' : mode === 'group' ? 'Create group' : 'Start conversation'}
+            {busy
+              ? announce
+                ? "Posting…"
+                : "Starting…"
+              : announce
+                ? "Post announcement"
+                : mode === "group"
+                  ? "Create group"
+                  : "Start conversation"}
           </Button>
         </>
       }
     >
       <div className="ch-ms-new">
-        {api.viewer.role === 'coach' && (
-        <Segmented<'direct' | 'group'>
-          label="Message type"
-          value={mode}
-          onChange={(v) => {
-            setMode(v);
-            setTo([]);
-          }}
-          options={[
-            { value: 'direct', label: 'Direct' },
-            { value: 'group', label: 'Group' },
-          ]}
-        />
+        {api.viewer.role === "coach" && (
+          <Segmented<"direct" | "group" | "announce">
+            label="Message type"
+            value={mode}
+            onChange={(v) => {
+              setMode(v);
+              setTo([]);
+              setTouched(false);
+            }}
+            options={[
+              { value: "direct", label: "Direct" },
+              { value: "group", label: "Group" },
+              { value: "announce", label: "Announcement" },
+            ]}
+          />
         )}
-        {coachGroup && (
-          <label className="ch-field">
-            <span className="ch-field__label">Group name</span>
-            <input className="ch-input" placeholder="Pinehurst travel" value={title} onChange={(e) => setTitle(e.target.value)} maxLength={80} aria-invalid={touched && needsTitle} />
-            {touched && needsTitle && <span className="ch-field__help is-error">Name the group so players know what it&apos;s for.</span>}
-          </label>
-        )}
-        <SearchField value={q} onChange={setQ} placeholder={coachGroup ? 'Find a player' : 'Find a player or coach'} label="Find people" />
-        {mode === 'group' && to.length > 0 && (
-          <div className="ch-ms-to">
-            {to.map((id) => {
-              const p = personOf(api, id);
-              return (
-                <span key={id} className="ch-ms-to__c">
-                  <Avatar name={p?.name ?? 'Member'} size={20} />
-                  {firstName(p?.name ?? 'Member')}
-                  <button type="button" aria-label={`Remove ${p?.name ?? 'member'}`} onClick={() => toggle(id)}>
-                    <Icon icon={X} size={12} />
-                  </button>
+        {announce ? (
+          <>
+            <label className="ch-field">
+              <span className="ch-field__label">Title</span>
+              <input
+                className="ch-input"
+                placeholder="Bus time moved to 6:00"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                maxLength={200}
+                aria-invalid={touched && needsTitle}
+              />
+              {touched && needsTitle && (
+                <span className="ch-field__help is-error">
+                  Give the announcement a title.
                 </span>
-              );
-            })}
-          </div>
-        )}
-        {api.directoryError ? (
-          <InlineNotice title="Your team list didn't load." body="Close this and try again; the error has been reported." />
+              )}
+            </label>
+            <label className="ch-field">
+              <span className="ch-field__label">Message</span>
+              <textarea
+                className="ch-textarea"
+                rows={4}
+                placeholder="What the team needs to know, and by when"
+                value={body}
+                onChange={(e) => setBody(e.target.value)}
+                maxLength={5000}
+                aria-invalid={touched && needsBody}
+              />
+              {touched && needsBody && (
+                <span className="ch-field__help is-error">
+                  Write what the team needs to know.
+                </span>
+              )}
+            </label>
+            <div className="ch-ms-mute__opts" style={{ gap: 24 }}>
+              <label className="ch-switch">
+                <input
+                  type="checkbox"
+                  checked={urgent}
+                  onChange={(e) => (
+                    haptic("select"),
+                    setUrgent(e.target.checked)
+                  )}
+                />
+                <span className="ch-switch__t" aria-hidden="true" />
+                Urgent
+              </label>
+              <label className="ch-switch">
+                <input
+                  type="checkbox"
+                  checked={ack}
+                  onChange={(e) => (haptic("select"), setAck(e.target.checked))}
+                />
+                <span className="ch-switch__t" aria-hidden="true" />
+                Ask players to acknowledge
+              </label>
+            </div>
+          </>
         ) : (
-          <div className="ch-ms-pick" role="listbox" aria-multiselectable={mode === 'group'} aria-label="People">
-            {people.map((p) => {
-              const on = to.includes(p.userId);
-              return (
-                <button key={p.userId} type="button" role="option" aria-selected={on} className="ch-pp__row" onClick={() => toggle(p.userId)}>
-                  <Avatar name={p.name} size={28} />
-                  <span className="ch-pp__name">
-                    <b>{p.name}</b>
-                    <span>{p.subtitle}</span>
+          <>
+            {coachGroup && (
+              <label className="ch-field">
+                <span className="ch-field__label">Group name</span>
+                <input
+                  className="ch-input"
+                  placeholder="Pinehurst travel"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  maxLength={80}
+                  aria-invalid={touched && needsTitle}
+                />
+                {touched && needsTitle && (
+                  <span className="ch-field__help is-error">
+                    Name the group so players know what it&apos;s for.
                   </span>
-                  {mode === 'group' ? <span className={'ch-pp__box' + (on ? ' is-on' : '')}>{on && <Icon icon={Check} size={12} />}</span> : on ? <Icon icon={Check} size={15} /> : <span />}
-                </button>
-              );
-            })}
-            {!people.length && <div className="ch-pp__empty">{q.trim() ? `No one matches “${q.trim()}”.` : 'No one to message yet.'}</div>}
-          </div>
+                )}
+              </label>
+            )}
+            <SearchField
+              value={q}
+              onChange={setQ}
+              placeholder={
+                coachGroup ? "Find a player" : "Find a player or coach"
+              }
+              label="Find people"
+            />
+            {mode === "group" && to.length > 0 && (
+              <div className="ch-ms-to">
+                {to.map((id) => {
+                  const p = personOf(api, id);
+                  return (
+                    <span key={id} className="ch-ms-to__c">
+                      <Avatar name={p?.name ?? "Member"} size={20} />
+                      {firstName(p?.name ?? "Member")}
+                      <button
+                        type="button"
+                        aria-label={`Remove ${p?.name ?? "member"}`}
+                        onClick={() => toggle(id)}
+                      >
+                        <Icon icon={X} size={12} />
+                      </button>
+                    </span>
+                  );
+                })}
+              </div>
+            )}
+            {api.directoryError ? (
+              <InlineNotice
+                title="Your team list didn't load."
+                body="Close this and try again; the error has been reported."
+              />
+            ) : (
+              <div
+                className="ch-ms-pick"
+                role="listbox"
+                aria-multiselectable={mode === "group"}
+                aria-label="People"
+              >
+                {people.map((p) => {
+                  const on = to.includes(p.userId);
+                  return (
+                    <button
+                      key={p.userId}
+                      type="button"
+                      role="option"
+                      aria-selected={on}
+                      className="ch-pp__row"
+                      onClick={() => toggle(p.userId)}
+                    >
+                      <Avatar name={p.name} size={28} />
+                      <span className="ch-pp__name">
+                        <b>{p.name}</b>
+                        <span>{p.subtitle}</span>
+                      </span>
+                      {mode === "group" ? (
+                        <span className={"ch-pp__box" + (on ? " is-on" : "")}>
+                          {on && <Icon icon={Check} size={12} />}
+                        </span>
+                      ) : on ? (
+                        <Icon icon={Check} size={15} />
+                      ) : (
+                        <span />
+                      )}
+                    </button>
+                  );
+                })}
+                {!people.length && (
+                  <div className="ch-pp__empty">
+                    {q.trim()
+                      ? `No one matches “${q.trim()}”.`
+                      : "No one to message yet."}
+                  </div>
+                )}
+              </div>
+            )}
+            {touched && !canGo && !needsTitle && (
+              <span className="ch-field__help is-error">
+                {mode === "direct"
+                  ? "Choose who to message."
+                  : "Choose at least one person."}
+              </span>
+            )}
+          </>
         )}
-        {touched && !canGo && !needsTitle && <span className="ch-field__help is-error">{mode === 'direct' ? 'Choose who to message.' : 'Choose at least one person.'}</span>}
       </div>
     </Modal>
   );
@@ -949,32 +1548,72 @@ export function MessagesView({ api }: { api: ChMessagesApi }) {
   const [details, setDetails] = useState(false);
   const [compose, setCompose] = useState(false);
   const conv = api.convs.find((c) => c.id === api.selectedId) ?? null;
+  const ann = api.announcements.find((a) => a.id === api.selectedAnnId) ?? null;
   useEffect(() => setDetails(false), [api.selectedId]);
   const toast = useToast();
   useEffect(() => {
     if (api.selectedId && !conv && !api.convsLoading && api.convs.length) {
-      toast({ tone: 'error', title: "That conversation isn't available", body: 'You may have left it, or it belongs to another team.' });
+      toast({
+        tone: "error",
+        title: "That conversation isn't available",
+        body: "You may have left it, or it belongs to another team.",
+      });
       api.select(null);
     }
   }, [api.selectedId, api.convsLoading, api.convs.length, conv, toast]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
-    <main className={'ch-ms' + (conv ? ' has-open' : '') + (details && conv ? ' has-details' : '')}>
+    <main
+      className={
+        "ch-ms" +
+        (conv || ann ? " has-open" : "") +
+        (details && conv ? " has-details" : "")
+      }
+    >
       <SectionBoundary surface="messages.rail" label="Your conversations">
         <Rail api={api} onNew={() => setCompose(true)} />
       </SectionBoundary>
-      {conv ? (
+      {ann ? (
+        <SectionBoundary
+          surface="messages.announcement"
+          label="This announcement"
+        >
+          <AnnouncementPane
+            api={api}
+            a={ann}
+            onBack={() => api.selectAnn(null)}
+          />
+        </SectionBoundary>
+      ) : conv ? (
         <SectionBoundary surface="messages.thread" label="This conversation">
-          <Thread api={api} conv={conv} detailsOpen={details} setDetails={setDetails} onBack={() => api.select(null)} />
+          <Thread
+            api={api}
+            conv={conv}
+            detailsOpen={details}
+            setDetails={setDetails}
+            onBack={() => api.select(null)}
+          />
         </SectionBoundary>
       ) : (
         <section className="ch-ms-thread is-empty">
           <EmptyState
             icon={MessageSquare}
-            title={api.convs.length ? 'Pick a conversation.' : 'Start your first conversation.'}
-            body={api.convs.length ? 'Threads open here, with replies as they arrive.' : 'Message a player, a coach or the whole team.'}
+            title={
+              api.convs.length
+                ? "Pick a conversation."
+                : "Start your first conversation."
+            }
+            body={
+              api.convs.length
+                ? "Threads open here, with replies as they arrive."
+                : "Message a player, a coach or the whole team."
+            }
             action={
-              <Button variant="primary" leftIcon={SquarePen} onClick={() => setCompose(true)}>
+              <Button
+                variant="primary"
+                leftIcon={SquarePen}
+                onClick={() => setCompose(true)}
+              >
                 New message
               </Button>
             }

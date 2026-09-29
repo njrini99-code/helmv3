@@ -9,6 +9,8 @@ export interface ChMessagesData {
   role: 'coach' | 'player';
   viewerUserId: string;
   viewerName: string;
+  /** golf_players.id when the viewer is a player (announcement acknowledgements and tasks). */
+  viewerPlayerId: string | null;
   teamId: string;
   teamName: string | null;
   timeZone: string;
@@ -28,6 +30,7 @@ export async function loadMessagesDirectory(input: {
   teamId: string;
   viewerUserId: string;
   viewerName: string;
+  viewerPlayerId: string | null;
 }): Promise<ChMessagesData> {
   const supabase = await createClient();
   const [teamRes, settingsRes, membersRes] = await Promise.all([
@@ -71,6 +74,7 @@ export async function loadMessagesDirectory(input: {
     role: input.role,
     viewerUserId: input.viewerUserId,
     viewerName: input.viewerName,
+    viewerPlayerId: input.viewerPlayerId,
     teamId: input.teamId,
     teamName: teamRes.data?.name ?? null,
     timeZone: getValidTimezone(settingsRes.data?.timezone ?? null),

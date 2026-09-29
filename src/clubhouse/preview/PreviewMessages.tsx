@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import { MessagesView, type ChMessagesApi } from '../screens/messages/MessagesView';
-import type { ChConv, ChMember, ChMsg, ChPerson, ChReaction, ChReactionKey } from '../screens/messages/model';
+import type { ChAnnouncement, ChConv, ChMember, ChMsg, ChMute, ChPerson, ChReaction, ChReactionKey } from '../screens/messages/model';
 import { useToast } from '../ui/Toast';
 
 /**
@@ -84,14 +84,35 @@ const baseReactions: Record<string, ChReaction[]> = {
   ],
 };
 
+const baseAnns: ChAnnouncement[] = [
+  { id: 'an1', title: 'Pinehurst travel: bus at 6:15', body: 'Bus leaves the field house at 6:15 Thursday. Breakfast on the bus. Bring your rain gear and two dozen balls.', urgent: true, publishedAt: at(14, 8, 5), requiresAck: true, ackCount: 5, total: 6, acknowledgedByMe: false, taskCount: 1, completedTaskCount: 4, docCount: 1 },
+  { id: 'an2', title: 'Qualifier pairings posted', body: 'Pairings for the Pinehurst qualifier are in Documents.', urgent: false, publishedAt: at(12, 17, 30), requiresAck: false, ackCount: 0, total: 6, acknowledgedByMe: false, taskCount: 0, completedTaskCount: 0, docCount: 0 },
+];
+const annDetail = async (id: string) =>
+  id === 'an1'
+    ? {
+        id,
+        acknowledged: ['ava', 'jonah', 'priya', 'sofia', 'theo'].map((u, i) => ({ playerId: `p-${u}`, name: people.find((p) => p.userId === u)!.name, at: at(14, 8, 20 + i * 7) })),
+        waiting: [{ playerId: 'p-eli', name: 'Eli Brandt' }],
+        tasks: [{ taskId: 't1', title: 'Upload your travel waiver', due: 'Wed, Oct 15', doneByMe: false, done: 4, total: 6 }],
+        documents: [{ id: 'd1', title: 'Pinehurst itinerary', url: '#', size: 84000 }],
+      }
+    : { id, acknowledged: [], waiting: [], tasks: [], documents: [] };
+const previewSearch = async (q: string) =>
+  Object.entries(baseThreads)
+    .flatMap(([cid, list]) => list.filter((m) => m.text.toLowerCase().includes(q.toLowerCase())).map((m) => ({ messageId: m.id, conversationId: cid, conversationName: baseConvs.find((c) => c.id === cid)!.title, senderName: m.senderId === 'me' ? 'You' : (people.find((p) => p.userId === m.senderId)?.name ?? 'Member'), text: m.text, at: m.at })));
+
 const previewAttachments = async () => [{ id: 'a1', name: 'Room list · Pinehurst.pdf', size: 48 * 1024, mime: 'application/pdf', url: null }];
 
-export function PreviewMessages({ state }: { state?: string }) {
+export function PreviewMessages({ state, role = 'coach' }: { state?: string; role?: 'coach' | 'player' }) {
   const toast = useToast();
   const [convs, setConvs] = useState<ChConv[]>(state === 'empty' ? [] : baseConvs);
   const [threads, setThreads] = useState(baseThreads);
   const [reactions, setReactions] = useState(baseReactions);
-  const [selectedId, setSelectedId] = useState<string | null>(state === 'empty' || state === 'rail' ? null : 'team');
+  const [selectedId, setSelectedId] = useState<string | null>(state === 'empty' || state === 'rail' || state === 'announcement' ? null : 'team');
+  const [anns, setAnns] = useState<ChAnnouncement[]>(state === 'empty' ? [] : baseAnns);
+  const [annId, setAnnId] = useState<string | null>(state === 'announcement' ? 'an1' : null);
+  const [mute, setMute] = useState<ChMute>({ muted: false, until: null });
 
   const members: ChMember[] = useMemo(
     () => [{ userId: 'me', name: 'Maya Reyes', subtitle: 'Head coach', role: 'coach' as const }, ...people.map((p) => ({ userId: p.userId, name: p.name, subtitle: p.subtitle, role: p.role }))],
@@ -99,7 +120,7 @@ export function PreviewMessages({ state }: { state?: string }) {
   );
 
   const api: ChMessagesApi = {
-    viewer: { userId: 'me', role: 'coach', name: 'Maya Reyes' },
+    viewer: { userId: 'me', role, name: role === 'coach' ? 'Maya Reyes' : 'Jonah Okafor' },
     timeZone: TZ,
     now: NOW,
     teamName: 'Varsity',
@@ -110,6 +131,7 @@ export function PreviewMessages({ state }: { state?: string }) {
     selectedId,
     select: (id) => {
       setSelectedId(id);
+      if (id) setAnnId(null);
       if (id) setConvs((cs) => cs.map((c) => (c.id === id ? { ...c, unread: 0 } : c)));
     },
     msgs: selectedId ? (threads[selectedId] ?? []) : [],
@@ -179,6 +201,44 @@ export function PreviewMessages({ state }: { state?: string }) {
       setConvs((cs) => [c, ...cs]);
       setSelectedId(c.id);
       toast({ title: `Group created · ${c.title}` });
+      return true;
+    },
+    searchMessages: previewSearch,
+    openHit: (h) => {
+      setSelectedId(h.conversationId);
+      setAnnId(null);
+    },
+    mute,
+    muteError: false,
+    setMute: async (muted, hours) => {
+      setMute({ muted, until: muted && hours ? new Date(Date.parse(NOW) + hours * 3600000).toISOString() : null });
+      toast({ title: muted ? 'Conversation muted' : 'Notifications back on' });
+      return true;
+    },
+    announcements: anns,
+    annError: state === 'ann-failed',
+    refetchAnns: () => undefined,
+    selectedAnnId: annId,
+    selectAnn: (id) => {
+      setAnnId(id);
+      if (id) setSelectedId(null);
+    },
+    announcementDetail: annDetail,
+    acknowledge: async (id) => {
+      setAnns((l) => l.map((a) => (a.id === id ? { ...a, acknowledgedByMe: true, ackCount: a.ackCount + 1 } : a)));
+      toast({ title: 'Acknowledged · coach can see you read it' });
+      return true;
+    },
+    completeTask: async () => {
+      toast({ title: 'Task marked done' });
+      return true;
+    },
+    createAnnouncement: async ({ title, body, urgent, ack }) => {
+      const a: ChAnnouncement = { id: `an${Date.now()}`, title, body, urgent, publishedAt: NOW, requiresAck: ack, ackCount: 0, total: 6, acknowledgedByMe: false, taskCount: 0, completedTaskCount: 0, docCount: 0 };
+      setAnns((l) => [a, ...l]);
+      setAnnId(a.id);
+      setSelectedId(null);
+      toast({ title: `Posted to Varsity · ${title}` });
       return true;
     },
   };
