@@ -100,6 +100,21 @@ describe('getTopInsightsForPlayers — exposure ledger is written once per sweep
     expect(written.every((r) => r.rank_position === 0 && r.surface === 'roster_card')).toBe(true);
   });
 
+  it('records the rank_score each roster pick was ranked on (audit row 51)', async () => {
+    const out = await getTopInsightsForPlayers(['p-1'], {}, makeClient([row('i-1', 'p-1', 'approach_125_175')]));
+    expect(out.get('p-1')?.[0]?.id).toBe('i-1');
+    const written = recordInsightExposure.mock.calls[0]?.[0] as Array<{ rank_score?: number }>;
+    // 0.5 strokes × 0.8 confidence × neutral weight/goal/coachability × full damping.
+    expect(written[0]?.rank_score).toBeCloseTo(0.4, 6);
+  });
+
+  it('never reads the calibration table while ranking (defect 4: explicit no-op)', async () => {
+    const client = makeClient([row('i-1', 'p-1', 'approach_125_175')]);
+    await getTopInsightsForPlayers(['p-1'], {}, client);
+    const tables = (client.from as unknown as { mock: { calls: unknown[][] } }).mock.calls.map((c) => c[0]);
+    expect(tables).not.toContain('golf_confidence_calibration');
+  });
+
   it('writes nothing when no player has a visible insight', async () => {
     await getTopInsightsForPlayers(['p-1', 'p-2'], {}, makeClient([]));
     expect(recordInsightExposure).not.toHaveBeenCalled();
