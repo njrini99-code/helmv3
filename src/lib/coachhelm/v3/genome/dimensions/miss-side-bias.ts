@@ -53,7 +53,6 @@ const dim: GenomeDimension = {
   id: 'miss_side_bias',
   category: 'miss_tendencies',
   label: 'Miss-side bias',
-  min_rounds: 8,
 
   compute(ctx: GenomeContext): DimensionResult {
     const approaches = ctx.shots.filter(

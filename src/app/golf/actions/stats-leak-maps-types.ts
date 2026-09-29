@@ -17,7 +17,8 @@ import type { PgaOmissionReason } from '@/lib/coachhelm/v3/standing/types';
  *
  * `team_value` carries the computed value for the level being reported:
  *   - putting  → make% (0-100), higher is better
- *   - approach → average proximity-to-hole in FEET, lower is better
+ *   - approach → average proximity-to-hole in FEET over every approach in
+ *                the band (misses included), lower is better
  *
  * `pga_value` is the matching `golf_pga_standards.pga_tour_value`; it is
  * null for any band that has no PGA standard (e.g. the 0-3 ft putt band).
@@ -37,6 +38,22 @@ export interface LeakBucket {
   div1_value: number | null;
   /** Gradeable shots / attempts contributing to `team_value`. */
   sample_n: number;
+  /** Attempts a band needs before `team_value` is shown (audit rows 9/32). */
+  min_n?: number;
+  /** True when the band has attempts but fewer than `min_n`: `team_value`
+   *  is withheld (null) rather than printed off 1-9 shots. */
+  below_floor?: boolean;
+  /** 95% interval for `team_value` (Wilson for make %, t for mean feet);
+   *  null when the value is withheld. */
+  ci_low?: number | null;
+  ci_high?: number | null;
+  /** Approach only: proximity averages EVERY approach in the band, misses
+   *  included — the same basis as the Tour reference (audit rows 9/32). */
+  basis?: 'all_shot';
+  /** Approach only: share of the band's approaches that finished on the green. */
+  green_hit_pct?: number | null;
+  /** Approach 175+ only: par-5 lay-ups (left 50+ yd out) kept out of the band. */
+  excluded_layups?: number;
 }
 
 /** Team-level leak maps (both families) for the coach surface. */

@@ -82,6 +82,7 @@ export async function computeGenomeForPlayer(player_id: string): Promise<Compute
     .from('golf_rounds')
     .select('id, round_date, round_type, total_score, score_to_par, holes_played, front_nine, back_nine, total_putts')
     .eq('player_id', player_id)
+    .eq('is_test', false)
     .eq('status', 'completed')
     .gte('round_date', since);
 
@@ -181,8 +182,11 @@ export async function computeGenomeForPlayer(player_id: string): Promise<Compute
   for (const dim of GENOME_DIMENSIONS) {
     let res: DimensionResult;
     try {
-      // Honor per-dim min_rounds override before calling compute.
-      const min = dim.min_rounds ?? 8;
+      // Each dimension owns its data floor inside compute(); an explicit
+      // min_rounds is only an extra gate. The old blanket default of 8
+      // blanked 35 of 57 active players (median 6 countable rounds) whose
+      // dimensions' own floors were met (audit row 18).
+      const min = dim.min_rounds ?? 1;
       if (roundIds.length < min) {
         res = { value: null, confidence: null };
       } else {

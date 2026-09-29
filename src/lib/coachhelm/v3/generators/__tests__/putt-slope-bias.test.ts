@@ -186,3 +186,29 @@ describe('selectDownhillPenaltyCut — distance-band-controlled downhill vs leve
     expect(cut!.band).toBe('0-3 ft');
   });
 });
+
+describe('audit row 27 — the stored value is what the metric name says', () => {
+  it('your_value is the downhill PENALTY (level − downhill, pp), not the downhill make %', () => {
+    const c = gen.composeContent(agg({ downhill_pct: 55, level_pct: 96, gap_pp: 41 }));
+    expect(c.evidence.metric).toBe('putt_slope_downhill_penalty_pct');
+    expect(c.evidence.your_value).toBe(41);
+    // The comparison is "no penalty", and lower is better for a penalty.
+    expect(c.evidence.comparison_value).toBe(0);
+    expect(c.evidence.polarity).toBe('lower_better');
+    // Both make rates stay machine-readable next to the gap.
+    expect(c.evidence.detail).toMatchObject({ downhill_pct: 55, level_pct: 96, downhill_n: 13, level_n: 13 });
+  });
+});
+
+describe('audit row 27 — correction for the two-band search', () => {
+  it('rejects a cut that is significant at 0.05 but not at the Bonferroni 0.025', () => {
+    // 0-3 ft: level 14/20 (70%) vs downhill 7/20 (35%), p ≈ 0.03.
+    const rows = [
+      ...Array(14).fill(0).map(() => row('level', 2, true)),
+      ...Array(6).fill(0).map(() => row('level', 2, false)),
+      ...Array(7).fill(0).map(() => row('downhill', 2, true)),
+      ...Array(13).fill(0).map(() => row('downhill', 2, false)),
+    ];
+    expect(selectDownhillPenaltyCut(rows)).toBeNull();
+  });
+});

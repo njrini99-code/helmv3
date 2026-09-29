@@ -60,7 +60,7 @@ import { buildCoachTools, isConfirmRequired } from '@/lib/coachhelm/v3/chat/agen
 import { buildInstructions } from '@/lib/coachhelm/v3/chat/instructions';
 import {
   collectDates,
-  collectNumbers,
+  collectScopedNumbers,
   // Imported as a value, not `type`-only: `priorTurnEvidence` runs it as a
   // zod schema (`ToolEnvelope.safeParse`) to validate a stored `ui_parts`
   // blob before trusting its shape. The inferred type of the same name is
@@ -69,14 +69,18 @@ import {
   ToolEnvelope,
   type Measurement,
   type MeasurementSeries,
+  type ScopedNumber,
 } from '@/lib/coachhelm/v3/chat/provenance';
 import {
   computeTurnVerdict,
   STREAM_INCOMPLETE_NOTE,
   verdictPartType,
+  verdictRecord,
+  withVerdictPart,
   type TurnVerdict,
+  type TurnVerdictReason,
 } from '@/lib/coachhelm/v3/chat/verdict';
-import { buildSinglePlayerPacket } from '@/lib/coachhelm/v3/chat/claims-packet';
+import { extractAndValidateChatClaims } from '@/lib/coachhelm/v3/chat/claims-packet';
 import { CLAIMS_OPEN, CLAIMS_CLOSE, extractAndValidateClaimsSafe } from '@/lib/coachhelm/v3/llm/claims-block';
 import { isFlagEnabled } from '@/lib/flags';
 import type { ChatMessage } from '@/lib/coachhelm/v3/chat/types';
@@ -90,6 +94,7 @@ import {
   touchConversation,
   upsertUserTurn,
 } from '@/lib/coachhelm/v3/chat/persistence';
+import { linkProposalsToMessage, proposalKeysFromParts } from '@/lib/coachhelm/v3/chat/action-runs';
 // `publishableParts` also drops dangling tool calls: storing one poisons the
 // conversation permanently, because a reload rehydrates the thread from
 // `ui_parts` and sends the orphaned `tool_use` back with no matching
@@ -261,11 +266,11 @@ const PRIOR_EVIDENCE_ROW_LIMIT = 40;
  *         asked about now.
  */
 function priorTurnEvidence(messages: readonly ChatMessage[], timezone: string): {
-  shared: { measurements: Measurement[]; series: MeasurementSeries[]; detailNumbers: number[]; detailDates: string[] };
+  shared: { measurements: Measurement[]; series: MeasurementSeries[]; detailNumbers: ScopedNumber[]; detailDates: string[] };
   deferred: {
     measurements: Measurement[];
     series: MeasurementSeries[];
-    detailNumbers: number[];
+    detailNumbers: ScopedNumber[];
     detailDates: string[];
     playerIds: Set<string>;
   };
@@ -273,13 +278,13 @@ function priorTurnEvidence(messages: readonly ChatMessage[], timezone: string): 
   const shared = {
     measurements: [] as Measurement[],
     series: [] as MeasurementSeries[],
-    detailNumbers: [] as number[],
+    detailNumbers: [] as ScopedNumber[],
     detailDates: [] as string[],
   };
   const deferred = {
     measurements: [] as Measurement[],
     series: [] as MeasurementSeries[],
-    detailNumbers: [] as number[],
+    detailNumbers: [] as ScopedNumber[],
     detailDates: [] as string[],
     playerIds: new Set<string>(),
   };
@@ -308,7 +313,7 @@ function priorTurnEvidence(messages: readonly ChatMessage[], timezone: string): 
       target.measurements.push(...envelope.measurements);
       target.series.push(...envelope.series);
       if (envelope.detail !== undefined) {
-        target.detailNumbers.push(...collectNumbers(envelope.detail));
+        target.detailNumbers.push(...collectScopedNumbers(envelope.detail));
         target.detailDates.push(...collectDates(envelope.detail, timezone));
       }
       for (const id of playerIdsHere) deferred.playerIds.add(id);
@@ -450,7 +455,7 @@ export async function POST(req: NextRequest) {
   // Numbers a tool returned in its structured `detail` — team averages, round
   // rows, RSVP counts. The model may legitimately cite these, so they count as
   // supported. See auditNumericClaims' `extraSupported`.
-  const detailNumbers: number[] = [];
+  const detailNumbers: ScopedNumber[] = [];
   // ISO dates reachable inside a tool's `detail` (an event's `starts_at`, a
   // round's `date`) — the model may restate one in non-ISO prose ("Aug 16",
   // "9/6/26"); see auditNumericClaims' `extraSupportedDates`.
@@ -459,7 +464,7 @@ export async function POST(req: NextRequest) {
     measurements.push(...envelope.measurements);
     seriesAll.push(...envelope.series);
     if (envelope.detail !== undefined) {
-      detailNumbers.push(...collectNumbers(envelope.detail));
+      detailNumbers.push(...collectScopedNumbers(envelope.detail));
       detailDates.push(...collectDates(envelope.detail, ctx.timezone));
     }
   };
@@ -474,7 +479,7 @@ export async function POST(req: NextRequest) {
   let priorDeferred: {
     measurements: Measurement[];
     series: MeasurementSeries[];
-    detailNumbers: number[];
+    detailNumbers: ScopedNumber[];
     detailDates: string[];
     playerIds: Set<string>;
   } = { measurements: [], series: [], detailNumbers: [], detailDates: [], playerIds: new Set() };
@@ -861,26 +866,23 @@ export async function POST(req: NextRequest) {
         detailDates.push(...priorDeferred.detailDates);
       }
 
-      // Addendum A7 slice 1: parse+validate the claims block against a
-      // packet only when this turn's fresh measurements resolve to exactly
-      // one player and one window (`buildSinglePlayerPacket` returns `null`
-      // otherwise — a team/multi-player turn is judged by the checks above
-      // only, same as before this gate existed). Either way `strippedText`
-      // is the text with any claims block removed — see
-      // `extractAndValidateClaims`'s own doc comment for why that holds
-      // even when no packet is engaged.
+      // Addendum A7 slice 1 / audit row 47(a): the typed claim gate. With
+      // the flag on, `extractAndValidateChatClaims` validates EVERY claim in
+      // the block against the packet for the claim's own (player, window) —
+      // a multi-player or multi-window turn is no longer skipped — and leaves
+      // prose numbers to the player/metric-bound numeric audit above. It
+      // engages only when the turn has player-scoped measurements; a team
+      // turn is judged by the numeric audit alone.
       //
       // Gated behind `coachhelm_chat_claim_gate` (config/feature-flags.yml,
       // default off — same pattern as round-recap's
-      // `coachhelm_recap_claim_packet`): off, `claimsPacket` stays `null`,
-      // so the third verdict check never engages and behavior is unchanged
-      // from before this gate existed. The `<<<CLAIMS>>>` block is still
-      // always stripped either way (the system prompt asks for one
-      // unconditionally) and the numeric audit above is unaffected.
-      const claimsPacket = claimsBlockEnabled
-        ? buildSinglePlayerPacket(measurements)
-        : null;
-      const { strippedText, claims } = extractAndValidateClaimsSafe(rawText, claimsPacket);
+      // `coachhelm_recap_claim_packet`): off, `claims` stays `null`, so the
+      // third verdict check never engages and behavior is unchanged from
+      // before this gate existed. Either way `strippedText` is the text with
+      // any `<<<CLAIMS>>>` block removed, and the numeric audit is unaffected.
+      const { strippedText, claims } = claimsBlockEnabled
+        ? extractAndValidateChatClaims(rawText, measurements)
+        : extractAndValidateClaimsSafe(rawText, null);
       turnText = strippedText.trim();
       turnVerdict = computeTurnVerdict({
         streamComplete: !streamErrored,
@@ -900,6 +902,9 @@ export async function POST(req: NextRequest) {
         // a broken call).
         detailDates,
         timezone: ctx.timezone,
+        // Audit row 47b: the roster lets the numeric audit recognise a
+        // player named in the answer and bind the number to them.
+        players: ctx.roster,
         claims,
       });
       // A rejected verdict's note replaces the streamed text — not a note
@@ -1066,15 +1071,30 @@ export async function POST(req: NextRequest) {
         // raw rejected text in a `text` part alongside it (#1997 review,
         // NICE) — this comment used to overclaim that display, not just the
         // model-context payload, was undecorated everywhere.
-        await appendMessage(supabase, {
+        const persistedAssistant = await appendMessage(supabase, {
           conversation_id: convId,
           role: 'assistant',
           content: text,
           status: verdict.outcome === 'accepted' ? 'complete' : 'failed',
           client_turn_id: clientTurnId,
-          ui_parts: publishableParts(assistant.parts) as unknown,
+          // Audit row 47(c): a rejected turn's verdict part carries WHY
+          // (reason kind + unmatched tokens), appended if none was streamed.
+          ui_parts: withVerdictPart(publishableParts(assistant.parts), verdict) as unknown,
         });
         await touchConversation(supabase, convId);
+
+        // Audit row 50(b): tie every action this turn proposed to the message
+        // that carries its card. `message_id` was NULL on every production
+        // run — the audit trail could not say which answer proposed what.
+        // Best-effort: a failure here never costs the coach their answer.
+        const proposalKeys = proposalKeysFromParts(assistant.parts);
+        if (persistedAssistant?.id && proposalKeys.length > 0) {
+          await linkProposalsToMessage(supabase, {
+            coach_id: ctx.coach_id,
+            message_id: persistedAssistant.id,
+            idempotency_keys: proposalKeys,
+          }).catch(() => {});
+        }
 
         // Latency telemetry: first token and total. No player name, prompt
         // text or database value — only timings and the model tier.
@@ -1096,12 +1116,8 @@ export async function POST(req: NextRequest) {
           conversationId: convId,
           usagePromise,
           grounded: verdict.outcome === 'accepted',
-          unmatchedTokens:
-            verdict.outcome === 'rejected'
-              ? verdict.reason === 'claim_validation_failed'
-                ? (verdict.rejectedClaims ?? []).map((r) => `${r.claim.metric_id || '(none)'}:${r.reason}`)
-                : verdict.unsupported.map((c) => c.text)
-              : [],
+          unmatchedTokens: verdictRecord(verdict)?.unmatched_tokens ?? [],
+          verdictReason: verdict.outcome === 'rejected' ? verdict.reason : undefined,
         });
 
         // helm.ai.* — the call reached this point, so the model responded and
@@ -1173,8 +1189,10 @@ async function recordTurnCost(args: {
   grounded: boolean;
   /** The claim texts the audit flagged, when `grounded` is false. */
   unmatchedTokens: string[];
+  /** Which verdict check rejected the turn (audit row 47c). */
+  verdictReason?: TurnVerdictReason;
 }): Promise<void> {
-  const { admin, ctx, conversationId, usagePromise, grounded, unmatchedTokens } = args;
+  const { admin, ctx, conversationId, usagePromise, grounded, unmatchedTokens, verdictReason } = args;
   try {
     const usage = usagePromise ? await usagePromise : undefined;
     const promptTokens = usage?.inputTokens ?? 0;
@@ -1205,6 +1223,7 @@ async function recordTurnCost(args: {
         costUsd: cost,
         grounded,
         unmatchedTokens,
+        verdictReason,
       }),
     );
     await recordSpend(admin, { coach_id: ctx.coach_id, task: 'coach_chat', cost_usd: cost });

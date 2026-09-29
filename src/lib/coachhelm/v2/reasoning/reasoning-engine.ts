@@ -123,9 +123,9 @@ export class ReasoningEngine {
         if (rel.confidence > 0.7) {
           steps.push({
             type: 'deductive',
-            premise: `${rel.cause} has a causal effect on ${rel.effect}`,
+            premise: `${rel.cause} tends to move with ${rel.effect} in this player's rounds`,
             inference: `Mechanism: ${rel.mechanism}`,
-            conclusion: `Changes in ${rel.cause} will affect ${rel.effect}`,
+            conclusion: `${rel.cause} and ${rel.effect} move together (a correlation, not proof of cause)`,
             confidence: rel.confidence,
             evidence: [
               `Strength: ${(rel.strength * 100).toFixed(0)}%`,

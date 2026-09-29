@@ -70,8 +70,12 @@ export async function GET(req: NextRequest) {
     let validated = 0;
     let skipped = 0;
     let skippedUnknown = 0;
-    const skippedByReason: Record<'retired_invalid_horizon' | 'no_round_in_closed_window' | 'awaiting_round', number> = {
+    const skippedByReason: Record<
+      'retired_invalid_horizon' | 'retired_no_outcome' | 'no_round_in_closed_window' | 'awaiting_round',
+      number
+    > = {
       retired_invalid_horizon: 0,
+      retired_no_outcome: 0,
       no_round_in_closed_window: 0,
       awaiting_round: 0,
     };
@@ -144,6 +148,7 @@ export async function GET(req: NextRequest) {
       skipped,
       failed,
       skipped_retired_invalid_horizon: skippedByReason.retired_invalid_horizon,
+      skipped_retired_no_outcome: skippedByReason.retired_no_outcome,
       skipped_no_round_in_closed_window: skippedByReason.no_round_in_closed_window,
       skipped_awaiting_round: skippedByReason.awaiting_round,
       skipped_unknown: skippedUnknown,

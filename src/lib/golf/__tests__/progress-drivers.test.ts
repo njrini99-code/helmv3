@@ -138,7 +138,7 @@ vi.mock('@/lib/coachhelm/v3/standing/loader', () => ({
   }),
 }));
 
-import { runFocusAreaProgressForPlayers } from '../progress-drivers';
+import { runFocusAreaProgressForPlayers, resolveGoalObservedValue } from '../progress-drivers';
 
 describe('runFocusAreaProgressForPlayers — standing fallback (B2 / P0 fix)', () => {
   beforeEach(() => {
@@ -401,5 +401,39 @@ describe('runFocusAreaProgressForPlayers — baseline + snapshots (#1240 / #1241
 
     expect(summary.evaluated).toBe(0);
     expect(updateCalls).toHaveLength(0);
+  });
+});
+
+describe('resolveGoalObservedValue — audit row 20 frozen goal series', () => {
+  const wr = (round_date: string, sg: number) => ({
+    round_date,
+    strokes_gained_total: null,
+    strokes_gained_putting: sg,
+    strokes_gained_tee: null,
+    strokes_gained_approach: null,
+    strokes_gained_around_green: null,
+    greens_hit: null,
+    greens_total: null,
+    sand_saves: null,
+    sand_attempts: null,
+    penalty_strokes: 0,
+  });
+  const goal = { metric_id: 'sg_putting' as const, started_at: '2026-09-01T12:00:00Z' };
+
+  it('does NOT fall back to the all-time standing when no round was played in the window', () => {
+    // Before: observed = standing (-6.475) every day -> one repeated value.
+    expect(resolveGoalObservedValue(goal, -6.475, [wr('2026-08-20', -2)])).toBeNull();
+  });
+
+  it('measures only rounds on or after the goal start', () => {
+    expect(
+      resolveGoalObservedValue(goal, -6.475, [wr('2026-08-20', -9), wr('2026-09-03', -3), wr('2026-09-10', -1)]),
+    ).toBeCloseTo(-2, 6);
+  });
+
+  it('keeps the standing for a legacy non-windowed goal', () => {
+    expect(
+      resolveGoalObservedValue({ metric_id: 'scoring_par_4', started_at: '2026-09-01' }, 4.22, []),
+    ).toBe(4.22);
   });
 });

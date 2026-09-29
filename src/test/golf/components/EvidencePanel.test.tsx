@@ -318,6 +318,70 @@ describe('EvidencePanel', () => {
     });
   });
 
+  // The Lab dossier printed "undefined putts · undefined days" and
+  // "undefined You · undefined" off a roster roll-up, whose evidence is only
+  // { metric, metric_label, strokes_impact, players_affected }. The JSONB is
+  // not guaranteed to match the type, so every fact is gated on its field.
+  describe('partial evidence (Lab dossier "undefined" bug)', () => {
+    function partial(fields: Record<string, unknown>): InsightEvidence {
+      return fields as unknown as InsightEvidence;
+    }
+
+    it('renders nothing for a blob that carries no measurable fact', () => {
+      const { container } = render(
+        <EvidencePanel evidence={partial({ metric: 'putts_made_3_5ft_pct', metric_label: 'Putts Made 3-5 ft' })} compact />,
+      );
+      expect(container.firstChild).toBeNull();
+    });
+
+    it('never prints "undefined" for a roll-up-shaped blob', () => {
+      const { container } = render(
+        <EvidencePanel
+          evidence={partial({
+            metric: 'putts_made_3_5ft_pct',
+            metric_label: 'Putts Made 3-5 ft',
+            strokes_impact: 2.4,
+            players_affected: 6,
+          })}
+          compact
+        />,
+      );
+      expect(container.textContent).not.toMatch(/undefined|NaN/);
+      // No anchors, so no scale; no sample or window either.
+      expect(screen.queryByTestId('evidence-benchmark-scale')).toBeNull();
+      expect(screen.queryByTestId('evidence-sample')).toBeNull();
+      expect(screen.queryByTestId('evidence-confidence')).toBeNull();
+      // The one fact it does carry still reaches the coach.
+      expect(screen.getByTestId('evidence-impact')).toHaveTextContent('~2.4 strokes/round');
+    });
+
+    it('shows the sample without a window, and skips the scale without a comparison', () => {
+      render(
+        <EvidencePanel
+          evidence={partial({ metric: 'putts_made_3_5ft_pct', your_value: 47, unit: 'percent', sample_n: 43 })}
+          compact
+        />,
+      );
+      expect(screen.getByTestId('evidence-sample')).toHaveTextContent(/^43 putts$/);
+      expect(screen.queryByTestId('evidence-benchmark-scale')).toBeNull();
+    });
+
+    it('expanded mode lists only the rows the blob can support', () => {
+      const { container } = render(
+        <EvidencePanel
+          evidence={partial({ metric: 'putts_made_3_5ft_pct', metric_label: 'Putts Made 3-5 ft', strokes_impact: 1.2 })}
+          compact={false}
+        />,
+      );
+      expect(container.textContent).not.toMatch(/undefined|NaN/);
+      expect(screen.getByTestId('evidence-row-impact')).toHaveTextContent('1.2');
+      expect(screen.queryByTestId('evidence-row-your')).toBeNull();
+      expect(screen.queryByTestId('evidence-row-sample')).toBeNull();
+      expect(screen.queryByTestId('evidence-row-window')).toBeNull();
+      expect(screen.queryByTestId('evidence-row-confidence')).toBeNull();
+    });
+  });
+
   describe('formatWindow', () => {
     it('renders days + date range when both ends parse', () => {
       const out = formatWindow('2026-03-23T00:00:00Z', '2026-04-22T00:00:00Z', 30);
@@ -329,5 +393,31 @@ describe('EvidencePanel', () => {
     it('falls back to day count when dates are unparseable', () => {
       expect(formatWindow('not-a-date', 'also-not-a-date', 30)).toBe('30 days');
     });
+  });
+});
+
+describe('audit row 12 — lifetime values and the cohort source', () => {
+  it('compact mode says "lifetime", not "N days", for an all-time value', () => {
+    render(<EvidencePanel evidence={makeEvidence({ window_basis: 'lifetime', window_days: 213, sample_n: 20, metric: 'big_number_rate' })} />);
+    const sample = screen.getByTestId('evidence-sample');
+    expect(sample.textContent).toContain('lifetime');
+    expect(sample.textContent).not.toContain('213 days');
+  });
+
+  it('expanded mode labels the window Lifetime with the round span', () => {
+    render(
+      <EvidencePanel
+        compact={false}
+        evidence={makeEvidence({ window_basis: 'lifetime', window_days: 213, window_start: '2026-02-01', window_end: '2026-08-31' })}
+      />,
+    );
+    const row = screen.getByTestId('evidence-row-window');
+    expect(row.textContent).toContain('Lifetime');
+    expect(row.textContent).not.toContain('213 days');
+  });
+
+  it('labels a cohort_avg comparison as the college cohort', () => {
+    render(<EvidencePanel compact={false} evidence={makeEvidence({ comparison_source: 'cohort_avg', comparison_label: 'College cohort avg' })} />);
+    expect(screen.getByTestId('evidence-row-comparison').textContent).toContain('College cohort avg');
   });
 });

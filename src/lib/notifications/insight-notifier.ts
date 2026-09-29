@@ -145,3 +145,29 @@ export async function notifyInsightLanded(args: NotifyInsightArgs): Promise<void
     );
   }
 }
+
+/**
+ * Resolution celebration for writers that do NOT go through `upsertInsight`
+ * (audit row 53). Resolution is written by the lifecycle cron
+ * (api/cron/coachhelm-insight-lifecycle) and by the coach's resolve action
+ * (golf/actions/insights.ts resolveInsightImpl); neither calls
+ * `notifyInsightLanded`, so 'goal_achieved' never fired for a resolved insight
+ * (0 receipts for 18+ resolved rows). Call this after the write that flipped
+ * the row to 'resolved' succeeds. Same category, copy and throttle key as the
+ * upsert path, so a double call on one day sends once. NEVER throws.
+ */
+export async function notifyInsightResolved(args: {
+  player_id: string;
+  insight_id: string;
+  category: string;
+}): Promise<void> {
+  await notifyInsightLanded({
+    player_id: args.player_id,
+    insight_id: args.insight_id,
+    category: args.category,
+    title: '',
+    evidence: {} as InsightEvidence,
+    lifecycle_state: 'resolved',
+    was_lifecycle_promotion: true,
+  });
+}

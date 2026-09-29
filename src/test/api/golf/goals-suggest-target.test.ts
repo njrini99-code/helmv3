@@ -142,4 +142,36 @@ describe('suggestGoalTarget', () => {
     expect(s.suggested_target).toBeNull();
     expect(s.no_target_reason).toBeNull();
   });
+
+  // Audit row 21 (owner decision 2026-09-28): the cohort is the anchor, the
+  // Tour is context.
+  it('behind a real cohort → halfway to the cohort, Tour kept as context', async () => {
+    loadStandingForMetric.mockResolvedValue(
+      standing({ metric_id: 'sg_putting', player_value: -3, pga_value: 0, level_avg: -1, level_n: 40 }),
+    );
+    const s = await suggestGoalTarget('sg_putting');
+    expect(s.anchor).toBe('cohort');
+    expect(s.cohort_value).toBe(-1);
+    expect(s.pga_value).toBe(0);
+    expect(s.suggested_target).toBeCloseTo(-2, 6);
+  });
+
+  it('past the cohort but behind the Tour → halfway to the Tour', async () => {
+    loadStandingForMetric.mockResolvedValue(
+      standing({ metric_id: 'sg_putting', player_value: -0.5, pga_value: 0, level_avg: -1, level_n: 40 }),
+    );
+    const s = await suggestGoalTarget('sg_putting');
+    expect(s.anchor).toBe('tour');
+    expect(s.suggested_target).toBeCloseTo(-0.25, 6);
+  });
+
+  it('ignores a cohort of fewer than 5 players', async () => {
+    loadStandingForMetric.mockResolvedValue(
+      standing({ metric_id: 'sg_putting', player_value: -3, pga_value: 0, level_avg: -1, level_n: 3 }),
+    );
+    const s = await suggestGoalTarget('sg_putting');
+    expect(s.cohort_value).toBeNull();
+    expect(s.anchor).toBe('tour');
+    expect(s.suggested_target).toBeCloseTo(-1.5, 6);
+  });
 });

@@ -32,6 +32,7 @@ interface MockRoundRow {
   status: string | null;
   ai_recap: string | null;
   ai_recap_generated_at: string | null;
+  is_test?: boolean | null;
 }
 
 const { logServerErrorMock } = vi.hoisted(() => ({
@@ -104,6 +105,13 @@ vi.mock('@/lib/coachhelm/v3/llm/compose', () => ({
 const revalidatePathMock = vi.fn();
 vi.mock('next/cache', () => ({
   revalidatePath: (...args: [string]) => revalidatePathMock(...args),
+}));
+
+
+// Season context now comes from the player's countable, non-test rounds
+// (recap-season-context.ts), not golf_player_stats_cache.
+vi.mock('@/lib/golf/recap-season-context', () => ({
+  loadRecapSeasonContext: vi.fn(async () => mockStats),
 }));
 
 import { generateRoundRecap } from '../round-recap';
@@ -294,5 +302,45 @@ describe('generateRoundRecap — the prompt names THIS player (Shenandoah field 
     mockPlayerFirstName = "D'Angelo";
     await generateRoundRecap('round-1');
     expect(promptHandedToTheModel()).toContain(`as "D'Angelo" in the third person`);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// OD-03 leak (2026-09-28 audit): round 91301a75 (is_test, 37 over 18) got the
+// persisted recap "37 on the card, 35.8 strokes below the season average", and
+// two QA Test Course rounds got recaps too. A test round gets no recap, and a
+// stored one is not served back.
+// ---------------------------------------------------------------------------
+describe('generateRoundRecap — is_test rounds (OD-03)', () => {
+  beforeEach(() => {
+    mockStats = { scoring_average: 72.8, best_round: 69, rounds_played: 20 };
+    persistedRecap = null;
+    persistError = null;
+    composeMock.mockClear();
+    mockRpc.mockClear();
+  });
+
+  it('generates nothing for a test round: no LLM call, no write', async () => {
+    mockRound = { ...baseRound, holes_played: 18, total_score: 37, score_to_par: -35, front_nine: 19, back_nine: 18, is_test: true };
+
+    const result = await generateRoundRecap('round-1');
+
+    expect(result).toEqual({ recap: null, cached: false });
+    expect(composeMock).not.toHaveBeenCalled();
+    expect(mockRpc).not.toHaveBeenCalled();
+  });
+
+  it('does not serve a recap already stored on a test round', async () => {
+    mockRound = { ...baseRound, is_test: true, ai_recap: '37 on the card, 35.8 strokes below the season average.' };
+
+    const result = await generateRoundRecap('round-1');
+
+    expect(result).toEqual({ recap: null, cached: false });
+  });
+
+  it('still serves a stored recap on a real round', async () => {
+    mockRound = { ...baseRound, is_test: false, ai_recap: 'Already generated.' };
+
+    await expect(generateRoundRecap('round-1')).resolves.toEqual({ recap: 'Already generated.', cached: true });
   });
 });

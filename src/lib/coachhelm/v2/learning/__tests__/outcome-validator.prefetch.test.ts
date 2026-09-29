@@ -98,7 +98,10 @@ describe('prefetchCandidateRounds — one golf_rounds read per batch', () => {
   it('keeps each prediction on its own window (a round outside it does not grade)', async () => {
     // Played inside the batch's union window but after p-late's due date.
     const rounds = [
-      { id: 'r1', player_id: 'A', round_date: '2026-08-20', created_at: '2026-08-20T10:00:00Z', score_to_par: 4 },
+      {
+        id: 'r1', player_id: 'A', round_date: '2026-08-20', created_at: '2026-08-20T10:00:00Z', score_to_par: 4,
+        holes_played: 18, total_score: 76, front_nine: 38, back_nine: 38, total_putts: 31, is_test: false,
+      },
     ];
     const early = prediction('p-early', 'A');
     const late = { ...prediction('p-late', 'A'), due_date: '2026-08-30' };

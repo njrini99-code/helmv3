@@ -11,7 +11,8 @@ let shotRows: Row[] = [];
 
 function builder(rows: Row[]) {
   const b: Record<string, unknown> = {};
-  for (const m of ['select', 'eq', 'gte', 'in', 'not', 'order', 'range']) b[m] = vi.fn(() => b);
+  for (const m of ['select', 'eq', 'gte', 'in', 'not', 'order', 'range', 'limit']) b[m] = vi.fn(() => b);
+  b.maybeSingle = vi.fn(async () => ({ data: null, error: null }));
   b.then = (res: (v: { data: Row[]; error: null }) => unknown) => res({ data: rows, error: null });
   return b;
 }
@@ -120,5 +121,44 @@ describe('C7 par-normalized opening tax', () => {
     const c = g.composeContent(makeAgg({ playerValue: 0.4, cause_putt_pct: 60, cause_tee_pct: 25, cause_penalty_pct: 15 }));
     expect(c.content.toLowerCase()).toContain('putt');
     expect(c.content).toContain('60%');
+  });
+});
+
+describe('opening-hole tax: interval gate + measured impact (audit row 15, defect 1)', () => {
+  /** `n` rounds; hole 1 is a par 4 scored `opener(i)`, holes 2-5 par 4s at par. */
+  function rounds(n: number, opener: (i: number) => number) {
+    roundRows = Array.from({ length: n }, (_, i) => ({ id: `r${i}` }));
+    holeRows = [];
+    for (let i = 0; i < n; i++) {
+      holeRows.push({ round_id: `r${i}`, hole_number: 1, par: 4, score: opener(i), putts: 2, penalty_strokes: 0 });
+      for (let h = 2; h <= 5; h++) {
+        holeRows.push({ round_id: `r${i}`, hole_number: h, par: 4, score: 4, putts: 2, penalty_strokes: 0 });
+      }
+    }
+  }
+
+  it('does NOT emit a +0.17 tax over 12 openers whose interval straddles zero', async () => {
+    // 2 bogeys in 12 openers → mean +0.17, SE ≈ 0.11 → 95% low < 0.
+    rounds(12, (i) => (i < 2 ? 5 : 4));
+    expect(await new WarmupHoleGenerator(PLAYER_ID).aggregate()).toBeNull();
+  });
+
+  it('emits when the interval excludes zero, with the interval on the row', async () => {
+    // 9 bogeys in 12 openers → mean +0.75, 95% low ≈ +0.49.
+    rounds(12, (i) => (i < 9 ? 5 : 4));
+    const agg = await new WarmupHoleGenerator(PLAYER_ID).aggregate();
+    expect(agg).not.toBeNull();
+    expect(agg!.delta_ci_low).toBeGreaterThan(0);
+    const c = new WarmupHoleGenerator(PLAYER_ID).composeContent(agg!);
+    expect(c.content).toMatch(/95% range \+0\.\d\d to \+\d\.\d\d strokes/);
+    expect(c.evidence.detail?.delta_ci_low).toBeGreaterThan(0);
+    // Measured impact: the tax above the Tour's 0.1, one opener per round.
+    expect(c.evidence.strokes_impact).toBeCloseTo(0.75 - 0.1, 3);
+  });
+
+  it('retracts (no aggregate) when the window has no data', async () => {
+    roundRows = [];
+    holeRows = [];
+    expect(await new WarmupHoleGenerator(PLAYER_ID).aggregate()).toBeNull();
   });
 });

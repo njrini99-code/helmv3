@@ -61,6 +61,7 @@ export async function loadFollowUpRoundCounts(
         fromUntyped(supabase, 'golf_rounds')
           .select('player_id, round_date, status')
           .in('player_id', batch)
+          .eq('is_test', false)
           .eq('status', 'completed')
           .gte('round_date', earliestStartDate)
           .order('id', { ascending: true })

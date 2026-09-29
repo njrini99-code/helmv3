@@ -478,7 +478,14 @@ export default async function PlayerCoachHelmPage() {
       achievedGoals = achievedGoalsRes.map((g) => ({ goal: g, standing: standingMap.get(g.metric_id) ?? null }));
       suggestions = suggestionsRes.map((s) => {
         const cfg = getMetricRenderConfig(s.metric_id);
-        return { suggestion: s, display_label: cfg?.display_label ?? s.metric_id, unit: cfg?.unit ?? 'count' };
+        const st = standingMap.get(s.metric_id);
+        return {
+          suggestion: s,
+          display_label: cfg?.display_label ?? s.metric_id,
+          unit: cfg?.unit ?? 'count',
+          cohort_value: st?.level_avg ?? null,
+          tour_value: st && !st.pga_omitted ? st.pga_value : null,
+        };
       });
       causalRelationships = causalRes;
     } catch {

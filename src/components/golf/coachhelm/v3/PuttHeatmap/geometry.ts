@@ -13,6 +13,7 @@ import {
   type PuttMissDirection,
   type PuttRecord,
 } from './types';
+import { puttBucketFor } from '@/lib/golf/putt-distance-buckets';
 
 // ---------------------------------------------------------------------------
 // Canonical viewBox — square, hole at center.
@@ -94,6 +95,9 @@ export interface PuttBucketStats {
 export interface MissBias {
   /** Total missed putts considered. */
   total: number;
+  /** Missed putts with a recorded direction — the denominator of `share`.
+   *  About a quarter of logged misses carry no direction (audit row 42). */
+  directed: number;
   /** Count per side. */
   left: number;
   right: number;
@@ -101,7 +105,7 @@ export interface MissBias {
   short: number;
   /** Dominant side (highest count), or null if no clear bias / no data. */
   dominant: NonNullable<PuttMissDirection> | null;
-  /** Share of misses on dominant side, 0–1. */
+  /** Share of DIRECTED misses on the dominant side, 0–1. */
   share: number;
 }
 
@@ -119,11 +123,7 @@ export interface PuttHeatmapData {
 // ---------------------------------------------------------------------------
 
 function bucketFor(distance_feet: number): PuttBucketId {
-  for (const b of PUTT_BUCKETS) {
-    if (distance_feet >= b.min && distance_feet < b.max) return b.id;
-  }
-  // Final bucket (25+) catches Infinity max.
-  return PUTT_BUCKETS[PUTT_BUCKETS.length - 1]!.id;
+  return puttBucketFor(distance_feet).id;
 }
 
 export function buildPuttHeatmap(putts: PuttRecord[]): PuttHeatmapData {
@@ -151,9 +151,13 @@ export function buildPuttHeatmap(putts: PuttRecord[]): PuttHeatmapData {
   // Miss bias
   const misses = putts.filter((p) => !p.made);
   const counts = { left: 0, right: 0, long: 0, short: 0 };
+  let directed = 0;
   for (const m of misses) {
     const d = normalizePuttMiss(m.miss_direction);
-    if (d && d in counts) counts[d]++;
+    if (d && d in counts) {
+      counts[d]++;
+      directed++;
+    }
   }
   let dominant: NonNullable<PuttMissDirection> | null = null;
   let topCount = 0;
@@ -165,9 +169,12 @@ export function buildPuttHeatmap(putts: PuttRecord[]): PuttHeatmapData {
   });
   const miss_bias: MissBias = {
     total: misses.length,
+    directed,
     ...counts,
     dominant,
-    share: misses.length > 0 ? topCount / misses.length : 0,
+    // Over misses WITH a direction: an unlogged direction is unknown, not
+    // "not the dominant side", so it cannot sit in the denominator.
+    share: directed > 0 ? topCount / directed : 0,
   };
 
   // Plotted dots

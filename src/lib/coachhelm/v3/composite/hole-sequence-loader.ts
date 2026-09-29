@@ -36,6 +36,7 @@ async function recentCompletedRoundIds(
     .from('golf_rounds')
     .select('id')
     .eq('player_id', playerId)
+    .eq('is_test', false)
     .eq('status', 'completed')
     .gte('round_date', since);
   return (data ?? []).map((r) => r.id);

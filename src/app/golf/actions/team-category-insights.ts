@@ -16,7 +16,14 @@ import {
 import {
   samplePerPlayerRounds,
   computeTeamHealth,
+  countableRatioPct,
 } from './team-category-insights-helpers';
+import { applyInsightVisibility } from '@/lib/coachhelm/v3/insight-visibility';
+import { BRIEF_CATEGORY_TO_ENGINE_CATEGORY } from '@/lib/coachhelm/v3/brief/assemble';
+import { RECENT_PLAYER_WINDOW_DAYS, recentWindowStart, recentlyActivePlayerIds } from '@/lib/coachhelm/recent-players';
+import { teamStrokesAvailable, type EngineLeakRow } from '@/lib/golf/team-intelligence/strokes-available';
+import type { IntelStrokesAvailable } from '@/lib/golf/team-intelligence/types';
+import { analyzeTeamShots, type TeamShotAnalysisResult, type TeamShotRow } from '@/lib/coachhelm/team-shot-analysis';
 import { describeError } from '@/lib/utils/describe-error';
 import { withCanonicalRoundTotal } from '@/lib/golf/round-total';
 import { isCountableRound, type CountableRoundInput } from '@/lib/golf/round-countable';
@@ -65,6 +72,15 @@ export interface TeamCategory {
   players: PlayerCategoryStat[];
   primaryMetric: string;
   attentionCount: number;
+  /** Players whose value entered `teamAvg` and the 1-SD flag: roster members
+   *  with a countable round in the last `RECENT_PLAYER_WINDOW_DAYS` days. */
+  playersCounted: number;
+  /** Active roster members left out for having no round in that window. */
+  playersWithoutRecentRound: number;
+  /** Team strokes per round available (roster mean of each current player's
+   *  largest live counterfactual), or null when no current player carries
+   *  one. See `strokes-available.ts`. */
+  strokesAvailable: IntelStrokesAvailable | null;
 }
 
 export interface TeamCategoryInsightsResult {
@@ -293,11 +309,9 @@ export interface TeamOverviewResult {
   data?: {
     teamComposite: number;
     teamCategories: { teeGame: number; approach: number; shortGame: number; putting: number; scoring: number };
-    teamShotAnalysis: {
-      yardageCurve: Array<{ rangeStart: number; rangeEnd: number; avgSG: number; shotCount: number }>;
-      deadZones: Array<{ rangeStart: number; rangeEnd: number; deficit: number }>;
-      topWeaknesses: Array<{ context: string; lie: string; distanceRange: string; avgSG: number; shotCount: number }>;
-    };
+    /** `analyzeTeamShots` (team-shot-analysis.ts): rising Tour curve,
+     *  open-ended 250+ bucket, dead zones vs the team's own mean. */
+    teamShotAnalysis: TeamShotAnalysisResult;
     playerCount: number;
     /** How many players actually had a stats-cache row used to compute
      *  teamComposite/teamCategories. Distinguishes "truly average team" from
@@ -404,7 +418,7 @@ async function getTeamOverviewImpl(
         data: {
           teamComposite: 0,
           teamCategories: { teeGame: 50, approach: 50, shortGame: 50, putting: 50, scoring: 50 },
-          teamShotAnalysis: { yardageCurve: [], deadZones: [], topWeaknesses: [] },
+          teamShotAnalysis: { yardageCurve: [], deadZones: [], topWeaknesses: [], teamAvgSG: null, penaltyStrokes: 0 },
           playerCount: 0,
           statsRowCount: 0,
         },
@@ -541,14 +555,6 @@ async function getTeamOverviewImpl(
     }
 
     // 6. Aggregate shot data for yardage curve (last 90 days)
-    const {
-      buildDefaultBaseline,
-      buildYardageCurve,
-      findDeadZones,
-      analyzeShotsByContext,
-      rankWeaknessContexts,
-    } = await import('@/lib/coachhelm/v2/shot-analysis');
-
     const sinceDate = new Date();
     sinceDate.setDate(sinceDate.getDate() - 90);
     const sinceDateStr = sinceDate.toISOString().split('T')[0];
@@ -578,22 +584,20 @@ async function getTeamOverviewImpl(
       throw new Error(`team overview round-id read failed: ${roundsError.message}`);
     }
 
-    let yardageCurve: Array<{ rangeStart: number; rangeEnd: number; avgSG: number; shotCount: number }> = [];
-    let deadZones: Array<{ rangeStart: number; rangeEnd: number; deficit: number }> = [];
-    let topWeaknesses: Array<{ context: string; lie: string; distanceRange: string; avgSG: number; shotCount: number }> = [];
+    let teamShotAnalysis: TeamShotAnalysisResult = analyzeTeamShots([]);
 
     if (roundsData && roundsData.length > 0) {
       const roundIds = roundsData.map((r) => r.id);
 
       // Fetch shots in batches if needed (supabase .in has limits with large arrays)
       const batchSize = 100;
-      const allShotsRaw: Array<Record<string, unknown>> = [];
+      const allShotsRaw: TeamShotRow[] = [];
 
       for (let i = 0; i < roundIds.length; i += batchSize) {
         const batch = roundIds.slice(i, i + batchSize);
         const { data: shotsData, error: shotsError } = await fetchAllRowsResult((from, to) => supabase
           .from('golf_shots')
-          .select('id, round_id, hole_number, shot_number, lie_before, lie_after, distance_to_hole_before, distance_to_hole_after, distance_unit_before, distance_unit_after, club_type, result')
+          .select('id, round_id, hole_number, shot_number, shot_type, is_penalty, lie_before, lie_after, distance_to_hole_before, distance_to_hole_after, distance_unit_before, distance_unit_after, club_type, result')
           .in('round_id', batch)
           .order('round_id')
           .order('hole_number')
@@ -614,77 +618,11 @@ async function getTeamOverviewImpl(
           throw new Error(`team overview shot batch read failed: ${shotsError.message}`);
         }
         if (shotsData) {
-          allShotsRaw.push(...(shotsData as unknown as Array<Record<string, unknown>>));
+          allShotsRaw.push(...(shotsData as unknown as TeamShotRow[]));
         }
       }
 
-      // Map DB shots to ShotData interface (same logic as coachhelm-data.ts)
-      type ShotDataType = { id: string; roundId: string; holeNumber: number; shotNumber: number; lieBefore: string; distanceBefore: number; lieAfter: string; distanceAfter: number; club?: string; result?: string };
-      const shots: ShotDataType[] = allShotsRaw
-        .filter((s) => s.lie_before && s.distance_to_hole_before != null)
-        .map((s) => {
-          const lieBefore = (s.lie_before as string) ?? 'fairway';
-          const lieAfter = (s.lie_after as string) ?? 'fairway';
-          const distBefore = lieBefore === 'green'
-            ? Number(s.distance_to_hole_before ?? 0)
-            : (s.distance_unit_before as string) === 'feet'
-              ? Number(s.distance_to_hole_before ?? 0) / 3
-              : Number(s.distance_to_hole_before ?? 0);
-          const distAfter = lieAfter === 'green'
-            ? Number(s.distance_to_hole_after ?? 0)
-            : (s.distance_unit_after as string) === 'feet'
-              ? Number(s.distance_to_hole_after ?? 0) / 3
-              : Number(s.distance_to_hole_after ?? 0);
-
-          return {
-            id: s.id as string,
-            roundId: s.round_id as string,
-            holeNumber: Number(s.hole_number),
-            shotNumber: Number(s.shot_number),
-            lieBefore,
-            distanceBefore: distBefore,
-            lieAfter,
-            distanceAfter: distAfter,
-            club: (s.club_type as string) ?? undefined,
-            result: (s.result as string) ?? undefined,
-          };
-        });
-
-      if (shots.length > 0) {
-        const sgBaseline = buildDefaultBaseline();
-
-        // Build team yardage curve
-        const teamCurve = buildYardageCurve(shots, sgBaseline, 25, 'team');
-        yardageCurve = teamCurve.buckets.map((b) => ({
-          rangeStart: b.rangeStart,
-          rangeEnd: b.rangeEnd,
-          avgSG: Math.round(b.avgSG * 1000) / 1000,
-          shotCount: b.shotCount,
-        }));
-
-        // Build synthetic baseline for dead zone detection (SG = 0)
-        const syntheticBaseline = {
-          playerId: 'baseline',
-          buckets: teamCurve.buckets.map((b) => ({ ...b, avgSG: 0 })),
-        };
-        const rawDeadZones = findDeadZones(teamCurve, syntheticBaseline, 0.2, 15);
-        deadZones = rawDeadZones.map((dz) => ({
-          rangeStart: dz.rangeStart,
-          rangeEnd: dz.rangeEnd,
-          deficit: Math.round(dz.deficit * 1000) / 1000,
-        }));
-
-        // Analyze by context and rank weaknesses
-        const contextAnalyses = analyzeShotsByContext(shots, sgBaseline);
-        const ranked = rankWeaknessContexts(contextAnalyses, 15);
-        topWeaknesses = ranked.slice(0, 5).map((w) => ({
-          context: w.context,
-          lie: w.lie,
-          distanceRange: w.distanceRange,
-          avgSG: Math.round(w.avgSG * 1000) / 1000,
-          shotCount: w.shotCount,
-        }));
-      }
+      teamShotAnalysis = analyzeTeamShots(allShotsRaw);
     }
 
     return {
@@ -692,7 +630,7 @@ async function getTeamOverviewImpl(
       data: {
         teamComposite,
         teamCategories,
-        teamShotAnalysis: { yardageCurve, deadZones, topWeaknesses },
+        teamShotAnalysis,
         playerCount: playerIds.length,
         statsRowCount: (statsData ?? []).length,
       },
@@ -810,6 +748,9 @@ async function getTeamCategoryInsightsImpl(
             players: [],
             primaryMetric: c.primaryLabel,
             attentionCount: 0,
+            playersCounted: 0,
+            playersWithoutRecentRound: 0,
+            strokesAvailable: null,
           })),
           teamHealth: 0,
           // No active players → no data analyzed. Empty (consumers guard on
@@ -907,9 +848,14 @@ async function getTeamCategoryInsightsImpl(
       if (arr) arr.push(r);
       else countableByPlayer.set(pid, [r]);
     }
+    // Fairway % and GIR % come from the same countable rounds (summed hits
+    // over summed opportunities). Scramble % stays on the stats cache: rounds
+    // carry no per-round up-and-down counts.
     const countableOverride = (pid: string, metric: string): number | null | undefined => {
       if (roundsResult.error) return undefined; // fall back to the cache
       const rows = countableByPlayer.get(pid) ?? [];
+      const ratio = countableRatioPct(rows, metric);
+      if (ratio !== undefined) return ratio;
       if (metric === 'putts_per_round') {
         return aggregateCountableRounds(rows as unknown as CountableRoundRow[]).puttsPer18;
       }
@@ -931,6 +877,46 @@ async function getTeamCategoryInsightsImpl(
       roundsByPlayer.get(pid)!.push(r);
     }
 
+    // Team mean, SD and the attention flag use CURRENT players only: a
+    // countable round in the last RECENT_PLAYER_WINDOW_DAYS days. The 2026-09
+    // audit found 29 of 86 active members with no round in 60 days moving
+    // every team mean (on one team only 3 of 8 were current). If the rounds
+    // read failed nobody is filtered (cache fallback, as above).
+    const recentSince = recentWindowStart(new Date().toISOString().slice(0, 10), RECENT_PLAYER_WINDOW_DAYS);
+    const currentPlayerIds = roundsResult.error
+      ? new Set(playerIds)
+      : recentlyActivePlayerIds(
+          countableRounds.map((r) => ({ ...r, player_id: r.player_id as string, round_date: (r.round_date as string | null) ?? null })),
+          recentSince,
+        );
+    const playersWithoutRecentRound = playerIds.filter((pid) => !currentPlayerIds.has(pid)).length;
+
+    // Visible engine rows for THIS roster, read directly (not the coach-wide
+    // ranked feed, which spans every team the coach staffs and is capped at
+    // 20): the input to each category's team strokes-available figure. Same
+    // visibility as that feed (`applyInsightVisibility`, which drops dismissed
+    // rows): marking a signal reviewed does not make its leak go away.
+    const engineCategories = [...new Set(Object.values(BRIEF_CATEGORY_TO_ENGINE_CATEGORY))];
+    const engineRowsResult = await fetchAllRowsResult<EngineLeakRow>((from, to) =>
+      applyInsightVisibility(
+        supabase
+          .from('golf_coach_insights')
+          .select('id, player_id, category, evidence')
+          .in('player_id', playerIds)
+          .in('category', engineCategories),
+      )
+        .order('id', { ascending: true })
+        .range(from, to),
+    );
+    if (engineRowsResult.error) {
+      await logServerError(
+        `getTeamCategoryInsights engine-row read failed; no strokes-available figures: ${describeError(engineRowsResult.error)}`,
+        { action: 'getTeamCategoryInsights', featureArea: 'insights' },
+        'warning',
+      );
+    }
+    const engineRows = engineRowsResult.error ? [] : (engineRowsResult.data ?? []);
+
     // 5. Build each category
     const categories: TeamCategory[] = [];
 
@@ -940,6 +926,7 @@ async function getTeamCategoryInsightsImpl(
       const values: number[] = [];
 
       for (const pid of playerIds) {
+        if (!currentPlayerIds.has(pid)) continue;
         const stats = statsByPlayer.get(pid);
         const info = playerInfoMap.get(pid);
         const override = countableOverride(pid, catDef.primaryMetric);
@@ -1049,6 +1036,13 @@ async function getTeamCategoryInsightsImpl(
         players: playerStats,
         primaryMetric: catDef.primaryLabel,
         attentionCount,
+        playersCounted: values.length,
+        playersWithoutRecentRound,
+        strokesAvailable: teamStrokesAvailable(
+          engineRows,
+          BRIEF_CATEGORY_TO_ENGINE_CATEGORY[catDef.id] ?? catDef.id,
+          currentPlayerIds,
+        ),
       });
     }
 
@@ -1078,8 +1072,10 @@ async function getTeamCategoryInsightsImpl(
         for (const [pid, info] of playerInfoMap) {
           playerNamesForVoice[pid] = info.name;
         }
+        // The sweep spans every team this coach staffs; keep this roster's rows.
+        const rosterIds = new Set(playerIds);
         const engineByCategory = assembleBriefEngineInsights(
-          engineResult.data,
+          engineResult.data.filter((row) => rosterIds.has(row.player_id)),
           CATEGORIES.map((c) => ({ id: c.id, label: c.label })),
           playerNamesForVoice,
         );

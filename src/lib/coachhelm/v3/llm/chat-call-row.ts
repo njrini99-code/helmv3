@@ -28,6 +28,9 @@
  * the one the instrument could not see.
  */
 
+/** Mirrors `chat/verdict.ts`'s `TurnVerdictReason` (kept local: llm/ does not import chat/). */
+export type ChatVerdictReason = 'stream_incomplete' | 'ungrounded_claims' | 'claim_validation_failed';
+
 export interface ChatLlmCallRow {
   task: 'coach_chat';
   coach_id: string;
@@ -50,7 +53,17 @@ export interface ChatLlmCallRow {
    * prunes it, and #1540 was found only because a fresh production query
    * happened to land before that happened.
    */
-  citations: { reason: 'verification_failed'; unmatched_tokens: string[] } | null;
+  citations: {
+    reason: 'verification_failed';
+    /**
+     * Which chat verdict check rejected the turn (audit row 47c). `reason`
+     * alone could not tell an ungrounded claim from a dropped stream or a
+     * typed-gate rejection. Present only when the caller supplies it, so the
+     * shape round_review shares is unchanged.
+     */
+    verdict_reason?: ChatVerdictReason;
+    unmatched_tokens: string[];
+  } | null;
   verified: boolean;
   /**
    * Always false, and correct — not an oversight carried over from the old
@@ -73,7 +86,9 @@ export function buildChatLlmCallRow(args: {
   /** `unsupported.length === 0` from the route's numeric-claim audit. */
   grounded: boolean;
   /** The claim texts the audit flagged — e.g. `['71', '-25']`. Ignored when grounded. */
-  unmatchedTokens: string[];
+  unmatchedTokens?: string[];
+  /** Which verdict check rejected the turn. Ignored when grounded. */
+  verdictReason?: ChatVerdictReason;
 }): ChatLlmCallRow {
   return {
     task: 'coach_chat',
@@ -91,7 +106,11 @@ export function buildChatLlmCallRow(args: {
     // a player name or a database value. See the ChatLlmCallRow doc comment.
     citations: args.grounded
       ? null
-      : { reason: 'verification_failed', unmatched_tokens: args.unmatchedTokens },
+      : {
+          reason: 'verification_failed',
+          ...(args.verdictReason ? { verdict_reason: args.verdictReason } : {}),
+          unmatched_tokens: args.unmatchedTokens ?? [],
+        },
     verified: args.grounded,
     fallback_to_template: false,
   };

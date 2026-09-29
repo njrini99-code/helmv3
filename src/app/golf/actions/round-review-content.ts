@@ -23,6 +23,8 @@ import type {
   StrokesToGainItem,
   StatComparison,
 } from './round-review-system';
+import { isCountableRound } from '@/lib/golf/round-countable';
+import { PUTT_DISTANCE_BUCKETS, puttStartFeet } from '@/lib/golf/putt-distance-buckets';
 
 // Hole-level data from golf_holes table (carries known par, score, etc.) —
 // moved here (with buildHoleBreakdowns/calculateComparisonAverages below)
@@ -53,6 +55,73 @@ export interface ComparisonRoundRow {
   holes_played?: number | null;
 }
 
+/**
+ * A prior-round row as the as-played baseline query returns it: the
+ * comparison columns plus what the countable-round rule and the test flag
+ * need (audit row 39).
+ */
+export interface BaselineRoundRow extends ComparisonRoundRow {
+  id: string;
+  created_at?: string | null;
+  front_nine: number | null;
+  back_nine: number | null;
+  is_test?: boolean | null;
+}
+
+/**
+ * Version stamp for rule-based reviews (golf_round_reviews.engine_version).
+ * v3 (2026-09-28, audit rows 39/42/43): countable/non-test baseline, bounded
+ * grade bands + gradeBasis, player-derived strokes-to-gain with a basis, and
+ * the shared putt distance field/edges. Stored reviews keep the version they
+ * were written with, so a reader can tell the two algorithms apart.
+ */
+export const RULE_BASED_ENGINE_VERSION = 'rule-based-v3';
+
+/** Columns the baseline query must select for `selectBaselineRounds`. */
+export const BASELINE_ROUND_COLUMNS =
+  'id, created_at, total_score, score_to_par, total_putts, total_gir, total_gir_possible, total_fairways_hit, total_fairways, holes_played, front_nine, back_nine, is_test';
+
+/** The baseline is the player's last N countable rounds before this one. */
+export const BASELINE_ROUND_LIMIT = 20;
+
+/**
+ * How many newest-first rows the query fetches before filtering. Filtering
+ * happens after the fetch (the countable rule is not expressible in
+ * PostgREST), so the query over-fetches to still fill 20 after dropping
+ * test and non-countable rounds. Prod has 14 non-countable rounds in 391
+ * (audit row 41), so 2x is ample.
+ */
+export const BASELINE_FETCH_LIMIT = BASELINE_ROUND_LIMIT * 2;
+
+/**
+ * Audit row 39: the prior-20 baseline used to be every completed round,
+ * including test rounds and rounds the app's countable-round rule rejects
+ * (half-entered, hole-less, implausible). Keeps the caller's order
+ * (newest-first) and caps at BASELINE_ROUND_LIMIT after filtering.
+ */
+export function selectBaselineRounds<T extends BaselineRoundRow>(rows: readonly T[]): T[] {
+  return rows
+    .filter((r) => r.is_test !== true)
+    .filter((r) => isCountableRound({
+      holes_played: r.holes_played ?? null,
+      total_score: r.total_score,
+      front_nine: r.front_nine,
+      back_nine: r.back_nine,
+      total_putts: r.total_putts,
+    }))
+    .slice(0, BASELINE_ROUND_LIMIT);
+}
+
+/** Typical-player fallbacks for strokes-to-gain, used only when the player's
+ *  data cannot support an estimate (and then marked basis 'benchmark'). */
+const GIR_BENCHMARK_TARGET_PCT = 50;
+const GIR_BENCHMARK_STROKES_PER_GREEN = 0.7;
+const SCRAMBLE_BENCHMARK_TARGET = 0.5;
+const SCRAMBLE_BENCHMARK_STEP = 0.15;
+/** Holes needed on each side (GIR / missed green) to trust this round's own
+ *  per-green scoring gap. */
+const MIN_HOLES_PER_GIR_SIDE = 3;
+
 function missMatches(direction: string | null | undefined, side: 'left' | 'right' | 'short' | 'long'): boolean {
   if (!direction) return false;
   return direction === side || direction.startsWith(`${side}_`) || direction.endsWith(`_${side}`);
@@ -64,54 +133,65 @@ function determineSentiment(scoreToPar: number): ReviewSentiment {
   return 'challenging';
 }
 
+/**
+ * Bounded grading bands (audit row 43). Each factor is graded on how many
+ * strokes (score to par, putts — both per 18 holes) or percentage points
+ * (GIR, fairways) the round was better than the player's own average:
+ *   better > outer  -> 5,  better > inner -> 4,  |better| <= inner -> 3,
+ *   better >= -outer -> 2, else 1.
+ * The inner band is about one unit of the stat for one round (one stroke,
+ * one green = 5.6 pts, one fairway of 14 = 7.1 pts), so a round within one
+ * of its average is "average". The old bands were +-5/+-15 PERCENT of the
+ * average, which divided by a near-zero score-to-par average (14 of 208
+ * reviews had |avg| < 0.5) and turned one stroke into +-200%.
+ */
+export const GRADE_BANDS = {
+  scoreToPar: { inner: 1, outer: 3 },
+  putts: { inner: 1, outer: 3 },
+  girPct: { inner: 4, outer: 10 },
+  fairwayPct: { inner: 7, outer: 15 },
+} as const;
+
+function boundedGrade(better: number, band: { inner: number; outer: number }): number {
+  if (better > band.outer) return 5;
+  if (better > band.inner) return 4;
+  if (better >= -band.inner) return 3;
+  if (better >= -band.outer) return 2;
+  return 1;
+}
+
 function determineGrade(
   scoreToPar: number,
   girPct: number | null,
   fairwayPct: number | null,
   putts: number,
   playerAvgs?: ComparisonAverages | null
-): OverallGrade {
+): { grade: OverallGrade; basis: 'player' | 'benchmark' } {
   let score = 0;
   let factors = 0;
-
-  // Helper: grade a stat relative to the player's own average
-  // Returns 1-5 where 5 = exceptional for this player
-  const relativeGrade = (val: number, avg: number, better: 'lower' | 'higher'): number => {
-    const pctDiff = avg !== 0 ? ((val - avg) / Math.abs(avg)) * 100 : 0;
-    // For "lower is better" stats, invert the difference
-    const adjustedDiff = better === 'lower' ? -pctDiff : pctDiff;
-    if (adjustedDiff > 15) return 5;
-    if (adjustedDiff > 5) return 4;
-    if (adjustedDiff >= -5) return 3;
-    if (adjustedDiff >= -15) return 2;
-    return 1;
-  };
+  let basis: 'player' | 'benchmark' = 'player';
 
   if (playerAvgs) {
     // Player-relative grading: compare to their own history. Each average can
     // independently be null (no supporting round data) — skip that factor
     // rather than grade against a fabricated benchmark.
     if (playerAvgs.avgScoreToPar !== null) {
-      const scoreVal = relativeGrade(scoreToPar, playerAvgs.avgScoreToPar, 'lower');
-      score += scoreVal * 2;
+      score += boundedGrade(playerAvgs.avgScoreToPar - scoreToPar, GRADE_BANDS.scoreToPar) * 2;
       factors += 2;
     }
 
     if (girPct !== null && playerAvgs.avgGirPct !== null) {
-      const girVal = relativeGrade(girPct, playerAvgs.avgGirPct, 'higher');
-      score += girVal;
+      score += boundedGrade(girPct - playerAvgs.avgGirPct, GRADE_BANDS.girPct);
       factors++;
     }
 
     if (fairwayPct !== null && playerAvgs.avgFairwayPct !== null) {
-      const fwVal = relativeGrade(fairwayPct, playerAvgs.avgFairwayPct, 'higher');
-      score += fwVal;
+      score += boundedGrade(fairwayPct - playerAvgs.avgFairwayPct, GRADE_BANDS.fairwayPct);
       factors++;
     }
 
     if (playerAvgs.avgPutts !== null) {
-      const puttVal = relativeGrade(putts, playerAvgs.avgPutts, 'lower');
-      score += puttVal;
+      score += boundedGrade(playerAvgs.avgPutts - putts, GRADE_BANDS.putts);
       factors++;
     }
   }
@@ -119,6 +199,8 @@ function determineGrade(
   if (factors === 0) {
     // Fallback: fixed benchmarks (college-level). Reached when playerAvgs is
     // null (< 3 comparison rounds) or when every usable average was null.
+    // Recorded as gradeBasis 'benchmark' so the review can say so.
+    basis = 'benchmark';
     const scoreVal = scoreToPar <= -3 ? 5 : scoreToPar <= -1 ? 4 : scoreToPar <= 1 ? 3.5 : scoreToPar <= 3 ? 3 : scoreToPar <= 5 ? 2 : 1;
     score += scoreVal * 2;
     factors += 2;
@@ -141,11 +223,8 @@ function determineGrade(
   }
 
   const avg = score / factors;
-  if (avg >= 4.2) return 'A';
-  if (avg >= 3.5) return 'B';
-  if (avg >= 2.5) return 'C';
-  if (avg >= 1.5) return 'D';
-  return 'F';
+  const grade: OverallGrade = avg >= 4.2 ? 'A' : avg >= 3.5 ? 'B' : avg >= 2.5 ? 'C' : avg >= 1.5 ? 'D' : 'F';
+  return { grade, basis };
 }
 
 /**
@@ -295,28 +374,29 @@ export function generateReviewContent(
   }
 
   // ===== PUTTING BREAKDOWN by distance =====
-  const puttBuckets = [
-    { label: '0-5 ft', min: 0, max: 5 },
-    { label: '5-15 ft', min: 5, max: 15 },
-    { label: '15-25 ft', min: 15, max: 25 },
-    { label: '25+ ft', min: 25, max: 999 },
-  ];
+  // One field and one set of edges with the PuttHeatmap on the same page
+  // (audit row 42): start distance = distance_to_hole_before (yards x3),
+  // edges = PUTT_DISTANCE_BUCKETS. Reviews stored before this carry the old
+  // four 0-5/5-15/15-25/25+ ranges from putt_distance_feet; the renderer maps
+  // whatever `ranges` it is given, so those still render as stored.
+  //
   // Bucket EVERY putt by its own distance (made = holed) so the ranges sum to
   // the total putt count — not one first-putt per hole. The old per-hole
   // first-putt bucketing made the chart attempts add up to 18 (holes) while the
   // header showed 35 (total putts), which read as "missing" putts. Falls back to
   // the per-hole first-putt view only when shot-level putt rows are unavailable.
   const puttShots = shotRows.filter(s => s.shot_type === 'putting');
-  const puttingRanges: PuttingRange[] = puttBuckets.map(bucket => {
+  const puttingRanges: PuttingRange[] = PUTT_DISTANCE_BUCKETS.map(bucket => {
+    const label = `${bucket.short} ft`;
     if (puttShots.length > 0) {
       const inBucket = puttShots.filter(s => {
-        const ft = s.putt_distance_feet != null ? parseFloat(s.putt_distance_feet) : NaN;
-        if (Number.isNaN(ft)) return false;
+        const ft = puttStartFeet(s.distance_to_hole_before, s.distance_unit_before);
+        if (ft === null) return false;
         return ft >= bucket.min && ft < bucket.max;
       });
       const made = inBucket.filter(s => s.putt_made === true || s.result === 'hole').length;
       return {
-        label: bucket.label,
+        label,
         attempts: inBucket.length,
         made,
         pct: inBucket.length > 0 ? Math.round((made / inBucket.length) * 100) : 0,
@@ -326,7 +406,7 @@ export function generateReviewContent(
     const inBucket = holes.filter(h => h.firstPuttFeet !== null && h.firstPuttFeet >= bucket.min && h.firstPuttFeet < bucket.max);
     const made = inBucket.filter(h => h.onePutt).length;
     return {
-      label: bucket.label,
+      label,
       attempts: inBucket.length,
       made,
       pct: inBucket.length > 0 ? Math.round((made / inBucket.length) * 100) : 0,
@@ -373,24 +453,21 @@ export function generateReviewContent(
     strokesLost: penaltyHoles.reduce((s, h) => s + h.penalties, 0),
   };
 
-  // ===== STROKES TO GAIN (distance-aware estimates) =====
+  // ===== STROKES TO GAIN =====
+  // Audit row 39: these used to be fixed constants (0.5/0.7/1.0 per 3-putt by
+  // distance, 0.7 per extra GIR, a +15-point scramble target) whatever the
+  // player's data said. Each item now carries a `basis`; the constants
+  // survive only as a labelled 'benchmark' fallback.
   const strokesToGain: StrokesToGainItem[] = [];
   if (threePutts.length > 0) {
-    // Estimate savings based on first putt distance for each three-putt
-    let threePuttSavings = 0;
-    for (const tp of threePutts) {
-      const dist = tp.firstPuttFeet ?? 20;
-      // Three-putt from far = less savings (still hard to 2-putt)
-      // Three-putt from close = more savings (should definitely 2-putt)
-      if (dist >= 25) threePuttSavings += 0.5;
-      else if (dist >= 15) threePuttSavings += 0.7;
-      else threePuttSavings += 1.0;
-    }
-    const roundedSavings = Math.round(threePuttSavings * 10) / 10;
+    // Exact, not an estimate: a three-putt played as a two-putt is one stroke
+    // fewer, by definition.
+    const n = threePutts.length;
     strokesToGain.push({
       category: 'Putting',
-      potentialStrokes: roundedSavings,
-      description: `Eliminating ${threePutts.length} three-putt${threePutts.length > 1 ? 's' : ''} saves ~${roundedSavings} stroke${roundedSavings !== 1 ? 's' : ''}`,
+      potentialStrokes: n,
+      description: `Two-putting your ${n} three-putt${n > 1 ? 's' : ''} saves ${n} stroke${n > 1 ? 's' : ''}`,
+      basis: 'exact',
     });
   }
   if (penaltyAnalysis.total > 0) {
@@ -398,32 +475,50 @@ export function generateReviewContent(
       category: 'Course Management',
       potentialStrokes: penaltyAnalysis.strokesLost,
       description: `${penaltyAnalysis.total} penalty stroke${penaltyAnalysis.total > 1 ? 's' : ''} cost ${penaltyAnalysis.strokesLost} stroke${penaltyAnalysis.strokesLost > 1 ? 's' : ''}`,
+      basis: 'exact',
     });
   }
   const missedScrambles = scrambleAttemptsList.length - scrambleSuccessList.length;
-  if (missedScrambles > 0 && scramblePct !== null && scramblePct < 50) {
-    // Use actual scramble rate to estimate realistic improvement
+  if (missedScrambles > 0 && scramblePct !== null && scramblePct < SCRAMBLE_BENCHMARK_TARGET * 100) {
+    // Benchmark: golf_rounds carries no scramble total, so no per-player
+    // scramble baseline exists to target. Each extra save is one stroke; the
+    // target rate is the typical-player constant, and the item says so.
     const currentRate = scramblePct / 100;
-    const targetRate = Math.min(0.5, currentRate + 0.15); // aim for 15% improvement or 50%, whichever is lower
+    const targetRate = Math.min(SCRAMBLE_BENCHMARK_TARGET, currentRate + SCRAMBLE_BENCHMARK_STEP);
     const extraSaves = Math.round(scrambleAttemptsList.length * (targetRate - currentRate) * 10) / 10;
     if (extraSaves > 0) {
       strokesToGain.push({
         category: 'Short Game',
-        potentialStrokes: Math.round(extraSaves * 10) / 10,
-        description: `Improving scramble rate to ${Math.round(targetRate * 100)}% saves ~${extraSaves.toFixed(1)} strokes from ${scrambleAttemptsList.length} attempts`,
+        potentialStrokes: extraSaves,
+        description: `Scrambling at a typical ${Math.round(targetRate * 100)}% saves ~${extraSaves.toFixed(1)} strokes from ${scrambleAttemptsList.length} attempts`,
+        basis: 'benchmark',
       });
     }
   }
-  if (girPct !== null && girPct < 50 && girTotal > 0) {
-    const improvedGir = Math.round(girTotal * 0.5);
-    const additionalGIRs = improvedGir - girHitsCount;
-    if (additionalGIRs > 0) {
-      // GIR holes typically score 0.7 strokes better than non-GIR holes
-      const potentialSaves = Math.round(additionalGIRs * 0.7 * 10) / 10;
+  if (girPct !== null && girTotal > 0) {
+    // Target: the player's own GIR average when a baseline exists; the
+    // typical-player 50% only without one.
+    const playerGirTarget = playerAvgs?.avgGirPct ?? null;
+    const targetPct = playerGirTarget ?? GIR_BENCHMARK_TARGET_PCT;
+    // Value of one more green: this round's own scoring gap between GIR and
+    // missed-green holes, when both sides have enough holes to average.
+    const girScores = holes.filter(h => h.gir && Number.isFinite(h.scoreToPar)).map(h => h.scoreToPar);
+    const missScores = holes.filter(h => !h.gir && Number.isFinite(h.scoreToPar)).map(h => h.scoreToPar);
+    const mean = (xs: number[]) => xs.reduce((a, b) => a + b, 0) / xs.length;
+    const roundGirValue = girScores.length >= MIN_HOLES_PER_GIR_SIDE && missScores.length >= MIN_HOLES_PER_GIR_SIDE
+      ? mean(missScores) - mean(girScores)
+      : null;
+    const perGreen = roundGirValue ?? GIR_BENCHMARK_STROKES_PER_GREEN;
+    const additionalGIRs = Math.round(girTotal * (targetPct / 100)) - girHitsCount;
+    if (targetPct > girPct && additionalGIRs > 0 && perGreen > 0) {
+      const potentialSaves = Math.round(additionalGIRs * perGreen * 10) / 10;
+      const fromPlayer = playerGirTarget !== null && roundGirValue !== null;
+      const targetText = playerGirTarget !== null ? `your ${playerGirTarget}% average` : `a typical ${GIR_BENCHMARK_TARGET_PCT}%`;
       strokesToGain.push({
         category: 'Approach Shots',
         potentialStrokes: potentialSaves,
-        description: `Hitting ${additionalGIRs} more green${additionalGIRs > 1 ? 's' : ''} in regulation saves ~${potentialSaves} strokes`,
+        description: `Hitting ${additionalGIRs} more green${additionalGIRs > 1 ? 's' : ''} (${targetText}) saves ~${potentialSaves} strokes${roundGirValue === null ? ' at a typical value per green' : ''}`,
+        basis: fromPlayer ? 'player' : 'benchmark',
       });
     }
   }
@@ -433,7 +528,7 @@ export function generateReviewContent(
   const sentiment = determineSentiment(scoreToPar);
   // Grade on 18-hole-equivalent score/putts so 9-hole rounds compare honestly
   // against the 18-normalized averages (and fixed 18-hole benchmarks).
-  const overallGrade = determineGrade(scoreToPar * to18, girPct, fairwayPct, totalPutts * to18, playerAvgs);
+  const { grade: overallGrade, basis: gradeBasis } = determineGrade(scoreToPar * to18, girPct, fairwayPct, totalPutts * to18, playerAvgs);
 
   // ===== SUMMARY =====
   let summary = '';
@@ -612,7 +707,7 @@ export function generateReviewContent(
   }
 
   return {
-    summary, sentiment, overallGrade,
+    summary, sentiment, overallGrade, gradeBasis,
     highlights, areasForImprovement, keyStats, recommendations,
     scoringDistribution, frontBackSplit, momentumData,
     puttingBreakdown, drivingAnalysis, shortGameAnalysis,
@@ -812,7 +907,10 @@ export function buildHoleBreakdowns(shots: ShotRow[], round: RoundData, holePars
     const driveClub = teeShot?.club_type ?? null;
 
     const firstPutt = putts[0];
-    const firstPuttFeet = firstPutt?.putt_distance_feet ? parseFloat(firstPutt.putt_distance_feet) : null;
+    // Same start-distance field as puttingBreakdown and the heatmap (audit row 42).
+    const firstPuttFeet = firstPutt
+      ? puttStartFeet(firstPutt.distance_to_hole_before, firstPutt.distance_unit_before)
+      : null;
 
     const approachShot = holeShots.find(s =>
       s.shot_type === 'approach' || (s.shot_type === 'around_green' && !gir)

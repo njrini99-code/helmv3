@@ -89,6 +89,23 @@ still use `getPlayerStatsDashboardBundle`.
   (3, 5], the same edges as the cache writer (`putt_make_pct_3_5ft`) and the
   calculator's `getPuttDistanceBucket`, so the chart and the Putting-by-distance
   table agree. Approach bands still use `bandFor`'s [min, max).
+- Leak-map buckets (audit rows 9/32, 2026-09-28; pure rules in
+  `src/lib/golf/leak-map-buckets.ts`): approach proximity is ALL-SHOT — every
+  approach in the band, misses included (`basis: 'all_shot'`), the Tour
+  reference's basis and the standing RPC's. Only an on-green finish beyond
+  150 ft is dropped as a mis-entry; par-5 175+ yd lay-ups (left 50+ yd out,
+  `v3/metrics/layup-intent.ts`) leave the band (`excluded_layups`), and
+  `green_hit_pct` rides beside the proximity. A band below 10 attempts
+  (`LEAK_BUCKET_MIN_N`) has `team_value: null` and `below_floor: true`
+  (`sample_n` still reports what was there); shown values carry a 95%
+  `ci_low`/`ci_high` (Wilson for make %, t for mean feet).
+- Player shot analytics (`shot-analytics.ts`, audit row 31, 2026-09-28): the
+  payload carries `requestedPeriodDays`, `windowWidened` and `windowLabel`
+  (the 30 → 90 day widening is labelled, never silent); prior-period fairway
+  % / GIR % come from hole rows like the current period (`holeRates`,
+  `src/lib/golf/shot-analytics-basis.ts`); threshold rules name a weakness or
+  strength only with two rounds of holes (36; 28 fairway opportunities) or 10
+  attempts behind the rate.
 - Standing's vs-team caption can be direction-aware (StandingBar opt-in
   `cohort_wording: 'direction_aware'`): Closer/Farther for distances in feet,
   Better/Worse for other lower-is-better stats. The default stays Above/Below

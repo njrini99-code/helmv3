@@ -9,6 +9,7 @@
  * - Regenerating reviews with latest engine
  */
 
+import { notifyRoundReviewReady } from '@/lib/coachhelm/v3/notifications/notify';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { revalidatePath } from 'next/cache';
@@ -27,9 +28,11 @@ import {
   generateReviewContent,
   buildHoleBreakdowns,
   calculateComparisonAverages,
+  RULE_BASED_ENGINE_VERSION,
   type HoleParRow,
   type ComparisonRoundRow,
 } from './round-review-content';
+import { loadAsPlayedBaselineRounds } from '@/lib/golf/round-review/deterministic-review';
 import { withAdminObserved } from '@/lib/admin/observed-action';
 import { describeError } from '@/lib/utils/describe-error';
 import { gateCoachHelmEngineCall } from '@/lib/auth/action-rate-limit';
@@ -96,6 +99,12 @@ export interface StrokesToGainItem {
   category: string;
   potentialStrokes: number;
   description: string;
+  /** Where the estimate comes from (audit row 39): 'exact' = arithmetic on
+   *  this round (a 3-putt made a 2-putt saves exactly 1), 'player' = the
+   *  player's own round/baseline data, 'benchmark' = a fixed typical-player
+   *  constant used because the player's data could not support one. Absent
+   *  on reviews stored before this field existed. */
+  basis?: 'exact' | 'player' | 'benchmark';
 }
 
 export interface CoachHelmReviewInsight {
@@ -137,6 +146,10 @@ export interface RoundReviewContent {
   summary: string;
   sentiment: ReviewSentiment;
   overallGrade: OverallGrade;
+  /** What `overallGrade` was graded against (audit row 43): the player's own
+   *  prior-20 averages, or fixed benchmarks when fewer than 3 countable prior
+   *  rounds exist. Absent on reviews stored before this field existed. */
+  gradeBasis?: 'player' | 'benchmark';
   highlights: RoundReviewHighlight[];
   areasForImprovement: RoundReviewImprovementArea[];
   keyStats: RoundReviewKeyStat[];
@@ -699,7 +712,7 @@ async function generateAndStoreRoundReviewImpl(
     return existing;
   }
 
-  const run = computeAndStoreRoundReview(roundId, playerId);
+  const run = computeAndStoreRoundReview(roundId, playerId, user.id);
   inFlightRoundReviews.set(roundId, run);
   try {
     return await run;
@@ -739,7 +752,9 @@ export async function generateAndStoreRoundReview(
  */
 async function computeAndStoreRoundReview(
   roundId: string,
-  playerId: string
+  playerId: string,
+  /** The signed-in user who triggered generation (row 53 notify gate). */
+  callerUserId: string,
 ): Promise<GenerateReviewResult> {
   const supabase = await createClient();
 
@@ -870,18 +885,15 @@ async function computeAndStoreRoundReview(
     // be the exact bug class this PR fixes elsewhere in this function: a
     // real DB error masquerading as a legitimate empty state (a new
     // player's first round) instead of failing loudly.
-    const { data: playerRounds, error: playerRoundsError } = await supabase
-      .from('golf_rounds')
-      .select('id, created_at, total_score, score_to_par, total_putts, total_gir, total_gir_possible, total_fairways_hit, total_fairways, holes_played')
-      .eq('player_id', ownerPlayerId)
-      .eq('status', 'completed')
-      .not('total_score', 'is', null)
-      .neq('id', roundId)
-      .lt('round_date', roundData.round_date)
-      .order('round_date', { ascending: false })
-      .order('created_at', { ascending: false })
-      .order('id', { ascending: false })
-      .limit(20);
+    //
+    // Audit row 39: the baseline also drops is_test rounds and rounds the
+    // countable-round rule rejects. The query lives in ONE place,
+    // `loadAsPlayedBaselineRounds`, shared with the pre-warm/backfill path.
+    const { rows: playerRounds, error: playerRoundsError } = await loadAsPlayedBaselineRounds(supabase, {
+      playerId: ownerPlayerId,
+      roundId,
+      roundDate: roundData.round_date,
+    });
     if (playerRoundsError) {
       await logServerError(
         `[RoundReview] generateAndStoreRoundReview: comparison read failed: ${describeError(playerRoundsError)}`,
@@ -890,7 +902,7 @@ async function computeAndStoreRoundReview(
       return { success: false, error: 'An unexpected error occurred', code: 'db_error' };
     }
 
-    const playerAvgs = calculateComparisonAverages((playerRounds ?? []) as ComparisonRoundRow[]);
+    const playerAvgs = calculateComparisonAverages(playerRounds);
 
     let reviewContent = generateReviewContent(roundData, holeBreakdowns, playerAvgs, shotRows);
 
@@ -950,7 +962,7 @@ async function computeAndStoreRoundReview(
           insights_count: insightsCount,
           round_score: roundData.total_score,
           round_score_to_par: roundData.score_to_par,
-          engine_version: coachHelmEnhanced ? 'coachhelm-v2' : 'rule-based-v2',
+          engine_version: coachHelmEnhanced ? `coachhelm-v2+${RULE_BASED_ENGINE_VERSION}` : RULE_BASED_ENGINE_VERSION,
           updated_at: new Date().toISOString(),
         },
         { onConflict: 'round_id', ignoreDuplicates: false }
@@ -967,6 +979,18 @@ async function computeAndStoreRoundReview(
     }
     const reviewId: string = upserted.id;
 
+    // Audit row 53: tell the player a NEW review is ready, but only when
+    // someone else (their coach) generated it; a player who just opened the
+    // review page is already looking at it. Never throws.
+    const { data: ownerRow } = await supabase
+      .from('golf_players')
+      .select('user_id')
+      .eq('id', ownerPlayerId)
+      .maybeSingle();
+    if (ownerRow && ownerRow.user_id && ownerRow.user_id !== callerUserId) {
+      await notifyRoundReviewReady({ player_id: ownerPlayerId, round_id: roundId });
+    }
+
     revalidatePath('/golf/dashboard/rounds');
     revalidatePath(`/golf/dashboard/rounds/${roundId}`);
     revalidatePath(`/golf/dashboard/rounds/${roundId}/review`);
@@ -977,7 +1001,7 @@ async function computeAndStoreRoundReview(
       round_id: roundId,
       review_content: reviewContent,
       generated_at: new Date().toISOString(),
-      ai_model_version: coachHelmEnhanced ? 'coachhelm-v2' : 'rule-based-v2',
+      ai_model_version: coachHelmEnhanced ? `coachhelm-v2+${RULE_BASED_ENGINE_VERSION}` : RULE_BASED_ENGINE_VERSION,
       shared_with_coach: false,
       shared_at: null,
       coach_notes: null,

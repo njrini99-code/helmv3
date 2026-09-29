@@ -209,6 +209,7 @@ React state, which dies with the component.
 - Required acknowledgements need durable tracking per player.
 - Inline announcement tasks must stay consistent with task assignment state.
 - Urgent announcements may need push/email/in-app notification treatment; check current notification wiring before claiming it exists.
+- Notification center (2026-09-28, audit row 56): calendar rows older than 30 days (`CALENDAR_UNREAD_MAX_AGE_DAYS`) stop counting as unread in the feed and in the coach/player badges, and collapse into one read "N older calendar updates" item on the first page. The first page reserves min(5, limit/3) slots for CoachHelm receipts. Nothing is deleted or marked read in the database.
 - A text send retries ONCE, after 750 ms, when the server-action POST fails
   at the transport layer (WebKit "Load failed", Chromium "Failed to fetch" —
   `withOneTransportRetry` in `src/lib/transient-network-error.ts`). Any other

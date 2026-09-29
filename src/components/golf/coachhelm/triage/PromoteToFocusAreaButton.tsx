@@ -38,10 +38,11 @@
  * FocusAreaModal.tsx. Purely informational; no new write path here.
  *
  * Reports success via `onPromoted` — the caller (TriageDesk) removes the
- * signal from the queue and jumps to the Players view IN PLACE
- * (`?view=players`), never the old `/golf/dashboard/development` route (a
- * permanentRedirect shim that just bounces back here — see the Task 9
- * diagnosis).
+ * signal from the queue, closes its dossier and keeps the coach in The Lab
+ * (the view pin in `hrefFor`), then refreshes so the new focus area shows in
+ * the player's context. It never routes to the old
+ * `/golf/dashboard/development` route (a permanentRedirect shim that just
+ * bounces back here — see the Task 9 diagnosis).
  * ========================================================================== */
 
 import { useState } from 'react';

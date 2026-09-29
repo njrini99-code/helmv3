@@ -70,6 +70,13 @@ function dotDelay(i: number): number {
   return Math.min(i, DOT_STAGGER_CAP) * DOT_STAGGER_STEP;
 }
 
+/** "67% of 3 misses with a direction" — the share is over directed misses
+ *  only, and the copy names that n (audit row 42). */
+function missShareText(data: PuttHeatmapData): string {
+  const n = data.miss_bias.directed;
+  return `${Math.round(data.miss_bias.share * 100)}% of ${n} miss${n === 1 ? '' : 'es'} with a direction`;
+}
+
 function buildAriaSummary(data: PuttHeatmapData): string {
   if (data.total_putts === 0) return 'Putting heatmap. No putts logged.';
   const parts = [
@@ -77,7 +84,7 @@ function buildAriaSummary(data: PuttHeatmapData): string {
   ];
   if (data.miss_bias.dominant) {
     parts.push(
-      `Most misses go ${MISS_SIDE_LABEL[data.miss_bias.dominant].toLowerCase()} (${Math.round(data.miss_bias.share * 100)}% of misses).`,
+      `Most misses go ${MISS_SIDE_LABEL[data.miss_bias.dominant].toLowerCase()} (${missShareText(data)}).`,
     );
   }
   return parts.join(' ');
@@ -223,8 +230,7 @@ export function PuttHeatmap({ putts, title = 'Putting heatmap', className }: Put
                 <span className="font-medium text-text-primary">
                   {MISS_SIDE_LABEL[data.miss_bias.dominant].toLowerCase()}
                 </span>
-                {', '}
-                {Math.round(data.miss_bias.share * 100)}% of misses.
+                {`, ${missShareText(data)}.`}
               </p>
             ) : null}
 

@@ -20,10 +20,10 @@
  *     (e.g. unit tests, legacy rows) it falls back to a shot-derived
  *     up-and-down heuristic (reached the green AND <=1 putt after).
  *
- * The generator keeps requiresStanding=true + the scrambling_pct_sand metric, so
- * Phase A's StandingBar / counterfactual / backfill pipeline runs unchanged;
- * playerValue stays the sand-save % (the registered unit). The new diagnosis
- * only changes the prose + the priority hint feeding Phase A's floor.
+ * The generator keeps the scrambling_pct_sand metric and attaches standing when
+ * a row exists, so Phase A's StandingBar / counterfactual pipeline still runs;
+ * playerValue stays the sand-save % (the registered unit). A missing standing
+ * row no longer hides the card (audit row 28: requiresStanding=false).
  */
 
 import { staleDataSuffix } from '@/lib/coachhelm/v3/engine/window-honesty';
@@ -38,6 +38,7 @@ import {
   cohortAnchorSource,
   type CohortGender,
 } from '@/lib/coachhelm/v3/counterfactual/cohort-baselines';
+import { wilsonInterval } from '@/lib/coachhelm/v3/stats/intervals';
 import type {
   ComposedContent,
   GeneratorAggregate,
@@ -69,6 +70,59 @@ interface ScramblingAggregate extends GeneratorAggregate {
   cohort_gender: CohortGender;
   /** Player's own sand attempts per round (attempts / rounds_played). */
   attempts_per_round: number;
+  /** Denominator of `playerValue`: bunker HOLES (flag source) or sand shots
+   *  (heuristic source). This, not the shot count, is the card's n. */
+  save_n: number;
+  /** Numerator of `playerValue`. */
+  saves_made: number;
+  /** Which definition produced the save rate. */
+  save_source: 'hole_flag' | 'shot_heuristic';
+}
+
+/** Escape share below which the leak is getting out of the sand at all. */
+const ESCAPE_LEAK_RATE = 0.55;
+
+/**
+ * Pure failure-mode rule (audit row 28 — exported so the classification can be
+ * recomputed from raw shots in a test). ESCAPE when fewer than 55% of sand
+ * shots reached the green; LAG when most escape but at least half of the
+ * reached greens became 2-putts (with at least 3 reached); MIXED otherwise.
+ * A decision rule, not a statistical test — the card says what it measured.
+ */
+export function classifyBunkerFailureMode(input: {
+  attempts: number;
+  reachedN: number;
+  twoPuttAfterReachN: number;
+}): ScramblingFailureMode {
+  const { attempts, reachedN, twoPuttAfterReachN } = input;
+  if (attempts <= 0) return 'mixed';
+  if (reachedN / attempts < ESCAPE_LEAK_RATE) return 'escape';
+  if (reachedN >= 3 && twoPuttAfterReachN / reachedN >= 0.5) return 'lag';
+  return 'mixed';
+}
+
+/**
+ * Pure sand-save summary. With golf_holes.sand_save flags present, one save
+ * opportunity per bunker HOLE (a hole with two sand shots is one chance, not
+ * two — the old per-shot count double-counted it, audit row 28). Without any
+ * flag, the shot-derived fallback: a sand shot that reached the green and was
+ * followed by at most one putt.
+ */
+export function summarizeSandSaves(
+  shots: readonly SandShot[],
+): { made: number; n: number; source: 'hole_flag' | 'shot_heuristic' } {
+  const byHole = new Map<string, boolean>();
+  for (const s of shots) {
+    if (s.sand_save_flag === null || s.sand_save_flag === undefined) continue;
+    byHole.set(`${s.round_id}:${s.hole_number}`, s.sand_save_flag === true);
+  }
+  if (byHole.size > 0) {
+    let made = 0;
+    for (const v of byHole.values()) if (v) made += 1;
+    return { made, n: byHole.size, source: 'hole_flag' };
+  }
+  const made = shots.filter((s) => s.reached_green && s.putts_after <= 1).length;
+  return { made, n: shots.length, source: 'shot_heuristic' };
 }
 
 const LIE_TO_METRIC_ID: Record<ScramblingLie, MetricId> = {
@@ -79,7 +133,13 @@ export class ScramblingGenerator extends BaseGenerator<ScramblingAggregate> {
   readonly name = 'ScramblingGenerator';
   readonly insightType = 'scrambling';
   readonly category: InsightCategory = 'short_game';
-  readonly minSampleN = 5; // sand ATTEMPTS — a sand-save % off 1-2 bunker shots is noise
+  readonly minSampleN = 5; // save opportunities — a sand-save % off 1-2 bunker holes is noise
+
+  // Descriptive card (audit row 28): it measures the player's own bunker
+  // outcomes, so a missing scrambling_pct_sand standing row must not hide it.
+  // Standing still attaches (StandingBar, counterfactual) when it exists.
+  protected override readonly requiresStanding = false;
+  protected override readonly attachStandingWhenAvailable = true;
 
   readonly metricId: MetricId;
   readonly lie: ScramblingLie;
@@ -103,22 +163,12 @@ export class ScramblingGenerator extends BaseGenerator<ScramblingAggregate> {
     const reachedN = reached.length;
     const failedN = attempts - reachedN;
 
-    // Sand save % — reconcile with the displayed `sand_save_percentage`.
-    // Authoritative source = golf_holes.sand_save flag (the SAME the DB cache +
-    // stat-formulas use): attempt = flag non-null, made = flag === true. Fall
-    // back to a shot-derived up-and-down (reached the green AND <=1 putt after,
-    // holed counts) ONLY when no hole flags are recorded.
-    const flagged = shots.filter((s): s is SandShot & { sand_save_flag: boolean } =>
-      s.sand_save_flag !== null && s.sand_save_flag !== undefined,
-    );
-    let playerValue: number;
-    if (flagged.length > 0) {
-      const savesN = flagged.filter((s) => s.sand_save_flag === true).length;
-      playerValue = round((100 * savesN) / flagged.length, 1);
-    } else {
-      const savesN = reached.filter((s) => s.putts_after <= 1).length;
-      playerValue = round((100 * savesN) / attempts, 1);
-    }
+    // Sand save % — reconcile with the displayed `sand_save_percentage`:
+    // golf_holes.sand_save, one opportunity per bunker hole. Shot-derived
+    // fallback only when no flag is recorded (summarizeSandSaves).
+    const saves = summarizeSandSaves(shots);
+    if (saves.n === 0) return null;
+    const playerValue = round((100 * saves.made) / saves.n, 1);
 
     const leaves = reached
       .map((s) => s.leave_distance_feet)
@@ -133,21 +183,19 @@ export class ScramblingGenerator extends BaseGenerator<ScramblingAggregate> {
     // problem; if most reach but don't get up-and-down it's a LAG/proximity
     // problem (Nick: 90% reach, single-digit up-and-down → lag). Mixed when
     // neither clearly dominates.
-    const escapeRate = reachedN / attempts; // share that DID escape
-    let failureMode: ScramblingFailureMode;
-    if (escapeRate < 0.55) {
-      failureMode = 'escape';
-    } else if (reachedN >= 3 && twoPuttAfterReach / reachedN >= 0.5) {
-      failureMode = 'lag';
-    } else {
-      failureMode = 'mixed';
-    }
+    const failureMode = classifyBunkerFailureMode({
+      attempts,
+      reachedN,
+      twoPuttAfterReachN: twoPuttAfterReach,
+    });
 
     const lastRoundDate = await loadLastRoundDate(this.playerId);
 
     return {
       last_round_date: lastRoundDate,
-      sampleN: attempts,
+      // n is the rate's own denominator (bunker holes), so the base-class
+      // floor and the printed sample describe the same thing.
+      sampleN: saves.n,
       playerValue,
       lie: this.lie,
       attempts,
@@ -159,6 +207,9 @@ export class ScramblingGenerator extends BaseGenerator<ScramblingAggregate> {
       failure_mode: failureMode,
       cohort_gender: cohort.gender,
       attempts_per_round: attemptsPerRound,
+      save_n: saves.n,
+      saves_made: saves.made,
+      save_source: saves.source,
     };
   }
 
@@ -198,8 +249,15 @@ export class ScramblingGenerator extends BaseGenerator<ScramblingAggregate> {
         `dominates yet. Keep logging bunker shots to sharpen the read.`;
     }
 
+    // A 5-hole rate moves 20 points per hole; print its 95% range beside it.
+    const ci = wilsonInterval(agg.saves_made, agg.save_n);
+    const saveNoun = agg.save_source === 'hole_flag' ? 'bunker hole' : 'sand shot';
+    const rangeClause = ci
+      ? ` Sand saves: ${agg.saves_made} of ${agg.save_n} ${saveNoun}${agg.save_n === 1 ? '' : 's'} ` +
+        `(95% range ${Math.round(ci.low)}-${Math.round(ci.high)}%).`
+      : '';
     const content =
-      `${driver} ${agg.cohort_gender === 'womens'
+      `${driver}${rangeClause} ${agg.cohort_gender === 'womens'
         ? `Women's college sand-save target is ~${anchor}% (estimated).`
         : `Tour sand-save average is ~${anchor}%.`}` +
       staleDataSuffix(agg.last_round_date);
@@ -220,7 +278,7 @@ export class ScramblingGenerator extends BaseGenerator<ScramblingAggregate> {
         comparison_value: anchor,
         comparison_label: anchorLabel,
         comparison_source: cohortAnchorSource(agg.cohort_gender),
-        sample_n: agg.attempts,
+        sample_n: agg.save_n,
         // Phase E: scrambling is a SHOT-SOURCE engine — loadSandShots genuinely
         // windows the last 90 days (golf_shots via golf_rounds.round_date >= now-90d),
         // UNLIKE the cache-backed putt/par generators whose cache aggregates a
@@ -257,6 +315,11 @@ export class ScramblingGenerator extends BaseGenerator<ScramblingAggregate> {
           avg_leave_feet: agg.avg_leave_feet,
           reached_green_n: agg.reached_green_n,
           two_putt_after_reach_n: agg.two_putt_after_reach_n,
+          sand_shots: agg.attempts,
+          save_n: agg.save_n,
+          saves_made: agg.saves_made,
+          save_source: agg.save_source,
+          save_ci_95: ci ? { low: ci.low, high: ci.high } : null,
         },
       },
     };

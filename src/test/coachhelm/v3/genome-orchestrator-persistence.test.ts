@@ -210,3 +210,39 @@ describe('genome orchestrator — persistence guards (P2-21)', () => {
     expect(result.rounds_basis).toBe(1);
   });
 });
+
+describe('audit row 18 — per-dimension floors, not a blanket 8-round gate', () => {
+  it('a 6-round player gets par3_proficiency once they have 16+ par-3 holes', async () => {
+    // Median active player had 6 countable rounds in the window; the blanket
+    // 8-round gate blanked 35 of 57 players although par3_proficiency's own
+    // floor (16 par-3 holes) was met.
+    roundsResponse = {
+      data: Array.from({ length: 6 }, (_, i) => round(`r${i}`)),
+      error: null,
+    };
+    const holes = [];
+    for (let r = 0; r < 6; r++) {
+      for (let h = 1; h <= 18; h++) {
+        const par = h % 4 === 0 ? 3 : 4; // 4 par-3s per round → 24 par-3 holes
+        holes.push({ round_id: `r${r}`, hole_number: h, par, score: par + 1, gir: false });
+      }
+    }
+    fetchAllRowsResultMock
+      .mockResolvedValueOnce({ data: holes, error: null })
+      .mockResolvedValueOnce({ data: [], error: null });
+
+    const result = await computeGenomeForPlayer('player-six');
+    expect(result.persisted).toBe(true);
+    const payload = (upsertMock.mock.calls as unknown as Array<Array<{
+      vector: Record<string, { value: unknown }>;
+    }>>)[0]![0]!;
+    expect(typeof payload.vector.par3_proficiency!.value).toBe('number');
+    expect(typeof payload.vector.back_nine_delta!.value).toBe('number');
+  });
+
+  it('the weather stub is retired: no dimension that can never produce a value', async () => {
+    const { GENOME_DIMENSIONS } = await import('@/lib/coachhelm/v3/genome/registry');
+    expect(GENOME_DIMENSIONS.map((d) => d.id)).not.toContain('weather_sensitivity_stub');
+    expect(GENOME_DIMENSIONS.some((d) => d.neverAvailable === true)).toBe(false);
+  });
+});

@@ -86,6 +86,10 @@ export interface GoalSuggestionView {
   display_label: string;
   /** Resolved metric unit for formatting the suggested target. */
   unit: Unit;
+  /** The player's cohort (level) average: what the target aims toward. */
+  cohort_value?: number | null;
+  /** The Tour figure, shown as secondary context only (null when omitted). */
+  tour_value?: number | null;
 }
 
 export interface GoalsSectionProps {
@@ -121,7 +125,7 @@ export interface GoalsSectionProps {
  * ────────────────────────────────────────────────────────────────────────── */
 
 function SuggestionRow({ view }: { view: GoalSuggestionView }) {
-  const { suggestion, display_label, unit } = view;
+  const { suggestion, display_label, unit, cohort_value, tour_value } = view;
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
 
@@ -148,6 +152,14 @@ function SuggestionRow({ view }: { view: GoalSuggestionView }) {
     suggestion.suggested_target_value !== null
       ? formatValue(suggestion.suggested_target_value, unit)
       : '—';
+  // Owner decision (audit row 21): the target anchors to the cohort; the Tour
+  // is context behind it.
+  const contextText = [
+    cohort_value != null ? `Level avg ${formatValue(cohort_value, unit)}` : null,
+    tour_value != null ? `Tour ${formatValue(tour_value, unit)}` : null,
+  ]
+    .filter(Boolean)
+    .join(' · ');
 
   return (
     <Inset
@@ -162,6 +174,7 @@ function SuggestionRow({ view }: { view: GoalSuggestionView }) {
         </p>
         <p className="font-fw-mono text-caption tabular-nums text-text-tertiary">
           Target {targetText} · {suggestion.suggested_window_days}-day window
+          {contextText ? <span className="block">{contextText}</span> : null}
         </p>
       </div>
       {/* Touch target: md (44px min-height) unconditionally — not sm, which is

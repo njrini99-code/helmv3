@@ -33,6 +33,7 @@ export async function extractTemporalFeatures(
     .from('golf_rounds')
     .select('id, total_score, score_to_par, round_date, created_at')
     .eq('player_id', playerId)
+    .eq('is_test', false)
     .eq('status', 'completed')
     .gte('round_date', ninetyDaysAgo.toISOString())
     .order('round_date', { ascending: false });

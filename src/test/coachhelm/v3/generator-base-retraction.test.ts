@@ -51,7 +51,9 @@ let updateError: { message: string } | null = null;
 
 function makeSelectBuilder(table: string) {
   const rec: RecordedSelect = { table, filters: [] };
-  recordedSelects.push(rec);
+  // Only the insights-table sweep is under test; the row-22 provenance read
+  // (golf_rounds) is a separate, failure-silent lookup.
+  if (table === 'golf_coach_insights') recordedSelects.push(rec);
   const thenable = {
     eq: vi.fn((...args: unknown[]) => (rec.filters.push({ op: 'eq', args }), thenable)),
     like: vi.fn((...args: unknown[]) => (rec.filters.push({ op: 'like', args }), thenable)),
