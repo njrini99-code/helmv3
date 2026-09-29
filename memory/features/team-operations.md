@@ -42,7 +42,9 @@ Tasks let coaches assign work to players. Documents provide a team file library 
 
 - `src/components/golf/tasks/**`
 - `src/components/golf/documents/**`
-- `src/components/fairway/pages/travel/**` (FairwayTravel, FairwayNextTrip, FairwayTripCard, FairwayTripDetail; `travel-helpers.tsx` owns trip status + grouping)
+- `src/components/fairway/pages/travel/**`: FairwayTravel, FairwayNextTrip,
+  FairwayTripCard, FairwayTripDetail; `travel-helpers.tsx` owns trip status
+  and grouping
 - `src/components/golf/player-hub/**`
 - `src/components/fairway/pages/team-hub/**`
 
