@@ -32,7 +32,8 @@ rejected the result; this tree exists so that cannot happen again.
   needs owner approval before it is built. It is never a shrunken desktop.
   Follow `docs/clubhouse/MOBILE.md`, and never commit a native config that
   points anywhere but production.
-- **New design:** follow `docs/clubhouse/README.md` step by step.
+- **New design:** follow `docs/clubhouse/README.md` step by step. The
+  screen checklist is `docs/clubhouse/SCREENS.md`.
 - **Tracker:** `docs/clubhouse/PROGRESS.md`. Move a gate only with evidence.
 - **Before you report work done,** run `npm run clubhouse:check`.
 - **Reviews:** `ui-polish-reviewer` reviews against Fairway. Don't use it here;

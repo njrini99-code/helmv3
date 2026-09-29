@@ -53,7 +53,7 @@ Starting the next session:
 2. New desktop designs: follow `README.md`. New mobile designs: follow
    `MOBILE.md`. Build the foundation (tab bar, top bar, sheets) before any
    page's phone version.
-3. Waiting on designs: CoachHelm, Rounds, Practice, Lineups, Events,
+3. The screen-by-screen checklist is `SCREENS.md`. Waiting on designs: CoachHelm, Rounds, Practice, Lineups, Events,
    Scouting, the player app, the phone foundation (push prompt, pull to
    refresh), and each page's mobile design.
 4. Nothing gets applied: no migrations, no deploys, the flag stays off

@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { checkSource, checkProgress, checkCatalog } from '../check.mjs';
+import { checkSource, checkProgress, checkCatalog, checkScreens, readRebuiltRoutes } from '../check.mjs';
 
 test('flags Fairway imports and tokens', () => {
   const v = checkSource('src/clubhouse/x.tsx', "import { Button } from '@/components/fairway/controls';\nconst s = { color: 'var(--fw-ink)' };");
@@ -104,4 +104,23 @@ test('catalog: pages after the first eight use a two-digit prefix; an unknown pa
   assert.doesNotMatch(v, /CH-09001/);
   assert.doesNotMatch(v, /CH-09601/);
   assert.match(v, /no page number for "practice"/);
+});
+
+test('screens: ticks match the rebuilt routes, per role', () => {
+  const nav = "const SETTINGS_ROUTES = ['/golf/dashboard/settings'];\nexport const CH_REBUILT_ROUTES: Record<ChRole, readonly string[]> = {\n  coach: ['/golf/dashboard', '/golf/dashboard/roster', ...SETTINGS_ROUTES],\n  player: ['/golf/dashboard/calendar'],\n};";
+  const rebuilt = readRebuiltRoutes(nav);
+  assert.deepEqual([...rebuilt.coach], ['/golf/dashboard', '/golf/dashboard/roster', '/golf/dashboard/settings']);
+  const md = [
+    '## Coaches',
+    '- [x] **Home** `/` — a',
+    '- [ ] **Roster** `/roster` — b',
+    '- [x] **Travel** `/travel` — c',
+    '## Players',
+    '- [x] **Calendar** `/calendar` — d',
+  ].join('\n');
+  const v = checkScreens(md, rebuilt).join('\n');
+  assert.match(v, /Roster \(coach\) is rebuilt; tick it/);
+  assert.match(v, /Travel \(coach\) is ticked but/);
+  assert.match(v, /\/golf\/dashboard\/settings is rebuilt for the coach role but not listed/);
+  assert.doesNotMatch(v, /Home|Calendar/);
 });

@@ -5,6 +5,9 @@ behind the `golf_clubhouse_ui` flag. The rules that hold throughout are in
 `.claude/rules/clubhouse.md`. The tracker is `PROGRESS.md`, and
 `npm run clubhouse:check` enforces the steps marked (checked).
 
+Which screens exist, what each is for, and which are rebuilt: `SCREENS.md`.
+It is the checklist for the whole redesign.
+
 ## 1. Drop in the design
 
 - Put the new handoff files (`<Page>.html`, its `.jsx`/`.css`/data) and
@@ -33,7 +36,7 @@ behind the `golf_clubhouse_ui` flag. The rules that hold throughout are in
 | Screen components | `src/clubhouse/screens/<slug>/` |
 | Server loader (one pass, reports each failed read, never throws for a partial read) | `src/clubhouse/data/<slug>.ts` |
 | Route entry, flag check, not-on-team/no-team states | `src/clubhouse/routes/<slug>.tsx`, called from the page under `src/app/golf/(dashboard)/dashboard/…` through `isClubhouseFor` |
-| Nav: the page shows in Clubhouse only once listed | `CH_REBUILT_ROUTES` in `src/clubhouse/shell/nav.ts` |
+| Nav: the page shows in Clubhouse only once listed | `CH_REBUILT_ROUTES` in `src/clubhouse/shell/nav.ts`, and tick it in `SCREENS.md` (checked) |
 | Styles, `.ch-*` classes and `--ch-*` tokens only | `src/clubhouse/styles/<slug>.css` |
 | Preview with sample data and every state (`?state=empty\|failed\|partial\|loading`) | `src/app/clubhouse-preview/[screen]/page.tsx`, fixtures in `src/clubhouse/preview/` |
 | Mutations go through `useAction` (offline, slow, error toast, haptic, Sentry) | `src/clubhouse/lib/` |

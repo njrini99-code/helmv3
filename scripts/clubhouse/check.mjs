@@ -241,6 +241,45 @@ export function checkCatalog({ catalogs, sources, tests, pages = CATALOG_PAGE })
   return v;
 }
 
+// ── Screens list (docs/clubhouse/SCREENS.md) ──
+
+/** The rebuilt routes per role, read from CH_REBUILT_ROUTES in src/clubhouse/shell/nav.ts. */
+export function readRebuiltRoutes(navTs) {
+  const strings = (body) => [...body.matchAll(/'([^']+)'/g)].map((m) => m[1]);
+  const settings = strings(/const SETTINGS_ROUTES = \[([^\]]*)\]/.exec(navTs)?.[1] ?? '');
+  const block = /CH_REBUILT_ROUTES[^=]*=\s*\{([\s\S]*?)\n\};/.exec(navTs)?.[1] ?? '';
+  const role = (name) => {
+    const body = new RegExp(`${name}:\\s*\\[([^\\]]*)\\]`).exec(block)?.[1] ?? '';
+    return new Set([...strings(body), ...(body.includes('...SETTINGS_ROUTES') ? settings : [])]);
+  };
+  return { coach: role('coach'), player: role('player') };
+}
+
+/**
+ * Each line `- [x] **Name** `/route` — purpose` under "## Coaches" or
+ * "## Players" is ticked exactly when its route is rebuilt for that role, and
+ * every rebuilt route has a line.
+ */
+export function checkScreens(md, rebuilt) {
+  const v = [];
+  const listed = { coach: new Set(), player: new Set() };
+  let role = null;
+  for (const line of md.split('\n')) {
+    if (/^## Coaches/.test(line)) role = 'coach';
+    else if (/^## Players/.test(line)) role = 'player';
+    else if (/^## /.test(line)) role = null;
+    const m = /^- \[( |x)\] \*\*(.+?)\*\* `(\/[^`]*)`/.exec(line);
+    if (!m || !role) continue;
+    const route = m[3] === '/' ? '/golf/dashboard' : `/golf/dashboard${m[3]}`;
+    listed[role].add(route);
+    const ticked = m[1] === 'x';
+    if (ticked && !rebuilt[role].has(route)) v.push(`SCREENS.md: ${m[2]} (${role}) is ticked but ${route} is not in CH_REBUILT_ROUTES`);
+    if (!ticked && rebuilt[role].has(route)) v.push(`SCREENS.md: ${m[2]} (${role}) is rebuilt; tick it`);
+  }
+  for (const r of ['coach', 'player']) for (const route of rebuilt[r]) if (!listed[r].has(route)) v.push(`SCREENS.md: ${route} is rebuilt for the ${r} role but not listed`);
+  return v;
+}
+
 function main() {
   const argRoot = process.argv.indexOf('--root');
   const root = argRoot > -1 ? process.argv[argRoot + 1] : join(fileURLToPath(new URL('.', import.meta.url)), '../..');
@@ -265,6 +304,10 @@ function main() {
       : {};
     violations.push(...checkCatalog({ catalogs, sources, tests }));
   }
+
+  const screens = join(root, 'docs/clubhouse/SCREENS.md');
+  if (!existsSync(screens)) violations.push('docs/clubhouse/SCREENS.md is missing');
+  else violations.push(...checkScreens(readFileSync(screens, 'utf8'), readRebuiltRoutes(readFileSync(join(root, 'src/clubhouse/shell/nav.ts'), 'utf8'))));
 
   if (violations.length) {
     console.error(`clubhouse:check found ${violations.length} violation(s):`);
