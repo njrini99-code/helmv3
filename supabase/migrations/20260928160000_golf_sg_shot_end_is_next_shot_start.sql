@@ -74,6 +74,7 @@ BEGIN
         WHERE n.hole_id = gs.hole_id AND n.shot_number > gs.shot_number
           AND NOT COALESCE(n.is_penalty, FALSE)
           AND n.distance_to_hole_before IS NOT NULL AND n.distance_to_hole_before > 0
+          AND (n.lie_before IS NOT NULL OR n.shot_type = 'putting')
         ORDER BY n.shot_number
         LIMIT 1
       ) nx ON TRUE

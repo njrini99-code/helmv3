@@ -274,3 +274,43 @@ describe('sgBaselineLabelForScale (audit row 46)', () => {
     expect(sgBaselineLabelForScale(1.083)).toBe('LPGA Tour');
   });
 });
+
+import { withNextShotEnd, attachShotStrokesGained as attachForRow1 } from '../shot-strokes-gained';
+
+describe('withNextShotEnd (audit row 1)', () => {
+  const base = {
+    hole_number: 1,
+    shot_type: 'approach',
+    result: 'rough',
+    putt_made: null,
+    is_penalty: false,
+    distance_unit_before: 'yards',
+    distance_unit_after: 'yards',
+  };
+  const s1 = { ...base, shot_number: 1, shot_type: 'tee', lie_before: 'tee', distance_to_hole_before: 400, lie_after: 'rough', distance_to_hole_after: 150 };
+  const pen = { ...base, shot_number: 2, shot_type: 'penalty', is_penalty: true, lie_before: 'rough', distance_to_hole_before: 150, lie_after: 'penalty', distance_to_hole_after: 150 };
+  const s3 = { ...base, shot_number: 3, lie_before: 'fairway', distance_to_hole_before: 140, lie_after: 'green', distance_to_hole_after: 20, distance_unit_after: 'feet' };
+  const s4 = { ...base, shot_number: 4, shot_type: 'putting', lie_before: 'green', distance_to_hole_before: 20, distance_unit_before: 'feet', lie_after: 'green', distance_to_hole_after: 0, result: 'hole', putt_made: true };
+  const shots = [s1, pen, s3, s4] as never[];
+
+  it('ends a shot at the next non-penalty shot start, skipping penalty rows', () => {
+    const r = withNextShotEnd(s1 as never, shots) as typeof s1;
+    expect(r.lie_after).toBe('fairway');
+    expect(r.distance_to_hole_after).toBe(140);
+  });
+
+  it('keeps holed shots and penalty rows unchanged', () => {
+    expect(withNextShotEnd(s4 as never, shots)).toBe(s4);
+    expect(withNextShotEnd(pen as never, shots)).toBe(pen);
+  });
+
+  it('per-shot SG on a lie-break hole telescopes: non-penalty shots sum to expected(first) - (strokes - penalties)', () => {
+    const withSg = attachForRow1(shots as never[]);
+    const nonPenalty = withSg.filter((s) => !(s as { is_penalty?: boolean }).is_penalty);
+    const sum = nonPenalty.reduce((a, s) => a + (s.sg ?? 0), 0);
+    // Tee (400y) -> fairway 140y -> green 20ft -> holed: expected(tee 400) - 3.
+    const teeOnly = attachForRow1([{ ...s1, lie_after: 'green', distance_to_hole_after: 0, result: 'hole', putt_made: true }] as never[]);
+    const expectedFirstMinusOne = teeOnly[0]!.sg!; // = E(tee 400) - 0 - 1
+    expect(sum).toBeCloseTo(expectedFirstMinusOne - 2, 6);
+  });
+});

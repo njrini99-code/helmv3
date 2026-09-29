@@ -65,7 +65,38 @@ export function attachShotStrokesGained<T extends RawShot>(
   shots: T[],
   scale = 1,
 ): (T & { sg: number | null })[] {
-  return shots.map((shot) => ({ ...shot, sg: computeShotStrokesGained(shot, scale) }));
+  return shots.map((shot) => ({
+    ...shot,
+    sg: computeShotStrokesGained(withNextShotEnd(shot, shots), scale),
+  }));
+}
+
+/**
+ * A shot ends where the next non-penalty shot on the same hole starts (audit
+ * row 1, mirrored in recalculate_round_strokes_gained by migration
+ * 20260928160000). When a shot's own recorded end disagrees with the next
+ * shot's start (a lie break), using its own end makes per-shot SG stop
+ * summing to the hole's expected-minus-strokes. Holed shots, penalty rows and
+ * a hole's last shot keep their recorded end.
+ */
+export function withNextShotEnd<T extends RawShot>(shot: T, shots: readonly T[]): T {
+  if (shot.is_penalty) return shot;
+  if (shot.putt_made === true || shot.result === 'holed' || shot.result === 'hole') return shot;
+  let next: T | null = null;
+  for (const s of shots) {
+    if (s.hole_number !== shot.hole_number || s.shot_number <= shot.shot_number) continue;
+    if (s.is_penalty) continue;
+    if (s.distance_to_hole_before == null || !(s.distance_to_hole_before > 0)) continue;
+    if (!s.lie_before && s.shot_type !== 'putting') continue; // no usable start state
+    if (!next || s.shot_number < next.shot_number) next = s;
+  }
+  if (!next) return shot;
+  return {
+    ...shot,
+    lie_after: next.shot_type === 'putting' ? 'green' : next.lie_before,
+    distance_to_hole_after: next.distance_to_hole_before,
+    distance_unit_after: next.distance_unit_before ?? null,
+  };
 }
 
 /** Sum of a hole's per-shot Strokes Gained, plus how complete that sum is —
