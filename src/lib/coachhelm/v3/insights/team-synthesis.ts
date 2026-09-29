@@ -44,15 +44,29 @@ import type { GroupedSignal, SignalSeverity } from '@/lib/coachhelm/signal-group
  */
 export const TEAM_SIGNAL_MIN_PLAYERS = 3;
 
-/** Combined strokes/round → severity. Grounded in the measured spread above:
- *  Guilford's largest real cluster is 18 strokes and its smallest reportable
- *  one is ~5, so the bands sit inside the range the data actually produces
- *  rather than at invented round numbers. */
-function severityForCombined(combined: number): SignalSeverity {
-  if (combined >= 12) return 'urgent';
-  if (combined >= 6) return 'high';
-  if (combined >= 3) return 'medium';
+/**
+ * Severity from the PER-PLAYER leak (combined / players), not the roster sum.
+ *
+ * The first bands (combined >= 12 / 6 / 3) were set from one 18-stroke
+ * Guilford cluster that no longer exists; on 2026-09-28 the largest combined
+ * card was 8.00, so `urgent` could not occur, and a sum grows with roster
+ * size, so a big roster read severe from headcount alone. Recalibrated from
+ * the live distribution that day (16 cards over players with a round in the
+ * last 60 days): per-player mean |impact| p25 0.52, p75 0.90, p90 1.43, max
+ * 2.00 strokes/round. Bands sit at those quantiles.
+ */
+function severityForPerPlayer(perPlayer: number): SignalSeverity {
+  if (perPlayer >= 1.5) return 'urgent';
+  if (perPlayer >= 0.9) return 'high';
+  if (perPlayer >= 0.5) return 'medium';
   return 'low';
+}
+
+export interface SynthesizeOptions {
+  /** Players with a countable round in the recent window. When given, a
+   *  player outside it contributes nothing: a card must not total the leaks
+   *  of players who have stopped playing. */
+  activePlayerIds?: ReadonlySet<string>;
 }
 
 function metricOf(signal: GroupedSignal): { id: string; label: string } | null {
@@ -73,7 +87,7 @@ function metricOf(signal: GroupedSignal): { id: string; label: string } | null {
  * function's own output back into itself, and a null/zero impact is not a leak
  * to pool. A player carrying the same metric twice counts once.
  */
-export function synthesizeTeamSignals(signals: GroupedSignal[]): GroupedSignal[] {
+export function synthesizeTeamSignals(signals: GroupedSignal[], opts: SynthesizeOptions = {}): GroupedSignal[] {
   const byMetric = new Map<
     string,
     { label: string; playerImpact: Map<string, number> }
@@ -81,6 +95,7 @@ export function synthesizeTeamSignals(signals: GroupedSignal[]): GroupedSignal[]
 
   for (const s of signals) {
     if (s.playerId === null) continue;
+    if (opts.activePlayerIds && !opts.activePlayerIds.has(s.playerId)) continue;
     if (s.strokeImpact === null || !Number.isFinite(s.strokeImpact)) continue;
     const impact = Math.abs(s.strokeImpact);
     if (impact <= 0) continue;
@@ -109,7 +124,7 @@ export function synthesizeTeamSignals(signals: GroupedSignal[]): GroupedSignal[]
       // rows already in the list — see the `kind` docs in signal-grouping.ts.
       kind: 'team_synthesis',
       category: metricId,
-      severity: severityForCombined(rounded),
+      severity: severityForPerPlayer(combined / players),
       title: `Team leak: ${entry.label}`,
       claim:
         `${players} players are losing a combined ${rounded.toFixed(2)} strokes per round on ` +

@@ -4,24 +4,23 @@ import { getGolfSessionProfile } from '@/lib/auth/session';
 import { getTeamOverview, getTeamCategoryInsights } from '@/app/golf/actions/team-category-insights';
 import { getAlertCounts } from '@/app/golf/actions/alerts';
 import { getSignalGroups } from '@/app/golf/actions/signal-groups';
-import {
-  getCoachHelmOverview,
-  getInsightEffectiveness,
-  getPredictionPerformance,
-  getPatternImpact,
-} from '@/app/golf/actions/coachhelm-analytics';
 import { fairwayScope } from '@/lib/redesign/flag';
 import {
   FeatureUnavailable,
-  type FairwayEffectivenessProps,
   type PlayersGridPlayer,
   type PlayersGridFocusArea,
   type PlayersGridStats,
 } from '@/components/fairway';
 import { resolveCoachActiveTeamIdForRequest } from '@/lib/golf/dashboard-request-cache';
 import { surfaceName } from '@/lib/golf/surface-registry';
-import { CoachIntelligenceHome } from '@/components/golf/coachhelm/home/CoachIntelligenceHome';
+import {
+  CoachIntelligenceHome,
+  type CoachChatTabData,
+} from '@/components/golf/coachhelm/home/CoachIntelligenceHome';
 import { getCoachChatContext, getCoachProgramPulse } from '@/lib/coachhelm/v3/chat/request-cache';
+import { listConversations, listMessages } from '@/lib/coachhelm/v3/chat/persistence';
+import { restoreUIMessages } from '@/lib/coachhelm/v3/chat/restore';
+import { generalOpeners, coverageLine } from '@/lib/coachhelm/v3/chat/program-pulse';
 import { getTeamCausalRelationships, type CausalRelationshipRow } from '@/app/golf/actions/causal-relationships';
 import { loadCoachIntents } from '@/lib/coachhelm/v3/intent/loader';
 import type { CoachPlayerIntent } from '@/lib/coachhelm/v3/intent/types';
@@ -34,6 +33,8 @@ import type { FairwayGoalCardData } from '@/components/fairway/pages/coachhelm/F
 import { logServerError } from '@/lib/server-error-logger';
 import { describeError } from '@/lib/utils/describe-error';
 import { todayIsoInZone } from '@/lib/golf/timezone';
+import { loadTeamIntelligence } from '@/lib/golf/team-intelligence/loader';
+import type { TeamIntelligenceResult } from '@/lib/golf/team-intelligence/types';
 import { isFlagEnabled } from '@/lib/flags';
 import { fromUntyped } from '@/lib/supabase/untyped';
 import { computeEvidenceRevisionStatuses } from '@/lib/coachhelm/focus-areas/load-evidence-revision-status';
@@ -75,8 +76,7 @@ export const metadata = {
 
 // The coach Brief reflects team data that PLAYERS change (logging rounds). Force
 // dynamic so the route is always freshly rendered and never served from a stale
-// Full Route Cache entry — the Triage Desk absorbs Signals/Players/Effectiveness
-// too, all of which are similarly live/mutable.
+// Full Route Cache entry. Home, The Lab and Chat are all live/mutable.
 export const dynamic = 'force-dynamic';
 
 interface IntelligencePageProps {
@@ -89,6 +89,9 @@ interface IntelligencePageProps {
     // one deep-link param this page still resolves server-side (F133,
     // forwarded by the `/development` redirect shim).
     player?: string;
+    // The Chat tab's open conversation (written by `AskSurface` once a new
+    // thread has an id), so a reload or a shared link reopens that thread.
+    c?: string;
   }>;
 }
 
@@ -148,24 +151,43 @@ export default async function IntelligenceDashboardPage({ searchParams }: Intell
     redirect('/golf/dashboard');
   }
 
-  // Started here and awaited nowhere on the critical path: the four
-  // Effectiveness-view reads stream to the client as one promise (the
-  // Effectiveness tab suspends on it only if opened before it lands), so the
-  // Brief header and the signal queue never wait on them. `.catch` → null so
-  // the promise always RESOLVES — a rejection would throw through `use()`
-  // into error.tsx and take the whole Brief down, where each read already
-  // degrades to "no data" on its own.
-  const effectivenessReads = Promise.all([
-    getCoachHelmOverview(teamId),
-    getInsightEffectiveness(teamId),
-    getPredictionPerformance(teamId),
-    getPatternImpact(teamId),
-  ]).catch(() => null);
   const rosterPromise = loadPlayersDrillData(supabase, teamId);
+  // Read once (Promise.resolve runs the builder a single time) and shared by
+  // the due-for-review day and Home's Team intelligence season window.
+  const teamTimezonePromise = Promise.resolve(
+    supabase.from('golf_team_settings').select('timezone').eq('team_id', teamId).maybeSingle(),
+  );
+  // Home's Team intelligence: season rounds + tracked shots. Chained on the
+  // timezone so "today" is the team's day; never rejects (a failed read
+  // becomes an honest notice on Home, not a blank page).
+  const teamIntelligencePromise: Promise<TeamIntelligenceResult> = teamTimezonePromise
+    .then((res) =>
+      loadTeamIntelligence(
+        supabase,
+        teamId,
+        todayIsoInZone((res.data as { timezone?: string } | null)?.timezone || 'America/New_York'),
+      ),
+    )
+    .then(
+      (data): TeamIntelligenceResult => ({ success: true, data }),
+      (error: unknown): TeamIntelligenceResult => {
+        void logServerError(
+          `[intelligence] team intelligence read failed for team ${teamId}: ${describeError(error)}`,
+          { action: 'intelligence.loadTeamIntelligence', featureArea: 'coachhelm' },
+          'error',
+        );
+        return { success: false, error: 'Team intelligence did not load. The rest of the page is unaffected.' };
+      },
+    );
+  // The Chat tab's thread, history rail and openers. Resolved on every load,
+  // not only on `?view=chat`: switching tabs is client-side, so the tab must
+  // already have its data when the coach opens it. Never rejects (degrades to
+  // null, and the tab then says chat is unavailable).
+  const chatPromise = loadChatTab(supabase, sp.c ?? null);
 
   // ── Home-gate + Triage Desk data — `getTeamOverview` still drives the
   // overview-failure-vs-empty-roster gate (Triage Desk spec §5); `alertCounts`
-  // still feeds the Players/Effectiveness drills' `signalCount` badge
+  // still feeds the deep-link-only Players view's `signalCount` badge
   // (unchanged from before this rebuild); `getSignalGroups` is the FROZEN
   // contract the Triage Desk itself reads — one unfiltered fetch of every
   // open signal for the team, with view/queue filtering happening entirely
@@ -186,6 +208,8 @@ export default async function IntelligenceDashboardPage({ searchParams }: Intell
     teamTimezoneResult,
     roster,
     command,
+    chat,
+    teamIntelligenceResult,
   ] = await Promise.all([
     getTeamOverview(teamId),
     getAlertCounts(coach.id),
@@ -202,7 +226,7 @@ export default async function IntelligenceDashboardPage({ searchParams }: Intell
     getTeamCategoryInsights(teamId),
     // #1998 review — "due for review" needs the TEAM's wall-clock calendar
     // day, not the server's UTC day (dashboard-data.ts's own pattern).
-    supabase.from('golf_team_settings').select('timezone').eq('team_id', teamId).maybeSingle(),
+    teamTimezonePromise,
     // The whole Players-drill chain (roster → players → focus areas/stats/
     // goals/standing → everything keyed off focus areas) runs BESIDE this
     // batch rather than after it: it needs only teamId. It stays on the
@@ -210,6 +234,8 @@ export default async function IntelligenceDashboardPage({ searchParams }: Intell
     // the roster.
     rosterPromise,
     commandPromise,
+    chatPromise,
+    teamIntelligencePromise,
   ]);
   const alertCounts = countsRes.success ? (countsRes.counts ?? null) : null;
   const signalGroups = signalGroupsResult.success ? signalGroupsResult.groups : [];
@@ -353,22 +379,6 @@ export default async function IntelligenceDashboardPage({ searchParams }: Intell
     }
   }
 
-  const signalCount = alertCounts?.critical ?? null;
-  const effectivenessDrillProps: Promise<FairwayEffectivenessProps> = effectivenessReads.then((reads) => {
-    const [coachHelmOverviewResult, effectivenessResult, performanceResult, patternResult] = reads ?? [];
-    return {
-      teamId,
-      coachId: coach.id,
-      initialOverview: coachHelmOverviewResult?.success ? coachHelmOverviewResult.data : undefined,
-      initialEffectiveness: effectivenessResult?.success ? effectivenessResult.data : undefined,
-      initialPerformance: performanceResult?.success ? performanceResult.data : undefined,
-      initialPatternImpact: patternResult?.success ? patternResult.data : undefined,
-      signalCount,
-      initialView: 'cockpit',
-      initialRange: '30d',
-    };
-  });
-
   return (
     <div className={fairwayScope('min-h-full bg-canvas bg-canvas-gradient font-fw-sans text-text-primary')}>
       <div className="mx-auto w-full max-w-[1200px] px-4 py-6 md:px-6">
@@ -376,6 +386,7 @@ export default async function IntelligenceDashboardPage({ searchParams }: Intell
           command={command}
           overview={overviewResult}
           categoryInsights={categoryInsightsResult}
+          teamIntelligence={teamIntelligenceResult}
           coachId={coach.id}
           groups={signalGroups}
           scannedAt={signalGroupsResult.scannedAt}
@@ -400,7 +411,7 @@ export default async function IntelligenceDashboardPage({ searchParams }: Intell
             practiceLogEnabled,
             followUpRoundCounts,
           }}
-          effectivenessDrillProps={effectivenessDrillProps}
+          chat={chat}
         />
       </div>
     </div>
@@ -659,6 +670,53 @@ async function loadCommand(
       pulse,
     };
   } catch {
+    return null;
+  }
+}
+
+// ── The Chat tab: the same inputs the standalone Ask page resolves
+// (`coachhelm/chat/page.tsx`), for the conversation embedded in this page.
+// The context and pulse are the request-cached getters `loadCommand` also
+// reads, so they cost nothing extra here. Degrades to null rather than
+// redirecting: a coach whose chat context cannot be resolved still gets Home
+// and The Lab, and the tab says chat is unavailable. ─────────────────────────
+async function loadChatTab(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  requestedConversationId: string | null,
+): Promise<CoachChatTabData | null> {
+  try {
+    const [ctx, pulse, conversations, history] = await Promise.all([
+      getCoachChatContext(),
+      // Already null on failure: the thread still works without the openers.
+      getCoachProgramPulse(),
+      listConversations(supabase),
+      requestedConversationId ? listMessages(supabase, requestedConversationId) : Promise.resolve([]),
+    ]);
+    return {
+      teamName: ctx.team_name,
+      players: ctx.roster.map((p) => ({ id: p.id, name: p.name })),
+      // Only the generic openers as pills: each pulse finding carries its own
+      // ask on its own row (see the Ask page for why they are not merged).
+      suggestions: pulse ? generalOpeners(pulse, ctx.team_name) : [],
+      pulseItems: pulse?.items ?? [],
+      coverage: pulse ? coverageLine(pulse) : null,
+      // Formatted here, in the team's zone: a client-side format of the same
+      // instant disagrees with the server render on hydration.
+      asOfLabel: pulse
+        ? new Intl.DateTimeFormat('en-US', { hour: 'numeric', minute: '2-digit', timeZone: ctx.timezone }).format(
+            new Date(pulse.as_of),
+          )
+        : null,
+      conversations,
+      conversationId: requestedConversationId,
+      initialMessages: restoreUIMessages(history),
+    };
+  } catch (err) {
+    void logServerError(
+      `[intelligence] chat tab context failed; the Chat tab will say it is unavailable: ${describeError(err)}`,
+      { action: 'intelligence.loadChatTab', featureArea: 'coachhelm' },
+      'warning',
+    );
     return null;
   }
 }

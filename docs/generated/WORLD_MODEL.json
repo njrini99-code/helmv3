@@ -12561,6 +12561,11 @@
         {
           "kind": "import_graph",
           "path": "src/app/golf/actions/signal-groups.ts",
+          "anchor": "src/lib/supabase/fetch-all-rows"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/signal-groups.ts",
           "anchor": "src/lib/auth/resilient-get-user"
         },
         {
@@ -12669,6 +12674,16 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/app/golf/actions/signal-groups.ts",
+          "anchor": "src/lib/coachhelm/roster-scope"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/signal-groups.ts",
+          "anchor": "src/lib/coachhelm/recent-players"
+        },
+        {
+          "kind": "import_graph",
           "path": "src/app/golf/actions/team-category-insights.ts",
           "anchor": "src/lib/coachhelm/trend"
         },
@@ -12676,6 +12691,16 @@
           "kind": "import_graph",
           "path": "src/app/golf/actions/team-category-insights.ts",
           "anchor": "src/app/golf/actions/insight-delivery"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/team-category-insights.ts",
+          "anchor": "src/lib/coachhelm/recent-players"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/team-category-insights.ts",
+          "anchor": "src/lib/coachhelm/team-shot-analysis"
         },
         {
           "kind": "import_graph",
@@ -12802,6 +12827,16 @@
           "kind": "import_graph",
           "path": "src/app/golf/actions/team-category-insights.ts",
           "anchor": "src/lib/golf/resolve-team"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/team-category-insights.ts",
+          "anchor": "src/lib/golf/team-intelligence/strokes-available"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/team-category-insights.ts",
+          "anchor": "src/lib/golf/team-intelligence/types"
         },
         {
           "kind": "import_graph",
@@ -12948,6 +12983,11 @@
           "kind": "import_graph",
           "path": "src/app/golf/actions/team-category-insights.ts",
           "anchor": "src/lib/coachhelm/v3/brief/assemble"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/team-category-insights.ts",
+          "anchor": "src/lib/coachhelm/v3/insight-visibility"
         },
         {
           "kind": "import_graph",
@@ -13996,6 +14036,11 @@
           "kind": "import_graph",
           "path": "src/lib/coachhelm/composite-rating.ts",
           "anchor": "src/lib/golf/form-score"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/recent-players.ts",
+          "anchor": "src/lib/golf/round-countable"
         }
       ]
     },
@@ -15686,6 +15731,16 @@
           "kind": "import_graph",
           "path": "src/lib/golf/stats-action-context.ts",
           "anchor": "src/lib/auth/verify-player-access"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/golf/team-intelligence/loader.ts",
+          "anchor": "src/lib/supabase/server"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/golf/team-intelligence/loader.ts",
+          "anchor": "src/lib/supabase/fetch-all-rows"
         },
         {
           "kind": "import_graph",
@@ -17998,6 +18053,11 @@
           "kind": "import_graph",
           "path": "src/lib/coachhelm/v3/chat/action-planners.ts",
           "anchor": "src/lib/coachhelm/focus-areas/duplicate-guard"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/chat/program-pulse.ts",
+          "anchor": "src/lib/coachhelm/recent-players"
         },
         {
           "kind": "import_graph",

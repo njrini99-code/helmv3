@@ -11,9 +11,18 @@
  * Renders nothing when `evidence` is null/undefined so legacy pre-phase
  * insight rows don't break the UI.
  *
+ * Partial evidence renders only what it carries. The blob is JSONB, so the
+ * `InsightEvidence` type is a producer promise, not a guarantee: a roster
+ * roll-up (`team_synthesis`) carries only metric/label/impact/player count,
+ * and the Lab dossier printed "undefined putts · undefined days" and
+ * "undefined You · undefined" off it. Every fact below is gated on its own
+ * field being a finite number (or a present string), and a blob with none
+ * of them renders nothing rather than an empty shell.
+ *
  * Design contract:
  * docs/superpowers/plans/2026-04-22-insight-quality/00-design-contract.md
  */
+import { Fragment, type ReactNode } from 'react';
 import { cn } from '@/lib/utils';
 import { confidenceLabel } from '@/lib/coachhelm/confidence-label';
 import type {
@@ -26,6 +35,17 @@ import type { EvidenceStanding } from '@/lib/coachhelm/v2/insights/standing-inje
 import { applyTourBasis } from '@/lib/coachhelm/v3/standing/tour-basis';
 import { DiagnosisPanel } from './DiagnosisPanel';
 import { formatValue } from './format-value';
+
+/** A real, finite number. `typeof NaN === 'number'`, so the typeof check alone
+ *  would let a NaN from a malformed blob through to the axis math. */
+function isFiniteNumber(value: unknown): value is number {
+  return typeof value === 'number' && Number.isFinite(value);
+}
+
+const ONE_DECIMAL = new Intl.NumberFormat('en-US', {
+  minimumFractionDigits: 1,
+  maximumFractionDigits: 1,
+});
 
 /**
  * W15: When v2 generators have injected `evidence.standing` (W14), render
@@ -76,8 +96,29 @@ export interface EvidencePanelProps {
   evidence: InsightEvidence | null | undefined;
   /** When true render the single-row summary; when false render the full grid. */
   compact?: boolean;
+  /** Compact only: leave the strokes/round fact out, for a host that already
+   *  headlines the same figure (the Lab dossier's impact readout). */
+  omitImpact?: boolean;
   /** Optional test-id hook so integrators can target the wrapper in e2e specs. */
   'data-testid'?: string;
+}
+
+/**
+ * Whether the compact panel would render anything for this blob — so a host
+ * can decide to draw its own "Evidence" heading without leaving it orphaned
+ * above a panel that returned null. Mirrors the gates inside the compact
+ * branch below; keep the two in step.
+ */
+export function evidenceHasFacts(
+  evidence: InsightEvidence | null | undefined,
+  { omitImpact = false }: { omitImpact?: boolean } = {},
+): boolean {
+  if (!evidence) return false;
+  if (tryRenderV3Standing(evidence)) return true;
+  if (isFiniteNumber(evidence.your_value) && isFiniteNumber(evidence.comparison_value)) return true;
+  if (isFiniteNumber(evidence.sample_n) || isFiniteNumber(evidence.window_days)) return true;
+  if (isFiniteNumber(evidence.confidence)) return true;
+  return !omitImpact && Math.round(Math.abs(sanitizeStrokesImpact(evidence.strokes_impact)) * 10) > 0;
 }
 
 const SHORT_MONTHS = [
@@ -253,7 +294,7 @@ function BenchmarkScale({ evidence }: { evidence: InsightEvidence }) {
     },
   ];
   if (
-    typeof evidence.secondary_value === 'number' &&
+    isFiniteNumber(evidence.secondary_value) &&
     evidence.secondary_value !== evidence.comparison_value
   ) {
     ticks.push({
@@ -287,7 +328,9 @@ function BenchmarkScale({ evidence }: { evidence: InsightEvidence }) {
     pct: ((t.value - axisMin) / axisSpan) * 100,
   }));
 
-  const youColor = 'bg-accent-fill text-text-on-accent-fill ring-2 ring-primary-200';
+  // A surface-coloured halo separates the marker from the axis; a green halo
+  // read as one of the outline rings the Golf theme no longer draws.
+  const youColor = 'bg-accent-fill text-text-on-accent-fill ring-2 ring-surface';
   const primaryColor = 'bg-warm-700 text-white ring-1 ring-warm-200/45';
   // Secondary benchmark: a hollow marker (no violet, off-palette — HUB-09).
   const secondaryColor = 'bg-surface text-text-primary ring-2 ring-border-control';
@@ -343,61 +386,104 @@ function BenchmarkScale({ evidence }: { evidence: InsightEvidence }) {
 export function EvidencePanel({
   evidence,
   compact = true,
+  omitImpact = false,
   'data-testid': testId,
 }: EvidencePanelProps) {
   // Defensive: an insight minted before this phase will have no evidence
   // JSON. Render nothing rather than a half-populated panel.
   if (!evidence) return null;
 
-  const confPct = Math.round(Math.max(0, Math.min(1, evidence.confidence)) * 100);
+  const hasConfidence = isFiniteNumber(evidence.confidence);
+  const confPct = hasConfidence ? Math.round(Math.max(0, Math.min(1, evidence.confidence)) * 100) : 0;
   // Players see a word ("Solid read"), not "100% confidence": the value is a
   // sample-size ramp (e.g. min(n/30, 1)), not certainty about the claim.
-  const confWord = confidenceLabel(evidence.confidence, evidence.sample_n) ?? '—';
-  const colors = confidenceColor(evidence.confidence);
+  const confWord = hasConfidence ? (confidenceLabel(evidence.confidence, evidence.sample_n) ?? '—') : null;
+  const colors = confidenceColor(hasConfidence ? evidence.confidence : 0);
 
   // FID-5: clamp the stroke magnitude at render so an impossible upstream
   // value (stale rows have carried 40+ strokes/round) never reaches the eye.
+  const hasImpact = isFiniteNumber(evidence.strokes_impact);
   const safeImpact = sanitizeStrokesImpact(evidence.strokes_impact);
 
   // W15: prefer v3 StandingBar when v14 generators have populated
   // evidence.standing AND the metric_id resolves to a canonical v3 metric.
-  // Falls through to the legacy BenchmarkScale for v2-only insights.
+  // Falls through to the legacy BenchmarkScale for v2-only insights — but
+  // only when BOTH anchors exist: a scale with no ticks is not a scale.
   const v3Standing = tryRenderV3Standing(evidence);
+  const hasYourValue = isFiniteNumber(evidence.your_value);
+  const hasComparison = isFiniteNumber(evidence.comparison_value);
+  const hasSample = isFiniteNumber(evidence.sample_n);
+  const hasWindow = isFiniteNumber(evidence.window_days);
+  const metricKey = typeof evidence.metric === 'string' ? evidence.metric : '';
 
   if (compact) {
-    return (
-      <div
-        data-testid={testId ?? 'evidence-panel-compact'}
-        className={cn('mt-3 space-y-2.5')}
-      >
-        {v3Standing ?? <BenchmarkScale evidence={evidence} />}
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-caption text-text-tertiary tabular-nums">
-          <span data-testid="evidence-sample">
-            {formatSample(evidence.sample_n, evidence.metric)} · {evidence.window_basis === 'lifetime' ? 'lifetime' : `${evidence.window_days} days`}
+    const scale = v3Standing ?? (hasYourValue && hasComparison ? <BenchmarkScale evidence={evidence} /> : null);
+    const sampleParts = [
+      hasSample ? formatSample(evidence.sample_n, metricKey) : null,
+      hasWindow ? (evidence.window_basis === 'lifetime' ? 'lifetime' : `${evidence.window_days} days`) : null,
+    ].filter((part): part is string => part !== null);
+
+    const facts: Array<{ key: string; node: ReactNode }> = [];
+    if (sampleParts.length > 0) {
+      facts.push({
+        key: 'sample',
+        node: <span data-testid="evidence-sample">{sampleParts.join(' · ')}</span>,
+      });
+    }
+    if (!omitImpact && Math.round(Math.abs(safeImpact) * 10) > 0) {
+      facts.push({
+        key: 'impact',
+        node: (
+          <span className="text-warm-700 font-medium" data-testid="evidence-impact">
+            ~{ONE_DECIMAL.format(Math.abs(safeImpact))} strokes/round
           </span>
-          {Math.round(Math.abs(safeImpact) * 10) > 0 && (
-            <>
-              <span aria-hidden="true">·</span>
-              <span className="text-warm-700 font-medium" data-testid="evidence-impact">
-                ~{Math.abs(safeImpact).toFixed(1)} strokes/round
-              </span>
-            </>
-          )}
-          <span aria-hidden="true">·</span>
+        ),
+      });
+    }
+    if (confWord) {
+      facts.push({
+        key: 'confidence',
+        node: (
           <span
             className={cn('inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full font-medium', colors.bg, colors.text)}
             data-testid="evidence-confidence"
           >
             {confWord}
           </span>
-        </div>
+        ),
+      });
+    }
+
+    // Nothing measurable to show: no shell. An empty bordered block reads as
+    // "we have evidence and it is blank".
+    if (!scale && facts.length === 0) return null;
+
+    return (
+      <div
+        data-testid={testId ?? 'evidence-panel-compact'}
+        className={cn('mt-3 space-y-2.5')}
+      >
+        {scale}
+        {facts.length > 0 ? (
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-caption text-text-tertiary tabular-nums">
+            {facts.map((fact, index) => (
+              <Fragment key={fact.key}>
+                {index > 0 ? <span aria-hidden="true">·</span> : null}
+                {fact.node}
+              </Fragment>
+            ))}
+          </div>
+        ) : null}
       </div>
     );
   }
 
-  // Expanded mode — 2-column key/value grid.
-  const rows: Array<{ label: string; value: React.ReactNode; testId: string }> = [
-    {
+  // Expanded mode — 2-column key/value grid. Each row only when its field
+  // exists; a row reading "undefined" or a fabricated "~0.0" is worse than a
+  // shorter grid.
+  const rows: Array<{ label: string; value: ReactNode; testId: string }> = [];
+  if (hasYourValue || (typeof evidence.your_value_display === 'string' && evidence.your_value_display.trim())) {
+    rows.push({
       label: 'Your number',
       value: (
         <span className="font-medium text-warm-900">
@@ -405,8 +491,10 @@ export function EvidencePanel({
         </span>
       ),
       testId: 'evidence-row-your',
-    },
-    {
+    });
+  }
+  if (hasComparison) {
+    rows.push({
       label: 'Comparison',
       value: (
         <span>
@@ -419,34 +507,42 @@ export function EvidencePanel({
         </span>
       ),
       testId: 'evidence-row-comparison',
-    },
-    {
+    });
+  }
+  if (hasSample) {
+    rows.push({
       label: 'Sample',
-      value: <span>{formatSample(evidence.sample_n, evidence.metric)}</span>,
+      value: <span>{formatSample(evidence.sample_n, metricKey)}</span>,
       testId: 'evidence-row-sample',
-    },
-    {
+    });
+  }
+  if (hasWindow) {
+    rows.push({
       label: 'Window',
       value: (
         <span>
           {evidence.window_basis === 'lifetime'
-            ? formatLifetimeWindow(evidence.window_start, evidence.window_end)
-            : formatWindow(evidence.window_start, evidence.window_end, evidence.window_days)}
+            ? formatLifetimeWindow(evidence.window_start ?? '', evidence.window_end ?? '')
+            : formatWindow(evidence.window_start ?? '', evidence.window_end ?? '', evidence.window_days)}
         </span>
       ),
       testId: 'evidence-row-window',
-    },
-    {
+    });
+  }
+  if (hasImpact) {
+    rows.push({
       label: 'Strokes impact',
       value: (
         <span>
-          ~{Math.abs(safeImpact).toFixed(1)}{' '}
+          ~{ONE_DECIMAL.format(Math.abs(safeImpact))}{' '}
           <span className="text-text-tertiary">strokes/round</span>
         </span>
       ),
       testId: 'evidence-row-impact',
-    },
-    {
+    });
+  }
+  if (evidence.strokes_impact_method) {
+    rows.push({
       label: 'Method',
       value: (
         <span className="text-warm-700">
@@ -454,8 +550,8 @@ export function EvidencePanel({
         </span>
       ),
       testId: 'evidence-row-method',
-    },
-  ];
+    });
+  }
 
   return (
     <div
@@ -479,9 +575,11 @@ export function EvidencePanel({
       ) : null}
       {/* W15: v3 StandingBar above the legacy key/value grid when present. */}
       {v3Standing && <div className="mb-3">{v3Standing}</div>}
-      <div className="mb-2 text-caption font-medium text-text-tertiary">
-        {evidence.metric_label}
-      </div>
+      {evidence.metric_label ? (
+        <div className="mb-2 text-caption font-medium text-text-tertiary">
+          {evidence.metric_label}
+        </div>
+      ) : null}
       <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-sm text-warm-800">
         {rows.map((r) => (
           <div key={r.testId} className="contents" data-testid={r.testId}>
@@ -489,25 +587,27 @@ export function EvidencePanel({
             <dd className="tabular-nums">{r.value}</dd>
           </div>
         ))}
-        <div className="contents" data-testid="evidence-row-confidence">
-          <dt className="text-text-tertiary">Confidence</dt>
-          <dd className="flex items-center gap-2 tabular-nums">
-            <span className={cn('font-medium', colors.text)}>{confWord}</span>
-            <div
-              role="progressbar"
-              aria-valuenow={confPct}
-              aria-valuetext={confWord}
-              aria-valuemin={0}
-              aria-valuemax={100}
-              className="relative flex-1 h-1.5 rounded-full bg-warm-100 overflow-hidden max-w-[160px]"
-            >
+        {confWord ? (
+          <div className="contents" data-testid="evidence-row-confidence">
+            <dt className="text-text-tertiary">Confidence</dt>
+            <dd className="flex items-center gap-2 tabular-nums">
+              <span className={cn('font-medium', colors.text)}>{confWord}</span>
               <div
-                className={cn('absolute inset-y-0 left-0', colors.bar)}
-                style={{ width: `${confPct}%` }}
-              />
-            </div>
-          </dd>
-        </div>
+                role="progressbar"
+                aria-valuenow={confPct}
+                aria-valuetext={confWord}
+                aria-valuemin={0}
+                aria-valuemax={100}
+                className="relative flex-1 h-1.5 rounded-full bg-warm-100 overflow-hidden max-w-[160px]"
+              >
+                <div
+                  className={cn('absolute inset-y-0 left-0', colors.bar)}
+                  style={{ width: `${confPct}%` }}
+                />
+              </div>
+            </dd>
+          </div>
+        ) : null}
       </dl>
     </div>
   );
