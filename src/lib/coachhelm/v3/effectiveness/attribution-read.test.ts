@@ -88,21 +88,21 @@ describe('readAttributionForInsight', () => {
     expect(fromCalled).toBe(false);
   });
 
-  it('maps a found row, normalizing a real null method_version to null', async () => {
+  it('excludes a legacy NULL method_version row (removed v1 math, deep audit row 35) and maps a versioned one', async () => {
+    const base = {
+      target_metric_id: 'sg_total',
+      baseline_value: 1,
+      post_value: 2,
+      delta: 1,
+      n_rounds_before: 5,
+      n_rounds_after: 5,
+    };
     const sb = makeSb({
       attribution: [
         {
           data: [
-            {
-              insight_id: 'i1',
-              target_metric_id: 'sg_total',
-              baseline_value: 1,
-              post_value: 2,
-              delta: 1,
-              n_rounds_before: 5,
-              n_rounds_after: 5,
-              method_version: null,
-            },
+            { ...base, insight_id: 'i-legacy', method_version: null },
+            { ...base, insight_id: 'i1', method_version: 'v3_did_prewindow' },
           ],
           error: null,
         },
@@ -111,19 +111,7 @@ describe('readAttributionForInsight', () => {
     const result = await readAttributionForInsight(sb, 'i1');
     expect(result).toEqual({
       ok: true,
-      rows: [
-        {
-          insight_id: 'i1',
-          target_metric_id: 'sg_total',
-          baseline_value: 1,
-          post_value: 2,
-          delta: 1,
-          n_rounds_before: 5,
-          n_rounds_after: 5,
-          method_version: null,
-          anchor_kind: null,
-        },
-      ],
+      rows: [{ ...base, insight_id: 'i1', method_version: 'v3_did_prewindow', anchor_kind: null }],
     });
   });
 
