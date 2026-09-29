@@ -50,6 +50,10 @@ function row(
     intervention_potential: 0.6,
     created_at: '2026-08-01T00:00:00.000Z',
     updated_at: '2026-08-17T00:00:00.000Z',
+    correlation: 0.7,
+    sample_n: 20,
+    p_value: 0.001,
+    q_value: 0.003,
     ...over,
   };
 }
@@ -68,11 +72,11 @@ const GREENS_TO_PUTTS = row(
   'total_putts',
 );
 
-describe('CausalWhyPanel — root-cause chains', () => {
+describe('CausalWhyPanel — linked patterns', () => {
   it('joins two connecting relationships into one chain, above the single-edge list', () => {
     render(<CausalWhyPanel relationships={[DRIVING_TO_GREENS, GREENS_TO_PUTTS]} />);
 
-    const chain = screen.getByRole('group', { name: /root-cause chain/i });
+    const chain = screen.getByRole('group', { name: /linked pattern/i });
 
     // Every node in order — the middle metric is named once, not twice.
     expect(chain).toHaveTextContent('Driving accuracy');
@@ -90,7 +94,7 @@ describe('CausalWhyPanel — root-cause chains', () => {
       />,
     );
 
-    const chain = screen.getByRole('group', { name: /root-cause chain/i });
+    const chain = screen.getByRole('group', { name: /linked pattern/i });
     // Confidence reads as a word band (NUM-08), from the weakest hop.
     expect(chain).toHaveTextContent('Early read');
     expect(chain).not.toHaveTextContent('Solid read');
@@ -99,7 +103,7 @@ describe('CausalWhyPanel — root-cause chains', () => {
   it('says every step was detected separately, so a chain never reads as proven', () => {
     render(<CausalWhyPanel relationships={[DRIVING_TO_GREENS, GREENS_TO_PUTTS]} />);
 
-    const chain = screen.getByRole('group', { name: /root-cause chain/i });
+    const chain = screen.getByRole('group', { name: /linked pattern/i });
     expect(chain).toHaveTextContent(/detected separately/i);
   });
 
@@ -118,7 +122,7 @@ describe('CausalWhyPanel — root-cause chains', () => {
   });
 
   it('renders no chain section at all when nothing connects', () => {
-    // Today's common case: several causes, all pointing at the score.
+    // Several edges, all score arithmetic: none may chain.
     render(
       <CausalWhyPanel
         relationships={[
@@ -129,21 +133,68 @@ describe('CausalWhyPanel — root-cause chains', () => {
       />,
     );
 
-    expect(screen.queryByRole('group', { name: /root-cause chain/i })).toBeNull();
+    expect(screen.queryByRole('group', { name: /linked pattern/i })).toBeNull();
     // and the single-edge list is untouched
     expect(screen.getByText('3 relationships')).toBeInTheDocument();
   });
 
   it('renders no chain section for a single relationship', () => {
     render(<CausalWhyPanel relationships={[GREENS_TO_PUTTS]} />);
-    expect(screen.queryByRole('group', { name: /root-cause chain/i })).toBeNull();
+    expect(screen.queryByRole('group', { name: /linked pattern/i })).toBeNull();
   });
 
   it('keeps the honest empty state when there are no relationships at all', () => {
     render(<CausalWhyPanel relationships={[]} />);
-    expect(screen.queryByRole('group', { name: /root-cause chain/i })).toBeNull();
+    expect(screen.queryByRole('group', { name: /linked pattern/i })).toBeNull();
     expect(
-      screen.getByText(/Not enough rounds yet to map what's driving scores/i),
+      screen.getByText(/No stats move together clearly enough yet/i),
     ).toBeInTheDocument();
+  });
+});
+
+/**
+ * Deep audit rows 33/34 (2026-09-28), owner decision "honest correlation":
+ * the cards must not claim cause, must show the sign and n, and must carry a
+ * caveat. 'How sure the engine is it's causal' was the confidence hint.
+ */
+describe('CausalWhyPanel — honest correlation copy', () => {
+  it('never claims causality on a relationship card', () => {
+    const { container } = render(<CausalWhyPanel relationships={[GREENS_TO_PUTTS]} />);
+    expect(container.textContent ?? '').not.toMatch(/causal|root.cause|dose.responsive/i);
+    expect(screen.getByText(/not\s+proof that one causes the other/i)).toBeInTheDocument();
+    expect(screen.getByText('How unlikely the pattern is to be chance')).toBeInTheDocument();
+  });
+
+  it('states the SIGN in words and shows n', () => {
+    render(
+      <CausalWhyPanel
+        relationships={[{ ...GREENS_TO_PUTTS, correlation: -0.55, sample_n: 18 }]}
+      />,
+    );
+    expect(screen.getByText('moves opposite to')).toBeInTheDocument();
+    expect(screen.getByText(/tends to be\s+lower\s+\(18 rounds\)/i)).toBeInTheDocument();
+    expect(screen.getByText('18')).toBeInTheDocument();
+  });
+
+  it('a positive correlation reads "moves with" and "higher"', () => {
+    render(<CausalWhyPanel relationships={[GREENS_TO_PUTTS]} />);
+    expect(screen.getByText('moves with')).toBeInTheDocument();
+    expect(screen.getByText(/tends to be\s+higher/i)).toBeInTheDocument();
+  });
+
+  it('a linked pattern shows each link sign and the composed direction', () => {
+    render(
+      <CausalWhyPanel
+        relationships={[
+          { ...DRIVING_TO_GREENS, correlation: 0.6 },
+          { ...GREENS_TO_PUTTS, correlation: -0.6 },
+        ]}
+      />,
+    );
+    const chain = screen.getByRole('group', { name: /linked pattern/i });
+    expect(chain).toHaveTextContent('moves with');
+    expect(chain).toHaveTextContent('moves opposite to');
+    expect(chain).toHaveTextContent(/driving accuracy moves opposite to putting volume/i);
+    expect(chain).toHaveTextContent(/not a cause/i);
   });
 });
