@@ -507,7 +507,7 @@ export function CalendarPersonDialog({ request, personId, onDateChange, onCompar
 
         {person ? (
           <aside aria-label="Day summary" className={cn('sticky top-0 hidden w-[300px] shrink-0 self-start space-y-4 rounded-card p-4 lg:block', 'border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-card)]')}>
-            <h3 className="font-fw-sans text-body-sm font-semibold text-text-primary">Day summary</h3>
+            <h3 className="font-fw-sans text-label font-semibold uppercase tracking-[0.12em] text-text-tertiary">Day summary</h3>
             <dl className="space-y-2">
               {([['class', BookOpen, 'Classes'], ['team', CalendarDays, 'Team events'], ['personal', Clock, 'Personal blocks']] as const).map(([key, Icon, label]) => (
                 <div key={key} className="flex items-center gap-3">

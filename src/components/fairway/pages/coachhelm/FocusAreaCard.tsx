@@ -1249,7 +1249,7 @@ export const FocusAreaCard = forwardRef<HTMLDivElement, FocusAreaCardProps>(
               the same kind of number as the suggested target/current value. */}
           {focusArea.criteria && focusArea.criteria.length > 0 ? (
             <Inset padding="sm" className="space-y-1.5">
-              <h4 className="font-fw-sans text-body-sm font-semibold text-text-primary">
+              <h4 className="font-fw-sans text-label font-semibold uppercase tracking-wide text-text-tertiary">
                 Criteria
               </h4>
               {role === 'coach' && actionable && typeof onSetCriterionMet === 'function' ? (

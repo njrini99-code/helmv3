@@ -644,7 +644,7 @@ export function MessageConversationRail({
       <div className="flex flex-col gap-4">
         {unread.length > 0 ? (
           <div>
-            <h2 className="px-3 pb-2 font-fw-sans text-body-sm font-semibold text-accent-700">
+            <h2 className="px-3 pb-2 text-label font-semibold uppercase tracking-[0.14em] font-fw-sans text-accent-700">
               Unread
             </h2>
             {/* ONE radius token, ONE shadow token — the ramp already decided both.
@@ -687,7 +687,7 @@ export function MessageConversationRail({
           if (group.length === 0) return null;
           return (
             <div key={key}>
-              <h2 className="px-3 pb-2 font-fw-sans text-body-sm font-semibold text-text-primary">
+              <h2 className="px-3 pb-2 text-label font-semibold uppercase tracking-[0.14em] text-text-tertiary font-fw-sans">
                 {label}
               </h2>
               <ul className="divide-y divide-border-subtle overflow-hidden rounded-card bg-surface shadow-raise">

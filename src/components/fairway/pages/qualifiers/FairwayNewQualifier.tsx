@@ -452,7 +452,7 @@ export function FairwayNewQualifier({ players }: FairwayNewQualifierProps) {
             </div>
             {/* Live read-out — same vocabulary as the leaderboard cut lines. */}
             <Surface elevation="border" padding="md" className="bg-surface-sunken">
-              <h3 className="font-fw-sans text-body-sm font-semibold text-text-primary">
+              <h3 className="font-fw-sans text-label font-semibold uppercase tracking-[0.12em] text-text-tertiary">
                 How the squad is set
               </h3>
               <p className="mt-1.5 font-fw-sans text-body text-text-secondary">

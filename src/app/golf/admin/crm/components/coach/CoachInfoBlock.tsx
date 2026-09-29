@@ -194,7 +194,7 @@ export function CoachInfoBlock({ coach }: CoachInfoBlockProps) {
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div className="px-5 py-4 border-b border-border-subtle last:border-b-0">
-      <h3 className="font-fw-sans text-body-sm font-semibold text-text-primary mb-2">
+      <h3 className="text-label font-fw-sans font-semibold uppercase tracking-wider text-text-tertiary mb-2">
         {title}
       </h3>
       <div className="space-y-1.5">{children}</div>

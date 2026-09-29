@@ -231,7 +231,7 @@ export function FairwayMyQualifiers({ qualifiers, error, loadError }: FairwayMyQ
 
           {/* ── How qualifiers work — quiet footer note ─────────────────────── */}
           <Surface elevation="border" padding="md">
-            <h2 className="font-fw-sans text-body-sm font-semibold text-text-primary">
+            <h2 className="font-fw-sans text-label font-semibold uppercase tracking-[0.14em] text-text-tertiary">
               How qualifiers work
             </h2>
             <p className="mt-1.5 max-w-[70ch] font-fw-sans text-body-sm text-text-secondary">
@@ -253,7 +253,7 @@ function SectionHeading({ children }: { children: React.ReactNode }) {
   // outline so assistive-tech rotor navigation can tell a section apart from
   // the items inside it. Visual size is governed by the classes, not the tag.
   return (
-    <h2 className="px-1 font-fw-sans text-body-sm font-semibold text-text-primary">
+    <h2 className="px-1 text-label font-medium uppercase tracking-[0.14em] text-text-tertiary font-fw-sans">
       {children}
     </h2>
   );

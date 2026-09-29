@@ -95,7 +95,7 @@ function fullName(first: string | null | undefined, last: string | null | undefi
 /* ─── Quiet uppercase section overline (inside expanded detail) ────────────── */
 function DetailHeading({ children }: { children: React.ReactNode }) {
   return (
-    <h4 className="font-fw-sans text-body-sm font-semibold text-text-primary">
+    <h4 className="text-label font-medium uppercase tracking-[0.14em] text-text-tertiary font-fw-sans">
       {children}
     </h4>
   );

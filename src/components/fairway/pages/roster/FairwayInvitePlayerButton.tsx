@@ -318,7 +318,7 @@ export function FairwayInvitePlayerButton({
 
                 {/* How it works — three-step explainer on the Fairway stepper. */}
                 <div className="space-y-2 rounded-card bg-surface-sunken p-4">
-                  <h3 className="flex items-center gap-2 font-fw-sans text-body-sm font-semibold text-text-primary">
+                  <h3 className="flex items-center gap-2 text-label font-medium uppercase tracking-[0.08em] text-text-tertiary font-fw-sans">
                     <IconUsers size={14} />
                     How it works
                   </h3>

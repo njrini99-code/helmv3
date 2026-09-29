@@ -439,7 +439,7 @@ function ComparePicker({
     <InstrumentPanel depth="base" padding="sm" className="space-y-2" as="section">
       <div className="flex items-center gap-2 px-1">
         <span aria-hidden className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: dotColor }} />
-        <h2 className="font-fw-sans text-body-sm font-semibold text-text-primary">
+        <h2 className="font-fw-sans text-label font-semibold uppercase tracking-wide text-text-tertiary">
           {heading}
         </h2>
       </div>

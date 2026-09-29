@@ -597,7 +597,7 @@ export function FairwayTasks({
 
                   {/* Quick stats — honest, tabular. */}
                   <Surface elevation="border" padding="md">
-                    <h2 className="font-fw-sans text-body-sm font-semibold text-text-primary">
+                    <h2 className="font-fw-sans text-label font-semibold uppercase tracking-[0.12em] text-text-tertiary">
                       Quick stats
                     </h2>
                     <div className="mt-3 grid grid-cols-2 gap-3">
@@ -1112,7 +1112,7 @@ function FairwayTaskCard({
       {/* Expanded per-player progress (coach). */}
       {role === 'coach' && expanded && hasAssignments && (
         <div className="border-t border-border-subtle pt-4">
-          <h4 className="mb-3 font-fw-sans text-body-sm font-semibold text-text-primary">
+          <h4 className="mb-3 font-fw-sans text-label font-semibold uppercase tracking-[0.12em] text-text-tertiary">
             Player progress
           </h4>
           <div className="flex flex-col gap-1.5">

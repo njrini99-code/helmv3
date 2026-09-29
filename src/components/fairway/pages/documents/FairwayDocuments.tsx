@@ -1568,7 +1568,7 @@ export function FairwayDocuments({
  * ────────────────────────────────────────────────────────────────────────── */
 function SectionHeading({ children }: { children: React.ReactNode }) {
   return (
-    <h2 className="font-fw-sans text-body-sm font-semibold text-text-primary">
+    <h2 className="text-label font-medium uppercase tracking-[0.14em] text-text-tertiary font-fw-sans">
       {children}
     </h2>
   );

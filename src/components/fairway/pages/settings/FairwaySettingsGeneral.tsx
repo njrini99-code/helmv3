@@ -341,7 +341,7 @@ export function SectionCard({
           {icon}
         </span>
         <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-          <h2 className="font-fw-sans text-body-sm font-semibold text-text-primary">
+          <h2 className="font-fw-sans text-label font-semibold uppercase tracking-[0.12em] text-text-tertiary">
             {title}
           </h2>
           {description ? (
@@ -2611,7 +2611,7 @@ export function TeamSettingsPanel({ onUpdate }: { onUpdate: () => void }) {
 
         {organizationId ? (
           <div className="space-y-4 border-t border-border-subtle pt-4">
-            <h3 className="font-fw-sans text-body-sm font-semibold text-text-primary">
+            <h3 className="font-fw-sans text-label font-medium uppercase tracking-[0.08em] text-text-tertiary">
               Organization
             </h3>
             <LabeledField label="School name">

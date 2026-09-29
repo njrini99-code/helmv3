@@ -765,7 +765,7 @@ function CourseSection({ label, count, children }: { label: string; count: numbe
   return (
     <section className="flex flex-col">
       <div className="mb-2 flex items-baseline justify-between px-1">
-        <h2 className="font-fw-sans text-body-sm font-semibold text-text-primary">
+        <h2 className="font-fw-sans text-label font-semibold uppercase tracking-[0.16em] text-text-secondary">
           {label}
         </h2>
         <span className="font-fw-sans text-caption tabular-nums text-text-secondary">

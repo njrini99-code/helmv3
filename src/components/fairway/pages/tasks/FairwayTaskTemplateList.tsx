@@ -300,7 +300,7 @@ export function FairwayTaskTemplateList({ teamId, onSelectTemplate }: FairwayTas
         <div className="flex flex-col gap-4">
           {Object.entries(grouped).map(([category, items]) => (
             <div key={category} className="flex flex-col gap-2">
-              <h2 className="font-fw-sans text-body-sm font-semibold text-text-primary">
+              <h2 className="font-fw-sans text-label font-semibold uppercase tracking-[0.12em] text-text-tertiary">
                 {category}
               </h2>
               <div className="flex flex-col gap-2">

@@ -543,7 +543,7 @@ function CoachingIntelligenceBody({
               than as settings. */}
           {ALERT_GROUPS.map((group) => (
             <div key={group.title}>
-              <h3 className="bg-surface-sunken px-4 py-1.5 font-fw-sans text-body-sm font-semibold text-text-primary">
+              <h3 className="bg-surface-sunken px-4 py-1.5 font-fw-sans text-label font-semibold uppercase tracking-[0.12em] text-text-tertiary">
                 {group.title}
               </h3>
               <div className="divide-y divide-border-subtle">

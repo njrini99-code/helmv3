@@ -159,7 +159,7 @@ export function TasksPanel({ coachId }: TasksPanelProps) {
 
       {!loading && !error && open.length > 0 && (
         <section className="space-y-2">
-          <h4 className="font-fw-sans text-body-sm font-semibold text-text-primary px-1">
+          <h4 className="text-label font-fw-sans font-semibold uppercase tracking-wider text-text-tertiary px-1">
             Open
           </h4>
           <div className="space-y-1.5">
@@ -172,7 +172,7 @@ export function TasksPanel({ coachId }: TasksPanelProps) {
 
       {!loading && !error && completed.length > 0 && (
         <section className="space-y-2">
-          <h4 className="font-fw-sans text-body-sm font-semibold text-text-primary px-1">
+          <h4 className="text-label font-fw-sans font-semibold uppercase tracking-wider text-text-tertiary px-1">
             Recently completed
           </h4>
           <div className="space-y-1.5">

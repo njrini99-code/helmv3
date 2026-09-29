@@ -649,7 +649,7 @@ function PersonaInstrument({
         </p>
         {persona.course_profile ? (
           <InstrumentPanel depth="inset" padding="sm">
-            <h3 className="font-fw-sans text-body-sm font-semibold text-text-primary">
+            <h3 className="font-fw-sans text-label font-semibold uppercase tracking-wide text-text-tertiary">
               Course profile
             </h3>
             <p className="mt-1 font-fw-sans text-body-sm leading-relaxed text-text-secondary">
@@ -757,7 +757,7 @@ function PersonaInstrument({
       {/* Course profile — a recessed inset sub-readout on the same instrument. */}
       {persona.course_profile ? (
         <InstrumentPanel depth="inset" padding="sm">
-          <h3 className="font-fw-sans text-body-sm font-semibold text-text-primary">
+          <h3 className="font-fw-sans text-label font-semibold uppercase tracking-wide text-text-tertiary">
             Course profile
           </h3>
           <p className="mt-1 font-fw-sans text-body-sm leading-relaxed text-text-secondary">

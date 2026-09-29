@@ -168,7 +168,7 @@ export function FairwayRoundSummarySheet({
               animate={{ opacity: 1, y: 0 }}
               transition={prefersReducedMotion ? { duration: 0 } : { delay: 0.3, duration: 0.3 }}
             >
-              <h3 className="mb-2 font-fw-sans text-body-sm font-semibold text-text-primary">Scorecard</h3>
+              <h3 className="mb-2 font-fw-sans text-label font-medium uppercase tracking-[0.12em] text-text-tertiary">Scorecard</h3>
               <div className="overflow-x-auto overflow-hidden rounded-fw-md border border-border-subtle">
                 {/* Front 9 (or all 9 for a 9-hole round) */}
                 <div className="grid gap-px bg-border-subtle" style={{ gridTemplateColumns: `repeat(${colCount}, 1fr)` }}>

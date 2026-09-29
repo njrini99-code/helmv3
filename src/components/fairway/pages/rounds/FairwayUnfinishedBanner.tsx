@@ -91,7 +91,7 @@ export function FairwayUnfinishedBanner({ rounds, playerId }: FairwayUnfinishedB
   return (
     <section aria-label="Rounds in progress" className="flex flex-col gap-3">
       <div className="flex items-center gap-2 px-1">
-        <h2 className="font-fw-sans text-body-sm font-semibold text-text-primary">
+        <h2 className="font-fw-sans text-label font-semibold uppercase tracking-[0.07em] text-text-tertiary">
           In progress
         </h2>
         <span className="font-fw-mono text-caption tabular-nums text-text-tertiary">

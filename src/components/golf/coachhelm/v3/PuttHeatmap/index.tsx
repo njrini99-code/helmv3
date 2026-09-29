@@ -99,7 +99,7 @@ export function PuttHeatmap({ putts, title = 'Putting heatmap', className }: Put
         animate="visible"
         transition={enterTransition}
       >
-        <h3 className="font-fw-sans text-body-sm font-semibold text-text-primary">{title}</h3>
+        <h3 className="font-fw-sans text-label font-semibold uppercase tracking-wide text-text-tertiary">{title}</h3>
 
         {insufficient ? (
           <InsufficientData

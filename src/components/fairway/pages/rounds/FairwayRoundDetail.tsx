@@ -543,7 +543,7 @@ export function FairwayRoundDetail({
         {/* ════════════════ 3 · SCORECARD — the real spine (golf_holes) ═════ */}
         {hasHoles ? (
           <section className="flex flex-col gap-3">
-            <h2 className="px-1 font-fw-sans text-body-sm font-semibold text-text-primary">
+            <h2 className="px-1 text-label font-medium uppercase tracking-[0.14em] text-text-tertiary font-fw-sans">
               Scorecard
             </h2>
             <Surface padding="none" elevation="border" className="overflow-hidden">
@@ -617,7 +617,7 @@ export function FairwayRoundDetail({
 
         {/* ════════════════ 5 · WHAT'S-NEXT — areas to work on ══════════════ */}
         <section className="flex flex-col gap-3">
-          <h2 className="px-1 font-fw-sans text-body-sm font-semibold text-text-primary">
+          <h2 className="px-1 text-label font-medium uppercase tracking-[0.14em] text-text-tertiary font-fw-sans">
             Areas to work on
           </h2>
           <Surface padding={hasReview && hasNextWork ? 'md' : 'none'} elevation="border">

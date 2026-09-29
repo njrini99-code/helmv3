@@ -34,7 +34,7 @@ const fieldCls =
   'w-full rounded-fw-md border border-border-subtle bg-surface-sunken px-3 py-2 font-fw-sans text-body-sm text-text-primary outline-none transition-colors placeholder:text-text-tertiary focus:border-accent-500 focus:bg-surface focus:ring-2 focus:ring-accent-500/25 disabled:opacity-50';
 const labelCls = 'mb-1.5 block font-fw-sans text-caption font-medium text-text-secondary';
 const sectionTitleCls =
-  'flex items-center gap-1.5 font-fw-sans text-body-sm font-semibold text-text-primary';
+  'flex items-center gap-1.5 font-fw-sans text-label font-semibold uppercase tracking-[0.12em] text-text-tertiary';
 
 /* ── the form shape — IDENTICAL to the legacy TravelClient formData, plus the
  * optional event_id link (createGolfTravelItinerary already accepts it). ───── */

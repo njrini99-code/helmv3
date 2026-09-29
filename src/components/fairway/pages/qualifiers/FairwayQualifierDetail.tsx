@@ -333,7 +333,7 @@ export function FairwayQualifierDetail(props: FairwayQualifierDetailProps) {
 
             {rules ? (
               <div className="space-y-2">
-                <h2 className="font-fw-sans text-body-sm font-semibold text-text-primary">
+                <h2 className="font-fw-sans text-label font-semibold uppercase tracking-[0.07em] text-text-tertiary">
                   Rules
                 </h2>
                 <Inset padding="md">

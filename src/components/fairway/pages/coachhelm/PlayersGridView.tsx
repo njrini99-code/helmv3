@@ -924,7 +924,7 @@ export function PlayersGridView({
                  A sparse Fraunces section label organizes it. ---- */
           <section aria-label="Team roster" className="flex flex-col gap-3">
             <div className="flex items-baseline justify-between gap-3">
-              <h2 className="font-fw-sans text-body-sm font-semibold text-text-primary">
+              <h2 className="text-label font-semibold uppercase tracking-[0.14em] text-text-tertiary font-fw-sans">
                 Roster · {rosterRows.length} player{rosterRows.length === 1 ? '' : 's'}
               </h2>
               <p className="font-fw-sans text-caption text-text-tertiary">
@@ -1440,7 +1440,7 @@ function FocusAreaBoard({
           fix or retract the prescription before the player acts on it. */}
       {proposed.length > 0 ? (
         <div className="space-y-3">
-          <h2 className="font-fw-sans text-body-sm font-semibold text-text-primary">
+          <h2 className="font-fw-sans text-label font-semibold uppercase tracking-wide text-text-tertiary">
             Pending acceptance ({proposed.length})
           </h2>
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
@@ -1465,7 +1465,7 @@ function FocusAreaBoard({
           prescribed area never shows up as active; Edit/Delete only. */}
       {declined.length > 0 ? (
         <div className="space-y-3">
-          <h2 className="font-fw-sans text-body-sm font-semibold text-text-primary">
+          <h2 className="font-fw-sans text-label font-semibold uppercase tracking-wide text-text-tertiary">
             Declined ({declined.length})
           </h2>
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
@@ -1487,7 +1487,7 @@ function FocusAreaBoard({
 
       {completed.length > 0 ? (
         <div className="space-y-3">
-          <h2 className="font-fw-sans text-body-sm font-semibold text-text-primary">
+          <h2 className="font-fw-sans text-label font-semibold uppercase tracking-wide text-text-tertiary">
             Completed ({completed.length})
           </h2>
           <div className="space-y-2">

@@ -110,7 +110,7 @@ export function FairwayRecentCourses({ courses, onConfirmCourse }: FairwayRecent
     <section aria-label="Recently played courses" className="flex flex-col gap-3">
       <div className="flex items-center gap-2 px-0.5">
         <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-accent-500" />
-        <h2 className="font-fw-sans text-body-sm font-semibold text-text-primary">
+        <h2 className="font-fw-sans text-label font-semibold uppercase tracking-[0.16em] text-text-tertiary">
           Pick up where you left off
         </h2>
       </div>

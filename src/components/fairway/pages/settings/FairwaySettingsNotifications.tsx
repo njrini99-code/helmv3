@@ -254,7 +254,7 @@ export function FairwaySettingsNotifications({
           <div className="flex flex-col gap-1">
             {/* Eyebrow, not a display h2 — matches the settings vocabulary the
                 rest of the surfaces moved to (2026-07-25). */}
-            <h2 className="font-fw-sans text-body-sm font-semibold text-text-primary">
+            <h2 className="font-fw-sans text-label font-semibold uppercase tracking-[0.12em] text-text-tertiary">
               Per-update preferences
             </h2>
             <p className="font-fw-sans text-caption text-text-secondary">

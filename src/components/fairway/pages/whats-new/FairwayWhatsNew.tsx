@@ -514,7 +514,7 @@ export function FairwayWhatsNew({ success, error, items, truncated, timeZone, se
                   aria-label={`${label}, ${dayItems.length} ${dayItems.length === 1 ? 'update' : 'updates'}`}
                 >
                   <div className="flex items-baseline gap-2 px-1">
-                    <h2 className="font-fw-sans text-body-sm font-semibold text-text-primary">
+                    <h2 className="text-label font-medium uppercase tracking-[0.14em] text-text-tertiary font-fw-sans">
                       {label}
                     </h2>
                     <span
