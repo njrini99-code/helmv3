@@ -12712,6 +12712,11 @@
         {
           "kind": "import_graph",
           "path": "src/app/golf/actions/signal-groups.ts",
+          "anchor": "src/lib/coachhelm/roster-scope"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/signal-groups.ts",
           "anchor": "src/lib/coachhelm/recent-players"
         },
         {
