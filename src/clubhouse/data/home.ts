@@ -6,8 +6,7 @@ import { isCountableRound } from '@/lib/golf/round-countable';
 import { CLASS_EVENT_TYPE } from '@/lib/calendar/class-events';
 import { getCurrentDecimalHourInTz } from '@/lib/utils/timezone';
 import { getGreeting, timeOfDayForHour } from '@/lib/utils/time-of-day';
-import { logServerError } from '@/lib/server-error-logger';
-import { describeError } from '@/lib/utils/describe-error';
+import { chLogServer } from '../lib/track-server';
 
 /**
  * Coach Home (Clubhouse). One server read, final data on first paint.
@@ -88,11 +87,8 @@ const COMPETITION_TYPES = new Set(['tournament', 'qualifier']);
 const TREND_LENGTH = 7;
 const MIN_SG_ROUNDS = 3;
 
-function log(action: string, error: unknown) {
-  void logServerError(`[clubhouse home] ${action} failed: ${describeError(error)}`, {
-    action: `clubhouse.home.${action}`,
-    featureArea: 'coach_dashboard',
-  });
+function log(read: string, error: unknown) {
+  chLogServer('home', read, error);
 }
 
 /** YYYY-MM-DD for an instant in a timezone. */

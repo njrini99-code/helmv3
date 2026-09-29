@@ -33,7 +33,9 @@ function Nine({ label, holes }: { label: string; holes: ChHoleScore[] }) {
         <span role="cell">{par ?? NO_DATA}</span>
       </div>
       <div className="ch-h-nine__row" role="row">
-        <span role="rowheader" className="ch-sr-only">Score</span>
+        <span role="rowheader">
+          <span className="ch-sr-only">Score</span>
+        </span>
         {holes.map((h) => (
           <span key={h.n} role="cell">
             <ScoreMark score={h.score} par={h.par} size="sm" />

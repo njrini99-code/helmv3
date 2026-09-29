@@ -11,7 +11,7 @@ import {
 } from '@/lib/error-logging';
 import { getRecovery, requestRecovery } from '@/lib/recovery/client';
 import { useInClubhouse } from '@/clubhouse/shell/context';
-import { RouteErrorView } from '@/clubhouse/ui/States';
+import { RouteErrorView } from '@/clubhouse/ui/Notices';
 
 interface RouteErrorBoundaryProps {
   error: Error & { digest?: string };

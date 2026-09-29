@@ -1,7 +1,6 @@
 import 'server-only';
 import { createClient } from '@/lib/supabase/server';
-import { logServerError } from '@/lib/server-error-logger';
-import { describeError } from '@/lib/utils/describe-error';
+import { chLogServer } from '../lib/track-server';
 
 export interface ChNextEvent {
   id: string;
@@ -46,16 +45,10 @@ export async function loadClubhouseShell(teamId: string | undefined): Promise<Ch
   const timezone = (!tzRes.error && tzRes.data?.timezone) || 'America/New_York';
 
   if (eventRes.error) {
-    void logServerError(`[clubhouse shell] next event read failed: ${describeError(eventRes.error)}`, {
-      action: 'clubhouse.shell.nextEvent',
-      featureArea: 'calendar',
-    });
+    chLogServer('shell', 'nextEvent', eventRes.error, 'calendar');
   }
   if (joinRes.error) {
-    void logServerError(`[clubhouse shell] join request count failed: ${describeError(joinRes.error)}`, {
-      action: 'clubhouse.shell.joinRequests',
-      featureArea: 'teams',
-    });
+    chLogServer('shell', 'joinRequests', joinRes.error, 'teams');
   }
 
   const e = eventRes.error ? null : eventRes.data;

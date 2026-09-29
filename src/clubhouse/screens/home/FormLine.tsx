@@ -49,7 +49,7 @@ export function FormLine({ data, width = 148, height = 34, label }: { data: numb
   const line = monotonePath(pts);
   const [ex, ey] = pts[pts.length - 1]!;
   return (
-    <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} className={`ch-form ch-form--${tone}`} role="img" aria-label={label}>
+    <svg viewBox={`0 0 ${width} ${height}`} className={`ch-form ch-form--${tone}`} role="img" aria-label={label}>
       <line x1={pad} x2={width - pad} y1={y(avg)} y2={y(avg)} className="ch-form__mean" />
       <path d={`${line} L${ex},${height} L${pad},${height} Z`} className="ch-form__fill" />
       <path d={line} className="ch-form__line" />

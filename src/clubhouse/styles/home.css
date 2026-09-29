@@ -427,6 +427,9 @@
 /* Form line */
 .ch-form {
   display: block;
+  width: 100%;
+  max-width: 148px;
+  height: auto;
 }
 .ch-form__mean {
   stroke: var(--ch-ivory-300);
@@ -476,6 +479,11 @@
 @container (max-width: 860px) {
   .ch-h-sheet {
     grid-template-columns: minmax(0, 1fr);
+  }
+  .ch-h-lb__row {
+    grid-template-columns: 20px minmax(0, 1fr) minmax(72px, 112px) 48px 52px 68px;
+    gap: 12px;
+    min-width: 0;
   }
   .ch-h-sheet > .ch-h-pane + .ch-h-pane {
     box-shadow: inset 0 1px 0 var(--ch-border-hairline);

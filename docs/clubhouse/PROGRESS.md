@@ -22,28 +22,37 @@ desktop.
 | `desktop` | Built pixel-accurate against the reference screenshots at 924px and 1280px |
 | `wired` | Every figure comes from a real loader, and null, zero and early-read states render distinctly |
 | `states` | Empty, loading and failed-read states are designed and built, and they are distinct from each other. Every action goes through `useAction`, so a failure tells the coach what failed and what to do next, fires an error haptic and is reported to Sentry. Route errors render the Clubhouse error view |
+| `error-tracking` | Server reads log through `chLogServer`, client crashes through `chReport` (tagged `ui=clubhouse` and `surface`), intents leave breadcrumbs, nothing is swallowed, and every failure path was forced once |
 | `phone-spec` | A written native phone design (`docs/clubhouse/phone/<screen>.md`) is approved by the owner |
 | `phone` | The phone design is built at 390px, with safe areas and the bottom tab bar |
 | `motion` | Transitions, press and haptics are wired within the doctrine (90/150/220/360ms, 0.985 press, no count-ups or staggers) |
+| `accessibility` | Keyboard path, landmarks and roles, chart text equivalents, announced status changes, AA contrast |
+| `performance` | No server waterfall, client JS only on interactive islands, no layout shift after first paint |
 | `verified` | typecheck, lint, tests and `clubhouse:check` are green, and a browser pass on desktop and phone is logged below |
 
 Statuses are `todo`, `doing`, `blocked (reason)` and `done`.
 
+Each screen past `spec` has a checklist at `docs/clubhouse/screens/<slug>.md`,
+copied from `CHECKLIST_TEMPLATE.md`. It has one section per gate, and
+`clubhouse:check` refuses a `done` gate while its section still has an
+unchecked box. That checklist is the definition of pro quality for the
+screen.
+
 ## Screens
 
 <!-- clubhouse:screens:start -->
-| Screen | Route | spec | desktop | wired | states | phone-spec | phone | motion | verified |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| Foundation | (shell, tokens, primitives) | done | doing | doing | doing | doing | todo | doing | todo |
-| Home | /golf/dashboard | done | doing | doing | doing | doing | todo | todo | todo |
-| Roster | /golf/dashboard/roster | todo | todo | todo | todo | todo | todo | todo | todo |
-| Stats (team) | /golf/dashboard/stats | todo | todo | todo | todo | todo | todo | todo | todo |
-| Stats (player) | /golf/dashboard/stats?player= | todo | todo | todo | todo | todo | todo | todo | todo |
-| Calendar | /golf/dashboard/calendar | todo | todo | todo | todo | todo | todo | todo | todo |
-| Messages | /golf/dashboard/messages | todo | todo | todo | todo | todo | todo | todo | todo |
-| CoachHelm | /golf/dashboard/coachhelm | blocked (still in design) | todo | todo | todo | todo | todo | todo | todo |
-| Rounds, Practice, Lineups, Events, Scouting | various | blocked (no design yet) | todo | todo | todo | todo | todo | todo | todo |
-| Player app (all screens) | /golf/dashboard (player role) | blocked (no design yet) | todo | todo | todo | todo | todo | todo | todo |
+| Screen | Route | spec | desktop | wired | states | error-tracking | phone-spec | phone | motion | accessibility | performance | verified |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Foundation | (shell, tokens, primitives) | done | doing | doing | doing | doing | doing | todo | doing | doing | doing | todo |
+| Home | /golf/dashboard | done | doing | doing | doing | doing | doing | todo | todo | doing | doing | todo |
+| Roster | /golf/dashboard/roster | todo | todo | todo | todo | todo | todo | todo | todo | todo | todo | todo |
+| Stats (team) | /golf/dashboard/stats | todo | todo | todo | todo | todo | todo | todo | todo | todo | todo | todo |
+| Stats (player) | /golf/dashboard/stats?player= | todo | todo | todo | todo | todo | todo | todo | todo | todo | todo | todo |
+| Calendar | /golf/dashboard/calendar | todo | todo | todo | todo | todo | todo | todo | todo | todo | todo | todo |
+| Messages | /golf/dashboard/messages | todo | todo | todo | todo | todo | todo | todo | todo | todo | todo | todo |
+| CoachHelm | /golf/dashboard/coachhelm | blocked (still in design) | todo | todo | todo | todo | todo | todo | todo | todo | todo | todo |
+| Rounds, Practice, Lineups, Events, Scouting | various | blocked (no design yet) | todo | todo | todo | todo | todo | todo | todo | todo | todo | todo |
+| Player app (all screens) | /golf/dashboard (player role) | blocked (no design yet) | todo | todo | todo | todo | todo | todo | todo | todo | todo | todo |
 <!-- clubhouse:screens:end -->
 
 ## Decisions

@@ -1,6 +1,7 @@
 import { Users } from 'lucide-react';
 import type { ChCoachHome } from '../../data/home';
 import { EmptyState } from '../../ui/States';
+import { SectionBoundary } from '../../ui/SectionBoundary';
 import { Week } from './Week';
 import { LatestRound } from './LatestRound';
 import { Leaderboard } from './Leaderboard';
@@ -19,10 +20,16 @@ export function CoachHome({ data }: { data: ChCoachHome }) {
         <h1 className="ch-display">{data.greeting}</h1>
       </header>
       <div className="ch-h-sheet ch-sheet">
-        <Week week={data.week} />
-        <LatestRound data={data.latestRounds} />
+        <SectionBoundary surface="home.week" label="This week">
+          <Week week={data.week} />
+        </SectionBoundary>
+        <SectionBoundary surface="home.latestRound" label="The latest round">
+          <LatestRound data={data.latestRounds} />
+        </SectionBoundary>
       </div>
-      <Leaderboard data={data.leaderboard} />
+      <SectionBoundary surface="home.leaderboard" label="The leaderboard">
+        <Leaderboard data={data.leaderboard} />
+      </SectionBoundary>
     </main>
   );
 }

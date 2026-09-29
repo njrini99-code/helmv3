@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useState } from 'react';
-import { logError } from '@/lib/error-logging';
+import { chReport, chTrail } from './track';
 import { useToast } from '../ui/Toast';
 import { haptic } from './haptics';
 
@@ -37,12 +37,12 @@ export function useAction<A extends unknown[], T>(
       if (pending) return { success: false, error: 'busy' };
       const c = typeof copy === 'function' ? copy(...args) : copy;
       setPending(true);
+      chTrail(`action ${name}`);
       let result: ActionResult<T>;
       try {
         result = await action(...args);
       } catch (err) {
-        const error = err instanceof Error ? err : new Error(String(err));
-        logError(error, { component: 'clubhouse', action: name }, 'medium');
+        chReport(err, { surface: name.split('.')[0] ?? name, action: name });
         result = { success: false, error: undefined };
       } finally {
         setPending(false);
@@ -51,6 +51,8 @@ export function useAction<A extends unknown[], T>(
         haptic('commit');
         toast({ title: c.done });
       } else {
+        // A handled failure (the action returned success: false) is still tracked, at low severity.
+        if (result.error !== 'busy') chReport(new Error(result.error || 'action failed'), { surface: name.split('.')[0] ?? name, action: name, severity: 'low' });
         haptic('error');
         toast({
           tone: 'error',

@@ -23,7 +23,7 @@ const RED_TOKENS = /var\(--ch-(score-under|chart-flag|danger-600)\)/;
 const RED_ALLOWED_CONTEXT = /under|birdie|eagle|flag|danger|error|invalid/i;
 const ALLOWED_DURATIONS_S = new Set(['0', '0.09', '.09', '0.15', '.15', '0.22', '.22', '0.36', '.36']);
 const STATUSES = /^(todo|doing|done|blocked \(.+\))$/;
-const GATES = ['spec', 'desktop', 'wired', 'states', 'phone-spec', 'phone', 'motion', 'verified'];
+const GATES = ['spec', 'desktop', 'wired', 'states', 'error-tracking', 'phone-spec', 'phone', 'motion', 'accessibility', 'performance', 'verified'];
 
 function walk(dir, out = []) {
   if (!existsSync(dir)) return out;
@@ -108,6 +108,23 @@ export function checkSource(file, raw) {
   return v;
 }
 
+export function parseChecklist(md) {
+  const sections = new Map();
+  let cur = null;
+  for (const line of md.split('\n')) {
+    const h = line.match(/^##\s+([a-z-]+)\s*$/);
+    if (h) {
+      cur = { open: 0, closed: 0 };
+      sections.set(h[1], cur);
+      continue;
+    }
+    if (!cur) continue;
+    if (/^\s*- \[ \]/.test(line)) cur.open += 1;
+    else if (/^\s*- \[x\]/i.test(line)) cur.closed += 1;
+  }
+  return sections;
+}
+
 export function checkProgress(md, exists = existsSync, root = '.', read = (p) => readFileSync(p, 'utf8')) {
   const v = [];
   const block = md.split('<!-- clubhouse:screens:start -->')[1]?.split('<!-- clubhouse:screens:end -->')[0];
@@ -131,8 +148,21 @@ export function checkProgress(md, exists = existsSync, root = '.', read = (p) =>
       v.push(`PROGRESS.md: ${screen} phone is done without an approved phone-spec`);
     }
     if (st.wired === 'done' && st.spec !== 'done') v.push(`PROGRESS.md: ${screen} is wired before its spec is done`);
+    const slug = screen.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+    const started = GATES.slice(1).some((g) => st[g] === 'doing' || st[g] === 'done');
+    const checklist = join(root, 'docs/clubhouse/screens', `${slug}.md`);
+    if (started && !exists(checklist)) {
+      v.push(`PROGRESS.md: ${screen} is past spec but ${checklist} is missing (copy CHECKLIST_TEMPLATE.md)`);
+    } else if (started) {
+      const sections = parseChecklist(read(checklist));
+      for (const g of GATES) {
+        if (st[g] !== 'done') continue;
+        const sec = sections.get(g);
+        if (!sec) v.push(`${checklist}: gate ${g} is done but the checklist has no "## ${g}" section`);
+        else if (sec.open > 0) v.push(`${checklist}: gate ${g} is done but ${sec.open} item(s) are unchecked`);
+      }
+    }
     if (st['phone-spec'] === 'done') {
-      const slug = screen.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
       const doc = join(root, 'docs/clubhouse/phone', `${slug}.md`);
       if (!exists(doc)) v.push(`PROGRESS.md: ${screen} phone-spec is done but ${doc} is missing`);
       else if (!/Status:\s*approved/i.test(read(doc))) {
