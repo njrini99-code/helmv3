@@ -175,29 +175,50 @@ export function checkProgress(md, exists = existsSync, root = '.', read = (p) =>
 
 // ── State catalog (docs/clubhouse/catalog) ──
 
-const CATALOG_PAGE = { shell: '1', home: '2', roster: '3', 'stats-team': '4', 'stats-player': '5', calendar: '6', messages: '7', settings: '8' };
+/**
+ * Page prefixes. The first eight pages have one digit (CH-8001); every page
+ * after them has two (CH-09001), so no existing number ever changes. A page
+ * gets the next free prefix when its catalog is started, here and in
+ * docs/clubhouse/catalog/README.md together.
+ */
+const CATALOG_PAGE = {
+  shell: '1',
+  home: '2',
+  roster: '3',
+  'stats-team': '4',
+  'stats-player': '5',
+  calendar: '6',
+  messages: '7',
+  settings: '8',
+};
 /** Kinds whose rows must exist in code and in a test: toasts, validation, didn't load, empty, loading, confirm. */
 const ENFORCED_KINDS = new Set(['0', '1', '2', '3', '4', '5']);
-const CODE_RE = /CH-(\d{4})/g;
+const CODE_RE = /CH-(\d{4,5})(?!\d)/g;
+/** The kind digit follows the page prefix: one digit for 4-digit numbers, two for 5-digit. */
+const kindOf = (num) => num[num.length - 3];
 
 /**
  * Every number used in src/clubhouse is catalogued exactly once, in its
  * page's block; every enforced row (kinds 0-5) is used in code and named by a
  * test unless the row says `preview`; rows marked retired may not be used.
+ * A catalog file for a page without a prefix is itself a violation.
  */
-export function checkCatalog({ catalogs, sources, tests }) {
+export function checkCatalog({ catalogs, sources, tests, pages = CATALOG_PAGE }) {
   const v = [];
   const rows = new Map();
   for (const [file, md] of Object.entries(catalogs)) {
     const page = file.replace(/^.*\//, '').replace(/\.md$/, '');
-    const digit = CATALOG_PAGE[page];
-    if (!digit) continue;
+    const prefix = pages[page];
+    if (!prefix) {
+      v.push(`${file}: no page number for "${page}"; add it to CATALOG_PAGE in scripts/clubhouse/check.mjs and to the catalog README`);
+      continue;
+    }
     for (const line of md.split('\n')) {
-      const m = /^\|\s*CH-(\d{4})\s*\|/.exec(line);
+      const m = /^\|\s*CH-(\d{4,5})\s*\|/.exec(line);
       if (!m) continue;
       const num = m[1];
       if (rows.has(num)) v.push(`${file}: CH-${num} is catalogued twice`);
-      if (num[0] !== digit) v.push(`${file}: CH-${num} is outside the ${page} block (${digit}xxx)`);
+      if (!num.startsWith(prefix) || num.length !== prefix.length + 3) v.push(`${file}: CH-${num} is outside the ${page} block (${prefix}xxx)`);
       rows.set(num, { file, retired: /retired/i.test(line), previewOnly: /\|\s*preview\s*\|\s*$/.test(line.trim()) || /\|\s*existing\s*\|\s*$/.test(line.trim()) });
     }
   }
@@ -213,7 +234,7 @@ export function checkCatalog({ catalogs, sources, tests }) {
     else if (row.retired) v.push(`${file}: CH-${num} is retired and may not be used`);
   }
   for (const [num, row] of rows) {
-    if (row.retired || row.previewOnly || !ENFORCED_KINDS.has(num[1])) continue;
+    if (row.retired || row.previewOnly || !ENFORCED_KINDS.has(kindOf(num))) continue;
     if (!used.has(num)) v.push(`${row.file}: CH-${num} is catalogued but not used in src/clubhouse`);
     if (!tested.has(num)) v.push(`${row.file}: CH-${num} has no test that names it`);
   }

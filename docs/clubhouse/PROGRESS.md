@@ -2,7 +2,7 @@
 
 The from-scratch GolfHelm UI. Code: `src/clubhouse/`. Spec: `design/handoff/`
 (desktop, owner-approved). Flag: `golf_clubhouse_ui` (production off). Rules:
-`.claude/rules/clubhouse.md`. Enforcement: `npm run clubhouse:check`, which
+`.claude/rules/clubhouse.md`. Adding a new design: `README.md`. Enforcement: `npm run clubhouse:check`, which
 also validates this file.
 
 Nothing in `src/clubhouse/` imports or styles through Fairway. Shared
@@ -77,6 +77,7 @@ screen.
 - D-18 (2026-09-29): Settings is one page with a section rail (owner). The handoff has no Settings screen, so it is built strictly from the design system: Surface cards, Inset, PopoverPanel, FormField, Select, Switch, Segmented; the selected section is a flat green tint (owner). Both notification stores stay, shown as "Email and push" and "CoachHelm updates" (owner). Only preferences Clubhouse honours are shown: animations (now wired to every Clubhouse transition) and haptics; theme waits for the dark theme (owner). Coaching intelligence is the CoachHelm section (owner). Writes keep the current tables and actions; new: a typed "delete" to delete an account, a confirm before a new invite code, and blank organization fields can now be cleared.
 - D-19 (2026-09-29): The bell and every menu use the design system's PopoverPanel (strong glass, 14px radius, 34px items).
 - D-20 (2026-09-29): Every error, empty, loading, confirm, motion, haptic and accessibility state has a catalog number (`docs/clubhouse/catalog/`, CH- plus four digits: page, then kind). The number is on the element as `data-ch-code`, each enforced row is forced in a test named by it, and `clubhouse:check` fails when code, catalog and tests disagree. Not sent to Sentry or the Bridge yet (owner). Pages are catalogued one at a time, each reviewed before the next (owner: go slow).
+- D-21 (2026-09-29): Pages after the first eight get two-digit catalog page numbers (`CH-09001`), in the order their catalogs are started, so existing numbers never change (owner). A catalog file without a page number fails `clubhouse:check`.
 - D-7 (2026-09-29): Errors reuse the existing pipeline (`logError`, `logServerError`, chunk and stale-action recovery) with a Clubhouse view and voice. The messages coaches see say what failed and what to do next, and never show raw server text.
 
 ## Open owner questions

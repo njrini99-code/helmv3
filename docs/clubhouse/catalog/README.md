@@ -9,7 +9,11 @@ page) can find it. It is not sent to Sentry yet.
 
 ## Numbering
 
-`CH-` plus four digits. The first digit is the page, the second the kind.
+`CH-`, then the page, the kind, and two digits. The first eight pages have a
+one-digit page number (`CH-8001`). Every page after them has two digits
+(`CH-09001`), so no existing number ever changes. A new page takes the next
+free number when its catalog is started, added here and in `CATALOG_PAGE`
+(`scripts/clubhouse/check.mjs`) together.
 
 | First digit | Page |
 | --- | --- |
@@ -21,6 +25,7 @@ page) can find it. It is not sent to Sentry yet.
 | 6 | Calendar |
 | 7 | Messages |
 | 8 | Settings |
+| 09, 10, … | Pages after these, in the order their catalogs are started |
 
 | Second digit | Kind | What it means |
 | --- | --- | --- |
@@ -35,7 +40,10 @@ page) can find it. It is not sent to Sentry yet.
 | 8 | Accessibility | Keyboard, screen reader and contrast behaviour |
 | 9 | Network and UX | Offline, slow, and signals of a confusing experience |
 
-So `CH-8001` is Settings, error toast, number one.
+So `CH-8001` is Settings, error toast, number one, and `CH-09001` is the
+ninth page's first error toast. A new page's catalog starts from
+`../CATALOG_TEMPLATE.md`; the full steps for a new design are in
+`../README.md`.
 
 ## How each row is written
 

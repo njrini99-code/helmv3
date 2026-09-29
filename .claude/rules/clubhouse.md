@@ -30,6 +30,7 @@ rejected the result; this tree exists so that cannot happen again.
 - **Phone:** every screen gets its own native phone design, written in
   `docs/clubhouse/phone/<screen>.md` and approved by the owner before it is
   built. It is never a shrunken desktop.
+- **New design:** follow `docs/clubhouse/README.md` step by step.
 - **Tracker:** `docs/clubhouse/PROGRESS.md`. Move a gate only with evidence.
 - **Before you report work done,** run `npm run clubhouse:check`.
 - **Reviews:** `ui-polish-reviewer` reviews against Fairway. Don't use it here;

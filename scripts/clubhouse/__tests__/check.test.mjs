@@ -90,3 +90,18 @@ test('catalog: every number is catalogued once, in its block, used and tested', 
   assert.doesNotMatch(v, /CH-8401/);
   assert.doesNotMatch(v, /CH-8601/);
 });
+
+test('catalog: pages after the first eight use a two-digit prefix; an unknown page is flagged', () => {
+  const catalogs = {
+    'docs/clubhouse/catalog/rounds.md': ['| CH-09001 | a | b | c | rounds.test |', '| CH-09301 | a | b | c | rounds.test |', '| CH-9001 | short | b | c | t |', '| CH-09601 | a | b | c | preview |'].join('\n'),
+    'docs/clubhouse/catalog/practice.md': '| CH-13001 | a | b | c | t |',
+  };
+  const sources = { 'src/clubhouse/r.tsx': "code: 'CH-09001'; code: 'CH-09301'" };
+  const tests = { 'rounds.test.tsx': "it('CH-09001 …')" };
+  const v = checkCatalog({ catalogs, sources, tests, pages: { rounds: '09' } }).join('\n');
+  assert.match(v, /CH-9001 is outside the rounds block \(09xxx\)/);
+  assert.match(v, /CH-09301 has no test/);
+  assert.doesNotMatch(v, /CH-09001/);
+  assert.doesNotMatch(v, /CH-09601/);
+  assert.match(v, /no page number for "practice"/);
+});
