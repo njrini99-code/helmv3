@@ -18,14 +18,16 @@
 
 ALTER TABLE "public"."golf_insight_outcome_attribution"
 ADD COLUMN IF NOT EXISTS "control_value" double precision,
-ADD COLUMN IF NOT EXISTS "n_rounds_control" integer,
+ADD COLUMN IF NOT EXISTS "n_rounds_control" bigint,
 ADD COLUMN IF NOT EXISTS "lift_ci_low" double precision,
 ADD COLUMN IF NOT EXISTS "lift_ci_high" double precision,
 ADD COLUMN IF NOT EXISTS "lift_z" double precision;
 
 ALTER TABLE "public"."golf_insight_outcome_attribution"
 ADD CONSTRAINT "golf_insight_outcome_attribution_n_rounds_control_check"
-CHECK (n_rounds_control IS NULL OR n_rounds_control >= 0);
+CHECK (n_rounds_control IS NULL OR n_rounds_control >= 0) NOT VALID;
+-- NOT VALID is enough: the column is new, so every existing row is NULL and
+-- passes; new writes are checked. No separate VALIDATE step is needed.
 
 -- ROLLBACK: `ALTER TABLE public.golf_insight_outcome_attribution DROP
 -- ROLLBACK: CONSTRAINT golf_insight_outcome_attribution_n_rounds_control_check,

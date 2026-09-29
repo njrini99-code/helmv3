@@ -18,22 +18,32 @@
 -- rows stay readable.
 
 ALTER TYPE public.notification_type
-ADD VALUE IF NOT EXISTS 'coachhelm_round_review_ready';
+ADD VALUE IF NOT EXISTS 'coachhelm_round_review_ready'
+AFTER 'team_join_rejected';
 ALTER TYPE public.notification_type
-ADD VALUE IF NOT EXISTS 'coachhelm_coach_assigned_goal';
+ADD VALUE IF NOT EXISTS 'coachhelm_coach_assigned_goal'
+AFTER 'coachhelm_round_review_ready';
 ALTER TYPE public.notification_type
-ADD VALUE IF NOT EXISTS 'coachhelm_goal_achieved';
+ADD VALUE IF NOT EXISTS 'coachhelm_goal_achieved'
+AFTER 'coachhelm_coach_assigned_goal';
 ALTER TYPE public.notification_type
-ADD VALUE IF NOT EXISTS 'coachhelm_goal_missed';
+ADD VALUE IF NOT EXISTS 'coachhelm_goal_missed'
+AFTER 'coachhelm_goal_achieved';
 ALTER TYPE public.notification_type
-ADD VALUE IF NOT EXISTS 'coachhelm_new_insight';
+ADD VALUE IF NOT EXISTS 'coachhelm_new_insight'
+AFTER 'coachhelm_goal_missed';
 ALTER TYPE public.notification_type
-ADD VALUE IF NOT EXISTS 'coachhelm_composite_insight';
+ADD VALUE IF NOT EXISTS 'coachhelm_composite_insight'
+AFTER 'coachhelm_new_insight';
 ALTER TYPE public.notification_type
-ADD VALUE IF NOT EXISTS 'coachhelm_weekly_digest';
+ADD VALUE IF NOT EXISTS 'coachhelm_weekly_digest'
+AFTER 'coachhelm_composite_insight';
 ALTER TYPE public.notification_type
-ADD VALUE IF NOT EXISTS 'coachhelm_coach_commented';
+ADD VALUE IF NOT EXISTS 'coachhelm_coach_commented'
+AFTER 'coachhelm_weekly_digest';
 ALTER TYPE public.notification_type
-ADD VALUE IF NOT EXISTS 'coachhelm_engine_suggested_goal';
+ADD VALUE IF NOT EXISTS 'coachhelm_engine_suggested_goal'
+AFTER 'coachhelm_coach_commented';
 ALTER TYPE public.notification_type
-ADD VALUE IF NOT EXISTS 'coachhelm_standing_percentile_changed';
+ADD VALUE IF NOT EXISTS 'coachhelm_standing_percentile_changed'
+AFTER 'coachhelm_engine_suggested_goal';
