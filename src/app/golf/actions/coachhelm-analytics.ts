@@ -21,7 +21,7 @@ import {
   isGradedPrediction,
   landedInInterval,
 } from '@/lib/coachhelm/v2/analytics/prediction-performance-writer';
-import { INVALID_HORIZON_CATEGORY } from '@/lib/coachhelm/v2/learning/outcome-validator';
+import { RETIRED_PREDICTION_CATEGORIES } from '@/lib/coachhelm/v2/learning/outcome-validator';
 import { getUserResilient } from '@/lib/auth/resilient-get-user';
 
 // ============================================================================
@@ -1175,7 +1175,7 @@ async function calculatePredictionPerformanceFromPredictions(
     for (const pred of predictions) {
       // A retired invalid-horizon prediction could never validate; it is not
       // a prediction made, let alone a miss.
-      if (pred.error_category === INVALID_HORIZON_CATEGORY) continue;
+      if (pred.error_category && RETIRED_PREDICTION_CATEGORIES.has(pred.error_category)) continue;
       const date = pred.created_at?.split('T')[0] || 'unknown';
       const existing = byDate.get(date) || { total: 0, validated: 0, accuracySum: 0 };
       existing.total++;

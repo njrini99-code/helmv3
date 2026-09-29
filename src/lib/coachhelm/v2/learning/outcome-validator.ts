@@ -158,6 +158,9 @@ export type ValidationSkipReason =
    *  often (80% of rounds are entered on a different day than played, averaging
    *  33.6 days later), so this is "stuck", not strictly "impossible". */
   | 'no_round_in_closed_window'
+  /** Closed window, still empty NO_OUTCOME_GRACE_DAYS after the due date:
+   *  retired as `no_outcome_in_window` (audit row 57) so the queue drains. */
+  | 'retired_no_outcome'
   /** Due date is still ahead; a qualifying round may yet be played. */
   | 'awaiting_round';
 
@@ -574,6 +577,10 @@ export async function validatePredictionAgainstOutcome(
     // returns `invalid` without one), but the type does not say so.
     const dueDay = prediction.due_date?.slice(0, 10) ?? '';
     const todayUtc = new Date().toISOString().slice(0, 10);
+    if (dueDay !== '' && isPastNoOutcomeGrace(dueDay, todayUtc)) {
+      await retireNoOutcome(supabase, prediction);
+      return { skipped: 'retired_no_outcome' };
+    }
     return {
       skipped: dueDay !== '' && dueDay < todayUtc ? 'no_round_in_closed_window' : 'awaiting_round',
     };
@@ -652,6 +659,52 @@ export async function validatePredictionAgainstOutcome(
 
 /** Sentinel category stamped on retired same-day/invalid-horizon predictions. */
 export const INVALID_HORIZON_CATEGORY = 'invalid_horizon';
+
+/**
+ * Sentinel for a prediction whose window closed with no round played in it
+ * (audit row 57: 109 such rows sat unvalidated, the oldest 84 days past due).
+ * Rounds are often entered weeks after they are played (mean 33.6 days), so
+ * the retirement waits NO_OUTCOME_GRACE_DAYS past the due date.
+ */
+export const NO_OUTCOME_CATEGORY = 'no_outcome_in_window';
+export const NO_OUTCOME_GRACE_DAYS = 60;
+
+/** Categories that mark a retired, never-graded prediction. */
+export const RETIRED_PREDICTION_CATEGORIES: ReadonlySet<string> = new Set([
+  INVALID_HORIZON_CATEGORY,
+  NO_OUTCOME_CATEGORY,
+]);
+
+/** True once `todayUtc` is more than the grace period past `dueDay` (YYYY-MM-DD). */
+export function isPastNoOutcomeGrace(dueDay: string, todayUtc: string): boolean {
+  const due = Date.parse(`${dueDay}T00:00:00Z`);
+  const today = Date.parse(`${todayUtc}T00:00:00Z`);
+  if (!Number.isFinite(due) || !Number.isFinite(today)) return false;
+  return today - due > NO_OUTCOME_GRACE_DAYS * 86_400_000;
+}
+
+async function retireNoOutcome(supabase: AdminSupabase, prediction: RipePrediction): Promise<void> {
+  const { error } = await supabase
+    .from('golf_predictions')
+    .update({
+      validated_at: new Date().toISOString(),
+      actual_value: null,
+      was_accurate: null,
+      error_category: NO_OUTCOME_CATEGORY,
+    })
+    .eq('id', prediction.id);
+  if (error) {
+    await logServerError(
+      `Failed to retire no-outcome prediction ${prediction.id}: ${error.message}`,
+      {
+        action: 'outcomeValidator.retireNoOutcome',
+        featureArea: 'coachhelm',
+        extra: { predictionId: prediction.id },
+      },
+      'warning',
+    );
+  }
+}
 
 /**
  * Retire a prediction that can never validate honestly (same-day/inverted
